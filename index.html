@@ -2,60 +2,77 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMWebs 系統驗證中...</title>
+    <!-- 加入這行可以防止手機版網頁被不正常放大縮小 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CMWebs 系統綁定</title>
     <!-- 引入 LINE LIFF 官方 SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* 簡單的載入畫面，讓使用者在 0.1 秒的跳轉過程中有好的視覺體驗 */
-        body { 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; margin: 0; font-family: sans-serif; background-color: #f4f4f4; 
+        /* 讓畫面完美貼齊邊緣，隱藏捲軸 */
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #f4f4f4; }
+        
+        /* 載入畫面的設計 */
+        #loader { 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            height: 100vh; font-family: sans-serif;
         }
-        .loader-container { text-align: center; }
         .spinner { 
             border: 4px solid rgba(0,0,0,0.1); width: 40px; height: 40px; 
-            border-radius: 50%; border-left-color: #06C755; /* LINE 的綠色 */
-            animation: spin 1s linear infinite; margin: 0 auto 15px; 
+            border-radius: 50%; border-left-color: #06C755; 
+            animation: spin 1s linear infinite; margin-bottom: 15px; 
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        p { color: #555; font-size: 14px; }
+        p { color: #555; font-size: 14px; letter-spacing: 1px; }
+        
+        /* 隱藏的 Tally 畫框，等載入完成後才顯示 */
+        #tally-frame {
+            display: none; width: 100vw; height: 100vh; border: none;
+        }
     </style>
 </head>
 <body>
-    <div class="loader-container">
+    <!-- 1. 一開始先顯示轉圈圈 -->
+    <div id="loader">
         <div class="spinner"></div>
         <p>安全驗證與身分綁定中...</p>
     </div>
+    
+    <!-- 2. 準備用來裝 Tally 表單的隱形畫框 -->
+    <iframe id="tally-frame" src=""></iframe>
 
     <script>
-        // 1. 設定您的專屬 ID 與目標網址
+        // 設定您的專屬 ID 與目標網址
         const myLiffId = "2010314940-at3zGKFb"; 
-        const tallyUrl = "https://tally.so/r/rjvdPX";
+        const tallyBaseUrl = "https://tally.so/r/rjvdPX";
 
         async function main() {
             try {
-                // 2. 初始化 LIFF
+                // 初始化 LIFF
                 await liff.init({ liffId: myLiffId });
-
-                // 3. 確認是否在 LINE 裡面並取得授權
+                
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
-                    const userId = profile.userId; // 這就是我們最需要的 UID
+                    const userId = profile.userId; // 成功抓取 UID
                     
-                    // 4. 瞬間跳轉到 Tally，並把 UID 塞在網址後面
-                    window.location.replace(`${tallyUrl}?uid=${userId}`);
+                    const iframe = document.getElementById('tally-frame');
+                    
+                    // 將 Tally 網址加上 UID 後，塞進畫框裡面
+                    iframe.src = `${tallyBaseUrl}?uid=${userId}`;
+                    
+                    // 監聽畫框：只要 Tally 載入完畢，就隱藏轉圈圈，顯示表單
+                    iframe.onload = function() {
+                        document.getElementById('loader').style.display = 'none';
+                        iframe.style.display = 'block';
+                    };
                 } else {
-                    // 若在外部瀏覽器打開，強制要求登入
                     liff.login();
                 }
             } catch (err) {
                 console.error("LIFF 初始化失敗", err);
-                alert("系統驗證連線失敗，請稍後再試。");
+                document.getElementById('loader').innerHTML = "<p>系統連線失敗，請關閉視窗後重試。</p>";
             }
         }
 
-        // 執行主程式
         main();
     </script>
 </body>
