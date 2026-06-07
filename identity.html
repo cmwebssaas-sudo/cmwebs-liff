@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CMWebs 系統身分綁定認證</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #f4f4f4; }
+        #loader { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: #06C755; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        p { color: #555; font-size: 14px; letter-spacing: 1px; }
+        #tally-frame { display: none; width: 100vw; height: 100vh; border: none; }
+    </style>
+</head>
+<body>
+    <div id="loader">
+        <div class="spinner"></div>
+        <p>系統連線與身分驗證中...</p>
+    </div>
+    
+    <iframe id="tally-frame" src=""></iframe>
+
+    <script>
+        // ⚠️ 請在這裡貼上您在「第一步」取得的全新 LIFF ID
+        const myLiffId = "2010314940-WndrUM1J"; 
+        
+        // 已經幫您轉換成 iframe 專用的 embed 網址
+        const tallyBaseUrl = "https://tally.so/embed/eqv2Gk";
+
+        async function main() {
+            try {
+                await liff.init({ liffId: myLiffId });
+                
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    const userId = profile.userId;
+                    
+                    const iframe = document.getElementById('tally-frame');
+                    iframe.src = `${tallyBaseUrl}?uid=${userId}`;
+                    
+                    iframe.onload = function() {
+                        document.getElementById('loader').style.display = 'none';
+                        iframe.style.display = 'block';
+                    };
+                } else {
+                    liff.login();
+                }
+            } catch (err) {
+                console.error("LIFF 初始化失敗", err);
+                document.getElementById('loader').innerHTML = "<p>系統連線失敗，請關閉視窗後重試。</p>";
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>
