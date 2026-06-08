@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統載入中...</title>
+    <!-- 引入 LINE LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background-color: #f4f4f4; }
+        .loader { border: 4px solid #e0e0e0; border-top: 4px solid #333; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+    <script>
+        // 請填入您為這個「發送公告」專門建立的新 LIFF ID
+        const myLiffId = "您的_LIFF_ID_填在這裡"; 
+        // 請填入您剛剛做好的 Tally 表單網址
+        const tallyUrl = "https://tally.so/r/您的表單代碼";
+
+        async function main() {
+            try {
+                await liff.init({ liffId: myLiffId });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                
+                // 抓取使用者的 LINE 資料
+                const profile = await liff.getProfile();
+                const userId = profile.userId;
+
+                // 組合網址並跳轉 (將 userId 塞進隱藏欄位 uid 中)
+                window.location.replace(`${tallyUrl}?uid=${userId}`);
+
+            } catch (err) {
+                console.error('LIFF 初始化失敗', err);
+                document.body.innerHTML = "<p>系統發生錯誤，請稍後再試。</p>";
+            }
+        }
+        main();
+    </script>
+</body>
+</html>
