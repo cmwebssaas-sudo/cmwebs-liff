@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMWebs 房客入住系統載入中...</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f5f7; color: #333; }
+        .loader { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="loader">
+        <h2>CMWebs 智能租管</h2>
+        <p>正在為您準備入住登錄表單，請稍候...</p>
+    </div>
+
+    <script>
+        async function main() {
+            try {
+                // 1. 初始化本次專屬的 入住 LIFF ID
+                await liff.init({ liffId: "2010314940-5A3pViKf" });
+
+                if (liff.isLoggedIn()) {
+                    // 2. 取得房客的 LINE UID
+                    const profile = await liff.getProfile();
+                    const userUid = profile.userId;
+
+                    // 3. 轉址到新的 入住 Tally 表單並帶上 UID
+                    window.location.replace("https://tally.so/r/Ek64Vr?uid=" + userUid);
+                } else {
+                    liff.login();
+                }
+            } catch (err) {
+                console.error("LIFF 初始化失敗:", err);
+                alert("系統載入異常，請重新點擊 LINE 內的連結。");
+            }
+        }
+        main();
+    </script>
+</body>
+</html>
