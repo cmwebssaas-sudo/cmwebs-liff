@@ -1,44 +1,109 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMWebs 準備發起新合約...</title>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f5f7; color: #333; }
-        .loader { text-align: center; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMWebs 新租賃合約發起</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #f4f5f7;
+      color: #222;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .box {
+      max-width: 420px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0 0 12px;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 8px 0;
+    }
+
+    .small {
+      color: #666;
+      font-size: 13px;
+      word-break: break-all;
+      margin-top: 16px;
+    }
+  </style>
 </head>
 <body>
-    <div class="loader">
-        <h2>CMWebs 智能租管</h2>
-        <p>正在載入新租賃合約表單，請稍候...</p>
-    </div>
+  <div class="box">
+    <h1>CMWebs 智能租管</h1>
+    <p id="status">正在載入新租賃合約表單，請稍候...</p>
+    <p class="small" id="debug"></p>
+  </div>
 
-    <script>
-        async function main() {
-            try {
-                // 1. 初始化這次專屬的 LIFF ID
-                await liff.init({ liffId: "2010314940-hsmAUnNw" });
+  <script>
+    const LIFF_ID = "2010314940-hsmAUnNw";
+    const TALLY_URL = "https://tally.so/r/ODEWKa";
 
-                if (liff.isLoggedIn()) {
-                    // 2. 取得 UID
-                    const profile = await liff.getProfile();
-                    const userUid = profile.userId;
+    function showError(message, detail) {
+      const status = document.getElementById("status");
+      const debug = document.getElementById("debug");
 
-                    // 3. 轉址到新的 Tally 表單並帶上 UID
-                    window.location.replace("https://tally.so/r/ODEWKa?uid=" + userId);
-                } else {
-                    liff.login();
-                }
-            } catch (err) {
-  console.error("LIFF 初始化失敗:", err);
-  alert("LIFF 初始化失敗：" + (err.message || JSON.stringify(err)));
-}
+      status.textContent = message;
+      debug.textContent = detail || "";
+
+      alert(message + (detail ? "\n\n" + detail : ""));
+    }
+
+    async function main() {
+      try {
+        document.getElementById("debug").textContent = "LIFF ID: " + LIFF_ID;
+
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login({
+            redirectUri: "https://liff.line.me/" + LIFF_ID
+          });
+          return;
         }
-        
-        main();
-    </script>
+
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+
+        if (!userId) {
+          showError("無法取得 LINE UID", "profile.userId 是空的");
+          return;
+        }
+
+        const targetUrl = TALLY_URL + "?uid=" + encodeURIComponent(userId);
+
+        document.getElementById("status").textContent = "已取得 LINE 身分，正在前往表單...";
+        document.getElementById("debug").textContent = "UID: " + userId;
+
+        window.location.replace(targetUrl);
+      } catch (err) {
+        console.error("LIFF 初始化失敗:", err);
+
+        const message = err && err.message ? err.message : JSON.stringify(err);
+        showError("LIFF 初始化失敗", message);
+      }
+    }
+
+    main();
+  </script>
 </body>
 </html>
