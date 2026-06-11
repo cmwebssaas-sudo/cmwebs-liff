@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMWebs 系統載入中...</title>
+    <!-- 載入 LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f5f7; color: #333; }
+        .loader { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="loader">
+        <h2>CMWebs 智能租管</h2>
+        <p>正在為您驗證身分並跳轉至專屬表單...</p>
+    </div>
+
+    <script>
+        async function main() {
+            try {
+                // 1. 初始化 LIFF (請確認這是您截圖上的 LIFF ID)
+                await liff.init({ liffId: "2010314940-jMdgTriP" });
+
+                // 2. 確認是否在 LINE 內開啟或已登入
+                if (liff.isLoggedIn()) {
+                    // 3. 取得使用者的真實 LINE UID
+                    const profile = await liff.getProfile();
+                    const userUid = profile.userId;
+
+                    // 4. 帶著 UID 自動轉址到您的 Tally 房東名冊表單
+                    // 這裡預設您的 Tally 隱藏欄位叫做 uid
+                    window.location.replace("https://tally.so/r/44G7ar?uid=" + userUid);
+                } else {
+                    // 若在外部瀏覽器打開且未登入，則要求登入
+                    liff.login();
+                }
+            } catch (err) {
+                console.error("LIFF 初始化失敗:", err);
+                alert("系統載入異常，請重新點擊 LINE 內的連結。");
+            }
+        }
+        main();
+    </script>
+</body>
+</html>
