@@ -50,27 +50,27 @@
 <body>
   <div class="box">
     <h1>CMWebs 智能租管</h1>
-    <p id="status">正在載入新租賃合約表單，請稍候...</p>
+    <p id="status">正在確認房客綁定狀態，請稍候...</p>
     <p class="small" id="debug"></p>
   </div>
 
   <script>
     const LIFF_ID = "2010314940-hsmAUnNw";
-    const TALLY_URL = "https://tally.so/r/ODEWKa";
+    const CHECK_WEBHOOK_URL = "https://hook.us2.make.com/bke3eglwyf2xnhbqougyaiv37w0fdkd4";
+
+    function showStatus(message, detail) {
+      document.getElementById("status").textContent = message;
+      document.getElementById("debug").textContent = detail || "";
+    }
 
     function showError(message, detail) {
-      const status = document.getElementById("status");
-      const debug = document.getElementById("debug");
-
-      status.textContent = message;
-      debug.textContent = detail || "";
-
+      showStatus(message, detail);
       alert(message + (detail ? "\n\n" + detail : ""));
     }
 
     async function main() {
       try {
-        document.getElementById("debug").textContent = "LIFF ID: " + LIFF_ID;
+        showStatus("正在初始化 LINE 身分驗證...", "LIFF ID: " + LIFF_ID);
 
         await liff.init({ liffId: LIFF_ID });
 
@@ -81,6 +81,8 @@
           return;
         }
 
+        showStatus("正在取得 LINE UID...");
+
         const profile = await liff.getProfile();
         const userId = profile.userId;
 
@@ -89,17 +91,31 @@
           return;
         }
 
-        const targetUrl = TALLY_URL + "?uid=" + encodeURIComponent(userId);
+        showStatus("正在確認是否已完成註冊綁定...", "UID: " + userId);
 
-        document.getElementById("status").textContent = "已取得 LINE 身分，正在前往表單...";
-        document.getElementById("debug").textContent = "UID: " + userId;
+        const response = await fetch(CHECK_WEBHOOK_URL + "?uid=" + encodeURIComponent(userId), {
+          method: "GET",
+          cache: "no-store"
+        });
 
-        window.location.replace(targetUrl);
+        if (!response.ok) {
+          throw new Error("Make webhook 回應失敗，HTTP " + response.status);
+        }
+
+        const data = await response.json();
+
+        if (!data.redirectUrl) {
+          throw new Error("Make 沒有回傳 redirectUrl：" + JSON.stringify(data));
+        }
+
+        showStatus("確認完成，正在前往表單...", data.redirectUrl);
+
+        window.location.replace(data.redirectUrl);
       } catch (err) {
-        console.error("LIFF 初始化失敗:", err);
+        console.error("流程失敗:", err);
 
-        const message = err && err.message ? err.message : JSON.stringify(err);
-        showError("LIFF 初始化失敗", message);
+        const detail = err && err.message ? err.message : JSON.stringify(err);
+        showError("系統檢查失敗", detail);
       }
     }
 
