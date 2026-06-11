@@ -33,9 +33,9 @@
                     liff.login();
                 }
             } catch (err) {
-                console.error("LIFF 初始化失敗:", err);
-                alert("系統載入異常，請重新點擊 LINE 內的連結。");
-            }
+  console.error("LIFF 初始化失敗:", err);
+  alert("LIFF 初始化失敗：" + (err.message || JSON.stringify(err)));
+}
         }
         main();
     </script>
