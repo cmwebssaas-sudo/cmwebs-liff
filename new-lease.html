@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CMWebs 新租賃合約發起</title>
+  <title>CMWebs 智能租管</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
@@ -19,7 +19,6 @@
       padding: 24px;
       box-sizing: border-box;
     }
-
     .box {
       max-width: 420px;
       background: #fff;
@@ -27,18 +26,8 @@
       padding: 28px 24px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     }
-
-    h1 {
-      font-size: 22px;
-      margin: 0 0 12px;
-    }
-
-    p {
-      font-size: 16px;
-      line-height: 1.6;
-      margin: 8px 0;
-    }
-
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    p { font-size: 16px; line-height: 1.6; margin: 8px 0; }
     .small {
       color: #666;
       font-size: 13px;
@@ -50,7 +39,7 @@
 <body>
   <div class="box">
     <h1>CMWebs 智能租管</h1>
-    <p id="status">正在確認房客綁定狀態，請稍候...</p>
+    <p id="status">正在確認 LINE 身分，請稍候...</p>
     <p class="small" id="debug"></p>
   </div>
 
@@ -70,13 +59,17 @@
 
     async function main() {
       try {
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get("mode") || "";
+        const contractId = params.get("contract_id") || "";
+
         showStatus("正在初始化 LINE 身分驗證...", "LIFF ID: " + LIFF_ID);
 
         await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
           liff.login({
-            redirectUri: "https://liff.line.me/" + LIFF_ID
+            redirectUri: window.location.href
           });
           return;
         }
@@ -91,9 +84,15 @@
           return;
         }
 
-        showStatus("正在確認是否已完成註冊綁定...", "UID: " + userId);
+        showStatus("正在判斷入口...", "UID: " + userId + " / mode: " + mode + " / contract_id: " + contractId);
 
-        const response = await fetch(CHECK_WEBHOOK_URL + "?uid=" + encodeURIComponent(userId), {
+        const webhookUrl =
+          CHECK_WEBHOOK_URL +
+          "?uid=" + encodeURIComponent(userId) +
+          "&mode=" + encodeURIComponent(mode) +
+          "&contract_id=" + encodeURIComponent(contractId);
+
+        const response = await fetch(webhookUrl, {
           method: "GET",
           cache: "no-store"
         });
@@ -113,7 +112,6 @@
         window.location.replace(data.redirectUrl);
       } catch (err) {
         console.error("流程失敗:", err);
-
         const detail = err && err.message ? err.message : JSON.stringify(err);
         showError("系統檢查失敗", detail);
       }
