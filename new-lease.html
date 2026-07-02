@@ -4,10 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CMWebs 智能租管</title>
+
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
     body {
-      font-family: Arial, "Noto Sans TC", sans-serif;
+      font-family: Arial, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
       background: #f4f5f7;
       color: #222;
       margin: 0;
@@ -19,25 +21,75 @@
       padding: 24px;
       box-sizing: border-box;
     }
+
     .box {
+      width: 100%;
       max-width: 420px;
       background: #fff;
-      border-radius: 12px;
-      padding: 28px 24px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      border-radius: 14px;
+      padding: 30px 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      box-sizing: border-box;
     }
-    h1 { font-size: 22px; margin: 0 0 12px; }
-    p { font-size: 16px; line-height: 1.6; margin: 8px 0; }
+
+    h1 {
+      font-size: 22px;
+      margin: 0 0 14px;
+      font-weight: 700;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 8px 0;
+    }
+
     .small {
       color: #666;
       font-size: 13px;
       word-break: break-all;
       margin-top: 16px;
+      text-align: left;
+      background: #f8f8f8;
+      border-radius: 8px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #ddd;
+      border-top-color: #06c755;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: #06c755;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
     }
   </style>
 </head>
+
 <body>
   <div class="box">
+    <div class="loading" id="loading"></div>
     <h1>CMWebs 智能租管</h1>
     <p id="status">正在確認 LINE 身分，請稍候...</p>
     <p class="small" id="debug"></p>
@@ -45,6 +97,7 @@
 
   <script>
     const LIFF_ID = "2010314940-hsmAUnNw";
+
     const CHECK_WEBHOOK_URL = "https://hook.us2.make.com/bke3eglwyf2xnhbqougyaiv37w0fdkd4";
 
     function showStatus(message, detail) {
@@ -52,24 +105,97 @@
       document.getElementById("debug").textContent = detail || "";
     }
 
+    function stopLoading() {
+      const loading = document.getElementById("loading");
+      if (loading) {
+        loading.style.display = "none";
+      }
+    }
+
     function showError(message, detail) {
-      showStatus(message, detail);
+      stopLoading();
+      showStatus(message, detail || "");
       alert(message + (detail ? "\n\n" + detail : ""));
+    }
+
+    function safeDecode(value) {
+      if (!value) return "";
+      try {
+        return decodeURIComponent(value);
+      } catch (e) {
+        return value;
+      }
+    }
+
+    function getLiffStateParams() {
+      const directParams = new URLSearchParams(window.location.search);
+      const rawState = directParams.get("liff.state");
+
+      if (!rawState) {
+        return new URLSearchParams();
+      }
+
+      const decodedState = safeDecode(rawState);
+
+      /*
+        liff.state 可能長這樣：
+
+        ?mode=new_tenant&role=tenant&contract_id=xxxx
+
+        或：
+
+        /new-lease.html?mode=new_tenant&role=tenant&contract_id=xxxx
+      */
+
+      let queryString = "";
+
+      if (decodedState.startsWith("?")) {
+        queryString = decodedState.substring(1);
+      } else {
+        const questionIndex = decodedState.indexOf("?");
+        if (questionIndex >= 0) {
+          queryString = decodedState.substring(questionIndex + 1);
+        }
+      }
+
+      queryString = queryString.split("#")[0];
+
+      return new URLSearchParams(queryString);
+    }
+
+    function getQueryParam(name) {
+      const directParams = new URLSearchParams(window.location.search);
+
+      const directValue = directParams.get(name);
+      if (directValue) {
+        return directValue;
+      }
+
+      const stateParams = getLiffStateParams();
+      const stateValue = stateParams.get(name);
+
+      return stateValue || "";
+    }
+
+    function buildLoginRedirectUri() {
+      /*
+        保留目前網址，避免登入 LINE 後 contract_id 消失。
+      */
+      return window.location.href;
     }
 
     async function main() {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const mode = params.get("mode") || "";
-        const contractId = params.get("contract_id") || "";
-
         showStatus("正在初始化 LINE 身分驗證...", "LIFF ID: " + LIFF_ID);
 
-        await liff.init({ liffId: LIFF_ID });
+        await liff.init({
+          liffId: LIFF_ID
+        });
 
         if (!liff.isLoggedIn()) {
+          showStatus("尚未登入 LINE，正在前往登入...");
           liff.login({
-            redirectUri: window.location.href
+            redirectUri: buildLoginRedirectUri()
           });
           return;
         }
@@ -77,19 +203,38 @@
         showStatus("正在取得 LINE UID...");
 
         const profile = await liff.getProfile();
-        const userId = profile.userId;
+        const userId = profile && profile.userId ? profile.userId : "";
 
         if (!userId) {
-          showError("無法取得 LINE UID", "profile.userId 是空的");
+          showError("無法取得 LINE UID", "profile.userId 是空的，請重新從 LINE 內開啟連結。");
           return;
         }
 
-        showStatus("正在判斷入口...", "UID: " + userId + " / mode: " + mode + " / contract_id: " + contractId);
+        const mode = getQueryParam("mode") || "new_tenant";
+        const role = getQueryParam("role") || "tenant";
+        const contractId = getQueryParam("contract_id") || "";
+
+        if (!contractId) {
+          showError(
+            "缺少合約 ID",
+            "網址沒有帶入 contract_id，請重新從房東轉發的合約連結進入。"
+          );
+          return;
+        }
+
+        showStatus(
+          "正在判斷入口...",
+          "UID: " + userId +
+          "\nmode: " + mode +
+          "\nrole: " + role +
+          "\ncontract_id: " + contractId
+        );
 
         const webhookUrl =
           CHECK_WEBHOOK_URL +
           "?uid=" + encodeURIComponent(userId) +
           "&mode=" + encodeURIComponent(mode) +
+          "&role=" + encodeURIComponent(role) +
           "&contract_id=" + encodeURIComponent(contractId);
 
         const response = await fetch(webhookUrl, {
@@ -103,16 +248,22 @@
 
         const data = await response.json();
 
-        if (!data.redirectUrl) {
+        if (!data || !data.redirectUrl) {
           throw new Error("Make 沒有回傳 redirectUrl：" + JSON.stringify(data));
         }
 
         showStatus("確認完成，正在前往表單...", data.redirectUrl);
 
         window.location.replace(data.redirectUrl);
+
       } catch (err) {
         console.error("流程失敗:", err);
-        const detail = err && err.message ? err.message : JSON.stringify(err);
+
+        const detail =
+          err && err.message
+            ? err.message
+            : JSON.stringify(err);
+
         showError("系統檢查失敗", detail);
       }
     }
