@@ -26,15 +26,15 @@
       width: 100%;
       max-width: 430px;
       background: #ffffff;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 30px 24px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.12);
       box-sizing: border-box;
     }
 
     h1 {
-      font-size: 22px;
-      margin: 0 0 14px;
+      font-size: 24px;
+      margin: 0 0 16px;
       font-weight: 700;
     }
 
@@ -44,35 +44,23 @@
       margin: 10px 0;
     }
 
-    .small {
+    .hint {
       color: #666;
-      font-size: 13px;
-      word-break: break-all;
-      margin-top: 18px;
-      text-align: left;
+      font-size: 14px;
+      line-height: 1.7;
       background: #f7f7f7;
-      border-radius: 8px;
-      padding: 10px;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 16px;
+      text-align: left;
+      word-break: break-all;
       display: none;
     }
 
     .loading {
-      margin-top: 18px;
+      margin-top: 16px;
       font-size: 13px;
       color: #777;
-    }
-
-    .btn {
-      display: inline-block;
-      margin-top: 18px;
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: none;
-      background: #111827;
-      color: #fff;
-      font-size: 15px;
-      cursor: pointer;
-      text-decoration: none;
     }
   </style>
 </head>
@@ -82,35 +70,32 @@
     <h1>CMWebs 智能租管</h1>
     <p id="status">正在確認 LINE 身分，請稍候...</p>
     <p class="loading" id="loading">系統處理中，請勿關閉畫面。</p>
-    <p class="small" id="debug"></p>
+    <div class="hint" id="debug"></div>
   </div>
 
   <script>
     /************************************************************
-     *  基本設定
+     * 基本設定
      ************************************************************/
 
-    // 你的 LIFF ID
     const LIFF_ID = "2010314940-hsmAUnNw";
 
-    // 你的 Make 身分判斷 Webhook
-    // 用於：房客點開合約連結後，判斷是否已綁定 / 要導去哪個表單
+    // 房客身份判斷 Make Webhook
     const CHECK_WEBHOOK_URL = "https://hook.us2.make.com/bke3eglwyf2xnhbqougyaiv37w0fdkd4";
 
     // 房東發起新租約 A 表單
-    // 你的 Tally 編輯網址是 tally.so/forms/ODEWKa/edit
-    // 對外填寫網址通常是下面這個：
     const LANDLORD_NEW_LEASE_FORM_URL = "https://tally.so/r/ODEWKa";
 
 
     /************************************************************
-     *  畫面工具
+     * 畫面顯示
      ************************************************************/
 
     function showStatus(message, detail) {
       document.getElementById("status").textContent = message;
 
       const debugEl = document.getElementById("debug");
+
       if (detail) {
         debugEl.style.display = "block";
         debugEl.textContent = detail;
@@ -133,59 +118,21 @@
 
 
     /************************************************************
-     *  取得 LIFF URL 參數
-     *
-     *  重要：
-     *  LINE LIFF 有時候會把參數放在 liff.state 裡，
-     *  例如：
-     *  https://liff.line.me/xxx?mode=start_contract
-     *
-     *  實際進入頁面後可能變成：
-     *  new-lease.html?liff.state=%3Fmode%3Dstart_contract
-     *
-     *  所以不能只讀 window.location.search。
+     * 安全解碼
      ************************************************************/
 
-    function getAllParams() {
-      const result = new URLSearchParams();
+    function safeDecode(value) {
+      if (!value) return "";
 
-      // 1. 先讀目前網址上的參數
-      const currentParams = new URLSearchParams(window.location.search);
+      let result = value;
 
-      currentParams.forEach((value, key) => {
-        if (key !== "liff.state") {
-          result.set(key, value);
-        }
-      });
-
-      // 2. 再讀 liff.state 裡面的參數
-      const rawState = currentParams.get("liff.state");
-
-      if (rawState) {
-        let decodedState = "";
-
+      for (let i = 0; i < 3; i++) {
         try {
-          decodedState = decodeURIComponent(rawState);
+          const decoded = decodeURIComponent(result);
+          if (decoded === result) break;
+          result = decoded;
         } catch (e) {
-          decodedState = rawState;
-        }
-
-        let queryString = "";
-
-        if (decodedState.startsWith("?")) {
-          queryString = decodedState.substring(1);
-        } else if (decodedState.includes("?")) {
-          queryString = decodedState.substring(decodedState.indexOf("?") + 1);
-        }
-
-        if (queryString) {
-          const stateParams = new URLSearchParams(queryString);
-
-          stateParams.forEach((value, key) => {
-            if (!result.has(key)) {
-              result.set(key, value);
-            }
-          });
+          break;
         }
       }
 
@@ -194,7 +141,79 @@
 
 
     /************************************************************
-     *  組合網址參數
+     * 從字串抓 query parameters
+     ************************************************************/
+
+    function mergeParamsFromString(targetParams, rawText) {
+      if (!rawText) return;
+
+      let text = safeDecode(rawText);
+
+      // 只取 ? 後面的部分
+      if (text.includes("?")) {
+        text = text.substring(text.indexOf("?") + 1);
+      }
+
+      // 去掉 # 後面內容
+      if (text.includes("#")) {
+        text = text.substring(0, text.indexOf("#"));
+      }
+
+      if (!text) return;
+
+      try {
+        const tempParams = new URLSearchParams(text);
+
+        tempParams.forEach((value, key) => {
+          if (key && value && !targetParams.has(key)) {
+            targetParams.set(key, value);
+          }
+        });
+      } catch (e) {
+        console.warn("參數解析失敗：", rawText, e);
+      }
+    }
+
+
+    /************************************************************
+     * 取得所有參數
+     *
+     * 會同時讀：
+     * 1. window.location.search
+     * 2. liff.state
+     * 3. window.location.hash
+     ************************************************************/
+
+    function getAllParams() {
+      const result = new URLSearchParams();
+
+      const currentUrl = window.location.href;
+      const urlObj = new URL(currentUrl);
+
+      // 一般 query
+      urlObj.searchParams.forEach((value, key) => {
+        if (key !== "liff.state") {
+          result.set(key, value);
+        }
+      });
+
+      // liff.state
+      const rawLiffState = urlObj.searchParams.get("liff.state");
+      if (rawLiffState) {
+        mergeParamsFromString(result, rawLiffState);
+      }
+
+      // hash 內的 query
+      if (window.location.hash) {
+        mergeParamsFromString(result, window.location.hash);
+      }
+
+      return result;
+    }
+
+
+    /************************************************************
+     * 組網址
      ************************************************************/
 
     function appendParams(baseUrl, paramsObj) {
@@ -213,7 +232,7 @@
 
 
     /************************************************************
-     *  主流程
+     * 主流程
      ************************************************************/
 
     async function main() {
@@ -232,45 +251,52 @@
         showStatus("正在取得 LINE UID...");
 
         const profile = await liff.getProfile();
+
         const userId = profile && profile.userId ? profile.userId : "";
         const displayName = profile && profile.displayName ? profile.displayName : "";
 
         if (!userId) {
-          showError("無法取得 LINE UID", "profile.userId 是空的，請確認 LIFF Scope 有開啟 profile。");
+          showError("無法取得 LINE UID", "請確認 LIFF Scope 有開啟 profile。");
           return;
         }
 
         const params = getAllParams();
 
-        let mode = params.get("mode") || "";
-        const contractId = params.get("contract_id") || "";
+        const mode = params.get("mode") || "";
         const role = params.get("role") || "";
+        const contractId = params.get("contract_id") || params.get("contractId") || "";
 
-        // 舊連結防呆：
-        // 如果沒有 mode，但有 contract_id，視為房客簽約入口
-        if (!mode && contractId) {
-          mode = "tenant_checkin";
-        }
+        const rawAllText = safeDecode(window.location.href);
+
+        const isStartContract =
+          mode === "start_contract" ||
+          rawAllText.includes("mode=start_contract");
+
+        const isTenantCheckin =
+          mode === "tenant_checkin" ||
+          role === "tenant" ||
+          rawAllText.includes("mode=tenant_checkin") ||
+          rawAllText.includes("role=tenant");
 
         showStatus(
           "正在判斷入口...",
           "UID: " + userId +
+          "\nDisplayName: " + displayName +
           "\nmode: " + mode +
+          "\nrole: " + role +
           "\ncontract_id: " + contractId +
-          "\nrole: " + role
+          "\nURL: " + window.location.href
         );
 
 
         /********************************************************
-         *  情境 1：房東發起新租約
+         * A. 房東發起新租約
          *
-         *  入口：
-         *  https://liff.line.me/2010314940-hsmAUnNw?mode=start_contract
-         *
-         *  這個入口不需要 contract_id
+         * 連結：
+         * https://liff.line.me/2010314940-hsmAUnNw?mode=start_contract
          ********************************************************/
 
-        if (mode === "start_contract") {
+        if (isStartContract) {
           const landlordFormUrl = appendParams(LANDLORD_NEW_LEASE_FORM_URL, {
             landlord_id: userId,
             uid: userId,
@@ -285,18 +311,13 @@
 
 
         /********************************************************
-         *  情境 2：房客點開房東轉發的合約連結
+         * B. 房客合約簽署入口
          *
-         *  正確格式：
-         *  https://liff.line.me/2010314940-hsmAUnNw
-         *    ?mode=tenant_checkin
-         *    &contract_id=合約ID
-         *    &role=tenant
-         *
-         *  這個情境一定要有 contract_id
+         * 連結：
+         * https://liff.line.me/2010314940-hsmAUnNw?mode=tenant_checkin&contract_id=xxxx&role=tenant
          ********************************************************/
 
-        if (mode === "tenant_checkin" || role === "tenant") {
+        if (isTenantCheckin) {
           if (!contractId) {
             showError(
               "缺少合約 ID",
@@ -326,6 +347,7 @@
           }
 
           const responseText = await response.text();
+
           let data = null;
 
           try {
@@ -334,13 +356,11 @@
             data = null;
           }
 
-          // Make 回傳 JSON：{ "redirectUrl": "https://..." }
           if (data && data.redirectUrl) {
             redirectTo(data.redirectUrl);
             return;
           }
 
-          // Make 直接回傳純文字網址
           if (responseText && responseText.trim().startsWith("http")) {
             redirectTo(responseText.trim());
             return;
@@ -351,13 +371,23 @@
 
 
         /********************************************************
-         *  情境 3：沒有 mode
+         * C. 沒有任何參數
+         *
+         * 防呆：
+         * 因為目前這個 LIFF 主要是「新增租約」入口，
+         * 所以沒有參數時，預設送去房東 A 表單。
          ********************************************************/
 
-        showError(
-          "缺少入口模式",
-          "網址沒有帶入 mode。請從 LINE 圖文選單或系統產生的專屬連結進入。"
-        );
+        const fallbackLandlordFormUrl = appendParams(LANDLORD_NEW_LEASE_FORM_URL, {
+          landlord_id: userId,
+          uid: userId,
+          line_uid: userId,
+          display_name: displayName,
+          mode: "start_contract"
+        });
+
+        redirectTo(fallbackLandlordFormUrl);
+        return;
 
       } catch (err) {
         console.error("流程失敗:", err);
