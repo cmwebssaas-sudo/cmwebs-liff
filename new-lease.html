@@ -24,11 +24,11 @@
 
     .box {
       width: 100%;
-      max-width: 420px;
-      background: #fff;
+      max-width: 430px;
+      background: #ffffff;
       border-radius: 14px;
       padding: 30px 24px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
       box-sizing: border-box;
     }
 
@@ -40,162 +40,191 @@
 
     p {
       font-size: 16px;
-      line-height: 1.6;
-      margin: 8px 0;
+      line-height: 1.7;
+      margin: 10px 0;
     }
 
     .small {
       color: #666;
       font-size: 13px;
       word-break: break-all;
-      margin-top: 16px;
+      margin-top: 18px;
       text-align: left;
-      background: #f8f8f8;
+      background: #f7f7f7;
       border-radius: 8px;
       padding: 10px;
-      box-sizing: border-box;
+      display: none;
     }
 
     .loading {
-      display: inline-block;
-      width: 22px;
-      height: 22px;
-      border: 3px solid #ddd;
-      border-top-color: #06c755;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 12px;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+      margin-top: 18px;
+      font-size: 13px;
+      color: #777;
     }
 
     .btn {
       display: inline-block;
-      margin-top: 16px;
+      margin-top: 18px;
       padding: 10px 16px;
       border-radius: 8px;
-      background: #06c755;
+      border: none;
+      background: #111827;
       color: #fff;
-      text-decoration: none;
-      font-weight: 700;
       font-size: 15px;
+      cursor: pointer;
+      text-decoration: none;
     }
   </style>
 </head>
 
 <body>
   <div class="box">
-    <div class="loading" id="loading"></div>
     <h1>CMWebs 智能租管</h1>
     <p id="status">正在確認 LINE 身分，請稍候...</p>
+    <p class="loading" id="loading">系統處理中，請勿關閉畫面。</p>
     <p class="small" id="debug"></p>
   </div>
 
   <script>
+    /************************************************************
+     *  基本設定
+     ************************************************************/
+
+    // 你的 LIFF ID
     const LIFF_ID = "2010314940-hsmAUnNw";
 
+    // 你的 Make 身分判斷 Webhook
+    // 用於：房客點開合約連結後，判斷是否已綁定 / 要導去哪個表單
     const CHECK_WEBHOOK_URL = "https://hook.us2.make.com/bke3eglwyf2xnhbqougyaiv37w0fdkd4";
+
+    // 房東發起新租約 A 表單
+    // 你的 Tally 編輯網址是 tally.so/forms/ODEWKa/edit
+    // 對外填寫網址通常是下面這個：
+    const LANDLORD_NEW_LEASE_FORM_URL = "https://tally.so/r/ODEWKa";
+
+
+    /************************************************************
+     *  畫面工具
+     ************************************************************/
 
     function showStatus(message, detail) {
       document.getElementById("status").textContent = message;
-      document.getElementById("debug").textContent = detail || "";
-    }
 
-    function stopLoading() {
-      const loading = document.getElementById("loading");
-      if (loading) {
-        loading.style.display = "none";
+      const debugEl = document.getElementById("debug");
+      if (detail) {
+        debugEl.style.display = "block";
+        debugEl.textContent = detail;
+      } else {
+        debugEl.style.display = "none";
+        debugEl.textContent = "";
       }
     }
 
     function showError(message, detail) {
-      stopLoading();
+      document.getElementById("loading").style.display = "none";
       showStatus(message, detail || "");
       alert(message + (detail ? "\n\n" + detail : ""));
     }
 
-    function safeDecode(value) {
-      if (!value) return "";
-      try {
-        return decodeURIComponent(value);
-      } catch (e) {
-        return value;
-      }
+    function redirectTo(url) {
+      showStatus("確認完成，正在前往表單...", url);
+      window.location.replace(url);
     }
 
-    function getLiffStateParams() {
-      const directParams = new URLSearchParams(window.location.search);
-      const rawState = directParams.get("liff.state");
 
-      if (!rawState) {
-        return new URLSearchParams();
-      }
+    /************************************************************
+     *  取得 LIFF URL 參數
+     *
+     *  重要：
+     *  LINE LIFF 有時候會把參數放在 liff.state 裡，
+     *  例如：
+     *  https://liff.line.me/xxx?mode=start_contract
+     *
+     *  實際進入頁面後可能變成：
+     *  new-lease.html?liff.state=%3Fmode%3Dstart_contract
+     *
+     *  所以不能只讀 window.location.search。
+     ************************************************************/
 
-      const decodedState = safeDecode(rawState);
+    function getAllParams() {
+      const result = new URLSearchParams();
 
-      /*
-        liff.state 可能長這樣：
+      // 1. 先讀目前網址上的參數
+      const currentParams = new URLSearchParams(window.location.search);
 
-        ?mode=new_tenant&role=tenant&contract_id=xxxx
+      currentParams.forEach((value, key) => {
+        if (key !== "liff.state") {
+          result.set(key, value);
+        }
+      });
 
-        或：
+      // 2. 再讀 liff.state 裡面的參數
+      const rawState = currentParams.get("liff.state");
 
-        /new-lease.html?mode=new_tenant&role=tenant&contract_id=xxxx
-      */
+      if (rawState) {
+        let decodedState = "";
 
-      let queryString = "";
+        try {
+          decodedState = decodeURIComponent(rawState);
+        } catch (e) {
+          decodedState = rawState;
+        }
 
-      if (decodedState.startsWith("?")) {
-        queryString = decodedState.substring(1);
-      } else {
-        const questionIndex = decodedState.indexOf("?");
-        if (questionIndex >= 0) {
-          queryString = decodedState.substring(questionIndex + 1);
+        let queryString = "";
+
+        if (decodedState.startsWith("?")) {
+          queryString = decodedState.substring(1);
+        } else if (decodedState.includes("?")) {
+          queryString = decodedState.substring(decodedState.indexOf("?") + 1);
+        }
+
+        if (queryString) {
+          const stateParams = new URLSearchParams(queryString);
+
+          stateParams.forEach((value, key) => {
+            if (!result.has(key)) {
+              result.set(key, value);
+            }
+          });
         }
       }
 
-      queryString = queryString.split("#")[0];
-
-      return new URLSearchParams(queryString);
+      return result;
     }
 
-    function getQueryParam(name) {
-      const directParams = new URLSearchParams(window.location.search);
 
-      const directValue = directParams.get(name);
-      if (directValue) {
-        return directValue;
-      }
+    /************************************************************
+     *  組合網址參數
+     ************************************************************/
 
-      const stateParams = getLiffStateParams();
-      const stateValue = stateParams.get(name);
+    function appendParams(baseUrl, paramsObj) {
+      const url = new URL(baseUrl);
 
-      return stateValue || "";
+      Object.keys(paramsObj).forEach((key) => {
+        const value = paramsObj[key];
+
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+          url.searchParams.set(key, value);
+        }
+      });
+
+      return url.toString();
     }
 
-    function buildLoginRedirectUri() {
-      /*
-        保留目前網址，避免登入 LINE 後 contract_id 消失。
-      */
-      return window.location.href;
-    }
+
+    /************************************************************
+     *  主流程
+     ************************************************************/
 
     async function main() {
       try {
         showStatus("正在初始化 LINE 身分驗證...", "LIFF ID: " + LIFF_ID);
 
-        await liff.init({
-          liffId: LIFF_ID
-        });
+        await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
-          showStatus("尚未登入 LINE，正在前往登入...");
           liff.login({
-            redirectUri: buildLoginRedirectUri()
+            redirectUri: window.location.href
           });
           return;
         }
@@ -204,65 +233,136 @@
 
         const profile = await liff.getProfile();
         const userId = profile && profile.userId ? profile.userId : "";
+        const displayName = profile && profile.displayName ? profile.displayName : "";
 
         if (!userId) {
-          showError("無法取得 LINE UID", "profile.userId 是空的，請重新從 LINE 內開啟連結。");
+          showError("無法取得 LINE UID", "profile.userId 是空的，請確認 LIFF Scope 有開啟 profile。");
           return;
         }
 
-        const mode = getQueryParam("mode") || "new_tenant";
-        const role = getQueryParam("role") || "tenant";
-        const contractId = getQueryParam("contract_id") || "";
+        const params = getAllParams();
 
-        if (!contractId) {
-          showError(
-            "缺少合約 ID",
-            "網址沒有帶入 contract_id，請重新從房東轉發的合約連結進入。"
-          );
-          return;
+        let mode = params.get("mode") || "";
+        const contractId = params.get("contract_id") || "";
+        const role = params.get("role") || "";
+
+        // 舊連結防呆：
+        // 如果沒有 mode，但有 contract_id，視為房客簽約入口
+        if (!mode && contractId) {
+          mode = "tenant_checkin";
         }
 
         showStatus(
           "正在判斷入口...",
           "UID: " + userId +
           "\nmode: " + mode +
-          "\nrole: " + role +
-          "\ncontract_id: " + contractId
+          "\ncontract_id: " + contractId +
+          "\nrole: " + role
         );
 
-        const webhookUrl =
-          CHECK_WEBHOOK_URL +
-          "?uid=" + encodeURIComponent(userId) +
-          "&mode=" + encodeURIComponent(mode) +
-          "&role=" + encodeURIComponent(role) +
-          "&contract_id=" + encodeURIComponent(contractId);
 
-        const response = await fetch(webhookUrl, {
-          method: "GET",
-          cache: "no-store"
-        });
+        /********************************************************
+         *  情境 1：房東發起新租約
+         *
+         *  入口：
+         *  https://liff.line.me/2010314940-hsmAUnNw?mode=start_contract
+         *
+         *  這個入口不需要 contract_id
+         ********************************************************/
 
-        if (!response.ok) {
-          throw new Error("Make webhook 回應失敗，HTTP " + response.status);
+        if (mode === "start_contract") {
+          const landlordFormUrl = appendParams(LANDLORD_NEW_LEASE_FORM_URL, {
+            landlord_id: userId,
+            uid: userId,
+            line_uid: userId,
+            display_name: displayName,
+            mode: "start_contract"
+          });
+
+          redirectTo(landlordFormUrl);
+          return;
         }
 
-        const data = await response.json();
 
-        if (!data || !data.redirectUrl) {
-          throw new Error("Make 沒有回傳 redirectUrl：" + JSON.stringify(data));
+        /********************************************************
+         *  情境 2：房客點開房東轉發的合約連結
+         *
+         *  正確格式：
+         *  https://liff.line.me/2010314940-hsmAUnNw
+         *    ?mode=tenant_checkin
+         *    &contract_id=合約ID
+         *    &role=tenant
+         *
+         *  這個情境一定要有 contract_id
+         ********************************************************/
+
+        if (mode === "tenant_checkin" || role === "tenant") {
+          if (!contractId) {
+            showError(
+              "缺少合約 ID",
+              "網址沒有帶入 contract_id，請重新從房東轉發的合約連結進入。"
+            );
+            return;
+          }
+
+          const webhookUrl = appendParams(CHECK_WEBHOOK_URL, {
+            uid: userId,
+            line_uid: userId,
+            display_name: displayName,
+            mode: "tenant_checkin",
+            contract_id: contractId,
+            role: "tenant"
+          });
+
+          showStatus("正在向系統確認合約與身分...", webhookUrl);
+
+          const response = await fetch(webhookUrl, {
+            method: "GET",
+            cache: "no-store"
+          });
+
+          if (!response.ok) {
+            throw new Error("Make webhook 回應失敗，HTTP " + response.status);
+          }
+
+          const responseText = await response.text();
+          let data = null;
+
+          try {
+            data = JSON.parse(responseText);
+          } catch (e) {
+            data = null;
+          }
+
+          // Make 回傳 JSON：{ "redirectUrl": "https://..." }
+          if (data && data.redirectUrl) {
+            redirectTo(data.redirectUrl);
+            return;
+          }
+
+          // Make 直接回傳純文字網址
+          if (responseText && responseText.trim().startsWith("http")) {
+            redirectTo(responseText.trim());
+            return;
+          }
+
+          throw new Error("Make 沒有回傳 redirectUrl：" + responseText);
         }
 
-        showStatus("確認完成，正在前往表單...", data.redirectUrl);
 
-        window.location.replace(data.redirectUrl);
+        /********************************************************
+         *  情境 3：沒有 mode
+         ********************************************************/
+
+        showError(
+          "缺少入口模式",
+          "網址沒有帶入 mode。請從 LINE 圖文選單或系統產生的專屬連結進入。"
+        );
 
       } catch (err) {
         console.error("流程失敗:", err);
 
-        const detail =
-          err && err.message
-            ? err.message
-            : JSON.stringify(err);
+        const detail = err && err.message ? err.message : JSON.stringify(err);
 
         showError("系統檢查失敗", detail);
       }
