@@ -191,9 +191,11 @@
       const urlObj = new URL(currentUrl);
 
       // 一般 query
+      // 重點：Make/LINE 可能會讓中文參數變成二次編碼。
+      // 這裡先做 safeDecode，避免最後帶到 Tally 時變成 %E6%88... 亂碼。
       urlObj.searchParams.forEach((value, key) => {
         if (key !== "liff.state") {
-          result.set(key, value);
+          result.set(key, safeDecode(value));
         }
       });
 
@@ -220,7 +222,7 @@
       for (const key of keys) {
         const value = params.get(key);
         if (value !== undefined && value !== null && String(value).trim() !== "") {
-          return value;
+          return safeDecode(String(value));
         }
       }
       return "";
@@ -238,7 +240,9 @@
         const value = paramsObj[key];
 
         if (value !== undefined && value !== null && String(value).trim() !== "") {
-          url.searchParams.set(key, value);
+          // 先解碼再交給 URLSearchParams 重新組網址。
+          // 目的：Make 裡使用 encodeURL() 是對的，但進 Tally 前不能留下已編碼文字。
+          url.searchParams.set(key, safeDecode(String(value)));
         }
       });
 
