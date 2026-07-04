@@ -213,6 +213,21 @@
 
 
     /************************************************************
+     * 取得第一個有值的參數
+     ************************************************************/
+
+    function getFirstParam(params, keys) {
+      for (const key of keys) {
+        const value = params.get(key);
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+          return value;
+        }
+      }
+      return "";
+    }
+
+
+    /************************************************************
      * 組網址
      ************************************************************/
 
@@ -292,15 +307,72 @@
         /********************************************************
          * A. 房東發起新租約
          *
-         * 連結：
-         * https://liff.line.me/2010314940-hsmAUnNw?mode=start_contract
+         * 重要：
+         * 這裡不能把 landlord_id 寫成 LINE UID。
+         * landlord_id 要吃 Make 傳進來的房東代碼。
          ********************************************************/
 
         if (isStartContract) {
+          const landlordId = getFirstParam(params, [
+            "landlord_id",
+            "landlordId"
+          ]);
+
+          const buildingId = getFirstParam(params, [
+            "building_id",
+            "buildingId"
+          ]);
+
+          const propertyAddress = getFirstParam(params, [
+            "property_address",
+            "propertyAddress",
+            "landlord_address",
+            "address"
+          ]);
+
+          const landlordName = getFirstParam(params, [
+            "landlord_name",
+            "landlordName",
+            "name"
+          ]);
+
+          const landlordPhone = getFirstParam(params, [
+            "landlord_phone",
+            "landlordPhone",
+            "phone"
+          ]);
+
+          const landlordBankAccount = getFirstParam(params, [
+            "landlord_bank_account",
+            "landlordBankAccount",
+            "bank_account",
+            "bankAccount"
+          ]);
+
+          const landlordUid = getFirstParam(params, [
+            "landlord_uid",
+            "landlordUid",
+            "uid",
+            "line_uid"
+          ]) || userId;
+
           const landlordFormUrl = appendParams(LANDLORD_NEW_LEASE_FORM_URL, {
-            landlord_id: userId,
+            // Tally hidden fields
             uid: userId,
             line_uid: userId,
+            landlord_uid: landlordUid,
+            role: role || "房東",
+
+            // 房東資料：從 Make 連結帶進來
+            landlord_id: landlordId,
+            building_id: buildingId,
+            property_address: propertyAddress,
+            landlord_name: landlordName,
+            landlord_phone: landlordPhone,
+            landlord_bank_account: landlordBankAccount,
+
+            // 可選
+            contract_id: contractId,
             display_name: displayName,
             mode: "start_contract"
           });
@@ -373,15 +445,15 @@
         /********************************************************
          * C. 沒有任何參數
          *
-         * 防呆：
-         * 因為目前這個 LIFF 主要是「新增租約」入口，
-         * 所以沒有參數時，預設送去房東 A 表單。
+         * 沒有 Make 傳入資料時，只能帶入 LINE UID。
+         * 房東代碼、物件代碼、地址等會是空白。
          ********************************************************/
 
         const fallbackLandlordFormUrl = appendParams(LANDLORD_NEW_LEASE_FORM_URL, {
-          landlord_id: userId,
           uid: userId,
           line_uid: userId,
+          landlord_uid: userId,
+          role: "房東",
           display_name: displayName,
           mode: "start_contract"
         });
