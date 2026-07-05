@@ -1,1 +1,1222 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>CMWebs｜每月批量抄表</title>
 
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --navy: #0A2540;
+      --navy2: #12395A;
+      --cyan: #00B4D8;
+      --bg: #F4F7F9;
+      --card: #FFFFFF;
+      --text: #102A43;
+      --muted: #6B7280;
+      --line: #E5E7EB;
+      --danger: #DC2626;
+      --success: #059669;
+      --warning: #D97706;
+      --shadow: 0 10px 30px rgba(10, 37, 64, 0.12);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    body {
+      min-height: 100vh;
+      padding-bottom: 120px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18px 14px 40px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      color: #fff;
+      border-radius: 0 0 26px 26px;
+      padding: 26px 18px 24px;
+      margin: -18px -14px 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: #fff;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .brand-sub {
+      font-size: 13px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .header-desc {
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0 0 12px;
+      color: var(--navy);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .info-item {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+
+    .info-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 15px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 800;
+      margin-bottom: 7px;
+      color: var(--navy);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid #CBD5E1;
+      background: #fff;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.16);
+    }
+
+    .help {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .room-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .room-card {
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+    }
+
+    .room-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .room-no {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--navy);
+    }
+
+    .tenant {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: #ECFEFF;
+      color: #0369A1;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .room-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .mini {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 9px;
+    }
+
+    .mini-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mini-value {
+      font-weight: 800;
+      margin-top: 2px;
+      word-break: break-word;
+    }
+
+    .reading-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .reading-row .field {
+      margin-bottom: 0;
+    }
+
+    .note-field {
+      margin-top: 10px;
+    }
+
+    .note-field textarea {
+      resize: vertical;
+      min-height: 44px;
+      font-size: 14px;
+    }
+
+    .status {
+      padding: 13px 14px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+      font-weight: 700;
+    }
+
+    .status.loading {
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
+    }
+
+    .status.error {
+      background: #FEF2F2;
+      color: var(--danger);
+      border: 1px solid #FECACA;
+    }
+
+    .status.success {
+      background: #ECFDF5;
+      color: var(--success);
+      border: 1px solid #A7F3D0;
+    }
+
+    .status.warning {
+      background: #FFFBEB;
+      color: var(--warning);
+      border: 1px solid #FDE68A;
+    }
+
+    .actions {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.96);
+      border-top: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+      z-index: 20;
+    }
+
+    .actions-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      background: #E2E8F0;
+      color: var(--navy);
+    }
+
+    .btn-primary {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .btn-primary:disabled,
+    .btn-secondary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .summary-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .pill {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      color: #334155;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .debug {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #0F172A;
+      color: #E2E8F0;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 12px;
+      max-height: 280px;
+      overflow: auto;
+      display: none;
+    }
+
+    .debug.show {
+      display: block;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 520px) {
+      .info-grid,
+      .room-meta,
+      .reading-row {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      .actions-inner {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="brand">
+        <div class="logo">CM</div>
+        <div>
+          <div class="brand-title">CMWebs 智能租管</div>
+          <div class="brand-sub">房東每月批量抄表</div>
+        </div>
+      </div>
+      <h1>每月批量抄表</h1>
+      <div class="header-desc">
+        系統會自動帶出您名下房間，請輸入本月電表度數後一次送出。
+      </div>
+    </div>
+
+    <div id="statusBox" class="status loading">系統初始化中，請稍候...</div>
+
+    <div class="card">
+      <h2 class="section-title">1. 房東資料</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">房東代碼</div>
+          <div id="landlordIdText" class="info-value">讀取中</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">物件代碼</div>
+          <div id="buildingIdText" class="info-value">讀取中</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">房東姓名</div>
+          <div id="landlordNameText" class="info-value">讀取中</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">LINE UID</div>
+          <div id="uidText" class="info-value">讀取中</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">2. 抄表設定</h2>
+
+      <div class="field">
+        <label for="monthInput">本月結帳月份</label>
+        <input id="monthInput" type="month" />
+        <div class="help">例如：2026-07，送出後會寫入同一批次。</div>
+      </div>
+
+      <div class="field">
+        <label for="readingDateInput">抄表／拍照日期</label>
+        <input id="readingDateInput" type="date" />
+      </div>
+
+      <div class="summary-bar">
+        <div id="totalRoomsPill" class="pill">房間：0</div>
+        <div id="filledRoomsPill" class="pill">已填：0</div>
+        <div id="emptyRoomsPill" class="pill">未填：0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">3. 房間清單</h2>
+      <div id="roomList" class="room-list"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">除錯資料</h2>
+      <button type="button" class="btn-secondary" onclick="toggleDebug()">顯示／隱藏除錯資料</button>
+      <div id="debugBox" class="debug"></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div class="actions-inner">
+      <button id="reloadBtn" type="button" class="btn-secondary">重新讀取</button>
+      <button id="submitBtn" type="button" class="btn-primary">送出抄表</button>
+    </div>
+  </div>
+
+  <script>
+    /************************************************************
+     * 重要：你只需要改這 2 個 Make Webhook URL
+     ************************************************************/
+
+    const MAKE_GET_ROOMS_URL = "請貼上你的取得房間清單 Make Webhook URL";
+    const MAKE_SUBMIT_METERS_URL = "請貼上你的批量送出抄表 Make Webhook URL";
+
+    /************************************************************
+     * LIFF ID
+     ************************************************************/
+    const LIFF_ID = "2010314940-X9jVnrKv";
+
+    /************************************************************
+     * 全域狀態
+     ************************************************************/
+    let currentUid = "";
+    let rawResponse = null;
+    let rooms = [];
+    let landlordInfo = {
+      landlord_id: "",
+      building_id: "",
+      landlord_name: ""
+    };
+
+    const els = {
+      statusBox: document.getElementById("statusBox"),
+      roomList: document.getElementById("roomList"),
+      debugBox: document.getElementById("debugBox"),
+      landlordIdText: document.getElementById("landlordIdText"),
+      buildingIdText: document.getElementById("buildingIdText"),
+      landlordNameText: document.getElementById("landlordNameText"),
+      uidText: document.getElementById("uidText"),
+      monthInput: document.getElementById("monthInput"),
+      readingDateInput: document.getElementById("readingDateInput"),
+      totalRoomsPill: document.getElementById("totalRoomsPill"),
+      filledRoomsPill: document.getElementById("filledRoomsPill"),
+      emptyRoomsPill: document.getElementById("emptyRoomsPill"),
+      reloadBtn: document.getElementById("reloadBtn"),
+      submitBtn: document.getElementById("submitBtn")
+    };
+
+    /************************************************************
+     * 初始化
+     ************************************************************/
+    document.addEventListener("DOMContentLoaded", async () => {
+      setDefaultDates();
+
+      els.reloadBtn.addEventListener("click", () => loadRooms());
+      els.submitBtn.addEventListener("click", () => submitMeters());
+
+      document.addEventListener("input", (event) => {
+        if (event.target.classList.contains("meter-input") || event.target.classList.contains("note-input")) {
+          updateSummary();
+          saveDraft();
+        }
+      });
+
+      try {
+        await initLiff();
+        await loadRooms();
+      } catch (err) {
+        console.error(err);
+        showStatus("error", "初始化失敗：" + getErrorMessage(err));
+        writeDebug({ error: getErrorMessage(err), stack: err.stack });
+      }
+    });
+
+    async function initLiff() {
+      showStatus("loading", "正在確認 LINE 身分...");
+
+      const urlUid = getParam("uid");
+      if (urlUid) {
+        currentUid = urlUid;
+        els.uidText.textContent = currentUid;
+        return;
+      }
+
+      if (!window.liff) {
+        throw new Error("LIFF SDK 載入失敗，請確認網路或 LIFF Endpoint 設定。");
+      }
+
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      currentUid = profile.userId || "";
+
+      if (!currentUid) {
+        throw new Error("無法取得 LINE UID。");
+      }
+
+      els.uidText.textContent = currentUid;
+    }
+
+    /************************************************************
+     * 取得房間清單
+     ************************************************************/
+    async function loadRooms() {
+      clearRooms();
+      disableButtons(true);
+
+      try {
+        if (!isValidWebhookUrl(MAKE_GET_ROOMS_URL)) {
+          throw new Error("尚未設定 MAKE_GET_ROOMS_URL，請先貼上「取得房間清單」Make Webhook URL。");
+        }
+
+        if (!currentUid) {
+          throw new Error("缺少 LINE UID。");
+        }
+
+        showStatus("loading", "正在取得房間清單...");
+
+        const url = new URL(MAKE_GET_ROOMS_URL);
+        url.searchParams.set("uid", currentUid);
+        url.searchParams.set("source", "batch_meter_liff");
+        url.searchParams.set("t", String(Date.now()));
+
+        const res = await fetch(url.toString(), {
+          method: "GET",
+          mode: "cors",
+          cache: "no-store"
+        });
+
+        const text = await res.text();
+        let data;
+
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error("Make 回傳不是 JSON。原始內容：" + text.slice(0, 300));
+        }
+
+        if (!res.ok) {
+          throw new Error(data.message || data.error || "取得房間清單失敗，HTTP " + res.status);
+        }
+
+        rawResponse = data;
+        writeDebug(data);
+
+        const normalized = normalizeResponse(data);
+
+        landlordInfo = {
+          landlord_id: normalized.landlord_id || "",
+          building_id: normalized.building_id || "",
+          landlord_name: normalized.landlord_name || ""
+        };
+
+        rooms = normalized.rooms;
+
+        renderLandlordInfo();
+        renderRooms();
+        restoreDraft();
+        updateSummary();
+
+        if (!rooms.length) {
+          showStatus("warning", "找不到房間資料。請確認房東帳號是否已綁定，或 Make 查詢條件是否正確。");
+        } else {
+          showStatus("success", "已取得 " + rooms.length + " 間房間，請填寫本月電表度數。");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("error", getErrorMessage(err));
+        writeDebug({ error: getErrorMessage(err), rawResponse });
+      } finally {
+        disableButtons(false);
+      }
+    }
+
+    function normalizeResponse(data) {
+      const rawRooms = Array.isArray(data.rooms) ? data.rooms : [];
+
+      const normalizedRooms = rawRooms.map((r, index) => normalizeRoom(r, index))
+        .filter(r => r.room || r.tenant_name || r.line_uid);
+
+      normalizedRooms.sort((a, b) => {
+        const na = Number(String(a.room).replace(/[^\d.]/g, ""));
+        const nb = Number(String(b.room).replace(/[^\d.]/g, ""));
+        if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+        return String(a.room).localeCompare(String(b.room), "zh-Hant");
+      });
+
+      const first = normalizedRooms[0] || {};
+
+      return {
+        landlord_id: pick(data, [
+          "landlord_id", "landlordId", "房東代碼", "房東帳號"
+        ]) || first.landlord_id || "",
+        building_id: pick(data, [
+          "building_id", "buildingId", "建築代碼", "物件代碼", "物件名稱"
+        ]) || first.building_id || "",
+        landlord_name: pick(data, [
+          "landlord_name", "landlordName", "房東姓名"
+        ]) || first.landlord_name || "",
+        rooms: normalizedRooms
+      };
+    }
+
+    function normalizeRoom(r, index) {
+      if (!r || typeof r !== "object") {
+        return {
+          row_index: index + 1,
+          landlord_id: landlordInfo.landlord_id || "",
+          building_id: "",
+          room: "",
+          tenant_name: "",
+          line_uid: "",
+          rent: "",
+          last_meter_reading: ""
+        };
+      }
+
+      return {
+        row_index: index + 1,
+
+        landlord_id: pick(r, [
+          "landlord_id",
+          "landlordId",
+          "房東代碼",
+          "房東帳號",
+          "房東帳號 (B)",
+          "房東代碼 (C)",
+          "B",
+          "C",
+          "1"
+        ]) || pick(rawResponse || {}, ["landlord_id"]) || "",
+
+        building_id: pick(r, [
+          "building_id",
+          "buildingId",
+          "建築代碼",
+          "物件代碼",
+          "物件名稱",
+          "物件名稱 (C)",
+          "建築代碼 (E)",
+          "C",
+          "E",
+          "2"
+        ]) || pick(rawResponse || {}, ["building_id"]) || "",
+
+        room: pick(r, [
+          "room",
+          "room_no",
+          "roomNo",
+          "房號",
+          "房號 (D)",
+          "D",
+          "3"
+        ]),
+
+        tenant_name: pick(r, [
+          "tenant_name",
+          "tenantName",
+          "租客姓名",
+          "租客姓名 (F)",
+          "真實姓名",
+          "F",
+          "5"
+        ]),
+
+        phone: pick(r, [
+          "phone",
+          "tenant_phone",
+          "手機號碼",
+          "手機號碼 (G)",
+          "G",
+          "6"
+        ]),
+
+        line_uid: pick(r, [
+          "line_uid",
+          "uid",
+          "LINE UID",
+          "LINE User ID",
+          "LINE User ID (H)",
+          "LINE UID (H)",
+          "H",
+          "7"
+        ]),
+
+        rent: pick(r, [
+          "rent",
+          "monthly_rent",
+          "每月租金",
+          "每月租金 (I)",
+          "I",
+          "8"
+        ]),
+
+        management_fee: pick(r, [
+          "management_fee",
+          "每月管理費",
+          "每月管理費 (J)",
+          "J",
+          "9"
+        ]),
+
+        electricity_rate: pick(r, [
+          "electricity_rate",
+          "每度電費",
+          "每度電費 (K)",
+          "K",
+          "10"
+        ]),
+
+        equipment_rate: pick(r, [
+          "equipment_rate",
+          "每度設備費",
+          "每度設備費 (L)",
+          "L",
+          "11"
+        ]),
+
+        previous_meter_reading: pick(r, [
+          "previous_meter_reading",
+          "上期電表度數",
+          "上期電表度數 (M)",
+          "M",
+          "12"
+        ]),
+
+        last_meter_reading: pick(r, [
+          "last_meter_reading",
+          "current_meter_reading",
+          "本月電表度數",
+          "本月電表度數 (N)",
+          "N",
+          "13"
+        ])
+      };
+    }
+
+    function pick(obj, keys) {
+      if (!obj || typeof obj !== "object") return "";
+      for (const key of keys) {
+        if (obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== "") {
+          return String(obj[key]).trim();
+        }
+      }
+      return "";
+    }
+
+    /************************************************************
+     * 畫面渲染
+     ************************************************************/
+    function renderLandlordInfo() {
+      els.landlordIdText.textContent = landlordInfo.landlord_id || "-";
+      els.buildingIdText.textContent = landlordInfo.building_id || "-";
+      els.landlordNameText.textContent = landlordInfo.landlord_name || "-";
+      els.uidText.textContent = currentUid || "-";
+    }
+
+    function renderRooms() {
+      els.roomList.innerHTML = "";
+
+      if (!rooms.length) {
+        els.roomList.innerHTML = `
+          <div class="status warning">
+            目前沒有可抄表房間。請確認「1.房客帳務與門禁(B2C)」是否有對應房東代碼，且資料不是空白。
+          </div>
+        `;
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+
+      rooms.forEach((room, index) => {
+        const card = document.createElement("div");
+        card.className = "room-card";
+        card.dataset.index = String(index);
+
+        const roomNo = escapeHtml(room.room || "未填房號");
+        const tenantName = escapeHtml(room.tenant_name || "未填租客");
+        const rent = escapeHtml(room.rent || "-");
+        const last = escapeHtml(room.last_meter_reading || room.previous_meter_reading || "-");
+        const lineUid = escapeHtml(room.line_uid || "-");
+
+        card.innerHTML = `
+          <div class="room-head">
+            <div>
+              <div class="room-no">${roomNo}</div>
+              <div class="tenant">${tenantName}</div>
+            </div>
+            <div class="badge">房間 ${index + 1}</div>
+          </div>
+
+          <div class="room-meta">
+            <div class="mini">
+              <div class="mini-label">每月租金</div>
+              <div class="mini-value">${rent}</div>
+            </div>
+            <div class="mini">
+              <div class="mini-label">上次電表度數</div>
+              <div class="mini-value">${last}</div>
+            </div>
+          </div>
+
+          <div class="reading-row">
+            <div class="field">
+              <label>本月電表度數</label>
+              <input
+                class="meter-input"
+                type="number"
+                inputmode="decimal"
+                step="0.1"
+                min="0"
+                placeholder="請輸入本月度數"
+                data-index="${index}"
+              />
+            </div>
+
+            <div class="field">
+              <label>LINE UID</label>
+              <input value="${lineUid}" readonly />
+            </div>
+          </div>
+
+          <div class="note-field">
+            <textarea
+              class="note-input"
+              placeholder="備註，可不填"
+              data-index="${index}"
+            ></textarea>
+          </div>
+        `;
+
+        frag.appendChild(card);
+      });
+
+      els.roomList.appendChild(frag);
+    }
+
+    function clearRooms() {
+      els.roomList.innerHTML = "";
+      rooms = [];
+      updateSummary();
+    }
+
+    /************************************************************
+     * 送出抄表資料
+     ************************************************************/
+    async function submitMeters() {
+      try {
+        if (!isValidWebhookUrl(MAKE_SUBMIT_METERS_URL)) {
+          throw new Error("尚未設定 MAKE_SUBMIT_METERS_URL，請先貼上「批量送出抄表」Make Webhook URL。");
+        }
+
+        if (!rooms.length) {
+          throw new Error("沒有房間資料可以送出。");
+        }
+
+        const monthValue = els.monthInput.value;
+        const readingDate = els.readingDateInput.value;
+
+        if (!monthValue) {
+          throw new Error("請選擇本月結帳月份。");
+        }
+
+        if (!readingDate) {
+          throw new Error("請選擇抄表／拍照日期。");
+        }
+
+        const payloadRooms = collectFilledRooms();
+
+        if (!payloadRooms.length) {
+          throw new Error("請至少填寫一間房間的本月電表度數。");
+        }
+
+        const invalid = payloadRooms.find(r => r.current_meter_reading === "" || Number.isNaN(Number(r.current_meter_reading)));
+        if (invalid) {
+          throw new Error("房號 " + invalid.room + " 的本月電表度數格式不正確。");
+        }
+
+        const warnings = payloadRooms.filter(r => {
+          const last = Number(r.last_meter_reading);
+          const current = Number(r.current_meter_reading);
+          return !Number.isNaN(last) && !Number.isNaN(current) && current < last;
+        });
+
+        if (warnings.length) {
+          const ok = confirm(
+            "有 " + warnings.length + " 間房間的本月度數小於上次度數，可能是填錯或電表歸零。\n\n仍要送出嗎？"
+          );
+          if (!ok) return;
+        }
+
+        const ok = confirm("確認送出 " + payloadRooms.length + " 筆抄表資料？");
+        if (!ok) return;
+
+        disableButtons(true);
+        showStatus("loading", "正在送出抄表資料...");
+
+        const payload = {
+          ok: true,
+          source: "batch_meter_liff",
+          uid: currentUid,
+          landlord_id: landlordInfo.landlord_id,
+          building_id: landlordInfo.building_id,
+          landlord_name: landlordInfo.landlord_name,
+          month: monthValue,
+          month_label: toMonthLabel(monthValue),
+          reading_date: readingDate,
+          batch_id: makeBatchId(monthValue),
+          submitted_at: new Date().toISOString(),
+          rooms: payloadRooms
+        };
+
+        const res = await fetch(MAKE_SUBMIT_METERS_URL, {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        let data = {};
+
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch (e) {
+          data = { raw: text };
+        }
+
+        writeDebug({
+          submitPayload: payload,
+          submitResponse: data
+        });
+
+        if (!res.ok) {
+          throw new Error(data.message || data.error || "送出失敗，HTTP " + res.status);
+        }
+
+        clearDraft();
+
+        showStatus("success", "送出成功！共送出 " + payloadRooms.length + " 筆抄表資料。");
+
+        alert("送出成功！共送出 " + payloadRooms.length + " 筆抄表資料。");
+
+      } catch (err) {
+        console.error(err);
+        showStatus("error", getErrorMessage(err));
+        alert(getErrorMessage(err));
+      } finally {
+        disableButtons(false);
+      }
+    }
+
+    function collectFilledRooms() {
+      const meterInputs = Array.from(document.querySelectorAll(".meter-input"));
+      const noteInputs = Array.from(document.querySelectorAll(".note-input"));
+
+      return meterInputs.map(input => {
+        const index = Number(input.dataset.index);
+        const room = rooms[index];
+        const noteEl = noteInputs.find(n => Number(n.dataset.index) === index);
+        const current = String(input.value || "").trim();
+        const monthValue = els.monthInput.value;
+
+        if (!current) return null;
+
+        const roomNo = room.room || "";
+        const buildingId = room.building_id || landlordInfo.building_id || "";
+        const landlordId = room.landlord_id || landlordInfo.landlord_id || "";
+
+        return {
+          landlord_id: landlordId,
+          building_id: buildingId,
+          landlord_name: landlordInfo.landlord_name || room.landlord_name || "",
+          room: roomNo,
+          tenant_name: room.tenant_name || "",
+          tenant_phone: room.phone || "",
+          line_uid: room.line_uid || "",
+          rent: room.rent || "",
+          management_fee: room.management_fee || "",
+          electricity_rate: room.electricity_rate || "",
+          equipment_rate: room.equipment_rate || "",
+          previous_meter_reading: room.previous_meter_reading || "",
+          last_meter_reading: room.last_meter_reading || "",
+          current_meter_reading: current,
+          reading_date: els.readingDateInput.value,
+          month: monthValue,
+          month_label: toMonthLabel(monthValue),
+          note: noteEl ? String(noteEl.value || "").trim() : "",
+          dedupe_key: [
+            landlordId,
+            buildingId,
+            roomNo,
+            monthValue
+          ].join("-")
+        };
+      }).filter(Boolean);
+    }
+
+    /************************************************************
+     * 草稿暫存
+     ************************************************************/
+    function saveDraft() {
+      if (!currentUid) return;
+
+      const key = getDraftKey();
+      const draft = {
+        month: els.monthInput.value,
+        reading_date: els.readingDateInput.value,
+        values: {}
+      };
+
+      document.querySelectorAll(".meter-input").forEach(input => {
+        draft.values["meter_" + input.dataset.index] = input.value || "";
+      });
+
+      document.querySelectorAll(".note-input").forEach(input => {
+        draft.values["note_" + input.dataset.index] = input.value || "";
+      });
+
+      localStorage.setItem(key, JSON.stringify(draft));
+    }
+
+    function restoreDraft() {
+      const key = getDraftKey();
+      const text = localStorage.getItem(key);
+      if (!text) return;
+
+      try {
+        const draft = JSON.parse(text);
+        if (draft.month) els.monthInput.value = draft.month;
+        if (draft.reading_date) els.readingDateInput.value = draft.reading_date;
+
+        document.querySelectorAll(".meter-input").forEach(input => {
+          input.value = draft.values?.["meter_" + input.dataset.index] || "";
+        });
+
+        document.querySelectorAll(".note-input").forEach(input => {
+          input.value = draft.values?.["note_" + input.dataset.index] || "";
+        });
+      } catch (e) {
+        console.warn("restoreDraft failed", e);
+      }
+    }
+
+    function clearDraft() {
+      localStorage.removeItem(getDraftKey());
+    }
+
+    function getDraftKey() {
+      return "cmwebs_batch_meter_" + currentUid + "_" + (els.monthInput.value || "default");
+    }
+
+    /************************************************************
+     * 小工具
+     ************************************************************/
+    function updateSummary() {
+      const total = rooms.length;
+      const filled = Array.from(document.querySelectorAll(".meter-input"))
+        .filter(input => String(input.value || "").trim() !== "").length;
+
+      els.totalRoomsPill.textContent = "房間：" + total;
+      els.filledRoomsPill.textContent = "已填：" + filled;
+      els.emptyRoomsPill.textContent = "未填：" + Math.max(total - filled, 0);
+    }
+
+    function setDefaultDates() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+
+      els.monthInput.value = `${yyyy}-${mm}`;
+      els.readingDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    function toMonthLabel(monthValue) {
+      if (!monthValue || !monthValue.includes("-")) return monthValue || "";
+      const [y, m] = monthValue.split("-");
+      return `${Number(m)}月`;
+    }
+
+    function makeBatchId(monthValue) {
+      const id = [
+        "BM",
+        landlordInfo.landlord_id || "NA",
+        landlordInfo.building_id || "NA",
+        monthValue || "NA",
+        Date.now()
+      ].join("-");
+      return id;
+    }
+
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name) || "";
+    }
+
+    function isValidWebhookUrl(url) {
+      return /^https:\/\/.+/i.test(String(url || "")) && !String(url).includes("請貼上");
+    }
+
+    function showStatus(type, message) {
+      els.statusBox.className = "status " + type;
+      els.statusBox.textContent = message;
+    }
+
+    function disableButtons(disabled) {
+      els.reloadBtn.disabled = disabled;
+      els.submitBtn.disabled = disabled;
+    }
+
+    function writeDebug(obj) {
+      els.debugBox.textContent = JSON.stringify(obj, null, 2);
+    }
+
+    function toggleDebug() {
+      els.debugBox.classList.toggle("show");
+    }
+
+    function getErrorMessage(err) {
+      if (!err) return "未知錯誤";
+      if (typeof err === "string") return err;
+      return err.message || JSON.stringify(err);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
