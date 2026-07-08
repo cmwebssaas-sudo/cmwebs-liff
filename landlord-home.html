@@ -224,42 +224,31 @@
       return;
     }
 
-    const requestId =
-      'cmwebsReq_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+    const callbackName =
+      'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
 
     let finished = false;
-    const iframe = document.createElement('iframe');
+    const script = document.createElement('script');
 
     function cleanup() {
-      window.removeEventListener('message', onMessage);
+      clearTimeout(timer);
 
-      if (iframe && iframe.parentNode) {
-        iframe.parentNode.removeChild(iframe);
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      try {
+        delete window[callbackName];
+      } catch (e) {
+        window[callbackName] = undefined;
       }
     }
 
-    function onMessage(event) {
-      let msg = event.data;
-
-      // 有些 WebView 可能把 message 變字串，這裡兼容一下
-      if (typeof msg === 'string') {
-        try {
-          msg = JSON.parse(msg);
-        } catch (e) {
-          return;
-        }
-      }
-
-      if (!msg || msg.source !== 'CMWEBS_APPS_SCRIPT') return;
-      if (msg.requestId !== requestId) return;
-
+    window[callbackName] = function (json) {
       if (finished) return;
       finished = true;
 
-      clearTimeout(timer);
       cleanup();
-
-      const json = msg.payload;
 
       if (!json || json.success !== true) {
         reject(new Error((json && json.message) ? json.message : '查詢失敗'));
@@ -267,37 +256,32 @@
       }
 
       resolve(json.data);
-    }
+    };
 
     const timer = setTimeout(() => {
       if (finished) return;
       finished = true;
+
       cleanup();
       reject(new Error('API 載入逾時'));
     }, 30000);
 
-    window.addEventListener('message', onMessage);
+    script.charset = 'UTF-8';
 
-    // 重要：不要用 display:none
-    // LINE WebView 有時不執行 display:none iframe
-    iframe.style.position = 'absolute';
-    iframe.style.left = '-9999px';
-    iframe.style.top = '-9999px';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.border = '0';
-    iframe.style.opacity = '0';
-    iframe.style.pointerEvents = 'none';
+    script.onerror = function () {
+      // Apps Script 有時會 redirect 到 googleusercontent，
+      // 某些 WebView 可能誤觸 onerror，所以這裡不要立刻 reject
+      console.log('JSONP script onerror ignored');
+    };
 
-    document.body.appendChild(iframe);
-
-    iframe.src =
+    script.src =
       API_URL +
       '?v2_action=' + encodeURIComponent(action) +
       '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
-      '&bridge=1' +
-      '&request_id=' + encodeURIComponent(requestId) +
+      '&callback=' + encodeURIComponent(callbackName) +
       '&_=' + Date.now();
+
+    document.body.appendChild(script);
   });
 }
 
