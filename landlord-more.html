@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMWebs 更多功能</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 62px;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      background: #f5f7fb;
+      overflow: hidden;
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .menu-item {
+      width: 100%;
+      border: 0;
+      background: #fff;
+      padding: 16px 0;
+      border-top: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .menu-item:first-of-type {
+      border-top: none;
+    }
+
+    .menu-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #f0fdf4;
+      color: #06c755;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .menu-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .menu-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .menu-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #222;
+      margin-bottom: 4px;
+    }
+
+    .menu-desc {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.4;
+    }
+
+    .menu-arrow {
+      color: #bbb;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .disabled {
+      opacity: 0.55;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #eef7ee;
+      color: #10893e;
+    }
+
+    .badge-gray {
+      background: #f1f3f5;
+      color: #666;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.6;
+    }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-black {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-green {
+      background: #06c755;
+      color: #fff;
+    }
+
+    /* ===== Fixed Bottom Navigation ===== */
+    .bottom-nav {
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 99999 !important;
+      background: rgba(255, 255, 255, 0.98);
+      border-top: 1px solid #eceff3;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: #06c755;
+      font-weight: 800;
+    }
+
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: #06c755;
+    }
+
+    .nav-item:active {
+      opacity: 0.65;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <div class="page">
+      <div class="card">
+        <div class="title">更多功能</div>
+        <div class="sub">
+          房東端管理入口。部分功能目前先作為入口，後續再逐步接上資料與操作。
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">常用管理</div>
+
+        <button class="menu-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+          <div class="menu-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="9" cy="8.5" r="3"></circle>
+              <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
+              <circle cx="16.5" cy="9.5" r="2.3"></circle>
+              <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
+            </svg>
+          </div>
+          <div class="menu-main">
+            <div class="menu-title">房客名單</div>
+            <div class="menu-desc">查看所有房客、聯絡資訊、綁定狀態</div>
+          </div>
+          <div class="menu-arrow">›</div>
+        </button>
+
+        <button class="menu-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+          <div class="menu-icon">
+            <svg viewBox="0 0 24 24">
+              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+              <path d="M8.5 9h7"></path>
+              <path d="M8.5 13h7"></path>
+              <path d="M8.5 17h4"></path>
+            </svg>
+          </div>
+          <div class="menu-main">
+            <div class="menu-title">房客欠款</div>
+            <div class="menu-desc">查看未繳帳單、欠款金額與逾期狀態</div>
+          </div>
+          <div class="menu-arrow">›</div>
+        </button>
+
+        <button class="menu-item disabled" onclick="alert('帳單管理功能建置中')">
+          <div class="menu-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M6 3.5h12v17l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2-2 1.2v-17z"></path>
+              <path d="M9 8h6"></path>
+              <path d="M9 12h6"></path>
+              <path d="M9 16h4"></path>
+            </svg>
+          </div>
+          <div class="menu-main">
+            <div class="menu-title">帳單管理 <span class="badge-gray">建置中</span></div>
+            <div class="menu-desc">建立帳單、修改帳單、查看發送狀態</div>
+          </div>
+          <div class="menu-arrow">›</div>
+        </button>
+
+        <button class="menu-item disabled" onclick="alert('抄表管理功能建置中')">
+          <div class="menu-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 4h10v16H7z"></path>
+              <path d="M9.5 8h5"></path>
+              <path d="M9.5 12h5"></path>
+              <path d="M9.5 16h3"></path>
+            </svg>
+          </div>
+          <div class="menu-main">
+            <div class="menu-title">抄表管理 <span class="badge-gray">建置中</span></div>
+            <div class="menu-desc">輸入本月電錶度數、產生電費資料</div>
+          </div>
+          <div class="menu-arrow">›</div>
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="section-title">通知與設定</div>
+
+        <button class="menu-item disabled" onclick="alert('公告發送功能建置中')">
+          <div class="menu-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M5 10v4"></path>
+              <path d="M8 9l9-4v14l-9-4z"></path>
+              <path d="M8 15v4"></path>
+            </svg>
+          </div>
+          <div class="menu-main">
+            <div class="menu-title">公告發送 <span class="badge-gray">建置中</span></div>
+            <div class="menu-desc">向房客推送公告、提醒與管理訊息</div>
+          </div>
+          <div class="menu-arrow">›</div>
+        </button>
+
+        <button class="menu-item disabled" onclick="alert('房客報到管理功能建置中')">
+          <div class="menu-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M9 12l2 2 4-5"></path>
+              <circle cx="12" cy="12" r="8"></circle>
+            </svg>
+          </div>
+          <div class="menu-main">
+            <div class="menu-title">房客報到管理 <span class="badge-gray">建置中</span></div>
+            <div class="menu-desc">確認房客綁定、入住報到與帳號狀態</div>
+          </div>
+          <div class="menu-arrow">›</div>
+        </button>
+
+        <button class="menu-item disabled" onclick="alert('系統設定功能建置中')">
+          <div class="menu-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.1L14 3h-4l-.5 2.8a7 7 0 0 0-2 1.1l-2.4-1-2 3.4 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.1L10 21h4l.5-2.8a7 7 0 0 0 2-1.1l2.4 1 2-3.4-2-1.5A7 7 0 0 0 19 12z"></path>
+            </svg>
+          </div>
+          <div class="menu-main">
+            <div class="menu-title">系統設定 <span class="badge-gray">建置中</span></div>
+            <div class="menu-desc">房東資料、收款帳號、系統偏好設定</div>
+          </div>
+          <div class="menu-arrow">›</div>
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="section-title">系統狀態</div>
+        <div class="row">
+          <div class="label">目前版本</div>
+          <div class="value">CMWebs V2</div>
+        </div>
+        <div class="row">
+          <div class="label">頁面狀態</div>
+          <div class="value"><span class="badge">正常</span></div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" onclick="location.href='landlord-home.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <div>首頁</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <div>欠款</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8.5" r="3"></circle>
+            <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
+            <circle cx="16.5" cy="9.5" r="2.3"></circle>
+            <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
+          </svg>
+          <div>房客</div>
+        </button>
+
+        <button class="nav-item active" onclick="location.href='landlord-more.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <div>更多</div>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <script>
+    function setAppHeight() {
+      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+    }
+
+    setAppHeight();
+
+    window.addEventListener('resize', setAppHeight);
+    window.addEventListener('orientationchange', function () {
+      setTimeout(setAppHeight, 300);
+    });
+  </script>
+</body>
+</html>
