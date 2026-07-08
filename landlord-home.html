@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMWebs 房東首頁</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    .page {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 15px;
+    }
+
+    .row:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      color: #666;
+    }
+
+    .value {
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .big-money {
+      font-size: 30px;
+      font-weight: 800;
+      color: #d93025;
+      margin: 12px 0;
+    }
+
+    .green-money {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0aaf4f;
+      margin: 12px 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 13px;
+    }
+
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .btn-green {
+      background: #06c755;
+      color: white;
+    }
+
+    .btn-dark {
+      background: #222;
+      color: white;
+    }
+
+    .btn-gray {
+      background: #e5e7eb;
+      color: #222;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .error {
+      color: #d93025;
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #777;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #e8f5e9;
+      color: #0a7d32;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div id="app" class="loading">資料載入中...</div>
+  </div>
+
+  <script>
+    // ==================================================
+    // 1. 基本設定
+    // ==================================================
+
+    // Apps Script Web App URL，結尾一定要是 /exec
+    const API_URL = 'https://script.google.com/macros/s/AKfycyb5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    // 房東首頁 LIFF ID
+    // 如果你等等在 LINE Developers 新增「房東首頁」LIFF，這裡要換成新的 LIFF ID
+    const LIFF_ID = '';
+
+    // 測試用 LINE UID：目前朱文漢房東帳號
+    // 非 LINE LIFF 環境時會用這個，所以電腦瀏覽器可以測
+    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+
+    let LINE_USER_ID = '';
+    let HOME_DATA = null;
+
+    const app = document.getElementById('app');
+
+    // ==================================================
+    // 2. 工具函式
+    // ==================================================
+
+    function safeText(v) {
+      if (v === undefined || v === null || v === '') return '-';
+      return String(v);
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
+    }
+
+    function isInsideLineLiff() {
+      return typeof liff !== 'undefined' && window.location.href.includes('liff.line.me');
+    }
+
+    function showLoading(text) {
+      app.className = 'loading';
+      app.innerHTML = text || '資料載入中...';
+    }
+
+    function showError(title, message) {
+      app.className = 'card';
+      app.innerHTML = `
+        <div class="error">${safeText(title)}</div>
+        <div style="margin-bottom: 14px;">${safeText(message)}</div>
+        <button class="btn btn-dark" onclick="location.reload()">重新整理</button>
+        <div class="small">
+          若持續失敗，請確認：<br>
+          1. 房東 LINE UID 是否已在 V2_landlords<br>
+          2. V2_landlord_home_view 是否有產生資料<br>
+          3. Apps Script 是否已重新部署新版
+        </div>
+      `;
+    }
+
+    // ==================================================
+    // 3. JSONP API
+    // ==================================================
+
+    function callApi(action) {
+      return new Promise((resolve, reject) => {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少 LINE User ID'));
+          return;
+        }
+
+        const callbackName =
+          'cmwebsCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+
+        const script = document.createElement('script');
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error('API 載入逾時'));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          cleanup();
+
+          if (!json || json.success !== true) {
+            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
+            return;
+          }
+
+          resolve(json.data);
+        };
+
+        script.onerror = function () {
+          cleanup();
+          reject(new Error('API 載入失敗'));
+        };
+
+        script.src =
+          API_URL +
+          '?v2_action=' + encodeURIComponent(action) +
+          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+
+        document.body.appendChild(script);
+      });
+    }
+
+    // ==================================================
+    // 4. 取得 LINE User ID
+    // ==================================================
+
+    async function initLineUserId() {
+      // 電腦瀏覽器 / GitHub Pages 直接測試
+      if (!isInsideLineLiff()) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return;
+      }
+
+      // 如果還沒填 LIFF_ID，先用測試 UID 避免整頁壞掉
+      if (!LIFF_ID) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return;
+      }
+
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      LINE_USER_ID = profile.userId;
+    }
+
+    // ==================================================
+    // 5. 畫面渲染
+    // ==================================================
+
+    function renderHome(data) {
+      HOME_DATA = data;
+
+      app.className = '';
+      app.innerHTML = `
+        <div class="card">
+          <div class="title">您好，${safeText(data.landlord_name)}</div>
+          <div class="sub">房東編號：${safeText(data.landlord_id)}</div>
+
+          <div class="row">
+            <div class="label">帳號狀態</div>
+            <div class="value">
+              <span class="badge">${safeText(data.account_status)}</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="label">最新帳單月份</div>
+            <div class="value">${safeText(data.latest_bill_month)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">更新時間</div>
+            <div class="value">${safeText(data.updated_at)}</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sub">本月應收總額</div>
+          <div class="big-money">${money(data.latest_total_amount)}</div>
+
+          <div class="row">
+            <div class="label">本月帳單數</div>
+            <div class="value">${safeText(data.latest_bill_count)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">未繳帳單數</div>
+            <div class="value" style="color:#d93025;">${safeText(data.unpaid_bill_count)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">未繳總額</div>
+            <div class="value" style="color:#d93025;">${money(data.unpaid_total_amount)}</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sub">已收款統計</div>
+          <div class="green-money">${money(data.paid_total_amount)}</div>
+
+          <div class="row">
+            <div class="label">已付款帳單數</div>
+            <div class="value">${safeText(data.paid_bill_count)}</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="grid">
+            <div class="stat">
+              <div class="stat-num">${safeText(data.room_count)}</div>
+              <div class="stat-label">房間數</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-num">${safeText(data.tenant_count)}</div>
+              <div class="stat-label">房客數</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-green" onclick="goTenantList()">查看房客 / 帳單</button>
+        <button class="btn btn-dark" onclick="location.reload()">重新整理</button>
+      `;
+    }
+
+    function goTenantList() {
+      alert('下一步會接房東帳單總覽 / 房客列表頁');
+    }
+
+    // ==================================================
+    // 6. 啟動
+    // ==================================================
+
+    async function main() {
+      try {
+        showLoading('資料載入中...');
+
+        await initLineUserId();
+
+        if (!LINE_USER_ID) {
+          throw new Error('無法取得 LINE User ID');
+        }
+
+        const data = await callApi('landlord_home');
+        renderHome(data);
+
+      } catch (error) {
+        showError('資料讀取失敗', error.message || '未知錯誤');
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
