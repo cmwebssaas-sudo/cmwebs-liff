@@ -318,8 +318,8 @@
         };
 
         script.onerror = function () {
-          cleanup();
-          reject(new Error('API 載入失敗'));
+        cleanup();
+        reject(new Error('API 載入失敗：' + script.src));
         };
 
         const url =
