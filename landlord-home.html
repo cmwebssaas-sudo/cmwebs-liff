@@ -22,7 +22,7 @@
     .page {
       max-width: 520px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 20px 14px 32px;
     }
 
     .card {
@@ -40,45 +40,45 @@
     }
 
     .sub {
-      color: #666;
       font-size: 14px;
+      color: #666;
       margin-bottom: 14px;
     }
 
     .row {
       display: flex;
       justify-content: space-between;
-      gap: 16px;
+      align-items: center;
+      gap: 12px;
       padding: 12px 0;
-      border-bottom: 1px solid #eee;
+      border-top: 1px solid #eee;
       font-size: 15px;
     }
 
-    .row:last-child {
-      border-bottom: none;
+    .row:first-of-type {
+      border-top: none;
     }
 
     .label {
       color: #666;
+      flex: 1;
     }
 
     .value {
       font-weight: 700;
       text-align: right;
+      word-break: break-all;
     }
 
-    .big-money {
-      font-size: 30px;
+    .money-main {
+      font-size: 32px;
       font-weight: 800;
       color: #d93025;
-      margin: 12px 0;
+      margin: 10px 0 16px;
     }
 
-    .green-money {
-      font-size: 26px;
-      font-weight: 800;
-      color: #0aaf4f;
-      margin: 12px 0;
+    .money-green {
+      color: #08a045;
     }
 
     .grid {
@@ -87,36 +87,37 @@
       gap: 12px;
     }
 
-    .stat {
-      background: #f8fafc;
+    .mini-card {
+      background: #fff;
       border-radius: 14px;
       padding: 16px;
-      text-align: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     }
 
-    .stat-num {
+    .mini-label {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 8px;
+    }
+
+    .mini-value {
       font-size: 24px;
       font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .stat-label {
-      color: #666;
-      font-size: 13px;
     }
 
     .btn {
+      display: block;
       width: 100%;
       border: none;
       border-radius: 10px;
-      padding: 14px 16px;
+      padding: 15px 16px;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
       margin-bottom: 10px;
     }
 
-    .btn-green {
+    .btn-primary {
       background: #06c755;
       color: white;
     }
@@ -127,37 +128,65 @@
     }
 
     .btn-gray {
-      background: #e5e7eb;
+      background: #e9eef5;
       color: #222;
     }
 
     .loading {
       text-align: center;
-      padding: 40px 20px;
       color: #666;
+      padding: 40px 20px;
     }
 
-    .error {
+    .error-title {
       color: #d93025;
-      font-weight: 700;
-      font-size: 18px;
+      font-size: 20px;
+      font-weight: 800;
       margin-bottom: 8px;
     }
 
-    .small {
-      font-size: 13px;
+    .error-message {
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+
+    .hint {
       color: #777;
-      line-height: 1.5;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+
+    .debug {
+      margin-top: 12px;
+      padding: 10px;
+      background: #f1f3f4;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #555;
+      word-break: break-all;
+      display: none;
     }
 
     .badge {
       display: inline-block;
       padding: 4px 10px;
       border-radius: 999px;
+      background: #e8f5e9;
+      color: #0b8043;
       font-size: 13px;
       font-weight: 700;
-      background: #e8f5e9;
-      color: #0a7d32;
+    }
+
+    .badge-red {
+      background: #fdecea;
+      color: #d93025;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -168,19 +197,18 @@
   </div>
 
   <script>
-    // ==================================================
+    // ======================================================
     // 1. 基本設定
-    // ==================================================
+    // ======================================================
 
-    // Apps Script Web App URL，結尾一定要是 /exec
+    // Apps Script Web App URL，結尾必須是 /exec
     const API_URL = 'https://script.google.com/macros/s/AKfycyb5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
     // 房東首頁 LIFF ID
-    // 如果你等等在 LINE Developers 新增「房東首頁」LIFF，這裡要換成新的 LIFF ID
-    const LIFF_ID = '';
+    const LIFF_ID = '2010314940-EjX1qbb8';
 
-    // 測試用 LINE UID：目前朱文漢房東帳號
-    // 非 LINE LIFF 環境時會用這個，所以電腦瀏覽器可以測
+    // 測試用 LINE UID：目前 V2_landlords A2
+    // 在 LINE LIFF 裡會自動改用真正登入者 UID
     const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
 
     let LINE_USER_ID = '';
@@ -188,9 +216,9 @@
 
     const app = document.getElementById('app');
 
-    // ==================================================
+    // ======================================================
     // 2. 工具函式
-    // ==================================================
+    // ======================================================
 
     function safeText(v) {
       if (v === undefined || v === null || v === '') return '-';
@@ -202,33 +230,48 @@
       return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
     }
 
-    function isInsideLineLiff() {
-      return typeof liff !== 'undefined' && window.location.href.includes('liff.line.me');
+    function numberText(n) {
+      const num = Number(n || 0);
+      return Math.round(num).toLocaleString('zh-TW');
     }
 
-    function showLoading(text) {
+    function statusText(status) {
+      if (status === 'active') return '啟用';
+      if (status === 'inactive') return '停用';
+      if (status === 'bound') return '已綁定';
+      if (status === 'unbound') return '未綁定';
+      return safeText(status);
+    }
+
+    function showLoading() {
       app.className = 'loading';
-      app.innerHTML = text || '資料載入中...';
+      app.innerHTML = '資料載入中...';
     }
 
-    function showError(title, message) {
-      app.className = 'card';
+    function showError(title, message, debugText) {
+      app.className = '';
       app.innerHTML = `
-        <div class="error">${safeText(title)}</div>
-        <div style="margin-bottom: 14px;">${safeText(message)}</div>
-        <button class="btn btn-dark" onclick="location.reload()">重新整理</button>
-        <div class="small">
-          若持續失敗，請確認：<br>
-          1. 房東 LINE UID 是否已在 V2_landlords<br>
-          2. V2_landlord_home_view 是否有產生資料<br>
-          3. Apps Script 是否已重新部署新版
+        <div class="card">
+          <div class="error-title">${safeText(title)}</div>
+          <div class="error-message">${safeText(message)}</div>
+          <button class="btn btn-dark" onclick="location.reload()">重新整理</button>
+
+          <div class="hint">
+            若持續失敗，請確認：<br>
+            1. 房東 LINE UID 是否已存在 V2_landlords<br>
+            2. V2_landlord_home_view 是否有產生資料<br>
+            3. Apps Script 是否已重新部署新版<br>
+            4. LIFF Endpoint URL 是否為 landlord-home.html
+          </div>
+
+          <div id="debugBox" class="debug">${safeText(debugText)}</div>
         </div>
       `;
     }
 
-    // ==================================================
-    // 3. JSONP API
-    // ==================================================
+    // ======================================================
+    // 3. JSONP API：重點，不使用 fetch()
+    // ======================================================
 
     function callApi(action) {
       return new Promise((resolve, reject) => {
@@ -238,7 +281,7 @@
         }
 
         const callbackName =
-          'cmwebsCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+          'cmwebsCallback' + Date.now() + Math.floor(Math.random() * 100000);
 
         const script = document.createElement('script');
 
@@ -264,6 +307,8 @@
         window[callbackName] = function (json) {
           cleanup();
 
+          console.log('API 回傳：', json);
+
           if (!json || json.success !== true) {
             reject(new Error((json && json.message) ? json.message : '查詢失敗'));
             return;
@@ -277,148 +322,173 @@
           reject(new Error('API 載入失敗'));
         };
 
-        script.src =
+        const url =
           API_URL +
           '?v2_action=' + encodeURIComponent(action) +
           '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
           '&callback=' + encodeURIComponent(callbackName) +
           '&_=' + Date.now();
 
+        console.log('API URL：', url);
+
+        script.src = url;
         document.body.appendChild(script);
       });
     }
 
-    // ==================================================
+    // ======================================================
     // 4. 取得 LINE User ID
-    // ==================================================
+    // ======================================================
 
     async function initLineUserId() {
-      // 電腦瀏覽器 / GitHub Pages 直接測試
-      if (!isInsideLineLiff()) {
+      // 非 LINE 瀏覽器，例如 Chrome 測試時，直接使用測試 UID
+      if (typeof liff === 'undefined') {
         LINE_USER_ID = TEST_LINE_USER_ID;
         return;
       }
 
-      // 如果還沒填 LIFF_ID，先用測試 UID 避免整頁壞掉
-      if (!LIFF_ID) {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        LINE_USER_ID = profile.userId || '';
+
+        if (!LINE_USER_ID) {
+          LINE_USER_ID = TEST_LINE_USER_ID;
+        }
+      } catch (error) {
+        console.warn('LIFF 初始化失敗，改用測試 UID：', error);
         LINE_USER_ID = TEST_LINE_USER_ID;
-        return;
       }
-
-      await liff.init({ liffId: LIFF_ID });
-
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-
-      const profile = await liff.getProfile();
-      LINE_USER_ID = profile.userId;
     }
 
-    // ==================================================
+    // ======================================================
     // 5. 畫面渲染
-    // ==================================================
+    // ======================================================
 
     function renderHome(data) {
-      HOME_DATA = data;
+      HOME_DATA = data || {};
+
+      const unpaidAmount = Number(HOME_DATA.unpaid_total_amount || 0);
+      const paidAmount = Number(HOME_DATA.paid_total_amount || 0);
+      const latestTotal = Number(HOME_DATA.latest_total_amount || 0);
 
       app.className = '';
       app.innerHTML = `
         <div class="card">
-          <div class="title">您好，${safeText(data.landlord_name)}</div>
-          <div class="sub">房東編號：${safeText(data.landlord_id)}</div>
+          <div class="title">您好，${safeText(HOME_DATA.landlord_name)}</div>
+          <div class="sub">房東代碼：${safeText(HOME_DATA.landlord_id)}</div>
 
           <div class="row">
             <div class="label">帳號狀態</div>
             <div class="value">
-              <span class="badge">${safeText(data.account_status)}</span>
+              <span class="badge">${statusText(HOME_DATA.account_status)}</span>
             </div>
           </div>
 
           <div class="row">
             <div class="label">最新帳單月份</div>
-            <div class="value">${safeText(data.latest_bill_month)}</div>
+            <div class="value">${safeText(HOME_DATA.latest_bill_month)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">管理房間數</div>
+            <div class="value">${numberText(HOME_DATA.room_count)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">房客數</div>
+            <div class="value">${numberText(HOME_DATA.tenant_count)}</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">收款總覽</div>
+
+          <div class="sub">目前未收總額</div>
+          <div class="money-main">${money(unpaidAmount)}</div>
+
+          <div class="row">
+            <div class="label">未繳帳單數</div>
+            <div class="value">${numberText(HOME_DATA.unpaid_bill_count)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">已付款帳單數</div>
+            <div class="value">${numberText(HOME_DATA.paid_bill_count)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">已收金額</div>
+            <div class="value money-green">${money(paidAmount)}</div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="mini-card">
+            <div class="mini-label">本月帳單數</div>
+            <div class="mini-value">${numberText(HOME_DATA.latest_bill_count)}</div>
+          </div>
+
+          <div class="mini-card">
+            <div class="mini-label">本月應收</div>
+            <div class="mini-value">${money(latestTotal)}</div>
+          </div>
+        </div>
+
+        <div style="height: 16px;"></div>
+
+        <button class="btn btn-primary" onclick="goBillList()">查看帳單總覽</button>
+        <button class="btn btn-gray" onclick="location.reload()">重新整理</button>
+
+        <div class="card">
+          <div class="section-title">系統資訊</div>
+
+          <div class="row">
+            <div class="label">LINE UID</div>
+            <div class="value">${safeText(HOME_DATA.line_user_id)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">User ID</div>
+            <div class="value">${safeText(HOME_DATA.user_id)}</div>
           </div>
 
           <div class="row">
             <div class="label">更新時間</div>
-            <div class="value">${safeText(data.updated_at)}</div>
+            <div class="value">${safeText(HOME_DATA.updated_at)}</div>
           </div>
         </div>
-
-        <div class="card">
-          <div class="sub">本月應收總額</div>
-          <div class="big-money">${money(data.latest_total_amount)}</div>
-
-          <div class="row">
-            <div class="label">本月帳單數</div>
-            <div class="value">${safeText(data.latest_bill_count)}</div>
-          </div>
-
-          <div class="row">
-            <div class="label">未繳帳單數</div>
-            <div class="value" style="color:#d93025;">${safeText(data.unpaid_bill_count)}</div>
-          </div>
-
-          <div class="row">
-            <div class="label">未繳總額</div>
-            <div class="value" style="color:#d93025;">${money(data.unpaid_total_amount)}</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sub">已收款統計</div>
-          <div class="green-money">${money(data.paid_total_amount)}</div>
-
-          <div class="row">
-            <div class="label">已付款帳單數</div>
-            <div class="value">${safeText(data.paid_bill_count)}</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="grid">
-            <div class="stat">
-              <div class="stat-num">${safeText(data.room_count)}</div>
-              <div class="stat-label">房間數</div>
-            </div>
-
-            <div class="stat">
-              <div class="stat-num">${safeText(data.tenant_count)}</div>
-              <div class="stat-label">房客數</div>
-            </div>
-          </div>
-        </div>
-
-        <button class="btn btn-green" onclick="goTenantList()">查看房客 / 帳單</button>
-        <button class="btn btn-dark" onclick="location.reload()">重新整理</button>
       `;
     }
 
-    function goTenantList() {
-      alert('下一步會接房東帳單總覽 / 房客列表頁');
+    function goBillList() {
+      alert('下一步再接房東帳單總覽頁');
     }
 
-    // ==================================================
+    // ======================================================
     // 6. 啟動
-    // ==================================================
+    // ======================================================
 
     async function main() {
-      try {
-        showLoading('資料載入中...');
+      showLoading();
 
+      try {
         await initLineUserId();
 
-        if (!LINE_USER_ID) {
-          throw new Error('無法取得 LINE User ID');
-        }
+        console.log('LINE_USER_ID：', LINE_USER_ID);
 
         const data = await callApi('landlord_home');
-        renderHome(data);
 
+        renderHome(data);
       } catch (error) {
-        showError('資料讀取失敗', error.message || '未知錯誤');
+        console.error(error);
+        showError('資料讀取失敗', error.message || 'API 載入失敗', String(error && error.stack ? error.stack : error));
       }
     }
 
