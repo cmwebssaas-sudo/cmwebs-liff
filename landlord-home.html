@@ -218,72 +218,69 @@
     // ==================================================
 
   function callApi(action) {
-    return new Promise((resolve, reject) => {
-      if (!LINE_USER_ID) {
-        reject(new Error('缺少 LINE User ID'));
+  return new Promise((resolve, reject) => {
+    if (!LINE_USER_ID) {
+      reject(new Error('缺少 LINE User ID'));
+      return;
+    }
+
+    const requestId =
+      'cmwebsReq_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+
+    let finished = false;
+    const iframe = document.createElement('iframe');
+
+    function cleanup() {
+      window.removeEventListener('message', onMessage);
+
+      if (iframe && iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
+    }
+
+    function onMessage(event) {
+      const msg = event.data;
+
+      if (!msg || msg.source !== 'CMWEBS_APPS_SCRIPT') return;
+      if (msg.requestId !== requestId) return;
+
+      if (finished) return;
+      finished = true;
+
+      clearTimeout(timer);
+      cleanup();
+
+      const json = msg.payload;
+
+      if (!json || json.success !== true) {
+        reject(new Error((json && json.message) ? json.message : '查詢失敗'));
         return;
       }
 
-      const callbackName =
-        'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+      resolve(json.data);
+    }
 
-      let finished = false;
-      const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error('API 載入逾時'));
+    }, 20000);
 
-      function cleanup() {
-        if (script && script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
+    window.addEventListener('message', onMessage);
 
-        try {
-          delete window[callbackName];
-        } catch (e) {
-          window[callbackName] = undefined;
-        }
-      }
+    iframe.style.display = 'none';
+    iframe.src =
+      API_URL +
+      '?v2_action=' + encodeURIComponent(action) +
+      '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+      '&bridge=1' +
+      '&request_id=' + encodeURIComponent(requestId) +
+      '&_=' + Date.now();
 
-      const timer = setTimeout(() => {
-        if (finished) return;
-        finished = true;
-        cleanup();
-        reject(new Error('API 載入逾時'));
-      }, 20000);
-
-      window[callbackName] = function (json) {
-        if (finished) return;
-        finished = true;
-
-        clearTimeout(timer);
-        cleanup();
-
-        if (!json || json.success !== true) {
-          reject(new Error((json && json.message) ? json.message : '查詢失敗'));
-          return;
-        }
-
-        resolve(json.data);
-      };
-
-      script.charset = 'UTF-8';
-
-      script.onerror = function () {
-        // 重要：
-        // Apps Script 會從 script.google.com 轉到 script.googleusercontent.com
-        // 某些 LINE WebView 會誤觸 onerror。
-        // 所以這裡不要立刻 reject，讓 callback 或 timeout 決定結果。
-        console.warn('JSONP script onerror ignored, waiting callback...');
-      };
-
-      script.src =
-        API_URL +
-        '?v2_action=' + encodeURIComponent(action) +
-        '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
-        '&callback=' + encodeURIComponent(callbackName) +
-        '&_=' + Date.now();
-
-      document.body.appendChild(script);
-    });
-  }
+    document.body.appendChild(iframe);
+  });
+}
 
     // ==================================================
     // 4. 取得 LINE User ID
