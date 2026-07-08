@@ -480,5 +480,30 @@ body {
 }
     
   </script>
+
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="nav-item active" onclick="location.href='landlord-home.html?v=' + Date.now()">
+      <div class="nav-icon">🏠</div>
+      <div>首頁</div>
+    </button>
+
+    <button class="nav-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+      <div class="nav-icon">💰</div>
+      <div>欠款</div>
+    </button>
+
+    <button class="nav-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+      <div class="nav-icon">👥</div>
+      <div>房客</div>
+    </button>
+
+    <button class="nav-item" onclick="alert('更多功能建置中')">
+      <div class="nav-icon">☰</div>
+      <div>更多</div>
+    </button>
+  </div>
+</nav>
+  
 </body>
 </html>
