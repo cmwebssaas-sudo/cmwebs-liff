@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMWebs 房客欠款</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    .page {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .amount-main {
+      color: #d93025;
+      font-size: 30px;
+      font-weight: 800;
+      margin: 8px 0 14px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    .row:first-of-type {
+      border-top: none;
+    }
+
+    .label {
+      color: #666;
+      flex: 1;
+    }
+
+    .value {
+      font-weight: 700;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .tenant-name {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #ffe8e6;
+      color: #d93025;
+      margin-left: 6px;
+    }
+
+    .amount {
+      color: #d93025;
+      font-size: 22px;
+      font-weight: 800;
+      margin: 10px 0;
+    }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-black {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-green {
+      background: #06c755;
+      color: #fff;
+    }
+
+    .loading,
+    .empty,
+    .error {
+      text-align: center;
+      padding: 36px 20px;
+      color: #666;
+    }
+
+    .error-title {
+      color: #d93025;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .error-text {
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div id="app" class="loading">資料載入中...</div>
+  </div>
+
+  <script>
+    // ==================================================
+    // 1. 基本設定
+    // ==================================================
+
+    // Apps Script Web App URL，結尾必須是 /exec
+    const API_URL = 'https://script.google.com/macros/s/AKfycyb5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    // 房東首頁 LIFF ID
+    const LIFF_ID = '2010314940-EjX1qbb8';
+
+    // 測試用 LINE UID：非 LINE LIFF 環境時使用
+    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+
+    const app = document.getElementById('app');
+
+    // ==================================================
+    // 2. 工具函式
+    // ==================================================
+
+    function safeText(v) {
+      if (v === undefined || v === null || v === '') return '-';
+      return String(v);
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
+    }
+
+    function statusText(v) {
+      const s = String(v || '').toLowerCase();
+
+      if (s === 'unpaid') return '未繳';
+      if (s === 'paid') return '已繳';
+      if (s === 'issued') return '已建立';
+      if (s === 'not_sent') return '未發送';
+      if (s === 'sent') return '已發送';
+
+      return safeText(v);
+    }
+
+    function renderError(message) {
+      app.className = 'card';
+      app.innerHTML = `
+        <div class="error-title">資料讀取失敗</div>
+        <div class="error-text">
+          API 載入失敗：<br>
+          ${safeText(message)}
+        </div>
+
+        <button class="btn btn-black" onclick="location.reload()">重新整理</button>
+
+        <div class="small" style="margin-top:14px;">
+          若持續失敗，請確認：<br>
+          1. 房東 LINE UID 是否存在於 V2_landlords<br>
+          2. V2_landlord_arrears_view 是否有產生資料<br>
+          3. Apps Script 是否已重新部署新版<br>
+          4. LIFF Endpoint URL 是否正確
+        </div>
+      `;
+    }
+
+    // ==================================================
+    // 3. JSONP API
+    // ==================================================
+
+    function callApi(action) {
+      return new Promise((resolve, reject) => {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少 LINE User ID'));
+          return;
+        }
+
+        const callbackName =
+          'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+
+        let finished = false;
+        const script = document.createElement('script');
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) return;
+          finished = true;
+
+          cleanup();
+
+          if (!json || json.success !== true) {
+            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
+            return;
+          }
+
+          resolve(json.data);
+        };
+
+        const timer = setTimeout(() => {
+          if (finished) return;
+          finished = true;
+
+          cleanup();
+          reject(new Error('API 載入逾時'));
+        }, 30000);
+
+        script.charset = 'UTF-8';
+
+        script.onerror = function () {
+          console.log('JSONP script onerror ignored');
+        };
+
+        script.src =
+          API_URL +
+          '?v2_action=' + encodeURIComponent(action) +
+          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+
+        document.body.appendChild(script);
+      });
+    }
+
+    // ==================================================
+    // 4. 取得 LINE User ID
+    // ==================================================
+
+    async function initLineUserId() {
+      // 非 LINE 瀏覽器測試時，直接用測試 UID
+      if (typeof liff === 'undefined') {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return;
+      }
+
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        LINE_USER_ID = profile.userId || '';
+
+        if (!LINE_USER_ID) {
+          throw new Error('無法取得 LINE User ID');
+        }
+      } catch (error) {
+        // 桌機或非 LIFF 環境測試時 fallback
+        LINE_USER_ID = TEST_LINE_USER_ID;
+      }
+    }
+
+    // ==================================================
+    // 5. 畫面渲染
+    // ==================================================
+
+    function renderPage(data) {
+      PAGE_DATA = data;
+
+      const landlord = data.landlord || {};
+      const summary = data.summary || {};
+      const arrears = Array.isArray(data.arrears) ? data.arrears : [];
+
+      const arrearsCount = Number(summary.arrears_count || arrears.length || 0);
+      const unpaidTotal = Number(summary.unpaid_total_amount || 0);
+
+      let html = '';
+
+      html += `
+        <div class="card">
+          <div class="title">房客欠款明細</div>
+          <div class="sub">
+            房東：${safeText(landlord.landlord_name)}<br>
+            LINE UID：${safeText(LINE_USER_ID)}
+          </div>
+
+          <div class="row">
+            <div class="label">帳號狀態</div>
+            <div class="value">${safeText(landlord.account_status)}</div>
+          </div>
+          <div class="row">
+            <div class="label">管理房間數</div>
+            <div class="value">${Number(landlord.room_count || 0)}</div>
+          </div>
+          <div class="row">
+            <div class="label">房客數</div>
+            <div class="value">${Number(landlord.tenant_count || 0)}</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">欠款總覽</div>
+          <div class="sub">目前未繳總額</div>
+          <div class="amount-main">${money(unpaidTotal)}</div>
+
+          <div class="row">
+            <div class="label">未繳帳單數</div>
+            <div class="value">${arrearsCount}</div>
+          </div>
+          <div class="row">
+            <div class="label">最後更新</div>
+            <div class="value">${safeText(landlord.updated_at)}</div>
+          </div>
+        </div>
+      `;
+
+      if (arrears.length === 0) {
+        html += `
+          <div class="card empty">
+            目前沒有未繳帳單
+          </div>
+        `;
+      } else {
+        arrears.forEach(item => {
+          html += `
+            <div class="card">
+              <div class="tenant-name">
+                ${safeText(item.tenant_name)}
+                <span class="badge">${statusText(item.payment_status)}</span>
+              </div>
+
+              <div class="sub">
+                房號：${safeText(item.room_name)}｜帳單月份：${safeText(item.bill_month)}
+              </div>
+
+              <div class="amount">${money(item.total_amount)}</div>
+
+              <div class="row">
+                <div class="label">繳款期限</div>
+                <div class="value">${safeText(item.due_date)}</div>
+              </div>
+              <div class="row">
+                <div class="label">逾期天數</div>
+                <div class="value">${Number(item.days_overdue || 0)}</div>
+              </div>
+              <div class="row">
+                <div class="label">帳單狀態</div>
+                <div class="value">${statusText(item.bill_status)}</div>
+              </div>
+              <div class="row">
+                <div class="label">發送狀態</div>
+                <div class="value">${statusText(item.sent_status)}</div>
+              </div>
+              <div class="row">
+                <div class="label">帳單 ID</div>
+                <div class="value">${safeText(item.bill_id)}</div>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      html += `
+        <button class="btn btn-green" onclick="goHome()">返回房東首頁</button>
+        <button class="btn btn-black" onclick="location.reload()">重新整理</button>
+      `;
+
+      app.className = '';
+      app.innerHTML = html;
+    }
+
+    function goHome() {
+      location.href = 'landlord-home.html?v=' + Date.now();
+    }
+
+    // ==================================================
+    // 6. 啟動
+    // ==================================================
+
+    async function main() {
+      try {
+        app.className = 'loading';
+        app.innerHTML = '資料載入中...';
+
+        await initLineUserId();
+
+        const data = await callApi('landlord_arrears');
+
+        renderPage(data);
+      } catch (error) {
+        renderError(error.message || error);
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
