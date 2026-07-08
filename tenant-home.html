@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CMWebs 房客首頁</title>
 
-  <!-- LINE LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: Arial, "Noto Sans TC", sans-serif;
@@ -57,7 +60,6 @@
 
     .label {
       color: #666;
-      flex: 1;
     }
 
     .value {
@@ -70,7 +72,7 @@
       font-size: 30px;
       font-weight: 800;
       color: #d93025;
-      margin: 10px 0 18px;
+      margin: 12px 0;
     }
 
     .btn {
@@ -84,7 +86,7 @@
       margin-bottom: 10px;
     }
 
-    .btn-primary {
+    .btn-green {
       background: #06c755;
       color: white;
     }
@@ -95,43 +97,23 @@
     }
 
     .btn-light {
-      background: #eef1f5;
+      background: #f1f3f4;
       color: #222;
     }
 
     .loading,
-    .error {
+    .error,
+    .empty {
       text-align: center;
       padding: 40px 20px;
       color: #666;
     }
 
-    .error {
+    .error-title {
       color: #d93025;
-      font-weight: 700;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .pill-paid {
-      background: #e6f4ea;
-      color: #137333;
-    }
-
-    .pill-unpaid {
-      background: #fce8e6;
-      color: #d93025;
-    }
-
-    .pill-issued {
-      background: #e8f0fe;
-      color: #1967d2;
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
     }
 
     .bill-title {
@@ -140,20 +122,32 @@
       margin-bottom: 4px;
     }
 
-    .section-title {
-      font-size: 18px;
+    .status-paid {
+      color: #188038;
       font-weight: 800;
-      margin: 8px 0 12px;
+    }
+
+    .status-unpaid {
+      color: #d93025;
+      font-weight: 800;
     }
 
     .small {
-      color: #777;
       font-size: 13px;
+      color: #888;
+      margin-top: 8px;
       line-height: 1.5;
     }
 
-    .footer-space {
-      height: 20px;
+    .debug {
+      margin-top: 12px;
+      padding: 10px;
+      background: #f1f3f4;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #666;
+      word-break: break-all;
+      display: none;
     }
   </style>
 </head>
@@ -164,447 +158,369 @@
   </div>
 
   <script>
-    // =========================
-    // 基本設定
-    // =========================
+    // =========================================================
+    // 1. 基本設定
+    // =========================================================
+
+    // Apps Script Web App URL，結尾必須是 /exec
+    const API_URL = 'https://script.google.com/macros/s/AKfycyb5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
     // 房客首頁 LIFF ID
     const LIFF_ID = '2010314940-iJB1D6sN';
 
-    // Apps Script Web App URL，結尾必須是 /exec
-    const API_URL = 'https://script.google.com/macros/s/AKfycyb5n2iXvOz5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+    // 測試用 LINE UID：非 LINE LIFF 環境時使用
+    // 目前這個是「測試人員 / 603」
+    const TEST_LINE_USER_ID = 'U3615a7ed919c1a4a438a246c10784d70';
+
+    let LINE_USER_ID = '';
+    let HOME_DATA = null;
+    let BILL_LIST = [];
 
     const app = document.getElementById('app');
 
-    let LINE_USER_ID = '';
+    // =========================================================
+    // 2. 工具函式
+    // =========================================================
 
-    // =========================
-    // 工具函式
-    // =========================
-
-    function money(value) {
-      const num = Number(value || 0);
-      if (Number.isNaN(num)) return '0';
-      return Math.round(num).toLocaleString('zh-TW');
+    function safeText(v) {
+      if (v === undefined || v === null || v === '') return '-';
+      return String(v);
     }
 
-    function numberText(value, digits = 1) {
-      if (value === '' || value === null || value === undefined) return '-';
-      const num = Number(value);
-      if (Number.isNaN(num)) return String(value);
-      return num.toLocaleString('zh-TW', {
-        maximumFractionDigits: digits
-      });
+    function money(n) {
+      const num = Number(n || 0);
+      return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
     }
 
-    function safeText(value) {
-      if (value === undefined || value === null || value === '') return '-';
-      return String(value);
+    function num(n) {
+      const value = Number(n || 0);
+      return Math.round(value).toLocaleString('zh-TW');
     }
 
-    function dateText(value) {
-      if (!value) return '-';
-
-      const raw = String(value);
-
-      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-        return raw;
-      }
-
-      const date = new Date(raw);
-      if (!Number.isNaN(date.getTime())) {
-        return new Intl.DateTimeFormat('sv-SE', {
-          timeZone: 'Asia/Taipei',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).format(date);
-      }
-
-      return raw;
-    }
-
-    function dateTimeText(value) {
-      if (!value) return '-';
-
-      const date = new Date(value);
-      if (!Number.isNaN(date.getTime())) {
-        return new Intl.DateTimeFormat('zh-TW', {
-          timeZone: 'Asia/Taipei',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        }).format(date);
-      }
-
-      return String(value);
-    }
-
-    function paymentPill(status) {
-      const s = String(status || '').toLowerCase();
-
-      if (s === 'paid') {
-        return '<span class="pill pill-paid">已繳</span>';
-      }
-
-      if (s === 'unpaid') {
-        return '<span class="pill pill-unpaid">未繳</span>';
-      }
-
-      return `<span class="pill pill-issued">${safeText(status)}</span>`;
-    }
-
-    function billStatusText(status) {
-      const s = String(status || '').toLowerCase();
-
-      if (s === 'issued') return '已建立';
-      if (s === 'draft') return '草稿';
-      if (s === 'void') return '作廢';
-
+    function statusText(status) {
+      if (status === 'paid') return '已繳';
+      if (status === 'unpaid') return '未繳';
+      if (status === 'issued') return '已建立';
+      if (status === 'not_sent') return '未發送';
       return safeText(status);
     }
 
-    function showLoading(text = '資料載入中...') {
-      app.className = 'loading';
-      app.innerHTML = text;
+    function statusClass(status) {
+      if (status === 'paid') return 'status-paid';
+      if (status === 'unpaid') return 'status-unpaid';
+      return '';
     }
 
-    function showError(message) {
-      app.className = 'error';
+    function setLoading(text) {
+      app.className = 'loading';
+      app.innerHTML = safeText(text);
+    }
+
+    function showError(message, detail) {
+      app.className = '';
       app.innerHTML = `
         <div class="card">
-          <div class="title">資料讀取失敗</div>
-          <div class="sub">${safeText(message)}</div>
+          <div class="error-title">資料讀取失敗</div>
+          <div>${safeText(message)}</div>
+          ${detail ? `<div class="small">${safeText(detail)}</div>` : ''}
           <button class="btn btn-dark" onclick="initPage()">重新整理</button>
+          <div class="debug" id="debugBox"></div>
         </div>
       `;
     }
 
-    // =========================
-    // LIFF 初始化
-    // =========================
+    // =========================================================
+    // 3. JSONP API，重點：不用 fetch()
+    // =========================================================
 
-    async function getLineUserId() {
-      // 測試用：如果你未來想用瀏覽器直接測，可以在網址後面加：
-      // ?line_user_id=Uxxxxxxxxxxxxxxxx
-      const params = new URLSearchParams(window.location.search);
-      const debugLineUserId = params.get('line_user_id');
+    function callApi(action) {
+      return new Promise((resolve, reject) => {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少 LINE User ID'));
+          return;
+        }
 
-      if (debugLineUserId) {
-        return debugLineUserId.trim();
-      }
+        const callbackName =
+          'cmwebsCallback_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
 
-      if (!window.liff) {
-        throw new Error('LIFF SDK 載入失敗');
-      }
+        const script = document.createElement('script');
 
-      await liff.init({
-        liffId: LIFF_ID
+        const url =
+          API_URL +
+          '?v2_action=' + encodeURIComponent(action) +
+          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+
+        let finished = false;
+
+        const timeout = setTimeout(() => {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          reject(new Error('API 讀取逾時'));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timeout);
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) return;
+          finished = true;
+          cleanup();
+
+          if (!json || json.success !== true) {
+            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
+            return;
+          }
+
+          resolve(json.data);
+        };
+
+        script.onerror = function () {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          reject(new Error('API 載入失敗'));
+        };
+
+        script.src = url;
+        script.async = true;
+        document.body.appendChild(script);
       });
-
-      if (!liff.isLoggedIn()) {
-        liff.login({
-          redirectUri: window.location.href
-        });
-        return '';
-      }
-
-      const profile = await liff.getProfile();
-
-      if (!profile || !profile.userId) {
-        throw new Error('無法取得 LINE User ID');
-      }
-
-      return profile.userId;
     }
 
-    // =========================
-    // API
-    // =========================
+    // =========================================================
+    // 4. 取得 LINE User ID
+    // =========================================================
 
-    function jsonpRequest(url) {
-  return new Promise((resolve, reject) => {
-    const callbackName =
-      'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-
-    const script = document.createElement('script');
-    const separator = url.includes('?') ? '&' : '?';
-
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error('API timeout'));
-    }, 15000);
-
-    function cleanup() {
-      clearTimeout(timer);
-      delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-    }
-
-    window[callbackName] = function (json) {
-      cleanup();
-      resolve(json);
-    };
-
-    script.onerror = function () {
-      cleanup();
-      reject(new Error('JSONP load failed'));
-    };
-
-    script.src =
-      url +
-      separator +
-      'callback=' +
-      encodeURIComponent(callbackName) +
-      '&_=' +
-      Date.now();
-
-    document.body.appendChild(script);
-  });
-}
-
-async function callApi(action) {
-  if (!LINE_USER_ID) {
-    throw new Error('缺少 LINE User ID');
-  }
-
-  const url =
-    API_URL +
-    '?v2_action=' + encodeURIComponent(action) +
-    '&line_user_id=' + encodeURIComponent(LINE_USER_ID);
-
-  const json = await jsonpRequest(url);
-
-  if (!json.success) {
-    throw new Error(json.message || '查詢失敗');
-  }
-
-  return json.data;
-}
-
-    async function fetchTenantHome() {
-      return await callApi('tenant_home');
-    }
-
-    async function fetchTenantBills() {
-      return await callApi('tenant_bills');
-    }
-
-    // =========================
-    // 畫面：首頁
-    // =========================
-
-    function renderHome(data) {
-      if (!data) {
-        showError('找不到房客資料，請確認此 LINE 帳號是否已完成房客綁定。');
+    async function initLineUserId() {
+      // 非 LINE 瀏覽器測試時，直接用測試 UID
+      if (typeof liff === 'undefined') {
+        LINE_USER_ID = TEST_LINE_USER_ID;
         return;
       }
+
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        LINE_USER_ID = profile.userId || TEST_LINE_USER_ID;
+      } catch (error) {
+        // 如果 LIFF 初始化失敗，先用測試 UID，方便你在瀏覽器測試
+        LINE_USER_ID = TEST_LINE_USER_ID;
+      }
+    }
+
+    // =========================================================
+    // 5. 畫面渲染
+    // =========================================================
+
+    function renderHome() {
+      const home = HOME_DATA || {};
+      const bills = Array.isArray(BILL_LIST) ? BILL_LIST : [];
+
+      const tenantName = safeText(home.tenant_name);
+      const roomList = safeText(home.room_list);
+      const accountStatus = safeText(home.account_status);
+      const latestBillMonth = safeText(home.latest_bill_month);
+      const latestDueDate = safeText(home.latest_due_date).slice(0, 10);
+      const unpaidTotal = Number(home.unpaid_total_amount || 0);
+      const unpaidCount = Number(home.unpaid_bill_count || 0);
+      const latestPaymentStatus = safeText(home.latest_payment_status);
 
       app.className = '';
       app.innerHTML = `
         <div class="card">
-          <div class="title">您好，${safeText(data.tenant_name)}</div>
-          <div class="sub">房號：${safeText(data.room_list)}</div>
+          <div class="title">您好，${tenantName}</div>
+          <div class="sub">房號：${roomList}</div>
 
           <div class="row">
             <div class="label">帳號狀態</div>
-            <div class="value">${safeText(data.account_status)}</div>
+            <div class="value">${accountStatus}</div>
           </div>
 
           <div class="row">
             <div class="label">最新帳單月份</div>
-            <div class="value">${safeText(data.latest_bill_month)}</div>
+            <div class="value">${latestBillMonth}</div>
           </div>
 
           <div class="row">
             <div class="label">繳款期限</div>
-            <div class="value">${dateText(data.latest_due_date)}</div>
+            <div class="value">${latestDueDate}</div>
           </div>
         </div>
 
         <div class="card">
           <div class="sub">目前未繳總額</div>
-          <div class="amount">NT$ ${money(data.unpaid_total_amount)}</div>
+          <div class="amount">${money(unpaidTotal)}</div>
 
           <div class="row">
             <div class="label">未繳帳單數</div>
-            <div class="value">${money(data.unpaid_bill_count)}</div>
+            <div class="value">${unpaidCount}</div>
           </div>
 
           <div class="row">
             <div class="label">最新付款狀態</div>
-            <div class="value">${paymentPill(data.latest_payment_status)}</div>
+            <div class="value ${statusClass(latestPaymentStatus)}">${statusText(latestPaymentStatus)}</div>
           </div>
         </div>
 
-        <button class="btn btn-primary" onclick="loadBills()">查看帳單明細</button>
+        <button class="btn btn-green" onclick="scrollToBills()">查看帳單明細</button>
         <button class="btn btn-dark" onclick="initPage()">重新整理</button>
 
-        <div class="small">
-          更新時間：${dateTimeText(data.updated_at)}
+        <div id="billSection">
+          ${renderBills(bills)}
         </div>
 
-        <div class="footer-space"></div>
+        <div class="small">
+          更新時間：${safeText(home.updated_at)}
+        </div>
       `;
     }
 
-    // =========================
-    // 畫面：帳單明細
-    // =========================
-
     function renderBills(bills) {
       if (!Array.isArray(bills) || bills.length === 0) {
-        app.className = '';
-        app.innerHTML = `
-          <div class="card">
-            <div class="title">帳單明細</div>
-            <div class="sub">目前查無帳單資料。</div>
+        return `
+          <div class="card empty">
+            目前沒有帳單資料
           </div>
-
-          <button class="btn btn-light" onclick="initPage()">返回首頁</button>
         `;
-        return;
       }
 
-      const billCards = bills.map((bill) => {
-        const previousMeter = bill.previous_meter;
-        const currentMeter =
-          bill.current_meter_reading !== undefined
-            ? bill.current_meter_reading
-            : bill.current_meter_r;
+      return bills.map((bill) => {
+        const paymentStatus = safeText(bill.payment_status);
 
         return `
           <div class="card">
             <div class="bill-title">${safeText(bill.bill_month)} 帳單</div>
-            <div class="sub">
-              房號：${safeText(bill.room_name)}　
-              狀態：${paymentPill(bill.payment_status)}
-            </div>
+            <div class="sub">房號：${safeText(bill.room_name)}｜帳單ID：${safeText(bill.bill_id)}</div>
 
             <div class="row">
               <div class="label">繳款期限</div>
-              <div class="value">${dateText(bill.due_date)}</div>
+              <div class="value">${safeText(bill.due_date).slice(0, 10)}</div>
             </div>
 
             <div class="row">
               <div class="label">租金</div>
-              <div class="value">NT$ ${money(bill.rent_amount)}</div>
+              <div class="value">${money(bill.rent_amount)}</div>
             </div>
 
             <div class="row">
               <div class="label">管理費</div>
-              <div class="value">NT$ ${money(bill.management_fee)}</div>
+              <div class="value">${money(bill.management_fee)}</div>
             </div>
 
             <div class="row">
-              <div class="label">上期電錶度數</div>
-              <div class="value">${numberText(previousMeter, 2)}</div>
+              <div class="label">上期電表度數</div>
+              <div class="value">${safeText(bill.previous_meter)}</div>
             </div>
 
             <div class="row">
-              <div class="label">本期電錶度數</div>
-              <div class="value">${numberText(currentMeter, 2)}</div>
+              <div class="label">本期電表度數</div>
+              <div class="value">${safeText(bill.current_meter_reading)}</div>
             </div>
 
             <div class="row">
-              <div class="label">本月用電度數</div>
-              <div class="value">${numberText(bill.electricity_usage, 2)}</div>
+              <div class="label">本月用電</div>
+              <div class="value">${safeText(bill.electricity_usage)} 度</div>
             </div>
 
             <div class="row">
               <div class="label">每度電費</div>
-              <div class="value">NT$ ${numberText(bill.electricity_fee_rate, 2)}</div>
+              <div class="value">${safeText(bill.electricity_fee_rate)}</div>
             </div>
 
             <div class="row">
-              <div class="label">每度設備費</div>
-              <div class="value">NT$ ${numberText(bill.equipment_fee_rate, 2)}</div>
+              <div class="label">每度設備耗損費</div>
+              <div class="value">${safeText(bill.equipment_fee_rate)}</div>
             </div>
 
             <div class="row">
               <div class="label">本月電費</div>
-              <div class="value">NT$ ${money(bill.electricity_amount)}</div>
+              <div class="value">${money(bill.electricity_amount)}</div>
             </div>
 
             <div class="row">
               <div class="label">本月設備耗損費</div>
-              <div class="value">NT$ ${money(bill.equipment_amount)}</div>
+              <div class="value">${money(bill.equipment_amount)}</div>
             </div>
 
             <div class="row">
               <div class="label">其他費用</div>
-              <div class="value">NT$ ${money(bill.other_amount)}</div>
+              <div class="value">${money(bill.other_amount)}</div>
             </div>
 
             <div class="row">
-              <div class="label">折扣金額</div>
-              <div class="value">NT$ ${money(bill.discount_amount)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">帳單狀態</div>
-              <div class="value">${billStatusText(bill.bill_status)}</div>
+              <div class="label">折扣</div>
+              <div class="value">${money(bill.discount_amount)}</div>
             </div>
 
             <div class="row">
               <div class="label">應繳總額</div>
-              <div class="value">NT$ ${money(bill.total_amount)}</div>
+              <div class="value">${money(bill.total_amount)}</div>
+            </div>
+
+            <div class="row">
+              <div class="label">帳單狀態</div>
+              <div class="value">${statusText(bill.bill_status)}</div>
+            </div>
+
+            <div class="row">
+              <div class="label">付款狀態</div>
+              <div class="value ${statusClass(paymentStatus)}">${statusText(paymentStatus)}</div>
             </div>
           </div>
         `;
       }).join('');
-
-      app.className = '';
-      app.innerHTML = `
-        <div class="section-title">帳單明細</div>
-
-        ${billCards}
-
-        <button class="btn btn-light" onclick="initPage()">返回首頁</button>
-        <button class="btn btn-dark" onclick="loadBills()">重新整理帳單</button>
-
-        <div class="footer-space"></div>
-      `;
     }
 
-    // =========================
-    // 頁面流程
-    // =========================
-
-    async function initPage() {
-      try {
-        showLoading('資料載入中...');
-
-        if (!LINE_USER_ID) {
-          LINE_USER_ID = await getLineUserId();
-
-          if (!LINE_USER_ID) {
-            return;
-          }
-        }
-
-        const data = await fetchTenantHome();
-        renderHome(data);
-      } catch (error) {
-        console.error(error);
-        showError(error.message);
+    function scrollToBills() {
+      const el = document.getElementById('billSection');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
 
-    async function loadBills() {
-      try {
-        showLoading('帳單明細載入中...');
+    // =========================================================
+    // 6. 初始化頁面
+    // =========================================================
 
-        const bills = await fetchTenantBills();
-        renderBills(bills);
+    async function initPage() {
+      try {
+        setLoading('資料載入中...');
+
+        await initLineUserId();
+
+        if (!LINE_USER_ID) {
+          throw new Error('無法取得 LINE User ID');
+        }
+
+        const home = await callApi('tenant_home');
+        const bills = await callApi('tenant_bills');
+
+        HOME_DATA = home || {};
+        BILL_LIST = Array.isArray(bills) ? bills : [];
+
+        renderHome();
       } catch (error) {
-        console.error(error);
-        showError(error.message);
+        showError(error.message || 'Load failed');
       }
     }
 
