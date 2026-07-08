@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CMWebs 房客名單</title>
+  <title>CMWebs 房客欠款</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -13,6 +13,7 @@
       font-family: Arial, "Noto Sans TC", sans-serif;
       background: #f5f7fb;
       color: #222;
+      padding-bottom: calc(74px + env(safe-area-inset-bottom));
     }
 
     .page {
@@ -32,20 +33,27 @@
 
     .title {
       font-size: 22px;
-      font-weight: 800;
+      font-weight: 700;
       margin-bottom: 6px;
-    }
-
-    .section-title {
-      font-size: 17px;
-      font-weight: 800;
-      margin-bottom: 12px;
     }
 
     .sub {
       color: #666;
       font-size: 13px;
       line-height: 1.6;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .amount-main {
+      color: #d93025;
+      font-size: 30px;
+      font-weight: 800;
+      margin: 8px 0 14px;
     }
 
     .row {
@@ -72,31 +80,10 @@
       word-break: break-word;
     }
 
-    .amount-main {
-      color: #d93025;
-      font-size: 30px;
-      font-weight: 900;
-      margin: 8px 0 14px;
-    }
-
-    .amount-green {
-      color: #06c755;
-      font-size: 24px;
-      font-weight: 900;
-      margin: 8px 0 14px;
-    }
-
     .tenant-name {
       font-size: 18px;
       font-weight: 800;
       margin-bottom: 4px;
-    }
-
-    .tenant-meta {
-      color: #666;
-      font-size: 13px;
-      line-height: 1.6;
-      margin-bottom: 8px;
     }
 
     .badge {
@@ -104,38 +91,17 @@
       padding: 3px 8px;
       border-radius: 999px;
       font-size: 12px;
-      font-weight: 800;
-      margin-left: 6px;
-      vertical-align: middle;
-    }
-
-    .badge-red {
+      font-weight: 700;
       background: #ffe8e6;
       color: #d93025;
-    }
-
-    .badge-green {
-      background: #e6f7ed;
-      color: #0b8043;
-    }
-
-    .badge-gray {
-      background: #eee;
-      color: #555;
+      margin-left: 6px;
     }
 
     .amount {
-      font-size: 22px;
-      font-weight: 900;
-      margin: 8px 0 10px;
-    }
-
-    .amount-red {
       color: #d93025;
-    }
-
-    .amount-normal {
-      color: #222;
+      font-size: 22px;
+      font-weight: 800;
+      margin: 10px 0;
     }
 
     .btn {
@@ -144,14 +110,9 @@
       border-radius: 10px;
       padding: 14px 16px;
       font-size: 16px;
-      font-weight: 800;
+      font-weight: 700;
       cursor: pointer;
       margin-top: 8px;
-    }
-
-    .btn-green {
-      background: #06c755;
-      color: #fff;
     }
 
     .btn-black {
@@ -159,13 +120,14 @@
       color: #fff;
     }
 
-    .btn-gray {
-      background: #eee;
-      color: #222;
+    .btn-green {
+      background: #06c755;
+      color: #fff;
     }
 
     .loading,
-    .empty {
+    .empty,
+    .error {
       text-align: center;
       padding: 36px 20px;
       color: #666;
@@ -174,13 +136,15 @@
     .error-title {
       color: #d93025;
       font-size: 18px;
-      font-weight: 900;
+      font-weight: 800;
       margin-bottom: 8px;
+      text-align: left;
     }
 
     .error-text {
       font-size: 14px;
       line-height: 1.6;
+      text-align: left;
       word-break: break-word;
     }
 
@@ -188,6 +152,73 @@
       font-size: 12px;
       color: #777;
       line-height: 1.6;
+    }
+
+    /* ===== Bottom Navigation ===== */
+    .bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      background: rgba(255, 255, 255, 0.98);
+      border-top: 1px solid #eceff3;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav-inner {
+      max-width: 560px;
+      height: 62px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: #06c755;
+      font-weight: 800;
+    }
+
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: #06c755;
+    }
+
+    .nav-item:active {
+      opacity: 0.65;
     }
   </style>
 </head>
@@ -197,27 +228,57 @@
     <div id="app" class="loading">資料載入中...</div>
   </div>
 
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="nav-item" onclick="location.href='landlord-home.html?v=' + Date.now()">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 11.5L12 5l8 6.5"></path>
+          <path d="M6.5 10.5V19h11v-8.5"></path>
+          <path d="M9.5 19v-5h5v5"></path>
+        </svg>
+        <div>首頁</div>
+      </button>
+
+      <button class="nav-item active" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+        <svg viewBox="0 0 24 24">
+          <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+          <path d="M8.5 9h7"></path>
+          <path d="M8.5 13h7"></path>
+          <path d="M8.5 17h4"></path>
+        </svg>
+        <div>欠款</div>
+      </button>
+
+      <button class="nav-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+        <svg viewBox="0 0 24 24">
+          <circle cx="9" cy="8.5" r="3"></circle>
+          <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
+          <circle cx="16.5" cy="9.5" r="2.3"></circle>
+          <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
+        </svg>
+        <div>房客</div>
+      </button>
+
+      <button class="nav-item" onclick="alert('更多功能建置中')">
+        <svg viewBox="0 0 24 24">
+          <circle cx="6" cy="12" r="1.5"></circle>
+          <circle cx="12" cy="12" r="1.5"></circle>
+          <circle cx="18" cy="12" r="1.5"></circle>
+        </svg>
+        <div>更多</div>
+      </button>
+    </div>
+  </nav>
+
   <script>
-    // ==================================================
-    // 1. 基本設定
-    // ==================================================
-
     const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
-
-    // 房東首頁 LIFF ID
     const LIFF_ID = '2010314940-EjX1qbb8';
-
-    // 測試用房東 LINE UID
     const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
 
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
 
     const app = document.getElementById('app');
-
-    // ==================================================
-    // 2. 工具函式
-    // ==================================================
 
     function safeText(v) {
       if (v === undefined || v === null || v === '') return '-';
@@ -238,21 +299,9 @@
       if (s === 'not_sent') return '未發送';
       if (s === 'sent') return '已發送';
       if (s === 'active') return '啟用中';
-      if (s === 'inactive') return '停用';
-      if (s === 'bound') return '已綁定';
-      if (s === 'unbound') return '未綁定';
-      if (s === 'checked_in') return '已報到';
+      if (s === 'inactive') return '未啟用';
 
       return safeText(v);
-    }
-
-    function paymentBadgeClass(v) {
-      const s = String(v || '').toLowerCase();
-
-      if (s === 'unpaid') return 'badge badge-red';
-      if (s === 'paid') return 'badge badge-green';
-
-      return 'badge badge-gray';
     }
 
     function renderError(message) {
@@ -269,17 +318,12 @@
         <div class="small" style="margin-top:14px;">
           若持續失敗，請確認：<br>
           1. 房東 LINE UID 是否存在於 V2_landlords<br>
-          2. V2_landlord_tenant_list_view 是否有產生資料<br>
+          2. V2_landlord_arrears_view 是否有產生資料<br>
           3. Apps Script 是否已重新部署新版<br>
-          4. API_URL 是否為 AKfycby5 開頭<br>
-          5. LIFF Endpoint URL 是否正確
+          4. LIFF Endpoint URL 是否正確
         </div>
       `;
     }
-
-    // ==================================================
-    // 3. JSONP API
-    // ==================================================
 
     function callApi(action) {
       return new Promise((resolve, reject) => {
@@ -347,12 +391,7 @@
       });
     }
 
-    // ==================================================
-    // 4. 取得 LINE User ID
-    // ==================================================
-
     async function initLineUserId() {
-      // 非 LINE 瀏覽器測試時使用測試 UID
       if (typeof liff === 'undefined') {
         LINE_USER_ID = TEST_LINE_USER_ID;
         return;
@@ -377,28 +416,21 @@
       }
     }
 
-    // ==================================================
-    // 5. 畫面渲染
-    // ==================================================
-
     function renderPage(data) {
       PAGE_DATA = data;
 
       const landlord = data.landlord || {};
       const summary = data.summary || {};
-      const tenants = Array.isArray(data.tenants) ? data.tenants : [];
+      const arrears = Array.isArray(data.arrears) ? data.arrears : [];
 
-      const tenantCount = Number(summary.tenant_count || tenants.length || 0);
-      const unpaidTenantCount = Number(summary.unpaid_tenant_count || 0);
-      const paidTenantCount = Number(summary.paid_tenant_count || 0);
-      const unpaidTotalAmount = Number(summary.unpaid_total_amount || 0);
-      const latestTotalAmount = Number(summary.latest_total_amount || 0);
+      const arrearsCount = Number(summary.arrears_count || arrears.length || 0);
+      const unpaidTotal = Number(summary.unpaid_total_amount || 0);
 
       let html = '';
 
       html += `
         <div class="card">
-          <div class="title">房客名單</div>
+          <div class="title">房客欠款明細</div>
           <div class="sub">
             房東：${safeText(landlord.landlord_name)}<br>
             LINE UID：${safeText(LINE_USER_ID)}
@@ -408,10 +440,12 @@
             <div class="label">帳號狀態</div>
             <div class="value">${statusText(landlord.account_status)}</div>
           </div>
+
           <div class="row">
             <div class="label">管理房間數</div>
             <div class="value">${Number(landlord.room_count || 0)}</div>
           </div>
+
           <div class="row">
             <div class="label">房客數</div>
             <div class="value">${Number(landlord.tenant_count || 0)}</div>
@@ -419,28 +453,15 @@
         </div>
 
         <div class="card">
-          <div class="section-title">房客狀態總覽</div>
+          <div class="section-title">欠款總覽</div>
+          <div class="sub">目前未繳總額</div>
+          <div class="amount-main">${money(unpaidTotal)}</div>
 
           <div class="row">
-            <div class="label">房客總數</div>
-            <div class="value">${tenantCount}</div>
-          </div>
-          <div class="row">
-            <div class="label">未繳房客數</div>
-            <div class="value" style="color:#d93025;">${unpaidTenantCount}</div>
-          </div>
-          <div class="row">
-            <div class="label">已繳房客數</div>
-            <div class="value" style="color:#0b8043;">${paidTenantCount}</div>
+            <div class="label">未繳帳單數</div>
+            <div class="value">${arrearsCount}</div>
           </div>
 
-          <div class="sub" style="margin-top:12px;">目前未繳總額</div>
-          <div class="amount-main">${money(unpaidTotalAmount)}</div>
-
-          <div class="row">
-            <div class="label">本月帳單總額</div>
-            <div class="value">${money(latestTotalAmount)}</div>
-          </div>
           <div class="row">
             <div class="label">最後更新</div>
             <div class="value">${safeText(landlord.updated_at)}</div>
@@ -448,71 +469,50 @@
         </div>
       `;
 
-      if (tenants.length === 0) {
+      if (arrears.length === 0) {
         html += `
           <div class="card empty">
-            目前沒有房客資料
+            目前沒有未繳帳單
           </div>
         `;
       } else {
-        tenants.forEach(item => {
-          const paymentStatus = String(item.latest_payment_status || '').toLowerCase();
-          const isUnpaid = paymentStatus === 'unpaid';
-
+        arrears.forEach(item => {
           html += `
             <div class="card">
               <div class="tenant-name">
                 ${safeText(item.tenant_name)}
-                <span class="${paymentBadgeClass(item.latest_payment_status)}">
-                  ${statusText(item.latest_payment_status)}
-                </span>
+                <span class="badge">${statusText(item.payment_status)}</span>
               </div>
 
-              <div class="tenant-meta">
-                房號：${safeText(item.room_list)}｜房客 ID：${safeText(item.tenant_id)}
-              </div>
-              <div class="row">
-              <div class="label">電話</div>
-              <div class="value">${safeText(item.tenant_phone)}</div>
-               </div>
-
-               <div class="row">
-               <div class="label">Email</div>
-               <div class="value">${safeText(item.tenant_email)}</div>
+              <div class="sub">
+                房號：${safeText(item.room_name)}｜帳單月份：${safeText(item.bill_month)}
               </div>
 
-              <div class="row">
-              <div class="label">綁定狀態</div>
-              <div class="value">${statusText(item.tenant_binding_status)}</div>
-              </div>
-              
-              <div class="amount ${isUnpaid ? 'amount-red' : 'amount-normal'}">
-                ${money(item.latest_total_amount)}
-              </div>
+              <div class="amount">${money(item.total_amount)}</div>
 
-              <div class="row">
-                <div class="label">最新帳單月份</div>
-                <div class="value">${safeText(item.latest_bill_month)}</div>
-              </div>
               <div class="row">
                 <div class="label">繳款期限</div>
-                <div class="value">${safeText(item.latest_due_date)}</div>
+                <div class="value">${safeText(item.due_date)}</div>
               </div>
+
               <div class="row">
-                <div class="label">未繳帳單數</div>
-                <div class="value" style="${isUnpaid ? 'color:#d93025;' : ''}">
-                  ${Number(item.unpaid_bill_count || 0)}
-                </div>
+                <div class="label">逾期天數</div>
+                <div class="value">${Number(item.days_overdue || 0)}</div>
               </div>
+
               <div class="row">
-                <div class="label">未繳總額</div>
-                <div class="value" style="${Number(item.unpaid_total_amount || 0) > 0 ? 'color:#d93025;' : ''}">
-                  ${money(item.unpaid_total_amount)}
-                </div>
+                <div class="label">帳單狀態</div>
+                <div class="value">${statusText(item.bill_status)}</div>
               </div>
+
               <div class="row">
-                <div class="label">房客帳號狀態</div>
-                <div class="value">${statusText(item.tenant_account_status)}</div>
+                <div class="label">發送狀態</div>
+                <div class="value">${statusText(item.sent_status)}</div>
+              </div>
+
+              <div class="row">
+                <div class="label">帳單 ID</div>
+                <div class="value">${safeText(item.bill_id)}</div>
               </div>
             </div>
           `;
@@ -520,17 +520,8 @@
       }
 
       html += `
-        <button class="btn btn-green" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
-          查看房客欠款
-        </button>
-
-        <button class="btn btn-black" onclick="goHome()">
-          返回房東首頁
-        </button>
-
-        <button class="btn btn-gray" onclick="location.reload()">
-          重新整理
-        </button>
+        <button class="btn btn-green" onclick="goHome()">返回房東首頁</button>
+        <button class="btn btn-black" onclick="location.reload()">重新整理</button>
       `;
 
       app.className = '';
@@ -541,10 +532,6 @@
       location.href = 'landlord-home.html?v=' + Date.now();
     }
 
-    // ==================================================
-    // 6. 啟動
-    // ==================================================
-
     async function main() {
       try {
         app.className = 'loading';
@@ -552,7 +539,7 @@
 
         await initLineUserId();
 
-        const data = await callApi('landlord_tenants');
+        const data = await callApi('landlord_arrears');
 
         renderPage(data);
       } catch (error) {
@@ -561,86 +548,6 @@
     }
 
     main();
-
-/* ===== Bottom Navigation ===== */
-body {
-  padding-bottom: calc(78px + env(safe-area-inset-bottom));
-}
-
-.bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-  background: rgba(255, 255, 255, 0.96);
-  border-top: 1px solid #e5e7eb;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.bottom-nav-inner {
-  max-width: 560px;
-  margin: 0 auto;
-  height: 64px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.nav-item {
-  border: 0;
-  background: transparent;
-  color: #666;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  cursor: pointer;
-}
-
-.nav-icon {
-  font-size: 21px;
-  line-height: 1;
-}
-
-.nav-item.active {
-  color: #06c755;
-}
-
-.nav-item:active {
-  background: #f0fdf4;
-}
-
-
-    
   </script>
-
-<nav class="bottom-nav">
-  <div class="bottom-nav-inner">
-    <button class="nav-item" onclick="location.href='landlord-home.html?v=' + Date.now()">
-      <div class="nav-icon">🏠</div>
-      <div>首頁</div>
-    </button>
-
-    <button class="nav-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
-      <div class="nav-icon">💰</div>
-      <div>欠款</div>
-    </button>
-
-    <button class="nav-item active" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
-      <div class="nav-icon">👥</div>
-      <div>房客</div>
-    </button>
-
-    <button class="nav-item" onclick="alert('更多功能建置中')">
-      <div class="nav-icon">☰</div>
-      <div>更多</div>
-    </button>
-  </div>
-</nav>
-  
 </body>
 </html>
