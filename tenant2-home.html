@@ -8,13 +8,13 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      font-family: Arial, "Noto Sans TC", sans-serif;
       background: #f5f7fb;
       color: #222;
     }
 
-    .container {
-      max-width: 480px;
+    .page {
+      max-width: 520px;
       margin: 0 auto;
       padding: 20px;
     }
@@ -22,34 +22,28 @@
     .card {
       background: white;
       border-radius: 16px;
-      padding: 20px;
+      padding: 18px;
       margin-bottom: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
 
     .title {
       font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 8px;
+      font-weight: 700;
+      margin-bottom: 6px;
     }
 
     .sub {
       color: #666;
-      margin-bottom: 16px;
-    }
-
-    .amount {
-      font-size: 32px;
-      font-weight: bold;
-      color: #00b900;
-      margin: 12px 0;
+      font-size: 14px;
+      margin-bottom: 14px;
     }
 
     .row {
       display: flex;
       justify-content: space-between;
-      border-bottom: 1px solid #eee;
       padding: 10px 0;
+      border-bottom: 1px solid #eee;
       font-size: 15px;
     }
 
@@ -62,94 +56,74 @@
     }
 
     .value {
-      font-weight: bold;
+      font-weight: 600;
       text-align: right;
     }
 
-    .badge-unpaid {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #fff0f0;
+    .amount {
+      font-size: 30px;
+      font-weight: 800;
       color: #d93025;
-      font-weight: bold;
+      margin: 10px 0;
     }
 
-    .badge-paid {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #e8f5e9;
-      color: #188038;
-      font-weight: bold;
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      background: #06c755;
+      color: white;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      background: #222;
+      margin-top: 10px;
+    }
+
+    .loading,
+    .error {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
     }
 
     .error {
       color: #d93025;
-      font-weight: bold;
-    }
-
-    .loading {
-      color: #777;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="card">
-      <div class="title" id="tenantName">載入中...</div>
-      <div class="sub" id="roomList">正在讀取房客資料</div>
-    </div>
-
-    <div class="card">
-      <div class="sub">本期應繳金額</div>
-      <div class="amount" id="latestTotalAmount">NT$ -</div>
-
-      <div class="row">
-        <div class="label">帳單月份</div>
-        <div class="value" id="latestBillMonth">-</div>
-      </div>
-
-      <div class="row">
-        <div class="label">繳費期限</div>
-        <div class="value" id="latestDueDate">-</div>
-      </div>
-
-      <div class="row">
-        <div class="label">付款狀態</div>
-        <div class="value" id="latestPaymentStatus">-</div>
-      </div>
-
-      <div class="row">
-        <div class="label">未繳帳單</div>
-        <div class="value" id="unpaidSummary">-</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="row">
-        <div class="label">帳號狀態</div>
-        <div class="value" id="accountStatus">-</div>
-      </div>
-
-      <div class="row">
-        <div class="label">更新時間</div>
-        <div class="value" id="updatedAt">-</div>
-      </div>
-    </div>
+  <div class="page">
+    <div id="app" class="loading">資料載入中...</div>
   </div>
 
   <script>
-    // 這裡換成你的 Apps Script Web App 部署網址
-    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+    // 1. 換成你的 Apps Script Web App URL，結尾要是 /exec
+    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
-    // 先用測試 UID 寫死
+    // 2. 測試階段先寫死 LINE UID
     const TEST_LINE_USER_ID = 'U3615a7ed919c1a4a438a246c10784d70';
 
+    const app = document.getElementById('app');
+
+    function money(n) {
+      const num = Number(n || 0);
+      return num.toLocaleString('zh-TW');
+    }
+
+    function safeText(v) {
+      return v === undefined || v === null || v === '' ? '-' : v;
+    }
+
     async function fetchTenantHome() {
-      const url =
-        `${API_BASE_URL}?v2_action=tenant_home&line_user_id=${encodeURIComponent(TEST_LINE_USER_ID)}`;
+      const url = API_URL
+        + '?v2_action=tenant_home'
+        + '&line_user_id=' + encodeURIComponent(TEST_LINE_USER_ID);
 
       const res = await fetch(url);
       const json = await res.json();
@@ -161,64 +135,69 @@
       return json.data;
     }
 
-    async function renderTenantHome() {
+    function render(data) {
+      app.className = '';
+
+      app.innerHTML = `
+        <div class="card">
+          <div class="title">您好，${safeText(data.tenant_name)}</div>
+          <div class="sub">房號：${safeText(data.room_list)}</div>
+
+          <div class="row">
+            <div class="label">帳號狀態</div>
+            <div class="value">${safeText(data.account_status)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">最新帳單月份</div>
+            <div class="value">${safeText(data.latest_bill_month)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">繳款期限</div>
+            <div class="value">${safeText(data.latest_due_date).slice(0, 10)}</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sub">目前未繳總額</div>
+          <div class="amount">NT$ ${money(data.unpaid_total_amount)}</div>
+
+          <div class="row">
+            <div class="label">未繳帳單數</div>
+            <div class="value">${money(data.unpaid_bill_count)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">最新付款狀態</div>
+            <div class="value">${safeText(data.latest_payment_status)}</div>
+          </div>
+        </div>
+
+        <button class="btn" onclick="location.href='tenant-bills.html'">
+          查看帳單明細
+        </button>
+
+        <button class="btn secondary" onclick="location.reload()">
+          重新整理
+        </button>
+      `;
+    }
+
+    async function main() {
       try {
         const data = await fetchTenantHome();
-
-        document.getElementById('tenantName').textContent =
-          data.tenant_name || '-';
-
-        document.getElementById('roomList').textContent =
-          `房號：${data.room_list || '-'}`;
-
-        document.getElementById('latestBillMonth').textContent =
-          data.latest_bill_month || '-';
-
-        document.getElementById('latestDueDate').textContent =
-          formatDate(data.latest_due_date);
-
-        document.getElementById('latestTotalAmount').textContent =
-          `NT$ ${Number(data.latest_total_amount || 0).toLocaleString()}`;
-
-        document.getElementById('latestPaymentStatus').innerHTML =
-          data.latest_payment_status === 'paid'
-            ? '<span class="badge-paid">已繳</span>'
-            : '<span class="badge-unpaid">未繳</span>';
-
-        document.getElementById('unpaidSummary').textContent =
-          `${data.unpaid_bill_count || 0} 筆，NT$ ${Number(data.unpaid_total_amount || 0).toLocaleString()}`;
-
-        document.getElementById('accountStatus').textContent =
-          data.account_status || '-';
-
-        document.getElementById('updatedAt').textContent =
-          formatDateTime(data.updated_at);
-
+        render(data);
       } catch (err) {
-        console.error(err);
-        document.getElementById('tenantName').innerHTML =
-          '<span class="error">資料載入失敗</span>';
-
-        document.getElementById('roomList').textContent =
-          err.message || '請稍後再試';
+        app.className = 'error';
+        app.innerHTML = `
+          <div>資料載入失敗</div>
+          <div style="font-size:13px;margin-top:10px;">${err.message}</div>
+        `;
       }
     }
 
-    function formatDate(value) {
-      if (!value) return '-';
-      const d = new Date(value);
-      if (isNaN(d.getTime())) return value;
-      return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-    }
-
-    function formatDateTime(value) {
-      if (!value) return '-';
-      const d = new Date(value);
-      if (isNaN(d.getTime())) return value;
-      return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    }
-
-    renderTenantHome();
+    main();
   </script>
 </body>
 </html>
