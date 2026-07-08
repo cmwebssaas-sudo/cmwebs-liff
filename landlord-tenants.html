@@ -50,6 +50,34 @@
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     }
 
+    .tenant-card {
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.08s ease, opacity 0.08s ease;
+    }
+
+    .tenant-card:active {
+      transform: scale(0.995);
+      opacity: 0.82;
+    }
+
+    .card-chevron {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      color: #bbb;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .detail-hint {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #999;
+      text-align: right;
+    }
+
     .title {
       font-size: 22px;
       font-weight: 800;
@@ -98,6 +126,7 @@
       font-size: 18px;
       font-weight: 800;
       margin-bottom: 4px;
+      padding-right: 22px;
     }
 
     .tenant-meta {
@@ -119,13 +148,6 @@
       font-size: 22px;
       font-weight: 800;
       margin: 10px 0;
-    }
-
-    .amount-main {
-      color: #d93025;
-      font-size: 30px;
-      font-weight: 800;
-      margin: 8px 0 14px;
     }
 
     .badge {
@@ -401,6 +423,17 @@
       return String(v || '').replace(/[^\d+]/g, '');
     }
 
+    function tenantDetailUrl(item) {
+      const tenantId = String(item.tenant_id || '');
+      const tenantUserId = String(item.tenant_user_id || '');
+
+      if (tenantId) {
+        return 'landlord-tenant-detail.html?tenant_id=' + encodeURIComponent(tenantId) + '&v=' + Date.now();
+      }
+
+      return 'landlord-tenant-detail.html?tenant_user_id=' + encodeURIComponent(tenantUserId) + '&v=' + Date.now();
+    }
+
     function renderError(message) {
       app.className = 'card';
       app.innerHTML = `
@@ -601,9 +634,12 @@
           const paymentStatus = String(item.latest_payment_status || '').toLowerCase();
           const unpaidAmount = Number(item.unpaid_total_amount || 0);
           const latestAmount = Number(item.latest_total_amount || 0);
+          const detailUrl = tenantDetailUrl(item);
 
           html += `
-            <div class="card">
+            <div class="card tenant-card" onclick="location.href='${escapeHtml(detailUrl)}'">
+              <div class="card-chevron">›</div>
+
               <div class="tenant-name">
                 ${safeText(item.tenant_name)}
                 <span class="${badgeClass(item.latest_payment_status)}">${statusText(item.latest_payment_status)}</span>
@@ -618,7 +654,7 @@
                 <div class="value">
                   ${
                     phone
-                      ? `<a class="phone-link" href="tel:${escapeHtml(phone)}">${safeText(item.tenant_phone)}</a>`
+                      ? `<a class="phone-link" href="tel:${escapeHtml(phone)}" onclick="event.stopPropagation()">${safeText(item.tenant_phone)}</a>`
                       : '-'
                   }
                 </div>
@@ -664,6 +700,8 @@
                 <div class="label">房客帳號狀態</div>
                 <div class="value">${statusText(item.tenant_account_status)}</div>
               </div>
+
+              <div class="detail-hint">點擊查看詳細資料</div>
             </div>
           `;
         });
