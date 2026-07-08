@@ -324,37 +324,68 @@
     // API
     // =========================
 
-    async function callApi(action) {
-      if (!LINE_USER_ID) {
-        throw new Error('缺少 LINE User ID');
+    function jsonpRequest(url) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+
+    const script = document.createElement('script');
+    const separator = url.includes('?') ? '&' : '?';
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('API timeout'));
+    }, 15000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
-
-      const url =
-        API_URL +
-        '?v2_action=' + encodeURIComponent(action) +
-        '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
-        '&_t=' + Date.now();
-
-      const response = await fetch(url, {
-        method: 'GET',
-        cache: 'no-store'
-      });
-
-      const text = await response.text();
-
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch (error) {
-        throw new Error('API 回傳不是 JSON：' + text.slice(0, 120));
-      }
-
-      if (!json.success) {
-        throw new Error(json.message || '查詢失敗');
-      }
-
-      return json.data;
     }
+
+    window[callbackName] = function (json) {
+      cleanup();
+      resolve(json);
+    };
+
+    script.onerror = function () {
+      cleanup();
+      reject(new Error('JSONP load failed'));
+    };
+
+    script.src =
+      url +
+      separator +
+      'callback=' +
+      encodeURIComponent(callbackName) +
+      '&_=' +
+      Date.now();
+
+    document.body.appendChild(script);
+  });
+}
+
+async function callApi(action) {
+  if (!LINE_USER_ID) {
+    throw new Error('缺少 LINE User ID');
+  }
+
+  const url =
+    API_URL +
+    '?v2_action=' + encodeURIComponent(action) +
+    '&line_user_id=' + encodeURIComponent(LINE_USER_ID);
+
+  const json = await jsonpRequest(url);
+
+  if (!json.success) {
+    throw new Error(json.message || '查詢失敗');
+  }
+
+  return json.data;
+}
 
     async function fetchTenantHome() {
       return await callApi('tenant_home');
