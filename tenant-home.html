@@ -200,7 +200,7 @@
 
     async function main() {
       try {
-        const data = await fetchTenantHome();
+        const data = await initLiff();
         render(data);
       } catch (err) {
         app.className = 'error';
