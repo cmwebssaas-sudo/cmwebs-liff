@@ -239,7 +239,16 @@
     }
 
     function onMessage(event) {
-      const msg = event.data;
+      let msg = event.data;
+
+      // 有些 WebView 可能把 message 變字串，這裡兼容一下
+      if (typeof msg === 'string') {
+        try {
+          msg = JSON.parse(msg);
+        } catch (e) {
+          return;
+        }
+      }
 
       if (!msg || msg.source !== 'CMWEBS_APPS_SCRIPT') return;
       if (msg.requestId !== requestId) return;
@@ -265,11 +274,23 @@
       finished = true;
       cleanup();
       reject(new Error('API 載入逾時'));
-    }, 20000);
+    }, 30000);
 
     window.addEventListener('message', onMessage);
 
-    iframe.style.display = 'none';
+    // 重要：不要用 display:none
+    // LINE WebView 有時不執行 display:none iframe
+    iframe.style.position = 'absolute';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '-9999px';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+
+    document.body.appendChild(iframe);
+
     iframe.src =
       API_URL +
       '?v2_action=' + encodeURIComponent(action) +
@@ -277,8 +298,6 @@
       '&bridge=1' +
       '&request_id=' + encodeURIComponent(requestId) +
       '&_=' + Date.now();
-
-    document.body.appendChild(iframe);
   });
 }
 
