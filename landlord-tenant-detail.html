@@ -163,7 +163,31 @@
       background: #d93025;
       color: #fff;
     }
+.textarea {
+  width: 100%;
+  min-height: 110px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  font-family: Arial, "Noto Sans TC", sans-serif;
+}
 
+.textarea:focus {
+  border-color: #06c755;
+  box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
+}
+
+.char-count {
+  text-align: right;
+  font-size: 12px;
+  color: #999;
+  margin-top: 6px;
+}
     .loading,
     .empty,
     .error {
@@ -532,10 +556,12 @@
       const tenants = Array.isArray(data.tenants) ? data.tenants : [];
       const item = findTenant(tenants);
 
-      if (!item) {
-      renderError('找不到指定房客資料。請從房客名單重新進入。');
-      return;
-      }
+if (!item) {
+  renderError('找不到指定房客資料。請從房客名單重新進入。');
+  return;
+}
+
+CURRENT_TENANT = item;
 
       CURRENT_TENANT = item;
 
@@ -630,15 +656,33 @@
           </div>
         </div>
 
-       ${
-       phone
-        ? `<button class="btn btn-green" onclick="location.href='tel:${escapeHtml(phone)}'">撥打電話</button>`
-       : ''
-          }
+      ${
+  phone
+    ? `<button class="btn btn-green" onclick="location.href='tel:${escapeHtml(phone)}'">撥打電話</button>`
+    : ''
+}
 
-       <button class="btn btn-green" onclick="sendTenantLineMessage()">
-      傳 LINE 繳費提醒
-     </button>
+<div class="card">
+  <div class="section-title">傳 LINE 訊息</div>
+
+  <button class="btn btn-green" onclick="sendTenantLineMessage('payment_reminder')">
+    傳 LINE 繳費提醒
+  </button>
+
+  <textarea
+    id="customLineMessage"
+    class="textarea"
+    maxlength="500"
+    placeholder="輸入要傳給房客的 LINE 訊息，例如：您好，請您方便時回覆目前繳款狀況，謝謝。"
+    oninput="updateLineMessageCount()"
+  ></textarea>
+
+  <div id="lineMessageCount" class="char-count">0 / 500</div>
+
+  <button class="btn btn-black" onclick="sendTenantLineMessage('custom')">
+    送出自訂 LINE 訊息
+  </button>
+</div>
 
 <button class="btn btn-green" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
   查看房客欠款
@@ -649,7 +693,16 @@
         </button>
       `;
     }
-function sendTenantLineMessage() {
+function updateLineMessageCount() {
+  const input = document.getElementById('customLineMessage');
+  const count = document.getElementById('lineMessageCount');
+
+  if (!input || !count) return;
+
+  count.textContent = input.value.length + ' / 500';
+}
+
+function sendTenantLineMessage(messageType) {
   if (!CURRENT_TENANT) {
     alert('找不到房客資料');
     return;
@@ -657,14 +710,34 @@ function sendTenantLineMessage() {
 
   const tenantId = String(CURRENT_TENANT.tenant_id || '');
   const tenantUserId = String(CURRENT_TENANT.tenant_user_id || '');
+  let messageText = '';
 
   if (!tenantId && !tenantUserId) {
     alert('缺少房客 ID，無法發送 LINE 訊息');
     return;
   }
 
-  if (!confirm('確定要傳送 LINE 繳費提醒給 ' + safeText(CURRENT_TENANT.tenant_name) + ' 嗎？')) {
-    return;
+  if (messageType === 'custom') {
+    const input = document.getElementById('customLineMessage');
+    messageText = input ? input.value.trim() : '';
+
+    if (!messageText) {
+      alert('請輸入要傳送的 LINE 訊息');
+      return;
+    }
+
+    if (messageText.length > 500) {
+      alert('自訂訊息最多 500 字');
+      return;
+    }
+
+    if (!confirm('確定要傳送這段自訂 LINE 訊息給 ' + CURRENT_TENANT.tenant_name + ' 嗎？')) {
+      return;
+    }
+  } else {
+    if (!confirm('確定要傳送 LINE 繳費提醒給 ' + CURRENT_TENANT.tenant_name + ' 嗎？')) {
+      return;
+    }
   }
 
   const callbackName =
@@ -698,6 +771,12 @@ function sendTenantLineMessage() {
       return;
     }
 
+    if (messageType === 'custom') {
+      const input = document.getElementById('customLineMessage');
+      if (input) input.value = '';
+      updateLineMessageCount();
+    }
+
     alert('LINE 訊息已送出');
   };
 
@@ -721,7 +800,8 @@ function sendTenantLineMessage() {
     '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
     '&tenant_id=' + encodeURIComponent(tenantId) +
     '&tenant_user_id=' + encodeURIComponent(tenantUserId) +
-    '&message_type=payment_reminder' +
+    '&message_type=' + encodeURIComponent(messageType) +
+    '&message_text=' + encodeURIComponent(messageText) +
     '&callback=' + encodeURIComponent(callbackName) +
     '&_=' + Date.now();
 
