@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMWebs LINE 訊息紀錄</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 62px;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      background: #f5f7fb;
+      overflow: hidden;
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid #eee;
+      font-size: 14px;
+      align-items: center;
+    }
+
+    .row:first-of-type {
+      border-top: none;
+    }
+
+    .label {
+      color: #666;
+      flex: 1;
+    }
+
+    .value {
+      font-weight: 700;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .log-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .tenant-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #222;
+      line-height: 1.4;
+    }
+
+    .log-time {
+      font-size: 12px;
+      color: #888;
+      text-align: right;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+
+    .message-box {
+      background: #f7f8fa;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 10px;
+    }
+
+    .note-box {
+      color: #777;
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 8px;
+      word-break: break-word;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      vertical-align: middle;
+    }
+
+    .badge-green {
+      background: #e8f7ee;
+      color: #10893e;
+    }
+
+    .badge-red {
+      background: #ffe8e6;
+      color: #d93025;
+    }
+
+    .badge-gray {
+      background: #f1f3f5;
+      color: #666;
+    }
+
+    .badge-blue {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-black {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-green {
+      background: #06c755;
+      color: #fff;
+    }
+
+    .loading,
+    .empty,
+    .error {
+      text-align: center;
+      padding: 36px 20px;
+      color: #666;
+    }
+
+    .error-title {
+      color: #d93025;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .error-text {
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.6;
+    }
+
+    /* ===== Fixed Bottom Navigation ===== */
+    .bottom-nav {
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 99999 !important;
+      background: rgba(255, 255, 255, 0.98);
+      border-top: 1px solid #eceff3;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: #06c755;
+      font-weight: 800;
+    }
+
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: #06c755;
+    }
+
+    .nav-item:active {
+      opacity: 0.65;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <div class="page">
+      <div id="app" class="loading">資料載入中...</div>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" onclick="location.href='landlord-home.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <div>首頁</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <div>欠款</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8.5" r="3"></circle>
+            <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
+            <circle cx="16.5" cy="9.5" r="2.3"></circle>
+            <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
+          </svg>
+          <div>房客</div>
+        </button>
+
+        <button class="nav-item active" onclick="location.href='landlord-more.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <div>更多</div>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <script>
+    function setAppHeight() {
+      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+    }
+
+    setAppHeight();
+
+    window.addEventListener('resize', setAppHeight);
+    window.addEventListener('orientationchange', function () {
+      setTimeout(setAppHeight, 300);
+    });
+
+    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+    const LIFF_ID = '2010314940-EjX1qbb8';
+    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+
+    let LINE_USER_ID = '';
+
+    const app = document.getElementById('app');
+
+    function escapeHtml(v) {
+      return String(v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function safeText(v) {
+      if (v === undefined || v === null || v === '') return '-';
+      return escapeHtml(v);
+    }
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name) || '';
+    }
+
+    function statusText(v) {
+      const s = String(v || '').toLowerCase();
+
+      if (s === 'success') return '成功';
+      if (s === 'failed') return '失敗';
+      if (s === 'error') return '錯誤';
+
+      return safeText(v);
+    }
+
+    function messageTypeText(v) {
+      const s = String(v || '').toLowerCase();
+
+      if (s === 'payment_reminder') return '繳費提醒';
+      if (s === 'custom') return '自訂訊息';
+
+      return safeText(v);
+    }
+
+    function statusBadgeClass(v) {
+      const s = String(v || '').toLowerCase();
+
+      if (s === 'success') return 'badge badge-green';
+      if (s === 'failed' || s === 'error') return 'badge badge-red';
+
+      return 'badge badge-gray';
+    }
+
+    function typeBadgeClass(v) {
+      const s = String(v || '').toLowerCase();
+
+      if (s === 'custom') return 'badge badge-blue';
+      if (s === 'payment_reminder') return 'badge badge-green';
+
+      return 'badge badge-gray';
+    }
+
+    function formatDateTime(v) {
+      if (!v) return '-';
+
+      const d = new Date(v);
+
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mi = String(d.getMinutes()).padStart(2, '0');
+
+        return yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + mi;
+      }
+
+      return safeText(v);
+    }
+
+    function renderError(message) {
+      app.className = 'card';
+      app.innerHTML = `
+        <div class="error-title">資料讀取失敗</div>
+        <div class="error-text">${safeText(message)}</div>
+
+        <button class="btn btn-black" onclick="location.reload()">
+          重新整理
+        </button>
+
+        <button class="btn btn-green" onclick="location.href='landlord-more.html?v=' + Date.now()">
+          返回更多功能
+        </button>
+      `;
+    }
+
+    function callApi(action) {
+      return new Promise((resolve, reject) => {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少 LINE User ID'));
+          return;
+        }
+
+        const callbackName =
+          'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+
+        const tenantId = getQueryParam('tenant_id');
+        const tenantUserId = getQueryParam('tenant_user_id');
+
+        let finished = false;
+        const script = document.createElement('script');
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) return;
+          finished = true;
+
+          cleanup();
+
+          if (!json || json.success !== true) {
+            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
+            return;
+          }
+
+          resolve(json.data);
+        };
+
+        const timer = setTimeout(() => {
+          if (finished) return;
+          finished = true;
+
+          cleanup();
+          reject(new Error('API 載入逾時'));
+        }, 30000);
+
+        script.charset = 'UTF-8';
+
+        script.onerror = function () {
+          console.log('JSONP script onerror ignored');
+        };
+
+        script.src =
+          API_URL +
+          '?v2_action=' + encodeURIComponent(action) +
+          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+          '&tenant_id=' + encodeURIComponent(tenantId) +
+          '&tenant_user_id=' + encodeURIComponent(tenantUserId) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initLineUserId() {
+      if (typeof liff === 'undefined') {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return;
+      }
+
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        LINE_USER_ID = profile.userId || '';
+
+        if (!LINE_USER_ID) {
+          throw new Error('無法取得 LINE User ID');
+        }
+      } catch (error) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+      }
+    }
+
+    function renderPage(data) {
+      const logs = Array.isArray(data.logs) ? data.logs : [];
+
+      const successCount = logs.filter(item => String(item.status || '').toLowerCase() === 'success').length;
+      const failedCount = logs.filter(item => {
+        const s = String(item.status || '').toLowerCase();
+        return s === 'failed' || s === 'error';
+      }).length;
+
+      let html = '';
+
+      html += `
+        <div class="card">
+          <div class="title">LINE 訊息紀錄</div>
+          <div class="sub">
+            查看房東端透過 CMWebs 官方帳號發送給房客的 LINE 訊息。
+          </div>
+
+          <div class="row">
+            <div class="label">紀錄總數</div>
+            <div class="value">${logs.length}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">成功</div>
+            <div class="value" style="color:#10893e;">${successCount}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">失敗 / 錯誤</div>
+            <div class="value" style="color:#d93025;">${failedCount}</div>
+          </div>
+        </div>
+      `;
+
+      if (logs.length === 0) {
+        html += `
+          <div class="card empty">
+            目前沒有 LINE 訊息紀錄
+          </div>
+        `;
+      } else {
+        logs.forEach(item => {
+          html += `
+            <div class="card">
+              <div class="log-head">
+                <div>
+                  <div class="tenant-name">${safeText(item.tenant_name)}</div>
+                  <div class="sub">
+                    房號：${safeText(item.room_list)}｜房客 ID：${safeText(item.tenant_id)}
+                  </div>
+                </div>
+
+                <div class="log-time">
+                  ${formatDateTime(item.created_at)}
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="label">訊息類型</div>
+                <div class="value">
+                  <span class="${typeBadgeClass(item.message_type)}">${messageTypeText(item.message_type)}</span>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="label">發送狀態</div>
+                <div class="value">
+                  <span class="${statusBadgeClass(item.status)}">${statusText(item.status)}</span>
+                </div>
+              </div>
+
+              <div class="message-box">${safeText(item.message_text)}</div>
+
+              ${
+                item.note
+                  ? `<div class="note-box">備註：${safeText(item.note)}</div>`
+                  : ''
+              }
+            </div>
+          `;
+        });
+      }
+
+      html += `
+        <button class="btn btn-black" onclick="location.reload()">
+          重新整理
+        </button>
+
+        <button class="btn btn-green" onclick="location.href='landlord-more.html?v=' + Date.now()">
+          返回更多功能
+        </button>
+      `;
+
+      app.className = '';
+      app.innerHTML = html;
+    }
+
+    async function main() {
+      try {
+        app.className = 'loading';
+        app.innerHTML = '資料載入中...';
+
+        await initLineUserId();
+
+        const data = await callApi('landlord_line_logs');
+
+        renderPage(data);
+      } catch (error) {
+        renderError(error.message || error);
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
