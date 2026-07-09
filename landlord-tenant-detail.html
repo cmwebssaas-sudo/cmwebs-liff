@@ -328,6 +328,7 @@
 
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
+    let CURRENT_TENANT = null;
 
     const app = document.getElementById('app');
 
@@ -532,9 +533,11 @@
       const item = findTenant(tenants);
 
       if (!item) {
-        renderError('找不到指定房客資料。請從房客名單重新進入。');
-        return;
+      renderError('找不到指定房客資料。請從房客名單重新進入。');
+      return;
       }
+
+      CURRENT_TENANT = item;
 
       const phone = rawPhone(item.tenant_phone);
       const paymentStatus = String(item.latest_payment_status || '').toLowerCase();
@@ -627,22 +630,103 @@
           </div>
         </div>
 
-        ${
-          phone
-            ? `<button class="btn btn-green" onclick="location.href='tel:${escapeHtml(phone)}'">撥打電話</button>`
-            : ''
-        }
+       ${
+       phone
+        ? `<button class="btn btn-green" onclick="location.href='tel:${escapeHtml(phone)}'">撥打電話</button>`
+       : ''
+          }
 
-        <button class="btn btn-green" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
-          查看房客欠款
-        </button>
+       <button class="btn btn-green" onclick="sendTenantLineMessage()">
+      傳 LINE 繳費提醒
+     </button>
+
+<button class="btn btn-green" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+  查看房客欠款
+</button>
 
         <button class="btn btn-black" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
           返回房客名單
         </button>
       `;
     }
+function sendTenantLineMessage() {
+  if (!CURRENT_TENANT) {
+    alert('找不到房客資料');
+    return;
+  }
 
+  const tenantId = String(CURRENT_TENANT.tenant_id || '');
+  const tenantUserId = String(CURRENT_TENANT.tenant_user_id || '');
+
+  if (!tenantId && !tenantUserId) {
+    alert('缺少房客 ID，無法發送 LINE 訊息');
+    return;
+  }
+
+  if (!confirm('確定要傳送 LINE 繳費提醒給 ' + safeText(CURRENT_TENANT.tenant_name) + ' 嗎？')) {
+    return;
+  }
+
+  const callbackName =
+    'cmwebsSendLine_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+
+  let finished = false;
+  const script = document.createElement('script');
+
+  function cleanup() {
+    clearTimeout(timer);
+
+    if (script && script.parentNode) {
+      script.parentNode.removeChild(script);
+    }
+
+    try {
+      delete window[callbackName];
+    } catch (e) {
+      window[callbackName] = undefined;
+    }
+  }
+
+  window[callbackName] = function (json) {
+    if (finished) return;
+    finished = true;
+
+    cleanup();
+
+    if (!json || json.success !== true) {
+      alert((json && json.message) ? json.message : 'LINE 訊息發送失敗');
+      return;
+    }
+
+    alert('LINE 訊息已送出');
+  };
+
+  const timer = setTimeout(() => {
+    if (finished) return;
+    finished = true;
+
+    cleanup();
+    alert('LINE 訊息發送逾時');
+  }, 30000);
+
+  script.charset = 'UTF-8';
+
+  script.onerror = function () {
+    console.log('LINE message JSONP script onerror ignored');
+  };
+
+  script.src =
+    API_URL +
+    '?v2_action=landlord_send_tenant_message' +
+    '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+    '&tenant_id=' + encodeURIComponent(tenantId) +
+    '&tenant_user_id=' + encodeURIComponent(tenantUserId) +
+    '&message_type=payment_reminder' +
+    '&callback=' + encodeURIComponent(callbackName) +
+    '&_=' + Date.now();
+
+  document.body.appendChild(script);
+}
     async function main() {
       try {
         app.className = 'loading';
