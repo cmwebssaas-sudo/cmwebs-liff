@@ -754,6 +754,23 @@
       count.textContent = input.value.length + ' / 500';
     }
 
+function goTenantLineLogs() {
+  if (!CURRENT_TENANT) {
+    appAlert('找不到房客資料');
+    return;
+  }
+
+  const tenantId = String(CURRENT_TENANT.tenant_id || '').trim();
+  const tenantUserId = String(CURRENT_TENANT.tenant_user_id || '').trim();
+
+  location.href =
+    'landlord-line-logs.html' +
+    '?tenant_id=' + encodeURIComponent(tenantId) +
+    '&tenant_user_id=' + encodeURIComponent(tenantUserId) +
+    '&v=' + Date.now();
+}
+
+    
     function sendTenantLineMessage(messageType) {
       if (!CURRENT_TENANT) {
         appAlert('找不到房客資料');
@@ -1012,13 +1029,17 @@
           </div>
         </div>
 
-        <button class="btn btn-green" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
-          查看房客欠款
-        </button>
+        <button class="btn btn-black" onclick="goTenantLineLogs()">
+  查看此房客 LINE 紀錄
+</button>
 
-        <button class="btn btn-black" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
-          返回房客名單
-        </button>
+<button class="btn btn-green" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+  查看房客欠款
+</button>
+
+<button class="btn btn-black" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+  返回房客名單
+</button>
       `;
     }
 
