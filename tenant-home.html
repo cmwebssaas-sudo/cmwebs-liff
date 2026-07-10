@@ -3,26 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>CMWebs 房客首頁</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 62px;
+    }
+
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
       font-family: Arial, "Noto Sans TC", sans-serif;
       background: #f5f7fb;
       color: #222;
     }
 
-    .page {
-      max-width: 520px;
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
       margin: 0 auto;
-      padding: 20px;
+      background: #f5f7fb;
+      overflow: hidden;
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
     }
 
     .card {
@@ -35,13 +56,20 @@
 
     .title {
       font-size: 22px;
-      font-weight: 700;
+      font-weight: 800;
       margin-bottom: 6px;
     }
 
     .sub {
       color: #666;
       font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
       margin-bottom: 12px;
     }
 
@@ -52,6 +80,7 @@
       padding: 10px 0;
       border-bottom: 1px solid #eee;
       font-size: 15px;
+      align-items: center;
     }
 
     .row:last-child {
@@ -60,6 +89,7 @@
 
     .label {
       color: #666;
+      flex: 1;
     }
 
     .value {
@@ -70,7 +100,7 @@
 
     .amount {
       font-size: 30px;
-      font-weight: 800;
+      font-weight: 900;
       color: #d93025;
       margin: 12px 0;
     }
@@ -81,7 +111,7 @@
       border-radius: 10px;
       padding: 14px 16px;
       font-size: 16px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       margin-bottom: 10px;
     }
@@ -101,81 +131,64 @@
       color: #222;
     }
 
-    .loading,
-    .error,
-    .empty {
-      text-align: center;
-      padding: 40px 20px;
-      color: #666;
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 12px;
     }
 
-    .error-title {
-      color: #d93025;
-      font-size: 20px;
+    .quick-action {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid #edf0f4;
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .quick-action:active {
+      opacity: 0.7;
+    }
+
+    .quick-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: #e8f7ee;
+      color: #06c755;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .quick-icon svg {
+      width: 21px;
+      height: 21px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .quick-title {
+      font-size: 15px;
       font-weight: 800;
-      margin-bottom: 8px;
+      color: #222;
+      margin-bottom: 4px;
     }
 
-.quick-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-top: 12px;
-}
+    .quick-desc {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.5;
+    }
 
-.quick-action {
-  appearance: none;
-  -webkit-appearance: none;
-  border: 1px solid #edf0f4;
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px 10px;
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.quick-action:active {
-  opacity: 0.7;
-}
-
-.quick-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: #e8f7ee;
-  color: #06c755;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-
-.quick-icon svg {
-  width: 21px;
-  height: 21px;
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.quick-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: #222;
-  margin-bottom: 4px;
-}
-
-.quick-desc {
-  font-size: 12px;
-  color: #777;
-  line-height: 1.5;
-}
-
-
-    
     .bill-title {
       font-size: 18px;
       font-weight: 800;
@@ -192,11 +205,39 @@
       font-weight: 800;
     }
 
+    .status-reported {
+      color: #9a6b00;
+      font-weight: 800;
+    }
+
     .small {
       font-size: 13px;
       color: #888;
       margin-top: 8px;
-      line-height: 1.5;
+      line-height: 1.6;
+    }
+
+    .loading,
+    .error,
+    .empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .error-title {
+      color: #d93025;
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .error-text {
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: left;
+      word-break: break-word;
     }
 
     .debug {
@@ -209,27 +250,148 @@
       word-break: break-all;
       display: none;
     }
+
+    /* ===== Fixed Bottom Navigation ===== */
+    .bottom-nav {
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 99999 !important;
+      background: rgba(255, 255, 255, 0.98);
+      border-top: 1px solid #eceff3;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: #06c755;
+      font-weight: 800;
+    }
+
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: #06c755;
+    }
+
+    .nav-item:active {
+      opacity: 0.65;
+    }
   </style>
 </head>
 
 <body>
-  <div class="page">
-    <div id="app" class="loading">資料載入中...</div>
+  <div class="app-shell">
+    <div class="page">
+      <div id="app" class="loading">資料載入中...</div>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item active" onclick="location.href='tenant-home.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <div>首頁</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='tenant-bills.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <div>帳單</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='tenant-payment-report.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 4.5h12v15H6z"></path>
+            <path d="M8.5 8.5h7"></path>
+            <path d="M8.5 12h7"></path>
+            <path d="M8.5 15.5h4"></path>
+          </svg>
+          <div>回報</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='tenant-more.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <div>更多</div>
+        </button>
+      </div>
+    </nav>
   </div>
 
   <script>
     // =========================================================
+    // 0. App Height
+    // =========================================================
+
+    function setAppHeight() {
+      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+    }
+
+    setAppHeight();
+
+    window.addEventListener('resize', setAppHeight);
+    window.addEventListener('orientationchange', function () {
+      setTimeout(setAppHeight, 300);
+    });
+
+    // =========================================================
     // 1. 基本設定
     // =========================================================
 
-    // Apps Script Web App URL，結尾必須是 /exec
-   const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
-    // 房客首頁 LIFF ID
     const LIFF_ID = '2010314940-iJB1D6sN';
 
-    // 測試用 LINE UID：非 LINE LIFF 環境時使用
-    // 目前這個是「測試人員 / 603」
     const TEST_LINE_USER_ID = 'U3615a7ed919c1a4a438a246c10784d70';
 
     let LINE_USER_ID = '';
@@ -242,8 +404,22 @@
     // 2. 工具函式
     // =========================================================
 
+    function escapeHtml(v) {
+      return String(v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function safeText(v) {
       if (v === undefined || v === null || v === '') return '-';
+      return escapeHtml(v);
+    }
+
+    function rawText(v) {
+      if (v === undefined || v === null || v === '') return '';
       return String(v);
     }
 
@@ -252,23 +428,43 @@
       return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
     }
 
-    function num(n) {
-      const value = Number(n || 0);
-      return Math.round(value).toLocaleString('zh-TW');
-    }
-
     function statusText(status) {
-      if (status === 'paid') return '已繳';
-      if (status === 'unpaid') return '未繳';
-      if (status === 'issued') return '已建立';
-      if (status === 'not_sent') return '未發送';
+      const s = String(status || '').toLowerCase();
+
+      if (s === 'paid') return '已繳';
+      if (s === 'unpaid') return '未繳';
+      if (s === 'issued') return '已建立';
+      if (s === 'not_sent') return '未發送';
+      if (s === 'payment_reported') return '已回報';
+      if (s === 'pending') return '待確認';
+
       return safeText(status);
     }
 
     function statusClass(status) {
-      if (status === 'paid') return 'status-paid';
-      if (status === 'unpaid') return 'status-unpaid';
+      const s = String(status || '').toLowerCase();
+
+      if (s === 'paid') return 'status-paid';
+      if (s === 'unpaid') return 'status-unpaid';
+      if (s === 'payment_reported' || s === 'pending') return 'status-reported';
+
       return '';
+    }
+
+    function dateOnly(v) {
+      if (!v) return '-';
+
+      const d = new Date(v);
+
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+
+        return yyyy + '-' + mm + '-' + dd;
+      }
+
+      return String(v).slice(0, 10);
     }
 
     function setLoading(text) {
@@ -281,111 +477,117 @@
       app.innerHTML = `
         <div class="card">
           <div class="error-title">資料讀取失敗</div>
-          <div>${safeText(message)}</div>
+          <div class="error-text">${safeText(message)}</div>
           ${detail ? `<div class="small">${safeText(detail)}</div>` : ''}
-          <button class="btn btn-dark" onclick="initPage()">重新整理</button>
+
+          <button class="btn btn-dark" onclick="initPage()">
+            重新整理
+          </button>
+
           <div class="debug" id="debugBox"></div>
         </div>
       `;
     }
 
-    <div class="card">
-  <div class="section-title">常用功能</div>
-
-  <div class="quick-actions">
-    <button class="quick-action" onclick="goPaymentReport()">
-      <div class="quick-icon">
-        <svg viewBox="0 0 24 24">
-          <path d="M6 4.5h12v15H6z"></path>
-          <path d="M8.5 8.5h7"></path>
-          <path d="M8.5 12h7"></path>
-          <path d="M8.5 15.5h4"></path>
-        </svg>
-      </div>
-      <div class="quick-title">回報付款</div>
-      <div class="quick-desc">選擇帳單並填寫匯款後 5 碼</div>
-    </button>
-
-    <button class="quick-action" onclick="location.href='tenant-bills.html?v=' + Date.now()">
-      <div class="quick-icon">
-        <svg viewBox="0 0 24 24">
-          <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
-          <path d="M8.5 9h7"></path>
-          <path d="M8.5 13h7"></path>
-          <path d="M8.5 17h4"></path>
-        </svg>
-      </div>
-      <div class="quick-title">查帳單</div>
-      <div class="quick-desc">查看租金、電費與繳款狀態</div>
-    </button>
-  </div>
-</div>
     // =========================================================
-    // 3. JSONP API，重點：不用 fetch()
+    // 3. 跳頁函式
+    // =========================================================
+
+    function goPaymentReport() {
+      location.href = 'tenant-payment-report.html?v=' + Date.now();
+    }
+
+    function goTenantBills() {
+      location.href = 'tenant-bills.html?v=' + Date.now();
+    }
+
+    function goTenantMessage() {
+      location.href = 'tenant-message.html?v=' + Date.now();
+    }
+
+    function goTenantContract() {
+      location.href = 'tenant-contract.html?v=' + Date.now();
+    }
+
+    // =========================================================
+    // 4. JSONP API
     // =========================================================
 
     function callApi(action) {
-  return new Promise((resolve, reject) => {
-    if (!LINE_USER_ID) {
-      reject(new Error('缺少 LINE User ID'));
-      return;
+      return new Promise((resolve, reject) => {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少 LINE User ID'));
+          return;
+        }
+
+        const callbackName =
+          'cmwebsCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+
+        const script = document.createElement('script');
+
+        let finished = false;
+
+        const timer = setTimeout(() => {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          reject(new Error('API 載入逾時'));
+        }, 20000);
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) return;
+          finished = true;
+
+          cleanup();
+
+          if (!json || json.success !== true) {
+            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
+            return;
+          }
+
+          resolve(json.data);
+        };
+
+        script.onerror = function () {
+          if (finished) return;
+          finished = true;
+
+          cleanup();
+          reject(new Error('API 載入失敗'));
+        };
+
+        script.charset = 'UTF-8';
+
+        script.src =
+          API_URL +
+          '?v2_action=' + encodeURIComponent(action) +
+          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+
+        document.body.appendChild(script);
+      });
     }
-
-    const callbackName =
-      'cmwebsCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-
-    const script = document.createElement('script');
-
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error('API 載入逾時'));
-    }, 15000);
-
-    function cleanup() {
-      clearTimeout(timer);
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-      try {
-        delete window[callbackName];
-      } catch (e) {
-        window[callbackName] = undefined;
-      }
-    }
-
-    window[callbackName] = function (json) {
-      cleanup();
-
-      if (!json || json.success !== true) {
-        reject(new Error((json && json.message) ? json.message : '查詢失敗'));
-        return;
-      }
-
-      resolve(json.data);
-    };
-
-    script.onerror = function () {
-      cleanup();
-      reject(new Error('API 載入失敗'));
-    };
-
-    script.src =
-      API_URL +
-      '?v2_action=' + encodeURIComponent(action) +
-      '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
-      '&callback=' + encodeURIComponent(callbackName) +
-      '&_=' + Date.now();
-
-    document.body.appendChild(script);
-  });
-}
 
     // =========================================================
-    // 4. 取得 LINE User ID
+    // 5. 取得 LINE User ID
     // =========================================================
 
     async function initLineUserId() {
-      // 非 LINE 瀏覽器測試時，直接用測試 UID
       if (typeof liff === 'undefined') {
         LINE_USER_ID = TEST_LINE_USER_ID;
         return;
@@ -400,16 +602,80 @@
         }
 
         const profile = await liff.getProfile();
-        LINE_USER_ID = profile.userId || TEST_LINE_USER_ID;
+        LINE_USER_ID = profile.userId || '';
+
+        if (!LINE_USER_ID) {
+          throw new Error('無法取得 LINE User ID');
+        }
       } catch (error) {
-        // 如果 LIFF 初始化失敗，先用測試 UID，方便你在瀏覽器測試
         LINE_USER_ID = TEST_LINE_USER_ID;
       }
     }
 
     // =========================================================
-    // 5. 畫面渲染
+    // 6. 畫面渲染
     // =========================================================
+
+    function renderQuickActions() {
+      return `
+        <div class="card">
+          <div class="section-title">常用功能</div>
+
+          <div class="quick-actions">
+            <button class="quick-action" onclick="goPaymentReport()">
+              <div class="quick-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 4.5h12v15H6z"></path>
+                  <path d="M8.5 8.5h7"></path>
+                  <path d="M8.5 12h7"></path>
+                  <path d="M8.5 15.5h4"></path>
+                </svg>
+              </div>
+              <div class="quick-title">回報付款</div>
+              <div class="quick-desc">選擇帳單並填寫匯款後 5 碼</div>
+            </button>
+
+            <button class="quick-action" onclick="goTenantBills()">
+              <div class="quick-icon">
+                <svg viewBox="0 0 24 24">
+                  <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+                  <path d="M8.5 9h7"></path>
+                  <path d="M8.5 13h7"></path>
+                  <path d="M8.5 17h4"></path>
+                </svg>
+              </div>
+              <div class="quick-title">查帳單</div>
+              <div class="quick-desc">查看租金、電費與繳款狀態</div>
+            </button>
+
+            <button class="quick-action" onclick="goTenantMessage()">
+              <div class="quick-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 6.5h14v9.5H8l-3 3v-12.5z"></path>
+                  <path d="M8.5 10h7"></path>
+                  <path d="M8.5 13h5"></path>
+                </svg>
+              </div>
+              <div class="quick-title">傳訊房東</div>
+              <div class="quick-desc">報修、詢問或通知房東</div>
+            </button>
+
+            <button class="quick-action" onclick="goTenantContract()">
+              <div class="quick-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 4.5h10v15H7z"></path>
+                  <path d="M9.5 8h5"></path>
+                  <path d="M9.5 11.5h5"></path>
+                  <path d="M9.5 15h3"></path>
+                </svg>
+              </div>
+              <div class="quick-title">查合約</div>
+              <div class="quick-desc">查看租期、租金與合約資訊</div>
+            </button>
+          </div>
+        </div>
+      `;
+    }
 
     function renderHome() {
       const home = HOME_DATA || {};
@@ -419,10 +685,10 @@
       const roomList = safeText(home.room_list);
       const accountStatus = safeText(home.account_status);
       const latestBillMonth = safeText(home.latest_bill_month);
-      const latestDueDate = safeText(home.latest_due_date).slice(0, 10);
+      const latestDueDate = dateOnly(home.latest_due_date);
       const unpaidTotal = Number(home.unpaid_total_amount || 0);
       const unpaidCount = Number(home.unpaid_bill_count || 0);
-      const latestPaymentStatus = safeText(home.latest_payment_status);
+      const latestPaymentStatus = rawText(home.latest_payment_status);
 
       app.className = '';
       app.innerHTML = `
@@ -442,7 +708,7 @@
 
           <div class="row">
             <div class="label">繳款期限</div>
-            <div class="value">${latestDueDate}</div>
+            <div class="value">${safeText(latestDueDate)}</div>
           </div>
         </div>
 
@@ -457,12 +723,21 @@
 
           <div class="row">
             <div class="label">最新付款狀態</div>
-            <div class="value ${statusClass(latestPaymentStatus)}">${statusText(latestPaymentStatus)}</div>
+            <div class="value ${statusClass(latestPaymentStatus)}">
+              ${statusText(latestPaymentStatus)}
+            </div>
           </div>
         </div>
 
-        <button class="btn btn-green" onclick="scrollToBills()">查看帳單明細</button>
-        <button class="btn btn-dark" onclick="initPage()">重新整理</button>
+        ${renderQuickActions()}
+
+        <button class="btn btn-green" onclick="goPaymentReport()">
+          回報付款後 5 碼
+        </button>
+
+        <button class="btn btn-dark" onclick="initPage()">
+          重新整理
+        </button>
 
         <div id="billSection">
           ${renderBills(bills)}
@@ -484,16 +759,18 @@
       }
 
       return bills.map((bill) => {
-        const paymentStatus = safeText(bill.payment_status);
+        const paymentStatus = rawText(bill.payment_status);
 
         return `
           <div class="card">
             <div class="bill-title">${safeText(bill.bill_month)} 帳單</div>
-            <div class="sub">房號：${safeText(bill.room_name)}｜帳單ID：${safeText(bill.bill_id)}</div>
+            <div class="sub">
+              房號：${safeText(bill.room_name)}｜帳單 ID：${safeText(bill.bill_id)}
+            </div>
 
             <div class="row">
               <div class="label">繳款期限</div>
-              <div class="value">${safeText(bill.due_date).slice(0, 10)}</div>
+              <div class="value">${safeText(dateOnly(bill.due_date))}</div>
             </div>
 
             <div class="row">
@@ -563,22 +840,27 @@
 
             <div class="row">
               <div class="label">付款狀態</div>
-              <div class="value ${statusClass(paymentStatus)}">${statusText(paymentStatus)}</div>
+              <div class="value ${statusClass(paymentStatus)}">
+                ${statusText(paymentStatus)}
+              </div>
             </div>
+
+            ${
+              String(paymentStatus || '').toLowerCase() !== 'paid'
+                ? `
+                  <button class="btn btn-green" onclick="goPaymentReport()">
+                    回報此帳單付款
+                  </button>
+                `
+                : ''
+            }
           </div>
         `;
       }).join('');
     }
 
-    function scrollToBills() {
-      const el = document.getElementById('billSection');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-
     // =========================================================
-    // 6. 初始化頁面
+    // 7. 初始化頁面
     // =========================================================
 
     async function initPage() {
@@ -604,12 +886,6 @@
     }
 
     initPage();
-
-    function goPaymentReport() {
-  location.href = 'tenant-payment-report.html?v=' + Date.now();
-}
-    
   </script>
 </body>
 </html>
-
