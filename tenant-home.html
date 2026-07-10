@@ -116,6 +116,66 @@
       margin-bottom: 8px;
     }
 
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.quick-action {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #edf0f4;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.quick-action:active {
+  opacity: 0.7;
+}
+
+.quick-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #e8f7ee;
+  color: #06c755;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.quick-icon svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.quick-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #222;
+  margin-bottom: 4px;
+}
+
+.quick-desc {
+  font-size: 12px;
+  color: #777;
+  line-height: 1.5;
+}
+
+
+    
     .bill-title {
       font-size: 18px;
       font-weight: 800;
@@ -229,6 +289,37 @@
       `;
     }
 
+    <div class="card">
+  <div class="section-title">常用功能</div>
+
+  <div class="quick-actions">
+    <button class="quick-action" onclick="goPaymentReport()">
+      <div class="quick-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M6 4.5h12v15H6z"></path>
+          <path d="M8.5 8.5h7"></path>
+          <path d="M8.5 12h7"></path>
+          <path d="M8.5 15.5h4"></path>
+        </svg>
+      </div>
+      <div class="quick-title">回報付款</div>
+      <div class="quick-desc">選擇帳單並填寫匯款後 5 碼</div>
+    </button>
+
+    <button class="quick-action" onclick="location.href='tenant-bills.html?v=' + Date.now()">
+      <div class="quick-icon">
+        <svg viewBox="0 0 24 24">
+          <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+          <path d="M8.5 9h7"></path>
+          <path d="M8.5 13h7"></path>
+          <path d="M8.5 17h4"></path>
+        </svg>
+      </div>
+      <div class="quick-title">查帳單</div>
+      <div class="quick-desc">查看租金、電費與繳款狀態</div>
+    </button>
+  </div>
+</div>
     // =========================================================
     // 3. JSONP API，重點：不用 fetch()
     // =========================================================
@@ -513,6 +604,11 @@
     }
 
     initPage();
+
+    function goPaymentReport() {
+  location.href = 'tenant-payment-report.html?v=' + Date.now();
+}
+    
   </script>
 </body>
 </html>
