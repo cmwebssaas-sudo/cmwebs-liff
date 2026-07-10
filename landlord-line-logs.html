@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CMWebs LINE 訊息紀錄</title>
+  <title>CMWebs LINE 對話紀錄</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -38,7 +38,7 @@
       height: 100%;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
+      padding: 18px 14px calc(var(--nav-height) + 26px + env(safe-area-inset-bottom));
       box-sizing: border-box;
     }
 
@@ -62,78 +62,198 @@
       line-height: 1.6;
     }
 
-    .section-title {
-      font-size: 17px;
-      font-weight: 800;
-      margin-bottom: 12px;
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 14px;
     }
 
-    .row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 0;
-      border-top: 1px solid #eee;
-      font-size: 14px;
-      align-items: center;
-    }
-
-    .row:first-of-type {
-      border-top: none;
-    }
-
-    .label {
-      color: #666;
-      flex: 1;
-    }
-
-    .value {
-      font-weight: 700;
-      text-align: right;
-      word-break: break-word;
-    }
-
-    .log-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 8px;
-    }
-
-    .tenant-name {
-      font-size: 17px;
-      font-weight: 800;
-      color: #222;
-      line-height: 1.4;
-    }
-
-    .log-time {
-      font-size: 12px;
-      color: #888;
-      text-align: right;
-      line-height: 1.4;
-      white-space: nowrap;
-    }
-
-    .message-box {
+    .summary-box {
       background: #f7f8fa;
       border-radius: 12px;
-      padding: 12px;
-      font-size: 14px;
-      color: #333;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      word-break: break-word;
-      margin-top: 10px;
+      padding: 10px 8px;
+      text-align: center;
     }
 
-    .note-box {
+    .summary-number {
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 3px;
+    }
+
+    .summary-label {
+      font-size: 11px;
       color: #777;
+    }
+
+    .chat-list {
+      padding: 4px 0 8px;
+    }
+
+    .date-divider {
+      display: flex;
+      justify-content: center;
+      margin: 18px 0 12px;
+    }
+
+    .date-divider span {
+      background: rgba(0, 0, 0, 0.08);
+      color: #666;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .message-row {
+      display: flex;
+      margin-bottom: 12px;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .message-row.incoming {
+      justify-content: flex-start;
+    }
+
+    .message-row.outgoing {
+      justify-content: flex-end;
+    }
+
+    .bubble-wrap {
+      max-width: 82%;
+    }
+
+    .bubble-meta {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .message-row.outgoing .bubble-meta {
+      text-align: right;
+    }
+
+    .bubble {
+      border-radius: 18px;
+      padding: 11px 13px;
+      font-size: 14px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .message-row.incoming .bubble {
+      background: #fff;
+      color: #222;
+      border-bottom-left-radius: 5px;
+    }
+
+    .message-row.outgoing .bubble {
+      background: #06c755;
+      color: #fff;
+      border-bottom-right-radius: 5px;
+    }
+
+    .bubble-time {
+      font-size: 10px;
+      opacity: 0.72;
+      margin-top: 5px;
+      text-align: right;
+    }
+
+    .message-row.incoming .bubble-time {
+      color: #777;
+    }
+
+    .message-row.outgoing .bubble-time {
+      color: rgba(255,255,255,0.9);
+    }
+
+    .system-row {
+      display: flex;
+      justify-content: center;
+      margin: 12px 0;
+    }
+
+    .system-message {
+      max-width: 90%;
+      background: #fff4e5;
+      color: #9a5b00;
+      border-radius: 12px;
+      padding: 9px 12px;
       font-size: 12px;
       line-height: 1.6;
-      margin-top: 8px;
       word-break: break-word;
+      text-align: center;
+    }
+
+    .system-message.error {
+      background: #ffe8e6;
+      color: #d93025;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 36px 20px;
+      color: #666;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 36px 20px;
+      color: #666;
+    }
+
+    .error-title {
+      color: #d93025;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .error-text {
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-black {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-green {
+      background: #06c755;
+      color: #fff;
+    }
+
+    .btn-light {
+      background: #eef1f5;
+      color: #333;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.6;
     }
 
     .badge {
@@ -158,61 +278,6 @@
     .badge-gray {
       background: #f1f3f5;
       color: #666;
-    }
-
-    .badge-blue {
-      background: #e8f0fe;
-      color: #1a73e8;
-    }
-
-    .btn {
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 14px 16px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-
-    .btn-black {
-      background: #222;
-      color: #fff;
-    }
-
-    .btn-green {
-      background: #06c755;
-      color: #fff;
-    }
-
-    .loading,
-    .empty,
-    .error {
-      text-align: center;
-      padding: 36px 20px;
-      color: #666;
-    }
-
-    .error-title {
-      color: #d93025;
-      font-size: 18px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      text-align: left;
-    }
-
-    .error-text {
-      font-size: 14px;
-      line-height: 1.6;
-      text-align: left;
-      word-break: break-word;
-    }
-
-    .small {
-      font-size: 12px;
-      color: #777;
-      line-height: 1.6;
     }
 
     /* ===== Fixed Bottom Navigation ===== */
@@ -371,12 +436,42 @@
       return params.get(name) || '';
     }
 
+    function getTenantIdParam() {
+      return String(getQueryParam('tenant_id') || '').trim();
+    }
+
+    function getTenantUserIdParam() {
+      return String(getQueryParam('tenant_user_id') || '').trim();
+    }
+
+    function normalizeDirection(item) {
+      const direction = String(item.direction || '').toLowerCase();
+      const source = String(item.source || '').toLowerCase();
+      const messageType = String(item.message_type || '').toLowerCase();
+
+      if (direction === 'incoming' || direction === 'outgoing') {
+        return direction;
+      }
+
+      if (source === 'tenant_line') {
+        return 'incoming';
+      }
+
+      if (messageType.indexOf('incoming_') === 0) {
+        return 'incoming';
+      }
+
+      return 'outgoing';
+    }
+
     function statusText(v) {
       const s = String(v || '').toLowerCase();
 
       if (s === 'success') return '成功';
+      if (s === 'received') return '已收到';
       if (s === 'failed') return '失敗';
       if (s === 'error') return '錯誤';
+      if (s === 'unmatched') return '未匹配';
 
       return safeText(v);
     }
@@ -386,29 +481,23 @@
 
       if (s === 'payment_reminder') return '繳費提醒';
       if (s === 'custom') return '自訂訊息';
+      if (s === 'incoming_text') return '房客回覆';
+      if (s.indexOf('incoming_') === 0) return '房客回覆';
+      if (s.indexOf('event_') === 0) return 'LINE 事件';
 
       return safeText(v);
     }
 
-    function statusBadgeClass(v) {
-      const s = String(v || '').toLowerCase();
+    function parseTime(v) {
+      if (!v) return 0;
 
-      if (s === 'success') return 'badge badge-green';
-      if (s === 'failed' || s === 'error') return 'badge badge-red';
+      const d = new Date(v);
+      if (!isNaN(d.getTime())) return d.getTime();
 
-      return 'badge badge-gray';
+      return 0;
     }
 
-    function typeBadgeClass(v) {
-      const s = String(v || '').toLowerCase();
-
-      if (s === 'custom') return 'badge badge-blue';
-      if (s === 'payment_reminder') return 'badge badge-green';
-
-      return 'badge badge-gray';
-    }
-
-    function formatDateTime(v) {
+    function formatDateLabel(v) {
       if (!v) return '-';
 
       const d = new Date(v);
@@ -417,13 +506,95 @@
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
+
+        return yyyy + '-' + mm + '-' + dd;
+      }
+
+      const text = String(v);
+      return text.split(' ')[0] || text;
+    }
+
+    function formatTimeOnly(v) {
+      if (!v) return '-';
+
+      const d = new Date(v);
+
+      if (!isNaN(d.getTime())) {
         const hh = String(d.getHours()).padStart(2, '0');
         const mi = String(d.getMinutes()).padStart(2, '0');
 
-        return yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + mi;
+        return hh + ':' + mi;
       }
 
-      return safeText(v);
+      const text = String(v);
+      const match = text.match(/(\d{1,2}):(\d{2})/);
+
+      if (match) {
+        return match[1].padStart(2, '0') + ':' + match[2];
+      }
+
+      return text;
+    }
+
+    function getMessageText(item) {
+      const text = String(item.message_text || '').trim();
+      const messageType = String(item.message_type || '').toLowerCase();
+
+      if (text) {
+        return text;
+      }
+
+      if (messageType === 'payment_reminder') {
+        return '已發送繳費提醒。';
+      }
+
+      if (messageType === 'custom') {
+        return '已發送自訂訊息。';
+      }
+
+      if (messageType.indexOf('incoming_') === 0) {
+        return '已收到房客訊息。';
+      }
+
+      return item.note || '無訊息內容';
+    }
+
+    function isSystemLog(item) {
+      const status = String(item.status || '').toLowerCase();
+      const messageType = String(item.message_type || '').toLowerCase();
+
+      return (
+        status === 'failed' ||
+        status === 'error' ||
+        status === 'unmatched' ||
+        messageType === 'webhook_error' ||
+        messageType === 'event_error' ||
+        messageType.indexOf('event_') === 0
+      );
+    }
+
+    function getDisplayName(item, direction) {
+      const tenantName = String(item.tenant_name || '').trim();
+      const roomList = String(item.room_list || '').trim();
+      const tenantId = String(item.tenant_id || '').trim();
+
+      if (direction === 'outgoing') {
+        if (tenantName) {
+          return '房東 → ' + tenantName + (roomList ? '｜' + roomList : '');
+        }
+
+        return '房東發送';
+      }
+
+      if (tenantName) {
+        return tenantName + (roomList ? '｜' + roomList : '');
+      }
+
+      if (tenantId) {
+        return '房客 ' + tenantId;
+      }
+
+      return '房客回覆';
     }
 
     function renderError(message) {
@@ -452,8 +623,8 @@
         const callbackName =
           'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
 
-        const tenantId = getQueryParam('tenant_id');
-        const tenantUserId = getQueryParam('tenant_user_id');
+        const tenantId = getTenantIdParam();
+        const tenantUserId = getTenantUserIdParam();
 
         let finished = false;
         const script = document.createElement('script');
@@ -538,37 +709,106 @@
       }
     }
 
-    function renderPage(data) {
-      const logs = Array.isArray(data.logs) ? data.logs : [];
+    function goBackToTenantDetail() {
+      const tenantId = getTenantIdParam();
+      const tenantUserId = getTenantUserIdParam();
 
-      const successCount = logs.filter(item => String(item.status || '').toLowerCase() === 'success').length;
-      const failedCount = logs.filter(item => {
-        const s = String(item.status || '').toLowerCase();
-        return s === 'failed' || s === 'error';
-      }).length;
+      if (!tenantId && !tenantUserId) {
+        location.href = 'landlord-tenants.html?v=' + Date.now();
+        return;
+      }
+
+      location.href =
+        'landlord-tenant-detail.html' +
+        '?tenant_id=' + encodeURIComponent(tenantId) +
+        '&tenant_user_id=' + encodeURIComponent(tenantUserId) +
+        '&v=' + Date.now();
+    }
+
+    function renderSystemLog(item) {
+      const status = String(item.status || '').toLowerCase();
+      const text = [
+        messageTypeText(item.message_type),
+        statusText(item.status),
+        item.tenant_name ? '房客：' + item.tenant_name : '',
+        item.room_list ? '房號：' + item.room_list : '',
+        item.note ? '備註：' + item.note : ''
+      ].filter(Boolean).join('｜');
+
+      return `
+        <div class="system-row">
+          <div class="system-message ${status === 'failed' || status === 'error' ? 'error' : ''}">
+            ${safeText(text)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBubble(item) {
+      const direction = normalizeDirection(item);
+      const text = getMessageText(item);
+      const name = getDisplayName(item, direction);
+      const time = formatTimeOnly(item.created_at);
+      const status = statusText(item.status);
+      const type = messageTypeText(item.message_type);
+
+      return `
+        <div class="message-row ${direction}">
+          <div class="bubble-wrap">
+            <div class="bubble-meta">
+              ${safeText(name)}
+            </div>
+
+            <div class="bubble">
+              ${safeText(text)}
+              <div class="bubble-time">
+                ${safeText(time)}｜${safeText(type)}｜${safeText(status)}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPage(data) {
+      let logs = Array.isArray(data.logs) ? data.logs : [];
+
+      logs = logs.slice().sort((a, b) => {
+        return parseTime(a.created_at) - parseTime(b.created_at);
+      });
+
+      const tenantId = getTenantIdParam();
+      const tenantUserId = getTenantUserIdParam();
+      const isTenantOnly = !!(tenantId || tenantUserId);
+
+      const incomingCount = logs.filter(item => normalizeDirection(item) === 'incoming' && !isSystemLog(item)).length;
+      const outgoingCount = logs.filter(item => normalizeDirection(item) === 'outgoing' && !isSystemLog(item)).length;
+      const errorCount = logs.filter(item => isSystemLog(item)).length;
 
       let html = '';
 
       html += `
         <div class="card">
-          <div class="title">LINE 訊息紀錄</div>
+          <div class="title">${isTenantOnly ? '此房客 LINE 對話紀錄' : 'LINE 對話紀錄'}</div>
           <div class="sub">
-            查看房東端透過 CMWebs 官方帳號發送給房客的 LINE 訊息。
+            ${isTenantOnly ? '顯示指定房客的 LINE 發送與回覆紀錄。' : '顯示房東端發送與房客回覆的 LINE 紀錄。'}
           </div>
 
-          <div class="row">
-            <div class="label">紀錄總數</div>
-            <div class="value">${logs.length}</div>
-          </div>
+          <div class="summary-grid">
+            <div class="summary-box">
+              <div class="summary-number">${incomingCount}</div>
+              <div class="summary-label">房客回覆</div>
+            </div>
 
-          <div class="row">
-            <div class="label">成功</div>
-            <div class="value" style="color:#10893e;">${successCount}</div>
-          </div>
+            <div class="summary-box">
+              <div class="summary-number">${outgoingCount}</div>
+              <div class="summary-label">房東發送</div>
+            </div>
 
-          <div class="row">
-            <div class="label">失敗 / 錯誤</div>
-            <div class="value" style="color:#d93025;">${failedCount}</div>
+            <div class="summary-box">
+              <div class="summary-number">${errorCount}</div>
+              <div class="summary-label">異常紀錄</div>
+            </div>
           </div>
         </div>
       `;
@@ -576,56 +816,51 @@
       if (logs.length === 0) {
         html += `
           <div class="card empty">
-            目前沒有 LINE 訊息紀錄
+            目前沒有 LINE 對話紀錄
           </div>
         `;
       } else {
+        html += `<div class="chat-list">`;
+
+        let lastDateLabel = '';
+
         logs.forEach(item => {
-          html += `
-            <div class="card">
-              <div class="log-head">
-                <div>
-                  <div class="tenant-name">${safeText(item.tenant_name)}</div>
-                  <div class="sub">
-                    房號：${safeText(item.room_list)}｜房客 ID：${safeText(item.tenant_id)}
-                  </div>
-                </div>
+          const dateLabel = formatDateLabel(item.created_at);
 
-                <div class="log-time">
-                  ${formatDateTime(item.created_at)}
-                </div>
+          if (dateLabel !== lastDateLabel) {
+            lastDateLabel = dateLabel;
+
+            html += `
+              <div class="date-divider">
+                <span>${safeText(dateLabel)}</span>
               </div>
+            `;
+          }
 
-              <div class="row">
-                <div class="label">訊息類型</div>
-                <div class="value">
-                  <span class="${typeBadgeClass(item.message_type)}">${messageTypeText(item.message_type)}</span>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="label">發送狀態</div>
-                <div class="value">
-                  <span class="${statusBadgeClass(item.status)}">${statusText(item.status)}</span>
-                </div>
-              </div>
-
-              <div class="message-box">${safeText(item.message_text)}</div>
-
-              ${
-                item.note
-                  ? `<div class="note-box">備註：${safeText(item.note)}</div>`
-                  : ''
-              }
-            </div>
-          `;
+          if (isSystemLog(item)) {
+            html += renderSystemLog(item);
+          } else {
+            html += renderBubble(item);
+          }
         });
+
+        html += `</div>`;
       }
 
       html += `
         <button class="btn btn-black" onclick="location.reload()">
           重新整理
         </button>
+
+        ${
+          isTenantOnly
+            ? `
+              <button class="btn btn-light" onclick="goBackToTenantDetail()">
+                返回房客詳細資料
+              </button>
+            `
+            : ''
+        }
 
         <button class="btn btn-green" onclick="location.href='landlord-more.html?v=' + Date.now()">
           返回更多功能
@@ -634,6 +869,13 @@
 
       app.className = '';
       app.innerHTML = html;
+
+      setTimeout(() => {
+        const page = document.querySelector('.page');
+        if (page) {
+          page.scrollTop = page.scrollHeight;
+        }
+      }, 120);
     }
 
     async function main() {
