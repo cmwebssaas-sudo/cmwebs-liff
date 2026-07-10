@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>CMWebs 付款回報</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 62px;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      background: #f5f7fb;
+      overflow: hidden;
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .bill-card {
+      border: 2px solid #edf0f4;
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 10px;
+      cursor: pointer;
+      background: #fff;
+      transition: 0.15s;
+    }
+
+    .bill-card.active {
+      border-color: #06c755;
+      background: #f2fff7;
+    }
+
+    .bill-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .bill-month {
+      font-size: 17px;
+      font-weight: 800;
+      color: #222;
+    }
+
+    .bill-room {
+      font-size: 12px;
+      color: #777;
+      margin-top: 3px;
+    }
+
+    .bill-amount {
+      font-size: 20px;
+      font-weight: 900;
+      color: #d93025;
+      white-space: nowrap;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid #eee;
+      font-size: 14px;
+      align-items: center;
+    }
+
+    .row:first-of-type {
+      border-top: none;
+    }
+
+    .label {
+      color: #666;
+      flex: 1;
+    }
+
+    .value {
+      font-weight: 700;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      vertical-align: middle;
+    }
+
+    .badge-red {
+      background: #ffe8e6;
+      color: #d93025;
+    }
+
+    .badge-green {
+      background: #e8f7ee;
+      color: #10893e;
+    }
+
+    .badge-yellow {
+      background: #fff4d7;
+      color: #9a6b00;
+    }
+
+    .badge-gray {
+      background: #f1f3f5;
+      color: #666;
+    }
+
+    .field {
+      margin-top: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: #444;
+      font-weight: 800;
+      margin-bottom: 7px;
+    }
+
+    .input,
+    .textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 16px;
+      outline: none;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #fff;
+    }
+
+    .input:focus,
+    .textarea:focus {
+      border-color: #06c755;
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
+    }
+
+    .input-last5 {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 6px;
+      text-align: center;
+    }
+
+    .textarea {
+      min-height: 90px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .help {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.6;
+      margin-top: 6px;
+    }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .btn-green {
+      background: #06c755;
+      color: #fff;
+    }
+
+    .btn-black {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-light {
+      background: #eef1f5;
+      color: #333;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .loading,
+    .empty {
+      text-align: center;
+      padding: 36px 20px;
+      color: #666;
+    }
+
+    .error-title {
+      color: #d93025;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .error-text {
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    .report-item {
+      border-top: 1px solid #eee;
+      padding: 12px 0;
+    }
+
+    .report-item:first-of-type {
+      border-top: none;
+    }
+
+    .report-title {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .report-desc {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.6;
+    }
+
+    /* ===== Custom Modal ===== */
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .modal-mask.show {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 330px;
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px 18px 16px;
+      box-sizing: border-box;
+      text-align: center;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #222;
+      margin-bottom: 10px;
+    }
+
+    .modal-message {
+      font-size: 15px;
+      color: #555;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 18px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      height: 44px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .modal-btn-cancel {
+      background: #f3f4f6;
+      color: #444;
+    }
+
+    .modal-btn-confirm {
+      background: #06c755;
+      color: #fff;
+    }
+
+    .modal-btn-single {
+      background: #06c755;
+      color: #fff;
+      width: 100%;
+    }
+
+    /* ===== Fixed Bottom Navigation ===== */
+    .bottom-nav {
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 99999 !important;
+      background: rgba(255, 255, 255, 0.98);
+      border-top: 1px solid #eceff3;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: #06c755;
+      font-weight: 800;
+    }
+
+    .nav-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: #06c755;
+    }
+
+    .nav-item:active {
+      opacity: 0.65;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <div class="page">
+      <div id="app" class="loading">資料載入中...</div>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" onclick="location.href='tenant-home.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <div>首頁</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='tenant-bills.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <div>帳單</div>
+        </button>
+
+        <button class="nav-item active" onclick="location.href='tenant-payment-report.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12.5h14"></path>
+            <path d="M7.5 8.5h9"></path>
+            <path d="M8 17h8"></path>
+            <path d="M6 4.5h12v15H6z"></path>
+          </svg>
+          <div>回報</div>
+        </button>
+
+        <button class="nav-item" onclick="location.href='tenant-more.html?v=' + Date.now()">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <div>更多</div>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <div id="customModal" class="modal-mask">
+    <div class="modal-box">
+      <div id="customModalTitle" class="modal-title">提示</div>
+      <div id="customModalMessage" class="modal-message"></div>
+      <div id="customModalActions" class="modal-actions"></div>
+    </div>
+  </div>
+
+  <script>
+    function setAppHeight() {
+      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+    }
+
+    setAppHeight();
+
+    window.addEventListener('resize', setAppHeight);
+    window.addEventListener('orientationchange', function () {
+      setTimeout(setAppHeight, 300);
+    });
+
+    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+    const LIFF_ID = '2010314940-iJB1D6sN';
+    const TEST_LINE_USER_ID = 'U3615a7ed919c1a4a438a246c10784d70';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let SELECTED_BILL_ID = '';
+
+    const app = document.getElementById('app');
+
+    function escapeHtml(v) {
+      return String(v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function safeText(v) {
+      if (v === undefined || v === null || v === '') return '-';
+      return escapeHtml(v);
+    }
+
+    function money(n) {
+      const num = Number(n || 0);
+      return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
+    }
+
+    function todayText() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+
+      return yyyy + '-' + mm + '-' + dd;
+    }
+
+    function statusText(v) {
+      const s = String(v || '').toLowerCase();
+
+      if (s === 'pending') return '待確認';
+      if (s === 'confirmed') return '已確認';
+      if (s === 'rejected') return '已駁回';
+      if (s === 'paid') return '已繳';
+      if (s === 'unpaid') return '未繳';
+      if (s === 'issued') return '已建立';
+      if (s === 'payment_reported') return '已回報';
+
+      return safeText(v);
+    }
+
+    function statusBadgeClass(v) {
+      const s = String(v || '').toLowerCase();
+
+      if (s === 'confirmed' || s === 'paid') return 'badge badge-green';
+      if (s === 'pending' || s === 'payment_reported') return 'badge badge-yellow';
+      if (s === 'rejected' || s === 'unpaid') return 'badge badge-red';
+
+      return 'badge badge-gray';
+    }
+
+    function showModal(options) {
+      const modal = document.getElementById('customModal');
+      const titleEl = document.getElementById('customModalTitle');
+      const msgEl = document.getElementById('customModalMessage');
+      const actionsEl = document.getElementById('customModalActions');
+
+      const title = options.title || '提示';
+      const message = options.message || '';
+      const type = options.type || 'alert';
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      actionsEl.innerHTML = '';
+
+      if (type === 'confirm') {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'modal-btn-cancel';
+        cancelBtn.textContent = options.cancelText || '取消';
+        cancelBtn.onclick = function () {
+          hideModal();
+          if (typeof options.onCancel === 'function') options.onCancel();
+        };
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'modal-btn-confirm';
+        confirmBtn.textContent = options.confirmText || '確定';
+        confirmBtn.onclick = function () {
+          hideModal();
+          if (typeof options.onConfirm === 'function') options.onConfirm();
+        };
+
+        actionsEl.appendChild(cancelBtn);
+        actionsEl.appendChild(confirmBtn);
+      } else {
+        const okBtn = document.createElement('button');
+        okBtn.className = 'modal-btn-single';
+        okBtn.textContent = options.confirmText || '確定';
+        okBtn.onclick = function () {
+          hideModal();
+          if (typeof options.onConfirm === 'function') options.onConfirm();
+        };
+
+        actionsEl.appendChild(okBtn);
+      }
+
+      modal.classList.add('show');
+    }
+
+    function hideModal() {
+      const modal = document.getElementById('customModal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    function appAlert(message, callback) {
+      showModal({
+        title: '提示',
+        message: message,
+        type: 'alert',
+        confirmText: '確定',
+        onConfirm: callback || null
+      });
+    }
+
+    function appConfirm(message, onConfirm) {
+      showModal({
+        title: '請確認',
+        message: message,
+        type: 'confirm',
+        confirmText: '送出',
+        cancelText: '取消',
+        onConfirm: onConfirm || null
+      });
+    }
+
+    function callApi(action, params) {
+      return new Promise((resolve, reject) => {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少 LINE User ID'));
+          return;
+        }
+
+        params = params || {};
+
+        const callbackName =
+          'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+
+        let finished = false;
+        const script = document.createElement('script');
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) return;
+          finished = true;
+
+          cleanup();
+
+          if (!json || json.success !== true) {
+            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
+            return;
+          }
+
+          resolve(json.data);
+        };
+
+        const timer = setTimeout(() => {
+          if (finished) return;
+          finished = true;
+
+          cleanup();
+          reject(new Error('API 載入逾時'));
+        }, 30000);
+
+        let url =
+          API_URL +
+          '?v2_action=' + encodeURIComponent(action) +
+          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+
+        Object.keys(params).forEach(key => {
+          url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+        });
+
+        script.charset = 'UTF-8';
+
+        script.onerror = function () {
+          console.log('JSONP script onerror ignored');
+        };
+
+        script.src = url;
+
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initLineUserId() {
+      if (typeof liff === 'undefined') {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return;
+      }
+
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        LINE_USER_ID = profile.userId || '';
+
+        if (!LINE_USER_ID) {
+          throw new Error('無法取得 LINE User ID');
+        }
+      } catch (error) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+      }
+    }
+
+    function renderError(message) {
+      app.className = 'card';
+      app.innerHTML = `
+        <div class="error-title">資料讀取失敗</div>
+        <div class="error-text">${safeText(message)}</div>
+
+        <button class="btn btn-black" onclick="location.reload()">
+          重新整理
+        </button>
+
+        <button class="btn btn-green" onclick="location.href='tenant-home.html?v=' + Date.now()">
+          返回首頁
+        </button>
+      `;
+    }
+
+    function selectBill(billId) {
+      SELECTED_BILL_ID = String(billId || '').trim();
+
+      document.querySelectorAll('.bill-card').forEach(el => {
+        if (el.getAttribute('data-bill-id') === SELECTED_BILL_ID) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+    }
+
+    function renderBillCard(item) {
+      return `
+        <div class="bill-card ${String(item.bill_id || '') === SELECTED_BILL_ID ? 'active' : ''}"
+             data-bill-id="${safeText(item.bill_id)}"
+             onclick="selectBill('${escapeHtml(item.bill_id)}')">
+
+          <div class="bill-top">
+            <div>
+              <div class="bill-month">${safeText(item.bill_month)}</div>
+              <div class="bill-room">
+                房號：${safeText(item.room_name)}
+              </div>
+            </div>
+
+            <div class="bill-amount">
+              ${money(item.total_amount)}
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <div class="label">繳款期限</div>
+            <div class="value">${safeText(item.due_date)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">付款狀態</div>
+            <div class="value">
+              <span class="${statusBadgeClass(item.payment_status)}">
+                ${statusText(item.payment_status)}
+              </span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="label">帳單 ID</div>
+            <div class="value">${safeText(item.bill_id)}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderReports(reports) {
+      if (!Array.isArray(reports) || reports.length === 0) {
+        return `
+          <div class="sub">
+            目前沒有付款回報紀錄。
+          </div>
+        `;
+      }
+
+      return reports.map(item => `
+        <div class="report-item">
+          <div class="report-title">
+            ${safeText(item.bill_month)}｜後 5 碼 ${safeText(item.reported_last5)}
+          </div>
+          <div class="report-desc">
+            金額：${money(item.reported_amount)}<br>
+            付款日期：${safeText(item.reported_paid_date)}<br>
+            狀態：
+            <span class="${statusBadgeClass(item.status)}">
+              ${statusText(item.status)}
+            </span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderPage(data) {
+      PAGE_DATA = data;
+
+      const tenant = data.tenant || {};
+      const bills = Array.isArray(data.bills) ? data.bills : [];
+      const reports = Array.isArray(data.reports) ? data.reports : [];
+
+      if (!SELECTED_BILL_ID && bills.length === 1) {
+        SELECTED_BILL_ID = String(bills[0].bill_id || '');
+      }
+
+      let html = '';
+
+      html += `
+        <div class="card">
+          <div class="title">付款回報</div>
+          <div class="sub">
+            請選擇要回報的帳單，並填入匯款帳號後 5 碼。送出後會通知房東確認。
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <div class="label">房客</div>
+            <div class="value">${safeText(tenant.tenant_name)}</div>
+          </div>
+
+          <div class="row">
+            <div class="label">房號</div>
+            <div class="value">${safeText(tenant.room_list)}</div>
+          </div>
+        </div>
+      `;
+
+      html += `
+        <div class="card">
+          <div class="section-title">選擇未繳帳單</div>
+      `;
+
+      if (bills.length === 0) {
+        html += `
+          <div class="empty">
+            目前沒有可回報的未繳帳單。
+          </div>
+        `;
+      } else {
+        bills.forEach(item => {
+          html += renderBillCard(item);
+        });
+      }
+
+      html += `</div>`;
+
+      if (bills.length > 0) {
+        html += `
+          <div class="card">
+            <div class="section-title">填寫付款資料</div>
+
+            <div class="field">
+              <label for="reportedLast5">匯款帳號後 5 碼</label>
+              <input
+                id="reportedLast5"
+                class="input input-last5"
+                maxlength="5"
+                inputmode="numeric"
+                placeholder="12345"
+                oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,5)"
+              />
+              <div class="help">
+                請輸入您匯款帳號的後 5 碼。請勿輸入空格或文字。
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="reportedPaidDate">付款日期</label>
+              <input
+                id="reportedPaidDate"
+                class="input"
+                type="date"
+                value="${todayText()}"
+              />
+            </div>
+
+            <div class="field">
+              <label for="reportNote">備註</label>
+              <textarea
+                id="reportNote"
+                class="textarea"
+                maxlength="200"
+                placeholder="可選填，例如：已於早上轉帳。"
+              ></textarea>
+            </div>
+
+            <button id="submitBtn" class="btn btn-green" onclick="submitPaymentReport()">
+              送出付款回報
+            </button>
+
+            <div class="help">
+              送出後狀態會是「待確認」，房東確認入帳後才會正式銷帳。
+            </div>
+          </div>
+        `;
+      }
+
+      html += `
+        <div class="card">
+          <div class="section-title">付款回報紀錄</div>
+          ${renderReports(reports)}
+        </div>
+
+        <button class="btn btn-black" onclick="location.href='tenant-bills.html?v=' + Date.now()">
+          查看帳單
+        </button>
+
+        <button class="btn btn-green" onclick="location.href='tenant-home.html?v=' + Date.now()">
+          返回首頁
+        </button>
+      `;
+
+      app.className = '';
+      app.innerHTML = html;
+    }
+
+    function getSelectedBill() {
+      if (!PAGE_DATA || !Array.isArray(PAGE_DATA.bills)) return null;
+
+      return PAGE_DATA.bills.find(item => {
+        return String(item.bill_id || '') === String(SELECTED_BILL_ID || '');
+      }) || null;
+    }
+
+    function submitPaymentReport() {
+      const bill = getSelectedBill();
+
+      if (!bill) {
+        appAlert('請先選擇要回報的帳單');
+        return;
+      }
+
+      const last5Input = document.getElementById('reportedLast5');
+      const dateInput = document.getElementById('reportedPaidDate');
+      const noteInput = document.getElementById('reportNote');
+
+      const reportedLast5 = last5Input ? last5Input.value.trim() : '';
+      const reportedPaidDate = dateInput ? dateInput.value.trim() : '';
+      const note = noteInput ? noteInput.value.trim() : '';
+
+      if (!/^[0-9]{5}$/.test(reportedLast5)) {
+        appAlert('請輸入正確的匯款後 5 碼');
+        return;
+      }
+
+      if (!reportedPaidDate) {
+        appAlert('請選擇付款日期');
+        return;
+      }
+
+      const confirmText =
+        '請確認付款回報資料：\n\n' +
+        '帳單月份：' + (bill.bill_month || '-') + '\n' +
+        '帳單金額：' + money(bill.total_amount) + '\n' +
+        '後 5 碼：' + reportedLast5 + '\n' +
+        '付款日期：' + reportedPaidDate + '\n\n' +
+        '送出後會通知房東確認。';
+
+      appConfirm(confirmText, function () {
+        doSubmitPaymentReport_(bill.bill_id, reportedLast5, reportedPaidDate, note);
+      });
+    }
+
+    async function doSubmitPaymentReport_(billId, reportedLast5, reportedPaidDate, note) {
+      const btn = document.getElementById('submitBtn');
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = '送出中...';
+        }
+
+        const data = await callApi('tenant_payment_report_submit', {
+          bill_id: billId,
+          reported_last5: reportedLast5,
+          reported_paid_date: reportedPaidDate,
+          note: note
+        });
+
+        appAlert('付款回報已送出，請等待房東確認。', function () {
+          location.reload();
+        });
+
+      } catch (error) {
+        appAlert(error.message || String(error));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '送出付款回報';
+        }
+      }
+    }
+
+    async function main() {
+      try {
+        app.className = 'loading';
+        app.innerHTML = '資料載入中...';
+
+        await initLineUserId();
+
+        const data = await callApi('tenant_payment_report_init');
+
+        renderPage(data);
+      } catch (error) {
+        renderError(error.message || error);
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
