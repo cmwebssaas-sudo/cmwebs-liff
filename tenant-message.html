@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>CMWebs 傳訊給房東</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 62px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font-family: inherit;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background: #f5f7fb;
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
+    }
+
+    .card {
+      padding: 18px;
+      margin-bottom: 14px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .title {
+      margin-bottom: 6px;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .sub {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .section-title {
+      margin-bottom: 12px;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    .row:first-of-type {
+      border-top: none;
+    }
+
+    .label {
+      flex: 1;
+      color: #666;
+    }
+
+    .value {
+      font-weight: 700;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .field {
+      margin-top: 16px;
+    }
+
+    .field:first-of-type {
+      margin-top: 0;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 7px;
+      color: #444;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .required {
+      color: #d93025;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      outline: none;
+      background: #fff;
+      color: #222;
+      font-size: 15px;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: #06c755;
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
+    }
+
+    .textarea {
+      min-height: 150px;
+      resize: vertical;
+      line-height: 1.7;
+    }
+
+    .help {
+      margin-top: 6px;
+      color: #888;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .char-count {
+      margin-top: 6px;
+      color: #999;
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .priority-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .priority-option {
+      position: relative;
+    }
+
+    .priority-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .priority-label {
+      display: block;
+      padding: 12px;
+      border: 2px solid #edf0f4;
+      border-radius: 12px;
+      background: #fff;
+      color: #555;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .priority-option input:checked + .priority-label {
+      border-color: #06c755;
+      background: #f2fff7;
+      color: #10893e;
+    }
+
+    .priority-option.urgent input:checked + .priority-label {
+      border-color: #d93025;
+      background: #fff2f1;
+      color: #d93025;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px 16px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-green {
+      background: #06c755;
+      color: #fff;
+    }
+
+    .btn-black {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-light {
+      background: #eef1f5;
+      color: #333;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .message-item {
+      padding: 14px 0;
+      border-top: 1px solid #eee;
+    }
+
+    .message-item:first-of-type {
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .message-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .message-title {
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+    .message-time {
+      flex-shrink: 0;
+      color: #999;
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: right;
+    }
+
+    .message-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .message-body {
+      padding: 11px 12px;
+      margin-top: 10px;
+      border-radius: 10px;
+      background: #f7f8fa;
+      color: #333;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .reply-box {
+      padding: 11px 12px;
+      margin-top: 10px;
+      border: 1px solid #dcefe4;
+      border-radius: 10px;
+      background: #f2fff7;
+      color: #22663e;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .reply-title {
+      margin-bottom: 5px;
+      font-weight: 800;
+    }
+
+    .contact-time {
+      margin-top: 8px;
+      color: #777;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .badge-green {
+      background: #e8f7ee;
+      color: #10893e;
+    }
+
+    .badge-red {
+      background: #ffe8e6;
+      color: #d93025;
+    }
+
+    .badge-yellow {
+      background: #fff4d7;
+      color: #9a6b00;
+    }
+
+    .badge-blue {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+
+    .badge-gray {
+      background: #f1f3f5;
+      color: #666;
+    }
+
+    .loading,
+    .empty {
+      padding: 36px 20px;
+      color: #666;
+      text-align: center;
+    }
+
+    .error-title {
+      margin-bottom: 8px;
+      color: #d93025;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .error-text {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.7;
+      word-break: break-word;
+    }
+
+    /* 自訂彈窗 */
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .modal-mask.show {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 340px;
+      padding: 22px 18px 16px;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+      text-align: center;
+    }
+
+    .modal-title {
+      margin-bottom: 10px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .modal-message {
+      margin-bottom: 18px;
+      color: #555;
+      font-size: 15px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      height: 44px;
+      border: 0;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .modal-btn-cancel {
+      background: #f3f4f6;
+      color: #444;
+    }
+
+    .modal-btn-confirm,
+    .modal-btn-single {
+      background: #06c755;
+      color: #fff;
+    }
+
+    /* 固定底部導覽 */
+    .bottom-nav {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 99999;
+      padding-bottom: env(safe-area-inset-bottom);
+      border-top: 1px solid #eceff3;
+      background: rgba(255, 255, 255, 0.98);
+    }
+
+    .bottom-nav-inner {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      height: var(--nav-height);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      appearance: none;
+      -webkit-appearance: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: #06c755;
+      font-weight: 800;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: #06c755;
+      content: "";
+    }
+
+    .nav-item:active {
+      opacity: 0.65;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <div class="page">
+      <div id="app" class="loading">資料載入中...</div>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button
+          class="nav-item"
+          onclick="location.href='tenant-home.html?v=' + Date.now()"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <div>首頁</div>
+        </button>
+
+        <button
+          class="nav-item"
+          onclick="location.href='tenant-bills.html?v=' + Date.now()"
+        >
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <div>帳單</div>
+        </button>
+
+        <button
+          class="nav-item"
+          onclick="location.href='tenant-payment-report.html?v=' + Date.now()"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M6 4.5h12v15H6z"></path>
+            <path d="M8.5 8.5h7"></path>
+            <path d="M8.5 12h7"></path>
+            <path d="M8.5 15.5h4"></path>
+          </svg>
+          <div>回報</div>
+        </button>
+
+        <button
+          class="nav-item active"
+          onclick="location.href='tenant-more.html?v=' + Date.now()"
+        >
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <div>更多</div>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <div id="customModal" class="modal-mask">
+    <div class="modal-box">
+      <div id="customModalTitle" class="modal-title">提示</div>
+      <div id="customModalMessage" class="modal-message"></div>
+      <div id="customModalActions" class="modal-actions"></div>
+    </div>
+  </div>
+
+  <script>
+    function setAppHeight() {
+      document.documentElement.style.setProperty(
+        '--app-height',
+        window.innerHeight + 'px'
+      );
+    }
+
+    setAppHeight();
+
+    window.addEventListener('resize', setAppHeight);
+
+    window.addEventListener('orientationchange', function () {
+      setTimeout(setAppHeight, 300);
+    });
+
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID = '2010314940-iJB1D6sN';
+
+    const TEST_LINE_USER_ID =
+      'U3615a7ed919c1a4a438a246c10784d70';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+
+    const app = document.getElementById('app');
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function safeText(value) {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ''
+      ) {
+        return '-';
+      }
+
+      return escapeHtml(value);
+    }
+
+    function categoryText(value) {
+      const map = {
+        general: '一般詢問',
+        repair: '報修',
+        payment: '繳費問題',
+        contract: '合約問題',
+        other: '其他'
+      };
+
+      return map[String(value || '').toLowerCase()] ||
+        safeText(value);
+    }
+
+    function statusText(value) {
+      const map = {
+        pending: '待處理',
+        processing: '處理中',
+        replied: '已回覆',
+        completed: '已完成',
+        closed: '已結案',
+        rejected: '已駁回'
+      };
+
+      return map[String(value || '').toLowerCase()] ||
+        safeText(value);
+    }
+
+    function statusBadgeClass(value) {
+      const status = String(value || '').toLowerCase();
+
+      if (
+        status === 'completed' ||
+        status === 'closed'
+      ) {
+        return 'badge badge-green';
+      }
+
+      if (
+        status === 'pending' ||
+        status === 'processing'
+      ) {
+        return 'badge badge-yellow';
+      }
+
+      if (status === 'rejected') {
+        return 'badge badge-red';
+      }
+
+      if (status === 'replied') {
+        return 'badge badge-blue';
+      }
+
+      return 'badge badge-gray';
+    }
+
+    function priorityText(value) {
+      return String(value || '').toLowerCase() === 'urgent'
+        ? '急件'
+        : '一般';
+    }
+
+    function priorityBadgeClass(value) {
+      return String(value || '').toLowerCase() === 'urgent'
+        ? 'badge badge-red'
+        : 'badge badge-gray';
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '-';
+
+      const date = new Date(value);
+
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hour = String(date.getHours()).padStart(2, '0');
+        const minute = String(date.getMinutes()).padStart(2, '0');
+
+        return (
+          year +
+          '-' +
+          month +
+          '-' +
+          day +
+          ' ' +
+          hour +
+          ':' +
+          minute
+        );
+      }
+
+      return safeText(value);
+    }
+
+    function updateBodyCount() {
+      const input = document.getElementById('messageBody');
+      const count = document.getElementById('messageBodyCount');
+
+      if (!input || !count) return;
+
+      count.textContent = input.value.length + ' / 500';
+    }
+
+    function updateTitleCount() {
+      const input = document.getElementById('messageTitle');
+      const count = document.getElementById('messageTitleCount');
+
+      if (!input || !count) return;
+
+      count.textContent = input.value.length + ' / 60';
+    }
+
+    function showModal(options) {
+      const modal = document.getElementById('customModal');
+      const titleElement =
+        document.getElementById('customModalTitle');
+      const messageElement =
+        document.getElementById('customModalMessage');
+      const actionsElement =
+        document.getElementById('customModalActions');
+
+      titleElement.textContent =
+        options.title || '提示';
+
+      messageElement.textContent =
+        options.message || '';
+
+      actionsElement.innerHTML = '';
+
+      if (options.type === 'confirm') {
+        const cancelButton =
+          document.createElement('button');
+
+        cancelButton.className =
+          'modal-btn-cancel';
+
+        cancelButton.textContent =
+          options.cancelText || '取消';
+
+        cancelButton.onclick = function () {
+          hideModal();
+
+          if (
+            typeof options.onCancel === 'function'
+          ) {
+            options.onCancel();
+          }
+        };
+
+        const confirmButton =
+          document.createElement('button');
+
+        confirmButton.className =
+          'modal-btn-confirm';
+
+        confirmButton.textContent =
+          options.confirmText || '確定';
+
+        confirmButton.onclick = function () {
+          hideModal();
+
+          if (
+            typeof options.onConfirm === 'function'
+          ) {
+            options.onConfirm();
+          }
+        };
+
+        actionsElement.appendChild(cancelButton);
+        actionsElement.appendChild(confirmButton);
+      } else {
+        const confirmButton =
+          document.createElement('button');
+
+        confirmButton.className =
+          'modal-btn-single';
+
+        confirmButton.textContent =
+          options.confirmText || '確定';
+
+        confirmButton.onclick = function () {
+          hideModal();
+
+          if (
+            typeof options.onConfirm === 'function'
+          ) {
+            options.onConfirm();
+          }
+        };
+
+        actionsElement.appendChild(confirmButton);
+      }
+
+      modal.classList.add('show');
+    }
+
+    function hideModal() {
+      document
+        .getElementById('customModal')
+        .classList
+        .remove('show');
+    }
+
+    function appAlert(message, callback) {
+      showModal({
+        title: '提示',
+        message: message,
+        type: 'alert',
+        confirmText: '確定',
+        onConfirm: callback || null
+      });
+    }
+
+    function appConfirm(message, callback) {
+      showModal({
+        title: '請確認',
+        message: message,
+        type: 'confirm',
+        confirmText: '送出',
+        cancelText: '取消',
+        onConfirm: callback || null
+      });
+    }
+
+    function callApi(action, params) {
+      return new Promise(function (resolve, reject) {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少 LINE User ID'));
+          return;
+        }
+
+        params = params || {};
+
+        const callbackName =
+          'cmwebsJsonp_' +
+          Date.now() +
+          '_' +
+          Math.floor(Math.random() * 1000000);
+
+        const script =
+          document.createElement('script');
+
+        let finished = false;
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (error) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+
+          if (!json || json.success !== true) {
+            reject(
+              new Error(
+                json && json.message
+                  ? json.message
+                  : '查詢失敗'
+              )
+            );
+
+            return;
+          }
+
+          resolve(json.data);
+        };
+
+        const timer = setTimeout(function () {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+
+          reject(new Error('API 載入逾時'));
+        }, 30000);
+
+        let url =
+          API_URL +
+          '?v2_action=' +
+          encodeURIComponent(action) +
+          '&line_user_id=' +
+          encodeURIComponent(LINE_USER_ID) +
+          '&callback=' +
+          encodeURIComponent(callbackName) +
+          '&_=' +
+          Date.now();
+
+        Object.keys(params).forEach(function (key) {
+          url +=
+            '&' +
+            encodeURIComponent(key) +
+            '=' +
+            encodeURIComponent(params[key]);
+        });
+
+        script.charset = 'UTF-8';
+
+        script.onerror = function () {
+          console.log(
+            'JSONP script onerror ignored'
+          );
+        };
+
+        script.src = url;
+
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initLineUserId() {
+      if (typeof liff === 'undefined') {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return;
+      }
+
+      try {
+        await liff.init({
+          liffId: LIFF_ID
+        });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile =
+          await liff.getProfile();
+
+        LINE_USER_ID =
+          profile.userId || '';
+
+        if (!LINE_USER_ID) {
+          throw new Error(
+            '無法取得 LINE User ID'
+          );
+        }
+      } catch (error) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+      }
+    }
+
+    function renderError(message) {
+      app.className = 'card';
+
+      app.innerHTML = `
+        <div class="error-title">
+          資料讀取失敗
+        </div>
+
+        <div class="error-text">
+          ${safeText(message)}
+        </div>
+
+        <button
+          class="btn btn-black"
+          onclick="location.reload()"
+        >
+          重新整理
+        </button>
+
+        <button
+          class="btn btn-green"
+          onclick="location.href='tenant-home.html?v=' + Date.now()"
+        >
+          返回首頁
+        </button>
+      `;
+    }
+
+    function renderMessageHistory(messages) {
+      if (
+        !Array.isArray(messages) ||
+        messages.length === 0
+      ) {
+        return `
+          <div class="empty">
+            目前沒有傳訊或報修紀錄
+          </div>
+        `;
+      }
+
+      return messages.map(function (item) {
+        const reply =
+          String(item.landlord_reply || '').trim();
+
+        return `
+          <div class="message-item">
+            <div class="message-top">
+              <div>
+                <div class="message-title">
+                  ${safeText(item.message_title)}
+                </div>
+
+                <div class="message-meta">
+                  <span class="badge badge-blue">
+                    ${categoryText(item.message_category)}
+                  </span>
+
+                  <span class="${priorityBadgeClass(item.priority)}">
+                    ${priorityText(item.priority)}
+                  </span>
+
+                  <span class="${statusBadgeClass(item.status)}">
+                    ${statusText(item.status)}
+                  </span>
+                </div>
+              </div>
+
+              <div class="message-time">
+                ${formatDateTime(item.created_at)}
+              </div>
+            </div>
+
+            <div class="message-body">${safeText(item.message_body)}</div>
+
+            ${
+              item.preferred_contact_time
+                ? `
+                  <div class="contact-time">
+                    方便聯絡時間：
+                    ${safeText(item.preferred_contact_time)}
+                  </div>
+                `
+                : ''
+            }
+
+            ${
+              reply
+                ? `
+                  <div class="reply-box">
+                    <div class="reply-title">
+                      房東回覆
+                    </div>
+
+                    ${safeText(reply)}
+
+                    ${
+                      item.replied_at
+                        ? `
+                          <div class="contact-time">
+                            回覆時間：
+                            ${formatDateTime(item.replied_at)}
+                          </div>
+                        `
+                        : ''
+                    }
+                  </div>
+                `
+                : ''
+            }
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderPage(data) {
+      PAGE_DATA = data;
+
+      const tenant = data.tenant || {};
+      const messages =
+        Array.isArray(data.messages)
+          ? data.messages
+          : [];
+
+      app.className = '';
+
+      app.innerHTML = `
+        <div class="card">
+          <div class="title">
+            傳訊給房東
+          </div>
+
+          <div class="sub">
+            可用於一般詢問、報修、繳費或合約問題。送出後，系統會保存紀錄並透過 LINE 通知房東。
+          </div>
+
+          <div class="row">
+            <div class="label">房客</div>
+            <div class="value">
+              ${safeText(tenant.tenant_name)}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="label">房號</div>
+            <div class="value">
+              ${safeText(tenant.room_list)}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="label">房東</div>
+            <div class="value">
+              ${safeText(tenant.landlord_name)}
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">
+            填寫訊息
+          </div>
+
+          <div class="field">
+            <label
+              class="field-label"
+              for="messageCategory"
+            >
+              訊息類型
+              <span class="required">*</span>
+            </label>
+
+            <select
+              id="messageCategory"
+              class="select"
+            >
+              <option value="">
+                請選擇訊息類型
+              </option>
+
+              <option value="general">
+                一般詢問
+              </option>
+
+              <option value="repair">
+                報修
+              </option>
+
+              <option value="payment">
+                繳費問題
+              </option>
+
+              <option value="contract">
+                合約問題
+              </option>
+
+              <option value="other">
+                其他
+              </option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label
+              class="field-label"
+              for="messageTitle"
+            >
+              標題
+              <span class="required">*</span>
+            </label>
+
+            <input
+              id="messageTitle"
+              class="input"
+              maxlength="60"
+              placeholder="例如：冷氣不冷"
+              oninput="updateTitleCount()"
+            />
+
+            <div
+              id="messageTitleCount"
+              class="char-count"
+            >
+              0 / 60
+            </div>
+          </div>
+
+          <div class="field">
+            <label
+              class="field-label"
+              for="messageBody"
+            >
+              詳細內容
+              <span class="required">*</span>
+            </label>
+
+            <textarea
+              id="messageBody"
+              class="textarea"
+              maxlength="500"
+              placeholder="請說明問題或需要房東協助的事項。"
+              oninput="updateBodyCount()"
+            ></textarea>
+
+            <div
+              id="messageBodyCount"
+              class="char-count"
+            >
+              0 / 500
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              優先程度
+            </div>
+
+            <div class="priority-options">
+              <label class="priority-option">
+                <input
+                  type="radio"
+                  name="priority"
+                  value="normal"
+                  checked
+                />
+
+                <span class="priority-label">
+                  一般
+                </span>
+              </label>
+
+              <label class="priority-option urgent">
+                <input
+                  type="radio"
+                  name="priority"
+                  value="urgent"
+                />
+
+                <span class="priority-label">
+                  急件
+                </span>
+              </label>
+            </div>
+
+            <div class="help">
+              急件只用於漏水、停電、門鎖或其他需要盡快處理的狀況。
+            </div>
+          </div>
+
+          <div class="field">
+            <label
+              class="field-label"
+              for="contactTime"
+            >
+              方便聯絡時間
+            </label>
+
+            <input
+              id="contactTime"
+              class="input"
+              maxlength="80"
+              placeholder="例如：平日晚上六點後"
+            />
+
+            <div class="help">
+              此欄位可選填。
+            </div>
+          </div>
+
+          <button
+            id="submitBtn"
+            class="btn btn-green"
+            onclick="submitTenantMessage()"
+          >
+            送出訊息
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="section-title">
+            我的訊息紀錄
+          </div>
+
+          ${renderMessageHistory(messages)}
+        </div>
+
+        <button
+          class="btn btn-black"
+          onclick="location.href='tenant-home.html?v=' + Date.now()"
+        >
+          返回首頁
+        </button>
+      `;
+    }
+
+    function getSelectedPriority() {
+      const checked =
+        document.querySelector(
+          'input[name="priority"]:checked'
+        );
+
+      return checked
+        ? checked.value
+        : 'normal';
+    }
+
+    function submitTenantMessage() {
+      const category =
+        document
+          .getElementById('messageCategory')
+          .value
+          .trim();
+
+      const title =
+        document
+          .getElementById('messageTitle')
+          .value
+          .trim();
+
+      const body =
+        document
+          .getElementById('messageBody')
+          .value
+          .trim();
+
+      const priority =
+        getSelectedPriority();
+
+      const contactTime =
+        document
+          .getElementById('contactTime')
+          .value
+          .trim();
+
+      if (!category) {
+        appAlert('請選擇訊息類型');
+        return;
+      }
+
+      if (!title) {
+        appAlert('請輸入訊息標題');
+        return;
+      }
+
+      if (title.length > 60) {
+        appAlert('訊息標題最多 60 字');
+        return;
+      }
+
+      if (!body) {
+        appAlert('請輸入詳細內容');
+        return;
+      }
+
+      if (body.length > 500) {
+        appAlert('訊息內容最多 500 字');
+        return;
+      }
+
+      const confirmMessage =
+        '請確認要送出以下訊息：\n\n' +
+        '類型：' +
+        categoryText(category) +
+        '\n' +
+        '標題：' +
+        title +
+        '\n' +
+        '優先程度：' +
+        priorityText(priority) +
+        '\n\n' +
+        body;
+
+      appConfirm(
+        confirmMessage,
+        function () {
+          doSubmitTenantMessage_(
+            category,
+            title,
+            body,
+            priority,
+            contactTime
+          );
+        }
+      );
+    }
+
+    async function doSubmitTenantMessage_(
+      category,
+      title,
+      body,
+      priority,
+      contactTime
+    ) {
+      const button =
+        document.getElementById('submitBtn');
+
+      try {
+        if (button) {
+          button.disabled = true;
+          button.textContent = '送出中...';
+        }
+
+        const result =
+          await callApi(
+            'tenant_message_submit',
+            {
+              message_category: category,
+              message_title: title,
+              message_body: body,
+              priority: priority,
+              contact_time: contactTime
+            }
+          );
+
+        const notificationSuccess =
+          result &&
+          result.landlord_notification_success === true;
+
+        const successMessage =
+          notificationSuccess
+            ? '訊息已送出，房東已收到 LINE 通知。'
+            : '訊息已保存，但房東 LINE 通知未成功。';
+
+        appAlert(
+          successMessage,
+          function () {
+            location.reload();
+          }
+        );
+
+      } catch (error) {
+        appAlert(
+          error.message || String(error)
+        );
+
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = '送出訊息';
+        }
+      }
+    }
+
+    async function main() {
+      try {
+        app.className = 'loading';
+        app.innerHTML = '資料載入中...';
+
+        await initLineUserId();
+
+        const data =
+          await callApi(
+            'tenant_message_init'
+          );
+
+        renderPage(data);
+
+      } catch (error) {
+        renderError(
+          error.message || error
+        );
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
