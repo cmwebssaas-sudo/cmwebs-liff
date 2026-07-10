@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>CMWebs 房客訊息管理</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 64px;
+      --primary: #06c755;
+      --background: #f5f7fb;
+      --text: #222;
+      --muted: #70757d;
+      --danger: #d93025;
+      --warning: #9a6b00;
+      --blue: #1a73e8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--background);
+      color: var(--text);
+      font-family: Arial, "Noto Sans TC", sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background: var(--background);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 16px
+        calc(var(--nav-height) + 28px + env(safe-area-inset-bottom));
+    }
+
+    .page-header {
+      margin-bottom: 16px;
+    }
+
+    .page-title {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .card {
+      padding: 17px;
+      margin-bottom: 14px;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+    }
+
+    .section-title {
+      margin-bottom: 12px;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .landlord-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      display: flex;
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #e8f7ee;
+      color: var(--primary);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .landlord-name {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .landlord-desc {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .summary-item {
+      padding: 14px;
+      border: 1px solid #edf0f4;
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .summary-value {
+      margin-top: 5px;
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .summary-item.urgent .summary-value {
+      color: var(--danger);
+    }
+
+    .summary-item.pending .summary-value {
+      color: var(--warning);
+    }
+
+    .summary-item.processing .summary-value {
+      color: var(--blue);
+    }
+
+    .summary-item.completed .summary-value {
+      color: #188038;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .search-input,
+    .filter-select {
+      width: 100%;
+      min-height: 44px;
+      padding: 11px 13px;
+      border: 1px solid #dfe3e8;
+      border-radius: 12px;
+      outline: none;
+      background: #fff;
+      color: #222;
+      font-size: 14px;
+    }
+
+    .search-input:focus,
+    .filter-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .message-card {
+      position: relative;
+      padding: 17px;
+      margin-bottom: 13px;
+      overflow: hidden;
+      border: 1px solid #edf0f4;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .message-card.urgent {
+      border-color: #f5c7c3;
+    }
+
+    .message-card.urgent::before {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 4px;
+      background: var(--danger);
+      content: "";
+    }
+
+    .message-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .tenant-block {
+      min-width: 0;
+    }
+
+    .tenant-name {
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.4;
+    }
+
+    .room-name {
+      margin-left: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .message-time {
+      flex: 0 0 auto;
+      color: #92979e;
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: right;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .badge {
+      display: inline-flex;
+      min-height: 24px;
+      padding: 4px 8px;
+      align-items: center;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .badge-blue {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+
+    .badge-red {
+      background: #ffe8e6;
+      color: #d93025;
+    }
+
+    .badge-yellow {
+      background: #fff4d7;
+      color: #9a6b00;
+    }
+
+    .badge-green {
+      background: #e8f7ee;
+      color: #10893e;
+    }
+
+    .badge-gray {
+      background: #f1f3f5;
+      color: #666;
+    }
+
+    .badge-purple {
+      background: #f1e8ff;
+      color: #6f42c1;
+    }
+
+    .message-title {
+      margin-top: 13px;
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .message-body {
+      padding: 12px 13px;
+      margin-top: 9px;
+      border-radius: 11px;
+      background: #f7f8fa;
+      color: #35383d;
+      font-size: 14px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .info-row {
+      display: flex;
+      gap: 10px;
+      padding-top: 10px;
+      margin-top: 10px;
+      border-top: 1px solid #eee;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .info-label {
+      flex: 0 0 auto;
+      font-weight: 800;
+    }
+
+    .info-value {
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .reply-box {
+      padding: 12px 13px;
+      margin-top: 11px;
+      border: 1px solid #d6ebdf;
+      border-radius: 11px;
+      background: #f2fff7;
+      color: #255f3c;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .reply-label {
+      margin-bottom: 5px;
+      font-weight: 900;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 44px;
+      padding: 11px 13px;
+      border: 0;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn:active {
+      opacity: 0.72;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-dark {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-light {
+      background: #eef1f5;
+      color: #333;
+    }
+
+    .btn-blue {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+
+    .btn-green-soft {
+      background: #e8f7ee;
+      color: #10893e;
+    }
+
+    .btn-danger-soft {
+      background: #ffe8e6;
+      color: #d93025;
+    }
+
+    .full-action {
+      grid-column: 1 / -1;
+    }
+
+    .empty,
+    .loading {
+      padding: 42px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty-icon {
+      margin-bottom: 10px;
+      font-size: 34px;
+    }
+
+    .empty-title {
+      color: #444;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .empty-desc {
+      margin-top: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .error-title {
+      margin-bottom: 8px;
+      color: var(--danger);
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .error-text {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.7;
+      word-break: break-word;
+    }
+
+    .refresh-btn {
+      margin-top: 12px;
+    }
+
+    /* Modal */
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+      background: rgba(0, 0, 0, 0.46);
+    }
+
+    .modal-mask.show {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      padding:
+        18px 18px
+        calc(18px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      border-radius: 22px 22px 0 0;
+      background: #fff;
+      box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-handle {
+      width: 40px;
+      height: 5px;
+      margin: 0 auto 15px;
+      border-radius: 999px;
+      background: #d9dde2;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .modal-subtitle {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .field {
+      margin-top: 16px;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 7px;
+      color: #444;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .field-select,
+    .field-textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #dfe3e8;
+      border-radius: 12px;
+      outline: none;
+      background: #fff;
+      color: #222;
+      font-size: 15px;
+    }
+
+    .field-textarea {
+      min-height: 145px;
+      resize: vertical;
+      line-height: 1.7;
+    }
+
+    .field-select:focus,
+    .field-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
+    }
+
+    .char-count {
+      margin-top: 6px;
+      color: #999;
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .modal-message-preview {
+      padding: 12px;
+      margin-top: 14px;
+      border-radius: 11px;
+      background: #f7f8fa;
+      color: #444;
+      font-size: 13px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    /* Alert Modal */
+    .alert-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.46);
+    }
+
+    .alert-mask.show {
+      display: flex;
+    }
+
+    .alert-box {
+      width: 100%;
+      max-width: 340px;
+      padding: 22px 18px 16px;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .alert-title {
+      margin-bottom: 10px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .alert-message {
+      margin-bottom: 18px;
+      color: #555;
+      font-size: 15px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 99999;
+      padding-bottom: env(safe-area-inset-bottom);
+      border-top: 1px solid #eceff3;
+      background: rgba(255, 255, 255, 0.98);
+    }
+
+    .bottom-nav-inner {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      height: var(--nav-height);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      appearance: none;
+      -webkit-appearance: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    @media (min-width: 480px) {
+      .summary-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .summary-item {
+        padding: 13px 10px;
+      }
+
+      .summary-value {
+        font-size: 23px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div id="app" class="loading">資料載入中...</div>
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button
+          class="nav-item"
+          onclick="goPage('landlord-home.html')"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button
+          class="nav-item"
+          onclick="goPage('landlord-arrears.html')"
+        >
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>欠租</span>
+        </button>
+
+        <button
+          class="nav-item"
+          onclick="goPage('landlord-tenants.html')"
+        >
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+          </svg>
+          <span>房客</span>
+        </button>
+
+        <button
+          class="nav-item active"
+          onclick="goPage('landlord-more.html')"
+        >
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <span>更多</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- 更新訊息 Modal -->
+  <div id="updateModal" class="modal-mask">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+
+      <div class="modal-title">處理房客訊息</div>
+
+      <div id="updateModalSubtitle" class="modal-subtitle"></div>
+
+      <div id="updateMessagePreview" class="modal-message-preview"></div>
+
+      <div class="field">
+        <label class="field-label" for="updateStatus">
+          處理狀態
+        </label>
+
+        <select id="updateStatus" class="field-select">
+          <option value="pending">待處理</option>
+          <option value="processing">處理中</option>
+          <option value="replied">已回覆</option>
+          <option value="completed">已完成</option>
+          <option value="closed">已結案</option>
+          <option value="rejected">已駁回</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="landlordReply">
+          回覆房客
+        </label>
+
+        <textarea
+          id="landlordReply"
+          class="field-textarea"
+          maxlength="500"
+          placeholder="輸入回覆內容。填寫後送出，系統會透過 LINE 傳給房客。"
+          oninput="updateReplyCount()"
+        ></textarea>
+
+        <div id="replyCount" class="char-count">0 / 500</div>
+      </div>
+
+      <div class="modal-actions">
+        <button
+          class="btn btn-light"
+          onclick="closeUpdateModal()"
+        >
+          取消
+        </button>
+
+        <button
+          id="saveUpdateBtn"
+          class="btn btn-primary"
+          onclick="submitMessageUpdate()"
+        >
+          儲存更新
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示 Modal -->
+  <div id="alertModal" class="alert-mask">
+    <div class="alert-box">
+      <div id="alertTitle" class="alert-title">提示</div>
+      <div id="alertMessage" class="alert-message"></div>
+
+      <button
+        class="btn btn-primary"
+        onclick="closeAlertModal()"
+      >
+        確定
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // 基本設定
+    // =========================================================
+
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID = '2010314940-EjX1qbb8';
+
+    const TEST_LANDLORD_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let ALL_MESSAGES = [];
+    let ACTIVE_MESSAGE_ID = '';
+    let ALERT_CALLBACK = null;
+
+    const app = document.getElementById('app');
+
+    function setAppHeight() {
+      document.documentElement.style.setProperty(
+        '--app-height',
+        window.innerHeight + 'px'
+      );
+    }
+
+    setAppHeight();
+
+    window.addEventListener('resize', setAppHeight);
+
+    window.addEventListener('orientationchange', function () {
+      setTimeout(setAppHeight, 250);
+    });
+
+    // =========================================================
+    // 工具函式
+    // =========================================================
+
+    function goPage(filename) {
+      location.href = filename + '?v=' + Date.now();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function safeText(value) {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ''
+      ) {
+        return '-';
+      }
+
+      return escapeHtml(value);
+    }
+
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '-';
+
+      const date = new Date(value);
+
+      if (!isNaN(date.getTime())) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+
+        return yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + min;
+      }
+
+      return safeText(value);
+    }
+
+    function getInitial(name) {
+      const text = rawText(name).trim();
+
+      if (!text) return '房';
+
+      return text.slice(0, 1);
+    }
+
+    function categoryText(value) {
+      const map = {
+        general: '一般詢問',
+        repair: '報修',
+        payment: '繳費問題',
+        contract: '合約問題',
+        other: '其他'
+      };
+
+      return map[rawText(value).toLowerCase()] || safeText(value);
+    }
+
+    function priorityText(value) {
+      return rawText(value).toLowerCase() === 'urgent'
+        ? '急件'
+        : '一般';
+    }
+
+    function statusText(value) {
+      const map = {
+        pending: '待處理',
+        processing: '處理中',
+        replied: '已回覆',
+        completed: '已完成',
+        closed: '已結案',
+        rejected: '已駁回'
+      };
+
+      return map[rawText(value).toLowerCase()] || safeText(value);
+    }
+
+    function statusBadgeClass(value) {
+      const status = rawText(value).toLowerCase();
+
+      if (status === 'pending') {
+        return 'badge badge-yellow';
+      }
+
+      if (status === 'processing') {
+        return 'badge badge-blue';
+      }
+
+      if (status === 'replied') {
+        return 'badge badge-purple';
+      }
+
+      if (
+        status === 'completed' ||
+        status === 'closed'
+      ) {
+        return 'badge badge-green';
+      }
+
+      if (status === 'rejected') {
+        return 'badge badge-red';
+      }
+
+      return 'badge badge-gray';
+    }
+
+    function categoryBadgeClass(value) {
+      const category = rawText(value).toLowerCase();
+
+      if (category === 'repair') {
+        return 'badge badge-red';
+      }
+
+      if (category === 'payment') {
+        return 'badge badge-yellow';
+      }
+
+      if (category === 'contract') {
+        return 'badge badge-purple';
+      }
+
+      return 'badge badge-blue';
+    }
+
+    function updateReplyCount() {
+      const textarea = document.getElementById('landlordReply');
+      const count = document.getElementById('replyCount');
+
+      if (!textarea || !count) return;
+
+      count.textContent = textarea.value.length + ' / 500';
+    }
+
+    // =========================================================
+    // JSONP API
+    // =========================================================
+
+    function callApi(action, params) {
+      return new Promise(function (resolve, reject) {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少房東 LINE User ID'));
+          return;
+        }
+
+        params = params || {};
+
+        const callbackName =
+          'cmwebsJsonp_' +
+          Date.now() +
+          '_' +
+          Math.floor(Math.random() * 1000000);
+
+        const script = document.createElement('script');
+        let finished = false;
+        let timer = null;
+
+        function cleanup() {
+          if (timer) {
+            clearTimeout(timer);
+          }
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (error) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+
+          if (!json || json.success !== true) {
+            reject(
+              new Error(
+                json && json.message
+                  ? json.message
+                  : 'API 查詢失敗'
+              )
+            );
+
+            return;
+          }
+
+          resolve(json.data);
+        };
+
+        timer = setTimeout(function () {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+          reject(new Error('API 載入逾時'));
+        }, 30000);
+
+        let url =
+          API_URL +
+          '?v2_action=' +
+          encodeURIComponent(action) +
+          '&line_user_id=' +
+          encodeURIComponent(LINE_USER_ID) +
+          '&callback=' +
+          encodeURIComponent(callbackName) +
+          '&_=' +
+          Date.now();
+
+        Object.keys(params).forEach(function (key) {
+          url +=
+            '&' +
+            encodeURIComponent(key) +
+            '=' +
+            encodeURIComponent(params[key]);
+        });
+
+        script.charset = 'UTF-8';
+
+        script.onerror = function () {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+          reject(new Error('API 載入失敗'));
+        };
+
+        script.src = url;
+        document.body.appendChild(script);
+      });
+    }
+
+    // =========================================================
+    // LIFF
+    // =========================================================
+
+    async function initLineUserId() {
+      if (typeof liff === 'undefined') {
+        LINE_USER_ID = TEST_LANDLORD_LINE_USER_ID;
+        return;
+      }
+
+      try {
+        await liff.init({
+          liffId: LIFF_ID
+        });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+
+        LINE_USER_ID = profile.userId || '';
+
+        if (!LINE_USER_ID) {
+          throw new Error('無法取得房東 LINE User ID');
+        }
+      } catch (error) {
+        LINE_USER_ID = TEST_LANDLORD_LINE_USER_ID;
+      }
+    }
+
+    // =========================================================
+    // 畫面渲染
+    // =========================================================
+
+    function renderSummary(summary) {
+      summary = summary || {};
+
+      return `
+        <div class="summary-grid">
+          <div class="summary-item pending">
+            <div class="summary-label">待處理</div>
+            <div class="summary-value">
+              ${Number(summary.pending || 0)}
+            </div>
+          </div>
+
+          <div class="summary-item processing">
+            <div class="summary-label">處理中</div>
+            <div class="summary-value">
+              ${Number(summary.processing || 0)}
+            </div>
+          </div>
+
+          <div class="summary-item urgent">
+            <div class="summary-label">未結案急件</div>
+            <div class="summary-value">
+              ${Number(summary.urgent || 0)}
+            </div>
+          </div>
+
+          <div class="summary-item completed">
+            <div class="summary-label">已完成／結案</div>
+            <div class="summary-value">
+              ${Number(summary.completed || 0)}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderToolbar() {
+      return `
+        <div class="card">
+          <div class="section-title">篩選訊息</div>
+
+          <div class="toolbar">
+            <input
+              id="searchInput"
+              class="search-input"
+              placeholder="搜尋房客、房號、標題或內容"
+              oninput="applyFilters()"
+            />
+
+            <div class="filter-row">
+              <select
+                id="statusFilter"
+                class="filter-select"
+                onchange="applyFilters()"
+              >
+                <option value="">全部狀態</option>
+                <option value="pending">待處理</option>
+                <option value="processing">處理中</option>
+                <option value="replied">已回覆</option>
+                <option value="completed">已完成</option>
+                <option value="closed">已結案</option>
+                <option value="rejected">已駁回</option>
+              </select>
+
+              <select
+                id="categoryFilter"
+                class="filter-select"
+                onchange="applyFilters()"
+              >
+                <option value="">全部類型</option>
+                <option value="urgent">只看急件</option>
+                <option value="repair">報修</option>
+                <option value="general">一般詢問</option>
+                <option value="payment">繳費問題</option>
+                <option value="contract">合約問題</option>
+                <option value="other">其他</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMessageCard(item) {
+      const messageId = safeText(item.message_id);
+      const priority = rawText(item.priority).toLowerCase();
+      const status = rawText(item.status).toLowerCase();
+      const reply = rawText(item.landlord_reply).trim();
+      const tenantId = rawText(item.tenant_id).trim();
+
+      return `
+        <article
+          class="message-card ${priority === 'urgent' ? 'urgent' : ''}"
+          data-message-id="${messageId}"
+        >
+          <div class="message-head">
+            <div class="tenant-block">
+              <div class="tenant-name">
+                ${safeText(item.tenant_name)}
+                <span class="room-name">
+                  房號 ${safeText(item.room_name)}
+                </span>
+              </div>
+
+              <div class="badge-row">
+                <span class="${categoryBadgeClass(item.message_category)}">
+                  ${categoryText(item.message_category)}
+                </span>
+
+                ${
+                  priority === 'urgent'
+                    ? `
+                      <span class="badge badge-red">
+                        急件
+                      </span>
+                    `
+                    : `
+                      <span class="badge badge-gray">
+                        一般
+                      </span>
+                    `
+                }
+
+                <span class="${statusBadgeClass(status)}">
+                  ${statusText(status)}
+                </span>
+              </div>
+            </div>
+
+            <div class="message-time">
+              ${formatDateTime(item.created_at)}
+            </div>
+          </div>
+
+          <div class="message-title">
+            ${safeText(item.message_title)}
+          </div>
+
+          <div class="message-body">${safeText(item.message_body)}</div>
+
+          ${
+            item.preferred_contact_time
+              ? `
+                <div class="info-row">
+                  <div class="info-label">方便聯絡</div>
+                  <div class="info-value">
+                    ${safeText(item.preferred_contact_time)}
+                  </div>
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            reply
+              ? `
+                <div class="reply-box">
+                  <div class="reply-label">
+                    已回覆房客
+                  </div>
+
+                  ${safeText(reply)}
+
+                  ${
+                    item.replied_at
+                      ? `
+                        <div style="margin-top:6px;color:#6f7d75;font-size:11px;">
+                          ${formatDateTime(item.replied_at)}
+                        </div>
+                      `
+                      : ''
+                  }
+                </div>
+              `
+              : ''
+          }
+
+          <div class="action-grid">
+            ${
+              tenantId
+                ? `
+                  <button
+                    class="btn btn-light"
+                    onclick="openTenantDetail('${escapeHtml(tenantId)}')"
+                  >
+                    查看房客
+                  </button>
+                `
+                : `
+                  <button
+                    class="btn btn-light"
+                    disabled
+                  >
+                    查看房客
+                  </button>
+                `
+            }
+
+            <button
+              class="btn btn-primary"
+              onclick="openUpdateModal('${escapeHtml(item.message_id)}')"
+            >
+              處理／回覆
+            </button>
+
+            ${
+              status === 'pending'
+                ? `
+                  <button
+                    class="btn btn-blue full-action"
+                    onclick="quickUpdateStatus(
+                      '${escapeHtml(item.message_id)}',
+                      'processing'
+                    )"
+                  >
+                    標記為處理中
+                  </button>
+                `
+                : ''
+            }
+
+            ${
+              status !== 'completed' &&
+              status !== 'closed'
+                ? `
+                  <button
+                    class="btn btn-green-soft full-action"
+                    onclick="quickUpdateStatus(
+                      '${escapeHtml(item.message_id)}',
+                      'completed'
+                    )"
+                  >
+                    標記為已完成
+                  </button>
+                `
+                : ''
+            }
+          </div>
+        </article>
+      `;
+    }
+
+    function renderMessages(messages) {
+      const container = document.getElementById('messageList');
+
+      if (!container) return;
+
+      if (!Array.isArray(messages) || messages.length === 0) {
+        container.innerHTML = `
+          <div class="card empty">
+            <div class="empty-icon">✓</div>
+            <div class="empty-title">沒有符合條件的訊息</div>
+            <div class="empty-desc">
+              可調整搜尋條件或重新整理頁面。
+            </div>
+          </div>
+        `;
+
+        return;
+      }
+
+      container.innerHTML = messages
+        .map(renderMessageCard)
+        .join('');
+    }
+
+    function renderPage(data) {
+      PAGE_DATA = data || {};
+      ALL_MESSAGES = Array.isArray(PAGE_DATA.messages)
+        ? PAGE_DATA.messages
+        : [];
+
+      const landlord = PAGE_DATA.landlord || {};
+      const summary = PAGE_DATA.summary || {};
+
+      app.className = '';
+
+      app.innerHTML = `
+        <header class="page-header">
+          <h1 class="page-title">房客訊息管理</h1>
+
+          <div class="page-subtitle">
+            查看房客詢問、報修及急件，更新處理狀態並透過 LINE 回覆。
+          </div>
+        </header>
+
+        <section class="card">
+          <div class="landlord-row">
+            <div class="avatar">
+              ${safeText(getInitial(landlord.landlord_name))}
+            </div>
+
+            <div>
+              <div class="landlord-name">
+                ${safeText(landlord.landlord_name)}
+              </div>
+
+              <div class="landlord-desc">
+                共 ${Number(summary.total || 0)} 筆房客訊息
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">訊息概況</div>
+          ${renderSummary(summary)}
+        </section>
+
+        ${renderToolbar()}
+
+        <section id="messageList"></section>
+
+        <button
+          class="btn btn-dark refresh-btn"
+          onclick="loadPage()"
+        >
+          重新整理
+        </button>
+      `;
+
+      renderMessages(ALL_MESSAGES);
+    }
+
+    function applyFilters() {
+      const searchElement =
+        document.getElementById('searchInput');
+
+      const statusElement =
+        document.getElementById('statusFilter');
+
+      const categoryElement =
+        document.getElementById('categoryFilter');
+
+      const keyword = rawText(
+        searchElement ? searchElement.value : ''
+      )
+        .trim()
+        .toLowerCase();
+
+      const statusFilter = rawText(
+        statusElement ? statusElement.value : ''
+      ).toLowerCase();
+
+      const categoryFilter = rawText(
+        categoryElement ? categoryElement.value : ''
+      ).toLowerCase();
+
+      const filtered = ALL_MESSAGES.filter(function (item) {
+        const status = rawText(item.status).toLowerCase();
+        const category = rawText(item.message_category).toLowerCase();
+        const priority = rawText(item.priority).toLowerCase();
+
+        if (
+          statusFilter &&
+          status !== statusFilter
+        ) {
+          return false;
+        }
+
+        if (categoryFilter === 'urgent') {
+          if (priority !== 'urgent') {
+            return false;
+          }
+        } else if (
+          categoryFilter &&
+          category !== categoryFilter
+        ) {
+          return false;
+        }
+
+        if (keyword) {
+          const haystack = [
+            item.tenant_name,
+            item.room_name,
+            item.message_title,
+            item.message_body,
+            item.landlord_reply,
+            categoryText(item.message_category),
+            statusText(item.status)
+          ]
+            .join(' ')
+            .toLowerCase();
+
+          if (!haystack.includes(keyword)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      renderMessages(filtered);
+    }
+
+    function renderError(message) {
+      app.className = '';
+
+      app.innerHTML = `
+        <div class="card">
+          <div class="error-title">資料讀取失敗</div>
+
+          <div class="error-text">
+            ${safeText(message)}
+          </div>
+
+          <button
+            class="btn btn-dark refresh-btn"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+
+          <button
+            class="btn btn-primary"
+            onclick="goPage('landlord-home.html')"
+          >
+            返回首頁
+          </button>
+        </div>
+      `;
+    }
+
+    // =========================================================
+    // 訊息更新
+    // =========================================================
+
+    function findMessageById(messageId) {
+      return ALL_MESSAGES.find(function (item) {
+        return rawText(item.message_id) === rawText(messageId);
+      }) || null;
+    }
+
+    function openUpdateModal(messageId) {
+      const item = findMessageById(messageId);
+
+      if (!item) {
+        showAlert('找不到指定訊息');
+        return;
+      }
+
+      ACTIVE_MESSAGE_ID = rawText(messageId);
+
+      const modal = document.getElementById('updateModal');
+      const subtitle = document.getElementById('updateModalSubtitle');
+      const preview = document.getElementById('updateMessagePreview');
+      const statusSelect = document.getElementById('updateStatus');
+      const replyTextarea = document.getElementById('landlordReply');
+
+      subtitle.textContent =
+        (item.tenant_name || '-') +
+        '｜房號 ' +
+        (item.room_name || '-');
+
+      preview.textContent =
+        (item.message_title || '-') +
+        '\n\n' +
+        (item.message_body || '-');
+
+      statusSelect.value = rawText(item.status) || 'pending';
+      replyTextarea.value = rawText(item.landlord_reply);
+
+      updateReplyCount();
+      modal.classList.add('show');
+    }
+
+    function closeUpdateModal() {
+      const modal = document.getElementById('updateModal');
+
+      modal.classList.remove('show');
+      ACTIVE_MESSAGE_ID = '';
+    }
+
+    async function submitMessageUpdate() {
+      if (!ACTIVE_MESSAGE_ID) {
+        showAlert('缺少訊息 ID');
+        return;
+      }
+
+      const status =
+        document.getElementById('updateStatus').value.trim();
+
+      const reply =
+        document.getElementById('landlordReply').value.trim();
+
+      if (status === 'replied' && !reply) {
+        showAlert('狀態選擇「已回覆」時，請輸入回覆內容');
+        return;
+      }
+
+      if (reply.length > 500) {
+        showAlert('回覆內容最多 500 字');
+        return;
+      }
+
+      const button =
+        document.getElementById('saveUpdateBtn');
+
+      try {
+        button.disabled = true;
+        button.textContent = '儲存中...';
+
+        const result = await callApi(
+          'landlord_message_update',
+          {
+            message_id: ACTIVE_MESSAGE_ID,
+            status: status,
+            landlord_reply: reply
+          }
+        );
+
+        closeUpdateModal();
+
+        const notificationSuccess =
+          result &&
+          result.tenant_notification_success;
+
+        let message = '訊息已更新。';
+
+        if (reply) {
+          message =
+            notificationSuccess === true
+              ? '訊息已更新，回覆已透過 LINE 傳送給房客。'
+              : '訊息已更新，但房客 LINE 通知未成功。';
+        }
+
+        showAlert(message, function () {
+          loadPage();
+        });
+      } catch (error) {
+        showAlert(error.message || String(error));
+      } finally {
+        button.disabled = false;
+        button.textContent = '儲存更新';
+      }
+    }
+
+    async function quickUpdateStatus(messageId, status) {
+      const item = findMessageById(messageId);
+
+      if (!item) {
+        showAlert('找不到指定訊息');
+        return;
+      }
+
+      const actionText =
+        status === 'processing'
+          ? '處理中'
+          : status === 'completed'
+            ? '已完成'
+            : statusText(status);
+
+      try {
+        await callApi(
+          'landlord_message_update',
+          {
+            message_id: messageId,
+            status: status,
+            landlord_reply: ''
+          }
+        );
+
+        showAlert(
+          '已將「' +
+          (item.message_title || '房客訊息') +
+          '」標記為' +
+          actionText +
+          '。',
+          function () {
+            loadPage();
+          }
+        );
+      } catch (error) {
+        showAlert(error.message || String(error));
+      }
+    }
+
+    function openTenantDetail(tenantId) {
+      location.href =
+        'landlord-tenant-detail.html' +
+        '?tenant_id=' +
+        encodeURIComponent(tenantId) +
+        '&v=' +
+        Date.now();
+    }
+
+    // =========================================================
+    // 提示視窗
+    // =========================================================
+
+    function showAlert(message, callback) {
+      ALERT_CALLBACK =
+        typeof callback === 'function'
+          ? callback
+          : null;
+
+      document.getElementById('alertMessage').textContent =
+        message || '';
+
+      document.getElementById('alertModal').classList.add('show');
+    }
+
+    function closeAlertModal() {
+      document.getElementById('alertModal').classList.remove('show');
+
+      const callback = ALERT_CALLBACK;
+      ALERT_CALLBACK = null;
+
+      if (callback) {
+        callback();
+      }
+    }
+
+    document
+      .getElementById('updateModal')
+      .addEventListener('click', function (event) {
+        if (event.target === this) {
+          closeUpdateModal();
+        }
+      });
+
+    document
+      .getElementById('alertModal')
+      .addEventListener('click', function (event) {
+        if (event.target === this) {
+          closeAlertModal();
+        }
+      });
+
+    // =========================================================
+    // 初始化
+    // =========================================================
+
+    async function loadPage() {
+      try {
+        app.className = 'loading';
+        app.innerHTML = '資料載入中...';
+
+        await initLineUserId();
+
+        if (!LINE_USER_ID) {
+          throw new Error('無法取得房東 LINE User ID');
+        }
+
+        const data = await callApi(
+          'landlord_messages_init'
+        );
+
+        renderPage(data);
+      } catch (error) {
+        renderError(error.message || String(error));
+      }
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
