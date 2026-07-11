@@ -412,6 +412,118 @@
       margin-top: 12px;
     }
 
+    /* 催繳里程碑下方進度條：節點與上方三個階段卡片置中對齊 */
+    .reminder-track-wrap {
+      position: relative;
+      height: 30px;
+      margin: 7px calc(16.6667% - 3px) 0;
+    }
+
+    .reminder-track-base,
+    .reminder-track-fill {
+      position: absolute;
+      top: 9px;
+      left: 0;
+      height: 4px;
+      border-radius: 999px;
+    }
+
+    .reminder-track-base {
+      right: 0;
+      background: #e3e7ec;
+    }
+
+    .reminder-track-fill {
+      width: 0;
+      background: var(--success);
+      transition: width 0.35s ease;
+    }
+
+    .reminder-track-fill.current {
+      background: linear-gradient(
+        90deg,
+        var(--success) 0%,
+        var(--blue) 100%
+      );
+    }
+
+    .reminder-track-node {
+      position: absolute;
+      top: 2px;
+      z-index: 2;
+      width: 18px;
+      height: 18px;
+      border: 3px solid #d9dde3;
+      border-radius: 50%;
+      background: #ffffff;
+      transform: translateX(-50%);
+    }
+
+    .reminder-track-node.first {
+      left: 0;
+    }
+
+    .reminder-track-node.second {
+      left: 50%;
+    }
+
+    .reminder-track-node.third {
+      left: 100%;
+    }
+
+    .reminder-track-node.done {
+      border-color: var(--success);
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(18, 142, 66, 0.10);
+    }
+
+    .reminder-track-node.current {
+      border-color: var(--blue);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.12);
+    }
+
+    .reminder-track-node.pending {
+      border-color: #d9dde3;
+      background: #ffffff;
+    }
+
+    .reminder-track-node::after {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #c3c8cf;
+      content: "";
+      transform: translate(-50%, -50%);
+    }
+
+    .reminder-track-node.done::after {
+      background: #ffffff;
+    }
+
+    .reminder-track-node.current::after {
+      background: var(--blue);
+    }
+
+    .reminder-track-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: -2px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .reminder-track-caption strong {
+      color: var(--text);
+      font-size: 11px;
+    }
+
     .reminder-step {
       padding: 9px 6px;
       border: 1px solid #e2e5e9;
@@ -1758,6 +1870,12 @@
 
       const stages = [2, 6, 15];
 
+      const nextReminderDay =
+        Number(
+          item.next_reminder_day ||
+          0
+        );
+
       const stepsHtml =
         stages.map(
           function (stage) {
@@ -1767,10 +1885,7 @@
               stateClass = 'done';
             } else if (
               !manualRequired &&
-              Number(
-                item.next_reminder_day ||
-                0
-              ) === stage
+              nextReminderDay === stage
             ) {
               stateClass = 'current';
             }
@@ -1795,6 +1910,89 @@
           }
         ).join('');
 
+      const progressPercent =
+        lastStage >= 15
+          ? 100
+          : lastStage >= 6
+            ? 50
+            : 0;
+
+      const progressStageCount =
+        lastStage >= 15
+          ? 3
+          : lastStage >= 6
+            ? 2
+            : lastStage >= 2
+              ? 1
+              : 0;
+
+      const trackNodeClasses =
+        stages.map(
+          function (stage) {
+            if (lastStage >= stage) {
+              return 'done';
+            }
+
+            if (
+              !manualRequired &&
+              nextReminderDay === stage
+            ) {
+              return 'current';
+            }
+
+            return 'pending';
+          }
+        );
+
+      const trackFillClass =
+        !manualRequired &&
+        nextReminderDay > lastStage
+          ? 'current'
+          : '';
+
+      const trackHtml = `
+        <div
+          class="reminder-track-wrap"
+          role="progressbar"
+          aria-label="自動催繳里程碑進度"
+          aria-valuemin="0"
+          aria-valuemax="3"
+          aria-valuenow="${progressStageCount}"
+        >
+          <div class="reminder-track-base"></div>
+
+          <div
+            class="reminder-track-fill ${trackFillClass}"
+            style="width: ${progressPercent}%"
+          ></div>
+
+          <span
+            class="reminder-track-node first ${trackNodeClasses[0]}"
+            title="逾期第 2 天"
+          ></span>
+
+          <span
+            class="reminder-track-node second ${trackNodeClasses[1]}"
+            title="逾期第 6 天"
+          ></span>
+
+          <span
+            class="reminder-track-node third ${trackNodeClasses[2]}"
+            title="逾期第 15 天"
+          ></span>
+        </div>
+
+        <div class="reminder-track-caption">
+          <span>
+            綠色：已通過｜藍色：下一階段
+          </span>
+
+          <strong>
+            里程碑 ${progressStageCount} / 3
+          </strong>
+        </div>
+      `;
+
       return `
         <div class="reminder-panel ${panelClass}">
           <div class="reminder-head">
@@ -1818,6 +2016,8 @@
           <div class="reminder-progress">
             ${stepsHtml}
           </div>
+
+          ${trackHtml}
 
           <div class="reminder-detail-list">
             <div class="reminder-detail-row">
