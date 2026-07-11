@@ -28,6 +28,12 @@
       --warning-soft: #fff4d7;
       --blue: #1a73e8;
       --blue-soft: #e8f0fe;
+      --success: #10893e;
+      --success-soft: #eaf9f0;
+      --purple: #7654c4;
+      --purple-soft: #f2edff;
+      --orange: #a55a00;
+      --orange-soft: #fff1df;
     }
 
     * {
@@ -192,6 +198,29 @@
       font-weight: 900;
     }
 
+    .summary-value.danger {
+      color: var(--danger);
+    }
+
+    .summary-value.success {
+      color: var(--success);
+    }
+
+    .summary-value.purple {
+      color: var(--purple);
+    }
+
+    .reminder-schedule-note {
+      padding: 12px 13px;
+      margin-top: 12px;
+      border: 1px solid #dfe8ff;
+      border-radius: 12px;
+      background: #f5f8ff;
+      color: #48627f;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
     .arrears-card {
       position: relative;
       overflow: hidden;
@@ -205,6 +234,10 @@
       width: 4px;
       background: var(--danger);
       content: "";
+    }
+
+    .arrears-card.manual-required::before {
+      background: var(--orange);
     }
 
     .arrears-head {
@@ -309,6 +342,147 @@
     .bill-id {
       color: #555;
       font-size: 11px;
+    }
+
+    .reminder-panel {
+      padding: 13px;
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #f8f9fb;
+    }
+
+    .reminder-panel.manual {
+      border-color: #f1c995;
+      background: #fff8ef;
+    }
+
+    .reminder-panel.final {
+      border-color: #d9cef8;
+      background: #faf8ff;
+    }
+
+    .reminder-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .reminder-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .reminder-subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .reminder-badge {
+      display: inline-flex;
+      flex: 0 0 auto;
+      min-height: 24px;
+      padding: 4px 8px;
+      align-items: center;
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .reminder-badge.manual {
+      background: var(--orange-soft);
+      color: var(--orange);
+    }
+
+    .reminder-badge.final {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .reminder-progress {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .reminder-step {
+      padding: 9px 6px;
+      border: 1px solid #e2e5e9;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #92979e;
+      text-align: center;
+    }
+
+    .reminder-step.done {
+      border-color: #bfe8cf;
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .reminder-step.current {
+      border-color: #bfd4ff;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .reminder-step-day {
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .reminder-step-label {
+      margin-top: 3px;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .reminder-detail-list {
+      margin-top: 10px;
+    }
+
+    .reminder-detail-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 0;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .reminder-detail-row:first-child {
+      border-top: 0;
+    }
+
+    .reminder-detail-label {
+      color: var(--muted);
+    }
+
+    .reminder-detail-value {
+      min-width: 0;
+      font-weight: 900;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .manual-followup-box {
+      padding: 11px 12px;
+      margin-top: 11px;
+      border: 1px solid #efc17f;
+      border-radius: 11px;
+      background: #fff3df;
+      color: #775000;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.7;
     }
 
     .card-actions {
@@ -1286,6 +1460,339 @@
       );
     }
 
+    function formatDateTime(value) {
+      const date =
+        dateFromSheetValue(value);
+
+      if (!date) {
+        return safeText(value);
+      }
+
+      return new Intl.DateTimeFormat(
+        'zh-TW',
+        {
+          timeZone: 'Asia/Taipei',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }
+      ).format(date);
+    }
+
+    function toBoolean(value) {
+      if (value === true) {
+        return true;
+      }
+
+      const text =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      return [
+        'true',
+        '1',
+        'yes',
+        'y',
+        '是',
+        '需人工處理'
+      ].indexOf(text) !== -1;
+    }
+
+    function reminderStageText(stage) {
+      const number = Number(stage || 0);
+
+      if (number >= 15) {
+        return '第 15 天最終提醒';
+      }
+
+      if (number >= 6) {
+        return '第 6 天第二次提醒';
+      }
+
+      if (number >= 2) {
+        return '第 2 天第一次提醒';
+      }
+
+      return '尚未發送';
+    }
+
+    function nextReminderText(item) {
+      if (
+        toBoolean(
+          item.manual_follow_up_required
+        )
+      ) {
+        return '已停止自動催繳';
+      }
+
+      const apiLabel =
+        rawText(
+          item.next_reminder_label
+        ).trim();
+
+      if (apiLabel) {
+        return apiLabel;
+      }
+
+      const apiDay =
+        Number(
+          item.next_reminder_day ||
+          0
+        );
+
+      if (apiDay > 0) {
+        return '逾期第 ' + apiDay + ' 天';
+      }
+
+      const stage =
+        Number(
+          item.last_reminder_stage ||
+          0
+        );
+
+      if (stage < 2) {
+        return '逾期第 2 天';
+      }
+
+      if (stage < 6) {
+        return '逾期第 6 天';
+      }
+
+      if (stage < 15) {
+        return '逾期第 15 天';
+      }
+
+      return '等待轉人工處理';
+    }
+
+    function reminderStatusLabel(item) {
+      if (
+        toBoolean(
+          item.manual_follow_up_required
+        )
+      ) {
+        return '需人工處理';
+      }
+
+      const apiStatus =
+        rawText(
+          item.reminder_status
+        )
+          .trim()
+          .toLowerCase();
+
+      const statusMap = {
+        pending: '等待自動催繳',
+        active: '自動催繳中',
+        scheduled: '等待排程',
+        final_sent: '最終提醒已送出',
+        completed: '自動流程完成',
+        manual_required: '需人工處理'
+      };
+
+      if (
+        apiStatus &&
+        statusMap[apiStatus]
+      ) {
+        return statusMap[apiStatus];
+      }
+
+      const stage =
+        Number(
+          item.last_reminder_stage ||
+          0
+        );
+
+      if (stage >= 15) {
+        return '最終提醒已送出';
+      }
+
+      if (
+        Number(
+          item.reminder_count ||
+          0
+        ) > 0
+      ) {
+        return '自動催繳中';
+      }
+
+      return '等待自動催繳';
+    }
+
+    function renderReminderPanel(item) {
+      const reminderCount =
+        Number(
+          item.reminder_count ||
+          0
+        );
+
+      const lastStage =
+        Number(
+          item.last_reminder_stage ||
+          0
+        );
+
+      const manualRequired =
+        toBoolean(
+          item.manual_follow_up_required
+        );
+
+      const panelClass =
+        manualRequired
+          ? 'manual'
+          : lastStage >= 15
+            ? 'final'
+            : '';
+
+      const badgeClass =
+        manualRequired
+          ? 'manual'
+          : lastStage >= 15
+            ? 'final'
+            : '';
+
+      const stages = [2, 6, 15];
+
+      const stepsHtml =
+        stages.map(
+          function (stage) {
+            let stateClass = '';
+
+            if (lastStage >= stage) {
+              stateClass = 'done';
+            } else if (
+              !manualRequired &&
+              Number(
+                item.next_reminder_day ||
+                0
+              ) === stage
+            ) {
+              stateClass = 'current';
+            }
+
+            return `
+              <div class="reminder-step ${stateClass}">
+                <div class="reminder-step-day">
+                  第 ${stage} 天
+                </div>
+
+                <div class="reminder-step-label">
+                  ${
+                    stage === 2
+                      ? '第一次'
+                      : stage === 6
+                        ? '第二次'
+                        : '最終提醒'
+                  }
+                </div>
+              </div>
+            `;
+          }
+        ).join('');
+
+      return `
+        <div class="reminder-panel ${panelClass}">
+          <div class="reminder-head">
+            <div>
+              <div class="reminder-title">
+                自動催繳進度
+              </div>
+
+              <div class="reminder-subtitle">
+                系統於逾期第 2、6、15 天自動發送提醒
+              </div>
+            </div>
+
+            <span class="reminder-badge ${badgeClass}">
+              ${safeText(
+                reminderStatusLabel(item)
+              )}
+            </span>
+          </div>
+
+          <div class="reminder-progress">
+            ${stepsHtml}
+          </div>
+
+          <div class="reminder-detail-list">
+            <div class="reminder-detail-row">
+              <div class="reminder-detail-label">
+                已成功催繳
+              </div>
+
+              <div class="reminder-detail-value">
+                ${reminderCount} 次
+              </div>
+            </div>
+
+            <div class="reminder-detail-row">
+              <div class="reminder-detail-label">
+                最後催繳階段
+              </div>
+
+              <div class="reminder-detail-value">
+                ${safeText(
+                  reminderStageText(
+                    lastStage
+                  )
+                )}
+              </div>
+            </div>
+
+            <div class="reminder-detail-row">
+              <div class="reminder-detail-label">
+                最後催繳時間
+              </div>
+
+              <div class="reminder-detail-value">
+                ${
+                  item.last_reminder_at
+                    ? formatDateTime(
+                        item.last_reminder_at
+                      )
+                    : '-'
+                }
+              </div>
+            </div>
+
+            <div class="reminder-detail-row">
+              <div class="reminder-detail-label">
+                下一步
+              </div>
+
+              <div class="reminder-detail-value">
+                ${safeText(
+                  nextReminderText(item)
+                )}
+              </div>
+            </div>
+          </div>
+
+          ${
+            manualRequired
+              ? `
+                <div class="manual-followup-box">
+                  此帳單已完成自動催繳流程，系統不再自動發送。請由房東聯絡房客，確認付款狀況或安排後續處理。
+                  ${
+                    item.manual_follow_up_at
+                      ? '<br>轉人工時間：' +
+                        formatDateTime(
+                          item.manual_follow_up_at
+                        )
+                      : ''
+                  }
+                </div>
+              `
+              : ''
+          }
+        </div>
+      `;
+    }
+
     function formatBillMonth(value) {
       const text =
         rawText(value).trim();
@@ -1567,17 +2074,14 @@
 
           script.onerror =
             function () {
-              if (finished) {
-                return;
-              }
-
-              finished = true;
-              cleanup();
-
-              reject(
-                new Error(
-                  'API 載入失敗'
-                )
+              /*
+               * Apps Script 可能重新導向至
+               * script.googleusercontent.com。
+               * 部分 LINE WebView 會誤觸 onerror，
+               * 因此由 JSONP callback 或 timeout 判定。
+               */
+              console.warn(
+                'JSONP script onerror ignored.'
               );
             };
 
@@ -1675,7 +2179,13 @@
         );
 
       return `
-        <article class="card arrears-card">
+        <article class="card arrears-card ${
+          toBoolean(
+            item.manual_follow_up_required
+          )
+            ? 'manual-required'
+            : ''
+        }">
           <div class="arrears-head">
             <div class="tenant-block">
               <div class="tenant-name">
@@ -1769,6 +2279,8 @@
             </div>
           </div>
 
+          ${renderReminderPanel(item)}
+
           <div class="card-actions">
             <button
               class="btn btn-outline"
@@ -1841,6 +2353,59 @@
           0
         );
 
+      const computedManualCount =
+        ARREARS.filter(
+          function (item) {
+            return toBoolean(
+              item.manual_follow_up_required
+            );
+          }
+        ).length;
+
+      const manualFollowUpCount =
+        Number(
+          summary
+            .manual_follow_up_count ??
+          computedManualCount
+        );
+
+      const computedActiveCount =
+        ARREARS.filter(
+          function (item) {
+            return !toBoolean(
+              item.manual_follow_up_required
+            );
+          }
+        ).length;
+
+      const autoReminderActiveCount =
+        Number(
+          summary
+            .auto_reminder_active_count ??
+          computedActiveCount
+        );
+
+      const computedReminderTotal =
+        ARREARS.reduce(
+          function (total, item) {
+            return (
+              total +
+              Number(
+                item.reminder_count ||
+                0
+              )
+            );
+          },
+          0
+        );
+
+      const reminderTotalCount =
+        Number(
+          summary
+            .reminder_total_count ??
+          computedReminderTotal
+        );
+
       app.className = '';
 
       app.innerHTML = `
@@ -1850,7 +2415,7 @@
           </h1>
 
           <div class="page-subtitle">
-            查看未繳帳單，並在確認收到私訊、轉帳截圖或現金後手動完成銷帳。
+            查看未繳帳單、自動催繳進度，以及需要房東人工聯絡處理的帳款。
           </div>
         </header>
 
@@ -1909,22 +2474,44 @@
                 未繳帳單數
               </div>
 
-              <div class="summary-value">
+              <div class="summary-value danger">
                 ${arrearsCount}
               </div>
             </div>
 
             <div class="summary-item">
               <div class="summary-label">
-                帳號狀態
+                自動催繳中
+              </div>
+
+              <div class="summary-value success">
+                ${autoReminderActiveCount}
+              </div>
+            </div>
+
+            <div class="summary-item">
+              <div class="summary-label">
+                需人工處理
+              </div>
+
+              <div class="summary-value purple">
+                ${manualFollowUpCount}
+              </div>
+            </div>
+
+            <div class="summary-item">
+              <div class="summary-label">
+                已發送提醒
               </div>
 
               <div class="summary-value">
-                ${statusText(
-                  landlord.account_status
-                )}
+                ${reminderTotalCount}
               </div>
             </div>
+          </div>
+
+          <div class="reminder-schedule-note">
+            自動催繳排程：逾期第 2 天、第 6 天及第 15 天；最終提醒完成後，帳單轉由房東人工處理。
           </div>
         </section>
 
@@ -2051,7 +2638,12 @@
           tenantId
         ) +
         '&v=' +
-        Date.now();
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
     }
 
     // ==================================================
