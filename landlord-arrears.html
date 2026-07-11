@@ -542,6 +542,15 @@
       color: var(--blue);
     }
 
+    .btn-warning {
+      background: #f59e0b;
+      color: #ffffff;
+    }
+
+    .btn-warning:hover {
+      background: #d98600;
+    }
+
     .btn-danger-soft {
       background: var(--danger-soft);
       color: var(--danger);
@@ -798,6 +807,44 @@
       margin-top: 18px;
     }
 
+    .manual-reminder-title {
+      color: var(--orange);
+    }
+
+    .manual-reminder-message {
+      padding: 14px;
+      margin-top: 16px;
+      border: 1px solid #f0d2ad;
+      border-radius: 12px;
+      background: #fffaf3;
+    }
+
+    .manual-reminder-message-title {
+      margin-bottom: 8px;
+      color: #7a4700;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .manual-reminder-message-text {
+      color: #4f463d;
+      font-size: 13px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .manual-reminder-note {
+      padding: 12px 13px;
+      margin-top: 14px;
+      border: 1px solid #f0dda6;
+      border-radius: 11px;
+      background: #fffaf0;
+      color: #7e5b00;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
     /* ==================================================
        提示 Modal
        ================================================== */
@@ -990,6 +1037,59 @@
       </button>
     </div>
   </nav>
+
+  <!-- 手動催繳 Modal -->
+  <div id="manualReminderModal" class="modal-mask">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+
+      <div class="modal-title manual-reminder-title">
+        手動催繳
+      </div>
+
+      <div
+        id="manualReminderModalSubtitle"
+        class="modal-subtitle"
+      ></div>
+
+      <div
+        id="manualReminderPreview"
+        class="settlement-preview"
+      ></div>
+
+      <div class="manual-reminder-message">
+        <div class="manual-reminder-message-title">
+          預計提醒內容
+        </div>
+
+        <div
+          id="manualReminderMessageText"
+          class="manual-reminder-message-text"
+        ></div>
+      </div>
+
+      <div class="manual-reminder-note">
+        系統會以房客目前的未繳帳款資料建立正式 LINE 提醒。同一房客同一天最多成功發送一次；若已有待確認付款回報、帳單尚未逾期，或今天已提醒過，後端會阻止發送。
+      </div>
+
+      <div class="modal-actions">
+        <button
+          class="btn btn-light"
+          onclick="closeManualReminderModal()"
+        >
+          取消
+        </button>
+
+        <button
+          id="submitManualReminderBtn"
+          class="btn btn-warning"
+          onclick="submitManualReminder()"
+        >
+          確認傳送 LINE
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- 手動確認已繳 Modal -->
   <div id="settlementModal" class="modal-mask">
@@ -1255,6 +1355,7 @@
     let PAGE_DATA = null;
     let ARREARS = [];
     let ACTIVE_BILL_ID = '';
+    let ACTIVE_REMINDER_BILL_ID = '';
     let ALERT_CALLBACK = null;
 
     const app =
@@ -2300,7 +2401,29 @@
             </button>
 
             <button
-              class="btn btn-primary"
+              class="btn btn-warning"
+              data-bill-id="${escapeHtml(
+                billId
+              )}"
+              onclick="openManualReminderModal(
+                this.dataset.billId
+              )"
+              ${
+                billId &&
+                item.tenant_id &&
+                Number(
+                  item.days_overdue || 0
+                ) >= 1
+                  ? ''
+                  : 'disabled'
+              }
+              title="帳單逾期第 1 天起可手動催繳"
+            >
+              手動催繳
+            </button>
+
+            <button
+              class="btn btn-primary full-action"
               data-bill-id="${escapeHtml(
                 billId
               )}"
@@ -2645,6 +2768,290 @@
             : ''
         );
     }
+
+    // ==================================================
+    // 手動催繳
+    // ==================================================
+
+    function buildManualReminderPreview(
+      item
+    ) {
+      const tenantName =
+        rawText(
+          item.tenant_name
+        ).trim() ||
+        '房客';
+
+      return [
+        '【CMWebs 租屋繳費提醒】',
+        '',
+        tenantName + ' 您好：',
+        '',
+        '您的租屋帳款目前尚未完成繳款，請儘速確認付款狀況。',
+        '',
+        '房號：' +
+          (
+            rawText(
+              item.room_name
+            ).trim() ||
+            '-'
+          ),
+        '帳單月份：' +
+          formatBillMonth(
+            item.bill_month
+          ),
+        '繳款期限：' +
+          formatDateOnly(
+            item.due_date
+          ),
+        '未繳金額：' +
+          money(
+            item.total_amount
+          ),
+        '',
+        '若您已完成繳款，請至付款回報頁提交資料，或直接與房東聯絡。',
+        '謝謝您。'
+      ].join('\n');
+    }
+
+    function openManualReminderModal(
+      billId
+    ) {
+      const item =
+        findArrearByBillId(
+          billId
+        );
+
+      if (!item) {
+        showAlert(
+          '找不到指定帳單'
+        );
+
+        return;
+      }
+
+      if (
+        Number(
+          item.days_overdue || 0
+        ) < 1
+      ) {
+        showAlert(
+          '此帳單尚未逾期，暫時不能催繳'
+        );
+
+        return;
+      }
+
+      if (!item.tenant_id) {
+        showAlert(
+          '此帳單缺少房客 ID，無法傳送催繳'
+        );
+
+        return;
+      }
+
+      ACTIVE_REMINDER_BILL_ID =
+        rawText(
+          billId
+        ).trim();
+
+      document
+        .getElementById(
+          'manualReminderModalSubtitle'
+        )
+        .textContent =
+          (item.tenant_name || '-') +
+          '｜房號 ' +
+          (item.room_name || '-');
+
+      document
+        .getElementById(
+          'manualReminderPreview'
+        )
+        .innerHTML = `
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單月份
+            </div>
+
+            <div class="preview-value">
+              ${formatBillMonth(
+                item.bill_month
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              未繳金額
+            </div>
+
+            <div class="preview-value">
+              ${money(
+                item.total_amount
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              繳款期限
+            </div>
+
+            <div class="preview-value">
+              ${formatDateOnly(
+                item.due_date
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              逾期天數
+            </div>
+
+            <div class="preview-value">
+              ${Number(
+                item.days_overdue || 0
+              )} 天
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              自動催繳階段
+            </div>
+
+            <div class="preview-value">
+              ${safeText(
+                reminderStageText(
+                  item.last_reminder_stage
+                )
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單 ID
+            </div>
+
+            <div class="preview-value">
+              ${safeText(
+                item.bill_id
+              )}
+            </div>
+          </div>
+        `;
+
+      document
+        .getElementById(
+          'manualReminderMessageText'
+        )
+        .textContent =
+          buildManualReminderPreview(
+            item
+          );
+
+      document
+        .getElementById(
+          'manualReminderModal'
+        )
+        .classList
+        .add('show');
+
+      document.body
+        .classList
+        .add('modal-open');
+    }
+
+    function closeManualReminderModal() {
+      document
+        .getElementById(
+          'manualReminderModal'
+        )
+        .classList
+        .remove('show');
+
+      document.body
+        .classList
+        .remove('modal-open');
+
+      ACTIVE_REMINDER_BILL_ID = '';
+    }
+
+    async function submitManualReminder() {
+      if (
+        !ACTIVE_REMINDER_BILL_ID
+      ) {
+        showAlert(
+          '缺少帳單 ID'
+        );
+
+        return;
+      }
+
+      const item =
+        findArrearByBillId(
+          ACTIVE_REMINDER_BILL_ID
+        );
+
+      if (!item) {
+        showAlert(
+          '找不到指定帳單'
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          'submitManualReminderBtn'
+        );
+
+      try {
+        button.disabled = true;
+        button.textContent =
+          '傳送中...';
+
+        const response =
+          await callApi(
+            'landlord_send_tenant_message',
+            {
+              tenant_id:
+                item.tenant_id || '',
+
+              tenant_user_id:
+                item.user_id || '',
+
+              message_type:
+                'payment_reminder',
+
+              message_text:
+                ''
+            }
+          );
+
+        closeManualReminderModal();
+
+        showAlert(
+          response.message ||
+          'LINE 催繳提醒已送出'
+        );
+
+      } catch (error) {
+        showAlert(
+          error.message ||
+          String(error)
+        );
+
+      } finally {
+        button.disabled = false;
+        button.textContent =
+          '確認傳送 LINE';
+      }
+    }
+
 
     // ==================================================
     // 手動確認已繳
@@ -3142,6 +3549,21 @@
         callback();
       }
     }
+
+    document
+      .getElementById(
+        'manualReminderModal'
+      )
+      .addEventListener(
+        'click',
+        function (event) {
+          if (
+            event.target === this
+          ) {
+            closeManualReminderModal();
+          }
+        }
+      );
 
     document
       .getElementById(
