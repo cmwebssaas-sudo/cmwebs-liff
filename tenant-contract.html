@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+
+  <title>CMWebs 我的合約</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 66px;
+
+      --primary: #06c755;
+      --primary-dark: #05a847;
+      --primary-soft: #eaf9f0;
+
+      --background: #f4f6f9;
+      --surface: #ffffff;
+      --text: #222222;
+      --muted: #747981;
+      --border: #e7eaee;
+
+      --blue: #1a73e8;
+      --blue-soft: #eaf2ff;
+
+      --orange: #ef8f00;
+      --orange-soft: #fff4dc;
+
+      --purple: #7654c4;
+      --purple-soft: #f2edff;
+
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.065);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+      background: var(--background);
+      color: var(--text);
+      font-family: Arial, "Noto Sans TC", sans-serif;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background: var(--background);
+    }
+
+    .page {
+      width: 100%;
+      height: 100%;
+      padding:
+        18px
+        15px
+        calc(
+          var(--nav-height) +
+          28px +
+          env(safe-area-inset-bottom)
+        );
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .page-header {
+      margin-bottom: 15px;
+    }
+
+    .page-title {
+      margin: 0 0 5px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .card {
+      padding: 17px;
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .section-title {
+      margin-bottom: 12px;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .profile-row {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+    }
+
+    .avatar {
+      display: flex;
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .profile-content {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .profile-name {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .profile-desc {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      min-height: 24px;
+      padding: 4px 9px;
+      align-items: center;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .status-active {
+      background: var(--primary-soft);
+      color: #10893e;
+    }
+
+    .status-pending {
+      background: var(--orange-soft);
+      color: #a76500;
+    }
+
+    .status-approved {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .status-rejected {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .status-cancelled,
+    .status-completed,
+    .status-default {
+      background: #f0f2f4;
+      color: #666c75;
+    }
+
+    .contract-hero {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      margin-bottom: 13px;
+      border-radius: 18px;
+      background:
+        linear-gradient(
+          145deg,
+          #0bb95a 0%,
+          #06c755 56%,
+          #05aa49 100%
+        );
+      color: #ffffff;
+      box-shadow: 0 8px 24px rgba(6, 199, 85, 0.22);
+    }
+
+    .contract-hero::after {
+      position: absolute;
+      top: -44px;
+      right: -38px;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      content: "";
+    }
+
+    .hero-top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .hero-room {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+
+    .hero-landlord {
+      margin-top: 5px;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .days-box {
+      min-width: 82px;
+      padding: 10px 11px;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.18);
+      text-align: center;
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .days-value {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .days-label {
+      margin-top: 5px;
+      font-size: 11px;
+      opacity: 0.92;
+    }
+
+    .contract-progress {
+      position: relative;
+      z-index: 1;
+      margin-top: 18px;
+    }
+
+    .progress-line {
+      width: 100%;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: #ffffff;
+      transition: width 0.35s ease;
+    }
+
+    .progress-dates {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 11px;
+      opacity: 0.95;
+    }
+
+    .detail-list {
+      margin-top: 2px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 0;
+      border-top: 1px solid #eeeeee;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .detail-row:first-child {
+      border-top: none;
+    }
+
+    .detail-label {
+      flex: 0 0 auto;
+      color: var(--muted);
+    }
+
+    .detail-value {
+      min-width: 0;
+      font-weight: 800;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .money {
+      color: #10893e;
+    }
+
+    .bank-box {
+      padding: 14px;
+      border: 1px solid #dcefe3;
+      border-radius: 13px;
+      background: #f3fcf6;
+    }
+
+    .bank-title {
+      margin-bottom: 9px;
+      color: #10893e;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .bank-account {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 0.8px;
+      word-break: break-all;
+    }
+
+    .bank-meta {
+      margin-top: 7px;
+      color: #607368;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .action-card {
+      width: 100%;
+      min-height: 112px;
+      padding: 15px 13px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #ffffff;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .action-card:active {
+      opacity: 0.72;
+      transform: scale(0.995);
+    }
+
+    .action-card:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .action-icon {
+      display: flex;
+      width: 42px;
+      height: 42px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 11px;
+      border-radius: 12px;
+    }
+
+    .action-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .action-icon.renewal {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .action-icon.termination {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .action-title {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .action-desc {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .request-card {
+      position: relative;
+      padding: 15px;
+      margin-bottom: 11px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .request-card::before {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 4px;
+      background: var(--blue);
+      content: "";
+    }
+
+    .request-card.termination::before {
+      background: var(--danger);
+    }
+
+    .request-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .request-title {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .request-time {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .request-reason,
+    .landlord-note {
+      padding: 12px 13px;
+      margin-top: 11px;
+      border-radius: 11px;
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .request-reason {
+      background: #f7f8fa;
+      color: #555555;
+    }
+
+    .landlord-note {
+      border: 1px solid #dbe6ff;
+      background: #f4f7ff;
+      color: #38517a;
+    }
+
+    .box-title {
+      margin-bottom: 5px;
+      font-weight: 900;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 44px;
+      padding: 11px 13px;
+      border: 0;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn:active {
+      opacity: 0.72;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-light {
+      background: #eef1f5;
+      color: #333333;
+    }
+
+    .btn-black {
+      background: #222222;
+      color: #ffffff;
+    }
+
+    .btn-danger-soft {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .request-actions {
+      margin-top: 12px;
+    }
+
+    .empty {
+      padding: 38px 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty-icon {
+      margin-bottom: 9px;
+      font-size: 35px;
+    }
+
+    .empty-title {
+      color: #444444;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .empty-desc {
+      margin-top: 7px;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .page-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .loading,
+    .error-box {
+      padding: 42px 20px;
+      text-align: center;
+    }
+
+    .loading {
+      color: var(--muted);
+    }
+
+    .error-card {
+      padding: 18px;
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .error-title {
+      color: var(--danger);
+      font-size: 19px;
+      font-weight: 900;
+      text-align: left;
+    }
+
+    .error-message {
+      margin-top: 9px;
+      color: #555555;
+      font-size: 14px;
+      line-height: 1.7;
+      text-align: left;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .error-code {
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 10px;
+      background: #f7f8fa;
+      color: #777777;
+      font-size: 11px;
+      text-align: left;
+      word-break: break-all;
+    }
+
+    /* Modal */
+
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.48);
+    }
+
+    .modal-mask.show {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 560px;
+      max-height: 92vh;
+      max-height: 92dvh;
+      padding:
+        18px
+        18px
+        calc(18px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      border-radius: 22px 22px 0 0;
+      background: #ffffff;
+      box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.22);
+    }
+
+    .modal-handle {
+      width: 40px;
+      height: 5px;
+      margin: 0 auto 15px;
+      border-radius: 999px;
+      background: #d9dde2;
+    }
+
+    .modal-title {
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .modal-subtitle {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .field {
+      margin-top: 16px;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 7px;
+      color: #444444;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .field-textarea {
+      width: 100%;
+      min-height: 105px;
+      padding: 13px 14px;
+      resize: vertical;
+      border: 1px solid #dfe3e8;
+      border-radius: 12px;
+      outline: none;
+      background: #ffffff;
+      color: #222222;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .field-textarea:focus {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.1);
+    }
+
+    .char-count {
+      margin-top: 6px;
+      color: #999999;
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .modal-warning {
+      padding: 12px 13px;
+      margin-top: 15px;
+      border: 1px solid #efd9a7;
+      border-radius: 11px;
+      background: #fffaf0;
+      color: #7c5b00;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .alert-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.48);
+    }
+
+    .alert-mask.show {
+      display: flex;
+    }
+
+    .alert-box {
+      width: 100%;
+      max-width: 350px;
+      padding: 22px 18px 16px;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
+      text-align: center;
+    }
+
+    .alert-title {
+      margin-bottom: 10px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .alert-message {
+      margin-bottom: 18px;
+      color: #555555;
+      font-size: 14px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Bottom navigation */
+
+    .bottom-nav {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 99999;
+      width: 100%;
+      padding-bottom: env(safe-area-inset-bottom);
+      border-top: 1px solid #eceff3;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .bottom-nav-inner {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      height: var(--nav-height);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      appearance: none;
+      -webkit-appearance: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    .nav-item:active {
+      opacity: 0.65;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div id="app" class="loading">
+        合約資料載入中...
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button
+          class="nav-item"
+          onclick="goPage('tenant-home.html')"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button
+          class="nav-item"
+          onclick="goPage('tenant-bills.html')"
+        >
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>帳單</span>
+        </button>
+
+        <button
+          class="nav-item active"
+          onclick="goPage('tenant-contract.html')"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M6 3.5h9l3 3V20H6z"></path>
+            <path d="M15 3.5V7h3"></path>
+            <path d="M9 11h6"></path>
+            <path d="M9 15h6"></path>
+          </svg>
+          <span>合約</span>
+        </button>
+
+        <button
+          class="nav-item"
+          onclick="goPage('tenant-message.html')"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M5 5h14v11H9l-4 3z"></path>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 12h5"></path>
+          </svg>
+          <span>聯絡</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- 取消申請 Modal -->
+  <div id="cancelModal" class="modal-mask">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+
+      <div class="modal-title">
+        取消合約申請
+      </div>
+
+      <div id="cancelSubtitle" class="modal-subtitle"></div>
+
+      <div class="field">
+        <label class="field-label" for="cancelReason">
+          取消原因（選填）
+        </label>
+
+        <textarea
+          id="cancelReason"
+          class="field-textarea"
+          maxlength="300"
+          placeholder="例如：日期需要重新確認，稍後會重新提出申請。"
+          oninput="updateCancelCount()"
+        ></textarea>
+
+        <div id="cancelCount" class="char-count">
+          0 / 300
+        </div>
+      </div>
+
+      <div class="modal-warning">
+        取消後，原申請會保留在紀錄中並標示為「已取消」。房東也會收到取消通知。
+      </div>
+
+      <div class="modal-actions">
+        <button
+          class="btn btn-light"
+          onclick="closeCancelModal()"
+        >
+          返回
+        </button>
+
+        <button
+          id="submitCancelBtn"
+          class="btn btn-danger-soft"
+          onclick="submitCancelRequest()"
+        >
+          確認取消
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示 Modal -->
+  <div id="alertModal" class="alert-mask">
+    <div class="alert-box">
+      <div id="alertTitle" class="alert-title">
+        提示
+      </div>
+
+      <div id="alertMessage" class="alert-message"></div>
+
+      <button
+        class="btn btn-primary"
+        onclick="closeAlertModal()"
+      >
+        確定
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==================================================
+    // 基本設定
+    // ==================================================
+
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-iJB1D6sN';
+
+    const TEST_LINE_USER_ID =
+      'U3615a7ed919c1a4a438a246c10784d70';
+
+    const QUERY_PARAMS =
+      new URLSearchParams(location.search);
+
+    const TEST_MODE =
+      QUERY_PARAMS.get('test') === '1';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let REQUESTS = [];
+    let ACTIVE_REQUEST_ID = '';
+    let ALERT_CALLBACK = null;
+
+    const app =
+      document.getElementById('app');
+
+    // ==================================================
+    // 固定畫面高度
+    // ==================================================
+
+    function updateAppHeight() {
+      const height =
+        window.visualViewport
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement
+        .style
+        .setProperty(
+          '--app-height',
+          height + 'px'
+        );
+    }
+
+    updateAppHeight();
+
+    window.addEventListener(
+      'resize',
+      updateAppHeight
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport
+        .addEventListener(
+          'resize',
+          updateAppHeight
+        );
+    }
+
+    // ==================================================
+    // 工具函式
+    // ==================================================
+
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function escapeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function safeText(value) {
+      const text =
+        rawText(value).trim();
+
+      return text
+        ? escapeHtml(text)
+        : '-';
+    }
+
+    function money(value) {
+      const number =
+        Number(value || 0);
+
+      return (
+        'NT$ ' +
+        Math.round(
+          isFinite(number)
+            ? number
+            : 0
+        ).toLocaleString('zh-TW')
+      );
+    }
+
+    function getInitial(name) {
+      const text =
+        rawText(name).trim();
+
+      return text
+        ? text.slice(0, 1)
+        : '房';
+    }
+
+    function dateFromValue(value) {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ''
+      ) {
+        return null;
+      }
+
+      if (
+        typeof value === 'number' ||
+        /^\d{5}(\.\d+)?$/.test(
+          rawText(value).trim()
+        )
+      ) {
+        const serial =
+          Number(value);
+
+        if (
+          isFinite(serial) &&
+          serial > 20000 &&
+          serial < 100000
+        ) {
+          return new Date(
+            Date.UTC(1899, 11, 30) +
+            serial * 86400000
+          );
+        }
+      }
+
+      const text =
+        rawText(value).trim();
+
+      if (/^\d{4}-\d{2}$/.test(text)) {
+        return new Date(
+          text + '-01T12:00:00+08:00'
+        );
+      }
+
+      const parsed =
+        new Date(text);
+
+      return isNaN(parsed.getTime())
+        ? null
+        : parsed;
+    }
+
+    function formatDateOnly(value) {
+      const date =
+        dateFromValue(value);
+
+      if (!date) {
+        return safeText(value);
+      }
+
+      return new Intl.DateTimeFormat(
+        'en-CA',
+        {
+          timeZone: 'Asia/Taipei',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }
+      ).format(date);
+    }
+
+    function formatDateTime(value) {
+      const date =
+        dateFromValue(value);
+
+      if (!date) {
+        return safeText(value);
+      }
+
+      return new Intl.DateTimeFormat(
+        'zh-TW',
+        {
+          timeZone: 'Asia/Taipei',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }
+      ).format(date);
+    }
+
+    function statusText(value) {
+      const status =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      const map = {
+        active: '有效',
+        valid: '有效',
+        current: '有效',
+        pending: '待處理',
+        approved: '已核准',
+        rejected: '已駁回',
+        cancelled: '已取消',
+        completed: '已完成',
+        expired: '已到期',
+        terminated: '已終止'
+      };
+
+      return map[status] || safeText(value);
+    }
+
+    function statusClass(value) {
+      const status =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      const map = {
+        active: 'status-active',
+        valid: 'status-active',
+        current: 'status-active',
+        pending: 'status-pending',
+        approved: 'status-approved',
+        rejected: 'status-rejected',
+        cancelled: 'status-cancelled',
+        completed: 'status-completed'
+      };
+
+      return map[status] || 'status-default';
+    }
+
+    function requestTypeText(value) {
+      const type =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      return type === 'renewal'
+        ? '續約申請'
+        : type === 'termination'
+          ? '解約／退租申請'
+          : safeText(value);
+    }
+
+    function goPage(filename) {
+      const testSuffix =
+        TEST_MODE
+          ? '&test=1'
+          : '';
+
+      location.href =
+        filename +
+        '?v=' +
+        Date.now() +
+        testSuffix;
+    }
+
+    function goRequestPage(filename) {
+      const contract =
+        PAGE_DATA && PAGE_DATA.contract
+          ? PAGE_DATA.contract
+          : {};
+
+      const params =
+        new URLSearchParams();
+
+      params.set('v', Date.now());
+
+      if (TEST_MODE) {
+        params.set('test', '1');
+      }
+
+      if (contract.contract_id) {
+        params.set(
+          'contract_id',
+          contract.contract_id
+        );
+      }
+
+      location.href =
+        filename +
+        '?' +
+        params.toString();
+    }
+
+    function contractProgress(contract) {
+      const start =
+        dateFromValue(contract.start_date);
+
+      const end =
+        dateFromValue(contract.end_date);
+
+      if (!start || !end) {
+        return 0;
+      }
+
+      const total =
+        end.getTime() -
+        start.getTime();
+
+      if (total <= 0) {
+        return 100;
+      }
+
+      const elapsed =
+        Date.now() -
+        start.getTime();
+
+      return Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            elapsed /
+            total *
+            100
+          )
+        )
+      );
+    }
+
+    function daysRemainingText(value) {
+      const days =
+        Number(value);
+
+      if (!isFinite(days)) {
+        return '-';
+      }
+
+      if (days < 0) {
+        return '已到期';
+      }
+
+      return String(days);
+    }
+
+    function updateCancelCount() {
+      const input =
+        document.getElementById(
+          'cancelReason'
+        );
+
+      const counter =
+        document.getElementById(
+          'cancelCount'
+        );
+
+      counter.textContent =
+        input.value.length +
+        ' / 300';
+    }
+
+    // ==================================================
+    // JSONP API
+    // ==================================================
+
+    function callApi(action, params) {
+      return new Promise(
+        function (resolve, reject) {
+          if (!LINE_USER_ID) {
+            reject(
+              new Error(
+                '缺少房客 LINE User ID'
+              )
+            );
+
+            return;
+          }
+
+          params = params || {};
+
+          const callbackName =
+            'cmwebsJsonp_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+          let timer = null;
+
+          function cleanup() {
+            if (timer) {
+              clearTimeout(timer);
+            }
+
+            if (script.parentNode) {
+              script.parentNode
+                .removeChild(script);
+            }
+
+            try {
+              delete window[callbackName];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (json) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(json || {});
+            };
+
+          timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                cleanup();
+
+                reject(
+                  new Error(
+                    'API 載入逾時'
+                  )
+                );
+              },
+              30000
+            );
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(action) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(params)
+            .forEach(
+              function (key) {
+                const value =
+                  params[key];
+
+                if (
+                  value === undefined ||
+                  value === null
+                ) {
+                  return;
+                }
+
+                url +=
+                  '&' +
+                  encodeURIComponent(key) +
+                  '=' +
+                  encodeURIComponent(value);
+              }
+            );
+
+          script.charset = 'UTF-8';
+
+          script.onerror =
+            function () {
+              console.warn(
+                'JSONP script onerror ignored.'
+              );
+            };
+
+          script.src = url;
+
+          document.body
+            .appendChild(script);
+        }
+      );
+    }
+
+    // ==================================================
+    // LIFF
+    // ==================================================
+
+    async function initLineUserId() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        return true;
+      }
+
+      if (typeof liff === 'undefined') {
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri: location.href
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error(
+          '無法取得房客 LINE User ID'
+        );
+      }
+
+      return true;
+    }
+
+    // ==================================================
+    // 畫面渲染
+    // ==================================================
+
+    function renderContractHero(contract) {
+      const progress =
+        contractProgress(contract);
+
+      return `
+        <section class="contract-hero">
+          <div class="hero-top">
+            <div>
+              <div class="hero-room">
+                房號 ${safeText(
+                  contract.room_name
+                )}
+              </div>
+
+              <div class="hero-landlord">
+                房東：${safeText(
+                  contract.landlord_name
+                )}
+              </div>
+            </div>
+
+            <div class="days-box">
+              <div class="days-value">
+                ${daysRemainingText(
+                  contract.days_remaining
+                )}
+              </div>
+
+              <div class="days-label">
+                ${
+                  Number(
+                    contract.days_remaining
+                  ) < 0
+                    ? '合約狀態'
+                    : '剩餘天數'
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="contract-progress">
+            <div class="progress-line">
+              <div
+                class="progress-fill"
+                style="width: ${progress}%"
+              ></div>
+            </div>
+
+            <div class="progress-dates">
+              <span>
+                ${formatDateOnly(
+                  contract.start_date
+                )}
+              </span>
+
+              <span>
+                ${formatDateOnly(
+                  contract.end_date
+                )}
+              </span>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderRequestCard(request) {
+      const type =
+        rawText(
+          request.request_type
+        )
+          .trim()
+          .toLowerCase();
+
+      const status =
+        rawText(request.status)
+          .trim()
+          .toLowerCase();
+
+      const isPending =
+        status === 'pending';
+
+      return `
+        <article class="request-card ${escapeHtml(type)}">
+          <div class="request-head">
+            <div>
+              <div class="request-title">
+                ${requestTypeText(type)}
+              </div>
+
+              <div class="request-time">
+                提出時間：${formatDateTime(
+                  request.created_at
+                )}
+              </div>
+            </div>
+
+            <span class="status-badge ${statusClass(status)}">
+              ${statusText(status)}
+            </span>
+          </div>
+
+          <div class="detail-list">
+            <div class="detail-row">
+              <div class="detail-label">
+                申請編號
+              </div>
+
+              <div class="detail-value">
+                ${safeText(
+                  request.request_id
+                )}
+              </div>
+            </div>
+
+            ${
+              type === 'renewal'
+                ? `
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      續約月數
+                    </div>
+
+                    <div class="detail-value">
+                      ${Number(
+                        request.requested_term_months ||
+                        0
+                      )} 個月
+                    </div>
+                  </div>
+
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      希望到期日
+                    </div>
+
+                    <div class="detail-value">
+                      ${formatDateOnly(
+                        request.preferred_end_date
+                      )}
+                    </div>
+                  </div>
+                `
+                : `
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      預計退租日
+                    </div>
+
+                    <div class="detail-value">
+                      ${formatDateOnly(
+                        request.move_out_date
+                      )}
+                    </div>
+                  </div>
+                `
+            }
+          </div>
+
+          <div class="request-reason">
+            <div class="box-title">
+              申請原因
+            </div>
+
+            ${safeText(
+              request.reason
+            )}
+          </div>
+
+          ${
+            request.landlord_note
+              ? `
+                <div class="landlord-note">
+                  <div class="box-title">
+                    房東說明
+                  </div>
+
+                  ${safeText(
+                    request.landlord_note
+                  )}
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            isPending
+              ? `
+                <div class="request-actions">
+                  <button
+                    class="btn btn-danger-soft"
+                    data-request-id="${escapeHtml(
+                      request.request_id
+                    )}"
+                    onclick="openCancelModal(
+                      this.dataset.requestId
+                    )"
+                  >
+                    取消此申請
+                  </button>
+                </div>
+              `
+              : ''
+          }
+        </article>
+      `;
+    }
+
+    function renderPage(data) {
+      PAGE_DATA = data || {};
+
+      const tenant =
+        PAGE_DATA.tenant || {};
+
+      const contract =
+        PAGE_DATA.contract || null;
+
+      const permissions =
+        PAGE_DATA.permissions || {};
+
+      REQUESTS =
+        Array.isArray(PAGE_DATA.requests)
+          ? PAGE_DATA.requests
+          : [];
+
+      app.className = '';
+
+      app.innerHTML = `
+        <header class="page-header">
+          <h1 class="page-title">
+            我的合約
+          </h1>
+
+          <div class="page-subtitle">
+            查看目前租約、付款資訊及續約或退租申請進度
+          </div>
+        </header>
+
+        <section class="card">
+          <div class="profile-row">
+            <div class="avatar">
+              ${safeText(
+                getInitial(
+                  tenant.tenant_name
+                )
+              )}
+            </div>
+
+            <div class="profile-content">
+              <div class="profile-name">
+                ${safeText(
+                  tenant.tenant_name
+                )}
+              </div>
+
+              <div class="profile-desc">
+                房號 ${safeText(
+                  tenant.room_name ||
+                  tenant.room_list ||
+                  (
+                    contract &&
+                    contract.room_name
+                  )
+                )}
+                ｜房客編號 ${safeText(
+                  tenant.tenant_id
+                )}
+              </div>
+            </div>
+
+            ${
+              contract
+                ? `
+                  <span class="status-badge ${statusClass(
+                    contract.contract_status
+                  )}">
+                    ${statusText(
+                      contract.contract_status ||
+                      'active'
+                    )}
+                  </span>
+                `
+                : ''
+            }
+          </div>
+        </section>
+
+        ${
+          contract
+            ? renderContractHero(contract)
+            : `
+              <section class="card empty">
+                <div class="empty-icon">
+                  📄
+                </div>
+
+                <div class="empty-title">
+                  查無目前有效合約
+                </div>
+
+                <div class="empty-desc">
+                  請確認房客綁定資料與 V2_contracts 是否已有有效合約。
+                </div>
+              </section>
+            `
+        }
+
+        ${
+          contract
+            ? `
+              <section class="card">
+                <div class="section-title">
+                  合約內容
+                </div>
+
+                <div class="detail-list">
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      合約編號
+                    </div>
+
+                    <div class="detail-value">
+                      ${safeText(
+                        contract.contract_id
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      合約起日
+                    </div>
+
+                    <div class="detail-value">
+                      ${formatDateOnly(
+                        contract.start_date
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      合約到期日
+                    </div>
+
+                    <div class="detail-value">
+                      ${formatDateOnly(
+                        contract.end_date
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      每月租金
+                    </div>
+
+                    <div class="detail-value money">
+                      ${money(
+                        contract.rent_amount
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      每月管理費
+                    </div>
+
+                    <div class="detail-value money">
+                      ${money(
+                        contract.management_fee
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      押金
+                    </div>
+
+                    <div class="detail-value money">
+                      ${money(
+                        contract.deposit_amount
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      每月繳款日
+                    </div>
+
+                    <div class="detail-value">
+                      每月 ${Number(
+                        contract.monthly_payment_day ||
+                        0
+                      ) || '-'} 日
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="card">
+                <div class="section-title">
+                  房東收款資訊
+                </div>
+
+                <div class="bank-box">
+                  <div class="bank-title">
+                    匯款帳號
+                  </div>
+
+                  <div class="bank-account">
+                    ${safeText(
+                      contract.bank_account
+                    )}
+                  </div>
+
+                  <div class="bank-meta">
+                    銀行：${safeText(
+                      contract.bank_name
+                    )}<br />
+                    戶名：${safeText(
+                      contract.bank_account_name
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section class="card">
+                <div class="section-title">
+                  合約申請
+                </div>
+
+                <div class="action-grid">
+                  <button
+                    class="action-card"
+                    onclick="goRequestPage(
+                      'tenant-renewal.html'
+                    )"
+                    ${
+                      permissions.can_request_renewal === false
+                        ? 'disabled'
+                        : ''
+                    }
+                  >
+                    <div class="action-icon renewal">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 7h10"></path>
+                        <path d="M12 4l3 3-3 3"></path>
+                        <path d="M19 17H9"></path>
+                        <path d="M12 14l-3 3 3 3"></path>
+                      </svg>
+                    </div>
+
+                    <div class="action-title">
+                      申請續約
+                    </div>
+
+                    <div class="action-desc">
+                      選擇續約期間並送交房東確認
+                    </div>
+                  </button>
+
+                  <button
+                    class="action-card"
+                    onclick="goRequestPage(
+                      'tenant-termination.html'
+                    )"
+                    ${
+                      permissions.can_request_termination === false
+                        ? 'disabled'
+                        : ''
+                    }
+                  >
+                    <div class="action-icon termination">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M7 4h10v16H7z"></path>
+                        <path d="M11 12h6"></path>
+                        <path d="M14 9l3 3-3 3"></path>
+                      </svg>
+                    </div>
+
+                    <div class="action-title">
+                      申請解約
+                    </div>
+
+                    <div class="action-desc">
+                      提交預計退租日期與解約原因
+                    </div>
+                  </button>
+                </div>
+
+                ${
+                  permissions.can_request_renewal === false ||
+                  permissions.can_request_termination === false
+                    ? `
+                      <div class="modal-warning">
+                        同類型申請已有待處理紀錄時，系統會暫停重複申請。可先於下方取消原申請。
+                      </div>
+                    `
+                    : ''
+                }
+              </section>
+            `
+            : ''
+        }
+
+        <section class="card">
+          <div class="section-title">
+            申請紀錄
+          </div>
+
+          ${
+            REQUESTS.length > 0
+              ? REQUESTS
+                  .map(renderRequestCard)
+                  .join('')
+              : `
+                <div class="empty">
+                  <div class="empty-icon">
+                    ✓
+                  </div>
+
+                  <div class="empty-title">
+                    尚無合約申請紀錄
+                  </div>
+
+                  <div class="empty-desc">
+                    續約或解約申請送出後，處理進度會顯示在這裡。
+                  </div>
+                </div>
+              `
+          }
+        </section>
+
+        <div class="page-actions">
+          <button
+            class="btn btn-black"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </div>
+      `;
+    }
+
+    function renderNoContract(data, message) {
+      PAGE_DATA =
+        data || {
+          tenant: {},
+          contract: null,
+          requests: [],
+          permissions: {}
+        };
+
+      renderPage(PAGE_DATA);
+
+      if (message) {
+        showAlert(message);
+      }
+    }
+
+    function renderError(message, code) {
+      app.className = '';
+
+      app.innerHTML = `
+        <div class="error-card">
+          <div class="error-title">
+            合約資料讀取失敗
+          </div>
+
+          <div class="error-message">
+            ${safeText(
+              message ||
+              '讀取失敗'
+            )}
+          </div>
+
+          ${
+            code
+              ? `
+                <div class="error-code">
+                  錯誤代碼：${safeText(code)}
+                </div>
+              `
+              : ''
+          }
+
+          <div class="page-actions">
+            <button
+              class="btn btn-black"
+              onclick="loadPage()"
+            >
+              重新整理
+            </button>
+
+            <button
+              class="btn btn-primary"
+              onclick="goPage(
+                'tenant-home.html'
+              )"
+            >
+              返回首頁
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function findRequestById(requestId) {
+      return (
+        REQUESTS.find(
+          function (request) {
+            return (
+              rawText(
+                request.request_id
+              ).trim() ===
+              rawText(requestId).trim()
+            );
+          }
+        ) || null
+      );
+    }
+
+    // ==================================================
+    // 取消申請
+    // ==================================================
+
+    function openCancelModal(requestId) {
+      const request =
+        findRequestById(requestId);
+
+      if (!request) {
+        showAlert(
+          '找不到指定申請'
+        );
+
+        return;
+      }
+
+      if (
+        rawText(request.status)
+          .trim()
+          .toLowerCase() !==
+        'pending'
+      ) {
+        showAlert(
+          '只有待處理申請可以取消'
+        );
+
+        return;
+      }
+
+      ACTIVE_REQUEST_ID =
+        rawText(requestId).trim();
+
+      document
+        .getElementById(
+          'cancelSubtitle'
+        )
+        .textContent =
+          requestTypeText(
+            request.request_type
+          ) +
+          '｜申請編號 ' +
+          request.request_id;
+
+      document
+        .getElementById(
+          'cancelReason'
+        )
+        .value = '';
+
+      updateCancelCount();
+
+      document
+        .getElementById(
+          'cancelModal'
+        )
+        .classList
+        .add('show');
+
+      document.body
+        .classList
+        .add('modal-open');
+    }
+
+    function closeCancelModal() {
+      document
+        .getElementById(
+          'cancelModal'
+        )
+        .classList
+        .remove('show');
+
+      document.body
+        .classList
+        .remove('modal-open');
+
+      ACTIVE_REQUEST_ID = '';
+    }
+
+    async function submitCancelRequest() {
+      const request =
+        findRequestById(
+          ACTIVE_REQUEST_ID
+        );
+
+      if (!request) {
+        showAlert(
+          '找不到指定申請'
+        );
+
+        return;
+      }
+
+      const cancelReason =
+        document
+          .getElementById(
+            'cancelReason'
+          )
+          .value
+          .trim();
+
+      if (cancelReason.length > 300) {
+        showAlert(
+          '取消原因最多 300 字'
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          'submitCancelBtn'
+        );
+
+      try {
+        button.disabled = true;
+        button.textContent =
+          '取消處理中...';
+
+        const response =
+          await callApi(
+            'tenant_contract_request_cancel',
+            {
+              request_id:
+                request.request_id,
+              cancel_reason:
+                cancelReason
+            }
+          );
+
+        if (
+          !response ||
+          response.success !== true
+        ) {
+          throw new Error(
+            response &&
+            response.message
+              ? response.message
+              : '取消申請失敗'
+          );
+        }
+
+        closeCancelModal();
+
+        showAlert(
+          response.message ||
+          '申請已取消',
+          function () {
+            loadPage();
+          }
+        );
+
+      } catch (error) {
+        showAlert(
+          error.message ||
+          String(error)
+        );
+
+      } finally {
+        button.disabled = false;
+        button.textContent =
+          '確認取消';
+      }
+    }
+
+    // ==================================================
+    // 提示視窗
+    // ==================================================
+
+    function showAlert(
+      message,
+      callback,
+      title
+    ) {
+      ALERT_CALLBACK =
+        typeof callback === 'function'
+          ? callback
+          : null;
+
+      document
+        .getElementById(
+          'alertTitle'
+        )
+        .textContent =
+          title || '提示';
+
+      document
+        .getElementById(
+          'alertMessage'
+        )
+        .textContent =
+          message || '';
+
+      document
+        .getElementById(
+          'alertModal'
+        )
+        .classList
+        .add('show');
+    }
+
+    function closeAlertModal() {
+      document
+        .getElementById(
+          'alertModal'
+        )
+        .classList
+        .remove('show');
+
+      const callback =
+        ALERT_CALLBACK;
+
+      ALERT_CALLBACK = null;
+
+      if (callback) {
+        callback();
+      }
+    }
+
+    document
+      .getElementById(
+        'cancelModal'
+      )
+      .addEventListener(
+        'click',
+        function (event) {
+          if (event.target === this) {
+            closeCancelModal();
+          }
+        }
+      );
+
+    document
+      .getElementById(
+        'alertModal'
+      )
+      .addEventListener(
+        'click',
+        function (event) {
+          if (event.target === this) {
+            closeAlertModal();
+          }
+        }
+      );
+
+    // ==================================================
+    // 載入
+    // ==================================================
+
+    async function loadPage() {
+      try {
+        app.className = 'loading';
+        app.innerHTML =
+          '合約資料載入中...';
+
+        const response =
+          await callApi(
+            'tenant_contract_init'
+          );
+
+        if (
+          response &&
+          response.success === true
+        ) {
+          renderPage(
+            response.data || {}
+          );
+
+          return;
+        }
+
+        if (
+          response &&
+          response.code ===
+            'CONTRACT_NOT_FOUND'
+        ) {
+          renderNoContract(
+            response.data || {},
+            response.message ||
+              '查無目前有效合約'
+          );
+
+          return;
+        }
+
+        renderError(
+          response &&
+          response.message
+            ? response.message
+            : '合約資料讀取失敗',
+          response &&
+          response.code
+            ? response.code
+            : ''
+        );
+
+      } catch (error) {
+        renderError(
+          error.message ||
+          String(error),
+          'NETWORK_ERROR'
+        );
+      }
+    }
+
+    async function main() {
+      try {
+        const ready =
+          await initLineUserId();
+
+        if (!ready) {
+          return;
+        }
+
+        await loadPage();
+
+      } catch (error) {
+        renderError(
+          error.message ||
+          String(error),
+          'LIFF_INIT_ERROR'
+        );
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
