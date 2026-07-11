@@ -524,6 +524,41 @@
 </button>
 
 <button
+  class="paid-bills-entry"
+  onclick="location.href='landlord-paid-bills.html?v=' + Date.now()"
+>
+  <div class="paid-bills-entry-icon">
+    <svg viewBox="0 0 24 24">
+      <rect
+        x="5"
+        y="3.5"
+        width="14"
+        height="17"
+        rx="2"
+      ></rect>
+
+      <path d="M8.5 8.5h7"></path>
+      <path d="M8.5 12.5h4"></path>
+      <path d="M9 16l2 2 4-4"></path>
+    </svg>
+  </div>
+
+  <div class="paid-bills-entry-content">
+    <div class="paid-bills-entry-title">
+      已繳帳單管理
+    </div>
+
+    <div class="paid-bills-entry-desc">
+      查看所有已繳帳單，撤銷誤銷帳並恢復欠款
+    </div>
+  </div>
+
+  <div class="paid-bills-entry-arrow">
+    ›
+  </div>
+</button>
+
+<button
   class="btn btn-green"
   onclick="location.href='landlord-messages.html?v=' + Date.now()"
 >
@@ -562,6 +597,74 @@
     }
 
     main();
+
+    /* ===== 已繳帳單管理入口 ===== */
+
+.paid-bills-entry {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #dfe7e2;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #222222;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+.paid-bills-entry:active {
+  opacity: 0.72;
+}
+
+.paid-bills-entry-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: #e9f8ef;
+  color: #06c755;
+}
+
+.paid-bills-entry-icon svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.paid-bills-entry-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.paid-bills-entry-title {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.paid-bills-entry-desc {
+  margin-top: 4px;
+  color: #777777;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.paid-bills-entry-arrow {
+  flex: 0 0 auto;
+  color: #a0a5ab;
+  font-size: 22px;
+}
+    
   </script>
 </body>
 </html>
