@@ -16,12 +16,20 @@
     :root {
       --nav-height: 64px;
       --primary: #06c755;
+      --primary-dark: #05a847;
       --background: #f5f7fb;
-      --text: #222;
+      --surface: #ffffff;
+      --text: #222222;
       --muted: #70757d;
+      --border: #e8ebef;
       --danger: #d93025;
+      --danger-soft: #ffe8e6;
       --warning: #9a6b00;
+      --warning-soft: #fff4d7;
       --blue: #1a73e8;
+      --blue-soft: #e8f0fe;
+      --purple: #7e57c2;
+      --purple-soft: #f0eaff;
     }
 
     * {
@@ -38,6 +46,10 @@
       background: var(--background);
       color: var(--text);
       font-family: Arial, "Noto Sans TC", sans-serif;
+    }
+
+    body.modal-open {
+      overflow: hidden;
     }
 
     button,
@@ -100,8 +112,9 @@
     .card {
       padding: 17px;
       margin-bottom: 14px;
+      border: 1px solid rgba(232, 235, 239, 0.8);
       border-radius: 16px;
-      background: #fff;
+      background: var(--surface);
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
     }
 
@@ -119,15 +132,15 @@
 
     .avatar {
       display: flex;
-      width: 44px;
-      height: 44px;
-      flex: 0 0 44px;
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
       align-items: center;
       justify-content: center;
       border-radius: 50%;
       background: #e8f7ee;
       color: var(--primary);
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 900;
     }
 
@@ -137,9 +150,10 @@
     }
 
     .landlord-desc {
-      margin-top: 3px;
+      margin-top: 4px;
       color: var(--muted);
       font-size: 12px;
+      line-height: 1.5;
     }
 
     .summary-grid {
@@ -149,22 +163,25 @@
     }
 
     .summary-item {
-      padding: 14px;
-      border: 1px solid #edf0f4;
-      border-radius: 14px;
-      background: #fff;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #fafbfc;
     }
 
     .summary-label {
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.4;
     }
 
     .summary-value {
       margin-top: 5px;
-      font-size: 25px;
+      font-size: 23px;
       font-weight: 900;
+    }
+
+    .summary-item.total .summary-value {
+      color: var(--blue);
     }
 
     .summary-item.pending .summary-value {
@@ -179,13 +196,15 @@
       color: var(--danger);
     }
 
-    .summary-item.total .summary-value {
-      color: var(--blue);
-    }
-
     .toolbar {
       display: flex;
       flex-direction: column;
+      gap: 10px;
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
 
@@ -197,8 +216,8 @@
       border: 1px solid #dfe3e8;
       border-radius: 12px;
       outline: none;
-      background: #fff;
-      color: #222;
+      background: #ffffff;
+      color: #222222;
       font-size: 14px;
     }
 
@@ -208,55 +227,41 @@
       box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
     }
 
-    .filter-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
     .report-card {
       position: relative;
       padding: 17px;
       margin-bottom: 13px;
       overflow: hidden;
-      border: 1px solid #edf0f4;
+      border: 1px solid var(--border);
       border-radius: 16px;
-      background: #fff;
+      background: #ffffff;
       box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
     }
 
-    .report-card.pending {
-      border-color: #f0dda6;
+    .report-card::before {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 4px;
+      content: "";
+      background: #a0a4aa;
     }
 
     .report-card.pending::before {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      width: 4px;
       background: #f9ab00;
-      content: "";
     }
 
     .report-card.confirmed::before {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      width: 4px;
       background: #188038;
-      content: "";
     }
 
     .report-card.rejected::before {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      width: 4px;
       background: var(--danger);
-      content: "";
+    }
+
+    .report-card.voided::before {
+      background: var(--purple);
     }
 
     .report-head {
@@ -273,7 +278,8 @@
     .tenant-name {
       font-size: 16px;
       font-weight: 900;
-      line-height: 1.4;
+      line-height: 1.45;
+      word-break: break-word;
     }
 
     .room-name {
@@ -310,8 +316,8 @@
     }
 
     .badge-yellow {
-      background: #fff4d7;
-      color: #9a6b00;
+      background: var(--warning-soft);
+      color: var(--warning);
     }
 
     .badge-green {
@@ -320,18 +326,23 @@
     }
 
     .badge-red {
-      background: #ffe8e6;
-      color: #d93025;
+      background: var(--danger-soft);
+      color: var(--danger);
     }
 
     .badge-blue {
-      background: #e8f0fe;
-      color: #1a73e8;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .badge-purple {
+      background: var(--purple-soft);
+      color: var(--purple);
     }
 
     .badge-gray {
       background: #f1f3f5;
-      color: #666;
+      color: #666666;
     }
 
     .amount-box {
@@ -348,7 +359,7 @@
 
     .amount-value {
       margin-top: 5px;
-      color: #d93025;
+      color: var(--danger);
       font-size: 26px;
       font-weight: 900;
     }
@@ -362,7 +373,7 @@
       justify-content: space-between;
       gap: 12px;
       padding: 10px 0;
-      border-top: 1px solid #eee;
+      border-top: 1px solid #eeeeee;
       font-size: 13px;
       line-height: 1.55;
     }
@@ -385,50 +396,55 @@
 
     .last5-value {
       color: var(--blue);
-      font-size: 19px;
+      font-size: 18px;
       letter-spacing: 3px;
     }
 
-    .reason-box {
+    .payment-id {
+      color: #188038;
+      font-size: 11px;
+    }
+
+    .reason-box,
+    .note-box,
+    .void-box,
+    .warning-box {
       padding: 12px 13px;
       margin-top: 11px;
-      border: 1px solid #f2cbc7;
       border-radius: 11px;
-      background: #fff5f4;
-      color: #9d2e25;
       font-size: 13px;
       line-height: 1.7;
       white-space: pre-wrap;
       word-break: break-word;
     }
 
+    .reason-box {
+      border: 1px solid #f2cbc7;
+      background: #fff5f4;
+      color: #9d2e25;
+    }
+
     .note-box {
-      padding: 12px 13px;
-      margin-top: 11px;
       border: 1px solid #dde2e7;
-      border-radius: 11px;
       background: #f7f8fa;
-      color: #555;
-      font-size: 13px;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      word-break: break-word;
+      color: #555555;
+    }
+
+    .void-box {
+      border: 1px solid #dacdf3;
+      background: #f7f3ff;
+      color: #6945a5;
+    }
+
+    .warning-box {
+      border: 1px solid #f0dda6;
+      background: #fffaf0;
+      color: #7e5b00;
     }
 
     .box-title {
       margin-bottom: 5px;
       font-weight: 900;
-    }
-
-    .warning-box {
-      padding: 12px 13px;
-      margin-top: 12px;
-      border: 1px solid #f0dda6;
-      border-radius: 11px;
-      background: #fffaf0;
-      color: #7e5b00;
-      font-size: 12px;
-      line-height: 1.65;
     }
 
     .action-grid {
@@ -454,28 +470,27 @@
     }
 
     .btn:disabled {
-      opacity: 0.5;
+      opacity: 0.48;
       cursor: not-allowed;
     }
 
     .btn-primary {
       background: var(--primary);
-      color: #fff;
+      color: #ffffff;
     }
 
-    .btn-dark {
-      background: #222;
-      color: #fff;
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-black {
+      background: #222222;
+      color: #ffffff;
     }
 
     .btn-light {
       background: #eef1f5;
-      color: #333;
-    }
-
-    .btn-green {
-      background: #06c755;
-      color: #fff;
+      color: #333333;
     }
 
     .btn-green-soft {
@@ -484,12 +499,23 @@
     }
 
     .btn-red-soft {
-      background: #ffe8e6;
-      color: #d93025;
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .btn-purple-soft {
+      background: var(--purple-soft);
+      color: var(--purple);
     }
 
     .full-action {
       grid-column: 1 / -1;
+    }
+
+    .page-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
     }
 
     .loading,
@@ -501,19 +527,19 @@
 
     .empty-icon {
       margin-bottom: 10px;
-      font-size: 34px;
+      font-size: 36px;
     }
 
     .empty-title {
-      color: #444;
-      font-size: 16px;
+      color: #444444;
+      font-size: 17px;
       font-weight: 900;
     }
 
     .empty-desc {
-      margin-top: 6px;
+      margin-top: 7px;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     .error-title {
@@ -524,17 +550,15 @@
     }
 
     .error-text {
-      color: #555;
+      color: #555555;
       font-size: 14px;
       line-height: 1.7;
       word-break: break-word;
     }
 
-    .refresh-btn {
-      margin-top: 12px;
-    }
-
-    /* ===== 處理付款回報 Modal ===== */
+    /* ==================================================
+       共用底部 Modal
+       ================================================== */
 
     .modal-mask {
       position: fixed;
@@ -544,7 +568,7 @@
       align-items: flex-end;
       justify-content: center;
       padding: 0;
-      background: rgba(0, 0, 0, 0.46);
+      background: rgba(0, 0, 0, 0.48);
     }
 
     .modal-mask.show {
@@ -554,8 +578,8 @@
     .modal-sheet {
       width: 100%;
       max-width: 560px;
-      max-height: 92vh;
-      max-height: 92dvh;
+      max-height: 94vh;
+      max-height: 94dvh;
 
       padding:
         18px
@@ -565,8 +589,8 @@
       overflow-y: auto;
       overscroll-behavior: contain;
       border-radius: 22px 22px 0 0;
-      background: #fff;
-      box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.2);
+      background: #ffffff;
+      box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.22);
     }
 
     .modal-handle {
@@ -578,8 +602,12 @@
     }
 
     .modal-title {
-      font-size: 20px;
+      font-size: 21px;
       font-weight: 900;
+    }
+
+    .modal-title.danger {
+      color: var(--danger);
     }
 
     .modal-subtitle {
@@ -592,7 +620,7 @@
     .modal-preview {
       padding: 13px;
       margin-top: 14px;
-      border-radius: 12px;
+      border-radius: 13px;
       background: #f7f8fa;
     }
 
@@ -601,8 +629,9 @@
       justify-content: space-between;
       gap: 12px;
       padding: 8px 0;
-      border-top: 1px solid #e9ecef;
+      border-top: 1px solid #e8ebef;
       font-size: 13px;
+      line-height: 1.5;
     }
 
     .preview-row:first-child {
@@ -639,10 +668,10 @@
     .decision-label {
       display: block;
       padding: 13px;
-      border: 2px solid #edf0f4;
+      border: 2px solid var(--border);
       border-radius: 12px;
-      background: #fff;
-      color: #555;
+      background: #ffffff;
+      color: #555555;
       font-size: 14px;
       font-weight: 900;
       text-align: center;
@@ -650,15 +679,15 @@
     }
 
     .decision-option.confirmed input:checked + .decision-label {
-      border-color: #06c755;
+      border-color: var(--primary);
       background: #f2fff7;
       color: #10893e;
     }
 
     .decision-option.rejected input:checked + .decision-label {
-      border-color: #d93025;
+      border-color: var(--danger);
       background: #fff5f4;
-      color: #d93025;
+      color: var(--danger);
     }
 
     .field {
@@ -672,25 +701,34 @@
     .field-label {
       display: block;
       margin-bottom: 7px;
-      color: #444;
+      color: #444444;
       font-size: 13px;
       font-weight: 900;
     }
 
+    .required-mark {
+      color: var(--danger);
+    }
+
+    .field-input,
     .field-textarea {
       width: 100%;
-      min-height: 110px;
       padding: 13px 14px;
-      resize: vertical;
       border: 1px solid #dfe3e8;
       border-radius: 12px;
       outline: none;
-      background: #fff;
-      color: #222;
+      background: #ffffff;
+      color: #222222;
       font-size: 15px;
+    }
+
+    .field-textarea {
+      min-height: 110px;
+      resize: vertical;
       line-height: 1.7;
     }
 
+    .field-input:focus,
     .field-textarea:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
@@ -698,20 +736,61 @@
 
     .char-count {
       margin-top: 6px;
-      color: #999;
+      color: #999999;
       font-size: 12px;
       text-align: right;
     }
 
-    .modal-warning {
-      padding: 11px 12px;
-      margin-top: 15px;
-      border: 1px solid #f0dda6;
+    .notify-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px;
+      margin-top: 16px;
+      border: 1px solid #f0c5c1;
+      border-radius: 12px;
+      background: #fff7f6;
+      cursor: pointer;
+    }
+
+    .notify-row input {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 19px;
+      accent-color: var(--danger);
+    }
+
+    .notify-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .notify-desc {
+      margin-top: 3px;
+      color: #755f5d;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .modal-warning,
+    .modal-danger-warning {
+      padding: 12px 13px;
+      margin-top: 16px;
       border-radius: 11px;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .modal-warning {
+      border: 1px solid #f0dda6;
       background: #fffaf0;
       color: #7e5b00;
-      font-size: 12px;
-      line-height: 1.65;
+    }
+
+    .modal-danger-warning {
+      border: 1px solid #efc7c3;
+      background: #fff5f4;
+      color: #9d2e25;
     }
 
     .modal-actions {
@@ -721,7 +800,9 @@
       margin-top: 18px;
     }
 
-    /* ===== 自訂提示 Modal ===== */
+    /* ==================================================
+       提示視窗
+       ================================================== */
 
     .alert-mask {
       position: fixed;
@@ -731,7 +812,7 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      background: rgba(0, 0, 0, 0.46);
+      background: rgba(0, 0, 0, 0.48);
     }
 
     .alert-mask.show {
@@ -740,11 +821,11 @@
 
     .alert-box {
       width: 100%;
-      max-width: 340px;
+      max-width: 350px;
       padding: 22px 18px 16px;
       border-radius: 18px;
-      background: #fff;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+      background: #ffffff;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
       text-align: center;
     }
 
@@ -756,32 +837,30 @@
 
     .alert-message {
       margin-bottom: 18px;
-      color: #555;
-      font-size: 15px;
-      line-height: 1.7;
+      color: #555555;
+      font-size: 14px;
+      line-height: 1.75;
       white-space: pre-wrap;
       word-break: break-word;
     }
 
-    /* ===== 固定底部導覽列 ===== */
+    /* ==================================================
+       底部導覽列
+       ================================================== */
 
     .bottom-nav {
       position: fixed;
-      left: 50%;
       right: auto;
       bottom: 0;
+      left: 50%;
       z-index: 99999;
-
       width: 100%;
       max-width: 560px;
-
       transform: translateX(-50%);
       padding-bottom: env(safe-area-inset-bottom);
-
       border-top: 1px solid #eceff3;
       background: rgba(255, 255, 255, 0.98);
       box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
-
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
@@ -848,7 +927,7 @@
       }
 
       .summary-value {
-        font-size: 23px;
+        font-size: 21px;
       }
     }
   </style>
@@ -874,7 +953,6 @@
           <path d="M6.5 10.5V19h11v-8.5"></path>
           <path d="M9.5 19v-5h5v5"></path>
         </svg>
-
         <span>首頁</span>
       </button>
 
@@ -888,7 +966,6 @@
           <path d="M8.5 13h7"></path>
           <path d="M8.5 17h4"></path>
         </svg>
-
         <span>帳款</span>
       </button>
 
@@ -902,7 +979,6 @@
           <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
           <path d="M16 14c2.2.4 3.5 2 4 5"></path>
         </svg>
-
         <span>房客</span>
       </button>
 
@@ -915,13 +991,12 @@
           <circle cx="12" cy="12" r="1.5"></circle>
           <circle cx="18" cy="12" r="1.5"></circle>
         </svg>
-
         <span>更多</span>
       </button>
     </div>
   </nav>
 
-  <!-- 處理付款回報 Modal -->
+  <!-- 確認／駁回付款回報 -->
   <div id="decisionModal" class="modal-mask">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
@@ -951,7 +1026,7 @@
           />
 
           <span class="decision-label">
-            確認回報
+            確認並銷帳
           </span>
         </label>
 
@@ -978,13 +1053,14 @@
           for="rejectReason"
         >
           駁回原因
+          <span class="required-mark">*</span>
         </label>
 
         <textarea
           id="rejectReason"
           class="field-textarea"
           maxlength="300"
-          placeholder="例如：未查到符合的匯款紀錄，請重新確認付款帳號及日期。"
+          placeholder="例如：未查到符合的匯款紀錄，請重新確認付款日期及帳戶。"
           oninput="updateRejectCount()"
         ></textarea>
 
@@ -1008,7 +1084,7 @@
           id="landlordNote"
           class="field-textarea"
           maxlength="300"
-          placeholder="此欄位可選填，供管理紀錄使用。"
+          placeholder="此欄位可選填，供帳務管理紀錄使用。"
           oninput="updateNoteCount()"
         ></textarea>
 
@@ -1021,7 +1097,7 @@
       </div>
 
       <div class="modal-warning">
-        目前「確認回報」只會更新付款回報狀態並通知房客，不會直接把帳單改成已繳。
+        選擇「確認並銷帳」後，系統會建立正式付款紀錄、將 V2 帳單改為已繳，並同步 V1 每月帳單表及歷史帳單總表。
       </div>
 
       <div class="modal-actions">
@@ -1037,13 +1113,98 @@
           class="btn btn-primary"
           onclick="submitDecision()"
         >
-          儲存處理結果
+          確認付款並銷帳
         </button>
       </div>
     </div>
   </div>
 
-  <!-- 提示 Modal -->
+  <!-- 撤銷銷帳 Modal -->
+  <div id="reversalModal" class="modal-mask">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+
+      <div class="modal-title danger">
+        撤銷已繳／恢復欠款
+      </div>
+
+      <div
+        id="reversalModalSubtitle"
+        class="modal-subtitle"
+      ></div>
+
+      <div
+        id="reversalPreview"
+        class="modal-preview"
+      ></div>
+
+      <div class="field">
+        <label
+          class="field-label"
+          for="reversalReason"
+        >
+          撤銷原因
+          <span class="required-mark">*</span>
+        </label>
+
+        <textarea
+          id="reversalReason"
+          class="field-textarea"
+          maxlength="300"
+          placeholder="例如：先前誤認為已入帳，實際尚未收到款項。"
+          oninput="updateReversalCount()"
+        ></textarea>
+
+        <div
+          id="reversalCount"
+          class="char-count"
+        >
+          0 / 300
+        </div>
+      </div>
+
+      <label class="notify-row">
+        <input
+          id="reversalNotifyTenant"
+          type="checkbox"
+          checked
+        />
+
+        <div>
+          <div class="notify-title">
+            LINE 通知房客
+          </div>
+
+          <div class="notify-desc">
+            通知房客付款確認已撤銷，帳單已恢復為未繳。
+          </div>
+        </div>
+      </label>
+
+      <div class="modal-danger-warning">
+        確認後會作廢原付款紀錄、將帳單恢復為未繳、同步 V1 帳單狀態，並讓該帳單重新出現在欠款頁。原付款資料不會刪除，會保留作為稽核紀錄。
+      </div>
+
+      <div class="modal-actions">
+        <button
+          class="btn btn-light"
+          onclick="closeReversalModal()"
+        >
+          取消
+        </button>
+
+        <button
+          id="submitReversalBtn"
+          class="btn btn-red-soft"
+          onclick="submitReversal()"
+        >
+          確認撤銷並恢復欠款
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示視窗 -->
   <div id="alertModal" class="alert-mask">
     <div class="alert-box">
       <div
@@ -1068,9 +1229,9 @@
   </div>
 
   <script>
-    // =========================================================
+    // ==================================================
     // 基本設定
-    // =========================================================
+    // ==================================================
 
     const API_URL =
       'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
@@ -1078,48 +1239,39 @@
     const LIFF_ID =
       '2010314940-EjX1qbb8';
 
-    const TEST_LANDLORD_LINE_USER_ID =
+    const TEST_LINE_USER_ID =
       'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const TEST_MODE =
+      new URLSearchParams(
+        location.search
+      ).get('test') === '1';
 
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
     let ALL_REPORTS = [];
     let ACTIVE_REPORT_ID = '';
+    let ACTIVE_REVERSAL_REPORT_ID = '';
     let ALERT_CALLBACK = null;
 
     const app =
       document.getElementById('app');
 
-    // =========================================================
+    // ==================================================
     // 工具函式
-    // =========================================================
+    // ==================================================
 
     function goPage(filename) {
+      const testSuffix =
+        TEST_MODE
+          ? '&test=1'
+          : '';
+
       location.href =
         filename +
         '?v=' +
-        Date.now();
-    }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    function safeText(value) {
-      if (
-        value === undefined ||
-        value === null ||
-        value === ''
-      ) {
-        return '-';
-      }
-
-      return escapeHtml(value);
+        Date.now() +
+        testSuffix;
     }
 
     function rawText(value) {
@@ -1133,99 +1285,31 @@
       return String(value);
     }
 
-    function money(value) {
-      const amount =
-        Number(value || 0);
+    function escapeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
 
+    function safeText(value) {
+      const text =
+        rawText(value).trim();
+
+      return text
+        ? escapeHtml(text)
+        : '-';
+    }
+
+    function money(value) {
       return (
         'NT$ ' +
-        Math.round(amount)
-          .toLocaleString('zh-TW')
+        Math.round(
+          Number(value || 0)
+        ).toLocaleString('zh-TW')
       );
-    }
-
-    function formatDateOnly(value) {
-      if (!value) {
-        return '-';
-      }
-
-      const date =
-        new Date(value);
-
-      if (!isNaN(date.getTime())) {
-        const yyyy =
-          date.getFullYear();
-
-        const mm =
-          String(
-            date.getMonth() + 1
-          ).padStart(2, '0');
-
-        const dd =
-          String(
-            date.getDate()
-          ).padStart(2, '0');
-
-        return (
-          yyyy +
-          '-' +
-          mm +
-          '-' +
-          dd
-        );
-      }
-
-      return safeText(
-        String(value).slice(0, 10)
-      );
-    }
-
-    function formatDateTime(value) {
-      if (!value) {
-        return '-';
-      }
-
-      const date =
-        new Date(value);
-
-      if (!isNaN(date.getTime())) {
-        const yyyy =
-          date.getFullYear();
-
-        const mm =
-          String(
-            date.getMonth() + 1
-          ).padStart(2, '0');
-
-        const dd =
-          String(
-            date.getDate()
-          ).padStart(2, '0');
-
-        const hh =
-          String(
-            date.getHours()
-          ).padStart(2, '0');
-
-        const min =
-          String(
-            date.getMinutes()
-          ).padStart(2, '0');
-
-        return (
-          yyyy +
-          '-' +
-          mm +
-          '-' +
-          dd +
-          ' ' +
-          hh +
-          ':' +
-          min
-        );
-      }
-
-      return safeText(value);
     }
 
     function getInitial(name) {
@@ -1237,26 +1321,192 @@
         : '房';
     }
 
+    function dateFromSheetValue(value) {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ''
+      ) {
+        return null;
+      }
+
+      if (
+        typeof value === 'number' ||
+        /^\d{5}(\.\d+)?$/.test(
+          rawText(value).trim()
+        )
+      ) {
+        const serial =
+          Number(value);
+
+        if (
+          isFinite(serial) &&
+          serial > 20000 &&
+          serial < 100000
+        ) {
+          return new Date(
+            Date.UTC(1899, 11, 30) +
+            serial * 86400000
+          );
+        }
+      }
+
+      const text =
+        rawText(value).trim();
+
+      if (
+        /^\d{4}-\d{2}$/.test(text)
+      ) {
+        return new Date(
+          text + '-01T12:00:00+08:00'
+        );
+      }
+
+      if (
+        /^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}$/.test(
+          text
+        )
+      ) {
+        return new Date(
+          text.replace(/\//g, '-') +
+          'T12:00:00+08:00'
+        );
+      }
+
+      const parsed =
+        new Date(text);
+
+      return isNaN(
+        parsed.getTime()
+      )
+        ? null
+        : parsed;
+    }
+
+    function taipeiDateParts(value) {
+      const date =
+        dateFromSheetValue(value);
+
+      if (!date) {
+        return null;
+      }
+
+      const parts =
+        new Intl.DateTimeFormat(
+          'en-CA',
+          {
+            timeZone: 'Asia/Taipei',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }
+        ).formatToParts(date);
+
+      const result = {};
+
+      parts.forEach(function (part) {
+        if (part.type !== 'literal') {
+          result[part.type] =
+            part.value;
+        }
+      });
+
+      return result;
+    }
+
+    function formatDateOnly(value) {
+      const parts =
+        taipeiDateParts(value);
+
+      if (!parts) {
+        return safeText(value);
+      }
+
+      return (
+        parts.year +
+        '-' +
+        parts.month +
+        '-' +
+        parts.day
+      );
+    }
+
+    function formatDateTime(value) {
+      const date =
+        dateFromSheetValue(value);
+
+      if (!date) {
+        return safeText(value);
+      }
+
+      return new Intl.DateTimeFormat(
+        'zh-TW',
+        {
+          timeZone: 'Asia/Taipei',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }
+      ).format(date);
+    }
+
+    function formatBillMonth(value) {
+      const text =
+        rawText(value).trim();
+
+      if (
+        /^\d{4}-\d{2}$/.test(text)
+      ) {
+        return text;
+      }
+
+      const parts =
+        taipeiDateParts(value);
+
+      if (!parts) {
+        return safeText(value);
+      }
+
+      return (
+        parts.year +
+        '-' +
+        parts.month
+      );
+    }
+
     function statusText(value) {
+      const status =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
       const map = {
         pending: '待確認',
+        payment_reported: '已回報',
         confirmed: '已確認',
-        rejected: '已駁回'
+        rejected: '已駁回',
+        voided: '已撤銷'
       };
 
       return (
-        map[
-          rawText(value).toLowerCase()
-        ] ||
+        map[status] ||
         safeText(value)
       );
     }
 
     function statusBadgeClass(value) {
       const status =
-        rawText(value).toLowerCase();
+        rawText(value)
+          .trim()
+          .toLowerCase();
 
-      if (status === 'pending') {
+      if (
+        status === 'pending' ||
+        status === 'payment_reported'
+      ) {
         return 'badge badge-yellow';
       }
 
@@ -1266,6 +1516,10 @@
 
       if (status === 'rejected') {
         return 'badge badge-red';
+      }
+
+      if (status === 'voided') {
+        return 'badge badge-purple';
       }
 
       return 'badge badge-gray';
@@ -1288,18 +1542,13 @@
           'rejectReason'
         );
 
-      const count =
-        document.getElementById(
+      document
+        .getElementById(
           'rejectCount'
-        );
-
-      if (!input || !count) {
-        return;
-      }
-
-      count.textContent =
-        input.value.length +
-        ' / 300';
+        )
+        .textContent =
+          input.value.length +
+          ' / 300';
     }
 
     function updateNoteCount() {
@@ -1308,23 +1557,33 @@
           'landlordNote'
         );
 
-      const count =
-        document.getElementById(
+      document
+        .getElementById(
           'noteCount'
-        );
-
-      if (!input || !count) {
-        return;
-      }
-
-      count.textContent =
-        input.value.length +
-        ' / 300';
+        )
+        .textContent =
+          input.value.length +
+          ' / 300';
     }
 
-    // =========================================================
+    function updateReversalCount() {
+      const input =
+        document.getElementById(
+          'reversalReason'
+        );
+
+      document
+        .getElementById(
+          'reversalCount'
+        )
+        .textContent =
+          input.value.length +
+          ' / 300';
+    }
+
+    // ==================================================
     // JSONP API
-    // =========================================================
+    // ==================================================
 
     function callApi(action, params) {
       return new Promise(
@@ -1335,7 +1594,6 @@
                 '缺少房東 LINE User ID'
               )
             );
-
             return;
           }
 
@@ -1363,9 +1621,8 @@
             }
 
             if (script.parentNode) {
-              script.parentNode.removeChild(
-                script
-              );
+              script.parentNode
+                .removeChild(script);
             }
 
             try {
@@ -1389,19 +1646,32 @@
                 !json ||
                 json.success !== true
               ) {
+                const message =
+                  json &&
+                  json.message
+                    ? json.message
+                    : 'API 操作失敗';
+
+                const code =
+                  json &&
+                  json.code
+                    ? json.code
+                    : '';
+
                 reject(
                   new Error(
-                    json &&
-                    json.message
-                      ? json.message
-                      : 'API 查詢失敗'
+                    code
+                      ? message +
+                        '\n錯誤代碼：' +
+                        code
+                      : message
                   )
                 );
 
                 return;
               }
 
-              resolve(json.data);
+              resolve(json);
             };
 
           timer =
@@ -1438,8 +1708,15 @@
             '&_=' +
             Date.now();
 
-          Object.keys(params).forEach(
-            function (key) {
+          Object.keys(params)
+            .forEach(function (key) {
+              if (
+                params[key] === undefined ||
+                params[key] === null
+              ) {
+                return;
+              }
+
               url +=
                 '&' +
                 encodeURIComponent(key) +
@@ -1447,10 +1724,10 @@
                 encodeURIComponent(
                   params[key]
                 );
-            }
-          );
+            });
 
-          script.charset = 'UTF-8';
+          script.charset =
+            'UTF-8';
 
           script.onerror =
             function () {
@@ -1470,25 +1747,29 @@
 
           script.src = url;
 
-          document.body.appendChild(
-            script
-          );
+          document.body
+            .appendChild(script);
         }
       );
     }
 
-    // =========================================================
+    // ==================================================
     // LIFF
-    // =========================================================
+    // ==================================================
 
     async function initLineUserId() {
       if (
         typeof liff === 'undefined'
       ) {
-        LINE_USER_ID =
-          TEST_LANDLORD_LINE_USER_ID;
+        if (TEST_MODE) {
+          LINE_USER_ID =
+            TEST_LINE_USER_ID;
+          return true;
+        }
 
-        return;
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
       }
 
       try {
@@ -1497,8 +1778,12 @@
         });
 
         if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
+          liff.login({
+            redirectUri:
+              location.href
+          });
+
+          return false;
         }
 
         const profile =
@@ -1513,15 +1798,22 @@
           );
         }
 
+        return true;
+
       } catch (error) {
-        LINE_USER_ID =
-          TEST_LANDLORD_LINE_USER_ID;
+        if (TEST_MODE) {
+          LINE_USER_ID =
+            TEST_LINE_USER_ID;
+          return true;
+        }
+
+        throw error;
       }
     }
 
-    // =========================================================
+    // ==================================================
     // 畫面渲染
-    // =========================================================
+    // ==================================================
 
     function renderSummary(summary) {
       summary = summary || {};
@@ -1532,7 +1824,6 @@
             <div class="summary-label">
               全部回報
             </div>
-
             <div class="summary-value">
               ${Number(
                 summary.total || 0
@@ -1544,7 +1835,6 @@
             <div class="summary-label">
               待確認
             </div>
-
             <div class="summary-value">
               ${Number(
                 summary.pending || 0
@@ -1556,7 +1846,6 @@
             <div class="summary-label">
               已確認
             </div>
-
             <div class="summary-value">
               ${Number(
                 summary.confirmed || 0
@@ -1568,7 +1857,6 @@
             <div class="summary-label">
               已駁回
             </div>
-
             <div class="summary-value">
               ${Number(
                 summary.rejected || 0
@@ -1576,61 +1864,6 @@
             </div>
           </div>
         </div>
-      `;
-    }
-
-    function renderToolbar() {
-      return `
-        <section class="card">
-          <div class="section-title">
-            篩選付款回報
-          </div>
-
-          <div class="toolbar">
-            <input
-              id="searchInput"
-              class="search-input"
-              placeholder="搜尋房客、房號、帳單月份或後 5 碼"
-              oninput="applyFilters()"
-            />
-
-            <div class="filter-row">
-              <select
-                id="statusFilter"
-                class="filter-select"
-                onchange="applyFilters()"
-              >
-                <option value="">
-                  全部狀態
-                </option>
-
-                <option value="pending">
-                  待確認
-                </option>
-
-                <option value="confirmed">
-                  已確認
-                </option>
-
-                <option value="rejected">
-                  已駁回
-                </option>
-              </select>
-
-              <select
-                id="monthFilter"
-                class="filter-select"
-                onchange="applyFilters()"
-              >
-                <option value="">
-                  全部月份
-                </option>
-
-                ${renderMonthOptions()}
-              </select>
-            </div>
-          </div>
-        </section>
       `;
     }
 
@@ -1646,7 +1879,9 @@
               })
               .filter(Boolean)
           )
-        ).sort().reverse();
+        )
+          .sort()
+          .reverse();
 
       return months
         .map(function (month) {
@@ -1659,30 +1894,191 @@
         .join('');
     }
 
-    function renderReportCard(item) {
+    function renderToolbar() {
+      return `
+        <section class="card">
+          <div class="section-title">
+            篩選付款回報
+          </div>
+
+          <div class="toolbar">
+            <input
+              id="searchInput"
+              class="search-input"
+              placeholder="搜尋房客、房號、月份、後 5 碼或付款 ID"
+              oninput="applyFilters()"
+            />
+
+            <div class="filter-row">
+              <select
+                id="statusFilter"
+                class="filter-select"
+                onchange="applyFilters()"
+              >
+                <option value="">
+                  全部狀態
+                </option>
+                <option value="pending">
+                  待確認
+                </option>
+                <option value="confirmed">
+                  已確認
+                </option>
+                <option value="rejected">
+                  已駁回
+                </option>
+                <option value="voided">
+                  已撤銷
+                </option>
+              </select>
+
+              <select
+                id="monthFilter"
+                class="filter-select"
+                onchange="applyFilters()"
+              >
+                <option value="">
+                  全部月份
+                </option>
+                ${renderMonthOptions()}
+              </select>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderActionButtons(item) {
       const status =
-        rawText(
-          item.status
-        ).toLowerCase();
+        rawText(item.status)
+          .trim()
+          .toLowerCase();
 
       const reportId =
+        rawText(item.report_id)
+          .trim();
+
+      const matchedPaymentId =
         rawText(
-          item.report_id
+          item.matched_payment_id
         ).trim();
 
-      const tenantId =
-        rawText(
-          item.tenant_id
-        ).trim();
+      let html = '';
+
+      if (
+        status === 'pending' ||
+        status === 'payment_reported'
+      ) {
+        html += `
+          <button
+            class="btn btn-primary"
+            data-report-id="${escapeHtml(reportId)}"
+            onclick="openDecisionModal(
+              this.dataset.reportId
+            )"
+          >
+            處理付款回報
+          </button>
+
+          <button
+            class="btn btn-green-soft full-action"
+            data-report-id="${escapeHtml(reportId)}"
+            onclick="quickConfirm(
+              this.dataset.reportId
+            )"
+          >
+            快速確認並銷帳
+          </button>
+        `;
+      }
+
+      if (
+        status === 'confirmed' &&
+        matchedPaymentId
+      ) {
+        html += `
+          <button
+            class="btn btn-red-soft"
+            data-report-id="${escapeHtml(reportId)}"
+            onclick="openReversalModal(
+              this.dataset.reportId
+            )"
+          >
+            撤銷已繳
+          </button>
+
+          <button
+            class="btn btn-purple-soft full-action"
+            data-report-id="${escapeHtml(reportId)}"
+            onclick="openReversalModal(
+              this.dataset.reportId
+            )"
+          >
+            撤銷銷帳／恢復欠款
+          </button>
+        `;
+      }
+
+      if (
+        status === 'confirmed' &&
+        !matchedPaymentId
+      ) {
+        html += `
+          <button
+            class="btn btn-primary"
+            data-report-id="${escapeHtml(reportId)}"
+            onclick="settleConfirmedLegacyReport(
+              this.dataset.reportId
+            )"
+          >
+            補做正式銷帳
+          </button>
+        `;
+      }
+
+      if (
+        status === 'rejected' ||
+        status === 'voided'
+      ) {
+        html += `
+          <button
+            class="btn btn-light"
+            disabled
+          >
+            無可用操作
+          </button>
+        `;
+      }
+
+      return html;
+    }
+
+    function renderReportCard(item) {
+      const status =
+        rawText(item.status)
+          .trim()
+          .toLowerCase();
+
+      const reportId =
+        rawText(item.report_id)
+          .trim();
 
       const rejectReason =
-        rawText(
-          item.reject_reason
-        ).trim();
+        rawText(item.reject_reason)
+          .trim();
 
       const note =
+        rawText(item.note)
+          .trim();
+
+      const voidReason =
         rawText(
-          item.note
+          item.void_reason
+        ).trim();
+
+      const matchedPaymentId =
+        rawText(
+          item.matched_payment_id
         ).trim();
 
       return `
@@ -1711,10 +2107,20 @@
                 </span>
 
                 <span class="badge badge-blue">
-                  ${safeText(
+                  ${formatBillMonth(
                     item.bill_month
                   )}
                 </span>
+
+                ${
+                  matchedPaymentId
+                    ? `
+                      <span class="badge badge-green">
+                        已正式銷帳
+                      </span>
+                    `
+                    : ''
+                }
               </div>
             </div>
 
@@ -1799,7 +2205,24 @@
             </div>
 
             ${
-              status === 'confirmed' &&
+              matchedPaymentId
+                ? `
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      付款 ID
+                    </div>
+
+                    <div class="detail-value payment-id">
+                      ${safeText(
+                        matchedPaymentId
+                      )}
+                    </div>
+                  </div>
+                `
+                : ''
+            }
+
+            ${
               item.confirmed_at
                 ? `
                   <div class="detail-row">
@@ -1818,17 +2241,16 @@
             }
 
             ${
-              status === 'rejected' &&
-              item.rejected_at
+              item.voided_at
                 ? `
                   <div class="detail-row">
                     <div class="detail-label">
-                      駁回時間
+                      撤銷時間
                     </div>
 
                     <div class="detail-value">
                       ${formatDateTime(
-                        item.rejected_at
+                        item.voided_at
                       )}
                     </div>
                   </div>
@@ -1844,8 +2266,20 @@
                   <div class="box-title">
                     駁回原因
                   </div>
-
                   ${safeText(rejectReason)}
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            voidReason
+              ? `
+                <div class="void-box">
+                  <div class="box-title">
+                    撤銷原因
+                  </div>
+                  ${safeText(voidReason)}
                 </div>
               `
               : ''
@@ -1858,7 +2292,6 @@
                   <div class="box-title">
                     備註
                   </div>
-
                   ${safeText(note)}
                 </div>
               `
@@ -1866,10 +2299,11 @@
           }
 
           ${
-            status === 'confirmed'
+            status === 'confirmed' &&
+            !matchedPaymentId
               ? `
                 <div class="warning-box">
-                  此筆付款回報已確認，但目前尚未自動將原帳單改為已繳。
+                  此筆回報已標示為確認，但尚未建立正式付款紀錄。請執行「補做正式銷帳」。
                 </div>
               `
               : ''
@@ -1877,13 +2311,16 @@
 
           <div class="action-grid">
             ${
-              tenantId
+              item.tenant_id
                 ? `
                   <button
                     class="btn btn-light"
-                    onclick="openTenantDetail('${escapeHtml(
-                      tenantId
-                    )}')"
+                    data-tenant-id="${escapeHtml(
+                      item.tenant_id
+                    )}"
+                    onclick="openTenantDetail(
+                      this.dataset.tenantId
+                    )"
                   >
                     查看房客
                   </button>
@@ -1898,38 +2335,7 @@
                 `
             }
 
-            ${
-              status === 'pending'
-                ? `
-                  <button
-                    class="btn btn-primary"
-                    onclick="openDecisionModal('${escapeHtml(
-                      reportId
-                    )}')"
-                  >
-                    處理回報
-                  </button>
-
-                  <button
-                    class="btn btn-green-soft full-action"
-                    onclick="quickConfirm('${escapeHtml(
-                      reportId
-                    )}')"
-                  >
-                    快速確認回報
-                  </button>
-                `
-                : `
-                  <button
-                    class="btn btn-light"
-                    onclick="openDecisionModal('${escapeHtml(
-                      reportId
-                    )}')"
-                  >
-                    查看／修改
-                  </button>
-                `
-            }
+            ${renderActionButtons(item)}
           </div>
         </article>
       `;
@@ -2000,7 +2406,7 @@
           </h1>
 
           <div class="page-subtitle">
-            查看房客付款回報、匯款後 5 碼及付款日期，並確認或駁回回報。
+            確認付款、正式銷帳、駁回回報，以及撤銷誤認的已繳紀錄。
           </div>
         </header>
 
@@ -2044,12 +2450,23 @@
 
         <section id="reportList"></section>
 
-        <button
-          class="btn btn-dark refresh-btn"
-          onclick="loadPage()"
-        >
-          重新整理
-        </button>
+        <div class="page-actions">
+          <button
+            class="btn btn-light"
+            onclick="goPage(
+              'landlord-arrears.html'
+            )"
+          >
+            查看欠款帳單
+          </button>
+
+          <button
+            class="btn btn-black"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </div>
       `;
 
       renderReports(
@@ -2058,43 +2475,36 @@
     }
 
     function applyFilters() {
-      const searchElement =
-        document.getElementById(
-          'searchInput'
-        );
-
-      const statusElement =
-        document.getElementById(
-          'statusFilter'
-        );
-
-      const monthElement =
-        document.getElementById(
-          'monthFilter'
-        );
-
       const keyword =
         rawText(
-          searchElement
-            ? searchElement.value
-            : ''
+          document
+            .getElementById(
+              'searchInput'
+            )
+            .value
         )
           .trim()
           .toLowerCase();
 
       const statusFilter =
         rawText(
-          statusElement
-            ? statusElement.value
-            : ''
-        ).toLowerCase();
+          document
+            .getElementById(
+              'statusFilter'
+            )
+            .value
+        )
+          .trim()
+          .toLowerCase();
 
       const monthFilter =
         rawText(
-          monthElement
-            ? monthElement.value
-            : ''
-        );
+          document
+            .getElementById(
+              'monthFilter'
+            )
+            .value
+        ).trim();
 
       const filtered =
         ALL_REPORTS.filter(
@@ -2102,12 +2512,14 @@
             const status =
               rawText(
                 item.status
-              ).toLowerCase();
+              )
+                .trim()
+                .toLowerCase();
 
             const billMonth =
               rawText(
                 item.bill_month
-              );
+              ).trim();
 
             if (
               statusFilter &&
@@ -2131,7 +2543,9 @@
                 item.bill_month,
                 item.reported_last5,
                 item.report_id,
+                item.matched_payment_id,
                 item.reject_reason,
+                item.void_reason,
                 item.note,
                 statusText(item.status)
               ]
@@ -2139,9 +2553,7 @@
                 .toLowerCase();
 
               if (
-                !haystack.includes(
-                  keyword
-                )
+                !haystack.includes(keyword)
               ) {
                 return false;
               }
@@ -2167,26 +2579,26 @@
             ${safeText(message)}
           </div>
 
-          <button
-            class="btn btn-dark refresh-btn"
-            onclick="loadPage()"
-          >
-            重新整理
-          </button>
+          <div class="page-actions">
+            <button
+              class="btn btn-black"
+              onclick="loadPage()"
+            >
+              重新整理
+            </button>
 
-          <button
-            class="btn btn-primary"
-            onclick="goPage('landlord-home.html')"
-          >
-            返回首頁
-          </button>
+            <button
+              class="btn btn-primary"
+              onclick="goPage(
+                'landlord-home.html'
+              )"
+            >
+              返回首頁
+            </button>
+          </div>
         </div>
       `;
     }
-
-    // =========================================================
-    // 付款回報處理
-    // =========================================================
 
     function findReportById(reportId) {
       return (
@@ -2195,8 +2607,10 @@
             return (
               rawText(
                 item.report_id
-              ) ===
-              rawText(reportId)
+              ).trim() ===
+              rawText(
+                reportId
+              ).trim()
             );
           }
         ) ||
@@ -2204,128 +2618,126 @@
       );
     }
 
+    function openTenantDetail(tenantId) {
+      tenantId =
+        rawText(tenantId).trim();
+
+      if (!tenantId) {
+        showAlert(
+          '缺少房客 ID'
+        );
+        return;
+      }
+
+      location.href =
+        'landlord-tenant-detail.html' +
+        '?tenant_id=' +
+        encodeURIComponent(tenantId) +
+        '&v=' +
+        Date.now();
+    }
+
+    // ==================================================
+    // 確認／駁回付款回報
+    // ==================================================
+
     function openDecisionModal(reportId) {
       const item =
-        findReportById(
-          reportId
-        );
+        findReportById(reportId);
 
       if (!item) {
         showAlert(
           '找不到指定付款回報'
         );
-
         return;
       }
 
       ACTIVE_REPORT_ID =
-        rawText(reportId);
+        rawText(reportId).trim();
 
-      const subtitle =
-        document.getElementById(
+      document
+        .getElementById(
           'decisionModalSubtitle'
-        );
+        )
+        .textContent =
+          (item.tenant_name || '-') +
+          '｜房號 ' +
+          (item.room_name || '-');
 
-      const preview =
-        document.getElementById(
+      document
+        .getElementById(
           'decisionPreview'
-        );
+        )
+        .innerHTML = `
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單月份
+            </div>
 
-      const rejectReason =
-        document.getElementById(
-          'rejectReason'
-        );
-
-      const landlordNote =
-        document.getElementById(
-          'landlordNote'
-        );
-
-      const status =
-        rawText(
-          item.status
-        ).toLowerCase();
-
-      subtitle.textContent =
-        (item.tenant_name || '-') +
-        '｜房號 ' +
-        (item.room_name || '-');
-
-      preview.innerHTML = `
-        <div class="preview-row">
-          <div class="preview-label">
-            帳單月份
+            <div class="preview-value">
+              ${formatBillMonth(
+                item.bill_month
+              )}
+            </div>
           </div>
 
-          <div class="preview-value">
-            ${safeText(
-              item.bill_month
-            )}
-          </div>
-        </div>
+          <div class="preview-row">
+            <div class="preview-label">
+              回報金額
+            </div>
 
-        <div class="preview-row">
-          <div class="preview-label">
-            回報金額
-          </div>
-
-          <div class="preview-value">
-            ${money(
-              item.reported_amount
-            )}
-          </div>
-        </div>
-
-        <div class="preview-row">
-          <div class="preview-label">
-            匯款後 5 碼
+            <div class="preview-value">
+              ${money(
+                item.reported_amount
+              )}
+            </div>
           </div>
 
-          <div class="preview-value">
-            ${safeText(
-              item.reported_last5
-            )}
+          <div class="preview-row">
+            <div class="preview-label">
+              匯款後 5 碼
+            </div>
+
+            <div class="preview-value">
+              ${safeText(
+                item.reported_last5
+              )}
+            </div>
           </div>
-        </div>
 
-        <div class="preview-row">
-          <div class="preview-label">
-            付款日期
+          <div class="preview-row">
+            <div class="preview-label">
+              付款日期
+            </div>
+
+            <div class="preview-value">
+              ${formatDateOnly(
+                item.reported_paid_date
+              )}
+            </div>
           </div>
+        `;
 
-          <div class="preview-value">
-            ${formatDateOnly(
-              item.reported_paid_date
-            )}
-          </div>
-        </div>
-      `;
-
-      const decisionValue =
-        status === 'rejected'
-          ? 'rejected'
-          : 'confirmed';
-
-      const decisionInput =
+      const confirmedInput =
         document.querySelector(
-          'input[name="decision"][value="' +
-          decisionValue +
-          '"]'
+          'input[name="decision"][value="confirmed"]'
         );
 
-      if (decisionInput) {
-        decisionInput.checked = true;
+      if (confirmedInput) {
+        confirmedInput.checked = true;
       }
 
-      rejectReason.value =
-        rawText(
-          item.reject_reason
-        );
+      document
+        .getElementById(
+          'rejectReason'
+        )
+        .value = '';
 
-      landlordNote.value =
-        rawText(
-          item.note
-        );
+      document
+        .getElementById(
+          'landlordNote'
+        )
+        .value = '';
 
       updateRejectCount();
       updateNoteCount();
@@ -2337,6 +2749,10 @@
         )
         .classList
         .add('show');
+
+      document.body
+        .classList
+        .add('modal-open');
     }
 
     function closeDecisionModal() {
@@ -2346,6 +2762,10 @@
         )
         .classList
         .remove('show');
+
+      document.body
+        .classList
+        .remove('modal-open');
 
       ACTIVE_REPORT_ID = '';
     }
@@ -2365,9 +2785,9 @@
         );
 
       if (decision === 'rejected') {
-        rejectField.classList.remove(
-          'hidden'
-        );
+        rejectField
+          .classList
+          .remove('hidden');
 
         button.className =
           'btn btn-red-soft';
@@ -2375,15 +2795,15 @@
         button.textContent =
           '確認駁回';
       } else {
-        rejectField.classList.add(
-          'hidden'
-        );
+        rejectField
+          .classList
+          .add('hidden');
 
         button.className =
           'btn btn-primary';
 
         button.textContent =
-          '確認付款回報';
+          '確認付款並銷帳';
       }
     }
 
@@ -2392,7 +2812,6 @@
         showAlert(
           '缺少付款回報 ID'
         );
-
         return;
       }
 
@@ -2420,25 +2839,8 @@
         !rejectReason
       ) {
         showAlert(
-          '駁回付款回報時，請輸入駁回原因'
+          '駁回時請輸入駁回原因'
         );
-
-        return;
-      }
-
-      if (rejectReason.length > 300) {
-        showAlert(
-          '駁回原因最多 300 字'
-        );
-
-        return;
-      }
-
-      if (landlordNote.length > 300) {
-        showAlert(
-          '房東備註最多 300 字'
-        );
-
         return;
       }
 
@@ -2452,55 +2854,88 @@
         button.textContent =
           '處理中...';
 
-        const result =
-          await callApi(
-            'landlord_payment_report_update',
-            {
-              report_id:
-                ACTIVE_REPORT_ID,
+        let response;
 
-              decision:
-                decision,
+        if (decision === 'confirmed') {
+          response =
+            await callApi(
+              'landlord_payment_report_settle',
+              {
+                report_id:
+                  ACTIVE_REPORT_ID,
 
-              reject_reason:
-                decision === 'rejected'
-                  ? rejectReason
-                  : '',
+                landlord_note:
+                  landlordNote
+              }
+            );
+        } else {
+          response =
+            await callApi(
+              'landlord_payment_report_update',
+              {
+                report_id:
+                  ACTIVE_REPORT_ID,
 
-              landlord_note:
-                landlordNote
-            }
-          );
+                decision:
+                  'rejected',
+
+                reject_reason:
+                  rejectReason,
+
+                landlord_note:
+                  landlordNote
+              }
+            );
+        }
 
         closeDecisionModal();
 
-        const notificationSuccess =
-          result &&
-          result
-            .tenant_notification_success === true;
+        const result =
+          response.data || {};
 
         let message =
-          decision === 'confirmed'
-            ? '付款回報已確認。'
-            : '付款回報已駁回。';
+          response.message ||
+          '付款回報處理完成';
 
-        if (notificationSuccess) {
+        if (
+          result.payment_id
+        ) {
           message +=
-            '\n房客已收到 LINE 通知。';
-        } else {
-          message +=
-            '\n房客 LINE 通知未成功。';
+            '\n\n付款紀錄：' +
+            result.payment_id;
         }
 
-        if (decision === 'confirmed') {
+        if (
+          result.legacy_sync
+        ) {
           message +=
-            '\n\n目前尚未自動將帳單改為已繳。';
+            '\nV1 每月帳單：' +
+            (
+              result
+                .legacy_sync
+                .monthly
+                .status ||
+              '未回傳'
+            );
+
+          message +=
+            '\nV1 歷史帳單：' +
+            (
+              result
+                .legacy_sync
+                .history
+                .status ||
+              '未回傳'
+            );
         }
 
         showAlert(
           message,
           function () {
-            loadPage();
+            setTimeout(
+              loadPage,
+              1000
+            );
           }
         );
 
@@ -2518,61 +2953,378 @@
 
     function quickConfirm(reportId) {
       const item =
+        findReportById(reportId);
+
+      if (!item) {
+        showAlert(
+          '找不到指定付款回報'
+        );
+        return;
+      }
+
+      openDecisionModal(reportId);
+
+      document
+        .getElementById(
+          'landlordNote'
+        )
+        .value =
+          '房東已確認入帳';
+
+      updateNoteCount();
+    }
+
+    async function settleConfirmedLegacyReport(
+      reportId
+    ) {
+      const item =
+        findReportById(reportId);
+
+      if (!item) {
+        showAlert(
+          '找不到指定付款回報'
+        );
+        return;
+      }
+
+      try {
+        const response =
+          await callApi(
+            'landlord_payment_report_settle',
+            {
+              report_id:
+                reportId,
+
+              landlord_note:
+                '補做正式付款銷帳'
+            }
+          );
+
+        const result =
+          response.data || {};
+
+        let message =
+          response.message ||
+          '正式銷帳完成';
+
+        if (result.payment_id) {
+          message +=
+            '\n\n付款紀錄：' +
+            result.payment_id;
+        }
+
+        showAlert(
+          message,
+          function () {
+            setTimeout(
+              loadPage,
+              1000
+            );
+          }
+        );
+
+      } catch (error) {
+        showAlert(
+          error.message ||
+          String(error)
+        );
+      }
+    }
+
+    // ==================================================
+    // 撤銷已繳／恢復欠款
+    // ==================================================
+
+    function openReversalModal(reportId) {
+      const item =
+        findReportById(reportId);
+
+      if (!item) {
+        showAlert(
+          '找不到指定付款回報'
+        );
+        return;
+      }
+
+      if (!item.bill_id) {
+        showAlert(
+          '此付款回報缺少帳單 ID'
+        );
+        return;
+      }
+
+      if (!item.matched_payment_id) {
+        showAlert(
+          '此付款回報尚未建立正式付款紀錄，不能執行撤銷銷帳'
+        );
+        return;
+      }
+
+      ACTIVE_REVERSAL_REPORT_ID =
+        rawText(reportId).trim();
+
+      document
+        .getElementById(
+          'reversalModalSubtitle'
+        )
+        .textContent =
+          (item.tenant_name || '-') +
+          '｜房號 ' +
+          (item.room_name || '-');
+
+      document
+        .getElementById(
+          'reversalPreview'
+        )
+        .innerHTML = `
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單月份
+            </div>
+
+            <div class="preview-value">
+              ${formatBillMonth(
+                item.bill_month
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單金額
+            </div>
+
+            <div class="preview-value">
+              ${money(
+                item.bill_total_amount ||
+                item.reported_amount
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單 ID
+            </div>
+
+            <div class="preview-value">
+              ${safeText(
+                item.bill_id
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              原付款 ID
+            </div>
+
+            <div class="preview-value">
+              ${safeText(
+                item.matched_payment_id
+              )}
+            </div>
+          </div>
+        `;
+
+      document
+        .getElementById(
+          'reversalReason'
+        )
+        .value = '';
+
+      document
+        .getElementById(
+          'reversalNotifyTenant'
+        )
+        .checked = true;
+
+      updateReversalCount();
+
+      document
+        .getElementById(
+          'reversalModal'
+        )
+        .classList
+        .add('show');
+
+      document.body
+        .classList
+        .add('modal-open');
+    }
+
+    function closeReversalModal() {
+      document
+        .getElementById(
+          'reversalModal'
+        )
+        .classList
+        .remove('show');
+
+      document.body
+        .classList
+        .remove('modal-open');
+
+      ACTIVE_REVERSAL_REPORT_ID = '';
+    }
+
+    async function submitReversal() {
+      const item =
         findReportById(
-          reportId
+          ACTIVE_REVERSAL_REPORT_ID
         );
 
       if (!item) {
         showAlert(
           '找不到指定付款回報'
         );
-
         return;
       }
 
-      ACTIVE_REPORT_ID =
-        reportId;
+      const reversalReason =
+        document
+          .getElementById(
+            'reversalReason'
+          )
+          .value
+          .trim();
 
-      const confirmedInput =
-        document.querySelector(
-          'input[name="decision"][value="confirmed"]'
+      const notifyTenant =
+        document
+          .getElementById(
+            'reversalNotifyTenant'
+          )
+          .checked;
+
+      if (!reversalReason) {
+        showAlert(
+          '請輸入撤銷原因'
         );
-
-      if (confirmedInput) {
-        confirmedInput.checked = true;
+        return;
       }
 
-      document
-        .getElementById(
-          'rejectReason'
-        )
-        .value = '';
+      if (
+        reversalReason.length < 3
+      ) {
+        showAlert(
+          '撤銷原因至少需要 3 個字'
+        );
+        return;
+      }
 
-      document
-        .getElementById(
-          'landlordNote'
-        )
-        .value = '已確認入帳';
+      if (
+        reversalReason.length > 300
+      ) {
+        showAlert(
+          '撤銷原因最多 300 字'
+        );
+        return;
+      }
 
-      openDecisionModal(
-        reportId
-      );
+      const button =
+        document.getElementById(
+          'submitReversalBtn'
+        );
+
+      try {
+        button.disabled = true;
+        button.textContent =
+          '撤銷處理中...';
+
+        const response =
+          await callApi(
+            'landlord_bill_reopen',
+            {
+              bill_id:
+                item.bill_id,
+
+              reversal_reason:
+                reversalReason,
+
+              notify_tenant:
+                notifyTenant
+                  ? 'true'
+                  : 'false'
+            }
+          );
+
+        const result =
+          response.data || {};
+
+        closeReversalModal();
+
+        let message =
+          response.message ||
+          '帳單已恢復為未繳';
+
+        if (result.reversal_id) {
+          message +=
+            '\n\n撤銷紀錄：' +
+            result.reversal_id;
+        }
+
+        if (result.voided_payment_count !== undefined) {
+          message +=
+            '\n作廢付款紀錄：' +
+            result.voided_payment_count +
+            ' 筆';
+        }
+
+        if (result.voided_report_count !== undefined) {
+          message +=
+            '\n作廢付款回報：' +
+            result.voided_report_count +
+            ' 筆';
+        }
+
+        if (result.legacy_sync) {
+          message +=
+            '\nV1 每月帳單：' +
+            (
+              result
+                .legacy_sync
+                .monthly
+                .status ||
+              '未回傳'
+            );
+
+          message +=
+            '\nV1 歷史帳單：' +
+            (
+              result
+                .legacy_sync
+                .history
+                .status ||
+              '未回傳'
+            );
+        }
+
+        showAlert(
+          message,
+          function () {
+            setTimeout(
+              loadPage,
+              1200
+            );
+          }
+        );
+
+      } catch (error) {
+        showAlert(
+          error.message ||
+          String(error)
+        );
+
+      } finally {
+        button.disabled = false;
+        button.textContent =
+          '確認撤銷並恢復欠款';
+      }
     }
 
-    function openTenantDetail(tenantId) {
-      location.href =
-        'landlord-tenant-detail.html' +
-        '?tenant_id=' +
-        encodeURIComponent(
-          tenantId
-        ) +
-        '&v=' +
-        Date.now();
-    }
-
-    // =========================================================
+    // ==================================================
     // 提示視窗
-    // =========================================================
+    // ==================================================
 
     function showAlert(
       message,
@@ -2583,10 +3335,12 @@
           ? callback
           : null;
 
-      document.getElementById(
-        'alertMessage'
-      ).textContent =
-        message || '';
+      document
+        .getElementById(
+          'alertMessage'
+        )
+        .textContent =
+          message || '';
 
       document
         .getElementById(
@@ -2621,10 +3375,21 @@
       .addEventListener(
         'click',
         function (event) {
-          if (
-            event.target === this
-          ) {
+          if (event.target === this) {
             closeDecisionModal();
+          }
+        }
+      );
+
+    document
+      .getElementById(
+        'reversalModal'
+      )
+      .addEventListener(
+        'click',
+        function (event) {
+          if (event.target === this) {
+            closeReversalModal();
           }
         }
       );
@@ -2636,17 +3401,15 @@
       .addEventListener(
         'click',
         function (event) {
-          if (
-            event.target === this
-          ) {
+          if (event.target === this) {
             closeAlertModal();
           }
         }
       );
 
-    // =========================================================
+    // ==================================================
     // 初始化
-    // =========================================================
+    // ==================================================
 
     async function loadPage() {
       try {
@@ -2656,20 +3419,14 @@
         app.innerHTML =
           '資料載入中...';
 
-        await initLineUserId();
-
-        if (!LINE_USER_ID) {
-          throw new Error(
-            '無法取得房東 LINE User ID'
-          );
-        }
-
-        const data =
+        const response =
           await callApi(
             'landlord_payment_reports_init'
           );
 
-        renderPage(data);
+        renderPage(
+          response.data || {}
+        );
 
       } catch (error) {
         renderError(
@@ -2679,7 +3436,32 @@
       }
     }
 
-    loadPage();
+    async function main() {
+      try {
+        app.className =
+          'loading';
+
+        app.innerHTML =
+          '資料載入中...';
+
+        const ready =
+          await initLineUserId();
+
+        if (!ready) {
+          return;
+        }
+
+        await loadPage();
+
+      } catch (error) {
+        renderError(
+          error.message ||
+          String(error)
+        );
+      }
+    }
+
+    main();
   </script>
 </body>
 </html>
