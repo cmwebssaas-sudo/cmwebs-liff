@@ -2,237 +2,743 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+
   <title>CMWebs 房客欠款</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
     :root {
-      --app-height: 100vh;
-      --nav-height: 62px;
+      --nav-height: 64px;
+      --primary: #06c755;
+      --primary-dark: #05a847;
+      --background: #f5f7fb;
+      --surface: #ffffff;
+      --text: #222222;
+      --muted: #70757d;
+      --border: #e8ebef;
+      --danger: #d93025;
+      --danger-soft: #ffe8e6;
+      --warning: #9a6b00;
+      --warning-soft: #fff4d7;
+      --blue: #1a73e8;
+      --blue-soft: #e8f0fe;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     html,
     body {
-      margin: 0;
       width: 100%;
       height: 100%;
+      margin: 0;
       overflow: hidden;
+      overscroll-behavior: none;
+      background: var(--background);
+      color: var(--text);
       font-family: Arial, "Noto Sans TC", sans-serif;
-      background: #f5f7fb;
-      color: #222;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
     }
 
     .app-shell {
       position: relative;
       width: 100%;
       max-width: 560px;
-      height: var(--app-height);
+      height: 100vh;
+      height: 100dvh;
       margin: 0 auto;
-      background: #f5f7fb;
       overflow: hidden;
+      background: var(--background);
     }
 
     .page {
+      width: 100%;
       height: 100%;
+      padding:
+        18px
+        16px
+        calc(
+          var(--nav-height) +
+          30px +
+          env(safe-area-inset-bottom)
+        );
+
+      overflow-x: hidden;
       overflow-y: auto;
+      overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
-      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
-      box-sizing: border-box;
+    }
+
+    .page-header {
+      margin-bottom: 16px;
+    }
+
+    .page-title {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
     }
 
     .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 18px;
+      padding: 17px;
       margin-bottom: 14px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .sub {
-      color: #666;
-      font-size: 13px;
-      line-height: 1.6;
+      border: 1px solid rgba(232, 235, 239, 0.8);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
     }
 
     .section-title {
-      font-size: 17px;
-      font-weight: 700;
       margin-bottom: 12px;
+      font-size: 17px;
+      font-weight: 900;
     }
 
-    .amount-main {
-      color: #d93025;
-      font-size: 30px;
-      font-weight: 800;
-      margin: 8px 0 14px;
-    }
-
-    .row {
+    .landlord-row {
       display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      display: flex;
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #e8f7ee;
+      color: var(--primary);
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .landlord-name {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .landlord-desc {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .summary-amount-label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .summary-amount {
+      margin: 7px 0 14px;
+      color: var(--danger);
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: -0.6px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .summary-item {
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #fafbfc;
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .summary-value {
+      margin-top: 5px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .arrears-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .arrears-card::before {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 4px;
+      background: var(--danger);
+      content: "";
+    }
+
+    .arrears-head {
+      display: flex;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      padding: 10px 0;
-      border-top: 1px solid #eee;
-      font-size: 14px;
     }
 
-    .row:first-of-type {
-      border-top: none;
-    }
-
-    .label {
-      color: #666;
-      flex: 1;
-    }
-
-    .value {
-      font-weight: 700;
-      text-align: right;
-      word-break: break-word;
+    .tenant-block {
+      min-width: 0;
     }
 
     .tenant-name {
       font-size: 18px;
-      font-weight: 800;
-      margin-bottom: 4px;
+      font-weight: 900;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .tenant-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
     }
 
     .badge {
-      display: inline-block;
-      padding: 3px 8px;
+      display: inline-flex;
+      min-height: 24px;
+      padding: 4px 8px;
+      align-items: center;
       border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      background: #ffe8e6;
-      color: #d93025;
-      margin-left: 6px;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .badge-danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .badge-warning {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .days-box {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 11px;
+      background: var(--warning-soft);
+      color: var(--warning);
+      text-align: center;
+    }
+
+    .days-value {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .days-label {
+      margin-top: 2px;
+      font-size: 10px;
+      font-weight: 800;
     }
 
     .amount {
-      color: #d93025;
-      font-size: 22px;
+      margin: 13px 0;
+      color: var(--danger);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .detail-list {
+      margin-top: 4px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid #eeeeee;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .detail-label {
+      flex: 0 0 auto;
+      color: var(--muted);
+    }
+
+    .detail-value {
+      min-width: 0;
       font-weight: 800;
-      margin: 10px 0;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .bill-id {
+      color: #555;
+      font-size: 11px;
+    }
+
+    .card-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 14px;
     }
 
     .btn {
       width: 100%;
+      min-height: 44px;
+      padding: 11px 13px;
       border: 0;
-      border-radius: 10px;
-      padding: 14px 16px;
-      font-size: 16px;
-      font-weight: 700;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 900;
       cursor: pointer;
-      margin-top: 8px;
+    }
+
+    .btn:active {
+      opacity: 0.72;
+    }
+
+    .btn:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
     }
 
     .btn-black {
-      background: #222;
-      color: #fff;
+      background: #222222;
+      color: #ffffff;
     }
 
-    .btn-green {
-      background: #06c755;
-      color: #fff;
+    .btn-light {
+      background: #eef1f5;
+      color: #333333;
+    }
+
+    .btn-outline {
+      border: 1px solid #dfe3e8;
+      background: #ffffff;
+      color: #444444;
+    }
+
+    .btn-blue-soft {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .btn-danger-soft {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .full-action {
+      grid-column: 1 / -1;
+    }
+
+    .page-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
     }
 
     .loading,
-    .empty,
-    .error {
+    .empty {
+      padding: 42px 20px;
+      color: var(--muted);
       text-align: center;
-      padding: 36px 20px;
-      color: #666;
+    }
+
+    .empty-icon {
+      margin-bottom: 10px;
+      font-size: 36px;
+    }
+
+    .empty-title {
+      color: #444444;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .empty-desc {
+      margin-top: 7px;
+      font-size: 13px;
+      line-height: 1.65;
     }
 
     .error-title {
-      color: #d93025;
-      font-size: 18px;
-      font-weight: 800;
       margin-bottom: 8px;
-      text-align: left;
+      color: var(--danger);
+      font-size: 19px;
+      font-weight: 900;
     }
 
     .error-text {
+      color: #555555;
       font-size: 14px;
-      line-height: 1.6;
-      text-align: left;
+      line-height: 1.7;
       word-break: break-word;
     }
 
-    .small {
-      font-size: 12px;
-      color: #777;
+    /* ==================================================
+       手動銷帳 Modal
+       ================================================== */
+
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+      background: rgba(0, 0, 0, 0.48);
+    }
+
+    .modal-mask.show {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 560px;
+      max-height: 94vh;
+      max-height: 94dvh;
+
+      padding:
+        18px
+        18px
+        calc(18px + env(safe-area-inset-bottom));
+
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      border-radius: 22px 22px 0 0;
+      background: #ffffff;
+      box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.22);
+    }
+
+    .modal-handle {
+      width: 40px;
+      height: 5px;
+      margin: 0 auto 15px;
+      border-radius: 999px;
+      background: #d9dde2;
+    }
+
+    .modal-title {
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .modal-subtitle {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
       line-height: 1.6;
     }
 
-    /* ===== Fixed Bottom Navigation ===== */
+    .settlement-preview {
+      padding: 13px;
+      margin-top: 14px;
+      border-radius: 13px;
+      background: #f7f8fa;
+    }
+
+    .preview-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-top: 1px solid #e8ebef;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .preview-row:first-child {
+      border-top: none;
+    }
+
+    .preview-label {
+      color: var(--muted);
+    }
+
+    .preview-value {
+      font-weight: 900;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .field {
+      margin-top: 16px;
+    }
+
+    .field.hidden {
+      display: none;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 7px;
+      color: #444444;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .required-mark {
+      color: var(--danger);
+    }
+
+    .field-input,
+    .field-select,
+    .field-textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #dfe3e8;
+      border-radius: 12px;
+      outline: none;
+      background: #ffffff;
+      color: #222222;
+      font-size: 15px;
+    }
+
+    .field-input:focus,
+    .field-select:focus,
+    .field-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
+    }
+
+    .field-input[readonly] {
+      background: #f4f5f7;
+      color: #555555;
+      font-weight: 900;
+    }
+
+    .field-textarea {
+      min-height: 105px;
+      resize: vertical;
+      line-height: 1.7;
+    }
+
+    .field-help {
+      margin-top: 6px;
+      color: #888888;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .char-count {
+      margin-top: 6px;
+      color: #999999;
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .notify-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px;
+      margin-top: 16px;
+      border: 1px solid #d6ebdf;
+      border-radius: 12px;
+      background: #f2fff7;
+      cursor: pointer;
+    }
+
+    .notify-row input {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 19px;
+      accent-color: var(--primary);
+    }
+
+    .notify-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .notify-desc {
+      margin-top: 3px;
+      color: #607067;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .settlement-warning {
+      padding: 12px 13px;
+      margin-top: 16px;
+      border: 1px solid #f0dda6;
+      border-radius: 11px;
+      background: #fffaf0;
+      color: #7e5b00;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    /* ==================================================
+       提示 Modal
+       ================================================== */
+
+    .alert-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.48);
+    }
+
+    .alert-mask.show {
+      display: flex;
+    }
+
+    .alert-box {
+      width: 100%;
+      max-width: 350px;
+      padding: 22px 18px 16px;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
+      text-align: center;
+    }
+
+    .alert-title {
+      margin-bottom: 10px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .alert-message {
+      margin-bottom: 18px;
+      color: #555555;
+      font-size: 14px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* ==================================================
+       底部導覽列
+       ================================================== */
+
     .bottom-nav {
-      position: absolute !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 99999 !important;
-      background: rgba(255, 255, 255, 0.98);
-      border-top: 1px solid #eceff3;
+      position: fixed;
+      right: auto;
+      bottom: 0;
+      left: 50%;
+      z-index: 99999;
+
+      width: 100%;
+      max-width: 560px;
+
+      transform: translateX(-50%);
       padding-bottom: env(safe-area-inset-bottom);
+
+      border-top: 1px solid #eceff3;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
     .bottom-nav-inner {
-      height: var(--nav-height);
-      margin: 0 auto;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
+      height: var(--nav-height);
     }
 
     .nav-item {
+      position: relative;
+      display: flex;
       appearance: none;
       -webkit-appearance: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
       border: 0;
       background: transparent;
       color: #8b9098;
       font-size: 11px;
       font-weight: 600;
-      line-height: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      position: relative;
       cursor: pointer;
     }
 
     .nav-item svg {
       width: 23px;
       height: 23px;
+      fill: none;
       stroke: currentColor;
       stroke-width: 1.9;
-      fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
     .nav-item.active {
-      color: #06c755;
-      font-weight: 800;
+      color: var(--primary);
+      font-weight: 900;
     }
 
     .nav-item.active::after {
-      content: "";
       position: absolute;
       bottom: 5px;
       width: 18px;
       height: 3px;
       border-radius: 999px;
-      background: #06c755;
+      background: var(--primary);
+      content: "";
     }
 
     .nav-item:active {
@@ -243,338 +749,1890 @@
 
 <body>
   <div class="app-shell">
-    <div class="page">
-      <div id="app" class="loading">資料載入中...</div>
+    <main class="page">
+      <div id="app" class="loading">
+        資料載入中...
+      </div>
+    </main>
+  </div>
+
+  <!-- 固定底部導覽列 -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button
+        class="nav-item"
+        onclick="goPage('landlord-home.html')"
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M4 11.5L12 5l8 6.5"></path>
+          <path d="M6.5 10.5V19h11v-8.5"></path>
+          <path d="M9.5 19v-5h5v5"></path>
+        </svg>
+        <span>首頁</span>
+      </button>
+
+      <button
+        class="nav-item active"
+        onclick="goPage('landlord-arrears.html')"
+      >
+        <svg viewBox="0 0 24 24">
+          <rect
+            x="5"
+            y="4.5"
+            width="14"
+            height="15"
+            rx="2"
+          ></rect>
+          <path d="M8.5 9h7"></path>
+          <path d="M8.5 13h7"></path>
+          <path d="M8.5 17h4"></path>
+        </svg>
+        <span>欠款</span>
+      </button>
+
+      <button
+        class="nav-item"
+        onclick="goPage('landlord-tenants.html')"
+      >
+        <svg viewBox="0 0 24 24">
+          <circle cx="9" cy="8" r="3"></circle>
+          <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+          <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+          <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+        </svg>
+        <span>房客</span>
+      </button>
+
+      <button
+        class="nav-item"
+        onclick="goPage('landlord-more.html')"
+      >
+        <svg viewBox="0 0 24 24">
+          <circle cx="6" cy="12" r="1.5"></circle>
+          <circle cx="12" cy="12" r="1.5"></circle>
+          <circle cx="18" cy="12" r="1.5"></circle>
+        </svg>
+        <span>更多</span>
+      </button>
     </div>
+  </nav>
 
-    <nav class="bottom-nav">
-      <div class="bottom-nav-inner">
-        <button class="nav-item" onclick="location.href='landlord-home.html?v=' + Date.now()">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 11.5L12 5l8 6.5"></path>
-            <path d="M6.5 10.5V19h11v-8.5"></path>
-            <path d="M9.5 19v-5h5v5"></path>
-          </svg>
-          <div>首頁</div>
+  <!-- 手動確認已繳 Modal -->
+  <div id="settlementModal" class="modal-mask">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+
+      <div class="modal-title">
+        手動確認已繳
+      </div>
+
+      <div
+        id="settlementModalSubtitle"
+        class="modal-subtitle"
+      ></div>
+
+      <div
+        id="settlementPreview"
+        class="settlement-preview"
+      ></div>
+
+      <div class="field">
+        <label
+          class="field-label"
+          for="paymentDate"
+        >
+          付款日期
+          <span class="required-mark">*</span>
+        </label>
+
+        <input
+          id="paymentDate"
+          class="field-input"
+          type="date"
+        />
+      </div>
+
+      <div class="field">
+        <label
+          class="field-label"
+          for="paymentMethod"
+        >
+          付款方式
+          <span class="required-mark">*</span>
+        </label>
+
+        <select
+          id="paymentMethod"
+          class="field-select"
+          onchange="handlePaymentMethodChange()"
+        >
+          <option value="bank_transfer">
+            銀行轉帳
+          </option>
+
+          <option value="cash">
+            現金
+          </option>
+
+          <option value="other">
+            其他
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label
+          class="field-label"
+          for="paymentAmount"
+        >
+          付款金額
+        </label>
+
+        <input
+          id="paymentAmount"
+          class="field-input"
+          type="number"
+          min="1"
+          step="1"
+          readonly
+        />
+
+        <div class="field-help">
+          第一版僅支援全額銷帳，金額固定為帳單總額。
+        </div>
+      </div>
+
+      <div
+        id="bankLast5Field"
+        class="field"
+      >
+        <label
+          class="field-label"
+          for="bankLast5"
+        >
+          匯款後 5 碼
+        </label>
+
+        <input
+          id="bankLast5"
+          class="field-input"
+          type="text"
+          inputmode="numeric"
+          maxlength="5"
+          placeholder="選填，例如 12345"
+          oninput="normalizeBankLast5()"
+        />
+
+        <div class="field-help">
+          房客只有提供轉帳截圖、私訊或帳戶後 5 碼時再填寫。
+        </div>
+      </div>
+
+      <div class="field">
+        <label
+          class="field-label"
+          for="confirmationSource"
+        >
+          確認依據
+          <span class="required-mark">*</span>
+        </label>
+
+        <select
+          id="confirmationSource"
+          class="field-select"
+        >
+          <option value="private_message">
+            房客私訊
+          </option>
+
+          <option value="transfer_screenshot">
+            轉帳截圖
+          </option>
+
+          <option value="phone">
+            電話通知
+          </option>
+
+          <option value="onsite_cash">
+            現場收款
+          </option>
+
+          <option value="other">
+            其他
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label
+          class="field-label"
+          for="landlordNote"
+        >
+          房東備註
+        </label>
+
+        <textarea
+          id="landlordNote"
+          class="field-textarea"
+          maxlength="300"
+          placeholder="例如：房客透過 LINE 傳送轉帳截圖，已確認入帳。"
+          oninput="updateNoteCount()"
+        ></textarea>
+
+        <div
+          id="noteCount"
+          class="char-count"
+        >
+          0 / 300
+        </div>
+      </div>
+
+      <label class="notify-row">
+        <input
+          id="notifyTenant"
+          type="checkbox"
+          checked
+        />
+
+        <div>
+          <div class="notify-title">
+            LINE 通知房客
+          </div>
+
+          <div class="notify-desc">
+            完成銷帳後，傳送帳單已繳通知給已綁定 LINE 的房客。
+          </div>
+        </div>
+      </label>
+
+      <div class="settlement-warning">
+        確認後會建立正式付款紀錄、將 V2 帳單改為已繳，並嘗試同步 V1 每月帳單表及歷史帳單總表。此操作不能作為一般資料修改使用。
+      </div>
+
+      <div class="modal-actions">
+        <button
+          class="btn btn-light"
+          onclick="closeSettlementModal()"
+        >
+          取消
         </button>
 
-        <button class="nav-item active" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
-          <svg viewBox="0 0 24 24">
-            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
-            <path d="M8.5 9h7"></path>
-            <path d="M8.5 13h7"></path>
-            <path d="M8.5 17h4"></path>
-          </svg>
-          <div>欠款</div>
-        </button>
-
-        <button class="nav-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
-          <svg viewBox="0 0 24 24">
-            <circle cx="9" cy="8.5" r="3"></circle>
-            <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
-            <circle cx="16.5" cy="9.5" r="2.3"></circle>
-            <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
-          </svg>
-          <div>房客</div>
-        </button>
-
-        <button class="nav-item" onclick="location.href='landlord-more.html?v=' + Date.now()">
-          <svg viewBox="0 0 24 24">
-            <circle cx="6" cy="12" r="1.5"></circle>
-            <circle cx="12" cy="12" r="1.5"></circle>
-            <circle cx="18" cy="12" r="1.5"></circle>
-          </svg>
-          <div>更多</div>
+        <button
+          id="submitSettlementBtn"
+          class="btn btn-primary"
+          onclick="submitManualSettlement()"
+        >
+          確認已繳並銷帳
         </button>
       </div>
-    </nav>
+    </div>
+  </div>
+
+  <!-- 提示 Modal -->
+  <div id="alertModal" class="alert-mask">
+    <div class="alert-box">
+      <div
+        id="alertTitle"
+        class="alert-title"
+      >
+        提示
+      </div>
+
+      <div
+        id="alertMessage"
+        class="alert-message"
+      ></div>
+
+      <button
+        class="btn btn-primary"
+        onclick="closeAlertModal()"
+      >
+        確定
+      </button>
+    </div>
   </div>
 
   <script>
-    function setAppHeight() {
-      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-    }
+    // ==================================================
+    // 基本設定
+    // ==================================================
 
-    setAppHeight();
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
-    window.addEventListener('resize', setAppHeight);
-    window.addEventListener('orientationchange', function () {
-      setTimeout(setAppHeight, 300);
-    });
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
 
-    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
-    const LIFF_ID = '2010314940-EjX1qbb8';
-    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    /*
+     * 直接在瀏覽器測試時，可使用：
+     * landlord-arrears.html?test=1
+     *
+     * 正式 LINE LIFF 使用時不會啟用測試 UID。
+     */
+    const TEST_MODE =
+      new URLSearchParams(
+        location.search
+      ).get('test') === '1';
 
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
+    let ARREARS = [];
+    let ACTIVE_BILL_ID = '';
+    let ALERT_CALLBACK = null;
 
-    const app = document.getElementById('app');
+    const app =
+      document.getElementById('app');
 
-    function safeText(v) {
-      if (v === undefined || v === null || v === '') return '-';
-      return String(v);
+    // ==================================================
+    // 工具函式
+    // ==================================================
+
+    function goPage(filename) {
+      const testSuffix =
+        TEST_MODE
+          ? '&test=1'
+          : '';
+
+      location.href =
+        filename +
+        '?v=' +
+        Date.now() +
+        testSuffix;
     }
 
-    function money(n) {
-      const num = Number(n || 0);
-      return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
     }
 
-    function statusText(v) {
-      const s = String(v || '').toLowerCase();
-
-      if (s === 'unpaid') return '未繳';
-      if (s === 'paid') return '已繳';
-      if (s === 'issued') return '已建立';
-      if (s === 'not_sent') return '未發送';
-      if (s === 'sent') return '已發送';
-      if (s === 'active') return '啟用中';
-      if (s === 'inactive') return '未啟用';
-
-      return safeText(v);
+    function escapeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
-    function renderError(message) {
-      app.className = 'card';
-      app.innerHTML = `
-        <div class="error-title">資料讀取失敗</div>
-        <div class="error-text">
-          API 載入失敗：<br>
-          ${safeText(message)}
-        </div>
+    function safeText(value) {
+      const text =
+        rawText(value).trim();
 
-        <button class="btn btn-black" onclick="location.reload()">重新整理</button>
-
-        <div class="small" style="margin-top:14px;">
-          若持續失敗，請確認：<br>
-          1. 房東 LINE UID 是否存在於 V2_landlords<br>
-          2. V2_landlord_arrears_view 是否有產生資料<br>
-          3. Apps Script 是否已重新部署新版<br>
-          4. LIFF Endpoint URL 是否正確
-        </div>
-      `;
+      return text
+        ? escapeHtml(text)
+        : '-';
     }
 
-    function callApi(action) {
-      return new Promise((resolve, reject) => {
-        if (!LINE_USER_ID) {
-          reject(new Error('缺少 LINE User ID'));
-          return;
+    function money(value) {
+      const amount =
+        Number(value || 0);
+
+      return (
+        'NT$ ' +
+        Math.round(amount)
+          .toLocaleString('zh-TW')
+      );
+    }
+
+    function statusText(value) {
+      const status =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      const map = {
+        unpaid: '未繳',
+        paid: '已繳',
+        issued: '已建立',
+        draft: '草稿',
+        not_sent: '未發送',
+        sent: '已發送',
+        active: '啟用中',
+        inactive: '未啟用'
+      };
+
+      return (
+        map[status] ||
+        safeText(value)
+      );
+    }
+
+    function dateFromSheetValue(value) {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ''
+      ) {
+        return null;
+      }
+
+      if (
+        typeof value === 'number' ||
+        /^\d{5}(\.\d+)?$/.test(
+          rawText(value).trim()
+        )
+      ) {
+        const serial =
+          Number(value);
+
+        if (
+          isFinite(serial) &&
+          serial > 20000 &&
+          serial < 100000
+        ) {
+          return new Date(
+            Date.UTC(
+              1899,
+              11,
+              30
+            ) +
+            serial * 86400000
+          );
         }
+      }
 
-        const callbackName =
-          'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+      const text =
+        rawText(value).trim();
 
-        let finished = false;
-        const script = document.createElement('script');
+      if (
+        /^\d{4}-\d{2}$/.test(text)
+      ) {
+        return new Date(
+          text + '-01T12:00:00+08:00'
+        );
+      }
 
-        function cleanup() {
-          clearTimeout(timer);
+      if (
+        /^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}$/.test(
+          text
+        )
+      ) {
+        return new Date(
+          text.replace(/\//g, '-') +
+          'T12:00:00+08:00'
+        );
+      }
 
-          if (script && script.parentNode) {
-            script.parentNode.removeChild(script);
+      const parsed =
+        new Date(text);
+
+      return isNaN(
+        parsed.getTime()
+      )
+        ? null
+        : parsed;
+    }
+
+    function taipeiDateParts(value) {
+      const date =
+        dateFromSheetValue(value);
+
+      if (!date) {
+        return null;
+      }
+
+      const parts =
+        new Intl.DateTimeFormat(
+          'en-CA',
+          {
+            timeZone:
+              'Asia/Taipei',
+            year:
+              'numeric',
+            month:
+              '2-digit',
+            day:
+              '2-digit'
           }
+        ).formatToParts(date);
 
-          try {
-            delete window[callbackName];
-          } catch (e) {
-            window[callbackName] = undefined;
-          }
+      const result = {};
+
+      parts.forEach(function (part) {
+        if (
+          part.type !== 'literal'
+        ) {
+          result[part.type] =
+            part.value;
         }
-
-        window[callbackName] = function (json) {
-          if (finished) return;
-          finished = true;
-
-          cleanup();
-
-          if (!json || json.success !== true) {
-            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
-            return;
-          }
-
-          resolve(json.data);
-        };
-
-        const timer = setTimeout(() => {
-          if (finished) return;
-          finished = true;
-
-          cleanup();
-          reject(new Error('API 載入逾時'));
-        }, 30000);
-
-        script.charset = 'UTF-8';
-
-        script.onerror = function () {
-          console.log('JSONP script onerror ignored');
-        };
-
-        script.src =
-          API_URL +
-          '?v2_action=' + encodeURIComponent(action) +
-          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-
-        document.body.appendChild(script);
       });
+
+      return result;
     }
 
-    async function initLineUserId() {
-      if (typeof liff === 'undefined') {
-        LINE_USER_ID = TEST_LINE_USER_ID;
+    function formatDateOnly(value) {
+      const parts =
+        taipeiDateParts(value);
+
+      if (!parts) {
+        return safeText(value);
+      }
+
+      return (
+        parts.year +
+        '-' +
+        parts.month +
+        '-' +
+        parts.day
+      );
+    }
+
+    function formatBillMonth(value) {
+      const text =
+        rawText(value).trim();
+
+      if (
+        /^\d{4}-\d{2}$/.test(text)
+      ) {
+        return text;
+      }
+
+      const parts =
+        taipeiDateParts(value);
+
+      if (!parts) {
+        return safeText(value);
+      }
+
+      return (
+        parts.year +
+        '-' +
+        parts.month
+      );
+    }
+
+    function todayTaipei() {
+      const parts =
+        new Intl.DateTimeFormat(
+          'en-CA',
+          {
+            timeZone:
+              'Asia/Taipei',
+            year:
+              'numeric',
+            month:
+              '2-digit',
+            day:
+              '2-digit'
+          }
+        ).formatToParts(
+          new Date()
+        );
+
+      const result = {};
+
+      parts.forEach(function (part) {
+        if (
+          part.type !== 'literal'
+        ) {
+          result[part.type] =
+            part.value;
+        }
+      });
+
+      return (
+        result.year +
+        '-' +
+        result.month +
+        '-' +
+        result.day
+      );
+    }
+
+    function getInitial(name) {
+      const text =
+        rawText(name).trim();
+
+      return text
+        ? text.slice(0, 1)
+        : '房';
+    }
+
+    function updateNoteCount() {
+      const input =
+        document.getElementById(
+          'landlordNote'
+        );
+
+      const count =
+        document.getElementById(
+          'noteCount'
+        );
+
+      if (!input || !count) {
         return;
       }
 
-      try {
-        await liff.init({ liffId: LIFF_ID });
+      count.textContent =
+        input.value.length +
+        ' / 300';
+    }
 
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
+    function normalizeBankLast5() {
+      const input =
+        document.getElementById(
+          'bankLast5'
+        );
+
+      if (!input) {
+        return;
+      }
+
+      input.value =
+        input.value
+          .replace(/\D/g, '')
+          .slice(0, 5);
+    }
+
+    // ==================================================
+    // JSONP API
+    // ==================================================
+
+    function callApi(
+      action,
+      params
+    ) {
+      return new Promise(
+        function (
+          resolve,
+          reject
+        ) {
+          if (!LINE_USER_ID) {
+            reject(
+              new Error(
+                '缺少房東 LINE User ID'
+              )
+            );
+
+            return;
+          }
+
+          params =
+            params || {};
+
+          const callbackName =
+            'cmwebsJsonp_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+          let timer = null;
+
+          function cleanup() {
+            if (timer) {
+              clearTimeout(timer);
+            }
+
+            if (
+              script.parentNode
+            ) {
+              script.parentNode
+                .removeChild(script);
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[
+                callbackName
+              ] = undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (json) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              if (
+                !json ||
+                json.success !== true
+              ) {
+                const message =
+                  json &&
+                  json.message
+                    ? json.message
+                    : 'API 操作失敗';
+
+                const code =
+                  json &&
+                  json.code
+                    ? json.code
+                    : '';
+
+                reject(
+                  new Error(
+                    code
+                      ? message +
+                        '\n錯誤代碼：' +
+                        code
+                      : message
+                  )
+                );
+
+                return;
+              }
+
+              resolve(json);
+            };
+
+          timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                cleanup();
+
+                reject(
+                  new Error(
+                    'API 載入逾時'
+                  )
+                );
+              },
+              30000
+            );
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(params)
+            .forEach(
+              function (key) {
+                const value =
+                  params[key];
+
+                if (
+                  value ===
+                    undefined ||
+                  value === null
+                ) {
+                  return;
+                }
+
+                url +=
+                  '&' +
+                  encodeURIComponent(
+                    key
+                  ) +
+                  '=' +
+                  encodeURIComponent(
+                    value
+                  );
+              }
+            );
+
+          script.charset =
+            'UTF-8';
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 載入失敗'
+                )
+              );
+            };
+
+          script.src = url;
+
+          document.body
+            .appendChild(
+              script
+            );
+        }
+      );
+    }
+
+    // ==================================================
+    // LIFF
+    // ==================================================
+
+    async function initLineUserId() {
+      if (
+        typeof liff ===
+        'undefined'
+      ) {
+        if (TEST_MODE) {
+          LINE_USER_ID =
+            TEST_LINE_USER_ID;
+
+          return true;
         }
 
-        const profile = await liff.getProfile();
-        LINE_USER_ID = profile.userId || '';
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
+      }
+
+      try {
+        await liff.init({
+          liffId:
+            LIFF_ID
+        });
+
+        if (
+          !liff.isLoggedIn()
+        ) {
+          liff.login({
+            redirectUri:
+              location.href
+          });
+
+          return false;
+        }
+
+        const profile =
+          await liff.getProfile();
+
+        LINE_USER_ID =
+          profile.userId ||
+          '';
 
         if (!LINE_USER_ID) {
-          throw new Error('無法取得 LINE User ID');
+          throw new Error(
+            '無法取得房東 LINE User ID'
+          );
         }
+
+        return true;
+
       } catch (error) {
-        LINE_USER_ID = TEST_LINE_USER_ID;
+        if (TEST_MODE) {
+          LINE_USER_ID =
+            TEST_LINE_USER_ID;
+
+          return true;
+        }
+
+        throw error;
       }
+    }
+
+    // ==================================================
+    // 畫面渲染
+    // ==================================================
+
+    function renderArrearsCard(
+      item
+    ) {
+      const billId =
+        rawText(
+          item.bill_id
+        ).trim();
+
+      const daysOverdue =
+        Number(
+          item.days_overdue ||
+          0
+        );
+
+      return `
+        <article class="card arrears-card">
+          <div class="arrears-head">
+            <div class="tenant-block">
+              <div class="tenant-name">
+                ${safeText(
+                  item.tenant_name
+                )}
+
+                <span class="badge badge-danger">
+                  ${statusText(
+                    item.payment_status
+                  )}
+                </span>
+              </div>
+
+              <div class="tenant-sub">
+                房號：
+                ${safeText(
+                  item.room_name
+                )}
+                ｜帳單月份：
+                ${formatBillMonth(
+                  item.bill_month
+                )}
+              </div>
+            </div>
+
+            <div class="days-box">
+              <div class="days-value">
+                ${daysOverdue}
+              </div>
+
+              <div class="days-label">
+                逾期天數
+              </div>
+            </div>
+          </div>
+
+          <div class="amount">
+            ${money(
+              item.total_amount
+            )}
+          </div>
+
+          <div class="detail-list">
+            <div class="detail-row">
+              <div class="detail-label">
+                繳款期限
+              </div>
+
+              <div class="detail-value">
+                ${formatDateOnly(
+                  item.due_date
+                )}
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="detail-label">
+                帳單狀態
+              </div>
+
+              <div class="detail-value">
+                ${statusText(
+                  item.bill_status
+                )}
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="detail-label">
+                發送狀態
+              </div>
+
+              <div class="detail-value">
+                ${statusText(
+                  item.sent_status
+                )}
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="detail-label">
+                帳單 ID
+              </div>
+
+              <div class="detail-value bill-id">
+                ${safeText(
+                  item.bill_id
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button
+              class="btn btn-outline"
+              data-tenant-id="${escapeHtml(
+                item.tenant_id || ''
+              )}"
+              onclick="openTenantDetail(
+                this.dataset.tenantId
+              )"
+              ${
+                item.tenant_id
+                  ? ''
+                  : 'disabled'
+              }
+            >
+              查看房客
+            </button>
+
+            <button
+              class="btn btn-primary"
+              data-bill-id="${escapeHtml(
+                billId
+              )}"
+              onclick="openSettlementModal(
+                this.dataset.billId
+              )"
+              ${
+                billId
+                  ? ''
+                  : 'disabled'
+              }
+            >
+              手動確認已繳
+            </button>
+          </div>
+        </article>
+      `;
     }
 
     function renderPage(data) {
-      PAGE_DATA = data;
+      PAGE_DATA =
+        data || {};
 
-      const landlord = data.landlord || {};
-      const summary = data.summary || {};
-      const arrears = Array.isArray(data.arrears) ? data.arrears : [];
+      const landlord =
+        PAGE_DATA.landlord ||
+        {};
 
-      const arrearsCount = Number(summary.arrears_count || arrears.length || 0);
-      const unpaidTotal = Number(summary.unpaid_total_amount || 0);
+      const summary =
+        PAGE_DATA.summary ||
+        {};
 
-      let html = '';
+      ARREARS =
+        Array.isArray(
+          PAGE_DATA.arrears
+        )
+          ? PAGE_DATA.arrears
+          : [];
 
-      html += `
-        <div class="card">
-          <div class="title">房客欠款明細</div>
-          <div class="sub">
-            房東：${safeText(landlord.landlord_name)}<br>
-            LINE UID：${safeText(LINE_USER_ID)}
-          </div>
+      const arrearsCount =
+        Number(
+          summary.arrears_count ||
+          ARREARS.length ||
+          0
+        );
 
-          <div class="row">
-            <div class="label">帳號狀態</div>
-            <div class="value">${statusText(landlord.account_status)}</div>
-          </div>
-
-          <div class="row">
-            <div class="label">管理房間數</div>
-            <div class="value">${Number(landlord.room_count || 0)}</div>
-          </div>
-
-          <div class="row">
-            <div class="label">房客數</div>
-            <div class="value">${Number(landlord.tenant_count || 0)}</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-title">欠款總覽</div>
-          <div class="sub">目前未繳總額</div>
-          <div class="amount-main">${money(unpaidTotal)}</div>
-
-          <div class="row">
-            <div class="label">未繳帳單數</div>
-            <div class="value">${arrearsCount}</div>
-          </div>
-
-          <div class="row">
-            <div class="label">最後更新</div>
-            <div class="value">${safeText(landlord.updated_at)}</div>
-          </div>
-        </div>
-      `;
-
-      if (arrears.length === 0) {
-        html += `
-          <div class="card empty">
-            目前沒有未繳帳單
-          </div>
-        `;
-      } else {
-        arrears.forEach(item => {
-          html += `
-            <div class="card">
-              <div class="tenant-name">
-                ${safeText(item.tenant_name)}
-                <span class="badge">${statusText(item.payment_status)}</span>
-              </div>
-
-              <div class="sub">
-                房號：${safeText(item.room_name)}｜帳單月份：${safeText(item.bill_month)}
-              </div>
-
-              <div class="amount">${money(item.total_amount)}</div>
-
-              <div class="row">
-                <div class="label">繳款期限</div>
-                <div class="value">${safeText(item.due_date)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">逾期天數</div>
-                <div class="value">${Number(item.days_overdue || 0)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">帳單狀態</div>
-                <div class="value">${statusText(item.bill_status)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">發送狀態</div>
-                <div class="value">${statusText(item.sent_status)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">帳單 ID</div>
-                <div class="value">${safeText(item.bill_id)}</div>
-              </div>
-            </div>
-          `;
-        });
-      }
-
-      html += `
-        <button class="btn btn-green" onclick="goHome()">返回房東首頁</button>
-        <button class="btn btn-black" onclick="location.reload()">重新整理</button>
-      `;
+      const unpaidTotal =
+        Number(
+          summary
+            .unpaid_total_amount ||
+          0
+        );
 
       app.className = '';
-      app.innerHTML = html;
+
+      app.innerHTML = `
+        <header class="page-header">
+          <h1 class="page-title">
+            房客欠款
+          </h1>
+
+          <div class="page-subtitle">
+            查看未繳帳單，並在確認收到私訊、轉帳截圖或現金後手動完成銷帳。
+          </div>
+        </header>
+
+        <section class="card">
+          <div class="landlord-row">
+            <div class="avatar">
+              ${safeText(
+                getInitial(
+                  landlord.landlord_name
+                )
+              )}
+            </div>
+
+            <div>
+              <div class="landlord-name">
+                ${safeText(
+                  landlord.landlord_name
+                )}
+              </div>
+
+              <div class="landlord-desc">
+                管理
+                ${Number(
+                  landlord.room_count ||
+                  0
+                )}
+                間房｜
+                ${Number(
+                  landlord.tenant_count ||
+                  0
+                )}
+                位房客
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            欠款總覽
+          </div>
+
+          <div class="summary-amount-label">
+            目前未繳總額
+          </div>
+
+          <div class="summary-amount">
+            ${money(
+              unpaidTotal
+            )}
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-item">
+              <div class="summary-label">
+                未繳帳單數
+              </div>
+
+              <div class="summary-value">
+                ${arrearsCount}
+              </div>
+            </div>
+
+            <div class="summary-item">
+              <div class="summary-label">
+                帳號狀態
+              </div>
+
+              <div class="summary-value">
+                ${statusText(
+                  landlord.account_status
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="arrearsList">
+          ${
+            ARREARS.length > 0
+              ? ARREARS
+                  .map(
+                    renderArrearsCard
+                  )
+                  .join('')
+              : `
+                <div class="card empty">
+                  <div class="empty-icon">
+                    ✓
+                  </div>
+
+                  <div class="empty-title">
+                    目前沒有未繳帳單
+                  </div>
+
+                  <div class="empty-desc">
+                    所有房客帳單目前均已完成繳款。
+                  </div>
+                </div>
+              `
+          }
+        </section>
+
+        <div class="page-actions">
+          <button
+            class="btn btn-light"
+            onclick="goPage(
+              'landlord-payment-reports.html'
+            )"
+          >
+            查看付款回報
+          </button>
+
+          <button
+            class="btn btn-black"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </div>
+      `;
     }
 
-    function goHome() {
-      location.href = 'landlord-home.html?v=' + Date.now();
+    function renderError(message) {
+      app.className = '';
+
+      app.innerHTML = `
+        <div class="card">
+          <div class="error-title">
+            資料讀取失敗
+          </div>
+
+          <div class="error-text">
+            ${safeText(message)}
+          </div>
+
+          <div class="page-actions">
+            <button
+              class="btn btn-black"
+              onclick="loadPage()"
+            >
+              重新整理
+            </button>
+
+            <button
+              class="btn btn-primary"
+              onclick="goPage(
+                'landlord-home.html'
+              )"
+            >
+              返回首頁
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function findArrearByBillId(
+      billId
+    ) {
+      return (
+        ARREARS.find(
+          function (item) {
+            return (
+              rawText(
+                item.bill_id
+              ).trim() ===
+              rawText(
+                billId
+              ).trim()
+            );
+          }
+        ) ||
+        null
+      );
+    }
+
+    function openTenantDetail(
+      tenantId
+    ) {
+      tenantId =
+        rawText(
+          tenantId
+        ).trim();
+
+      if (!tenantId) {
+        showAlert(
+          '此帳單缺少房客 ID'
+        );
+
+        return;
+      }
+
+      location.href =
+        'landlord-tenant-detail.html' +
+        '?tenant_id=' +
+        encodeURIComponent(
+          tenantId
+        ) +
+        '&v=' +
+        Date.now();
+    }
+
+    // ==================================================
+    // 手動確認已繳
+    // ==================================================
+
+    function openSettlementModal(
+      billId
+    ) {
+      const item =
+        findArrearByBillId(
+          billId
+        );
+
+      if (!item) {
+        showAlert(
+          '找不到指定帳單'
+        );
+
+        return;
+      }
+
+      ACTIVE_BILL_ID =
+        rawText(
+          billId
+        ).trim();
+
+      document
+        .getElementById(
+          'settlementModalSubtitle'
+        )
+        .textContent =
+          (item.tenant_name || '-') +
+          '｜房號 ' +
+          (item.room_name || '-');
+
+      document
+        .getElementById(
+          'settlementPreview'
+        )
+        .innerHTML = `
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單月份
+            </div>
+
+            <div class="preview-value">
+              ${formatBillMonth(
+                item.bill_month
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單金額
+            </div>
+
+            <div class="preview-value">
+              ${money(
+                item.total_amount
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              繳款期限
+            </div>
+
+            <div class="preview-value">
+              ${formatDateOnly(
+                item.due_date
+              )}
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <div class="preview-label">
+              帳單 ID
+            </div>
+
+            <div class="preview-value">
+              ${safeText(
+                item.bill_id
+              )}
+            </div>
+          </div>
+        `;
+
+      document
+        .getElementById(
+          'paymentDate'
+        )
+        .value =
+          todayTaipei();
+
+      document
+        .getElementById(
+          'paymentMethod'
+        )
+        .value =
+          'bank_transfer';
+
+      document
+        .getElementById(
+          'paymentAmount'
+        )
+        .value =
+          Math.round(
+            Number(
+              item.total_amount ||
+              0
+            )
+          );
+
+      document
+        .getElementById(
+          'bankLast5'
+        )
+        .value = '';
+
+      document
+        .getElementById(
+          'confirmationSource'
+        )
+        .value =
+          'private_message';
+
+      document
+        .getElementById(
+          'landlordNote'
+        )
+        .value = '';
+
+      document
+        .getElementById(
+          'notifyTenant'
+        )
+        .checked = true;
+
+      updateNoteCount();
+      handlePaymentMethodChange();
+
+      document
+        .getElementById(
+          'settlementModal'
+        )
+        .classList
+        .add('show');
+
+      document.body
+        .classList
+        .add('modal-open');
+    }
+
+    function closeSettlementModal() {
+      document
+        .getElementById(
+          'settlementModal'
+        )
+        .classList
+        .remove('show');
+
+      document.body
+        .classList
+        .remove('modal-open');
+
+      ACTIVE_BILL_ID = '';
+    }
+
+    function handlePaymentMethodChange() {
+      const method =
+        document
+          .getElementById(
+            'paymentMethod'
+          )
+          .value;
+
+      const bankField =
+        document.getElementById(
+          'bankLast5Field'
+        );
+
+      const bankInput =
+        document.getElementById(
+          'bankLast5'
+        );
+
+      if (
+        method ===
+        'bank_transfer'
+      ) {
+        bankField
+          .classList
+          .remove('hidden');
+
+        bankInput.disabled =
+          false;
+      } else {
+        bankField
+          .classList
+          .add('hidden');
+
+        bankInput.value = '';
+        bankInput.disabled =
+          true;
+      }
+    }
+
+    async function submitManualSettlement() {
+      if (!ACTIVE_BILL_ID) {
+        showAlert(
+          '缺少帳單 ID'
+        );
+
+        return;
+      }
+
+      const item =
+        findArrearByBillId(
+          ACTIVE_BILL_ID
+        );
+
+      if (!item) {
+        showAlert(
+          '找不到指定帳單'
+        );
+
+        return;
+      }
+
+      const paymentDate =
+        document
+          .getElementById(
+            'paymentDate'
+          )
+          .value
+          .trim();
+
+      const paymentMethod =
+        document
+          .getElementById(
+            'paymentMethod'
+          )
+          .value
+          .trim();
+
+      const paymentAmount =
+        document
+          .getElementById(
+            'paymentAmount'
+          )
+          .value
+          .trim();
+
+      const bankLast5 =
+        document
+          .getElementById(
+            'bankLast5'
+          )
+          .value
+          .trim();
+
+      const confirmationSource =
+        document
+          .getElementById(
+            'confirmationSource'
+          )
+          .value
+          .trim();
+
+      const landlordNote =
+        document
+          .getElementById(
+            'landlordNote'
+          )
+          .value
+          .trim();
+
+      const notifyTenant =
+        document
+          .getElementById(
+            'notifyTenant'
+          )
+          .checked;
+
+      if (!paymentDate) {
+        showAlert(
+          '請選擇付款日期'
+        );
+
+        return;
+      }
+
+      if (!paymentMethod) {
+        showAlert(
+          '請選擇付款方式'
+        );
+
+        return;
+      }
+
+      if (
+        Number(paymentAmount) !==
+        Math.round(
+          Number(
+            item.total_amount ||
+            0
+          )
+        )
+      ) {
+        showAlert(
+          '付款金額必須等於帳單總額'
+        );
+
+        return;
+      }
+
+      if (
+        bankLast5 &&
+        !/^\d{5}$/.test(
+          bankLast5
+        )
+      ) {
+        showAlert(
+          '匯款後 5 碼必須是 5 位數字'
+        );
+
+        return;
+      }
+
+      if (
+        landlordNote.length >
+        300
+      ) {
+        showAlert(
+          '房東備註最多 300 字'
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          'submitSettlementBtn'
+        );
+
+      try {
+        button.disabled = true;
+
+        button.textContent =
+          '銷帳處理中...';
+
+        const response =
+          await callApi(
+            'landlord_bill_manual_settle',
+            {
+              bill_id:
+                ACTIVE_BILL_ID,
+
+              payment_date:
+                paymentDate,
+
+              payment_method:
+                paymentMethod,
+
+              payment_amount:
+                paymentAmount,
+
+              bank_last5:
+                bankLast5,
+
+              confirmation_source:
+                confirmationSource,
+
+              landlord_note:
+                landlordNote,
+
+              notify_tenant:
+                notifyTenant
+                  ? 'true'
+                  : 'false'
+            }
+          );
+
+        const result =
+          response.data ||
+          {};
+
+        closeSettlementModal();
+
+        const legacySync =
+          result.legacy_sync ||
+          {};
+
+        const monthlyStatus =
+          legacySync.monthly &&
+          legacySync.monthly.status
+            ? legacySync.monthly.status
+            : '未回傳';
+
+        const historyStatus =
+          legacySync.history &&
+          legacySync.history.status
+            ? legacySync.history.status
+            : '未回傳';
+
+        let message =
+          response.message ||
+          '帳單已完成銷帳';
+
+        message +=
+          '\n\n付款紀錄：' +
+          (
+            result.payment_id ||
+            '-'
+          );
+
+        message +=
+          '\nV1 每月帳單：' +
+          monthlyStatus;
+
+        message +=
+          '\nV1 歷史帳單：' +
+          historyStatus;
+
+        showAlert(
+          message,
+          function () {
+            setTimeout(
+              loadPage,
+              1200
+            );
+          }
+        );
+
+      } catch (error) {
+        showAlert(
+          error.message ||
+          String(error)
+        );
+
+      } finally {
+        button.disabled =
+          false;
+
+        button.textContent =
+          '確認已繳並銷帳';
+      }
+    }
+
+    // ==================================================
+    // 提示視窗
+    // ==================================================
+
+    function showAlert(
+      message,
+      callback
+    ) {
+      ALERT_CALLBACK =
+        typeof callback ===
+        'function'
+          ? callback
+          : null;
+
+      document
+        .getElementById(
+          'alertMessage'
+        )
+        .textContent =
+          message || '';
+
+      document
+        .getElementById(
+          'alertModal'
+        )
+        .classList
+        .add('show');
+    }
+
+    function closeAlertModal() {
+      document
+        .getElementById(
+          'alertModal'
+        )
+        .classList
+        .remove('show');
+
+      const callback =
+        ALERT_CALLBACK;
+
+      ALERT_CALLBACK = null;
+
+      if (callback) {
+        callback();
+      }
+    }
+
+    document
+      .getElementById(
+        'settlementModal'
+      )
+      .addEventListener(
+        'click',
+        function (event) {
+          if (
+            event.target === this
+          ) {
+            closeSettlementModal();
+          }
+        }
+      );
+
+    document
+      .getElementById(
+        'alertModal'
+      )
+      .addEventListener(
+        'click',
+        function (event) {
+          if (
+            event.target === this
+          ) {
+            closeAlertModal();
+          }
+        }
+      );
+
+    // ==================================================
+    // 載入資料
+    // ==================================================
+
+    async function loadPage() {
+      try {
+        app.className =
+          'loading';
+
+        app.innerHTML =
+          '資料載入中...';
+
+        const response =
+          await callApi(
+            'landlord_arrears'
+          );
+
+        renderPage(
+          response.data ||
+          {}
+        );
+
+      } catch (error) {
+        renderError(
+          error.message ||
+          String(error)
+        );
+      }
     }
 
     async function main() {
       try {
-        app.className = 'loading';
-        app.innerHTML = '資料載入中...';
+        app.className =
+          'loading';
 
-        await initLineUserId();
+        app.innerHTML =
+          '資料載入中...';
 
-        const data = await callApi('landlord_arrears');
+        const ready =
+          await initLineUserId();
 
-        renderPage(data);
+        if (!ready) {
+          return;
+        }
+
+        await loadPage();
+
       } catch (error) {
-        renderError(error.message || error);
+        renderError(
+          error.message ||
+          String(error)
+        );
       }
     }
 
