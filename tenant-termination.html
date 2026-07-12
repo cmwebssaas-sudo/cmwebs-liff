@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+
+  <title>CMWebs 申請解約</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 66px;
+
+      --primary: #06c755;
+      --primary-dark: #05a847;
+      --primary-soft: #eaf9f0;
+
+      --background: #f4f6f9;
+      --surface: #ffffff;
+      --text: #222222;
+      --muted: #747981;
+      --border: #e7eaee;
+
+      --blue: #1a73e8;
+      --blue-soft: #eaf2ff;
+
+      --orange: #ef8f00;
+      --orange-soft: #fff4dc;
+
+      --danger: #d93025;
+      --danger-dark: #b5261c;
+      --danger-soft: #fff0ef;
+
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.065);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+      background: var(--background);
+      color: var(--text);
+      font-family: Arial, "Noto Sans TC", sans-serif;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background: var(--background);
+    }
+
+    .page {
+      width: 100%;
+      height: 100%;
+      padding:
+        16px
+        15px
+        calc(
+          var(--nav-height) +
+          28px +
+          env(safe-area-inset-bottom)
+        );
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .back-btn {
+      display: flex;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: #333333;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    .back-btn svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .header-content {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 23px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+    }
+
+    .page-subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .card {
+      padding: 17px;
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .section-title {
+      margin-bottom: 12px;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .contract-card {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      margin-bottom: 13px;
+      border-radius: 18px;
+      background:
+        linear-gradient(
+          145deg,
+          #0bb95a 0%,
+          #06c755 56%,
+          #05aa49 100%
+        );
+      color: #ffffff;
+      box-shadow: 0 8px 24px rgba(6, 199, 85, 0.22);
+    }
+
+    .contract-card::after {
+      position: absolute;
+      top: -50px;
+      right: -38px;
+      width: 155px;
+      height: 155px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      content: "";
+    }
+
+    .contract-top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .contract-room {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+
+    .contract-landlord {
+      margin-top: 5px;
+      font-size: 12px;
+      opacity: 0.92;
+    }
+
+    .days-box {
+      display: flex;
+      min-width: 78px;
+      min-height: 63px;
+      padding: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.2);
+      text-align: center;
+    }
+
+    .days-value {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .days-label {
+      margin-top: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      opacity: 0.92;
+    }
+
+    .contract-dates {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+      padding-top: 13px;
+      border-top: 1px solid rgba(255, 255, 255, 0.27);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 0;
+      border-top: 1px solid #eeeeee;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .detail-row:first-child {
+      border-top: none;
+    }
+
+    .detail-label {
+      flex: 0 0 auto;
+      color: var(--muted);
+    }
+
+    .detail-value {
+      min-width: 0;
+      font-weight: 800;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .detail-value.primary {
+      color: #10893e;
+    }
+
+    .field {
+      margin-top: 14px;
+    }
+
+    .field:first-child {
+      margin-top: 0;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 7px;
+      color: #333333;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .field-hint {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .field-input,
+    .field-select,
+    .field-textarea {
+      width: 100%;
+      border: 1px solid #dfe3e8;
+      border-radius: 11px;
+      outline: none;
+      background: #ffffff;
+      color: #222222;
+      transition: border-color 0.15s ease;
+    }
+
+    .field-input,
+    .field-select {
+      min-height: 46px;
+      padding: 11px 12px;
+    }
+
+    .field-textarea {
+      min-height: 118px;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    .field-input:focus,
+    .field-select:focus,
+    .field-textarea:focus {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.1);
+    }
+
+    .field-input:disabled,
+    .field-select:disabled,
+    .field-textarea:disabled {
+      background: #f6f8fa;
+      color: #999999;
+    }
+
+    .date-shortcuts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .date-chip {
+      min-height: 50px;
+      padding: 8px 6px;
+      border: 1px solid #dfe3e8;
+      border-radius: 11px;
+      background: #ffffff;
+      color: #444444;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.35;
+      cursor: pointer;
+    }
+
+    .date-chip:active {
+      opacity: 0.65;
+    }
+
+    .date-chip.active {
+      border-color: #f0a49e;
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .quick-reasons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .reason-chip {
+      padding: 8px 10px;
+      border: 1px solid #dfe3e8;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #555555;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .reason-chip:active {
+      opacity: 0.65;
+    }
+
+    .char-count {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .termination-preview {
+      padding: 14px;
+      margin-top: 14px;
+      border: 1px solid #ffd2cf;
+      border-radius: 13px;
+      background: #fff6f5;
+    }
+
+    .preview-title {
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .preview-range {
+      margin-top: 8px;
+      color: #222222;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+
+    .preview-note {
+      margin-top: 6px;
+      color: #7b5b59;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      min-height: 24px;
+      padding: 4px 9px;
+      align-items: center;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .status-pill.warning {
+      background: var(--orange-soft);
+      color: #9b6200;
+    }
+
+    .status-pill.success {
+      background: var(--primary-soft);
+      color: #10893e;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 11px;
+      border: 1px solid #eceff3;
+      border-radius: 11px;
+      background: #fafbfc;
+      color: #555555;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .check-icon {
+      display: flex;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--danger-soft);
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .notice-box {
+      padding: 13px;
+      margin-top: 13px;
+      border-radius: 12px;
+      background: var(--orange-soft);
+      color: #7d5100;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .pending-box {
+      padding: 14px;
+      margin-bottom: 13px;
+      border: 1px solid #ffd88f;
+      border-radius: 14px;
+      background: #fff9ed;
+    }
+
+    .pending-title {
+      color: #9b6200;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .pending-message {
+      margin-top: 7px;
+      color: #725c35;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .page-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 47px;
+      padding: 12px 14px;
+      border: 0;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn:active {
+      opacity: 0.72;
+    }
+
+    .btn:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-dark);
+    }
+
+    .btn-light {
+      border: 1px solid #dfe3e8;
+      background: #ffffff;
+      color: #333333;
+    }
+
+    .loading,
+    .error-box {
+      padding: 42px 20px;
+      text-align: center;
+    }
+
+    .loading {
+      color: var(--muted);
+    }
+
+    .error-card {
+      padding: 18px;
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .error-title {
+      color: var(--danger);
+      font-size: 19px;
+      font-weight: 900;
+      text-align: left;
+    }
+
+    .error-message {
+      margin-top: 9px;
+      color: #555555;
+      font-size: 14px;
+      line-height: 1.7;
+      text-align: left;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .bottom-nav {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 9999;
+      width: 100%;
+      padding-bottom: env(safe-area-inset-bottom);
+      border-top: 1px solid #eceff3;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .bottom-nav-inner {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      height: var(--nav-height);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      appearance: none;
+      -webkit-appearance: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    .modal-mask,
+    .alert-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 14px;
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .modal-mask.show,
+    .alert-mask.show {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 530px;
+      padding: 16px;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      border-radius: 20px 20px 16px 16px;
+      background: #ffffff;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .modal-handle {
+      width: 42px;
+      height: 4px;
+      margin: 0 auto 14px;
+      border-radius: 999px;
+      background: #d8dce1;
+    }
+
+    .modal-title {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .modal-subtitle {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .confirm-summary {
+      margin-top: 14px;
+      padding: 13px;
+      border-radius: 12px;
+      background: #f6f8fa;
+    }
+
+    .confirm-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-top: 1px solid #e8ebef;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .confirm-row:first-child {
+      border-top: 0;
+    }
+
+    .confirm-label {
+      color: var(--muted);
+    }
+
+    .confirm-value {
+      max-width: 65%;
+      font-weight: 800;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .alert-mask {
+      align-items: center;
+    }
+
+    .alert-box {
+      width: 100%;
+      max-width: 420px;
+      padding: 18px;
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .alert-title {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .alert-message {
+      margin: 11px 0 16px;
+      color: #555555;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div id="app" class="loading">
+        解約資料載入中...
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" onclick="goPage('tenant-home.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button class="nav-item" onclick="goPage('tenant-bills.html')">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>帳單</span>
+        </button>
+
+        <button class="nav-item active" onclick="goPage('tenant-contract.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 3.5h9l3 3V20H6z"></path>
+            <path d="M15 3.5V7h3"></path>
+            <path d="M9 11h6"></path>
+            <path d="M9 15h6"></path>
+          </svg>
+          <span>合約</span>
+        </button>
+
+        <button class="nav-item" onclick="goPage('tenant-message.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 5h14v11H9l-4 3z"></path>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 12h5"></path>
+          </svg>
+          <span>聯絡</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <div id="confirmModal" class="modal-mask">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">確認送出解約申請</div>
+      <div class="modal-subtitle">
+        送出後將通知房東審核。房東核准前，現有合約與付款義務不會自動終止。
+      </div>
+      <div id="confirmSummary" class="confirm-summary"></div>
+      <div class="modal-actions">
+        <button class="btn btn-light" onclick="closeConfirmModal()">
+          返回修改
+        </button>
+        <button id="confirmSubmitBtn" class="btn btn-danger" onclick="submitTermination()">
+          確認送出
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="alertModal" class="alert-mask">
+    <div class="alert-box">
+      <div id="alertTitle" class="alert-title">提示</div>
+      <div id="alertMessage" class="alert-message"></div>
+      <button class="btn btn-danger" onclick="closeAlertModal()">
+        確定
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-iJB1D6sN';
+
+    const TEST_LINE_USER_ID =
+      'U3615a7ed919c1a4a438a246c10784d70';
+
+    const QUERY_PARAMS =
+      new URLSearchParams(location.search);
+
+    const TEST_MODE =
+      QUERY_PARAMS.get('test') === '1';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let CONTRACT = null;
+    let ALERT_CALLBACK = null;
+    let IS_SUBMITTING = false;
+
+    const app =
+      document.getElementById('app');
+
+    function updateAppHeight() {
+      const height =
+        window.visualViewport
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement
+        .style
+        .setProperty('--app-height', height + 'px');
+    }
+
+    updateAppHeight();
+    window.addEventListener('resize', updateAppHeight);
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        updateAppHeight
+      );
+    }
+
+    function rawText(value) {
+      if (value === undefined || value === null) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function escapeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function safeText(value) {
+      const text = rawText(value).trim();
+      return text ? escapeHtml(text) : '-';
+    }
+
+    function safeAlertText(value) {
+      return rawText(value).trim() || '-';
+    }
+
+    function money(value) {
+      const number = Number(value || 0);
+      return 'NT$ ' + Math.round(
+        isFinite(number) ? number : 0
+      ).toLocaleString('zh-TW');
+    }
+
+    function dateFromValue(value) {
+      if (value === undefined || value === null || value === '') {
+        return null;
+      }
+
+      if (
+        typeof value === 'number' ||
+        /^\d{5}(\.\d+)?$/.test(rawText(value).trim())
+      ) {
+        const serial = Number(value);
+
+        if (isFinite(serial) && serial > 20000 && serial < 100000) {
+          return new Date(
+            Date.UTC(1899, 11, 30) + serial * 86400000
+          );
+        }
+      }
+
+      const text = rawText(value).trim();
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+        return new Date(text + 'T12:00:00+08:00');
+      }
+
+      const parsed = new Date(text);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDateOnly(value) {
+      const date = dateFromValue(value);
+
+      if (!date) {
+        return safeText(value);
+      }
+
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(date);
+    }
+
+    function formatDateObject(date) {
+      if (!date || isNaN(date.getTime())) {
+        return '';
+      }
+
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(date);
+    }
+
+    function todayDateText() {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+    }
+
+    function addDays(value, days) {
+      const date = dateFromValue(value);
+      if (!date) return null;
+
+      const result = new Date(date.getTime());
+      result.setDate(result.getDate() + Number(days || 0));
+      return result;
+    }
+
+    function diffDays(startValue, endValue) {
+      const start = dateFromValue(startValue);
+      const end = dateFromValue(endValue);
+
+      if (!start || !end) return 0;
+
+      const startMidnight = new Date(
+        start.getFullYear(),
+        start.getMonth(),
+        start.getDate(),
+        12,
+        0,
+        0
+      );
+
+      const endMidnight = new Date(
+        end.getFullYear(),
+        end.getMonth(),
+        end.getDate(),
+        12,
+        0,
+        0
+      );
+
+      return Math.round(
+        (endMidnight.getTime() - startMidnight.getTime()) /
+        86400000
+      );
+    }
+
+    function clampDateToContract(date) {
+      const endDate = dateFromValue(CONTRACT && CONTRACT.end_date);
+
+      if (!date) return null;
+      if (!endDate) return date;
+
+      return date.getTime() > endDate.getTime()
+        ? endDate
+        : date;
+    }
+
+    function goPage(filename) {
+      const params = new URLSearchParams();
+      params.set('v', Date.now());
+
+      if (TEST_MODE) {
+        params.set('test', '1');
+      }
+
+      location.href = filename + '?' + params.toString();
+    }
+
+    function renderLoading() {
+      app.className = 'loading';
+      app.innerHTML = '解約資料載入中...';
+    }
+
+    function renderError(message) {
+      app.className = '';
+      app.innerHTML = `
+        <div class="error-card">
+          <div class="error-title">資料讀取失敗</div>
+          <div class="error-message">${safeText(message || '讀取失敗')}</div>
+          <div class="page-actions">
+            <button class="btn btn-danger" onclick="location.reload()">
+              重新整理
+            </button>
+            <button class="btn btn-light" onclick="goPage('tenant-contract.html')">
+              返回我的合約
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function callApi(action, params) {
+      return new Promise(function (resolve, reject) {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少房客 LINE User ID'));
+          return;
+        }
+
+        params = params || {};
+
+        const callbackName =
+          'cmwebsJsonp_' +
+          Date.now() +
+          '_' +
+          Math.floor(Math.random() * 1000000);
+
+        const script = document.createElement('script');
+        let finished = false;
+        let timer = null;
+
+        function cleanup() {
+          if (timer) clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+
+          try {
+            delete window[callbackName];
+          } catch (error) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+
+          if (!json || json.success !== true) {
+            const message = json && json.message
+              ? json.message
+              : 'API 查詢失敗';
+
+            const code = json && json.code
+              ? json.code
+              : '';
+
+            const error = new Error(
+              code ? message + '\n錯誤代碼：' + code : message
+            );
+
+            error.code = code;
+            error.data = json && json.data ? json.data : null;
+            reject(error);
+            return;
+          }
+
+          resolve(json.data || {});
+        };
+
+        timer = setTimeout(function () {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+          reject(new Error('API 載入逾時'));
+        }, 30000);
+
+        let url =
+          API_URL +
+          '?v2_action=' + encodeURIComponent(action) +
+          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+
+        Object.keys(params).forEach(function (key) {
+          const value = params[key];
+
+          if (value === undefined || value === null) return;
+
+          url +=
+            '&' + encodeURIComponent(key) +
+            '=' + encodeURIComponent(value);
+        });
+
+        script.charset = 'UTF-8';
+        script.onerror = function () {
+          console.warn('JSONP script onerror ignored.');
+        };
+        script.src = url;
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initLineUserId() {
+      if (TEST_MODE) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return true;
+      }
+
+      if (typeof liff === 'undefined') {
+        throw new Error('LIFF SDK 載入失敗');
+      }
+
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: location.href });
+        return false;
+      }
+
+      const profile = await liff.getProfile();
+      LINE_USER_ID = profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error('無法取得房客 LINE User ID');
+      }
+
+      return true;
+    }
+
+    function findPendingTermination(requests) {
+      return (requests || []).find(function (request) {
+        return (
+          rawText(request.request_type).toLowerCase() === 'termination' &&
+          rawText(request.status).toLowerCase() === 'pending'
+        );
+      }) || null;
+    }
+
+    function renderPage(data) {
+      PAGE_DATA = data || {};
+      CONTRACT = PAGE_DATA.contract || {};
+
+      const tenant = PAGE_DATA.tenant || {};
+      const permissions = PAGE_DATA.permissions || {};
+      const pendingTermination = findPendingTermination(PAGE_DATA.requests || []);
+      const canSubmit = permissions.can_request_termination !== false && !pendingTermination;
+
+      const currentEnd = formatDateOnly(CONTRACT.end_date);
+      const currentStart = formatDateOnly(CONTRACT.start_date);
+      const daysRemaining = Number(CONTRACT.days_remaining || 0);
+      const today = todayDateText();
+
+      let maxMoveOutDate = currentEnd;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(maxMoveOutDate)) {
+        maxMoveOutDate = '';
+      }
+
+      let defaultMoveOut = currentEnd;
+      if (!defaultMoveOut || defaultMoveOut < today) {
+        defaultMoveOut = today;
+      }
+
+      app.className = '';
+      app.innerHTML = `
+        <div class="topbar">
+          <button class="back-btn" onclick="goPage('tenant-contract.html')" aria-label="返回">
+            <svg viewBox="0 0 24 24">
+              <path d="M15 5l-7 7 7 7"></path>
+            </svg>
+          </button>
+
+          <div class="header-content">
+            <h1 class="page-title">申請解約</h1>
+            <div class="page-subtitle">填寫預計退租日期與原因，送交房東審核</div>
+          </div>
+        </div>
+
+        ${pendingTermination ? `
+          <div class="pending-box">
+            <div class="pending-title">已有待處理的解約申請</div>
+            <div class="pending-message">
+              申請編號：${safeText(pendingTermination.request_id)}<br>
+              預計退租日：${safeText(formatDateOnly(pendingTermination.move_out_date))}<br>
+              目前狀態：等待房東審核。請先返回「我的合約」查看或取消原申請。
+            </div>
+          </div>
+        ` : ''}
+
+        <section class="contract-card">
+          <div class="contract-top">
+            <div>
+              <div class="contract-room">房號 ${safeText(CONTRACT.room_name || tenant.room_name)}</div>
+              <div class="contract-landlord">
+                房東：${safeText(CONTRACT.landlord_name || tenant.landlord_name)}
+              </div>
+            </div>
+
+            <div class="days-box">
+              <div class="days-value">${isFinite(daysRemaining) ? daysRemaining : '-'}</div>
+              <div class="days-label">剩餘天數</div>
+            </div>
+          </div>
+
+          <div class="contract-dates">
+            <span>${currentStart}</span>
+            <span>${currentEnd}</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">目前合約</div>
+
+          <div class="detail-row">
+            <div class="detail-label">合約編號</div>
+            <div class="detail-value">${safeText(CONTRACT.contract_id)}</div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">每月租金</div>
+            <div class="detail-value primary">${money(CONTRACT.rent_amount)}</div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">每月管理費</div>
+            <div class="detail-value primary">${money(CONTRACT.management_fee)}</div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">押金</div>
+            <div class="detail-value primary">${money(CONTRACT.deposit_amount)}</div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">目前到期日</div>
+            <div class="detail-value">${currentEnd}</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">預計退租日期</div>
+
+          <div class="field">
+            <label class="field-label" for="moveOutDate">退租／搬離日期</label>
+            <input
+              id="moveOutDate"
+              class="field-input"
+              type="date"
+              min="${today}"
+              ${maxMoveOutDate ? `max="${maxMoveOutDate}"` : ''}
+              value="${defaultMoveOut}"
+              onchange="handleMoveOutDateChange()"
+              ${canSubmit ? '' : 'disabled'}
+            />
+            <div class="field-hint">
+              日期不得早於今天；合約仍在有效期間時，不得晚於目前合約到期日。
+            </div>
+
+            <div class="date-shortcuts">
+              <button class="date-chip" data-shortcut="30" onclick="selectMoveOutShortcut(30)" ${canSubmit ? '' : 'disabled'}>
+                30 天後
+              </button>
+              <button class="date-chip" data-shortcut="60" onclick="selectMoveOutShortcut(60)" ${canSubmit ? '' : 'disabled'}>
+                60 天後
+              </button>
+              <button class="date-chip active" data-shortcut="end" onclick="selectContractEndDate()" ${canSubmit ? '' : 'disabled'}>
+                合約到期日
+              </button>
+            </div>
+          </div>
+
+          <div class="termination-preview">
+            <div class="preview-title">退租日期預覽</div>
+            <div id="previewRange" class="preview-range">-</div>
+            <div id="previewNote" class="preview-note">
+              此日期為申請內容，實際解約日、費用結算、點交與押金退還仍以房東核准及雙方確認為準。
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">申請內容</div>
+
+          <div class="field">
+            <label class="field-label" for="reason">解約／退租原因</label>
+            <textarea
+              id="reason"
+              class="field-textarea"
+              maxlength="500"
+              placeholder="請說明申請解約或退租的原因。"
+              oninput="updateReasonCount()"
+              ${canSubmit ? '' : 'disabled'}
+            ></textarea>
+
+            <div class="quick-reasons">
+              <button class="reason-chip" onclick="insertReason('合約到期後不再續租，預計依約辦理退租。')" ${canSubmit ? '' : 'disabled'}>到期不續租</button>
+              <button class="reason-chip" onclick="insertReason('因工作或就學地點調整，需要搬離目前住所。')" ${canSubmit ? '' : 'disabled'}>工作／就學搬遷</button>
+              <button class="reason-chip" onclick="insertReason('因個人生涯規劃調整，申請提前終止租約。')" ${canSubmit ? '' : 'disabled'}>個人生涯規劃</button>
+              <button class="reason-chip" onclick="insertReason('因居住需求改變，申請解約並辦理退租。')" ${canSubmit ? '' : 'disabled'}>居住需求改變</button>
+            </div>
+
+            <div id="reasonCount" class="char-count">0 / 500</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="note">補充說明（選填）</label>
+            <textarea
+              id="note"
+              class="field-textarea"
+              maxlength="300"
+              placeholder="例如：可配合點交時間、聯絡時段、搬遷安排或其他需要房東了解的事項。"
+              oninput="updateNoteCount()"
+              ${canSubmit ? '' : 'disabled'}
+            ></textarea>
+            <div id="noteCount" class="char-count">0 / 300</div>
+          </div>
+
+          <div class="checklist">
+            <div class="check-item">
+              <div class="check-icon">1</div>
+              <div>送出申請不代表合約已立即終止，需等待房東審核與雙方確認。</div>
+            </div>
+
+            <div class="check-item">
+              <div class="check-icon">2</div>
+              <div>租金、水電、管理費、設備損耗與其他費用仍需依合約及實際點交結果結算。</div>
+            </div>
+
+            <div class="check-item">
+              <div class="check-icon">3</div>
+              <div>押金退還須於房屋點交、費用結清及鑰匙返還後，由房東依合約辦理。</div>
+            </div>
+          </div>
+
+          <div class="notice-box">
+            提前解約可能涉及違約金、通知期間或其他合約責任。系統只負責送出申請，最終條件以現有租約與房東審核結果為準。
+          </div>
+
+          <div class="page-actions">
+            <button
+              id="openConfirmBtn"
+              class="btn btn-danger"
+              onclick="openConfirmModal()"
+              ${canSubmit ? '' : 'disabled'}
+            >
+              ${canSubmit ? '送出解約申請' : '已有待處理申請'}
+            </button>
+
+            <button class="btn btn-light" onclick="goPage('tenant-contract.html')">
+              返回我的合約
+            </button>
+          </div>
+        </section>
+      `;
+
+      updateTerminationPreview();
+    }
+
+    function setMoveOutDate(value, shortcut) {
+      const input = document.getElementById('moveOutDate');
+      if (!input || input.disabled) return;
+
+      input.value = value;
+
+      document.querySelectorAll('.date-chip').forEach(function (button) {
+        button.classList.toggle(
+          'active',
+          button.getAttribute('data-shortcut') === String(shortcut)
+        );
+      });
+
+      updateTerminationPreview();
+    }
+
+    function selectMoveOutShortcut(days) {
+      const date = clampDateToContract(
+        addDays(todayDateText(), days)
+      );
+
+      if (!date) return;
+      setMoveOutDate(formatDateObject(date), String(days));
+    }
+
+    function selectContractEndDate() {
+      const endDate = formatDateOnly(CONTRACT && CONTRACT.end_date);
+      const today = todayDateText();
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+        showAlert('無法選擇日期', '目前合約缺少有效的到期日。');
+        return;
+      }
+
+      setMoveOutDate(endDate < today ? today : endDate, 'end');
+    }
+
+    function handleMoveOutDateChange() {
+      document.querySelectorAll('.date-chip').forEach(function (button) {
+        button.classList.remove('active');
+      });
+
+      updateTerminationPreview();
+    }
+
+    function updateTerminationPreview() {
+      const input = document.getElementById('moveOutDate');
+      const preview = document.getElementById('previewRange');
+      const note = document.getElementById('previewNote');
+
+      if (!input || !preview || !note) return;
+
+      const moveOutDate = rawText(input.value).trim();
+      const currentEnd = formatDateOnly(CONTRACT && CONTRACT.end_date);
+      const today = todayDateText();
+
+      if (!moveOutDate) {
+        preview.textContent = '請選擇預計退租日期';
+        note.textContent = '日期確認後，系統會顯示距離退租日的天數及是否屬於提前解約。';
+        return;
+      }
+
+      const daysUntilMoveOut = diffDays(today, moveOutDate);
+      const earlyTermination =
+        /^\d{4}-\d{2}-\d{2}$/.test(currentEnd) &&
+        moveOutDate < currentEnd;
+
+      preview.textContent =
+        moveOutDate +
+        '（距今 ' +
+        Math.max(daysUntilMoveOut, 0) +
+        ' 天）';
+
+      note.innerHTML = earlyTermination
+        ? '<span class="status-pill warning">提前解約申請</span>　退租日早於目前合約到期日，可能涉及通知期間、違約金或其他合約責任。'
+        : '<span class="status-pill success">合約到期退租</span>　退租日為目前合約到期日，仍需完成房屋點交與費用結算。';
+    }
+
+    function insertReason(text) {
+      const input = document.getElementById('reason');
+      if (!input || input.disabled) return;
+
+      input.value = text;
+      updateReasonCount();
+      input.focus();
+    }
+
+    function updateReasonCount() {
+      const input = document.getElementById('reason');
+      const counter = document.getElementById('reasonCount');
+
+      if (input && counter) {
+        counter.textContent = input.value.length + ' / 500';
+      }
+    }
+
+    function updateNoteCount() {
+      const input = document.getElementById('note');
+      const counter = document.getElementById('noteCount');
+
+      if (input && counter) {
+        counter.textContent = input.value.length + ' / 300';
+      }
+    }
+
+    function collectFormData() {
+      const moveOutDate = rawText(
+        document.getElementById('moveOutDate')
+          ? document.getElementById('moveOutDate').value
+          : ''
+      ).trim();
+
+      const reason = rawText(
+        document.getElementById('reason')
+          ? document.getElementById('reason').value
+          : ''
+      ).trim();
+
+      const note = rawText(
+        document.getElementById('note')
+          ? document.getElementById('note').value
+          : ''
+      ).trim();
+
+      const currentEnd = formatDateOnly(CONTRACT && CONTRACT.end_date);
+
+      return {
+        request_type: 'termination',
+        requested_date: todayDateText(),
+        move_out_date: moveOutDate,
+        reason: reason,
+        note: note,
+        early_termination:
+          /^\d{4}-\d{2}-\d{2}$/.test(currentEnd) &&
+          moveOutDate < currentEnd,
+        current_end_date: currentEnd
+      };
+    }
+
+    function validateForm(data) {
+      const today = todayDateText();
+      const currentEnd = data.current_end_date;
+
+      if (!data.move_out_date) {
+        return '請選擇預計退租日期。';
+      }
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(data.move_out_date)) {
+        return '退租日期格式不正確。';
+      }
+
+      if (data.move_out_date < today) {
+        return '退租日期不能早於今天。';
+      }
+
+      if (
+        /^\d{4}-\d{2}-\d{2}$/.test(currentEnd) &&
+        currentEnd >= today &&
+        data.move_out_date > currentEnd
+      ) {
+        return '退租日期不能晚於目前合約到期日。';
+      }
+
+      if (!data.reason) {
+        return '請填寫解約／退租原因。';
+      }
+
+      if (data.reason.length > 500) {
+        return '解約原因最多 500 字。';
+      }
+
+      if (data.note.length > 300) {
+        return '補充說明最多 300 字。';
+      }
+
+      return '';
+    }
+
+    function openConfirmModal() {
+      if (IS_SUBMITTING) return;
+
+      const data = collectFormData();
+      const error = validateForm(data);
+
+      if (error) {
+        showAlert('資料尚未完成', error);
+        return;
+      }
+
+      const summary = document.getElementById('confirmSummary');
+      summary.innerHTML = `
+        <div class="confirm-row">
+          <div class="confirm-label">房號</div>
+          <div class="confirm-value">${safeText(CONTRACT.room_name)}</div>
+        </div>
+        <div class="confirm-row">
+          <div class="confirm-label">目前到期日</div>
+          <div class="confirm-value">${safeText(data.current_end_date)}</div>
+        </div>
+        <div class="confirm-row">
+          <div class="confirm-label">預計退租日</div>
+          <div class="confirm-value">${safeText(data.move_out_date)}</div>
+        </div>
+        <div class="confirm-row">
+          <div class="confirm-label">申請類型</div>
+          <div class="confirm-value">${data.early_termination ? '提前解約' : '到期退租'}</div>
+        </div>
+        <div class="confirm-row">
+          <div class="confirm-label">解約原因</div>
+          <div class="confirm-value">${safeText(data.reason)}</div>
+        </div>
+      `;
+
+      document.getElementById('confirmModal').classList.add('show');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeConfirmModal() {
+      if (IS_SUBMITTING) return;
+
+      document.getElementById('confirmModal').classList.remove('show');
+      document.body.classList.remove('modal-open');
+    }
+
+    async function submitTermination() {
+      if (IS_SUBMITTING) return;
+
+      const data = collectFormData();
+      const error = validateForm(data);
+
+      if (error) {
+        closeConfirmModal();
+        showAlert('資料尚未完成', error);
+        return;
+      }
+
+      IS_SUBMITTING = true;
+
+      const button = document.getElementById('confirmSubmitBtn');
+      if (button) {
+        button.disabled = true;
+        button.textContent = '送出中...';
+      }
+
+      try {
+        const result = await callApi(
+          'tenant_contract_request_submit',
+          {
+            request_type: data.request_type,
+            requested_date: data.requested_date,
+            move_out_date: data.move_out_date,
+            reason: data.reason,
+            note: data.note
+          }
+        );
+
+        document.getElementById('confirmModal').classList.remove('show');
+        document.body.classList.remove('modal-open');
+
+        showAlert(
+          '解約申請已送出',
+          '申請編號：' + safeAlertText(
+            result.request && result.request.request_id
+              ? result.request.request_id
+              : ''
+          ) +
+          '\n\n房東已收到申請通知，請至「我的合約」查看審核進度。',
+          function () {
+            goPage('tenant-contract.html');
+          }
+        );
+
+      } catch (errorObject) {
+        document.getElementById('confirmModal').classList.remove('show');
+        document.body.classList.remove('modal-open');
+
+        showAlert(
+          '送出失敗',
+          errorObject && errorObject.message
+            ? errorObject.message
+            : String(errorObject)
+        );
+
+      } finally {
+        IS_SUBMITTING = false;
+
+        if (button) {
+          button.disabled = false;
+          button.textContent = '確認送出';
+        }
+      }
+    }
+
+    function showAlert(title, message, callback) {
+      ALERT_CALLBACK = typeof callback === 'function'
+        ? callback
+        : null;
+
+      document.getElementById('alertTitle').textContent = title || '提示';
+      document.getElementById('alertMessage').textContent = message || '';
+      document.getElementById('alertModal').classList.add('show');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeAlertModal() {
+      document.getElementById('alertModal').classList.remove('show');
+      document.body.classList.remove('modal-open');
+
+      const callback = ALERT_CALLBACK;
+      ALERT_CALLBACK = null;
+
+      if (callback) callback();
+    }
+
+    async function loadPage() {
+      try {
+        renderLoading();
+
+        const data = await callApi('tenant_contract_init');
+        renderPage(data);
+
+      } catch (error) {
+        renderError(
+          error && error.message
+            ? error.message
+            : String(error)
+        );
+      }
+    }
+
+    async function main() {
+      try {
+        renderLoading();
+
+        const ready = await initLineUserId();
+        if (!ready) return;
+
+        await loadPage();
+
+      } catch (error) {
+        renderError(
+          error && error.message
+            ? error.message
+            : String(error)
+        );
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
