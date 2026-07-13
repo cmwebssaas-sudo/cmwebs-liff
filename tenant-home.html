@@ -877,26 +877,100 @@
         .toLowerCase();
     }
 
-    function formatDate(value) {
+    function spreadsheetSerialDate(value) {
+      const number =
+        Number(value);
+
+      if (
+        !Number.isFinite(number) ||
+        number < 20000 ||
+        number > 90000
+      ) {
+        return null;
+      }
+
+      const milliseconds =
+        Date.UTC(1899, 11, 30) +
+        Math.round(number) * 86400000;
+
+      return new Date(milliseconds);
+    }
+
+    function taipeiDateParts(date) {
+      if (
+        !(date instanceof Date) ||
+        Number.isNaN(date.getTime())
+      ) {
+        return null;
+      }
+
+      const parts =
+        new Intl.DateTimeFormat(
+          'en-CA',
+          {
+            timeZone: 'Asia/Taipei',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }
+        ).formatToParts(date);
+
+      const result = {};
+
+      parts.forEach(function (part) {
+        result[part.type] =
+          part.value;
+      });
+
+      return {
+        year:
+          result.year || '',
+        month:
+          result.month || '',
+        day:
+          result.day || ''
+      };
+    }
+
+    function dateValue(value) {
+      if (
+        value instanceof Date
+      ) {
+        return Number.isNaN(
+          value.getTime()
+        )
+          ? null
+          : value;
+      }
+
+      const serialDate =
+        spreadsheetSerialDate(value);
+
+      if (serialDate) {
+        return serialDate;
+      }
+
       const text =
         rawText(value).trim();
 
       if (!text) {
-        return '-';
+        return null;
       }
 
-      const match =
+      const exactDate =
         text.match(
-          /^(\d{4})-(\d{2})-(\d{2})/
+          /^(\d{4})-(\d{2})-(\d{2})$/
         );
 
-      if (match) {
-        return (
-          match[1] +
-          '-' +
-          match[2] +
-          '-' +
-          match[3]
+      if (exactDate) {
+        return new Date(
+          Number(exactDate[1]),
+          Number(exactDate[2]) - 1,
+          Number(exactDate[3]),
+          0,
+          0,
+          0,
+          0
         );
       }
 
@@ -908,43 +982,92 @@
           date.getTime()
         )
       ) {
-        return text;
-      }
-
-      return date.toLocaleDateString(
-        'zh-TW',
-        {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }
-      );
-    }
-
-    function dateValue(value) {
-      const text =
-        rawText(value).trim();
-
-      if (!text) {
-        return null;
-      }
-
-      const date =
-        new Date(
-          text.length <= 10
-            ? text + 'T00:00:00'
-            : text
-        );
-
-      if (
-        Number.isNaN(
-          date.getTime()
-        )
-      ) {
         return null;
       }
 
       return date;
+    }
+
+    function formatDate(value) {
+      const date =
+        dateValue(value);
+
+      if (!date) {
+        const text =
+          rawText(value).trim();
+
+        return text || '-';
+      }
+
+      const parts =
+        taipeiDateParts(date);
+
+      if (!parts) {
+        return '-';
+      }
+
+      return (
+        parts.year +
+        '-' +
+        parts.month +
+        '-' +
+        parts.day
+      );
+    }
+
+    function formatBillMonth(value) {
+      const text =
+        rawText(value).trim();
+
+      if (!text) {
+        return '-';
+      }
+
+      const monthOnly =
+        text.match(
+          /^(\d{4})[-/](\d{1,2})$/
+        );
+
+      if (monthOnly) {
+        return (
+          monthOnly[1] +
+          '-' +
+          String(
+            Number(monthOnly[2])
+          ).padStart(2, '0')
+        );
+      }
+
+      const compact =
+        text.match(
+          /^(\d{4})(\d{2})$/
+        );
+
+      if (compact) {
+        return (
+          compact[1] +
+          '-' +
+          compact[2]
+        );
+      }
+
+      const date =
+        dateValue(value);
+
+      if (!date) {
+        return text;
+      }
+
+      const parts =
+        taipeiDateParts(date);
+
+      return parts
+        ? (
+            parts.year +
+            '-' +
+            parts.month
+          )
+        : text;
     }
 
     function daysBetween(
@@ -1568,8 +1691,9 @@
             <span>
               帳單月份：
               ${safeHtml(
-                home.latest_bill_month ||
-                '-'
+                formatBillMonth(
+                  home.latest_bill_month
+                )
               )}
             </span>
 
