@@ -1,0 +1,3064 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 我的帳單</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 66px;
+
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-soft: #fbfcfd;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+
+      --blue: #1a73e8;
+      --blue-soft: #edf4ff;
+
+      --orange: #ef8f00;
+      --orange-soft: #fff5df;
+
+      --purple: #7654c4;
+      --purple-soft: #f3efff;
+
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+
+      --shadow: 0 6px 22px rgba(25, 35, 55, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    .page {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        16px
+        15px
+        calc(
+          var(--nav-height) +
+          28px +
+          env(safe-area-inset-bottom)
+        );
+    }
+
+    .card {
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .header-card {
+      padding: 19px;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(26, 115, 232, 0.1),
+          rgba(255, 255, 255, 0.99) 62%
+        );
+    }
+
+    .header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      margin-bottom: 5px;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.45px;
+    }
+
+    .page-subtitle {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .refresh-button {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #ffffff;
+      color: #626975;
+      cursor: pointer;
+    }
+
+    .refresh-button svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .refresh-button.loading svg {
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .summary-box {
+      min-width: 0;
+      padding: 12px 13px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.86);
+    }
+
+    .summary-label {
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .summary-value {
+      overflow: hidden;
+      font-size: 16px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .summary-value.red {
+      color: var(--danger);
+    }
+
+    .summary-value.green {
+      color: var(--primary-dark);
+    }
+
+    .toolbar-card {
+      padding: 14px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .filter-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-button {
+      min-height: 36px;
+      flex: 0 0 auto;
+      padding: 8px 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #ffffff;
+      color: #656c76;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .filter-button.active {
+      border-color: rgba(26, 115, 232, 0.22);
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 17px 2px 10px;
+    }
+
+    .list-title {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .list-count {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .bill-card {
+      overflow: hidden;
+    }
+
+    .bill-main-button {
+      width: 100%;
+      display: block;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .bill-main-button:active {
+      opacity: 0.72;
+    }
+
+    .bill-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 13px;
+      padding: 16px 16px 13px;
+    }
+
+    .bill-head-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .bill-month-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 5px;
+    }
+
+    .bill-month {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .bill-meta {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .bill-total-wrap {
+      flex: 0 0 auto;
+      text-align: right;
+    }
+
+    .bill-total-label {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .bill-total {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .bill-total.unpaid {
+      color: var(--danger);
+    }
+
+    .bill-total.paid {
+      color: var(--primary-dark);
+    }
+
+    .badge {
+      display: inline-flex;
+      min-height: 23px;
+      padding: 3px 8px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: #f0f2f4;
+      color: #666c75;
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .badge.green {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .badge.orange {
+      background: var(--orange-soft);
+      color: #a96700;
+    }
+
+    .badge.red {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .badge.blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .badge.purple {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .breakdown-preview {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--border);
+      background: var(--surface-soft);
+    }
+
+    .preview-box {
+      min-width: 0;
+      padding: 12px 15px;
+    }
+
+    .preview-box + .preview-box {
+      border-left: 1px solid var(--border);
+    }
+
+    .preview-label {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .preview-value {
+      overflow: hidden;
+      font-size: 13px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meter-preview {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid var(--border);
+    }
+
+    .meter-box {
+      min-width: 0;
+      padding: 11px 10px;
+      text-align: center;
+    }
+
+    .meter-box + .meter-box {
+      border-left: 1px solid var(--border);
+    }
+
+    .meter-label {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .meter-value {
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bill-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--border);
+    }
+
+    .bill-action-button {
+      min-height: 44px;
+      border: 0;
+      background: #ffffff;
+      color: #5f6670;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .bill-action-button + .bill-action-button {
+      border-left: 1px solid var(--border);
+    }
+
+    .bill-action-button.primary {
+      color: var(--blue);
+    }
+
+    .bill-action-button.green {
+      color: var(--primary-dark);
+    }
+
+    .bill-action-button:active {
+      background: #f7f8fa;
+    }
+
+    .empty-card,
+    .loading-card,
+    .error-card {
+      padding: 30px 18px;
+      text-align: center;
+    }
+
+    .empty-title,
+    .error-title {
+      margin-bottom: 8px;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .error-title {
+      color: var(--danger);
+    }
+
+    .empty-text,
+    .loading-text,
+    .error-text {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .loading-spinner {
+      width: 30px;
+      height: 30px;
+      margin: 0 auto 13px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    .primary-button,
+    .secondary-button {
+      min-height: 46px;
+      padding: 12px 15px;
+      border-radius: 13px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .primary-button {
+      border: 0;
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    .secondary-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .bottom-nav {
+      position: absolute;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-top: 1px solid #e8ecf1;
+      background: rgba(255, 255, 255, 0.98);
+      padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      z-index: 1500;
+      inset: 0;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      background: rgba(17, 24, 39, 0.48);
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .detail-sheet {
+      width: 100%;
+      max-height:
+        calc(
+          var(--app-height) -
+          var(--nav-height) -
+          env(safe-area-inset-bottom) -
+          14px
+        );
+      overflow-y: auto;
+      padding: 17px 16px 22px;
+      border-radius: 22px 22px 0 0;
+      background: #ffffff;
+      box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.17);
+      animation: sheet-in 0.2s ease forwards;
+    }
+
+    @keyframes sheet-in {
+      from {
+        transform: translateY(18px);
+      }
+
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    .sheet-handle {
+      width: 42px;
+      height: 4px;
+      margin: 0 auto 15px;
+      border-radius: 999px;
+      background: #d9dde3;
+    }
+
+    .sheet-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 13px;
+      margin-bottom: 13px;
+    }
+
+    .sheet-title {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .sheet-subtitle {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .close-button {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: #656c76;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .detail-total {
+      margin-bottom: 13px;
+      padding: 15px;
+      border-radius: 15px;
+      background: var(--blue-soft);
+    }
+
+    .detail-total.unpaid {
+      background: var(--danger-soft);
+    }
+
+    .detail-total-label {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .detail-total-value {
+      color: var(--blue);
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .detail-total.unpaid .detail-total-value {
+      color: var(--danger);
+    }
+
+    .detail-section {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: var(--surface-soft);
+    }
+
+    .detail-section-title {
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .detail-row:first-of-type {
+      border-top: 0;
+    }
+
+    .detail-label {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .detail-value {
+      min-width: 0;
+      flex: 1;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.5;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .calculation-box {
+      margin-top: 9px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #666d77;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .report-card {
+      margin-top: 9px;
+      padding: 12px;
+      border: 1px solid #e5dcfb;
+      border-radius: 12px;
+      background: var(--purple-soft);
+    }
+
+    .report-card-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .report-card-desc {
+      color: #646a74;
+      font-size: 11px;
+      line-height: 1.65;
+    }
+
+    .toast {
+      position: absolute;
+      z-index: 3000;
+      right: 18px;
+      bottom:
+        calc(
+          var(--nav-height) +
+          22px +
+          env(safe-area-inset-bottom)
+        );
+      left: 18px;
+      display: none;
+      padding: 13px 15px;
+      border-radius: 13px;
+      background: rgba(25, 28, 33, 0.94);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: center;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    @media (max-width: 390px) {
+      .summary-grid,
+      .breakdown-preview,
+      .button-row {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-box + .preview-box {
+        border-top: 1px solid var(--border);
+        border-left: 0;
+      }
+
+      .bill-head {
+        flex-direction: column;
+      }
+
+      .bill-total-wrap {
+        width: 100%;
+        text-align: left;
+      }
+
+      .page {
+        padding-right: 13px;
+        padding-left: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">帳單資料載入中...</div>
+        </section>
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" type="button" onclick="goPage('tenant-home.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button class="nav-item active" type="button" onclick="goPage('tenant-bills.html')">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>帳單</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('tenant-contract.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 3.5h9l3 3V20H6z"></path>
+            <path d="M15 3.5V7h3"></path>
+            <path d="M9 11h6"></path>
+            <path d="M9 15h6"></path>
+          </svg>
+          <span>合約</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('tenant-message.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 5.5h14v10H9l-4 3.5z"></path>
+            <path d="M8.5 9.5h7"></path>
+            <path d="M8.5 12.5h5"></path>
+          </svg>
+          <span>聯絡</span>
+        </button>
+      </div>
+    </nav>
+
+    <div
+      id="detailModal"
+      class="modal-backdrop"
+      onclick="closeDetailFromBackdrop(event)"
+    >
+      <div id="detailSheet" class="detail-sheet"></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-iJB1D6sN';
+
+    const TEST_LINE_USER_ID =
+      'U3615a7ed919c1a4a438a246c10784d70';
+
+    const URL_PARAMS =
+      new URLSearchParams(location.search);
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') === '1';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let ALL_BILLS = [];
+    let REPORTS = [];
+    let REPORTS_BY_BILL = {};
+    let ACTIVE_FILTER = 'all';
+    let ACTIVE_BILL_ID = '';
+    let toastTimer = null;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function numberValue(value) {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ''
+      ) {
+        return 0;
+      }
+
+      const normalized =
+        String(value)
+          .replace(/,/g, '')
+          .replace(/[^\d.-]/g, '');
+
+      const number =
+        Number(normalized);
+
+      return (
+        Number.isFinite(number)
+          ? number
+          : 0
+      );
+    }
+
+    function hasValue(value) {
+      return !(
+        value === undefined ||
+        value === null ||
+        value === ''
+      );
+    }
+
+    function pickValue(
+      object,
+      keys,
+      fallback
+    ) {
+      object =
+        object || {};
+
+      for (
+        let index = 0;
+        index < keys.length;
+        index += 1
+      ) {
+        const key =
+          keys[index];
+
+        if (
+          Object.prototype.hasOwnProperty.call(
+            object,
+            key
+          ) &&
+          hasValue(object[key])
+        ) {
+          return object[key];
+        }
+      }
+
+      return fallback;
+    }
+
+    function pickNumber(
+      object,
+      keys,
+      fallback
+    ) {
+      const value =
+        pickValue(
+          object,
+          keys,
+          undefined
+        );
+
+      if (!hasValue(value)) {
+        return (
+          fallback === undefined
+            ? 0
+            : fallback
+        );
+      }
+
+      return numberValue(value);
+    }
+
+    function money(value) {
+      return (
+        'NT$ ' +
+        Math.round(
+          numberValue(value)
+        ).toLocaleString('zh-TW')
+      );
+    }
+
+    function numberText(
+      value,
+      decimals
+    ) {
+      const number =
+        numberValue(value);
+
+      return number.toLocaleString(
+        'zh-TW',
+        {
+          minimumFractionDigits:
+            decimals || 0,
+          maximumFractionDigits:
+            decimals || 0
+        }
+      );
+    }
+
+    function normalizeStatus(value) {
+      return rawText(value)
+        .trim()
+        .toLowerCase();
+    }
+
+    function formatDate(value) {
+      const text =
+        rawText(value).trim();
+
+      if (!text) {
+        return '-';
+      }
+
+      const match =
+        text.match(
+          /^(\d{4})-(\d{2})-(\d{2})/
+        );
+
+      if (match) {
+        return (
+          match[1] +
+          '-' +
+          match[2] +
+          '-' +
+          match[3]
+        );
+      }
+
+      const date =
+        new Date(text);
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return text;
+      }
+
+      return date.toLocaleDateString(
+        'zh-TW',
+        {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }
+      );
+    }
+
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
+
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
+    function goPaymentReport(
+      billId,
+      event
+    ) {
+      if (event) {
+        event.stopPropagation();
+      }
+
+      let url =
+        'tenant-payment-report.html' +
+        '?bill_id=' +
+        encodeURIComponent(
+          billId || ''
+        ) +
+        '&v=' +
+        Date.now();
+
+      if (TEST_MODE) {
+        url += '&test=1';
+      }
+
+      location.href = url;
+    }
+
+    function showToast(message) {
+      const toast =
+        document.getElementById('toast');
+
+      toast.textContent =
+        rawText(message) || '提示';
+
+      toast.classList.add('show');
+
+      clearTimeout(toastTimer);
+
+      toastTimer =
+        setTimeout(function () {
+          toast.classList.remove('show');
+        }, 2300);
+    }
+
+    function jsonpRequest(
+      action,
+      params
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_bills_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() * 1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 載入逾時'
+                )
+              );
+            }, 30000);
+
+          function cleanup() {
+            clearTimeout(timer);
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(action) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(
+            function (key) {
+              const value =
+                params[key];
+
+              if (
+                value === undefined ||
+                value === null
+              ) {
+                return;
+              }
+
+              url +=
+                '&' +
+                encodeURIComponent(key) +
+                '=' +
+                encodeURIComponent(value);
+            }
+          );
+
+          script.charset = 'UTF-8';
+
+          script.onerror =
+            function () {
+              console.warn(
+                'JSONP script onerror ignored.'
+              );
+            };
+
+          script.src = url;
+
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    async function initLineUserId() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        return true;
+      }
+
+      if (
+        typeof liff ===
+        'undefined'
+      ) {
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            location.href
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error(
+          '無法取得房客 LINE User ID'
+        );
+      }
+
+      return true;
+    }
+
+    function unwrapData(result) {
+      if (
+        result &&
+        result.success === true
+      ) {
+        return (
+          result.data !== undefined
+            ? result.data
+            : result
+        );
+      }
+
+      throw new Error(
+        result && result.message
+          ? result.message
+          : '查詢失敗'
+      );
+    }
+
+    function paymentStatus(
+      bill
+    ) {
+      return normalizeStatus(
+        pickValue(
+          bill,
+          [
+            'payment_status',
+            'status',
+            'bill_status'
+          ],
+          ''
+        )
+      );
+    }
+
+    function paymentStatusText(
+      status
+    ) {
+      const labels = {
+        paid: '已繳',
+        unpaid: '未繳',
+        overdue: '逾期',
+        pending: '待確認',
+        partial: '部分繳款',
+        cancelled: '已取消',
+        void: '已作廢'
+      };
+
+      return (
+        labels[status] ||
+        status ||
+        '待確認'
+      );
+    }
+
+    function paymentBadgeClass(
+      status
+    ) {
+      if (status === 'paid') {
+        return 'badge green';
+      }
+
+      if (
+        status === 'unpaid' ||
+        status === 'overdue'
+      ) {
+        return 'badge red';
+      }
+
+      if (
+        status === 'pending' ||
+        status === 'partial'
+      ) {
+        return 'badge orange';
+      }
+
+      return 'badge';
+    }
+
+    function reportStatusText(
+      status
+    ) {
+      const labels = {
+        pending: '回報待確認',
+        approved: '回報已核准',
+        settled: '已銷帳',
+        rejected: '回報已駁回',
+        cancelled: '回報已取消'
+      };
+
+      return (
+        labels[status] ||
+        status ||
+        '-'
+      );
+    }
+
+    function reportBadgeClass(
+      status
+    ) {
+      if (
+        status === 'approved' ||
+        status === 'settled'
+      ) {
+        return 'badge green';
+      }
+
+      if (status === 'pending') {
+        return 'badge purple';
+      }
+
+      if (status === 'rejected') {
+        return 'badge red';
+      }
+
+      return 'badge';
+    }
+
+    function billIdOf(bill) {
+      return rawText(
+        pickValue(
+          bill,
+          [
+            'bill_id',
+            'id'
+          ],
+          ''
+        )
+      ).trim();
+    }
+
+    function billMonthOf(bill) {
+      return rawText(
+        pickValue(
+          bill,
+          [
+            'bill_month',
+            'billing_month',
+            'month'
+          ],
+          '-'
+        )
+      );
+    }
+
+    function totalAmountOf(bill) {
+      return pickNumber(
+        bill,
+        [
+          'total_amount',
+          'bill_total',
+          'amount_due',
+          'amount'
+        ],
+        0
+      );
+    }
+
+    function rentAmountOf(bill) {
+      return pickNumber(
+        bill,
+        [
+          'rent_amount',
+          'monthly_rent',
+          'rent_fee',
+          'rent'
+        ],
+        0
+      );
+    }
+
+    function managementFeeOf(bill) {
+      return pickNumber(
+        bill,
+        [
+          'management_fee',
+          'management_amount',
+          'admin_fee'
+        ],
+        0
+      );
+    }
+
+    function previousMeterOf(bill) {
+      return pickNumber(
+        bill,
+        [
+          'previous_meter',
+          'previous_meter_reading',
+          'last_meter',
+          'last_meter_reading',
+          'prev_meter',
+          'meter_previous'
+        ],
+        0
+      );
+    }
+
+    function currentMeterOf(bill) {
+      return pickNumber(
+        bill,
+        [
+          'current_meter',
+          'current_meter_reading',
+          'this_meter',
+          'this_meter_reading',
+          'meter_current'
+        ],
+        0
+      );
+    }
+
+    function electricityUsageOf(bill) {
+      const explicit =
+        pickValue(
+          bill,
+          [
+            'electricity_usage',
+            'electric_usage',
+            'usage_units',
+            'meter_usage',
+            'used_units'
+          ],
+          undefined
+        );
+
+      if (hasValue(explicit)) {
+        return numberValue(explicit);
+      }
+
+      const previous =
+        previousMeterOf(bill);
+
+      const current =
+        currentMeterOf(bill);
+
+      return Math.max(
+        current - previous,
+        0
+      );
+    }
+
+    function electricityUnitPriceOf(
+      bill
+    ) {
+      return pickNumber(
+        bill,
+        [
+          'electricity_unit_price',
+          'electricity_price',
+          'electric_unit_price',
+          'electric_price',
+          'price_per_kwh'
+        ],
+        0
+      );
+    }
+
+    function electricityAmountOf(bill) {
+      const explicit =
+        pickValue(
+          bill,
+          [
+            'electricity_amount',
+            'electricity_fee',
+            'electric_fee',
+            'power_fee'
+          ],
+          undefined
+        );
+
+      if (hasValue(explicit)) {
+        return numberValue(explicit);
+      }
+
+      return (
+        electricityUsageOf(bill) *
+        electricityUnitPriceOf(bill)
+      );
+    }
+
+    function equipmentUnitPriceOf(
+      bill
+    ) {
+      return pickNumber(
+        bill,
+        [
+          'equipment_unit_price',
+          'equipment_price',
+          'device_unit_price',
+          'device_price',
+          'equipment_fee_per_unit'
+        ],
+        0
+      );
+    }
+
+    function equipmentAmountOf(bill) {
+      const explicit =
+        pickValue(
+          bill,
+          [
+            'equipment_amount',
+            'equipment_fee',
+            'device_fee',
+            'equipment_depreciation_fee',
+            'equipment_wear_fee'
+          ],
+          undefined
+        );
+
+      if (hasValue(explicit)) {
+        return numberValue(explicit);
+      }
+
+      return (
+        electricityUsageOf(bill) *
+        equipmentUnitPriceOf(bill)
+      );
+    }
+
+    function otherAmountOf(bill) {
+      return pickNumber(
+        bill,
+        [
+          'other_amount',
+          'other_fee',
+          'additional_fee',
+          'misc_fee'
+        ],
+        0
+      );
+    }
+
+    function dueDateOf(bill) {
+      return pickValue(
+        bill,
+        [
+          'due_date',
+          'payment_due_date'
+        ],
+        ''
+      );
+    }
+
+    function paidDateOf(bill) {
+      return pickValue(
+        bill,
+        [
+          'paid_at',
+          'payment_date',
+          'paid_date',
+          'settled_at'
+        ],
+        ''
+      );
+    }
+
+    function roomNameOf(bill) {
+      return pickValue(
+        bill,
+        [
+          'room_name',
+          'room_number',
+          'room'
+        ],
+        '-'
+      );
+    }
+
+    function buildReportMap(
+      reports
+    ) {
+      const map = {};
+
+      (reports || []).forEach(
+        function (report) {
+          const billId =
+            rawText(
+              pickValue(
+                report,
+                [
+                  'bill_id'
+                ],
+                ''
+              )
+            ).trim();
+
+          if (!billId) {
+            return;
+          }
+
+          if (!map[billId]) {
+            map[billId] = [];
+          }
+
+          map[billId].push(report);
+        }
+      );
+
+      Object.keys(map).forEach(
+        function (billId) {
+          map[billId].sort(
+            function (a, b) {
+              const aTime =
+                new Date(
+                  pickValue(
+                    a,
+                    [
+                      'updated_at',
+                      'created_at',
+                      'reported_at'
+                    ],
+                    0
+                  )
+                ).getTime();
+
+              const bTime =
+                new Date(
+                  pickValue(
+                    b,
+                    [
+                      'updated_at',
+                      'created_at',
+                      'reported_at'
+                    ],
+                    0
+                  )
+                ).getTime();
+
+              return bTime - aTime;
+            }
+          );
+        }
+      );
+
+      return map;
+    }
+
+    function latestReportFor(bill) {
+      const reports =
+        REPORTS_BY_BILL[
+          billIdOf(bill)
+        ] || [];
+
+      return reports[0] || null;
+    }
+
+    function getFilteredBills() {
+      return ALL_BILLS.filter(
+        function (bill) {
+          const status =
+            paymentStatus(bill);
+
+          if (
+            ACTIVE_FILTER === 'unpaid'
+          ) {
+            return (
+              status === 'unpaid' ||
+              status === 'overdue' ||
+              status === 'partial'
+            );
+          }
+
+          if (
+            ACTIVE_FILTER === 'paid'
+          ) {
+            return status === 'paid';
+          }
+
+          if (
+            ACTIVE_FILTER === 'report'
+          ) {
+            const report =
+              latestReportFor(bill);
+
+            return (
+              report &&
+              normalizeStatus(
+                report.status
+              ) === 'pending'
+            );
+          }
+
+          return true;
+        }
+      );
+    }
+
+    function setFilter(value) {
+      ACTIVE_FILTER = value;
+
+      document
+        .querySelectorAll(
+          '.filter-button'
+        )
+        .forEach(function (button) {
+          button.classList.toggle(
+            'active',
+            button.dataset.filter ===
+              value
+          );
+        });
+
+      renderBillList();
+    }
+
+    function renderBillCard(bill) {
+      const billId =
+        billIdOf(bill);
+
+      const status =
+        paymentStatus(bill);
+
+      const report =
+        latestReportFor(bill);
+
+      const electricityAmount =
+        electricityAmountOf(bill);
+
+      const equipmentAmount =
+        equipmentAmountOf(bill);
+
+      const previousMeter =
+        previousMeterOf(bill);
+
+      const currentMeter =
+        currentMeterOf(bill);
+
+      const usage =
+        electricityUsageOf(bill);
+
+      return `
+        <section class="card bill-card">
+          <button
+            class="bill-main-button"
+            type="button"
+            onclick="openBillDetail('${safeHtml(billId)}')"
+          >
+            <div class="bill-head">
+              <div class="bill-head-main">
+                <div class="bill-month-row">
+                  <div class="bill-month">
+                    ${safeHtml(
+                      billMonthOf(bill)
+                    )}
+                  </div>
+
+                  <span class="${paymentBadgeClass(status)}">
+                    ${safeHtml(
+                      paymentStatusText(
+                        status
+                      )
+                    )}
+                  </span>
+
+                  ${
+                    report
+                      ? `
+                        <span class="${reportBadgeClass(
+                          normalizeStatus(
+                            report.status
+                          )
+                        )}">
+                          ${safeHtml(
+                            reportStatusText(
+                              normalizeStatus(
+                                report.status
+                              )
+                            )
+                          )}
+                        </span>
+                      `
+                      : ''
+                  }
+                </div>
+
+                <div class="bill-meta">
+                  房號 ${safeHtml(
+                    roomNameOf(bill)
+                  )}
+                  ・繳款期限 ${safeHtml(
+                    formatDate(
+                      dueDateOf(bill)
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div class="bill-total-wrap">
+                <div class="bill-total-label">
+                  應繳總額
+                </div>
+
+                <div class="bill-total ${
+                  status === 'paid'
+                    ? 'paid'
+                    : 'unpaid'
+                }">
+                  ${money(
+                    totalAmountOf(bill)
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div class="breakdown-preview">
+              <div class="preview-box">
+                <div class="preview-label">
+                  租金＋管理費
+                </div>
+                <div class="preview-value">
+                  ${money(
+                    rentAmountOf(bill) +
+                    managementFeeOf(bill)
+                  )}
+                </div>
+              </div>
+
+              <div class="preview-box">
+                <div class="preview-label">
+                  電費＋設備耗損費
+                </div>
+                <div class="preview-value">
+                  ${money(
+                    electricityAmount +
+                    equipmentAmount
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div class="meter-preview">
+              <div class="meter-box">
+                <div class="meter-label">
+                  上月電錶
+                </div>
+                <div class="meter-value">
+                  ${numberText(previousMeter, 0)}
+                </div>
+              </div>
+
+              <div class="meter-box">
+                <div class="meter-label">
+                  本月電錶
+                </div>
+                <div class="meter-value">
+                  ${numberText(currentMeter, 0)}
+                </div>
+              </div>
+
+              <div class="meter-box">
+                <div class="meter-label">
+                  本月用電
+                </div>
+                <div class="meter-value">
+                  ${numberText(usage, 0)} 度
+                </div>
+              </div>
+            </div>
+          </button>
+
+          <div class="bill-actions">
+            <button
+              class="bill-action-button primary"
+              type="button"
+              onclick="openBillDetail('${safeHtml(billId)}')"
+            >
+              查看完整明細
+            </button>
+
+            ${
+              status === 'paid'
+                ? `
+                  <button
+                    class="bill-action-button green"
+                    type="button"
+                    onclick="openBillDetail('${safeHtml(billId)}')"
+                  >
+                    查看付款資料
+                  </button>
+                `
+                : `
+                  <button
+                    class="bill-action-button green"
+                    type="button"
+                    onclick="goPaymentReport('${safeHtml(billId)}', event)"
+                  >
+                    回報付款
+                  </button>
+                `
+            }
+          </div>
+        </section>
+      `;
+    }
+
+    function renderBillList() {
+      const list =
+        document.getElementById(
+          'billList'
+        );
+
+      const count =
+        document.getElementById(
+          'billListCount'
+        );
+
+      if (!list || !count) {
+        return;
+      }
+
+      const bills =
+        getFilteredBills();
+
+      count.textContent =
+        bills.length +
+        ' / ' +
+        ALL_BILLS.length +
+        ' 筆';
+
+      if (bills.length === 0) {
+        list.innerHTML = `
+          <section class="card empty-card">
+            <div class="empty-title">
+              目前沒有符合條件的帳單
+            </div>
+            <div class="empty-text">
+              請切換其他帳單狀態查看。
+            </div>
+          </section>
+        `;
+
+        return;
+      }
+
+      list.innerHTML =
+        bills
+          .map(renderBillCard)
+          .join('');
+    }
+
+    function renderPage(
+      data,
+      paymentReportData
+    ) {
+      PAGE_DATA =
+        data || {};
+
+      const tenant =
+        PAGE_DATA.tenant || {};
+
+      const summary =
+        PAGE_DATA.summary || {};
+
+      ALL_BILLS =
+        Array.isArray(
+          PAGE_DATA.bills
+        )
+          ? PAGE_DATA.bills.slice()
+          : (
+              Array.isArray(
+                PAGE_DATA.items
+              )
+                ? PAGE_DATA.items.slice()
+                : []
+            );
+
+      ALL_BILLS.sort(
+        function (a, b) {
+          return rawText(
+            billMonthOf(b)
+          ).localeCompare(
+            rawText(
+              billMonthOf(a)
+            )
+          );
+        }
+      );
+
+      REPORTS =
+        paymentReportData &&
+        Array.isArray(
+          paymentReportData.reports
+        )
+          ? paymentReportData.reports
+          : [];
+
+      REPORTS_BY_BILL =
+        buildReportMap(REPORTS);
+
+      const unpaidBills =
+        ALL_BILLS.filter(
+          function (bill) {
+            const status =
+              paymentStatus(bill);
+
+            return (
+              status === 'unpaid' ||
+              status === 'overdue' ||
+              status === 'partial'
+            );
+          }
+        );
+
+      const paidBills =
+        ALL_BILLS.filter(
+          function (bill) {
+            return (
+              paymentStatus(bill) ===
+              'paid'
+            );
+          }
+        );
+
+      const unpaidTotal =
+        hasValue(
+          summary.unpaid_total_amount
+        )
+          ? numberValue(
+              summary.unpaid_total_amount
+            )
+          : unpaidBills.reduce(
+              function (sum, bill) {
+                return (
+                  sum +
+                  totalAmountOf(bill)
+                );
+              },
+              0
+            );
+
+      const pendingReports =
+        REPORTS.filter(
+          function (report) {
+            return (
+              normalizeStatus(
+                report.status
+              ) === 'pending'
+            );
+          }
+        ).length;
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card header-card">
+          <div class="header-row">
+            <div>
+              <div class="eyebrow">
+                ${safeHtml(
+                  tenant.tenant_name ||
+                  '房客'
+                )}・房號 ${safeHtml(
+                  tenant.room_list ||
+                  roomNameOf(
+                    ALL_BILLS[0] || {}
+                  ) ||
+                  '-'
+                )}
+              </div>
+
+              <h1 class="page-title">
+                我的帳單
+              </h1>
+
+              <div class="page-subtitle">
+                查看租金、管理費、電錶度數、電費與設備耗損費明細。
+              </div>
+            </div>
+
+            <button
+              id="refreshButton"
+              class="refresh-button"
+              type="button"
+              onclick="loadPage()"
+              aria-label="重新整理"
+            >
+              <svg viewBox="0 0 24 24">
+                <path d="M20 11a8 8 0 1 0-2.34 5.66"></path>
+                <path d="M20 5v6h-6"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-box">
+              <div class="summary-label">
+                目前未繳總額
+              </div>
+              <div class="summary-value red">
+                ${money(unpaidTotal)}
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-label">
+                未繳帳單
+              </div>
+              <div class="summary-value">
+                ${unpaidBills.length} 筆
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-label">
+                已繳帳單
+              </div>
+              <div class="summary-value green">
+                ${paidBills.length} 筆
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-label">
+                付款回報待確認
+              </div>
+              <div class="summary-value">
+                ${pendingReports} 筆
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card toolbar-card">
+          <div class="filter-row">
+            <button
+              class="filter-button active"
+              data-filter="all"
+              type="button"
+              onclick="setFilter('all')"
+            >
+              全部帳單
+            </button>
+
+            <button
+              class="filter-button"
+              data-filter="unpaid"
+              type="button"
+              onclick="setFilter('unpaid')"
+            >
+              未繳／逾期
+            </button>
+
+            <button
+              class="filter-button"
+              data-filter="paid"
+              type="button"
+              onclick="setFilter('paid')"
+            >
+              已繳
+            </button>
+
+            <button
+              class="filter-button"
+              data-filter="report"
+              type="button"
+              onclick="setFilter('report')"
+            >
+              回報待確認
+            </button>
+          </div>
+        </section>
+
+        <div class="list-header">
+          <div class="list-title">
+            帳單紀錄
+          </div>
+
+          <div
+            id="billListCount"
+            class="list-count"
+          ></div>
+        </div>
+
+        <div id="billList"></div>
+      `;
+
+      renderBillList();
+
+      const requestedBillId =
+        rawText(
+          URL_PARAMS.get('bill_id')
+        ).trim();
+
+      if (requestedBillId) {
+        setTimeout(
+          function () {
+            openBillDetail(
+              requestedBillId
+            );
+          },
+          100
+        );
+      }
+    }
+
+    function detailRow(
+      label,
+      value
+    ) {
+      return `
+        <div class="detail-row">
+          <div class="detail-label">
+            ${safeHtml(label)}
+          </div>
+          <div class="detail-value">
+            ${safeHtml(value)}
+          </div>
+        </div>
+      `;
+    }
+
+    function reportDetailHtml(report) {
+      if (!report) {
+        return `
+          <div class="empty-state">
+            此帳單目前沒有付款回報紀錄。
+          </div>
+        `;
+      }
+
+      const status =
+        normalizeStatus(
+          report.status
+        );
+
+      return `
+        <div class="report-card">
+          <div class="report-card-title">
+            <span>付款回報</span>
+            <span class="${reportBadgeClass(status)}">
+              ${safeHtml(
+                reportStatusText(status)
+              )}
+            </span>
+          </div>
+
+          <div class="report-card-desc">
+            回報金額：
+            ${money(
+              pickValue(
+                report,
+                [
+                  'reported_amount',
+                  'amount'
+                ],
+                0
+              )
+            )}<br>
+
+            付款日期：
+            ${safeHtml(
+              formatDate(
+                pickValue(
+                  report,
+                  [
+                    'reported_paid_date',
+                    'paid_date'
+                  ],
+                  ''
+                )
+              )
+            )}<br>
+
+            匯款後五碼：
+            ${safeHtml(
+              pickValue(
+                report,
+                [
+                  'reported_last5',
+                  'bank_last5'
+                ],
+                '-'
+              )
+            )}
+
+            ${
+              rawText(
+                pickValue(
+                  report,
+                  [
+                    'note',
+                    'tenant_note'
+                  ],
+                  ''
+                )
+              ).trim()
+                ? `
+                  <br>備註：
+                  ${safeHtml(
+                    pickValue(
+                      report,
+                      [
+                        'note',
+                        'tenant_note'
+                      ],
+                      ''
+                    )
+                  )}
+                `
+                : ''
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    function openBillDetail(
+      billId
+    ) {
+      const bill =
+        ALL_BILLS.find(
+          function (item) {
+            return (
+              billIdOf(item) ===
+              rawText(billId).trim()
+            );
+          }
+        );
+
+      if (!bill) {
+        showToast(
+          '找不到指定帳單'
+        );
+
+        return;
+      }
+
+      ACTIVE_BILL_ID =
+        billIdOf(bill);
+
+      const status =
+        paymentStatus(bill);
+
+      const rent =
+        rentAmountOf(bill);
+
+      const management =
+        managementFeeOf(bill);
+
+      const previousMeter =
+        previousMeterOf(bill);
+
+      const currentMeter =
+        currentMeterOf(bill);
+
+      const usage =
+        electricityUsageOf(bill);
+
+      const electricityUnitPrice =
+        electricityUnitPriceOf(bill);
+
+      const electricityAmount =
+        electricityAmountOf(bill);
+
+      const equipmentUnitPrice =
+        equipmentUnitPriceOf(bill);
+
+      const equipmentAmount =
+        equipmentAmountOf(bill);
+
+      const otherAmount =
+        otherAmountOf(bill);
+
+      const report =
+        latestReportFor(bill);
+
+      const note =
+        pickValue(
+          bill,
+          [
+            'note',
+            'bill_note',
+            'memo'
+          ],
+          ''
+        );
+
+      const paymentMethod =
+        pickValue(
+          bill,
+          [
+            'payment_method',
+            'paid_method'
+          ],
+          ''
+        );
+
+      const bankLast5 =
+        pickValue(
+          bill,
+          [
+            'bank_last5',
+            'payment_last5'
+          ],
+          ''
+        );
+
+      document.getElementById(
+        'detailSheet'
+      ).innerHTML = `
+        <div class="sheet-handle"></div>
+
+        <div class="sheet-top">
+          <div>
+            <div class="sheet-title">
+              ${safeHtml(
+                billMonthOf(bill)
+              )} 帳單明細
+            </div>
+
+            <div class="sheet-subtitle">
+              房號 ${safeHtml(
+                roomNameOf(bill)
+              )}
+              ・帳單 ID ${safeHtml(
+                billIdOf(bill)
+              )}
+            </div>
+          </div>
+
+          <button
+            class="close-button"
+            type="button"
+            onclick="closeBillDetail()"
+            aria-label="關閉"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="detail-total ${
+          status === 'paid'
+            ? ''
+            : 'unpaid'
+        }">
+          <div class="detail-total-label">
+            應繳總額
+          </div>
+
+          <div class="detail-total-value">
+            ${money(
+              totalAmountOf(bill)
+            )}
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">
+            帳單基本資料
+          </div>
+
+          ${detailRow(
+            '付款狀態',
+            paymentStatusText(status)
+          )}
+
+          ${detailRow(
+            '帳單月份',
+            billMonthOf(bill)
+          )}
+
+          ${detailRow(
+            '繳款期限',
+            formatDate(
+              dueDateOf(bill)
+            )
+          )}
+
+          ${
+            status === 'paid'
+              ? detailRow(
+                  '付款日期',
+                  formatDate(
+                    paidDateOf(bill)
+                  )
+                )
+              : ''
+          }
+
+          ${
+            paymentMethod
+              ? detailRow(
+                  '付款方式',
+                  rawText(paymentMethod)
+                )
+              : ''
+          }
+
+          ${
+            bankLast5
+              ? detailRow(
+                  '匯款後五碼',
+                  rawText(bankLast5)
+                )
+              : ''
+          }
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">
+            固定費用
+          </div>
+
+          ${detailRow(
+            '本月租金',
+            money(rent)
+          )}
+
+          ${detailRow(
+            '本月管理費',
+            money(management)
+          )}
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">
+            電錶與電費
+          </div>
+
+          ${detailRow(
+            '上月電錶度數',
+            numberText(
+              previousMeter,
+              0
+            )
+          )}
+
+          ${detailRow(
+            '本月電錶度數',
+            numberText(
+              currentMeter,
+              0
+            )
+          )}
+
+          ${detailRow(
+            '本月使用度數',
+            numberText(
+              usage,
+              0
+            ) + ' 度'
+          )}
+
+          ${detailRow(
+            '每度電費',
+            money(
+              electricityUnitPrice
+            )
+          )}
+
+          ${detailRow(
+            '本月電費',
+            money(
+              electricityAmount
+            )
+          )}
+
+          <div class="calculation-box">
+            電費計算：
+            ${numberText(
+              usage,
+              0
+            )} 度 ×
+            ${money(
+              electricityUnitPrice
+            )}
+            ＝
+            ${money(
+              electricityAmount
+            )}
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">
+            設備耗損費
+          </div>
+
+          ${detailRow(
+            '每度設備費',
+            money(
+              equipmentUnitPrice
+            )
+          )}
+
+          ${detailRow(
+            '本月設備耗損費',
+            money(
+              equipmentAmount
+            )
+          )}
+
+          <div class="calculation-box">
+            設備耗損費計算：
+            ${numberText(
+              usage,
+              0
+            )} 度 ×
+            ${money(
+              equipmentUnitPrice
+            )}
+            ＝
+            ${money(
+              equipmentAmount
+            )}
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">
+            費用合計
+          </div>
+
+          ${detailRow(
+            '租金',
+            money(rent)
+          )}
+
+          ${detailRow(
+            '管理費',
+            money(management)
+          )}
+
+          ${detailRow(
+            '電費',
+            money(
+              electricityAmount
+            )
+          )}
+
+          ${detailRow(
+            '設備耗損費',
+            money(
+              equipmentAmount
+            )
+          )}
+
+          ${
+            otherAmount !== 0
+              ? detailRow(
+                  '其他費用',
+                  money(
+                    otherAmount
+                  )
+                )
+              : ''
+          }
+
+          ${detailRow(
+            '應繳總額',
+            money(
+              totalAmountOf(bill)
+            )
+          )}
+        </div>
+
+        ${
+          note
+            ? `
+              <div class="detail-section">
+                <div class="detail-section-title">
+                  帳單備註
+                </div>
+
+                <div class="calculation-box">
+                  ${safeHtml(note)}
+                </div>
+              </div>
+            `
+            : ''
+        }
+
+        <div class="detail-section">
+          <div class="detail-section-title">
+            付款回報／入帳資料
+          </div>
+
+          ${reportDetailHtml(report)}
+        </div>
+
+        <div class="button-row">
+          <button
+            class="secondary-button"
+            type="button"
+            onclick="closeBillDetail()"
+          >
+            關閉
+          </button>
+
+          ${
+            status === 'paid'
+              ? `
+                <button
+                  class="primary-button"
+                  type="button"
+                  onclick="goPage('tenant-payment-report.html')"
+                >
+                  查看回報紀錄
+                </button>
+              `
+              : `
+                <button
+                  class="primary-button"
+                  type="button"
+                  onclick="goPaymentReport('${safeHtml(
+                    billIdOf(bill)
+                  )}')"
+                >
+                  回報付款
+                </button>
+              `
+          }
+        </div>
+      `;
+
+      document.getElementById(
+        'detailModal'
+      ).classList.add('show');
+
+      document.body.classList.add(
+        'modal-open'
+      );
+    }
+
+    function closeBillDetail() {
+      ACTIVE_BILL_ID = '';
+
+      document.getElementById(
+        'detailModal'
+      ).classList.remove('show');
+
+      document.body.classList.remove(
+        'modal-open'
+      );
+    }
+
+    function closeDetailFromBackdrop(
+      event
+    ) {
+      if (
+        event.target &&
+        event.target.id ===
+        'detailModal'
+      ) {
+        closeBillDetail();
+      }
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">
+            帳單資料讀取失敗
+          </div>
+
+          <div class="error-text">
+            ${safeHtml(
+              message || '未知錯誤'
+            )}
+          </div>
+
+          <div class="button-row">
+            <button
+              class="secondary-button"
+              type="button"
+              onclick="goPage('tenant-home.html')"
+            >
+              返回首頁
+            </button>
+
+            <button
+              class="primary-button"
+              type="button"
+              onclick="loadPage()"
+            >
+              重新整理
+            </button>
+          </div>
+        </section>
+      `;
+    }
+
+    function setRefreshLoading(
+      loading
+    ) {
+      const button =
+        document.getElementById(
+          'refreshButton'
+        );
+
+      if (!button) {
+        return;
+      }
+
+      button.classList.toggle(
+        'loading',
+        Boolean(loading)
+      );
+    }
+
+    async function loadPage() {
+      setRefreshLoading(true);
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLineUserId();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const results =
+          await Promise.allSettled([
+            jsonpRequest(
+              'tenant_bills',
+              {}
+            ),
+            jsonpRequest(
+              'tenant_payment_report_init',
+              {}
+            )
+          ]);
+
+        if (
+          results[0].status !==
+          'fulfilled'
+        ) {
+          throw results[0].reason;
+        }
+
+        const billsData =
+          unwrapData(
+            results[0].value
+          );
+
+        let paymentReportData = {
+          reports: []
+        };
+
+        if (
+          results[1].status ===
+          'fulfilled'
+        ) {
+          try {
+            paymentReportData =
+              unwrapData(
+                results[1].value
+              );
+          } catch (error) {
+            console.warn(
+              '付款回報資料讀取失敗：',
+              error
+            );
+          }
+        }
+
+        renderPage(
+          billsData,
+          paymentReportData
+        );
+      } catch (error) {
+        renderError(
+          error && error.message
+            ? error.message
+            : String(error)
+        );
+      } finally {
+        setRefreshLoading(false);
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      function () {
+        setTimeout(
+          setAppHeight,
+          250
+        );
+      }
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
