@@ -2,8 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
   <title>CMWebs 房客首頁</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -11,7 +13,31 @@
   <style>
     :root {
       --app-height: 100vh;
-      --nav-height: 62px;
+      --nav-height: 66px;
+
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+
+      --blue: #1a73e8;
+      --blue-soft: #edf4ff;
+
+      --orange: #ef8f00;
+      --orange-soft: #fff5df;
+
+      --purple: #7654c4;
+      --purple-soft: #f3efff;
+
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+
+      --shadow: 0 6px 22px rgba(25, 35, 55, 0.07);
     }
 
     * {
@@ -20,13 +46,23 @@
 
     html,
     body {
-      margin: 0;
       width: 100%;
       height: 100%;
+      margin: 0;
       overflow: hidden;
-      font-family: Arial, "Noto Sans TC", sans-serif;
-      background: #f5f7fb;
-      color: #222;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button {
+      font: inherit;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .app-shell {
@@ -35,377 +71,786 @@
       max-width: 560px;
       height: var(--app-height);
       margin: 0 auto;
-      background: #f5f7fb;
       overflow: hidden;
+      background: var(--page-bg);
     }
 
     .page {
+      width: 100%;
       height: 100%;
+      overflow-x: hidden;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
+      padding:
+        17px
+        15px
+        calc(
+          var(--nav-height) +
+          28px +
+          env(safe-area-inset-bottom)
+        );
     }
 
     .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
     }
 
-    .title {
-      font-size: 22px;
+    .hero-card {
+      overflow: hidden;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #0abb59 0%,
+          #06c755 56%,
+          #05a947 100%
+        );
+      box-shadow: 0 9px 26px rgba(6, 199, 85, 0.22);
+    }
+
+    .hero-main {
+      position: relative;
+      padding: 20px;
+    }
+
+    .hero-main::after {
+      position: absolute;
+      top: -58px;
+      right: -44px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      content: "";
+    }
+
+    .hero-top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      margin-bottom: 5px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 11px;
       font-weight: 800;
-      margin-bottom: 6px;
     }
 
-    .sub {
-      color: #666;
-      font-size: 14px;
-      line-height: 1.6;
+    .hero-name {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.45px;
+    }
+
+    .hero-room {
+      margin-top: 7px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .refresh-button {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      cursor: pointer;
+      backdrop-filter: blur(7px);
+    }
+
+    .refresh-button svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .refresh-button.loading svg {
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .hero-stats {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 17px;
+    }
+
+    .hero-stat {
+      min-width: 0;
+      padding: 12px 13px;
+      border: 1px solid rgba(255, 255, 255, 0.23);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.13);
+    }
+
+    .hero-stat-label {
+      margin-bottom: 4px;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .hero-stat-value {
+      overflow: hidden;
+      font-size: 16px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hero-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 11px 20px;
+      background: rgba(0, 0, 0, 0.08);
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 10px;
+    }
+
+    .section-card {
+      padding: 17px;
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       margin-bottom: 12px;
     }
 
     .section-title {
       font-size: 17px;
-      font-weight: 800;
-      margin-bottom: 12px;
+      font-weight: 900;
     }
 
-    .row {
+    .section-hint {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      min-height: 24px;
+      padding: 4px 9px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .status-green {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .status-orange {
+      background: var(--orange-soft);
+      color: #a96700;
+    }
+
+    .status-blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .status-purple {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .status-red {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .status-gray {
+      background: #f0f2f4;
+      color: #666c75;
+    }
+
+    .bill-hero {
+      padding: 15px;
+      border-radius: 15px;
+      background: var(--primary-soft);
+    }
+
+    .bill-hero.unpaid {
+      background: var(--danger-soft);
+    }
+
+    .bill-label {
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .bill-amount {
+      color: var(--primary-dark);
+      font-size: 29px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .bill-hero.unpaid .bill-amount {
+      color: var(--danger);
+    }
+
+    .bill-meta {
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 15px;
-      align-items: center;
+      margin-top: 8px;
+      color: #69717b;
+      font-size: 11px;
+      line-height: 1.45;
     }
 
-    .row:last-child {
-      border-bottom: none;
-    }
-
-    .label {
-      color: #666;
-      flex: 1;
-    }
-
-    .value {
-      font-weight: 700;
-      text-align: right;
-      word-break: break-word;
-    }
-
-    .amount {
-      font-size: 30px;
-      font-weight: 900;
-      color: #d93025;
-      margin: 12px 0;
-    }
-
-    .btn {
-      width: 100%;
-      border: none;
-      border-radius: 10px;
-      padding: 14px 16px;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
-      margin-bottom: 10px;
-    }
-
-    .btn-green {
-      background: #06c755;
-      color: white;
-    }
-
-    .btn-dark {
-      background: #222;
-      color: white;
-    }
-
-    .btn-light {
-      background: #f1f3f4;
-      color: #222;
-    }
-
-    .quick-actions {
+    .bill-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
       margin-top: 12px;
     }
 
-    .quick-action {
-      appearance: none;
-      -webkit-appearance: none;
-      border: 1px solid #edf0f4;
-      background: #fff;
-      border-radius: 14px;
-      padding: 14px 10px;
-      text-align: left;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    .info-box {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #fbfcfd;
     }
 
-    .quick-action:active {
+    .info-label {
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .info-value {
+      overflow: hidden;
+      font-size: 13px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .primary-button,
+    .secondary-button {
+      min-height: 44px;
+      padding: 11px 13px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .primary-button {
+      border: 0;
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .secondary-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .primary-button:active,
+    .secondary-button:active {
       opacity: 0.7;
     }
 
-    .quick-icon {
-      width: 34px;
-      height: 34px;
+    .contract-hero {
+      overflow: hidden;
+      padding: 16px;
+      border-radius: 15px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #7654c4 0%,
+          #6744b8 65%,
+          #5835a8 100%
+        );
+    }
+
+    .contract-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .contract-room {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .contract-sub {
+      margin-top: 5px;
+      color: rgba(255, 255, 255, 0.84);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .days-box {
+      min-width: 77px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.16);
+      text-align: center;
+    }
+
+    .days-value {
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .days-label {
+      margin-top: 5px;
+      color: rgba(255, 255, 255, 0.84);
+      font-size: 10px;
+    }
+
+    .contract-progress {
+      height: 8px;
+      overflow: hidden;
+      margin-top: 15px;
       border-radius: 999px;
-      background: #e8f7ee;
-      color: #06c755;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .contract-progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: #ffffff;
+    }
+
+    .contract-dates {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 7px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 10px;
+    }
+
+    .contract-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .contract-summary-box {
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fbfcfd;
+    }
+
+    .contract-summary-label {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .contract-summary-value {
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .request-banner {
+      margin-top: 12px;
+      padding: 12px 13px;
+      border: 1px solid #eadffd;
+      border-radius: 12px;
+      background: var(--purple-soft);
+    }
+
+    .request-banner.pending {
+      border-color: #f1dfb2;
+      background: var(--orange-soft);
+    }
+
+    .request-banner.completed {
+      border-color: #d5eadc;
+      background: var(--primary-soft);
+    }
+
+    .request-banner-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .request-banner-desc {
+      margin-top: 6px;
+      color: #646a74;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .quick-button {
+      min-height: 103px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: #ffffff;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .quick-button:active {
+      opacity: 0.68;
+    }
+
+    .quick-icon {
+      width: 37px;
+      height: 37px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 10px;
+      border-radius: 12px;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .quick-icon.blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .quick-icon.purple {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .quick-icon.orange {
+      background: var(--orange-soft);
+      color: var(--orange);
     }
 
     .quick-icon svg {
       width: 21px;
       height: 21px;
-      stroke: currentColor;
-      stroke-width: 2;
       fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
     .quick-title {
-      font-size: 15px;
-      font-weight: 800;
-      color: #222;
-      margin-bottom: 4px;
+      font-size: 14px;
+      font-weight: 900;
     }
 
     .quick-desc {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .empty-state {
+      padding: 19px 10px;
+      color: var(--muted);
       font-size: 12px;
-      color: #777;
-      line-height: 1.5;
-    }
-
-    .bill-title {
-      font-size: 18px;
-      font-weight: 800;
-      margin-bottom: 4px;
-    }
-
-    .status-paid {
-      color: #188038;
-      font-weight: 800;
-    }
-
-    .status-unpaid {
-      color: #d93025;
-      font-weight: 800;
-    }
-
-    .status-reported {
-      color: #9a6b00;
-      font-weight: 800;
-    }
-
-    .small {
-      font-size: 13px;
-      color: #888;
-      margin-top: 8px;
-      line-height: 1.6;
-    }
-
-    .loading,
-    .error,
-    .empty {
+      line-height: 1.65;
       text-align: center;
-      padding: 40px 20px;
-      color: #666;
+    }
+
+    .loading-card,
+    .error-card {
+      padding: 30px 18px;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 30px;
+      height: 30px;
+      margin: 0 auto 13px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    .loading-text,
+    .error-text {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
     }
 
     .error-title {
-      color: #d93025;
-      font-size: 20px;
-      font-weight: 800;
       margin-bottom: 8px;
-      text-align: left;
+      color: var(--danger);
+      font-size: 17px;
+      font-weight: 900;
     }
 
-    .error-text {
-      font-size: 14px;
-      line-height: 1.6;
-      text-align: left;
-      word-break: break-word;
-    }
-
-    .debug {
-      margin-top: 12px;
-      padding: 10px;
-      background: #f1f3f4;
-      border-radius: 8px;
-      font-size: 12px;
-      color: #666;
-      word-break: break-all;
-      display: none;
-    }
-
-    /* ===== Fixed Bottom Navigation ===== */
     .bottom-nav {
-      position: absolute !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 99999 !important;
+      position: absolute;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-top: 1px solid #e8ecf1;
       background: rgba(255, 255, 255, 0.98);
-      border-top: 1px solid #eceff3;
       padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
     }
 
     .bottom-nav-inner {
       height: var(--nav-height);
-      margin: 0 auto;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
     }
 
     .nav-item {
-      appearance: none;
-      -webkit-appearance: none;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
       border: 0;
       background: transparent;
       color: #8b9098;
       font-size: 11px;
       font-weight: 600;
-      line-height: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      position: relative;
       cursor: pointer;
     }
 
     .nav-item svg {
       width: 23px;
       height: 23px;
+      fill: none;
       stroke: currentColor;
       stroke-width: 1.9;
-      fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
     .nav-item.active {
-      color: #06c755;
-      font-weight: 800;
+      color: var(--primary);
+      font-weight: 900;
     }
 
     .nav-item.active::after {
-      content: "";
       position: absolute;
       bottom: 5px;
       width: 18px;
       height: 3px;
       border-radius: 999px;
-      background: #06c755;
+      background: var(--primary);
+      content: "";
     }
 
-    .nav-item:active {
-      opacity: 0.65;
+    .toast {
+      position: absolute;
+      z-index: 3000;
+      right: 18px;
+      bottom: calc(var(--nav-height) + 22px + env(safe-area-inset-bottom));
+      left: 18px;
+      display: none;
+      padding: 13px 15px;
+      border-radius: 13px;
+      background: rgba(25, 28, 33, 0.94);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: center;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    @media (max-width: 390px) {
+      .hero-stats,
+      .bill-grid,
+      .contract-summary-grid,
+      .quick-grid,
+      .button-row {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        padding-right: 13px;
+        padding-left: 13px;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="app-shell">
-    <div class="page">
-      <div id="app" class="loading">資料載入中...</div>
-    </div>
+    <main class="page">
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">房客首頁載入中...</div>
+        </section>
+      </div>
+    </main>
 
     <nav class="bottom-nav">
       <div class="bottom-nav-inner">
-        <button class="nav-item active" onclick="location.href='tenant-home.html?v=' + Date.now()">
+        <button class="nav-item active" type="button" onclick="goPage('tenant-home.html')">
           <svg viewBox="0 0 24 24">
             <path d="M4 11.5L12 5l8 6.5"></path>
             <path d="M6.5 10.5V19h11v-8.5"></path>
             <path d="M9.5 19v-5h5v5"></path>
           </svg>
-          <div>首頁</div>
+          <span>首頁</span>
         </button>
 
-        <button class="nav-item" onclick="location.href='tenant-bills.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('tenant-bills.html')">
           <svg viewBox="0 0 24 24">
             <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
             <path d="M8.5 9h7"></path>
             <path d="M8.5 13h7"></path>
             <path d="M8.5 17h4"></path>
           </svg>
-          <div>帳單</div>
+          <span>帳單</span>
         </button>
 
-        <button class="nav-item" onclick="location.href='tenant-payment-report.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('tenant-contract.html')">
           <svg viewBox="0 0 24 24">
-            <path d="M6 4.5h12v15H6z"></path>
-            <path d="M8.5 8.5h7"></path>
-            <path d="M8.5 12h7"></path>
-            <path d="M8.5 15.5h4"></path>
+            <path d="M6 3.5h9l3 3V20H6z"></path>
+            <path d="M15 3.5V7h3"></path>
+            <path d="M9 11h6"></path>
+            <path d="M9 15h6"></path>
           </svg>
-          <div>回報</div>
+          <span>合約</span>
         </button>
 
-        <button class="nav-item" onclick="location.href='tenant-more.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('tenant-message.html')">
           <svg viewBox="0 0 24 24">
-            <circle cx="6" cy="12" r="1.5"></circle>
-            <circle cx="12" cy="12" r="1.5"></circle>
-            <circle cx="18" cy="12" r="1.5"></circle>
+            <path d="M5 5.5h14v10H9l-4 3.5z"></path>
+            <path d="M8.5 9.5h7"></path>
+            <path d="M8.5 12.5h5"></path>
           </svg>
-          <div>更多</div>
+          <span>聯絡</span>
         </button>
       </div>
     </nav>
+
+    <div id="toast" class="toast"></div>
   </div>
 
   <script>
-    // =========================================================
-    // 0. App Height
-    // =========================================================
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
-    function setAppHeight() {
-      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-    }
+    const LIFF_ID =
+      '2010314940-iJB1D6sN';
 
-    setAppHeight();
+    const TEST_LINE_USER_ID =
+      'U3615a7ed919c1a4a438a246c10784d70';
 
-    window.addEventListener('resize', setAppHeight);
-    window.addEventListener('orientationchange', function () {
-      setTimeout(setAppHeight, 300);
-    });
+    const URL_PARAMS =
+      new URLSearchParams(location.search);
 
-    // =========================================================
-    // 1. 基本設定
-    // =========================================================
-
-    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
-
-    const LIFF_ID = '2010314940-iJB1D6sN';
-
-    const TEST_LINE_USER_ID = 'U3615a7ed919c1a4a438a246c10784d70';
+    const TEST_MODE =
+      URL_PARAMS.get('test') === '1';
 
     let LINE_USER_ID = '';
-    let HOME_DATA = null;
-    let BILL_LIST = [];
+    let toastTimer = null;
 
-    const app = document.getElementById('app');
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
 
-    // =========================================================
-    // 2. 工具函式
-    // =========================================================
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
 
-    function escapeHtml(v) {
-      return String(v)
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -413,230 +858,986 @@
         .replace(/'/g, '&#039;');
     }
 
-    function safeText(v) {
-      if (v === undefined || v === null || v === '') return '-';
-      return escapeHtml(v);
+    function numberValue(value) {
+      return Number(value || 0) || 0;
     }
 
-    function rawText(v) {
-      if (v === undefined || v === null || v === '') return '';
-      return String(v);
+    function money(value) {
+      return (
+        'NT$ ' +
+        Math.round(
+          numberValue(value)
+        ).toLocaleString('zh-TW')
+      );
     }
 
-    function money(n) {
-      const num = Number(n || 0);
-      return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
+    function normalizeStatus(value) {
+      return rawText(value)
+        .trim()
+        .toLowerCase();
     }
 
-    function statusText(status) {
-      const s = String(status || '').toLowerCase();
+    function formatDate(value) {
+      const text =
+        rawText(value).trim();
 
-      if (s === 'paid') return '已繳';
-      if (s === 'unpaid') return '未繳';
-      if (s === 'issued') return '已建立';
-      if (s === 'not_sent') return '未發送';
-      if (s === 'payment_reported') return '已回報';
-      if (s === 'pending') return '待確認';
-
-      return safeText(status);
-    }
-
-    function statusClass(status) {
-      const s = String(status || '').toLowerCase();
-
-      if (s === 'paid') return 'status-paid';
-      if (s === 'unpaid') return 'status-unpaid';
-      if (s === 'payment_reported' || s === 'pending') return 'status-reported';
-
-      return '';
-    }
-
-    function dateOnly(v) {
-      if (!v) return '-';
-
-      const d = new Date(v);
-
-      if (!isNaN(d.getTime())) {
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-
-        return yyyy + '-' + mm + '-' + dd;
+      if (!text) {
+        return '-';
       }
 
-      return String(v).slice(0, 10);
+      const match =
+        text.match(
+          /^(\d{4})-(\d{2})-(\d{2})/
+        );
+
+      if (match) {
+        return (
+          match[1] +
+          '-' +
+          match[2] +
+          '-' +
+          match[3]
+        );
+      }
+
+      const date =
+        new Date(text);
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return text;
+      }
+
+      return date.toLocaleDateString(
+        'zh-TW',
+        {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }
+      );
     }
 
-    function setLoading(text) {
-      app.className = 'loading';
-      app.innerHTML = safeText(text);
+    function dateValue(value) {
+      const text =
+        rawText(value).trim();
+
+      if (!text) {
+        return null;
+      }
+
+      const date =
+        new Date(
+          text.length <= 10
+            ? text + 'T00:00:00'
+            : text
+        );
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return null;
+      }
+
+      return date;
     }
 
-    function showError(message, detail) {
-      app.className = '';
-      app.innerHTML = `
-        <div class="card">
-          <div class="error-title">資料讀取失敗</div>
-          <div class="error-text">${safeText(message)}</div>
-          ${detail ? `<div class="small">${safeText(detail)}</div>` : ''}
+    function daysBetween(
+      start,
+      end
+    ) {
+      const startDate =
+        dateValue(start);
 
-          <button class="btn btn-dark" onclick="initPage()">
-            重新整理
-          </button>
+      const endDate =
+        dateValue(end);
 
-          <div class="debug" id="debugBox"></div>
+      if (
+        !startDate ||
+        !endDate
+      ) {
+        return 0;
+      }
+
+      return Math.ceil(
+        (
+          endDate.getTime() -
+          startDate.getTime()
+        ) /
+        86400000
+      );
+    }
+
+    function clamp(
+      value,
+      min,
+      max
+    ) {
+      return Math.min(
+        Math.max(value, min),
+        max
+      );
+    }
+
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
+
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
+    function showToast(message) {
+      const toast =
+        document.getElementById('toast');
+
+      toast.textContent =
+        rawText(message) || '提示';
+
+      toast.classList.add('show');
+
+      clearTimeout(toastTimer);
+
+      toastTimer =
+        setTimeout(function () {
+          toast.classList.remove('show');
+        }, 2300);
+    }
+
+    function jsonpRequest(
+      action,
+      params
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_tenant_home_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() * 1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 載入逾時'
+                )
+              );
+            }, 30000);
+
+          function cleanup() {
+            clearTimeout(timer);
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(action) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(
+            function (key) {
+              const value =
+                params[key];
+
+              if (
+                value === undefined ||
+                value === null
+              ) {
+                return;
+              }
+
+              url +=
+                '&' +
+                encodeURIComponent(key) +
+                '=' +
+                encodeURIComponent(value);
+            }
+          );
+
+          script.charset = 'UTF-8';
+
+          script.onerror =
+            function () {
+              console.warn(
+                'JSONP script onerror ignored.'
+              );
+            };
+
+          script.src = url;
+
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    async function initLineUserId() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        return true;
+      }
+
+      if (
+        typeof liff ===
+        'undefined'
+      ) {
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            location.href
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error(
+          '無法取得房客 LINE User ID'
+        );
+      }
+
+      return true;
+    }
+
+    function unwrapData(result) {
+      if (
+        result &&
+        result.success === true
+      ) {
+        return (
+          result.data !== undefined
+            ? result.data
+            : result
+        );
+      }
+
+      throw new Error(
+        result && result.message
+          ? result.message
+          : '查詢失敗'
+      );
+    }
+
+    function paymentStatusText(value) {
+      const status =
+        normalizeStatus(value);
+
+      if (status === 'paid') {
+        return '已繳清';
+      }
+
+      if (status === 'unpaid') {
+        return '尚未繳費';
+      }
+
+      if (status === 'overdue') {
+        return '已逾期';
+      }
+
+      return (
+        rawText(value) ||
+        '待確認'
+      );
+    }
+
+    function paymentBadgeClass(value) {
+      const status =
+        normalizeStatus(value);
+
+      if (status === 'paid') {
+        return 'status-badge status-green';
+      }
+
+      if (
+        status === 'unpaid' ||
+        status === 'overdue'
+      ) {
+        return 'status-badge status-red';
+      }
+
+      return 'status-badge status-gray';
+    }
+
+    function requestStatusText(value) {
+      const status =
+        normalizeStatus(value);
+
+      const labels = {
+        pending: '待房東審核',
+        approved: '已核准・待完成',
+        completed: '已完成',
+        rejected: '已駁回',
+        cancelled: '已取消'
+      };
+
+      return (
+        labels[status] ||
+        rawText(value) ||
+        '-'
+      );
+    }
+
+    function requestTypeText(item) {
+      const type =
+        normalizeStatus(
+          item.request_type
+        );
+
+      if (type === 'renewal') {
+        return '續約申請';
+      }
+
+      if (type === 'termination') {
+        return (
+          normalizeStatus(
+            item.termination_type
+          ) === 'early_termination'
+            ? '提前解約'
+            : '到期不續約'
+        );
+      }
+
+      return (
+        rawText(
+          item.request_type_label
+        ) ||
+        '合約申請'
+      );
+    }
+
+    function getLatestActiveRequest(
+      requests
+    ) {
+      return (
+        (requests || [])
+          .filter(function (item) {
+            const status =
+              normalizeStatus(
+                item.status
+              );
+
+            return (
+              status === 'pending' ||
+              status === 'approved'
+            );
+          })
+          .sort(function (a, b) {
+            const aTime =
+              dateValue(
+                a.updated_at ||
+                a.created_at
+              );
+
+            const bTime =
+              dateValue(
+                b.updated_at ||
+                b.created_at
+              );
+
+            return (
+              (
+                bTime
+                  ? bTime.getTime()
+                  : 0
+              ) -
+              (
+                aTime
+                  ? aTime.getTime()
+                  : 0
+              )
+            );
+          })[0] ||
+        null
+      );
+    }
+
+    function contractProgress(
+      contract
+    ) {
+      const start =
+        dateValue(
+          contract.start_date
+        );
+
+      const end =
+        dateValue(
+          contract.end_date
+        );
+
+      const now =
+        new Date();
+
+      if (!start || !end) {
+        return 0;
+      }
+
+      const total =
+        end.getTime() -
+        start.getTime();
+
+      const elapsed =
+        now.getTime() -
+        start.getTime();
+
+      if (total <= 0) {
+        return 100;
+      }
+
+      return clamp(
+        (elapsed / total) * 100,
+        0,
+        100
+      );
+    }
+
+    function requestBannerHtml(
+      request
+    ) {
+      if (!request) {
+        return '';
+      }
+
+      const status =
+        normalizeStatus(
+          request.status
+        );
+
+      const className =
+        status === 'pending'
+          ? 'request-banner pending'
+          : (
+              status === 'completed'
+                ? 'request-banner completed'
+                : 'request-banner'
+            );
+
+      const description =
+        status === 'pending'
+          ? '申請已送出，房東尚未完成審核。'
+          : (
+              status === 'approved'
+                ? '房東已核准條件，等待完成正式合約或退租程序。'
+                : '可進入我的合約查看完整處理結果。'
+            );
+
+      return `
+        <div class="${className}">
+          <div class="request-banner-title">
+            <span>
+              ${safeHtml(
+                requestTypeText(request)
+              )}
+            </span>
+
+            <span class="${
+              status === 'pending'
+                ? 'status-badge status-orange'
+                : 'status-badge status-purple'
+            }">
+              ${safeHtml(
+                requestStatusText(status)
+              )}
+            </span>
+          </div>
+
+          <div class="request-banner-desc">
+            ${safeHtml(description)}
+          </div>
         </div>
       `;
     }
 
-    // =========================================================
-    // 3. 跳頁函式
-    // =========================================================
+    function renderPage(
+      home,
+      contractData
+    ) {
+      const contract =
+        contractData &&
+        contractData.contract
+          ? contractData.contract
+          : null;
 
-    function goPaymentReport() {
-      location.href = 'tenant-payment-report.html?v=' + Date.now();
-    }
+      const requests =
+        contractData &&
+        Array.isArray(
+          contractData.requests
+        )
+          ? contractData.requests
+          : [];
 
-    function goTenantBills() {
-      location.href = 'tenant-bills.html?v=' + Date.now();
-    }
+      const activeRequest =
+        getLatestActiveRequest(
+          requests
+        );
 
-    function goTenantMessage() {
-      location.href = 'tenant-message.html?v=' + Date.now();
-    }
+      const paymentStatus =
+        normalizeStatus(
+          home.latest_payment_status
+        );
 
-    function goTenantContract() {
-      location.href = 'tenant-contract.html?v=' + Date.now();
-    }
+      const isPaid =
+        paymentStatus === 'paid';
 
-    // =========================================================
-    // 4. JSONP API
-    // =========================================================
+      const displayAmount =
+        isPaid
+          ? numberValue(
+              home.latest_total_amount
+            )
+          : numberValue(
+              home.unpaid_total_amount ||
+              home.latest_total_amount
+            );
 
-    function callApi(action) {
-      return new Promise((resolve, reject) => {
-        if (!LINE_USER_ID) {
-          reject(new Error('缺少 LINE User ID'));
-          return;
-        }
+      const contractDays =
+        contract
+          ? daysBetween(
+              new Date(),
+              contract.end_date
+            )
+          : 0;
 
-        const callbackName =
-          'cmwebsCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const app =
+        document.getElementById('app');
 
-        const script = document.createElement('script');
+      app.innerHTML = `
+        <section class="card hero-card">
+          <div class="hero-main">
+            <div class="hero-top">
+              <div>
+                <div class="eyebrow">
+                  CMWebs 智慧租管
+                </div>
 
-        let finished = false;
+                <h1 class="hero-name">
+                  您好，${safeHtml(
+                    home.tenant_name ||
+                    '房客'
+                  )}
+                </h1>
 
-        const timer = setTimeout(() => {
-          if (finished) return;
-          finished = true;
-          cleanup();
-          reject(new Error('API 載入逾時'));
-        }, 20000);
-
-        function cleanup() {
-          clearTimeout(timer);
-
-          if (script.parentNode) {
-            script.parentNode.removeChild(script);
-          }
-
-          try {
-            delete window[callbackName];
-          } catch (e) {
-            window[callbackName] = undefined;
-          }
-        }
-
-        window[callbackName] = function (json) {
-          if (finished) return;
-          finished = true;
-
-          cleanup();
-
-          if (!json || json.success !== true) {
-            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
-            return;
-          }
-
-          resolve(json.data);
-        };
-
-        script.onerror = function () {
-          if (finished) return;
-          finished = true;
-
-          cleanup();
-          reject(new Error('API 載入失敗'));
-        };
-
-        script.charset = 'UTF-8';
-
-        script.src =
-          API_URL +
-          '?v2_action=' + encodeURIComponent(action) +
-          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-
-        document.body.appendChild(script);
-      });
-    }
-
-    // =========================================================
-    // 5. 取得 LINE User ID
-    // =========================================================
-
-    async function initLineUserId() {
-      if (typeof liff === 'undefined') {
-        LINE_USER_ID = TEST_LINE_USER_ID;
-        return;
-      }
-
-      try {
-        await liff.init({ liffId: LIFF_ID });
-
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-
-        const profile = await liff.getProfile();
-        LINE_USER_ID = profile.userId || '';
-
-        if (!LINE_USER_ID) {
-          throw new Error('無法取得 LINE User ID');
-        }
-      } catch (error) {
-        LINE_USER_ID = TEST_LINE_USER_ID;
-      }
-    }
-
-    // =========================================================
-    // 6. 畫面渲染
-    // =========================================================
-
-    function renderQuickActions() {
-      return `
-        <div class="card">
-          <div class="section-title">常用功能</div>
-
-          <div class="quick-actions">
-            <button class="quick-action" onclick="goPaymentReport()">
-              <div class="quick-icon">
-                <svg viewBox="0 0 24 24">
-                  <path d="M6 4.5h12v15H6z"></path>
-                  <path d="M8.5 8.5h7"></path>
-                  <path d="M8.5 12h7"></path>
-                  <path d="M8.5 15.5h4"></path>
-                </svg>
+                <div class="hero-room">
+                  房號 ${safeHtml(
+                    home.room_list ||
+                    (
+                      contract &&
+                      contract.room_name
+                    ) ||
+                    '-'
+                  )}
+                  ・房客編號 ${safeHtml(
+                    home.tenant_id || '-'
+                  )}
+                </div>
               </div>
-              <div class="quick-title">回報付款</div>
-              <div class="quick-desc">選擇帳單並填寫匯款後 5 碼</div>
+
+              <button
+                id="refreshButton"
+                class="refresh-button"
+                type="button"
+                onclick="loadPage()"
+                aria-label="重新整理"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 11a8 8 0 1 0-2.34 5.66"></path>
+                  <path d="M20 5v6h-6"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="hero-stats">
+              <div class="hero-stat">
+                <div class="hero-stat-label">
+                  目前帳款
+                </div>
+                <div class="hero-stat-value">
+                  ${safeHtml(
+                    paymentStatusText(
+                      paymentStatus
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div class="hero-stat">
+                <div class="hero-stat-label">
+                  合約狀態
+                </div>
+                <div class="hero-stat-value">
+                  ${
+                    contract
+                      ? (
+                          contractDays >= 0
+                            ? '有效'
+                            : '已到期'
+                        )
+                      : '查無合約'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-footer">
+            <span>
+              帳單月份：
+              ${safeHtml(
+                home.latest_bill_month ||
+                '-'
+              )}
+            </span>
+
+            <span>
+              ${TEST_MODE ? '測試模式' : '正式模式'}
+            </span>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">
+              最新帳單
+            </div>
+
+            <span class="${paymentBadgeClass(paymentStatus)}">
+              ${safeHtml(
+                paymentStatusText(
+                  paymentStatus
+                )
+              )}
+            </span>
+          </div>
+
+          <div class="bill-hero ${isPaid ? '' : 'unpaid'}">
+            <div class="bill-label">
+              ${isPaid ? '最新帳單金額' : '目前未繳總額'}
+            </div>
+
+            <div class="bill-amount">
+              ${money(displayAmount)}
+            </div>
+
+            <div class="bill-meta">
+              <span>
+                繳款期限：
+                ${safeHtml(
+                  formatDate(
+                    home.latest_due_date
+                  )
+                )}
+              </span>
+
+              <span>
+                未繳 ${numberValue(
+                  home.unpaid_bill_count
+                )} 筆
+              </span>
+            </div>
+          </div>
+
+          <div class="bill-grid">
+            <div class="info-box">
+              <div class="info-label">
+                最新帳單月份
+              </div>
+              <div class="info-value">
+                ${safeHtml(
+                  home.latest_bill_month ||
+                  '-'
+                )}
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-label">
+                最新帳單金額
+              </div>
+              <div class="info-value">
+                ${money(
+                  home.latest_total_amount
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button
+              class="secondary-button"
+              type="button"
+              onclick="goPage('tenant-bills.html')"
+            >
+              查看帳單明細
             </button>
 
-            <button class="quick-action" onclick="goTenantBills()">
-              <div class="quick-icon">
+            <button
+              class="primary-button"
+              type="button"
+              onclick="goPage('tenant-payment-report.html')"
+            >
+              回報付款
+            </button>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">
+              我的合約
+            </div>
+
+            ${
+              activeRequest
+                ? `
+                  <span class="${
+                    normalizeStatus(
+                      activeRequest.status
+                    ) === 'pending'
+                      ? 'status-badge status-orange'
+                      : 'status-badge status-purple'
+                  }">
+                    ${safeHtml(
+                      requestStatusText(
+                        activeRequest.status
+                      )
+                    )}
+                  </span>
+                `
+                : (
+                    contract
+                      ? `
+                        <span class="status-badge status-green">
+                          有效
+                        </span>
+                      `
+                      : `
+                        <span class="status-badge status-gray">
+                          查無資料
+                        </span>
+                      `
+                  )
+            }
+          </div>
+
+          ${
+            contract
+              ? `
+                <div class="contract-hero">
+                  <div class="contract-top">
+                    <div>
+                      <div class="contract-room">
+                        ${safeHtml(
+                          contract.room_name ||
+                          home.room_list ||
+                          '-'
+                        )}
+                      </div>
+
+                      <div class="contract-sub">
+                        每月租金 ${money(
+                          contract.rent_amount
+                        )}
+                        ・管理費 ${money(
+                          contract.management_fee
+                        )}
+                      </div>
+                    </div>
+
+                    <div class="days-box">
+                      <div class="days-value">
+                        ${
+                          contractDays >= 0
+                            ? contractDays
+                            : 0
+                        }
+                      </div>
+                      <div class="days-label">
+                        ${
+                          contractDays >= 0
+                            ? '天後到期'
+                            : '合約已到期'
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="contract-progress">
+                    <div
+                      class="contract-progress-fill"
+                      style="width:${contractProgress(contract).toFixed(1)}%;"
+                    ></div>
+                  </div>
+
+                  <div class="contract-dates">
+                    <span>
+                      ${safeHtml(
+                        formatDate(
+                          contract.start_date
+                        )
+                      )}
+                    </span>
+                    <span>
+                      ${safeHtml(
+                        formatDate(
+                          contract.end_date
+                        )
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="contract-summary-grid">
+                  <div class="contract-summary-box">
+                    <div class="contract-summary-label">
+                      合約編號
+                    </div>
+                    <div class="contract-summary-value">
+                      ${safeHtml(
+                        contract.contract_id ||
+                        '-'
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="contract-summary-box">
+                    <div class="contract-summary-label">
+                      每月繳款日
+                    </div>
+                    <div class="contract-summary-value">
+                      每月 ${numberValue(
+                        contract.monthly_payment_day
+                      ) || '-'} 日
+                    </div>
+                  </div>
+                </div>
+
+                ${requestBannerHtml(activeRequest)}
+
+                <button
+                  class="primary-button"
+                  style="width:100%;margin-top:12px;"
+                  type="button"
+                  onclick="goPage('tenant-contract.html')"
+                >
+                  查看合約與申請進度
+                </button>
+              `
+              : `
+                <div class="empty-state">
+                  目前查無有效合約資料。請確認房客綁定或聯絡房東。
+                </div>
+
+                <button
+                  class="secondary-button"
+                  style="width:100%;"
+                  type="button"
+                  onclick="goPage('tenant-contract.html')"
+                >
+                  查看合約頁
+                </button>
+              `
+          }
+        </section>
+
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">
+              快速功能
+            </div>
+          </div>
+
+          <div class="quick-grid">
+            <button
+              class="quick-button"
+              type="button"
+              onclick="goPage('tenant-bills.html')"
+            >
+              <div class="quick-icon blue">
                 <svg viewBox="0 0 24 24">
                   <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
                   <path d="M8.5 9h7"></path>
@@ -644,248 +1845,271 @@
                   <path d="M8.5 17h4"></path>
                 </svg>
               </div>
-              <div class="quick-title">查帳單</div>
-              <div class="quick-desc">查看租金、電費與繳款狀態</div>
+
+              <div>
+                <div class="quick-title">
+                  帳單查詢
+                </div>
+                <div class="quick-desc">
+                  查看租金、電費及設備費明細
+                </div>
+              </div>
             </button>
 
-            <button class="quick-action" onclick="goTenantMessage()">
-              <div class="quick-icon">
+            <button
+              class="quick-button"
+              type="button"
+              onclick="goPage('tenant-payment-report.html')"
+            >
+              <div class="quick-icon orange">
                 <svg viewBox="0 0 24 24">
-                  <path d="M5 6.5h14v9.5H8l-3 3v-12.5z"></path>
-                  <path d="M8.5 10h7"></path>
-                  <path d="M8.5 13h5"></path>
+                  <path d="M5 4.5h14v15H5z"></path>
+                  <path d="M8 9h8"></path>
+                  <path d="M8 13h5"></path>
+                  <path d="M15.5 15.5l1.5 1.5 3-3"></path>
                 </svg>
               </div>
-              <div class="quick-title">傳訊房東</div>
-              <div class="quick-desc">報修、詢問或通知房東</div>
+
+              <div>
+                <div class="quick-title">
+                  回報付款
+                </div>
+                <div class="quick-desc">
+                  填寫匯款後五碼與付款日期
+                </div>
+              </div>
             </button>
 
-            <button class="quick-action" onclick="goTenantContract()">
-              <div class="quick-icon">
+            <button
+              class="quick-button"
+              type="button"
+              onclick="goPage('tenant-contract.html')"
+            >
+              <div class="quick-icon purple">
                 <svg viewBox="0 0 24 24">
-                  <path d="M7 4.5h10v15H7z"></path>
-                  <path d="M9.5 8h5"></path>
-                  <path d="M9.5 11.5h5"></path>
-                  <path d="M9.5 15h3"></path>
+                  <path d="M6 3.5h9l3 3V20H6z"></path>
+                  <path d="M15 3.5V7h3"></path>
+                  <path d="M9 11h6"></path>
+                  <path d="M9 15h6"></path>
                 </svg>
               </div>
-              <div class="quick-title">查合約</div>
-              <div class="quick-desc">查看租期、租金與合約資訊</div>
+
+              <div>
+                <div class="quick-title">
+                  我的合約
+                </div>
+                <div class="quick-desc">
+                  查看合約、續約及解約進度
+                </div>
+              </div>
+            </button>
+
+            <button
+              class="quick-button"
+              type="button"
+              onclick="goPage('tenant-message.html')"
+            >
+              <div class="quick-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 5.5h14v10H9l-4 3.5z"></path>
+                  <path d="M8.5 9.5h7"></path>
+                  <path d="M8.5 12.5h5"></path>
+                </svg>
+              </div>
+
+              <div>
+                <div class="quick-title">
+                  聯絡房東
+                </div>
+                <div class="quick-desc">
+                  報修、問題反映與一般聯絡
+                </div>
+              </div>
             </button>
           </div>
-        </div>
-      `;
-    }
+        </section>
 
-    function renderHome() {
-      const home = HOME_DATA || {};
-      const bills = Array.isArray(BILL_LIST) ? BILL_LIST : [];
-
-      const tenantName = safeText(home.tenant_name);
-      const roomList = safeText(home.room_list);
-      const accountStatus = safeText(home.account_status);
-      const latestBillMonth = safeText(home.latest_bill_month);
-      const latestDueDate = dateOnly(home.latest_due_date);
-      const unpaidTotal = Number(home.unpaid_total_amount || 0);
-      const unpaidCount = Number(home.unpaid_bill_count || 0);
-      const latestPaymentStatus = rawText(home.latest_payment_status);
-
-      app.className = '';
-      app.innerHTML = `
-        <div class="card">
-          <div class="title">您好，${tenantName}</div>
-          <div class="sub">房號：${roomList}</div>
-
-          <div class="row">
-            <div class="label">帳號狀態</div>
-            <div class="value">${accountStatus}</div>
-          </div>
-
-          <div class="row">
-            <div class="label">最新帳單月份</div>
-            <div class="value">${latestBillMonth}</div>
-          </div>
-
-          <div class="row">
-            <div class="label">繳款期限</div>
-            <div class="value">${safeText(latestDueDate)}</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sub">目前未繳總額</div>
-          <div class="amount">${money(unpaidTotal)}</div>
-
-          <div class="row">
-            <div class="label">未繳帳單數</div>
-            <div class="value">${unpaidCount}</div>
-          </div>
-
-          <div class="row">
-            <div class="label">最新付款狀態</div>
-            <div class="value ${statusClass(latestPaymentStatus)}">
-              ${statusText(latestPaymentStatus)}
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">
+              系統資訊
             </div>
           </div>
-        </div>
 
-        ${renderQuickActions()}
+          <div class="bill-grid">
+            <div class="info-box">
+              <div class="info-label">
+                帳號狀態
+              </div>
+              <div class="info-value">
+                ${safeHtml(
+                  home.account_status ||
+                  '-'
+                )}
+              </div>
+            </div>
 
-        <button class="btn btn-green" onclick="goPaymentReport()">
-          回報付款後 5 碼
-        </button>
-
-        <button class="btn btn-dark" onclick="initPage()">
-          重新整理
-        </button>
-
-        <div id="billSection">
-          ${renderBills(bills)}
-        </div>
-
-        <div class="small">
-          更新時間：${safeText(home.updated_at)}
-        </div>
+            <div class="info-box">
+              <div class="info-label">
+                資料更新時間
+              </div>
+              <div class="info-value">
+                ${safeHtml(
+                  home.updated_at ||
+                  '-'
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
       `;
     }
 
-    function renderBills(bills) {
-      if (!Array.isArray(bills) || bills.length === 0) {
-        return `
-          <div class="card empty">
-            目前沒有帳單資料
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">
+            房客首頁讀取失敗
           </div>
-        `;
+
+          <div class="error-text">
+            ${safeHtml(
+              message || '未知錯誤'
+            )}
+          </div>
+
+          <button
+            class="primary-button"
+            style="width:100%;margin-top:15px;"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+    }
+
+    function setRefreshLoading(
+      loading
+    ) {
+      const button =
+        document.getElementById(
+          'refreshButton'
+        );
+
+      if (!button) {
+        return;
       }
 
-      return bills.map((bill) => {
-        const paymentStatus = rawText(bill.payment_status);
-
-        return `
-          <div class="card">
-            <div class="bill-title">${safeText(bill.bill_month)} 帳單</div>
-            <div class="sub">
-              房號：${safeText(bill.room_name)}｜帳單 ID：${safeText(bill.bill_id)}
-            </div>
-
-            <div class="row">
-              <div class="label">繳款期限</div>
-              <div class="value">${safeText(dateOnly(bill.due_date))}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">租金</div>
-              <div class="value">${money(bill.rent_amount)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">管理費</div>
-              <div class="value">${money(bill.management_fee)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">上期電表度數</div>
-              <div class="value">${safeText(bill.previous_meter)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">本期電表度數</div>
-              <div class="value">${safeText(bill.current_meter_reading)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">本月用電</div>
-              <div class="value">${safeText(bill.electricity_usage)} 度</div>
-            </div>
-
-            <div class="row">
-              <div class="label">每度電費</div>
-              <div class="value">${safeText(bill.electricity_fee_rate)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">每度設備耗損費</div>
-              <div class="value">${safeText(bill.equipment_fee_rate)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">本月電費</div>
-              <div class="value">${money(bill.electricity_amount)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">本月設備耗損費</div>
-              <div class="value">${money(bill.equipment_amount)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">其他費用</div>
-              <div class="value">${money(bill.other_amount)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">折扣</div>
-              <div class="value">${money(bill.discount_amount)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">應繳總額</div>
-              <div class="value">${money(bill.total_amount)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">帳單狀態</div>
-              <div class="value">${statusText(bill.bill_status)}</div>
-            </div>
-
-            <div class="row">
-              <div class="label">付款狀態</div>
-              <div class="value ${statusClass(paymentStatus)}">
-                ${statusText(paymentStatus)}
-              </div>
-            </div>
-
-            ${
-              String(paymentStatus || '').toLowerCase() !== 'paid'
-                ? `
-                  <button class="btn btn-green" onclick="goPaymentReport()">
-                    回報此帳單付款
-                  </button>
-                `
-                : ''
-            }
-          </div>
-        `;
-      }).join('');
+      button.classList.toggle(
+        'loading',
+        Boolean(loading)
+      );
     }
 
-    // =========================================================
-    // 7. 初始化頁面
-    // =========================================================
+    async function loadPage() {
+      setRefreshLoading(true);
 
-    async function initPage() {
       try {
-        setLoading('資料載入中...');
-
-        await initLineUserId();
-
         if (!LINE_USER_ID) {
-          throw new Error('無法取得 LINE User ID');
+          const ready =
+            await initLineUserId();
+
+          if (!ready) {
+            return;
+          }
         }
 
-        const home = await callApi('tenant_home');
-        const bills = await callApi('tenant_bills');
+        const results =
+          await Promise.allSettled([
+            jsonpRequest(
+              'tenant_home',
+              {}
+            ),
+            jsonpRequest(
+              'tenant_contract_init',
+              {}
+            )
+          ]);
 
-        HOME_DATA = home || {};
-        BILL_LIST = Array.isArray(bills) ? bills : [];
+        if (
+          results[0].status !==
+          'fulfilled'
+        ) {
+          throw results[0].reason;
+        }
 
-        renderHome();
+        const home =
+          unwrapData(
+            results[0].value
+          );
+
+        let contractData = {
+          contract: null,
+          requests: [],
+          permissions: {}
+        };
+
+        if (
+          results[1].status ===
+          'fulfilled'
+        ) {
+          try {
+            contractData =
+              unwrapData(
+                results[1].value
+              );
+          } catch (error) {
+            console.warn(
+              '合約資料讀取失敗：',
+              error
+            );
+          }
+        }
+
+        renderPage(
+          home,
+          contractData
+        );
       } catch (error) {
-        showError(error.message || 'Load failed');
+        renderError(
+          error && error.message
+            ? error.message
+            : String(error)
+        );
+      } finally {
+        setRefreshLoading(false);
       }
     }
 
-    initPage();
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      function () {
+        setTimeout(
+          setAppHeight,
+          250
+        );
+      }
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
   </script>
 </body>
 </html>
