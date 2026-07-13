@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 合約申請管理</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100dvh;
+      --nav-height: 64px;
+      --primary: #06c755;
+      --primary-dark: #05a847;
+      --background: #f5f7fb;
+      --surface: #ffffff;
+      --text: #202124;
+      --muted: #72777f;
+      --border: #e6e9ee;
+      --soft: #f8f9fb;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --warning: #956400;
+      --warning-soft: #fff5d9;
+      --success: #16833f;
+      --success-soft: #eaf8ef;
+      --blue: #1a73e8;
+      --blue-soft: #eaf2ff;
+      --purple: #6f4cc3;
+      --purple-soft: #f2edff;
+      --gray-soft: #f0f2f5;
+      --shadow: 0 5px 18px rgba(0, 0, 0, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--background);
+      color: var(--text);
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      overscroll-behavior: none;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background: var(--background);
+    }
+
+    .page {
+      width: 100%;
+      height: 100%;
+      padding:
+        18px
+        16px
+        calc(var(--nav-height) + 28px + env(safe-area-inset-bottom));
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .loading,
+    .empty-state,
+    .error-card {
+      padding: 28px 18px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .page-header {
+      margin-bottom: 16px;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .page-title {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.45px;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .icon-button {
+      display: inline-flex;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: var(--surface);
+      color: #5f6368;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+    }
+
+    .icon-button svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .icon-button:active {
+      transform: translateY(1px);
+      opacity: 0.72;
+    }
+
+    .card {
+      padding: 17px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(230, 233, 238, 0.9);
+      border-radius: 17px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .landlord-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      display: flex;
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #e8f8ee;
+      color: var(--primary);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .landlord-name {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .landlord-desc {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fafbfc;
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .summary-value {
+      margin-top: 5px;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .summary-value.warning {
+      color: var(--warning);
+    }
+
+    .summary-value.blue {
+      color: var(--blue);
+    }
+
+    .summary-value.success {
+      color: var(--success);
+    }
+
+    .summary-value.purple {
+      color: var(--purple);
+    }
+
+    .toolbar-card {
+      padding: 13px;
+    }
+
+    .filter-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-button {
+      flex: 0 0 auto;
+      padding: 9px 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #ffffff;
+      color: #5f6368;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .filter-button.active {
+      border-color: var(--primary);
+      background: #eaf9f0;
+      color: var(--primary-dark);
+    }
+
+    .secondary-filter-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 11px;
+    }
+
+    .select-input,
+    .text-input,
+    .number-input,
+    .date-input,
+    .textarea-input {
+      width: 100%;
+      border: 1px solid #dfe3e8;
+      border-radius: 12px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+
+    .select-input,
+    .text-input,
+    .number-input,
+    .date-input {
+      min-height: 44px;
+      padding: 10px 12px;
+    }
+
+    .textarea-input {
+      min-height: 96px;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    .select-input:focus,
+    .text-input:focus,
+    .number-input:focus,
+    .date-input:focus,
+    .textarea-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
+    }
+
+    .select-input:disabled,
+    .text-input:disabled,
+    .number-input:disabled,
+    .date-input:disabled,
+    .textarea-input:disabled {
+      background: #f1f3f5;
+      color: #8b9097;
+    }
+
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 18px 2px 10px;
+    }
+
+    .list-title {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .list-count {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .request-card {
+      padding: 16px;
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .request-card.pending {
+      border-left: 4px solid #e0a000;
+    }
+
+    .request-card.approved {
+      border-left: 4px solid var(--blue);
+    }
+
+    .request-card.completed {
+      border-left: 4px solid var(--success);
+    }
+
+    .request-card.rejected,
+    .request-card.cancelled {
+      border-left: 4px solid #9aa0a6;
+    }
+
+    .request-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .request-title {
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+
+    .request-id {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      word-break: break-all;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .badge.pending {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .badge.approved {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .badge.completed {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .badge.rejected,
+    .badge.cancelled {
+      background: var(--gray-soft);
+      color: #62676d;
+    }
+
+    .badge.renewal {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .badge.termination {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .request-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 11px;
+    }
+
+    .mini-tag {
+      padding: 5px 8px;
+      border-radius: 8px;
+      background: #f2f4f7;
+      color: #5d6268;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .request-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .request-info {
+      min-width: 0;
+      padding: 10px 11px;
+      border: 1px solid #edf0f3;
+      border-radius: 11px;
+      background: #fafbfc;
+    }
+
+    .request-info-label {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .request-info-value {
+      margin-top: 4px;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .request-note {
+      margin-top: 11px;
+      padding: 10px 11px;
+      border-radius: 11px;
+      background: #f7f8fa;
+      color: #555b61;
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .request-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .request-actions.two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .btn {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      opacity: 0.8;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-blue {
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .btn-light {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: #4f555b;
+    }
+
+    .btn-soft-danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .error-title {
+      margin-bottom: 8px;
+      color: var(--danger);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .error-message {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .page-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    /* Modal */
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 200000;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding-top: 30px;
+      background: rgba(0, 0, 0, 0.46);
+    }
+
+    .modal-mask.show {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 560px;
+      max-height: calc(var(--app-height) - 22px);
+      padding: 9px 16px calc(18px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      border-radius: 22px 22px 0 0;
+      background: #ffffff;
+      box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-sheet.small {
+      max-width: 420px;
+      margin: auto 16px;
+      padding: 20px 18px;
+      border-radius: 18px;
+    }
+
+    .modal-handle {
+      width: 42px;
+      height: 5px;
+      margin: 2px auto 14px;
+      border-radius: 999px;
+      background: #d8dce1;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .modal-subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .close-button {
+      display: inline-flex;
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: #f0f2f5;
+      color: #5f6368;
+      font-size: 21px;
+      cursor: pointer;
+    }
+
+    .section-title {
+      margin: 18px 0 10px;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .detail-item {
+      min-width: 0;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fafbfc;
+    }
+
+    .detail-item.full {
+      grid-column: 1 / -1;
+    }
+
+    .detail-label {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .detail-value {
+      margin-top: 4px;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .form-group {
+      margin-bottom: 13px;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .required {
+      color: var(--danger);
+    }
+
+    .form-hint {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .choice-card {
+      position: relative;
+      display: block;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    .choice-card input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .choice-card.selected {
+      border-color: var(--primary);
+      background: #ebf9f1;
+      box-shadow: 0 0 0 2px rgba(6, 199, 85, 0.1);
+    }
+
+    .choice-title {
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .choice-desc {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .notice-box {
+      padding: 12px 13px;
+      margin-bottom: 13px;
+      border: 1px solid #dce6ff;
+      border-radius: 12px;
+      background: #f5f8ff;
+      color: #48627f;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .notice-box.warning {
+      border-color: #f1d99a;
+      background: var(--warning-soft);
+      color: #7a5600;
+    }
+
+    .notice-box.danger {
+      border-color: #f3cbc7;
+      background: var(--danger-soft);
+      color: #9f3027;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 18px;
+    }
+
+    .modal-actions.two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .alert-title {
+      margin-bottom: 9px;
+      font-size: 19px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .alert-message {
+      margin-bottom: 17px;
+      color: #555b61;
+      font-size: 13px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+      text-align: center;
+    }
+
+    /* 底部導覽 */
+    .bottom-nav {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 100000;
+      padding-bottom: env(safe-area-inset-bottom);
+      border-top: 1px solid #eceff3;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .bottom-nav-inner {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      height: var(--nav-height);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      appearance: none;
+      -webkit-appearance: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b9098;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    @media (max-width: 390px) {
+      .request-info-grid,
+      .detail-grid,
+      .form-row,
+      .choice-grid,
+      .secondary-filter-row {
+        grid-template-columns: 1fr;
+      }
+
+      .detail-item.full {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div id="app" class="loading">合約申請資料載入中...</div>
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" onclick="goPage('landlord-home.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button class="nav-item" onclick="goPage('landlord-arrears.html')">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>欠款</span>
+        </button>
+
+        <button class="nav-item" onclick="goPage('landlord-tenants.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+          </svg>
+          <span>房客</span>
+        </button>
+
+        <button class="nav-item active" onclick="goPage('landlord-more.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <span>更多</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- 申請明細／審核 Modal -->
+  <div id="requestModal" class="modal-mask" onclick="handleMaskClick(event, 'requestModal')">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div id="requestModalContent"></div>
+    </div>
+  </div>
+
+  <!-- 確認 Modal -->
+  <div id="confirmModal" class="modal-mask" onclick="handleMaskClick(event, 'confirmModal')">
+    <div class="modal-sheet small" onclick="event.stopPropagation()">
+      <div id="confirmTitle" class="alert-title">確認操作</div>
+      <div id="confirmMessage" class="alert-message"></div>
+      <div class="modal-actions two">
+        <button class="btn btn-light" onclick="closeConfirmModal()">取消</button>
+        <button id="confirmButton" class="btn btn-primary" onclick="executeConfirmedAction()">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 一般提示 Modal -->
+  <div id="alertModal" class="modal-mask" onclick="handleMaskClick(event, 'alertModal')">
+    <div class="modal-sheet small" onclick="event.stopPropagation()">
+      <div id="alertTitle" class="alert-title">提示</div>
+      <div id="alertMessage" class="alert-message"></div>
+      <button class="btn btn-primary" style="width:100%;" onclick="closeAlertModal()">確定</button>
+    </div>
+  </div>
+
+  <script>
+    // ==================================================
+    // 基本設定
+    // ==================================================
+
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
+
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const TEST_MODE =
+      new URLSearchParams(location.search).get('test') === '1';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let ALL_REQUESTS = [];
+    let ACTIVE_REQUEST = null;
+    let ACTIVE_STATUS_FILTER = 'pending';
+    let ACTIVE_TYPE_FILTER = 'all';
+    let ACTIVE_TERM_FILTER = 'all';
+    let IS_SUBMITTING = false;
+    let CONFIRM_CALLBACK = null;
+    let ALERT_CALLBACK = null;
+
+    const app = document.getElementById('app');
+
+    // ==================================================
+    // 畫面高度
+    // ==================================================
+
+    function updateAppHeight() {
+      const height = window.visualViewport
+        ? window.visualViewport.height
+        : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.max(320, Math.round(height)) + 'px'
+      );
+    }
+
+    updateAppHeight();
+    window.addEventListener('resize', updateAppHeight);
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateAppHeight);
+    }
+
+    // ==================================================
+    // 工具函式
+    // ==================================================
+
+    function goPage(filename) {
+      const params = new URLSearchParams();
+      params.set('v', Date.now());
+
+      if (TEST_MODE) {
+        params.set('test', '1');
+      }
+
+      location.href = filename + '?' + params.toString();
+    }
+
+    function rawText(value) {
+      if (value === undefined || value === null) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function escapeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function safeText(value) {
+      const text = rawText(value).trim();
+      return text ? escapeHtml(text) : '-';
+    }
+
+    function numberValue(value, fallback) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : (fallback || 0);
+    }
+
+    function money(value) {
+      return 'NT$ ' + Math.round(numberValue(value, 0)).toLocaleString('zh-TW');
+    }
+
+    function dateFromValue(value) {
+      if (value === undefined || value === null || value === '') {
+        return null;
+      }
+
+      const raw = rawText(value).trim();
+
+      if (/^\d{5}(\.\d+)?$/.test(raw)) {
+        const serial = Number(raw);
+
+        if (serial > 20000 && serial < 100000) {
+          return new Date(Date.UTC(1899, 11, 30) + serial * 86400000);
+        }
+      }
+
+      const match = raw.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+
+      if (match) {
+        return new Date(
+          Number(match[1]),
+          Number(match[2]) - 1,
+          Number(match[3]),
+          12,
+          0,
+          0
+        );
+      }
+
+      const parsed = new Date(raw);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function dateKey(value) {
+      const date = dateFromValue(value);
+
+      if (!date) {
+        return '';
+      }
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return year + '-' + month + '-' + day;
+    }
+
+    function formatDate(value) {
+      const key = dateKey(value);
+      return key || '-';
+    }
+
+    function formatDateTime(value) {
+      const date = dateFromValue(value);
+
+      if (!date) {
+        return '-';
+      }
+
+      return new Intl.DateTimeFormat('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Taipei'
+      }).format(date);
+    }
+
+    function addDays(value, days) {
+      const date = dateFromValue(value);
+
+      if (!date) {
+        return null;
+      }
+
+      const result = new Date(date.getTime());
+      result.setDate(result.getDate() + Number(days || 0));
+      return result;
+    }
+
+    function calculateTermEndDate(startValue, termMonths) {
+      const startDate = dateFromValue(startValue);
+      const months = Math.round(numberValue(termMonths, 0));
+
+      if (!startDate || months < 1) {
+        return '';
+      }
+
+      const result = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth() + months,
+        startDate.getDate(),
+        12,
+        0,
+        0
+      );
+
+      result.setDate(result.getDate() - 1);
+      return dateKey(result);
+    }
+
+    function normalizeStatus(value) {
+      return rawText(value).trim().toLowerCase();
+    }
+
+    function statusLabel(value) {
+      const status = normalizeStatus(value);
+      const map = {
+        pending: '待審核',
+        approved: '已核准・待完成',
+        completed: '已完成',
+        rejected: '已駁回',
+        cancelled: '房客已取消'
+      };
+      return map[status] || rawText(value) || '-';
+    }
+
+    function requestTypeLabel(request) {
+      const type = normalizeStatus(request && request.request_type);
+      return type === 'renewal' ? '續約申請' : '退租／解約申請';
+    }
+
+    function terminationTypeLabel(value) {
+      const type = normalizeStatus(value);
+      const map = {
+        early_termination: '提前解約',
+        non_renewal: '到期不續約'
+      };
+      return map[type] || '-';
+    }
+
+    function penaltyStatusLabel(value) {
+      const status = normalizeStatus(value);
+      const map = {
+        pending: '待房東決定',
+        charged: '收取違約金',
+        waived: '免收違約金',
+        not_applicable: '不適用'
+      };
+      return map[status] || '-';
+    }
+
+    function firstLetter(value) {
+      const text = rawText(value).trim();
+      return text ? text.slice(0, 1) : '房';
+    }
+
+    function findRequest(requestId) {
+      return ALL_REQUESTS.find(function (request) {
+        return rawText(request.request_id) === rawText(requestId);
+      }) || null;
+    }
+
+    function detailItem(label, value, full) {
+      return `
+        <div class="detail-item ${full ? 'full' : ''}">
+          <div class="detail-label">${escapeHtml(label)}</div>
+          <div class="detail-value">${safeText(value)}</div>
+        </div>
+      `;
+    }
+
+    function handleMaskClick(event, modalId) {
+      if (event.target.id !== modalId) {
+        return;
+      }
+
+      if (modalId === 'requestModal' && !IS_SUBMITTING) {
+        closeRequestModal();
+      }
+
+      if (modalId === 'confirmModal' && !IS_SUBMITTING) {
+        closeConfirmModal();
+      }
+
+      if (modalId === 'alertModal') {
+        closeAlertModal();
+      }
+    }
+
+    // ==================================================
+    // API
+    // ==================================================
+
+    function callApi(action, params) {
+      return new Promise(function (resolve, reject) {
+        if (!LINE_USER_ID) {
+          reject(new Error('缺少房東 LINE User ID'));
+          return;
+        }
+
+        params = params || {};
+
+        const callbackName =
+          'cmwebsJsonp_' +
+          Date.now() +
+          '_' +
+          Math.floor(Math.random() * 1000000);
+
+        const script = document.createElement('script');
+        let finished = false;
+        let timer = null;
+
+        function cleanup() {
+          if (timer) {
+            clearTimeout(timer);
+          }
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (error) {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = function (json) {
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+          cleanup();
+
+          if (!json || json.success !== true) {
+            const message = json && json.message
+              ? json.message
+              : 'API 查詢失敗';
+
+            const code = json && json.code
+              ? json.code
+              : '';
+
+            const error = new Error(
+              code ? message + '\n錯誤代碼：' + code : message
+            );
+
+            error.code = code;
+            error.data = json && json.data ? json.data : null;
+            reject(error);
+            return;
+          }
+
+          resolve(json.data || {});
+        };
+
+        timer = setTimeout(function () {
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+          cleanup();
+          reject(new Error('API 載入逾時'));
+        }, 30000);
+
+        let url =
+          API_URL +
+          '?v2_action=' + encodeURIComponent(action) +
+          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+
+        Object.keys(params).forEach(function (key) {
+          const value = params[key];
+
+          if (value === undefined || value === null) {
+            return;
+          }
+
+          url +=
+            '&' + encodeURIComponent(key) +
+            '=' + encodeURIComponent(value);
+        });
+
+        script.charset = 'UTF-8';
+        script.onerror = function () {
+          console.warn('JSONP script onerror ignored.');
+        };
+        script.src = url;
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initLineUserId() {
+      if (TEST_MODE) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return true;
+      }
+
+      if (typeof liff === 'undefined') {
+        throw new Error('LIFF SDK 載入失敗');
+      }
+
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: location.href });
+        return false;
+      }
+
+      const profile = await liff.getProfile();
+      LINE_USER_ID = profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error('無法取得房東 LINE User ID');
+      }
+
+      return true;
+    }
+
+    // ==================================================
+    // 主頁渲染
+    // ==================================================
+
+    function renderLoading() {
+      app.className = 'loading';
+      app.innerHTML = '合約申請資料載入中...';
+    }
+
+    function renderError(message) {
+      app.className = '';
+      app.innerHTML = `
+        <div class="error-card">
+          <div class="error-title">資料讀取失敗</div>
+          <div class="error-message">${safeText(message || '讀取失敗')}</div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="loadPage()">重新整理</button>
+            <button class="btn btn-light" onclick="goPage('landlord-more.html')">返回更多</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function setStatusFilter(status) {
+      ACTIVE_STATUS_FILTER = status;
+      renderPage(PAGE_DATA);
+    }
+
+    function setTypeFilter(value) {
+      ACTIVE_TYPE_FILTER = value;
+      renderRequestList();
+    }
+
+    function setTerminationFilter(value) {
+      ACTIVE_TERM_FILTER = value;
+      renderRequestList();
+    }
+
+    function filterRequests() {
+      return ALL_REQUESTS.filter(function (request) {
+        const status = normalizeStatus(request.status);
+        const type = normalizeStatus(request.request_type);
+        const terminationType = normalizeStatus(request.termination_type);
+
+        let statusMatched = true;
+
+        if (ACTIVE_STATUS_FILTER === 'closed') {
+          statusMatched = ['completed', 'rejected', 'cancelled'].indexOf(status) !== -1;
+        } else if (ACTIVE_STATUS_FILTER !== 'all') {
+          statusMatched = status === ACTIVE_STATUS_FILTER;
+        }
+
+        const typeMatched =
+          ACTIVE_TYPE_FILTER === 'all' || type === ACTIVE_TYPE_FILTER;
+
+        const terminationMatched =
+          ACTIVE_TERM_FILTER === 'all' ||
+          (type === 'termination' && terminationType === ACTIVE_TERM_FILTER);
+
+        return statusMatched && typeMatched && terminationMatched;
+      });
+    }
+
+    function renderPage(data) {
+      PAGE_DATA = data || {};
+      ALL_REQUESTS = Array.isArray(PAGE_DATA.requests)
+        ? PAGE_DATA.requests
+        : [];
+
+      const landlord = PAGE_DATA.landlord || {};
+      const summary = PAGE_DATA.summary || {};
+
+      app.className = '';
+      app.innerHTML = `
+        <div class="page-header">
+          <div class="header-row">
+            <div>
+              <h1 class="page-title">合約申請管理</h1>
+              <div class="page-subtitle">
+                審核房客續約、提前解約與到期不續約申請。
+              </div>
+            </div>
+            <button class="icon-button" onclick="loadPage()" aria-label="重新整理">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 11a8 8 0 1 0-2.34 5.66"></path>
+                <path d="M20 5v6h-6"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <section class="card">
+          <div class="landlord-row">
+            <div class="avatar">${escapeHtml(firstLetter(landlord.landlord_name))}</div>
+            <div>
+              <div class="landlord-name">${safeText(landlord.landlord_name || '房東')}</div>
+              <div class="landlord-desc">
+                房東編號：${safeText(landlord.landlord_id)} ・ 共 ${numberValue(summary.total_count, ALL_REQUESTS.length)} 筆申請
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="summary-grid">
+            <div class="summary-item">
+              <div class="summary-label">待審核</div>
+              <div class="summary-value warning">${numberValue(summary.pending_count, 0)}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">已核准待完成</div>
+              <div class="summary-value blue">${numberValue(summary.approved_count, 0)}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">續約申請</div>
+              <div class="summary-value purple">${numberValue(summary.renewal_count, 0)}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">已完成</div>
+              <div class="summary-value success">${numberValue(summary.completed_count, 0)}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card toolbar-card">
+          <div class="filter-scroll">
+            ${renderFilterButton('pending', '待審核', summary.pending_count)}
+            ${renderFilterButton('approved', '待完成', summary.approved_count)}
+            ${renderFilterButton('all', '全部', summary.total_count)}
+            ${renderFilterButton('closed', '已結案',
+              numberValue(summary.completed_count, 0) +
+              numberValue(summary.rejected_count, 0) +
+              numberValue(summary.cancelled_count, 0)
+            )}
+          </div>
+
+          <div class="secondary-filter-row">
+            <select class="select-input" onchange="setTypeFilter(this.value)">
+              <option value="all" ${ACTIVE_TYPE_FILTER === 'all' ? 'selected' : ''}>全部申請類型</option>
+              <option value="renewal" ${ACTIVE_TYPE_FILTER === 'renewal' ? 'selected' : ''}>續約申請</option>
+              <option value="termination" ${ACTIVE_TYPE_FILTER === 'termination' ? 'selected' : ''}>退租／解約</option>
+            </select>
+
+            <select class="select-input" onchange="setTerminationFilter(this.value)">
+              <option value="all" ${ACTIVE_TERM_FILTER === 'all' ? 'selected' : ''}>全部退租類型</option>
+              <option value="early_termination" ${ACTIVE_TERM_FILTER === 'early_termination' ? 'selected' : ''}>提前解約</option>
+              <option value="non_renewal" ${ACTIVE_TERM_FILTER === 'non_renewal' ? 'selected' : ''}>到期不續約</option>
+            </select>
+          </div>
+        </section>
+
+        <div class="list-header">
+          <div class="list-title">申請清單</div>
+          <div id="listCount" class="list-count"></div>
+        </div>
+
+        <div id="requestList"></div>
+      `;
+
+      renderRequestList();
+    }
+
+    function renderFilterButton(value, label, count) {
+      const activeClass = ACTIVE_STATUS_FILTER === value ? 'active' : '';
+
+      return `
+        <button class="filter-button ${activeClass}" onclick="setStatusFilter('${escapeHtml(value)}')">
+          ${escapeHtml(label)} ${numberValue(count, 0)}
+        </button>
+      `;
+    }
+
+    function renderRequestList() {
+      const container = document.getElementById('requestList');
+      const countElement = document.getElementById('listCount');
+
+      if (!container) {
+        return;
+      }
+
+      const requests = filterRequests();
+
+      if (countElement) {
+        countElement.textContent = '顯示 ' + requests.length + ' 筆';
+      }
+
+      if (!requests.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            目前篩選條件下沒有合約申請。
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = requests.map(renderRequestCard).join('');
+    }
+
+    function renderRequestCard(request) {
+      const status = normalizeStatus(request.status);
+      const type = normalizeStatus(request.request_type);
+      const typeClass = type === 'renewal' ? 'renewal' : 'termination';
+      const tenantRoom = [request.tenant_name, request.room_name]
+        .filter(Boolean)
+        .join('・');
+
+      let infoHtml = '';
+
+      if (type === 'renewal') {
+        infoHtml = `
+          <div class="request-info">
+            <div class="request-info-label">希望續約期間</div>
+            <div class="request-info-value">${numberValue(request.requested_term_months, 0)} 個月</div>
+          </div>
+          <div class="request-info">
+            <div class="request-info-label">希望新租金</div>
+            <div class="request-info-value">${money(request.requested_rent_amount)}</div>
+          </div>
+          <div class="request-info">
+            <div class="request-info-label">新租期</div>
+            <div class="request-info-value">${formatDate(request.requested_start_date)} ～ ${formatDate(request.preferred_end_date)}</div>
+          </div>
+          <div class="request-info">
+            <div class="request-info-label">希望管理費</div>
+            <div class="request-info-value">${money(request.requested_management_fee)}</div>
+          </div>
+        `;
+      } else {
+        infoHtml = `
+          <div class="request-info">
+            <div class="request-info-label">退租類型</div>
+            <div class="request-info-value">${terminationTypeLabel(request.termination_type)}</div>
+          </div>
+          <div class="request-info">
+            <div class="request-info-label">預計退租日</div>
+            <div class="request-info-value">${formatDate(request.move_out_date)}</div>
+          </div>
+          <div class="request-info">
+            <div class="request-info-label">目前合約到期</div>
+            <div class="request-info-value">${formatDate(request.current_end_date)}</div>
+          </div>
+          <div class="request-info">
+            <div class="request-info-label">違約金狀態</div>
+            <div class="request-info-value">${penaltyStatusLabel(request.penalty_status)}</div>
+          </div>
+        `;
+      }
+
+      let actionsHtml = `
+        <div class="request-actions">
+          <button class="btn btn-light" onclick="openRequestModal('${escapeHtml(request.request_id)}')">查看明細</button>
+        </div>
+      `;
+
+      if (status === 'pending') {
+        actionsHtml = `
+          <div class="request-actions two">
+            <button class="btn btn-light" onclick="openRequestModal('${escapeHtml(request.request_id)}')">查看明細</button>
+            <button class="btn btn-primary" onclick="openRequestModal('${escapeHtml(request.request_id)}', true)">開始審核</button>
+          </div>
+        `;
+      }
+
+      if (status === 'approved') {
+        actionsHtml = `
+          <div class="request-actions two">
+            <button class="btn btn-light" onclick="openRequestModal('${escapeHtml(request.request_id)}')">核准內容</button>
+            <button class="btn btn-blue" onclick="requestComplete('${escapeHtml(request.request_id)}')">標記完成</button>
+          </div>
+        `;
+      }
+
+      return `
+        <article class="request-card ${escapeHtml(status)}">
+          <div class="request-top">
+            <div>
+              <div class="request-title">${safeText(tenantRoom || '房客申請')}</div>
+              <div class="request-id">${safeText(request.request_id)}</div>
+            </div>
+            <span class="badge ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>
+          </div>
+
+          <div class="request-meta-row">
+            <span class="badge ${typeClass}">${escapeHtml(requestTypeLabel(request))}</span>
+            <span class="mini-tag">申請日 ${formatDate(request.requested_date || request.created_at)}</span>
+            <span class="mini-tag">合約 ${safeText(request.contract_id)}</span>
+          </div>
+
+          <div class="request-info-grid">
+            ${infoHtml}
+          </div>
+
+          ${request.reason ? `
+            <div class="request-note">申請原因：${safeText(request.reason)}</div>
+          ` : ''}
+
+          ${actionsHtml}
+        </article>
+      `;
+    }
+
+    // ==================================================
+    // 明細與審核 Modal
+    // ==================================================
+
+    function openRequestModal(requestId, focusReview) {
+      const request = findRequest(requestId);
+
+      if (!request) {
+        showAlert('找不到申請', '申請資料可能已更新，請重新整理。');
+        return;
+      }
+
+      ACTIVE_REQUEST = request;
+
+      const content = document.getElementById('requestModalContent');
+      content.innerHTML = renderRequestModalContent(request);
+
+      document.getElementById('requestModal').classList.add('show');
+      document.body.classList.add('modal-open');
+
+      if (normalizeStatus(request.status) === 'pending') {
+        initializeReviewForm(request);
+      }
+
+      if (focusReview) {
+        setTimeout(function () {
+          const reviewSection = document.getElementById('reviewSection');
+
+          if (reviewSection) {
+            reviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 80);
+      }
+    }
+
+    function closeRequestModal(force) {
+      if (IS_SUBMITTING && !force) {
+        return;
+      }
+
+      document.getElementById('requestModal').classList.remove('show');
+      document.body.classList.remove('modal-open');
+      ACTIVE_REQUEST = null;
+    }
+
+    function renderRequestModalContent(request) {
+      const status = normalizeStatus(request.status);
+      const type = normalizeStatus(request.request_type);
+
+      let requestDetails = '';
+      let approvedDetails = '';
+      let reviewForm = '';
+      let footerActions = '';
+
+      if (type === 'renewal') {
+        requestDetails = `
+          <div class="detail-grid">
+            ${detailItem('目前合約期間', formatDate(request.current_start_date) + ' ～ ' + formatDate(request.current_end_date), true)}
+            ${detailItem('目前租金', money(request.current_rent_amount), false)}
+            ${detailItem('目前管理費', money(request.current_management_fee), false)}
+            ${detailItem('希望新租期', formatDate(request.requested_start_date) + ' ～ ' + formatDate(request.preferred_end_date), true)}
+            ${detailItem('希望續約期間', numberValue(request.requested_term_months, 0) + ' 個月', false)}
+            ${detailItem('希望新租金', money(request.requested_rent_amount), false)}
+            ${detailItem('希望新管理費', money(request.requested_management_fee), false)}
+          </div>
+        `;
+
+        if (status === 'approved' || status === 'completed') {
+          approvedDetails = `
+            <div class="section-title">房東核准條件</div>
+            <div class="detail-grid">
+              ${detailItem('核准新租期', formatDate(request.approved_start_date) + ' ～ ' + formatDate(request.approved_end_date), true)}
+              ${detailItem('核准期間', numberValue(request.approved_term_months, 0) + ' 個月', false)}
+              ${detailItem('核准租金', money(request.approved_rent_amount), false)}
+              ${detailItem('核准管理費', money(request.approved_management_fee), false)}
+            </div>
+          `;
+        }
+
+        if (status === 'pending') {
+          reviewForm = renderRenewalReviewForm(request);
+        }
+      } else {
+        requestDetails = `
+          <div class="detail-grid">
+            ${detailItem('退租類型', terminationTypeLabel(request.termination_type), false)}
+            ${detailItem('申請退租日', formatDate(request.move_out_date), false)}
+            ${detailItem('目前合約期間', formatDate(request.current_start_date) + ' ～ ' + formatDate(request.current_end_date), true)}
+            ${detailItem('目前租金', money(request.current_rent_amount), false)}
+            ${detailItem('目前管理費', money(request.current_management_fee), false)}
+          </div>
+        `;
+
+        if (status === 'approved' || status === 'completed') {
+          approvedDetails = `
+            <div class="section-title">房東核准條件</div>
+            <div class="detail-grid">
+              ${detailItem('核准退租日', formatDate(request.approved_move_out_date), false)}
+              ${detailItem('違約金處理', penaltyStatusLabel(request.penalty_status), false)}
+              ${detailItem('違約金金額', money(request.penalty_amount), false)}
+              ${detailItem('違約金說明', request.penalty_note || '-', true)}
+            </div>
+          `;
+        }
+
+        if (status === 'pending') {
+          reviewForm = renderTerminationReviewForm(request);
+        }
+      }
+
+      if (status === 'pending') {
+        footerActions = `
+          <div class="modal-actions two">
+            <button class="btn btn-soft-danger" onclick="rejectActiveRequest()">駁回申請</button>
+            <button id="approveButton" class="btn btn-primary" onclick="approveActiveRequest()">核准申請</button>
+          </div>
+        `;
+      } else if (status === 'approved') {
+        footerActions = `
+          <div class="modal-actions two">
+            <button class="btn btn-light" onclick="closeRequestModal()">關閉</button>
+            <button class="btn btn-blue" onclick="requestComplete('${escapeHtml(request.request_id)}')">標記完成</button>
+          </div>
+        `;
+      } else {
+        footerActions = `
+          <div class="modal-actions">
+            <button class="btn btn-light" onclick="closeRequestModal()">關閉</button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">${escapeHtml(requestTypeLabel(request))}</div>
+            <div class="modal-subtitle">
+              ${safeText(request.tenant_name)}・${safeText(request.room_name)}<br>
+              ${safeText(request.request_id)}
+            </div>
+          </div>
+          <button class="close-button" onclick="closeRequestModal()" aria-label="關閉">×</button>
+        </div>
+
+        <div class="request-meta-row" style="margin-top:0; margin-bottom:12px;">
+          <span class="badge ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>
+          <span class="mini-tag">建立 ${formatDateTime(request.created_at)}</span>
+        </div>
+
+        <div class="section-title">申請內容</div>
+        ${requestDetails}
+
+        <div class="section-title">房客說明</div>
+        <div class="detail-grid">
+          ${detailItem('申請原因', request.reason || '-', true)}
+          ${detailItem('補充說明', request.note || '-', true)}
+        </div>
+
+        ${approvedDetails}
+
+        ${request.landlord_note ? `
+          <div class="section-title">房東備註</div>
+          <div class="notice-box">${safeText(request.landlord_note)}</div>
+        ` : ''}
+
+        ${status === 'rejected' ? `
+          <div class="notice-box danger">此申請已駁回。</div>
+        ` : ''}
+
+        ${status === 'cancelled' ? `
+          <div class="notice-box warning">房客已取消此申請。</div>
+        ` : ''}
+
+        ${status === 'completed' ? `
+          <div class="notice-box">
+            已完成並套用至正式合約。正式合約編號：${safeText(request.applied_contract_id || request.contract_id)}
+          </div>
+        ` : ''}
+
+        ${reviewForm}
+        ${footerActions}
+      `;
+    }
+
+    function renderRenewalReviewForm(request) {
+      return `
+        <div id="reviewSection">
+          <div class="section-title">核准續約條件</div>
+          <div class="notice-box">
+            可依協議調整租金、管理費與租期。按「核准」只保存條件；完成簽約後再按「標記完成」，才會正式更新合約。
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="approvedStartDate">新租期起日 <span class="required">*</span></label>
+              <input id="approvedStartDate" class="date-input" type="date" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="approvedTermMonths">續約月數 <span class="required">*</span></label>
+              <input id="approvedTermMonths" class="number-input" type="number" min="1" max="36" step="1" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="approvedEndDate">新租期到期日 <span class="required">*</span></label>
+            <input id="approvedEndDate" class="date-input" type="date" />
+            <div class="form-hint">調整起日或月數時會自動重新計算，仍可手動修改。</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="approvedRentAmount">核准月租金 <span class="required">*</span></label>
+              <input id="approvedRentAmount" class="number-input" type="number" min="1" step="1" inputmode="numeric" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="approvedManagementFee">核准管理費 <span class="required">*</span></label>
+              <input id="approvedManagementFee" class="number-input" type="number" min="0" step="1" inputmode="numeric" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="renewalLandlordNote">房東備註</label>
+            <textarea id="renewalLandlordNote" class="textarea-input" maxlength="500" placeholder="例如：已與房客確認新租金及續約期間"></textarea>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTerminationReviewForm(request) {
+      const terminationType = normalizeStatus(request.termination_type);
+      const isEarly = terminationType === 'early_termination';
+
+      return `
+        <div id="reviewSection">
+          <div class="section-title">核准退租條件</div>
+
+          ${isEarly ? `
+            <div class="notice-box warning">
+              此申請屬於提前解約。核准時必須決定是否收取違約金。
+            </div>
+          ` : `
+            <div class="notice-box">
+              此申請為合約到期不續約，退租日固定為目前合約到期日，違約金不適用。
+            </div>
+          `}
+
+          <div class="form-group">
+            <label class="form-label" for="approvedMoveOutDate">核准退租日 <span class="required">*</span></label>
+            <input id="approvedMoveOutDate" class="date-input" type="date" ${isEarly ? '' : 'disabled'} />
+          </div>
+
+          ${isEarly ? `
+            <div class="form-group">
+              <div class="form-label">違約金處理 <span class="required">*</span></div>
+              <div class="choice-grid">
+                <label id="penaltyChargedChoice" class="choice-card" onclick="selectPenaltyStatus('charged')">
+                  <input type="radio" name="penaltyStatus" value="charged" />
+                  <div class="choice-title">收取違約金</div>
+                  <div class="choice-desc">輸入實際收取金額與說明。</div>
+                </label>
+                <label id="penaltyWaivedChoice" class="choice-card" onclick="selectPenaltyStatus('waived')">
+                  <input type="radio" name="penaltyStatus" value="waived" />
+                  <div class="choice-title">免收違約金</div>
+                  <div class="choice-desc">違約金金額自動設為 0。</div>
+                </label>
+              </div>
+            </div>
+
+            <div id="penaltyAmountGroup" class="form-group" style="display:none;">
+              <label class="form-label" for="penaltyAmount">違約金金額 <span class="required">*</span></label>
+              <input id="penaltyAmount" class="number-input" type="number" min="1" step="1" inputmode="numeric" />
+              <div class="form-hint">可依租約約定填入一個月租金或其他協議金額。</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="penaltyNote">違約金說明</label>
+              <textarea id="penaltyNote" class="textarea-input" maxlength="500" placeholder="例如：依租約第 10 條收取一個月租金"></textarea>
+            </div>
+          ` : ''}
+
+          <div class="form-group">
+            <label class="form-label" for="terminationLandlordNote">房東備註</label>
+            <textarea id="terminationLandlordNote" class="textarea-input" maxlength="500" placeholder="例如：退租點交前請結清水電與租金"></textarea>
+          </div>
+        </div>
+      `;
+    }
+
+    function initializeReviewForm(request) {
+      const type = normalizeStatus(request.request_type);
+
+      if (type === 'renewal') {
+        const startInput = document.getElementById('approvedStartDate');
+        const termInput = document.getElementById('approvedTermMonths');
+        const endInput = document.getElementById('approvedEndDate');
+        const rentInput = document.getElementById('approvedRentAmount');
+        const managementInput = document.getElementById('approvedManagementFee');
+
+        const defaultStart =
+          dateKey(request.requested_start_date) ||
+          dateKey(addDays(request.current_end_date, 1));
+
+        const defaultTerm = numberValue(request.requested_term_months, 12);
+        const defaultEnd =
+          dateKey(request.preferred_end_date) ||
+          calculateTermEndDate(defaultStart, defaultTerm);
+
+        startInput.value = defaultStart;
+        termInput.value = defaultTerm;
+        endInput.value = defaultEnd;
+        rentInput.value = numberValue(
+          request.requested_rent_amount,
+          numberValue(request.current_rent_amount, 0)
+        );
+        managementInput.value = numberValue(
+          request.requested_management_fee,
+          numberValue(request.current_management_fee, 0)
+        );
+
+        function recalculateEndDate() {
+          const calculated = calculateTermEndDate(startInput.value, termInput.value);
+
+          if (calculated) {
+            endInput.value = calculated;
+          }
+        }
+
+        startInput.addEventListener('change', recalculateEndDate);
+        termInput.addEventListener('input', recalculateEndDate);
+        return;
+      }
+
+      const moveOutInput = document.getElementById('approvedMoveOutDate');
+
+      if (moveOutInput) {
+        moveOutInput.value =
+          dateKey(request.termination_type === 'non_renewal'
+            ? request.current_end_date
+            : request.move_out_date);
+
+        if (normalizeStatus(request.termination_type) === 'early_termination') {
+          const currentEndKey = dateKey(request.current_end_date);
+
+          if (currentEndKey) {
+            const endDate = addDays(currentEndKey, -1);
+            moveOutInput.max = dateKey(endDate);
+          }
+        }
+      }
+    }
+
+    function selectPenaltyStatus(status) {
+      const chargedChoice = document.getElementById('penaltyChargedChoice');
+      const waivedChoice = document.getElementById('penaltyWaivedChoice');
+      const amountGroup = document.getElementById('penaltyAmountGroup');
+      const amountInput = document.getElementById('penaltyAmount');
+
+      if (!chargedChoice || !waivedChoice || !amountGroup) {
+        return;
+      }
+
+      const charged = status === 'charged';
+      chargedChoice.classList.toggle('selected', charged);
+      waivedChoice.classList.toggle('selected', !charged);
+      chargedChoice.querySelector('input').checked = charged;
+      waivedChoice.querySelector('input').checked = !charged;
+      amountGroup.style.display = charged ? 'block' : 'none';
+
+      if (!charged && amountInput) {
+        amountInput.value = '0';
+      }
+
+      if (charged && amountInput && !numberValue(amountInput.value, 0)) {
+        amountInput.value = Math.max(1, Math.round(numberValue(ACTIVE_REQUEST.current_rent_amount, 0)));
+      }
+    }
+
+    function collectApprovalData() {
+      if (!ACTIVE_REQUEST) {
+        throw new Error('找不到目前申請資料');
+      }
+
+      const type = normalizeStatus(ACTIVE_REQUEST.request_type);
+
+      if (type === 'renewal') {
+        const startDate = document.getElementById('approvedStartDate').value;
+        const termMonths = Math.round(numberValue(document.getElementById('approvedTermMonths').value, 0));
+        const endDate = document.getElementById('approvedEndDate').value;
+        const rentAmount = Math.round(numberValue(document.getElementById('approvedRentAmount').value, 0));
+        const managementFee = Math.round(numberValue(document.getElementById('approvedManagementFee').value, -1));
+        const landlordNote = document.getElementById('renewalLandlordNote').value.trim();
+
+        if (!startDate) {
+          throw new Error('請填寫新租期起日');
+        }
+
+        if (termMonths < 1 || termMonths > 36) {
+          throw new Error('續約月數必須為 1 至 36 個月');
+        }
+
+        if (!endDate) {
+          throw new Error('請填寫新租期到期日');
+        }
+
+        if (rentAmount <= 0) {
+          throw new Error('核准租金必須大於 0');
+        }
+
+        if (managementFee < 0) {
+          throw new Error('核准管理費不可小於 0');
+        }
+
+        return {
+          params: {
+            status: 'approved',
+            landlord_note: landlordNote,
+            approved_start_date: startDate,
+            approved_term_months: termMonths,
+            approved_rent_amount: rentAmount,
+            approved_management_fee: managementFee,
+            approved_end_date: endDate
+          },
+          summary:
+            '新租期：' + startDate + ' ～ ' + endDate + '\n' +
+            '續約期間：' + termMonths + ' 個月\n' +
+            '月租金：' + money(rentAmount) + '\n' +
+            '管理費：' + money(managementFee)
+        };
+      }
+
+      const moveOutDate = document.getElementById('approvedMoveOutDate').value;
+      const landlordNote = document.getElementById('terminationLandlordNote').value.trim();
+      const terminationType = normalizeStatus(ACTIVE_REQUEST.termination_type);
+
+      if (!moveOutDate) {
+        throw new Error('請填寫核准退租日期');
+      }
+
+      if (terminationType === 'non_renewal') {
+        return {
+          params: {
+            status: 'approved',
+            landlord_note: landlordNote,
+            approved_move_out_date: moveOutDate,
+            penalty_status: 'not_applicable',
+            penalty_amount: 0,
+            penalty_note: ''
+          },
+          summary:
+            '退租類型：到期不續約\n' +
+            '核准退租日：' + moveOutDate + '\n' +
+            '違約金：不適用'
+        };
+      }
+
+      const selected = document.querySelector('input[name="penaltyStatus"]:checked');
+      const penaltyStatus = selected ? selected.value : '';
+      const penaltyAmount = Math.round(numberValue(
+        document.getElementById('penaltyAmount')
+          ? document.getElementById('penaltyAmount').value
+          : 0,
+        0
+      ));
+      const penaltyNote = document.getElementById('penaltyNote').value.trim();
+
+      if (['charged', 'waived'].indexOf(penaltyStatus) === -1) {
+        throw new Error('請選擇收取或免收違約金');
+      }
+
+      if (penaltyStatus === 'charged' && penaltyAmount <= 0) {
+        throw new Error('收取違約金時，金額必須大於 0');
+      }
+
+      return {
+        params: {
+          status: 'approved',
+          landlord_note: landlordNote,
+          approved_move_out_date: moveOutDate,
+          penalty_status: penaltyStatus,
+          penalty_amount: penaltyStatus === 'charged' ? penaltyAmount : 0,
+          penalty_note: penaltyNote
+        },
+        summary:
+          '退租類型：提前解約\n' +
+          '核准退租日：' + moveOutDate + '\n' +
+          '違約金處理：' + penaltyStatusLabel(penaltyStatus) + '\n' +
+          '違約金金額：' + money(penaltyStatus === 'charged' ? penaltyAmount : 0)
+      };
+    }
+
+    function approveActiveRequest() {
+      try {
+        const approval = collectApprovalData();
+
+        showConfirm(
+          '確認核准申請',
+          approval.summary + '\n\n核准後仍需在簽約或退租程序完成時按「標記完成」。',
+          '核准申請',
+          'primary',
+          function () {
+            return submitRequestUpdate(
+              ACTIVE_REQUEST.request_id,
+              approval.params
+            );
+          }
+        );
+      } catch (error) {
+        showAlert('資料未完成', error.message || String(error));
+      }
+    }
+
+    function rejectActiveRequest() {
+      if (!ACTIVE_REQUEST) {
+        return;
+      }
+
+      const reason = window.prompt('請輸入駁回原因：', '');
+
+      if (reason === null) {
+        return;
+      }
+
+      const trimmed = reason.trim();
+
+      if (!trimmed) {
+        showAlert('需要駁回原因', '駁回申請時必須填寫原因。');
+        return;
+      }
+
+      showConfirm(
+        '確認駁回申請',
+        '房客：' + rawText(ACTIVE_REQUEST.tenant_name) + '\n' +
+        '申請：' + requestTypeLabel(ACTIVE_REQUEST) + '\n\n' +
+        '駁回原因：' + trimmed,
+        '確認駁回',
+        'danger',
+        function () {
+          return submitRequestUpdate(
+            ACTIVE_REQUEST.request_id,
+            {
+              status: 'rejected',
+              landlord_note: trimmed
+            }
+          );
+        }
+      );
+    }
+
+    function requestComplete(requestId) {
+      const request = findRequest(requestId);
+
+      if (!request) {
+        showAlert('找不到申請', '申請資料可能已更新，請重新整理。');
+        return;
+      }
+
+      const type = normalizeStatus(request.request_type);
+      let details = '';
+
+      if (type === 'renewal') {
+        details =
+          '正式更新合約到期日為：' + formatDate(request.approved_end_date) + '\n' +
+          '正式月租金：' + money(request.approved_rent_amount) + '\n' +
+          '正式管理費：' + money(request.approved_management_fee);
+      } else {
+        details =
+          '正式退租日：' + formatDate(request.approved_move_out_date) + '\n' +
+          '違約金處理：' + penaltyStatusLabel(request.penalty_status) + '\n' +
+          '違約金金額：' + money(request.penalty_amount);
+      }
+
+      showConfirm(
+        '確認標記完成',
+        '此動作會正式更新 V2_contracts，完成後不可再修改本申請。\n\n' + details,
+        '確認完成',
+        'blue',
+        function () {
+          return submitRequestUpdate(
+            request.request_id,
+            {
+              status: 'completed',
+              landlord_note: request.landlord_note || ''
+            }
+          );
+        }
+      );
+    }
+
+    async function submitRequestUpdate(requestId, params) {
+      if (IS_SUBMITTING) {
+        return;
+      }
+
+      IS_SUBMITTING = true;
+      setSubmitButtonsDisabled(true);
+
+      try {
+        const payload = Object.assign({}, params, {
+          request_id: requestId
+        });
+
+        await callApi('landlord_contract_request_update', payload);
+
+        closeConfirmModal(true);
+        closeRequestModal(true);
+        await loadPage(false);
+
+        showAlert(
+          '操作完成',
+          normalizeStatus(params.status) === 'approved'
+            ? '申請已核准，請在實際程序完成後再標記完成。'
+            : normalizeStatus(params.status) === 'completed'
+              ? '申請已完成，正式合約資料已更新。'
+              : '申請已駁回並通知房客。'
+        );
+      } catch (error) {
+        closeConfirmModal(true);
+        showAlert('操作失敗', error.message || String(error));
+      } finally {
+        IS_SUBMITTING = false;
+        setSubmitButtonsDisabled(false);
+      }
+    }
+
+    function setSubmitButtonsDisabled(disabled) {
+      document.querySelectorAll('.btn').forEach(function (button) {
+        if (button.closest('#alertModal')) {
+          return;
+        }
+
+        button.disabled = disabled;
+      });
+    }
+
+    // ==================================================
+    // Confirm / Alert
+    // ==================================================
+
+    function showConfirm(title, message, buttonText, buttonStyle, callback) {
+      CONFIRM_CALLBACK = typeof callback === 'function' ? callback : null;
+
+      document.getElementById('confirmTitle').textContent = title || '確認操作';
+      document.getElementById('confirmMessage').textContent = message || '';
+
+      const button = document.getElementById('confirmButton');
+      button.textContent = buttonText || '確認';
+      button.className = 'btn ' + (
+        buttonStyle === 'danger'
+          ? 'btn-danger'
+          : buttonStyle === 'blue'
+            ? 'btn-blue'
+            : 'btn-primary'
+      );
+
+      document.getElementById('confirmModal').classList.add('show');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeConfirmModal(force) {
+      if (IS_SUBMITTING && !force) {
+        return;
+      }
+
+      document.getElementById('confirmModal').classList.remove('show');
+      CONFIRM_CALLBACK = null;
+
+      if (!document.getElementById('requestModal').classList.contains('show')) {
+        document.body.classList.remove('modal-open');
+      }
+    }
+
+    async function executeConfirmedAction() {
+      if (!CONFIRM_CALLBACK || IS_SUBMITTING) {
+        return;
+      }
+
+      const callback = CONFIRM_CALLBACK;
+      await callback();
+    }
+
+    function showAlert(title, message, callback) {
+      ALERT_CALLBACK = typeof callback === 'function' ? callback : null;
+      document.getElementById('alertTitle').textContent = title || '提示';
+      document.getElementById('alertMessage').textContent = message || '';
+      document.getElementById('alertModal').classList.add('show');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeAlertModal() {
+      document.getElementById('alertModal').classList.remove('show');
+
+      const callback = ALERT_CALLBACK;
+      ALERT_CALLBACK = null;
+
+      if (!document.getElementById('requestModal').classList.contains('show') &&
+          !document.getElementById('confirmModal').classList.contains('show')) {
+        document.body.classList.remove('modal-open');
+      }
+
+      if (callback) {
+        callback();
+      }
+    }
+
+    // ==================================================
+    // 初始化
+    // ==================================================
+
+    async function loadPage(showLoading) {
+      try {
+        if (showLoading !== false) {
+          renderLoading();
+        }
+
+        const data = await callApi('landlord_contract_requests_init');
+        renderPage(data);
+      } catch (error) {
+        renderError(error.message || String(error));
+      }
+    }
+
+    async function main() {
+      try {
+        renderLoading();
+        const ready = await initLineUserId();
+
+        if (!ready) {
+          return;
+        }
+
+        await loadPage(false);
+      } catch (error) {
+        renderError(error.message || String(error));
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
