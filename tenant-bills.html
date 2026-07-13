@@ -606,8 +606,16 @@
       z-index: 1500;
       inset: 0;
       display: none;
-      align-items: flex-end;
+      align-items: stretch;
       justify-content: center;
+      padding:
+        14px
+        14px
+        calc(
+          var(--nav-height) +
+          14px +
+          env(safe-area-inset-bottom)
+        );
       background: rgba(17, 24, 39, 0.48);
     }
 
@@ -617,28 +625,28 @@
 
     .detail-sheet {
       width: 100%;
-      max-height:
-        calc(
-          var(--app-height) -
-          var(--nav-height) -
-          env(safe-area-inset-bottom) -
-          14px
-        );
+      height: 100%;
+      max-height: none;
+      overflow-x: hidden;
       overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
       padding: 17px 16px 22px;
-      border-radius: 22px 22px 0 0;
+      border-radius: 20px;
       background: #ffffff;
-      box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.17);
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.22);
       animation: sheet-in 0.2s ease forwards;
     }
 
     @keyframes sheet-in {
       from {
-        transform: translateY(18px);
+        transform: translateY(12px);
+        opacity: 0;
       }
 
       to {
         transform: translateY(0);
+        opacity: 1;
       }
     }
 
@@ -2734,9 +2742,14 @@
           ''
         );
 
-      document.getElementById(
-        'detailSheet'
-      ).innerHTML = `
+      const detailSheet =
+        document.getElementById(
+          'detailSheet'
+        );
+
+      detailSheet.scrollTop = 0;
+
+      detailSheet.innerHTML = `
         <div class="sheet-handle"></div>
 
         <div class="sheet-top">
@@ -3058,6 +3071,12 @@
 
       document.body.classList.add(
         'modal-open'
+      );
+
+      requestAnimationFrame(
+        function () {
+          detailSheet.scrollTop = 0;
+        }
       );
     }
 
