@@ -481,6 +481,208 @@
       font-size: 11px;
     }
 
+
+    .request-status-hint {
+      padding: 10px 12px;
+      margin-top: 11px;
+      border: 1px solid #e5e9ef;
+      border-radius: 11px;
+      background: #f8f9fb;
+      color: #5c626c;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.6;
+    }
+
+    .request-status-hint.pending {
+      border-color: #f5dfad;
+      background: #fff9e9;
+      color: #9a6400;
+    }
+
+    .request-status-hint.approved {
+      border-color: #cfe0ff;
+      background: #f3f7ff;
+      color: #315b9b;
+    }
+
+    .request-status-hint.completed {
+      border-color: #d5eadc;
+      background: #f2fbf5;
+      color: #237541;
+    }
+
+    .request-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .request-summary-box {
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #f8f9fb;
+    }
+
+    .request-summary-label {
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .request-summary-value {
+      color: #20242a;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .request-section {
+      padding: 12px;
+      margin-top: 11px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .request-section.approved-terms {
+      border-color: #cfe0ff;
+      background: #f6f9ff;
+    }
+
+    .request-section-title {
+      margin-bottom: 9px;
+      color: #444a53;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .price-comparison {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .price-compare-box {
+      padding: 10px 11px;
+      border: 1px solid #e5e8ed;
+      border-radius: 10px;
+      background: #ffffff;
+    }
+
+    .price-compare-title {
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .price-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 0;
+      color: #5e646d;
+      font-size: 11px;
+    }
+
+    .price-line strong {
+      color: #272b31;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .price-line.requested {
+      color: #10893e;
+      font-weight: 900;
+    }
+
+    .price-line.requested strong {
+      color: #06a94b;
+    }
+
+    .approved-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+    }
+
+    .approved-item {
+      min-width: 0;
+    }
+
+    .approved-label {
+      margin-bottom: 4px;
+      color: #6980a3;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .approved-value {
+      color: #244a83;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .penalty-box {
+      padding: 12px;
+      margin-top: 11px;
+      border: 1px solid #f2dfb6;
+      border-radius: 12px;
+      background: #fff9e9;
+    }
+
+    .penalty-box.charged {
+      border-color: #f3c9c5;
+      background: #fff4f3;
+    }
+
+    .penalty-box.waived,
+    .penalty-box.not-applicable {
+      border-color: #d8e8de;
+      background: #f3fbf6;
+    }
+
+    .penalty-title {
+      margin-bottom: 5px;
+      color: #8b5b00;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .penalty-box.charged .penalty-title {
+      color: #b33a30;
+    }
+
+    .penalty-box.waived .penalty-title,
+    .penalty-box.not-applicable .penalty-title {
+      color: #237541;
+    }
+
+    .penalty-value {
+      color: #3c3f44;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+
+    .penalty-note {
+      margin-top: 6px;
+      color: #6c6355;
+      font-size: 11px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     .request-reason,
     .landlord-note {
       padding: 12px 13px;
@@ -841,6 +1043,13 @@
     .nav-item:active {
       opacity: 0.65;
     }
+    @media (max-width: 420px) {
+      .price-comparison,
+      .approved-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -1238,6 +1447,100 @@
           : safeText(value);
     }
 
+
+    function requestStatusText(value) {
+      const status =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      const map = {
+        pending: '待房東審核',
+        approved: '已核准・待完成',
+        rejected: '已駁回',
+        cancelled: '已取消',
+        completed: '已完成'
+      };
+
+      return map[status] || statusText(value);
+    }
+
+    function requestStatusHint(status) {
+      const normalized =
+        rawText(status)
+          .trim()
+          .toLowerCase();
+
+      const map = {
+        pending: '申請已送出，正在等待房東審核。審核前仍可取消申請。',
+        approved: '房東已核准申請，目前等待雙方完成續約或退租程序。',
+        rejected: '房東未核准本次申請，請查看房東說明。',
+        cancelled: '此申請已由房客取消，不會再進入審核流程。',
+        completed: '本次申請程序已完成，正式合約資料會依完成結果更新。'
+      };
+
+      return map[normalized] || '請查看申請內容與目前處理狀態。';
+    }
+
+    function terminationTypeText(value) {
+      const type =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      const map = {
+        early_termination: '提前解約',
+        non_renewal: '到期不續約'
+      };
+
+      return map[type] || safeText(value);
+    }
+
+    function penaltyStatusText(value) {
+      const status =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      const map = {
+        pending: '待房東決定',
+        charged: '收取違約金',
+        waived: '免收違約金',
+        not_applicable: '不適用'
+      };
+
+      return map[status] || safeText(value);
+    }
+
+    function hasOptionalNumber(value) {
+      return (
+        value !== undefined &&
+        value !== null &&
+        rawText(value).trim() !== '' &&
+        isFinite(Number(value))
+      );
+    }
+
+    function optionalMoney(value) {
+      return hasOptionalNumber(value)
+        ? money(value)
+        : '-';
+    }
+
+    function requestDateRange(startDate, endDate) {
+      const start =
+        formatDateOnly(startDate);
+
+      const end =
+        formatDateOnly(endDate);
+
+      if (start === '-' && end === '-') {
+        return '-';
+      }
+
+      return start + ' ～ ' + end;
+    }
+
     function goPage(filename) {
       const testSuffix =
         TEST_MODE
@@ -1614,6 +1917,280 @@
       const isPending =
         status === 'pending';
 
+      const showApprovedTerms =
+        (
+          status === 'approved' ||
+          status === 'completed'
+        ) &&
+        type === 'renewal';
+
+      const terminationType =
+        rawText(
+          request.termination_type
+        )
+          .trim()
+          .toLowerCase();
+
+      const penaltyStatus =
+        rawText(
+          request.penalty_status
+        )
+          .trim()
+          .toLowerCase();
+
+      const requestedStartDate =
+        request.requested_start_date ||
+        request.current_end_date;
+
+      const approvedStartDate =
+        request.approved_start_date ||
+        request.requested_start_date;
+
+      const approvedEndDate =
+        request.approved_end_date ||
+        request.preferred_end_date;
+
+      const approvedMoveOutDate =
+        request.approved_move_out_date ||
+        request.move_out_date;
+
+      const renewalDetails = `
+        <div class="request-summary-grid">
+          <div class="request-summary-box">
+            <div class="request-summary-label">
+              希望續約期間
+            </div>
+            <div class="request-summary-value">
+              ${Number(
+                request.requested_term_months ||
+                0
+              )} 個月
+            </div>
+          </div>
+
+          <div class="request-summary-box">
+            <div class="request-summary-label">
+              希望新租期
+            </div>
+            <div class="request-summary-value">
+              ${requestDateRange(
+                requestedStartDate,
+                request.preferred_end_date
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div class="request-section">
+          <div class="request-section-title">
+            續約金額對照
+          </div>
+
+          <div class="price-comparison">
+            <div class="price-compare-box">
+              <div class="price-compare-title">
+                每月租金
+              </div>
+
+              <div class="price-line">
+                <span>原租金</span>
+                <strong>${money(
+                  request.current_rent_amount
+                )}</strong>
+              </div>
+
+              <div class="price-line requested">
+                <span>希望租金</span>
+                <strong>${optionalMoney(
+                  request.requested_rent_amount
+                )}</strong>
+              </div>
+            </div>
+
+            <div class="price-compare-box">
+              <div class="price-compare-title">
+                每月管理費
+              </div>
+
+              <div class="price-line">
+                <span>原管理費</span>
+                <strong>${money(
+                  request.current_management_fee
+                )}</strong>
+              </div>
+
+              <div class="price-line requested">
+                <span>希望管理費</span>
+                <strong>${optionalMoney(
+                  request.requested_management_fee
+                )}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        ${
+          showApprovedTerms
+            ? `
+              <div class="request-section approved-terms">
+                <div class="request-section-title">
+                  房東核准條件
+                </div>
+
+                <div class="approved-grid">
+                  <div class="approved-item">
+                    <div class="approved-label">
+                      核准新租期
+                    </div>
+                    <div class="approved-value">
+                      ${requestDateRange(
+                        approvedStartDate,
+                        approvedEndDate
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="approved-item">
+                    <div class="approved-label">
+                      核准月數
+                    </div>
+                    <div class="approved-value">
+                      ${Number(
+                        request.approved_term_months ||
+                        request.requested_term_months ||
+                        0
+                      )} 個月
+                    </div>
+                  </div>
+
+                  <div class="approved-item">
+                    <div class="approved-label">
+                      核准租金
+                    </div>
+                    <div class="approved-value">
+                      ${optionalMoney(
+                        request.approved_rent_amount
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="approved-item">
+                    <div class="approved-label">
+                      核准管理費
+                    </div>
+                    <div class="approved-value">
+                      ${optionalMoney(
+                        request.approved_management_fee
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+            : ''
+        }
+      `;
+
+      const penaltyClass =
+        penaltyStatus === 'charged'
+          ? 'charged'
+          : penaltyStatus === 'waived'
+            ? 'waived'
+            : penaltyStatus === 'not_applicable'
+              ? 'not-applicable'
+              : '';
+
+      const penaltyValue =
+        penaltyStatus === 'charged'
+          ? '違約金 ' + money(
+              request.penalty_amount
+            )
+          : penaltyStatusText(
+              penaltyStatus ||
+              (
+                terminationType === 'non_renewal'
+                  ? 'not_applicable'
+                  : 'pending'
+              )
+            );
+
+      const terminationDetails = `
+        <div class="request-summary-grid">
+          <div class="request-summary-box">
+            <div class="request-summary-label">
+              退租類型
+            </div>
+            <div class="request-summary-value">
+              ${terminationTypeText(
+                terminationType
+              )}
+            </div>
+          </div>
+
+          <div class="request-summary-box">
+            <div class="request-summary-label">
+              目前合約到期日
+            </div>
+            <div class="request-summary-value">
+              ${formatDateOnly(
+                request.current_end_date
+              )}
+            </div>
+          </div>
+
+          <div class="request-summary-box">
+            <div class="request-summary-label">
+              房客預計退租日
+            </div>
+            <div class="request-summary-value">
+              ${formatDateOnly(
+                request.move_out_date
+              )}
+            </div>
+          </div>
+
+          <div class="request-summary-box">
+            <div class="request-summary-label">
+              房東核准退租日
+            </div>
+            <div class="request-summary-value">
+              ${
+                status === 'approved' ||
+                status === 'completed'
+                  ? formatDateOnly(
+                      approvedMoveOutDate
+                    )
+                  : '待審核'
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="penalty-box ${escapeHtml(
+          penaltyClass
+        )}">
+          <div class="penalty-title">
+            違約金處理
+          </div>
+
+          <div class="penalty-value">
+            ${penaltyValue}
+          </div>
+
+          ${
+            request.penalty_note
+              ? `
+                <div class="penalty-note">
+                  ${safeText(
+                    request.penalty_note
+                  )}
+                </div>
+              `
+              : ''
+          }
+        </div>
+      `;
+
       return `
         <article class="request-card ${escapeHtml(type)}">
           <div class="request-head">
@@ -1630,8 +2207,12 @@
             </div>
 
             <span class="status-badge ${statusClass(status)}">
-              ${statusText(status)}
+              ${requestStatusText(status)}
             </span>
+          </div>
+
+          <div class="request-status-hint ${escapeHtml(status)}">
+            ${requestStatusHint(status)}
           </div>
 
           <div class="detail-list">
@@ -1646,50 +2227,13 @@
                 )}
               </div>
             </div>
-
-            ${
-              type === 'renewal'
-                ? `
-                  <div class="detail-row">
-                    <div class="detail-label">
-                      續約月數
-                    </div>
-
-                    <div class="detail-value">
-                      ${Number(
-                        request.requested_term_months ||
-                        0
-                      )} 個月
-                    </div>
-                  </div>
-
-                  <div class="detail-row">
-                    <div class="detail-label">
-                      希望到期日
-                    </div>
-
-                    <div class="detail-value">
-                      ${formatDateOnly(
-                        request.preferred_end_date
-                      )}
-                    </div>
-                  </div>
-                `
-                : `
-                  <div class="detail-row">
-                    <div class="detail-label">
-                      預計退租日
-                    </div>
-
-                    <div class="detail-value">
-                      ${formatDateOnly(
-                        request.move_out_date
-                      )}
-                    </div>
-                  </div>
-                `
-            }
           </div>
+
+          ${
+            type === 'renewal'
+              ? renewalDetails
+              : terminationDetails
+          }
 
           <div class="request-reason">
             <div class="box-title">
@@ -1700,6 +2244,22 @@
               request.reason
             )}
           </div>
+
+          ${
+            request.note
+              ? `
+                <div class="request-reason">
+                  <div class="box-title">
+                    房客補充說明
+                  </div>
+
+                  ${safeText(
+                    request.note
+                  )}
+                </div>
+              `
+              : ''
+          }
 
           ${
             request.landlord_note
