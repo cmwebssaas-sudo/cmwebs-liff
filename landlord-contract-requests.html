@@ -623,6 +623,36 @@
       background: rgba(0, 0, 0, 0.46);
     }
 
+    /*
+     * 審核明細保留在房東頁內顯示，底部導覽列不被遮住。
+     * requestModal 會放在 .app-shell 裡，因此使用 absolute。
+     */
+    #requestModal {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+      left: 0;
+      z-index: 90000;
+      padding-top: 12px;
+    }
+
+    #requestModal .modal-sheet {
+      max-height: calc(
+        var(--app-height) -
+        var(--nav-height) -
+        env(safe-area-inset-bottom) -
+        12px
+      );
+      padding-bottom: 20px;
+    }
+
+    /* 確認與提示視窗仍需蓋在導覽列上方。 */
+    #confirmModal,
+    #alertModal {
+      z-index: 400000;
+    }
+
     .modal-mask.show {
       display: flex;
     }
@@ -854,7 +884,7 @@
       right: 0;
       bottom: 0;
       left: 0;
-      z-index: 100000;
+      z-index: 120000;
       padding-bottom: env(safe-area-inset-bottom);
       border-top: 1px solid #eceff3;
       background: rgba(255, 255, 255, 0.98);
@@ -933,6 +963,14 @@
       <div id="app" class="loading">合約申請資料載入中...</div>
     </main>
 
+    <!-- 申請明細／審核 Modal：保留在 app-shell 內，底部導覽列持續顯示 -->
+    <div id="requestModal" class="modal-mask" onclick="handleMaskClick(event, 'requestModal')">
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <div id="requestModalContent"></div>
+      </div>
+    </div>
+
     <nav class="bottom-nav">
       <div class="bottom-nav-inner">
         <button class="nav-item" onclick="goPage('landlord-home.html')">
@@ -974,14 +1012,6 @@
         </button>
       </div>
     </nav>
-  </div>
-
-  <!-- 申請明細／審核 Modal -->
-  <div id="requestModal" class="modal-mask" onclick="handleMaskClick(event, 'requestModal')">
-    <div class="modal-sheet" onclick="event.stopPropagation()">
-      <div class="modal-handle"></div>
-      <div id="requestModalContent"></div>
-    </div>
   </div>
 
   <!-- 確認 Modal -->
