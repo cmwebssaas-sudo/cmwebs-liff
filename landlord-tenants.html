@@ -2,7 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
   <title>CMWebs 房客名單</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -10,18 +13,53 @@
   <style>
     :root {
       --app-height: 100vh;
-      --nav-height: 62px;
+      --nav-height: 64px;
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #effcf4;
+      --page-bg: #f4f6fa;
+      --card-bg: #ffffff;
+      --text-main: #171a1f;
+      --text-muted: #747b85;
+      --border: #e7ebf0;
+      --danger: #e5484d;
+      --danger-soft: #fff1f2;
+      --warning: #e69b00;
+      --warning-soft: #fff7df;
+      --blue: #246bfd;
+      --blue-soft: #eef4ff;
+      --purple: #7c3aed;
+      --purple-soft: #f4efff;
+      --shadow: 0 7px 24px rgba(30, 40, 60, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     html,
     body {
-      margin: 0;
       width: 100%;
       height: 100%;
+      margin: 0;
       overflow: hidden;
-      font-family: Arial, "Noto Sans TC", sans-serif;
-      background: #f5f7fb;
-      color: #222;
+      background: var(--page-bg);
+      color: var(--text-main);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
     }
 
     .app-shell {
@@ -30,347 +68,697 @@
       max-width: 560px;
       height: var(--app-height);
       margin: 0 auto;
-      background: #f5f7fb;
       overflow: hidden;
+      background: var(--page-bg);
     }
 
     .page {
       height: 100%;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
-      box-sizing: border-box;
+      padding:
+        16px
+        16px
+        calc(var(--nav-height) + 28px + env(safe-area-inset-bottom));
     }
 
     .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 18px;
       margin-bottom: 14px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(231, 235, 240, 0.92);
+      border-radius: 18px;
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+    }
+
+    .header-card {
+      padding: 19px;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(6, 199, 85, 0.11),
+          rgba(255, 255, 255, 0.98) 62%
+        );
+    }
+
+    .header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      margin-bottom: 5px;
+      color: var(--primary-dark);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.45px;
+    }
+
+    .page-subtitle {
+      margin-top: 7px;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .refresh-button {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #ffffff;
+      color: #626975;
+      cursor: pointer;
+    }
+
+    .refresh-button svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .refresh-button.loading svg {
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .summary-box {
+      min-width: 0;
+      padding: 12px 13px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.84);
+    }
+
+    .summary-label {
+      margin-bottom: 5px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .summary-value {
+      overflow: hidden;
+      font-size: 16px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .summary-value.green {
+      color: var(--primary-dark);
+    }
+
+    .summary-value.red {
+      color: var(--danger);
+    }
+
+    .summary-value.purple {
+      color: var(--purple);
+    }
+
+    .toolbar-card {
+      padding: 15px;
+    }
+
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      left: 13px;
+      width: 20px;
+      height: 20px;
+      transform: translateY(-50%);
+      fill: none;
+      stroke: #9aa1aa;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 46px;
+      padding: 0 42px 0 42px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      outline: none;
+      background: #fbfcfd;
+      color: var(--text-main);
+      font-size: 14px;
+    }
+
+    .search-input:focus {
+      border-color: rgba(6, 199, 85, 0.55);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.09);
+    }
+
+    .clear-search {
+      position: absolute;
+      top: 50%;
+      right: 9px;
+      width: 30px;
+      height: 30px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 999px;
+      background: #eef1f4;
+      color: #7e858f;
+      transform: translateY(-50%);
+      cursor: pointer;
+    }
+
+    .clear-search.show {
+      display: inline-flex;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-top: 12px;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .filter-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-button {
+      flex: 0 0 auto;
+      min-height: 36px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #ffffff;
+      color: #646b75;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .filter-button.active {
+      border-color: rgba(6, 199, 85, 0.24);
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 17px 2px 10px;
+    }
+
+    .list-title {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .list-count {
+      color: var(--text-muted);
+      font-size: 11px;
     }
 
     .tenant-card {
-      position: relative;
+      overflow: hidden;
+    }
+
+    .tenant-card-button {
+      width: 100%;
+      display: block;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
       cursor: pointer;
-      transition: transform 0.08s ease, opacity 0.08s ease;
     }
 
-    .tenant-card:active {
-      transform: scale(0.995);
-      opacity: 0.82;
+    .tenant-card-button:active {
+      opacity: 0.72;
     }
 
-    .card-chevron {
-      position: absolute;
-      top: 18px;
-      right: 18px;
-      color: #bbb;
-      font-size: 24px;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .detail-hint {
-      margin-top: 12px;
-      font-size: 12px;
-      color: #999;
-      text-align: right;
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .sub {
-      color: #666;
-      font-size: 13px;
-      line-height: 1.6;
-      margin-bottom: 10px;
-    }
-
-    .section-title {
-      font-size: 17px;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
-
-    .row {
+    .tenant-head {
       display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 0;
-      border-top: 1px solid #eee;
-      font-size: 14px;
       align-items: center;
+      gap: 13px;
+      padding: 16px 16px 13px;
     }
 
-    .row:first-of-type {
-      border-top: none;
+    .avatar {
+      width: 47px;
+      height: 47px;
+      flex: 0 0 47px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 19px;
+      font-weight: 900;
     }
 
-    .label {
-      color: #666;
+    .tenant-main {
+      min-width: 0;
       flex: 1;
     }
 
-    .value {
-      font-weight: 700;
-      text-align: right;
-      word-break: break-word;
+    .tenant-name-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 4px;
     }
 
     .tenant-name {
-      font-size: 18px;
-      font-weight: 800;
-      margin-bottom: 4px;
-      padding-right: 22px;
+      overflow: hidden;
+      max-width: 190px;
+      font-size: 16px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .tenant-meta {
-      color: #666;
-      font-size: 13px;
-      line-height: 1.6;
-      margin-bottom: 10px;
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.55;
     }
 
-    .amount-red {
-      color: #d93025;
+    .tenant-arrow {
+      flex: 0 0 auto;
+      color: #b4bac2;
       font-size: 22px;
-      font-weight: 800;
-      margin: 10px 0;
-    }
-
-    .amount-green {
-      color: #00a85a;
-      font-size: 22px;
-      font-weight: 800;
-      margin: 10px 0;
+      font-weight: 700;
     }
 
     .badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 23px;
       padding: 3px 8px;
       border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      margin-left: 6px;
-      vertical-align: middle;
+      background: #f0f2f5;
+      color: #6c727c;
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
     }
 
-    .badge-green {
-      background: #e8f7ee;
-      color: #10893e;
+    .badge.green {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
     }
 
-    .badge-red {
-      background: #ffe8e6;
-      color: #d93025;
+    .badge.warning {
+      background: var(--warning-soft);
+      color: #b87500;
     }
 
-    .badge-gray {
-      background: #f1f3f5;
-      color: #666;
+    .badge.danger {
+      background: var(--danger-soft);
+      color: var(--danger);
     }
 
-    .phone-link {
-      color: #06c755;
-      text-decoration: none;
-      font-weight: 800;
+    .badge.blue {
+      background: var(--blue-soft);
+      color: var(--blue);
     }
 
-    .btn {
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 14px 16px;
-      font-size: 16px;
+    .badge.purple {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .tenant-status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 0 16px 13px;
+    }
+
+    .tenant-money-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--border);
+      background: #fbfcfd;
+    }
+
+    .money-box {
+      min-width: 0;
+      padding: 12px 15px;
+    }
+
+    .money-box + .money-box {
+      border-left: 1px solid var(--border);
+    }
+
+    .money-label {
+      margin-bottom: 4px;
+      color: var(--text-muted);
+      font-size: 10px;
       font-weight: 700;
+    }
+
+    .money-value {
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .money-value.green {
+      color: var(--primary-dark);
+    }
+
+    .money-value.red {
+      color: var(--danger);
+    }
+
+    .tenant-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--border);
+    }
+
+    .tenant-action-button {
+      min-height: 42px;
+      border: 0;
+      background: #ffffff;
+      color: #5f6670;
+      font-size: 11px;
+      font-weight: 900;
       cursor: pointer;
-      margin-top: 8px;
     }
 
-    .btn-black {
-      background: #222;
-      color: #fff;
+    .tenant-action-button + .tenant-action-button {
+      border-left: 1px solid var(--border);
     }
 
-    .btn-green {
-      background: #06c755;
-      color: #fff;
+    .tenant-action-button.purple {
+      color: var(--purple);
     }
 
-    .loading,
-    .empty,
-    .error {
+    .tenant-action-button:active {
+      background: #f7f8fa;
+    }
+
+    .loading-card,
+    .error-card,
+    .empty-card {
+      padding: 30px 18px;
       text-align: center;
-      padding: 36px 20px;
-      color: #666;
+    }
+
+    .loading-spinner {
+      width: 30px;
+      height: 30px;
+      margin: 0 auto 13px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    .loading-text,
+    .error-text,
+    .empty-text {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .error-title,
+    .empty-title {
+      margin-bottom: 8px;
+      font-size: 17px;
+      font-weight: 900;
     }
 
     .error-title {
-      color: #d93025;
-      font-size: 18px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      text-align: left;
+      color: var(--danger);
     }
 
-    .error-text {
+    .primary-button {
+      width: 100%;
+      min-height: 46px;
+      margin-top: 15px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 13px;
+      background: var(--primary);
+      color: #ffffff;
       font-size: 14px;
-      line-height: 1.6;
-      text-align: left;
-      word-break: break-word;
+      font-weight: 900;
+      cursor: pointer;
     }
 
-    .small {
-      font-size: 12px;
-      color: #777;
-      line-height: 1.6;
-    }
-
-    /* ===== Fixed Bottom Navigation ===== */
     .bottom-nav {
-      position: absolute !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 99999 !important;
+      position: absolute;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-top: 1px solid #e8ecf1;
       background: rgba(255, 255, 255, 0.98);
-      border-top: 1px solid #eceff3;
       padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
     }
 
     .bottom-nav-inner {
       height: var(--nav-height);
-      margin: 0 auto;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
     }
 
     .nav-item {
-      appearance: none;
-      -webkit-appearance: none;
-      border: 0;
-      background: transparent;
-      color: #8b9098;
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1;
+      position: relative;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
       gap: 5px;
-      position: relative;
+      border: 0;
+      background: transparent;
+      color: #8b919a;
+      font-size: 11px;
+      font-weight: 700;
       cursor: pointer;
     }
 
     .nav-item svg {
       width: 23px;
       height: 23px;
+      fill: none;
       stroke: currentColor;
       stroke-width: 1.9;
-      fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
     .nav-item.active {
-      color: #06c755;
-      font-weight: 800;
+      color: var(--primary);
+      font-weight: 900;
     }
 
     .nav-item.active::after {
-      content: "";
       position: absolute;
       bottom: 5px;
       width: 18px;
       height: 3px;
       border-radius: 999px;
-      background: #06c755;
+      background: var(--primary);
+      content: "";
     }
 
-    .nav-item:active {
-      opacity: 0.65;
+    .toast {
+      position: absolute;
+      z-index: 3000;
+      right: 18px;
+      bottom: calc(var(--nav-height) + 22px + env(safe-area-inset-bottom));
+      left: 18px;
+      display: none;
+      padding: 13px 15px;
+      border-radius: 13px;
+      background: rgba(25, 28, 33, 0.94);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: center;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    @media (max-width: 390px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tenant-name {
+        max-width: 145px;
+      }
+
+      .page {
+        padding-right: 13px;
+        padding-left: 13px;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="app-shell">
-    <div class="page">
-      <div id="app" class="loading">資料載入中...</div>
-    </div>
+    <main class="page">
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">房客名單載入中...</div>
+        </section>
+      </div>
+    </main>
 
     <nav class="bottom-nav">
       <div class="bottom-nav-inner">
-        <button class="nav-item" onclick="location.href='landlord-home.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">
           <svg viewBox="0 0 24 24">
             <path d="M4 11.5L12 5l8 6.5"></path>
             <path d="M6.5 10.5V19h11v-8.5"></path>
             <path d="M9.5 19v-5h5v5"></path>
           </svg>
-          <div>首頁</div>
+          <span>首頁</span>
         </button>
 
-        <button class="nav-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')">
           <svg viewBox="0 0 24 24">
             <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
             <path d="M8.5 9h7"></path>
             <path d="M8.5 13h7"></path>
             <path d="M8.5 17h4"></path>
           </svg>
-          <div>欠款</div>
+          <span>欠款</span>
         </button>
 
-        <button class="nav-item active" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+        <button class="nav-item active" type="button" onclick="goPage('landlord-tenants.html')">
           <svg viewBox="0 0 24 24">
-            <circle cx="9" cy="8.5" r="3"></circle>
-            <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
-            <circle cx="16.5" cy="9.5" r="2.3"></circle>
-            <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
           </svg>
-          <div>房客</div>
+          <span>房客</span>
         </button>
 
-        <button class="nav-item" onclick="location.href='landlord-more.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('landlord-more.html')">
           <svg viewBox="0 0 24 24">
             <circle cx="6" cy="12" r="1.5"></circle>
             <circle cx="12" cy="12" r="1.5"></circle>
             <circle cx="18" cy="12" r="1.5"></circle>
           </svg>
-          <div>更多</div>
+          <span>更多</span>
         </button>
       </div>
     </nav>
+
+    <div id="toast" class="toast"></div>
   </div>
 
   <script>
-    function setAppHeight() {
-      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-    }
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
-    setAppHeight();
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
 
-    window.addEventListener('resize', setAppHeight);
-    window.addEventListener('orientationchange', function () {
-      setTimeout(setAppHeight, 300);
-    });
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
 
-    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
-    const LIFF_ID = '2010314940-EjX1qbb8';
-    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+    const URL_PARAMS =
+      new URLSearchParams(location.search);
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') === '1';
 
     let LINE_USER_ID = '';
-    let PAGE_DATA = null;
+    let TENANT_DATA = null;
+    let ALL_TENANTS = [];
+    let CONTRACT_REQUESTS = [];
+    let CONTRACT_SUMMARY_BY_TENANT = {};
+    let ACTIVE_FILTER = 'all';
+    let SEARCH_TEXT = '';
+    let toastTimer = null;
 
-    const app = document.getElementById('app');
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
 
-    function escapeHtml(v) {
-      return String(v)
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -378,365 +766,1131 @@
         .replace(/'/g, '&#039;');
     }
 
-    function safeText(v) {
-      if (v === undefined || v === null || v === '') return '-';
-      return escapeHtml(v);
+    function numberValue(value) {
+      return Number(value || 0) || 0;
     }
 
-    function money(n) {
-      const num = Number(n || 0);
-      return 'NT$ ' + Math.round(num).toLocaleString('zh-TW');
+    function money(value) {
+      return (
+        'NT$ ' +
+        Math.round(
+          numberValue(value)
+        ).toLocaleString('zh-TW')
+      );
     }
 
-    function statusText(v) {
-      const s = String(v || '').toLowerCase();
-
-      if (s === 'unpaid') return '未繳';
-      if (s === 'paid') return '已繳';
-      if (s === 'issued') return '已建立';
-      if (s === 'not_sent') return '未發送';
-      if (s === 'sent') return '已發送';
-      if (s === 'active') return '啟用中';
-      if (s === 'inactive') return '未啟用';
-      if (s === 'bound') return '已綁定';
-      if (s === 'unbound') return '未綁定';
-      if (s === 'checked_in') return '已報到';
-
-      return safeText(v);
+    function normalizeStatus(value) {
+      return rawText(value)
+        .trim()
+        .toLowerCase();
     }
 
-    function badgeClass(v) {
-      const s = String(v || '').toLowerCase();
+    function statusLabel(value) {
+      const status =
+        normalizeStatus(value);
 
-      if (s === 'paid' || s === 'active' || s === 'bound' || s === 'checked_in') {
-        return 'badge badge-green';
+      const map = {
+        active: '有效',
+        enabled: '啟用',
+        bound: '已綁定',
+        unbound: '未綁定',
+        pending: '待處理',
+        paid: '已繳',
+        unpaid: '未繳',
+        overdue: '逾期',
+        approved: '已核准'
+      };
+
+      return (
+        map[status] ||
+        rawText(value) ||
+        '-'
+      );
+    }
+
+    function statusBadgeClass(value) {
+      const status =
+        normalizeStatus(value);
+
+      if (
+        [
+          'active',
+          'enabled',
+          'bound',
+          'paid'
+        ].indexOf(status) >= 0
+      ) {
+        return 'badge green';
       }
 
-      if (s === 'unpaid' || s === 'inactive' || s === 'unbound') {
-        return 'badge badge-red';
+      if (
+        [
+          'pending',
+          'unbound'
+        ].indexOf(status) >= 0
+      ) {
+        return 'badge warning';
       }
 
-      return 'badge badge-gray';
-    }
-
-    function rawPhone(v) {
-      return String(v || '').replace(/[^\d+]/g, '');
-    }
-
-    function tenantDetailUrl(item) {
-      const tenantId = String(item.tenant_id || '');
-      const tenantUserId = String(item.tenant_user_id || '');
-
-      if (tenantId) {
-        return 'landlord-tenant-detail.html?tenant_id=' + encodeURIComponent(tenantId) + '&v=' + Date.now();
+      if (
+        [
+          'unpaid',
+          'overdue'
+        ].indexOf(status) >= 0
+      ) {
+        return 'badge danger';
       }
 
-      return 'landlord-tenant-detail.html?tenant_user_id=' + encodeURIComponent(tenantUserId) + '&v=' + Date.now();
+      if (status === 'approved') {
+        return 'badge purple';
+      }
+
+      return 'badge';
     }
 
-    function renderError(message) {
-      app.className = 'card';
-      app.innerHTML = `
-        <div class="error-title">資料讀取失敗</div>
-        <div class="error-text">
-          API 載入失敗：<br>
-          ${safeText(message)}
-        </div>
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
 
-        <button class="btn btn-black" onclick="location.reload()">重新整理</button>
-
-        <div class="small" style="margin-top:14px;">
-          若持續失敗，請確認：<br>
-          1. 房東 LINE UID 是否存在於 V2_landlords<br>
-          2. V2_landlord_tenant_list_view 是否有產生資料<br>
-          3. Apps Script 是否已重新部署新版<br>
-          4. LIFF Endpoint URL 是否正確
-        </div>
-      `;
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
     }
 
-    function callApi(action) {
-      return new Promise((resolve, reject) => {
-        if (!LINE_USER_ID) {
-          reject(new Error('缺少 LINE User ID'));
-          return;
+    function goTenantDetail(
+      tenantId
+    ) {
+      let url =
+        'landlord-tenant-detail.html' +
+        '?tenant_id=' +
+        encodeURIComponent(
+          tenantId || ''
+        ) +
+        '&v=' +
+        Date.now();
+
+      if (TEST_MODE) {
+        url += '&test=1';
+      }
+
+      location.href = url;
+    }
+
+    function goTenantContractRequests(
+      tenantId,
+      event
+    ) {
+      if (event) {
+        event.stopPropagation();
+      }
+
+      let url =
+        'landlord-contract-requests.html' +
+        '?tenant_id=' +
+        encodeURIComponent(
+          tenantId || ''
+        ) +
+        '&v=' +
+        Date.now();
+
+      if (TEST_MODE) {
+        url += '&test=1';
+      }
+
+      location.href = url;
+    }
+
+    function showToast(message) {
+      const toast =
+        document.getElementById('toast');
+
+      toast.textContent =
+        rawText(message) || '提示';
+
+      toast.classList.add('show');
+
+      clearTimeout(toastTimer);
+
+      toastTimer =
+        setTimeout(function () {
+          toast.classList.remove('show');
+        }, 2300);
+    }
+
+    function jsonpRequest(action, params) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_tenants_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() * 1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 載入逾時'
+                )
+              );
+            }, 30000);
+
+          function cleanup() {
+            clearTimeout(timer);
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(action) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(function (key) {
+            const value =
+              params[key];
+
+            if (
+              value === undefined ||
+              value === null
+            ) {
+              return;
+            }
+
+            url +=
+              '&' +
+              encodeURIComponent(key) +
+              '=' +
+              encodeURIComponent(value);
+          });
+
+          script.charset = 'UTF-8';
+
+          script.onerror =
+            function () {
+              console.warn(
+                'JSONP script onerror ignored.'
+              );
+            };
+
+          script.src = url;
+          document.body.appendChild(
+            script
+          );
         }
-
-        const callbackName =
-          'cmwebsJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
-
-        let finished = false;
-        const script = document.createElement('script');
-
-        function cleanup() {
-          clearTimeout(timer);
-
-          if (script && script.parentNode) {
-            script.parentNode.removeChild(script);
-          }
-
-          try {
-            delete window[callbackName];
-          } catch (e) {
-            window[callbackName] = undefined;
-          }
-        }
-
-        window[callbackName] = function (json) {
-          if (finished) return;
-          finished = true;
-
-          cleanup();
-
-          if (!json || json.success !== true) {
-            reject(new Error((json && json.message) ? json.message : '查詢失敗'));
-            return;
-          }
-
-          resolve(json.data);
-        };
-
-        const timer = setTimeout(() => {
-          if (finished) return;
-          finished = true;
-
-          cleanup();
-          reject(new Error('API 載入逾時'));
-        }, 30000);
-
-        script.charset = 'UTF-8';
-
-        script.onerror = function () {
-          console.log('JSONP script onerror ignored');
-        };
-
-        script.src =
-          API_URL +
-          '?v2_action=' + encodeURIComponent(action) +
-          '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-
-        document.body.appendChild(script);
-      });
+      );
     }
 
     async function initLineUserId() {
-      if (typeof liff === 'undefined') {
-        LINE_USER_ID = TEST_LINE_USER_ID;
-        return;
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        return true;
       }
 
-      try {
-        await liff.init({ liffId: LIFF_ID });
-
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-
-        const profile = await liff.getProfile();
-        LINE_USER_ID = profile.userId || '';
-
-        if (!LINE_USER_ID) {
-          throw new Error('無法取得 LINE User ID');
-        }
-      } catch (error) {
-        LINE_USER_ID = TEST_LINE_USER_ID;
+      if (
+        typeof liff === 'undefined'
+      ) {
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
       }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            location.href
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error(
+          '無法取得房東 LINE User ID'
+        );
+      }
+
+      return true;
     }
 
-    function renderPage(data) {
-      PAGE_DATA = data;
+    function unwrapData(result) {
+      if (
+        result &&
+        result.success === true
+      ) {
+        return (
+          result.data !== undefined
+            ? result.data
+            : result
+        );
+      }
 
-      const landlord = data.landlord || {};
-      const summary = data.summary || {};
-      const tenants = Array.isArray(data.tenants) ? data.tenants : [];
+      throw new Error(
+        result && result.message
+          ? result.message
+          : '查詢失敗'
+      );
+    }
 
-      const tenantCount = Number(summary.tenant_count || landlord.tenant_count || tenants.length || 0);
-      const unpaidTenantCount = Number(summary.unpaid_tenant_count || 0);
-      const paidTenantCount = Number(summary.paid_tenant_count || 0);
-      const unpaidTotal = Number(summary.unpaid_total_amount || 0);
-      const latestTotal = Number(summary.latest_total_amount || 0);
+    function buildContractSummary(
+      requests
+    ) {
+      const summary = {};
 
-      let html = '';
+      (requests || []).forEach(
+        function (request) {
+          const tenantId =
+            rawText(
+              request.tenant_id
+            ).trim();
 
-      html += `
-        <div class="card">
-          <div class="title">房客名單</div>
-          <div class="sub">
-            房東：${safeText(landlord.landlord_name)}<br>
-            LINE UID：${safeText(LINE_USER_ID)}
-          </div>
+          if (!tenantId) {
+            return;
+          }
 
-          <div class="row">
-            <div class="label">帳號狀態</div>
-            <div class="value">
-              <span class="${badgeClass(landlord.account_status)}">${statusText(landlord.account_status)}</span>
-            </div>
-          </div>
+          if (!summary[tenantId]) {
+            summary[tenantId] = {
+              pending: 0,
+              approved: 0,
+              totalActive: 0,
+              latestType: ''
+            };
+          }
 
-          <div class="row">
-            <div class="label">管理房間數</div>
-            <div class="value">${Number(landlord.room_count || 0)}</div>
-          </div>
+          const status =
+            normalizeStatus(
+              request.status
+            );
 
-          <div class="row">
-            <div class="label">房客數</div>
-            <div class="value">${tenantCount}</div>
-          </div>
-        </div>
+          if (status === 'pending') {
+            summary[tenantId].pending += 1;
+            summary[tenantId].totalActive += 1;
+          }
 
-        <div class="card">
-          <div class="section-title">房客狀態總覽</div>
+          if (status === 'approved') {
+            summary[tenantId].approved += 1;
+            summary[tenantId].totalActive += 1;
+          }
 
-          <div class="row">
-            <div class="label">房客總數</div>
-            <div class="value">${tenantCount}</div>
-          </div>
+          if (
+            status === 'pending' ||
+            status === 'approved'
+          ) {
+            summary[tenantId].latestType =
+              normalizeStatus(
+                request.request_type
+              );
+          }
+        }
+      );
 
-          <div class="row">
-            <div class="label">未繳房客數</div>
-            <div class="value" style="color:#d93025;">${unpaidTenantCount}</div>
-          </div>
+      return summary;
+    }
 
-          <div class="row">
-            <div class="label">已繳房客數</div>
-            <div class="value" style="color:#00a85a;">${paidTenantCount}</div>
-          </div>
+    function getFilteredTenants() {
+      return ALL_TENANTS.filter(
+        function (tenant) {
+          const tenantId =
+            rawText(
+              tenant.tenant_id
+            ).trim();
 
-          <div class="row">
-            <div class="label">目前未繳總額</div>
-            <div class="value" style="color:#d93025;">${money(unpaidTotal)}</div>
-          </div>
+          const contract =
+            CONTRACT_SUMMARY_BY_TENANT[
+              tenantId
+            ] || {
+              pending: 0,
+              approved: 0,
+              totalActive: 0
+            };
 
-          <div class="row">
-            <div class="label">本月帳單總額</div>
-            <div class="value">${money(latestTotal)}</div>
-          </div>
+          const hasArrears =
+            numberValue(
+              tenant.unpaid_bill_count
+            ) > 0 ||
+            normalizeStatus(
+              tenant.latest_payment_status
+            ) === 'unpaid';
 
-          <div class="row">
-            <div class="label">最後更新</div>
-            <div class="value">${safeText(landlord.updated_at || summary.updated_at)}</div>
-          </div>
-        </div>
-      `;
+          const isPaid =
+            normalizeStatus(
+              tenant.latest_payment_status
+            ) === 'paid';
 
-      if (tenants.length === 0) {
-        html += `
-          <div class="card empty">
-            目前沒有房客資料
-          </div>
+          const hasContract =
+            contract.totalActive > 0;
+
+          const isUnbound =
+            !rawText(
+              tenant.tenant_line_user_id
+            ).trim() ||
+            normalizeStatus(
+              tenant.tenant_binding_status
+            ) === 'unbound';
+
+          let matchFilter = true;
+
+          if (
+            ACTIVE_FILTER ===
+            'arrears'
+          ) {
+            matchFilter = hasArrears;
+          }
+
+          if (
+            ACTIVE_FILTER ===
+            'paid'
+          ) {
+            matchFilter = isPaid;
+          }
+
+          if (
+            ACTIVE_FILTER ===
+            'contract'
+          ) {
+            matchFilter = hasContract;
+          }
+
+          if (
+            ACTIVE_FILTER ===
+            'unbound'
+          ) {
+            matchFilter = isUnbound;
+          }
+
+          if (!matchFilter) {
+            return false;
+          }
+
+          const haystack =
+            [
+              tenant.tenant_name,
+              tenant.tenant_id,
+              tenant.room_list,
+              tenant.tenant_phone,
+              tenant.tenant_email
+            ]
+              .map(function (value) {
+                return rawText(value)
+                  .toLowerCase();
+              })
+              .join(' ');
+
+          return (
+            !SEARCH_TEXT ||
+            haystack.indexOf(
+              SEARCH_TEXT
+            ) >= 0
+          );
+        }
+      );
+    }
+
+    function setFilter(value) {
+      ACTIVE_FILTER = value;
+
+      document
+        .querySelectorAll(
+          '.filter-button'
+        )
+        .forEach(function (button) {
+          button.classList.toggle(
+            'active',
+            button.dataset.filter ===
+              value
+          );
+        });
+
+      renderTenantList();
+    }
+
+    function updateSearch(value) {
+      SEARCH_TEXT =
+        rawText(value)
+          .trim()
+          .toLowerCase();
+
+      const clearButton =
+        document.getElementById(
+          'clearSearchButton'
+        );
+
+      if (clearButton) {
+        clearButton.classList.toggle(
+          'show',
+          Boolean(SEARCH_TEXT)
+        );
+      }
+
+      renderTenantList();
+    }
+
+    function clearSearch() {
+      const input =
+        document.getElementById(
+          'tenantSearch'
+        );
+
+      if (input) {
+        input.value = '';
+      }
+
+      updateSearch('');
+    }
+
+    function renderTenantCard(
+      tenant
+    ) {
+      const tenantId =
+        rawText(
+          tenant.tenant_id
+        ).trim();
+
+      const contract =
+        CONTRACT_SUMMARY_BY_TENANT[
+          tenantId
+        ] || {
+          pending: 0,
+          approved: 0,
+          totalActive: 0,
+          latestType: ''
+        };
+
+      const paymentStatus =
+        normalizeStatus(
+          tenant.latest_payment_status
+        );
+
+      const hasArrears =
+        numberValue(
+          tenant.unpaid_bill_count
+        ) > 0 ||
+        paymentStatus === 'unpaid';
+
+      const bindingStatus =
+        rawText(
+          tenant.tenant_line_user_id
+        ).trim()
+          ? 'bound'
+          : (
+              tenant.tenant_binding_status ||
+              'unbound'
+            );
+
+      const avatarText =
+        rawText(
+          tenant.tenant_name
+        ).trim().slice(0, 1) ||
+        '房';
+
+      let contractBadge = '';
+
+      if (contract.pending > 0) {
+        contractBadge = `
+          <span class="badge warning">
+            合約待審 ${contract.pending}
+          </span>
         `;
-      } else {
-        tenants.forEach(item => {
-          const phone = rawPhone(item.tenant_phone);
-          const paymentStatus = String(item.latest_payment_status || '').toLowerCase();
-          const unpaidAmount = Number(item.unpaid_total_amount || 0);
-          const latestAmount = Number(item.latest_total_amount || 0);
-          const detailUrl = tenantDetailUrl(item);
+      } else if (
+        contract.approved > 0
+      ) {
+        contractBadge = `
+          <span class="badge purple">
+            合約待完成 ${contract.approved}
+          </span>
+        `;
+      }
 
-          html += `
-            <div class="card tenant-card" onclick="location.href='${escapeHtml(detailUrl)}'">
-              <div class="card-chevron">›</div>
-
-              <div class="tenant-name">
-                ${safeText(item.tenant_name)}
-                <span class="${badgeClass(item.latest_payment_status)}">${statusText(item.latest_payment_status)}</span>
+      return `
+        <section class="card tenant-card">
+          <button
+            class="tenant-card-button"
+            type="button"
+            onclick="goTenantDetail('${safeHtml(tenantId)}')"
+          >
+            <div class="tenant-head">
+              <div class="avatar">
+                ${safeHtml(avatarText)}
               </div>
 
-              <div class="tenant-meta">
-                房號：${safeText(item.room_list)}｜房客 ID：${safeText(item.tenant_id)}
+              <div class="tenant-main">
+                <div class="tenant-name-row">
+                  <div class="tenant-name">
+                    ${safeHtml(
+                      tenant.tenant_name ||
+                      '未命名房客'
+                    )}
+                  </div>
+
+                  <span class="${statusBadgeClass(bindingStatus)}">
+                    ${safeHtml(
+                      statusLabel(
+                        bindingStatus
+                      )
+                    )}
+                  </span>
+                </div>
+
+                <div class="tenant-meta">
+                  房號 ${safeHtml(
+                    tenant.room_list || '-'
+                  )}
+                  ・${safeHtml(tenantId || '-')}
+                </div>
               </div>
 
-              <div class="row">
-                <div class="label">電話</div>
-                <div class="value">
+              <div class="tenant-arrow">›</div>
+            </div>
+
+            <div class="tenant-status-row">
+              <span class="${statusBadgeClass(paymentStatus)}">
+                帳款 ${safeHtml(
+                  statusLabel(
+                    paymentStatus
+                  )
+                )}
+              </span>
+
+              ${
+                hasArrears
+                  ? `
+                    <span class="badge danger">
+                      欠款 ${numberValue(
+                        tenant.unpaid_bill_count
+                      )} 筆
+                    </span>
+                  `
+                  : ''
+              }
+
+              ${contractBadge}
+            </div>
+
+            <div class="tenant-money-grid">
+              <div class="money-box">
+                <div class="money-label">最新帳單</div>
+                <div class="money-value">
+                  ${money(
+                    tenant.latest_total_amount
+                  )}
+                </div>
+              </div>
+
+              <div class="money-box">
+                <div class="money-label">目前未繳</div>
+                <div class="money-value ${hasArrears ? 'red' : 'green'}">
                   ${
-                    phone
-                      ? `<a class="phone-link" href="tel:${escapeHtml(phone)}" onclick="event.stopPropagation()">${safeText(item.tenant_phone)}</a>`
-                      : '-'
+                    hasArrears
+                      ? money(
+                          tenant.unpaid_total_amount
+                        )
+                      : '已繳清'
                   }
                 </div>
               </div>
-
-              <div class="row">
-                <div class="label">Email</div>
-                <div class="value">${safeText(item.tenant_email)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">綁定狀態</div>
-                <div class="value">
-                  <span class="${badgeClass(item.tenant_binding_status)}">${statusText(item.tenant_binding_status)}</span>
-                </div>
-              </div>
-
-              <div class="${paymentStatus === 'paid' ? 'amount-green' : 'amount-red'}">
-                ${money(paymentStatus === 'paid' ? latestAmount : unpaidAmount)}
-              </div>
-
-              <div class="row">
-                <div class="label">最新帳單月份</div>
-                <div class="value">${safeText(item.latest_bill_month)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">繳款期限</div>
-                <div class="value">${safeText(item.latest_due_date)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">最新付款狀態</div>
-                <div class="value">${statusText(item.latest_payment_status)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">未繳帳單數</div>
-                <div class="value">${Number(item.unpaid_bill_count || 0)}</div>
-              </div>
-
-              <div class="row">
-                <div class="label">房客帳號狀態</div>
-                <div class="value">${statusText(item.tenant_account_status)}</div>
-              </div>
-
-              <div class="detail-hint">點擊查看詳細資料</div>
             </div>
-          `;
-        });
+          </button>
+
+          <div class="tenant-actions">
+            <button
+              class="tenant-action-button"
+              type="button"
+              onclick="goTenantDetail('${safeHtml(tenantId)}')"
+            >
+              查看房客資料
+            </button>
+
+            <button
+              class="tenant-action-button purple"
+              type="button"
+              onclick="goTenantContractRequests('${safeHtml(tenantId)}', event)"
+            >
+              ${
+                contract.totalActive > 0
+                  ? '處理合約申請'
+                  : '合約申請紀錄'
+              }
+            </button>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderTenantList() {
+      const list =
+        document.getElementById(
+          'tenantList'
+        );
+
+      const count =
+        document.getElementById(
+          'tenantListCount'
+        );
+
+      if (!list || !count) {
+        return;
       }
 
-      html += `
-        <button class="btn btn-green" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
-          查看房客欠款
-        </button>
+      const tenants =
+        getFilteredTenants();
 
-        <button class="btn btn-black" onclick="location.reload()">
-          重新整理
-        </button>
+      count.textContent =
+        tenants.length +
+        ' / ' +
+        ALL_TENANTS.length +
+        ' 位';
+
+      if (tenants.length === 0) {
+        list.innerHTML = `
+          <section class="card empty-card">
+            <div class="empty-title">
+              找不到符合條件的房客
+            </div>
+            <div class="empty-text">
+              請調整搜尋文字或篩選條件。
+            </div>
+          </section>
+        `;
+
+        return;
+      }
+
+      list.innerHTML =
+        tenants
+          .map(renderTenantCard)
+          .join('');
+    }
+
+    function renderPage(
+      tenantData,
+      contractData
+    ) {
+      TENANT_DATA =
+        tenantData || {};
+
+      ALL_TENANTS =
+        Array.isArray(
+          TENANT_DATA.tenants
+        )
+          ? TENANT_DATA.tenants
+          : [];
+
+      CONTRACT_REQUESTS =
+        contractData &&
+        Array.isArray(
+          contractData.requests
+        )
+          ? contractData.requests
+          : [];
+
+      CONTRACT_SUMMARY_BY_TENANT =
+        buildContractSummary(
+          CONTRACT_REQUESTS
+        );
+
+      const landlord =
+        TENANT_DATA.landlord || {};
+
+      const summary =
+        TENANT_DATA.summary || {};
+
+      const tenantCount =
+        numberValue(
+          summary.tenant_count ||
+          ALL_TENANTS.length
+        );
+
+      const unpaidTenantCount =
+        numberValue(
+          summary.unpaid_tenant_count
+        );
+
+      const paidTenantCount =
+        numberValue(
+          summary.paid_tenant_count
+        );
+
+      const activeContractTenantCount =
+        Object.keys(
+          CONTRACT_SUMMARY_BY_TENANT
+        ).filter(function (tenantId) {
+          return (
+            CONTRACT_SUMMARY_BY_TENANT[
+              tenantId
+            ].totalActive > 0
+          );
+        }).length;
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card header-card">
+          <div class="header-row">
+            <div>
+              <div class="eyebrow">
+                ${safeHtml(
+                  landlord.landlord_name ||
+                  '房東'
+                )}・房客管理
+              </div>
+
+              <h1 class="page-title">
+                房客名單
+              </h1>
+
+              <div class="page-subtitle">
+                查看房客帳款、LINE 綁定及續約／解約申請狀態。
+              </div>
+            </div>
+
+            <button
+              id="refreshButton"
+              class="refresh-button"
+              type="button"
+              onclick="loadPage()"
+              aria-label="重新整理"
+            >
+              <svg viewBox="0 0 24 24">
+                <path d="M20 11a8 8 0 1 0-2.34 5.66"></path>
+                <path d="M20 5v6h-6"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-box">
+              <div class="summary-label">房客總數</div>
+              <div class="summary-value">
+                ${tenantCount} 位
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-label">已繳房客</div>
+              <div class="summary-value green">
+                ${paidTenantCount} 位
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-label">欠款房客</div>
+              <div class="summary-value red">
+                ${unpaidTenantCount} 位
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-label">合約待處理房客</div>
+              <div class="summary-value purple">
+                ${activeContractTenantCount} 位
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card toolbar-card">
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="M20 20l-4-4"></path>
+            </svg>
+
+            <input
+              id="tenantSearch"
+              class="search-input"
+              type="search"
+              placeholder="搜尋姓名、房號、電話或房客 ID"
+              oninput="updateSearch(this.value)"
+            />
+
+            <button
+              id="clearSearchButton"
+              class="clear-search"
+              type="button"
+              onclick="clearSearch()"
+              aria-label="清除搜尋"
+            >
+              ×
+            </button>
+          </div>
+
+          <div class="filter-row">
+            <button
+              class="filter-button active"
+              data-filter="all"
+              type="button"
+              onclick="setFilter('all')"
+            >
+              全部
+            </button>
+
+            <button
+              class="filter-button"
+              data-filter="arrears"
+              type="button"
+              onclick="setFilter('arrears')"
+            >
+              有欠款
+            </button>
+
+            <button
+              class="filter-button"
+              data-filter="paid"
+              type="button"
+              onclick="setFilter('paid')"
+            >
+              已繳清
+            </button>
+
+            <button
+              class="filter-button"
+              data-filter="contract"
+              type="button"
+              onclick="setFilter('contract')"
+            >
+              合約待處理
+            </button>
+
+            <button
+              class="filter-button"
+              data-filter="unbound"
+              type="button"
+              onclick="setFilter('unbound')"
+            >
+              未綁定 LINE
+            </button>
+          </div>
+        </section>
+
+        <div class="list-header">
+          <div class="list-title">房客清單</div>
+          <div
+            id="tenantListCount"
+            class="list-count"
+          ></div>
+        </div>
+
+        <div id="tenantList"></div>
       `;
 
-      app.className = '';
-      app.innerHTML = html;
+      renderTenantList();
     }
 
-    async function main() {
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">
+            房客名單讀取失敗
+          </div>
+
+          <div class="error-text">
+            ${safeHtml(
+              message || '未知錯誤'
+            )}
+          </div>
+
+          <button
+            class="primary-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+    }
+
+    function setRefreshLoading(
+      loading
+    ) {
+      const button =
+        document.getElementById(
+          'refreshButton'
+        );
+
+      if (!button) {
+        return;
+      }
+
+      button.classList.toggle(
+        'loading',
+        Boolean(loading)
+      );
+    }
+
+    async function loadPage() {
+      setRefreshLoading(true);
+
       try {
-        app.className = 'loading';
-        app.innerHTML = '資料載入中...';
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLineUserId();
 
-        await initLineUserId();
+          if (!ready) {
+            return;
+          }
+        }
 
-        const data = await callApi('landlord_tenants');
+        const results =
+          await Promise.allSettled([
+            jsonpRequest(
+              'landlord_tenants',
+              {}
+            ),
+            jsonpRequest(
+              'landlord_contract_requests_init',
+              {}
+            )
+          ]);
 
-        renderPage(data);
+        if (
+          results[0].status !==
+          'fulfilled'
+        ) {
+          throw results[0].reason;
+        }
+
+        const tenantData =
+          unwrapData(
+            results[0].value
+          );
+
+        let contractData = {
+          requests: []
+        };
+
+        if (
+          results[1].status ===
+          'fulfilled'
+        ) {
+          try {
+            contractData =
+              unwrapData(
+                results[1].value
+              );
+          } catch (error) {
+            console.warn(
+              '合約申請資料讀取失敗：',
+              error
+            );
+          }
+        }
+
+        renderPage(
+          tenantData,
+          contractData
+        );
       } catch (error) {
-        renderError(error.message || error);
+        renderError(
+          error && error.message
+            ? error.message
+            : String(error)
+        );
+      } finally {
+        setRefreshLoading(false);
       }
     }
 
-    main();
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      function () {
+        setTimeout(
+          setAppHeight,
+          250
+        );
+      }
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
   </script>
 </body>
 </html>
