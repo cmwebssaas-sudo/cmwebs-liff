@@ -120,6 +120,91 @@
       letter-spacing: -0.45px;
     }
 
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-back-button {
+      display: inline-flex;
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: #5f6368;
+      cursor: pointer;
+    }
+
+    .header-back-button svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .tenant-filter-card {
+      border-color: rgba(111, 76, 195, 0.2);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(242, 237, 255, 0.98),
+          rgba(255, 255, 255, 0.98)
+        );
+    }
+
+    .tenant-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tenant-filter-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .tenant-filter-label {
+      margin-bottom: 4px;
+      color: var(--purple);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .tenant-filter-name {
+      overflow: hidden;
+      font-size: 16px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tenant-filter-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .clear-filter-button {
+      flex: 0 0 auto;
+      padding: 9px 11px;
+      border: 1px solid rgba(111, 76, 195, 0.22);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--purple);
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
     .page-subtitle {
       color: var(--muted);
       font-size: 13px;
@@ -1049,14 +1134,23 @@
     const TEST_LINE_USER_ID =
       'Uf708ece75c9c985cfe1dbda48d123511';
 
+    const URL_PARAMS =
+      new URLSearchParams(location.search);
+
     const TEST_MODE =
-      new URLSearchParams(location.search).get('test') === '1';
+      URL_PARAMS.get('test') === '1';
+
+    const TENANT_FILTER_ID =
+      String(
+        URL_PARAMS.get('tenant_id') || ''
+      ).trim();
 
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
     let ALL_REQUESTS = [];
     let ACTIVE_REQUEST = null;
-    let ACTIVE_STATUS_FILTER = 'pending';
+    let ACTIVE_STATUS_FILTER =
+      TENANT_FILTER_ID ? 'all' : 'pending';
     let ACTIVE_TYPE_FILTER = 'all';
     let ACTIVE_TERM_FILTER = 'all';
     let IS_SUBMITTING = false;
@@ -1100,6 +1194,29 @@
       }
 
       location.href = filename + '?' + params.toString();
+    }
+
+    function goBackToTenantDetail() {
+      if (!TENANT_FILTER_ID) {
+        goPage('landlord-tenants.html');
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('tenant_id', TENANT_FILTER_ID);
+      params.set('v', Date.now());
+
+      if (TEST_MODE) {
+        params.set('test', '1');
+      }
+
+      location.href =
+        'landlord-tenant-detail.html?' +
+        params.toString();
+    }
+
+    function clearTenantFilter() {
+      goPage('landlord-contract-requests.html');
     }
 
     function rawText(value) {
@@ -1464,7 +1581,12 @@
           <div class="error-message">${safeText(message || '讀取失敗')}</div>
           <div class="page-actions">
             <button class="btn btn-primary" onclick="loadPage()">重新整理</button>
-            <button class="btn btn-light" onclick="goPage('landlord-more.html')">返回更多</button>
+            <button
+              class="btn btn-light"
+              onclick="${TENANT_FILTER_ID ? 'goBackToTenantDetail()' : "goPage('landlord-more.html')"}"
+            >
+              ${TENANT_FILTER_ID ? '返回房客資料' : '返回更多'}
+            </button>
           </div>
         </div>
       `;
@@ -1483,6 +1605,69 @@
     function setTerminationFilter(value) {
       ACTIVE_TERM_FILTER = value;
       renderRequestList();
+    }
+
+    function summarizeRequests(requests) {
+      const summary = {
+        total_count: 0,
+        pending_count: 0,
+        approved_count: 0,
+        renewal_count: 0,
+        termination_count: 0,
+        completed_count: 0,
+        rejected_count: 0,
+        cancelled_count: 0
+      };
+
+      (requests || []).forEach(function (request) {
+        const status = normalizeStatus(request.status);
+        const type = normalizeStatus(request.request_type);
+
+        summary.total_count += 1;
+
+        if (status === 'pending') {
+          summary.pending_count += 1;
+        }
+
+        if (status === 'approved') {
+          summary.approved_count += 1;
+        }
+
+        if (status === 'completed') {
+          summary.completed_count += 1;
+        }
+
+        if (status === 'rejected') {
+          summary.rejected_count += 1;
+        }
+
+        if (status === 'cancelled') {
+          summary.cancelled_count += 1;
+        }
+
+        if (type === 'renewal') {
+          summary.renewal_count += 1;
+        }
+
+        if (type === 'termination') {
+          summary.termination_count += 1;
+        }
+      });
+
+      return summary;
+    }
+
+    function findFilteredTenant(requests) {
+      if (!TENANT_FILTER_ID) {
+        return null;
+      }
+
+      return (requests || []).find(function (request) {
+        return (
+          rawText(request.tenant_id).trim() ===
+          TENANT_FILTER_ID
+        );
+      }) || null;
     }
 
     function filterRequests() {
@@ -1512,23 +1697,72 @@
 
     function renderPage(data) {
       PAGE_DATA = data || {};
-      ALL_REQUESTS = Array.isArray(PAGE_DATA.requests)
-        ? PAGE_DATA.requests
-        : [];
+
+      const sourceRequests =
+        Array.isArray(PAGE_DATA.requests)
+          ? PAGE_DATA.requests
+          : [];
+
+      ALL_REQUESTS =
+        TENANT_FILTER_ID
+          ? sourceRequests.filter(function (request) {
+              return (
+                rawText(request.tenant_id).trim() ===
+                TENANT_FILTER_ID
+              );
+            })
+          : sourceRequests;
 
       const landlord = PAGE_DATA.landlord || {};
-      const summary = PAGE_DATA.summary || {};
+      const filteredTenant =
+        findFilteredTenant(sourceRequests);
+
+      const summary =
+        TENANT_FILTER_ID
+          ? summarizeRequests(ALL_REQUESTS)
+          : (PAGE_DATA.summary || {});
+
+      const pageTitle =
+        TENANT_FILTER_ID
+          ? '房客合約申請'
+          : '合約申請管理';
+
+      const pageSubtitle =
+        TENANT_FILTER_ID
+          ? '目前只顯示指定房客的續約與解約申請。'
+          : '審核房客續約、提前解約與到期不續約申請。';
 
       app.className = '';
       app.innerHTML = `
         <div class="page-header">
           <div class="header-row">
             <div>
-              <h1 class="page-title">合約申請管理</h1>
+              <div class="header-title-row">
+                ${
+                  TENANT_FILTER_ID
+                    ? `
+                      <button
+                        class="header-back-button"
+                        type="button"
+                        onclick="goBackToTenantDetail()"
+                        aria-label="返回房客詳細資料"
+                      >
+                        <svg viewBox="0 0 24 24">
+                          <path d="M15 18l-6-6 6-6"></path>
+                        </svg>
+                      </button>
+                    `
+                    : ''
+                }
+
+                <h1 class="page-title">${escapeHtml(pageTitle)}</h1>
+              </div>
+
               <div class="page-subtitle">
-                審核房客續約、提前解約與到期不續約申請。
+                ${escapeHtml(pageSubtitle)}
               </div>
             </div>
+
             <button class="icon-button" onclick="loadPage()" aria-label="重新整理">
               <svg viewBox="0 0 24 24">
                 <path d="M20 11a8 8 0 1 0-2.34 5.66"></path>
@@ -1538,17 +1772,65 @@
           </div>
         </div>
 
-        <section class="card">
-          <div class="landlord-row">
-            <div class="avatar">${escapeHtml(firstLetter(landlord.landlord_name))}</div>
-            <div>
-              <div class="landlord-name">${safeText(landlord.landlord_name || '房東')}</div>
-              <div class="landlord-desc">
-                房東編號：${safeText(landlord.landlord_id)} ・ 共 ${numberValue(summary.total_count, ALL_REQUESTS.length)} 筆申請
-              </div>
-            </div>
-          </div>
-        </section>
+        ${
+          TENANT_FILTER_ID
+            ? `
+              <section class="card tenant-filter-card">
+                <div class="tenant-filter-row">
+                  <div class="avatar">
+                    ${escapeHtml(
+                      firstLetter(
+                        filteredTenant
+                          ? filteredTenant.tenant_name
+                          : '房'
+                      )
+                    )}
+                  </div>
+
+                  <div class="tenant-filter-main">
+                    <div class="tenant-filter-label">目前房客篩選</div>
+                    <div class="tenant-filter-name">
+                      ${safeText(
+                        filteredTenant
+                          ? filteredTenant.tenant_name
+                          : TENANT_FILTER_ID
+                      )}
+                    </div>
+                    <div class="tenant-filter-meta">
+                      房號 ${safeText(
+                        filteredTenant
+                          ? filteredTenant.room_name
+                          : '-'
+                      )}
+                      ・房客 ID ${safeText(TENANT_FILTER_ID)}
+                      ・共 ${numberValue(summary.total_count, 0)} 筆申請
+                    </div>
+                  </div>
+
+                  <button
+                    class="clear-filter-button"
+                    type="button"
+                    onclick="clearTenantFilter()"
+                  >
+                    查看全部
+                  </button>
+                </div>
+              </section>
+            `
+            : `
+              <section class="card">
+                <div class="landlord-row">
+                  <div class="avatar">${escapeHtml(firstLetter(landlord.landlord_name))}</div>
+                  <div>
+                    <div class="landlord-name">${safeText(landlord.landlord_name || '房東')}</div>
+                    <div class="landlord-desc">
+                      房東編號：${safeText(landlord.landlord_id)} ・ 共 ${numberValue(summary.total_count, ALL_REQUESTS.length)} 筆申請
+                    </div>
+                  </div>
+                </div>
+              </section>
+            `
+        }
 
         <section class="card">
           <div class="summary-grid">
@@ -1599,7 +1881,18 @@
         </section>
 
         <div class="list-header">
-          <div class="list-title">申請清單</div>
+          <div class="list-title">
+            ${
+              TENANT_FILTER_ID
+                ? (
+                    filteredTenant &&
+                    filteredTenant.tenant_name
+                      ? escapeHtml(filteredTenant.tenant_name) + '的申請'
+                      : '房客申請清單'
+                  )
+                : '申請清單'
+            }
+          </div>
           <div id="listCount" class="list-count"></div>
         </div>
 
@@ -1636,7 +1929,11 @@
       if (!requests.length) {
         container.innerHTML = `
           <div class="empty-state">
-            目前篩選條件下沒有合約申請。
+            ${
+              TENANT_FILTER_ID
+                ? '此房客在目前狀態與類型篩選下沒有合約申請。'
+                : '目前篩選條件下沒有合約申請。'
+            }
           </div>
         `;
         return;
