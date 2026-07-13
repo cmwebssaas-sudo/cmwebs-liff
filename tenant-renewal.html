@@ -388,6 +388,118 @@
       color: #555555;
     }
 
+    .amount-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .amount-box {
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #fafbfc;
+    }
+
+    .amount-box-label {
+      color: #555555;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .amount-current {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .currency-input-wrap {
+      position: relative;
+      margin-top: 9px;
+    }
+
+    .currency-prefix {
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      z-index: 1;
+      color: #5f6368;
+      font-size: 13px;
+      font-weight: 900;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .currency-input-wrap .field-input {
+      padding-left: 46px;
+      font-weight: 900;
+    }
+
+    .amount-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    .small-action-btn {
+      padding: 8px 11px;
+      border: 1px solid #cfe8d8;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #10893e;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .small-action-btn:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .amount-preview-lines {
+      display: grid;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .amount-preview-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: #334039;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.55;
+    }
+
+    .amount-preview-line strong {
+      color: #111111;
+      text-align: right;
+    }
+
+    .amount-delta {
+      margin-left: 5px;
+      color: #6b7470;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .amount-delta.increase {
+      color: #b25f00;
+    }
+
+    .amount-delta.decrease {
+      color: #137333;
+    }
+
+    @media (max-width: 390px) {
+      .amount-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .quick-reasons {
       display: flex;
       flex-wrap: wrap;
@@ -887,6 +999,18 @@
       ).toLocaleString('zh-TW');
     }
 
+    function optionalMoney(value) {
+      if (
+        value === undefined ||
+        value === null ||
+        rawText(value).trim() === ''
+      ) {
+        return '未設定';
+      }
+
+      return money(value);
+    }
+
     function dateFromValue(value) {
       if (value === undefined || value === null || value === '') {
         return null;
@@ -1178,7 +1302,7 @@
 
           <div class="header-content">
             <h1 class="page-title">申請續約</h1>
-            <div class="page-subtitle">填寫希望續租的期間與原因，送交房東審核</div>
+            <div class="page-subtitle">填寫希望續租的期間、租金與管理費，送交房東審核</div>
           </div>
         </div>
 
@@ -1188,6 +1312,8 @@
             <div class="pending-message">
               申請編號：${safeText(pendingRenewal.request_id)}<br>
               申請期間：${safeText(pendingRenewal.requested_term_months)} 個月<br>
+              希望租金：${optionalMoney(pendingRenewal.requested_rent_amount)}<br>
+              希望管理費：${optionalMoney(pendingRenewal.requested_management_fee)}<br>
               目前狀態：等待房東審核。請先返回「我的合約」查看或取消原申請。
             </div>
           </div>
@@ -1289,6 +1415,75 @@
         </section>
 
         <section class="card">
+          <div class="section-title">希望續約金額</div>
+
+          <div class="amount-grid">
+            <div class="amount-box">
+              <div class="amount-box-label">希望每月租金</div>
+              <div class="amount-current">
+                目前租金：${money(CONTRACT.rent_amount)}
+              </div>
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">NT$</span>
+                <input
+                  id="requestedRentAmount"
+                  class="field-input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  value="${Math.max(0, Math.round(Number(CONTRACT.rent_amount || 0)))}"
+                  placeholder="請輸入希望租金"
+                  oninput="updateAmountPreview()"
+                  ${canSubmit ? '' : 'disabled'}
+                />
+              </div>
+            </div>
+
+            <div class="amount-box">
+              <div class="amount-box-label">希望每月管理費</div>
+              <div class="amount-current">
+                目前管理費：${money(CONTRACT.management_fee)}
+              </div>
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">NT$</span>
+                <input
+                  id="requestedManagementFee"
+                  class="field-input"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputmode="numeric"
+                  value="${Math.max(0, Math.round(Number(CONTRACT.management_fee || 0)))}"
+                  placeholder="可輸入 0"
+                  oninput="updateAmountPreview()"
+                  ${canSubmit ? '' : 'disabled'}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="amount-actions">
+            <button
+              type="button"
+              class="small-action-btn"
+              onclick="resetRequestedAmounts()"
+              ${canSubmit ? '' : 'disabled'}
+            >
+              恢復目前金額
+            </button>
+          </div>
+
+          <div class="renewal-preview">
+            <div class="preview-title">提出的續約條件</div>
+            <div id="amountPreview" class="amount-preview-lines"></div>
+            <div class="preview-note">
+              此處為房客提出的希望金額。房東審核時仍可調整租金與管理費，最終以房東核准及雙方完成的新合約為準。
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
           <div class="section-title">申請內容</div>
 
           <div class="field">
@@ -1323,7 +1518,7 @@
           </div>
 
           <div class="notice-box">
-            續約申請送出後，房東會收到通知並進行審核。送出申請不代表合約已自動延長；必須待房東核准並完成新合約程序。
+            續約申請送出後，房東會審核續約期間、租金與管理費。房東可能調整你提出的金額；送出申請不代表合約已自動延長，仍須完成核准與新合約程序。
           </div>
 
           <div class="page-actions">
@@ -1347,6 +1542,7 @@
       CUSTOM_TERM_ACTIVE = false;
       updateTermButtons();
       updateRenewalPreview();
+      updateAmountPreview();
     }
 
     function selectTerm(months) {
@@ -1423,6 +1619,89 @@
         '（' + SELECTED_TERM + ' 個月）';
     }
 
+    function readAmountInput(id) {
+      const input = document.getElementById(id);
+      const value = Number(input ? input.value : NaN);
+
+      return isFinite(value) ? value : NaN;
+    }
+
+    function amountDeltaHtml(currentValue, requestedValue) {
+      const current = Math.round(Number(currentValue || 0));
+      const requested = Math.round(Number(requestedValue || 0));
+      const difference = requested - current;
+
+      if (difference === 0) {
+        return '<span class="amount-delta">維持原金額</span>';
+      }
+
+      if (difference > 0) {
+        return '<span class="amount-delta increase">增加 ' + money(difference) + '</span>';
+      }
+
+      return '<span class="amount-delta decrease">減少 ' + money(Math.abs(difference)) + '</span>';
+    }
+
+    function updateAmountPreview() {
+      const preview = document.getElementById('amountPreview');
+      if (!preview || !CONTRACT) return;
+
+      const requestedRent = readAmountInput('requestedRentAmount');
+      const requestedManagement = readAmountInput('requestedManagementFee');
+
+      const rentText = isFinite(requestedRent)
+        ? money(requestedRent)
+        : '尚未輸入';
+
+      const managementText = isFinite(requestedManagement)
+        ? money(requestedManagement)
+        : '尚未輸入';
+
+      preview.innerHTML = `
+        <div class="amount-preview-line">
+          <span>每月租金</span>
+          <strong>
+            ${rentText}
+            ${isFinite(requestedRent)
+              ? amountDeltaHtml(CONTRACT.rent_amount, requestedRent)
+              : ''}
+          </strong>
+        </div>
+        <div class="amount-preview-line">
+          <span>每月管理費</span>
+          <strong>
+            ${managementText}
+            ${isFinite(requestedManagement)
+              ? amountDeltaHtml(CONTRACT.management_fee, requestedManagement)
+              : ''}
+          </strong>
+        </div>
+      `;
+    }
+
+    function resetRequestedAmounts() {
+      if (!CONTRACT) return;
+
+      const rentInput = document.getElementById('requestedRentAmount');
+      const managementInput = document.getElementById('requestedManagementFee');
+
+      if (rentInput && !rentInput.disabled) {
+        rentInput.value = Math.max(
+          0,
+          Math.round(Number(CONTRACT.rent_amount || 0))
+        );
+      }
+
+      if (managementInput && !managementInput.disabled) {
+        managementInput.value = Math.max(
+          0,
+          Math.round(Number(CONTRACT.management_fee || 0))
+        );
+      }
+
+      updateAmountPreview();
+    }
+
     function insertReason(text) {
       const input = document.getElementById('reason');
       if (!input || input.disabled) return;
@@ -1463,26 +1742,64 @@
           : ''
       ).trim();
 
+      const requestedRentAmount =
+        readAmountInput('requestedRentAmount');
+
+      const requestedManagementFee =
+        readAmountInput('requestedManagementFee');
+
       const dates = getRenewalDates();
 
       return {
         request_type: 'renewal',
         requested_date: todayDateText(),
+        requested_start_date: dates.start_date,
         requested_term_months: SELECTED_TERM,
+        requested_rent_amount: requestedRentAmount,
+        requested_management_fee: requestedManagementFee,
         preferred_end_date: dates.preferred_end_date,
         reason: reason,
-        note: note,
-        renewal_start_date: dates.start_date
+        note: note
       };
     }
 
     function validateForm(data) {
-      if (!data.requested_term_months || data.requested_term_months < 1 || data.requested_term_months > 36) {
+      if (
+        !data.requested_term_months ||
+        data.requested_term_months < 1 ||
+        data.requested_term_months > 36
+      ) {
         return '續約期間請輸入 1 至 36 個月。';
+      }
+
+      if (!data.requested_start_date) {
+        return '無法計算新租期起日，請確認目前合約到期日。';
       }
 
       if (!data.preferred_end_date) {
         return '無法計算續約到期日，請確認目前合約到期日。';
+      }
+
+      if (
+        !isFinite(data.requested_rent_amount) ||
+        data.requested_rent_amount <= 0
+      ) {
+        return '希望續約租金必須大於 0。';
+      }
+
+      if (!Number.isInteger(data.requested_rent_amount)) {
+        return '希望續約租金請輸入整數金額。';
+      }
+
+      if (
+        !isFinite(data.requested_management_fee) ||
+        data.requested_management_fee < 0
+      ) {
+        return '希望管理費不可小於 0。';
+      }
+
+      if (!Number.isInteger(data.requested_management_fee)) {
+        return '希望管理費請輸入整數金額。';
       }
 
       if (!data.reason) {
@@ -1527,7 +1844,21 @@
         </div>
         <div class="confirm-row">
           <div class="confirm-label">預計新租期</div>
-          <div class="confirm-value">${safeText(data.renewal_start_date)} ～ ${safeText(data.preferred_end_date)}</div>
+          <div class="confirm-value">${safeText(data.requested_start_date)} ～ ${safeText(data.preferred_end_date)}</div>
+        </div>
+        <div class="confirm-row">
+          <div class="confirm-label">希望每月租金</div>
+          <div class="confirm-value">
+            ${money(data.requested_rent_amount)}
+            ${amountDeltaHtml(CONTRACT.rent_amount, data.requested_rent_amount)}
+          </div>
+        </div>
+        <div class="confirm-row">
+          <div class="confirm-label">希望每月管理費</div>
+          <div class="confirm-value">
+            ${money(data.requested_management_fee)}
+            ${amountDeltaHtml(CONTRACT.management_fee, data.requested_management_fee)}
+          </div>
         </div>
         <div class="confirm-row">
           <div class="confirm-label">續約原因</div>
@@ -1572,7 +1903,10 @@
           {
             request_type: data.request_type,
             requested_date: data.requested_date,
+            requested_start_date: data.requested_start_date,
             requested_term_months: data.requested_term_months,
+            requested_rent_amount: data.requested_rent_amount,
+            requested_management_fee: data.requested_management_fee,
             preferred_end_date: data.preferred_end_date,
             reason: data.reason,
             note: data.note
