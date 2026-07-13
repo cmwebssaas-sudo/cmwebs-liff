@@ -1752,8 +1752,9 @@
               </div>
               <div class="info-value">
                 ${safeHtml(
-                  home.latest_bill_month ||
-                  '-'
+                  formatBillMonth(
+                    home.latest_bill_month
+                  )
                 )}
               </div>
             </div>
