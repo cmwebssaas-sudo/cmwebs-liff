@@ -1087,7 +1087,133 @@
         .toLowerCase();
     }
 
+    function spreadsheetSerialDate(value) {
+      const number =
+        Number(value);
+
+      if (
+        !Number.isFinite(number) ||
+        number < 20000 ||
+        number > 90000
+      ) {
+        return null;
+      }
+
+      return new Date(
+        Date.UTC(1899, 11, 30) +
+        Math.round(number) * 86400000
+      );
+    }
+
+    function parseDateValue(value) {
+      if (
+        value instanceof Date
+      ) {
+        return Number.isNaN(
+          value.getTime()
+        )
+          ? null
+          : value;
+      }
+
+      const serialDate =
+        spreadsheetSerialDate(value);
+
+      if (serialDate) {
+        return serialDate;
+      }
+
+      const text =
+        rawText(value).trim();
+
+      if (!text) {
+        return null;
+      }
+
+      const exact =
+        text.match(
+          /^(\d{4})-(\d{2})-(\d{2})$/
+        );
+
+      if (exact) {
+        return new Date(
+          Number(exact[1]),
+          Number(exact[2]) - 1,
+          Number(exact[3]),
+          0,
+          0,
+          0,
+          0
+        );
+      }
+
+      const date =
+        new Date(text);
+
+      return Number.isNaN(
+        date.getTime()
+      )
+        ? null
+        : date;
+    }
+
+    function taipeiDateParts(date) {
+      if (!date) {
+        return null;
+      }
+
+      const parts =
+        new Intl.DateTimeFormat(
+          'en-CA',
+          {
+            timeZone: 'Asia/Taipei',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }
+        ).formatToParts(date);
+
+      const result = {};
+
+      parts.forEach(function (part) {
+        result[part.type] =
+          part.value;
+      });
+
+      return {
+        year:
+          result.year || '',
+        month:
+          result.month || '',
+        day:
+          result.day || ''
+      };
+    }
+
     function formatDate(value) {
+      const date =
+        parseDateValue(value);
+
+      if (!date) {
+        const text =
+          rawText(value).trim();
+
+        return text || '-';
+      }
+
+      const parts =
+        taipeiDateParts(date);
+
+      return (
+        parts.year +
+        '-' +
+        parts.month +
+        '-' +
+        parts.day
+      );
+    }
+
+    function formatBillMonth(value) {
       const text =
         rawText(value).trim();
 
@@ -1095,39 +1221,48 @@
         return '-';
       }
 
-      const match =
+      const monthOnly =
         text.match(
-          /^(\d{4})-(\d{2})-(\d{2})/
+          /^(\d{4})[-/](\d{1,2})$/
         );
 
-      if (match) {
+      if (monthOnly) {
         return (
-          match[1] +
+          monthOnly[1] +
           '-' +
-          match[2] +
+          String(
+            Number(monthOnly[2])
+          ).padStart(2, '0')
+        );
+      }
+
+      const compact =
+        text.match(
+          /^(\d{4})(\d{2})$/
+        );
+
+      if (compact) {
+        return (
+          compact[1] +
           '-' +
-          match[3]
+          compact[2]
         );
       }
 
       const date =
-        new Date(text);
+        parseDateValue(value);
 
-      if (
-        Number.isNaN(
-          date.getTime()
-        )
-      ) {
+      if (!date) {
         return text;
       }
 
-      return date.toLocaleDateString(
-        'zh-TW',
-        {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }
+      const parts =
+        taipeiDateParts(date);
+
+      return (
+        parts.year +
+        '-' +
+        parts.month
       );
     }
 
@@ -1489,7 +1624,7 @@
     }
 
     function billMonthOf(bill) {
-      return rawText(
+      return formatBillMonth(
         pickValue(
           bill,
           [
@@ -1606,6 +1741,7 @@
         bill,
         [
           'electricity_unit_price',
+          'electricity_fee_rate',
           'electricity_price',
           'electric_unit_price',
           'electric_price',
@@ -1645,6 +1781,7 @@
         bill,
         [
           'equipment_unit_price',
+          'equipment_fee_rate',
           'equipment_price',
           'device_unit_price',
           'device_price',
@@ -2106,24 +2243,65 @@
       PAGE_DATA =
         data || {};
 
-      const tenant =
-        PAGE_DATA.tenant || {};
-
-      const summary =
-        PAGE_DATA.summary || {};
+      const directBills =
+        Array.isArray(data)
+          ? data.slice()
+          : [];
 
       ALL_BILLS =
-        Array.isArray(
-          PAGE_DATA.bills
-        )
-          ? PAGE_DATA.bills.slice()
+        directBills.length > 0
+          ? directBills
           : (
               Array.isArray(
-                PAGE_DATA.items
+                PAGE_DATA.bills
               )
-                ? PAGE_DATA.items.slice()
-                : []
+                ? PAGE_DATA.bills.slice()
+                : (
+                    Array.isArray(
+                      PAGE_DATA.items
+                    )
+                      ? PAGE_DATA.items.slice()
+                      : []
+                  )
             );
+
+      const firstBill =
+        ALL_BILLS[0] || {};
+
+      const reportTenant =
+        paymentReportData &&
+        paymentReportData.tenant
+          ? paymentReportData.tenant
+          : {};
+
+      const tenant =
+        (
+          !Array.isArray(data) &&
+          PAGE_DATA.tenant
+        )
+          ? PAGE_DATA.tenant
+          : (
+              Object.keys(
+                reportTenant
+              ).length > 0
+                ? reportTenant
+                : {
+                    tenant_id:
+                      firstBill.tenant_id || '',
+                    tenant_name:
+                      firstBill.tenant_name || '',
+                    room_list:
+                      firstBill.room_name || ''
+                  }
+            );
+
+      const summary =
+        (
+          !Array.isArray(data) &&
+          PAGE_DATA.summary
+        )
+          ? PAGE_DATA.summary
+          : {};
 
       ALL_BILLS.sort(
         function (a, b) {
