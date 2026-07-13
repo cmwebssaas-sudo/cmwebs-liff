@@ -477,6 +477,47 @@
       word-break: break-word;
     }
 
+    .amount-compare {
+      margin-top: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .amount-compare-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .amount-compare-row span {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .amount-compare-row strong {
+      min-width: 0;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 900;
+      word-break: break-word;
+    }
+
+    .amount-compare-row.requested {
+      padding-top: 5px;
+      border-top: 1px dashed #dfe4e8;
+    }
+
+    .amount-compare-row.requested span,
+    .amount-compare-row.requested strong {
+      color: var(--primary);
+    }
+
     .request-note {
       margin-top: 11px;
       padding: 10px 11px;
@@ -1591,16 +1632,34 @@
             <div class="request-info-value">${numberValue(request.requested_term_months, 0)} 個月</div>
           </div>
           <div class="request-info">
-            <div class="request-info-label">希望新租金</div>
-            <div class="request-info-value">${money(request.requested_rent_amount)}</div>
-          </div>
-          <div class="request-info">
             <div class="request-info-label">新租期</div>
             <div class="request-info-value">${formatDate(request.requested_start_date)} ～ ${formatDate(request.preferred_end_date)}</div>
           </div>
           <div class="request-info">
-            <div class="request-info-label">希望管理費</div>
-            <div class="request-info-value">${money(request.requested_management_fee)}</div>
+            <div class="request-info-label">租金對照</div>
+            <div class="amount-compare">
+              <div class="amount-compare-row">
+                <span>原租金</span>
+                <strong>${money(request.current_rent_amount)}</strong>
+              </div>
+              <div class="amount-compare-row requested">
+                <span>希望租金</span>
+                <strong>${money(request.requested_rent_amount)}</strong>
+              </div>
+            </div>
+          </div>
+          <div class="request-info">
+            <div class="request-info-label">管理費對照</div>
+            <div class="amount-compare">
+              <div class="amount-compare-row">
+                <span>原管理費</span>
+                <strong>${money(request.current_management_fee)}</strong>
+              </div>
+              <div class="amount-compare-row requested">
+                <span>希望管理費</span>
+                <strong>${money(request.requested_management_fee)}</strong>
+              </div>
+            </div>
           </div>
         `;
       } else {
