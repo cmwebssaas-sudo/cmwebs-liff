@@ -7,7 +7,7 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
 
-  <title>CMWebs 申請解約</title>
+  <title>CMWebs 退租／解約申請</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -340,6 +340,122 @@
     .field-textarea:disabled {
       background: #f6f8fa;
       color: #999999;
+    }
+
+    .termination-type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .termination-type-card {
+      min-height: 132px;
+      padding: 14px;
+      border: 1px solid #dfe3e8;
+      border-radius: 14px;
+      background: #ffffff;
+      color: #333333;
+      text-align: left;
+      cursor: pointer;
+      transition:
+        border-color 0.15s ease,
+        background 0.15s ease,
+        transform 0.15s ease;
+    }
+
+    .termination-type-card:active {
+      transform: scale(0.985);
+    }
+
+    .termination-type-card.active {
+      border-color: #ef8f00;
+      background: #fff8eb;
+      box-shadow: 0 0 0 3px rgba(239, 143, 0, 0.1);
+    }
+
+    .termination-type-card.danger.active {
+      border-color: var(--danger);
+      background: var(--danger-soft);
+      box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.09);
+    }
+
+    .termination-type-card:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .termination-type-icon {
+      display: flex;
+      width: 34px;
+      height: 34px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: var(--primary-soft);
+      color: #10893e;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .termination-type-card.danger .termination-type-icon {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .termination-type-title {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .termination-type-desc {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .penalty-panel {
+      padding: 14px;
+      margin-top: 14px;
+      border: 1px solid #ccebd8;
+      border-radius: 13px;
+      background: #f1fbf5;
+    }
+
+    .penalty-panel.warning {
+      border-color: #ffd394;
+      background: #fff8eb;
+    }
+
+    .penalty-panel-title {
+      color: #10893e;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .penalty-panel.warning .penalty-panel-title {
+      color: #9b6200;
+    }
+
+    .penalty-panel-main {
+      margin-top: 7px;
+      color: #222222;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+
+    .penalty-panel-note {
+      margin-top: 6px;
+      color: #5f6d64;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .penalty-panel.warning .penalty-panel-note {
+      color: #735a2d;
     }
 
     .date-shortcuts {
@@ -868,6 +984,9 @@
     let CONTRACT = null;
     let ALERT_CALLBACK = null;
     let IS_SUBMITTING = false;
+    let TERMINATION_TYPE = 'non_renewal';
+    let CAN_SUBMIT = false;
+    let EARLY_TERMINATION_AVAILABLE = false;
 
     const app =
       document.getElementById('app');
@@ -1030,16 +1149,6 @@
       );
     }
 
-    function clampDateToContract(date) {
-      const endDate = dateFromValue(CONTRACT && CONTRACT.end_date);
-
-      if (!date) return null;
-      if (!endDate) return date;
-
-      return date.getTime() > endDate.getTime()
-        ? endDate
-        : date;
-    }
 
     function goPage(filename) {
       const params = new URLSearchParams();
@@ -1203,6 +1312,29 @@
       }) || null;
     }
 
+    function terminationTypeLabel(value) {
+      const normalized = rawText(value).trim().toLowerCase();
+
+      if (normalized === 'early_termination') {
+        return '提前解約';
+      }
+
+      if (normalized === 'non_renewal') {
+        return '合約到期不續約';
+      }
+
+      return '退租／解約';
+    }
+
+    function penaltyStatusLabel(value) {
+      const normalized = rawText(value).trim().toLowerCase();
+
+      if (normalized === 'charged') return '收取違約金';
+      if (normalized === 'waived') return '免收違約金';
+      if (normalized === 'not_applicable') return '不適用違約金';
+      return '待房東審核';
+    }
+
     function renderPage(data) {
       PAGE_DATA = data || {};
       CONTRACT = PAGE_DATA.contract || {};
@@ -1216,16 +1348,21 @@
       const currentStart = formatDateOnly(CONTRACT.start_date);
       const daysRemaining = Number(CONTRACT.days_remaining || 0);
       const today = todayDateText();
+      const hasValidEndDate = /^\d{4}-\d{2}-\d{2}$/.test(currentEnd);
+      const dayBeforeEnd = hasValidEndDate
+        ? formatDateObject(addDays(currentEnd, -1))
+        : '';
 
-      let maxMoveOutDate = currentEnd;
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(maxMoveOutDate)) {
-        maxMoveOutDate = '';
-      }
+      CAN_SUBMIT = canSubmit && hasValidEndDate && currentEnd >= today;
+      EARLY_TERMINATION_AVAILABLE =
+        CAN_SUBMIT &&
+        /^\d{4}-\d{2}-\d{2}$/.test(dayBeforeEnd) &&
+        dayBeforeEnd >= today;
+      TERMINATION_TYPE = 'non_renewal';
 
-      let defaultMoveOut = currentEnd;
-      if (!defaultMoveOut || defaultMoveOut < today) {
-        defaultMoveOut = today;
-      }
+      const defaultMoveOut = hasValidEndDate
+        ? currentEnd
+        : today;
 
       app.className = '';
       app.innerHTML = `
@@ -1237,8 +1374,8 @@
           </button>
 
           <div class="header-content">
-            <h1 class="page-title">申請解約</h1>
-            <div class="page-subtitle">填寫預計退租日期與原因，送交房東審核</div>
+            <h1 class="page-title">退租／解約申請</h1>
+            <div class="page-subtitle">選擇提前解約或到期不續約，送交房東審核</div>
           </div>
         </div>
 
@@ -1247,7 +1384,9 @@
             <div class="pending-title">已有待處理的解約申請</div>
             <div class="pending-message">
               申請編號：${safeText(pendingTermination.request_id)}<br>
+              申請類型：${safeText(terminationTypeLabel(pendingTermination.termination_type))}<br>
               預計退租日：${safeText(formatDateOnly(pendingTermination.move_out_date))}<br>
+              違約金狀態：${safeText(penaltyStatusLabel(pendingTermination.penalty_status))}<br>
               目前狀態：等待房東審核。請先返回「我的合約」查看或取消原申請。
             </div>
           </div>
@@ -1304,33 +1443,85 @@
         </section>
 
         <section class="card">
-          <div class="section-title">預計退租日期</div>
+          <div class="section-title">選擇退租類型</div>
+
+          <div class="termination-type-grid">
+            <button
+              id="nonRenewalTypeBtn"
+              class="termination-type-card active"
+              type="button"
+              onclick="selectTerminationType('non_renewal')"
+              ${CAN_SUBMIT ? '' : 'disabled'}
+            >
+              <div class="termination-type-icon">✓</div>
+              <div class="termination-type-title">合約到期不續約</div>
+              <div class="termination-type-desc">
+                依目前合約到期日退租，不屬於提前解約，違約金不適用。
+              </div>
+            </button>
+
+            <button
+              id="earlyTerminationTypeBtn"
+              class="termination-type-card danger"
+              type="button"
+              onclick="selectTerminationType('early_termination')"
+              ${EARLY_TERMINATION_AVAILABLE ? '' : 'disabled'}
+            >
+              <div class="termination-type-icon">!</div>
+              <div class="termination-type-title">提前解約</div>
+              <div class="termination-type-desc">
+                在合約到期日前搬離。房東審核時可決定收取或免收違約金。
+              </div>
+            </button>
+          </div>
+
+          ${!hasValidEndDate ? `
+            <div class="notice-box">
+              目前合約缺少有效到期日，暫時無法送出退租申請，請聯絡房東補齊合約資料。
+            </div>
+          ` : ''}
+
+          ${hasValidEndDate && currentEnd < today ? `
+            <div class="notice-box">
+              目前合約到期日已早於今天，無法從此頁送出新的退租申請，請直接聯絡房東處理。
+            </div>
+          ` : ''}
+
+          ${hasValidEndDate && currentEnd >= today && !EARLY_TERMINATION_AVAILABLE ? `
+            <div class="field-hint">
+              目前已無早於合約到期日的可選日期，因此不能提出提前解約；仍可選擇到期不續約。
+            </div>
+          ` : ''}
+        </section>
+
+        <section class="card">
+          <div id="moveOutSectionTitle" class="section-title">到期退租日期</div>
 
           <div class="field">
-            <label class="field-label" for="moveOutDate">退租／搬離日期</label>
+            <label id="moveOutDateLabel" class="field-label" for="moveOutDate">退租／搬離日期</label>
             <input
               id="moveOutDate"
               class="field-input"
               type="date"
-              min="${today}"
-              ${maxMoveOutDate ? `max="${maxMoveOutDate}"` : ''}
+              min="${currentEnd}"
+              max="${currentEnd}"
               value="${defaultMoveOut}"
               onchange="handleMoveOutDateChange()"
-              ${canSubmit ? '' : 'disabled'}
+              disabled
             />
-            <div class="field-hint">
-              日期不得早於今天；合約仍在有效期間時，不得晚於目前合約到期日。
+            <div id="moveOutDateHint" class="field-hint">
+              到期不續約的退租日期固定為目前合約到期日。
             </div>
 
-            <div class="date-shortcuts">
-              <button class="date-chip" data-shortcut="30" onclick="selectMoveOutShortcut(30)" ${canSubmit ? '' : 'disabled'}>
+            <div id="dateShortcuts" class="date-shortcuts" style="display:none;">
+              <button class="date-chip" data-shortcut="30" type="button" onclick="selectMoveOutShortcut(30)">
                 30 天後
               </button>
-              <button class="date-chip" data-shortcut="60" onclick="selectMoveOutShortcut(60)" ${canSubmit ? '' : 'disabled'}>
+              <button class="date-chip" data-shortcut="60" type="button" onclick="selectMoveOutShortcut(60)">
                 60 天後
               </button>
-              <button class="date-chip active" data-shortcut="end" onclick="selectContractEndDate()" ${canSubmit ? '' : 'disabled'}>
-                合約到期日
+              <button class="date-chip" data-shortcut="before-end" type="button" onclick="selectDayBeforeContractEnd()">
+                到期前一天
               </button>
             </div>
           </div>
@@ -1340,6 +1531,14 @@
             <div id="previewRange" class="preview-range">-</div>
             <div id="previewNote" class="preview-note">
               此日期為申請內容，實際解約日、費用結算、點交與押金退還仍以房東核准及雙方確認為準。
+            </div>
+          </div>
+
+          <div id="penaltyPanel" class="penalty-panel">
+            <div class="penalty-panel-title">違約金處理</div>
+            <div class="penalty-panel-main">不適用違約金</div>
+            <div class="penalty-panel-note">
+              到期不續約不屬於提前解約；仍需依合約完成費用結算與房屋點交。
             </div>
           </div>
         </section>
@@ -1355,14 +1554,14 @@
               maxlength="500"
               placeholder="請說明申請解約或退租的原因。"
               oninput="updateReasonCount()"
-              ${canSubmit ? '' : 'disabled'}
+              ${CAN_SUBMIT ? '' : 'disabled'}
             ></textarea>
 
             <div class="quick-reasons">
-              <button class="reason-chip" onclick="insertReason('合約到期後不再續租，預計依約辦理退租。')" ${canSubmit ? '' : 'disabled'}>到期不續租</button>
-              <button class="reason-chip" onclick="insertReason('因工作或就學地點調整，需要搬離目前住所。')" ${canSubmit ? '' : 'disabled'}>工作／就學搬遷</button>
-              <button class="reason-chip" onclick="insertReason('因個人生涯規劃調整，申請提前終止租約。')" ${canSubmit ? '' : 'disabled'}>個人生涯規劃</button>
-              <button class="reason-chip" onclick="insertReason('因居住需求改變，申請解約並辦理退租。')" ${canSubmit ? '' : 'disabled'}>居住需求改變</button>
+              <button class="reason-chip" type="button" onclick="insertReason('合約到期後不再續租，預計依約辦理退租。')" ${CAN_SUBMIT ? '' : 'disabled'}>到期不續租</button>
+              <button class="reason-chip" type="button" onclick="insertReason('因工作或就學地點調整，需要搬離目前住所。')" ${CAN_SUBMIT ? '' : 'disabled'}>工作／就學搬遷</button>
+              <button class="reason-chip" type="button" onclick="insertReason('因個人生涯規劃調整，申請提前終止租約。')" ${CAN_SUBMIT ? '' : 'disabled'}>個人生涯規劃</button>
+              <button class="reason-chip" type="button" onclick="insertReason('因居住需求改變，申請解約並辦理退租。')" ${CAN_SUBMIT ? '' : 'disabled'}>居住需求改變</button>
             </div>
 
             <div id="reasonCount" class="char-count">0 / 500</div>
@@ -1376,7 +1575,7 @@
               maxlength="300"
               placeholder="例如：可配合點交時間、聯絡時段、搬遷安排或其他需要房東了解的事項。"
               oninput="updateNoteCount()"
-              ${canSubmit ? '' : 'disabled'}
+              ${CAN_SUBMIT ? '' : 'disabled'}
             ></textarea>
             <div id="noteCount" class="char-count">0 / 300</div>
           </div>
@@ -1399,7 +1598,7 @@
           </div>
 
           <div class="notice-box">
-            提前解約可能涉及違約金、通知期間或其他合約責任。系統只負責送出申請，最終條件以現有租約與房東審核結果為準。
+            提前解約的違約金由房東審核時選擇「收取」或「免收」；選擇收取時，房東必須填寫實際金額與說明。到期不續約則不適用違約金。最終仍以現有租約及雙方確認結果為準。
           </div>
 
           <div class="page-actions">
@@ -1407,9 +1606,9 @@
               id="openConfirmBtn"
               class="btn btn-danger"
               onclick="openConfirmModal()"
-              ${canSubmit ? '' : 'disabled'}
+              ${CAN_SUBMIT ? '' : 'disabled'}
             >
-              ${canSubmit ? '送出解約申請' : '已有待處理申請'}
+              ${CAN_SUBMIT ? '送出退租申請' : '已有待處理申請'}
             </button>
 
             <button class="btn btn-light" onclick="goPage('tenant-contract.html')">
@@ -1419,7 +1618,128 @@
         </section>
       `;
 
+      applyTerminationTypeState();
+    }
+
+    function selectTerminationType(type) {
+      if (!CAN_SUBMIT) return;
+
+      if (
+        type === 'early_termination' &&
+        !EARLY_TERMINATION_AVAILABLE
+      ) {
+        showAlert(
+          '無法選擇提前解約',
+          '目前沒有早於合約到期日的可選退租日期。'
+        );
+        return;
+      }
+
+      TERMINATION_TYPE = type === 'early_termination'
+        ? 'early_termination'
+        : 'non_renewal';
+
+      applyTerminationTypeState();
+    }
+
+    function applyTerminationTypeState() {
+      const nonRenewalButton = document.getElementById('nonRenewalTypeBtn');
+      const earlyButton = document.getElementById('earlyTerminationTypeBtn');
+      const input = document.getElementById('moveOutDate');
+      const shortcuts = document.getElementById('dateShortcuts');
+      const sectionTitle = document.getElementById('moveOutSectionTitle');
+      const dateLabel = document.getElementById('moveOutDateLabel');
+      const dateHint = document.getElementById('moveOutDateHint');
+
+      if (!input) return;
+
+      const today = todayDateText();
+      const currentEnd = formatDateOnly(CONTRACT && CONTRACT.end_date);
+      const dayBeforeEnd = formatDateObject(addDays(currentEnd, -1));
+      const isEarly = TERMINATION_TYPE === 'early_termination';
+
+      if (nonRenewalButton) {
+        nonRenewalButton.classList.toggle('active', !isEarly);
+      }
+
+      if (earlyButton) {
+        earlyButton.classList.toggle('active', isEarly);
+      }
+
+      document.querySelectorAll('.date-chip').forEach(function (button) {
+        button.classList.remove('active');
+      });
+
+      if (!isEarly) {
+        input.value = currentEnd;
+        input.min = currentEnd;
+        input.max = currentEnd;
+        input.disabled = true;
+
+        if (shortcuts) shortcuts.style.display = 'none';
+        if (sectionTitle) sectionTitle.textContent = '到期退租日期';
+        if (dateLabel) dateLabel.textContent = '退租／搬離日期';
+        if (dateHint) {
+          dateHint.textContent = '到期不續約的退租日期固定為目前合約到期日。';
+        }
+      } else {
+        let candidate = formatDateObject(addDays(today, 30));
+
+        if (!candidate || candidate > dayBeforeEnd) {
+          candidate = dayBeforeEnd;
+        }
+
+        if (
+          !/^\d{4}-\d{2}-\d{2}$/.test(input.value) ||
+          input.value < today ||
+          input.value >= currentEnd
+        ) {
+          input.value = candidate;
+        }
+
+        input.min = today;
+        input.max = dayBeforeEnd;
+        input.disabled = !CAN_SUBMIT || !EARLY_TERMINATION_AVAILABLE;
+
+        if (shortcuts) shortcuts.style.display = 'grid';
+        if (sectionTitle) sectionTitle.textContent = '提前解約日期';
+        if (dateLabel) dateLabel.textContent = '預計提前退租日期';
+        if (dateHint) {
+          dateHint.textContent = '提前解約日期不得早於今天，且必須早於目前合約到期日。';
+        }
+      }
+
       updateTerminationPreview();
+      updatePenaltyPanel();
+    }
+
+    function updatePenaltyPanel() {
+      const panel = document.getElementById('penaltyPanel');
+      if (!panel) return;
+
+      const isEarly = TERMINATION_TYPE === 'early_termination';
+
+      panel.classList.toggle('warning', isEarly);
+
+      if (!isEarly) {
+        panel.innerHTML = `
+          <div class="penalty-panel-title">違約金處理</div>
+          <div class="penalty-panel-main">不適用違約金</div>
+          <div class="penalty-panel-note">
+            到期不續約不屬於提前解約；仍需依合約完成費用結算與房屋點交。
+          </div>
+        `;
+        return;
+      }
+
+      panel.innerHTML = `
+        <div class="penalty-panel-title">違約金待房東審核</div>
+        <div class="penalty-panel-main">房東可選擇收取或免收</div>
+        <div class="penalty-panel-note">
+          是否收取及實際金額由房東依租約內容與雙方協議決定。房東選擇收取時，必須填寫違約金金額與說明；選擇免收時，違約金為 NT$ 0。<br>
+          目前每月租金為 ${money(CONTRACT && CONTRACT.rent_amount)}，僅供確認現行合約資料，並非系統自動認定的違約金。
+        </div>
+      `;
     }
 
     function setMoveOutDate(value, shortcut) {
@@ -1439,24 +1759,30 @@
     }
 
     function selectMoveOutShortcut(days) {
-      const date = clampDateToContract(
-        addDays(todayDateText(), days)
-      );
+      if (TERMINATION_TYPE !== 'early_termination') return;
+
+      const currentEnd = formatDateOnly(CONTRACT && CONTRACT.end_date);
+      const dayBeforeEnd = formatDateObject(addDays(currentEnd, -1));
+      let date = formatDateObject(addDays(todayDateText(), days));
 
       if (!date) return;
-      setMoveOutDate(formatDateObject(date), String(days));
+      if (date > dayBeforeEnd) date = dayBeforeEnd;
+
+      setMoveOutDate(date, String(days));
     }
 
-    function selectContractEndDate() {
-      const endDate = formatDateOnly(CONTRACT && CONTRACT.end_date);
-      const today = todayDateText();
+    function selectDayBeforeContractEnd() {
+      if (TERMINATION_TYPE !== 'early_termination') return;
 
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      const currentEnd = formatDateOnly(CONTRACT && CONTRACT.end_date);
+      const dayBeforeEnd = formatDateObject(addDays(currentEnd, -1));
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dayBeforeEnd)) {
         showAlert('無法選擇日期', '目前合約缺少有效的到期日。');
         return;
       }
 
-      setMoveOutDate(endDate < today ? today : endDate, 'end');
+      setMoveOutDate(dayBeforeEnd, 'before-end');
     }
 
     function handleMoveOutDateChange() {
@@ -1475,19 +1801,16 @@
       if (!input || !preview || !note) return;
 
       const moveOutDate = rawText(input.value).trim();
-      const currentEnd = formatDateOnly(CONTRACT && CONTRACT.end_date);
       const today = todayDateText();
+      const isEarly = TERMINATION_TYPE === 'early_termination';
 
       if (!moveOutDate) {
         preview.textContent = '請選擇預計退租日期';
-        note.textContent = '日期確認後，系統會顯示距離退租日的天數及是否屬於提前解約。';
+        note.textContent = '日期確認後，系統會顯示距離退租日的天數及申請類型。';
         return;
       }
 
       const daysUntilMoveOut = diffDays(today, moveOutDate);
-      const earlyTermination =
-        /^\d{4}-\d{2}-\d{2}$/.test(currentEnd) &&
-        moveOutDate < currentEnd;
 
       preview.textContent =
         moveOutDate +
@@ -1495,9 +1818,9 @@
         Math.max(daysUntilMoveOut, 0) +
         ' 天）';
 
-      note.innerHTML = earlyTermination
-        ? '<span class="status-pill warning">提前解約申請</span>　退租日早於目前合約到期日，可能涉及通知期間、違約金或其他合約責任。'
-        : '<span class="status-pill success">合約到期退租</span>　退租日為目前合約到期日，仍需完成房屋點交與費用結算。';
+      note.innerHTML = isEarly
+        ? '<span class="status-pill warning">提前解約</span>　房東審核時將決定收取或免收違約金，收取時另填實際金額。'
+        : '<span class="status-pill success">合約到期不續約</span>　退租日固定為目前合約到期日，違約金不適用。';
     }
 
     function insertReason(text) {
@@ -1551,12 +1874,12 @@
       return {
         request_type: 'termination',
         requested_date: todayDateText(),
+        termination_type: TERMINATION_TYPE,
         move_out_date: moveOutDate,
         reason: reason,
         note: note,
         early_termination:
-          /^\d{4}-\d{2}-\d{2}$/.test(currentEnd) &&
-          moveOutDate < currentEnd,
+          TERMINATION_TYPE === 'early_termination',
         current_end_date: currentEnd
       };
     }
@@ -1564,6 +1887,17 @@
     function validateForm(data) {
       const today = todayDateText();
       const currentEnd = data.current_end_date;
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(currentEnd)) {
+        return '目前合約缺少有效到期日，無法送出申請。';
+      }
+
+      if (
+        data.termination_type !== 'early_termination' &&
+        data.termination_type !== 'non_renewal'
+      ) {
+        return '請選擇提前解約或合約到期不續約。';
+      }
 
       if (!data.move_out_date) {
         return '請選擇預計退租日期。';
@@ -1578,11 +1912,17 @@
       }
 
       if (
-        /^\d{4}-\d{2}-\d{2}$/.test(currentEnd) &&
-        currentEnd >= today &&
-        data.move_out_date > currentEnd
+        data.termination_type === 'non_renewal' &&
+        data.move_out_date !== currentEnd
       ) {
-        return '退租日期不能晚於目前合約到期日。';
+        return '到期不續約的退租日期必須等於目前合約到期日。';
+      }
+
+      if (
+        data.termination_type === 'early_termination' &&
+        data.move_out_date >= currentEnd
+      ) {
+        return '提前解約日期必須早於目前合約到期日。';
       }
 
       if (!data.reason) {
@@ -1627,7 +1967,11 @@
         </div>
         <div class="confirm-row">
           <div class="confirm-label">申請類型</div>
-          <div class="confirm-value">${data.early_termination ? '提前解約' : '到期退租'}</div>
+          <div class="confirm-value">${safeText(terminationTypeLabel(data.termination_type))}</div>
+        </div>
+        <div class="confirm-row">
+          <div class="confirm-label">違約金</div>
+          <div class="confirm-value">${data.early_termination ? '待房東決定收取／免收及金額' : '不適用'}</div>
         </div>
         <div class="confirm-row">
           <div class="confirm-label">解約原因</div>
@@ -1672,6 +2016,7 @@
           {
             request_type: data.request_type,
             requested_date: data.requested_date,
+            termination_type: data.termination_type,
             move_out_date: data.move_out_date,
             reason: data.reason,
             note: data.note
