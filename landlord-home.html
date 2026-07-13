@@ -2,12 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
-
   <title>CMWebs 房東首頁</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -15,34 +13,24 @@
   <style>
     :root {
       --app-height: 100vh;
-      --nav-height: 66px;
-
+      --nav-height: 64px;
       --primary: #06c755;
-      --primary-dark: #05aa49;
-      --primary-soft: #eaf9f0;
-
-      --background: #f4f6f9;
-      --surface: #ffffff;
-
-      --text: #222222;
-      --muted: #747981;
-      --border: #e7eaee;
-
-      --danger: #d93025;
-      --danger-soft: #fff0ef;
-
-      --blue: #1a73e8;
-      --blue-soft: #eaf2ff;
-
-      --purple: #7654c4;
-      --purple-soft: #f2edff;
-
-      --orange: #a76500;
-      --orange-soft: #fff4dc;
-
-      --shadow:
-        0 4px 16px
-        rgba(0, 0, 0, 0.065);
+      --primary-dark: #05a948;
+      --primary-soft: #effcf4;
+      --page-bg: #f4f6fa;
+      --card-bg: #ffffff;
+      --text-main: #171a1f;
+      --text-muted: #747b85;
+      --border: #e7ebf0;
+      --danger: #e5484d;
+      --danger-soft: #fff1f2;
+      --warning: #e69b00;
+      --warning-soft: #fff7df;
+      --blue: #246bfd;
+      --blue-soft: #eef4ff;
+      --purple: #7c3aed;
+      --purple-soft: #f4efff;
+      --shadow: 0 7px 24px rgba(30, 40, 60, 0.07);
     }
 
     * {
@@ -55,23 +43,18 @@
       height: 100%;
       margin: 0;
       overflow: hidden;
-      overscroll-behavior: none;
-      background: var(--background);
-      color: var(--text);
+      background: var(--page-bg);
+      color: var(--text-main);
       font-family:
         Arial,
         "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
         sans-serif;
     }
 
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-    }
-
     button {
+      font: inherit;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -82,249 +65,307 @@
       height: var(--app-height);
       margin: 0 auto;
       overflow: hidden;
-      background: var(--background);
+      background: var(--page-bg);
     }
 
     .page {
-      width: 100%;
       height: 100%;
-
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       padding:
         18px
-        15px
-        calc(
-          var(--nav-height) +
-          28px +
-          env(safe-area-inset-bottom)
-        );
-
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior-y: contain;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .page-header {
-      margin-bottom: 15px;
-    }
-
-    .page-title {
-      margin: 0 0 5px;
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: -0.4px;
-    }
-
-    .page-subtitle {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
+        16px
+        calc(var(--nav-height) + 28px + env(safe-area-inset-bottom));
     }
 
     .card {
-      padding: 17px;
-      margin-bottom: 13px;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      background: var(--surface);
+      margin-bottom: 14px;
+      border: 1px solid rgba(231, 235, 240, 0.92);
+      border-radius: 18px;
+      background: var(--card-bg);
       box-shadow: var(--shadow);
     }
 
-    .profile-row {
+    .hero-card {
+      overflow: hidden;
+      background:
+        linear-gradient(145deg, #07c95a 0%, #05b64f 58%, #039f44 100%);
+      color: #ffffff;
+    }
+
+    .hero-main {
+      padding: 20px;
+    }
+
+    .hero-top {
       display: flex;
-      align-items: center;
-      gap: 13px;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
     }
 
-    .avatar {
-      display: flex;
-      width: 48px;
-      height: 48px;
-      flex: 0 0 48px;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background: var(--primary-soft);
-      color: var(--primary);
-      font-size: 20px;
-      font-weight: 900;
-    }
-
-    .profile-content {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .profile-name {
-      font-size: 18px;
-      font-weight: 900;
-      line-height: 1.4;
-      word-break: break-word;
-    }
-
-    .profile-id {
-      margin-top: 4px;
-      color: var(--muted);
+    .eyebrow {
+      margin-bottom: 5px;
+      color: rgba(255, 255, 255, 0.82);
       font-size: 12px;
-      word-break: break-all;
+      font-weight: 700;
     }
 
-    .status-badge {
-      display: inline-flex;
-      min-height: 24px;
-      padding: 4px 9px;
-      align-items: center;
-      border-radius: 999px;
-      background: var(--primary-soft);
-      color: #10893e;
-      font-size: 11px;
+    .hero-title {
+      margin: 0;
+      font-size: 24px;
       font-weight: 900;
+      letter-spacing: -0.5px;
     }
 
-    .section-title {
-      margin-bottom: 12px;
-      font-size: 17px;
-      font-weight: 900;
-    }
-
-    .overview-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .overview-item {
-      padding: 13px;
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      background: #fafbfc;
-    }
-
-    .overview-label {
-      color: var(--muted);
+    .hero-meta {
+      margin-top: 7px;
+      color: rgba(255, 255, 255, 0.84);
       font-size: 12px;
       line-height: 1.5;
     }
 
-    .overview-value {
-      margin-top: 5px;
-      color: #222222;
-      font-size: 22px;
-      font-weight: 900;
-      word-break: break-word;
+    .refresh-button {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
     }
 
-    .overview-value.small-value {
-      font-size: 17px;
+    .refresh-button svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    .overview-item.danger .overview-value {
-      color: var(--danger);
+    .refresh-button.loading svg {
+      animation: spin 0.9s linear infinite;
     }
 
-    .overview-item.success .overview-value {
-      color: #10893e;
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
-    .amount-panel {
-      padding: 15px;
-      margin-top: 11px;
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .hero-stat {
+      min-width: 0;
+      padding: 12px 13px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 14px;
-      background: #f7f8fa;
+      background: rgba(255, 255, 255, 0.13);
     }
 
-    .amount-label {
-      color: var(--muted);
+    .hero-stat-label {
+      margin-bottom: 4px;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .hero-stat-value {
+      overflow: hidden;
+      font-size: 18px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hero-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.08);
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 11px;
+    }
+
+    .section-card {
+      padding: 17px;
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .section-hint {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .collection-amount {
+      margin-bottom: 12px;
+      padding: 15px;
+      border-radius: 15px;
+      background: var(--danger-soft);
+    }
+
+    .collection-label {
+      margin-bottom: 5px;
+      color: #a13a40;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .collection-value {
+      color: var(--danger);
+      font-size: 29px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .progress-track {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #edf0f3;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background:
+        linear-gradient(90deg, var(--primary), #55d98c);
+      transition: width 0.35s ease;
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 9px;
+      color: var(--text-muted);
       font-size: 12px;
     }
 
-    .amount-value {
-      margin-top: 5px;
-      font-size: 29px;
+    .progress-value {
+      color: var(--text-main);
       font-weight: 900;
-      line-height: 1.25;
     }
 
-    .amount-value.unpaid {
-      color: var(--danger);
-    }
-
-    .amount-value.paid {
-      color: #10893e;
-    }
-
-    .detail-list {
-      margin-top: 11px;
-    }
-
-    .detail-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 11px 0;
-      border-top: 1px solid #eeeeee;
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    .detail-row:first-child {
-      border-top: none;
-    }
-
-    .detail-label {
-      flex: 0 0 auto;
-      color: var(--muted);
-    }
-
-    .detail-value {
-      min-width: 0;
-      font-weight: 800;
-      text-align: right;
-      word-break: break-word;
-    }
-
-    .function-grid {
+    .summary-grid {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
+      margin-top: 13px;
     }
 
-    .function-card {
-      display: flex;
-      width: 100%;
-      min-height: 82px;
-      padding: 14px;
-      align-items: center;
-      gap: 13px;
+    .summary-box {
+      min-width: 0;
+      padding: 13px;
       border: 1px solid var(--border);
       border-radius: 14px;
-      background: #ffffff;
-      color: #222222;
+      background: #fbfcfd;
+    }
+
+    .summary-label {
+      margin-bottom: 5px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .summary-value {
+      overflow: hidden;
+      font-size: 16px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .summary-value.green {
+      color: var(--primary-dark);
+    }
+
+    .action-list {
+      overflow: hidden;
+      border-radius: 14px;
+    }
+
+    .action-item {
+      width: 100%;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 14px 2px;
+      border: 0;
+      border-top: 1px solid var(--border);
+      background: transparent;
       text-align: left;
       cursor: pointer;
-      box-shadow:
-        0 2px 10px
-        rgba(0, 0, 0, 0.035);
     }
 
-    .function-card:active {
-      opacity: 0.7;
-      transform: scale(0.995);
+    .action-item:first-child {
+      border-top: 0;
     }
 
-    .function-icon {
+    .action-item:active {
+      opacity: 0.67;
+    }
+
+    .action-icon {
+      width: 43px;
+      height: 43px;
+      flex: 0 0 43px;
       display: flex;
-      width: 47px;
-      height: 47px;
-      flex: 0 0 47px;
       align-items: center;
       justify-content: center;
-      border-radius: 13px;
+      border-radius: 14px;
+      background: var(--warning-soft);
+      color: var(--warning);
     }
 
-    .function-icon svg {
-      width: 25px;
-      height: 25px;
+    .action-icon.blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .action-icon.purple {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .action-icon.green {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .action-icon svg {
+      width: 23px;
+      height: 23px;
       fill: none;
       stroke: currentColor;
       stroke-width: 1.9;
@@ -332,179 +373,203 @@
       stroke-linejoin: round;
     }
 
-    .function-icon.red {
-      background: var(--danger-soft);
-      color: var(--danger);
-    }
-
-    .function-icon.green {
-      background: var(--primary-soft);
-      color: var(--primary);
-    }
-
-    .function-icon.blue {
-      background: var(--blue-soft);
-      color: var(--blue);
-    }
-
-    .function-icon.purple {
-      background: var(--purple-soft);
-      color: var(--purple);
-    }
-
-    .function-icon.orange {
-      background: var(--orange-soft);
-      color: var(--orange);
-    }
-
-    .function-icon.gray {
-      background: #f0f2f4;
-      color: #666c75;
-    }
-
-    .function-content {
+    .action-main {
       min-width: 0;
       flex: 1;
     }
 
-    .function-title {
+    .action-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 4px;
+    }
+
+    .action-title {
       font-size: 15px;
       font-weight: 900;
+    }
+
+    .action-desc {
+      color: var(--text-muted);
+      font-size: 12px;
       line-height: 1.45;
     }
 
-    .function-desc {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
-    }
-
-    .function-arrow {
+    .action-arrow {
       flex: 0 0 auto;
-      color: #a3a7ad;
-      font-size: 24px;
-      line-height: 1;
+      color: #b4bac2;
+      font-size: 22px;
+      font-weight: 700;
     }
 
-    .page-actions {
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 23px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #f0f2f5;
+      color: #6c727c;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .badge.warning {
+      background: var(--warning-soft);
+      color: #b87500;
+    }
+
+    .badge.danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .badge.green {
+      background: var(--primary-soft);
+      color: #079641;
+    }
+
+    .badge.purple {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .quick-grid {
       display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
-      margin-top: 16px;
     }
 
-    .btn {
-      width: 100%;
-      min-height: 45px;
-      padding: 12px 14px;
-      border: 0;
+    .quick-button {
+      min-height: 93px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: #ffffff;
+      color: var(--text-main);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .quick-button:active {
+      opacity: 0.67;
+    }
+
+    .quick-icon {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 11px;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .quick-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .quick-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .quick-desc {
+      margin-top: 3px;
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .loading-card,
+    .error-card {
+      padding: 28px 18px;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 28px;
+      height: 28px;
+      margin: 0 auto 12px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    .loading-text,
+    .error-text {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .error-title {
+      margin-bottom: 8px;
+      color: var(--danger);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .primary-button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 13px;
+      border: 0;
+      border-radius: 13px;
+      background: var(--primary);
+      color: #ffffff;
       font-size: 14px;
       font-weight: 900;
       cursor: pointer;
     }
 
-    .btn:active {
-      opacity: 0.72;
-    }
-
-    .btn-black {
-      background: #222222;
-      color: #ffffff;
-    }
-
-    .btn-light {
-      background: #eceff3;
-      color: #333333;
-    }
-
-    .loading,
-    .error-box {
-      padding: 42px 20px;
-      text-align: center;
-    }
-
-    .loading {
-      color: var(--muted);
-    }
-
-    .error-card {
-      padding: 18px;
-      border-radius: 16px;
-      background: #ffffff;
-      box-shadow: var(--shadow);
-    }
-
-    .error-title {
-      color: var(--danger);
-      font-size: 19px;
-      font-weight: 900;
-      text-align: left;
-    }
-
-    .error-message {
-      margin-top: 9px;
-      color: #555555;
-      font-size: 14px;
-      line-height: 1.7;
-      text-align: left;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .error-detail {
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 10px;
-      background: #f7f8fa;
-      color: #777777;
-      font-size: 11px;
-      line-height: 1.6;
-      text-align: left;
-      word-break: break-all;
-    }
-
-    /* ==================================================
-       固定底部導覽列
-       ================================================== */
-
     .bottom-nav {
       position: absolute;
+      z-index: 1000;
       right: 0;
       bottom: 0;
       left: 0;
-      z-index: 99999;
-      width: 100%;
-      padding-bottom: env(safe-area-inset-bottom);
-      border-top: 1px solid #eceff3;
+      border-top: 1px solid #e8ecf1;
       background: rgba(255, 255, 255, 0.98);
-      box-shadow:
-        0 -2px 12px
-        rgba(0, 0, 0, 0.05);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
     }
 
     .bottom-nav-inner {
+      height: var(--nav-height);
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      height: var(--nav-height);
     }
 
     .nav-item {
       position: relative;
       display: flex;
-      appearance: none;
-      -webkit-appearance: none;
       align-items: center;
       justify-content: center;
       flex-direction: column;
       gap: 5px;
       border: 0;
       background: transparent;
-      color: #8b9098;
+      color: #8b919a;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
     }
 
@@ -533,22 +598,37 @@
       content: "";
     }
 
-    .nav-item:active {
-      opacity: 0.65;
+    .toast {
+      position: absolute;
+      z-index: 3000;
+      right: 18px;
+      bottom: calc(var(--nav-height) + 22px + env(safe-area-inset-bottom));
+      left: 18px;
+      display: none;
+      padding: 13px 15px;
+      border-radius: 13px;
+      background: rgba(25, 28, 33, 0.94);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: center;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
     }
 
-    @media (min-width: 480px) {
-      .function-grid {
-        grid-template-columns: 1fr 1fr;
+    .toast.show {
+      display: block;
+    }
+
+    @media (max-width: 390px) {
+      .summary-grid,
+      .quick-grid {
+        grid-template-columns: 1fr;
       }
 
-      .function-card {
-        min-height: 112px;
-        align-items: flex-start;
-      }
-
-      .function-arrow {
-        align-self: center;
+      .page {
+        padding-right: 13px;
+        padding-left: 13px;
       }
     }
   </style>
@@ -557,82 +637,60 @@
 <body>
   <div class="app-shell">
     <main class="page">
-      <div id="app" class="loading">
-        資料載入中...
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">房東首頁資料載入中...</div>
+        </section>
       </div>
     </main>
 
     <nav class="bottom-nav">
       <div class="bottom-nav-inner">
-        <button
-          class="nav-item active"
-          onclick="goPage('landlord-home.html')"
-        >
+        <button class="nav-item active" type="button" onclick="goPage('landlord-home.html')">
           <svg viewBox="0 0 24 24">
             <path d="M4 11.5L12 5l8 6.5"></path>
             <path d="M6.5 10.5V19h11v-8.5"></path>
             <path d="M9.5 19v-5h5v5"></path>
           </svg>
-
           <span>首頁</span>
         </button>
 
-        <button
-          class="nav-item"
-          onclick="goPage('landlord-arrears.html')"
-        >
+        <button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')">
           <svg viewBox="0 0 24 24">
-            <rect
-              x="5"
-              y="4.5"
-              width="14"
-              height="15"
-              rx="2"
-            ></rect>
-
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
             <path d="M8.5 9h7"></path>
             <path d="M8.5 13h7"></path>
             <path d="M8.5 17h4"></path>
           </svg>
-
           <span>欠款</span>
         </button>
 
-        <button
-          class="nav-item"
-          onclick="goPage('landlord-tenants.html')"
-        >
+        <button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')">
           <svg viewBox="0 0 24 24">
             <circle cx="9" cy="8" r="3"></circle>
             <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
             <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
             <path d="M16 14c2.2.4 3.5 2 4 5"></path>
           </svg>
-
           <span>房客</span>
         </button>
 
-        <button
-          class="nav-item"
-          onclick="goPage('landlord-more.html')"
-        >
+        <button class="nav-item" type="button" onclick="goPage('landlord-more.html')">
           <svg viewBox="0 0 24 24">
             <circle cx="6" cy="12" r="1.5"></circle>
             <circle cx="12" cy="12" r="1.5"></circle>
             <circle cx="18" cy="12" r="1.5"></circle>
           </svg>
-
           <span>更多</span>
         </button>
       </div>
     </nav>
+
+    <div id="toast" class="toast"></div>
   </div>
 
   <script>
-    // ==================================================
-    // 基本設定
-    // ==================================================
-
     const API_URL =
       'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
@@ -642,59 +700,26 @@
     const TEST_LINE_USER_ID =
       'Uf708ece75c9c985cfe1dbda48d123511';
 
-    const QUERY_PARAMS =
-      new URLSearchParams(
-        location.search
-      );
+    const URL_PARAMS =
+      new URLSearchParams(location.search);
 
     const TEST_MODE =
-      QUERY_PARAMS.get('test') ===
-      '1';
+      URL_PARAMS.get('test') === '1';
 
     let LINE_USER_ID = '';
-    let LANDLORD_HOME = null;
+    let toastTimer = null;
 
-    const app =
-      document.getElementById(
-        'app'
-      );
-
-    // ==================================================
-    // 固定畫面高度
-    // ==================================================
-
-    function updateAppHeight() {
+    function setAppHeight() {
       const height =
-        window.visualViewport
+        window.visualViewport && window.visualViewport.height
           ? window.visualViewport.height
           : window.innerHeight;
 
-      document.documentElement
-        .style
-        .setProperty(
-          '--app-height',
-          height + 'px'
-        );
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
     }
-
-    updateAppHeight();
-
-    window.addEventListener(
-      'resize',
-      updateAppHeight
-    );
-
-    if (window.visualViewport) {
-      window.visualViewport
-        .addEventListener(
-          'resize',
-          updateAppHeight
-        );
-    }
-
-    // ==================================================
-    // 工具函式
-    // ==================================================
 
     function rawText(value) {
       if (
@@ -707,7 +732,7 @@
       return String(value);
     }
 
-    function escapeHtml(value) {
+    function safeHtml(value) {
       return rawText(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -716,406 +741,177 @@
         .replace(/'/g, '&#039;');
     }
 
-    function safeText(value) {
-      const text =
-        rawText(value).trim();
-
-      return text
-        ? escapeHtml(text)
-        : '-';
-    }
-
     function money(value) {
       const number =
         Number(value || 0);
 
       return (
         'NT$ ' +
-        Math.round(
-          isFinite(number)
-            ? number
-            : 0
-        ).toLocaleString(
+        Math.round(number).toLocaleString(
           'zh-TW'
         )
       );
     }
 
-    function numberText(value) {
-      const number =
-        Number(value || 0);
-
-      return isFinite(number)
-        ? number.toLocaleString(
-            'zh-TW'
-          )
-        : '0';
+    function numberValue(value) {
+      return Number(value || 0) || 0;
     }
 
-    function getInitial(name) {
-      const text =
-        rawText(name).trim();
-
-      return text
-        ? text.slice(0, 1)
-        : '房';
-    }
-
-    function dateFromValue(value) {
-      if (
-        value === undefined ||
-        value === null ||
-        value === ''
-      ) {
-        return null;
-      }
-
-      if (
-        typeof value === 'number' ||
-        /^\d{5}(\.\d+)?$/.test(
-          rawText(value).trim()
-        )
-      ) {
-        const serial =
-          Number(value);
-
-        if (
-          isFinite(serial) &&
-          serial > 20000 &&
-          serial < 100000
-        ) {
-          return new Date(
-            Date.UTC(
-              1899,
-              11,
-              30
-            ) +
-            serial *
-            86400000
-          );
-        }
-      }
-
-      const text =
-        rawText(value).trim();
-
-      const parsed =
-        new Date(text);
-
-      return isNaN(
-        parsed.getTime()
-      )
-        ? null
-        : parsed;
-    }
-
-    function formatDateTime(value) {
-      const date =
-        dateFromValue(value);
-
-      if (!date) {
-        return safeText(value);
-      }
-
-      return new Intl.DateTimeFormat(
-        'zh-TW',
-        {
-          timeZone:
-            'Asia/Taipei',
-
-          year:
-            'numeric',
-
-          month:
-            '2-digit',
-
-          day:
-            '2-digit',
-
-          hour:
-            '2-digit',
-
-          minute:
-            '2-digit',
-
-          hour12:
-            false
-        }
-      ).format(date);
-    }
-
-    function goPage(filename) {
-      const testSuffix =
-        TEST_MODE
-          ? '&test=1'
-          : '';
-
-      location.href =
-        filename +
-        '?v=' +
-        Date.now() +
-        testSuffix;
-    }
-
-    function renderLoading() {
-      app.className =
-        'loading';
-
-      app.innerHTML =
-        '資料載入中...';
-    }
-
-    function renderError(
-      message,
-      detail
-    ) {
-      app.className = '';
-
-      app.innerHTML = `
-        <div class="error-card">
-          <div class="error-title">
-            資料讀取失敗
-          </div>
-
-          <div class="error-message">
-            ${safeText(
-              message ||
-              '讀取失敗'
-            )}
-          </div>
-
-          ${
-            detail
-              ? `
-                <div class="error-detail">
-                  ${safeText(detail)}
-                </div>
-              `
-              : ''
-          }
-
-          <div class="page-actions">
-            <button
-              class="btn btn-black"
-              onclick="location.reload()"
-            >
-              重新整理
-            </button>
-
-            <button
-              class="btn btn-light"
-              onclick="goPage(
-                'landlord-more.html'
-              )"
-            >
-              前往更多功能
-            </button>
-          </div>
-        </div>
-      `;
-    }
-
-    // ==================================================
-    // JSONP API
-    // ==================================================
-
-    function callApi(
-      action,
-      params
-    ) {
-      return new Promise(
-        function (
-          resolve,
-          reject
-        ) {
-          if (!LINE_USER_ID) {
-            reject(
-              new Error(
-                '缺少房東 LINE User ID'
-              )
-            );
-
-            return;
-          }
-
-          params =
-            params || {};
-
-          const callbackName =
-            'cmwebsJsonp_' +
-            Date.now() +
-            '_' +
-            Math.floor(
-              Math.random() *
-              1000000
-            );
-
-          const script =
-            document.createElement(
-              'script'
-            );
-
-          let finished = false;
-          let timer = null;
-
-          function cleanup() {
-            if (timer) {
-              clearTimeout(timer);
-            }
-
-            if (
-              script.parentNode
-            ) {
-              script.parentNode
-                .removeChild(script);
-            }
-
-            try {
-              delete window[
-                callbackName
-              ];
-            } catch (error) {
-              window[
-                callbackName
-              ] = undefined;
-            }
-          }
-
-          window[callbackName] =
-            function (json) {
-              if (finished) {
-                return;
-              }
-
-              finished = true;
-              cleanup();
-
-              if (
-                !json ||
-                json.success !== true
-              ) {
-                const message =
-                  json &&
-                  json.message
-                    ? json.message
-                    : 'API 查詢失敗';
-
-                const code =
-                  json &&
-                  json.code
-                    ? json.code
-                    : '';
-
-                reject(
-                  new Error(
-                    code
-                      ? message +
-                        '\n錯誤代碼：' +
-                        code
-                      : message
-                  )
-                );
-
-                return;
-              }
-
-              resolve(
-                json.data ||
-                {}
-              );
-            };
-
-          timer =
-            setTimeout(
-              function () {
-                if (finished) {
-                  return;
-                }
-
-                finished = true;
-                cleanup();
-
-                reject(
-                  new Error(
-                    'API 載入逾時'
-                  )
-                );
-              },
-              30000
-            );
-
-          let url =
-            API_URL +
-            '?v2_action=' +
-            encodeURIComponent(
-              action
-            ) +
-            '&line_user_id=' +
-            encodeURIComponent(
-              LINE_USER_ID
-            ) +
-            '&callback=' +
-            encodeURIComponent(
-              callbackName
-            ) +
-            '&_=' +
-            Date.now();
-
-          Object.keys(params)
-            .forEach(
-              function (key) {
-                const value =
-                  params[key];
-
-                if (
-                  value === undefined ||
-                  value === null
-                ) {
-                  return;
-                }
-
-                url +=
-                  '&' +
-                  encodeURIComponent(
-                    key
-                  ) +
-                  '=' +
-                  encodeURIComponent(
-                    value
-                  );
-              }
-            );
-
-          script.charset =
-            'UTF-8';
-
-          script.onerror =
-            function () {
-              /*
-               * Apps Script 可能重新導向至
-               * script.googleusercontent.com。
-               * 某些 LINE WebView 會誤觸 onerror，
-               * 因此交由 callback 或 timeout 判定。
-               */
-              console.warn(
-                'JSONP script onerror ignored.'
-              );
-            };
-
-          script.src =
-            url;
-
-          document.body
-            .appendChild(
-              script
-            );
-        }
+    function clamp(value, min, max) {
+      return Math.min(
+        Math.max(value, min),
+        max
       );
     }
 
-    // ==================================================
-    // LIFF
-    // ==================================================
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
+
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
+    function showToast(message) {
+      const toast =
+        document.getElementById('toast');
+
+      toast.textContent =
+        rawText(message) || '提示';
+
+      toast.classList.add('show');
+
+      clearTimeout(toastTimer);
+
+      toastTimer =
+        setTimeout(function () {
+          toast.classList.remove('show');
+        }, 2300);
+    }
+
+    function jsonpRequest(action, params) {
+      return new Promise(function (resolve, reject) {
+        if (!LINE_USER_ID) {
+          reject(
+            new Error('缺少 LINE User ID')
+          );
+
+          return;
+        }
+
+        const callbackName =
+          '__cmwebs_home_' +
+          Date.now() +
+          '_' +
+          Math.floor(
+            Math.random() * 1000000
+          );
+
+        const script =
+          document.createElement('script');
+
+        let finished = false;
+
+        const timer =
+          setTimeout(function () {
+            if (finished) {
+              return;
+            }
+
+            finished = true;
+            cleanup();
+            reject(
+              new Error('API 載入逾時')
+            );
+          }, 30000);
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(
+              script
+            );
+          }
+
+          try {
+            delete window[callbackName];
+          } catch (error) {
+            window[callbackName] =
+              undefined;
+          }
+        }
+
+        window[callbackName] =
+          function (result) {
+            if (finished) {
+              return;
+            }
+
+            finished = true;
+            cleanup();
+            resolve(result);
+          };
+
+        let url =
+          API_URL +
+          '?v2_action=' +
+          encodeURIComponent(action) +
+          '&line_user_id=' +
+          encodeURIComponent(
+            LINE_USER_ID
+          ) +
+          '&callback=' +
+          encodeURIComponent(
+            callbackName
+          ) +
+          '&_=' +
+          Date.now();
+
+        Object.keys(
+          params || {}
+        ).forEach(function (key) {
+          const value =
+            params[key];
+
+          if (
+            value === undefined ||
+            value === null
+          ) {
+            return;
+          }
+
+          url +=
+            '&' +
+            encodeURIComponent(key) +
+            '=' +
+            encodeURIComponent(value);
+        });
+
+        script.charset =
+          'UTF-8';
+
+        script.onerror =
+          function () {
+            console.warn(
+              'JSONP script onerror ignored.'
+            );
+          };
+
+        script.src = url;
+        document.body.appendChild(script);
+      });
+    }
 
     async function initLineUserId() {
       if (TEST_MODE) {
@@ -1135,13 +931,10 @@
       }
 
       await liff.init({
-        liffId:
-          LIFF_ID
+        liffId: LIFF_ID
       });
 
-      if (
-        !liff.isLoggedIn()
-      ) {
+      if (!liff.isLoggedIn()) {
         liff.login({
           redirectUri:
             location.href
@@ -1154,8 +947,7 @@
         await liff.getProfile();
 
       LINE_USER_ID =
-        profile.userId ||
-        '';
+        profile.userId || '';
 
       if (!LINE_USER_ID) {
         throw new Error(
@@ -1166,491 +958,776 @@
       return true;
     }
 
-    // ==================================================
-    // 首頁渲染
-    // ==================================================
+    function unwrapData(result) {
+      if (
+        result &&
+        result.success === true
+      ) {
+        return (
+          result.data !== undefined
+            ? result.data
+            : result
+        );
+      }
 
-    function renderHome(data) {
-      LANDLORD_HOME =
-        data || {};
+      throw new Error(
+        result && result.message
+          ? result.message
+          : '查詢失敗'
+      );
+    }
 
-      const unpaidTotal =
-        Number(
-          LANDLORD_HOME
-            .unpaid_total_amount ||
-          0
+    function findSummaryNumber(
+      summary,
+      keys
+    ) {
+      summary =
+        summary || {};
+
+      for (
+        let index = 0;
+        index < keys.length;
+        index += 1
+      ) {
+        const key =
+          keys[index];
+
+        if (
+          summary[key] !== undefined &&
+          summary[key] !== null &&
+          summary[key] !== ''
+        ) {
+          return numberValue(
+            summary[key]
+          );
+        }
+      }
+
+      return 0;
+    }
+
+    function buildActionSummary(
+      contractData,
+      paymentData,
+      messageData
+    ) {
+      const contractSummary =
+        contractData &&
+        contractData.summary
+          ? contractData.summary
+          : {};
+
+      const paymentSummary =
+        paymentData &&
+        paymentData.summary
+          ? paymentData.summary
+          : {};
+
+      const messageSummary =
+        messageData &&
+        messageData.summary
+          ? messageData.summary
+          : {};
+
+      return {
+        contractPending:
+          findSummaryNumber(
+            contractSummary,
+            [
+              'pending_count',
+              'pending'
+            ]
+          ),
+
+        contractApproved:
+          findSummaryNumber(
+            contractSummary,
+            [
+              'approved_count',
+              'approved'
+            ]
+          ),
+
+        paymentPending:
+          findSummaryNumber(
+            paymentSummary,
+            [
+              'pending_count',
+              'pending'
+            ]
+          ),
+
+        messagePending:
+          findSummaryNumber(
+            messageSummary,
+            [
+              'pending_count',
+              'pending'
+            ]
+          ),
+
+        messageProcessing:
+          findSummaryNumber(
+            messageSummary,
+            [
+              'processing_count',
+              'processing'
+            ]
+          ),
+
+        messageUrgent:
+          findSummaryNumber(
+            messageSummary,
+            [
+              'urgent_count',
+              'urgent'
+            ]
+          )
+      };
+    }
+
+    function badgeHtml(
+      count,
+      emptyText,
+      className
+    ) {
+      if (count > 0) {
+        return (
+          '<span class="badge ' +
+          className +
+          '">' +
+          count +
+          ' 筆</span>'
+        );
+      }
+
+      return (
+        '<span class="badge green">' +
+        safeHtml(
+          emptyText || '無待處理'
+        ) +
+        '</span>'
+      );
+    }
+
+    function renderHome(
+      home,
+      actionSummary
+    ) {
+      const latestTotal =
+        numberValue(
+          home.latest_total_amount
         );
 
       const paidTotal =
-        Number(
-          LANDLORD_HOME
-            .paid_total_amount ||
-          0
+        numberValue(
+          home.paid_total_amount
         );
 
-      app.className = '';
+      const unpaidTotal =
+        numberValue(
+          home.unpaid_total_amount
+        );
+
+      const paidRate =
+        latestTotal > 0
+          ? clamp(
+              (
+                paidTotal /
+                latestTotal
+              ) * 100,
+              0,
+              100
+            )
+          : 0;
+
+      const contractActionCount =
+        actionSummary.contractPending +
+        actionSummary.contractApproved;
+
+      const messageActionCount =
+        actionSummary.messagePending +
+        actionSummary.messageProcessing;
+
+      const app =
+        document.getElementById('app');
 
       app.innerHTML = `
-        <header class="page-header">
-          <h1 class="page-title">
-            房東管理首頁
-          </h1>
+        <section class="card hero-card">
+          <div class="hero-main">
+            <div class="hero-top">
+              <div>
+                <div class="eyebrow">CMWebs 智慧租管</div>
+                <h1 class="hero-title">
+                  您好，${safeHtml(
+                    home.landlord_name || '房東'
+                  )}
+                </h1>
+                <div class="hero-meta">
+                  房東編號：
+                  ${safeHtml(
+                    home.landlord_id || '-'
+                  )}
+                  ・帳號
+                  ${safeHtml(
+                    home.account_status || '-'
+                  )}
+                </div>
+              </div>
 
-          <div class="page-subtitle">
-            帳款、房客、付款回報及房客訊息集中管理
+              <button
+                id="refreshButton"
+                class="refresh-button"
+                type="button"
+                onclick="loadPage()"
+                aria-label="重新整理"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 11a8 8 0 1 0-2.34 5.66"></path>
+                  <path d="M20 5v6h-6"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="hero-stats">
+              <div class="hero-stat">
+                <div class="hero-stat-label">管理房間</div>
+                <div class="hero-stat-value">
+                  ${numberValue(
+                    home.room_count
+                  )} 間
+                </div>
+              </div>
+
+              <div class="hero-stat">
+                <div class="hero-stat-label">目前房客</div>
+                <div class="hero-stat-value">
+                  ${numberValue(
+                    home.tenant_count
+                  )} 位
+                </div>
+              </div>
+            </div>
           </div>
-        </header>
 
-        <section class="card">
-          <div class="profile-row">
-            <div class="avatar">
-              ${safeText(
-                getInitial(
-                  LANDLORD_HOME
-                    .landlord_name
-                )
+          <div class="hero-footer">
+            <span>
+              最新帳單月份：
+              ${safeHtml(
+                home.latest_bill_month || '-'
               )}
+            </span>
+            <span>
+              ${TEST_MODE ? '測試模式' : '正式模式'}
+            </span>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">本月收款總覽</div>
+            <div class="section-hint">
+              ${numberValue(
+                home.latest_bill_count
+              )} 筆帳單
             </div>
+          </div>
 
-            <div class="profile-content">
-              <div class="profile-name">
-                您好，
-                ${safeText(
-                  LANDLORD_HOME
-                    .landlord_name
-                )}
-              </div>
-
-              <div class="profile-id">
-                房東編號：
-                ${safeText(
-                  LANDLORD_HOME
-                    .landlord_id
-                )}
-              </div>
+          <div class="collection-amount">
+            <div class="collection-label">目前未繳總額</div>
+            <div class="collection-value">
+              ${money(unpaidTotal)}
             </div>
+          </div>
 
-            <span class="status-badge">
-              ${safeText(
-                LANDLORD_HOME
-                  .account_status
-              )}
+          <div class="progress-track">
+            <div
+              class="progress-fill"
+              style="width:${paidRate.toFixed(1)}%;"
+            ></div>
+          </div>
+
+          <div class="progress-row">
+            <span>本月收款進度</span>
+            <span class="progress-value">
+              ${paidRate.toFixed(0)}%
             </span>
           </div>
 
-          <div class="detail-list">
-            <div class="detail-row">
-              <div class="detail-label">
-                管理房間數
-              </div>
-
-              <div class="detail-value">
-                ${numberText(
-                  LANDLORD_HOME
-                    .room_count
-                )}
+          <div class="summary-grid">
+            <div class="summary-box">
+              <div class="summary-label">已收總額</div>
+              <div class="summary-value green">
+                ${money(paidTotal)}
               </div>
             </div>
 
-            <div class="detail-row">
-              <div class="detail-label">
-                房客數
-              </div>
-
-              <div class="detail-value">
-                ${numberText(
-                  LANDLORD_HOME
-                    .tenant_count
-                )}
+            <div class="summary-box">
+              <div class="summary-label">本月帳單總額</div>
+              <div class="summary-value">
+                ${money(latestTotal)}
               </div>
             </div>
 
-            <div class="detail-row">
-              <div class="detail-label">
-                最新帳單月份
+            <div class="summary-box">
+              <div class="summary-label">未繳帳單</div>
+              <div class="summary-value">
+                ${numberValue(
+                  home.unpaid_bill_count
+                )} 筆
               </div>
+            </div>
 
-              <div class="detail-value">
-                ${safeText(
-                  LANDLORD_HOME
-                    .latest_bill_month
-                )}
+            <div class="summary-box">
+              <div class="summary-label">已繳帳單</div>
+              <div class="summary-value">
+                ${numberValue(
+                  home.paid_bill_count
+                )} 筆
               </div>
             </div>
           </div>
         </section>
 
-        <section class="card">
-          <div class="section-title">
-            本月收款總覽
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">待處理事項</div>
+            <div class="section-hint">點擊直接處理</div>
           </div>
 
-          <div class="amount-panel">
-            <div class="amount-label">
-              目前未繳總額
-            </div>
-
-            <div class="amount-value unpaid">
-              ${money(
-                unpaidTotal
-              )}
-            </div>
-          </div>
-
-          <div class="overview-grid">
-            <div class="overview-item danger">
-              <div class="overview-label">
-                未繳帳單數
-              </div>
-
-              <div class="overview-value">
-                ${numberText(
-                  LANDLORD_HOME
-                    .unpaid_bill_count
-                )}
-              </div>
-            </div>
-
-            <div class="overview-item success">
-              <div class="overview-label">
-                已繳帳單數
-              </div>
-
-              <div class="overview-value">
-                ${numberText(
-                  LANDLORD_HOME
-                    .paid_bill_count
-                )}
-              </div>
-            </div>
-
-            <div class="overview-item">
-              <div class="overview-label">
-                本月帳單總數
-              </div>
-
-              <div class="overview-value">
-                ${numberText(
-                  LANDLORD_HOME
-                    .latest_bill_count
-                )}
-              </div>
-            </div>
-
-            <div class="overview-item">
-              <div class="overview-label">
-                本月帳單總額
-              </div>
-
-              <div class="overview-value small-value">
-                ${money(
-                  LANDLORD_HOME
-                    .latest_total_amount
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div class="amount-panel">
-            <div class="amount-label">
-              目前已收總額
-            </div>
-
-            <div class="amount-value paid">
-              ${money(
-                paidTotal
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="section-title">
-            管理功能
-          </div>
-
-          <div class="function-grid">
+          <div class="action-list">
             <button
-              class="function-card"
-              onclick="goPage(
-                'landlord-arrears.html'
-              )"
+              class="action-item"
+              type="button"
+              onclick="goPage('landlord-payment-reports.html')"
             >
-              <div class="function-icon red">
+              <div class="action-icon blue">
                 <svg viewBox="0 0 24 24">
-                  <rect
-                    x="5"
-                    y="4"
-                    width="14"
-                    height="16"
-                    rx="2"
-                  ></rect>
+                  <path d="M5 4.5h14v15H5z"></path>
+                  <path d="M8 9h8"></path>
+                  <path d="M8 13h5"></path>
+                  <path d="M15.5 15.5l1.5 1.5 3-3"></path>
+                </svg>
+              </div>
 
+              <div class="action-main">
+                <div class="action-title-row">
+                  <div class="action-title">付款回報審核</div>
+                  ${badgeHtml(
+                    actionSummary.paymentPending,
+                    '無待審',
+                    'warning'
+                  )}
+                </div>
+                <div class="action-desc">
+                  核對匯款日期、後五碼及付款帳款
+                </div>
+              </div>
+
+              <div class="action-arrow">›</div>
+            </button>
+
+            <button
+              class="action-item"
+              type="button"
+              onclick="goPage('landlord-contract-requests.html')"
+            >
+              <div class="action-icon purple">
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 3.5h9l3 3V20H6z"></path>
+                  <path d="M15 3.5V7h3"></path>
+                  <path d="M9 11h6"></path>
+                  <path d="M9 15h6"></path>
+                </svg>
+              </div>
+
+              <div class="action-main">
+                <div class="action-title-row">
+                  <div class="action-title">合約申請管理</div>
+                  ${
+                    contractActionCount > 0
+                      ? (
+                          '<span class="badge purple">' +
+                          contractActionCount +
+                          ' 筆</span>'
+                        )
+                      : (
+                          '<span class="badge green">無待處理</span>'
+                        )
+                  }
+                </div>
+                <div class="action-desc">
+                  待審 ${actionSummary.contractPending} 筆・待完成 ${actionSummary.contractApproved} 筆
+                </div>
+              </div>
+
+              <div class="action-arrow">›</div>
+            </button>
+
+            <button
+              class="action-item"
+              type="button"
+              onclick="goPage('landlord-messages.html')"
+            >
+              <div class="action-icon green">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 5.5h14v10H9l-4 3.5z"></path>
+                  <path d="M8.5 9.5h7"></path>
+                  <path d="M8.5 12.5h5"></path>
+                </svg>
+              </div>
+
+              <div class="action-main">
+                <div class="action-title-row">
+                  <div class="action-title">房客訊息</div>
+                  ${
+                    actionSummary.messageUrgent > 0
+                      ? (
+                          '<span class="badge danger">緊急 ' +
+                          actionSummary.messageUrgent +
+                          '</span>'
+                        )
+                      : badgeHtml(
+                          messageActionCount,
+                          '無待處理',
+                          'warning'
+                        )
+                  }
+                </div>
+                <div class="action-desc">
+                  待處理 ${actionSummary.messagePending} 筆・處理中 ${actionSummary.messageProcessing} 筆
+                </div>
+              </div>
+
+              <div class="action-arrow">›</div>
+            </button>
+
+            <button
+              class="action-item"
+              type="button"
+              onclick="goPage('landlord-arrears.html')"
+            >
+              <div class="action-icon">
+                <svg viewBox="0 0 24 24">
+                  <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
                   <path d="M8.5 9h7"></path>
                   <path d="M8.5 13h7"></path>
                   <path d="M8.5 17h4"></path>
                 </svg>
               </div>
 
-              <div class="function-content">
-                <div class="function-title">
-                  欠款帳單
+              <div class="action-main">
+                <div class="action-title-row">
+                  <div class="action-title">房客欠款</div>
+                  ${
+                    numberValue(
+                      home.unpaid_bill_count
+                    ) > 0
+                      ? (
+                          '<span class="badge danger">' +
+                          numberValue(
+                            home.unpaid_bill_count
+                          ) +
+                          ' 筆</span>'
+                        )
+                      : (
+                          '<span class="badge green">已清償</span>'
+                        )
+                  }
                 </div>
-
-                <div class="function-desc">
-                  查看未繳帳單並手動確認房客已繳
+                <div class="action-desc">
+                  未繳總額 ${money(unpaidTotal)}
                 </div>
               </div>
 
-              <div class="function-arrow">
-                ›
+              <div class="action-arrow">›</div>
+            </button>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">快速功能</div>
+          </div>
+
+          <div class="quick-grid">
+            <button
+              class="quick-button"
+              type="button"
+              onclick="goPage('landlord-tenants.html')"
+            >
+              <div class="quick-icon">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="8.5" r="3"></circle>
+                  <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
+                  <circle cx="16.5" cy="9.5" r="2.3"></circle>
+                  <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
+                </svg>
+              </div>
+
+              <div>
+                <div class="quick-title">房客名單</div>
+                <div class="quick-desc">查看房客與房間明細</div>
               </div>
             </button>
 
             <button
-              class="function-card"
-              onclick="goPage(
-                'landlord-payment-reports.html'
-              )"
+              class="quick-button"
+              type="button"
+              onclick="goPage('landlord-paid-bills.html')"
             >
-              <div class="function-icon blue">
+              <div class="quick-icon">
                 <svg viewBox="0 0 24 24">
-                  <path d="M4 6h16v12H4z"></path>
-                  <path d="M4 9h16"></path>
-                  <path d="M8 14h4"></path>
-                  <path d="M16 13v4"></path>
-                  <path d="M14 15h4"></path>
+                  <path d="M6 3.5h12v17l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2-2 1.2v-17z"></path>
+                  <path d="M8.5 10.5l2 2 4.5-5"></path>
                 </svg>
               </div>
 
-              <div class="function-content">
-                <div class="function-title">
-                  付款回報管理
-                </div>
-
-                <div class="function-desc">
-                  確認房客匯款回報、正式銷帳或駁回
-                </div>
-              </div>
-
-              <div class="function-arrow">
-                ›
+              <div>
+                <div class="quick-title">已繳帳單</div>
+                <div class="quick-desc">查詢及恢復誤銷帳</div>
               </div>
             </button>
 
             <button
-              class="function-card"
-              onclick="goPage(
-                'landlord-paid-bills.html'
-              )"
+              class="quick-button"
+              type="button"
+              onclick="goPage('landlord-line-logs.html')"
             >
-              <div class="function-icon green">
+              <div class="quick-icon">
                 <svg viewBox="0 0 24 24">
-                  <rect
-                    x="5"
-                    y="3.5"
-                    width="14"
-                    height="17"
-                    rx="2"
-                  ></rect>
-
-                  <path d="M8.5 8.5h7"></path>
-                  <path d="M8.5 12.5h4"></path>
-                  <path d="M9 16l2 2 4-4"></path>
+                  <path d="M5 6.5h14V16H8l-3 3z"></path>
+                  <path d="M8.5 10h7"></path>
+                  <path d="M8.5 13h5"></path>
                 </svg>
               </div>
 
-              <div class="function-content">
-                <div class="function-title">
-                  已繳帳單管理
-                </div>
-
-                <div class="function-desc">
-                  查看全部已繳帳單，撤銷誤銷帳並恢復欠款
-                </div>
-              </div>
-
-              <div class="function-arrow">
-                ›
+              <div>
+                <div class="quick-title">LINE 紀錄</div>
+                <div class="quick-desc">查看所有發送與接收</div>
               </div>
             </button>
 
             <button
-              class="function-card"
-              onclick="goPage(
-                'landlord-tenants.html'
-              )"
+              class="quick-button"
+              type="button"
+              onclick="goPage('landlord-more.html')"
             >
-              <div class="function-icon purple">
+              <div class="quick-icon">
                 <svg viewBox="0 0 24 24">
-                  <circle
-                    cx="9"
-                    cy="8"
-                    r="3"
-                  ></circle>
-
-                  <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
-                  <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
-                  <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+                  <circle cx="6" cy="12" r="1.5"></circle>
+                  <circle cx="12" cy="12" r="1.5"></circle>
+                  <circle cx="18" cy="12" r="1.5"></circle>
                 </svg>
               </div>
 
-              <div class="function-content">
-                <div class="function-title">
-                  房客管理
-                </div>
-
-                <div class="function-desc">
-                  查看房客資料、帳款狀態及傳送 LINE 訊息
-                </div>
-              </div>
-
-              <div class="function-arrow">
-                ›
-              </div>
-            </button>
-
-            <button
-              class="function-card"
-              onclick="goPage(
-                'landlord-messages.html'
-              )"
-            >
-              <div class="function-icon orange">
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 5h14v11H9l-4 3z"></path>
-                  <path d="M8.5 9h7"></path>
-                  <path d="M8.5 12h5"></path>
-                </svg>
-              </div>
-
-              <div class="function-content">
-                <div class="function-title">
-                  房客訊息與報修
-                </div>
-
-                <div class="function-desc">
-                  處理一般詢問、報修、繳費及合約問題
-                </div>
-              </div>
-
-              <div class="function-arrow">
-                ›
-              </div>
-            </button>
-
-            <button
-              class="function-card"
-              onclick="goPage(
-                'landlord-line-logs.html'
-              )"
-            >
-              <div class="function-icon gray">
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 5h14v11H9l-4 3z"></path>
-                  <path d="M9 9h6"></path>
-                  <path d="M9 12h4"></path>
-                </svg>
-              </div>
-
-              <div class="function-content">
-                <div class="function-title">
-                  LINE 訊息紀錄
-                </div>
-
-                <div class="function-desc">
-                  查看房東與房客的 LINE 傳送及回覆紀錄
-                </div>
-              </div>
-
-              <div class="function-arrow">
-                ›
+              <div>
+                <div class="quick-title">更多功能</div>
+                <div class="quick-desc">開啟完整管理入口</div>
               </div>
             </button>
           </div>
         </section>
 
-        <section class="card">
-          <div class="detail-row">
-            <div class="detail-label">
-              最後更新
-            </div>
-
-            <div class="detail-value">
-              ${formatDateTime(
-                LANDLORD_HOME
-                  .updated_at
-              )}
-            </div>
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">系統資訊</div>
           </div>
 
-          <div class="page-actions">
-            <button
-              class="btn btn-black"
-              onclick="loadHome()"
-            >
-              重新整理
-            </button>
+          <div class="summary-grid">
+            <div class="summary-box">
+              <div class="summary-label">最後更新</div>
+              <div class="summary-value">
+                ${safeHtml(
+                  home.updated_at || '-'
+                )}
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-label">目前模式</div>
+              <div class="summary-value">
+                ${TEST_MODE ? '測試' : '正式'}
+              </div>
+            </div>
           </div>
         </section>
       `;
     }
 
-    // ==================================================
-    // 載入首頁
-    // ==================================================
+    function renderError(message) {
+      const app =
+        document.getElementById('app');
 
-    async function loadHome() {
-      try {
-        renderLoading();
+      app.innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">首頁資料讀取失敗</div>
+          <div class="error-text">
+            ${safeHtml(
+              message || '未知錯誤'
+            )}
+          </div>
 
-        const data =
-          await callApi(
-            'landlord_home'
-          );
-
-        renderHome(data);
-
-      } catch (error) {
-        renderError(
-          error.message ||
-          String(error),
-
-          'LINE UID：' +
-          rawText(
-            LINE_USER_ID
-          )
-        );
-      }
+          <button
+            class="primary-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
     }
 
-    async function main() {
+    function setRefreshLoading(
+      loading
+    ) {
+      const button =
+        document.getElementById(
+          'refreshButton'
+        );
+
+      if (!button) {
+        return;
+      }
+
+      button.classList.toggle(
+        'loading',
+        Boolean(loading)
+      );
+    }
+
+    async function loadPage() {
+      setRefreshLoading(true);
+
       try {
-        renderLoading();
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLineUserId();
 
-        const ready =
-          await initLineUserId();
-
-        if (!ready) {
-          return;
+          if (!ready) {
+            return;
+          }
         }
 
-        await loadHome();
+        const homeResult =
+          await jsonpRequest(
+            'landlord_home',
+            {}
+          );
 
+        const home =
+          unwrapData(homeResult);
+
+        const optionalResults =
+          await Promise.allSettled([
+            jsonpRequest(
+              'landlord_contract_requests_init',
+              {}
+            ),
+            jsonpRequest(
+              'landlord_payment_reports_init',
+              {}
+            ),
+            jsonpRequest(
+              'landlord_messages_init',
+              {}
+            )
+          ]);
+
+        let contractData = {};
+        let paymentData = {};
+        let messageData = {};
+
+        if (
+          optionalResults[0].status ===
+          'fulfilled'
+        ) {
+          try {
+            contractData =
+              unwrapData(
+                optionalResults[0].value
+              );
+          } catch (error) {
+            console.warn(error);
+          }
+        }
+
+        if (
+          optionalResults[1].status ===
+          'fulfilled'
+        ) {
+          try {
+            paymentData =
+              unwrapData(
+                optionalResults[1].value
+              );
+          } catch (error) {
+            console.warn(error);
+          }
+        }
+
+        if (
+          optionalResults[2].status ===
+          'fulfilled'
+        ) {
+          try {
+            messageData =
+              unwrapData(
+                optionalResults[2].value
+              );
+          } catch (error) {
+            console.warn(error);
+          }
+        }
+
+        const actionSummary =
+          buildActionSummary(
+            contractData,
+            paymentData,
+            messageData
+          );
+
+        renderHome(
+          home,
+          actionSummary
+        );
       } catch (error) {
         renderError(
-          error.message ||
-          String(error),
-
-          'LINE UID：' +
-          rawText(
-            LINE_USER_ID
-          )
+          error && error.message
+            ? error.message
+            : String(error)
         );
+      } finally {
+        setRefreshLoading(false);
       }
     }
 
-    main();
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      function () {
+        setTimeout(
+          setAppHeight,
+          250
+        );
+      }
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
   </script>
 </body>
 </html>
