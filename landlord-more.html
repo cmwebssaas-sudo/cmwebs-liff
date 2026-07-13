@@ -2,7 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
   <title>CMWebs 更多功能</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -10,18 +13,53 @@
   <style>
     :root {
       --app-height: 100vh;
-      --nav-height: 62px;
+      --nav-height: 64px;
+      --primary: #06c755;
+      --primary-soft: #effcf4;
+      --page-bg: #f4f6fa;
+      --card-bg: #ffffff;
+      --text-main: #171a1f;
+      --text-muted: #737983;
+      --border: #e9edf2;
+      --warning: #f59e0b;
+      --warning-soft: #fff7df;
+      --danger: #ef4444;
+      --purple: #7c3aed;
+      --purple-soft: #f4efff;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --shadow: 0 6px 22px rgba(20, 30, 50, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     html,
     body {
-      margin: 0;
       width: 100%;
       height: 100%;
+      margin: 0;
       overflow: hidden;
-      font-family: Arial, "Noto Sans TC", sans-serif;
-      background: #f5f7fb;
-      color: #222;
+      background: var(--page-bg);
+      color: var(--text-main);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
     }
 
     .app-shell {
@@ -30,428 +68,1121 @@
       max-width: 560px;
       height: var(--app-height);
       margin: 0 auto;
-      background: #f5f7fb;
       overflow: hidden;
+      background: var(--page-bg);
     }
 
     .page {
       height: 100%;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 18px 18px calc(var(--nav-height) + 30px + env(safe-area-inset-bottom));
-      box-sizing: border-box;
+      padding:
+        18px
+        16px
+        calc(var(--nav-height) + 28px + env(safe-area-inset-bottom));
+    }
+
+    .hero-card,
+    .card {
+      margin-bottom: 14px;
+      border: 1px solid rgba(231, 235, 240, 0.85);
+      border-radius: 18px;
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 20px;
+      background:
+        linear-gradient(145deg, rgba(6, 199, 85, 0.09), rgba(255, 255, 255, 0.96) 58%);
+    }
+
+    .hero-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .hero-title {
+      margin: 0 0 7px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .hero-subtitle {
+      max-width: 390px;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .refresh-button {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #ffffff;
+      color: #636b75;
+      cursor: pointer;
+    }
+
+    .refresh-button svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .refresh-button.loading svg {
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 17px;
+    }
+
+    .status-box {
+      min-width: 0;
+      padding: 12px 13px;
+      border: 1px solid rgba(6, 199, 85, 0.13);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .status-label {
+      margin-bottom: 5px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .status-value {
+      overflow: hidden;
+      font-size: 15px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 14px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      padding: 17px;
     }
 
-    .title {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .sub {
-      color: #666;
-      font-size: 13px;
-      line-height: 1.6;
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
     }
 
     .section-title {
       font-size: 17px;
-      font-weight: 800;
-      margin-bottom: 12px;
+      font-weight: 900;
+    }
+
+    .section-hint {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .menu-list {
+      overflow: hidden;
+      border-radius: 13px;
     }
 
     .menu-item {
       width: 100%;
-      border: 0;
-      background: #fff;
-      padding: 16px 0;
-      border-top: 1px solid #eee;
+      min-height: 72px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 13px;
+      padding: 14px 2px;
+      border: 0;
+      border-top: 1px solid var(--border);
+      background: transparent;
       text-align: left;
       cursor: pointer;
     }
 
-    .menu-item:first-of-type {
-      border-top: none;
+    .menu-item:first-child {
+      border-top: 0;
+    }
+
+    .menu-item:active {
+      opacity: 0.65;
+    }
+
+    .menu-item.disabled {
+      cursor: default;
+      opacity: 0.55;
     }
 
     .menu-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: #f0fdf4;
-      color: #06c755;
+      width: 43px;
+      height: 43px;
+      flex: 0 0 43px;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      border-radius: 14px;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .menu-icon.blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .menu-icon.purple {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .menu-icon.orange {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .menu-icon.gray {
+      background: #f2f4f6;
+      color: #737983;
     }
 
     .menu-icon svg {
-      width: 22px;
-      height: 22px;
+      width: 23px;
+      height: 23px;
+      fill: none;
       stroke: currentColor;
       stroke-width: 1.9;
-      fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
     .menu-main {
-      flex: 1;
       min-width: 0;
+      flex: 1;
     }
 
-    .menu-title {
-      font-size: 15px;
-      font-weight: 800;
-      color: #222;
+    .menu-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
       margin-bottom: 4px;
     }
 
+    .menu-title {
+      color: var(--text-main);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
     .menu-desc {
+      color: var(--text-muted);
       font-size: 12px;
-      color: #777;
-      line-height: 1.4;
+      line-height: 1.45;
     }
 
     .menu-arrow {
-      color: #bbb;
-      font-size: 20px;
+      flex: 0 0 auto;
+      color: #b4bac2;
+      font-size: 22px;
       font-weight: 700;
-    }
-
-    .disabled {
-      opacity: 0.55;
     }
 
     .badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 23px;
       padding: 3px 8px;
       border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      background: #eef7ee;
-      color: #10893e;
+      background: var(--primary-soft);
+      color: #079641;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
     }
 
-    .badge-gray {
-      background: #f1f3f5;
-      color: #666;
+    .badge.warning {
+      background: var(--warning-soft);
+      color: #b87500;
     }
 
-    .small {
-      font-size: 12px;
-      color: #777;
-      line-height: 1.6;
+    .badge.gray {
+      background: #f0f2f5;
+      color: #6c727c;
     }
 
-    .btn {
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 14px 16px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 8px;
+    .badge.purple {
+      background: var(--purple-soft);
+      color: var(--purple);
     }
 
-    .btn-black {
-      background: #222;
-      color: #fff;
+    .system-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
     }
 
-    .btn-green {
-      background: #06c755;
-      color: #fff;
+    .system-row:first-of-type {
+      border-top: 0;
     }
 
-    /* ===== Fixed Bottom Navigation ===== */
+    .system-label {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .system-value {
+      text-align: right;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
     .bottom-nav {
-      position: absolute !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 99999 !important;
+      position: absolute;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-top: 1px solid #e8ecf1;
       background: rgba(255, 255, 255, 0.98);
-      border-top: 1px solid #eceff3;
       padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
     }
 
     .bottom-nav-inner {
       height: var(--nav-height);
-      margin: 0 auto;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
     }
 
     .nav-item {
-      appearance: none;
-      -webkit-appearance: none;
-      border: 0;
-      background: transparent;
-      color: #8b9098;
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1;
+      position: relative;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
       gap: 5px;
-      position: relative;
+      border: 0;
+      background: transparent;
+      color: #8b919a;
+      font-size: 11px;
+      font-weight: 700;
       cursor: pointer;
     }
 
     .nav-item svg {
       width: 23px;
       height: 23px;
+      fill: none;
       stroke: currentColor;
       stroke-width: 1.9;
-      fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
     .nav-item.active {
-      color: #06c755;
-      font-weight: 800;
+      color: var(--primary);
+      font-weight: 900;
     }
 
     .nav-item.active::after {
-      content: "";
       position: absolute;
       bottom: 5px;
       width: 18px;
       height: 3px;
       border-radius: 999px;
-      background: #06c755;
+      background: var(--primary);
+      content: "";
     }
 
     .nav-item:active {
       opacity: 0.65;
+    }
+
+    .toast {
+      position: absolute;
+      z-index: 3000;
+      right: 18px;
+      bottom: calc(var(--nav-height) + 22px + env(safe-area-inset-bottom));
+      left: 18px;
+      display: none;
+      padding: 13px 15px;
+      border-radius: 13px;
+      background: rgba(25, 28, 33, 0.94);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: center;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    @media (max-width: 380px) {
+      .status-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        padding-right: 13px;
+        padding-left: 13px;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="app-shell">
-    <div class="page">
-      <div class="card">
-        <div class="title">更多功能</div>
-        <div class="sub">
-          房東端管理入口。部分功能目前先作為入口，後續再逐步接上資料與操作。
+    <main class="page">
+      <section class="hero-card">
+        <div class="hero-row">
+          <div>
+            <h1 class="hero-title">更多功能</h1>
+            <div class="hero-subtitle">
+              房東端管理入口。已完成的功能可直接進入，待建置項目保留在下方。
+            </div>
+          </div>
+
+          <button
+            id="refreshButton"
+            class="refresh-button"
+            type="button"
+            onclick="loadSummary()"
+            aria-label="重新整理"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M20 11a8 8 0 1 0-2.34 5.66"></path>
+              <path d="M20 5v6h-6"></path>
+            </svg>
+          </button>
         </div>
-      </div>
 
-      <div class="card">
-        <div class="section-title">常用管理</div>
+        <div class="status-strip">
+          <div class="status-box">
+            <div class="status-label">合約申請待處理</div>
+            <div id="contractPendingValue" class="status-value">讀取中</div>
+          </div>
 
-        <button class="menu-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
-          <div class="menu-icon">
-            <svg viewBox="0 0 24 24">
-              <circle cx="9" cy="8.5" r="3"></circle>
-              <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
-              <circle cx="16.5" cy="9.5" r="2.3"></circle>
-              <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
-            </svg>
+          <div class="status-box">
+            <div class="status-label">目前登入模式</div>
+            <div id="modeValue" class="status-value">初始化中</div>
           </div>
-          <div class="menu-main">
-            <div class="menu-title">房客名單</div>
-            <div class="menu-desc">查看所有房客、聯絡資訊、綁定狀態</div>
-          </div>
-          <div class="menu-arrow">›</div>
-        </button>
-
-        <button class="menu-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
-          <div class="menu-icon">
-            <svg viewBox="0 0 24 24">
-              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
-              <path d="M8.5 9h7"></path>
-              <path d="M8.5 13h7"></path>
-              <path d="M8.5 17h4"></path>
-            </svg>
-          </div>
-          <div class="menu-main">
-            <div class="menu-title">房客欠款</div>
-            <div class="menu-desc">查看未繳帳單、欠款金額與逾期狀態</div>
-          </div>
-          <div class="menu-arrow">›</div>
-        </button>
-
-        <button class="menu-item disabled" onclick="alert('帳單管理功能建置中')">
-          <div class="menu-icon">
-            <svg viewBox="0 0 24 24">
-              <path d="M6 3.5h12v17l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2-2 1.2v-17z"></path>
-              <path d="M9 8h6"></path>
-              <path d="M9 12h6"></path>
-              <path d="M9 16h4"></path>
-            </svg>
-          </div>
-          <div class="menu-main">
-            <div class="menu-title">帳單管理 <span class="badge-gray">建置中</span></div>
-            <div class="menu-desc">建立帳單、修改帳單、查看發送狀態</div>
-          </div>
-          <div class="menu-arrow">›</div>
-        </button>
-
-        <button class="menu-item disabled" onclick="alert('抄表管理功能建置中')">
-          <div class="menu-icon">
-            <svg viewBox="0 0 24 24">
-              <path d="M7 4h10v16H7z"></path>
-              <path d="M9.5 8h5"></path>
-              <path d="M9.5 12h5"></path>
-              <path d="M9.5 16h3"></path>
-            </svg>
-          </div>
-          <div class="menu-main">
-            <div class="menu-title">抄表管理 <span class="badge-gray">建置中</span></div>
-            <div class="menu-desc">輸入本月電錶度數、產生電費資料</div>
-          </div>
-          <div class="menu-arrow">›</div>
-        </button>
-      </div>
-
-      <div class="card">
-        <div class="section-title">通知與設定</div>
-
-<button class="menu-item" onclick="location.href='landlord-line-logs.html?v=' + Date.now()">
-  <div class="menu-icon">
-    <svg viewBox="0 0 24 24">
-      <path d="M5 6.5h14v9.5H8l-3 3v-12.5z"></path>
-      <path d="M8.5 10h7"></path>
-      <path d="M8.5 13h5"></path>
-    </svg>
-  </div>
-  <div class="menu-main">
-    <div class="menu-title">LINE 訊息紀錄</div>
-    <div class="menu-desc">查看房東端發送給房客的 LINE 訊息紀錄</div>
-  </div>
-  <div class="menu-arrow">›</div>
-</button>
-        
-        <button class="menu-item disabled" onclick="alert('公告發送功能建置中')">
-          <div class="menu-icon">
-            <svg viewBox="0 0 24 24">
-              <path d="M5 10v4"></path>
-              <path d="M8 9l9-4v14l-9-4z"></path>
-              <path d="M8 15v4"></path>
-            </svg>
-          </div>
-          <div class="menu-main">
-            <div class="menu-title">公告發送 <span class="badge-gray">建置中</span></div>
-            <div class="menu-desc">向房客推送公告、提醒與管理訊息</div>
-          </div>
-          <div class="menu-arrow">›</div>
-        </button>
-
-        <button class="menu-item disabled" onclick="alert('房客報到管理功能建置中')">
-          <div class="menu-icon">
-            <svg viewBox="0 0 24 24">
-              <path d="M9 12l2 2 4-5"></path>
-              <circle cx="12" cy="12" r="8"></circle>
-            </svg>
-          </div>
-          <div class="menu-main">
-            <div class="menu-title">房客報到管理 <span class="badge-gray">建置中</span></div>
-            <div class="menu-desc">確認房客綁定、入住報到與帳號狀態</div>
-          </div>
-          <div class="menu-arrow">›</div>
-        </button>
-
-        <button class="menu-item disabled" onclick="alert('系統設定功能建置中')">
-          <div class="menu-icon">
-            <svg viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.1L14 3h-4l-.5 2.8a7 7 0 0 0-2 1.1l-2.4-1-2 3.4 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.1L10 21h4l.5-2.8a7 7 0 0 0 2-1.1l2.4 1 2-3.4-2-1.5A7 7 0 0 0 19 12z"></path>
-            </svg>
-          </div>
-          <div class="menu-main">
-            <div class="menu-title">系統設定 <span class="badge-gray">建置中</span></div>
-            <div class="menu-desc">房東資料、收款帳號、系統偏好設定</div>
-          </div>
-          <div class="menu-arrow">›</div>
-        </button>
-      </div>
-
-      <div class="card">
-        <div class="section-title">系統狀態</div>
-        <div class="row">
-          <div class="label">目前版本</div>
-          <div class="value">CMWebs V2</div>
         </div>
-        <div class="row">
-          <div class="label">頁面狀態</div>
-          <div class="value"><span class="badge">正常</span></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title-row">
+          <div class="section-title">租務管理</div>
+          <div class="section-hint">日常核心功能</div>
         </div>
-      </div>
-    </div>
+
+        <div class="menu-list">
+          <button class="menu-item" type="button" onclick="goPage('landlord-tenants.html')">
+            <div class="menu-icon">
+              <svg viewBox="0 0 24 24">
+                <circle cx="9" cy="8.5" r="3"></circle>
+                <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
+                <circle cx="16.5" cy="9.5" r="2.3"></circle>
+                <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">房客名單</div>
+              </div>
+              <div class="menu-desc">查看所有房客、聯絡資訊、綁定狀態與房客明細</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item" type="button" onclick="goPage('landlord-arrears.html')">
+            <div class="menu-icon orange">
+              <svg viewBox="0 0 24 24">
+                <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+                <path d="M8.5 9h7"></path>
+                <path d="M8.5 13h7"></path>
+                <path d="M8.5 17h4"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">房客欠款</div>
+              </div>
+              <div class="menu-desc">查看未繳帳單、逾期狀態、催繳進度與手動銷帳</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item" type="button" onclick="goPage('landlord-paid-bills.html')">
+            <div class="menu-icon blue">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 3.5h12v17l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2-2 1.2v-17z"></path>
+                <path d="M8.5 10.5l2 2 4.5-5"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">已繳帳單</div>
+              </div>
+              <div class="menu-desc">查詢已完成帳款，必要時將誤銷帳恢復為未繳</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item" type="button" onclick="goPage('landlord-payment-reports.html')">
+            <div class="menu-icon blue">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 4.5h14v15H5z"></path>
+                <path d="M8 9h8"></path>
+                <path d="M8 13h5"></path>
+                <path d="M15.5 15.5l1.5 1.5 3-3"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">付款回報審核</div>
+              </div>
+              <div class="menu-desc">核對房客匯款回報、後五碼、付款日期與帳款</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item" type="button" onclick="goPage('landlord-contract-requests.html')">
+            <div class="menu-icon purple">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 3.5h9l3 3V20H6z"></path>
+                <path d="M15 3.5V7h3"></path>
+                <path d="M9 11h6"></path>
+                <path d="M9 15h6"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">合約申請管理</div>
+                <span id="contractMenuBadge" class="badge purple">讀取中</span>
+              </div>
+              <div class="menu-desc">審核續約、調整租金管理費、處理提前解約與違約金</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title-row">
+          <div class="section-title">訊息與溝通</div>
+          <div class="section-hint">房客聯繫紀錄</div>
+        </div>
+
+        <div class="menu-list">
+          <button class="menu-item" type="button" onclick="goPage('landlord-messages.html')">
+            <div class="menu-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 5.5h14v10H9l-4 3.5z"></path>
+                <path d="M8.5 9.5h7"></path>
+                <path d="M8.5 12.5h5"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">房客訊息管理</div>
+              </div>
+              <div class="menu-desc">處理房客報修、問題反映、一般聯絡與房東回覆</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item" type="button" onclick="goPage('landlord-line-logs.html')">
+            <div class="menu-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 6.5h14V16H8l-3 3z"></path>
+                <path d="M8.5 10h7"></path>
+                <path d="M8.5 13h5"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">LINE 訊息紀錄</div>
+              </div>
+              <div class="menu-desc">查看系統發送、房東發送及房客傳入的 LINE 紀錄</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title-row">
+          <div class="section-title">後續建置</div>
+          <div class="section-hint">保留入口</div>
+        </div>
+
+        <div class="menu-list">
+          <button class="menu-item disabled" type="button" onclick="showToast('帳單管理功能尚在建置中')">
+            <div class="menu-icon gray">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 3.5h12v17l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2-2 1.2v-17z"></path>
+                <path d="M9 8h6"></path>
+                <path d="M9 12h6"></path>
+                <path d="M9 16h4"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">帳單管理</div>
+                <span class="badge gray">建置中</span>
+              </div>
+              <div class="menu-desc">建立帳單、修改帳單、查看帳單發送狀態</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item disabled" type="button" onclick="showToast('抄表管理功能尚在建置中')">
+            <div class="menu-icon gray">
+              <svg viewBox="0 0 24 24">
+                <path d="M7 4h10v16H7z"></path>
+                <path d="M9.5 8h5"></path>
+                <path d="M9.5 12h5"></path>
+                <path d="M9.5 16h3"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">抄表管理</div>
+                <span class="badge gray">建置中</span>
+              </div>
+              <div class="menu-desc">輸入本月電錶度數並產生電費與設備耗損費</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item disabled" type="button" onclick="showToast('公告發送功能尚在建置中')">
+            <div class="menu-icon gray">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 10v4"></path>
+                <path d="M8 9l9-4v14l-9-4z"></path>
+                <path d="M8 15v4"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">公告發送</div>
+                <span class="badge gray">建置中</span>
+              </div>
+              <div class="menu-desc">向全部或指定房客推送公告與管理訊息</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item disabled" type="button" onclick="showToast('房客報到管理功能尚在建置中')">
+            <div class="menu-icon gray">
+              <svg viewBox="0 0 24 24">
+                <path d="M9 12l2 2 4-5"></path>
+                <circle cx="12" cy="12" r="8"></circle>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">房客報到管理</div>
+                <span class="badge gray">建置中</span>
+              </div>
+              <div class="menu-desc">確認房客綁定、入住報到與帳號狀態</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+
+          <button class="menu-item disabled" type="button" onclick="showToast('系統設定功能尚在建置中')">
+            <div class="menu-icon gray">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.1L14 3h-4l-.5 2.8a7 7 0 0 0-2 1.1l-2.4-1-2 3.4 2 1.5A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.1L10 21h4l.5-2.8a7 7 0 0 0 2-1.1l2.4 1 2-3.4-2-1.5A7 7 0 0 0 19 12z"></path>
+              </svg>
+            </div>
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">系統設定</div>
+                <span class="badge gray">建置中</span>
+              </div>
+              <div class="menu-desc">房東資料、收款帳號、通知及系統偏好設定</div>
+            </div>
+            <div class="menu-arrow">›</div>
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title-row">
+          <div class="section-title">系統狀態</div>
+        </div>
+
+        <div class="system-row">
+          <div class="system-label">目前版本</div>
+          <div class="system-value">CMWebs V2</div>
+        </div>
+
+        <div class="system-row">
+          <div class="system-label">合約模組</div>
+          <div class="system-value">
+            <span class="badge">已啟用</span>
+          </div>
+        </div>
+
+        <div class="system-row">
+          <div class="system-label">頁面狀態</div>
+          <div class="system-value">
+            <span class="badge">正常</span>
+          </div>
+        </div>
+      </section>
+    </main>
 
     <nav class="bottom-nav">
       <div class="bottom-nav-inner">
-        <button class="nav-item" onclick="location.href='landlord-home.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">
           <svg viewBox="0 0 24 24">
             <path d="M4 11.5L12 5l8 6.5"></path>
             <path d="M6.5 10.5V19h11v-8.5"></path>
             <path d="M9.5 19v-5h5v5"></path>
           </svg>
-          <div>首頁</div>
+          <span>首頁</span>
         </button>
 
-        <button class="nav-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')">
           <svg viewBox="0 0 24 24">
             <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
             <path d="M8.5 9h7"></path>
             <path d="M8.5 13h7"></path>
             <path d="M8.5 17h4"></path>
           </svg>
-          <div>欠款</div>
+          <span>欠款</span>
         </button>
 
-        <button class="nav-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+        <button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')">
           <svg viewBox="0 0 24 24">
-            <circle cx="9" cy="8.5" r="3"></circle>
-            <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
-            <circle cx="16.5" cy="9.5" r="2.3"></circle>
-            <path d="M14.5 14.5c2.3.4 3.8 1.9 4.5 4.5"></path>
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
           </svg>
-          <div>房客</div>
+          <span>房客</span>
         </button>
 
-        <button class="nav-item active" onclick="location.href='landlord-more.html?v=' + Date.now()">
+        <button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">
           <svg viewBox="0 0 24 24">
             <circle cx="6" cy="12" r="1.5"></circle>
             <circle cx="12" cy="12" r="1.5"></circle>
             <circle cx="18" cy="12" r="1.5"></circle>
           </svg>
-          <div>更多</div>
+          <span>更多</span>
         </button>
       </div>
     </nav>
+
+    <div id="toast" class="toast"></div>
   </div>
 
   <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
+
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const URL_PARAMS =
+      new URLSearchParams(location.search);
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') === '1';
+
+    let LINE_USER_ID = '';
+    let toastTimer = null;
+
     function setAppHeight() {
-      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+      const height =
+        window.visualViewport && window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
+
+      const testParameter =
+        TEST_MODE
+          ? '&test=1'
+          : '';
+
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        testParameter;
+    }
+
+    function showToast(message) {
+      const toast =
+        document.getElementById('toast');
+
+      toast.textContent =
+        String(message || '提示');
+
+      toast.classList.add('show');
+
+      clearTimeout(toastTimer);
+
+      toastTimer =
+        setTimeout(function () {
+          toast.classList.remove('show');
+        }, 2200);
+    }
+
+    function jsonpRequest(action, params) {
+      return new Promise(function (resolve, reject) {
+        const callbackName =
+          '__cmwebs_more_' +
+          Date.now() +
+          '_' +
+          Math.floor(Math.random() * 100000);
+
+        const script =
+          document.createElement('script');
+
+        let finished = false;
+
+        function cleanup() {
+          try {
+            delete window[callbackName];
+          } catch (error) {
+            window[callbackName] = undefined;
+          }
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        window[callbackName] =
+          function (result) {
+            if (finished) {
+              return;
+            }
+
+            finished = true;
+            cleanup();
+            resolve(result);
+          };
+
+        const timeout =
+          setTimeout(function () {
+            if (finished) {
+              return;
+            }
+
+            finished = true;
+            cleanup();
+            reject(new Error('API 載入逾時'));
+          }, 25000);
+
+        const originalCleanup =
+          cleanup;
+
+        cleanup =
+          function () {
+            clearTimeout(timeout);
+            originalCleanup();
+          };
+
+        let url =
+          API_URL +
+          '?v2_action=' +
+          encodeURIComponent(action) +
+          '&line_user_id=' +
+          encodeURIComponent(LINE_USER_ID) +
+          '&callback=' +
+          encodeURIComponent(callbackName) +
+          '&_=' +
+          Date.now();
+
+        Object.keys(params || {}).forEach(function (key) {
+          const value =
+            params[key];
+
+          if (
+            value === undefined ||
+            value === null
+          ) {
+            return;
+          }
+
+          url +=
+            '&' +
+            encodeURIComponent(key) +
+            '=' +
+            encodeURIComponent(value);
+        });
+
+        script.charset = 'UTF-8';
+
+        script.onerror =
+          function () {
+            console.warn('JSONP script onerror ignored.');
+          };
+
+        script.src = url;
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initLineUserId() {
+      const modeValue =
+        document.getElementById('modeValue');
+
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        modeValue.textContent =
+          '測試模式';
+
+        return true;
+      }
+
+      if (typeof liff === 'undefined') {
+        throw new Error('LIFF SDK 載入失敗');
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri: location.href
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error('無法取得房東 LINE User ID');
+      }
+
+      modeValue.textContent =
+        '正式模式';
+
+      return true;
+    }
+
+    function setContractSummary(data) {
+      const summary =
+        data && data.summary
+          ? data.summary
+          : {};
+
+      const requests =
+        data && Array.isArray(data.requests)
+          ? data.requests
+          : [];
+
+      const pendingCount =
+        Number(
+          summary.pending_count !== undefined
+            ? summary.pending_count
+            : requests.filter(function (item) {
+                return String(item.status || '').toLowerCase() === 'pending';
+              }).length
+        ) || 0;
+
+      const approvedCount =
+        Number(
+          summary.approved_count !== undefined
+            ? summary.approved_count
+            : requests.filter(function (item) {
+                return String(item.status || '').toLowerCase() === 'approved';
+              }).length
+        ) || 0;
+
+      const totalActionCount =
+        pendingCount + approvedCount;
+
+      document.getElementById(
+        'contractPendingValue'
+      ).textContent =
+        totalActionCount > 0
+          ? totalActionCount + ' 筆'
+          : '目前無待處理';
+
+      const badge =
+        document.getElementById(
+          'contractMenuBadge'
+        );
+
+      if (pendingCount > 0) {
+        badge.className =
+          'badge warning';
+
+        badge.textContent =
+          '待審 ' + pendingCount;
+      } else if (approvedCount > 0) {
+        badge.className =
+          'badge purple';
+
+        badge.textContent =
+          '待完成 ' + approvedCount;
+      } else {
+        badge.className =
+          'badge';
+
+        badge.textContent =
+          '無待處理';
+      }
+    }
+
+    function setSummaryError(message) {
+      document.getElementById(
+        'contractPendingValue'
+      ).textContent =
+        '讀取失敗';
+
+      const badge =
+        document.getElementById(
+          'contractMenuBadge'
+        );
+
+      badge.className =
+        'badge gray';
+
+      badge.textContent =
+        '可直接進入';
+
+      console.warn(message);
+    }
+
+    async function loadSummary() {
+      const refreshButton =
+        document.getElementById(
+          'refreshButton'
+        );
+
+      refreshButton.classList.add(
+        'loading'
+      );
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLineUserId();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'landlord_contract_requests_init',
+            {}
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result && result.message
+              ? result.message
+              : '合約申請摘要讀取失敗'
+          );
+        }
+
+        setContractSummary(
+          result.data || result
+        );
+      } catch (error) {
+        setSummaryError(
+          error && error.message
+            ? error.message
+            : String(error)
+        );
+      } finally {
+        refreshButton.classList.remove(
+          'loading'
+        );
+      }
     }
 
     setAppHeight();
 
-    window.addEventListener('resize', setAppHeight);
-    window.addEventListener('orientationchange', function () {
-      setTimeout(setAppHeight, 300);
-    });
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      function () {
+        setTimeout(
+          setAppHeight,
+          250
+        );
+      }
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadSummary();
   </script>
 </body>
 </html>
