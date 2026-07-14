@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 加入管理團隊</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --primary: #06c755;
+      --primary-soft: #edf9f2;
+      --purple: #7654c4;
+      --purple-soft: #f3efff;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --orange-soft: #fff5df;
+      --shadow: 0 12px 38px rgba(25, 35, 55, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 100% 0%,
+          rgba(118, 84, 196, 0.15),
+          transparent 30%
+        ),
+        var(--page-bg);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        max(21px, env(safe-area-inset-top))
+        16px
+        calc(28px + env(safe-area-inset-bottom));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 18px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      background: var(--purple);
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .brand-name {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .brand-subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 24px 20px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #6342ad 0%,
+          #7654c4 58%,
+          #5e3ca9 100%
+        );
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -60px;
+      right: -45px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      content: "";
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-eyebrow {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .hero-title {
+      margin-top: 7px;
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .hero-desc {
+      margin-top: 9px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 11px;
+      line-height: 1.7;
+    }
+
+    .invite-box {
+      margin-top: 15px;
+      padding: 12px 13px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.11);
+    }
+
+    .invite-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .invite-row:last-child {
+      border-bottom: 0;
+    }
+
+    .invite-label {
+      color: rgba(255, 255, 255, 0.74);
+      font-size: 9px;
+    }
+
+    .invite-value {
+      font-size: 10px;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .profile-card,
+    .form-card {
+      padding: 18px;
+    }
+
+    .profile-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      background: var(--purple-soft);
+      color: var(--purple);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-content {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .profile-label {
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .profile-name {
+      margin-top: 4px;
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .line-badge {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: #079641;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .section-desc {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .field {
+      margin-top: 15px;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .required {
+      color: var(--danger);
+      font-size: 9px;
+    }
+
+    .optional {
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .input {
+      width: 100%;
+      height: 47px;
+      padding: 0 13px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .agreement {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f7f9fb;
+      color: #5e6570;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .agreement input {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 17px;
+      margin: 1px 0 0;
+      accent-color: var(--primary);
+    }
+
+    .primary-button,
+    .secondary-button {
+      width: 100%;
+      min-height: 49px;
+      margin-top: 16px;
+      border-radius: 13px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .primary-button {
+      border: 0;
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .secondary-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .state-card {
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    .state-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 20px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 29px;
+      font-weight: 900;
+    }
+
+    .state-icon.red {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .state-icon.orange {
+      background: var(--orange-soft);
+      color: #ef8f00;
+    }
+
+    .state-title {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .state-text {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.75;
+    }
+
+    .loading-spinner {
+      width: 33px;
+      height: 33px;
+      margin: 0 auto 14px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border: 1px solid #f0dfb9;
+      border-radius: 13px;
+      background: var(--orange-soft);
+      color: #74500c;
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .toast {
+      position: absolute;
+      z-index: 1800;
+      right: 16px;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      left: 16px;
+      max-width: 470px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: 13px;
+      background: #22252a;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div class="brand">
+        <div class="brand-icon">CM</div>
+
+        <div>
+          <div class="brand-name">CMWebs 智慧租管</div>
+          <div class="brand-subtitle">Join Workspace Team</div>
+        </div>
+      </div>
+
+      <div id="app">
+        <section class="card state-card">
+          <div class="loading-spinner"></div>
+          <div class="state-title">邀請資料載入中</div>
+          <div class="state-text">
+            正在確認邀請狀態與目前登入的 LINE 帳號。
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
+
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const URL_PARAMS =
+      new URLSearchParams(
+        location.search
+      );
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') ===
+      '1';
+
+    const INVITE_TOKEN =
+      URL_PARAMS.get('token') ||
+      '';
+
+    let LINE_USER_ID = '';
+    let LINE_PROFILE = null;
+    let PAGE_DATA = null;
+    let toastTimer = null;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      return value === undefined || value === null
+        ? ''
+        : String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function showToast(
+      message,
+      isError
+    ) {
+      const toast =
+        document.getElementById(
+          'toast'
+        );
+
+      clearTimeout(
+        toastTimer
+      );
+
+      toast.textContent =
+        message || '';
+
+      toast.className =
+        isError
+          ? 'toast error show'
+          : 'toast show';
+
+      toastTimer =
+        setTimeout(
+          function () {
+            toast.className =
+              'toast';
+          },
+          2800
+        );
+    }
+
+    function goEntry() {
+      location.replace(
+        'landlord-entry.html?v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        )
+      );
+    }
+
+    function roleLabel(role) {
+      const map = {
+        admin: '管理員',
+        manager: '營運管理',
+        accountant: '帳務人員',
+        maintenance: '維修人員',
+        viewer: '唯讀成員'
+      };
+
+      return map[role] || role || '-';
+    }
+
+    function formatDate(value) {
+      const date =
+        new Date(value);
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return rawText(value) || '-';
+      }
+
+      return new Intl.DateTimeFormat(
+        'zh-TW',
+        {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }
+      ).format(date);
+    }
+
+    function jsonpRequest(
+      action,
+      params
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_team_join_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                cleanup();
+
+                reject(
+                  new Error(
+                    'API 載入逾時'
+                  )
+                );
+              },
+              25000
+            );
+
+          function cleanup() {
+            clearTimeout(timer);
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(
+            function (key) {
+              url +=
+                '&' +
+                encodeURIComponent(
+                  key
+                ) +
+                '=' +
+                encodeURIComponent(
+                  params[key]
+                );
+            }
+          );
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 路由執行失敗'
+                )
+              );
+            };
+
+          script.src = url;
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        LINE_PROFILE = {
+          displayName:
+            '測試房東',
+          pictureUrl:
+            ''
+        };
+
+        return true;
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            location.href
+        });
+
+        return false;
+      }
+
+      LINE_PROFILE =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        LINE_PROFILE.userId || '';
+
+      return true;
+    }
+
+    function normalizePhone(value) {
+      let digits =
+        rawText(value)
+          .replace(/\D/g, '');
+
+      if (
+        digits.indexOf('886') ===
+          0 &&
+        digits.length ===
+          12
+      ) {
+        digits =
+          '0' +
+          digits.slice(3);
+      }
+
+      if (
+        digits.length ===
+          9 &&
+        digits.charAt(0) ===
+          '9'
+      ) {
+        digits =
+          '0' +
+          digits;
+      }
+
+      return digits;
+    }
+
+    function profileHtml() {
+      const displayName =
+        LINE_PROFILE &&
+        LINE_PROFILE.displayName
+          ? LINE_PROFILE.displayName
+          : 'LINE 使用者';
+
+      const pictureUrl =
+        LINE_PROFILE &&
+        LINE_PROFILE.pictureUrl
+          ? LINE_PROFILE.pictureUrl
+          : '';
+
+      return `
+        <section class="card profile-card">
+          <div class="profile-row">
+            <div class="avatar">
+              ${
+                pictureUrl
+                  ? `
+                    <img
+                      src="${safeHtml(
+                        pictureUrl
+                      )}"
+                      alt=""
+                    />
+                  `
+                  : safeHtml(
+                      displayName.slice(
+                        0,
+                        1
+                      )
+                    )
+              }
+            </div>
+
+            <div class="profile-content">
+              <div class="profile-label">
+                目前登入的 LINE 帳號
+              </div>
+
+              <div class="profile-name">
+                ${safeHtml(
+                  displayName
+                )}
+              </div>
+            </div>
+
+            <div class="line-badge">
+              已登入
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderInvitation() {
+      const invitation =
+        PAGE_DATA.invitation || {};
+
+      const existing =
+        PAGE_DATA.existing_user || {};
+
+      if (
+        PAGE_DATA.already_member
+      ) {
+        renderJoined(
+          invitation
+        );
+        return;
+      }
+
+      if (
+        !PAGE_DATA.can_accept
+      ) {
+        renderUnavailable(
+          invitation
+        );
+        return;
+      }
+
+      const name =
+        existing.name ||
+        invitation.invite_name ||
+        (
+          LINE_PROFILE &&
+          LINE_PROFILE.displayName
+            ? LINE_PROFILE.displayName
+            : ''
+        );
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card hero">
+          <div class="hero-content">
+            <div class="hero-eyebrow">
+              您收到團隊邀請
+            </div>
+
+            <div class="hero-title">
+              加入管理團隊
+            </div>
+
+            <div class="hero-desc">
+              接受後，您將依指定角色共同管理同一工作區。
+            </div>
+
+            <div class="invite-box">
+              <div class="invite-row">
+                <div class="invite-label">管理團隊</div>
+                <div class="invite-value">
+                  ${safeHtml(
+                    invitation.workspace_name ||
+                    '-'
+                  )}
+                </div>
+              </div>
+
+              <div class="invite-row">
+                <div class="invite-label">指派角色</div>
+                <div class="invite-value">
+                  ${safeHtml(
+                    roleLabel(
+                      invitation.invite_role
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div class="invite-row">
+                <div class="invite-label">邀請期限</div>
+                <div class="invite-value">
+                  ${safeHtml(
+                    formatDate(
+                      invitation.expires_at
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        ${profileHtml()}
+
+        <section class="card form-card">
+          <div class="section-title">
+            確認成員資料
+          </div>
+
+          <div class="section-desc">
+            手機或 Email 必須與邀請資料一致。
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>姓名</span>
+              <span class="required">必填</span>
+            </div>
+
+            <input
+              id="displayName"
+              class="input"
+              maxlength="60"
+              value="${safeHtml(name)}"
+            />
+          </div>
+
+          ${
+            invitation.invite_phone_masked
+              ? `
+                <div class="notice">
+                  邀請指定手機：
+                  <strong>
+                    ${safeHtml(
+                      invitation.invite_phone_masked
+                    )}
+                  </strong>
+                </div>
+              `
+              : ''
+          }
+
+          <div class="field">
+            <div class="field-label">
+              <span>手機號碼</span>
+              <span class="${
+                invitation.invite_phone_masked
+                  ? 'required'
+                  : 'optional'
+              }">
+                ${
+                  invitation.invite_phone_masked
+                    ? '必填'
+                    : '選填'
+                }
+              </span>
+            </div>
+
+            <input
+              id="phone"
+              class="input"
+              type="tel"
+              maxlength="14"
+              inputmode="tel"
+              value="${safeHtml(
+                existing.phone || ''
+              )}"
+            />
+          </div>
+
+          ${
+            invitation.invite_email_masked
+              ? `
+                <div class="notice">
+                  邀請指定 Email：
+                  <strong>
+                    ${safeHtml(
+                      invitation.invite_email_masked
+                    )}
+                  </strong>
+                </div>
+              `
+              : ''
+          }
+
+          <div class="field">
+            <div class="field-label">
+              <span>Email</span>
+              <span class="${
+                invitation.invite_email_masked
+                  ? 'required'
+                  : 'optional'
+              }">
+                ${
+                  invitation.invite_email_masked
+                    ? '必填'
+                    : '選填'
+                }
+              </span>
+            </div>
+
+            <input
+              id="email"
+              class="input"
+              type="email"
+              maxlength="120"
+              value="${safeHtml(
+                existing.email || ''
+              )}"
+            />
+          </div>
+
+          <label class="agreement">
+            <input
+              id="selfConfirm"
+              type="checkbox"
+            />
+
+            <span>
+              我確認這是本人 LINE 帳號，並同意加入上述管理團隊及依指定角色存取租務資料。
+            </span>
+          </label>
+
+          <button
+            id="acceptButton"
+            class="primary-button"
+            type="button"
+            onclick="acceptInvitation()"
+          >
+            接受邀請並加入團隊
+          </button>
+        </section>
+      `;
+    }
+
+    function renderJoined(invitation) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card state-card">
+          <div class="state-icon">✓</div>
+
+          <div class="state-title">
+            已加入管理團隊
+          </div>
+
+          <div class="state-text">
+            您已是「${safeHtml(
+              invitation.workspace_name ||
+              '此團隊'
+            )}」的成員。
+          </div>
+
+          <button
+            class="primary-button"
+            type="button"
+            onclick="goEntry()"
+          >
+            前往房東入口
+          </button>
+        </section>
+      `;
+    }
+
+    function renderUnavailable(invitation) {
+      const status =
+        invitation.status;
+
+      const title =
+        status === 'expired'
+          ? '邀請已過期'
+          : status === 'cancelled'
+            ? '邀請已取消'
+            : '此邀請目前無法使用';
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card state-card">
+          <div class="state-icon orange">!</div>
+
+          <div class="state-title">
+            ${safeHtml(title)}
+          </div>
+
+          <div class="state-text">
+            請聯絡團隊擁有者或管理員重新建立邀請。
+          </div>
+
+          <button
+            class="secondary-button"
+            type="button"
+            onclick="goEntry()"
+          >
+            前往房東入口
+          </button>
+        </section>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card state-card">
+          <div class="state-icon red">!</div>
+
+          <div class="state-title">
+            邀請資料載入失敗
+          </div>
+
+          <div class="state-text">
+            ${safeHtml(message)}
+          </div>
+
+          <button
+            class="primary-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+    }
+
+    async function acceptInvitation() {
+      const name =
+        rawText(
+          document.getElementById(
+            'displayName'
+          ).value
+        ).trim();
+
+      const phone =
+        normalizePhone(
+          document.getElementById(
+            'phone'
+          ).value
+        );
+
+      const email =
+        rawText(
+          document.getElementById(
+            'email'
+          ).value
+        )
+          .trim()
+          .toLowerCase();
+
+      if (!name) {
+        showToast(
+          '請輸入姓名。',
+          true
+        );
+
+        return;
+      }
+
+      if (
+        PAGE_DATA.invitation
+          .invite_phone_masked &&
+        !/^09\d{8}$/.test(
+          phone
+        )
+      ) {
+        showToast(
+          '請輸入完整手機號碼。',
+          true
+        );
+
+        return;
+      }
+
+      if (
+        PAGE_DATA.invitation
+          .invite_email_masked &&
+        !email
+      ) {
+        showToast(
+          '請輸入邀請指定的 Email。',
+          true
+        );
+
+        return;
+      }
+
+      if (
+        !document.getElementById(
+          'selfConfirm'
+        ).checked
+      ) {
+        showToast(
+          '請確認這是本人 LINE 帳號。',
+          true
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          'acceptButton'
+        );
+
+      button.disabled = true;
+      button.textContent =
+        '加入中...';
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_invitation_accept',
+            {
+              invite_token:
+                INVITE_TOKEN,
+              display_name:
+                name,
+              phone:
+                phone,
+              email:
+                email,
+              profile_display_name:
+                LINE_PROFILE
+                  ? LINE_PROFILE.displayName ||
+                    ''
+                  : '',
+              profile_picture_url:
+                LINE_PROFILE
+                  ? LINE_PROFILE.pictureUrl ||
+                    ''
+                  : ''
+            }
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '加入團隊失敗'
+          );
+        }
+
+        document.getElementById(
+          'app'
+        ).innerHTML = `
+          <section class="card state-card">
+            <div class="state-icon">✓</div>
+
+            <div class="state-title">
+              已加入管理團隊
+            </div>
+
+            <div class="state-text">
+              您已加入「${safeHtml(
+                result.data.workspace_name
+              )}」，角色為
+              ${safeHtml(
+                roleLabel(
+                  result.data.role
+                )
+              )}。
+            </div>
+
+            <button
+              class="primary-button"
+              type="button"
+              onclick="goEntry()"
+            >
+              前往房東入口
+            </button>
+          </section>
+        `;
+
+        setTimeout(
+          goEntry,
+          1000
+        );
+      } catch (error) {
+        showToast(
+          error.message ||
+          '加入團隊失敗',
+          true
+        );
+
+        button.disabled = false;
+        button.textContent =
+          '接受邀請並加入團隊';
+      }
+    }
+
+    async function loadPage() {
+      if (!INVITE_TOKEN) {
+        renderError(
+          '邀請連結缺少 token。'
+        );
+
+        return;
+      }
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLine();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'landlord_invitation_init',
+            {
+              invite_token:
+                INVITE_TOKEN
+            }
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '邀請資料載入失敗'
+          );
+        }
+
+        PAGE_DATA =
+          result.data || {};
+
+        renderInvitation();
+      } catch (error) {
+        renderError(
+          error.message ||
+          String(error)
+        );
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
