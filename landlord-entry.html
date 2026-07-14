@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 房東入口</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-soft: #fafbfc;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --orange: #ef8f00;
+      --orange-soft: #fff5df;
+      --shadow: 0 12px 38px rgba(25, 35, 55, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button {
+      font: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 100% 0%,
+          rgba(6, 199, 85, 0.16),
+          transparent 31%
+        ),
+        radial-gradient(
+          circle at 0% 100%,
+          rgba(26, 115, 232, 0.08),
+          transparent 28%
+        ),
+        var(--page-bg);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        max(22px, env(safe-area-inset-top))
+        16px
+        calc(30px + env(safe-area-inset-bottom));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 18px;
+    }
+
+    .brand-icon {
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 8px 23px rgba(6, 199, 85, 0.24);
+    }
+
+    .brand-name {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .brand-subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .loading-card,
+    .state-card,
+    .error-card {
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 34px;
+      height: 34px;
+      margin: 0 auto 14px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .state-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 20px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .state-icon.orange {
+      background: var(--orange-soft);
+      color: var(--orange);
+    }
+
+    .state-icon.red {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .state-title {
+      margin-bottom: 8px;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.3px;
+    }
+
+    .state-text {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.75;
+    }
+
+    .context-box {
+      margin-top: 17px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface-soft);
+      text-align: left;
+    }
+
+    .context-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .context-row:last-child {
+      border-bottom: 0;
+    }
+
+    .context-label {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .context-value {
+      min-width: 0;
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 900;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .primary-button,
+    .secondary-button {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .primary-button {
+      border: 0;
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(6, 199, 85, 0.2);
+    }
+
+    .secondary-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .button-grid .primary-button,
+    .button-grid .secondary-button {
+      margin-top: 0;
+    }
+
+    .route-note {
+      margin-top: 15px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 390px) {
+      .button-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        padding-right: 13px;
+        padding-left: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div class="brand">
+        <div class="brand-icon">CM</div>
+
+        <div>
+          <div class="brand-name">CMWebs 智慧租管</div>
+          <div class="brand-subtitle">Landlord Workspace Entry</div>
+        </div>
+      </div>
+
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="state-title">正在確認房東帳號</div>
+          <div class="state-text">
+            系統正在確認註冊狀態、管理團隊與初始設定進度。
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+    const LIFF_ID = '2010314940-EjX1qbb8';
+    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const URL_PARAMS =
+      new URLSearchParams(
+        location.search
+      );
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') ===
+      '1';
+
+    const STAY_MODE =
+      URL_PARAMS.get('stay') ===
+      '1';
+
+    let LINE_USER_ID = '';
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function buildPageUrl(page) {
+      return (
+        page +
+        '?v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        )
+      );
+    }
+
+    function goPage(page) {
+      location.replace(
+        buildPageUrl(page)
+      );
+    }
+
+    function jsonpRequest(
+      action,
+      params
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_landlord_entry_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                cleanup();
+
+                reject(
+                  new Error(
+                    'API 載入逾時'
+                  )
+                );
+              },
+              25000
+            );
+
+          function cleanup() {
+            clearTimeout(timer);
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(
+            function (key) {
+              const value =
+                params[key];
+
+              if (
+                value === undefined ||
+                value === null
+              ) {
+                return;
+              }
+
+              url +=
+                '&' +
+                encodeURIComponent(
+                  key
+                ) +
+                '=' +
+                encodeURIComponent(
+                  value
+                );
+            }
+          );
+
+          script.charset =
+            'UTF-8';
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 路由執行失敗，請確認 Workspace 後端已重新部署'
+                )
+              );
+            };
+
+          script.src = url;
+
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        return true;
+      }
+
+      if (
+        typeof liff ===
+        'undefined'
+      ) {
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            location.href
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error(
+          '無法取得 LINE User ID'
+        );
+      }
+
+      return true;
+    }
+
+    function renderOnboarding(data) {
+      const workspace =
+        data.active_workspace || {};
+
+      const membership =
+        data.active_membership || {};
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card state-card">
+          <div class="state-icon orange">
+            1
+          </div>
+
+          <div class="state-title">
+            帳號已建立
+          </div>
+
+          <div class="state-text">
+            您已建立房東帳號與第一個管理團隊。下一步需要設定收款資料、第一個物件及房間，完成後才會進入正式管理首頁。
+          </div>
+
+          <div class="context-box">
+            <div class="context-row">
+              <div class="context-label">
+                管理團隊
+              </div>
+
+              <div class="context-value">
+                ${safeHtml(
+                  workspace.workspace_name ||
+                  '-'
+                )}
+              </div>
+            </div>
+
+            <div class="context-row">
+              <div class="context-label">
+                目前角色
+              </div>
+
+              <div class="context-value">
+                ${safeHtml(
+                  membership.role ||
+                  'owner'
+                )}
+              </div>
+            </div>
+
+            <div class="context-row">
+              <div class="context-label">
+                初始設定
+              </div>
+
+              <div class="context-value">
+                尚未完成
+              </div>
+            </div>
+          </div>
+
+          <button
+            class="primary-button"
+            type="button"
+            onclick="goPage('landlord-onboarding.html')"
+          >
+            開始初始設定
+          </button>
+
+          <button
+            class="secondary-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新確認狀態
+          </button>
+
+          <div class="route-note">
+            下一階段會接續建立 landlord-onboarding.html。
+          </div>
+        </section>
+      `;
+    }
+
+    function renderBlocked(data, message) {
+      const workspace =
+        data.active_workspace || {};
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card state-card">
+          <div class="state-icon red">
+            !
+          </div>
+
+          <div class="state-title">
+            目前無法進入管理後台
+          </div>
+
+          <div class="state-text">
+            ${safeHtml(
+              message ||
+              '房東帳號、管理團隊或成員資格目前不是啟用狀態。'
+            )}
+          </div>
+
+          ${
+            workspace.workspace_name
+              ? `
+                <div class="context-box">
+                  <div class="context-row">
+                    <div class="context-label">
+                      管理團隊
+                    </div>
+
+                    <div class="context-value">
+                      ${safeHtml(
+                        workspace.workspace_name
+                      )}
+                    </div>
+                  </div>
+                </div>
+              `
+              : ''
+          }
+
+          <button
+            class="secondary-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="state-icon red">
+            !
+          </div>
+
+          <div class="state-title">
+            房東入口載入失敗
+          </div>
+
+          <div class="state-text">
+            ${safeHtml(
+              message ||
+              '未知錯誤'
+            )}
+          </div>
+
+          <div class="button-grid">
+            <button
+              class="secondary-button"
+              type="button"
+              onclick="location.reload()"
+            >
+              重新整理
+            </button>
+
+            <button
+              class="primary-button"
+              type="button"
+              onclick="goPage('landlord-register.html')"
+            >
+              前往註冊頁
+            </button>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderReady(data) {
+      const workspace =
+        data.active_workspace || {};
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card state-card">
+          <div class="state-icon">
+            ✓
+          </div>
+
+          <div class="state-title">
+            管理後台準備完成
+          </div>
+
+          <div class="state-text">
+            已確認您的帳號、管理團隊與使用權限。
+          </div>
+
+          <div class="context-box">
+            <div class="context-row">
+              <div class="context-label">
+                目前管理團隊
+              </div>
+
+              <div class="context-value">
+                ${safeHtml(
+                  workspace.workspace_name ||
+                  '-'
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button
+            class="primary-button"
+            type="button"
+            onclick="goPage('landlord-home.html')"
+          >
+            進入管理首頁
+          </button>
+        </section>
+      `;
+    }
+
+    async function loadPage() {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="state-title">
+            正在確認房東帳號
+          </div>
+          <div class="state-text">
+            系統正在確認註冊狀態、管理團隊與初始設定進度。
+          </div>
+        </section>
+      `;
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLine();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'landlord_entry_status',
+            {}
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '房東入口狀態查詢失敗'
+          );
+        }
+
+        const data =
+          result.data || {};
+
+        if (
+          data.route ===
+          'register'
+        ) {
+          if (STAY_MODE) {
+            document.getElementById(
+              'app'
+            ).innerHTML = `
+              <section class="card state-card">
+                <div class="state-icon">
+                  +
+                </div>
+
+                <div class="state-title">
+                  尚未建立房東帳號
+                </div>
+
+                <div class="state-text">
+                  此 LINE 帳號尚未註冊。建立帳號時會同時建立第一個管理團隊，您會成為團隊擁有者。
+                </div>
+
+                <button
+                  class="primary-button"
+                  type="button"
+                  onclick="goPage('landlord-register.html')"
+                >
+                  建立房東帳號
+                </button>
+              </section>
+            `;
+
+            return;
+          }
+
+          goPage(
+            'landlord-register.html'
+          );
+
+          return;
+        }
+
+        if (
+          data.route ===
+          'home'
+        ) {
+          if (STAY_MODE) {
+            renderReady(data);
+            return;
+          }
+
+          goPage(
+            'landlord-home.html'
+          );
+
+          return;
+        }
+
+        if (
+          data.route ===
+          'onboarding'
+        ) {
+          renderOnboarding(data);
+          return;
+        }
+
+        renderBlocked(
+          data,
+          result.message
+        );
+
+      } catch (error) {
+        renderError(
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        );
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      function () {
+        setTimeout(
+          setAppHeight,
+          250
+        );
+      }
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
