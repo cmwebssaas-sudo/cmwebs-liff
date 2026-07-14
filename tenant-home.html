@@ -1125,6 +1125,17 @@
         );
     }
 
+    function goBindingPage() {
+      location.href =
+        'tenant-bind.html?v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
     function showToast(message) {
       const toast =
         document.getElementById('toast');
@@ -2167,9 +2178,26 @@
           throw results[0].reason;
         }
 
+        const homeResult =
+          results[0].value;
+
+        if (
+          homeResult &&
+          homeResult.success !== true &&
+          (
+            homeResult.code ===
+              'TENANT_NOT_FOUND' ||
+            homeResult.code ===
+              'TENANT_BINDING_REQUIRED'
+          )
+        ) {
+          goBindingPage();
+          return;
+        }
+
         const home =
           unwrapData(
-            results[0].value
+            homeResult
           );
 
         let contractData = {
