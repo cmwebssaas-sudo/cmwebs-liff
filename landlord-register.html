@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 建立房東帳號</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --blue: #1a73e8;
+      --blue-soft: #edf4ff;
+      --orange-soft: #fff5df;
+      --shadow: 0 12px 38px rgba(25, 35, 55, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 100% 0%,
+          rgba(6, 199, 85, 0.16),
+          transparent 31%
+        ),
+        var(--page-bg);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        max(22px, env(safe-area-inset-top))
+        16px
+        calc(30px + env(safe-area-inset-bottom));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 18px;
+    }
+
+    .brand-icon {
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 8px 23px rgba(6, 199, 85, 0.24);
+    }
+
+    .brand-name {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .brand-subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      overflow: hidden;
+    }
+
+    .hero {
+      position: relative;
+      padding: 24px 20px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #08a94b 0%,
+          #06c755 58%,
+          #05a947 100%
+        );
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -62px;
+      right: -42px;
+      width: 185px;
+      height: 185px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      content: "";
+    }
+
+    .hero-eyebrow,
+    .hero-title,
+    .hero-desc {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-eyebrow {
+      margin-bottom: 7px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: 27px;
+      font-weight: 900;
+      letter-spacing: -0.55px;
+    }
+
+    .hero-desc {
+      margin-top: 9px;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .profile-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 18px;
+    }
+
+    .profile-avatar {
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .profile-label {
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .profile-name {
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      flex: 0 0 auto;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .form-card {
+      padding: 19px;
+    }
+
+    .section-title {
+      margin-bottom: 6px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .section-desc {
+      margin-bottom: 17px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.65;
+    }
+
+    .field {
+      margin-top: 15px;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .required {
+      color: var(--danger);
+      font-size: 10px;
+    }
+
+    .optional {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .input {
+      width: 100%;
+      height: 48px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .input:focus {
+      border-color: rgba(6, 199, 85, 0.55);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.1);
+    }
+
+    .field-help {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .team-note {
+      margin-top: 17px;
+      padding: 13px 14px;
+      border: 1px solid #d8e5fb;
+      border-radius: 14px;
+      background: var(--blue-soft);
+      color: #315a92;
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .team-note strong {
+      color: var(--blue);
+    }
+
+    .agreement {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f7f9fb;
+      color: #5e6570;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .agreement input {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 17px;
+      margin: 1px 0 0;
+      accent-color: var(--primary);
+    }
+
+    .submit-button,
+    .primary-button,
+    .secondary-button {
+      width: 100%;
+      min-height: 49px;
+      margin-top: 16px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .submit-button,
+    .primary-button {
+      border: 0;
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(6, 199, 85, 0.2);
+    }
+
+    .secondary-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .submit-button:disabled {
+      cursor: default;
+      opacity: 0.55;
+      box-shadow: none;
+    }
+
+    .security-note {
+      margin-top: 11px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .loading-card,
+    .error-card {
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 33px;
+      height: 33px;
+      margin: 0 auto 14px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .state-icon {
+      width: 62px;
+      height: 62px;
+      margin: 0 auto 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 20px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .state-icon.red {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .state-title {
+      margin-bottom: 8px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .state-text {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.75;
+    }
+
+    .notice {
+      margin-bottom: 14px;
+      padding: 13px 14px;
+      border: 1px solid #f0dfb9;
+      border-radius: 14px;
+      background: var(--orange-soft);
+      color: #74500c;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.65;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      z-index: 1500;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 16px;
+      background: rgba(17, 24, 39, 0.5);
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 430px;
+      padding: 20px;
+      border-radius: 19px;
+      background: #ffffff;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+      text-align: center;
+    }
+
+    .modal-title {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .modal-message {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    @media (max-width: 390px) {
+      .page {
+        padding-right: 13px;
+        padding-left: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div class="brand">
+        <div class="brand-icon">CM</div>
+
+        <div>
+          <div class="brand-name">CMWebs 智慧租管</div>
+          <div class="brand-subtitle">Create Landlord Workspace</div>
+        </div>
+      </div>
+
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="state-title">正在準備註冊資料</div>
+          <div class="state-text">
+            系統正在確認此 LINE 帳號是否已經建立房東帳號。
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="successModal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="state-icon">✓</div>
+        <div class="modal-title">房東帳號建立成功</div>
+        <div id="successMessage" class="modal-message"></div>
+
+        <button
+          class="primary-button"
+          type="button"
+          onclick="goEntry()"
+        >
+          繼續初始設定
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+    const LIFF_ID = '2010314940-EjX1qbb8';
+    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const URL_PARAMS =
+      new URLSearchParams(
+        location.search
+      );
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') ===
+      '1';
+
+    const FORCE_FORM =
+      URL_PARAMS.get('force') ===
+      '1';
+
+    let LINE_USER_ID = '';
+    let LINE_PROFILE = null;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function buildPageUrl(page) {
+      return (
+        page +
+        '?v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        )
+      );
+    }
+
+    function goEntry() {
+      location.replace(
+        buildPageUrl(
+          'landlord-entry.html'
+        )
+      );
+    }
+
+    function jsonpRequest(
+      action,
+      params
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_landlord_register_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                cleanup();
+
+                reject(
+                  new Error(
+                    'API 載入逾時'
+                  )
+                );
+              },
+              25000
+            );
+
+          function cleanup() {
+            clearTimeout(timer);
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(
+            function (key) {
+              const value =
+                params[key];
+
+              if (
+                value === undefined ||
+                value === null
+              ) {
+                return;
+              }
+
+              url +=
+                '&' +
+                encodeURIComponent(
+                  key
+                ) +
+                '=' +
+                encodeURIComponent(
+                  value
+                );
+            }
+          );
+
+          script.charset =
+            'UTF-8';
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 路由執行失敗，請確認 Workspace 後端已重新部署'
+                )
+              );
+            };
+
+          script.src = url;
+
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        LINE_PROFILE = {
+          displayName:
+            '測試房東',
+          pictureUrl:
+            ''
+        };
+
+        return true;
+      }
+
+      if (
+        typeof liff ===
+        'undefined'
+      ) {
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            location.href
+        });
+
+        return false;
+      }
+
+      LINE_PROFILE =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        LINE_PROFILE.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error(
+          '無法取得 LINE User ID'
+        );
+      }
+
+      return true;
+    }
+
+    function normalizePhone(value) {
+      let digits =
+        rawText(value)
+          .replace(/\D/g, '');
+
+      if (
+        digits.indexOf('8860') === 0 &&
+        digits.length === 13
+      ) {
+        digits =
+          '0' +
+          digits.slice(4);
+      } else if (
+        digits.indexOf('886') === 0 &&
+        digits.length === 12
+      ) {
+        digits =
+          '0' +
+          digits.slice(3);
+      } else if (
+        digits.length === 9 &&
+        digits.charAt(0) === '9'
+      ) {
+        digits =
+          '0' +
+          digits;
+      }
+
+      return digits;
+    }
+
+    function validEmail(value) {
+      const text =
+        rawText(value).trim();
+
+      if (!text) {
+        return true;
+      }
+
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        text
+      );
+    }
+
+    function sanitizePhone(input) {
+      input.value =
+        rawText(input.value)
+          .replace(/[^\d+]/g, '')
+          .slice(0, 14);
+    }
+
+    function updateNameDefaults() {
+      const nameInput =
+        document.getElementById(
+          'landlordName'
+        );
+
+      const workspaceInput =
+        document.getElementById(
+          'workspaceName'
+        );
+
+      if (
+        !nameInput ||
+        !workspaceInput
+      ) {
+        return;
+      }
+
+      if (
+        !workspaceInput.dataset.edited
+      ) {
+        workspaceInput.value =
+          nameInput.value.trim()
+            ? (
+                nameInput.value.trim() +
+                '的管理團隊'
+              )
+            : '';
+      }
+    }
+
+    function markWorkspaceEdited() {
+      const input =
+        document.getElementById(
+          'workspaceName'
+        );
+
+      if (input) {
+        input.dataset.edited =
+          input.value.trim()
+            ? '1'
+            : '';
+      }
+    }
+
+    function profileHtml() {
+      const displayName =
+        LINE_PROFILE &&
+        LINE_PROFILE.displayName
+          ? LINE_PROFILE.displayName
+          : 'LINE 使用者';
+
+      const pictureUrl =
+        LINE_PROFILE &&
+        LINE_PROFILE.pictureUrl
+          ? LINE_PROFILE.pictureUrl
+          : '';
+
+      return `
+        <div class="profile-row">
+          <div class="profile-avatar">
+            ${
+              pictureUrl
+                ? `
+                  <img
+                    src="${safeHtml(
+                      pictureUrl
+                    )}"
+                    alt=""
+                  />
+                `
+                : safeHtml(
+                    displayName.slice(
+                      0,
+                      1
+                    )
+                  )
+            }
+          </div>
+
+          <div class="profile-main">
+            <div class="profile-label">
+              將綁定此 LINE 帳號
+            </div>
+
+            <div class="profile-name">
+              ${safeHtml(
+                displayName
+              )}
+            </div>
+          </div>
+
+          <div class="status-badge">
+            LINE 已登入
+          </div>
+        </div>
+      `;
+    }
+
+    function renderForm(
+      existingData
+    ) {
+      const profileName =
+        LINE_PROFILE &&
+        LINE_PROFILE.displayName
+          ? LINE_PROFILE.displayName
+          : '';
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        ${
+          existingData &&
+          existingData.registered &&
+          FORCE_FORM
+            ? `
+              <div class="notice">
+                此測試 LINE 帳號已建立房東帳號。因網址包含
+                <strong>force=1</strong>
+                而顯示註冊表單；後端仍會阻止重複建立資料。
+              </div>
+            `
+            : ''
+        }
+
+        <section class="card hero-card">
+          <div class="hero">
+            <div class="hero-eyebrow">
+              第一次使用 CMWebs
+            </div>
+
+            <h1 class="hero-title">
+              建立房東帳號
+            </h1>
+
+            <div class="hero-desc">
+              註冊時會同時建立第一個管理團隊。之後可邀請共同房東、管理人員、會計或維修人員加入同一個工作區。
+            </div>
+          </div>
+
+          ${profileHtml()}
+        </section>
+
+        <section class="card form-card">
+          <div class="section-title">
+            帳號基本資料
+          </div>
+
+          <div class="section-desc">
+            姓名與手機號碼會作為帳號識別及重要通知資料。系統編號會自動產生，不需要自行填寫。
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>姓名</span>
+              <span class="required">必填</span>
+            </div>
+
+            <input
+              id="landlordName"
+              class="input"
+              type="text"
+              maxlength="60"
+              autocomplete="name"
+              placeholder="例如：朱文漢"
+              value="${safeHtml(
+                profileName
+              )}"
+              oninput="updateNameDefaults()"
+            />
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>手機號碼</span>
+              <span class="required">必填</span>
+            </div>
+
+            <input
+              id="phone"
+              class="input"
+              type="tel"
+              maxlength="14"
+              inputmode="tel"
+              autocomplete="tel"
+              placeholder="0912345678"
+              oninput="sanitizePhone(this)"
+            />
+
+            <div class="field-help">
+              <span>請輸入本人使用的台灣手機號碼。</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>Email</span>
+              <span class="optional">選填</span>
+            </div>
+
+            <input
+              id="email"
+              class="input"
+              type="email"
+              maxlength="120"
+              autocomplete="email"
+              placeholder="example@gmail.com"
+            />
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>管理團隊名稱</span>
+              <span class="required">必填</span>
+            </div>
+
+            <input
+              id="workspaceName"
+              class="input"
+              type="text"
+              maxlength="80"
+              placeholder="例如：綠界租屋管理團隊"
+              oninput="markWorkspaceEdited()"
+            />
+
+            <div class="field-help">
+              <span>此名稱會顯示在工作區切換與團隊管理中。</span>
+            </div>
+          </div>
+
+          <div class="team-note">
+            <strong>多人共同管理：</strong>
+            您會成為第一位團隊擁有者。完成初始設定後，可邀請其他成員共同管理同一物件、房間、房客、合約與帳務。
+          </div>
+
+          <label class="agreement">
+            <input
+              id="selfConfirm"
+              type="checkbox"
+            />
+
+            <span>
+              我確認這是本人 LINE 帳號，並同意將此 LINE 帳號綁定到新建立的房東帳號。
+            </span>
+          </label>
+
+          <label class="agreement">
+            <input
+              id="termsConfirm"
+              type="checkbox"
+            />
+
+            <span>
+              我同意服務條款與必要的帳號、租務及團隊管理資料使用。
+            </span>
+          </label>
+
+          <button
+            id="submitButton"
+            class="submit-button"
+            type="button"
+            onclick="submitRegistration()"
+          >
+            建立房東帳號與管理團隊
+          </button>
+
+          <div class="security-note">
+            同一 LINE 帳號與手機號碼不能重複建立房東帳號。
+          </div>
+        </section>
+      `;
+
+      updateNameDefaults();
+    }
+
+    function routeExisting(data) {
+      if (
+        data.route ===
+        'home'
+      ) {
+        location.replace(
+          buildPageUrl(
+            'landlord-home.html'
+          )
+        );
+
+        return;
+      }
+
+      location.replace(
+        buildPageUrl(
+          'landlord-entry.html'
+        )
+      );
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="state-icon red">
+            !
+          </div>
+
+          <div class="state-title">
+            註冊頁載入失敗
+          </div>
+
+          <div class="state-text">
+            ${safeHtml(
+              message ||
+              '未知錯誤'
+            )}
+          </div>
+
+          <button
+            class="primary-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+
+          <button
+            class="secondary-button"
+            type="button"
+            onclick="goEntry()"
+          >
+            返回房東入口
+          </button>
+        </section>
+      `;
+    }
+
+    async function submitRegistration() {
+      const landlordName =
+        rawText(
+          document.getElementById(
+            'landlordName'
+          ).value
+        ).trim();
+
+      const phone =
+        normalizePhone(
+          document.getElementById(
+            'phone'
+          ).value
+        );
+
+      const email =
+        rawText(
+          document.getElementById(
+            'email'
+          ).value
+        )
+          .trim()
+          .toLowerCase();
+
+      const workspaceName =
+        rawText(
+          document.getElementById(
+            'workspaceName'
+          ).value
+        ).trim();
+
+      const selfConfirm =
+        document.getElementById(
+          'selfConfirm'
+        ).checked;
+
+      const termsConfirm =
+        document.getElementById(
+          'termsConfirm'
+        ).checked;
+
+      if (!landlordName) {
+        window.alert(
+          '請輸入姓名。'
+        );
+
+        return;
+      }
+
+      if (
+        !/^09\d{8}$/.test(
+          phone
+        )
+      ) {
+        window.alert(
+          '請輸入正確的台灣手機號碼，例如 0912345678。'
+        );
+
+        return;
+      }
+
+      if (!validEmail(email)) {
+        window.alert(
+          'Email 格式不正確。'
+        );
+
+        return;
+      }
+
+      if (!workspaceName) {
+        window.alert(
+          '請輸入管理團隊名稱。'
+        );
+
+        return;
+      }
+
+      if (!selfConfirm) {
+        window.alert(
+          '請確認這是本人 LINE 帳號。'
+        );
+
+        return;
+      }
+
+      if (!termsConfirm) {
+        window.alert(
+          '請先同意服務條款與資料使用說明。'
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          'submitButton'
+        );
+
+      button.disabled = true;
+      button.textContent =
+        '建立中...';
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_register_submit',
+            {
+              landlord_name:
+                landlordName,
+              phone:
+                phone,
+              email:
+                email,
+              workspace_name:
+                workspaceName,
+              profile_display_name:
+                LINE_PROFILE &&
+                LINE_PROFILE.displayName
+                  ? LINE_PROFILE.displayName
+                  : '',
+              profile_picture_url:
+                LINE_PROFILE &&
+                LINE_PROFILE.pictureUrl
+                  ? LINE_PROFILE.pictureUrl
+                  : ''
+            }
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '房東帳號建立失敗'
+          );
+        }
+
+        const data =
+          result.data || {};
+
+        if (
+          result.code ===
+          'ALREADY_REGISTERED'
+        ) {
+          routeExisting(data);
+          return;
+        }
+
+        const workspace =
+          data.active_workspace ||
+          {};
+
+        const user =
+          data.user || {};
+
+        document.getElementById(
+          'successMessage'
+        ).textContent =
+          '姓名：' +
+          (
+            user.name ||
+            landlordName
+          ) +
+          '\n管理團隊：' +
+          (
+            workspace.workspace_name ||
+            workspaceName
+          ) +
+          '\n角色：owner\n\n接下來請完成收款、物件與房間設定。';
+
+        document.getElementById(
+          'successModal'
+        ).classList.add(
+          'show'
+        );
+
+      } catch (error) {
+        window.alert(
+          error &&
+          error.message
+            ? error.message
+            : '房東帳號建立失敗'
+        );
+
+      } finally {
+        button.disabled = false;
+        button.textContent =
+          '建立房東帳號與管理團隊';
+      }
+    }
+
+    async function loadPage() {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="state-title">
+            正在準備註冊資料
+          </div>
+          <div class="state-text">
+            系統正在確認此 LINE 帳號是否已經建立房東帳號。
+          </div>
+        </section>
+      `;
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLine();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'landlord_entry_status',
+            {}
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '房東帳號狀態查詢失敗'
+          );
+        }
+
+        const data =
+          result.data || {};
+
+        if (
+          data.registered === true &&
+          !FORCE_FORM
+        ) {
+          routeExisting(data);
+          return;
+        }
+
+        renderForm(data);
+
+      } catch (error) {
+        renderError(
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        );
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      function () {
+        setTimeout(
+          setAppHeight,
+          250
+        );
+      }
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
