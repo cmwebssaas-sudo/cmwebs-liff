@@ -292,11 +292,10 @@
       font-weight: 900;
     }
 
-    .input.last4 {
-      font-size: 20px;
+    .input.phone {
+      font-size: 18px;
       font-weight: 900;
-      letter-spacing: 5px;
-      text-align: center;
+      letter-spacing: 1px;
     }
 
     .input:focus {
@@ -910,50 +909,29 @@
           </div>
 
           <div class="section-desc">
-            請輸入房東提供的房客編號，以及房客資料中登記手機號碼的末四碼。
+            請輸入租約或房客資料中登記的完整手機號碼。系統會自動查找對應的有效租屋資料。
           </div>
 
           <div class="field">
             <div class="field-label">
-              <span>房客編號</span>
+              <span>手機號碼</span>
               <span class="required">必填</span>
             </div>
 
             <input
-              id="tenantId"
-              class="input code"
-              type="text"
-              maxlength="30"
-              autocomplete="off"
-              placeholder="例如：T000020"
-              oninput="sanitizeTenantId(this)"
+              id="phoneNumber"
+              class="input phone"
+              type="tel"
+              maxlength="14"
+              inputmode="tel"
+              autocomplete="tel"
+              placeholder="0912345678"
+              oninput="sanitizePhone(this)"
             />
 
             <div class="field-help">
-              <span>請依房東提供的房客編號輸入。</span>
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">
-              <span>手機號碼末四碼</span>
-              <span class="required">必填</span>
-            </div>
-
-            <input
-              id="phoneLast4"
-              class="input last4"
-              type="text"
-              maxlength="4"
-              inputmode="numeric"
-              autocomplete="off"
-              placeholder="1234"
-              oninput="sanitizeLast4(this)"
-            />
-
-            <div class="field-help">
-              <span>只需輸入手機號碼最後四位數字。</span>
-              <span id="last4Count">0 / 4</span>
+              <span>請輸入租約或房客資料中登記的完整手機號碼。</span>
+              <span id="phoneCount">0 / 10</span>
             </div>
           </div>
 
@@ -988,7 +966,7 @@
           </div>
 
           <div class="help-text">
-            請確認房客編號與手機末四碼。房客已綁定其他 LINE 帳號、手機資料未建立或合約未啟用時，請聯絡房東協助處理。
+            請確認手機號碼是否與租約登記資料一致。房客已綁定其他 LINE 帳號、手機資料未建立、同一號碼對應多筆資料或合約未啟用時，請聯絡房東協助處理。
           </div>
         </section>
       `;
@@ -1112,57 +1090,103 @@
       `;
     }
 
-    function sanitizeTenantId(
-      input
-    ) {
-      input.value =
-        rawText(
-          input.value
-        )
-          .toUpperCase()
-          .replace(
-            /[^A-Z0-9_-]/g,
-            ''
-          )
-          .slice(0, 30);
-    }
+    function sanitizePhone(input) {
+      let value =
+        rawText(input.value)
+          .replace(/[^\d+]/g, '');
 
-    function sanitizeLast4(
-      input
-    ) {
-      input.value =
-        rawText(
-          input.value
-        )
-          .replace(/\D/g, '')
-          .slice(0, 4);
+      if (
+        value.indexOf('+') > 0
+      ) {
+        value =
+          value.replace(/\+/g, '');
+      }
+
+      if (
+        value.charAt(0) === '+'
+      ) {
+        value =
+          '+' +
+          value.slice(1)
+            .replace(/\+/g, '')
+            .slice(0, 12);
+      } else {
+        value =
+          value.replace(/\+/g, '')
+            .slice(0, 12);
+      }
+
+      input.value = value;
+
+      const digits =
+        value.replace(/\D/g, '');
+
+      const normalizedLength =
+        digits.indexOf('886') === 0
+          ? Math.max(
+              digits.length - 2,
+              0
+            )
+          : (
+              digits.length === 9 &&
+              digits.charAt(0) === '9'
+                ? 10
+                : digits.length
+            );
 
       const count =
         document.getElementById(
-          'last4Count'
+          'phoneCount'
         );
 
       if (count) {
         count.textContent =
-          input.value.length +
-          ' / 4';
+          Math.min(
+            normalizedLength,
+            10
+          ) +
+          ' / 10';
       }
     }
 
-    async function submitBinding() {
-      const tenantId =
-        rawText(
-          document.getElementById(
-            'tenantId'
-          ).value
-        )
-          .trim()
-          .toUpperCase();
 
-      const phoneLast4 =
+    function normalizePhoneForValidation(value) {
+      let digits =
+        rawText(value)
+          .replace(/\D/g, '');
+
+      if (
+        digits.indexOf('8860') === 0 &&
+        digits.length === 13
+      ) {
+        digits =
+          '0' +
+          digits.slice(4);
+      } else if (
+        digits.indexOf('886') === 0 &&
+        digits.length === 12
+      ) {
+        digits =
+          '0' +
+          digits.slice(3);
+      } else if (
+        digits.length === 9 &&
+        digits.charAt(0) === '9'
+      ) {
+        digits =
+          '0' +
+          digits;
+      }
+
+      return digits;
+    }
+
+
+    async function submitBinding() {
+      const phoneNumber =
         rawText(
           document.getElementById(
-            'phoneLast4'
+            'phoneNumber'
           ).value
         ).trim();
 
@@ -1171,21 +1195,18 @@
           'agreement'
         ).checked;
 
-      if (!tenantId) {
-        window.alert(
-          '請輸入房客編號。'
+      const normalizedPhone =
+        normalizePhoneForValidation(
+          phoneNumber
         );
 
-        return;
-      }
-
       if (
-        !/^\d{4}$/.test(
-          phoneLast4
+        !/^09\d{8}$/.test(
+          normalizedPhone
         )
       ) {
         window.alert(
-          '請輸入完整的手機末四碼。'
+          '請輸入正確的台灣手機號碼，例如 0912345678。'
         );
 
         return;
@@ -1213,10 +1234,8 @@
           await jsonpRequest(
             'tenant_bind_submit',
             {
-              tenant_id:
-                tenantId,
-              phone_last4:
-                phoneLast4
+              phone_number:
+                normalizedPhone
             }
           );
 
@@ -1246,7 +1265,7 @@
           '\n房客編號：' +
           (
             data.tenant_id ||
-            tenantId
+            '-'
           ) +
           (
             data.room_name
