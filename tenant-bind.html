@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 房客首次綁定</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --orange: #ef8f00;
+      --orange-soft: #fff5df;
+      --shadow: 0 10px 34px rgba(25, 35, 55, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 92% 2%,
+          rgba(6, 199, 85, 0.16),
+          transparent 28%
+        ),
+        var(--page-bg);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        22px
+        16px
+        calc(30px + env(safe-area-inset-bottom));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 18px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 8px 22px rgba(6, 199, 85, 0.24);
+    }
+
+    .brand-name {
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .brand-subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      overflow: hidden;
+    }
+
+    .hero {
+      position: relative;
+      padding: 24px 20px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #0abb59 0%,
+          #06c755 58%,
+          #05a947 100%
+        );
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -58px;
+      right: -45px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      content: "";
+    }
+
+    .hero-eyebrow,
+    .hero-title,
+    .hero-desc {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-eyebrow {
+      margin-bottom: 7px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: 27px;
+      font-weight: 900;
+      letter-spacing: -0.55px;
+    }
+
+    .hero-desc {
+      margin-top: 9px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .profile-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 18px;
+    }
+
+    .profile-avatar {
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .profile-label {
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .profile-name {
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      flex: 0 0 auto;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--orange-soft);
+      color: #a96700;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .form-card {
+      padding: 19px;
+    }
+
+    .section-title {
+      margin-bottom: 6px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .section-desc {
+      margin-bottom: 17px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.65;
+    }
+
+    .field {
+      margin-top: 15px;
+    }
+
+    .field:first-of-type {
+      margin-top: 0;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .required {
+      color: var(--danger);
+      font-size: 10px;
+    }
+
+    .input {
+      width: 100%;
+      height: 48px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .input.code {
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 900;
+    }
+
+    .input.last4 {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 5px;
+      text-align: center;
+    }
+
+    .input:focus {
+      border-color: rgba(6, 199, 85, 0.55);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.1);
+    }
+
+    .field-help {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .agreement {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-top: 17px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f7f9fb;
+      color: #5e6570;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .agreement input {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 17px;
+      margin: 1px 0 0;
+      accent-color: var(--primary);
+    }
+
+    .submit-button,
+    .primary-button,
+    .secondary-button {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 16px;
+      border-radius: 13px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .submit-button,
+    .primary-button {
+      border: 0;
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .secondary-button {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .submit-button:disabled {
+      cursor: default;
+      opacity: 0.55;
+    }
+
+    .security-note {
+      margin-top: 11px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .help-card {
+      padding: 16px 18px;
+    }
+
+    .help-title {
+      margin-bottom: 7px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .help-text {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.7;
+    }
+
+    .notice {
+      margin-bottom: 14px;
+      padding: 13px 14px;
+      border: 1px solid #f0dfb9;
+      border-radius: 14px;
+      background: var(--orange-soft);
+      color: #74500c;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.65;
+    }
+
+    .loading-card,
+    .error-card,
+    .bound-card {
+      padding: 31px 20px;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 31px;
+      height: 31px;
+      margin: 0 auto 13px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-title,
+    .bound-title,
+    .error-title {
+      margin-bottom: 7px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .error-title {
+      color: var(--danger);
+    }
+
+    .loading-text,
+    .bound-text,
+    .error-text {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .result-icon {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      z-index: 1500;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 16px;
+      background: rgba(17, 24, 39, 0.5);
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 430px;
+      padding: 20px;
+      border-radius: 19px;
+      background: #ffffff;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+      text-align: center;
+    }
+
+    .modal-title {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .modal-message {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    @media (max-width: 390px) {
+      .page {
+        padding-right: 13px;
+        padding-left: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div class="brand">
+        <div class="brand-icon">CM</div>
+
+        <div>
+          <div class="brand-name">CMWebs 智慧租管</div>
+          <div class="brand-subtitle">房客首次登入綁定</div>
+        </div>
+      </div>
+
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">正在確認登入狀態</div>
+          <div class="loading-text">
+            系統正在確認此 LINE 帳號是否已完成房客綁定。
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="successModal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="result-icon">✓</div>
+        <div class="modal-title">房客綁定成功</div>
+        <div id="successMessage" class="modal-message"></div>
+
+        <button
+          class="primary-button"
+          type="button"
+          onclick="goHome()"
+        >
+          進入房客首頁
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-iJB1D6sN';
+
+    const TEST_LINE_USER_ID =
+      'U3615a7ed919c1a4a438a246c10784d70';
+
+    const URL_PARAMS =
+      new URLSearchParams(
+        location.search
+      );
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') ===
+      '1';
+
+    const FORCE_FORM =
+      URL_PARAMS.get('force') ===
+      '1';
+
+    let LINE_USER_ID = '';
+    let LINE_PROFILE = null;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      return String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function goHome() {
+      location.href =
+        'tenant-home.html?v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
+    function jsonpRequest(
+      action,
+      params
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_tenant_bind_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                cleanup();
+
+                reject(
+                  new Error(
+                    'API 載入逾時'
+                  )
+                );
+              },
+              25000
+            );
+
+          function cleanup() {
+            clearTimeout(timer);
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(
+            function (key) {
+              const value =
+                params[key];
+
+              if (
+                value === undefined ||
+                value === null
+              ) {
+                return;
+              }
+
+              url +=
+                '&' +
+                encodeURIComponent(
+                  key
+                ) +
+                '=' +
+                encodeURIComponent(
+                  value
+                );
+            }
+          );
+
+          script.charset =
+            'UTF-8';
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 路由執行失敗，請確認綁定後端已重新部署'
+                )
+              );
+            };
+
+          script.src = url;
+
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        LINE_PROFILE = {
+          displayName:
+            '測試 LINE 使用者',
+          pictureUrl:
+            ''
+        };
+
+        return true;
+      }
+
+      if (
+        typeof liff ===
+        'undefined'
+      ) {
+        throw new Error(
+          'LIFF SDK 載入失敗'
+        );
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            location.href
+        });
+
+        return false;
+      }
+
+      LINE_PROFILE =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        LINE_PROFILE.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error(
+          '無法取得 LINE User ID'
+        );
+      }
+
+      return true;
+    }
+
+    function profileHtml() {
+      const displayName =
+        LINE_PROFILE &&
+        LINE_PROFILE.displayName
+          ? LINE_PROFILE.displayName
+          : 'LINE 使用者';
+
+      const pictureUrl =
+        LINE_PROFILE &&
+        LINE_PROFILE.pictureUrl
+          ? LINE_PROFILE.pictureUrl
+          : '';
+
+      return `
+        <div class="profile-row">
+          <div class="profile-avatar">
+            ${
+              pictureUrl
+                ? `
+                  <img
+                    src="${safeHtml(
+                      pictureUrl
+                    )}"
+                    alt=""
+                  />
+                `
+                : safeHtml(
+                    displayName.slice(
+                      0,
+                      1
+                    )
+                  )
+            }
+          </div>
+
+          <div class="profile-main">
+            <div class="profile-label">
+              目前登入的 LINE 帳號
+            </div>
+
+            <div class="profile-name">
+              ${safeHtml(
+                displayName
+              )}
+            </div>
+          </div>
+
+          <div class="status-badge">
+            尚未綁定
+          </div>
+        </div>
+      `;
+    }
+
+    function renderForm(
+      statusData
+    ) {
+      const alreadyBound =
+        statusData &&
+        statusData.bound === true;
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        ${
+          alreadyBound &&
+          FORCE_FORM
+            ? `
+              <div class="notice">
+                此測試 LINE 帳號目前已綁定。網址包含
+                <strong>force=1</strong>
+                ，因此仍顯示綁定表單；正式環境不會重複顯示。
+              </div>
+            `
+            : ''
+        }
+
+        <section class="card hero-card">
+          <div class="hero">
+            <div class="hero-eyebrow">
+              房客首次登入
+            </div>
+
+            <h1 class="hero-title">
+              綁定您的租屋資料
+            </h1>
+
+            <div class="hero-desc">
+              完成一次綁定後，即可使用帳單查詢、付款回報、合約申請及聯絡房東等功能。
+            </div>
+          </div>
+
+          ${profileHtml()}
+        </section>
+
+        <section class="card form-card">
+          <div class="section-title">
+            身分驗證
+          </div>
+
+          <div class="section-desc">
+            請輸入房東提供的房客編號，以及房客資料中登記手機號碼的末四碼。
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>房客編號</span>
+              <span class="required">必填</span>
+            </div>
+
+            <input
+              id="tenantId"
+              class="input code"
+              type="text"
+              maxlength="30"
+              autocomplete="off"
+              placeholder="例如：T000020"
+              oninput="sanitizeTenantId(this)"
+            />
+
+            <div class="field-help">
+              <span>請依房東提供的房客編號輸入。</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>手機號碼末四碼</span>
+              <span class="required">必填</span>
+            </div>
+
+            <input
+              id="phoneLast4"
+              class="input last4"
+              type="text"
+              maxlength="4"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="1234"
+              oninput="sanitizeLast4(this)"
+            />
+
+            <div class="field-help">
+              <span>只需輸入手機號碼最後四位數字。</span>
+              <span id="last4Count">0 / 4</span>
+            </div>
+          </div>
+
+          <label class="agreement">
+            <input
+              id="agreement"
+              type="checkbox"
+            />
+
+            <span>
+              我確認使用的是本人 LINE 帳號，並同意將此 LINE 帳號綁定到上述房客資料。日後更換 LINE 帳號時，需聯絡房東解除原綁定。
+            </span>
+          </label>
+
+          <button
+            id="submitButton"
+            class="submit-button"
+            type="button"
+            onclick="submitBinding()"
+          >
+            確認綁定
+          </button>
+
+          <div class="security-note">
+            連續驗證失敗 5 次，系統會暫停綁定 10 分鐘。
+          </div>
+        </section>
+
+        <section class="card help-card">
+          <div class="help-title">
+            無法完成綁定？
+          </div>
+
+          <div class="help-text">
+            請確認房客編號與手機末四碼。房客已綁定其他 LINE 帳號、手機資料未建立或合約未啟用時，請聯絡房東協助處理。
+          </div>
+        </section>
+      `;
+    }
+
+    function renderBound(
+      data,
+      inactive
+    ) {
+      const tenant =
+        data &&
+        data.tenant
+          ? data.tenant
+          : {};
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card bound-card">
+          <div class="result-icon">
+            ${inactive ? '!' : '✓'}
+          </div>
+
+          <div class="bound-title">
+            ${
+              inactive
+                ? '房客帳號目前未啟用'
+                : '已完成房客綁定'
+            }
+          </div>
+
+          <div class="bound-text">
+            房客：
+            ${safeHtml(
+              tenant.tenant_name ||
+              '-'
+            )}<br>
+
+            房客編號：
+            ${safeHtml(
+              tenant.tenant_id ||
+              '-'
+            )}
+
+            ${
+              tenant.room_name
+                ? `
+                  <br>房號：
+                  ${safeHtml(
+                    tenant.room_name
+                  )}
+                `
+                : ''
+            }
+
+            <br><br>
+
+            ${
+              inactive
+                ? '此 LINE 帳號已綁定，但房客帳號目前不是啟用狀態，請聯絡房東。'
+                : '即將前往房客首頁。'
+            }
+          </div>
+
+          ${
+            inactive
+              ? `
+                <button
+                  class="secondary-button"
+                  type="button"
+                  onclick="location.reload()"
+                >
+                  重新整理
+                </button>
+              `
+              : `
+                <button
+                  class="primary-button"
+                  type="button"
+                  onclick="goHome()"
+                >
+                  進入房客首頁
+                </button>
+              `
+          }
+        </section>
+      `;
+
+      if (!inactive) {
+        setTimeout(
+          goHome,
+          900
+        );
+      }
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">
+            綁定頁載入失敗
+          </div>
+
+          <div class="error-text">
+            ${safeHtml(
+              message ||
+              '未知錯誤'
+            )}
+          </div>
+
+          <button
+            class="primary-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+    }
+
+    function sanitizeTenantId(
+      input
+    ) {
+      input.value =
+        rawText(
+          input.value
+        )
+          .toUpperCase()
+          .replace(
+            /[^A-Z0-9_-]/g,
+            ''
+          )
+          .slice(0, 30);
+    }
+
+    function sanitizeLast4(
+      input
+    ) {
+      input.value =
+        rawText(
+          input.value
+        )
+          .replace(/\D/g, '')
+          .slice(0, 4);
+
+      const count =
+        document.getElementById(
+          'last4Count'
+        );
+
+      if (count) {
+        count.textContent =
+          input.value.length +
+          ' / 4';
+      }
+    }
+
+    async function submitBinding() {
+      const tenantId =
+        rawText(
+          document.getElementById(
+            'tenantId'
+          ).value
+        )
+          .trim()
+          .toUpperCase();
+
+      const phoneLast4 =
+        rawText(
+          document.getElementById(
+            'phoneLast4'
+          ).value
+        ).trim();
+
+      const agreement =
+        document.getElementById(
+          'agreement'
+        ).checked;
+
+      if (!tenantId) {
+        window.alert(
+          '請輸入房客編號。'
+        );
+
+        return;
+      }
+
+      if (
+        !/^\d{4}$/.test(
+          phoneLast4
+        )
+      ) {
+        window.alert(
+          '請輸入完整的手機末四碼。'
+        );
+
+        return;
+      }
+
+      if (!agreement) {
+        window.alert(
+          '請先勾選綁定確認。'
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          'submitButton'
+        );
+
+      button.disabled = true;
+      button.textContent =
+        '驗證中...';
+
+      try {
+        const result =
+          await jsonpRequest(
+            'tenant_bind_submit',
+            {
+              tenant_id:
+                tenantId,
+              phone_last4:
+                phoneLast4
+            }
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '綁定失敗'
+          );
+        }
+
+        const data =
+          result.data || {};
+
+        document.getElementById(
+          'successMessage'
+        ).textContent =
+          '房客：' +
+          (
+            data.tenant_name ||
+            '-'
+          ) +
+          '\n房客編號：' +
+          (
+            data.tenant_id ||
+            tenantId
+          ) +
+          (
+            data.room_name
+              ? '\n房號：' +
+                data.room_name
+              : ''
+          );
+
+        document.getElementById(
+          'successModal'
+        ).classList.add(
+          'show'
+        );
+
+      } catch (error) {
+        window.alert(
+          error &&
+          error.message
+            ? error.message
+            : '綁定失敗'
+        );
+
+      } finally {
+        button.disabled = false;
+        button.textContent =
+          '確認綁定';
+      }
+    }
+
+    async function loadPage() {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">
+            正在確認登入狀態
+          </div>
+          <div class="loading-text">
+            系統正在確認此 LINE 帳號是否已完成房客綁定。
+          </div>
+        </section>
+      `;
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLine();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'tenant_binding_status',
+            {}
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '綁定狀態查詢失敗'
+          );
+        }
+
+        const data =
+          result.data || {};
+
+        if (
+          data.bound === true &&
+          !FORCE_FORM
+        ) {
+          renderBound(
+            data,
+            data.account_active !==
+              true
+          );
+
+          return;
+        }
+
+        renderForm(data);
+
+      } catch (error) {
+        renderError(
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        );
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    window.addEventListener(
+      'orientationchange',
+      function () {
+        setTimeout(
+          setAppHeight,
+          250
+        );
+      }
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
