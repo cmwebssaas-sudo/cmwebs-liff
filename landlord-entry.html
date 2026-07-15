@@ -313,6 +313,9 @@
       URL_PARAMS.get('stay') ===
       '1';
 
+    const RETURN_TO =
+      resolveReturnTo();
+
     let LINE_USER_ID = '';
 
     function setAppHeight() {
@@ -348,6 +351,99 @@
         .replace(/'/g, '&#039;');
     }
 
+    function resolveReturnTo() {
+      const stored =
+        sessionStorage.getItem(
+          'cmwebs_landlord_return_to'
+        ) || '';
+
+      const candidate =
+        URL_PARAMS.get(
+          'return_to'
+        ) ||
+        stored;
+
+      if (!candidate) {
+        return '';
+      }
+
+      try {
+        const url =
+          new URL(
+            candidate,
+            location.href
+          );
+
+        const allowedPrefix =
+          location.pathname
+            .replace(
+              /[^/]+$/,
+              ''
+            ) +
+          'landlord-';
+
+        if (
+          url.origin !==
+            location.origin ||
+          !url.pathname.startsWith(
+            allowedPrefix
+          ) ||
+          url.pathname.endsWith(
+            '/landlord-entry.html'
+          )
+        ) {
+          sessionStorage.removeItem(
+            'cmwebs_landlord_return_to'
+          );
+
+          return '';
+        }
+
+        [
+          'code',
+          'state',
+          'liff.state',
+          'friendship_status_changed',
+          'error',
+          'error_description'
+        ].forEach(
+          function (key) {
+            url.searchParams.delete(
+              key
+            );
+          }
+        );
+
+        const relative =
+          url.pathname.split('/').pop() +
+          (
+            url.searchParams
+              .toString()
+              ? '?' +
+                url.searchParams
+                  .toString()
+              : ''
+          ) +
+          (
+            url.hash || ''
+          );
+
+        sessionStorage.setItem(
+          'cmwebs_landlord_return_to',
+          relative
+        );
+
+        return relative;
+
+      } catch (error) {
+        sessionStorage.removeItem(
+          'cmwebs_landlord_return_to'
+        );
+
+        return '';
+      }
+    }
+
     function buildPageUrl(page) {
       return (
         page +
@@ -359,6 +455,22 @@
             : ''
         )
       );
+    }
+
+    function goReturnTo() {
+      if (!RETURN_TO) {
+        return false;
+      }
+
+      sessionStorage.removeItem(
+        'cmwebs_landlord_return_to'
+      );
+
+      location.replace(
+        RETURN_TO
+      );
+
+      return true;
     }
 
     function goPage(page) {
@@ -872,6 +984,10 @@
         ) {
           if (STAY_MODE) {
             renderReady(data);
+            return;
+          }
+
+          if (goReturnTo()) {
             return;
           }
 
