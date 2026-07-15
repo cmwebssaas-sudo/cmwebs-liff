@@ -1114,6 +1114,38 @@
       home,
       actionSummary
     ) {
+      const workspaceContext =
+        home.workspace_context || {};
+
+      const workspace =
+        home.workspace ||
+        workspaceContext.workspace ||
+        {};
+
+      const currentMembership =
+        home.current_membership ||
+        workspaceContext.current_membership ||
+        {};
+
+      const roleLabels = {
+        owner: '擁有者',
+        admin: '管理員',
+        manager: '營運管理',
+        accountant: '帳務人員',
+        maintenance: '維修人員',
+        viewer: '唯讀成員'
+      };
+
+      const currentRole =
+        roleLabels[
+          String(
+            currentMembership.role ||
+            ''
+          ).toLowerCase()
+        ] ||
+        currentMembership.role ||
+        '-';
+
       const latestTotal =
         numberValue(
           home.latest_total_amount
@@ -1163,6 +1195,18 @@
                     home.landlord_name || '房東'
                   )}
                 </h1>
+                <div class="hero-meta">
+                  管理團隊：
+                  ${safeHtml(
+                    workspace.workspace_name ||
+                    '-'
+                  )}
+                  ・角色：
+                  ${safeHtml(
+                    currentRole
+                  )}
+                </div>
+
                 <div class="hero-meta">
                   房東編號：
                   ${safeHtml(
