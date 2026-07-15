@@ -154,7 +154,7 @@
 
     .status-strip {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
       margin-top: 17px;
     }
@@ -493,8 +493,13 @@
           </div>
 
           <div class="status-box">
-            <div class="status-label">目前登入模式</div>
-            <div id="modeValue" class="status-value">初始化中</div>
+            <div class="status-label">目前管理團隊</div>
+            <div id="workspaceValue" class="status-value">讀取中</div>
+          </div>
+
+          <div class="status-box">
+            <div class="status-label">可用管理團隊</div>
+            <div id="workspaceCountValue" class="status-value">讀取中</div>
           </div>
         </div>
       </section>
@@ -721,6 +726,30 @@
           </button>
 
 
+
+          <button class="menu-item" type="button" onclick="goPage('landlord-workspaces.html')">
+            <div class="menu-icon purple">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="4" y="5" width="16" height="6" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                <rect x="4" y="13" width="16" height="6" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M8 8h.01M8 16h.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+
+            <div class="menu-main">
+              <div class="menu-title-row">
+                <div class="menu-title">切換管理團隊</div>
+                <span id="workspaceMenuBadge" class="badge purple">讀取中</span>
+              </div>
+
+              <div class="menu-desc">
+                在自己建立或受邀加入的管理團隊之間切換目前操作資料
+              </div>
+            </div>
+
+            <div class="menu-arrow">›</div>
+          </button>
+
           <button class="menu-item" type="button" onclick="goPage('landlord-team.html')">
             <div class="menu-icon purple">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -862,6 +891,12 @@
     const LIFF_ID =
       '2010314940-EjX1qbb8';
 
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+
     const TEST_LINE_USER_ID =
       'Uf708ece75c9c985cfe1dbda48d123511';
 
@@ -903,6 +938,58 @@
         'v=' +
         Date.now() +
         testParameter;
+    }
+
+    function buildLandlordLoginRedirectUri() {
+      const currentUrl =
+        new URL(
+          location.href
+        );
+
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(
+        function (key) {
+          currentUrl.searchParams.delete(
+            key
+          );
+        }
+      );
+
+      const returnTo =
+        currentUrl.pathname
+          .split('/')
+          .pop() +
+        (
+          currentUrl.searchParams
+            .toString()
+            ? '?' +
+              currentUrl.searchParams
+                .toString()
+            : ''
+        );
+
+      sessionStorage.setItem(
+        'cmwebs_landlord_return_to',
+        returnTo
+      );
+
+      const entryUrl =
+        new URL(
+          LANDLORD_ENTRY_URL
+        );
+
+      entryUrl.searchParams.set(
+        'return_to',
+        returnTo
+      );
+
+      return entryUrl.href;
     }
 
     function showToast(message) {
@@ -1020,15 +1107,9 @@
     }
 
     async function initLineUserId() {
-      const modeValue =
-        document.getElementById('modeValue');
-
       if (TEST_MODE) {
         LINE_USER_ID =
           TEST_LINE_USER_ID;
-
-        modeValue.textContent =
-          '測試模式';
 
         return true;
       }
@@ -1043,7 +1124,8 @@
 
       if (!liff.isLoggedIn()) {
         liff.login({
-          redirectUri: location.href
+          redirectUri:
+            buildLandlordLoginRedirectUri()
         });
 
         return false;
@@ -1059,10 +1141,74 @@
         throw new Error('無法取得房東 LINE User ID');
       }
 
-      modeValue.textContent =
-        '正式模式';
-
       return true;
+    }
+
+    function setWorkspaceSummary(data) {
+      const activeWorkspace =
+        data && data.active_workspace
+          ? data.active_workspace
+          : {};
+
+      const workspaces =
+        data && Array.isArray(data.workspaces)
+          ? data.workspaces
+          : [];
+
+      const workspaceValue =
+        document.getElementById(
+          'workspaceValue'
+        );
+
+      const workspaceCountValue =
+        document.getElementById(
+          'workspaceCountValue'
+        );
+
+      const badge =
+        document.getElementById(
+          'workspaceMenuBadge'
+        );
+
+      workspaceValue.textContent =
+        activeWorkspace.workspace_name ||
+        '未設定';
+
+      workspaceCountValue.textContent =
+        workspaces.length + ' 個';
+
+      badge.className =
+        workspaces.length > 1
+          ? 'badge purple'
+          : 'badge';
+
+      badge.textContent =
+        workspaces.length > 1
+          ? workspaces.length + ' 個可切換'
+          : '目前 1 個';
+    }
+
+    function setWorkspaceSummaryError() {
+      document.getElementById(
+        'workspaceValue'
+      ).textContent =
+        '讀取失敗';
+
+      document.getElementById(
+        'workspaceCountValue'
+      ).textContent =
+        '-';
+
+      const badge =
+        document.getElementById(
+          'workspaceMenuBadge'
+        );
+
+      badge.className =
+        'badge gray';
+
+      badge.textContent =
+        '可直接進入';
     }
 
     function setContractSummary(data) {
@@ -1170,32 +1316,66 @@
           }
         }
 
-        const result =
-          await jsonpRequest(
-            'landlord_contract_requests_init',
-            {}
-          );
+        const results =
+          await Promise.allSettled([
+            jsonpRequest(
+              'landlord_contract_requests_init',
+              {}
+            ),
+            jsonpRequest(
+              'landlord_workspace_context',
+              {}
+            )
+          ]);
+
+        const contractResult =
+          results[0].status ===
+            'fulfilled'
+            ? results[0].value
+            : null;
+
+        const workspaceResult =
+          results[1].status ===
+            'fulfilled'
+            ? results[1].value
+            : null;
 
         if (
-          !result ||
-          result.success !== true
+          contractResult &&
+          contractResult.success === true
         ) {
-          throw new Error(
-            result && result.message
-              ? result.message
+          setContractSummary(
+            contractResult.data ||
+            contractResult
+          );
+        } else {
+          setSummaryError(
+            contractResult &&
+            contractResult.message
+              ? contractResult.message
               : '合約申請摘要讀取失敗'
           );
         }
 
-        setContractSummary(
-          result.data || result
-        );
+        if (
+          workspaceResult &&
+          workspaceResult.success === true
+        ) {
+          setWorkspaceSummary(
+            workspaceResult.data ||
+            {}
+          );
+        } else {
+          setWorkspaceSummaryError();
+        }
       } catch (error) {
         setSummaryError(
           error && error.message
             ? error.message
             : String(error)
         );
+
+        setWorkspaceSummaryError();
       } finally {
         refreshButton.classList.remove(
           'loading'
