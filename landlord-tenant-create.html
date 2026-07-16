@@ -1,0 +1,2685 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 建立房客與租約</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 68px;
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+      --purple: #7654c4;
+      --purple-soft: #f3efff;
+      --blue: #1a73e8;
+      --blue-soft: #edf4ff;
+      --orange: #ef8f00;
+      --orange-soft: #fff5df;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-soft: #fafbfc;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+      --shadow: 0 10px 34px rgba(25, 35, 55, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 620px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 100% 0%,
+          rgba(6, 199, 85, 0.1),
+          transparent 28%
+        ),
+        var(--page-bg);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        max(16px, env(safe-area-inset-top))
+        15px
+        calc(
+          var(--nav-height) +
+          24px +
+          env(safe-area-inset-bottom)
+        );
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .eyebrow {
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .page-title {
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.35px;
+    }
+
+    .back-button {
+      min-height: 40px;
+      padding: 0 13px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: #5f6670;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .card {
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #079641 0%,
+          #06c755 58%,
+          #059943 100%
+        );
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -65px;
+      right: -45px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.13);
+      content: "";
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-label {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .workspace-name {
+      margin-top: 5px;
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .hero-desc {
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .progress-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .progress-item {
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .progress-number {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .progress-label {
+      margin-top: 3px;
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 8px;
+    }
+
+    .section-card {
+      padding: 16px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section-desc {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .section-index {
+      width: 32px;
+      height: 32px;
+      flex: 0 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .field {
+      margin-top: 13px;
+    }
+
+    .field:first-child {
+      margin-top: 0;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .required {
+      color: var(--danger);
+      font-size: 8px;
+    }
+
+    .optional {
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .input,
+    .select {
+      height: 46px;
+      padding: 0 13px;
+    }
+
+    .textarea {
+      min-height: 88px;
+      padding: 11px 13px;
+      resize: vertical;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: rgba(6, 199, 85, 0.55);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.08);
+    }
+
+    .field-note {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.55;
+    }
+
+    .room-preview {
+      display: none;
+      margin-top: 13px;
+      padding: 12px;
+      border: 1px solid #d9d0f3;
+      border-radius: 12px;
+      background: var(--purple-soft);
+    }
+
+    .room-preview.show {
+      display: block;
+    }
+
+    .room-preview-title {
+      color: var(--purple);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .room-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .preview-item {
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .preview-label {
+      color: #78679d;
+      font-size: 7px;
+    }
+
+    .preview-value {
+      margin-top: 3px;
+      color: #4c3c73;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .contract-warning {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 11px;
+      border: 1px solid #f0dfb9;
+      border-radius: 10px;
+      background: var(--orange-soft);
+      color: #74500c;
+      font-size: 8px;
+      line-height: 1.65;
+    }
+
+    .contract-warning.show {
+      display: block;
+    }
+
+    .amount-preview {
+      margin-top: 13px;
+      padding: 13px;
+      border: 1px solid #ccebd8;
+      border-radius: 12px;
+      background: var(--primary-soft);
+    }
+
+    .amount-preview-title {
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .amount-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .amount-item {
+      min-width: 0;
+      padding: 9px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .amount-label {
+      color: #64806e;
+      font-size: 7px;
+    }
+
+    .amount-value {
+      margin-top: 4px;
+      overflow: hidden;
+      color: var(--primary-dark);
+      font-size: 11px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .confirmation-card {
+      padding: 15px;
+      border-color: #d7e8dd;
+    }
+
+    .confirmation-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .confirmation-check {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 19px;
+      margin-top: 1px;
+      accent-color: var(--primary);
+    }
+
+    .confirmation-text {
+      color: #4d555f;
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .confirmation-text strong {
+      color: var(--text);
+    }
+
+    .submit-button {
+      width: 100%;
+      min-height: 50px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 9px 22px rgba(6, 199, 85, 0.2);
+    }
+
+    .submit-button:disabled {
+      opacity: 0.52;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .loading-card,
+    .error-card,
+    .empty-card {
+      padding: 30px 18px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 14px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-title,
+    .error-title {
+      margin-bottom: 7px;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .error-title {
+      color: var(--danger);
+    }
+
+    .retry-button {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 15px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .success-card {
+      overflow: hidden;
+    }
+
+    .success-head {
+      padding: 21px 18px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #079641,
+          #06c755
+        );
+      text-align: center;
+    }
+
+    .success-icon {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      font-size: 27px;
+      font-weight: 900;
+    }
+
+    .success-title {
+      margin-top: 11px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .success-desc {
+      margin-top: 6px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .success-body {
+      padding: 17px;
+    }
+
+    .success-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .success-item {
+      min-width: 0;
+      padding: 10px;
+      border-radius: 11px;
+      background: var(--surface-soft);
+    }
+
+    .success-label {
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .success-value {
+      margin-top: 4px;
+      overflow: hidden;
+      font-size: 10px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .invite-box {
+      margin-top: 14px;
+      padding: 13px;
+      border: 1px solid #d9d0f3;
+      border-radius: 13px;
+      background: var(--purple-soft);
+    }
+
+    .invite-title {
+      color: var(--purple);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .invite-text {
+      width: 100%;
+      min-height: 150px;
+      margin-top: 9px;
+      padding: 11px;
+      border: 1px solid #ddd5f5;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #4d435f;
+      font-size: 9px;
+      line-height: 1.65;
+      resize: none;
+    }
+
+    .success-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .success-button {
+      min-height: 44px;
+      border-radius: 11px;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .success-button.primary {
+      border: 0;
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .success-button.secondary {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .success-button.full {
+      grid-column: 1 / -1;
+    }
+
+    .toast {
+      position: absolute;
+      z-index: 2000;
+      right: 16px;
+      bottom:
+        calc(
+          var(--nav-height) +
+          16px +
+          env(safe-area-inset-bottom)
+        );
+      left: 16px;
+      max-width: 470px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: 13px;
+      background: #22252a;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.55;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+
+    .bottom-nav {
+      position: absolute;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-top: 1px solid #e8ecf1;
+      background: rgba(255, 255, 255, 0.98);
+      padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b919a;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    @media (max-width: 430px) {
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .amount-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Tenant Onboarding</div>
+          <div class="page-title">建立房客與租約</div>
+        </div>
+
+        <button
+          class="back-button"
+          type="button"
+          onclick="goPage('landlord-tenants.html')"
+        >
+          返回房客
+        </button>
+      </div>
+
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">建立資料載入中</div>
+          正在讀取物件、房間與租金設定。
+        </section>
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>欠款</span>
+        </button>
+
+        <button class="nav-item active" type="button" onclick="goPage('landlord-tenants.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+          </svg>
+          <span>房客</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-more.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <span>更多</span>
+        </button>
+      </div>
+    </nav>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
+
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const URL_PARAMS =
+      new URLSearchParams(
+        location.search
+      );
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') ===
+      '1';
+
+    const PRESELECTED_PROPERTY_ID =
+      URL_PARAMS.get(
+        'property_id'
+      ) || '';
+
+    const PRESELECTED_ROOM_ID =
+      URL_PARAMS.get(
+        'room_id'
+      ) || '';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let CREATED_DATA = null;
+    let toastTimer = null;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      return value === undefined || value === null
+        ? ''
+        : String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function money(value) {
+      return new Intl.NumberFormat(
+        'zh-TW'
+      ).format(
+        Number(value || 0)
+      );
+    }
+
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
+
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
+    function buildLandlordLoginRedirectUri() {
+      const currentUrl =
+        new URL(
+          location.href
+        );
+
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(
+        function (key) {
+          currentUrl.searchParams.delete(
+            key
+          );
+        }
+      );
+
+      const returnTo =
+        currentUrl.pathname
+          .split('/')
+          .pop() +
+        (
+          currentUrl.searchParams
+            .toString()
+            ? '?' +
+              currentUrl.searchParams
+                .toString()
+            : ''
+        );
+
+      sessionStorage.setItem(
+        'cmwebs_landlord_return_to',
+        returnTo
+      );
+
+      const entryUrl =
+        new URL(
+          LANDLORD_ENTRY_URL
+        );
+
+      entryUrl.searchParams.set(
+        'return_to',
+        returnTo
+      );
+
+      return entryUrl.href;
+    }
+
+    function showToast(
+      message,
+      isError
+    ) {
+      const toast =
+        document.getElementById(
+          'toast'
+        );
+
+      clearTimeout(
+        toastTimer
+      );
+
+      toast.textContent =
+        message || '';
+
+      toast.className =
+        isError
+          ? 'toast error show'
+          : 'toast show';
+
+      toastTimer =
+        setTimeout(
+          function () {
+            toast.className =
+              'toast';
+          },
+          2800
+        );
+    }
+
+    function jsonpRequest(
+      action,
+      params
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_tenant_create_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                cleanup();
+
+                reject(
+                  new Error(
+                    'API 載入逾時'
+                  )
+                );
+              },
+              30000
+            );
+
+          function cleanup() {
+            clearTimeout(timer);
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(
+            function (key) {
+              url +=
+                '&' +
+                encodeURIComponent(
+                  key
+                ) +
+                '=' +
+                encodeURIComponent(
+                  params[key]
+                );
+            }
+          );
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 路由執行失敗'
+                )
+              );
+            };
+
+          script.src = url;
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+        return true;
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            buildLandlordLoginRedirectUri()
+        });
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId || '';
+
+      if (!LINE_USER_ID) {
+        throw new Error(
+          '無法取得房東 LINE User ID'
+        );
+      }
+
+      return true;
+    }
+
+    function inputValue(id) {
+      const element =
+        document.getElementById(
+          id
+        );
+
+      return element
+        ? rawText(
+            element.value
+          ).trim()
+        : '';
+    }
+
+    function normalizePhone(value) {
+      let digits =
+        rawText(value)
+          .replace(/\D/g, '');
+
+      if (
+        digits.indexOf('8860') === 0 &&
+        digits.length === 13
+      ) {
+        digits =
+          '0' +
+          digits.slice(4);
+      } else if (
+        digits.indexOf('886') === 0 &&
+        digits.length === 12
+      ) {
+        digits =
+          '0' +
+          digits.slice(3);
+      } else if (
+        digits.length === 9 &&
+        digits.charAt(0) === '9'
+      ) {
+        digits =
+          '0' +
+          digits;
+      }
+
+      return digits;
+    }
+
+    function formatPhoneInput() {
+      const input =
+        document.getElementById(
+          'tenantPhone'
+        );
+
+      if (!input) {
+        return;
+      }
+
+      input.value =
+        normalizePhone(
+          input.value
+        );
+    }
+
+    function addOneYearMinusOneDay(value) {
+      const start =
+        new Date(
+          value +
+          'T00:00:00'
+        );
+
+      if (
+        Number.isNaN(
+          start.getTime()
+        )
+      ) {
+        return '';
+      }
+
+      start.setFullYear(
+        start.getFullYear() +
+        1
+      );
+
+      start.setDate(
+        start.getDate() -
+        1
+      );
+
+      return [
+        start.getFullYear(),
+        String(
+          start.getMonth() +
+          1
+        ).padStart(2, '0'),
+        String(
+          start.getDate()
+        ).padStart(2, '0')
+      ].join('-');
+    }
+
+    function getRoom(roomId) {
+      return (
+        PAGE_DATA.rooms || []
+      ).find(
+        function (room) {
+          return room.room_id ===
+            roomId;
+        }
+      ) || null;
+    }
+
+    function propertyOptions(selectedId) {
+      return (
+        PAGE_DATA.properties || []
+      ).map(
+        function (property) {
+          return `
+            <option
+              value="${safeHtml(property.property_id)}"
+              ${
+                property.property_id ===
+                selectedId
+                  ? 'selected'
+                  : ''
+              }
+            >
+              ${safeHtml(property.property_name)}
+            </option>
+          `;
+        }
+      ).join('');
+    }
+
+    function roomOptions(propertyId, selectedId) {
+      const rooms =
+        (
+          PAGE_DATA.rooms || []
+        ).filter(
+          function (room) {
+            return room.property_id ===
+              propertyId;
+          }
+        );
+
+      return rooms.map(
+        function (room) {
+          const contractLabel =
+            room.has_current_or_upcoming_contract
+              ? '・已有租約，仍可建立不重疊的未來租約'
+              : '';
+
+          return `
+            <option
+              value="${safeHtml(room.room_id)}"
+              ${
+                room.room_id ===
+                selectedId
+                  ? 'selected'
+                  : ''
+              }
+            >
+              ${safeHtml(
+                room.room_name +
+                contractLabel
+              )}
+            </option>
+          `;
+        }
+      ).join('');
+    }
+
+    function renderPage() {
+      const workspace =
+        PAGE_DATA.workspace || {};
+
+      const canCreate =
+        PAGE_DATA.can_create ===
+        true;
+
+      const properties =
+        PAGE_DATA.properties || [];
+
+      const rooms =
+        PAGE_DATA.rooms || [];
+
+      if (!canCreate) {
+        document.getElementById(
+          'app'
+        ).innerHTML = `
+          <section class="card error-card">
+            <div class="error-title">
+              目前角色不能建立房客
+            </div>
+
+            只有擁有者、管理員與營運管理角色可以建立房客及初始租約。
+          </section>
+        `;
+
+        return;
+      }
+
+      if (
+        properties.length === 0 ||
+        rooms.length === 0
+      ) {
+        document.getElementById(
+          'app'
+        ).innerHTML = `
+          <section class="card empty-card">
+            <div class="error-title">
+              請先建立物件與房間
+            </div>
+
+            建立房客租約前，必須先建立至少一個使用中的物件與房間。
+
+            <button
+              class="retry-button"
+              type="button"
+              onclick="goPage('landlord-properties.html')"
+            >
+              前往物件與房間
+            </button>
+          </section>
+        `;
+
+        return;
+      }
+
+      const selectedPropertyId =
+        PAGE_DATA.selected_property_id ||
+        properties[0].property_id ||
+        '';
+
+      const availableRooms =
+        rooms.filter(
+          function (room) {
+            return room.property_id ===
+              selectedPropertyId;
+          }
+        );
+
+      const selectedRoomId =
+        PAGE_DATA.selected_room_id ||
+        (
+          availableRooms[0]
+            ? availableRooms[0].room_id
+            : ''
+        );
+
+      const defaults =
+        PAGE_DATA.defaults || {};
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card hero">
+          <div class="hero-content">
+            <div class="hero-label">目前管理團隊</div>
+
+            <div class="workspace-name">
+              ${safeHtml(
+                workspace.workspace_name ||
+                '-'
+              )}
+            </div>
+
+            <div class="hero-desc">
+              建立房客基本資料與正式租約，再將 LINE 綁定訊息傳給房客。
+            </div>
+
+            <div class="progress-grid">
+              <div class="progress-item">
+                <div class="progress-number">1</div>
+                <div class="progress-label">房客資料</div>
+              </div>
+
+              <div class="progress-item">
+                <div class="progress-number">2</div>
+                <div class="progress-label">租約條件</div>
+              </div>
+
+              <div class="progress-item">
+                <div class="progress-number">3</div>
+                <div class="progress-label">LINE 綁定</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title">房客基本資料</div>
+              <div class="section-desc">
+                手機號碼是房客首次登入時的身份驗證依據。
+              </div>
+            </div>
+
+            <div class="section-index">1</div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>房客姓名</span>
+              <span class="required">必填</span>
+            </div>
+
+            <input
+              id="tenantName"
+              class="input"
+              maxlength="80"
+              placeholder="例如：王小明"
+            />
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label">
+                <span>手機號碼</span>
+                <span class="required">必填</span>
+              </div>
+
+              <input
+                id="tenantPhone"
+                class="input"
+                inputmode="numeric"
+                maxlength="10"
+                placeholder="0912345678"
+                onblur="formatPhoneInput()"
+              />
+
+              <div class="field-note">
+                必須與房客稍後輸入的號碼完全一致。
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field-label">
+                <span>Email</span>
+                <span class="optional">選填</span>
+              </div>
+
+              <input
+                id="tenantEmail"
+                class="input"
+                type="email"
+                maxlength="120"
+                placeholder="tenant@example.com"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title">物件與房間</div>
+              <div class="section-desc">
+                同一房間的租期不能與其他有效租約重疊。
+              </div>
+            </div>
+
+            <div class="section-index">2</div>
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label">
+                <span>物件</span>
+                <span class="required">必填</span>
+              </div>
+
+              <select
+                id="propertyId"
+                class="select"
+                onchange="handlePropertyChange()"
+              >
+                ${propertyOptions(selectedPropertyId)}
+              </select>
+            </div>
+
+            <div class="field">
+              <div class="field-label">
+                <span>房間</span>
+                <span class="required">必填</span>
+              </div>
+
+              <select
+                id="roomId"
+                class="select"
+                onchange="handleRoomChange(true)"
+              >
+                ${roomOptions(
+                  selectedPropertyId,
+                  selectedRoomId
+                )}
+              </select>
+            </div>
+          </div>
+
+          <div id="roomPreview" class="room-preview"></div>
+          <div id="contractWarning" class="contract-warning"></div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title">租約與收費條件</div>
+              <div class="section-desc">
+                房間預設金額會自動帶入，建立前仍可調整。
+              </div>
+            </div>
+
+            <div class="section-index">3</div>
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label">
+                <span>租約開始日</span>
+                <span class="required">必填</span>
+              </div>
+
+              <input
+                id="startDate"
+                class="input"
+                type="date"
+                value="${safeHtml(defaults.start_date || '')}"
+                onchange="handleStartDateChange()"
+              />
+            </div>
+
+            <div class="field">
+              <div class="field-label">
+                <span>租約結束日</span>
+                <span class="required">必填</span>
+              </div>
+
+              <input
+                id="endDate"
+                class="input"
+                type="date"
+                value="${safeHtml(defaults.end_date || '')}"
+              />
+            </div>
+          </div>
+
+          <div class="field-grid">
+            ${numberField(
+              'rentAmount',
+              '每月租金',
+              '',
+              '1',
+              '1'
+            )}
+
+            ${numberField(
+              'managementFee',
+              '每月管理費',
+              '0',
+              '0',
+              '1'
+            )}
+
+            ${numberField(
+              'depositMonths',
+              '押金月數',
+              defaults.deposit_months || 2,
+              '0',
+              '0.5',
+              '12'
+            )}
+
+            ${numberField(
+              'depositAmount',
+              '押金金額',
+              '0',
+              '0',
+              '1'
+            )}
+
+            ${numberField(
+              'paymentDay',
+              '每月繳款日',
+              defaults.payment_day || 10,
+              '1',
+              '1',
+              '28'
+            )}
+
+            ${numberField(
+              'electricityRate',
+              '每度電費',
+              '0',
+              '0',
+              '1'
+            )}
+
+            ${numberField(
+              'equipmentRate',
+              '設備耗損費／度',
+              '0',
+              '0',
+              '1'
+            )}
+          </div>
+
+          <div class="field">
+            <div class="field-label">
+              <span>備註</span>
+              <span class="optional">選填</span>
+            </div>
+
+            <textarea
+              id="note"
+              class="textarea"
+              maxlength="500"
+              placeholder="例如：已完成紙本簽約、入住前需補交文件"
+            ></textarea>
+          </div>
+
+          <div class="amount-preview">
+            <div class="amount-preview-title">
+              建立後的主要金額
+            </div>
+
+            <div class="amount-grid">
+              <div class="amount-item">
+                <div class="amount-label">每月固定費用</div>
+                <div id="monthlyTotalPreview" class="amount-value">NT$ 0</div>
+              </div>
+
+              <div class="amount-item">
+                <div class="amount-label">押金</div>
+                <div id="depositPreview" class="amount-value">NT$ 0</div>
+              </div>
+
+              <div class="amount-item">
+                <div class="amount-label">首次登入</div>
+                <div class="amount-value">手機綁定</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card confirmation-card">
+          <div class="confirmation-row">
+            <input
+              id="confirmCreate"
+              class="confirmation-check"
+              type="checkbox"
+              onchange="updateSubmitState()"
+            />
+
+            <label class="confirmation-text" for="confirmCreate">
+              <strong>我確認房客姓名、手機號碼、房間與租約日期均正確。</strong>
+              建立後，手機號碼會作為房客本人 LINE 帳號的綁定依據。
+            </label>
+          </div>
+        </section>
+
+        <button
+          id="submitButton"
+          class="submit-button"
+          type="button"
+          onclick="submitCreate()"
+          disabled
+        >
+          建立房客與正式租約
+        </button>
+      `;
+
+      handleRoomChange(true);
+      updateAmountPreview();
+
+      [
+        'rentAmount',
+        'managementFee',
+        'depositMonths',
+        'depositAmount'
+      ].forEach(
+        function (id) {
+          const element =
+            document.getElementById(
+              id
+            );
+
+          if (element) {
+            element.addEventListener(
+              'input',
+              updateAmountPreview
+            );
+          }
+        }
+      );
+    }
+
+    function numberField(
+      id,
+      label,
+      value,
+      min,
+      step,
+      max
+    ) {
+      return `
+        <div class="field">
+          <div class="field-label">
+            <span>${safeHtml(label)}</span>
+            <span class="required">必填</span>
+          </div>
+
+          <input
+            id="${safeHtml(id)}"
+            class="input"
+            type="number"
+            min="${safeHtml(min)}"
+            step="${safeHtml(step)}"
+            ${
+              max
+                ? 'max="' +
+                  safeHtml(max) +
+                  '"'
+                : ''
+            }
+            value="${safeHtml(value)}"
+          />
+        </div>
+      `;
+    }
+
+    function handlePropertyChange() {
+      const propertyId =
+        inputValue(
+          'propertyId'
+        );
+
+      const roomSelect =
+        document.getElementById(
+          'roomId'
+        );
+
+      roomSelect.innerHTML =
+        roomOptions(
+          propertyId,
+          ''
+        );
+
+      handleRoomChange(
+        true
+      );
+    }
+
+    function handleRoomChange(
+      applyDefaults
+    ) {
+      const room =
+        getRoom(
+          inputValue(
+            'roomId'
+          )
+        );
+
+      const preview =
+        document.getElementById(
+          'roomPreview'
+        );
+
+      const warning =
+        document.getElementById(
+          'contractWarning'
+        );
+
+      if (!room) {
+        preview.classList.remove(
+          'show'
+        );
+
+        warning.classList.remove(
+          'show'
+        );
+
+        return;
+      }
+
+      preview.innerHTML = `
+        <div class="room-preview-title">
+          ${safeHtml(
+            room.property_name +
+            '・' +
+            room.room_name
+          )}
+        </div>
+
+        <div class="room-preview-grid">
+          ${previewItem(
+            '房間月租',
+            'NT$ ' +
+            money(
+              room.rent_amount
+            )
+          )}
+
+          ${previewItem(
+            '管理費',
+            'NT$ ' +
+            money(
+              room.management_fee
+            )
+          )}
+
+          ${previewItem(
+            '每月繳款日',
+            '每月 ' +
+            Number(
+              room.payment_day ||
+              10
+            ) +
+            ' 日'
+          )}
+
+          ${previewItem(
+            '目前狀態',
+            room.has_current_or_upcoming_contract
+              ? '已有租約'
+              : '可建立租約'
+          )}
+        </div>
+      `;
+
+      preview.classList.add(
+        'show'
+      );
+
+      if (
+        room.has_current_or_upcoming_contract &&
+        room.existing_contract
+      ) {
+        const contract =
+          room.existing_contract;
+
+        warning.textContent =
+          '此房間已有租約 ' +
+          (
+            contract.contract_id ||
+            ''
+          ) +
+          '，期間 ' +
+          (
+            rawText(
+              contract.start_date
+            ) ||
+            '-'
+          ) +
+          ' 至 ' +
+          (
+            rawText(
+              contract.end_date
+            ) ||
+            '-'
+          ) +
+          '。後端會阻止日期重疊，但仍可建立不重疊的未來租約。';
+
+        warning.classList.add(
+          'show'
+        );
+      } else {
+        warning.classList.remove(
+          'show'
+        );
+      }
+
+      if (applyDefaults) {
+        setInputValue(
+          'rentAmount',
+          room.rent_amount
+        );
+
+        setInputValue(
+          'managementFee',
+          room.management_fee
+        );
+
+        setInputValue(
+          'depositMonths',
+          room.deposit_months ||
+          2
+        );
+
+        setInputValue(
+          'depositAmount',
+          Math.round(
+            Number(
+              room.rent_amount ||
+              0
+            ) *
+            Number(
+              room.deposit_months ||
+              2
+            )
+          )
+        );
+
+        setInputValue(
+          'paymentDay',
+          room.payment_day ||
+          10
+        );
+
+        setInputValue(
+          'electricityRate',
+          room.electricity_fee_rate ||
+          0
+        );
+
+        setInputValue(
+          'equipmentRate',
+          room.equipment_fee_rate ||
+          0
+        );
+
+        updateAmountPreview();
+      }
+    }
+
+    function previewItem(
+      label,
+      value
+    ) {
+      return `
+        <div class="preview-item">
+          <div class="preview-label">
+            ${safeHtml(label)}
+          </div>
+
+          <div class="preview-value">
+            ${safeHtml(value)}
+          </div>
+        </div>
+      `;
+    }
+
+    function setInputValue(
+      id,
+      value
+    ) {
+      const element =
+        document.getElementById(
+          id
+        );
+
+      if (element) {
+        element.value =
+          value ===
+          undefined ||
+          value ===
+          null
+            ? ''
+            : value;
+      }
+    }
+
+    function handleStartDateChange() {
+      const startDate =
+        inputValue(
+          'startDate'
+        );
+
+      if (!startDate) {
+        return;
+      }
+
+      setInputValue(
+        'endDate',
+        addOneYearMinusOneDay(
+          startDate
+        )
+      );
+    }
+
+    function updateAmountPreview() {
+      const rent =
+        Number(
+          inputValue(
+            'rentAmount'
+          ) || 0
+        );
+
+      const management =
+        Number(
+          inputValue(
+            'managementFee'
+          ) || 0
+        );
+
+      const deposit =
+        Number(
+          inputValue(
+            'depositAmount'
+          ) || 0
+        );
+
+      const monthlyElement =
+        document.getElementById(
+          'monthlyTotalPreview'
+        );
+
+      const depositElement =
+        document.getElementById(
+          'depositPreview'
+        );
+
+      if (monthlyElement) {
+        monthlyElement.textContent =
+          'NT$ ' +
+          money(
+            rent +
+            management
+          );
+      }
+
+      if (depositElement) {
+        depositElement.textContent =
+          'NT$ ' +
+          money(
+            deposit
+          );
+      }
+    }
+
+    function updateSubmitState() {
+      const checkbox =
+        document.getElementById(
+          'confirmCreate'
+        );
+
+      const button =
+        document.getElementById(
+          'submitButton'
+        );
+
+      if (button) {
+        button.disabled =
+          !checkbox ||
+          checkbox.checked !==
+            true;
+      }
+    }
+
+    function validateForm() {
+      const tenantName =
+        inputValue(
+          'tenantName'
+        );
+
+      const tenantPhone =
+        normalizePhone(
+          inputValue(
+            'tenantPhone'
+          )
+        );
+
+      const tenantEmail =
+        inputValue(
+          'tenantEmail'
+        );
+
+      const propertyId =
+        inputValue(
+          'propertyId'
+        );
+
+      const roomId =
+        inputValue(
+          'roomId'
+        );
+
+      const startDate =
+        inputValue(
+          'startDate'
+        );
+
+      const endDate =
+        inputValue(
+          'endDate'
+        );
+
+      if (!tenantName) {
+        return '請輸入房客姓名。';
+      }
+
+      if (
+        !/^09\d{8}$/.test(
+          tenantPhone
+        )
+      ) {
+        return '請輸入正確的台灣手機號碼。';
+      }
+
+      if (
+        tenantEmail &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          tenantEmail
+        )
+      ) {
+        return '房客 Email 格式不正確。';
+      }
+
+      if (
+        !propertyId ||
+        !roomId
+      ) {
+        return '請選擇物件與房間。';
+      }
+
+      if (
+        !startDate ||
+        !endDate
+      ) {
+        return '請輸入租約開始與結束日期。';
+      }
+
+      if (
+        new Date(
+          startDate +
+          'T00:00:00'
+        ).getTime() >
+        new Date(
+          endDate +
+          'T00:00:00'
+        ).getTime()
+      ) {
+        return '租約結束日期不得早於開始日期。';
+      }
+
+      if (
+        Number(
+          inputValue(
+            'rentAmount'
+          )
+        ) <= 0
+      ) {
+        return '每月租金必須大於 0。';
+      }
+
+      const paymentDay =
+        Number(
+          inputValue(
+            'paymentDay'
+          )
+        );
+
+      if (
+        !Number.isInteger(
+          paymentDay
+        ) ||
+        paymentDay < 1 ||
+        paymentDay > 28
+      ) {
+        return '每月繳款日請輸入 1 至 28。';
+      }
+
+      return '';
+    }
+
+    async function submitCreate() {
+      const validation =
+        validateForm();
+
+      if (validation) {
+        showToast(
+          validation,
+          true
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          'submitButton'
+        );
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        '建立中...';
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_tenant_create',
+            {
+              tenant_name:
+                inputValue(
+                  'tenantName'
+                ),
+              tenant_phone:
+                normalizePhone(
+                  inputValue(
+                    'tenantPhone'
+                  )
+                ),
+              tenant_email:
+                inputValue(
+                  'tenantEmail'
+                ),
+              property_id:
+                inputValue(
+                  'propertyId'
+                ),
+              room_id:
+                inputValue(
+                  'roomId'
+                ),
+              start_date:
+                inputValue(
+                  'startDate'
+                ),
+              end_date:
+                inputValue(
+                  'endDate'
+                ),
+              rent_amount:
+                inputValue(
+                  'rentAmount'
+                ),
+              management_fee:
+                inputValue(
+                  'managementFee'
+                ),
+              deposit_months:
+                inputValue(
+                  'depositMonths'
+                ),
+              deposit_amount:
+                inputValue(
+                  'depositAmount'
+                ),
+              payment_day:
+                inputValue(
+                  'paymentDay'
+                ),
+              electricity_fee_rate:
+                inputValue(
+                  'electricityRate'
+                ),
+              equipment_fee_rate:
+                inputValue(
+                  'equipmentRate'
+                ),
+              note:
+                inputValue(
+                  'note'
+                )
+            }
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '房客與租約建立失敗'
+          );
+        }
+
+        CREATED_DATA =
+          result.data || {};
+
+        renderSuccess();
+
+      } catch (error) {
+        showToast(
+          error &&
+          error.message
+            ? error.message
+            : '房客與租約建立失敗',
+          true
+        );
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          '建立房客與正式租約';
+      }
+    }
+
+    function renderSuccess() {
+      const tenant =
+        CREATED_DATA.tenant || {};
+
+      const contract =
+        CREATED_DATA.contract || {};
+
+      const property =
+        CREATED_DATA.property || {};
+
+      const room =
+        CREATED_DATA.room || {};
+
+      const binding =
+        CREATED_DATA.binding || {};
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card success-card">
+          <div class="success-head">
+            <div class="success-icon">✓</div>
+            <div class="success-title">
+              房客與租約已建立
+            </div>
+
+            <div class="success-desc">
+              現在將下方綁定訊息傳給房客即可。
+            </div>
+          </div>
+
+          <div class="success-body">
+            <div class="success-grid">
+              ${successItem(
+                '房客',
+                tenant.tenant_name
+              )}
+
+              ${successItem(
+                '房客 ID',
+                tenant.tenant_id
+              )}
+
+              ${successItem(
+                '物件',
+                property.property_name
+              )}
+
+              ${successItem(
+                '房間',
+                room.room_name
+              )}
+
+              ${successItem(
+                '租約 ID',
+                contract.contract_id
+              )}
+
+              ${successItem(
+                '租約期間',
+                contract.start_date +
+                ' 至 ' +
+                contract.end_date
+              )}
+
+              ${successItem(
+                '手機',
+                tenant.tenant_phone
+              )}
+
+              ${successItem(
+                'LINE 狀態',
+                '尚未綁定'
+              )}
+            </div>
+
+            <div class="invite-box">
+              <div class="invite-title">
+                傳給房客的 LINE 綁定訊息
+              </div>
+
+              <textarea
+                id="inviteMessage"
+                class="invite-text"
+                readonly
+              >${safeHtml(
+                binding.invitation_message ||
+                ''
+              )}</textarea>
+            </div>
+
+            <div class="success-actions">
+              <button
+                class="success-button primary"
+                type="button"
+                onclick="copyInvitation()"
+              >
+                複製綁定訊息
+              </button>
+
+              <button
+                class="success-button secondary"
+                type="button"
+                onclick="openTenantLiff()"
+              >
+                開啟房客 LIFF
+              </button>
+
+              <button
+                class="success-button secondary full"
+                type="button"
+                onclick="goPage('landlord-tenants.html')"
+              >
+                返回房客名單
+              </button>
+
+              <button
+                class="success-button secondary full"
+                type="button"
+                onclick="resetCreatePage()"
+              >
+                繼續建立另一位房客
+              </button>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function successItem(
+      label,
+      value
+    ) {
+      return `
+        <div class="success-item">
+          <div class="success-label">
+            ${safeHtml(label)}
+          </div>
+
+          <div class="success-value">
+            ${safeHtml(value || '-')}
+          </div>
+        </div>
+      `;
+    }
+
+    async function copyInvitation() {
+      const message =
+        inputValue(
+          'inviteMessage'
+        );
+
+      try {
+        await navigator.clipboard.writeText(
+          message
+        );
+
+        showToast(
+          '綁定訊息已複製'
+        );
+
+      } catch (error) {
+        const textarea =
+          document.getElementById(
+            'inviteMessage'
+          );
+
+        textarea.focus();
+        textarea.select();
+
+        document.execCommand(
+          'copy'
+        );
+
+        showToast(
+          '綁定訊息已複製'
+        );
+      }
+    }
+
+    function openTenantLiff() {
+      const binding =
+        CREATED_DATA &&
+        CREATED_DATA.binding
+          ? CREATED_DATA.binding
+          : {};
+
+      const url =
+        binding.tenant_liff_url ||
+        PAGE_DATA.tenant_liff_url ||
+        '';
+
+      if (!url) {
+        showToast(
+          '找不到房客 LIFF 網址。',
+          true
+        );
+
+        return;
+      }
+
+      window.open(
+        url,
+        '_blank',
+        'noopener'
+      );
+    }
+
+    function resetCreatePage() {
+      CREATED_DATA =
+        null;
+
+      renderPage();
+    }
+
+    function renderLoading() {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">建立資料載入中</div>
+          正在讀取物件、房間與租金設定。
+        </section>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">
+            建立資料載入失敗
+          </div>
+
+          ${safeHtml(
+            message ||
+            '未知錯誤'
+          )}
+
+          <button
+            class="retry-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+    }
+
+    async function loadPage() {
+      renderLoading();
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLine();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'landlord_tenant_create_init',
+            {
+              property_id:
+                PRESELECTED_PROPERTY_ID,
+              room_id:
+                PRESELECTED_ROOM_ID
+            }
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '建立資料載入失敗'
+          );
+        }
+
+        PAGE_DATA =
+          result.data || {};
+
+        renderPage();
+
+      } catch (error) {
+        renderError(
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        );
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
