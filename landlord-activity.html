@@ -286,6 +286,11 @@
       color: var(--orange);
     }
 
+    .activity-icon.tenant {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
     .activity-content {
       min-width: 0;
       flex: 1;
@@ -874,7 +879,8 @@
         payment: '$',
         message: '✉',
         contract: '✓',
-        property: '⌂'
+        property: '⌂',
+        tenant: '人'
       };
 
       return map[category] || '•';
@@ -888,7 +894,8 @@
         contract_request: '合約申請',
         property: '物件',
         room: '房間',
-        tenant: '房客'
+        tenant: '房客',
+        tenant_profile: '房客資料'
       };
 
       return map[item.target_type] ||
@@ -1256,4 +1263,3 @@
   </script>
 </body>
 </html>
-
