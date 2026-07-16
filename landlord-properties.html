@@ -1576,7 +1576,7 @@
             ${roomFinance('月租', 'NT$ ' + money(room.rent_amount))}
             ${roomFinance('管理費', 'NT$ ' + money(room.management_fee))}
             ${roomFinance('每月繳款日', '每月 ' + Number(room.payment_day || 0) + ' 日')}
-            ${roomFinance('押金', Number(room.deposit_months || 0) + ' 個月')}
+            ${roomFinance('押金', 'NT$ ' + money(room.deposit_amount))}
           </div>
 
           ${
@@ -2058,7 +2058,15 @@
           ${numberField('roomElectricityRate', '每度電費', room ? room.electricity_fee_rate : 0, '0', '1')}
           ${numberField('roomEquipmentRate', '設備耗損費／度', room ? room.equipment_fee_rate : 0, '0', '1')}
           ${numberField('roomPaymentDay', '每月繳款日', room ? room.payment_day : 10, '1', '1', '28')}
-          ${numberField('roomDepositMonths', '押金月數', room ? room.deposit_months : 2, '0', '0.5', '12')}
+          ${numberField(
+            'roomDepositAmount',
+            '押金金額',
+            room
+              ? room.deposit_amount
+              : 0,
+            '0',
+            '1'
+          )}
         </div>
 
         <div class="field">
@@ -2171,7 +2179,9 @@
         payment_day:
           inputValue('roomPaymentDay'),
         deposit_months:
-          inputValue('roomDepositMonths'),
+          '',
+        deposit_amount:
+          inputValue('roomDepositAmount'),
         room_status:
           room &&
           room.has_active_contract
