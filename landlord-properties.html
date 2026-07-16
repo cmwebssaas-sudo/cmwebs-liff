@@ -974,6 +974,26 @@
         );
     }
 
+    function goTenantCreate(
+      propertyId,
+      roomId
+    ) {
+      let url =
+        'landlord-tenant-create.html' +
+        '?property_id=' +
+        encodeURIComponent(
+          propertyId || ''
+        ) +
+        '&room_id=' +
+        encodeURIComponent(
+          roomId || ''
+        );
+
+      goPage(
+        url
+      );
+    }
+
     function buildLandlordLoginRedirectUri() {
       const currentUrl =
         new URL(
@@ -1542,6 +1562,22 @@
             canWrite
               ? `
                 <div class="room-actions">
+                  ${
+                    room.effective_status ===
+                      'vacant' &&
+                    !room.has_active_contract
+                      ? `
+                        <button
+                          class="small-button primary"
+                          type="button"
+                          onclick="goTenantCreate('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')"
+                        >
+                          建立房客
+                        </button>
+                      `
+                      : ''
+                  }
+
                   <button
                     class="small-button secondary"
                     type="button"
