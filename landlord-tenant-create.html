@@ -1012,7 +1012,8 @@
 
     function jsonpRequest(
       action,
-      params
+      params,
+      retryCount
     ) {
       return new Promise(
         function (resolve, reject) {
@@ -1042,13 +1043,31 @@
                 finished = true;
                 cleanup();
 
+                if (
+                  Number(
+                    retryCount || 0
+                  ) < 1
+                ) {
+                  jsonpRequest(
+                    action,
+                    params,
+                    1
+                  ).then(
+                    resolve
+                  ).catch(
+                    reject
+                  );
+
+                  return;
+                }
+
                 reject(
                   new Error(
-                    'API 載入逾時'
+                    'API 載入逾時。請確認已替換快速修正版後端並重新部署。'
                   )
                 );
               },
-              30000
+              45000
             );
 
           function cleanup() {
