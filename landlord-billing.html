@@ -435,6 +435,19 @@
       padding: 0 10px;
     }
 
+    .meter-source {
+      min-height: 14px;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 7px;
+      line-height: 1.45;
+    }
+
+    .meter-source.warning {
+      color: var(--orange);
+      font-weight: 800;
+    }
+
     .detail-toggle {
       width: 100%;
       min-height: 34px;
@@ -1515,6 +1528,20 @@
                     : ''
                 }
               />
+
+              <div
+                class="meter-source ${
+                  item.previous_meter_source ===
+                    'manual'
+                    ? 'warning'
+                    : ''
+                }"
+              >
+                ${safeHtml(
+                  item.previous_meter_source_label ||
+                  '尚無上期抄表來源'
+                )}
+              </div>
             </div>
 
             <div class="meter-field">
