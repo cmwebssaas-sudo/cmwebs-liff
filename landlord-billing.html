@@ -112,6 +112,24 @@
       letter-spacing: -0.35px;
     }
 
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notification-button {
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid #ccebd8;
+      border-radius: 13px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-size: 9px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
     .refresh-button {
       width: 42px;
       height: 42px;
@@ -765,13 +783,23 @@
           <div class="page-title">帳單與抄表</div>
         </div>
 
-        <button
-          class="refresh-button"
-          type="button"
-          onclick="loadPage()"
-        >
-          ↻
-        </button>
+        <div class="top-actions">
+          <button
+            class="notification-button"
+            type="button"
+            onclick="goBillNotifications()"
+          >
+            LINE 通知
+          </button>
+
+          <button
+            class="refresh-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            ↻
+          </button>
+        </div>
       </div>
 
       <div id="app">
@@ -959,6 +987,23 @@
             ? '&test=1'
             : ''
         );
+    }
+
+    function goBillNotifications() {
+      const month =
+        getSelectedMonth();
+
+      goPage(
+        'landlord-bill-notifications.html' +
+        (
+          month
+            ? '?bill_month=' +
+              encodeURIComponent(
+                month
+              )
+            : ''
+        )
+      );
     }
 
     function buildLandlordLoginRedirectUri() {
