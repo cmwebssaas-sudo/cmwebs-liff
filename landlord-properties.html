@@ -2055,8 +2055,35 @@
         <div class="field-grid">
           ${numberField('roomRent', '每月租金', room ? room.rent_amount : '', '1', '1')}
           ${numberField('roomManagementFee', '每月管理費', room ? room.management_fee : 0, '0', '1')}
-          ${numberField('roomElectricityRate', '每度電費', room ? room.electricity_fee_rate : 0, '0', '1')}
-          ${numberField('roomEquipmentRate', '設備耗損費／度', room ? room.equipment_fee_rate : 0, '0', '1')}
+          ${numberField(
+            'roomElectricityRate',
+            '每度電費',
+            room
+              ? room.electricity_fee_rate
+              : 0,
+            '0',
+            '0.1'
+          )}
+
+          ${numberField(
+            'roomEquipmentSummerRate',
+            '夏月耗損費／度（6–9月）',
+            room
+              ? room.equipment_fee_rate_summer
+              : 3.5,
+            '0',
+            '0.1'
+          )}
+
+          ${numberField(
+            'roomEquipmentRegularRate',
+            '其他月份耗損費／度',
+            room
+              ? room.equipment_fee_rate_regular
+              : 2.5,
+            '0',
+            '0.1'
+          )}
           ${numberField('roomPaymentDay', '每月繳款日', room ? room.payment_day : 10, '1', '1', '28')}
           ${numberField(
             'roomDepositAmount',
@@ -2067,6 +2094,10 @@
             '0',
             '1'
           )}
+        </div>
+
+        <div class="modal-note">
+          設備耗損費依帳單月份自動套用：6–9 月使用夏月費率，其餘月份使用一般費率。
         </div>
 
         <div class="field">
@@ -2175,7 +2206,15 @@
         electricity_fee_rate:
           inputValue('roomElectricityRate'),
         equipment_fee_rate:
-          inputValue('roomEquipmentRate'),
+          '',
+        equipment_fee_rate_summer:
+          inputValue(
+            'roomEquipmentSummerRate'
+          ),
+        equipment_fee_rate_regular:
+          inputValue(
+            'roomEquipmentRegularRate'
+          ),
         payment_day:
           inputValue('roomPaymentDay'),
         deposit_months:
