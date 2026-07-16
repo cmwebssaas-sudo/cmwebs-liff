@@ -1,0 +1,2314 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 帳單與抄表</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 68px;
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+      --purple: #7654c4;
+      --purple-soft: #f3efff;
+      --blue: #1a73e8;
+      --blue-soft: #edf4ff;
+      --orange: #ef8f00;
+      --orange-soft: #fff5df;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-soft: #fafbfc;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+      --shadow: 0 10px 34px rgba(25, 35, 55, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 650px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 100% 0%,
+          rgba(118, 84, 196, 0.1),
+          transparent 28%
+        ),
+        var(--page-bg);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        max(16px, env(safe-area-inset-top))
+        15px
+        calc(
+          var(--nav-height) +
+          96px +
+          env(safe-area-inset-bottom)
+        );
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .eyebrow {
+      color: var(--purple);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .page-title {
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.35px;
+    }
+
+    .refresh-button {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #ffffff;
+      color: #5f6670;
+      font-size: 19px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .card {
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #6542ad 0%,
+          #7654c4 58%,
+          #5e3ca9 100%
+        );
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -65px;
+      right: -45px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      content: "";
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-label {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .workspace-name {
+      margin-top: 5px;
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .hero-desc {
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .summary-item {
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .summary-label {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 8px;
+    }
+
+    .summary-value {
+      margin-top: 4px;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .filters-card {
+      padding: 14px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .input,
+    .select {
+      height: 43px;
+      padding: 0 11px;
+    }
+
+    .textarea {
+      min-height: 64px;
+      padding: 10px 11px;
+      resize: vertical;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: rgba(118, 84, 196, 0.55);
+      box-shadow: 0 0 0 3px rgba(118, 84, 196, 0.08);
+    }
+
+    .season-note {
+      margin-top: 10px;
+      padding: 10px 11px;
+      border: 1px solid #d9d0f3;
+      border-radius: 11px;
+      background: var(--purple-soft);
+      color: #5c478e;
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .toolbar-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px;
+    }
+
+    .toolbar-title {
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .toolbar-desc {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .toolbar-button {
+      min-height: 38px;
+      flex: 0 0 auto;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 9px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 18px 2px 9px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section-count {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .bill-card {
+      padding: 14px;
+    }
+
+    .bill-card.locked {
+      opacity: 0.75;
+    }
+
+    .bill-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .room-checkbox {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 19px;
+      margin-top: 2px;
+      accent-color: var(--primary);
+    }
+
+    .room-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .room-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .room-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .badge {
+      padding: 4px 7px;
+      border-radius: 999px;
+      font-size: 8px;
+      font-weight: 900;
+    }
+
+    .badge.new {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .badge.unpaid {
+      background: var(--orange-soft);
+      color: #9b6200;
+    }
+
+    .badge.paid {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .badge.season {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .room-meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .base-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .base-item {
+      min-width: 0;
+      padding: 8px;
+      border-radius: 9px;
+      background: var(--surface-soft);
+    }
+
+    .base-label {
+      color: var(--muted);
+      font-size: 7px;
+    }
+
+    .base-value {
+      margin-top: 3px;
+      overflow: hidden;
+      font-size: 10px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .meter-field .field-label {
+      font-size: 9px;
+    }
+
+    .meter-field .input {
+      height: 40px;
+      padding: 0 10px;
+    }
+
+    .detail-toggle {
+      width: 100%;
+      min-height: 34px;
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: #626975;
+      font-size: 9px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .extra-fields {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .extra-fields.show {
+      display: block;
+    }
+
+    .extra-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .calculation-box {
+      margin-top: 11px;
+      padding: 11px;
+      border: 1px solid #d7e8dd;
+      border-radius: 11px;
+      background: var(--primary-soft);
+    }
+
+    .calculation-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .calculation-item {
+      min-width: 0;
+      padding: 8px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .calculation-label {
+      color: #668070;
+      font-size: 7px;
+    }
+
+    .calculation-value {
+      margin-top: 3px;
+      overflow: hidden;
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bill-error {
+      display: none;
+      margin-top: 9px;
+      padding: 9px 10px;
+      border: 1px solid #f0cfcc;
+      border-radius: 10px;
+      background: var(--danger-soft);
+      color: var(--danger);
+      font-size: 8px;
+      line-height: 1.55;
+    }
+
+    .bill-error.show {
+      display: block;
+    }
+
+    .loading-card,
+    .error-card,
+    .empty-card {
+      padding: 30px 18px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 14px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-title,
+    .error-title {
+      margin-bottom: 7px;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .error-title {
+      color: var(--danger);
+    }
+
+    .retry-button {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 15px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .action-bar {
+      position: absolute;
+      z-index: 1100;
+      right: 0;
+      bottom:
+        calc(
+          var(--nav-height) +
+          env(safe-area-inset-bottom)
+        );
+      left: 0;
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.97);
+      backdrop-filter: blur(12px);
+    }
+
+    .action-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .selection-summary {
+      min-width: 0;
+      flex: 1;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.45;
+    }
+
+    .selection-summary strong {
+      display: block;
+      color: var(--text);
+      font-size: 11px;
+    }
+
+    .generate-button {
+      min-height: 46px;
+      flex: 0 0 auto;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(6, 199, 85, 0.18);
+    }
+
+    .generate-button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .toast {
+      position: absolute;
+      z-index: 2100;
+      right: 16px;
+      bottom:
+        calc(
+          var(--nav-height) +
+          86px +
+          env(safe-area-inset-bottom)
+        );
+      left: 16px;
+      max-width: 470px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: 13px;
+      background: #22252a;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.55;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+
+    .bottom-nav {
+      position: absolute;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-top: 1px solid #e8ecf1;
+      background: rgba(255, 255, 255, 0.98);
+      padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b919a;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    @media (max-width: 470px) {
+      .summary-grid,
+      .base-grid,
+      .calculation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .meter-grid,
+      .filter-grid,
+      .extra-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .action-inner {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .generate-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Billing & Meter</div>
+          <div class="page-title">帳單與抄表</div>
+        </div>
+
+        <button
+          class="refresh-button"
+          type="button"
+          onclick="loadPage()"
+        >
+          ↻
+        </button>
+      </div>
+
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">帳單資料載入中</div>
+          正在讀取租約、房間費率與上期電錶。
+        </section>
+      </div>
+    </main>
+
+    <div id="actionBar" class="action-bar" style="display:none;">
+      <div class="action-inner">
+        <div id="selectionSummary" class="selection-summary"></div>
+
+        <button
+          id="generateButton"
+          class="generate-button"
+          type="button"
+          onclick="generateBills()"
+        >
+          建立所選帳單
+        </button>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>欠款</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+          </svg>
+          <span>房客</span>
+        </button>
+
+        <button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <span>更多</span>
+        </button>
+      </div>
+    </nav>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
+
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const URL_PARAMS =
+      new URLSearchParams(
+        location.search
+      );
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') ===
+      '1';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let toastTimer = null;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      return value === undefined || value === null
+        ? ''
+        : String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function money(value) {
+      return new Intl.NumberFormat(
+        'zh-TW'
+      ).format(
+        Math.round(
+          Number(value || 0)
+        )
+      );
+    }
+
+    function numberValue(id) {
+      const element =
+        document.getElementById(
+          id
+        );
+
+      const value =
+        element
+          ? Number(
+              rawText(
+                element.value
+              ).replace(/,/g, '')
+            )
+          : 0;
+
+      return Number.isFinite(value)
+        ? value
+        : 0;
+    }
+
+    function inputValue(id) {
+      const element =
+        document.getElementById(
+          id
+        );
+
+      return element
+        ? rawText(
+            element.value
+          ).trim()
+        : '';
+    }
+
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
+
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
+    function buildLandlordLoginRedirectUri() {
+      const currentUrl =
+        new URL(
+          location.href
+        );
+
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(
+        function (key) {
+          currentUrl.searchParams.delete(
+            key
+          );
+        }
+      );
+
+      const returnTo =
+        currentUrl.pathname
+          .split('/')
+          .pop() +
+        (
+          currentUrl.searchParams
+            .toString()
+            ? '?' +
+              currentUrl.searchParams
+                .toString()
+            : ''
+        );
+
+      sessionStorage.setItem(
+        'cmwebs_landlord_return_to',
+        returnTo
+      );
+
+      const entryUrl =
+        new URL(
+          LANDLORD_ENTRY_URL
+        );
+
+      entryUrl.searchParams.set(
+        'return_to',
+        returnTo
+      );
+
+      return entryUrl.href;
+    }
+
+    function showToast(message, isError) {
+      const toast =
+        document.getElementById(
+          'toast'
+        );
+
+      clearTimeout(
+        toastTimer
+      );
+
+      toast.textContent =
+        message || '';
+
+      toast.className =
+        isError
+          ? 'toast error show'
+          : 'toast show';
+
+      toastTimer =
+        setTimeout(
+          function () {
+            toast.className =
+              'toast';
+          },
+          3000
+        );
+    }
+
+    function jsonpRequest(
+      action,
+      params,
+      retryCount
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_billing_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished = false;
+
+          const timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                cleanup();
+
+                if (
+                  Number(
+                    retryCount || 0
+                  ) < 1
+                ) {
+                  jsonpRequest(
+                    action,
+                    params,
+                    1
+                  ).then(
+                    resolve
+                  ).catch(
+                    reject
+                  );
+
+                  return;
+                }
+
+                reject(
+                  new Error(
+                    'API 載入逾時，請確認帳單後端已部署。'
+                  )
+                );
+              },
+              45000
+            );
+
+          function cleanup() {
+            clearTimeout(
+              timer
+            );
+
+            if (script.parentNode) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[callbackName] =
+                undefined;
+            }
+          }
+
+          window[callbackName] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+              resolve(result);
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params || {}
+          ).forEach(
+            function (key) {
+              url +=
+                '&' +
+                encodeURIComponent(
+                  key
+                ) +
+                '=' +
+                encodeURIComponent(
+                  params[key]
+                );
+            }
+          );
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 路由執行失敗'
+                )
+              );
+            };
+
+          script.src = url;
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+        return true;
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            buildLandlordLoginRedirectUri()
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId || '';
+
+      return true;
+    }
+
+    function currentMonth() {
+      const date =
+        new Date();
+
+      return [
+        date.getFullYear(),
+        String(
+          date.getMonth() + 1
+        ).padStart(2, '0')
+      ].join('-');
+    }
+
+    function getSelectedMonth() {
+      const element =
+        document.getElementById(
+          'billMonth'
+        );
+
+      return element
+        ? element.value
+        : (
+            PAGE_DATA
+              ? PAGE_DATA.bill_month
+              : currentMonth()
+          );
+    }
+
+    function getSelectedProperty() {
+      const element =
+        document.getElementById(
+          'propertyFilter'
+        );
+
+      return element
+        ? element.value
+        : '';
+    }
+
+    function propertyOptions() {
+      return `
+        <option value="">全部物件</option>
+        ${
+          (
+            PAGE_DATA.properties ||
+            []
+          ).map(
+            function (property) {
+              return `
+                <option
+                  value="${safeHtml(property.property_id)}"
+                  ${
+                    property.property_id ===
+                    PAGE_DATA.selected_property_id
+                      ? 'selected'
+                      : ''
+                  }
+                >
+                  ${safeHtml(property.property_name)}
+                </option>
+              `;
+            }
+          ).join('')
+        }
+      `;
+    }
+
+    function renderPage() {
+      const workspace =
+        PAGE_DATA.workspace || {};
+
+      const summary =
+        PAGE_DATA.summary || {};
+
+      const items =
+        PAGE_DATA.items || [];
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card hero">
+          <div class="hero-content">
+            <div class="hero-label">目前管理團隊</div>
+
+            <div class="workspace-name">
+              ${safeHtml(
+                workspace.workspace_name ||
+                '-'
+              )}
+            </div>
+
+            <div class="hero-desc">
+              輸入本期電錶後，一次建立租金、管理費、電費與設備耗損費帳單。
+            </div>
+
+            <div class="summary-grid">
+              ${summaryItem('應出帳', summary.billable_room_count)}
+              ${summaryItem('已建立', summary.generated_count)}
+              ${summaryItem('未繳', summary.unpaid_count)}
+              ${summaryItem('已繳', summary.paid_count)}
+            </div>
+          </div>
+        </section>
+
+        <section class="card filters-card">
+          <div class="filter-grid">
+            <div>
+              <div class="field-label">
+                <span>帳單月份</span>
+              </div>
+
+              <input
+                id="billMonth"
+                class="input"
+                type="month"
+                value="${safeHtml(PAGE_DATA.bill_month || currentMonth())}"
+                onchange="loadPage(false)"
+              />
+            </div>
+
+            <div>
+              <div class="field-label">
+                <span>物件篩選</span>
+              </div>
+
+              <select
+                id="propertyFilter"
+                class="select"
+                onchange="loadPage(false)"
+              >
+                ${propertyOptions()}
+              </select>
+            </div>
+          </div>
+
+          <div class="season-note">
+            本月套用
+            <strong>${safeHtml(PAGE_DATA.season_label || '-')}</strong>
+            設備耗損費率。6–9 月使用夏月費率，其餘月份使用一般費率。
+          </div>
+        </section>
+
+        <section class="card toolbar-card">
+          <div>
+            <div class="toolbar-title">批次抄表</div>
+            <div class="toolbar-desc">
+              已繳帳單會自動鎖定，不會被批次覆寫。
+            </div>
+          </div>
+
+          <button
+            class="toolbar-button"
+            type="button"
+            onclick="toggleAll()"
+          >
+            全選／取消
+          </button>
+        </section>
+
+        <div class="section-head">
+          <div class="section-title">房間帳單</div>
+          <div class="section-count">${items.length} 間</div>
+        </div>
+
+        ${
+          items.length
+            ? items.map(
+                function (item, index) {
+                  return billCard(
+                    item,
+                    index
+                  );
+                }
+              ).join('')
+            : `
+              <section class="card empty-card">
+                此月份沒有符合條件的有效租約房間。
+              </section>
+            `
+        }
+      `;
+
+      document.getElementById(
+        'actionBar'
+      ).style.display =
+        (
+          items.length &&
+          PAGE_DATA.can_generate
+        )
+          ? 'block'
+          : 'none';
+
+      items.forEach(
+        function (item, index) {
+          bindRowEvents(
+            index
+          );
+
+          calculateRow(
+            index
+          );
+        }
+      );
+
+      updateSelectionSummary();
+    }
+
+    function summaryItem(label, value) {
+      return `
+        <div class="summary-item">
+          <div class="summary-label">${safeHtml(label)}</div>
+          <div class="summary-value">${Number(value || 0)}</div>
+        </div>
+      `;
+    }
+
+    function billCard(item, index) {
+      const existing =
+        item.existing_bill;
+
+      const paid =
+        existing &&
+        existing.payment_status ===
+          'paid';
+
+      const checked =
+        !paid;
+
+      const badgeClass =
+        !existing
+          ? 'new'
+          : (
+              paid
+                ? 'paid'
+                : 'unpaid'
+            );
+
+      const badgeLabel =
+        !existing
+          ? '尚未建立'
+          : (
+              paid
+                ? '已繳'
+                : '未繳'
+            );
+
+      return `
+        <section
+          class="card bill-card ${paid ? 'locked' : ''}"
+          data-index="${index}"
+        >
+          <div class="bill-head">
+            <input
+              id="selected_${index}"
+              class="room-checkbox"
+              type="checkbox"
+              ${checked ? 'checked' : ''}
+              ${paid ? 'disabled' : ''}
+              onchange="updateSelectionSummary()"
+            />
+
+            <div class="room-main">
+              <div class="room-title-row">
+                <span class="room-title">
+                  ${safeHtml(item.room_name || '-')}
+                </span>
+
+                <span class="badge ${badgeClass}">
+                  ${badgeLabel}
+                </span>
+
+                <span class="badge season">
+                  ${safeHtml(item.season_label || '-')}
+                </span>
+              </div>
+
+              <div class="room-meta">
+                ${safeHtml(item.property_name || '-')}
+                ・
+                ${safeHtml(item.tenant_name || '未命名房客')}
+              </div>
+            </div>
+          </div>
+
+          <div class="base-grid">
+            ${baseItem('月租', 'NT$ ' + money(item.rent_amount))}
+            ${baseItem('管理費', 'NT$ ' + money(item.management_fee))}
+            ${baseItem('每度電費', formatRate(item.electricity_fee_rate))}
+            ${baseItem('耗損費／度', formatRate(item.equipment_fee_rate))}
+          </div>
+
+          <div class="meter-grid">
+            <div class="meter-field">
+              <div class="field-label">
+                <span>上期電錶</span>
+              </div>
+
+              <input
+                id="previous_${index}"
+                class="input"
+                type="number"
+                step="0.001"
+                value="${safeHtml(item.previous_meter)}"
+                ${
+                  item.previous_meter_locked ||
+                  paid
+                    ? 'disabled'
+                    : ''
+                }
+              />
+            </div>
+
+            <div class="meter-field">
+              <div class="field-label">
+                <span>本期電錶</span>
+              </div>
+
+              <input
+                id="current_${index}"
+                class="input"
+                type="number"
+                step="0.001"
+                value="${safeHtml(item.current_meter_reading)}"
+                ${paid ? 'disabled' : ''}
+                placeholder="輸入本期度數"
+              />
+            </div>
+
+            <div class="meter-field">
+              <div class="field-label">
+                <span>繳款期限</span>
+              </div>
+
+              <input
+                id="due_${index}"
+                class="input"
+                type="date"
+                value="${safeHtml(item.due_date)}"
+                ${paid ? 'disabled' : ''}
+              />
+            </div>
+          </div>
+
+          <button
+            class="detail-toggle"
+            type="button"
+            onclick="toggleExtra(${index})"
+          >
+            其他費用、折扣與備註
+          </button>
+
+          <div id="extra_${index}" class="extra-fields">
+            <div class="extra-grid">
+              <div>
+                <div class="field-label">
+                  <span>其他費用</span>
+                </div>
+
+                <input
+                  id="other_${index}"
+                  class="input"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="${safeHtml(item.other_amount)}"
+                  ${paid ? 'disabled' : ''}
+                />
+              </div>
+
+              <div>
+                <div class="field-label">
+                  <span>折扣金額</span>
+                </div>
+
+                <input
+                  id="discount_${index}"
+                  class="input"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="${safeHtml(item.discount_amount)}"
+                  ${paid ? 'disabled' : ''}
+                />
+              </div>
+            </div>
+
+            <div style="margin-top:9px;">
+              <div class="field-label">
+                <span>帳單備註</span>
+              </div>
+
+              <textarea
+                id="note_${index}"
+                class="textarea"
+                maxlength="300"
+                ${paid ? 'disabled' : ''}
+              >${safeHtml(item.note || '')}</textarea>
+            </div>
+          </div>
+
+          <div class="calculation-box">
+            <div class="calculation-grid">
+              ${calculationItem(index, 'usage', '用電度數')}
+              ${calculationItem(index, 'electricity', '電費')}
+              ${calculationItem(index, 'equipment', '耗損費')}
+              ${calculationItem(index, 'total', '帳單總額')}
+            </div>
+          </div>
+
+          <div id="error_${index}" class="bill-error"></div>
+        </section>
+      `;
+    }
+
+    function baseItem(label, value) {
+      return `
+        <div class="base-item">
+          <div class="base-label">${safeHtml(label)}</div>
+          <div class="base-value">${safeHtml(value)}</div>
+        </div>
+      `;
+    }
+
+    function calculationItem(index, key, label) {
+      return `
+        <div class="calculation-item">
+          <div class="calculation-label">${safeHtml(label)}</div>
+          <div
+            id="${key}_${index}"
+            class="calculation-value"
+          >
+            -
+          </div>
+        </div>
+      `;
+    }
+
+    function formatRate(value) {
+      const number =
+        Number(value || 0);
+
+      return (
+        Number.isInteger(number)
+          ? number.toFixed(0)
+          : number.toFixed(2)
+      ) +
+      ' 元';
+    }
+
+    function bindRowEvents(index) {
+      [
+        'previous',
+        'current',
+        'other',
+        'discount'
+      ].forEach(
+        function (prefix) {
+          const element =
+            document.getElementById(
+              prefix +
+              '_' +
+              index
+            );
+
+          if (element) {
+            element.addEventListener(
+              'input',
+              function () {
+                calculateRow(
+                  index
+                );
+              }
+            );
+          }
+        }
+      );
+    }
+
+    function calculateRow(index) {
+      const item =
+        PAGE_DATA.items[index];
+
+      const previous =
+        numberValue(
+          'previous_' +
+          index
+        );
+
+      const currentText =
+        inputValue(
+          'current_' +
+          index
+        );
+
+      const current =
+        currentText
+          ? numberValue(
+              'current_' +
+              index
+            )
+          : previous;
+
+      const usage =
+        Math.max(
+          0,
+          current -
+          previous
+        );
+
+      const electricity =
+        Math.round(
+          usage *
+          Number(
+            item.electricity_fee_rate ||
+            0
+          )
+        );
+
+      const equipment =
+        Math.round(
+          usage *
+          Number(
+            item.equipment_fee_rate ||
+            0
+          )
+        );
+
+      const other =
+        numberValue(
+          'other_' +
+          index
+        );
+
+      const discount =
+        numberValue(
+          'discount_' +
+          index
+        );
+
+      const total =
+        Math.max(
+          0,
+          Math.round(
+            Number(
+              item.rent_amount ||
+              0
+            ) +
+            Number(
+              item.management_fee ||
+              0
+            ) +
+            electricity +
+            equipment +
+            other -
+            discount
+          )
+        );
+
+      document.getElementById(
+        'usage_' +
+        index
+      ).textContent =
+        formatUsage(
+          usage
+        ) +
+        ' 度';
+
+      document.getElementById(
+        'electricity_' +
+        index
+      ).textContent =
+        'NT$ ' +
+        money(
+          electricity
+        );
+
+      document.getElementById(
+        'equipment_' +
+        index
+      ).textContent =
+        'NT$ ' +
+        money(
+          equipment
+        );
+
+      document.getElementById(
+        'total_' +
+        index
+      ).textContent =
+        'NT$ ' +
+        money(
+          total
+        );
+
+      const errorElement =
+        document.getElementById(
+          'error_' +
+          index
+        );
+
+      if (
+        currentText &&
+        current <
+          previous
+      ) {
+        errorElement.textContent =
+          '本期電錶不得小於上期電錶。';
+
+        errorElement.classList.add(
+          'show'
+        );
+      } else {
+        errorElement.textContent =
+          '';
+
+        errorElement.classList.remove(
+          'show'
+        );
+      }
+
+      updateSelectionSummary();
+    }
+
+    function formatUsage(value) {
+      const number =
+        Number(value || 0);
+
+      return Number.isInteger(number)
+        ? number.toFixed(0)
+        : number.toFixed(3)
+            .replace(/0+$/, '')
+            .replace(/\.$/, '');
+    }
+
+    function toggleExtra(index) {
+      document.getElementById(
+        'extra_' +
+        index
+      ).classList.toggle(
+        'show'
+      );
+    }
+
+    function toggleAll() {
+      const checkboxes =
+        (
+          PAGE_DATA.items ||
+          []
+        ).map(
+          function (_, index) {
+            return document.getElementById(
+              'selected_' +
+              index
+            );
+          }
+        ).filter(
+          function (checkbox) {
+            return (
+              checkbox &&
+              !checkbox.disabled
+            );
+          }
+        );
+
+      const shouldCheck =
+        checkboxes.some(
+          function (checkbox) {
+            return !checkbox.checked;
+          }
+        );
+
+      checkboxes.forEach(
+        function (checkbox) {
+          checkbox.checked =
+            shouldCheck;
+        }
+      );
+
+      updateSelectionSummary();
+    }
+
+    function selectedIndexes() {
+      return (
+        PAGE_DATA.items ||
+        []
+      ).map(
+        function (_, index) {
+          const checkbox =
+            document.getElementById(
+              'selected_' +
+              index
+            );
+
+          return (
+            checkbox &&
+            checkbox.checked &&
+            !checkbox.disabled
+          )
+            ? index
+            : -1;
+        }
+      ).filter(
+        function (index) {
+          return index >= 0;
+        }
+      );
+    }
+
+    function updateSelectionSummary() {
+      const indexes =
+        selectedIndexes();
+
+      let total =
+        0;
+
+      indexes.forEach(
+        function (index) {
+          const text =
+            document.getElementById(
+              'total_' +
+              index
+            ).textContent;
+
+          total +=
+            Number(
+              rawText(text)
+                .replace(/[^\d.-]/g, '')
+            ) ||
+            0;
+        }
+      );
+
+      const summary =
+        document.getElementById(
+          'selectionSummary'
+        );
+
+      if (summary) {
+        summary.innerHTML = `
+          <strong>已選 ${indexes.length} 間</strong>
+          預估總額 NT$ ${money(total)}
+        `;
+      }
+
+      const button =
+        document.getElementById(
+          'generateButton'
+        );
+
+      if (button) {
+        button.disabled =
+          indexes.length === 0;
+      }
+    }
+
+    function validateSelected() {
+      const indexes =
+        selectedIndexes();
+
+      for (
+        let position = 0;
+        position < indexes.length;
+        position += 1
+      ) {
+        const index =
+          indexes[position];
+
+        const item =
+          PAGE_DATA.items[
+            index
+          ];
+
+        const previous =
+          numberValue(
+            'previous_' +
+            index
+          );
+
+        const currentText =
+          inputValue(
+            'current_' +
+            index
+          );
+
+        const current =
+          currentText
+            ? numberValue(
+                'current_' +
+                index
+              )
+            : previous;
+
+        if (
+          item.requires_meter &&
+          !currentText
+        ) {
+          return (
+            item.room_name +
+            ' 尚未輸入本期電錶。'
+          );
+        }
+
+        if (
+          current <
+          previous
+        ) {
+          return (
+            item.room_name +
+            ' 本期電錶不得小於上期電錶。'
+          );
+        }
+
+        if (
+          !inputValue(
+            'due_' +
+            index
+          )
+        ) {
+          return (
+            item.room_name +
+            ' 尚未設定繳款期限。'
+          );
+        }
+      }
+
+      return '';
+    }
+
+    async function generateBills() {
+      const error =
+        validateSelected();
+
+      if (error) {
+        showToast(
+          error,
+          true
+        );
+
+        return;
+      }
+
+      const indexes =
+        selectedIndexes();
+
+      const items =
+        indexes.map(
+          function (index) {
+            const item =
+              PAGE_DATA.items[
+                index
+              ];
+
+            return {
+              selected:
+                true,
+              room_id:
+                item.room_id,
+              previous_meter:
+                inputValue(
+                  'previous_' +
+                  index
+                ),
+              current_meter_reading:
+                inputValue(
+                  'current_' +
+                  index
+                ),
+              due_date:
+                inputValue(
+                  'due_' +
+                  index
+                ),
+              other_amount:
+                inputValue(
+                  'other_' +
+                  index
+                ),
+              discount_amount:
+                inputValue(
+                  'discount_' +
+                  index
+                ),
+              note:
+                inputValue(
+                  'note_' +
+                  index
+                )
+            };
+          }
+        );
+
+      const button =
+        document.getElementById(
+          'generateButton'
+        );
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        '建立中...';
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_bills_generate',
+            {
+              bill_month:
+                getSelectedMonth(),
+              items_json:
+                JSON.stringify(
+                  items
+                )
+            }
+          );
+
+        if (
+          !result ||
+          (
+            result.success !== true &&
+            !(
+              result.data &&
+              result.data.generated_count >
+                0
+            )
+          )
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '帳單建立失敗'
+          );
+        }
+
+        const data =
+          result.data || {};
+
+        showToast(
+          '已建立 ' +
+          Number(
+            data.generated_count ||
+            0
+          ) +
+          ' 筆帳單' +
+          (
+            Number(
+              data.error_count ||
+              0
+            ) > 0
+              ? '，另有 ' +
+                data.error_count +
+                ' 筆失敗'
+              : ''
+          ),
+          Number(
+            data.error_count ||
+            0
+          ) > 0
+        );
+
+        await loadPage(
+          false
+        );
+
+      } catch (requestError) {
+        showToast(
+          requestError.message ||
+          '帳單建立失敗',
+          true
+        );
+
+      } finally {
+        button.disabled =
+          false;
+
+        button.textContent =
+          '建立所選帳單';
+      }
+    }
+
+    function renderLoading() {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">帳單資料載入中</div>
+          正在讀取租約、房間費率與上期電錶。
+        </section>
+      `;
+
+      document.getElementById(
+        'actionBar'
+      ).style.display =
+        'none';
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">帳單資料載入失敗</div>
+
+          ${safeHtml(
+            message ||
+            '未知錯誤'
+          )}
+
+          <button
+            class="retry-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+
+      document.getElementById(
+        'actionBar'
+      ).style.display =
+        'none';
+    }
+
+    async function loadPage(showLoading) {
+      const previousMonth =
+        getSelectedMonth();
+
+      const previousProperty =
+        getSelectedProperty();
+
+      if (
+        showLoading !==
+        false
+      ) {
+        renderLoading();
+      }
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLine();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'landlord_billing_init',
+            {
+              bill_month:
+                previousMonth ||
+                currentMonth(),
+              property_id:
+                previousProperty
+            }
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '帳單資料載入失敗'
+          );
+        }
+
+        PAGE_DATA =
+          result.data || {};
+
+        renderPage();
+
+      } catch (error) {
+        renderError(
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        );
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
