@@ -13,7 +13,7 @@
   <style>
     :root {
       --app-height: 100vh;
-      --nav-height: 64px;
+      --nav-height: 68px;
       --primary: #06c755;
       --primary-dark: #079641;
       --primary-soft: #effcf4;
@@ -202,6 +202,40 @@
 
     .summary-value.purple {
       color: var(--purple);
+    }
+
+    .create-tenant-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px;
+    }
+
+    .create-tenant-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .create-tenant-desc {
+      margin-top: 5px;
+      color: var(--text-muted);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .create-tenant-button {
+      min-height: 42px;
+      flex: 0 0 auto;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(6, 199, 85, 0.18);
     }
 
     .toolbar-card {
@@ -715,6 +749,12 @@
     const LIFF_ID =
       '2010314940-EjX1qbb8';
 
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+
     const TEST_LINE_USER_ID =
       'Uf708ece75c9c985cfe1dbda48d123511';
 
@@ -909,6 +949,64 @@
       location.href = url;
     }
 
+    function buildLandlordLoginRedirectUri() {
+      const currentUrl =
+        new URL(
+          location.href
+        );
+
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(
+        function (key) {
+          currentUrl.searchParams.delete(
+            key
+          );
+        }
+      );
+
+      const returnTo =
+        currentUrl.pathname
+          .split('/')
+          .pop() +
+        (
+          currentUrl.searchParams
+            .toString()
+            ? '?' +
+              currentUrl.searchParams
+                .toString()
+            : ''
+        );
+
+      sessionStorage.setItem(
+        'cmwebs_landlord_return_to',
+        returnTo
+      );
+
+      const entryUrl =
+        new URL(
+          LANDLORD_ENTRY_URL
+        );
+
+      entryUrl.searchParams.set(
+        'return_to',
+        returnTo
+      );
+
+      return entryUrl.href;
+    }
+
+    function goCreateTenant() {
+      goPage(
+        'landlord-tenant-create.html'
+      );
+    }
+
     function showToast(message) {
       const toast =
         document.getElementById('toast');
@@ -1065,7 +1163,7 @@
       if (!liff.isLoggedIn()) {
         liff.login({
           redirectUri:
-            location.href
+            buildLandlordLoginRedirectUri()
         });
 
         return false;
@@ -1659,6 +1757,26 @@
               </div>
             </div>
           </div>
+        </section>
+
+        <section class="card create-tenant-card">
+          <div>
+            <div class="create-tenant-title">
+              建立新房客與初始租約
+            </div>
+
+            <div class="create-tenant-desc">
+              選擇房間、設定租期與租金，再將手機綁定訊息傳給房客。
+            </div>
+          </div>
+
+          <button
+            class="create-tenant-button"
+            type="button"
+            onclick="goCreateTenant()"
+          >
+            ＋ 新增房客
+          </button>
         </section>
 
         <section class="card toolbar-card">
