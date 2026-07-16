@@ -1074,7 +1074,11 @@
         );
     }
 
-    function jsonpRequest(action, params) {
+    function jsonpRequest(
+      action,
+      params,
+      retryCount
+    ) {
       return new Promise(
         function (resolve, reject) {
           const callbackName =
@@ -1103,13 +1107,31 @@
                 finished = true;
                 cleanup();
 
+                if (
+                  Number(
+                    retryCount || 0
+                  ) < 1
+                ) {
+                  jsonpRequest(
+                    action,
+                    params,
+                    1
+                  ).then(
+                    resolve
+                  ).catch(
+                    reject
+                  );
+
+                  return;
+                }
+
                 reject(
                   new Error(
-                    'API 載入逾時'
+                    'API 載入逾時。請確認效能修正版後端已重新部署。'
                   )
                 );
               },
-              25000
+              30000
             );
 
           function cleanup() {
