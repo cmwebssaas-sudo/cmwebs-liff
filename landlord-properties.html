@@ -1896,6 +1896,62 @@
       ).classList.add(
         'show'
       );
+
+      if (!room) {
+        const rentInput =
+          document.getElementById(
+            'roomRent'
+          );
+
+        const depositInput =
+          document.getElementById(
+            'roomDepositAmount'
+          );
+
+        const defaultDepositMonths =
+          Number(
+            roomDefaults
+              .default_deposit_months ||
+            0
+          );
+
+        let depositManuallyEdited =
+          false;
+
+        depositInput.addEventListener(
+          'input',
+          function () {
+            depositManuallyEdited =
+              true;
+          }
+        );
+
+        rentInput.addEventListener(
+          'input',
+          function () {
+            if (
+              depositManuallyEdited
+            ) {
+              return;
+            }
+
+            const rent =
+              Number(
+                rentInput.value ||
+                0
+              );
+
+            depositInput.value =
+              rent > 0 &&
+              defaultDepositMonths > 0
+                ? Math.round(
+                    rent *
+                    defaultDepositMonths
+                  )
+                : '';
+          }
+        );
+      }
     }
 
     async function saveProperty(propertyId) {
@@ -1998,6 +2054,25 @@
           ? getRoom(roomId)
           : null;
 
+      const roomDefaults =
+        PAGE_DATA.room_defaults ||
+        {
+          default_payment_day:
+            10,
+          default_electricity_fee_rate:
+            3,
+          summer_equipment_fee_rate:
+            3.5,
+          regular_equipment_fee_rate:
+            2.5,
+          default_management_fee:
+            0,
+          default_deposit_months:
+            2,
+          summer_months_label:
+            '6–9 月'
+        };
+
       if (!property) {
         showToast(
           '請先建立物件。',
@@ -2054,23 +2129,36 @@
 
         <div class="field-grid">
           ${numberField('roomRent', '每月租金', room ? room.rent_amount : '', '1', '1')}
-          ${numberField('roomManagementFee', '每月管理費', room ? room.management_fee : 0, '0', '1')}
+          ${numberField(
+            'roomManagementFee',
+            '每月管理費',
+            room
+              ? room.management_fee
+              : roomDefaults.default_management_fee,
+            '0',
+            '1'
+          )}
           ${numberField(
             'roomElectricityRate',
             '每度電費',
             room
               ? room.electricity_fee_rate
-              : 0,
+              : roomDefaults.default_electricity_fee_rate,
             '0',
             '0.1'
           )}
 
           ${numberField(
             'roomEquipmentSummerRate',
-            '夏月耗損費／度（6–9月）',
+            '夏月耗損費／度（' +
+              (
+                roomDefaults.summer_months_label ||
+                '6–9 月'
+              ) +
+              '）',
             room
               ? room.equipment_fee_rate_summer
-              : 3.5,
+              : roomDefaults.summer_equipment_fee_rate,
             '0',
             '0.1'
           )}
@@ -2080,24 +2168,38 @@
             '其他月份耗損費／度',
             room
               ? room.equipment_fee_rate_regular
-              : 2.5,
+              : roomDefaults.regular_equipment_fee_rate,
             '0',
             '0.1'
           )}
-          ${numberField('roomPaymentDay', '每月繳款日', room ? room.payment_day : 10, '1', '1', '28')}
+          ${numberField(
+            'roomPaymentDay',
+            '每月繳款日',
+            room
+              ? room.payment_day
+              : roomDefaults.default_payment_day,
+            '1',
+            '1',
+            '28'
+          )}
           ${numberField(
             'roomDepositAmount',
             '押金金額',
             room
               ? room.deposit_amount
-              : 0,
+              : '',
             '0',
             '1'
           )}
         </div>
 
         <div class="modal-note">
-          設備耗損費依帳單月份自動套用：6–9 月使用夏月費率，其餘月份使用一般費率。
+          設備耗損費依帳單月份自動套用：${safeHtml(
+            roomDefaults.summer_months_label ||
+            '6–9 月'
+          )}使用夏月費率，其餘月份使用一般費率。新增房間的押金預設為 ${safeHtml(
+            roomDefaults.default_deposit_months
+          )} 個月租金，可直接修改金額。
         </div>
 
         <div class="field">
