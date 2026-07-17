@@ -1869,6 +1869,14 @@
                 )}
 
                 ${toggleRow(
+                  'notifyTenantMessage',
+                  '房客訊息與報修',
+                  '房客送出一般聯絡、問題反映或報修時通知相關團隊成員。',
+                  preferences.notify_tenant_message,
+                  !editable
+                )}
+
+                ${toggleRow(
                   'notifyOverdue',
                   '欠款與逾期',
                   '帳單逾期、提醒與催收狀態。',
@@ -2277,6 +2285,11 @@
         notify_payment_report:
           inputChecked(
             'notifyPaymentReport'
+          ),
+
+        notify_tenant_message:
+          inputChecked(
+            'notifyTenantMessage'
           ),
 
         notify_overdue:
