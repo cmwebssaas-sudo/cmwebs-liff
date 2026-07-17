@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 公告發送</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 68px;
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+      --purple: #7654c4;
+      --purple-soft: #f3efff;
+      --blue: #1a73e8;
+      --blue-soft: #edf4ff;
+      --orange: #ef8f00;
+      --orange-soft: #fff5df;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --gray-soft: #f0f2f5;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-soft: #fafbfc;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+      --shadow: 0 10px 34px rgba(25, 35, 55, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 650px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 100% 0%,
+          rgba(239, 143, 0, 0.11),
+          transparent 28%
+        ),
+        var(--page-bg);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        max(16px, env(safe-area-inset-top))
+        15px
+        calc(
+          var(--nav-height) +
+          22px +
+          env(safe-area-inset-bottom)
+        );
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .eyebrow {
+      color: var(--orange);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .page-title {
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.35px;
+    }
+
+    .refresh-button {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #ffffff;
+      color: #5f6670;
+      font-size: 19px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .card {
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #cf7500 0%,
+          #ef8f00 58%,
+          #c66e00 100%
+        );
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -65px;
+      right: -45px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.13);
+      content: "";
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-label {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .workspace-name {
+      margin-top: 5px;
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .hero-desc {
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 15px;
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 9px 7px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .summary-label {
+      overflow: hidden;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 7px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .summary-value {
+      margin-top: 4px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .compose-card {
+      padding: 15px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .card-desc {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .form-field {
+      min-width: 0;
+    }
+
+    .form-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .field-hint {
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 700;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .input,
+    .select {
+      height: 43px;
+      padding: 0 11px;
+    }
+
+    .textarea {
+      min-height: 130px;
+      padding: 11px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: rgba(239, 143, 0, 0.55);
+      box-shadow: 0 0 0 3px rgba(239, 143, 0, 0.08);
+    }
+
+    .recipient-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 11px;
+    }
+
+    .recipient-summary-item {
+      padding: 9px 8px;
+      border-radius: 10px;
+      background: var(--surface-soft);
+    }
+
+    .recipient-summary-label {
+      color: var(--muted);
+      font-size: 7px;
+    }
+
+    .recipient-summary-value {
+      margin-top: 3px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .audience-note {
+      margin-top: 10px;
+      padding: 10px 11px;
+      border: 1px solid #f3d7a9;
+      border-radius: 11px;
+      background: var(--orange-soft);
+      color: #8a5a12;
+      font-size: 9px;
+      line-height: 1.65;
+    }
+
+    .tenant-selector {
+      display: none;
+      max-height: 330px;
+      margin-top: 10px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #ffffff;
+    }
+
+    .tenant-selector.show {
+      display: block;
+    }
+
+    .tenant-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.97);
+    }
+
+    .tenant-search {
+      min-width: 0;
+      flex: 1;
+      height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+    }
+
+    .small-button {
+      flex: 0 0 auto;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 8px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .tenant-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tenant-row:last-child {
+      border-bottom: 0;
+    }
+
+    .tenant-check {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--orange);
+    }
+
+    .tenant-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .tenant-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tenant-name {
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .tenant-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.5;
+    }
+
+    .badge {
+      padding: 4px 7px;
+      border-radius: 999px;
+      font-size: 8px;
+      font-weight: 900;
+    }
+
+    .badge.bound,
+    .badge.sent {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .badge.unbound,
+    .badge.partial {
+      background: var(--orange-soft);
+      color: #9b6200;
+    }
+
+    .badge.conflict,
+    .badge.failed {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .badge.general {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .badge.maintenance {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .badge.utility {
+      background: var(--orange-soft);
+      color: #9b6200;
+    }
+
+    .badge.payment {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .badge.emergency {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .preview-box {
+      margin-top: 11px;
+      padding: 12px;
+      border: 1px solid #f3d7a9;
+      border-radius: 12px;
+      background: var(--orange-soft);
+      color: #664710;
+      font-size: 9px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .compose-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .compose-button {
+      min-height: 47px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .compose-button.primary {
+      border-color: var(--orange);
+      background: var(--orange);
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(239, 143, 0, 0.18);
+    }
+
+    .compose-button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .history-filter-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 14px;
+    }
+
+    .history-filter-select {
+      width: 150px;
+      height: 39px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      background: #ffffff;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 18px 2px 9px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section-count {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .history-card {
+      padding: 14px;
+    }
+
+    .history-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .history-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .history-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .history-title {
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .history-meta {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.55;
+    }
+
+    .history-body {
+      margin-top: 11px;
+      padding: 10px 11px;
+      border-radius: 10px;
+      background: var(--surface-soft);
+      color: #4f5660;
+      font-size: 9px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .delivery-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 11px;
+    }
+
+    .delivery-item {
+      min-width: 0;
+      padding: 8px;
+      border-radius: 9px;
+      background: var(--surface-soft);
+    }
+
+    .delivery-label {
+      color: var(--muted);
+      font-size: 7px;
+    }
+
+    .delivery-value {
+      margin-top: 3px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .history-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 11px;
+      padding-top: 11px;
+      border-top: 1px solid var(--border);
+    }
+
+    .history-button {
+      min-height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 9px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .history-button.primary {
+      border-color: var(--orange);
+      background: var(--orange);
+      color: #ffffff;
+    }
+
+    .recipient-detail {
+      display: none;
+      margin-top: 9px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      overflow: hidden;
+    }
+
+    .recipient-detail.show {
+      display: block;
+    }
+
+    .recipient-detail-row {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 0.9fr;
+      gap: 8px;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 8px;
+      line-height: 1.5;
+    }
+
+    .recipient-detail-row:last-child {
+      border-bottom: 0;
+    }
+
+    .recipient-error {
+      grid-column: 1 / -1;
+      color: var(--danger);
+      word-break: break-word;
+    }
+
+    .loading-card,
+    .error-card,
+    .empty-card {
+      padding: 30px 18px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 14px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-title,
+    .error-title {
+      margin-bottom: 7px;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .error-title {
+      color: var(--danger);
+    }
+
+    .retry-button {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 15px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .toast {
+      position: absolute;
+      z-index: 2600;
+      right: 16px;
+      bottom:
+        calc(
+          var(--nav-height) +
+          18px +
+          env(safe-area-inset-bottom)
+        );
+      left: 16px;
+      max-width: 470px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: 13px;
+      background: #22252a;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.55;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+
+    .bottom-nav {
+      position: absolute;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-top: 1px solid #e8ecf1;
+      background: rgba(255, 255, 255, 0.98);
+      padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b919a;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    @media (max-width: 520px) {
+      .summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-field.full {
+        grid-column: auto;
+      }
+
+      .recipient-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .delivery-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .recipient-detail-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Tenant Announcement</div>
+          <div class="page-title">公告發送</div>
+        </div>
+
+        <button
+          class="refresh-button"
+          type="button"
+          onclick="loadPage()"
+        >
+          ↻
+        </button>
+      </div>
+
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">公告資料載入中</div>
+          正在讀取房客、租約與 LINE 綁定狀態。
+        </section>
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>欠款</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+          </svg>
+          <span>房客</span>
+        </button>
+
+        <button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <span>更多</span>
+        </button>
+      </div>
+    </nav>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
+
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const URL_PARAMS =
+      new URLSearchParams(
+        location.search
+      );
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') ===
+      '1';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let toastTimer = null;
+    let sending = false;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      return value === undefined || value === null
+        ? ''
+        : String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function inputValue(id) {
+      const element =
+        document.getElementById(
+          id
+        );
+
+      return element
+        ? rawText(
+            element.value
+          ).trim()
+        : '';
+    }
+
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
+
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
+    function buildLandlordLoginRedirectUri() {
+      const currentUrl =
+        new URL(
+          location.href
+        );
+
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(
+        function (key) {
+          currentUrl.searchParams.delete(
+            key
+          );
+        }
+      );
+
+      const returnTo =
+        currentUrl.pathname
+          .split('/')
+          .pop() +
+        (
+          currentUrl.searchParams
+            .toString()
+            ? '?' +
+              currentUrl.searchParams
+                .toString()
+            : ''
+        );
+
+      sessionStorage.setItem(
+        'cmwebs_landlord_return_to',
+        returnTo
+      );
+
+      const entryUrl =
+        new URL(
+          LANDLORD_ENTRY_URL
+        );
+
+      entryUrl.searchParams.set(
+        'return_to',
+        returnTo
+      );
+
+      return entryUrl.href;
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        return true;
+      }
+
+      await liff.init({
+        liffId:
+          LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            buildLandlordLoginRedirectUri()
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId ||
+        '';
+
+      return true;
+    }
+
+    function showToast(
+      message,
+      isError
+    ) {
+      const toast =
+        document.getElementById(
+          'toast'
+        );
+
+      clearTimeout(
+        toastTimer
+      );
+
+      toast.textContent =
+        message ||
+        '';
+
+      toast.className =
+        isError
+          ? 'toast error show'
+          : 'toast show';
+
+      toastTimer =
+        setTimeout(
+          function () {
+            toast.className =
+              'toast';
+          },
+          3400
+        );
+    }
+
+    function jsonpRequest(
+      action,
+      params,
+      retryCount
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_announcement_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished =
+            false;
+
+          const timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished =
+                  true;
+
+                cleanup();
+
+                if (
+                  Number(
+                    retryCount ||
+                    0
+                  ) <
+                  1
+                ) {
+                  jsonpRequest(
+                    action,
+                    params,
+                    1
+                  ).then(
+                    resolve
+                  ).catch(
+                    reject
+                  );
+
+                  return;
+                }
+
+                reject(
+                  new Error(
+                    'API 載入逾時，請確認公告後端已部署。'
+                  )
+                );
+              },
+              50000
+            );
+
+          function cleanup() {
+            clearTimeout(
+              timer
+            );
+
+            if (
+              script.parentNode
+            ) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[
+                callbackName
+              ] =
+                undefined;
+            }
+          }
+
+          window[
+            callbackName
+          ] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished =
+                true;
+
+              cleanup();
+
+              resolve(
+                result
+              );
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params ||
+            {}
+          ).forEach(
+            function (key) {
+              url +=
+                '&' +
+                encodeURIComponent(
+                  key
+                ) +
+                '=' +
+                encodeURIComponent(
+                  params[
+                    key
+                  ]
+                );
+            }
+          );
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished =
+                true;
+
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 路由執行失敗'
+                )
+              );
+            };
+
+          script.src =
+            url;
+
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    function categoryLabel(value) {
+      const labels = {
+        general:
+          '管理公告',
+        maintenance:
+          '維修公告',
+        utility:
+          '水電公告',
+        payment:
+          '繳費公告',
+        emergency:
+          '緊急公告'
+      };
+
+      return labels[
+        value
+      ] ||
+      '管理公告';
+    }
+
+    function priorityPrefix(value) {
+      if (
+        value ===
+        'emergency'
+      ) {
+        return '【緊急】';
+      }
+
+      if (
+        value ===
+        'urgent'
+      ) {
+        return '【重要】';
+      }
+
+      return '';
+    }
+
+    function currentAudienceRecipients() {
+      const recipients =
+        PAGE_DATA.recipients ||
+        [];
+
+      const audienceType =
+        inputValue(
+          'audienceType'
+        ) ||
+        'all';
+
+      if (
+        audienceType ===
+        'property'
+      ) {
+        const propertyId =
+          inputValue(
+            'audienceProperty'
+          );
+
+        return recipients.filter(
+          function (recipient) {
+            return (
+              recipient.property_ids ||
+              []
+            ).indexOf(
+              propertyId
+            ) >= 0;
+          }
+        );
+      }
+
+      if (
+        audienceType ===
+        'selected'
+      ) {
+        const selected =
+          selectedTenantIds();
+
+        const selectedMap =
+          {};
+
+        selected.forEach(
+          function (tenantId) {
+            selectedMap[
+              tenantId
+            ] = true;
+          }
+        );
+
+        return recipients.filter(
+          function (recipient) {
+            return Boolean(
+              selectedMap[
+                recipient.tenant_id
+              ]
+            );
+          }
+        );
+      }
+
+      return recipients;
+    }
+
+    function selectedTenantIds() {
+      return (
+        PAGE_DATA.recipients ||
+        []
+      ).map(
+        function (recipient, index) {
+          const checkbox =
+            document.getElementById(
+              'tenantSelect_' +
+              index
+            );
+
+          return (
+            checkbox &&
+            checkbox.checked
+          )
+            ? recipient.tenant_id
+            : '';
+        }
+      ).filter(Boolean);
+    }
+
+    function renderPage() {
+      const workspace =
+        PAGE_DATA.workspace ||
+        {};
+
+      const audience =
+        PAGE_DATA.audience_summary ||
+        {};
+
+      const summary =
+        PAGE_DATA.summary ||
+        {};
+
+      const announcements =
+        PAGE_DATA.announcements ||
+        [];
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card hero">
+          <div class="hero-content">
+            <div class="hero-label">目前管理團隊</div>
+
+            <div class="workspace-name">
+              ${safeHtml(
+                workspace.workspace_name ||
+                '-'
+              )}
+            </div>
+
+            <div class="hero-desc">
+              將管理、維修、水電或緊急公告推送給全部或指定房客。
+            </div>
+
+            <div class="summary-grid">
+              ${summaryItem('有效房客', audience.total_count)}
+              ${summaryItem('LINE 已綁定', audience.bound_count)}
+              ${summaryItem('未綁定', audience.unbound_count)}
+              ${summaryItem('公告數', summary.announcement_count)}
+              ${summaryItem('累計送達', summary.delivered_recipient_count)}
+            </div>
+          </div>
+        </section>
+
+        <section class="card compose-card">
+          <div class="card-title">建立公告</div>
+
+          <div class="card-desc">
+            公告會立即透過 LINE 官方帳號發送，並保存每位房客的送達結果。
+          </div>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <div class="field-label">公告類別</div>
+
+              <select
+                id="category"
+                class="select"
+                onchange="updatePreview()"
+              >
+                <option value="general">管理公告</option>
+                <option value="maintenance">維修公告</option>
+                <option value="utility">水電公告</option>
+                <option value="payment">繳費公告</option>
+                <option value="emergency">緊急公告</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <div class="field-label">重要程度</div>
+
+              <select
+                id="priority"
+                class="select"
+                onchange="updatePreview()"
+              >
+                <option value="normal">一般</option>
+                <option value="urgent">重要</option>
+                <option value="emergency">緊急</option>
+              </select>
+            </div>
+
+            <div class="form-field full">
+              <div class="field-label">
+                <span>公告標題</span>
+                <span id="titleCount" class="field-hint">0 / 80</span>
+              </div>
+
+              <input
+                id="title"
+                class="input"
+                type="text"
+                maxlength="80"
+                placeholder="例如：公共區域清潔通知"
+                oninput="updatePreview()"
+              />
+            </div>
+
+            <div class="form-field full">
+              <div class="field-label">
+                <span>公告內容</span>
+                <span id="bodyCount" class="field-hint">0 / 1200</span>
+              </div>
+
+              <textarea
+                id="body"
+                class="textarea"
+                maxlength="1200"
+                placeholder="輸入完整公告內容、日期、時間與房客需要配合的事項"
+                oninput="updatePreview()"
+              ></textarea>
+            </div>
+
+            <div class="form-field">
+              <div class="field-label">發送對象</div>
+
+              <select
+                id="audienceType"
+                class="select"
+                onchange="handleAudienceChange()"
+              >
+                <option value="all">全部有效租約房客</option>
+                <option value="property">指定物件</option>
+                <option value="selected">指定房客</option>
+              </select>
+            </div>
+
+            <div
+              id="propertyField"
+              class="form-field"
+              style="display:none;"
+            >
+              <div class="field-label">指定物件</div>
+
+              <select
+                id="audienceProperty"
+                class="select"
+                onchange="updateAudienceSummary()"
+              >
+                <option value="">請選擇物件</option>
+
+                ${
+                  (
+                    PAGE_DATA.properties ||
+                    []
+                  ).map(
+                    function (property) {
+                      return `
+                        <option value="${safeHtml(property.property_id)}">
+                          ${safeHtml(property.property_name)}
+                        </option>
+                      `;
+                    }
+                  ).join('')
+                }
+              </select>
+            </div>
+          </div>
+
+          <div
+            id="tenantSelector"
+            class="tenant-selector"
+          >
+            <div class="tenant-toolbar">
+              <input
+                id="tenantSearch"
+                class="tenant-search"
+                type="search"
+                placeholder="搜尋姓名、房號或物件"
+                oninput="filterTenantRows()"
+              />
+
+              <button
+                class="small-button"
+                type="button"
+                onclick="toggleVisibleTenants()"
+              >
+                全選／取消
+              </button>
+            </div>
+
+            <div id="tenantRows">
+              ${
+                (
+                  PAGE_DATA.recipients ||
+                  []
+                ).map(
+                  function (recipient, index) {
+                    return tenantRow(
+                      recipient,
+                      index
+                    );
+                  }
+                ).join('')
+              }
+            </div>
+          </div>
+
+          <div class="recipient-summary">
+            <div class="recipient-summary-item">
+              <div class="recipient-summary-label">選擇房客</div>
+              <div id="targetCount" class="recipient-summary-value">0</div>
+            </div>
+
+            <div class="recipient-summary-item">
+              <div class="recipient-summary-label">可發送</div>
+              <div id="boundCount" class="recipient-summary-value">0</div>
+            </div>
+
+            <div class="recipient-summary-item">
+              <div class="recipient-summary-label">未綁定</div>
+              <div id="unboundCount" class="recipient-summary-value">0</div>
+            </div>
+
+            <div class="recipient-summary-item">
+              <div class="recipient-summary-label">綁定衝突</div>
+              <div id="conflictCount" class="recipient-summary-value">0</div>
+            </div>
+          </div>
+
+          <div class="audience-note">
+            未綁定或存在多個 LINE UID 的房客不會收到通知，但會保留在送達紀錄，可在完成綁定後按「重試未送達」。
+          </div>
+
+          <div id="previewBox" class="preview-box"></div>
+
+          <div class="compose-actions">
+            <button
+              class="compose-button"
+              type="button"
+              onclick="clearCompose()"
+            >
+              清除內容
+            </button>
+
+            <button
+              id="sendButton"
+              class="compose-button primary"
+              type="button"
+              onclick="sendAnnouncement()"
+              ${PAGE_DATA.can_send ? '' : 'disabled'}
+            >
+              立即發送公告
+            </button>
+          </div>
+        </section>
+
+        <section class="card history-filter-card">
+          <div>
+            <div class="card-title">公告紀錄</div>
+            <div class="card-desc">查看每次公告送達與失敗房客。</div>
+          </div>
+
+          <select
+            id="historyFilter"
+            class="history-filter-select"
+            onchange="loadPage(false)"
+          >
+            ${historyFilterOptions()}
+          </select>
+        </section>
+
+        <div class="section-head">
+          <div class="section-title">發送紀錄</div>
+          <div class="section-count">${announcements.length} 筆</div>
+        </div>
+
+        ${
+          announcements.length
+            ? announcements.map(
+                function (item, index) {
+                  return historyCard(
+                    item,
+                    index
+                  );
+                }
+              ).join('')
+            : `
+              <section class="card empty-card">
+                目前沒有符合條件的公告紀錄。
+              </section>
+            `
+        }
+      `;
+
+      handleAudienceChange();
+      updatePreview();
+    }
+
+    function summaryItem(
+      label,
+      value
+    ) {
+      return `
+        <div class="summary-item">
+          <div class="summary-label">
+            ${safeHtml(label)}
+          </div>
+
+          <div class="summary-value">
+            ${Number(value || 0)}
+          </div>
+        </div>
+      `;
+    }
+
+    function tenantRow(
+      recipient,
+      index
+    ) {
+      const searchText = [
+        recipient.tenant_name,
+        recipient.tenant_phone,
+        recipient.property_name,
+        recipient.room_list
+      ].join(' ').toLowerCase();
+
+      return `
+        <label
+          class="tenant-row"
+          data-search="${safeHtml(searchText)}"
+        >
+          <input
+            id="tenantSelect_${index}"
+            class="tenant-check"
+            type="checkbox"
+            onchange="updateAudienceSummary()"
+          />
+
+          <div class="tenant-main">
+            <div class="tenant-title-row">
+              <span class="tenant-name">
+                ${safeHtml(recipient.tenant_name || '未命名房客')}
+              </span>
+
+              <span class="badge ${safeHtml(recipient.binding_status)}">
+                ${
+                  recipient.binding_status ===
+                    'bound'
+                    ? 'LINE 已綁定'
+                    : (
+                        recipient.binding_status ===
+                          'conflict'
+                          ? '綁定衝突'
+                          : '尚未綁定'
+                      )
+                }
+              </span>
+            </div>
+
+            <div class="tenant-meta">
+              ${safeHtml(recipient.property_name || '-')}
+              ・
+              ${safeHtml(recipient.room_list || '-')}
+              ・
+              ${safeHtml(recipient.tenant_phone || '未填手機')}
+            </div>
+          </div>
+        </label>
+      `;
+    }
+
+    function historyFilterOptions() {
+      const options = [
+        ['all', '全部狀態'],
+        ['sent', '已送達'],
+        ['partial', '部分送達'],
+        ['failed', '未送達']
+      ];
+
+      return options.map(
+        function (option) {
+          return `
+            <option
+              value="${option[0]}"
+              ${
+                option[0] ===
+                PAGE_DATA.history_filter
+                  ? 'selected'
+                  : ''
+              }
+            >
+              ${option[1]}
+            </option>
+          `;
+        }
+      ).join('');
+    }
+
+    function historyCard(
+      item,
+      index
+    ) {
+      return `
+        <section class="card history-card">
+          <div class="history-head">
+            <div class="history-main">
+              <div class="history-title-row">
+                <span class="history-title">
+                  ${safeHtml(item.title || '-')}
+                </span>
+
+                <span class="badge ${safeHtml(item.category)}">
+                  ${safeHtml(item.category_label)}
+                </span>
+
+                <span class="badge ${safeHtml(item.status)}">
+                  ${safeHtml(item.status_label)}
+                </span>
+              </div>
+
+              <div class="history-meta">
+                ${safeHtml(item.audience_label)}
+                ・
+                ${safeHtml(item.priority_label)}
+                ・
+                ${safeHtml(item.created_at || '-')}
+              </div>
+            </div>
+          </div>
+
+          <div class="history-body">
+            ${safeHtml(item.body || '')}
+          </div>
+
+          <div class="delivery-grid">
+            ${deliveryItem('目標', item.target_count)}
+            ${deliveryItem('已送達', item.sent_count)}
+            ${deliveryItem('失敗', item.failed_count)}
+            ${deliveryItem('未綁定', item.unbound_count)}
+            ${deliveryItem('衝突', item.conflict_count)}
+          </div>
+
+          <div class="history-actions">
+            <button
+              class="history-button"
+              type="button"
+              onclick="toggleRecipientDetail(${index})"
+            >
+              查看送達明細
+            </button>
+
+            <button
+              class="history-button primary"
+              type="button"
+              onclick="retryAnnouncement(${index})"
+              ${
+                Number(item.pending_retry_count || 0) > 0 &&
+                PAGE_DATA.can_send
+                  ? ''
+                  : 'disabled'
+              }
+            >
+              重試未送達
+            </button>
+          </div>
+
+          <div
+            id="recipientDetail_${index}"
+            class="recipient-detail"
+          >
+            ${
+              (
+                item.recipients ||
+                []
+              ).length
+                ? (
+                    item.recipients ||
+                    []
+                  ).map(
+                    function (recipient) {
+                      return recipientDetailRow(
+                        recipient
+                      );
+                    }
+                  ).join('')
+                : `
+                  <div class="recipient-detail-row">
+                    尚無收件人明細
+                  </div>
+                `
+            }
+          </div>
+        </section>
+      `;
+    }
+
+    function deliveryItem(
+      label,
+      value
+    ) {
+      return `
+        <div class="delivery-item">
+          <div class="delivery-label">
+            ${safeHtml(label)}
+          </div>
+
+          <div class="delivery-value">
+            ${Number(value || 0)}
+          </div>
+        </div>
+      `;
+    }
+
+    function recipientDetailRow(
+      recipient
+    ) {
+      const statusLabel =
+        recipient.send_status ===
+          'sent'
+          ? '已送達'
+          : (
+              recipient.send_status ===
+                'failed'
+                ? '發送失敗'
+                : (
+                    recipient.send_status ===
+                      'conflict'
+                      ? '綁定衝突'
+                      : '未綁定'
+                  )
+            );
+
+      return `
+        <div class="recipient-detail-row">
+          <div>
+            <strong>${safeHtml(recipient.tenant_name || '-')}</strong><br />
+            ${safeHtml(recipient.room_list || '-')}
+          </div>
+
+          <div>
+            ${safeHtml(statusLabel)}
+            ${
+              recipient.sent_at
+                ? '<br />' +
+                  safeHtml(recipient.sent_at)
+                : ''
+            }
+          </div>
+
+          <div>
+            發送 ${Number(recipient.send_count || 0)} 次
+          </div>
+
+          ${
+            recipient.last_error
+              ? `
+                <div class="recipient-error">
+                  ${safeHtml(recipient.last_error)}
+                </div>
+              `
+              : ''
+          }
+        </div>
+      `;
+    }
+
+    function handleAudienceChange() {
+      const type =
+        inputValue(
+          'audienceType'
+        ) ||
+        'all';
+
+      const propertyField =
+        document.getElementById(
+          'propertyField'
+        );
+
+      const tenantSelector =
+        document.getElementById(
+          'tenantSelector'
+        );
+
+      propertyField.style.display =
+        type ===
+          'property'
+          ? 'block'
+          : 'none';
+
+      tenantSelector.classList.toggle(
+        'show',
+        type ===
+          'selected'
+      );
+
+      updateAudienceSummary();
+      updatePreview();
+    }
+
+    function updateAudienceSummary() {
+      const recipients =
+        currentAudienceRecipients();
+
+      document.getElementById(
+        'targetCount'
+      ).textContent =
+        recipients.length;
+
+      document.getElementById(
+        'boundCount'
+      ).textContent =
+        recipients.filter(
+          function (recipient) {
+            return (
+              recipient.binding_status ===
+              'bound'
+            );
+          }
+        ).length;
+
+      document.getElementById(
+        'unboundCount'
+      ).textContent =
+        recipients.filter(
+          function (recipient) {
+            return (
+              recipient.binding_status ===
+              'unbound'
+            );
+          }
+        ).length;
+
+      document.getElementById(
+        'conflictCount'
+      ).textContent =
+        recipients.filter(
+          function (recipient) {
+            return (
+              recipient.binding_status ===
+              'conflict'
+            );
+          }
+        ).length;
+
+      updatePreview();
+    }
+
+    function updatePreview() {
+      const title =
+        inputValue(
+          'title'
+        );
+
+      const body =
+        inputValue(
+          'body'
+        );
+
+      const category =
+        inputValue(
+          'category'
+        ) ||
+        'general';
+
+      const priority =
+        inputValue(
+          'priority'
+        ) ||
+        'normal';
+
+      const recipients =
+        PAGE_DATA
+          ? currentAudienceRecipients()
+          : [];
+
+      const example =
+        recipients[0] ||
+        {
+          tenant_name:
+            '房客姓名',
+          property_name:
+            '物件名稱',
+          room_list:
+            '房號'
+        };
+
+      const preview = [
+        priorityPrefix(
+          priority
+        ) +
+          '【CMWebs ' +
+          categoryLabel(
+            category
+          ) +
+          '】',
+        '',
+        (
+          example.tenant_name ||
+          '房客姓名'
+        ) +
+          ' 您好：',
+        '',
+        title ||
+          '公告標題',
+        '',
+        body ||
+          '公告內容會顯示在這裡。',
+        '',
+        '適用房間：' +
+          (
+            example.property_name ||
+            '物件名稱'
+          ) +
+          ' / ' +
+          (
+            example.room_list ||
+            '房號'
+          ),
+        '',
+        '房客入口：',
+        PAGE_DATA
+          ? PAGE_DATA.tenant_liff_url
+          : 'https://liff.line.me/2010314940-iJB1D6sN'
+      ];
+
+      document.getElementById(
+        'previewBox'
+      ).textContent =
+        preview.join(
+          '\n'
+        );
+
+      document.getElementById(
+        'titleCount'
+      ).textContent =
+        title.length +
+        ' / 80';
+
+      document.getElementById(
+        'bodyCount'
+      ).textContent =
+        body.length +
+        ' / 1200';
+    }
+
+    function filterTenantRows() {
+      const keyword =
+        inputValue(
+          'tenantSearch'
+        ).toLowerCase();
+
+      document.querySelectorAll(
+        '.tenant-row'
+      ).forEach(
+        function (row) {
+          row.style.display =
+            !keyword ||
+            rawText(
+              row.dataset.search
+            ).indexOf(
+              keyword
+            ) >= 0
+              ? 'flex'
+              : 'none';
+        }
+      );
+    }
+
+    function toggleVisibleTenants() {
+      const visible = Array.from(
+        document.querySelectorAll(
+          '.tenant-row'
+        )
+      ).filter(
+        function (row) {
+          return (
+            row.style.display !==
+            'none'
+          );
+        }
+      );
+
+      const shouldCheck =
+        visible.some(
+          function (row) {
+            const checkbox =
+              row.querySelector(
+                '.tenant-check'
+              );
+
+            return (
+              checkbox &&
+              !checkbox.checked
+            );
+          }
+        );
+
+      visible.forEach(
+        function (row) {
+          const checkbox =
+            row.querySelector(
+              '.tenant-check'
+            );
+
+          if (checkbox) {
+            checkbox.checked =
+              shouldCheck;
+          }
+        }
+      );
+
+      updateAudienceSummary();
+    }
+
+    function clearCompose() {
+      document.getElementById(
+        'title'
+      ).value =
+        '';
+
+      document.getElementById(
+        'body'
+      ).value =
+        '';
+
+      document.getElementById(
+        'category'
+      ).value =
+        'general';
+
+      document.getElementById(
+        'priority'
+      ).value =
+        'normal';
+
+      document.getElementById(
+        'audienceType'
+      ).value =
+        'all';
+
+      document.getElementById(
+        'audienceProperty'
+      ).value =
+        '';
+
+      document.querySelectorAll(
+        '.tenant-check'
+      ).forEach(
+        function (checkbox) {
+          checkbox.checked =
+            false;
+        }
+      );
+
+      handleAudienceChange();
+    }
+
+    async function sendAnnouncement() {
+      if (sending) {
+        return;
+      }
+
+      const title =
+        inputValue(
+          'title'
+        );
+
+      const body =
+        inputValue(
+          'body'
+        );
+
+      const audienceType =
+        inputValue(
+          'audienceType'
+        ) ||
+        'all';
+
+      const propertyId =
+        inputValue(
+          'audienceProperty'
+        );
+
+      const tenantIds =
+        selectedTenantIds();
+
+      const recipients =
+        currentAudienceRecipients();
+
+      if (
+        title.length < 2
+      ) {
+        showToast(
+          '請輸入至少 2 個字的公告標題。',
+          true
+        );
+
+        return;
+      }
+
+      if (
+        body.length < 2
+      ) {
+        showToast(
+          '請輸入至少 2 個字的公告內容。',
+          true
+        );
+
+        return;
+      }
+
+      if (
+        audienceType ===
+          'property' &&
+        !propertyId
+      ) {
+        showToast(
+          '請選擇公告物件。',
+          true
+        );
+
+        return;
+      }
+
+      if (
+        audienceType ===
+          'selected' &&
+        tenantIds.length ===
+          0
+      ) {
+        showToast(
+          '請至少選擇一位房客。',
+          true
+        );
+
+        return;
+      }
+
+      if (
+        recipients.length ===
+        0
+      ) {
+        showToast(
+          '目前發送條件沒有房客。',
+          true
+        );
+
+        return;
+      }
+
+      const boundCount =
+        recipients.filter(
+          function (recipient) {
+            return (
+              recipient.binding_status ===
+              'bound'
+            );
+          }
+        ).length;
+
+      const confirmed =
+        window.confirm(
+          '確定立即發送此公告？\n\n' +
+          '目標房客：' +
+          recipients.length +
+          ' 位\n' +
+          '目前可送達：' +
+          boundCount +
+          ' 位\n' +
+          '未綁定或衝突：' +
+          (
+            recipients.length -
+            boundCount
+          ) +
+          ' 位'
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          'sendButton'
+        );
+
+      sending =
+        true;
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        '公告發送中...';
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_announcement_send',
+            {
+              title:
+                title,
+              body:
+                body,
+              category:
+                inputValue(
+                  'category'
+                ) ||
+                'general',
+              priority:
+                inputValue(
+                  'priority'
+                ) ||
+                'normal',
+              audience_type:
+                audienceType,
+              property_id:
+                propertyId,
+              tenant_ids_json:
+                JSON.stringify(
+                  tenantIds
+                )
+            }
+          );
+
+        const data =
+          result &&
+          result.data
+            ? result.data
+            : {};
+
+        if (
+          !result ||
+          (
+            result.success !==
+              true &&
+            Number(
+              data.sent_count ||
+              0
+            ) ===
+              0
+          )
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '公告發送失敗'
+          );
+        }
+
+        showToast(
+          '公告已送達 ' +
+          Number(
+            data.sent_count ||
+            0
+          ) +
+          ' 位' +
+          (
+            Number(
+              data.failed_count ||
+              0
+            ) > 0
+              ? '，失敗 ' +
+                data.failed_count +
+                ' 位'
+              : ''
+          ) +
+          (
+            Number(
+              data.unbound_count ||
+              0
+            ) > 0
+              ? '，未綁定 ' +
+                data.unbound_count +
+                ' 位'
+              : ''
+          )
+        );
+
+        clearCompose();
+
+        await loadPage(
+          false
+        );
+
+      } catch (error) {
+        showToast(
+          error &&
+          error.message
+            ? error.message
+            : '公告發送失敗',
+          true
+        );
+
+      } finally {
+        sending =
+          false;
+
+        button.disabled =
+          !PAGE_DATA.can_send;
+
+        button.textContent =
+          '立即發送公告';
+      }
+    }
+
+    async function retryAnnouncement(index) {
+      const item =
+        PAGE_DATA.announcements[
+          index
+        ];
+
+      if (
+        Number(
+          item.pending_retry_count ||
+          0
+        ) ===
+        0
+      ) {
+        showToast(
+          '此公告沒有需要重試的房客。'
+        );
+
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          '確定重試此公告的未送達房客？\n\n' +
+          '待重試：' +
+          Number(
+            item.pending_retry_count ||
+            0
+          ) +
+          ' 位'
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        showToast(
+          '正在重試公告送達...'
+        );
+
+        const result =
+          await jsonpRequest(
+            'landlord_announcement_retry',
+            {
+              announcement_id:
+                item.announcement_id
+            }
+          );
+
+        const data =
+          result &&
+          result.data
+            ? result.data
+            : {};
+
+        if (
+          !result ||
+          (
+            result.success !==
+              true &&
+            Number(
+              data.sent_now ||
+              0
+            ) ===
+              0
+          )
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '公告重試失敗'
+          );
+        }
+
+        showToast(
+          '本次送達 ' +
+          Number(
+            data.sent_now ||
+            0
+          ) +
+          ' 位' +
+          (
+            Number(
+              data.still_blocked_count ||
+              0
+            ) > 0
+              ? '，仍有 ' +
+                data.still_blocked_count +
+                ' 位未完成綁定'
+              : ''
+          )
+        );
+
+        await loadPage(
+          false
+        );
+
+      } catch (error) {
+        showToast(
+          error &&
+          error.message
+            ? error.message
+            : '公告重試失敗',
+          true
+        );
+      }
+    }
+
+    function toggleRecipientDetail(index) {
+      document.getElementById(
+        'recipientDetail_' +
+        index
+      ).classList.toggle(
+        'show'
+      );
+    }
+
+    function renderLoading() {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">公告資料載入中</div>
+          正在讀取房客、租約與 LINE 綁定狀態。
+        </section>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">
+            公告資料載入失敗
+          </div>
+
+          ${safeHtml(
+            message ||
+            '未知錯誤'
+          )}
+
+          <button
+            class="retry-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+    }
+
+    async function loadPage(showLoading) {
+      const historyFilter =
+        inputValue(
+          'historyFilter'
+        ) ||
+        (
+          PAGE_DATA
+            ? PAGE_DATA.history_filter
+            : 'all'
+        );
+
+      if (
+        showLoading !==
+        false
+      ) {
+        renderLoading();
+      }
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLine();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'landlord_announcements_init',
+            {
+              history_filter:
+                historyFilter
+            }
+          );
+
+        if (
+          !result ||
+          result.success !==
+            true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '公告資料載入失敗'
+          );
+        }
+
+        PAGE_DATA =
+          result.data ||
+          {};
+
+        renderPage();
+
+      } catch (error) {
+        renderError(
+          error &&
+          error.message
+            ? error.message
+            : String(
+                error
+              )
+        );
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    if (
+      window.visualViewport
+    ) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
