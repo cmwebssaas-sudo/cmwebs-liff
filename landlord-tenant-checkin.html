@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 房客報到管理</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 68px;
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+      --purple: #7654c4;
+      --purple-soft: #f3efff;
+      --blue: #1a73e8;
+      --blue-soft: #edf4ff;
+      --orange: #ef8f00;
+      --orange-soft: #fff5df;
+      --danger: #d93025;
+      --danger-soft: #fff0ef;
+      --gray-soft: #f0f2f5;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-soft: #fafbfc;
+      --text: #1d2025;
+      --muted: #747a83;
+      --border: #e7eaee;
+      --shadow: 0 10px 34px rgba(25, 35, 55, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 650px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 100% 0%,
+          rgba(118, 84, 196, 0.1),
+          transparent 28%
+        ),
+        var(--page-bg);
+    }
+
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding:
+        max(16px, env(safe-area-inset-top))
+        15px
+        calc(
+          var(--nav-height) +
+          22px +
+          env(safe-area-inset-bottom)
+        );
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .eyebrow {
+      color: var(--purple);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .page-title {
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.35px;
+    }
+
+    .refresh-button {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #ffffff;
+      color: #5f6670;
+      font-size: 19px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .card {
+      margin-bottom: 13px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      color: #ffffff;
+      background:
+        linear-gradient(
+          145deg,
+          #6542ad 0%,
+          #7654c4 58%,
+          #5e3ca9 100%
+        );
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -65px;
+      right: -45px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      content: "";
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-label {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .workspace-name {
+      margin-top: 5px;
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .hero-desc {
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 15px;
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 9px 7px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .summary-label {
+      overflow: hidden;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 7px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .summary-value {
+      margin-top: 4px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .filters-card {
+      padding: 14px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .input,
+    .select {
+      height: 43px;
+      padding: 0 11px;
+    }
+
+    .textarea {
+      min-height: 86px;
+      padding: 10px 11px;
+      resize: vertical;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: rgba(118, 84, 196, 0.55);
+      box-shadow: 0 0 0 3px rgba(118, 84, 196, 0.08);
+    }
+
+    .notice-note {
+      margin-top: 10px;
+      padding: 10px 11px;
+      border: 1px solid #d9d0f3;
+      border-radius: 11px;
+      background: var(--purple-soft);
+      color: #5c478e;
+      font-size: 9px;
+      line-height: 1.65;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 18px 2px 9px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section-count {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .checkin-card {
+      padding: 14px;
+    }
+
+    .checkin-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+    }
+
+    .room-avatar {
+      width: 45px;
+      height: 45px;
+      flex: 0 0 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: var(--purple-soft);
+      color: var(--purple);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .checkin-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .checkin-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .checkin-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .badge {
+      padding: 4px 7px;
+      border-radius: 999px;
+      font-size: 8px;
+      font-weight: 900;
+    }
+
+    .badge.ready {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .badge.pending {
+      background: var(--orange-soft);
+      color: #9b6200;
+    }
+
+    .badge.upcoming {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .badge.completed {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .badge.unbound {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .badge.cancelled {
+      background: var(--gray-soft);
+      color: #6c727b;
+    }
+
+    .badge.bound {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .checkin-meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .data-item {
+      min-width: 0;
+      padding: 8px;
+      border-radius: 9px;
+      background: var(--surface-soft);
+    }
+
+    .data-label {
+      color: var(--muted);
+      font-size: 7px;
+    }
+
+    .data-value {
+      margin-top: 3px;
+      overflow: hidden;
+      font-size: 10px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-note {
+      margin-top: 10px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      font-size: 8px;
+      line-height: 1.6;
+    }
+
+    .status-note.unbound {
+      border: 1px solid #d9d0f3;
+      background: var(--purple-soft);
+      color: #5c478e;
+    }
+
+    .status-note.error {
+      border: 1px solid #f0cfcc;
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .status-note.success {
+      border: 1px solid #cde9d7;
+      background: var(--primary-soft);
+      color: #386b4a;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 11px;
+      padding-top: 11px;
+      border-top: 1px solid var(--border);
+    }
+
+    .action-button {
+      min-height: 41px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 9px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .action-button.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .action-button.purple {
+      border-color: #d9d0f3;
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .action-button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .loading-card,
+    .error-card,
+    .empty-card {
+      padding: 30px 18px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 14px;
+      border: 3px solid #e5e9ed;
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-title,
+    .error-title {
+      margin-bottom: 7px;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .error-title {
+      color: var(--danger);
+    }
+
+    .retry-button {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 15px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      z-index: 2000;
+      inset: 0;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      background: rgba(28, 31, 36, 0.46);
+      backdrop-filter: blur(3px);
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-height:
+        calc(
+          var(--app-height) -
+          max(22px, env(safe-area-inset-top))
+        );
+      overflow-y: auto;
+      border-radius: 22px 22px 0 0;
+      background: #ffffff;
+      padding:
+        18px
+        16px
+        calc(
+          18px +
+          env(safe-area-inset-bottom)
+        );
+      box-shadow: 0 -12px 40px rgba(25, 35, 55, 0.18);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .modal-desc {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .close-button {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: #606873;
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .modal-field {
+      margin-bottom: 12px;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    .modal-button {
+      min-height: 47px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .modal-button.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .toast {
+      position: absolute;
+      z-index: 2600;
+      right: 16px;
+      bottom:
+        calc(
+          var(--nav-height) +
+          18px +
+          env(safe-area-inset-bottom)
+        );
+      left: 16px;
+      max-width: 470px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: 13px;
+      background: #22252a;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.55;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+
+    .bottom-nav {
+      position: absolute;
+      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border-top: 1px solid #e8ecf1;
+      background: rgba(255, 255, 255, 0.98);
+      padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: #8b919a;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .nav-item.active::after {
+      position: absolute;
+      bottom: 5px;
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      content: "";
+    }
+
+    @media (max-width: 520px) {
+      .summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .filter-grid,
+      .modal-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .data-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <main class="page">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Tenant Check-in</div>
+          <div class="page-title">房客報到管理</div>
+        </div>
+
+        <button
+          class="refresh-button"
+          type="button"
+          onclick="loadPage()"
+        >
+          ↻
+        </button>
+      </div>
+
+      <div id="app">
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">報到資料載入中</div>
+          正在讀取租約、房間與 LINE 綁定狀態。
+        </section>
+      </div>
+    </main>
+
+    <div id="modal" class="modal-overlay" onclick="handleOverlayClick(event)">
+      <section class="modal-sheet">
+        <div class="modal-head">
+          <div>
+            <div id="modalTitle" class="modal-title">管理報到</div>
+            <div id="modalDesc" class="modal-desc"></div>
+          </div>
+
+          <button
+            class="close-button"
+            type="button"
+            onclick="closeModal()"
+          >
+            ×
+          </button>
+        </div>
+
+        <input id="modalContractId" type="hidden" />
+
+        <div class="modal-grid">
+          <div class="modal-field">
+            <div class="field-label">預定報到日</div>
+
+            <input
+              id="modalScheduledDate"
+              class="input"
+              type="date"
+            />
+          </div>
+
+          <div class="modal-field">
+            <div class="field-label">報到狀態</div>
+
+            <select id="modalStatus" class="select">
+              <option value="pending">待報到</option>
+              <option value="completed">已完成報到</option>
+              <option value="cancelled">取消報到</option>
+            </select>
+          </div>
+
+          <div class="modal-field">
+            <div class="field-label">鑰匙交付</div>
+
+            <select id="modalKeyStatus" class="select">
+              <option value="pending">尚未交付</option>
+              <option value="completed">已完成交付</option>
+              <option value="not_required">不需交付</option>
+            </select>
+          </div>
+
+          <div class="modal-field">
+            <div class="field-label">入住電錶</div>
+
+            <input
+              id="modalFirstMeter"
+              class="input"
+              type="number"
+              min="0"
+              step="0.001"
+              placeholder="選填"
+            />
+          </div>
+        </div>
+
+        <div class="modal-field">
+          <div class="field-label">報到備註</div>
+
+          <textarea
+            id="modalNote"
+            class="textarea"
+            maxlength="1000"
+            placeholder="例如：鑰匙 2 支、門禁卡 1 張、設備點交完成"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            class="modal-button"
+            type="button"
+            onclick="closeModal()"
+          >
+            取消
+          </button>
+
+          <button
+            id="saveButton"
+            class="modal-button primary"
+            type="button"
+            onclick="saveCheckin()"
+          >
+            儲存報到資料
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg>
+          <span>首頁</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg>
+          <span>欠款</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+          </svg>
+          <span>房客</span>
+        </button>
+
+        <button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg>
+          <span>更多</span>
+        </button>
+      </div>
+    </nav>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
+
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+
+    const URL_PARAMS =
+      new URLSearchParams(
+        location.search
+      );
+
+    const TEST_MODE =
+      URL_PARAMS.get('test') ===
+      '1';
+
+    let LINE_USER_ID = '';
+    let PAGE_DATA = null;
+    let toastTimer = null;
+    let ACTIVE_INDEX = -1;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        Math.round(height) + 'px'
+      );
+    }
+
+    function rawText(value) {
+      return value === undefined || value === null
+        ? ''
+        : String(value);
+    }
+
+    function safeHtml(value) {
+      return rawText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function inputValue(id) {
+      const element =
+        document.getElementById(
+          id
+        );
+
+      return element
+        ? rawText(
+            element.value
+          ).trim()
+        : '';
+    }
+
+    function goPage(page) {
+      const separator =
+        page.indexOf('?') >= 0
+          ? '&'
+          : '?';
+
+      location.href =
+        page +
+        separator +
+        'v=' +
+        Date.now() +
+        (
+          TEST_MODE
+            ? '&test=1'
+            : ''
+        );
+    }
+
+    function buildLandlordLoginRedirectUri() {
+      const currentUrl =
+        new URL(
+          location.href
+        );
+
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(
+        function (key) {
+          currentUrl.searchParams.delete(
+            key
+          );
+        }
+      );
+
+      const returnTo =
+        currentUrl.pathname
+          .split('/')
+          .pop() +
+        (
+          currentUrl.searchParams
+            .toString()
+            ? '?' +
+              currentUrl.searchParams
+                .toString()
+            : ''
+        );
+
+      sessionStorage.setItem(
+        'cmwebs_landlord_return_to',
+        returnTo
+      );
+
+      const entryUrl =
+        new URL(
+          LANDLORD_ENTRY_URL
+        );
+
+      entryUrl.searchParams.set(
+        'return_to',
+        returnTo
+      );
+
+      return entryUrl.href;
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+
+        return true;
+      }
+
+      await liff.init({
+        liffId:
+          LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri:
+            buildLandlordLoginRedirectUri()
+        });
+
+        return false;
+      }
+
+      const profile =
+        await liff.getProfile();
+
+      LINE_USER_ID =
+        profile.userId ||
+        '';
+
+      return true;
+    }
+
+    function showToast(
+      message,
+      isError
+    ) {
+      const toast =
+        document.getElementById(
+          'toast'
+        );
+
+      clearTimeout(
+        toastTimer
+      );
+
+      toast.textContent =
+        message ||
+        '';
+
+      toast.className =
+        isError
+          ? 'toast error show'
+          : 'toast show';
+
+      toastTimer =
+        setTimeout(
+          function () {
+            toast.className =
+              'toast';
+          },
+          3200
+        );
+    }
+
+    function jsonpRequest(
+      action,
+      params,
+      retryCount
+    ) {
+      return new Promise(
+        function (resolve, reject) {
+          const callbackName =
+            '__cmwebs_checkin_' +
+            Date.now() +
+            '_' +
+            Math.floor(
+              Math.random() *
+              1000000
+            );
+
+          const script =
+            document.createElement(
+              'script'
+            );
+
+          let finished =
+            false;
+
+          const timer =
+            setTimeout(
+              function () {
+                if (finished) {
+                  return;
+                }
+
+                finished =
+                  true;
+
+                cleanup();
+
+                if (
+                  Number(
+                    retryCount ||
+                    0
+                  ) <
+                  1
+                ) {
+                  jsonpRequest(
+                    action,
+                    params,
+                    1
+                  ).then(
+                    resolve
+                  ).catch(
+                    reject
+                  );
+
+                  return;
+                }
+
+                reject(
+                  new Error(
+                    'API 載入逾時，請確認房客報到後端已部署。'
+                  )
+                );
+              },
+              45000
+            );
+
+          function cleanup() {
+            clearTimeout(
+              timer
+            );
+
+            if (
+              script.parentNode
+            ) {
+              script.parentNode.removeChild(
+                script
+              );
+            }
+
+            try {
+              delete window[
+                callbackName
+              ];
+            } catch (error) {
+              window[
+                callbackName
+              ] =
+                undefined;
+            }
+          }
+
+          window[
+            callbackName
+          ] =
+            function (result) {
+              if (finished) {
+                return;
+              }
+
+              finished =
+                true;
+
+              cleanup();
+
+              resolve(
+                result
+              );
+            };
+
+          let url =
+            API_URL +
+            '?v2_action=' +
+            encodeURIComponent(
+              action
+            ) +
+            '&line_user_id=' +
+            encodeURIComponent(
+              LINE_USER_ID
+            ) +
+            '&callback=' +
+            encodeURIComponent(
+              callbackName
+            ) +
+            '&_=' +
+            Date.now();
+
+          Object.keys(
+            params ||
+            {}
+          ).forEach(
+            function (key) {
+              url +=
+                '&' +
+                encodeURIComponent(
+                  key
+                ) +
+                '=' +
+                encodeURIComponent(
+                  params[
+                    key
+                  ]
+                );
+            }
+          );
+
+          script.onerror =
+            function () {
+              if (finished) {
+                return;
+              }
+
+              finished =
+                true;
+
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 路由執行失敗'
+                )
+              );
+            };
+
+          script.src =
+            url;
+
+          document.body.appendChild(
+            script
+          );
+        }
+      );
+    }
+
+    function getSelectedProperty() {
+      return inputValue(
+        'propertyFilter'
+      );
+    }
+
+    function getStatusFilter() {
+      return inputValue(
+        'statusFilter'
+      ) ||
+      'all';
+    }
+
+    function propertyOptions() {
+      return `
+        <option value="">全部物件</option>
+        ${
+          (
+            PAGE_DATA.properties ||
+            []
+          ).map(
+            function (property) {
+              return `
+                <option
+                  value="${safeHtml(property.property_id)}"
+                  ${
+                    property.property_id ===
+                    PAGE_DATA.selected_property_id
+                      ? 'selected'
+                      : ''
+                  }
+                >
+                  ${safeHtml(property.property_name)}
+                </option>
+              `;
+            }
+          ).join('')
+        }
+      `;
+    }
+
+    function statusOptions() {
+      const options = [
+        ['all', '全部狀態'],
+        ['ready', '可報到'],
+        ['unbound', '尚未綁定 LINE'],
+        ['upcoming', '即將入住'],
+        ['pending', '待報到'],
+        ['completed', '已完成'],
+        ['cancelled', '已取消']
+      ];
+
+      return options.map(
+        function (option) {
+          return `
+            <option
+              value="${option[0]}"
+              ${
+                option[0] ===
+                PAGE_DATA.status_filter
+                  ? 'selected'
+                  : ''
+              }
+            >
+              ${option[1]}
+            </option>
+          `;
+        }
+      ).join('');
+    }
+
+    function renderPage() {
+      const workspace =
+        PAGE_DATA.workspace ||
+        {};
+
+      const summary =
+        PAGE_DATA.summary ||
+        {};
+
+      const items =
+        PAGE_DATA.items ||
+        [];
+
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card hero">
+          <div class="hero-content">
+            <div class="hero-label">目前管理團隊</div>
+
+            <div class="workspace-name">
+              ${safeHtml(
+                workspace.workspace_name ||
+                '-'
+              )}
+            </div>
+
+            <div class="hero-desc">
+              管理房客 LINE 綁定、預定入住、鑰匙交付與完成報到狀態。
+            </div>
+
+            <div class="summary-grid">
+              ${summaryItem('可報到', summary.ready_count)}
+              ${summaryItem('未綁定', summary.unbound_count)}
+              ${summaryItem('即將入住', summary.upcoming_count)}
+              ${summaryItem('待報到', summary.pending_count)}
+              ${summaryItem('已完成', summary.completed_count)}
+            </div>
+          </div>
+        </section>
+
+        <section class="card filters-card">
+          <div class="filter-grid">
+            <div>
+              <div class="field-label">物件</div>
+
+              <select
+                id="propertyFilter"
+                class="select"
+                onchange="loadPage(false)"
+              >
+                ${propertyOptions()}
+              </select>
+            </div>
+
+            <div>
+              <div class="field-label">報到狀態</div>
+
+              <select
+                id="statusFilter"
+                class="select"
+                onchange="loadPage(false)"
+              >
+                ${statusOptions()}
+              </select>
+            </div>
+          </div>
+
+          <div class="notice-note">
+            尚未綁定 LINE 的房客可直接複製綁定邀請；已綁定房客可發送入住通知。報到紀錄以租約為單位保存。
+          </div>
+        </section>
+
+        <div class="section-head">
+          <div class="section-title">入住租約</div>
+          <div class="section-count">${items.length} 筆</div>
+        </div>
+
+        ${
+          items.length
+            ? items.map(
+                function (item, index) {
+                  return checkinCard(
+                    item,
+                    index
+                  );
+                }
+              ).join('')
+            : `
+              <section class="card empty-card">
+                此篩選條件沒有有效或即將開始的租約。
+              </section>
+            `
+        }
+      `;
+    }
+
+    function summaryItem(
+      label,
+      value
+    ) {
+      return `
+        <div class="summary-item">
+          <div class="summary-label">
+            ${safeHtml(label)}
+          </div>
+
+          <div class="summary-value">
+            ${Number(value || 0)}
+          </div>
+        </div>
+      `;
+    }
+
+    function checkinCard(
+      item,
+      index
+    ) {
+      const lineBound =
+        Boolean(
+          item.tenant_line_user_id
+        );
+
+      const lineConflict =
+        item.tenant_line_binding_conflict ===
+        true;
+
+      const welcomeSent =
+        item.welcome_sent_status ===
+        'sent';
+
+      return `
+        <section class="card checkin-card">
+          <div class="checkin-head">
+            <div class="room-avatar">
+              ${safeHtml(
+                rawText(
+                  item.room_name ||
+                  '?'
+                ).slice(
+                  0,
+                  3
+                )
+              )}
+            </div>
+
+            <div class="checkin-main">
+              <div class="checkin-title-row">
+                <span class="checkin-title">
+                  ${safeHtml(item.tenant_name || '未命名房客')}
+                </span>
+
+                <span class="badge ${safeHtml(item.display_status)}">
+                  ${safeHtml(item.display_status_label)}
+                </span>
+
+                <span class="badge ${lineBound ? 'bound' : 'unbound'}">
+                  ${lineBound ? 'LINE 已綁定' : 'LINE 未綁定'}
+                </span>
+              </div>
+
+              <div class="checkin-meta">
+                ${safeHtml(item.property_name || '-')}
+                ・
+                ${safeHtml(item.room_name || '-')}
+                ・
+                ${safeHtml(item.tenant_phone || '未填手機')}
+              </div>
+            </div>
+          </div>
+
+          <div class="data-grid">
+            ${dataItem('租約開始', item.contract_start_date || '-')}
+            ${dataItem('租約結束', item.contract_end_date || '-')}
+            ${dataItem('預定報到', item.scheduled_checkin_date || '-')}
+            ${dataItem('鑰匙交付', keyStatusLabel(item.key_handover_status))}
+          </div>
+
+          ${
+            item.checked_in_at
+              ? `
+                <div class="status-note success">
+                  已於 ${safeHtml(item.checked_in_at)} 完成報到。
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            !lineBound
+              ? `
+                <div class="status-note unbound">
+                  尚未找到房客 LINE UID。請複製綁定邀請傳給房客，完成後重新整理本頁。
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            lineConflict
+              ? `
+                <div class="status-note error">
+                  此房客找到多個 LINE UID，暫停發送通知，請先整理綁定資料。
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            item.welcome_last_error
+              ? `
+                <div class="status-note error">
+                  最近通知失敗：${safeHtml(item.welcome_last_error)}
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            welcomeSent
+              ? `
+                <div class="status-note success">
+                  入住通知已發送 ${Number(item.welcome_send_count || 0)} 次
+                  ${
+                    item.welcome_sent_at
+                      ? '・最近 ' +
+                        safeHtml(item.welcome_sent_at)
+                      : ''
+                  }
+                </div>
+              `
+              : ''
+          }
+
+          <div class="action-grid">
+            <button
+              class="action-button purple"
+              type="button"
+              onclick="openModal(${index})"
+              ${PAGE_DATA.can_manage ? '' : 'disabled'}
+            >
+              管理報到
+            </button>
+
+            ${
+              lineBound &&
+              !lineConflict
+                ? `
+                  <button
+                    class="action-button primary"
+                    type="button"
+                    onclick="sendWelcome(${index})"
+                    ${PAGE_DATA.can_manage ? '' : 'disabled'}
+                  >
+                    ${welcomeSent ? '重新發送入住通知' : '發送入住通知'}
+                  </button>
+                `
+                : `
+                  <button
+                    class="action-button"
+                    type="button"
+                    onclick="copyBindingInvitation(${index})"
+                  >
+                    複製綁定邀請
+                  </button>
+                `
+            }
+          </div>
+        </section>
+      `;
+    }
+
+    function dataItem(
+      label,
+      value
+    ) {
+      return `
+        <div class="data-item">
+          <div class="data-label">
+            ${safeHtml(label)}
+          </div>
+
+          <div class="data-value">
+            ${safeHtml(value)}
+          </div>
+        </div>
+      `;
+    }
+
+    function keyStatusLabel(
+      status
+    ) {
+      const labels = {
+        pending:
+          '尚未交付',
+        completed:
+          '已完成',
+        not_required:
+          '不需交付'
+      };
+
+      return labels[
+        status
+      ] ||
+      '尚未交付';
+    }
+
+    function openModal(index) {
+      const item =
+        PAGE_DATA.items[
+          index
+        ];
+
+      ACTIVE_INDEX =
+        index;
+
+      document.getElementById(
+        'modalContractId'
+      ).value =
+        item.contract_id ||
+        '';
+
+      document.getElementById(
+        'modalTitle'
+      ).textContent =
+        '管理 ' +
+        (
+          item.room_name ||
+          ''
+        ) +
+        ' 報到';
+
+      document.getElementById(
+        'modalDesc'
+      ).textContent =
+        (
+          item.tenant_name ||
+          '房客'
+        ) +
+        '・' +
+        (
+          item.property_name ||
+          ''
+        ) +
+        '・租約 ' +
+        (
+          item.contract_start_date ||
+          '-'
+        ) +
+        ' 至 ' +
+        (
+          item.contract_end_date ||
+          '-'
+        );
+
+      document.getElementById(
+        'modalScheduledDate'
+      ).value =
+        item.scheduled_checkin_date ||
+        item.contract_start_date ||
+        '';
+
+      document.getElementById(
+        'modalStatus'
+      ).value =
+        item.checkin_status ||
+        'pending';
+
+      document.getElementById(
+        'modalKeyStatus'
+      ).value =
+        item.key_handover_status ||
+        'pending';
+
+      document.getElementById(
+        'modalFirstMeter'
+      ).value =
+        item.first_meter_reading !==
+          undefined &&
+        item.first_meter_reading !==
+          null
+          ? item.first_meter_reading
+          : '';
+
+      document.getElementById(
+        'modalNote'
+      ).value =
+        item.note ||
+        '';
+
+      document.getElementById(
+        'modal'
+      ).classList.add(
+        'show'
+      );
+    }
+
+    function closeModal() {
+      document.getElementById(
+        'modal'
+      ).classList.remove(
+        'show'
+      );
+
+      ACTIVE_INDEX =
+        -1;
+    }
+
+    function handleOverlayClick(
+      event
+    ) {
+      if (
+        event.target.id ===
+        'modal'
+      ) {
+        closeModal();
+      }
+    }
+
+    async function saveCheckin() {
+      const button =
+        document.getElementById(
+          'saveButton'
+        );
+
+      const contractId =
+        inputValue(
+          'modalContractId'
+        );
+
+      if (!contractId) {
+        showToast(
+          '缺少租約編號。',
+          true
+        );
+
+        return;
+      }
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        '儲存中...';
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_tenant_checkin_save',
+            {
+              contract_id:
+                contractId,
+              scheduled_checkin_date:
+                inputValue(
+                  'modalScheduledDate'
+                ),
+              checkin_status:
+                inputValue(
+                  'modalStatus'
+                ),
+              key_handover_status:
+                inputValue(
+                  'modalKeyStatus'
+                ),
+              first_meter_reading:
+                inputValue(
+                  'modalFirstMeter'
+                ),
+              note:
+                inputValue(
+                  'modalNote'
+                )
+            }
+          );
+
+        if (
+          !result ||
+          result.success !==
+          true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '報到資料儲存失敗'
+          );
+        }
+
+        closeModal();
+
+        showToast(
+          result.message ||
+          '報到資料已儲存'
+        );
+
+        await loadPage(
+          false
+        );
+
+      } catch (error) {
+        showToast(
+          error &&
+          error.message
+            ? error.message
+            : '報到資料儲存失敗',
+          true
+        );
+
+      } finally {
+        button.disabled =
+          false;
+
+        button.textContent =
+          '儲存報到資料';
+      }
+    }
+
+    async function sendWelcome(index) {
+      const item =
+        PAGE_DATA.items[
+          index
+        ];
+
+      const resend =
+        Number(
+          item.welcome_send_count ||
+          0
+        ) > 0;
+
+      const confirmed =
+        window.confirm(
+          resend
+            ? '確定重新發送入住通知給 ' +
+              item.tenant_name +
+              '？'
+            : '確定發送入住通知給 ' +
+              item.tenant_name +
+              '？'
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        showToast(
+          '入住通知發送中...'
+        );
+
+        const result =
+          await jsonpRequest(
+            'landlord_tenant_checkin_send_welcome',
+            {
+              contract_id:
+                item.contract_id
+            }
+          );
+
+        if (
+          !result ||
+          result.success !==
+          true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '入住通知發送失敗'
+          );
+        }
+
+        showToast(
+          result.message ||
+          '入住通知已發送'
+        );
+
+        await loadPage(
+          false
+        );
+
+      } catch (error) {
+        showToast(
+          error &&
+          error.message
+            ? error.message
+            : '入住通知發送失敗',
+          true
+        );
+      }
+    }
+
+    async function copyBindingInvitation(index) {
+      const item =
+        PAGE_DATA.items[
+          index
+        ];
+
+      const text =
+        item.binding_invitation_text ||
+        '';
+
+      if (!text) {
+        showToast(
+          '沒有可複製的綁定邀請。',
+          true
+        );
+
+        return;
+      }
+
+      try {
+        if (
+          navigator.clipboard &&
+          navigator.clipboard.writeText
+        ) {
+          await navigator.clipboard.writeText(
+            text
+          );
+
+        } else {
+          const textarea =
+            document.createElement(
+              'textarea'
+            );
+
+          textarea.value =
+            text;
+
+          textarea.style.position =
+            'fixed';
+
+          textarea.style.opacity =
+            '0';
+
+          document.body.appendChild(
+            textarea
+          );
+
+          textarea.select();
+
+          document.execCommand(
+            'copy'
+          );
+
+          document.body.removeChild(
+            textarea
+          );
+        }
+
+        showToast(
+          '已複製房客綁定邀請'
+        );
+
+      } catch (error) {
+        window.prompt(
+          '請複製以下內容：',
+          text
+        );
+      }
+    }
+
+    function renderLoading() {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card loading-card">
+          <div class="loading-spinner"></div>
+          <div class="loading-title">報到資料載入中</div>
+          正在讀取租約、房間與 LINE 綁定狀態。
+        </section>
+      `;
+    }
+
+    function renderError(message) {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card error-card">
+          <div class="error-title">
+            報到資料載入失敗
+          </div>
+
+          ${safeHtml(
+            message ||
+            '未知錯誤'
+          )}
+
+          <button
+            class="retry-button"
+            type="button"
+            onclick="loadPage()"
+          >
+            重新整理
+          </button>
+        </section>
+      `;
+    }
+
+    async function loadPage(showLoading) {
+      const propertyId =
+        getSelectedProperty();
+
+      const statusFilter =
+        getStatusFilter();
+
+      if (
+        showLoading !==
+        false
+      ) {
+        renderLoading();
+      }
+
+      try {
+        if (!LINE_USER_ID) {
+          const ready =
+            await initLine();
+
+          if (!ready) {
+            return;
+          }
+        }
+
+        const result =
+          await jsonpRequest(
+            'landlord_tenant_checkins_init',
+            {
+              property_id:
+                propertyId,
+              status_filter:
+                statusFilter
+            }
+          );
+
+        if (
+          !result ||
+          result.success !==
+          true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '報到資料載入失敗'
+          );
+        }
+
+        PAGE_DATA =
+          result.data ||
+          {};
+
+        renderPage();
+
+      } catch (error) {
+        renderError(
+          error &&
+          error.message
+            ? error.message
+            : String(
+                error
+              )
+        );
+      }
+    }
+
+    setAppHeight();
+
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+
+    if (
+      window.visualViewport
+    ) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>
