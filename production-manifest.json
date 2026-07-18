@@ -1,0 +1,560 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-18T00:00:00+08:00",
+  "project": {
+    "project_name": "CMWebs 智慧租管",
+    "project_line": "CMWebs 智能租管（台灣長租房東管理 SaaS）",
+    "handoff_date": "2026-07-18",
+    "timezone": "Asia/Taipei",
+    "repository": "https://github.com/cmwebssaas-sudo/cmwebs-liff",
+    "github_pages_base": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
+    "apps_script_web_app": "https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec",
+    "tenant_liff_id": "2010314940-iJB1D6sN",
+    "tenant_liff_url": "https://liff.line.me/2010314940-iJB1D6sN",
+    "landlord_liff_id": "2010314940-EjX1qbb8",
+    "landlord_liff_url": "https://liff.line.me/2010314940-EjX1qbb8",
+    "test_tenant_line_uid": "U3615a7ed919c1a4a438a246c10784d70",
+    "test_landlord_line_uid": "Uf708ece75c9c985cfe1dbda48d123511",
+    "source_of_truth_status": "production-candidate-only",
+    "warning": "候選檔案必須與 GitHub main、實際部署的 Apps Script 專案及目前試算表 Schema 完成對帳後，才能標記為 Production baseline。"
+  },
+  "route_count": 68,
+  "routes": [
+    "tenant_binding_status",
+    "tenant_bind_submit",
+    "landlord_entry_status",
+    "landlord_register_submit",
+    "landlord_onboarding_init",
+    "landlord_onboarding_save",
+    "landlord_onboarding_complete",
+    "landlord_team_init",
+    "landlord_team_invite_create",
+    "landlord_team_invite_cancel",
+    "landlord_team_member_update",
+    "landlord_team_member_remove",
+    "landlord_invitation_init",
+    "landlord_invitation_accept",
+    "landlord_workspace_activity_init",
+    "landlord_notifications_init",
+    "landlord_notification_mark_read",
+    "landlord_notifications_mark_all_read",
+    "landlord_settings_init",
+    "landlord_settings_save_profile",
+    "landlord_settings_save_workspace",
+    "landlord_settings_save_payment",
+    "landlord_settings_save_preferences",
+    "landlord_announcements_init",
+    "landlord_announcement_send",
+    "landlord_announcement_retry",
+    "landlord_tenant_checkins_init",
+    "landlord_tenant_checkin_save",
+    "landlord_tenant_checkin_send_welcome",
+    "landlord_bill_notifications_init",
+    "landlord_bill_notifications_send",
+    "landlord_billing_init",
+    "landlord_bills_generate",
+    "landlord_tenant_create_init",
+    "landlord_tenant_create",
+    "landlord_properties_init",
+    "landlord_property_save",
+    "landlord_property_archive",
+    "landlord_room_save",
+    "landlord_room_archive",
+    "landlord_workspace_create",
+    "landlord_workspace_context",
+    "landlord_workspace_switch",
+    "tenant_home",
+    "tenant_payment_report_init",
+    "tenant_payment_report_submit",
+    "tenant_message_init",
+    "tenant_message_submit",
+    "tenant_bills",
+    "landlord_home",
+    "landlord_arrears",
+    "landlord_tenants",
+    "landlord_line_logs",
+    "landlord_send_tenant_message",
+    "landlord_messages_init",
+    "landlord_message_update",
+    "landlord_payment_reports_init",
+    "landlord_payment_report_update",
+    "landlord_payment_report_settle",
+    "landlord_bill_manual_settle",
+    "landlord_bill_reopen",
+    "landlord_paid_bills_init",
+    "tenant_contract_init",
+    "tenant_contract_request_submit",
+    "tenant_contract_requests",
+    "tenant_contract_request_cancel",
+    "landlord_contract_requests_init",
+    "landlord_contract_request_update"
+  ],
+  "candidate_files": [
+    {
+      "source_artifact": "Code-complete-notification-center.gs",
+      "canonical_path": "candidate-overlay/apps-script/Code.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "目前已知最新完整路由基準，包含 68 個 V2 路由。",
+      "bytes": 41841,
+      "sha256": "0eef41cec7c7b3d1e216ac2f699cfbf8757275fec08aeb8f72db1be68254d0f8"
+    },
+    {
+      "source_artifact": "V2_WORKSPACES.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_WORKSPACES.gs",
+      "included": true,
+      "confidence": "medium",
+      "note": "Workspace 基礎模組；必須與實際部署版本比對。",
+      "bytes": 49071,
+      "sha256": "af2887f168ec86f2ffe0bf0b39676a5412b4964674286d7625733e252cd03199"
+    },
+    {
+      "source_artifact": "V2_WORKSPACE_CREATION.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_WORKSPACE_CREATION.gs",
+      "included": true,
+      "confidence": "medium",
+      "note": "Workspace 建立模組。",
+      "bytes": 11702,
+      "sha256": "0724c89bf22842836e51aeab0aeb5312ebaec717874bde9ea6a0bc23e7abb165"
+    },
+    {
+      "source_artifact": "V2_WORKSPACE_LANDLORD_ACCESS_NATIVE_COMPAT.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_WORKSPACE_LANDLORD_ACCESS.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "原生 Workspace Access 相容版；不可與舊版同時存在。",
+      "bytes": 37041,
+      "sha256": "47584e8286b12324478525cb4f455fcfbaeb17d78f6fc130d3d1142157815351"
+    },
+    {
+      "source_artifact": "V2_WORKSPACE_DASHBOARD_NATIVE.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_WORKSPACE_DASHBOARD_NATIVE.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "landlord_home / landlord_arrears / landlord_tenants 原生資料來源。",
+      "bytes": 45063,
+      "sha256": "4b21b3409d1a00c6dc0474669591f85226f48de4bc5155f80d8c9f13feb27e8f"
+    },
+    {
+      "source_artifact": "V2_WORKSPACE_OPERATION_AUDIT_WITH_SYSTEM_SETTINGS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_WORKSPACE_OPERATION_AUDIT.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "包含帳單、報到、公告與系統設定操作標籤。",
+      "bytes": 22069,
+      "sha256": "d0151e788a8ab4070de9e1f61fc5132a4676810e14df0cbf73656483727dbe6d"
+    },
+    {
+      "source_artifact": "V2_TEAM_MANAGEMENT_PHONE_FIXED.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_TEAM_MANAGEMENT.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "團隊管理與電話格式修正。",
+      "bytes": 39224,
+      "sha256": "664c80098de32b42c534d2d1b695f648636352a4abfe62468b3b1945008cc63b"
+    },
+    {
+      "source_artifact": "V2_LANDLORD_ONBOARDING_MULTIWORKSPACE.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_LANDLORD_ONBOARDING.gs",
+      "included": true,
+      "confidence": "medium",
+      "note": "多 Workspace onboarding 候選版。",
+      "bytes": 46885,
+      "sha256": "2d3133d71ea109afc42690dfa6be653b47c764d033ba1cad64f3cf91cea53a51"
+    },
+    {
+      "source_artifact": "V2_LANDLORD_MANAGEMENT.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_LANDLORD_MANAGEMENT.gs",
+      "included": true,
+      "confidence": "medium",
+      "note": "房東資料基礎模組。",
+      "bytes": 32000,
+      "sha256": "0ddc2bd06d495b0624d365c3689bc9f4d88c0c3bb8948b5bcd3d203fe0bbe580"
+    },
+    {
+      "source_artifact": "V2_SYSTEM_SETTINGS_WITH_NOTIFICATION_CENTER.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_SYSTEM_SETTINGS.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "含前導 0、自動催繳同步、帳務設定與 notify_tenant_message。",
+      "bytes": 58662,
+      "sha256": "e903486bbaf73248879be1d57e8ec32084684ab7376eb462ac5f15add6fc6a81"
+    },
+    {
+      "source_artifact": "V2_SETTINGS_INTEGRATION.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_SETTINGS_INTEGRATION.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "將 Workspace 預設值接入房間、帳單與提醒。",
+      "bytes": 15772,
+      "sha256": "96da56eb8a7fea3ca300b52b0e79fa34f1a5c1d32e8f6fe0746a31cf1d86d44e"
+    },
+    {
+      "source_artifact": "V2_PROPERTY_ROOM_MANAGEMENT_WITH_SETTINGS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_PROPERTY_ROOM_MANAGEMENT.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "含季節費率、押金預設、效能修正與 Workspace 設定。",
+      "bytes": 94308,
+      "sha256": "a326031729f675e155ba8816b5ba514257b63cb18abcf6afc576bd82e483e1f3"
+    },
+    {
+      "source_artifact": "V2_BILLING_MANAGEMENT_WITH_TEAM_NOTIFICATIONS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_BILLING_MANAGEMENT.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "含上期電表 null 修正、Workspace 設定與團隊通知。",
+      "bytes": 82661,
+      "sha256": "02d62c007a5745a2744e36fec46e104c65e5e7117bf9bc1e04f78882fdac01be"
+    },
+    {
+      "source_artifact": "V2_BILL_NOTIFICATIONS_BINDING_FIXED.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_BILL_NOTIFICATIONS.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "帳單通知與房客綁定修正。",
+      "bytes": 49670,
+      "sha256": "5416ef1fae1ec1866507fb3470fbe94c6a84050487c654f96c6afbbe1280f8b5"
+    },
+    {
+      "source_artifact": "V2_AUTO_PAYMENT_REMINDER_WITH_TEAM_NOTIFICATIONS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_AUTO_PAYMENT_REMINDER.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "Workspace 排程、動態提醒天數、觸發器同步與團隊通知。",
+      "bytes": 70309,
+      "sha256": "6f8acdd0d81d4d679381fd5968e2ddf612978a31f1487472fc99b5d1a2194398"
+    },
+    {
+      "source_artifact": "V2_WORKSPACE_NOTIFICATIONS_ALL_EVENTS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_WORKSPACE_NOTIFICATIONS.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "通知中心完整事件版；使用獨立 DocumentLock。",
+      "bytes": 49276,
+      "sha256": "f6b614d4e82cfe4bcd2ab096454fa103460fda5d2b8e2383c39118287bd7ee4b"
+    },
+    {
+      "source_artifact": "V2_TENANT_PAYMENT_REPORTS_WITH_TEAM_NOTIFICATIONS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_TENANT_PAYMENT_REPORTS.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "付款回報改為 Workspace 團隊通知。",
+      "bytes": 22123,
+      "sha256": "f69ce7fd283a19602e3518c8d282bd67297256e699c189444fec72985fd314a7"
+    },
+    {
+      "source_artifact": "V2_CONTRACT_REQUESTS_WITH_TEAM_NOTIFICATIONS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_CONTRACT_REQUESTS.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "含續約、提前解約、條款、違約金與團隊通知。",
+      "bytes": 101181,
+      "sha256": "4f2179c8e9b993bc4be98ff34c4c5289642dfc0821cfd7ea0454c6698fc332f0"
+    },
+    {
+      "source_artifact": "V2_TENANT_MESSAGES_WITH_TEAM_NOTIFICATIONS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_TENANT_MESSAGES.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "房客訊息／報修與團隊通知。",
+      "bytes": 19786,
+      "sha256": "c6b30ac48602252e563e61d582dc86379164cf39baf183f525c90d6e8e04e84e"
+    },
+    {
+      "source_artifact": "V2_TENANT_CHECKIN_MANAGEMENT_WITH_TEAM_NOTIFICATIONS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_TENANT_CHECKIN_MANAGEMENT.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "報到、鑰匙、入住電表、歡迎通知與團隊通知。",
+      "bytes": 70588,
+      "sha256": "e12fbdf123aa2878e5ff1d38b28c22701a3eca878f5613729fdd2d63eead2e76"
+    },
+    {
+      "source_artifact": "V2_ANNOUNCEMENT_MANAGEMENT_WITH_TEAM_NOTIFICATIONS.gs",
+      "canonical_path": "candidate-overlay/apps-script/V2_ANNOUNCEMENT_MANAGEMENT.gs",
+      "included": true,
+      "confidence": "high",
+      "note": "公告、受眾、重試、容量整理與團隊結果通知。",
+      "bytes": 83805,
+      "sha256": "df2a10c70bde54ab26f784fbe868ea607b935ebb112c7128a466bc71ba0c780d"
+    },
+    {
+      "source_artifact": "landlord-entry-login-return-fixed.html",
+      "canonical_path": "candidate-overlay/public/landlord-entry.html",
+      "included": true,
+      "confidence": "high",
+      "note": "登入後返回原頁修正版。",
+      "bytes": 22271,
+      "sha256": "c31a3aa999bcf474f825be55458154d891204fcdcaf5e5f79d5d551822ef1c95"
+    },
+    {
+      "source_artifact": "landlord-register.html",
+      "canonical_path": "candidate-overlay/public/landlord-register.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "房東註冊頁。",
+      "bytes": 30954,
+      "sha256": "0a54eb9c7de8cdfcefd8e858bbd2c9e4ce0444eb35b705798c60b0b6e36777ef"
+    },
+    {
+      "source_artifact": "landlord-onboarding.html",
+      "canonical_path": "candidate-overlay/public/landlord-onboarding.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "房東 onboarding。",
+      "bytes": 64331,
+      "sha256": "6c68a439df9f4123d7ed80607419fb59becb78800d25dc0d0a0c9beb96542aec"
+    },
+    {
+      "source_artifact": "landlord-home-workspace-native.html",
+      "canonical_path": "candidate-overlay/public/landlord-home.html",
+      "included": true,
+      "confidence": "high",
+      "note": "Workspace 原生首頁。",
+      "bytes": 42619,
+      "sha256": "a0253ea577e8eb57dae3e8bba828a4febbc0e792f3956dff42e89e22797410a2"
+    },
+    {
+      "source_artifact": "landlord-arrears-workspace-native.html",
+      "canonical_path": "candidate-overlay/public/landlord-arrears.html",
+      "included": true,
+      "confidence": "high",
+      "note": "Workspace 原生欠款頁。",
+      "bytes": 79948,
+      "sha256": "31d8525f6780d79117d8427779b50d3134d364b4467a5c83db523cab12a4b9d1"
+    },
+    {
+      "source_artifact": "landlord-tenants-workspace-native.html",
+      "canonical_path": "candidate-overlay/public/landlord-tenants.html",
+      "included": true,
+      "confidence": "high",
+      "note": "Workspace 原生房客清單。",
+      "bytes": 43278,
+      "sha256": "c45fa04f9919c90e0bbed6e47bdc52c8be8a9a8c63d29cbc9e9c03778d46ef74"
+    },
+    {
+      "source_artifact": "landlord-tenant-detail.html",
+      "canonical_path": "candidate-overlay/public/landlord-tenant-detail.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "房客詳細資料。",
+      "bytes": 53203,
+      "sha256": "51314bf2b9d6feacfdc354c1b08039d051dbb1485ac99d8d4df39972ebf691c5"
+    },
+    {
+      "source_artifact": "landlord-tenant-create-performance-fixed.html",
+      "canonical_path": "candidate-overlay/public/landlord-tenant-create.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "新增房客效能修正版；需與目前部署版對帳。",
+      "bytes": 57251,
+      "sha256": "c8336cb7b68c4c166fe5323d2b42e6fdfcbc7a92c13deaad19739ee88e288486"
+    },
+    {
+      "source_artifact": "landlord-more-with-notification-center.html",
+      "canonical_path": "candidate-overlay/public/landlord-more.html",
+      "included": true,
+      "confidence": "high",
+      "note": "已啟用系統設定、公告、報到與通知中心。",
+      "bytes": 39879,
+      "sha256": "7f8696ff7f2e9aa74710e9b6758ebbc8c510540ff8a07155f0fb281d9de6f915"
+    },
+    {
+      "source_artifact": "landlord-team-nav-login-fixed.html",
+      "canonical_path": "candidate-overlay/public/landlord-team.html",
+      "included": true,
+      "confidence": "high",
+      "note": "團隊頁導覽與登入修正。",
+      "bytes": 48265,
+      "sha256": "ec8f3d28ecb7b28e920a57916fac92ccdaa190f5d0acfd6e9f6a548b4bdce276"
+    },
+    {
+      "source_artifact": "landlord-join.html",
+      "canonical_path": "candidate-overlay/public/landlord-join.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "接受團隊邀請。",
+      "bytes": 29607,
+      "sha256": "010423e747828d08cac6dec22ec7a8d41b9fc425010212d0acf7630168ffacca"
+    },
+    {
+      "source_artifact": "landlord-properties-with-settings.html",
+      "canonical_path": "candidate-overlay/public/landlord-properties.html",
+      "included": true,
+      "confidence": "high",
+      "note": "物件／房間與 Workspace 預設整合。",
+      "bytes": 60306,
+      "sha256": "10ec18621fc65f376f3988ad7d4c3ea1cd0fd8199ab4cd644e690a7423943db3"
+    },
+    {
+      "source_artifact": "landlord-contract-requests-tenant-filter.html",
+      "canonical_path": "candidate-overlay/public/landlord-contract-requests.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "含房客篩選；需確認導覽修正是否已合併。",
+      "bytes": 79492,
+      "sha256": "452af0473f11aeef57bcbed2ec67bb1d7e3729c08f0269a8f289f77c74e6775d"
+    },
+    {
+      "source_artifact": "landlord-billing-with-settings.html",
+      "canonical_path": "candidate-overlay/public/landlord-billing.html",
+      "included": true,
+      "confidence": "high",
+      "note": "帳務、上期電表與 Workspace 預設。",
+      "bytes": 49770,
+      "sha256": "f37a668d1f209c9edbd933d8bcf146d7a687310093009883deff66a21e62bab4"
+    },
+    {
+      "source_artifact": "landlord-bill-notifications.html",
+      "canonical_path": "candidate-overlay/public/landlord-bill-notifications.html",
+      "included": true,
+      "confidence": "high",
+      "note": "帳單通知。",
+      "bytes": 42958,
+      "sha256": "cfebdeaa93edf7e058940d0f00e51b548d276699f3843a0b275c09fe9bb151de"
+    },
+    {
+      "source_artifact": "landlord-tenant-checkin.html",
+      "canonical_path": "candidate-overlay/public/landlord-tenant-checkin.html",
+      "included": true,
+      "confidence": "high",
+      "note": "房客報到管理。",
+      "bytes": 45670,
+      "sha256": "dc70f7f603f71434656bc7c839bba84d6564c231f343191154afe7eaca88dd35"
+    },
+    {
+      "source_artifact": "landlord-announcements.html",
+      "canonical_path": "candidate-overlay/public/landlord-announcements.html",
+      "included": true,
+      "confidence": "high",
+      "note": "公告發送、歷史、送達與重試。",
+      "bytes": 59289,
+      "sha256": "4911057d2df612a52c856297d7628bf0eda7ac72a039fe3aab1bf8981e8575f5"
+    },
+    {
+      "source_artifact": "landlord-notifications.html",
+      "canonical_path": "candidate-overlay/public/landlord-notifications.html",
+      "included": true,
+      "confidence": "high",
+      "note": "Workspace 通知中心。",
+      "bytes": 33102,
+      "sha256": "855e4cff98d94d9e24f1a8b8df934a0aeee206ad8477d5fbc7ec1cb87d8eba38"
+    },
+    {
+      "source_artifact": "tenant-home-fixed.html",
+      "canonical_path": "candidate-overlay/public/tenant-home.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "房客首頁候選修正版。",
+      "bytes": 49126,
+      "sha256": "6b691aa5eac2b1e5c11b70634e8b754129ba1446024ea132709c276bedabf5c0"
+    },
+    {
+      "source_artifact": "tenant-message-fixed.html",
+      "canonical_path": "candidate-overlay/public/tenant-message.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "房客訊息／報修表單候選修正版。",
+      "bytes": 40684,
+      "sha256": "882a4f00148eaeb44fd324df74970a105f6940708654254509cfc496dd7161a5"
+    },
+    {
+      "source_artifact": "tenant-payment-report-v3.html",
+      "canonical_path": "candidate-overlay/public/tenant-payment-report.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "付款回報候選最新版。",
+      "bytes": 65317,
+      "sha256": "1e8987e418af8719af1e22b94cfb2b3a9e6a08759daa8616171514185d624fb8"
+    },
+    {
+      "source_artifact": "tenant-bills-fixed.html",
+      "canonical_path": "candidate-overlay/public/tenant-bills.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "房客帳單候選修正版。",
+      "bytes": 66291,
+      "sha256": "0e08e410019ad6f5d49741c3f624b6fc80de9b25b676bde08780b3d624a11f5f"
+    },
+    {
+      "source_artifact": "tenant-contract-request-status-v2.html",
+      "canonical_path": "candidate-overlay/public/tenant-contract.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "房客租約與申請狀態候選版。",
+      "bytes": 66882,
+      "sha256": "fe2001e0624b139f397b7d2289c61db10a684fc7824ee0346fb6cabaa39a6b74"
+    },
+    {
+      "source_artifact": "tenant-renewal.html",
+      "canonical_path": "candidate-overlay/public/tenant-renewal.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "續約申請。",
+      "bytes": 51419,
+      "sha256": "607b18b29f9da00207e0a27cc1128da79261aee68e2346d9afd4514bdf17b1f2"
+    },
+    {
+      "source_artifact": "tenant-termination.html",
+      "canonical_path": "candidate-overlay/public/tenant-termination.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "提前終止申請。",
+      "bytes": 56301,
+      "sha256": "dbe92b2ce33d639dec723bd35a92ade3424fe1542c4c35988ffa1adf170b5744"
+    },
+    {
+      "source_artifact": "tenant-bind-phone.html",
+      "canonical_path": "candidate-overlay/public/tenant-bind.html",
+      "included": true,
+      "confidence": "medium",
+      "note": "手機綁定頁候選修正版。",
+      "bytes": 28813,
+      "sha256": "1fea4f5af955efec3370d8284b376dd33005fcd9eb9e698c647218f14baf83ed"
+    }
+  ],
+  "unresolved_candidates": {
+    "V2_TENANT_LEASE_ONBOARDING.gs": [
+      {
+        "filename": "V2_TENANT_LEASE_ONBOARDING.gs",
+        "bytes": 50228,
+        "sha256": "dfbc0709812a8487408ccdaf838f8c5bdfdd75e616a6add3af500e73d1af37aa"
+      },
+      {
+        "filename": "V2_TENANT_LEASE_ONBOARDING_FAST_FIXED.gs",
+        "bytes": 53922,
+        "sha256": "91e4ef56c90bd3b664c84a042f3c3cc12b63ce83cb8b08c736b05716da1e3a6e"
+      },
+      {
+        "filename": "V2_TENANT_LEASE_ONBOARDING_PERFORMANCE_FIXED.gs",
+        "bytes": 54040,
+        "sha256": "9006ad0b64ef6dd19fee077b4cbcc513271fc196c1f7d0d2ef3a8479809c8c43"
+      }
+    ],
+    "V2_TENANT_BINDING": [
+      {
+        "filename": "V2_TENANT_BINDING_BASE.gs",
+        "bytes": 23967,
+        "sha256": "88f1aa4cc876560c2a8476cea42c058388ac873f0958d02a17d86d7714dc9d05"
+      },
+      {
+        "filename": "V2_TENANT_BINDING_PHONE_SYNC_REPAIR.gs",
+        "bytes": 47496,
+        "sha256": "525905411142f5f2ec4ab9d4995677d7ffeb71d631a00d076fb610fe8e4bd488"
+      }
+    ]
+  },
+  "missing_or_repo_only_frontend": [
+    "landlord-line-logs.html",
+    "landlord-messages.html",
+    "landlord-payment-reports.html",
+    "landlord-paid-bills.html"
+  ],
+  "required_reconciliation_sources": [
+    "GitHub main",
+    "目前實際部署的 Apps Script 專案",
+    "目前正式 Google Sheets Schema 與資料",
+    "Apps Script Script Properties"
+  ]
+}

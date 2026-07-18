@@ -1,0 +1,5 @@
+
+# Local CMWebs handoff and deployment backups
+_handoff/
+_deployed/
+_backup/
