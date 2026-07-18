@@ -3,3 +3,11 @@
 _handoff/
 _deployed/
 _backup/
+
+# Local Apps Script deployment and authentication files
+apps-script/.clasp.json
+**/.clasprc.json
+**/credentials.json
+**/credentials.local.json
+**/client_secret*.json
+**/oauth*.json

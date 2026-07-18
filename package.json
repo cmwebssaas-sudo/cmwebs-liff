@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "validate": "node scripts/validate-project.js --root ."
+    "validate": "node scripts/validate-project.js --root . --apps-dir apps-script --html-dir . --expected-routes 68"
   },
   "engines": {
     "node": ">=20"
