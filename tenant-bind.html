@@ -551,9 +551,6 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
-
     const URL_PARAMS =
       new URLSearchParams(
         location.search
@@ -603,15 +600,37 @@
         .replace(/'/g, '&#039;');
     }
 
-    function goHome() {
-      location.href =
-        'tenant-home.html?v=' +
-        Date.now() +
-        (
-          TEST_MODE
-            ? '&test=1'
-            : ''
+    function preserveTestQuery_(
+      targetUrl
+    ) {
+      const url = new URL(
+        targetUrl,
+        location.href
+      );
+
+      if (TEST_MODE) {
+        url.searchParams.set(
+          'test',
+          '1'
         );
+      }
+
+      return url.href;
+    }
+
+    function goHome() {
+      const url = new URL(
+        'tenant-home.html',
+        location.href
+      );
+
+      url.searchParams.set(
+        'v',
+        Date.now()
+      );
+
+      location.href =
+        preserveTestQuery_(url.href);
     }
 
     function jsonpRequest(
@@ -702,6 +721,10 @@
             '&_=' +
             Date.now();
 
+          if (TEST_MODE) {
+            url += '&test=1';
+          }
+
           Object.keys(
             params || {}
           ).forEach(
@@ -757,20 +780,6 @@
     }
 
     async function initLine() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
-
-        LINE_PROFILE = {
-          displayName:
-            '測試 LINE 使用者',
-          pictureUrl:
-            ''
-        };
-
-        return true;
-      }
-
       if (
         typeof liff ===
         'undefined'

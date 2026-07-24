@@ -926,9 +926,6 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
-
     const URL_PARAMS =
       new URLSearchParams(location.search);
 
@@ -1274,22 +1271,37 @@
       );
     }
 
+    function preserveTestQuery_(
+      targetUrl
+    ) {
+      const url = new URL(
+        targetUrl,
+        location.href
+      );
+
+      if (TEST_MODE) {
+        url.searchParams.set(
+          'test',
+          '1'
+        );
+      }
+
+      return url.href;
+    }
+
     function goPage(page) {
-      const separator =
-        page.indexOf('?') >= 0
-          ? '&'
-          : '?';
+      const url = new URL(
+        page,
+        location.href
+      );
+
+      url.searchParams.set(
+        'v',
+        Date.now()
+      );
 
       location.href =
-        page +
-        separator +
-        'v=' +
-        Date.now() +
-        (
-          TEST_MODE
-            ? '&test=1'
-            : ''
-        );
+        preserveTestQuery_(url.href);
     }
 
     function goPaymentReport(
@@ -1300,20 +1312,23 @@
         event.stopPropagation();
       }
 
-      let url =
-        'tenant-payment-report.html' +
-        '?bill_id=' +
-        encodeURIComponent(
-          billId || ''
-        ) +
-        '&v=' +
-        Date.now();
+      const url = new URL(
+        'tenant-payment-report.html',
+        location.href
+      );
 
-      if (TEST_MODE) {
-        url += '&test=1';
-      }
+      url.searchParams.set(
+        'bill_id',
+        billId || ''
+      );
 
-      location.href = url;
+      url.searchParams.set(
+        'v',
+        Date.now()
+      );
+
+      location.href =
+        preserveTestQuery_(url.href);
     }
 
     function showToast(message) {
@@ -1415,6 +1430,10 @@
             '&_=' +
             Date.now();
 
+          if (TEST_MODE) {
+            url += '&test=1';
+          }
+
           Object.keys(
             params || {}
           ).forEach(
@@ -1441,8 +1460,17 @@
 
           script.onerror =
             function () {
-              console.warn(
-                'JSONP script onerror ignored.'
+              if (finished) {
+                return;
+              }
+
+              finished = true;
+              cleanup();
+
+              reject(
+                new Error(
+                  'API 載入失敗'
+                )
               );
             };
 
@@ -1456,13 +1484,6 @@
     }
 
     async function initLineUserId() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
-
-        return true;
-      }
-
       if (
         typeof liff ===
         'undefined'
@@ -1517,6 +1538,72 @@
           ? result.message
           : '查詢失敗'
       );
+    }
+
+    function unwrapTenantBillsPayload(
+      result
+    ) {
+      if (
+        !result ||
+        (
+          result.ok !== true &&
+          result.success !== true
+        )
+      ) {
+        throw new Error(
+          result && result.message
+            ? result.message
+            : '帳單資料讀取失敗'
+        );
+      }
+
+      const data =
+        result.data !== undefined
+          ? result.data
+          : result;
+      const normalized =
+        data &&
+        !Array.isArray(data) &&
+        typeof data === 'object'
+          ? Object.assign({}, data)
+          : {};
+      const tenant =
+        normalized.tenant ||
+        result.tenant ||
+        {};
+      let bills = [];
+
+      if (Array.isArray(data)) {
+        bills = data.slice();
+      } else if (
+        Array.isArray(
+          normalized.bills
+        )
+      ) {
+        bills =
+          normalized.bills.slice();
+      } else if (
+        Array.isArray(
+          normalized.items
+        )
+      ) {
+        bills =
+          normalized.items.slice();
+      } else if (
+        Array.isArray(result.bills)
+      ) {
+        bills = result.bills.slice();
+      } else if (
+        Array.isArray(result.items)
+      ) {
+        bills = result.items.slice();
+      }
+
+      normalized.tenant = tenant;
+      normalized.bills = bills;
+      normalized.count = bills.length;
+
+      return normalized;
     }
 
     function paymentStatus(
@@ -2224,13 +2311,24 @@
         ' 筆';
 
       if (bills.length === 0) {
+        const hasAnyBill =
+          ALL_BILLS.length > 0;
+
         list.innerHTML = `
           <section class="card empty-card">
             <div class="empty-title">
-              目前沒有符合條件的帳單
+              ${
+                hasAnyBill
+                  ? '目前沒有符合條件的帳單'
+                  : '目前沒有帳單'
+              }
             </div>
             <div class="empty-text">
-              請切換其他帳單狀態查看。
+              ${
+                hasAnyBill
+                  ? '請切換其他帳單狀態查看。'
+                  : '目前尚無帳單資料。'
+              }
             </div>
           </section>
         `;
@@ -3191,7 +3289,7 @@
         }
 
         const billsData =
-          unwrapData(
+          unwrapTenantBillsPayload(
             results[0].value
           );
 

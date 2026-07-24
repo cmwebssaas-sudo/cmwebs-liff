@@ -813,9 +813,6 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
-
     const URL_PARAMS =
       new URLSearchParams(location.search);
 
@@ -824,6 +821,7 @@
 
     let LINE_USER_ID = '';
     let toastTimer = null;
+    let pageLoadGeneration = 0;
 
     function setAppHeight() {
       const height =
@@ -1107,33 +1105,41 @@
       );
     }
 
+    function preserveTestQuery_(
+      targetUrl
+    ) {
+      const url = new URL(
+        targetUrl,
+        location.href
+      );
+
+      if (TEST_MODE) {
+        url.searchParams.set(
+          'test',
+          '1'
+        );
+      }
+
+      return url.href;
+    }
+
     function goPage(page) {
-      const separator =
-        page.indexOf('?') >= 0
-          ? '&'
-          : '?';
+      const url = new URL(
+        page,
+        location.href
+      );
+
+      url.searchParams.set(
+        'v',
+        Date.now()
+      );
 
       location.href =
-        page +
-        separator +
-        'v=' +
-        Date.now() +
-        (
-          TEST_MODE
-            ? '&test=1'
-            : ''
-        );
+        preserveTestQuery_(url.href);
     }
 
     function goBindingPage() {
-      location.href =
-        'tenant-bind.html?v=' +
-        Date.now() +
-        (
-          TEST_MODE
-            ? '&test=1'
-            : ''
-        );
+      goPage('tenant-bind.html');
     }
 
     function showToast(message) {
@@ -1235,6 +1241,10 @@
             '&_=' +
             Date.now();
 
+          if (TEST_MODE) {
+            url += '&test=1';
+          }
+
           Object.keys(
             params || {}
           ).forEach(
@@ -1276,13 +1286,6 @@
     }
 
     async function initLineUserId() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
-
-        return true;
-      }
-
       if (
         typeof liff ===
         'undefined'
@@ -1570,8 +1573,12 @@
 
     function renderPage(
       home,
-      contractData
+      contractData,
+      contractState
     ) {
+      const optionalState =
+        contractState || 'ready';
+
       const contract =
         contractData &&
         contractData.contract
@@ -1617,6 +1624,40 @@
             )
           : 0;
 
+      const propertyText =
+        contract
+          ? (
+              contract.property_name ||
+              contract.property_address ||
+              '物件資料未提供'
+            )
+          : (
+              optionalState === 'loading'
+                ? '物件資料讀取中...'
+                : (
+                    optionalState === 'error'
+                      ? '物件資料暫時無法讀取'
+                      : '物件資料未提供'
+                  )
+            );
+
+      const contractStatusText =
+        optionalState === 'loading'
+          ? '讀取中...'
+          : (
+              optionalState === 'error'
+                ? '暫時無法讀取'
+                : (
+                    contract
+                      ? (
+                          contractDays >= 0
+                            ? '有效'
+                            : '已到期'
+                        )
+                      : '查無合約'
+                  )
+            );
+
       const app =
         document.getElementById('app');
 
@@ -1639,15 +1680,15 @@
                 <div class="hero-room">
                   房號 ${safeHtml(
                     home.room_list ||
-                    (
-                      contract &&
-                      contract.room_name
-                    ) ||
                     '-'
                   )}
                   ・房客編號 ${safeHtml(
                     home.tenant_id || '-'
                   )}
+                </div>
+
+                <div class="hero-room" aria-live="polite">
+                  ${safeHtml(propertyText)}
                 </div>
               </div>
 
@@ -1683,16 +1724,8 @@
                 <div class="hero-stat-label">
                   合約狀態
                 </div>
-                <div class="hero-stat-value">
-                  ${
-                    contract
-                      ? (
-                          contractDays >= 0
-                            ? '有效'
-                            : '已到期'
-                        )
-                      : '查無合約'
-                  }
+                <div class="hero-stat-value" aria-live="polite">
+                  ${safeHtml(contractStatusText)}
                 </div>
               </div>
             </div>
@@ -1801,14 +1834,27 @@
           </div>
         </section>
 
-        <section class="card section-card">
+        <section class="card section-card" aria-live="polite">
           <div class="section-title-row">
             <div class="section-title">
               我的合約
             </div>
 
             ${
-              activeRequest
+              optionalState === 'loading'
+                ? `
+                  <span class="status-badge status-gray">
+                    讀取中
+                  </span>
+                `
+                : (
+                  optionalState === 'error'
+                    ? `
+                      <span class="status-badge status-gray">
+                        暫時無法讀取
+                      </span>
+                    `
+                    : activeRequest
                 ? `
                   <span class="${
                     normalizeStatus(
@@ -1837,11 +1883,37 @@
                         </span>
                       `
                   )
+                )
             }
           </div>
 
           ${
-            contract
+            optionalState === 'loading'
+              ? `
+                <div class="loading-card">
+                  <div class="loading-spinner"></div>
+                  <div class="loading-text">
+                    合約與物件資料讀取中，首頁其他功能可先使用。
+                  </div>
+                </div>
+              `
+              : (
+                optionalState === 'error'
+                  ? `
+                    <div class="empty-state">
+                      合約與物件資料暫時無法讀取，首頁其他功能仍可使用。
+                    </div>
+
+                    <button
+                      class="secondary-button"
+                      style="width:100%;"
+                      type="button"
+                      onclick="loadPage()"
+                    >
+                      重新讀取
+                    </button>
+                  `
+                  : contract
               ? `
                 <div class="contract-hero">
                   <div class="contract-top">
@@ -1957,6 +2029,7 @@
                   查看合約頁
                 </button>
               `
+              )
           }
         </section>
 
@@ -2101,6 +2174,28 @@
       `;
     }
 
+    function renderOptionalContract(
+      home,
+      contractData,
+      contractState
+    ) {
+      const page =
+        document.querySelector('.page');
+
+      const scrollTop =
+        page ? page.scrollTop : 0;
+
+      renderPage(
+        home,
+        contractData,
+        contractState
+      );
+
+      if (page) {
+        page.scrollTop = scrollTop;
+      }
+    }
+
     function renderError(message) {
       document.getElementById(
         'app'
@@ -2147,6 +2242,9 @@
     }
 
     async function loadPage() {
+      const generation =
+        ++pageLoadGeneration;
+
       setRefreshLoading(true);
 
       try {
@@ -2159,27 +2257,37 @@
           }
         }
 
-        const results =
-          await Promise.allSettled([
-            jsonpRequest(
-              'tenant_home',
-              {}
-            ),
-            jsonpRequest(
-              'tenant_contract_init',
-              {}
-            )
-          ]);
-
-        if (
-          results[0].status !==
-          'fulfilled'
-        ) {
-          throw results[0].reason;
-        }
+        const contractOutcome =
+          jsonpRequest(
+            'tenant_contract_init',
+            {}
+          ).then(
+            function (value) {
+              return {
+                status: 'fulfilled',
+                value: value
+              };
+            },
+            function (reason) {
+              return {
+                status: 'rejected',
+                reason: reason
+              };
+            }
+          );
 
         const homeResult =
-          results[0].value;
+          await jsonpRequest(
+            'tenant_home',
+            {}
+          );
+
+        if (
+          generation !==
+          pageLoadGeneration
+        ) {
+          return;
+        }
 
         if (
           homeResult &&
@@ -2200,41 +2308,81 @@
             homeResult
           );
 
-        let contractData = {
-          contract: null,
-          requests: [],
-          permissions: {}
-        };
+        renderPage(
+          home,
+          null,
+          'loading'
+        );
+
+        setRefreshLoading(false);
+
+        const contractResult =
+          await contractOutcome;
 
         if (
-          results[1].status ===
+          generation !==
+          pageLoadGeneration
+        ) {
+          return;
+        }
+
+        if (
+          contractResult.status ===
           'fulfilled'
         ) {
           try {
-            contractData =
+            const contractData =
               unwrapData(
-                results[1].value
+                contractResult.value
               );
+
+            renderOptionalContract(
+              home,
+              contractData,
+              'ready'
+            );
           } catch (error) {
             console.warn(
               '合約資料讀取失敗：',
               error
             );
-          }
-        }
 
-        renderPage(
-          home,
-          contractData
-        );
+            renderOptionalContract(
+              home,
+              null,
+              'error'
+            );
+          }
+        } else {
+          console.warn(
+            '合約資料讀取失敗：',
+            contractResult.reason
+          );
+
+          renderOptionalContract(
+            home,
+            null,
+            'error'
+          );
+        }
       } catch (error) {
-        renderError(
-          error && error.message
-            ? error.message
-            : String(error)
-        );
+        if (
+          generation ===
+          pageLoadGeneration
+        ) {
+          renderError(
+            error && error.message
+              ? error.message
+              : String(error)
+          );
+        }
       } finally {
-        setRefreshLoading(false);
+        if (
+          generation ===
+          pageLoadGeneration
+        ) {
+          setRefreshLoading(false);
+        }
       }
     }
 
