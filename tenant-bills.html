@@ -921,7 +921,7 @@
 
   <script>
     const API_URL =
-      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+      'https://script.google.com/macros/s/AKfycbyrwKb3adOgHVBwbwHwLeSsDoUgYhaUaFXui66tnyMNBrT9eOVbi788oHeVRTif_LA9BA/exec';
 
     const LIFF_ID =
       '2010314940-iJB1D6sN';
@@ -1674,7 +1674,10 @@
         approved: '回報已核准',
         settled: '已銷帳',
         rejected: '回報已駁回',
-        cancelled: '回報已取消'
+        cancelled: '回報已取消',
+        // This is the status of a historical payment report, not of the bill.
+        // Keep it distinct from the bill's unpaid/paid badge.
+        voided: '回報已作廢'
       };
 
       return (
