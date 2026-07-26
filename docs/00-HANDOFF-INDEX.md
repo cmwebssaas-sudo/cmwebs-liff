@@ -23,3 +23,31 @@
 | `19-CHANGELOG-CURRENT.md` | 已完成階段摘要 |
 | `20-TEST-FUNCTIONS-GENERATED.md` | 候選模組內的 Apps Script 測試函式 |
 | `21-CODEX-PROMPT.md` | 可直接貼給 Codex 的首輪指令 |
+
+## 權威產品記憶與新對話 Resume Block
+
+在任何 CMWebs 任務前，必須先讀取下列權威文件：
+
+| 文件 | 用途 |
+|---|---|
+| `CMWEBS_PRODUCT_ROADMAP.md` | V2.0、V2.1、V3、V4 的產品邊界與順序 |
+| `CMWEBS_CURRENT_STATE.md` | 最後驗證的 Production 基線、下一階段與工作邊界 |
+| `CMWEBS_ARCHITECTURE_DECISIONS.md` | BYO LINE OA、標準化與 V2 feature freeze 決策 |
+| `CMWEBS_RELEASE_RULES.md` | Production 安全與 release/rollback 規則 |
+| `CMWEBS_CHANGELOG.md` | 精簡產品決策與 release 記憶 |
+
+可貼到新 ChatGPT/Codex 對話的最小交接：
+
+```text
+PROJECT: CMWebs 智能租管
+REPOSITORY: cmwebs-liff
+Read AGENTS.md and the authoritative CMWEBS_PRODUCT_ROADMAP,
+CMWEBS_CURRENT_STATE, CMWEBS_ARCHITECTURE_DECISIONS, and
+CMWEBS_RELEASE_RULES before any task.
+
+Current product state: V2.0 is the internal Production baseline. V2.1 is the
+next bounded internal-operations phase, gated by Production Consolidation/Gate
+0 and separate authorization. After V2.1, V2_FEATURE_FREEZE = FINAL.
+Classify the request V2.0/V2.1/V3/V4; state Production impact and recommend a
+Codex model and speed before execution.
+```

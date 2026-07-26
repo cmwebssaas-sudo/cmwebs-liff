@@ -6,9 +6,14 @@ Applies to: all CMWebs V2–V4 source, configuration, and Production releases.
 
 ## Product release boundary
 
-- V2 releases may address only internal Production operations, blockers,
-  performance, reliability, security/isolation verification, regression
-  coverage, and operational QA.
+- V2.0 releases may address only genuine internal-Production blockers,
+  correctness fixes, and stability repairs.
+- V2.1 work requires Gate 0/Production Consolidation completion and separate
+  authorization. Its permitted scope is performance consolidation, the fixed
+  standard reporting set, the standard digital contract workflow, and defined
+  operational-stability completion—never customer-specific extensions.
+- After `V2_FEATURE_FREEZE = FINAL`, V2 returns to blocker, correctness, and
+  stability work only.
 - V3/V4 work must not be slipped into a V2 release.
 - No release may create customer-specific feature, workflow, field, layout, or
   code branches.
@@ -41,6 +46,19 @@ not weaken RBAC or Workspace isolation. Prioritize instrumentation, one
 bootstrap request per page, short Workspace caching, stable build-version cache
 keys, and reduced full-Sheet scans. A cache requires an explicit key, scope,
 TTL, invalidation rule, and stale-data risk assessment.
+
+## V2.1 reporting and contract release rules
+
+- Reporting is one fixed standard set. Do not add custom report builders,
+  customer-specific dashboards, or per-customer metrics/layouts.
+- Digital contracts must retain the standard generation, review, immutable PDF,
+  signed-document upload, version/timestamp/audit history, and billing-
+  activation boundaries.
+- Do not build a legal electronic-signature evidence system from scratch in
+  V2.1. Any e-signature provider integration is a separately approved V3 scope.
+- Backups/restore, controlled data correction, incident runbook, and the
+  required real operational-flow verification need explicit evidence before
+  recording the V2.1 feature freeze.
 
 ## Prohibited without explicit authorization
 

@@ -19,6 +19,21 @@ Before any release, rollback, support conclusion, or Production change, repeat
 the appropriate authenticated, read-only verification. Historical values in
 this file must never be treated as authority to deploy.
 
+## Current product baseline and next approved phase
+
+- **Current baseline:** V2.0 internal Production operations, with completed
+  rental-management, billing, arrears, reminders, repair, contract, team,
+  RBAC, Workspace isolation, and LINE flows.
+- **Next approved phase:** V2.1 Internal Operations Completion. Its scope is
+  performance consolidation, fixed graphical operational reporting, a standard
+  digital contract workflow, and defined operational-stability completion.
+- **Entry condition:** V2.1 is planned, not an authorization to begin feature
+  implementation. The current Production Consolidation/Gate 0 requirements in
+  `AGENTS.md` remain the engineering entry gate.
+- **Exit condition:** after approved V2.1 scope is complete,
+  `V2_FEATURE_FREEZE = FINAL`; later V2 work is only genuine Production
+  blockers, correctness fixes, and stability repairs.
+
 ## Latest verified operational result
 
 The last manual landlord UI verification after Version 82 recorded:
@@ -35,13 +50,14 @@ a replacement for current UI or data verification.
 
 ## Outstanding operational issues and work boundaries
 
-1. **V2 consolidation remains the active engineering boundary.** Work is
-   limited to Production blockers, reliability, performance, operational QA,
-   and regression/isolation evidence.
-2. **Performance consolidation is outstanding.** Follow the sequence in the
-   authoritative roadmap: instrumentation, one bootstrap request per page,
-   short Workspace caching, stable build-version cache keys, and fewer
-   full-Sheet scans. See [68-RUNTIME-PERFORMANCE-AUDIT.md](68-RUNTIME-PERFORMANCE-AUDIT.md).
+1. **Production Consolidation/Gate 0 remains the entry gate.** No V2.1 feature
+   implementation begins until its requirements are met and work is separately
+   authorized.
+2. **V2.1 performance consolidation is planned.** Follow the authoritative
+   roadmap: instrumentation, safe LIFF-initialization reduction, intentional
+   page bootstrap requests, short Workspace caching, stable release-version
+   cache keys, and fewer full-Sheet scans. See
+   [68-RUNTIME-PERFORMANCE-AUDIT.md](68-RUNTIME-PERFORMANCE-AUDIT.md).
 3. **Tenant real-device evidence is historical and incomplete.** The older
    report contains unretested P0 failures/blockers; it must be reconciled with
    the Version 82 serving identity before it is used as a present release
@@ -66,6 +82,7 @@ ARCHITECTURE_DECISIONS,RELEASE_RULES,CHANGELOG}.md first.
 Known last-verified serving state: Apps Script v82, rollback v81; Pages last
 repository-contained verified revision 3b48e9b... (no Pages publish with v82).
 Treat these as historical evidence and re-verify before any Production action.
-Classify the request V2/V3/V4; V2 accepts only operational consolidation.
+Classify the request V2.0/V2.1/V3/V4. V2.1 needs Gate 0 completion and separate
+authorization; V2.0 accepts only blockers, correctness, and stability repairs.
 Recommend a Codex model and speed before beginning work.
 ```
