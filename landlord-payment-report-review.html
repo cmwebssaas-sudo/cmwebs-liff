@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 付款回報審核</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -153,7 +154,7 @@
     }
 
     function goPage(page) {
-      location.replace(page + '?v=' + Date.now());
+      location.replace(page + '?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1'));
     }
 
     function buildLandlordEntryUrl() {

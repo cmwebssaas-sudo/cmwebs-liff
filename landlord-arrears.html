@@ -11,6 +11,7 @@
   <title>CMWebs 房客欠款</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
 
   <style>
     :root {
@@ -1492,7 +1493,7 @@
       location.href =
         filename +
         '?v=' +
-        Date.now() +
+        (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') +
         testSuffix;
     }
 
@@ -3022,7 +3023,7 @@
           tenantId
         ) +
         '&v=' +
-        Date.now() +
+        (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') +
         (
           TEST_MODE
             ? '&test=1'

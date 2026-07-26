@@ -6,6 +6,7 @@
   <title>CMWebs LINE 對話紀錄</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
 
   <style>
     :root {
@@ -356,7 +357,7 @@
 
     <nav class="bottom-nav">
       <div class="bottom-nav-inner">
-        <button class="nav-item" onclick="location.href='landlord-home.html?v=' + Date.now()">
+        <button class="nav-item" onclick="location.href='landlord-home.html?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1')">
           <svg viewBox="0 0 24 24">
             <path d="M4 11.5L12 5l8 6.5"></path>
             <path d="M6.5 10.5V19h11v-8.5"></path>
@@ -365,7 +366,7 @@
           <div>首頁</div>
         </button>
 
-        <button class="nav-item" onclick="location.href='landlord-arrears.html?v=' + Date.now()">
+        <button class="nav-item" onclick="location.href='landlord-arrears.html?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1')">
           <svg viewBox="0 0 24 24">
             <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
             <path d="M8.5 9h7"></path>
@@ -375,7 +376,7 @@
           <div>欠款</div>
         </button>
 
-        <button class="nav-item" onclick="location.href='landlord-tenants.html?v=' + Date.now()">
+        <button class="nav-item" onclick="location.href='landlord-tenants.html?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1')">
           <svg viewBox="0 0 24 24">
             <circle cx="9" cy="8.5" r="3"></circle>
             <path d="M4 19c.8-3.3 2.7-5 5-5s4.2 1.7 5 5"></path>
@@ -385,7 +386,7 @@
           <div>房客</div>
         </button>
 
-        <button class="nav-item active" onclick="location.href='landlord-more.html?v=' + Date.now()">
+        <button class="nav-item active" onclick="location.href='landlord-more.html?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1')">
           <svg viewBox="0 0 24 24">
             <circle cx="6" cy="12" r="1.5"></circle>
             <circle cx="12" cy="12" r="1.5"></circle>
@@ -607,7 +608,7 @@
           重新整理
         </button>
 
-        <button class="btn btn-green" onclick="location.href='landlord-more.html?v=' + Date.now()">
+        <button class="btn btn-green" onclick="location.href='landlord-more.html?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1')">
           返回更多功能
         </button>
       `;
@@ -714,7 +715,7 @@
       const tenantUserId = getTenantUserIdParam();
 
       if (!tenantId && !tenantUserId) {
-        location.href = 'landlord-tenants.html?v=' + Date.now();
+        location.href = 'landlord-tenants.html?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
         return;
       }
 
@@ -722,7 +723,7 @@
         'landlord-tenant-detail.html' +
         '?tenant_id=' + encodeURIComponent(tenantId) +
         '&tenant_user_id=' + encodeURIComponent(tenantUserId) +
-        '&v=' + Date.now();
+        '&v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
     }
 
     function renderSystemLog(item) {
@@ -862,7 +863,7 @@
             : ''
         }
 
-        <button class="btn btn-green" onclick="location.href='landlord-more.html?v=' + Date.now()">
+        <button class="btn btn-green" onclick="location.href='landlord-more.html?v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1')">
           返回更多功能
         </button>
       `;
