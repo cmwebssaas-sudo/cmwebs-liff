@@ -313,8 +313,7 @@
       URL_PARAMS.get('stay') ===
       '1';
 
-    const RETURN_TO =
-      resolveReturnTo();
+    let RETURN_TO = '';
 
     let LINE_USER_ID = '';
 
@@ -357,10 +356,40 @@
           'cmwebs_landlord_return_to'
         ) || '';
 
+      const params = new URLSearchParams(
+        location.search
+      );
+
+      let restored = '';
+      const liffState = rawText(
+        params.get('liff.state')
+      );
+
+      if (liffState) {
+        try {
+          restored = new URL(
+            liffState,
+            location.href
+          ).searchParams.get(
+            'return_to'
+          ) || '';
+        } catch (error) {
+          const queryStart =
+            liffState.indexOf('?');
+
+          restored = new URLSearchParams(
+            queryStart >= 0
+              ? liffState.slice(queryStart + 1)
+              : liffState
+          ).get('return_to') || '';
+        }
+      }
+
       const candidate =
-        URL_PARAMS.get(
+        params.get(
           'return_to'
         ) ||
+        restored ||
         stored;
 
       if (!candidate) {
@@ -471,6 +500,23 @@
       );
 
       return true;
+    }
+
+    function isInvitationReturnTo() {
+      if (!RETURN_TO) {
+        return false;
+      }
+
+      try {
+        return new URL(
+          RETURN_TO,
+          location.href
+        ).pathname.endsWith(
+          '/landlord-join.html'
+        );
+      } catch (error) {
+        return false;
+      }
     }
 
     function goPage(page) {
@@ -641,6 +687,12 @@
       await liff.init({
         liffId: LIFF_ID
       });
+
+      // LIFF can restore the pre-login URL through liff.state.  Capture the
+      // validated return path only after initialization has completed.
+      RETURN_TO =
+        resolveReturnTo() ||
+        RETURN_TO;
 
       if (!liff.isLoggedIn()) {
         liff.login({
@@ -916,6 +968,14 @@
           }
         }
 
+        // Invitation acceptance creates or joins the invited membership; it
+        // must not first take an unregistered invitee through owner signup.
+        if (isInvitationReturnTo()) {
+          goReturnTo();
+
+          return;
+        }
+
         const result =
           await jsonpRequest(
             'landlord_entry_status',
@@ -1049,4 +1109,3 @@
   </script>
 </body>
 </html>
-
