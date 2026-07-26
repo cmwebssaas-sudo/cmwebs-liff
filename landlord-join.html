@@ -495,9 +495,7 @@
       URL_PARAMS.get('test') ===
       '1';
 
-    const INVITE_TOKEN =
-      URL_PARAMS.get('token') ||
-      '';
+    let INVITE_TOKEN = '';
 
     let LINE_USER_ID = '';
     let LINE_PROFILE = null;
@@ -521,6 +519,107 @@
       return value === undefined || value === null
         ? ''
         : String(value);
+    }
+
+    function currentUrlParams() {
+      return new URLSearchParams(
+        location.search
+      );
+    }
+
+    function tokenFromLiffState(params) {
+      const state = rawText(
+        params.get('liff.state')
+      );
+
+      if (!state) {
+        return '';
+      }
+
+      try {
+        const stateUrl = new URL(
+          state,
+          location.href
+        );
+
+        return stateUrl.searchParams.get(
+          'token'
+        ) || '';
+      } catch (error) {
+        const queryStart =
+          state.indexOf('?');
+
+        return new URLSearchParams(
+          queryStart >= 0
+            ? state.slice(queryStart + 1)
+            : state
+        ).get('token') || '';
+      }
+    }
+
+    function normalizeInviteToken(value) {
+      const token = rawText(value);
+
+      if (
+        !token ||
+        token.length > 256 ||
+        /[\u0000-\u001f\s]/.test(token)
+      ) {
+        return '';
+      }
+
+      return token;
+    }
+
+    function readInviteTokenAfterLiffInit() {
+      const params = currentUrlParams();
+
+      return normalizeInviteToken(
+        params.get('token') ||
+        tokenFromLiffState(params)
+      );
+    }
+
+    function isGatewayReturn() {
+      return currentUrlParams().get(
+        'liff_join'
+      ) === '1';
+    }
+
+    function buildLiffEntryUrl(token) {
+      const joinUrl = new URL(
+        'landlord-join.html',
+        location.href
+      );
+
+      joinUrl.searchParams.set(
+        'token',
+        token
+      );
+      joinUrl.searchParams.set(
+        'liff_join',
+        '1'
+      );
+
+      const entryUrl = new URL(
+        'landlord-entry.html',
+        location.href
+      );
+
+      entryUrl.searchParams.set(
+        'return_to',
+        joinUrl.pathname.split('/').pop() +
+          '?' +
+          joinUrl.searchParams.toString()
+      );
+
+      return entryUrl.toString();
+    }
+
+    function redirectToLiffEntry(token) {
+      location.replace(
+        buildLiffEntryUrl(token)
+      );
     }
 
     function safeHtml(value) {
@@ -740,7 +839,7 @@
       );
     }
 
-    async function initLine() {
+    async function initLine(inviteToken) {
       if (TEST_MODE) {
         LINE_USER_ID =
           TEST_LINE_USER_ID;
@@ -760,10 +859,9 @@
       });
 
       if (!liff.isLoggedIn()) {
-        liff.login({
-          redirectUri:
-            location.href
-        });
+        // landlord-join.html is not the registered LIFF endpoint.  Never
+        // ask LINE Login to return here directly; enter through the gateway.
+        redirectToLiffEntry(inviteToken);
 
         return false;
       }
@@ -1345,22 +1443,50 @@
     }
 
     async function loadPage() {
-      if (!INVITE_TOKEN) {
+      const initialToken =
+        readInviteTokenAfterLiffInit();
+
+      if (!initialToken) {
         renderError(
-          '邀請連結缺少 token。'
+          '邀請連結缺少或格式不正確。'
         );
 
         return;
       }
 
       try {
+        if (
+          !TEST_MODE &&
+          !isGatewayReturn()
+        ) {
+          // Keep legacy direct join links working after the frontend is
+          // published, without ever using their sibling URL as redirectUri.
+          redirectToLiffEntry(initialToken);
+
+          return;
+        }
+
         if (!LINE_USER_ID) {
           const ready =
-            await initLine();
+            await initLine(initialToken);
 
           if (!ready) {
             return;
           }
+        }
+
+        // LIFF may restore the original query through liff.state.  Resolve
+        // the token only after init has completed and never delete LIFF
+        // parameters before that point.
+        INVITE_TOKEN =
+          readInviteTokenAfterLiffInit();
+
+        if (!INVITE_TOKEN) {
+          renderError(
+            'LINE 登入後找不到邀請 token，請重新開啟原始邀請連結。'
+          );
+
+          return;
         }
 
         const result =
