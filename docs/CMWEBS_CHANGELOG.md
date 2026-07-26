@@ -3,6 +3,16 @@
 This is a concise product-memory changelog. It links to detailed release and
 validation evidence instead of duplicating it.
 
+## 2026-07-27 — Codex product-memory and handoff reinforcement
+
+- Added an explicit cross-document continuity rule for the authoritative
+  V2.0/V2.1/V3/V4 boundary.
+- Confirmed that every Codex task declares a recommended model and speed, and
+  that a documentation-only update neither starts V2.1 implementation nor
+  authorizes any Production action.
+- Added a dedicated new-conversation handoff that preserves the version
+  boundary and the no-Production default for documentation work.
+
 ## 2026-07-27 — V2.1 and V3/V4 product plan confirmed
 
 - Recorded V2.0 as the current internal Production baseline.

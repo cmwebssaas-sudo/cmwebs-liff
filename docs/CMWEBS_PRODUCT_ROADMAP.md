@@ -38,6 +38,15 @@ AI growth work follows the V3 foundation.
 7. CMWebs owns the core software, deployment, updates, automation,
    subscription, and module licensing.
 
+## Codex handoff and product-memory rule
+
+The authoritative roadmap, current state, architecture decisions, release
+rules, changelog, and repository `AGENTS.md` are the durable product-memory
+set. Every Codex task must read the applicable records before classifying or
+planning work, must not redefine the V2.0/V2.1/V3/V4 boundary, and must state
+its recommended model and speed before execution. Documentation-only memory
+updates do not authorize a Production action.
+
 ## V2.0 — Production Baseline
 
 **Customer:** CMWebs's own managed properties only.

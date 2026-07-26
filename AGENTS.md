@@ -4,11 +4,25 @@
 
 ## 1. 產品版本邊界
 
-- V2：內部自有房源可正式上線使用。
-- V3：可對外正式上線並收費的 SaaS。
-- V4：AI 房源內容、影片、社群與自媒體自動推廣。
+- V2.0：目前內部自有房源的 Production 基線，只接受真實 Production
+  blocker、正確性修正與穩定性修復。
+- V2.1：在 Gate 0 完成且另行授權後才開始的 Internal Operations
+  Completion；限於效能整併、固定圖形化營運報表、標準數位合約閉環，及
+  備份/復原/Runbook/真實營運週期驗證。完成後記錄
+  `V2_FEATURE_FREEZE = FINAL`。
+- V3：可對外正式上線並收費的標準化多租戶 SaaS；房東使用自己的 BYO
+  LINE OA 發訊息，CMWebs 不使用共用 OA 代發。名稱、Logo、標準配色與
+  聯絡資訊可品牌化；功能、流程、欄位、頁面與程式分支不可客製。訂閱、
+  房間額度、Channel Registry、自動開通、中央升級及第三方電子簽章整合
+  都屬 V3。
+- V4：建立於 V3 基礎的標準化 Booking、Appointment、CRM，以及 AI 文案、
+  圖片、短影音、社群分發、KOL/微型創作者、追蹤連結、優惠碼與成交分潤。
 
-未經明確 Issue，不得把 V3 或 V4 功能塞入 V2。
+永久原則：一套核心程式、一套功能規則、一次更新全部客戶；新增客戶不得
+造成維護工作等比例增加。品牌可以設定，功能不可客製。
+
+未經明確 Issue，不得把 V3 或 V4 功能塞入 V2；Gate 0 前也不得開始
+V2.1 功能實作。
 
 ## 2. 目前工程任務
 
@@ -91,13 +105,15 @@ html, body { height:100%; overflow:hidden; }
 
 ## 7. 每次變更的必做項目
 
-1. 建立 feature branch。
-2. 修改正式檔名，不建立 suffix 版本。
-3. 執行 `npm run validate`。
-4. 執行受影響模組的 Apps Script 測試函式。
-5. 更新測試矩陣、API、Schema 或決策文件。
-6. 提供 diff 摘要、風險、部署步驟與 rollback。
-7. 合併後建立清楚 commit，不直接在 main 疊加人工修正。
+1. 在任何 Codex 任務指令或 handoff 開始前，註明建議模型與速度；預設為
+   `gpt-5.6-terra`、`medium`，不同選擇需說明原因。
+2. 建立 feature branch。
+3. 修改正式檔名，不建立 suffix 版本。
+4. 執行 `npm run validate`。
+5. 執行受影響模組的 Apps Script 測試函式。
+6. 更新測試矩陣、API、Schema 或決策文件。
+7. 提供 diff 摘要、風險、部署步驟與 rollback。
+8. 合併後建立清楚 commit，不直接在 main 疊加人工修正。
 
 ## 8. 禁止事項
 

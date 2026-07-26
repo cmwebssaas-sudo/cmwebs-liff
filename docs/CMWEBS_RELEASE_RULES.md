@@ -39,6 +39,15 @@ Applies to: all CMWebs V2–V4 source, configuration, and Production releases.
 9. Complete read-only smoke/operational verification and capture concise
    evidence before declaring success.
 
+## Documentation-only product-memory updates
+
+An isolated, path-scoped documentation update may record or reinforce the
+authoritative V2.0/V2.1/V3/V4 boundary without completing Gate 0. It must not
+change runtime code, Production data, Script Properties, triggers, LINE
+settings, deployment state, or GitHub Pages. A local documentation commit is
+permitted when explicitly authorized; it must remain unpushed unless a
+separate push authorization is given.
+
 ## V2 performance-release rules
 
 Performance changes must be measurable, isolated, and reversible. They must

@@ -72,6 +72,14 @@ This repository has pre-existing, unrelated dirty runtime and documentation
 changes. This documentation task neither classifies nor incorporates them. The
 local documentation commit for these five files is deliberately path-scoped.
 
+## Codex product-memory status
+
+The authoritative V2.0/V2.1/V3/V4 boundary is recorded in the roadmap,
+architecture decisions, release rules, changelog, and `AGENTS.md`. A
+documentation-only handoff or memory update may preserve that boundary without
+waiting for Gate 0, but it does not authorize V2.1 implementation, a
+Production change, or a release conclusion.
+
 ## New-conversation handoff
 
 ```text

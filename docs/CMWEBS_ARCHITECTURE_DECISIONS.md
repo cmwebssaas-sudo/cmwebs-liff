@@ -102,6 +102,15 @@ work begins. The handoff must also state the product-version classification and
 whether it may touch Production. A recommended default for bounded repository
 work is `gpt-5.6-terra`, `medium`; a different choice requires a brief reason.
 
+### ADR-CMW-013 — Authoritative product-memory continuity
+
+The authoritative roadmap, current state, architecture decisions, release
+rules, changelog, and repository `AGENTS.md` must preserve the same V2.0,
+V2.1, V3, and V4 boundary. New Codex conversations use the documented handoff
+instead of reconstructing or redefining product scope from chat history.
+Documentation-only memory updates are repository records, not permission to
+alter runtime code, Production configuration, or Production data.
+
 ## Existing V2 decisions retained
 
 - V2 retains GitHub Pages + Apps Script + Sheets while it consolidates
