@@ -9,6 +9,7 @@
   <title>CMWebs 房客首頁</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
 
   <style>
     :root {
@@ -1131,7 +1132,7 @@
 
       url.searchParams.set(
         'v',
-        Date.now()
+        (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1')
       );
 
       location.href =

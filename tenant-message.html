@@ -9,6 +9,7 @@
   <title>CMWebs 聯絡房東</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
 
   <style>
     :root {
@@ -819,7 +820,7 @@
         page +
         separator +
         'v=' +
-        Date.now() +
+        (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') +
         (
           TEST_MODE
             ? '&test=1'

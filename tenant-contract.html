@@ -10,6 +10,7 @@
   <title>CMWebs 我的合約</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
 
   <style>
     :root {
@@ -1550,7 +1551,7 @@
       location.href =
         filename +
         '?v=' +
-        Date.now() +
+        (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') +
         testSuffix;
     }
 
@@ -1563,7 +1564,7 @@
       const params =
         new URLSearchParams();
 
-      params.set('v', Date.now());
+      params.set('v', (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1'));
 
       if (TEST_MODE) {
         params.set('test', '1');

@@ -9,6 +9,7 @@
   <title>CMWebs 切換管理團隊</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
 
   <style>
     :root {
@@ -1193,7 +1194,7 @@
       location.href =
         page +
         '?v=' +
-        Date.now() +
+        (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') +
         (
           TEST_MODE
             ? '&test=1'
@@ -2017,7 +2018,7 @@
           function () {
             location.replace(
               'landlord-onboarding.html?v=' +
-              Date.now() +
+              (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') +
               (
                 TEST_MODE
                   ? '&test=1'
@@ -2202,7 +2203,7 @@
                   : '?'
               ) +
               'v=' +
-              Date.now() +
+              (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') +
               (
                 TEST_MODE
                   ? '&test=1'

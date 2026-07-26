@@ -10,6 +10,7 @@
   <title>CMWebs 申請續約</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
 
   <style>
     :root {
@@ -1118,7 +1119,7 @@
 
     function goPage(filename) {
       const params = new URLSearchParams();
-      params.set('v', Date.now());
+      params.set('v', (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1'));
 
       if (TEST_MODE) {
         params.set('test', '1');
