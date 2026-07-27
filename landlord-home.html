@@ -1713,76 +1713,26 @@
           }
         }
 
-        const homeResult =
+        const bootstrapResult =
           await jsonpRequest(
-            'landlord_home',
+            'landlord_home_bootstrap',
             {}
           );
 
+        const bootstrap =
+          unwrapData(bootstrapResult);
+
         const home =
-          unwrapData(homeResult);
+          bootstrap.home || {};
 
-        const optionalResults =
-          await Promise.allSettled([
-            jsonpRequest(
-              'landlord_contract_requests_init',
-              {}
-            ),
-            jsonpRequest(
-              'landlord_payment_reports_init',
-              {}
-            ),
-            jsonpRequest(
-              'landlord_messages_init',
-              {}
-            )
-          ]);
+        const contractData =
+          bootstrap.contract_requests || {};
 
-        let contractData = {};
-        let paymentData = {};
-        let messageData = {};
+        const paymentData =
+          bootstrap.payment_reports || {};
 
-        if (
-          optionalResults[0].status ===
-          'fulfilled'
-        ) {
-          try {
-            contractData =
-              unwrapData(
-                optionalResults[0].value
-              );
-          } catch (error) {
-            console.warn(error);
-          }
-        }
-
-        if (
-          optionalResults[1].status ===
-          'fulfilled'
-        ) {
-          try {
-            paymentData =
-              unwrapData(
-                optionalResults[1].value
-              );
-          } catch (error) {
-            console.warn(error);
-          }
-        }
-
-        if (
-          optionalResults[2].status ===
-          'fulfilled'
-        ) {
-          try {
-            messageData =
-              unwrapData(
-                optionalResults[2].value
-              );
-          } catch (error) {
-            console.warn(error);
-          }
-        }
+        const messageData =
+          bootstrap.messages || {};
 
         const actionSummary =
           buildActionSummary(
