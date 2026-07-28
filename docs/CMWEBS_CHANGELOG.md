@@ -42,6 +42,11 @@
   fields, preserves `contract_status`, and fails closed without the required
   schema. It does not simulate approval, activation, or completed contract
   status.
+- Added the corresponding isolated local `tenant-contract.html` signing UI:
+  server-derived summary and terms, conditional new-tenant identity uploads,
+  signature capture, consent, and submitted-for-review state. Renewal renders
+  no identity upload flow. No frontend publication or Production action
+  occurred.
 
 ## 2026-07-29 — Gate 0 canonical baseline formalization
 

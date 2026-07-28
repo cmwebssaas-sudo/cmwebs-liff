@@ -1044,10 +1044,419 @@
     .nav-item:active {
       opacity: 0.65;
     }
+
+    /* Native signing workflow: intentionally quiet, single-action mobile UI. */
+    .signing-page {
+      min-height: 100%;
+      padding-bottom: calc(var(--nav-height) + 116px + env(safe-area-inset-bottom));
+      background: #ffffff;
+    }
+
+    .signing-header {
+      padding: 8px 2px 22px;
+    }
+
+    .signing-kicker {
+      margin-bottom: 8px;
+      color: #6b717a;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .signing-title {
+      margin: 0;
+      color: #202124;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      line-height: 1.24;
+    }
+
+    .signing-description {
+      margin: 10px 0 0;
+      color: #656b73;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .signing-status {
+      display: inline-flex;
+      min-height: 28px;
+      padding: 5px 10px;
+      align-items: center;
+      border: 1px solid #dfe3e8;
+      border-radius: 999px;
+      background: #f7f8f9;
+      color: #424850;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .signing-status.ready {
+      border-color: #cce8d7;
+      background: #f1fbf5;
+      color: #257345;
+    }
+
+    .signing-status.pending {
+      border-color: #f0dfbd;
+      background: #fff9ee;
+      color: #8a5e00;
+    }
+
+    .signing-section {
+      padding: 20px 0;
+      border-top: 1px solid #eceef0;
+    }
+
+    .signing-section:first-of-type {
+      border-top: 0;
+    }
+
+    .signing-section-title {
+      margin: 0;
+      color: #23262a;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .signing-section-help {
+      margin: 7px 0 0;
+      color: #727780;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .signing-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0;
+      margin-top: 15px;
+      border: 1px solid #e6e8eb;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .signing-summary-item {
+      min-width: 0;
+      padding: 14px 13px;
+      border-right: 1px solid #e6e8eb;
+      border-bottom: 1px solid #e6e8eb;
+    }
+
+    .signing-summary-item:nth-child(2n) {
+      border-right: 0;
+    }
+
+    .signing-summary-item:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    .signing-summary-label {
+      color: #747982;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .signing-summary-value {
+      margin-top: 5px;
+      color: #25282d;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .signing-summary-value.money {
+      color: #222222;
+    }
+
+    .signing-details {
+      margin-top: 15px;
+      border-top: 1px solid #e6e8eb;
+      border-bottom: 1px solid #e6e8eb;
+    }
+
+    .signing-details summary {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      color: #292d32;
+      font-size: 14px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    .signing-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .signing-details summary::after {
+      margin-left: auto;
+      color: #777d86;
+      content: '＋';
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    .signing-details[open] summary::after {
+      content: '－';
+    }
+
+    .signing-terms-content {
+      padding: 0 0 17px;
+      color: #444a52;
+      font-size: 13px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .signing-diff {
+      margin-top: 15px;
+      border-top: 1px solid #e6e8eb;
+    }
+
+    .signing-diff-row {
+      display: grid;
+      grid-template-columns: minmax(64px, 0.55fr) minmax(0, 1fr) 18px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid #e6e8eb;
+      color: #34383e;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .signing-diff-label {
+      color: #6d737c;
+      font-weight: 800;
+    }
+
+    .signing-diff-value {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .signing-diff-value.changed {
+      color: #202124;
+      font-weight: 800;
+    }
+
+    .signing-diff-arrow {
+      color: #9aa0a7;
+      text-align: center;
+    }
+
+    .signing-upload-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .signing-upload {
+      padding: 14px;
+      border: 1px solid #e2e5e8;
+      border-radius: 14px;
+    }
+
+    .signing-upload-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .signing-upload-top > div {
+      min-width: 0;
+    }
+
+    .signing-upload-title {
+      color: #24272c;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .signing-upload-help,
+    .signing-upload-state {
+      margin-top: 5px;
+      color: #747982;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .signing-upload-state.error {
+      color: #b23830;
+    }
+
+    .signing-upload-state.success {
+      color: #267344;
+    }
+
+    .signing-file-button,
+    .signing-secondary-button {
+      min-height: 44px;
+      padding: 10px 13px;
+      border: 1px solid #d9dde1;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #25282c;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .signing-file-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .signing-file-button input {
+      display: none;
+    }
+
+    .signature-pad {
+      position: relative;
+      margin-top: 15px;
+      border: 1px dashed #c9ced4;
+      border-radius: 14px;
+      background: #fbfbfc;
+      overflow: hidden;
+    }
+
+    .signature-pad canvas {
+      display: block;
+      width: 100%;
+      height: 180px;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .signature-pad-hint {
+      position: absolute;
+      top: 50%;
+      right: 16px;
+      left: 16px;
+      transform: translateY(-50%);
+      color: #9aa0a7;
+      font-size: 14px;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    .signature-pad.has-signature .signature-pad-hint {
+      display: none;
+    }
+
+    .signing-consent {
+      display: flex;
+      min-height: 44px;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 15px;
+      color: #42474e;
+      font-size: 13px;
+      line-height: 1.65;
+      cursor: pointer;
+    }
+
+    .signing-consent input {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      margin: 1px 0 0;
+      accent-color: #222222;
+    }
+
+    .signing-notice {
+      padding: 13px 14px;
+      margin-top: 15px;
+      border-radius: 12px;
+      background: #f7f8f9;
+      color: #5e646d;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .signing-notice.warning {
+      background: #fff9ee;
+      color: #7c5b00;
+    }
+
+    .signing-sticky-action {
+      position: sticky;
+      z-index: 2;
+      bottom: calc(var(--nav-height) + 10px);
+      padding-top: 18px;
+      background: #ffffff;
+    }
+
+    .signing-primary-button {
+      width: 100%;
+      min-height: 52px;
+      padding: 13px 16px;
+      border: 0;
+      border-radius: 12px;
+      background: #222222;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .signing-primary-button:disabled {
+      background: #c8cdd2;
+      cursor: not-allowed;
+    }
+
+    .signing-action-hint {
+      min-height: 18px;
+      margin: 8px 4px 0;
+      color: #70767e;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
     @media (max-width: 420px) {
       .price-comparison,
-      .approved-grid {
+      .approved-grid,
+      .signing-summary {
         grid-template-columns: 1fr;
+      }
+
+      .signing-summary-item,
+      .signing-summary-item:nth-child(2n),
+      .signing-summary-item:nth-last-child(-n + 2) {
+        border-right: 0;
+        border-bottom: 1px solid #e6e8eb;
+      }
+
+      .signing-summary-item:last-child {
+        border-bottom: 0;
+      }
+
+      .signing-diff-row {
+        grid-template-columns: 66px minmax(0, 1fr) 14px minmax(0, 1fr);
+        gap: 5px;
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .signing-upload-top {
+        flex-direction: column;
+      }
+
+      .signing-file-button {
+        width: 100%;
       }
     }
 
@@ -1215,6 +1624,12 @@
     let ACTIVE_REQUEST_ID = '';
     let TENANT_SIGNING_SESSION_TOKEN = '';
     let TENANT_SIGNING_MODE = '';
+    let TENANT_SIGNING_DATA = null;
+    let TENANT_SIGNING_ARTIFACT_STATE = {};
+    let TENANT_SIGNING_UPLOAD_STATE = {};
+    let TENANT_SIGNATURE_PAD = null;
+    let TENANT_SIGNATURE_HAS_STROKE = false;
+    let TENANT_SIGNING_SUBMITTING = false;
     let ALERT_CALLBACK = null;
 
     const app =
@@ -1833,6 +2248,39 @@
       });
     }
 
+    function callTenantSigningSubmissionStatus(requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsSigningSubmit_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error('簽署送交確認逾時'));
+        }, 30000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) {}
+        }
+
+        window[callbackName] = function(result) {
+          cleanup();
+          resolve(result || {});
+        };
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('簽署送交確認連線失敗'));
+        };
+        script.src = API_URL +
+          '?v2_action=tenant_contract_sign_status' +
+          '&request_id=' + encodeURIComponent(requestId) +
+          '&poll_secret=' + encodeURIComponent(pollSecret) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
     async function initializeTenantSigningSession() {
       const idToken = liff.getIDToken();
       if (!idToken) throw new Error('無法取得簽署身分憑證');
@@ -1856,14 +2304,58 @@
         const result = await callTenantSigningStatus(requestId, pollSecret);
         if (result.code === 'AUTH_EXCHANGE_NOT_FOUND') continue;
         if (!result.success || !result.data || !result.data.session_token) {
-          throw new Error('簽署身分驗證失敗');
+          const error = new Error(
+            tenantSigningErrorMessage(
+              result.code,
+              result.message
+            )
+          );
+          error.code = result.code || 'SIGNING_AUTH_FAILED';
+          throw error;
         }
         TENANT_SIGNING_SESSION_TOKEN = result.data.session_token;
         const mode = String((result.data.contract || {}).signing_mode || '').toLowerCase();
         TENANT_SIGNING_MODE = ['new_tenant', 'renewal'].indexOf(mode) !== -1 ? mode : '';
+        TENANT_SIGNING_DATA = result.data;
+        TENANT_SIGNING_ARTIFACT_STATE = result.data.artifact_state || {};
+        TENANT_SIGNING_UPLOAD_STATE = {};
         return result;
       }
       throw new Error('簽署身分驗證逾時');
+    }
+
+    async function submitTenantContractSigning() {
+      if (!TENANT_SIGNING_SESSION_TOKEN) {
+        throw new Error('簽署身分驗證已失效，請重新驗證。');
+      }
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify({
+          action: 'tenant_contract_sign_submit',
+          request_id: requestId,
+          poll_secret: pollSecret,
+          session_token: TENANT_SIGNING_SESSION_TOKEN,
+          consent: true
+        })
+      });
+
+      for (let attempt = 0; attempt < 6; attempt++) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callTenantSigningSubmissionStatus(requestId, pollSecret);
+        if (result.code === 'SIGNING_EXCHANGE_NOT_FOUND') continue;
+        if (!result.success) {
+          const error = new Error(
+            tenantSigningErrorMessage(result.code, result.message)
+          );
+          error.code = result.code || 'SIGNING_SUBMISSION_FAILED';
+          throw error;
+        }
+        return result;
+      }
+      throw new Error('簽署送交確認逾時');
     }
 
     async function uploadTenantContractArtifact(artifactType, file, idempotencyKey) {
@@ -2025,6 +2517,439 @@
       }
 
       return true;
+    }
+
+    // ==================================================
+    // 原生合約簽署 UI
+    // ==================================================
+
+    function tenantSigningErrorMessage(code, fallback) {
+      const messages = {
+        SIGNABLE_CONTRACT_NOT_FOUND: '目前沒有可簽署的合約。',
+        SIGNING_MODE_NOT_READY: '簽署模式尚未就緒，請聯絡房東確認。',
+        SESSION_TOKEN_EXPIRED: '簽署驗證已逾期，請重新驗證後再試。',
+        SESSION_TOKEN_INVALID: '簽署驗證無效，請重新驗證後再試。',
+        SESSION_PRINCIPAL_INVALID: '目前帳號無法確認此合約的簽署權限。',
+        CONTRACT_OWNERSHIP_INVALID: '目前帳號無法簽署此合約。',
+        CONTRACT_NOT_SIGNABLE: '此合約目前無法送交簽署。',
+        REQUIRED_ARTIFACT_MISSING: '請完成所有必要附件與簽名。',
+        CONSENT_REQUIRED: '請先勾選同意確認。',
+        CONTRACT_SIGNING_SCHEMA_NOT_READY: '簽署資料尚未備妥，請聯絡房東協助處理。',
+        SIGNING_EXCHANGE_DENIED: '簽署確認未通過，請重新驗證後再試。'
+      };
+      return messages[code] || fallback || '簽署流程暫時無法完成，請稍後再試。';
+    }
+
+    function tenantSigningModeTitle() {
+      return TENANT_SIGNING_MODE === 'renewal'
+        ? '續約合約'
+        : '新租客簽約';
+    }
+
+    function tenantSigningModeDescription() {
+      return TENANT_SIGNING_MODE === 'renewal'
+        ? '請確認本次續約條件並完成親筆簽名。既有個資與身分證資料不需要重新提交。'
+        : '請依序確認合約內容、上傳必要證件並完成親筆簽名。';
+    }
+
+    function tenantSigningUploadCopy(type) {
+      const state = TENANT_SIGNING_UPLOAD_STATE[type] || 'idle';
+      const copy = {
+        idle: ['尚未選擇', ''],
+        processing: ['圖片處理中…', ''],
+        uploading: ['安全上傳中…', ''],
+        success: ['已安全儲存', 'success'],
+        error: ['上傳失敗，可重新選擇檔案後再試。', 'error']
+      };
+      return copy[state] || copy.idle;
+    }
+
+    function tenantSigningRequiredArtifacts() {
+      return Array.isArray(
+        TENANT_SIGNING_DATA && TENANT_SIGNING_DATA.artifact_requirements
+      )
+        ? TENANT_SIGNING_DATA.artifact_requirements
+        : [];
+    }
+
+    function tenantSigningStatusLabel() {
+      return rawText(
+        TENANT_SIGNING_DATA && TENANT_SIGNING_DATA.signing_status
+      ).toLowerCase() === 'submitted'
+        ? '已送交簽署資料'
+        : '待您確認';
+    }
+
+    function tenantSigningSummaryItem(label, value, className) {
+      return `
+        <div class="signing-summary-item">
+          <div class="signing-summary-label">${escapeHtml(label)}</div>
+          <div class="signing-summary-value ${className || ''}">${value}</div>
+        </div>
+      `;
+    }
+
+    function renderTenantArtifactUpload(type, title, help) {
+      const complete = TENANT_SIGNING_ARTIFACT_STATE[type] === true;
+      const state = tenantSigningUploadCopy(type);
+      const inputId = 'tenantSigningUpload_' + type;
+      const busy = ['processing', 'uploading'].indexOf(
+        TENANT_SIGNING_UPLOAD_STATE[type]
+      ) >= 0;
+      return `
+        <div class="signing-upload">
+          <div class="signing-upload-top">
+            <div>
+              <div class="signing-upload-title">${escapeHtml(title)}</div>
+              <div class="signing-upload-help">${escapeHtml(help)}</div>
+              <div class="signing-upload-state ${state[1]}">
+                ${complete ? '已安全儲存，可重新選擇更新。' : escapeHtml(state[0])}
+              </div>
+            </div>
+            <label class="signing-file-button" for="${inputId}">
+              ${busy ? '處理中' : complete ? '重新選擇' : '選擇檔案'}
+              <input
+                id="${inputId}"
+                type="file"
+                accept="image/jpeg,image/png"
+                ${busy ? 'disabled' : ''}
+                onchange="handleTenantArtifactSelect('${type}', this)"
+              />
+            </label>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTenantSigningLoading(message) {
+      app.className = 'signing-page';
+      app.innerHTML = `
+        <div class="signing-header">
+          <div class="signing-kicker">CMWebs 合約簽署</div>
+          <h1 class="signing-title">正在確認簽署資格</h1>
+          <p class="signing-description">${safeText(message || '請稍候，系統正在安全驗證您的 LIFF 身分與合約。')}</p>
+        </div>
+      `;
+    }
+
+    function renderTenantSigningFailure(message, code) {
+      app.className = 'signing-page';
+      app.innerHTML = `
+        <div class="signing-header">
+          <div class="signing-kicker">CMWebs 合約簽署</div>
+          <h1 class="signing-title">暫時無法開始簽署</h1>
+          <p class="signing-description">${safeText(message)}</p>
+          ${code ? `<div class="signing-notice">請重新驗證；若問題持續，請聯絡房東協助確認合約資料。</div>` : ''}
+          <div class="signing-sticky-action">
+            <button class="signing-primary-button" onclick="retryTenantSigningSession()">重新驗證</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTenantSigningWorkflow() {
+      const data = TENANT_SIGNING_DATA || {};
+      const tenant = data.tenant || {};
+      const contract = data.contract || {};
+      const isRenewal = TENANT_SIGNING_MODE === 'renewal';
+      const submitted = rawText(data.signing_status).toLowerCase() === 'submitted';
+      const terms = contract.terms_document || {};
+      const comparison = contract.renewal_comparison || {};
+      const changedItems = Array.isArray(comparison.items)
+        ? comparison.items.filter(function(item) { return item.changed === true; })
+        : [];
+      const summary = [
+        tenantSigningSummaryItem('房號', safeText(contract.room_name || tenant.room_name)),
+        tenantSigningSummaryItem('租期', safeText(formatDateOnly(contract.start_date)) + '<br>至 ' + safeText(formatDateOnly(contract.end_date))),
+        tenantSigningSummaryItem('月租', safeText(money(contract.rent_amount)), 'money'),
+        tenantSigningSummaryItem('管理費', safeText(money(contract.management_fee)), 'money'),
+        tenantSigningSummaryItem('押金', safeText(money(contract.deposit_amount)), 'money'),
+        tenantSigningSummaryItem('繳款日', '每月 ' + safeText(contract.monthly_payment_day || '-') + ' 日')
+      ].join('');
+
+      app.className = 'signing-page';
+      app.innerHTML = `
+        <header class="signing-header">
+          <div class="signing-kicker">CMWebs 合約簽署</div>
+          <h1 class="signing-title">${tenantSigningModeTitle()}</h1>
+          <p class="signing-description">${tenantSigningModeDescription()}</p>
+          <div class="signing-status ${submitted ? 'ready' : 'pending'}">${tenantSigningStatusLabel()}</div>
+        </header>
+
+        ${submitted ? `
+          <section class="signing-section">
+            <h2 class="signing-section-title">資料已送交</h2>
+            <p class="signing-section-help">您的簽署資料已送交後續確認。這不代表合約已核准或生效；請留意房東的後續通知。</p>
+          </section>
+        ` : ''}
+
+        <section class="signing-section">
+          <h2 class="signing-section-title">合約重要摘要</h2>
+          <p class="signing-section-help">請先確認下列主要條件。</p>
+          <div class="signing-summary">${summary}</div>
+        </section>
+
+        ${isRenewal ? `
+          <section class="signing-section">
+            <h2 class="signing-section-title">本次續約的主要變更</h2>
+            ${comparison.available ? `
+              <div class="signing-diff">
+                ${changedItems.length ? changedItems.map(function(item) {
+                  return `
+                    <div class="signing-diff-row">
+                      <div class="signing-diff-label">${safeText(item.label)}</div>
+                      <div class="signing-diff-value">${safeText(item.old_value)}</div>
+                      <div class="signing-diff-arrow">→</div>
+                      <div class="signing-diff-value changed">${safeText(item.new_value)}</div>
+                    </div>
+                  `;
+                }).join('') : '<div class="signing-notice">主要條件沒有異動，請閱讀完整續約合約確認。</div>'}
+              </div>
+              ${contract.landlord_note ? `<div class="signing-notice">房東補充條件：${safeText(contract.landlord_note)}</div>` : ''}
+            ` : `
+              <div class="signing-notice warning">${safeText(comparison.message || '續約前一份合約關聯尚未提供，暫時無法確認差異。')}</div>
+            `}
+          </section>
+        ` : ''}
+
+        <section class="signing-section">
+          <h2 class="signing-section-title">完整合約內容</h2>
+          ${terms.available ? `
+            <details class="signing-details">
+              <summary>閱讀完整合約</summary>
+              <div class="signing-terms-content">${safeText(terms.content)}</div>
+            </details>
+          ` : `
+            <div class="signing-notice warning">${safeText(terms.message || '完整合約內容尚未提供。')}</div>
+          `}
+        </section>
+
+        ${!submitted && !isRenewal ? `
+          <section class="signing-section">
+            <h2 class="signing-section-title">身分證件</h2>
+            <p class="signing-section-help">證件只會依後端驗證的簽署模式安全保存，不會顯示公開連結。</p>
+            <div class="signing-upload-list">
+              ${renderTenantArtifactUpload('identity_front', '身分證正面', '請上傳清晰的 JPG 或 PNG 圖片。')}
+              ${renderTenantArtifactUpload('identity_back', '身分證反面', '請上傳清晰的 JPG 或 PNG 圖片。')}
+            </div>
+          </section>
+        ` : ''}
+
+        ${!submitted ? `
+          <section class="signing-section">
+            <h2 class="signing-section-title">親筆簽名</h2>
+            <p class="signing-section-help">請在下方以手指或觸控筆簽名。簽名只在您送交時安全上傳。</p>
+            ${TENANT_SIGNING_ARTIFACT_STATE.signature === true ? `
+              <div class="signing-notice">親筆簽名已安全儲存，可直接送交簽署資料。</div>
+            ` : `
+              <div id="tenantSignaturePad" class="signature-pad">
+                <canvas id="tenantSignatureCanvas" aria-label="親筆簽名區"></canvas>
+                <div class="signature-pad-hint">請在這裡親筆簽名</div>
+              </div>
+              <div class="page-actions">
+                <button class="signing-secondary-button" type="button" onclick="clearTenantSignature()">清除簽名</button>
+              </div>
+            `}
+          </section>
+
+          <section class="signing-section">
+            <h2 class="signing-section-title">同意與確認</h2>
+            <label class="signing-consent">
+              <input id="tenantSigningConsent" type="checkbox" onchange="updateTenantSigningActionState()" />
+              <span>我已閱讀並確認以上合約內容與條件，並同意送交本次簽署資料供後續確認。</span>
+            </label>
+          </section>
+
+          <div class="signing-sticky-action">
+            <button id="tenantSigningSubmitButton" class="signing-primary-button" type="button" onclick="submitTenantSigningWorkflow()">送交簽署資料</button>
+            <div id="tenantSigningActionHint" class="signing-action-hint"></div>
+          </div>
+        ` : ''}
+      `;
+
+      if (!submitted) {
+        setupTenantSignaturePad();
+        updateTenantSigningActionState();
+      }
+    }
+
+    async function handleTenantArtifactSelect(type, input) {
+      const file = input && input.files ? input.files[0] : null;
+      if (!file) return;
+      TENANT_SIGNING_UPLOAD_STATE[type] = 'processing';
+      renderTenantSigningWorkflow();
+      try {
+        TENANT_SIGNING_UPLOAD_STATE[type] = 'uploading';
+        renderTenantSigningWorkflow();
+        const result = await uploadTenantContractArtifact(
+          type,
+          file,
+          randomUrlToken(18)
+        );
+        if (!result || result.success !== true) {
+          throw new Error(tenantSigningErrorMessage(result && result.code, result && result.message));
+        }
+        TENANT_SIGNING_ARTIFACT_STATE[type] = true;
+        TENANT_SIGNING_UPLOAD_STATE[type] = 'success';
+      } catch (error) {
+        TENANT_SIGNING_UPLOAD_STATE[type] = 'error';
+        showAlert(error.message || '附件上傳失敗，請重新選擇檔案後再試。', null, '上傳未完成');
+      }
+      renderTenantSigningWorkflow();
+    }
+
+    function setupTenantSignaturePad() {
+      const canvas = document.getElementById('tenantSignatureCanvas');
+      const pad = document.getElementById('tenantSignaturePad');
+      if (!canvas || !pad) return;
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width * ratio));
+      canvas.height = Math.max(1, Math.round(rect.height * ratio));
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      context.scale(ratio, ratio);
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      context.lineWidth = 2.2;
+      context.strokeStyle = '#202124';
+      let drawing = false;
+      let lastPoint = null;
+
+      function point(event) {
+        const bounds = canvas.getBoundingClientRect();
+        return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+      }
+
+      canvas.addEventListener('pointerdown', function(event) {
+        drawing = true;
+        lastPoint = point(event);
+        TENANT_SIGNATURE_HAS_STROKE = true;
+        pad.classList.add('has-signature');
+        context.beginPath();
+        context.arc(lastPoint.x, lastPoint.y, 1.1, 0, Math.PI * 2);
+        context.fillStyle = '#202124';
+        context.fill();
+        canvas.setPointerCapture(event.pointerId);
+        updateTenantSigningActionState();
+      });
+      canvas.addEventListener('pointermove', function(event) {
+        if (!drawing || !lastPoint) return;
+        const next = point(event);
+        context.beginPath();
+        context.moveTo(lastPoint.x, lastPoint.y);
+        context.lineTo(next.x, next.y);
+        context.stroke();
+        lastPoint = next;
+      });
+      function stopDrawing(event) {
+        drawing = false;
+        lastPoint = null;
+        if (event && canvas.hasPointerCapture(event.pointerId)) {
+          canvas.releasePointerCapture(event.pointerId);
+        }
+      }
+      canvas.addEventListener('pointerup', stopDrawing);
+      canvas.addEventListener('pointercancel', stopDrawing);
+      TENANT_SIGNATURE_PAD = canvas;
+    }
+
+    function clearTenantSignature() {
+      if (!TENANT_SIGNATURE_PAD) return;
+      const context = TENANT_SIGNATURE_PAD.getContext('2d');
+      context.clearRect(0, 0, TENANT_SIGNATURE_PAD.width, TENANT_SIGNATURE_PAD.height);
+      TENANT_SIGNATURE_HAS_STROKE = false;
+      const pad = document.getElementById('tenantSignaturePad');
+      if (pad) pad.classList.remove('has-signature');
+      updateTenantSigningActionState();
+    }
+
+    function tenantSignatureBlob() {
+      if (!TENANT_SIGNATURE_PAD || !TENANT_SIGNATURE_HAS_STROKE) {
+        return Promise.reject(new Error('請先完成親筆簽名。'));
+      }
+      return new Promise(function(resolve, reject) {
+        TENANT_SIGNATURE_PAD.toBlob(function(blob) {
+          if (blob && blob.size > 0) resolve(blob);
+          else reject(new Error('簽名處理失敗，請重新簽名。'));
+        }, 'image/png');
+      });
+    }
+
+    function tenantSigningReadyToSubmit() {
+      const data = TENANT_SIGNING_DATA || {};
+      const contract = data.contract || {};
+      if (TENANT_SIGNING_SUBMITTING) return { ready: false, hint: '簽署資料處理中，請勿離開此頁。' };
+      if (!contract.terms_document || contract.terms_document.available !== true) return { ready: false, hint: '完整合約內容尚未備妥，暫時無法送交。' };
+      if (TENANT_SIGNING_MODE === 'renewal' && (!contract.renewal_comparison || contract.renewal_comparison.available !== true)) return { ready: false, hint: '續約條件差異尚未備妥，暫時無法送交。' };
+      if (Object.keys(TENANT_SIGNING_UPLOAD_STATE).some(function(type) {
+        return ['processing', 'uploading'].indexOf(TENANT_SIGNING_UPLOAD_STATE[type]) >= 0;
+      })) return { ready: false, hint: '附件處理中，請稍候。' };
+      const required = tenantSigningRequiredArtifacts();
+      const missing = required.some(function(type) {
+        return TENANT_SIGNING_ARTIFACT_STATE[type] !== true && !(type === 'signature' && TENANT_SIGNATURE_HAS_STROKE);
+      });
+      if (missing) return { ready: false, hint: '請完成所有必要附件與親筆簽名。' };
+      const consent = document.getElementById('tenantSigningConsent');
+      if (!consent || consent.checked !== true) return { ready: false, hint: '請先勾選同意確認。' };
+      return { ready: true, hint: '送交後將進入後續確認，不代表合約立即生效。' };
+    }
+
+    function updateTenantSigningActionState() {
+      const button = document.getElementById('tenantSigningSubmitButton');
+      const hint = document.getElementById('tenantSigningActionHint');
+      if (!button || !hint) return;
+      const state = tenantSigningReadyToSubmit();
+      button.disabled = !state.ready;
+      button.textContent = TENANT_SIGNING_SUBMITTING ? '送交處理中…' : '送交簽署資料';
+      hint.textContent = state.hint;
+    }
+
+    async function submitTenantSigningWorkflow() {
+      const state = tenantSigningReadyToSubmit();
+      if (!state.ready) {
+        updateTenantSigningActionState();
+        return;
+      }
+      TENANT_SIGNING_SUBMITTING = true;
+      updateTenantSigningActionState();
+      try {
+        if (TENANT_SIGNING_ARTIFACT_STATE.signature !== true) {
+          const signature = await tenantSignatureBlob();
+          const result = await uploadTenantContractArtifact(
+            'signature',
+            signature,
+            randomUrlToken(18)
+          );
+          if (!result || result.success !== true) {
+            throw new Error(tenantSigningErrorMessage(result && result.code, result && result.message));
+          }
+          TENANT_SIGNING_ARTIFACT_STATE.signature = true;
+          TENANT_SIGNING_UPLOAD_STATE.signature = 'success';
+        }
+        const result = await submitTenantContractSigning();
+        TENANT_SIGNING_DATA.signing_status = result.data && result.data.signing_status || 'submitted';
+        renderTenantSigningWorkflow();
+      } catch (error) {
+        showAlert(error.message || '簽署送交失敗，請重新驗證後再試。', null, '尚未送交');
+      } finally {
+        TENANT_SIGNING_SUBMITTING = false;
+        updateTenantSigningActionState();
+      }
+    }
+
+    async function retryTenantSigningSession() {
+      TENANT_SIGNING_SESSION_TOKEN = '';
+      TENANT_SIGNING_MODE = '';
+      TENANT_SIGNING_DATA = null;
+      TENANT_SIGNING_ARTIFACT_STATE = {};
+      renderTenantSigningLoading('正在重新驗證您的簽署資格…');
+      try {
+        await initializeTenantSigningSession();
+        renderTenantSigningWorkflow();
+      } catch (error) {
+        renderTenantSigningFailure(error.message || '簽署身分驗證失敗。', error.code);
+      }
     }
 
     // ==================================================
@@ -3227,7 +4152,24 @@
           return;
         }
 
-        await loadPage();
+        renderTenantSigningLoading();
+
+        try {
+          await initializeTenantSigningSession();
+          renderTenantSigningWorkflow();
+        } catch (signingError) {
+          if (signingError.code === 'SIGNABLE_CONTRACT_NOT_FOUND') {
+            await loadPage();
+            return;
+          }
+
+          renderTenantSigningFailure(
+            signingError.message ||
+              '簽署身分驗證失敗，請重新驗證後再試。',
+            signingError.code ||
+              'SIGNING_AUTH_FAILED'
+          );
+        }
 
       } catch (error) {
         renderError(
