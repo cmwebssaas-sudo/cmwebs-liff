@@ -55,3 +55,12 @@ and immutable rollback remain separate Production evidence.
 - Tokens, identity images, signatures, Drive identifiers, and internal metadata
   stay out of URLs, browser storage, and console output. Private artifact
   storage must fail closed when its required schema is absent.
+- The signing read model returns only fields from the server-resolved signable
+  contract and, for a renewal, its same-tenant, same-Workspace linked
+  predecessor. Missing full-contract content or predecessor linkage is shown as
+  unavailable; the browser must not invent either.
+- The native final action records a tenant signing submission only after a
+  verified session, consent, and required stored artifacts. It preserves
+  `contract_status`, is idempotent after a successful submission, and fails
+  closed when the explicit signing-audit schema is absent. It is not a contract
+  activation, approval, or status-transition mechanism.

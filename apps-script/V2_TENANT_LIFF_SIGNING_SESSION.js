@@ -53,7 +53,7 @@ function tenantLiffSigningAuthenticate_(idToken) {
   const nowIso = new Date().toISOString();
   const expiresAt = now + V2_TENANT_LIFF_AUTH_TTL_SECONDS_;
   const token = createTenantLiffSessionToken_({ version: 1, purpose: V2_TENANT_LIFF_AUTH_PURPOSE_, line_sub: claims.sub, user_id: principal.data.user_id, tenant_id: principal.data.tenant_id, workspace_id: principal.data.workspace_id, contract_id: principal.data.contract_id, issued_at: now, expires_at: expiresAt, jti: Utilities.getUuid() });
-  return { success: true, code: 'OK', data: { tenant: principal.data.tenant, contract: principal.data.contract, requests: [], permissions: { can_request_renewal: false, can_request_termination: false }, signing_required: true, signing_status: 'pending', tenant_signed_at: '', has_identity_documents: false, has_signature: false, session_token: token, session_expires_at: new Date(expiresAt * 1000).toISOString(), authenticated_at: nowIso } };
+  return { success: true, code: 'OK', data: { tenant: principal.data.tenant, contract: principal.data.contract, signing_required: true, signing_status: principal.data.signing_status, artifact_requirements: principal.data.artifact_requirements, artifact_state: principal.data.artifact_state, session_token: token, session_expires_at: new Date(expiresAt * 1000).toISOString(), authenticated_at: nowIso } };
 }
 
 function tenantLiffSigningResolvePrincipal_(lineSub) {
@@ -69,14 +69,71 @@ function tenantLiffSigningResolvePrincipal_(lineSub) {
   const contracts = tenantLiffSigningRows_(ss.getSheetByName('V2_contracts'));
   const contract = contracts.find(function (row) { return tenantLiffSigningText_(row.tenant_id) === tenantLiffSigningText_(tenant.tenant_id) && tenantLiffSigningText_(row.workspace_id) === workspaceId && ['pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(tenantLiffSigningText_(row.contract_status)) >= 0; });
   if (!contract) return tenantLiffSigningError_('SIGNABLE_CONTRACT_NOT_FOUND');
-  return { success: true, data: { user_id: tenantLiffSigningText_(user.user_id), tenant_id: tenantLiffSigningText_(tenant.tenant_id), workspace_id: workspaceId, contract_id: tenantLiffSigningText_(contract.contract_id), tenant: { tenant_id: tenantLiffSigningText_(tenant.tenant_id), room_name: tenantLiffSigningText_(tenant.room_name) }, contract: { contract_id: tenantLiffSigningText_(contract.contract_id), contract_status: tenantLiffSigningText_(contract.contract_status), signing_mode: tenantLiffSigningText_(contract.signing_mode), start_date: contract.start_date || '', end_date: contract.end_date || '', rent_amount: contract.rent_amount || '', management_fee: contract.management_fee || '', deposit_amount: contract.deposit_amount || '' } } };
+  const signingMode = tenantLiffSigningText_(contract.signing_mode).toLowerCase();
+  if (['new_tenant', 'renewal'].indexOf(signingMode) === -1) return tenantLiffSigningError_('SIGNING_MODE_NOT_READY');
+  const artifactState = tenantLiffSigningArtifactState_(ss, contract, signingMode);
+  return { success: true, data: { user_id: tenantLiffSigningText_(user.user_id), tenant_id: tenantLiffSigningText_(tenant.tenant_id), workspace_id: workspaceId, contract_id: tenantLiffSigningText_(contract.contract_id), tenant: { tenant_id: tenantLiffSigningText_(tenant.tenant_id), tenant_name: tenantLiffSigningText_(tenant.tenant_name || tenant.name), room_name: tenantLiffSigningText_(tenant.room_name) }, contract: tenantLiffSigningContractView_(contracts, contract, signingMode), signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending', artifact_requirements: signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'], artifact_state: artifactState } };
+}
+
+function tenantLiffSigningContractView_(contracts, contract, signingMode) {
+  const previousId = tenantLiffSigningText_(contract.previous_contract_id || contract.renewed_from_contract_id);
+  const previous = previousId ? contracts.find(function (row) { return tenantLiffSigningText_(row.contract_id) === previousId && tenantLiffSigningText_(row.tenant_id) === tenantLiffSigningText_(contract.tenant_id) && tenantLiffSigningText_(row.workspace_id) === tenantLiffSigningText_(contract.workspace_id); }) : null;
+  const terms = tenantLiffSigningTermsDocument_(contract);
+  return {
+    contract_id: tenantLiffSigningText_(contract.contract_id),
+    contract_status: tenantLiffSigningText_(contract.contract_status),
+    signing_mode: signingMode,
+    room_name: tenantLiffSigningText_(contract.room_name),
+    start_date: contract.start_date || contract.contract_start_date || '',
+    end_date: contract.end_date || contract.contract_end_date || '',
+    rent_amount: contract.rent_amount || contract.monthly_rent || '',
+    management_fee: contract.management_fee || contract.monthly_management_fee || '',
+    deposit_amount: contract.deposit_amount || '',
+    monthly_payment_day: contract.monthly_payment_day || contract.payment_day || '',
+    landlord_note: tenantLiffSigningText_(contract.landlord_note || contract.signing_note || contract.renewal_landlord_note),
+    terms_document: terms,
+    renewal_comparison: tenantLiffSigningRenewalComparison_(previous, contract, signingMode)
+  };
+}
+
+function tenantLiffSigningTermsDocument_(contract) {
+  const content = tenantLiffSigningText_(contract.contract_content || contract.contract_text || contract.contract_terms || contract.terms_text);
+  return content ? { available: true, content: content } : { available: false, message: '完整合約內容尚未提供，請聯絡房東確認。' };
+}
+
+function tenantLiffSigningRenewalComparison_(previous, contract, signingMode) {
+  if (signingMode !== 'renewal') return { available: false, items: [] };
+  if (!previous) return { available: false, message: '續約前一份合約關聯尚未提供。', items: [] };
+  const fields = [
+    ['租期', 'start_date', 'end_date'],
+    ['月租', 'rent_amount', 'monthly_rent'],
+    ['管理費', 'management_fee', 'monthly_management_fee'],
+    ['押金', 'deposit_amount', 'deposit_amount'],
+    ['繳款日', 'monthly_payment_day', 'payment_day']
+  ];
+  const items = fields.map(function (field) {
+    const oldValue = field[0] === '租期' ? tenantLiffSigningText_(previous.start_date || previous.contract_start_date) + ' → ' + tenantLiffSigningText_(previous.end_date || previous.contract_end_date) : tenantLiffSigningText_(previous[field[1]] || previous[field[2]]);
+    const newValue = field[0] === '租期' ? tenantLiffSigningText_(contract.start_date || contract.contract_start_date) + ' → ' + tenantLiffSigningText_(contract.end_date || contract.contract_end_date) : tenantLiffSigningText_(contract[field[1]] || contract[field[2]]);
+    return { label: field[0], old_value: oldValue, new_value: newValue, changed: oldValue !== newValue };
+  });
+  return { available: true, items: items };
+}
+
+function tenantLiffSigningArtifactState_(ss, contract, signingMode) {
+  const rows = tenantLiffSigningRows_(ss.getSheetByName('V2_contract_artifacts'));
+  const required = signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'];
+  const stored = {};
+  rows.forEach(function (row) {
+    if (tenantLiffSigningText_(row.contract_id) === tenantLiffSigningText_(contract.contract_id) && tenantLiffSigningText_(row.workspace_id) === tenantLiffSigningText_(contract.workspace_id) && tenantLiffSigningText_(row.tenant_id) === tenantLiffSigningText_(contract.tenant_id) && tenantLiffSigningText_(row.status) === 'stored') stored[tenantLiffSigningText_(row.artifact_type)] = true;
+  });
+  return required.reduce(function (result, type) { result[type] = stored[type] === true; return result; }, {});
 }
 
 function createTenantLiffSessionToken_(claims) { const payload = Utilities.base64EncodeWebSafe(JSON.stringify(claims)).replace(/=+$/g, ''); return payload + '.' + tenantLiffSigningHmacHex_(payload, tenantLiffSigningSessionSecret_()); }
 function verifyTenantLiffSessionToken_(token) { const parts = String(token || '').split('.'); if (parts.length !== 2 || !tenantLiffSigningConstantEquals_(parts[1], tenantLiffSigningHmacHex_(parts[0], tenantLiffSigningSessionSecret_()))) return tenantLiffSigningError_('SESSION_TOKEN_INVALID'); let claims; try { claims = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString()); } catch (_) { return tenantLiffSigningError_('SESSION_TOKEN_INVALID'); } if (claims.purpose !== V2_TENANT_LIFF_AUTH_PURPOSE_ || Number(claims.expires_at) <= Math.floor(Date.now()/1000)) return tenantLiffSigningError_('SESSION_TOKEN_EXPIRED'); const principal = tenantLiffSigningResolvePrincipal_(claims.line_sub); if (!principal.success || principal.data.user_id !== claims.user_id || principal.data.tenant_id !== claims.tenant_id || principal.data.workspace_id !== claims.workspace_id || principal.data.contract_id !== claims.contract_id) return tenantLiffSigningError_('SESSION_PRINCIPAL_INVALID'); return { success: true, data: claims }; }
 function tenantLiffSigningSessionSecret_() { const secret = PropertiesService.getScriptProperties().getProperty('CMWEBS_LIFF_SESSION_HMAC_SECRET'); if (!secret) throw new Error('CMWEBS_LIFF_SESSION_HMAC_SECRET is not configured'); return secret; }
 function tenantLiffSigningHmacHex_(value, key) { return Utilities.computeHmacSha256Signature(String(value), String(key)).map(function (b) { return ('0' + (b < 0 ? b + 256 : b).toString(16)).slice(-2); }).join(''); }
-function tenantLiffSigningRows_(sheet) { if (!sheet || sheet.getLastRow() < 2) return []; const values = sheet.getDataRange().getValues(); const headers = values.shift().map(tenantLiffSigningText_); return values.map(function (row) { const obj = {}; headers.forEach(function (h, i) { obj[h] = row[i]; }); return obj; }); }
+function tenantLiffSigningRows_(sheet) { if (!sheet || sheet.getLastRow() < 2) return []; const values = sheet.getDataRange().getValues(); const headers = values.shift().map(tenantLiffSigningText_); return values.map(function (row, index) { const obj = { _sheet_row: index + 2 }; headers.forEach(function (h, i) { obj[h] = row[i]; }); return obj; }); }
 function tenantLiffSigningExchangeKey_(id) { return 'tenant_liff_auth:' + String(id || ''); }
 function tenantLiffSigningText_(v) { return v === null || v === undefined ? '' : String(v).trim(); }
 function tenantLiffSigningConstantEquals_(a, b) { a = String(a || ''); b = String(b || ''); let d = a.length ^ b.length; for (let i=0; i<Math.max(a.length,b.length); i++) d |= (a.charCodeAt(i)||0) ^ (b.charCodeAt(i)||0); return d === 0; }

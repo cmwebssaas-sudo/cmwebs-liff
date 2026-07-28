@@ -63,6 +63,16 @@ function doGet(e) {
     );
   }
 
+  if (v2Action === 'tenant_contract_sign_status') {
+    return jsonOutput_(
+      tenantContractSigningReadExchange_(
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
   runtimeSnapshotBegin_(v2Action);
 
   try {
@@ -2094,7 +2104,9 @@ function doPost(e) {
           ? tenantLiffSigningHandleAuthPost_(postBody)
           : tenantContractArtifactIsUploadRequest_(postBody)
             ? tenantContractArtifactHandleUploadPost_(postBody)
-            : handleLineWebhook_(postBody);
+            : tenantContractSigningIsSubmitRequest_(postBody)
+              ? tenantContractSigningHandleSubmitPost_(postBody)
+              : handleLineWebhook_(postBody);
 
     return ContentService
       .createTextOutput(JSON.stringify(result))

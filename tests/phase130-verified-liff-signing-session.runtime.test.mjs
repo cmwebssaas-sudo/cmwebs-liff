@@ -11,7 +11,7 @@ const makeRuntime = () => {
   const sheets = () => ({
     V2_users: makeRows(['user_id','line_user_id','role','status'], [['user-1','Utenant','tenant','active']]),
     V2_tenants: makeRows(['tenant_id','tenant_user_id','line_user_id','workspace_id','status','room_name'], [['tenant-1','user-1','Utenant','ws-1','active','R1']]),
-    V2_contracts: makeRows(['contract_id','tenant_id','workspace_id','contract_status'], [['contract-1','tenant-1','ws-1','pending_tenant_signature']])
+    V2_contracts: makeRows(['contract_id','tenant_id','workspace_id','contract_status','signing_mode'], [['contract-1','tenant-1','ws-1','pending_tenant_signature','new_tenant']])
   });
   state.sheetMap = sheets();
   const context = { JSON, String, Number, Math, Date, RegExp, Error, console: { log() {}, warn() {}, error() {} }, SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: n => state.sheetMap[n] || null }) }, PropertiesService: { getScriptProperties: () => ({ getProperty: k => state.props.get(k) || null }) }, CacheService: { getScriptCache: () => ({ put: (k,v) => state.cache.set(k,v), get: k => state.cache.get(k) || null, remove: k => state.cache.delete(k) }) }, UrlFetchApp: { fetch: () => ({ getResponseCode: () => state.verify.code, getContentText: () => typeof state.verify.body === 'string' ? state.verify.body : JSON.stringify(state.verify.body) }) }, Utilities: { getUuid: () => crypto.randomUUID(), computeHmacSha256Signature: (v,k) => [...crypto.createHmac('sha256', k).update(v).digest()].map(x => x > 127 ? x - 256 : x), base64EncodeWebSafe: v => Buffer.from(v).toString('base64url'), base64DecodeWebSafe: v => Buffer.from(v, 'base64url'), newBlob: v => ({ getDataAsString: () => Buffer.from(v).toString() }) } };

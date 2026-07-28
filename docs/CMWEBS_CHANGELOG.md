@@ -37,7 +37,11 @@
 - Server-side principal resolution and backend-derived `signing_mode` control
   the permitted artifacts. Normal renewal is signature-only; missing mode or
   missing artifact schema fail closed.
-- The final signing-submit action is intentionally not added or simulated.
+- Added a server-verified signing-submission action. It requires consent and
+  the mode-specific stored artifacts, records only explicit signing-audit
+  fields, preserves `contract_status`, and fails closed without the required
+  schema. It does not simulate approval, activation, or completed contract
+  status.
 
 ## 2026-07-29 — Gate 0 canonical baseline formalization
 
