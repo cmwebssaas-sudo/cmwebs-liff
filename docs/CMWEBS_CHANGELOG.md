@@ -29,6 +29,16 @@
   Production data or configuration change, LINE/LIFF change, or manual
   message send occurred.
 
+## 2026-07-29 — Unpublished V2.1 native signing foundation
+
+- Added verified LIFF signing-session and private contract-artifact foundations
+  to an isolated local branch only; no Apps Script deployment or Production
+  data/configuration action occurred.
+- Server-side principal resolution and backend-derived `signing_mode` control
+  the permitted artifacts. Normal renewal is signature-only; missing mode or
+  missing artifact schema fail closed.
+- The final signing-submit action is intentionally not added or simulated.
+
 ## 2026-07-29 — Gate 0 canonical baseline formalization
 
 - GitHub PR #3 merged the immutable Apps Script Version 85 source snapshot,

@@ -81,6 +81,10 @@ tenant_bills
 tenant_bind_submit
 tenant_binding_status
 tenant_contract_init
+tenant_contract_auth_init
+tenant_contract_auth_status
+tenant_contract_artifact_upload_submit
+tenant_contract_artifact_upload_status
 tenant_contract_request_cancel
 tenant_contract_request_submit
 tenant_contract_requests

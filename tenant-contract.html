@@ -1198,6 +1198,8 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
+    const TENANT_ARTIFACT_MAX_EDGE = 1600;
+
     const TEST_LINE_USER_ID =
       'U3615a7ed919c1a4a438a246c10784d70';
 
@@ -1211,6 +1213,8 @@
     let PAGE_DATA = null;
     let REQUESTS = [];
     let ACTIVE_REQUEST_ID = '';
+    let TENANT_SIGNING_SESSION_TOKEN = '';
+    let TENANT_SIGNING_MODE = '';
     let ALERT_CALLBACK = null;
 
     const app =
@@ -1785,6 +1789,197 @@
             .appendChild(script);
         }
       );
+    }
+
+    function randomUrlToken(bytes) {
+      const value = new Uint8Array(bytes);
+      crypto.getRandomValues(value);
+      return btoa(String.fromCharCode.apply(null, value))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '');
+    }
+
+    function callTenantSigningStatus(requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsSigning_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error('簽署身分驗證逾時'));
+        }, 30000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) {}
+        }
+
+        window[callbackName] = function(result) {
+          cleanup();
+          resolve(result || {});
+        };
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('簽署身分驗證連線失敗'));
+        };
+        script.src = API_URL +
+          '?v2_action=tenant_contract_auth_status' +
+          '&request_id=' + encodeURIComponent(requestId) +
+          '&poll_secret=' + encodeURIComponent(pollSecret) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initializeTenantSigningSession() {
+      const idToken = liff.getIDToken();
+      if (!idToken) throw new Error('無法取得簽署身分憑證');
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      const payload = {
+        action: 'tenant_contract_auth_init',
+        id_token: idToken,
+        request_id: requestId,
+        poll_secret: pollSecret
+      };
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(payload)
+      });
+
+      for (let attempt = 0; attempt < 6; attempt++) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callTenantSigningStatus(requestId, pollSecret);
+        if (result.code === 'AUTH_EXCHANGE_NOT_FOUND') continue;
+        if (!result.success || !result.data || !result.data.session_token) {
+          throw new Error('簽署身分驗證失敗');
+        }
+        TENANT_SIGNING_SESSION_TOKEN = result.data.session_token;
+        const mode = String((result.data.contract || {}).signing_mode || '').toLowerCase();
+        TENANT_SIGNING_MODE = ['new_tenant', 'renewal'].indexOf(mode) !== -1 ? mode : '';
+        return result;
+      }
+      throw new Error('簽署身分驗證逾時');
+    }
+
+    async function uploadTenantContractArtifact(artifactType, file, idempotencyKey) {
+      if (!TENANT_SIGNING_SESSION_TOKEN) throw new Error('簽署身分驗證已失效');
+      if (['new_tenant', 'renewal'].indexOf(TENANT_SIGNING_MODE) === -1) {
+        throw new Error('簽署模式尚未就緒，請重新驗證');
+      }
+      const type = String(artifactType || '').toLowerCase();
+      const allowed = TENANT_SIGNING_MODE === 'renewal'
+        ? ['signature']
+        : ['identity_front', 'identity_back', 'signature'];
+      if (allowed.indexOf(type) === -1) throw new Error('此簽署流程不允許上傳此附件');
+      if (!(file instanceof Blob)) throw new Error('附件格式無效');
+
+      const preparedFile = await prepareTenantContractArtifactFile(file, type);
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      const payload = {
+        action: 'tenant_contract_artifact_upload_submit',
+        request_id: requestId,
+        poll_secret: pollSecret,
+        session_token: TENANT_SIGNING_SESSION_TOKEN,
+        artifact_type: type,
+        idempotency_key: idempotencyKey,
+        file: {
+          mime_type: preparedFile.type,
+          base64: await tenantContractArtifactBase64(preparedFile)
+        }
+      };
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(payload)
+      });
+      return tenantContractArtifactStatus(requestId, pollSecret);
+    }
+
+    async function prepareTenantContractArtifactFile(file, artifactType) {
+      const accepted = artifactType === 'signature'
+        ? ['image/png']
+        : ['image/jpeg', 'image/png'];
+      if (accepted.indexOf(String(file.type || '').toLowerCase()) === -1) {
+        throw new Error('附件格式不支援');
+      }
+      if (typeof createImageBitmap !== 'function') {
+        throw new Error('此裝置無法安全處理圖片');
+      }
+      const image = await createImageBitmap(file);
+      const scale = Math.min(1, TENANT_ARTIFACT_MAX_EDGE / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext('2d', { alpha: artifactType === 'signature' });
+      if (!context) {
+        image.close();
+        throw new Error('此裝置無法安全處理圖片');
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      image.close();
+      const outputType = artifactType === 'signature' ? 'image/png' : 'image/jpeg';
+      const output = await new Promise(function(resolve, reject) {
+        canvas.toBlob(function(blob) {
+          if (blob) resolve(blob);
+          else reject(new Error('附件壓縮失敗'));
+        }, outputType, outputType === 'image/jpeg' ? 0.82 : undefined);
+      });
+      if (output.size === 0 || output.size > 2.5 * 1024 * 1024) {
+        throw new Error('附件壓縮後仍超過安全上限');
+      }
+      return output;
+    }
+
+    function tenantContractArtifactBase64(file) {
+      return new Promise(function(resolve, reject) {
+        const reader = new FileReader();
+        reader.onerror = function() { reject(new Error('附件讀取失敗')); };
+        reader.onload = function() {
+          const value = String(reader.result || '');
+          const marker = value.indexOf(',');
+          if (marker < 0) {
+            reject(new Error('附件編碼失敗'));
+            return;
+          }
+          resolve(value.slice(marker + 1));
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function tenantContractArtifactStatus(requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsArtifact_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error('附件上傳逾時'));
+        }, 30000);
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) {}
+        }
+        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('附件上傳連線失敗'));
+        };
+        script.src = API_URL +
+          '?v2_action=tenant_contract_artifact_upload_status' +
+          '&request_id=' + encodeURIComponent(requestId) +
+          '&poll_secret=' + encodeURIComponent(pollSecret) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
     }
 
     // ==================================================
