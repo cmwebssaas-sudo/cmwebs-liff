@@ -2,6 +2,21 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-07-30 — Serving Version 87 source-reconciliation hold
+
+- Read-only deployment metadata and immutable source export verified that the
+  serving Apps Script release is Version 87, with Version 85 retained as its
+  rollback reference.
+- The Version 87 overdue-reminder tenant-source repair is in `main` through
+  PR #5 (`aaab086`, merge `fbefa6f`).
+- The Version 87 source also contains an unmerged signed legacy-contract sync
+  bridge, related contract schema fields, workspace read options, and POST
+  dispatch. Git history traces that work to `251c14b` and `b420df6`.
+- `GATE_0` is therefore recorded as `HUMAN_REQUIRED` for serving-source
+  reconciliation. No Apps Script deployment, GitHub Pages publication,
+  Production data or configuration change, LINE/LIFF change, or manual
+  message send occurred.
+
 ## 2026-07-29 — Gate 0 canonical baseline formalization
 
 - GitHub PR #3 merged the immutable Apps Script Version 85 source snapshot,
