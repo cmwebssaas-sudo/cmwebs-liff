@@ -2060,7 +2060,17 @@ function doPost(e) {
         ? e.postData.contents
         : '';
 
-    const result = handleLineWebhook_(postBody);
+    // Make Scenario B uses a signed POST body. Keep LINE webhook handling as
+    // the fallback so existing LINE behaviour and payloads remain unchanged.
+    const result =
+      legacyContractSignedSyncIsRequest_(postBody)
+        ? handleLegacyContractSignedSyncPost_(
+            postBody,
+            e.parameter && e.parameter.signature
+              ? e.parameter.signature
+              : ''
+          )
+        : handleLineWebhook_(postBody);
 
     return ContentService
       .createTextOutput(JSON.stringify(result))
