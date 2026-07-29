@@ -39,7 +39,11 @@ const AUTO_REMINDER_STAGES = [
 
 const AUTO_REMINDER_BILLS_SHEET = 'V2_bills';
 const AUTO_REMINDER_CONTRACTS_SHEET = 'V2_contracts';
-const AUTO_REMINDER_TENANT_VIEW_SHEET = 'V2_landlord_tenant_list_view';
+/*
+ * 催繳資格必須由正式房客資料表判斷。房東清單檢視表是前端讀取用途，
+ * 可能因篩選或同步延遲而不包含仍有效的房客，不可作為 LINE 發送資格來源。
+ */
+const AUTO_REMINDER_TENANTS_SHEET = 'V2_tenants';
 const AUTO_REMINDER_LANDLORD_VIEW_SHEET = 'V2_landlord_home_view';
 const AUTO_REMINDER_LANDLORDS_SHEET = 'V2_landlords';
 const AUTO_REMINDER_WORKSPACES_SHEET = 'V2_workspaces';
@@ -574,7 +578,7 @@ function autoReminderExecute_(options) {
     );
     const tenantSheet = autoReminderRequireSheet_(
       ss,
-      AUTO_REMINDER_TENANT_VIEW_SHEET
+      AUTO_REMINDER_TENANTS_SHEET
     );
     const landlordSheet = autoReminderRequireSheet_(
       ss,
@@ -1660,8 +1664,10 @@ function autoReminderBuildPlan_(
         tenantLineUserId:
           autoReminderText_(
             tenant &&
-            tenant
-              .tenant_line_user_id
+            (
+              tenant.tenant_line_user_id ||
+              tenant.line_user_id
+            )
           ),
 
         tenantName:
@@ -1669,15 +1675,21 @@ function autoReminderBuildPlan_(
             bill.tenant_name ||
             (
               tenant &&
-              tenant.tenant_name
+              (
+                tenant.tenant_name ||
+                tenant.display_name ||
+                tenant.name
+              )
             )
           ),
 
         tenantBindingStatus:
           autoReminderText_(
             tenant &&
-            tenant
-              .tenant_binding_status
+            (
+              tenant.tenant_binding_status ||
+              tenant.binding_status
+            )
           ),
 
         tenantAccountStatus:
