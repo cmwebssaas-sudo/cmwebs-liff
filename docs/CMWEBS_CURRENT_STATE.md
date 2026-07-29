@@ -8,26 +8,27 @@ must be refreshed before any Production action.
 
 ## Gate 0 / Production Consolidation
 
-`GATE_0=HUMAN_REQUIRED` for the current serving source reconciliation.
+`GATE_0=PASS` for source consolidation and current serving-source
+reconciliation.
 
-The prior Version 85 baseline evidence remains useful, but it is not enough to
-claim that the current serving Apps Script source is identical to GitHub
-`main`. An immutable Version 87 source export was read-only compared on
-2026-07-30 and contains deliberate runtime changes that have not all been
-reconciled into `main`.
+The historical Version 85 baseline remains useful. The read-only immutable
+Version 87 source export was compared with current GitHub `main` on
+2026-07-30 after PR #6 merged. All runtime source is aligned; the remaining
+differences are a comment/format-only change in the reminder module and
+semantically equivalent JSON formatting in `appsscript.json`.
 
 | Gate item | Verified state | Evidence reference |
 | --- | --- | --- |
 | GitHub main reconciliation | PASS | PR #3 merged the Version 85 baseline as `0328472` / `989dc8c`; PR #5 merged the Version 87 reminder tenant-source repair as `fbefa6f`. |
 | Serving Apps Script snapshot | PASS | Read-only immutable Version 87 export inspected on 2026-07-30. |
-| Serving-to-main source reconciliation | HUMAN_REQUIRED | Version 87 has no exact matching Git commit. Its contract-sync bridge, contract schema fields, workspace read options, and `doPost` routing are absent from `main`. |
+| Serving-to-main source reconciliation | PASS | Version 87 compared to current `main`: all runtime logic is aligned; the reminder difference is comment/format only and `appsscript.json` parses to the same JSON. |
 | Rollback reference | PASS | Immutable Version 85 is retained as the rollback reference for the Version 87 reminder repair. |
 | Google Sheets schema | PASS | Read-only metadata/header capture: 69 tabs, including core V2 tables. |
 | Script Properties | PASS | Read-only presence-only inventory captured; no values retained. |
 | Trigger inventory | PASS | Existing time-driven handlers: `runV2AutomaticPaymentReminders` and `syncV1PaidBillsToV2`. |
 | Route/handler baseline | PASS | Canonical snapshot validation passed with 69 unique routes/handlers. |
-| Unique canonical source | HUMAN_REQUIRED | `main` is the Version 85 baseline, but cannot yet be called the source-equivalent record for serving Version 87. |
-| V2 internal-beta baseline | HISTORICAL | `V2_INTERNAL_BETA_BASELINE=Version85`; serving Version 87 requires source reconciliation before a new canonical label. |
+| Unique canonical source | PASS | GitHub `main` is source-equivalent to the serving Version 87 backend. |
+| V2 internal-beta baseline | PASS | `V2_INTERNAL_BETA_BASELINE=Version87`. |
 
 ## Serving and rollback references
 
@@ -46,28 +47,30 @@ reconciled into `main`.
 The read-only comparison against Version 85 found six relevant differences:
 
 - `V2_AUTO_PAYMENT_REMINDER.js`: canonical tenant-source repair; merged to
-  `main` by PR #5 (`aaab086`, merge `fbefa6f`).
+  `main` by PR #5 (`aaab086`, merge `fbefa6f`). The final export comparison
+  found only explanatory comment/formatting differences.
 - `V2_LEGACY_CONTRACT_SIGNED_SYNC.js`: a signed legacy-contract sync bridge;
-  present in Version 87 but absent from `main`.
+  reconciled to `main` by PR #6 (merge `ae2961d`).
 - `V2_TENANT_LEASE_ONBOARDING.js`: legacy signed-contract artifact columns;
-  present in Version 87 but absent from `main`.
+  reconciled to `main` by PR #6.
 - `V2_WORKSPACE_LANDLORD_ACCESS.js`: read paths can skip schema/context
-  creation; present in Version 87 but absent from `main`.
+  creation; reconciled to `main` by PR #6.
 - `程式碼.js`: dispatches signed legacy sync POST requests before falling back
-  to the LINE webhook; present in Version 87 but absent from `main`.
-- `appsscript.json`: formatting-only manifest difference.
+  to the LINE webhook; reconciled to `main` by PR #6.
+- `appsscript.json`: formatting-only manifest difference; parsed JSON is
+  semantically equivalent.
 
-Repository history traces the missing bridge/schema/dispatcher work to the
-existing local commits `251c14b` and `b420df6`; those commits have not been
-merged into `main`. No source should be copied wholesale from Production.
+Repository history traces the bridge/schema/dispatcher work to
+`251c14b` and `b420df6`. It was reconciled from the immutable Version 87
+export through reviewed PR #6, without copying Production wholesale.
 
-### Required human decision
+### Reconciliation result
 
-Decide whether the existing legacy signed-contract sync bridge is an approved
-V2.0 Production dependency. Then an isolated candidate may either reconcile
-the reviewed bridge into `main` with focused tests or retire it through a
-separately approved Production release. Until that decision and an exact
-source comparison are recorded, deployment from current `main` is blocked.
+The legacy signed-contract sync bridge was retained as an approved V2.0
+Production dependency. The final comparison now supports GitHub `main` as the
+Version 87 source-equivalent record. This reconciliation did not deploy Apps
+Script or alter Production; any future deployment still needs its own scoped
+preflight and authorization.
 
 ## Operational boundary
 
@@ -82,13 +85,11 @@ Project: CMWebs 智慧租管 / cmwebs-liff
 Read AGENTS.md and all docs/CMWEBS_*.md files first.
 Recommended model: gpt-5.6-terra; speed: medium.
 
-Historical V2 internal-beta baseline: Apps Script Version 85 in GitHub main
-(PR #3 / merge 0328472). Current serving backend: Version 87; rollback
-reference: Version 85. Version 87 is not source-equivalent to `main` because
-its legacy signed-contract sync bridge is unmerged.
+Canonical V2 internal-beta backend baseline: Apps Script Version 87 in GitHub
+`main` (PR #6 / merge `ae2961d`). Verified rollback reference: Version 85.
+Gate 0 is PASS for current source reconciliation.
 
-Gate 0 is HUMAN_REQUIRED for serving-source reconciliation. Do not deploy
-from `main`, infer a current live deployment, or alter Sheet, Properties,
-triggers, LINE, LIFF, or Pages without fresh scoped approval. Classify all
-work as V2.0/V2.1/V3/V4. V2.1 requires separate authorization.
+Do not infer a future live deployment, Sheet, Properties, trigger, LINE, LIFF,
+or Pages state from this record; re-verify before each scoped action. Classify
+all work as V2.0/V2.1/V3/V4. V2.1 requires separate authorization.
 ```
