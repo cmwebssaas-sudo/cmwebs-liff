@@ -894,15 +894,19 @@ function workspaceLandlordResolveAccess_(
     );
   }
 
-  workspaceEnsureSchema_();
+  if (options.skip_schema_ensure !== true) {
+    workspaceEnsureSchema_();
+  }
 
   const ss =
     runtimeSpreadsheet_();
 
-  workspaceEnsureLegacyLandlordContext_(
-    ss,
-    lineUserId
-  );
+  if (options.skip_legacy_context_creation !== true) {
+    workspaceEnsureLegacyLandlordContext_(
+      ss,
+      lineUserId
+    );
+  }
 
   const context =
     workspaceResolveContextByLineUid_(

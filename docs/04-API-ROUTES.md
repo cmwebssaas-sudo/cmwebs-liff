@@ -90,3 +90,19 @@ tenant_message_submit
 tenant_payment_report_init
 tenant_payment_report_submit
 ```
+
+## Signed legacy contract integration webhook
+
+| POST action | Module | Purpose |
+| --- | --- | --- |
+| `legacy_contract_signed_sync` | `V2_LEGACY_CONTRACT_SIGNED_SYNC.js` | Accepts only the legacy signed-contract integration's HMAC-authenticated JSON body, verifies its existing V1/V2 contract, tenant LINE UID, Workspace write access, and updates metadata on an existing V2 contract. |
+
+- This is a `doPost` integration action, not a LIFF `v2_action`; the 69 JSONP
+  route count does not change.
+- `timestamp` remains in the body and `signature` is an HMAC-SHA256 of the raw
+  body passed as a query parameter. The secret is read only from Script
+  Property `CMWEBS_LEGACY_CONTRACT_SYNC_HMAC_SECRET`.
+- The bridge does not create contracts or schema columns. A missing optional
+  contract field returns `V2_CONTRACT_SYNC_SCHEMA_NOT_READY` before any write.
+- Private document and identity metadata must never be included in tenant or
+  general-message API responses.
