@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-07-30 — Version 87 source reconciliation closed
+
+- PR #6 merged the retained legacy signed-contract sync bridge and its focused
+  regression test into GitHub `main` as `ae2961d`.
+- A minimal final comparison found current `main` source-equivalent to the
+  immutable serving Version 87 export: the remaining reminder difference is
+  comment/format only and `appsscript.json` is semantically equivalent JSON.
+- `GATE_0=PASS` is restored for current serving-source reconciliation and
+  `V2_INTERNAL_BETA_BASELINE=Version87` is recorded.
+- No Apps Script deployment, GitHub Pages publication, Production data or
+  configuration change, LINE/LIFF change, or manual message send occurred.
+
 ## 2026-07-30 — Serving Version 87 source-reconciliation hold
 
 - Read-only deployment metadata and immutable source export verified that the
