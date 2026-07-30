@@ -15,9 +15,10 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
-- Gate 0 source consolidation: PASS.
-- Canonical V2 internal-beta backend baseline: Version 85 in GitHub `main`.
-- Verified Apps Script rollback: Version 75.
+- Gate 0 / Production Consolidation: PASS (2026-07-30 read-only evidence).
+- Canonical V2 internal-beta backend baseline: serving Version 87,
+  behaviorally source-equivalent to GitHub `main`.
+- Verified Apps Script rollback: Version 85.
 - V2.1 may begin only with a separate, explicit scope authorization.
 - No historical document proves present Production state; re-verify the
   relevant release surface before action.
