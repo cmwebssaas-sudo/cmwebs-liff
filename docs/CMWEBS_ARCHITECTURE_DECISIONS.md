@@ -37,3 +37,30 @@ The immutable Apps Script Version 85 snapshot is retained in GitHub `main`
 under `apps-script/` as the V2 internal-beta canonical backend baseline. It is
 not permission to deploy the current editor source. Serving deployment identity
 and immutable rollback remain separate Production evidence.
+
+## V2.1 native contract-signing boundary
+
+- The backend-derived `signing_mode` is the only source of truth for a signing
+  session. The browser must not select the mode or supply tenant, Workspace,
+  landlord, or LINE identity as write authority.
+- A normal renewal is a condition-confirmation and signature flow. It does not
+  repeat new-tenant onboarding, identity-image upload, tenant/room/Workspace
+  creation, or LINE binding.
+- A future renewal record/version links to its immutable predecessor through
+  `previous_contract_id` or `renewed_from_contract_id`; a changed actual
+  tenant, name, or identity is a re-contract exception, not normal renewal.
+- New-tenant signing may require the approved identity artifacts and signature;
+  renewal permits only the signature artifact. Identity or actual-tenant
+  changes are exception/re-sign flows, not normal renewal.
+- Tokens, identity images, signatures, Drive identifiers, and internal metadata
+  stay out of URLs, browser storage, and console output. Private artifact
+  storage must fail closed when its required schema is absent.
+- The signing read model returns only fields from the server-resolved signable
+  contract and, for a renewal, its same-tenant, same-Workspace linked
+  predecessor. Missing full-contract content or predecessor linkage is shown as
+  unavailable; the browser must not invent either.
+- The native final action records a tenant signing submission only after a
+  verified session, consent, and required stored artifacts. It preserves
+  `contract_status`, is idempotent after a successful submission, and fails
+  closed when the explicit signing-audit schema is absent. It is not a contract
+  activation, approval, or status-transition mechanism.

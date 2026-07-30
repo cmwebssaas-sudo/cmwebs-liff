@@ -27,6 +27,25 @@
   publication, Production data or configuration change, LINE/LIFF change, or
   manual message send.
 
+## 2026-07-29 — Unpublished V2.1 native signing foundation
+
+- Added verified LIFF signing-session and private contract-artifact foundations
+  to an isolated local branch only; no Apps Script deployment or Production
+  data/configuration action occurred.
+- Server-side principal resolution and backend-derived `signing_mode` control
+  the permitted artifacts. Normal renewal is signature-only; missing mode or
+  missing artifact schema fail closed.
+- Added a server-verified signing-submission action. It requires consent and
+  the mode-specific stored artifacts, records only explicit signing-audit
+  fields, preserves `contract_status`, and fails closed without the required
+  schema. It does not simulate approval, activation, or completed contract
+  status.
+- Added the corresponding isolated local `tenant-contract.html` signing UI:
+  server-derived summary and terms, conditional new-tenant identity uploads,
+  signature capture, consent, and submitted-for-review state. Renewal renders
+  no identity upload flow. No frontend publication or Production action
+  occurred.
+
 ## 2026-07-29 — Gate 0 canonical baseline formalization
 
 - GitHub PR #3 merged the immutable Apps Script Version 85 source snapshot,

@@ -29,6 +29,14 @@ One standardized core and upgrade stream serve all customers. Branding can be
 configured; functionality cannot be customized. V3 uses each landlord's own
 BYO LINE OA; CMWebs does not operate a shared OA for landlord messages.
 
+For V2.1 native contract signing, trust only the backend-derived
+`signing_mode`. Normal renewal is signature-only and must not re-run
+new-tenant identity onboarding or binding. A final submission may record only
+the verified, mode-specific signing evidence and must preserve
+`contract_status`; it cannot fake approval, activation, or a completed signing
+result. Missing session, artifact, content, predecessor-linkage, or explicit
+signing-audit schema must fail closed.
+
 ## Safe execution contract
 
 Use an isolated worktree, preserve unrelated dirty work, stage only in-scope
