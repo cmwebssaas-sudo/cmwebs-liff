@@ -19,15 +19,13 @@
 - Read-only deployment metadata and immutable source export verified that the
   serving Apps Script release is Version 87, with Version 85 retained as its
   rollback reference.
-- The Version 87 overdue-reminder tenant-source repair is in `main` through
-  PR #5 (`aaab086`, merge `fbefa6f`).
-- The Version 87 source also contains an unmerged signed legacy-contract sync
-  bridge, related contract schema fields, workspace read options, and POST
-  dispatch. Git history traces that work to `251c14b` and `b420df6`.
-- `GATE_0` is therefore recorded as `HUMAN_REQUIRED` for serving-source
-  reconciliation. No Apps Script deployment, GitHub Pages publication,
-  Production data or configuration change, LINE/LIFF change, or manual
-  message send occurred.
+- Focused source reconciliation confirmed that four previously flagged files
+  are byte-identical to `main`; the remaining reminder and manifest changes
+  are non-executing comments, whitespace, and JSON key order.
+- `GATE_0=PASS` for Production Consolidation. This records source-equivalence
+  only; it does not authorize an Apps Script deployment, GitHub Pages
+  publication, Production data or configuration change, LINE/LIFF change, or
+  manual message send.
 
 ## 2026-07-29 — Gate 0 canonical baseline formalization
 
