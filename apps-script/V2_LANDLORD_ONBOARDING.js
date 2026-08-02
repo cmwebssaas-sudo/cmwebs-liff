@@ -276,7 +276,8 @@ function saveLandlordOnboardingStepByLineUid_(
         : '';
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const landlord =
       onboardingResolveLandlord_(
@@ -516,7 +517,8 @@ function completeLandlordOnboardingByLineUid_(
         : '';
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const currentData =
       onboardingBuildData_(
@@ -1533,7 +1535,8 @@ function onboardingBuildData_(
   workspaceId
 ) {
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const workspaceSheet =
     ss.getSheetByName(
@@ -1851,7 +1854,8 @@ function onboardingEnsureSchema_() {
   }
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   onboardingEnsureSheet_(
     ss,
@@ -2716,7 +2720,8 @@ function testEnsureV2LandlordOnboardingSchema() {
   onboardingEnsureSchema_();
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const result = {};
 

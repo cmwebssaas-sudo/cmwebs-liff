@@ -43,6 +43,8 @@ function doGet(e) {
   let lineUserId =
     e.parameter.line_user_id || '';
 
+  // Native tenant-contract exchanges authenticate by their short-lived
+  // exchange credentials before any general LIFF identity resolution.
   if (v2Action === 'tenant_contract_auth_status') {
     return jsonOutput_(
       tenantLiffSigningReadExchange_(
@@ -72,8 +74,6 @@ function doGet(e) {
       callback
     );
   }
-
-  runtimeSnapshotBegin_(v2Action);
 
   try {
     lineUserId =
@@ -1092,18 +1092,6 @@ if (v2Action === 'tenant_message_submit') {
     return jsonOutput_(result, callback);
   }
 
-  if (v2Action === 'landlord_home_bootstrap') {
-    const result = getWorkspaceLandlordHomeBootstrapByLineUid_(
-      lineUserId
-    );
-
-    if (bridge === '1') {
-      return htmlBridgeOutput_(result, requestId);
-    }
-
-    return jsonOutput_(result, callback);
-  }
-
   if (v2Action === 'landlord_arrears') {
     const result = getWorkspaceLandlordArrearsNativeByLineUid_(lineUserId);
 
@@ -2090,23 +2078,13 @@ function doPost(e) {
         ? e.postData.contents
         : '';
 
-    // Make Scenario B uses a signed POST body. Keep LINE webhook handling as
-    // the fallback so existing LINE behaviour and payloads remain unchanged.
-    const result =
-      legacyContractSignedSyncIsRequest_(postBody)
-        ? handleLegacyContractSignedSyncPost_(
-            postBody,
-            e.parameter && e.parameter.signature
-              ? e.parameter.signature
-              : ''
-          )
-        : tenantLiffSigningIsAuthRequest_(postBody)
-          ? tenantLiffSigningHandleAuthPost_(postBody)
-          : tenantContractArtifactIsUploadRequest_(postBody)
-            ? tenantContractArtifactHandleUploadPost_(postBody)
-            : tenantContractSigningIsSubmitRequest_(postBody)
-              ? tenantContractSigningHandleSubmitPost_(postBody)
-              : handleLineWebhook_(postBody);
+    const result = tenantLiffSigningIsAuthRequest_(postBody)
+      ? tenantLiffSigningHandleAuthPost_(postBody)
+      : tenantContractArtifactIsUploadRequest_(postBody)
+        ? tenantContractArtifactHandleUploadPost_(postBody)
+        : tenantContractSigningIsSubmitRequest_(postBody)
+          ? tenantContractSigningHandleSubmitPost_(postBody)
+          : handleLineWebhook_(postBody);
 
     return ContentService
       .createTextOutput(JSON.stringify(result))

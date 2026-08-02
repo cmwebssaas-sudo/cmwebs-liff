@@ -99,7 +99,8 @@ function workspaceNotifyTeam_(
     workspaceNotificationEnsureSchema_();
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const eventType =
       workspaceNotificationEventType_(
@@ -518,7 +519,8 @@ function getLandlordNotificationsInitByLineUid_(
     }
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const workspaceId =
       workspaceNotificationText_(
@@ -845,7 +847,8 @@ function workspaceNotificationMarkRead_(
       true;
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const workspaceId =
       workspaceNotificationText_(
@@ -1353,7 +1356,8 @@ function workspaceNotificationDeliver_(
       'skipped_disabled';
 
     workspaceNotificationAppend_(
-      runtimeSpreadsheet_()
+      SpreadsheetApp
+        .getActiveSpreadsheet()
         .getSheetByName(
           V2_WORKSPACE_NOTIFICATION_SHEETS_
             .deliveries
@@ -1374,7 +1378,8 @@ function workspaceNotificationDeliver_(
       '成員尚未綁定 LINE';
 
     workspaceNotificationAppend_(
-      runtimeSpreadsheet_()
+      SpreadsheetApp
+        .getActiveSpreadsheet()
         .getSheetByName(
           V2_WORKSPACE_NOTIFICATION_SHEETS_
             .deliveries
@@ -1445,7 +1450,8 @@ function workspaceNotificationDeliver_(
     new Date();
 
   workspaceNotificationAppend_(
-    runtimeSpreadsheet_()
+    SpreadsheetApp
+      .getActiveSpreadsheet()
       .getSheetByName(
         V2_WORKSPACE_NOTIFICATION_SHEETS_
           .deliveries
@@ -2054,7 +2060,8 @@ function workspaceNotificationEnsureSchema_() {
   }
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   workspaceNotificationEnsureSheet_(
     ss,
@@ -2909,7 +2916,8 @@ function testEnsureWorkspaceNotificationSchema() {
   workspaceNotificationEnsureSchema_();
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const result = {
     success:
@@ -2953,7 +2961,8 @@ function testWorkspaceNotificationRecipients() {
     );
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const workspaceId =
     access &&

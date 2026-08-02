@@ -77,7 +77,8 @@ function getLandlordPaidBillsInitByLineUid_(
     }
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const landlord =
       paidBillManagementResolveLandlord_(

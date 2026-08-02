@@ -105,7 +105,8 @@ function getLandlordWorkspaceActivityByLineUid_(
       ).toLowerCase();
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const sheet =
       ss.getSheetByName(
@@ -285,7 +286,8 @@ function workspaceRecordOperationActor_(
       meta || {};
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const sheet =
       ss.getSheetByName(
@@ -482,7 +484,8 @@ function workspaceStampOperationActorToTarget_(
   }
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
     ss.getSheetByName(
@@ -760,7 +763,8 @@ function workspaceAuditTargetConfig_(
 
 function workspaceEnsureOperationAuditSchema_() {
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   let sheet =
     ss.getSheetByName(

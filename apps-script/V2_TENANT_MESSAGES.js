@@ -5,12 +5,8 @@
  * - tenant_message_init
  * - tenant_message_submit
  *
- * Read dependency:
- * - V2_TENANT_RUNTIME_RESOLVER.js
+ * 依賴既有函式：
  * - resolveCanonicalTenantRuntimeByLineUid_()
- *
- * V2_TENANT_RUNTIME_DATA_REPAIR.js is not a Message read dependency.
- * Other existing dependencies:
  * - getSheetObjects_()
  * - logLiffAccess_()
  * - pushLineTextMessage_()
@@ -23,123 +19,6 @@ const V2_TENANT_MESSAGE_SHEETS_ = {
   tenantMessages:
     'V2_tenant_messages'
 };
-
-
-function tenantMessageRuntimeError_(code, message) {
-  const error = new Error(message || code);
-  error.code = code;
-  return error;
-}
-
-
-function tenantMessageResolveLandlordRecipient_(
-  canonical,
-  tenantLink
-) {
-  canonical = canonical || {};
-  tenantLink = tenantLink || {};
-
-  const canonicalWorkspaceId =
-    String(
-      canonical.workspace_id || ''
-    ).trim();
-  const linkWorkspaceId =
-    String(
-      tenantLink.workspace_id ||
-      canonicalWorkspaceId
-    ).trim();
-
-  if (!canonicalWorkspaceId || !linkWorkspaceId) {
-    throw tenantMessageRuntimeError_(
-      'TENANT_MESSAGE_WORKSPACE_MISSING',
-      '房客訊息缺少 Workspace 關聯'
-    );
-  }
-
-  if (linkWorkspaceId !== canonicalWorkspaceId) {
-    throw tenantMessageRuntimeError_(
-      'TENANT_MESSAGE_WORKSPACE_CONFLICT',
-      '房客與房東的 Workspace 關聯不一致'
-    );
-  }
-
-  const canonicalLandlordId =
-    String(
-      canonical.landlord_id || ''
-    ).trim();
-  const linkLandlordId =
-    String(
-      tenantLink.landlord_id ||
-      canonicalLandlordId
-    ).trim();
-
-  if (!canonicalLandlordId || !linkLandlordId) {
-    throw tenantMessageRuntimeError_(
-      'TENANT_MESSAGE_LANDLORD_MISSING',
-      '房客訊息缺少房東關聯'
-    );
-  }
-
-  if (linkLandlordId !== canonicalLandlordId) {
-    throw tenantMessageRuntimeError_(
-      'TENANT_MESSAGE_LANDLORD_CONFLICT',
-      '房客與房東的 landlord_id 不一致'
-    );
-  }
-
-  const recipientValues = {};
-
-  [
-    tenantLink.landlord_line_user_id,
-    tenantLink.landlord_line_uid,
-    canonical.landlord_line_user_id
-  ].forEach(function (value) {
-    const text = String(value || '').trim();
-
-    if (text) {
-      recipientValues[text] = true;
-    }
-  });
-
-  const recipients =
-    Object.keys(recipientValues);
-
-  if (recipients.length === 0) {
-    throw tenantMessageRuntimeError_(
-      'TENANT_MESSAGE_RECIPIENT_MISSING',
-      '房客訊息缺少經驗證的房東 LINE 收件人'
-    );
-  }
-
-  if (recipients.length > 1) {
-    throw tenantMessageRuntimeError_(
-      'TENANT_MESSAGE_RECIPIENT_CONFLICT',
-      '房東 LINE 收件人資料不一致'
-    );
-  }
-
-  const recipient = recipients[0];
-  const tenantLineUserId =
-    String(
-      canonical.line_user_id || ''
-    ).trim();
-
-  if (
-    tenantLineUserId &&
-    recipient === tenantLineUserId
-  ) {
-    throw tenantMessageRuntimeError_(
-      'TENANT_MESSAGE_RECIPIENT_IS_TENANT',
-      '房東 LINE 收件人不得與房客身份相同'
-    );
-  }
-
-  return {
-    workspace_id: canonicalWorkspaceId,
-    landlord_id: canonicalLandlordId,
-    landlord_line_user_id: recipient
-  };
-}
 
 
 /**
@@ -221,11 +100,27 @@ function getTenantMessageInitByLineUid(
         room_list:
           canonical.room_name
       };
-    const recipient =
-      tenantMessageResolveLandlordRecipient_(
-        canonical,
-        tenantLink
-      );
+
+    if (
+      !tenantLink ||
+      !String(
+        tenantLink.landlord_id ||
+        canonical.landlord_id ||
+        ''
+      ).trim()
+    ) {
+      return {
+        success: false,
+        code:
+          'TENANT_LANDLORD_LINK_NOT_FOUND',
+        message:
+          '找不到房客與房東的關聯資料',
+        data: {
+          tenant: tenant,
+          messages: []
+        }
+      };
+    }
 
     const messages =
       getTenantMessages_(
@@ -270,12 +165,15 @@ function getTenantMessageInitByLineUid(
             tenant.room_list || '',
 
           landlord_id:
-            recipient.landlord_id,
+            tenantLink.landlord_id ||
+            canonical.landlord_id || '',
           landlord_name:
             tenantLink.landlord_name ||
             canonical.landlord_name || '',
           landlord_line_user_id:
-            recipient.landlord_line_user_id
+            tenantLink.line_user_id ||
+            tenantLink.landlord_line_user_id ||
+            canonical.landlord_line_user_id || ''
         },
         messages:
           messages
@@ -303,14 +201,10 @@ function getTenantMessageInitByLineUid(
     return {
       success: false,
       code:
-        error && error.code
-          ? error.code
-          : 'SYSTEM_ERROR',
+        'SYSTEM_ERROR',
       message:
-        error && error.code
-          ? error.message
-          : '系統錯誤：' +
-            error.message,
+        '系統錯誤：' +
+        error.message,
       data: {
         tenant: null,
         messages: []
@@ -499,13 +393,31 @@ function submitTenantMessageByLineUid_(
         room_list:
           canonical.room_name
       };
-    const recipient =
-      tenantMessageResolveLandlordRecipient_(
-        canonical,
-        tenantLink
-      );
+
+    if (
+      !tenantLink ||
+      !String(
+        tenantLink.landlord_id ||
+        canonical.landlord_id ||
+        ''
+      ).trim()
+    ) {
+      return {
+        success: false,
+        code:
+          'TENANT_LANDLORD_LINK_NOT_FOUND',
+        message:
+          '找不到房客與房東的關聯資料'
+      };
+    }
+
     const landlordLineUserId =
-      recipient.landlord_line_user_id;
+      String(
+        tenantLink.line_user_id ||
+        tenantLink.landlord_line_user_id ||
+        canonical.landlord_line_user_id ||
+        ''
+      ).trim();
 
     const now =
       new Date();
@@ -522,7 +434,8 @@ function submitTenantMessageByLineUid_(
         now,
 
       landlord_id:
-        recipient.landlord_id,
+        tenantLink.landlord_id ||
+        '',
       landlord_line_user_id:
         landlordLineUserId,
 
@@ -602,7 +515,8 @@ function submitTenantMessageByLineUid_(
       pushResult =
         workspaceNotifyTeam_({
           workspace_id:
-            recipient.workspace_id,
+            tenantLink.workspace_id ||
+            '',
 
           landlord_id:
             messageRecord.landlord_id,
@@ -775,14 +689,10 @@ function submitTenantMessageByLineUid_(
     return {
       success: false,
       code:
-        error && error.code
-          ? error.code
-          : 'SYSTEM_ERROR',
+        'SYSTEM_ERROR',
       message:
-        error && error.code
-          ? error.message
-          : '系統錯誤：' +
-            error.message
+        '系統錯誤：' +
+        error.message
     };
   }
 }
@@ -804,7 +714,8 @@ function getTenantMessages_(
   }
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
     ss.getSheetByName(
@@ -964,7 +875,8 @@ function appendTenantMessage_(
  */
 function ensureTenantMessageSheet_() {
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   let sheet =
     ss.getSheetByName(

@@ -82,7 +82,8 @@ function getLandlordTenantCheckinsInitByLineUid_(
       );
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const data =
       tenantCheckinLoadData_(
@@ -710,7 +711,8 @@ function saveLandlordTenantCheckinByLineUid_(
       true;
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const contractSheet =
       ss.getSheetByName(
@@ -1229,7 +1231,8 @@ function sendLandlordTenantCheckinWelcomeByLineUid_(
       true;
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const data =
       tenantCheckinLoadData_(
@@ -3144,7 +3147,8 @@ function tenantCheckinEnsureSchema_() {
   }
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   tenantCheckinEnsureSheet_(
     ss,
@@ -3833,7 +3837,8 @@ function testEnsureTenantCheckinSchema() {
   tenantCheckinEnsureSchema_();
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const result = {
     success:

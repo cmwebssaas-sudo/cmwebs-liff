@@ -89,7 +89,8 @@ function getLandlordBillNotificationsInitByLineUid_(
       );
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const bills =
       billNotificationGetWorkspaceRows_(
@@ -514,7 +515,8 @@ function sendLandlordBillNotificationsByLineUid_(
     }
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const billSheet =
       ss.getSheetByName(
@@ -2098,7 +2100,8 @@ function billNotificationGetWorkspaceRows_(
 
 function billNotificationEnsureSchema_() {
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const billSheet =
     ss.getSheetByName(
@@ -2151,7 +2154,8 @@ function billNotificationEnsureSchema_() {
 
 function billNotificationRequireSchema_() {
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const required = [
     V2_BILL_NOTIFICATION_SHEETS_
@@ -2717,7 +2721,8 @@ function testEnsureBillNotificationSchema() {
   billNotificationEnsureSchema_();
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const result = {
     success:
