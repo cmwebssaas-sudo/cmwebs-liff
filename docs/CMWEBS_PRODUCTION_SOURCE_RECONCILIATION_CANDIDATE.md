@@ -1,48 +1,56 @@
 # CMWebs Production Source Reconciliation Candidate
 
-Status: **candidate only — not yet the canonical repository source**
+Status: **candidate only — not yet approved for Production deployment**
 
 ## Purpose
 
-This branch records the Apps Script source obtained by a read-only pull from the
-currently serving CMWebs Production project on 2026-08-02 (Asia/Taipei).  It is
-an auditable candidate for resolving the serving-source mismatch before any new
-Apps Script feature deployment.
+This branch starts from the Apps Script source obtained by a read-only pull
+from the actual CMWebs Production project on 2026-08-02 (Asia/Taipei). It then
+re-integrates only the native tenant-contract signing core that was already
+reviewed and merged into GitHub `main`.
 
 ## Candidate identity
 
-- Repository base: `origin/main` at `f35a9fa3afb63e9eb0d1d90fa0fa416dc413f69c`.
-- Candidate branch: `codex/production-source-reconciliation-20260802`.
-- Candidate content: 32 Apps Script source files plus `appsscript.json`, copied
-  exactly from the serving project; local clasp metadata is deliberately not
-  included.
-- Verification: the committed `apps-script/` tree is byte-for-byte identical to
-  the read-only serving-source snapshot, excluding local clasp metadata.
+- Serving-source base: the read-only clone of the verified CMWebs Production
+  Apps Script project; local clasp metadata is deliberately excluded.
+- Candidate branch: `codex/production-signing-reconciliation-20260802`.
+- Re-integrated files: `V2_TENANT_LIFF_SIGNING_SESSION.js`,
+  `V2_CONTRACT_ARTIFACT_STORAGE.js`,
+  `V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js`,
+  `V2_ROOM_603_SIGNING_FIXTURE.js`, and the minimal route additions in
+  `程式碼.js`.
+- Existing API documentation already records all six tenant-contract actions;
+  no API contract was renamed or expanded.
 
 ## Why this is not automatically canonical
 
-The serving source and `origin/main` have materially diverged.  Adopting this
-candidate without review would remove source files that currently exist in
-`origin/main`, including the native tenant-contract signing session, artifact
-storage, and signing-submission modules.  The candidate is therefore the one
-**serving-source baseline candidate**, not an approval to discard main-only
-work.
+The serving source and `origin/main` have materially diverged. This candidate
+preserves the serving source and avoids overwriting it with an unrelated full
+`main` snapshot. It is a reviewed integration candidate, not authorization to
+discard serving-only source or deploy it without the Production preflight.
 
 ## Required acceptance decision
 
 Before any Apps Script deployment from this branch, an authorized reviewer must
-select one of these paths:
+confirm the live Production preflight: required Properties are present, the
+artifact sheet and contract signing columns exist, and the private Drive root is
+valid. The same existing Web App deployment must then be updated through a new
+immutable Apps Script version; no new Web App URL is created.
 
-1. Accept the candidate as the canonical serving baseline, then re-integrate
-   the required main-only modules in a reviewed release candidate; or
-2. Reconcile the serving project to the reviewed `origin/main` source in a
-   separate immutable deployment, preserving the required signing modules.
+The Room 603 signing fixture is included only because its prerequisite signing
+session, private artifact upload, and signing submission primitives are also
+included. It remains a separately invoked, guarded internal tool and is not a
+Web App route.
 
-The Room 603 signing fixture must not be deployed until the selected canonical
-source contains the existing tenant-contract signing session, private artifact
-upload, and signing-submission primitives.  The serving snapshot currently does
-not contain them, so a fixture-only deployment could change data without making
-the test contract signable.
+## Focused validation
+
+- Phase 130 static and runtime signing-session tests: pass.
+- Phase 131 artifact-storage runtime tests: pass.
+- Phase 132 signing-submission runtime tests: pass.
+- Phase 136 Room 603 fixture runtime tests: pass.
+- `git diff --check`: pass.
+- `npm run validate`: not applicable; this repository baseline has no
+  `package.json`.
 
 ## Non-actions
 

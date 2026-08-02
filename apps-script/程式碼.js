@@ -43,6 +43,38 @@ function doGet(e) {
   let lineUserId =
     e.parameter.line_user_id || '';
 
+  // Native tenant-contract exchanges authenticate by their short-lived
+  // exchange credentials before any general LIFF identity resolution.
+  if (v2Action === 'tenant_contract_auth_status') {
+    return jsonOutput_(
+      tenantLiffSigningReadExchange_(
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
+  if (v2Action === 'tenant_contract_artifact_upload_status') {
+    return jsonOutput_(
+      tenantContractArtifactReadExchange_(
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
+  if (v2Action === 'tenant_contract_sign_status') {
+    return jsonOutput_(
+      tenantContractSigningReadExchange_(
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
   try {
     lineUserId =
       resolveTenantRequestLineUserId_(
@@ -2046,7 +2078,13 @@ function doPost(e) {
         ? e.postData.contents
         : '';
 
-    const result = handleLineWebhook_(postBody);
+    const result = tenantLiffSigningIsAuthRequest_(postBody)
+      ? tenantLiffSigningHandleAuthPost_(postBody)
+      : tenantContractArtifactIsUploadRequest_(postBody)
+        ? tenantContractArtifactHandleUploadPost_(postBody)
+        : tenantContractSigningIsSubmitRequest_(postBody)
+          ? tenantContractSigningHandleSubmitPost_(postBody)
+          : handleLineWebhook_(postBody);
 
     return ContentService
       .createTextOutput(JSON.stringify(result))
