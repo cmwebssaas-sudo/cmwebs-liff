@@ -16,8 +16,9 @@ Apps Script feature deployment.
 - Candidate content: 32 Apps Script source files plus `appsscript.json`, copied
   exactly from the serving project; local clasp metadata is deliberately not
   included.
-- Verification: the committed `apps-script/` tree is byte-for-byte identical to
-  the read-only serving-source snapshot, excluding local clasp metadata.
+- Baseline verification: commit `3ac97f0` has an `apps-script/` tree that is
+  byte-for-byte identical to the read-only serving-source snapshot, excluding
+  local clasp metadata.
 
 ## Why this is not automatically canonical
 
@@ -43,6 +44,16 @@ source contains the existing tenant-contract signing session, private artifact
 upload, and signing-submission primitives.  The serving snapshot currently does
 not contain them, so a fixture-only deployment could change data without making
 the test contract signable.
+
+## Signing-core reintegration candidate
+
+This descendant branch retains the verified serving-source baseline and adds
+only the required native tenant-contract signing session, private artifact
+storage, final signing submission, dispatcher exchange routes, and the guarded
+Room 603 test-fixture tool. It is a reviewed deployment candidate, not evidence
+that the serving source has already changed. Its preflight must confirm the
+required Properties, private Drive root, and contract-artifact schema before an
+immutable deployment is created.
 
 ## Non-actions
 
