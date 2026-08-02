@@ -388,153 +388,6 @@ function getWorkspaceLandlordContractRequestsInitByLineUid_(
 }
 
 
-/**
- * 房東首頁單次載入。
- *
- * 首頁原本平行請求 landlord_home、合約申請、付款回報與房客訊息四條
- * read route；每條都會重跑 Workspace/RBAC 與 legacy landlord identity
- * 解析。這裡只在入口解析一次 access，再把同一個受驗證 principal 傳給
- * 既有資料建立函式。舊 route 保持不變，供各自頁面與相容性使用。
- */
-function getWorkspaceLandlordHomeBootstrapByLineUid_(
-  lineUserId
-) {
-  return workspaceLandlordProxy_(
-    lineUserId,
-    'landlord_home_bootstrap',
-    'read',
-    function (principalLineUserId, access) {
-      const ss =
-        SpreadsheetApp.getActiveSpreadsheet();
-
-      const data =
-        workspaceDashboardLoadData_(
-          ss,
-          access
-        );
-
-      const homeResult =
-        workspaceDashboardBuildHomeResult_(
-          access,
-          data
-        );
-
-      if (
-        !homeResult ||
-        homeResult.success !== true
-      ) {
-        return homeResult ||
-          workspaceResult_(
-            false,
-            'LANDLORD_HOME_BOOTSTRAP_ERROR',
-            '首頁資料讀取失敗'
-          );
-      }
-
-      const landlord =
-        workspaceLandlordBootstrapLegacyIdentity_(
-          access
-        );
-
-      const contractResult =
-        getLandlordContractRequestsInitByLineUid_(
-          principalLineUserId,
-          landlord,
-          ss
-        );
-
-      const paymentResult =
-        getLandlordPaymentReportsInitByLineUid(
-          principalLineUserId,
-          landlord
-        );
-
-      const messageResult =
-        getLandlordMessagesInitByLineUid(
-          principalLineUserId,
-          landlord
-        );
-
-      return {
-        success: true,
-        code: 'OK',
-        message: '查詢成功',
-        data: {
-          home: homeResult.data || {},
-          contract_requests:
-            workspaceLandlordBootstrapResultData_(
-              contractResult
-            ),
-          payment_reports:
-            workspaceLandlordBootstrapResultData_(
-              paymentResult
-            ),
-          messages:
-            workspaceLandlordBootstrapResultData_(
-              messageResult
-            )
-        }
-      };
-    }
-  );
-}
-
-
-function workspaceLandlordBootstrapLegacyIdentity_(
-  access
-) {
-  const principal =
-    access && access.principal
-      ? access.principal
-      : {};
-
-  const lineUserId =
-    workspaceText_(
-      principal.line_user_id ||
-      (
-        access &&
-        access.principal_line_user_id
-      )
-    );
-
-  return {
-    landlord_id:
-      workspaceText_(
-        principal.landlord_id ||
-        (
-          access &&
-          access.principal_landlord_id
-        )
-      ),
-    landlord_user_id:
-      workspaceText_(
-        principal.landlord_user_id
-      ),
-    landlord_line_user_id:
-      lineUserId,
-    line_user_id:
-      lineUserId,
-    user_id:
-      workspaceText_(
-        principal.landlord_user_id
-      ),
-    landlord_name:
-      workspaceText_(
-        principal.landlord_name
-      )
-  };
-}
-
-
-function workspaceLandlordBootstrapResultData_(
-  result
-) {
-  return result && result.success === true
-    ? (result.data || {})
-    : {};
-}
-
-
 // ==================================================
 // Write proxies
 // ==================================================
@@ -894,19 +747,16 @@ function workspaceLandlordResolveAccess_(
     );
   }
 
-  if (options.skip_schema_ensure !== true) {
-    workspaceEnsureSchema_();
-  }
+  workspaceEnsureSchema_();
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
-  if (options.skip_legacy_context_creation !== true) {
-    workspaceEnsureLegacyLandlordContext_(
-      ss,
-      lineUserId
-    );
-  }
+  workspaceEnsureLegacyLandlordContext_(
+    ss,
+    lineUserId
+  );
 
   const context =
     workspaceResolveContextByLineUid_(
@@ -1744,7 +1594,8 @@ function migrateV2OperationalDataToWorkspaceIds() {
   workspaceEnsureSchema_();
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const landlordsSheet =
     ss.getSheetByName(

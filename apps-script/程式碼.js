@@ -43,38 +43,6 @@ function doGet(e) {
   let lineUserId =
     e.parameter.line_user_id || '';
 
-  if (v2Action === 'tenant_contract_auth_status') {
-    return jsonOutput_(
-      tenantLiffSigningReadExchange_(
-        requestId,
-        e.parameter.poll_secret || ''
-      ),
-      callback
-    );
-  }
-
-  if (v2Action === 'tenant_contract_artifact_upload_status') {
-    return jsonOutput_(
-      tenantContractArtifactReadExchange_(
-        requestId,
-        e.parameter.poll_secret || ''
-      ),
-      callback
-    );
-  }
-
-  if (v2Action === 'tenant_contract_sign_status') {
-    return jsonOutput_(
-      tenantContractSigningReadExchange_(
-        requestId,
-        e.parameter.poll_secret || ''
-      ),
-      callback
-    );
-  }
-
-  runtimeSnapshotBegin_(v2Action);
-
   try {
     lineUserId =
       resolveTenantRequestLineUserId_(
@@ -1092,18 +1060,6 @@ if (v2Action === 'tenant_message_submit') {
     return jsonOutput_(result, callback);
   }
 
-  if (v2Action === 'landlord_home_bootstrap') {
-    const result = getWorkspaceLandlordHomeBootstrapByLineUid_(
-      lineUserId
-    );
-
-    if (bridge === '1') {
-      return htmlBridgeOutput_(result, requestId);
-    }
-
-    return jsonOutput_(result, callback);
-  }
-
   if (v2Action === 'landlord_arrears') {
     const result = getWorkspaceLandlordArrearsNativeByLineUid_(lineUserId);
 
@@ -2090,23 +2046,7 @@ function doPost(e) {
         ? e.postData.contents
         : '';
 
-    // Make Scenario B uses a signed POST body. Keep LINE webhook handling as
-    // the fallback so existing LINE behaviour and payloads remain unchanged.
-    const result =
-      legacyContractSignedSyncIsRequest_(postBody)
-        ? handleLegacyContractSignedSyncPost_(
-            postBody,
-            e.parameter && e.parameter.signature
-              ? e.parameter.signature
-              : ''
-          )
-        : tenantLiffSigningIsAuthRequest_(postBody)
-          ? tenantLiffSigningHandleAuthPost_(postBody)
-          : tenantContractArtifactIsUploadRequest_(postBody)
-            ? tenantContractArtifactHandleUploadPost_(postBody)
-            : tenantContractSigningIsSubmitRequest_(postBody)
-              ? tenantContractSigningHandleSubmitPost_(postBody)
-              : handleLineWebhook_(postBody);
+    const result = handleLineWebhook_(postBody);
 
     return ContentService
       .createTextOutput(JSON.stringify(result))

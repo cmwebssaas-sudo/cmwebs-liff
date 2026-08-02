@@ -149,7 +149,8 @@ function reopenLandlordBillByLineUid_(
     }
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const billSheet =
       paymentReversalEnsureBillSheet_(
@@ -771,7 +772,8 @@ function reopenLandlordBillByLineUid_(
   } catch (error) {
     try {
       const ss =
-        runtimeSpreadsheet_();
+        SpreadsheetApp
+          .getActiveSpreadsheet();
 
       paymentReversalWriteAuditLog_(
         ss,
@@ -3326,7 +3328,8 @@ function paymentReversalNormalizeRoom_(
  */
 function testEnsurePaymentReversalSheets() {
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const billSheet =
     paymentReversalEnsureBillSheet_(

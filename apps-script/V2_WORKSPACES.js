@@ -85,7 +85,7 @@ function getLandlordEntryStatusByLineUid_(lineUserId) {
     lock.waitLock(15000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     // 舊版房東首次進入時，自動建立工作區與 owner membership。
     workspaceEnsureLegacyLandlordContext_(ss, lineUserId);
@@ -300,7 +300,7 @@ function registerLandlordWorkspaceByLineUid_(
     lock.waitLock(20000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     // 舊房東不應建立第二組帳號，先執行相容遷移。
     workspaceEnsureLegacyLandlordContext_(ss, lineUserId);
@@ -573,7 +573,7 @@ function getLandlordWorkspaceContextByLineUid_(lineUserId) {
 
     workspaceEnsureSchema_();
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const context = workspaceResolveContextByLineUid_(ss, lineUserId);
 
     if (!context.user) {
@@ -652,7 +652,7 @@ function setLandlordActiveWorkspaceByLineUid_(lineUserId, workspaceId) {
     lock.waitLock(15000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const context = workspaceResolveContextByLineUid_(ss, lineUserId);
 
     if (!context.user) {
@@ -774,7 +774,7 @@ function migrateExistingLandlordsToWorkspaces_() {
     lock.waitLock(30000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const landlordSheet = ss.getSheetByName(V2_WORKSPACE_SHEETS_.landlords);
     const landlords = workspaceGetObjectsWithRow_(landlordSheet);
 
@@ -1372,7 +1372,7 @@ function workspaceEmptyEntryData_() {
 // ==================================================
 
 function workspaceEnsureSchema_() {
-  const ss = runtimeSpreadsheet_();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   workspaceEnsureSheet_(ss, V2_WORKSPACE_SHEETS_.users, [
     'user_id',
@@ -1670,8 +1670,7 @@ function workspaceGetObjectsWithRow_(sheet) {
     return [];
   }
 
-  const values =
-    runtimeSnapshotGetValues_(sheet);
+  const values = sheet.getDataRange().getValues();
   const headers = values[0].map(workspaceText_);
 
   return values.slice(1).map(function (row, index) {
@@ -1781,7 +1780,7 @@ function workspaceNextId_(sheet, headerName, prefix, digits) {
 
 function workspaceWriteActivityLog_(record) {
   try {
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = workspaceEnsureSheet_(
       ss,
       V2_WORKSPACE_SHEETS_.activityLogs,
@@ -1952,7 +1951,7 @@ function workspaceResult_(success, code, message, data) {
 function testEnsureV2WorkspaceSchema() {
   workspaceEnsureSchema_();
 
-  const ss = runtimeSpreadsheet_();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const result = {};
 
   [

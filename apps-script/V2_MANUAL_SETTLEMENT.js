@@ -240,7 +240,8 @@ function manualSettleLandlordBillByLineUid_(
     }
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     const billSheet =
       manualSettlementEnsureBillSheet_(
@@ -275,18 +276,6 @@ function manualSettleLandlordBillByLineUid_(
 
     const bill =
       billData.object;
-
-    if (
-      v2CanonicalBillIsVoided_(
-        bill
-      )
-    ) {
-      return {
-        success: false,
-        code: 'BILL_CANCELLED',
-        message: '此帳單已取消，不可手動銷帳'
-      };
-    }
 
     const landlordIdentity =
       manualSettlementResolveLandlord_(
@@ -905,7 +894,8 @@ function manualSettleLandlordBillByLineUid_(
 
     try {
       const ss =
-        runtimeSpreadsheet_();
+        SpreadsheetApp
+          .getActiveSpreadsheet();
 
       manualSettlementWriteAuditLog_(
         ss,
@@ -3380,7 +3370,8 @@ function manualSettlementFormatDate_(
  */
 function testEnsureManualSettlementSheets() {
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const billSheet =
     manualSettlementEnsureBillSheet_(
@@ -3445,7 +3436,7 @@ function repairV2PaidBillsToV1() {
     }
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp.getActiveSpreadsheet();
 
     const billSheet =
       ss.getSheetByName(
@@ -3699,7 +3690,7 @@ function testRepairSinglePaidBillToV1() {
     'BILL-202607-C000019';
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp.getActiveSpreadsheet();
 
   const billSheet =
     ss.getSheetByName(

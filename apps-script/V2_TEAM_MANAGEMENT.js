@@ -14,11 +14,8 @@
  * 依賴 V2_WORKSPACES.gs
  */
 
-const V2_TEAM_JOIN_PATH_ =
-  'landlord-join.html';
-
-const V2_TEAM_LIFF_ENTRY_URL_ =
-  'https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html';
+const V2_TEAM_JOIN_URL_ =
+  'https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-join.html';
 
 const V2_TEAM_ASSIGNABLE_ROLES_ = [
   'admin',
@@ -130,7 +127,7 @@ function createLandlordTeamInvitationByLineUid_(
     lock.waitLock(20000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const workspaceId = workspaceText_(
       access.workspace.workspace_id
     ).toUpperCase();
@@ -234,7 +231,9 @@ function createLandlordTeamInvitationByLineUid_(
     );
 
     const invitationUrl =
-      teamBuildInvitationUrl_(token);
+      V2_TEAM_JOIN_URL_ +
+      '?token=' +
+      encodeURIComponent(token);
 
     teamEnsurePhoneTextColumn_(
       invitationSheet,
@@ -345,7 +344,7 @@ function cancelLandlordTeamInvitationByLineUid_(
     lock.waitLock(15000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(
       V2_WORKSPACE_SHEETS_.invitations
     );
@@ -462,7 +461,7 @@ function updateLandlordTeamMemberByLineUid_(
     lock.waitLock(15000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(
       V2_WORKSPACE_SHEETS_.members
     );
@@ -573,7 +572,7 @@ function removeLandlordTeamMemberByLineUid_(
     lock.waitLock(15000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(
       V2_WORKSPACE_SHEETS_.members
     );
@@ -666,7 +665,7 @@ function getLandlordInvitationInit_(
       );
     }
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     let invitation = teamFindInvitation_(ss, inviteToken);
 
     if (!invitation) {
@@ -810,7 +809,7 @@ function acceptLandlordInvitationByLineUid_(
     lock.waitLock(20000);
     locked = true;
 
-    const ss = runtimeSpreadsheet_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     let invitation = teamFindInvitation_(ss, inviteToken);
 
     if (!invitation) {
@@ -1166,7 +1165,7 @@ function teamAccess_(lineUserId, requireManageTeam) {
 
   workspaceEnsureSchema_();
 
-  const ss = runtimeSpreadsheet_();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   workspaceEnsureLegacyLandlordContext_(ss, lineUserId);
 
@@ -1216,7 +1215,7 @@ function teamAccess_(lineUserId, requireManageTeam) {
 
 
 function teamBuildData_(access) {
-  const ss = runtimeSpreadsheet_();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const workspaceId = workspaceText_(
     access.workspace.workspace_id
   ).toUpperCase();
@@ -1305,14 +1304,11 @@ function teamBuildData_(access) {
             row.invite_phone
           ),
         invite_email: row.invite_email || '',
-        // Always project the current LIFF-safe gateway URL.  Existing
-        // pending invitation rows may contain the legacy direct join URL,
-        // which must not be shared because its login redirect is outside
-        // the registered LIFF endpoint.
         invitation_url:
-          teamBuildInvitationUrl_(
-            row.invite_token || ''
-          ),
+          row.invitation_url ||
+          V2_TEAM_JOIN_URL_ +
+            '?token=' +
+            encodeURIComponent(row.invite_token || ''),
         expires_at: row.expires_at || '',
         status: row.status || '',
         created_at: row.created_at || '',
@@ -1445,7 +1441,7 @@ function teamRoleDescription_(role) {
 function teamEnsureSchema_() {
   workspaceEnsureSchema_();
 
-  const ss = runtimeSpreadsheet_();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(
     V2_WORKSPACE_SHEETS_.invitations
   );
@@ -1531,23 +1527,6 @@ function teamFindInvitation_(ss, token) {
 }
 
 
-function teamBuildInvitationUrl_(token) {
-  token = workspaceText_(token);
-
-  const joinPath =
-    V2_TEAM_JOIN_PATH_ +
-    '?token=' +
-    encodeURIComponent(token) +
-    '&liff_join=1';
-
-  return (
-    V2_TEAM_LIFF_ENTRY_URL_ +
-    '?return_to=' +
-    encodeURIComponent(joinPath)
-  );
-}
-
-
 function teamExpireInvitations_(ss, workspaceId) {
   const sheet = ss.getSheetByName(
     V2_WORKSPACE_SHEETS_.invitations
@@ -1609,7 +1588,8 @@ function repairTeamInvitationPhones_() {
   teamEnsureSchema_();
 
   const ss =
-    runtimeSpreadsheet_();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
     ss.getSheetByName(
@@ -1732,7 +1712,8 @@ function teamMaskEmail_(value) {
 function testEnsureV2TeamSchema() {
   teamEnsureSchema_();
 
-  const sheet = runtimeSpreadsheet_()
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
     .getSheetByName(V2_WORKSPACE_SHEETS_.invitations);
 
   const result = {

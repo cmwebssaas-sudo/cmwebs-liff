@@ -107,7 +107,8 @@ function createAdditionalLandlordWorkspaceByLineUid_(
     locked = true;
 
     const ss =
-      runtimeSpreadsheet_();
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
     workspaceEnsureLegacyLandlordContext_(
       ss,
