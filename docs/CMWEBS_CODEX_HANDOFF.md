@@ -6,6 +6,7 @@ Before work, read `AGENTS.md` and:
 
 - `docs/CMWEBS_PRODUCT_ROADMAP.md`
 - `docs/CMWEBS_CURRENT_STATE.md`
+- `docs/CMWEBS_V2_1_CODEX_EXECUTION_RECORD.md`
 - `docs/CMWEBS_ARCHITECTURE_DECISIONS.md`
 - `docs/CMWEBS_RELEASE_RULES.md`
 - `docs/CMWEBS_CHANGELOG.md`
@@ -15,13 +16,20 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
-- Gate 0 / Production Consolidation: PASS (2026-07-30 read-only evidence).
-- Canonical V2 internal-beta backend baseline: serving Version 87,
-  behaviorally source-equivalent to GitHub `main`.
-- Verified Apps Script rollback: Version 85.
-- V2.1 may begin only with a separate, explicit scope authorization.
-- No historical document proves present Production state; re-verify the
-  relevant release surface before action.
+- Gate 0 / Production Consolidation: PASS for canonical source reconciliation
+  on 2026-08-03.
+- Canonical V2 source baseline: immutable Apps Script Version 89 source is
+  byte-identical to approved commit `9a17c4b`; PR #12 merged the same tree to
+  GitHub `main` as `747b484`.
+- This is source-reconciliation evidence only. It does not assert a current
+  serving version, deployment state, or rollback version.
+- Re-verify the Production account, target project, existing deployment,
+  serving version, and rollback target for every Production action.
+- Recorded V2.1 local work includes documentation-baseline synchronization and
+  an unpushed `landlord_home_bootstrap` request-local snapshot candidate. Both
+  remain review candidates, not canonical or deployed source.
+- V2.1 integration, push, deployment, Production access, and any external
+  operation still need separate explicit scopes.
 
 ## Non-negotiable product rules
 
