@@ -64,10 +64,12 @@ rollback status:
 V2.0 remains the internal Production baseline. Gate 0 completion does not
 authorize implementation or external operations.
 
-On 2026-08-03, the only V2.1 authorization recorded here is a local
-documentation-baseline synchronization. It permits no Production read/write,
-runtime test, deployment, GitHub Pages publication, account action, or feature
-implementation. V2.1 work remains bounded by
+On 2026-08-03, local documentation-baseline synchronization was authorized.
+On 2026-08-04, a separate local-only candidate enabled the existing
+request-local snapshot for `landlord_home_bootstrap`, with a focused mock. Both
+are isolated, unpushed source records; neither permits Production read/write,
+deployment, GitHub Pages publication, account action, or runtime/UAT claims.
+V2.1 work remains bounded by
 `CMWEBS_PRODUCT_ROADMAP.md`, `CMWEBS_ARCHITECTURE_DECISIONS.md`, and
 `CMWEBS_RELEASE_RULES.md`; every later work unit needs its own explicit scope
 authorization.
@@ -85,7 +87,7 @@ contains that same tree through PR #12 merge 747b484.
 
 This is source evidence, not a current Production deployment claim. Re-verify
 the target account, project, serving version, rollback version, live runtime,
-and any external surface before a scoped action. V2.1 currently has only a
-separately authorized local documentation-baseline unit; later V2.1 work needs
+and any external surface before a scoped action. V2.1 currently has local-only
+documentation and snapshot candidates; later integration or external work needs
 separate authorization.
 ```

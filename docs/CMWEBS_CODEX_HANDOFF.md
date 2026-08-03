@@ -25,9 +25,11 @@ Start every handoff with a recommended model and speed. Default:
   serving version, deployment state, or rollback version.
 - Re-verify the Production account, target project, existing deployment,
   serving version, and rollback target for every Production action.
-- The only recorded V2.1 authorization is a local documentation-baseline
-  synchronization. V2.1 implementation and any external operation still need
-  separate explicit scopes.
+- Recorded V2.1 local work includes documentation-baseline synchronization and
+  an unpushed `landlord_home_bootstrap` request-local snapshot candidate. Both
+  remain review candidates, not canonical or deployed source.
+- V2.1 integration, push, deployment, Production access, and any external
+  operation still need separate explicit scopes.
 
 ## Non-negotiable product rules
 

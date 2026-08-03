@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-08-03 (Asia/Taipei)**
+**Last updated: 2026-08-04 (Asia/Taipei)**
 
 ## Purpose
 
@@ -30,8 +30,22 @@ be verified for the particular action that needs it.
 | Date | Authorized unit | Boundary |
 | --- | --- | --- |
 | 2026-08-03 | Documentation authority-baseline synchronization | Only this record, `CMWEBS_CURRENT_STATE.md`, and `CMWEBS_CODEX_HANDOFF.md`; isolated local branch and local commit only. No push, deployment, Production access, runtime test, or source implementation. |
+| 2026-08-04 | Landlord-home request-local snapshot candidate | Isolated local source/test candidate only. It enables the existing snapshot for `landlord_home_bootstrap` and adds a focused mock; no cross-request cache, push, deployment, Production access, or external action. |
 
-No other V2.1 activity is implied by this record.
+The source candidate is not canonical Git `main`, deployed Apps Script, or
+Production-performance evidence. It requires separate review and authorization
+for every later integration, publication, deployment, or runtime verification.
+
+## Local validation record
+
+- Existing Phase 130–132 tenant-signing mocks passed locally. These prove only
+  their mocked session, artifact, and submission paths; they do not establish
+  LINE, Drive, LIFF, or Production UAT results.
+- The Phase 137 landlord-bootstrap snapshot mock passed locally. It proves one
+  request reuses one sheet snapshot and that a second request starts fresh.
+- `git diff --check` and JavaScript syntax verification passed for the local
+  snapshot candidate. The isolated checkouts used for this work had no
+  `package.json`, so `npm run validate` was not applicable there.
 
 ## V2.1 scope boundary
 
