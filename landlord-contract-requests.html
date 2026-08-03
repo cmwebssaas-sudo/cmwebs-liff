@@ -1149,6 +1149,7 @@
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
     let ALL_REQUESTS = [];
+    let SIGNING_REVIEWS = [];
     let ACTIVE_REQUEST = null;
     let ACTIVE_STATUS_FILTER =
       TENANT_FILTER_ID ? 'all' : 'pending';
@@ -1698,6 +1699,9 @@
 
     function renderPage(data) {
       PAGE_DATA = data || {};
+      SIGNING_REVIEWS = Array.isArray(PAGE_DATA.native_signing_reviews)
+        ? PAGE_DATA.native_signing_reviews
+        : [];
 
       const sourceRequests =
         Array.isArray(PAGE_DATA.requests)
@@ -1854,6 +1858,8 @@
           </div>
         </section>
 
+        ${renderNativeSigningReviewSection()}
+
         <section class="card toolbar-card">
           <div class="filter-scroll">
             ${renderFilterButton('pending', '待審核', summary.pending_count)}
@@ -1901,6 +1907,78 @@
       `;
 
       renderRequestList();
+    }
+
+    function renderNativeSigningReviewSection() {
+      const reviews = TENANT_FILTER_ID
+        ? SIGNING_REVIEWS.filter(function (review) {
+            return rawText(review.tenant_id).trim() === TENANT_FILTER_ID;
+          })
+        : SIGNING_REVIEWS;
+
+      if (!reviews.length) {
+        return '';
+      }
+
+      return `
+        <section class="card">
+          <div class="list-header" style="margin:0 0 12px;">
+            <div class="list-title">待審核的原生合約簽署</div>
+            <div class="list-count">${reviews.length} 筆</div>
+          </div>
+          ${reviews.map(function (review) {
+            return `
+              <article class="request-card pending">
+                <div class="request-top">
+                  <div>
+                    <div class="request-title">原生合約簽署資料</div>
+                    <div class="request-id">${safeText(review.contract_id)}</div>
+                  </div>
+                  <span class="badge pending">待審核</span>
+                </div>
+                <div class="request-meta-row">
+                  <span class="mini-tag">房客 ${safeText(review.tenant_id)}</span>
+                  <span class="mini-tag">送交 ${formatDateTime(review.tenant_signing_submitted_at || review.tenant_signed_at)}</span>
+                </div>
+                <div class="request-actions two">
+                  <button class="btn btn-soft-danger" onclick="submitNativeSigningReview('${escapeHtml(review.contract_id)}', 'reject')">駁回</button>
+                  <button class="btn btn-primary" onclick="submitNativeSigningReview('${escapeHtml(review.contract_id)}', 'approve')">核准生效</button>
+                </div>
+              </article>
+            `;
+          }).join('')}
+        </section>
+      `;
+    }
+
+    async function submitNativeSigningReview(contractId, decision) {
+      if (IS_SUBMITTING) return;
+      const rejecting = decision === 'reject';
+      const reviewNote = window.prompt(
+        rejecting ? '請輸入駁回與補正說明：' : '可選填核准備註：',
+        ''
+      );
+      if (reviewNote === null) return;
+      if (rejecting && !reviewNote.trim()) {
+        showAlert('需要駁回說明', '駁回原生合約簽署時必須提供房客可理解的補正說明。');
+        return;
+      }
+      IS_SUBMITTING = true;
+      setSubmitButtonsDisabled(true);
+      try {
+        await callApi('landlord_contract_signing_review_update', {
+          contract_id: contractId,
+          decision: decision,
+          review_note: reviewNote.trim()
+        });
+        await loadPage(false);
+        showAlert('操作完成', rejecting ? '已退回房客補正；房客可重新送交。' : '已核准合約，合約已生效。');
+      } catch (error) {
+        showAlert('操作失敗', error.message || String(error));
+      } finally {
+        IS_SUBMITTING = false;
+        setSubmitButtonsDisabled(false);
+      }
     }
 
     function renderFilterButton(value, label, count) {
@@ -2779,6 +2857,15 @@
         }
 
         const data = await callApi('landlord_contract_requests_init');
+        try {
+          const signingReviews = await callApi('landlord_contract_signing_reviews_init');
+          data.native_signing_reviews = Array.isArray(signingReviews.items)
+            ? signingReviews.items
+            : [];
+        } catch (_) {
+          // Legacy contract-request management remains usable if the optional native review schema is not installed.
+          data.native_signing_reviews = [];
+        }
         renderPage(data);
       } catch (error) {
         renderError(error.message || String(error));

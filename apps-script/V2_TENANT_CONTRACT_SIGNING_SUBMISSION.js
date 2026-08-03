@@ -63,20 +63,24 @@ function tenantContractSigningSubmit_(request) {
     const artifacts = tenantContractSigningRequiredArtifacts_(schema.data.artifacts, session.data, signingMode);
     if (!artifacts.success) return artifacts;
     const now = new Date().toISOString();
-    tenantContractSigningUpdateContract_(schema.data.contractSheet, contract, {
+    const updates = {
       tenant_signed_at: now,
       tenant_signature_artifact_id: artifacts.data.signature_artifact_id,
       tenant_signing_submission_status: 'submitted',
       tenant_signing_submitted_at: now,
       updated_at: now
+    };
+    // A re-submission supersedes only the current review fields when that local migration is present.
+    [
+      'tenant_signing_reviewed_at',
+      'tenant_signing_reviewed_by_user_id',
+      'tenant_signing_reviewed_by_membership_id',
+      'tenant_signing_review_note'
+    ].forEach(function (header) {
+      if (schema.data.contractHeaders.indexOf(header) >= 0) updates[header] = '';
     });
-    const updated = Object.assign({}, contract, {
-      tenant_signed_at: now,
-      tenant_signature_artifact_id: artifacts.data.signature_artifact_id,
-      tenant_signing_submission_status: 'submitted',
-      tenant_signing_submitted_at: now,
-      updated_at: now
-    });
+    tenantContractSigningUpdateContract_(schema.data.contractSheet, contract, updates);
+    const updated = Object.assign({}, contract, updates);
     return { success: true, code: 'OK', data: tenantContractSigningPublicResult_(updated, false) };
   } catch (_) {
     return tenantContractSigningSubmitError_('SIGNING_SUBMISSION_FAILED');

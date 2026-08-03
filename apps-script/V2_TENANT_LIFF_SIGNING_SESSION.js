@@ -91,6 +91,9 @@ function tenantLiffSigningContractView_(contracts, contract, signingMode) {
     deposit_amount: contract.deposit_amount || '',
     monthly_payment_day: contract.monthly_payment_day || contract.payment_day || '',
     landlord_note: tenantLiffSigningText_(contract.landlord_note || contract.signing_note || contract.renewal_landlord_note),
+    tenant_signing_submission_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending',
+    tenant_signing_reviewed_at: contract.tenant_signing_reviewed_at || '',
+    tenant_signing_review_note: tenantLiffSigningText_(contract.tenant_signing_review_note),
     terms_document: terms,
     renewal_comparison: tenantLiffSigningRenewalComparison_(previous, contract, signingMode)
   };

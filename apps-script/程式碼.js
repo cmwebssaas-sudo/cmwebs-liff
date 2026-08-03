@@ -1692,6 +1692,76 @@ if (
 
 
 // --------------------------------------------------
+// 房東：原生合約簽署審核清單
+//
+// v2_action=landlord_contract_signing_reviews_init
+// --------------------------------------------------
+
+if (
+  v2Action ===
+  'landlord_contract_signing_reviews_init'
+) {
+  const result =
+    getLandlordContractSigningReviewsByLineUid_(
+      lineUserId
+    );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(
+      result,
+      requestId
+    );
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
+
+// --------------------------------------------------
+// 房東：核准或駁回原生合約簽署
+//
+// v2_action=landlord_contract_signing_review_update
+// --------------------------------------------------
+
+if (
+  v2Action ===
+  'landlord_contract_signing_review_update'
+) {
+  const result =
+    updateLandlordContractSigningReviewByLineUid_(
+      lineUserId,
+      String(
+        e.parameter.contract_id ||
+        ''
+      ).trim(),
+      String(
+        e.parameter.decision ||
+        ''
+      ).trim(),
+      String(
+        e.parameter.review_note ||
+        ''
+      ).trim()
+    );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(
+      result,
+      requestId
+    );
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
+
+// --------------------------------------------------
 // 房東：核准、駁回、完成合約申請
 //
 // v2_action=landlord_contract_request_update
