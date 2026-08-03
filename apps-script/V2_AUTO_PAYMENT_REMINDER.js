@@ -32,13 +32,14 @@ const AUTO_REMINDER_TRIGGER_HOUR = 10;
  * 此常數只作為尚未建立設定資料時的安全預設。
  */
 const AUTO_REMINDER_STAGES = [
-  1,
-  3,
-  7
+  2,
+  6,
+  15
 ];
 
 const AUTO_REMINDER_BILLS_SHEET = 'V2_bills';
-const AUTO_REMINDER_TENANT_VIEW_SHEET = 'V2_landlord_tenant_list_view';
+const AUTO_REMINDER_CONTRACTS_SHEET = 'V2_contracts';
+const AUTO_REMINDER_TENANTS_SHEET = 'V2_tenants';
 const AUTO_REMINDER_LANDLORD_VIEW_SHEET = 'V2_landlord_home_view';
 const AUTO_REMINDER_LANDLORDS_SHEET = 'V2_landlords';
 const AUTO_REMINDER_WORKSPACES_SHEET = 'V2_workspaces';
@@ -573,7 +574,7 @@ function autoReminderExecute_(options) {
     );
     const tenantSheet = autoReminderRequireSheet_(
       ss,
-      AUTO_REMINDER_TENANT_VIEW_SHEET
+      AUTO_REMINDER_TENANTS_SHEET
     );
     const landlordSheet = autoReminderRequireSheet_(
       ss,
@@ -615,6 +616,13 @@ function autoReminderExecute_(options) {
         billSheet
       );
 
+    const contractRows =
+      autoReminderGetObjects_(
+        ss.getSheetByName(
+          AUTO_REMINDER_CONTRACTS_SHEET
+        )
+      );
+
     const tenantRows =
       autoReminderGetObjects_(
         tenantSheet
@@ -633,6 +641,7 @@ function autoReminderExecute_(options) {
     const context =
       autoReminderBuildContext_(
         tenantRows,
+        contractRows,
         landlordRows,
         logRows,
         landlordRegistryRows,
@@ -1457,6 +1466,18 @@ function autoReminderBuildPlan_(
         ] ||
         null;
 
+      const contractId =
+        autoReminderText_(
+          bill.contract_id
+        );
+
+      const contract =
+        contractId
+          ? context.contractById[
+              contractId
+            ] || null
+          : null;
+
       const landlord =
         context.landlordById[
           landlordId
@@ -1526,16 +1547,6 @@ function autoReminderBuildPlan_(
             }
           );
 
-      const stage =
-        autoReminderResolveStage_(
-          daysOverdue,
-          reminderStages
-        );
-
-      if (!stage) {
-        return;
-      }
-
       const finalStage =
         reminderStages[
           reminderStages.length -
@@ -1546,20 +1557,16 @@ function autoReminderBuildPlan_(
         finalStage +
         1;
 
-      const stageKey =
+      const finalStageKey =
         autoReminderStageKey_(
           billId,
-          stage
+          finalStage
         );
 
-      const maxSuccessfulStage =
-        Number(
-          context
-            .maxSuccessStageByBill[
-              billId
-            ] ||
-          0
-        );
+      const finalStageSent =
+        context.successStageKeys[
+          finalStageKey
+        ] === true;
 
       const item = {
         sheetRow:
@@ -1596,7 +1603,7 @@ function autoReminderBuildPlan_(
           daysOverdue,
 
         stage:
-          stage,
+          0,
 
         finalStage:
           finalStage,
@@ -1653,8 +1660,10 @@ function autoReminderBuildPlan_(
         tenantLineUserId:
           autoReminderText_(
             tenant &&
-            tenant
-              .tenant_line_user_id
+            (
+              tenant.tenant_line_user_id ||
+              tenant.line_user_id
+            )
           ),
 
         tenantName:
@@ -1662,15 +1671,17 @@ function autoReminderBuildPlan_(
             bill.tenant_name ||
             (
               tenant &&
-              tenant.tenant_name
+              (tenant.tenant_name || tenant.display_name || tenant.name)
             )
           ),
 
         tenantBindingStatus:
           autoReminderText_(
             tenant &&
-            tenant
-              .tenant_binding_status
+            (
+              tenant.tenant_binding_status ||
+              tenant.binding_status
+            )
           ),
 
         tenantAccountStatus:
@@ -1691,8 +1702,7 @@ function autoReminderBuildPlan_(
       if (
         daysOverdue >=
           manualFollowUpDay &&
-        maxSuccessfulStage >=
-          finalStage
+        finalStageSent
       ) {
         manualItems.push(
           autoReminderPublicItem_(
@@ -1704,19 +1714,22 @@ function autoReminderBuildPlan_(
       }
 
       /*
-       * 精確階段已成功，或歷史成功階段比目前階段更高，
-       * 均視為已完成，避免設定天數調整後重複發送舊階段。
+       * 只選取已到期且尚無成功紀錄的最高階段。失敗紀錄不會進入
+       * successStageKeys，因此後續 hourly trigger 會重試同一階段。
        */
-      if (
-        context
-          .successStageKeys[
-            stageKey
-          ] ||
-        maxSuccessfulStage >=
-          stage
-      ) {
+      const stage =
+        autoReminderResolvePendingStage_(
+          billId,
+          daysOverdue,
+          reminderStages,
+          context.successStageKeys
+        );
+
+      if (!stage) {
         return;
       }
+
+      item.stage = stage;
 
       if (
         !landlordId ||
@@ -1740,6 +1753,25 @@ function autoReminderBuildPlan_(
           autoReminderSkippedItem_(
             item,
             '找不到房客資料'
+          )
+        );
+
+        return;
+      }
+
+      if (
+        !contractId ||
+        !contract ||
+        !autoReminderIsContractActive_(
+          contract,
+          now,
+          timezone
+        )
+      ) {
+        skippedItems.push(
+          autoReminderSkippedItem_(
+            item,
+            '租約不是有效狀態'
           )
         );
 
@@ -2003,6 +2035,41 @@ function autoReminderResolveStage_(
   );
 
   return resolved;
+}
+
+
+function autoReminderResolvePendingStage_(
+  billId,
+  daysOverdue,
+  reminderStages,
+  successStageKeys
+) {
+  const stages =
+    autoReminderNormalizeStages_(
+      reminderStages
+    );
+
+  for (
+    let index = stages.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const stage = stages[index];
+
+    if (
+      daysOverdue >= stage &&
+      !successStageKeys[
+        autoReminderStageKey_(
+          billId,
+          stage
+        )
+      ]
+    ) {
+      return stage;
+    }
+  }
+
+  return 0;
 }
 
 
@@ -2326,6 +2393,7 @@ function autoReminderMarkManualFollowUp_(
 
 function autoReminderBuildContext_(
   tenantRows,
+  contractRows,
   landlordRows,
   logRows,
   landlordRegistryRows,
@@ -2337,6 +2405,7 @@ function autoReminderBuildContext_(
 ) {
   const tenantById = {};
   const tenantByUserId = {};
+  const contractById = {};
   const landlordById = {};
   const workspaceByLandlordId = {};
   const workspaceRowsById = {};
@@ -2370,6 +2439,21 @@ function autoReminderBuildContext_(
           userId
         ] =
           row;
+      }
+    }
+  );
+
+  contractRows.forEach(
+    function (row) {
+      const contractId =
+        autoReminderText_(
+          row.contract_id
+        );
+
+      if (contractId) {
+        contractById[
+          contractId
+        ] = row;
       }
     }
   );
@@ -2498,18 +2582,6 @@ function autoReminderBuildContext_(
         ] =
           true;
 
-        maxSuccessStageByBill[
-          billId
-        ] =
-          Math.max(
-            Number(
-              maxSuccessStageByBill[
-                billId
-              ] ||
-              0
-            ),
-            stage
-          );
       }
 
       if (
@@ -2542,6 +2614,9 @@ function autoReminderBuildContext_(
     tenantByUserId:
       tenantByUserId,
 
+    contractById:
+      contractById,
+
     landlordById:
       landlordById,
 
@@ -2559,9 +2634,6 @@ function autoReminderBuildContext_(
 
     successStageKeys:
       successStageKeys,
-
-    maxSuccessStageByBill:
-      maxSuccessStageByBill,
 
     manualRequiredBillIds:
       manualRequiredBillIds
@@ -3002,10 +3074,25 @@ function autoReminderNormalizeStages_(
       value
     );
 
-  return stages.length >
-    0
-    ? stages
-    : AUTO_REMINDER_STAGES.slice();
+  if (stages.length === 0) {
+    return AUTO_REMINDER_STAGES.slice();
+  }
+
+  /*
+   * 舊版預設值意外寫成 [1,3,7]。將這個唯一的 legacy default
+   * 在讀取時映射為正式 2/6/15，避免既有 Workspace 因舊設定跳過
+   * 第 15 天提醒；不寫回 Sheet，也不改動其他自訂階段。
+   */
+  if (
+    stages.length === 3 &&
+    stages[0] === 1 &&
+    stages[1] === 3 &&
+    stages[2] === 7
+  ) {
+    return AUTO_REMINDER_STAGES.slice();
+  }
+
+  return stages;
 }
 
 
@@ -3325,10 +3412,10 @@ function autoReminderGetSpreadsheet_() {
     .getProperty('CMWEBS_SPREADSHEET_ID');
 
   if (spreadsheetId) {
-    return SpreadsheetApp.openById(spreadsheetId);
+    return runtimeSpreadsheet_(spreadsheetId);
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
 
   if (!ss) {
     throw new Error(
@@ -3345,7 +3432,7 @@ function autoReminderGetSpreadsheet_() {
  * 時間觸發器若無法取得 Active Spreadsheet，可先執行一次此函式。
  */
 function saveV2AutomaticPaymentReminderSpreadsheetId() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
 
   if (!ss) {
     throw new Error('目前沒有可用的綁定試算表');
@@ -3550,6 +3637,91 @@ function autoReminderIsAccountActive_(value) {
   ];
 
   return inactiveValues.indexOf(text) === -1;
+}
+
+
+function autoReminderIsContractActive_(
+  contract,
+  now,
+  timezone
+) {
+  const status =
+    autoReminderText_(
+      contract.contract_status ||
+      contract.status ||
+      contract.account_status
+    )
+      .replace(/\s+/g, '')
+      .toLowerCase();
+
+  const inactiveValues = [
+    'inactive',
+    'terminated',
+    'ended',
+    'expired',
+    'cancelled',
+    'canceled',
+    'closed',
+    'archived',
+    'void',
+    'voided',
+    'deleted',
+    'rejected',
+    'draft',
+    '停用',
+    '終止',
+    '到期',
+    '取消',
+    '作廢',
+    '退租'
+  ];
+
+  if (inactiveValues.indexOf(status) !== -1) {
+    return false;
+  }
+
+  const todayKey =
+    autoReminderDateKey_(
+      now,
+      timezone
+    );
+  const startKey =
+    autoReminderDateKey_(
+      contract.start_date ||
+      contract.contract_start_date ||
+      contract.lease_start_date,
+      timezone
+    );
+  const endKey =
+    autoReminderDateKey_(
+      contract.end_date ||
+      contract.contract_end_date ||
+      contract.lease_end_date,
+      timezone
+    );
+
+  if (startKey && todayKey && startKey > todayKey) {
+    return false;
+  }
+
+  if (endKey && todayKey && endKey < todayKey) {
+    return false;
+  }
+
+  return Boolean(
+    startKey ||
+    endKey ||
+    [
+      'active',
+      'current',
+      'effective',
+      'signed',
+      'approved',
+      '有效',
+      '生效',
+      '進行中'
+    ].indexOf(status) !== -1
+  );
 }
 
 

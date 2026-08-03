@@ -85,11 +85,8 @@ function getWorkspaceLandlordArrearsNativeByLineUid_(
         data.bills
           .filter(
             function (bill) {
-              return (
-                workspaceDashboardPaymentStatus_(
-                  bill.payment_status
-                ) ===
-                'unpaid'
+              return v2CanonicalBillIsOutstanding_(
+                bill
               );
             }
           )
@@ -532,8 +529,7 @@ function workspaceDashboardExecute_(
     }
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const data =
       workspaceDashboardLoadData_(
@@ -938,22 +934,30 @@ function workspaceDashboardBuildHomeData_(
 ) {
   const activeRooms =
     data.rooms.filter(
-      function (room) {
-        return (
-          workspaceDashboardText_(
-            room.account_status ||
-            room.room_status ||
-            'active'
-          ).toLowerCase() !==
-          'archived'
-        );
-      }
+      workspaceDashboardRoomIsOperational_
     );
 
   const activeContracts =
     data.contracts.filter(
       workspaceDashboardContractIsCurrent_
     );
+
+  const tenantsById = {};
+  const roomsById = {};
+
+  data.tenants.forEach(function (tenant) {
+    const tenantId = workspaceDashboardText_(tenant.tenant_id).toUpperCase();
+    if (tenantId) {
+      tenantsById[tenantId] = tenant;
+    }
+  });
+
+  data.rooms.forEach(function (room) {
+    const roomId = workspaceDashboardText_(room.room_id);
+    if (roomId) {
+      roomsById[roomId] = room;
+    }
+  });
 
   const activeTenantIds = {};
 
@@ -965,15 +969,32 @@ function workspaceDashboardBuildHomeData_(
         ).toUpperCase();
 
       if (tenantId) {
-        activeTenantIds[
-          tenantId
-        ] = true;
+        const tenant = tenantsById[tenantId] || {};
+
+        if (
+          workspaceDashboardTenantIsOperational_(tenant) &&
+          workspaceDashboardContractRoomIsOperational_(
+            contract,
+            roomsById
+          )
+        ) {
+          activeTenantIds[tenantId] = true;
+        }
       }
     }
   );
 
+  const activeBills =
+    data.bills.filter(
+      function (bill) {
+        return !v2CanonicalBillIsVoided_(
+          bill
+        );
+      }
+    );
+
   const latestMonth =
-    data.bills.reduce(
+    activeBills.reduce(
       function (
         latest,
         bill
@@ -995,7 +1016,7 @@ function workspaceDashboardBuildHomeData_(
 
   const latestBills =
     latestMonth
-      ? data.bills.filter(
+      ? activeBills.filter(
           function (bill) {
             return (
               workspaceDashboardNormalizeMonth_(
@@ -1022,11 +1043,8 @@ function workspaceDashboardBuildHomeData_(
   const unpaidBills =
     latestBills.filter(
       function (bill) {
-        return (
-          workspaceDashboardPaymentStatus_(
-            bill.payment_status
-          ) ===
-          'unpaid'
+        return v2CanonicalBillIsOutstanding_(
+          bill
         );
       }
     );
@@ -1142,6 +1160,74 @@ function workspaceDashboardBuildHomeData_(
 }
 
 
+/**
+ * Operational rooms are the only rooms that may appear in current landlord
+ * counts and current-tenant workflows.  Historical room rows are retained but
+ * inactive, archived, unavailable, and maintenance rooms are deliberately
+ * excluded from operational summaries.
+ */
+function workspaceDashboardRoomIsOperational_(
+  room
+) {
+  const accountStatus =
+    workspaceDashboardText_(
+      room && room.account_status ||
+      'active'
+    ).toLowerCase();
+
+  return [
+    'active',
+    'enabled',
+    '啟用',
+    '正常'
+  ].indexOf(accountStatus) >= 0;
+}
+
+
+function workspaceDashboardTenantIsOperational_(
+  tenant
+) {
+  const accountStatus =
+    workspaceDashboardText_(
+      tenant && (
+        tenant.account_status ||
+        tenant.tenant_account_status ||
+        tenant.status
+      ) ||
+      'active'
+    ).toLowerCase();
+
+  return [
+    'active',
+    'enabled',
+    '啟用',
+    '正常'
+  ].indexOf(accountStatus) >= 0;
+}
+
+
+function workspaceDashboardContractRoomIsOperational_(
+  contract,
+  roomsById
+) {
+  const roomId =
+    workspaceDashboardText_(
+      contract && contract.room_id
+    );
+
+  if (!roomId) {
+    return true;
+  }
+
+  const room = roomsById[roomId];
+
+  return Boolean(
+    room &&
+    workspaceDashboardRoomIsOperational_(room)
+  );
+}
+
+
 function workspaceDashboardLandlordSummary_(
   home
 ) {
@@ -1189,6 +1275,20 @@ function workspaceDashboardBuildTenantList_(
   const viewByTenantId = {};
   const contractsByTenantId = {};
   const billsByTenantId = {};
+  const roomsById = {};
+
+  data.rooms.forEach(
+    function (room) {
+      const roomId =
+        workspaceDashboardText_(
+          room.room_id
+        );
+
+      if (roomId) {
+        roomsById[roomId] = room;
+      }
+    }
+  );
 
   data.tenants.forEach(
     function (tenant) {
@@ -1397,8 +1497,20 @@ function workspaceDashboardBuildTenantList_(
           contracts.find(
             workspaceDashboardContractIsCurrent_
           ) ||
-          contracts[0] ||
           {};
+
+        if (
+          !workspaceDashboardTenantIsOperational_(
+            tenant
+          ) ||
+          !currentContract.contract_id ||
+          !workspaceDashboardContractRoomIsOperational_(
+            currentContract,
+            roomsById
+          )
+        ) {
+          return null;
+        }
 
         const tenantBills =
           (
@@ -1444,11 +1556,8 @@ function workspaceDashboardBuildTenantList_(
         const unpaidBills =
           tenantBills.filter(
             function (bill) {
-              return (
-                workspaceDashboardPaymentStatus_(
-                  bill.payment_status
-                ) ===
-                'unpaid'
+              return v2CanonicalBillIsOutstanding_(
+                bill
               );
             }
           );
@@ -1641,6 +1750,7 @@ function workspaceDashboardBuildTenantList_(
         };
       }
     )
+    .filter(Boolean)
     .filter(
       function (tenant) {
         return Boolean(
@@ -1966,20 +2076,26 @@ function workspaceDashboardReminderStatus_(
     return 'waiting';
   }
 
-  if (
-    lastStage >= 3
-  ) {
+  if (lastStage >= 15) {
     return 'final_sent';
   }
 
-  if (
-    reminderCount > 0 ||
-    lastStage > 0
-  ) {
-    return 'reminding';
+  if (lastStage >= 6) {
+    return 'second_sent';
   }
 
-  return 'ready';
+  if (
+    lastStage >= 2 ||
+    reminderCount > 0
+  ) {
+    return 'first_sent';
+  }
+
+  if (daysOverdue >= 2) {
+    return 'ready';
+  }
+
+  return 'waiting';
 }
 
 
@@ -1988,36 +2104,27 @@ function workspaceDashboardNextReminderDay_(
   lastStage,
   manualFollowUp
 ) {
-  if (manualFollowUp) {
+  if (manualFollowUp || lastStage >= 15) {
     return 0;
   }
 
-  const days = [
-    2,
-    5,
-    8
-  ];
-
-  for (
-    let index =
-      Math.max(
-        0,
-        Math.round(
-          lastStage
-        )
-      );
-    index < days.length;
-    index += 1
-  ) {
-    if (
-      daysOverdue <
-      days[index]
-    ) {
-      return days[index];
-    }
+  if (lastStage >= 6) {
+    return 15;
   }
 
-  return 0;
+  if (lastStage >= 2) {
+    return 6;
+  }
+
+  if (daysOverdue < 2) {
+    return 2;
+  }
+
+  if (daysOverdue < 6) {
+    return 6;
+  }
+
+  return 15;
 }
 
 
@@ -2112,22 +2219,9 @@ function workspaceDashboardSum_(
 function workspaceDashboardPaymentStatus_(
   value
 ) {
-  const status =
-    workspaceDashboardText_(
-      value
-    ).toLowerCase();
-
-  return [
-    'paid',
-    'settled',
-    'confirmed',
-    'complete',
-    'completed'
-  ].indexOf(
-    status
-  ) >= 0
-    ? 'paid'
-    : 'unpaid';
+  return v2CanonicalBillPaymentStatus_(
+    value
+  );
 }
 
 
@@ -2527,4 +2621,3 @@ function testWorkspaceLandlordTenantsNative() {
 
   return result;
 }
-

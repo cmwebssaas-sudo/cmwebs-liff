@@ -83,8 +83,7 @@ function getLandlordBillingInitByLineUid_(
       );
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const billingSettings =
       typeof settingsIntegrationGetWorkspaceSettings_ ===
@@ -723,8 +722,7 @@ function generateLandlordBillsByLineUid_(
     locked = true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const billingSettings =
       typeof settingsIntegrationGetWorkspaceSettings_ ===
@@ -2061,7 +2059,10 @@ function billingSyncBillViews_(
           billingNormalizePaymentStatus_(
             row.payment_status
           ) ===
-          'unpaid'
+          'unpaid' &&
+          !v2CanonicalBillIsVoided_(
+            row
+          )
         );
       }
     );
@@ -2175,28 +2176,6 @@ function billingSyncBillViews_(
     }
   );
 
-  const runtimeViewSync =
-    syncTenantRuntimeViewsForTenant_(
-      ss,
-      {
-        line_user_id:
-          bill.tenant_line_user_id || '',
-        tenant_id:
-          bill.tenant_id || '',
-        contract_id:
-          bill.contract_id || '',
-        workspace_id:
-          bill.workspace_id || ''
-      },
-      now
-    );
-
-  if (!runtimeViewSync.success) {
-    throw new Error(
-      '帳單衍生 View 同步失敗：' +
-      runtimeViewSync.code
-    );
-  }
 }
 
 
@@ -2220,7 +2199,10 @@ function billingRefreshWorkspaceSummaries_(
           billingNormalizePaymentStatus_(
             bill.payment_status
           ) ===
-          'unpaid'
+          'unpaid' &&
+          !v2CanonicalBillIsVoided_(
+            bill
+          )
         );
       }
     );
@@ -3240,8 +3222,7 @@ function billingEnsureSchema_() {
   workspaceEnsureSchema_();
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   billingEnsureSheet_(
     ss,
@@ -3281,8 +3262,7 @@ function billingEnsureSchema_() {
 
 function billingRequireSchema_() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const required = [
     V2_BILLING_SHEETS_
@@ -3453,7 +3433,12 @@ function billingBillHeaders_() {
     'updated_by_membership_id',
     'created_at',
     'updated_at',
-    'note'
+    'note',
+    'cancelled_at',
+    'cancelled_by_user_id',
+    'cancelled_by_membership_id',
+    'cancelled_by_name',
+    'cancellation_reason'
   ];
 }
 
@@ -4136,8 +4121,7 @@ function testEnsureBillingSchema() {
   billingEnsureSchema_();
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const result = {
     success:
@@ -4196,8 +4180,7 @@ function diagnoseBillingPreviousMetersByLineUid_(
     );
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const formalBills =
     billingGetWorkspaceRows_(
@@ -4373,8 +4356,7 @@ function repairBillingPreviousMetersByLineUid_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const billSheet =
     ss.getSheetByName(

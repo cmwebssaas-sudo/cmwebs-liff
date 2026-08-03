@@ -102,7 +102,10 @@ function getTenantPaymentReportInitByLineUid(
           return (
             rowLineUserId ===
               lineUserId &&
-            status !== 'paid'
+            status !== 'paid' &&
+            !v2CanonicalBillIsVoided_(
+              row
+            )
           );
         })
         .map(
@@ -367,6 +370,18 @@ function submitTenantPaymentReportByLineUid_(
         false,
         'BILL_NOT_FOUND',
         '找不到指定帳單'
+      );
+    }
+
+    if (
+      v2CanonicalBillIsVoided_(
+        bill
+      )
+    ) {
+      return tenantPaymentReportResult_(
+        false,
+        'BILL_CANCELLED',
+        '此帳單已取消，不可回報付款'
       );
     }
 
@@ -760,8 +775,7 @@ function tenantPaymentReportGetReports_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const sheet =
     ss.getSheetByName(
@@ -896,8 +910,7 @@ function tenantPaymentReportFindBlocking_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const sheet =
     ss.getSheetByName(
@@ -978,8 +991,7 @@ function tenantPaymentReportAppend_(
 
 function tenantPaymentReportEnsureSheet_() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   let sheet =
     ss.getSheetByName(

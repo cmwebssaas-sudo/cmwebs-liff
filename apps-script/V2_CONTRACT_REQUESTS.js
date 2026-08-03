@@ -111,7 +111,7 @@ const V2_CONTRACT_REQUEST_HEADERS = [
 
 function ensureV2ContractRequestsSheet_() {
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   let sheet =
     ss.getSheetByName(
@@ -186,7 +186,7 @@ function getTenantContractInitByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const identity =
       contractRequestResolveTenantIdentity_(
@@ -365,7 +365,7 @@ function submitTenantContractRequestByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const identity =
       contractRequestResolveTenantIdentity_(
@@ -707,7 +707,7 @@ function getTenantContractRequestsByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const identity =
       contractRequestResolveTenantIdentity_(
@@ -934,7 +934,9 @@ function cancelTenantContractRequestByLineUid_(
 // ==================================================
 
 function getLandlordContractRequestsInitByLineUid_(
-  landlordLineUserId
+  landlordLineUserId,
+  resolvedLandlord,
+  spreadsheet
 ) {
   const action =
     'landlord_contract_requests_init';
@@ -953,9 +955,11 @@ function getLandlordContractRequestsInitByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      spreadsheet ||
+      runtimeSpreadsheet_();
 
     const landlord =
+      resolvedLandlord ||
       contractRequestResolveLandlordIdentity_(
         ss,
         landlordLineUserId
@@ -1133,7 +1137,7 @@ function updateLandlordContractRequestByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const landlord =
       contractRequestResolveLandlordIdentity_(
@@ -3768,38 +3772,6 @@ function contractRequestApplyCompletedRequestToContract_(
     updated
   );
 
-  const runtimeViewSync =
-    syncTenantRuntimeViewsForTenant_(
-      ss,
-      {
-        line_user_id:
-          updated.tenant_line_user_id || '',
-        tenant_id:
-          updated.tenant_id || '',
-        contract_id:
-          contractId,
-        workspace_id:
-          updated.workspace_id ||
-          request.workspace_id ||
-          ''
-      },
-      now
-    );
-
-  if (!runtimeViewSync.success) {
-    contractRequestUpdateObjectRow_(
-      sheet,
-      contract._sheet_row,
-      contract
-    );
-
-    return contractRequestError_(
-      'CONTRACT_VIEW_SYNC_FAILED',
-      '衍生 View 同步失敗，合約更新已回復：' +
-        runtimeViewSync.code
-    );
-  }
-
   return {
     success: true,
     code: 'OK',
@@ -3815,9 +3787,7 @@ function contractRequestApplyCompletedRequestToContract_(
       request_type:
         requestType,
       updated_by:
-        landlordLineUserId,
-      view_sync:
-        runtimeViewSync.views
+        landlordLineUserId
     }
   };
 }
@@ -4457,9 +4427,9 @@ function contractRequestGetObjects_(
   }
 
   const values =
-    sheet
-      .getDataRange()
-      .getValues();
+    runtimeSnapshotGetValues_(
+      sheet
+    );
 
   const headers =
     values[0].map(

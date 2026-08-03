@@ -20,7 +20,10 @@ var LM_SHEETS_ = {
  * 房東付款回報管理頁初始化
  * v2_action=landlord_payment_reports_init
  */
-function getLandlordPaymentReportsInitByLineUid(landlordLineUserId) {
+function getLandlordPaymentReportsInitByLineUid(
+  landlordLineUserId,
+  resolvedLandlord
+) {
   var action = 'landlord_payment_reports_init';
   var emptyData = {
     landlord: null,
@@ -46,7 +49,9 @@ function getLandlordPaymentReportsInitByLineUid(landlordLineUserId) {
       };
     }
 
-    var landlord = lmResolveLandlord_(landlordLineUserId);
+    var landlord =
+      resolvedLandlord ||
+      lmResolveLandlord_(landlordLineUserId);
 
     if (!landlord) {
       return {
@@ -57,7 +62,10 @@ function getLandlordPaymentReportsInitByLineUid(landlordLineUserId) {
       };
     }
 
-    var reports = getLandlordPaymentReports_(landlordLineUserId);
+    var reports = getLandlordPaymentReports_(
+      landlordLineUserId,
+      landlord
+    );
 
     var summary = {
       total: reports.length,
@@ -113,14 +121,19 @@ function getLandlordPaymentReportsInitByLineUid(landlordLineUserId) {
 /**
  * 取得指定房東的付款回報。
  */
-function getLandlordPaymentReports_(landlordLineUserId) {
+function getLandlordPaymentReports_(
+  landlordLineUserId,
+  resolvedLandlord
+) {
   landlordLineUserId = lmText_(landlordLineUserId);
 
   if (!landlordLineUserId) {
     return [];
   }
 
-  var landlord = lmResolveLandlord_(landlordLineUserId);
+  var landlord =
+    resolvedLandlord ||
+    lmResolveLandlord_(landlordLineUserId);
   var landlordId = landlord ? lmText_(landlord.landlord_id) : '';
   var sheet = lmEnsurePaymentReportSheet_();
 
@@ -437,7 +450,10 @@ function updateLandlordPaymentReportByLineUid_(
  * 房東訊息管理頁初始化
  * v2_action=landlord_messages_init
  */
-function getLandlordMessagesInitByLineUid(landlordLineUserId) {
+function getLandlordMessagesInitByLineUid(
+  landlordLineUserId,
+  resolvedLandlord
+) {
   var action = 'landlord_messages_init';
   var emptyData = {
     landlord: null,
@@ -463,7 +479,9 @@ function getLandlordMessagesInitByLineUid(landlordLineUserId) {
       };
     }
 
-    var landlord = lmResolveLandlord_(landlordLineUserId);
+    var landlord =
+      resolvedLandlord ||
+      lmResolveLandlord_(landlordLineUserId);
 
     if (!landlord) {
       return {
@@ -474,7 +492,10 @@ function getLandlordMessagesInitByLineUid(landlordLineUserId) {
       };
     }
 
-    var messages = getLandlordTenantMessages_(landlordLineUserId);
+    var messages = getLandlordTenantMessages_(
+      landlordLineUserId,
+      landlord
+    );
 
     var summary = {
       total: messages.length,
@@ -538,14 +559,19 @@ function getLandlordMessagesInitByLineUid(landlordLineUserId) {
 /**
  * 取得指定房東的房客訊息。
  */
-function getLandlordTenantMessages_(landlordLineUserId) {
+function getLandlordTenantMessages_(
+  landlordLineUserId,
+  resolvedLandlord
+) {
   landlordLineUserId = lmText_(landlordLineUserId);
 
   if (!landlordLineUserId) {
     return [];
   }
 
-  var landlord = lmResolveLandlord_(landlordLineUserId);
+  var landlord =
+    resolvedLandlord ||
+    lmResolveLandlord_(landlordLineUserId);
   var landlordId = landlord ? lmText_(landlord.landlord_id) : '';
   var sheet = lmEnsureTenantMessageSheet_();
 
@@ -824,8 +850,7 @@ function lmResolveLandlord_(landlordLineUserId) {
   ];
 
   for (var s = 0; s < candidateSheets.length; s++) {
-    var sheet = SpreadsheetApp
-      .getActiveSpreadsheet()
+    var sheet = runtimeSpreadsheet_()
       .getSheetByName(candidateSheets[s]);
 
     if (!sheet || sheet.getLastRow() < 2) {
@@ -862,7 +887,7 @@ function lmResolveLandlord_(landlordLineUserId) {
 
 
 function lmEnsurePaymentReportSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = runtimeSpreadsheet_();
   var sheet = ss.getSheetByName(LM_SHEETS_.paymentReports);
   var headers = [
     'report_id',
@@ -907,7 +932,7 @@ function lmEnsurePaymentReportSheet_() {
 
 
 function lmEnsureTenantMessageSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = runtimeSpreadsheet_();
   var sheet = ss.getSheetByName(LM_SHEETS_.tenantMessages);
   var headers = [
     'message_id',

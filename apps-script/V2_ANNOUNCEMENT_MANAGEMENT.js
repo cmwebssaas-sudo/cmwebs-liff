@@ -112,8 +112,7 @@ function getLandlordAnnouncementsInitByLineUid_(
       );
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const data =
       announcementLoadWorkspaceData_(
@@ -491,8 +490,7 @@ function sendLandlordAnnouncementByLineUid_(
       true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const data =
       announcementLoadWorkspaceData_(
@@ -1348,8 +1346,7 @@ function retryLandlordAnnouncementByLineUid_(
       true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const announcementSheet =
       ss.getSheetByName(
@@ -3681,8 +3678,7 @@ function announcementEnsureSchema_() {
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   announcementEnsureSheet_(
     ss,
@@ -4676,8 +4672,7 @@ function announcementNumber_(
 function testDiagnoseAnnouncementSpreadsheetCapacity() {
   const result =
     announcementDiagnoseCellCapacity_(
-      SpreadsheetApp
-        .getActiveSpreadsheet()
+      runtimeSpreadsheet_()
     );
 
   Logger.log(
@@ -4695,8 +4690,7 @@ function testDiagnoseAnnouncementSpreadsheetCapacity() {
 function testCompactAnnouncementSpreadsheetCapacity() {
   const result =
     announcementCompactSpreadsheetCapacity_(
-      SpreadsheetApp
-        .getActiveSpreadsheet()
+      runtimeSpreadsheet_()
     );
 
   Logger.log(
@@ -4715,8 +4709,7 @@ function testEnsureAnnouncementSchema() {
   announcementEnsureSchema_();
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const result = {
     success:

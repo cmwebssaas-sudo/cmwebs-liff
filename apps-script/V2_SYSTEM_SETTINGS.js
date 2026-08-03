@@ -85,7 +85,7 @@ const V2_SYSTEM_SETTINGS_DEFAULTS_ = {
     10,
 
   overdue_reminder_days_json:
-    '[1,3,7]',
+    '[2,6,15]',
 
   notify_bill_created:
     true,
@@ -142,8 +142,7 @@ function getLandlordSettingsInitByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const workspaceId =
       systemSettingsText_(
@@ -533,8 +532,7 @@ function saveLandlordSettingsProfileByLineUid_(
       true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const now =
       new Date();
@@ -797,8 +795,7 @@ function saveLandlordSettingsWorkspaceByLineUid_(
       true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const workspaceId =
       systemSettingsText_(
@@ -1075,8 +1072,7 @@ function saveLandlordSettingsPaymentByLineUid_(
       true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const workspaceId =
       systemSettingsText_(
@@ -1399,8 +1395,7 @@ function saveLandlordSettingsPreferencesByLineUid_(
       true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const setting =
       systemSettingsGetOrCreateWorkspaceSettings_(
@@ -2483,8 +2478,7 @@ function systemSettingsEnsureSchema_() {
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   systemSettingsEnsureSheet_(
     ss,
@@ -2812,8 +2806,7 @@ function systemSettingsCompactWorkbookCapacity_(
 
 function systemSettingsRepairPhoneLeadingZeros_() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const targets = [
     {
@@ -3482,8 +3475,7 @@ function testEnsureSystemSettingsSchema() {
   systemSettingsEnsureSchema_();
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const result = {
     success:

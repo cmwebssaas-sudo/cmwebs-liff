@@ -89,8 +89,7 @@ function getLandlordTenantCreateInitByLineUid_(
       );
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const properties =
       tenantLeaseGetWorkspaceRows_(
@@ -774,8 +773,7 @@ function createLandlordTenantLeaseByLineUid_(
     locked = true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const propertySheet =
       ss.getSheetByName(
@@ -1435,27 +1433,6 @@ function createLandlordTenantLeaseByLineUid_(
       }
     );
 
-    const runtimeViewSync =
-      syncTenantRuntimeViewsForTenant_(
-        ss,
-        {
-          tenant_id:
-            tenantId,
-          contract_id:
-            contractId,
-          workspace_id:
-            workspaceId
-        },
-        now
-      );
-
-    if (!runtimeViewSync.success) {
-      throw new Error(
-        '房客建立後衍生 View 同步失敗：' +
-        runtimeViewSync.code
-      );
-    }
-
     SpreadsheetApp.flush();
 
     const invitationMessage =
@@ -1538,9 +1515,7 @@ function createLandlordTenantLeaseByLineUid_(
               ),
             invitation_message:
               invitationMessage
-          },
-          view_sync:
-            runtimeViewSync.views
+          }
         }
       );
 
@@ -2210,8 +2185,7 @@ function tenantLeaseEnsureSchema_() {
   workspaceEnsureSchema_();
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   tenantLeaseEnsureSheet_(
     ss,
@@ -2290,6 +2264,14 @@ function tenantLeaseEnsureSchema_() {
       'status',
       'account_status',
       'signed_at',
+      'legacy_contract_id',
+      'legacy_signed_at',
+      'legacy_signed_status',
+      'legacy_signed_document_url',
+      'legacy_signed_pdf_url',
+      'legacy_identity_front_url',
+      'legacy_identity_back_url',
+      'legacy_signed_sync_at',
       'created_by_user_id',
       'created_by_membership_id',
       'created_at',
@@ -2510,8 +2492,7 @@ function tenantLeaseEnsureSheet_(
  */
 function tenantLeaseRequireReadSchema_() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const requiredSheets = [
     V2_TENANT_LEASE_SHEETS_
@@ -2937,8 +2918,7 @@ function testEnsureTenantLeaseSchema() {
   tenantLeaseEnsureSchema_();
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const result = {
     success:

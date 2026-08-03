@@ -1,3 +1,8 @@
+/**
+ * Tenant Home read runtime depends on V2_TENANT_RUNTIME_RESOLVER.js.
+ * V2_TENANT_RUNTIME_DATA_REPAIR.js is not a read-handler dependency.
+ */
+
 const V2_TIMEZONE = 'Asia/Taipei';
 const V2_PAYMENT_REMINDER_MIN_DAYS_OVERDUE = 1;
 
@@ -127,7 +132,10 @@ function getTenantHomeByLineUid(lineUserId) {
 
     const runtimeIdentity =
       resolveCanonicalTenantRuntimeByLineUid_(
-        lineUserId
+        lineUserId,
+        {
+          include_bill_master: true
+        }
       );
 
     if (
@@ -224,11 +232,40 @@ function getTenantHomeByLineUid(lineUserId) {
       };
     }
 
-    const data =
+    const tenantHomeData =
       tenantRuntimeHomeData_(
         canonical,
         tenantHome
       );
+    const billing =
+      v2CanonicalTenantBillingProjection_(
+        canonical.bill_rows,
+        canonical
+      );
+    const latestBill =
+      billing.latest_bill || {};
+    const data = Object.assign(
+      {},
+      tenantHomeData,
+      {
+        latest_bill_month:
+          latestBill.bill_month || '',
+        latest_due_date:
+          latestBill.due_date || '',
+        latest_total_amount:
+          Number(latestBill.total_amount || 0),
+        latest_payment_status:
+          latestBill.bill_id
+            ? v2CanonicalBillPaymentStatus_(
+                latestBill.payment_status
+              )
+            : '',
+        unpaid_bill_count:
+          billing.unpaid_bill_count,
+        unpaid_total_amount:
+          billing.unpaid_total_amount
+      }
+    );
 
     logLiffAccess_({
       lineUserId,
@@ -260,7 +297,10 @@ function getTenantHomeByLineUid(lineUserId) {
 
     return {
       success: false,
-      code: 'SYSTEM_ERROR',
+      code:
+        error && error.code
+          ? error.code
+          : 'SYSTEM_ERROR',
       message: '系統錯誤：' + error.message,
       data: null
     };
@@ -269,7 +309,7 @@ function getTenantHomeByLineUid(lineUserId) {
 
 
 function testGetTenantHomeByLineUid() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
   const sheet = ss.getSheetByName(V2_SHEETS.tenantHomeView);
 
   const testLineUserId = sheet.getRange('A2').getValue();
@@ -438,6 +478,146 @@ function tenantBillsRuntimeNumber_(value) {
   return Number.isFinite(number)
     ? number
     : 0;
+}
+
+
+function tenantBillsRuntimeFormatDate_(value) {
+  if (
+    value instanceof Date &&
+    !Number.isNaN(value.getTime())
+  ) {
+    return Utilities.formatDate(
+      value,
+      V2_TIMEZONE,
+      'yyyy-MM-dd'
+    );
+  }
+
+  const text =
+    tenantBillsRuntimeText_(value);
+
+  if (!text) {
+    return '';
+  }
+
+  const match =
+    text.match(
+      /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/
+    );
+
+  if (match) {
+    return (
+      match[1] +
+      '-' +
+      String(Number(match[2]))
+        .padStart(2, '0') +
+      '-' +
+      String(Number(match[3]))
+        .padStart(2, '0')
+    );
+  }
+
+  const date = new Date(value);
+
+  if (!Number.isNaN(date.getTime())) {
+    return Utilities.formatDate(
+      date,
+      V2_TIMEZONE,
+      'yyyy-MM-dd'
+    );
+  }
+
+  return text;
+}
+
+
+function tenantBillsRuntimeJsonSafeValue_(
+  value,
+  ancestors
+) {
+  if (value === undefined) {
+    return '';
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      throw tenantBillsRuntimeError_(
+        'INVALID_DATE_VALUE',
+        '帳單回傳資料包含無效日期'
+      );
+    }
+
+    return value.toISOString();
+  }
+
+  const valueType = typeof value;
+
+  if (
+    valueType === 'string' ||
+    valueType === 'boolean'
+  ) {
+    return value;
+  }
+
+  if (valueType === 'number') {
+    return Number.isFinite(value)
+      ? value
+      : null;
+  }
+
+  if (
+    valueType === 'function' ||
+    valueType === 'symbol' ||
+    valueType === 'bigint'
+  ) {
+    throw tenantBillsRuntimeError_(
+      'NON_SERIALIZABLE_VALUE',
+      '帳單回傳資料包含不可序列化值'
+    );
+  }
+
+  if (valueType !== 'object') {
+    return tenantBillsRuntimeText_(value);
+  }
+
+  ancestors = ancestors || [];
+
+  if (ancestors.indexOf(value) >= 0) {
+    throw tenantBillsRuntimeError_(
+      'CIRCULAR_RESPONSE_VALUE',
+      '帳單回傳資料包含循環參照'
+    );
+  }
+
+  ancestors.push(value);
+
+  let result;
+
+  if (Array.isArray(value)) {
+    result = value.map(function (item) {
+      return tenantBillsRuntimeJsonSafeValue_(
+        item,
+        ancestors
+      );
+    });
+  } else {
+    result = {};
+
+    Object.keys(value).forEach(function (key) {
+      result[key] =
+        tenantBillsRuntimeJsonSafeValue_(
+          value[key],
+          ancestors
+        );
+    });
+  }
+
+  ancestors.pop();
+  return result;
 }
 
 
@@ -831,7 +1011,10 @@ function tenantBillsRuntimePublicBill_(
         row.bill_month ||
         row.billing_month
       ),
-    due_date: row.due_date || '',
+    due_date:
+      tenantBillsRuntimeFormatDate_(
+        row.due_date
+      ),
     rent_amount:
       tenantBillsRuntimeNumber_(
         row.rent_amount
@@ -841,9 +1024,13 @@ function tenantBillsRuntimePublicBill_(
         row.management_fee
       ),
     previous_meter:
-      row.previous_meter,
+      tenantBillsRuntimeJsonSafeValue_(
+        row.previous_meter
+      ),
     current_meter_reading:
-      row.current_meter_reading,
+      tenantBillsRuntimeJsonSafeValue_(
+        row.current_meter_reading
+      ),
     electricity_usage:
       tenantBillsRuntimeNumber_(
         row.electricity_usage
@@ -881,14 +1068,17 @@ function tenantBillsRuntimePublicBill_(
         row.bill_status
       ),
     payment_status:
-      tenantBillsRuntimeText_(
+      v2CanonicalBillPaymentStatus_(
         row.payment_status
       ),
     sent_status:
       tenantBillsRuntimeText_(
         row.sent_status
       ),
-    updated_at: row.updated_at || ''
+    updated_at:
+      tenantBillsRuntimeJsonSafeValue_(
+        row.updated_at
+      )
   };
 }
 
@@ -898,13 +1088,6 @@ function tenantBillsRuntimePayload_(lineUserId) {
     tenantBillsRuntimeResolveIdentity_(
       lineUserId
     );
-  const viewSelection =
-    tenantBillsRuntimeIdentityRows_(
-      getSheetObjects_(
-        V2_SHEETS.tenantBillView
-      ),
-      identity
-    );
   const masterSelection =
     tenantBillsRuntimeIdentityRows_(
       getSheetObjects_(
@@ -912,51 +1095,13 @@ function tenantBillsRuntimePayload_(lineUserId) {
       ),
       identity
     );
-  const masterById =
-    tenantBillsRuntimeRowsByBillId_(
-      masterSelection.rows
+  const source = 'V2_bills_canonical';
+  const billing =
+    v2CanonicalTenantBillingProjection_(
+      masterSelection.rows,
+      identity
     );
-  let source = 'V2_tenant_bill_view';
-  let rows =
-    viewSelection.rows
-      .filter(function (row) {
-        return Boolean(
-          tenantBillsRuntimeText_(
-            row.bill_id
-          )
-        );
-      })
-      .map(function (viewRow) {
-        const billId =
-          tenantBillsRuntimeUpper_(
-            viewRow.bill_id
-          );
-        const master =
-          masterById[billId] || {};
-
-        return Object.assign(
-          {},
-          viewRow,
-          master,
-          {
-            line_user_id:
-              viewRow.line_user_id,
-            tenant_line_user_id:
-              viewRow.tenant_line_user_id ||
-              master.tenant_line_user_id,
-            user_id:
-              viewRow.user_id ||
-              master.user_id
-          }
-        );
-      });
-
-  tenantBillsRuntimeRowsByBillId_(rows);
-
-  if (rows.length === 0) {
-    source = 'V2_bills_fallback';
-    rows = masterSelection.rows.slice();
-  }
+  const rows = billing.bills;
 
   tenantBillsRuntimeRowsByBillId_(rows);
 
@@ -1003,7 +1148,7 @@ function tenantBillsRuntimePayload_(lineUserId) {
     count: bills.length
   };
 
-  return {
+  return tenantBillsRuntimeJsonSafeValue_({
     success: true,
     ok: true,
     code:
@@ -1021,14 +1166,10 @@ function tenantBillsRuntimePayload_(lineUserId) {
     source: source,
     identity_match:
       rows.length > 0
-        ? (
-            source === 'V2_tenant_bill_view'
-              ? viewSelection.source
-              : masterSelection.source
-          )
+        ? masterSelection.source
         : '',
     data: payload
-  };
+  });
 }
 
 
@@ -1125,6 +1266,184 @@ function testGetTenantBillsRuntimePayload() {
     getTenantBillsRuntimePayloadByLineUid_(
       lineUserId
     );
+
+  Logger.log(
+    JSON.stringify(
+      result,
+      null,
+      2
+    )
+  );
+
+  return result;
+}
+
+
+function tenantBillsRuntimeJsonSafetyReport_(value) {
+  const report = {
+    date_paths: [],
+    undefined_paths: [],
+    circular_paths: [],
+    non_serializable_paths: []
+  };
+
+  function inspect_(item, path, ancestors) {
+    if (item === undefined) {
+      report.undefined_paths.push(path);
+      return;
+    }
+
+    if (item === null) {
+      return;
+    }
+
+    if (item instanceof Date) {
+      report.date_paths.push(path);
+      return;
+    }
+
+    const itemType = typeof item;
+
+    if (
+      itemType === 'function' ||
+      itemType === 'symbol' ||
+      itemType === 'bigint'
+    ) {
+      report.non_serializable_paths.push(
+        path
+      );
+      return;
+    }
+
+    if (itemType !== 'object') {
+      return;
+    }
+
+    if (ancestors.indexOf(item) >= 0) {
+      report.circular_paths.push(path);
+      return;
+    }
+
+    ancestors.push(item);
+
+    Object.keys(item).forEach(function (key) {
+      inspect_(
+        item[key],
+        path + '.' + key,
+        ancestors
+      );
+    });
+
+    ancestors.pop();
+  }
+
+  inspect_(value, '$', []);
+  return report;
+}
+
+
+function testTenantBillsApiResponse() {
+  const lineUserId =
+    getRequiredScriptProperty_(
+      'TEST_TENANT_LINE_UID'
+    );
+  const response =
+    getTenantBillsRuntimePayloadByLineUid_(
+      lineUserId
+    );
+  const bills =
+    Array.isArray(response.bills)
+      ? response.bills
+      : [];
+  const firstBill = bills[0] || {};
+  const safety =
+    tenantBillsRuntimeJsonSafetyReport_(
+      response
+    );
+  let serialized = '';
+  let stringifyError = '';
+
+  try {
+    serialized = JSON.stringify(response);
+  } catch (error) {
+    stringifyError =
+      error && error.message
+        ? error.message
+        : String(error);
+  }
+
+  const result = {
+    handler_response: response,
+    success: response.success === true,
+    ok: response.ok === true,
+    success_ok_consistent:
+      (response.success === true) ===
+      (response.ok === true),
+    error:
+      tenantBillsRuntimeText_(
+        response.error
+      ),
+    code:
+      tenantBillsRuntimeText_(
+        response.code
+      ),
+    message:
+      tenantBillsRuntimeText_(
+        response.message
+      ),
+    bills_is_array:
+      Array.isArray(response.bills),
+    data_bills_is_array:
+      Boolean(
+        response.data &&
+        Array.isArray(
+          response.data.bills
+        )
+      ),
+    top_level_and_data_bills_match:
+      Boolean(
+        response.data &&
+        JSON.stringify(response.bills) ===
+          JSON.stringify(
+            response.data.bills
+          )
+      ),
+    bills_length: bills.length,
+    first_bill: {
+      bill_id:
+        tenantBillsRuntimeText_(
+          firstBill.bill_id
+        ),
+      bill_month:
+        tenantBillsRuntimeText_(
+          firstBill.bill_month
+        ),
+      bill_status:
+        tenantBillsRuntimeText_(
+          firstBill.bill_status
+        ),
+      payment_status:
+        tenantBillsRuntimeText_(
+          firstBill.payment_status
+        )
+    },
+    json_stringify_success:
+      Boolean(serialized) &&
+      !stringifyError,
+    json_stringify_error:
+      stringifyError,
+    contains_date:
+      safety.date_paths.length > 0,
+    contains_undefined:
+      safety.undefined_paths.length > 0,
+    contains_circular_reference:
+      safety.circular_paths.length > 0,
+    contains_non_serializable_value:
+      safety
+        .non_serializable_paths
+        .length > 0,
+    serialization_findings: safety
+  };
 
   Logger.log(
     JSON.stringify(
@@ -1273,7 +1592,7 @@ function getLandlordHomeByLineUid(lineUserId) {
 
 
 function testGetLandlordHomeByLineUid() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
   const sheet = ss.getSheetByName(V2_SHEETS.landlordHomeView);
 
   const testLineUserId = sheet.getRange('A2').getValue();
@@ -1419,18 +1738,12 @@ function getLandlordArrearsByLineUid(
               row.landlord_id || ''
             ).trim();
 
-          const paymentStatus =
-            String(
-              row.payment_status || ''
-            )
-              .trim()
-              .toLowerCase();
-
           return (
             rowLandlordId ===
               landlordId &&
-            paymentStatus ===
-              'unpaid'
+            v2CanonicalBillIsOutstanding_(
+              row
+            )
           );
         })
         .map(function (row) {
@@ -1519,7 +1832,9 @@ function getLandlordArrearsByLineUid(
               row.bill_status || '',
 
             payment_status:
-              row.payment_status || '',
+              v2CanonicalBillPaymentStatus_(
+                row.payment_status
+              ),
 
             sent_status:
               row.sent_status || '',
@@ -1973,10 +2288,7 @@ function getV2ArrearsNextReminderDay_(
       lastReminderStage || 0
     );
 
-  if (
-    stage >= 15 ||
-    overdue > 15
-  ) {
+  if (stage >= 15) {
     return 0;
   }
 
@@ -2376,7 +2688,7 @@ function getLandlordTenantsByLineUid(lineUserId) {
 
 
 function testGetLandlordTenantsByLineUid() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
   const sheet = ss.getSheetByName(V2_SHEETS.landlordTenantListView);
 
   const testLineUserId = sheet.getRange('A2').getValue();
@@ -3098,7 +3410,7 @@ function hasPendingPaymentReportForTenant_(
   ).trim();
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const sheet =
     ss.getSheetByName(
@@ -3182,7 +3494,7 @@ function hasPaymentReminderSentToday_(
   ).trim();
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const sheet =
     ss.getSheetByName(
@@ -3558,7 +3870,7 @@ function getLandlordLineLogsByLineUid(lineUserId, tenantId, tenantUserId) {
       };
     }
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = runtimeSpreadsheet_();
     const sheet = ss.getSheetByName(V2_SHEETS.lineMessageLogs);
 
     if (!sheet) {
@@ -3905,7 +4217,7 @@ function isLineMessageAlreadyLogged_(lineMessageId, direction) {
     return false;
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
   const sheet = ss.getSheetByName(V2_SHEETS.lineMessageLogs);
 
   if (!sheet) {
@@ -3969,7 +4281,7 @@ function cmwebsLogLineMessage_(data) {
  * 確保 V2_line_message_logs 存在，且欄位完整
  */
 function ensureLineMessageLogSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
   let sheet = ss.getSheetByName(V2_SHEETS.lineMessageLogs);
 
   const requiredHeaders = [
@@ -4056,6 +4368,8 @@ function jsonOutput_(obj, callback) {
   const json = JSON.stringify(obj);
   const cb = String(callback || '').trim();
 
+  runtimeSnapshotFinish_();
+
   if (cb !== '') {
     return ContentService
       .createTextOutput(cb + '(' + json + ');')
@@ -4089,6 +4403,8 @@ function htmlBridgeOutput_(obj, requestId) {
 </html>
 `;
 
+  runtimeSnapshotFinish_();
+
   return HtmlService
     .createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -4100,14 +4416,15 @@ function htmlBridgeOutput_(obj, requestId) {
 // ==================================================
 
 function getSheetObjects_(sheetName) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
   const sheet = ss.getSheetByName(sheetName);
 
   if (!sheet) {
     throw new Error('Sheet not found: ' + sheetName);
   }
 
-  const values = sheet.getDataRange().getValues();
+  const values =
+    runtimeSnapshotGetValues_(sheet);
 
   if (!values || values.length < 2) {
     return [];
@@ -4138,7 +4455,7 @@ function getSheetObjects_(sheetName) {
 
 function logLiffAccess_(params) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = runtimeSpreadsheet_();
     let sheet = ss.getSheetByName(V2_SHEETS.liffAccessLogs);
 
     if (!sheet) {
@@ -4257,7 +4574,7 @@ function syncV1PaidBillsToV2() {
   try {
     lock.waitLock(30000);
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = runtimeSpreadsheet_();
 
     const legacySheet = ss.getSheetByName(
       V2_SHEETS.legacyBillHistory
@@ -4858,7 +5175,7 @@ function appendUniqueNote_(
 function appendV1V2SyncLog_(data) {
   try {
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const sheetName =
       'V2_sync_logs';

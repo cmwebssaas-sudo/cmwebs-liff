@@ -42,7 +42,7 @@ function getTenantBindingStatusByLineUid_(lineUserId) {
       );
     }
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = runtimeSpreadsheet_();
     const tenant = tenantBindingResolveByLineUid_(ss, lineUserId);
 
     if (!tenant) {
@@ -206,7 +206,7 @@ function bindTenantByLineUid_(lineUserId, phoneNumber) {
     lock.waitLock(15000);
     locked = true;
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = runtimeSpreadsheet_();
 
     const boundTenant = tenantBindingResolveByLineUid_(
       ss,
@@ -214,27 +214,6 @@ function bindTenantByLineUid_(lineUserId, phoneNumber) {
     );
 
     if (boundTenant) {
-      const viewSync =
-        syncTenantRuntimeViewsForTenant_(
-          ss,
-          {
-            line_user_id:
-              lineUserId,
-            tenant_id:
-              boundTenant.tenant_id || '',
-            workspace_id:
-              boundTenant.workspace_id || ''
-          },
-          new Date()
-        );
-
-      if (!viewSync.success) {
-        throw new Error(
-          '已綁定房客的衍生 View 同步失敗：' +
-          viewSync.code
-        );
-      }
-
       tenantBindingClearFailures_(lineUserId);
 
       return tenantBindingResult_(
@@ -250,9 +229,7 @@ function bindTenantByLineUid_(lineUserId, phoneNumber) {
           room_name:
             boundTenant.room_name ||
             boundTenant.room_list ||
-            '',
-          view_sync:
-            viewSync.views
+            ''
         }
       );
     }
@@ -490,31 +467,6 @@ function bindTenantByLineUid_(lineUserId, phoneNumber) {
       now
     );
 
-    const viewSync =
-      syncTenantRuntimeViewsForTenant_(
-        ss,
-        {
-          line_user_id:
-            lineUserId,
-          tenant_id:
-            tenantId,
-          contract_id:
-            activeContract.contract_id || '',
-          workspace_id:
-            tenant.workspace_id ||
-            activeContract.workspace_id ||
-            ''
-        },
-        now
-      );
-
-    if (!viewSync.success) {
-      throw new Error(
-        '房客綁定後衍生 View 同步失敗：' +
-        viewSync.code
-      );
-    }
-
     SpreadsheetApp.flush();
     tenantBindingClearFailures_(lineUserId);
 
@@ -573,9 +525,7 @@ function bindTenantByLineUid_(lineUserId, phoneNumber) {
         contract_id:
           activeContract.contract_id ||
           '',
-        bound_at: now,
-        view_sync:
-          viewSync.views
+        bound_at: now
       }
     );
 
@@ -1309,7 +1259,7 @@ function tenantBindingWriteLog_(record) {
 
 
 function tenantBindingEnsureLogSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
   let sheet = ss.getSheetByName(
     V2_TENANT_BINDING_SHEETS_.bindingLogs
   );
@@ -1618,8 +1568,7 @@ function tenantBindingLogAccess_(payload) {
 
 function diagnoseAllTenantLineBindings_() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const index =
     tenantBindingBuildLineCandidateIndex_(
@@ -1774,8 +1723,7 @@ function repairAllTenantLineBindings_() {
       true;
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const index =
       tenantBindingBuildLineCandidateIndex_(
@@ -2509,7 +2457,7 @@ function testTenantBindingStatus() {
 
 
 function testTenantBindingSchema() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = runtimeSpreadsheet_();
   const result = {};
 
   [
