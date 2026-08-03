@@ -72,7 +72,7 @@ function getLandlordPropertiesInitByLineUid_(
       );
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const roomDefaults =
       typeof settingsIntegrationGetWorkspaceSettings_ ===
@@ -649,7 +649,7 @@ function saveLandlordPropertyByLineUid_(
     locked = true;
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const sheet =
       ss.getSheetByName(
@@ -1096,7 +1096,7 @@ function saveLandlordRoomByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const roomDefaults =
       typeof settingsIntegrationGetWorkspaceSettings_ ===
@@ -1658,63 +1658,6 @@ function saveLandlordRoomByLineUid_(
       );
     }
 
-    let runtimeViewSync = null;
-
-    if (existing) {
-      const relatedContracts =
-        propertyRoomGetWorkspaceRows_(
-          ss.getSheetByName(
-            V2_PROPERTY_ROOM_SHEETS_.contracts
-          ),
-          access,
-          ['landlord_id']
-        ).filter(function (contract) {
-          return (
-            propertyRoomText_(
-              contract.room_id
-            ) === savedRoomId &&
-            propertyRoomContractIsActive_(
-              contract
-            )
-          );
-        });
-
-      if (relatedContracts.length > 1) {
-        throw new Error(
-          '房間存在多筆有效租約，未同步衍生 View'
-        );
-      }
-
-      if (relatedContracts.length === 1) {
-        const relatedContract =
-          relatedContracts[0];
-
-        runtimeViewSync =
-          syncTenantRuntimeViewsForTenant_(
-            ss,
-            {
-              line_user_id:
-                relatedContract
-                  .tenant_line_user_id || '',
-              tenant_id:
-                relatedContract.tenant_id || '',
-              contract_id:
-                relatedContract.contract_id || '',
-              workspace_id:
-                access.workspace.workspace_id || ''
-            },
-            now
-          );
-
-        if (!runtimeViewSync.success) {
-          throw new Error(
-            '房間更新後衍生 View 同步失敗：' +
-            runtimeViewSync.code
-          );
-        }
-      }
-    }
-
     SpreadsheetApp.flush();
 
     const result =
@@ -1730,11 +1673,7 @@ function saveLandlordRoomByLineUid_(
           room_id:
             savedRoomId,
           property_id:
-            propertyId,
-          view_sync:
-            runtimeViewSync
-              ? runtimeViewSync.views
-              : null
+            propertyId
         }
       );
 
@@ -1841,7 +1780,7 @@ function archiveLandlordRoomByLineUid_(
     locked = true;
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const roomSheet =
       ss.getSheetByName(
@@ -3073,7 +3012,7 @@ function propertyRoomEnsureSchema_() {
   workspaceEnsureSchema_();
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   propertyRoomEnsureSheet_(
     ss,
@@ -3280,8 +3219,7 @@ function propertyRoomEnsureSheet_(
  */
 function propertyRoomRequireReadSchema_() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const requiredSheets = [
     V2_PROPERTY_ROOM_SHEETS_
@@ -4302,8 +4240,7 @@ function repairWorkspacePropertyRoomLinksByLineUid_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const roomSheet =
     ss.getSheetByName(
@@ -4545,8 +4482,7 @@ function repairWorkspaceRoomFinancialDataByLineUid_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const roomSheet =
     ss.getSheetByName(
@@ -4943,8 +4879,7 @@ function diagnoseWorkspaceRoomPaymentDepositByLineUid_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const rooms =
     propertyRoomGetWorkspaceRooms_(
@@ -5196,7 +5131,7 @@ function testEnsurePropertyRoomSchema() {
   propertyRoomEnsureSchema_();
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const result = {
     success:

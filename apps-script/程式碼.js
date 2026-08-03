@@ -75,6 +75,8 @@ function doGet(e) {
     );
   }
 
+  runtimeSnapshotBegin_(v2Action);
+
   try {
     lineUserId =
       resolveTenantRequestLineUserId_(
@@ -1092,6 +1094,18 @@ if (v2Action === 'tenant_message_submit') {
     return jsonOutput_(result, callback);
   }
 
+  if (v2Action === 'landlord_home_bootstrap') {
+    const result = getWorkspaceLandlordHomeBootstrapByLineUid_(
+      lineUserId
+    );
+
+    if (bridge === '1') {
+      return htmlBridgeOutput_(result, requestId);
+    }
+
+    return jsonOutput_(result, callback);
+  }
+
   if (v2Action === 'landlord_arrears') {
     const result = getWorkspaceLandlordArrearsNativeByLineUid_(lineUserId);
 
@@ -2078,13 +2092,23 @@ function doPost(e) {
         ? e.postData.contents
         : '';
 
+    // Native tenant-contract operations use short-lived, verified LIFF
+    // exchanges. Preserve the existing signed legacy bridge and LINE webhook
+    // fallback for all unrelated POST bodies.
     const result = tenantLiffSigningIsAuthRequest_(postBody)
       ? tenantLiffSigningHandleAuthPost_(postBody)
       : tenantContractArtifactIsUploadRequest_(postBody)
         ? tenantContractArtifactHandleUploadPost_(postBody)
         : tenantContractSigningIsSubmitRequest_(postBody)
           ? tenantContractSigningHandleSubmitPost_(postBody)
-          : handleLineWebhook_(postBody);
+          : legacyContractSignedSyncIsRequest_(postBody)
+            ? handleLegacyContractSignedSyncPost_(
+                postBody,
+                e.parameter && e.parameter.signature
+                  ? e.parameter.signature
+                  : ''
+              )
+            : handleLineWebhook_(postBody);
 
     return ContentService
       .createTextOutput(JSON.stringify(result))

@@ -80,8 +80,7 @@ function settleLandlordPaymentReportByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const reportSheet =
       ensureSettlementPaymentReportSheet_(
@@ -249,6 +248,18 @@ if (
 
     const bill =
       billData.object;
+
+    if (
+      v2CanonicalBillIsVoided_(
+        bill
+      )
+    ) {
+      return {
+        success: false,
+        code: 'BILL_CANCELLED',
+        message: '此帳單已取消，不可確認付款或建立付款紀錄'
+      };
+    }
 
     if (
       String(
@@ -1411,8 +1422,7 @@ function buildSettlementSuccessNotice_(
  */
 function testEnsureSettlementSheets() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const paymentSheet =
     ensureSettlementPaymentSheet_(

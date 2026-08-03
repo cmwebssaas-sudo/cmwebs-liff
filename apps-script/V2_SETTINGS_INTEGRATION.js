@@ -63,9 +63,9 @@ const V2_SETTINGS_INTEGRATION_DEFAULTS_ = {
 
   overdue_reminder_days:
     [
-      1,
-      3,
-      7
+      2,
+      6,
+      15
     ]
 };
 
@@ -83,8 +83,7 @@ function settingsIntegrationGetWorkspaceSettings_(
 ) {
   ss =
     ss ||
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const workspaceId =
     settingsIntegrationWorkspaceId_(
@@ -1030,8 +1029,7 @@ function settingsIntegrationText_(
 function testWorkspaceSettingsIntegration() {
   const result =
     settingsIntegrationGetWorkspaceSettings_(
-      SpreadsheetApp
-        .getActiveSpreadsheet(),
+      runtimeSpreadsheet_(),
       'W000001'
     );
 
