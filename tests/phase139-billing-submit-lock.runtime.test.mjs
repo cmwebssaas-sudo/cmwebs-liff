@@ -81,6 +81,11 @@ function createRuntime(existingBills, options = {}) {
       }),
       flush() {}
     },
+    runtimeSpreadsheet_() {
+      return {
+        getSheetByName: (name) => sheets[name]
+      };
+    },
     billingEnsureSchema_() {},
     workspaceLandlordResolveAccess_() {
       return {
