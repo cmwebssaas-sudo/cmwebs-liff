@@ -856,6 +856,7 @@ function generateLandlordBillsByLineUid_(
     const generated = [];
     const skipped = [];
     const errors = [];
+    const processedRoomIds = {};
 
     items.forEach(
       function (item) {
@@ -880,6 +881,45 @@ function generateLandlordBillsByLineUid_(
             throw new Error(
               '找不到房間或無權限存取'
             );
+          }
+
+          if (processedRoomIds[roomId]) {
+            skipped.push({
+              room_id: roomId,
+              room_name: billingText_(room.room_name),
+              code: 'DUPLICATE_ROOM_SELECTION_SKIPPED',
+              message: '重複選取同一房間，已略過重複項目'
+            });
+            return;
+          }
+
+          processedRoomIds[roomId] = true;
+
+          const existingBill =
+            billRows.find(
+              function (bill) {
+                return (
+                  billingText_(
+                    bill.room_id
+                  ) ===
+                    roomId &&
+                  billingNormalizeBillMonth_(
+                    bill.bill_month
+                  ) ===
+                    billMonth
+                );
+              }
+            ) ||
+            null;
+
+          if (existingBill) {
+            skipped.push({
+              room_id: roomId,
+              room_name: billingText_(room.room_name),
+              code: 'BILL_ALREADY_CREATED_LOCKED',
+              message: '此房間本月帳單已建立，請至帳單管理更正'
+            });
+            return;
           }
 
           const contract =
@@ -907,45 +947,6 @@ function generateLandlordBillsByLineUid_(
               tenantId
             ] ||
             {};
-
-          const existingBill =
-            billRows.find(
-              function (bill) {
-                return (
-                  billingText_(
-                    bill.room_id
-                  ) ===
-                    roomId &&
-                  billingNormalizeBillMonth_(
-                    bill.bill_month
-                  ) ===
-                    billMonth
-                );
-              }
-            ) ||
-            null;
-
-          if (
-            existingBill &&
-            billingIsPaidStatus_(
-              existingBill.payment_status
-            )
-          ) {
-            skipped.push({
-              room_id:
-                roomId,
-              room_name:
-                billingText_(
-                  room.room_name
-                ),
-              code:
-                'PAID_BILL_LOCKED',
-              message:
-                '已繳帳單不能覆寫'
-            });
-
-            return;
-          }
 
           const referenceBillRows =
             billingMergeReferenceBills_(
@@ -979,69 +980,43 @@ function generateLandlordBillsByLineUid_(
             );
 
           let billId =
-            existingBill
-              ? billingText_(
-                  existingBill.bill_id
-                )
-              : '';
+            '';
 
           const now =
             new Date();
 
-          if (existingBill) {
-            billingSetValues_(
+          billId =
+            workspaceNextId_(
               billSheet,
-              existingBill
-                .__row_number,
-              Object.assign(
-                {},
-                calculated,
-                {
-                  bill_id:
-                    billId,
-                  updated_at:
-                    now,
-                  updated_by_user_id:
-                    actor.user_id,
-                  updated_by_membership_id:
-                    actor.membership_id
-                }
-              )
+              'bill_id',
+              'B',
+              7
             );
-          } else {
-            billId =
-              workspaceNextId_(
-                billSheet,
-                'bill_id',
-                'B',
-                7
-              );
 
-            workspaceAppendObject_(
-              billSheet,
-              Object.assign(
-                {
-                  bill_id:
-                    billId,
-                  created_at:
-                    now,
-                  created_by_user_id:
-                    actor.user_id,
-                  created_by_membership_id:
-                    actor.membership_id
-                },
-                calculated,
-                {
-                  updated_at:
-                    now,
-                  updated_by_user_id:
-                    actor.user_id,
-                  updated_by_membership_id:
-                    actor.membership_id
-                }
-              )
-            );
-          }
+          workspaceAppendObject_(
+            billSheet,
+            Object.assign(
+              {
+                bill_id:
+                  billId,
+                created_at:
+                  now,
+                created_by_user_id:
+                  actor.user_id,
+                created_by_membership_id:
+                  actor.membership_id
+              },
+              calculated,
+              {
+                updated_at:
+                  now,
+                updated_by_user_id:
+                  actor.user_id,
+                updated_by_membership_id:
+                  actor.membership_id
+              }
+            )
+          );
 
           calculated.bill_id =
             billId;
@@ -1096,9 +1071,7 @@ function generateLandlordBillsByLineUid_(
             total_amount:
               calculated.total_amount,
             updated_existing:
-              Boolean(
-                existingBill
-              )
+              false
           });
 
         } catch (itemError) {
@@ -1114,10 +1087,15 @@ function generateLandlordBillsByLineUid_(
 
     SpreadsheetApp.flush();
 
-    billingRefreshWorkspaceSummaries_(
-      ss,
-      access
-    );
+    if (
+      generated.length >
+        0
+    ) {
+      billingRefreshWorkspaceSummaries_(
+        ss,
+        access
+      );
+    }
 
     let teamNotification =
       null;
@@ -1284,14 +1262,24 @@ function generateLandlordBillsByLineUid_(
       workspaceResult_(
         errors.length === 0,
         errors.length === 0
-          ? 'BILLS_GENERATED'
+          ? (
+              generated.length === 0 &&
+              skipped.length > 0
+                ? 'BILLS_ALREADY_CREATED_LOCKED'
+                : 'BILLS_GENERATED'
+            )
           : (
               generated.length > 0
                 ? 'BILLS_PARTIAL_SUCCESS'
                 : 'BILLS_GENERATE_FAILED'
             ),
         errors.length === 0
-          ? '帳單已建立'
+          ? (
+              generated.length === 0 &&
+              skipped.length > 0
+                ? '所選帳單均已建立，未修改任何資料'
+                : '帳單已建立'
+            )
           : (
               generated.length > 0
                 ? '部分帳單已建立，部分失敗'

@@ -2068,6 +2068,55 @@
       return '';
     }
 
+    function formatBillingGenerationResult(result) {
+      if (
+        result &&
+        result.code ===
+          'BILLS_ALREADY_CREATED_LOCKED'
+      ) {
+        return '所選帳單均已建立，未修改任何資料';
+      }
+
+      const data =
+        (result && result.data) ||
+        {};
+      const generatedCount =
+        Number(
+          data.generated_count ||
+          0
+        );
+      const errorCount =
+        Number(
+          data.error_count ||
+          0
+        );
+      const skippedCount =
+        Number(
+          data.skipped_count ||
+          0
+        );
+
+      return (
+        '已建立 ' +
+        generatedCount +
+        ' 筆帳單' +
+        (
+          errorCount > 0
+            ? '，另有 ' +
+              errorCount +
+              ' 筆失敗'
+            : ''
+        ) +
+        (
+          skippedCount > 0
+            ? '，略過 ' +
+              skippedCount +
+              ' 筆已建立帳單'
+            : ''
+        )
+      );
+    }
+
     async function generateBills() {
       const error =
         validateSelected();
@@ -2179,21 +2228,8 @@
           result.data || {};
 
         showToast(
-          '已建立 ' +
-          Number(
-            data.generated_count ||
-            0
-          ) +
-          ' 筆帳單' +
-          (
-            Number(
-              data.error_count ||
-              0
-            ) > 0
-              ? '，另有 ' +
-                data.error_count +
-                ' 筆失敗'
-              : ''
+          formatBillingGenerationResult(
+            result
           ),
           Number(
             data.error_count ||

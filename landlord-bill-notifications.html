@@ -872,6 +872,9 @@
     let PAGE_DATA = null;
     let toastTimer = null;
 
+    const LIFF_ACCESS_TOKEN_RENEWAL_KEY =
+      'cmwebs_landlord_bill_notifications_liff_renewal_attempted';
+
     function setAppHeight() {
       const height =
         window.visualViewport &&
@@ -995,6 +998,14 @@
       );
 
       return entryUrl.href;
+    }
+
+    function isExpiredLiffAccessTokenError(error) {
+      return Boolean(
+        error &&
+        error.message ===
+          'The access token expired'
+      );
     }
 
     function showToast(
@@ -1203,8 +1214,44 @@
         return false;
       }
 
-      const profile =
-        await liff.getProfile();
+      let profile;
+
+      try {
+        profile =
+          await liff.getProfile();
+      } catch (error) {
+        if (!isExpiredLiffAccessTokenError(error)) {
+          throw error;
+        }
+
+        if (
+          sessionStorage.getItem(
+            LIFF_ACCESS_TOKEN_RENEWAL_KEY
+          )
+        ) {
+          throw error;
+        }
+
+        sessionStorage.setItem(
+          LIFF_ACCESS_TOKEN_RENEWAL_KEY,
+          '1'
+        );
+
+        if (typeof liff.logout === 'function') {
+          liff.logout();
+        }
+
+        liff.login({
+          redirectUri:
+            buildLandlordLoginRedirectUri()
+        });
+
+        return false;
+      }
+
+      sessionStorage.removeItem(
+        LIFF_ACCESS_TOKEN_RENEWAL_KEY
+      );
 
       LINE_USER_ID =
         profile.userId ||
