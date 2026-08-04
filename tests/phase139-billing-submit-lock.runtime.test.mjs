@@ -255,3 +255,21 @@ function loadNotificationInitLine({ getProfile }) {
   assert.equal(runtime.calls.logout, 0);
   assert.equal(runtime.calls.login.length, 0);
 }
+
+{
+  const runtime = loadNotificationInitLine({
+    getProfile: async () => { throw new Error('The access token expired'); }
+  });
+
+  runtime.storage.set(
+    'cmwebs_landlord_bill_notifications_liff_renewal_attempted',
+    '1'
+  );
+
+  await assert.rejects(
+    runtime.context.initLine(),
+    /The access token expired/
+  );
+  assert.equal(runtime.calls.logout, 0);
+  assert.equal(runtime.calls.login.length, 0);
+}
