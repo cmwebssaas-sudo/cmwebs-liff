@@ -1147,6 +1147,7 @@
       ).trim();
 
     let LINE_USER_ID = '';
+    let NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
     let PAGE_DATA = null;
     let ALL_REQUESTS = [];
     let SIGNING_REVIEWS = [];
@@ -1537,6 +1538,80 @@
         script.src = url;
         document.body.appendChild(script);
       });
+    }
+
+    function randomUrlToken(bytes) {
+      const value = new Uint8Array(bytes);
+      crypto.getRandomValues(value);
+      return btoa(String.fromCharCode.apply(null, value))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '');
+    }
+
+    function callNativeSigningReviewAuthStatus(requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsLandlordSigningReview_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error('房東審核身分驗證逾時'));
+        }, 30000);
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) {}
+        }
+        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
+        script.onerror = function() { cleanup(); reject(new Error('房東審核身分驗證連線失敗')); };
+        script.src = API_URL +
+          '?v2_action=landlord_contract_signing_review_auth_status' +
+          '&request_id=' + encodeURIComponent(requestId) +
+          '&poll_secret=' + encodeURIComponent(pollSecret) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initializeNativeSigningReviewSession() {
+      if (TEST_MODE) return false;
+      const idToken = liff.getIDToken();
+      if (!idToken) throw new Error('無法取得房東審核身分憑證');
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify({
+          action: 'landlord_contract_signing_review_auth_init',
+          id_token: idToken,
+          request_id: requestId,
+          poll_secret: pollSecret
+        })
+      });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callNativeSigningReviewAuthStatus(requestId, pollSecret);
+        if (result.code === 'AUTH_EXCHANGE_NOT_FOUND') continue;
+        if (!result.success || !result.data || !result.data.session_token) {
+          const error = new Error(result && result.message ? result.message : '房東審核身分驗證失敗');
+          error.code = result && result.code ? result.code : 'LANDLORD_REVIEW_AUTH_FAILED';
+          throw error;
+        }
+        NATIVE_SIGNING_REVIEW_SESSION_TOKEN = result.data.session_token;
+        return true;
+      }
+      throw new Error('房東審核身分驗證逾時');
+    }
+
+    function callNativeSigningReviewApi(action, params) {
+      if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) {
+        return Promise.reject(new Error('房東審核身分驗證已失效，請重新整理頁面。'));
+      }
+      return callApi(action, Object.assign({}, params || {}, {
+        review_session_token: NATIVE_SIGNING_REVIEW_SESSION_TOKEN
+      }));
     }
 
     async function initLineUserId() {
@@ -1966,7 +2041,7 @@
       IS_SUBMITTING = true;
       setSubmitButtonsDisabled(true);
       try {
-        await callApi('landlord_contract_signing_review_update', {
+        await callNativeSigningReviewApi('landlord_contract_signing_review_update', {
           contract_id: contractId,
           decision: decision,
           review_note: reviewNote.trim()
@@ -2858,7 +2933,7 @@
 
         const data = await callApi('landlord_contract_requests_init');
         try {
-          const signingReviews = await callApi('landlord_contract_signing_reviews_init');
+          const signingReviews = await callNativeSigningReviewApi('landlord_contract_signing_reviews_init');
           data.native_signing_reviews = Array.isArray(signingReviews.items)
             ? signingReviews.items
             : [];
@@ -2881,6 +2956,13 @@
           return;
         }
 
+        try {
+          await initializeNativeSigningReviewSession();
+        } catch (error) {
+          // Legacy request management stays readable; native review remains fail-closed.
+          NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
+          console.warn('Native signing-review session unavailable.', error);
+        }
         await loadPage(false);
       } catch (error) {
         renderError(error.message || String(error));

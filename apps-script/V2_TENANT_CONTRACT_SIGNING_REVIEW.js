@@ -29,8 +29,8 @@ function migrateV2TenantContractSigningReviewSchema_(ss) {
   return { success: true, code: 'OK', data: { added_headers: addedHeaders } };
 }
 
-function getLandlordContractSigningReviewsByLineUid_(lineUserId) {
-  const access = tenantContractSigningReviewResolveAccess_(lineUserId, 'read');
+function getLandlordContractSigningReviewsBySessionToken_(sessionToken) {
+  const access = tenantContractSigningReviewAccessFromSession_(sessionToken, 'read');
   if (!access.success) return access;
   const schema = tenantContractSigningReviewSchema_(SpreadsheetApp.getActiveSpreadsheet());
   if (!schema.success) return schema;
@@ -42,44 +42,102 @@ function getLandlordContractSigningReviewsByLineUid_(lineUserId) {
   return { success: true, code: 'OK', data: { items: items, count: items.length } };
 }
 
-function updateLandlordContractSigningReviewByLineUid_(lineUserId, contractId, decision, reviewNote) {
-  const access = tenantContractSigningReviewResolveAccess_(lineUserId, 'contract_write');
+function updateLandlordContractSigningReviewBySessionToken_(sessionToken, contractId, decision, reviewNote) {
+  const access = tenantContractSigningReviewAccessFromSession_(sessionToken, 'contract_write');
   if (!access.success) return access;
   const normalizedDecision = tenantContractSigningReviewText_(decision).toLowerCase();
   if (['approve', 'reject'].indexOf(normalizedDecision) === -1) return tenantContractSigningReviewError_('REVIEW_DECISION_INVALID');
-  const schema = tenantContractSigningReviewSchema_(SpreadsheetApp.getActiveSpreadsheet());
-  if (!schema.success) return schema;
-  const workspaceId = tenantContractSigningReviewText_(access.data.workspace.workspace_id);
-  const contract = tenantContractSigningReviewRows_(schema.data.sheet).find(function (row) {
-    return tenantContractSigningReviewText_(row.contract_id) === tenantContractSigningReviewText_(contractId) &&
-      tenantContractSigningReviewText_(row.workspace_id) === workspaceId;
-  });
-  if (!contract) return tenantContractSigningReviewError_('CONTRACT_NOT_FOUND');
-  const submissionStatus = tenantContractSigningReviewText_(contract.tenant_signing_submission_status).toLowerCase();
-  const finalStatus = normalizedDecision === 'approve' ? 'approved' : 'rejected';
-  if (submissionStatus === finalStatus) {
-    return { success: true, code: 'IDEMPOTENT', data: tenantContractSigningReviewPublicResult_(contract, true) };
-  }
-  if (['approved', 'rejected'].indexOf(submissionStatus) !== -1) return tenantContractSigningReviewError_('REVIEW_ALREADY_FINALIZED');
-  if (submissionStatus !== 'submitted') return tenantContractSigningReviewError_('CONTRACT_NOT_SUBMITTED');
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const schema = tenantContractSigningReviewSchema_(ss);
+    if (!schema.success) return schema;
+    const workspaceId = tenantContractSigningReviewText_(access.data.workspace.workspace_id);
+    const contract = tenantContractSigningReviewRows_(schema.data.sheet).find(function (row) {
+      return tenantContractSigningReviewText_(row.contract_id) === tenantContractSigningReviewText_(contractId) &&
+        tenantContractSigningReviewText_(row.workspace_id) === workspaceId;
+    });
+    if (!contract) return tenantContractSigningReviewError_('CONTRACT_NOT_FOUND');
+    const submissionStatus = tenantContractSigningReviewText_(contract.tenant_signing_submission_status).toLowerCase();
+    const finalStatus = normalizedDecision === 'approve' ? 'approved' : 'rejected';
+    if (submissionStatus === finalStatus) {
+      return { success: true, code: 'IDEMPOTENT', data: tenantContractSigningReviewPublicResult_(contract, true) };
+    }
+    if (['approved', 'rejected'].indexOf(submissionStatus) !== -1) return tenantContractSigningReviewError_('REVIEW_ALREADY_FINALIZED');
+    if (submissionStatus !== 'submitted') return tenantContractSigningReviewError_('CONTRACT_NOT_SUBMITTED');
 
-  const now = new Date().toISOString();
-  const actor = access.data;
-  const updates = {
-    tenant_signing_submission_status: finalStatus,
-    contract_status: normalizedDecision === 'approve' ? 'active' : tenantContractSigningReviewText_(contract.contract_status),
-    tenant_signing_reviewed_at: now,
-    tenant_signing_reviewed_by_user_id: tenantContractSigningReviewText_(actor.user.user_id),
-    tenant_signing_reviewed_by_membership_id: tenantContractSigningReviewText_(actor.membership.membership_id),
-    tenant_signing_review_note: tenantContractSigningReviewText_(reviewNote),
-    updated_at: now
-  };
-  tenantContractSigningReviewUpdateRow_(schema.data.sheet, contract, updates);
-  return {
-    success: true,
-    code: 'OK',
-    data: tenantContractSigningReviewPublicResult_(Object.assign({}, contract, updates), false)
-  };
+    if (normalizedDecision === 'approve') {
+      const signingMode = tenantContractSigningReviewText_(contract.signing_mode).toLowerCase();
+      const artifactSheet = ss.getSheetByName('V2_contract_artifacts');
+      if (!artifactSheet || typeof tenantContractSigningRequiredArtifacts_ !== 'function' || typeof tenantLiffSigningRows_ !== 'function') {
+        return tenantContractSigningReviewError_('CONTRACT_SIGNING_ARTIFACTS_NOT_READY');
+      }
+      const artifacts = tenantContractSigningRequiredArtifacts_(
+        tenantLiffSigningRows_(artifactSheet),
+        {
+          contract_id: tenantContractSigningReviewText_(contract.contract_id),
+          tenant_id: tenantContractSigningReviewText_(contract.tenant_id),
+          workspace_id: workspaceId
+        },
+        signingMode
+      );
+      if (!artifacts || artifacts.success !== true) {
+        return tenantContractSigningReviewError_((artifacts && artifacts.code) || 'REQUIRED_ARTIFACT_MISSING');
+      }
+    }
+
+    const now = new Date().toISOString();
+    const actor = access.data;
+    const updates = {
+      tenant_signing_submission_status: finalStatus,
+      contract_status: normalizedDecision === 'approve' ? 'active' : tenantContractSigningReviewText_(contract.contract_status),
+      tenant_signing_reviewed_at: now,
+      tenant_signing_reviewed_by_user_id: tenantContractSigningReviewText_(actor.user.user_id),
+      tenant_signing_reviewed_by_membership_id: tenantContractSigningReviewText_(actor.membership.membership_id),
+      tenant_signing_review_note: tenantContractSigningReviewText_(reviewNote),
+      updated_at: now
+    };
+    tenantContractSigningReviewUpdateRow_(schema.data.sheet, contract, updates);
+    return {
+      success: true,
+      code: 'OK',
+      data: tenantContractSigningReviewPublicResult_(Object.assign({}, contract, updates), false)
+    };
+  } catch (_) {
+    return tenantContractSigningReviewError_('REVIEW_UPDATE_FAILED');
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
+}
+
+function getLandlordContractSigningReviewsByLineUid_() {
+  return tenantContractSigningReviewError_('LANDLORD_REVIEW_SESSION_REQUIRED');
+}
+
+function updateLandlordContractSigningReviewByLineUid_() {
+  return tenantContractSigningReviewError_('LANDLORD_REVIEW_SESSION_REQUIRED');
+}
+
+function tenantContractSigningReviewAccessFromSession_(sessionToken, policy) {
+  if (typeof verifyLandlordContractSigningReviewSessionToken_ !== 'function') {
+    return tenantContractSigningReviewError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED');
+  }
+  const session = verifyLandlordContractSigningReviewSessionToken_(sessionToken);
+  if (!session || session.success !== true || !session.data) {
+    return tenantContractSigningReviewError_((session && session.code) || 'LANDLORD_REVIEW_SESSION_INVALID');
+  }
+  const access = tenantContractSigningReviewResolveAccess_(session.data.line_sub, policy);
+  if (!access.success) return access;
+  const claims = session.data;
+  if (
+    tenantContractSigningReviewText_(access.data.user.user_id) !== tenantContractSigningReviewText_(claims.user_id) ||
+    tenantContractSigningReviewText_(access.data.membership.membership_id) !== tenantContractSigningReviewText_(claims.membership_id) ||
+    tenantContractSigningReviewText_(access.data.workspace.workspace_id) !== tenantContractSigningReviewText_(claims.workspace_id)
+  ) {
+    return tenantContractSigningReviewError_('LANDLORD_REVIEW_SESSION_PRINCIPAL_INVALID');
+  }
+  return access;
 }
 
 function tenantContractSigningReviewResolveAccess_(lineUserId, policy) {

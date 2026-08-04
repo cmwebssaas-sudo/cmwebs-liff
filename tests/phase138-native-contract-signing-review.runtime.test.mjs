@@ -65,16 +65,27 @@ function makeRuntime(options = {}) {
   const sheets = {
     V2_contracts: new Sheet(signingHeaders, contractRows),
     V2_contract_artifacts: new Sheet(['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'status'], [
+      ['artifact-front-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'identity_front', 'stored'],
+      ['artifact-back-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'identity_back', 'stored'],
+      ['artifact-signature-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'signature', 'stored'],
       ['artifact-front', 'ws-1', 'tenant-1', 'contract-rejected', 'identity_front', 'stored'],
       ['artifact-back', 'ws-1', 'tenant-1', 'contract-rejected', 'identity_back', 'stored'],
       ['artifact-signature', 'ws-1', 'tenant-1', 'contract-rejected', 'signature', 'stored']
     ])
   };
-  const state = { allowed: options.allowed !== false };
+  const state = {
+    allowed: options.allowed !== false,
+    sessionValid: options.sessionValid !== false,
+    lockWaits: 0,
+    lockReleases: 0
+  };
   const context = {
     JSON, String, Number, Math, Date, RegExp, Error, Object, Array,
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: name => sheets[name] || null }) },
-    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    LockService: { getScriptLock: () => ({
+      waitLock() { state.lockWaits += 1; },
+      releaseLock() { state.lockReleases += 1; }
+    }) },
     workspaceLandlordResolveAccess_: () => ({
       success: true,
       workspace: { workspace_id: 'ws-1' },
@@ -84,6 +95,17 @@ function makeRuntime(options = {}) {
     workspaceLandlordCheckPolicy_: () => state.allowed
       ? { success: true }
       : { success: false, code: 'WORKSPACE_PERMISSION_DENIED' },
+    verifyLandlordContractSigningReviewSessionToken_: () => state.sessionValid
+      ? {
+          success: true,
+          data: {
+            line_sub: 'landlord-line',
+            user_id: 'landlord-1',
+            membership_id: 'member-1',
+            workspace_id: 'ws-1'
+          }
+        }
+      : { success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' },
     tenantLiffSigningText_: value => String(value == null ? '' : value).trim(),
     tenantLiffSigningRows_: sheet => {
       if (!sheet || sheet.getLastRow() < 2) return [];
@@ -123,10 +145,14 @@ function makeRuntime(options = {}) {
   return { api: context, sheets, state };
 }
 
+function reviewSessionToken() {
+  return 'server-verified-landlord-review-session';
+}
+
 {
   const { api, sheets } = makeRuntime();
   assert.equal(
-    api.getLandlordContractSigningReviewsByLineUid_('landlord-line').code,
+    api.getLandlordContractSigningReviewsBySessionToken_(reviewSessionToken()).code,
     'CONTRACT_SIGNING_REVIEW_SCHEMA_NOT_READY'
   );
   const migration = api.migrateV2TenantContractSigningReviewSchema_(
@@ -147,7 +173,7 @@ function makeRuntime(options = {}) {
 {
   const { api, sheets } = makeRuntime();
   api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
-  const listed = api.getLandlordContractSigningReviewsByLineUid_('landlord-line');
+  const listed = api.getLandlordContractSigningReviewsBySessionToken_(reviewSessionToken());
   assert.equal(listed.success, true, listed.code);
   assert.deepEqual([...listed.data.items.map(item => item.contract_id)], ['contract-submitted']);
   assert.equal(listed.data.items[0].workspace_id, 'ws-1');
@@ -158,28 +184,30 @@ function makeRuntime(options = {}) {
   const { api, sheets, state } = makeRuntime();
   api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
   state.allowed = false;
-  assert.equal(api.updateLandlordContractSigningReviewByLineUid_('landlord-line', 'contract-submitted', 'approve', '').code, 'WORKSPACE_PERMISSION_DENIED');
+  assert.equal(api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'approve', '').code, 'WORKSPACE_PERMISSION_DENIED');
   state.allowed = true;
-  assert.equal(api.updateLandlordContractSigningReviewByLineUid_('landlord-line', 'contract-other-workspace', 'approve', '').code, 'CONTRACT_NOT_FOUND');
+  assert.equal(api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-other-workspace', 'approve', '').code, 'CONTRACT_NOT_FOUND');
 }
 
 {
-  const { api, sheets } = makeRuntime();
+  const { api, sheets, state } = makeRuntime();
   api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
-  const approved = api.updateLandlordContractSigningReviewByLineUid_('landlord-line', 'contract-submitted', 'approve', '資料完整');
+  const approved = api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'approve', '資料完整');
   assert.equal(approved.success, true, approved.code);
   assert.equal(approved.data.contract_status, 'active');
   assert.equal(approved.data.tenant_signing_submission_status, 'approved');
   assert.equal(approved.data.idempotent, false);
   assert.equal(approved.data.reviewed_by_user_id, 'landlord-1');
-  assert.equal(api.updateLandlordContractSigningReviewByLineUid_('landlord-line', 'contract-submitted', 'approve', '資料完整').code, 'IDEMPOTENT');
-  assert.equal(api.updateLandlordContractSigningReviewByLineUid_('landlord-line', 'contract-submitted', 'reject', '改變主意').code, 'REVIEW_ALREADY_FINALIZED');
+  assert.equal(api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'approve', '資料完整').code, 'IDEMPOTENT');
+  assert.equal(api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'reject', '改變主意').code, 'REVIEW_ALREADY_FINALIZED');
+  assert.equal(state.lockWaits, 3, 'every final-decision attempt must be serialized by ScriptLock');
+  assert.equal(state.lockReleases, 3, 'every acquired review lock must be released');
 }
 
 {
   const { api, sheets } = makeRuntime();
   api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
-  const rejected = api.updateLandlordContractSigningReviewByLineUid_('landlord-line', 'contract-rejected', 'reject', '請補正資料');
+  const rejected = api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-rejected', 'reject', '請補正資料');
   assert.equal(rejected.success, true, rejected.code);
   assert.equal(rejected.data.contract_status, 'pending_tenant_signature');
   assert.equal(rejected.data.tenant_signing_submission_status, 'rejected');
@@ -192,10 +220,34 @@ function makeRuntime(options = {}) {
   assert.equal(sheets.V2_contracts.rows[1][reviewedAtColumn], '');
 }
 
+{
+  const { api, sheets } = makeRuntime();
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const signatureStatusColumn = sheets.V2_contract_artifacts.headers.indexOf('status');
+  sheets.V2_contract_artifacts.rows[2][signatureStatusColumn] = 'removed';
+  assert.equal(
+    api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'approve', '附件已驗證').code,
+    'REQUIRED_ARTIFACT_MISSING',
+    'approval must revalidate required stored artifacts, not trust an earlier submission alone'
+  );
+}
+
+{
+  const { api, sheets, state } = makeRuntime({ sessionValid: false });
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  assert.equal(
+    api.getLandlordContractSigningReviewsBySessionToken_('forged-query-line-user-id').code,
+    'LANDLORD_REVIEW_SESSION_INVALID',
+    'a caller-provided LINE UID must never authorize native signing-review access'
+  );
+  assert.equal(state.lockWaits, 0);
+}
+
 assert.equal(reviewSource.includes('legacyContract'), false, 'native signing review must not call the legacy signed-contract bridge');
 assert.equal(dispatcherSource.includes("'landlord_contract_signing_reviews_init'"), true, 'review list route must be dispatched');
 assert.equal(dispatcherSource.includes("'landlord_contract_signing_review_update'"), true, 'review update route must be dispatched');
+assert.equal(dispatcherSource.includes("'landlord_contract_signing_review_auth_status'"), true, 'review session status route must be dispatched');
 assert.equal(tenantContractPage.includes('審核退回，請補正後重新送交'), true, 'tenant must see a rejected native signing state');
-assert.equal(landlordRequestPage.includes("callApi('landlord_contract_signing_reviews_init')"), true, 'landlord must load submitted native signing reviews');
-assert.equal(landlordRequestPage.includes("callApi('landlord_contract_signing_review_update'"), true, 'landlord must be able to submit a native signing review');
+assert.equal(landlordRequestPage.includes('initializeNativeSigningReviewSession'), true, 'landlord must obtain a server-verified review session before native review access');
+assert.equal(landlordRequestPage.includes('review_session_token'), true, 'landlord native review calls must carry the verified review session token, not a raw LINE UID');
 console.log('Phase 138 native tenant-contract signing-review runtime mocks passed.');

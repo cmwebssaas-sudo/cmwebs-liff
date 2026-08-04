@@ -75,6 +75,16 @@ function doGet(e) {
     );
   }
 
+  if (v2Action === 'landlord_contract_signing_review_auth_status') {
+    return jsonOutput_(
+      landlordContractSigningReviewReadExchange_(
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
   runtimeSnapshotBegin_(v2Action);
 
   try {
@@ -1702,8 +1712,11 @@ if (
   'landlord_contract_signing_reviews_init'
 ) {
   const result =
-    getLandlordContractSigningReviewsByLineUid_(
-      lineUserId
+    getLandlordContractSigningReviewsBySessionToken_(
+      String(
+        e.parameter.review_session_token ||
+        ''
+      ).trim()
     );
 
   if (bridge === '1') {
@@ -1731,8 +1744,11 @@ if (
   'landlord_contract_signing_review_update'
 ) {
   const result =
-    updateLandlordContractSigningReviewByLineUid_(
-      lineUserId,
+    updateLandlordContractSigningReviewBySessionToken_(
+      String(
+        e.parameter.review_session_token ||
+        ''
+      ).trim(),
       String(
         e.parameter.contract_id ||
         ''
@@ -2167,6 +2183,8 @@ function doPost(e) {
     // fallback for all unrelated POST bodies.
     const result = tenantLiffSigningIsAuthRequest_(postBody)
       ? tenantLiffSigningHandleAuthPost_(postBody)
+      : landlordContractSigningReviewIsAuthRequest_(postBody)
+        ? landlordContractSigningReviewHandleAuthPost_(postBody)
       : tenantContractArtifactIsUploadRequest_(postBody)
         ? tenantContractArtifactHandleUploadPost_(postBody)
         : tenantContractSigningIsSubmitRequest_(postBody)
