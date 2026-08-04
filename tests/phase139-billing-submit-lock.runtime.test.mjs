@@ -2,6 +2,47 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
+function loadBillingGenerationResultFormatter() {
+  const source = fs.readFileSync('landlord-billing.html', 'utf8');
+  const start = source.indexOf('function formatBillingGenerationResult(');
+  const end = source.indexOf('\n    async function generateBills()', start);
+
+  assert.notEqual(start, -1, 'formatBillingGenerationResult must exist in the billing page');
+  assert.notEqual(end, -1, 'formatBillingGenerationResult must precede generateBills');
+
+  const context = {};
+  vm.runInNewContext(source.slice(start, end), context);
+  return context.formatBillingGenerationResult;
+}
+
+{
+  const formatBillingGenerationResult = loadBillingGenerationResultFormatter();
+
+  assert.equal(
+    formatBillingGenerationResult({
+      code: 'BILLS_ALREADY_CREATED_LOCKED',
+      data: { generated_count: 0, skipped_count: 18, error_count: 0 }
+    }),
+    '所選帳單均已建立，未修改任何資料'
+  );
+
+  assert.equal(
+    formatBillingGenerationResult({
+      code: 'BILLS_CREATED',
+      data: { generated_count: 2, skipped_count: 1, error_count: 0 }
+    }),
+    '已建立 2 筆帳單，略過 1 筆已建立帳單'
+  );
+
+  assert.equal(
+    formatBillingGenerationResult({
+      code: 'BILLS_CREATED_WITH_ERRORS',
+      data: { generated_count: 2, skipped_count: 1, error_count: 3 }
+    }),
+    '已建立 2 筆帳單，另有 3 筆失敗，略過 1 筆已建立帳單'
+  );
+}
+
 function createRuntime(existingBills) {
   const fixtures = {
     billWrites: 0,
