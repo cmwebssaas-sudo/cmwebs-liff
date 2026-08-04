@@ -146,6 +146,30 @@ tenant_payment_report_submit
   example, `NT$ 3`). This display rule does not change the stored rate or the
   existing whole-dollar calculation of bill amounts.
 
+## V2.1 native landlord signing-review candidate routes
+
+These routes are local-candidate additions after the immutable Version 85
+baseline above. They are not deployment evidence and do not alter that
+baseline's 69-route count.
+
+| Route / POST action | Transport | Required authority | Purpose |
+| --- | --- | --- | --- |
+| `landlord_contract_signing_review_auth_init` | `doPost` | A LINE `id_token` verified server-side against `CMWEBS_LINE_LOGIN_CHANNEL_ID` | Starts a short-lived, one-time exchange for an HMAC-signed landlord review session. |
+| `landlord_contract_signing_review_auth_status` | JSONP `v2_action` | The exchange `request_id` and secret | Redeems the one-time exchange; it never accepts a raw landlord LINE UID as a review credential. |
+| `landlord_contract_signing_reviews_init` | JSONP `v2_action` | `review_session_token`, active Workspace membership, read policy | Returns only submitted native-signing contracts in the session's Workspace. |
+| `landlord_contract_signing_review_update` | JSONP `v2_action` | `review_session_token`, active Workspace membership, `contract_write` policy | Approves or rejects one in-Workspace submitted native-signing contract. Approval revalidates required stored artifacts and is serialized with `ScriptLock`. |
+
+- `review_session_token` is a short-lived HMAC-signed server credential. It is
+  bound to the verified LINE subject, V2 user, membership, and Workspace; it
+  must not be replaced by a URL `line_user_id`, browser storage value, or a
+  client-supplied Workspace/user/member identifier.
+- The review update is idempotent only for the same already-final decision. An
+  opposite decision after finalization returns an error and does not overwrite
+  the audit record.
+- These routes are native V2 signing-review routes only. They do not invoke the
+  legacy signed-contract integration bridge or reinterpret
+  `V2_contract_requests` rows as native signing submissions.
+
 ## Signed legacy contract integration webhook
 
 | POST action | Module | Purpose |
