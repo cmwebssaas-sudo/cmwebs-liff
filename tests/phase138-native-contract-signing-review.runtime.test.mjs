@@ -191,10 +191,19 @@ function reviewSessionToken() {
     session_token: reviewSessionToken()
   }));
   assert.equal(submitted.code, 'EXCHANGE_ACCEPTED');
-  const listed = api.landlordContractSigningReviewReadExchange_('list', requestId, pollSecret);
+  const locksBeforeRedemption = state.lockWaits;
+  const releasesBeforeRedemption = state.lockReleases;
+  const listed = api.landlordContractSigningReviewReadResultExchange_('list', requestId, pollSecret);
   assert.equal(listed.success, true, listed.code);
   assert.deepEqual([...listed.data.items.map(item => item.contract_id)], ['contract-submitted']);
   assert.equal([...state.exchangeCache.values()].some(value => String(value).includes(reviewSessionToken())), false, 'cached JSONP exchange results must not retain the review session token');
+  assert.equal(state.lockWaits, locksBeforeRedemption + 1, 'a result exchange must be redeemed under ScriptLock');
+  assert.equal(state.lockReleases, releasesBeforeRedemption + 1, 'the result exchange lock must be released');
+  assert.equal(
+    api.landlordContractSigningReviewReadResultExchange_('list', requestId, pollSecret).code,
+    'REVIEW_EXCHANGE_NOT_FOUND',
+    'a redeemed result exchange must not be reusable'
+  );
 }
 
 {
@@ -205,6 +214,43 @@ function reviewSessionToken() {
   assert.deepEqual([...listed.data.items.map(item => item.contract_id)], ['contract-submitted']);
   assert.equal(listed.data.items[0].workspace_id, 'ws-1');
   assert.equal(listed.data.items[0].tenant_signing_submission_status, 'submitted');
+}
+
+{
+  const { api, sheets } = makeRuntime();
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const contractStatusColumn = sheets.V2_contracts.headers.indexOf('contract_status');
+  const reviewStatusColumn = sheets.V2_contracts.headers.indexOf('tenant_signing_submission_status');
+  sheets.V2_contracts.rows[0][contractStatusColumn] = 'terminated';
+  assert.equal(
+    api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'approve', '不可重新啟用').code,
+    'CONTRACT_NOT_SIGNABLE',
+    'a submitted contract that was terminated after submission must not be reactivated'
+  );
+  assert.equal(sheets.V2_contracts.rows[0][contractStatusColumn], 'terminated');
+  assert.equal(sheets.V2_contracts.rows[0][reviewStatusColumn], 'submitted');
+}
+
+{
+  const { api, sheets } = makeRuntime();
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const signingModeColumn = sheets.V2_contracts.headers.indexOf('signing_mode');
+  sheets.V2_contracts.rows[0][signingModeColumn] = 'legacy_bridge';
+  assert.equal(
+    api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'reject', '不可用簽署模式').code,
+    'SIGNING_MODE_NOT_READY',
+    'review must use the same permitted signing modes as tenant submission'
+  );
+}
+
+{
+  const { api, sheets } = makeRuntime();
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  assert.equal(
+    api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'reject', 'x'.repeat(1001)).code,
+    'REVIEW_NOTE_TOO_LONG',
+    'review notes must have a server-side size limit'
+  );
 }
 
 {
@@ -219,6 +265,8 @@ function reviewSessionToken() {
 {
   const { api, sheets, state } = makeRuntime();
   api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const locksBeforeDecisions = state.lockWaits;
+  const releasesBeforeDecisions = state.lockReleases;
   const approved = api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'approve', '資料完整');
   assert.equal(approved.success, true, approved.code);
   assert.equal(approved.data.contract_status, 'active');
@@ -227,8 +275,8 @@ function reviewSessionToken() {
   assert.equal(approved.data.reviewed_by_user_id, 'landlord-1');
   assert.equal(api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'approve', '資料完整').code, 'IDEMPOTENT');
   assert.equal(api.updateLandlordContractSigningReviewBySessionToken_(reviewSessionToken(), 'contract-submitted', 'reject', '改變主意').code, 'REVIEW_ALREADY_FINALIZED');
-  assert.equal(state.lockWaits, 3, 'every final-decision attempt must be serialized by ScriptLock');
-  assert.equal(state.lockReleases, 3, 'every acquired review lock must be released');
+  assert.equal(state.lockWaits, locksBeforeDecisions + 3, 'every final-decision attempt must be serialized by ScriptLock');
+  assert.equal(state.lockReleases, releasesBeforeDecisions + 3, 'every acquired review lock must be released');
 }
 
 {
@@ -262,12 +310,13 @@ function reviewSessionToken() {
 {
   const { api, sheets, state } = makeRuntime({ sessionValid: false });
   api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const locksBeforeRejectedAccess = state.lockWaits;
   assert.equal(
     api.getLandlordContractSigningReviewsBySessionToken_('forged-query-line-user-id').code,
     'LANDLORD_REVIEW_SESSION_INVALID',
     'a caller-provided LINE UID must never authorize native signing-review access'
   );
-  assert.equal(state.lockWaits, 0);
+  assert.equal(state.lockWaits, locksBeforeRejectedAccess, 'an invalid session must be rejected before acquiring a review lock');
 }
 
 assert.equal(reviewSource.includes('legacyContract'), false, 'native signing review must not call the legacy signed-contract bridge');

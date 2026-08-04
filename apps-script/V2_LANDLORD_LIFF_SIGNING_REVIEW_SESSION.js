@@ -26,16 +26,24 @@ function landlordContractSigningReviewHandleAuthPost_(body) {
   return { success: true, code: 'EXCHANGE_ACCEPTED' };
 }
 
-function landlordContractSigningReviewReadExchange_(requestId, pollSecret) {
-  const raw = CacheService.getScriptCache().get(landlordContractSigningReviewExchangeKey_(requestId));
-  if (!raw) return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_NOT_FOUND');
-  let entry;
-  try { entry = JSON.parse(raw); } catch (_) { return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_INVALID'); }
-  let secret;
-  try { secret = landlordContractSigningReviewSessionSecret_(); } catch (_) { return landlordContractSigningReviewSessionError_('LIFF_SESSION_SECRET_NOT_CONFIGURED'); }
-  if (!landlordContractSigningReviewConstantEquals_(entry.poll_hash, landlordContractSigningReviewHmacHex_(pollSecret, secret))) return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_DENIED');
-  CacheService.getScriptCache().remove(landlordContractSigningReviewExchangeKey_(requestId));
-  return entry.result || landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_INVALID');
+function landlordContractSigningReviewReadAuthExchange_(requestId, pollSecret) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    const raw = CacheService.getScriptCache().get(landlordContractSigningReviewExchangeKey_(requestId));
+    if (!raw) return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_NOT_FOUND');
+    let entry;
+    try { entry = JSON.parse(raw); } catch (_) { return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_INVALID'); }
+    let secret;
+    try { secret = landlordContractSigningReviewSessionSecret_(); } catch (_) { return landlordContractSigningReviewSessionError_('LIFF_SESSION_SECRET_NOT_CONFIGURED'); }
+    if (!landlordContractSigningReviewConstantEquals_(entry.poll_hash, landlordContractSigningReviewHmacHex_(pollSecret, secret))) return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_DENIED');
+    CacheService.getScriptCache().remove(landlordContractSigningReviewExchangeKey_(requestId));
+    return entry.result || landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_INVALID');
+  } catch (_) {
+    return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_READ_FAILED');
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
 }
 
 function landlordContractSigningReviewAuthenticate_(idToken) {

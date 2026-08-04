@@ -77,7 +77,7 @@ function doGet(e) {
 
   if (v2Action === 'landlord_contract_signing_review_auth_status') {
     return jsonOutput_(
-      landlordContractSigningReviewReadExchange_(
+      landlordContractSigningReviewReadAuthExchange_(
         requestId,
         e.parameter.poll_secret || ''
       ),
@@ -87,7 +87,7 @@ function doGet(e) {
 
   if (v2Action === 'landlord_contract_signing_reviews_fetch_status') {
     return jsonOutput_(
-      landlordContractSigningReviewReadExchange_(
+      landlordContractSigningReviewReadResultExchange_(
         'list',
         requestId,
         e.parameter.poll_secret || ''
@@ -98,7 +98,7 @@ function doGet(e) {
 
   if (v2Action === 'landlord_contract_signing_review_update_status') {
     return jsonOutput_(
-      landlordContractSigningReviewReadExchange_(
+      landlordContractSigningReviewReadResultExchange_(
         'update',
         requestId,
         e.parameter.poll_secret || ''
