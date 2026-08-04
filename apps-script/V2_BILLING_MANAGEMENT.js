@@ -856,6 +856,7 @@ function generateLandlordBillsByLineUid_(
     const generated = [];
     const skipped = [];
     const errors = [];
+    const processedRoomIds = {};
 
     items.forEach(
       function (item) {
@@ -882,31 +883,17 @@ function generateLandlordBillsByLineUid_(
             );
           }
 
-          const contract =
-            billingResolveRoomContractForMonth_(
-              contractRows,
-              roomId,
-              monthStart,
-              monthEnd
-            );
-
-          if (!contract) {
-            throw new Error(
-              '此房間在帳單月份沒有有效租約'
-            );
+          if (processedRoomIds[roomId]) {
+            skipped.push({
+              room_id: roomId,
+              room_name: billingText_(room.room_name),
+              code: 'DUPLICATE_ROOM_SELECTION_SKIPPED',
+              message: '重複選取同一房間，已略過重複項目'
+            });
+            return;
           }
 
-          const tenantId =
-            billingText_(
-              contract.tenant_id ||
-              room.current_tenant_id
-            );
-
-          const tenant =
-            tenantMap[
-              tenantId
-            ] ||
-            {};
+          processedRoomIds[roomId] = true;
 
           const existingBill =
             billRows.find(
@@ -934,6 +921,32 @@ function generateLandlordBillsByLineUid_(
             });
             return;
           }
+
+          const contract =
+            billingResolveRoomContractForMonth_(
+              contractRows,
+              roomId,
+              monthStart,
+              monthEnd
+            );
+
+          if (!contract) {
+            throw new Error(
+              '此房間在帳單月份沒有有效租約'
+            );
+          }
+
+          const tenantId =
+            billingText_(
+              contract.tenant_id ||
+              room.current_tenant_id
+            );
+
+          const tenant =
+            tenantMap[
+              tenantId
+            ] ||
+            {};
 
           const referenceBillRows =
             billingMergeReferenceBills_(
@@ -1074,10 +1087,15 @@ function generateLandlordBillsByLineUid_(
 
     SpreadsheetApp.flush();
 
-    billingRefreshWorkspaceSummaries_(
-      ss,
-      access
-    );
+    if (
+      generated.length >
+        0
+    ) {
+      billingRefreshWorkspaceSummaries_(
+        ss,
+        access
+      );
+    }
 
     let teamNotification =
       null;

@@ -43,11 +43,14 @@ function loadBillingGenerationResultFormatter() {
   );
 }
 
-function createRuntime(existingBills) {
+function createRuntime(existingBills, options = {}) {
   const fixtures = {
     billWrites: 0,
     roomMeterWrites: 0,
-    roomMeterWriteRoomIds: []
+    roomMeterWriteRoomIds: [],
+    billViewSyncs: 0,
+    summaryRefreshes: 0,
+    teamNotifications: 0
   };
   const sheets = {
     V2_properties: { name: 'V2_properties', rows: [] },
@@ -96,6 +99,7 @@ function createRuntime(existingBills) {
     billingMonthEnd_() { return new Date('2026-08-31T00:00:00Z'); },
     billingActor_() { return { user_id: 'user-a', membership_id: 'membership-a' }; },
     billingResolveRoomContractForMonth_(_contracts, roomId) {
+      if (options.resolveContract === false) return null;
       return { tenant_id: roomId === 'R001' ? 'T001' : 'T002' };
     },
     billingIsPaidStatus_() { return false; },
@@ -130,11 +134,15 @@ function createRuntime(existingBills) {
         );
       }
     },
-    billingSyncBillViews_() {},
-    billingRefreshWorkspaceSummaries_() {},
+    billingSyncBillViews_() { fixtures.billViewSyncs += 1; },
+    billingRefreshWorkspaceSummaries_() { fixtures.summaryRefreshes += 1; },
     billingFormatDate_() { return '2026-08-10'; },
     billingNumber_(value) { return Number(value) || 0; },
     workspaceResult_(success, code, message, data) { return { success, code, message, data }; },
+    workspaceNotifyTeam_() {
+      fixtures.teamNotifications += 1;
+      return { success: true };
+    },
     billingAudit_() {}
   };
   const source = fs.readFileSync('apps-script/V2_BILLING_MANAGEMENT.js', 'utf8');
@@ -148,9 +156,12 @@ function createRuntime(existingBills) {
 }
 
 {
-  const { fixtures, generate } = createRuntime([
-    { bill_id: 'B0000009', room_id: 'R001', bill_month: '2026-08', payment_status: 'unpaid', __row_number: 2 }
-  ]);
+  const { fixtures, generate } = createRuntime(
+    [
+      { bill_id: 'B0000009', room_id: 'R001', bill_month: '2026-08', payment_status: 'unpaid', __row_number: 2 }
+    ],
+    { resolveContract: false }
+  );
   const result = generate(
     'landlord-a',
     '2026-08',
@@ -163,6 +174,9 @@ function createRuntime(existingBills) {
   assert.equal(result.data.skipped[0].code, 'BILL_ALREADY_CREATED_LOCKED');
   assert.equal(fixtures.billWrites, 0);
   assert.equal(fixtures.roomMeterWrites, 0);
+  assert.equal(fixtures.billViewSyncs, 0);
+  assert.equal(fixtures.summaryRefreshes, 0);
+  assert.equal(fixtures.teamNotifications, 0);
 }
 
 {
@@ -183,7 +197,34 @@ function createRuntime(existingBills) {
   assert.equal(result.data.skipped.length, 1);
   assert.equal(result.data.skipped[0].code, 'BILL_ALREADY_CREATED_LOCKED');
   assert.equal(fixtures.billWrites, 1);
+  assert.equal(fixtures.roomMeterWrites, 1);
   assert.equal(fixtures.roomMeterWriteRoomIds.includes('R001'), false);
+  assert.deepEqual(fixtures.roomMeterWriteRoomIds, ['R002']);
+  assert.equal(fixtures.billViewSyncs, 1);
+  assert.equal(fixtures.summaryRefreshes, 1);
+  assert.equal(fixtures.teamNotifications, 1);
+}
+
+{
+  const { fixtures, generate } = createRuntime([]);
+  const result = generate(
+    'landlord-a',
+    '2026-08',
+    JSON.stringify([
+      { selected: true, room_id: 'R002', current_meter_reading: 888 },
+      { selected: true, room_id: 'R002', current_meter_reading: 999 }
+    ])
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.generated_count, 1);
+  assert.equal(result.data.skipped_count, 1);
+  assert.equal(result.data.skipped[0].code, 'DUPLICATE_ROOM_SELECTION_SKIPPED');
+  assert.equal(result.data.skipped[0].message, '重複選取同一房間，已略過重複項目');
+  assert.equal(fixtures.billWrites, 1);
+  assert.equal(fixtures.billViewSyncs, 1);
+  assert.equal(fixtures.summaryRefreshes, 1);
+  assert.equal(fixtures.teamNotifications, 1);
 }
 
 function loadNotificationInitLine({ getProfile }) {
