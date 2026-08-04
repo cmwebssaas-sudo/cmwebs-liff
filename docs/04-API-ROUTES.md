@@ -155,14 +155,21 @@ baseline's 69-route count.
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
 | `landlord_contract_signing_review_auth_init` | `doPost` | A LINE `id_token` verified server-side against `CMWEBS_LINE_LOGIN_CHANNEL_ID` | Starts a short-lived, one-time exchange for an HMAC-signed landlord review session. |
-| `landlord_contract_signing_review_auth_status` | JSONP `v2_action` | The exchange `request_id` and secret | Redeems the one-time exchange; it never accepts a raw landlord LINE UID as a review credential. |
-| `landlord_contract_signing_reviews_init` | JSONP `v2_action` | `review_session_token`, active Workspace membership, read policy | Returns only submitted native-signing contracts in the session's Workspace. |
-| `landlord_contract_signing_review_update` | JSONP `v2_action` | `review_session_token`, active Workspace membership, `contract_write` policy | Approves or rejects one in-Workspace submitted native-signing contract. Approval revalidates required stored artifacts and is serialized with `ScriptLock`. |
+| `landlord_contract_signing_review_auth_status` | JSONP `v2_action` | The authentication exchange `request_id` and secret | Redeems the one-time authentication exchange; it never accepts a raw landlord LINE UID as a review credential. |
+| `landlord_contract_signing_reviews_fetch` | `doPost` | `review_session_token` in the POST body, active Workspace membership, read policy | Creates a short-lived result exchange for submitted native-signing contracts in the session's Workspace. |
+| `landlord_contract_signing_reviews_fetch_status` | JSONP `v2_action` | The result exchange `request_id` and `poll_secret` | Redeems the one-time list result. The URL contains no review session token. |
+| `landlord_contract_signing_review_update_submit` | `doPost` | `review_session_token` in the POST body, active Workspace membership, `contract_write` policy | Creates a short-lived result exchange for an approval or rejection of one in-Workspace submitted native-signing contract. Approval revalidates required stored artifacts and is serialized with `ScriptLock`. |
+| `landlord_contract_signing_review_update_status` | JSONP `v2_action` | The result exchange `request_id` and `poll_secret` | Redeems the one-time update result. The URL contains no review session token. |
+| `landlord_contract_signing_reviews_init` / `landlord_contract_signing_review_update` | JSONP `v2_action` compatibility routes | None | Reject with `LANDLORD_REVIEW_POST_EXCHANGE_REQUIRED`; they no longer accept a review credential through a URL. |
 
 - `review_session_token` is a short-lived HMAC-signed server credential. It is
   bound to the verified LINE subject, V2 user, membership, and Workspace; it
-  must not be replaced by a URL `line_user_id`, browser storage value, or a
+  is sent only in the `doPost` body. It must not be placed in a URL, replaced
+  by a URL `line_user_id`, stored in the browser, or replaced by a
   client-supplied Workspace/user/member identifier.
+- The JSONP result exchange carries only a one-time `request_id` and
+  `poll_secret`; its cached result expires after 60 seconds and is removed on
+  successful redemption.
 - The review update is idempotent only for the same already-final decision. An
   opposite decision after finalization returns an error and does not overwrite
   the audit record.
