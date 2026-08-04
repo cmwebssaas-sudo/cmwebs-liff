@@ -1605,13 +1605,73 @@
       throw new Error('房東審核身分驗證逾時');
     }
 
-    function callNativeSigningReviewApi(action, params) {
+    function callNativeSigningReviewExchangeStatus(operation, requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsLandlordSigningReviewExchange_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error('原生合約審核處理逾時'));
+        }, 30000);
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) {}
+        }
+        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
+        script.onerror = function() { cleanup(); reject(new Error('原生合約審核結果查詢失敗')); };
+        const statusAction = operation === 'list'
+          ? 'landlord_contract_signing_reviews_fetch_status'
+          : 'landlord_contract_signing_review_update_status';
+        script.src = API_URL +
+          '?v2_action=' + encodeURIComponent(statusAction) +
+          '&request_id=' + encodeURIComponent(requestId) +
+          '&poll_secret=' + encodeURIComponent(pollSecret) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function callNativeSigningReviewApi(action, params) {
       if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) {
-        return Promise.reject(new Error('房東審核身分驗證已失效，請重新整理頁面。'));
+        throw new Error('房東審核身分驗證已失效，請重新整理頁面。');
       }
-      return callApi(action, Object.assign({}, params || {}, {
-        review_session_token: NATIVE_SIGNING_REVIEW_SESSION_TOKEN
-      }));
+      const operation = action === 'landlord_contract_signing_reviews_init'
+        ? 'list'
+        : action === 'landlord_contract_signing_review_update'
+          ? 'update'
+          : '';
+      if (!operation) {
+        throw new Error('不支援的原生合約審核操作');
+      }
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      const payload = Object.assign({}, params || {}, {
+        action: operation === 'list'
+          ? 'landlord_contract_signing_reviews_fetch'
+          : 'landlord_contract_signing_review_update_submit',
+        request_id: requestId,
+        poll_secret: pollSecret,
+        session_token: NATIVE_SIGNING_REVIEW_SESSION_TOKEN
+      });
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(payload)
+      });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callNativeSigningReviewExchangeStatus(operation, requestId, pollSecret);
+        if (result.code === 'REVIEW_EXCHANGE_NOT_FOUND') continue;
+        if (!result.success) {
+          const error = new Error(result && result.message ? result.message : '原生合約審核失敗');
+          error.code = result && result.code ? result.code : 'LANDLORD_REVIEW_EXCHANGE_FAILED';
+          throw error;
+        }
+        return result.data || {};
+      }
+      throw new Error('原生合約審核處理逾時');
     }
 
     async function initLineUserId() {

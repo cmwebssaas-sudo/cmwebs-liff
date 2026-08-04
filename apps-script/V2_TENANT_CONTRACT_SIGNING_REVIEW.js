@@ -1,6 +1,7 @@
 // Native V2 landlord review for tenant-submitted contract signing. It never invokes legacy signing bridges.
 const V2_TENANT_CONTRACT_SIGNING_REVIEW_LIST_ACTION_ = 'landlord_contract_signing_reviews_init';
 const V2_TENANT_CONTRACT_SIGNING_REVIEW_UPDATE_ACTION_ = 'landlord_contract_signing_review_update';
+const V2_TENANT_CONTRACT_SIGNING_REVIEW_EXCHANGE_TTL_SECONDS_ = 60;
 const V2_TENANT_CONTRACT_SIGNING_REVIEW_AUDIT_HEADERS_ = [
   'tenant_signing_reviewed_at',
   'tenant_signing_reviewed_by_user_id',
@@ -109,6 +110,78 @@ function updateLandlordContractSigningReviewBySessionToken_(sessionToken, contra
   } finally {
     try { lock.releaseLock(); } catch (_) {}
   }
+}
+
+function landlordContractSigningReviewIsExchangeRequest_(body) {
+  try {
+    const action = tenantContractSigningReviewText_(JSON.parse(String(body || '')).action);
+    return [
+      'landlord_contract_signing_reviews_fetch',
+      'landlord_contract_signing_review_update_submit'
+    ].indexOf(action) >= 0;
+  } catch (_) {
+    return false;
+  }
+}
+
+function landlordContractSigningReviewHandleExchangePost_(body) {
+  let request;
+  try { request = JSON.parse(String(body || '')); } catch (_) { return tenantContractSigningReviewError_('INVALID_JSON'); }
+  const action = tenantContractSigningReviewText_(request && request.action);
+  const operation = action === 'landlord_contract_signing_reviews_fetch'
+    ? 'list'
+    : action === 'landlord_contract_signing_review_update_submit'
+      ? 'update'
+      : '';
+  if (!operation) return tenantContractSigningReviewError_('INVALID_ACTION');
+  const requestId = tenantContractSigningReviewText_(request.request_id);
+  const pollSecret = tenantContractSigningReviewText_(request.poll_secret);
+  if (!/^[A-Za-z0-9_-]{22,}$/.test(requestId) || !/^[A-Za-z0-9_-]{43,}$/.test(pollSecret)) {
+    return tenantContractSigningReviewError_('INVALID_EXCHANGE_CREDENTIAL');
+  }
+  let secret;
+  try { secret = landlordContractSigningReviewSessionSecret_(); } catch (_) { return tenantContractSigningReviewError_('LIFF_SESSION_SECRET_NOT_CONFIGURED'); }
+  const result = operation === 'list'
+    ? getLandlordContractSigningReviewsBySessionToken_(request.session_token)
+    : updateLandlordContractSigningReviewBySessionToken_(
+      request.session_token,
+      tenantContractSigningReviewText_(request.contract_id),
+      tenantContractSigningReviewText_(request.decision),
+      tenantContractSigningReviewText_(request.review_note)
+    );
+  CacheService.getScriptCache().put(
+    tenantContractSigningReviewExchangeKey_(operation, requestId),
+    JSON.stringify({
+      poll_hash: landlordContractSigningReviewHmacHex_(pollSecret, secret),
+      result: result
+    }),
+    V2_TENANT_CONTRACT_SIGNING_REVIEW_EXCHANGE_TTL_SECONDS_
+  );
+  return { success: true, code: 'EXCHANGE_ACCEPTED' };
+}
+
+function landlordContractSigningReviewReadExchange_(operation, requestId, pollSecret) {
+  operation = tenantContractSigningReviewText_(operation);
+  if (['list', 'update'].indexOf(operation) === -1) return tenantContractSigningReviewError_('INVALID_ACTION');
+  const raw = CacheService.getScriptCache().get(
+    tenantContractSigningReviewExchangeKey_(operation, requestId)
+  );
+  if (!raw) return tenantContractSigningReviewError_('REVIEW_EXCHANGE_NOT_FOUND');
+  let entry;
+  try { entry = JSON.parse(raw); } catch (_) { return tenantContractSigningReviewError_('REVIEW_EXCHANGE_INVALID'); }
+  let secret;
+  try { secret = landlordContractSigningReviewSessionSecret_(); } catch (_) { return tenantContractSigningReviewError_('LIFF_SESSION_SECRET_NOT_CONFIGURED'); }
+  if (!landlordContractSigningReviewConstantEquals_(entry.poll_hash, landlordContractSigningReviewHmacHex_(pollSecret, secret))) {
+    return tenantContractSigningReviewError_('REVIEW_EXCHANGE_DENIED');
+  }
+  CacheService.getScriptCache().remove(
+    tenantContractSigningReviewExchangeKey_(operation, requestId)
+  );
+  return entry.result || tenantContractSigningReviewError_('REVIEW_EXCHANGE_INVALID');
+}
+
+function tenantContractSigningReviewExchangeKey_(operation, requestId) {
+  return 'landlord_contract_signing_review:' + tenantContractSigningReviewText_(operation) + ':' + tenantContractSigningReviewText_(requestId);
 }
 
 function getLandlordContractSigningReviewsByLineUid_() {

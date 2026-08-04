@@ -77,7 +77,8 @@ function makeRuntime(options = {}) {
     allowed: options.allowed !== false,
     sessionValid: options.sessionValid !== false,
     lockWaits: 0,
-    lockReleases: 0
+    lockReleases: 0,
+    exchangeCache: new Map()
   };
   const context = {
     JSON, String, Number, Math, Date, RegExp, Error, Object, Array,
@@ -85,6 +86,11 @@ function makeRuntime(options = {}) {
     LockService: { getScriptLock: () => ({
       waitLock() { state.lockWaits += 1; },
       releaseLock() { state.lockReleases += 1; }
+    }) },
+    CacheService: { getScriptCache: () => ({
+      put: (key, value) => state.exchangeCache.set(key, value),
+      get: key => state.exchangeCache.get(key) || null,
+      remove: key => state.exchangeCache.delete(key)
     }) },
     workspaceLandlordResolveAccess_: () => ({
       success: true,
@@ -106,6 +112,9 @@ function makeRuntime(options = {}) {
           }
         }
       : { success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' },
+    landlordContractSigningReviewSessionSecret_: () => 'review-exchange-secret',
+    landlordContractSigningReviewHmacHex_: (value, key) => crypto.createHmac('sha256', String(key)).update(String(value)).digest('hex'),
+    landlordContractSigningReviewConstantEquals_: (left, right) => String(left) === String(right),
     tenantLiffSigningText_: value => String(value == null ? '' : value).trim(),
     tenantLiffSigningRows_: sheet => {
       if (!sheet || sheet.getLastRow() < 2) return [];
@@ -168,6 +177,24 @@ function reviewSessionToken() {
   const beforeRetry = sheets.V2_contracts.headers.slice();
   assert.equal(api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null }).data.added_headers.length, 0);
   assert.deepEqual(sheets.V2_contracts.headers, beforeRetry);
+}
+
+{
+  const { api, sheets, state } = makeRuntime();
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const requestId = 'review-list-request-id-123';
+  const pollSecret = 'review-list-poll-secret-12345678901234567890';
+  const submitted = api.landlordContractSigningReviewHandleExchangePost_(JSON.stringify({
+    action: 'landlord_contract_signing_reviews_fetch',
+    request_id: requestId,
+    poll_secret: pollSecret,
+    session_token: reviewSessionToken()
+  }));
+  assert.equal(submitted.code, 'EXCHANGE_ACCEPTED');
+  const listed = api.landlordContractSigningReviewReadExchange_('list', requestId, pollSecret);
+  assert.equal(listed.success, true, listed.code);
+  assert.deepEqual([...listed.data.items.map(item => item.contract_id)], ['contract-submitted']);
+  assert.equal([...state.exchangeCache.values()].some(value => String(value).includes(reviewSessionToken())), false, 'cached JSONP exchange results must not retain the review session token');
 }
 
 {
@@ -247,7 +274,11 @@ assert.equal(reviewSource.includes('legacyContract'), false, 'native signing rev
 assert.equal(dispatcherSource.includes("'landlord_contract_signing_reviews_init'"), true, 'review list route must be dispatched');
 assert.equal(dispatcherSource.includes("'landlord_contract_signing_review_update'"), true, 'review update route must be dispatched');
 assert.equal(dispatcherSource.includes("'landlord_contract_signing_review_auth_status'"), true, 'review session status route must be dispatched');
+assert.equal(dispatcherSource.includes("'landlord_contract_signing_reviews_fetch_status'"), true, 'list exchange status route must be dispatched');
+assert.equal(dispatcherSource.includes("'landlord_contract_signing_review_update_status'"), true, 'update exchange status route must be dispatched');
 assert.equal(tenantContractPage.includes('審核退回，請補正後重新送交'), true, 'tenant must see a rejected native signing state');
 assert.equal(landlordRequestPage.includes('initializeNativeSigningReviewSession'), true, 'landlord must obtain a server-verified review session before native review access');
-assert.equal(landlordRequestPage.includes('review_session_token'), true, 'landlord native review calls must carry the verified review session token, not a raw LINE UID');
+assert.equal(landlordRequestPage.includes("'landlord_contract_signing_reviews_fetch'"), true, 'native review list must use a POST exchange');
+assert.equal(landlordRequestPage.includes("'landlord_contract_signing_review_update_submit'"), true, 'native review update must use a POST exchange');
+assert.equal(landlordRequestPage.includes('review_session_token: NATIVE_SIGNING_REVIEW_SESSION_TOKEN'), false, 'native review session tokens must never be appended to a JSONP URL');
 console.log('Phase 138 native tenant-contract signing-review runtime mocks passed.');
