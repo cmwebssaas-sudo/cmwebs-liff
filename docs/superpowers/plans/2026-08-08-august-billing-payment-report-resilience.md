@@ -133,6 +133,7 @@ Ensure docs do not expose raw LINE UIDs, tokens, spreadsheet IDs, or tenant pers
 node --test tests/phase140-tenant-payment-report-canonical-context.runtime.test.mjs
 node --test tests/phase140-tenant-bill-rate-format.test.mjs
 node --check apps-script/V2_TENANT_PAYMENT_REPORTS.js
+node --check apps-script/V2_TENANT_RUNTIME_RESOLVER.js
 git diff --check
 ```
 
@@ -151,7 +152,7 @@ This isolated worktree has no `package.json`; therefore this command cannot be u
 ```bash
 git status --short
 git diff --check
-git diff -- apps-script/V2_TENANT_PAYMENT_REPORTS.js tenant-bills.html docs/04-API-ROUTES.md tests/phase140-tenant-payment-report-canonical-context.runtime.test.mjs tests/phase140-tenant-bill-rate-format.test.mjs
+git diff -- apps-script/V2_TENANT_PAYMENT_REPORTS.js apps-script/V2_TENANT_RUNTIME_RESOLVER.js tenant-bills.html docs/04-API-ROUTES.md tests/phase140-tenant-payment-report-canonical-context.runtime.test.mjs tests/phase140-tenant-bill-rate-format.test.mjs
 ```
 
 Acceptance conditions:
@@ -170,7 +171,7 @@ Acceptance conditions:
 ### Step 1: Commit only after verification
 
 ```bash
-git add apps-script/V2_TENANT_PAYMENT_REPORTS.js tenant-bills.html docs/04-API-ROUTES.md tests/phase140-tenant-payment-report-canonical-context.runtime.test.mjs tests/phase140-tenant-bill-rate-format.test.mjs
+git add apps-script/V2_TENANT_PAYMENT_REPORTS.js apps-script/V2_TENANT_RUNTIME_RESOLVER.js tenant-bills.html docs/04-API-ROUTES.md tests/phase140-tenant-payment-report-canonical-context.runtime.test.mjs tests/phase140-tenant-bill-rate-format.test.mjs
 git commit -m "fix(v2.1): harden August billing payment reporting"
 ```
 

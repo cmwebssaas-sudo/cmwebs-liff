@@ -43,7 +43,8 @@ though the stored rate and the computed equipment amount remain 3.5-based.
 
 Add a small private helper in `V2_TENANT_PAYMENT_REPORTS.js` that calls
 `resolveCanonicalTenantRuntimeByLineUid_(lineUserId, {
-include_bill_master: false
+include_bill_master: false,
+include_landlord_tenant_list_view: false
 })`. It returns only the fields the submit path needs:
 
 - `tenant_id`, `tenant_user_id`, `tenant_name`
