@@ -236,3 +236,55 @@ function billView(overrides = {}) {
   assert.equal(result.code, 'INVALID_PAID_BILL_CORRECTION');
   assert.equal(runtime.writes.length, 0);
 }
+
+{
+  const source = fs.readFileSync(
+    'apps-script/V2_BILLING_MANAGEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf(
+    'function repairApprovedRoom506AugustPaidBill_()'
+  );
+  const end = source.indexOf(
+    '\n\nfunction testDiagnoseBillingPreviousMeters()',
+    start
+  );
+
+  assert.notEqual(
+    start,
+    -1,
+    'approved room-506 one-time entry point must exist'
+  );
+  assert.notEqual(end, -1);
+
+  let received = null;
+  const context = {
+    getRequiredScriptProperty_(name) {
+      assert.equal(name, 'TEST_LANDLORD_LINE_UID');
+      return 'owner-line-id';
+    },
+    repairPaidBillMeterCorrectionByLineUid_(lineUserId, correction) {
+      received = { lineUserId, correction };
+      return { success: true };
+    }
+  };
+
+  vm.runInNewContext(source.slice(start, end), context);
+  assert.deepEqual(
+    context.repairApprovedRoom506AugustPaidBill_(),
+    { success: true }
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(received)), {
+    lineUserId: 'owner-line-id',
+    correction: {
+      expected_bill_id: 'B0000016',
+      room_name: '506',
+      bill_month: '2026-08',
+      expected_previous_meter_before: 23310.8,
+      corrected_previous_meter: 24815.5,
+      expected_current_meter: 24853.3,
+      expected_total_amount: 7745,
+      reason: '506 房 2026-08 已付款帳單上期電表基準更正'
+    }
+  });
+}

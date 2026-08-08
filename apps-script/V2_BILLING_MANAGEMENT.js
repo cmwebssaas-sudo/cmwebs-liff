@@ -5089,6 +5089,40 @@ function repairPaidBillMeterCorrectionByLineUid_(
 }
 
 
+/**
+ * 唯一核准的 506 房 2026-08 已付款帳單更正入口。
+ *
+ * 參數刻意不開放由執行介面輸入，以免帳單、月份或已收金額被替換；真正的
+ * 寫入仍完全受 repairPaidBillMeterCorrectionByLineUid_ 的付款、Workspace、
+ * 唯一列、電表和重算總額前置條件保護。
+ */
+function repairApprovedRoom506AugustPaidBill_() {
+  return repairPaidBillMeterCorrectionByLineUid_(
+    getRequiredScriptProperty_(
+      'TEST_LANDLORD_LINE_UID'
+    ),
+    {
+      expected_bill_id:
+        'B0000016',
+      room_name:
+        '506',
+      bill_month:
+        '2026-08',
+      expected_previous_meter_before:
+        23310.8,
+      corrected_previous_meter:
+        24815.5,
+      expected_current_meter:
+        24853.3,
+      expected_total_amount:
+        7745,
+      reason:
+        '506 房 2026-08 已付款帳單上期電表基準更正'
+    }
+  );
+}
+
+
 function testDiagnoseBillingPreviousMeters() {
   return diagnoseBillingPreviousMetersByLineUid_(
     getRequiredScriptProperty_('TEST_LANDLORD_LINE_UID'),
