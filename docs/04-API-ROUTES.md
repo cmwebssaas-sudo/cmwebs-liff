@@ -97,6 +97,32 @@ tenant_payment_report_init
 tenant_payment_report_submit
 ```
 
+## Payment-report and bill-display contracts
+
+### `tenant_payment_report_submit`
+
+- Resolves the requesting tenant, active contract, room, workspace, and
+  landlord context through the canonical tenant runtime resolver before reading
+  the requested bill.
+- The optional landlord/tenant-list compatibility view is non-authoritative for
+  this submit path. A missing or malformed compatibility-view row does not
+  reject an otherwise valid canonical tenant identity.
+- A canonical identity failure is returned as that resolver's explicit error
+  envelope. If the requested bill does not link to the same requesting
+  identity, tenant, contract, room, and workspace, the route returns the
+  existing `BILL_NOT_FOUND` error envelope.
+- This preserves the existing route name, request fields, success response, and
+  the existing validation and bill-status error contracts.
+
+### Tenant bill rate presentation
+
+- Bill totals and other monetary amounts continue to use whole Taiwan-dollar
+  currency formatting.
+- Per-unit electricity and equipment rates preserve stored fractional precision
+  for display (for example, `NT$ 3.5`); integer rates remain unpadded (for
+  example, `NT$ 3`). This display rule does not change the stored rate or the
+  existing whole-dollar calculation of bill amounts.
+
 ## Signed legacy contract integration webhook
 
 | POST action | Module | Purpose |

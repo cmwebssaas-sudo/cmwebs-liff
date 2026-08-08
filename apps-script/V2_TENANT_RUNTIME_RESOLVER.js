@@ -169,6 +169,13 @@ function tenantRuntimeReadSnapshot_(ss, options) {
       return;
     }
 
+    if (
+      key === 'landlordTenantListView' &&
+      options.include_landlord_tenant_list_view === false
+    ) {
+      return;
+    }
+
     const sheetName =
       V2_TENANT_RUNTIME_DATA_SHEETS_[key];
 
@@ -1035,13 +1042,17 @@ function tenantRuntimeResolveCanonicalFromSnapshot_(
       )
   };
 
+  const landlordLinkRows =
+    options.include_landlord_tenant_list_view === false
+      ? []
+      : tenantRuntimeRequireSheet_(
+          source,
+          V2_TENANT_RUNTIME_DATA_SHEETS_
+            .landlordTenantListView
+        ).rows;
   const landlordLinkSelection =
     tenantRuntimeSelectLandlordLink_(
-      tenantRuntimeRequireSheet_(
-        source,
-        V2_TENANT_RUNTIME_DATA_SHEETS_
-          .landlordTenantListView
-      ).rows,
+      landlordLinkRows,
       seed
     );
   const landlordLink =
@@ -1256,7 +1267,10 @@ function resolveCanonicalTenantRuntimeByLineUid_(
       tenantRuntimeUpper_(options.workspace_id),
       options.include_bill_master === false
         ? 'NO_BILL_MASTER'
-        : 'WITH_BILL_MASTER'
+        : 'WITH_BILL_MASTER',
+      options.include_landlord_tenant_list_view === false
+        ? 'NO_LANDLORD_TENANT_LIST_VIEW'
+        : 'WITH_LANDLORD_TENANT_LIST_VIEW'
     ].join('|');
     const cachedContext =
       runtimeSnapshotGetContext_(
@@ -1266,9 +1280,17 @@ function resolveCanonicalTenantRuntimeByLineUid_(
 
     if (cachedContext) {
       runtimeSnapshotRecordAvoidedReads_(
-        options.include_bill_master === false
-          ? 7
-          : 8
+        8 -
+        (
+          options.include_bill_master === false
+            ? 1
+            : 0
+        ) -
+        (
+          options.include_landlord_tenant_list_view === false
+            ? 1
+            : 0
+        )
       );
 
       return {
