@@ -24,6 +24,8 @@ function tenantPaymentReportResolveCanonicalContext_(
       lineUserId,
       {
         include_bill_master:
+          false,
+        include_landlord_tenant_list_view:
           false
       }
     );

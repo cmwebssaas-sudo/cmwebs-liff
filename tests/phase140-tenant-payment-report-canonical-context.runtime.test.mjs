@@ -115,14 +115,181 @@ function createRuntime(options = {}) {
   };
 }
 
-function submit(runtime) {
+function sheetFromRows(rows) {
+  const headers = Object.keys(rows[0] || {});
+
+  return {
+    values: [
+      headers,
+      ...rows.map((row) => headers.map((header) => row[header] || ''))
+    ]
+  };
+}
+
+function createResolverBackedRuntime(options = {}) {
+  const fixtures = {
+    appendedReports: [],
+    teamNotifications: []
+  };
+  const sheetRows = {
+    V2_tenants: [{
+      tenant_id: CANONICAL_CONTEXT.tenant_id,
+      tenant_line_user_id: CANONICAL_CONTEXT.line_user_id,
+      tenant_user_id: CANONICAL_CONTEXT.tenant_user_id,
+      tenant_name: CANONICAL_CONTEXT.tenant_name,
+      property_id: CANONICAL_CONTEXT.property_id,
+      workspace_id: CANONICAL_CONTEXT.workspace_id,
+      room_id: CANONICAL_CONTEXT.room_id,
+      landlord_id: CANONICAL_CONTEXT.landlord_id
+    }],
+    V2_contracts: [{
+      tenant_id: CANONICAL_CONTEXT.tenant_id,
+      tenant_user_id: CANONICAL_CONTEXT.tenant_user_id,
+      contract_id: CANONICAL_CONTEXT.contract_id,
+      contract_status: 'active',
+      property_id: CANONICAL_CONTEXT.property_id,
+      workspace_id: CANONICAL_CONTEXT.workspace_id,
+      room_id: CANONICAL_CONTEXT.room_id,
+      landlord_id: CANONICAL_CONTEXT.landlord_id,
+      landlord_line_user_id: CANONICAL_CONTEXT.landlord_line_user_id
+    }],
+    V2_properties: [{
+      property_id: CANONICAL_CONTEXT.property_id,
+      property_name: CANONICAL_CONTEXT.property_name,
+      workspace_id: CANONICAL_CONTEXT.workspace_id,
+      landlord_id: CANONICAL_CONTEXT.landlord_id
+    }],
+    V2_rooms: [{
+      room_id: CANONICAL_CONTEXT.room_id,
+      room_name: CANONICAL_CONTEXT.room_name,
+      workspace_id: CANONICAL_CONTEXT.workspace_id,
+      property_id: CANONICAL_CONTEXT.property_id
+    }],
+    V2_tenant_home_view: [],
+    V2_tenant_bill_view: [options.bill || canonicalBill()]
+  };
+  const sheets = Object.fromEntries(
+    Object.entries(sheetRows)
+      .filter(([name]) => !(options.missingSheets || []).includes(name))
+      .map(([name, rows]) => [name, sheetFromRows(rows)])
+  );
+  const context = {
+    Boolean,
+    Date,
+    Error,
+    JSON,
+    Math,
+    Number,
+    Object,
+    String,
+    Utilities: {
+      formatDate() {
+        return '2026-08-08';
+      }
+    },
+    runtimeSnapshotGetValues_(sheet) {
+      return sheet.values;
+    },
+    runtimeSnapshotGetContext_() {
+      return null;
+    },
+    runtimeSnapshotSetContext_() {},
+    runtimeSnapshotRecordAvoidedReads_() {},
+    runtimeSpreadsheet_() {
+      return {
+        getSheetByName(name) {
+          if (name === 'V2_payment_reports') {
+            return {};
+          }
+
+          return sheets[name] || null;
+        }
+      };
+    },
+    getSheetObjects_(sheetName) {
+      if (sheetName === 'V2_landlord_tenant_list_view') {
+        throw new Error('payment module must not read the compatibility view');
+      }
+
+      if (sheetName === 'V2_payment_reports') {
+        return options.reports || [];
+      }
+
+      return sheetRows[sheetName] || [];
+    },
+    v2CanonicalBillIsVoided_(bill) {
+      return bill.bill_status === 'cancelled' || bill.bill_status === 'voided';
+    },
+    workspaceNotifyTeam_(payload) {
+      fixtures.teamNotifications.push(payload);
+      return { success: true, data: { sent_count: 1 } };
+    }
+  };
+  const resolverSource = fs.readFileSync('apps-script/V2_TENANT_RUNTIME_RESOLVER.js', 'utf8');
+  const paymentSource = fs.readFileSync('apps-script/V2_TENANT_PAYMENT_REPORTS.js', 'utf8');
+
+  vm.runInNewContext(resolverSource, context);
+  vm.runInNewContext(paymentSource, context);
+  context.tenantPaymentReportAppend_ = (report) => {
+    fixtures.appendedReports.push(report);
+  };
+
+  return {
+    fixtures,
+    resolve: context.resolveCanonicalTenantRuntimeByLineUid_,
+    submit: context.submitTenantPaymentReportByLineUid_
+  };
+}
+
+function submit(runtime, options = {}) {
   return runtime.submit(
-    CANONICAL_CONTEXT.line_user_id,
-    'bill-canonical',
+    options.lineUserId || CANONICAL_CONTEXT.line_user_id,
+    options.billId || 'bill-canonical',
     '12345',
     '2026-08-08',
     'canonical context test'
   );
+}
+
+{
+  const runtime = createResolverBackedRuntime();
+  const identity = runtime.resolve(
+    CANONICAL_CONTEXT.line_user_id,
+    {
+      include_bill_master: false,
+      include_landlord_tenant_list_view: false
+    }
+  );
+  const result = submit(runtime);
+
+  assert.equal(identity.success, true);
+  assert.equal(identity.data.workspace_id, CANONICAL_CONTEXT.workspace_id);
+  assert.equal(result.success, true);
+  assert.equal(runtime.fixtures.appendedReports.length, 1);
+  assert.equal(runtime.fixtures.teamNotifications.length, 1);
+}
+
+{
+  const runtime = createResolverBackedRuntime();
+  const identity = runtime.resolve(
+    CANONICAL_CONTEXT.line_user_id,
+    { include_bill_master: false }
+  );
+
+  assert.equal(identity.success, false);
+  assert.equal(identity.code, 'TENANT_RUNTIME_SHEET_MISSING');
+}
+
+{
+  const runtime = createResolverBackedRuntime({
+    missingSheets: ['V2_contracts']
+  });
+  const result = submit(runtime);
+
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'TENANT_RUNTIME_SHEET_MISSING');
+  assert.equal(runtime.fixtures.appendedReports.length, 0);
+  assert.equal(runtime.fixtures.teamNotifications.length, 0);
 }
 
 {
@@ -166,6 +333,38 @@ for (const [field, conflictingValue] of [
   const result = submit(runtime);
 
   assert.equal(result.success, false, `${field} conflict must fail closed`);
+  assert.equal(result.code, 'BILL_NOT_FOUND');
+  assert.equal(runtime.fixtures.appendedReports.length, 0);
+  assert.equal(runtime.fixtures.teamNotifications.length, 0);
+}
+
+for (const [name, runtimeOptions, submitOptions] of [
+  [
+    'bill line_user_id',
+    { bill: canonicalBill({ line_user_id: 'different-bill-line' }) },
+    {}
+  ],
+  [
+    'canonical LINE UID',
+    {
+      resolverResult: {
+        success: true,
+        code: 'OK',
+        message: '房客 runtime 身份解析成功',
+        data: {
+          ...CANONICAL_CONTEXT,
+          line_user_id: 'different-canonical-line'
+        }
+      }
+    },
+    {}
+  ],
+  ['bill ID', {}, { billId: 'bill-mismatch' }]
+]) {
+  const runtime = createRuntime(runtimeOptions);
+  const result = submit(runtime, submitOptions);
+
+  assert.equal(result.success, false, `${name} mismatch must fail closed`);
   assert.equal(result.code, 'BILL_NOT_FOUND');
   assert.equal(runtime.fixtures.appendedReports.length, 0);
   assert.equal(runtime.fixtures.teamNotifications.length, 0);
