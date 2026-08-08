@@ -21,6 +21,7 @@
 
 **Files:**
 - Modify: `apps-script/V2_TENANT_PAYMENT_REPORTS.js`
+- Modify: `apps-script/V2_TENANT_RUNTIME_RESOLVER.js` (allow only the canonical payment-report projection to omit the optional compatibility view)
 - Test: `tests/phase140-tenant-payment-report-canonical-context.runtime.test.mjs`
 
 ### Step 1: Write failing runtime cases
@@ -124,7 +125,7 @@ Ensure docs do not expose raw LINE UIDs, tokens, spreadsheet IDs, or tenant pers
 ## Task 4: Full local verification and review
 
 **Files:**
-- Verify only all files above.
+- Verify only all files above, including `apps-script/V2_TENANT_RUNTIME_RESOLVER.js`.
 
 ### Step 1: Run focused tests and static syntax checks
 
@@ -163,7 +164,8 @@ Acceptance conditions:
 
 ## Task 5: Local-only candidate commit and handoff
 
-**Files:** all verified Task 1–3 files.
+**Files:** all verified Task 1–3 files, including
+`apps-script/V2_TENANT_RUNTIME_RESOLVER.js`.
 
 ### Step 1: Commit only after verification
 

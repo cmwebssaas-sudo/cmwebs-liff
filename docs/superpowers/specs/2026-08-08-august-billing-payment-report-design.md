@@ -15,6 +15,12 @@ documentation. It does not create a route, change a sheet schema, repair a
 spreadsheet formula, change an existing bill, send LINE, deploy, publish, or
 push Git.
 
+The small resolver adjustment is within this scope only because the canonical
+payment-report projection sets `include_landlord_tenant_list_view: false`:
+that makes the compatibility view optional for this projection while retaining
+the existing master-chain and fail-closed checks. It is not a broader resolver
+or data-model expansion.
+
 The incorrect August room-506 bill is deliberately excluded. It is already
 marked paid, so any data correction needs a separately authorised,
 auditable Production procedure after payment facts are confirmed.
