@@ -5123,6 +5123,11 @@ function repairApprovedRoom506AugustPaidBill_() {
 }
 
 
+function testRepairApprovedRoom506AugustPaidBill() {
+  return repairApprovedRoom506AugustPaidBill_();
+}
+
+
 function testDiagnoseBillingPreviousMeters() {
   return diagnoseBillingPreviousMetersByLineUid_(
     getRequiredScriptProperty_('TEST_LANDLORD_LINE_UID'),

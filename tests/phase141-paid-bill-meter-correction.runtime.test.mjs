@@ -288,3 +288,43 @@ function billView(overrides = {}) {
     }
   });
 }
+
+{
+  const source = fs.readFileSync(
+    'apps-script/V2_BILLING_MANAGEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf(
+    'function testRepairApprovedRoom506AugustPaidBill()'
+  );
+  const end = source.indexOf(
+    '\n\nfunction testDiagnoseBillingPreviousMeters()',
+    start
+  );
+
+  assert.notEqual(
+    start,
+    -1,
+    'Apps Script executable entry point must use the test prefix'
+  );
+  assert.notEqual(end, -1);
+
+  let called = 0;
+  const context = {
+    repairApprovedRoom506AugustPaidBill_() {
+      called += 1;
+      return { success: true, code: 'PAID_BILL_METER_CORRECTED' };
+    }
+  };
+
+  vm.runInNewContext(source.slice(start, end), context);
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(
+        context.testRepairApprovedRoom506AugustPaidBill()
+      )
+    ),
+    { success: true, code: 'PAID_BILL_METER_CORRECTED' }
+  );
+  assert.equal(called, 1);
+}
