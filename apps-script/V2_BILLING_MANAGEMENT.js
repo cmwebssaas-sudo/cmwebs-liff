@@ -4677,7 +4677,15 @@ function repairPaidBillMeterCorrectionByLineUid_(
   let locked = false;
 
   try {
-    billingEnsureSchema_();
+    correction =
+      correction || {};
+
+    const dryRun =
+      correction.dry_run === true;
+
+    if (!dryRun) {
+      billingEnsureSchema_();
+    }
 
     const access =
       workspaceLandlordResolveAccess_(
@@ -4710,9 +4718,6 @@ function repairPaidBillMeterCorrectionByLineUid_(
         '目前角色沒有更正已付款帳單的權限'
       );
     }
-
-    correction =
-      correction || {};
 
     const expectedBillId =
       billingText_(
@@ -4986,6 +4991,28 @@ function repairPaidBillMeterCorrectionByLineUid_(
       );
     }
 
+    if (dryRun) {
+      return workspaceResult_(
+        true,
+        'PAID_BILL_METER_CORRECTION_READY',
+        '已付款帳單更正前置條件通過，尚未修改任何資料',
+        {
+          room_name:
+            roomName,
+          bill_month:
+            billMonth,
+          previous_meter:
+            existingPrevious,
+          corrected_previous_meter:
+            correctedPrevious,
+          current_meter:
+            currentMeter,
+          recomputed_total:
+            total
+        }
+      );
+    }
+
     const now =
       new Date();
     const correctionNote =
@@ -5125,6 +5152,54 @@ function repairApprovedRoom506AugustPaidBill_() {
 
 function testRepairApprovedRoom506AugustPaidBill() {
   return repairApprovedRoom506AugustPaidBill_();
+}
+
+
+/**
+ * Read-only executable preflight for the one approved 506 correction.  Logger
+ * output is intentional: the Apps Script editor otherwise hides a successful
+ * function return and obscures the fail-closed reason.
+ */
+function preflightApprovedRoom506AugustPaidBillCorrection_() {
+  return repairPaidBillMeterCorrectionByLineUid_(
+    getRequiredScriptProperty_(
+      'TEST_LANDLORD_LINE_UID'
+    ),
+    {
+      expected_bill_id:
+        'B0000016',
+      room_name:
+        '506',
+      bill_month:
+        '2026-08',
+      expected_previous_meter_before:
+        23310.8,
+      corrected_previous_meter:
+        24815.5,
+      expected_current_meter:
+        24853.3,
+      expected_total_amount:
+        7745,
+      dry_run:
+        true,
+      reason:
+        '506 房 2026-08 已付款帳單上期電表基準更正'
+    }
+  );
+}
+
+
+function testPreflightApprovedRoom506AugustPaidBillCorrection() {
+  const result =
+    preflightApprovedRoom506AugustPaidBillCorrection_();
+
+  Logger.log(
+    JSON.stringify(
+      result
+    )
+  );
+
+  return result;
 }
 
 

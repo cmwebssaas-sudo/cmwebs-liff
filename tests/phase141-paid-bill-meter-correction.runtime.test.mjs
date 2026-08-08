@@ -5,6 +5,7 @@ import vm from 'node:vm';
 function createRuntime({ bills, billViews }) {
   const writes = [];
   const audits = [];
+  let schemaEnsures = 0;
   const source = fs.readFileSync(
     'apps-script/V2_BILLING_MANAGEMENT.js',
     'utf8'
@@ -48,7 +49,7 @@ function createRuntime({ bills, billViews }) {
     runtimeSpreadsheet_() {
       return { getSheetByName: (name) => sheets[name] };
     },
-    billingEnsureSchema_() {},
+    billingEnsureSchema_() { schemaEnsures += 1; },
     workspaceLandlordResolveAccess_() {
       return {
         success: true,
@@ -93,10 +94,32 @@ function createRuntime({ bills, billViews }) {
   vm.runInNewContext(source.slice(start, end), context);
   return {
     correct: context.repairPaidBillMeterCorrectionByLineUid_,
+    preflight: context.repairPaidBillMeterCorrectionByLineUid_,
     writes,
     audits,
+    schemaEnsures() { return schemaEnsures; },
     sheets
   };
+}
+
+{
+  const runtime = createRuntime({
+    bills: [paidBill()],
+    billViews: [billView()]
+  });
+  const result = runtime.preflight(
+    'owner-line-id',
+    correctionInput({ dry_run: true })
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(result.code, 'PAID_BILL_METER_CORRECTION_READY');
+  assert.equal(result.data.previous_meter, 23310.8);
+  assert.equal(result.data.corrected_previous_meter, 24815.5);
+  assert.equal(result.data.recomputed_total, 7745);
+  assert.equal(runtime.writes.length, 0);
+  assert.equal(runtime.audits.length, 0);
+  assert.equal(runtime.schemaEnsures(), 0);
 }
 
 function correctionInput(overrides = {}) {
@@ -169,6 +192,7 @@ function billView(overrides = {}) {
     assert.equal(row.payment_id, 'P-506');
   }
   assert.equal(runtime.audits.length, 1);
+  assert.equal(runtime.schemaEnsures(), 1);
 }
 
 {
@@ -327,4 +351,98 @@ function billView(overrides = {}) {
     { success: true, code: 'PAID_BILL_METER_CORRECTED' }
   );
   assert.equal(called, 1);
+}
+
+{
+  const source = fs.readFileSync(
+    'apps-script/V2_BILLING_MANAGEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf(
+    'function preflightApprovedRoom506AugustPaidBillCorrection_()'
+  );
+  const end = source.indexOf(
+    '\n\nfunction testDiagnoseBillingPreviousMeters()',
+    start
+  );
+
+  assert.notEqual(
+    start,
+    -1,
+    'the approved 506 correction needs a read-only preflight entry point'
+  );
+  assert.notEqual(end, -1);
+
+  let received = null;
+  const context = {
+    getRequiredScriptProperty_(name) {
+      assert.equal(name, 'TEST_LANDLORD_LINE_UID');
+      return 'owner-line-id';
+    },
+    repairPaidBillMeterCorrectionByLineUid_(lineUserId, correction) {
+      received = { lineUserId, correction };
+      return { success: false, code: 'PAID_BILL_TOTAL_MISMATCH' };
+    }
+  };
+
+  vm.runInNewContext(source.slice(start, end), context);
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(
+        context.preflightApprovedRoom506AugustPaidBillCorrection_()
+      )
+    ),
+    { success: false, code: 'PAID_BILL_TOTAL_MISMATCH' }
+  );
+  assert.equal(received.lineUserId, 'owner-line-id');
+  assert.equal(received.correction.room_name, '506');
+  assert.equal(received.correction.expected_total_amount, 7745);
+  assert.equal(received.correction.dry_run, true);
+}
+
+{
+  const source = fs.readFileSync(
+    'apps-script/V2_BILLING_MANAGEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf(
+    'function testPreflightApprovedRoom506AugustPaidBillCorrection()'
+  );
+  const end = source.indexOf(
+    '\n\nfunction testDiagnoseBillingPreviousMeters()',
+    start
+  );
+
+  assert.notEqual(
+    start,
+    -1,
+    'Apps Script must expose a test-prefixed read-only preflight runner'
+  );
+  assert.notEqual(end, -1);
+
+  let called = 0;
+  let logged = null;
+  const context = {
+    Logger: {
+      log(value) { logged = value; }
+    },
+    preflightApprovedRoom506AugustPaidBillCorrection_() {
+      called += 1;
+      return { success: false, code: 'PAID_BILL_TOTAL_MISMATCH' };
+    }
+  };
+
+  vm.runInNewContext(source.slice(start, end), context);
+  const result =
+    context.testPreflightApprovedRoom506AugustPaidBillCorrection();
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(result)),
+    { success: false, code: 'PAID_BILL_TOTAL_MISMATCH' }
+  );
+  assert.equal(called, 1);
+  assert.deepEqual(
+    JSON.parse(logged),
+    { success: false, code: 'PAID_BILL_TOTAL_MISMATCH' }
+  );
 }
