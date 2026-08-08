@@ -336,6 +336,36 @@ function submitTenantPaymentReportByLineUid_(
 
     const canonical =
       canonicalResult.data || {};
+    const tenantHome =
+      canonical.tenant_home_rows &&
+      canonical.tenant_home_rows[0]
+        ? canonical.tenant_home_rows[0]
+        : {};
+    const accountStatus =
+      String(
+        tenantHome.account_status ||
+        canonical.account_status ||
+        'active'
+      )
+        .trim()
+        .toLowerCase();
+
+    if (
+      [
+        'active',
+        'enabled',
+        'valid',
+        'current',
+        '啟用',
+        '有效'
+      ].indexOf(accountStatus) < 0
+    ) {
+      return tenantPaymentReportResult_(
+        false,
+        'ACCOUNT_NOT_ACTIVE',
+        '帳號目前不是啟用狀態'
+      );
+    }
 
     const billRows =
       getSheetObjects_(

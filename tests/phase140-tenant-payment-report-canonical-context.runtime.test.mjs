@@ -140,7 +140,8 @@ function createResolverBackedRuntime(options = {}) {
       property_id: CANONICAL_CONTEXT.property_id,
       workspace_id: CANONICAL_CONTEXT.workspace_id,
       room_id: CANONICAL_CONTEXT.room_id,
-      landlord_id: CANONICAL_CONTEXT.landlord_id
+      landlord_id: CANONICAL_CONTEXT.landlord_id,
+      account_status: options.tenantAccountStatus || 'active'
     }],
     V2_contracts: [{
       tenant_id: CANONICAL_CONTEXT.tenant_id,
@@ -288,6 +289,19 @@ function submit(runtime, options = {}) {
 
   assert.equal(result.success, false);
   assert.equal(result.code, 'TENANT_RUNTIME_SHEET_MISSING');
+  assert.equal(runtime.fixtures.appendedReports.length, 0);
+  assert.equal(runtime.fixtures.teamNotifications.length, 0);
+}
+
+{
+  const runtime = createResolverBackedRuntime({
+    tenantAccountStatus: 'suspended'
+  });
+  const result = submit(runtime);
+
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'ACCOUNT_NOT_ACTIVE');
+  assert.equal(result.message, '帳號目前不是啟用狀態');
   assert.equal(runtime.fixtures.appendedReports.length, 0);
   assert.equal(runtime.fixtures.teamNotifications.length, 0);
 }
