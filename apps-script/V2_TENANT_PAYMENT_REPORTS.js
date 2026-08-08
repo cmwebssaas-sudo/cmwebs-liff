@@ -11,11 +11,47 @@
 const V2_TENANT_PAYMENT_REPORT_SHEETS_ = {
   tenantBillView:
     'V2_tenant_bill_view',
-  landlordTenantListView:
-    'V2_landlord_tenant_list_view',
   paymentReports:
     'V2_payment_reports'
 };
+
+
+function tenantPaymentReportResolveCanonicalContext_(
+  lineUserId
+) {
+  const runtimeIdentity =
+    resolveCanonicalTenantRuntimeByLineUid_(
+      lineUserId,
+      {
+        include_bill_master:
+          false
+      }
+    );
+
+  if (
+    !runtimeIdentity ||
+    runtimeIdentity.success !== true
+  ) {
+    return tenantPaymentReportResult_(
+      false,
+      runtimeIdentity &&
+      runtimeIdentity.code
+        ? runtimeIdentity.code
+        : 'TENANT_NOT_FOUND',
+      runtimeIdentity &&
+      runtimeIdentity.message
+        ? runtimeIdentity.message
+        : '查無房客資料，請先完成身份綁定'
+    );
+  }
+
+  return tenantPaymentReportResult_(
+    true,
+    runtimeIdentity.code || 'OK',
+    runtimeIdentity.message || '房客 runtime 身份解析成功',
+    runtimeIdentity.data || {}
+  );
+}
 
 
 /**
@@ -285,63 +321,19 @@ function submitTenantPaymentReportByLineUid_(
       );
     }
 
-    const homeResult =
-      getTenantHomeByLineUid(
+    const canonicalResult =
+      tenantPaymentReportResolveCanonicalContext_(
         lineUserId
       );
 
     if (
-      !homeResult ||
-      homeResult.success !== true
+      canonicalResult.success !== true
     ) {
-      return tenantPaymentReportResult_(
-        false,
-        homeResult &&
-        homeResult.code
-          ? homeResult.code
-          : 'TENANT_NOT_FOUND',
-        homeResult &&
-        homeResult.message
-          ? homeResult.message
-          : '查無房客資料，請先完成身份綁定'
-      );
+      return canonicalResult;
     }
 
-    const tenant =
-      homeResult.data || {};
-
-    const linkRows =
-      getSheetObjects_(
-        V2_TENANT_PAYMENT_REPORT_SHEETS_
-          .landlordTenantListView
-      );
-
-    const tenantLink =
-      linkRows.find(function (row) {
-        return (
-          String(
-            row.tenant_line_user_id ||
-            ''
-          ).trim() ===
-            lineUserId ||
-          String(
-            row.tenant_id ||
-            ''
-          ).trim() ===
-            String(
-              tenant.tenant_id ||
-              ''
-            ).trim()
-        );
-      });
-
-    if (!tenantLink) {
-      return tenantPaymentReportResult_(
-        false,
-        'TENANT_LANDLORD_LINK_NOT_FOUND',
-        '找不到房客與房東的關聯資料'
-      );
-    }
+    const canonical =
+      canonicalResult.data || {};
 
     const billRows =
       getSheetObjects_(
@@ -354,6 +346,11 @@ function submitTenantPaymentReportByLineUid_(
         return (
           String(
             row.line_user_id ||
+          ''
+          ).trim() ===
+            lineUserId &&
+          String(
+            canonical.line_user_id ||
             ''
           ).trim() ===
             lineUserId &&
@@ -361,7 +358,39 @@ function submitTenantPaymentReportByLineUid_(
             row.bill_id ||
             ''
           ).trim() ===
-            billId
+            billId &&
+          String(
+            row.tenant_id ||
+            ''
+          ).trim() ===
+            String(
+              canonical.tenant_id ||
+              ''
+            ).trim() &&
+          String(
+            row.contract_id ||
+            ''
+          ).trim() ===
+            String(
+              canonical.contract_id ||
+              ''
+            ).trim() &&
+          String(
+            row.room_id ||
+            ''
+          ).trim() ===
+            String(
+              canonical.room_id ||
+              ''
+            ).trim() &&
+          String(
+            row.workspace_id ||
+            ''
+          ).trim() ===
+            String(
+              canonical.workspace_id ||
+              ''
+            ).trim()
         );
       });
 
@@ -404,7 +433,7 @@ function submitTenantPaymentReportByLineUid_(
     const existingReport =
       tenantPaymentReportFindBlocking_(
         billId,
-        tenant.tenant_id
+        canonical.tenant_id
       );
 
     if (existingReport) {
@@ -429,8 +458,7 @@ function submitTenantPaymentReportByLineUid_(
 
     const landlordLineUserId =
       String(
-        tenantLink.line_user_id ||
-        tenantLink.landlord_line_user_id ||
+        canonical.landlord_line_user_id ||
         ''
       ).trim();
 
@@ -443,23 +471,22 @@ function submitTenantPaymentReportByLineUid_(
         now,
 
       landlord_id:
-        tenantLink.landlord_id ||
+        canonical.landlord_id ||
         '',
       landlord_line_user_id:
         landlordLineUserId,
 
       tenant_id:
-        tenant.tenant_id ||
+        canonical.tenant_id ||
         '',
       tenant_user_id:
-        tenant.user_id ||
-        tenantLink.tenant_user_id ||
+        canonical.tenant_user_id ||
         '',
       tenant_line_user_id:
+        canonical.line_user_id ||
         lineUserId,
       tenant_name:
-        tenant.tenant_name ||
-        tenantLink.tenant_name ||
+        canonical.tenant_name ||
         '',
 
       room_id:
@@ -467,8 +494,7 @@ function submitTenantPaymentReportByLineUid_(
         '',
       room_name:
         bill.room_name ||
-        tenant.room_list ||
-        tenantLink.room_list ||
+        canonical.room_name ||
         '',
 
       bill_id:
@@ -538,7 +564,7 @@ function submitTenantPaymentReportByLineUid_(
       pushResult =
         workspaceNotifyTeam_({
           workspace_id:
-            tenantLink.workspace_id ||
+            canonical.workspace_id ||
             '',
 
           landlord_id:
