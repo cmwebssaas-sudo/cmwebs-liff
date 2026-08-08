@@ -2,6 +2,7 @@
 const V2_TENANT_CONTRACT_SIGNING_REVIEW_LIST_ACTION_ = 'landlord_contract_signing_reviews_init';
 const V2_TENANT_CONTRACT_SIGNING_REVIEW_UPDATE_ACTION_ = 'landlord_contract_signing_review_update';
 const V2_TENANT_CONTRACT_SIGNING_REVIEW_EXCHANGE_TTL_SECONDS_ = 60;
+const V2_TENANT_CONTRACT_SIGNING_REVIEW_RESERVATION_TTL_SECONDS_ = 600;
 const V2_TENANT_CONTRACT_SIGNING_REVIEW_NOTE_MAX_LENGTH_ = 1000;
 const V2_TENANT_CONTRACT_SIGNING_REVIEW_AUDIT_HEADERS_ = [
   'tenant_signing_reviewed_at',
@@ -161,6 +162,19 @@ function landlordContractSigningReviewHandleExchangePost_(body) {
   }
   let secret;
   try { secret = landlordContractSigningReviewSessionSecret_(); } catch (_) { return tenantContractSigningReviewError_('LIFF_SESSION_SECRET_NOT_CONFIGURED'); }
+  const cache = CacheService.getScriptCache();
+  const key = tenantContractSigningReviewExchangeKey_(operation, requestId);
+  const pollHash = landlordContractSigningReviewHmacHex_(pollSecret, secret);
+  const reserveLock = LockService.getScriptLock();
+  try {
+    reserveLock.waitLock(5000);
+    if (cache.get(key)) return tenantContractSigningReviewError_('REVIEW_EXCHANGE_CONFLICT');
+    cache.put(key, JSON.stringify({ poll_hash: pollHash, pending: true }), V2_TENANT_CONTRACT_SIGNING_REVIEW_RESERVATION_TTL_SECONDS_);
+  } catch (_) {
+    return tenantContractSigningReviewError_('REVIEW_EXCHANGE_CREATE_FAILED');
+  } finally {
+    try { reserveLock.releaseLock(); } catch (_) {}
+  }
   const result = operation === 'list'
     ? getLandlordContractSigningReviewsBySessionToken_(request.session_token)
     : updateLandlordContractSigningReviewBySessionToken_(
@@ -169,15 +183,23 @@ function landlordContractSigningReviewHandleExchangePost_(body) {
       tenantContractSigningReviewText_(request.decision),
       tenantContractSigningReviewText_(request.review_note)
     );
-  CacheService.getScriptCache().put(
-    tenantContractSigningReviewExchangeKey_(operation, requestId),
-    JSON.stringify({
-      poll_hash: landlordContractSigningReviewHmacHex_(pollSecret, secret),
-      result: result
-    }),
-    V2_TENANT_CONTRACT_SIGNING_REVIEW_EXCHANGE_TTL_SECONDS_
-  );
-  return { success: true, code: 'EXCHANGE_ACCEPTED' };
+  const completeLock = LockService.getScriptLock();
+  try {
+    completeLock.waitLock(5000);
+    const raw = cache.get(key);
+    if (!raw) return tenantContractSigningReviewError_('REVIEW_EXCHANGE_RESERVATION_MISSING');
+    let reservation;
+    try { reservation = JSON.parse(raw); } catch (_) { return tenantContractSigningReviewError_('REVIEW_EXCHANGE_RESERVATION_INVALID'); }
+    if (reservation.pending !== true || !landlordContractSigningReviewConstantEquals_(reservation.poll_hash, pollHash)) {
+      return tenantContractSigningReviewError_('REVIEW_EXCHANGE_RESERVATION_INVALID');
+    }
+    cache.put(key, JSON.stringify({ poll_hash: pollHash, result: result }), V2_TENANT_CONTRACT_SIGNING_REVIEW_EXCHANGE_TTL_SECONDS_);
+    return { success: true, code: 'EXCHANGE_ACCEPTED' };
+  } catch (_) {
+    return tenantContractSigningReviewError_('REVIEW_EXCHANGE_CREATE_FAILED');
+  } finally {
+    try { completeLock.releaseLock(); } catch (_) {}
+  }
 }
 
 function landlordContractSigningReviewReadResultExchange_(operation, requestId, pollSecret) {
@@ -197,6 +219,7 @@ function landlordContractSigningReviewReadResultExchange_(operation, requestId, 
     if (!landlordContractSigningReviewConstantEquals_(entry.poll_hash, landlordContractSigningReviewHmacHex_(pollSecret, secret))) {
       return tenantContractSigningReviewError_('REVIEW_EXCHANGE_DENIED');
     }
+    if (entry.pending === true) return tenantContractSigningReviewError_('REVIEW_EXCHANGE_PENDING');
     CacheService.getScriptCache().remove(
       tenantContractSigningReviewExchangeKey_(operation, requestId)
     );

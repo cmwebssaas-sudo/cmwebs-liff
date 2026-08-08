@@ -78,7 +78,9 @@ function makeRuntime(options = {}) {
     sessionValid: options.sessionValid !== false,
     lockWaits: 0,
     lockReleases: 0,
-    exchangeCache: new Map()
+    exchangeCache: new Map(),
+    exchangeTtls: new Map(),
+    exchangeWrites: []
   };
   const context = {
     JSON, String, Number, Math, Date, RegExp, Error, Object, Array,
@@ -88,7 +90,11 @@ function makeRuntime(options = {}) {
       releaseLock() { state.lockReleases += 1; }
     }) },
     CacheService: { getScriptCache: () => ({
-      put: (key, value) => state.exchangeCache.set(key, value),
+      put: (key, value, ttl) => {
+        state.exchangeCache.set(key, value);
+        state.exchangeTtls.set(key, ttl);
+        state.exchangeWrites.push({ key, value, ttl });
+      },
       get: key => state.exchangeCache.get(key) || null,
       remove: key => state.exchangeCache.delete(key)
     }) },
@@ -184,13 +190,28 @@ function reviewSessionToken() {
   api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
   const requestId = 'review-list-request-id-123';
   const pollSecret = 'review-list-poll-secret-12345678901234567890';
-  const submitted = api.landlordContractSigningReviewHandleExchangePost_(JSON.stringify({
+  const locksBeforeCreation = state.lockWaits;
+  const request = JSON.stringify({
     action: 'landlord_contract_signing_reviews_fetch',
     request_id: requestId,
     poll_secret: pollSecret,
     session_token: reviewSessionToken()
-  }));
+  });
+  const submitted = api.landlordContractSigningReviewHandleExchangePost_(request);
   assert.equal(submitted.code, 'EXCHANGE_ACCEPTED');
+  const reservationKey = api.tenantContractSigningReviewExchangeKey_('list', requestId);
+  assert.equal(
+    state.exchangeWrites.some(write => write.key === reservationKey && write.ttl === 600 && JSON.parse(write.value).pending === true),
+    true,
+    'a result reservation must cover the maximum native review execution window'
+  );
+  assert.equal(state.lockWaits, locksBeforeCreation + 2, 'result exchange creation must reserve and complete under ScriptLock');
+  assert.equal(
+    api.landlordContractSigningReviewHandleExchangePost_(request).code,
+    'REVIEW_EXCHANGE_CONFLICT',
+    'a colliding result request ID must fail closed before it can overwrite the first exchange'
+  );
+  assert.equal(state.lockWaits, locksBeforeCreation + 3, 'a colliding result exchange must be checked under ScriptLock');
   const locksBeforeRedemption = state.lockWaits;
   const releasesBeforeRedemption = state.lockReleases;
   const listed = api.landlordContractSigningReviewReadResultExchange_('list', requestId, pollSecret);
@@ -204,6 +225,55 @@ function reviewSessionToken() {
     'REVIEW_EXCHANGE_NOT_FOUND',
     'a redeemed result exchange must not be reusable'
   );
+}
+
+{
+  const { api, sheets } = makeRuntime();
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const requestId = 'review-update-request-id-123';
+  const pollSecret = 'review-update-poll-secret-12345678901234567890';
+  const request = JSON.stringify({
+    action: 'landlord_contract_signing_review_update_submit',
+    request_id: requestId,
+    poll_secret: pollSecret,
+    session_token: reviewSessionToken(),
+    contract_id: 'contract-submitted',
+    decision: 'approve',
+    review_note: '核准完成'
+  });
+  assert.equal(api.landlordContractSigningReviewHandleExchangePost_(request).code, 'EXCHANGE_ACCEPTED');
+  const reviewStatusColumn = sheets.V2_contracts.headers.indexOf('tenant_signing_submission_status');
+  const reviewedAtColumn = sheets.V2_contracts.headers.indexOf('tenant_signing_reviewed_at');
+  const reviewedAt = sheets.V2_contracts.rows[0][reviewedAtColumn];
+  assert.equal(sheets.V2_contracts.rows[0][reviewStatusColumn], 'approved');
+  assert.equal(
+    api.landlordContractSigningReviewHandleExchangePost_(request).code,
+    'REVIEW_EXCHANGE_CONFLICT',
+    'a duplicate update exchange must fail before it can run a second review decision'
+  );
+  assert.equal(sheets.V2_contracts.rows[0][reviewStatusColumn], 'approved');
+  assert.equal(sheets.V2_contracts.rows[0][reviewedAtColumn], reviewedAt, 'a colliding update exchange must not overwrite the first audit record');
+  const result = api.landlordContractSigningReviewReadResultExchange_('update', requestId, pollSecret);
+  assert.equal(result.success, true, result.code);
+  assert.equal(result.data.tenant_signing_submission_status, 'approved');
+}
+
+{
+  const { api, sheets, state } = makeRuntime();
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const requestId = 'review-pending-request-id-123';
+  const pollSecret = 'review-pending-poll-secret-12345678901234567890';
+  const key = api.tenantContractSigningReviewExchangeKey_('list', requestId);
+  state.exchangeCache.set(key, JSON.stringify({
+    poll_hash: crypto.createHmac('sha256', 'review-exchange-secret').update(pollSecret).digest('hex'),
+    pending: true
+  }));
+  assert.equal(
+    api.landlordContractSigningReviewReadResultExchange_('list', requestId, pollSecret).code,
+    'REVIEW_EXCHANGE_PENDING',
+    'a pending result exchange must remain retryable without exposing or consuming a result'
+  );
+  assert.equal(state.exchangeCache.has(key), true, 'a pending result exchange must not be removed by polling');
 }
 
 {

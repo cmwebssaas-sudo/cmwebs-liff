@@ -74,6 +74,7 @@ assert.equal(verified.data.membership_id, 'member-1');
 
 const exchangeRequestId = 'review-auth-request-id-123';
 const exchangePollSecret = 'review-auth-poll-secret-12345678901234567890';
+const locksBeforeAuthCreation = lockState.waits;
 assert.equal(
   context.landlordContractSigningReviewHandleAuthPost_(JSON.stringify({
     action: 'landlord_contract_signing_review_auth_init',
@@ -83,6 +84,18 @@ assert.equal(
   })).code,
   'EXCHANGE_ACCEPTED'
 );
+assert.equal(lockState.waits, locksBeforeAuthCreation + 1, 'auth exchange creation must reserve its request ID under ScriptLock');
+assert.equal(
+  context.landlordContractSigningReviewHandleAuthPost_(JSON.stringify({
+    action: 'landlord_contract_signing_review_auth_init',
+    id_token: 'valid-line-id-token',
+    request_id: exchangeRequestId,
+    poll_secret: exchangePollSecret
+  })).code,
+  'AUTH_EXCHANGE_CONFLICT',
+  'a colliding auth request ID must fail closed instead of overwriting the first exchange'
+);
+assert.equal(lockState.waits, locksBeforeAuthCreation + 2, 'the colliding auth exchange must also be checked under ScriptLock');
 const locksBeforeAuthRedemption = lockState.waits;
 const authExchange = context.landlordContractSigningReviewReadAuthExchange_(exchangeRequestId, exchangePollSecret);
 assert.equal(authExchange.success, true, authExchange.code);

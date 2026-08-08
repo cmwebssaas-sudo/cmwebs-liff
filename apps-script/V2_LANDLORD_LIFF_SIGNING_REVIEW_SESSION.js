@@ -20,10 +20,21 @@ function landlordContractSigningReviewHandleAuthPost_(body) {
   let secret;
   try { secret = landlordContractSigningReviewSessionSecret_(); } catch (_) { return landlordContractSigningReviewSessionError_('LIFF_SESSION_SECRET_NOT_CONFIGURED'); }
   const result = landlordContractSigningReviewAuthenticate_(request.id_token);
-  CacheService.getScriptCache().put(landlordContractSigningReviewExchangeKey_(requestId), JSON.stringify({
-    poll_hash: landlordContractSigningReviewHmacHex_(pollSecret, secret), result: result
-  }), V2_LANDLORD_SIGNING_REVIEW_EXCHANGE_TTL_SECONDS_);
-  return { success: true, code: 'EXCHANGE_ACCEPTED' };
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    const cache = CacheService.getScriptCache();
+    const key = landlordContractSigningReviewExchangeKey_(requestId);
+    if (cache.get(key)) return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_CONFLICT');
+    cache.put(key, JSON.stringify({
+      poll_hash: landlordContractSigningReviewHmacHex_(pollSecret, secret), result: result
+    }), V2_LANDLORD_SIGNING_REVIEW_EXCHANGE_TTL_SECONDS_);
+    return { success: true, code: 'EXCHANGE_ACCEPTED' };
+  } catch (_) {
+    return landlordContractSigningReviewSessionError_('AUTH_EXCHANGE_CREATE_FAILED');
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
 }
 
 function landlordContractSigningReviewReadAuthExchange_(requestId, pollSecret) {
