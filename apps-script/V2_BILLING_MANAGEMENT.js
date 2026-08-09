@@ -5225,6 +5225,8 @@ function repairPaidBillMeterCorrectionByLineUid_(
         subtotal,
       total_amount:
         total,
+      payment_status:
+        bill.payment_status,
       note:
         billingText_(
           bill.note

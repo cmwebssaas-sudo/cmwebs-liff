@@ -1532,6 +1532,22 @@ for (const allowedProjectionWorkspace of ['W-current', '']) {
 
 {
   const runtime = createRuntime({
+    bills: [paidBill()],
+    billViews: [billView({ payment_status: 'unpaid' })]
+  });
+  const result = runtime.correct('owner-line-id', correctionInput());
+
+  assert.equal(result.success, true);
+  assert.equal(result.code, 'PAID_BILL_METER_CORRECTED');
+  assert.equal(
+    runtime.sheets.V2_tenant_bill_view.rows[0].payment_status,
+    'paid',
+    'the corrected tenant bill view must retain the canonical paid state'
+  );
+}
+
+{
+  const runtime = createRuntime({
     bills: [paidBill({ rent_amount: 7400 })],
     billViews: [billView()]
   });
