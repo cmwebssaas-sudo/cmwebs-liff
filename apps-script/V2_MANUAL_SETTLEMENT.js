@@ -575,6 +575,9 @@ function manualSettleLandlordBillByLineUid_(
           appendError.settlementRowIndex || 0
         );
 
+      paymentAppendUnverified =
+        appendRowIndex > 1;
+
       if (appendRowIndex > 1) {
         try {
           const appendedPayment =
@@ -590,12 +593,9 @@ function manualSettleLandlordBillByLineUid_(
           ) {
             paymentRowIndex =
               appendRowIndex;
-            paymentAppendUnverified =
-              true;
           }
         } catch (appendReadbackError) {
-          paymentAppendUnverified =
-            true;
+          // 保留未驗證狀態；不可猜測該列是否安全可作廢。
         }
       }
 

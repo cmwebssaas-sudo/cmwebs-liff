@@ -264,6 +264,7 @@ function createPaymentSettlementScopeRuntime({
   forceSyncFailure = false,
   forcePreflightFailure = false,
   forcePaymentAppendFailure = false,
+  forcePaymentAppendIdentityMismatch = false,
   forcePaymentVoidFailure = false,
   forcePaymentReadbackFailure = false,
   forceBillRestoreFailure = false
@@ -321,12 +322,18 @@ function createPaymentSettlementScopeRuntime({
       ensureCalls.push('payment');
       return sheets.V2_payments;
     },
-    findSettlementRowByHeader_(sheet) {
+    findSettlementRowByHeader_(sheet, header, value) {
       if (
         forcePaymentReadbackFailure &&
         sheet === sheets.V2_payments
       ) {
         throw new Error('forced payment readback failure');
+      }
+      if (
+        sheet === sheets.V2_payments &&
+        (!sheet.row || sheet.row[header] !== value)
+      ) {
+        return null;
       }
       return { rowIndex: 2, object: sheet.row };
     },
@@ -351,6 +358,9 @@ function createPaymentSettlementScopeRuntime({
     appendSettlementObjectRowVerified_(sheet, object) {
       writes.push('verified-append');
       sheet.row = { ...object };
+      if (forcePaymentAppendIdentityMismatch) {
+        sheet.row.payment_id = 'PAY-CORRUPTED';
+      }
       if (forcePaymentAppendFailure) {
         const error = new Error('forced payment append readback failure');
         error.settlementRowIndex = 2;
@@ -445,6 +455,7 @@ function createManualSettlementScopeRuntime({
   forceSyncFailure = false,
   forcePreflightFailure = false,
   forcePaymentAppendFailure = false,
+  forcePaymentAppendIdentityMismatch = false,
   forcePaymentVoidFailure = false,
   forcePaymentReadbackFailure = false,
   forceBillRestoreFailure = false
@@ -492,12 +503,18 @@ function createManualSettlementScopeRuntime({
       return sheets.V2_payments;
     },
     manualSettlementEnsureAuditSheet_() { ensureCalls.push('audit'); },
-    manualSettlementFindRowByHeader_(sheet) {
+    manualSettlementFindRowByHeader_(sheet, header, value) {
       if (
         forcePaymentReadbackFailure &&
         sheet === sheets.V2_payments
       ) {
         throw new Error('forced payment readback failure');
+      }
+      if (
+        sheet === sheets.V2_payments &&
+        (!sheet.row || sheet.row[header] !== value)
+      ) {
+        return null;
       }
       return { rowIndex: 2, object: sheet.row };
     },
@@ -526,6 +543,9 @@ function createManualSettlementScopeRuntime({
     manualSettlementAppendObjectRowVerified_(sheet, object) {
       writes.push('verified-append');
       sheet.row = { ...object };
+      if (forcePaymentAppendIdentityMismatch) {
+        sheet.row.payment_id = 'PAY-CORRUPTED';
+      }
       if (forcePaymentAppendFailure) {
         const error = new Error('forced payment append readback failure');
         error.settlementRowIndex = 2;
@@ -687,6 +707,46 @@ function assertSettlementScopeGate(runtimeFactory) {
 
 assertSettlementScopeGate(createPaymentSettlementScopeRuntime);
 assertSettlementScopeGate(createManualSettlementScopeRuntime);
+
+for (const runtimeFactory of [
+  createPaymentSettlementScopeRuntime,
+  createManualSettlementScopeRuntime
+]) {
+  const bill = {
+    bill_id: 'B-append-identity-mismatch',
+    workspace_id: 'W-current',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    payment_id: '',
+    paid_at: '',
+    updated_at: 'before',
+    notes: 'original note',
+    total_amount: 100
+  };
+  const runtime = runtimeFactory({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principals: [{ landlord_id: 'legacy-owner' }]
+    },
+    existingPayment: false,
+    forcePaymentAppendFailure: true,
+    forcePaymentAppendIdentityMismatch: true
+  });
+
+  const result = runtime.settle();
+
+  assert.equal(result.success, false);
+  assert.equal(
+    result.code,
+    'SETTLEMENT_COMPENSATION_UNVERIFIED',
+    'an append whose deterministic row cannot be matched by payment ID must fail explicitly rather than claim a generic retryable error'
+  );
+  assert.equal(runtime.sheets.V2_payments.row.status, 'confirmed');
+  assert.equal(bill.payment_status, 'unpaid');
+}
 
 for (const runtimeFactory of [
   createPaymentSettlementScopeRuntime,

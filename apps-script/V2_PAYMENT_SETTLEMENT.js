@@ -534,6 +534,9 @@ const matchedPaymentId =
           appendError.settlementRowIndex || 0
         );
 
+      paymentAppendUnverified =
+        appendRowIndex > 1;
+
       if (appendRowIndex > 1) {
         try {
           const appendedPayment =
@@ -549,12 +552,9 @@ const matchedPaymentId =
           ) {
             paymentRowIndex =
               appendRowIndex;
-            paymentAppendUnverified =
-              true;
           }
         } catch (appendReadbackError) {
-          paymentAppendUnverified =
-            true;
+          // 保留未驗證狀態；不可猜測該列是否安全可作廢。
         }
       }
 
