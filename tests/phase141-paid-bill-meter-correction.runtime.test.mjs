@@ -260,6 +260,9 @@ function scopeFixtureMatchesBill(bill, access) {
 function createPaymentSettlementScopeRuntime({
   bill,
   access,
+  callerLineUserId = 'owner-line-id',
+  reportLandlordLineUserId = 'owner-line-id',
+  reportLandlordId = bill.landlord_id,
   existingPayment = true,
   forceSyncFailure = false,
   forcePreflightFailure = false,
@@ -286,11 +289,11 @@ function createPaymentSettlementScopeRuntime({
   let downstreamCalls = 0;
   const report = {
     report_id: 'REPORT-1',
-    landlord_line_user_id: 'owner-line-id',
+    landlord_line_user_id: reportLandlordLineUserId,
     status: bill.payment_id ? 'confirmed' : 'pending',
     matched_payment_id: bill.payment_id || '',
     bill_id: bill.bill_id,
-    landlord_id: bill.landlord_id,
+    landlord_id: reportLandlordId,
     tenant_id: bill.tenant_id,
     reported_amount: bill.total_amount
   };
@@ -434,7 +437,7 @@ function createPaymentSettlementScopeRuntime({
   return {
     settle() {
       return context.settleLandlordPaymentReportByLineUid_(
-        'owner-line-id',
+        callerLineUserId,
         'REPORT-1',
         ''
       );
@@ -707,6 +710,69 @@ function assertSettlementScopeGate(runtimeFactory) {
 
 assertSettlementScopeGate(createPaymentSettlementScopeRuntime);
 assertSettlementScopeGate(createManualSettlementScopeRuntime);
+
+{
+  const bill = {
+    bill_id: 'B-report-owner-alias',
+    workspace_id: 'W-current',
+    landlord_id: 'landlord-current',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    total_amount: 100
+  };
+  const access = {
+    success: true,
+    workspace: { workspace_id: 'W-current' },
+    principal_landlord_id: 'landlord-current',
+    principal_line_user_id: 'current-owner-line-id',
+    principals: [{ landlord_id: 'landlord-current' }]
+  };
+  const runtime = createPaymentSettlementScopeRuntime({
+    bill,
+    access,
+    callerLineUserId: 'current-owner-line-id',
+    reportLandlordLineUserId: 'historical-owner-line-id',
+    reportLandlordId: 'landlord-current'
+  });
+  const result = runtime.settle();
+
+  assert.match(
+    result.code,
+    /^PAYMENT(?:_RECORD)?_ALREADY_EXISTS$/,
+    'a report visible to the authorised landlord_id must reach the existing safe settlement guard despite a historical LINE UID'
+  );
+  assert.equal(runtime.scopeCalls.length, 1);
+  assert.equal(runtime.downstreamCalls, 1);
+}
+
+{
+  const bill = {
+    bill_id: 'B-report-owner-reject',
+    workspace_id: 'W-current',
+    landlord_id: 'landlord-current',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    total_amount: 100
+  };
+  const runtime = createPaymentSettlementScopeRuntime({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principal_landlord_id: 'landlord-current',
+      principal_line_user_id: 'current-owner-line-id',
+      principals: [{ landlord_id: 'landlord-current' }]
+    },
+    callerLineUserId: 'current-owner-line-id',
+    reportLandlordLineUserId: 'historical-owner-line-id',
+    reportLandlordId: 'landlord-other'
+  });
+  const result = runtime.settle();
+
+  assert.equal(result.code, 'REPORT_NOT_OWNED_BY_LANDLORD');
+  assert.equal(runtime.scopeCalls.length, 0);
+  assert.equal(runtime.downstreamCalls, 0);
+}
 
 for (const runtimeFactory of [
   createPaymentSettlementScopeRuntime,

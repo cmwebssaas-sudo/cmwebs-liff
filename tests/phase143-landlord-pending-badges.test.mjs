@@ -19,6 +19,12 @@ assert.match(
   'pending badges must use the shared red badge style'
 );
 
+assert.match(
+  source,
+  /\.pending-count-badge\[hidden\]\s*\{\s*display:\s*none\s*!important;/,
+  'an empty pending badge must not render a red dot'
+);
+
 for (const action of [
   'landlord_payment_reports_init',
   'landlord_contract_requests_init',
