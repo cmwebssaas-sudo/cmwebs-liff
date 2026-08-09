@@ -1375,7 +1375,11 @@
           summary.pending_count !== undefined
             ? summary.pending_count
             : requests.filter(function (item) {
-                return String(item.status || '').toLowerCase() === 'pending';
+                return (
+                  item &&
+                  typeof item === 'object' &&
+                  String(item.status || '').toLowerCase() === 'pending'
+                );
               }).length
         ) || 0;
 
@@ -1384,7 +1388,11 @@
           summary.approved_count !== undefined
             ? summary.approved_count
             : requests.filter(function (item) {
-                return String(item.status || '').toLowerCase() === 'approved';
+                return (
+                  item &&
+                  typeof item === 'object' &&
+                  String(item.status || '').toLowerCase() === 'approved'
+                );
               }).length
         ) || 0;
 

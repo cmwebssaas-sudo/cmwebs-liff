@@ -70,6 +70,51 @@ assert.deepEqual(elements.get('badge'), { hidden: true, textContent: '' });
 context.setPendingBadge('badge', 'invalid');
 assert.deepEqual(elements.get('badge'), { hidden: true, textContent: '' });
 
+const contractElements = new Map([
+  ['contractPendingValue', { hidden: false, textContent: '' }],
+  ['contractMenuBadge', { hidden: false, textContent: '', className: '' }],
+  ['contractRequestPendingBadge', { hidden: true, textContent: '' }],
+  ['paymentReportPendingBadge', { hidden: false, textContent: '4' }],
+  ['notificationUnreadBadge', { hidden: false, textContent: '7' }]
+]);
+const contractContext = {
+  Math,
+  Number,
+  String,
+  document: {
+    getElementById(id) {
+      return contractElements.get(id) || null;
+    }
+  }
+};
+
+vm.runInNewContext(
+  [
+    extractFunction('formatPendingBadgeCount'),
+    extractFunction('setPendingBadge'),
+    extractFunction('hidePendingBadge'),
+    extractFunction('setContractSummary')
+  ].join('\n'),
+  contractContext
+);
+
+contractContext.setContractSummary({ requests: [null] });
+assert.deepEqual(
+  contractElements.get('contractRequestPendingBadge'),
+  { hidden: true, textContent: '' },
+  'a malformed fulfilled contract item must hide only the contract badge'
+);
+assert.deepEqual(
+  contractElements.get('paymentReportPendingBadge'),
+  { hidden: false, textContent: '4' },
+  'a malformed contract item must not clear a loaded payment badge'
+);
+assert.deepEqual(
+  contractElements.get('notificationUnreadBadge'),
+  { hidden: false, textContent: '7' },
+  'a malformed contract item must not clear a loaded notification badge'
+);
+
 function sourceSegment(startMarker, endMarker) {
   const start = source.indexOf(startMarker);
   assert.notEqual(start, -1, `${startMarker} must exist`);
