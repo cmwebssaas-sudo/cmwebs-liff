@@ -1532,6 +1532,54 @@ for (const allowedProjectionWorkspace of ['W-current', '']) {
 
 {
   const runtime = createRuntime({
+    bills: [paidBill()],
+    billViews: [billView({ payment_status: 'unpaid' })]
+  });
+  const result = runtime.correct('owner-line-id', correctionInput());
+
+  assert.equal(result.success, true);
+  assert.equal(result.code, 'PAID_BILL_METER_CORRECTED');
+  assert.equal(
+    runtime.sheets.V2_tenant_bill_view.rows[0].payment_status,
+    'paid',
+    'the corrected tenant bill view must retain the canonical paid state'
+  );
+}
+
+{
+  const correctedBill = paidBill({
+    previous_meter: 24815.5,
+    electricity_usage: 37.8,
+    electricity_amount: 113,
+    equipment_amount: 132,
+    subtotal_amount: 7745,
+    total_amount: 7745
+  });
+  const runtime = createRuntime({
+    bills: [correctedBill],
+    billViews: [billView({
+      previous_meter: 24815.5,
+      electricity_usage: 37.8,
+      electricity_amount: 113,
+      equipment_amount: 132,
+      subtotal_amount: 7745,
+      total_amount: 7745,
+      payment_status: 'unpaid'
+    })]
+  });
+  const result = runtime.correct('owner-line-id', correctionInput());
+
+  assert.equal(result.success, true);
+  assert.equal(result.code, 'PAID_BILL_METER_CORRECTED');
+  assert.equal(
+    runtime.sheets.V2_tenant_bill_view.rows[0].payment_status,
+    'paid',
+    'a stale view payment state alone must be synchronized'
+  );
+}
+
+{
+  const runtime = createRuntime({
     bills: [paidBill({ rent_amount: 7400 })],
     billViews: [billView()]
   });
