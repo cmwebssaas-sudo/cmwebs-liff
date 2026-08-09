@@ -75,7 +75,9 @@ function createPaymentSettlementScopeRuntime({
   existingPayment = true,
   forceSyncFailure = false,
   forcePreflightFailure = false,
-  forcePaymentVoidFailure = false
+  forcePaymentVoidFailure = false,
+  forcePaymentReadbackFailure = false,
+  forceBillRestoreFailure = false
 }) {
   const source = fs.readFileSync(
     'apps-script/V2_PAYMENT_SETTLEMENT.js',
@@ -131,6 +133,12 @@ function createPaymentSettlementScopeRuntime({
       return sheets.V2_payments;
     },
     findSettlementRowByHeader_(sheet) {
+      if (
+        forcePaymentReadbackFailure &&
+        sheet === sheets.V2_payments
+      ) {
+        throw new Error('forced payment readback failure');
+      }
       return { rowIndex: 2, object: sheet.row };
     },
     v2CanonicalBillIsVoided_() { return false; },
@@ -152,6 +160,14 @@ function createPaymentSettlementScopeRuntime({
       return 2;
     },
     updateSettlementRowByObject_(sheet, _rowIndex, updates) {
+      if (
+        forceBillRestoreFailure &&
+        sheet === sheets.V2_bills &&
+        updates.payment_status === 'unpaid'
+      ) {
+        Object.assign(sheet.row, updates);
+        throw new Error('forced bill restore failure');
+      }
       if (
         forcePaymentVoidFailure &&
         sheet === sheets.V2_payments &&
@@ -201,7 +217,9 @@ function createManualSettlementScopeRuntime({
   existingPayment = true,
   forceSyncFailure = false,
   forcePreflightFailure = false,
-  forcePaymentVoidFailure = false
+  forcePaymentVoidFailure = false,
+  forcePaymentReadbackFailure = false,
+  forceBillRestoreFailure = false
 }) {
   const source = fs.readFileSync(
     'apps-script/V2_MANUAL_SETTLEMENT.js',
@@ -247,6 +265,12 @@ function createManualSettlementScopeRuntime({
     },
     manualSettlementEnsureAuditSheet_() { ensureCalls.push('audit'); },
     manualSettlementFindRowByHeader_(sheet) {
+      if (
+        forcePaymentReadbackFailure &&
+        sheet === sheets.V2_payments
+      ) {
+        throw new Error('forced payment readback failure');
+      }
       return { rowIndex: 2, object: sheet.row };
     },
     v2CanonicalBillIsVoided_() { return false; },
@@ -272,6 +296,14 @@ function createManualSettlementScopeRuntime({
       return 2;
     },
     manualSettlementUpdateRowByObject_(sheet, _rowIndex, updates) {
+      if (
+        forceBillRestoreFailure &&
+        sheet === sheets.V2_bills &&
+        updates.payment_status === 'unpaid'
+      ) {
+        Object.assign(sheet.row, updates);
+        throw new Error('forced bill restore failure');
+      }
       if (
         forcePaymentVoidFailure &&
         sheet === sheets.V2_payments &&
@@ -543,6 +575,56 @@ for (const runtimeFactory of [
   assert.equal(runtime.sheets.V2_payments.row.status, 'void');
   assert.equal(bill.payment_status, 'unpaid');
   assert.equal(bill.payment_id, '');
+}
+
+for (const [label, options] of [
+  ['payment void partial write', {
+    forcePaymentVoidFailure: 'after_status'
+  }],
+  ['payment void readback failure', {
+    forcePaymentVoidFailure: true,
+    forcePaymentReadbackFailure: true
+  }],
+  ['bill restore partial write', {
+    forceBillRestoreFailure: true
+  }]
+]) {
+  for (const runtimeFactory of [
+    createPaymentSettlementScopeRuntime,
+    createManualSettlementScopeRuntime
+  ]) {
+    const bill = {
+      bill_id: `B-unverified-${label}`,
+      workspace_id: 'W-current',
+      landlord_id: 'legacy-owner',
+      tenant_id: 'T-1',
+      payment_status: 'unpaid',
+      payment_id: '',
+      paid_at: '',
+      updated_at: 'before',
+      notes: 'original note',
+      total_amount: 100
+    };
+    const runtime = runtimeFactory({
+      bill,
+      access: {
+        success: true,
+        workspace: { workspace_id: 'W-current' },
+        principals: [{ landlord_id: 'legacy-owner' }]
+      },
+      existingPayment: false,
+      forceSyncFailure: true,
+      ...options
+    });
+
+    const result = runtime.settle();
+
+    assert.equal(
+      result.code,
+      'SETTLEMENT_COMPENSATION_UNVERIFIED',
+      `${label} must not return a generic settlement failure after an unverified compensation state`
+    );
+  }
 }
 
 {
