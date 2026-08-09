@@ -340,6 +340,23 @@
       color: var(--purple);
     }
 
+    .pending-count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      box-sizing: border-box;
+      border-radius: 999px;
+      background: #e5484d;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
     .system-row {
       display: flex;
       align-items: center;
@@ -576,6 +593,12 @@
             <div class="menu-main">
               <div class="menu-title-row">
                 <div class="menu-title">付款回報審核</div>
+                <span
+                  id="paymentReportPendingBadge"
+                  class="pending-count-badge"
+                  hidden
+                  aria-label="待審付款回報"
+                ></span>
               </div>
               <div class="menu-desc">核對房客匯款回報、後五碼、付款日期與帳款</div>
             </div>
@@ -594,6 +617,12 @@
             <div class="menu-main">
               <div class="menu-title-row">
                 <div class="menu-title">合約申請管理</div>
+                <span
+                  id="contractRequestPendingBadge"
+                  class="pending-count-badge"
+                  hidden
+                  aria-label="待審合約申請"
+                ></span>
                 <span id="contractMenuBadge" class="badge purple">讀取中</span>
               </div>
               <div class="menu-desc">審核續約、調整租金管理費、處理提前解約與違約金</div>
@@ -639,6 +668,12 @@
             <div class="menu-main">
               <div class="menu-title-row">
                 <div class="menu-title">通知中心</div>
+                <span
+                  id="notificationUnreadBadge"
+                  class="pending-count-badge"
+                  hidden
+                  aria-label="未讀通知"
+                ></span>
                 <span class="badge purple">可使用</span>
               </div>
               <div class="menu-desc">集中查看付款、租約、房客訊息與團隊 LINE 送達結果</div>
@@ -1171,6 +1206,54 @@
       });
     }
 
+    function formatPendingBadgeCount(value) {
+      const count = Math.max(0, Number(value) || 0);
+      return count > 99 ? '99+' : (count > 0 ? String(count) : '');
+    }
+
+    function setPendingBadge(elementId, value) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      const label = formatPendingBadgeCount(value);
+      element.hidden = !label;
+      element.textContent = label;
+    }
+
+    function hidePendingBadge(elementId) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      element.hidden = true;
+      element.textContent = '';
+    }
+
+    function setPendingBadgeFromSummary(elementId, result, summaryKey) {
+      const data =
+        result && result.success === true
+          ? (
+            result.data &&
+            typeof result.data === 'object'
+              ? result.data
+              : result
+          )
+          : null;
+
+      const summary =
+        data && data.summary && typeof data.summary === 'object'
+          ? data.summary
+          : null;
+
+      if (
+        !summary ||
+        !Object.prototype.hasOwnProperty.call(summary, summaryKey) ||
+        !Number.isFinite(Number(summary[summaryKey]))
+      ) {
+        hidePendingBadge(elementId);
+        return;
+      }
+
+      setPendingBadge(elementId, summary[summaryKey]);
+    }
+
     async function initLineUserId() {
       if (TEST_MODE) {
         LINE_USER_ID =
@@ -1339,6 +1422,11 @@
         badge.textContent =
           '無待處理';
       }
+
+      setPendingBadge(
+        'contractRequestPendingBadge',
+        pendingCount
+      );
     }
 
     function setSummaryError(message) {
@@ -1357,6 +1445,10 @@
 
       badge.textContent =
         '可直接進入';
+
+      hidePendingBadge(
+        'contractRequestPendingBadge'
+      );
 
       console.warn(message);
     }
@@ -1390,6 +1482,14 @@
             jsonpRequest(
               'landlord_workspace_context',
               {}
+            ),
+            jsonpRequest(
+              'landlord_payment_reports_init',
+              {}
+            ),
+            jsonpRequest(
+              'landlord_notifications_init',
+              {}
             )
           ]);
 
@@ -1403,6 +1503,18 @@
           results[1].status ===
             'fulfilled'
             ? results[1].value
+            : null;
+
+        const paymentResult =
+          results[2].status ===
+            'fulfilled'
+            ? results[2].value
+            : null;
+
+        const notificationResult =
+          results[3].status ===
+            'fulfilled'
+            ? results[3].value
             : null;
 
         if (
@@ -1419,6 +1531,36 @@
             contractResult.message
               ? contractResult.message
               : '合約申請摘要讀取失敗'
+          );
+        }
+
+        if (
+          paymentResult &&
+          paymentResult.success === true
+        ) {
+          setPendingBadgeFromSummary(
+            'paymentReportPendingBadge',
+            paymentResult,
+            'pending'
+          );
+        } else {
+          hidePendingBadge(
+            'paymentReportPendingBadge'
+          );
+        }
+
+        if (
+          notificationResult &&
+          notificationResult.success === true
+        ) {
+          setPendingBadgeFromSummary(
+            'notificationUnreadBadge',
+            notificationResult,
+            'unread_count'
+          );
+        } else {
+          hidePendingBadge(
+            'notificationUnreadBadge'
           );
         }
 
@@ -1441,6 +1583,14 @@
         );
 
         setWorkspaceSummaryError();
+
+        hidePendingBadge(
+          'paymentReportPendingBadge'
+        );
+
+        hidePendingBadge(
+          'notificationUnreadBadge'
+        );
       } finally {
         refreshButton.classList.remove(
           'loading'
