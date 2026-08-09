@@ -26,6 +26,79 @@ assertPaidBillViewSyncBeforeFlush(
   'manualSettlementUpdateRowByObject_(\n      billSheet,'
 );
 
+{
+  const source = fs.readFileSync(
+    'apps-script/V2_BILLING_MANAGEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf(
+    'function billingBillMatchesAccessScope_('
+  );
+  const end = source.indexOf(
+    '\n\nfunction billingGetWorkspaceRows_(',
+    start
+  );
+
+  assert.notEqual(
+    start,
+    -1,
+    'bill scope predicate must exist'
+  );
+  assert.notEqual(
+    end,
+    -1,
+    'bill scope predicate must precede workspace bill rows'
+  );
+
+  const context = {
+    billingText_(value) {
+      return value == null ? '' : String(value).trim();
+    }
+  };
+
+  vm.runInNewContext(source.slice(start, end), context);
+
+  const access = {
+    workspace: { workspace_id: 'W-current' },
+    principals: [
+      { landlord_id: 'legacy-owner' }
+    ]
+  };
+
+  assert.equal(
+    context.billingBillMatchesAccessScope_(
+      { workspace_id: 'w-CURRENT', landlord_id: 'other-owner' },
+      access
+    ),
+    true,
+    'current Workspace bill must match regardless of legacy landlord'
+  );
+  assert.equal(
+    context.billingBillMatchesAccessScope_(
+      { workspace_id: 'W-other', landlord_id: 'legacy-owner' },
+      access
+    ),
+    false,
+    'Workspace bill must not fall back to a legacy principal'
+  );
+  assert.equal(
+    context.billingBillMatchesAccessScope_(
+      { workspace_id: '', landlord_id: ' LEGACY-OWNER ' },
+      access
+    ),
+    true,
+    'legacy bill must match a normalized authenticated principal'
+  );
+  assert.equal(
+    context.billingBillMatchesAccessScope_(
+      { workspace_id: '', landlord_id: 'other-owner' },
+      access
+    ),
+    false,
+    'legacy bill without an authenticated principal must not match'
+  );
+}
+
 function createRuntime({ bills, billViews }) {
   const writes = [];
   const audits = [];
