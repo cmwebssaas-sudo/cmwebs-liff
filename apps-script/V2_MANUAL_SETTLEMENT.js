@@ -80,6 +80,7 @@ function manualSettleLandlordBillByLineUid_(
   let billSettlementState = null;
   let billWriteAttempted = false;
   let canonicalSettlementCompleted = false;
+  let paymentAppendUnverified = false;
 
   try {
     landlordLineUserId =
@@ -559,11 +560,47 @@ function manualSettleLandlordBillByLineUid_(
         '房東手動確認已繳'
     };
 
-    paymentRowIndex =
-      manualSettlementAppendObjectRow_(
-        paymentSheet,
-        paymentRecord
-      );
+    try {
+      const appendedPayment =
+        manualSettlementAppendObjectRowVerified_(
+          paymentSheet,
+          paymentRecord
+        );
+
+      paymentRowIndex =
+        appendedPayment.rowIndex;
+    } catch (appendError) {
+      const appendRowIndex =
+        Number(
+          appendError.settlementRowIndex || 0
+        );
+
+      if (appendRowIndex > 1) {
+        try {
+          const appendedPayment =
+            manualSettlementFindRowByHeader_(
+              paymentSheet,
+              'payment_id',
+              paymentId
+            );
+
+          if (
+            appendedPayment &&
+            appendedPayment.rowIndex === appendRowIndex
+          ) {
+            paymentRowIndex =
+              appendRowIndex;
+            paymentAppendUnverified =
+              true;
+          }
+        } catch (appendReadbackError) {
+          paymentAppendUnverified =
+            true;
+        }
+      }
+
+      throw appendError;
+    }
 
     billRowIndex =
       billData.rowIndex;
@@ -964,7 +1001,7 @@ function manualSettleLandlordBillByLineUid_(
     let billRestored =
       !billWriteAttempted;
     let compensationUnverified =
-      false;
+      paymentAppendUnverified;
 
     if (
       !canonicalSettlementCompleted &&
@@ -1868,6 +1905,79 @@ function manualSettlementAppendObjectRow_(
 
 
 /**
+ * 新增整列後立即讀回驗證。失敗時保留預先決定的列號，讓呼叫端能安全補償。
+ */
+function manualSettlementAppendObjectRowVerified_(
+  sheet,
+  object
+) {
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getValues()[0]
+      .map(function (header) {
+        return manualSettlementText_(
+          header
+        );
+      });
+  const rowIndex =
+    sheet.getLastRow() + 1;
+  const row =
+    headers.map(function (header) {
+      return object[header] !== undefined
+        ? object[header]
+        : '';
+    });
+  const rowRange =
+    sheet.getRange(
+      rowIndex,
+      1,
+      1,
+      headers.length
+    );
+
+  try {
+    rowRange.setValues([row]);
+
+    const verifiedRow =
+      rowRange.getValues()[0];
+    const verifiedObject =
+      {};
+
+    headers.forEach(function (header, index) {
+      verifiedObject[header] =
+        verifiedRow[index];
+
+      if (
+        !manualSettlementRowValueMatches_(
+          verifiedRow[index],
+          row[index]
+        )
+      ) {
+        throw new Error(
+          'SETTLEMENT_ROW_WRITE_UNVERIFIED'
+        );
+      }
+    });
+
+    return {
+      rowIndex: rowIndex,
+      object: verifiedObject
+    };
+  } catch (error) {
+    error.settlementRowIndex =
+      rowIndex;
+    throw error;
+  }
+}
+
+
+/**
  * 依欄位名稱更新資料列
  */
 function manualSettlementUpdateRowByObject_(
@@ -1957,6 +2067,13 @@ function manualSettlementUpdateRowByObjectVerified_(
 
   const verifiedRow =
     rowRange.getValues()[0];
+  const verifiedObject =
+    {};
+
+  headers.forEach(function (header, index) {
+    verifiedObject[header] =
+      verifiedRow[index];
+  });
 
   Object.keys(updates)
     .forEach(function (header) {
@@ -1976,7 +2093,7 @@ function manualSettlementUpdateRowByObjectVerified_(
       }
     });
 
-  return verifiedRow;
+  return verifiedObject;
 }
 
 

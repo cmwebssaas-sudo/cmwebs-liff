@@ -33,6 +33,7 @@ function settleLandlordPaymentReportByLineUid_(
   let billWriteAttempted = false;
   let canonicalSettlementCompleted = false;
   let paymentId = '';
+  let paymentAppendUnverified = false;
 
   try {
     landlordLineUserId =
@@ -518,11 +519,47 @@ const matchedPaymentId =
         '房東確認付款回報後正式銷帳'
     };
 
-    paymentRowIndex =
-      appendSettlementObjectRow_(
-        paymentSheet,
-        paymentRecord
-      );
+    try {
+      const appendedPayment =
+        appendSettlementObjectRowVerified_(
+          paymentSheet,
+          paymentRecord
+        );
+
+      paymentRowIndex =
+        appendedPayment.rowIndex;
+    } catch (appendError) {
+      const appendRowIndex =
+        Number(
+          appendError.settlementRowIndex || 0
+        );
+
+      if (appendRowIndex > 1) {
+        try {
+          const appendedPayment =
+            findSettlementRowByHeader_(
+              paymentSheet,
+              'payment_id',
+              paymentId
+            );
+
+          if (
+            appendedPayment &&
+            appendedPayment.rowIndex === appendRowIndex
+          ) {
+            paymentRowIndex =
+              appendRowIndex;
+            paymentAppendUnverified =
+              true;
+          }
+        } catch (appendReadbackError) {
+          paymentAppendUnverified =
+            true;
+        }
+      }
+
+      throw appendError;
+    }
 
     billRowIndex =
       billData.rowIndex;
@@ -828,7 +865,7 @@ return {
     let billRestored =
       !billWriteAttempted;
     let compensationUnverified =
-      false;
+      paymentAppendUnverified;
 
     if (
       !canonicalSettlementCompleted &&
@@ -1372,6 +1409,79 @@ function appendSettlementObjectRow_(
 
 
 /**
+ * 新增整列後立即讀回驗證。失敗時保留預先決定的列號，讓呼叫端能安全補償。
+ */
+function appendSettlementObjectRowVerified_(
+  sheet,
+  object
+) {
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getValues()[0]
+      .map(function (header) {
+        return String(
+          header || ''
+        ).trim();
+      });
+  const rowIndex =
+    sheet.getLastRow() + 1;
+  const row =
+    headers.map(function (header) {
+      return object[header] !== undefined
+        ? object[header]
+        : '';
+    });
+  const rowRange =
+    sheet.getRange(
+      rowIndex,
+      1,
+      1,
+      headers.length
+    );
+
+  try {
+    rowRange.setValues([row]);
+
+    const verifiedRow =
+      rowRange.getValues()[0];
+    const verifiedObject =
+      {};
+
+    headers.forEach(function (header, index) {
+      verifiedObject[header] =
+        verifiedRow[index];
+
+      if (
+        !settlementRowValueMatches_(
+          verifiedRow[index],
+          row[index]
+        )
+      ) {
+        throw new Error(
+          'SETTLEMENT_ROW_WRITE_UNVERIFIED'
+        );
+      }
+    });
+
+    return {
+      rowIndex: rowIndex,
+      object: verifiedObject
+    };
+  } catch (error) {
+    error.settlementRowIndex =
+      rowIndex;
+    throw error;
+  }
+}
+
+
+/**
  * 依欄位名稱更新資料列
  */
 function updateSettlementRowByObject_(
@@ -1461,6 +1571,13 @@ function updateSettlementRowByObjectVerified_(
 
   const verifiedRow =
     rowRange.getValues()[0];
+  const verifiedObject =
+    {};
+
+  headers.forEach(function (header, index) {
+    verifiedObject[header] =
+      verifiedRow[index];
+  });
 
   Object.keys(updates)
     .forEach(function (header) {
@@ -1480,7 +1597,7 @@ function updateSettlementRowByObjectVerified_(
       }
     });
 
-  return verifiedRow;
+  return verifiedObject;
 }
 
 

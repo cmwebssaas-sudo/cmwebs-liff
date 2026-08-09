@@ -79,6 +79,169 @@ for (const [sourcePath, helperName] of [
   );
 }
 
+function extractSettlementHelper(sourcePath, helperName, dependencies = '') {
+  const source = fs.readFileSync(sourcePath, 'utf8');
+  const helperAt = source.indexOf(`function ${helperName}(`);
+  const helperEnd = source.indexOf('\n\nfunction ', helperAt + 1);
+
+  assert.notEqual(helperAt, -1, `${sourcePath} must expose ${helperName}`);
+
+  return `${dependencies}\n${source.slice(
+    helperAt,
+    helperEnd === -1 ? source.length : helperEnd
+  )}`;
+}
+
+function createVerifiedRowSheet({
+  headers,
+  row,
+  afterWriteReadback,
+  failOnRowRead = 1
+}) {
+  const state = { headers: [...headers], row: [...row], readCount: 0 };
+
+  return {
+    state,
+    getLastColumn() { return state.headers.length; },
+    getLastRow() { return state.row.length ? 2 : 1; },
+    getRange(rowIndex, columnIndex, _numRows, numColumns) {
+      const start = columnIndex - 1;
+      const read = () => {
+        if (rowIndex === 1) return state.headers.slice(start, start + numColumns);
+        state.readCount += 1;
+        if (afterWriteReadback && state.readCount >= failOnRowRead) {
+          return afterWriteReadback(state.row.slice(start, start + numColumns));
+        }
+        return state.row.slice(start, start + numColumns);
+      };
+
+      return {
+        getValues() { return [read()]; },
+        setValues(values) {
+          const next = values[0];
+          next.forEach((value, index) => { state.row[start + index] = value; });
+        }
+      };
+    }
+  };
+}
+
+for (const [sourcePath, helperName, dependencies] of [
+  [
+    'apps-script/V2_PAYMENT_SETTLEMENT.js',
+    'updateSettlementRowByObjectVerified_',
+    extractSettlementHelper(
+      'apps-script/V2_PAYMENT_SETTLEMENT.js',
+      'settlementRowValueMatches_'
+    )
+  ],
+  [
+    'apps-script/V2_MANUAL_SETTLEMENT.js',
+    'manualSettlementUpdateRowByObjectVerified_',
+    extractSettlementHelper(
+      'apps-script/V2_MANUAL_SETTLEMENT.js',
+      'manualSettlementRowValueMatches_',
+      'function manualSettlementText_(value) { return value == null ? \'\' : String(value).trim(); }'
+    )
+  ]
+]) {
+  const context = {};
+  vm.runInNewContext(
+    extractSettlementHelper(sourcePath, helperName, dependencies),
+    context
+  );
+
+  const successfulSheet = createVerifiedRowSheet({
+    headers: ['payment_id', 'status', 'note'],
+    row: ['PAY-3', 'confirmed', 'original']
+  });
+  const verified = context[helperName](
+    successfulSheet,
+    2,
+    { status: 'void' }
+  );
+
+  assert.equal(
+    verified.payment_id,
+    'PAY-3',
+    `${helperName} must return a verified row object rather than an array`
+  );
+
+  const sheet = createVerifiedRowSheet({
+    headers: ['payment_id', 'status', 'note'],
+    row: ['PAY-3', 'confirmed', 'original'],
+    afterWriteReadback(row) {
+      return [row[0], 'confirmed', row[2]];
+    },
+    failOnRowRead: 2
+  });
+
+  assert.throws(
+    () => context[helperName](sheet, 2, { status: 'void' }),
+    /SETTLEMENT_ROW_WRITE_UNVERIFIED/,
+    `${helperName} must execute its real post-write read-back before accepting a payment void`
+  );
+  assert.equal(
+    sheet.state.row[1],
+    'void',
+    `${helperName} test must simulate the real write occurring before the failed read-back`
+  );
+}
+
+for (const [sourcePath, helperName, dependencies] of [
+  [
+    'apps-script/V2_PAYMENT_SETTLEMENT.js',
+    'appendSettlementObjectRowVerified_',
+    extractSettlementHelper(
+      'apps-script/V2_PAYMENT_SETTLEMENT.js',
+      'settlementRowValueMatches_'
+    )
+  ],
+  [
+    'apps-script/V2_MANUAL_SETTLEMENT.js',
+    'manualSettlementAppendObjectRowVerified_',
+    extractSettlementHelper(
+      'apps-script/V2_MANUAL_SETTLEMENT.js',
+      'manualSettlementRowValueMatches_',
+      'function manualSettlementText_(value) { return value == null ? \'\' : String(value).trim(); }'
+    )
+  ]
+]) {
+  const context = {};
+  vm.runInNewContext(
+    extractSettlementHelper(sourcePath, helperName, dependencies),
+    context
+  );
+
+  const sheet = createVerifiedRowSheet({
+    headers: ['payment_id', 'status', 'note'],
+    row: []
+  });
+  const appended = context[helperName](sheet, {
+    payment_id: 'PAY-1', status: 'confirmed', note: 'test'
+  });
+
+  assert.equal(appended.rowIndex, 2, `${helperName} must return its deterministic row index`);
+  assert.equal(appended.object.payment_id, 'PAY-1');
+  assert.equal(sheet.state.row[0], 'PAY-1');
+
+  const readbackFailingSheet = createVerifiedRowSheet({
+    headers: ['payment_id', 'status', 'note'],
+    row: [],
+    afterWriteReadback(row) {
+      return ['', row[1], row[2]];
+    }
+  });
+
+  assert.throws(
+    () => context[helperName](readbackFailingSheet, {
+      payment_id: 'PAY-2', status: 'confirmed', note: 'test'
+    }),
+    (error) => error.message === 'SETTLEMENT_ROW_WRITE_UNVERIFIED' && error.settlementRowIndex === 2,
+    `${helperName} must expose the deterministic row index when post-write read-back is unverified`
+  );
+}
+
 function scopeFixtureMatchesBill(bill, access) {
   const text = (value) => String(value || '').trim().toUpperCase();
   const billWorkspaceId = text(bill.workspace_id);
@@ -100,6 +263,7 @@ function createPaymentSettlementScopeRuntime({
   existingPayment = true,
   forceSyncFailure = false,
   forcePreflightFailure = false,
+  forcePaymentAppendFailure = false,
   forcePaymentVoidFailure = false,
   forcePaymentReadbackFailure = false,
   forceBillRestoreFailure = false
@@ -183,6 +347,16 @@ function createPaymentSettlementScopeRuntime({
       writes.push('append');
       sheet.row = { ...object };
       return 2;
+    },
+    appendSettlementObjectRowVerified_(sheet, object) {
+      writes.push('verified-append');
+      sheet.row = { ...object };
+      if (forcePaymentAppendFailure) {
+        const error = new Error('forced payment append readback failure');
+        error.settlementRowIndex = 2;
+        throw error;
+      }
+      return { rowIndex: 2, object: sheet.row };
     },
     updateSettlementRowByObject_(sheet, _rowIndex, updates) {
       if (
@@ -270,6 +444,7 @@ function createManualSettlementScopeRuntime({
   existingPayment = true,
   forceSyncFailure = false,
   forcePreflightFailure = false,
+  forcePaymentAppendFailure = false,
   forcePaymentVoidFailure = false,
   forcePaymentReadbackFailure = false,
   forceBillRestoreFailure = false
@@ -347,6 +522,16 @@ function createManualSettlementScopeRuntime({
       writes.push('append');
       sheet.row = { ...object };
       return 2;
+    },
+    manualSettlementAppendObjectRowVerified_(sheet, object) {
+      writes.push('verified-append');
+      sheet.row = { ...object };
+      if (forcePaymentAppendFailure) {
+        const error = new Error('forced payment append readback failure');
+        error.settlementRowIndex = 2;
+        throw error;
+      }
+      return { rowIndex: 2, object: sheet.row };
     },
     manualSettlementUpdateRowByObject_(sheet, _rowIndex, updates) {
       if (
@@ -578,6 +763,46 @@ for (const runtimeFactory of [
   assert.equal(bill.payment_id, '');
   assert.equal(bill.updated_at, 'before');
   assert.equal(bill.notes, 'original note');
+}
+
+for (const runtimeFactory of [
+  createPaymentSettlementScopeRuntime,
+  createManualSettlementScopeRuntime
+]) {
+  const bill = {
+    bill_id: 'B-append-readback-failure',
+    workspace_id: 'W-current',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    payment_id: '',
+    paid_at: '',
+    updated_at: 'before',
+    notes: 'original note',
+    total_amount: 100
+  };
+  const runtime = runtimeFactory({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principals: [{ landlord_id: 'legacy-owner' }]
+    },
+    existingPayment: false,
+    forcePaymentAppendFailure: true
+  });
+
+  const result = runtime.settle();
+
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'SETTLEMENT_COMPENSATION_UNVERIFIED');
+  assert.equal(
+    runtime.sheets.V2_payments.row.status,
+    'void',
+    'a payment appended before its read-back failure must be voided rather than orphaned'
+  );
+  assert.equal(bill.payment_status, 'unpaid');
+  assert.equal(bill.payment_id, '');
 }
 
 for (const runtimeFactory of [
