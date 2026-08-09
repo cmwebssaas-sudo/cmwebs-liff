@@ -99,6 +99,72 @@ assertPaidBillViewSyncBeforeFlush(
   );
 }
 
+{
+  const source = fs.readFileSync(
+    'apps-script/V2_BILLING_MANAGEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf(
+    'function billingBillMatchesAccessScope_('
+  );
+  const end = source.indexOf(
+    '\n\nfunction billingGetWorkspaceRoomRows_(',
+    start
+  );
+
+  assert.notEqual(start, -1);
+  assert.notEqual(
+    end,
+    -1,
+    'generic Workspace row helper must precede room rows'
+  );
+
+  const context = {
+    V2_BILLING_SHEETS_: {
+      bills: 'V2_bills'
+    },
+    billingText_(value) {
+      return value == null ? '' : String(value).trim();
+    },
+    workspaceGetObjectsWithRow_(sheet) {
+      return sheet.rows;
+    }
+  };
+
+  vm.runInNewContext(source.slice(start, end), context);
+
+  const access = {
+    workspace: { workspace_id: 'W-current' },
+    principals: [
+      { landlord_id: 'legacy-owner' }
+    ]
+  };
+  const row = {
+    workspace_id: '',
+    landlord_id: 'LEGACY-OWNER'
+  };
+  const scopedRows = function (sheetName) {
+    return context.billingGetWorkspaceRows_(
+      {
+        getName() { return sheetName; },
+        rows: [row]
+      },
+      access
+    );
+  };
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(scopedRows('V2_properties'))),
+    [],
+    'generic Workspace row helper must retain legacy landlord case semantics'
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(scopedRows('V2_bills'))),
+    [row],
+    'V2_bills must use the normalized canonical bill scope predicate'
+  );
+}
+
 function createRuntime({ bills, billViews }) {
   const writes = [];
   const audits = [];

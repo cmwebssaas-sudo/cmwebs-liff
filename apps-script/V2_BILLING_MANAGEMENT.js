@@ -2473,13 +2473,71 @@ function billingGetWorkspaceRows_(
     return [];
   }
 
+  const isBillSheet =
+    typeof sheet.getName ===
+      'function' &&
+    sheet.getName() ===
+      V2_BILLING_SHEETS_
+        .bills;
+
+  if (isBillSheet) {
+    return workspaceGetObjectsWithRow_(
+      sheet
+    ).filter(
+      function (bill) {
+        return billingBillMatchesAccessScope_(
+          bill,
+          access
+        );
+      }
+    );
+  }
+
+  const workspaceId =
+    billingText_(
+      access.workspace
+        .workspace_id
+    ).toUpperCase();
+
+  const landlordIds =
+    (
+      access.principals || []
+    )
+      .map(
+        function (principal) {
+          return billingText_(
+            principal.landlord_id
+          );
+        }
+      )
+      .filter(Boolean);
+
   return workspaceGetObjectsWithRow_(
     sheet
   ).filter(
     function (row) {
-      return billingBillMatchesAccessScope_(
-        row,
-        access
+      const rowWorkspaceId =
+        billingText_(
+          row.workspace_id
+        ).toUpperCase();
+
+      if (rowWorkspaceId) {
+        return (
+          rowWorkspaceId ===
+          workspaceId
+        );
+      }
+
+      const landlordId =
+        billingText_(
+          row.landlord_id
+        );
+
+      return (
+        landlordId &&
+        landlordIds.indexOf(
+          landlordId
+        ) >= 0
       );
     }
   );
