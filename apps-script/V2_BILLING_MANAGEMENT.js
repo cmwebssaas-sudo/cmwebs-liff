@@ -4948,15 +4948,19 @@ function repairPaidBillMeterCorrectionByLineUid_(
     const view =
       viewMatches[0];
 
-    if (
-      !billingIsPaidStatus_(
+    const viewPaymentStatus =
+      billingNormalizePaymentStatus_(
         view.payment_status
-      )
+      );
+
+    if (
+      viewPaymentStatus !== 'paid' &&
+      viewPaymentStatus !== 'unpaid'
     ) {
       return workspaceResult_(
         false,
-        'PAID_BILL_VIEW_PAYMENT_STATUS_MISMATCH',
-        '房客帳單視圖付款狀態不符，已停止更正'
+        'PAID_BILL_VIEW_PAYMENT_STATUS_INVALID',
+        '房客帳單視圖付款狀態不正確，已停止更正'
       );
     }
 
@@ -5008,7 +5012,11 @@ function repairPaidBillMeterCorrectionByLineUid_(
           current_meter:
             currentMeter,
           recomputed_total:
-            total
+            total,
+          view_payment_status:
+            viewPaymentStatus,
+          view_payment_status_mismatch:
+            viewPaymentStatus !== 'paid'
         }
       );
     }

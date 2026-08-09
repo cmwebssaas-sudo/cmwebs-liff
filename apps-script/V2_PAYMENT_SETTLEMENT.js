@@ -360,6 +360,39 @@ if (
       };
     }
 
+    const billingAccess =
+      workspaceLandlordResolveAccess_(
+        landlordLineUserId,
+        {
+          require_onboarding: true,
+          skip_schema_ensure: true,
+          skip_legacy_context_creation: true
+        }
+      );
+
+    if (!billingAccess.success) {
+      return {
+        success: false,
+        code: billingAccess.code || 'WORKSPACE_ACCESS_REQUIRED',
+        message: billingAccess.message || '無法驗證帳務 Workspace 權限'
+      };
+    }
+
+    if (
+      String(
+        billingAccess.workspace.workspace_id || ''
+      ).trim() !==
+      String(
+        bill.workspace_id || ''
+      ).trim()
+    ) {
+      return {
+        success: false,
+        code: 'BILL_WORKSPACE_MISMATCH',
+        message: '帳單不屬於目前管理團隊'
+      };
+    }
+
     const existingPayment =
       findExistingSettlementPayment_(
         paymentSheet,
@@ -496,6 +529,30 @@ if (
             paymentId
           )
       }
+    );
+
+    const settledBill =
+      Object.assign(
+        {},
+        bill,
+        {
+          payment_status: 'paid',
+          paid_at: paymentDate,
+          payment_id: paymentId,
+          updated_at: now
+        }
+      );
+
+    billingSyncBillViews_(
+      ss,
+      billingAccess,
+      settledBill,
+      now
+    );
+
+    billingRefreshWorkspaceSummaries_(
+      ss,
+      billingAccess
     );
 
     /*

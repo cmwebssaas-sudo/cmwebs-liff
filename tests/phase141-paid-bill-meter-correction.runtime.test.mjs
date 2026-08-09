@@ -2,6 +2,30 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
+function assertPaidBillViewSyncBeforeFlush(sourcePath, updateMarker) {
+  const source = fs.readFileSync(sourcePath, 'utf8');
+  const updateAt = source.indexOf(updateMarker);
+  const flushAt = source.indexOf('SpreadsheetApp.flush()', updateAt);
+  const syncAt = source.indexOf('billingSyncBillViews_(', updateAt);
+
+  assert.notEqual(updateAt, -1, `${sourcePath} must update the formal bill`);
+  assert.notEqual(flushAt, -1, `${sourcePath} must flush the settlement`);
+  assert.ok(
+    syncAt > updateAt && syncAt < flushAt,
+    `${sourcePath} must synchronise the tenant bill view after payment settlement and before flush`
+  );
+}
+
+assertPaidBillViewSyncBeforeFlush(
+  'apps-script/V2_PAYMENT_SETTLEMENT.js',
+  'updateSettlementRowByObject_(\n      billSheet,'
+);
+
+assertPaidBillViewSyncBeforeFlush(
+  'apps-script/V2_MANUAL_SETTLEMENT.js',
+  'manualSettlementUpdateRowByObject_(\n      billSheet,'
+);
+
 function createRuntime({ bills, billViews }) {
   const writes = [];
   const audits = [];
@@ -120,6 +144,24 @@ function createRuntime({ bills, billViews }) {
   assert.equal(runtime.writes.length, 0);
   assert.equal(runtime.audits.length, 0);
   assert.equal(runtime.schemaEnsures(), 0);
+}
+
+{
+  const runtime = createRuntime({
+    bills: [paidBill()],
+    billViews: [billView({ payment_status: 'unpaid' })]
+  });
+  const result = runtime.preflight(
+    'owner-line-id',
+    correctionInput({ dry_run: true })
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(result.code, 'PAID_BILL_METER_CORRECTION_READY');
+  assert.equal(result.data.view_payment_status, 'unpaid');
+  assert.equal(result.data.view_payment_status_mismatch, true);
+  assert.equal(runtime.writes.length, 0);
+  assert.equal(runtime.audits.length, 0);
 }
 
 function correctionInput(overrides = {}) {
