@@ -1206,8 +1206,22 @@
       });
     }
 
+    function normalisePendingBadgeCount(value) {
+      if (
+        typeof value !== 'number' ||
+        !Number.isFinite(value) ||
+        !Number.isInteger(value) ||
+        value < 0
+      ) {
+        return null;
+      }
+
+      return value;
+    }
+
     function formatPendingBadgeCount(value) {
-      const count = Math.max(0, Number(value) || 0);
+      const count = normalisePendingBadgeCount(value);
+      if (count === null) return '';
       return count > 99 ? '99+' : (count > 0 ? String(count) : '');
     }
 
@@ -1245,7 +1259,7 @@
       if (
         !summary ||
         !Object.prototype.hasOwnProperty.call(summary, summaryKey) ||
-        !Number.isFinite(Number(summary[summaryKey]))
+        normalisePendingBadgeCount(summary[summaryKey]) === null
       ) {
         hidePendingBadge(elementId);
         return;
@@ -1371,7 +1385,7 @@
           : [];
 
       const pendingCount =
-        Number(
+        normalisePendingBadgeCount(
           summary.pending_count !== undefined
             ? summary.pending_count
             : requests.filter(function (item) {
@@ -1381,10 +1395,10 @@
                   String(item.status || '').toLowerCase() === 'pending'
                 );
               }).length
-        ) || 0;
+        );
 
       const approvedCount =
-        Number(
+        normalisePendingBadgeCount(
           summary.approved_count !== undefined
             ? summary.approved_count
             : requests.filter(function (item) {
@@ -1394,10 +1408,16 @@
                   String(item.status || '').toLowerCase() === 'approved'
                 );
               }).length
-        ) || 0;
+        );
+
+      const displayPendingCount =
+        pendingCount === null ? 0 : pendingCount;
+
+      const displayApprovedCount =
+        approvedCount === null ? 0 : approvedCount;
 
       const totalActionCount =
-        pendingCount + approvedCount;
+        displayPendingCount + displayApprovedCount;
 
       document.getElementById(
         'contractPendingValue'
@@ -1411,18 +1431,18 @@
           'contractMenuBadge'
         );
 
-      if (pendingCount > 0) {
+      if (displayPendingCount > 0) {
         badge.className =
           'badge warning';
 
         badge.textContent =
-          '待審 ' + pendingCount;
-      } else if (approvedCount > 0) {
+          '待審 ' + displayPendingCount;
+      } else if (displayApprovedCount > 0) {
         badge.className =
           'badge purple';
 
         badge.textContent =
-          '待完成 ' + approvedCount;
+          '待完成 ' + displayApprovedCount;
       } else {
         badge.className =
           'badge';

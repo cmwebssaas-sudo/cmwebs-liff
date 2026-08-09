@@ -64,6 +64,7 @@ const context = {
 
 vm.runInNewContext(
   [
+    extractFunction('normalisePendingBadgeCount'),
     extractFunction('formatPendingBadgeCount'),
     extractFunction('setPendingBadge'),
     extractFunction('hidePendingBadge')
@@ -76,6 +77,22 @@ assert.equal(context.formatPendingBadgeCount(99), '99');
 assert.equal(context.formatPendingBadgeCount(100), '99+');
 assert.equal(context.formatPendingBadgeCount(0), '');
 assert.equal(context.formatPendingBadgeCount('not-a-count'), '');
+
+for (const malformedCount of [
+  true,
+  [],
+  1.5,
+  -1,
+  NaN,
+  {},
+  '4'
+]) {
+  assert.equal(
+    context.formatPendingBadgeCount(malformedCount),
+    '',
+    `malformed count ${String(malformedCount)} must not render a badge`
+  );
+}
 
 context.setPendingBadge('badge', 1);
 assert.deepEqual(elements.get('badge'), { hidden: false, textContent: '1' });
@@ -104,6 +121,7 @@ const contractContext = {
 
 vm.runInNewContext(
   [
+    extractFunction('normalisePendingBadgeCount'),
     extractFunction('formatPendingBadgeCount'),
     extractFunction('setPendingBadge'),
     extractFunction('hidePendingBadge'),
@@ -146,6 +164,24 @@ const orchestrationElements = new Map([
   ['workspaceMenuBadge', { textContent: '', className: '' }]
 ]);
 const requestedActions = [];
+const summaryResponses = {
+  landlord_contract_requests_init: {
+    success: true,
+    data: { requests: [null] }
+  },
+  landlord_workspace_context: {
+    success: true,
+    data: { active_workspace: {}, workspaces: [] }
+  },
+  landlord_payment_reports_init: {
+    success: true,
+    data: { summary: { pending: 4 } }
+  },
+  landlord_notifications_init: {
+    success: true,
+    data: { summary: { unread_count: 7 } }
+  }
+};
 const orchestrationContext = {
   Math,
   Number,
@@ -154,6 +190,7 @@ const orchestrationContext = {
   Promise,
   console,
   requestedActions,
+  summaryResponses,
   document: {
     getElementById(id) {
       return orchestrationElements.get(id) || null;
@@ -166,27 +203,10 @@ vm.runInNewContext(
     "let LINE_USER_ID = 'landlord-line-user';",
     `const jsonpRequest = function (action) {
       requestedActions.push(action);
-      const responses = {
-        landlord_contract_requests_init: {
-          success: true,
-          data: { requests: [null] }
-        },
-        landlord_workspace_context: {
-          success: true,
-          data: { active_workspace: {}, workspaces: [] }
-        },
-        landlord_payment_reports_init: {
-          success: true,
-          data: { summary: { pending: 4 } }
-        },
-        landlord_notifications_init: {
-          success: true,
-          data: { summary: { unread_count: 7 } }
-        }
-      };
-      return Promise.resolve(responses[action]);
+      return Promise.resolve(summaryResponses[action]);
     };`,
     "const initLineUserId = async function () { throw new Error('unexpected LIFF initialisation'); };",
+    extractFunction('normalisePendingBadgeCount'),
     extractFunction('formatPendingBadgeCount'),
     extractFunction('setPendingBadge'),
     extractFunction('hidePendingBadge'),
@@ -225,6 +245,96 @@ assert.deepEqual(
   orchestrationElements.get('notificationUnreadBadge'),
   { hidden: false, textContent: '7' },
   'loadSummary must retain the fulfilled notification summary despite malformed contract data'
+);
+
+function setFulfilledSummary(action, summary) {
+  summaryResponses[action] = {
+    success: true,
+    data: { summary }
+  };
+}
+
+setFulfilledSummary(
+  'landlord_contract_requests_init',
+  { pending_count: true, approved_count: 0 }
+);
+setFulfilledSummary(
+  'landlord_payment_reports_init',
+  { pending: 4 }
+);
+setFulfilledSummary(
+  'landlord_notifications_init',
+  { unread_count: 7 }
+);
+await orchestrationContext.loadSummary();
+assert.deepEqual(
+  orchestrationElements.get('contractRequestPendingBadge'),
+  { hidden: true, textContent: '' },
+  'a fulfilled boolean contract count must hide only the contract badge'
+);
+assert.deepEqual(
+  orchestrationElements.get('paymentReportPendingBadge'),
+  { hidden: false, textContent: '4' },
+  'a valid payment count must survive malformed contract count data'
+);
+assert.deepEqual(
+  orchestrationElements.get('notificationUnreadBadge'),
+  { hidden: false, textContent: '7' },
+  'a valid notification count must survive malformed contract count data'
+);
+
+setFulfilledSummary(
+  'landlord_contract_requests_init',
+  { pending_count: 2, approved_count: 0 }
+);
+setFulfilledSummary(
+  'landlord_payment_reports_init',
+  { pending: 1.5 }
+);
+setFulfilledSummary(
+  'landlord_notifications_init',
+  { unread_count: 7 }
+);
+await orchestrationContext.loadSummary();
+assert.deepEqual(
+  orchestrationElements.get('paymentReportPendingBadge'),
+  { hidden: true, textContent: '' },
+  'a fulfilled decimal payment count must hide only the payment badge'
+);
+assert.deepEqual(
+  orchestrationElements.get('contractRequestPendingBadge'),
+  { hidden: false, textContent: '2' },
+  'a valid contract count must survive malformed payment count data'
+);
+assert.deepEqual(
+  orchestrationElements.get('notificationUnreadBadge'),
+  { hidden: false, textContent: '7' },
+  'a valid notification count must survive malformed payment count data'
+);
+
+setFulfilledSummary(
+  'landlord_payment_reports_init',
+  { pending: 4 }
+);
+setFulfilledSummary(
+  'landlord_notifications_init',
+  { unread_count: -1 }
+);
+await orchestrationContext.loadSummary();
+assert.deepEqual(
+  orchestrationElements.get('notificationUnreadBadge'),
+  { hidden: true, textContent: '' },
+  'a fulfilled negative notification count must hide only the notification badge'
+);
+assert.deepEqual(
+  orchestrationElements.get('contractRequestPendingBadge'),
+  { hidden: false, textContent: '2' },
+  'a valid contract count must survive malformed notification count data'
+);
+assert.deepEqual(
+  orchestrationElements.get('paymentReportPendingBadge'),
+  { hidden: false, textContent: '4' },
+  'a valid payment count must survive malformed notification count data'
 );
 
 function sourceSegment(startMarker, endMarker) {
