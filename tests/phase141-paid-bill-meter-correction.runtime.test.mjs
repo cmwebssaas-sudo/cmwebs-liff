@@ -38,12 +38,12 @@ function assertSettlementScopesBillBeforeViewSync(sourcePath) {
 
 assertPaidBillViewSyncBeforeFlush(
   'apps-script/V2_PAYMENT_SETTLEMENT.js',
-  'updateSettlementRowByObject_(\n      billSheet,'
+  'updateSettlementRowByObjectVerified_(\n      billSheet,'
 );
 
 assertPaidBillViewSyncBeforeFlush(
   'apps-script/V2_MANUAL_SETTLEMENT.js',
-  'manualSettlementUpdateRowByObject_(\n      billSheet,'
+  'manualSettlementUpdateRowByObjectVerified_(\n      billSheet,'
 );
 
 assertSettlementScopesBillBeforeViewSync(
@@ -53,6 +53,31 @@ assertSettlementScopesBillBeforeViewSync(
 assertSettlementScopesBillBeforeViewSync(
   'apps-script/V2_MANUAL_SETTLEMENT.js'
 );
+
+for (const [sourcePath, helperName] of [
+  ['apps-script/V2_PAYMENT_SETTLEMENT.js', 'updateSettlementRowByObjectVerified_'],
+  ['apps-script/V2_MANUAL_SETTLEMENT.js', 'manualSettlementUpdateRowByObjectVerified_']
+]) {
+  const source = fs.readFileSync(sourcePath, 'utf8');
+  const helperAt = source.indexOf(`function ${helperName}(`);
+  const helperEnd = source.indexOf('\n\nfunction ', helperAt + 1);
+  const helperSource = source.slice(
+    helperAt,
+    helperEnd === -1 ? source.length : helperEnd
+  );
+
+  assert.notEqual(helperAt, -1, `${sourcePath} must expose ${helperName}`);
+  assert.match(
+    helperSource,
+    /setValues\(\[nextRow\]\)/,
+    `${helperName} must perform one whole-row write`
+  );
+  assert.match(
+    helperSource,
+    /SETTLEMENT_ROW_WRITE_UNVERIFIED/,
+    `${helperName} must reject an unverified row state`
+  );
+}
 
 function scopeFixtureMatchesBill(bill, access) {
   const text = (value) => String(value || '').trim().toUpperCase();
@@ -165,7 +190,7 @@ function createPaymentSettlementScopeRuntime({
         sheet === sheets.V2_bills &&
         updates.payment_status === 'unpaid'
       ) {
-        Object.assign(sheet.row, updates);
+        sheet.row.payment_status = updates.payment_status;
         throw new Error('forced bill restore failure');
       }
       if (
@@ -173,12 +198,40 @@ function createPaymentSettlementScopeRuntime({
         sheet === sheets.V2_payments &&
         updates.status === 'void'
       ) {
-        if (forcePaymentVoidFailure === 'after_status') {
+        if (
+          forcePaymentVoidFailure === 'after_status' ||
+          forcePaymentVoidFailure === 'readback'
+        ) {
           sheet.row.status = 'void';
         }
         throw new Error('forced payment void failure');
       }
       writes.push('update');
+      Object.assign(sheet.row, updates);
+    },
+    updateSettlementRowByObjectVerified_(sheet, _rowIndex, updates) {
+      if (
+        forceBillRestoreFailure &&
+        sheet === sheets.V2_bills &&
+        updates.payment_status === 'unpaid'
+      ) {
+        sheet.row.payment_status = updates.payment_status;
+        throw new Error('forced bill restore failure');
+      }
+      if (
+        forcePaymentVoidFailure &&
+        sheet === sheets.V2_payments &&
+        updates.status === 'void'
+      ) {
+        if (
+          forcePaymentVoidFailure === 'after_status' ||
+          forcePaymentVoidFailure === 'readback'
+        ) {
+          sheet.row.status = 'void';
+        }
+        throw new Error('forced payment void failure');
+      }
+      writes.push('verified-update');
       Object.assign(sheet.row, updates);
     },
     billingPreflightBillViews_() {
@@ -315,6 +368,28 @@ function createManualSettlementScopeRuntime({
         throw new Error('forced payment void failure');
       }
       writes.push('update');
+      Object.assign(sheet.row, updates);
+    },
+    manualSettlementUpdateRowByObjectVerified_(sheet, _rowIndex, updates) {
+      if (
+        forceBillRestoreFailure &&
+        sheet === sheets.V2_bills &&
+        updates.payment_status === 'unpaid'
+      ) {
+        Object.assign(sheet.row, updates);
+        throw new Error('forced bill restore failure');
+      }
+      if (
+        forcePaymentVoidFailure &&
+        sheet === sheets.V2_payments &&
+        updates.status === 'void'
+      ) {
+        if (forcePaymentVoidFailure === 'after_status') {
+          sheet.row.status = 'void';
+        }
+        throw new Error('forced payment void failure');
+      }
+      writes.push('verified-update');
       Object.assign(sheet.row, updates);
     },
     billingPreflightBillViews_() {
@@ -536,9 +611,10 @@ for (const runtimeFactory of [
   const result = runtime.settle();
 
   assert.equal(result.success, false);
+  assert.equal(result.code, 'SETTLEMENT_COMPENSATION_UNVERIFIED');
   assert.equal(runtime.sheets.V2_payments.row.status, 'confirmed');
-  assert.equal(bill.payment_status, 'paid');
-  assert.equal(bill.payment_id, runtime.sheets.V2_payments.row.payment_id);
+  assert.equal(bill.payment_status, 'unpaid');
+  assert.equal(bill.payment_id, '');
 }
 
 for (const runtimeFactory of [
@@ -582,7 +658,7 @@ for (const [label, options] of [
     forcePaymentVoidFailure: 'after_status'
   }],
   ['payment void readback failure', {
-    forcePaymentVoidFailure: true,
+    forcePaymentVoidFailure: 'readback',
     forcePaymentReadbackFailure: true
   }],
   ['bill restore partial write', {

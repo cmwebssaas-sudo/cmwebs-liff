@@ -609,7 +609,7 @@ function manualSettleLandlordBillByLineUid_(
 
     billWriteAttempted = true;
 
-    manualSettlementUpdateRowByObject_(
+    manualSettlementUpdateRowByObjectVerified_(
       billSheet,
       billData.rowIndex,
       billSettlementState
@@ -963,6 +963,8 @@ function manualSettleLandlordBillByLineUid_(
      */
     let billRestored =
       !billWriteAttempted;
+    let compensationUnverified =
+      false;
 
     if (
       !canonicalSettlementCompleted &&
@@ -972,7 +974,7 @@ function manualSettleLandlordBillByLineUid_(
       billOriginalState
     ) {
       try {
-        manualSettlementUpdateRowByObject_(
+        manualSettlementUpdateRowByObjectVerified_(
           billSheet,
           billRowIndex,
           billOriginalState
@@ -981,6 +983,7 @@ function manualSettleLandlordBillByLineUid_(
         billRestored = true;
       } catch (rollbackError) {
         billRestored = false;
+        compensationUnverified = true;
       }
     }
 
@@ -991,7 +994,7 @@ function manualSettleLandlordBillByLineUid_(
       billRestored
     ) {
       try {
-        manualSettlementUpdateRowByObject_(
+        manualSettlementUpdateRowByObjectVerified_(
           paymentSheet,
           paymentRowIndex,
           {
@@ -1007,37 +1010,16 @@ function manualSettleLandlordBillByLineUid_(
           }
         );
       } catch (rollbackError) {
-        let paymentWasVoided = false;
-
-        try {
-          const rollbackPaymentData =
-            manualSettlementFindRowByHeader_(
-              paymentSheet,
-              'payment_id',
-              paymentId
-            );
-
-          paymentWasVoided =
-            rollbackPaymentData &&
-            manualSettlementText_(
-              rollbackPaymentData.object.status
-            ).toLowerCase() === 'void';
-        } catch (readError) {
-          paymentWasVoided = false;
-        }
-
-        if (!paymentWasVoided) {
-          try {
-            manualSettlementUpdateRowByObject_(
-              billSheet,
-              billRowIndex,
-              billSettlementState
-            );
-          } catch (repairError) {
-            // 避免補償修復失敗覆蓋原錯誤
-          }
-        }
+        compensationUnverified = true;
       }
+    }
+
+    if (
+      !canonicalSettlementCompleted &&
+      billWriteAttempted &&
+      !billRestored
+    ) {
+      compensationUnverified = true;
     }
 
     try {
@@ -1144,10 +1126,15 @@ function manualSettleLandlordBillByLineUid_(
     return {
       success: false,
       code:
-        'MANUAL_SETTLEMENT_ERROR',
+        compensationUnverified
+          ? 'SETTLEMENT_COMPENSATION_UNVERIFIED'
+          : 'MANUAL_SETTLEMENT_ERROR',
       message:
-        '手動銷帳失敗：' +
-        error.message
+        compensationUnverified
+          ? '手動銷帳補償狀態無法驗證：' +
+            error.message
+          : '手動銷帳失敗：' +
+            error.message
     };
 
   } finally {
@@ -1925,6 +1912,91 @@ function manualSettlementUpdateRowByObject_(
           );
       }
     );
+}
+
+
+/**
+ * 整列更新後立即驗證指定欄位，避免逐格寫入留下未知的部分更新狀態。
+ */
+function manualSettlementUpdateRowByObjectVerified_(
+  sheet,
+  rowIndex,
+  updates
+) {
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getValues()[0]
+      .map(function (header) {
+        return manualSettlementText_(
+          header
+        );
+      });
+  const rowRange =
+    sheet.getRange(
+      rowIndex,
+      1,
+      1,
+      headers.length
+    );
+  const currentRow =
+    rowRange.getValues()[0];
+  const nextRow =
+    headers.map(function (header, index) {
+      return updates[header] === undefined
+        ? currentRow[index]
+        : updates[header];
+    });
+
+  rowRange.setValues([nextRow]);
+
+  const verifiedRow =
+    rowRange.getValues()[0];
+
+  Object.keys(updates)
+    .forEach(function (header) {
+      const columnIndex =
+        headers.indexOf(header);
+
+      if (
+        columnIndex < 0 ||
+        !manualSettlementRowValueMatches_(
+          verifiedRow[columnIndex],
+          updates[header]
+        )
+      ) {
+        throw new Error(
+          'SETTLEMENT_ROW_WRITE_UNVERIFIED'
+        );
+      }
+    });
+
+  return verifiedRow;
+}
+
+
+function manualSettlementRowValueMatches_(
+  actual,
+  expected
+) {
+  if (
+    expected instanceof Date
+  ) {
+    const actualTime =
+      actual instanceof Date
+        ? actual.getTime()
+        : new Date(actual).getTime();
+
+    return actualTime === expected.getTime();
+  }
+
+  return manualSettlementText_(actual) ===
+    manualSettlementText_(expected);
 }
 
 

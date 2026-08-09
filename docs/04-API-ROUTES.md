@@ -116,6 +116,11 @@ tenant_payment_report_submit
   Workspace. A blank-workspace legacy bill is compatible only when its nonblank
   `landlord_id` matches an authorized principal in that authenticated access
   context; the legacy fallback never bypasses Workspace or role authorization.
+- If a post-write projection failure prevents the settlement flow from
+  verifying a consistent canonical bill/payment pair, the existing route may
+  return `SETTLEMENT_COMPENSATION_UNVERIFIED`. It makes no speculative repair
+  write; the exceptional state remains available to existing audit handling for
+  controlled follow-up.
 
 ### `tenant_payment_report_submit`
 
