@@ -5148,17 +5148,21 @@ function repairPaidBillMeterCorrectionByLineUid_(
       );
     }
 
-    const alreadyCorrect =
+    const billAlreadyCorrect =
       existingPrevious ===
         correctedPrevious &&
       currentMeter ===
         expectedCurrent &&
       billingNumber_(
         bill.total_amount
-      ) === total &&
+      ) === total;
+
+    const alreadyCorrect =
+      billAlreadyCorrect &&
       billingNumber_(
         view.total_amount
-      ) === total;
+      ) === total &&
+      viewPaymentStatus === 'paid';
 
     if (alreadyCorrect) {
       return workspaceResult_(
@@ -5169,8 +5173,9 @@ function repairPaidBillMeterCorrectionByLineUid_(
     }
 
     if (
+      !billAlreadyCorrect &&
       existingPrevious !==
-      expectedPreviousBefore
+        expectedPreviousBefore
     ) {
       return workspaceResult_(
         false,
