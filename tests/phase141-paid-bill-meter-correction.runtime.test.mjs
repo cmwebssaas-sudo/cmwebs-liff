@@ -54,6 +54,218 @@ assertSettlementScopesBillBeforeViewSync(
   'apps-script/V2_MANUAL_SETTLEMENT.js'
 );
 
+function scopeFixtureMatchesBill(bill, access) {
+  const text = (value) => String(value || '').trim().toUpperCase();
+  const billWorkspaceId = text(bill.workspace_id);
+  const workspaceId = text(access.workspace.workspace_id);
+
+  if (billWorkspaceId) {
+    return billWorkspaceId === workspaceId;
+  }
+
+  const billLandlordId = text(bill.landlord_id);
+  return Boolean(billLandlordId) && access.principals.some(
+    (principal) => text(principal.landlord_id) === billLandlordId
+  );
+}
+
+function createPaymentSettlementScopeRuntime({ bill, access }) {
+  const source = fs.readFileSync(
+    'apps-script/V2_PAYMENT_SETTLEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf(
+    'function settleLandlordPaymentReportByLineUid_('
+  );
+  const end = source.indexOf(
+    'function ensureSettlementPaymentSheet_(', start
+  );
+  const writes = [];
+  const syncCalls = [];
+  const scopeCalls = [];
+  let downstreamCalls = 0;
+  const report = {
+    report_id: 'REPORT-1',
+    landlord_line_user_id: 'owner-line-id',
+    status: 'pending',
+    bill_id: bill.bill_id,
+    landlord_id: bill.landlord_id,
+    tenant_id: bill.tenant_id,
+    reported_amount: bill.total_amount
+  };
+  const context = {
+    LockService: {
+      getScriptLock() {
+        return { tryLock() { return true; }, releaseLock() {} };
+      }
+    },
+    runtimeSpreadsheet_() { return {}; },
+    ensureSettlementPaymentReportSheet_() { return { row: report }; },
+    ensureSettlementBillSheet_() { return { row: bill }; },
+    ensureSettlementPaymentSheet_() { return {}; },
+    findSettlementRowByHeader_(sheet) {
+      return { rowIndex: 2, object: sheet.row };
+    },
+    v2CanonicalBillIsVoided_() { return false; },
+    workspaceLandlordResolveAccess_() { return access; },
+    billingBillMatchesAccessScope_(candidate, candidateAccess) {
+      scopeCalls.push({ candidate, candidateAccess });
+      return scopeFixtureMatchesBill(candidate, candidateAccess);
+    },
+    findExistingSettlementPayment_() {
+      downstreamCalls += 1;
+      return { payment_id: 'EXISTING-1' };
+    },
+    appendSettlementObjectRow_() { writes.push('append'); },
+    updateSettlementRowByObject_() { writes.push('update'); },
+    billingSyncBillViews_() { syncCalls.push(true); }
+  };
+
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  vm.runInNewContext(source.slice(start, end), context);
+  return {
+    settle() {
+      return context.settleLandlordPaymentReportByLineUid_(
+        'owner-line-id',
+        'REPORT-1',
+        ''
+      );
+    },
+    writes,
+    syncCalls,
+    scopeCalls,
+    get downstreamCalls() { return downstreamCalls; }
+  };
+}
+
+function createManualSettlementScopeRuntime({ bill, access }) {
+  const source = fs.readFileSync(
+    'apps-script/V2_MANUAL_SETTLEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf(
+    'function manualSettleLandlordBillByLineUid_('
+  );
+  const end = source.indexOf(
+    'function manualSettlementEnsureBillSheet_(', start
+  );
+  const writes = [];
+  const syncCalls = [];
+  const scopeCalls = [];
+  let downstreamCalls = 0;
+  const context = {
+    LockService: {
+      getScriptLock() {
+        return { tryLock() { return true; }, releaseLock() {} };
+      }
+    },
+    manualSettlementText_(value) {
+      return value == null ? '' : String(value).trim();
+    },
+    manualSettlementBoolean_() { return false; },
+    manualSettlementParseDate_() { return new Date('2026-08-09T00:00:00Z'); },
+    runtimeSpreadsheet_() { return {}; },
+    manualSettlementEnsureBillSheet_() { return { row: bill }; },
+    manualSettlementEnsurePaymentSheet_() { return {}; },
+    manualSettlementEnsureAuditSheet_() {},
+    manualSettlementFindRowByHeader_(sheet) {
+      return { rowIndex: 2, object: sheet.row };
+    },
+    v2CanonicalBillIsVoided_() { return false; },
+    manualSettlementResolveLandlord_() {
+      return { landlord_id: String(bill.landlord_id || '').trim() };
+    },
+    workspaceLandlordResolveAccess_() { return access; },
+    billingBillMatchesAccessScope_(candidate, candidateAccess) {
+      scopeCalls.push({ candidate, candidateAccess });
+      return scopeFixtureMatchesBill(candidate, candidateAccess);
+    },
+    manualSettlementFindExistingPayment_() {
+      downstreamCalls += 1;
+      return { payment_id: 'EXISTING-1' };
+    },
+    manualSettlementAppendObjectRow_() { writes.push('append'); },
+    manualSettlementUpdateRowByObject_() { writes.push('update'); },
+    billingSyncBillViews_() { syncCalls.push(true); }
+  };
+
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  vm.runInNewContext(source.slice(start, end), context);
+  return {
+    settle() {
+      return context.manualSettleLandlordBillByLineUid_(
+        'owner-line-id',
+        bill.bill_id,
+        '2026-08-09',
+        'bank_transfer',
+        bill.total_amount,
+        '',
+        'private_message',
+        '',
+        false
+      );
+    },
+    writes,
+    syncCalls,
+    scopeCalls,
+    get downstreamCalls() { return downstreamCalls; }
+  };
+}
+
+function assertSettlementScopeGate(runtimeFactory) {
+  const access = {
+    success: true,
+    workspace: { workspace_id: 'W-current' },
+    principals: [{ landlord_id: 'legacy-owner' }]
+  };
+  const crossWorkspaceRuntime = runtimeFactory({
+    bill: {
+      bill_id: 'B-cross-workspace',
+      workspace_id: 'W-other',
+      landlord_id: 'legacy-owner',
+      tenant_id: 'T-1',
+      payment_status: 'unpaid',
+      total_amount: 100
+    },
+    access
+  });
+  const crossWorkspaceResult = crossWorkspaceRuntime.settle();
+
+  assert.equal(crossWorkspaceResult.code, 'BILL_WORKSPACE_MISMATCH');
+  assert.equal(crossWorkspaceRuntime.scopeCalls.length, 1);
+  assert.equal(crossWorkspaceRuntime.downstreamCalls, 0);
+  assert.deepEqual(crossWorkspaceRuntime.writes, []);
+  assert.deepEqual(crossWorkspaceRuntime.syncCalls, []);
+
+  const legacyRuntime = runtimeFactory({
+    bill: {
+      bill_id: 'B-legacy',
+      workspace_id: '',
+      landlord_id: ' LEGACY-OWNER ',
+      tenant_id: 'T-1',
+      payment_status: 'unpaid',
+      total_amount: 100
+    },
+    access
+  });
+  const legacyResult = legacyRuntime.settle();
+
+  assert.match(
+    legacyResult.code,
+    /^PAYMENT(?:_RECORD)?_ALREADY_EXISTS$/,
+    'an authorized legacy bill must pass the scope gate into the downstream payment check'
+  );
+  assert.equal(legacyRuntime.scopeCalls.length, 1);
+  assert.equal(legacyRuntime.downstreamCalls, 1);
+  assert.deepEqual(legacyRuntime.writes, []);
+  assert.deepEqual(legacyRuntime.syncCalls, []);
+}
+
+assertSettlementScopeGate(createPaymentSettlementScopeRuntime);
+assertSettlementScopeGate(createManualSettlementScopeRuntime);
+
 {
   const source = fs.readFileSync(
     'apps-script/V2_BILLING_MANAGEMENT.js',
