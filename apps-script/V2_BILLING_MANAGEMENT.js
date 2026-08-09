@@ -1971,6 +1971,50 @@ function billingCalculateBill_(
 // View synchronization
 // ==================================================
 
+function billingPreflightBillViews_(
+  ss,
+  access,
+  bill
+) {
+  const projectionWorkspaceId =
+    billingText_(
+      access &&
+      access.workspace &&
+      access.workspace.workspace_id
+    );
+  const tenantBillSheet =
+    ss.getSheetByName(
+      V2_BILLING_SHEETS_
+        .tenantBillView
+    );
+  const tenantHomeSheet =
+    ss.getSheetByName(
+      V2_BILLING_SHEETS_
+        .tenantHomeView
+    );
+
+  billingResolveUpsertByIdTarget_(
+    tenantBillSheet,
+    'bill_id',
+    bill.bill_id,
+    bill
+  );
+
+  billingFindByTenantId_(
+    tenantHomeSheet,
+    bill.tenant_id,
+    projectionWorkspaceId
+  );
+
+  workspaceGetObjectsWithRow_(
+    ss.getSheetByName(
+      V2_BILLING_SHEETS_
+        .landlordTenantListView
+    )
+  );
+}
+
+
 function billingSelectLatestTenantBill_(
   tenantBills
 ) {
@@ -2110,11 +2154,18 @@ function billingSyncBillViews_(
       0
     );
 
+  const projectionWorkspaceId =
+    billingText_(
+      access &&
+      access.workspace &&
+      access.workspace.workspace_id
+    );
+
   const tenantHomeRow =
     billingFindByTenantId_(
       tenantHomeSheet,
       bill.tenant_id,
-      bill.workspace_id
+      projectionWorkspaceId
     );
 
   if (tenantHomeRow) {
@@ -2157,18 +2208,21 @@ function billingSyncBillViews_(
       landlordTenantSheet
     ).filter(
       function (row) {
+        const rowWorkspaceId =
+          billingText_(
+            row.workspace_id
+          ).toUpperCase();
+
         return (
           billingText_(
             row.tenant_id
           ) ===
             bill.tenant_id &&
           (
-            !row.workspace_id ||
-            billingText_(
-              row.workspace_id
-            ).toUpperCase() ===
+            !rowWorkspaceId ||
+            rowWorkspaceId ===
               billingText_(
-                bill.workspace_id
+                projectionWorkspaceId
               ).toUpperCase()
           )
         );
@@ -2343,6 +2397,41 @@ function billingUpsertById_(
     return;
   }
 
+  const existing =
+    billingResolveUpsertByIdTarget_(
+      sheet,
+      idHeader,
+      idValue,
+      values
+    );
+
+  if (existing) {
+    billingSetValues_(
+      sheet,
+      existing.__row_number,
+      values
+    );
+
+    return;
+  }
+
+  workspaceAppendObject_(
+    sheet,
+    values
+  );
+}
+
+
+function billingResolveUpsertByIdTarget_(
+  sheet,
+  idHeader,
+  idValue,
+  values
+) {
+  if (!sheet) {
+    return null;
+  }
+
   const matches =
     workspaceGetObjectsWithRow_(
       sheet
@@ -2390,20 +2479,7 @@ function billingUpsertById_(
 
   const existing = matches[0] || null;
 
-  if (existing) {
-    billingSetValues_(
-      sheet,
-      existing.__row_number,
-      values
-    );
-
-    return;
-  }
-
-  workspaceAppendObject_(
-    sheet,
-    values
-  );
+  return existing;
 }
 
 

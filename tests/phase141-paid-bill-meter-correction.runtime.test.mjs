@@ -69,7 +69,14 @@ function scopeFixtureMatchesBill(bill, access) {
   );
 }
 
-function createPaymentSettlementScopeRuntime({ bill, access }) {
+function createPaymentSettlementScopeRuntime({
+  bill,
+  access,
+  existingPayment = true,
+  forceSyncFailure = false,
+  forcePreflightFailure = false,
+  forcePaymentVoidFailure = false
+}) {
   const source = fs.readFileSync(
     'apps-script/V2_PAYMENT_SETTLEMENT.js',
     'utf8'
@@ -83,26 +90,46 @@ function createPaymentSettlementScopeRuntime({ bill, access }) {
   const writes = [];
   const syncCalls = [];
   const scopeCalls = [];
+  const ensureCalls = [];
   let downstreamCalls = 0;
   const report = {
     report_id: 'REPORT-1',
     landlord_line_user_id: 'owner-line-id',
-    status: 'pending',
+    status: bill.payment_id ? 'confirmed' : 'pending',
+    matched_payment_id: bill.payment_id || '',
     bill_id: bill.bill_id,
     landlord_id: bill.landlord_id,
     tenant_id: bill.tenant_id,
     reported_amount: bill.total_amount
   };
+  const sheets = {
+    V2_payment_reports: { row: report },
+    V2_bills: { row: bill },
+    V2_payments: { row: null }
+  };
   const context = {
+    V2_PAYMENT_REPORT_SHEET_NAME: 'V2_payment_reports',
+    V2_BILL_SHEET_NAME: 'V2_bills',
     LockService: {
       getScriptLock() {
         return { tryLock() { return true; }, releaseLock() {} };
       }
     },
-    runtimeSpreadsheet_() { return {}; },
-    ensureSettlementPaymentReportSheet_() { return { row: report }; },
-    ensureSettlementBillSheet_() { return { row: bill }; },
-    ensureSettlementPaymentSheet_() { return {}; },
+    runtimeSpreadsheet_() {
+      return { getSheetByName(name) { return sheets[name] || null; } };
+    },
+    ensureSettlementPaymentReportSheet_() {
+      ensureCalls.push('report');
+      return sheets.V2_payment_reports;
+    },
+    ensureSettlementBillSheet_() {
+      ensureCalls.push('bill');
+      return sheets.V2_bills;
+    },
+    ensureSettlementPaymentSheet_() {
+      ensureCalls.push('payment');
+      return sheets.V2_payments;
+    },
     findSettlementRowByHeader_(sheet) {
       return { rowIndex: 2, object: sheet.row };
     },
@@ -114,11 +141,38 @@ function createPaymentSettlementScopeRuntime({ bill, access }) {
     },
     findExistingSettlementPayment_() {
       downstreamCalls += 1;
-      return { payment_id: 'EXISTING-1' };
+      return existingPayment ? { payment_id: 'EXISTING-1' } : null;
     },
-    appendSettlementObjectRow_() { writes.push('append'); },
-    updateSettlementRowByObject_() { writes.push('update'); },
-    billingSyncBillViews_() { syncCalls.push(true); }
+    makeSettlementPaymentId_() { return 'PAY-NEW-1'; },
+    normalizeSettlementDate_() { return new Date('2026-08-09T00:00:00Z'); },
+    appendSettlementNote_(_current, appended) { return appended; },
+    appendSettlementObjectRow_(sheet, object) {
+      writes.push('append');
+      sheet.row = { ...object };
+      return 2;
+    },
+    updateSettlementRowByObject_(sheet, _rowIndex, updates) {
+      if (
+        forcePaymentVoidFailure &&
+        sheet === sheets.V2_payments &&
+        updates.status === 'void'
+      ) {
+        if (forcePaymentVoidFailure === 'after_status') {
+          sheet.row.status = 'void';
+        }
+        throw new Error('forced payment void failure');
+      }
+      writes.push('update');
+      Object.assign(sheet.row, updates);
+    },
+    billingPreflightBillViews_() {
+      if (forcePreflightFailure) throw new Error('forced view preflight failure');
+    },
+    billingSyncBillViews_() {
+      syncCalls.push(true);
+      if (forceSyncFailure) throw new Error('forced view sync failure');
+    },
+    logLiffAccess_() {}
   };
 
   assert.notEqual(start, -1);
@@ -135,11 +189,20 @@ function createPaymentSettlementScopeRuntime({ bill, access }) {
     writes,
     syncCalls,
     scopeCalls,
+    ensureCalls,
+    sheets,
     get downstreamCalls() { return downstreamCalls; }
   };
 }
 
-function createManualSettlementScopeRuntime({ bill, access }) {
+function createManualSettlementScopeRuntime({
+  bill,
+  access,
+  existingPayment = true,
+  forceSyncFailure = false,
+  forcePreflightFailure = false,
+  forcePaymentVoidFailure = false
+}) {
   const source = fs.readFileSync(
     'apps-script/V2_MANUAL_SETTLEMENT.js',
     'utf8'
@@ -153,8 +216,14 @@ function createManualSettlementScopeRuntime({ bill, access }) {
   const writes = [];
   const syncCalls = [];
   const scopeCalls = [];
+  const ensureCalls = [];
   let downstreamCalls = 0;
+  const sheets = {
+    V2_bills: { row: bill },
+    V2_payments: { row: null }
+  };
   const context = {
+    MANUAL_SETTLEMENT_BILLS_SHEET: 'V2_bills',
     LockService: {
       getScriptLock() {
         return { tryLock() { return true; }, releaseLock() {} };
@@ -165,10 +234,18 @@ function createManualSettlementScopeRuntime({ bill, access }) {
     },
     manualSettlementBoolean_() { return false; },
     manualSettlementParseDate_() { return new Date('2026-08-09T00:00:00Z'); },
-    runtimeSpreadsheet_() { return {}; },
-    manualSettlementEnsureBillSheet_() { return { row: bill }; },
-    manualSettlementEnsurePaymentSheet_() { return {}; },
-    manualSettlementEnsureAuditSheet_() {},
+    runtimeSpreadsheet_() {
+      return { getSheetByName(name) { return sheets[name] || null; } };
+    },
+    manualSettlementEnsureBillSheet_() {
+      ensureCalls.push('bill');
+      return sheets.V2_bills;
+    },
+    manualSettlementEnsurePaymentSheet_() {
+      ensureCalls.push('payment');
+      return sheets.V2_payments;
+    },
+    manualSettlementEnsureAuditSheet_() { ensureCalls.push('audit'); },
     manualSettlementFindRowByHeader_(sheet) {
       return { rowIndex: 2, object: sheet.row };
     },
@@ -183,11 +260,40 @@ function createManualSettlementScopeRuntime({ bill, access }) {
     },
     manualSettlementFindExistingPayment_() {
       downstreamCalls += 1;
-      return { payment_id: 'EXISTING-1' };
+      return existingPayment ? { payment_id: 'EXISTING-1' } : null;
     },
-    manualSettlementAppendObjectRow_() { writes.push('append'); },
-    manualSettlementUpdateRowByObject_() { writes.push('update'); },
-    billingSyncBillViews_() { syncCalls.push(true); }
+    manualSettlementMakePaymentId_() { return 'PAY-MANUAL-1'; },
+    manualSettlementResolveTenant_() { return null; },
+    manualSettlementConfirmationSourceText_() { return '私訊'; },
+    manualSettlementAppendNote_(_current, appended) { return appended; },
+    manualSettlementAppendObjectRow_(sheet, object) {
+      writes.push('append');
+      sheet.row = { ...object };
+      return 2;
+    },
+    manualSettlementUpdateRowByObject_(sheet, _rowIndex, updates) {
+      if (
+        forcePaymentVoidFailure &&
+        sheet === sheets.V2_payments &&
+        updates.status === 'void'
+      ) {
+        if (forcePaymentVoidFailure === 'after_status') {
+          sheet.row.status = 'void';
+        }
+        throw new Error('forced payment void failure');
+      }
+      writes.push('update');
+      Object.assign(sheet.row, updates);
+    },
+    billingPreflightBillViews_() {
+      if (forcePreflightFailure) throw new Error('forced view preflight failure');
+    },
+    billingSyncBillViews_() {
+      syncCalls.push(true);
+      if (forceSyncFailure) throw new Error('forced view sync failure');
+    },
+    manualSettlementWriteAuditLog_() {},
+    logLiffAccess_() {}
   };
 
   assert.notEqual(start, -1);
@@ -210,6 +316,8 @@ function createManualSettlementScopeRuntime({ bill, access }) {
     writes,
     syncCalls,
     scopeCalls,
+    ensureCalls,
+    sheets,
     get downstreamCalls() { return downstreamCalls; }
   };
 }
@@ -236,8 +344,30 @@ function assertSettlementScopeGate(runtimeFactory) {
   assert.equal(crossWorkspaceResult.code, 'BILL_WORKSPACE_MISMATCH');
   assert.equal(crossWorkspaceRuntime.scopeCalls.length, 1);
   assert.equal(crossWorkspaceRuntime.downstreamCalls, 0);
+  assert.deepEqual(
+    crossWorkspaceRuntime.ensureCalls,
+    [],
+    'cross-Workspace rejection must happen before every schema-mutating ensure helper'
+  );
   assert.deepEqual(crossWorkspaceRuntime.writes, []);
   assert.deepEqual(crossWorkspaceRuntime.syncCalls, []);
+
+  const terminalCrossWorkspaceRuntime = runtimeFactory({
+    bill: {
+      bill_id: 'B-cross-workspace-paid',
+      workspace_id: 'W-other',
+      landlord_id: 'legacy-owner',
+      tenant_id: 'T-1',
+      payment_status: 'paid',
+      payment_id: 'PAY-SECRET',
+      total_amount: 100
+    },
+    access
+  });
+  const terminalCrossWorkspaceResult = terminalCrossWorkspaceRuntime.settle();
+
+  assert.equal(terminalCrossWorkspaceResult.code, 'BILL_WORKSPACE_MISMATCH');
+  assert.deepEqual(terminalCrossWorkspaceRuntime.ensureCalls, []);
 
   const legacyRuntime = runtimeFactory({
     bill: {
@@ -265,6 +395,155 @@ function assertSettlementScopeGate(runtimeFactory) {
 
 assertSettlementScopeGate(createPaymentSettlementScopeRuntime);
 assertSettlementScopeGate(createManualSettlementScopeRuntime);
+
+for (const runtimeFactory of [
+  createPaymentSettlementScopeRuntime,
+  createManualSettlementScopeRuntime
+]) {
+  const bill = {
+    bill_id: 'B-sync-failure',
+    workspace_id: 'W-current',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    payment_id: '',
+    paid_at: '',
+    updated_at: 'before',
+    notes: 'original note',
+    total_amount: 100
+  };
+  const runtime = runtimeFactory({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principals: [{ landlord_id: 'legacy-owner' }]
+    },
+    existingPayment: false,
+    forceSyncFailure: true
+  });
+
+  const result = runtime.settle();
+
+  assert.equal(result.success, false);
+  assert.match(result.code, /^(?:SETTLEMENT_ERROR|MANUAL_SETTLEMENT_ERROR)$/);
+  assert.equal(runtime.sheets.V2_payments.row.status, 'void');
+  assert.equal(bill.payment_status, 'unpaid');
+  assert.equal(bill.payment_id, '');
+  assert.equal(bill.paid_at, '');
+  assert.equal(bill.updated_at, 'before');
+  assert.equal(bill.notes, 'original note');
+}
+
+for (const runtimeFactory of [
+  createPaymentSettlementScopeRuntime,
+  createManualSettlementScopeRuntime
+]) {
+  const bill = {
+    bill_id: 'B-preflight-failure',
+    workspace_id: 'W-current',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    payment_id: '',
+    paid_at: '',
+    updated_at: 'before',
+    notes: 'original note',
+    total_amount: 100
+  };
+  const runtime = runtimeFactory({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principals: [{ landlord_id: 'legacy-owner' }]
+    },
+    existingPayment: false,
+    forcePreflightFailure: true,
+    forceSyncFailure: true
+  });
+
+  const result = runtime.settle();
+
+  assert.equal(result.success, false);
+  assert.equal(runtime.sheets.V2_payments.row, null);
+  assert.equal(bill.payment_status, 'unpaid');
+  assert.equal(bill.payment_id, '');
+  assert.equal(bill.updated_at, 'before');
+  assert.equal(bill.notes, 'original note');
+}
+
+for (const runtimeFactory of [
+  createPaymentSettlementScopeRuntime,
+  createManualSettlementScopeRuntime
+]) {
+  const bill = {
+    bill_id: 'B-compensation-fallback',
+    workspace_id: 'W-current',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    payment_id: '',
+    paid_at: '',
+    updated_at: 'before',
+    notes: 'original note',
+    total_amount: 100
+  };
+  const runtime = runtimeFactory({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principals: [{ landlord_id: 'legacy-owner' }]
+    },
+    existingPayment: false,
+    forceSyncFailure: true,
+    forcePaymentVoidFailure: true
+  });
+
+  const result = runtime.settle();
+
+  assert.equal(result.success, false);
+  assert.equal(runtime.sheets.V2_payments.row.status, 'confirmed');
+  assert.equal(bill.payment_status, 'paid');
+  assert.equal(bill.payment_id, runtime.sheets.V2_payments.row.payment_id);
+}
+
+for (const runtimeFactory of [
+  createPaymentSettlementScopeRuntime,
+  createManualSettlementScopeRuntime
+]) {
+  const bill = {
+    bill_id: 'B-partial-void-compensation',
+    workspace_id: 'W-current',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    payment_id: '',
+    paid_at: '',
+    updated_at: 'before',
+    notes: 'original note',
+    total_amount: 100
+  };
+  const runtime = runtimeFactory({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principals: [{ landlord_id: 'legacy-owner' }]
+    },
+    existingPayment: false,
+    forceSyncFailure: true,
+    forcePaymentVoidFailure: 'after_status'
+  });
+
+  const result = runtime.settle();
+
+  assert.equal(result.success, false);
+  assert.equal(runtime.sheets.V2_payments.row.status, 'void');
+  assert.equal(bill.payment_status, 'unpaid');
+  assert.equal(bill.payment_id, '');
+}
 
 {
   const source = fs.readFileSync(
@@ -637,14 +916,18 @@ function createBillViewSyncRuntime({ bills, billViews, tenantHomes, landlordTena
       assert.ok(row, 'exact bill view must exist for this harness');
       Object.assign(row, values);
     },
-    billingFindByTenantId_(sheet, tenantId, workspaceId) {
-      return sheet.rows.find(
-        (row) => row.tenant_id === tenantId && row.workspace_id === workspaceId
-      ) || null;
-    }
+    billingFindByTenantId_: null
   };
 
   vm.runInNewContext(source.slice(start, end), context);
+  const findStart = source.indexOf('function billingFindByTenantId_(');
+  const findEnd = source.indexOf(
+    '\n\n// ==================================================\n// Workspace data helpers',
+    findStart
+  );
+  assert.notEqual(findStart, -1, 'tenant projection selector must exist');
+  assert.notEqual(findEnd, -1, 'tenant projection selector must be bounded');
+  vm.runInNewContext(source.slice(findStart, findEnd), context);
   return { sheets, sync: context.billingSyncBillViews_, select: context.billingSelectLatestTenantBill_ };
 }
 
@@ -717,6 +1000,59 @@ function createBillViewSyncRuntime({ bills, billViews, tenantHomes, landlordTena
     assert.equal(summary.unpaid_bill_count, 1);
     assert.equal(summary.unpaid_total_amount, 8000);
   }
+}
+
+for (const allowedProjectionWorkspace of ['W-current', '']) {
+  const legacyBill = paidBill({
+    bill_id: 'B-legacy-projection',
+    workspace_id: '',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-legacy',
+    bill_month: '2026-08',
+    payment_status: 'paid'
+  });
+  const tenantOther = {
+    tenant_id: 'T-legacy',
+    workspace_id: 'W-other',
+    latest_payment_status: 'other-before',
+    __row_number: 20
+  };
+  const tenantAllowed = {
+    tenant_id: 'T-legacy',
+    workspace_id: allowedProjectionWorkspace,
+    latest_payment_status: 'allowed-before',
+    __row_number: 21
+  };
+  const landlordOther = {
+    tenant_id: 'T-legacy',
+    workspace_id: 'W-other',
+    latest_payment_status: 'other-before',
+    __row_number: 30
+  };
+  const landlordAllowed = {
+    tenant_id: 'T-legacy',
+    workspace_id: allowedProjectionWorkspace,
+    latest_payment_status: 'allowed-before',
+    __row_number: 31
+  };
+  const runtime = createBillViewSyncRuntime({
+    bills: [legacyBill],
+    billViews: [billView({ ...legacyBill })],
+    tenantHomes: [tenantOther, tenantAllowed],
+    landlordTenants: [landlordOther, landlordAllowed]
+  });
+
+  runtime.sync(
+    { getSheetByName(name) { return runtime.sheets[name]; } },
+    { workspace: { workspace_id: 'W-current' } },
+    legacyBill,
+    '2026-08-09T01:00:00Z'
+  );
+
+  assert.equal(tenantOther.latest_payment_status, 'other-before');
+  assert.equal(landlordOther.latest_payment_status, 'other-before');
+  assert.equal(tenantAllowed.latest_payment_status, 'paid');
+  assert.equal(landlordAllowed.latest_payment_status, 'paid');
 }
 
 {

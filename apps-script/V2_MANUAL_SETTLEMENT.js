@@ -72,9 +72,14 @@ function manualSettleLandlordBillByLineUid_(
     LockService.getScriptLock();
 
   let paymentSheet = null;
+  let billSheet = null;
   let paymentRowIndex = 0;
   let paymentId = '';
-  let billUpdated = false;
+  let billRowIndex = 0;
+  let billOriginalState = null;
+  let billSettlementState = null;
+  let billWriteAttempted = false;
+  let canonicalSettlementCompleted = false;
 
   try {
     landlordLineUserId =
@@ -242,19 +247,17 @@ function manualSettleLandlordBillByLineUid_(
     const ss =
       runtimeSpreadsheet_();
 
-    const billSheet =
-      manualSettlementEnsureBillSheet_(
-        ss
+    billSheet =
+      ss.getSheetByName(
+        MANUAL_SETTLEMENT_BILLS_SHEET
       );
 
-    paymentSheet =
-      manualSettlementEnsurePaymentSheet_(
-        ss
+    if (!billSheet) {
+      throw new Error(
+        '找不到工作表：' +
+        MANUAL_SETTLEMENT_BILLS_SHEET
       );
-
-    manualSettlementEnsureAuditSheet_(
-      ss
-    );
+    }
 
     const billData =
       manualSettlementFindRowByHeader_(
@@ -275,6 +278,32 @@ function manualSettleLandlordBillByLineUid_(
 
     const bill =
       billData.object;
+
+    const billingAccess =
+      workspaceLandlordResolveAccess_(
+        landlordLineUserId,
+        {
+          require_onboarding: true,
+          skip_schema_ensure: true,
+          skip_legacy_context_creation: true
+        }
+      );
+
+    if (!billingAccess.success) {
+      return {
+        success: false,
+        code: billingAccess.code || 'WORKSPACE_ACCESS_REQUIRED',
+        message: billingAccess.message || '無法驗證帳務 Workspace 權限'
+      };
+    }
+
+    if (!billingBillMatchesAccessScope_(bill, billingAccess)) {
+      return {
+        success: false,
+        code: 'BILL_WORKSPACE_MISMATCH',
+        message: '帳單不屬於目前管理團隊'
+      };
+    }
 
     if (
       v2CanonicalBillIsVoided_(
@@ -415,31 +444,19 @@ function manualSettleLandlordBillByLineUid_(
       };
     }
 
-    const billingAccess =
-      workspaceLandlordResolveAccess_(
-        landlordLineUserId,
-        {
-          require_onboarding: true,
-          skip_schema_ensure: true,
-          skip_legacy_context_creation: true
-        }
+    billSheet =
+      manualSettlementEnsureBillSheet_(
+        ss
       );
 
-    if (!billingAccess.success) {
-      return {
-        success: false,
-        code: billingAccess.code || 'WORKSPACE_ACCESS_REQUIRED',
-        message: billingAccess.message || '無法驗證帳務 Workspace 權限'
-      };
-    }
+    paymentSheet =
+      manualSettlementEnsurePaymentSheet_(
+        ss
+      );
 
-    if (!billingBillMatchesAccessScope_(bill, billingAccess)) {
-      return {
-        success: false,
-        code: 'BILL_WORKSPACE_MISMATCH',
-        message: '帳單不屬於目前管理團隊'
-      };
-    }
+    manualSettlementEnsureAuditSheet_(
+      ss
+    );
 
     const existingPayment =
       manualSettlementFindExistingPayment_(
@@ -456,6 +473,12 @@ function manualSettleLandlordBillByLineUid_(
           '此帳單已存在有效付款紀錄，請先檢查 V2_payments'
       };
     }
+
+    billingPreflightBillViews_(
+      ss,
+      billingAccess,
+      bill
+    );
 
     const now =
       new Date();
@@ -542,6 +565,22 @@ function manualSettleLandlordBillByLineUid_(
         paymentRecord
       );
 
+    billRowIndex =
+      billData.rowIndex;
+
+    billOriginalState = {
+      payment_status:
+        bill.payment_status || '',
+      paid_at:
+        bill.paid_at || '',
+      payment_id:
+        bill.payment_id || '',
+      updated_at:
+        bill.updated_at || '',
+      notes:
+        bill.notes || ''
+    };
+
     const billNote =
       [
         '房東手動銷帳',
@@ -552,40 +591,35 @@ function manualSettleLandlordBillByLineUid_(
           )
       ].join('／');
 
+    billSettlementState = {
+      payment_status:
+        'paid',
+      paid_at:
+        paymentDate,
+      payment_id:
+        paymentId,
+      updated_at:
+        now,
+      notes:
+        manualSettlementAppendNote_(
+          bill.notes || '',
+          billNote
+        )
+    };
+
+    billWriteAttempted = true;
+
     manualSettlementUpdateRowByObject_(
       billSheet,
       billData.rowIndex,
-      {
-        payment_status:
-          'paid',
-
-        paid_at:
-          paymentDate,
-
-        payment_id:
-          paymentId,
-
-        updated_at:
-          now,
-
-        notes:
-          manualSettlementAppendNote_(
-            bill.notes || '',
-            billNote
-          )
-      }
+      billSettlementState
     );
 
     const settledBill =
       Object.assign(
         {},
         bill,
-        {
-          payment_status: 'paid',
-          paid_at: paymentDate,
-          payment_id: paymentId,
-          updated_at: now
-        }
+        billSettlementState
       );
 
     billingSyncBillViews_(
@@ -600,7 +634,7 @@ function manualSettleLandlordBillByLineUid_(
       billingAccess
     );
 
-    billUpdated = true;
+    canonicalSettlementCompleted = true;
 
     /*
      * 同步回 V1。
@@ -924,13 +958,37 @@ function manualSettleLandlordBillByLineUid_(
 
   } catch (error) {
     /*
-     * 若付款紀錄已新增但帳單尚未成功更新，
-     * 將該付款紀錄標記為 void，避免假付款紀錄。
+     * 若 canonical 寫入後續失敗，先還原帳單；只有帳單已還原時
+     * 才將新付款標記為 void，避免 paid 帳單與 void 付款互相矛盾。
      */
+    let billRestored =
+      !billWriteAttempted;
+
     if (
+      !canonicalSettlementCompleted &&
+      billWriteAttempted &&
+      billSheet &&
+      billRowIndex > 1 &&
+      billOriginalState
+    ) {
+      try {
+        manualSettlementUpdateRowByObject_(
+          billSheet,
+          billRowIndex,
+          billOriginalState
+        );
+
+        billRestored = true;
+      } catch (rollbackError) {
+        billRestored = false;
+      }
+    }
+
+    if (
+      !canonicalSettlementCompleted &&
       paymentSheet &&
       paymentRowIndex > 1 &&
-      !billUpdated
+      billRestored
     ) {
       try {
         manualSettlementUpdateRowByObject_(
@@ -949,7 +1007,36 @@ function manualSettleLandlordBillByLineUid_(
           }
         );
       } catch (rollbackError) {
-        // 避免回滾失敗覆蓋原錯誤
+        let paymentWasVoided = false;
+
+        try {
+          const rollbackPaymentData =
+            manualSettlementFindRowByHeader_(
+              paymentSheet,
+              'payment_id',
+              paymentId
+            );
+
+          paymentWasVoided =
+            rollbackPaymentData &&
+            manualSettlementText_(
+              rollbackPaymentData.object.status
+            ).toLowerCase() === 'void';
+        } catch (readError) {
+          paymentWasVoided = false;
+        }
+
+        if (!paymentWasVoided) {
+          try {
+            manualSettlementUpdateRowByObject_(
+              billSheet,
+              billRowIndex,
+              billSettlementState
+            );
+          } catch (repairError) {
+            // 避免補償修復失敗覆蓋原錯誤
+          }
+        }
       }
     }
 
