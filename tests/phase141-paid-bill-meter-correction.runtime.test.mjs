@@ -16,6 +16,26 @@ function assertPaidBillViewSyncBeforeFlush(sourcePath, updateMarker) {
   );
 }
 
+function assertSettlementScopesBillBeforeViewSync(sourcePath) {
+  const source = fs.readFileSync(sourcePath, 'utf8');
+  const accessAt = source.indexOf('const billingAccess =');
+  const scopeAt = source.indexOf(
+    'billingBillMatchesAccessScope_(bill, billingAccess)',
+    accessAt
+  );
+  const syncAt = source.indexOf('billingSyncBillViews_(', accessAt);
+
+  assert.notEqual(
+    accessAt,
+    -1,
+    `${sourcePath} must resolve the authenticated billing access scope`
+  );
+  assert.ok(
+    scopeAt > accessAt && scopeAt < syncAt,
+    `${sourcePath} must scope the bill through billingBillMatchesAccessScope_ before synchronising views`
+  );
+}
+
 assertPaidBillViewSyncBeforeFlush(
   'apps-script/V2_PAYMENT_SETTLEMENT.js',
   'updateSettlementRowByObject_(\n      billSheet,'
@@ -24,6 +44,14 @@ assertPaidBillViewSyncBeforeFlush(
 assertPaidBillViewSyncBeforeFlush(
   'apps-script/V2_MANUAL_SETTLEMENT.js',
   'manualSettlementUpdateRowByObject_(\n      billSheet,'
+);
+
+assertSettlementScopesBillBeforeViewSync(
+  'apps-script/V2_PAYMENT_SETTLEMENT.js'
+);
+
+assertSettlementScopesBillBeforeViewSync(
+  'apps-script/V2_MANUAL_SETTLEMENT.js'
 );
 
 {

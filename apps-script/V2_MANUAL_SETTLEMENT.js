@@ -433,14 +433,7 @@ function manualSettleLandlordBillByLineUid_(
       };
     }
 
-    if (
-      manualSettlementText_(
-        billingAccess.workspace.workspace_id
-      ) !==
-      manualSettlementText_(
-        bill.workspace_id
-      )
-    ) {
+    if (!billingBillMatchesAccessScope_(bill, billingAccess)) {
       return {
         success: false,
         code: 'BILL_WORKSPACE_MISMATCH',

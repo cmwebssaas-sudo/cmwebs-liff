@@ -378,14 +378,7 @@ if (
       };
     }
 
-    if (
-      String(
-        billingAccess.workspace.workspace_id || ''
-      ).trim() !==
-      String(
-        bill.workspace_id || ''
-      ).trim()
-    ) {
+    if (!billingBillMatchesAccessScope_(bill, billingAccess)) {
       return {
         success: false,
         code: 'BILL_WORKSPACE_MISMATCH',
