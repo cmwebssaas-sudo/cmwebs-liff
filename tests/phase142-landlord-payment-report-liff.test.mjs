@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const ROOT = process.cwd();
 
 const notificationSource = readFileSync(
   'apps-script/V2_TENANT_PAYMENT_REPORTS.js',
@@ -34,5 +37,15 @@ assert.match(
   /const LIFF_ID\s*=\s*\n\s*'2010314940-iJB1D6sN';/,
   'the tenant payment-report page must retain the tenant LIFF app'
 );
+
+for (const page of [
+  'landlord-more.html',
+  'landlord-arrears.html',
+  'landlord-paid-bills.html'
+]) {
+  const source = readFileSync(resolve(ROOT, page), 'utf8');
+  assert.match(source, /landlord-payment-report-review\.html/);
+  assert.doesNotMatch(source, /landlord-payment-reports\.html/);
+}
 
 console.log('Phase 142 landlord payment-report notification destination tests passed.');
