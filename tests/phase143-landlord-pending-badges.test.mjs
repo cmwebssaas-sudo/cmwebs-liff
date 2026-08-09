@@ -28,10 +28,24 @@ for (const action of [
 }
 
 function extractFunction(name) {
-  const start = source.indexOf(`function ${name}(`);
-  assert.notEqual(start, -1, `${name} must exist`);
-  const end = source.indexOf('\n    function ', start + 1);
-  return source.slice(start, end === -1 ? source.length : end);
+  const functionStart = source.indexOf(`function ${name}(`);
+  assert.notEqual(functionStart, -1, `${name} must exist`);
+  const asyncStart = source.lastIndexOf('async ', functionStart);
+  const start =
+    asyncStart >= 0 &&
+    source.slice(asyncStart, functionStart) === 'async '
+      ? asyncStart
+      : functionStart;
+  const openingBrace = source.indexOf('{', functionStart);
+  let depth = 0;
+
+  for (let index = openingBrace; index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1;
+    if (source[index] === '}') depth -= 1;
+    if (depth === 0) return source.slice(start, index + 1);
+  }
+
+  throw new Error(`Could not extract ${name}`);
 }
 
 const elements = new Map([
@@ -113,6 +127,104 @@ assert.deepEqual(
   contractElements.get('notificationUnreadBadge'),
   { hidden: false, textContent: '7' },
   'a malformed contract item must not clear a loaded notification badge'
+);
+
+const orchestrationElements = new Map([
+  ['refreshButton', {
+    classList: {
+      add() {},
+      remove() {}
+    }
+  }],
+  ['contractPendingValue', { textContent: '' }],
+  ['contractMenuBadge', { textContent: '', className: '' }],
+  ['contractRequestPendingBadge', { hidden: false, textContent: 'stale' }],
+  ['paymentReportPendingBadge', { hidden: true, textContent: '' }],
+  ['notificationUnreadBadge', { hidden: true, textContent: '' }],
+  ['workspaceValue', { textContent: '' }],
+  ['workspaceCountValue', { textContent: '' }],
+  ['workspaceMenuBadge', { textContent: '', className: '' }]
+]);
+const requestedActions = [];
+const orchestrationContext = {
+  Math,
+  Number,
+  String,
+  Object,
+  Promise,
+  console,
+  requestedActions,
+  document: {
+    getElementById(id) {
+      return orchestrationElements.get(id) || null;
+    }
+  }
+};
+
+vm.runInNewContext(
+  [
+    "let LINE_USER_ID = 'landlord-line-user';",
+    `const jsonpRequest = function (action) {
+      requestedActions.push(action);
+      const responses = {
+        landlord_contract_requests_init: {
+          success: true,
+          data: { requests: [null] }
+        },
+        landlord_workspace_context: {
+          success: true,
+          data: { active_workspace: {}, workspaces: [] }
+        },
+        landlord_payment_reports_init: {
+          success: true,
+          data: { summary: { pending: 4 } }
+        },
+        landlord_notifications_init: {
+          success: true,
+          data: { summary: { unread_count: 7 } }
+        }
+      };
+      return Promise.resolve(responses[action]);
+    };`,
+    "const initLineUserId = async function () { throw new Error('unexpected LIFF initialisation'); };",
+    extractFunction('formatPendingBadgeCount'),
+    extractFunction('setPendingBadge'),
+    extractFunction('hidePendingBadge'),
+    extractFunction('setPendingBadgeFromSummary'),
+    extractFunction('setContractSummary'),
+    extractFunction('setSummaryError'),
+    extractFunction('setWorkspaceSummary'),
+    extractFunction('setWorkspaceSummaryError'),
+    extractFunction('loadSummary')
+  ].join('\n'),
+  orchestrationContext
+);
+
+await orchestrationContext.loadSummary();
+assert.deepEqual(
+  requestedActions,
+  [
+    'landlord_contract_requests_init',
+    'landlord_workspace_context',
+    'landlord_payment_reports_init',
+    'landlord_notifications_init'
+  ],
+  'loadSummary must execute the complete existing JSONP summary orchestration'
+);
+assert.deepEqual(
+  orchestrationElements.get('contractRequestPendingBadge'),
+  { hidden: true, textContent: '' },
+  'the malformed fulfilled contract response must hide only the contract badge'
+);
+assert.deepEqual(
+  orchestrationElements.get('paymentReportPendingBadge'),
+  { hidden: false, textContent: '4' },
+  'loadSummary must retain the fulfilled payment summary despite malformed contract data'
+);
+assert.deepEqual(
+  orchestrationElements.get('notificationUnreadBadge'),
+  { hidden: false, textContent: '7' },
+  'loadSummary must retain the fulfilled notification summary despite malformed contract data'
 );
 
 function sourceSegment(startMarker, endMarker) {
