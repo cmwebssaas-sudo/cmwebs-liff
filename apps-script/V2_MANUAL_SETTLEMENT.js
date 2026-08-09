@@ -72,9 +72,15 @@ function manualSettleLandlordBillByLineUid_(
     LockService.getScriptLock();
 
   let paymentSheet = null;
+  let billSheet = null;
   let paymentRowIndex = 0;
   let paymentId = '';
-  let billUpdated = false;
+  let billRowIndex = 0;
+  let billOriginalState = null;
+  let billSettlementState = null;
+  let billWriteAttempted = false;
+  let canonicalSettlementCompleted = false;
+  let paymentAppendUnverified = false;
 
   try {
     landlordLineUserId =
@@ -242,19 +248,17 @@ function manualSettleLandlordBillByLineUid_(
     const ss =
       runtimeSpreadsheet_();
 
-    const billSheet =
-      manualSettlementEnsureBillSheet_(
-        ss
+    billSheet =
+      ss.getSheetByName(
+        MANUAL_SETTLEMENT_BILLS_SHEET
       );
 
-    paymentSheet =
-      manualSettlementEnsurePaymentSheet_(
-        ss
+    if (!billSheet) {
+      throw new Error(
+        '找不到工作表：' +
+        MANUAL_SETTLEMENT_BILLS_SHEET
       );
-
-    manualSettlementEnsureAuditSheet_(
-      ss
-    );
+    }
 
     const billData =
       manualSettlementFindRowByHeader_(
@@ -275,6 +279,32 @@ function manualSettleLandlordBillByLineUid_(
 
     const bill =
       billData.object;
+
+    const billingAccess =
+      workspaceLandlordResolveAccess_(
+        landlordLineUserId,
+        {
+          require_onboarding: true,
+          skip_schema_ensure: true,
+          skip_legacy_context_creation: true
+        }
+      );
+
+    if (!billingAccess.success) {
+      return {
+        success: false,
+        code: billingAccess.code || 'WORKSPACE_ACCESS_REQUIRED',
+        message: billingAccess.message || '無法驗證帳務 Workspace 權限'
+      };
+    }
+
+    if (!billingBillMatchesAccessScope_(bill, billingAccess)) {
+      return {
+        success: false,
+        code: 'BILL_WORKSPACE_MISMATCH',
+        message: '帳單不屬於目前管理團隊'
+      };
+    }
 
     if (
       v2CanonicalBillIsVoided_(
@@ -415,6 +445,20 @@ function manualSettleLandlordBillByLineUid_(
       };
     }
 
+    billSheet =
+      manualSettlementEnsureBillSheet_(
+        ss
+      );
+
+    paymentSheet =
+      manualSettlementEnsurePaymentSheet_(
+        ss
+      );
+
+    manualSettlementEnsureAuditSheet_(
+      ss
+    );
+
     const existingPayment =
       manualSettlementFindExistingPayment_(
         paymentSheet,
@@ -430,6 +474,12 @@ function manualSettleLandlordBillByLineUid_(
           '此帳單已存在有效付款紀錄，請先檢查 V2_payments'
       };
     }
+
+    billingPreflightBillViews_(
+      ss,
+      billingAccess,
+      bill
+    );
 
     const now =
       new Date();
@@ -510,11 +560,63 @@ function manualSettleLandlordBillByLineUid_(
         '房東手動確認已繳'
     };
 
-    paymentRowIndex =
-      manualSettlementAppendObjectRow_(
-        paymentSheet,
-        paymentRecord
-      );
+    try {
+      const appendedPayment =
+        manualSettlementAppendObjectRowVerified_(
+          paymentSheet,
+          paymentRecord
+        );
+
+      paymentRowIndex =
+        appendedPayment.rowIndex;
+    } catch (appendError) {
+      const appendRowIndex =
+        Number(
+          appendError.settlementRowIndex || 0
+        );
+
+      paymentAppendUnverified =
+        appendRowIndex > 1;
+
+      if (appendRowIndex > 1) {
+        try {
+          const appendedPayment =
+            manualSettlementFindRowByHeader_(
+              paymentSheet,
+              'payment_id',
+              paymentId
+            );
+
+          if (
+            appendedPayment &&
+            appendedPayment.rowIndex === appendRowIndex
+          ) {
+            paymentRowIndex =
+              appendRowIndex;
+          }
+        } catch (appendReadbackError) {
+          // 保留未驗證狀態；不可猜測該列是否安全可作廢。
+        }
+      }
+
+      throw appendError;
+    }
+
+    billRowIndex =
+      billData.rowIndex;
+
+    billOriginalState = {
+      payment_status:
+        bill.payment_status || '',
+      paid_at:
+        bill.paid_at || '',
+      payment_id:
+        bill.payment_id || '',
+      updated_at:
+        bill.updated_at || '',
+      notes:
+        bill.notes || ''
+    };
 
     const billNote =
       [
@@ -526,31 +628,50 @@ function manualSettleLandlordBillByLineUid_(
           )
       ].join('／');
 
-    manualSettlementUpdateRowByObject_(
+    billSettlementState = {
+      payment_status:
+        'paid',
+      paid_at:
+        paymentDate,
+      payment_id:
+        paymentId,
+      updated_at:
+        now,
+      notes:
+        manualSettlementAppendNote_(
+          bill.notes || '',
+          billNote
+        )
+    };
+
+    billWriteAttempted = true;
+
+    manualSettlementUpdateRowByObjectVerified_(
       billSheet,
       billData.rowIndex,
-      {
-        payment_status:
-          'paid',
-
-        paid_at:
-          paymentDate,
-
-        payment_id:
-          paymentId,
-
-        updated_at:
-          now,
-
-        notes:
-          manualSettlementAppendNote_(
-            bill.notes || '',
-            billNote
-          )
-      }
+      billSettlementState
     );
 
-    billUpdated = true;
+    const settledBill =
+      Object.assign(
+        {},
+        bill,
+        billSettlementState
+      );
+
+    billingSyncBillViews_(
+      ss,
+      billingAccess,
+      settledBill,
+      now
+    );
+
+    billingRefreshWorkspaceSummaries_(
+      ss,
+      billingAccess
+    );
+
+    canonicalSettlementCompleted = true;
 
     /*
      * 同步回 V1。
@@ -874,16 +995,43 @@ function manualSettleLandlordBillByLineUid_(
 
   } catch (error) {
     /*
-     * 若付款紀錄已新增但帳單尚未成功更新，
-     * 將該付款紀錄標記為 void，避免假付款紀錄。
+     * 若 canonical 寫入後續失敗，先還原帳單；只有帳單已還原時
+     * 才將新付款標記為 void，避免 paid 帳單與 void 付款互相矛盾。
      */
+    let billRestored =
+      !billWriteAttempted;
+    let compensationUnverified =
+      paymentAppendUnverified;
+
     if (
-      paymentSheet &&
-      paymentRowIndex > 1 &&
-      !billUpdated
+      !canonicalSettlementCompleted &&
+      billWriteAttempted &&
+      billSheet &&
+      billRowIndex > 1 &&
+      billOriginalState
     ) {
       try {
-        manualSettlementUpdateRowByObject_(
+        manualSettlementUpdateRowByObjectVerified_(
+          billSheet,
+          billRowIndex,
+          billOriginalState
+        );
+
+        billRestored = true;
+      } catch (rollbackError) {
+        billRestored = false;
+        compensationUnverified = true;
+      }
+    }
+
+    if (
+      !canonicalSettlementCompleted &&
+      paymentSheet &&
+      paymentRowIndex > 1 &&
+      billRestored
+    ) {
+      try {
+        manualSettlementUpdateRowByObjectVerified_(
           paymentSheet,
           paymentRowIndex,
           {
@@ -899,8 +1047,16 @@ function manualSettleLandlordBillByLineUid_(
           }
         );
       } catch (rollbackError) {
-        // 避免回滾失敗覆蓋原錯誤
+        compensationUnverified = true;
       }
+    }
+
+    if (
+      !canonicalSettlementCompleted &&
+      billWriteAttempted &&
+      !billRestored
+    ) {
+      compensationUnverified = true;
     }
 
     try {
@@ -1007,10 +1163,15 @@ function manualSettleLandlordBillByLineUid_(
     return {
       success: false,
       code:
-        'MANUAL_SETTLEMENT_ERROR',
+        compensationUnverified
+          ? 'SETTLEMENT_COMPENSATION_UNVERIFIED'
+          : 'MANUAL_SETTLEMENT_ERROR',
       message:
-        '手動銷帳失敗：' +
-        error.message
+        compensationUnverified
+          ? '手動銷帳補償狀態無法驗證：' +
+            error.message
+          : '手動銷帳失敗：' +
+            error.message
     };
 
   } finally {
@@ -1744,6 +1905,79 @@ function manualSettlementAppendObjectRow_(
 
 
 /**
+ * 新增整列後立即讀回驗證。失敗時保留預先決定的列號，讓呼叫端能安全補償。
+ */
+function manualSettlementAppendObjectRowVerified_(
+  sheet,
+  object
+) {
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getValues()[0]
+      .map(function (header) {
+        return manualSettlementText_(
+          header
+        );
+      });
+  const rowIndex =
+    sheet.getLastRow() + 1;
+  const row =
+    headers.map(function (header) {
+      return object[header] !== undefined
+        ? object[header]
+        : '';
+    });
+  const rowRange =
+    sheet.getRange(
+      rowIndex,
+      1,
+      1,
+      headers.length
+    );
+
+  try {
+    rowRange.setValues([row]);
+
+    const verifiedRow =
+      rowRange.getValues()[0];
+    const verifiedObject =
+      {};
+
+    headers.forEach(function (header, index) {
+      verifiedObject[header] =
+        verifiedRow[index];
+
+      if (
+        !manualSettlementRowValueMatches_(
+          verifiedRow[index],
+          row[index]
+        )
+      ) {
+        throw new Error(
+          'SETTLEMENT_ROW_WRITE_UNVERIFIED'
+        );
+      }
+    });
+
+    return {
+      rowIndex: rowIndex,
+      object: verifiedObject
+    };
+  } catch (error) {
+    error.settlementRowIndex =
+      rowIndex;
+    throw error;
+  }
+}
+
+
+/**
  * 依欄位名稱更新資料列
  */
 function manualSettlementUpdateRowByObject_(
@@ -1788,6 +2022,98 @@ function manualSettlementUpdateRowByObject_(
           );
       }
     );
+}
+
+
+/**
+ * 整列更新後立即驗證指定欄位，避免逐格寫入留下未知的部分更新狀態。
+ */
+function manualSettlementUpdateRowByObjectVerified_(
+  sheet,
+  rowIndex,
+  updates
+) {
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getValues()[0]
+      .map(function (header) {
+        return manualSettlementText_(
+          header
+        );
+      });
+  const rowRange =
+    sheet.getRange(
+      rowIndex,
+      1,
+      1,
+      headers.length
+    );
+  const currentRow =
+    rowRange.getValues()[0];
+  const nextRow =
+    headers.map(function (header, index) {
+      return updates[header] === undefined
+        ? currentRow[index]
+        : updates[header];
+    });
+
+  rowRange.setValues([nextRow]);
+
+  const verifiedRow =
+    rowRange.getValues()[0];
+  const verifiedObject =
+    {};
+
+  headers.forEach(function (header, index) {
+    verifiedObject[header] =
+      verifiedRow[index];
+  });
+
+  Object.keys(updates)
+    .forEach(function (header) {
+      const columnIndex =
+        headers.indexOf(header);
+
+      if (
+        columnIndex < 0 ||
+        !manualSettlementRowValueMatches_(
+          verifiedRow[columnIndex],
+          updates[header]
+        )
+      ) {
+        throw new Error(
+          'SETTLEMENT_ROW_WRITE_UNVERIFIED'
+        );
+      }
+    });
+
+  return verifiedObject;
+}
+
+
+function manualSettlementRowValueMatches_(
+  actual,
+  expected
+) {
+  if (
+    expected instanceof Date
+  ) {
+    const actualTime =
+      actual instanceof Date
+        ? actual.getTime()
+        : new Date(actual).getTime();
+
+    return actualTime === expected.getTime();
+  }
+
+  return manualSettlementText_(actual) ===
+    manualSettlementText_(expected);
 }
 
 

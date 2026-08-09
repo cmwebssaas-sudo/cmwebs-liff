@@ -99,6 +99,29 @@ tenant_payment_report_submit
 
 ## Payment-report and bill-display contracts
 
+### Existing paid-settlement view synchronization
+
+- No API route is added or renamed by paid-settlement view synchronization.
+  The existing `landlord_payment_report_settle` and
+  `landlord_bill_manual_settle` routes retain their public request and response
+  envelopes.
+- After either existing settlement path changes a canonical `V2_bills` row, it
+  synchronizes that exact bill's `V2_tenant_bill_view` row from canonical bill
+  truth. Tenant-home and landlord-tenant-list `latest_*` fields are selected
+  from the latest scoped canonical bill for that tenant, so settling an older
+  bill cannot regress a newer bill's summary.
+- Outstanding totals are derived only from canonical unpaid, non-voided bills;
+  paid, cancelled, and voided bills remain excluded.
+- A bill with a nonblank `workspace_id` must exactly match the authenticated
+  Workspace. A blank-workspace legacy bill is compatible only when its nonblank
+  `landlord_id` matches an authorized principal in that authenticated access
+  context; the legacy fallback never bypasses Workspace or role authorization.
+- If a post-write projection failure prevents the settlement flow from
+  verifying a consistent canonical bill/payment pair, the existing route may
+  return `SETTLEMENT_COMPENSATION_UNVERIFIED`. It makes no speculative repair
+  write; the exceptional state remains available to existing audit handling for
+  controlled follow-up.
+
 ### `tenant_payment_report_submit`
 
 - Resolves the requesting tenant, active contract, room, workspace, and

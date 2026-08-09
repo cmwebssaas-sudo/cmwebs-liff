@@ -24,6 +24,17 @@ function settleLandlordPaymentReportByLineUid_(
   const lock =
     LockService.getScriptLock();
 
+  let paymentSheet = null;
+  let paymentRowIndex = 0;
+  let billSheet = null;
+  let billRowIndex = 0;
+  let billOriginalState = null;
+  let billSettlementState = null;
+  let billWriteAttempted = false;
+  let canonicalSettlementCompleted = false;
+  let paymentId = '';
+  let paymentAppendUnverified = false;
+
   try {
     landlordLineUserId =
       String(
@@ -82,20 +93,17 @@ function settleLandlordPaymentReportByLineUid_(
     const ss =
       runtimeSpreadsheet_();
 
-    const reportSheet =
-      ensureSettlementPaymentReportSheet_(
-        ss
+    let reportSheet =
+      ss.getSheetByName(
+        V2_PAYMENT_REPORT_SHEET_NAME
       );
 
-    const billSheet =
-      ensureSettlementBillSheet_(
-        ss
+    if (!reportSheet) {
+      throw new Error(
+        '找不到工作表：' +
+        V2_PAYMENT_REPORT_SHEET_NAME
       );
-
-    const paymentSheet =
-      ensureSettlementPaymentSheet_(
-        ss
-      );
+    }
 
     const reportData =
       findSettlementRowByHeader_(
@@ -145,75 +153,6 @@ const matchedPaymentId =
     ''
   ).trim();
 
-/*
- * 已經有 matched_payment_id，
- * 代表正式付款紀錄與銷帳都已完成。
- * 前端重送時直接回傳原結果，避免重複建立付款紀錄。
- */
-if (
-  reportStatus === 'confirmed' &&
-  matchedPaymentId
-) {
-  return {
-    success: true,
-    code: 'ALREADY_SETTLED',
-    message: '此付款回報已完成銷帳',
-
-    data: {
-      report_id:
-        reportId,
-
-      payment_id:
-        matchedPaymentId,
-
-      bill_id:
-        report.bill_id || '',
-
-      status:
-        'confirmed',
-
-      bill_payment_status:
-        'paid',
-
-      tenant_notification_success:
-        null
-    }
-  };
-}
-
-/*
- * 相容舊版流程：
- *
- * 舊版 landlord_payment_report_update
- * 可能已先將 status 改為 confirmed，
- * 但 matched_payment_id 仍是空白，
- * 代表只有人工確認，尚未正式建立付款紀錄及銷帳。
- *
- * 因此允許以下狀態進入正式銷帳：
- * - pending
- * - payment_reported
- * - confirmed，但 matched_payment_id 必須是空白
- */
-const settleableStatuses = [
-  'pending',
-  'payment_reported',
-  'confirmed'
-];
-
-if (
-  settleableStatuses.indexOf(
-    reportStatus
-  ) === -1
-) {
-  return {
-    success: false,
-    code:
-      'REPORT_STATUS_NOT_SETTLEABLE',
-    message:
-      '此付款回報目前不能進行銷帳'
-  };
-}
-
     const billId =
       String(
         report.bill_id || ''
@@ -227,6 +166,18 @@ if (
         message:
           '付款回報缺少帳單 ID'
       };
+    }
+
+    billSheet =
+      ss.getSheetByName(
+        V2_BILL_SHEET_NAME
+      );
+
+    if (!billSheet) {
+      throw new Error(
+        '找不到工作表：' +
+        V2_BILL_SHEET_NAME
+      );
     }
 
     const billData =
@@ -248,6 +199,90 @@ if (
 
     const bill =
       billData.object;
+
+    const billingAccess =
+      workspaceLandlordResolveAccess_(
+        landlordLineUserId,
+        {
+          require_onboarding: true,
+          skip_schema_ensure: true,
+          skip_legacy_context_creation: true
+        }
+      );
+
+    if (!billingAccess.success) {
+      return {
+        success: false,
+        code: billingAccess.code || 'WORKSPACE_ACCESS_REQUIRED',
+        message: billingAccess.message || '無法驗證帳務 Workspace 權限'
+      };
+    }
+
+    if (!billingBillMatchesAccessScope_(bill, billingAccess)) {
+      return {
+        success: false,
+        code: 'BILL_WORKSPACE_MISMATCH',
+        message: '帳單不屬於目前管理團隊'
+      };
+    }
+
+    /*
+     * 已經有 matched_payment_id，代表正式付款紀錄與銷帳都已完成。
+     * 權限與帳單 scope 驗證後才採冪等回傳，避免洩漏跨 Workspace ID。
+     */
+    if (
+      reportStatus === 'confirmed' &&
+      matchedPaymentId
+    ) {
+      return {
+        success: true,
+        code: 'ALREADY_SETTLED',
+        message: '此付款回報已完成銷帳',
+
+        data: {
+          report_id:
+            reportId,
+
+          payment_id:
+            matchedPaymentId,
+
+          bill_id:
+            report.bill_id || '',
+
+          status:
+            'confirmed',
+
+          bill_payment_status:
+            'paid',
+
+          tenant_notification_success:
+            null
+        }
+      };
+    }
+
+    /*
+     * 相容舊版流程：pending、payment_reported，或尚未連結付款的 confirmed。
+     */
+    const settleableStatuses = [
+      'pending',
+      'payment_reported',
+      'confirmed'
+    ];
+
+    if (
+      settleableStatuses.indexOf(
+        reportStatus
+      ) === -1
+    ) {
+      return {
+        success: false,
+        code:
+          'REPORT_STATUS_NOT_SETTLEABLE',
+        message:
+          '此付款回報目前不能進行銷帳'
+      };
+    }
 
     if (
       v2CanonicalBillIsVoided_(
@@ -360,6 +395,21 @@ if (
       };
     }
 
+    reportSheet =
+      ensureSettlementPaymentReportSheet_(
+        ss
+      );
+
+    billSheet =
+      ensureSettlementBillSheet_(
+        ss
+      );
+
+    paymentSheet =
+      ensureSettlementPaymentSheet_(
+        ss
+      );
+
     const existingPayment =
       findExistingSettlementPayment_(
         paymentSheet,
@@ -377,10 +427,16 @@ if (
       };
     }
 
+    billingPreflightBillViews_(
+      ss,
+      billingAccess,
+      bill
+    );
+
     const now =
       new Date();
 
-    const paymentId =
+    paymentId =
       makeSettlementPaymentId_();
 
     const paymentDate =
@@ -463,40 +519,114 @@ if (
         '房東確認付款回報後正式銷帳'
     };
 
-    appendSettlementObjectRow_(
-      paymentSheet,
-      paymentRecord
-    );
+    try {
+      const appendedPayment =
+        appendSettlementObjectRowVerified_(
+          paymentSheet,
+          paymentRecord
+        );
+
+      paymentRowIndex =
+        appendedPayment.rowIndex;
+    } catch (appendError) {
+      const appendRowIndex =
+        Number(
+          appendError.settlementRowIndex || 0
+        );
+
+      paymentAppendUnverified =
+        appendRowIndex > 1;
+
+      if (appendRowIndex > 1) {
+        try {
+          const appendedPayment =
+            findSettlementRowByHeader_(
+              paymentSheet,
+              'payment_id',
+              paymentId
+            );
+
+          if (
+            appendedPayment &&
+            appendedPayment.rowIndex === appendRowIndex
+          ) {
+            paymentRowIndex =
+              appendRowIndex;
+          }
+        } catch (appendReadbackError) {
+          // 保留未驗證狀態；不可猜測該列是否安全可作廢。
+        }
+      }
+
+      throw appendError;
+    }
+
+    billRowIndex =
+      billData.rowIndex;
+
+    billOriginalState = {
+      payment_status:
+        bill.payment_status || '',
+      paid_at:
+        bill.paid_at || '',
+      payment_id:
+        bill.payment_id || '',
+      updated_at:
+        bill.updated_at || '',
+      notes:
+        bill.notes || ''
+    };
+
+    billSettlementState = {
+      payment_status:
+        'paid',
+      paid_at:
+        paymentDate,
+      payment_id:
+        paymentId,
+      updated_at:
+        now,
+      notes:
+        appendSettlementNote_(
+          bill.notes || '',
+          '付款回報銷帳：' +
+          reportId +
+          '／付款ID：' +
+          paymentId
+        )
+    };
 
     /*
      * 更新 V2_bills
      */
-    updateSettlementRowByObject_(
+    billWriteAttempted = true;
+
+    updateSettlementRowByObjectVerified_(
       billSheet,
       billData.rowIndex,
-      {
-        payment_status:
-          'paid',
-
-        paid_at:
-          paymentDate,
-
-        payment_id:
-          paymentId,
-
-        updated_at:
-          now,
-
-        notes:
-          appendSettlementNote_(
-            bill.notes || '',
-            '付款回報銷帳：' +
-            reportId +
-            '／付款ID：' +
-            paymentId
-          )
-      }
+      billSettlementState
     );
+
+    const settledBill =
+      Object.assign(
+        {},
+        bill,
+        billSettlementState
+      );
+
+    billingSyncBillViews_(
+      ss,
+      billingAccess,
+      settledBill,
+      now
+    );
+
+    billingRefreshWorkspaceSummaries_(
+      ss,
+      billingAccess
+    );
+
+    canonicalSettlementCompleted = true;
 
     /*
      * 更新 V2_payment_reports
@@ -732,6 +862,63 @@ return {
 };
 
   } catch (error) {
+    let billRestored =
+      !billWriteAttempted;
+    let compensationUnverified =
+      paymentAppendUnverified;
+
+    if (
+      !canonicalSettlementCompleted &&
+      billWriteAttempted &&
+      billSheet &&
+      billRowIndex > 1 &&
+      billOriginalState
+    ) {
+      try {
+        updateSettlementRowByObjectVerified_(
+          billSheet,
+          billRowIndex,
+          billOriginalState
+        );
+
+        billRestored = true;
+      } catch (rollbackError) {
+        billRestored = false;
+        compensationUnverified = true;
+      }
+    }
+
+    if (
+      !canonicalSettlementCompleted &&
+      paymentSheet &&
+      paymentRowIndex > 1 &&
+      billRestored
+    ) {
+      try {
+        updateSettlementRowByObjectVerified_(
+          paymentSheet,
+          paymentRowIndex,
+          {
+            status: 'void',
+            updated_at: new Date(),
+            note:
+              '銷帳失敗，自動作廢：' +
+              error.message
+          }
+        );
+      } catch (rollbackError) {
+        compensationUnverified = true;
+      }
+    }
+
+    if (
+      !canonicalSettlementCompleted &&
+      billWriteAttempted &&
+      !billRestored
+    ) {
+      compensationUnverified = true;
+    }
+
     logLiffAccess_({
       lineUserId:
         landlordLineUserId || '',
@@ -758,10 +945,15 @@ return {
     return {
       success: false,
       code:
-        'SETTLEMENT_ERROR',
+        compensationUnverified
+          ? 'SETTLEMENT_COMPENSATION_UNVERIFIED'
+          : 'SETTLEMENT_ERROR',
       message:
-        '付款銷帳失敗：' +
-        error.message
+        compensationUnverified
+          ? '付款銷帳補償狀態無法驗證：' +
+            error.message
+          : '付款銷帳失敗：' +
+            error.message
     };
 
   } finally {
@@ -1211,6 +1403,81 @@ function appendSettlementObjectRow_(
     );
 
   sheet.appendRow(row);
+
+  return sheet.getLastRow();
+}
+
+
+/**
+ * 新增整列後立即讀回驗證。失敗時保留預先決定的列號，讓呼叫端能安全補償。
+ */
+function appendSettlementObjectRowVerified_(
+  sheet,
+  object
+) {
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getValues()[0]
+      .map(function (header) {
+        return String(
+          header || ''
+        ).trim();
+      });
+  const rowIndex =
+    sheet.getLastRow() + 1;
+  const row =
+    headers.map(function (header) {
+      return object[header] !== undefined
+        ? object[header]
+        : '';
+    });
+  const rowRange =
+    sheet.getRange(
+      rowIndex,
+      1,
+      1,
+      headers.length
+    );
+
+  try {
+    rowRange.setValues([row]);
+
+    const verifiedRow =
+      rowRange.getValues()[0];
+    const verifiedObject =
+      {};
+
+    headers.forEach(function (header, index) {
+      verifiedObject[header] =
+        verifiedRow[index];
+
+      if (
+        !settlementRowValueMatches_(
+          verifiedRow[index],
+          row[index]
+        )
+      ) {
+        throw new Error(
+          'SETTLEMENT_ROW_WRITE_UNVERIFIED'
+        );
+      }
+    });
+
+    return {
+      rowIndex: rowIndex,
+      object: verifiedObject
+    };
+  } catch (error) {
+    error.settlementRowIndex =
+      rowIndex;
+    throw error;
+  }
 }
 
 
@@ -1259,6 +1526,98 @@ function updateSettlementRowByObject_(
           );
       }
     );
+}
+
+
+/**
+ * 整列更新後立即驗證指定欄位，避免逐格寫入留下未知的部分更新狀態。
+ */
+function updateSettlementRowByObjectVerified_(
+  sheet,
+  rowIndex,
+  updates
+) {
+  const headers =
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        sheet.getLastColumn()
+      )
+      .getValues()[0]
+      .map(function (header) {
+        return String(
+          header || ''
+        ).trim();
+      });
+  const rowRange =
+    sheet.getRange(
+      rowIndex,
+      1,
+      1,
+      headers.length
+    );
+  const currentRow =
+    rowRange.getValues()[0];
+  const nextRow =
+    headers.map(function (header, index) {
+      return updates[header] === undefined
+        ? currentRow[index]
+        : updates[header];
+    });
+
+  rowRange.setValues([nextRow]);
+
+  const verifiedRow =
+    rowRange.getValues()[0];
+  const verifiedObject =
+    {};
+
+  headers.forEach(function (header, index) {
+    verifiedObject[header] =
+      verifiedRow[index];
+  });
+
+  Object.keys(updates)
+    .forEach(function (header) {
+      const columnIndex =
+        headers.indexOf(header);
+
+      if (
+        columnIndex < 0 ||
+        !settlementRowValueMatches_(
+          verifiedRow[columnIndex],
+          updates[header]
+        )
+      ) {
+        throw new Error(
+          'SETTLEMENT_ROW_WRITE_UNVERIFIED'
+        );
+      }
+    });
+
+  return verifiedObject;
+}
+
+
+function settlementRowValueMatches_(
+  actual,
+  expected
+) {
+  if (
+    expected instanceof Date
+  ) {
+    const actualTime =
+      actual instanceof Date
+        ? actual.getTime()
+        : new Date(actual).getTime();
+
+    return actualTime === expected.getTime();
+  }
+
+  return String(actual == null ? '' : actual) ===
+    String(expected == null ? '' : expected);
 }
 
 

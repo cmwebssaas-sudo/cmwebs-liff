@@ -1971,6 +1971,87 @@ function billingCalculateBill_(
 // View synchronization
 // ==================================================
 
+function billingPreflightBillViews_(
+  ss,
+  access,
+  bill
+) {
+  const projectionWorkspaceId =
+    billingText_(
+      access &&
+      access.workspace &&
+      access.workspace.workspace_id
+    );
+  const tenantBillSheet =
+    ss.getSheetByName(
+      V2_BILLING_SHEETS_
+        .tenantBillView
+    );
+  const tenantHomeSheet =
+    ss.getSheetByName(
+      V2_BILLING_SHEETS_
+        .tenantHomeView
+    );
+
+  billingResolveUpsertByIdTarget_(
+    tenantBillSheet,
+    'bill_id',
+    bill.bill_id,
+    bill
+  );
+
+  billingFindByTenantId_(
+    tenantHomeSheet,
+    bill.tenant_id,
+    projectionWorkspaceId
+  );
+
+  workspaceGetObjectsWithRow_(
+    ss.getSheetByName(
+      V2_BILLING_SHEETS_
+        .landlordTenantListView
+    )
+  );
+}
+
+
+function billingSelectLatestTenantBill_(
+  tenantBills
+) {
+  return (tenantBills || []).reduce(
+    function (latest, bill) {
+      if (!latest) {
+        return bill;
+      }
+
+      const latestMonth =
+        billingNormalizeBillMonth_(
+          latest.bill_month
+        );
+      const billMonth =
+        billingNormalizeBillMonth_(
+          bill.bill_month
+        );
+
+      if (billMonth !== latestMonth) {
+        return billMonth > latestMonth
+          ? bill
+          : latest;
+      }
+
+      return billingNumber_(
+        bill.__row_number
+      ) >
+        billingNumber_(
+          latest.__row_number
+        )
+        ? bill
+        : latest;
+    },
+    null
+  );
+}
+
 function billingSyncBillViews_(
   ss,
   access,
@@ -2040,6 +2121,11 @@ function billingSyncBillViews_(
       }
     );
 
+  const latestBill =
+    billingSelectLatestTenantBill_(
+      tenantBills
+    ) || bill;
+
   const unpaidBills =
     tenantBills.filter(
       function (row) {
@@ -2068,11 +2154,18 @@ function billingSyncBillViews_(
       0
     );
 
+  const projectionWorkspaceId =
+    billingText_(
+      access &&
+      access.workspace &&
+      access.workspace.workspace_id
+    );
+
   const tenantHomeRow =
     billingFindByTenantId_(
       tenantHomeSheet,
       bill.tenant_id,
-      bill.workspace_id
+      projectionWorkspaceId
     );
 
   if (tenantHomeRow) {
@@ -2093,13 +2186,13 @@ function billingSyncBillViews_(
             .tenant_line_user_id ||
           '',
         latest_bill_month:
-          bill.bill_month,
+          latestBill.bill_month,
         latest_due_date:
-          bill.due_date,
+          latestBill.due_date,
         latest_total_amount:
-          bill.total_amount,
+          latestBill.total_amount,
         latest_payment_status:
-          bill.payment_status,
+          latestBill.payment_status,
         unpaid_bill_count:
           unpaidBills.length,
         unpaid_total_amount:
@@ -2115,18 +2208,21 @@ function billingSyncBillViews_(
       landlordTenantSheet
     ).filter(
       function (row) {
+        const rowWorkspaceId =
+          billingText_(
+            row.workspace_id
+          ).toUpperCase();
+
         return (
           billingText_(
             row.tenant_id
           ) ===
             bill.tenant_id &&
           (
-            !row.workspace_id ||
-            billingText_(
-              row.workspace_id
-            ).toUpperCase() ===
+            !rowWorkspaceId ||
+            rowWorkspaceId ===
               billingText_(
-                bill.workspace_id
+                projectionWorkspaceId
               ).toUpperCase()
           )
         );
@@ -2146,13 +2242,13 @@ function billingSyncBillViews_(
               .tenant_line_user_id ||
             '',
           latest_bill_month:
-            bill.bill_month,
+            latestBill.bill_month,
           latest_due_date:
-            bill.due_date,
+            latestBill.due_date,
           latest_total_amount:
-            bill.total_amount,
+            latestBill.total_amount,
           latest_payment_status:
-            bill.payment_status,
+            latestBill.payment_status,
           unpaid_bill_count:
             unpaidBills.length,
           unpaid_total_amount:
@@ -2301,6 +2397,41 @@ function billingUpsertById_(
     return;
   }
 
+  const existing =
+    billingResolveUpsertByIdTarget_(
+      sheet,
+      idHeader,
+      idValue,
+      values
+    );
+
+  if (existing) {
+    billingSetValues_(
+      sheet,
+      existing.__row_number,
+      values
+    );
+
+    return;
+  }
+
+  workspaceAppendObject_(
+    sheet,
+    values
+  );
+}
+
+
+function billingResolveUpsertByIdTarget_(
+  sheet,
+  idHeader,
+  idValue,
+  values
+) {
+  if (!sheet) {
+    return null;
+  }
+
   const matches =
     workspaceGetObjectsWithRow_(
       sheet
@@ -2348,20 +2479,7 @@ function billingUpsertById_(
 
   const existing = matches[0] || null;
 
-  if (existing) {
-    billingSetValues_(
-      sheet,
-      existing.__row_number,
-      values
-    );
-
-    return;
-  }
-
-  workspaceAppendObject_(
-    sheet,
-    values
-  );
+  return existing;
 }
 
 
@@ -2419,12 +2537,78 @@ function billingFindByTenantId_(
 // Workspace data helpers
 // ==================================================
 
+function billingBillMatchesAccessScope_(
+  bill,
+  access
+) {
+  const workspaceId =
+    billingText_(
+      access &&
+      access.workspace &&
+      access.workspace.workspace_id
+    ).toUpperCase();
+  const billWorkspaceId =
+    billingText_(
+      bill &&
+      bill.workspace_id
+    ).toUpperCase();
+
+  if (billWorkspaceId) {
+    return billWorkspaceId === workspaceId;
+  }
+
+  const billLandlordId =
+    billingText_(
+      bill &&
+      bill.landlord_id
+    ).toUpperCase();
+
+  if (!billLandlordId) {
+    return false;
+  }
+
+  return (
+    (access.principals || [])
+      .map(
+        function (principal) {
+          return billingText_(
+            principal &&
+            principal.landlord_id
+          ).toUpperCase();
+        }
+      )
+      .filter(Boolean)
+      .indexOf(billLandlordId) >= 0
+  );
+}
+
+
 function billingGetWorkspaceRows_(
   sheet,
   access
 ) {
   if (!sheet) {
     return [];
+  }
+
+  const isBillSheet =
+    typeof sheet.getName ===
+      'function' &&
+    sheet.getName() ===
+      V2_BILLING_SHEETS_
+        .bills;
+
+  if (isBillSheet) {
+    return workspaceGetObjectsWithRow_(
+      sheet
+    ).filter(
+      function (bill) {
+        return billingBillMatchesAccessScope_(
+          bill,
+          access
+        );
+      }
+    );
   }
 
   const workspaceId =
@@ -4654,6 +4838,556 @@ function repairBillingPreviousMetersByLineUid_(
       result,
       null,
       2
+    )
+  );
+
+  return result;
+}
+
+
+/**
+ * 更正單一已付款帳單的抄表基準與衍生金額。
+ *
+ * 此函式刻意不使用批次 repair；所有辨識、付款與金額前置條件都必須
+ * 在寫入前完全匹配。它只同步同一 Workspace、同一 bill_id 的房客帳單視圖。
+ */
+function repairPaidBillMeterCorrectionByLineUid_(
+  lineUserId,
+  correction
+) {
+  const lock =
+    LockService.getScriptLock();
+
+  let locked = false;
+
+  try {
+    correction =
+      correction || {};
+
+    const dryRun =
+      correction.dry_run === true;
+
+    if (!dryRun) {
+      billingEnsureSchema_();
+    }
+
+    const access =
+      workspaceLandlordResolveAccess_(
+        lineUserId,
+        {
+          require_onboarding:
+            false
+        }
+      );
+
+    if (!access.success) {
+      return access;
+    }
+
+    const role =
+      billingText_(
+        access.membership &&
+        access.membership.role
+      ).toLowerCase();
+
+    if (
+      [
+        'owner',
+        'admin'
+      ].indexOf(role) < 0
+    ) {
+      return workspaceResult_(
+        false,
+        'PERMISSION_DENIED',
+        '目前角色沒有更正已付款帳單的權限'
+      );
+    }
+
+    const expectedBillId =
+      billingText_(
+        correction.expected_bill_id
+      );
+    const roomName =
+      billingText_(
+        correction.room_name
+      );
+    const billMonth =
+      billingNormalizeBillMonth_(
+        correction.bill_month
+      );
+    const expectedPreviousBefore =
+      billingNumber_(
+        correction.expected_previous_meter_before
+      );
+    const correctedPrevious =
+      billingNumber_(
+        correction.corrected_previous_meter
+      );
+    const expectedCurrent =
+      billingNumber_(
+        correction.expected_current_meter
+      );
+    const expectedTotal =
+      Math.round(
+        billingNumber_(
+          correction.expected_total_amount
+        )
+      );
+    const reason =
+      billingText_(
+        correction.reason
+      );
+
+    if (
+      !expectedBillId ||
+      !roomName ||
+      !billMonth ||
+      !reason ||
+      expectedPreviousBefore <= 0 ||
+      correctedPrevious <= 0 ||
+      expectedCurrent <= correctedPrevious ||
+      expectedTotal < 0
+    ) {
+      return workspaceResult_(
+        false,
+        'INVALID_PAID_BILL_CORRECTION',
+        '已付款帳單更正資料不完整或不合理'
+      );
+    }
+
+    lock.waitLock(
+      25000
+    );
+
+    locked = true;
+
+    const ss =
+      runtimeSpreadsheet_();
+    const billSheet =
+      ss.getSheetByName(
+        V2_BILLING_SHEETS_
+          .bills
+      );
+    const tenantBillSheet =
+      ss.getSheetByName(
+        V2_BILLING_SHEETS_
+          .tenantBillView
+      );
+    const bills =
+      billingGetWorkspaceRows_(
+        billSheet,
+        access
+      );
+    const matches =
+      bills.filter(
+        function (bill) {
+          return (
+            billingText_(
+              bill.bill_id
+            ) ===
+              expectedBillId &&
+            billingText_(
+              bill.room_name
+            ) ===
+              roomName &&
+            billingNormalizeBillMonth_(
+              bill.bill_month
+            ) ===
+              billMonth
+          );
+        }
+      );
+
+    if (matches.length !== 1) {
+      return workspaceResult_(
+        false,
+        'PAID_BILL_TARGET_NOT_UNIQUE',
+        '找不到唯一的已付款帳單更正目標'
+      );
+    }
+
+    const bill =
+      matches[0];
+
+    if (
+      !billingIsPaidStatus_(
+        bill.payment_status
+      )
+    ) {
+      return workspaceResult_(
+        false,
+        'PAID_BILL_NOT_PAID',
+        '目標帳單不是已付款狀態，已停止更正'
+      );
+    }
+
+    const currentMeter =
+      billingNumber_(
+        bill.current_meter_reading
+      );
+    const existingPrevious =
+      billingNumber_(
+        bill.previous_meter
+      );
+    const usage =
+      Math.round(
+        (
+          expectedCurrent -
+          correctedPrevious
+        ) *
+        1000
+      ) /
+      1000;
+    const electricityAmount =
+      Math.round(
+        usage *
+        billingNumber_(
+          bill.electricity_fee_rate
+        )
+      );
+    const equipmentAmount =
+      Math.round(
+        usage *
+        billingNumber_(
+          bill.equipment_fee_rate
+        )
+      );
+    const subtotal =
+      Math.round(
+        billingNumber_(
+          bill.rent_amount
+        ) +
+        billingNumber_(
+          bill.management_fee
+        ) +
+        electricityAmount +
+        equipmentAmount +
+        billingNumber_(
+          bill.other_amount
+        )
+      );
+    const total =
+      Math.max(
+        0,
+        subtotal -
+        Math.round(
+          billingNumber_(
+            bill.discount_amount
+          )
+        )
+      );
+
+    if (
+      currentMeter !==
+      expectedCurrent
+    ) {
+      return workspaceResult_(
+        false,
+        'PAID_BILL_CURRENT_METER_MISMATCH',
+        '本期電表與已核准更正值不符，已停止更正'
+      );
+    }
+
+    if (
+      total !==
+      expectedTotal
+    ) {
+      return workspaceResult_(
+        false,
+        'PAID_BILL_TOTAL_MISMATCH',
+        '重算總額與已收款金額不符，已停止更正'
+      );
+    }
+
+    const viewMatches =
+      workspaceGetObjectsWithRow_(
+        tenantBillSheet
+      ).filter(
+        function (row) {
+          return (
+            billingText_(
+              row.bill_id
+            ) ===
+              billingText_(
+                bill.bill_id
+              ) &&
+            billingText_(
+              row.workspace_id
+            ).toUpperCase() ===
+              billingText_(
+                bill.workspace_id
+              ).toUpperCase()
+          );
+        }
+      );
+
+    if (viewMatches.length !== 1) {
+      return workspaceResult_(
+        false,
+        'PAID_BILL_VIEW_NOT_FOUND',
+        '找不到唯一的房客帳單視圖資料，已停止更正'
+      );
+    }
+
+    const view =
+      viewMatches[0];
+
+    const viewPaymentStatus =
+      billingNormalizePaymentStatus_(
+        view.payment_status
+      );
+
+    if (
+      viewPaymentStatus !== 'paid' &&
+      viewPaymentStatus !== 'unpaid'
+    ) {
+      return workspaceResult_(
+        false,
+        'PAID_BILL_VIEW_PAYMENT_STATUS_INVALID',
+        '房客帳單視圖付款狀態不正確，已停止更正'
+      );
+    }
+
+    const alreadyCorrect =
+      existingPrevious ===
+        correctedPrevious &&
+      currentMeter ===
+        expectedCurrent &&
+      billingNumber_(
+        bill.total_amount
+      ) === total &&
+      billingNumber_(
+        view.total_amount
+      ) === total;
+
+    if (alreadyCorrect) {
+      return workspaceResult_(
+        true,
+        'PAID_BILL_METER_ALREADY_CORRECTED',
+        '目標帳單已是核准的更正值，未修改任何資料'
+      );
+    }
+
+    if (
+      existingPrevious !==
+      expectedPreviousBefore
+    ) {
+      return workspaceResult_(
+        false,
+        'PAID_BILL_PREVIOUS_METER_MISMATCH',
+        '上期電表與核准更正前值不符，已停止更正'
+      );
+    }
+
+    if (dryRun) {
+      return workspaceResult_(
+        true,
+        'PAID_BILL_METER_CORRECTION_READY',
+        '已付款帳單更正前置條件通過，尚未修改任何資料',
+        {
+          room_name:
+            roomName,
+          bill_month:
+            billMonth,
+          previous_meter:
+            existingPrevious,
+          corrected_previous_meter:
+            correctedPrevious,
+          current_meter:
+            currentMeter,
+          recomputed_total:
+            total,
+          view_payment_status:
+            viewPaymentStatus,
+          view_payment_status_mismatch:
+            viewPaymentStatus !== 'paid'
+        }
+      );
+    }
+
+    const now =
+      new Date();
+    const correctionNote =
+      '[帳務更正] ' +
+      reason;
+    const values = {
+      previous_meter:
+        correctedPrevious,
+      current_meter_reading:
+        expectedCurrent,
+      electricity_usage:
+        usage,
+      electricity_amount:
+        electricityAmount,
+      equipment_amount:
+        equipmentAmount,
+      subtotal_amount:
+        subtotal,
+      total_amount:
+        total,
+      note:
+        billingText_(
+          bill.note
+        )
+          ? (
+              billingText_(
+                bill.note
+              ) +
+              '\n' +
+              correctionNote
+            )
+          : correctionNote,
+      updated_at:
+        now
+    };
+
+    billingSetValues_(
+      billSheet,
+      bill.__row_number,
+      values
+    );
+
+    billingSetValues_(
+      tenantBillSheet,
+      view.__row_number,
+      values
+    );
+
+    SpreadsheetApp.flush();
+
+    const result =
+      workspaceResult_(
+        true,
+        'PAID_BILL_METER_CORRECTED',
+        '已付款帳單抄表與金額已受控更正',
+        {
+          bill_id:
+            bill.bill_id,
+          room_name:
+            roomName,
+          bill_month:
+            billMonth,
+          previous_meter:
+            correctedPrevious,
+          current_meter:
+            expectedCurrent,
+          total_amount:
+            total
+        }
+      );
+
+    billingAudit_(
+      access,
+      'paid_bill_meter_corrected',
+      result,
+      {
+        bill_id:
+          bill.bill_id,
+        room_name:
+          roomName,
+        bill_month:
+          billMonth,
+        previous_meter_before:
+          expectedPreviousBefore,
+        previous_meter_after:
+          correctedPrevious,
+        total_amount:
+          total,
+        reason:
+          reason
+      }
+    );
+
+    return result;
+
+  } finally {
+    if (locked) {
+      lock.releaseLock();
+    }
+  }
+}
+
+
+/**
+ * 唯一核准的 506 房 2026-08 已付款帳單更正入口。
+ *
+ * 參數刻意不開放由執行介面輸入，以免帳單、月份或已收金額被替換；真正的
+ * 寫入仍完全受 repairPaidBillMeterCorrectionByLineUid_ 的付款、Workspace、
+ * 唯一列、電表和重算總額前置條件保護。
+ */
+function repairApprovedRoom506AugustPaidBill_() {
+  return repairPaidBillMeterCorrectionByLineUid_(
+    getRequiredScriptProperty_(
+      'TEST_LANDLORD_LINE_UID'
+    ),
+    {
+      expected_bill_id:
+        'B0000016',
+      room_name:
+        '506',
+      bill_month:
+        '2026-08',
+      expected_previous_meter_before:
+        23310.8,
+      corrected_previous_meter:
+        24815.5,
+      expected_current_meter:
+        24853.3,
+      expected_total_amount:
+        7745,
+      reason:
+        '506 房 2026-08 已付款帳單上期電表基準更正'
+    }
+  );
+}
+
+
+function testRepairApprovedRoom506AugustPaidBill() {
+  return repairApprovedRoom506AugustPaidBill_();
+}
+
+
+/**
+ * Read-only executable preflight for the one approved 506 correction.  Logger
+ * output is intentional: the Apps Script editor otherwise hides a successful
+ * function return and obscures the fail-closed reason.
+ */
+function preflightApprovedRoom506AugustPaidBillCorrection_() {
+  return repairPaidBillMeterCorrectionByLineUid_(
+    getRequiredScriptProperty_(
+      'TEST_LANDLORD_LINE_UID'
+    ),
+    {
+      expected_bill_id:
+        'B0000016',
+      room_name:
+        '506',
+      bill_month:
+        '2026-08',
+      expected_previous_meter_before:
+        23310.8,
+      corrected_previous_meter:
+        24815.5,
+      expected_current_meter:
+        24853.3,
+      expected_total_amount:
+        7745,
+      dry_run:
+        true,
+      reason:
+        '506 房 2026-08 已付款帳單上期電表基準更正'
+    }
+  );
+}
+
+
+function testPreflightApprovedRoom506AugustPaidBillCorrection() {
+  const result =
+    preflightApprovedRoom506AugustPaidBillCorrection_();
+
+  Logger.log(
+    JSON.stringify(
+      result
     )
   );
 
