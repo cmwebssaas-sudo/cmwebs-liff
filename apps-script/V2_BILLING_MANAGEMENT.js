@@ -1971,6 +1971,43 @@ function billingCalculateBill_(
 // View synchronization
 // ==================================================
 
+function billingSelectLatestTenantBill_(
+  tenantBills
+) {
+  return (tenantBills || []).reduce(
+    function (latest, bill) {
+      if (!latest) {
+        return bill;
+      }
+
+      const latestMonth =
+        billingNormalizeBillMonth_(
+          latest.bill_month
+        );
+      const billMonth =
+        billingNormalizeBillMonth_(
+          bill.bill_month
+        );
+
+      if (billMonth !== latestMonth) {
+        return billMonth > latestMonth
+          ? bill
+          : latest;
+      }
+
+      return billingNumber_(
+        bill.__row_number
+      ) >
+        billingNumber_(
+          latest.__row_number
+        )
+        ? bill
+        : latest;
+    },
+    null
+  );
+}
+
 function billingSyncBillViews_(
   ss,
   access,
@@ -2040,6 +2077,11 @@ function billingSyncBillViews_(
       }
     );
 
+  const latestBill =
+    billingSelectLatestTenantBill_(
+      tenantBills
+    ) || bill;
+
   const unpaidBills =
     tenantBills.filter(
       function (row) {
@@ -2093,13 +2135,13 @@ function billingSyncBillViews_(
             .tenant_line_user_id ||
           '',
         latest_bill_month:
-          bill.bill_month,
+          latestBill.bill_month,
         latest_due_date:
-          bill.due_date,
+          latestBill.due_date,
         latest_total_amount:
-          bill.total_amount,
+          latestBill.total_amount,
         latest_payment_status:
-          bill.payment_status,
+          latestBill.payment_status,
         unpaid_bill_count:
           unpaidBills.length,
         unpaid_total_amount:
@@ -2146,13 +2188,13 @@ function billingSyncBillViews_(
               .tenant_line_user_id ||
             '',
           latest_bill_month:
-            bill.bill_month,
+            latestBill.bill_month,
           latest_due_date:
-            bill.due_date,
+            latestBill.due_date,
           latest_total_amount:
-            bill.total_amount,
+            latestBill.total_amount,
           latest_payment_status:
-            bill.payment_status,
+            latestBill.payment_status,
           unpaid_bill_count:
             unpaidBills.length,
           unpaid_total_amount:

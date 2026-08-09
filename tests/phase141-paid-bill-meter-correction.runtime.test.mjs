@@ -344,6 +344,141 @@ function billView(overrides = {}) {
   return { ...paidBill(), __row_number: 2, ...overrides };
 }
 
+function createBillViewSyncRuntime({ bills, billViews, tenantHomes, landlordTenants }) {
+  const source = fs.readFileSync(
+    'apps-script/V2_BILLING_MANAGEMENT.js',
+    'utf8'
+  );
+  const start = source.indexOf('function billingSelectLatestTenantBill_(');
+  const end = source.indexOf('\n\nfunction billingRefreshWorkspaceSummaries_(', start);
+
+  assert.notEqual(start, -1, 'latest tenant-bill selector must exist');
+  assert.notEqual(end, -1, 'view sync section must precede workspace summaries');
+
+  const sheets = {
+    V2_bills: { name: 'V2_bills', rows: bills },
+    V2_tenant_bill_view: { name: 'V2_tenant_bill_view', rows: billViews },
+    V2_tenant_home_view: { name: 'V2_tenant_home_view', rows: tenantHomes },
+    V2_landlord_tenant_list_view: {
+      name: 'V2_landlord_tenant_list_view',
+      rows: landlordTenants
+    }
+  };
+  const context = {
+    V2_BILLING_SHEETS_: {
+      bills: 'V2_bills',
+      tenantBillView: 'V2_tenant_bill_view',
+      tenantHomeView: 'V2_tenant_home_view',
+      landlordTenantListView: 'V2_landlord_tenant_list_view'
+    },
+    billingText_(value) { return value == null ? '' : String(value).trim(); },
+    billingNumber_(value) { return Number(value) || 0; },
+    billingNormalizeBillMonth_(value) {
+      const match = String(value || '').match(/^(\d{4})-(\d{2})$/);
+      return match ? value : '';
+    },
+    billingNormalizePaymentStatus_(value) {
+      return String(value).toLowerCase() === 'paid' ? 'paid' : 'unpaid';
+    },
+    v2CanonicalBillIsVoided_(bill) {
+      return ['void', 'voided', 'cancelled', 'canceled'].includes(
+        String(bill.bill_status || '').toLowerCase()
+      );
+    },
+    billingGetWorkspaceRows_(sheet) { return sheet.rows; },
+    workspaceGetObjectsWithRow_(sheet) { return sheet.rows; },
+    billingSetValues_(sheet, rowNumber, values) {
+      const row = sheet.rows.find((item) => item.__row_number === rowNumber);
+      assert.ok(row, 'view update target must exist');
+      Object.assign(row, values);
+    },
+    billingUpsertById_(sheet, idHeader, idValue, values) {
+      const row = sheet.rows.find((item) => item[idHeader] === idValue);
+      assert.ok(row, 'exact bill view must exist for this harness');
+      Object.assign(row, values);
+    },
+    billingFindByTenantId_(sheet, tenantId, workspaceId) {
+      return sheet.rows.find(
+        (row) => row.tenant_id === tenantId && row.workspace_id === workspaceId
+      ) || null;
+    }
+  };
+
+  vm.runInNewContext(source.slice(start, end), context);
+  return { sheets, sync: context.billingSyncBillViews_, select: context.billingSelectLatestTenantBill_ };
+}
+
+{
+  const julyPaid = paidBill({
+    bill_id: 'B-506-2026-07',
+    bill_month: '2026-07',
+    total_amount: 7000,
+    due_date: '2026-07-05',
+    tenant_id: 'T-506',
+    __row_number: 12
+  });
+  const august = paidBill({
+    bill_id: 'B-506-2026-08',
+    bill_month: '2026-08',
+    total_amount: 8000,
+    due_date: '2026-08-05',
+    payment_status: 'unpaid',
+    tenant_id: 'T-506',
+    __row_number: 13
+  });
+  const voided = paidBill({
+    bill_id: 'B-506-voided',
+    bill_month: '2026-06',
+    total_amount: 9000,
+    payment_status: 'unpaid',
+    bill_status: 'voided',
+    tenant_id: 'T-506',
+    __row_number: 14
+  });
+  const cancelled = paidBill({
+    bill_id: 'B-506-cancelled',
+    bill_month: '2026-05',
+    total_amount: 10000,
+    payment_status: 'unpaid',
+    bill_status: 'cancelled',
+    tenant_id: 'T-506',
+    __row_number: 15
+  });
+  const runtime = createBillViewSyncRuntime({
+    bills: [julyPaid, august, voided, cancelled],
+    billViews: [billView({ ...julyPaid }), billView({ ...august })],
+    tenantHomes: [{ tenant_id: 'T-506', workspace_id: 'W-1', __row_number: 22 }],
+    landlordTenants: [{ tenant_id: 'T-506', workspace_id: 'W-1', __row_number: 32 }]
+  });
+
+  assert.equal(
+    runtime.select([august, { ...august, bill_id: 'B-506-2026-08-later', __row_number: 99 }]).bill_id,
+    'B-506-2026-08-later',
+    'same normalized month must use row number as a deterministic fallback'
+  );
+
+  runtime.sync(
+    { getSheetByName(name) { return runtime.sheets[name]; } },
+    { workspace: { workspace_id: 'W-1' } },
+    julyPaid,
+    '2026-08-09T01:00:00Z'
+  );
+
+  const julyView = runtime.sheets.V2_tenant_bill_view.rows[0];
+  const tenantHome = runtime.sheets.V2_tenant_home_view.rows[0];
+  const landlordTenant = runtime.sheets.V2_landlord_tenant_list_view.rows[0];
+  assert.equal(julyView.bill_id, 'B-506-2026-07');
+  assert.equal(julyView.payment_status, 'paid');
+  for (const summary of [tenantHome, landlordTenant]) {
+    assert.equal(summary.latest_bill_month, '2026-08');
+    assert.equal(summary.latest_total_amount, 8000);
+    assert.equal(summary.latest_due_date, '2026-08-05');
+    assert.equal(summary.latest_payment_status, 'unpaid');
+    assert.equal(summary.unpaid_bill_count, 1);
+    assert.equal(summary.unpaid_total_amount, 8000);
+  }
+}
+
 {
   const runtime = createRuntime({
     bills: [paidBill()],
