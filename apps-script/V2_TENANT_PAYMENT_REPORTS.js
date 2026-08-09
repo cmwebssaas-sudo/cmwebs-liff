@@ -618,7 +618,7 @@ function submitTenantPaymentReportByLineUid_(
             report.report_id,
 
           action_url:
-            'https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-payment-reports.html',
+            'https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-payment-report-review.html',
 
           severity:
             'info',
