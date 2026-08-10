@@ -124,13 +124,106 @@ function settleLandlordPaymentReportByLineUid_(
     const report =
       reportData.object;
 
-    if (
-      String(
-        report
-          .landlord_line_user_id ||
-        ''
-      ).trim() !== landlordLineUserId
+    const billingAccess =
+      workspaceLandlordResolveAccess_(
+        landlordLineUserId,
+        {
+          require_onboarding: true,
+          skip_schema_ensure: true,
+          skip_legacy_context_creation: true
+        }
+      );
+
+    if (!billingAccess.success) {
+      return {
+        success: false,
+        code: billingAccess.code || 'WORKSPACE_ACCESS_REQUIRED',
+        message: billingAccess.message || '無法驗證帳務 Workspace 權限'
+      };
+    }
+
+    const principalLandlordIds = [];
+
+    [
+      billingAccess.principal_landlord_id,
+      billingAccess.principal &&
+        billingAccess.principal.landlord_id
+    ].forEach(function (landlordId) {
+      const normalizedLandlordId =
+        String(landlordId || '').trim();
+
+      if (
+        normalizedLandlordId &&
+        principalLandlordIds.indexOf(normalizedLandlordId) === -1
+      ) {
+        principalLandlordIds.push(normalizedLandlordId);
+      }
+    });
+
+    const accessPrincipals =
+      billingAccess.principals || [];
+
+    for (
+      let principalIndex = 0;
+      principalIndex < accessPrincipals.length;
+      principalIndex += 1
     ) {
+      const normalizedLandlordId =
+        String(
+          accessPrincipals[principalIndex] &&
+          accessPrincipals[principalIndex].landlord_id ||
+          ''
+        ).trim();
+
+      if (
+        normalizedLandlordId &&
+        principalLandlordIds.indexOf(normalizedLandlordId) === -1
+      ) {
+        principalLandlordIds.push(normalizedLandlordId);
+      }
+    }
+
+    const principalLineUserId =
+      String(
+        billingAccess.principal_line_user_id ||
+        (
+          billingAccess.principal &&
+          billingAccess.principal.line_user_id
+        ) ||
+        ''
+      ).trim();
+
+    const reportLandlordId =
+      String(
+        report.landlord_id || ''
+      ).trim();
+
+    const reportLandlordLineUserId =
+      String(
+        report.landlord_line_user_id || ''
+      ).trim();
+
+    const reportOwned =
+      (
+        reportLandlordLineUserId === landlordLineUserId
+      ) ||
+      (
+        !!principalLineUserId &&
+        reportLandlordLineUserId === principalLineUserId
+      ) ||
+      (
+        principalLandlordIds.indexOf(reportLandlordId) !== -1
+      );
+
+    const reportOwnedByLandlordIdOnly =
+      reportLandlordLineUserId !== landlordLineUserId &&
+      (
+        !principalLineUserId ||
+        reportLandlordLineUserId !== principalLineUserId
+      ) &&
+      principalLandlordIds.indexOf(reportLandlordId) !== -1;
+
+    if (!reportOwned) {
       return {
         success: false,
         code:
@@ -200,21 +293,14 @@ const matchedPaymentId =
     const bill =
       billData.object;
 
-    const billingAccess =
-      workspaceLandlordResolveAccess_(
-        landlordLineUserId,
-        {
-          require_onboarding: true,
-          skip_schema_ensure: true,
-          skip_legacy_context_creation: true
-        }
-      );
-
-    if (!billingAccess.success) {
+    if (
+      reportOwnedByLandlordIdOnly &&
+      !String(bill.workspace_id || '').trim()
+    ) {
       return {
         success: false,
-        code: billingAccess.code || 'WORKSPACE_ACCESS_REQUIRED',
-        message: billingAccess.message || '無法驗證帳務 Workspace 權限'
+        code: 'REPORT_WORKSPACE_UNVERIFIED',
+        message: '歷史付款回報缺少可驗證的 Workspace 歸屬'
       };
     }
 
