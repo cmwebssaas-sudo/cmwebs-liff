@@ -746,6 +746,37 @@ assertSettlementScopeGate(createManualSettlementScopeRuntime);
 }
 
 {
+  const runtime = createPaymentSettlementScopeRuntime({
+    bill: {
+      bill_id: 'B-legacy-report-owner-alias',
+      workspace_id: '',
+      landlord_id: 'landlord-current',
+      tenant_id: 'T-1',
+      payment_status: 'unpaid',
+      total_amount: 100
+    },
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principal_landlord_id: 'landlord-current',
+      principal_line_user_id: 'current-owner-line-id',
+      principals: [{ landlord_id: 'landlord-current' }]
+    },
+    callerLineUserId: 'current-owner-line-id',
+    reportLandlordLineUserId: 'historical-owner-line-id',
+    reportLandlordId: 'landlord-current'
+  });
+  const result = runtime.settle();
+
+  assert.equal(
+    result.code,
+    'REPORT_WORKSPACE_UNVERIFIED',
+    'a historical LINE UID must not authorize a legacy blank-workspace bill solely through a reused landlord_id'
+  );
+  assert.equal(runtime.downstreamCalls, 0);
+}
+
+{
   const bill = {
     bill_id: 'B-report-owner-reject',
     workspace_id: 'W-current',

@@ -215,6 +215,14 @@ function settleLandlordPaymentReportByLineUid_(
         principalLandlordIds.indexOf(reportLandlordId) !== -1
       );
 
+    const reportOwnedByLandlordIdOnly =
+      reportLandlordLineUserId !== landlordLineUserId &&
+      (
+        !principalLineUserId ||
+        reportLandlordLineUserId !== principalLineUserId
+      ) &&
+      principalLandlordIds.indexOf(reportLandlordId) !== -1;
+
     if (!reportOwned) {
       return {
         success: false,
@@ -284,6 +292,17 @@ const matchedPaymentId =
 
     const bill =
       billData.object;
+
+    if (
+      reportOwnedByLandlordIdOnly &&
+      !String(bill.workspace_id || '').trim()
+    ) {
+      return {
+        success: false,
+        code: 'REPORT_WORKSPACE_UNVERIFIED',
+        message: '歷史付款回報缺少可驗證的 Workspace 歸屬'
+      };
+    }
 
     if (!billingBillMatchesAccessScope_(bill, billingAccess)) {
       return {
