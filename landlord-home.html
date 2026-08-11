@@ -693,7 +693,7 @@
 
   <script>
     const API_URL =
-      'https://script.google.com/macros/s/AKfycbyrwKb3adOgHVBwbwHwLeSsDoUgYhaUaFXui66tnyMNBrT9eOVbi788oHeVRTif_LA9BA/exec';
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
 
     const LIFF_ID =
       '2010314940-EjX1qbb8';
@@ -1065,6 +1065,47 @@
       return 0;
     }
 
+    function countPendingPaymentReports(
+      paymentData
+    ) {
+      const reports =
+        paymentData &&
+        Array.isArray(paymentData.reports)
+          ? paymentData.reports
+          : null;
+
+      if (reports) {
+        return reports.filter(function (report) {
+          const status =
+            String(
+              report && report.status ||
+              ''
+            )
+              .trim()
+              .toLowerCase();
+
+          return (
+            status === 'pending' ||
+            status === 'payment_reported'
+          );
+        }).length;
+      }
+
+      const summary =
+        paymentData &&
+        paymentData.summary
+          ? paymentData.summary
+          : {};
+
+      return findSummaryNumber(
+        summary,
+        [
+          'pending_count',
+          'pending'
+        ]
+      );
+    }
+
     function buildActionSummary(
       contractData,
       paymentData,
@@ -1074,12 +1115,6 @@
         contractData &&
         contractData.summary
           ? contractData.summary
-          : {};
-
-      const paymentSummary =
-        paymentData &&
-        paymentData.summary
-          ? paymentData.summary
           : {};
 
       const messageSummary =
@@ -1108,12 +1143,8 @@
           ),
 
         paymentPending:
-          findSummaryNumber(
-            paymentSummary,
-            [
-              'pending_count',
-              'pending'
-            ]
+          countPendingPaymentReports(
+            paymentData
           ),
 
         messagePending:
