@@ -1013,6 +1013,9 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
+    const TENANT_LIFF_ENTRY_PAGE =
+      'tenant-bind.html';
+
     const TEST_LINE_USER_ID =
       'U3615a7ed919c1a4a438a246c10784d70';
 
@@ -1037,6 +1040,48 @@
     let PAYMENT_REPORT_BACKEND_READY = true;
     let PAYMENT_REPORT_BACKEND_MESSAGE = '';
     let toastTimer = null;
+
+    function buildTenantLiffLoginRedirect_() {
+      const entryUrl =
+        new URL(
+          TENANT_LIFF_ENTRY_PAGE,
+          location.href
+        );
+      const targetPage =
+        location.pathname
+          .split('/')
+          .filter(Boolean)
+          .pop() ||
+        'tenant-payment-report.html';
+      const targetQuery =
+        new URLSearchParams();
+
+      ['bill_id', 'test'].forEach(
+        function (key) {
+          const value =
+            URL_PARAMS.get(key);
+
+          if (value !== null && value !== '') {
+            targetQuery.set(key, value);
+          }
+        }
+      );
+
+      const target =
+        targetPage +
+        (
+          targetQuery.toString()
+            ? '?' + targetQuery.toString()
+            : ''
+        );
+
+      entryUrl.searchParams.set(
+        'next',
+        target
+      );
+
+      return entryUrl.href;
+    }
 
     function setAppHeight() {
       const height =
@@ -1534,7 +1579,7 @@
       if (!liff.isLoggedIn()) {
         liff.login({
           redirectUri:
-            location.href
+            buildTenantLiffLoginRedirect_()
         });
 
         return false;
