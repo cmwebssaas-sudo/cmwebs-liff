@@ -619,7 +619,94 @@
       return url.href;
     }
 
+    function buildPostLoginTarget_() {
+      const rawNext =
+        rawText(
+          URL_PARAMS.get('next')
+        ).trim();
+
+      if (!rawNext) {
+        return '';
+      }
+
+      let target;
+
+      try {
+        target = new URL(
+          rawNext,
+          location.href
+        );
+      } catch (error) {
+        return '';
+      }
+
+      if (
+        target.origin !==
+        location.origin
+      ) {
+        return '';
+      }
+
+      const allowedPages = [
+        'tenant-home.html',
+        'tenant-bills.html',
+        'tenant-payment-report.html',
+        'tenant-message.html',
+        'tenant-contract.html',
+        'tenant-renewal.html',
+        'tenant-termination.html'
+      ];
+      const page =
+        target.pathname
+          .split('/')
+          .filter(Boolean)
+          .pop() ||
+        '';
+
+      if (
+        allowedPages.indexOf(page) < 0
+      ) {
+        return '';
+      }
+
+      const nextUrl =
+        new URL(
+          page,
+          location.href
+        );
+
+      ['bill_id', 'test'].forEach(
+        function (key) {
+          const value =
+            target.searchParams.get(key);
+
+          if (value !== null && value !== '') {
+            nextUrl.searchParams.set(
+              key,
+              value
+            );
+          }
+        }
+      );
+
+      nextUrl.searchParams.set(
+        'v',
+        Date.now()
+      );
+
+      return nextUrl.href;
+    }
+
     function goHome() {
+      const postLoginTarget =
+        buildPostLoginTarget_();
+
+      if (postLoginTarget) {
+        location.href =
+          postLoginTarget;
+        return;
+      }
+
       const url = new URL(
         'tenant-home.html',
         location.href
