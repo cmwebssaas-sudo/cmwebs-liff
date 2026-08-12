@@ -1016,9 +1016,6 @@
     const TENANT_LIFF_ENTRY_PAGE =
       'tenant-bind.html';
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
-
     const URL_PARAMS =
       new URLSearchParams(location.search);
 
@@ -1528,6 +1525,10 @@
             }
           );
 
+          if (TEST_MODE) {
+            url += '&test=1';
+          }
+
           script.charset = 'UTF-8';
 
           script.onerror =
@@ -1557,9 +1558,6 @@
 
     async function initLineUserId() {
       if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
-
         return true;
       }
 

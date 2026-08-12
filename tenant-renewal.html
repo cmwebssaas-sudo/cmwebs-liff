@@ -930,9 +930,6 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
-
     const QUERY_PARAMS =
       new URLSearchParams(location.search);
 
@@ -1153,7 +1150,7 @@
 
     function callApi(action, params) {
       return new Promise(function (resolve, reject) {
-        if (!LINE_USER_ID) {
+        if (!LINE_USER_ID && !TEST_MODE) {
           reject(new Error('缺少房客 LINE User ID'));
           return;
         }
@@ -1234,6 +1231,10 @@
             '=' + encodeURIComponent(value);
         });
 
+        if (TEST_MODE) {
+          url += '&test=1';
+        }
+
         script.charset = 'UTF-8';
         script.onerror = function () {
           console.warn('JSONP script onerror ignored.');
@@ -1245,7 +1246,6 @@
 
     async function initLineUserId() {
       if (TEST_MODE) {
-        LINE_USER_ID = TEST_LINE_USER_ID;
         return true;
       }
 
