@@ -938,6 +938,9 @@
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
     let toastTimer = null;
+
+    const LIFF_ACCESS_TOKEN_RENEWAL_KEY =
+      'cmwebs_landlord_tenant_checkin_liff_renewal_attempted';
     let ACTIVE_INDEX = -1;
 
     function setAppHeight() {
@@ -1073,8 +1076,48 @@
         return false;
       }
 
-      const profile =
-        await liff.getProfile();
+      let profile;
+
+      try {
+        profile =
+          await liff.getProfile();
+      } catch (error) {
+        if (
+          !error ||
+          error.message !==
+            'The access token expired'
+        ) {
+          throw error;
+        }
+
+        if (
+          sessionStorage.getItem(
+            LIFF_ACCESS_TOKEN_RENEWAL_KEY
+          )
+        ) {
+          throw error;
+        }
+
+        sessionStorage.setItem(
+          LIFF_ACCESS_TOKEN_RENEWAL_KEY,
+          '1'
+        );
+
+        if (typeof liff.logout === 'function') {
+          liff.logout();
+        }
+
+        liff.login({
+          redirectUri:
+            buildLandlordLoginRedirectUri()
+        });
+
+        return false;
+      }
+
+      sessionStorage.removeItem(
+        LIFF_ACCESS_TOKEN_RENEWAL_KEY
+      );
 
       LINE_USER_ID =
         profile.userId ||
