@@ -124,22 +124,6 @@ function settleLandlordPaymentReportByLineUid_(
     const report =
       reportData.object;
 
-    if (
-      String(
-        report
-          .landlord_line_user_id ||
-        ''
-      ).trim() !== landlordLineUserId
-    ) {
-      return {
-        success: false,
-        code:
-          'REPORT_NOT_OWNED_BY_LANDLORD',
-        message:
-          '此付款回報不屬於目前房東'
-      };
-    }
-
     const reportStatus =
   String(
     report.status || ''
@@ -215,6 +199,90 @@ const matchedPaymentId =
         success: false,
         code: billingAccess.code || 'WORKSPACE_ACCESS_REQUIRED',
         message: billingAccess.message || '無法驗證帳務 Workspace 權限'
+      };
+    }
+
+    const principalLandlordIds = [];
+
+    [
+      billingAccess.principal_landlord_id,
+      billingAccess.principal &&
+        billingAccess.principal.landlord_id
+    ].forEach(function (landlordId) {
+      const normalizedLandlordId =
+        String(landlordId || '').trim();
+
+      if (
+        normalizedLandlordId &&
+        principalLandlordIds.indexOf(
+          normalizedLandlordId
+        ) === -1
+      ) {
+        principalLandlordIds.push(
+          normalizedLandlordId
+        );
+      }
+    });
+
+    (billingAccess.principals || []).forEach(
+      function (principal) {
+        const normalizedLandlordId =
+          String(
+            principal &&
+            principal.landlord_id ||
+            ''
+          ).trim();
+
+        if (
+          normalizedLandlordId &&
+          principalLandlordIds.indexOf(
+            normalizedLandlordId
+          ) === -1
+        ) {
+          principalLandlordIds.push(
+            normalizedLandlordId
+          );
+        }
+      }
+    );
+
+    const principalLineUserId =
+      String(
+        billingAccess.principal_line_user_id ||
+        (
+          billingAccess.principal &&
+          billingAccess.principal.line_user_id
+        ) ||
+        ''
+      ).trim();
+
+    const reportLandlordId =
+      String(report.landlord_id || '').trim();
+    const reportLandlordLineUserId =
+      String(
+        report.landlord_line_user_id ||
+        ''
+      ).trim();
+
+    const reportOwned =
+      reportLandlordLineUserId ===
+        landlordLineUserId ||
+      (
+        !!principalLineUserId &&
+        reportLandlordLineUserId ===
+          principalLineUserId
+      ) ||
+      principalLandlordIds.indexOf(
+        reportLandlordId
+      ) !== -1;
+
+    if (!reportOwned) {
+      return {
+        success: false,
+        code:
+          'REPORT_NOT_OWNED_BY_LANDLORD',
+        message:
+          '此付款回報不屬於目前房東'
       };
     }
 

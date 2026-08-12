@@ -161,3 +161,26 @@ tenant_payment_report_submit
   contract field returns `V2_CONTRACT_SYNC_SCHEMA_NOT_READY` before any write.
 - Private document and identity metadata must never be included in tenant or
   general-message API responses.
+
+## Version 102 payment-reconciliation candidate — 2026-08-12
+
+This section records a local reconciliation candidate only. It is not the
+canonical source, a deployment record, or authorization to change Production.
+
+- `tenant_payment_report_init` reads the canonical tenant runtime bill rows and
+  excludes rows without a nonblank `bill_id`, preventing blank payment-report
+  cards from being rendered.
+- `tenant_payment_report_submit` uses the same canonical bill-row source and
+  preserves the existing tenant, contract, room, Workspace, duplicate-report,
+  paid-bill, and voided-bill checks.
+- `landlord_payment_reports_init` derives an effective report status from the
+  matching `V2_bills` row. A legacy `pending`/`payment_reported` report whose
+  bill is already `paid` is returned as `confirmed`, so it is excluded from
+  pending-review counts without mutating either sheet.
+- `landlord_payment_report_settle` rejects a report without `bill_id` before
+  any settlement write and continues to require authorized landlord access and
+  bill Workspace scope.
+
+The route names and public request envelopes are unchanged. Any Production
+release still requires a separate immutable-version, rollback, schema, and
+authenticated runtime verification packet.

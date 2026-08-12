@@ -84,7 +84,10 @@ function createRuntime(options = {}) {
         success: true,
         code: 'OK',
         message: '房客 runtime 身份解析成功',
-        data: CANONICAL_CONTEXT
+        data: {
+          ...CANONICAL_CONTEXT,
+          tenant_bill_rows: [rowsBySheet.V2_tenant_bill_view[0]]
+        }
       };
     },
     runtimeSpreadsheet_() {
