@@ -16,13 +16,20 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
-- Gate 0 / Production Consolidation: PASS for canonical source reconciliation
-  on 2026-08-03.
+- Historical Gate 0 / Production Consolidation: PASS for the Version 89 source
+  reconciliation on 2026-08-03.
+- Current serving-source parity: `BLOCKED`; Version 102 differs from GitHub
+  `main` in three payment-flow modules. See
+  `docs/126-PRODUCTION-V102-SOURCE-DRIFT-2026-08-12.md`.
 - Canonical V2 source baseline: immutable Apps Script Version 89 source is
   byte-identical to approved commit `9a17c4b`; PR #12 merged the same tree to
   GitHub `main` as `747b484`.
 - This is source-reconciliation evidence only. It does not assert a current
   serving version, deployment state, or rollback version.
+- The current Version 102 parity check supersedes any claim of current
+  byte-level parity: 40 of 43 files match GitHub `main`, while three payment-flow
+  modules differ. Do not deploy Apps Script until the canonical source decision
+  is recorded.
 - Re-verify the Production account, target project, existing deployment,
   serving version, and rollback target for every Production action.
 - Recorded V2.1 local work includes documentation-baseline synchronization and

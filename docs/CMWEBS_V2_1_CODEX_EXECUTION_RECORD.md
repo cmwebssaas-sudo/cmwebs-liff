@@ -11,7 +11,7 @@ not a deployment record or authorization for external actions.
 
 ## Canonical source baseline
 
-Gate 0 source reconciliation is complete:
+Historical Version 89 source reconciliation is complete:
 
 - The approved source commit `9a17c4bd2719d4cdb24058d4d797bd9281e4b06e` is
   byte-identical to the read-only immutable Apps Script Version 89 export
@@ -24,6 +24,11 @@ Gate 0 source reconciliation is complete:
 This baseline does not establish a current serving version, deployment state,
 rollback target, runtime result, or external account state. Each of those must
 be verified for the particular action that needs it.
+
+The 2026-08-12 Version 102 read-only parity check found 40 of 43 files
+identical to GitHub `main`, with three payment-flow modules differing. Current
+serving-source parity is therefore blocked until the canonical three-module
+resolution is explicitly selected.
 
 ## Recorded V2.1 authorization
 
