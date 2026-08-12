@@ -1609,9 +1609,6 @@
 
     const TENANT_ARTIFACT_MAX_EDGE = 1600;
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
-
     const QUERY_PARAMS =
       new URLSearchParams(location.search);
 
@@ -2076,7 +2073,7 @@
     function callApi(action, params) {
       return new Promise(
         function (resolve, reject) {
-          if (!LINE_USER_ID) {
+          if (!LINE_USER_ID && !TEST_MODE) {
             reject(
               new Error(
                 '缺少房客 LINE User ID'
@@ -2189,6 +2186,10 @@
               }
             );
 
+          if (TEST_MODE) {
+            url += '&test=1';
+          }
+
           script.charset = 'UTF-8';
 
           script.onerror =
@@ -2238,12 +2239,16 @@
           cleanup();
           reject(new Error('簽署身分驗證連線失敗'));
         };
-        script.src = API_URL +
+        let url = API_URL +
           '?v2_action=tenant_contract_auth_status' +
           '&request_id=' + encodeURIComponent(requestId) +
           '&poll_secret=' + encodeURIComponent(pollSecret) +
           '&callback=' + encodeURIComponent(callbackName) +
           '&_=' + Date.now();
+        if (TEST_MODE) {
+          url += '&test=1';
+        }
+        script.src = url;
         document.body.appendChild(script);
       });
     }
@@ -2271,12 +2276,16 @@
           cleanup();
           reject(new Error('簽署送交確認連線失敗'));
         };
-        script.src = API_URL +
+        let url = API_URL +
           '?v2_action=tenant_contract_sign_status' +
           '&request_id=' + encodeURIComponent(requestId) +
           '&poll_secret=' + encodeURIComponent(pollSecret) +
           '&callback=' + encodeURIComponent(callbackName) +
           '&_=' + Date.now();
+        if (TEST_MODE) {
+          url += '&test=1';
+        }
+        script.src = url;
         document.body.appendChild(script);
       });
     }
@@ -2464,12 +2473,16 @@
           cleanup();
           reject(new Error('附件上傳連線失敗'));
         };
-        script.src = API_URL +
+        let url = API_URL +
           '?v2_action=tenant_contract_artifact_upload_status' +
           '&request_id=' + encodeURIComponent(requestId) +
           '&poll_secret=' + encodeURIComponent(pollSecret) +
           '&callback=' + encodeURIComponent(callbackName) +
           '&_=' + Date.now();
+        if (TEST_MODE) {
+          url += '&test=1';
+        }
+        script.src = url;
         document.body.appendChild(script);
       });
     }
@@ -2480,9 +2493,6 @@
 
     async function initLineUserId() {
       if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
-
         return true;
       }
 

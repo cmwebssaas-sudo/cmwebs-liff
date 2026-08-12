@@ -240,7 +240,20 @@ function runTenantPaymentReportInit(sourcePath) {
           };
         }
       };
-    }
+    },
+    workspaceLandlordResolveAccess_() {
+      return {
+        success: true,
+        principal_landlord_id: 'landlord-148',
+        principal_line_user_id: 'landlord-line-148',
+        principals: []
+      };
+    },
+    billingBillMatchesAccessScope_() {
+      return true;
+    },
+    logLiffAccess() {},
+    logLiffAccess_() {}
   };
   vm.runInNewContext(source, context);
 

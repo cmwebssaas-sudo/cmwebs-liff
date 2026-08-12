@@ -1,7 +1,7 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-08-03 (Asia/Taipei)**
+**Last verified: 2026-08-12 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
@@ -31,15 +31,35 @@ Production deployment, runtime/UAT result, current Apps Script serving version,
 current rollback version, Google Sheets state, Properties, triggers, LINE/LIFF,
 or GitHub Pages state.
 
+## 2026-08-12 read-only Production identity reconciliation
+
+The current authenticated Apps Script editor was checked read-only under
+`cmwebs.saas@gmail.com`. The project shown was `綠界結帳`; its active Web App
+deployment was Version 102, with the description `Production V102: ignore
+incomplete tenant payment bill rows`. The deployment executes as the owner and
+is accessible to everyone. The deployment identifier is intentionally not
+duplicated here.
+
+The editor listed 42 `.gs` files. GitHub `main` at merge `0bbbe06e` listed 42
+corresponding `.js` files after suffix normalization. This is an inventory
+comparison, not a byte-level source export. The complete evidence is recorded
+in [125-PRODUCTION-IDENTITY-RECONCILIATION-2026-08-12.md](125-PRODUCTION-IDENTITY-RECONCILIATION-2026-08-12.md).
+
+The Phase 147 GitHub Pages deployment completed successfully in workflow
+`31601674513`, and the four public tenant pages were fetched successfully. This
+read-only package did not identify a rollback version and did not inspect or
+change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
+
 ## Serving and rollback references
 
 - **Canonical source baseline:** the Version 89 source tree described above,
   reconciled to GitHub `main` by PR #12.
-- **Current serving and rollback versions:** `HUMAN_REQUIRED` for each future
-  Production action. Do not infer them from this document or from historical
-  release evidence.
-- **GitHub Pages:** its live revision is separate from backend-source evidence
-  and must be independently verified before a Pages action.
+- **Current Apps Script serving version:** Version 102, verified read-only on
+  2026-08-12; this is deployment identity evidence, not source equivalence.
+- **Current Apps Script rollback version:** `HUMAN_REQUIRED`; it was not
+  identified in the read-only reconciliation.
+- **GitHub Pages:** merge `0bbbe06e` was deployed successfully by workflow
+  `31601674513`; its public tenant pages were fetched successfully.
 - **Production editor source:** an open Apps Script editor does not prove what
   immutable version is serving. Deployment metadata and a scoped source export
   are authoritative.
@@ -85,9 +105,10 @@ Gate 0 canonical source reconciliation is PASS. Immutable Apps Script Version
 89 source is byte-identical to approved commit 9a17c4b; canonical Git main
 contains that same tree through PR #12 merge 747b484.
 
-This is source evidence, not a current Production deployment claim. Re-verify
-the target account, project, serving version, rollback version, live runtime,
-and any external surface before a scoped action. V2.1 currently has local-only
-documentation and snapshot candidates; later integration or external work needs
-separate authorization.
+The 2026-08-12 read-only reconciliation verified the target account, project,
+serving Version 102, and GitHub Pages workflow. It did not establish a rollback
+target, byte-level Apps Script parity, live Sheets state, or runtime/UAT result.
+Re-verify those items before a scoped Production action. V2.1 currently has
+local-only documentation and snapshot candidates; later integration or external
+work needs separate authorization.
 ```

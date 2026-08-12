@@ -2,6 +2,20 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-08-12 — Phase 147 tenant identity release and Production identity check
+
+- PR #23 merged the Phase 147 tenant test-identity migration into GitHub
+  `main` as `0bbbe06e`.
+- GitHub Pages workflow `31601674513` completed successfully; the four tenant
+  pages were fetched from the public Pages origin and retained formal LIFF
+  initialization and the Phase 146 payment gateway.
+- A read-only Apps Script check identified the authenticated project and active
+  Web App Version 102. The file inventory matched GitHub `main` by normalized
+  filename count only; no byte-level source export or rollback identification
+  was performed.
+- No Apps Script, Sheets, Properties, triggers, LINE, LIFF configuration, or
+  payment data was changed by this release.
+
 ## 2026-07-30 — Version 87 source reconciliation closed
 
 - PR #6 merged the retained legacy signed-contract sync bridge and its focused
