@@ -82,6 +82,17 @@ function makeRuntime(options = {}) {
     exchangeTtls: new Map(),
     exchangeWrites: []
   };
+  const sessionClaims = Object.assign({
+    line_sub: 'landlord-line',
+    user_id: 'landlord-1',
+    membership_id: 'member-1',
+    workspace_id: 'ws-1'
+  }, options.sessionClaims || {});
+  const resolvedAccess = Object.assign({
+    workspace: { workspace_id: 'ws-1' },
+    user: { user_id: 'landlord-1', display_name: '林房東' },
+    membership: { membership_id: 'member-1', role: 'owner' }
+  }, options.resolvedAccess || {});
   const context = {
     JSON, String, Number, Math, Date, RegExp, Error, Object, Array,
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: name => sheets[name] || null }) },
@@ -100,9 +111,9 @@ function makeRuntime(options = {}) {
     }) },
     workspaceLandlordResolveAccess_: () => ({
       success: true,
-      workspace: { workspace_id: 'ws-1' },
-      user: { user_id: 'landlord-1', display_name: '林房東' },
-      membership: { membership_id: 'member-1', role: 'owner' }
+      workspace: resolvedAccess.workspace,
+      user: resolvedAccess.user,
+      membership: resolvedAccess.membership
     }),
     workspaceLandlordCheckPolicy_: () => state.allowed
       ? { success: true }
@@ -110,12 +121,7 @@ function makeRuntime(options = {}) {
     verifyLandlordContractSigningReviewSessionToken_: () => state.sessionValid
       ? {
           success: true,
-          data: {
-            line_sub: 'landlord-line',
-            user_id: 'landlord-1',
-            membership_id: 'member-1',
-            workspace_id: 'ws-1'
-          }
+          data: sessionClaims
         }
       : { success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' },
     landlordContractSigningReviewSessionSecret_: () => 'review-exchange-secret',
@@ -387,6 +393,20 @@ function reviewSessionToken() {
     'a caller-provided LINE UID must never authorize native signing-review access'
   );
   assert.equal(state.lockWaits, locksBeforeRejectedAccess, 'an invalid session must be rejected before acquiring a review lock');
+}
+
+{
+  const { api, sheets, state } = makeRuntime({
+    sessionClaims: { workspace_id: 'ws-2' }
+  });
+  api.migrateV2TenantContractSigningReviewSchema_({ getSheetByName: name => sheets[name] || null });
+  const locksBeforeMismatch = state.lockWaits;
+  assert.equal(
+    api.getLandlordContractSigningReviewsBySessionToken_(reviewSessionToken()).code,
+    'LANDLORD_REVIEW_SESSION_PRINCIPAL_INVALID',
+    'a validly signed session whose Workspace claim no longer matches server-resolved access must fail closed'
+  );
+  assert.equal(state.lockWaits, locksBeforeMismatch, 'a mismatched principal must be rejected before reading review rows');
 }
 
 assert.equal(reviewSource.includes('legacyContract'), false, 'native signing review must not call the legacy signed-contract bridge');
