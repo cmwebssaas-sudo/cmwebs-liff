@@ -2,6 +2,17 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-08-12 — Version 102 source parity blocked
+
+- Read-only export of Apps Script Version 102 contained 43 files and passed
+  JavaScript syntax validation.
+- 40 files matched GitHub `main` by SHA-256; three payment-flow modules did
+  not: `V2_PAYMENT_SETTLEMENT.js`, `V2_TENANT_PAYMENT_REPORTS.js`, and
+  `V2_LANDLORD_MANAGEMENT.js`.
+- This is recorded as source drift, not as an authorization to overwrite either
+  source. Apps Script deployment and `clasp push` remain blocked until the
+  canonical three-module source is explicitly selected.
+
 ## 2026-08-12 — Phase 147 tenant identity release and Production identity check
 
 - PR #23 merged the Phase 147 tenant test-identity migration into GitHub

@@ -9,7 +9,10 @@ version, rollback, and runtime state before every Production action.
 
 ## Gate 0 / Production Consolidation
 
-`GATE_0=PASS` for canonical source reconciliation.
+Historical canonical source reconciliation for Version 89 is recorded as
+`PASS`. The current serving-source parity gate is
+`GATE_0_SOURCE_PARITY=BLOCKED` because Version 102 differs from GitHub `main`
+in three payment-flow modules.
 
 The approved source commit
 `9a17c4bd2719d4cdb24058d4d797bd9281e4b06e` was reconciled with a read-only
@@ -26,8 +29,8 @@ byte-identical. GitHub PR #12 then merged that exact source tree into canonical
 | Static source validation | PASS | 42 JavaScript syntax checks, eight focused checks, diff check, and sensitive-credential scan. |
 | Unique canonical source | PASS | GitHub `main` is the canonical source record for the reconciled Version 89 tree. |
 
-This evidence proves source reconciliation only. It does **not** prove a fresh
-Production deployment, runtime/UAT result, current Apps Script serving version,
+The Version 89 evidence proves only that historical source reconciliation. It
+does **not** prove current Version 102 parity, Production runtime/UAT result,
 current rollback version, Google Sheets state, Properties, triggers, LINE/LIFF,
 or GitHub Pages state.
 
@@ -50,10 +53,25 @@ The Phase 147 GitHub Pages deployment completed successfully in workflow
 read-only package did not identify a rollback version and did not inspect or
 change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
 
+## 2026-08-12 Version 102 source parity result
+
+An immutable read-only export of Apps Script Version 102 was compared with
+GitHub `main` at `0865b88e`. The export contained 43 files. 40 matched by
+SHA-256; three payment-flow modules differed: `V2_PAYMENT_SETTLEMENT.js`,
+`V2_TENANT_PAYMENT_REPORTS.js`, and `V2_LANDLORD_MANAGEMENT.js`. No files were
+missing. All 42 exported JavaScript files passed syntax checks.
+
+This means current source parity is **blocked**, despite the earlier filename
+inventory match. The complete hashes and classification are recorded in
+[126-PRODUCTION-V102-SOURCE-DRIFT-2026-08-12.md](126-PRODUCTION-V102-SOURCE-DRIFT-2026-08-12.md).
+Until an authorized owner selects the canonical three-module source, do not
+deploy Apps Script or claim byte-level Gate 0 completion.
+
 ## Serving and rollback references
 
-- **Canonical source baseline:** the Version 89 source tree described above,
-  reconciled to GitHub `main` by PR #12.
+- **Canonical source baseline:** GitHub `main` at `0865b88e` is the repository
+  baseline, but it is not byte-identical to the currently serving Version 102
+  payment modules.
 - **Current Apps Script serving version:** Version 102, verified read-only on
   2026-08-12; this is deployment identity evidence, not source equivalence.
 - **Current Apps Script rollback version:** `HUMAN_REQUIRED`; it was not
@@ -101,14 +119,13 @@ Project: CMWebs 智慧租管 / cmwebs-liff
 Read AGENTS.md and all docs/CMWEBS_*.md files first.
 Recommended model: gpt-5.6-terra; speed: medium.
 
-Gate 0 canonical source reconciliation is PASS. Immutable Apps Script Version
-89 source is byte-identical to approved commit 9a17c4b; canonical Git main
-contains that same tree through PR #12 merge 747b484.
+Historical Gate 0 canonical source reconciliation passed for immutable Apps
+Script Version 89 and approved commit 9a17c4b through PR #12 merge 747b484.
 
 The 2026-08-12 read-only reconciliation verified the target account, project,
-serving Version 102, and GitHub Pages workflow. It did not establish a rollback
-target, byte-level Apps Script parity, live Sheets state, or runtime/UAT result.
-Re-verify those items before a scoped Production action. V2.1 currently has
-local-only documentation and snapshot candidates; later integration or external
-work needs separate authorization.
+serving Version 102, and GitHub Pages workflow, but found current source parity
+blocked in three payment modules. It did not establish a rollback target, live
+Sheets state, or runtime/UAT result. Re-verify those items before a scoped
+Production action. V2.1 currently has local-only documentation and snapshot
+candidates; later integration or external work needs separate authorization.
 ```
