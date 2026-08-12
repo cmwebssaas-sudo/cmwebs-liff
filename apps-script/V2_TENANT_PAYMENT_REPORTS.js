@@ -56,6 +56,32 @@ function tenantPaymentReportResolveCanonicalContext_(
 }
 
 
+function tenantPaymentReportBuildTenant_(canonical) {
+  canonical = canonical || {};
+
+  return {
+    line_user_id:
+      canonical.line_user_id || '',
+    user_id:
+      canonical.tenant_user_id || '',
+    tenant_id:
+      canonical.tenant_id || '',
+    tenant_name:
+      canonical.tenant_name || '',
+    tenant_phone:
+      canonical.tenant_phone || '',
+    tenant_email:
+      canonical.tenant_email || '',
+    room_list:
+      canonical.room_name || canonical.room_no || '',
+    account_status:
+      canonical.account_status || 'active',
+    binding_status:
+      canonical.binding_status || 'bound'
+  };
+}
+
+
 /**
  * 房客付款回報頁初始化
  */
@@ -84,24 +110,24 @@ function getTenantPaymentReportInitByLineUid(
       );
     }
 
-    const homeResult =
-      getTenantHomeByLineUid(
+    const canonicalResult =
+      tenantPaymentReportResolveCanonicalContext_(
         lineUserId
       );
 
     if (
-      !homeResult ||
-      homeResult.success !== true
+      !canonicalResult ||
+      canonicalResult.success !== true
     ) {
       return tenantPaymentReportResult_(
         false,
-        homeResult &&
-        homeResult.code
-          ? homeResult.code
+        canonicalResult &&
+        canonicalResult.code
+          ? canonicalResult.code
           : 'TENANT_NOT_FOUND',
-        homeResult &&
-        homeResult.message
-          ? homeResult.message
+        canonicalResult &&
+        canonicalResult.message
+          ? canonicalResult.message
           : '查無房客資料，請先完成身份綁定',
         {
           tenant: null,
@@ -111,21 +137,30 @@ function getTenantPaymentReportInitByLineUid(
       );
     }
 
+    const canonical =
+      canonicalResult.data || {};
     const tenant =
-      homeResult.data || {};
+      tenantPaymentReportBuildTenant_(canonical);
 
     const billRows =
-      getSheetObjects_(
-        V2_TENANT_PAYMENT_REPORT_SHEETS_
-          .tenantBillView
-      );
+      Array.isArray(canonical.tenant_bill_rows)
+        ? canonical.tenant_bill_rows
+        : [];
 
     const bills =
       billRows
         .filter(function (row) {
+          const billId =
+            String(
+              row.bill_id ||
+              ''
+            ).trim();
+
           const rowLineUserId =
             String(
               row.line_user_id ||
+              row.tenant_line_user_id ||
+              row.tenant_line_uid ||
               ''
             ).trim();
 
@@ -138,6 +173,7 @@ function getTenantPaymentReportInitByLineUid(
               .toLowerCase();
 
           return (
+            billId &&
             rowLineUserId ===
               lineUserId &&
             status !== 'paid' &&
@@ -368,17 +404,18 @@ function submitTenantPaymentReportByLineUid_(
     }
 
     const billRows =
-      getSheetObjects_(
-        V2_TENANT_PAYMENT_REPORT_SHEETS_
-          .tenantBillView
-      );
+      Array.isArray(canonical.tenant_bill_rows)
+        ? canonical.tenant_bill_rows
+        : [];
 
     const bill =
       billRows.find(function (row) {
         return (
           String(
             row.line_user_id ||
-          ''
+            row.tenant_line_user_id ||
+            row.tenant_line_uid ||
+            ''
           ).trim() ===
             lineUserId &&
           String(
@@ -391,38 +428,18 @@ function submitTenantPaymentReportByLineUid_(
             ''
           ).trim() ===
             billId &&
-          String(
-            row.tenant_id ||
-            ''
-          ).trim() ===
-            String(
-              canonical.tenant_id ||
-              ''
-            ).trim() &&
-          String(
-            row.contract_id ||
-            ''
-          ).trim() ===
-            String(
-              canonical.contract_id ||
-              ''
-            ).trim() &&
-          String(
-            row.room_id ||
-            ''
-          ).trim() ===
-            String(
-              canonical.room_id ||
-              ''
-            ).trim() &&
-          String(
-            row.workspace_id ||
-            ''
-          ).trim() ===
-            String(
-              canonical.workspace_id ||
-              ''
-            ).trim()
+          (!row.tenant_id ||
+            String(row.tenant_id).trim() ===
+              String(canonical.tenant_id || '').trim()) &&
+          (!row.contract_id ||
+            String(row.contract_id).trim() ===
+              String(canonical.contract_id || '').trim()) &&
+          (!row.room_id ||
+            String(row.room_id).trim() ===
+              String(canonical.room_id || '').trim()) &&
+          (!row.workspace_id ||
+            String(row.workspace_id).trim() ===
+              String(canonical.workspace_id || '').trim())
         );
       });
 
