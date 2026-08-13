@@ -3,6 +3,16 @@
 This is a concise product-memory changelog. It links to detailed release and
 validation evidence instead of duplicating it.
 
+## 2026-08-13 — Payment write timeout recovery (local candidate)
+
+- Added client-side authoritative-state recovery for landlord payment-report
+  confirmation and manual bill settlement when the write JSONP response times
+  out after the backend may already have committed the Sheet changes.
+- Recovery never resubmits the write; it confirms `confirmed` payment reports or
+  settled/removed arrears records before showing success.
+- Phase 147 covers the recovery paths. This candidate was not deployed or
+  verified against Production.
+
 ## 2026-07-27 — Codex product-memory and handoff reinforcement
 
 - Added an explicit cross-document continuity rule for the authoritative
