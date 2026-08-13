@@ -2269,7 +2269,8 @@
 
     function callApi(
       action,
-      params
+      params,
+      timeoutMs
     ) {
       return new Promise(
         function (
@@ -2288,6 +2289,11 @@
 
           params =
             params || {};
+
+          const requestTimeoutMs =
+            Number(timeoutMs) > 0
+              ? Number(timeoutMs)
+              : 30000;
 
           const callbackName =
             'cmwebsJsonp_' +
@@ -2380,13 +2386,17 @@
                 finished = true;
                 cleanup();
 
-                reject(
+                const error =
                   new Error(
                     'API 載入逾時'
-                  )
-                );
+                  );
+
+                error.code =
+                  'API_TIMEOUT';
+
+                reject(error);
               },
-              30000
+              requestTimeoutMs
             );
 
           let url =
@@ -3319,6 +3329,112 @@
     // 手動確認已繳
     // ==================================================
 
+    function hasManualSettlementCommitted(
+      data,
+      billId
+    ) {
+      const arrears =
+        data &&
+        Array.isArray(data.arrears)
+          ? data.arrears
+          : null;
+
+      if (!arrears) {
+        return false;
+      }
+
+      const targetId =
+        rawText(billId).trim();
+
+      const item =
+        arrears.find(
+          function (candidate) {
+            return (
+              rawText(
+                candidate &&
+                candidate.bill_id
+              ).trim() === targetId
+            );
+          }
+        );
+
+      if (!item) {
+        return true;
+      }
+
+      const statuses = [
+        item.payment_status,
+        item.bill_status,
+        item.status
+      ].map(
+        function (value) {
+          return rawText(value).toLowerCase();
+        }
+      );
+
+      return (
+        Boolean(item.payment_id) ||
+        statuses.some(
+          function (status) {
+            return [
+              'paid',
+              'settled',
+              'completed',
+              'confirmed',
+              '已繳',
+              '已銷帳'
+            ].indexOf(status) !== -1;
+          }
+        )
+      );
+    }
+
+    function waitForManualSettlementRecoveryDelay() {
+      return new Promise(
+        function (resolve) {
+          setTimeout(resolve, 1200);
+        }
+      );
+    }
+
+    async function recoverTimedOutManualSettlement(
+      billId
+    ) {
+      for (
+        let attempt = 0;
+        attempt < 3;
+        attempt += 1
+      ) {
+        try {
+          const response =
+            await callApi(
+              'landlord_arrears',
+              {},
+              5000
+            );
+
+          if (
+            response &&
+            response.success === true &&
+            hasManualSettlementCommitted(
+              response.data || {},
+              billId
+            )
+          ) {
+            return true;
+          }
+        } catch (error) {
+          // The write response is already uncertain; keep checking authoritative state.
+        }
+
+        if (attempt < 2) {
+          await waitForManualSettlementRecoveryDelay();
+        }
+      }
+
+      return false;
+    }
+
     function openSettlementModal(
       billId
     ) {
@@ -3751,6 +3867,30 @@
         );
 
       } catch (error) {
+        if (
+          error &&
+          error.code === 'API_TIMEOUT'
+        ) {
+          const committed =
+            await recoverTimedOutManualSettlement(
+              ACTIVE_BILL_ID
+            );
+
+          if (committed) {
+            closeSettlementModal();
+            showAlert(
+              '帳單已完成銷帳。',
+              function () {
+                setTimeout(
+                  loadPage,
+                  1200
+                );
+              }
+            );
+            return;
+          }
+        }
+
         showAlert(
           error.message ||
           String(error)

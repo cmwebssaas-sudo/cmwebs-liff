@@ -2,6 +2,16 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-08-13 — Payment write timeout recovery (local candidate)
+
+- Added client-side authoritative-state recovery for landlord payment-report
+  confirmation and manual bill settlement when the write JSONP response times
+  out after the backend may already have committed the Sheet changes.
+- Recovery never resubmits the write; it confirms `confirmed` payment reports or
+  settled/removed arrears records before showing success.
+- Phase 147 covers the recovery paths. This candidate was not deployed or
+  verified against Production.
+
 ## 2026-08-12 — Phase 147 tenant identity release and Production identity check
 
 - PR #23 merged the Phase 147 tenant test-identity migration into GitHub

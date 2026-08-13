@@ -227,18 +227,21 @@
       return true;
     }
 
-    function jsonpRequest(action, params) {
+    function jsonpRequest(action, params, timeoutMs) {
       return new Promise(function (resolve, reject) {
         const callbackName = '__cmwebs_payment_review_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
         const script = document.createElement('script');
+        const requestTimeoutMs = Number(timeoutMs) > 0 ? Number(timeoutMs) : 30000;
         let finished = false;
         const timer = setTimeout(function () {
           if (!finished) {
             finished = true;
             cleanup();
-            reject(new Error('API 載入逾時'));
+            const error = new Error('API 載入逾時');
+            error.code = 'API_TIMEOUT';
+            reject(error);
           }
-        }, 30000);
+        }, requestTimeoutMs);
         function cleanup() {
           clearTimeout(timer);
           if (script.parentNode) script.parentNode.removeChild(script);
@@ -266,6 +269,36 @@
         script.src = url;
         document.body.appendChild(script);
       });
+    }
+
+    function findConfirmedPaymentReport(data, reportId) {
+      const reports = data && Array.isArray(data.reports) ? data.reports : [];
+      const targetId = rawText(reportId).trim();
+      const report = reports.find(function (item) {
+        return rawText(item && item.report_id).trim() === targetId;
+      });
+      if (!report) return null;
+      return rawText(report.status).toLowerCase() === 'confirmed' ? report : null;
+    }
+
+    function waitForPaymentReportRecoveryDelay() {
+      return new Promise(function (resolve) { setTimeout(resolve, 1200); });
+    }
+
+    async function recoverTimedOutPaymentReport(reportId) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          const result = await jsonpRequest('landlord_payment_reports_init', {}, 5000);
+          if (result && result.success === true) {
+            const report = findConfirmedPaymentReport(result.data || {}, reportId);
+            if (report) return report;
+          }
+        } catch (error) {
+          // The write response is already uncertain; keep checking authoritative state.
+        }
+        if (attempt < 2) await waitForPaymentReportRecoveryDelay();
+      }
+      return null;
     }
 
     function renderError(message) {
@@ -337,6 +370,15 @@
         showToast(result.message || '付款回報已處理。');
         loadPage();
       } catch (error) {
+        if (error && error.code === 'API_TIMEOUT') {
+          const confirmedReport = await recoverTimedOutPaymentReport(reportId);
+          if (confirmedReport) {
+            modal.remove();
+            showToast('付款回報已完成銷帳。');
+            loadPage();
+            return;
+          }
+        }
         submit.disabled = false;
         showToast(error.message || '付款回報處理失敗。', true);
       }
