@@ -8,7 +8,7 @@ not a deployment instruction and not evidence that the repository has been
 deployed.
 
 - Dispatcher: `apps-script/程式碼.js`
-- Route count: **77** unique `v2Action` routes
+- Route count: **78** unique `v2Action` routes
 - Source tree SHA-256: `c24e33ee91dec312d288fab508e09d8b4c9fefcc3c8eb84ab8b2486a4b2930d0`
 - Scope: read/write route definitions only; every write route still requires its
   existing Workspace, role, and authorization checks.
@@ -175,7 +175,8 @@ tenant_payment_report_submit
 
 These routes are local-candidate additions after the immutable Version 85
 baseline above. They are not deployment evidence. The immutable baseline has
-69 routes; with this candidate addition the current source inventory has 77.
+69 routes; with the contract and revenue-dashboard candidates the current
+source inventory has 78.
 
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
