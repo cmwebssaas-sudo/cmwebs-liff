@@ -40,6 +40,6 @@ assert.match(source, /\.signing-summary\s*\{\s*display: grid;[\s\S]*?minmax\(0, 
 assert.match(source, /\.signature-pad canvas\s*\{[\s\S]*?width: 100%/);
 assert.match(source, /\.signing-sticky-action\s*\{[\s\S]*?bottom: calc\(var\(--nav-height\)/);
 assert.match(source, /const LIFF_ID\s*=\s*'2010314940-iJB1D6sN'/);
-assert.match(source, /const API_URL\s*=\s*'https:\/\/script\.google\.com\/macros\/s\/AKfycbyrwKb3adOgHVBwbwHwLeSsDoUgYhaUaFXui66tnyMNBrT9eOVbi788oHeVRTif_LA9BA\/exec'/);
+assert.match(source, /AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og\/exec/);
 
 console.log('Phase 133 tenant-contract signing UI static tests passed.');

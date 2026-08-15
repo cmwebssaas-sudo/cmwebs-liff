@@ -72,18 +72,30 @@ function tenantLiffSigningResolvePrincipal_(lineSub) {
   const signingMode = tenantLiffSigningText_(contract.signing_mode).toLowerCase();
   if (['new_tenant', 'renewal'].indexOf(signingMode) === -1) return tenantLiffSigningError_('SIGNING_MODE_NOT_READY');
   const artifactState = tenantLiffSigningArtifactState_(ss, contract, signingMode);
-  return { success: true, data: { user_id: tenantLiffSigningText_(user.user_id), tenant_id: tenantLiffSigningText_(tenant.tenant_id), workspace_id: workspaceId, contract_id: tenantLiffSigningText_(contract.contract_id), tenant: { tenant_id: tenantLiffSigningText_(tenant.tenant_id), tenant_name: tenantLiffSigningText_(tenant.tenant_name || tenant.name), room_name: tenantLiffSigningText_(tenant.room_name) }, contract: tenantLiffSigningContractView_(contracts, contract, signingMode), signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending', artifact_requirements: signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'], artifact_state: artifactState } };
+  return { success: true, data: { user_id: tenantLiffSigningText_(user.user_id), tenant_id: tenantLiffSigningText_(tenant.tenant_id), workspace_id: workspaceId, contract_id: tenantLiffSigningText_(contract.contract_id), tenant: { tenant_id: tenantLiffSigningText_(tenant.tenant_id), tenant_name: tenantLiffSigningText_(tenant.tenant_name || tenant.name), room_name: tenantLiffSigningText_(tenant.room_name) }, contract: tenantLiffSigningContractView_(contracts, contract, signingMode, tenant), signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending', artifact_requirements: signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'], artifact_state: artifactState } };
 }
 
-function tenantLiffSigningContractView_(contracts, contract, signingMode) {
+function tenantLiffSigningContractView_(contracts, contract, signingMode, tenant) {
   const previousId = tenantLiffSigningText_(contract.previous_contract_id || contract.renewed_from_contract_id);
   const previous = previousId ? contracts.find(function (row) { return tenantLiffSigningText_(row.contract_id) === previousId && tenantLiffSigningText_(row.tenant_id) === tenantLiffSigningText_(contract.tenant_id) && tenantLiffSigningText_(row.workspace_id) === tenantLiffSigningText_(contract.workspace_id); }) : null;
-  const terms = tenantLiffSigningTermsDocument_(contract);
+  const documentContract = Object.assign({}, contract, {
+    landlord_name: contract.landlord_name || contract.owner_name,
+    tenant_name: contract.tenant_name || (tenant && (tenant.tenant_name || tenant.name)),
+    room_name: contract.room_name || (tenant && tenant.room_name)
+  });
+  const terms = tenantLiffSigningTermsDocument_(documentContract);
   return {
     contract_id: tenantLiffSigningText_(contract.contract_id),
     contract_status: tenantLiffSigningText_(contract.contract_status),
     signing_mode: signingMode,
-    room_name: tenantLiffSigningText_(contract.room_name),
+    landlord_name: tenantLiffSigningText_(contract.landlord_name || contract.owner_name),
+    tenant_name: tenantLiffSigningText_(contract.tenant_name || (tenant && (tenant.tenant_name || tenant.name))),
+    property_name: tenantLiffSigningText_(contract.property_name),
+    property_address: tenantLiffSigningText_(contract.property_address || contract.address),
+    room_name: tenantLiffSigningText_(contract.room_name || (tenant && tenant.room_name)),
+    bank_name: tenantLiffSigningText_(contract.bank_name || contract.landlord_bank_name),
+    bank_account: tenantLiffSigningText_(contract.bank_account || contract.landlord_bank_account || contract.payment_account),
+    bank_account_name: tenantLiffSigningText_(contract.bank_account_name || contract.account_name),
     start_date: contract.start_date || contract.contract_start_date || '',
     end_date: contract.end_date || contract.contract_end_date || '',
     rent_amount: contract.rent_amount || contract.monthly_rent || '',
@@ -92,6 +104,8 @@ function tenantLiffSigningContractView_(contracts, contract, signingMode) {
     monthly_payment_day: contract.monthly_payment_day || contract.payment_day || '',
     landlord_note: tenantLiffSigningText_(contract.landlord_note || contract.signing_note || contract.renewal_landlord_note),
     tenant_signing_submission_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending',
+    tenant_signed_at: contract.tenant_signed_at || '',
+    tenant_signing_submitted_at: contract.tenant_signing_submitted_at || '',
     tenant_signing_reviewed_at: contract.tenant_signing_reviewed_at || '',
     tenant_signing_review_note: tenantLiffSigningText_(contract.tenant_signing_review_note),
     terms_document: terms,
@@ -101,7 +115,96 @@ function tenantLiffSigningContractView_(contracts, contract, signingMode) {
 
 function tenantLiffSigningTermsDocument_(contract) {
   const content = tenantLiffSigningText_(contract.contract_content || contract.contract_text || contract.contract_terms || contract.terms_text);
-  return content ? { available: true, content: content } : { available: false, message: '完整合約內容尚未提供，請聯絡房東確認。' };
+  if (content) {
+    return {
+      available: true,
+      source: 'landlord_provided_contract',
+      version: tenantLiffSigningText_(contract.contract_version) || 'landlord-provided',
+      content: content
+    };
+  }
+  const generated = tenantLiffSigningGenerateStandardContract_(contract);
+  return generated
+    ? { available: true, source: 'generated_standard_contract', version: 'v2.1-standard-1', content: generated }
+    : { available: false, message: '完整合約必要欄位尚未提供，請聯絡房東確認。' };
+}
+
+function tenantLiffSigningGenerateStandardContract_(contract) {
+  contract = contract || {};
+  const required = [
+    contract.start_date || contract.contract_start_date,
+    contract.end_date || contract.contract_end_date,
+    contract.rent_amount || contract.monthly_rent,
+    contract.deposit_amount,
+    contract.room_name
+  ];
+  if (required.some(function (value) { return !tenantLiffSigningText_(value); })) return '';
+  const landlord = tenantLiffSigningText_(contract.landlord_name || contract.owner_name) || '出租人';
+  const tenant = tenantLiffSigningText_(contract.tenant_name) || '承租人';
+  const property = tenantLiffSigningText_(contract.property_name) || '租賃物件';
+  const address = tenantLiffSigningText_(contract.property_address || contract.address) || '未提供';
+  const room = tenantLiffSigningText_(contract.room_name);
+  const start = tenantLiffSigningText_(contract.start_date || contract.contract_start_date);
+  const end = tenantLiffSigningText_(contract.end_date || contract.contract_end_date);
+  const rent = tenantLiffSigningMoney_(contract.rent_amount || contract.monthly_rent);
+  const managementFee = tenantLiffSigningMoney_(contract.management_fee || contract.monthly_management_fee);
+  const deposit = tenantLiffSigningMoney_(contract.deposit_amount);
+  const paymentDay = tenantLiffSigningText_(contract.monthly_payment_day || contract.payment_day) || '未提供';
+  const bankName = tenantLiffSigningText_(contract.bank_name || contract.landlord_bank_name) || '未提供';
+  const bankAccount = tenantLiffSigningText_(contract.bank_account || contract.landlord_bank_account || contract.payment_account) || '未提供';
+  const bankAccountName = tenantLiffSigningText_(contract.bank_account_name || contract.account_name) || landlord;
+  const note = tenantLiffSigningText_(contract.landlord_note || contract.signing_note || contract.renewal_landlord_note) || '無';
+  return [
+    '租賃契約書',
+    '文件版本：CMWebs V2.1 標準格式',
+    '',
+    '第一條　當事人',
+    '出租人：' + landlord,
+    '承租人：' + tenant,
+    '',
+    '第二條　租賃標的',
+    '租賃物件：' + property,
+    '地址：' + address,
+    '房號：' + room,
+    '',
+    '第三條　租賃期間',
+    '自 ' + start + ' 起至 ' + end + ' 止。',
+    '',
+    '第四條　租金與押金',
+    '每月租金：新臺幣 ' + rent + ' 元。',
+    '每月管理費：新臺幣 ' + managementFee + ' 元。',
+    '押金：新臺幣 ' + deposit + ' 元。',
+    '',
+    '第五條　付款方式',
+    '承租人應於每月 ' + paymentDay + ' 日前完成當期租金及應付費用，並依房東提供的收款方式付款。',
+    '收款銀行：' + bankName + '；帳號：' + bankAccount + '；戶名：' + bankAccountName + '。',
+    '',
+    '第六條　使用與修繕',
+    '承租人應以善良管理人之注意使用租賃標的，不得違法、轉租或為影響建物及他人安全之使用。一般耗損以外之損壞，應依責任歸屬負擔修復或賠償。',
+    '',
+    '第七條　費用與設備',
+    '水電、網路、公共費用及其他使用相關費用，依房東公告之計費方式及雙方確認的帳單負擔。設備交付與返還狀況以點交紀錄為準。',
+    '',
+    '第八條　提前終止',
+    '任一方需提前終止租約時，應依租約及相關法令提前通知，並完成費用結清、物品返還及房屋點交。違約責任依雙方確認之約定及適用法令處理。',
+    '',
+    '第九條　返還與點交',
+    '租期屆滿或租約終止時，承租人應返還租賃標的、鑰匙及設備，並恢復合理使用狀態；押金於費用及損害責任確認後依約結算。',
+    '',
+    '第十條　爭議處理',
+    '本契約未約定事項依中華民國相關法令及誠信原則處理；如有爭議，雙方應先協商，協商不成時依管轄法院及適用法令處理。',
+    '',
+    '第十一條　補充約定',
+    note,
+    '',
+    '第十二條　簽署確認',
+    '雙方已閱讀本契約全部條款及重要條件，並以線上簽名及送交紀錄確認本次簽署意旨。合約是否生效仍以房東審核完成及系統狀態為準。'
+  ].join('\n');
+}
+
+function tenantLiffSigningMoney_(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.round(number).toLocaleString('en-US') : '0';
 }
 
 function tenantLiffSigningRenewalComparison_(previous, contract, signingMode) {

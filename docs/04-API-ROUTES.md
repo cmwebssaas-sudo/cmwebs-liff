@@ -112,7 +112,7 @@ tenant_payment_report_submit
 
 | Route | Transport | Required authority | Purpose |
 |---|---|---|---|
-| `landlord_revenue_dashboard_init` | JSONP / bridge | Active Workspace landlord read access | Returns Workspace-scoped revenue KPIs, monthly receivable/collected/outstanding aggregates, property aggregates, and range metadata. It never returns raw bills, payments, tenant names, LINE IDs, or bank data. |
+| `landlord_revenue_dashboard_init` | JSONP / bridge | Active Workspace landlord read access | Returns Workspace-scoped revenue KPIs, monthly receivable/collected/outstanding aggregates, payment-status distribution, overdue ratio/ageing, occupancy, contract-expiry distribution, property aggregates, and range metadata. It never returns raw bills, payments, tenant names, LINE IDs, or bank data. |
 
 - Required filters are `range` (`month`, `3m`, or `12m`) or an explicit
   `from_month`/`to_month` pair. `property_id` is optional and cannot expand the
@@ -123,6 +123,31 @@ tenant_payment_report_submit
   is zero.
 - Missing required reporting sheets fail closed with
   `REPORTING_SCHEMA_NOT_READY`.
+- The legacy `kpis` envelope remains limited to `receivable`, `collected`,
+  `outstanding`, and `collection_rate`. Additional visual aggregates are
+  returned under `metrics`, `status_distribution`, `overdue_aging`,
+  `monthly_status`, `occupancy`, and `contract_expiry` so existing consumers
+  remain compatible.
+- `metrics.overdue_ratio` is outstanding amount past the canonical due date
+  divided by receivable; partial payments past due remain visible as partial in
+  the status distribution but are included in overdue metrics.
+- Room status is read from `V2_rooms`; an explicit room status takes priority
+  over a conflicting active contract. Occupancy excludes inactive rooms from
+  its rate denominator and reports unknown states separately.
+
+### Native contract document response
+
+The tenant signing session and landlord signing-review list return a complete
+`terms_document`/`contract_document` view. When landlord-provided contract text
+exists it is returned as-is with its source/version; otherwise the server
+generates the fixed V2.1 standard contract from canonical contract fields. The
+standard document includes parties, property/room, dates, rent, deposit,
+payment method, use/repair, fees/equipment, early termination, handover,
+dispute handling, supplemental terms, and signing confirmation. Missing
+required fields fail closed rather than producing a document with guessed
+values. The tenant must read the document, complete required artifacts, draw a
+signature, and submit consent; the server records the signing timestamp and
+landlord review remains the activation boundary.
 
 ### Existing paid-settlement view synchronization
 
