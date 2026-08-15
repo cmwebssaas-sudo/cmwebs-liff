@@ -64,3 +64,27 @@ and immutable rollback remain separate Production evidence.
   `contract_status`, is idempotent after a successful submission, and fails
   closed when the explicit signing-audit schema is absent. It is not a contract
   activation, approval, or status-transition mechanism.
+
+## V2.1 native landlord signing-review candidate
+
+This local candidate adds the post-submission review step without changing the
+native queue object: a submitted item remains the canonical `V2_contracts` row,
+not a `V2_contract_requests` or legacy-integration record.
+
+- The `V2_contracts` review audit schema is append-only and idempotent. Its
+  required fields are `tenant_signing_reviewed_at`,
+  `tenant_signing_reviewed_by_user_id`,
+  `tenant_signing_reviewed_by_membership_id`, and
+  `tenant_signing_review_note`. A missing schema fails closed; this document
+  does not authorize migration of any Production spreadsheet.
+- Native landlord-review read and write routes require a short-lived,
+  server-verified LINE session bound to the active V2 user, Workspace membership
+  and Workspace. A raw URL `line_user_id` cannot authorize these routes.
+- The approval/rejection write obtains `ScriptLock`, re-reads the contract
+  inside the lock, enforces the existing Workspace `contract_write` policy and
+  preserves the final-decision idempotency boundary. Approval revalidates the
+  required stored artifacts before changing `contract_status` to `active`.
+- Rejection preserves the existing signable contract status and records
+  `tenant_signing_submission_status=rejected`; the tenant may resubmit through
+  the existing verified native session and artifact path. Neither outcome calls
+  LINE, Make, the legacy signed-contract bridge, or an external e-sign service.

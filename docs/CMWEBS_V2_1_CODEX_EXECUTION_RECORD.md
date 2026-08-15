@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-08-04 (Asia/Taipei)**
+**Last updated: 2026-08-13 (Asia/Taipei)**
 
 ## Purpose
 
@@ -31,6 +31,7 @@ be verified for the particular action that needs it.
 | --- | --- | --- |
 | 2026-08-03 | Documentation authority-baseline synchronization | Only this record, `CMWEBS_CURRENT_STATE.md`, and `CMWEBS_CODEX_HANDOFF.md`; isolated local branch and local commit only. No push, deployment, Production access, runtime test, or source implementation. |
 | 2026-08-04 | Landlord-home request-local snapshot candidate | Isolated local source/test candidate only. It enables the existing snapshot for `landlord_home_bootstrap` and adds a focused mock; no cross-request cache, push, deployment, Production access, or external action. |
+| 2026-08-13 | Native landlord contract-signing review security repair | Explicitly authorized isolated V2.1 candidate only. Uses server-verified review sessions, Workspace/RBAC revalidation, serialized final decisions, and approval-time artifact checks; no deployment, schema migration, Production access, push, PR, merge, or external action. |
 
 The source candidate is not canonical Git `main`, deployed Apps Script, or
 Production-performance evidence. It requires separate review and authorization
@@ -46,6 +47,27 @@ for every later integration, publication, deployment, or runtime verification.
 - `git diff --check` and JavaScript syntax verification passed for the local
   snapshot candidate. The isolated checkouts used for this work had no
   `package.json`, so `npm run validate` was not applicable there.
+
+## 2026-08-13 native signing-review candidate validation matrix
+
+The candidate branch is
+`codex/v2_1-signing-review-security-20260813`. This is local evidence only;
+it does not establish LINE, Drive, LIFF, Apps Script serving, or Production
+state.
+
+| Boundary | Focused evidence | Result |
+| --- | --- | --- |
+| Server-verified landlord identity | Phase 140 session exchange and forged-token denial | PASS |
+| Workspace and membership binding | Phase 138 cross-Workspace claim mismatch denial | PASS |
+| Final decision serialization/idempotency | Phase 138 lock, approval, rejection, and opposite-finalization checks | PASS |
+| Approval artifact fail-closed behavior | Phase 138 missing/removed required artifact check | PASS |
+| Tenant signing compatibility | Phase 129–132 runtime mocks | PASS |
+
+The focused runtime mocks, Apps Script JavaScript syntax checks, test-module
+syntax checks, and `git diff --check` passed on 2026-08-13. `npm run validate`
+was attempted but this isolated candidate has no `package.json`, so the npm
+validation command is unavailable there. No Apps Script runtime or Production
+verification was performed.
 
 ## V2.1 scope boundary
 

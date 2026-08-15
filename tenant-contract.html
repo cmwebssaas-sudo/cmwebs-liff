@@ -2583,11 +2583,12 @@
     }
 
     function tenantSigningStatusLabel() {
-      return rawText(
+      const status = rawText(
         TENANT_SIGNING_DATA && TENANT_SIGNING_DATA.signing_status
-      ).toLowerCase() === 'submitted'
-        ? '已送交簽署資料'
-        : '待您確認';
+      ).toLowerCase();
+      if (status === 'submitted') return '已送交簽署資料';
+      if (status === 'rejected') return '審核退回，請補正後重新送交';
+      return '待您確認';
     }
 
     function tenantSigningSummaryItem(label, value, className) {
@@ -2662,7 +2663,9 @@
       const tenant = data.tenant || {};
       const contract = data.contract || {};
       const isRenewal = TENANT_SIGNING_MODE === 'renewal';
-      const submitted = rawText(data.signing_status).toLowerCase() === 'submitted';
+      const signingStatus = rawText(data.signing_status).toLowerCase();
+      const submitted = signingStatus === 'submitted';
+      const rejected = signingStatus === 'rejected';
       const terms = contract.terms_document || {};
       const comparison = contract.renewal_comparison || {};
       const changedItems = Array.isArray(comparison.items)
@@ -2690,6 +2693,14 @@
           <section class="signing-section">
             <h2 class="signing-section-title">資料已送交</h2>
             <p class="signing-section-help">您的簽署資料已送交後續確認。這不代表合約已核准或生效；請留意房東的後續通知。</p>
+          </section>
+        ` : ''}
+
+        ${rejected ? `
+          <section class="signing-section">
+            <h2 class="signing-section-title">請補正後重新送交</h2>
+            <p class="signing-section-help">房東已退回這次簽署資料。您可確認合約內容與附件後再次送交。</p>
+            ${contract.tenant_signing_review_note ? `<div class="signing-notice">房東說明：${safeText(contract.tenant_signing_review_note)}</div>` : ''}
           </section>
         ` : ''}
 
