@@ -58,6 +58,7 @@ landlord_paid_bills_init
 landlord_payment_report_settle
 landlord_payment_report_update
 landlord_payment_reports_init
+landlord_revenue_dashboard_init
 landlord_properties_init
 landlord_property_archive
 landlord_property_save
@@ -106,6 +107,22 @@ tenant_payment_report_submit
 ```
 
 ## Payment-report and bill-display contracts
+
+## Landlord revenue dashboard
+
+| Route | Transport | Required authority | Purpose |
+|---|---|---|---|
+| `landlord_revenue_dashboard_init` | JSONP / bridge | Active Workspace landlord read access | Returns Workspace-scoped revenue KPIs, monthly receivable/collected/outstanding aggregates, property aggregates, and range metadata. It never returns raw bills, payments, tenant names, LINE IDs, or bank data. |
+
+- Required filters are `range` (`month`, `3m`, or `12m`) or an explicit
+  `from_month`/`to_month` pair. `property_id` is optional and cannot expand the
+  authenticated Workspace scope.
+- Receivable uses valid canonical bills; collected uses confirmed payments first
+  and a paid canonical-bill fallback when no payment rows exist. Outstanding is
+  `max(receivable - collected, 0)` and collection rate is `null` when receivable
+  is zero.
+- Missing required reporting sheets fail closed with
+  `REPORTING_SCHEMA_NOT_READY`.
 
 ### Existing paid-settlement view synchronization
 
