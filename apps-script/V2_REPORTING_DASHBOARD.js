@@ -896,6 +896,12 @@ function revenueDashboardBillMonth_(bill) {
 
 
 function revenueDashboardNormalizeMonth_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    const year = value.getFullYear();
+    const month = value.getMonth() + 1;
+    return String(year) + '-' + String(month).padStart(2, '0');
+  }
+
   const text = revenueDashboardText_(value);
   const match = text.match(/^(\d{4})[-/](\d{1,2})/);
 

@@ -1627,6 +1627,7 @@
     let TENANT_SIGNATURE_PAD = null;
     let TENANT_SIGNATURE_HAS_STROKE = false;
     let TENANT_SIGNING_SUBMITTING = false;
+    let READ_ONLY_CONTRACT_FALLBACK = false;
     let ALERT_CALLBACK = null;
 
     const app =
@@ -2550,6 +2551,23 @@
       return messages[code] || fallback || '簽署流程暫時無法完成，請稍後再試。';
     }
 
+    function shouldFallbackToReadOnlyContract_(code) {
+      const fallbackCodes = [
+        'SIGNABLE_CONTRACT_NOT_FOUND',
+        'SIGNING_MODE_NOT_READY',
+        'LINE_LOGIN_CHANNEL_NOT_CONFIGURED',
+        'LIFF_SESSION_SECRET_NOT_CONFIGURED',
+        'LINE_TOKEN_VERIFY_FAILED',
+        'LINE_TOKEN_CLAIMS_INVALID',
+        'TENANT_USER_NOT_ACTIVE',
+        'TENANT_MAPPING_NOT_FOUND',
+        'WORKSPACE_MEMBERSHIP_INVALID',
+        'SIGNING_AUTH_FAILED'
+      ];
+
+      return !rawText(code) || fallbackCodes.indexOf(rawText(code)) >= 0;
+    }
+
     function tenantSigningModeTitle() {
       return TENANT_SIGNING_MODE === 'renewal'
         ? '續約合約'
@@ -3470,6 +3488,12 @@
           <div class="page-subtitle">
             查看目前租約、付款資訊及續約或退租申請進度
           </div>
+
+          ${READ_ONLY_CONTRACT_FALLBACK ? `
+            <div class="modal-warning">
+              目前先顯示合約內容；線上簽署驗證暫時未完成，請稍後重新整理再試。
+            </div>
+          ` : ''}
         </header>
 
         <section class="card">
@@ -4177,9 +4201,11 @@
 
         try {
           await initializeTenantSigningSession();
+          READ_ONLY_CONTRACT_FALLBACK = false;
           renderTenantSigningWorkflow();
         } catch (signingError) {
-          if (signingError.code === 'SIGNABLE_CONTRACT_NOT_FOUND') {
+          if (shouldFallbackToReadOnlyContract_(signingError.code)) {
+            READ_ONLY_CONTRACT_FALLBACK = true;
             await loadPage();
             return;
           }
