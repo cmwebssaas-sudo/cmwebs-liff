@@ -8,7 +8,7 @@ not a deployment instruction and not evidence that the repository has been
 deployed.
 
 - Dispatcher: `apps-script/程式碼.js`
-- Route count: **69** unique `v2Action` routes
+- Route count: **77** unique `v2Action` routes
 - Source tree SHA-256: `c24e33ee91dec312d288fab508e09d8b4c9fefcc3c8eb84ab8b2486a4b2930d0`
 - Scope: read/write route definitions only; every write route still requires its
   existing Workspace, role, and authorization checks.
@@ -30,6 +30,14 @@ landlord_bill_notifications_send
 landlord_bill_reopen
 landlord_billing_init
 landlord_bills_generate
+landlord_contract_signing_review_auth_init
+landlord_contract_signing_review_auth_status
+landlord_contract_signing_review_update
+landlord_contract_signing_review_update_status
+landlord_contract_signing_review_update_submit
+landlord_contract_signing_reviews_fetch
+landlord_contract_signing_reviews_fetch_status
+landlord_contract_signing_reviews_init
 landlord_contract_request_update
 landlord_contract_requests_init
 landlord_entry_status
@@ -149,8 +157,8 @@ tenant_payment_report_submit
 ## V2.1 native landlord signing-review candidate routes
 
 These routes are local-candidate additions after the immutable Version 85
-baseline above. They are not deployment evidence and do not alter that
-baseline's 69-route count.
+baseline above. They are not deployment evidence. The immutable baseline has
+69 routes; with this candidate addition the current source inventory has 77.
 
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
