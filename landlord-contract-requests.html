@@ -1147,8 +1147,10 @@
       ).trim();
 
     let LINE_USER_ID = '';
+    let NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
     let PAGE_DATA = null;
     let ALL_REQUESTS = [];
+    let SIGNING_REVIEWS = [];
     let ACTIVE_REQUEST = null;
     let ACTIVE_STATUS_FILTER =
       TENANT_FILTER_ID ? 'all' : 'pending';
@@ -1538,6 +1540,140 @@
       });
     }
 
+    function randomUrlToken(bytes) {
+      const value = new Uint8Array(bytes);
+      crypto.getRandomValues(value);
+      return btoa(String.fromCharCode.apply(null, value))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '');
+    }
+
+    function callNativeSigningReviewAuthStatus(requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsLandlordSigningReview_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error('房東審核身分驗證逾時'));
+        }, 30000);
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) {}
+        }
+        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
+        script.onerror = function() { cleanup(); reject(new Error('房東審核身分驗證連線失敗')); };
+        script.src = API_URL +
+          '?v2_action=landlord_contract_signing_review_auth_status' +
+          '&request_id=' + encodeURIComponent(requestId) +
+          '&poll_secret=' + encodeURIComponent(pollSecret) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initializeNativeSigningReviewSession() {
+      if (TEST_MODE) return false;
+      const idToken = liff.getIDToken();
+      if (!idToken) throw new Error('無法取得房東審核身分憑證');
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify({
+          action: 'landlord_contract_signing_review_auth_init',
+          id_token: idToken,
+          request_id: requestId,
+          poll_secret: pollSecret
+        })
+      });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callNativeSigningReviewAuthStatus(requestId, pollSecret);
+        if (result.code === 'AUTH_EXCHANGE_NOT_FOUND') continue;
+        if (!result.success || !result.data || !result.data.session_token) {
+          const error = new Error(result && result.message ? result.message : '房東審核身分驗證失敗');
+          error.code = result && result.code ? result.code : 'LANDLORD_REVIEW_AUTH_FAILED';
+          throw error;
+        }
+        NATIVE_SIGNING_REVIEW_SESSION_TOKEN = result.data.session_token;
+        return true;
+      }
+      throw new Error('房東審核身分驗證逾時');
+    }
+
+    function callNativeSigningReviewExchangeStatus(operation, requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsLandlordSigningReviewExchange_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error('原生合約審核處理逾時'));
+        }, 30000);
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) {}
+        }
+        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
+        script.onerror = function() { cleanup(); reject(new Error('原生合約審核結果查詢失敗')); };
+        const statusAction = operation === 'list'
+          ? 'landlord_contract_signing_reviews_fetch_status'
+          : 'landlord_contract_signing_review_update_status';
+        script.src = API_URL +
+          '?v2_action=' + encodeURIComponent(statusAction) +
+          '&request_id=' + encodeURIComponent(requestId) +
+          '&poll_secret=' + encodeURIComponent(pollSecret) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function callNativeSigningReviewApi(action, params) {
+      if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) {
+        throw new Error('房東審核身分驗證已失效，請重新整理頁面。');
+      }
+      const operation = action === 'landlord_contract_signing_reviews_init'
+        ? 'list'
+        : action === 'landlord_contract_signing_review_update'
+          ? 'update'
+          : '';
+      if (!operation) {
+        throw new Error('不支援的原生合約審核操作');
+      }
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      const payload = Object.assign({}, params || {}, {
+        action: operation === 'list'
+          ? 'landlord_contract_signing_reviews_fetch'
+          : 'landlord_contract_signing_review_update_submit',
+        request_id: requestId,
+        poll_secret: pollSecret,
+        session_token: NATIVE_SIGNING_REVIEW_SESSION_TOKEN
+      });
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(payload)
+      });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callNativeSigningReviewExchangeStatus(operation, requestId, pollSecret);
+        if (result.code === 'REVIEW_EXCHANGE_NOT_FOUND') continue;
+        if (!result.success) {
+          const error = new Error(result && result.message ? result.message : '原生合約審核失敗');
+          error.code = result && result.code ? result.code : 'LANDLORD_REVIEW_EXCHANGE_FAILED';
+          throw error;
+        }
+        return result.data || {};
+      }
+      throw new Error('原生合約審核處理逾時');
+    }
+
     async function initLineUserId() {
       if (TEST_MODE) {
         LINE_USER_ID = TEST_LINE_USER_ID;
@@ -1698,6 +1834,9 @@
 
     function renderPage(data) {
       PAGE_DATA = data || {};
+      SIGNING_REVIEWS = Array.isArray(PAGE_DATA.native_signing_reviews)
+        ? PAGE_DATA.native_signing_reviews
+        : [];
 
       const sourceRequests =
         Array.isArray(PAGE_DATA.requests)
@@ -1854,6 +1993,8 @@
           </div>
         </section>
 
+        ${renderNativeSigningReviewSection()}
+
         <section class="card toolbar-card">
           <div class="filter-scroll">
             ${renderFilterButton('pending', '待審核', summary.pending_count)}
@@ -1901,6 +2042,78 @@
       `;
 
       renderRequestList();
+    }
+
+    function renderNativeSigningReviewSection() {
+      const reviews = TENANT_FILTER_ID
+        ? SIGNING_REVIEWS.filter(function (review) {
+            return rawText(review.tenant_id).trim() === TENANT_FILTER_ID;
+          })
+        : SIGNING_REVIEWS;
+
+      if (!reviews.length) {
+        return '';
+      }
+
+      return `
+        <section class="card">
+          <div class="list-header" style="margin:0 0 12px;">
+            <div class="list-title">待審核的原生合約簽署</div>
+            <div class="list-count">${reviews.length} 筆</div>
+          </div>
+          ${reviews.map(function (review) {
+            return `
+              <article class="request-card pending">
+                <div class="request-top">
+                  <div>
+                    <div class="request-title">原生合約簽署資料</div>
+                    <div class="request-id">${safeText(review.contract_id)}</div>
+                  </div>
+                  <span class="badge pending">待審核</span>
+                </div>
+                <div class="request-meta-row">
+                  <span class="mini-tag">房客 ${safeText(review.tenant_id)}</span>
+                  <span class="mini-tag">送交 ${formatDateTime(review.tenant_signing_submitted_at || review.tenant_signed_at)}</span>
+                </div>
+                <div class="request-actions two">
+                  <button class="btn btn-soft-danger" onclick="submitNativeSigningReview('${escapeHtml(review.contract_id)}', 'reject')">駁回</button>
+                  <button class="btn btn-primary" onclick="submitNativeSigningReview('${escapeHtml(review.contract_id)}', 'approve')">核准生效</button>
+                </div>
+              </article>
+            `;
+          }).join('')}
+        </section>
+      `;
+    }
+
+    async function submitNativeSigningReview(contractId, decision) {
+      if (IS_SUBMITTING) return;
+      const rejecting = decision === 'reject';
+      const reviewNote = window.prompt(
+        rejecting ? '請輸入駁回與補正說明：' : '可選填核准備註：',
+        ''
+      );
+      if (reviewNote === null) return;
+      if (rejecting && !reviewNote.trim()) {
+        showAlert('需要駁回說明', '駁回原生合約簽署時必須提供房客可理解的補正說明。');
+        return;
+      }
+      IS_SUBMITTING = true;
+      setSubmitButtonsDisabled(true);
+      try {
+        await callNativeSigningReviewApi('landlord_contract_signing_review_update', {
+          contract_id: contractId,
+          decision: decision,
+          review_note: reviewNote.trim()
+        });
+        await loadPage(false);
+        showAlert('操作完成', rejecting ? '已退回房客補正；房客可重新送交。' : '已核准合約，合約已生效。');
+      } catch (error) {
+        showAlert('操作失敗', error.message || String(error));
+      } finally {
+        IS_SUBMITTING = false;
+        setSubmitButtonsDisabled(false);
+      }
     }
 
     function renderFilterButton(value, label, count) {
@@ -2779,6 +2992,15 @@
         }
 
         const data = await callApi('landlord_contract_requests_init');
+        try {
+          const signingReviews = await callNativeSigningReviewApi('landlord_contract_signing_reviews_init');
+          data.native_signing_reviews = Array.isArray(signingReviews.items)
+            ? signingReviews.items
+            : [];
+        } catch (_) {
+          // Legacy contract-request management remains usable if the optional native review schema is not installed.
+          data.native_signing_reviews = [];
+        }
         renderPage(data);
       } catch (error) {
         renderError(error.message || String(error));
@@ -2794,6 +3016,13 @@
           return;
         }
 
+        try {
+          await initializeNativeSigningReviewSession();
+        } catch (error) {
+          // Legacy request management stays readable; native review remains fail-closed.
+          NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
+          console.warn('Native signing-review session unavailable.', error);
+        }
         await loadPage(false);
       } catch (error) {
         renderError(error.message || String(error));

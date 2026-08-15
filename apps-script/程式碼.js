@@ -75,6 +75,38 @@ function doGet(e) {
     );
   }
 
+  if (v2Action === 'landlord_contract_signing_review_auth_status') {
+    return jsonOutput_(
+      landlordContractSigningReviewReadAuthExchange_(
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
+  if (v2Action === 'landlord_contract_signing_reviews_fetch_status') {
+    return jsonOutput_(
+      landlordContractSigningReviewReadResultExchange_(
+        'list',
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
+  if (v2Action === 'landlord_contract_signing_review_update_status') {
+    return jsonOutput_(
+      landlordContractSigningReviewReadResultExchange_(
+        'update',
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
   runtimeSnapshotBegin_(v2Action);
 
   try {
@@ -1692,6 +1724,62 @@ if (
 
 
 // --------------------------------------------------
+// 房東：原生合約簽署審核清單
+//
+// v2_action=landlord_contract_signing_reviews_init
+// --------------------------------------------------
+
+if (
+  v2Action ===
+  'landlord_contract_signing_reviews_init'
+) {
+  const result = tenantContractSigningReviewError_(
+    'LANDLORD_REVIEW_POST_EXCHANGE_REQUIRED'
+  );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(
+      result,
+      requestId
+    );
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
+
+// --------------------------------------------------
+// 房東：核准或駁回原生合約簽署
+//
+// v2_action=landlord_contract_signing_review_update
+// --------------------------------------------------
+
+if (
+  v2Action ===
+  'landlord_contract_signing_review_update'
+) {
+  const result = tenantContractSigningReviewError_(
+    'LANDLORD_REVIEW_POST_EXCHANGE_REQUIRED'
+  );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(
+      result,
+      requestId
+    );
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
+
+// --------------------------------------------------
 // 房東：核准、駁回、完成合約申請
 //
 // v2_action=landlord_contract_request_update
@@ -2097,6 +2185,10 @@ function doPost(e) {
     // fallback for all unrelated POST bodies.
     const result = tenantLiffSigningIsAuthRequest_(postBody)
       ? tenantLiffSigningHandleAuthPost_(postBody)
+      : landlordContractSigningReviewIsAuthRequest_(postBody)
+        ? landlordContractSigningReviewHandleAuthPost_(postBody)
+        : landlordContractSigningReviewIsExchangeRequest_(postBody)
+          ? landlordContractSigningReviewHandleExchangePost_(postBody)
       : tenantContractArtifactIsUploadRequest_(postBody)
         ? tenantContractArtifactHandleUploadPost_(postBody)
         : tenantContractSigningIsSubmitRequest_(postBody)
