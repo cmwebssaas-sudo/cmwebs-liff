@@ -10,7 +10,7 @@ Google Sheets，即可查看指定期間的應收、實收、未收與收款率�
 
 - 第一版支援本月、近 3 個月、近 12 個月與自訂月份區間。
 - KPI：期間應收、期間實收、期間未收、收款率。
-- 圖形化資料：月份應收／實收／未收折線資料與物件收入／收款率資料。
+- 圖形化資料：月份應收／實收／未收上升／下降折線、繳款狀態分布、遲繳比例、遲繳天數、入住率與合約到期分布，並保留物件收入／收款率資料。
 - 圖表下方提供相同聚合結果的數值表格。
 - 前端提供 CSV 匯出，內容只使用已授權 Workspace 的聚合結果。
 - 無資料時顯示空狀態，不以全為零的圖表誤導使用者。
@@ -37,15 +37,15 @@ resolver 驗證身份與 onboarding，再以 `runtimeSpreadsheet_()` 讀取
 應收為零時回傳 `null`。
 
 新增 JSONP route `landlord_revenue_dashboard_init`，只回傳聚合後的 KPI、
-月份序列、物件序列、更新時間與 scope metadata，不回傳帳單、房客姓名、
-LINE UID 或銀行資料。
+月份序列、物件序列、繳款狀態、遲繳比例／年齡、房間入住率、合約到期區間、
+更新時間與 scope metadata，不回傳帳單、房客姓名、LINE UID 或銀行資料。
 
 ## 前端設計
 
 新增 `landlord-revenue-dashboard.html`，沿用既有 LIFF 初始化、固定 shell、
-bottom navigation 與 JSONP transport。頁面提供期間選擇、更新按鈕、四張 KPI
-卡、SVG 折線圖、月份表格、物件表格與 CSV 下載。SVG 只呈現 API 回傳的聚合
-數字，不在瀏覽器掃描明細。
+bottom navigation 與 JSONP transport。頁面提供期間選擇、更新按鈕、KPI 卡、SVG
+折線／柱狀／圓環圖、月份表格、物件表格與 CSV 下載。SVG 只呈現 API 回傳的
+聚合數字，不在瀏覽器掃描明細。
 
 `landlord-more.html` 新增「營收儀表板」入口；既有頁面與帳務流程不改變。
 

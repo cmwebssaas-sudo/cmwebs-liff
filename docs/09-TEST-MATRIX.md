@@ -143,4 +143,6 @@
 - [x] 合約審核缺少必要附件時 fail closed、跨 Workspace 拒絕、重複決策 idempotent（Phase 138 runtime mock；Production Sheet schema 尚未驗證）
 - [x] 營收儀表板聚合應收／實收／未收／收款率，並排除跨 Workspace 帳單（Phase 150 runtime test）
 - [x] 營收儀表板提供 SVG 圖表、數值表格 fallback、空資料狀態與月份／物件 CSV（Phase 151 UI test）
+- [x] 營收儀表板提供繳款狀態分布、遲繳比例與遲繳天數、入住率、合約到期分布（Phase 152 runtime + Phase 153 UI tests）
+- [x] 缺少原始合約文字時由伺服器依 canonical 欄位產生完整標準租賃契約，房客全文閱讀／線上簽名送審，房東審核頁可全文檢視（Phase 154 runtime + Phase 155 UI tests）
 - [ ] Apps Script 實際 serving version、正式 Sheet schema、LIFF 真機與 GitHub Pages 發布後 UAT

@@ -37,6 +37,19 @@
     .section-hint { color:var(--muted); font-size:11px; }
     .chart-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:#fbfcfe; padding:8px; }
     #revenueChart { display:block; width:100%; min-width:510px; height:auto; }
+    .visual-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .visual-card { min-width:0; padding:14px; border:1px solid var(--line); border-radius:14px; background:#fbfcfe; }
+    .visual-card.wide { grid-column:1 / -1; }
+    .visual-title { margin-bottom:9px; font-size:14px; font-weight:900; }
+    .visual-subtitle { min-height:32px; margin-bottom:8px; color:var(--muted); font-size:11px; line-height:1.5; }
+    .mini-chart { display:block; width:100%; height:auto; min-height:120px; }
+    .donut-chart { display:block; width:100%; max-height:170px; }
+    .visual-value { margin-top:7px; font-size:22px; font-weight:900; }
+    .visual-value.danger { color:var(--danger); }
+    .visual-footnote { margin-top:7px; color:var(--muted); font-size:11px; line-height:1.5; }
+    .visual-card .table-wrap { margin-top:10px; }
+    .visual-card table { min-width:0; font-size:11px; }
+    .visual-card th, .visual-card td { padding:7px 4px; }
     .legend { display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; color:var(--muted); font-size:11px; }
     .legend-item { display:inline-flex; align-items:center; gap:5px; }
     .legend-dot { width:9px; height:9px; border-radius:50%; }
@@ -60,6 +73,7 @@
     .toast { position:absolute; z-index:3000; right:18px; bottom:calc(var(--nav-height) + 22px + env(safe-area-inset-bottom)); left:18px; display:none; border-radius:12px; padding:12px 14px; background:rgba(25,28,33,.94); color:#fff; text-align:center; font-size:13px; font-weight:800; }
     .toast.show { display:block; }
     .toast.error { background:var(--danger); }
+    @media (max-width:420px) { .visual-grid { grid-template-columns:1fr; } .visual-card.wide { grid-column:auto; } }
   </style>
 </head>
 <body>
@@ -165,6 +179,45 @@
       const labels = rows.map(function (row, index) { const point = chartPoint(0, max, index, rows.length); return '<text x="' + point.x + '" y="246" text-anchor="middle" fill="#8792a5" font-size="10">' + safeHtml(row.month) + '</text>'; }).join('');
       svg.innerHTML = grid + '<polyline points="' + polyline(rows, 'receivable', max) + '" fill="none" stroke="#246bfd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="' + polyline(rows, 'collected', max) + '" fill="none" stroke="#06c755" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="' + polyline(rows, 'outstanding', max) + '" fill="none" stroke="#c83c4a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' + labels;
     }
+    function renderBarChart(id, rows, valueKey, color) {
+      const svg = document.getElementById(id);
+      if (!svg) return;
+      rows = Array.isArray(rows) ? rows : [];
+      const max = Math.max(1, ...rows.map(function (row) { return number(row[valueKey]); }));
+      const width = 320;
+      const height = 150;
+      const left = 10;
+      const bottom = 26;
+      const slot = rows.length ? (width - left * 2) / rows.length : width;
+      const bars = rows.map(function (row, index) {
+        const value = number(row[valueKey]);
+        const barHeight = value > 0 ? Math.max(4, (value / max) * 98) : 2;
+        const x = left + index * slot + slot * .18;
+        const y = height - bottom - barHeight;
+        const label = row.label || row.status || row.bucket || row.month || '';
+        return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + Math.max(8, slot * .64).toFixed(1) + '" height="' + barHeight.toFixed(1) + '" rx="5" fill="' + color + '" opacity=".88"><title>' + safeHtml(label) + '：' + safeHtml(value) + '</title></rect><text x="' + (x + slot * .32).toFixed(1) + '" y="' + (height - 8) + '" text-anchor="middle" fill="#8792a5" font-size="9">' + safeHtml(label) + '</text>';
+      }).join('');
+      svg.innerHTML = '<line x1="8" y1="' + (height - bottom) + '" x2="' + (width - 8) + '" y2="' + (height - bottom) + '" stroke="#dfe5ed"/>' + bars;
+    }
+    function renderDonutChart(id, ratio, color, label) {
+      const svg = document.getElementById(id);
+      if (!svg) return;
+      const value = ratio === null || ratio === undefined ? 0 : Math.max(0, Math.min(1, number(ratio)));
+      const circumference = 2 * Math.PI * 42;
+      const dash = (circumference * value).toFixed(1);
+      svg.innerHTML = '<circle cx="80" cy="80" r="42" fill="none" stroke="#e9edf2" stroke-width="14"/><circle cx="80" cy="80" r="42" fill="none" stroke="' + color + '" stroke-width="14" stroke-linecap="round" stroke-dasharray="' + dash + ' ' + circumference.toFixed(1) + '" transform="rotate(-90 80 80)"/><text x="80" y="78" text-anchor="middle" fill="#152238" font-size="21" font-weight="900">' + percent(ratio) + '</text><text x="80" y="98" text-anchor="middle" fill="#6b778c" font-size="10">' + safeHtml(label) + '</text>';
+    }
+    function renderVisualCharts() {
+      const status = Array.isArray(PAGE_DATA.status_distribution) ? PAGE_DATA.status_distribution : [];
+      const aging = Array.isArray(PAGE_DATA.overdue_aging) ? PAGE_DATA.overdue_aging : [];
+      const expiry = Array.isArray(PAGE_DATA.contract_expiry) ? PAGE_DATA.contract_expiry : [];
+      const occupancy = PAGE_DATA.occupancy || {};
+      renderBarChart('paymentStatusChart', status, 'amount', '#246bfd');
+      renderBarChart('overdueAgingChart', aging, 'amount', '#c83c4a');
+      renderBarChart('contractExpiryChart', expiry, 'count', '#7654c4');
+      renderDonutChart('overdueRatioChart', PAGE_DATA.metrics && PAGE_DATA.metrics.overdue_ratio, '#c83c4a', '遲繳金額比例');
+      renderDonutChart('occupancyChart', occupancy.occupancy_rate, '#06c755', '可用房間入住率');
+    }
     function renderTable(rows) {
       if (!rows.length) return '<div class="empty"><div class="state-title">沒有可顯示的營收資料</div><div class="state-text">目前期間沒有符合工作區範圍的有效帳單。</div></div>';
       return '<div class="table-wrap"><table><thead><tr><th>月份</th><th>應收</th><th>實收</th><th>未收</th><th>收款率</th></tr></thead><tbody>' + rows.map(function (row) { return '<tr><td>' + safeHtml(row.month) + '</td><td>' + money(row.receivable) + '</td><td>' + money(row.collected) + '</td><td>' + money(row.outstanding) + '</td><td>' + percent(row.collection_rate) + '</td></tr>'; }).join('') + '</tbody></table></div>';
@@ -177,13 +230,35 @@
       const propertyOptions = '<option value="">全部物件</option>' + properties.map(function (property) { return '<option value="' + safeHtml(property.property_id) + '"' + (property.property_id === SELECTED_PROPERTY ? ' selected' : '') + '>' + safeHtml(property.property_name || property.property_id) + '</option>'; }).join('');
       return '<div class="card filters"><div class="field"><label for="rangeSelect">資料期間</label><select id="rangeSelect" onchange="changeRange(this.value)"><option value="month"' + (SELECTED_RANGE === 'month' ? ' selected' : '') + '>本月</option><option value="3m"' + (SELECTED_RANGE === '3m' ? ' selected' : '') + '>近 3 個月</option><option value="12m"' + (SELECTED_RANGE === '12m' ? ' selected' : '') + '>近 12 個月</option></select></div><div class="field"><label for="propertySelect">物件</label><select id="propertySelect" onchange="changeProperty(this.value)">' + propertyOptions + '</select></div></div>';
     }
+    function renderStatusTable(rows) {
+      if (!rows.length) return '<div class="visual-footnote">目前沒有繳款狀態資料。</div>';
+      return '<div class="table-wrap"><table><thead><tr><th>狀態</th><th>筆數</th><th>金額</th></tr></thead><tbody>' + rows.map(function (row) { return '<tr><td>' + safeHtml(row.label || row.status) + '</td><td>' + number(row.count) + '</td><td>' + money(row.amount) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    }
+    function renderAgingTable(rows) {
+      if (!rows.length) return '<div class="visual-footnote">目前沒有遲繳資料。</div>';
+      return '<div class="table-wrap"><table><thead><tr><th>逾期區間</th><th>筆數</th><th>未收</th></tr></thead><tbody>' + rows.map(function (row) { return '<tr><td>' + safeHtml(row.label || row.bucket) + '</td><td>' + number(row.count) + '</td><td>' + money(row.amount) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    }
+    function renderExpiryTable(rows) {
+      if (!rows.length) return '<div class="visual-footnote">目前沒有即將到期合約。</div>';
+      return '<div class="table-wrap"><table><thead><tr><th>到期區間</th><th>合約數</th></tr></thead><tbody>' + rows.map(function (row) { return '<tr><td>' + safeHtml(row.label || row.bucket) + '</td><td>' + number(row.count) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    }
+    function renderOccupancyTable(occupancy) {
+      const rows = Array.isArray(occupancy.distribution) ? occupancy.distribution : [];
+      return '<div class="table-wrap"><table><thead><tr><th>房間狀態</th><th>數量</th></tr></thead><tbody>' + rows.map(function (row) { return '<tr><td>' + safeHtml(row.label || row.status) + '</td><td>' + number(row.count) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    }
     function render(data) {
       PAGE_DATA = data || {};
       const kpis = PAGE_DATA.kpis || { receivable: 0, collected: 0, outstanding: 0, collection_rate: null };
+      const metrics = PAGE_DATA.metrics || {};
       const rows = Array.isArray(PAGE_DATA.months) ? PAGE_DATA.months : [];
       const properties = Array.isArray(PAGE_DATA.properties) ? PAGE_DATA.properties : [];
-      document.getElementById('app').innerHTML = '<div class="header"><div><div class="eyebrow">CMWebs 智慧租管</div><h1>營收儀表板</h1><p class="subtitle">只顯示目前房東工作區的聚合資料。</p></div><button class="refresh" type="button" onclick="loadReport()">重新整理</button></div>' + renderFilters(properties) + '<section class="card summary"><div class="metric"><div class="metric-label">本期應收</div><div class="metric-value">' + money(kpis.receivable) + '</div></div><div class="metric"><div class="metric-label">本期實收</div><div class="metric-value green">' + money(kpis.collected) + '</div></div><div class="metric"><div class="metric-label">本期未收</div><div class="metric-value red">' + money(kpis.outstanding) + '</div></div><div class="metric"><div class="metric-label">收款率</div><div class="metric-value">' + percent(kpis.collection_rate) + '</div></div></section>' + (PAGE_DATA.has_data ? '<section class="card section"><div class="section-title-row"><div class="section-title">月份營收趨勢</div><button class="download" type="button" onclick="downloadCsv()">下載 CSV</button></div><div class="chart-wrap"><svg id="revenueChart" viewBox="0 0 640 260" role="img" aria-label="月份應收、實收與未收折線圖"></svg></div><div class="legend"><span class="legend-item"><i class="legend-dot" style="background:#246bfd"></i>應收</span><span class="legend-item"><i class="legend-dot" style="background:#06c755"></i>實收</span><span class="legend-item"><i class="legend-dot" style="background:#c83c4a"></i>未收</span></div></section><section class="card section"><div class="section-title-row"><div class="section-title">月份明細</div><div class="section-hint">圖表數值 fallback</div></div>' + renderTable(rows) + '</section><section class="card section"><div class="section-title-row"><div class="section-title">物件績效</div><div class="section-hint">依應收排序</div></div>' + renderPropertyTable(properties) + '</section>' : '<section class="card empty"><div class="state-title">沒有可顯示的營收資料</div><div class="state-text">請調整期間或確認目前工作區已有有效帳單。</div></section>') + '<div class="updated">資料更新：' + safeHtml(formatTimestamp(PAGE_DATA.updated_at)) + '</div>';
-      if (PAGE_DATA.has_data) renderChart(rows);
+      const status = Array.isArray(PAGE_DATA.status_distribution) ? PAGE_DATA.status_distribution : [];
+      const aging = Array.isArray(PAGE_DATA.overdue_aging) ? PAGE_DATA.overdue_aging : [];
+      const expiry = Array.isArray(PAGE_DATA.contract_expiry) ? PAGE_DATA.contract_expiry : [];
+      const occupancy = PAGE_DATA.occupancy || {};
+      const dashboard = '<div class="header"><div><div class="eyebrow">CMWebs 智慧租管</div><h1>營收儀表板</h1><p class="subtitle">只顯示目前房東工作區的聚合資料，數值與圖形同步來自同一份聚合結果。</p></div><button class="refresh" type="button" onclick="loadReport()">重新整理</button></div>' + renderFilters(properties) + '<section class="card summary"><div class="metric"><div class="metric-label">本期應收</div><div class="metric-value">' + money(kpis.receivable) + '</div></div><div class="metric"><div class="metric-label">本期實收</div><div class="metric-value green">' + money(kpis.collected) + '</div></div><div class="metric"><div class="metric-label">本期未收</div><div class="metric-value red">' + money(kpis.outstanding) + '</div></div><div class="metric"><div class="metric-label">收款率</div><div class="metric-value">' + percent(kpis.collection_rate) + '</div></div><div class="metric"><div class="metric-label">遲繳比例</div><div class="metric-value red">' + percent(metrics.overdue_ratio) + '</div></div><div class="metric"><div class="metric-label">入住率</div><div class="metric-value green">' + percent(occupancy.occupancy_rate) + '</div></div></section>' + (PAGE_DATA.has_data ? '<section class="card section"><div class="section-title-row"><div class="section-title">月份營收上升／下降曲線</div><button class="download" type="button" onclick="downloadCsv()">下載 CSV</button></div><div class="chart-wrap"><svg id="revenueChart" viewBox="0 0 640 260" role="img" aria-label="月份應收、實收與未收上升下降折線圖"></svg></div><div class="legend"><span class="legend-item"><i class="legend-dot" style="background:#246bfd"></i>應收</span><span class="legend-item"><i class="legend-dot" style="background:#06c755"></i>實收</span><span class="legend-item"><i class="legend-dot" style="background:#c83c4a"></i>未收</span></div></section><section class="card section"><div class="section-title">繳款狀態、遲繳與營運圖形</div><div class="visual-grid"><div class="visual-card wide"><div class="visual-title">繳款狀態分布</div><div class="visual-subtitle">已繳款、部分繳款、待繳款與遲繳的金額比較。</div><svg id="paymentStatusChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="繳款狀態分布圖"></svg>' + renderStatusTable(status) + '</div><div class="visual-card"><div class="visual-title">遲繳比例</div><div class="visual-subtitle">以目前期間應收金額為分母，遲繳未收金額為分子。</div><svg id="overdueRatioChart" class="donut-chart" viewBox="0 0 160 160" role="img" aria-label="遲繳比例圖"></svg><div class="visual-value danger">' + percent(metrics.overdue_ratio) + '</div><div class="visual-footnote">遲繳 ' + number(metrics.overdue_count) + ' 筆／共 ' + number(metrics.bill_count) + ' 筆</div></div><div class="visual-card"><div class="visual-title">入住率</div><div class="visual-subtitle">依目前 Workspace 房間狀態計算，停用房間不列入分母。</div><svg id="occupancyChart" class="donut-chart" viewBox="0 0 160 160" role="img" aria-label="入住率圖"></svg><div class="visual-value">' + percent(occupancy.occupancy_rate) + '</div>' + renderOccupancyTable(occupancy) + '</div><div class="visual-card wide"><div class="visual-title">遲繳天數分布</div><div class="visual-subtitle">依到期日與報表基準日分組，讓房東快速辨識逾期集中區段。</div><svg id="overdueAgingChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="遲繳天數分布圖"></svg>' + renderAgingTable(aging) + '</div><div class="visual-card wide"><div class="visual-title">合約到期分布</div><div class="visual-subtitle">列出 30／60／90 天內即將到期的有效合約數量。</div><svg id="contractExpiryChart" class="mini-chart" viewBox="0 0 320 150" role="img" aria-label="合約到期分布圖"></svg>' + renderExpiryTable(expiry) + '</div></div></section><section class="card section"><div class="section-title-row"><div class="section-title">月份明細</div><div class="section-hint">數值表格 fallback</div></div>' + renderTable(rows) + '</section><section class="card section"><div class="section-title-row"><div class="section-title">物件績效</div><div class="section-hint">依應收排序</div></div>' + renderPropertyTable(properties) + '</section>' : '<section class="card empty"><div class="state-title">沒有可顯示的營收資料</div><div class="state-text">請調整期間或確認目前工作區已有有效帳單或房間資料。</div></section>') + '<div class="updated">資料更新：' + safeHtml(formatTimestamp(PAGE_DATA.updated_at)) + '</div>';
+      document.getElementById('app').innerHTML = dashboard;
+      if (PAGE_DATA.has_data) { renderChart(rows); renderVisualCharts(); }
     }
     async function loadReport() {
       const app = document.getElementById('app');
