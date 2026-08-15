@@ -1581,42 +1581,55 @@
           </div>
 
           ${
-            active &&
             canWrite
               ? `
                 <div class="room-actions">
+                  <button
+                    class="small-button ${active ? 'danger' : 'primary'}"
+                    type="button"
+                    onclick="toggleRoomAccount('${safeHtml(room.room_id)}', ${active ? 'false' : 'true'})"
+                  >
+                    ${active ? '關閉房間帳號' : '重新啟用房間帳號'}
+                  </button>
+
                   ${
-                    room.effective_status ===
-                      'vacant' &&
-                    !room.has_active_contract
+                    active
                       ? `
+                        ${
+                          room.effective_status ===
+                            'vacant' &&
+                          !room.has_active_contract
+                            ? `
+                              <button
+                                class="small-button primary"
+                                type="button"
+                                onclick="goTenantCreate('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')"
+                              >
+                                建立房客
+                              </button>
+                            `
+                            : ''
+                        }
+
                         <button
-                          class="small-button primary"
+                          class="small-button secondary"
                           type="button"
-                          onclick="goTenantCreate('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')"
+                          onclick="openRoomEditor('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')"
                         >
-                          建立房客
+                          編輯
+                        </button>
+
+                        <button
+                          class="small-button danger"
+                          type="button"
+                          ${room.has_active_contract ? 'disabled' : ''}
+                          onclick="openArchiveEditor('room','${safeHtml(room.room_id)}','${safeHtml(room.room_name)}')"
+                        >
+                          ${room.has_active_contract ? '租約中' : '封存'}
                         </button>
                       `
                       : ''
                   }
-
-                  <button
-                    class="small-button secondary"
-                    type="button"
-                    onclick="openRoomEditor('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')"
-                  >
-                    編輯
-                  </button>
-
-                  <button
-                    class="small-button danger"
-                    type="button"
-                    ${room.has_active_contract ? 'disabled' : ''}
-                    onclick="openArchiveEditor('room','${safeHtml(room.room_id)}','${safeHtml(room.room_name)}')"
-                  >
-                    ${room.has_active_contract ? '租約中' : '封存'}
-                  </button>
                 </div>
               `
               : ''
@@ -2287,6 +2300,64 @@
           />
         </div>
       `;
+    }
+
+    async function toggleRoomAccount(roomId, enabled) {
+      const actionLabel =
+        enabled
+          ? '重新啟用'
+          : '關閉';
+
+      if (
+        !window.confirm(
+          '確定要' +
+          actionLabel +
+          '這個房間帳號嗎？租約、帳單與付款紀錄不會被刪除。'
+        )
+      ) {
+        return;
+      }
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_room_account_toggle',
+            {
+              room_id:
+                roomId,
+              enabled:
+                enabled
+                  ? 'true'
+                  : 'false'
+            }
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.message
+              ? result.message
+              : '房間帳號狀態更新失敗'
+          );
+        }
+
+        showToast(
+          result.message ||
+          '房間帳號狀態已更新'
+        );
+
+        await loadPage(false);
+
+      } catch (error) {
+        showToast(
+          error.message ||
+          '房間帳號狀態更新失敗',
+          true
+        );
+      }
     }
 
     async function saveRoom(roomId) {
