@@ -1230,6 +1230,30 @@ if (v2Action === 'landlord_payment_reports_init') {
   );
 }
 
+if (v2Action === 'landlord_revenue_dashboard_init') {
+  const result = getLandlordRevenueDashboardByLineUid_(
+    lineUserId,
+    {
+      range: e.parameter.range || '',
+      from_month: e.parameter.from_month || '',
+      to_month: e.parameter.to_month || '',
+      property_id: e.parameter.property_id || ''
+    }
+  );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(
+      result,
+      requestId
+    );
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
 if (v2Action === 'landlord_payment_report_update') {
   const reportId =
     e.parameter.report_id || '';
