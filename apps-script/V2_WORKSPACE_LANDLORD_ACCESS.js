@@ -784,6 +784,83 @@ function updateWorkspaceLandlordContractRequestByLineUid_(
 }
 
 
+function getWorkspaceLandlordInitiatedContractsInitBySession_(
+  sessionToken
+) {
+  if (
+    typeof landlordInitiatedContractListBySession_ !==
+    'function'
+  ) {
+    return workspaceResult_(
+      false,
+      'LANDLORD_INITIATED_CONTRACT_MODULE_REQUIRED',
+      '找不到房東發起合約模組'
+    );
+  }
+
+  return landlordInitiatedContractListBySession_(
+    sessionToken
+  );
+}
+
+
+function createWorkspaceLandlordInitiatedContractBySession_(
+  sessionToken,
+  mode,
+  input
+) {
+  if (
+    typeof landlordInitiatedContractHandlePost_ !==
+    'function'
+  ) {
+    return workspaceResult_(
+      false,
+      'LANDLORD_INITIATED_CONTRACT_MODULE_REQUIRED',
+      '找不到房東發起合約模組'
+    );
+  }
+
+  const action =
+    String(mode || '').toLowerCase() ===
+    'renewal'
+      ? 'landlord_contract_initiate_renewal'
+      : 'landlord_contract_initiate_new';
+
+  return landlordInitiatedContractHandlePost_(
+    JSON.stringify({
+      action: action,
+      session_token: sessionToken,
+      input: input || {}
+    })
+  );
+}
+
+
+function cancelWorkspaceLandlordInitiatedContractBySession_(
+  sessionToken,
+  inviteId
+) {
+  if (
+    typeof landlordInitiatedContractHandlePost_ !==
+    'function'
+  ) {
+    return workspaceResult_(
+      false,
+      'LANDLORD_INITIATED_CONTRACT_MODULE_REQUIRED',
+      '找不到房東發起合約模組'
+    );
+  }
+
+  return landlordInitiatedContractHandlePost_(
+    JSON.stringify({
+      action: 'landlord_contract_invite_cancel',
+      session_token: sessionToken,
+      invite_id: inviteId
+    })
+  );
+}
+
+
 // ==================================================
 // Proxy core
 // ==================================================

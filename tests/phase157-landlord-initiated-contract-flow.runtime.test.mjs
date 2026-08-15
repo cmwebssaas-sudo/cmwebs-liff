@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const sourcePath = new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url);
+const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
+const landlordAccessSource = readFileSync(new URL('../apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js', import.meta.url), 'utf8');
 assert.equal(existsSync(sourcePath), true, 'landlord initiation module must exist before runtime tests can run');
 const source = readFileSync(sourcePath, 'utf8');
 
@@ -129,6 +131,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
   };
   vm.createContext(context);
   vm.runInContext(source, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });
+  context.verifyLandlordContractSigningReviewSessionToken_ = () => ({ success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' });
   return { api: context, sheets };
 }
 
@@ -200,6 +203,22 @@ const newInput = {
   const result = api.landlordInitiatedContractCreateNew_(access, newInput);
   assert.equal(result.success, false);
   assert.equal(result.code, 'CONTRACT_INVITE_SCHEMA_NOT_READY');
+}
+
+{
+  const { api } = makeRuntime();
+  assert.equal(typeof api.landlordInitiatedContractIsRequest_, 'function');
+  assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_initiate_new' }), true);
+  assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_initiate_renewal' }), true);
+  assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'tenant_contract_sign_submit' }), false);
+  const result = api.landlordInitiatedContractHandlePost_(JSON.stringify({ action: 'landlord_contract_initiate_new', session_token: 'invalid' }));
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'LANDLORD_REVIEW_SESSION_INVALID');
+  assert.match(dispatcherSource, /landlordInitiatedContractIsRequest_\(postBody\)/);
+  assert.match(dispatcherSource, /landlordInitiatedContractHandlePost_\(postBody\)/);
+  assert.match(dispatcherSource, /landlord_contract_initiated_init/);
+  assert.match(landlordAccessSource, /function getWorkspaceLandlordInitiatedContractsInitBySession_/);
+  assert.match(landlordAccessSource, /function cancelWorkspaceLandlordInitiatedContractBySession_/);
 }
 
 console.log('Phase 157 landlord-initiated contract runtime RED/GREEN tests passed.');
