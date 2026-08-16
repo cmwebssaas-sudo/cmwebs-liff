@@ -2252,113 +2252,46 @@
         .replace(/=+$/g, '');
     }
 
-    function callTenantSigningStatus(requestId, pollSecret) {
-      return new Promise(function(resolve, reject) {
-        const callbackName = 'cmwebsSigning_' + randomUrlToken(12);
-        const script = document.createElement('script');
-        const timer = setTimeout(function() {
-          cleanup();
-          reject(new Error('簽署身分驗證逾時'));
-        }, 30000);
-
-        function cleanup() {
-          clearTimeout(timer);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try { delete window[callbackName]; } catch (_) {}
-        }
-
-        window[callbackName] = function(result) {
-          cleanup();
-          resolve(result || {});
-        };
-        script.onerror = function() {
-          cleanup();
-          reject(new Error('簽署身分驗證連線失敗'));
-        };
-        let url = API_URL +
-          '?v2_action=tenant_contract_auth_status' +
-          '&request_id=' + encodeURIComponent(requestId) +
-          '&poll_secret=' + encodeURIComponent(pollSecret) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-        if (TEST_MODE) {
-          url += '&test=1';
-        }
-        script.src = url;
-        document.body.appendChild(script);
+    async function fetchStatusJson(url) {
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'omit',
+        cache: 'no-store'
       });
+      if (!response.ok) {
+        throw new Error('簽署狀態連線失敗');
+      }
+      return response.json();
+    }
+
+    function callTenantSigningStatus(requestId, pollSecret) {
+      let url = API_URL +
+        '?v2_action=tenant_contract_auth_status' +
+        '&request_id=' + encodeURIComponent(requestId) +
+        '&poll_secret=' + encodeURIComponent(pollSecret) +
+        '&_=' + Date.now();
+      if (TEST_MODE) url += '&test=1';
+      return fetchStatusJson(url);
     }
 
     function callTenantInviteAuthStatus(requestId, pollSecret) {
-      return new Promise(function(resolve, reject) {
-        const callbackName = 'cmwebsInviteAuth_' + randomUrlToken(12);
-        const script = document.createElement('script');
-        const timer = setTimeout(function() {
-          cleanup();
-          reject(new Error('邀請身分驗證逾時'));
-        }, 30000);
-
-        function cleanup() {
-          clearTimeout(timer);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try { delete window[callbackName]; } catch (_) {}
-        }
-
-        window[callbackName] = function(result) {
-          cleanup();
-          resolve(result || {});
-        };
-        script.onerror = function() {
-          cleanup();
-          reject(new Error('邀請身分驗證連線失敗'));
-        };
-        let url = API_URL +
-          '?v2_action=tenant_contract_invite_auth_status' +
-          '&request_id=' + encodeURIComponent(requestId) +
-          '&poll_secret=' + encodeURIComponent(pollSecret) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-        if (TEST_MODE) url += '&test=1';
-        script.src = url;
-        document.body.appendChild(script);
-      });
+      let url = API_URL +
+        '?v2_action=tenant_contract_invite_auth_status' +
+        '&request_id=' + encodeURIComponent(requestId) +
+        '&poll_secret=' + encodeURIComponent(pollSecret) +
+        '&_=' + Date.now();
+      if (TEST_MODE) url += '&test=1';
+      return fetchStatusJson(url);
     }
 
     function callTenantSigningSubmissionStatus(requestId, pollSecret) {
-      return new Promise(function(resolve, reject) {
-        const callbackName = 'cmwebsSigningSubmit_' + randomUrlToken(12);
-        const script = document.createElement('script');
-        const timer = setTimeout(function() {
-          cleanup();
-          reject(new Error('簽署送交確認逾時'));
-        }, 30000);
-
-        function cleanup() {
-          clearTimeout(timer);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try { delete window[callbackName]; } catch (_) {}
-        }
-
-        window[callbackName] = function(result) {
-          cleanup();
-          resolve(result || {});
-        };
-        script.onerror = function() {
-          cleanup();
-          reject(new Error('簽署送交確認連線失敗'));
-        };
-        let url = API_URL +
-          '?v2_action=tenant_contract_sign_status' +
-          '&request_id=' + encodeURIComponent(requestId) +
-          '&poll_secret=' + encodeURIComponent(pollSecret) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-        if (TEST_MODE) {
-          url += '&test=1';
-        }
-        script.src = url;
-        document.body.appendChild(script);
-      });
+      let url = API_URL +
+        '?v2_action=tenant_contract_sign_status' +
+        '&request_id=' + encodeURIComponent(requestId) +
+        '&poll_secret=' + encodeURIComponent(pollSecret) +
+        '&_=' + Date.now();
+      if (TEST_MODE) url += '&test=1';
+      return fetchStatusJson(url);
     }
 
     async function initializeTenantSigningSession() {
@@ -2623,35 +2556,13 @@
     }
 
     function tenantContractArtifactStatus(requestId, pollSecret) {
-      return new Promise(function(resolve, reject) {
-        const callbackName = 'cmwebsArtifact_' + randomUrlToken(12);
-        const script = document.createElement('script');
-        const timer = setTimeout(function() {
-          cleanup();
-          reject(new Error('附件上傳逾時'));
-        }, 30000);
-        function cleanup() {
-          clearTimeout(timer);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try { delete window[callbackName]; } catch (_) {}
-        }
-        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
-        script.onerror = function() {
-          cleanup();
-          reject(new Error('附件上傳連線失敗'));
-        };
-        let url = API_URL +
-          '?v2_action=tenant_contract_artifact_upload_status' +
-          '&request_id=' + encodeURIComponent(requestId) +
-          '&poll_secret=' + encodeURIComponent(pollSecret) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-        if (TEST_MODE) {
-          url += '&test=1';
-        }
-        script.src = url;
-        document.body.appendChild(script);
-      });
+      let url = API_URL +
+        '?v2_action=tenant_contract_artifact_upload_status' +
+        '&request_id=' + encodeURIComponent(requestId) +
+        '&poll_secret=' + encodeURIComponent(pollSecret) +
+        '&_=' + Date.now();
+      if (TEST_MODE) url += '&test=1';
+      return fetchStatusJson(url);
     }
 
     // ==================================================
