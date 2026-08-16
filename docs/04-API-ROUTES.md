@@ -65,6 +65,7 @@ landlord_property_save
 landlord_register_submit
 landlord_room_archive
 landlord_room_save
+landlord_room_account_toggle
 landlord_send_tenant_message
 landlord_settings_init
 landlord_settings_save_payment
