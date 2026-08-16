@@ -990,6 +990,19 @@ function doGet(e) {
       : jsonOutput_(result, callback);
   }
 
+  if (v2Action === 'landlord_room_account_toggle') {
+    const result =
+      setLandlordRoomAccountToggleByLineUid_(
+        lineUserId,
+        e.parameter.room_id || '',
+        e.parameter.enabled || e.parameter.account_status || ''
+      );
+
+    return bridge === '1'
+      ? htmlBridgeOutput_(result, requestId)
+      : jsonOutput_(result, callback);
+  }
+
   if (v2Action === 'landlord_room_archive') {
     const result =
       archiveLandlordRoomByLineUid_(
