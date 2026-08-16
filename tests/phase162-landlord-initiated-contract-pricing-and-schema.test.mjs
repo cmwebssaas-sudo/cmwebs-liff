@@ -54,6 +54,12 @@ const context = {
   Array,
   JSON,
   RegExp,
+  LockService: {
+    getScriptLock: () => ({
+      waitLock: () => {},
+      releaseLock: () => {}
+    })
+  },
   Utilities: {
     getUuid: () => 'uuid-1',
     computeDigest: () => [1, 2, 3]
@@ -61,6 +67,23 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(initiatedSource, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });
+
+let lockAttempts = 0;
+context.LockService.getScriptLock = () => ({
+  waitLock: () => {
+    lockAttempts += 1;
+    if (lockAttempts < 3) throw new Error('temporary contention');
+  },
+  releaseLock: () => {}
+});
+const retried = context.landlordInitiatedContractWithScriptLock_(() => ({ success: true, code: 'OK' }));
+assert.equal(retried.success, true);
+assert.equal(lockAttempts, 3);
+
+context.LockService.getScriptLock = () => ({ waitLock: () => {}, releaseLock: () => {} });
+const failedOperation = context.landlordInitiatedContractWithScriptLock_(() => { throw new Error('sheet write failed'); });
+assert.equal(failedOperation.success, false);
+assert.equal(failedOperation.code, 'CONTRACT_OPERATION_FAILED');
 
 const normalized = context.landlordInitiatedContractNormalizeInput_({
   property_id: 'P1',
