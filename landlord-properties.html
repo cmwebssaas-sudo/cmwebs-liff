@@ -894,7 +894,12 @@
       <div id="editorSheet" class="modal-sheet"></div>
     </div>
 
-    <div id="toast" class="toast"></div>
+    <div
+      id="toast"
+      class="toast"
+      role="status"
+      aria-live="polite"
+    ></div>
   </div>
 
   <script>
@@ -1047,11 +1052,16 @@
       return entryUrl.href;
     }
 
-    function showToast(message, isError) {
+    function showToast(message, isError, durationMs) {
       const toast =
         document.getElementById(
           'toast'
         );
+
+      const duration =
+        Number(durationMs) > 0
+          ? Number(durationMs)
+          : 2800;
 
       clearTimeout(
         toastTimer
@@ -1071,7 +1081,7 @@
             toast.className =
               'toast';
           },
-          2800
+          duration
         );
     }
 
@@ -2362,12 +2372,14 @@
           );
         }
 
+        await loadPage(false);
+
         showToast(
           result.message ||
-          '房間帳號狀態已更新'
+          '房間帳號狀態已更新',
+          false,
+          5000
         );
-
-        await loadPage(false);
 
       } catch (error) {
         showToast(
