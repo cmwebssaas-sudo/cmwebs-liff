@@ -228,6 +228,36 @@ source inventory has 78.
   legacy signed-contract integration bridge or reinterpret
   `V2_contract_requests` rows as native signing submissions.
 
+## V2.1 landlord-initiated contract candidate routes
+
+These routes implement the approved local candidate flow for new vacant-room
+contracts and landlord-initiated renewals. They are not deployed or verified
+against Production.
+
+| Route / POST action | Transport | Required authority | Purpose |
+| --- | --- | --- | --- |
+| `landlord_contract_initiated_init` | `doPost` exchange | Landlord review session, Workspace read policy | Lists the session Workspace's pending landlord-initiated contracts without exposing confirmation codes. |
+| `landlord_contract_initiate_new` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a pending new-tenant contract, provisional tenant identity, one-time invite and short confirmation code; it does not activate a room. |
+| `landlord_contract_initiate_renewal` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a new pending renewal version linked by `previous_contract_id`; it does not overwrite or activate the predecessor. |
+| `landlord_contract_invite_cancel` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Cancels an unclaimed invite and its pending contract. |
+| `landlord_contract_initiated_status` | JSONP `v2_action` | One-time HMAC-bound request exchange | Redeems the POST result; the session token and confirmation code are not placed in the URL. |
+| `tenant_contract_invite_auth_init` | `doPost` exchange | LINE `id_token`, invite ID, confirmation code and tenant data | Verifies the LINE identity, atomically claims a new-tenant invite once, and returns a short-lived invite signing session. |
+| `tenant_contract_invite_auth_status` | JSONP `v2_action` | One-time HMAC-bound authentication exchange | Redeems the invite signing session result without exposing the session token in the URL. |
+| `tenant_contract_invite_submit` | `doPost` exchange | Verified invite signing session, required artifacts and consent | Submits the new-tenant signing package for landlord review; it does not activate the contract. |
+
+- New vacant-room initiation accepts blank tenant prefill data, but the tenant
+  must provide a name and Taiwan mobile number before the invite can be claimed.
+- New-tenant signing requires identity front, identity back and signature;
+  renewal signing requires signature only.
+- Landlord approval is the activation boundary. It activates the new tenant,
+  contract, room pointers and compatibility views, or activates a renewal while
+  archiving the predecessor as renewed. All write operations re-read scoped
+  rows and use `ScriptLock`, except finalization which is called inside the
+  existing review update lock to avoid nested lock acquisition.
+- The one-time confirmation code is returned only in the immediate new-contract
+  response for on-site handoff. It is hashed in the invite sheet and never
+  returned by the list route.
+
 ## Signed legacy contract integration webhook
 
 | POST action | Module | Purpose |

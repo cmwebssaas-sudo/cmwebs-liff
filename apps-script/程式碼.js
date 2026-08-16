@@ -55,6 +55,16 @@ function doGet(e) {
     );
   }
 
+  if (v2Action === 'tenant_contract_invite_auth_status') {
+    return jsonOutput_(
+      tenantLiffSigningReadInviteExchange_(
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
   if (v2Action === 'tenant_contract_artifact_upload_status') {
     return jsonOutput_(
       tenantContractArtifactReadExchange_(
@@ -68,6 +78,17 @@ function doGet(e) {
   if (v2Action === 'tenant_contract_sign_status') {
     return jsonOutput_(
       tenantContractSigningReadExchange_(
+        requestId,
+        e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
+  if (v2Action === 'landlord_contract_initiated_status') {
+    return jsonOutput_(
+      landlordInitiatedContractReadExchange_(
+        e.parameter.operation || '',
         requestId,
         e.parameter.poll_secret || ''
       ),
@@ -102,6 +123,21 @@ function doGet(e) {
         'update',
         requestId,
         e.parameter.poll_secret || ''
+      ),
+      callback
+    );
+  }
+
+  if ([
+    'landlord_contract_initiated_init',
+    'landlord_contract_initiate_new',
+    'landlord_contract_initiate_renewal',
+    'landlord_contract_invite_cancel'
+  ].indexOf(v2Action) >= 0) {
+    return jsonOutput_(
+      landlordInitiatedContractError_(
+        'LANDLORD_INITIATED_CONTRACT_POST_REQUIRED',
+        '房東發起合約必須使用已驗證的 POST session'
       ),
       callback
     );
@@ -2209,10 +2245,14 @@ function doPost(e) {
     // fallback for all unrelated POST bodies.
     const result = tenantLiffSigningIsAuthRequest_(postBody)
       ? tenantLiffSigningHandleAuthPost_(postBody)
+      : tenantLiffSigningIsInviteAuthRequest_(postBody)
+        ? tenantLiffSigningHandleInviteAuthPost_(postBody)
       : landlordContractSigningReviewIsAuthRequest_(postBody)
         ? landlordContractSigningReviewHandleAuthPost_(postBody)
         : landlordContractSigningReviewIsExchangeRequest_(postBody)
           ? landlordContractSigningReviewHandleExchangePost_(postBody)
+          : landlordInitiatedContractIsRequest_(postBody)
+            ? landlordInitiatedContractHandlePost_(postBody)
       : tenantContractArtifactIsUploadRequest_(postBody)
         ? tenantContractArtifactHandleUploadPost_(postBody)
         : tenantContractSigningIsSubmitRequest_(postBody)

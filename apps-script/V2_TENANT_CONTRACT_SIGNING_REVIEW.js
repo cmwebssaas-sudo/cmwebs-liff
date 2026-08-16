@@ -110,6 +110,12 @@ function updateLandlordContractSigningReviewBySessionToken_(sessionToken, contra
     }
 
     const now = new Date().toISOString();
+    const initiatedContract = tenantContractSigningReviewText_(contract.contract_origin).toLowerCase() === 'landlord_initiated' || Boolean(tenantContractSigningReviewText_(contract.invite_id)) || Boolean(tenantContractSigningReviewText_(contract.previous_contract_id));
+    if (normalizedDecision === 'approve' && initiatedContract) {
+      if (typeof landlordInitiatedContractFinalizeApproval_ !== 'function') return tenantContractSigningReviewError_('LANDLORD_INITIATED_CONTRACT_MODULE_REQUIRED');
+      const finalization = landlordInitiatedContractFinalizeApproval_(ss, access.data, contract, now);
+      if (!finalization || finalization.success !== true) return tenantContractSigningReviewError_((finalization && finalization.code) || 'CONTRACT_FINALIZATION_FAILED');
+    }
     const actor = access.data;
     const updates = {
       tenant_signing_submission_status: finalStatus,

@@ -2,6 +2,23 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-08-16 — Landlord-initiated new lease and renewal signing (local candidate)
+
+- Added the approved landlord-first contract flow in an isolated local branch:
+  new vacant-room contracts may start with blank tenant prefill data, while
+  renewals are started from the current active contract and link a new version
+  to its predecessor.
+- Added one-time invite claiming with LINE identity verification, tenant name
+  and Taiwan mobile completion, private identity-artifact requirements for new
+  tenants, signature-only renewal signing, and landlord-only approval as the
+  activation boundary.
+- Added landlord and tenant mobile UI entry points, short POST/JSONP exchanges,
+  ScriptLock-protected writes, activation view synchronization, and focused
+  Phase 157–159 regression tests.
+- This is a local implementation candidate only. No Apps Script deployment,
+  GitHub Pages publication, Production Spreadsheet/Properties/trigger change,
+  LINE/LIFF configuration change, or real message send occurred.
+
 ## 2026-08-13 — Payment write timeout recovery (local candidate)
 
 - Added client-side authoritative-state recovery for landlord payment-report
