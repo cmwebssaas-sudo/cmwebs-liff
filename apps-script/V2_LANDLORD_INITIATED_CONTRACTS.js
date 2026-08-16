@@ -599,19 +599,47 @@ function landlordInitiatedContractAccessFromSession_(sessionToken, policy) {
 
 function landlordInitiatedContractSchema_(ss) {
   if (!ss || typeof ss.getSheetByName !== 'function') return landlordInitiatedContractError_('CONTRACT_INVITE_SCHEMA_NOT_READY', '合約資料表尚未就緒');
+  const inviteSheet = landlordInitiatedContractEnsureInviteSheet_(ss);
+  if (!inviteSheet.success) return inviteSheet;
   const sheets = {
     properties: ss.getSheetByName('V2_properties'),
     rooms: ss.getSheetByName('V2_rooms'),
     users: ss.getSheetByName('V2_users'),
     tenants: ss.getSheetByName('V2_tenants'),
     contracts: ss.getSheetByName('V2_contracts'),
-    invites: ss.getSheetByName(V2_LANDLORD_INITIATED_CONTRACT_INVITE_SHEET_)
+    invites: inviteSheet.data
   };
-  const required = Object.keys(sheets).filter(function (key) { return !sheets[key]; });
+  const required = ['properties', 'rooms', 'users', 'tenants', 'contracts'].filter(function (key) { return !sheets[key]; });
   if (required.length) return landlordInitiatedContractError_('CONTRACT_INVITE_SCHEMA_NOT_READY', '缺少合約邀請資料表');
   const missing = V2_LANDLORD_INITIATED_CONTRACT_INVITE_HEADERS_.filter(function (header) { return landlordInitiatedContractHeaders_(sheets.invites).indexOf(header) < 0; });
   if (missing.length) return landlordInitiatedContractError_('CONTRACT_INVITE_SCHEMA_NOT_READY', '合約邀請欄位尚未就緒');
   return { success: true, code: 'OK', data: sheets };
+}
+
+function landlordInitiatedContractEnsureInviteSheet_(ss) {
+  let sheet = ss.getSheetByName(V2_LANDLORD_INITIATED_CONTRACT_INVITE_SHEET_);
+  if (!sheet) {
+    if (typeof ss.insertSheet !== 'function') return landlordInitiatedContractError_('CONTRACT_INVITE_SCHEMA_NOT_READY', '缺少合約邀請資料表');
+    try {
+      sheet = ss.insertSheet(V2_LANDLORD_INITIATED_CONTRACT_INVITE_SHEET_);
+    } catch (_) {
+      return landlordInitiatedContractError_('CONTRACT_INVITE_SCHEMA_NOT_READY', '合約邀請資料表建立失敗');
+    }
+  }
+
+  const existing = landlordInitiatedContractHeaders_(sheet);
+  const hasExistingHeader = existing.some(function (header) { return Boolean(header); });
+  if (!hasExistingHeader) {
+    sheet.getRange(1, 1, 1, V2_LANDLORD_INITIATED_CONTRACT_INVITE_HEADERS_.length).setValues([V2_LANDLORD_INITIATED_CONTRACT_INVITE_HEADERS_.slice()]);
+  } else {
+    const missing = V2_LANDLORD_INITIATED_CONTRACT_INVITE_HEADERS_.filter(function (header) { return existing.indexOf(header) < 0; });
+    if (missing.length) {
+      const startColumn = Math.max(sheet.getLastColumn(), 1) + 1;
+      sheet.getRange(1, startColumn, 1, missing.length).setValues([missing]);
+    }
+  }
+
+  return { success: true, code: 'OK', data: sheet };
 }
 
 function landlordInitiatedContractNormalizeInput_(input) {
@@ -623,8 +651,11 @@ function landlordInitiatedContractNormalizeInput_(input) {
     end_date: landlordInitiatedContractText_(input.end_date),
     rent_amount: landlordInitiatedContractNumber_(input.rent_amount),
     management_fee: landlordInitiatedContractNumber_(input.management_fee),
+    deposit_months: landlordInitiatedContractNumber_(input.deposit_months),
     deposit_amount: landlordInitiatedContractNumber_(input.deposit_amount),
     payment_day: Math.round(landlordInitiatedContractNumber_(input.payment_day || input.monthly_payment_day)),
+    electricity_fee_rate: landlordInitiatedContractNumber_(input.electricity_fee_rate),
+    equipment_fee_rate: landlordInitiatedContractNumber_(input.equipment_fee_rate),
     tenant_name: landlordInitiatedContractText_(input.tenant_name || input.name),
     tenant_phone: landlordInitiatedContractNormalizePhone_(input.tenant_phone || input.phone),
     tenant_email: landlordInitiatedContractText_(input.tenant_email || input.email),
@@ -643,7 +674,7 @@ function landlordInitiatedContractContractObject_(access, actor, property, room,
     tenant_id: '', tenant_user_id: '', tenant_line_user_id: '', tenant_name: '', tenant_phone: '', tenant_email: '',
     property_id: property.property_id || '', property_name: property.property_name || room.property_name || '', property_address: property.property_address || property.address || '', room_id: room.room_id || '', room_name: room.room_name || '',
     start_date: input.start_date, contract_start_date: input.start_date, end_date: input.end_date, contract_end_date: input.end_date,
-    rent_amount: input.rent_amount, monthly_rent: input.rent_amount, management_fee: input.management_fee, monthly_management_fee: input.management_fee, deposit_amount: input.deposit_amount, payment_day: input.payment_day, monthly_payment_day: input.payment_day,
+    rent_amount: input.rent_amount, monthly_rent: input.rent_amount, management_fee: input.management_fee, monthly_management_fee: input.management_fee, deposit_months: input.deposit_months, deposit_amount: input.deposit_amount, payment_day: input.payment_day, monthly_payment_day: input.payment_day, electricity_fee_rate: input.electricity_fee_rate, equipment_fee_rate: input.equipment_fee_rate,
     contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending', signing_mode: '', contract_origin: 'landlord_initiated', invite_id: '', contract_content: '', contract_version: 'v2.1-standard-1', previous_contract_id: '', renewed_to_contract_id: '', tenant_signing_submission_status: 'pending',
     created_by_user_id: actor.user_id, created_by_membership_id: actor.membership_id, created_at: '', updated_at: '', note: input.note
   };
@@ -672,6 +703,7 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
     '第四條　租金與押金',
     '每月租金：新臺幣 ' + money(input.rent_amount) + ' 元。',
     '每月管理費：新臺幣 ' + money(input.management_fee) + ' 元。',
+    '押金月數：' + input.deposit_months + ' 個月。',
     '押金：新臺幣 ' + money(input.deposit_amount) + ' 元。',
     '',
     '第五條　付款方式',
@@ -681,6 +713,8 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
     '承租人應以善良管理人之注意使用租賃標的，不得違法、轉租或為影響建物及他人安全之使用。',
     '',
     '第七條　費用與設備',
+    '每度電費：新臺幣 ' + money(input.electricity_fee_rate) + ' 元。',
+    '設備耗損費／度：新臺幣 ' + money(input.equipment_fee_rate) + ' 元。',
     '水電、網路、公共費用及其他使用相關費用，依雙方確認的帳單負擔。',
     '',
     '第八條　提前終止',
