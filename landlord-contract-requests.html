@@ -1163,6 +1163,12 @@
     const LIFF_ID =
       '2010314940-EjX1qbb8';
 
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+
     const TEST_LINE_USER_ID =
       'Uf708ece75c9c985cfe1dbda48d123511';
 
@@ -1248,6 +1254,36 @@
       location.href =
         'landlord-tenant-detail.html?' +
         params.toString();
+    }
+
+    function buildLandlordLoginRedirectUri() {
+      const currentUrl = new URL(location.href);
+
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(function(key) {
+        currentUrl.searchParams.delete(key);
+      });
+
+      const returnTo =
+        currentUrl.pathname.split('/').pop() +
+        (currentUrl.searchParams.toString()
+          ? '?' + currentUrl.searchParams.toString()
+          : '');
+
+      sessionStorage.setItem(
+        'cmwebs_landlord_return_to',
+        returnTo
+      );
+
+      const entryUrl = new URL(LANDLORD_ENTRY_URL);
+      entryUrl.searchParams.set('return_to', returnTo);
+      return entryUrl.href;
     }
 
     function clearTenantFilter() {
@@ -1747,7 +1783,9 @@
       await liff.init({ liffId: LIFF_ID });
 
       if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: location.href });
+        liff.login({
+          redirectUri: buildLandlordLoginRedirectUri()
+        });
         return false;
       }
 
@@ -3169,25 +3207,35 @@
           renderLoading();
         }
 
-        const data = await callApi('landlord_contract_requests_init');
-        try {
-          const signingReviews = await callNativeSigningReviewApi('landlord_contract_signing_reviews_init');
-          data.native_signing_reviews = Array.isArray(signingReviews.items)
-            ? signingReviews.items
-            : [];
-        } catch (_) {
-          // Legacy contract-request management remains usable if the optional native review schema is not installed.
-          data.native_signing_reviews = [];
-        }
-        try {
-          const initiatedContracts = await callLandlordInitiatedApi('landlord_contract_initiated_init');
-          data.landlord_initiated_contracts = Array.isArray(initiatedContracts.items)
-            ? initiatedContracts.items
-            : [];
-        } catch (_) {
-          // The legacy request page stays usable if the new initiated-contract schema is not installed yet.
-          data.landlord_initiated_contracts = [];
-        }
+        const results = await Promise.all([
+          callApi('landlord_contract_requests_init'),
+          (async function() {
+            try {
+              const signingReviews = await callNativeSigningReviewApi('landlord_contract_signing_reviews_init');
+              return Array.isArray(signingReviews.items)
+                ? signingReviews.items
+                : [];
+            } catch (_) {
+              // Legacy contract-request management remains usable if the optional native review schema is not installed.
+              return [];
+            }
+          })(),
+          (async function() {
+            try {
+              const initiatedContracts = await callLandlordInitiatedApi('landlord_contract_initiated_init');
+              return Array.isArray(initiatedContracts.items)
+                ? initiatedContracts.items
+                : [];
+            } catch (_) {
+              // The legacy request page stays usable if the new initiated-contract schema is not installed yet.
+              return [];
+            }
+          })()
+        ]);
+
+        const data = results[0];
+        data.native_signing_reviews = results[1];
+        data.landlord_initiated_contracts = results[2];
         renderPage(data);
       } catch (error) {
         renderError(error.message || String(error));
