@@ -238,13 +238,29 @@ function getLandlordTenantCreateInitByLineUid_(
                 tenantLeaseMoney_(
                   room.management_fee
                 ),
-              electricity_fee_rate:
+              deposit_amount:
                 tenantLeaseMoney_(
+                  room.deposit_amount
+                ),
+              electricity_fee_rate:
+                tenantLeaseNumber_(
                   room.electricity_fee_rate
                 ),
               equipment_fee_rate:
-                tenantLeaseMoney_(
-                  room.equipment_fee_rate
+                tenantLeaseNumber_(
+                  tenantLeaseCurrentEquipmentRate_(
+                    room
+                  )
+                ),
+              equipment_fee_rate_summer:
+                tenantLeaseNumber_(
+                  room.equipment_fee_rate_summer ||
+                  room.summer_equipment_fee_rate
+                ),
+              equipment_fee_rate_regular:
+                tenantLeaseNumber_(
+                  room.equipment_fee_rate_regular ||
+                  room.regular_equipment_fee_rate
                 ),
               payment_day:
                 tenantLeaseInteger_(
@@ -253,9 +269,8 @@ function getLandlordTenantCreateInitByLineUid_(
                   10
                 ),
               deposit_months:
-                tenantLeaseNumber_(
-                  room.deposit_months ||
-                  2
+                tenantLeaseRoomDepositMonths_(
+                  room
                 ),
 
               has_current_or_upcoming_contract:
@@ -2907,6 +2922,75 @@ function tenantLeaseMoney_(
       value
     )
   );
+}
+
+
+function tenantLeaseCurrentEquipmentRate_(
+  room
+) {
+  room = room || {};
+
+  const month =
+    new Date().getMonth() + 1;
+  const summerMonths =
+    tenantLeaseText_(
+      room.equipment_summer_months ||
+      room.summer_months ||
+      '6,7,8,9'
+    )
+      .split(/[^0-9]+/)
+      .filter(Boolean)
+      .map(Number);
+  const isSummer =
+    summerMonths.indexOf(month) >= 0;
+  const seasonalRate =
+    isSummer
+      ? room.equipment_fee_rate_summer ||
+        room.summer_equipment_fee_rate
+      : room.equipment_fee_rate_regular ||
+        room.regular_equipment_fee_rate;
+
+  return tenantLeaseNumber_(
+    tenantLeaseNumber_(seasonalRate) > 0
+      ? seasonalRate
+      : room.equipment_fee_rate
+  );
+}
+
+
+function tenantLeaseRoomDepositMonths_(
+  room
+) {
+  room = room || {};
+
+  const rent = tenantLeaseNumber_(
+    room.rent_amount
+  );
+  const management = tenantLeaseNumber_(
+    room.management_fee
+  );
+  const deposit = tenantLeaseNumber_(
+    room.deposit_amount
+  );
+  const monthlyTotal =
+    rent + management;
+
+  if (
+    deposit > 0 &&
+    monthlyTotal > 0
+  ) {
+    return Math.round(
+      (deposit / monthlyTotal) * 100
+    ) / 100;
+  }
+
+  const stored = tenantLeaseNumber_(
+    room.deposit_months
+  );
+
+  return stored > 0
+    ? stored
+    : 2;
 }
 
 

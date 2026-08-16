@@ -1917,6 +1917,11 @@
             'roomRent'
           );
 
+        const managementInput =
+          document.getElementById(
+            'roomManagementFee'
+          );
+
         const depositInput =
           document.getElementById(
             'roomDepositAmount'
@@ -1940,8 +1945,7 @@
           }
         );
 
-        rentInput.addEventListener(
-          'input',
+        const updateDefaultDeposit =
           function () {
             if (
               depositManuallyEdited
@@ -1949,20 +1953,34 @@
               return;
             }
 
-            const rent =
-              Number(
-                rentInput.value ||
-                0
-              );
+            const rent = Number(
+              rentInput.value || 0
+            );
+            const management = Number(
+              managementInput.value || 0
+            );
+            const monthlyTotal =
+              rent + management;
 
             depositInput.value =
-              rent > 0 &&
+              monthlyTotal > 0 &&
               defaultDepositMonths > 0
                 ? Math.round(
-                    rent *
+                    monthlyTotal *
                     defaultDepositMonths
                   )
                 : '';
+          };
+
+        [
+          rentInput,
+          managementInput
+        ].forEach(
+          function (input) {
+            input.addEventListener(
+              'input',
+              updateDefaultDeposit
+            );
           }
         );
       }

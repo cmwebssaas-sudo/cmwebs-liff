@@ -723,6 +723,15 @@
       backdrop-filter: blur(12px);
     }
 
+    .app-shell.keyboard-open .bottom-nav {
+      display: none;
+    }
+
+    .app-shell.keyboard-open .page {
+      padding-bottom: 24px;
+      scroll-padding-bottom: 24px;
+    }
+
     .bottom-nav-inner {
       height: var(--nav-height);
       display: grid;
@@ -902,6 +911,21 @@
         window.visualViewport.height
           ? window.visualViewport.height
           : window.innerHeight;
+
+      const appShell =
+        document.querySelector(
+          '.app-shell'
+        );
+
+      if (appShell) {
+        appShell.classList.toggle(
+          'keyboard-open',
+          Boolean(
+            window.visualViewport &&
+            window.innerHeight - height > 120
+          )
+        );
+      }
 
       document.documentElement.style.setProperty(
         '--app-height',
@@ -1779,7 +1803,7 @@
               '每度電費',
               '0',
               '0',
-              '1'
+              '0.1'
             )}
 
             ${numberField(
@@ -1787,7 +1811,7 @@
               '設備耗損費／度',
               '0',
               '0',
-              '1'
+              '0.1'
             )}
           </div>
 
@@ -1938,6 +1962,49 @@
       );
     }
 
+    function resolveRoomLeaseDefaults_(room) {
+      const rent = Number(
+        room && room.rent_amount || 0
+      );
+      const management = Number(
+        room && room.management_fee || 0
+      );
+      const monthlyTotal =
+        rent + management;
+      const explicitDeposit = Number(
+        room && room.deposit_amount || 0
+      );
+      const storedMonths = Number(
+        room && room.deposit_months || 0
+      );
+      const depositMonths =
+        explicitDeposit > 0 && monthlyTotal > 0
+          ? Math.round(
+              (explicitDeposit / monthlyTotal) * 100
+            ) / 100
+          : storedMonths > 0
+            ? storedMonths
+            : 2;
+
+      return {
+        rent_amount: rent,
+        management_fee: management,
+        deposit_months: depositMonths,
+        deposit_amount: explicitDeposit > 0
+          ? Math.round(explicitDeposit)
+          : Math.round(monthlyTotal * depositMonths),
+        payment_day: Number(
+          room && room.payment_day || 10
+        ),
+        electricity_fee_rate: Number(
+          room && room.electricity_fee_rate || 0
+        ),
+        equipment_fee_rate: Number(
+          room && room.equipment_fee_rate || 0
+        )
+      };
+    }
+
     function handleRoomChange(
       applyDefaults
     ) {
@@ -2057,52 +2124,44 @@
       }
 
       if (applyDefaults) {
+        const defaults =
+          resolveRoomLeaseDefaults_(
+            room
+          );
+
         setInputValue(
           'rentAmount',
-          room.rent_amount
+          defaults.rent_amount
         );
 
         setInputValue(
           'managementFee',
-          room.management_fee
+          defaults.management_fee
         );
 
         setInputValue(
           'depositMonths',
-          room.deposit_months ||
-          2
+          defaults.deposit_months
         );
 
         setInputValue(
           'depositAmount',
-          Math.round(
-            Number(
-              room.rent_amount ||
-              0
-            ) *
-            Number(
-              room.deposit_months ||
-              2
-            )
-          )
+          defaults.deposit_amount
         );
 
         setInputValue(
           'paymentDay',
-          room.payment_day ||
-          10
+          defaults.payment_day
         );
 
         setInputValue(
           'electricityRate',
-          room.electricity_fee_rate ||
-          0
+          defaults.electricity_fee_rate
         );
 
         setInputValue(
           'equipmentRate',
-          room.equipment_fee_rate ||
-          0
+          defaults.equipment_fee_rate
         );
 
         updateAmountPreview();
@@ -2854,6 +2913,34 @@
         setAppHeight
       );
     }
+
+    document.addEventListener(
+      'focusin',
+      function (event) {
+        const target =
+          event.target;
+
+        if (
+          !target ||
+          !target.matches ||
+          !target.matches(
+            'input, select, textarea'
+          )
+        ) {
+          return;
+        }
+
+        setTimeout(
+          function () {
+            target.scrollIntoView({
+              block: 'center',
+              inline: 'nearest'
+            });
+          },
+          250
+        );
+      }
+    );
 
     loadPage();
   </script>
