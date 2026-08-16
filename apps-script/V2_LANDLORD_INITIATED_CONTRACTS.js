@@ -24,16 +24,38 @@ const V2_LANDLORD_INITIATED_CONTRACT_INVITE_TTL_MS_ = 24 * 60 * 60 * 1000;
 const V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ = 'https://liff.line.me/2010314940-iJB1D6sN';
 const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_TTL_SECONDS_ = 60;
 const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_RESERVATION_TTL_SECONDS_ = 600;
+const V2_LANDLORD_INITIATED_CONTRACT_LOCK_ATTEMPTS_ = 3;
+const V2_LANDLORD_INITIATED_CONTRACT_LOCK_WAIT_MS_ = 10000;
 
 function landlordInitiatedContractWithScriptLock_(operation) {
   const lock = LockService.getScriptLock();
+  let acquired = false;
+
+  for (let attempt = 0; attempt < V2_LANDLORD_INITIATED_CONTRACT_LOCK_ATTEMPTS_; attempt += 1) {
+    try {
+      lock.waitLock(V2_LANDLORD_INITIATED_CONTRACT_LOCK_WAIT_MS_);
+      acquired = true;
+      break;
+    } catch (_) {
+      if (attempt === V2_LANDLORD_INITIATED_CONTRACT_LOCK_ATTEMPTS_ - 1) {
+        return landlordInitiatedContractError_('CONTRACT_OPERATION_BUSY', '合約操作正在處理，請稍後再試');
+      }
+    }
+  }
+
   try {
-    lock.waitLock(5000);
     return operation();
-  } catch (_) {
-    return landlordInitiatedContractError_('CONTRACT_OPERATION_BUSY', '合約操作正在處理，請稍後再試');
+  } catch (error) {
+    try {
+      if (typeof console !== 'undefined' && console && typeof console.error === 'function') {
+        console.error('landlordInitiatedContract operation failed: ' + (error && error.message ? error.message : String(error)));
+      }
+    } catch (_) {}
+    return landlordInitiatedContractError_('CONTRACT_OPERATION_FAILED', '合約資料寫入失敗，請重新整理後再試');
   } finally {
-    try { lock.releaseLock(); } catch (_) {}
+    if (acquired) {
+      try { lock.releaseLock(); } catch (_) {}
+    }
   }
 }
 
