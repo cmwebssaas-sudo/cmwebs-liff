@@ -121,7 +121,7 @@ class FakeSheet {
   }
 
   getLastColumn() {
-    return Math.max(this.headers.length, 1);
+    return this.headers.length;
   }
 
   getLastRow() {
@@ -134,6 +134,7 @@ class FakeSheet {
 
   getRange(row, column, height = 1, width = 1) {
     if (row === 1) {
+      if (width < 1) throw new Error('range width must be positive');
       return {
         getDisplayValues: () => [this.headers.slice(column - 1, column - 1 + width)],
         setValues: values => {

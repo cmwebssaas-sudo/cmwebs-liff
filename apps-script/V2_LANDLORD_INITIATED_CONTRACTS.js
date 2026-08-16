@@ -832,7 +832,12 @@ function landlordInitiatedContractText_(value) { return value === undefined || v
 function landlordInitiatedContractNumber_(value) { const number = Number(landlordInitiatedContractText_(value).replace(/,/g, '')); return Number.isFinite(number) ? number : 0; }
 function landlordInitiatedContractNormalizePhone_(value) { let digits = landlordInitiatedContractText_(value).replace(/\D/g, ''); if (digits.indexOf('8860') === 0 && digits.length === 13) digits = '0' + digits.slice(4); else if (digits.length === 9 && digits.charAt(0) === '9') digits = '0' + digits; return digits; }
 function landlordInitiatedContractDateValue_(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 0 : date.getTime(); }
-function landlordInitiatedContractHeaders_(sheet) { return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0].map(landlordInitiatedContractText_); }
+function landlordInitiatedContractHeaders_(sheet) {
+  if (!sheet || typeof sheet.getRange !== 'function' || typeof sheet.getLastColumn !== 'function') return [];
+  const lastColumn = Number(sheet.getLastColumn()) || 0;
+  if (lastColumn < 1) return [];
+  return sheet.getRange(1, 1, 1, lastColumn).getDisplayValues()[0].map(landlordInitiatedContractText_);
+}
 function landlordInitiatedContractRows_(sheet) { if (!sheet || sheet.getLastRow() < 2) return []; const values = sheet.getDataRange().getValues(); const headers = values.shift().map(landlordInitiatedContractText_); return values.map(function (row, index) { const result = { _sheet_row: index + 2 }; headers.forEach(function (header, column) { result[header] = row[column]; }); return result; }); }
 function landlordInitiatedContractAppend_(sheet, object) { const headers = landlordInitiatedContractHeaders_(sheet); sheet.appendRow(headers.map(function (header) { return object[header] === undefined ? '' : object[header]; })); }
 function landlordInitiatedContractUpdate_(sheet, row, updates) { const headers = landlordInitiatedContractHeaders_(sheet); Object.keys(updates || {}).forEach(function (header) { const column = headers.indexOf(header); if (column >= 0) sheet.getRange(row._sheet_row, column + 1).setValue(updates[header]); }); }
