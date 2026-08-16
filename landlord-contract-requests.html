@@ -1617,29 +1617,25 @@
         .replace(/=+$/g, '');
     }
 
-    function callNativeSigningReviewAuthStatus(requestId, pollSecret) {
-      return new Promise(function(resolve, reject) {
-        const callbackName = 'cmwebsLandlordSigningReview_' + randomUrlToken(12);
-        const script = document.createElement('script');
-        const timer = setTimeout(function() {
-          cleanup();
-          reject(new Error('房東審核身分驗證逾時'));
-        }, 30000);
-        function cleanup() {
-          clearTimeout(timer);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try { delete window[callbackName]; } catch (_) {}
-        }
-        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
-        script.onerror = function() { cleanup(); reject(new Error('房東審核身分驗證連線失敗')); };
-        script.src = API_URL +
-          '?v2_action=landlord_contract_signing_review_auth_status' +
-          '&request_id=' + encodeURIComponent(requestId) +
-          '&poll_secret=' + encodeURIComponent(pollSecret) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-        document.body.appendChild(script);
+    async function fetchStatusJson(url) {
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'omit',
+        cache: 'no-store'
       });
+      if (!response.ok) {
+        throw new Error('房東審核身分驗證連線失敗');
+      }
+      return response.json();
+    }
+
+    function callNativeSigningReviewAuthStatus(requestId, pollSecret) {
+      const url = API_URL +
+        '?v2_action=landlord_contract_signing_review_auth_status' +
+        '&request_id=' + encodeURIComponent(requestId) +
+        '&poll_secret=' + encodeURIComponent(pollSecret) +
+        '&_=' + Date.now();
+      return fetchStatusJson(url);
     }
 
     async function initializeNativeSigningReviewSession() {
@@ -1674,31 +1670,15 @@
     }
 
     function callNativeSigningReviewExchangeStatus(operation, requestId, pollSecret) {
-      return new Promise(function(resolve, reject) {
-        const callbackName = 'cmwebsLandlordSigningReviewExchange_' + randomUrlToken(12);
-        const script = document.createElement('script');
-        const timer = setTimeout(function() {
-          cleanup();
-          reject(new Error('原生合約審核處理逾時'));
-        }, 30000);
-        function cleanup() {
-          clearTimeout(timer);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try { delete window[callbackName]; } catch (_) {}
-        }
-        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
-        script.onerror = function() { cleanup(); reject(new Error('原生合約審核結果查詢失敗')); };
-        const statusAction = operation === 'list'
-          ? 'landlord_contract_signing_reviews_fetch_status'
-          : 'landlord_contract_signing_review_update_status';
-        script.src = API_URL +
-          '?v2_action=' + encodeURIComponent(statusAction) +
-          '&request_id=' + encodeURIComponent(requestId) +
-          '&poll_secret=' + encodeURIComponent(pollSecret) +
-          '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
-        document.body.appendChild(script);
-      });
+      const statusAction = operation === 'list'
+        ? 'landlord_contract_signing_reviews_fetch_status'
+        : 'landlord_contract_signing_review_update_status';
+      const url = API_URL +
+        '?v2_action=' + encodeURIComponent(statusAction) +
+        '&request_id=' + encodeURIComponent(requestId) +
+        '&poll_secret=' + encodeURIComponent(pollSecret) +
+        '&_=' + Date.now();
+      return fetchStatusJson(url);
     }
 
     async function callNativeSigningReviewApi(action, params) {
@@ -1743,16 +1723,13 @@
     }
 
     function callLandlordInitiatedStatus(action, requestId, pollSecret) {
-      return new Promise(function(resolve, reject) {
-        const callbackName = 'cmwebsLandlordInitiated_' + randomUrlToken(12);
-        const script = document.createElement('script');
-        const timer = setTimeout(function() { cleanup(); reject(new Error('房東合約操作逾時')); }, 30000);
-        function cleanup() { clearTimeout(timer); if (script.parentNode) script.parentNode.removeChild(script); try { delete window[callbackName]; } catch (_) {} }
-        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
-        script.onerror = function() { cleanup(); reject(new Error('房東合約操作結果讀取失敗')); };
-        script.src = API_URL + '?v2_action=landlord_contract_initiated_status&operation=' + encodeURIComponent(action) + '&request_id=' + encodeURIComponent(requestId) + '&poll_secret=' + encodeURIComponent(pollSecret) + '&callback=' + encodeURIComponent(callbackName) + '&_=' + Date.now();
-        document.body.appendChild(script);
-      });
+      const url = API_URL +
+        '?v2_action=landlord_contract_initiated_status' +
+        '&operation=' + encodeURIComponent(action) +
+        '&request_id=' + encodeURIComponent(requestId) +
+        '&poll_secret=' + encodeURIComponent(pollSecret) +
+        '&_=' + Date.now();
+      return fetchStatusJson(url);
     }
 
     async function callLandlordInitiatedApi(action, params) {
