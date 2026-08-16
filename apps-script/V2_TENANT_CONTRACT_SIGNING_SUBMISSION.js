@@ -1,5 +1,6 @@
 // Native V2 final signing submission. It never chooses or mutates contract_status.
 const V2_TENANT_CONTRACT_SIGNING_SUBMIT_ACTION_ = 'tenant_contract_sign_submit';
+const V2_TENANT_CONTRACT_INVITE_SUBMIT_ACTION_ = 'tenant_contract_invite_submit';
 const V2_TENANT_CONTRACT_SIGNING_STATUS_ACTION_ = 'tenant_contract_sign_status';
 const V2_TENANT_CONTRACT_SIGNING_EXCHANGE_TTL_SECONDS_ = 60;
 const V2_TENANT_CONTRACT_SIGNING_CONTRACT_HEADERS_ = [
@@ -12,13 +13,16 @@ const V2_TENANT_CONTRACT_SIGNING_ARTIFACT_HEADERS_ = [
 ];
 
 function tenantContractSigningIsSubmitRequest_(body) {
-  try { return JSON.parse(String(body || '')).action === V2_TENANT_CONTRACT_SIGNING_SUBMIT_ACTION_; } catch (_) { return false; }
+  try {
+    const action = JSON.parse(String(body || '')).action;
+    return action === V2_TENANT_CONTRACT_SIGNING_SUBMIT_ACTION_ || action === V2_TENANT_CONTRACT_INVITE_SUBMIT_ACTION_;
+  } catch (_) { return false; }
 }
 
 function tenantContractSigningHandleSubmitPost_(body) {
   let request;
   try { request = JSON.parse(String(body || '')); } catch (_) { return tenantContractSigningSubmitError_('INVALID_JSON'); }
-  if (!request || request.action !== V2_TENANT_CONTRACT_SIGNING_SUBMIT_ACTION_) return tenantContractSigningSubmitError_('INVALID_ACTION');
+  if (!request || [V2_TENANT_CONTRACT_SIGNING_SUBMIT_ACTION_, V2_TENANT_CONTRACT_INVITE_SUBMIT_ACTION_].indexOf(request.action) < 0) return tenantContractSigningSubmitError_('INVALID_ACTION');
   const requestId = tenantLiffSigningText_(request.request_id);
   const pollSecret = tenantLiffSigningText_(request.poll_secret);
   if (!/^[A-Za-z0-9_-]{22,}$/.test(requestId) || !/^[A-Za-z0-9_-]{43,}$/.test(pollSecret)) return tenantContractSigningSubmitError_('INVALID_EXCHANGE_CREDENTIAL');

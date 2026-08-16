@@ -1080,6 +1080,35 @@
       line-height: 1.65;
     }
 
+    .signing-form-field {
+      margin-top: 15px;
+    }
+
+    .signing-form-label {
+      display: block;
+      margin-bottom: 7px;
+      color: #444444;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .signing-form-input {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 13px;
+      border: 1px solid #dfe3e8;
+      border-radius: 12px;
+      outline: none;
+      background: #ffffff;
+      color: #222222;
+      font-size: 15px;
+    }
+
+    .signing-form-input:focus {
+      border-color: #222222;
+      box-shadow: 0 0 0 3px rgba(34, 34, 34, 0.08);
+    }
+
     .signing-status {
       display: inline-flex;
       min-height: 28px;
@@ -1614,6 +1643,12 @@
 
     const TEST_MODE =
       QUERY_PARAMS.get('test') === '1';
+
+    const INVITE_ID =
+      rawText(QUERY_PARAMS.get('invite_id')).trim();
+
+    const TENANT_INVITE_FLOW =
+      Boolean(INVITE_ID);
 
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
@@ -2254,6 +2289,41 @@
       });
     }
 
+    function callTenantInviteAuthStatus(requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsInviteAuth_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error('邀請身分驗證逾時'));
+        }, 30000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) {}
+        }
+
+        window[callbackName] = function(result) {
+          cleanup();
+          resolve(result || {});
+        };
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('邀請身分驗證連線失敗'));
+        };
+        let url = API_URL +
+          '?v2_action=tenant_contract_invite_auth_status' +
+          '&request_id=' + encodeURIComponent(requestId) +
+          '&poll_secret=' + encodeURIComponent(pollSecret) +
+          '&callback=' + encodeURIComponent(callbackName) +
+          '&_=' + Date.now();
+        if (TEST_MODE) url += '&test=1';
+        script.src = url;
+        document.body.appendChild(script);
+      });
+    }
+
     function callTenantSigningSubmissionStatus(requestId, pollSecret) {
       return new Promise(function(resolve, reject) {
         const callbackName = 'cmwebsSigningSubmit_' + randomUrlToken(12);
@@ -2334,6 +2404,102 @@
       throw new Error('簽署身分驗證逾時');
     }
 
+    function normalizeTenantInvitePhone(value) {
+      const digits = rawText(value).replace(/[^0-9]/g, '');
+      if (/^9\d{8}$/.test(digits)) return '0' + digits;
+      return digits;
+    }
+
+    function renderTenantInviteClaimForm(message) {
+      app.className = 'signing-page';
+      app.innerHTML = `
+        <div class="signing-header">
+          <div class="signing-kicker">CMWebs 房客合約</div>
+          <h1 class="signing-title">開始您的租賃合約</h1>
+          <p class="signing-description">這是房東現場建立的新空房合約邀請。請填寫基本資料並輸入房東提供的 6 碼確認碼，接著確認完整合約、上傳身分證正反面與親筆簽名。</p>
+        </div>
+        <section class="signing-section">
+          <h2 class="signing-section-title">房客資料</h2>
+          <p class="signing-section-help">資料送出後會綁定這次邀請的 LINE 帳號；房東核准前，合約不會啟用。</p>
+          <div class="signing-form-field">
+            <label class="signing-form-label" for="tenantInviteName">姓名</label>
+            <input id="tenantInviteName" class="signing-form-input" autocomplete="name" placeholder="請輸入姓名" />
+          </div>
+          <div class="signing-form-field">
+            <label class="signing-form-label" for="tenantInvitePhone">手機</label>
+            <input id="tenantInvitePhone" class="signing-form-input" inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxx" />
+          </div>
+          <div class="signing-form-field">
+            <label class="signing-form-label" for="tenantInviteEmail">Email（選填）</label>
+            <input id="tenantInviteEmail" class="signing-form-input" type="email" autocomplete="email" placeholder="name@example.com" />
+          </div>
+          <div class="signing-form-field">
+            <label class="signing-form-label" for="tenantInviteConfirmationCode">房東提供的 6 碼確認碼</label>
+            <input id="tenantInviteConfirmationCode" class="signing-form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="請輸入 6 碼確認碼" />
+          </div>
+          ${message ? `<div class="signing-notice warning">${safeText(message)}</div>` : ''}
+          <div class="signing-sticky-action">
+            <button class="signing-primary-button" type="button" onclick="startTenantInviteSigning()">確認資料並開始簽署</button>
+          </div>
+        </section>
+      `;
+    }
+
+    async function startTenantInviteSigning() {
+      const name = rawText(document.getElementById('tenantInviteName') && document.getElementById('tenantInviteName').value).trim();
+      const phone = normalizeTenantInvitePhone(document.getElementById('tenantInvitePhone') && document.getElementById('tenantInvitePhone').value);
+      const email = rawText(document.getElementById('tenantInviteEmail') && document.getElementById('tenantInviteEmail').value).trim();
+      const confirmationCode = rawText(document.getElementById('tenantInviteConfirmationCode') && document.getElementById('tenantInviteConfirmationCode').value).trim();
+      if (!name || !/^09\d{8}$/.test(phone) || !/^\d{6}$/.test(confirmationCode)) {
+        renderTenantInviteClaimForm('請填寫姓名、正確的台灣手機號碼，以及房東提供的 6 碼確認碼。');
+        return;
+      }
+      if (typeof liff === 'undefined' || typeof liff.getIDToken !== 'function') {
+        renderTenantSigningFailure('LINE 身分驗證尚未就緒，請重新整理後再試。', 'INVITE_SESSION_INVALID');
+        return;
+      }
+      renderTenantSigningLoading('正在認領邀請並確認合約…');
+      try {
+        const idToken = liff.getIDToken();
+        if (!idToken) throw new Error('無法取得 LINE 身分憑證');
+        const requestId = randomUrlToken(16);
+        const pollSecret = randomUrlToken(32);
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: JSON.stringify({
+            action: 'tenant_contract_invite_auth_init',
+            invite_id: INVITE_ID,
+            confirmation_code: confirmationCode,
+            id_token: idToken,
+            tenant_data: { tenant_name: name, tenant_phone: phone, tenant_email: email },
+            request_id: requestId,
+            poll_secret: pollSecret
+          })
+        });
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+          await new Promise(function(resolve) { setTimeout(resolve, 500); });
+          const result = await callTenantInviteAuthStatus(requestId, pollSecret);
+          if (result.code === 'AUTH_EXCHANGE_NOT_FOUND') continue;
+          if (!result.success || !result.data || !result.data.session_token) {
+            const error = new Error(tenantSigningErrorMessage(result.code, result.message));
+            error.code = result.code || 'INVITE_SESSION_INVALID';
+            throw error;
+          }
+          TENANT_SIGNING_SESSION_TOKEN = result.data.session_token;
+          TENANT_SIGNING_MODE = 'new_tenant';
+          TENANT_SIGNING_DATA = result.data;
+          TENANT_SIGNING_ARTIFACT_STATE = result.data.artifact_state || {};
+          TENANT_SIGNING_UPLOAD_STATE = {};
+          renderTenantSigningWorkflow();
+          return;
+        }
+        throw new Error('邀請身分驗證逾時');
+      } catch (error) {
+        renderTenantInviteClaimForm(tenantSigningErrorMessage(error.code, error.message || '邀請認領失敗，請確認連結與確認碼。'));
+      }
+    }
+
     async function submitTenantContractSigning() {
       if (!TENANT_SIGNING_SESSION_TOKEN) {
         throw new Error('簽署身分驗證已失效，請重新驗證。');
@@ -2344,7 +2510,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
         body: JSON.stringify({
-          action: 'tenant_contract_sign_submit',
+          action: TENANT_INVITE_FLOW ? 'tenant_contract_invite_submit' : 'tenant_contract_sign_submit',
           request_id: requestId,
           poll_secret: pollSecret,
           session_token: TENANT_SIGNING_SESSION_TOKEN,
@@ -2546,7 +2712,14 @@
         REQUIRED_ARTIFACT_MISSING: '請完成所有必要附件與簽名。',
         CONSENT_REQUIRED: '請先勾選同意確認。',
         CONTRACT_SIGNING_SCHEMA_NOT_READY: '簽署資料尚未備妥，請聯絡房東協助處理。',
-        SIGNING_EXCHANGE_DENIED: '簽署確認未通過，請重新驗證後再試。'
+        SIGNING_EXCHANGE_DENIED: '簽署確認未通過，請重新驗證後再試。',
+        INVITE_CODE_INVALID: '確認碼錯誤，請向房東重新確認 6 碼確認碼。',
+        INVITE_EXPIRED: '這個合約邀請已過期，請請房東重新建立邀請。',
+        INVITE_ALREADY_CLAIMED: '這個合約邀請已被認領，請使用原本認領的 LINE 帳號。',
+        INVITE_CANCELLED: '這個合約邀請已取消，請聯絡房東。',
+        INVITE_NOT_FOUND: '找不到這個合約邀請，請確認連結是否完整。',
+        TENANT_DATA_REQUIRED: '請填寫房客姓名與正確的台灣手機號碼。',
+        INVITE_SESSION_INVALID: '邀請簽署驗證失效，請重新開啟房東提供的邀請連結。'
       };
       return messages[code] || fallback || '簽署流程暫時無法完成，請稍後再試。';
     }
@@ -2978,6 +3151,14 @@
     }
 
     async function retryTenantSigningSession() {
+      if (TENANT_INVITE_FLOW) {
+        TENANT_SIGNING_SESSION_TOKEN = '';
+        TENANT_SIGNING_MODE = '';
+        TENANT_SIGNING_DATA = null;
+        TENANT_SIGNING_ARTIFACT_STATE = {};
+        renderTenantInviteClaimForm();
+        return;
+      }
       TENANT_SIGNING_SESSION_TOKEN = '';
       TENANT_SIGNING_MODE = '';
       TENANT_SIGNING_DATA = null;
@@ -4194,6 +4375,11 @@
           await initLineUserId();
 
         if (!ready) {
+          return;
+        }
+
+        if (TENANT_INVITE_FLOW) {
+          renderTenantInviteClaimForm();
           return;
         }
 

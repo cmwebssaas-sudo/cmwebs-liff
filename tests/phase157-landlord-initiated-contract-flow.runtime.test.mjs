@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const sourcePath = new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url);
+const signingSessionSource = readFileSync(new URL('../apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js', import.meta.url), 'utf8');
+const signingSubmissionSource = readFileSync(new URL('../apps-script/V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js', import.meta.url), 'utf8');
 const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
 const landlordAccessSource = readFileSync(new URL('../apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js', import.meta.url), 'utf8');
 assert.equal(existsSync(sourcePath), true, 'landlord initiation module must exist before runtime tests can run');
@@ -65,6 +67,11 @@ function rowFor(headers, values) {
 }
 
 function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
+  const scriptProperties = new Map([
+    ['CMWEBS_LINE_LOGIN_CHANNEL_ID', 'channel-1'],
+    ['CMWEBS_LIFF_SESSION_HMAC_SECRET', 'session-secret']
+  ]);
+  const cache = new Map();
   const properties = new Sheet(
     ['property_id', 'workspace_id', 'landlord_id', 'property_name', 'property_address', 'account_status'],
     [['P1', 'W1', 'L1', '幸福公寓', '台北市測試路 1 號', 'active']]
@@ -119,11 +126,15 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
     Utilities: {
       getUuid: () => 'uuid-' + (++uuid),
       computeDigest: (_algorithm, value) => [...crypto.createHash('sha256').update(String(value)).digest()].map(byte => byte > 127 ? byte - 256 : byte),
+      computeHmacSha256Signature: (value, key) => [...crypto.createHmac('sha256', String(key)).update(String(value)).digest()].map(byte => byte > 127 ? byte - 256 : byte),
       DigestAlgorithm: { SHA_256: 'SHA_256' },
       base64EncodeWebSafe: value => Buffer.from(value).toString('base64url'),
       base64DecodeWebSafe: value => Buffer.from(value, 'base64url'),
       newBlob: value => ({ getDataAsString: () => Buffer.from(value).toString() })
     },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => scriptProperties.get(key) || null }) },
+    CacheService: { getScriptCache: () => ({ put: (key, value) => cache.set(key, value), get: key => cache.get(key) || null, remove: key => cache.delete(key) }) },
+    UrlFetchApp: { fetch: () => ({ getResponseCode: () => 200, getContentText: () => JSON.stringify({ iss: 'https://access.line.me', aud: 'channel-1', sub: 'new-tenant-line', exp: Math.floor(Date.now() / 1000) + 600, iat: Math.floor(Date.now() / 1000) }) }) },
     tenantContractSigningReviewText_: value => String(value == null ? '' : value).trim(),
     tenantLiffSigningText_: value => String(value == null ? '' : value).trim(),
     tenantContractSigningReviewError_: code => ({ success: false, code, message: 'contract error' }),
@@ -131,6 +142,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
   };
   vm.createContext(context);
   vm.runInContext(source, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });
+  vm.runInContext(signingSessionSource, context, { filename: 'V2_TENANT_LIFF_SIGNING_SESSION.js' });
   context.verifyLandlordContractSigningReviewSessionToken_ = () => ({ success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' });
   return { api: context, sheets };
 }
@@ -216,9 +228,38 @@ const newInput = {
   assert.equal(result.code, 'LANDLORD_REVIEW_SESSION_INVALID');
   assert.match(dispatcherSource, /landlordInitiatedContractIsRequest_\(postBody\)/);
   assert.match(dispatcherSource, /landlordInitiatedContractHandlePost_\(postBody\)/);
+  assert.match(dispatcherSource, /landlordInitiatedContractReadExchange_/);
   assert.match(dispatcherSource, /landlord_contract_initiated_init/);
+  assert.match(dispatcherSource, /landlord_contract_initiated_status/);
+  assert.match(dispatcherSource, /tenantLiffSigningIsInviteAuthRequest_\(postBody\)/);
+  assert.match(dispatcherSource, /tenantLiffSigningHandleInviteAuthPost_\(postBody\)/);
+  assert.match(dispatcherSource, /tenant_contract_invite_auth_status/);
+  assert.match(signingSubmissionSource, /tenant_contract_invite_submit/);
   assert.match(landlordAccessSource, /function getWorkspaceLandlordInitiatedContractsInitBySession_/);
   assert.match(landlordAccessSource, /function cancelWorkspaceLandlordInitiatedContractBySession_/);
+}
+
+{
+  const { api } = makeRuntime();
+  assert.equal(typeof api.tenantLiffSigningInviteAuthenticate_, 'function');
+  const created = api.landlordInitiatedContractCreateNew_(access, newInput);
+  assert.equal(created.success, true, created.code);
+  const result = api.tenantLiffSigningInviteAuthenticate_(
+    created.data.invite.invite_id,
+    created.data.invite.confirmation_code,
+    'id-token',
+    { tenant_name: '現場房客', tenant_phone: '0912345678', tenant_email: '' }
+  );
+  assert.equal(result.success, true, result.code);
+  assert.equal(result.data.contract.signing_mode, 'new_tenant');
+  assert.deepEqual([...result.data.artifact_requirements], ['identity_front', 'identity_back', 'signature']);
+  assert.equal(result.data.session_token.split('.').length, 2);
+  assert.equal(api.tenantLiffSigningInviteAuthenticate_(
+    created.data.invite.invite_id,
+    created.data.invite.confirmation_code,
+    'id-token',
+    { tenant_name: '現場房客', tenant_phone: '0912345678' }
+  ).code, 'INVITE_ALREADY_CLAIMED');
 }
 
 console.log('Phase 157 landlord-initiated contract runtime RED/GREEN tests passed.');

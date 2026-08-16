@@ -609,6 +609,25 @@
       font-weight: 900;
     }
 
+    .invite-qr {
+      display: flex;
+      margin-top: 11px;
+      align-items: center;
+      gap: 12px;
+      color: #5c5273;
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .invite-qr img {
+      width: 132px;
+      height: 132px;
+      flex: 0 0 132px;
+      padding: 6px;
+      border-radius: 10px;
+      background: #ffffff;
+    }
+
     .invite-text {
       width: 100%;
       min-height: 150px;
@@ -870,8 +889,11 @@
       ) || '';
 
     let LINE_USER_ID = '';
+    let LANDLORD_REVIEW_SESSION_TOKEN = '';
     let PAGE_DATA = null;
     let CREATED_DATA = null;
+    let CONTRACT_MODE = 'new';
+    let PREVIOUS_CONTRACT_ID = '';
     let toastTimer = null;
 
     function setAppHeight() {
@@ -1156,6 +1178,74 @@
           );
         }
       );
+    }
+
+    function randomUrlToken(bytes) {
+      const value = new Uint8Array(bytes);
+      crypto.getRandomValues(value);
+      return btoa(String.fromCharCode.apply(null, value))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '');
+    }
+
+    function callLandlordReviewAuthStatus(requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsCreateReviewAuth_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() { cleanup(); reject(new Error('房東身分驗證逾時')); }, 30000);
+        function cleanup() { clearTimeout(timer); if (script.parentNode) script.parentNode.removeChild(script); try { delete window[callbackName]; } catch (_) {} }
+        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
+        script.onerror = function() { cleanup(); reject(new Error('房東身分驗證連線失敗')); };
+        script.src = API_URL + '?v2_action=landlord_contract_signing_review_auth_status&request_id=' + encodeURIComponent(requestId) + '&poll_secret=' + encodeURIComponent(pollSecret) + '&callback=' + encodeURIComponent(callbackName) + '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function initializeLandlordReviewSession() {
+      if (TEST_MODE) return false;
+      const idToken = liff.getIDToken();
+      if (!idToken) throw new Error('無法取得房東審核身分憑證');
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ action: 'landlord_contract_signing_review_auth_init', id_token: idToken, request_id: requestId, poll_secret: pollSecret }) });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callLandlordReviewAuthStatus(requestId, pollSecret);
+        if (result.code === 'AUTH_EXCHANGE_NOT_FOUND') continue;
+        if (!result.success || !result.data || !result.data.session_token) throw new Error(result.message || '房東審核身分驗證失敗');
+        LANDLORD_REVIEW_SESSION_TOKEN = result.data.session_token;
+        return true;
+      }
+      throw new Error('房東身分驗證逾時');
+    }
+
+    function callLandlordInitiatedStatus(action, requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsInitiatedContract_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() { cleanup(); reject(new Error('合約操作結果讀取逾時')); }, 30000);
+        function cleanup() { clearTimeout(timer); if (script.parentNode) script.parentNode.removeChild(script); try { delete window[callbackName]; } catch (_) {} }
+        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
+        script.onerror = function() { cleanup(); reject(new Error('合約操作結果讀取失敗')); };
+        script.src = API_URL + '?v2_action=landlord_contract_initiated_status&operation=' + encodeURIComponent(action) + '&request_id=' + encodeURIComponent(requestId) + '&poll_secret=' + encodeURIComponent(pollSecret) + '&callback=' + encodeURIComponent(callbackName) + '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function postLandlordInitiatedContract(action, input) {
+      if (!LANDLORD_REVIEW_SESSION_TOKEN) throw new Error('房東審核身分驗證已失效，請重新整理頁面。');
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(Object.assign({}, input || {}, { action: action, request_id: requestId, poll_secret: pollSecret, session_token: LANDLORD_REVIEW_SESSION_TOKEN })) });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callLandlordInitiatedStatus(action, requestId, pollSecret);
+        if (result.code === 'LANDLORD_INITIATED_CONTRACT_EXCHANGE_NOT_FOUND' || result.code === 'LANDLORD_INITIATED_CONTRACT_EXCHANGE_PENDING') continue;
+        if (!result.success) throw new Error(result.message || '合約操作失敗');
+        return result.data || {};
+      }
+      throw new Error('合約操作處理逾時');
     }
 
     async function initLine() {
@@ -1455,7 +1545,7 @@
               )}
             </div>
 
-            <div class="hero-desc">
+              <div id="heroDescription" class="hero-desc">
               建立房客基本資料與正式租約，再將 LINE 綁定訊息傳給房客。
             </div>
 
@@ -1482,7 +1572,7 @@
           <div class="section-head">
             <div>
               <div class="section-title">房客基本資料</div>
-              <div class="section-desc">
+              <div id="tenantDataSectionDesc" class="section-desc">
                 手機號碼是房客首次登入時的身份驗證依據。
               </div>
             </div>
@@ -1492,8 +1582,8 @@
 
           <div class="field">
             <div class="field-label">
-              <span>房客姓名</span>
-              <span class="required">必填</span>
+                <span>房客姓名</span>
+                <span class="optional">現場可後補</span>
             </div>
 
             <input
@@ -1508,7 +1598,7 @@
             <div class="field">
               <div class="field-label">
                 <span>手機號碼</span>
-                <span class="required">必填</span>
+                <span class="optional">現場可後補</span>
               </div>
 
               <input
@@ -1521,7 +1611,7 @@
               />
 
               <div class="field-note">
-                必須與房客稍後輸入的號碼完全一致。
+                若現場尚未取得資料可先留白，房客會在邀請頁補填並用 LINE 身分確認。
               </div>
             </div>
 
@@ -1744,8 +1834,8 @@
             />
 
             <label class="confirmation-text" for="confirmCreate">
-              <strong>我確認房客姓名、手機號碼、房間與租約日期均正確。</strong>
-              建立後，手機號碼會作為房客本人 LINE 帳號的綁定依據。
+              <strong id="confirmationHeadline">我確認房間、租約日期與收費條件均正確。</strong>
+              <span id="confirmationBody">房客姓名與手機可留白，系統會建立待認領邀請，核准後才啟用房客資料。</span>
             </label>
           </div>
         </section>
@@ -1757,11 +1847,12 @@
           onclick="submitCreate()"
           disabled
         >
-          建立房客與正式租約
+          建立待房客認領的合約
         </button>
       `;
 
       handleRoomChange(true);
+      setContractModeUi();
       updateAmountPreview();
 
       [
@@ -1852,6 +1943,15 @@
           )
         );
 
+      if (
+        CONTRACT_MODE === 'renewal' &&
+        (!room || !room.existing_contract || rawText(room.existing_contract.contract_id) !== PREVIOUS_CONTRACT_ID)
+      ) {
+        CONTRACT_MODE = 'new';
+        PREVIOUS_CONTRACT_ID = '';
+        setContractModeUi();
+      }
+
       const preview =
         document.getElementById(
           'roomPreview'
@@ -1930,27 +2030,17 @@
         const contract =
           room.existing_contract;
 
-        warning.textContent =
-          '此房間已有租約 ' +
-          (
-            contract.contract_id ||
-            ''
+        warning.innerHTML =
+          safeHtml(
+            '此房間已有租約 ' +
+            (contract.contract_id || '') +
+            '，期間 ' +
+            (rawText(contract.start_date) || '-') +
+            ' 至 ' +
+            (rawText(contract.end_date) || '-') +
+            '。若是同一房客續約，請由房東主動發起新版本。'
           ) +
-          '，期間 ' +
-          (
-            rawText(
-              contract.start_date
-            ) ||
-            '-'
-          ) +
-          ' 至 ' +
-          (
-            rawText(
-              contract.end_date
-            ) ||
-            '-'
-          ) +
-          '。後端會阻止日期重疊，但仍可建立不重疊的未來租約。';
+          '<button class="retry-button" type="button" onclick="startRenewalFromRoom()">從此有效合約發起續約</button>';
 
         warning.classList.add(
           'show'
@@ -2012,6 +2102,56 @@
 
         updateAmountPreview();
       }
+    }
+
+    function setContractModeUi() {
+      const renewal = CONTRACT_MODE === 'renewal';
+      const heroDescription = document.getElementById('heroDescription');
+      const tenantDataDescription = document.getElementById('tenantDataSectionDesc');
+      const confirmationHeadline = document.getElementById('confirmationHeadline');
+      const confirmationBody = document.getElementById('confirmationBody');
+      const submitButton = document.getElementById('submitButton');
+      if (heroDescription) heroDescription.textContent = renewal
+        ? '由房東主動建立新的續約版本，房客只需確認差異並完成線上簽名。'
+        : '建立待房客認領的新空房合約，現場可先收款，房客再補資料與簽署。';
+      if (tenantDataDescription) tenantDataDescription.textContent = renewal
+        ? '續約沿用既有房客身份，不會要求重新上傳身分證；下方資料僅供房東確認。'
+        : '房客姓名與手機可先留白，房客會在邀請頁補填並用 LINE 身分確認。';
+      if (confirmationHeadline) confirmationHeadline.textContent = renewal
+        ? '我確認這是正確的既有房客與續約條件。'
+        : '我確認房間、租約日期與收費條件均正確。';
+      if (confirmationBody) confirmationBody.textContent = renewal
+        ? '系統會建立新的待簽版本，原有效合約要等房東核准後才會標記為已續約。'
+        : '房客姓名與手機可留白，系統會建立待認領邀請，核准後才啟用房客資料。';
+      if (submitButton) submitButton.textContent = renewal
+        ? '建立待房客簽署的續約合約'
+        : '建立待房客認領的合約';
+    }
+
+    function startRenewalFromRoom() {
+      const room = getRoom(inputValue('roomId'));
+      const previous = room && room.existing_contract;
+      if (!previous || !rawText(previous.contract_id).trim()) {
+        showToast('找不到可續約的有效合約。', true);
+        return;
+      }
+      CONTRACT_MODE = 'renewal';
+      PREVIOUS_CONTRACT_ID = rawText(previous.contract_id).trim();
+      setInputValue('tenantName', previous.tenant_name || previous.name || '');
+      setInputValue('tenantPhone', previous.tenant_phone || previous.phone || '');
+      setInputValue('tenantEmail', previous.tenant_email || previous.email || '');
+      if (previous.end_date) {
+        const end = new Date(rawText(previous.end_date) + 'T00:00:00');
+        if (!Number.isNaN(end.getTime())) {
+          end.setDate(end.getDate() + 1);
+          const nextStart = [end.getFullYear(), String(end.getMonth() + 1).padStart(2, '0'), String(end.getDate()).padStart(2, '0')].join('-');
+          setInputValue('startDate', nextStart);
+          setInputValue('endDate', addOneYearMinusOneDay(nextStart));
+        }
+      }
+      setContractModeUi();
+      showToast('已切換為續約模式，請確認新租期與收費條件。');
+      document.getElementById('startDate').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function previewItem(
@@ -2176,15 +2316,7 @@
           'endDate'
         );
 
-      if (!tenantName) {
-        return '請輸入房客姓名。';
-      }
-
-      if (
-        !/^09\d{8}$/.test(
-          tenantPhone
-        )
-      ) {
+      if (tenantPhone && !/^09\d{8}$/.test(tenantPhone)) {
         return '請輸入正確的台灣手機號碼。';
       }
 
@@ -2280,8 +2412,10 @@
 
       try {
         const result =
-          await jsonpRequest(
-            'landlord_tenant_create',
+          await postLandlordInitiatedContract(
+            CONTRACT_MODE === 'renewal'
+              ? 'landlord_contract_initiate_renewal'
+              : 'landlord_contract_initiate_new',
             {
               tenant_name:
                 inputValue(
@@ -2344,24 +2478,20 @@
               note:
                 inputValue(
                   'note'
-                )
+                ),
+              previous_contract_id:
+                CONTRACT_MODE === 'renewal'
+                  ? PREVIOUS_CONTRACT_ID
+                  : ''
             }
           );
 
-        if (
-          !result ||
-          result.success !== true
-        ) {
-          throw new Error(
-            result &&
-            result.message
-              ? result.message
-              : '房客與租約建立失敗'
-          );
+        if (!result || !result.contract || (CONTRACT_MODE === 'new' && !result.invite)) {
+          throw new Error('房東合約邀請建立失敗');
         }
 
-        CREATED_DATA =
-          result.data || {};
+        result.mode = CONTRACT_MODE;
+        CREATED_DATA = result;
 
         renderSuccess();
 
@@ -2377,8 +2507,9 @@
         button.disabled =
           false;
 
-        button.textContent =
-          '建立房客與正式租約';
+        button.textContent = CONTRACT_MODE === 'renewal'
+          ? '建立待房客簽署的續約合約'
+          : '建立待房客認領的合約';
       }
     }
 
@@ -2397,6 +2528,20 @@
 
       const binding =
         CREATED_DATA.binding || {};
+      const invite = CREATED_DATA.invite || {};
+      const initiated = Boolean(invite.invite_id);
+      const renewal = CREATED_DATA.mode === 'renewal';
+      const selectedRoom = getRoom(contract.room_id) || {};
+      const selectedProperty = (PAGE_DATA && Array.isArray(PAGE_DATA.properties)
+        ? PAGE_DATA.properties.find(function(item) { return rawText(item.property_id) === rawText(contract.property_id); })
+        : null) || {};
+      const propertyName = property.property_name || selectedProperty.property_name || selectedRoom.property_name || '';
+      const roomName = room.room_name || selectedRoom.room_name || contract.room_name || '';
+      const invitationMessage = initiated
+        ? '請開啟房客合約邀請：\n' + invite.url + '\n\n確認碼：' + invite.confirmation_code + '\n\n請用本人 LINE 開啟連結，填寫姓名與手機、上傳證件並完成線上簽署。房東審核通過後合約才會生效。'
+        : renewal
+          ? '房東已建立新的續約合約：' + contract.contract_id + '\n\n請開啟 CMWebs 房客合約頁，確認新舊條款差異並完成線上簽名。房東審核通過後，新合約才會生效。'
+        : binding.invitation_message || '';
 
       document.getElementById(
         'app'
@@ -2405,11 +2550,11 @@
           <div class="success-head">
             <div class="success-icon">✓</div>
             <div class="success-title">
-              房客與租約已建立
+              ${initiated ? '待房客認領的合約已建立' : renewal ? '待房客簽署的續約合約已建立' : '房客與租約已建立'}
             </div>
 
             <div class="success-desc">
-              現在將下方綁定訊息傳給房客即可。
+              ${initiated ? '將下方邀請連結與確認碼交給房客，房客現場完成資料與簽署。' : renewal ? '請通知既有房客開啟合約頁確認差異並簽名；核准前不會改動原合約。' : '現在將下方綁定訊息傳給房客即可。'}
             </div>
           </div>
 
@@ -2417,22 +2562,22 @@
             <div class="success-grid">
               ${successItem(
                 '房客',
-                tenant.tenant_name
+                contract.tenant_name || tenant.tenant_name || '待房客填寫'
               )}
 
               ${successItem(
                 '房客 ID',
-                tenant.tenant_id
+                contract.tenant_id || tenant.tenant_id
               )}
 
               ${successItem(
                 '物件',
-                property.property_name
+                propertyName
               )}
 
               ${successItem(
                 '房間',
-                room.room_name
+                roomName
               )}
 
               ${successItem(
@@ -2449,28 +2594,27 @@
 
               ${successItem(
                 '手機',
-                tenant.tenant_phone
+                contract.tenant_phone || tenant.tenant_phone
               )}
 
               ${successItem(
                 'LINE 狀態',
-                '尚未綁定'
+                initiated ? '待房客認領' : renewal ? '沿用既有綁定' : '尚未綁定'
               )}
             </div>
 
             <div class="invite-box">
               <div class="invite-title">
-                傳給房客的 LINE 綁定訊息
+                ${initiated ? '傳給房客的合約邀請（含確認碼）' : renewal ? '傳給房客的續約通知' : '傳給房客的 LINE 綁定訊息'}
               </div>
+
+              ${initiated ? `<div class="invite-qr"><img src="https://quickchart.io/qr?size=220&text=${encodeURIComponent(invite.url)}" alt="房客合約邀請 QR Code" /><span>房客掃描後，請再輸入下方一次性確認碼。QR 只包含邀請連結，不包含登入憑證或個資。</span></div>` : ''}
 
               <textarea
                 id="inviteMessage"
                 class="invite-text"
                 readonly
-              >${safeHtml(
-                binding.invitation_message ||
-                ''
-              )}</textarea>
+              >${safeHtml(invitationMessage)}</textarea>
             </div>
 
             <div class="success-actions">
@@ -2479,16 +2623,16 @@
                 type="button"
                 onclick="copyInvitation()"
               >
-                複製綁定訊息
+                ${initiated ? '複製合約邀請' : renewal ? '複製續約通知' : '複製綁定訊息'}
               </button>
 
-              <button
+              ${initiated ? `<button
                 class="success-button secondary"
                 type="button"
                 onclick="openTenantLiff()"
               >
                 開啟房客 LIFF
-              </button>
+              </button>` : ''}
 
               <button
                 class="success-button secondary full"
@@ -2570,6 +2714,7 @@
           : {};
 
       const url =
+        (CREATED_DATA && CREATED_DATA.invite && CREATED_DATA.invite.url) ||
         binding.tenant_liff_url ||
         PAGE_DATA.tenant_liff_url ||
         '';
@@ -2593,6 +2738,8 @@
     function resetCreatePage() {
       CREATED_DATA =
         null;
+      CONTRACT_MODE = 'new';
+      PREVIOUS_CONTRACT_ID = '';
 
       renderPage();
     }
@@ -2645,6 +2792,10 @@
           if (!ready) {
             return;
           }
+        }
+
+        if (!TEST_MODE && !LANDLORD_REVIEW_SESSION_TOKEN) {
+          await initializeLandlordReviewSession();
         }
 
         const result =
@@ -2703,4 +2854,3 @@
   </script>
 </body>
 </html>
-

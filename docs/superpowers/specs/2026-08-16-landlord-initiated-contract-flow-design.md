@@ -1,6 +1,6 @@
 # V2.1 房東發起新租／續約線上簽署設計
 
-**Status:** Proposed — pending user review
+**Status:** Approved — local implementation candidate
 **Date:** 2026-08-16 (Asia/Taipei)
 **Scope:** 房東端發起合約、房客以 LINE/QR 簽署、房東核准後才建立有效租約
 

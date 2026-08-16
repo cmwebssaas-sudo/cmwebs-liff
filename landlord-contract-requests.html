@@ -1182,6 +1182,7 @@
     let PAGE_DATA = null;
     let ALL_REQUESTS = [];
     let SIGNING_REVIEWS = [];
+    let INITIATED_CONTRACTS = [];
     let ACTIVE_REQUEST = null;
     let ACTIVE_STATUS_FILTER =
       TENANT_FILTER_ID ? 'all' : 'pending';
@@ -1705,6 +1706,34 @@
       throw new Error('原生合約審核處理逾時');
     }
 
+    function callLandlordInitiatedStatus(action, requestId, pollSecret) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cmwebsLandlordInitiated_' + randomUrlToken(12);
+        const script = document.createElement('script');
+        const timer = setTimeout(function() { cleanup(); reject(new Error('房東合約操作逾時')); }, 30000);
+        function cleanup() { clearTimeout(timer); if (script.parentNode) script.parentNode.removeChild(script); try { delete window[callbackName]; } catch (_) {} }
+        window[callbackName] = function(result) { cleanup(); resolve(result || {}); };
+        script.onerror = function() { cleanup(); reject(new Error('房東合約操作結果讀取失敗')); };
+        script.src = API_URL + '?v2_action=landlord_contract_initiated_status&operation=' + encodeURIComponent(action) + '&request_id=' + encodeURIComponent(requestId) + '&poll_secret=' + encodeURIComponent(pollSecret) + '&callback=' + encodeURIComponent(callbackName) + '&_=' + Date.now();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function callLandlordInitiatedApi(action, params) {
+      if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) throw new Error('房東身分驗證已失效，請重新整理頁面。');
+      const requestId = randomUrlToken(16);
+      const pollSecret = randomUrlToken(32);
+      await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(Object.assign({}, params || {}, { action: action, request_id: requestId, poll_secret: pollSecret, session_token: NATIVE_SIGNING_REVIEW_SESSION_TOKEN })) });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 500); });
+        const result = await callLandlordInitiatedStatus(action, requestId, pollSecret);
+        if (['LANDLORD_INITIATED_CONTRACT_EXCHANGE_NOT_FOUND', 'LANDLORD_INITIATED_CONTRACT_EXCHANGE_PENDING'].indexOf(result.code) >= 0) continue;
+        if (!result.success) { const error = new Error(result.message || '房東合約操作失敗'); error.code = result.code || ''; throw error; }
+        return result.data || {};
+      }
+      throw new Error('房東合約操作處理逾時');
+    }
+
     async function initLineUserId() {
       if (TEST_MODE) {
         LINE_USER_ID = TEST_LINE_USER_ID;
@@ -1868,6 +1897,9 @@
       SIGNING_REVIEWS = Array.isArray(PAGE_DATA.native_signing_reviews)
         ? PAGE_DATA.native_signing_reviews
         : [];
+      INITIATED_CONTRACTS = Array.isArray(PAGE_DATA.landlord_initiated_contracts)
+        ? PAGE_DATA.landlord_initiated_contracts
+        : [];
 
       const sourceRequests =
         Array.isArray(PAGE_DATA.requests)
@@ -2026,6 +2058,8 @@
 
         ${renderNativeSigningReviewSection()}
 
+        ${renderLandlordInitiatedContractSection()}
+
         <section class="card toolbar-card">
           <div class="filter-scroll">
             ${renderFilterButton('pending', '待審核', summary.pending_count)}
@@ -2073,6 +2107,110 @@
       `;
 
       renderRequestList();
+    }
+
+    function renderLandlordInitiatedContractSection() {
+      if (TENANT_FILTER_ID) return '';
+
+      const pending = INITIATED_CONTRACTS.filter(function(contract) {
+        return ['pending', 'awaiting_tenant', 'tenant_signed'].indexOf(normalizeStatus(contract.status || contract.contract_status)) >= 0;
+      });
+      const renewalCandidates = ALL_REQUESTS.filter(function(request) {
+        return rawText(request.contract_id).trim() &&
+          ['active', 'approved', 'completed'].indexOf(normalizeStatus(request.contract_status || request.status)) >= 0;
+      });
+
+      return `
+        <section class="card">
+          <div class="list-header" style="margin:0 0 8px;">
+            <div class="list-title">房東發起合約</div>
+            <div class="list-count">${pending.length} 筆待處理</div>
+          </div>
+          <div class="request-meta-row">
+            <span class="mini-tag">新空房可先收款後補資料</span>
+            <span class="mini-tag">續約由房東主動發起</span>
+          </div>
+          <div class="request-actions" style="margin-top:12px;">
+            <a class="btn btn-primary" href="landlord-tenant-create.html">新增空房合約</a>
+          </div>
+          ${pending.length ? pending.map(function(contract) {
+            const mode = normalizeStatus(contract.signing_mode || contract.contract_mode);
+            const inviteUrl = rawText(contract.invite_url).trim();
+            return `
+              <article class="request-card pending" style="margin-top:12px;">
+                <div class="request-top">
+                  <div>
+                    <div class="request-title">${mode === 'renewal' ? '續約合約' : '新空房合約'}</div>
+                    <div class="request-id">${safeText(contract.contract_id)}</div>
+                  </div>
+                  <span class="badge pending">${safeText(contract.status || contract.contract_status || '待處理')}</span>
+                </div>
+                <div class="request-meta-row">
+                  <span class="mini-tag">房號 ${safeText(contract.room_name || contract.room_id || '-')}</span>
+                  <span class="mini-tag">房客 ${safeText(contract.tenant_name || '待房客補資料')}</span>
+                </div>
+                ${inviteUrl ? `<div class="review-contract-meta" style="word-break:break-all;">邀請連結：${safeText(inviteUrl)}</div>` : '<div class="review-contract-meta">邀請連結會在建立合約後提供，請勿把確認碼公開轉傳。</div>'}
+                ${mode === 'renewal' ? '' : `<div class="review-contract-meta">確認碼僅在建立當下顯示，房客需透過邀請連結認領。</div>`}
+                ${contract.invite_id ? `<div class="request-actions"><button class="btn btn-soft-danger" type="button" onclick="cancelLandlordInitiatedInvite('${escapeHtml(contract.invite_id)}')">取消這次邀請</button></div>` : ''}
+              </article>
+            `;
+          }).join('') : '<div class="empty-state" style="margin-top:12px;">目前沒有待處理的房東發起合約。</div>'}
+          ${renewalCandidates.length ? `
+            <div class="section-title" style="margin:18px 0 8px;">從現有合約發起續約</div>
+            ${renewalCandidates.slice(0, 8).map(function(request) {
+              return `
+                <div class="request-meta-row" style="justify-content:space-between; margin-top:8px;">
+                  <span class="mini-tag">${safeText(request.room_name || request.contract_id)} ・ ${safeText(request.tenant_name || request.tenant_id || '房客')}</span>
+                  <button class="btn btn-light" type="button" onclick="startLandlordRenewal('${escapeHtml(request.contract_id)}')">開始續約</button>
+                </div>
+              `;
+            }).join('')}
+          ` : ''}
+        </section>
+      `;
+    }
+
+    async function startLandlordRenewal(contractId) {
+      const previousContractId = rawText(contractId).trim();
+      if (!previousContractId) return;
+      const startDate = window.prompt('新合約開始日（YYYY-MM-DD）：', '');
+      if (!startDate) return;
+      const endDate = window.prompt('新合約結束日（YYYY-MM-DD）：', '');
+      if (!endDate) return;
+      const rentAmount = window.prompt('月租金：', '');
+      if (!rentAmount) return;
+      const managementFee = window.prompt('管理費（可填 0）：', '0');
+      const depositAmount = window.prompt('押金：', '');
+      if (!depositAmount) return;
+      const paymentDay = window.prompt('每月繳款日：', '5');
+      if (!paymentDay) return;
+      try {
+        await callLandlordInitiatedApi('landlord_contract_initiate_renewal', {
+          input: {
+            previous_contract_id: previousContractId,
+            start_date: startDate,
+            end_date: endDate,
+            rent_amount: rentAmount,
+            management_fee: managementFee || '0',
+            deposit_amount: depositAmount,
+            payment_day: paymentDay
+          }
+        });
+        showAlert('續約合約已建立', '請將新合約邀請連結交給房客確認並簽署。', function() { loadPage(false); });
+      } catch (error) {
+        showAlert('續約建立失敗', error.message || '請稍後再試。');
+      }
+    }
+
+    async function cancelLandlordInitiatedInvite(inviteId) {
+      const normalizedInviteId = rawText(inviteId).trim();
+      if (!normalizedInviteId || !window.confirm('確定取消這次房客合約邀請嗎？取消後需要重新建立新的邀請。')) return;
+      try {
+        await callLandlordInitiatedApi('landlord_contract_invite_cancel', { invite_id: normalizedInviteId });
+        showAlert('邀請已取消', '這次待處理合約已關閉；如需繼續，請重新建立新邀請。', function() { loadPage(false); });
+      } catch (error) {
+        showAlert('取消失敗', error.message || '請稍後再試。');
+      }
     }
 
     function renderNativeSigningReviewSection() {
@@ -3040,6 +3178,15 @@
         } catch (_) {
           // Legacy contract-request management remains usable if the optional native review schema is not installed.
           data.native_signing_reviews = [];
+        }
+        try {
+          const initiatedContracts = await callLandlordInitiatedApi('landlord_contract_initiated_init');
+          data.landlord_initiated_contracts = Array.isArray(initiatedContracts.items)
+            ? initiatedContracts.items
+            : [];
+        } catch (_) {
+          // The legacy request page stays usable if the new initiated-contract schema is not installed yet.
+          data.landlord_initiated_contracts = [];
         }
         renderPage(data);
       } catch (error) {

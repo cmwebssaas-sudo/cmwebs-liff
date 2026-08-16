@@ -22,8 +22,28 @@ const V2_LANDLORD_INITIATED_CONTRACT_INVITE_HEADERS_ = [
 ];
 const V2_LANDLORD_INITIATED_CONTRACT_INVITE_TTL_MS_ = 24 * 60 * 60 * 1000;
 const V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ = 'https://liff.line.me/2010314940-iJB1D6sN';
+const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_TTL_SECONDS_ = 60;
+const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_RESERVATION_TTL_SECONDS_ = 600;
+
+function landlordInitiatedContractWithScriptLock_(operation) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    return operation();
+  } catch (_) {
+    return landlordInitiatedContractError_('CONTRACT_OPERATION_BUSY', '合約操作正在處理，請稍後再試');
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
+}
 
 function landlordInitiatedContractCreateNew_(access, input) {
+  return landlordInitiatedContractWithScriptLock_(function() {
+    return landlordInitiatedContractCreateNewUnlocked_(access, input);
+  });
+}
+
+function landlordInitiatedContractCreateNewUnlocked_(access, input) {
   const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
   if (!schema.success) return schema;
   if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
@@ -146,6 +166,12 @@ function landlordInitiatedContractCreateNew_(access, input) {
 }
 
 function landlordInitiatedContractCreateRenewal_(access, input) {
+  return landlordInitiatedContractWithScriptLock_(function() {
+    return landlordInitiatedContractCreateRenewalUnlocked_(access, input);
+  });
+}
+
+function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
   const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
   if (!schema.success) return schema;
   if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
@@ -236,6 +262,12 @@ function landlordInitiatedContractListBySession_(sessionToken) {
 }
 
 function landlordInitiatedContractCancelBySession_(sessionToken, inviteId) {
+  return landlordInitiatedContractWithScriptLock_(function() {
+    return landlordInitiatedContractCancelBySessionUnlocked_(sessionToken, inviteId);
+  });
+}
+
+function landlordInitiatedContractCancelBySessionUnlocked_(sessionToken, inviteId) {
   if (typeof tenantContractSigningReviewAccessFromSession_ !== 'function') return landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED', '找不到房東 session 模組');
   const access = tenantContractSigningReviewAccessFromSession_(sessionToken, 'contract_write');
   if (!access || access.success !== true) return access || landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_INVALID', '房東 session 無效');
@@ -256,6 +288,12 @@ function landlordInitiatedContractCancelBySession_(sessionToken, inviteId) {
 }
 
 function landlordInitiatedContractInviteClaim_(inviteId, confirmationCode, lineSub, tenantData) {
+  return landlordInitiatedContractWithScriptLock_(function() {
+    return landlordInitiatedContractInviteClaimUnlocked_(inviteId, confirmationCode, lineSub, tenantData);
+  });
+}
+
+function landlordInitiatedContractInviteClaimUnlocked_(inviteId, confirmationCode, lineSub, tenantData) {
   const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
   if (!schema.success) return schema;
   const normalizedInviteId = landlordInitiatedContractText_(inviteId);
@@ -289,6 +327,15 @@ function landlordInitiatedContractInviteClaim_(inviteId, confirmationCode, lineS
     tenant_name: name,
     tenant_phone: landlordInitiatedContractNormalizePhone_(phone),
     tenant_email: landlordInitiatedContractText_(data.tenant_email || data.email || contract.tenant_email),
+    tenant_line_user_id: normalizedLineSub,
+    contract_content: landlordInitiatedContractReplaceTenantName_(contract.contract_content, name),
+    updated_at: now
+  });
+  const updatedContract = Object.assign({}, contract, {
+    tenant_name: name,
+    tenant_phone: landlordInitiatedContractNormalizePhone_(phone),
+    tenant_email: landlordInitiatedContractText_(data.tenant_email || data.email || contract.tenant_email),
+    tenant_line_user_id: normalizedLineSub,
     contract_content: landlordInitiatedContractReplaceTenantName_(contract.contract_content, name),
     updated_at: now
   });
@@ -297,17 +344,148 @@ function landlordInitiatedContractInviteClaim_(inviteId, confirmationCode, lineS
     code: 'OK',
     data: {
       invite: { invite_id: invite.invite_id, contract_id: contract.contract_id, status: 'claimed', line_sub: normalizedLineSub },
-      contract: Object.assign({}, contract, { tenant_name: name, tenant_phone: landlordInitiatedContractNormalizePhone_(phone) }),
+      contract: updatedContract,
       tenant: tenant ? Object.assign({}, tenant, { tenant_name: name, tenant_phone: landlordInitiatedContractNormalizePhone_(phone), line_user_id: normalizedLineSub }) : null
     }
   };
+}
+
+function landlordInitiatedContractInviteSessionContext_(claims) {
+  const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+  if (!schema.success) return schema;
+  const inviteId = landlordInitiatedContractText_(claims && claims.invite_id);
+  const workspaceId = landlordInitiatedContractText_(claims && claims.workspace_id);
+  const contractId = landlordInitiatedContractText_(claims && claims.contract_id);
+  const lineSub = landlordInitiatedContractText_(claims && claims.line_sub);
+  const invite = landlordInitiatedContractRows_(schema.data.invites).find(function (row) {
+    return landlordInitiatedContractText_(row.invite_id) === inviteId && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+  });
+  if (!invite) return landlordInitiatedContractError_('INVITE_NOT_FOUND', '找不到邀請');
+  if (landlordInitiatedContractText_(invite.status).toLowerCase() !== 'claimed' || landlordInitiatedContractText_(invite.claimed_line_user_id) !== lineSub) return landlordInitiatedContractError_('INVITE_SESSION_INVALID', '邀請認領身分無效');
+  const contract = landlordInitiatedContractRows_(schema.data.contracts).find(function (row) {
+    return landlordInitiatedContractText_(row.contract_id) === contractId && landlordInitiatedContractText_(row.workspace_id) === workspaceId && landlordInitiatedContractText_(row.invite_id) === inviteId;
+  });
+  if (!contract) return landlordInitiatedContractError_('CONTRACT_NOT_FOUND', '找不到邀請合約');
+  if (landlordInitiatedContractText_(contract.tenant_id) !== landlordInitiatedContractText_(claims.tenant_id) || landlordInitiatedContractText_(contract.tenant_user_id) !== landlordInitiatedContractText_(claims.user_id) || landlordInitiatedContractText_(contract.signing_mode).toLowerCase() !== 'new_tenant') return landlordInitiatedContractError_('INVITE_SESSION_INVALID', '邀請合約身分不一致');
+  if (['pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(landlordInitiatedContractText_(contract.contract_status)) < 0) return landlordInitiatedContractError_('CONTRACT_NOT_SIGNABLE', '合約目前不可簽署');
+  return { success: true, code: 'OK', data: { invite: invite, contract: contract } };
 }
 
 function landlordInitiatedContractFinalizeApproval_(ss, access, contract, now) {
   if (!ss || !access || !contract) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_INVALID', '缺少核准資料');
   const mode = landlordInitiatedContractText_(contract.signing_mode).toLowerCase();
   if (['new_tenant', 'renewal'].indexOf(mode) === -1) return landlordInitiatedContractError_('SIGNING_MODE_NOT_READY', '簽署模式無效');
-  return { success: true, code: 'FINALIZATION_READY', data: { mode: mode, contract_id: contract.contract_id, now: now || new Date().toISOString() } };
+  const schema = landlordInitiatedContractSchema_(ss);
+  if (!schema.success) return schema;
+  const workspaceId = landlordInitiatedContractWorkspaceId_(access);
+  const contractId = landlordInitiatedContractText_(contract.contract_id);
+  const room = landlordInitiatedContractRows_(schema.data.rooms).find(function (row) {
+    return landlordInitiatedContractText_(row.room_id) === landlordInitiatedContractText_(contract.room_id) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+  });
+  const tenant = landlordInitiatedContractRows_(schema.data.tenants).find(function (row) {
+    return landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+  });
+  const user = landlordInitiatedContractRows_(schema.data.users).find(function (row) {
+    return landlordInitiatedContractText_(row.user_id) === landlordInitiatedContractText_(contract.tenant_user_id) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+  });
+  const views = landlordInitiatedContractFinalizationViews_(ss);
+  if (!room || !tenant || !user || !views.success) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_SCHEMA_NOT_READY', '合約啟用所需房間、房客或檢視資料尚未就緒');
+  const contractHeaders = landlordInitiatedContractHeaders_(schema.data.contracts);
+  const roomHeaders = landlordInitiatedContractHeaders_(schema.data.rooms);
+  const tenantHeaders = landlordInitiatedContractHeaders_(schema.data.tenants);
+  const userHeaders = landlordInitiatedContractHeaders_(schema.data.users);
+  if (!landlordInitiatedContractHasAnyHeader_(userHeaders, ['status', 'account_status']) || !landlordInitiatedContractHasAnyHeader_(tenantHeaders, ['tenant_binding_status', 'binding_status']) || !landlordInitiatedContractHasAnyHeader_(tenantHeaders, ['account_status', 'tenant_account_status']) || !landlordInitiatedContractHasHeaders_(roomHeaders, ['room_status', 'current_contract_id', 'current_tenant_id']) || !landlordInitiatedContractHasHeaders_(contractHeaders, ['contract_status', 'status', 'account_status'])) {
+    return landlordInitiatedContractError_('CONTRACT_FINALIZATION_SCHEMA_NOT_READY', '合約啟用欄位尚未就緒');
+  }
+  const viewHeadersReady = landlordInitiatedContractHasHeaders_(views.data.landlord.headers, ['tenant_id', 'workspace_id', 'current_contract_id', 'contract_status']) && landlordInitiatedContractHasHeaders_(views.data.tenant.headers, ['tenant_id', 'workspace_id', 'current_contract_id', 'contract_status']);
+  if (!viewHeadersReady) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_SCHEMA_NOT_READY', '房東與房客檢視欄位尚未就緒');
+  const timestamp = now || new Date().toISOString();
+  const commonContractUpdates = {
+    contract_status: 'active', status: 'active', account_status: 'active',
+    tenant_signing_submission_status: 'approved', updated_at: timestamp
+  };
+  if (mode === 'new_tenant') {
+    const invite = landlordInitiatedContractRows_(schema.data.invites).find(function (row) {
+      return landlordInitiatedContractText_(row.invite_id) === landlordInitiatedContractText_(contract.invite_id) && landlordInitiatedContractText_(row.contract_id) === contractId && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+    });
+    const lineSub = landlordInitiatedContractText_(contract.tenant_line_user_id || (invite && invite.claimed_line_user_id));
+    if (!invite || landlordInitiatedContractText_(invite.status).toLowerCase() !== 'claimed' || !lineSub || landlordInitiatedContractText_(invite.claimed_line_user_id) !== lineSub) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_TENANT_NOT_CLAIMED', '新房客尚未完成邀請認領');
+    if (landlordInitiatedContractText_(tenant.tenant_user_id || tenant.user_id) !== landlordInitiatedContractText_(user.user_id)) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_TENANT_MISMATCH', '房客與使用者資料不一致');
+    landlordInitiatedContractUpdate_(schema.data.users, user, { line_user_id: lineSub, status: 'active', account_status: 'active', active_workspace_id: workspaceId, updated_at: timestamp });
+    landlordInitiatedContractUpdate_(schema.data.tenants, tenant, { tenant_line_user_id: lineSub, line_user_id: lineSub, tenant_binding_status: 'bound', binding_status: 'bound', account_status: 'active', tenant_account_status: 'active', current_contract_id: contractId, bound_at: timestamp, updated_at: timestamp });
+    landlordInitiatedContractUpdate_(schema.data.contracts, contract, Object.assign({}, commonContractUpdates, { tenant_line_user_id: lineSub }));
+    landlordInitiatedContractUpdate_(schema.data.rooms, room, { room_status: 'occupied', current_contract_id: contractId, current_tenant_id: contract.tenant_id, current_tenant_name: contract.tenant_name, updated_at: timestamp });
+    landlordInitiatedContractUpdate_(schema.data.invites, invite, { status: 'completed', updated_at: timestamp });
+    landlordInitiatedContractUpsertViews_(views.data, contract, tenant, lineSub, timestamp, 'bound');
+  } else {
+    const previousId = landlordInitiatedContractText_(contract.previous_contract_id);
+    const previous = landlordInitiatedContractRows_(schema.data.contracts).find(function (row) {
+      return landlordInitiatedContractText_(row.contract_id) === previousId && landlordInitiatedContractText_(row.workspace_id) === workspaceId && landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id);
+    });
+    if (!previous || landlordInitiatedContractText_(previous.contract_status).toLowerCase() !== 'active') return landlordInitiatedContractError_('CONTRACT_FINALIZATION_PREVIOUS_NOT_ACTIVE', '前一份合約目前不是有效狀態');
+    if (landlordInitiatedContractText_(previous.renewed_to_contract_id) && landlordInitiatedContractText_(previous.renewed_to_contract_id) !== contractId) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_RENEWAL_CONFLICT', '前一份合約已有其他續約版本');
+    const lineSub = landlordInitiatedContractText_(contract.tenant_line_user_id || tenant.tenant_line_user_id || tenant.line_user_id);
+    landlordInitiatedContractUpdate_(schema.data.contracts, previous, { contract_status: 'renewed', status: 'archived', account_status: 'archived', renewed_to_contract_id: contractId, updated_at: timestamp });
+    landlordInitiatedContractUpdate_(schema.data.contracts, contract, Object.assign({}, commonContractUpdates, { tenant_line_user_id: lineSub }));
+    landlordInitiatedContractUpdate_(schema.data.tenants, tenant, { current_contract_id: contractId, updated_at: timestamp });
+    landlordInitiatedContractUpdate_(schema.data.rooms, room, { room_status: 'occupied', current_contract_id: contractId, current_tenant_id: contract.tenant_id, current_tenant_name: contract.tenant_name, updated_at: timestamp });
+    landlordInitiatedContractUpsertViews_(views.data, contract, tenant, lineSub, timestamp, 'bound');
+  }
+  return { success: true, code: 'OK', data: { mode: mode, contract_id: contractId, activated: true, now: timestamp } };
+}
+
+function landlordInitiatedContractFinalizationViews_(ss) {
+  const landlord = ss && ss.getSheetByName('V2_landlord_tenant_list_view');
+  const tenant = ss && ss.getSheetByName('V2_tenant_home_view');
+  if (!landlord || !tenant) return { success: false, code: 'CONTRACT_FINALIZATION_SCHEMA_NOT_READY' };
+  return { success: true, data: { landlord: { sheet: landlord, headers: landlordInitiatedContractHeaders_(landlord) }, tenant: { sheet: tenant, headers: landlordInitiatedContractHeaders_(tenant) } } };
+}
+
+function landlordInitiatedContractHasHeaders_(headers, required) {
+  return (required || []).every(function (header) { return headers.indexOf(header) >= 0; });
+}
+
+function landlordInitiatedContractHasAnyHeader_(headers, candidates) {
+  return (candidates || []).some(function (header) { return headers.indexOf(header) >= 0; });
+}
+
+function landlordInitiatedContractUpsertViews_(views, contract, tenant, lineSub, timestamp, bindingStatus) {
+  const values = {
+    tenant_id: contract.tenant_id,
+    workspace_id: contract.workspace_id,
+    tenant_user_id: contract.tenant_user_id || tenant.tenant_user_id || tenant.user_id,
+    user_id: contract.tenant_user_id || tenant.tenant_user_id || tenant.user_id,
+    tenant_line_user_id: lineSub,
+    line_user_id: lineSub,
+    tenant_name: contract.tenant_name || tenant.tenant_name || tenant.name,
+    tenant_phone: contract.tenant_phone || tenant.tenant_phone || tenant.phone,
+    tenant_email: contract.tenant_email || tenant.tenant_email || tenant.email,
+    tenant_binding_status: bindingStatus,
+    binding_status: bindingStatus,
+    tenant_account_status: 'active',
+    account_status: 'active',
+    property_id: contract.property_id || tenant.property_id,
+    property_name: contract.property_name || tenant.property_name,
+    room_id: contract.room_id || tenant.room_id,
+    room_name: contract.room_name || tenant.room_name,
+    room_list: contract.room_name || tenant.room_name,
+    current_contract_id: contract.contract_id,
+    contract_status: 'active',
+    contract_start_date: contract.start_date || contract.contract_start_date,
+    contract_end_date: contract.end_date || contract.contract_end_date,
+    updated_at: timestamp
+  };
+  landlordInitiatedContractUpsertView_(views.landlord.sheet, values);
+  landlordInitiatedContractUpsertView_(views.tenant.sheet, values);
+}
+
+function landlordInitiatedContractUpsertView_(sheet, values) {
+  const rows = landlordInitiatedContractRows_(sheet);
+  const target = rows.find(function (row) {
+    return landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(values.tenant_id) && landlordInitiatedContractText_(row.workspace_id) === landlordInitiatedContractText_(values.workspace_id);
+  });
+  if (target) landlordInitiatedContractUpdate_(sheet, target, values);
+  else landlordInitiatedContractAppend_(sheet, values);
 }
 
 function landlordInitiatedContractIsRequest_(body) {
@@ -329,6 +507,42 @@ function landlordInitiatedContractHandlePost_(body) {
     try { request = JSON.parse(body); } catch (_) { return landlordInitiatedContractError_('INVALID_JSON', '請求格式無效'); }
   }
   if (!request || !landlordInitiatedContractIsRequest_(request)) return landlordInitiatedContractError_('INVALID_ACTION', '不支援的合約邀請操作');
+  const requestId = landlordInitiatedContractText_(request.request_id);
+  const pollSecret = landlordInitiatedContractText_(request.poll_secret);
+  const hasExchangeCredentials = requestId || pollSecret;
+  if (hasExchangeCredentials) {
+    if (!/^[A-Za-z0-9_-]{22,}$/.test(requestId) || !/^[A-Za-z0-9_-]{43,}$/.test(pollSecret)) return landlordInitiatedContractError_('INVALID_EXCHANGE_CREDENTIAL', '合約操作交換憑證無效');
+    const key = landlordInitiatedContractExchangeKey_(request.action, requestId);
+    const cache = CacheService.getScriptCache();
+    const lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(5000);
+      if (cache.get(key)) return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_CONFLICT', '相同合約操作正在處理');
+      cache.put(key, JSON.stringify({ poll_hash: landlordInitiatedContractHmacHex_(pollSecret, landlordInitiatedContractExchangeSecret_()), pending: true }), V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_RESERVATION_TTL_SECONDS_);
+    } catch (_) {
+      return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_CREATE_FAILED', '合約操作交換建立失敗');
+    } finally {
+      try { lock.releaseLock(); } catch (_) {}
+    }
+    const result = landlordInitiatedContractHandlePostDirect_(request);
+    try {
+      lock.waitLock(5000);
+      const raw = cache.get(key);
+      if (!raw) return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_RESERVATION_MISSING', '合約操作交換已失效');
+      const reservation = JSON.parse(raw);
+      if (reservation.pending !== true || !landlordInitiatedContractConstantEquals_(reservation.poll_hash, landlordInitiatedContractHmacHex_(pollSecret, landlordInitiatedContractExchangeSecret_()))) return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_RESERVATION_INVALID', '合約操作交換無效');
+      cache.put(key, JSON.stringify({ poll_hash: reservation.poll_hash, result: result }), V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_TTL_SECONDS_);
+      return { success: true, code: 'EXCHANGE_ACCEPTED' };
+    } catch (_) {
+      return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_CREATE_FAILED', '合約操作交換建立失敗');
+    } finally {
+      try { lock.releaseLock(); } catch (_) {}
+    }
+  }
+  return landlordInitiatedContractHandlePostDirect_(request);
+}
+
+function landlordInitiatedContractHandlePostDirect_(request) {
   const action = landlordInitiatedContractText_(request.action);
   if (action === 'landlord_contract_initiated_init') return landlordInitiatedContractListBySession_(request.session_token);
   if (action === 'landlord_contract_invite_cancel') return landlordInitiatedContractCancelBySession_(request.session_token, request.invite_id);
@@ -339,6 +553,36 @@ function landlordInitiatedContractHandlePost_(body) {
   if (action === 'landlord_contract_initiate_renewal') return landlordInitiatedContractCreateRenewal_(access, input);
   return landlordInitiatedContractError_('INVALID_ACTION', '不支援的合約邀請操作');
 }
+
+function landlordInitiatedContractReadExchange_(action, requestId, pollSecret) {
+  const normalizedAction = landlordInitiatedContractText_(action);
+  const key = landlordInitiatedContractExchangeKey_(normalizedAction, requestId);
+  const cache = CacheService.getScriptCache();
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    const raw = cache.get(key);
+    if (!raw) return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_NOT_FOUND', '合約操作結果不存在或已讀取');
+    const entry = JSON.parse(raw);
+    if (!landlordInitiatedContractConstantEquals_(entry.poll_hash, landlordInitiatedContractHmacHex_(pollSecret, landlordInitiatedContractExchangeSecret_()))) return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_DENIED', '合約操作結果驗證失敗');
+    if (entry.pending === true) return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_PENDING', '合約操作仍在處理');
+    cache.remove(key);
+    return entry.result || landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_INVALID', '合約操作結果無效');
+  } catch (_) {
+    return landlordInitiatedContractError_('LANDLORD_INITIATED_CONTRACT_EXCHANGE_READ_FAILED', '合約操作結果讀取失敗');
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
+}
+
+function landlordInitiatedContractExchangeKey_(action, requestId) { return 'landlord_initiated_contract:' + landlordInitiatedContractText_(action) + ':' + landlordInitiatedContractText_(requestId); }
+function landlordInitiatedContractExchangeSecret_() {
+  if (typeof tenantLiffSigningSessionSecret_ === 'function') return tenantLiffSigningSessionSecret_();
+  const secret = PropertiesService.getScriptProperties().getProperty('CMWEBS_LIFF_SESSION_HMAC_SECRET');
+  if (!secret) throw new Error('CMWEBS_LIFF_SESSION_HMAC_SECRET is not configured');
+  return secret;
+}
+function landlordInitiatedContractHmacHex_(value, key) { return Utilities.computeHmacSha256Signature(String(value), String(key)).map(function (byte) { return ('0' + (byte < 0 ? byte + 256 : byte).toString(16)).slice(-2); }).join(''); }
 
 function landlordInitiatedContractAccessFromSession_(sessionToken, policy) {
   if (typeof verifyLandlordContractSigningReviewSessionToken_ !== 'function') return landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED', '找不到房東 session 模組');
@@ -461,11 +705,17 @@ function landlordInitiatedContractReplaceTenantName_(content, tenantName) {
 }
 
 function landlordInitiatedContractPublicContract_(contract, tenant) {
+  const inviteId = landlordInitiatedContractText_(contract.invite_id || (tenant && tenant.invite_id));
+  const inviteStatus = landlordInitiatedContractText_(tenant && tenant.status);
   return Object.assign({}, contract, {
     tenant_binding_status: landlordInitiatedContractText_(contract.tenant_binding_status || (tenant && tenant.tenant_binding_status)),
     contract_status: landlordInitiatedContractText_(contract.contract_status),
     signing_mode: landlordInitiatedContractText_(contract.signing_mode),
-    contract_content: landlordInitiatedContractText_(contract.contract_content)
+    contract_content: landlordInitiatedContractText_(contract.contract_content),
+    invite_id: inviteId,
+    invite_url: inviteId ? V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ + '?invite_id=' + encodeURIComponent(inviteId) : '',
+    invite_status: inviteStatus,
+    invite_expires_at: tenant && tenant.expires_at ? tenant.expires_at : ''
   });
 }
 
