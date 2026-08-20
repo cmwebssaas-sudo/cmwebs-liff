@@ -455,6 +455,18 @@ function getWorkspaceLandlordHomeBootstrapByLineUid_(
           landlord
         );
 
+      const initiatedContractResult =
+        typeof landlordInitiatedContractListByAccess_ ===
+          'function'
+          ? landlordInitiatedContractListByAccess_(
+              access
+            )
+          : workspaceResult_(
+              false,
+              'LANDLORD_INITIATED_CONTRACT_MODULE_REQUIRED',
+              '找不到房東發起合約模組'
+            );
+
       return {
         success: true,
         code: 'OK',
@@ -472,7 +484,23 @@ function getWorkspaceLandlordHomeBootstrapByLineUid_(
           messages:
             workspaceLandlordBootstrapResultData_(
               messageResult
-            )
+            ),
+          landlord_initiated_contracts:
+            workspaceLandlordBootstrapResultData_(
+              initiatedContractResult
+            ),
+          landlord_initiated_contracts_error:
+            initiatedContractResult &&
+            initiatedContractResult.success !== true
+              ? {
+                  code:
+                    initiatedContractResult.code ||
+                    'LANDLORD_INITIATED_CONTRACT_ERROR',
+                  message:
+                    initiatedContractResult.message ||
+                    '房東發起合約資料讀取失敗'
+                }
+              : null
         }
       };
     }

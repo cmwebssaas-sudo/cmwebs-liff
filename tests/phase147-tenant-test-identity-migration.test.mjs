@@ -56,13 +56,13 @@ assert.match(paymentReport, /bill_id/);
 
 const expectedTestFlagCounts = {
   'tenant-payment-report.html': 1,
-  'tenant-contract.html': 4,
+  'tenant-contract.html': 5,
   'tenant-renewal.html': 1,
   'tenant-termination.html': 1
 };
 const testFlagPattern = /url\s*\+=\s*['"]&test=1['"]\s*;/g;
 const guardedTestFlagPattern =
-  /if\s*\(\s*TEST_MODE\s*\)\s*\{[\s\S]*?url\s*\+=\s*['"]&test=1['"]\s*;[\s\S]*?\}/g;
+  /if\s*\(\s*TEST_MODE\s*\)(?:\s*\{[\s\S]*?url\s*\+=\s*['"]&test=1['"]\s*;[\s\S]*?\}|\s*url\s*\+=\s*['"]&test=1['"]\s*;)/g;
 
 for (const [name, expectedCount] of Object.entries(expectedTestFlagCounts)) {
   const source = sources[name];

@@ -1109,7 +1109,8 @@
     function buildActionSummary(
       contractData,
       paymentData,
-      messageData
+      messageData,
+      initiatedContractData
     ) {
       const contractSummary =
         contractData &&
@@ -1122,6 +1123,11 @@
         messageData.summary
           ? messageData.summary
           : {};
+
+      const landlordInitiatedPending =
+        countPendingLandlordInitiatedContracts(
+          initiatedContractData
+        );
 
       return {
         contractPending:
@@ -1141,6 +1147,9 @@
               'approved'
             ]
           ),
+
+        landlordInitiatedPending:
+          landlordInitiatedPending,
 
         paymentPending:
           countPendingPaymentReports(
@@ -1174,6 +1183,33 @@
             ]
           )
       };
+    }
+
+    function countPendingLandlordInitiatedContracts(
+      initiatedContractData
+    ) {
+      const items =
+        initiatedContractData &&
+        Array.isArray(initiatedContractData.items)
+          ? initiatedContractData.items
+          : [];
+
+      return items.filter(function (contract) {
+        const status = String(
+          contract && (
+            contract.contract_status ||
+            contract.status
+          ) || ''
+        ).trim().toLowerCase();
+
+        return [
+          'pending',
+          'awaiting_tenant',
+          'tenant_signed',
+          'pending_tenant_signature',
+          'awaiting_tenant_signature'
+        ].indexOf(status) >= 0;
+      }).length;
     }
 
     function badgeHtml(
@@ -1265,7 +1301,8 @@
 
       const contractActionCount =
         actionSummary.contractPending +
-        actionSummary.contractApproved;
+        actionSummary.contractApproved +
+        actionSummary.landlordInitiatedPending;
 
       const messageActionCount =
         actionSummary.messagePending +
@@ -1491,7 +1528,7 @@
                   }
                 </div>
                 <div class="action-desc">
-                  待審 ${actionSummary.contractPending} 筆・待完成 ${actionSummary.contractApproved} 筆
+                  待審 ${actionSummary.contractPending} 筆・待完成 ${actionSummary.contractApproved} 筆・房東發起 ${actionSummary.landlordInitiatedPending} 筆
                 </div>
               </div>
 
@@ -1765,11 +1802,15 @@
         const messageData =
           bootstrap.messages || {};
 
+        const initiatedContractData =
+          bootstrap.landlord_initiated_contracts || {};
+
         const actionSummary =
           buildActionSummary(
             contractData,
             paymentData,
-            messageData
+            messageData,
+            initiatedContractData
           );
 
         renderHome(
