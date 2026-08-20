@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const landlordRequestsPage = readFileSync(new URL('../landlord-contract-requests.html', import.meta.url), 'utf8');
 const landlordCreatePage = readFileSync(new URL('../landlord-tenant-create.html', import.meta.url), 'utf8');
 const tenantContractPage = readFileSync(new URL('../tenant-contract.html', import.meta.url), 'utf8');
-const productionApiPath = 'AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og';
+const productionApiPath = 'AKfycbyrwKb3adOgHVBwbwHwLeSsDoUgYhaUaFXui66tnyMNBrT9eOVbi788oHeVRTif_LA9BA';
 
 for (const [name, source] of [
   ['landlord-contract-requests.html', landlordRequestsPage],
