@@ -735,8 +735,68 @@
 
     /* 確認與提示視窗仍需蓋在導覽列上方。 */
     #confirmModal,
-    #alertModal {
+    #alertModal,
+    #landlordInviteModal {
       z-index: 400000;
+    }
+
+    .invite-recovery-card {
+      padding: 12px;
+      border: 1px solid #e7e1fb;
+      border-radius: 16px;
+      background: #faf8ff;
+    }
+
+    .invite-recovery-qr {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      margin: 10px 0 12px;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .invite-recovery-qr img {
+      display: block;
+      width: 220px;
+      height: 220px;
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    .invite-recovery-link {
+      padding: 10px;
+      border: 1px solid #e1e4ea;
+      border-radius: 11px;
+      background: #ffffff;
+      color: #4e5661;
+      font-size: 12px;
+      line-height: 1.55;
+      word-break: break-all;
+    }
+
+    .invite-recovery-code {
+      padding: 13px;
+      margin-top: 10px;
+      border-radius: 13px;
+      background: #eaf8ef;
+      color: #16833f;
+      text-align: center;
+    }
+
+    .invite-recovery-code strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 25px;
+      letter-spacing: 4px;
+    }
+
+    .invite-recovery-status {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
     }
 
     .modal-mask.show {
@@ -1088,6 +1148,19 @@
       </div>
     </div>
 
+    <div id="landlordInviteModal" class="modal-mask" onclick="handleMaskClick(event, 'landlordInviteModal')">
+      <div class="modal-sheet small" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">房客合約邀請</div>
+            <div class="modal-subtitle">離開頁面後，仍可從這裡找回 QR Code 與邀請連結。</div>
+          </div>
+          <button class="modal-close" type="button" onclick="closeLandlordInviteModal()" aria-label="關閉">×</button>
+        </div>
+        <div id="landlordInviteModalContent"></div>
+      </div>
+    </div>
+
     <nav class="bottom-nav">
       <div class="bottom-nav-inner">
         <button class="nav-item" onclick="goPage('landlord-home.html')">
@@ -1189,7 +1262,10 @@
     let ALL_REQUESTS = [];
     let SIGNING_REVIEWS = [];
     let INITIATED_CONTRACTS = [];
+    let INITIATED_CONTRACTS_ERROR = null;
     let ACTIVE_REQUEST = null;
+    let ACTIVE_LANDLORD_INVITE = null;
+    let ACTIVE_LANDLORD_INVITE_RESULT = null;
     let ACTIVE_STATUS_FILTER =
       TENANT_FILTER_ID ? 'all' : 'pending';
     let ACTIVE_TYPE_FILTER = 'all';
@@ -1498,6 +1574,10 @@
 
       if (modalId === 'alertModal') {
         closeAlertModal();
+      }
+
+      if (modalId === 'landlordInviteModal') {
+        closeLandlordInviteModal();
       }
     }
 
@@ -1915,6 +1995,7 @@
       INITIATED_CONTRACTS = Array.isArray(PAGE_DATA.landlord_initiated_contracts)
         ? PAGE_DATA.landlord_initiated_contracts
         : [];
+      INITIATED_CONTRACTS_ERROR = PAGE_DATA.landlord_initiated_contracts_error || null;
 
       const sourceRequests =
         Array.isArray(PAGE_DATA.requests)
@@ -2127,6 +2208,16 @@
     function renderLandlordInitiatedContractSection() {
       if (TENANT_FILTER_ID) return '';
 
+      if (INITIATED_CONTRACTS_ERROR) {
+        return `
+          <section class="card error-card">
+            <div class="error-title">房東發起合約讀取失敗</div>
+            <div class="error-message">${safeText(INITIATED_CONTRACTS_ERROR.message || '請重新整理後再試。')}</div>
+            <button class="btn btn-primary" type="button" onclick="loadPage(false)">重新整理</button>
+          </section>
+        `;
+      }
+
       const pending = INITIATED_CONTRACTS.filter(function(contract) {
         return ['pending', 'awaiting_tenant', 'tenant_signed'].indexOf(normalizeStatus(contract.status || contract.contract_status)) >= 0;
       });
@@ -2164,9 +2255,14 @@
                   <span class="mini-tag">房號 ${safeText(contract.room_name || contract.room_id || '-')}</span>
                   <span class="mini-tag">房客 ${safeText(contract.tenant_name || '待房客補資料')}</span>
                 </div>
-                ${inviteUrl ? `<div class="review-contract-meta" style="word-break:break-all;">邀請連結：${safeText(inviteUrl)}</div>` : '<div class="review-contract-meta">邀請連結會在建立合約後提供，請勿把確認碼公開轉傳。</div>'}
-                ${mode === 'renewal' ? '' : `<div class="review-contract-meta">確認碼僅在建立當下顯示，房客需透過邀請連結認領。</div>`}
-                ${contract.invite_id ? `<div class="request-actions"><button class="btn btn-soft-danger" type="button" onclick="cancelLandlordInitiatedInvite('${escapeHtml(contract.invite_id)}')">取消這次邀請</button></div>` : ''}
+                ${inviteUrl ? `<div class="review-contract-meta" style="word-break:break-all;">邀請連結已保存，可從「查看 QR／連結」再次取得。</div>` : '<div class="review-contract-meta">目前找不到可用邀請，請重新整理確認狀態。</div>'}
+                ${contract.invite_id ? `
+                  <div class="request-actions">
+                    <button class="btn btn-primary" type="button" onclick="openLandlordInviteModal('${escapeHtml(contract.contract_id)}')">查看 QR／連結</button>
+                    <button class="btn btn-light" type="button" onclick="reissueLandlordInvite('${escapeHtml(contract.invite_id)}')">重新產生邀請</button>
+                    <button class="btn btn-soft-danger" type="button" onclick="cancelLandlordInitiatedInvite('${escapeHtml(contract.invite_id)}')">取消這次邀請</button>
+                  </div>
+                ` : ''}
               </article>
             `;
           }).join('') : '<div class="empty-state" style="margin-top:12px;">目前沒有待處理的房東發起合約。</div>'}
@@ -2215,6 +2311,143 @@
       } catch (error) {
         showAlert('續約建立失敗', error.message || '請稍後再試。');
       }
+    }
+
+    function openLandlordInviteModal(contractId) {
+      const normalizedContractId = rawText(contractId).trim();
+      const contract = INITIATED_CONTRACTS.find(function(item) {
+        return rawText(item.contract_id).trim() === normalizedContractId;
+      });
+      if (!contract) {
+        showAlert('找不到合約', '邀請資料可能已更新，請先重新整理。');
+        return;
+      }
+      ACTIVE_LANDLORD_INVITE = contract;
+      ACTIVE_LANDLORD_INVITE_RESULT = null;
+      renderLandlordInviteModal();
+      document.getElementById('landlordInviteModal').classList.add('show');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeLandlordInviteModal() {
+      document.getElementById('landlordInviteModal').classList.remove('show');
+      ACTIVE_LANDLORD_INVITE = null;
+      ACTIVE_LANDLORD_INVITE_RESULT = null;
+      if (!document.getElementById('requestModal').classList.contains('show') &&
+          !document.getElementById('confirmModal').classList.contains('show') &&
+          !document.getElementById('alertModal').classList.contains('show')) {
+        document.body.classList.remove('modal-open');
+      }
+    }
+
+    function renderLandlordInviteModal() {
+      const modal = document.getElementById('landlordInviteModalContent');
+      if (!modal || !ACTIVE_LANDLORD_INVITE) return;
+      const contract = ACTIVE_LANDLORD_INVITE;
+      const resultInvite = ACTIVE_LANDLORD_INVITE_RESULT || {};
+      const inviteUrl = rawText(resultInvite.url || contract.invite_url).trim();
+      const confirmationCode = rawText(resultInvite.confirmation_code).trim();
+      const expiresAt = resultInvite.expires_at || contract.invite_expires_at || '';
+      const expired = expiresAt && new Date(expiresAt).getTime() <= Date.now();
+      const status = confirmationCode
+        ? '新邀請已產生，請立即把 QR／連結與一次性確認碼交給房客。'
+        : expired
+          ? '目前邀請已過期，請按「重新產生邀請」取得新的 QR／連結與確認碼。'
+          : '確認碼只會在建立或重新產生當下顯示；若遺失，請重新產生邀請。';
+      const qrUrl = inviteUrl
+        ? 'https://quickchart.io/qr?size=220&text=' + encodeURIComponent(inviteUrl)
+        : '';
+
+      modal.innerHTML = `
+        <div class="invite-recovery-card">
+          <div class="request-meta-row">
+            <span class="mini-tag">房號 ${safeText(contract.room_name || contract.room_id || '-')}</span>
+            <span class="mini-tag">${safeText(contract.tenant_name || '待房客補資料')}</span>
+          </div>
+          ${qrUrl ? `
+            <div class="invite-recovery-qr">
+              <img src="${escapeHtml(qrUrl)}" alt="房客合約邀請 QR Code" />
+            </div>
+            <div class="review-contract-meta">房客掃描 QR 後，仍需輸入一次性確認碼；QR 只包含邀請連結，不包含個資。</div>
+          ` : '<div class="empty-state">目前沒有可用邀請連結，請重新整理或重新產生邀請。</div>'}
+          ${inviteUrl ? `<div class="invite-recovery-link">${safeText(inviteUrl)}</div>` : ''}
+          ${confirmationCode ? `
+            <div class="invite-recovery-code" aria-live="polite">
+              <div>本次一次性確認碼</div>
+              <strong>${safeText(confirmationCode)}</strong>
+            </div>
+          ` : ''}
+          <div class="invite-recovery-status">${safeText(status)}</div>
+          ${expiresAt ? `<div class="review-contract-meta">有效期限：${safeText(expiresAt)}</div>` : ''}
+          <div class="modal-actions two" style="margin-top:12px;">
+            <button class="btn btn-primary" type="button" onclick="copyLandlordInviteLink()" ${inviteUrl ? '' : 'disabled'}>複製邀請連結</button>
+            <button class="btn btn-light" type="button" onclick="reissueLandlordInvite('${escapeHtml(contract.invite_id || '')}')">重新產生邀請</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function copyLandlordInviteLink() {
+      const resultInvite = ACTIVE_LANDLORD_INVITE_RESULT || {};
+      const inviteUrl = rawText(resultInvite.url || (ACTIVE_LANDLORD_INVITE && ACTIVE_LANDLORD_INVITE.invite_url)).trim();
+      if (!inviteUrl) {
+        showAlert('目前沒有邀請連結', '請先重新產生邀請。');
+        return;
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(inviteUrl);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = inviteUrl;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+        showAlert('已複製邀請連結', '請將連結交給新房客，再提供畫面上的一次性確認碼。');
+      } catch (error) {
+        showAlert('複製失敗', '請長按邀請連結手動複製。');
+      }
+    }
+
+    async function reissueLandlordInvite(inviteId) {
+      const normalizedInviteId = rawText(inviteId).trim();
+      if (!normalizedInviteId) {
+        showAlert('無法重新產生', '目前合約沒有可識別的邀請，請重新整理。');
+        return;
+      }
+      showConfirm('重新產生合約邀請', '舊 QR／連結會立即失效，系統會產生新的 QR／連結與一次性確認碼。確定繼續嗎？', '重新產生', 'blue', async function() {
+        IS_SUBMITTING = true;
+        setSubmitButtonsDisabled(true);
+        try {
+          const data = await callLandlordInitiatedApi('landlord_contract_invite_reissue', { invite_id: normalizedInviteId });
+          const invite = data && data.invite ? data.invite : null;
+          if (!invite || !invite.confirmation_code) throw new Error('重新產生邀請未回傳確認碼');
+          ACTIVE_LANDLORD_INVITE_RESULT = invite;
+          await loadPage(false);
+          ACTIVE_LANDLORD_INVITE = INITIATED_CONTRACTS.find(function(item) {
+            return rawText(item.invite_id).trim() === rawText(invite.invite_id).trim();
+          }) || Object.assign({}, ACTIVE_LANDLORD_INVITE || {}, {
+            invite_id: invite.invite_id,
+            invite_url: invite.url,
+            invite_expires_at: invite.expires_at,
+            invite_status: invite.status
+          });
+          closeConfirmModal(true);
+          renderLandlordInviteModal();
+          showAlert('邀請已重新產生', '新的確認碼是：' + invite.confirmation_code + '\n請把新的 QR／連結與確認碼交給房客；舊邀請已失效。');
+        } catch (error) {
+          closeConfirmModal(true);
+          showAlert('重新產生失敗', error.message || '請重新整理後再試。');
+        } finally {
+          IS_SUBMITTING = false;
+          setSubmitButtonsDisabled(false);
+        }
+      });
     }
 
     async function cancelLandlordInitiatedInvite(inviteId) {
@@ -3136,7 +3369,8 @@
       document.getElementById('confirmModal').classList.remove('show');
       CONFIRM_CALLBACK = null;
 
-      if (!document.getElementById('requestModal').classList.contains('show')) {
+      if (!document.getElementById('requestModal').classList.contains('show') &&
+          !document.getElementById('landlordInviteModal').classList.contains('show')) {
         document.body.classList.remove('modal-open');
       }
     }
@@ -3165,7 +3399,8 @@
       ALERT_CALLBACK = null;
 
       if (!document.getElementById('requestModal').classList.contains('show') &&
-          !document.getElementById('confirmModal').classList.contains('show')) {
+          !document.getElementById('confirmModal').classList.contains('show') &&
+          !document.getElementById('landlordInviteModal').classList.contains('show')) {
         document.body.classList.remove('modal-open');
       }
 
@@ -3200,19 +3435,30 @@
           (async function() {
             try {
               const initiatedContracts = await callLandlordInitiatedApi('landlord_contract_initiated_init');
-              return Array.isArray(initiatedContracts.items)
-                ? initiatedContracts.items
-                : [];
-            } catch (_) {
-              // The legacy request page stays usable if the new initiated-contract schema is not installed yet.
-              return [];
+              return {
+                items: Array.isArray(initiatedContracts.items)
+                  ? initiatedContracts.items
+                  : [],
+                error: null
+              };
+            } catch (error) {
+              return {
+                items: [],
+                error: {
+                  code: error && error.code ? error.code : '',
+                  message: error && error.message
+                    ? error.message
+                    : '房東發起合約資料讀取失敗'
+                }
+              };
             }
           })()
         ]);
 
         const data = results[0];
         data.native_signing_reviews = results[1];
-        data.landlord_initiated_contracts = results[2];
+        data.landlord_initiated_contracts = results[2].items;
+        data.landlord_initiated_contracts_error = results[2].error;
         renderPage(data);
       } catch (error) {
         renderError(error.message || String(error));

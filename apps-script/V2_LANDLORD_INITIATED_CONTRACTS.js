@@ -181,7 +181,7 @@ function landlordInitiatedContractCreateNewUnlocked_(access, input) {
     success: true,
     code: 'OK',
     data: {
-      contract: landlordInitiatedContractPublicContract_(contract, tenant),
+      contract: landlordInitiatedContractPublicContract_(contract, tenant, invite),
       invite: landlordInitiatedContractPublicInvite_(invite, confirmationCode)
     }
   };
@@ -260,9 +260,14 @@ function landlordInitiatedContractListBySession_(sessionToken) {
   if (typeof tenantContractSigningReviewAccessFromSession_ !== 'function') return landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED', '找不到房東 session 模組');
   const access = tenantContractSigningReviewAccessFromSession_(sessionToken, 'read');
   if (!access || access.success !== true) return access || landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_INVALID', '房東 session 無效');
+  return landlordInitiatedContractListByAccess_(Object.assign({ success: true }, access.data || {}));
+}
+
+function landlordInitiatedContractListByAccess_(access) {
+  if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
   const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
   if (!schema.success) return schema;
-  const workspaceId = landlordInitiatedContractWorkspaceId_(access.data);
+  const workspaceId = landlordInitiatedContractWorkspaceId_(access);
   const contracts = landlordInitiatedContractRows_(schema.data.contracts).filter(function (row) {
     return landlordInitiatedContractText_(row.workspace_id) === workspaceId &&
       landlordInitiatedContractText_(row.contract_origin) === 'landlord_initiated' &&
@@ -276,9 +281,80 @@ function landlordInitiatedContractListBySession_(sessionToken) {
     code: 'OK',
     data: {
       items: contracts.map(function (contract) {
-        const invite = invites.find(function (row) { return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contract.contract_id); });
-        return landlordInitiatedContractPublicContract_(contract, invite || {});
+        const currentInviteId = landlordInitiatedContractText_(contract.invite_id);
+        const invite = invites.find(function (row) {
+          return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contract.contract_id) &&
+            landlordInitiatedContractText_(row.invite_id) === currentInviteId;
+        });
+        return landlordInitiatedContractPublicContract_(contract, {}, invite || {});
       })
+    }
+  };
+}
+
+function landlordInitiatedContractReissueBySession_(sessionToken, inviteId) {
+  return landlordInitiatedContractWithScriptLock_(function() {
+    return landlordInitiatedContractReissueBySessionUnlocked_(sessionToken, inviteId);
+  });
+}
+
+function landlordInitiatedContractReissueBySessionUnlocked_(sessionToken, inviteId) {
+  if (typeof tenantContractSigningReviewAccessFromSession_ !== 'function') return landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED', '找不到房東 session 模組');
+  const accessResult = tenantContractSigningReviewAccessFromSession_(sessionToken, 'contract_write');
+  if (!accessResult || accessResult.success !== true) return accessResult || landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_INVALID', '房東 session 無效');
+  const access = Object.assign({ success: true }, accessResult.data || {});
+  if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
+  const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+  if (!schema.success) return schema;
+  const workspaceId = landlordInitiatedContractWorkspaceId_(access);
+  const normalizedInviteId = landlordInitiatedContractText_(inviteId);
+  const invites = landlordInitiatedContractRows_(schema.data.invites);
+  const oldInvite = invites.find(function(row) {
+    return landlordInitiatedContractText_(row.invite_id) === normalizedInviteId && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+  });
+  if (!oldInvite) return landlordInitiatedContractError_('INVITE_NOT_FOUND', '找不到邀請');
+  const contract = landlordInitiatedContractRows_(schema.data.contracts).find(function(row) {
+    return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(oldInvite.contract_id) &&
+      landlordInitiatedContractText_(row.workspace_id) === workspaceId &&
+      landlordInitiatedContractText_(row.contract_origin) === 'landlord_initiated';
+  });
+  if (!contract) return landlordInitiatedContractError_('CONTRACT_NOT_FOUND', '找不到邀請合約');
+  if (['pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(landlordInitiatedContractText_(contract.contract_status)) < 0) return landlordInitiatedContractError_('CONTRACT_NOT_REISSUABLE', '目前合約狀態無法重新產生邀請');
+  if (landlordInitiatedContractText_(contract.invite_id) !== normalizedInviteId) return landlordInitiatedContractError_('INVITE_STALE', '這個邀請已被新的邀請取代，請重新整理後再試');
+  const oldStatus = landlordInitiatedContractText_(oldInvite.status).toLowerCase();
+  if (oldStatus === 'claimed' || oldStatus === 'completed') return landlordInitiatedContractError_('INVITE_ALREADY_CLAIMED', '房客已使用此邀請，無法重新產生');
+  if (oldStatus === 'cancelled') return landlordInitiatedContractError_('INVITE_STALE', '這個邀請已失效，請重新整理後再試');
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const confirmationCode = landlordInitiatedContractConfirmationCode_();
+  const newInvite = {
+    invite_id: landlordInitiatedContractUuid_(),
+    workspace_id: workspaceId,
+    contract_id: contract.contract_id,
+    room_id: contract.room_id,
+    landlord_user_id: oldInvite.landlord_user_id || landlordInitiatedContractText_(access.user && access.user.user_id),
+    landlord_membership_id: oldInvite.landlord_membership_id || landlordInitiatedContractText_(access.membership && access.membership.membership_id),
+    claim_code_hash: landlordInitiatedContractDigest_(confirmationCode),
+    status: 'pending',
+    expires_at: new Date(now.getTime() + V2_LANDLORD_INITIATED_CONTRACT_INVITE_TTL_MS_).toISOString(),
+    claimed_at: '',
+    claimed_line_user_id: '',
+    cancelled_at: '',
+    created_at: nowIso,
+    updated_at: nowIso
+  };
+  landlordInitiatedContractUpdate_(schema.data.invites, oldInvite, { status: 'cancelled', cancelled_at: nowIso, updated_at: nowIso });
+  landlordInitiatedContractAppend_(schema.data.invites, newInvite);
+  landlordInitiatedContractUpdate_(schema.data.contracts, contract, { invite_id: newInvite.invite_id, updated_at: nowIso });
+  contract.invite_id = newInvite.invite_id;
+  contract.updated_at = nowIso;
+  return {
+    success: true,
+    code: 'OK',
+    data: {
+      contract: landlordInitiatedContractPublicContract_(contract, {}, newInvite),
+      invite: landlordInitiatedContractPublicInvite_(newInvite, confirmationCode)
     }
   };
 }
@@ -519,7 +595,8 @@ function landlordInitiatedContractIsRequest_(body) {
     'landlord_contract_initiated_init',
     'landlord_contract_initiate_new',
     'landlord_contract_initiate_renewal',
-    'landlord_contract_invite_cancel'
+    'landlord_contract_invite_cancel',
+    'landlord_contract_invite_reissue'
   ].indexOf(landlordInitiatedContractText_(request && request.action)) >= 0;
 }
 
@@ -568,6 +645,7 @@ function landlordInitiatedContractHandlePostDirect_(request) {
   const action = landlordInitiatedContractText_(request.action);
   if (action === 'landlord_contract_initiated_init') return landlordInitiatedContractListBySession_(request.session_token);
   if (action === 'landlord_contract_invite_cancel') return landlordInitiatedContractCancelBySession_(request.session_token, request.invite_id);
+  if (action === 'landlord_contract_invite_reissue') return landlordInitiatedContractReissueBySession_(request.session_token, request.invite_id);
   const access = landlordInitiatedContractAccessFromSession_(request.session_token, 'contract_write');
   if (!access.success) return access;
   const input = request.input && typeof request.input === 'object' ? request.input : request;
@@ -760,9 +838,10 @@ function landlordInitiatedContractReplaceTenantName_(content, tenantName) {
   return landlordInitiatedContractText_(content).replace(/承租人：[^\n]*/, '承租人：' + tenantName);
 }
 
-function landlordInitiatedContractPublicContract_(contract, tenant) {
-  const inviteId = landlordInitiatedContractText_(contract.invite_id || (tenant && tenant.invite_id));
-  const inviteStatus = landlordInitiatedContractText_(tenant && tenant.status);
+function landlordInitiatedContractPublicContract_(contract, tenant, invite) {
+  const currentInvite = invite || {};
+  const inviteId = landlordInitiatedContractText_(contract.invite_id || currentInvite.invite_id || (tenant && tenant.invite_id));
+  const inviteStatus = landlordInitiatedContractText_(currentInvite.status || (tenant && tenant.status));
   return Object.assign({}, contract, {
     tenant_binding_status: landlordInitiatedContractText_(contract.tenant_binding_status || (tenant && tenant.tenant_binding_status)),
     contract_status: landlordInitiatedContractText_(contract.contract_status),
@@ -771,7 +850,7 @@ function landlordInitiatedContractPublicContract_(contract, tenant) {
     invite_id: inviteId,
     invite_url: inviteId ? V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ + '?invite_id=' + encodeURIComponent(inviteId) : '',
     invite_status: inviteStatus,
-    invite_expires_at: tenant && tenant.expires_at ? tenant.expires_at : ''
+    invite_expires_at: currentInvite.expires_at || (tenant && tenant.expires_at) || ''
   });
 }
 

@@ -241,6 +241,7 @@ against Production.
 | `landlord_contract_initiate_new` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a pending new-tenant contract, provisional tenant identity, one-time invite and short confirmation code; it does not activate a room. |
 | `landlord_contract_initiate_renewal` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a new pending renewal version linked by `previous_contract_id`; it does not overwrite or activate the predecessor. |
 | `landlord_contract_invite_cancel` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Cancels an unclaimed invite and its pending contract. |
+| `landlord_contract_invite_reissue` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Invalidates the current unclaimed invite, appends a replacement invite, updates the contract pointer, and returns the new QR/link payload with the one-time confirmation code only in that response. |
 | `landlord_contract_initiated_status` | JSONP `v2_action` | One-time HMAC-bound request exchange | Redeems the POST result; the session token and confirmation code are not placed in the URL. |
 | `tenant_contract_invite_auth_init` | `doPost` exchange | LINE `id_token`, invite ID, confirmation code and tenant data | Verifies the LINE identity, atomically claims a new-tenant invite once, and returns a short-lived invite signing session. |
 | `tenant_contract_invite_auth_status` | JSONP `v2_action` | One-time HMAC-bound authentication exchange | Redeems the invite signing session result without exposing the session token in the URL. |
@@ -255,9 +256,11 @@ against Production.
   archiving the predecessor as renewed. All write operations re-read scoped
   rows and use `ScriptLock`, except finalization which is called inside the
   existing review update lock to avoid nested lock acquisition.
-- The one-time confirmation code is returned only in the immediate new-contract
-  response for on-site handoff. It is hashed in the invite sheet and never
-  returned by the list route.
+- The one-time confirmation code is returned only in the immediate create or
+  reissue response for on-site handoff. It is hashed in the invite sheet and
+  never returned by the list route. The list route always joins the contract's
+  current `invite_id`, so a landlord can retrieve the current QR/link after
+  leaving the create page.
 
 ## Signed legacy contract integration webhook
 
