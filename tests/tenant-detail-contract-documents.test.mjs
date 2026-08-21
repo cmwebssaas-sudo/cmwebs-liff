@@ -43,6 +43,10 @@ assert.match(tenantDetailPage, /isTenantDocumentTypeUploaded/);
 assert.match(tenantDetailPage, /tenant-document-upload-actions/);
 assert.match(tenantDetailPage, /bindTenantDocumentUploadActions/);
 assert.match(tenantDetailPage, /data-tenant-document-upload-action/);
+assert.match(tenantDetailPage, /tenant-document-drop-zone/);
+assert.match(tenantDetailPage, /bindTenantDocumentDropZones/);
+assert.match(tenantDetailPage, /data-tenant-document-drop-input/);
+assert.match(tenantDetailPage, /dataTransfer\.files/);
 assert.match(tenantDetailPage, /openTenantDocumentPrintWindow/);
 const printWindowOpenIndex = tenantDetailPage.indexOf(
   'printOnly ? openTenantDocumentPrintWindow() : null'
@@ -53,6 +57,18 @@ const printRequestIndex = tenantDetailPage.indexOf(
 assert.ok(
   printWindowOpenIndex >= 0 && printWindowOpenIndex < printRequestIndex,
   '列印視窗必須在文件下載 API 請求前建立'
+);
+assert.match(overviewPage, /openTenantDocumentPrintWindow/);
+const overviewPrintWindowOpenIndex = overviewPage.indexOf(
+  'printOnly ? openTenantDocumentPrintWindow() : null'
+);
+const overviewPrintRequestIndex = overviewPage.indexOf(
+  "'landlord_contract_document_download'"
+);
+assert.ok(
+  overviewPrintWindowOpenIndex >= 0 &&
+    overviewPrintWindowOpenIndex < overviewPrintRequestIndex,
+  '文件總覽列印視窗必須在文件下載 API 請求前建立'
 );
 assert.doesNotMatch(tenantDetailPage, /tenant-document-actions/);
 assert.doesNotMatch(tenantDetailPage, /tenantInput/);
