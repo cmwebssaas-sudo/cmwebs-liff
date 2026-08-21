@@ -674,24 +674,23 @@
       opacity: 1;
     }
 
-    .tenant-document-upload-actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 4px;
+    .tenant-document-preview-action {
+      display: block;
     }
 
-    .tenant-document-upload-actions[hidden] {
+    .tenant-document-preview-action[hidden] {
       display: none;
     }
 
-    .tenant-document-upload-action {
+    .tenant-document-preview-button {
+      width: 100%;
       min-height: 30px;
-      padding: 5px 4px;
+      padding: 7px 8px;
       border: 1px solid rgba(6, 199, 85, 0.35);
       border-radius: 8px;
       background: #ffffff;
       color: var(--primary-dark);
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 900;
       cursor: pointer;
     }
@@ -1942,16 +1941,16 @@
         });
     }
 
-    function bindTenantDocumentUploadActions(item, documentId) {
+    function bindTenantDocumentPreviewActions(item, documentId) {
       if (!item) {
         return;
       }
 
       const actions = item.querySelector(
-        '.tenant-document-upload-actions'
+        '.tenant-document-preview-action'
       );
-      const buttons = item.querySelectorAll(
-        '[data-tenant-document-upload-action]'
+      const button = item.querySelector(
+        '[data-tenant-document-preview-action]'
       );
       const safeDocumentId = rawText(documentId).trim();
 
@@ -1959,23 +1958,19 @@
         actions.hidden = !safeDocumentId;
       }
 
-      buttons.forEach(function (button) {
+      if (button) {
         button.disabled = !safeDocumentId;
 
         if (safeDocumentId) {
           button.setAttribute('data-document-id', safeDocumentId);
           button.onclick = function () {
-            downloadTenantDocument(
-              safeDocumentId,
-              button.getAttribute('data-tenant-document-upload-action') ===
-                'print'
-            );
+            previewTenantDocument(safeDocumentId);
           };
         } else {
           button.removeAttribute('data-document-id');
           button.onclick = null;
         }
-      });
+      }
     }
 
     function resetTenantDocumentUploadStates() {
@@ -2030,7 +2025,7 @@
             status.textContent = '';
           }
 
-          bindTenantDocumentUploadActions(item, '');
+          bindTenantDocumentPreviewActions(item, '');
         });
     }
 
@@ -2083,7 +2078,7 @@
           : '已歸檔，無需重複上傳';
       }
 
-      bindTenantDocumentUploadActions(
+      bindTenantDocumentPreviewActions(
         item,
         documentData && documentData.document_id
       );
@@ -2190,23 +2185,16 @@
                     上傳舊合約
                   </button>
                   <div
-                    class="tenant-document-upload-actions"
-                    data-tenant-document-upload-actions="legacy_contract"
+                    class="tenant-document-preview-action"
+                    data-tenant-document-preview-action-wrap="legacy_contract"
                     hidden
                   >
                     <button
-                      class="tenant-document-upload-action"
+                      class="tenant-document-preview-button"
                       type="button"
-                      data-tenant-document-upload-action="download"
+                      data-tenant-document-preview-action
                     >
-                      下載
-                    </button>
-                    <button
-                      class="tenant-document-upload-action"
-                      type="button"
-                      data-tenant-document-upload-action="print"
-                    >
-                      列印
+                      預覽
                     </button>
                   </div>
                 </div>
@@ -2268,23 +2256,16 @@
                     上傳正面
                   </button>
                   <div
-                    class="tenant-document-upload-actions"
-                    data-tenant-document-upload-actions="identity_front"
+                    class="tenant-document-preview-action"
+                    data-tenant-document-preview-action-wrap="identity_front"
                     hidden
                   >
                     <button
-                      class="tenant-document-upload-action"
+                      class="tenant-document-preview-button"
                       type="button"
-                      data-tenant-document-upload-action="download"
+                      data-tenant-document-preview-action
                     >
-                      下載
-                    </button>
-                    <button
-                      class="tenant-document-upload-action"
-                      type="button"
-                      data-tenant-document-upload-action="print"
-                    >
-                      列印
+                      預覽
                     </button>
                   </div>
                 </div>
@@ -2346,23 +2327,16 @@
                     上傳反面
                   </button>
                   <div
-                    class="tenant-document-upload-actions"
-                    data-tenant-document-upload-actions="identity_back"
+                    class="tenant-document-preview-action"
+                    data-tenant-document-preview-action-wrap="identity_back"
                     hidden
                   >
                     <button
-                      class="tenant-document-upload-action"
+                      class="tenant-document-preview-button"
                       type="button"
-                      data-tenant-document-upload-action="download"
+                      data-tenant-document-preview-action
                     >
-                      下載
-                    </button>
-                    <button
-                      class="tenant-document-upload-action"
-                      type="button"
-                      data-tenant-document-upload-action="print"
-                    >
-                      列印
+                      預覽
                     </button>
                   </div>
                 </div>
@@ -2424,23 +2398,16 @@
                     上傳自拍照
                   </button>
                   <div
-                    class="tenant-document-upload-actions"
-                    data-tenant-document-upload-actions="selfie"
+                    class="tenant-document-preview-action"
+                    data-tenant-document-preview-action-wrap="selfie"
                     hidden
                   >
                     <button
-                      class="tenant-document-upload-action"
+                      class="tenant-document-preview-button"
                       type="button"
-                      data-tenant-document-upload-action="download"
+                      data-tenant-document-preview-action
                     >
-                      下載
-                    </button>
-                    <button
-                      class="tenant-document-upload-action"
-                      type="button"
-                      data-tenant-document-upload-action="print"
-                    >
-                      列印
+                      預覽
                     </button>
                   </div>
                 </div>
@@ -2735,36 +2702,6 @@
       document.body.classList.remove('is-printing-tenant-document');
     }
 
-    function printTenantDocumentPreview() {
-      const frame = document.getElementById('tenantDocumentPreviewFrame');
-      const image = document.getElementById('tenantDocumentPreviewImage');
-
-      if (image) {
-        document.body.classList.add('is-printing-tenant-document');
-        window.print();
-        setTimeout(function () {
-          document.body.classList.remove('is-printing-tenant-document');
-        }, 500);
-        return;
-      }
-
-      try {
-        if (frame && frame.contentWindow) {
-          frame.contentWindow.focus();
-          frame.contentWindow.print();
-          return;
-        }
-      } catch (error) {
-        // Some embedded PDF viewers do not expose contentWindow.print().
-      }
-
-      document.body.classList.add('is-printing-tenant-document');
-      window.print();
-      setTimeout(function () {
-        document.body.classList.remove('is-printing-tenant-document');
-      }, 500);
-    }
-
     function openTenantDocumentActionModal(documentData, objectUrl) {
       closeTenantDocumentActionModal();
       CURRENT_TENANT_DOCUMENT_OBJECT_URL = objectUrl;
@@ -2779,7 +2716,7 @@
       modal.className = 'tenant-document-action-modal';
       modal.setAttribute('role', 'dialog');
       modal.setAttribute('aria-modal', 'true');
-      modal.setAttribute('aria-label', '文件預覽與操作');
+      modal.setAttribute('aria-label', '文件預覽');
       modal.innerHTML =
         '<div class="tenant-document-action-dialog">' +
         '  <div class="tenant-document-action-head">' +
@@ -2787,7 +2724,7 @@
         '      <div class="tenant-document-action-title">文件預覽</div>' +
         '      <div class="tenant-document-action-note">' +
         safeHtml(fileName) +
-        ' · 請直接按下方按鈕，不需要允許快顯視窗</div>' +
+        ' · 可直接瀏覽文件內容</div>' +
         '    </div>' +
         '    <button class="tenant-document-action-close" type="button" data-tenant-document-close>關閉</button>' +
         '  </div>' +
@@ -2804,15 +2741,6 @@
             safeHtml(fileName) +
             '"></iframe>') +
         '  </div>' +
-        '  <div class="tenant-document-action-footer">' +
-        '    <a id="tenantDocumentPreviewDownload" class="tenant-document-action-button primary" href="' +
-        safeHtml(objectUrl) +
-        '" download="' +
-        safeHtml(fileName) +
-        '">下載檔案</a>' +
-        '    <button class="tenant-document-action-button" type="button" data-tenant-document-print>列印</button>' +
-        '    <button class="tenant-document-action-button" type="button" data-tenant-document-close>關閉</button>' +
-        '  </div>' +
         '</div>';
 
       document.body.appendChild(modal);
@@ -2823,12 +2751,9 @@
           button.addEventListener('click', closeTenantDocumentActionModal);
         }
       );
-      modal
-        .querySelector('[data-tenant-document-print]')
-        .addEventListener('click', printTenantDocumentPreview);
     }
 
-    async function downloadTenantDocument(documentId, printOnly) {
+    async function previewTenantDocument(documentId) {
       if (!documentId) {
         showToast('找不到文件編號', true);
         return;
@@ -2868,15 +2793,11 @@
         const objectUrl = URL.createObjectURL(blob);
 
         openTenantDocumentActionModal(documentData, objectUrl);
-        showToast(
-          printOnly
-            ? '文件已載入，請按下方列印'
-            : '文件已載入，請按下方下載檔案'
-        );
+        showToast('文件已載入');
       } catch (error) {
         closeTenantDocumentActionModal();
         showToast(
-          rawText(error && error.message ? error.message : '下載失敗'),
+          rawText(error && error.message ? error.message : '文件讀取失敗'),
           true
         );
       }

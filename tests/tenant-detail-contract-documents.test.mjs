@@ -31,8 +31,7 @@ assert.match(tenantDetailPage, /tenantDocumentLegacyFile/);
 assert.match(tenantDetailPage, /tenantDocumentIdFrontFile/);
 assert.match(tenantDetailPage, /tenantDocumentIdBackFile/);
 assert.match(tenantDetailPage, /tenantDocumentSelfieFile/);
-assert.match(tenantDetailPage, /下載/);
-assert.match(tenantDetailPage, /列印/);
+assert.match(tenantDetailPage, /預覽/);
 assert.match(tenantDetailPage, /tenant-document-upload-state/);
 assert.match(tenantDetailPage, /tenant-document-upload-state\[hidden\]/);
 assert.match(tenantDetailPage, /is-complete/);
@@ -40,9 +39,13 @@ assert.match(tenantDetailPage, /tenantDocumentTypeIcon/);
 assert.match(tenantDetailPage, /已上傳，無需重複上傳/);
 assert.match(tenantDetailPage, /markTenantDocumentTypeUploaded/);
 assert.match(tenantDetailPage, /isTenantDocumentTypeUploaded/);
-assert.match(tenantDetailPage, /tenant-document-upload-actions/);
-assert.match(tenantDetailPage, /bindTenantDocumentUploadActions/);
-assert.match(tenantDetailPage, /data-tenant-document-upload-action/);
+assert.match(tenantDetailPage, /tenant-document-preview-action/);
+assert.match(tenantDetailPage, /bindTenantDocumentPreviewActions/);
+assert.match(tenantDetailPage, /data-tenant-document-preview-action/);
+assert.doesNotMatch(
+  tenantDetailPage,
+  /data-tenant-document-upload-action="(?:download|print)"/
+);
 assert.match(tenantDetailPage, /tenant-document-drop-zone/);
 assert.match(tenantDetailPage, /bindTenantDocumentDropZones/);
 assert.match(tenantDetailPage, /data-tenant-document-drop-input/);
@@ -50,8 +53,9 @@ assert.match(tenantDetailPage, /dataTransfer\.files/);
 assert.match(tenantDetailPage, /tenant-document-action-modal/);
 assert.match(tenantDetailPage, /openTenantDocumentActionModal/);
 assert.match(tenantDetailPage, /tenantDocumentPreviewFrame/);
-assert.match(tenantDetailPage, /tenantDocumentPreviewDownload/);
-assert.match(tenantDetailPage, /printTenantDocumentPreview/);
+assert.doesNotMatch(tenantDetailPage, /tenantDocumentPreviewDownload/);
+assert.doesNotMatch(tenantDetailPage, /printTenantDocumentPreview/);
+assert.doesNotMatch(tenantDetailPage, /data-tenant-document-print/);
 assert.doesNotMatch(tenantDetailPage, /openTenantDocumentPrintWindow/);
 assert.doesNotMatch(
   tenantDetailPage,
@@ -60,8 +64,11 @@ assert.doesNotMatch(
 assert.match(overviewPage, /document-action-modal/);
 assert.match(overviewPage, /openDocumentActionModal/);
 assert.match(overviewPage, /documentPreviewFrame/);
-assert.match(overviewPage, /documentPreviewDownload/);
-assert.match(overviewPage, /printDocumentPreview/);
+assert.match(overviewPage, /data-action="preview"/);
+assert.doesNotMatch(overviewPage, /documentPreviewDownload/);
+assert.doesNotMatch(overviewPage, /printDocumentPreview/);
+assert.doesNotMatch(overviewPage, /data-action="(?:download|print)"/);
+assert.doesNotMatch(overviewPage, /data-document-print/);
 assert.doesNotMatch(overviewPage, /openTenantDocumentPrintWindow/);
 assert.doesNotMatch(
   overviewPage,
