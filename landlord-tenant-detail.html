@@ -585,6 +585,53 @@
       font-size: 11px;
     }
 
+    .tenant-document-drop-zone {
+      position: relative;
+      min-width: 0;
+      min-height: 42px;
+      padding: 7px 9px;
+      border: 1px dashed rgba(6, 199, 85, 0.42);
+      border-radius: 10px;
+      background: #ffffff;
+      transition:
+        border-color 0.15s ease,
+        background 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .tenant-document-drop-zone.is-dragover {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.12);
+    }
+
+    .tenant-document-drop-zone.is-disabled {
+      border-color: rgba(6, 199, 85, 0.22);
+      background: rgba(255, 255, 255, 0.62);
+      cursor: not-allowed;
+      opacity: 0.72;
+    }
+
+    .tenant-document-drop-zone .tenant-document-file {
+      min-height: 30px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .tenant-document-drop-hint {
+      margin-top: 3px;
+      color: var(--text-muted);
+      font-size: 10px;
+      line-height: 1.4;
+      pointer-events: none;
+    }
+
+    .tenant-document-drop-zone.is-dragover .tenant-document-drop-hint {
+      color: var(--primary-dark);
+      font-weight: 900;
+    }
+
     .tenant-document-upload-item.is-complete .tenant-document-file {
       border-color: rgba(6, 199, 85, 0.22);
       background: rgba(255, 255, 255, 0.68);
@@ -1603,6 +1650,141 @@
       return null;
     }
 
+    function tenantDocumentDropZoneLabel(zone, fileName) {
+      if (!zone) {
+        return;
+      }
+
+      const label = zone.querySelector(
+        '[data-tenant-document-drop-name]'
+      );
+
+      if (label) {
+        label.textContent = fileName
+          ? '已選取：' + fileName
+          : '拖曳檔案到這裡，或點擊選擇檔案';
+      }
+    }
+
+    function assignTenantDocumentDropFiles(input, files) {
+      if (!input || !files || !files.length) {
+        return false;
+      }
+
+      try {
+        const transfer = new DataTransfer();
+        transfer.items.add(files[0]);
+        input.files = transfer.files;
+      } catch (error) {
+        try {
+          input.files = files;
+        } catch (assignmentError) {
+          return false;
+        }
+      }
+
+      return Boolean(input.files && input.files.length);
+    }
+
+    function bindTenantDocumentDropZones() {
+      document
+        .querySelectorAll('[data-tenant-document-drop-zone]')
+        .forEach(function (zone) {
+          if (zone.getAttribute('data-drop-bound') === '1') {
+            return;
+          }
+
+          const inputId = zone.getAttribute(
+            'data-tenant-document-drop-input'
+          );
+          const input = inputId
+            ? document.getElementById(inputId)
+            : null;
+          const type = rawText(
+            zone.getAttribute('data-tenant-document-drop-type')
+          );
+
+          if (!input || !type) {
+            return;
+          }
+
+          zone.setAttribute('data-drop-bound', '1');
+          tenantDocumentDropZoneLabel(
+            zone,
+            input.files && input.files[0]
+              ? input.files[0].name
+              : ''
+          );
+
+          zone.addEventListener('click', function (event) {
+            const target = event.target;
+            const clickedHint =
+              target && typeof target.closest === 'function'
+                ? target.closest('[data-tenant-document-drop-name]')
+                : null;
+
+            if (
+              target === zone ||
+              clickedHint
+            ) {
+              if (!input.disabled) {
+                input.click();
+              }
+            }
+          });
+
+          input.addEventListener('change', function () {
+            tenantDocumentDropZoneLabel(
+              zone,
+              input.files && input.files[0]
+                ? input.files[0].name
+                : ''
+            );
+          });
+
+          zone.addEventListener('dragover', function (event) {
+            event.preventDefault();
+
+            if (!input.disabled) {
+              zone.classList.add('is-dragover');
+            }
+          });
+
+          zone.addEventListener('dragleave', function (event) {
+            if (
+              event.relatedTarget &&
+              zone.contains(event.relatedTarget)
+            ) {
+              return;
+            }
+
+            zone.classList.remove('is-dragover');
+          });
+
+          zone.addEventListener('drop', function (event) {
+            event.preventDefault();
+            zone.classList.remove('is-dragover');
+
+            if (input.disabled) {
+              return;
+            }
+
+            const files =
+              event.dataTransfer && event.dataTransfer.files
+                ? event.dataTransfer.files
+                : null;
+
+            if (!assignTenantDocumentDropFiles(input, files)) {
+              showToast('無法讀取拖入的檔案', true);
+              return;
+            }
+
+            tenantDocumentDropZoneLabel(zone, input.files[0].name);
+            uploadTenantDocument(type, input.id);
+          });
+        });
+    }
+
     function bindTenantDocumentUploadActions(item, documentId) {
       if (!item) {
         return;
@@ -1664,6 +1846,18 @@
             input.title = '';
           }
 
+          const dropZone = item.querySelector(
+            '[data-tenant-document-drop-zone]'
+          );
+
+          if (dropZone) {
+            dropZone.classList.remove(
+              'is-dragover',
+              'is-disabled'
+            );
+            tenantDocumentDropZoneLabel(dropZone, '');
+          }
+
           if (button) {
             button.disabled = false;
             button.classList.remove('is-complete');
@@ -1694,6 +1888,9 @@
       const button = item.querySelector('.tenant-document-upload-button');
       const state = item.querySelector('.tenant-document-upload-state');
       const status = item.querySelector('.tenant-document-upload-status');
+      const dropZone = item.querySelector(
+        '[data-tenant-document-drop-zone]'
+      );
       const fileName = rawText(
         documentData && documentData.file_name
           ? documentData.file_name
@@ -1705,6 +1902,11 @@
       if (input) {
         input.disabled = true;
         input.title = '此項目已上傳，無需重複上傳';
+      }
+
+      if (dropZone) {
+        dropZone.classList.add('is-disabled');
+        tenantDocumentDropZoneLabel(dropZone, fileName);
       }
 
       if (button) {
@@ -1777,7 +1979,7 @@
             <option value="">載入租約中...</option>
           </select>
           <div class="tenant-document-hint">
-            不綁定特定租約時，文件仍會保留在此房客名下；支援 JPG、PNG、PDF，單檔上限 8MB。
+            不綁定特定租約時，文件仍會保留在此房客名下；支援 JPG、PNG、PDF，單檔上限 8MB。電腦可直接拖曳檔案到欄位上傳。
           </div>
 
           <div class="tenant-document-upload-grid">
@@ -1802,12 +2004,25 @@
                 </span>
               </div>
               <div class="tenant-document-upload-row">
-                <input
-                  id="tenantDocumentLegacyFile"
-                  class="tenant-document-file"
-                  type="file"
-                  accept="image/png,image/jpeg,application/pdf"
-                />
+                <div
+                  class="tenant-document-drop-zone"
+                  data-tenant-document-drop-zone
+                  data-tenant-document-drop-type="legacy_contract"
+                  data-tenant-document-drop-input="tenantDocumentLegacyFile"
+                >
+                  <input
+                    id="tenantDocumentLegacyFile"
+                    class="tenant-document-file"
+                    type="file"
+                    accept="image/png,image/jpeg,application/pdf"
+                  />
+                  <div
+                    class="tenant-document-drop-hint"
+                    data-tenant-document-drop-name
+                  >
+                    拖曳檔案到這裡，或點擊選擇檔案
+                  </div>
+                </div>
                 <div class="tenant-document-upload-button-stack">
                   <button
                     id="tenantDocumentLegacyUploadBtn"
@@ -1867,12 +2082,25 @@
                 </span>
               </div>
               <div class="tenant-document-upload-row">
-                <input
-                  id="tenantDocumentIdFrontFile"
-                  class="tenant-document-file"
-                  type="file"
-                  accept="image/png,image/jpeg"
-                />
+                <div
+                  class="tenant-document-drop-zone"
+                  data-tenant-document-drop-zone
+                  data-tenant-document-drop-type="identity_front"
+                  data-tenant-document-drop-input="tenantDocumentIdFrontFile"
+                >
+                  <input
+                    id="tenantDocumentIdFrontFile"
+                    class="tenant-document-file"
+                    type="file"
+                    accept="image/png,image/jpeg"
+                  />
+                  <div
+                    class="tenant-document-drop-hint"
+                    data-tenant-document-drop-name
+                  >
+                    拖曳檔案到這裡，或點擊選擇檔案
+                  </div>
+                </div>
                 <div class="tenant-document-upload-button-stack">
                   <button
                     id="tenantDocumentIdFrontUploadBtn"
@@ -1932,12 +2160,25 @@
                 </span>
               </div>
               <div class="tenant-document-upload-row">
-                <input
-                  id="tenantDocumentIdBackFile"
-                  class="tenant-document-file"
-                  type="file"
-                  accept="image/png,image/jpeg"
-                />
+                <div
+                  class="tenant-document-drop-zone"
+                  data-tenant-document-drop-zone
+                  data-tenant-document-drop-type="identity_back"
+                  data-tenant-document-drop-input="tenantDocumentIdBackFile"
+                >
+                  <input
+                    id="tenantDocumentIdBackFile"
+                    class="tenant-document-file"
+                    type="file"
+                    accept="image/png,image/jpeg"
+                  />
+                  <div
+                    class="tenant-document-drop-hint"
+                    data-tenant-document-drop-name
+                  >
+                    拖曳檔案到這裡，或點擊選擇檔案
+                  </div>
+                </div>
                 <div class="tenant-document-upload-button-stack">
                   <button
                     id="tenantDocumentIdBackUploadBtn"
@@ -1997,12 +2238,25 @@
                 </span>
               </div>
               <div class="tenant-document-upload-row">
-                <input
-                  id="tenantDocumentSelfieFile"
-                  class="tenant-document-file"
-                  type="file"
-                  accept="image/png,image/jpeg"
-                />
+                <div
+                  class="tenant-document-drop-zone"
+                  data-tenant-document-drop-zone
+                  data-tenant-document-drop-type="selfie"
+                  data-tenant-document-drop-input="tenantDocumentSelfieFile"
+                >
+                  <input
+                    id="tenantDocumentSelfieFile"
+                    class="tenant-document-file"
+                    type="file"
+                    accept="image/png,image/jpeg"
+                  />
+                  <div
+                    class="tenant-document-drop-hint"
+                    data-tenant-document-drop-name
+                  >
+                    拖曳檔案到這裡，或點擊選擇檔案
+                  </div>
+                </div>
                 <div class="tenant-document-upload-button-stack">
                   <button
                     id="tenantDocumentSelfieUploadBtn"
@@ -2198,6 +2452,27 @@
       return labels[type] || '上傳';
     }
 
+    function tenantDocumentFileTypeAllowed(type, file) {
+      const mimeType = rawText(file && file.type).toLowerCase();
+      const fileName = rawText(file && file.name).toLowerCase();
+      const extension = fileName.includes('.')
+        ? fileName.split('.').pop()
+        : '';
+      const allowedTypes =
+        type === 'legacy_contract'
+          ? ['image/png', 'image/jpeg', 'application/pdf']
+          : ['image/png', 'image/jpeg'];
+      const allowedExtensions =
+        type === 'legacy_contract'
+          ? ['png', 'jpg', 'jpeg', 'pdf']
+          : ['png', 'jpg', 'jpeg'];
+
+      return (
+        allowedTypes.includes(mimeType) ||
+        allowedExtensions.includes(extension)
+      );
+    }
+
     async function uploadTenantDocument(type, inputId) {
       if (!CURRENT_TENANT || !TENANT_ID) {
         showToast('找不到房客資料', true);
@@ -2219,6 +2494,11 @@
 
       if (file.size <= 0 || file.size > 8 * 1024 * 1024) {
         showToast('檔案大小必須介於 1B 至 8MB', true);
+        return;
+      }
+
+      if (!tenantDocumentFileTypeAllowed(type, file)) {
+        showToast('此文件格式不支援', true);
         return;
       }
 
@@ -2282,13 +2562,31 @@
       }
     }
 
+    function openTenantDocumentPrintWindow() {
+      const printWindow = window.open('', '_blank');
+
+      if (!printWindow) {
+        throw new Error('請先允許快顯視窗後再試一次');
+      }
+
+      printWindow.document.write(
+        '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>文件列印</title></head><body style="margin:0;padding:24px;font-family:Arial,sans-serif;">文件載入中…</body></html>'
+      );
+      printWindow.document.close();
+      return printWindow;
+    }
+
     async function downloadTenantDocument(documentId, printOnly) {
       if (!documentId) {
         showToast('找不到文件編號', true);
         return;
       }
 
+      let printWindow = null;
+
       try {
+        printWindow = printOnly ? openTenantDocumentPrintWindow() : null;
+
         const result = await jsonpRequest(
           'landlord_contract_document_download',
           { document_id: documentId }
@@ -2320,12 +2618,6 @@
         const objectUrl = URL.createObjectURL(blob);
 
         if (printOnly) {
-          const printWindow = window.open('', '_blank');
-
-          if (!printWindow) {
-            throw new Error('請允許快顯視窗後再試一次');
-          }
-
           if (rawText(documentData.mime_type).startsWith('image/')) {
             printWindow.document.write(
               '<img src="' +
@@ -2358,6 +2650,10 @@
           URL.revokeObjectURL(objectUrl);
         }, 12000);
       } catch (error) {
+        if (printWindow && !printWindow.closed) {
+          printWindow.close();
+        }
+
         showToast(
           rawText(error && error.message ? error.message : '下載失敗'),
           true
@@ -3070,6 +3366,8 @@
           </div>
         </section>
       `;
+
+      bindTenantDocumentDropZones();
     }
 
     function renderError(message) {
