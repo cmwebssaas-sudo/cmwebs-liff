@@ -307,6 +307,158 @@
       line-height: 1.45;
     }
 
+    .document-action-modal {
+      position: fixed;
+      z-index: 200;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, 0.58);
+    }
+
+    .document-action-dialog {
+      display: flex;
+      width: min(100%, 540px);
+      max-height: min(90vh, 760px);
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: 0 18px 60px rgba(15, 23, 42, 0.28);
+    }
+
+    .document-action-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 15px 11px;
+    }
+
+    .document-action-title {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .document-action-note {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .document-action-close {
+      min-width: 38px;
+      min-height: 36px;
+      padding: 6px 9px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .document-action-preview {
+      min-height: 180px;
+      flex: 1;
+      margin: 0 15px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f5f7fb;
+    }
+
+    .document-action-preview iframe,
+    .document-action-preview img {
+      display: block;
+      width: 100%;
+      min-height: 48vh;
+      border: 0;
+      object-fit: contain;
+      background: #ffffff;
+    }
+
+    .document-action-preview img {
+      height: auto;
+      max-height: 58vh;
+    }
+
+    .document-action-footer {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 13px 15px 15px;
+    }
+
+    .document-action-button {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      border: 1px solid rgba(6, 199, 85, 0.35);
+      border-radius: 10px;
+      background: #ffffff;
+      color: #0f8b3d;
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .document-action-button.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    @media print {
+      body.is-printing-document > .app-shell {
+        display: none !important;
+      }
+
+      body.is-printing-document .document-action-modal {
+        position: static;
+        display: block;
+        padding: 0;
+        background: #ffffff;
+      }
+
+      body.is-printing-document .document-action-dialog {
+        width: 100%;
+        max-height: none;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      body.is-printing-document .document-action-head {
+        padding: 0 0 10px;
+      }
+
+      body.is-printing-document .document-action-close,
+      body.is-printing-document .document-action-footer {
+        display: none;
+      }
+
+      body.is-printing-document .document-action-preview {
+        min-height: 0;
+        margin: 0;
+        border: 0;
+      }
+
+      body.is-printing-document .document-action-preview img {
+        min-height: 0;
+        max-height: none;
+      }
+    }
+
     .bottom-nav {
       position: absolute;
       left: 0;
@@ -417,6 +569,7 @@
     let LINE_USER_ID = '';
     let inited = false;
     let toastTimer = null;
+    let CURRENT_DOCUMENT_OBJECT_URL = '';
 
     function setAppHeight() {
       const height =
@@ -633,29 +786,115 @@
       });
     }
 
-    function openTenantDocumentPrintWindow() {
-      const printWindow = window.open('', '_blank');
+    function closeDocumentActionModal() {
+      const modal = document.getElementById('documentActionModal');
 
-      if (!printWindow) {
-        throw new Error('請先允許快顯視窗後再試一次');
+      if (modal) {
+        modal.remove();
       }
 
-      printWindow.document.write(
-        '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>文件列印</title></head><body style="margin:0;padding:24px;font-family:Arial,sans-serif;">文件載入中…</body></html>'
+      if (CURRENT_DOCUMENT_OBJECT_URL) {
+        URL.revokeObjectURL(CURRENT_DOCUMENT_OBJECT_URL);
+        CURRENT_DOCUMENT_OBJECT_URL = '';
+      }
+
+      document.body.classList.remove('is-printing-document');
+    }
+
+    function printDocumentPreview() {
+      const frame = document.getElementById('documentPreviewFrame');
+      const image = document.getElementById('documentPreviewImage');
+
+      if (image) {
+        document.body.classList.add('is-printing-document');
+        window.print();
+        setTimeout(function () {
+          document.body.classList.remove('is-printing-document');
+        }, 500);
+        return;
+      }
+
+      try {
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+          return;
+        }
+      } catch (error) {
+        // Some embedded PDF viewers do not expose contentWindow.print().
+      }
+
+      document.body.classList.add('is-printing-document');
+      window.print();
+      setTimeout(function () {
+        document.body.classList.remove('is-printing-document');
+      }, 500);
+    }
+
+    function openDocumentActionModal(documentData, objectUrl) {
+      closeDocumentActionModal();
+      CURRENT_DOCUMENT_OBJECT_URL = objectUrl;
+
+      const fileName = safeText(documentData.file_name || '文件');
+      const mimeType = safeText(
+        documentData.mime_type || 'application/octet-stream'
       );
-      printWindow.document.close();
-      return printWindow;
+      const isImage = mimeType.startsWith('image/');
+      const modal = document.createElement('div');
+      modal.id = 'documentActionModal';
+      modal.className = 'document-action-modal';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-label', '文件預覽與操作');
+      modal.innerHTML =
+        '<div class="document-action-dialog">' +
+        '  <div class="document-action-head">' +
+        '    <div>' +
+        '      <div class="document-action-title">文件預覽</div>' +
+        '      <div class="document-action-note">' +
+        safeHtml(fileName) +
+        ' · 請直接按下方按鈕，不需要允許快顯視窗</div>' +
+        '    </div>' +
+        '    <button class="document-action-close" type="button" data-document-close>關閉</button>' +
+        '  </div>' +
+        '  <div class="document-action-preview">' +
+        (isImage
+          ? '<img id="documentPreviewImage" src="' +
+            safeHtml(objectUrl) +
+            '" alt="' +
+            safeHtml(fileName) +
+            '" />'
+          : '<iframe id="documentPreviewFrame" src="' +
+            safeHtml(objectUrl) +
+            '" title="' +
+            safeHtml(fileName) +
+            '"></iframe>') +
+        '  </div>' +
+        '  <div class="document-action-footer">' +
+        '    <a id="documentPreviewDownload" class="document-action-button primary" href="' +
+        safeHtml(objectUrl) +
+        '" download="' +
+        safeHtml(fileName) +
+        '">下載檔案</a>' +
+        '    <button class="document-action-button" type="button" data-document-print>列印</button>' +
+        '    <button class="document-action-button" type="button" data-document-close>關閉</button>' +
+        '  </div>' +
+        '</div>';
+
+      document.body.appendChild(modal);
+
+      modal.querySelectorAll('[data-document-close]').forEach(
+        function (button) {
+          button.addEventListener('click', closeDocumentActionModal);
+        }
+      );
+      modal
+        .querySelector('[data-document-print]')
+        .addEventListener('click', printDocumentPreview);
     }
 
     function doDownload(documentId, printOnly) {
-      let printWindow = null;
-
-      try {
-        printWindow = printOnly ? openTenantDocumentPrintWindow() : null;
-      } catch (error) {
-        showToast(error.message, true);
-        return Promise.resolve();
-      }
+      closeDocumentActionModal();
 
       return jsonpRequest('landlord_contract_document_download', {
         document_id: documentId
@@ -683,41 +922,15 @@
           );
           const objectUrl = URL.createObjectURL(blob);
 
-          if (printOnly) {
-            const isImage = String(
-              safeText(documentData.mime_type || '')
-            ).startsWith('image/');
-            if (isImage) {
-              printWindow.document.write(
-                `<img src="${objectUrl}" style="max-width:100%;max-height:100%;display:block;margin:12px auto;" />`
-              );
-            } else {
-              printWindow.document.write(
-                `<iframe src="${objectUrl}" style="width:100%;height:98vh;border:none;"></iframe>`
-              );
-            }
-            printWindow.document.close();
-            setTimeout(function () {
-              printWindow.focus();
-              printWindow.print();
-            }, 350);
-          } else {
-            const anchor = document.createElement('a');
-            anchor.href = objectUrl;
-            anchor.download = safeText(documentData.file_name || 'document');
-            document.body.appendChild(anchor);
-            anchor.click();
-            document.body.removeChild(anchor);
-          }
-
-          setTimeout(function () {
-            URL.revokeObjectURL(objectUrl);
-          }, 12000);
+          openDocumentActionModal(documentData, objectUrl);
+          showToast(
+            printOnly
+              ? '文件已載入，請按下方列印'
+              : '文件已載入，請按下方下載檔案'
+          );
         })
         .catch(function (error) {
-          if (printWindow && !printWindow.closed) {
-            printWindow.close();
-          }
+          closeDocumentActionModal();
           showToast(error.message, true);
         });
     }

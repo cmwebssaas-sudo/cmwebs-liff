@@ -47,28 +47,25 @@ assert.match(tenantDetailPage, /tenant-document-drop-zone/);
 assert.match(tenantDetailPage, /bindTenantDocumentDropZones/);
 assert.match(tenantDetailPage, /data-tenant-document-drop-input/);
 assert.match(tenantDetailPage, /dataTransfer\.files/);
-assert.match(tenantDetailPage, /openTenantDocumentPrintWindow/);
-const printWindowOpenIndex = tenantDetailPage.indexOf(
-  'printOnly ? openTenantDocumentPrintWindow() : null'
+assert.match(tenantDetailPage, /tenant-document-action-modal/);
+assert.match(tenantDetailPage, /openTenantDocumentActionModal/);
+assert.match(tenantDetailPage, /tenantDocumentPreviewFrame/);
+assert.match(tenantDetailPage, /tenantDocumentPreviewDownload/);
+assert.match(tenantDetailPage, /printTenantDocumentPreview/);
+assert.doesNotMatch(tenantDetailPage, /openTenantDocumentPrintWindow/);
+assert.doesNotMatch(
+  tenantDetailPage,
+  /window\.open\(\s*['"]['"]\s*,\s*['"]_blank['"]/
 );
-const printRequestIndex = tenantDetailPage.indexOf(
-  "'landlord_contract_document_download'"
-);
-assert.ok(
-  printWindowOpenIndex >= 0 && printWindowOpenIndex < printRequestIndex,
-  '列印視窗必須在文件下載 API 請求前建立'
-);
-assert.match(overviewPage, /openTenantDocumentPrintWindow/);
-const overviewPrintWindowOpenIndex = overviewPage.indexOf(
-  'printOnly ? openTenantDocumentPrintWindow() : null'
-);
-const overviewPrintRequestIndex = overviewPage.indexOf(
-  "'landlord_contract_document_download'"
-);
-assert.ok(
-  overviewPrintWindowOpenIndex >= 0 &&
-    overviewPrintWindowOpenIndex < overviewPrintRequestIndex,
-  '文件總覽列印視窗必須在文件下載 API 請求前建立'
+assert.match(overviewPage, /document-action-modal/);
+assert.match(overviewPage, /openDocumentActionModal/);
+assert.match(overviewPage, /documentPreviewFrame/);
+assert.match(overviewPage, /documentPreviewDownload/);
+assert.match(overviewPage, /printDocumentPreview/);
+assert.doesNotMatch(overviewPage, /openTenantDocumentPrintWindow/);
+assert.doesNotMatch(
+  overviewPage,
+  /window\.open\(\s*['"]['"]\s*,\s*['"]_blank['"]/
 );
 assert.doesNotMatch(tenantDetailPage, /tenant-document-actions/);
 assert.doesNotMatch(tenantDetailPage, /tenantInput/);
