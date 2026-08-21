@@ -18,6 +18,14 @@ assert.match(tenantDetailPage, /文件與身份驗證/);
 assert.match(tenantDetailPage, /landlord_contract_documents_init/);
 assert.match(tenantDetailPage, /tenant_id:\s*TENANT_ID/);
 assert.match(tenantDetailPage, /landlord_contract_document_upload/);
+assert.match(
+  tenantDetailPage,
+  /['"]Content-Type['"]\s*:\s*['"]text\/plain(?:;charset=UTF-8)?['"]/
+);
+assert.doesNotMatch(
+  tenantDetailPage,
+  /['"]Content-Type['"]\s*:\s*['"]application\/json['"]/
+);
 assert.match(tenantDetailPage, /tenantDocumentContractSelect/);
 assert.match(tenantDetailPage, /tenantDocumentLegacyFile/);
 assert.match(tenantDetailPage, /tenantDocumentIdFrontFile/);

@@ -1451,7 +1451,10 @@
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          // Apps Script Web Apps do not answer the CORS preflight triggered by
+          // application/json. text/plain keeps this cross-origin upload a
+          // simple request while the body remains JSON for doPost parsing.
+          'Content-Type': 'text/plain;charset=UTF-8'
         },
         body: JSON.stringify(payload)
       });
