@@ -503,12 +503,61 @@
       background: #fbfcfd;
     }
 
+    .tenant-document-upload-item.is-complete {
+      border-color: rgba(6, 199, 85, 0.34);
+      background: var(--primary-soft);
+    }
+
+    .tenant-document-upload-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+
     .tenant-document-upload-label {
       display: block;
-      margin-bottom: 7px;
       color: var(--text-main);
       font-size: 12px;
       font-weight: 900;
+    }
+
+    .tenant-document-upload-state {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 4px;
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .tenant-document-upload-state[hidden],
+    .tenant-document-upload-status[hidden] {
+      display: none;
+    }
+
+    .tenant-document-upload-state-icon {
+      display: inline-flex;
+      width: 19px;
+      height: 19px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .tenant-document-upload-state-icon svg {
+      width: 13px;
+      height: 13px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .tenant-document-upload-row {
@@ -529,6 +578,22 @@
       font-size: 11px;
     }
 
+    .tenant-document-upload-item.is-complete .tenant-document-file {
+      border-color: rgba(6, 199, 85, 0.22);
+      background: rgba(255, 255, 255, 0.68);
+      opacity: 0.72;
+    }
+
+    .tenant-document-upload-status {
+      margin-top: 7px;
+      overflow: hidden;
+      color: var(--primary-dark);
+      font-size: 10px;
+      line-height: 1.45;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .tenant-document-upload-button {
       min-height: 42px;
       padding: 9px 12px;
@@ -546,6 +611,13 @@
       background: #9de6af;
       cursor: not-allowed;
       opacity: 0.75;
+    }
+
+    .tenant-document-upload-button.is-complete {
+      border: 1px solid rgba(6, 199, 85, 0.35);
+      background: #ffffff;
+      color: var(--primary-dark);
+      opacity: 1;
     }
 
     .tenant-document-list {
@@ -1493,6 +1565,146 @@
       });
     }
 
+    function tenantDocumentTypeIcon(type) {
+      const icons = {
+        legacy_contract:
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8l4 4v13H6z"></path><path d="M14 3.5v4h4M9 12h6M9 16h6"></path></svg>',
+        identity_front:
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"></rect><circle cx="8.5" cy="11" r="2"></circle><path d="M6 16c.7-1.5 1.6-2.2 2.5-2.2S10.3 14.5 11 16M13.5 10h4M13.5 13h4"></path></svg>',
+        identity_back:
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"></rect><path d="M7 9h10M7 12h10M7 15h6"></path></svg>',
+        selfie:
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"></circle><path d="M5 20c.9-3.5 3.2-5.3 7-5.3s6.1 1.8 7 5.3"></path></svg>'
+      };
+
+      return icons[type] || icons.legacy_contract;
+    }
+
+    function tenantDocumentUploadItemForType(type) {
+      const items = document.querySelectorAll(
+        '[data-tenant-document-upload-type]'
+      );
+
+      for (let index = 0; index < items.length; index += 1) {
+        if (
+          items[index].getAttribute('data-tenant-document-upload-type') ===
+          type
+        ) {
+          return items[index];
+        }
+      }
+
+      return null;
+    }
+
+    function resetTenantDocumentUploadStates() {
+      document
+        .querySelectorAll('[data-tenant-document-upload-type]')
+        .forEach(function (item) {
+          const type = item.getAttribute(
+            'data-tenant-document-upload-type'
+          );
+          const input = item.querySelector('.tenant-document-file');
+          const button = item.querySelector(
+            '.tenant-document-upload-button'
+          );
+          const state = item.querySelector(
+            '.tenant-document-upload-state'
+          );
+          const status = item.querySelector(
+            '.tenant-document-upload-status'
+          );
+
+          item.classList.remove('is-complete');
+
+          if (input) {
+            input.disabled = false;
+            input.title = '';
+          }
+
+          if (button) {
+            button.disabled = false;
+            button.classList.remove('is-complete');
+            button.textContent = tenantDocumentUploadButtonLabel(type);
+          }
+
+          if (state) {
+            state.hidden = true;
+          }
+
+          if (status) {
+            status.hidden = true;
+            status.textContent = '';
+          }
+        });
+    }
+
+    function markTenantDocumentTypeUploaded(type, documentData) {
+      const item = tenantDocumentUploadItemForType(type);
+
+      if (!item) {
+        return;
+      }
+
+      const input = item.querySelector('.tenant-document-file');
+      const button = item.querySelector('.tenant-document-upload-button');
+      const state = item.querySelector('.tenant-document-upload-state');
+      const status = item.querySelector('.tenant-document-upload-status');
+      const fileName = rawText(
+        documentData && documentData.file_name
+          ? documentData.file_name
+          : ''
+      );
+
+      item.classList.add('is-complete');
+
+      if (input) {
+        input.disabled = true;
+        input.title = '此項目已上傳，無需重複上傳';
+      }
+
+      if (button) {
+        button.disabled = true;
+        button.classList.add('is-complete');
+        button.textContent = '已上傳';
+      }
+
+      if (state) {
+        state.hidden = false;
+      }
+
+      if (status) {
+        status.hidden = false;
+        status.textContent = fileName
+          ? '已歸檔：' + fileName
+          : '已歸檔，無需重複上傳';
+      }
+    }
+
+    function updateTenantDocumentUploadStates(documents) {
+      resetTenantDocumentUploadStates();
+
+      const latestByType = {};
+      (Array.isArray(documents) ? documents : []).forEach(function (
+        documentData
+      ) {
+        const type = rawText(documentData && documentData.document_type);
+
+        if (type && !latestByType[type]) {
+          latestByType[type] = documentData;
+        }
+      });
+
+      Object.keys(latestByType).forEach(function (type) {
+        markTenantDocumentTypeUploaded(type, latestByType[type]);
+      });
+    }
+
+    function isTenantDocumentTypeUploaded(type) {
+      const item = tenantDocumentUploadItemForType(type);
+      return Boolean(item && item.classList.contains('is-complete'));
+    }
+
     function tenantDocumentPanelHtml() {
       const tenantName = CURRENT_TENANT
         ? rawText(CURRENT_TENANT.tenant_name || '房客')
@@ -1520,10 +1732,26 @@
           </div>
 
           <div class="tenant-document-upload-grid">
-            <div class="tenant-document-upload-item">
-              <label class="tenant-document-upload-label" for="tenantDocumentLegacyFile">
-                舊合約
-              </label>
+            <div
+              class="tenant-document-upload-item"
+              data-tenant-document-upload-type="legacy_contract"
+            >
+              <div class="tenant-document-upload-label-row">
+                <label class="tenant-document-upload-label" for="tenantDocumentLegacyFile">
+                  舊合約
+                </label>
+                <span
+                  id="tenantDocumentLegacyUploadState"
+                  class="tenant-document-upload-state"
+                  aria-live="polite"
+                  hidden
+                >
+                  <span class="tenant-document-upload-state-icon" aria-hidden="true">
+                    ${tenantDocumentTypeIcon('legacy_contract')}
+                  </span>
+                  <span>已上傳</span>
+                </span>
+              </div>
               <div class="tenant-document-upload-row">
                 <input
                   id="tenantDocumentLegacyFile"
@@ -1540,12 +1768,33 @@
                   上傳舊合約
                 </button>
               </div>
+              <div
+                id="tenantDocumentLegacyUploadStatus"
+                class="tenant-document-upload-status"
+                hidden
+              ></div>
             </div>
 
-            <div class="tenant-document-upload-item">
-              <label class="tenant-document-upload-label" for="tenantDocumentIdFrontFile">
-                身分證正面
-              </label>
+            <div
+              class="tenant-document-upload-item"
+              data-tenant-document-upload-type="identity_front"
+            >
+              <div class="tenant-document-upload-label-row">
+                <label class="tenant-document-upload-label" for="tenantDocumentIdFrontFile">
+                  身分證正面
+                </label>
+                <span
+                  id="tenantDocumentIdFrontUploadState"
+                  class="tenant-document-upload-state"
+                  aria-live="polite"
+                  hidden
+                >
+                  <span class="tenant-document-upload-state-icon" aria-hidden="true">
+                    ${tenantDocumentTypeIcon('identity_front')}
+                  </span>
+                  <span>已上傳</span>
+                </span>
+              </div>
               <div class="tenant-document-upload-row">
                 <input
                   id="tenantDocumentIdFrontFile"
@@ -1562,12 +1811,33 @@
                   上傳正面
                 </button>
               </div>
+              <div
+                id="tenantDocumentIdFrontUploadStatus"
+                class="tenant-document-upload-status"
+                hidden
+              ></div>
             </div>
 
-            <div class="tenant-document-upload-item">
-              <label class="tenant-document-upload-label" for="tenantDocumentIdBackFile">
-                身分證反面
-              </label>
+            <div
+              class="tenant-document-upload-item"
+              data-tenant-document-upload-type="identity_back"
+            >
+              <div class="tenant-document-upload-label-row">
+                <label class="tenant-document-upload-label" for="tenantDocumentIdBackFile">
+                  身分證反面
+                </label>
+                <span
+                  id="tenantDocumentIdBackUploadState"
+                  class="tenant-document-upload-state"
+                  aria-live="polite"
+                  hidden
+                >
+                  <span class="tenant-document-upload-state-icon" aria-hidden="true">
+                    ${tenantDocumentTypeIcon('identity_back')}
+                  </span>
+                  <span>已上傳</span>
+                </span>
+              </div>
               <div class="tenant-document-upload-row">
                 <input
                   id="tenantDocumentIdBackFile"
@@ -1584,12 +1854,33 @@
                   上傳反面
                 </button>
               </div>
+              <div
+                id="tenantDocumentIdBackUploadStatus"
+                class="tenant-document-upload-status"
+                hidden
+              ></div>
             </div>
 
-            <div class="tenant-document-upload-item">
-              <label class="tenant-document-upload-label" for="tenantDocumentSelfieFile">
-                自拍照
-              </label>
+            <div
+              class="tenant-document-upload-item"
+              data-tenant-document-upload-type="selfie"
+            >
+              <div class="tenant-document-upload-label-row">
+                <label class="tenant-document-upload-label" for="tenantDocumentSelfieFile">
+                  自拍照
+                </label>
+                <span
+                  id="tenantDocumentSelfieUploadState"
+                  class="tenant-document-upload-state"
+                  aria-live="polite"
+                  hidden
+                >
+                  <span class="tenant-document-upload-state-icon" aria-hidden="true">
+                    ${tenantDocumentTypeIcon('selfie')}
+                  </span>
+                  <span>已上傳</span>
+                </span>
+              </div>
               <div class="tenant-document-upload-row">
                 <input
                   id="tenantDocumentSelfieFile"
@@ -1606,6 +1897,11 @@
                   上傳自拍照
                 </button>
               </div>
+              <div
+                id="tenantDocumentSelfieUploadStatus"
+                class="tenant-document-upload-status"
+                hidden
+              ></div>
             </div>
           </div>
 
@@ -1657,6 +1953,7 @@
       const rows = Array.isArray(documents) ? documents : [];
 
       CURRENT_TENANT_DOCUMENTS = rows;
+      updateTenantDocumentUploadStates(rows);
 
       if (count) {
         count.textContent = rows.length + ' 份文件';
@@ -1808,6 +2105,11 @@
     async function uploadTenantDocument(type, inputId) {
       if (!CURRENT_TENANT || !TENANT_ID) {
         showToast('找不到房客資料', true);
+        return;
+      }
+
+      if (isTenantDocumentTypeUploaded(type)) {
+        showToast('此項目已上傳，無需重複上傳', true);
         return;
       }
 

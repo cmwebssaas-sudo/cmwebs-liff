@@ -33,6 +33,13 @@ assert.match(tenantDetailPage, /tenantDocumentIdBackFile/);
 assert.match(tenantDetailPage, /tenantDocumentSelfieFile/);
 assert.match(tenantDetailPage, /下載/);
 assert.match(tenantDetailPage, /列印/);
+assert.match(tenantDetailPage, /tenant-document-upload-state/);
+assert.match(tenantDetailPage, /tenant-document-upload-state\[hidden\]/);
+assert.match(tenantDetailPage, /is-complete/);
+assert.match(tenantDetailPage, /tenantDocumentTypeIcon/);
+assert.match(tenantDetailPage, /已上傳，無需重複上傳/);
+assert.match(tenantDetailPage, /markTenantDocumentTypeUploaded/);
+assert.match(tenantDetailPage, /isTenantDocumentTypeUploaded/);
 assert.doesNotMatch(tenantDetailPage, /tenantInput/);
 
 assert.match(overviewPage, /文件總覽/);
