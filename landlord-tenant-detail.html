@@ -567,6 +567,13 @@
       align-items: center;
     }
 
+    .tenant-document-upload-button-stack {
+      display: flex;
+      min-width: 104px;
+      flex-direction: column;
+      gap: 6px;
+    }
+
     .tenant-document-file {
       width: 100%;
       min-width: 0;
@@ -620,6 +627,28 @@
       opacity: 1;
     }
 
+    .tenant-document-upload-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .tenant-document-upload-actions[hidden] {
+      display: none;
+    }
+
+    .tenant-document-upload-action {
+      min-height: 30px;
+      padding: 5px 4px;
+      border: 1px solid rgba(6, 199, 85, 0.35);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
     .tenant-document-list {
       display: grid;
       gap: 9px;
@@ -654,29 +683,6 @@
       color: var(--text-muted);
       font-size: 10px;
       line-height: 1.5;
-    }
-
-    .tenant-document-actions {
-      display: flex;
-      flex: 0 0 auto;
-      gap: 7px;
-    }
-
-    .tenant-document-action {
-      min-height: 30px;
-      padding: 5px 9px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #ffffff;
-      color: var(--text-main);
-      font-size: 10px;
-      font-weight: 900;
-      cursor: pointer;
-    }
-
-    .tenant-document-action.primary {
-      border-color: rgba(6, 199, 85, 0.35);
-      color: var(--primary-dark);
     }
 
     .tenant-document-overview-link {
@@ -1597,6 +1603,42 @@
       return null;
     }
 
+    function bindTenantDocumentUploadActions(item, documentId) {
+      if (!item) {
+        return;
+      }
+
+      const actions = item.querySelector(
+        '.tenant-document-upload-actions'
+      );
+      const buttons = item.querySelectorAll(
+        '[data-tenant-document-upload-action]'
+      );
+      const safeDocumentId = rawText(documentId).trim();
+
+      if (actions) {
+        actions.hidden = !safeDocumentId;
+      }
+
+      buttons.forEach(function (button) {
+        button.disabled = !safeDocumentId;
+
+        if (safeDocumentId) {
+          button.setAttribute('data-document-id', safeDocumentId);
+          button.onclick = function () {
+            downloadTenantDocument(
+              safeDocumentId,
+              button.getAttribute('data-tenant-document-upload-action') ===
+                'print'
+            );
+          };
+        } else {
+          button.removeAttribute('data-document-id');
+          button.onclick = null;
+        }
+      });
+    }
+
     function resetTenantDocumentUploadStates() {
       document
         .querySelectorAll('[data-tenant-document-upload-type]')
@@ -1636,6 +1678,8 @@
             status.hidden = true;
             status.textContent = '';
           }
+
+          bindTenantDocumentUploadActions(item, '');
         });
     }
 
@@ -1679,6 +1723,11 @@
           ? '已歸檔：' + fileName
           : '已歸檔，無需重複上傳';
       }
+
+      bindTenantDocumentUploadActions(
+        item,
+        documentData && documentData.document_id
+      );
     }
 
     function updateTenantDocumentUploadStates(documents) {
@@ -1759,14 +1808,36 @@
                   type="file"
                   accept="image/png,image/jpeg,application/pdf"
                 />
-                <button
-                  id="tenantDocumentLegacyUploadBtn"
-                  class="tenant-document-upload-button"
-                  type="button"
-                  onclick="uploadTenantDocument('legacy_contract', 'tenantDocumentLegacyFile')"
-                >
-                  上傳舊合約
-                </button>
+                <div class="tenant-document-upload-button-stack">
+                  <button
+                    id="tenantDocumentLegacyUploadBtn"
+                    class="tenant-document-upload-button"
+                    type="button"
+                    onclick="uploadTenantDocument('legacy_contract', 'tenantDocumentLegacyFile')"
+                  >
+                    上傳舊合約
+                  </button>
+                  <div
+                    class="tenant-document-upload-actions"
+                    data-tenant-document-upload-actions="legacy_contract"
+                    hidden
+                  >
+                    <button
+                      class="tenant-document-upload-action"
+                      type="button"
+                      data-tenant-document-upload-action="download"
+                    >
+                      下載
+                    </button>
+                    <button
+                      class="tenant-document-upload-action"
+                      type="button"
+                      data-tenant-document-upload-action="print"
+                    >
+                      列印
+                    </button>
+                  </div>
+                </div>
               </div>
               <div
                 id="tenantDocumentLegacyUploadStatus"
@@ -1802,14 +1873,36 @@
                   type="file"
                   accept="image/png,image/jpeg"
                 />
-                <button
-                  id="tenantDocumentIdFrontUploadBtn"
-                  class="tenant-document-upload-button"
-                  type="button"
-                  onclick="uploadTenantDocument('identity_front', 'tenantDocumentIdFrontFile')"
-                >
-                  上傳正面
-                </button>
+                <div class="tenant-document-upload-button-stack">
+                  <button
+                    id="tenantDocumentIdFrontUploadBtn"
+                    class="tenant-document-upload-button"
+                    type="button"
+                    onclick="uploadTenantDocument('identity_front', 'tenantDocumentIdFrontFile')"
+                  >
+                    上傳正面
+                  </button>
+                  <div
+                    class="tenant-document-upload-actions"
+                    data-tenant-document-upload-actions="identity_front"
+                    hidden
+                  >
+                    <button
+                      class="tenant-document-upload-action"
+                      type="button"
+                      data-tenant-document-upload-action="download"
+                    >
+                      下載
+                    </button>
+                    <button
+                      class="tenant-document-upload-action"
+                      type="button"
+                      data-tenant-document-upload-action="print"
+                    >
+                      列印
+                    </button>
+                  </div>
+                </div>
               </div>
               <div
                 id="tenantDocumentIdFrontUploadStatus"
@@ -1845,14 +1938,36 @@
                   type="file"
                   accept="image/png,image/jpeg"
                 />
-                <button
-                  id="tenantDocumentIdBackUploadBtn"
-                  class="tenant-document-upload-button"
-                  type="button"
-                  onclick="uploadTenantDocument('identity_back', 'tenantDocumentIdBackFile')"
-                >
-                  上傳反面
-                </button>
+                <div class="tenant-document-upload-button-stack">
+                  <button
+                    id="tenantDocumentIdBackUploadBtn"
+                    class="tenant-document-upload-button"
+                    type="button"
+                    onclick="uploadTenantDocument('identity_back', 'tenantDocumentIdBackFile')"
+                  >
+                    上傳反面
+                  </button>
+                  <div
+                    class="tenant-document-upload-actions"
+                    data-tenant-document-upload-actions="identity_back"
+                    hidden
+                  >
+                    <button
+                      class="tenant-document-upload-action"
+                      type="button"
+                      data-tenant-document-upload-action="download"
+                    >
+                      下載
+                    </button>
+                    <button
+                      class="tenant-document-upload-action"
+                      type="button"
+                      data-tenant-document-upload-action="print"
+                    >
+                      列印
+                    </button>
+                  </div>
+                </div>
               </div>
               <div
                 id="tenantDocumentIdBackUploadStatus"
@@ -1888,14 +2003,36 @@
                   type="file"
                   accept="image/png,image/jpeg"
                 />
-                <button
-                  id="tenantDocumentSelfieUploadBtn"
-                  class="tenant-document-upload-button"
-                  type="button"
-                  onclick="uploadTenantDocument('selfie', 'tenantDocumentSelfieFile')"
-                >
-                  上傳自拍照
-                </button>
+                <div class="tenant-document-upload-button-stack">
+                  <button
+                    id="tenantDocumentSelfieUploadBtn"
+                    class="tenant-document-upload-button"
+                    type="button"
+                    onclick="uploadTenantDocument('selfie', 'tenantDocumentSelfieFile')"
+                  >
+                    上傳自拍照
+                  </button>
+                  <div
+                    class="tenant-document-upload-actions"
+                    data-tenant-document-upload-actions="selfie"
+                    hidden
+                  >
+                    <button
+                      class="tenant-document-upload-action"
+                      type="button"
+                      data-tenant-document-upload-action="download"
+                    >
+                      下載
+                    </button>
+                    <button
+                      class="tenant-document-upload-action"
+                      type="button"
+                      data-tenant-document-upload-action="print"
+                    >
+                      列印
+                    </button>
+                  </div>
+                </div>
               </div>
               <div
                 id="tenantDocumentSelfieUploadStatus"
@@ -1976,7 +2113,6 @@
       list.hidden = false;
       list.innerHTML = rows
         .map(function (documentData) {
-          const documentId = rawText(documentData.document_id);
           const fileName = rawText(documentData.file_name || '未命名檔案');
 
           return `
@@ -1995,51 +2131,11 @@
                     租約：${safeHtml(documentData.contract_id || '未綁定特定租約')}
                   </div>
                 </div>
-                <div class="tenant-document-actions">
-                  <button
-                    class="tenant-document-action primary"
-                    type="button"
-                    data-tenant-document-action="download"
-                    data-document-id="${safeHtml(documentId)}"
-                  >
-                    下載
-                  </button>
-                  <button
-                    class="tenant-document-action"
-                    type="button"
-                    data-tenant-document-action="print"
-                    data-document-id="${safeHtml(documentId)}"
-                  >
-                    列印
-                  </button>
-                </div>
               </div>
             </div>
           `;
         })
         .join('');
-
-      list
-        .querySelectorAll('[data-tenant-document-action="download"]')
-        .forEach(function (button) {
-          button.addEventListener('click', function () {
-            downloadTenantDocument(
-              button.getAttribute('data-document-id'),
-              false
-            );
-          });
-        });
-
-      list
-        .querySelectorAll('[data-tenant-document-action="print"]')
-        .forEach(function (button) {
-          button.addEventListener('click', function () {
-            downloadTenantDocument(
-              button.getAttribute('data-document-id'),
-              true
-            );
-          });
-        });
     }
 
     async function loadTenantDocuments() {
