@@ -463,6 +463,159 @@
       text-align: center;
     }
 
+    .tenant-document-context {
+      margin-bottom: 12px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: var(--blue-soft);
+      color: #425b8f;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .tenant-document-select {
+      width: 100%;
+      min-height: 44px;
+      margin-bottom: 6px;
+      padding: 0 11px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #ffffff;
+      color: var(--text-main);
+    }
+
+    .tenant-document-hint {
+      margin-bottom: 13px;
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .tenant-document-upload-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .tenant-document-upload-item {
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #fbfcfd;
+    }
+
+    .tenant-document-upload-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .tenant-document-upload-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tenant-document-file {
+      width: 100%;
+      min-width: 0;
+      min-height: 42px;
+      padding: 7px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #ffffff;
+      font-size: 11px;
+    }
+
+    .tenant-document-upload-button {
+      min-height: 42px;
+      padding: 9px 12px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .tenant-document-upload-button:disabled {
+      background: #9de6af;
+      cursor: not-allowed;
+      opacity: 0.75;
+    }
+
+    .tenant-document-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .tenant-document-item {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #ffffff;
+    }
+
+    .tenant-document-item-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .tenant-document-name {
+      min-width: 0;
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tenant-document-meta {
+      margin-top: 4px;
+      color: var(--text-muted);
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .tenant-document-actions {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 7px;
+    }
+
+    .tenant-document-action {
+      min-height: 30px;
+      padding: 5px 9px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .tenant-document-action.primary {
+      border-color: rgba(6, 199, 85, 0.35);
+      color: var(--primary-dark);
+    }
+
+    .tenant-document-overview-link {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 900;
+      text-decoration: none;
+    }
+
     .action-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -923,6 +1076,8 @@
     let LINE_USER_ID = '';
     let CURRENT_TENANT = null;
     let CURRENT_REQUESTS = [];
+    let CURRENT_TENANT_DOCUMENTS = [];
+    let CURRENT_TENANT_CONTRACTS = [];
     let toastTimer = null;
 
     function setAppHeight() {
@@ -1259,8 +1414,554 @@
       throw new Error(
         result && result.message
           ? result.message
-          : '查詢失敗'
+        : '查詢失敗'
       );
+    }
+
+    function formatDocumentBytes(size) {
+      const number = Number(size || 0);
+
+      if (!number) {
+        return '0B';
+      }
+
+      if (number < 1024) {
+        return number + 'B';
+      }
+
+      if (number < 1024 * 1024) {
+        return (number / 1024).toFixed(1) + 'KB';
+      }
+
+      return (number / 1024 / 1024).toFixed(1) + 'MB';
+    }
+
+    function tenantDocumentTypeLabel(type) {
+      const labels = {
+        legacy_contract: '舊合約',
+        identity_front: '身分證正面',
+        identity_back: '身分證反面',
+        selfie: '自拍照'
+      };
+
+      return labels[type] || type || '文件';
+    }
+
+    async function postJsonBody(payload) {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await response.text();
+
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        throw new Error('回應格式錯誤：' + text);
+      }
+    }
+
+    function readFileAsBase64(file) {
+      return new Promise(function (resolve, reject) {
+        const reader = new FileReader();
+
+        reader.onload = function () {
+          const dataUrl = String(reader.result || '');
+          const parts = dataUrl.split(',');
+
+          resolve({
+            base64: parts.length > 1 ? parts[1] : '',
+            mimeType:
+              parts.length > 1
+                ? parts[0].replace('data:', '').split(';')[0]
+                : file.type
+          });
+        };
+
+        reader.onerror = function () {
+          reject(new Error('讀取檔案失敗'));
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function tenantDocumentPanelHtml() {
+      const tenantName = CURRENT_TENANT
+        ? rawText(CURRENT_TENANT.tenant_name || '房客')
+        : '房客';
+
+      return `
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">文件與身份驗證</div>
+            <div id="tenantDocumentCount" class="section-hint">載入中</div>
+          </div>
+
+          <div class="tenant-document-context">
+            這裡的文件會直接歸檔到「${safeHtml(tenantName)}」的房客資料，不需要再輸入 Tenant ID。
+          </div>
+
+          <label class="detail-label" for="tenantDocumentContractSelect">
+            關聯租約（可選）
+          </label>
+          <select id="tenantDocumentContractSelect" class="tenant-document-select">
+            <option value="">載入租約中...</option>
+          </select>
+          <div class="tenant-document-hint">
+            不綁定特定租約時，文件仍會保留在此房客名下；支援 JPG、PNG、PDF，單檔上限 8MB。
+          </div>
+
+          <div class="tenant-document-upload-grid">
+            <div class="tenant-document-upload-item">
+              <label class="tenant-document-upload-label" for="tenantDocumentLegacyFile">
+                舊合約
+              </label>
+              <div class="tenant-document-upload-row">
+                <input
+                  id="tenantDocumentLegacyFile"
+                  class="tenant-document-file"
+                  type="file"
+                  accept="image/png,image/jpeg,application/pdf"
+                />
+                <button
+                  id="tenantDocumentLegacyUploadBtn"
+                  class="tenant-document-upload-button"
+                  type="button"
+                  onclick="uploadTenantDocument('legacy_contract', 'tenantDocumentLegacyFile')"
+                >
+                  上傳舊合約
+                </button>
+              </div>
+            </div>
+
+            <div class="tenant-document-upload-item">
+              <label class="tenant-document-upload-label" for="tenantDocumentIdFrontFile">
+                身分證正面
+              </label>
+              <div class="tenant-document-upload-row">
+                <input
+                  id="tenantDocumentIdFrontFile"
+                  class="tenant-document-file"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                />
+                <button
+                  id="tenantDocumentIdFrontUploadBtn"
+                  class="tenant-document-upload-button"
+                  type="button"
+                  onclick="uploadTenantDocument('identity_front', 'tenantDocumentIdFrontFile')"
+                >
+                  上傳正面
+                </button>
+              </div>
+            </div>
+
+            <div class="tenant-document-upload-item">
+              <label class="tenant-document-upload-label" for="tenantDocumentIdBackFile">
+                身分證反面
+              </label>
+              <div class="tenant-document-upload-row">
+                <input
+                  id="tenantDocumentIdBackFile"
+                  class="tenant-document-file"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                />
+                <button
+                  id="tenantDocumentIdBackUploadBtn"
+                  class="tenant-document-upload-button"
+                  type="button"
+                  onclick="uploadTenantDocument('identity_back', 'tenantDocumentIdBackFile')"
+                >
+                  上傳反面
+                </button>
+              </div>
+            </div>
+
+            <div class="tenant-document-upload-item">
+              <label class="tenant-document-upload-label" for="tenantDocumentSelfieFile">
+                自拍照
+              </label>
+              <div class="tenant-document-upload-row">
+                <input
+                  id="tenantDocumentSelfieFile"
+                  class="tenant-document-file"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                />
+                <button
+                  id="tenantDocumentSelfieUploadBtn"
+                  class="tenant-document-upload-button"
+                  type="button"
+                  onclick="uploadTenantDocument('selfie', 'tenantDocumentSelfieFile')"
+                >
+                  上傳自拍照
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="tenantDocumentsState" class="empty-state">文件載入中…</div>
+          <div id="tenantDocumentsList" class="tenant-document-list" hidden></div>
+          <a
+            class="tenant-document-overview-link"
+            href="landlord-contract-documents.html"
+          >
+            查看全部房客文件總覽 →
+          </a>
+        </section>
+      `;
+    }
+
+    function renderTenantDocumentContracts(contracts) {
+      const select = document.getElementById(
+        'tenantDocumentContractSelect'
+      );
+
+      if (!select) {
+        return;
+      }
+
+      const rows = Array.isArray(contracts) ? contracts : [];
+      CURRENT_TENANT_CONTRACTS = rows;
+      select.innerHTML =
+        '<option value="">不綁定特定租約（仍歸此房客）</option>';
+
+      rows.forEach(function (contract) {
+        const option = document.createElement('option');
+        option.value = rawText(contract.contract_id);
+        option.textContent =
+          '租約 ' +
+          rawText(contract.contract_id || '-') +
+          '（' +
+          rawText(contract.contract_start || '-') +
+          ' ～ ' +
+          rawText(contract.contract_end || '-') +
+          '）';
+        select.appendChild(option);
+      });
+    }
+
+    function renderTenantDocumentList(documents) {
+      const state = document.getElementById('tenantDocumentsState');
+      const list = document.getElementById('tenantDocumentsList');
+      const count = document.getElementById('tenantDocumentCount');
+      const rows = Array.isArray(documents) ? documents : [];
+
+      CURRENT_TENANT_DOCUMENTS = rows;
+
+      if (count) {
+        count.textContent = rows.length + ' 份文件';
+      }
+
+      if (!state || !list) {
+        return;
+      }
+
+      if (rows.length === 0) {
+        state.hidden = false;
+        state.className = 'empty-state';
+        state.textContent = '此房客目前尚無文件紀錄。';
+        list.hidden = true;
+        list.innerHTML = '';
+        return;
+      }
+
+      state.hidden = true;
+      list.hidden = false;
+      list.innerHTML = rows
+        .map(function (documentData) {
+          const documentId = rawText(documentData.document_id);
+          const fileName = rawText(documentData.file_name || '未命名檔案');
+
+          return `
+            <div class="tenant-document-item">
+              <div class="tenant-document-item-head">
+                <div style="min-width:0;">
+                  <div class="tenant-document-name" title="${safeHtml(fileName)}">
+                    ${safeHtml(fileName)}
+                  </div>
+                  <div class="tenant-document-meta">
+                    ${safeHtml(tenantDocumentTypeLabel(rawText(documentData.document_type)))} ・
+                    ${safeHtml(formatDocumentBytes(documentData.byte_size))} ・
+                    ${safeHtml(formatDate(documentData.created_at))}
+                  </div>
+                  <div class="tenant-document-meta">
+                    租約：${safeHtml(documentData.contract_id || '未綁定特定租約')}
+                  </div>
+                </div>
+                <div class="tenant-document-actions">
+                  <button
+                    class="tenant-document-action primary"
+                    type="button"
+                    data-tenant-document-action="download"
+                    data-document-id="${safeHtml(documentId)}"
+                  >
+                    下載
+                  </button>
+                  <button
+                    class="tenant-document-action"
+                    type="button"
+                    data-tenant-document-action="print"
+                    data-document-id="${safeHtml(documentId)}"
+                  >
+                    列印
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+
+      list
+        .querySelectorAll('[data-tenant-document-action="download"]')
+        .forEach(function (button) {
+          button.addEventListener('click', function () {
+            downloadTenantDocument(
+              button.getAttribute('data-document-id'),
+              false
+            );
+          });
+        });
+
+      list
+        .querySelectorAll('[data-tenant-document-action="print"]')
+        .forEach(function (button) {
+          button.addEventListener('click', function () {
+            downloadTenantDocument(
+              button.getAttribute('data-document-id'),
+              true
+            );
+          });
+        });
+    }
+
+    async function loadTenantDocuments() {
+      if (!TENANT_ID) {
+        return;
+      }
+
+      const result = await jsonpRequest(
+        'landlord_contract_documents_init',
+        {
+          tenant_id: TENANT_ID
+        }
+      );
+      const data = unwrapData(result);
+      const contracts = Array.isArray(data.contracts)
+        ? data.contracts.filter(function (contract) {
+            return rawText(contract.tenant_id).trim() === TENANT_ID;
+          })
+        : [];
+
+      renderTenantDocumentContracts(contracts);
+      renderTenantDocumentList(
+        Array.isArray(data.documents) ? data.documents : []
+      );
+    }
+
+    function renderTenantDocumentError(error) {
+      const state = document.getElementById('tenantDocumentsState');
+
+      if (!state) {
+        return;
+      }
+
+      state.hidden = false;
+      state.className = 'empty-state';
+      state.textContent =
+        '文件載入失敗：' +
+        rawText(error && error.message ? error.message : '請稍後重試');
+    }
+
+    function tenantDocumentUploadButtonId(type) {
+      const map = {
+        legacy_contract: 'tenantDocumentLegacyUploadBtn',
+        identity_front: 'tenantDocumentIdFrontUploadBtn',
+        identity_back: 'tenantDocumentIdBackUploadBtn',
+        selfie: 'tenantDocumentSelfieUploadBtn'
+      };
+
+      return map[type] || '';
+    }
+
+    function tenantDocumentUploadButtonLabel(type) {
+      const labels = {
+        legacy_contract: '上傳舊合約',
+        identity_front: '上傳正面',
+        identity_back: '上傳反面',
+        selfie: '上傳自拍照'
+      };
+
+      return labels[type] || '上傳';
+    }
+
+    async function uploadTenantDocument(type, inputId) {
+      if (!CURRENT_TENANT || !TENANT_ID) {
+        showToast('找不到房客資料', true);
+        return;
+      }
+
+      const input = document.getElementById(inputId);
+      const file = input && input.files ? input.files[0] : null;
+
+      if (!file) {
+        showToast('請先選擇檔案', true);
+        return;
+      }
+
+      if (file.size <= 0 || file.size > 8 * 1024 * 1024) {
+        showToast('檔案大小必須介於 1B 至 8MB', true);
+        return;
+      }
+
+      const contractSelect = document.getElementById(
+        'tenantDocumentContractSelect'
+      );
+      const button = document.getElementById(
+        tenantDocumentUploadButtonId(type)
+      );
+      const contractId = contractSelect
+        ? rawText(contractSelect.value).trim()
+        : '';
+
+      if (button) {
+        button.disabled = true;
+        button.textContent = '上傳中…';
+      }
+
+      try {
+        const filePayload = await readFileAsBase64(file);
+        const result = await postJsonBody({
+          v2_action: 'landlord_contract_document_upload',
+          line_user_id: LINE_USER_ID,
+          tenant_id: TENANT_ID,
+          contract_id: contractId,
+          document_type: type,
+          file_name: file.name,
+          mime_type: filePayload.mimeType || file.type,
+          base64: filePayload.base64,
+          idempotency_key:
+            type +
+            '_' +
+            TENANT_ID +
+            '_' +
+            (contractId || 'noc') +
+            '_' +
+            Date.now() +
+            '_' +
+            Math.random().toString(36).slice(2, 10)
+        });
+
+        if (!result || result.success !== true) {
+          throw new Error(
+            rawText((result || {}).message || '上傳失敗')
+          );
+        }
+
+        input.value = '';
+        showToast('文件已歸檔到此房客資料');
+        await loadTenantDocuments();
+      } catch (error) {
+        showToast(
+          rawText(error && error.message ? error.message : '上傳失敗'),
+          true
+        );
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = tenantDocumentUploadButtonLabel(type);
+        }
+      }
+    }
+
+    async function downloadTenantDocument(documentId, printOnly) {
+      if (!documentId) {
+        showToast('找不到文件編號', true);
+        return;
+      }
+
+      try {
+        const result = await jsonpRequest(
+          'landlord_contract_document_download',
+          { document_id: documentId }
+        );
+        const documentData =
+          result &&
+          result.success === true &&
+          result.data &&
+          result.data.document
+            ? result.data.document
+            : null;
+
+        if (!documentData || !documentData.base64) {
+          throw new Error(
+            rawText((result || {}).message || '下載資料不完整')
+          );
+        }
+
+        const binary = atob(rawText(documentData.base64));
+        const bytes = new Uint8Array(binary.length);
+
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+
+        const blob = new Blob([bytes], {
+          type: rawText(documentData.mime_type || 'application/octet-stream')
+        });
+        const objectUrl = URL.createObjectURL(blob);
+
+        if (printOnly) {
+          const printWindow = window.open('', '_blank');
+
+          if (!printWindow) {
+            throw new Error('請允許快顯視窗後再試一次');
+          }
+
+          if (rawText(documentData.mime_type).startsWith('image/')) {
+            printWindow.document.write(
+              '<img src="' +
+                objectUrl +
+                '" style="max-width:100%;max-height:100%;display:block;margin:12px auto;" />'
+            );
+          } else {
+            printWindow.document.write(
+              '<iframe src="' +
+                objectUrl +
+                '" style="width:100%;height:98vh;border:none;"></iframe>'
+            );
+          }
+
+          printWindow.document.close();
+          setTimeout(function () {
+            printWindow.focus();
+            printWindow.print();
+          }, 350);
+        } else {
+          const anchor = document.createElement('a');
+          anchor.href = objectUrl;
+          anchor.download = rawText(documentData.file_name || 'document');
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+        }
+
+        setTimeout(function () {
+          URL.revokeObjectURL(objectUrl);
+        }, 12000);
+      } catch (error) {
+        showToast(
+          rawText(error && error.message ? error.message : '下載失敗'),
+          true
+        );
+      }
     }
 
     function normalizedStatus(value) {
@@ -1884,6 +2585,8 @@
           </button>
         </section>
 
+        ${tenantDocumentPanelHtml()}
+
         <section class="card section-card">
           <div class="section-title-row">
             <div class="section-title">快速操作</div>
@@ -2124,6 +2827,12 @@
           tenantData,
           requests
         );
+
+        try {
+          await loadTenantDocuments();
+        } catch (error) {
+          renderTenantDocumentError(error);
+        }
       } catch (error) {
         renderError(
           error && error.message

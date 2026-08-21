@@ -160,6 +160,13 @@
       line-height: 1.45;
     }
 
+    .overview-note {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
     .input,
     .input-file {
       width: 100%;
@@ -353,8 +360,8 @@
           ‹
         </button>
         <div>
-          <h1 class="topbar-title">合約文件管理</h1>
-          <div class="topbar-subtitle">舊合約、身分件及自拍照管理</div>
+          <h1 class="topbar-title">文件總覽</h1>
+          <div class="topbar-subtitle">查詢全部房客的合約與身分文件</div>
         </div>
         <button class="refresh-btn" id="refreshButton" type="button" aria-label="重新整理">
           ⟳
@@ -362,89 +369,17 @@
       </div>
 
       <section class="card">
-        <h2 class="section-title">上傳文件</h2>
-        <div class="field">
-          <label for="contractSelect">關聯租約（可選）</label>
-          <select id="contractSelect" class="input">
-            <option value="">載入中...</option>
-          </select>
-          <small>不選擇時可直接上傳至房東名下，建議選擇租約以利追蹤。</small>
-        </div>
-
-        <div class="field">
-          <label for="tenantInput">承租人 Tenant ID（可選）</label>
-          <input
-            class="input"
-            id="tenantInput"
-            type="text"
-            placeholder="例如：tenant_xxx（不填則用選定租約的承租人）"
-          />
-        </div>
-
-        <div class="field">
-          <label>上傳類型</label>
-          <div class="row-2">
-            <button class="primary" type="button" id="uploadLegacyBtn">
-              上傳舊合約
-            </button>
-            <input
-              class="input-file"
-              id="legacyFile"
-              type="file"
-              accept="image/png,image/jpeg,application/pdf"
-            />
-          </div>
-          <small>檔名將保留原檔名，支援 JPG / PNG / PDF，單檔上限 8MB。</small>
-        </div>
-
-        <div class="field">
-          <label>身分證件（身份正面）</label>
-          <div class="row-2">
-            <button class="primary" type="button" id="uploadIdFrontBtn">
-              上傳身份正面
-            </button>
-            <input
-              class="input-file"
-              id="idFrontFile"
-              type="file"
-              accept="image/png,image/jpeg"
-            />
-          </div>
-        </div>
-
-        <div class="field">
-          <label>身分證件（身份反面）</label>
-          <div class="row-2">
-            <button class="primary" type="button" id="uploadIdBackBtn">
-              上傳身份反面
-            </button>
-            <input
-              class="input-file"
-              id="idBackFile"
-              type="file"
-              accept="image/png,image/jpeg"
-            />
-          </div>
-        </div>
-
-        <div class="field">
-          <label>自拍照</label>
-          <div class="row-2">
-            <button class="primary" type="button" id="uploadSelfieBtn">
-              上傳自拍照
-            </button>
-            <input
-              class="input-file"
-              id="selfieFile"
-              type="file"
-              accept="image/png,image/jpeg"
-            />
-          </div>
-        </div>
+        <h2 class="section-title">文件歸檔方式</h2>
+        <p class="overview-note">
+          請從「房客名單 → 房客詳細資料」上傳文件，系統會自動歸檔到該房客名下；本頁提供全部房客文件的查詢、下載與列印。
+        </p>
+        <button class="primary" type="button" id="backToTenantsButton">
+          前往房客名單
+        </button>
       </section>
 
       <section class="card">
-        <h2 class="section-title">文件紀錄</h2>
+        <h2 class="section-title">全部文件紀錄</h2>
         <div id="documentsState" class="loading">載入中…</div>
         <div id="documentsList" hidden></div>
       </section>
@@ -480,7 +415,6 @@
     const TEST_MODE = urlParams.get('test') === '1';
 
     let LINE_USER_ID = '';
-    let currentData = null;
     let inited = false;
     let toastTimer = null;
 
@@ -526,6 +460,15 @@
 
     function safeText(value) {
       return value === null || value === undefined ? '' : String(value);
+    }
+
+    function safeHtml(value) {
+      return safeText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     function buildLandlordLoginRedirectUri() {
@@ -601,46 +544,6 @@
       });
     }
 
-    async function postJsonBody(payload) {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      const text = await response.text();
-      try {
-        return JSON.parse(text);
-      } catch (_) {
-        throw new Error('回應格式錯誤：' + text);
-      }
-    }
-
-    function readFileAsBase64(file) {
-      return new Promise(function (resolve, reject) {
-        const reader = new FileReader();
-        reader.onload = function () {
-          const dataUrl = String(reader.result || '');
-          const split = dataUrl.split(',');
-          resolve({
-            base64:
-              split.length > 1
-                ? split[1]
-                : '',
-            mimeType:
-              split.length > 1
-                ? split[0].replace('data:', '').split(';')[0]
-                : file.type
-          });
-        };
-        reader.onerror = function () {
-          reject(new Error('讀取檔案失敗'));
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
     function formatBytes(size) {
       const n = Number(size || 0);
       if (!n) {
@@ -665,19 +568,6 @@
       return map[type] || type;
     }
 
-    function renderContracts(contracts) {
-      const select = document.getElementById('contractSelect');
-      select.innerHTML =
-        '<option value="">不綁定到特定租約</option>';
-
-      contracts.forEach(function (contract) {
-        const option = document.createElement('option');
-        option.value = contract.contract_id || '';
-        option.textContent = `租約 ${contract.contract_id}（${contract.tenant_name || contract.tenant_id || '未綁定承租人'}）`;
-        select.appendChild(option);
-      });
-    }
-
     function renderDocuments(documents) {
       const stateEl = document.getElementById('documentsState');
       const listEl = document.getElementById('documentsList');
@@ -699,23 +589,29 @@
         const item = document.createElement('div');
         item.className = 'document-item';
         const fileName = safeText(doc.file_name || '未命名檔案');
+        const tenantId = safeText(doc.tenant_id);
 
         item.innerHTML =
           `<div class="doc-main">
-            <span class="doc-type">${documentTypeLabel(safeText(doc.document_type))}</span>
-            <div class="doc-title" title="${fileName}">${fileName}</div>
+            <span class="doc-type">${safeHtml(documentTypeLabel(safeText(doc.document_type)))}</span>
+            <div class="doc-title" title="${safeHtml(fileName)}">${safeHtml(fileName)}</div>
             <p class="doc-meta">
-              合約：${safeText(doc.contract_id || '未綁定')}&nbsp;｜
-              承租人：${safeText(doc.tenant_id || '未綁定')}
+              合約：${safeHtml(doc.contract_id || '未綁定')}&nbsp;｜
+              承租人：${safeHtml(tenantId || '未綁定')}
             </p>
             <p class="doc-meta">
-              類型：${safeText(doc.mime_type || '')} | 大小：${formatBytes(doc.byte_size)}
+              類型：${safeHtml(doc.mime_type || '')} | 大小：${safeHtml(formatBytes(doc.byte_size))}
             </p>
-            <p class="doc-meta">上傳時間：${safeText(doc.created_at || '')}</p>
+            <p class="doc-meta">上傳時間：${safeHtml(doc.created_at || '')}</p>
           </div>
           <div class="doc-actions">
             <button class="link-btn primary" type="button" data-action="download">下載</button>
             <button class="link-btn" type="button" data-action="print">列印</button>
+            ${
+              tenantId
+                ? '<button class="link-btn" type="button" data-action="tenant">查看房客</button>'
+                : ''
+            }
           </div>`;
 
         const id = safeText(doc.document_id);
@@ -726,6 +622,13 @@
         buttons[1].addEventListener('click', function () {
           doDownload(id, true);
         });
+        if (tenantId && buttons[2]) {
+          buttons[2].addEventListener('click', function () {
+            location.href =
+              'landlord-tenant-detail.html?tenant_id=' +
+              encodeURIComponent(tenantId);
+          });
+        }
         listEl.appendChild(item);
       });
     }
@@ -797,104 +700,24 @@
         });
     }
 
-    function uploadDocument(type, inputId) {
-      const fileInput = document.getElementById(inputId);
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) {
-        showToast('請先選擇檔案', true);
-        return;
-      }
-
-      const contractSelect = document.getElementById('contractSelect');
-      const contractId = safeText(contractSelect.value || '');
-      const tenantId = safeText(document.getElementById('tenantInput').value || '');
-
-      if (!contractId && !tenantId) {
-        showToast('請選擇租約，或至少填入 Tenant ID', true);
-        return;
-      }
-
-      const button = document.getElementById(
-        type === 'legacy_contract'
-          ? 'uploadLegacyBtn'
-          : type === 'identity_front'
-            ? 'uploadIdFrontBtn'
-            : type === 'identity_back'
-              ? 'uploadIdBackBtn'
-              : 'uploadSelfieBtn'
-      );
-      button.disabled = true;
-      button.textContent = '上傳中...';
-
-      readFileAsBase64(file)
-        .then(function (payload) {
-          return postJsonBody({
-            v2_action: 'landlord_contract_document_upload',
-            line_user_id: LINE_USER_ID,
-            contract_id: contractId,
-            tenant_id: tenantId,
-            document_type: type,
-            file_name: file.name,
-            mime_type: file.type,
-            base64: payload.base64,
-            idempotency_key: `${type}_${contractId || 'noc'}_${tenantId || 'notenant'}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-          });
-        })
-        .then(function (result) {
-          if (!result || result.success !== true) {
-            throw new Error(safeText((result || {}).message || '上傳失敗'));
-          }
-          showToast(`上傳完成：${safeText(file.name)}`);
-          fileInput.value = '';
-          return loadData();
-        })
-        .catch(function (error) {
-          showToast(error.message, true);
-        })
-        .finally(function () {
-          button.disabled = false;
-          button.textContent = getUploadButtonLabel(type);
-        });
-    }
-
-    function getUploadButtonLabel(type) {
-      if (type === 'legacy_contract') {
-        return '上傳舊合約';
-      }
-      if (type === 'identity_front') {
-        return '上傳身份正面';
-      }
-      if (type === 'identity_back') {
-        return '上傳身份反面';
-      }
-      return '上傳自拍照';
-    }
-
     async function loadData() {
       const state = document.getElementById('documentsState');
-      const contractSelect = document.getElementById('contractSelect');
       if (!inited) {
         state.hidden = false;
         state.className = 'loading';
         state.textContent = '載入中…';
       }
 
-      const contractId =
-        safeText(contractSelect.value || '');
-
       try {
         const result = await jsonpRequest('landlord_contract_documents_init', {
-          contract_id: contractId || ''
+          contract_id: ''
         });
         if (!result || result.success !== true) {
           throw new Error(safeText((result || {}).message || '查詢失敗'));
         }
-        currentData = result.data || {};
-        renderContracts(
-          currentData.contracts || []
-        );
+        const data = result.data || {};
         renderDocuments(
-          currentData.documents || []
+          data.documents || []
         );
         inited = true;
       } catch (error) {
@@ -924,38 +747,10 @@
       }
     );
 
-    document.getElementById('contractSelect').addEventListener(
-      'change',
-      function () {
-        loadData();
-      }
-    );
-
-    document.getElementById('uploadLegacyBtn').addEventListener(
+    document.getElementById('backToTenantsButton').addEventListener(
       'click',
       function () {
-        uploadDocument('legacy_contract', 'legacyFile');
-      }
-    );
-
-    document.getElementById('uploadIdFrontBtn').addEventListener(
-      'click',
-      function () {
-        uploadDocument('identity_front', 'idFrontFile');
-      }
-    );
-
-    document.getElementById('uploadIdBackBtn').addEventListener(
-      'click',
-      function () {
-        uploadDocument('identity_back', 'idBackFile');
-      }
-    );
-
-    document.getElementById('uploadSelfieBtn').addEventListener(
-      'click',
-      function () {
-        uploadDocument('selfie', 'selfieFile');
+        goPage('landlord-tenants.html');
       }
     );
 
