@@ -40,6 +40,10 @@ assert.match(tenantDetailPage, /tenantDocumentTypeIcon/);
 assert.match(tenantDetailPage, /已上傳，無需重複上傳/);
 assert.match(tenantDetailPage, /markTenantDocumentTypeUploaded/);
 assert.match(tenantDetailPage, /isTenantDocumentTypeUploaded/);
+assert.match(tenantDetailPage, /tenant-document-upload-actions/);
+assert.match(tenantDetailPage, /bindTenantDocumentUploadActions/);
+assert.match(tenantDetailPage, /data-tenant-document-upload-action/);
+assert.doesNotMatch(tenantDetailPage, /tenant-document-actions/);
 assert.doesNotMatch(tenantDetailPage, /tenantInput/);
 
 assert.match(overviewPage, /文件總覽/);
