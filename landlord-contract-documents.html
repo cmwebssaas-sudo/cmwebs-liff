@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>CMWebs 合約文件管理</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 66px;
+
+      --primary: #06c755;
+      --primary-dark: #079641;
+      --primary-soft: #edf9f2;
+      --page-bg: #f4f6f9;
+      --surface: #ffffff;
+      --ink: #202124;
+      --muted: #6f7580;
+      --line: #e6e9ee;
+
+      --blue: #1a73e8;
+      --blue-soft: #edf4ff;
+      --purple: #6940c6;
+      --purple-soft: #efeaff;
+      --gray: #7f8790;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--ink);
+      font-family:
+        Arial,
+        "Noto Sans TC",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+      outline: none;
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    .page {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding:
+        16px
+        15px
+        calc(
+          var(--nav-height) +
+          20px +
+          env(safe-area-inset-bottom)
+        );
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .back-btn,
+    .refresh-btn {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fff;
+      color: #4f5359;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .back-btn:active,
+    .refresh-btn:active {
+      transform: translateY(1px);
+    }
+
+    .topbar-title {
+      min-width: 0;
+      flex: 1;
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .topbar-subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(20, 30, 50, 0.05);
+      padding: 14px;
+      margin-bottom: 13px;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #49505a;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .field small {
+      display: block;
+      color: var(--muted);
+      margin-top: 5px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .input,
+    .input-file {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fff;
+      padding: 0 11px;
+    }
+
+    .input {
+      padding: 0 11px;
+    }
+
+    .primary {
+      width: 100%;
+      margin-top: 5px;
+      min-height: 44px;
+      border: 0;
+      border-radius: 11px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(6, 199, 85, 0.22);
+    }
+
+    .primary:disabled {
+      background: #9de6af;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .document-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 8px;
+      background: #fff;
+    }
+
+    .doc-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .doc-type {
+      display: inline-block;
+      margin-bottom: 4px;
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 900;
+      padding: 3px 8px;
+      border: 1px solid #d2e4fb;
+    }
+
+    .doc-title {
+      margin-bottom: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .doc-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .doc-actions {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .link-btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 7px 10px;
+      min-width: 74px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #f5f7fc;
+      color: #374047;
+      cursor: pointer;
+    }
+
+    .link-btn.primary {
+      background: #eafaf0;
+      color: #0f8b3d;
+    }
+
+    .loading,
+    .error {
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed #e1e4ea;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .error {
+      color: #a83b34;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 15px;
+      transform: translateX(-50%);
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(27, 27, 27, 0.95);
+      color: #fff;
+      font-size: 12px;
+      max-width: calc(100% - 32px);
+      width: calc(100% - 24px);
+      z-index: 90;
+      display: none;
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    .bottom-nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.97);
+      backdrop-filter: blur(4px);
+      padding:
+        8px
+        8px
+        calc(8px + env(safe-area-inset-bottom));
+    }
+
+    .bottom-nav-inner {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .nav-item {
+      border: 0;
+      border-radius: 13px;
+      min-height: 43px;
+      background: #fff;
+      color: #4f5863;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: var(--primary-dark);
+      border-color: #a7ebbe;
+      box-shadow: inset 0 0 0 2px rgba(6, 199, 85, 0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <main class="page" id="page">
+      <div class="topbar">
+        <button class="back-btn" id="backButton" type="button" aria-label="回到上一頁">
+          ‹
+        </button>
+        <div>
+          <h1 class="topbar-title">合約文件管理</h1>
+          <div class="topbar-subtitle">舊合約、身分件及自拍照管理</div>
+        </div>
+        <button class="refresh-btn" id="refreshButton" type="button" aria-label="重新整理">
+          ⟳
+        </button>
+      </div>
+
+      <section class="card">
+        <h2 class="section-title">上傳文件</h2>
+        <div class="field">
+          <label for="contractSelect">關聯租約（可選）</label>
+          <select id="contractSelect" class="input">
+            <option value="">載入中...</option>
+          </select>
+          <small>不選擇時可直接上傳至房東名下，建議選擇租約以利追蹤。</small>
+        </div>
+
+        <div class="field">
+          <label for="tenantInput">承租人 Tenant ID（可選）</label>
+          <input
+            class="input"
+            id="tenantInput"
+            type="text"
+            placeholder="例如：tenant_xxx（不填則用選定租約的承租人）"
+          />
+        </div>
+
+        <div class="field">
+          <label>上傳類型</label>
+          <div class="row-2">
+            <button class="primary" type="button" id="uploadLegacyBtn">
+              上傳舊合約
+            </button>
+            <input
+              class="input-file"
+              id="legacyFile"
+              type="file"
+              accept="image/png,image/jpeg,application/pdf"
+            />
+          </div>
+          <small>檔名將保留原檔名，支援 JPG / PNG / PDF，單檔上限 8MB。</small>
+        </div>
+
+        <div class="field">
+          <label>身分證件（身份正面）</label>
+          <div class="row-2">
+            <button class="primary" type="button" id="uploadIdFrontBtn">
+              上傳身份正面
+            </button>
+            <input
+              class="input-file"
+              id="idFrontFile"
+              type="file"
+              accept="image/png,image/jpeg"
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>身分證件（身份反面）</label>
+          <div class="row-2">
+            <button class="primary" type="button" id="uploadIdBackBtn">
+              上傳身份反面
+            </button>
+            <input
+              class="input-file"
+              id="idBackFile"
+              type="file"
+              accept="image/png,image/jpeg"
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>自拍照</label>
+          <div class="row-2">
+            <button class="primary" type="button" id="uploadSelfieBtn">
+              上傳自拍照
+            </button>
+            <input
+              class="input-file"
+              id="selfieFile"
+              type="file"
+              accept="image/png,image/jpeg"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="section-title">文件紀錄</h2>
+        <div id="documentsState" class="loading">載入中…</div>
+        <div id="documentsList" hidden></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">首頁</button>
+        <button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')">欠款</button>
+        <button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')">房客</button>
+        <button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">更多</button>
+      </div>
+    </nav>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og/exec';
+    const LIFF_ID =
+      '2010314940-EjX1qbb8';
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+    const TEST_LINE_USER_ID =
+      'Uf708ece75c9c985cfe1dbda48d123511';
+    const urlParams = new URLSearchParams(
+      location.search
+    );
+    const TEST_MODE = urlParams.get('test') === '1';
+
+    let LINE_USER_ID = '';
+    let currentData = null;
+    let inited = false;
+    let toastTimer = null;
+
+    function setAppHeight() {
+      const height =
+        window.visualViewport &&
+        window.visualViewport.height
+          ? window.visualViewport.height
+          : window.innerHeight;
+
+      document.documentElement.style.setProperty(
+        '--app-height',
+        `${height}px`
+      );
+    }
+
+    setAppHeight();
+    window.addEventListener(
+      'resize',
+      setAppHeight
+    );
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+        setAppHeight
+      );
+    }
+
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.display = 'block';
+      toast.style.background = isError
+        ? 'rgba(183, 52, 45, 0.98)'
+        : 'rgba(27, 27, 27, 0.95)';
+      if (toastTimer) {
+        clearTimeout(toastTimer);
+      }
+      toastTimer = setTimeout(function () {
+        toast.style.display = 'none';
+      }, 2200);
+    }
+
+    function safeText(value) {
+      return value === null || value === undefined ? '' : String(value);
+    }
+
+    function buildLandlordLoginRedirectUri() {
+      return `${LANDLORD_ENTRY_URL}?redirect=${encodeURIComponent(location.href)}`;
+    }
+
+    async function initLine() {
+      if (TEST_MODE) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        return true;
+      }
+
+      await liff.init({
+        liffId: LIFF_ID
+      });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri: buildLandlordLoginRedirectUri()
+        });
+        return false;
+      }
+
+      const profile = await liff.getProfile();
+      LINE_USER_ID = profile.userId || '';
+      return true;
+    }
+
+    function jsonpRequest(action, params = {}) {
+      return new Promise(function (resolve, reject) {
+        const callbackName =
+          `landlordCb_${Date.now()}_${Math.random()
+            .toString(36)
+            .slice(2)}`;
+        let resolved = false;
+
+        window[callbackName] = function (result) {
+          if (resolved) {
+            return;
+          }
+          resolved = true;
+          cleanup();
+          resolve(result || {});
+        };
+
+        const script = document.createElement('script');
+        const cleanup = function () {
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+          delete window[callbackName];
+        };
+        script.onerror = function () {
+          if (resolved) {
+            return;
+          }
+          resolved = true;
+          cleanup();
+          reject(new Error('API 請求失敗'));
+        };
+
+        let url =
+          `${API_URL}?v2_action=${encodeURIComponent(action)}&line_user_id=${encodeURIComponent(LINE_USER_ID)}&callback=${encodeURIComponent(callbackName)}&${Date.now()}`;
+        Object.keys(params).forEach(function (key) {
+          if (params[key] === undefined || params[key] === null || params[key] === '') {
+            return;
+          }
+          url +=
+            `&${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`;
+        });
+        script.src = url;
+        document.body.appendChild(script);
+      });
+    }
+
+    async function postJsonBody(payload) {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        throw new Error('回應格式錯誤：' + text);
+      }
+    }
+
+    function readFileAsBase64(file) {
+      return new Promise(function (resolve, reject) {
+        const reader = new FileReader();
+        reader.onload = function () {
+          const dataUrl = String(reader.result || '');
+          const split = dataUrl.split(',');
+          resolve({
+            base64:
+              split.length > 1
+                ? split[1]
+                : '',
+            mimeType:
+              split.length > 1
+                ? split[0].replace('data:', '').split(';')[0]
+                : file.type
+          });
+        };
+        reader.onerror = function () {
+          reject(new Error('讀取檔案失敗'));
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function formatBytes(size) {
+      const n = Number(size || 0);
+      if (!n) {
+        return '0B';
+      }
+      if (n < 1024) {
+        return n + 'B';
+      }
+      if (n < 1024 * 1024) {
+        return (n / 1024).toFixed(1) + 'KB';
+      }
+      return (n / 1024 / 1024).toFixed(1) + 'MB';
+    }
+
+    function documentTypeLabel(type) {
+      const map = {
+        legacy_contract: '舊合約',
+        identity_front: '身份正面',
+        identity_back: '身份反面',
+        selfie: '自拍照'
+      };
+      return map[type] || type;
+    }
+
+    function renderContracts(contracts) {
+      const select = document.getElementById('contractSelect');
+      select.innerHTML =
+        '<option value="">不綁定到特定租約</option>';
+
+      contracts.forEach(function (contract) {
+        const option = document.createElement('option');
+        option.value = contract.contract_id || '';
+        option.textContent = `租約 ${contract.contract_id}（${contract.tenant_name || contract.tenant_id || '未綁定承租人'}）`;
+        select.appendChild(option);
+      });
+    }
+
+    function renderDocuments(documents) {
+      const stateEl = document.getElementById('documentsState');
+      const listEl = document.getElementById('documentsList');
+      const rows = Array.isArray(documents) ? documents.slice() : [];
+
+      if (rows.length === 0) {
+        stateEl.className = 'empty';
+        stateEl.hidden = false;
+        stateEl.textContent = '目前尚無文件紀錄。';
+        listEl.hidden = true;
+        return;
+      }
+
+      stateEl.hidden = true;
+      listEl.hidden = false;
+      listEl.innerHTML = '';
+
+      rows.forEach(function (doc) {
+        const item = document.createElement('div');
+        item.className = 'document-item';
+        const fileName = safeText(doc.file_name || '未命名檔案');
+
+        item.innerHTML =
+          `<div class="doc-main">
+            <span class="doc-type">${documentTypeLabel(safeText(doc.document_type))}</span>
+            <div class="doc-title" title="${fileName}">${fileName}</div>
+            <p class="doc-meta">
+              合約：${safeText(doc.contract_id || '未綁定')}&nbsp;｜
+              承租人：${safeText(doc.tenant_id || '未綁定')}
+            </p>
+            <p class="doc-meta">
+              類型：${safeText(doc.mime_type || '')} | 大小：${formatBytes(doc.byte_size)}
+            </p>
+            <p class="doc-meta">上傳時間：${safeText(doc.created_at || '')}</p>
+          </div>
+          <div class="doc-actions">
+            <button class="link-btn primary" type="button" data-action="download">下載</button>
+            <button class="link-btn" type="button" data-action="print">列印</button>
+          </div>`;
+
+        const id = safeText(doc.document_id);
+        const buttons = item.querySelectorAll('button');
+        buttons[0].addEventListener('click', function () {
+          doDownload(id, false);
+        });
+        buttons[1].addEventListener('click', function () {
+          doDownload(id, true);
+        });
+        listEl.appendChild(item);
+      });
+    }
+
+    function doDownload(documentId, printOnly) {
+      return jsonpRequest('landlord_contract_document_download', {
+        document_id: documentId
+      })
+        .then(function (result) {
+          if (!result || result.success !== true) {
+            throw new Error(safeText((result || {}).message || '下載失敗'));
+          }
+
+          const documentData = result.data && result.data.document
+            ? result.data.document
+            : null;
+          if (!documentData || !documentData.base64) {
+            throw new Error('下載資料不完整');
+          }
+
+          const binary = atob(safeText(documentData.base64));
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          const blob = new Blob(
+            [bytes],
+            { type: safeText(documentData.mime_type) || 'application/octet-stream' }
+          );
+          const objectUrl = URL.createObjectURL(blob);
+
+          if (printOnly) {
+            const win = window.open('', '_blank');
+            if (!win) {
+              throw new Error('請允許快顯視窗後再試一次');
+            }
+            const isImage = String(
+              safeText(documentData.mime_type || '')
+            ).startsWith('image/');
+            if (isImage) {
+              win.document.write(
+                `<img src="${objectUrl}" style="max-width:100%;max-height:100%;display:block;margin:12px auto;" />`
+              );
+            } else {
+              win.document.write(
+                `<iframe src="${objectUrl}" style="width:100%;height:98vh;border:none;"></iframe>`
+              );
+            }
+            win.document.close();
+            setTimeout(function () {
+              win.focus();
+              win.print();
+            }, 350);
+          } else {
+            const anchor = document.createElement('a');
+            anchor.href = objectUrl;
+            anchor.download = safeText(documentData.file_name || 'document');
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+          }
+
+          setTimeout(function () {
+            URL.revokeObjectURL(objectUrl);
+          }, 12000);
+        })
+        .catch(function (error) {
+          showToast(error.message, true);
+        });
+    }
+
+    function uploadDocument(type, inputId) {
+      const fileInput = document.getElementById(inputId);
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        showToast('請先選擇檔案', true);
+        return;
+      }
+
+      const contractSelect = document.getElementById('contractSelect');
+      const contractId = safeText(contractSelect.value || '');
+      const tenantId = safeText(document.getElementById('tenantInput').value || '');
+
+      if (!contractId && !tenantId) {
+        showToast('請選擇租約，或至少填入 Tenant ID', true);
+        return;
+      }
+
+      const button = document.getElementById(
+        type === 'legacy_contract'
+          ? 'uploadLegacyBtn'
+          : type === 'identity_front'
+            ? 'uploadIdFrontBtn'
+            : type === 'identity_back'
+              ? 'uploadIdBackBtn'
+              : 'uploadSelfieBtn'
+      );
+      button.disabled = true;
+      button.textContent = '上傳中...';
+
+      readFileAsBase64(file)
+        .then(function (payload) {
+          return postJsonBody({
+            v2_action: 'landlord_contract_document_upload',
+            line_user_id: LINE_USER_ID,
+            contract_id: contractId,
+            tenant_id: tenantId,
+            document_type: type,
+            file_name: file.name,
+            mime_type: file.type,
+            base64: payload.base64,
+            idempotency_key: `${type}_${contractId || 'noc'}_${tenantId || 'notenant'}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+          });
+        })
+        .then(function (result) {
+          if (!result || result.success !== true) {
+            throw new Error(safeText((result || {}).message || '上傳失敗'));
+          }
+          showToast(`上傳完成：${safeText(file.name)}`);
+          fileInput.value = '';
+          return loadData();
+        })
+        .catch(function (error) {
+          showToast(error.message, true);
+        })
+        .finally(function () {
+          button.disabled = false;
+          button.textContent = getUploadButtonLabel(type);
+        });
+    }
+
+    function getUploadButtonLabel(type) {
+      if (type === 'legacy_contract') {
+        return '上傳舊合約';
+      }
+      if (type === 'identity_front') {
+        return '上傳身份正面';
+      }
+      if (type === 'identity_back') {
+        return '上傳身份反面';
+      }
+      return '上傳自拍照';
+    }
+
+    async function loadData() {
+      const state = document.getElementById('documentsState');
+      const contractSelect = document.getElementById('contractSelect');
+      if (!inited) {
+        state.hidden = false;
+        state.className = 'loading';
+        state.textContent = '載入中…';
+      }
+
+      const contractId =
+        safeText(contractSelect.value || '');
+
+      try {
+        const result = await jsonpRequest('landlord_contract_documents_init', {
+          contract_id: contractId || ''
+        });
+        if (!result || result.success !== true) {
+          throw new Error(safeText((result || {}).message || '查詢失敗'));
+        }
+        currentData = result.data || {};
+        renderContracts(
+          currentData.contracts || []
+        );
+        renderDocuments(
+          currentData.documents || []
+        );
+        inited = true;
+      } catch (error) {
+        state.className = 'error';
+        state.hidden = false;
+        state.textContent =
+          `載入失敗：${error.message || '請重試'}`;
+        document.getElementById('documentsList').hidden = true;
+      }
+    }
+
+    function goPage(path) {
+      location.href = path;
+    }
+
+    document.getElementById('backButton').addEventListener(
+      'click',
+      function () {
+        goPage('landlord-more.html');
+      }
+    );
+
+    document.getElementById('refreshButton').addEventListener(
+      'click',
+      function () {
+        loadData();
+      }
+    );
+
+    document.getElementById('contractSelect').addEventListener(
+      'change',
+      function () {
+        loadData();
+      }
+    );
+
+    document.getElementById('uploadLegacyBtn').addEventListener(
+      'click',
+      function () {
+        uploadDocument('legacy_contract', 'legacyFile');
+      }
+    );
+
+    document.getElementById('uploadIdFrontBtn').addEventListener(
+      'click',
+      function () {
+        uploadDocument('identity_front', 'idFrontFile');
+      }
+    );
+
+    document.getElementById('uploadIdBackBtn').addEventListener(
+      'click',
+      function () {
+        uploadDocument('identity_back', 'idBackFile');
+      }
+    );
+
+    document.getElementById('uploadSelfieBtn').addEventListener(
+      'click',
+      function () {
+        uploadDocument('selfie', 'selfieFile');
+      }
+    );
+
+    (async function bootstrap() {
+      const ok = await initLine();
+      if (!ok) {
+        return;
+      }
+      await loadData();
+    })();
+  </script>
+</body>
+</html>
