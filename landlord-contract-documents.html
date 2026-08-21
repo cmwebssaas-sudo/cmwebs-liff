@@ -570,6 +570,8 @@
     let inited = false;
     let toastTimer = null;
     let CURRENT_DOCUMENT_OBJECT_URL = '';
+    let CURRENT_DOCUMENT_BLOB = null;
+    let CURRENT_DOCUMENT_FILE_NAME = '';
 
     function setAppHeight() {
       const height =
@@ -795,14 +797,84 @@
         CURRENT_DOCUMENT_OBJECT_URL = '';
       }
 
+      CURRENT_DOCUMENT_BLOB = null;
+      CURRENT_DOCUMENT_FILE_NAME = '';
       document.body.classList.remove('is-printing-document');
     }
 
-    function openDocumentActionModal(documentData, objectUrl) {
+    function printDocumentPreview() {
+      const frame = document.getElementById('documentPreviewFrame');
+      const image = document.getElementById('documentPreviewImage');
+
+      if (image) {
+        document.body.classList.add('is-printing-document');
+        window.print();
+        setTimeout(function () {
+          document.body.classList.remove('is-printing-document');
+        }, 500);
+        return;
+      }
+
+      try {
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+          return;
+        }
+      } catch (error) {
+        // Some embedded PDF viewers do not expose contentWindow.print().
+      }
+
+      document.body.classList.add('is-printing-document');
+      window.print();
+      setTimeout(function () {
+        document.body.classList.remove('is-printing-document');
+      }, 500);
+    }
+
+    async function shareDocumentPreview() {
+      if (!navigator.share) {
+        showToast('此瀏覽器不支援檔案分享', true);
+        return;
+      }
+
+      if (typeof File === 'undefined' || !CURRENT_DOCUMENT_BLOB) {
+        showToast('目前文件無法準備分享', true);
+        return;
+      }
+
+      const file = new File(
+        [CURRENT_DOCUMENT_BLOB],
+        CURRENT_DOCUMENT_FILE_NAME || 'document',
+        { type: CURRENT_DOCUMENT_BLOB.type }
+      );
+      const shareData = {
+        title: CURRENT_DOCUMENT_FILE_NAME || 'CMWebs 文件',
+        files: [file]
+      };
+
+      try {
+        if (navigator.canShare && !navigator.canShare(shareData)) {
+          throw new Error('此瀏覽器不支援檔案分享');
+        }
+
+        await navigator.share(shareData);
+      } catch (error) {
+        if (error && error.name === 'AbortError') {
+          return;
+        }
+
+        showToast(error.message || '分享失敗', true);
+      }
+    }
+
+    function openDocumentActionModal(documentData, objectUrl, blob) {
       closeDocumentActionModal();
       CURRENT_DOCUMENT_OBJECT_URL = objectUrl;
+      CURRENT_DOCUMENT_BLOB = blob;
+      CURRENT_DOCUMENT_FILE_NAME = safeText(documentData.file_name || '文件');
 
-      const fileName = safeText(documentData.file_name || '文件');
+      const fileName = CURRENT_DOCUMENT_FILE_NAME;
       const mimeType = safeText(
         documentData.mime_type || 'application/octet-stream'
       );
@@ -837,6 +909,15 @@
             safeHtml(fileName) +
             '"></iframe>') +
         '  </div>' +
+        '  <div class="document-action-footer">' +
+        '    <a id="documentPreviewDownload" class="document-action-button primary" href="' +
+        safeHtml(objectUrl) +
+        '" download="' +
+        safeHtml(fileName) +
+        '">下載</a>' +
+        '    <button class="document-action-button" type="button" data-document-print>列印</button>' +
+        '    <button class="document-action-button" type="button" data-document-share>分享</button>' +
+        '  </div>' +
         '</div>';
 
       document.body.appendChild(modal);
@@ -846,6 +927,12 @@
           button.addEventListener('click', closeDocumentActionModal);
         }
       );
+      modal
+        .querySelector('[data-document-print]')
+        .addEventListener('click', printDocumentPreview);
+      modal
+        .querySelector('[data-document-share]')
+        .addEventListener('click', shareDocumentPreview);
     }
 
     function previewDocument(documentId) {
@@ -877,7 +964,7 @@
           );
           const objectUrl = URL.createObjectURL(blob);
 
-          openDocumentActionModal(documentData, objectUrl);
+          openDocumentActionModal(documentData, objectUrl, blob);
           showToast('文件已載入');
         })
         .catch(function (error) {

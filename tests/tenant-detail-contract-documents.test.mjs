@@ -53,9 +53,11 @@ assert.match(tenantDetailPage, /dataTransfer\.files/);
 assert.match(tenantDetailPage, /tenant-document-action-modal/);
 assert.match(tenantDetailPage, /openTenantDocumentActionModal/);
 assert.match(tenantDetailPage, /tenantDocumentPreviewFrame/);
-assert.doesNotMatch(tenantDetailPage, /tenantDocumentPreviewDownload/);
-assert.doesNotMatch(tenantDetailPage, /printTenantDocumentPreview/);
-assert.doesNotMatch(tenantDetailPage, /data-tenant-document-print/);
+assert.match(tenantDetailPage, /tenantDocumentPreviewDownload/);
+assert.match(tenantDetailPage, /printTenantDocumentPreview/);
+assert.match(tenantDetailPage, /shareTenantDocumentPreview/);
+assert.match(tenantDetailPage, /data-tenant-document-print/);
+assert.match(tenantDetailPage, /data-tenant-document-share/);
 assert.doesNotMatch(tenantDetailPage, /openTenantDocumentPrintWindow/);
 assert.doesNotMatch(
   tenantDetailPage,
@@ -65,10 +67,12 @@ assert.match(overviewPage, /document-action-modal/);
 assert.match(overviewPage, /openDocumentActionModal/);
 assert.match(overviewPage, /documentPreviewFrame/);
 assert.match(overviewPage, /data-action="preview"/);
-assert.doesNotMatch(overviewPage, /documentPreviewDownload/);
-assert.doesNotMatch(overviewPage, /printDocumentPreview/);
+assert.match(overviewPage, /documentPreviewDownload/);
+assert.match(overviewPage, /printDocumentPreview/);
+assert.match(overviewPage, /shareDocumentPreview/);
+assert.match(overviewPage, /data-document-print/);
+assert.match(overviewPage, /data-document-share/);
 assert.doesNotMatch(overviewPage, /data-action="(?:download|print)"/);
-assert.doesNotMatch(overviewPage, /data-document-print/);
 assert.doesNotMatch(overviewPage, /openTenantDocumentPrintWindow/);
 assert.doesNotMatch(
   overviewPage,

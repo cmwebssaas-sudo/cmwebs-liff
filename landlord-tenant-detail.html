@@ -1359,6 +1359,8 @@
     let CURRENT_TENANT_DOCUMENTS = [];
     let CURRENT_TENANT_CONTRACTS = [];
     let CURRENT_TENANT_DOCUMENT_OBJECT_URL = '';
+    let CURRENT_TENANT_DOCUMENT_BLOB = null;
+    let CURRENT_TENANT_DOCUMENT_FILE_NAME = '';
     let toastTimer = null;
 
     function setAppHeight() {
@@ -2698,15 +2700,93 @@
         CURRENT_TENANT_DOCUMENT_OBJECT_URL = '';
       }
 
+      CURRENT_TENANT_DOCUMENT_BLOB = null;
+      CURRENT_TENANT_DOCUMENT_FILE_NAME = '';
       document.body.classList.remove('modal-open');
       document.body.classList.remove('is-printing-tenant-document');
     }
 
-    function openTenantDocumentActionModal(documentData, objectUrl) {
+    function printTenantDocumentPreview() {
+      const frame = document.getElementById('tenantDocumentPreviewFrame');
+      const image = document.getElementById('tenantDocumentPreviewImage');
+
+      if (image) {
+        document.body.classList.add('is-printing-tenant-document');
+        window.print();
+        setTimeout(function () {
+          document.body.classList.remove('is-printing-tenant-document');
+        }, 500);
+        return;
+      }
+
+      try {
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.focus();
+          frame.contentWindow.print();
+          return;
+        }
+      } catch (error) {
+        // Some embedded PDF viewers do not expose contentWindow.print().
+      }
+
+      document.body.classList.add('is-printing-tenant-document');
+      window.print();
+      setTimeout(function () {
+        document.body.classList.remove('is-printing-tenant-document');
+      }, 500);
+    }
+
+    async function shareTenantDocumentPreview() {
+      if (!navigator.share) {
+        showToast('此瀏覽器不支援檔案分享', true);
+        return;
+      }
+
+      if (
+        typeof File === 'undefined' ||
+        !CURRENT_TENANT_DOCUMENT_BLOB
+      ) {
+        showToast('目前文件無法準備分享', true);
+        return;
+      }
+
+      const file = new File(
+        [CURRENT_TENANT_DOCUMENT_BLOB],
+        CURRENT_TENANT_DOCUMENT_FILE_NAME || 'document',
+        { type: CURRENT_TENANT_DOCUMENT_BLOB.type }
+      );
+      const shareData = {
+        title: CURRENT_TENANT_DOCUMENT_FILE_NAME || 'CMWebs 文件',
+        files: [file]
+      };
+
+      try {
+        if (navigator.canShare && !navigator.canShare(shareData)) {
+          throw new Error('此瀏覽器不支援檔案分享');
+        }
+
+        await navigator.share(shareData);
+      } catch (error) {
+        if (error && error.name === 'AbortError') {
+          return;
+        }
+
+        showToast(
+          rawText(error && error.message ? error.message : '分享失敗'),
+          true
+        );
+      }
+    }
+
+    function openTenantDocumentActionModal(documentData, objectUrl, blob) {
       closeTenantDocumentActionModal();
       CURRENT_TENANT_DOCUMENT_OBJECT_URL = objectUrl;
+      CURRENT_TENANT_DOCUMENT_BLOB = blob;
+      CURRENT_TENANT_DOCUMENT_FILE_NAME = rawText(
+        documentData.file_name || '文件'
+      );
 
-      const fileName = rawText(documentData.file_name || '文件');
+      const fileName = CURRENT_TENANT_DOCUMENT_FILE_NAME;
       const mimeType = rawText(
         documentData.mime_type || 'application/octet-stream'
       );
@@ -2741,6 +2821,15 @@
             safeHtml(fileName) +
             '"></iframe>') +
         '  </div>' +
+        '  <div class="tenant-document-action-footer">' +
+        '    <a id="tenantDocumentPreviewDownload" class="tenant-document-action-button primary" href="' +
+        safeHtml(objectUrl) +
+        '" download="' +
+        safeHtml(fileName) +
+        '">下載</a>' +
+        '    <button class="tenant-document-action-button" type="button" data-tenant-document-print>列印</button>' +
+        '    <button class="tenant-document-action-button" type="button" data-tenant-document-share>分享</button>' +
+        '  </div>' +
         '</div>';
 
       document.body.appendChild(modal);
@@ -2751,6 +2840,12 @@
           button.addEventListener('click', closeTenantDocumentActionModal);
         }
       );
+      modal
+        .querySelector('[data-tenant-document-print]')
+        .addEventListener('click', printTenantDocumentPreview);
+      modal
+        .querySelector('[data-tenant-document-share]')
+        .addEventListener('click', shareTenantDocumentPreview);
     }
 
     async function previewTenantDocument(documentId) {
@@ -2792,7 +2887,7 @@
         });
         const objectUrl = URL.createObjectURL(blob);
 
-        openTenantDocumentActionModal(documentData, objectUrl);
+        openTenantDocumentActionModal(documentData, objectUrl, blob);
         showToast('文件已載入');
       } catch (error) {
         closeTenantDocumentActionModal();
