@@ -140,7 +140,7 @@
 
 ## V2.1 本地候選：線上合約簽署與營收儀表板
 
-- [x] 房東房客詳細頁可管理舊合約、身分證正反面與自拍照；已上傳項目鎖定避免重複上傳，電腦可拖放檔案並沿用格式／大小驗證，下載／列印改用同頁預覽與可見按鈕，不依賴快顯視窗（`tests/tenant-detail-contract-documents.test.mjs`；正式站需另行發布驗證）
+- [x] 房東房客詳細頁可管理舊合約、身分證正反面與自拍照；已上傳項目鎖定避免重複上傳，電腦可拖放檔案並沿用格式／大小驗證，原下載／列印操作改為單一預覽入口，直接在同頁瀏覽文件（`tests/tenant-detail-contract-documents.test.mjs`；正式站需另行發布驗證）
 - [x] 房客簽署資料送出、房東 Workspace/RBAC 審核、核准啟用、拒絕後重送（Phase 129–133、138、140 focused tests；Production 尚未驗證）
 - [x] 合約審核缺少必要附件時 fail closed、跨 Workspace 拒絕、重複決策 idempotent（Phase 138 runtime mock；Production Sheet schema 尚未驗證）
 - [x] 營收儀表板聚合應收／實收／未收／收款率，並排除跨 Workspace 帳單（Phase 150 runtime test）

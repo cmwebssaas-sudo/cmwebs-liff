@@ -523,7 +523,7 @@
       <section class="card">
         <h2 class="section-title">文件歸檔方式</h2>
         <p class="overview-note">
-          請從「房客名單 → 房客詳細資料」上傳文件，系統會自動歸檔到該房客名下；本頁提供全部房客文件的查詢、下載與列印。
+          請從「房客名單 → 房客詳細資料」上傳文件，系統會自動歸檔到該房客名下；本頁提供全部房客文件的查詢與預覽。
         </p>
         <button class="primary" type="button" id="backToTenantsButton">
           前往房客名單
@@ -758,8 +758,7 @@
             <p class="doc-meta">上傳時間：${safeHtml(doc.created_at || '')}</p>
           </div>
           <div class="doc-actions">
-            <button class="link-btn primary" type="button" data-action="download">下載</button>
-            <button class="link-btn" type="button" data-action="print">列印</button>
+            <button class="link-btn primary" type="button" data-action="preview">預覽</button>
             ${
               tenantId
                 ? '<button class="link-btn" type="button" data-action="tenant">查看房客</button>'
@@ -768,15 +767,13 @@
           </div>`;
 
         const id = safeText(doc.document_id);
-        const buttons = item.querySelectorAll('button');
-        buttons[0].addEventListener('click', function () {
-          doDownload(id, false);
+        const previewButton = item.querySelector('[data-action="preview"]');
+        const tenantButton = item.querySelector('[data-action="tenant"]');
+        previewButton.addEventListener('click', function () {
+          previewDocument(id);
         });
-        buttons[1].addEventListener('click', function () {
-          doDownload(id, true);
-        });
-        if (tenantId && buttons[2]) {
-          buttons[2].addEventListener('click', function () {
+        if (tenantId && tenantButton) {
+          tenantButton.addEventListener('click', function () {
             location.href =
               'landlord-tenant-detail.html?tenant_id=' +
               encodeURIComponent(tenantId);
@@ -801,36 +798,6 @@
       document.body.classList.remove('is-printing-document');
     }
 
-    function printDocumentPreview() {
-      const frame = document.getElementById('documentPreviewFrame');
-      const image = document.getElementById('documentPreviewImage');
-
-      if (image) {
-        document.body.classList.add('is-printing-document');
-        window.print();
-        setTimeout(function () {
-          document.body.classList.remove('is-printing-document');
-        }, 500);
-        return;
-      }
-
-      try {
-        if (frame && frame.contentWindow) {
-          frame.contentWindow.focus();
-          frame.contentWindow.print();
-          return;
-        }
-      } catch (error) {
-        // Some embedded PDF viewers do not expose contentWindow.print().
-      }
-
-      document.body.classList.add('is-printing-document');
-      window.print();
-      setTimeout(function () {
-        document.body.classList.remove('is-printing-document');
-      }, 500);
-    }
-
     function openDocumentActionModal(documentData, objectUrl) {
       closeDocumentActionModal();
       CURRENT_DOCUMENT_OBJECT_URL = objectUrl;
@@ -845,7 +812,7 @@
       modal.className = 'document-action-modal';
       modal.setAttribute('role', 'dialog');
       modal.setAttribute('aria-modal', 'true');
-      modal.setAttribute('aria-label', '文件預覽與操作');
+      modal.setAttribute('aria-label', '文件預覽');
       modal.innerHTML =
         '<div class="document-action-dialog">' +
         '  <div class="document-action-head">' +
@@ -853,7 +820,7 @@
         '      <div class="document-action-title">文件預覽</div>' +
         '      <div class="document-action-note">' +
         safeHtml(fileName) +
-        ' · 請直接按下方按鈕，不需要允許快顯視窗</div>' +
+        ' · 可直接瀏覽文件內容</div>' +
         '    </div>' +
         '    <button class="document-action-close" type="button" data-document-close>關閉</button>' +
         '  </div>' +
@@ -870,15 +837,6 @@
             safeHtml(fileName) +
             '"></iframe>') +
         '  </div>' +
-        '  <div class="document-action-footer">' +
-        '    <a id="documentPreviewDownload" class="document-action-button primary" href="' +
-        safeHtml(objectUrl) +
-        '" download="' +
-        safeHtml(fileName) +
-        '">下載檔案</a>' +
-        '    <button class="document-action-button" type="button" data-document-print>列印</button>' +
-        '    <button class="document-action-button" type="button" data-document-close>關閉</button>' +
-        '  </div>' +
         '</div>';
 
       document.body.appendChild(modal);
@@ -888,12 +846,9 @@
           button.addEventListener('click', closeDocumentActionModal);
         }
       );
-      modal
-        .querySelector('[data-document-print]')
-        .addEventListener('click', printDocumentPreview);
     }
 
-    function doDownload(documentId, printOnly) {
+    function previewDocument(documentId) {
       closeDocumentActionModal();
 
       return jsonpRequest('landlord_contract_document_download', {
@@ -923,15 +878,11 @@
           const objectUrl = URL.createObjectURL(blob);
 
           openDocumentActionModal(documentData, objectUrl);
-          showToast(
-            printOnly
-              ? '文件已載入，請按下方列印'
-              : '文件已載入，請按下方下載檔案'
-          );
+          showToast('文件已載入');
         })
         .catch(function (error) {
           closeDocumentActionModal();
-          showToast(error.message, true);
+          showToast(error.message || '文件讀取失敗', true);
         });
     }
 
