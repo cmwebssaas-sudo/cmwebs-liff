@@ -2282,13 +2282,31 @@
       }
     }
 
+    function openTenantDocumentPrintWindow() {
+      const printWindow = window.open('', '_blank');
+
+      if (!printWindow) {
+        throw new Error('請先允許快顯視窗後再試一次');
+      }
+
+      printWindow.document.write(
+        '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>文件列印</title></head><body style="margin:0;padding:24px;font-family:Arial,sans-serif;">文件載入中…</body></html>'
+      );
+      printWindow.document.close();
+      return printWindow;
+    }
+
     async function downloadTenantDocument(documentId, printOnly) {
       if (!documentId) {
         showToast('找不到文件編號', true);
         return;
       }
 
+      let printWindow = null;
+
       try {
+        printWindow = printOnly ? openTenantDocumentPrintWindow() : null;
+
         const result = await jsonpRequest(
           'landlord_contract_document_download',
           { document_id: documentId }
@@ -2320,12 +2338,6 @@
         const objectUrl = URL.createObjectURL(blob);
 
         if (printOnly) {
-          const printWindow = window.open('', '_blank');
-
-          if (!printWindow) {
-            throw new Error('請允許快顯視窗後再試一次');
-          }
-
           if (rawText(documentData.mime_type).startsWith('image/')) {
             printWindow.document.write(
               '<img src="' +
@@ -2358,6 +2370,10 @@
           URL.revokeObjectURL(objectUrl);
         }, 12000);
       } catch (error) {
+        if (printWindow && !printWindow.closed) {
+          printWindow.close();
+        }
+
         showToast(
           rawText(error && error.message ? error.message : '下載失敗'),
           true
