@@ -691,7 +691,8 @@
 
       nextUrl.searchParams.set(
         'v',
-        Date.now()
+        window.CMWEBS_RELEASE_VERSION ||
+          'v2.1-p0-1'
       );
 
       return nextUrl.href;
