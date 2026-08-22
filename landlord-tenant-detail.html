@@ -10,6 +10,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
+  <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
 
   <style>
     :root {
@@ -2426,7 +2427,7 @@
           <div id="tenantDocumentsList" class="tenant-document-list" hidden></div>
           <a
             class="tenant-document-overview-link"
-            href="landlord-contract-documents.html"
+            href="landlord-contract-documents.html?v=20260822-line-actions-v1"
           >
             查看全部房客文件總覽 →
           </a>
@@ -2706,7 +2707,50 @@
       document.body.classList.remove('is-printing-tenant-document');
     }
 
-    function printTenantDocumentPreview() {
+    function shouldUseTenantDocumentSystemMenu() {
+      return Boolean(
+        window.CMWebsDocumentMobileActions &&
+        window.CMWebsDocumentMobileActions.shouldUseSystemFileMenu()
+      );
+    }
+
+    async function openTenantDocumentSystemMenu(action) {
+      const helper = window.CMWebsDocumentMobileActions;
+
+      if (!helper) {
+        showToast('手機檔案功能尚未載入，請重新開啟此頁', true);
+        return;
+      }
+
+      if (action === 'download') {
+        showToast('請在手機選單選「儲存到檔案」');
+      } else if (action === 'print') {
+        showToast('請在手機選單選「列印」');
+      }
+
+      try {
+        await helper.openSystemFileMenu({
+          blob: CURRENT_TENANT_DOCUMENT_BLOB,
+          fileName: CURRENT_TENANT_DOCUMENT_FILE_NAME || 'document'
+        });
+      } catch (error) {
+        if (error && error.name === 'AbortError') {
+          return;
+        }
+
+        showToast(
+          rawText(error && error.message ? error.message : '手機檔案選單開啟失敗'),
+          true
+        );
+      }
+    }
+
+    async function printTenantDocumentPreview() {
+      if (shouldUseTenantDocumentSystemMenu()) {
+        await openTenantDocumentSystemMenu('print');
+        return;
+      }
+
       const frame = document.getElementById('tenantDocumentPreviewFrame');
       const image = document.getElementById('tenantDocumentPreviewImage');
 
@@ -2737,45 +2781,7 @@
     }
 
     async function shareTenantDocumentPreview() {
-      if (!navigator.share) {
-        showToast('此瀏覽器不支援檔案分享', true);
-        return;
-      }
-
-      if (
-        typeof File === 'undefined' ||
-        !CURRENT_TENANT_DOCUMENT_BLOB
-      ) {
-        showToast('目前文件無法準備分享', true);
-        return;
-      }
-
-      const file = new File(
-        [CURRENT_TENANT_DOCUMENT_BLOB],
-        CURRENT_TENANT_DOCUMENT_FILE_NAME || 'document',
-        { type: CURRENT_TENANT_DOCUMENT_BLOB.type }
-      );
-      const shareData = {
-        title: CURRENT_TENANT_DOCUMENT_FILE_NAME || 'CMWebs 文件',
-        files: [file]
-      };
-
-      try {
-        if (navigator.canShare && !navigator.canShare(shareData)) {
-          throw new Error('此瀏覽器不支援檔案分享');
-        }
-
-        await navigator.share(shareData);
-      } catch (error) {
-        if (error && error.name === 'AbortError') {
-          return;
-        }
-
-        showToast(
-          rawText(error && error.message ? error.message : '分享失敗'),
-          true
-        );
-      }
+      await openTenantDocumentSystemMenu('share');
     }
 
     function openTenantDocumentActionModal(documentData, objectUrl, blob) {
@@ -2804,7 +2810,11 @@
         '      <div class="tenant-document-action-title">文件預覽</div>' +
         '      <div class="tenant-document-action-note">' +
         safeHtml(fileName) +
-        ' · 可直接瀏覽文件內容</div>' +
+        ' · 可直接瀏覽文件內容' +
+        (shouldUseTenantDocumentSystemMenu()
+          ? '<br>手機 LINE：下載請在手機選單選「儲存到檔案」，列印請在手機選單選「列印」。'
+          : '') +
+        '</div>' +
         '    </div>' +
         '    <button class="tenant-document-action-close" type="button" data-tenant-document-close>關閉</button>' +
         '  </div>' +
@@ -2846,6 +2856,16 @@
       modal
         .querySelector('[data-tenant-document-share]')
         .addEventListener('click', shareTenantDocumentPreview);
+      modal
+        .querySelector('#tenantDocumentPreviewDownload')
+        .addEventListener('click', function (event) {
+          if (!shouldUseTenantDocumentSystemMenu()) {
+            return;
+          }
+
+          event.preventDefault();
+          openTenantDocumentSystemMenu('download');
+        });
     }
 
     async function previewTenantDocument(documentId) {
