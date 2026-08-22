@@ -518,8 +518,12 @@
       border-top: 1px solid var(--border);
     }
 
+    .tenant-actions.has-binding-invite {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .tenant-action-button {
-      min-height: 42px;
+      min-height: 44px;
       border: 0;
       background: #ffffff;
       color: #5f6670;
@@ -534,6 +538,10 @@
 
     .tenant-action-button.purple {
       color: var(--purple);
+    }
+
+    .tenant-action-button.primary {
+      color: var(--primary-dark);
     }
 
     .tenant-action-button:active {
@@ -948,6 +956,123 @@
       }
 
       location.href = url;
+    }
+
+    function tenantBindingInviteUrl() {
+      const url =
+        new URL(
+          'tenant-bind.html',
+          location.href
+        );
+
+      url.searchParams.set(
+        'v',
+        window.CMWEBS_RELEASE_VERSION ||
+          'v2.1-p0-1'
+      );
+
+      if (TEST_MODE) {
+        url.searchParams.set('test', '1');
+      }
+
+      return url.href;
+    }
+
+    function buildTenantBindingInviteMessage() {
+      return [
+        '請使用本人 LINE 開啟 CMWebs 房客綁定連結：',
+        tenantBindingInviteUrl(),
+        '',
+        '開啟後輸入您留存的手機號碼，即可完成綁定。'
+      ].join('\n');
+    }
+
+    function copyTenantBindingInviteFallback(message) {
+      const textarea =
+        document.createElement('textarea');
+
+      textarea.value = message;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      const copied =
+        document.execCommand('copy');
+
+      textarea.remove();
+
+      if (!copied) {
+        throw new Error('copy_failed');
+      }
+    }
+
+    async function copyTenantBindingInvite(message) {
+      if (
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+        try {
+          await navigator.clipboard.writeText(message);
+          return;
+        } catch (error) {
+          // Continue to the legacy copy path below.
+        }
+      }
+
+      copyTenantBindingInviteFallback(message);
+    }
+
+    function shouldUseTenantBindingNativeShare() {
+      const userAgent =
+        rawText(navigator.userAgent);
+      const isMobile =
+        /Android|iPhone|iPad|iPod|Mobile/i.test(
+          userAgent
+        );
+      const isLineClient =
+        Boolean(
+          window.liff &&
+          window.liff.isInClient &&
+          window.liff.isInClient()
+        );
+
+      return Boolean(
+        navigator.share &&
+        (isMobile || isLineClient)
+      );
+    }
+
+    async function shareTenantBindingInvite(event) {
+      if (event) {
+        event.stopPropagation();
+      }
+
+      const message =
+        buildTenantBindingInviteMessage();
+
+      if (shouldUseTenantBindingNativeShare()) {
+        try {
+          await navigator.share({
+            title: 'CMWebs 房客綁定',
+            text: message
+          });
+          showToast('已開啟分享選單');
+          return;
+        } catch (error) {
+          if (error && error.name === 'AbortError') {
+            return;
+          }
+        }
+      }
+
+      try {
+        await copyTenantBindingInvite(message);
+        showToast('綁定邀請已複製，可直接貼給房客');
+      } catch (error) {
+        showToast('無法自動複製，請改用支援分享功能的瀏覽器');
+      }
     }
 
     function buildLandlordLoginRedirectUri() {
@@ -1563,7 +1688,11 @@
             </div>
           </button>
 
-          <div class="tenant-actions">
+          <div class="tenant-actions ${
+            bindingStatus === 'unbound'
+              ? 'has-binding-invite'
+              : ''
+          }">
             <button
               class="tenant-action-button"
               type="button"
@@ -1583,6 +1712,21 @@
                   : '合約申請紀錄'
               }
             </button>
+
+            ${
+              bindingStatus === 'unbound'
+                ? `
+                  <button
+                    class="tenant-action-button primary"
+                    type="button"
+                    aria-label="分享房客綁定連結"
+                    onclick="shareTenantBindingInvite(event)"
+                  >
+                    邀請綁定
+                  </button>
+                `
+                : ''
+            }
           </div>
         </section>
       `;

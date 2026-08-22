@@ -18,6 +18,7 @@
 - [ ] 新房東註冊
 - [ ] onboarding 暫存與完成
 - [ ] 房客未綁定導向 bind
+- [x] 房東房客名單只為未綁定房客顯示「邀請綁定」；手機使用系統分享，桌機複製不含房客個資的 `tenant-bind.html` 連結（`tests/tenant-binding-invite-share.test.mjs`）
 - [ ] `+886` 與 9 位手機正規化
 - [ ] 不同 Workspace 不可互看
 
