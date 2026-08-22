@@ -8,6 +8,7 @@
   />
   <title>CMWebs 合約文件管理</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -778,7 +779,8 @@
           tenantButton.addEventListener('click', function () {
             location.href =
               'landlord-tenant-detail.html?tenant_id=' +
-              encodeURIComponent(tenantId);
+              encodeURIComponent(tenantId) +
+              '&v=20260822-line-actions-v1';
           });
         }
         listEl.appendChild(item);
@@ -802,7 +804,47 @@
       document.body.classList.remove('is-printing-document');
     }
 
-    function printDocumentPreview() {
+    function shouldUseDocumentSystemMenu() {
+      return Boolean(
+        window.CMWebsDocumentMobileActions &&
+        window.CMWebsDocumentMobileActions.shouldUseSystemFileMenu()
+      );
+    }
+
+    async function openDocumentSystemMenu(action) {
+      const helper = window.CMWebsDocumentMobileActions;
+
+      if (!helper) {
+        showToast('手機檔案功能尚未載入，請重新開啟此頁', true);
+        return;
+      }
+
+      if (action === 'download') {
+        showToast('請在手機選單選「儲存到檔案」');
+      } else if (action === 'print') {
+        showToast('請在手機選單選「列印」');
+      }
+
+      try {
+        await helper.openSystemFileMenu({
+          blob: CURRENT_DOCUMENT_BLOB,
+          fileName: CURRENT_DOCUMENT_FILE_NAME || 'document'
+        });
+      } catch (error) {
+        if (error && error.name === 'AbortError') {
+          return;
+        }
+
+        showToast(error.message || '手機檔案選單開啟失敗', true);
+      }
+    }
+
+    async function printDocumentPreview() {
+      if (shouldUseDocumentSystemMenu()) {
+        await openDocumentSystemMenu('print');
+        return;
+      }
+
       const frame = document.getElementById('documentPreviewFrame');
       const image = document.getElementById('documentPreviewImage');
 
@@ -833,39 +875,7 @@
     }
 
     async function shareDocumentPreview() {
-      if (!navigator.share) {
-        showToast('此瀏覽器不支援檔案分享', true);
-        return;
-      }
-
-      if (typeof File === 'undefined' || !CURRENT_DOCUMENT_BLOB) {
-        showToast('目前文件無法準備分享', true);
-        return;
-      }
-
-      const file = new File(
-        [CURRENT_DOCUMENT_BLOB],
-        CURRENT_DOCUMENT_FILE_NAME || 'document',
-        { type: CURRENT_DOCUMENT_BLOB.type }
-      );
-      const shareData = {
-        title: CURRENT_DOCUMENT_FILE_NAME || 'CMWebs 文件',
-        files: [file]
-      };
-
-      try {
-        if (navigator.canShare && !navigator.canShare(shareData)) {
-          throw new Error('此瀏覽器不支援檔案分享');
-        }
-
-        await navigator.share(shareData);
-      } catch (error) {
-        if (error && error.name === 'AbortError') {
-          return;
-        }
-
-        showToast(error.message || '分享失敗', true);
-      }
+      await openDocumentSystemMenu('share');
     }
 
     function openDocumentActionModal(documentData, objectUrl, blob) {
@@ -892,7 +902,11 @@
         '      <div class="document-action-title">文件預覽</div>' +
         '      <div class="document-action-note">' +
         safeHtml(fileName) +
-        ' · 可直接瀏覽文件內容</div>' +
+        ' · 可直接瀏覽文件內容' +
+        (shouldUseDocumentSystemMenu()
+          ? '<br>手機 LINE：下載請在手機選單選「儲存到檔案」，列印請在手機選單選「列印」。'
+          : '') +
+        '</div>' +
         '    </div>' +
         '    <button class="document-action-close" type="button" data-document-close>關閉</button>' +
         '  </div>' +
@@ -933,6 +947,16 @@
       modal
         .querySelector('[data-document-share]')
         .addEventListener('click', shareDocumentPreview);
+      modal
+        .querySelector('#documentPreviewDownload')
+        .addEventListener('click', function (event) {
+          if (!shouldUseDocumentSystemMenu()) {
+            return;
+          }
+
+          event.preventDefault();
+          openDocumentSystemMenu('download');
+        });
     }
 
     function previewDocument(documentId) {
