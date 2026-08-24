@@ -10,7 +10,8 @@ const V2_TENANT_CONTRACT_SIGNING_CONTRACT_HEADERS_ = [
   'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'updated_at'
 ];
 const V2_TENANT_CONTRACT_SIGNING_ARTIFACT_HEADERS_ = [
-  'artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'status'
+  'artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type',
+  'drive_file_id', 'status'
 ];
 
 function tenantContractSigningIsSubmitRequest_(body) {
@@ -118,6 +119,15 @@ function tenantContractSigningSubmit_(request) {
         contract.tenant_signing_submission_status
       ) === 'submitted'
     ) {
+      const existingArtifact =
+        tenantContractSigningArtifactById_(
+          schema.data.artifacts,
+          session.data,
+          contract.tenant_signature_artifact_id
+        );
+      if (!existingArtifact || !tenantLiffSigningText_(existingArtifact.drive_file_id)) {
+        return tenantContractSigningSubmitError_('SIGNATURE_ARTIFACT_MISSING');
+      }
       const existingTenant =
         tenantContractDocumentResolveTenant_(
           ss,
@@ -128,9 +138,8 @@ function tenantContractSigningSubmit_(request) {
         tenantContractDocumentMaterialize_(
           contract,
           existingTenant,
-          tenantLiffSigningText_(
-            contract.tenant_signature_artifact_id
-          )
+          tenantLiffSigningText_(contract.tenant_signature_artifact_id),
+          tenantLiffSigningText_(existingArtifact.drive_file_id)
         );
 
       if (!existingDocument.success) {
@@ -177,7 +186,8 @@ function tenantContractSigningSubmit_(request) {
       tenantContractDocumentMaterialize_(
         contract,
         tenant,
-        artifacts.data.signature_artifact_id
+        artifacts.data.signature_artifact_id,
+        artifacts.data.signature_drive_file_id
       );
 
     if (!signedDocument.success) {
@@ -264,10 +274,32 @@ function tenantContractSigningRequiredArtifacts_(artifacts, claims, signingMode)
   const required = signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'];
   const found = {};
   artifacts.forEach(function (row) {
-    if (tenantLiffSigningText_(row.contract_id) === claims.contract_id && tenantLiffSigningText_(row.tenant_id) === claims.tenant_id && tenantLiffSigningText_(row.workspace_id) === claims.workspace_id && tenantLiffSigningText_(row.status) === 'stored') found[tenantLiffSigningText_(row.artifact_type)] = tenantLiffSigningText_(row.artifact_id);
+    if (tenantLiffSigningText_(row.contract_id) === claims.contract_id && tenantLiffSigningText_(row.tenant_id) === claims.tenant_id && tenantLiffSigningText_(row.workspace_id) === claims.workspace_id && tenantLiffSigningText_(row.status) === 'stored') {
+      found[tenantLiffSigningText_(row.artifact_type)] = {
+        artifact_id: tenantLiffSigningText_(row.artifact_id),
+        drive_file_id: tenantLiffSigningText_(row.drive_file_id)
+      };
+    }
   });
-  if (required.some(function (type) { return !found[type]; })) return tenantContractSigningSubmitError_('REQUIRED_ARTIFACT_MISSING');
-  return { success: true, data: { signature_artifact_id: found.signature } };
+  if (required.some(function (type) { return !found[type] || !found[type].artifact_id; })) return tenantContractSigningSubmitError_('REQUIRED_ARTIFACT_MISSING');
+  if (!found.signature.drive_file_id) return tenantContractSigningSubmitError_('SIGNATURE_ARTIFACT_MISSING');
+  return {
+    success: true,
+    data: {
+      signature_artifact_id: found.signature.artifact_id,
+      signature_drive_file_id: found.signature.drive_file_id
+    }
+  };
+}
+
+function tenantContractSigningArtifactById_(artifacts, claims, artifactId) {
+  return (artifacts || []).find(function (row) {
+    return tenantLiffSigningText_(row.artifact_id) === tenantLiffSigningText_(artifactId) &&
+      tenantLiffSigningText_(row.contract_id) === tenantLiffSigningText_(claims.contract_id) &&
+      tenantLiffSigningText_(row.tenant_id) === tenantLiffSigningText_(claims.tenant_id) &&
+      tenantLiffSigningText_(row.workspace_id) === tenantLiffSigningText_(claims.workspace_id) &&
+      tenantLiffSigningText_(row.status) === 'stored';
+  }) || null;
 }
 
 function tenantContractSigningUpdateContract_(sheet, contract, updates) {

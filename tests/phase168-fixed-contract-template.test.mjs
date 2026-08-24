@@ -36,6 +36,15 @@ assert.match(
 );
 assert.match(
   documentSigningSource,
+  /function tenantContractDocumentMaterialize_\([\s\S]*signatureDriveFileId/
+);
+assert.match(
+  documentSigningSource,
+  /DriveApp\.getFileById\(signatureDriveFileId\)/,
+  'Google Docs writeback must use the stored Drive file ID for the signature image'
+);
+assert.match(
+  documentSigningSource,
   /DocumentApp\.openById\(/,
   'the copied Google Doc must be opened for native writeback'
 );

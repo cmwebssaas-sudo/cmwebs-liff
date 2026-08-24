@@ -28,7 +28,7 @@ const contractHeaders = [
   'tenant_signed_document_record_id',
   'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'updated_at'
 ];
-const artifactHeaders = ['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'status'];
+const artifactHeaders = ['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'drive_file_id', 'status'];
 
 function makeRuntime(mode = 'new_tenant', options = {}) {
   const props = new Map([
@@ -41,13 +41,14 @@ function makeRuntime(mode = 'new_tenant', options = {}) {
     ? [['contract-0', 'ws-1', 'tenant-1', 'active', 'renewal', '2025-08-01', '2026-07-31', 24000, 800, 48000, 3, '舊租約', '', '', '', '', '', '', ''], current]
     : [current];
   const requiredTypes = mode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'];
-  const artifactRows = requiredTypes.map((type, index) => ['artifact-' + index, 'ws-1', 'tenant-1', 'contract-1', type, 'stored']);
+  const artifactRows = requiredTypes.map((type, index) => ['artifact-' + index, 'ws-1', 'tenant-1', 'contract-1', type, 'drive-file-' + index, 'stored']);
   const sheets = {
     V2_users: new Sheet(['user_id', 'line_user_id', 'role', 'status'], [['user-1', 'Utenant', 'tenant', 'active']]),
     V2_tenants: new Sheet(['tenant_id', 'tenant_user_id', 'line_user_id', 'workspace_id', 'status', 'tenant_name', 'room_name'], [['tenant-1', 'user-1', 'Utenant', 'ws-1', 'active', '王小明', 'A-101']]),
     V2_contracts: new Sheet(contractHeaders, contracts),
     V2_contract_artifacts: new Sheet(artifactHeaders, artifactRows)
   };
+  const materializeCalls = [];
   const context = {
     JSON, String, Number, Math, Date, RegExp, Error,
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: name => sheets[name] || null }) },
@@ -74,18 +75,21 @@ function makeRuntime(mode = 'new_tenant', options = {}) {
       tenant_name: contract.tenant_name || '王小明',
       phone: '0912345678'
     }),
-    tenantContractDocumentMaterialize_: (contract, _tenant, signatureArtifactId) => ({
-      success: true,
-      code: 'OK',
-      data: {
-        document_record_id: 'document-' + contract.contract_id + '-' + signatureArtifactId
-      }
-    })
+    tenantContractDocumentMaterialize_: (contract, _tenant, signatureArtifactId, signatureDriveFileId) => {
+      materializeCalls.push({ signatureArtifactId, signatureDriveFileId });
+      return {
+        success: true,
+        code: 'OK',
+        data: {
+          document_record_id: 'document-' + contract.contract_id + '-' + signatureArtifactId
+        }
+      };
+    }
   };
   vm.createContext(context);
   vm.runInContext(sessionSource, context);
   vm.runInContext(submitSource, context);
-  return { api: context, sheets, props };
+  return { api: context, sheets, props, materializeCalls };
 }
 
 function sessionFor(api) {
@@ -125,7 +129,7 @@ function requestFor(token, overrides = {}) {
 }
 
 {
-  const { api, sheets } = makeRuntime();
+  const { api, sheets, materializeCalls } = makeRuntime();
   const token = sessionFor(api);
   const result = api.tenantContractSigningSubmit_(requestFor(token));
   assert.equal(result.success, true, result.code);
@@ -134,7 +138,15 @@ function requestFor(token, overrides = {}) {
   const submitIndex = contractHeaders.indexOf('tenant_signing_submission_status');
   assert.equal(sheets.V2_contracts.rows[0][statusIndex], 'pending_tenant_signature');
   assert.equal(sheets.V2_contracts.rows[0][submitIndex], 'submitted');
+  assert.deepEqual(materializeCalls[0], {
+    signatureArtifactId: 'artifact-2',
+    signatureDriveFileId: 'drive-file-2'
+  });
   assert.equal(api.tenantContractSigningSubmit_(requestFor(token)).code, 'IDEMPOTENT');
+  assert.deepEqual(materializeCalls[1], {
+    signatureArtifactId: 'artifact-2',
+    signatureDriveFileId: 'drive-file-2'
+  });
 }
 
 {

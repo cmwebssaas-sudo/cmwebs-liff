@@ -529,11 +529,23 @@ function tenantContractDocumentAppend_(sheet, record) {
     })]);
 }
 
-function tenantContractDocumentMaterialize_(contract, tenant, signatureArtifactId) {
+function tenantContractDocumentMaterialize_(
+  contract,
+  tenant,
+  signatureArtifactId,
+  signatureDriveFileId
+) {
   contract = contract || {};
   tenant = tenant || {};
   signatureArtifactId = tenantContractDocumentText_(signatureArtifactId);
+  signatureDriveFileId = tenantContractDocumentText_(signatureDriveFileId);
   if (!signatureArtifactId) {
+    return {
+      success: false,
+      code: 'SIGNATURE_ARTIFACT_MISSING'
+    };
+  }
+  if (!signatureDriveFileId) {
     return {
       success: false,
       code: 'SIGNATURE_ARTIFACT_MISSING'
@@ -616,7 +628,7 @@ function tenantContractDocumentMaterialize_(contract, tenant, signatureArtifactI
         '數位軌跡：系統已綁定承租人專屬 LINE UID 備查。'
       );
     });
-    var signatureFile = DriveApp.getFileById(signatureArtifactId);
+    var signatureFile = DriveApp.getFileById(signatureDriveFileId);
     if (!tenantContractDocumentReplaceSignature_(body, signatureFile.getBlob())) {
       throw new Error('SIGNATURE_SLOT_NOT_FOUND');
     }

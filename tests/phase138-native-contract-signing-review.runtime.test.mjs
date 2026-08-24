@@ -65,13 +65,13 @@ function makeRuntime(options = {}) {
   ];
   const sheets = {
     V2_contracts: new Sheet(signingHeaders, contractRows),
-    V2_contract_artifacts: new Sheet(['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'status'], [
-      ['artifact-front-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'identity_front', 'stored'],
-      ['artifact-back-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'identity_back', 'stored'],
-      ['artifact-signature-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'signature', 'stored'],
-      ['artifact-front', 'ws-1', 'tenant-1', 'contract-rejected', 'identity_front', 'stored'],
-      ['artifact-back', 'ws-1', 'tenant-1', 'contract-rejected', 'identity_back', 'stored'],
-      ['artifact-signature', 'ws-1', 'tenant-1', 'contract-rejected', 'signature', 'stored']
+    V2_contract_artifacts: new Sheet(['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'drive_file_id', 'status'], [
+      ['artifact-front-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'identity_front', 'drive-front-submitted', 'stored'],
+      ['artifact-back-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'identity_back', 'drive-back-submitted', 'stored'],
+      ['artifact-signature-submitted', 'ws-1', 'tenant-1', 'contract-submitted', 'signature', 'drive-signature-submitted', 'stored'],
+      ['artifact-front', 'ws-1', 'tenant-1', 'contract-rejected', 'identity_front', 'drive-front', 'stored'],
+      ['artifact-back', 'ws-1', 'tenant-1', 'contract-rejected', 'identity_back', 'drive-back', 'stored'],
+      ['artifact-signature', 'ws-1', 'tenant-1', 'contract-rejected', 'signature', 'drive-signature', 'stored']
     ])
   };
   const state = {
