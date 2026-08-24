@@ -630,6 +630,11 @@
       text-align: center;
     }
 
+    .contract-entry-card {
+      padding: 30px 18px;
+      text-align: center;
+    }
+
     .loading-spinner {
       width: 30px;
       height: 30px;
@@ -650,6 +655,13 @@
     .error-title {
       margin-bottom: 8px;
       color: var(--danger);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .contract-entry-title {
+      margin-bottom: 8px;
+      color: var(--purple);
       font-size: 17px;
       font-weight: 900;
     }
@@ -2224,6 +2236,40 @@
       `;
     }
 
+    function isContractEntryFallbackError_(result) {
+      return Boolean(
+        result &&
+        result.success !== true &&
+        result.code ===
+          'ACTIVE_CONTRACT_NOT_FOUND'
+      );
+    }
+
+    function renderContractEntryFallback() {
+      document.getElementById(
+        'app'
+      ).innerHTML = `
+        <section class="card contract-entry-card">
+          <div class="contract-entry-title">
+            目前沒有生效中的租約
+          </div>
+
+          <div class="error-text">
+            如有待簽署的合約，請進入合約頁查看完整內容並完成手機簽名。
+          </div>
+
+          <button
+            class="primary-button"
+            style="width:100%;margin-top:15px;"
+            type="button"
+            onclick="goPage('tenant-contract.html')"
+          >
+            進入合約簽署
+          </button>
+        </section>
+      `;
+    }
+
     function setRefreshLoading(
       loading
     ) {
@@ -2301,6 +2347,15 @@
           )
         ) {
           goBindingPage();
+          return;
+        }
+
+        if (
+          isContractEntryFallbackError_(
+            homeResult
+          )
+        ) {
+          renderContractEntryFallback();
           return;
         }
 
