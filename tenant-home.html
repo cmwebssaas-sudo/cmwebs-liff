@@ -1151,6 +1151,27 @@
         preserveTestQuery_(url.href);
     }
 
+    function buildTenantLiffLoginRedirectUri_() {
+      const url = new URL(
+        'tenant-bind.html',
+        location.href
+      );
+
+      url.searchParams.set(
+        'next',
+        'tenant-home.html'
+      );
+      url.searchParams.set(
+        'v',
+        window.CMWEBS_RELEASE_VERSION ||
+          'v2.1-p0-1'
+      );
+
+      return preserveTestQuery_(
+        url.href
+      );
+    }
+
     function goBindingPage() {
       goPage('tenant-bind.html');
     }
@@ -1315,7 +1336,7 @@
       if (!liff.isLoggedIn()) {
         liff.login({
           redirectUri:
-            location.href
+            buildTenantLiffLoginRedirectUri_()
         });
 
         return false;
