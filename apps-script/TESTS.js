@@ -1,4 +1,41 @@
 /**
+ * 只讀觸發 Google Docs 授權並檢查固定合約版型是否可讀。
+ */
+function testInspectFixedContractTemplateAccess() {
+  const templateId = String(
+    PropertiesService
+      .getScriptProperties()
+      .getProperty('CMWEBS_CONTRACT_TEMPLATE_DOCUMENT_ID') || ''
+  ).trim();
+
+  const result = {
+    configured: Boolean(templateId),
+    can_open: false,
+    title: '',
+    text_length: 0,
+    error: ''
+  };
+
+  if (!templateId) {
+    result.error = 'CMWEBS_CONTRACT_TEMPLATE_DOCUMENT_ID 未設定';
+  } else {
+    try {
+      const document = DocumentApp.openById(templateId);
+      result.can_open = true;
+      result.title = document.getName();
+      result.text_length = document.getBody().getText().length;
+    } catch (error) {
+      result.error = error && error.message
+        ? error.message
+        : String(error);
+    }
+  }
+
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
+}
+
+/**
  * 檢查 603 帳單目前在 V2 的實際狀態
  */
 function testInspectRoom603Bill() {
