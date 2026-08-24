@@ -36,6 +36,23 @@ function testInspectFixedContractTemplateAccess() {
 }
 
 /**
+ * 讀取目前 Apps Script 使用者的授權狀態與 Google 授權網址。
+ */
+function testGetContractTemplateAuthorizationInfo() {
+  const info = ScriptApp.getAuthorizationInfo(
+    ScriptApp.AuthMode.FULL
+  );
+
+  const result = {
+    status: String(info.getAuthorizationStatus()),
+    authorization_url: info.getAuthorizationUrl() || ''
+  };
+
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
+}
+
+/**
  * 檢查 603 帳單目前在 V2 的實際狀態
  */
 function testInspectRoom603Bill() {
