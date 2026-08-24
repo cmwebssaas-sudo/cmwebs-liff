@@ -25,6 +25,12 @@ const submissionSource = readFileSync(submissionPath, 'utf8');
 const tenantUiSource = readFileSync(tenantUiPath, 'utf8');
 
 assert.match(
+  tenantUiSource,
+  /簽署成功[\s\S]*簽名圖片與簽署日期已寫入簽署版 Google 文件/,
+  'the tenant must receive an explicit success signal after submission'
+);
+
+assert.match(
   documentSigningSource,
   /CMWEBS_CONTRACT_TEMPLATE_DOCUMENT_ID/,
   'the template must be selected from Script Properties'
@@ -90,9 +96,46 @@ assert.match(
   'the tenant UI must render the supplied fixed-template contract content'
 );
 
-const runtime = { String, Object, Array, Math };
+const runtime = {
+  String,
+  Object,
+  Array,
+  Math,
+  Date,
+  Utilities: {
+    formatDate: (value, _timezone, pattern) => {
+      const date = new Date(value);
+      if (pattern === 'yyyy/MM/dd HH:mm:ss') return '2026/08/25 14:55:56';
+      if (pattern === 'yyyy') return '2026';
+      if (pattern === 'M') return '8';
+      if (pattern === 'd') return '25';
+      throw new Error(`unexpected format: ${pattern}`);
+    }
+  }
+};
 vm.createContext(runtime);
 vm.runInContext(documentSigningSource, runtime);
+
+const signedPreview = runtime.tenantContractDocumentBuildPreviewText_(
+  [
+    '簽署狀態：待房客完成線上簽署。',
+    '簽署時間：{{簽約時間}}',
+    '乙方簽名（線上簽署）：＿＿＿＿（待簽署）',
+    '西元{{簽約年}}年{{簽約月}}月{{簽約日}}日'
+  ].join('\n'),
+  {
+    tenant_signing_submission_status: 'submitted',
+    tenant_signed_at: '2026-08-25T06:55:56.000Z'
+  },
+  {},
+  new Date('2026-08-25T06:55:56.000Z')
+);
+assert.match(signedPreview, /簽署狀態：✅/);
+assert.match(signedPreview, /簽署時間：2026\/08\/25 14:55:56/);
+assert.match(signedPreview, /簽名圖片已回寫至簽署版 Google 文件/);
+assert.match(signedPreview, /西元2026年8月25日/);
+assert.doesNotMatch(signedPreview, /待房客完成線上簽署|待簽署/);
+
 let insertedIndex = null;
 let insertedBlob = null;
 let signatureWidth = 300;

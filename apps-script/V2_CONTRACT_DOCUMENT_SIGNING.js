@@ -51,24 +51,59 @@ function tenantContractDocumentBuildPreviewText_(
   templateText,
   contract,
   tenant,
-  now
+  now,
+  context
 ) {
+  contract = contract || {};
+  var signed = tenantContractDocumentIsSubmitted_(contract);
+  var signedAt = contract.tenant_signed_at ||
+    contract.tenant_signing_submitted_at ||
+    now ||
+    new Date();
   var fields = tenantContractDocumentFields_(
     contract || {},
     tenant || {},
-    {},
-    now
+    context || {},
+    signedAt
   );
-  fields.簽署時間 = '待完成';
-  fields.簽約年 = '—';
-  fields.簽約月 = '—';
-  fields.簽約日 = '—';
-  return tenantContractDocumentPendingEvidenceText_(
-    tenantContractDocumentReplacePlaceholders_(
+  if (!signed) {
+    fields.簽約時間 = '待完成';
+    fields.簽約年 = '—';
+    fields.簽約月 = '—';
+    fields.簽約日 = '—';
+  }
+  var content = tenantContractDocumentReplacePlaceholders_(
     templateText,
     fields
-    ).replace(/\{\{[^{}]+\}\}/g, '—')
-  );
+  ).replace(/\{\{[^{}]+\}\}/g, '—');
+  return signed
+    ? tenantContractDocumentSignedEvidenceText_(content)
+    : tenantContractDocumentPendingEvidenceText_(content);
+}
+
+function tenantContractDocumentIsSubmitted_(contract) {
+  contract = contract || {};
+  var status = tenantContractDocumentText_(
+    contract.tenant_signing_submission_status
+  ).toLowerCase();
+  return ['submitted', 'approved'].indexOf(status) >= 0 ||
+    Boolean(tenantContractDocumentText_(contract.tenant_signed_at));
+}
+
+function tenantContractDocumentSignedEvidenceText_(text) {
+  return String(text || '')
+    .split('簽署狀態：待房客完成線上簽署。')
+    .join('簽署狀態：✅ 本合約已由承租人透過 CMWebs線上租管系統完成實名證件上傳，並勾選同意租賃條款。')
+    .split('簽署狀態：待承租人簽署。')
+    .join('簽署狀態：✅ 本合約已由承租人透過 CMWebs線上租管系統完成實名證件上傳，並勾選同意租賃條款。')
+    .split('數位軌跡：簽署完成後由系統綁定承租人專屬 LINE UID 備查。')
+    .join('數位軌跡：系統已綁定承租人專屬 LINE UID 備查。')
+    .split('數位軌跡：系統於房客完成簽署後記錄。')
+    .join('數位軌跡：系統已綁定承租人專屬 LINE UID 備查。')
+    .replace(
+      /乙方簽名（線上簽署）：[＿_－—\-\s]+（待簽署）/g,
+      '乙方簽名（線上簽署）：✅ 親筆簽名圖片已回寫至簽署版 Google 文件'
+    );
 }
 
 function tenantContractDocumentPendingEvidenceText_(text) {
@@ -129,21 +164,15 @@ function tenantContractDocumentPreview_(contract, tenant) {
       contract || {},
       tenant || {}
     );
-    var fields = tenantContractDocumentFields_(
-      contract || {},
-      tenant || {},
-      context,
-      new Date()
-    );
-    fields.簽署時間 = '待完成';
-    fields.簽約年 = '—';
-    fields.簽約月 = '—';
-    fields.簽約日 = '—';
-    var content = tenantContractDocumentPendingEvidenceText_(
-      tenantContractDocumentReplacePlaceholders_(
-        body.getText(),
-        fields
-      ).replace(/\{\{[^{}]+\}\}/g, '—')
+    var previewTime = tenantContractDocumentIsSubmitted_(contract)
+      ? contract.tenant_signed_at || contract.tenant_signing_submitted_at || new Date()
+      : new Date();
+    var content = tenantContractDocumentBuildPreviewText_(
+      body.getText(),
+      contract,
+      tenant,
+      previewTime,
+      context
     );
     return {
       available: true,

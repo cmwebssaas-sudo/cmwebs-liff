@@ -30,6 +30,7 @@ assert.match(source, /function clearTenantSignature\(\)/);
 assert.match(source, /function tenantSigningReadyToSubmit\(\)/);
 assert.match(source, /CONTRACT_SIGNING_SCHEMA_NOT_READY/);
 assert.match(signingSubmit, /consent: true/);
+assert.match(source, /result\.data && result\.data\.terms_document/);
 assert.doesNotMatch(signingSubmit, /line_user_id|tenant_id|workspace_id|landlord_id|signing_mode:/);
 assert.doesNotMatch(source, /localStorage|sessionStorage/);
 assert.match(source, /min-height: 44px/);

@@ -160,7 +160,8 @@ function tenantContractSigningSubmit_(request) {
         code: 'IDEMPOTENT',
         data: tenantContractSigningPublicResult_(
           idempotentContract,
-          true
+          true,
+          existingTenant
         )
       };
     }
@@ -236,7 +237,8 @@ function tenantContractSigningSubmit_(request) {
       code: 'OK',
       data: tenantContractSigningPublicResult_(
         updated,
-        false
+        false,
+        tenant
       )
     };
   } catch (_) {
@@ -319,13 +321,18 @@ function tenantContractSigningHasHeaders_(headers, required) {
   return required.every(function (name) { return headers.indexOf(name) >= 0; });
 }
 
-function tenantContractSigningPublicResult_(contract, idempotent) {
+function tenantContractSigningPublicResult_(contract, idempotent, tenant) {
+  const termsDocument = tenant &&
+    typeof tenantContractDocumentPreview_ === 'function'
+    ? tenantContractDocumentPreview_(contract, tenant)
+    : null;
   return {
     contract_id: tenantLiffSigningText_(contract.contract_id),
     signed_document_record_id: tenantLiffSigningText_(contract.tenant_signed_document_record_id),
     signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'submitted',
     submitted_at: contract.tenant_signing_submitted_at || contract.tenant_signed_at || '',
-    idempotent: idempotent === true
+    idempotent: idempotent === true,
+    terms_document: termsDocument
   };
 }
 

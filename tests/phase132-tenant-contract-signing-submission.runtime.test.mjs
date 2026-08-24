@@ -134,6 +134,8 @@ function requestFor(token, overrides = {}) {
   const result = api.tenantContractSigningSubmit_(requestFor(token));
   assert.equal(result.success, true, result.code);
   assert.equal(result.data.signing_status, 'submitted');
+  assert.equal(result.data.terms_document.available, true);
+  assert.match(result.data.terms_document.content, /房屋租賃契約書/);
   const statusIndex = contractHeaders.indexOf('contract_status');
   const submitIndex = contractHeaders.indexOf('tenant_signing_submission_status');
   assert.equal(sheets.V2_contracts.rows[0][statusIndex], 'pending_tenant_signature');

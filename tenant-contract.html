@@ -2773,6 +2773,7 @@
       const submitted = signingStatus === 'submitted';
       const rejected = signingStatus === 'rejected';
       const terms = contract.terms_document || {};
+      const submittedAt = contract.tenant_signing_submitted_at || contract.tenant_signed_at;
       const comparison = contract.renewal_comparison || {};
       const changedItems = Array.isArray(comparison.items)
         ? comparison.items.filter(function(item) { return item.changed === true; })
@@ -2797,8 +2798,8 @@
 
         ${submitted ? `
           <section class="signing-section">
-            <h2 class="signing-section-title">線上簽署資料已送交</h2>
-            <p class="signing-section-help">送交時間：${safeText(formatDateTime(contract.tenant_signing_submitted_at || contract.tenant_signed_at))}。您的簽署資料已送交房東審核；這不代表合約已核准或生效，請留意後續通知。</p>
+            <h2 class="signing-section-title">簽署成功，資料已送交房東審核</h2>
+            <p class="signing-section-help">簽署時間：${safeText(formatDateTime(submittedAt))}。簽名圖片與簽署日期已寫入簽署版 Google 文件；這不代表合約已核准或生效，請留意後續通知。</p>
           </section>
         ` : ''}
 
@@ -2840,7 +2841,7 @@
         ` : ''}
 
         <section class="signing-section">
-          <h2 class="signing-section-title">完整合約內容（固定版型）</h2>
+          <h2 class="signing-section-title">${submitted ? '完整合約內容（已簽署版）' : '完整合約內容（固定版型）'}</h2>
           ${terms.available ? `
             <details class="signing-details" open>
               <summary>閱讀完整合約與簽署條款</summary>
@@ -3056,7 +3057,21 @@
         }
         const result = await submitTenantContractSigning();
         TENANT_SIGNING_DATA.signing_status = result.data && result.data.signing_status || 'submitted';
+        const submittedAt = result.data && result.data.submitted_at;
+        TENANT_SIGNING_DATA.contract = Object.assign({}, TENANT_SIGNING_DATA.contract || {}, {
+          tenant_signing_submission_status: TENANT_SIGNING_DATA.signing_status,
+          tenant_signing_submitted_at: submittedAt || (TENANT_SIGNING_DATA.contract && TENANT_SIGNING_DATA.contract.tenant_signing_submitted_at),
+          tenant_signed_at: submittedAt || (TENANT_SIGNING_DATA.contract && TENANT_SIGNING_DATA.contract.tenant_signed_at)
+        });
+        if (result.data && result.data.terms_document) {
+          TENANT_SIGNING_DATA.contract.terms_document = result.data.terms_document;
+        }
         renderTenantSigningWorkflow();
+        showAlert(
+          '簽署資料已成功送出。\n簽名圖片與簽署日期已寫入簽署版 Google 文件。',
+          null,
+          '簽署成功'
+        );
       } catch (error) {
         showAlert(error.message || '簽署送交失敗，請重新驗證後再試。', null, '尚未送交');
       } finally {
