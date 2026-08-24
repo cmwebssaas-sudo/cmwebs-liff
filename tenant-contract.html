@@ -1048,7 +1048,7 @@
     /* Native signing workflow: intentionally quiet, single-action mobile UI. */
     .signing-page {
       min-height: 100%;
-      padding-bottom: calc(var(--nav-height) + 116px + env(safe-area-inset-bottom));
+      padding-bottom: calc(28px + env(safe-area-inset-bottom));
       background: #ffffff;
     }
 
@@ -1419,11 +1419,9 @@
       color: #7c5b00;
     }
 
-    .signing-sticky-action {
-      position: sticky;
-      z-index: 2;
-      bottom: calc(var(--nav-height) + 10px);
+    .signing-action {
       padding-top: 18px;
+      padding-bottom: 8px;
       background: #ffffff;
     }
 
@@ -2371,7 +2369,7 @@
             <input id="tenantInviteConfirmationCode" class="signing-form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="請輸入 6 碼確認碼" />
           </div>
           ${message ? `<div class="signing-notice warning">${safeText(message)}</div>` : ''}
-          <div class="signing-sticky-action">
+          <div class="signing-action">
             <button class="signing-primary-button" type="button" onclick="startTenantInviteSigning()">確認資料並開始簽署</button>
           </div>
         </section>
@@ -2759,7 +2757,7 @@
           <h1 class="signing-title">暫時無法開始簽署</h1>
           <p class="signing-description">${safeText(message)}</p>
           ${code ? `<div class="signing-notice">請重新驗證；若問題持續，請聯絡房東協助確認合約資料。</div>` : ''}
-          <div class="signing-sticky-action">
+          <div class="signing-action">
             <button class="signing-primary-button" onclick="retryTenantSigningSession()">重新驗證</button>
           </div>
         </div>
@@ -2889,7 +2887,7 @@
             </label>
           </section>
 
-          <div class="signing-sticky-action">
+          <div class="signing-action">
             <button id="tenantSigningSubmitButton" class="signing-primary-button" type="button" onclick="submitTenantSigningWorkflow()">送交簽署資料</button>
             <div id="tenantSigningActionHint" class="signing-action-hint"></div>
           </div>

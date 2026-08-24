@@ -38,7 +38,9 @@ assert.match(source, /@media \(max-width: 420px\)/);
 assert.match(source, /@media \(max-width: 360px\)/);
 assert.match(source, /\.signing-summary\s*\{\s*display: grid;[\s\S]*?minmax\(0, 1fr\)/);
 assert.match(source, /\.signature-pad canvas\s*\{[\s\S]*?width: 100%/);
-assert.match(source, /\.signing-sticky-action\s*\{[\s\S]*?bottom: calc\(var\(--nav-height\)/);
+assert.match(source, /\.signing-action\s*\{[\s\S]*?padding-top: 18px;[\s\S]*?background: #ffffff;/);
+assert.doesNotMatch(source, /\.signing-sticky-action/);
+assert.doesNotMatch(source, /\.signing-action\s*\{[\s\S]*?position:\s*(?:fixed|sticky)/);
 assert.match(source, /const LIFF_ID\s*=\s*'2010314940-iJB1D6sN'/);
 assert.match(source, /AKfycbyrwKb3adOgHVBwbwHwLeSsDoUgYhaUaFXui66tnyMNBrT9eOVbi788oHeVRTif_LA9BA\/exec/);
 
