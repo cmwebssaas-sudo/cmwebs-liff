@@ -18,6 +18,8 @@
 - [ ] 新房東註冊
 - [ ] onboarding 暫存與完成
 - [ ] 房客未綁定導向 bind
+- [x] 房客綁定狀態查詢對 Apps Script 偶發慢回應採 30 秒逾時、一次重試，且不重試綁定寫入
+  （`tests/tenant-binding-api-resilience.test.mjs`；尚未做真機或 Production 驗證）
 - [x] 房東房客名單只為未綁定房客顯示「邀請綁定」；手機使用系統分享，桌機複製不含房客個資的 `tenant-bind.html` 連結（`tests/tenant-binding-invite-share.test.mjs`）
 - [ ] `+886` 與 9 位手機正規化
 - [ ] 不同 Workspace 不可互看

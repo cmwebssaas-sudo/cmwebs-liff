@@ -568,6 +568,10 @@
     let LINE_USER_ID = '';
     let LINE_PROFILE = null;
 
+    const JSONP_REQUEST_TIMEOUT_MS = 30000;
+    const JSONP_REQUEST_MAX_ATTEMPTS = 2;
+    const JSONP_REQUEST_RETRY_DELAY_MS = 350;
+
     function setAppHeight() {
       const height =
         window.visualViewport &&
@@ -722,9 +726,10 @@
         preserveTestQuery_(url.href);
     }
 
-    function jsonpRequest(
+    function jsonpRequestOnce(
       action,
-      params
+      params,
+      timeoutMs
     ) {
       return new Promise(
         function (resolve, reject) {
@@ -760,7 +765,8 @@
                   )
                 );
               },
-              25000
+              timeoutMs ||
+              JSONP_REQUEST_TIMEOUT_MS
             );
 
           function cleanup() {
@@ -864,6 +870,71 @@
           document.body.appendChild(
             script
           );
+        }
+      );
+    }
+
+    function jsonpRequest(
+      action,
+      params,
+      options
+    ) {
+      const requestOptions =
+        options || {};
+      const timeoutMs =
+        Number(
+          requestOptions.timeoutMs ||
+          JSONP_REQUEST_TIMEOUT_MS
+        );
+      const maxAttempts =
+        Math.max(
+          1,
+          Number(
+            requestOptions.maxAttempts ||
+            1
+          )
+        );
+      const retryOnTimeout =
+        requestOptions.retryOnTimeout ===
+        true;
+
+      let attempt = 0;
+
+      return new Promise(
+        function (resolve, reject) {
+          function run() {
+            attempt += 1;
+
+            jsonpRequestOnce(
+              action,
+              params,
+              timeoutMs
+            ).then(
+              resolve,
+              function (error) {
+                const isTimeout =
+                  error &&
+                  error.message ===
+                    'API 載入逾時';
+
+                if (
+                  retryOnTimeout &&
+                  isTimeout &&
+                  attempt < maxAttempts
+                ) {
+                  setTimeout(
+                    run,
+                    JSONP_REQUEST_RETRY_DELAY_MS
+                  );
+                  return;
+                }
+
+                reject(error);
+              }
+            );
+          }
+
+          run();
         }
       );
     }
@@ -1421,7 +1492,12 @@
         const result =
           await jsonpRequest(
             'tenant_binding_status',
-            {}
+            {},
+            {
+              maxAttempts:
+                JSONP_REQUEST_MAX_ATTEMPTS,
+              retryOnTimeout: true
+            }
           );
 
         if (
