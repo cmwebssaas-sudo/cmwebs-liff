@@ -139,16 +139,18 @@ tenant_payment_report_submit
 ### Native contract document response
 
 The tenant signing session and landlord signing-review list return a complete
-`terms_document`/`contract_document` view. When landlord-provided contract text
-exists it is returned as-is with its source/version; otherwise the server
-generates the fixed V2.1 standard contract from canonical contract fields. The
-standard document includes parties, property/room, dates, rent, deposit,
-payment method, use/repair, fees/equipment, early termination, handover,
-dispute handling, supplemental terms, and signing confirmation. Missing
-required fields fail closed rather than producing a document with guessed
-values. The tenant must read the document, complete required artifacts, draw a
-signature, and submit consent; the server records the signing timestamp and
-landlord review remains the activation boundary.
+`terms_document`/`contract_document` view from the configured fixed Google Docs
+template (`CMWEBS_CONTRACT_TEMPLATE_DOCUMENT_ID`). The server replaces the
+template placeholders with canonical contract, room, property, landlord and
+tenant fields; it does not generate a different standard contract when the
+template is unavailable. Missing template configuration or unreadable template
+content fails closed. On submission, the server copies the fixed template into
+the private signing folder (`CMWEBS_CONTRACT_SIGNING_DRIVE_ROOT_FOLDER_ID`),
+writes the tenant fields and signature image into that copy, promotes the
+template's pending-signature evidence, and records the resulting document in
+`V2_contract_signing_documents` and `tenant_signed_document_record_id`. The
+tenant must read the document, complete required artifacts, draw a signature,
+and submit consent; landlord review remains the activation boundary.
 
 ### Existing paid-settlement view synchronization
 

@@ -108,7 +108,7 @@ function landlordInitiatedContractCreateNewUnlocked_(access, input) {
     contract_origin: 'landlord_initiated',
     invite_id: inviteId,
     contract_content: landlordInitiatedContractBuildDocument_(access, property, room, normalized.data, tenantName),
-    contract_version: 'v2.1-standard-1',
+    contract_version: 'fixed-google-doc-template-1',
     previous_contract_id: '',
     renewed_to_contract_id: '',
     tenant_signing_submission_status: 'pending',
@@ -235,7 +235,7 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     contract_origin: 'landlord_initiated',
     invite_id: '',
     contract_content: landlordInitiatedContractBuildDocument_(access, property, room, normalized.data, previous.tenant_name || previous.name || ''),
-    contract_version: 'v2.1-standard-1',
+    contract_version: 'fixed-google-doc-template-1',
     previous_contract_id: previousId,
     renewed_to_contract_id: '',
     tenant_signing_submission_status: 'pending',
@@ -775,13 +775,56 @@ function landlordInitiatedContractContractObject_(access, actor, property, room,
     property_id: property.property_id || '', property_name: property.property_name || room.property_name || '', property_address: property.property_address || property.address || '', room_id: room.room_id || '', room_name: room.room_name || '',
     start_date: input.start_date, contract_start_date: input.start_date, end_date: input.end_date, contract_end_date: input.end_date,
     rent_amount: input.rent_amount, monthly_rent: input.rent_amount, management_fee: input.management_fee, monthly_management_fee: input.management_fee, deposit_months: input.deposit_months, deposit_amount: input.deposit_amount, payment_day: input.payment_day, monthly_payment_day: input.payment_day, electricity_fee_rate: input.electricity_fee_rate, equipment_fee_rate: input.equipment_fee_rate,
-    contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending', signing_mode: '', contract_origin: 'landlord_initiated', invite_id: '', contract_content: '', contract_version: 'v2.1-standard-1', previous_contract_id: '', renewed_to_contract_id: '', tenant_signing_submission_status: 'pending',
+    contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending', signing_mode: '', contract_origin: 'landlord_initiated', invite_id: '', contract_content: '', contract_version: 'fixed-google-doc-template-1', previous_contract_id: '', renewed_to_contract_id: '', tenant_signing_submission_status: 'pending',
     created_by_user_id: actor.user_id, created_by_membership_id: actor.membership_id, created_at: '', updated_at: '', note: input.note
   };
   return Object.assign(base, extra || {});
 }
 
 function landlordInitiatedContractBuildDocument_(access, property, room, input, tenantName) {
+  if (typeof tenantContractDocumentPreview_ === 'function') {
+    const fixedPreview =
+      tenantContractDocumentPreview_(
+        {
+          landlord_name:
+            landlordInitiatedContractText_(
+              access.user && access.user.name
+            ),
+          tenant_name: tenantName || '',
+          tenant_phone: input.tenant_phone || '',
+          property_id: property.property_id || '',
+          property_name:
+            property.property_name ||
+            room.property_name ||
+            '',
+          property_address:
+            property.property_address ||
+            property.address ||
+            '',
+          room_id: room.room_id || '',
+          room_name: room.room_name || '',
+          start_date: input.start_date,
+          end_date: input.end_date,
+          rent_amount: input.rent_amount,
+          management_fee: input.management_fee,
+          deposit_amount: input.deposit_amount
+        },
+        {
+          tenant_name: tenantName || '',
+          phone: input.tenant_phone || ''
+        }
+      );
+
+    if (fixedPreview && fixedPreview.available === true) {
+      return landlordInitiatedContractText_(
+        fixedPreview.content
+      );
+    }
+
+    return '';
+  }
+
+
   const money = function (value) { return landlordInitiatedContractNumber_(value).toLocaleString('en-US'); };
   const landlord = landlordInitiatedContractText_(access.user && access.user.name) || '出租人';
   return [
@@ -835,7 +878,9 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
 }
 
 function landlordInitiatedContractReplaceTenantName_(content, tenantName) {
-  return landlordInitiatedContractText_(content).replace(/承租人：[^\n]*/, '承租人：' + tenantName);
+  return landlordInitiatedContractText_(content)
+    .replace(/承租人：[^\n]*/, '承租人：' + tenantName)
+    .replace(/乙方[：:]\s*(?:—|待房客填寫)/, '乙方：' + tenantName);
 }
 
 function landlordInitiatedContractPublicContract_(contract, tenant, invite) {

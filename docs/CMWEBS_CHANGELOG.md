@@ -2,6 +2,19 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-08-25 — Restore supplied Google Docs fixed contract template (local candidate)
+
+- Replaced the generated standard-contract fallback in the tenant signing
+  preview and landlord review view with the configured fixed Google Docs
+  template and canonical placeholder substitution.
+- Submission now copies the fixed document, supports the supplied text-based
+  `乙方簽名（線上簽署）` slot as well as an image slot, promotes the supplied
+  pending-signature evidence, and records the signed copy in the document
+  signing schema.
+- Phase 168 and the full local suite pass. This remains a local candidate; no
+  Apps Script deployment, Script Properties update, Drive-folder migration,
+  GitHub Pages publication, or real LINE/mobile acceptance occurred.
+
 ## 2026-08-16 — Landlord-initiated new lease and renewal signing (local candidate)
 
 - Added the approved landlord-first contract flow in an isolated local branch:

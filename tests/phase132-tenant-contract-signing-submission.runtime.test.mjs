@@ -25,6 +25,7 @@ const contractHeaders = [
   'start_date', 'end_date', 'rent_amount', 'management_fee', 'deposit_amount',
   'monthly_payment_day', 'contract_content', 'previous_contract_id',
   'tenant_signed_at', 'tenant_signature_artifact_id',
+  'tenant_signed_document_record_id',
   'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'updated_at'
 ];
 const artifactHeaders = ['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'status'];
@@ -35,9 +36,9 @@ function makeRuntime(mode = 'new_tenant', options = {}) {
     ['CMWEBS_LIFF_SESSION_HMAC_SECRET', 'session-secret']
   ]);
   const cache = new Map();
-  const current = ['contract-1', 'ws-1', 'tenant-1', 'pending_tenant_signature', mode, '2026-08-01', '2027-07-31', 25000, 1000, 50000, 5, '第一條\n本租約以雙方確認內容為準。', options.previous ? 'contract-0' : '', '', '', '', '', ''];
+  const current = ['contract-1', 'ws-1', 'tenant-1', 'pending_tenant_signature', mode, '2026-08-01', '2027-07-31', 25000, 1000, 50000, 5, '第一條\n本租約以雙方確認內容為準。', options.previous ? 'contract-0' : '', '', '', '', '', '', ''];
   const contracts = options.previous
-    ? [['contract-0', 'ws-1', 'tenant-1', 'active', 'renewal', '2025-08-01', '2026-07-31', 24000, 800, 48000, 3, '舊租約', '', '', '', '', '', ''], current]
+    ? [['contract-0', 'ws-1', 'tenant-1', 'active', 'renewal', '2025-08-01', '2026-07-31', 24000, 800, 48000, 3, '舊租約', '', '', '', '', '', '', ''], current]
     : [current];
   const requiredTypes = mode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'];
   const artifactRows = requiredTypes.map((type, index) => ['artifact-' + index, 'ws-1', 'tenant-1', 'contract-1', type, 'stored']);
@@ -60,7 +61,26 @@ function makeRuntime(mode = 'new_tenant', options = {}) {
       base64EncodeWebSafe: value => Buffer.from(value).toString('base64url'),
       base64DecodeWebSafe: value => Buffer.from(value, 'base64url'),
       newBlob: value => ({ getDataAsString: () => Buffer.from(value).toString() })
-    }
+    },
+    tenantContractDocumentPreview_: () => ({
+      available: true,
+      source: 'fixed_google_doc_template',
+      version: 'fixed-google-doc-template',
+      content: '房屋租賃契約書\n第一條\n第十五條'
+    }),
+    tenantContractDocumentEnsureContractColumns_: () => {},
+    tenantContractDocumentResolveTenant_: (_ss, claims, contract) => ({
+      tenant_id: claims.tenant_id,
+      tenant_name: contract.tenant_name || '王小明',
+      phone: '0912345678'
+    }),
+    tenantContractDocumentMaterialize_: (contract, _tenant, signatureArtifactId) => ({
+      success: true,
+      code: 'OK',
+      data: {
+        document_record_id: 'document-' + contract.contract_id + '-' + signatureArtifactId
+      }
+    })
   };
   vm.createContext(context);
   vm.runInContext(sessionSource, context);

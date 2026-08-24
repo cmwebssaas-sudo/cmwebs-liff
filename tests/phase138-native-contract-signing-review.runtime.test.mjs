@@ -53,14 +53,15 @@ class Sheet {
 const signingHeaders = [
   'contract_id', 'workspace_id', 'tenant_id', 'contract_status', 'signing_mode',
   'tenant_signed_at', 'tenant_signature_artifact_id',
+  'tenant_signed_document_record_id',
   'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'updated_at'
 ];
 
 function makeRuntime(options = {}) {
   const contractRows = [
-    ['contract-submitted', 'ws-1', 'tenant-1', 'pending_tenant_signature', 'new_tenant', '2026-08-01T00:00:00.000Z', 'artifact-signature', 'submitted', '2026-08-01T00:00:00.000Z', ''],
-    ['contract-rejected', 'ws-1', 'tenant-1', 'pending_tenant_signature', 'new_tenant', '2026-08-01T00:00:00.000Z', 'artifact-signature', 'rejected', '2026-08-01T00:00:00.000Z', ''],
-    ['contract-other-workspace', 'ws-2', 'tenant-2', 'pending_tenant_signature', 'new_tenant', '2026-08-01T00:00:00.000Z', 'artifact-other', 'submitted', '2026-08-01T00:00:00.000Z', '']
+    ['contract-submitted', 'ws-1', 'tenant-1', 'pending_tenant_signature', 'new_tenant', '2026-08-01T00:00:00.000Z', 'artifact-signature', '', 'submitted', '2026-08-01T00:00:00.000Z', ''],
+    ['contract-rejected', 'ws-1', 'tenant-1', 'pending_tenant_signature', 'new_tenant', '2026-08-01T00:00:00.000Z', 'artifact-signature', '', 'rejected', '2026-08-01T00:00:00.000Z', ''],
+    ['contract-other-workspace', 'ws-2', 'tenant-2', 'pending_tenant_signature', 'new_tenant', '2026-08-01T00:00:00.000Z', 'artifact-other', '', 'submitted', '2026-08-01T00:00:00.000Z', '']
   ];
   const sheets = {
     V2_contracts: new Sheet(signingHeaders, contractRows),
@@ -149,7 +150,20 @@ function makeRuntime(options = {}) {
     }),
     tenantContractSigningSubmitError_: code => ({ success: false, code }),
     verifyTenantLiffSessionToken_: () => ({ success: true, data: { contract_id: 'contract-rejected', tenant_id: 'tenant-1', workspace_id: 'ws-1' } }),
-    tenantContractSigningRequiredArtifacts_: () => ({ success: true, data: { signature_artifact_id: 'artifact-signature' } })
+    tenantContractSigningRequiredArtifacts_: () => ({ success: true, data: { signature_artifact_id: 'artifact-signature' } }),
+    tenantContractDocumentEnsureContractColumns_: () => {},
+    tenantContractDocumentResolveTenant_: (_ss, claims, contract) => ({
+      tenant_id: claims.tenant_id,
+      tenant_name: contract.tenant_name || '王小明',
+      phone: '0912345678'
+    }),
+    tenantContractDocumentMaterialize_: (contract, _tenant, signatureArtifactId) => ({
+      success: true,
+      code: 'OK',
+      data: {
+        document_record_id: 'document-' + contract.contract_id + '-' + signatureArtifactId
+      }
+    })
   };
   vm.createContext(context);
   vm.runInContext(sessionSource, context);

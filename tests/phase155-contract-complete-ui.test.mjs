@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const tenantPage = readFileSync(new URL('../tenant-contract.html', import.meta.url), 'utf8');
 const landlordPage = readFileSync(new URL('../landlord-contract-requests.html', import.meta.url), 'utf8');
 
-for (const marker of ['租賃契約書', '完整合約內容', '閱讀完整合約', 'tenantSignatureCanvas', 'tenantSigningConsent', '送交簽署資料']) {
+for (const marker of ['完整合約內容', '閱讀完整合約', 'tenantSignatureCanvas', 'tenantSigningConsent', '送交簽署資料']) {
   assert.match(tenantPage, new RegExp(marker), `missing tenant signing marker: ${marker}`);
 }
 assert.match(tenantPage, /details[^>]+open/);

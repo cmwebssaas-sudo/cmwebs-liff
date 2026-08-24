@@ -6,6 +6,7 @@ const V2_TENANT_CONTRACT_SIGNING_EXCHANGE_TTL_SECONDS_ = 60;
 const V2_TENANT_CONTRACT_SIGNING_CONTRACT_HEADERS_ = [
   'contract_id', 'workspace_id', 'tenant_id', 'contract_status', 'signing_mode',
   'tenant_signed_at', 'tenant_signature_artifact_id',
+  'tenant_signed_document_record_id',
   'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'updated_at'
 ];
 const V2_TENANT_CONTRACT_SIGNING_ARTIFACT_HEADERS_ = [
@@ -48,48 +49,194 @@ function tenantContractSigningReadExchange_(requestId, pollSecret) {
 }
 
 function tenantContractSigningSubmit_(request) {
-  if (request.consent !== true) return tenantContractSigningSubmitError_('CONSENT_REQUIRED');
-  const session = verifyTenantLiffSessionToken_(request.session_token);
-  if (!session.success) return tenantContractSigningSubmitError_(session.code || 'SESSION_TOKEN_INVALID');
+  if (request.consent !== true) {
+    return tenantContractSigningSubmitError_('CONSENT_REQUIRED');
+  }
+
+  const session =
+    verifyTenantLiffSessionToken_(request.session_token);
+
+  if (!session.success) {
+    return tenantContractSigningSubmitError_(
+      session.code || 'SESSION_TOKEN_INVALID'
+    );
+  }
+
   const lock = LockService.getScriptLock();
+
   try {
     lock.waitLock(5000);
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const schema = tenantContractSigningSchema_(ss);
-    if (!schema.success) return schema;
-    const contract = tenantContractSigningOwnedContract_(schema.data.contracts, session.data);
-    if (!contract) return tenantContractSigningSubmitError_('CONTRACT_OWNERSHIP_INVALID');
-    const status = tenantLiffSigningText_(contract.contract_status).toLowerCase();
-    if (['pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(status) === -1) return tenantContractSigningSubmitError_('CONTRACT_NOT_SIGNABLE');
-    const signingMode = tenantLiffSigningText_(contract.signing_mode).toLowerCase();
-    if (['new_tenant', 'renewal'].indexOf(signingMode) === -1) return tenantContractSigningSubmitError_('SIGNING_MODE_NOT_READY');
-    if (tenantLiffSigningText_(contract.tenant_signing_submission_status) === 'submitted') return { success: true, code: 'IDEMPOTENT', data: tenantContractSigningPublicResult_(contract, true) };
-    const artifacts = tenantContractSigningRequiredArtifacts_(schema.data.artifacts, session.data, signingMode);
-    if (!artifacts.success) return artifacts;
+
+    if (!schema.success) {
+      return schema;
+    }
+
+    const contract =
+      tenantContractSigningOwnedContract_(
+        schema.data.contracts,
+        session.data
+      );
+
+    if (!contract) {
+      return tenantContractSigningSubmitError_(
+        'CONTRACT_OWNERSHIP_INVALID'
+      );
+    }
+
+    const status =
+      tenantLiffSigningText_(
+        contract.contract_status
+      ).toLowerCase();
+
+    if (
+      ['pending_tenant_signature', 'awaiting_tenant_signature']
+        .indexOf(status) === -1
+    ) {
+      return tenantContractSigningSubmitError_(
+        'CONTRACT_NOT_SIGNABLE'
+      );
+    }
+
+    const signingMode =
+      tenantLiffSigningText_(
+        contract.signing_mode
+      ).toLowerCase();
+
+    if (
+      ['new_tenant', 'renewal'].indexOf(signingMode) === -1
+    ) {
+      return tenantContractSigningSubmitError_(
+        'SIGNING_MODE_NOT_READY'
+      );
+    }
+
+    if (
+      tenantLiffSigningText_(
+        contract.tenant_signing_submission_status
+      ) === 'submitted'
+    ) {
+      const existingTenant =
+        tenantContractDocumentResolveTenant_(
+          ss,
+          session.data,
+          contract
+        );
+      const existingDocument =
+        tenantContractDocumentMaterialize_(
+          contract,
+          existingTenant,
+          tenantLiffSigningText_(
+            contract.tenant_signature_artifact_id
+          )
+        );
+
+      if (!existingDocument.success) {
+        return tenantContractSigningSubmitError_(
+          existingDocument.code ||
+            'CONTRACT_DOCUMENT_WRITE_FAILED'
+        );
+      }
+
+      const idempotentContract =
+        Object.assign({}, contract, {
+          tenant_signed_document_record_id:
+            existingDocument.data.document_record_id
+        });
+
+      return {
+        success: true,
+        code: 'IDEMPOTENT',
+        data: tenantContractSigningPublicResult_(
+          idempotentContract,
+          true
+        )
+      };
+    }
+
+    const artifacts =
+      tenantContractSigningRequiredArtifacts_(
+        schema.data.artifacts,
+        session.data,
+        signingMode
+      );
+
+    if (!artifacts.success) {
+      return artifacts;
+    }
+
+    const tenant =
+      tenantContractDocumentResolveTenant_(
+        ss,
+        session.data,
+        contract
+      );
+    const signedDocument =
+      tenantContractDocumentMaterialize_(
+        contract,
+        tenant,
+        artifacts.data.signature_artifact_id
+      );
+
+    if (!signedDocument.success) {
+      return tenantContractSigningSubmitError_(
+        signedDocument.code ||
+          'CONTRACT_DOCUMENT_WRITE_FAILED'
+      );
+    }
+
     const now = new Date().toISOString();
     const updates = {
       tenant_signed_at: now,
-      tenant_signature_artifact_id: artifacts.data.signature_artifact_id,
+      tenant_signature_artifact_id:
+        artifacts.data.signature_artifact_id,
+      tenant_signed_document_record_id:
+        signedDocument.data.document_record_id,
       tenant_signing_submission_status: 'submitted',
       tenant_signing_submitted_at: now,
       updated_at: now
     };
-    // A re-submission supersedes only the current review fields when that local migration is present.
+
     [
       'tenant_signing_reviewed_at',
       'tenant_signing_reviewed_by_user_id',
       'tenant_signing_reviewed_by_membership_id',
       'tenant_signing_review_note'
     ].forEach(function (header) {
-      if (schema.data.contractHeaders.indexOf(header) >= 0) updates[header] = '';
+      if (
+        schema.data.contractHeaders.indexOf(header) >= 0
+      ) {
+        updates[header] = '';
+      }
     });
-    tenantContractSigningUpdateContract_(schema.data.contractSheet, contract, updates);
-    const updated = Object.assign({}, contract, updates);
-    return { success: true, code: 'OK', data: tenantContractSigningPublicResult_(updated, false) };
+
+    tenantContractSigningUpdateContract_(
+      schema.data.contractSheet,
+      contract,
+      updates
+    );
+
+    const updated =
+      Object.assign({}, contract, updates);
+
+    return {
+      success: true,
+      code: 'OK',
+      data: tenantContractSigningPublicResult_(
+        updated,
+        false
+      )
+    };
   } catch (_) {
-    return tenantContractSigningSubmitError_('SIGNING_SUBMISSION_FAILED');
+    return tenantContractSigningSubmitError_(
+      'SIGNING_SUBMISSION_FAILED'
+    );
   } finally {
-    try { lock.releaseLock(); } catch (_) {}
+    try {
+      lock.releaseLock();
+    } catch (_) {}
   }
 }
 
@@ -97,6 +244,10 @@ function tenantContractSigningSchema_(ss) {
   const contractSheet = ss.getSheetByName('V2_contracts');
   const artifactSheet = ss.getSheetByName('V2_contract_artifacts');
   if (!contractSheet || !artifactSheet) return tenantContractSigningSubmitError_('CONTRACT_SIGNING_SCHEMA_NOT_READY');
+  tenantContractDocumentEnsureContractColumns_(
+    contractSheet,
+    ['tenant_signed_document_record_id']
+  );
   const contractHeaders = tenantContractSigningHeaders_(contractSheet);
   const artifactHeaders = tenantContractSigningHeaders_(artifactSheet);
   if (!tenantContractSigningHasHeaders_(contractHeaders, V2_TENANT_CONTRACT_SIGNING_CONTRACT_HEADERS_) || !tenantContractSigningHasHeaders_(artifactHeaders, V2_TENANT_CONTRACT_SIGNING_ARTIFACT_HEADERS_)) return tenantContractSigningSubmitError_('CONTRACT_SIGNING_SCHEMA_NOT_READY');
@@ -139,6 +290,7 @@ function tenantContractSigningHasHeaders_(headers, required) {
 function tenantContractSigningPublicResult_(contract, idempotent) {
   return {
     contract_id: tenantLiffSigningText_(contract.contract_id),
+    signed_document_record_id: tenantLiffSigningText_(contract.tenant_signed_document_record_id),
     signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'submitted',
     submitted_at: contract.tenant_signing_submitted_at || contract.tenant_signed_at || '',
     idempotent: idempotent === true

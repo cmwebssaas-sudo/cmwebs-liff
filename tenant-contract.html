@@ -2623,6 +2623,12 @@
         REQUIRED_ARTIFACT_MISSING: '請完成所有必要附件與簽名。',
         CONSENT_REQUIRED: '請先勾選同意確認。',
         CONTRACT_SIGNING_SCHEMA_NOT_READY: '簽署資料尚未備妥，請聯絡房東協助處理。',
+        CONTRACT_TEMPLATE_NOT_CONFIGURED: '固定版型尚未設定，請聯絡房東確認。',
+        CONTRACT_TEMPLATE_UNAVAILABLE: '固定版型目前無法讀取，請稍後再試或聯絡房東。',
+        CONTRACT_SIGNING_DRIVE_ROOT_NOT_CONFIGURED: '簽署文件儲存位置尚未設定，請聯絡房東。',
+        CONTRACT_SIGNING_DRIVE_ROOT_UNAVAILABLE: '簽署文件儲存位置目前無法使用，請聯絡房東。',
+        SIGNATURE_SLOT_NOT_FOUND: '固定版型找不到簽名位置，請聯絡房東修正版型。',
+        CONTRACT_DOCUMENT_WRITE_FAILED: '簽名版合約建立失敗，尚未送交，請稍後再試。',
         SIGNING_EXCHANGE_DENIED: '簽署確認未通過，請重新驗證後再試。',
         INVITE_CODE_INVALID: '確認碼錯誤，請向房東重新確認 6 碼確認碼。',
         INVITE_EXPIRED: '這個合約邀請已過期，請請房東重新建立邀請。',
@@ -2836,7 +2842,7 @@
         ` : ''}
 
         <section class="signing-section">
-          <h2 class="signing-section-title">完整合約內容（標準租賃契約書）</h2>
+          <h2 class="signing-section-title">完整合約內容（固定版型）</h2>
           ${terms.available ? `
             <details class="signing-details" open>
               <summary>閱讀完整合約與簽署條款</summary>

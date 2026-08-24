@@ -64,6 +64,13 @@ and immutable rollback remain separate Production evidence.
   `contract_status`, is idempotent after a successful submission, and fails
   closed when the explicit signing-audit schema is absent. It is not a contract
   activation, approval, or status-transition mechanism.
+- The contract content source is the configured fixed Google Docs template,
+  selected by `CMWEBS_CONTRACT_TEMPLATE_DOCUMENT_ID`. Preview replaces only
+  canonical placeholders and fails closed when the template cannot be read;
+  submission copies the template into the private folder selected by
+  `CMWEBS_CONTRACT_SIGNING_DRIVE_ROOT_FOLDER_ID`, writes the signature into the
+  supplied text or image signature slot, and records the copy in
+  `V2_contract_signing_documents` plus `tenant_signed_document_record_id`.
 
 ## V2.1 native landlord signing-review candidate
 
