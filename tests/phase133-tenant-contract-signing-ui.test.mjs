@@ -9,6 +9,14 @@ const releaseSource = readFileSync(
   new URL('../frontend-release.js', import.meta.url),
   'utf8'
 );
+const tenantBindSource = readFileSync(
+  new URL('../tenant-bind.html', import.meta.url),
+  'utf8'
+);
+const tenantHomeSource = readFileSync(
+  new URL('../tenant-home.html', import.meta.url),
+  'utf8'
+);
 
 const signingRender = source.match(
   /function renderTenantSigningWorkflow\(\)[\s\S]*?async function handleTenantArtifactSelect/
@@ -58,5 +66,12 @@ assert.match(
   /20260825-tenant-signature-preview-v1/,
   'the frontend cache version must advance when the tenant contract preview changes'
 );
+for (const pageSource of [tenantBindSource, tenantHomeSource, source]) {
+  assert.match(
+    pageSource,
+    /frontend-release\.js\?v=20260825-tenant-signature-preview-v1/,
+    'tenant entry pages must bypass the cached frontend release script'
+  );
+}
 
 console.log('Phase 133 tenant-contract signing UI static tests passed.');
