@@ -33,6 +33,25 @@ be verified for the particular action that needs it.
 | 2026-08-04 | Landlord-home request-local snapshot candidate | Isolated local source/test candidate only. It enables the existing snapshot for `landlord_home_bootstrap` and adds a focused mock; no cross-request cache, push, deployment, Production access, or external action. |
 | 2026-08-13 | Native landlord contract-signing review security repair | Explicitly authorized isolated V2.1 candidate only. Uses server-verified review sessions, Workspace/RBAC revalidation, serialized final decisions, and approval-time artifact checks; no deployment, schema migration, Production access, push, PR, merge, or external action. |
 
+## 2026-08-25 explicitly authorized tenant signature-preview release
+
+The user explicitly authorized the fixed Google Docs template tenant-signing
+repair and deployment. The scope was limited to the standard digital-contract
+path: write the stored tenant signature into the private signed document,
+return the private signature image in the mobile text preview, and bust stale
+tenant entry-page caches. The supplied fixed template, signing schema, and
+existing mobile flow were preserved.
+
+- Apps Script target verification preceded the push. The existing Web App URL
+  was retained and its immutable serving version was updated to Version 125.
+- GitHub Pages was published through the repository workflow; the final source
+  commit was `9e18425` and the final workflow was `32793428257`.
+- No Google Sheets rows, Script Properties, triggers, LINE/LIFF settings, or
+  tenant data were changed by this release.
+- Local and public static verification passed, but real authenticated
+  LINE/mobile room-603 UAT remains `HUMAN_REQUIRED`. Deployment success is not
+  treated as signing acceptance.
+
 The source candidate is not canonical Git `main`, deployed Apps Script, or
 Production-performance evidence. It requires separate review and authorization
 for every later integration, publication, deployment, or runtime verification.

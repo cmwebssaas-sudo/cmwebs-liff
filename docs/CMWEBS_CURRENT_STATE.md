@@ -1,7 +1,7 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-08-12 (Asia/Taipei)**
+**Last verified: 2026-08-25 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
@@ -54,15 +54,53 @@ change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
 
 - **Canonical source baseline:** the Version 89 source tree described above,
   reconciled to GitHub `main` by PR #12.
-- **Current Apps Script serving version:** Version 102, verified read-only on
-  2026-08-12; this is deployment identity evidence, not source equivalence.
+- **Current Apps Script serving version:** Version 125, read back from the
+  existing Web App deployment on 2026-08-25 after the authorized fixed-template
+  signature-preview release. This is deployment identity evidence, not a
+  real-device UAT result.
 - **Current Apps Script rollback version:** `HUMAN_REQUIRED`; it was not
   identified in the read-only reconciliation.
-- **GitHub Pages:** merge `0bbbe06e` was deployed successfully by workflow
-  `31601674513`; its public tenant pages were fetched successfully.
+- **GitHub Pages:** the cache-busting release at commit `9e18425` completed
+  successfully in workflow `32793428257`; public tenant entry pages and the
+  versioned release asset were fetched successfully.
 - **Production editor source:** an open Apps Script editor does not prove what
   immutable version is serving. Deployment metadata and a scoped source export
   are authoritative.
+
+## 2026-08-25 tenant fixed-template signature preview release
+
+This authorized work unit completes the fixed Google Docs template path for the
+tenant contract signing surface. The configured fixed template remains the
+content source; the original template is not modified. Submission materializes
+a private signed copy, writes the stored signature artifact into the signed
+document, and the mobile read model returns the private signature image for the
+tenant preview after successful submission.
+
+### Verified release evidence
+
+- Apps Script was pushed to the verified target project and the existing Web
+  App deployment was updated to immutable Version 125. No new Web App URL was
+  created. No Sheets, Script Properties, trigger, LINE configuration, or
+  tenant data migration was performed in this work unit.
+- GitHub Pages commits `b4d164d`, `d719eb9`, and `9e18425` completed the
+  signature-preview and cache-busting changes. Workflow `32793428257` passed
+  build, deploy, and status-report jobs.
+- Public readback returned HTTP 200 for `tenant-contract.html`; the three
+  tenant entry pages load the versioned `frontend-release.js` asset, whose
+  release value is `20260825-tenant-signature-preview-v1`.
+- Local verification passed: focused tenant signing UI test, full Node suite
+  (`48 pass, 0 fail`), project validator (`81/81` routes and handlers,
+  duplicate declarations `0`, credential scan `0`), and `git diff --check`.
+
+### Remaining gate
+
+`HUMAN_REQUIRED`: an authenticated real LINE/mobile room-603 submission and
+post-submit preview has not been verified. Directly opening a nested tenant
+page outside the LIFF entry reproduced LINE 400 because the current URL is not
+under the configured LIFF endpoint; the tenant must reopen from the official
+LIFF entry, not a copied nested page URL. The separate direct deep-link
+redirect hardening remains a follow-up risk and was not included in this
+release.
 
 ## Historical reconciliation context
 
@@ -101,14 +139,21 @@ Project: CMWebs 智慧租管 / cmwebs-liff
 Read AGENTS.md and all docs/CMWEBS_*.md files first.
 Recommended model: gpt-5.6-terra; speed: medium.
 
-Gate 0 canonical source reconciliation is PASS. Immutable Apps Script Version
-89 source is byte-identical to approved commit 9a17c4b; canonical Git main
-contains that same tree through PR #12 merge 747b484.
+The latest isolated worktree is
+`codex/fix-fixed-contract-template-20260825` at `9e18425`, clean after the
+handoff documentation commit if present. The root aggregate worktree remains
+user-owned and dirty; do not clean or reset it.
 
-The 2026-08-12 read-only reconciliation verified the target account, project,
-serving Version 102, and GitHub Pages workflow. It did not establish a rollback
-target, byte-level Apps Script parity, live Sheets state, or runtime/UAT result.
-Re-verify those items before a scoped Production action. V2.1 currently has
-local-only documentation and snapshot candidates; later integration or external
-work needs separate authorization.
+The authorized fixed Google Docs template tenant-signature-preview release is
+deployed: Apps Script Version 125 on the existing Web App deployment and
+GitHub Pages workflow `32793428257` for commit `9e18425`. Public asset
+readback and local tests pass. This does not prove authenticated LINE/mobile
+room-603 UAT. The next action is to use the official LIFF entry on a real LINE
+device, submit the signed fixture, and verify both the success state and the
+signature image in the mobile preview and private signed Google Doc.
+
+If that UAT still fails, first capture the authenticated browser/network
+evidence; do not redeploy Apps Script or change Sheets/Properties blindly. The
+direct nested-page LIFF 400 and deep-link redirect hardening remain separate
+follow-up work.
 ```

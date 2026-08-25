@@ -2,6 +2,20 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-08-25 — Deploy fixed-template tenant signature preview
+
+- Deployed the fixed Google Docs template signing path to Apps Script Version
+  125 on the existing Web App deployment. The signed copy remains private and
+  the original fixed template is unchanged.
+- The tenant mobile preview now renders the stored handwritten signature image
+  after submission, while the backend continues to source it from the private
+  stored artifact and signed document record.
+- Bumped the tenant entry release asset and added versioned script URLs to bust
+  stale LIFF/Pages caches. GitHub Pages workflow `32793428257` completed
+  successfully for commit `9e18425`.
+- Local tests and public static readback passed. Authenticated real LINE/mobile
+  room-603 acceptance remains unverified and is not implied by this release.
+
 ## 2026-08-25 — Restore supplied Google Docs fixed contract template (local candidate)
 
 - Replaced the generated standard-contract fallback in the tenant signing
