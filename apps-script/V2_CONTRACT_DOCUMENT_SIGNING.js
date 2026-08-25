@@ -114,6 +114,59 @@ function tenantContractDocumentPendingEvidenceText_(text) {
     .join('數位軌跡：簽署完成後由系統綁定承租人專屬 LINE UID 備查。');
 }
 
+function tenantContractDocumentSignatureImage_(contract, tenant) {
+  contract = contract || {};
+  tenant = tenant || {};
+  if (!tenantContractDocumentIsSubmitted_(contract)) return null;
+
+  var artifactId = tenantContractDocumentText_(
+    contract.tenant_signature_artifact_id
+  );
+  if (!artifactId) return null;
+
+  var workspaceId = tenantContractDocumentText_(contract.workspace_id);
+  var tenantId = tenantContractDocumentFirst_(tenant, ['tenant_id']) ||
+    tenantContractDocumentText_(contract.tenant_id);
+  var contractId = tenantContractDocumentText_(contract.contract_id);
+  if (!workspaceId || !tenantId || !contractId) return null;
+
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet()
+      .getSheetByName('V2_contract_artifacts');
+    var artifact = tenantContractDocumentRows_(sheet).find(function (row) {
+      return tenantContractDocumentText_(row.artifact_id) === artifactId &&
+        tenantContractDocumentText_(row.workspace_id) === workspaceId &&
+        tenantContractDocumentText_(row.tenant_id) === tenantId &&
+        tenantContractDocumentText_(row.contract_id) === contractId &&
+        tenantContractDocumentText_(row.artifact_type) === 'signature' &&
+        tenantContractDocumentText_(row.mime_type).toLowerCase() === 'image/png' &&
+        tenantContractDocumentText_(row.status) === 'stored';
+    });
+    var driveFileId = artifact && tenantContractDocumentText_(artifact.drive_file_id);
+    if (!driveFileId) return null;
+
+    var blob = DriveApp.getFileById(driveFileId).getBlob();
+    var mimeType = tenantContractDocumentText_(
+      blob.getContentType() || artifact.mime_type
+    ).toLowerCase();
+    var bytes = blob.getBytes();
+    if (
+      mimeType !== 'image/png' ||
+      !bytes ||
+      !bytes.length ||
+      bytes.length > 3 * 1024 * 1024
+    ) {
+      return null;
+    }
+    return {
+      mime_type: 'image/png',
+      base64: Utilities.base64Encode(bytes)
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
 function tenantContractDocumentTemplateId_() {
   var id = tenantContractDocumentText_(
     PropertiesService.getScriptProperties().getProperty(
@@ -174,10 +227,15 @@ function tenantContractDocumentPreview_(contract, tenant) {
       previewTime,
       context
     );
+    var signatureImage = tenantContractDocumentSignatureImage_(
+      contract,
+      tenant
+    );
     return {
       available: true,
       source: 'fixed_google_doc_template',
-      content: content
+      content: content,
+      signature_image: signatureImage
     };
   } catch (_) {
     return {

@@ -66,6 +66,16 @@ assert.match(
 );
 assert.match(
   documentSigningSource,
+  /function tenantContractDocumentSignatureImage_\(/,
+  'the signed preview must expose the stored signature image to the authenticated preview'
+);
+assert.match(
+  documentSigningSource,
+  /signature_image/,
+  'the fixed document preview must carry signature image data separately from contract text'
+);
+assert.match(
+  documentSigningSource,
   /簽署狀態：待承租人簽署。/,
   'the supplied template pending marker must be promoted after signing'
 );
@@ -74,6 +84,11 @@ assert.match(
   sessionSource,
   /tenantContractDocumentPreview_\(/,
   'tenant preview must read the fixed template'
+);
+assert.match(
+  sessionSource,
+  /signature_image:\s*preview\.signature_image/,
+  'the authenticated tenant session must pass the signature image to the mobile preview'
 );
 assert.doesNotMatch(
   sessionSource,
@@ -135,6 +150,64 @@ assert.match(signedPreview, /簽署時間：2026\/08\/25 14:55:56/);
 assert.match(signedPreview, /簽名圖片已回寫至簽署版 Google 文件/);
 assert.match(signedPreview, /西元2026年8月25日/);
 assert.doesNotMatch(signedPreview, /待房客完成線上簽署|待簽署/);
+
+const artifactSheet = {
+  getLastRow: () => 2,
+  getDataRange: () => ({
+    getValues: () => [
+      [
+        'artifact_id',
+        'workspace_id',
+        'tenant_id',
+        'contract_id',
+        'artifact_type',
+        'drive_file_id',
+        'mime_type',
+        'status'
+      ],
+      [
+        'art-sign',
+        'ws-1',
+        'tenant-1',
+        'contract-1',
+        'signature',
+        'drive-sign',
+        'image/png',
+        'stored'
+      ]
+    ]
+  })
+};
+runtime.SpreadsheetApp = {
+  getActiveSpreadsheet: () => ({
+    getSheetByName: name => name === 'V2_contract_artifacts' ? artifactSheet : null
+  })
+};
+runtime.DriveApp = {
+  getFileById: id => {
+    assert.equal(id, 'drive-sign');
+    return {
+      getBlob: () => ({
+        getContentType: () => 'image/png',
+        getBytes: () => [1, 2, 3]
+      })
+    };
+  }
+};
+runtime.Utilities.base64Encode = bytes => bytes.join(',') === '1,2,3' ? 'AQID' : '';
+const signatureImagePreview = runtime.tenantContractDocumentSignatureImage_({
+  tenant_signature_artifact_id: 'art-sign',
+  workspace_id: 'ws-1',
+  tenant_id: 'tenant-1',
+  contract_id: 'contract-1',
+  tenant_signing_submission_status: 'submitted'
+});
+assert.equal(signatureImagePreview.mime_type, 'image/png');
+assert.equal(
+  signatureImagePreview.base64,
+  'AQID',
+  'the signed preview must read only the matching stored signature artifact'
+);
 
 let insertedIndex = null;
 let insertedBlob = null;

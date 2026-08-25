@@ -213,7 +213,8 @@ function tenantLiffSigningTermsDocument_(contract, tenant) {
       available: true,
       source: 'fixed_google_doc_template',
       version: tenantLiffSigningText_(preview.version) || 'fixed-google-doc-template',
-      content: tenantLiffSigningText_(preview.content)
+      content: tenantLiffSigningText_(preview.content),
+      signature_image: preview.signature_image || null
     };
   }
 
