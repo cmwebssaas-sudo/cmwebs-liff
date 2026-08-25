@@ -5,6 +5,10 @@ const source = readFileSync(
   new URL('../tenant-contract.html', import.meta.url),
   'utf8'
 );
+const releaseSource = readFileSync(
+  new URL('../frontend-release.js', import.meta.url),
+  'utf8'
+);
 
 const signingRender = source.match(
   /function renderTenantSigningWorkflow\(\)[\s\S]*?async function handleTenantArtifactSelect/
@@ -49,5 +53,10 @@ assert.doesNotMatch(source, /\.signing-sticky-action/);
 assert.doesNotMatch(source, /\.signing-action\s*\{[\s\S]*?position:\s*(?:fixed|sticky)/);
 assert.match(source, /const LIFF_ID\s*=\s*'2010314940-iJB1D6sN'/);
 assert.match(source, /AKfycbyrwKb3adOgHVBwbwHwLeSsDoUgYhaUaFXui66tnyMNBrT9eOVbi788oHeVRTif_LA9BA\/exec/);
+assert.match(
+  releaseSource,
+  /20260825-tenant-signature-preview-v1/,
+  'the frontend cache version must advance when the tenant contract preview changes'
+);
 
 console.log('Phase 133 tenant-contract signing UI static tests passed.');
