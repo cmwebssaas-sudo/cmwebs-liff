@@ -1854,6 +1854,82 @@ if (
 
 
 // --------------------------------------------------
+// 房東：合約文件管理初始化
+//
+// v2_action=landlord_contract_documents_init
+//
+// 可加篩選 contract_id / tenant_id 查詢歷史文件
+// --------------------------------------------------
+
+if (
+  v2Action ===
+  'landlord_contract_documents_init'
+) {
+  const contractId =
+    String(
+      e.parameter.contract_id ||
+      ''
+    ).trim();
+
+  const tenantId =
+    String(
+      e.parameter.tenant_id ||
+      ''
+    ).trim();
+
+  const result =
+    getLandlordContractDocumentsInitByLineUid_(
+      lineUserId,
+      contractId,
+      tenantId
+    );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(result, requestId);
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
+
+// --------------------------------------------------
+// 房東：合約文件下載
+//
+// v2_action=landlord_contract_document_download
+// --------------------------------------------------
+
+if (
+  v2Action ===
+  'landlord_contract_document_download'
+) {
+  const documentId =
+    String(
+      e.parameter.document_id ||
+      e.parameter.documentId ||
+      ''
+    ).trim();
+
+  const result =
+    getLandlordContractDocumentDownloadByLineUid_(
+      lineUserId,
+      documentId
+    );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(result, requestId);
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
+
+// --------------------------------------------------
 // 房東：核准、駁回、完成合約申請
 //
 // v2_action=landlord_contract_request_update
@@ -2253,6 +2329,40 @@ function doPost(e) {
       e.postData && e.postData.contents
         ? e.postData.contents
         : '';
+
+    if (postBody) {
+      let request = null;
+
+      try {
+        request = JSON.parse(postBody);
+      } catch (_) {}
+
+      if (
+        request &&
+        String(request.v2_action || '')
+          .trim() ===
+          'landlord_contract_document_upload'
+      ) {
+        const result =
+          uploadLandlordContractDocumentByLineUid_(
+            request.line_user_id || '',
+            request.contract_id || '',
+            request.tenant_id || '',
+            request.document_type || '',
+            request.file_name || '',
+            request.mime_type || '',
+            request.base64 || '',
+            request.idempotency_key || '',
+            request.note || ''
+          );
+
+        return ContentService
+          .createTextOutput(
+            JSON.stringify(result)
+          )
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
 
     // Native tenant-contract operations use short-lived, verified LIFF
     // exchanges. Preserve the existing signed legacy bridge and LINE webhook

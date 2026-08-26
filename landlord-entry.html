@@ -526,146 +526,105 @@
       );
     }
 
-    function jsonpRequest(
+    async function fetchStatusJson(
       action,
       params
     ) {
-      return new Promise(
-        function (resolve, reject) {
-          const callbackName =
-            '__cmwebs_landlord_entry_' +
-            Date.now() +
-            '_' +
-            Math.floor(
-              Math.random() *
-              1000000
-            );
+      const controller =
+        new AbortController();
 
-          const script =
-            document.createElement(
-              'script'
-            );
+      const timer =
+        setTimeout(
+          function () {
+            controller.abort();
+          },
+          25000
+        );
 
-          let finished = false;
+      const query =
+        new URLSearchParams();
 
-          const timer =
-            setTimeout(
-              function () {
-                if (finished) {
-                  return;
-                }
+      query.set(
+        'v2_action',
+        action
+      );
+      query.set(
+        'line_user_id',
+        LINE_USER_ID
+      );
+      query.set(
+        '_',
+        String(Date.now())
+      );
 
-                finished = true;
-                cleanup();
+      Object.keys(
+        params || {}
+      ).forEach(
+        function (key) {
+          const value =
+            params[key];
 
-                reject(
-                  new Error(
-                    'API 載入逾時'
-                  )
-                );
-              },
-              25000
-            );
-
-          function cleanup() {
-            clearTimeout(timer);
-
-            if (script.parentNode) {
-              script.parentNode.removeChild(
-                script
-              );
-            }
-
-            try {
-              delete window[
-                callbackName
-              ];
-            } catch (error) {
-              window[callbackName] =
-                undefined;
-            }
+          if (
+            value === undefined ||
+            value === null
+          ) {
+            return;
           }
 
-          window[callbackName] =
-            function (result) {
-              if (finished) {
-                return;
-              }
-
-              finished = true;
-              cleanup();
-              resolve(result);
-            };
-
-          let url =
-            API_URL +
-            '?v2_action=' +
-            encodeURIComponent(
-              action
-            ) +
-            '&line_user_id=' +
-            encodeURIComponent(
-              LINE_USER_ID
-            ) +
-            '&callback=' +
-            encodeURIComponent(
-              callbackName
-            ) +
-            '&_=' +
-            Date.now();
-
-          Object.keys(
-            params || {}
-          ).forEach(
-            function (key) {
-              const value =
-                params[key];
-
-              if (
-                value === undefined ||
-                value === null
-              ) {
-                return;
-              }
-
-              url +=
-                '&' +
-                encodeURIComponent(
-                  key
-                ) +
-                '=' +
-                encodeURIComponent(
-                  value
-                );
-            }
-          );
-
-          script.charset =
-            'UTF-8';
-
-          script.onerror =
-            function () {
-              if (finished) {
-                return;
-              }
-
-              finished = true;
-              cleanup();
-
-              reject(
-                new Error(
-                  'API 路由執行失敗，請確認 Workspace 後端已重新部署'
-                )
-              );
-            };
-
-          script.src = url;
-
-          document.body.appendChild(
-            script
+          query.set(
+            key,
+            String(value)
           );
         }
       );
+
+      try {
+        const response =
+          await fetch(
+            API_URL +
+            '?' +
+            query.toString(),
+            {
+              method: 'GET',
+              credentials: 'omit',
+              cache: 'no-store',
+              signal: controller.signal
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            'API 路由執行失敗，請確認 Workspace 後端已重新部署'
+          );
+        }
+
+        return response.json();
+
+      } catch (error) {
+        if (
+          error &&
+          error.name === 'AbortError'
+        ) {
+          throw new Error(
+            'API 載入逾時'
+          );
+        }
+
+        if (
+          error &&
+          error.message ===
+            'API 路由執行失敗，請確認 Workspace 後端已重新部署'
+        ) {
+          throw error;
+        }
+
+        throw new Error(
+          'API 路由執行失敗，請確認 Workspace 後端已重新部署'
+        );
+
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
     async function initLine() {
@@ -978,7 +937,7 @@
         }
 
         const result =
-          await jsonpRequest(
+          await fetchStatusJson(
             'landlord_entry_status',
             {}
           );

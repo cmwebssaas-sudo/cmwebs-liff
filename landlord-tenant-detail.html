@@ -1496,7 +1496,7 @@
       location.href = url;
     }
 
-    function goContractRequests() {
+    function goContractRequests(focusNative) {
       let url =
         'landlord-contract-requests.html' +
         '?tenant_id=' +
@@ -1511,6 +1511,10 @@
       }
 
       url += '&v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
+
+      if (focusNative === true) {
+        url += '#native-signing-reviews';
+      }
 
       location.href = url;
     }
@@ -1530,6 +1534,99 @@
         setTimeout(function () {
           toast.classList.remove('show');
         }, 2400);
+    }
+
+    async function fetchStatusJson(action, params) {
+      const controller =
+        new AbortController();
+
+      const timer =
+        setTimeout(function () {
+          controller.abort();
+        }, 30000);
+
+      const query =
+        new URLSearchParams();
+
+      query.set(
+        'v2_action',
+        action
+      );
+      query.set(
+        'line_user_id',
+        LINE_USER_ID
+      );
+      query.set(
+        '_',
+        String(Date.now())
+      );
+
+      Object.keys(
+        params || {}
+      ).forEach(function (key) {
+        const value =
+          params[key];
+
+        if (
+          value === undefined ||
+          value === null
+        ) {
+          return;
+        }
+
+        query.set(
+          key,
+          String(value)
+        );
+      });
+
+      try {
+        const response =
+          await fetch(
+            API_URL +
+            '?' +
+            query.toString(),
+            {
+              method: 'GET',
+              credentials: 'omit',
+              cache: 'no-store',
+              signal: controller.signal
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            'API 路由執行失敗，請確認 Workspace 後端已重新部署'
+          );
+        }
+
+        return response.json();
+
+      } catch (error) {
+        if (
+          error &&
+          error.name === 'AbortError'
+        ) {
+          throw new Error(
+            'API 載入逾時'
+          );
+        }
+
+        if (
+          error &&
+          error.message ===
+            'API 路由執行失敗，請確認 Workspace 後端已重新部署'
+        ) {
+          throw error;
+        }
+
+        throw new Error(
+          'API 路由執行失敗，請確認 Workspace 後端已重新部署'
+        );
+
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
     function jsonpRequest(action, params) {
@@ -3511,6 +3608,26 @@
 
         <section class="card section-card">
           <div class="section-title-row">
+            <div class="section-title">房客合約</div>
+            <div class="section-hint">查看簽署內容</div>
+          </div>
+
+          <div class="tenant-document-context">
+            房客簽署的新租約會在合約頁顯示完整條款、簽署狀態與簽名預覽。
+          </div>
+
+          <button
+            class="primary-button"
+            style="width:100%;"
+            type="button"
+            onclick="goContractRequests(true)"
+          >
+            查看完整合約與簽名
+          </button>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-title-row">
             <div class="section-title">合約申請紀錄</div>
             <div class="section-hint">
               共 ${requests.length} 筆
@@ -3535,7 +3652,7 @@
             type="button"
             onclick="goContractRequests()"
           >
-            前往合約申請管理
+            查看合約申請紀錄
           </button>
         </section>
 
@@ -3702,11 +3819,11 @@
 
         const results =
           await Promise.allSettled([
-            jsonpRequest(
+            fetchStatusJson(
               'landlord_tenants',
               {}
             ),
-            jsonpRequest(
+            fetchStatusJson(
               'landlord_contract_requests_init',
               {}
             )

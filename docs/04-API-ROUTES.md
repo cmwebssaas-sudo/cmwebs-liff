@@ -8,7 +8,7 @@ not a deployment instruction and not evidence that the repository has been
 deployed.
 
 - Dispatcher: `apps-script/程式碼.js`
-- Route count: **78** unique `v2Action` routes
+- Route count: **83** unique `v2Action` routes
 - Source tree SHA-256: `c24e33ee91dec312d288fab508e09d8b4c9fefcc3c8eb84ab8b2486a4b2930d0`
 - Scope: read/write route definitions only; every write route still requires its
   existing Workspace, role, and authorization checks.
@@ -38,6 +38,8 @@ landlord_contract_signing_review_update_submit
 landlord_contract_signing_reviews_fetch
 landlord_contract_signing_reviews_fetch_status
 landlord_contract_signing_reviews_init
+landlord_contract_document_download
+landlord_contract_documents_init
 landlord_contract_request_update
 landlord_contract_requests_init
 landlord_entry_status
@@ -203,8 +205,8 @@ and submit consent; landlord review remains the activation boundary.
 
 These routes are local-candidate additions after the immutable Version 85
 baseline above. They are not deployment evidence. The immutable baseline has
-69 routes; with the contract and revenue-dashboard candidates the current
-source inventory has 78.
+69 routes; with the contract, revenue-dashboard, and document-management
+candidates the current source inventory has 83 JSONP routes.
 
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
@@ -263,6 +265,19 @@ against Production.
   never returned by the list route. The list route always joins the contract's
   current `invite_id`, so a landlord can retrieve the current QR/link after
   leaving the create page.
+
+## Landlord contract document routes
+
+These routes are the authenticated document-management surface used by the
+landlord tenant-detail page. They are included in this local repair candidate
+so the frontend does not call a route that is absent from the Apps Script
+dispatcher.
+
+| Route / POST action | Transport | Required authority | Purpose |
+| --- | --- | --- | --- |
+| `landlord_contract_documents_init` | JSONP / bridge | Bound landlord identity and owned contract scope | Lists the landlord's owned contracts and stored contract documents, optionally filtered by `contract_id` and `tenant_id`. |
+| `landlord_contract_document_download` | JSONP / bridge | Bound landlord identity and owned document scope | Returns a scoped stored document download payload without exposing Drive identifiers. |
+| `landlord_contract_document_upload` | JSON POST | Bound landlord identity and owned contract scope | Stores an idempotent JPG, PNG, or PDF landlord contract document in the configured private folder. |
 
 ## Signed legacy contract integration webhook
 

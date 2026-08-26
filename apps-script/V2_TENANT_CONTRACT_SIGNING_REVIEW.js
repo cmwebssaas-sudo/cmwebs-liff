@@ -396,6 +396,10 @@ function tenantContractSigningReviewContractDocument_(contract) {
       content:
         tenantContractSigningReviewText_(
           preview.content
+        ),
+      signature_image:
+        tenantContractSigningReviewSignatureImage_(
+          preview.signature_image
         )
     };
   }
@@ -408,6 +412,20 @@ function tenantContractSigningReviewContractDocument_(contract) {
     message: preview && preview.message
       ? preview.message
       : '固定版型尚未設定，請聯絡房東確認。'
+  };
+}
+
+function tenantContractSigningReviewSignatureImage_(value) {
+  if (!value || typeof value !== 'object') return null;
+
+  const mimeType = tenantContractSigningReviewText_(value.mime_type).toLowerCase();
+  const base64 = tenantContractSigningReviewText_(value.base64);
+  if (['image/png', 'image/jpeg'].indexOf(mimeType) === -1) return null;
+  if (!base64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) return null;
+
+  return {
+    mime_type: mimeType,
+    base64: base64
   };
 }
 

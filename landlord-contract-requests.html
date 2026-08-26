@@ -1118,6 +1118,28 @@
       line-height: 1.5;
     }
 
+    .review-contract-signature {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed #cddcf2;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .review-contract-signature img {
+      display: block;
+      max-width: min(100%, 280px);
+      max-height: 120px;
+      padding: 8px;
+      border: 1px solid #dbe7f8;
+      border-radius: 10px;
+      background: #fff;
+      object-fit: contain;
+    }
+
     @media (max-width: 390px) {
       .request-info-grid,
       .detail-grid,
@@ -1899,6 +1921,22 @@
       renderRequestList();
     }
 
+    function focusNativeSigningReviews() {
+      if (location.hash !== '#native-signing-reviews') {
+        return;
+      }
+
+      const section = document.getElementById('native-signing-reviews');
+
+      if (section) {
+        setTimeout(function () {
+          section.scrollIntoView({
+            block: 'start'
+          });
+        }, 0);
+      }
+    }
+
     function summarizeRequests(requests) {
       const summary = {
         total_count: 0,
@@ -2203,6 +2241,7 @@
       `;
 
       renderRequestList();
+      focusNativeSigningReviews();
     }
 
     function renderLandlordInitiatedContractSection() {
@@ -2465,15 +2504,27 @@
       const reviews = TENANT_FILTER_ID
         ? SIGNING_REVIEWS.filter(function (review) {
             return rawText(review.tenant_id).trim() === TENANT_FILTER_ID;
-          })
+        })
         : SIGNING_REVIEWS;
 
       if (!reviews.length) {
+        const reviewError = PAGE_DATA.native_signing_reviews_error;
+        if (reviewError) {
+          return `
+            <section class="card" id="native-signing-reviews">
+              <div class="list-header" style="margin:0 0 12px;">
+                <div class="list-title">原生合約簽署讀取失敗</div>
+                <div class="list-count">需要處理</div>
+              </div>
+              <div class="review-contract-meta">${safeText(reviewError.message || '房東端暫時無法讀取新租約。')}（錯誤碼：${safeText(reviewError.code || 'UNKNOWN')}）</div>
+            </section>
+          `;
+        }
         return '';
       }
 
       return `
-        <section class="card">
+        <section class="card" id="native-signing-reviews">
           <div class="list-header" style="margin:0 0 12px;">
             <div class="list-title">待審核的原生合約簽署</div>
             <div class="list-count">${reviews.length} 筆</div>
@@ -2481,6 +2532,12 @@
           ${reviews.map(function (review) {
             const contractDocument = review.terms_document || review.contract_document || {};
             const contractSnapshot = review.contract_snapshot || {};
+            const signatureImage = contractDocument.signature_image || null;
+            const signaturePreview = signatureImage &&
+              ['image/png', 'image/jpeg'].indexOf(rawText(signatureImage.mime_type).toLowerCase()) !== -1 &&
+              /^[A-Za-z0-9+/]+={0,2}$/.test(rawText(signatureImage.base64))
+              ? `<div class="review-contract-signature"><span>房客簽名預覽（已送出）</span><img src="data:${escapeHtml(rawText(signatureImage.mime_type).toLowerCase())};base64,${escapeHtml(rawText(signatureImage.base64))}" alt="房客簽名預覽"></div>`
+              : '';
             return `
               <article class="request-card pending">
                 <div class="request-top">
@@ -2497,7 +2554,7 @@
                 <div class="review-contract-content">
                   <details open>
                     <summary>檢視完整合約</summary>
-                    ${contractDocument.available ? `<div class="review-contract-document">${safeText(contractDocument.content)}</div><div class="review-contract-meta">文件來源：${safeText(contractDocument.source || '標準合約')}・版本：${safeText(contractDocument.version || '-')}</div>` : `<div class="review-contract-meta">${safeText(contractDocument.message || '完整合約內容尚未備妥，系統會拒絕核准。')}</div>`}
+                    ${contractDocument.available ? `<div class="review-contract-document">${safeText(contractDocument.content)}</div><div class="review-contract-meta">文件來源：${safeText(contractDocument.source || '標準合約')}・版本：${safeText(contractDocument.version || '-')}</div>${signaturePreview}` : `<div class="review-contract-meta">${safeText(contractDocument.message || '完整合約內容尚未備妥，系統會拒絕核准。')}</div>`}
                   </details>
                   ${contractSnapshot.room_name ? `<div class="review-contract-meta">房號：${safeText(contractSnapshot.room_name)}・租期：${safeText(contractSnapshot.start_date)} ～ ${safeText(contractSnapshot.end_date)}</div>` : ''}
                 </div>
@@ -3424,12 +3481,23 @@
           (async function() {
             try {
               const signingReviews = await callNativeSigningReviewApi('landlord_contract_signing_reviews_init');
-              return Array.isArray(signingReviews.items)
-                ? signingReviews.items
-                : [];
-            } catch (_) {
-              // Legacy contract-request management remains usable if the optional native review schema is not installed.
-              return [];
+              return {
+                items: Array.isArray(signingReviews.items)
+                  ? signingReviews.items
+                  : [],
+                error: null
+              };
+            } catch (error) {
+              // Legacy contract-request management remains usable, but the native-review failure must remain visible.
+              return {
+                items: [],
+                error: {
+                  code: error && error.code ? error.code : '',
+                  message: error && error.message
+                    ? error.message
+                    : '原生合約簽署資料讀取失敗'
+                }
+              };
             }
           })(),
           (async function() {
@@ -3456,7 +3524,8 @@
         ]);
 
         const data = results[0];
-        data.native_signing_reviews = results[1];
+        data.native_signing_reviews = results[1].items;
+        data.native_signing_reviews_error = results[1].error;
         data.landlord_initiated_contracts = results[2].items;
         data.landlord_initiated_contracts_error = results[2].error;
         renderPage(data);

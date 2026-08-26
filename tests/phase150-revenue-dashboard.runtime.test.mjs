@@ -66,7 +66,7 @@ assert.equal(result.has_data, true);
 assert.match(dispatcherSource, /landlord_revenue_dashboard_init/);
 assert.match(
   readFileSync(new URL('../docs/04-API-ROUTES.md', import.meta.url), 'utf8'),
-  /Route count: \*\*78\*\*/
+  /Route count: \*\*83\*\*/
 );
 
 const empty = context.revenueDashboardAggregate_(
