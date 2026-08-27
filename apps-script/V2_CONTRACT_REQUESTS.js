@@ -106,6 +106,8 @@ const V2_CONTRACT_REQUEST_HEADERS = [
   'penalty_note',
 
   'special_offer_decision',
+  'special_offer_applies',
+  'special_offer_notice_days',
   'special_offer_notice_date',
   'special_offer_days_before_expiry',
   'special_offer_decision_reason',
@@ -635,13 +637,23 @@ function submitTenantContractRequestByLineUid_(
         '',
 
       special_offer_decision:
-        '',
+        normalized.data.special_offer_decision || '',
+      special_offer_applies:
+        normalized.data.special_offer_applies === undefined
+          ? ''
+          : normalized.data.special_offer_applies,
+      special_offer_notice_days:
+        normalized.data.special_offer_notice_days === undefined
+          ? ''
+          : normalized.data.special_offer_notice_days,
       special_offer_notice_date:
-        '',
+        normalized.data.special_offer_notice_date || '',
       special_offer_days_before_expiry:
-        '',
+        normalized.data.special_offer_days_before_expiry === undefined
+          ? ''
+          : normalized.data.special_offer_days_before_expiry,
       special_offer_decision_reason:
-        '',
+        normalized.data.special_offer_decision_reason || '',
       identity_document_mode:
         normalized.data.identity_document_mode || '',
 
@@ -1881,6 +1893,40 @@ function contractRequestValidateRequestData_(
     );
   }
 
+  if (
+    typeof contractRenewalHistoryEvaluateNotice_ !==
+      'function'
+  ) {
+    return contractRequestError_(
+      'CONTRACT_RENEWAL_HISTORY_MODULE_REQUIRED',
+      '找不到 30 天優惠判定模組，暫時無法送出退租申請'
+    );
+  }
+
+  const specialOffer =
+    contractRenewalHistoryEvaluateNotice_(
+      contract,
+      contractRequestFormatDate_(
+        requestedDate
+      ),
+      {
+        event:
+          terminationType ===
+            'early_termination'
+            ? 'early_termination'
+            : 'expiry_non_renewal'
+      }
+    );
+
+  const terminationPenaltyStatus =
+    terminationType === 'early_termination'
+      ? 'pending'
+      : specialOffer.decision === 'waived'
+        ? 'waived'
+        : specialOffer.decision === 'landlord_review'
+          ? 'landlord_review'
+          : 'not_applicable';
+
   return {
     success: true,
     data: {
@@ -1908,10 +1954,19 @@ function contractRequestValidateRequestData_(
       move_out_date:
         moveOutDate,
       penalty_status:
-        terminationType ===
-        'early_termination'
-          ? 'pending'
-          : 'not_applicable'
+        terminationPenaltyStatus,
+      special_offer_decision:
+        specialOffer.decision,
+      special_offer_applies:
+        specialOffer.applicable,
+      special_offer_notice_days:
+        specialOffer.notice_days,
+      special_offer_notice_date:
+        specialOffer.notice_date,
+      special_offer_days_before_expiry:
+        specialOffer.days_before_expiry,
+      special_offer_decision_reason:
+        specialOffer.reason
     }
   };
 }
@@ -3380,6 +3435,20 @@ function contractRequestBuildRequestView_(
       contractRequestText_(
         row.special_offer_decision
       ),
+    special_offer_applies:
+      row.special_offer_applies === undefined ||
+      row.special_offer_applies === ''
+        ? ''
+        : contractRequestBoolean_(
+            row.special_offer_applies
+          ),
+    special_offer_notice_days:
+      row.special_offer_notice_days === undefined ||
+      row.special_offer_notice_days === ''
+        ? ''
+        : contractRequestInteger_(
+            row.special_offer_notice_days
+          ),
     special_offer_notice_date:
       row.special_offer_notice_date || '',
     special_offer_days_before_expiry:
@@ -3945,6 +4014,96 @@ function contractRequestValidateLandlordApproval_(
   if (
     terminationType === 'non_renewal'
   ) {
+    const specialOfferDecision =
+      contractRequestText_(
+        request.special_offer_decision
+      );
+
+    if (
+      specialOfferDecision === 'waived'
+    ) {
+      return {
+        success: true,
+        data: {
+          approved_start_date: '',
+          approved_term_months: 0,
+          approved_rent_amount: '',
+          approved_management_fee: '',
+          approved_end_date: '',
+          approved_move_out_date:
+            approvedMoveOutDate,
+          penalty_status: 'waived',
+          penalty_amount: 0,
+          penalty_note:
+            contractRequestText_(
+              decisionData.penalty_note
+            )
+        }
+      };
+    }
+
+    if (
+      specialOfferDecision === 'landlord_review'
+    ) {
+      const reviewedPenaltyStatus =
+        contractRequestNormalizePenaltyStatus_(
+          decisionData.penalty_status
+        );
+
+      if (
+        ['charged', 'waived'].indexOf(
+          reviewedPenaltyStatus
+        ) === -1
+      ) {
+        return contractRequestError_(
+          'PENALTY_DECISION_REQUIRED',
+          '未滿30天通知，請選擇收取或免收違約金'
+        );
+      }
+
+      let reviewedPenaltyAmount =
+        contractRequestNumber_(
+          decisionData.penalty_amount
+        );
+
+      if (
+        reviewedPenaltyStatus === 'charged' &&
+        reviewedPenaltyAmount <= 0
+      ) {
+        return contractRequestError_(
+          'INVALID_PENALTY_AMOUNT',
+          '選擇收取違約金時，金額必須大於 0'
+        );
+      }
+
+      if (
+        reviewedPenaltyStatus === 'waived'
+      ) {
+        reviewedPenaltyAmount = 0;
+      }
+
+      return {
+        success: true,
+        data: {
+          approved_start_date: '',
+          approved_term_months: 0,
+          approved_rent_amount: '',
+          approved_management_fee: '',
+          approved_end_date: '',
+          approved_move_out_date:
+            approvedMoveOutDate,
+          penalty_status:
+            reviewedPenaltyStatus,
+          penalty_amount:
+            reviewedPenaltyAmount,
+          penalty_note:
+            contractRequestText_(
+              decisionData.penalty_note
+            )
+        }
+      };
+    }
+
     return {
       success: true,
       data: {

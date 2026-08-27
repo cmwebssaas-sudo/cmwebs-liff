@@ -357,6 +357,88 @@ const landlordAccess = {
   assert.equal(retry.data.applied_contract_id, firstAppliedId);
   assert.equal(retry.data.idempotent, true);
   assert.equal(contracts.rows.length, 2);
+
+  const offerContract = {
+    start_date: '2025-10-01',
+    end_date: '2026-09-30',
+    rent_amount: 24000,
+    management_fee: 500,
+    deposit_amount: 48000,
+    payment_day: 5,
+    special_offer_enabled: true,
+    special_offer_notice_days: 30,
+    special_offer_clause: '租約期滿如不再續約，提前30個日曆日通知，免收違約金。'
+  };
+  const eligibleNotice = requestContext.contractRequestValidateRequestData_(
+    'termination',
+    { requested_date: '2026-08-31', termination_type: 'non_renewal', move_out_date: '2026-09-30' },
+    offerContract
+  );
+  assert.equal(eligibleNotice.success, true, eligibleNotice.code);
+  assert.equal(eligibleNotice.data.special_offer_decision, 'waived');
+  assert.equal(eligibleNotice.data.special_offer_days_before_expiry, 30);
+  assert.equal(eligibleNotice.data.penalty_status, 'waived');
+
+  const lateNotice = requestContext.contractRequestValidateRequestData_(
+    'termination',
+    { requested_date: '2026-09-01', termination_type: 'non_renewal', move_out_date: '2026-09-30' },
+    offerContract
+  );
+  assert.equal(lateNotice.success, true, lateNotice.code);
+  assert.equal(lateNotice.data.special_offer_decision, 'landlord_review');
+  assert.equal(lateNotice.data.special_offer_days_before_expiry, 29);
+  assert.equal(lateNotice.data.penalty_status, 'landlord_review');
+
+  const earlyNotice = requestContext.contractRequestValidateRequestData_(
+    'termination',
+    { requested_date: '2026-08-31', termination_type: 'early_termination', move_out_date: '2026-09-15' },
+    offerContract
+  );
+  assert.equal(earlyNotice.success, true, earlyNotice.code);
+  assert.equal(earlyNotice.data.special_offer_decision, 'not_applicable');
+  assert.equal(earlyNotice.data.special_offer_applies, false);
+  assert.equal(earlyNotice.data.penalty_status, 'pending');
+
+  const eligibleApproval = requestContext.contractRequestValidateLandlordApproval_(
+    {
+      request_type: 'termination',
+      termination_type: 'non_renewal',
+      current_end_date: '2026-09-30',
+      move_out_date: '2026-09-30',
+      special_offer_decision: 'waived'
+    },
+    { penalty_status: 'charged', penalty_amount: 24000 }
+  );
+  assert.equal(eligibleApproval.success, true, eligibleApproval.code);
+  assert.equal(eligibleApproval.data.penalty_status, 'waived');
+  assert.equal(eligibleApproval.data.penalty_amount, 0);
+
+  const reviewWithoutDecision = requestContext.contractRequestValidateLandlordApproval_(
+    {
+      request_type: 'termination',
+      termination_type: 'non_renewal',
+      current_end_date: '2026-09-30',
+      move_out_date: '2026-09-30',
+      special_offer_decision: 'landlord_review'
+    },
+    {}
+  );
+  assert.equal(reviewWithoutDecision.success, false);
+  assert.equal(reviewWithoutDecision.code, 'PENALTY_DECISION_REQUIRED');
+
+  const reviewedCharge = requestContext.contractRequestValidateLandlordApproval_(
+    {
+      request_type: 'termination',
+      termination_type: 'non_renewal',
+      current_end_date: '2026-09-30',
+      move_out_date: '2026-09-30',
+      special_offer_decision: 'landlord_review'
+    },
+    { penalty_status: 'charged', penalty_amount: 24000, penalty_note: '房東核准收取' }
+  );
+  assert.equal(reviewedCharge.success, true, reviewedCharge.code);
+  assert.equal(reviewedCharge.data.penalty_status, 'charged');
+  assert.equal(reviewedCharge.data.penalty_amount, 24000);
 }
 
 {
