@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 const sourcePath = new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url);
 const landlordSource = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
+const requestSource = readFileSync(new URL('../apps-script/V2_CONTRACT_REQUESTS.js', import.meta.url), 'utf8');
 assert.equal(existsSync(sourcePath), true, 'renewal history module must exist before runtime tests can run');
 const source = readFileSync(sourcePath, 'utf8');
 
@@ -187,8 +188,16 @@ class Sheet {
     return {
       getValues: () => this.rows.slice(row - 2, row - 2 + height).map(item => item.slice(column - 1, column - 1 + width)),
       getDisplayValues: () => this.rows.slice(row - 2, row - 2 + height).map(item => item.slice(column - 1, column - 1 + width)),
-      setValue: value => { this.rows[row - 2][column - 1] = value; },
-      setValues: values => { values.forEach((valuesRow, rowIndex) => { valuesRow.forEach((value, columnIndex) => { this.rows[row - 2 + rowIndex][column - 1 + columnIndex] = value; }); }); }
+      setValue: value => {
+        if (!this.rows[row - 2]) this.rows[row - 2] = new Array(this.headers.length).fill('');
+        this.rows[row - 2][column - 1] = value;
+      },
+      setValues: values => {
+        values.forEach((valuesRow, rowIndex) => {
+          if (!this.rows[row - 2 + rowIndex]) this.rows[row - 2 + rowIndex] = new Array(this.headers.length).fill('');
+          valuesRow.forEach((value, columnIndex) => { this.rows[row - 2 + rowIndex][column - 1 + columnIndex] = value; });
+        });
+      }
     };
   }
 
@@ -294,4 +303,56 @@ const landlordAccess = {
   assert.equal(sheets.V2_contracts.rows[0][landlordContractHeaders.indexOf('end_date')], previous[landlordContractHeaders.indexOf('end_date')]);
   assert.equal(sheets.V2_contracts.rows[0][landlordContractHeaders.indexOf('rent_amount')], previous[landlordContractHeaders.indexOf('rent_amount')]);
   assert.equal(sheets.V2_contracts.rows[0][landlordContractHeaders.indexOf('renewed_to_contract_id')], '');
+}
+
+{
+  const requestHeaders = landlordContractHeaders.concat([
+    'renewed_at', 'renewal_request_id', 'terminated_at', 'termination_request_id'
+  ]);
+  const previous = landlordRowFor(requestHeaders, {
+    contract_id: 'C603-2026', workspace_id: 'W1', tenant_id: 'T603', room_id: 'R603',
+    start_date: '2025-10-01', end_date: '2026-09-30', rent_amount: 24000,
+    management_fee: 500, deposit_amount: 48000, payment_day: 5,
+    contract_status: 'active', status: 'active', account_status: 'active'
+  });
+  const contracts = new Sheet(requestHeaders, [previous]);
+  const spreadsheet = { getSheetByName: name => name === 'V2_contracts' ? contracts : null };
+  const requestContext = {
+    Date, Math, Number, String, Object, Array, JSON, RegExp, Error,
+    Utilities: {
+      getUuid: () => 'request-uuid',
+      formatDate: (value, _timezone, _pattern) => new Date(value).toISOString().slice(0, 10)
+    },
+    Logger: { log() {} },
+    runtimeSnapshotGetValues_: sheet => sheet.getDataRange().getValues()
+  };
+  vm.createContext(requestContext);
+  vm.runInContext(source, requestContext, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
+  vm.runInContext(requestSource, requestContext, { filename: 'V2_CONTRACT_REQUESTS.js' });
+  const request = {
+    request_id: 'REQ-603-RENEWAL-1',
+    request_type: 'renewal',
+    contract_id: 'C603-2026',
+    approved_start_date: '2026-10-01',
+    approved_end_date: '2027-09-30',
+    approved_term_months: 12,
+    approved_rent_amount: 24000,
+    approved_management_fee: 500,
+    status: 'approved'
+  };
+  const result = requestContext.contractRequestApplyCompletedRequestToContract_(spreadsheet, request, 'landlord-line');
+  assert.equal(result.success, true, result.code);
+  assert.equal(contracts.rows.length, 2);
+  assert.equal(contracts.rows[0][requestHeaders.indexOf('end_date')], '2026-09-30');
+  assert.equal(contracts.rows[0][requestHeaders.indexOf('rent_amount')], 24000);
+  assert.equal(contracts.rows[0][requestHeaders.indexOf('contract_status')], 'renewed');
+  assert.notEqual(contracts.rows[1][requestHeaders.indexOf('contract_id')], 'C603-2026');
+  assert.equal(contracts.rows[1][requestHeaders.indexOf('renewed_from_contract_id')], 'C603-2026');
+  assert.equal(contracts.rows[1][requestHeaders.indexOf('identity_document_mode')], 'optional');
+  const firstAppliedId = contracts.rows[1][requestHeaders.indexOf('contract_id')];
+  const retry = requestContext.contractRequestApplyCompletedRequestToContract_(spreadsheet, request, 'landlord-line');
+  assert.equal(retry.success, true, retry.code);
+  assert.equal(retry.data.applied_contract_id, firstAppliedId);
+  assert.equal(retry.data.idempotent, true);
+  assert.equal(contracts.rows.length, 2);
 }
