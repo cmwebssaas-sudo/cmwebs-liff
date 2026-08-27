@@ -355,3 +355,93 @@ function contractRenewalHistoryAdditiveMigrationForTest_(sheet, requiredHeaders)
     added_headers: missing
   };
 }
+
+function contractRenewalHistoryEnsureHeaders_(sheet, requiredHeaders) {
+  if (!sheet || typeof sheet.getLastColumn !== 'function' || typeof sheet.getRange !== 'function') {
+    return {
+      success: false,
+      code: 'CONTRACT_RENEWAL_HISTORY_SCHEMA_NOT_READY',
+      added_headers: []
+    };
+  }
+
+  const currentWidth = Math.max(0, Number(sheet.getLastColumn()) || 0);
+  const currentHeaders = currentWidth
+    ? sheet.getRange(1, 1, 1, currentWidth).getDisplayValues()[0].map(contractRenewalHistoryText_)
+    : [];
+  const missing = contractRenewalHistoryMissingHeaders_(currentHeaders, requiredHeaders);
+  if (missing.length) {
+    sheet.getRange(1, currentWidth + 1, 1, missing.length).setValues([missing]);
+  }
+
+  return {
+    success: true,
+    code: 'OK',
+    added_headers: missing
+  };
+}
+
+function migrateV2ContractRenewalHistorySchema_(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    const requiredSheets = {
+      contracts: 'V2_contracts',
+      requests: 'V2_contract_requests',
+      documents: 'V2_contract_documents'
+    };
+    const sheets = {};
+    const missingSheets = [];
+    Object.keys(requiredSheets).forEach(function (key) {
+      const sheet = ss && ss.getSheetByName(requiredSheets[key]);
+      if (!sheet) {
+        missingSheets.push(requiredSheets[key]);
+      } else {
+        sheets[key] = sheet;
+      }
+    });
+    if (missingSheets.length) {
+      return {
+        success: false,
+        code: 'CONTRACT_RENEWAL_HISTORY_SCHEMA_NOT_READY',
+        data: {
+          missing_sheets: missingSheets,
+          added_headers: { contracts: [], requests: [], documents: [] }
+        }
+      };
+    }
+
+    const addedHeaders = {};
+    const definitions = {
+      contracts: V2_CONTRACT_RENEWAL_HISTORY_CONTRACT_FIELDS_,
+      requests: V2_CONTRACT_RENEWAL_HISTORY_REQUEST_FIELDS_,
+      documents: V2_CONTRACT_RENEWAL_HISTORY_DOCUMENT_FIELDS_
+    };
+    Object.keys(definitions).forEach(function (key) {
+      const result = contractRenewalHistoryEnsureHeaders_(sheets[key], definitions[key]);
+      if (!result.success) throw new Error('schema not ready: ' + key);
+      addedHeaders[key] = result.added_headers;
+    });
+
+    return {
+      success: true,
+      code: 'OK',
+      data: {
+        migration: 'contract_renewal_history_additive_v1',
+        added_headers: addedHeaders
+      }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      code: 'CONTRACT_RENEWAL_HISTORY_SCHEMA_MIGRATION_FAILED',
+      data: {
+        added_headers: { contracts: [], requests: [], documents: [] },
+        error: contractRenewalHistoryText_(error && error.message)
+      }
+    };
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
+}

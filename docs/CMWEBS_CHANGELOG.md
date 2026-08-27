@@ -16,6 +16,9 @@
   automatic charge or waiver. Early termination remains unchanged.
 - Added landlord and tenant contract-history UI. The landlord's selected
   version can load a complete contract/signature view in read-only mode.
+- Added the explicit additive-only `migrateV2ContractRenewalHistorySchema_`
+  entrypoint. It appends only missing renewal/request/document headers and is
+  idempotent; it does not delete or rewrite historical contracts.
 - Local Phase 174–176 tests pass. This candidate has not migrated Production
   Sheets, deployed Apps Script, published GitHub Pages, or completed LINE/mobile
   UAT.

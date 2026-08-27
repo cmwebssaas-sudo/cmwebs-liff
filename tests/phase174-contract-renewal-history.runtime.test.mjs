@@ -177,6 +177,60 @@ assert.deepEqual(plain(carried), {
   drive_file_id: 'drive-old'
 });
 
+{
+  class MigrationSheet {
+    constructor(headers) {
+      this.headers = headers.slice();
+    }
+
+    getLastColumn() { return this.headers.length; }
+
+    getRange(_row, column, _height = 1, width = 1) {
+      return {
+        getValues: () => [this.headers.slice(column - 1, column - 1 + width)],
+        getDisplayValues: () => [this.headers.slice(column - 1, column - 1 + width)],
+        setValues: values => {
+          (values[0] || []).forEach((value, index) => {
+            this.headers[column - 1 + index] = value;
+          });
+        }
+      };
+    }
+  }
+
+  const migrationSheets = {
+    V2_contracts: new MigrationSheet(['contract_id']),
+    V2_contract_requests: new MigrationSheet(['request_id']),
+    V2_contract_documents: new MigrationSheet(['document_id'])
+  };
+  const migrationContext = {
+    Date, Math, Number, String, Object, Array, JSON, RegExp, Error,
+    SpreadsheetApp: {
+      getActiveSpreadsheet: () => ({
+        getSheetByName: name => migrationSheets[name] || null
+      })
+    },
+    LockService: {
+      getScriptLock: () => ({ waitLock() {}, releaseLock() {} })
+    }
+  };
+  vm.createContext(migrationContext);
+  vm.runInContext(source, migrationContext, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
+
+  const firstRun = migrationContext.migrateV2ContractRenewalHistorySchema_();
+  assert.equal(firstRun.success, true, firstRun.code);
+  assert.ok(firstRun.data.added_headers.contracts.includes('contract_family_id'));
+  assert.ok(firstRun.data.added_headers.requests.includes('requested_deposit_amount'));
+  assert.deepEqual(plain(firstRun.data.added_headers.documents), ['document_origin', 'source_document_id']);
+
+  const secondRun = migrationContext.migrateV2ContractRenewalHistorySchema_();
+  assert.deepEqual(plain(secondRun.data.added_headers), {
+    contracts: [],
+    requests: [],
+    documents: []
+  });
+}
+
 console.log('Phase 174 contract renewal history runtime RED/GREEN tests passed.');
 
 class Sheet {
