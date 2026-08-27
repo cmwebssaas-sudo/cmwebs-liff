@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-08-27 — Native landlord contract-history route repair (local candidate)
+
+- Fixed the Workspace-native `landlord_tenants` read model used by the serving
+  dispatcher so it returns the same sanitized, read-only `contract_history` as
+  the legacy landlord tenant-list handler.
+- This restores the existing room-603 contract entry without recreating,
+  deleting, or modifying `V2_contracts` rows. Phase 177 reproduces the serving
+  route and preserves both the original and renewal version IDs.
+- This remains an isolated local candidate. No Apps Script deployment,
+  Production Sheet write, GitHub Pages publication, or LINE/mobile UAT is
+  implied.
+
 ## 2026-08-27 — Renewal contract history and 30-day offer (formal release)
 
 - Added append-only renewal versions for existing tenants. Each renewal gets a
