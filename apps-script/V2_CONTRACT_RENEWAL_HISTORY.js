@@ -445,3 +445,7 @@ function migrateV2ContractRenewalHistorySchema_(ss) {
     try { lock.releaseLock(); } catch (_) {}
   }
 }
+
+function runV2ContractRenewalHistoryProductionMigration() {
+  return migrateV2ContractRenewalHistorySchema_();
+}

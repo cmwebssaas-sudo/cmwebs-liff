@@ -217,7 +217,7 @@ assert.deepEqual(plain(carried), {
   vm.createContext(migrationContext);
   vm.runInContext(source, migrationContext, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
 
-  const firstRun = migrationContext.migrateV2ContractRenewalHistorySchema_();
+  const firstRun = migrationContext.runV2ContractRenewalHistoryProductionMigration();
   assert.equal(firstRun.success, true, firstRun.code);
   assert.ok(firstRun.data.added_headers.contracts.includes('contract_family_id'));
   assert.ok(firstRun.data.added_headers.requests.includes('requested_deposit_amount'));
