@@ -1278,6 +1278,11 @@
         URL_PARAMS.get('tenant_id') || ''
       ).trim();
 
+    const CONTRACT_FILTER_ID =
+      String(
+        URL_PARAMS.get('contract_id') || ''
+      ).trim();
+
     let LINE_USER_ID = '';
     let NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
     let PAGE_DATA = null;
@@ -2503,9 +2508,12 @@
     function renderNativeSigningReviewSection() {
       const reviews = TENANT_FILTER_ID
         ? SIGNING_REVIEWS.filter(function (review) {
-            return rawText(review.tenant_id).trim() === TENANT_FILTER_ID;
+            return rawText(review.tenant_id).trim() === TENANT_FILTER_ID &&
+              (!CONTRACT_FILTER_ID || rawText(review.contract_id).trim() === CONTRACT_FILTER_ID);
         })
-        : SIGNING_REVIEWS;
+        : SIGNING_REVIEWS.filter(function (review) {
+            return !CONTRACT_FILTER_ID || rawText(review.contract_id).trim() === CONTRACT_FILTER_ID;
+        });
 
       if (!reviews.length) {
         const reviewError = PAGE_DATA.native_signing_reviews_error;
@@ -2526,12 +2534,17 @@
       return `
         <section class="card" id="native-signing-reviews">
           <div class="list-header" style="margin:0 0 12px;">
-            <div class="list-title">待審核的原生合約簽署</div>
+            <div class="list-title">${CONTRACT_FILTER_ID ? '合約完整內容與簽名' : '待審核的原生合約簽署'}</div>
             <div class="list-count">${reviews.length} 筆</div>
           </div>
           ${reviews.map(function (review) {
             const contractDocument = review.terms_document || review.contract_document || {};
             const contractSnapshot = review.contract_snapshot || {};
+            const submissionStatus = normalizeStatus(review.tenant_signing_submission_status);
+            const isPendingReview = submissionStatus === 'submitted';
+            const displayStatus = isPendingReview
+              ? '待審核'
+              : (statusLabel(submissionStatus || review.contract_status));
             const signatureImage = contractDocument.signature_image || null;
             const signaturePreview = signatureImage &&
               ['image/png', 'image/jpeg'].indexOf(rawText(signatureImage.mime_type).toLowerCase()) !== -1 &&
@@ -2539,13 +2552,13 @@
               ? `<div class="review-contract-signature"><span>房客簽名預覽（已送出）</span><img src="data:${escapeHtml(rawText(signatureImage.mime_type).toLowerCase())};base64,${escapeHtml(rawText(signatureImage.base64))}" alt="房客簽名預覽"></div>`
               : '';
             return `
-              <article class="request-card pending">
+              <article class="request-card ${isPendingReview ? 'pending' : 'completed'}">
                 <div class="request-top">
                   <div>
-                    <div class="request-title">原生合約簽署資料</div>
+                    <div class="request-title">${CONTRACT_FILTER_ID ? '指定合約版本' : '原生合約簽署資料'}</div>
                     <div class="request-id">${safeText(review.contract_id)}</div>
                   </div>
-                  <span class="badge pending">待審核</span>
+                  <span class="badge ${isPendingReview ? 'pending' : 'completed'}">${safeText(displayStatus)}</span>
                 </div>
                 <div class="request-meta-row">
                   <span class="mini-tag">房客 ${safeText(review.tenant_id)}</span>
@@ -2558,10 +2571,12 @@
                   </details>
                   ${contractSnapshot.room_name ? `<div class="review-contract-meta">房號：${safeText(contractSnapshot.room_name)}・租期：${safeText(contractSnapshot.start_date)} ～ ${safeText(contractSnapshot.end_date)}</div>` : ''}
                 </div>
-                <div class="request-actions two">
-                  <button class="btn btn-soft-danger" onclick="submitNativeSigningReview('${escapeHtml(review.contract_id)}', 'reject')">駁回</button>
-                  <button class="btn btn-primary" onclick="submitNativeSigningReview('${escapeHtml(review.contract_id)}', 'approve')">核准生效</button>
-                </div>
+                ${isPendingReview ? `
+                  <div class="request-actions two">
+                    <button class="btn btn-soft-danger" onclick="submitNativeSigningReview('${escapeHtml(review.contract_id)}', 'reject')">駁回</button>
+                    <button class="btn btn-primary" onclick="submitNativeSigningReview('${escapeHtml(review.contract_id)}', 'approve')">核准生效</button>
+                  </div>
+                ` : '<div class="review-contract-meta">此版本已完成簽署，僅供歷史查閱，不會修改既有合約。</div>'}
               </article>
             `;
           }).join('')}
@@ -3480,7 +3495,10 @@
           callApi('landlord_contract_requests_init'),
           (async function() {
             try {
-              const signingReviews = await callNativeSigningReviewApi('landlord_contract_signing_reviews_init');
+              const signingReviews = await callNativeSigningReviewApi('landlord_contract_signing_reviews_init', {
+                contract_id: CONTRACT_FILTER_ID || undefined,
+                tenant_id: TENANT_FILTER_ID || undefined
+              });
               return {
                 items: Array.isArray(signingReviews.items)
                   ? signingReviews.items

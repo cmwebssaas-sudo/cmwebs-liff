@@ -32,6 +32,7 @@ be verified for the particular action that needs it.
 | 2026-08-03 | Documentation authority-baseline synchronization | Only this record, `CMWEBS_CURRENT_STATE.md`, and `CMWEBS_CODEX_HANDOFF.md`; isolated local branch and local commit only. No push, deployment, Production access, runtime test, or source implementation. |
 | 2026-08-04 | Landlord-home request-local snapshot candidate | Isolated local source/test candidate only. It enables the existing snapshot for `landlord_home_bootstrap` and adds a focused mock; no cross-request cache, push, deployment, Production access, or external action. |
 | 2026-08-13 | Native landlord contract-signing review security repair | Explicitly authorized isolated V2.1 candidate only. Uses server-verified review sessions, Workspace/RBAC revalidation, serialized final decisions, and approval-time artifact checks; no deployment, schema migration, Production access, push, PR, merge, or external action. |
+| 2026-08-27 | Renewal contract-history and 30-day offer candidate | Explicitly authorized isolated local implementation only. Uses append-only `V2_contracts` versions, renewal document carry-forward references, signature-only renewal, landlord-review routing under 30 days, and read-only history views; no Production schema migration, Apps Script deployment, GitHub Pages publication, LINE/mobile UAT, push, PR, merge, or external action. |
 
 ## 2026-08-25 explicitly authorized tenant signature-preview release
 

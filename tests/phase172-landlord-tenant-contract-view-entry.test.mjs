@@ -27,8 +27,8 @@ assert.match(
 );
 assert.match(
   tenantDetailSource,
-  /goContractRequests\(true\)/,
-  'tenant detail contract action must request the focused contract view'
+  /function goContractVersion\(contractId\)[\s\S]*?contract_id/,
+  'tenant detail contract action must request the selected contract version'
 );
 assert.match(
   contractRequestsSource,

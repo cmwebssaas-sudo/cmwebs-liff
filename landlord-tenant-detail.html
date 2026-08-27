@@ -399,6 +399,77 @@
       background: var(--purple-soft);
     }
 
+    .contract-history-card {
+      margin-top: 10px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: #fbfcfd;
+    }
+
+    .contract-history-card.current {
+      border-color: rgba(22, 163, 74, 0.3);
+      background: var(--primary-soft);
+    }
+
+    .contract-history-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .contract-history-title {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .contract-history-id {
+      margin-top: 3px;
+      color: var(--text-muted);
+      font-size: 10px;
+      word-break: break-all;
+    }
+
+    .contract-history-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .contract-history-grid > div {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid rgba(225, 229, 235, 0.9);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .contract-history-grid span,
+    .contract-history-grid strong {
+      display: block;
+    }
+
+    .contract-history-grid span {
+      margin-bottom: 4px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .contract-history-grid strong {
+      color: var(--text-main);
+      font-size: 12px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .contract-history-button {
+      width: 100%;
+      min-height: 42px;
+    }
+
     .request-head {
       display: flex;
       align-items: flex-start;
@@ -1517,6 +1588,33 @@
       }
 
       location.href = url;
+    }
+
+    function goContractVersion(contractId) {
+      const normalizedContractId = rawText(contractId).trim();
+      if (!normalizedContractId) {
+        showToast('找不到指定合約版本');
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set(
+        'tenant_id',
+        CURRENT_TENANT
+          ? CURRENT_TENANT.tenant_id || ''
+          : TENANT_ID
+      );
+      params.set('contract_id', normalizedContractId);
+
+      if (TEST_MODE) {
+        params.set('test', '1');
+      }
+
+      params.set('v', window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
+      location.href =
+        'landlord-contract-requests.html?' +
+        params.toString() +
+        '#native-signing-reviews';
     }
 
     function showToast(message) {
@@ -3359,6 +3457,9 @@
 
       CURRENT_TENANT = item;
       CURRENT_REQUESTS = requests;
+      CURRENT_TENANT_CONTRACTS = Array.isArray(item.contract_history)
+        ? item.contract_history
+        : [];
 
       const paymentStatus =
         normalizedStatus(
@@ -3606,25 +3707,7 @@
           </div>
         </section>
 
-        <section class="card section-card">
-          <div class="section-title-row">
-            <div class="section-title">房客合約</div>
-            <div class="section-hint">查看簽署內容</div>
-          </div>
-
-          <div class="tenant-document-context">
-            房客簽署的新租約會在合約頁顯示完整條款、簽署狀態與簽名預覽。
-          </div>
-
-          <button
-            class="primary-button"
-            style="width:100%;"
-            type="button"
-            onclick="goContractRequests(true)"
-          >
-            查看完整合約與簽名
-          </button>
-        </section>
+        ${renderContractHistory(CURRENT_TENANT_CONTRACTS)}
 
         <section class="card section-card">
           <div class="section-title-row">
@@ -3742,6 +3825,53 @@
       `;
 
       bindTenantDocumentDropZones();
+    }
+
+    function renderContractHistory(contracts) {
+      const rows = Array.isArray(contracts) ? contracts : [];
+      const body = rows.length
+        ? rows.map(function (contract) {
+            const contractId = rawText(contract.contract_id).trim();
+            const sequence = numberValue(contract.renewal_sequence, 1);
+            const current = contract.is_current === true;
+            const readOnly = contract.read_only !== false;
+            return `
+              <article class="contract-history-card ${current ? 'current' : ''}" data-contract-history-read-only="${readOnly ? 'true' : 'false'}">
+                <div class="contract-history-head">
+                  <div>
+                    <div class="contract-history-title">第 ${sequence} 版合約</div>
+                    <div class="contract-history-id">${safeHtml(contractId || '-')}</div>
+                  </div>
+                  <span class="badge ${current ? 'green' : 'blue'}">${current ? '目前版本' : '歷史版本'}</span>
+                </div>
+                <div class="contract-history-grid">
+                  <div><span>租期</span><strong>${safeHtml(formatDate(contract.start_date))} ～ ${safeHtml(formatDate(contract.end_date))}</strong></div>
+                  <div><span>月租／管理費</span><strong>${money(contract.rent_amount)}／${money(contract.management_fee)}</strong></div>
+                  <div><span>押金／繳款日</span><strong>${money(contract.deposit_amount)}／每月 ${numberValue(contract.monthly_payment_day, 0) || '-'} 日</strong></div>
+                  <div><span>簽署狀態</span><strong>${safeHtml(statusText(contract.tenant_signing_submission_status || contract.contract_status || '-'))}</strong></div>
+                </div>
+                <button class="primary-button contract-history-button" type="button" onclick="goContractVersion('${escapeHtml(contractId)}')">查看完整合約與簽名</button>
+              </article>
+            `;
+          }).join('')
+        : `
+            <div class="empty-state">
+              尚無可讀取的合約版本。請重新整理後再試。
+            </div>
+          `;
+
+      return `
+        <section class="card section-card" id="contract-history">
+          <div class="section-title-row">
+            <div class="section-title">房客合約</div>
+            <div class="section-hint">合約版本紀錄</div>
+          </div>
+          <div class="tenant-document-context">
+            每次續約都保留獨立版本；舊合約唯讀保存，點選指定版本即可查看完整條款與簽名。
+          </div>
+          ${body}
+        </section>
+      `;
     }
 
     function renderError(message) {
