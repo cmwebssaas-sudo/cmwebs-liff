@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-08-13 (Asia/Taipei)**
+**Last updated: 2026-08-27 (Asia/Taipei)**
 
 ## Purpose
 
@@ -32,7 +32,27 @@ be verified for the particular action that needs it.
 | 2026-08-03 | Documentation authority-baseline synchronization | Only this record, `CMWEBS_CURRENT_STATE.md`, and `CMWEBS_CODEX_HANDOFF.md`; isolated local branch and local commit only. No push, deployment, Production access, runtime test, or source implementation. |
 | 2026-08-04 | Landlord-home request-local snapshot candidate | Isolated local source/test candidate only. It enables the existing snapshot for `landlord_home_bootstrap` and adds a focused mock; no cross-request cache, push, deployment, Production access, or external action. |
 | 2026-08-13 | Native landlord contract-signing review security repair | Explicitly authorized isolated V2.1 candidate only. Uses server-verified review sessions, Workspace/RBAC revalidation, serialized final decisions, and approval-time artifact checks; no deployment, schema migration, Production access, push, PR, merge, or external action. |
-| 2026-08-27 | Renewal contract-history and 30-day offer candidate | Explicitly authorized isolated local implementation only. Uses append-only `V2_contracts` versions, renewal document carry-forward references, signature-only renewal, landlord-review routing under 30 days, read-only history views, and an idempotent additive-only schema migration entrypoint; no Production schema migration, Apps Script deployment, GitHub Pages publication, LINE/mobile UAT, push, PR, merge, or external action. |
+| 2026-08-27 | Renewal contract-history and 30-day offer formal release | Explicitly authorized implementation, additive Production schema migration, Apps Script deployment, GitHub Pages publication, push, PR, and merge. Uses append-only `V2_contracts` versions, renewal document carry-forward references, signature-only renewal, landlord-review routing under 30 days, and read-only history views. LINE/mobile UAT remains separately `HUMAN_REQUIRED`. |
+
+## 2026-08-27 formal release evidence
+
+- Candidate branch `codex/renewal-contract-history-20260827` passed the full
+  Node suite (`55 pass, 0 fail`), candidate validator (`83/83` routes and
+  handlers), duplicate declaration scan (`0`), credential scan (`0`), and
+  `git diff --check`.
+- Apps Script was pushed from the isolated candidate using a safe release
+  configuration and deployed as immutable Version 130 on the existing Web App
+  deployment. The Web App URL was preserved.
+- The additive-only migration runner was executed twice from the authenticated
+  Apps Script editor; both execution records show `已完成`. The migration
+  appends missing renewal/request/document headers only and is idempotent.
+- GitHub PR #56 merged the candidate into `main` as commit `7452416`. Pages
+  workflow `33054940344` completed build, deploy, and status-report jobs.
+  Public readback found `房客合約`, `合約版本紀錄`, and
+  `查看完整合約與簽名`.
+- `HUMAN_REQUIRED`: real authenticated LINE/mobile room-603 renewal/signing
+  and post-release contract/signature rendering were not performed in this
+  release evidence.
 
 ## 2026-08-25 explicitly authorized tenant signature-preview release
 
