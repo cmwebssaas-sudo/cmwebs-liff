@@ -6,6 +6,7 @@ const page = readFileSync(new URL('../landlord-tenant-detail.html', import.meta.
 assert.match(page, /function renderContractHistory\(contracts\)/, 'landlord detail must render a contract version history section');
 assert.match(page, /function numberValue\(value, fallback\)/, 'landlord detail history must define its numeric display helper');
 assert.match(page, /function statusText\(value\)/, 'landlord detail history must define its status display helper');
+assert.match(page, /function escapeHtml\(value\)/, 'landlord detail history buttons must define their HTML escaping helper');
 assert.match(page, /contract_history/, 'landlord detail must consume the server-built contract history payload');
 assert.match(page, /合約版本紀錄/, 'landlord detail must label the immutable contract version history');
 assert.match(page, /查看完整合約與簽名/, 'landlord detail must keep the complete contract and signature entry');

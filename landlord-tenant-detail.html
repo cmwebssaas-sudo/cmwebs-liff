@@ -1468,6 +1468,10 @@
         .replace(/'/g, '&#039;');
     }
 
+    function escapeHtml(value) {
+      return safeHtml(value);
+    }
+
     function numberValue(value, fallback) {
       const number = Number(value);
       return Number.isFinite(number) ? number : (fallback || 0);
