@@ -4239,6 +4239,14 @@ function contractRequestApplyCompletedRequestToContract_(
     });
 
     contractRequestAppendObject_(sheet, newContract);
+    let documentReferences = null;
+    if (typeof carryForwardLandlordContractDocumentsByLineUid_ === 'function') {
+      documentReferences = carryForwardLandlordContractDocumentsByLineUid_(
+        landlordLineUserId,
+        contractId,
+        newContractId
+      );
+    }
     const predecessor = Object.assign({}, contract, {
       contract_status: 'renewed',
       status: 'archived',
@@ -4260,6 +4268,7 @@ function contractRequestApplyCompletedRequestToContract_(
         previous_contract_id: contractId,
         request_id: request.request_id,
         request_type: requestType,
+        document_references: documentReferences,
         updated_by: landlordLineUserId
       }
     };

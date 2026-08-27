@@ -6,6 +6,8 @@ import vm from 'node:vm';
 const sourcePath = new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url);
 const landlordSource = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
 const requestSource = readFileSync(new URL('../apps-script/V2_CONTRACT_REQUESTS.js', import.meta.url), 'utf8');
+const signingSubmissionSource = readFileSync(new URL('../apps-script/V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js', import.meta.url), 'utf8');
+const documentSource = readFileSync(new URL('../apps-script/V2_LANDLORD_CONTRACT_DOCUMENTS.js', import.meta.url), 'utf8');
 assert.equal(existsSync(sourcePath), true, 'renewal history module must exist before runtime tests can run');
 const source = readFileSync(sourcePath, 'utf8');
 
@@ -355,4 +357,75 @@ const landlordAccess = {
   assert.equal(retry.data.applied_contract_id, firstAppliedId);
   assert.equal(retry.data.idempotent, true);
   assert.equal(contracts.rows.length, 2);
+}
+
+{
+  const signingContext = {
+    Date, Math, Number, String, Object, Array, JSON, RegExp,
+    tenantLiffSigningText_: value => String(value == null ? '' : value).trim()
+  };
+  vm.createContext(signingContext);
+  vm.runInContext(signingSubmissionSource, signingContext, { filename: 'V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js' });
+  const renewalClaims = { workspace_id: 'W1', tenant_id: 'T603', contract_id: 'C603-2027' };
+  const signature = [{ workspace_id: 'W1', tenant_id: 'T603', contract_id: 'C603-2027', artifact_type: 'signature', artifact_id: 'SIG-NEW', drive_file_id: 'drive-new', status: 'stored' }];
+  const renewalResult = signingContext.tenantContractSigningRequiredArtifacts_(signature, renewalClaims, 'renewal');
+  assert.equal(renewalResult.success, true, renewalResult.code);
+  assert.equal(renewalResult.data.signature_artifact_id, 'SIG-NEW');
+  assert.equal(signingContext.tenantContractSigningRequiredArtifacts_(signature, renewalClaims, 'new_tenant').code, 'REQUIRED_ARTIFACT_MISSING');
+  assert.equal(signingContext.tenantContractSigningRequiredArtifacts_([
+    { workspace_id: 'W1', tenant_id: 'T603', contract_id: 'C603-2026', artifact_type: 'signature', artifact_id: 'SIG-OLD', drive_file_id: 'drive-old', status: 'stored' }
+  ], renewalClaims, 'renewal').code, 'REQUIRED_ARTIFACT_MISSING');
+  assert.equal(signingContext.tenantContractSigningRequiredArtifacts_(signature, renewalClaims, 'unknown').code, 'SIGNING_MODE_NOT_READY');
+}
+
+{
+  const documentHeaders = [
+    'document_id', 'workspace_id', 'landlord_id', 'landlord_line_user_id', 'tenant_id', 'contract_id',
+    'document_type', 'file_name', 'mime_type', 'byte_size', 'sha256', 'idempotency_key', 'drive_file_id',
+    'status', 'created_at', 'created_by_user_id', 'note', 'document_origin', 'source_document_id'
+  ];
+  const documentSheet = new Sheet(documentHeaders, [
+    landlordRowFor(documentHeaders, {
+      document_id: 'DOC-FRONT-OLD', workspace_id: 'W1', landlord_id: 'L1', landlord_line_user_id: 'landlord-line',
+      tenant_id: 'T603', contract_id: 'C603-2026', document_type: 'identity_front', file_name: 'front.png',
+      mime_type: 'image/png', byte_size: 128, sha256: 'hash-front', drive_file_id: 'drive-front', status: 'stored'
+    }),
+    landlordRowFor(documentHeaders, {
+      document_id: 'DOC-BACK-OLD', workspace_id: 'W1', landlord_id: 'L1', landlord_line_user_id: 'landlord-line',
+      tenant_id: 'T603', contract_id: 'C603-2026', document_type: 'identity_back', file_name: 'back.png',
+      mime_type: 'image/png', byte_size: 128, sha256: 'hash-back', drive_file_id: 'drive-back', status: 'stored'
+    })
+  ]);
+  const contractHeaders = ['contract_id', 'workspace_id', 'landlord_id', 'tenant_id'];
+  const contractSheet = new Sheet(contractHeaders, [
+    landlordRowFor(contractHeaders, { contract_id: 'C603-2026', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T603' }),
+    landlordRowFor(contractHeaders, { contract_id: 'C603-2027', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T603' })
+  ]);
+  const spreadsheet = {
+    getSheetByName: name => name === 'V2_contract_documents' ? documentSheet : (name === 'V2_contracts' ? contractSheet : null),
+    insertSheet: () => documentSheet
+  };
+  const documentContext = {
+    Date, Math, Number, String, Object, Array, JSON, RegExp, Error,
+    runtimeSpreadsheet_: () => spreadsheet,
+    lmResolveLandlord_: () => ({ landlord_id: 'L1', landlord_user_id: 'landlord-user', workspace_id: 'W1' }),
+    lmSheetObjects_: sheet => {
+      const values = sheet.getDataRange().getValues();
+      const headers = values.shift();
+      return values.map((row, index) => Object.assign({ _sheet_row: index + 2 }, ...headers.map((header, column) => ({ [header]: row[column] }))));
+    },
+    lmLogAccess_: () => {},
+    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    Utilities: { getUuid: (() => { let n = 0; return () => 'doc-reference-' + (++n); })() }
+  };
+  vm.createContext(documentContext);
+  vm.runInContext(documentSource, documentContext, { filename: 'V2_LANDLORD_CONTRACT_DOCUMENTS.js' });
+  const result = documentContext.carryForwardLandlordContractDocumentsByLineUid_('landlord-line', 'C603-2026', 'C603-2027');
+  assert.equal(result.success, true, result.code);
+  assert.equal(result.data.documents.length, 2);
+  assert.equal(documentSheet.rows.length, 4);
+  assert.equal(documentSheet.rows[2][documentHeaders.indexOf('document_origin')], 'carried_forward');
+  assert.equal(documentSheet.rows[2][documentHeaders.indexOf('source_document_id')], 'DOC-FRONT-OLD');
+  assert.equal(documentSheet.rows[2][documentHeaders.indexOf('drive_file_id')], 'drive-front');
+  assert.equal(documentSheet.rows[0][documentHeaders.indexOf('contract_id')], 'C603-2026');
 }

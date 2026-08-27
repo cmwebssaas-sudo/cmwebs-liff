@@ -273,12 +273,21 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     note: normalized.data.note || previous.note || ''
   });
   landlordInitiatedContractAppend_(schema.data.contracts, contract);
+  let documentReferences = null;
+  if (typeof carryForwardLandlordContractDocumentsByLineUid_ === 'function') {
+    documentReferences = carryForwardLandlordContractDocumentsByLineUid_(
+      landlordInitiatedContractText_(access.line_user_id || access.principal_line_user_id),
+      previousId,
+      contractId
+    );
+  }
   return {
     success: true,
     code: 'OK',
     data: {
       contract: landlordInitiatedContractPublicContract_(contract, previous),
-      invite: null
+      invite: null,
+      document_references: documentReferences
     }
   };
 }
