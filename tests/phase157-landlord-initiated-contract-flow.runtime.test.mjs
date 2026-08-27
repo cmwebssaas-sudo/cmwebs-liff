@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const sourcePath = new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url);
+const renewalHistorySource = readFileSync(new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url), 'utf8');
 const signingSessionSource = readFileSync(new URL('../apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js', import.meta.url), 'utf8');
 const signingSubmissionSource = readFileSync(new URL('../apps-script/V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js', import.meta.url), 'utf8');
 const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
@@ -141,6 +142,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
     workspaceResult_: (success, code, message) => ({ success, code, message, data: null })
   };
   vm.createContext(context);
+  vm.runInContext(renewalHistorySource, context, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
   vm.runInContext(source, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });
   vm.runInContext(signingSessionSource, context, { filename: 'V2_TENANT_LIFF_SIGNING_SESSION.js' });
   context.verifyLandlordContractSigningReviewSessionToken_ = () => ({ success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' });

@@ -197,9 +197,8 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
   const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
   if (!schema.success) return schema;
   if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
-  const normalized = landlordInitiatedContractNormalizeInput_(input);
-  if (!normalized.success) return normalized;
-  const previousId = landlordInitiatedContractText_(input && input.previous_contract_id);
+  const rawInput = input || {};
+  const previousId = landlordInitiatedContractText_(rawInput.previous_contract_id);
   if (!previousId) return landlordInitiatedContractError_('PREVIOUS_CONTRACT_REQUIRED', '續約必須指定前一份合約');
 
   const contracts = landlordInitiatedContractRows_(schema.data.contracts);
@@ -213,6 +212,23 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
   if (!landlordInitiatedContractText_(previous.tenant_id)) return landlordInitiatedContractError_('PREVIOUS_TENANT_NOT_READY', '前一份合約缺少房客資料');
   if (landlordInitiatedContractHasOpenSibling_(contracts, access, previous.room_id, previousId)) return landlordInitiatedContractError_('ROOM_ALREADY_RESERVED', '房間已有其他待處理合約');
 
+  if (typeof contractRenewalHistoryBuildDefaults_ !== 'function' || typeof contractRenewalHistoryBuildVersionFields_ !== 'function') {
+    return landlordInitiatedContractError_('CONTRACT_RENEWAL_HISTORY_MODULE_REQUIRED', '找不到續約版本模組');
+  }
+
+  const defaults = contractRenewalHistoryBuildDefaults_(previous);
+  const renewalInput = Object.assign({}, defaults, {
+    property_id: previous.property_id || '',
+    room_id: previous.room_id || '',
+    payment_day: defaults.monthly_payment_day,
+    tenant_name: previous.tenant_name || previous.name || '',
+    tenant_phone: previous.tenant_phone || previous.phone || '',
+    tenant_email: previous.tenant_email || previous.email || '',
+    note: previous.note || ''
+  }, rawInput);
+  const normalized = landlordInitiatedContractNormalizeInput_(renewalInput);
+  if (!normalized.success) return normalized;
+
   const room = landlordInitiatedContractFindScopedRow_(schema.data.rooms, access, 'room_id', previous.room_id);
   const property = landlordInitiatedContractFindScopedRow_(schema.data.properties, access, 'property_id', previous.property_id);
   if (!room || !property) return landlordInitiatedContractError_('RENEWAL_TARGET_NOT_FOUND', '續約房屋資料不存在');
@@ -220,7 +236,13 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
   const now = new Date();
   const actor = landlordInitiatedContractActor_(access);
   const contractId = landlordInitiatedContractUuid_();
-  const contract = landlordInitiatedContractContractObject_(access, actor, property, room, normalized.data, {
+  const versionFields = contractRenewalHistoryBuildVersionFields_(previous, normalized.data, {
+    contract_id: contractId,
+    renewal_request_id: rawInput.renewal_request_id,
+    existing_rows: contracts
+  });
+  const contractInput = Object.assign({}, normalized.data, versionFields);
+  const contract = landlordInitiatedContractContractObject_(access, actor, property, room, contractInput, {
     contract_id: contractId,
     tenant_id: previous.tenant_id,
     tenant_user_id: previous.tenant_user_id || '',
@@ -239,11 +261,16 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     previous_contract_id: previousId,
     renewed_to_contract_id: '',
     tenant_signing_submission_status: 'pending',
+    previous_contract_id: previousId,
+    renewed_from_contract_id: previousId,
+    contract_family_id: versionFields.contract_family_id,
+    renewal_sequence: versionFields.renewal_sequence,
+    renewal_request_id: versionFields.renewal_request_id,
     created_by_user_id: actor.user_id,
     created_by_membership_id: actor.membership_id,
     created_at: now.toISOString(),
     updated_at: now.toISOString(),
-    note: normalized.data.note
+    note: normalized.data.note || previous.note || ''
   });
   landlordInitiatedContractAppend_(schema.data.contracts, contract);
   return {
@@ -753,9 +780,19 @@ function landlordInitiatedContractNormalizeInput_(input) {
     management_fee: landlordInitiatedContractNumber_(input.management_fee),
     deposit_months: landlordInitiatedContractNumber_(input.deposit_months),
     deposit_amount: landlordInitiatedContractNumber_(input.deposit_amount),
+    term_months: Math.round(landlordInitiatedContractNumber_(input.term_months)),
     payment_day: Math.round(landlordInitiatedContractNumber_(input.payment_day || input.monthly_payment_day)),
     electricity_fee_rate: landlordInitiatedContractNumber_(input.electricity_fee_rate),
     equipment_fee_rate: landlordInitiatedContractNumber_(input.equipment_fee_rate),
+    other_fixed_fee_amount: landlordInitiatedContractNumber_(input.other_fixed_fee_amount),
+    other_fixed_fee_note: landlordInitiatedContractText_(input.other_fixed_fee_note),
+    terms_snapshot_json: landlordInitiatedContractText_(input.terms_snapshot_json || input.contract_terms_snapshot),
+    special_offer_enabled: input.special_offer_enabled === undefined ? false : landlordInitiatedContractBoolean_(input.special_offer_enabled),
+    special_offer_notice_days: Math.round(landlordInitiatedContractNumber_(input.special_offer_notice_days || 30)),
+    special_offer_applies_to: landlordInitiatedContractText_(input.special_offer_applies_to || 'expiry_non_renewal'),
+    special_offer_waiver_type: landlordInitiatedContractText_(input.special_offer_waiver_type || 'breach_penalty_waived'),
+    special_offer_clause: landlordInitiatedContractText_(input.special_offer_clause),
+    identity_document_mode: landlordInitiatedContractText_(input.identity_document_mode || (input.previous_contract_id ? 'optional' : 'required')),
     tenant_name: landlordInitiatedContractText_(input.tenant_name || input.name),
     tenant_phone: landlordInitiatedContractNormalizePhone_(input.tenant_phone || input.phone),
     tenant_email: landlordInitiatedContractText_(input.tenant_email || input.email),
@@ -763,6 +800,8 @@ function landlordInitiatedContractNormalizeInput_(input) {
   };
   if ((!result.room_id && !landlordInitiatedContractText_(input.previous_contract_id)) || !result.start_date || !result.end_date || !result.rent_amount || !result.deposit_amount || !result.payment_day) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期、房間、租金、押金與付款日為必要資料');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(result.start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(result.end_date) || result.end_date < result.start_date) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期日期無效');
+  if (result.term_months < 0 || result.special_offer_notice_days < 0) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '續約期間或優惠通知天數無效');
+  if (['required', 'optional', 'carried_forward'].indexOf(result.identity_document_mode) === -1) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '身份文件模式無效');
   if (result.tenant_phone && !/^09\d{8}$/.test(result.tenant_phone)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '房客手機格式無效');
   if (result.tenant_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result.tenant_email)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '房客 Email 格式無效');
   return { success: true, code: 'OK', data: result };
@@ -774,8 +813,8 @@ function landlordInitiatedContractContractObject_(access, actor, property, room,
     tenant_id: '', tenant_user_id: '', tenant_line_user_id: '', tenant_name: '', tenant_phone: '', tenant_email: '',
     property_id: property.property_id || '', property_name: property.property_name || room.property_name || '', property_address: property.property_address || property.address || '', room_id: room.room_id || '', room_name: room.room_name || '',
     start_date: input.start_date, contract_start_date: input.start_date, end_date: input.end_date, contract_end_date: input.end_date,
-    rent_amount: input.rent_amount, monthly_rent: input.rent_amount, management_fee: input.management_fee, monthly_management_fee: input.management_fee, deposit_months: input.deposit_months, deposit_amount: input.deposit_amount, payment_day: input.payment_day, monthly_payment_day: input.payment_day, electricity_fee_rate: input.electricity_fee_rate, equipment_fee_rate: input.equipment_fee_rate,
-    contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending', signing_mode: '', contract_origin: 'landlord_initiated', invite_id: '', contract_content: '', contract_version: 'fixed-google-doc-template-1', previous_contract_id: '', renewed_to_contract_id: '', tenant_signing_submission_status: 'pending',
+    rent_amount: input.rent_amount, monthly_rent: input.rent_amount, management_fee: input.management_fee, monthly_management_fee: input.management_fee, deposit_months: input.deposit_months, deposit_amount: input.deposit_amount, payment_day: input.payment_day, monthly_payment_day: input.monthly_payment_day || input.payment_day, electricity_fee_rate: input.electricity_fee_rate, equipment_fee_rate: input.equipment_fee_rate, other_fixed_fee_amount: input.other_fixed_fee_amount, other_fixed_fee_note: input.other_fixed_fee_note, terms_snapshot_json: input.terms_snapshot_json, term_months: input.term_months, special_offer_enabled: input.special_offer_enabled, special_offer_notice_days: input.special_offer_notice_days, special_offer_applies_to: input.special_offer_applies_to, special_offer_waiver_type: input.special_offer_waiver_type, special_offer_clause: input.special_offer_clause, identity_document_mode: input.identity_document_mode,
+    contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending', signing_mode: '', contract_origin: 'landlord_initiated', invite_id: '', contract_content: '', contract_version: 'fixed-google-doc-template-1', previous_contract_id: '', renewed_from_contract_id: '', renewed_to_contract_id: '', renewal_request_id: '', contract_family_id: '', renewal_sequence: '', special_offer_decision: '', special_offer_notice_date: '', special_offer_days_before_expiry: '', special_offer_decision_reason: '', tenant_signing_submission_status: 'pending',
     created_by_user_id: actor.user_id, created_by_membership_id: actor.membership_id, created_at: '', updated_at: '', note: input.note
   };
   return Object.assign(base, extra || {});
@@ -954,6 +993,7 @@ function landlordInitiatedContractHex_(bytes) { return (bytes || []).map(functio
 function landlordInitiatedContractConstantEquals_(left, right) { left = String(left || ''); right = String(right || ''); let difference = left.length ^ right.length; for (let index = 0; index < Math.max(left.length, right.length); index += 1) difference |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0); return difference === 0; }
 function landlordInitiatedContractText_(value) { return value === undefined || value === null ? '' : String(value).trim(); }
 function landlordInitiatedContractNumber_(value) { const number = Number(landlordInitiatedContractText_(value).replace(/,/g, '')); return Number.isFinite(number) ? number : 0; }
+function landlordInitiatedContractBoolean_(value) { if (value === true || value === false) return value; const text = landlordInitiatedContractText_(value).toLowerCase(); if (['true', '1', 'yes', 'y', 'on', 'enabled'].indexOf(text) >= 0) return true; if (['false', '0', 'no', 'n', 'off', 'disabled'].indexOf(text) >= 0) return false; return false; }
 function landlordInitiatedContractNormalizePhone_(value) { let digits = landlordInitiatedContractText_(value).replace(/\D/g, ''); if (digits.indexOf('8860') === 0 && digits.length === 13) digits = '0' + digits.slice(4); else if (digits.length === 9 && digits.charAt(0) === '9') digits = '0' + digits; return digits; }
 function landlordInitiatedContractDateValue_(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 0 : date.getTime(); }
 function landlordInitiatedContractHeaders_(sheet) {
