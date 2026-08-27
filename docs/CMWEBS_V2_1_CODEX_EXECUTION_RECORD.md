@@ -33,6 +33,7 @@ be verified for the particular action that needs it.
 | 2026-08-04 | Landlord-home request-local snapshot candidate | Isolated local source/test candidate only. It enables the existing snapshot for `landlord_home_bootstrap` and adds a focused mock; no cross-request cache, push, deployment, Production access, or external action. |
 | 2026-08-13 | Native landlord contract-signing review security repair | Explicitly authorized isolated V2.1 candidate only. Uses server-verified review sessions, Workspace/RBAC revalidation, serialized final decisions, and approval-time artifact checks; no deployment, schema migration, Production access, push, PR, merge, or external action. |
 | 2026-08-27 | Renewal contract-history and 30-day offer formal release | Explicitly authorized implementation, additive Production schema migration, Apps Script deployment, GitHub Pages publication, push, PR, and merge. Uses append-only `V2_contracts` versions, renewal document carry-forward references, signature-only renewal, landlord-review routing under 30 days, and read-only history views. LINE/mobile UAT remains separately `HUMAN_REQUIRED`. |
+| 2026-08-27 | Workspace-native landlord contract-history route repair | Explicitly authorized local repair after room-603 Production verification found the serving `landlord_tenants` payload omitted `contract_history`. Scope is isolated source, regression test, and documentation only; no deployment, Production data write, push, PR, merge, or external action is authorized by this record. |
 
 ## 2026-08-27 formal release evidence
 

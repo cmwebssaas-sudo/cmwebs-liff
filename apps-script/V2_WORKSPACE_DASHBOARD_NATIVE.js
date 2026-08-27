@@ -15,6 +15,7 @@
  * 依賴：
  * - V2_WORKSPACES.gs
  * - V2_WORKSPACE_LANDLORD_ACCESS.gs
+ * - V2_API.gs（landlordContractHistoryView_）
  */
 
 const V2_WORKSPACE_DASHBOARD_SHEETS_ = {
@@ -1740,6 +1741,26 @@ function workspaceDashboardBuildTenantList_(
               currentContract.contract_status ||
               currentContract.status
             ),
+
+          contract_history:
+            typeof landlordContractHistoryView_ ===
+              'function'
+              ? landlordContractHistoryView_(
+                  contracts,
+                  {
+                    tenant_id:
+                      tenantId,
+                    workspace_id:
+                      access.workspace &&
+                      access.workspace.workspace_id,
+                    room_id:
+                      currentContract.room_id,
+                    current_contract_id:
+                      currentContract.contract_id
+                  },
+                  null
+                )
+              : [],
 
           updated_at:
             tenant.updated_at ||
