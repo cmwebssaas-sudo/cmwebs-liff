@@ -2,7 +2,7 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-08-27 — Renewal contract history and 30-day offer (local candidate)
+## 2026-08-27 — Renewal contract history and 30-day offer (formal release)
 
 - Added append-only renewal versions for existing tenants. Each renewal gets a
   new contract ID and links to its predecessor while retaining all prior
@@ -19,9 +19,19 @@
 - Added the explicit additive-only `runV2ContractRenewalHistoryProductionMigration`
   runner. It appends only missing renewal/request/document headers and is
   idempotent; it does not delete or rewrite historical contracts.
-- Local Phase 174–176 tests pass. This candidate has not migrated Production
-  Sheets, deployed Apps Script, published GitHub Pages, or completed LINE/mobile
-  UAT.
+- Apps Script was deployed as immutable Version 130 on the existing Web App
+  deployment; the existing Web App URL was preserved. The additive schema
+  migration was executed twice from the authenticated Apps Script editor and
+  both executions completed successfully, proving the runner is idempotent.
+- GitHub PR #56 merged the release into `main` as `7452416`. GitHub Pages
+  workflow `33054940344` completed build, deploy, and status-report jobs, and
+  public readback found the landlord contract-history entry and
+  `查看完整合約與簽名`.
+- Local Phase 174–176 tests and the full Node suite pass (`55 pass, 0 fail`);
+  the candidate validator passes all `83/83` routes and handlers with zero
+  duplicate declarations and zero credential findings.
+- Authenticated real LINE/mobile room-603 UAT remains `HUMAN_REQUIRED` and is
+  not implied by this release.
 
 ## 2026-08-25 — Deploy fixed-template tenant signature preview
 
