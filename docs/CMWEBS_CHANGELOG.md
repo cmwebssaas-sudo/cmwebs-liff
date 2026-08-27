@@ -2,17 +2,23 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-08-27 — Native landlord contract-history route repair (local candidate)
+## 2026-08-28 — Native landlord contract-history route repair (formal corrective release)
 
 - Fixed the Workspace-native `landlord_tenants` read model used by the serving
   dispatcher so it returns the same sanitized, read-only `contract_history` as
   the legacy landlord tenant-list handler.
 - This restores the existing room-603 contract entry without recreating,
   deleting, or modifying `V2_contracts` rows. Phase 177 reproduces the serving
-  route and preserves both the original and renewal version IDs.
-- This remains an isolated local candidate. No Apps Script deployment,
-  Production Sheet write, GitHub Pages publication, or LINE/mobile UAT is
-  implied.
+  route and preserves the append-only history projection.
+- PR #59 merged the route repair into `main`; PRs #60–#62 completed the
+  landlord tenant-detail history-card rendering helpers. Apps Script Version
+  131 was deployed on the existing Web App deployment, preserving the existing
+  Web App URL. No schema or tenant-data migration was run for this repair.
+- GitHub Pages workflow `33099332347` completed successfully for merged
+  `main` commit `7711dea`. Public room-603 smoke readback rendered the history
+  card and `查看完整合約與簽名`, with no page error card or browser console
+  errors. Real authenticated LINE/mobile signing acceptance remains
+  `HUMAN_REQUIRED`.
 
 ## 2026-08-27 — Renewal contract history and 30-day offer (formal release)
 

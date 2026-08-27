@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-08-27 (Asia/Taipei)**
+**Last updated: 2026-08-28 (Asia/Taipei)**
 
 ## Purpose
 
@@ -34,6 +34,7 @@ be verified for the particular action that needs it.
 | 2026-08-13 | Native landlord contract-signing review security repair | Explicitly authorized isolated V2.1 candidate only. Uses server-verified review sessions, Workspace/RBAC revalidation, serialized final decisions, and approval-time artifact checks; no deployment, schema migration, Production access, push, PR, merge, or external action. |
 | 2026-08-27 | Renewal contract-history and 30-day offer formal release | Explicitly authorized implementation, additive Production schema migration, Apps Script deployment, GitHub Pages publication, push, PR, and merge. Uses append-only `V2_contracts` versions, renewal document carry-forward references, signature-only renewal, landlord-review routing under 30 days, and read-only history views. LINE/mobile UAT remains separately `HUMAN_REQUIRED`. |
 | 2026-08-27 | Workspace-native landlord contract-history route repair | Explicitly authorized local repair after room-603 Production verification found the serving `landlord_tenants` payload omitted `contract_history`. Scope is isolated source, regression test, and documentation only; no deployment, Production data write, push, PR, merge, or external action is authorized by this record. |
+| 2026-08-28 | Room-603 contract-history corrective release | User explicitly authorized push, merge, Apps Script deployment, GitHub Pages publication, and re-verification. PR #59 restored the native `contract_history` route; PRs #60–#62 fixed the history-card rendering helpers. Apps Script Version 131 serves the existing Web App deployment and Pages workflow `33099332347` published merged `main` `7711dea`; public 603 smoke readback passed. No schema or tenant-data migration was run. LINE/mobile signing acceptance remains `HUMAN_REQUIRED`. |
 
 ## 2026-08-27 formal release evidence
 
