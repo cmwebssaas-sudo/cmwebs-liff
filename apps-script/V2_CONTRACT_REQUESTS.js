@@ -243,7 +243,8 @@ function getTenantContractInitByLineUid_(
         {
           tenant: identity,
           contract: null,
-          requests: []
+          requests: [],
+          contract_history: []
         }
       );
     }
@@ -259,6 +260,12 @@ function getTenantContractInitByLineUid_(
       tenant: identity,
       contract:
         contractRequestBuildContractView_(
+          ss,
+          contract,
+          identity
+        ),
+      contract_history:
+        contractRequestBuildContractHistory_(
           ss,
           contract,
           identity
@@ -2481,6 +2488,16 @@ function contractRequestBuildContractView_(
         )
       ),
 
+    other_fixed_fee_amount:
+      contractRequestNumber_(
+        contract.other_fixed_fee_amount
+      ),
+
+    other_fixed_fee_note:
+      contractRequestText_(
+        contract.other_fixed_fee_note
+      ),
+
     monthly_payment_day:
       contractRequestInteger_(
         contractRequestFirstValue_(
@@ -2493,6 +2510,67 @@ function contractRequestBuildContractView_(
           ]
         ) ||
         supplement.monthly_payment_day
+      ),
+
+    terms_snapshot_json:
+      contractRequestText_(
+        contract.terms_snapshot_json ||
+        contract.contract_terms_snapshot
+      ),
+
+    contract_family_id:
+      contractRequestText_(
+        contract.contract_family_id ||
+        contract.contract_id
+      ),
+
+    renewal_sequence:
+      contractRequestInteger_(
+        contract.renewal_sequence
+      ) || 1,
+
+    renewed_from_contract_id:
+      contractRequestText_(
+        contract.renewed_from_contract_id ||
+        contract.previous_contract_id
+      ),
+
+    renewed_to_contract_id:
+      contractRequestText_(
+        contract.renewed_to_contract_id
+      ),
+
+    renewal_request_id:
+      contractRequestText_(
+        contract.renewal_request_id
+      ),
+
+    signing_mode:
+      contractRequestText_(
+        contract.signing_mode
+      ),
+
+    identity_document_mode:
+      contractRequestText_(
+        contract.identity_document_mode
+      ),
+
+    special_offer_enabled:
+      contract.special_offer_enabled === undefined ||
+      contract.special_offer_enabled === ''
+        ? true
+        : contractRequestBoolean_(
+            contract.special_offer_enabled
+          ),
+
+    special_offer_notice_days:
+      contractRequestInteger_(
+        contract.special_offer_notice_days
+      ) || 30,
+
+    special_offer_clause:
+      contractRequestText_(
+        contract.special_offer_clause
       ),
 
     bank_name:
@@ -2548,6 +2626,78 @@ function contractRequestBuildContractView_(
     updated_at:
       contract.updated_at || ''
   };
+}
+
+
+function contractRequestBuildContractHistory_(
+  ss,
+  currentContract,
+  identity
+) {
+  if (
+    typeof contractRenewalHistoryBuildReadModel_ !==
+      'function'
+  ) {
+    return [];
+  }
+
+  const rows =
+    contractRequestGetObjects_(
+      ss.getSheetByName(
+        V2_CONTRACT_REQUESTS_CONTRACTS_SHEET
+      )
+    );
+
+  return contractRenewalHistoryBuildReadModel_(
+    rows,
+    currentContract
+  ).map(
+    function (row) {
+      const rowIdentity =
+        Object.assign(
+          {},
+          identity || {},
+          {
+            tenant_id:
+              row.tenant_id ||
+              (identity && identity.tenant_id),
+            tenant_name:
+              row.tenant_name ||
+              (identity && identity.tenant_name),
+            room_id:
+              row.room_id ||
+              (identity && identity.room_id),
+            room_name:
+              row.room_name ||
+              (identity && identity.room_name)
+          }
+        );
+
+      return Object.assign(
+        contractRequestBuildContractView_(
+          ss,
+          row,
+          rowIdentity
+        ),
+        {
+          contract_family_id:
+            row.contract_family_id,
+          renewal_sequence:
+            row.renewal_sequence,
+          renewed_from_contract_id:
+            row.renewed_from_contract_id,
+          renewed_to_contract_id:
+            row.renewed_to_contract_id,
+          renewal_request_id:
+            row.renewal_request_id,
+          read_only:
+            true,
+          is_current:
+            row.is_current === true
+        }
+      );
+    }
+  );
 }
 
 

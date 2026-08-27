@@ -10,6 +10,8 @@ const signingSubmissionSource = readFileSync(new URL('../apps-script/V2_TENANT_C
 const documentSource = readFileSync(new URL('../apps-script/V2_LANDLORD_CONTRACT_DOCUMENTS.js', import.meta.url), 'utf8');
 assert.equal(existsSync(sourcePath), true, 'renewal history module must exist before runtime tests can run');
 const source = readFileSync(sourcePath, 'utf8');
+const signingSessionSource = readFileSync(new URL('../apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js', import.meta.url), 'utf8');
+const apiSource = readFileSync(new URL('../apps-script/V2_API.js', import.meta.url), 'utf8');
 
 const context = {
   Date,
@@ -141,6 +143,17 @@ assert.deepEqual(listed.map(item => item.contract_id), ['C603-2026', 'C603-2027'
 assert.equal(listed.filter(item => item.is_current).length, 1);
 assert.equal(listed.find(item => item.contract_id === 'C603-2027').is_current, true);
 assert.equal(listed.find(item => item.contract_id === 'C603-2026').read_only, true);
+
+const history = context.contractRenewalHistoryBuildReadModel_([
+  Object.assign({}, previous, { contract_status: 'renewed' }),
+  Object.assign({}, versionTwo, { tenant_id: 'T603', contract_status: 'renewed' }),
+  Object.assign({}, versionThree, { tenant_id: 'T603', contract_status: 'active' }),
+  Object.assign({}, versionThree, { contract_id: 'OTHER-TENANT', tenant_id: 'OTHER', contract_status: 'active' })
+], Object.assign({}, versionThree, { tenant_id: 'T603' }));
+assert.deepEqual(history.map(item => item.contract_id), ['C603-2026', 'C603-2027', 'C603-2028']);
+assert.equal(history.find(item => item.contract_id === 'C603-2028').is_current, true);
+assert.equal(history.every(item => item.read_only), true);
+assert.equal(history.every(item => item.contract_family_id === 'C603-2026'), true);
 
 const carried = context.contractRenewalHistoryBuildCarriedDocumentReference_({
   document_id: 'DOC-OLD-FRONT',
@@ -358,6 +371,30 @@ const landlordAccess = {
   assert.equal(retry.data.idempotent, true);
   assert.equal(contracts.rows.length, 2);
 
+  const requestRows = requestContext.contractRequestGetObjects_(contracts);
+  const currentContract = requestRows.find(row => row.contract_id === firstAppliedId);
+  const identity = {
+    tenant_id: 'T603',
+    tenant_name: '測試房客',
+    room_id: 'R603',
+    room_name: '603',
+    landlord_id: 'L1',
+    landlord_name: '房東甲'
+  };
+  const historyView = requestContext.contractRequestBuildContractHistory_(spreadsheet, currentContract, identity);
+  assert.deepEqual(historyView.map(item => item.contract_id), ['C603-2026', firstAppliedId]);
+  assert.equal(historyView.find(item => item.contract_id === firstAppliedId).is_current, true);
+  assert.equal(historyView.every(item => item.read_only), true);
+
+  requestContext.runtimeSpreadsheet_ = () => spreadsheet;
+  requestContext.contractRequestResolveTenantIdentity_ = () => identity;
+  requestContext.contractRequestResolveCurrentContract_ = () => currentContract;
+  requestContext.contractRequestGetTenantRequests_ = () => [];
+  requestContext.contractRequestLogAccess_ = () => {};
+  const tenantInit = requestContext.getTenantContractInitByLineUid_('tenant-line');
+  assert.equal(tenantInit.success, true, tenantInit.code);
+  assert.deepEqual(tenantInit.data.contract_history.map(item => item.contract_id), ['C603-2026', firstAppliedId]);
+
   const offerContract = {
     start_date: '2025-10-01',
     end_date: '2026-09-30',
@@ -447,7 +484,39 @@ const landlordAccess = {
     tenantLiffSigningText_: value => String(value == null ? '' : value).trim()
   };
   vm.createContext(signingContext);
+  vm.runInContext(source, signingContext, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
+  vm.runInContext(signingSessionSource, signingContext, { filename: 'V2_TENANT_LIFF_SIGNING_SESSION.js' });
   vm.runInContext(signingSubmissionSource, signingContext, { filename: 'V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js' });
+  const signingHistoryRows = [
+    Object.assign({}, previous, {
+      contract_status: 'renewed',
+      contract_family_id: 'C603-2026',
+      renewal_sequence: 1
+    }),
+    {
+      contract_id: 'C603-2027',
+      workspace_id: 'W1',
+      tenant_id: 'T603',
+      room_id: 'R603',
+      start_date: '2026-10-01',
+      end_date: '2027-09-30',
+      rent_amount: 24000,
+      management_fee: 500,
+      contract_status: 'pending_tenant_signature',
+      signing_mode: 'renewal',
+      contract_family_id: 'C603-2026',
+      renewal_sequence: 2,
+      renewed_from_contract_id: 'C603-2026'
+    }
+  ];
+  const signingHistory = signingContext.tenantLiffSigningContractHistoryView_(
+    signingHistoryRows,
+    signingHistoryRows[1],
+    { tenant_name: '測試房客', room_name: '603' }
+  );
+  assert.deepEqual(signingHistory.map(item => item.contract_id), ['C603-2026', 'C603-2027']);
+  assert.equal(signingHistory.find(item => item.contract_id === 'C603-2027').is_current, true);
+  assert.equal(signingHistory.every(item => item.read_only), true);
   const renewalClaims = { workspace_id: 'W1', tenant_id: 'T603', contract_id: 'C603-2027' };
   const signature = [{ workspace_id: 'W1', tenant_id: 'T603', contract_id: 'C603-2027', artifact_type: 'signature', artifact_id: 'SIG-NEW', drive_file_id: 'drive-new', status: 'stored' }];
   const renewalResult = signingContext.tenantContractSigningRequiredArtifacts_(signature, renewalClaims, 'renewal');
@@ -458,6 +527,50 @@ const landlordAccess = {
     { workspace_id: 'W1', tenant_id: 'T603', contract_id: 'C603-2026', artifact_type: 'signature', artifact_id: 'SIG-OLD', drive_file_id: 'drive-old', status: 'stored' }
   ], renewalClaims, 'renewal').code, 'REQUIRED_ARTIFACT_MISSING');
   assert.equal(signingContext.tenantContractSigningRequiredArtifacts_(signature, renewalClaims, 'unknown').code, 'SIGNING_MODE_NOT_READY');
+}
+
+{
+  const landlordApiContext = { Date, Math, Number, String, Object, Array, JSON, RegExp };
+  vm.createContext(landlordApiContext);
+  vm.runInContext(source, landlordApiContext, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
+  vm.runInContext(apiSource, landlordApiContext, { filename: 'V2_API.js' });
+  const contractRows = [
+    {
+      contract_id: 'C603-2026', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T603', room_id: 'R603',
+      start_date: '2025-10-01', end_date: '2026-09-30', rent_amount: 24000, management_fee: 500,
+      contract_status: 'renewed', contract_family_id: 'C603-2026', renewal_sequence: 1
+    },
+    {
+      contract_id: 'C603-2027', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T603', room_id: 'R603',
+      start_date: '2026-10-01', end_date: '2027-09-30', rent_amount: 24000, management_fee: 500,
+      contract_status: 'active', contract_family_id: 'C603-2026', renewal_sequence: 2, renewed_from_contract_id: 'C603-2026'
+    },
+    {
+      contract_id: 'OTHER-2027', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'OTHER', room_id: 'R604',
+      start_date: '2026-10-01', end_date: '2027-09-30', contract_status: 'active', contract_family_id: 'OTHER-2026', renewal_sequence: 2
+    }
+  ];
+  landlordApiContext.runtimeSpreadsheet_ = () => ({ getSheetByName: () => null });
+  landlordApiContext.getLandlordHomeByLineUid = () => ({
+    success: true,
+    data: { landlord_id: 'L1', landlord_name: '房東甲', workspace_id: 'W1', line_user_id: 'landlord-line' }
+  });
+  landlordApiContext.getSheetObjects_ = sheetName => {
+    if (sheetName === 'V2_landlord_tenant_list_view') {
+      return [{
+        line_user_id: 'landlord-line', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T603',
+        tenant_name: '測試房客', room_id: 'R603', room_list: '603', current_contract_id: 'C603-2027',
+        tenant_binding_status: 'bound', tenant_account_status: 'active'
+      }];
+    }
+    if (sheetName === 'V2_contracts') return contractRows;
+    return [];
+  };
+  landlordApiContext.logLiffAccess_ = () => {};
+  const result = landlordApiContext.getLandlordTenantsByLineUid('landlord-line');
+  assert.equal(result.success, true, result.code);
+  assert.deepEqual(result.data.tenants[0].contract_history.map(item => item.contract_id), ['C603-2026', 'C603-2027']);
+  assert.equal(result.data.tenants[0].contract_history.find(item => item.contract_id === 'C603-2027').is_current, true);
 }
 
 {

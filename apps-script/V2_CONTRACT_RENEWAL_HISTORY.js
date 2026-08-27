@@ -271,6 +271,36 @@ function contractRenewalHistoryList_(rows) {
   return normalizedRows;
 }
 
+function contractRenewalHistoryBuildReadModel_(rows, currentContract) {
+  const allRows = Array.isArray(rows) ? rows : [];
+  const current = contractRenewalHistoryNormalizeContract_(currentContract);
+  const family = contractRenewalHistoryResolveFamily_(currentContract, allRows);
+  const candidates = allRows.filter(function (row) {
+    const candidate = contractRenewalHistoryNormalizeContract_(row);
+    const candidateFamily = candidate.contract_family_id || candidate.contract_id;
+    return candidateFamily === family.contract_family_id &&
+      (!current.workspace_id || candidate.workspace_id === current.workspace_id) &&
+      (!current.tenant_id || candidate.tenant_id === current.tenant_id) &&
+      (!current.room_id || !candidate.room_id || candidate.room_id === current.room_id);
+  });
+
+  const listed = contractRenewalHistoryList_(candidates);
+  const currentId = current.contract_id;
+  listed.forEach(function (row) {
+    row.is_current = Boolean(currentId && row.contract_id === currentId);
+  });
+
+  return listed.map(function (row) {
+    return Object.assign({}, row, {
+      contract_family_id: row.contract_family_id || family.contract_family_id,
+      renewal_sequence: Number(row.renewal_sequence || 1),
+      renewed_from_contract_id: row.renewed_from_contract_id || '',
+      renewed_to_contract_id: row.renewed_to_contract_id || '',
+      read_only: true
+    });
+  });
+}
+
 function contractRenewalHistoryBuildCarriedDocumentReference_(document, newContractId) {
   const source = document || {};
   return {
