@@ -446,6 +446,27 @@ function migrateV2ContractRenewalHistorySchema_(ss) {
   }
 }
 
+function contractRenewalHistoryResolveProductionSpreadsheet_() {
+  if (typeof PropertiesService === 'undefined' ||
+      typeof PropertiesService.getScriptProperties !== 'function' ||
+      typeof runtimeSpreadsheet_ !== 'function') {
+    throw new Error('PRODUCTION_SPREADSHEET_RESOLVER_REQUIRED');
+  }
+
+  const spreadsheetId = contractRenewalHistoryText_(
+    PropertiesService.getScriptProperties().getProperty('CMWEBS_SPREADSHEET_ID')
+  );
+  if (!spreadsheetId) throw new Error('PRODUCTION_SPREADSHEET_REFERENCE_REQUIRED');
+
+  const spreadsheet = runtimeSpreadsheet_(spreadsheetId);
+  if (!spreadsheet || typeof spreadsheet.getSheetByName !== 'function') {
+    throw new Error('PRODUCTION_SPREADSHEET_REFERENCE_REQUIRED');
+  }
+  return spreadsheet;
+}
+
 function runV2ContractRenewalHistoryProductionMigration() {
-  return migrateV2ContractRenewalHistorySchema_();
+  return migrateV2ContractRenewalHistorySchema_(
+    contractRenewalHistoryResolveProductionSpreadsheet_()
+  );
 }

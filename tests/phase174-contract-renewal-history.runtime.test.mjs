@@ -206,13 +206,21 @@ assert.deepEqual(plain(carried), {
   const migrationContext = {
     Date, Math, Number, String, Object, Array, JSON, RegExp, Error,
     SpreadsheetApp: {
-      getActiveSpreadsheet: () => ({
-        getSheetByName: name => migrationSheets[name] || null
+      getActiveSpreadsheet: () => {
+        throw new Error('active spreadsheet is unavailable in execution API');
+      }
+    },
+    PropertiesService: {
+      getScriptProperties: () => ({
+        getProperty: name => name === 'CMWEBS_SPREADSHEET_ID' ? 'production-sheet-id' : ''
       })
     },
     LockService: {
       getScriptLock: () => ({ waitLock() {}, releaseLock() {} })
-    }
+    },
+    runtimeSpreadsheet_: () => ({
+      getSheetByName: name => migrationSheets[name] || null
+    })
   };
   vm.createContext(migrationContext);
   vm.runInContext(source, migrationContext, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
@@ -223,7 +231,7 @@ assert.deepEqual(plain(carried), {
   assert.ok(firstRun.data.added_headers.requests.includes('requested_deposit_amount'));
   assert.deepEqual(plain(firstRun.data.added_headers.documents), ['document_origin', 'source_document_id']);
 
-  const secondRun = migrationContext.migrateV2ContractRenewalHistorySchema_();
+  const secondRun = migrationContext.runV2ContractRenewalHistoryProductionMigration();
   assert.deepEqual(plain(secondRun.data.added_headers), {
     contracts: [],
     requests: [],
