@@ -1,11 +1,30 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-08-25 (Asia/Taipei)**
+**Last verified: 2026-08-27 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-08-27 formal renewal-history release
+
+- The renewal contract-history candidate was merged to GitHub `main` by PR #56
+  as commit `74524166aead730a2eaa07e85950102ca2201c39`.
+- Apps Script Version 130 is serving on the existing Web App deployment. The
+  existing Web App URL was preserved; no new URL was created.
+- The additive-only production schema migration was run twice from the
+  authenticated Apps Script editor and both executions completed successfully.
+  The runner appends only missing headers and does not delete or rewrite old
+  contract versions.
+- GitHub Pages workflow `33054940344` completed successfully for the merged
+  `main` commit. Public readback found `房客合約`, `合約版本紀錄`, and
+  `查看完整合約與簽名` in the landlord tenant-detail page.
+- Local verification passed: full Node suite `55/55`, candidate validator
+  `83/83` routes and handlers, duplicate declarations `0`, credential scan `0`,
+  and `git diff --check`.
+- `HUMAN_REQUIRED`: authenticated real LINE/mobile room-603 UAT and actual
+  landlord/tenant contract interaction remain unverified.
 
 ## Gate 0 / Production Consolidation
 
@@ -54,15 +73,15 @@ change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
 
 - **Canonical source baseline:** the Version 89 source tree described above,
   reconciled to GitHub `main` by PR #12.
-- **Current Apps Script serving version:** Version 125, read back from the
-  existing Web App deployment on 2026-08-25 after the authorized fixed-template
-  signature-preview release. This is deployment identity evidence, not a
-  real-device UAT result.
+- **Current Apps Script serving version:** Version 130, read back from the
+  existing Web App deployment on 2026-08-27 after the formal renewal-history
+  release. This is deployment identity evidence, not a real-device UAT result.
 - **Current Apps Script rollback version:** `HUMAN_REQUIRED`; it was not
   identified in the read-only reconciliation.
-- **GitHub Pages:** the cache-busting release at commit `9e18425` completed
-  successfully in workflow `32793428257`; public tenant entry pages and the
-  versioned release asset were fetched successfully.
+- **GitHub Pages:** the renewal-history release at merged `main` commit
+  `7452416` completed successfully in workflow `33054940344`; public
+  landlord tenant-detail readback found the contract-history entry and the
+  complete contract/signature action.
 - **Production editor source:** an open Apps Script editor does not prove what
   immutable version is serving. Deployment metadata and a scoped source export
   are authoritative.
