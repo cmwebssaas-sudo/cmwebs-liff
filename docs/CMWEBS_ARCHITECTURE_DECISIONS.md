@@ -1,7 +1,7 @@
 # CMWebs Architecture Decisions
 
 **Status: AUTHORITATIVE**
-**Last updated: 2026-07-29 (Asia/Taipei)**
+**Last updated: 2026-08-27 (Asia/Taipei)**
 
 ## Supersedes
 
@@ -95,3 +95,31 @@ not a `V2_contract_requests` or legacy-integration record.
   `tenant_signing_submission_status=rejected`; the tenant may resubmit through
   the existing verified native session and artifact path. Neither outcome calls
   LINE, Make, the legacy signed-contract bridge, or an external e-sign service.
+
+## 2026-08-27 renewal contract-history candidate
+
+The approved local candidate uses an append-only contract version chain for
+existing tenants. A renewal appends a new `V2_contracts` row with a new
+`contract_id`, keeps the same `contract_family_id`, increments
+`renewal_sequence`, and links `renewed_from_contract_id`／
+`renewed_to_contract_id`. The predecessor's dates, amounts, terms, documents,
+and signature evidence are never overwritten or deleted; its lifecycle status
+may become `renewed`／`archived` only after the new version is created.
+
+The renewal version carries a complete snapshot of rent, management fee,
+deposit, other fixed fee, payment day, terms, and the 30-day expiry
+non-renewal offer. The offer is waived only when the non-renewal notice is at
+least 30 calendar days before expiry. A notice under 30 days is
+`landlord_review`; it does not auto-charge or auto-waive a penalty. Mid-term
+early termination remains outside this offer.
+
+Renewal identity documents are optional. When the tenant does not re-upload,
+the new version stores immutable `carried_forward` references through
+`source_document_id`; a renewal still requires a new signature artifact. New
+tenant signing keeps identity documents required. The landlord and tenant
+read models expose `contract_history`, and selected landlord history versions
+are served as read-only complete contract/signature views.
+
+This is a local V2.1 implementation candidate only. It does not authorize
+Production Sheet migration, Apps Script deployment, GitHub Pages publication,
+or LINE/mobile UAT.

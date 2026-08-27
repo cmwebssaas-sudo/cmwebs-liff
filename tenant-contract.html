@@ -1203,6 +1203,120 @@
       color: #222222;
     }
 
+    .contract-history-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .contract-history-item {
+      padding: 13px;
+      border: 1px solid #e6e8eb;
+      border-radius: 13px;
+      background: #ffffff;
+    }
+
+    .contract-history-item.current {
+      border-color: #b9e6c8;
+      background: #f5fcf7;
+    }
+
+    .contract-history-item-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .contract-history-item-title {
+      color: #292d32;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .contract-history-item-id {
+      margin-top: 3px;
+      color: #747982;
+      font-size: 10px;
+      word-break: break-all;
+    }
+
+    .contract-history-item-status {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: #f0f2f4;
+      color: #666c75;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .contract-history-item.current .contract-history-item-status {
+      background: var(--primary-soft);
+      color: #10893e;
+    }
+
+    .contract-history-item-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 11px;
+    }
+
+    .contract-history-item-grid > div {
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: #f7f8fa;
+    }
+
+    .contract-history-item-grid span,
+    .contract-history-item-grid strong {
+      display: block;
+    }
+
+    .contract-history-item-grid span {
+      margin-bottom: 4px;
+      color: #747982;
+      font-size: 10px;
+    }
+
+    .contract-history-item-grid strong {
+      color: #292d32;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .contract-history-item-details {
+      margin-top: 10px;
+      border-top: 1px solid #e6e8eb;
+    }
+
+    .contract-history-item-details summary {
+      min-height: 43px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      color: #292d32;
+      font-size: 12px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    .contract-history-item-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .contract-history-readonly-note {
+      padding: 9px 10px;
+      border-radius: 9px;
+      background: #f7f8fa;
+      color: #747982;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
     .signing-details {
       margin-top: 15px;
       border-top: 1px solid #e6e8eb;
@@ -1464,7 +1578,8 @@
     @media (max-width: 420px) {
       .price-comparison,
       .approved-grid,
-      .signing-summary {
+      .signing-summary,
+      .contract-history-item-grid {
         grid-template-columns: 1fr;
       }
 
@@ -2741,6 +2856,58 @@
       );
     }
 
+    function renderTenantContractHistory_(contracts, currentContractId) {
+      const rows = Array.isArray(contracts) ? contracts : [];
+      if (!rows.length) return '';
+
+      const normalizedCurrentId = rawText(currentContractId).trim();
+      return `
+        <section class="signing-section contract-history-section">
+          <h2 class="signing-section-title">合約版本紀錄</h2>
+          <p class="signing-section-help">每次續約都建立新版本，舊合約保留完整內容與簽名並以唯讀方式保存。</p>
+          <div class="contract-history-list">
+            ${rows.map(function (item) {
+              const contractId = rawText(item.contract_id).trim();
+              const current = item.is_current === true || contractId === normalizedCurrentId;
+              const sequence = Number(item.renewal_sequence || 1) || 1;
+              const status = rawText(item.tenant_signing_submission_status || item.contract_status).trim().toLowerCase();
+              const statusLabel = status === 'approved' || status === 'active'
+                ? '已簽署／有效'
+                : status === 'submitted'
+                  ? '待房東審核'
+                  : status === 'renewed'
+                    ? '已由新版本承接'
+                    : (status || '唯讀');
+              const terms = item.terms_document || {};
+              return `
+                <article class="contract-history-item ${current ? 'current' : ''}">
+                  <div class="contract-history-item-head">
+                    <div>
+                      <div class="contract-history-item-title">第 ${sequence} 版合約${current ? '（目前）' : ''}</div>
+                      <div class="contract-history-item-id">${safeText(contractId || '-')}</div>
+                    </div>
+                    <span class="contract-history-item-status">${safeText(statusLabel)}</span>
+                  </div>
+                  <div class="contract-history-item-grid">
+                    <div><span>租期</span><strong>${safeText(formatDateOnly(item.start_date))} ～ ${safeText(formatDateOnly(item.end_date))}</strong></div>
+                    <div><span>月租／管理費</span><strong>${safeText(money(item.rent_amount))}／${safeText(money(item.management_fee))}</strong></div>
+                    <div><span>押金／繳款日</span><strong>${safeText(money(item.deposit_amount))}／每月 ${safeText(item.monthly_payment_day || '-')} 日</strong></div>
+                    <div><span>證件要求</span><strong>${item.identity_document_mode === 'optional' ? '續約可沿用，選填' : '首次簽約必填'}</strong></div>
+                  </div>
+                  <details class="contract-history-item-details" ${current ? 'open' : ''}>
+                    <summary>查看完整合約與簽名</summary>
+                    ${terms.available === true
+                      ? `<div class="signing-terms-content">${renderTenantSigningTerms_(terms)}</div>`
+                      : '<div class="contract-history-readonly-note">此版本的合約內容目前未載入；版本資料仍保留，請稍後重新整理。</div>'}
+                  </details>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `;
+    }
+
     function renderTenantArtifactUpload(type, title, help) {
       const complete = TENANT_SIGNING_ARTIFACT_STATE[type] === true;
       const state = tenantSigningUploadCopy(type);
@@ -2851,6 +3018,8 @@
           <p class="signing-section-help">請先確認下列主要條件。</p>
           <div class="signing-summary">${summary}</div>
         </section>
+
+        ${renderTenantContractHistory_(data.contract_history, contract.contract_id)}
 
         ${isRenewal ? `
           <section class="signing-section">

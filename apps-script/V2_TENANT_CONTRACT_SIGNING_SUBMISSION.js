@@ -273,7 +273,9 @@ function tenantContractSigningOwnedContract_(contracts, claims) {
 }
 
 function tenantContractSigningRequiredArtifacts_(artifacts, claims, signingMode) {
-  const required = signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'];
+  const normalizedMode = tenantLiffSigningText_(signingMode).toLowerCase();
+  if (['new_tenant', 'renewal'].indexOf(normalizedMode) === -1) return tenantContractSigningSubmitError_('SIGNING_MODE_NOT_READY');
+  const required = normalizedMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'];
   const found = {};
   artifacts.forEach(function (row) {
     if (tenantLiffSigningText_(row.contract_id) === claims.contract_id && tenantLiffSigningText_(row.tenant_id) === claims.tenant_id && tenantLiffSigningText_(row.workspace_id) === claims.workspace_id && tenantLiffSigningText_(row.status) === 'stored') {

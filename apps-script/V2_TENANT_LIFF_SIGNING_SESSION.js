@@ -83,7 +83,7 @@ function tenantLiffSigningAuthenticate_(idToken) {
   const nowIso = new Date().toISOString();
   const expiresAt = now + V2_TENANT_LIFF_AUTH_TTL_SECONDS_;
   const token = createTenantLiffSessionToken_({ version: 1, purpose: V2_TENANT_LIFF_AUTH_PURPOSE_, line_sub: claims.sub, user_id: principal.data.user_id, tenant_id: principal.data.tenant_id, workspace_id: principal.data.workspace_id, contract_id: principal.data.contract_id, issued_at: now, expires_at: expiresAt, jti: Utilities.getUuid() });
-  return { success: true, code: 'OK', data: { tenant: principal.data.tenant, contract: principal.data.contract, signing_required: true, signing_status: principal.data.signing_status, artifact_requirements: principal.data.artifact_requirements, artifact_state: principal.data.artifact_state, session_token: token, session_expires_at: new Date(expiresAt * 1000).toISOString(), authenticated_at: nowIso } };
+  return { success: true, code: 'OK', data: { tenant: principal.data.tenant, contract: principal.data.contract, contract_history: principal.data.contract_history || [], signing_required: true, signing_status: principal.data.signing_status, artifact_requirements: principal.data.artifact_requirements, artifact_state: principal.data.artifact_state, session_token: token, session_expires_at: new Date(expiresAt * 1000).toISOString(), authenticated_at: nowIso } };
 }
 
 function tenantLiffSigningInviteAuthenticate_(inviteId, confirmationCode, idToken, tenantData) {
@@ -119,6 +119,7 @@ function tenantLiffSigningInviteAuthenticate_(inviteId, confirmationCode, idToke
     data: {
       tenant: tenant,
       contract: contractView,
+      contract_history: [contractView],
       signing_required: true,
       signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending',
       artifact_requirements: ['identity_front', 'identity_back', 'signature'],
@@ -161,7 +162,15 @@ function tenantLiffSigningResolvePrincipal_(lineSub) {
   const signingMode = tenantLiffSigningText_(contract.signing_mode).toLowerCase();
   if (['new_tenant', 'renewal'].indexOf(signingMode) === -1) return tenantLiffSigningError_('SIGNING_MODE_NOT_READY');
   const artifactState = tenantLiffSigningArtifactState_(ss, contract, signingMode);
-  return { success: true, data: { user_id: tenantLiffSigningText_(user.user_id), tenant_id: tenantLiffSigningText_(tenant.tenant_id), workspace_id: workspaceId, contract_id: tenantLiffSigningText_(contract.contract_id), tenant: { tenant_id: tenantLiffSigningText_(tenant.tenant_id), tenant_name: tenantLiffSigningText_(tenant.tenant_name || tenant.name), room_name: tenantLiffSigningText_(tenant.room_name) }, contract: tenantLiffSigningContractView_(contracts, contract, signingMode, tenant), signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending', artifact_requirements: signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'], artifact_state: artifactState } };
+  return { success: true, data: { user_id: tenantLiffSigningText_(user.user_id), tenant_id: tenantLiffSigningText_(tenant.tenant_id), workspace_id: workspaceId, contract_id: tenantLiffSigningText_(contract.contract_id), tenant: { tenant_id: tenantLiffSigningText_(tenant.tenant_id), tenant_name: tenantLiffSigningText_(tenant.tenant_name || tenant.name), room_name: tenantLiffSigningText_(tenant.room_name) }, contract: tenantLiffSigningContractView_(contracts, contract, signingMode, tenant), contract_history: tenantLiffSigningContractHistoryView_(contracts, contract, tenant), signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending', artifact_requirements: signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'], artifact_state: artifactState } };
+}
+
+function tenantLiffSigningContractHistoryView_(contracts, currentContract, tenant) {
+  if (typeof contractRenewalHistoryBuildReadModel_ !== 'function') return [];
+  return contractRenewalHistoryBuildReadModel_(contracts, currentContract).map(function (row) {
+    const rowMode = tenantLiffSigningText_(row.signing_mode || (row.contract_id === currentContract.contract_id ? currentContract.signing_mode : 'renewal')).toLowerCase() || 'renewal';
+    return tenantLiffSigningContractView_(contracts, row, rowMode, tenant);
+  });
 }
 
 function tenantLiffSigningContractView_(contracts, contract, signingMode, tenant) {
@@ -190,7 +199,21 @@ const terms = tenantLiffSigningTermsDocument_(documentContract, tenant);
     rent_amount: contract.rent_amount || contract.monthly_rent || '',
     management_fee: contract.management_fee || contract.monthly_management_fee || '',
     deposit_amount: contract.deposit_amount || '',
+    other_fixed_fee_amount: contract.other_fixed_fee_amount || 0,
+    other_fixed_fee_note: tenantLiffSigningText_(contract.other_fixed_fee_note),
     monthly_payment_day: contract.monthly_payment_day || contract.payment_day || '',
+    terms_snapshot_json: tenantLiffSigningText_(contract.terms_snapshot_json || contract.contract_terms_snapshot),
+    contract_family_id: tenantLiffSigningText_(contract.contract_family_id || contract.contract_id),
+    renewal_sequence: Number(contract.renewal_sequence || 1),
+    renewed_from_contract_id: tenantLiffSigningText_(contract.renewed_from_contract_id || contract.previous_contract_id),
+    renewed_to_contract_id: tenantLiffSigningText_(contract.renewed_to_contract_id),
+    renewal_request_id: tenantLiffSigningText_(contract.renewal_request_id),
+    identity_document_mode: tenantLiffSigningText_(contract.identity_document_mode),
+    special_offer_enabled: contract.special_offer_enabled === undefined || contract.special_offer_enabled === '' ? true : tenantLiffSigningBoolean_(contract.special_offer_enabled),
+    special_offer_notice_days: Number(contract.special_offer_notice_days || 30),
+    special_offer_clause: tenantLiffSigningText_(contract.special_offer_clause),
+    read_only: contract.read_only === true,
+    is_current: contract.is_current === true,
     landlord_note: tenantLiffSigningText_(contract.landlord_note || contract.signing_note || contract.renewal_landlord_note),
     tenant_signing_submission_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending',
     tenant_signed_at: contract.tenant_signed_at || '',
@@ -270,5 +293,6 @@ function tenantLiffSigningRows_(sheet) { if (!sheet || sheet.getLastRow() < 2) r
 function tenantLiffSigningExchangeKey_(id) { return 'tenant_liff_auth:' + String(id || ''); }
 function tenantLiffSigningInviteExchangeKey_(id) { return 'tenant_liff_invite_auth:' + String(id || ''); }
 function tenantLiffSigningText_(v) { return v === null || v === undefined ? '' : String(v).trim(); }
+function tenantLiffSigningBoolean_(v) { if (v === true || v === 1) return true; return ['true', '1', 'yes', 'y', '是'].indexOf(tenantLiffSigningText_(v).toLowerCase()) !== -1; }
 function tenantLiffSigningConstantEquals_(a, b) { a = String(a || ''); b = String(b || ''); let d = a.length ^ b.length; for (let i=0; i<Math.max(a.length,b.length); i++) d |= (a.charCodeAt(i)||0) ^ (b.charCodeAt(i)||0); return d === 0; }
 function tenantLiffSigningError_(code) { return { success: false, code: code, message: '房客簽署身分驗證失敗' }; }

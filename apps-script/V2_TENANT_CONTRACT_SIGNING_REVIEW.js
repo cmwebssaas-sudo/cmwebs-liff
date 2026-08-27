@@ -40,16 +40,24 @@ function migrateV2TenantContractSigningReviewSchema_(ss) {
   }
 }
 
-function getLandlordContractSigningReviewsBySessionToken_(sessionToken) {
+function getLandlordContractSigningReviewsBySessionToken_(sessionToken, contractId, tenantId) {
   const access = tenantContractSigningReviewAccessFromSession_(sessionToken, 'read');
   if (!access.success) return access;
   const schema = tenantContractSigningReviewSchema_(SpreadsheetApp.getActiveSpreadsheet());
   if (!schema.success) return schema;
   const workspaceId = tenantContractSigningReviewText_(access.data.workspace.workspace_id);
+  const selectedContractId = tenantContractSigningReviewText_(contractId);
+  const selectedTenantId = tenantContractSigningReviewText_(tenantId);
   const items = tenantContractSigningReviewRows_(schema.data.sheet).filter(function (contract) {
-    return tenantContractSigningReviewText_(contract.workspace_id) === workspaceId &&
-      tenantContractSigningReviewText_(contract.tenant_signing_submission_status).toLowerCase() === 'submitted';
+    if (tenantContractSigningReviewText_(contract.workspace_id) !== workspaceId) return false;
+    if (selectedContractId) {
+      return tenantContractSigningReviewText_(contract.contract_id) === selectedContractId &&
+        (!selectedTenantId || tenantContractSigningReviewText_(contract.tenant_id) === selectedTenantId);
+    }
+    if (selectedTenantId && tenantContractSigningReviewText_(contract.tenant_id) !== selectedTenantId) return false;
+    return tenantContractSigningReviewText_(contract.tenant_signing_submission_status).toLowerCase() === 'submitted';
   }).map(tenantContractSigningReviewPublicContract_);
+  if (selectedContractId && !items.length) return tenantContractSigningReviewError_('CONTRACT_NOT_FOUND');
   return { success: true, code: 'OK', data: { items: items, count: items.length } };
 }
 
@@ -182,7 +190,11 @@ function landlordContractSigningReviewHandleExchangePost_(body) {
     try { reserveLock.releaseLock(); } catch (_) {}
   }
   const result = operation === 'list'
-    ? getLandlordContractSigningReviewsBySessionToken_(request.session_token)
+    ? getLandlordContractSigningReviewsBySessionToken_(
+      request.session_token,
+      request.contract_id,
+      request.tenant_id
+    )
     : updateLandlordContractSigningReviewBySessionToken_(
       request.session_token,
       tenantContractSigningReviewText_(request.contract_id),

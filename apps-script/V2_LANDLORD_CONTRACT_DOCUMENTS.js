@@ -25,7 +25,9 @@ var LD_CONTRACT_DOCUMENT_HEADERS_ = [
   'status',
   'created_at',
   'created_by_user_id',
-  'note'
+  'note',
+  'document_origin',
+  'source_document_id'
 ];
 
 function getLandlordContractDocumentsInitByLineUid_(
@@ -324,7 +326,9 @@ function uploadLandlordContractDocumentByLineUid_(
         status: 'stored',
         created_at: now,
         created_by_user_id: ldText_(landlord.landlord_user_id || ''),
-        note: safeNote
+        note: safeNote,
+        document_origin: 'uploaded',
+        source_document_id: ''
       };
 
       sheet.appendRow(
@@ -580,9 +584,115 @@ function ldGetContractDocuments_(landlord, contractIdFilter, tenantIdFilter) {
         byte_size: Number(row.byte_size || 0),
         created_at: ldText_(row.created_at || ''),
         status: ldText_(row.status || 'stored'),
-        note: ldText_(row.note)
+        note: ldText_(row.note),
+        document_origin: ldText_(row.document_origin || 'uploaded'),
+        source_document_id: ldText_(row.source_document_id)
       };
     });
+}
+
+function carryForwardLandlordContractDocumentsByLineUid_(
+  landlordLineUserId,
+  sourceContractId,
+  targetContractId
+) {
+  var landlord = lmResolveLandlord_(landlordLineUserId);
+  if (!landlord) {
+    return {
+      success: false,
+      code: 'LANDLORD_NOT_FOUND',
+      message: '查無房東資料或尚未完成綁定'
+    };
+  }
+
+  var sourceId = ldText_(sourceContractId);
+  var targetId = ldText_(targetContractId);
+  if (!sourceId || !targetId || sourceId === targetId) {
+    return {
+      success: false,
+      code: 'DOCUMENT_REFERENCE_INVALID',
+      message: '合約文件引用來源或目標無效'
+    };
+  }
+
+  var contractSheet = runtimeSpreadsheet_().getSheetByName('V2_contracts');
+  var contractRows = contractSheet ? lmSheetObjects_(contractSheet) : [];
+  var sourceContract = contractRows.find(function (row) {
+    return ldText_(row.contract_id) === sourceId &&
+      ldText_(row.landlord_id) === ldText_(landlord.landlord_id);
+  });
+  var targetContract = contractRows.find(function (row) {
+    return ldText_(row.contract_id) === targetId &&
+      ldText_(row.landlord_id) === ldText_(landlord.landlord_id);
+  });
+  if (!sourceContract || !targetContract ||
+      ldText_(sourceContract.workspace_id) !== ldText_(landlord.workspace_id) ||
+      ldText_(targetContract.workspace_id) !== ldText_(landlord.workspace_id) ||
+      ldText_(sourceContract.tenant_id) !== ldText_(targetContract.tenant_id)) {
+    return {
+      success: false,
+      code: 'DOCUMENT_REFERENCE_NOT_AUTHORIZED',
+      message: '合約文件來源與目標不屬於同一房客與 Workspace'
+    };
+  }
+
+  var sheet = ldEnsureContractDocumentsSheet_();
+  var rows = lmSheetObjects_(sheet);
+  var landlordId = ldText_(landlord.landlord_id);
+  var sourceRows = rows.filter(function (row) {
+    return ldText_(row.landlord_id) === landlordId &&
+      ldText_(row.contract_id) === sourceId &&
+      ['identity_front', 'identity_back', 'selfie'].indexOf(ldText_(row.document_type)) >= 0 &&
+      ldText_(row.status || 'stored') === 'stored';
+  });
+  var headers = ldGetHeaders_(sheet);
+  var created = [];
+  var seenTypes = {};
+  sourceRows.forEach(function (source) {
+    var type = ldText_(source.document_type);
+    if (seenTypes[type]) return;
+    seenTypes[type] = true;
+    var reference = {
+      document_id: Utilities.getUuid(),
+      workspace_id: ldText_(landlord.workspace_id),
+      landlord_id: landlordId,
+      landlord_line_user_id: landlordLineUserId,
+      tenant_id: ldText_(source.tenant_id),
+      contract_id: targetId,
+      document_type: type,
+      file_name: ldText_(source.file_name),
+      mime_type: ldText_(source.mime_type),
+      byte_size: Number(source.byte_size || 0),
+      sha256: ldText_(source.sha256),
+      idempotency_key: 'carried-forward:' + ldText_(source.document_id) + ':' + targetId,
+      drive_file_id: ldText_(source.drive_file_id),
+      status: 'stored',
+      created_at: new Date().toISOString(),
+      created_by_user_id: ldText_(landlord.landlord_user_id || ''),
+      note: '沿用前一版本文件；來源文件：' + ldText_(source.document_id),
+      document_origin: 'carried_forward',
+      source_document_id: ldText_(source.document_id)
+    };
+    sheet.appendRow(headers.map(function (header) {
+      return reference[header] === undefined ? '' : reference[header];
+    }));
+    created.push({
+      document_id: reference.document_id,
+      document_type: type,
+      source_document_id: reference.source_document_id,
+      drive_file_id: reference.drive_file_id
+    });
+  });
+
+  return {
+    success: true,
+    code: 'OK',
+    data: {
+      source_contract_id: sourceId,
+      target_contract_id: targetId,
+      documents: created
+    }
+  };
 }
 
 function ldGetOwnedContractById_(landlord, contractId) {

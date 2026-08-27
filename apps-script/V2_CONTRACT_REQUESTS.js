@@ -60,6 +60,11 @@ const V2_CONTRACT_REQUEST_HEADERS = [
   'current_end_date',
   'current_rent_amount',
   'current_management_fee',
+  'current_deposit_amount',
+  'current_other_fixed_fee_amount',
+  'current_other_fixed_fee_note',
+  'current_payment_day',
+  'current_terms_snapshot_json',
 
   'requested_date',
 
@@ -67,12 +72,28 @@ const V2_CONTRACT_REQUEST_HEADERS = [
   'requested_term_months',
   'requested_rent_amount',
   'requested_management_fee',
+  'requested_deposit_amount',
+  'requested_other_fixed_fee_amount',
+  'requested_other_fixed_fee_note',
+  'requested_payment_day',
+  'requested_terms_snapshot_json',
+  'requested_special_offer_enabled',
+  'requested_special_offer_notice_days',
+  'requested_special_offer_clause',
   'preferred_end_date',
 
   'approved_start_date',
   'approved_term_months',
   'approved_rent_amount',
   'approved_management_fee',
+  'approved_deposit_amount',
+  'approved_other_fixed_fee_amount',
+  'approved_other_fixed_fee_note',
+  'approved_payment_day',
+  'approved_terms_snapshot_json',
+  'approved_special_offer_enabled',
+  'approved_special_offer_notice_days',
+  'approved_special_offer_clause',
   'approved_end_date',
 
   'termination_type',
@@ -83,6 +104,14 @@ const V2_CONTRACT_REQUEST_HEADERS = [
   'penalty_status',
   'penalty_amount',
   'penalty_note',
+
+  'special_offer_decision',
+  'special_offer_applies',
+  'special_offer_notice_days',
+  'special_offer_notice_date',
+  'special_offer_days_before_expiry',
+  'special_offer_decision_reason',
+  'identity_document_mode',
 
   'reason',
 
@@ -214,7 +243,8 @@ function getTenantContractInitByLineUid_(
         {
           tenant: identity,
           contract: null,
-          requests: []
+          requests: [],
+          contract_history: []
         }
       );
     }
@@ -230,6 +260,12 @@ function getTenantContractInitByLineUid_(
       tenant: identity,
       contract:
         contractRequestBuildContractView_(
+          ss,
+          contract,
+          identity
+        ),
+      contract_history:
+        contractRequestBuildContractHistory_(
           ss,
           contract,
           identity
@@ -523,6 +559,16 @@ function submitTenantContractRequestByLineUid_(
         normalized.data.current_rent_amount,
       current_management_fee:
         normalized.data.current_management_fee,
+      current_deposit_amount:
+        normalized.data.current_deposit_amount,
+      current_other_fixed_fee_amount:
+        normalized.data.current_other_fixed_fee_amount,
+      current_other_fixed_fee_note:
+        normalized.data.current_other_fixed_fee_note,
+      current_payment_day:
+        normalized.data.current_payment_day,
+      current_terms_snapshot_json:
+        normalized.data.current_terms_snapshot_json,
 
       requested_date:
         normalized.data.requested_date,
@@ -535,6 +581,22 @@ function submitTenantContractRequestByLineUid_(
         normalized.data.requested_rent_amount,
       requested_management_fee:
         normalized.data.requested_management_fee,
+      requested_deposit_amount:
+        normalized.data.requested_deposit_amount,
+      requested_other_fixed_fee_amount:
+        normalized.data.requested_other_fixed_fee_amount,
+      requested_other_fixed_fee_note:
+        normalized.data.requested_other_fixed_fee_note,
+      requested_payment_day:
+        normalized.data.requested_payment_day,
+      requested_terms_snapshot_json:
+        normalized.data.requested_terms_snapshot_json,
+      requested_special_offer_enabled:
+        normalized.data.requested_special_offer_enabled,
+      requested_special_offer_notice_days:
+        normalized.data.requested_special_offer_notice_days,
+      requested_special_offer_clause:
+        normalized.data.requested_special_offer_clause,
       preferred_end_date:
         normalized.data.preferred_end_date,
 
@@ -545,6 +607,22 @@ function submitTenantContractRequestByLineUid_(
       approved_rent_amount:
         '',
       approved_management_fee:
+        '',
+      approved_deposit_amount:
+        '',
+      approved_other_fixed_fee_amount:
+        '',
+      approved_other_fixed_fee_note:
+        '',
+      approved_payment_day:
+        '',
+      approved_terms_snapshot_json:
+        '',
+      approved_special_offer_enabled:
+        '',
+      approved_special_offer_notice_days:
+        '',
+      approved_special_offer_clause:
         '',
       approved_end_date:
         '',
@@ -564,6 +642,27 @@ function submitTenantContractRequestByLineUid_(
         0,
       penalty_note:
         '',
+
+      special_offer_decision:
+        normalized.data.special_offer_decision || '',
+      special_offer_applies:
+        normalized.data.special_offer_applies === undefined
+          ? ''
+          : normalized.data.special_offer_applies,
+      special_offer_notice_days:
+        normalized.data.special_offer_notice_days === undefined
+          ? ''
+          : normalized.data.special_offer_notice_days,
+      special_offer_notice_date:
+        normalized.data.special_offer_notice_date || '',
+      special_offer_days_before_expiry:
+        normalized.data.special_offer_days_before_expiry === undefined
+          ? ''
+          : normalized.data.special_offer_days_before_expiry,
+      special_offer_decision_reason:
+        normalized.data.special_offer_decision_reason || '',
+      identity_document_mode:
+        normalized.data.identity_document_mode || '',
 
       reason:
         reason,
@@ -1431,6 +1530,51 @@ function contractRequestValidateRequestData_(
       )
     );
 
+  const normalizedCurrentContract =
+    typeof contractRenewalHistoryNormalizeContract_ === 'function'
+      ? contractRenewalHistoryNormalizeContract_(contract)
+      : {};
+
+  const currentDepositAmount =
+    contractRequestNumber_(
+      contractRequestFirstValue_(
+        contract,
+        ['deposit_amount', 'deposit']
+      )
+    );
+
+  const currentOtherFixedFeeAmount =
+    contractRequestNumber_(
+      contractRequestFirstValue_(
+        contract,
+        ['other_fixed_fee_amount']
+      )
+    );
+
+  const currentOtherFixedFeeNote =
+    contractRequestText_(
+      contractRequestFirstValue_(
+        contract,
+        ['other_fixed_fee_note']
+      )
+    );
+
+  const currentPaymentDay =
+    contractRequestInteger_(
+      contractRequestFirstValue_(
+        contract,
+        ['monthly_payment_day', 'payment_day']
+      )
+    );
+
+  const currentTermsSnapshotJson =
+    contractRequestText_(
+      contractRequestFirstValue_(
+        contract,
+        ['terms_snapshot_json', 'contract_terms_snapshot']
+      )
+    );
+
   const contractEndDate =
     contractRequestDateObject_(
       contractRequestFirstValue_(
@@ -1448,7 +1592,8 @@ function contractRequestValidateRequestData_(
   ) {
     const requestedTermMonths =
       contractRequestInteger_(
-        requestData.requested_term_months
+        requestData.requested_term_months ||
+        12
       );
 
     if (
@@ -1480,6 +1625,64 @@ function contractRequestValidateRequestData_(
       requestedManagementInput === null
         ? currentManagementFee
         : requestedManagementInput;
+
+    const requestedDepositInput =
+      contractRequestOptionalNumber_(
+        requestData.requested_deposit_amount
+      );
+
+    const requestedDepositAmount =
+      requestedDepositInput === null
+        ? currentDepositAmount
+        : requestedDepositInput;
+
+    const requestedOtherFixedFeeInput =
+      contractRequestOptionalNumber_(
+        requestData.requested_other_fixed_fee_amount
+      );
+
+    const requestedOtherFixedFeeAmount =
+      requestedOtherFixedFeeInput === null
+        ? currentOtherFixedFeeAmount
+        : requestedOtherFixedFeeInput;
+
+    const requestedOtherFixedFeeNote =
+      contractRequestText_(
+        requestData.requested_other_fixed_fee_note
+      ) || currentOtherFixedFeeNote;
+
+    const requestedPaymentDay =
+      contractRequestInteger_(
+        requestData.requested_payment_day ||
+        currentPaymentDay ||
+        1
+      );
+
+    const requestedTermsSnapshotJson =
+      contractRequestText_(
+        requestData.requested_terms_snapshot_json
+      ) || currentTermsSnapshotJson;
+
+    const requestedSpecialOfferEnabled =
+      requestData.requested_special_offer_enabled === undefined ||
+      requestData.requested_special_offer_enabled === ''
+        ? true
+        : contractRequestBoolean_(
+            requestData.requested_special_offer_enabled
+          );
+
+    const requestedSpecialOfferNoticeDays =
+      contractRequestInteger_(
+        requestData.requested_special_offer_notice_days ||
+        30
+      );
+
+    const requestedSpecialOfferClause =
+      contractRequestText_(
+        requestData.requested_special_offer_clause
+      ) ||
+      (normalizedCurrentContract.special_offer_clause ||
+        '租約期滿如不再續約，提前30個日曆日通知，免收違約金。');
 
     if (
       requestedRentAmount <= 0
@@ -1557,6 +1760,16 @@ function contractRequestValidateRequestData_(
           currentRentAmount,
         current_management_fee:
           currentManagementFee,
+        current_deposit_amount:
+          currentDepositAmount,
+        current_other_fixed_fee_amount:
+          currentOtherFixedFeeAmount,
+        current_other_fixed_fee_note:
+          currentOtherFixedFeeNote,
+        current_payment_day:
+          currentPaymentDay,
+        current_terms_snapshot_json:
+          currentTermsSnapshotJson,
         requested_start_date:
           requestedStartDate,
         requested_term_months:
@@ -1565,6 +1778,24 @@ function contractRequestValidateRequestData_(
           requestedRentAmount,
         requested_management_fee:
           requestedManagementFee,
+        requested_deposit_amount:
+          requestedDepositAmount,
+        requested_other_fixed_fee_amount:
+          requestedOtherFixedFeeAmount,
+        requested_other_fixed_fee_note:
+          requestedOtherFixedFeeNote,
+        requested_payment_day:
+          requestedPaymentDay,
+        requested_terms_snapshot_json:
+          requestedTermsSnapshotJson,
+        requested_special_offer_enabled:
+          requestedSpecialOfferEnabled,
+        requested_special_offer_notice_days:
+          requestedSpecialOfferNoticeDays,
+        requested_special_offer_clause:
+          requestedSpecialOfferClause,
+        identity_document_mode:
+          'optional',
         preferred_end_date:
           preferredEndDate,
         termination_type:
@@ -1669,6 +1900,40 @@ function contractRequestValidateRequestData_(
     );
   }
 
+  if (
+    typeof contractRenewalHistoryEvaluateNotice_ !==
+      'function'
+  ) {
+    return contractRequestError_(
+      'CONTRACT_RENEWAL_HISTORY_MODULE_REQUIRED',
+      '找不到 30 天優惠判定模組，暫時無法送出退租申請'
+    );
+  }
+
+  const specialOffer =
+    contractRenewalHistoryEvaluateNotice_(
+      contract,
+      contractRequestFormatDate_(
+        requestedDate
+      ),
+      {
+        event:
+          terminationType ===
+            'early_termination'
+            ? 'early_termination'
+            : 'expiry_non_renewal'
+      }
+    );
+
+  const terminationPenaltyStatus =
+    terminationType === 'early_termination'
+      ? 'pending'
+      : specialOffer.decision === 'waived'
+        ? 'waived'
+        : specialOffer.decision === 'landlord_review'
+          ? 'landlord_review'
+          : 'not_applicable';
+
   return {
     success: true,
     data: {
@@ -1696,10 +1961,19 @@ function contractRequestValidateRequestData_(
       move_out_date:
         moveOutDate,
       penalty_status:
-        terminationType ===
-        'early_termination'
-          ? 'pending'
-          : 'not_applicable'
+        terminationPenaltyStatus,
+      special_offer_decision:
+        specialOffer.decision,
+      special_offer_applies:
+        specialOffer.applicable,
+      special_offer_notice_days:
+        specialOffer.notice_days,
+      special_offer_notice_date:
+        specialOffer.notice_date,
+      special_offer_days_before_expiry:
+        specialOffer.days_before_expiry,
+      special_offer_decision_reason:
+        specialOffer.reason
     }
   };
 }
@@ -2214,6 +2488,16 @@ function contractRequestBuildContractView_(
         )
       ),
 
+    other_fixed_fee_amount:
+      contractRequestNumber_(
+        contract.other_fixed_fee_amount
+      ),
+
+    other_fixed_fee_note:
+      contractRequestText_(
+        contract.other_fixed_fee_note
+      ),
+
     monthly_payment_day:
       contractRequestInteger_(
         contractRequestFirstValue_(
@@ -2226,6 +2510,67 @@ function contractRequestBuildContractView_(
           ]
         ) ||
         supplement.monthly_payment_day
+      ),
+
+    terms_snapshot_json:
+      contractRequestText_(
+        contract.terms_snapshot_json ||
+        contract.contract_terms_snapshot
+      ),
+
+    contract_family_id:
+      contractRequestText_(
+        contract.contract_family_id ||
+        contract.contract_id
+      ),
+
+    renewal_sequence:
+      contractRequestInteger_(
+        contract.renewal_sequence
+      ) || 1,
+
+    renewed_from_contract_id:
+      contractRequestText_(
+        contract.renewed_from_contract_id ||
+        contract.previous_contract_id
+      ),
+
+    renewed_to_contract_id:
+      contractRequestText_(
+        contract.renewed_to_contract_id
+      ),
+
+    renewal_request_id:
+      contractRequestText_(
+        contract.renewal_request_id
+      ),
+
+    signing_mode:
+      contractRequestText_(
+        contract.signing_mode
+      ),
+
+    identity_document_mode:
+      contractRequestText_(
+        contract.identity_document_mode
+      ),
+
+    special_offer_enabled:
+      contract.special_offer_enabled === undefined ||
+      contract.special_offer_enabled === ''
+        ? true
+        : contractRequestBoolean_(
+            contract.special_offer_enabled
+          ),
+
+    special_offer_notice_days:
+      contractRequestInteger_(
+        contract.special_offer_notice_days
+      ) || 30,
+
+    special_offer_clause:
+      contractRequestText_(
+        contract.special_offer_clause
       ),
 
     bank_name:
@@ -2281,6 +2626,78 @@ function contractRequestBuildContractView_(
     updated_at:
       contract.updated_at || ''
   };
+}
+
+
+function contractRequestBuildContractHistory_(
+  ss,
+  currentContract,
+  identity
+) {
+  if (
+    typeof contractRenewalHistoryBuildReadModel_ !==
+      'function'
+  ) {
+    return [];
+  }
+
+  const rows =
+    contractRequestGetObjects_(
+      ss.getSheetByName(
+        V2_CONTRACT_REQUESTS_CONTRACTS_SHEET
+      )
+    );
+
+  return contractRenewalHistoryBuildReadModel_(
+    rows,
+    currentContract
+  ).map(
+    function (row) {
+      const rowIdentity =
+        Object.assign(
+          {},
+          identity || {},
+          {
+            tenant_id:
+              row.tenant_id ||
+              (identity && identity.tenant_id),
+            tenant_name:
+              row.tenant_name ||
+              (identity && identity.tenant_name),
+            room_id:
+              row.room_id ||
+              (identity && identity.room_id),
+            room_name:
+              row.room_name ||
+              (identity && identity.room_name)
+          }
+        );
+
+      return Object.assign(
+        contractRequestBuildContractView_(
+          ss,
+          row,
+          rowIdentity
+        ),
+        {
+          contract_family_id:
+            row.contract_family_id,
+          renewal_sequence:
+            row.renewal_sequence,
+          renewed_from_contract_id:
+            row.renewed_from_contract_id,
+          renewed_to_contract_id:
+            row.renewed_to_contract_id,
+          renewal_request_id:
+            row.renewal_request_id,
+          read_only:
+            true,
+          is_current:
+            row.is_current === true
+        }
+      );
+    }
+  );
 }
 
 
@@ -3005,6 +3422,26 @@ function contractRequestBuildRequestView_(
       contractRequestNumber_(
         row.current_management_fee
       ),
+    current_deposit_amount:
+      contractRequestNumber_(
+        row.current_deposit_amount
+      ),
+    current_other_fixed_fee_amount:
+      contractRequestNumber_(
+        row.current_other_fixed_fee_amount
+      ),
+    current_other_fixed_fee_note:
+      contractRequestText_(
+        row.current_other_fixed_fee_note
+      ),
+    current_payment_day:
+      contractRequestInteger_(
+        row.current_payment_day
+      ),
+    current_terms_snapshot_json:
+      contractRequestText_(
+        row.current_terms_snapshot_json
+      ),
 
     requested_date:
       row.requested_date || '',
@@ -3023,6 +3460,38 @@ function contractRequestBuildRequestView_(
       contractRequestOptionalNumber_(
         row.requested_management_fee
       ),
+    requested_deposit_amount:
+      contractRequestOptionalNumber_(
+        row.requested_deposit_amount
+      ),
+    requested_other_fixed_fee_amount:
+      contractRequestOptionalNumber_(
+        row.requested_other_fixed_fee_amount
+      ),
+    requested_other_fixed_fee_note:
+      contractRequestText_(
+        row.requested_other_fixed_fee_note
+      ),
+    requested_payment_day:
+      contractRequestInteger_(
+        row.requested_payment_day
+      ),
+    requested_terms_snapshot_json:
+      contractRequestText_(
+        row.requested_terms_snapshot_json
+      ),
+    requested_special_offer_enabled:
+      contractRequestBoolean_(
+        row.requested_special_offer_enabled
+      ),
+    requested_special_offer_notice_days:
+      contractRequestInteger_(
+        row.requested_special_offer_notice_days
+      ),
+    requested_special_offer_clause:
+      contractRequestText_(
+        row.requested_special_offer_clause
+      ),
     preferred_end_date:
       row.preferred_end_date || '',
 
@@ -3039,6 +3508,38 @@ function contractRequestBuildRequestView_(
     approved_management_fee:
       contractRequestOptionalNumber_(
         row.approved_management_fee
+      ),
+    approved_deposit_amount:
+      contractRequestOptionalNumber_(
+        row.approved_deposit_amount
+      ),
+    approved_other_fixed_fee_amount:
+      contractRequestOptionalNumber_(
+        row.approved_other_fixed_fee_amount
+      ),
+    approved_other_fixed_fee_note:
+      contractRequestText_(
+        row.approved_other_fixed_fee_note
+      ),
+    approved_payment_day:
+      contractRequestInteger_(
+        row.approved_payment_day
+      ),
+    approved_terms_snapshot_json:
+      contractRequestText_(
+        row.approved_terms_snapshot_json
+      ),
+    approved_special_offer_enabled:
+      contractRequestBoolean_(
+        row.approved_special_offer_enabled
+      ),
+    approved_special_offer_notice_days:
+      contractRequestInteger_(
+        row.approved_special_offer_notice_days
+      ),
+    approved_special_offer_clause:
+      contractRequestText_(
+        row.approved_special_offer_clause
       ),
     approved_end_date:
       row.approved_end_date || '',
@@ -3075,6 +3576,38 @@ function contractRequestBuildRequestView_(
     penalty_note:
       contractRequestText_(
         row.penalty_note
+      ),
+    identity_document_mode:
+      contractRequestText_(
+        row.identity_document_mode
+      ),
+    special_offer_decision:
+      contractRequestText_(
+        row.special_offer_decision
+      ),
+    special_offer_applies:
+      row.special_offer_applies === undefined ||
+      row.special_offer_applies === ''
+        ? ''
+        : contractRequestBoolean_(
+            row.special_offer_applies
+          ),
+    special_offer_notice_days:
+      row.special_offer_notice_days === undefined ||
+      row.special_offer_notice_days === ''
+        ? ''
+        : contractRequestInteger_(
+            row.special_offer_notice_days
+          ),
+    special_offer_notice_date:
+      row.special_offer_notice_date || '',
+    special_offer_days_before_expiry:
+      contractRequestInteger_(
+        row.special_offer_days_before_expiry
+      ),
+    special_offer_decision_reason:
+      contractRequestText_(
+        row.special_offer_decision_reason
       ),
 
     reason:
@@ -3335,7 +3868,8 @@ function contractRequestValidateLandlordApproval_(
     const approvedTermMonths =
       contractRequestInteger_(
         decisionData.approved_term_months ||
-        request.requested_term_months
+        request.requested_term_months ||
+        12
       );
 
     if (
@@ -3374,6 +3908,85 @@ function contractRequestValidateLandlordApproval_(
           )
         : approvedManagementInput;
 
+    const approvedDepositInput =
+      contractRequestOptionalNumber_(
+        decisionData.approved_deposit_amount
+      );
+
+    const approvedDepositAmount =
+      approvedDepositInput === null
+        ? contractRequestNumber_(
+            request.requested_deposit_amount ||
+            request.current_deposit_amount
+          )
+        : approvedDepositInput;
+
+    const approvedOtherFixedFeeInput =
+      contractRequestOptionalNumber_(
+        decisionData.approved_other_fixed_fee_amount
+      );
+
+    const approvedOtherFixedFeeAmount =
+      approvedOtherFixedFeeInput === null
+        ? contractRequestNumber_(
+            request.requested_other_fixed_fee_amount ||
+            request.current_other_fixed_fee_amount
+          )
+        : approvedOtherFixedFeeInput;
+
+    const approvedOtherFixedFeeNote =
+      contractRequestText_(
+        decisionData.approved_other_fixed_fee_note
+      ) ||
+      contractRequestText_(
+        request.requested_other_fixed_fee_note ||
+        request.current_other_fixed_fee_note
+      );
+
+    const approvedPaymentDay =
+      contractRequestInteger_(
+        decisionData.approved_payment_day ||
+        request.requested_payment_day ||
+        request.current_payment_day ||
+        1
+      );
+
+    const approvedTermsSnapshotJson =
+      contractRequestText_(
+        decisionData.approved_terms_snapshot_json
+      ) ||
+      contractRequestText_(
+        request.requested_terms_snapshot_json ||
+        request.current_terms_snapshot_json
+      );
+
+    const approvedSpecialOfferEnabled =
+      decisionData.approved_special_offer_enabled === undefined ||
+      decisionData.approved_special_offer_enabled === ''
+        ? (request.requested_special_offer_enabled === undefined ||
+          request.requested_special_offer_enabled === ''
+          ? true
+          : contractRequestBoolean_(request.requested_special_offer_enabled))
+        : contractRequestBoolean_(
+            decisionData.approved_special_offer_enabled
+          );
+
+    const approvedSpecialOfferNoticeDays =
+      contractRequestInteger_(
+        decisionData.approved_special_offer_notice_days ||
+        request.requested_special_offer_notice_days ||
+        30
+      );
+
+    const approvedSpecialOfferClause =
+      contractRequestText_(
+        decisionData.approved_special_offer_clause
+      ) ||
+      contractRequestText_(
+        request.requested_special_offer_clause
+      ) ||
+      '租約期滿如不再續約，提前30個日曆日通知，免收違約金。';
+
     if (
       approvedRentAmount <= 0
     ) {
@@ -3389,6 +4002,13 @@ function contractRequestValidateLandlordApproval_(
       return contractRequestError_(
         'INVALID_APPROVED_MANAGEMENT_FEE',
         '核准管理費不可小於 0'
+      );
+    }
+
+    if (approvedDepositAmount < 0 || approvedOtherFixedFeeAmount < 0 || approvedPaymentDay < 1 || approvedSpecialOfferNoticeDays < 0) {
+      return contractRequestError_(
+        'INVALID_APPROVED_RENEWAL_SNAPSHOT',
+        '核准續約的押金、固定費用、付款日或優惠天數無效'
       );
     }
 
@@ -3458,6 +4078,24 @@ function contractRequestValidateLandlordApproval_(
           approvedRentAmount,
         approved_management_fee:
           approvedManagementFee,
+        approved_deposit_amount:
+          approvedDepositAmount,
+        approved_other_fixed_fee_amount:
+          approvedOtherFixedFeeAmount,
+        approved_other_fixed_fee_note:
+          approvedOtherFixedFeeNote,
+        approved_payment_day:
+          approvedPaymentDay,
+        approved_terms_snapshot_json:
+          approvedTermsSnapshotJson,
+        approved_special_offer_enabled:
+          approvedSpecialOfferEnabled,
+        approved_special_offer_notice_days:
+          approvedSpecialOfferNoticeDays,
+        approved_special_offer_clause:
+          approvedSpecialOfferClause,
+        identity_document_mode:
+          'optional',
         approved_end_date:
           approvedEndDate,
         approved_move_out_date:
@@ -3526,6 +4164,96 @@ function contractRequestValidateLandlordApproval_(
   if (
     terminationType === 'non_renewal'
   ) {
+    const specialOfferDecision =
+      contractRequestText_(
+        request.special_offer_decision
+      );
+
+    if (
+      specialOfferDecision === 'waived'
+    ) {
+      return {
+        success: true,
+        data: {
+          approved_start_date: '',
+          approved_term_months: 0,
+          approved_rent_amount: '',
+          approved_management_fee: '',
+          approved_end_date: '',
+          approved_move_out_date:
+            approvedMoveOutDate,
+          penalty_status: 'waived',
+          penalty_amount: 0,
+          penalty_note:
+            contractRequestText_(
+              decisionData.penalty_note
+            )
+        }
+      };
+    }
+
+    if (
+      specialOfferDecision === 'landlord_review'
+    ) {
+      const reviewedPenaltyStatus =
+        contractRequestNormalizePenaltyStatus_(
+          decisionData.penalty_status
+        );
+
+      if (
+        ['charged', 'waived'].indexOf(
+          reviewedPenaltyStatus
+        ) === -1
+      ) {
+        return contractRequestError_(
+          'PENALTY_DECISION_REQUIRED',
+          '未滿30天通知，請選擇收取或免收違約金'
+        );
+      }
+
+      let reviewedPenaltyAmount =
+        contractRequestNumber_(
+          decisionData.penalty_amount
+        );
+
+      if (
+        reviewedPenaltyStatus === 'charged' &&
+        reviewedPenaltyAmount <= 0
+      ) {
+        return contractRequestError_(
+          'INVALID_PENALTY_AMOUNT',
+          '選擇收取違約金時，金額必須大於 0'
+        );
+      }
+
+      if (
+        reviewedPenaltyStatus === 'waived'
+      ) {
+        reviewedPenaltyAmount = 0;
+      }
+
+      return {
+        success: true,
+        data: {
+          approved_start_date: '',
+          approved_term_months: 0,
+          approved_rent_amount: '',
+          approved_management_fee: '',
+          approved_end_date: '',
+          approved_move_out_date:
+            approvedMoveOutDate,
+          penalty_status:
+            reviewedPenaltyStatus,
+          penalty_amount:
+            reviewedPenaltyAmount,
+          penalty_note:
+            contractRequestText_(
+              decisionData.penalty_note
+            )
+        }
+      };
+    }
+
     return {
       success: true,
       data: {
@@ -3690,6 +4418,170 @@ function contractRequestApplyCompletedRequestToContract_(
     contractRequestNormalizeType_(
       request.request_type
     );
+
+  if (requestType === 'renewal') {
+    if (typeof contractRenewalHistoryBuildDefaults_ !== 'function' || typeof contractRenewalHistoryBuildVersionFields_ !== 'function') {
+      return contractRequestError_(
+        'CONTRACT_RENEWAL_HISTORY_MODULE_REQUIRED',
+        '找不到續約版本模組'
+      );
+    }
+
+    const appliedContractId = contractRequestText_(request.applied_contract_id);
+    if (appliedContractId) {
+      const appliedContract = rows.find(function (row) {
+        return contractRequestText_(row.contract_id) === appliedContractId;
+      });
+      if (appliedContract) {
+        return {
+          success: true,
+          code: 'OK',
+          message: '正式合約續約版本已完成',
+          data: {
+            contract_id: appliedContractId,
+            applied_contract_id: appliedContractId,
+            request_id: request.request_id,
+            request_type: requestType,
+            idempotent: true,
+            updated_by: landlordLineUserId
+          }
+        };
+      }
+    }
+
+    const existingApplied = rows.find(function (row) {
+      return contractRequestText_(row.contract_id) !== contractId &&
+        contractRequestText_(row.renewal_request_id) === contractRequestText_(request.request_id);
+    });
+    if (existingApplied) {
+      return {
+        success: true,
+        code: 'OK',
+        message: '正式合約續約版本已完成',
+        data: {
+          contract_id: existingApplied.contract_id,
+          applied_contract_id: existingApplied.contract_id,
+          request_id: request.request_id,
+          request_type: requestType,
+          idempotent: true,
+          updated_by: landlordLineUserId
+        }
+      };
+    }
+
+    if (['active', 'current'].indexOf(contractRequestText_(contract.contract_status || contract.status).toLowerCase()) === -1) {
+      return contractRequestError_('CONTRACT_NOT_ACTIVE_FOR_RENEWAL', '只有目前有效合約可以續約');
+    }
+
+    const renewalDefaults = contractRenewalHistoryBuildDefaults_(contract);
+    const approvedStartDate = contractRequestFormatDate_(request.approved_start_date || renewalDefaults.start_date);
+    const approvedEndDate = contractRequestFormatDate_(request.approved_end_date || renewalDefaults.end_date);
+    if (approvedStartDate === '-' || approvedEndDate === '-') {
+      return contractRequestError_('APPROVED_RENEWAL_TERMS_INCOMPLETE', '核准續約條件不完整，無法完成合約更新');
+    }
+
+    const renewalInput = Object.assign({}, renewalDefaults, {
+      start_date: approvedStartDate,
+      end_date: approvedEndDate,
+      term_months: contractRequestInteger_(request.approved_term_months || request.requested_term_months || renewalDefaults.term_months || 12),
+      rent_amount: contractRequestNumber_(request.approved_rent_amount || request.requested_rent_amount || renewalDefaults.rent_amount),
+      management_fee: contractRequestNumber_(request.approved_management_fee || request.requested_management_fee || renewalDefaults.management_fee),
+      deposit_amount: contractRequestNumber_(request.approved_deposit_amount || request.requested_deposit_amount || renewalDefaults.deposit_amount),
+      other_fixed_fee_amount: contractRequestNumber_(request.approved_other_fixed_fee_amount || request.requested_other_fixed_fee_amount || renewalDefaults.other_fixed_fee_amount),
+      other_fixed_fee_note: contractRequestFirstValue_(request, ['approved_other_fixed_fee_note', 'requested_other_fixed_fee_note']) || renewalDefaults.other_fixed_fee_note,
+      monthly_payment_day: contractRequestNumber_(request.approved_payment_day || request.requested_payment_day || renewalDefaults.monthly_payment_day),
+      payment_day: contractRequestNumber_(request.approved_payment_day || request.requested_payment_day || renewalDefaults.monthly_payment_day),
+      terms_snapshot_json: contractRequestFirstValue_(request, ['approved_terms_snapshot_json', 'requested_terms_snapshot_json']) || renewalDefaults.terms_snapshot_json,
+      special_offer_enabled: request.approved_special_offer_enabled !== undefined && request.approved_special_offer_enabled !== ''
+        ? contractRequestBoolean_(request.approved_special_offer_enabled)
+        : (request.requested_special_offer_enabled !== undefined && request.requested_special_offer_enabled !== ''
+          ? contractRequestBoolean_(request.requested_special_offer_enabled)
+          : renewalDefaults.special_offer_enabled),
+      special_offer_notice_days: contractRequestNumber_(request.approved_special_offer_notice_days || request.requested_special_offer_notice_days || renewalDefaults.special_offer_notice_days),
+      special_offer_clause: contractRequestFirstValue_(request, ['approved_special_offer_clause', 'requested_special_offer_clause']) || renewalDefaults.special_offer_clause,
+      identity_document_mode: 'optional'
+    });
+    if (renewalInput.rent_amount <= 0 || renewalInput.management_fee < 0 || renewalInput.deposit_amount < 0 || renewalInput.monthly_payment_day < 1) {
+      return contractRequestError_('APPROVED_RENEWAL_TERMS_INCOMPLETE', '核准續約條件不完整，無法完成合約更新');
+    }
+
+    const newContractId = contractRequestGenerateId_();
+    const versionFields = contractRenewalHistoryBuildVersionFields_(contract, renewalInput, {
+      contract_id: newContractId,
+      renewal_request_id: request.request_id,
+      existing_rows: rows
+    });
+    const newContract = Object.assign({}, contract, renewalInput, versionFields, {
+      contract_id: newContractId,
+      contract_start_date: approvedStartDate,
+      start_date: approvedStartDate,
+      contract_end_date: approvedEndDate,
+      end_date: approvedEndDate,
+      rent_amount: renewalInput.rent_amount,
+      monthly_rent: renewalInput.rent_amount,
+      management_fee: renewalInput.management_fee,
+      monthly_management_fee: renewalInput.management_fee,
+      deposit_amount: renewalInput.deposit_amount,
+      payment_day: renewalInput.payment_day,
+      monthly_payment_day: renewalInput.monthly_payment_day,
+      previous_contract_id: contractId,
+      renewed_from_contract_id: contractId,
+      renewed_to_contract_id: '',
+      renewal_request_id: request.request_id,
+      contract_status: 'active',
+      status: 'active',
+      account_status: 'active',
+      signing_mode: 'renewal',
+      contract_origin: 'legacy_renewal',
+      invite_id: '',
+      tenant_signing_submission_status: 'approved',
+      tenant_signed_at: '',
+      tenant_signature_artifact_id: '',
+      tenant_signing_submitted_at: '',
+      tenant_signing_reviewed_at: '',
+      tenant_signing_reviewed_by_user_id: '',
+      tenant_signing_reviewed_by_membership_id: '',
+      tenant_signing_review_note: '',
+      created_at: now,
+      updated_at: now,
+      renewed_at: ''
+    });
+
+    contractRequestAppendObject_(sheet, newContract);
+    let documentReferences = null;
+    if (typeof carryForwardLandlordContractDocumentsByLineUid_ === 'function') {
+      documentReferences = carryForwardLandlordContractDocumentsByLineUid_(
+        landlordLineUserId,
+        contractId,
+        newContractId
+      );
+    }
+    const predecessor = Object.assign({}, contract, {
+      contract_status: 'renewed',
+      status: 'archived',
+      account_status: 'archived',
+      renewed_to_contract_id: newContractId,
+      renewed_at: now,
+      renewal_request_id: request.request_id,
+      updated_at: now
+    });
+    contractRequestUpdateObjectRow_(sheet, contract._sheet_row, predecessor);
+
+    return {
+      success: true,
+      code: 'OK',
+      message: '正式合約已建立新的續約版本',
+      data: {
+        contract_id: newContractId,
+        applied_contract_id: newContractId,
+        previous_contract_id: contractId,
+        request_id: request.request_id,
+        request_type: requestType,
+        document_references: documentReferences,
+        updated_by: landlordLineUserId
+      }
+    };
+  }
 
   const updated =
     Object.assign(

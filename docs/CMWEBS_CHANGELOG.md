@@ -2,6 +2,27 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-08-27 — Renewal contract history and 30-day offer (local candidate)
+
+- Added append-only renewal versions for existing tenants. Each renewal gets a
+  new contract ID and links to its predecessor while retaining all prior
+  contract snapshots and document/signature references.
+- Renewal defaults carry rent, management fee, deposit, other fixed fees,
+  payment day, terms, and a one-year period from the day after expiry. Renewal
+  identity uploads are optional and reuse existing immutable document
+  references when omitted; a new renewal signature remains required.
+- Added the 30-calendar-day expiry non-renewal offer. Meeting the threshold
+  waives the penalty; a shorter notice is routed to landlord review without an
+  automatic charge or waiver. Early termination remains unchanged.
+- Added landlord and tenant contract-history UI. The landlord's selected
+  version can load a complete contract/signature view in read-only mode.
+- Added the explicit additive-only `runV2ContractRenewalHistoryProductionMigration`
+  runner. It appends only missing renewal/request/document headers and is
+  idempotent; it does not delete or rewrite historical contracts.
+- Local Phase 174–176 tests pass. This candidate has not migrated Production
+  Sheets, deployed Apps Script, published GitHub Pages, or completed LINE/mobile
+  UAT.
+
 ## 2026-08-25 — Deploy fixed-template tenant signature preview
 
 - Deployed the fixed Google Docs template signing path to Apps Script Version

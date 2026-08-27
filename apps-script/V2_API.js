@@ -2572,6 +2572,9 @@ function getLandlordTenantsByLineUid(lineUserId) {
 
     const landlord = homeResult.data;
     const rows = getSheetObjects_(V2_SHEETS.landlordTenantListView);
+    const contractRows = typeof contractRenewalHistoryBuildReadModel_ === 'function'
+      ? getSheetObjects_(V2_SHEETS.contracts)
+      : [];
 
     const tenants = rows
       .filter(row => String(row.line_user_id || '').trim() === lineUserId)
@@ -2585,6 +2588,9 @@ function getLandlordTenantsByLineUid(lineUserId) {
         tenant_user_id: row.tenant_user_id,
         tenant_id: row.tenant_id,
         tenant_name: row.tenant_name,
+        workspace_id: row.workspace_id,
+        room_id: row.room_id,
+        current_contract_id: row.current_contract_id,
 
         tenant_phone: row.tenant_phone,
         tenant_email: row.tenant_email,
@@ -2601,7 +2607,13 @@ function getLandlordTenantsByLineUid(lineUserId) {
         unpaid_total_amount: Number(row.unpaid_total_amount || 0),
 
         tenant_account_status: row.tenant_account_status,
-        updated_at: row.updated_at
+        updated_at: row.updated_at,
+        contract_history:
+          landlordContractHistoryView_(
+            contractRows,
+            row,
+            landlord
+          )
       }));
 
     const tenantCount = tenants.length;
@@ -2684,6 +2696,67 @@ function getLandlordTenantsByLineUid(lineUserId) {
       }
     };
   }
+}
+
+
+function landlordContractHistoryView_(contractRows, tenantRow, landlord) {
+  if (typeof contractRenewalHistoryBuildReadModel_ !== 'function') return [];
+
+  const tenantId = String(tenantRow.tenant_id || '').trim();
+  const landlordId = String(tenantRow.landlord_id || (landlord && landlord.landlord_id) || '').trim();
+  const workspaceId = String(tenantRow.workspace_id || (landlord && landlord.workspace_id) || '').trim();
+  const roomId = String(tenantRow.room_id || '').trim();
+  const rows = (Array.isArray(contractRows) ? contractRows : []).filter(function (row) {
+    return String(row.tenant_id || '').trim() === tenantId &&
+      (!landlordId || String(row.landlord_id || '').trim() === landlordId) &&
+      (!workspaceId || String(row.workspace_id || '').trim() === workspaceId) &&
+      (!roomId || !String(row.room_id || '').trim() || String(row.room_id || '').trim() === roomId);
+  });
+  if (!rows.length) return [];
+
+  let current = rows.find(function (row) {
+    return String(row.contract_id || '').trim() === String(tenantRow.current_contract_id || '').trim();
+  });
+  if (!current) {
+    const activeRows = rows.filter(function (row) {
+      return ['active', 'current', 'pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(String(row.contract_status || row.status || '').trim().toLowerCase()) >= 0;
+    });
+    current = activeRows.sort(function (left, right) {
+      return Number(right.renewal_sequence || 1) - Number(left.renewal_sequence || 1) ||
+        String(right.end_date || right.contract_end_date || '').localeCompare(String(left.end_date || left.contract_end_date || ''));
+    })[0] || rows[rows.length - 1];
+  }
+
+  return contractRenewalHistoryBuildReadModel_(rows, current).map(function (row) {
+    return {
+      contract_id: String(row.contract_id || '').trim(),
+      contract_family_id: String(row.contract_family_id || '').trim(),
+      renewal_sequence: Number(row.renewal_sequence || 1),
+      renewed_from_contract_id: String(row.renewed_from_contract_id || '').trim(),
+      renewed_to_contract_id: String(row.renewed_to_contract_id || '').trim(),
+      renewal_request_id: String(row.renewal_request_id || '').trim(),
+      start_date: row.start_date || row.contract_start_date || '',
+      end_date: row.end_date || row.contract_end_date || '',
+      rent_amount: Number(row.rent_amount || row.monthly_rent || 0),
+      management_fee: Number(row.management_fee || row.monthly_management_fee || 0),
+      deposit_amount: Number(row.deposit_amount || 0),
+      other_fixed_fee_amount: Number(row.other_fixed_fee_amount || 0),
+      other_fixed_fee_note: String(row.other_fixed_fee_note || '').trim(),
+      monthly_payment_day: Number(row.monthly_payment_day || row.payment_day || 0),
+      terms_snapshot_json: String(row.terms_snapshot_json || row.contract_terms_snapshot || '').trim(),
+      special_offer_enabled: row.special_offer_enabled === undefined || row.special_offer_enabled === '' ? true : ['true', '1', 'yes', '是'].indexOf(String(row.special_offer_enabled).toLowerCase()) >= 0,
+      special_offer_notice_days: Number(row.special_offer_notice_days || 30),
+      special_offer_clause: String(row.special_offer_clause || '').trim(),
+      contract_status: String(row.contract_status || row.status || '').trim(),
+      signing_mode: String(row.signing_mode || '').trim(),
+      identity_document_mode: String(row.identity_document_mode || '').trim(),
+      tenant_signing_submission_status: String(row.tenant_signing_submission_status || '').trim(),
+      tenant_signed_at: row.tenant_signed_at || '',
+      tenant_signature_artifact_id: String(row.tenant_signature_artifact_id || '').trim(),
+      read_only: true,
+      is_current: row.is_current === true
+    };
+  });
 }
 
 

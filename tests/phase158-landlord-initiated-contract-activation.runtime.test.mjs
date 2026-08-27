@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const initiatedSource = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
+const renewalHistorySource = readFileSync(new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url), 'utf8');
 const sessionSource = readFileSync(new URL('../apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js', import.meta.url), 'utf8');
 const reviewSource = readFileSync(new URL('../apps-script/V2_TENANT_CONTRACT_SIGNING_REVIEW.js', import.meta.url), 'utf8');
 
@@ -100,6 +101,7 @@ function makeRuntime({ renewal = false, includeViews = true } = {}) {
     }
   };
   vm.createContext(context);
+  vm.runInContext(renewalHistorySource, context, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
   vm.runInContext(initiatedSource, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });
   vm.runInContext(sessionSource, context, { filename: 'V2_TENANT_LIFF_SIGNING_SESSION.js' });
   vm.runInContext(reviewSource, context, { filename: 'V2_TENANT_CONTRACT_SIGNING_REVIEW.js' });
