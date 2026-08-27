@@ -1468,6 +1468,11 @@
         .replace(/'/g, '&#039;');
     }
 
+    function numberValue(value, fallback) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : (fallback || 0);
+    }
+
     function money(value) {
       const number =
         Number(value || 0);
