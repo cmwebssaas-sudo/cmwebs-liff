@@ -1,11 +1,30 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-08-27 (Asia/Taipei)**
+**Last verified: 2026-08-28 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-08-28 room-603 contract-history corrective release
+
+- The Workspace-native `landlord_tenants` route repair was merged by PR #59 as
+  commit `c79030f`. The landlord tenant-detail rendering follow-ups were merged
+  by PRs #60, #61, and #62; the final merged `main` commit is `7711dea`.
+- Apps Script Version 131 is serving on the existing Web App deployment. The
+  existing Web App URL was preserved; no new URL was created. No schema or
+  tenant-data migration was run for this read-model/UI-only repair.
+- GitHub Pages workflow `33099332347` completed build, deploy, and status-report
+  jobs for the final merged commit. Public room-603 smoke readback now renders
+  `房客合約` → `合約版本紀錄`, one existing contract-version card, and one
+  `查看完整合約與簽名` action; the page error card and browser console errors
+  were both absent.
+- Local verification passed: full Node suite `56/56`, candidate validator
+  `83/83` routes and handlers, duplicate declarations `0`, and credential scan
+  `0`.
+- This is public/test-mode and authenticated browser-extension evidence only.
+  Real authenticated LINE/mobile signing acceptance remains `HUMAN_REQUIRED`.
 
 ## 2026-08-27 formal renewal-history release
 
@@ -73,15 +92,15 @@ change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
 
 - **Canonical source baseline:** the Version 89 source tree described above,
   reconciled to GitHub `main` by PR #12.
-- **Current Apps Script serving version:** Version 130, read back from the
-  existing Web App deployment on 2026-08-27 after the formal renewal-history
+- **Current Apps Script serving version:** Version 131, read back from the
+  existing Web App deployment on 2026-08-28 after the room-603 corrective
   release. This is deployment identity evidence, not a real-device UAT result.
 - **Current Apps Script rollback version:** `HUMAN_REQUIRED`; it was not
   identified in the read-only reconciliation.
-- **GitHub Pages:** the renewal-history release at merged `main` commit
-  `7452416` completed successfully in workflow `33054940344`; public
-  landlord tenant-detail readback found the contract-history entry and the
-  complete contract/signature action.
+- **GitHub Pages:** the final corrective release at merged `main` commit
+  `7711dea` completed successfully in workflow `33099332347`; public room-603
+  readback found the contract-history card and the complete contract/signature
+  action.
 - **Production editor source:** an open Apps Script editor does not prove what
   immutable version is serving. Deployment metadata and a scoped source export
   are authoritative.
