@@ -50,6 +50,10 @@ function contractExpiryRenewalRunDaily_() {
 
 // This is called explicitly during an authorized Apps Script release. It never
 // removes or replaces an existing trigger, and is idempotent for this handler.
+function installContractExpiryRenewalDailyTrigger() {
+  return contractExpiryRenewalEnsureDailyTrigger_();
+}
+
 function contractExpiryRenewalEnsureDailyTrigger_() {
   if (typeof ScriptApp === 'undefined' || typeof ScriptApp.getProjectTriggers !== 'function') {
     return { success: false, code: 'CONTRACT_EXPIRY_TRIGGER_SERVICE_UNAVAILABLE' };

@@ -261,7 +261,8 @@ against Production.
   30 days it sends one reminder if the draft remains unconfirmed. It never
   sends a tenant invite or mutates the predecessor automatically.
 - An authorized release must explicitly run
-  `contractExpiryRenewalEnsureDailyTrigger_` once. It creates (but never
+  `installContractExpiryRenewalDailyTrigger` once. It delegates to the
+  idempotent internal installer and creates (but never
   deletes or replaces) the single daily `contractExpiryRenewalRunDaily_`
   trigger, targeted for the script's 09:00 hour.
 - Landlord approval is the activation boundary. It activates the new tenant,

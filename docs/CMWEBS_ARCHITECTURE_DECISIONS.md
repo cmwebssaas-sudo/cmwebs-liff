@@ -114,7 +114,7 @@ The additive `V2_contracts` fields are `renewal_review_status`,
 `renewal_review_reminded_30d_at`. Missing fields are appended only; existing
 headers and historic rows are never rewritten.
 The time trigger is installed only by the explicit, idempotent
-`contractExpiryRenewalEnsureDailyTrigger_` release step; source publication
+`installContractExpiryRenewalDailyTrigger` release step; source publication
 alone does not create scheduling state.
 
 ## 2026-08-27 renewal contract-history candidate
