@@ -250,8 +250,8 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     tenant_name: previous.tenant_name || previous.name || '',
     tenant_phone: previous.tenant_phone || previous.phone || '',
     tenant_email: previous.tenant_email || previous.email || '',
-    contract_status: 'pending_tenant_signature',
-    status: 'pending',
+    contract_status: 'pending_landlord_review',
+    status: 'pending_landlord_review',
     account_status: 'pending',
     signing_mode: 'renewal',
     contract_origin: 'landlord_initiated',
@@ -260,8 +260,8 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     contract_version: 'fixed-google-doc-template-1',
     previous_contract_id: previousId,
     renewed_to_contract_id: '',
+    renewal_review_status: 'pending',
     tenant_signing_submission_status: 'pending',
-    previous_contract_id: previousId,
     renewed_from_contract_id: previousId,
     contract_family_id: versionFields.contract_family_id,
     renewal_sequence: versionFields.renewal_sequence,
@@ -306,8 +306,8 @@ function landlordInitiatedContractListByAccess_(access) {
   const workspaceId = landlordInitiatedContractWorkspaceId_(access);
   const contracts = landlordInitiatedContractRows_(schema.data.contracts).filter(function (row) {
     return landlordInitiatedContractText_(row.workspace_id) === workspaceId &&
-      landlordInitiatedContractText_(row.contract_origin) === 'landlord_initiated' &&
-      ['pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(landlordInitiatedContractText_(row.contract_status)) >= 0;
+      ['landlord_initiated', 'expiry_prepared_renewal'].indexOf(landlordInitiatedContractText_(row.contract_origin)) >= 0 &&
+      ['pending_landlord_review', 'pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(landlordInitiatedContractText_(row.contract_status)) >= 0;
   });
   const invites = landlordInitiatedContractRows_(schema.data.invites).filter(function (row) {
     return landlordInitiatedContractText_(row.workspace_id) === workspaceId;
@@ -631,6 +631,7 @@ function landlordInitiatedContractIsRequest_(body) {
     'landlord_contract_initiated_init',
     'landlord_contract_initiate_new',
     'landlord_contract_initiate_renewal',
+    'landlord_contract_renewal_review_confirm',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
   ].indexOf(landlordInitiatedContractText_(request && request.action)) >= 0;
@@ -687,7 +688,36 @@ function landlordInitiatedContractHandlePostDirect_(request) {
   const input = request.input && typeof request.input === 'object' ? request.input : request;
   if (action === 'landlord_contract_initiate_new') return landlordInitiatedContractCreateNew_(access, input);
   if (action === 'landlord_contract_initiate_renewal') return landlordInitiatedContractCreateRenewal_(access, input);
+  if (action === 'landlord_contract_renewal_review_confirm') return landlordInitiatedContractConfirmRenewalReview_(access, input.contract_id);
   return landlordInitiatedContractError_('INVALID_ACTION', '不支援的合約邀請操作');
+}
+
+function landlordInitiatedContractConfirmRenewalReview_(access, contractId) {
+  return landlordInitiatedContractWithScriptLock_(function() {
+    if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
+    const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+    if (!schema.success) return schema;
+    const workspaceId = landlordInitiatedContractWorkspaceId_(access);
+    const contract = landlordInitiatedContractRows_(schema.data.contracts).find(function(row) {
+      return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contractId) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+    });
+    if (!contract) return landlordInitiatedContractError_('CONTRACT_NOT_FOUND', '找不到續約草稿');
+    if (landlordInitiatedContractText_(contract.signing_mode) !== 'renewal' || landlordInitiatedContractText_(contract.contract_status) !== 'pending_landlord_review') return landlordInitiatedContractError_('CONTRACT_REVIEW_NOT_READY', '此合約目前不可發送給房客');
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const confirmationCode = landlordInitiatedContractConfirmationCode_();
+    const invite = {
+      invite_id: landlordInitiatedContractUuid_(), workspace_id: workspaceId, contract_id: contract.contract_id, room_id: contract.room_id,
+      landlord_user_id: landlordInitiatedContractText_(access.user && access.user.user_id), landlord_membership_id: landlordInitiatedContractText_(access.membership && access.membership.membership_id),
+      claim_code_hash: landlordInitiatedContractDigest_(confirmationCode), status: 'pending', expires_at: new Date(now.getTime() + V2_LANDLORD_INITIATED_CONTRACT_INVITE_TTL_MS_).toISOString(),
+      claimed_at: '', claimed_line_user_id: '', cancelled_at: '', created_at: nowIso, updated_at: nowIso
+    };
+    landlordInitiatedContractAppend_(schema.data.invites, invite);
+    landlordInitiatedContractUpdate_(schema.data.contracts, contract, { invite_id: invite.invite_id, contract_status: 'pending_tenant_signature', status: 'pending', renewal_review_status: 'confirmed', renewal_review_confirmed_at: nowIso, updated_at: nowIso });
+    contract.invite_id = invite.invite_id;
+    contract.contract_status = 'pending_tenant_signature';
+    return { success: true, code: 'OK', data: { contract: landlordInitiatedContractPublicContract_(contract, {}, invite), invite: landlordInitiatedContractPublicInvite_(invite, confirmationCode) } };
+  });
 }
 
 function landlordInitiatedContractReadExchange_(action, requestId, pollSecret) {
@@ -965,7 +995,7 @@ function landlordInitiatedContractHasOpenSibling_(contracts, access, roomId, exc
     const status = landlordInitiatedContractText_(row.contract_status).toLowerCase();
     if (landlordInitiatedContractText_(row.workspace_id) !== workspaceId || landlordInitiatedContractText_(row.room_id) !== landlordInitiatedContractText_(roomId) || landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(excludedContractId)) return false;
     if (status === 'active') return true;
-    if (['pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(status) === -1) return false;
+    if (['pending_landlord_review', 'pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(status) === -1) return false;
     const inviteExpiry = landlordInitiatedContractDateValue_(row.invite_expires_at);
     return !inviteExpiry || inviteExpiry > now;
   });

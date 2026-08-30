@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 const sourcePath = new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url);
 const renewalHistorySource = readFileSync(new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url), 'utf8');
+const expiryRenewalSource = readFileSync(new URL('../apps-script/V2_CONTRACT_EXPIRY_RENEWALS.js', import.meta.url), 'utf8');
 const signingSessionSource = readFileSync(new URL('../apps-script/V2_TENANT_LIFF_SIGNING_SESSION.js', import.meta.url), 'utf8');
 const signingSubmissionSource = readFileSync(new URL('../apps-script/V2_TENANT_CONTRACT_SIGNING_SUBMISSION.js', import.meta.url), 'utf8');
 const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
@@ -53,6 +54,8 @@ const CONTRACT_HEADERS = [
   'deposit_amount', 'payment_day', 'monthly_payment_day', 'contract_status', 'status', 'account_status',
   'signing_mode', 'contract_origin', 'invite_id', 'contract_content', 'contract_version',
   'previous_contract_id', 'renewed_to_contract_id', 'tenant_signing_submission_status',
+  'renewed_from_contract_id', 'contract_family_id', 'renewal_sequence', 'renewal_request_id',
+  'renewal_review_status', 'renewal_review_prepared_at', 'renewal_review_confirmed_at', 'renewal_review_reminded_30d_at',
   'created_by_user_id', 'created_by_membership_id', 'created_at', 'updated_at', 'note'
 ];
 
@@ -139,11 +142,13 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
     tenantContractSigningReviewText_: value => String(value == null ? '' : value).trim(),
     tenantLiffSigningText_: value => String(value == null ? '' : value).trim(),
     tenantContractSigningReviewError_: code => ({ success: false, code, message: 'contract error' }),
-    workspaceResult_: (success, code, message) => ({ success, code, message, data: null })
+    workspaceResult_: (success, code, message) => ({ success, code, message, data: null }),
+    workspaceNotifyTeam_: () => ({ success: true, code: 'OK' })
   };
   vm.createContext(context);
   vm.runInContext(renewalHistorySource, context, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
   vm.runInContext(source, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });
+  vm.runInContext(expiryRenewalSource, context, { filename: 'V2_CONTRACT_EXPIRY_RENEWALS.js' });
   vm.runInContext(signingSessionSource, context, { filename: 'V2_TENANT_LIFF_SIGNING_SESSION.js' });
   context.verifyLandlordContractSigningReviewSessionToken_ = () => ({ success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' });
   return { api: context, sheets };
@@ -203,13 +208,36 @@ const newInput = {
     payment_day: 5
   });
   assert.equal(result.success, true, result.code);
-  assert.equal(result.data.contract.contract_status, 'pending_tenant_signature');
+  assert.equal(result.data.contract.contract_status, 'pending_landlord_review');
   assert.equal(result.data.contract.signing_mode, 'renewal');
   assert.equal(result.data.contract.previous_contract_id, 'old-contract');
   assert.equal(result.data.contract.tenant_id, 'tenant-1');
   assert.equal(sheets.V2_users.rows.length, 0);
   assert.equal(sheets.V2_tenants.rows.length, 0);
   assert.equal(sheets.V2_rooms.rows[0][5], 'vacant');
+  assert.equal(sheets.V2_contract_invites.rows.length, 0);
+
+  const confirmed = api.landlordInitiatedContractConfirmRenewalReview_(
+    access,
+    result.data.contract.contract_id
+  );
+  assert.equal(confirmed.success, true, confirmed.code);
+  assert.equal(confirmed.data.contract.contract_status, 'pending_tenant_signature');
+  assert.equal(sheets.V2_contract_invites.rows.length, 1);
+}
+
+{
+  const { api, sheets } = makeRuntime({ withPrevious: true });
+  const firstRun = api.contractExpiryRenewalRunDaily_();
+  assert.equal(firstRun.success, true, firstRun.code);
+  assert.equal(firstRun.data.prepared.length, 1);
+  assert.equal(sheets.V2_contracts.rows.length, 2);
+  assert.equal(sheets.V2_contracts.rows[1][27], 'pending_landlord_review');
+
+  const secondRun = api.contractExpiryRenewalRunDaily_();
+  assert.equal(secondRun.success, true, secondRun.code);
+  assert.equal(secondRun.data.prepared.length, 0);
+  assert.equal(sheets.V2_contracts.rows.length, 2);
 }
 
 {
@@ -224,6 +252,7 @@ const newInput = {
   assert.equal(typeof api.landlordInitiatedContractIsRequest_, 'function');
   assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_initiate_new' }), true);
   assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_initiate_renewal' }), true);
+  assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_renewal_review_confirm' }), true);
   assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'tenant_contract_sign_submit' }), false);
   const result = api.landlordInitiatedContractHandlePost_(JSON.stringify({ action: 'landlord_contract_initiate_new', session_token: 'invalid' }));
   assert.equal(result.success, false);
@@ -232,6 +261,7 @@ const newInput = {
   assert.match(dispatcherSource, /landlordInitiatedContractHandlePost_\(postBody\)/);
   assert.match(dispatcherSource, /landlordInitiatedContractReadExchange_/);
   assert.match(dispatcherSource, /landlord_contract_initiated_init/);
+  assert.match(dispatcherSource, /landlord_contract_renewal_review_confirm/);
   assert.match(dispatcherSource, /landlord_contract_initiated_status/);
   assert.match(dispatcherSource, /tenantLiffSigningIsInviteAuthRequest_\(postBody\)/);
   assert.match(dispatcherSource, /tenantLiffSigningHandleInviteAuthPost_\(postBody\)/);

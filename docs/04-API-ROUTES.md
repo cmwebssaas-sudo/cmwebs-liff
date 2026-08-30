@@ -243,7 +243,8 @@ against Production.
 | --- | --- | --- | --- |
 | `landlord_contract_initiated_init` | `doPost` exchange | Landlord review session, Workspace read policy | Lists the session Workspace's pending landlord-initiated contracts without exposing confirmation codes. |
 | `landlord_contract_initiate_new` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a pending new-tenant contract, provisional tenant identity, one-time invite and short confirmation code; it does not activate a room. |
-| `landlord_contract_initiate_renewal` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a new pending renewal version linked by `previous_contract_id`; it does not overwrite or activate the predecessor. |
+| `landlord_contract_initiate_renewal` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a new `pending_landlord_review` renewal version linked by `previous_contract_id`; it does not overwrite, invite the tenant, or activate the predecessor. |
+| `landlord_contract_renewal_review_confirm` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Re-reads the selected Workspace-scoped renewal draft under `ScriptLock`, creates one invite, and moves it to `pending_tenant_signature`. It rejects every status other than `pending_landlord_review`. |
 | `landlord_contract_invite_cancel` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Cancels an unclaimed invite and its pending contract. |
 | `landlord_contract_invite_reissue` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Invalidates the current unclaimed invite, appends a replacement invite, updates the contract pointer, and returns the new QR/link payload with the one-time confirmation code only in that response. |
 | `landlord_contract_initiated_status` | JSONP `v2_action` | One-time HMAC-bound request exchange | Redeems the POST result; the session token and confirmation code are not placed in the URL. |
@@ -255,6 +256,14 @@ against Production.
   must provide a name and Taiwan mobile number before the invite can be claimed.
 - New-tenant signing requires identity front, identity back and signature;
   renewal signing requires signature only.
+- The expiry scheduler uses the same append-only renewal object: at 60 days it
+  prepares `pending_landlord_review` and records a landlord notification; at
+  30 days it sends one reminder if the draft remains unconfirmed. It never
+  sends a tenant invite or mutates the predecessor automatically.
+- An authorized release must explicitly run
+  `contractExpiryRenewalEnsureDailyTrigger_` once. It creates (but never
+  deletes or replaces) the single daily `contractExpiryRenewalRunDaily_`
+  trigger, targeted for the script's 09:00 hour.
 - Landlord approval is the activation boundary. It activates the new tenant,
   contract, room pointers and compatibility views, or activates a renewal while
   archiving the predecessor as renewed. All write operations re-read scoped

@@ -96,6 +96,27 @@ not a `V2_contract_requests` or legacy-integration record.
   the existing verified native session and artifact path. Neither outcome calls
   LINE, Make, the legacy signed-contract bridge, or an external e-sign service.
 
+## 2026-08-30 expiry-review renewal candidate
+
+For an active contract ending within 60 calendar days, a daily scheduler may
+append exactly one renewal draft with `contract_status=pending_landlord_review`.
+The draft inherits the predecessor's stored financial and payment snapshot and
+keeps the existing append-only version chain. It is a landlord notification and
+review aid only: it does not contact the tenant, replace the previous contract,
+or change room pointers. At 30 days, an unconfirmed draft receives one retained
+Workspace reminder. The landlord's explicit Workspace-scoped confirmation is
+the only step that creates the tenant signing invite. The tenant list exposes
+the current contract end date and remaining days; visual warning changes at 60
+and 30 days, without altering contract data.
+
+The additive `V2_contracts` fields are `renewal_review_status`,
+`renewal_review_prepared_at`, `renewal_review_confirmed_at`, and
+`renewal_review_reminded_30d_at`. Missing fields are appended only; existing
+headers and historic rows are never rewritten.
+The time trigger is installed only by the explicit, idempotent
+`contractExpiryRenewalEnsureDailyTrigger_` release step; source publication
+alone does not create scheduling state.
+
 ## 2026-08-27 renewal contract-history candidate
 
 The approved local candidate uses an append-only contract version chain for
