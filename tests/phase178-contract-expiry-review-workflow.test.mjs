@@ -24,6 +24,11 @@ assert.equal(
 const expirySource = readFileSync(expiryModule, 'utf8');
 
 assert.match(expirySource, /function contractExpiryRenewalRunDaily_\(/);
+assert.match(expirySource, /function installContractExpiryRenewalDailyTrigger\(\)/);
+assert.match(
+  expirySource,
+  /function installContractExpiryRenewalDailyTrigger\(\)\s*\{\s*return contractExpiryRenewalEnsureDailyTrigger_\(\);\s*\}/
+);
 assert.match(expirySource, /function contractExpiryRenewalEnsureDailyTrigger_\(/);
 assert.match(expirySource, /function contractExpiryRenewalPrepareDraft_\(/);
 assert.match(expirySource, /function contractExpiryRenewalNotifyLandlord_\(/);
