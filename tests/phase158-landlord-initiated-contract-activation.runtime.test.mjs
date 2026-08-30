@@ -150,6 +150,10 @@ function markSubmitted(runtime, contractId, tenantId, mode) {
   const runtime = makeRuntime({ renewal: true });
   const created = runtime.api.landlordInitiatedContractCreateRenewal_(access, input('old-contract'));
   assert.equal(created.success, true, created.code);
+  assert.equal(created.data.contract.contract_status, 'pending_landlord_review');
+  const confirmed = runtime.api.landlordInitiatedContractConfirmRenewalReview_(access, created.data.contract.contract_id);
+  assert.equal(confirmed.success, true, confirmed.code);
+  assert.equal(confirmed.data.contract.contract_status, 'pending_tenant_signature');
   markSubmitted(runtime, created.data.contract.contract_id, 'tenant-existing', 'renewal');
   const approved = runtime.api.updateLandlordContractSigningReviewBySessionToken_('server-session', created.data.contract.contract_id, 'approve', '續約完成');
   assert.equal(approved.success, true, approved.code);

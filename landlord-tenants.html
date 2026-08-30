@@ -420,6 +420,27 @@
       line-height: 1.55;
     }
 
+    .contract-expiry {
+      display: inline-flex;
+      margin-top: 5px;
+      padding: 3px 7px;
+      border-radius: 7px;
+      background: #eef8f1;
+      color: #168447;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .contract-expiry.soon {
+      background: var(--warning-soft);
+      color: #a86800;
+    }
+
+    .contract-expiry.urgent {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
     .tenant-arrow {
       flex: 0 0 auto;
       color: #b4bac2;
@@ -1580,6 +1601,12 @@
         ).trim().slice(0, 1) ||
         '房';
 
+      const contractExpiry =
+        formatContractExpiry(
+          tenant.contract_end_date ||
+          tenant.end_date
+        );
+
       let contractBadge = '';
 
       if (contract.pending > 0) {
@@ -1634,6 +1661,16 @@
                   )}
                   ・${safeHtml(tenantId || '-')}
                 </div>
+
+                ${
+                  contractExpiry
+                    ? `
+                      <div class="contract-expiry ${safeHtml(contractExpiry.level)}">
+                        合約到期 ${safeHtml(contractExpiry.date)}・剩餘 ${safeHtml(contractExpiry.days)} 天
+                      </div>
+                    `
+                    : ''
+                }
               </div>
 
               <div class="tenant-arrow">›</div>
@@ -1730,6 +1767,38 @@
           </div>
         </section>
       `;
+    }
+
+    function formatContractExpiry(value) {
+      const date = rawText(value).trim().slice(0, 10);
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return null;
+      }
+
+      const now = new Date();
+      const today = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+      const end = new Date(date + 'T00:00:00');
+      const days = Math.round(
+        (end.getTime() - today.getTime()) /
+        86400000
+      );
+
+      return {
+        date,
+        days: String(days),
+        level: days <= 30
+          ? 'urgent'
+          : (
+              days <= 60
+                ? 'soon'
+                : 'normal'
+            )
+      };
     }
 
     function renderTenantList() {

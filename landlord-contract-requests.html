@@ -2263,7 +2263,7 @@
       }
 
       const pending = INITIATED_CONTRACTS.filter(function(contract) {
-        return ['pending', 'awaiting_tenant', 'tenant_signed'].indexOf(normalizeStatus(contract.status || contract.contract_status)) >= 0;
+        return ['pending_landlord_review', 'pending', 'awaiting_tenant', 'tenant_signed'].indexOf(normalizeStatus(contract.status || contract.contract_status)) >= 0;
       });
       const renewalCandidates = ALL_REQUESTS.filter(function(request) {
         return rawText(request.contract_id).trim() &&
@@ -2286,6 +2286,7 @@
           ${pending.length ? pending.map(function(contract) {
             const mode = normalizeStatus(contract.signing_mode || contract.contract_mode);
             const inviteUrl = rawText(contract.invite_url).trim();
+            const needsReview = normalizeStatus(contract.contract_status || contract.status) === 'pending_landlord_review';
             return `
               <article class="request-card pending" style="margin-top:12px;">
                 <div class="request-top">
@@ -2299,8 +2300,12 @@
                   <span class="mini-tag">房號 ${safeText(contract.room_name || contract.room_id || '-')}</span>
                   <span class="mini-tag">房客 ${safeText(contract.tenant_name || '待房客補資料')}</span>
                 </div>
-                ${inviteUrl ? `<div class="review-contract-meta" style="word-break:break-all;">邀請連結已保存，可從「查看 QR／連結」再次取得。</div>` : '<div class="review-contract-meta">目前找不到可用邀請，請重新整理確認狀態。</div>'}
-                ${contract.invite_id ? `
+                ${needsReview ? `
+                  <div class="review-contract-meta">待房東檢視：確認內容無誤後，才會建立房客簽約邀請。</div>
+                  <details class="review-contract-meta" style="white-space:pre-wrap;max-height:260px;overflow:auto;"><summary>查看完整合約草稿</summary>${safeText(contract.contract_content || '目前沒有可預覽的合約內容。')}</details>
+                  <div class="request-actions"><button class="btn btn-primary" type="button" onclick="confirmRenewalReview('${escapeHtml(contract.contract_id)}')">確認發送給房客</button></div>
+                ` : inviteUrl ? `<div class="review-contract-meta" style="word-break:break-all;">邀請連結已保存，可從「查看 QR／連結」再次取得。</div>` : '<div class="review-contract-meta">目前找不到可用邀請，請重新整理確認狀態。</div>'}
+                ${!needsReview && contract.invite_id ? `
                   <div class="request-actions">
                     <button class="btn btn-primary" type="button" onclick="openLandlordInviteModal('${escapeHtml(contract.contract_id)}')">查看 QR／連結</button>
                     <button class="btn btn-light" type="button" onclick="reissueLandlordInvite('${escapeHtml(contract.invite_id)}')">重新產生邀請</button>
@@ -2351,9 +2356,19 @@
             payment_day: paymentDay
           }
         });
-        showAlert('續約合約已建立', '請將新合約邀請連結交給房客確認並簽署。', function() { loadPage(false); });
+        showAlert('續約草稿已建立', '請先檢視合約內容，確認後才會發送給房客簽署。', function() { loadPage(false); });
       } catch (error) {
         showAlert('續約建立失敗', error.message || '請稍後再試。');
+      }
+    }
+
+    async function confirmRenewalReview(contractId) {
+      if (!window.confirm('確認合約內容無誤，現在發送給房客簽署？')) return;
+      try {
+        await callLandlordInitiatedApi('landlord_contract_renewal_review_confirm', { input: { contract_id: contractId } });
+        showAlert('已發送給房客', '房客現在可以開啟邀請並完成簽約。', function() { loadPage(false); });
+      } catch (error) {
+        showAlert('發送失敗', error.message || '請稍後再試。');
       }
     }
 
