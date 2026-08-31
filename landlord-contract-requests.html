@@ -2521,6 +2521,18 @@
     }
 
     function renderNativeSigningReviewSection() {
+      if (TEST_MODE) {
+        return `
+          <section class="card" id="native-signing-reviews">
+            <div class="list-header" style="margin:0 0 12px;">
+              <div class="list-title">測試模式：合約全文與簽名暫不載入</div>
+              <div class="list-count">測試狀態</div>
+            </div>
+            <div class="review-contract-meta">測試頁不會建立房東審核 session，也不會呼叫正式簽署審核 API。請使用已登入的正式房東入口驗證合約全文與簽名。</div>
+          </section>
+        `;
+      }
+
       const reviews = TENANT_FILTER_ID
         ? SIGNING_REVIEWS.filter(function (review) {
             return rawText(review.tenant_id).trim() === TENANT_FILTER_ID &&
@@ -3510,6 +3522,13 @@
           callApi('landlord_contract_requests_init'),
           (async function() {
             try {
+              if (TEST_MODE) {
+                return {
+                  items: [],
+                  error: null
+                };
+              }
+
               const signingReviews = await callNativeSigningReviewApi('landlord_contract_signing_reviews_init', {
                 contract_id: CONTRACT_FILTER_ID || undefined,
                 tenant_id: TENANT_FILTER_ID || undefined
