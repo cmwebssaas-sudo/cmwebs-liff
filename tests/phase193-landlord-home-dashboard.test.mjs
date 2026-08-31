@@ -98,6 +98,19 @@ for (const marker of [
   assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')), `missing dashboard UI marker: ${marker}`);
 }
 
+const mobileCssStart = source.indexOf('@media (max-width: 390px)');
+const mobileCss = source.slice(mobileCssStart, source.indexOf('</style>'));
+assert.match(
+  mobileCss,
+  /\.dashboard-kpi-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,/,
+  'mobile KPI cards must use two columns so currency values remain readable'
+);
+assert.match(
+  mobileCss,
+  /\.dashboard-kpi-value\s*\{[\s\S]*?overflow:\s*visible[\s\S]*?text-overflow:\s*clip/,
+  'mobile KPI currency values must not be truncated with an ellipsis'
+);
+
 const chartElements = new Map([
   ['landlordDashboardState', { innerHTML: '' }],
   ['homeRoot', { innerHTML: 'home-content' }]
@@ -210,6 +223,16 @@ assert.equal(
 );
 
 const loadPageSource = extractFunction('loadPage');
+assert.ok(
+  source.includes('function requestDashboardReport_('),
+  'dashboard report requests must be startable before the homepage bootstrap finishes'
+);
+const reportRequestStartIndex = loadPageSource.indexOf('requestDashboardReport_(');
+const bootstrapRequestIndex = loadPageSource.indexOf("'landlord_home_bootstrap'");
+assert.ok(
+  reportRequestStartIndex >= 0 && reportRequestStartIndex < bootstrapRequestIndex,
+  'dashboard report request must start before the blocking homepage bootstrap request'
+);
 assert.ok(
   loadPageSource.indexOf('renderHome(') >= 0,
   'bootstrap success must render the shell'

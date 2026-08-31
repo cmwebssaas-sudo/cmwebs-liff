@@ -912,14 +912,20 @@
         grid-template-columns: 1fr;
       }
 
+      .dashboard-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .dashboard-kpi {
         padding-right: 2px;
         padding-left: 2px;
       }
 
       .dashboard-kpi-value {
-        font-size: 11px;
-        letter-spacing: -0.45px;
+        overflow: visible;
+        font-size: 14px;
+        letter-spacing: -0.35px;
+        text-overflow: clip;
       }
 
       .page {
@@ -2257,7 +2263,7 @@
 
     let pageRequestToken_ = 0;
 
-    function loadDashboardReport_(
+    function requestDashboardReport_(
       requestToken
     ) {
       const activeToken =
@@ -2275,6 +2281,36 @@
         return dashboardReportRequest_.promise;
       }
 
+      const reportPromise =
+        jsonpRequest(
+          'landlord_revenue_dashboard_init',
+          { range: '12m' },
+          {
+            maxAttempts:
+              JSONP_REQUEST_MAX_ATTEMPTS,
+            retryOnTimeout: true
+          }
+        );
+
+      dashboardReportRequest_ = {
+        token: activeToken,
+        promise: reportPromise
+      };
+
+      return reportPromise;
+    }
+
+    function loadDashboardReport_(
+      requestToken,
+      pendingPromise
+    ) {
+      const activeToken =
+        Number.isFinite(
+          Number(requestToken)
+        )
+          ? Number(requestToken)
+          : pageRequestToken_;
+
       const host =
         document.getElementById(
           'landlordDashboardState'
@@ -2290,15 +2326,16 @@
       );
 
       const reportPromise =
-        jsonpRequest(
-          'landlord_revenue_dashboard_init',
-          { range: '12m' },
-          {
-            maxAttempts:
-              JSONP_REQUEST_MAX_ATTEMPTS,
-            retryOnTimeout: true
-          }
-        )
+        dashboardReportRequest_ &&
+        dashboardReportRequest_.token ===
+          activeToken
+          ? dashboardReportRequest_.promise
+          : pendingPromise ||
+            requestDashboardReport_(
+              activeToken
+            );
+
+      return reportPromise
           .then(function (result) {
             if (
               activeToken !==
@@ -2344,13 +2381,6 @@
                 null;
             }
           });
-
-      dashboardReportRequest_ = {
-        token: activeToken,
-        promise: reportPromise
-      };
-
-      return reportPromise;
     }
 
     function renderHome(
@@ -2826,6 +2856,15 @@
           }
         }
 
+        const dashboardReportPromise =
+          requestDashboardReport_(
+            requestToken
+          );
+
+        dashboardReportPromise.catch(
+          function () {}
+        );
+
         const bootstrapResult =
           await jsonpRequest(
             'landlord_home_bootstrap',
@@ -2869,7 +2908,8 @@
         );
 
         loadDashboardReport_(
-          requestToken
+          requestToken,
+          dashboardReportPromise
         );
       } catch (error) {
         if (

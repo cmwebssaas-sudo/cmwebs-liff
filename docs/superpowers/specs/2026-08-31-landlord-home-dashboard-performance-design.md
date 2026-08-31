@@ -56,9 +56,9 @@
 採用「漸進式兩階段載入」，而不是擴大首頁 bootstrap 或新增第三條報表 API。
 
 1. HTML 立即顯示與核准版面相同輪廓的 skeleton；底部導覽可立即操作。
-2. LIFF 身分完成後，呼叫既有唯讀 `landlord_home_bootstrap`。
+2. LIFF 身分完成後，立即並行呼叫既有唯讀 `landlord_home_bootstrap` 與 `landlord_revenue_dashboard_init`。
 3. 首頁 bootstrap 成功後立即渲染 KPI、待處理事項與快捷入口。
-4. 首次渲染完成後再非阻塞呼叫既有唯讀 `landlord_revenue_dashboard_init`，固定參數 `range=12m`。
+4. 報表結果只在首頁 shell 可用後寫入圖表區，固定參數 `range=12m`。
 5. 報表成功後只更新圖表區，不重建整個首頁。
 6. 任一唯讀請求只有在錯誤訊息精確為 `API 載入逾時` 時自動重試一次；最多兩次嘗試，間隔 350ms。寫入 API 不使用此重試策略。
 7. `script.onerror` 必須立即結束該次請求並顯示可理解錯誤，不再忽略並等待 30 秒。
@@ -71,7 +71,7 @@
 ### 採用：漸進式兩階段載入
 
 - 優點：首屏 KPI 不等待完整 12 個月聚合；報表失敗不拖垮整頁；重用已存在且已有測試的 API 與聚合器；不需 schema migration。
-- 代價：首頁完成載入會有兩次唯讀 API 呼叫，但第二次發生在首屏完成後，不阻塞核心操作。
+- 代價：首頁仍有兩次唯讀 API 呼叫，但兩者並行發出；報表結果須等 shell 可用後才能顯示。
 
 ### 不採用：擴大 `landlord_home_bootstrap`
 
@@ -105,7 +105,7 @@
 - 新測試覆蓋：
   - 首頁含四個 KPI、三色 12 月趨勢圖、入住率環形圖與 30／60／90 天到期柱狀圖。
   - 應收 `#2F6FED`、已收 `#06C755`、欠款 `#FF6259`。
-  - 首頁初始只呼叫一次 bootstrap，報表在核心渲染後才呼叫。
+  - 首頁初始只呼叫一次 bootstrap，報表與 bootstrap 並行請求，核心渲染後才更新圖表。
   - 唯讀 timeout 最多重試一次，非 timeout 不重試，`script.onerror` 立即 reject。
   - 報表錯誤只替換圖表區；核心首頁保留。
   - 固定 shell、safe-area、底部導覽與完整報表連結保留。
