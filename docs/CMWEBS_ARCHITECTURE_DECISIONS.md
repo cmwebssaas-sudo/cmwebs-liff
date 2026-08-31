@@ -181,3 +181,17 @@ This is a frontend-only correction. It does not change the bootstrap/report
 payloads, Apps Script, Sheet schema, or financial data. It requires the normal
 GitHub Pages publication and a fresh LIFF/mobile visual check before being
 called Production-verified.
+
+## 2026-09-01 landlord-home trend summary semantics
+
+The three values below the landlord-home 12-month trend chart represent the
+sum of every month currently plotted, not the final row in the series. The
+summary is explicitly labelled `近 12 個月合計`, while the separate top KPI
+cards continue to represent the current bill month. This keeps the chart
+summary consistent with the selected report range and prevents a current-month
+value from being mistaken for a 12-month aggregate.
+
+The total is derived from the already authorized monthly aggregate rows in the
+existing report response. No route, schema, Apps Script, or financial data
+change is required; a fresh GitHub Pages publication and LIFF/mobile visual
+check remain required for Production verification.

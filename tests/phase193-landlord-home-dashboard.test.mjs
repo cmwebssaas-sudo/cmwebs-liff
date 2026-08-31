@@ -34,7 +34,8 @@ vm.runInContext(
   [
     extractFunction('normaliseLandlordDashboardData_'),
     extractFunction('contractExpiryBuckets_'),
-    extractFunction('dashboardSeriesColor_')
+    extractFunction('dashboardSeriesColor_'),
+    extractFunction('dashboardTrendTotals_')
   ].join('\n'),
   context
 );
@@ -60,6 +61,14 @@ assert.deepEqual(JSON.parse(JSON.stringify(context.contractExpiryBuckets_(report
 assert.equal(context.dashboardSeriesColor_('receivable'), '#2F6FED');
 assert.equal(context.dashboardSeriesColor_('collected'), '#06C755');
 assert.equal(context.dashboardSeriesColor_('outstanding'), '#FF6259');
+assert.deepEqual(
+  JSON.parse(JSON.stringify(context.dashboardTrendTotals_([
+    { month: '2026-07', receivable: 1000, collected: 700, outstanding: 300 },
+    { month: '2026-08', receivable: 2500, collected: 2000, outstanding: 500 }
+  ]))),
+  { receivable: 3500, collected: 2700, outstanding: 800 },
+  'trend summary values must aggregate all displayed months'
+);
 
 const emptyReport = context.normaliseLandlordDashboardData_({
   months: null,
@@ -91,9 +100,10 @@ for (const marker of [
   '#2F6FED',
   '#06C755',
   '#FF6259',
-  'aria-label="應收',
-  'aria-label="已收',
-  'aria-label="欠款'
+  'aria-label="近 12 個月應收',
+  'aria-label="近 12 個月已收',
+  'aria-label="近 12 個月欠款',
+  '近 12 個月合計'
 ]) {
   assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')), `missing dashboard UI marker: ${marker}`);
 }
@@ -144,6 +154,7 @@ vm.runInNewContext(
     extractFunction('dashboardSeriesColor_'),
     extractFunction('dashboardNumber_'),
     extractFunction('dashboardMoney_'),
+    extractFunction('dashboardTrendTotals_'),
     extractFunction('dashboardPercent_'),
     extractFunction('dashboardEscape_'),
     extractFunction('dashboardLineChartSvg_'),
@@ -156,10 +167,29 @@ vm.runInNewContext(
 );
 
 chartContext.renderLandlordDashboardCharts_({
-  months: report.months,
+  months: [
+    { month: '2026-07', receivable: 1000, collected: 700, outstanding: 300 },
+    { month: '2026-08', receivable: 2500, collected: 2000, outstanding: 500 }
+  ],
   occupancy: report.occupancy,
   contract_expiry: report.contract_expiry
 });
+assert.match(
+  chartElements.get('landlordDashboardState').innerHTML,
+  /近 12 個月合計/
+);
+assert.match(
+  chartElements.get('landlordDashboardState').innerHTML,
+  /aria-label="近 12 個月應收 NT\$ 3,500"/
+);
+assert.match(
+  chartElements.get('landlordDashboardState').innerHTML,
+  /aria-label="近 12 個月已收 NT\$ 2,700"/
+);
+assert.match(
+  chartElements.get('landlordDashboardState').innerHTML,
+  /aria-label="近 12 個月欠款 NT\$ 800"/
+);
 assert.match(
   chartElements.get('landlordDashboardState').innerHTML,
   /landlordRevenueChart/

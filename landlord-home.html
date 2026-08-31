@@ -303,21 +303,28 @@
       font-size: 10px;
     }
 
+    .dashboard-chart-values-caption {
+      margin-top: 9px;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
     .dashboard-chart-values span {
       min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      overflow: visible;
+      text-overflow: clip;
       white-space: nowrap;
     }
 
     .dashboard-chart-values strong {
       display: block;
       margin-top: 3px;
-      overflow: hidden;
+      overflow: visible;
       color: var(--text-main);
       font-size: 11px;
       font-weight: 900;
-      text-overflow: ellipsis;
+      text-overflow: clip;
       white-space: nowrap;
     }
 
@@ -1855,6 +1862,51 @@
       );
     }
 
+    function dashboardTrendTotals_(
+      rows
+    ) {
+      return (
+        Array.isArray(rows)
+          ? rows
+          : []
+      ).reduce(
+        function (totals, row) {
+          const item =
+            row &&
+            typeof row === 'object'
+              ? row
+              : {};
+          const amount =
+            function (value) {
+              const number =
+                Number(value);
+
+              return Number.isFinite(
+                number
+              ) && number >= 0
+                ? number
+                : 0;
+            };
+
+          totals.receivable += amount(
+            item.receivable
+          );
+          totals.collected += amount(
+            item.collected
+          );
+          totals.outstanding += amount(
+            item.outstanding
+          );
+          return totals;
+        },
+        {
+          receivable: 0,
+          collected: 0,
+          outstanding: 0
+        }
+      );
+    }
+
     function dashboardPercent_(
       value
     ) {
@@ -2193,10 +2245,8 @@
           data
         );
       const rows = report.months;
-      const latest =
-        rows.length > 0
-          ? rows[rows.length - 1]
-          : {};
+      const trendTotals =
+        dashboardTrendTotals_(rows);
 
       host.innerHTML = `
         <section class="dashboard-card trend-card">
@@ -2215,10 +2265,11 @@
           <div class="dashboard-chart-scroll">
             ${dashboardLineChartSvg_(rows)}
           </div>
+          <div class="dashboard-chart-values-caption">近 12 個月合計</div>
           <div class="dashboard-chart-values">
-            <span aria-label="應收 ${dashboardMoney_(latest.receivable)}">應收 <strong>${dashboardMoney_(latest.receivable)}</strong></span>
-            <span aria-label="已收 ${dashboardMoney_(latest.collected)}">已收 <strong>${dashboardMoney_(latest.collected)}</strong></span>
-            <span aria-label="欠款 ${dashboardMoney_(latest.outstanding)}">欠款 <strong>${dashboardMoney_(latest.outstanding)}</strong></span>
+            <span aria-label="近 12 個月應收 ${dashboardMoney_(trendTotals.receivable)}">應收 <strong>${dashboardMoney_(trendTotals.receivable)}</strong></span>
+            <span aria-label="近 12 個月已收 ${dashboardMoney_(trendTotals.collected)}">已收 <strong>${dashboardMoney_(trendTotals.collected)}</strong></span>
+            <span aria-label="近 12 個月欠款 ${dashboardMoney_(trendTotals.outstanding)}">欠款 <strong>${dashboardMoney_(trendTotals.outstanding)}</strong></span>
           </div>
         </section>
         <section class="dashboard-card operations-card">
