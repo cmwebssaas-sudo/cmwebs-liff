@@ -100,6 +100,15 @@ for (const marker of [
 
 const mobileCssStart = source.indexOf('@media (max-width: 390px)');
 const mobileCss = source.slice(mobileCssStart, source.indexOf('</style>'));
+const dashboardKpiCss = source.slice(
+  source.indexOf('.dashboard-kpi-grid'),
+  source.indexOf('.dashboard-kpi {')
+);
+assert.match(
+  dashboardKpiCss,
+  /\.dashboard-kpi-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,/,
+  'dashboard KPI cards must use two columns at the base LIFF width'
+);
 assert.match(
   mobileCss,
   /\.dashboard-kpi-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,/,

@@ -167,3 +167,17 @@ Script cache. This avoids briefly showing another account or Workspace's
 stale aggregate while improving perceived speed through progressive
 rendering. This is a local V2.1 candidate only; it does not authorize
 Production deployment or LIFF/mobile UAT.
+
+## 2026-09-01 landlord-home KPI width correction
+
+The landlord homepage KPI row uses two equal columns at the base LIFF width,
+rather than relying on a `max-width: 390px` override. KPI currency values do
+not use `overflow: hidden` or ellipsis, so the receivable and collected totals
+remain readable when the embedded LINE viewport reports a wider CSS width than
+the physical phone screenshot suggests. The existing mobile override remains
+compatible and can enlarge the value text on narrower screens.
+
+This is a frontend-only correction. It does not change the bootstrap/report
+payloads, Apps Script, Sheet schema, or financial data. It requires the normal
+GitHub Pages publication and a fresh LIFF/mobile visual check before being
+called Production-verified.
