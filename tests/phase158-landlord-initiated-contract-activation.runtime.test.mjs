@@ -173,6 +173,51 @@ function markSubmitted(runtime, contractId, tenantId, mode) {
 }
 
 {
+  const runtime = makeRuntime({ renewal: true });
+  const created = runtime.api.landlordInitiatedContractCreateRenewal_(access, input('old-contract'));
+  assert.equal(created.success, true, created.code);
+  const oldContractBefore = runtime.sheets.V2_contracts.rows[0].slice();
+  const invalidDate = runtime.api.landlordInitiatedContractUpdateRenewalDraft_(access, created.data.contract.contract_id, {
+    start_date: '2026-02-30',
+    end_date: '2027-08-31'
+  });
+  assert.equal(invalidDate.code, 'CONTRACT_DRAFT_DATE_INVALID');
+  const updated = runtime.api.landlordInitiatedContractUpdateRenewalDraft_(access, created.data.contract.contract_id, {
+    start_date: '2026-09-01',
+    end_date: '2027-08-31'
+  });
+  assert.equal(updated.success, true, updated.code);
+  assert.equal(updated.data.contract.start_date, '2026-09-01');
+  assert.equal(updated.data.contract.contract_start_date, '2026-09-01');
+  assert.equal(updated.data.contract.end_date, '2027-08-31');
+  assert.equal(updated.data.contract.contract_end_date, '2027-08-31');
+  assert.match(updated.data.contract.contract_content, /2026-09-01/);
+  assert.match(updated.data.contract.contract_content, /2027-08-31/);
+  assert.deepEqual(runtime.sheets.V2_contracts.rows[0], oldContractBefore);
+
+  const confirmed = runtime.api.landlordInitiatedContractConfirmRenewalReview_(access, created.data.contract.contract_id);
+  assert.equal(confirmed.success, true, confirmed.code);
+  const afterSent = runtime.api.landlordInitiatedContractUpdateRenewalDraft_(access, created.data.contract.contract_id, {
+    start_date: '2026-10-01',
+    end_date: '2027-09-30'
+  });
+  assert.equal(afterSent.code, 'CONTRACT_DRAFT_NOT_EDITABLE');
+}
+
+{
+  const runtime = makeRuntime({ renewal: true });
+  const created = runtime.api.landlordInitiatedContractCreateRenewal_(access, input('old-contract'));
+  assert.equal(created.success, true, created.code);
+  const draft = runtime.api.landlordInitiatedContractRows_(runtime.sheets.V2_contracts).find(item => item.contract_id === created.data.contract.contract_id);
+  runtime.sheets.V2_contracts.rows[draft._sheet_row - 2][headers.contracts.indexOf('contract_origin')] = 'tenant_submitted';
+  const result = runtime.api.landlordInitiatedContractUpdateRenewalDraft_(access, created.data.contract.contract_id, {
+    start_date: '2026-09-01',
+    end_date: '2027-08-31'
+  });
+  assert.equal(result.code, 'CONTRACT_DRAFT_NOT_EDITABLE');
+}
+
+{
   const runtime = makeRuntime({ includeViews: false });
   const created = runtime.api.landlordInitiatedContractCreateNew_(access, input());
   runtime.api.landlordInitiatedContractInviteClaim_(created.data.invite.invite_id, created.data.invite.confirmation_code, 'tenant-line', { tenant_name: '新房客', tenant_phone: '0912345678' });

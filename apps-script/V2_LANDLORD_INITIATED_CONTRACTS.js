@@ -292,6 +292,75 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
   };
 }
 
+function landlordInitiatedContractUpdateRenewalDraft_(access, contractId, input) {
+  return landlordInitiatedContractWithScriptLock_(function() {
+    return landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId, input);
+  });
+}
+
+function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId, input) {
+  if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
+  const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+  if (!schema.success) return schema;
+  const workspaceId = landlordInitiatedContractWorkspaceId_(access);
+  const normalizedContractId = landlordInitiatedContractText_(contractId);
+  const contract = landlordInitiatedContractRows_(schema.data.contracts).find(function(row) {
+    return landlordInitiatedContractText_(row.contract_id) === normalizedContractId && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+  });
+  if (!contract) return landlordInitiatedContractError_('CONTRACT_NOT_FOUND', '找不到續約草稿');
+  if (landlordInitiatedContractText_(contract.signing_mode).toLowerCase() !== 'renewal' ||
+      landlordInitiatedContractText_(contract.contract_status).toLowerCase() !== 'pending_landlord_review' ||
+      ['landlord_initiated', 'expiry_prepared_renewal'].indexOf(landlordInitiatedContractText_(contract.contract_origin).toLowerCase()) === -1 ||
+      landlordInitiatedContractText_(contract.invite_id)) {
+    return landlordInitiatedContractError_('CONTRACT_DRAFT_NOT_EDITABLE', '續約草稿已送出或已完成，請建立新的更正續約版本');
+  }
+
+  const rawInput = input || {};
+  const startDate = landlordInitiatedContractText_(rawInput.start_date);
+  const endDate = landlordInitiatedContractText_(rawInput.end_date);
+  if (!landlordInitiatedContractIsIsoDate_(startDate) || !landlordInitiatedContractIsIsoDate_(endDate) || endDate < startDate) {
+    return landlordInitiatedContractError_('CONTRACT_DRAFT_DATE_INVALID', '租期日期無效，請使用 YYYY-MM-DD 且結束日不可早於開始日');
+  }
+
+  const room = landlordInitiatedContractFindScopedRow_(schema.data.rooms, access, 'room_id', contract.room_id);
+  const property = landlordInitiatedContractFindScopedRow_(schema.data.properties, access, 'property_id', contract.property_id);
+  if (!room || !property) return landlordInitiatedContractError_('RENEWAL_TARGET_NOT_FOUND', '續約房屋資料不存在');
+
+  const updatedAt = new Date().toISOString();
+  const documentInput = Object.assign({}, contract, {
+    start_date: startDate,
+    contract_start_date: startDate,
+    end_date: endDate,
+    contract_end_date: endDate
+  });
+  const contractContent = landlordInitiatedContractBuildDocument_(
+    access,
+    property,
+    room,
+    documentInput,
+    contract.tenant_name || contract.name || ''
+  );
+  landlordInitiatedContractUpdate_(schema.data.contracts, contract, {
+    start_date: startDate,
+    contract_start_date: startDate,
+    end_date: endDate,
+    contract_end_date: endDate,
+    contract_content: contractContent,
+    updated_at: updatedAt
+  });
+  const updatedContract = Object.assign({}, contract, documentInput, {
+    contract_content: contractContent,
+    updated_at: updatedAt
+  });
+  return {
+    success: true,
+    code: 'OK',
+    data: {
+      contract: landlordInitiatedContractPublicContract_(updatedContract, {}, {})
+    }
+  };
+}
+
 function landlordInitiatedContractListBySession_(sessionToken) {
   if (typeof tenantContractSigningReviewAccessFromSession_ !== 'function') return landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED', '找不到房東 session 模組');
   const access = tenantContractSigningReviewAccessFromSession_(sessionToken, 'read');
@@ -631,6 +700,7 @@ function landlordInitiatedContractIsRequest_(body) {
     'landlord_contract_initiated_init',
     'landlord_contract_initiate_new',
     'landlord_contract_initiate_renewal',
+    'landlord_contract_renewal_draft_update',
     'landlord_contract_renewal_review_confirm',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
@@ -688,6 +758,7 @@ function landlordInitiatedContractHandlePostDirect_(request) {
   const input = request.input && typeof request.input === 'object' ? request.input : request;
   if (action === 'landlord_contract_initiate_new') return landlordInitiatedContractCreateNew_(access, input);
   if (action === 'landlord_contract_initiate_renewal') return landlordInitiatedContractCreateRenewal_(access, input);
+  if (action === 'landlord_contract_renewal_draft_update') return landlordInitiatedContractUpdateRenewalDraft_(access, input.contract_id, input);
   if (action === 'landlord_contract_renewal_review_confirm') return landlordInitiatedContractConfirmRenewalReview_(access, input.contract_id);
   return landlordInitiatedContractError_('INVALID_ACTION', '不支援的合約邀請操作');
 }
@@ -1034,6 +1105,15 @@ function landlordInitiatedContractText_(value) { return value === undefined || v
 function landlordInitiatedContractNumber_(value) { const number = Number(landlordInitiatedContractText_(value).replace(/,/g, '')); return Number.isFinite(number) ? number : 0; }
 function landlordInitiatedContractBoolean_(value) { if (value === true || value === false) return value; const text = landlordInitiatedContractText_(value).toLowerCase(); if (['true', '1', 'yes', 'y', 'on', 'enabled'].indexOf(text) >= 0) return true; if (['false', '0', 'no', 'n', 'off', 'disabled'].indexOf(text) >= 0) return false; return false; }
 function landlordInitiatedContractNormalizePhone_(value) { let digits = landlordInitiatedContractText_(value).replace(/\D/g, ''); if (digits.indexOf('8860') === 0 && digits.length === 13) digits = '0' + digits.slice(4); else if (digits.length === 9 && digits.charAt(0) === '9') digits = '0' + digits; return digits; }
+function landlordInitiatedContractIsIsoDate_(value) {
+  const match = landlordInitiatedContractText_(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
 function landlordInitiatedContractDateValue_(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 0 : date.getTime(); }
 function landlordInitiatedContractHeaders_(sheet) {
   if (!sheet || typeof sheet.getRange !== 'function' || typeof sheet.getLastColumn !== 'function') return [];
