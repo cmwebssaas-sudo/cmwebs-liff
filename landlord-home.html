@@ -323,25 +323,36 @@
 
     .dashboard-operation-grid {
       display: grid;
-      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
       margin-top: 13px;
     }
 
     .dashboard-operation-item {
       min-width: 0;
-      padding: 12px 8px 9px;
+      padding: 9px 6px 6px;
       border: 1px solid var(--border);
       border-radius: 15px;
       background: #fbfcfd;
     }
 
     .dashboard-operation-label {
-      margin-bottom: 4px;
+      margin-bottom: 0;
       color: var(--text-muted);
       font-size: 11px;
       font-weight: 800;
       text-align: center;
+    }
+
+    .dashboard-operation-item svg {
+      width: 100%;
+      height: 100px;
+      display: block;
+    }
+
+    #landlordOccupancyChart,
+    #landlordContractExpiryChart {
+      height: 100px;
     }
 
     .dashboard-chart-error {
@@ -899,6 +910,16 @@
       .summary-grid,
       .quick-grid {
         grid-template-columns: 1fr;
+      }
+
+      .dashboard-kpi {
+        padding-right: 2px;
+        padding-left: 2px;
+      }
+
+      .dashboard-kpi-value {
+        font-size: 11px;
+        letter-spacing: -0.45px;
       }
 
       .page {
@@ -1859,11 +1880,11 @@
       rows
     ) {
       const width = 360;
-      const height = 226;
+      const height = 190;
       const left = 37;
       const right = 8;
       const top = 16;
-      const bottom = 34;
+      const bottom = 30;
       const plotWidth =
         width - left - right;
       const plotHeight =
@@ -2170,10 +2191,6 @@
         rows.length > 0
           ? rows[rows.length - 1]
           : {};
-      const expiry =
-        contractExpiryBuckets_(
-          report.contract_expiry
-        );
 
       host.innerHTML = `
         <section class="dashboard-card trend-card">
@@ -2207,7 +2224,7 @@
             </div>
             <div class="dashboard-operation-item">
               <div class="dashboard-operation-label">合約到期</div>
-              ${dashboardExpiryChartSvg_(expiry)}
+              ${dashboardExpiryChartSvg_(report.contract_expiry)}
             </div>
           </div>
         </section>
@@ -2414,7 +2431,6 @@
       app.innerHTML = `
         <header class="dashboard-page-header">
           <div>
-            <div class="dashboard-brand">CMWebs 智慧租管</div>
             <h1 class="dashboard-page-title">
               您好，${safeHtml(home.landlord_name || '房東')}
             </h1>
@@ -2469,19 +2485,9 @@
             </div>
             <div class="dashboard-kpi">
               <div class="dashboard-kpi-label">收款率</div>
-              <div class="dashboard-kpi-value dashboard-kpi-rate" aria-label="收款率 ${paidRate.toFixed(0)}%">
-                ${paidRate.toFixed(0)}%
+              <div class="dashboard-kpi-value dashboard-kpi-rate" aria-label="收款率 ${paidRate.toFixed(1)}%">
+                ${paidRate.toFixed(1)}%
               </div>
-            </div>
-          </div>
-
-          <div class="dashboard-collection-bar" aria-label="本月收款進度 ${paidRate.toFixed(0)}%">
-            <div class="dashboard-collection-track">
-              <div class="dashboard-collection-fill" style="width:${paidRate.toFixed(1)}%;"></div>
-            </div>
-            <div class="dashboard-collection-labels">
-              <span>本月收款進度</span>
-              <strong>${paidRate.toFixed(0)}%</strong>
             </div>
           </div>
         </section>

@@ -150,6 +150,18 @@ assert.match(
   chartElements.get('landlordDashboardState').innerHTML,
   /landlordContractExpiryChart/
 );
+assert.match(
+  chartElements.get('landlordDashboardState').innerHTML,
+  /30 天 2 份/
+);
+assert.match(
+  chartElements.get('landlordDashboardState').innerHTML,
+  /60 天 4 份/
+);
+assert.match(
+  chartElements.get('landlordDashboardState').innerHTML,
+  /90 天 0 份/
+);
 
 chartContext.renderLandlordDashboardError_('圖表暫時無法載入');
 assert.match(
