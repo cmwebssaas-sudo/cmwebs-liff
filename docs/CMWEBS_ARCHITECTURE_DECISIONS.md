@@ -144,3 +144,25 @@ are served as read-only complete contract/signature views.
 This is a local V2.1 implementation candidate only. It does not authorize
 Production Sheet migration, Apps Script deployment, GitHub Pages publication,
 or LINE/mobile UAT.
+
+## 2026-08-31 landlord-home dashboard loading candidate
+
+The landlord homepage uses a two-stage read path. Existing
+`landlord_home_bootstrap` remains the critical source for the greeting, KPI,
+action queue, and shortcuts. After that shell renders, the page defers the
+existing `landlord_revenue_dashboard_init` read with `range=12m` for the
+trend, occupancy, and contract-expiry charts. The chart area has its own
+loading and error boundary, so a report timeout does not erase usable
+homepage content.
+
+The browser JSONP layer separates one request from its retry wrapper. Only
+the exact read timeout `API 載入逾時` may retry once, while write-like calls
+remain single-attempt. Script errors clean up the callback and script and
+reject immediately. A monotonically increasing homepage request token blocks
+late responses from an earlier refresh from replacing newer content.
+
+No financial snapshot is stored in browser storage or a cross-request Apps
+Script cache. This avoids briefly showing another account or Workspace's
+stale aggregate while improving perceived speed through progressive
+rendering. This is a local V2.1 candidate only; it does not authorize
+Production deployment or LIFF/mobile UAT.
