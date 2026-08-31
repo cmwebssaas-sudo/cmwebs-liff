@@ -422,6 +422,8 @@
 
     .contract-expiry {
       display: inline-flex;
+      align-items: center;
+      gap: 4px;
       margin-top: 5px;
       padding: 3px 7px;
       border-radius: 7px;
@@ -429,16 +431,26 @@
       color: #168447;
       font-size: 10px;
       font-weight: 800;
+      line-height: 1.35;
+      border: 1px solid rgba(22, 132, 71, 0.16);
     }
 
     .contract-expiry.soon {
       background: var(--warning-soft);
       color: #a86800;
+      border-color: rgba(168, 104, 0, 0.2);
     }
 
     .contract-expiry.urgent {
       background: var(--danger-soft);
       color: var(--danger);
+      border-color: rgba(199, 62, 62, 0.22);
+    }
+
+    .contract-expiry.expired {
+      background: #7f1d1d;
+      color: #ffffff;
+      border-color: #7f1d1d;
     }
 
     .tenant-arrow {
@@ -1666,7 +1678,7 @@
                   contractExpiry
                     ? `
                       <div class="contract-expiry ${safeHtml(contractExpiry.level)}">
-                        合約到期 ${safeHtml(contractExpiry.date)}・剩餘 ${safeHtml(contractExpiry.days)} 天
+                        合約到期日 ${safeHtml(contractExpiry.date)}・${safeHtml(contractExpiry.statusLabel)}・${safeHtml(contractExpiry.daysLabel)}
                       </div>
                     `
                     : ''
@@ -1790,13 +1802,26 @@
 
       return {
         date,
-        days: String(days),
-        level: days <= 30
-          ? 'urgent'
+        statusLabel: days < 0
+          ? '已到期'
           : (
               days <= 60
-                ? 'soon'
-                : 'normal'
+                ? '即將到期'
+                : '合約有效'
+            ),
+        daysLabel: days < 0
+          ? `逾期 ${Math.abs(days)} 天`
+          : `剩餘 ${days} 天`,
+        level: days < 0
+          ? 'expired'
+          : (
+              days <= 30
+                ? 'urgent'
+                : (
+                    days <= 60
+                      ? 'soon'
+                      : 'normal'
+                  )
             )
       };
     }
