@@ -1,11 +1,34 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-08-28 (Asia/Taipei)**
+**Last verified: 2026-09-01 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-01 renewal-draft date-correction release
+
+- The renewal-draft date correction candidate was merged to GitHub `main` by
+  PR #74 as commit `3f6af93635742685da3272a81485b91a62d750f1`.
+- Apps Script was pushed as 51 source files and the existing Web App deployment
+  was updated to immutable Version 139. The existing Web App URL was
+  preserved; Version 138 remains the verified rollback target. No Sheet,
+  Script Properties, Trigger, LINE configuration, or contract data migration
+  was performed.
+- GitHub Pages workflow `33449180375` completed successfully for the merged
+  `main` commit. Public readback returned HTTP 200 and found `修改續約日期`
+  plus the manual-signing correction guidance.
+- The public Apps Script route readback recognized
+  `landlord_contract_renewal_draft_update` and returned the expected
+  POST-session guard for a GET request. This verifies routing only; no
+  production contract was edited.
+- Local verification passed: full Node suite `64/64`, candidate validator
+  `71/71` routes and handlers, duplicate declarations `0`, credential scan
+  `0`, JavaScript syntax checks, and `git diff --check`.
+- Real authenticated LINE/mobile date-edit acceptance remains
+  `HUMAN_REQUIRED`. Exact correction of any existing 603 or other contract
+  still requires the user to provide the target contract and correct dates.
 
 ## 2026-08-28 room-603 contract-history corrective release
 
@@ -92,15 +115,15 @@ change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
 
 - **Canonical source baseline:** the Version 89 source tree described above,
   reconciled to GitHub `main` by PR #12.
-- **Current Apps Script serving version:** Version 131, read back from the
-  existing Web App deployment on 2026-08-28 after the room-603 corrective
-  release. This is deployment identity evidence, not a real-device UAT result.
-- **Current Apps Script rollback version:** `HUMAN_REQUIRED`; it was not
-  identified in the read-only reconciliation.
-- **GitHub Pages:** the final corrective release at merged `main` commit
-  `7711dea` completed successfully in workflow `33099332347`; public room-603
-  readback found the contract-history card and the complete contract/signature
-  action.
+- **Current Apps Script serving version:** Version 139, read back from the
+  existing Web App deployment on 2026-09-01 after the renewal-draft date
+  correction release. This is deployment identity evidence, not a real-device
+  UAT result.
+- **Current Apps Script rollback version:** Version 138, the prior serving
+  version retained on the same Web App deployment.
+- **GitHub Pages:** the date-correction release at merged `main` commit
+  `3f6af936` completed successfully in workflow `33449180375`; public
+  readback found the date-edit button and manual correction guidance.
 - **Production editor source:** an open Apps Script editor does not prove what
   immutable version is serving. Deployment metadata and a scoped source export
   are authoritative.

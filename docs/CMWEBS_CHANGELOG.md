@@ -2,6 +2,24 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-01 — Renewal draft date correction (formal release)
+
+- Added `landlord_contract_renewal_draft_update`, a Workspace-scoped POST
+  action that permits a landlord to change only the start and end dates of an
+  unsigned `pending_landlord_review` renewal draft.
+- The server validates strict ISO dates, regenerates the complete contract
+  text, and keeps the predecessor unchanged. After an invite is created, the
+  draft cannot be overwritten; a new correction renewal version is required.
+- Added the landlord review-page `修改續約日期` action and guidance for
+  manual-signing date errors: cancel an unclaimed invite and recreate it, or
+  start a new correction renewal for an already signed contract.
+- PR #74 merged the change into `main` as `3f6af936`. Apps Script Version 139
+  was deployed on the existing Web App deployment, with Version 138 retained
+  as rollback. GitHub Pages workflow `33449180375` completed successfully.
+- Local suite `64/64` and project validation passed. Public routing/page
+  readback passed. Real authenticated LINE/mobile date-edit acceptance remains
+  `HUMAN_REQUIRED`; no contract data was changed by this release.
+
 ## 2026-08-28 — Native landlord contract-history route repair (formal corrective release)
 
 - Fixed the Workspace-native `landlord_tenants` read model used by the serving

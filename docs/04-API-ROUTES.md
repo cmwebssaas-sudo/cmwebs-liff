@@ -235,9 +235,12 @@ candidates the current source inventory has 83 JSONP routes.
 
 ## V2.1 landlord-initiated contract candidate routes
 
-These routes implement the approved local candidate flow for new vacant-room
-contracts and landlord-initiated renewals. They are not deployed or verified
-against Production.
+These routes implement the approved flow for new vacant-room contracts and
+landlord-initiated renewals. The date-correction action was deployed with the
+existing Web App as immutable Apps Script Version 139; the existing Web App
+URL was preserved and Version 138 is the rollback target. Public routing was
+verified, while authenticated LINE/mobile contract interaction remains
+`HUMAN_REQUIRED`.
 
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
