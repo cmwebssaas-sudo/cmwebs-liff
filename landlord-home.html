@@ -1236,6 +1236,194 @@
       );
     }
 
+    function normaliseLandlordDashboardData_(
+      data
+    ) {
+      const input =
+        data &&
+        typeof data === 'object'
+          ? data
+          : {};
+
+      const months =
+        Array.isArray(input.months)
+          ? input.months
+              .map(function (row) {
+                const item =
+                  row &&
+                  typeof row === 'object'
+                    ? row
+                    : {};
+
+                const month =
+                  String(
+                    item.month ||
+                    item.bill_month ||
+                    ''
+                  ).trim();
+
+                if (!month) {
+                  return null;
+                }
+
+                const amount =
+                  function (value) {
+                    const number =
+                      Number(value);
+
+                    return Number.isFinite(
+                      number
+                    ) &&
+                      number >= 0
+                      ? number
+                      : 0;
+                  };
+
+                return {
+                  month: month,
+                  receivable: amount(
+                    item.receivable
+                  ),
+                  collected: amount(
+                    item.collected
+                  ),
+                  outstanding: amount(
+                    item.outstanding
+                  )
+                };
+              })
+              .filter(function (row) {
+                return Boolean(row);
+              })
+          : [];
+
+      const occupancyInput =
+        input.occupancy &&
+        typeof input.occupancy === 'object'
+          ? input.occupancy
+          : {};
+      const occupancyRate =
+        Number(
+          occupancyInput.occupancy_rate
+        );
+
+      const contractExpiry =
+        Array.isArray(input.contract_expiry)
+          ? input.contract_expiry.map(
+              function (row) {
+                const item =
+                  row &&
+                  typeof row === 'object'
+                    ? row
+                    : {};
+                const count =
+                  Number(item.count);
+
+                return {
+                  bucket: String(
+                    item.bucket || ''
+                  ).trim(),
+                  label: String(
+                    item.label || ''
+                  ).trim(),
+                  count: Number.isFinite(
+                    count
+                  ) && count >= 0
+                    ? count
+                    : 0
+                };
+              }
+            )
+          : [];
+
+      return {
+        months: months,
+        occupancy: {
+          occupancy_rate:
+            Number.isFinite(occupancyRate) &&
+            occupancyRate >= 0
+              ? Math.min(
+                  Math.max(occupancyRate, 0),
+                  1
+                )
+              : 0
+        },
+        contract_expiry: contractExpiry
+      };
+    }
+
+    function contractExpiryBuckets_(
+      rows
+    ) {
+      const bucketDefinitions = [
+        {
+          key: '30d',
+          label: '30 天',
+          aliases: ['30d', '0-30']
+        },
+        {
+          key: '60d',
+          label: '60 天',
+          aliases: ['60d', '31-60']
+        },
+        {
+          key: '90d',
+          label: '90 天',
+          aliases: ['90d', '61-90']
+        }
+      ];
+
+      return bucketDefinitions.map(
+        function (definition) {
+          const row =
+            (Array.isArray(rows)
+              ? rows
+              : []
+            ).find(function (item) {
+              const bucket = String(
+                item && item.bucket
+                  ? item.bucket
+                  : ''
+              ).trim();
+
+              return (
+                definition.aliases.indexOf(
+                  bucket
+                ) >= 0
+              );
+            });
+          const count = Number(
+            row && row.count
+          );
+
+          return {
+            key: definition.key,
+            label: definition.label,
+            count:
+              Number.isFinite(count) &&
+              count >= 0
+                ? count
+                : 0
+          };
+        }
+      );
+    }
+
+    function dashboardSeriesColor_(
+      key
+    ) {
+      const colors = {
+        receivable: '#2F6FED',
+        collected: '#06C755',
+        outstanding: '#FF6259'
+      };
+
+      return (
+        colors[key] ||
+        '#64748B'
+      );
+    }
+
     function renderHome(
       home,
       actionSummary
