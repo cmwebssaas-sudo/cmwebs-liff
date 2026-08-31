@@ -70,6 +70,14 @@ function rowFor(headers, values) {
   return headers.map(header => values[header] === undefined ? '' : values[header]);
 }
 
+function isoDateOffset(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+const previousContractEndDate = isoDateOffset(1);
+
 function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
   const scriptProperties = new Map([
     ['CMWEBS_LINE_LOGIN_CHANNEL_ID', 'channel-1'],
@@ -91,7 +99,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
       contract_id: 'old-contract', workspace_id: 'W1', landlord_id: 'L1', landlord_line_user_id: 'landlord-line', landlord_name: '房東甲',
       tenant_id: 'tenant-1', tenant_user_id: 'tenant-user-1', tenant_line_user_id: 'tenant-line', tenant_name: '王小明', tenant_phone: '0912345678',
       property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R603', room_name: '603',
-      start_date: '2025-09-01', contract_start_date: '2025-09-01', end_date: '2026-08-31', contract_end_date: '2026-08-31',
+      start_date: '2025-09-01', contract_start_date: '2025-09-01', end_date: previousContractEndDate, contract_end_date: previousContractEndDate,
       rent_amount: 24000, monthly_rent: 24000, management_fee: 800, monthly_management_fee: 800, deposit_amount: 48000,
       payment_day: 5, monthly_payment_day: 5, contract_status: 'active', status: 'active', account_status: 'active',
       signing_mode: '', contract_origin: 'legacy', tenant_binding_status: 'active',
