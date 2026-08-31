@@ -2280,6 +2280,7 @@
             <span class="mini-tag">新空房可先收款後補資料</span>
             <span class="mini-tag">續約由房東主動發起</span>
           </div>
+          <div class="review-contract-meta" style="margin-top:10px;">手動簽約日期有誤：尚未送出房客前請取消邀請後重新建立；已簽署請用「開始續約」建立更正續約，舊合約與簽名會保留。</div>
           <div class="request-actions" style="margin-top:12px;">
             <a class="btn btn-primary" href="landlord-tenant-create.html">新增空房合約</a>
           </div>
@@ -2303,7 +2304,10 @@
                 ${needsReview ? `
                   <div class="review-contract-meta">待房東檢視：確認內容無誤後，才會建立房客簽約邀請。</div>
                   <details class="review-contract-meta" style="white-space:pre-wrap;max-height:260px;overflow:auto;"><summary>查看完整合約草稿</summary>${safeText(contract.contract_content || '目前沒有可預覽的合約內容。')}</details>
-                  <div class="request-actions"><button class="btn btn-primary" type="button" onclick="confirmRenewalReview('${escapeHtml(contract.contract_id)}')">確認發送給房客</button></div>
+                  <div class="request-actions">
+                    <button class="btn btn-light" type="button" onclick="editRenewalDraft('${escapeHtml(contract.contract_id)}')">修改續約日期</button>
+                    <button class="btn btn-primary" type="button" onclick="confirmRenewalReview('${escapeHtml(contract.contract_id)}')">確認發送給房客</button>
+                  </div>
                 ` : inviteUrl ? `<div class="review-contract-meta" style="word-break:break-all;">邀請連結已保存，可從「查看 QR／連結」再次取得。</div>` : '<div class="review-contract-meta">目前找不到可用邀請，請重新整理確認狀態。</div>'}
                 ${!needsReview && contract.invite_id ? `
                   <div class="request-actions">
@@ -2359,6 +2363,39 @@
         showAlert('續約草稿已建立', '請先檢視合約內容，確認後才會發送給房客簽署。', function() { loadPage(false); });
       } catch (error) {
         showAlert('續約建立失敗', error.message || '請稍後再試。');
+      }
+    }
+
+    async function editRenewalDraft(contractId) {
+      const normalizedContractId = rawText(contractId).trim();
+      const contract = INITIATED_CONTRACTS.find(function(item) {
+        return rawText(item.contract_id).trim() === normalizedContractId;
+      });
+      if (!contract) {
+        showAlert('找不到續約草稿', '資料可能已更新，請先重新整理。');
+        return;
+      }
+      const status = normalizeStatus(contract.contract_status || contract.status);
+      if (normalizeStatus(contract.signing_mode || contract.contract_mode) !== 'renewal' || status !== 'pending_landlord_review' || rawText(contract.invite_id).trim()) {
+        showAlert('目前無法修改', '續約已送出或已完成；請從現行合約建立新的更正續約版本。');
+        return;
+      }
+      const startDate = window.prompt('修改合約開始日（YYYY-MM-DD）：', formatDate(contract.start_date || contract.contract_start_date));
+      if (!startDate) return;
+      const endDate = window.prompt('修改合約結束日（YYYY-MM-DD）：', formatDate(contract.end_date || contract.contract_end_date));
+      if (!endDate) return;
+      if (!window.confirm('確定將續約日期修改為 ' + startDate + ' 至 ' + endDate + ' 嗎？修改後會重新產生合約全文。')) return;
+      try {
+        await callLandlordInitiatedApi('landlord_contract_renewal_draft_update', {
+          input: {
+            contract_id: normalizedContractId,
+            start_date: startDate,
+            end_date: endDate
+          }
+        });
+        showAlert('續約日期已更新', '合約全文已同步更新，請重新檢視後再發送給房客。', function() { loadPage(false); });
+      } catch (error) {
+        showAlert('修改失敗', error.message || '請重新整理後再試。');
       }
     }
 

@@ -132,6 +132,7 @@ function doGet(e) {
     'landlord_contract_initiated_init',
     'landlord_contract_initiate_new',
     'landlord_contract_initiate_renewal',
+    'landlord_contract_renewal_draft_update',
     'landlord_contract_renewal_review_confirm',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
