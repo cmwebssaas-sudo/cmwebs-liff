@@ -149,11 +149,12 @@ or LINE/mobile UAT.
 
 The landlord homepage uses a two-stage read path. Existing
 `landlord_home_bootstrap` remains the critical source for the greeting, KPI,
-action queue, and shortcuts. After that shell renders, the page defers the
-existing `landlord_revenue_dashboard_init` read with `range=12m` for the
-trend, occupancy, and contract-expiry charts. The chart area has its own
-loading and error boundary, so a report timeout does not erase usable
-homepage content.
+action queue, and shortcuts. After the browser resolves the LINE identity, it
+starts the existing `landlord_revenue_dashboard_init` read with `range=12m` in
+parallel with the bootstrap request; the chart result is rendered only after
+the shell is available. The chart area has its own loading and error boundary,
+so a report timeout does not erase usable homepage content while the two
+read paths avoid unnecessary serial latency.
 
 The browser JSONP layer separates one request from its retry wrapper. Only
 the exact read timeout `API 載入逾時` may retry once, while write-like calls

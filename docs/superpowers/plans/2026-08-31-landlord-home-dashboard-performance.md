@@ -4,7 +4,7 @@
 
 **Goal:** 在既有房東首頁整合核准的收入圖表與合約到期柱狀圖，並讓首頁與圖表在 API 逾時時可漸進載入、局部失敗及唯讀自動重試。
 
-**Architecture:** 保留既有 `landlord_home_bootstrap` 作為首頁核心資料來源，成功渲染 KPI 與操作入口後，再延後呼叫既有 `landlord_revenue_dashboard_init` 取得 12 個月、入住率與合約到期聚合資料。前端將 JSONP 拆成單次請求與唯讀重試 wrapper；逾時最多重試一次，報表錯誤只替換圖表區，首頁核心不清空。
+**Architecture:** 保留既有 `landlord_home_bootstrap` 作為首頁核心資料來源；LINE 身分完成後即與 bootstrap 並行呼叫既有 `landlord_revenue_dashboard_init`，取得 12 個月、入住率與合約到期聚合資料。前端將 JSONP 拆成單次請求與唯讀重試 wrapper；逾時最多重試一次，報表錯誤只替換圖表區，首頁核心不清空。
 
 **Tech Stack:** 原生 HTML／CSS／JavaScript、Apps Script JSONP、既有內嵌 SVG data charts、Node.js `node:assert/strict` source/runtime tests、既有 `npm run validate`。
 
@@ -153,7 +153,7 @@
 
 - [ ] **Step 2: Add failing progressive-orchestration tests.**
 
-  Extract `loadPage` with stubs for `initLineUserId`, `renderHome`, `loadDashboardReport_`, and `jsonpRequest`. Assert the recorded order is `bootstrap → renderHome → report`; assert the bootstrap request uses the retry options and the report request is not awaited before `renderHome` is called. Add a report failure fixture and assert the home renderer is still called before the local report error renderer.
+  Extract `loadPage` with stubs for `initLineUserId`, `renderHome`, `requestDashboardReport_`, `loadDashboardReport_`, and `jsonpRequest`. Assert the report request starts before the bootstrap request, while `renderHome` still waits only for bootstrap; assert both read paths use the retry options. Add a report failure fixture and assert the home renderer is still called before the local report error renderer.
 
 - [ ] **Step 3: Run the focused test and verify RED.**
 
@@ -165,7 +165,7 @@
 
 - [ ] **Step 5: Implement progressive loading and local error boundaries.**
 
-  Render an inline skeleton at page start, keep existing content during manual refresh, and use an incrementing request id so stale responses cannot overwrite newer refreshes. After bootstrap success, call `renderHome` immediately, then schedule `loadDashboardReport_` with a non-blocking task. The report call uses `{ range: '12m' }` and updates only the chart host. Render a chart-local retry/error state on final report failure; render the existing full-page error state only when bootstrap fails after its retry.
+  Render an inline skeleton at page start, keep existing content during manual refresh, and use an incrementing request id so stale responses cannot overwrite newer refreshes. After identity initialization, start `requestDashboardReport_` in parallel with bootstrap. After bootstrap success, call `renderHome` immediately, then attach `loadDashboardReport_` to the already-started report promise. The report call uses `{ range: '12m' }` and updates only the chart host. Render a chart-local retry/error state on final report failure; render the existing full-page error state only when bootstrap fails after its retry.
 
 - [ ] **Step 6: Run focused tests and verify GREEN.**
 
@@ -195,7 +195,7 @@
 
 - [ ] **Step 2: Record the architecture decision.**
 
-  Add a concise decision entry stating that the homepage uses core bootstrap first plus deferred existing report API, with timeout retry only for reads and no financial snapshot cache because cross-workspace stale display is a privacy risk.
+  Add a concise decision entry stating that the homepage uses the core bootstrap plus a parallel existing report API, with timeout retry only for reads and no financial snapshot cache because cross-workspace stale display is a privacy risk.
 
 - [ ] **Step 3: Run the repository validator and all affected tests.**
 
