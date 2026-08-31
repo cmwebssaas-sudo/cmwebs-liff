@@ -105,6 +105,13 @@ const context = {
   JSON,
   RegExp,
   Error,
+  Utilities: {
+    formatDate: value => {
+      const date = new Date(value);
+      const pad = part => String(part).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+  },
   v2CanonicalBillIsVoided_: () => false,
   v2CanonicalBillIsOutstanding_: () => false,
   v2CanonicalBillPaymentStatus_: value => String(value || '').toLowerCase()
@@ -133,6 +140,11 @@ const result = context.getWorkspaceLandlordTenantsNativeByLineUid_(
 assert.equal(result.success, true, result.code);
 assert.equal(result.data.tenants.length, 1);
 assert.equal(result.data.tenants[0].current_contract_id, 'C000019');
+assert.equal(
+  result.data.tenants[0].contract_end_date,
+  '2026-09-30',
+  'the production landlord_tenants route must expose the current contract expiry date'
+);
 assert.deepEqual(
   JSON.parse(JSON.stringify(
     result.data.tenants[0].contract_history.map(item => item.contract_id)

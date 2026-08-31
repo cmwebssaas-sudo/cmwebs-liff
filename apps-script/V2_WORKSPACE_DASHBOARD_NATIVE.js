@@ -1736,6 +1736,13 @@ function workspaceDashboardBuildTenantList_(
               currentContract.contract_id
             ),
 
+          contract_end_date:
+            workspaceDashboardFormatDate_(
+              currentContract.end_date ||
+              currentContract.contract_end_date ||
+              currentContract.lease_end_date
+            ),
+
           current_contract_status:
             workspaceDashboardText_(
               currentContract.contract_status ||

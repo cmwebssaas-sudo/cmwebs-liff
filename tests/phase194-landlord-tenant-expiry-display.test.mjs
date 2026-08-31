@@ -5,6 +5,10 @@ const apiSource = readFileSync(
   new URL('../apps-script/V2_API.js', import.meta.url),
   'utf8'
 );
+const nativeDashboardSource = readFileSync(
+  new URL('../apps-script/V2_WORKSPACE_DASHBOARD_NATIVE.js', import.meta.url),
+  'utf8'
+);
 const tenantsPage = readFileSync(
   new URL('../landlord-tenants.html', import.meta.url),
   'utf8'
@@ -14,6 +18,11 @@ assert.match(
   apiSource,
   /current_contract_id:\s*row\.current_contract_id,\s*contract_end_date:\s*row\.contract_end_date\s*\|\|\s*row\.end_date\s*\|\|\s*''/s,
   'landlord_tenants must return the current contract expiry date to the tenant list'
+);
+assert.match(
+  nativeDashboardSource,
+  /current_contract_id:\s*workspaceDashboardText_\(\s*currentContract\.contract_id\s*\),\s*contract_end_date:\s*workspaceDashboardFormatDate_\(\s*currentContract\.end_date\s*\|\|\s*currentContract\.contract_end_date\s*\|\|\s*currentContract\.lease_end_date\s*\)/s,
+  'workspace-native landlord_tenants must return the current contract expiry date'
 );
 assert.match(
   tenantsPage,
