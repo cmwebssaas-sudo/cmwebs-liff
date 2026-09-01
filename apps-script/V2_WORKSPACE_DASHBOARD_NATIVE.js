@@ -1498,6 +1498,9 @@ function workspaceDashboardBuildTenantList_(
           contracts.find(
             workspaceDashboardContractIsCurrent_
           ) ||
+          contracts.find(
+            workspaceDashboardContractIsRenewalRecoveryEligible_
+          ) ||
           {};
 
         if (
@@ -2053,6 +2056,42 @@ function workspaceDashboardContractIsCurrent_(
   ].indexOf(
     status
   ) >= 0;
+}
+
+
+/**
+ * Keep an operational tenant visible when the latest contract has just
+ * expired and no renewal draft was created before the expiry date.  This is
+ * only a read-model fallback for the manual renewal entry; it does not make
+ * an expired contract current or mutate the contract history.
+ */
+function workspaceDashboardContractIsRenewalRecoveryEligible_(
+  contract
+) {
+  const status =
+    workspaceDashboardText_(
+      contract.contract_status ||
+      contract.status ||
+      contract.account_status
+    ).toLowerCase();
+
+  const endDate =
+    workspaceDashboardDate_(
+      contract.end_date ||
+      contract.contract_end_date ||
+      contract.lease_end_date
+    );
+
+  return [
+    'active',
+    'expired',
+    'approved',
+    'completed'
+  ].indexOf(status) >= 0 && (
+    status === 'expired' ||
+    !endDate ||
+    endDate.getTime() < workspaceDashboardToday_().getTime()
+  );
 }
 
 
