@@ -10,7 +10,7 @@
   <title>CMWebs 我的合約</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20260902-renewal-date-prefill-v2"></script>
+  <script src="frontend-release.js?v=20260902-landlord-led-renewal-checkout-v1"></script>
 
   <style>
     :root {
@@ -3831,7 +3831,7 @@
           error.code = result && result.code ? result.code : 'RENEWAL_INTENT_FAILED';
           throw error;
         }
-        showAlert(accepted ? '已回覆同意續約' : '已回覆暫不續約', accepted ? '請等待房東發送正式合約簽署邀請。' : '房東會依你的回覆安排後續事宜。', function() { loadPage(false); });
+        showAlert(accepted ? '已回覆同意續約' : '已回覆暫不續約', accepted ? '系統已發送正式簽署邀請，請依 LINE 訊息開啟並完成簽署。' : '房東會依你的回覆安排退房流程。', function() { loadPage(false); });
       } catch (error) {
         showAlert(error.message || '續約意願回覆失敗，請重新整理後再試。', null, '回覆未完成');
       }
@@ -4089,17 +4089,7 @@
                     <div class="action-desc">房東檢視新合約後會先詢問你的續約意願。</div>
                   </div>
 
-                  <button
-                    class="action-card"
-                    onclick="goRequestPage(
-                      'tenant-termination.html'
-                    )"
-                    ${
-                      permissions.can_request_termination === false
-                        ? 'disabled'
-                        : ''
-                    }
-                  >
+                  <div class="action-card" style="cursor:default;">
                     <div class="action-icon termination">
                       <svg viewBox="0 0 24 24">
                         <path d="M7 4h10v16H7z"></path>
@@ -4109,25 +4099,14 @@
                     </div>
 
                     <div class="action-title">
-                      申請解約
+                      退租由房東處理
                     </div>
 
                     <div class="action-desc">
-                      提交預計退租日期與解約原因
+                      如不續約或需要提前退租，請先直接聯絡房東；房東會在系統完成退房。
                     </div>
-                  </button>
+                  </div>
                 </div>
-
-                ${
-                  permissions.can_request_renewal === false ||
-                  permissions.can_request_termination === false
-                    ? `
-                      <div class="modal-warning">
-                        同類型申請已有待處理紀錄時，系統會暫停重複申請。可先於下方取消原申請。
-                      </div>
-                    `
-                    : ''
-                }
               </section>
             `
             : ''

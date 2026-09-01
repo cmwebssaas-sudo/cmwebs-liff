@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>CMWebs 辦理房客退房</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js"></script>
+  <style>
+    :root { --app-height: 100vh; --nav-height: 64px; --primary: #06c755; --primary-dark: #079641; --page-bg: #f4f6fa; --surface: #fff; --text: #171a1f; --muted: #747b85; --border: #e7ebf0; --danger: #e5484d; --warning: #a46b00; --warning-bg: #fff7df; --shadow: 0 7px 24px rgba(30, 40, 60, .07); }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--page-bg); color: var(--text); font-family: Arial, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+    button, input, textarea { font: inherit; }
+    .app-shell { position: relative; width: 100%; max-width: 560px; height: var(--app-height); margin: 0 auto; overflow: hidden; background: var(--page-bg); }
+    .page { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: max(16px, env(safe-area-inset-top)) 16px calc(var(--nav-height) + 28px + env(safe-area-inset-bottom)); }
+    .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .back-button { width: 42px; height: 42px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); color: #606773; font-size: 21px; cursor: pointer; }
+    .topbar-title { min-width: 0; flex: 1; font-size: 19px; font-weight: 900; }
+    .topbar-subtitle { margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .card { margin-bottom: 14px; padding: 17px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); }
+    .hero { color: #fff; background: linear-gradient(145deg, #079641, #06c755); }
+    .hero h1 { margin: 0; font-size: 22px; }
+    .hero p { margin: 8px 0 0; color: rgba(255,255,255,.88); font-size: 13px; line-height: 1.65; }
+    .section-title { margin-bottom: 12px; font-size: 15px; font-weight: 900; }
+    .notice { padding: 12px; border-radius: 13px; background: var(--warning-bg); color: var(--warning); font-size: 12px; line-height: 1.65; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .detail-label { color: var(--muted); font-size: 11px; }
+    .detail-value { margin-top: 4px; font-size: 14px; font-weight: 900; word-break: break-word; }
+    label { display: block; margin-top: 14px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    input, textarea { width: 100%; margin-top: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff; color: var(--text); }
+    textarea { min-height: 94px; resize: vertical; line-height: 1.6; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 16px; }
+    .btn { min-height: 45px; border: 0; border-radius: 12px; font-weight: 900; cursor: pointer; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-light { border: 1px solid var(--border); background: #fff; color: #505760; }
+    .btn:disabled { cursor: not-allowed; opacity: .55; }
+    .error { color: var(--danger); line-height: 1.65; }
+    .success { color: var(--primary-dark); line-height: 1.65; }
+    .bottom-nav { position: absolute; right: 0; bottom: 0; left: 0; z-index: 10; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--border); background: rgba(255,255,255,.96); }
+    .bottom-nav-inner { display: flex; height: var(--nav-height); align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <main class="page" id="app"><section class="card">載入退房資料中…</section></main>
+    <nav class="bottom-nav"><div class="bottom-nav-inner">CMWebs 房東營運</div></nav>
+  </div>
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
+    const LIFF_ID = '2010314940-EjX1qbb8';
+    const URL_PARAMS = new URLSearchParams(location.search);
+    const CONTRACT_ID = String(URL_PARAMS.get('contract_id') || '').trim();
+    const TENANT_ID = String(URL_PARAMS.get('tenant_id') || '').trim();
+    const TEST_MODE = URL_PARAMS.get('test') === '1';
+    let NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
+    let CHECKOUT_DATA = null;
+    let IS_SUBMITTING = false;
+
+    function rawText(value) { return value === undefined || value === null ? '' : String(value); }
+    function escapeHtml(value) { return rawText(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+    function randomUrlToken(bytes) { const value = new Uint8Array(bytes); crypto.getRandomValues(value); return btoa(String.fromCharCode.apply(null, value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, ''); }
+    function setAppHeight() { const height = window.visualViewport ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty('--app-height', Math.max(320, Math.round(height)) + 'px'); }
+    setAppHeight(); window.addEventListener('resize', setAppHeight); if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+    function backToDetail() {
+      const params = new URLSearchParams();
+      if (TENANT_ID) params.set('tenant_id', TENANT_ID);
+      params.set('v', window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
+      if (TEST_MODE) params.set('test', '1');
+      location.href = 'landlord-tenant-detail.html?' + params.toString();
+    }
+    async function fetchStatusJson(url) { const response = await fetch(url, { method: 'GET', credentials: 'omit', cache: 'no-store' }); if (!response.ok) throw new Error('房東退房操作連線失敗'); return response.json(); }
+    async function initializeNativeSigningReviewSession() {
+      if (TEST_MODE) throw new Error('測試模式不提供退房寫入 session');
+      if (typeof liff === 'undefined') throw new Error('LIFF SDK 載入失敗');
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return false; }
+      const idToken = liff.getIDToken();
+      if (!idToken) throw new Error('無法取得房東審核身分憑證');
+      const requestId = randomUrlToken(16); const pollSecret = randomUrlToken(32);
+      await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ action: 'landlord_contract_signing_review_auth_init', id_token: idToken, request_id: requestId, poll_secret: pollSecret }) });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const result = await fetchStatusJson(API_URL + '?v2_action=landlord_contract_signing_review_auth_status&request_id=' + encodeURIComponent(requestId) + '&poll_secret=' + encodeURIComponent(pollSecret) + '&_=' + Date.now());
+        if (result.code === 'AUTH_EXCHANGE_NOT_FOUND') continue;
+        if (!result.success || !result.data || !result.data.session_token) throw new Error(result.message || '房東身分驗證失敗');
+        NATIVE_SIGNING_REVIEW_SESSION_TOKEN = result.data.session_token; return true;
+      }
+      throw new Error('房東身分驗證逾時');
+    }
+    async function callLandlordCheckoutApi(action, params) {
+      if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) throw new Error('房東身分驗證已失效，請重新整理頁面。');
+      const requestId = randomUrlToken(16); const pollSecret = randomUrlToken(32);
+      await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(Object.assign({}, params || {}, { action, request_id: requestId, poll_secret: pollSecret, session_token: NATIVE_SIGNING_REVIEW_SESSION_TOKEN })) });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const result = await fetchStatusJson(API_URL + '?v2_action=landlord_contract_initiated_status&operation=' + encodeURIComponent(action) + '&request_id=' + encodeURIComponent(requestId) + '&poll_secret=' + encodeURIComponent(pollSecret) + '&_=' + Date.now());
+        if (['LANDLORD_INITIATED_CONTRACT_EXCHANGE_NOT_FOUND', 'LANDLORD_INITIATED_CONTRACT_EXCHANGE_PENDING'].indexOf(result.code) >= 0) continue;
+        if (!result.success) { const error = new Error(result.message || '房東退房操作失敗'); error.code = result.code || ''; throw error; }
+        return result.data || {};
+      }
+      throw new Error('房東退房操作處理逾時');
+    }
+    function renderPage(data) {
+      CHECKOUT_DATA = data || {};
+      const contract = CHECKOUT_DATA.contract || {};
+      const tenant = CHECKOUT_DATA.tenant || {};
+      const room = CHECKOUT_DATA.room || {};
+      const eligible = CHECKOUT_DATA.eligibility && CHECKOUT_DATA.eligibility.can_checkout === true;
+      const originalEnd = rawText(CHECKOUT_DATA.default_move_out_date || contract.original_end_date || contract.end_date);
+      document.getElementById('app').innerHTML = '<div class="topbar"><button class="back-button" type="button" onclick="backToDetail()" aria-label="返回">‹</button><div><div class="topbar-title">辦理房客退房</div><div class="topbar-subtitle">房東手動完成點交與退房</div></div></div>' +
+        '<section class="card hero"><h1>房東退房流程</h1><p>退房由房東主動處理。完成後房間會恢復為空房，原合約全文與帳務紀錄仍會保留。</p></section>' +
+        '<section class="card"><div class="section-title">退房對象</div><div class="detail-grid"><div><div class="detail-label">房客</div><div class="detail-value">' + escapeHtml(tenant.tenant_name || contract.tenant_name || '-') + '</div></div><div><div class="detail-label">房號</div><div class="detail-value">' + escapeHtml(room.room_name || contract.room_name || '-') + '</div></div><div><div class="detail-label">原合約到期日</div><div class="detail-value">' + escapeHtml(originalEnd || '-') + '</div></div><div><div class="detail-label">目前狀態</div><div class="detail-value">' + escapeHtml(contract.contract_status || '-') + '</div></div></div></section>' +
+        '<section class="card"><div class="section-title">點交資料</div><div class="notice">原合約到期日僅供參考且不會被覆寫。若實際點交日在到期日之後，請填寫實際退房日。</div><label for="moveOutDate">實際退房日<input id="moveOutDate" type="date" value="' + escapeHtml(originalEnd) + '"></label><label for="checkoutNote">點交備註（選填）<textarea id="checkoutNote" placeholder="例如：已完成點交、鑰匙已返還、押金待結算…"></textarea></label><div id="resultMessage"></div><div class="actions"><button class="btn btn-light" type="button" onclick="backToDetail()">取消</button><button class="btn btn-primary" type="button" id="submitButton" onclick="submitCheckout()" ' + (eligible ? '' : 'disabled') + '>確認辦理退房</button></div></section>';
+      if (!eligible) document.getElementById('resultMessage').innerHTML = '<p class="error">' + escapeHtml((CHECKOUT_DATA.eligibility && CHECKOUT_DATA.eligibility.message) || '此合約目前不可辦理退房，請先重新整理資料。') + '</p>';
+    }
+    async function submitCheckout() {
+      if (IS_SUBMITTING || !CHECKOUT_DATA || !CHECKOUT_DATA.contract) return;
+      const moveOutDate = document.getElementById('moveOutDate').value;
+      const note = document.getElementById('checkoutNote').value.trim();
+      if (!moveOutDate) { document.getElementById('resultMessage').innerHTML = '<p class="error">請填寫實際退房日。</p>'; return; }
+      if (!window.confirm('確認已完成點交並辦理退房嗎？原合約內容不會被修改。')) return;
+      IS_SUBMITTING = true; document.getElementById('submitButton').disabled = true;
+      const idempotencyKey = 'checkout-' + CONTRACT_ID + '-' + randomUrlToken(12);
+      try {
+        const result = await callLandlordCheckoutApi('landlord_contract_checkout_complete', { input: { contract_id: CONTRACT_ID, move_out_date: moveOutDate, note, idempotency_key: idempotencyKey } });
+        document.getElementById('resultMessage').innerHTML = '<p class="success">退房已完成，房間已恢復為空房。原合約日期、全文、帳務與簽名紀錄均已保留。</p>';
+        setTimeout(backToDetail, 1000);
+      } catch (error) {
+        document.getElementById('resultMessage').innerHTML = '<p class="error">' + escapeHtml(error.message || '退房未完成，請重新整理後再試。') + '</p>';
+        IS_SUBMITTING = false; document.getElementById('submitButton').disabled = false;
+      }
+    }
+    async function loadPage() {
+      try {
+        if (!CONTRACT_ID) throw new Error('網址缺少 contract_id');
+        const ready = await initializeNativeSigningReviewSession();
+        if (!ready) return;
+        const data = await callLandlordCheckoutApi('landlord_contract_checkout_init', { contract_id: CONTRACT_ID });
+        renderPage(data);
+      } catch (error) { document.getElementById('app').innerHTML = '<section class="card"><p class="error">' + escapeHtml(error.message || '退房資料載入失敗') + '</p><button class="btn btn-light" type="button" onclick="backToDetail()">返回房客資料</button></section>'; }
+    }
+    loadPage();
+  </script>
+</body>
+</html>

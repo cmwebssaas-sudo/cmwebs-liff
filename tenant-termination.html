@@ -1340,6 +1340,27 @@
       PAGE_DATA = data || {};
       CONTRACT = PAGE_DATA.contract || {};
 
+      // Tenant checkout is landlord-led. Keep this route as a historical/
+      // compatibility landing page without exposing a new termination submit.
+      app.className = '';
+      app.innerHTML = `
+        <div class="topbar">
+          <button class="back-btn" onclick="goPage('tenant-contract.html')" aria-label="返回">
+            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></svg>
+          </button>
+          <div class="header-content">
+            <h1 class="page-title">退房由房東辦理</h1>
+            <div class="page-subtitle">房東會依續約回覆或雙方私下確認完成退房</div>
+          </div>
+        </div>
+        <section class="card">
+          <div class="section-title">請等待房東辦理退房</div>
+          <div class="pending-message">如合約到期不再續約，或雙方已確認提前退租，請直接聯絡房東。房東會完成點交、退房日期與押金等後續作業；原合約與歷史紀錄會保留。</div>
+          <div class="page-actions"><button class="btn btn-primary" onclick="goPage('tenant-contract.html')">返回我的合約</button></div>
+        </section>
+      `;
+      return;
+
       const tenant = PAGE_DATA.tenant || {};
       const permissions = PAGE_DATA.permissions || {};
       const pendingTermination = findPendingTermination(PAGE_DATA.requests || []);

@@ -744,6 +744,12 @@ function workspaceAuditTargetConfig_(
         'V2_tenants',
       id_header:
         'tenant_id'
+    },
+    contract: {
+      sheet_name:
+        'V2_contracts',
+      id_header:
+        'contract_id'
     }
   };
 
@@ -1045,6 +1051,8 @@ function workspaceAuditActionLabel_(
       '更新帳務與通知偏好',
     landlord_contract_request_update:
       '處理合約申請',
+    landlord_contract_checkout_complete:
+      '完成房東退房',
     landlord_property_create:
       '建立物件',
     landlord_property_update:

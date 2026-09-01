@@ -2274,6 +2274,7 @@
           <div class="request-meta-row">
             <span class="mini-tag">新空房可先收款後補資料</span>
             <span class="mini-tag">續約由房東主動發起</span>
+            <span class="mini-tag">房東確認後自動詢問房客</span>
           </div>
           <div class="review-contract-meta" style="margin-top:10px;">手動簽約日期有誤：尚未送出房客前請取消邀請後重新建立；已簽署請用「開始續約」建立更正續約，舊合約與簽名會保留。</div>
           <div class="request-actions" style="margin-top:12px;">
@@ -2296,14 +2297,14 @@
                     <div class="request-title">${mode === 'renewal' ? '續約合約' : '新空房合約'}</div>
                     <div class="request-id">${safeText(contract.contract_id)}</div>
                   </div>
-                  <span class="badge pending">${safeText(needsReview ? '待房東審查' : reviewConfirmed ? (tenantIntent === 'accepted' ? '房客已同意續約' : inquiryStatus === 'sent' ? '等待房客回覆' : '可詢問房客') : contract.status || contract.contract_status || '待處理')}</span>
+                  <span class="badge pending">${safeText(needsReview ? '待房東審查' : reviewConfirmed ? (tenantIntent === 'accepted' ? '待房客簽署' : tenantIntent === 'declined' ? '待辦理退房' : inquiryStatus === 'sent' ? '等待房客回覆' : '處理中') : contract.status || contract.contract_status || '待處理')}</span>
                 </div>
                 <div class="request-meta-row">
                   <span class="mini-tag">房號 ${safeText(contract.room_name || contract.room_id || '-')}</span>
                   <span class="mini-tag">房客 ${safeText(contract.tenant_name || '待房客補資料')}</span>
                 </div>
                 ${needsReview ? `
-                  <div class="review-contract-meta">系統已依舊合約準備續約草稿。請先確認日期、金額及是否加入 30 天優惠條款，完成審查後才可詢問房客。</div>
+                  <div class="review-contract-meta">系統已依舊合約準備新版續約草稿。請先確認日期、金額及是否加入 30 天優惠條款；完成房東審查後，系統會自動詢問房客。</div>
                   <div class="request-meta-row">
                     <span class="mini-tag">租金 ${money(contract.rent_amount || contract.monthly_rent)}</span>
                     <span class="mini-tag">管理費 ${money(contract.management_fee || contract.monthly_management_fee)}</span>
@@ -2316,11 +2317,8 @@
                     <button class="btn btn-primary" type="button" onclick="confirmRenewalReview('${escapeHtml(contract.contract_id)}')">完成房東審查</button>
                   </div>
                 ` : reviewConfirmed ? `
-                  <div class="review-contract-meta">房東已確認合約內容。${tenantIntent === 'accepted' ? '房客已同意續約，現在可以發送正式簽署邀請。' : inquiryStatus === 'sent' || inquiryStatus === 'responded' ? '已發送續約詢問，等待房客回覆。' : '尚未詢問房客續約意願。'}</div>
+                  <div class="review-contract-meta">房東已確認合約內容，系統已自動詢問房客。${tenantIntent === 'accepted' ? '房客已同意續約，系統已自動發送正式簽署邀請。' : tenantIntent === 'declined' ? '房客選擇不續約，請從房客詳細資料辦理退房。' : inquiryStatus === 'sent' || inquiryStatus === 'responded' ? '等待房客回覆。' : '處理中。'}</div>
                   <details class="review-contract-meta" style="white-space:pre-wrap;max-height:260px;overflow:auto;"><summary>查看完整合約草稿</summary>${safeText(contract.contract_content || '目前沒有可預覽的合約內容。')}</details>
-                  <div class="request-actions">
-                    ${tenantIntent === 'accepted' ? `<button class="btn btn-primary" type="button" onclick="sendRenewalContract('${escapeHtml(contract.contract_id)}')">發送合約簽署</button>` : inquiryStatus === 'sent' || inquiryStatus === 'responded' ? '' : `<button class="btn btn-primary" type="button" onclick="sendRenewalInquiry('${escapeHtml(contract.contract_id)}')">詢問房客續約意願</button>`}
-                  </div>
                 ` : inviteUrl ? `<div class="review-contract-meta" style="word-break:break-all;">邀請連結已保存，可從「查看 QR／連結」再次取得。</div>` : '<div class="review-contract-meta">目前找不到可用邀請，請重新整理確認狀態。</div>'}
                 ${!needsReview && contract.invite_id ? `
                   <div class="request-actions">
@@ -2389,32 +2387,12 @@
     }
 
     async function confirmRenewalReview(contractId) {
-      if (!window.confirm('確認日期、金額及優惠條款無誤，完成房東審查？完成後仍需另外詢問房客意願。')) return;
+      if (!window.confirm('確認日期、金額及優惠條款無誤，完成房東審查並自動詢問房客嗎？')) return;
       try {
         await callLandlordInitiatedApi('landlord_contract_renewal_review_confirm', { input: { contract_id: contractId } });
-        showAlert('房東審查完成', '請按「詢問房客續約意願」，房客同意後才會出現發送正式簽署合約的按鈕。', function() { loadPage(false); });
+        showAlert('房東審查完成', '系統已自動詢問房客續約意願；房客同意後會自動收到正式簽署邀請。', function() { loadPage(false); });
       } catch (error) {
         showAlert('審查確認失敗', error.message || '請稍後再試。');
-      }
-    }
-
-    async function sendRenewalInquiry(contractId) {
-      if (!window.confirm('確認先通知房客查看續約內容並回覆續約意願？此步驟不會建立簽約邀請。')) return;
-      try {
-        await callLandlordInitiatedApi('landlord_contract_renewal_inquiry_send', { input: { contract_id: contractId } });
-        showAlert('已詢問房客', '房客回覆同意後，才可發送正式合約簽署邀請。', function() { loadPage(false); });
-      } catch (error) {
-        showAlert('詢問房客失敗', error.message || '請稍後再試。');
-      }
-    }
-
-    async function sendRenewalContract(contractId) {
-      if (!window.confirm('房客已同意續約，確認現在發送正式合約簽署邀請？')) return;
-      try {
-        await callLandlordInitiatedApi('landlord_contract_renewal_send', { input: { contract_id: contractId } });
-        showAlert('正式合約已發送', '房客現在可以開啟邀請查看全文並完成簽署。', function() { loadPage(false); });
-      } catch (error) {
-        showAlert('發送合約失敗', error.message || '請稍後再試。');
       }
     }
 

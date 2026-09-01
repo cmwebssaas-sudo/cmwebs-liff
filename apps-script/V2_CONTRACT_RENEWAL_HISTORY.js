@@ -22,7 +22,17 @@ const V2_CONTRACT_RENEWAL_HISTORY_CONTRACT_FIELDS_ = [
   'special_offer_notice_date',
   'special_offer_days_before_expiry',
   'special_offer_decision_reason',
-  'identity_document_mode'
+  'identity_document_mode',
+  'electricity_fee_rate',
+  'equipment_fee_rate',
+  'checkout_status',
+  'checkout_source',
+  'checkout_requested_at',
+  'checkout_completed_at',
+  'checkout_move_out_date',
+  'checkout_note',
+  'checkout_idempotency_key',
+  'terminated_at'
 ];
 
 const V2_CONTRACT_RENEWAL_HISTORY_REQUEST_FIELDS_ = [
@@ -129,6 +139,8 @@ function contractRenewalHistoryNormalizeContract_(contract) {
     rent_amount: contractRenewalHistoryNumber_(row.rent_amount || row.monthly_rent, 0),
     management_fee: contractRenewalHistoryNumber_(row.management_fee || row.monthly_management_fee, 0),
     deposit_amount: contractRenewalHistoryNumber_(row.deposit_amount, 0),
+    electricity_fee_rate: contractRenewalHistoryNumber_(row.electricity_fee_rate, 0),
+    equipment_fee_rate: contractRenewalHistoryNumber_(row.equipment_fee_rate, 0),
     other_fixed_fee_amount: contractRenewalHistoryNumber_(row.other_fixed_fee_amount, 0),
     other_fixed_fee_note: contractRenewalHistoryText_(row.other_fixed_fee_note),
     monthly_payment_day: contractRenewalHistoryNumber_(row.monthly_payment_day || row.payment_day, 0),
@@ -156,6 +168,8 @@ function contractRenewalHistoryBuildDefaults_(previous, options) {
     rent_amount: normalized.rent_amount,
     management_fee: normalized.management_fee,
     deposit_amount: normalized.deposit_amount,
+    electricity_fee_rate: normalized.electricity_fee_rate,
+    equipment_fee_rate: normalized.equipment_fee_rate,
     other_fixed_fee_amount: normalized.other_fixed_fee_amount,
     other_fixed_fee_note: normalized.other_fixed_fee_note,
     monthly_payment_day: normalized.monthly_payment_day,

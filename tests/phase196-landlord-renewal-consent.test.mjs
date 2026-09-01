@@ -36,11 +36,14 @@ assert.match(initiatedSource, /function landlordInitiatedContractSendRenewal_/);
 assert.match(initiatedSource, /function landlordInitiatedContractUpdateRenewalIntentByLineUid_/);
 assert.match(requestsSource, /TENANT_RENEWAL_LANDLORD_INITIATED_ONLY/);
 assert.match(dispatcherSource, /tenant_contract_renewal_intent/);
-assert.match(landlordPage, /詢問房客續約意願/);
-assert.match(landlordPage, /發送合約簽署/);
+assert.match(landlordPage, /房東確認後自動詢問房客/);
+assert.match(landlordPage, /自動發送正式簽署邀請/);
+assert.doesNotMatch(landlordPage, /onclick="sendRenewalInquiry\(/);
+assert.doesNotMatch(landlordPage, /onclick="sendRenewalContract\(/);
 assert.match(landlordPage, /special_offer_enabled/);
 assert.match(tenantPage, /同意續約/);
 assert.match(tenantPage, /暫不續約/);
+assert.match(tenantPage, /系統已發送正式簽署邀請/);
 assert.match(tenantRenewalPage, /續約由房東發起/);
 
 const context = { Date, Math, Number, String, Object, Array, JSON, RegExp };
@@ -58,21 +61,21 @@ const reviewed = context.landlordInitiatedContractRenewalReviewTransition_({
 }, '2026-09-01T00:00:00.000Z');
 assert.equal(reviewed.success, true, reviewed.code);
 assert.equal(reviewed.updates.renewal_review_status, 'confirmed');
-assert.equal(reviewed.updates.renewal_inquiry_status, 'pending');
+assert.equal(reviewed.updates.renewal_inquiry_status, 'sent');
 assert.equal(reviewed.updates.renewal_tenant_intent, 'pending');
+assert.equal(reviewed.send_inquiry, true);
 assert.equal(reviewed.create_invite, false, 'landlord review must not create a tenant invite');
 
 const inquiry = context.landlordInitiatedContractRenewalInquiryTransition_({
   signing_mode: 'renewal',
   contract_status: 'pending_landlord_review',
   renewal_review_status: 'confirmed',
-  renewal_inquiry_status: 'pending',
+  renewal_inquiry_status: 'sent',
   renewal_tenant_intent: 'pending',
   invite_id: ''
 }, '2026-09-01T00:00:00.000Z');
-assert.equal(inquiry.success, true, inquiry.code);
-assert.equal(inquiry.updates.renewal_inquiry_status, 'sent');
-assert.equal(inquiry.updates.renewal_tenant_intent, 'pending');
+assert.equal(inquiry.success, false);
+assert.equal(inquiry.code, 'RENEWAL_INQUIRY_ALREADY_SENT');
 
 const accepted = context.landlordInitiatedContractRenewalIntentTransition_({
   signing_mode: 'renewal',
