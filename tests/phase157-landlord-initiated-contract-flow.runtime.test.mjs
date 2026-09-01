@@ -118,6 +118,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
   if (withInviteSheet) sheets.V2_contract_invites = invites;
 
   let uuid = 0;
+  const pushedMessages = [];
   const context = {
     Date,
     Math,
@@ -151,7 +152,11 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
     tenantLiffSigningText_: value => String(value == null ? '' : value).trim(),
     tenantContractSigningReviewError_: code => ({ success: false, code, message: 'contract error' }),
     workspaceResult_: (success, code, message) => ({ success, code, message, data: null }),
-    workspaceNotifyTeam_: () => ({ success: true, code: 'OK' })
+    workspaceNotifyTeam_: () => ({ success: true, code: 'OK' }),
+    pushLineTextMessage_: (lineUserId, message) => {
+      pushedMessages.push({ lineUserId, message });
+      return { success: true, code: 'OK' };
+    }
   };
   vm.createContext(context);
   vm.runInContext(renewalHistorySource, context, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
@@ -159,7 +164,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
   vm.runInContext(expiryRenewalSource, context, { filename: 'V2_CONTRACT_EXPIRY_RENEWALS.js' });
   vm.runInContext(signingSessionSource, context, { filename: 'V2_TENANT_LIFF_SIGNING_SESSION.js' });
   context.verifyLandlordContractSigningReviewSessionToken_ = () => ({ success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' });
-  return { api: context, sheets };
+  return { api: context, sheets, pushedMessages };
 }
 
 const access = {
@@ -205,7 +210,7 @@ const newInput = {
 }
 
 {
-  const { api, sheets } = makeRuntime({ withPrevious: true });
+  const { api, sheets, pushedMessages } = makeRuntime({ withPrevious: true });
   const result = api.landlordInitiatedContractCreateRenewal_(access, {
     previous_contract_id: 'old-contract',
     start_date: '2026-09-01',
@@ -225,12 +230,59 @@ const newInput = {
   assert.equal(sheets.V2_rooms.rows[0][5], 'vacant');
   assert.equal(sheets.V2_contract_invites.rows.length, 0);
 
+  const edited = api.landlordInitiatedContractUpdateRenewalDraft_(
+    access,
+    result.data.contract.contract_id,
+    {
+      start_date: '2026-09-01',
+      end_date: '2027-08-31',
+      rent_amount: 27000,
+      management_fee: 1200,
+      deposit_amount: 54000,
+      payment_day: 8,
+      special_offer_enabled: true,
+      special_offer_clause: '續約期滿前提前30天通知，免收違約金。'
+    }
+  );
+  assert.equal(edited.success, true, edited.code);
+  assert.equal(edited.data.contract.rent_amount, 27000);
+  assert.equal(edited.data.contract.management_fee, 1200);
+  assert.equal(edited.data.contract.special_offer_enabled, true);
+  assert.match(edited.data.contract.contract_content, /提前30天通知，免收違約金/);
+
   const confirmed = api.landlordInitiatedContractConfirmRenewalReview_(
     access,
     result.data.contract.contract_id
   );
   assert.equal(confirmed.success, true, confirmed.code);
-  assert.equal(confirmed.data.contract.contract_status, 'pending_tenant_signature');
+  assert.equal(confirmed.data.contract.contract_status, 'pending_landlord_review');
+  assert.equal(confirmed.data.contract.renewal_review_status, 'confirmed');
+  assert.equal(confirmed.data.invite, null);
+  assert.equal(sheets.V2_contract_invites.rows.length, 0);
+
+  const inquiry = api.landlordInitiatedContractSendRenewalInquiry_(
+    access,
+    result.data.contract.contract_id
+  );
+  assert.equal(inquiry.success, true, inquiry.code);
+  assert.equal(inquiry.data.contract.renewal_inquiry_status, 'sent');
+  assert.equal(pushedMessages.length, 1);
+  assert.equal(pushedMessages[0].lineUserId, 'tenant-line');
+
+  const accepted = api.landlordInitiatedContractUpdateRenewalIntentByLineUid_(
+    'tenant-line',
+    result.data.contract.contract_id,
+    'accepted'
+  );
+  assert.equal(accepted.success, true, accepted.code);
+  assert.equal(accepted.data.intent, 'accepted');
+
+  const sent = api.landlordInitiatedContractSendRenewal_(
+    access,
+    result.data.contract.contract_id
+  );
+  assert.equal(sent.success, true, sent.code);
+  assert.equal(sent.data.contract.contract_status, 'pending_tenant_signature');
   assert.equal(sheets.V2_contract_invites.rows.length, 1);
 }
 

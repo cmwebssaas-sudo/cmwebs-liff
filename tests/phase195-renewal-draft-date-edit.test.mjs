@@ -39,7 +39,7 @@ assert.match(
   /function landlordInitiatedContractIsIsoDate_\(/,
   'renewal draft dates must use strict ISO date validation'
 );
-assert.match(requestsPage, /修改續約日期/);
+assert.match(requestsPage, /修改續約條件/);
 assert.match(requestsPage, /function editRenewalDraft\(/);
 assert.match(requestsPage, /已簽署.*更正續約/);
 

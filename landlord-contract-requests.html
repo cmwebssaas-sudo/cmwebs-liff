@@ -2287,7 +2287,13 @@
           ${pending.length ? pending.map(function(contract) {
             const mode = normalizeStatus(contract.signing_mode || contract.contract_mode);
             const inviteUrl = rawText(contract.invite_url).trim();
-            const needsReview = normalizeStatus(contract.contract_status || contract.status) === 'pending_landlord_review';
+            const contractStatus = normalizeStatus(contract.contract_status || contract.status);
+            const reviewStatus = normalizeStatus(contract.renewal_review_status);
+            const inquiryStatus = normalizeStatus(contract.renewal_inquiry_status || 'pending');
+            const tenantIntent = normalizeStatus(contract.renewal_tenant_intent || 'pending');
+            const isRenewal = mode === 'renewal';
+            const needsReview = isRenewal && contractStatus === 'pending_landlord_review' && reviewStatus !== 'confirmed';
+            const reviewConfirmed = isRenewal && contractStatus === 'pending_landlord_review' && reviewStatus === 'confirmed';
             return `
               <article class="request-card pending" style="margin-top:12px;">
                 <div class="request-top">
@@ -2295,18 +2301,30 @@
                     <div class="request-title">${mode === 'renewal' ? '續約合約' : '新空房合約'}</div>
                     <div class="request-id">${safeText(contract.contract_id)}</div>
                   </div>
-                  <span class="badge pending">${safeText(contract.status || contract.contract_status || '待處理')}</span>
+                  <span class="badge pending">${safeText(needsReview ? '待房東審查' : reviewConfirmed ? (tenantIntent === 'accepted' ? '房客已同意續約' : inquiryStatus === 'sent' ? '等待房客回覆' : '可詢問房客') : contract.status || contract.contract_status || '待處理')}</span>
                 </div>
                 <div class="request-meta-row">
                   <span class="mini-tag">房號 ${safeText(contract.room_name || contract.room_id || '-')}</span>
                   <span class="mini-tag">房客 ${safeText(contract.tenant_name || '待房客補資料')}</span>
                 </div>
                 ${needsReview ? `
-                  <div class="review-contract-meta">待房東檢視：確認內容無誤後，才會建立房客簽約邀請。</div>
+                  <div class="review-contract-meta">系統已依舊合約準備續約草稿。請先確認日期、金額及是否加入 30 天優惠條款，完成審查後才可詢問房客。</div>
+                  <div class="request-meta-row">
+                    <span class="mini-tag">租金 ${money(contract.rent_amount || contract.monthly_rent)}</span>
+                    <span class="mini-tag">管理費 ${money(contract.management_fee || contract.monthly_management_fee)}</span>
+                    <span class="mini-tag">押金 ${money(contract.deposit_amount)}</span>
+                    <span class="mini-tag">${contract.special_offer_enabled === true || rawText(contract.special_offer_enabled).toLowerCase() === 'true' ? '含 30 天優惠' : '不含 30 天優惠'}</span>
+                  </div>
                   <details class="review-contract-meta" style="white-space:pre-wrap;max-height:260px;overflow:auto;"><summary>查看完整合約草稿</summary>${safeText(contract.contract_content || '目前沒有可預覽的合約內容。')}</details>
                   <div class="request-actions">
-                    <button class="btn btn-light" type="button" onclick="editRenewalDraft('${escapeHtml(contract.contract_id)}')">修改續約日期</button>
-                    <button class="btn btn-primary" type="button" onclick="confirmRenewalReview('${escapeHtml(contract.contract_id)}')">確認發送給房客</button>
+                    <button class="btn btn-light" type="button" onclick="editRenewalDraft('${escapeHtml(contract.contract_id)}')">修改續約條件</button>
+                    <button class="btn btn-primary" type="button" onclick="confirmRenewalReview('${escapeHtml(contract.contract_id)}')">完成房東審查</button>
+                  </div>
+                ` : reviewConfirmed ? `
+                  <div class="review-contract-meta">房東已確認合約內容。${tenantIntent === 'accepted' ? '房客已同意續約，現在可以發送正式簽署邀請。' : inquiryStatus === 'sent' || inquiryStatus === 'responded' ? '已發送續約詢問，等待房客回覆。' : '尚未詢問房客續約意願。'}</div>
+                  <details class="review-contract-meta" style="white-space:pre-wrap;max-height:260px;overflow:auto;"><summary>查看完整合約草稿</summary>${safeText(contract.contract_content || '目前沒有可預覽的合約內容。')}</details>
+                  <div class="request-actions">
+                    ${tenantIntent === 'accepted' ? `<button class="btn btn-primary" type="button" onclick="sendRenewalContract('${escapeHtml(contract.contract_id)}')">發送合約簽署</button>` : inquiryStatus === 'sent' || inquiryStatus === 'responded' ? '' : `<button class="btn btn-primary" type="button" onclick="sendRenewalInquiry('${escapeHtml(contract.contract_id)}')">詢問房客續約意願</button>`}
                   </div>
                 ` : inviteUrl ? `<div class="review-contract-meta" style="word-break:break-all;">邀請連結已保存，可從「查看 QR／連結」再次取得。</div>` : '<div class="review-contract-meta">目前找不到可用邀請，請重新整理確認狀態。</div>'}
                 ${!needsReview && contract.invite_id ? `
@@ -2384,28 +2402,67 @@
       if (!startDate) return;
       const endDate = window.prompt('修改合約結束日（YYYY-MM-DD）：', formatDate(contract.end_date || contract.contract_end_date));
       if (!endDate) return;
-      if (!window.confirm('確定將續約日期修改為 ' + startDate + ' 至 ' + endDate + ' 嗎？修改後會重新產生合約全文。')) return;
+      const rentAmount = window.prompt('月租金：', numberValue(contract.rent_amount || contract.monthly_rent, 0));
+      if (rentAmount === null || rentAmount === '') return;
+      const managementFee = window.prompt('管理費：', numberValue(contract.management_fee || contract.monthly_management_fee, 0));
+      if (managementFee === null || managementFee === '') return;
+      const depositAmount = window.prompt('押金：', numberValue(contract.deposit_amount, 0));
+      if (depositAmount === null || depositAmount === '') return;
+      const paymentDay = window.prompt('每月繳款日：', numberValue(contract.payment_day || contract.monthly_payment_day, 5));
+      if (paymentDay === null || paymentDay === '') return;
+      const offerDefault = contract.special_offer_enabled === true || rawText(contract.special_offer_enabled).toLowerCase() === 'true';
+      const includeOffer = window.confirm('是否加入「提前 30 天通知免收違約金」優惠條款？目前設定：' + (offerDefault ? '加入' : '不加入'));
+      const specialOfferClause = includeOffer ? window.prompt('優惠條款內容：', rawText(contract.special_offer_clause).trim() || '租約期滿如不再續約，提前30個日曆日通知，免收違約金。') : '';
+      if (includeOffer && specialOfferClause === null) return;
+      if (!window.confirm('確定更新續約日期、金額及優惠條款嗎？修改後會重新產生合約全文。')) return;
       try {
         await callLandlordInitiatedApi('landlord_contract_renewal_draft_update', {
           input: {
             contract_id: normalizedContractId,
             start_date: startDate,
-            end_date: endDate
+            end_date: endDate,
+            rent_amount: rentAmount,
+            management_fee: managementFee,
+            deposit_amount: depositAmount,
+            payment_day: paymentDay,
+            special_offer_enabled: includeOffer,
+            special_offer_notice_days: 30,
+            special_offer_clause: includeOffer ? specialOfferClause : ''
           }
         });
-        showAlert('續約日期已更新', '合約全文已同步更新，請重新檢視後再發送給房客。', function() { loadPage(false); });
+        showAlert('續約條件已更新', '日期、金額及優惠條款已同步到合約全文，請重新檢視後完成房東審查。', function() { loadPage(false); });
       } catch (error) {
         showAlert('修改失敗', error.message || '請重新整理後再試。');
       }
     }
 
     async function confirmRenewalReview(contractId) {
-      if (!window.confirm('確認合約內容無誤，現在發送給房客簽署？')) return;
+      if (!window.confirm('確認日期、金額及優惠條款無誤，完成房東審查？完成後仍需另外詢問房客意願。')) return;
       try {
         await callLandlordInitiatedApi('landlord_contract_renewal_review_confirm', { input: { contract_id: contractId } });
-        showAlert('已發送給房客', '房客現在可以開啟邀請並完成簽約。', function() { loadPage(false); });
+        showAlert('房東審查完成', '請按「詢問房客續約意願」，房客同意後才會出現發送正式簽署合約的按鈕。', function() { loadPage(false); });
       } catch (error) {
-        showAlert('發送失敗', error.message || '請稍後再試。');
+        showAlert('審查確認失敗', error.message || '請稍後再試。');
+      }
+    }
+
+    async function sendRenewalInquiry(contractId) {
+      if (!window.confirm('確認先通知房客查看續約內容並回覆續約意願？此步驟不會建立簽約邀請。')) return;
+      try {
+        await callLandlordInitiatedApi('landlord_contract_renewal_inquiry_send', { input: { contract_id: contractId } });
+        showAlert('已詢問房客', '房客回覆同意後，才可發送正式合約簽署邀請。', function() { loadPage(false); });
+      } catch (error) {
+        showAlert('詢問房客失敗', error.message || '請稍後再試。');
+      }
+    }
+
+    async function sendRenewalContract(contractId) {
+      if (!window.confirm('房客已同意續約，確認現在發送正式合約簽署邀請？')) return;
+      try {
+        await callLandlordInitiatedApi('landlord_contract_renewal_send', { input: { contract_id: contractId } });
+        showAlert('正式合約已發送', '房客現在可以開啟邀請查看全文並完成簽署。', function() { loadPage(false); });
+      } catch (error) {
+        showAlert('發送合約失敗', error.message || '請稍後再試。');
       }
     }
 

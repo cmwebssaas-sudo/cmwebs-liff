@@ -2364,6 +2364,26 @@ function doPost(e) {
           )
           .setMimeType(ContentService.MimeType.JSON);
       }
+
+      if (
+        request &&
+        String(request.v2_action || '')
+          .trim() ===
+          'tenant_contract_renewal_intent'
+      ) {
+        const result =
+          landlordInitiatedContractUpdateRenewalIntentByLineUid_(
+            request.line_user_id || '',
+            request.contract_id || '',
+            request.decision || ''
+          );
+
+        return ContentService
+          .createTextOutput(
+            JSON.stringify(result)
+          )
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
 
     // Native tenant-contract operations use short-lived, verified LIFF

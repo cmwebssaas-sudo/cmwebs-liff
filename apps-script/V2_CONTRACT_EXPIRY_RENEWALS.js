@@ -8,7 +8,12 @@ const V2_CONTRACT_EXPIRY_RENEWAL_HEADERS_ = [
   'renewal_review_status',
   'renewal_review_prepared_at',
   'renewal_review_confirmed_at',
-  'renewal_review_reminded_30d_at'
+  'renewal_review_reminded_30d_at',
+  'renewal_inquiry_status',
+  'renewal_inquiry_sent_at',
+  'renewal_inquiry_responded_at',
+  'renewal_tenant_intent',
+  'renewal_tenant_intent_at'
 ];
 
 function contractExpiryRenewalRunDaily_() {
@@ -101,7 +106,7 @@ function contractExpiryRenewalPrepareDraft_(previous, rows, roomsSheet, properti
     contract_status: V2_CONTRACT_EXPIRY_RENEWAL_DRAFT_STATUS_, status: V2_CONTRACT_EXPIRY_RENEWAL_DRAFT_STATUS_, account_status: 'pending', signing_mode: 'renewal', contract_origin: 'expiry_prepared_renewal',
     contract_content: landlordInitiatedContractBuildDocument_(access, property, room, input.data, previous.tenant_name || previous.name || ''),
     previous_contract_id: previous.contract_id, renewed_from_contract_id: previous.contract_id, contract_family_id: version.contract_family_id, renewal_sequence: version.renewal_sequence,
-    renewal_review_status: 'pending', renewal_review_prepared_at: now, tenant_signing_submission_status: 'pending', created_at: now, updated_at: now
+    renewal_review_status: 'pending', renewal_review_prepared_at: now, renewal_inquiry_status: 'pending', renewal_tenant_intent: 'pending', tenant_signing_submission_status: 'pending', created_at: now, updated_at: now
   });
   landlordInitiatedContractAppend_(SpreadsheetApp.getActiveSpreadsheet().getSheetByName('V2_contracts'), draft);
   contractExpiryRenewalNotifyLandlord_(draft, previous, contractExpiryRenewalDaysUntil_(previous.end_date || previous.contract_end_date, today), false);

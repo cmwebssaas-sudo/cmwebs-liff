@@ -1288,6 +1288,31 @@
       const pendingRenewal = findPendingRenewal(PAGE_DATA.requests || []);
       const canSubmit = permissions.can_request_renewal !== false && !pendingRenewal;
 
+      // Renewals are now landlord-led. Keep this legacy URL as a safe
+      // compatibility landing page so tenants cannot bypass the consent flow.
+      app.className = '';
+      app.innerHTML = `
+        <div class="topbar">
+          <button class="back-btn" onclick="goPage('tenant-contract.html')" aria-label="返回">
+            <svg viewBox="0 0 24 24">
+              <path d="M15 5l-7 7 7 7"></path>
+            </svg>
+          </button>
+          <div class="header-content">
+            <h1 class="page-title">續約由房東發起</h1>
+            <div class="page-subtitle">房東會先依現有合約準備新約並完成審查，再詢問你的續約意願。</div>
+          </div>
+        </div>
+        <section class="card">
+          <div class="section-title">目前無法由房客直接申請續約</div>
+          <div class="pending-message">請返回「我的合約」等待房東發送續約詢問。收到後，你可以先查看完整合約內容，再選擇同意續約或暫不續約。</div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="goPage('tenant-contract.html')">返回我的合約</button>
+          </div>
+        </section>
+      `;
+      return;
+
       const currentEnd = formatDateOnly(CONTRACT.end_date);
       const currentStart = formatDateOnly(CONTRACT.start_date);
       const daysRemaining = Number(CONTRACT.days_remaining || 0);

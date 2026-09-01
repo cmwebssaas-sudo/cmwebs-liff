@@ -98,7 +98,8 @@ function makeRuntime({ renewal = false, includeViews = true } = {}) {
       const required = signingMode === 'new_tenant' ? ['identity_front', 'identity_back', 'signature'] : ['signature'];
       const found = new Set(artifacts.filter(item => item.contract_id === claims.contract_id && item.tenant_id === claims.tenant_id && item.workspace_id === claims.workspace_id && item.status === 'stored').map(item => item.artifact_type));
       return required.every(type => found.has(type)) ? { success: true } : { success: false, code: 'REQUIRED_ARTIFACT_MISSING' };
-    }
+    },
+    pushLineTextMessage_: () => ({ success: true })
   };
   vm.createContext(context);
   vm.runInContext(renewalHistorySource, context, { filename: 'V2_CONTRACT_RENEWAL_HISTORY.js' });
@@ -153,7 +154,19 @@ function markSubmitted(runtime, contractId, tenantId, mode) {
   assert.equal(created.data.contract.contract_status, 'pending_landlord_review');
   const confirmed = runtime.api.landlordInitiatedContractConfirmRenewalReview_(access, created.data.contract.contract_id);
   assert.equal(confirmed.success, true, confirmed.code);
-  assert.equal(confirmed.data.contract.contract_status, 'pending_tenant_signature');
+  assert.equal(confirmed.data.contract.contract_status, 'pending_landlord_review');
+  assert.equal(confirmed.data.contract.renewal_review_status, 'confirmed');
+  assert.equal(confirmed.data.contract.renewal_inquiry_status, 'pending');
+  assert.equal(confirmed.data.invite, null);
+  const inquiry = runtime.api.landlordInitiatedContractSendRenewalInquiry_(access, created.data.contract.contract_id);
+  assert.equal(inquiry.success, true, inquiry.code);
+  assert.equal(inquiry.data.contract.renewal_inquiry_status, 'sent');
+  const accepted = runtime.api.landlordInitiatedContractUpdateRenewalIntentByLineUid_('existing-line', created.data.contract.contract_id, 'accepted');
+  assert.equal(accepted.success, true, accepted.code);
+  assert.equal(accepted.data.contract.renewal_tenant_intent, 'accepted');
+  const sent = runtime.api.landlordInitiatedContractSendRenewal_(access, created.data.contract.contract_id);
+  assert.equal(sent.success, true, sent.code);
+  assert.equal(sent.data.contract.contract_status, 'pending_tenant_signature');
   markSubmitted(runtime, created.data.contract.contract_id, 'tenant-existing', 'renewal');
   const approved = runtime.api.updateLandlordContractSigningReviewBySessionToken_('server-session', created.data.contract.contract_id, 'approve', '續約完成');
   assert.equal(approved.success, true, approved.code);

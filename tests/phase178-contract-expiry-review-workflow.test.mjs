@@ -44,10 +44,10 @@ assert.match(
 assert.match(
   initiatedContracts,
   /function landlordInitiatedContractConfirmRenewalReview_/,
-  'confirmation must create the tenant invitation only after review'
+  'confirmation must record landlord review before tenant inquiry'
 );
-assert.match(requestsPage, /待房東檢視/);
-assert.match(requestsPage, /確認發送給房客/);
+assert.match(requestsPage, /待房東審查/);
+assert.match(requestsPage, /詢問房客續約意願/);
 assert.match(requestsPage, /landlord_contract_renewal_review_confirm/);
 assert.match(tenantsPage, /contract_end_date/);
 assert.match(tenantsPage, /function formatContractExpiry/);

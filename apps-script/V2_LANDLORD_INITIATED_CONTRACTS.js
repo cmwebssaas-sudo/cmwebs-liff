@@ -26,6 +26,17 @@ const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_TTL_SECONDS_ = 60;
 const V2_LANDLORD_INITIATED_CONTRACT_EXCHANGE_RESERVATION_TTL_SECONDS_ = 600;
 const V2_LANDLORD_INITIATED_CONTRACT_LOCK_ATTEMPTS_ = 3;
 const V2_LANDLORD_INITIATED_CONTRACT_LOCK_WAIT_MS_ = 10000;
+const V2_LANDLORD_INITIATED_CONTRACT_RENEWAL_HEADERS_ = [
+  'renewal_review_status',
+  'renewal_review_prepared_at',
+  'renewal_review_confirmed_at',
+  'renewal_review_reminded_30d_at',
+  'renewal_inquiry_status',
+  'renewal_inquiry_sent_at',
+  'renewal_inquiry_responded_at',
+  'renewal_tenant_intent',
+  'renewal_tenant_intent_at'
+];
 
 function landlordInitiatedContractWithScriptLock_(operation) {
   const lock = LockService.getScriptLock();
@@ -261,6 +272,8 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     previous_contract_id: previousId,
     renewed_to_contract_id: '',
     renewal_review_status: 'pending',
+    renewal_inquiry_status: 'pending',
+    renewal_tenant_intent: 'pending',
     tenant_signing_submission_status: 'pending',
     renewed_from_contract_id: previousId,
     contract_family_id: versionFields.contract_family_id,
@@ -292,6 +305,35 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
   };
 }
 
+function landlordInitiatedContractRenewalDraftInput_(contract, input) {
+  const raw = input || {};
+  const has = function (key) { return Object.prototype.hasOwnProperty.call(raw, key); };
+  const numberValue = function (key, fallback) { return has(key) ? landlordInitiatedContractNumber_(raw[key]) : landlordInitiatedContractNumber_(fallback); };
+  const specialOfferEnabled = has('special_offer_enabled') ? landlordInitiatedContractBoolean_(raw.special_offer_enabled) : landlordInitiatedContractBoolean_(contract.special_offer_enabled);
+  const defaultClause = '租約期滿如不再續約，提前30個日曆日通知，免收違約金。';
+  const specialOfferClause = specialOfferEnabled
+    ? landlordInitiatedContractText_(has('special_offer_clause') ? raw.special_offer_clause : contract.special_offer_clause) || defaultClause
+    : '';
+  return Object.assign({}, contract, {
+    start_date: landlordInitiatedContractText_(has('start_date') ? raw.start_date : contract.start_date || contract.contract_start_date),
+    contract_start_date: landlordInitiatedContractText_(has('start_date') ? raw.start_date : contract.start_date || contract.contract_start_date),
+    end_date: landlordInitiatedContractText_(has('end_date') ? raw.end_date : contract.end_date || contract.contract_end_date),
+    contract_end_date: landlordInitiatedContractText_(has('end_date') ? raw.end_date : contract.end_date || contract.contract_end_date),
+    rent_amount: numberValue('rent_amount', contract.rent_amount || contract.monthly_rent),
+    monthly_rent: numberValue('rent_amount', contract.rent_amount || contract.monthly_rent),
+    management_fee: numberValue('management_fee', contract.management_fee || contract.monthly_management_fee),
+    monthly_management_fee: numberValue('management_fee', contract.management_fee || contract.monthly_management_fee),
+    deposit_amount: numberValue('deposit_amount', contract.deposit_amount),
+    payment_day: Math.round(numberValue('payment_day', contract.payment_day || contract.monthly_payment_day)),
+    monthly_payment_day: Math.round(numberValue('payment_day', contract.payment_day || contract.monthly_payment_day)),
+    special_offer_enabled: specialOfferEnabled,
+    special_offer_notice_days: Math.round(numberValue('special_offer_notice_days', contract.special_offer_notice_days || 30)) || 30,
+    special_offer_applies_to: landlordInitiatedContractText_(has('special_offer_applies_to') ? raw.special_offer_applies_to : contract.special_offer_applies_to) || 'expiry_non_renewal',
+    special_offer_waiver_type: landlordInitiatedContractText_(has('special_offer_waiver_type') ? raw.special_offer_waiver_type : contract.special_offer_waiver_type) || 'breach_penalty_waived',
+    special_offer_clause: specialOfferClause
+  });
+}
+
 function landlordInitiatedContractUpdateRenewalDraft_(access, contractId, input) {
   return landlordInitiatedContractWithScriptLock_(function() {
     return landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId, input);
@@ -310,29 +352,25 @@ function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId
   if (!contract) return landlordInitiatedContractError_('CONTRACT_NOT_FOUND', '找不到續約草稿');
   if (landlordInitiatedContractText_(contract.signing_mode).toLowerCase() !== 'renewal' ||
       landlordInitiatedContractText_(contract.contract_status).toLowerCase() !== 'pending_landlord_review' ||
+      landlordInitiatedContractText_(contract.renewal_review_status).toLowerCase() === 'confirmed' ||
       ['landlord_initiated', 'expiry_prepared_renewal'].indexOf(landlordInitiatedContractText_(contract.contract_origin).toLowerCase()) === -1 ||
       landlordInitiatedContractText_(contract.invite_id)) {
     return landlordInitiatedContractError_('CONTRACT_DRAFT_NOT_EDITABLE', '續約草稿已送出或已完成，請建立新的更正續約版本');
   }
 
-  const rawInput = input || {};
-  const startDate = landlordInitiatedContractText_(rawInput.start_date);
-  const endDate = landlordInitiatedContractText_(rawInput.end_date);
+  const documentInput = landlordInitiatedContractRenewalDraftInput_(contract, input);
+  const startDate = documentInput.start_date;
+  const endDate = documentInput.end_date;
   if (!landlordInitiatedContractIsIsoDate_(startDate) || !landlordInitiatedContractIsIsoDate_(endDate) || endDate < startDate) {
     return landlordInitiatedContractError_('CONTRACT_DRAFT_DATE_INVALID', '租期日期無效，請使用 YYYY-MM-DD 且結束日不可早於開始日');
   }
+  if (documentInput.rent_amount <= 0 || documentInput.deposit_amount <= 0 || documentInput.payment_day < 1 || documentInput.payment_day > 31 || documentInput.management_fee < 0) return landlordInitiatedContractError_('CONTRACT_DRAFT_AMOUNT_INVALID', '租金、押金、管理費或付款日無效');
 
   const room = landlordInitiatedContractFindScopedRow_(schema.data.rooms, access, 'room_id', contract.room_id);
   const property = landlordInitiatedContractFindScopedRow_(schema.data.properties, access, 'property_id', contract.property_id);
   if (!room || !property) return landlordInitiatedContractError_('RENEWAL_TARGET_NOT_FOUND', '續約房屋資料不存在');
 
   const updatedAt = new Date().toISOString();
-  const documentInput = Object.assign({}, contract, {
-    start_date: startDate,
-    contract_start_date: startDate,
-    end_date: endDate,
-    contract_end_date: endDate
-  });
   const contractContent = landlordInitiatedContractBuildDocument_(
     access,
     property,
@@ -341,10 +379,22 @@ function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId
     contract.tenant_name || contract.name || ''
   );
   landlordInitiatedContractUpdate_(schema.data.contracts, contract, {
-    start_date: startDate,
-    contract_start_date: startDate,
-    end_date: endDate,
-    contract_end_date: endDate,
+    start_date: documentInput.start_date,
+    contract_start_date: documentInput.contract_start_date,
+    end_date: documentInput.end_date,
+    contract_end_date: documentInput.contract_end_date,
+    rent_amount: documentInput.rent_amount,
+    monthly_rent: documentInput.monthly_rent,
+    management_fee: documentInput.management_fee,
+    monthly_management_fee: documentInput.monthly_management_fee,
+    deposit_amount: documentInput.deposit_amount,
+    payment_day: documentInput.payment_day,
+    monthly_payment_day: documentInput.monthly_payment_day,
+    special_offer_enabled: documentInput.special_offer_enabled,
+    special_offer_notice_days: documentInput.special_offer_notice_days,
+    special_offer_applies_to: documentInput.special_offer_applies_to,
+    special_offer_waiver_type: documentInput.special_offer_waiver_type,
+    special_offer_clause: documentInput.special_offer_clause,
     contract_content: contractContent,
     updated_at: updatedAt
   });
@@ -702,6 +752,8 @@ function landlordInitiatedContractIsRequest_(body) {
     'landlord_contract_initiate_renewal',
     'landlord_contract_renewal_draft_update',
     'landlord_contract_renewal_review_confirm',
+    'landlord_contract_renewal_inquiry_send',
+    'landlord_contract_renewal_send',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
   ].indexOf(landlordInitiatedContractText_(request && request.action)) >= 0;
@@ -760,7 +812,88 @@ function landlordInitiatedContractHandlePostDirect_(request) {
   if (action === 'landlord_contract_initiate_renewal') return landlordInitiatedContractCreateRenewal_(access, input);
   if (action === 'landlord_contract_renewal_draft_update') return landlordInitiatedContractUpdateRenewalDraft_(access, input.contract_id, input);
   if (action === 'landlord_contract_renewal_review_confirm') return landlordInitiatedContractConfirmRenewalReview_(access, input.contract_id);
+  if (action === 'landlord_contract_renewal_inquiry_send') return landlordInitiatedContractSendRenewalInquiry_(access, input.contract_id);
+  if (action === 'landlord_contract_renewal_send') return landlordInitiatedContractSendRenewal_(access, input.contract_id);
   return landlordInitiatedContractError_('INVALID_ACTION', '不支援的合約邀請操作');
+}
+
+function landlordInitiatedContractRenewalReviewTransition_(contract, nowIso) {
+  const status = landlordInitiatedContractText_(contract && contract.contract_status).toLowerCase();
+  if (landlordInitiatedContractText_(contract && contract.signing_mode).toLowerCase() !== 'renewal' || status !== 'pending_landlord_review' || landlordInitiatedContractText_(contract && contract.invite_id)) {
+    return landlordInitiatedContractError_('CONTRACT_REVIEW_NOT_READY', '此合約目前不可完成房東審查');
+  }
+  const timestamp = landlordInitiatedContractText_(nowIso) || new Date().toISOString();
+  return {
+    success: true,
+    code: 'OK',
+    create_invite: false,
+    updates: {
+      renewal_review_status: 'confirmed',
+      renewal_review_confirmed_at: timestamp,
+      renewal_inquiry_status: landlordInitiatedContractText_(contract && contract.renewal_inquiry_status) || 'pending',
+      renewal_tenant_intent: landlordInitiatedContractText_(contract && contract.renewal_tenant_intent) || 'pending',
+      updated_at: timestamp
+    }
+  };
+}
+
+function landlordInitiatedContractRenewalInquiryTransition_(contract, nowIso) {
+  const status = landlordInitiatedContractText_(contract && contract.contract_status).toLowerCase();
+  const review = landlordInitiatedContractText_(contract && contract.renewal_review_status).toLowerCase();
+  const inquiry = landlordInitiatedContractText_(contract && contract.renewal_inquiry_status).toLowerCase();
+  const intent = landlordInitiatedContractText_(contract && contract.renewal_tenant_intent).toLowerCase();
+  if (landlordInitiatedContractText_(contract && contract.signing_mode).toLowerCase() !== 'renewal' || status !== 'pending_landlord_review' || review !== 'confirmed' || landlordInitiatedContractText_(contract && contract.invite_id)) {
+    return landlordInitiatedContractError_('RENEWAL_REVIEW_REQUIRED', '請先完成房東審查確認');
+  }
+  if (inquiry === 'sent' || inquiry === 'responded') return landlordInitiatedContractError_('RENEWAL_INQUIRY_ALREADY_SENT', '已詢問房客續約意願');
+  if (intent === 'accepted' || intent === 'declined') return landlordInitiatedContractError_('RENEWAL_TENANT_INTENT_ALREADY_RECORDED', '房客續約意願已記錄');
+  const timestamp = landlordInitiatedContractText_(nowIso) || new Date().toISOString();
+  return {
+    success: true,
+    code: 'OK',
+    updates: {
+      renewal_inquiry_status: 'sent',
+      renewal_inquiry_sent_at: timestamp,
+      renewal_tenant_intent: 'pending',
+      updated_at: timestamp
+    }
+  };
+}
+
+function landlordInitiatedContractRenewalIntentTransition_(contract, decision, nowIso) {
+  const status = landlordInitiatedContractText_(contract && contract.contract_status).toLowerCase();
+  const review = landlordInitiatedContractText_(contract && contract.renewal_review_status).toLowerCase();
+  const inquiry = landlordInitiatedContractText_(contract && contract.renewal_inquiry_status).toLowerCase();
+  const normalizedDecision = landlordInitiatedContractText_(decision).toLowerCase();
+  if (landlordInitiatedContractText_(contract && contract.signing_mode).toLowerCase() !== 'renewal' || status !== 'pending_landlord_review' || review !== 'confirmed' || ['sent', 'responded'].indexOf(inquiry) === -1 || landlordInitiatedContractText_(contract && contract.invite_id)) {
+    return landlordInitiatedContractError_('RENEWAL_INQUIRY_NOT_READY', '目前沒有可回覆的續約詢問');
+  }
+  if (['accepted', 'declined'].indexOf(normalizedDecision) === -1) return landlordInitiatedContractError_('RENEWAL_INTENT_INVALID', '房客續約意願無效');
+  const existing = landlordInitiatedContractText_(contract && contract.renewal_tenant_intent).toLowerCase();
+  if (existing === normalizedDecision) return { success: true, code: 'RENEWAL_INTENT_ALREADY_RECORDED', updates: {} };
+  if (existing === 'accepted' || existing === 'declined') return landlordInitiatedContractError_('RENEWAL_INTENT_ALREADY_RECORDED', '房客續約意願已記錄');
+  const timestamp = landlordInitiatedContractText_(nowIso) || new Date().toISOString();
+  return {
+    success: true,
+    code: 'OK',
+    updates: {
+      renewal_inquiry_status: 'responded',
+      renewal_inquiry_responded_at: timestamp,
+      renewal_tenant_intent: normalizedDecision,
+      renewal_tenant_intent_at: timestamp,
+      updated_at: timestamp
+    }
+  };
+}
+
+function landlordInitiatedContractRenewalSendGuard_(contract) {
+  const status = landlordInitiatedContractText_(contract && contract.contract_status).toLowerCase();
+  const review = landlordInitiatedContractText_(contract && contract.renewal_review_status).toLowerCase();
+  const inquiry = landlordInitiatedContractText_(contract && contract.renewal_inquiry_status).toLowerCase();
+  const intent = landlordInitiatedContractText_(contract && contract.renewal_tenant_intent).toLowerCase();
+  if (landlordInitiatedContractText_(contract && contract.signing_mode).toLowerCase() !== 'renewal' || status !== 'pending_landlord_review' || review !== 'confirmed' || ['sent', 'responded'].indexOf(inquiry) === -1 || landlordInitiatedContractText_(contract && contract.invite_id)) return landlordInitiatedContractError_('RENEWAL_REVIEW_REQUIRED', '請先完成房東審查及詢問房客');
+  if (intent !== 'accepted') return landlordInitiatedContractError_('RENEWAL_TENANT_INTENT_REQUIRED', '房客尚未同意續約');
+  return { success: true, code: 'OK' };
 }
 
 function landlordInitiatedContractConfirmRenewalReview_(access, contractId) {
@@ -773,7 +906,51 @@ function landlordInitiatedContractConfirmRenewalReview_(access, contractId) {
       return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contractId) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
     });
     if (!contract) return landlordInitiatedContractError_('CONTRACT_NOT_FOUND', '找不到續約草稿');
-    if (landlordInitiatedContractText_(contract.signing_mode) !== 'renewal' || landlordInitiatedContractText_(contract.contract_status) !== 'pending_landlord_review') return landlordInitiatedContractError_('CONTRACT_REVIEW_NOT_READY', '此合約目前不可發送給房客');
+    const transition = landlordInitiatedContractRenewalReviewTransition_(contract, new Date().toISOString());
+    if (!transition.success) return transition;
+    landlordInitiatedContractUpdate_(schema.data.contracts, contract, transition.updates);
+    Object.assign(contract, transition.updates);
+    return { success: true, code: 'OK', data: { contract: landlordInitiatedContractPublicContract_(contract, {}, {}), invite: null, next_action: 'landlord_contract_renewal_inquiry_send' } };
+  });
+}
+
+function landlordInitiatedContractSendRenewalInquiry_(access, contractId) {
+  let result;
+  result = landlordInitiatedContractWithScriptLock_(function() {
+    if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
+    const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+    if (!schema.success) return schema;
+    const workspaceId = landlordInitiatedContractWorkspaceId_(access);
+    const contract = landlordInitiatedContractRows_(schema.data.contracts).find(function(row) {
+      return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contractId) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+    });
+    if (!contract) return landlordInitiatedContractError_('CONTRACT_NOT_FOUND', '找不到續約草稿');
+    const transition = landlordInitiatedContractRenewalInquiryTransition_(contract, new Date().toISOString());
+    if (!transition.success) return transition;
+    const tenantLineUserId = landlordInitiatedContractText_(contract.tenant_line_user_id);
+    if (!tenantLineUserId) return landlordInitiatedContractError_('TENANT_LINE_UID_MISSING', '房客尚未綁定 LINE，無法發送續約詢問');
+    if (typeof pushLineTextMessage_ !== 'function') return landlordInitiatedContractError_('LINE_PUSH_MODULE_REQUIRED', '找不到 LINE 發送模組');
+    const push = pushLineTextMessage_(tenantLineUserId, landlordInitiatedContractRenewalInquiryMessage_(contract));
+    if (!push || push.success !== true) return landlordInitiatedContractError_((push && push.code) || 'LINE_PUSH_FAILED', (push && push.message) || '續約詢問發送失敗');
+    landlordInitiatedContractUpdate_(schema.data.contracts, contract, transition.updates);
+    Object.assign(contract, transition.updates);
+    return { success: true, code: 'OK', data: { contract: landlordInitiatedContractPublicContract_(contract, {}, {}), notification: push, next_action: 'tenant_contract_renewal_intent' } };
+  });
+  return result;
+}
+
+function landlordInitiatedContractSendRenewal_(access, contractId) {
+  return landlordInitiatedContractWithScriptLock_(function() {
+    if (!landlordInitiatedContractAccessValid_(access)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
+    const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+    if (!schema.success) return schema;
+    const workspaceId = landlordInitiatedContractWorkspaceId_(access);
+    const contract = landlordInitiatedContractRows_(schema.data.contracts).find(function(row) {
+      return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contractId) && landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+    });
+    if (!contract) return landlordInitiatedContractError_('CONTRACT_NOT_FOUND', '找不到續約草稿');
+    const guard = landlordInitiatedContractRenewalSendGuard_(contract);
+    if (!guard.success) return guard;
     const now = new Date();
     const nowIso = now.toISOString();
     const confirmationCode = landlordInitiatedContractConfirmationCode_();
@@ -784,10 +961,64 @@ function landlordInitiatedContractConfirmRenewalReview_(access, contractId) {
       claimed_at: '', claimed_line_user_id: '', cancelled_at: '', created_at: nowIso, updated_at: nowIso
     };
     landlordInitiatedContractAppend_(schema.data.invites, invite);
-    landlordInitiatedContractUpdate_(schema.data.contracts, contract, { invite_id: invite.invite_id, contract_status: 'pending_tenant_signature', status: 'pending', renewal_review_status: 'confirmed', renewal_review_confirmed_at: nowIso, updated_at: nowIso });
+    landlordInitiatedContractUpdate_(schema.data.contracts, contract, { invite_id: invite.invite_id, contract_status: 'pending_tenant_signature', status: 'pending', renewal_review_status: 'confirmed', updated_at: nowIso });
     contract.invite_id = invite.invite_id;
     contract.contract_status = 'pending_tenant_signature';
+    contract.status = 'pending';
+    contract.updated_at = nowIso;
     return { success: true, code: 'OK', data: { contract: landlordInitiatedContractPublicContract_(contract, {}, invite), invite: landlordInitiatedContractPublicInvite_(invite, confirmationCode) } };
+  });
+}
+
+function landlordInitiatedContractRenewalInquiryMessage_(contract) {
+  return [
+    '【CMWebs 續約詢問】',
+    '',
+    (contract.property_name || '租屋') + ' ' + (contract.room_name || '') + ' 的租約即將到期。',
+    '房東已準備好新的續約合約，請開啟 CMWebs 房客端查看內容並回覆續約意願。',
+    '新租期：' + (contract.start_date || contract.contract_start_date || '-') + ' ～ ' + (contract.end_date || contract.contract_end_date || '-')
+  ].join('\n');
+}
+
+function landlordInitiatedContractUpdateRenewalIntentByLineUid_(tenantLineUserId, contractId, decision) {
+  let result;
+  result = landlordInitiatedContractWithScriptLock_(function() {
+    const normalizedLineUserId = landlordInitiatedContractText_(tenantLineUserId);
+    const normalizedContractId = landlordInitiatedContractText_(contractId);
+    if (!normalizedLineUserId || !normalizedContractId) return landlordInitiatedContractError_('RENEWAL_INTENT_INPUT_REQUIRED', '缺少房客或合約資料');
+    const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+    if (!schema.success) return schema;
+    const contract = landlordInitiatedContractRows_(schema.data.contracts).find(function(row) {
+      return landlordInitiatedContractText_(row.contract_id) === normalizedContractId && landlordInitiatedContractText_(row.tenant_line_user_id) === normalizedLineUserId;
+    });
+    if (!contract) return landlordInitiatedContractError_('RENEWAL_CONTRACT_ACCESS_DENIED', '找不到可回覆的續約合約');
+    const transition = landlordInitiatedContractRenewalIntentTransition_(contract, decision, new Date().toISOString());
+    if (!transition.success) return transition;
+    if (Object.keys(transition.updates).length) {
+      landlordInitiatedContractUpdate_(schema.data.contracts, contract, transition.updates);
+      Object.assign(contract, transition.updates);
+    }
+    return { success: true, code: transition.code, data: { contract: landlordInitiatedContractPublicContract_(contract, {}, {}), intent: contract.renewal_tenant_intent } };
+  });
+  if (result && result.success === true && result.data && result.data.contract) landlordInitiatedContractNotifyRenewalIntent_(result.data.contract);
+  return result;
+}
+
+function landlordInitiatedContractNotifyRenewalIntent_(contract) {
+  if (typeof workspaceNotifyTeam_ !== 'function') return { success: false, code: 'WORKSPACE_NOTIFICATION_MODULE_REQUIRED' };
+  const accepted = landlordInitiatedContractText_(contract.renewal_tenant_intent).toLowerCase() === 'accepted';
+  return workspaceNotifyTeam_({
+    workspace_id: contract.workspace_id,
+    landlord_id: contract.landlord_id,
+    event_type: 'contract',
+    title: accepted ? '房客已同意續約' : '房客暫不續約',
+    body: (contract.room_name || '房間') + ' 的房客已回覆續約意願：' + (accepted ? '同意續約，請由房東發送簽署合約。' : '暫不續約。'),
+    target_type: 'contract',
+    target_id: contract.contract_id,
+    action_url: 'landlord-contract-requests.html',
+    severity: accepted ? 'info' : 'warning',
+    source: 'landlord_renewal_consent',
+    fallback_line_user_id: contract.landlord_line_user_id
   });
 }
 
@@ -848,9 +1079,23 @@ function landlordInitiatedContractSchema_(ss) {
   };
   const required = ['properties', 'rooms', 'users', 'tenants', 'contracts'].filter(function (key) { return !sheets[key]; });
   if (required.length) return landlordInitiatedContractError_('CONTRACT_INVITE_SCHEMA_NOT_READY', '缺少合約邀請資料表');
+  const renewalSchema = landlordInitiatedContractEnsureRenewalHeaders_(sheets.contracts);
+  if (!renewalSchema.success) return renewalSchema;
   const missing = V2_LANDLORD_INITIATED_CONTRACT_INVITE_HEADERS_.filter(function (header) { return landlordInitiatedContractHeaders_(sheets.invites).indexOf(header) < 0; });
   if (missing.length) return landlordInitiatedContractError_('CONTRACT_INVITE_SCHEMA_NOT_READY', '合約邀請欄位尚未就緒');
   return { success: true, code: 'OK', data: sheets };
+}
+
+function landlordInitiatedContractEnsureRenewalHeaders_(contractSheet) {
+  const headers = landlordInitiatedContractHeaders_(contractSheet);
+  const missing = V2_LANDLORD_INITIATED_CONTRACT_RENEWAL_HEADERS_.filter(function (header) {
+    return headers.indexOf(header) < 0;
+  });
+  if (!missing.length) return { success: true, code: 'OK' };
+  if (!contractSheet || typeof contractSheet.getRange !== 'function') return landlordInitiatedContractError_('CONTRACT_INVITE_SCHEMA_NOT_READY', '續約流程欄位尚未就緒');
+  const startColumn = Math.max(contractSheet.getLastColumn(), 1) + 1;
+  contractSheet.getRange(1, startColumn, 1, missing.length).setValues([missing]);
+  return { success: true, code: 'OK', data: { added_headers: missing } };
 }
 
 function landlordInitiatedContractEnsureInviteSheet_(ss) {
@@ -924,7 +1169,7 @@ function landlordInitiatedContractContractObject_(access, actor, property, room,
     property_id: property.property_id || '', property_name: property.property_name || room.property_name || '', property_address: property.property_address || property.address || '', room_id: room.room_id || '', room_name: room.room_name || '',
     start_date: input.start_date, contract_start_date: input.start_date, end_date: input.end_date, contract_end_date: input.end_date,
     rent_amount: input.rent_amount, monthly_rent: input.rent_amount, management_fee: input.management_fee, monthly_management_fee: input.management_fee, deposit_months: input.deposit_months, deposit_amount: input.deposit_amount, payment_day: input.payment_day, monthly_payment_day: input.monthly_payment_day || input.payment_day, electricity_fee_rate: input.electricity_fee_rate, equipment_fee_rate: input.equipment_fee_rate, other_fixed_fee_amount: input.other_fixed_fee_amount, other_fixed_fee_note: input.other_fixed_fee_note, terms_snapshot_json: input.terms_snapshot_json, term_months: input.term_months, special_offer_enabled: input.special_offer_enabled, special_offer_notice_days: input.special_offer_notice_days, special_offer_applies_to: input.special_offer_applies_to, special_offer_waiver_type: input.special_offer_waiver_type, special_offer_clause: input.special_offer_clause, identity_document_mode: input.identity_document_mode,
-    contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending', signing_mode: '', contract_origin: 'landlord_initiated', invite_id: '', contract_content: '', contract_version: 'fixed-google-doc-template-1', previous_contract_id: '', renewed_from_contract_id: '', renewed_to_contract_id: '', renewal_request_id: '', contract_family_id: '', renewal_sequence: '', special_offer_decision: '', special_offer_notice_date: '', special_offer_days_before_expiry: '', special_offer_decision_reason: '', tenant_signing_submission_status: 'pending',
+    contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending', signing_mode: '', contract_origin: 'landlord_initiated', invite_id: '', contract_content: '', contract_version: 'fixed-google-doc-template-1', previous_contract_id: '', renewed_from_contract_id: '', renewed_to_contract_id: '', renewal_request_id: '', contract_family_id: '', renewal_sequence: '', special_offer_decision: '', special_offer_notice_date: '', special_offer_days_before_expiry: '', special_offer_decision_reason: '', tenant_signing_submission_status: 'pending', renewal_review_status: '', renewal_review_prepared_at: '', renewal_review_confirmed_at: '', renewal_inquiry_status: '', renewal_inquiry_sent_at: '', renewal_inquiry_responded_at: '', renewal_tenant_intent: '', renewal_tenant_intent_at: '',
     created_by_user_id: actor.user_id, created_by_membership_id: actor.membership_id, created_at: '', updated_at: '', note: input.note
   };
   return Object.assign(base, extra || {});
@@ -956,7 +1201,10 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
           end_date: input.end_date,
           rent_amount: input.rent_amount,
           management_fee: input.management_fee,
-          deposit_amount: input.deposit_amount
+          deposit_amount: input.deposit_amount,
+          special_offer_enabled: input.special_offer_enabled,
+          special_offer_notice_days: input.special_offer_notice_days,
+          special_offer_clause: input.special_offer_clause
         },
         {
           tenant_name: tenantName || '',
@@ -965,9 +1213,11 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
       );
 
     if (fixedPreview && fixedPreview.available === true) {
-      return landlordInitiatedContractText_(
-        fixedPreview.content
-      );
+      const fixedContent = landlordInitiatedContractText_(fixedPreview.content);
+      const clause = landlordInitiatedContractBoolean_(input.special_offer_enabled) ? landlordInitiatedContractText_(input.special_offer_clause) : '';
+      return clause && fixedContent.indexOf(clause) === -1
+        ? fixedContent + '\n\n續約優惠條款：' + clause
+        : fixedContent;
     }
 
     return '';
@@ -1000,6 +1250,10 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
     '',
     '第五條　付款方式',
     '承租人應於每月 ' + input.payment_day + ' 日前完成當期租金及應付費用。',
+    '',
+    input.special_offer_enabled && input.special_offer_clause
+      ? '續約優惠條款：' + input.special_offer_clause
+      : '',
     '',
     '第六條　使用與修繕',
     '承租人應以善良管理人之注意使用租賃標的，不得違法、轉租或為影響建物及他人安全之使用。',
