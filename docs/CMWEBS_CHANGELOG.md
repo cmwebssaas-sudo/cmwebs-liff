@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-01 — Landlord homepage timeout corrective release
+
+- Reused the request-local runtime snapshot in landlord payment/message reads,
+  removing duplicate Google Sheets reads during `landlord_home_bootstrap`.
+- Added Phase 197 regression coverage for the read-cache boundary. No contract,
+  billing, Sheet row, Property, Trigger, or LINE data was changed.
+- PR #79 merged the repair as `d9c371c`; Apps Script immutable Version 142 now
+  serves the existing fixed Web App deployment and Pages workflow
+  `33483720012` completed successfully.
+- Public page/API readback passed. Authenticated LINE/mobile dashboard UAT
+  remains `HUMAN_REQUIRED`.
+
 ## 2026-09-01 — Landlord-led renewal consent flow (formal release)
 
 - Changed expiry renewals to a landlord-led sequence: the system prepares a

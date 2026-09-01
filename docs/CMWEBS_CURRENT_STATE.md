@@ -7,6 +7,27 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-01 landlord homepage timeout corrective release
+
+- Fixed the landlord homepage bootstrap read path so the payment and message
+  read helpers reuse the existing request-local runtime snapshot instead of
+  reading the same Google Sheets again within one request. This is a read-only
+  performance repair; no contract, billing, Sheet row, Property, Trigger, or
+  LINE data was changed.
+- PR #79 merged the repair into GitHub `main` as commit `d9c371c`.
+- Apps Script was pushed to the verified production project and the existing
+  fixed Web App deployment was updated to immutable Version 142. Version 139
+  remains the recorded previous release target; the Web App URL was preserved.
+- GitHub Pages workflow `33483720012` completed successfully for `d9c371c`.
+  Public `landlord-home.html` readback returned HTTP 200 and retained the
+  timeout-retry and dashboard request markers. A safe anonymous API readback
+  returned HTTP 200 with the expected JSONP callback and access-denied result.
+- Local verification passed: full Node suite `66/66`, project validation
+  `71/71` routes and handlers, duplicate declarations `0`, credential scan
+  `0`, and `git diff --check`.
+- Authenticated LINE/mobile 603 UAT remains `HUMAN_REQUIRED`; the anonymous
+  readback does not prove the logged-in landlord's full dashboard data load.
+
 ## 2026-09-01 landlord-led renewal consent formal release
 
 - The isolated candidate changes expiry renewal handling to a landlord-led
