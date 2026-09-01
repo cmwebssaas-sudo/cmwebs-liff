@@ -61,6 +61,35 @@ assert.doesNotMatch(
   /end\.setDate\(end\.getDate\(\) \+ 1\)/,
   'renewal form must not add an extra day before prefilling the start date'
 );
+
+const renewalSourceResolver = renewalFormSource.match(
+  /function renewalSourceForRoom_\(room\)[\s\S]*?function applyRenewalSourceToForm_/
+)?.[0] || '';
+assert.ok(
+  renewalSourceResolver.indexOf('const source = PAGE_DATA && PAGE_DATA.renewal_source;') <
+    renewalSourceResolver.indexOf('const existing = room && room.existing_contract;'),
+  'renewal form must prefer the complete renewal source over the room summary'
+);
+
+const existingContractProjection = onboardingSource.match(
+  /existing_contract:\s*currentContract[\s\S]*?:\s*null/
+)?.[0] || '';
+for (const field of [
+  'rent_amount',
+  'management_fee',
+  'deposit_months',
+  'deposit_amount',
+  'payment_day',
+  'electricity_fee_rate',
+  'equipment_fee_rate'
+]) {
+  assert.match(
+    existingContractProjection,
+    new RegExp(`\\b${field}\\s*:`),
+    `room renewal source must carry ${field} from the predecessor contract`
+  );
+}
+
 assert.match(
   onboardingSource,
   /end_date:\s*tenantLeaseFormatDate_\(\s*renewalSource\.end_date\s*\|\|\s*renewalSource\.contract_end_date\s*\)/,

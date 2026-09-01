@@ -308,6 +308,56 @@ function getLandlordTenantCreateInitByLineUid_(
                         currentContract
                           .tenant_name ||
                         '',
+                      rent_amount:
+                        currentContract
+                          .rent_amount ||
+                        currentContract
+                          .monthly_rent ||
+                        '',
+                      management_fee:
+                        currentContract
+                          .management_fee ||
+                        currentContract
+                          .monthly_management_fee ||
+                        '',
+                      deposit_months:
+                        currentContract
+                          .deposit_months ||
+                        '',
+                      deposit_amount:
+                        currentContract
+                          .deposit_amount ||
+                        '',
+                      payment_day:
+                        currentContract
+                          .payment_day ||
+                        currentContract
+                          .monthly_payment_day ||
+                        '',
+                      electricity_fee_rate:
+                        currentContract
+                          .electricity_fee_rate ||
+                        '',
+                      equipment_fee_rate:
+                        currentContract
+                          .equipment_fee_rate ||
+                        '',
+                      special_offer_enabled:
+                        currentContract
+                          .special_offer_enabled ||
+                        false,
+                      special_offer_notice_days:
+                        currentContract
+                          .special_offer_notice_days ||
+                        30,
+                      special_offer_clause:
+                        currentContract
+                          .special_offer_clause ||
+                        '',
+                      note:
+                        currentContract
+                          .note ||
+                        '',
                       start_date:
                         currentContract
                           .start_date ||

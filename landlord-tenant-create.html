@@ -2250,10 +2250,10 @@
     }
 
     function renewalSourceForRoom_(room) {
-      const existing = room && room.existing_contract;
-      if (existing && rawText(existing.contract_id).trim() === PREVIOUS_CONTRACT_ID) return existing;
       const source = PAGE_DATA && PAGE_DATA.renewal_source;
       if (source && rawText(source.contract_id).trim() === PREVIOUS_CONTRACT_ID && rawText(source.room_id).trim() === rawText(room && room.room_id).trim()) return source;
+      const existing = room && room.existing_contract;
+      if (existing && rawText(existing.contract_id).trim() === PREVIOUS_CONTRACT_ID) return existing;
       return null;
     }
 
