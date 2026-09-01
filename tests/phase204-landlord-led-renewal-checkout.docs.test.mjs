@@ -13,6 +13,7 @@ assert.match(apiDocs, /原合約.*(?:日期|全文).*不.*覆寫/);
 assert.match(matrix, /Phase 202/);
 assert.match(matrix, /UNVERIFIED/);
 assert.match(changelog, /房東主導續約/);
-assert.match(changelog, /未部署/);
+assert.match(changelog, /正式部署/);
+assert.match(changelog, /HUMAN_REQUIRED/);
 
 console.log('Phase 204 landlord-led renewal checkout documentation tests passed.');

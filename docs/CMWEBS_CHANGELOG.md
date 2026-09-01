@@ -2,7 +2,7 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-02 — 房東主導續約與退房 local candidate (not deployed)
+## 2026-09-02 — 房東主導續約與退房正式部署
 
 - Implemented the approved landlord-led state machine: landlord review
   automatically asks the tenant; tenant acceptance automatically creates one
@@ -15,10 +15,19 @@
 - Added additive checkout fields and preserved legacy backend actions for old
   clients. Tenant renewal/termination pages no longer expose a new application
   submit flow; historical request data remains readable.
-- Local candidate verification covers Phases 202–204 and the repository
-  validator target. This candidate is **未部署**: Apps Script serving, Google
-  Sheets schema, GitHub Pages, authenticated landlord mobile, tenant LINE,
-  scheduled execution and Production UAT are `HUMAN_REQUIRED` / `UNVERIFIED`.
+- PR #90 merged the release into GitHub `main` as `3d8647d`. Apps Script
+  immutable Version 147 now serves the existing Web App deployment, with
+  Version 139 retained as rollback; the Web App URL was preserved.
+- The additive-only renewal/checkout schema migration completed in the
+  authenticated Apps Script editor. No contract or tenant rows, Properties,
+  triggers, or LINE data were changed.
+- GitHub Pages workflow `33567151637` completed successfully. Public readback
+  returned HTTP 200 for the six changed/release pages and confirmed cache key
+  `20260902-landlord-led-renewal-checkout-v1`, checkout entry, automatic
+  renewal copy, and passive tenant pages.
+- Local validator and full Node suite passed (`83/83` routes and handlers;
+  `73/73` tests). Authenticated LINE/mobile renewal, signing, and checkout UAT
+  remain `HUMAN_REQUIRED` / `UNVERIFIED`.
 
 ## 2026-09-02 — Expired tenant renewal recovery (formal corrective release)
 
