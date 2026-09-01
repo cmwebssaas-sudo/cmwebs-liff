@@ -210,6 +210,7 @@ const API_ROOM_HEADERS = ['room_id', 'workspace_id', 'landlord_id', 'property_id
 const API_TENANT_HEADERS = ['tenant_id', 'tenant_user_id', 'user_id', 'workspace_id', 'landlord_id', 'tenant_line_user_id', 'line_user_id', 'tenant_name', 'name', 'room_id', 'current_contract_id', 'tenant_binding_status', 'binding_status', 'account_status', 'tenant_account_status', 'updated_at'];
 const API_INVITE_HEADERS = ['invite_id', 'workspace_id', 'contract_id', 'room_id', 'landlord_user_id', 'landlord_membership_id', 'claim_code_hash', 'status', 'expires_at', 'claimed_at', 'claimed_line_user_id', 'cancelled_at', 'created_at', 'updated_at'];
 const API_BILL_HEADERS = ['bill_id', 'workspace_id', 'landlord_id', 'tenant_id', 'contract_id', 'room_id', 'bill_month', 'rent_amount', 'electricity_amount', 'equipment_amount', 'payment_status'];
+const API_DOCUMENT_HEADERS = ['document_id', 'workspace_id', 'landlord_id', 'tenant_id', 'contract_id', 'document_type', 'status'];
 const API_SETTLEMENT_HEADERS = [
   'settlement_id', 'workspace_id', 'landlord_id', 'contract_id', 'tenant_id', 'room_id', 'previous_bill_id', 'previous_bill_month',
   'previous_electricity_amount', 'previous_equipment_amount', 'settlement_start_date', 'move_out_date', 'rent_days', 'days_in_month',
@@ -247,6 +248,10 @@ function makeSettlementApiRuntime() {
     V2_contracts: new ApiSheet(API_CONTRACT_HEADERS, [contract]),
     V2_contract_invites: new ApiSheet(API_INVITE_HEADERS, []),
     V2_bills: new ApiSheet(API_BILL_HEADERS, [rowFor(API_BILL_HEADERS, { bill_id: 'bill-2026-08-506', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', room_id: 'R506', bill_month: '2026-08', rent_amount: 7500, electricity_amount: 120, equipment_amount: 80, payment_status: 'unpaid' })]),
+    V2_contract_documents: new ApiSheet(API_DOCUMENT_HEADERS, [
+      rowFor(API_DOCUMENT_HEADERS, { document_id: 'doc-start', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', document_type: 'checkout_start_meter', status: 'stored' }),
+      rowFor(API_DOCUMENT_HEADERS, { document_id: 'doc-end', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', document_type: 'checkout_end_meter', status: 'stored' })
+    ]),
     V2_checkout_settlements: new ApiSheet(API_SETTLEMENT_HEADERS, [])
   };
   const context = {

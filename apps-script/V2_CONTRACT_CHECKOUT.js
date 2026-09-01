@@ -214,6 +214,7 @@ function landlordContractCheckoutSettlementSchema_(ss, ensureSettlementSheet) {
     code: 'OK',
     data: Object.assign({}, schema.data, {
       bills: ss.getSheetByName('V2_bills'),
+      documents: ss.getSheetByName('V2_contract_documents'),
       settlements: settlementSheet
     })
   };
@@ -332,6 +333,19 @@ function landlordContractCheckoutSettlementFindExisting_(sheet, access, contract
   }) || null;
 }
 
+function landlordContractCheckoutSettlementHasStoredDocument_(sheet, access, contract, documentId, documentType) {
+  if (!sheet) return false;
+  return landlordContractCheckoutRows_(sheet).some(function(row) {
+    const status = landlordInitiatedContractText_(row.status || 'stored').toLowerCase();
+    return landlordInitiatedContractText_(row.document_id) === landlordInitiatedContractText_(documentId) &&
+      landlordInitiatedContractText_(row.document_type).toLowerCase() === documentType &&
+      landlordInitiatedContractText_(row.workspace_id) === landlordInitiatedContractWorkspaceId_(access) &&
+      landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contract.contract_id) &&
+      landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id) &&
+      ['stored', 'active'].indexOf(status) >= 0;
+  });
+}
+
 function landlordContractCheckoutSettlementResult_(row, calculation, idempotent) {
   return {
     success: true,
@@ -382,7 +396,9 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
     move_out_date: moveOutDate
   });
   if (!validation.success) return validation;
-  if (!landlordContractCheckoutSettlementText_(normalized.start_meter_document_id) || !landlordContractCheckoutSettlementText_(normalized.end_meter_document_id)) return landlordContractCheckoutSettlementError_('CHECKOUT_METER_DOCUMENTS_REQUIRED', '退房時必須上傳起始與結束電表照片');
+  const startMeterDocumentId = landlordContractCheckoutSettlementText_(normalized.start_meter_document_id || normalized.startMeterDocumentId);
+  const endMeterDocumentId = landlordContractCheckoutSettlementText_(normalized.end_meter_document_id || normalized.endMeterDocumentId);
+  if (!startMeterDocumentId || !endMeterDocumentId || !landlordContractCheckoutSettlementHasStoredDocument_(schema.data.documents, access, contract, startMeterDocumentId, 'checkout_start_meter') || !landlordContractCheckoutSettlementHasStoredDocument_(schema.data.documents, access, contract, endMeterDocumentId, 'checkout_end_meter')) return landlordContractCheckoutSettlementError_('CHECKOUT_METER_DOCUMENTS_REQUIRED', '退房時必須上傳起始與結束電表照片');
   const parsedMoveOut = landlordContractCheckoutSettlementParseDate_(moveOutDate);
   const settlementStartDate = landlordContractCheckoutSettlementFormatDate_(new Date(Date.UTC(parsedMoveOut.getUTCFullYear(), parsedMoveOut.getUTCMonth(), 1)));
   const previousBill = landlordContractCheckoutSettlementFindPreviousBill_(schema.data.bills, access, contract, settlementStartDate);
@@ -404,8 +420,8 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
     previous_bill_month: previousBill ? landlordInitiatedContractText_(previousBill.bill_month) : '',
     electricity_fee_rate: landlordContractCheckoutSettlementNumber_(contract.electricity_fee_rate, 0),
     equipment_fee_rate: landlordContractCheckoutSettlementNumber_(contract.equipment_fee_rate, 0),
-    start_meter_document_id: landlordContractCheckoutSettlementText_(normalized.start_meter_document_id),
-    end_meter_document_id: landlordContractCheckoutSettlementText_(normalized.end_meter_document_id),
+    start_meter_document_id: startMeterDocumentId,
+    end_meter_document_id: endMeterDocumentId,
     settlement_note: landlordContractCheckoutSettlementText_(normalized.settlement_note || normalized.note),
     settlement_status: 'completed',
     idempotency_key: idempotencyKey,
@@ -485,7 +501,7 @@ function landlordContractCheckoutCompleteBySession_(sessionToken, input) {
   let result = landlordInitiatedContractWithScriptLock_(function() {
     const access = landlordContractCheckoutAccessFromSession_(sessionToken, 'contract_write');
     if (!access.success) return access;
-    const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+    const schema = landlordContractCheckoutSettlementSchema_(SpreadsheetApp.getActiveSpreadsheet(), true);
     if (!schema.success) return schema;
     return landlordContractCheckoutApplyUnlocked_(access, schema, input || {});
   });
@@ -523,10 +539,27 @@ function landlordContractCheckoutApplyUnlocked_(access, schema, input) {
   const existingCheckoutStatus = landlordInitiatedContractText_(contract.checkout_status).toLowerCase();
   if (existingCheckoutStatus === 'completed') {
     if (landlordInitiatedContractText_(contract.checkout_idempotency_key) === idempotencyKey) {
-      return landlordContractCheckoutResult_(access, contract, true);
+      const existingSettlement = landlordContractCheckoutSettlementFindExisting_(schema.data.settlements, access, contractId);
+      return landlordContractCheckoutResult_(access, contract, true, existingSettlement ? {
+        settlement_id: landlordInitiatedContractText_(existingSettlement.settlement_id),
+        subtotal_amount: landlordContractCheckoutSettlementRound_(existingSettlement.subtotal_amount),
+        deposit_deduction_amount: landlordContractCheckoutSettlementRound_(existingSettlement.deposit_deduction_amount),
+        tenant_balance_due: landlordContractCheckoutSettlementRound_(existingSettlement.tenant_balance_due),
+        deposit_refund_amount: landlordContractCheckoutSettlementRound_(existingSettlement.deposit_refund_amount)
+      } : null);
     }
     return landlordInitiatedContractError_('CHECKOUT_ALREADY_COMPLETED', '此合約已完成退房');
   }
+
+  const hasStartMeter = normalizedInput.start_meter_reading !== undefined || normalizedInput.startMeterReading !== undefined;
+  const hasEndMeter = normalizedInput.end_meter_reading !== undefined || normalizedInput.endMeterReading !== undefined;
+  const hasDepositDeduction = normalizedInput.deposit_deduction_amount !== undefined || normalizedInput.depositDeductionAmount !== undefined;
+  const hasStartDocument = landlordContractCheckoutSettlementText_(normalizedInput.start_meter_document_id || normalizedInput.startMeterDocumentId);
+  const hasEndDocument = landlordContractCheckoutSettlementText_(normalizedInput.end_meter_document_id || normalizedInput.endMeterDocumentId);
+  if (!hasStartMeter || !hasEndMeter || !hasDepositDeduction || !hasStartDocument || !hasEndDocument) return landlordInitiatedContractError_('CHECKOUT_SETTLEMENT_REQUIRED', '完成退房前必須完成結算、電表度數與兩張電表照片');
+
+  const settlement = landlordContractCheckoutSettlementApplyUnlocked_(access, schema, normalizedInput);
+  if (!settlement.success) return settlement.code === 'CHECKOUT_METER_DOCUMENTS_REQUIRED' ? landlordInitiatedContractError_('CHECKOUT_SETTLEMENT_REQUIRED', '完成退房前必須完成結算、電表度數與兩張電表照片') : settlement;
 
   const room = landlordInitiatedContractFindScopedRow_(schema.data.rooms, access, 'room_id', contract.room_id);
   const tenant = landlordInitiatedContractFindScopedRow_(schema.data.tenants, access, 'tenant_id', contract.tenant_id);
@@ -570,22 +603,30 @@ function landlordContractCheckoutApplyUnlocked_(access, schema, input) {
   });
   if (tenant) landlordInitiatedContractUpdate_(schema.data.tenants, tenant, { current_contract_id: '', updated_at: nowIso });
   landlordContractCheckoutClearViews_(SpreadsheetApp.getActiveSpreadsheet(), contract, nowIso);
-  return landlordContractCheckoutResult_(access, contract, false);
+  return landlordContractCheckoutResult_(access, contract, false, settlement.data);
 }
 
-function landlordContractCheckoutResult_(access, contract, idempotent) {
+function landlordContractCheckoutResult_(access, contract, idempotent, settlement) {
+  const data = {
+    access: access,
+    contract_id: landlordInitiatedContractText_(contract.contract_id),
+    tenant_id: landlordInitiatedContractText_(contract.tenant_id),
+    checkout_status: landlordInitiatedContractText_(contract.checkout_status),
+    checkout_source: landlordInitiatedContractText_(contract.checkout_source),
+    move_out_date: landlordInitiatedContractText_(contract.checkout_move_out_date),
+    idempotent: idempotent === true
+  };
+  if (settlement) {
+    data.settlement_id = landlordInitiatedContractText_(settlement.settlement_id);
+    data.subtotal_amount = landlordContractCheckoutSettlementRound_(settlement.subtotal_amount);
+    data.deposit_deduction_amount = landlordContractCheckoutSettlementRound_(settlement.deposit_deduction_amount);
+    data.tenant_balance_due = landlordContractCheckoutSettlementRound_(settlement.tenant_balance_due);
+    data.deposit_refund_amount = landlordContractCheckoutSettlementRound_(settlement.deposit_refund_amount);
+  }
   return {
     success: true,
     code: idempotent ? 'IDEMPOTENT' : 'OK',
-    data: {
-      access: access,
-      contract_id: landlordInitiatedContractText_(contract.contract_id),
-      tenant_id: landlordInitiatedContractText_(contract.tenant_id),
-      checkout_status: landlordInitiatedContractText_(contract.checkout_status),
-      checkout_source: landlordInitiatedContractText_(contract.checkout_source),
-      move_out_date: landlordInitiatedContractText_(contract.checkout_move_out_date),
-      idempotent: idempotent === true
-    }
+    data: data
   };
 }
 
