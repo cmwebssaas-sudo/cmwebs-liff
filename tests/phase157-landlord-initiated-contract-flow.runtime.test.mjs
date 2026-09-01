@@ -128,6 +128,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false, previousSta
     Array,
     JSON,
     RegExp,
+    console,
     SpreadsheetApp: {
       getActiveSpreadsheet: () => ({
         getSheetByName: name => sheets[name] || null
@@ -291,15 +292,10 @@ const newInput = {
   assert.equal(confirmed.data.contract.renewal_review_status, 'confirmed');
   assert.equal(confirmed.data.invite, null);
   assert.equal(sheets.V2_contract_invites.rows.length, 0);
-
-  const inquiry = api.landlordInitiatedContractSendRenewalInquiry_(
-    access,
-    result.data.contract.contract_id
-  );
-  assert.equal(inquiry.success, true, inquiry.code);
-  assert.equal(inquiry.data.contract.renewal_inquiry_status, 'sent');
   assert.equal(pushedMessages.length, 1);
   assert.equal(pushedMessages[0].lineUserId, 'tenant-line');
+  assert.equal(confirmed.data.contract.renewal_inquiry_status, 'sent');
+  assert.equal(confirmed.data.next_action, 'tenant_contract_renewal_intent');
 
   const accepted = api.landlordInitiatedContractUpdateRenewalIntentByLineUid_(
     'tenant-line',
@@ -308,14 +304,107 @@ const newInput = {
   );
   assert.equal(accepted.success, true, accepted.code);
   assert.equal(accepted.data.intent, 'accepted');
-
-  const sent = api.landlordInitiatedContractSendRenewal_(
-    access,
-    result.data.contract.contract_id
-  );
-  assert.equal(sent.success, true, sent.code);
-  assert.equal(sent.data.contract.contract_status, 'pending_tenant_signature');
+  assert.equal(accepted.data.contract.contract_status, 'pending_tenant_signature');
   assert.equal(sheets.V2_contract_invites.rows.length, 1);
+  assert.equal(pushedMessages.length, 2);
+  assert.equal(pushedMessages[1].lineUserId, 'tenant-line');
+  assert.match(pushedMessages[1].message, /簽署/);
+
+  const duplicateAccepted = api.landlordInitiatedContractUpdateRenewalIntentByLineUid_(
+    'tenant-line',
+    result.data.contract.contract_id,
+    'accepted'
+  );
+  assert.equal(duplicateAccepted.success, true, duplicateAccepted.code);
+  assert.equal(duplicateAccepted.code, 'RENEWAL_INTENT_ALREADY_RECORDED');
+  assert.equal(sheets.V2_contract_invites.rows.length, 1);
+  assert.equal(pushedMessages.length, 2);
+}
+
+{
+  const { api, sheets, pushedMessages } = makeRuntime({ withPrevious: true });
+  const result = api.landlordInitiatedContractCreateRenewal_(access, {
+    previous_contract_id: 'old-contract',
+    start_date: '2026-09-01',
+    end_date: '2027-08-31',
+    rent_amount: 26000,
+    management_fee: 1000,
+    deposit_amount: 52000,
+    payment_day: 5
+  });
+  assert.equal(result.success, true, result.code);
+  const confirmed = api.landlordInitiatedContractConfirmRenewalReview_(access, result.data.contract.contract_id);
+  assert.equal(confirmed.success, true, confirmed.code);
+  const declined = api.landlordInitiatedContractUpdateRenewalIntentByLineUid_(
+    'tenant-line',
+    result.data.contract.contract_id,
+    'declined'
+  );
+  assert.equal(declined.success, true, declined.code);
+  assert.equal(declined.data.intent, 'declined');
+  assert.equal(declined.data.contract.checkout_status, 'pending');
+  assert.equal(declined.data.contract.checkout_source, 'tenant_declined');
+  assert.equal(declined.data.contract.checkout_move_out_date, previousContractEndDate);
+  assert.equal(sheets.V2_contract_invites.rows.length, 0);
+  assert.equal(pushedMessages.length, 1);
+}
+
+{
+  const { api } = makeRuntime({ withPrevious: true });
+  const result = api.landlordInitiatedContractCreateRenewal_(access, {
+    previous_contract_id: 'old-contract',
+    start_date: '2026-09-01',
+    end_date: '2027-08-31',
+    rent_amount: 26000,
+    management_fee: 1000,
+    deposit_amount: 52000,
+    payment_day: 5
+  });
+  assert.equal(result.success, true, result.code);
+  const confirmed = api.landlordInitiatedContractConfirmRenewalReview_(access, result.data.contract.contract_id);
+  assert.equal(confirmed.success, true, confirmed.code);
+  const sent = api.landlordInitiatedContractSendRenewal_(access, result.data.contract.contract_id);
+  assert.equal(sent.success, false);
+  assert.equal(sent.code, 'RENEWAL_TENANT_INTENT_REQUIRED');
+}
+
+{
+  const { api } = makeRuntime({ withPrevious: true });
+  const result = api.landlordInitiatedContractCreateRenewal_(access, {
+    previous_contract_id: 'old-contract',
+    start_date: '2026-09-01',
+    end_date: '2027-08-31',
+    rent_amount: 26000,
+    management_fee: 1000,
+    deposit_amount: 52000,
+    payment_day: 5
+  });
+  assert.equal(result.success, true, result.code);
+  const confirmed = api.landlordInitiatedContractConfirmRenewalReview_(access, result.data.contract.contract_id);
+  assert.equal(confirmed.success, true, confirmed.code);
+  const duplicateReview = api.landlordInitiatedContractConfirmRenewalReview_(access, result.data.contract.contract_id);
+  assert.equal(duplicateReview.success, true, duplicateReview.code);
+  assert.equal(duplicateReview.code, 'RENEWAL_REVIEW_ALREADY_CONFIRMED');
+  assert.equal(duplicateReview.data.contract.renewal_inquiry_status, 'sent');
+  assert.equal(duplicateReview.data.next_action, 'tenant_contract_renewal_intent');
+}
+
+{
+  const { api, sheets } = makeRuntime({ withPrevious: true });
+  const result = api.landlordInitiatedContractCreateRenewal_(access, {
+    previous_contract_id: 'old-contract',
+    start_date: '2026-09-01',
+    end_date: '2027-08-31',
+    rent_amount: 26000,
+    management_fee: 1000,
+    deposit_amount: 52000,
+    payment_day: 5
+  });
+  assert.equal(result.success, true, result.code);
+  const sent = api.landlordInitiatedContractSendRenewal_(access, result.data.contract.contract_id);
+  assert.equal(sent.success, false);
+  assert.equal(sent.code, 'RENEWAL_REVIEW_REQUIRED');
+  assert.equal(sheets.V2_contract_invites.rows.length, 0);
 }
 
 {

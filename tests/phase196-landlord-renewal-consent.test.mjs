@@ -58,21 +58,21 @@ const reviewed = context.landlordInitiatedContractRenewalReviewTransition_({
 }, '2026-09-01T00:00:00.000Z');
 assert.equal(reviewed.success, true, reviewed.code);
 assert.equal(reviewed.updates.renewal_review_status, 'confirmed');
-assert.equal(reviewed.updates.renewal_inquiry_status, 'pending');
+assert.equal(reviewed.updates.renewal_inquiry_status, 'sent');
 assert.equal(reviewed.updates.renewal_tenant_intent, 'pending');
+assert.equal(reviewed.send_inquiry, true);
 assert.equal(reviewed.create_invite, false, 'landlord review must not create a tenant invite');
 
 const inquiry = context.landlordInitiatedContractRenewalInquiryTransition_({
   signing_mode: 'renewal',
   contract_status: 'pending_landlord_review',
   renewal_review_status: 'confirmed',
-  renewal_inquiry_status: 'pending',
+  renewal_inquiry_status: 'sent',
   renewal_tenant_intent: 'pending',
   invite_id: ''
 }, '2026-09-01T00:00:00.000Z');
-assert.equal(inquiry.success, true, inquiry.code);
-assert.equal(inquiry.updates.renewal_inquiry_status, 'sent');
-assert.equal(inquiry.updates.renewal_tenant_intent, 'pending');
+assert.equal(inquiry.success, false);
+assert.equal(inquiry.code, 'RENEWAL_INQUIRY_ALREADY_SENT');
 
 const accepted = context.landlordInitiatedContractRenewalIntentTransition_({
   signing_mode: 'renewal',
