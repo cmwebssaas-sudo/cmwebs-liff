@@ -470,6 +470,12 @@
       min-height: 42px;
     }
 
+    .contract-history-actions {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
     .request-head {
       display: flex;
       align-items: flex-start;
@@ -1624,6 +1630,27 @@
         'landlord-contract-requests.html?' +
         params.toString() +
         '#native-signing-reviews';
+    }
+
+    function goTenantRenewal(contractId) {
+      const normalizedContractId = rawText(contractId).trim();
+      const contract = CURRENT_TENANT_CONTRACTS.find(function (item) {
+        return rawText(item.contract_id).trim() === normalizedContractId;
+      });
+      const status = normalizedStatus(contract && (contract.contract_status || contract.status));
+      if (!contract || !normalizedContractId || ['active', 'expired', 'approved', 'completed'].indexOf(status) < 0) {
+        showToast('目前合約不可發起續約');
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('mode', 'renewal');
+      params.set('previous_contract_id', normalizedContractId);
+      if (rawText(contract.property_id).trim()) params.set('property_id', rawText(contract.property_id).trim());
+      if (rawText(contract.room_id).trim()) params.set('room_id', rawText(contract.room_id).trim());
+      if (TEST_MODE) params.set('test', '1');
+      params.set('v', window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
+      location.href = 'landlord-tenant-create.html?' + params.toString();
     }
 
     function showToast(message) {
@@ -3848,6 +3875,8 @@
             const sequence = numberValue(contract.renewal_sequence, 1);
             const current = contract.is_current === true;
             const readOnly = contract.read_only !== false;
+            const status = normalizedStatus(contract.contract_status || contract.status);
+            const canRenew = ['active', 'expired', 'approved', 'completed'].indexOf(status) >= 0;
             return `
               <article class="contract-history-card ${current ? 'current' : ''}" data-contract-history-read-only="${readOnly ? 'true' : 'false'}">
                 <div class="contract-history-head">
@@ -3863,7 +3892,10 @@
                   <div><span>押金／繳款日</span><strong>${money(contract.deposit_amount)}／每月 ${numberValue(contract.monthly_payment_day, 0) || '-'} 日</strong></div>
                   <div><span>簽署狀態</span><strong>${safeHtml(statusText(contract.tenant_signing_submission_status || contract.contract_status || '-'))}</strong></div>
                 </div>
-                <button class="primary-button contract-history-button" type="button" onclick="goContractVersion('${escapeHtml(contractId)}')">查看完整合約與簽名</button>
+                <div class="contract-history-actions">
+                  ${canRenew ? `<button class="primary-button contract-history-button" type="button" onclick="goTenantRenewal('${escapeHtml(contractId)}')">發起續約</button>` : ''}
+                  <button class="secondary-button contract-history-button" type="button" onclick="goContractVersion('${escapeHtml(contractId)}')">查看完整合約與簽名</button>
+                </div>
               </article>
             `;
           }).join('')

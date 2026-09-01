@@ -78,7 +78,7 @@ function isoDateOffset(days) {
 
 const previousContractEndDate = isoDateOffset(1);
 
-function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
+function makeRuntime({ withInviteSheet = true, withPrevious = false, previousStatus = 'active' } = {}) {
   const scriptProperties = new Map([
     ['CMWEBS_LINE_LOGIN_CHANNEL_ID', 'channel-1'],
     ['CMWEBS_LIFF_SESSION_HMAC_SECRET', 'session-secret']
@@ -101,7 +101,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false } = {}) {
       property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R603', room_name: '603',
       start_date: '2025-09-01', contract_start_date: '2025-09-01', end_date: previousContractEndDate, contract_end_date: previousContractEndDate,
       rent_amount: 24000, monthly_rent: 24000, management_fee: 800, monthly_management_fee: 800, deposit_amount: 48000,
-      payment_day: 5, monthly_payment_day: 5, contract_status: 'active', status: 'active', account_status: 'active',
+      payment_day: 5, monthly_payment_day: 5, contract_status: previousStatus, status: previousStatus, account_status: 'active',
       signing_mode: '', contract_origin: 'legacy', tenant_binding_status: 'active',
       created_at: '2025-08-01T00:00:00.000Z', updated_at: '2025-08-01T00:00:00.000Z'
     })
@@ -190,6 +190,38 @@ const newInput = {
   tenant_phone: '',
   tenant_email: ''
 };
+
+{
+  const { api, sheets } = makeRuntime({ withPrevious: true, previousStatus: 'expired' });
+  const result = api.landlordInitiatedContractCreateDirectRenewal_(access, {
+    previous_contract_id: 'old-contract',
+    start_date: '2026-09-01',
+    end_date: '2027-08-31',
+    rent_amount: 26000,
+    management_fee: 1000,
+    deposit_amount: 52000,
+    payment_day: 5,
+    special_offer_enabled: true,
+    special_offer_notice_days: 30,
+    special_offer_clause: '租約期滿如不再續約，提前30個日曆日通知，免收違約金。'
+  });
+  assert.equal(result.success, true, result.code);
+  assert.equal(result.data.contract.contract_status, 'pending_tenant_signature');
+  assert.equal(result.data.contract.signing_mode, 'renewal');
+  assert.equal(result.data.contract.previous_contract_id, 'old-contract');
+  assert.equal(result.data.contract.contract_version, 'fixed-google-doc-template-1');
+  assert.equal(result.data.contract.renewal_review_status, 'confirmed');
+  assert.equal(result.data.contract.renewal_inquiry_status, 'manual_direct');
+  assert.equal(result.data.contract.renewal_tenant_intent, 'manual_direct');
+  assert.equal(result.data.contract.special_offer_enabled, true);
+  assert.equal(result.data.contract.special_offer_notice_days, 30);
+  assert.match(result.data.contract.contract_content, /提前30個日曆日通知，免收違約金/);
+  assert.equal(result.data.invite.invite_id, result.data.contract.invite_id);
+  assert.equal(result.data.invite.confirmation_code.length, 6);
+  assert.equal(sheets.V2_contracts.rows.length, 2);
+  assert.equal(sheets.V2_contracts.rows[0][27], 'expired');
+  assert.equal(sheets.V2_contract_invites.rows.length, 1);
+}
 
 {
   const { api, sheets } = makeRuntime();
@@ -312,6 +344,7 @@ const newInput = {
   assert.equal(typeof api.landlordInitiatedContractIsRequest_, 'function');
   assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_initiate_new' }), true);
   assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_initiate_renewal' }), true);
+  assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_initiate_renewal_direct' }), true);
   assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_renewal_review_confirm' }), true);
   assert.equal(api.landlordInitiatedContractIsRequest_({ action: 'tenant_contract_sign_submit' }), false);
   const result = api.landlordInitiatedContractHandlePost_(JSON.stringify({ action: 'landlord_contract_initiate_new', session_token: 'invalid' }));
@@ -322,6 +355,7 @@ const newInput = {
   assert.match(dispatcherSource, /landlordInitiatedContractReadExchange_/);
   assert.match(dispatcherSource, /landlord_contract_initiated_init/);
   assert.match(dispatcherSource, /landlord_contract_renewal_review_confirm/);
+  assert.match(dispatcherSource, /landlord_contract_initiate_renewal_direct/);
   assert.match(dispatcherSource, /landlord_contract_initiated_status/);
   assert.match(dispatcherSource, /tenantLiffSigningIsInviteAuthRequest_\(postBody\)/);
   assert.match(dispatcherSource, /tenantLiffSigningHandleInviteAuthPost_\(postBody\)/);

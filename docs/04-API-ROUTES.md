@@ -248,6 +248,7 @@ verified, while authenticated LINE/mobile contract interaction remains
 | `landlord_contract_initiated_init` | `doPost` exchange | Landlord review session, Workspace read policy | Lists the session Workspace's pending landlord-initiated contracts without exposing confirmation codes. |
 | `landlord_contract_initiate_new` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a pending new-tenant contract, provisional tenant identity, one-time invite and short confirmation code; it does not activate a room. |
 | `landlord_contract_initiate_renewal` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a new `pending_landlord_review` renewal version linked by `previous_contract_id`; it does not overwrite, invite the tenant, or activate the predecessor. |
+| `landlord_contract_initiate_renewal_direct` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates an append-only renewal version from an active, expired, approved or completed predecessor, records direct landlord confirmation, creates one signing invite immediately, and moves the new version to `pending_tenant_signature`. |
 | `landlord_contract_renewal_draft_update` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Updates dates, amounts, payment day, optional 30-day clause and regenerated full text of an unsigned `pending_landlord_review` renewal draft; it rejects sent/signed versions and never changes the predecessor. |
 | `landlord_contract_renewal_review_confirm` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Re-reads the selected Workspace-scoped renewal draft under `ScriptLock` and records landlord review confirmation without creating an invite. |
 | `landlord_contract_renewal_inquiry_send` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Sends the reviewed renewal inquiry to the bound tenant through LINE and records `renewal_inquiry_status=sent`; it never creates a signing invite. |
@@ -255,14 +256,19 @@ verified, while authenticated LINE/mobile contract interaction remains
 | `landlord_contract_invite_cancel` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Cancels an unclaimed invite and its pending contract. |
 | `landlord_contract_invite_reissue` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Invalidates the current unclaimed invite, appends a replacement invite, updates the contract pointer, and returns the new QR/link payload with the one-time confirmation code only in that response. |
 | `landlord_contract_initiated_status` | JSONP `v2_action` | One-time HMAC-bound request exchange | Redeems the POST result; the session token and confirmation code are not placed in the URL. |
-| `tenant_contract_invite_auth_init` | `doPost` exchange | LINE `id_token`, invite ID, confirmation code and tenant data | Verifies the LINE identity, atomically claims a new-tenant invite once, and returns a short-lived invite signing session. |
+| `tenant_contract_invite_auth_init` | `doPost` exchange | LINE `id_token`, invite ID, confirmation code and tenant data | Verifies the LINE identity, atomically claims a new-tenant or renewal invite once, and returns a short-lived invite signing session with mode-specific artifact requirements. |
 | `tenant_contract_invite_auth_status` | JSONP `v2_action` | One-time HMAC-bound authentication exchange | Redeems the invite signing session result without exposing the session token in the URL. |
-| `tenant_contract_invite_submit` | `doPost` exchange | Verified invite signing session, required artifacts and consent | Submits the new-tenant signing package for landlord review; it does not activate the contract. |
+| `tenant_contract_invite_submit` | `doPost` exchange | Verified invite signing session, required artifacts and consent | Submits the new-tenant or renewal signing package for landlord review; it does not activate the contract. |
 
 - New vacant-room initiation accepts blank tenant prefill data, but the tenant
   must provide a name and Taiwan mobile number before the invite can be claimed.
 - New-tenant signing requires identity front, identity back and signature;
   renewal signing requires signature only.
+- The direct renewal route is the short manual path for an existing or expired
+  contract: the landlord confirms the new dates, amounts and optional 30-day
+  clause on one page, then hands the generated invite link and confirmation
+  code to the tenant. It records `renewal_inquiry_status=manual_direct` and
+  does not send a separate tenant-consent inquiry.
 - The expiry scheduler uses the same append-only renewal object: at 60 days it
   prepares `pending_landlord_review` and records a landlord notification; at
   30 days it sends one reminder if the draft remains unconfirmed. It never
