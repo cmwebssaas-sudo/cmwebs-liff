@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PRODUCTION_DEPLOYMENT_ID =
-  'AKfycbyrwKb3adOgHVBwbwHwLeSsDoUgYhaUaFXui66tnyMNBrT9eOVbi788oHeVRTif_LA9BA';
+  'AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ';
 const LEGACY_DEPLOYMENT_ID =
   'AKfycby5n2iXv0z5Y99dpBATTkKHaF56bnHNZRdMmVh5aZKU8ciGa_Nc0vJzXaO120LT81X6Og';
 

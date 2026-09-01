@@ -60,7 +60,7 @@ assert.match(source, /\.signing-action\s*\{[\s\S]*?padding-top: 18px;[\s\S]*?bac
 assert.doesNotMatch(source, /\.signing-sticky-action/);
 assert.doesNotMatch(source, /\.signing-action\s*\{[\s\S]*?position:\s*(?:fixed|sticky)/);
 assert.match(source, /const LIFF_ID\s*=\s*'2010314940-iJB1D6sN'/);
-assert.match(source, /AKfycbyrwKb3adOgHVBwbwHwLeSsDoUgYhaUaFXui66tnyMNBrT9eOVbi788oHeVRTif_LA9BA\/exec/);
+assert.match(source, /AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ\/exec/);
 assert.match(
   releaseSource,
   /20260825-tenant-signature-preview-v1/,
