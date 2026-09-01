@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-09-01 (Asia/Taipei)**
+**Last updated: 2026-09-02 (Asia/Taipei)**
 
 ## Purpose
 
@@ -38,6 +38,7 @@ be verified for the particular action that needs it.
 | 2026-09-01 | Renewal-draft date-correction formal release | User explicitly authorized formal deployment. PR #74 merged `codex/renewal-draft-date-20260901` as `3f6af936`; Apps Script Version 139 serves the existing Web App deployment and Version 138 is the rollback target; Pages workflow `33449180375` published the merged source. No Sheet, Properties, Trigger, LINE, or contract-data write was run. Public route/page readback passed; LINE/mobile date-edit acceptance remains `HUMAN_REQUIRED`. |
 | 2026-09-01 | Landlord-led renewal consent formal release | User authorized formal deployment. PR #76 merged the feature as `52b75b8`; PR #77 moved the production HTML API references to immutable Apps Script Version 140 and merged as `ceeede8`; Pages workflow `33456765735` completed successfully. The prior read-only HEAD endpoint remains retained and Version 139 is available as the previous immutable release. No Sheet migration, LINE push, or contract-data write was run; authenticated LINE/mobile UAT remains `HUMAN_REQUIRED`. |
 | 2026-09-01 | Landlord homepage timeout corrective release | User authorized the corrective formal release. PR #79 merged the request-local Sheet-read cache repair as `d9c371c`; the existing fixed Web App deployment now serves immutable Version 142 and Pages workflow `33483720012` completed successfully. No Sheet row, Property, Trigger, LINE, contract, or billing data was changed. Authenticated LINE/mobile dashboard UAT remains `HUMAN_REQUIRED`. |
+| 2026-09-02 | Landlord-led renewal and checkout formal release | User requested deployment after implementation confirmation. PR #90 merged the release as `3d8647d`; Apps Script Version 147 serves the existing Web App deployment and Version 139 remains the rollback reference. The additive-only renewal/checkout schema migration completed in the authenticated Apps Script editor. Pages workflow `33567151637` completed successfully. No contract or tenant rows, Properties, triggers, or LINE data were changed; authenticated LINE/mobile UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
 
 ## 2026-08-27 formal release evidence
 

@@ -7,6 +7,25 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-02 landlord-led renewal and checkout formal release
+
+- PR #90 merged the landlord-led renewal and landlord-only checkout flow into
+  GitHub `main` as merge commit `3d8647d`.
+- Apps Script was pushed as 52 files and the existing Web App deployment now
+  serves immutable Version 147. The Web App URL is unchanged and Version 139
+  remains the rollback reference.
+- The additive-only renewal/checkout schema migration was run from the
+  authenticated Apps Script editor and completed. No contract or tenant rows,
+  Properties, triggers, or LINE data were changed by the migration or release;
+  only missing schema headers were eligible for addition.
+- GitHub Pages workflow `33567151637` completed build, deploy, and status jobs.
+  Public readback returned HTTP 200 for the release asset, tenant detail,
+  landlord checkout, contract requests, tenant contract, and tenant
+  termination pages, with the new cache key and flow markers present.
+- Local verification passed with the authoritative 83-route inventory and full
+  Node suite `73/73`. Authenticated LINE/mobile renewal, signing, and checkout
+  acceptance remain `HUMAN_REQUIRED` / `UNVERIFIED`.
+
 ## 2026-09-02 expired tenant renewal recovery formal release
 
 - The Workspace-native landlord tenant list now falls back to the latest
