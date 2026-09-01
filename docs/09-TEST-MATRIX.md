@@ -168,5 +168,5 @@
 - [x] 房東首頁在取得身份後即與 bootstrap 並行啟動報表請求，bootstrap 完成後漸進渲染報表；唯讀 JSONP 逾時最多自動重試一次，script error 立即清理並拒絕，圖表失敗不覆蓋已載入首頁（Phase 193；本地自動測試通過）
 - [x] 房客清單由 `landlord_tenants` 回傳現行合約到期日；房卡明確顯示到期日與剩餘／逾期天數，並以有效、60 天內、30 天內、已到期分級顏色提示（Phase 194；本地 API／UI 回歸測試通過，公開頁與 LIFF 真機尚待驗證）
 - [x] 房東可修改尚未發送的續約草稿日期，系統同步重建合約全文；已送出／已簽署版本拒絕覆寫，手動簽約日期錯誤改以取消未認領邀請後重建或新增更正續約版本（Phase 195；Apps Script Version 139／GitHub Pages workflow `33449180375` 已發布並完成公開 route/page readback，LINE 真機尚待驗證）
-- [x] 到期續約改由房東先檢視草稿、可修改日期／金額／30 天優惠條款，再發送續約詢問；房客只能回覆同意或暫不續約，同意後房東才可發送正式簽署邀請，舊合約版本維持 append-only（Phase 196；本地後端／前端回歸測試通過，正式部署與 LINE 真機尚待驗證）
+- [x] 到期續約改由房東先檢視草稿、可修改日期／金額／30 天優惠條款，再發送續約詢問；房客只能回覆同意或暫不續約，同意後房東才可發送正式簽署邀請，舊合約版本維持 append-only（Phase 196；正式 Apps Script Version 140 與 Pages workflow `33456765735` 已發布，LINE 真機仍待驗證）
 - [ ] Apps Script 實際 serving version、正式 Sheet schema、LIFF 真機與 GitHub Pages 發布後 UAT

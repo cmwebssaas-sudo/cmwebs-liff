@@ -7,16 +7,30 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-01 landlord-led renewal consent local candidate
+## 2026-09-01 landlord-led renewal consent formal release
 
 - The isolated candidate changes expiry renewal handling to a landlord-led
   consent flow. The landlord reviews the append-only one-year draft, can edit
   dates／amounts／payment day and choose the optional 30-day offer, then sends a
   tenant inquiry. The tenant's accepted response is required before a signing
   invite can be created.
-- Local Phase 196 and the updated Phase 157 runtime regression passed. No
-  Apps Script deployment, Sheet migration, LINE push, or authenticated LIFF
-  acceptance has been performed for this candidate.
+- PR #76 merged the feature into GitHub `main` as commit `52b75b8`; PR #77
+  updated all 36 production HTML API references and merged as `ceeede8`.
+- Apps Script was pushed to the verified production project and published as
+  immutable Version 140 in a new fixed deployment because the old HEAD
+  deployment is read-only. The old endpoint was retained; Version 139 remains
+  available as the previous immutable release. No Sheet migration, Script
+  Properties, Trigger, LINE push, or contract-data write was performed.
+- GitHub Pages workflow `33456765735` completed successfully for `ceeede8`.
+  Public readback returned HTTP 200, found the landlord inquiry/signing UI,
+  and confirmed the public HTML points to the Version 140 deployment.
+- Read-only API smoke returned `RENEWAL_INTENT_INPUT_REQUIRED` for an empty
+  renewal-intent POST, confirming the new dispatcher is serving without
+  mutating production data. Local Phase 196 and the updated Phase 157 runtime
+  regression passed; full Node suite `65/65`, project validation `83/83`, and
+  `git diff --check` passed.
+- Authenticated LINE/mobile room-603 UAT and production Sheet schema
+  migration remain `HUMAN_REQUIRED`.
 
 ## 2026-09-01 renewal-draft date-correction release
 
