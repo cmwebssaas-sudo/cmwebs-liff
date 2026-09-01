@@ -250,9 +250,11 @@ verified, while authenticated LINE/mobile contract interaction remains
 | `landlord_contract_initiate_renewal` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a new `pending_landlord_review` renewal version linked by `previous_contract_id`; it does not overwrite, invite the tenant, or activate the predecessor. |
 | `landlord_contract_initiate_renewal_direct` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates an append-only renewal version from an active, expired, approved or completed predecessor, records direct landlord confirmation, creates one signing invite immediately, and moves the new version to `pending_tenant_signature`. |
 | `landlord_contract_renewal_draft_update` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Updates dates, amounts, payment day, optional 30-day clause and regenerated full text of an unsigned `pending_landlord_review` renewal draft; it rejects sent/signed versions and never changes the predecessor. |
-| `landlord_contract_renewal_review_confirm` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Re-reads the selected Workspace-scoped renewal draft under `ScriptLock` and records landlord review confirmation without creating an invite. |
-| `landlord_contract_renewal_inquiry_send` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Sends the reviewed renewal inquiry to the bound tenant through LINE and records `renewal_inquiry_status=sent`; it never creates a signing invite. |
-| `landlord_contract_renewal_send` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates one signing invite only after the same tenant returns `accepted`; it moves the renewal to `pending_tenant_signature`. |
+| `landlord_contract_renewal_review_confirm` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Re-reads the selected Workspace-scoped renewal draft under `ScriptLock`, records landlord review confirmation, and automatically sends the tenant renewal inquiry before recording `renewal_inquiry_status=sent`. |
+| `landlord_contract_renewal_inquiry_send` | `doPost` exchange compatibility action | Landlord review session, Workspace `contract_write` policy | Retained for older clients; sends the reviewed renewal inquiry once and is idempotent after the inquiry is already sent. The new UI does not require a second click. |
+| `landlord_contract_renewal_send` | `doPost` exchange compatibility action | Landlord review session, Workspace `contract_write` policy | Retained for older accepted records; the current tenant-intent path creates one signing invite and sends it automatically after `accepted`. |
+| `landlord_contract_checkout_init` | `doPost` exchange | Landlord review session, Workspace read policy | Loads one same-Workspace predecessor contract, tenant, room, immutable original end date, and checkout eligibility for the landlord-only checkout page. |
+| `landlord_contract_checkout_complete` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Idempotently marks an eligible predecessor as `terminated`, records checkout fields, vacates and clears room/tenant/view pointers, preserves original dates/content and sends no tenant LINE notification. |
 | `landlord_contract_invite_cancel` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Cancels an unclaimed invite and its pending contract. |
 | `landlord_contract_invite_reissue` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Invalidates the current unclaimed invite, appends a replacement invite, updates the contract pointer, and returns the new QR/link payload with the one-time confirmation code only in that response. |
 | `landlord_contract_initiated_status` | JSONP `v2_action` | One-time HMAC-bound request exchange | Redeems the POST result; the session token and confirmation code are not placed in the URL. |
@@ -272,15 +274,23 @@ verified, while authenticated LINE/mobile contract interaction remains
 - The expiry scheduler uses the same append-only renewal object: at 60 days it
   prepares `pending_landlord_review` and records a landlord notification; at
   30 days it sends one reminder if the draft remains unconfirmed. It never
-  sends a tenant invite or mutates the predecessor automatically.
+  creates the signing invite or mutates the predecessor automatically.
 - Before review confirmation, the landlord may update dates, amounts, payment
   day, and whether the 30-day expiry non-renewal offer is included; the server
   regenerates the complete contract text and leaves the previous version
   unchanged.
-- After review confirmation, the landlord sends a separate tenant inquiry. A
-  tenant cannot create a renewal request through the legacy request route; the
-  tenant can only accept or decline a reviewed inquiry. Only an accepted
-  inquiry enables `landlord_contract_renewal_send` to create the signing invite.
+- After review confirmation, the system automatically sends the tenant inquiry；
+  房東確認後自動詢問房客。
+  A tenant cannot create a renewal request through the legacy request route; the
+  tenant can only accept or decline a reviewed inquiry. An accepted inquiry
+  automatically creates one signing invite and sends its URL and one-time code
+  through LINE; a declined inquiry records `checkout_status=pending` and
+  `checkout_source=tenant_declined` for landlord checkout.
+- Checkout fields are additive-only: `checkout_status`, `checkout_source`,
+  `checkout_requested_at`, `checkout_completed_at`, `checkout_move_out_date`,
+  `checkout_note`, `checkout_idempotency_key`, and `terminated_at`. Completing
+  checkout never overwrites the original contract dates or `contract_content`;
+  原合約日期與全文不會被覆寫，且不發送房客 LINE 通知。
 - After an invite is created, the draft is immutable and a new correction
   renewal version is required.
 - An authorized release must explicitly run

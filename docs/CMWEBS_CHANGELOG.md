@@ -2,6 +2,24 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-02 — 房東主導續約與退房 local candidate (not deployed)
+
+- Implemented the approved landlord-led state machine: landlord review
+  automatically asks the tenant; tenant acceptance automatically creates one
+  signing invite and sends its URL/code through LINE; tenant decline records a
+  `tenant_declined` checkout-pending state.
+- Added landlord-only checkout from the tenant detail journey. Completion is
+  Workspace/session protected and idempotent, clears room/tenant/view current
+  pointers, preserves original contract dates/content and operational records,
+  and does not send a tenant LINE message.
+- Added additive checkout fields and preserved legacy backend actions for old
+  clients. Tenant renewal/termination pages no longer expose a new application
+  submit flow; historical request data remains readable.
+- Local candidate verification covers Phases 202–204 and the repository
+  validator target. This candidate is **未部署**: Apps Script serving, Google
+  Sheets schema, GitHub Pages, authenticated landlord mobile, tenant LINE,
+  scheduled execution and Production UAT are `HUMAN_REQUIRED` / `UNVERIFIED`.
+
 ## 2026-09-02 — Expired tenant renewal recovery (formal corrective release)
 
 - Fixed the Workspace-native landlord tenant list so an operational tenant is

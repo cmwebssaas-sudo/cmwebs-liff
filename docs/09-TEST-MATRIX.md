@@ -157,7 +157,7 @@
 - [x] 房客與房東審核頁均讀取指定 Google Docs 固定版型；送出時複製固定版型、填入欄位、把文字簽名區替換為簽名圖片並回寫簽署紀錄（Phase 154–155、168 tests；Production template properties／真機尚待驗證）
 - [x] 報表可解析 Google Sheets 的 Date 型態帳單月份；簽署 bootstrap 失敗時保留房客唯讀合約檢視（Phase 156 regression test）
 - [x] 房東可發起新房出租／房客續約待簽合約，邀請欄位可在空白分頁安全初始化，且租金、管理費、押金與小數費率不失真（Phase 157–162 runtime／UI tests；Production schema header repair verified）
-- [x] 到期 60 天內每日只準備一份 append-only 續約草稿，保留原合約；草稿待房東檢視、30 天僅提醒一次，房東確認後才建立房客邀請，且房客清單顯示合約到期日／剩餘日數（Phase 178 runtime／UI tests；尚未部署或驗證正式觸發器）
+- [x] 到期 60 天內每日只準備一份 append-only 續約草稿，保留原合約；草稿待房東檢視、30 天僅提醒一次，房東確認後自動詢問房客，且房客清單顯示合約到期日／剩餘日數（Phase 178／202／203；本地候選，尚未部署或驗證正式觸發器）
 - [x] 房東合約申請頁顯示房客已送出的固定版型新租約、簽名預覽，且原生審核 API／房客文件 route 錯誤不再被靜默成空畫面（Phase 169；Production／LINE 真機待驗證）
 - [x] 房東房客詳細頁提供明確的「查看完整合約與簽名」入口，並定位至合約申請頁的原生合約內容區（Phase 172；Production／LINE 真機待驗證）
 - [x] 舊房客續約採 `V2_contracts` append-only 版本鏈，保留歷史合約、完整金額／付款快照、30 天到期不續約優惠、續約證件沿用與新簽名要求；房東／房客可讀取版本紀錄，指定房東版本可唯讀查看完整合約與簽名，並提供可重跑的 additive-only schema migration（Phase 174–176；Apps Script Version 130／GitHub Pages workflow `33098140787` 已發布；LINE 真機仍待驗證）
@@ -174,4 +174,7 @@
 - [x] 續約入口改由「房客名單 → 房客詳細資料 → 房客合約」進入；目前／已到期／可續約版本直接顯示「發起續約」，合約申請頁只保留既有草稿審查、邀請與簽署處理（Phase 199；正式部署於 PR #81／Pages workflow `33547890200`；尚未進行 LINE 真機 UAT）
 - [x] 續約表單起始日自動帶入原合約結束日，結束日自動計算為起始日加一年減一天；從房間發起續約時保留原合約租金／押金／電費／設備耗損費等條件，新租約流程與其他續約欄位不受影響（Phase 174／200；正式 Apps Script Version 145／GitHub Pages workflow `33555883954` 已發布並完成公開 readback，LINE 真機尚待驗證）
 - [x] 合約到期後若尚未建立續約草稿，仍保留啟用中的房客與房間於房東房客清單，並可從到期版本恢復手動續約入口；到期合約維持唯讀（Phase 201；正式 Apps Script Version 146，GitHub Pages 未變更，登入後 UAT 待驗證）
+- [x] 房東確認續約後自動發送房客詢問；房客同意後自動建立新版簽署邀請並透過 LINE 發送，拒絕後建立 `tenant_declined` 待退房狀態；邀請與通知具冪等保護（Phase 202 runtime；本地候選，`UNVERIFIED`：LINE 真機／Apps Script 尚未驗證）
+- [x] 房東可從房客詳細資料直接進入手動退房；退房完成後清除房間、房客與檢視指向，保留原合約日期／全文／帳務／簽名資料，且不發房客 LINE（Phase 202 runtime／203 UI；本地候選，`UNVERIFIED`：Production 尚未部署）
+- [x] 房客續約與退租頁改為被動資訊／歷史檢視，不建立新的 `V2_contract_requests` 退租申請；既有歷史 route 保留相容讀取（Phase 203 UI；本地候選，`UNVERIFIED`）
 - [ ] 正式 Sheet schema、LIFF 真機與已登入的正式合約交易 UAT
