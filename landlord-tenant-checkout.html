@@ -26,6 +26,16 @@
     .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .detail-label { color: var(--muted); font-size: 11px; }
     .detail-value { margin-top: 4px; font-size: 14px; font-weight: 900; word-break: break-word; }
+    .settlement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .summary { display: grid; gap: 8px; margin-top: 14px; padding: 13px; border-radius: 13px; background: #f7f9fb; }
+    .summary-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+    .summary-row strong { color: var(--text); text-align: right; }
+    .summary-row.total { padding-top: 8px; border-top: 1px solid var(--border); font-size: 14px; }
+    .file-input { padding: 10px; background: #f8fafc; font-size: 12px; }
+    .upload-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+    .upload-row .btn { min-height: 42px; padding: 0 12px; }
+    .upload-state { margin-top: 5px; color: var(--muted); font-size: 11px; }
+    .hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
     label { display: block; margin-top: 14px; color: var(--muted); font-size: 12px; font-weight: 700; }
     input, textarea { width: 100%; margin-top: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff; color: var(--text); }
     textarea { min-height: 94px; resize: vertical; line-height: 1.6; }
@@ -54,7 +64,10 @@
     const TEST_MODE = URL_PARAMS.get('test') === '1';
     let NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
     let CHECKOUT_DATA = null;
+    let SETTLEMENT_DATA = null;
+    const METER_DOCUMENTS = { start: '', end: '' };
     let IS_SUBMITTING = false;
+    let PREVIEW_SEQUENCE = 0;
 
     function rawText(value) { return value === undefined || value === null ? '' : String(value); }
     function escapeHtml(value) { return rawText(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
@@ -100,31 +113,159 @@
       }
       throw new Error('房東退房操作處理逾時');
     }
-    function renderPage(data) {
+    function formatMoney(value) { return 'NT$ ' + Math.round(Number(value || 0)).toLocaleString('zh-TW'); }
+    function numericValue(id) {
+      const element = document.getElementById(id);
+      if (!element || element.value === '') return null;
+      const value = Number(element.value);
+      return Number.isFinite(value) ? value : null;
+    }
+    function currentSettlementInput() {
+      return {
+        contract_id: CONTRACT_ID,
+        move_out_date: (document.getElementById('moveOutDate') || {}).value || '',
+        start_meter_reading: numericValue('startMeterReading'),
+        end_meter_reading: numericValue('endMeterReading'),
+        deposit_deduction_amount: numericValue('depositDeductionAmount'),
+        deposit_deduction_note: ((document.getElementById('depositDeductionNote') || {}).value || '').trim()
+      };
+    }
+    function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
+    function updateCompleteState() {
+      const input = currentSettlementInput();
+      const valid = CHECKOUT_DATA && CHECKOUT_DATA.eligibility && CHECKOUT_DATA.eligibility.can_checkout === true &&
+        input.move_out_date && input.start_meter_reading !== null && input.end_meter_reading !== null &&
+        input.end_meter_reading >= input.start_meter_reading && input.deposit_deduction_amount !== null &&
+        input.deposit_deduction_amount >= 0 && (input.deposit_deduction_amount === 0 || input.deposit_deduction_note) &&
+        METER_DOCUMENTS.start && METER_DOCUMENTS.end;
+      const button = document.getElementById('submitButton');
+      if (button) button.disabled = IS_SUBMITTING || !valid;
+    }
+    function renderSettlementSummary(settlement) {
+      const value = settlement || {};
+      const calculated = value.subtotal_amount !== undefined;
+      setText('previousUtilityAmount', formatMoney(Number(value.previous_electricity_amount || 0) + Number(value.previous_equipment_amount || 0)));
+      setText('currentRentAmount', calculated ? formatMoney(value.rent_amount) : '待輸入電表後試算');
+      setText('currentElectricityAmount', calculated ? formatMoney(value.electricity_amount) : '待輸入電表後試算');
+      setText('currentEquipmentAmount', calculated ? formatMoney(value.equipment_amount) : '待輸入電表後試算');
+      setText('subtotalAmount', calculated ? formatMoney(value.subtotal_amount) : '待計算');
+      setText('depositAmount', formatMoney(value.deposit_amount));
+      setText('tenantBalanceDue', calculated ? formatMoney(value.tenant_balance_due) : '待計算');
+      setText('depositRefundAmount', calculated ? formatMoney(value.deposit_refund_amount) : '待計算');
+      setText('meterUsage', value.electricity_usage === undefined ? '待輸入' : rawText(value.electricity_usage) + ' 度');
+    }
+    async function previewSettlement() {
+      if (!SETTLEMENT_DATA) return;
+      const input = currentSettlementInput();
+      if (!input.move_out_date || input.start_meter_reading === null || input.end_meter_reading === null || input.deposit_deduction_amount === null) {
+        renderSettlementSummary(SETTLEMENT_DATA.settlement || SETTLEMENT_DATA);
+        updateCompleteState();
+        return;
+      }
+      const sequence = ++PREVIEW_SEQUENCE;
+      try {
+        const result = await callLandlordCheckoutApi('landlord_contract_checkout_settlement_preview', { input });
+        if (sequence !== PREVIEW_SEQUENCE) return;
+        SETTLEMENT_DATA = result;
+        renderSettlementSummary(result.settlement || result);
+        setText('previewState', '已依伺服器規則更新試算');
+      } catch (error) {
+        if (sequence !== PREVIEW_SEQUENCE) return;
+        setText('previewState', error.message || '結算試算失敗');
+      }
+      updateCompleteState();
+    }
+    function handleSettlementInputChange() { updateCompleteState(); previewSettlement(); }
+    function readFileAsBase64(file) {
+      return new Promise(function(resolve, reject) {
+        const reader = new FileReader();
+        reader.onerror = function() { reject(new Error('照片讀取失敗')); };
+        reader.onload = function() {
+          const value = String(reader.result || '');
+          const marker = value.indexOf(',');
+          if (marker < 0) reject(new Error('照片編碼失敗'));
+          else resolve({ base64: value.slice(marker + 1), mime_type: file.type || 'image/jpeg' });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    async function prepareMeterPhoto(file) {
+      const mimeType = rawText(file && file.type).toLowerCase();
+      if (['image/jpeg', 'image/png'].indexOf(mimeType) < 0) throw new Error('電表照片僅支援 JPG 或 PNG');
+      if (!file || file.size <= 0 || file.size > 8 * 1024 * 1024) throw new Error('照片大小必須介於 1B 至 8MB');
+      if (typeof createImageBitmap !== 'function') return file;
+      const image = await createImageBitmap(file);
+      const scale = Math.min(1, 1800 / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) { image.close(); throw new Error('此裝置無法處理照片'); }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      image.close();
+      const output = await new Promise(function(resolve, reject) {
+        canvas.toBlob(function(blob) { blob ? resolve(blob) : reject(new Error('照片壓縮失敗')); }, 'image/jpeg', 0.82);
+      });
+      if (!output || output.size <= 0 || output.size > 8 * 1024 * 1024) throw new Error('照片壓縮後仍超過安全上限');
+      return output;
+    }
+    async function uploadMeterDocument(kind, inputId) {
+      const input = document.getElementById(inputId);
+      const file = input && input.files ? input.files[0] : null;
+      const button = document.getElementById(kind + 'MeterUploadButton');
+      if (!file) { setText(kind + 'MeterUploadState', '請先選擇照片'); return; }
+      if (button) { button.disabled = true; button.textContent = '上傳中…'; }
+      try {
+        const prepared = await prepareMeterPhoto(file);
+        const payload = await readFileAsBase64(prepared);
+        const result = await callLandlordCheckoutApi('landlord_contract_checkout_evidence_upload', { input: {
+          contract_id: CONTRACT_ID, tenant_id: TENANT_ID,
+          document_type: kind === 'start' ? 'checkout_start_meter' : 'checkout_end_meter',
+          file_name: file.name || kind + '-meter.jpg', mime_type: payload.mime_type,
+          base64: payload.base64, idempotency_key: 'checkout-' + kind + '-meter-' + CONTRACT_ID + '-' + randomUrlToken(10)
+        }});
+        METER_DOCUMENTS[kind] = rawText(result.document_id);
+        if (input) input.value = '';
+        setText(kind + 'MeterUploadState', METER_DOCUMENTS[kind] ? '照片已私有歸檔' : '照片上傳回應無效');
+      } catch (error) {
+        setText(kind + 'MeterUploadState', error.message || '照片上傳失敗');
+      } finally {
+        if (button) { button.disabled = false; button.textContent = '上傳照片'; }
+        updateCompleteState();
+      }
+    }
+    function renderPage(data, settlementData) {
       CHECKOUT_DATA = data || {};
+      SETTLEMENT_DATA = settlementData || SETTLEMENT_DATA || {};
       const contract = CHECKOUT_DATA.contract || {};
       const tenant = CHECKOUT_DATA.tenant || {};
       const room = CHECKOUT_DATA.room || {};
       const eligible = CHECKOUT_DATA.eligibility && CHECKOUT_DATA.eligibility.can_checkout === true;
       const originalEnd = rawText(CHECKOUT_DATA.default_move_out_date || contract.original_end_date || contract.end_date);
+      const settlement = SETTLEMENT_DATA.settlement || SETTLEMENT_DATA || {};
+      const settlementStart = rawText(settlement.settlement_start_date || originalEnd.slice(0, 7) + '-01');
       document.getElementById('app').innerHTML = '<div class="topbar"><button class="back-button" type="button" onclick="backToDetail()" aria-label="返回">‹</button><div><div class="topbar-title">辦理房客退房</div><div class="topbar-subtitle">房東手動完成點交與退房</div></div></div>' +
         '<section class="card hero"><h1>房東退房流程</h1><p>退房由房東主動處理。完成後房間會恢復為空房，原合約全文與帳務紀錄仍會保留。</p></section>' +
         '<section class="card"><div class="section-title">退房對象</div><div class="detail-grid"><div><div class="detail-label">房客</div><div class="detail-value">' + escapeHtml(tenant.tenant_name || contract.tenant_name || '-') + '</div></div><div><div class="detail-label">房號</div><div class="detail-value">' + escapeHtml(room.room_name || contract.room_name || '-') + '</div></div><div><div class="detail-label">原合約到期日</div><div class="detail-value">' + escapeHtml(originalEnd || '-') + '</div></div><div><div class="detail-label">目前狀態</div><div class="detail-value">' + escapeHtml(contract.contract_status || '-') + '</div></div></div></section>' +
-        '<section class="card"><div class="section-title">點交資料</div><div class="notice">原合約到期日僅供參考且不會被覆寫。若實際點交日在到期日之後，請填寫實際退房日。</div><label for="moveOutDate">實際退房日<input id="moveOutDate" type="date" value="' + escapeHtml(originalEnd) + '"></label><label for="checkoutNote">點交備註（選填）<textarea id="checkoutNote" placeholder="例如：已完成點交、鑰匙已返還、押金待結算…"></textarea></label><div id="resultMessage"></div><div class="actions"><button class="btn btn-light" type="button" onclick="backToDetail()">取消</button><button class="btn btn-primary" type="button" id="submitButton" onclick="submitCheckout()" ' + (eligible ? '' : 'disabled') + '>確認辦理退房</button></div></section>';
+        '<section class="card"><div class="section-title">退房結算</div><div class="notice">結算期間為 ' + escapeHtml(settlementStart) + ' 至實際退房日，含退房日，共 7 天（例如 9/1 到 9/7）。上月只帶入未繳電費與設備使用費，不重複計算上月房租。完成前必須上傳兩張電表照片。</div><label for="moveOutDate">實際退房日<input id="moveOutDate" type="date" value="' + escapeHtml(originalEnd) + '" onchange="handleSettlementInputChange()"></label><div class="settlement-grid"><label for="startMeterReading">9/1 電表度數<input id="startMeterReading" type="number" min="0" step="0.01" placeholder="請輸入起始度數" oninput="handleSettlementInputChange()"></label><label for="endMeterReading">退房日電表度數<input id="endMeterReading" type="number" min="0" step="0.01" placeholder="請輸入結束度數" oninput="handleSettlementInputChange()"></label></div><p class="hint">電費與設備使用費依兩次電表差額計算，不依天數拆分。</p><div class="upload-row"><label for="startMeterPhoto">9/1 電表現場照片<input id="startMeterPhoto" class="file-input" type="file" accept="image/jpeg,image/png"></label><button class="btn btn-light" type="button" id="startMeterUploadButton" onclick="uploadMeterDocument(\'start\', \'startMeterPhoto\')">上傳照片</button></div><div class="upload-state" id="startMeterUploadState">尚未上傳</div><div class="upload-row"><label for="endMeterPhoto">退房日電表現場照片<input id="endMeterPhoto" class="file-input" type="file" accept="image/jpeg,image/png"></label><button class="btn btn-light" type="button" id="endMeterUploadButton" onclick="uploadMeterDocument(\'end\', \'endMeterPhoto\')">上傳照片</button></div><div class="upload-state" id="endMeterUploadState">尚未上傳</div><label for="depositDeductionAmount">押金扣除<input id="depositDeductionAmount" type="number" min="0" step="1" value="0" oninput="handleSettlementInputChange()"></label><label for="depositDeductionNote">押金扣除說明（有扣除時必填）<textarea id="depositDeductionNote" placeholder="請說明扣除原因" oninput="handleSettlementInputChange()"></textarea></label><div class="summary"><div class="summary-row"><span>上月未繳電費＋設備使用費</span><strong id="previousUtilityAmount">' + formatMoney(Number(settlement.previous_electricity_amount || 0) + Number(settlement.previous_equipment_amount || 0)) + '</strong></div><div class="summary-row"><span>本期房租</span><strong id="currentRentAmount">待輸入電表後試算</strong></div><div class="summary-row"><span>本期電費</span><strong id="currentElectricityAmount">待輸入電表後試算</strong></div><div class="summary-row"><span>本期設備使用費</span><strong id="currentEquipmentAmount">待輸入電表後試算</strong></div><div class="summary-row"><span>本期用電</span><strong id="meterUsage">待輸入</strong></div><div class="summary-row total"><span>結算小計</span><strong id="subtotalAmount">待計算</strong></div><div class="summary-row"><span>押金快照</span><strong id="depositAmount">' + formatMoney(settlement.deposit_amount) + '</strong></div><div class="summary-row total"><span>應補繳</span><strong id="tenantBalanceDue">待計算</strong></div><div class="summary-row total"><span>押金應退</span><strong id="depositRefundAmount">待計算</strong></div></div><p class="hint" id="previewState">輸入度數後由伺服器試算</p><label for="checkoutNote">點交備註（選填）<textarea id="checkoutNote" placeholder="例如：已完成點交、鑰匙已返還…"></textarea></label><div id="resultMessage"></div><div class="actions"><button class="btn btn-light" type="button" onclick="backToDetail()">取消</button><button class="btn btn-primary" type="button" id="submitButton" onclick="submitCheckout()" ' + (eligible ? '' : 'disabled') + '>確認辦理退房</button></div></section>';
       if (!eligible) document.getElementById('resultMessage').innerHTML = '<p class="error">' + escapeHtml((CHECKOUT_DATA.eligibility && CHECKOUT_DATA.eligibility.message) || '此合約目前不可辦理退房，請先重新整理資料。') + '</p>';
+      renderSettlementSummary(settlement);
+      updateCompleteState();
     }
     async function submitCheckout() {
       if (IS_SUBMITTING || !CHECKOUT_DATA || !CHECKOUT_DATA.contract) return;
-      const moveOutDate = document.getElementById('moveOutDate').value;
+      const settlementInput = currentSettlementInput();
       const note = document.getElementById('checkoutNote').value.trim();
-      if (!moveOutDate) { document.getElementById('resultMessage').innerHTML = '<p class="error">請填寫實際退房日。</p>'; return; }
+      if (!settlementInput.move_out_date || settlementInput.start_meter_reading === null || settlementInput.end_meter_reading === null || settlementInput.deposit_deduction_amount === null || !METER_DOCUMENTS.start || !METER_DOCUMENTS.end) { document.getElementById('resultMessage').innerHTML = '<p class="error">請完成退房日、兩次電表度數與兩張現場照片。</p>'; return; }
+      if (settlementInput.end_meter_reading < settlementInput.start_meter_reading) { document.getElementById('resultMessage').innerHTML = '<p class="error">退房日電表度數不可低於 9/1 度數。</p>'; return; }
+      if (settlementInput.deposit_deduction_amount > 0 && !settlementInput.deposit_deduction_note) { document.getElementById('resultMessage').innerHTML = '<p class="error">有押金扣除時，請填寫扣除說明。</p>'; return; }
       if (!window.confirm('確認已完成點交並辦理退房嗎？原合約內容不會被修改。')) return;
       IS_SUBMITTING = true; document.getElementById('submitButton').disabled = true;
       const idempotencyKey = 'checkout-' + CONTRACT_ID + '-' + randomUrlToken(12);
       try {
-        const result = await callLandlordCheckoutApi('landlord_contract_checkout_complete', { input: { contract_id: CONTRACT_ID, move_out_date: moveOutDate, note, idempotency_key: idempotencyKey } });
-        document.getElementById('resultMessage').innerHTML = '<p class="success">退房已完成，房間已恢復為空房。原合約日期、全文、帳務與簽名紀錄均已保留。</p>';
-        setTimeout(backToDetail, 1000);
+        const result = await callLandlordCheckoutApi('landlord_contract_checkout_complete', { input: Object.assign({}, settlementInput, { note, settlement_note: note, start_meter_document_id: METER_DOCUMENTS.start, end_meter_document_id: METER_DOCUMENTS.end, idempotency_key: idempotencyKey }) });
+        document.getElementById('resultMessage').innerHTML = '<p class="success">退房已完成：應補繳 ' + escapeHtml(formatMoney(result.tenant_balance_due)) + '，押金應退 ' + escapeHtml(formatMoney(result.deposit_refund_amount)) + '。原合約日期、全文、帳務與簽名紀錄均已保留。</p>';
+        setTimeout(backToDetail, 1800);
       } catch (error) {
         document.getElementById('resultMessage').innerHTML = '<p class="error">' + escapeHtml(error.message || '退房未完成，請重新整理後再試。') + '</p>';
         IS_SUBMITTING = false; document.getElementById('submitButton').disabled = false;
@@ -136,7 +277,8 @@
         const ready = await initializeNativeSigningReviewSession();
         if (!ready) return;
         const data = await callLandlordCheckoutApi('landlord_contract_checkout_init', { contract_id: CONTRACT_ID });
-        renderPage(data);
+        const settlement = await callLandlordCheckoutApi('landlord_contract_checkout_settlement_init', { contract_id: CONTRACT_ID, move_out_date: data.default_move_out_date || (data.contract && (data.contract.original_end_date || data.contract.end_date)) });
+        renderPage(data, settlement);
       } catch (error) { document.getElementById('app').innerHTML = '<section class="card"><p class="error">' + escapeHtml(error.message || '退房資料載入失敗') + '</p><button class="btn btn-light" type="button" onclick="backToDetail()">返回房客資料</button></section>'; }
     }
     loadPage();
