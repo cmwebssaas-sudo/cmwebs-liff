@@ -220,9 +220,11 @@ change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
   release. This is deployment identity evidence, not a real-device UAT result.
 - **Current Apps Script rollback version:** Version 139, the prior serving
   version retained on the same Web App deployment.
-- **GitHub Pages:** the tenant-detail direct renewal release at merged `main`
-  commit `938b39d` completed successfully in workflow `33547890200`; public
-  readback found the tenant-detail renewal entry and direct renewal form.
+- **GitHub Pages:** the renewal date-prefill release at merged `main` commit
+  `52d4175` completed successfully in workflow `33553714995`; the subsequent
+  documentation-only sync at `b9bd9cc` also completed successfully in workflow
+  `33554260177`. Public readback found the tenant-detail renewal entry, direct
+  renewal form, and the new release cache key.
 - **Production editor source:** an open Apps Script editor does not prove what
   immutable version is serving. Deployment metadata and a scoped source export
   are authoritative.
