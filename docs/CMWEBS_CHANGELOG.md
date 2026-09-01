@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-02 — Renewal date prefill candidate (local only)
+
+- Changed renewal defaults so the new lease starts on the predecessor contract
+  end date itself, then runs for one year using the existing inclusive date
+  rule (`start date + one year - one day`).
+- Updated the renewal form to use the same date rule when it applies the old
+  contract snapshot, removing the extra one-day offset. Other renewal fields
+  and manual date editing remain unchanged.
+- Phase 174 and new Phase 200 cover the backend default and renewal-form
+  prefill. This candidate is not deployed; formal release and authenticated
+  LINE/mobile UAT remain `HUMAN_REQUIRED`.
+
 ## 2026-09-02 — Tenant-detail direct renewal signing (formal release)
 
 - Moved the primary renewal entry to the tenant journey: tenant list → tenant

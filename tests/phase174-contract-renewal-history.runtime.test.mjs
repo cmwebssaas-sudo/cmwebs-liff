@@ -61,8 +61,8 @@ const defaults = context.contractRenewalHistoryBuildDefaults_(previous, {
 });
 
 assert.deepEqual(plain(defaults), {
-  start_date: '2026-10-01',
-  end_date: '2027-09-30',
+  start_date: '2026-09-30',
+  end_date: '2027-09-29',
   term_months: 12,
   rent_amount: 24000,
   management_fee: 500,
@@ -367,8 +367,8 @@ const landlordAccess = {
   assert.equal(result.data.contract.renewed_from_contract_id, 'C603-2026');
   assert.equal(result.data.contract.contract_family_id, 'C603-2026');
   assert.equal(Number(result.data.contract.renewal_sequence), 2);
-  assert.equal(result.data.contract.start_date, '2026-10-01');
-  assert.equal(result.data.contract.end_date, '2027-09-30');
+  assert.equal(result.data.contract.start_date, '2026-09-30');
+  assert.equal(result.data.contract.end_date, '2027-09-29');
   assert.equal(Number(result.data.contract.rent_amount), 24000);
   assert.equal(Number(result.data.contract.management_fee), 500);
   assert.equal(Number(result.data.contract.deposit_amount), 48000);

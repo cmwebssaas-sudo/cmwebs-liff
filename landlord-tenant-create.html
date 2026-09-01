@@ -2272,12 +2272,11 @@
       setInputValue('note', previous.note || '');
 
       if (previous.end_date) {
-        const end = new Date(rawText(previous.end_date) + 'T00:00:00');
-        if (!Number.isNaN(end.getTime())) {
-          end.setDate(end.getDate() + 1);
-          const nextStart = [end.getFullYear(), String(end.getMonth() + 1).padStart(2, '0'), String(end.getDate()).padStart(2, '0')].join('-');
+        const nextStart = rawText(previous.end_date).trim();
+        const nextEnd = addOneYearMinusOneDay(nextStart);
+        if (nextStart && nextEnd) {
           setInputValue('startDate', nextStart);
-          setInputValue('endDate', addOneYearMinusOneDay(nextStart));
+          setInputValue('endDate', nextEnd);
         }
       }
 
