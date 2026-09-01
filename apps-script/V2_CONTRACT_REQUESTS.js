@@ -256,6 +256,13 @@ function getTenantContractInitByLineUid_(
         identity.tenant_id
       );
 
+    const renewalOffer =
+      contractRequestFindLandlordRenewalOffer_(
+        ss,
+        contract,
+        identity
+      );
+
     const responseData = {
       tenant: identity,
       contract:
@@ -271,12 +278,10 @@ function getTenantContractInitByLineUid_(
           identity
         ),
       requests: requests,
+      landlord_renewal_offer: renewalOffer,
       permissions: {
         can_request_renewal:
-          contractRequestCanSubmitType_(
-            requests,
-            'renewal'
-          ),
+          false,
         can_request_termination:
           contractRequestCanSubmitType_(
             requests,
@@ -337,6 +342,80 @@ function getTenantContractInitByLineUid_(
       )
     );
   }
+}
+
+function contractRequestFindLandlordRenewalOffer_(
+  ss,
+  currentContract,
+  identity
+) {
+  const currentContractId =
+    contractRequestText_(
+      currentContract && currentContract.contract_id
+    );
+  if (!currentContractId) return null;
+
+  const rows =
+    contractRequestGetObjects_(
+      ss.getSheetByName(
+        V2_CONTRACT_REQUESTS_CONTRACTS_SHEET
+      )
+    );
+  const workspaceId =
+    contractRequestText_(
+      (identity && identity.workspace_id) ||
+      (currentContract && currentContract.workspace_id)
+    );
+  const tenantId =
+    contractRequestText_(
+      (identity && identity.tenant_id) ||
+      (currentContract && currentContract.tenant_id)
+    );
+  const tenantLineUserId =
+    contractRequestText_(
+      (identity && identity.tenant_line_user_id) ||
+      (currentContract && currentContract.tenant_line_user_id)
+    );
+  const offers = rows.filter(function (row) {
+    const inquiryStatus =
+      contractRequestText_(row.renewal_inquiry_status).toLowerCase();
+    return (
+      contractRequestText_(row.workspace_id) === workspaceId &&
+      contractRequestText_(row.previous_contract_id || row.renewed_from_contract_id) === currentContractId &&
+      contractRequestText_(row.signing_mode).toLowerCase() === 'renewal' &&
+      contractRequestText_(row.contract_status).toLowerCase() === 'pending_landlord_review' &&
+      contractRequestText_(row.renewal_review_status).toLowerCase() === 'confirmed' &&
+      ['sent', 'responded'].indexOf(inquiryStatus) >= 0 &&
+      !contractRequestText_(row.invite_id) &&
+      (!tenantId || contractRequestText_(row.tenant_id) === tenantId) &&
+      (!tenantLineUserId || contractRequestText_(row.tenant_line_user_id) === tenantLineUserId)
+    );
+  });
+  offers.sort(function (left, right) {
+    return String(right.updated_at || right.created_at || '').localeCompare(String(left.updated_at || left.created_at || ''));
+  });
+  if (!offers.length) return null;
+  const offer = offers[0];
+  return Object.assign(
+    contractRequestBuildContractView_(ss, offer, identity),
+    {
+      contract_id: offer.contract_id,
+      start_date: offer.start_date || offer.contract_start_date || '',
+      end_date: offer.end_date || offer.contract_end_date || '',
+      rent_amount: offer.rent_amount || offer.monthly_rent || 0,
+      management_fee: offer.management_fee || offer.monthly_management_fee || 0,
+      deposit_amount: offer.deposit_amount || 0,
+      payment_day: offer.payment_day || offer.monthly_payment_day || '',
+      special_offer_enabled: offer.special_offer_enabled === true || contractRequestText_(offer.special_offer_enabled).toLowerCase() === 'true',
+      special_offer_notice_days: offer.special_offer_notice_days || 30,
+      special_offer_clause: contractRequestText_(offer.special_offer_clause),
+      renewal_review_status: contractRequestText_(offer.renewal_review_status),
+      renewal_inquiry_status: contractRequestText_(offer.renewal_inquiry_status),
+      renewal_tenant_intent: contractRequestText_(offer.renewal_tenant_intent) || 'pending',
+      identity_document_mode: 'optional',
+      read_only: true
+    }
+  );
 }
 
 
@@ -426,6 +505,13 @@ function submitTenantContractRequestByLineUid_(
       return contractRequestError_(
         'CONTRACT_NOT_FOUND',
         '查無目前有效合約'
+      );
+    }
+
+    if (requestType === 'renewal') {
+      return contractRequestError_(
+        'TENANT_RENEWAL_LANDLORD_INITIATED_ONLY',
+        '續約由房東發起，請等待房東詢問續約意願'
       );
     }
 

@@ -3775,6 +3775,67 @@
       `;
     }
 
+    function renderLandlordRenewalOffer(offer) {
+      if (!offer || !offer.contract_id) return '';
+      const intent = rawText(offer.renewal_tenant_intent || 'pending').trim().toLowerCase();
+      const offerEnabled = offer.special_offer_enabled === true || rawText(offer.special_offer_enabled).trim().toLowerCase() === 'true';
+      const offerStatus = intent === 'accepted'
+        ? '已同意續約'
+        : intent === 'declined'
+          ? '已選擇不續約'
+          : '等待你的回覆';
+      return `
+        <section class="card renewal-offer-card">
+          <div class="section-title">房東提供續約合約</div>
+          <div class="request-status-hint pending">${offerStatus}</div>
+          <div class="detail-list">
+            <div class="detail-row"><div class="detail-label">新租期</div><div class="detail-value">${requestDateRange(offer.start_date, offer.end_date)}</div></div>
+            <div class="detail-row"><div class="detail-label">每月租金</div><div class="detail-value money">${money(offer.rent_amount)}</div></div>
+            <div class="detail-row"><div class="detail-label">每月管理費</div><div class="detail-value money">${money(offer.management_fee)}</div></div>
+            <div class="detail-row"><div class="detail-label">押金</div><div class="detail-value money">${money(offer.deposit_amount)}</div></div>
+            <div class="detail-row"><div class="detail-label">優惠條款</div><div class="detail-value">${offerEnabled ? safeText(offer.special_offer_clause || '提前 30 天通知免收違約金') : '未加入'}</div></div>
+          </div>
+          <details class="request-status-hint" style="white-space:pre-wrap;max-height:240px;overflow:auto;margin-top:12px;"><summary>查看完整續約合約</summary>${safeText(offer.contract_content || '目前沒有可預覽的合約全文。')}</details>
+          ${intent === 'pending' || intent === '' ? `
+            <div class="request-actions" style="margin-top:12px;">
+              <button class="btn btn-primary" type="button" onclick="submitRenewalIntent('${escapeHtml(offer.contract_id)}','accepted')">同意續約</button>
+              <button class="btn btn-danger-soft" type="button" onclick="submitRenewalIntent('${escapeHtml(offer.contract_id)}','declined')">暫不續約</button>
+            </div>
+          ` : intent === 'accepted' ? '<div class="modal-warning">已通知房東你同意續約，待房東發送正式簽署邀請。</div>' : '<div class="modal-warning">已回覆暫不續約；如需更改請直接聯絡房東。</div>'}
+        </section>
+      `;
+    }
+
+    async function submitRenewalIntent(contractId, decision) {
+      if (!LINE_USER_ID) {
+        showAlert('房客身分尚未完成驗證，請重新整理後再試。');
+        return;
+      }
+      const accepted = decision === 'accepted';
+      if (!window.confirm(accepted ? '確認同意這份續約合約嗎？' : '確認回覆暫不續約嗎？')) return;
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: JSON.stringify({
+            v2_action: 'tenant_contract_renewal_intent',
+            line_user_id: LINE_USER_ID,
+            contract_id: contractId,
+            decision: decision
+          })
+        });
+        const result = await response.json();
+        if (!result || result.success !== true) {
+          const error = new Error(result && result.message ? result.message : '續約意願回覆失敗');
+          error.code = result && result.code ? result.code : 'RENEWAL_INTENT_FAILED';
+          throw error;
+        }
+        showAlert(accepted ? '已回覆同意續約' : '已回覆暫不續約', accepted ? '請等待房東發送正式合約簽署邀請。' : '房東會依你的回覆安排後續事宜。', function() { loadPage(false); });
+      } catch (error) {
+        showAlert(error.message || '續約意願回覆失敗，請重新整理後再試。', null, '回覆未完成');
+      }
+    }
+
     function renderPage(data) {
       PAGE_DATA = data || {};
 
@@ -3786,6 +3847,9 @@
 
       const permissions =
         PAGE_DATA.permissions || {};
+
+      const landlordRenewalOffer =
+        PAGE_DATA.landlord_renewal_offer || null;
 
       REQUESTS =
         Array.isArray(PAGE_DATA.requests)
@@ -3976,6 +4040,8 @@
                 </div>
               </section>
 
+              ${renderLandlordRenewalOffer(landlordRenewalOffer)}
+
               <section class="card">
                 <div class="section-title">
                   房東收款資訊
@@ -4009,17 +4075,7 @@
                 </div>
 
                 <div class="action-grid">
-                  <button
-                    class="action-card"
-                    onclick="goRequestPage(
-                      'tenant-renewal.html'
-                    )"
-                    ${
-                      permissions.can_request_renewal === false
-                        ? 'disabled'
-                        : ''
-                    }
-                  >
+                  <div class="action-card" style="cursor:default;">
                     <div class="action-icon renewal">
                       <svg viewBox="0 0 24 24">
                         <path d="M5 7h10"></path>
@@ -4028,15 +4084,9 @@
                         <path d="M12 14l-3 3 3 3"></path>
                       </svg>
                     </div>
-
-                    <div class="action-title">
-                      申請續約
-                    </div>
-
-                    <div class="action-desc">
-                      選擇續約期間並送交房東確認
-                    </div>
-                  </button>
+                    <div class="action-title">續約由房東發起</div>
+                    <div class="action-desc">房東檢視新合約後會先詢問你的續約意願。</div>
+                  </div>
 
                   <button
                     class="action-card"

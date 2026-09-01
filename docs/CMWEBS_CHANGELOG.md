@@ -2,6 +2,19 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-01 — Landlord-led renewal consent flow (local candidate)
+
+- Changed expiry renewals to a landlord-led sequence: the system prepares a
+  one-year draft from the prior contract, the landlord reviews dates, amounts,
+  payment day and the optional 30-day non-renewal offer, then sends a tenant
+  inquiry.
+- Tenants can no longer submit a renewal through the legacy request route. They
+  can only accept or decline a reviewed landlord inquiry; only an accepted
+  response enables the landlord to create the signing invitation.
+- Added additive lifecycle columns for inquiry and tenant intent. Existing
+  contract versions remain append-only, and the unsigned draft remains editable
+  until review confirmation. This candidate is not yet a Production release.
+
 ## 2026-09-01 — Renewal draft date correction (formal release)
 
 - Added `landlord_contract_renewal_draft_update`, a Workspace-scoped POST
