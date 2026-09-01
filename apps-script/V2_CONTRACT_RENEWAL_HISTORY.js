@@ -147,7 +147,7 @@ function contractRenewalHistoryNormalizeContract_(contract) {
 
 function contractRenewalHistoryBuildDefaults_(previous, options) {
   const normalized = contractRenewalHistoryNormalizeContract_(previous);
-  const startDate = contractRenewalHistoryAddDays_(normalized.end_date, 1);
+  const startDate = normalized.end_date;
   const endDate = contractRenewalHistoryAddYearsMinusDay_(startDate, 1);
   return {
     start_date: startDate,
