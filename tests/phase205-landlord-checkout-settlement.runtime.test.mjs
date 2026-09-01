@@ -38,7 +38,7 @@ const result = context.landlordContractCheckoutSettlementCalculate_({
 });
 
 assert.equal(result.success, true, result.code);
-assert.deepEqual(result.data, {
+assert.deepEqual(JSON.parse(JSON.stringify(result.data)), {
   settlement_start_date: '2026-09-01',
   move_out_date: '2026-09-07',
   rent_days: 7,
@@ -126,5 +126,27 @@ const absentPreviousBill = context.landlordContractCheckoutSettlementCalculate_(
 assert.equal(absentPreviousBill.success, true, absentPreviousBill.code);
 assert.equal(absentPreviousBill.data.previous_electricity_amount, 0);
 assert.equal(absentPreviousBill.data.previous_equipment_amount, 0);
+
+const settlementSheet = {
+  headers: ['legacy_column'],
+  getLastColumn() { return this.headers.length; },
+  getRange(_row, column, _height, width) {
+    return {
+      getValues: () => [this.headers.slice(column - 1, column - 1 + width)],
+      setValues: values => { this.headers.splice(column - 1, 0, ...values[0]); }
+    };
+  }
+};
+const spreadsheet = {
+  getSheetByName: name => name === 'V2_checkout_settlements' ? settlementSheet : null
+};
+const schema = context.landlordContractCheckoutSettlementEnsureSheet_(spreadsheet);
+assert.equal(schema.success, true, schema.code);
+assert.equal(settlementSheet.headers[0], 'legacy_column');
+assert.equal(settlementSheet.headers.includes('settlement_id'), true);
+assert.equal(settlementSheet.headers.includes('completed_at'), true);
+const schemaAgain = context.landlordContractCheckoutSettlementEnsureSheet_(spreadsheet);
+assert.equal(schemaAgain.success, true, schemaAgain.code);
+assert.deepEqual(JSON.parse(JSON.stringify(schemaAgain.data.added_headers)), []);
 
 console.log('Phase 205 landlord checkout settlement runtime RED/GREEN tests passed.');

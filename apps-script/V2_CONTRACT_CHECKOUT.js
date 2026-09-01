@@ -16,6 +16,189 @@ const V2_CONTRACT_CHECKOUT_OPEN_SIBLING_STATUSES_ = [
   'awaiting_tenant_signature'
 ];
 
+const V2_CHECKOUT_SETTLEMENT_SHEET_ = 'V2_checkout_settlements';
+const V2_CHECKOUT_SETTLEMENT_HEADERS_ = [
+  'settlement_id', 'workspace_id', 'landlord_id', 'contract_id', 'tenant_id',
+  'room_id', 'previous_bill_id', 'previous_bill_month',
+  'previous_electricity_amount', 'previous_equipment_amount',
+  'settlement_start_date', 'move_out_date', 'rent_days', 'days_in_month',
+  'rent_amount', 'start_meter_reading', 'end_meter_reading', 'electricity_usage',
+  'electricity_fee_rate', 'equipment_fee_rate', 'electricity_amount',
+  'equipment_amount', 'deposit_amount', 'deposit_deduction_amount',
+  'deposit_refund_amount', 'subtotal_amount', 'tenant_balance_due',
+  'start_meter_document_id', 'end_meter_document_id', 'settlement_note',
+  'settlement_status', 'idempotency_key', 'created_at', 'created_by_user_id',
+  'completed_at'
+];
+
+const V2_CHECKOUT_SETTLEMENT_PAID_STATUSES_ = [
+  'paid', 'confirmed', 'cancelled', 'canceled', 'void', 'voided'
+];
+
+function landlordContractCheckoutSettlementError_(code, message) {
+  return { success: false, code: code, message: message };
+}
+
+function landlordContractCheckoutSettlementText_(value) {
+  return value === null || value === undefined ? '' : String(value).trim();
+}
+
+function landlordContractCheckoutSettlementNumber_(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function landlordContractCheckoutSettlementRound_(value) {
+  return Math.round(landlordContractCheckoutSettlementNumber_(value, 0));
+}
+
+function landlordContractCheckoutSettlementParseDate_(value) {
+  const text = landlordContractCheckoutSettlementText_(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return date;
+}
+
+function landlordContractCheckoutSettlementFormatDate_(date) {
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, '0'),
+    String(date.getUTCDate()).padStart(2, '0')
+  ].join('-');
+}
+
+function landlordContractCheckoutSettlementDaysInMonth_(value) {
+  const date = landlordContractCheckoutSettlementParseDate_(value);
+  if (!date) return 0;
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+}
+
+function landlordContractCheckoutSettlementPreviousMonth_(value) {
+  const date = landlordContractCheckoutSettlementParseDate_(value + '-01');
+  if (!date) return '';
+  date.setUTCMonth(date.getUTCMonth() - 1);
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, '0')
+  ].join('-');
+}
+
+function landlordContractCheckoutSettlementValidateInput_(input) {
+  const normalized = input || {};
+  const contract = normalized.contract || {};
+  const moveOutDate = landlordContractCheckoutSettlementText_(normalized.moveOutDate || normalized.move_out_date);
+  const startDate = landlordContractCheckoutSettlementText_(contract.start_date || contract.contract_start_date);
+  const moveOut = landlordContractCheckoutSettlementParseDate_(moveOutDate);
+  const leaseStart = landlordContractCheckoutSettlementParseDate_(startDate);
+  if (!moveOut || !leaseStart || moveOutDate < startDate) return landlordContractCheckoutSettlementError_('CHECKOUT_MOVE_OUT_DATE_INVALID', '退房日期無效或早於租約起始日');
+
+  const startMeterReading = landlordContractCheckoutSettlementNumber_(normalized.startMeterReading === undefined ? normalized.start_meter_reading : normalized.startMeterReading, NaN);
+  const endMeterReading = landlordContractCheckoutSettlementNumber_(normalized.endMeterReading === undefined ? normalized.end_meter_reading : normalized.endMeterReading, NaN);
+  if (!Number.isFinite(startMeterReading) || !Number.isFinite(endMeterReading) || startMeterReading < 0 || endMeterReading < startMeterReading) {
+    return landlordContractCheckoutSettlementError_('CHECKOUT_METER_READING_INVALID', '電表起始或結束度數無效');
+  }
+
+  const depositAmount = landlordContractCheckoutSettlementRound_(contract.deposit_amount);
+  const depositDeductionAmount = landlordContractCheckoutSettlementNumber_(normalized.depositDeductionAmount === undefined ? normalized.deposit_deduction_amount : normalized.depositDeductionAmount, NaN);
+  if (!Number.isFinite(depositAmount) || depositAmount < 0 || !Number.isFinite(depositDeductionAmount) || depositDeductionAmount < 0 || depositDeductionAmount > depositAmount) {
+    return landlordContractCheckoutSettlementError_('CHECKOUT_DEPOSIT_DEDUCTION_INVALID', '押金扣除金額超過押金或無效');
+  }
+  const deductionNote = landlordContractCheckoutSettlementText_(normalized.depositDeductionNote || normalized.deposit_deduction_note);
+  if (depositDeductionAmount > 0 && !deductionNote) return landlordContractCheckoutSettlementError_('CHECKOUT_DEPOSIT_DEDUCTION_NOTE_REQUIRED', '有押金扣除時必須填寫說明');
+  return { success: true, code: 'OK' };
+}
+
+function landlordContractCheckoutSettlementPreviousUtility_(previousBill, settlementStartDate) {
+  const bill = previousBill || {};
+  const expectedMonth = landlordContractCheckoutSettlementPreviousMonth_(settlementStartDate.slice(0, 7));
+  const paymentStatus = landlordContractCheckoutSettlementText_(bill.payment_status || bill.status).toLowerCase();
+  if (!bill || landlordContractCheckoutSettlementText_(bill.bill_month) !== expectedMonth || V2_CHECKOUT_SETTLEMENT_PAID_STATUSES_.indexOf(paymentStatus) >= 0) {
+    return { electricity_amount: 0, equipment_amount: 0 };
+  }
+  return {
+    electricity_amount: landlordContractCheckoutSettlementRound_(bill.electricity_amount),
+    equipment_amount: landlordContractCheckoutSettlementRound_(bill.equipment_amount)
+  };
+}
+
+function landlordContractCheckoutSettlementCalculate_(input) {
+  const normalized = input || {};
+  const validation = landlordContractCheckoutSettlementValidateInput_(normalized);
+  if (!validation.success) return validation;
+
+  const contract = normalized.contract || {};
+  const moveOutDate = landlordContractCheckoutSettlementText_(normalized.moveOutDate || normalized.move_out_date);
+  const moveOut = landlordContractCheckoutSettlementParseDate_(moveOutDate);
+  const settlementStartDate = landlordContractCheckoutSettlementFormatDate_(new Date(Date.UTC(moveOut.getUTCFullYear(), moveOut.getUTCMonth(), 1)));
+  const daysInMonth = landlordContractCheckoutSettlementDaysInMonth_(moveOutDate);
+  const rentDays = moveOut.getUTCDate();
+  const rentAmount = landlordContractCheckoutSettlementRound_(landlordContractCheckoutSettlementNumber_(contract.rent_amount === undefined ? contract.monthly_rent : contract.rent_amount, 0) * rentDays / daysInMonth);
+  const startMeterReading = landlordContractCheckoutSettlementNumber_(normalized.startMeterReading === undefined ? normalized.start_meter_reading : normalized.startMeterReading, 0);
+  const endMeterReading = landlordContractCheckoutSettlementNumber_(normalized.endMeterReading === undefined ? normalized.end_meter_reading : normalized.endMeterReading, 0);
+  const electricityUsage = endMeterReading - startMeterReading;
+  const electricityFeeRate = landlordContractCheckoutSettlementNumber_(contract.electricity_fee_rate, 0);
+  const equipmentFeeRate = landlordContractCheckoutSettlementNumber_(contract.equipment_fee_rate, 0);
+  const electricityAmount = landlordContractCheckoutSettlementRound_(electricityUsage * electricityFeeRate);
+  const equipmentAmount = landlordContractCheckoutSettlementRound_(electricityUsage * equipmentFeeRate);
+  const previousUtility = landlordContractCheckoutSettlementPreviousUtility_(normalized.previousBill, settlementStartDate);
+  const depositAmount = landlordContractCheckoutSettlementRound_(contract.deposit_amount);
+  const depositDeductionAmount = landlordContractCheckoutSettlementRound_(normalized.depositDeductionAmount === undefined ? normalized.deposit_deduction_amount : normalized.depositDeductionAmount);
+  const subtotalAmount = landlordContractCheckoutSettlementRound_(previousUtility.electricity_amount + previousUtility.equipment_amount + rentAmount + electricityAmount + equipmentAmount);
+  return {
+    success: true,
+    code: 'OK',
+    data: {
+      settlement_start_date: settlementStartDate,
+      move_out_date: moveOutDate,
+      rent_days: rentDays,
+      days_in_month: daysInMonth,
+      rent_amount: rentAmount,
+      start_meter_reading: startMeterReading,
+      end_meter_reading: endMeterReading,
+      electricity_usage: electricityUsage,
+      electricity_amount: electricityAmount,
+      equipment_amount: equipmentAmount,
+      previous_electricity_amount: previousUtility.electricity_amount,
+      previous_equipment_amount: previousUtility.equipment_amount,
+      subtotal_amount: subtotalAmount,
+      deposit_amount: depositAmount,
+      deposit_deduction_amount: depositDeductionAmount,
+      deposit_refund_amount: Math.max(0, depositAmount - depositDeductionAmount),
+      tenant_balance_due: Math.max(0, subtotalAmount - depositDeductionAmount)
+    }
+  };
+}
+
+function landlordContractCheckoutSettlementEnsureSheet_(ss) {
+  const spreadsheet = ss || SpreadsheetApp.getActiveSpreadsheet();
+  if (!spreadsheet || typeof spreadsheet.getSheetByName !== 'function') return landlordContractCheckoutSettlementError_('CHECKOUT_SETTLEMENT_SPREADSHEET_REQUIRED', '找不到結算資料表');
+  let sheet = spreadsheet.getSheetByName(V2_CHECKOUT_SETTLEMENT_SHEET_);
+  if (!sheet && typeof spreadsheet.insertSheet === 'function') sheet = spreadsheet.insertSheet(V2_CHECKOUT_SETTLEMENT_SHEET_);
+  if (!sheet) return landlordContractCheckoutSettlementError_('CHECKOUT_SETTLEMENT_SHEET_REQUIRED', '無法建立退房結算資料表');
+  const lastColumn = Number(sheet.getLastColumn && sheet.getLastColumn()) || 0;
+  const existingHeaders = lastColumn > 0 && sheet.getRange ? sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function(header) { return landlordContractCheckoutSettlementText_(header); }) : [];
+  const addedHeaders = [];
+  if (existingHeaders.length === 0) {
+    sheet.getRange(1, 1, 1, V2_CHECKOUT_SETTLEMENT_HEADERS_.length).setValues([V2_CHECKOUT_SETTLEMENT_HEADERS_.slice()]);
+    addedHeaders.push.apply(addedHeaders, V2_CHECKOUT_SETTLEMENT_HEADERS_);
+  } else {
+    V2_CHECKOUT_SETTLEMENT_HEADERS_.forEach(function(header) {
+      if (existingHeaders.indexOf(header) < 0) addedHeaders.push(header);
+    });
+    if (addedHeaders.length > 0) sheet.getRange(1, existingHeaders.length + 1, 1, addedHeaders.length).setValues([addedHeaders]);
+  }
+  return { success: true, code: 'OK', data: { sheet: sheet, added_headers: addedHeaders } };
+}
+
+function runV2CheckoutSettlementProductionMigration() {
+  return landlordContractCheckoutSettlementEnsureSheet_(SpreadsheetApp.getActiveSpreadsheet());
+}
+
 function landlordContractCheckoutInitBySession_(sessionToken, contractId) {
   const access = landlordContractCheckoutAccessFromSession_(sessionToken, 'read');
   if (!access.success) return access;
