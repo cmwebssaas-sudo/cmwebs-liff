@@ -2,7 +2,7 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-02 — Renewal date prefill candidate (local only)
+## 2026-09-02 — Renewal date prefill (formal release)
 
 - Changed renewal defaults so the new lease starts on the predecessor contract
   end date itself, then runs for one year using the existing inclusive date
@@ -11,8 +11,20 @@
   contract snapshot, removing the extra one-day offset. Other renewal fields
   and manual date editing remain unchanged.
 - Phase 174 and new Phase 200 cover the backend default and renewal-form
-  prefill. This candidate is not deployed; formal release and authenticated
-  LINE/mobile UAT remain `HUMAN_REQUIRED`.
+  prefill. PR #83 merged the release into GitHub `main` as `52d4175`.
+- Apps Script was pushed as 51 source files and the existing public Web App
+  deployment was updated to immutable Version 144. The Web App URL was
+  preserved and Version 139 remains the rollback target. No Script Properties,
+  Trigger, LINE setting, contract row, or manual Sheet migration was changed.
+- GitHub Pages workflow `33553714995` completed build, deploy and status jobs.
+  Public readback returned HTTP 200 and confirmed cache key
+  `20260902-renewal-date-prefill-v1`, the direct renewal entry, and the
+  predecessor-end-date prefill logic.
+- Local verification passed: full Node suite `69/69`, project validation
+  `71/71` routes and handlers, duplicate declarations `0`, credential scan
+  `0`, Apps Script syntax checks, and `git diff --check`.
+- Exact production Sheet header state and authenticated LINE/mobile contract
+  acceptance remain `HUMAN_REQUIRED`.
 
 ## 2026-09-02 — Tenant-detail direct renewal signing (formal release)
 

@@ -7,6 +7,32 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-02 renewal date prefill formal release
+
+- Renewal forms now use the predecessor contract end date itself as the new
+  lease start date. The end date is then calculated with the existing inclusive
+  one-year rule (`start date + one year - one day`), so `2026-09-30` becomes
+  `2027-09-29`. The change applies to direct renewal defaults and expiry-draft
+  defaults; the new-lease flow and other renewal fields are unchanged.
+- The onboarding response now normalizes Sheet date/timestamp values before
+  they reach the HTML date inputs, including timestamps such as
+  `2026-10-02T16:00:00.000Z`.
+- PR #83 merged the candidate into GitHub `main` as `52d4175`.
+- Apps Script was pushed as 51 source files and the existing public Web App
+  deployment now serves immutable Version 144. The Web App URL was preserved;
+  Version 139 remains the rollback reference. No Script Properties, Trigger,
+  LINE setting, contract row, or manual Sheet migration was changed.
+- GitHub Pages workflow `33553714995` completed successfully. Public readback
+  returned HTTP 200 for the renewal form, release asset, and tenant-detail
+  entry, and confirmed cache key `20260902-renewal-date-prefill-v1` plus the
+  predecessor-end-date prefill logic.
+- Local verification passed: full Node suite `69/69`, project validation
+  `71/71` routes and handlers, duplicate declarations `0`, credential scan
+  `0`, Apps Script syntax checks, and `git diff --check`.
+- Exact production Sheet header state and authenticated LINE/mobile contract
+  acceptance remain `HUMAN_REQUIRED`; public readback does not prove a
+  logged-in contract transaction.
+
 ## 2026-09-02 tenant-detail direct renewal signing formal release
 
 - The primary renewal entry is now the tenant journey: tenant list → tenant
@@ -189,10 +215,9 @@ change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
 
 - **Canonical source baseline:** the Version 89 source tree described above,
   reconciled to GitHub `main` by PR #12.
-- **Current Apps Script serving version:** Version 143, read back from the
-  existing Web App deployment on 2026-09-02 after the tenant-detail direct
-  renewal release. This is deployment identity evidence, not a real-device
-  UAT result.
+- **Current Apps Script serving version:** Version 144, read back from the
+  existing Web App deployment on 2026-09-02 after the renewal date-prefill
+  release. This is deployment identity evidence, not a real-device UAT result.
 - **Current Apps Script rollback version:** Version 139, the prior serving
   version retained on the same Web App deployment.
 - **GitHub Pages:** the tenant-detail direct renewal release at merged `main`
