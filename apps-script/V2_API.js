@@ -2741,6 +2741,8 @@ function landlordContractHistoryView_(contractRows, tenantRow, landlord) {
       rent_amount: Number(row.rent_amount || row.monthly_rent || 0),
       management_fee: Number(row.management_fee || row.monthly_management_fee || 0),
       deposit_amount: Number(row.deposit_amount || 0),
+      electricity_fee_rate: Number(row.electricity_fee_rate || 0),
+      equipment_fee_rate: Number(row.equipment_fee_rate || 0),
       other_fixed_fee_amount: Number(row.other_fixed_fee_amount || 0),
       other_fixed_fee_note: String(row.other_fixed_fee_note || '').trim(),
       monthly_payment_day: Number(row.monthly_payment_day || row.payment_day || 0),
@@ -2754,6 +2756,14 @@ function landlordContractHistoryView_(contractRows, tenantRow, landlord) {
       tenant_signing_submission_status: String(row.tenant_signing_submission_status || '').trim(),
       tenant_signed_at: row.tenant_signed_at || '',
       tenant_signature_artifact_id: String(row.tenant_signature_artifact_id || '').trim(),
+      checkout_status: String(row.checkout_status || '').trim(),
+      checkout_source: String(row.checkout_source || '').trim(),
+      checkout_requested_at: row.checkout_requested_at || '',
+      checkout_completed_at: row.checkout_completed_at || '',
+      checkout_move_out_date: row.checkout_move_out_date || '',
+      checkout_note: String(row.checkout_note || '').trim(),
+      checkout_idempotency_key: String(row.checkout_idempotency_key || '').trim(),
+      terminated_at: row.terminated_at || '',
       read_only: true,
       is_current: row.is_current === true
     };
