@@ -863,7 +863,10 @@ function landlordInitiatedContractIsRequest_(body) {
     'landlord_contract_renewal_inquiry_send',
     'landlord_contract_renewal_send',
     'landlord_contract_checkout_init',
+    'landlord_contract_checkout_settlement_init',
+    'landlord_contract_checkout_settlement_preview',
     'landlord_contract_checkout_complete',
+    'landlord_contract_checkout_evidence_upload',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
   ].indexOf(landlordInitiatedContractText_(request && request.action)) >= 0;
@@ -914,7 +917,10 @@ function landlordInitiatedContractHandlePostDirect_(request) {
   const action = landlordInitiatedContractText_(request.action);
   if (action === 'landlord_contract_initiated_init') return landlordInitiatedContractListBySession_(request.session_token);
   if (action === 'landlord_contract_checkout_init') return landlordContractCheckoutInitBySession_(request.session_token, request.contract_id || (request.input && request.input.contract_id));
+  if (action === 'landlord_contract_checkout_settlement_init') return landlordContractCheckoutSettlementInitBySession_(request.session_token, request.contract_id || (request.input && request.input.contract_id), request.move_out_date || (request.input && request.input.move_out_date));
+  if (action === 'landlord_contract_checkout_settlement_preview') return landlordContractCheckoutSettlementPreviewBySession_(request.session_token, request.input || request);
   if (action === 'landlord_contract_checkout_complete') return landlordContractCheckoutCompleteBySession_(request.session_token, request.input || request);
+  if (action === 'landlord_contract_checkout_evidence_upload') return landlordContractCheckoutEvidenceUploadBySession_(request.session_token, request.input || request);
   if (action === 'landlord_contract_invite_cancel') return landlordInitiatedContractCancelBySession_(request.session_token, request.invite_id);
   if (action === 'landlord_contract_invite_reissue') return landlordInitiatedContractReissueBySession_(request.session_token, request.invite_id);
   const access = landlordInitiatedContractAccessFromSession_(request.session_token, 'contract_write');

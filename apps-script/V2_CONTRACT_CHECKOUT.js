@@ -199,6 +199,224 @@ function runV2CheckoutSettlementProductionMigration() {
   return landlordContractCheckoutSettlementEnsureSheet_(SpreadsheetApp.getActiveSpreadsheet());
 }
 
+function landlordContractCheckoutSettlementSchema_(ss, ensureSettlementSheet) {
+  const schema = landlordInitiatedContractSchema_(ss);
+  if (!schema.success) return schema;
+  let settlementSheet = schema.data.settlements || ss.getSheetByName(V2_CHECKOUT_SETTLEMENT_SHEET_);
+  if (!settlementSheet && ensureSettlementSheet === true) {
+    const ensured = landlordContractCheckoutSettlementEnsureSheet_(ss);
+    if (!ensured.success) return ensured;
+    settlementSheet = ensured.data.sheet;
+  }
+  if (!settlementSheet) return landlordContractCheckoutSettlementError_('CHECKOUT_SETTLEMENT_SCHEMA_NOT_READY', '退房結算資料表尚未就緒');
+  return {
+    success: true,
+    code: 'OK',
+    data: Object.assign({}, schema.data, {
+      bills: ss.getSheetByName('V2_bills'),
+      settlements: settlementSheet
+    })
+  };
+}
+
+function landlordContractCheckoutSettlementUuid_() {
+  if (typeof Utilities !== 'undefined' && Utilities && typeof Utilities.getUuid === 'function') return String(Utilities.getUuid());
+  return 'checkout-settlement-' + String(new Date().getTime()) + '-' + String(Math.floor(Math.random() * 1000000));
+}
+
+function landlordContractCheckoutSettlementFindPreviousBill_(sheet, access, contract, settlementStartDate) {
+  if (!sheet) return null;
+  const expectedMonth = landlordContractCheckoutSettlementPreviousMonth_(settlementStartDate.slice(0, 7));
+  return landlordContractCheckoutRows_(sheet).find(function(row) {
+    return landlordInitiatedContractText_(row.workspace_id) === landlordInitiatedContractWorkspaceId_(access) &&
+      landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contract.contract_id) &&
+      landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id) &&
+      landlordInitiatedContractText_(row.room_id) === landlordInitiatedContractText_(contract.room_id) &&
+      landlordInitiatedContractText_(row.bill_month) === expectedMonth;
+  }) || null;
+}
+
+function landlordContractCheckoutSettlementPublicBill_(bill) {
+  if (!bill) return null;
+  return {
+    bill_id: landlordInitiatedContractText_(bill.bill_id),
+    bill_month: landlordInitiatedContractText_(bill.bill_month),
+    payment_status: landlordInitiatedContractText_(bill.payment_status || bill.status).toLowerCase(),
+    electricity_amount: landlordContractCheckoutSettlementRound_(bill.electricity_amount),
+    equipment_amount: landlordContractCheckoutSettlementRound_(bill.equipment_amount)
+  };
+}
+
+function landlordContractCheckoutSettlementSource_(schema, access, contractId, moveOutDate) {
+  const contract = landlordContractCheckoutFindContract_(schema.data.contracts, access, contractId);
+  if (!contract) return landlordContractCheckoutSettlementError_('CONTRACT_NOT_FOUND', '找不到可辦理退房的合約');
+  const room = landlordInitiatedContractFindScopedRow_(schema.data.rooms, access, 'room_id', contract.room_id);
+  const tenant = landlordInitiatedContractFindScopedRow_(schema.data.tenants, access, 'tenant_id', contract.tenant_id);
+  if (!room) return landlordContractCheckoutSettlementError_('ROOM_NOT_FOUND', '找不到合約所屬房間');
+  const originalEndDate = landlordContractCheckoutOriginalEndDate_(contract);
+  const selectedMoveOutDate = landlordInitiatedContractText_(moveOutDate) || originalEndDate;
+  const eligibility = landlordContractCheckoutValidateTarget_(contract, room, landlordContractCheckoutFindSiblings_(schema.data.contracts, access, contract), {
+    workspace_id: landlordInitiatedContractWorkspaceId_(access),
+    move_out_date: selectedMoveOutDate
+  });
+  if (!eligibility.success) return eligibility;
+  const moveOut = landlordContractCheckoutSettlementParseDate_(selectedMoveOutDate);
+  const settlementStartDate = landlordContractCheckoutSettlementFormatDate_(new Date(Date.UTC(moveOut.getUTCFullYear(), moveOut.getUTCMonth(), 1)));
+  const previousBill = landlordContractCheckoutSettlementFindPreviousBill_(schema.data.bills, access, contract, settlementStartDate);
+  const previousUtility = landlordContractCheckoutSettlementPreviousUtility_(previousBill, settlementStartDate);
+  return {
+    success: true,
+    code: 'OK',
+    data: {
+      contract: Object.assign({}, contract, { original_end_date: originalEndDate }),
+      tenant: tenant || null,
+      room: room,
+      previous_bill: landlordContractCheckoutSettlementPublicBill_(previousBill),
+      settlement: {
+        settlement_start_date: settlementStartDate,
+        move_out_date: selectedMoveOutDate,
+        previous_bill_id: previousBill ? landlordInitiatedContractText_(previousBill.bill_id) : '',
+        previous_bill_month: previousBill ? landlordInitiatedContractText_(previousBill.bill_month) : '',
+        previous_electricity_amount: previousUtility.electricity_amount,
+        previous_equipment_amount: previousUtility.equipment_amount,
+        rent_amount: landlordContractCheckoutSettlementRound_(contract.rent_amount === undefined ? contract.monthly_rent : contract.rent_amount),
+        deposit_amount: landlordContractCheckoutSettlementRound_(contract.deposit_amount),
+        electricity_fee_rate: landlordContractCheckoutSettlementNumber_(contract.electricity_fee_rate, 0),
+        equipment_fee_rate: landlordContractCheckoutSettlementNumber_(contract.equipment_fee_rate, 0)
+      }
+    }
+  };
+}
+
+function landlordContractCheckoutSettlementInitBySession_(sessionToken, contractId, moveOutDate) {
+  const access = landlordContractCheckoutAccessFromSession_(sessionToken, 'read');
+  if (!access.success) return access;
+  const schema = landlordContractCheckoutSettlementSchema_(SpreadsheetApp.getActiveSpreadsheet(), false);
+  if (!schema.success) return schema;
+  return landlordContractCheckoutSettlementSource_(schema, access, contractId, moveOutDate);
+}
+
+function landlordContractCheckoutSettlementPreviewBySession_(sessionToken, input) {
+  const normalized = input || {};
+  const access = landlordContractCheckoutAccessFromSession_(sessionToken, 'read');
+  if (!access.success) return access;
+  const schema = landlordContractCheckoutSettlementSchema_(SpreadsheetApp.getActiveSpreadsheet(), false);
+  if (!schema.success) return schema;
+  const source = landlordContractCheckoutSettlementSource_(schema, access, normalized.contract_id, normalized.move_out_date || normalized.moveOutDate);
+  if (!source.success) return source;
+  const calculation = landlordContractCheckoutSettlementCalculate_(Object.assign({}, normalized, {
+    contract: source.data.contract,
+    previousBill: source.data.previous_bill
+  }));
+  if (!calculation.success) return calculation;
+  return {
+    success: true,
+    code: 'OK',
+    data: {
+      contract_id: landlordInitiatedContractText_(source.data.contract.contract_id),
+      tenant_id: landlordInitiatedContractText_(source.data.contract.tenant_id),
+      settlement: Object.assign({}, calculation.data, {
+        previous_bill_id: source.data.settlement.previous_bill_id,
+        previous_bill_month: source.data.settlement.previous_bill_month,
+        electricity_fee_rate: landlordContractCheckoutSettlementNumber_(source.data.contract.electricity_fee_rate, 0),
+        equipment_fee_rate: landlordContractCheckoutSettlementNumber_(source.data.contract.equipment_fee_rate, 0)
+      })
+    }
+  };
+}
+
+function landlordContractCheckoutSettlementFindExisting_(sheet, access, contractId) {
+  if (!sheet) return null;
+  return landlordContractCheckoutRows_(sheet).find(function(row) {
+    return landlordInitiatedContractText_(row.workspace_id) === landlordInitiatedContractWorkspaceId_(access) && landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contractId);
+  }) || null;
+}
+
+function landlordContractCheckoutSettlementResult_(row, calculation, idempotent) {
+  return {
+    success: true,
+    code: idempotent ? 'IDEMPOTENT' : 'OK',
+    data: {
+      settlement_id: landlordInitiatedContractText_(row.settlement_id),
+      contract_id: landlordInitiatedContractText_(row.contract_id),
+      tenant_id: landlordInitiatedContractText_(row.tenant_id),
+      settlement_status: landlordInitiatedContractText_(row.settlement_status),
+      subtotal_amount: calculation.subtotal_amount,
+      deposit_deduction_amount: calculation.deposit_deduction_amount,
+      tenant_balance_due: calculation.tenant_balance_due,
+      deposit_refund_amount: calculation.deposit_refund_amount,
+      idempotent: idempotent === true
+    }
+  };
+}
+
+function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input) {
+  const normalized = input || {};
+  const contractId = landlordInitiatedContractText_(normalized.contract_id);
+  const idempotencyKey = landlordInitiatedContractText_(normalized.idempotency_key);
+  if (!contractId || !idempotencyKey) return landlordContractCheckoutSettlementError_('CHECKOUT_SETTLEMENT_INPUT_REQUIRED', '缺少合約或退房結算操作識別碼');
+  if (idempotencyKey.length > 160) return landlordContractCheckoutSettlementError_('CHECKOUT_SETTLEMENT_IDEMPOTENCY_KEY_INVALID', '退房結算操作識別碼無效');
+  const settlementSheet = schema && schema.data && schema.data.settlements;
+  if (!settlementSheet) return landlordContractCheckoutSettlementError_('CHECKOUT_SETTLEMENT_SCHEMA_NOT_READY', '退房結算資料表尚未就緒');
+  const existing = landlordContractCheckoutSettlementFindExisting_(settlementSheet, access, contractId);
+  if (existing) {
+    if (landlordInitiatedContractText_(existing.idempotency_key) === idempotencyKey && landlordInitiatedContractText_(existing.settlement_status).toLowerCase() === 'completed') {
+      return landlordContractCheckoutSettlementResult_(existing, {
+        subtotal_amount: landlordContractCheckoutSettlementRound_(existing.subtotal_amount),
+        deposit_deduction_amount: landlordContractCheckoutSettlementRound_(existing.deposit_deduction_amount),
+        tenant_balance_due: landlordContractCheckoutSettlementRound_(existing.tenant_balance_due),
+        deposit_refund_amount: landlordContractCheckoutSettlementRound_(existing.deposit_refund_amount)
+      }, true);
+    }
+    return landlordContractCheckoutSettlementError_('CHECKOUT_SETTLEMENT_ALREADY_EXISTS', '此合約已有退房結算紀錄');
+  }
+
+  const contract = landlordContractCheckoutFindContract_(schema.data.contracts, access, contractId);
+  if (!contract) return landlordContractCheckoutSettlementError_('CONTRACT_NOT_FOUND', '找不到可辦理退房的合約');
+  const room = landlordInitiatedContractFindScopedRow_(schema.data.rooms, access, 'room_id', contract.room_id);
+  if (!room) return landlordContractCheckoutSettlementError_('ROOM_NOT_FOUND', '找不到合約所屬房間');
+  const tenant = landlordInitiatedContractFindScopedRow_(schema.data.tenants, access, 'tenant_id', contract.tenant_id);
+  const moveOutDate = landlordInitiatedContractText_(normalized.move_out_date || normalized.moveOutDate);
+  const validation = landlordContractCheckoutValidateTarget_(contract, room, landlordContractCheckoutFindSiblings_(schema.data.contracts, access, contract), {
+    workspace_id: landlordInitiatedContractWorkspaceId_(access),
+    move_out_date: moveOutDate
+  });
+  if (!validation.success) return validation;
+  if (!landlordContractCheckoutSettlementText_(normalized.start_meter_document_id) || !landlordContractCheckoutSettlementText_(normalized.end_meter_document_id)) return landlordContractCheckoutSettlementError_('CHECKOUT_METER_DOCUMENTS_REQUIRED', '退房時必須上傳起始與結束電表照片');
+  const parsedMoveOut = landlordContractCheckoutSettlementParseDate_(moveOutDate);
+  const settlementStartDate = landlordContractCheckoutSettlementFormatDate_(new Date(Date.UTC(parsedMoveOut.getUTCFullYear(), parsedMoveOut.getUTCMonth(), 1)));
+  const previousBill = landlordContractCheckoutSettlementFindPreviousBill_(schema.data.bills, access, contract, settlementStartDate);
+  const calculation = landlordContractCheckoutSettlementCalculate_(Object.assign({}, normalized, {
+    contract: contract,
+    previousBill: previousBill
+  }));
+  if (!calculation.success) return calculation;
+  const settlementId = landlordContractCheckoutSettlementUuid_();
+  const nowIso = new Date().toISOString();
+  const row = Object.assign({}, calculation.data, {
+    settlement_id: settlementId,
+    workspace_id: landlordInitiatedContractWorkspaceId_(access),
+    landlord_id: landlordInitiatedContractLandlordId_(access),
+    contract_id: landlordInitiatedContractText_(contract.contract_id),
+    tenant_id: landlordInitiatedContractText_(contract.tenant_id),
+    room_id: landlordInitiatedContractText_(contract.room_id),
+    previous_bill_id: previousBill ? landlordInitiatedContractText_(previousBill.bill_id) : '',
+    previous_bill_month: previousBill ? landlordInitiatedContractText_(previousBill.bill_month) : '',
+    electricity_fee_rate: landlordContractCheckoutSettlementNumber_(contract.electricity_fee_rate, 0),
+    equipment_fee_rate: landlordContractCheckoutSettlementNumber_(contract.equipment_fee_rate, 0),
+    start_meter_document_id: landlordContractCheckoutSettlementText_(normalized.start_meter_document_id),
+    end_meter_document_id: landlordContractCheckoutSettlementText_(normalized.end_meter_document_id),
+    settlement_note: landlordContractCheckoutSettlementText_(normalized.settlement_note || normalized.note),
+    settlement_status: 'completed',
+    idempotency_key: idempotencyKey,
+    created_at: nowIso,
+    created_by_user_id: landlordInitiatedContractText_(access.user && access.user.user_id),
+    completed_at: nowIso
+  });
+  landlordInitiatedContractAppend_(settlementSheet, row);
+  return landlordContractCheckoutSettlementResult_(row, calculation.data, false);
+}
+
 function landlordContractCheckoutInitBySession_(sessionToken, contractId) {
   const access = landlordContractCheckoutAccessFromSession_(sessionToken, 'read');
   if (!access.success) return access;
