@@ -7,6 +7,32 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-02 renewal fee prefill corrective release
+
+- Fixed the `從此合約發起續約` path so the predecessor rent, management fee,
+  deposit months, deposit amount, payment day, electricity fee rate, equipment
+  loss fee rate, optional 30-day clause, and note remain available when the
+  form switches into renewal mode.
+- The room summary now carries those predecessor contract fields, and the
+  frontend prefers the complete `renewal_source` before falling back to the
+  room summary. This prevents the room summary from masking the complete
+  contract data returned for a selected predecessor.
+- PR #86 merged the fix into GitHub `main` as `72542bc`.
+- Apps Script was pushed as 51 source files and the existing public Web App
+  deployment now serves immutable Version 145. The Web App URL was preserved;
+  Version 139 remains the rollback reference. No Script Properties, Trigger,
+  LINE setting, contract row, or manual Sheet migration was changed.
+- GitHub Pages workflow `33555883954` completed successfully. Public readback
+  returned HTTP 200 and confirmed cache key
+  `20260902-renewal-date-prefill-v2`, complete-source preference, and fee-field
+  prefill markers on the renewal page.
+- Local verification passed: full Node suite `69/69`, project validation
+  `71/71` routes and handlers, duplicate declarations `0`, credential scan
+  `0`, Apps Script syntax checks, and `git diff --check`.
+- Exact production Sheet header state and authenticated LINE/mobile contract
+  acceptance remain `HUMAN_REQUIRED`; public readback does not prove a
+  logged-in contract transaction.
+
 ## 2026-09-02 renewal date prefill formal release
 
 - Renewal forms now use the predecessor contract end date itself as the new
@@ -215,16 +241,16 @@ change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
 
 - **Canonical source baseline:** the Version 89 source tree described above,
   reconciled to GitHub `main` by PR #12.
-- **Current Apps Script serving version:** Version 144, read back from the
-  existing Web App deployment on 2026-09-02 after the renewal date-prefill
-  release. This is deployment identity evidence, not a real-device UAT result.
+- **Current Apps Script serving version:** Version 145, read back from the
+  existing Web App deployment on 2026-09-02 after the renewal fee-prefill
+  corrective release. This is deployment identity evidence, not a real-device
+  UAT result.
 - **Current Apps Script rollback version:** Version 139, the prior serving
   version retained on the same Web App deployment.
-- **GitHub Pages:** the renewal date-prefill release at merged `main` commit
-  `52d4175` completed successfully in workflow `33553714995`; the subsequent
-  documentation-only sync at `b9bd9cc` also completed successfully in workflow
-  `33554260177`. Public readback found the tenant-detail renewal entry, direct
-  renewal form, and the new release cache key.
+- **GitHub Pages:** the renewal fee-prefill corrective release at merged `main`
+  commit `72542bc` completed successfully in workflow `33555883954`; public
+  readback found the tenant-detail renewal entry, direct renewal form, fee
+  prefill logic, and cache key `20260902-renewal-date-prefill-v2`.
 - **Production editor source:** an open Apps Script editor does not prove what
   immutable version is serving. Deployment metadata and a scoped source export
   are authoritative.

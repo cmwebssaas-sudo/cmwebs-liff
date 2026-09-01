@@ -2,6 +2,27 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-02 — Preserve predecessor fees in renewal prefill (formal corrective release)
+
+- Fixed the `從此合約發起續約` room-warning action so the renewal form keeps
+  the predecessor rent, management fee, deposit months, deposit amount,
+  payment day, electricity fee rate, equipment loss fee rate, optional 30-day
+  clause, and note.
+- The backend room summary now includes the predecessor contract's fee fields;
+  the frontend also prefers the complete `renewal_source` before that summary.
+  This fixes the case where the form switched to renewal mode but displayed
+  blank or zero fee inputs.
+- PR #86 merged the fix into GitHub `main` as `72542bc`. Apps Script immutable
+  Version 145 now serves the existing Web App deployment, with Version 139
+  retained as rollback. No Sheet, contract row, Property, Trigger, LINE
+  setting, or manual migration was changed.
+- GitHub Pages workflow `33555883954` completed successfully. Public readback
+  returned HTTP 200 and confirmed cache key
+  `20260902-renewal-date-prefill-v2` and the fee-prefill logic.
+- Local verification passed: full Node suite `69/69`, project validation
+  `71/71` routes and handlers, Apps Script syntax checks, and `git diff --check`.
+- Authenticated LINE/mobile contract acceptance remains `HUMAN_REQUIRED`.
+
 ## 2026-09-02 — Renewal date prefill (formal release)
 
 - Changed renewal defaults so the new lease starts on the predecessor contract
