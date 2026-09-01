@@ -51,7 +51,7 @@ const CONTRACT_HEADERS = [
   'property_id', 'property_name', 'property_address', 'room_id', 'room_name',
   'start_date', 'contract_start_date', 'end_date', 'contract_end_date',
   'rent_amount', 'monthly_rent', 'management_fee', 'monthly_management_fee',
-  'deposit_amount', 'payment_day', 'monthly_payment_day', 'contract_status', 'status', 'account_status',
+  'deposit_amount', 'electricity_fee_rate', 'equipment_fee_rate', 'payment_day', 'monthly_payment_day', 'contract_status', 'status', 'account_status',
   'signing_mode', 'contract_origin', 'invite_id', 'contract_content', 'contract_version',
   'previous_contract_id', 'renewed_to_contract_id', 'tenant_signing_submission_status',
   'renewed_from_contract_id', 'contract_family_id', 'renewal_sequence', 'renewal_request_id',
@@ -100,7 +100,7 @@ function makeRuntime({ withInviteSheet = true, withPrevious = false, previousSta
       tenant_id: 'tenant-1', tenant_user_id: 'tenant-user-1', tenant_line_user_id: 'tenant-line', tenant_name: '王小明', tenant_phone: '0912345678',
       property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R603', room_name: '603',
       start_date: '2025-09-01', contract_start_date: '2025-09-01', end_date: previousContractEndDate, contract_end_date: previousContractEndDate,
-      rent_amount: 24000, monthly_rent: 24000, management_fee: 800, monthly_management_fee: 800, deposit_amount: 48000,
+      rent_amount: 24000, monthly_rent: 24000, management_fee: 800, monthly_management_fee: 800, deposit_amount: 48000, electricity_fee_rate: 6, equipment_fee_rate: 2,
       payment_day: 5, monthly_payment_day: 5, contract_status: previousStatus, status: previousStatus, account_status: 'active',
       signing_mode: '', contract_origin: 'legacy', tenant_binding_status: 'active',
       created_at: '2025-08-01T00:00:00.000Z', updated_at: '2025-08-01T00:00:00.000Z'
@@ -210,6 +210,8 @@ const newInput = {
   assert.equal(result.data.contract.contract_status, 'pending_tenant_signature');
   assert.equal(result.data.contract.signing_mode, 'renewal');
   assert.equal(result.data.contract.previous_contract_id, 'old-contract');
+  assert.equal(result.data.contract.electricity_fee_rate, 6);
+  assert.equal(result.data.contract.equipment_fee_rate, 2);
   assert.equal(result.data.contract.contract_version, 'fixed-google-doc-template-1');
   assert.equal(result.data.contract.renewal_review_status, 'confirmed');
   assert.equal(result.data.contract.renewal_inquiry_status, 'manual_direct');
@@ -220,7 +222,7 @@ const newInput = {
   assert.equal(result.data.invite.invite_id, result.data.contract.invite_id);
   assert.equal(result.data.invite.confirmation_code.length, 6);
   assert.equal(sheets.V2_contracts.rows.length, 2);
-  assert.equal(sheets.V2_contracts.rows[0][27], 'expired');
+  assert.equal(sheets.V2_contracts.rows[0][sheets.V2_contracts.headers.indexOf('contract_status')], 'expired');
   assert.equal(sheets.V2_contract_invites.rows.length, 1);
 }
 
@@ -235,7 +237,7 @@ const newInput = {
   assert.match(result.data.contract.contract_content, /603/);
   assert.equal(sheets.V2_rooms.rows[0][5], 'vacant');
   assert.equal(sheets.V2_rooms.rows[0][7], '');
-  assert.equal(sheets.V2_contracts.rows[0][27], 'pending_tenant_signature');
+  assert.equal(sheets.V2_contracts.rows[0][sheets.V2_contracts.headers.indexOf('contract_status')], 'pending_tenant_signature');
   assert.equal(sheets.V2_tenants.rows[0][20], 'pending');
   assert.equal(result.data.invite.confirmation_code.length, 6);
   assert.equal(result.data.invite.url.includes(result.data.invite.confirmation_code), false);
@@ -390,6 +392,29 @@ const newInput = {
 }
 
 {
+  const { api, sheets, pushedMessages } = makeRuntime({ withPrevious: true });
+  const result = api.landlordInitiatedContractCreateRenewal_(access, {
+    previous_contract_id: 'old-contract',
+    start_date: '2026-09-01',
+    end_date: '2027-08-31',
+    rent_amount: 26000,
+    management_fee: 1000,
+    deposit_amount: 52000,
+    payment_day: 5
+  });
+  assert.equal(result.success, true, result.code);
+  const firstReview = api.landlordInitiatedContractConfirmRenewalReview_(access, result.data.contract.contract_id);
+  assert.equal(firstReview.success, true, firstReview.code);
+  const pendingLegacyState = sheets.V2_contracts.rows[1];
+  pendingLegacyState[sheets.V2_contracts.headers.indexOf('renewal_review_status')] = 'confirmed';
+  pendingLegacyState[sheets.V2_contracts.headers.indexOf('renewal_inquiry_status')] = 'pending';
+  const recovered = api.landlordInitiatedContractSendRenewalInquiry_(access, result.data.contract.contract_id);
+  assert.equal(recovered.success, true, recovered.code);
+  assert.equal(recovered.data.contract.renewal_inquiry_status, 'sent');
+  assert.equal(pushedMessages.length, 2);
+}
+
+{
   const { api, sheets } = makeRuntime({ withPrevious: true });
   const result = api.landlordInitiatedContractCreateRenewal_(access, {
     previous_contract_id: 'old-contract',
@@ -413,7 +438,7 @@ const newInput = {
   assert.equal(firstRun.success, true, firstRun.code);
   assert.equal(firstRun.data.prepared.length, 1);
   assert.equal(sheets.V2_contracts.rows.length, 2);
-  assert.equal(sheets.V2_contracts.rows[1][27], 'pending_landlord_review');
+  assert.equal(sheets.V2_contracts.rows[1][sheets.V2_contracts.headers.indexOf('contract_status')], 'pending_landlord_review');
 
   const secondRun = api.contractExpiryRenewalRunDaily_();
   assert.equal(secondRun.success, true, secondRun.code);

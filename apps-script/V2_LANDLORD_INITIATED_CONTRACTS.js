@@ -46,6 +46,8 @@ const V2_LANDLORD_INITIATED_CONTRACT_RENEWAL_HEADERS_ = [
   'special_offer_days_before_expiry',
   'special_offer_decision_reason',
   'identity_document_mode',
+  'electricity_fee_rate',
+  'equipment_fee_rate',
   'renewal_review_status',
   'renewal_review_prepared_at',
   'renewal_review_confirmed_at',
@@ -1048,11 +1050,8 @@ function landlordInitiatedContractSendRenewalInquiryUnlocked_(access, schema, co
   if (inquiry === 'sent' || inquiry === 'responded') {
     return { success: true, code: 'RENEWAL_REVIEW_ALREADY_CONFIRMED', data: { contract: landlordInitiatedContractPublicContract_(contract, {}, {}), invite: null, next_action: 'tenant_contract_renewal_intent' } };
   }
-  if (fromReview && review === 'confirmed') {
-    return { success: true, code: 'RENEWAL_REVIEW_ALREADY_CONFIRMED', data: { contract: landlordInitiatedContractPublicContract_(contract, {}, {}), invite: null, next_action: 'tenant_contract_renewal_intent' } };
-  }
   if (review !== 'confirmed' && !fromReview) return landlordInitiatedContractError_('RENEWAL_REVIEW_REQUIRED', '請先完成房東審查確認');
-  const transition = fromReview
+  const transition = fromReview && review !== 'confirmed'
     ? landlordInitiatedContractRenewalReviewTransition_(contract, timestamp)
     : landlordInitiatedContractRenewalInquiryTransition_(contract, timestamp);
   if (!transition.success) return transition;
