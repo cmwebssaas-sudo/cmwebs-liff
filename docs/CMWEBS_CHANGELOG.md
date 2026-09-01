@@ -2,7 +2,7 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-01 — Landlord-led renewal consent flow (local candidate)
+## 2026-09-01 — Landlord-led renewal consent flow (formal release)
 
 - Changed expiry renewals to a landlord-led sequence: the system prepares a
   one-year draft from the prior contract, the landlord reviews dates, amounts,
@@ -13,7 +13,13 @@
   response enables the landlord to create the signing invitation.
 - Added additive lifecycle columns for inquiry and tenant intent. Existing
   contract versions remain append-only, and the unsigned draft remains editable
-  until review confirmation. This candidate is not yet a Production release.
+  until review confirmation.
+- PR #76 merged the feature as `52b75b8`; PR #77 moved the 36 production HTML
+  API references to the new fixed Apps Script Version 140 deployment and
+  merged as `ceeede8`. Pages workflow `33456765735` completed successfully.
+- Public HTML and read-only API smoke passed. No Sheet migration, LINE push,
+  or contract-data write was run; authenticated LINE/mobile UAT remains
+  `HUMAN_REQUIRED`.
 
 ## 2026-09-01 — Renewal draft date correction (formal release)
 
