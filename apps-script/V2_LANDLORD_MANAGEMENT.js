@@ -1068,7 +1068,10 @@ function lmSheetObjects_(sheet) {
     return [];
   }
 
-  var values = sheet.getDataRange().getValues();
+  var values =
+    typeof runtimeSnapshotGetValues_ === 'function'
+      ? runtimeSnapshotGetValues_(sheet)
+      : sheet.getDataRange().getValues();
   var headers = values[0].map(function (header) {
     return lmText_(header);
   });
