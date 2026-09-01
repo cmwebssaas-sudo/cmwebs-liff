@@ -1,11 +1,39 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-01 (Asia/Taipei)**
+**Last verified: 2026-09-02 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-02 tenant-detail direct renewal signing formal release
+
+- The primary renewal entry is now the tenant journey: tenant list → tenant
+  detail → contract version → `發起續約`. Eligible active, expired, approved
+  and completed versions hand off their exact predecessor `contract_id` to the
+  one-page renewal form. The contract request page remains the review,
+  invitation and signing-status surface.
+- The direct route creates an append-only renewal version, carries the fixed
+  contract template and optional 30-day non-renewal clause, and immediately
+  creates the tenant signing invite. The predecessor is not archived until the
+  new contract is signed and landlord approval is completed.
+- PR #81 merged the candidate into GitHub `main` as `938b39d`.
+- Apps Script was pushed as 51 source files and the existing public Web App
+  deployment now serves immutable Version 143. The Web App URL was preserved;
+  Version 139 remains the rollback reference. No Script Properties, Trigger,
+  LINE setting, or contract row was changed, and no manual Sheet migration was
+  run. The code retains an additive header guard for the new fields.
+- GitHub Pages workflow `33547890200` completed successfully for `938b39d`.
+  Public readback returned HTTP 200 and found the tenant-detail renewal entry,
+  direct renewal route, special-offer clause, request review page, and release
+  cache key.
+- Local verification passed: full Node suite `68/68`, project validation
+  `71/71` routes and handlers, duplicate declarations `0`, credential scan
+  `0`, Apps Script syntax checks, and `git diff --check`.
+- Exact production Sheet header state and authenticated LINE/mobile contract
+  acceptance remain `HUMAN_REQUIRED`; the public/API checks do not prove a
+  logged-in contract transaction.
 
 ## 2026-09-01 landlord homepage timeout corrective release
 
@@ -161,15 +189,15 @@ change Sheets, Properties, triggers, LINE, LIFF runtime state, or payment data.
 
 - **Canonical source baseline:** the Version 89 source tree described above,
   reconciled to GitHub `main` by PR #12.
-- **Current Apps Script serving version:** Version 139, read back from the
-  existing Web App deployment on 2026-09-01 after the renewal-draft date
-  correction release. This is deployment identity evidence, not a real-device
+- **Current Apps Script serving version:** Version 143, read back from the
+  existing Web App deployment on 2026-09-02 after the tenant-detail direct
+  renewal release. This is deployment identity evidence, not a real-device
   UAT result.
-- **Current Apps Script rollback version:** Version 138, the prior serving
+- **Current Apps Script rollback version:** Version 139, the prior serving
   version retained on the same Web App deployment.
-- **GitHub Pages:** the date-correction release at merged `main` commit
-  `3f6af936` completed successfully in workflow `33449180375`; public
-  readback found the date-edit button and manual correction guidance.
+- **GitHub Pages:** the tenant-detail direct renewal release at merged `main`
+  commit `938b39d` completed successfully in workflow `33547890200`; public
+  readback found the tenant-detail renewal entry and direct renewal form.
 - **Production editor source:** an open Apps Script editor does not prove what
   immutable version is serving. Deployment metadata and a scoped source export
   are authoritative.
