@@ -2,14 +2,13 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-02 — Tenant-detail renewal entry candidate (local only)
+## 2026-09-02 — Tenant-detail direct renewal signing (formal release)
 
-- Moved the primary renewal entry to the tenant journey: tenant list → tenant detail → contract version → `發起續約`.
-- Each eligible predecessor version passes its own `contract_id` into the existing one-page renewal form, while the contract request page remains focused on draft review, invitation and signing status handling.
-- Phase 199 covers the new entry and the removal of the duplicate reverse-lookup entry. Deployment, production readback and authenticated LINE/mobile UAT remain `HUMAN_REQUIRED`.
-
-## 2026-09-01 — Direct renewal signing candidate (local only)
-
+- Moved the primary renewal entry to the tenant journey: tenant list → tenant
+  detail → contract version → `發起續約`. Each eligible predecessor version
+  passes its own `contract_id` into the one-page renewal form, while the
+  contract request page remains focused on draft review, invitation and
+  signing status handling.
 - Added `landlord_contract_initiate_renewal_direct` for the short manual path:
   the landlord fills one renewal form, optionally selects the 30-calendar-day
   non-renewal clause, and receives a tenant signing invite immediately.
@@ -22,9 +21,23 @@
 - The tenant invite flow now preserves `renewal` mode and requires signature
   only; the existing multi-step landlord-review/tenant-inquiry route remains
   available for already-created renewal drafts.
-- This is a local candidate only. Apps Script deployment, GitHub Pages publish,
-  production Sheet readback and authenticated LINE/mobile UAT remain
-  `HUMAN_REQUIRED`.
+- PR #81 merged the release into GitHub `main` as `938b39d`.
+- Apps Script was pushed as 51 source files and the existing public Web App
+  deployment was updated to immutable Version 143. The Web App URL was
+  preserved and Version 139 remains the rollback target. No Script Properties,
+  Trigger, LINE setting, or contract row was changed; no manual Sheet
+  migration was run. The deployed code keeps the additive header guard for the
+  new renewal fields.
+- GitHub Pages workflow `33547890200` completed build, deploy and status jobs
+  for the merged commit. Public readback returned HTTP 200 for the tenant
+  detail, renewal form, request review page and release asset; the new entry,
+  direct route, special-offer clause and new release key were present.
+- Local verification passed: full Node suite `68/68`, project validation
+  `71/71` routes and handlers, duplicate declarations `0`, credential scan
+  `0`, Apps Script syntax checks, and `git diff --check`.
+- Exact production Sheet header state and authenticated LINE/mobile signing
+  acceptance remain `HUMAN_REQUIRED`; public readback and the anonymous
+  POST-only API guard do not prove a logged-in contract transaction.
 
 ## 2026-09-01 — Landlord homepage timeout corrective release
 
