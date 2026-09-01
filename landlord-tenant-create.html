@@ -897,12 +897,23 @@
         'room_id'
       ) || '';
 
+    const REQUESTED_CONTRACT_MODE =
+      URL_PARAMS.get('mode') ===
+      'renewal'
+        ? 'renewal'
+        : 'new';
+
+    const REQUESTED_PREVIOUS_CONTRACT_ID =
+      URL_PARAMS.get(
+        'previous_contract_id'
+      ) || '';
+
     let LINE_USER_ID = '';
     let LANDLORD_REVIEW_SESSION_TOKEN = '';
     let PAGE_DATA = null;
     let CREATED_DATA = null;
-    let CONTRACT_MODE = 'new';
-    let PREVIOUS_CONTRACT_ID = '';
+    let CONTRACT_MODE = REQUESTED_CONTRACT_MODE;
+    let PREVIOUS_CONTRACT_ID = REQUESTED_PREVIOUS_CONTRACT_ID;
     let toastTimer = null;
 
     function setAppHeight() {
@@ -1537,6 +1548,9 @@
       }
 
       const selectedPropertyId =
+        (CONTRACT_MODE === 'renewal' && PAGE_DATA.renewal_source
+          ? PAGE_DATA.renewal_source.property_id
+          : '') ||
         PAGE_DATA.selected_property_id ||
         properties[0].property_id ||
         '';
@@ -1550,6 +1564,9 @@
         );
 
       const selectedRoomId =
+        (CONTRACT_MODE === 'renewal' && PAGE_DATA.renewal_source
+          ? PAGE_DATA.renewal_source.room_id
+          : '') ||
         PAGE_DATA.selected_room_id ||
         (
           availableRooms[0]
@@ -1559,6 +1576,13 @@
 
       const defaults =
         PAGE_DATA.defaults || {};
+
+      const renewalSource =
+        CONTRACT_MODE === 'renewal' &&
+        PAGE_DATA.renewal_source &&
+        rawText(PAGE_DATA.renewal_source.contract_id) === PREVIOUS_CONTRACT_ID
+          ? PAGE_DATA.renewal_source
+          : null;
 
       document.getElementById(
         'app'
@@ -1815,6 +1839,25 @@
             )}
           </div>
 
+          <div id="renewalClauseField" class="field" style="display:none;">
+            <div class="field-label">
+              <span>30 天條款</span>
+              <span class="optional">續約可選</span>
+            </div>
+
+            <label class="confirmation-row" for="specialOfferEnabled">
+              <input
+                id="specialOfferEnabled"
+                class="confirmation-check"
+                type="checkbox"
+              />
+              <span class="confirmation-text">
+                <strong>加入「提前 30 天通知不續約，免收違約金」條款</strong>
+                <span class="field-note">勾選後會寫入這次新版續約合約，房客簽署前仍可在全文確認。</span>
+              </span>
+            </label>
+          </div>
+
           <div class="field">
             <div class="field-label">
               <span>備註</span>
@@ -1881,6 +1924,7 @@
       `;
 
       handleRoomChange(true);
+      if (renewalSource) applyRenewalSourceToForm_(renewalSource);
       setContractModeUi();
       updateAmountPreview();
 
@@ -2015,9 +2059,20 @@
           )
         );
 
+      const renewalSource = PAGE_DATA && PAGE_DATA.renewal_source;
+      const roomHasSelectedRenewal = Boolean(
+        room &&
+        PREVIOUS_CONTRACT_ID &&
+        (
+          (room.existing_contract && rawText(room.existing_contract.contract_id) === PREVIOUS_CONTRACT_ID) ||
+          (renewalSource && rawText(renewalSource.contract_id) === PREVIOUS_CONTRACT_ID && rawText(renewalSource.room_id) === rawText(room.room_id))
+        )
+      );
+
       if (
         CONTRACT_MODE === 'renewal' &&
-        (!room || !room.existing_contract || rawText(room.existing_contract.contract_id) !== PREVIOUS_CONTRACT_ID)
+        PREVIOUS_CONTRACT_ID &&
+        !roomHasSelectedRenewal
       ) {
         CONTRACT_MODE = 'new';
         PREVIOUS_CONTRACT_ID = '';
@@ -2112,7 +2167,7 @@
             (rawText(contract.end_date) || '-') +
             '。若是同一房客續約，請由房東主動發起新版本。'
           ) +
-          '<button class="retry-button" type="button" onclick="startRenewalFromRoom()">從此有效合約發起續約</button>';
+          '<button class="retry-button" type="button" onclick="startRenewalFromRoom()">從此合約發起續約</button>';
 
         warning.classList.add(
           'show'
@@ -2175,6 +2230,8 @@
       const confirmationHeadline = document.getElementById('confirmationHeadline');
       const confirmationBody = document.getElementById('confirmationBody');
       const submitButton = document.getElementById('submitButton');
+      const renewalClauseField = document.getElementById('renewalClauseField');
+      if (renewalClauseField) renewalClauseField.style.display = renewal ? 'block' : 'none';
       if (heroDescription) heroDescription.textContent = renewal
         ? '由房東主動建立新的續約版本，房客只需確認差異並完成線上簽名。'
         : '建立待房客認領的新空房合約，現場可先收款，房客再補資料與簽署。';
@@ -2185,25 +2242,35 @@
         ? '我確認這是正確的既有房客與續約條件。'
         : '我確認房間、租約日期與收費條件均正確。';
       if (confirmationBody) confirmationBody.textContent = renewal
-        ? '系統會建立新的待簽版本，原有效合約要等房東核准後才會標記為已續約。'
+        ? '系統會使用新版合約建立新的待簽版本，舊合約保留不覆寫；送出後可直接把邀請交給房客簽署。'
         : '房客姓名與手機可留白，系統會建立待認領邀請，核准後才啟用房客資料。';
       if (submitButton) submitButton.textContent = renewal
-        ? '建立待房客簽署的續約合約'
+        ? '建立新版續約並發送簽署邀請'
         : '建立待房客認領的合約';
     }
 
-    function startRenewalFromRoom() {
-      const room = getRoom(inputValue('roomId'));
-      const previous = room && room.existing_contract;
-      if (!previous || !rawText(previous.contract_id).trim()) {
-        showToast('找不到可續約的有效合約。', true);
-        return;
-      }
-      CONTRACT_MODE = 'renewal';
-      PREVIOUS_CONTRACT_ID = rawText(previous.contract_id).trim();
+    function renewalSourceForRoom_(room) {
+      const existing = room && room.existing_contract;
+      if (existing && rawText(existing.contract_id).trim() === PREVIOUS_CONTRACT_ID) return existing;
+      const source = PAGE_DATA && PAGE_DATA.renewal_source;
+      if (source && rawText(source.contract_id).trim() === PREVIOUS_CONTRACT_ID && rawText(source.room_id).trim() === rawText(room && room.room_id).trim()) return source;
+      return null;
+    }
+
+    function applyRenewalSourceToForm_(previous) {
+      if (!previous) return;
       setInputValue('tenantName', previous.tenant_name || previous.name || '');
       setInputValue('tenantPhone', previous.tenant_phone || previous.phone || '');
       setInputValue('tenantEmail', previous.tenant_email || previous.email || '');
+      setInputValue('rentAmount', previous.rent_amount || previous.monthly_rent || '');
+      setInputValue('managementFee', previous.management_fee || previous.monthly_management_fee || 0);
+      setInputValue('depositMonths', previous.deposit_months || '');
+      setInputValue('depositAmount', previous.deposit_amount || '');
+      setInputValue('paymentDay', previous.payment_day || previous.monthly_payment_day || 10);
+      setInputValue('electricityRate', previous.electricity_fee_rate || 0);
+      setInputValue('equipmentRate', previous.equipment_fee_rate || 0);
+      setInputValue('note', previous.note || '');
+
       if (previous.end_date) {
         const end = new Date(rawText(previous.end_date) + 'T00:00:00');
         if (!Number.isNaN(end.getTime())) {
@@ -2213,6 +2280,22 @@
           setInputValue('endDate', addOneYearMinusOneDay(nextStart));
         }
       }
+
+      const clauseCheckbox = document.getElementById('specialOfferEnabled');
+      if (clauseCheckbox) clauseCheckbox.checked = previous.special_offer_enabled === true || rawText(previous.special_offer_enabled).toLowerCase() === 'true';
+      updateAmountPreview();
+    }
+
+    function startRenewalFromRoom() {
+      const room = getRoom(inputValue('roomId'));
+      const previous = renewalSourceForRoom_(room);
+      if (!previous || !rawText(previous.contract_id).trim()) {
+        showToast('找不到可續約的現有合約。', true);
+        return;
+      }
+      CONTRACT_MODE = 'renewal';
+      PREVIOUS_CONTRACT_ID = rawText(previous.contract_id).trim();
+      applyRenewalSourceToForm_(previous);
       setContractModeUi();
       showToast('已切換為續約模式，請確認新租期與收費條件。');
       document.getElementById('startDate').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2478,7 +2561,7 @@
         const result =
           await postLandlordInitiatedContract(
             CONTRACT_MODE === 'renewal'
-              ? 'landlord_contract_initiate_renewal'
+              ? 'landlord_contract_initiate_renewal_direct'
               : 'landlord_contract_initiate_new',
             {
               tenant_name:
@@ -2543,6 +2626,18 @@
                 inputValue(
                   'note'
                 ),
+              special_offer_enabled:
+                CONTRACT_MODE === 'renewal' &&
+                Boolean(document.getElementById('specialOfferEnabled') && document.getElementById('specialOfferEnabled').checked),
+              special_offer_notice_days:
+                CONTRACT_MODE === 'renewal'
+                  ? 30
+                  : 0,
+              special_offer_clause:
+                CONTRACT_MODE === 'renewal' &&
+                Boolean(document.getElementById('specialOfferEnabled') && document.getElementById('specialOfferEnabled').checked)
+                  ? '租約期滿如不再續約，提前30個日曆日通知，免收違約金。'
+                  : '',
               previous_contract_id:
                 CONTRACT_MODE === 'renewal'
                   ? PREVIOUS_CONTRACT_ID
@@ -2572,7 +2667,7 @@
           false;
 
         button.textContent = CONTRACT_MODE === 'renewal'
-          ? '建立待房客簽署的續約合約'
+          ? '建立新版續約並發送簽署邀請'
           : '建立待房客認領的合約';
       }
     }
@@ -2602,7 +2697,7 @@
       const propertyName = property.property_name || selectedProperty.property_name || selectedRoom.property_name || '';
       const roomName = room.room_name || selectedRoom.room_name || contract.room_name || '';
       const invitationMessage = initiated
-        ? '請開啟房客合約邀請：\n' + invite.url + '\n\n確認碼：' + invite.confirmation_code + '\n\n請用本人 LINE 開啟連結，填寫姓名與手機、上傳證件並完成線上簽署。房東審核通過後合約才會生效。'
+        ? (renewal ? '請開啟房客續約簽署邀請：\n' : '請開啟房客合約邀請：\n') + invite.url + '\n\n確認碼：' + invite.confirmation_code + '\n\n請用本人 LINE 開啟連結，確認新版合約內容並完成線上簽署。房東審核通過後合約才會生效。'
         : renewal
           ? '房東已建立新的續約合約：' + contract.contract_id + '\n\n請開啟 CMWebs 房客合約頁，確認新舊條款差異並完成線上簽名。房東審核通過後，新合約才會生效。'
         : binding.invitation_message || '';
@@ -2614,11 +2709,11 @@
           <div class="success-head">
             <div class="success-icon">✓</div>
             <div class="success-title">
-              ${initiated ? '待房客認領的合約已建立' : renewal ? '待房客簽署的續約合約已建立' : '房客與租約已建立'}
+              ${initiated && renewal ? '新版續約簽署邀請已建立' : initiated ? '待房客認領的合約已建立' : renewal ? '待房客簽署的續約合約已建立' : '房客與租約已建立'}
             </div>
 
             <div class="success-desc">
-              ${initiated ? '將下方邀請連結與確認碼交給房客，房客現場完成資料與簽署。' : renewal ? '請通知既有房客開啟合約頁確認差異並簽名；核准前不會改動原合約。' : '現在將下方綁定訊息傳給房客即可。'}
+              ${initiated && renewal ? '新版合約已建立，請將下方邀請連結與確認碼交給既有房客簽署；舊合約保持不變。' : initiated ? '將下方邀請連結與確認碼交給房客，房客現場完成資料與簽署。' : renewal ? '請通知既有房客開啟合約頁確認差異並簽名；核准前不會改動原合約。' : '現在將下方綁定訊息傳給房客即可。'}
             </div>
           </div>
 
@@ -2663,13 +2758,13 @@
 
               ${successItem(
                 'LINE 狀態',
-                initiated ? '待房客認領' : renewal ? '沿用既有綁定' : '尚未綁定'
+                initiated && renewal ? '待房客簽署' : initiated ? '待房客認領' : renewal ? '沿用既有綁定' : '尚未綁定'
               )}
             </div>
 
             <div class="invite-box">
               <div class="invite-title">
-                ${initiated ? '傳給房客的合約邀請（含確認碼）' : renewal ? '傳給房客的續約通知' : '傳給房客的 LINE 綁定訊息'}
+                ${initiated && renewal ? '傳給房客的新版續約簽署邀請（含確認碼）' : initiated ? '傳給房客的合約邀請（含確認碼）' : renewal ? '傳給房客的續約通知' : '傳給房客的 LINE 綁定訊息'}
               </div>
 
               ${initiated ? `<div class="invite-qr"><img src="https://quickchart.io/qr?size=220&text=${encodeURIComponent(invite.url)}" alt="房客合約邀請 QR Code" /><span>房客掃描後，請再輸入下方一次性確認碼。QR 只包含邀請連結，不包含登入憑證或個資。</span></div>` : ''}
@@ -2687,7 +2782,7 @@
                 type="button"
                 onclick="copyInvitation()"
               >
-                ${initiated ? '複製合約邀請' : renewal ? '複製續約通知' : '複製綁定訊息'}
+                ${initiated && renewal ? '複製續約簽署邀請' : initiated ? '複製合約邀請' : renewal ? '複製續約通知' : '複製綁定訊息'}
               </button>
 
               ${initiated ? `<button
@@ -2869,7 +2964,9 @@
               property_id:
                 PRESELECTED_PROPERTY_ID,
               room_id:
-                PRESELECTED_ROOM_ID
+                PRESELECTED_ROOM_ID,
+              previous_contract_id:
+                PREVIOUS_CONTRACT_ID
             }
           );
 

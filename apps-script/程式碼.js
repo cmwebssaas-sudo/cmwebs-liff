@@ -132,6 +132,7 @@ function doGet(e) {
     'landlord_contract_initiated_init',
     'landlord_contract_initiate_new',
     'landlord_contract_initiate_renewal',
+    'landlord_contract_initiate_renewal_direct',
     'landlord_contract_renewal_draft_update',
     'landlord_contract_renewal_review_confirm',
     'landlord_contract_invite_cancel',
@@ -878,7 +879,8 @@ function doGet(e) {
       getLandlordTenantCreateInitByLineUid_(
         lineUserId,
         e.parameter.property_id || '',
-        e.parameter.room_id || ''
+        e.parameter.room_id || '',
+        e.parameter.previous_contract_id || ''
       );
 
     return bridge === '1'

@@ -2,6 +2,30 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-02 — Tenant-detail renewal entry candidate (local only)
+
+- Moved the primary renewal entry to the tenant journey: tenant list → tenant detail → contract version → `發起續約`.
+- Each eligible predecessor version passes its own `contract_id` into the existing one-page renewal form, while the contract request page remains focused on draft review, invitation and signing status handling.
+- Phase 199 covers the new entry and the removal of the duplicate reverse-lookup entry. Deployment, production readback and authenticated LINE/mobile UAT remain `HUMAN_REQUIRED`.
+
+## 2026-09-01 — Direct renewal signing candidate (local only)
+
+- Added `landlord_contract_initiate_renewal_direct` for the short manual path:
+  the landlord fills one renewal form, optionally selects the 30-calendar-day
+  non-renewal clause, and receives a tenant signing invite immediately.
+- Active, expired, approved and completed predecessors are eligible. The old
+  contract remains append-only and is archived only after the tenant signs and
+  the landlord approves the new version.
+- Reused the fixed Google Docs contract version (`fixed-google-doc-template-1`)
+  and added the renewal fields to the additive contract-schema guard so the
+  selected clause is persisted and shown in the tenant document.
+- The tenant invite flow now preserves `renewal` mode and requires signature
+  only; the existing multi-step landlord-review/tenant-inquiry route remains
+  available for already-created renewal drafts.
+- This is a local candidate only. Apps Script deployment, GitHub Pages publish,
+  production Sheet readback and authenticated LINE/mobile UAT remain
+  `HUMAN_REQUIRED`.
+
 ## 2026-09-01 — Landlord homepage timeout corrective release
 
 - Reused the request-local runtime snapshot in landlord payment/message reads,

@@ -94,7 +94,7 @@ function tenantLiffSigningInviteAuthenticate_(inviteId, confirmationCode, idToke
   if (!claimed || claimed.success !== true) return claimed || tenantLiffSigningError_('INVITE_CLAIM_FAILED');
   const contract = claimed.data.contract;
   const signingMode = tenantLiffSigningText_(contract.signing_mode).toLowerCase();
-  if (signingMode !== 'new_tenant') return tenantLiffSigningError_('INVITE_SIGNING_MODE_INVALID');
+  if (['new_tenant', 'renewal'].indexOf(signingMode) === -1) return tenantLiffSigningError_('INVITE_SIGNING_MODE_INVALID');
   const now = Math.floor(Date.now() / 1000);
   const expiresAt = now + V2_TENANT_LIFF_AUTH_TTL_SECONDS_;
   const token = createTenantLiffSessionToken_({
@@ -113,6 +113,7 @@ function tenantLiffSigningInviteAuthenticate_(inviteId, confirmationCode, idToke
   });
   const tenant = claimed.data.tenant || {};
   const contractView = tenantLiffSigningContractView_([contract], contract, signingMode, tenant);
+  const artifactRequirements = signingMode === 'renewal' ? ['signature'] : ['identity_front', 'identity_back', 'signature'];
   return {
     success: true,
     code: 'OK',
@@ -122,8 +123,8 @@ function tenantLiffSigningInviteAuthenticate_(inviteId, confirmationCode, idToke
       contract_history: [contractView],
       signing_required: true,
       signing_status: tenantLiffSigningText_(contract.tenant_signing_submission_status) || 'pending',
-      artifact_requirements: ['identity_front', 'identity_back', 'signature'],
-      artifact_state: { identity_front: false, identity_back: false, signature: false },
+      artifact_requirements: artifactRequirements,
+      artifact_state: artifactRequirements.reduce(function (state, type) { state[type] = false; return state; }, {}),
       session_token: token,
       session_expires_at: new Date(expiresAt * 1000).toISOString(),
       authenticated_at: new Date().toISOString()

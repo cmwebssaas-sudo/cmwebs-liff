@@ -56,9 +56,9 @@ const access = {
   principals: [{ landlord_id: 'L1' }]
 };
 
-function makeRuntime({ renewal = false, includeViews = true } = {}) {
+function makeRuntime({ renewal = false, includeViews = true, previousStatus = 'active' } = {}) {
   const previousContract = {
-    contract_id: 'old-contract', workspace_id: 'W1', landlord_id: 'L1', landlord_name: '林房東', tenant_id: 'tenant-existing', tenant_user_id: 'user-existing', tenant_line_user_id: 'existing-line', tenant_name: '既有房客', tenant_phone: '0911111111', property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R1', room_name: '603', start_date: '2025-08-01', end_date: '2026-07-31', rent_amount: 22000, management_fee: 1000, deposit_amount: 44000, payment_day: 5, contract_status: 'active', status: 'active', account_status: 'active', signing_mode: 'new_tenant', contract_origin: 'legacy', tenant_signing_submission_status: 'approved', created_at: '2025-08-01T00:00:00.000Z', updated_at: '2025-08-01T00:00:00.000Z'
+    contract_id: 'old-contract', workspace_id: 'W1', landlord_id: 'L1', landlord_name: '林房東', tenant_id: 'tenant-existing', tenant_user_id: 'user-existing', tenant_line_user_id: 'existing-line', tenant_name: '既有房客', tenant_phone: '0911111111', property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R1', room_name: '603', start_date: '2025-08-01', end_date: '2026-07-31', rent_amount: 22000, management_fee: 1000, deposit_amount: 44000, payment_day: 5, contract_status: previousStatus, status: previousStatus, account_status: 'active', signing_mode: 'new_tenant', contract_origin: 'legacy', tenant_signing_submission_status: 'approved', created_at: '2025-08-01T00:00:00.000Z', updated_at: '2025-08-01T00:00:00.000Z'
   };
   const sheets = {
     V2_properties: new Sheet(headers.properties, [row(headers.properties, { property_id: 'P1', workspace_id: 'W1', landlord_id: 'L1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', account_status: 'active' })]),
@@ -108,6 +108,27 @@ function makeRuntime({ renewal = false, includeViews = true } = {}) {
   vm.runInContext(reviewSource, context, { filename: 'V2_TENANT_CONTRACT_SIGNING_REVIEW.js' });
   context.tenantContractSigningReviewAccessFromSession_ = () => ({ success: true, data: { workspace: { workspace_id: 'W1' }, user: { user_id: 'landlord-user' }, membership: { membership_id: 'M1' } } });
   return { api: context, sheets };
+}
+
+{
+  const runtime = makeRuntime({ renewal: true, previousStatus: 'expired' });
+  const created = runtime.api.landlordInitiatedContractCreateDirectRenewal_(access, Object.assign(input('old-contract'), {
+    special_offer_enabled: true,
+    special_offer_notice_days: 30,
+    special_offer_clause: '租約期滿如不再續約，提前30個日曆日通知，免收違約金。'
+  }));
+  assert.equal(created.success, true, created.code);
+  assert.equal(created.data.contract.contract_status, 'pending_tenant_signature');
+  assert.equal(created.data.contract.renewal_inquiry_status, 'manual_direct');
+  markSubmitted(runtime, created.data.contract.contract_id, 'tenant-existing', 'renewal');
+  const approved = runtime.api.updateLandlordContractSigningReviewBySessionToken_('server-session', created.data.contract.contract_id, 'approve', '到期續約完成');
+  assert.equal(approved.success, true, approved.code);
+  const contracts = runtime.api.landlordInitiatedContractRows_(runtime.sheets.V2_contracts);
+  const oldContract = contracts.find(item => item.contract_id === 'old-contract');
+  const newContract = contracts.find(item => item.contract_id === created.data.contract.contract_id);
+  assert.equal(oldContract.contract_status, 'renewed');
+  assert.equal(oldContract.renewed_to_contract_id, newContract.contract_id);
+  assert.equal(newContract.contract_status, 'active');
 }
 
 function input(previousContractId = '') {

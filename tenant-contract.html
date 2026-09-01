@@ -10,7 +10,7 @@
   <title>CMWebs 我的合約</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20260825-tenant-signature-preview-v1"></script>
+  <script src="frontend-release.js?v=20260902-tenant-detail-renewal-entry-v1"></script>
 
   <style>
     :root {
@@ -2471,11 +2471,11 @@
         <div class="signing-header">
           <div class="signing-kicker">CMWebs 房客合約</div>
           <h1 class="signing-title">開始您的租賃合約</h1>
-          <p class="signing-description">這是房東現場建立的新空房合約邀請。請填寫基本資料並輸入房東提供的 6 碼確認碼，接著確認完整合約、上傳身分證正反面與親筆簽名。</p>
+        <p class="signing-description">這是房東建立的合約簽署邀請。請填寫或確認基本資料並輸入房東提供的 6 碼確認碼；系統會依新租約或續約顯示需要確認的資料與簽署項目。</p>
         </div>
         <section class="signing-section">
           <h2 class="signing-section-title">房客資料</h2>
-          <p class="signing-section-help">資料送出後會綁定這次邀請的 LINE 帳號；房東核准前，合約不會啟用。</p>
+          <p class="signing-section-help">資料送出後會綁定這次邀請的 LINE 帳號；續約只需完成新版合約確認與簽名，新租約則會依流程補齊身分文件。房東核准前，合約不會啟用。</p>
           <div class="signing-form-field">
             <label class="signing-form-label" for="tenantInviteName">姓名</label>
             <input id="tenantInviteName" class="signing-form-input" autocomplete="name" placeholder="請輸入姓名" />
@@ -2542,7 +2542,8 @@
             throw error;
           }
           TENANT_SIGNING_SESSION_TOKEN = result.data.session_token;
-          TENANT_SIGNING_MODE = 'new_tenant';
+          const signingMode = String((result.data.contract || {}).signing_mode || '').toLowerCase();
+          TENANT_SIGNING_MODE = signingMode;
           TENANT_SIGNING_DATA = result.data;
           TENANT_SIGNING_ARTIFACT_STATE = result.data.artifact_state || {};
           TENANT_SIGNING_UPLOAD_STATE = {};

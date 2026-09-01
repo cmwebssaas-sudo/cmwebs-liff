@@ -57,7 +57,8 @@ const V2_TENANT_LEASE_MAX_TERM_DAYS_ =
 function getLandlordTenantCreateInitByLineUid_(
   lineUserId,
   selectedPropertyId,
-  selectedRoomId
+  selectedRoomId,
+  previousContractId
 ) {
   try {
     const startedAt =
@@ -86,6 +87,11 @@ function getLandlordTenantCreateInitByLineUid_(
     selectedRoomId =
       tenantLeaseText_(
         selectedRoomId
+      );
+
+    previousContractId =
+      tenantLeaseText_(
+        previousContractId
       );
 
     const ss =
@@ -143,6 +149,16 @@ function getLandlordTenantCreateInitByLineUid_(
           'landlord_id'
         ]
       );
+
+    const renewalSource =
+      previousContractId
+        ? contracts.find(function (contract) {
+            return tenantLeaseText_(contract.contract_id) === previousContractId &&
+              ['active', 'expired', 'approved', 'completed'].indexOf(
+                tenantLeaseText_(contract.contract_status || contract.status).toLowerCase()
+              ) >= 0;
+          }) || null
+        : null;
 
     const roomContracts = {};
 
@@ -464,6 +480,31 @@ function getLandlordTenantCreateInitByLineUid_(
           selectedPropertyId,
         selected_room_id:
           selectedRoomId,
+        renewal_source:
+          renewalSource
+            ? {
+                contract_id: renewalSource.contract_id || '',
+                tenant_id: renewalSource.tenant_id || '',
+                tenant_name: renewalSource.tenant_name || renewalSource.name || '',
+                tenant_phone: renewalSource.tenant_phone || renewalSource.phone || '',
+                tenant_email: renewalSource.tenant_email || renewalSource.email || '',
+                property_id: renewalSource.property_id || '',
+                room_id: renewalSource.room_id || '',
+                start_date: renewalSource.start_date || renewalSource.contract_start_date || '',
+                end_date: renewalSource.end_date || renewalSource.contract_end_date || '',
+                rent_amount: renewalSource.rent_amount || renewalSource.monthly_rent || '',
+                management_fee: renewalSource.management_fee || renewalSource.monthly_management_fee || '',
+                deposit_months: renewalSource.deposit_months || '',
+                deposit_amount: renewalSource.deposit_amount || '',
+                payment_day: renewalSource.payment_day || renewalSource.monthly_payment_day || '',
+                electricity_fee_rate: renewalSource.electricity_fee_rate || '',
+                equipment_fee_rate: renewalSource.equipment_fee_rate || '',
+                special_offer_enabled: renewalSource.special_offer_enabled || false,
+                special_offer_notice_days: renewalSource.special_offer_notice_days || 30,
+                special_offer_clause: renewalSource.special_offer_clause || '',
+                note: renewalSource.note || ''
+              }
+            : null,
         tenant_liff_url:
           V2_TENANT_LIFF_URL_,
         defaults: {
