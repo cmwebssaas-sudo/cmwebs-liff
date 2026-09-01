@@ -1653,6 +1653,20 @@
       location.href = 'landlord-tenant-create.html?' + params.toString();
     }
 
+    function goTenantCheckout(contractId) {
+      const normalizedContractId = rawText(contractId).trim();
+      if (!normalizedContractId) {
+        showToast('找不到可辦理退房的合約');
+        return;
+      }
+      const params = new URLSearchParams();
+      params.set('contract_id', normalizedContractId);
+      params.set('tenant_id', CURRENT_TENANT && CURRENT_TENANT.tenant_id ? CURRENT_TENANT.tenant_id : TENANT_ID);
+      if (TEST_MODE) params.set('test', '1');
+      params.set('v', window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
+      location.href = 'landlord-tenant-checkout.html?' + params.toString();
+    }
+
     function showToast(message) {
       const toast =
         document.getElementById('toast');
@@ -3877,6 +3891,12 @@
             const readOnly = contract.read_only !== false;
             const status = normalizedStatus(contract.contract_status || contract.status);
             const canRenew = ['active', 'expired', 'approved', 'completed'].indexOf(status) >= 0;
+            const renewalIntent = normalizedStatus(contract.renewal_tenant_intent);
+            const checkoutPending = normalizedStatus(contract.checkout_status) === 'pending' || renewalIntent === 'declined';
+            const checkoutTargetId = checkoutPending && rawText(contract.renewed_from_contract_id || contract.previous_contract_id).trim()
+              ? rawText(contract.renewed_from_contract_id || contract.previous_contract_id).trim()
+              : contractId;
+            const canCheckout = canRenew && (current || status === 'expired' || checkoutPending);
             return `
               <article class="contract-history-card ${current ? 'current' : ''}" data-contract-history-read-only="${readOnly ? 'true' : 'false'}">
                 <div class="contract-history-head">
@@ -3894,6 +3914,7 @@
                 </div>
                 <div class="contract-history-actions">
                   ${canRenew ? `<button class="primary-button contract-history-button" type="button" onclick="goTenantRenewal('${escapeHtml(contractId)}')">發起續約</button>` : ''}
+                  ${canCheckout ? `<button class="${checkoutPending ? 'primary-button' : 'secondary-button'} contract-history-button" type="button" onclick="goTenantCheckout('${escapeHtml(checkoutTargetId)}')">${checkoutPending ? '待辦理退房' : '手動辦理退房'}</button>` : ''}
                   <button class="secondary-button contract-history-button" type="button" onclick="goContractVersion('${escapeHtml(contractId)}')">查看完整合約與簽名</button>
                 </div>
               </article>

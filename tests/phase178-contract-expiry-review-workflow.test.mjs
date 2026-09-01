@@ -47,8 +47,12 @@ assert.match(
   'confirmation must record landlord review before tenant inquiry'
 );
 assert.match(requestsPage, /待房東審查/);
-assert.match(requestsPage, /詢問房客續約意願/);
+assert.match(requestsPage, /房東確認後自動詢問房客/);
+assert.match(requestsPage, /自動發送正式簽署邀請/);
+assert.doesNotMatch(requestsPage, /onclick="sendRenewalInquiry\(/);
+assert.doesNotMatch(requestsPage, /onclick="sendRenewalContract\(/);
 assert.match(requestsPage, /landlord_contract_renewal_review_confirm/);
+assert.match(initiatedContracts, /landlord_contract_checkout_complete/);
 assert.match(tenantsPage, /contract_end_date/);
 assert.match(tenantsPage, /function formatContractExpiry/);
 assert.match(tenantsPage, /合約到期/);

@@ -36,11 +36,14 @@ assert.match(initiatedSource, /function landlordInitiatedContractSendRenewal_/);
 assert.match(initiatedSource, /function landlordInitiatedContractUpdateRenewalIntentByLineUid_/);
 assert.match(requestsSource, /TENANT_RENEWAL_LANDLORD_INITIATED_ONLY/);
 assert.match(dispatcherSource, /tenant_contract_renewal_intent/);
-assert.match(landlordPage, /詢問房客續約意願/);
-assert.match(landlordPage, /發送合約簽署/);
+assert.match(landlordPage, /房東確認後自動詢問房客/);
+assert.match(landlordPage, /自動發送正式簽署邀請/);
+assert.doesNotMatch(landlordPage, /onclick="sendRenewalInquiry\(/);
+assert.doesNotMatch(landlordPage, /onclick="sendRenewalContract\(/);
 assert.match(landlordPage, /special_offer_enabled/);
 assert.match(tenantPage, /同意續約/);
 assert.match(tenantPage, /暫不續約/);
+assert.match(tenantPage, /系統已發送正式簽署邀請/);
 assert.match(tenantRenewalPage, /續約由房東發起/);
 
 const context = { Date, Math, Number, String, Object, Array, JSON, RegExp };
