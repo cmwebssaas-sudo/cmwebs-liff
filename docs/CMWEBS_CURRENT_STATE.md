@@ -7,6 +7,28 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-02 landlord checkout settlement local candidate
+
+- Candidate branch: `codex/checkout-settlement-20260902`. The approved manual
+  landlord checkout settlement is implemented locally with the cache key
+  `20260902-landlord-checkout-settlement-v1`.
+- The candidate adds server-side inclusive settlement calculation, prior unpaid
+  utility carryover, meter-based current utilities, deposit offset/refund,
+  append-only `V2_checkout_settlements`, and private start/end meter evidence.
+  Existing contracts and `V2_bills` remain immutable.
+- Local Phase 202／205／206／207 tests and checkout-page JavaScript parsing pass.
+  The additive migration entry point is
+  `runV2CheckoutSettlementProductionMigration`; it has not been run against the
+  Production Spreadsheet.
+- This candidate has not been pushed, merged, deployed to Apps Script, or
+  published to GitHub Pages. No Production Sheet, Drive, contract, tenant,
+  Trigger, Property, LINE setting or message was changed. Production serving
+  remains Apps Script Version 147 and the prior Pages release until separately
+  authorized.
+- Authenticated LIFF/mobile checkout, real private Drive uploads, exact
+  Production Sheet schema, and 502/506 operational data remain
+  `HUMAN_REQUIRED` / `UNVERIFIED`.
+
 ## 2026-09-02 landlord-led renewal and checkout formal release
 
 - PR #90 merged the landlord-led renewal and landlord-only checkout flow into

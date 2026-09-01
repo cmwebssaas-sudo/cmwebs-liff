@@ -254,7 +254,10 @@ verified, while authenticated LINE/mobile contract interaction remains
 | `landlord_contract_renewal_inquiry_send` | `doPost` exchange compatibility action | Landlord review session, Workspace `contract_write` policy | Retained for older clients; sends the reviewed renewal inquiry once and is idempotent after the inquiry is already sent. The new UI does not require a second click. |
 | `landlord_contract_renewal_send` | `doPost` exchange compatibility action | Landlord review session, Workspace `contract_write` policy | Retained for older accepted records; the current tenant-intent path creates one signing invite and sends it automatically after `accepted`. |
 | `landlord_contract_checkout_init` | `doPost` exchange | Landlord review session, Workspace read policy | Loads one same-Workspace predecessor contract, tenant, room, immutable original end date, and checkout eligibility for the landlord-only checkout page. |
-| `landlord_contract_checkout_complete` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Idempotently marks an eligible predecessor as `terminated`, records checkout fields, vacates and clears room/tenant/view pointers, preserves original dates/content and sends no tenant LINE notification. |
+| `landlord_contract_checkout_settlement_init` | `doPost` exchange | Landlord review session, Workspace read policy | Loads the selected move-out date, prior-month unpaid electricity/equipment components, contract rent/deposit/rates, and settlement period without appending a settlement. |
+| `landlord_contract_checkout_settlement_preview` | `doPost` exchange | Landlord review session, Workspace read policy | Server-calculates inclusive rent days, meter-based current utilities, deposit offset/refund, and tenant balance due without writing a bill or settlement. |
+| `landlord_contract_checkout_evidence_upload` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Stores one `checkout_start_meter` or `checkout_end_meter` JPG/PNG through the existing private Drive document path; client landlord/Workspace identifiers are not authority. |
+| `landlord_contract_checkout_complete` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Requires a server-recomputed settlement, both stored meter-photo document IDs, meter readings, and deposit fields; appends one `V2_checkout_settlements` snapshot, then idempotently marks the predecessor `terminated`, vacates and clears room/tenant/view pointers, preserves original dates/content and sends no tenant LINE notification. |
 | `landlord_contract_invite_cancel` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Cancels an unclaimed invite and its pending contract. |
 | `landlord_contract_invite_reissue` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Invalidates the current unclaimed invite, appends a replacement invite, updates the contract pointer, and returns the new QR/link payload with the one-time confirmation code only in that response. |
 | `landlord_contract_initiated_status` | JSONP `v2_action` | One-time HMAC-bound request exchange | Redeems the POST result; the session token and confirmation code are not placed in the URL. |
@@ -271,6 +274,21 @@ verified, while authenticated LINE/mobile contract interaction remains
   clause on one page, then hands the generated invite link and confirmation
   code to the tenant. It records `renewal_inquiry_status=manual_direct` and
   does not send a separate tenant-consent inquiry.
+- Checkout settlement uses the first day of the move-out month through the
+  move-out date inclusively. A 9/1–9/7 checkout therefore has seven occupied
+  days; current rent is prorated by calendar days, while current electricity and
+  equipment fees use the meter difference. Only the immediately prior month's
+  unpaid electricity and equipment components carry forward; prior rent,
+  management fee and other fixed charges do not.
+- Settlement snapshots are append-only in `V2_checkout_settlements`. The
+  contract and existing `V2_bills` rows remain immutable. A positive deposit
+  deduction requires a note and cannot exceed the contract deposit snapshot.
+  Missing settlement fields or meter evidence fail closed with
+  `CHECKOUT_SETTLEMENT_REQUIRED`.
+- Meter evidence uses the private `V2_contract_documents` Drive path with
+  `checkout_start_meter` and `checkout_end_meter` document types. The two files
+  must be stored, same-Workspace, same-contract records before checkout can
+  complete. These POST actions do not change the 83-route JSONP inventory.
 - The expiry scheduler uses the same append-only renewal object: at 60 days it
   prepares `pending_landlord_review` and records a landlord notification; at
   30 days it sends one reminder if the draft remains unconfirmed. It never

@@ -2,6 +2,15 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-02 — 房東手動退房結算本地候選版（尚未部署）
+
+- 房東手動退房新增伺服器結算：結算期間從當月 9/1 到實際退房日，含退房日；例如 9/1–9/7 為 7 天。
+- 上月只帶入未繳電費與設備使用費，不重複計算上月房租；本期房租按當月日曆天數比例計算，本期電費／設備使用費按起始與退房日電表差額計算。
+- 新增 append-only `V2_checkout_settlements` 快照、押金扣除說明、應補繳與押金應退；原合約與既有 `V2_bills` 不覆寫。
+- 退房完成前必須透過房東驗證 session 上傳同一合約的 `checkout_start_meter` 與 `checkout_end_meter` 私有 JPG/PNG 電表照片；缺少結算或照片時 fail closed。
+- 本地候選分支為 `codex/checkout-settlement-20260902`，候選程式切片 commits 為 `7285a82`、`c20c6b1`、`a472d2d`、`eec1689`、`f5d1e98`；未執行 Production migration、Apps Script deployment、Pages publication 或正式資料寫入。
+- Phase 202／205／206／207 本地測試通過；已登入 LIFF、Drive 私有上傳、正式 Sheet schema 與真機流程仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
+
 ## 2026-09-02 — 房東主導續約與退房正式部署
 
 - Implemented the approved landlord-led state machine: landlord review
