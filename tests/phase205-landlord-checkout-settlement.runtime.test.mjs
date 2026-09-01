@@ -6,6 +6,10 @@ const initiatedSource = readFileSync(
   new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url),
   'utf8'
 );
+const documentsSource = readFileSync(
+  new URL('../apps-script/V2_LANDLORD_CONTRACT_DOCUMENTS.js', import.meta.url),
+  'utf8'
+);
 const checkoutSource = readFileSync(
   new URL('../apps-script/V2_CONTRACT_CHECKOUT.js', import.meta.url),
   'utf8'
@@ -257,12 +261,36 @@ function makeSettlementApiRuntime() {
   vm.createContext(context);
   vm.runInContext(initiatedSource, context, { filename: 'V2_LANDLORD_INITIATED_CONTRACTS.js' });
   vm.runInContext(checkoutSource, context, { filename: 'V2_CONTRACT_CHECKOUT.js' });
+  vm.runInContext(documentsSource, context, { filename: 'V2_LANDLORD_CONTRACT_DOCUMENTS.js' });
   return { api: context, access, sheets };
 }
 
 const settlementRuntime = makeSettlementApiRuntime();
+assert.match(documentsSource, /checkout_start_meter/);
+assert.match(documentsSource, /checkout_end_meter/);
 assert.equal(settlementRuntime.api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_checkout_settlement_init' }), true);
 assert.equal(settlementRuntime.api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_checkout_settlement_preview' }), true);
+assert.equal(settlementRuntime.api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_checkout_evidence_upload' }), true);
+const unsupportedEvidence = settlementRuntime.api.landlordContractCheckoutEvidenceUploadBySession_('session-token', {
+  contract_id: 'old-contract', tenant_id: 'tenant-1', document_type: 'identity_front', file_name: 'identity.jpg',
+  mime_type: 'image/jpeg', base64: 'aGVsbG8=', idempotency_key: 'evidence-test-1'
+});
+assert.equal(unsupportedEvidence.success, false);
+assert.equal(unsupportedEvidence.code, 'INVALID_CHECKOUT_EVIDENCE_TYPE');
+let delegatedUploadArgs = null;
+settlementRuntime.api.uploadLandlordContractDocumentByLineUid_ = (...args) => {
+  delegatedUploadArgs = args;
+  return { success: true, code: 'OK', data: { document_id: 'doc-start' } };
+};
+const uploadedEvidence = settlementRuntime.api.landlordContractCheckoutEvidenceUploadBySession_('session-token', {
+  contract_id: 'old-contract', tenant_id: 'tenant-1', workspace_id: 'W2', document_type: 'checkout_start_meter',
+  file_name: 'meter-start.jpg', mime_type: 'image/jpeg', base64: 'aGVsbG8=', idempotency_key: 'evidence-test-2'
+});
+assert.equal(uploadedEvidence.success, true, uploadedEvidence.code);
+assert.equal(delegatedUploadArgs[0], 'landlord-line');
+assert.equal(delegatedUploadArgs[1], 'old-contract');
+assert.equal(delegatedUploadArgs[2], 'tenant-1');
+assert.equal(delegatedUploadArgs[3], 'checkout_start_meter');
 const settlementInit = settlementRuntime.api.landlordContractCheckoutSettlementInitBySession_('session-token', 'old-contract', '2026-09-07');
 assert.equal(settlementInit.success, true, settlementInit.code);
 assert.equal(settlementInit.data.settlement.settlement_start_date, '2026-09-01');

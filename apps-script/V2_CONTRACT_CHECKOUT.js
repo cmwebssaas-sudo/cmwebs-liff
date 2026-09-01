@@ -417,6 +417,37 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
   return landlordContractCheckoutSettlementResult_(row, calculation.data, false);
 }
 
+function landlordContractCheckoutEvidenceUploadBySession_(sessionToken, input) {
+  const normalized = input || {};
+  const documentType = landlordContractCheckoutSettlementText_(normalized.document_type || normalized.documentType).toLowerCase();
+  if (['checkout_start_meter', 'checkout_end_meter'].indexOf(documentType) < 0) return landlordContractCheckoutSettlementError_('INVALID_CHECKOUT_EVIDENCE_TYPE', '退房結算照片類型無效');
+  const mimeType = landlordContractCheckoutSettlementText_(normalized.mime_type || normalized.mimeType).toLowerCase();
+  if (['image/jpeg', 'image/png'].indexOf(mimeType) < 0) return landlordContractCheckoutSettlementError_('INVALID_CHECKOUT_EVIDENCE_MIME_TYPE', '電表照片僅支援 JPG 或 PNG');
+  const access = landlordContractCheckoutAccessFromSession_(sessionToken, 'contract_write');
+  if (!access.success) return access;
+  const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
+  if (!schema.success) return schema;
+  const contractId = landlordInitiatedContractText_(normalized.contract_id || normalized.contractId);
+  const contract = landlordContractCheckoutFindContract_(schema.data.contracts, access, contractId);
+  if (!contract) return landlordContractCheckoutSettlementError_('CONTRACT_NOT_FOUND', '找不到可辦理退房的合約');
+  const tenantId = landlordInitiatedContractText_(normalized.tenant_id || normalized.tenantId);
+  if (tenantId && tenantId !== landlordInitiatedContractText_(contract.tenant_id)) return landlordContractCheckoutSettlementError_('CHECKOUT_TENANT_SCOPE_INVALID', '房客不屬於此合約');
+  if (typeof uploadLandlordContractDocumentByLineUid_ !== 'function') return landlordContractCheckoutSettlementError_('LANDLORD_DOCUMENT_MODULE_REQUIRED', '找不到私有文件上傳模組');
+  const verifiedLineUserId = landlordInitiatedContractText_(access.line_user_id || access.principal_line_user_id);
+  if (!verifiedLineUserId) return landlordContractCheckoutSettlementError_('WORKSPACE_ACCESS_DENIED', '房東 session 缺少驗證身份');
+  return uploadLandlordContractDocumentByLineUid_(
+    verifiedLineUserId,
+    contractId,
+    landlordInitiatedContractText_(contract.tenant_id),
+    documentType,
+    normalized.file_name || normalized.fileName,
+    mimeType,
+    normalized.base64,
+    normalized.idempotency_key || normalized.idempotencyKey,
+    normalized.note
+  );
+}
+
 function landlordContractCheckoutInitBySession_(sessionToken, contractId) {
   const access = landlordContractCheckoutAccessFromSession_(sessionToken, 'read');
   if (!access.success) return access;
