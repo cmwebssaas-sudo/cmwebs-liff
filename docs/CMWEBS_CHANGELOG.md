@@ -2,6 +2,31 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-02 — Expired tenant renewal recovery (formal corrective release)
+
+- Fixed the Workspace-native landlord tenant list so an operational tenant is
+  still visible when the latest contract expired before a renewal draft was
+  created. The expired contract remains read-only and can be used as the
+  predecessor for the manual renewal entry.
+- Phase 201 covers the expired-tenant recovery boundary and confirms that a
+  future active contract does not use the recovery fallback.
+- PR #88 merged the repair into GitHub `main` as `272f675c`. Apps Script was
+  pushed as 51 files and the existing production Web App deployment now
+  serves immutable Version 146. Version 139 remains the rollback target. No
+  Sheet row, contract status, Property, Trigger, LINE setting or LINE message
+  was changed.
+- GitHub Pages was not changed because the tenant-detail renewal entry was
+  already present in the current public frontend; its authenticated readback
+  remains separate from this backend release.
+- Local verification passed: worktree validation with the authoritative 83
+  route inventory, full Node suite `70/70`, Apps Script syntax checks and
+  `git diff --check`. The outer `npm run validate` package still carries the
+  stale expected-route value `71` and was not used as the release gate.
+- Authenticated 502 landlord-list/detail readback and LINE/mobile renewal UAT
+  remain `HUMAN_REQUIRED`. If the canonical tenant, room or contract rows are
+  absent rather than merely hidden by the expired-contract filter, a separate
+  data-recovery operation still requires exact target verification.
+
 ## 2026-09-02 — Preserve predecessor fees in renewal prefill (formal corrective release)
 
 - Fixed the `從此合約發起續約` room-warning action so the renewal form keeps

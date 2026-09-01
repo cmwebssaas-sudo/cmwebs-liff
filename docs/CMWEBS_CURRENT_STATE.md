@@ -7,6 +7,27 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-02 expired tenant renewal recovery formal release
+
+- The Workspace-native landlord tenant list now falls back to the latest
+  renewal-eligible predecessor when no contract is currently effective but an
+  operational tenant's contract has expired. This restores the tenant card and
+  manual renewal entry without making the expired contract current or changing
+  its immutable history.
+- Phase 201 adds runtime coverage for the reported boundary and rejects future
+  active contracts from this fallback.
+- PR #88 merged as `272f675c`. Apps Script was pushed as 51 files and the
+  existing production Web App deployment now serves Version 146. Version 139
+  remains the rollback reference; the Web App URL is unchanged.
+- No Production Sheet row, contract status, Property, Trigger, LINE setting or
+  LINE message was changed. GitHub Pages was not changed because no frontend
+  source was required for this backend read-model repair.
+- Local verification passed with the worktree's current 83-route inventory,
+  full Node suite `70/70`, Apps Script syntax checks and `git diff --check`.
+- The exact 502 Production data state and authenticated LINE/mobile acceptance
+  remain `HUMAN_REQUIRED`; a logged-in landlord must confirm that 502 is visible
+  again and that its old contract opens the renewal form.
+
 ## 2026-09-02 renewal fee prefill corrective release
 
 - Fixed the `從此合約發起續約` path so the predecessor rent, management fee,
