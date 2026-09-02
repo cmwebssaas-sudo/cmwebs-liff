@@ -16,6 +16,9 @@ version, rollback, and runtime state before every Production action.
   utility carryover, meter-based current utilities, deposit offset/refund,
   append-only `V2_checkout_settlements`, and private start/end meter evidence.
   Existing contracts and `V2_bills` remain immutable.
+- Bill-month sources now normalize Google Sheets Date values and exclude paid or
+  voided bill statuses; fee resolution preserves explicit contract rates and
+  falls back to the existing room／Workspace month settings when absent.
 - Local Phase 202／205／206／207 tests and checkout-page JavaScript parsing pass.
   The additive migration entry point is
   `runV2CheckoutSettlementProductionMigration`; it has not been run against the
