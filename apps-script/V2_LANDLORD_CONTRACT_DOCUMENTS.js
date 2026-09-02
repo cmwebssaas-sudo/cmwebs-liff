@@ -6,7 +6,9 @@ var LD_CONTRACT_DOCUMENT_TYPES_ = [
   'legacy_contract',
   'identity_front',
   'identity_back',
-  'selfie'
+  'selfie',
+  'checkout_start_meter',
+  'checkout_end_meter'
 ];
 var LD_CONTRACT_DOCUMENT_HEADERS_ = [
   'document_id',

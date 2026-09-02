@@ -136,7 +136,10 @@ function doGet(e) {
     'landlord_contract_renewal_draft_update',
     'landlord_contract_renewal_review_confirm',
     'landlord_contract_checkout_init',
+    'landlord_contract_checkout_settlement_init',
+    'landlord_contract_checkout_settlement_preview',
     'landlord_contract_checkout_complete',
+    'landlord_contract_checkout_evidence_upload',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
   ].indexOf(v2Action) >= 0) {

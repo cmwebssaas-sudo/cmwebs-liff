@@ -56,6 +56,15 @@ const CONTRACT_HEADERS = [
 const ROOM_HEADERS = ['room_id', 'workspace_id', 'landlord_id', 'property_id', 'room_name', 'room_status', 'account_status', 'current_contract_id', 'current_tenant_id', 'current_tenant_name', 'updated_at'];
 const TENANT_HEADERS = ['tenant_id', 'tenant_user_id', 'user_id', 'workspace_id', 'landlord_id', 'tenant_line_user_id', 'line_user_id', 'tenant_name', 'name', 'room_id', 'current_contract_id', 'tenant_binding_status', 'binding_status', 'account_status', 'tenant_account_status', 'updated_at'];
 const VIEW_HEADERS = ['tenant_id', 'workspace_id', 'tenant_user_id', 'user_id', 'tenant_line_user_id', 'line_user_id', 'tenant_name', 'room_id', 'room_name', 'current_contract_id', 'contract_status', 'updated_at'];
+const SETTLEMENT_HEADERS = [
+  'settlement_id', 'workspace_id', 'landlord_id', 'contract_id', 'tenant_id', 'room_id', 'previous_bill_id', 'previous_bill_month',
+  'previous_electricity_amount', 'previous_equipment_amount', 'settlement_start_date', 'move_out_date', 'rent_days', 'days_in_month',
+  'rent_amount', 'start_meter_reading', 'end_meter_reading', 'electricity_usage', 'electricity_fee_rate', 'equipment_fee_rate',
+  'electricity_amount', 'equipment_amount', 'deposit_amount', 'deposit_deduction_amount', 'deposit_refund_amount', 'subtotal_amount',
+  'tenant_balance_due', 'start_meter_document_id', 'end_meter_document_id', 'settlement_note', 'settlement_status', 'idempotency_key',
+  'created_at', 'created_by_user_id', 'completed_at'
+];
+const DOCUMENT_HEADERS = ['document_id', 'workspace_id', 'landlord_id', 'tenant_id', 'contract_id', 'document_type', 'status'];
 
 const access = {
   success: true,
@@ -90,7 +99,12 @@ function makeCheckoutRuntime() {
     V2_contracts: new Sheet(CONTRACT_HEADERS, [contract]),
     V2_contract_invites: new Sheet(['invite_id', 'workspace_id', 'contract_id', 'room_id', 'landlord_user_id', 'landlord_membership_id', 'claim_code_hash', 'status', 'expires_at', 'claimed_at', 'claimed_line_user_id', 'cancelled_at', 'created_at', 'updated_at'], []),
     V2_landlord_tenant_list_view: new Sheet(VIEW_HEADERS, [rowFor(VIEW_HEADERS, { tenant_id: 'tenant-1', workspace_id: 'W1', tenant_user_id: 'tenant-user-1', user_id: 'tenant-user-1', tenant_line_user_id: 'tenant-line', line_user_id: 'tenant-line', tenant_name: '王小明', room_id: 'R603', room_name: '603', current_contract_id: 'old-contract', contract_status: 'expired' })]),
-    V2_tenant_home_view: new Sheet(VIEW_HEADERS, [rowFor(VIEW_HEADERS, { tenant_id: 'tenant-1', workspace_id: 'W1', tenant_user_id: 'tenant-user-1', user_id: 'tenant-user-1', tenant_line_user_id: 'tenant-line', line_user_id: 'tenant-line', tenant_name: '王小明', room_id: 'R603', room_name: '603', current_contract_id: 'old-contract', contract_status: 'expired' })])
+    V2_tenant_home_view: new Sheet(VIEW_HEADERS, [rowFor(VIEW_HEADERS, { tenant_id: 'tenant-1', workspace_id: 'W1', tenant_user_id: 'tenant-user-1', user_id: 'tenant-user-1', tenant_line_user_id: 'tenant-line', line_user_id: 'tenant-line', tenant_name: '王小明', room_id: 'R603', room_name: '603', current_contract_id: 'old-contract', contract_status: 'expired' })]),
+    V2_contract_documents: new Sheet(DOCUMENT_HEADERS, [
+      rowFor(DOCUMENT_HEADERS, { document_id: 'doc-start', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', document_type: 'checkout_start_meter', status: 'stored' }),
+      rowFor(DOCUMENT_HEADERS, { document_id: 'doc-end', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', document_type: 'checkout_end_meter', status: 'stored' })
+    ]),
+    V2_checkout_settlements: new Sheet(SETTLEMENT_HEADERS, [])
   };
   const pushedMessages = [];
   const auditCalls = [];
@@ -156,12 +170,27 @@ assert.equal(init.success, true, init.code);
 assert.equal(init.data.contract.original_end_date, '2026-07-31');
 assert.equal(init.data.default_move_out_date, '2026-07-31');
 
+const missingSettlement = runtime.api.landlordContractCheckoutCompleteBySession_('session-token', {
+  contract_id: 'old-contract', move_out_date: '2026-09-01', idempotency_key: 'checkout-missing-settlement'
+});
+assert.equal(missingSettlement.success, false);
+assert.equal(missingSettlement.code, 'CHECKOUT_SETTLEMENT_REQUIRED');
+assert.equal(runtime.contract[25], 'expired');
+assert.equal(runtime.room[5], 'occupied');
+assert.equal(runtime.tenant[10], 'old-contract');
+assert.equal(runtime.sheets.V2_checkout_settlements.rows.length, 0);
+
 const completed = runtime.api.landlordContractCheckoutCompleteBySession_('session-token', {
   contract_id: 'old-contract', move_out_date: '2026-09-01',
-  note: '已完成點交，私下確認不續約', idempotency_key: 'checkout-test-1'
+  note: '已完成點交，私下確認不續約', settlement_note: '退房點交完成',
+  start_meter_reading: 100, end_meter_reading: 100, deposit_deduction_amount: 0,
+  start_meter_document_id: 'doc-start', end_meter_document_id: 'doc-end', idempotency_key: 'checkout-test-1'
 });
 assert.equal(completed.success, true, completed.code);
 assert.equal(completed.data.checkout_status, 'completed');
+assert.match(completed.data.settlement_id, /^checkout-settlement-/);
+assert.equal(completed.data.tenant_balance_due, 800);
+assert.equal(runtime.sheets.V2_checkout_settlements.rows.length, 1);
 assert.equal(runtime.contract[25], 'terminated');
 assert.equal(runtime.contract[16], '2026-07-31');
 assert.equal(runtime.contract[31], '不可覆寫的原合約全文');
@@ -178,7 +207,15 @@ const repeated = runtime.api.landlordContractCheckoutCompleteBySession_('session
 });
 assert.equal(repeated.success, true, repeated.code);
 assert.equal(repeated.data.idempotent, true);
+assert.equal(repeated.data.settlement_id, completed.data.settlement_id);
 assert.equal(runtime.auditCalls.length, 1);
+
+const differentKey = runtime.api.landlordContractCheckoutCompleteBySession_('session-token', {
+  contract_id: 'old-contract', move_out_date: '2026-09-01', idempotency_key: 'checkout-test-2'
+});
+assert.equal(differentKey.success, false);
+assert.equal(differentKey.code, 'CHECKOUT_ALREADY_COMPLETED');
+assert.equal(runtime.sheets.V2_checkout_settlements.rows.length, 1);
 
 const invalidDate = runtime.api.landlordContractCheckoutValidateTarget_(
   { ...runtime.api.landlordInitiatedContractRows_(runtime.sheets.V2_contracts)[0], contract_status: 'expired', start_date: '2025-09-01', workspace_id: 'W1', contract_id: 'old-contract' },
