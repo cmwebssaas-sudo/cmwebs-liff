@@ -45,6 +45,28 @@ be verified for the particular action that needs it.
 | 2026-09-03 | Landlord paper-contract backfill implementation candidate | User explicitly confirmed development of a landlord-only manual backfill for already paper-signed contracts. Scope is isolated source, tests and documentation: required private paper contract file, optional identity files, direct active/upcoming append-only lease, no contract application/electronic invite/LINE. No push, PR, merge, Apps Script or Pages deployment, Sheet/Drive/Properties/Trigger write, or LINE action is authorized by this record; authenticated mobile/LIFF/Drive UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-03 | Landlord paper-contract backfill formal deployment | User explicitly requested `正式部署`. This authorizes the clean candidate push, PR, merge, additive-only `V2_contracts` header migration, immutable Apps Script redeploy, and GitHub Pages publication for the paper-contract backfill flow. It does not authorize tenant/contract transaction creation, Drive document upload, Properties/Trigger changes, or LINE messages; rollback is to the freshly verified Version 149 and prior Pages revision. Authenticated mobile/LIFF and private Drive UAT remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
 
+## 2026-09-03 landlord paper-contract backfill formal release evidence
+
+- Candidate branch `codex/paper-contract-backfill-20260903` passed the full Node
+  suite, the authoritative validator, duplicate declaration and credential
+  scans, HTML link checks, all Apps Script syntax checks, and `git diff --check`.
+- PR #96 merged the candidate into GitHub `main` as `b36ec4b`. Apps Script source
+  was pushed as 53 files, immutable Version 150 was created, and the existing
+  Web App deployment was updated from Version 149 to Version 150. The Web App
+  URL was preserved and Version 149 remains the rollback point.
+- `testRunV2LandlordPaperContractBackfillProductionMigration` completed in the
+  authenticated Apps Script editor. Read-only Production Spreadsheet verification
+  found `paper_backfill_idempotency_key` and `paper_backfill_payload_hash` in the
+  existing `V2_contracts` header row. The migration is additive-only and no
+  contract data rows or new sheets were written.
+- Legacy GitHub Pages build `1190728482` completed for `b36ec4b`. Public readback
+  returned HTTP 200 for the release asset and changed landlord/tenant pages, and
+  confirmed the paper-backfill entry/action and cache key
+  `20260903-paper-contract-backfill-v1`.
+- No tenant transaction, Drive document upload, Properties/Trigger change, or
+  LINE message was performed. Authenticated LIFF/mobile and private Drive UAT
+  remain `HUMAN_REQUIRED` / `UNVERIFIED`.
+
 ## 2026-09-03 landlord simple new-lease formal release evidence
 
 - Candidate branch `codex/simplify-new-lease-entry-20260903` was merged through
