@@ -969,9 +969,14 @@
     }
 
     function goPage(page) {
+      const separator =
+        String(page || '').indexOf('?') >= 0
+          ? '&'
+          : '?';
       location.href =
         page +
-        '?v=' +
+        separator +
+        'v=' +
         (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1') +
         (
           TEST_MODE
@@ -998,6 +1003,16 @@
       goPage(
         url
       );
+    }
+
+    function goTenantPaperBackfill(propertyId, roomId) {
+      let url =
+        'landlord-tenant-create.html' +
+        '?mode=paper_backfill' +
+        '&property_id=' + encodeURIComponent(propertyId || '') +
+        '&room_id=' + encodeURIComponent(roomId || '');
+
+      goPage(url);
     }
 
     function buildLandlordLoginRedirectUri() {
@@ -1616,6 +1631,13 @@
                                 onclick="goTenantCreate('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')"
                               >
                                 建立房客
+                              </button>
+                              <button
+                                class="small-button secondary"
+                                type="button"
+                                onclick="goTenantPaperBackfill('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')"
+                              >
+                                手動補登紙本合約
                               </button>
                             `
                             : ''

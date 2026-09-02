@@ -140,6 +140,7 @@ function doGet(e) {
     'landlord_contract_checkout_settlement_preview',
     'landlord_contract_checkout_complete',
     'landlord_contract_checkout_evidence_upload',
+    'landlord_contract_paper_backfill',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
   ].indexOf(v2Action) >= 0) {
@@ -885,7 +886,8 @@ function doGet(e) {
         lineUserId,
         e.parameter.property_id || '',
         e.parameter.room_id || '',
-        e.parameter.previous_contract_id || ''
+        e.parameter.previous_contract_id || '',
+        e.parameter.tenant_id || ''
       );
 
     return bridge === '1'
@@ -2404,6 +2406,8 @@ function doPost(e) {
         ? landlordContractSigningReviewHandleAuthPost_(postBody)
         : landlordContractSigningReviewIsExchangeRequest_(postBody)
           ? landlordContractSigningReviewHandleExchangePost_(postBody)
+          : landlordPaperContractBackfillIsRequest_(postBody)
+            ? landlordPaperContractBackfillHandlePost_(postBody)
           : landlordInitiatedContractIsRequest_(postBody)
             ? landlordInitiatedContractHandlePost_(postBody)
       : tenantContractArtifactIsUploadRequest_(postBody)

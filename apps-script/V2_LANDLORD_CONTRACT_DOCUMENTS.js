@@ -383,6 +383,164 @@ function uploadLandlordContractDocumentByLineUid_(
   }
 }
 
+// Lock-aware storage primitive for compound landlord operations. The caller
+// owns the ScriptLock and must pass already-scoped contract/tenant IDs.
+function storeLandlordContractDocumentForAccess_(access, documentInput, options) {
+  var input = documentInput || {};
+  var config = options || {};
+  var normalizedType = ldText_(input.document_type).toLowerCase();
+  var allowedTypes = LD_CONTRACT_DOCUMENT_TYPES_ || [];
+  if (!access || !access.success || !ldText_(access.workspace && access.workspace.workspace_id)) {
+    return { success: false, code: 'WORKSPACE_ACCESS_DENIED', message: 'Workspace 權限無效' };
+  }
+  if (allowedTypes.indexOf(normalizedType) === -1) {
+    return { success: false, code: 'INVALID_DOCUMENT_TYPE', message: '不支援的文件類型' };
+  }
+
+  var bytes = input.file_bytes;
+  if (!bytes || !bytes.length) {
+    try { bytes = Utilities.base64Decode(ldText_(input.base64)); } catch (_) {
+      return { success: false, code: 'INVALID_BASE64', message: '上傳內容不是合法 Base64' };
+    }
+  }
+  if (!bytes || !bytes.length || bytes.length > LD_CONTRACT_DOCUMENT_MAX_BYTES_) {
+    return { success: false, code: 'INVALID_FILE_SIZE', message: '檔案大小不合法（1~8MB）' };
+  }
+
+  var fileName = ldText_(input.file_name || input.name);
+  var mimeType = ldText_(input.mime_type || input.type).toLowerCase();
+  var validMime = ['image/jpeg', 'image/png', 'application/pdf'].indexOf(mimeType) >= 0;
+  var idempotencyKey = ldText_(input.idempotency_key);
+  if (!fileName || !mimeType || !idempotencyKey) return { success: false, code: 'INVALID_UPLOAD_PAYLOAD', message: '缺少必要上傳欄位' };
+  if (!validMime) return { success: false, code: 'INVALID_MIME_TYPE', message: '僅支援 JPG、PNG、PDF' };
+
+  var sheet = config.sheet || ldEnsureContractDocumentsSheet_();
+  var landlordId = ldText_((access.principals && access.principals[0] && access.principals[0].landlord_id) || access.principal_landlord_id || access.landlord_id);
+  var workspaceId = ldText_(access.workspace && access.workspace.workspace_id);
+  var tenantId = ldText_(input.tenant_id);
+  var contractId = ldText_(input.contract_id);
+  var sha256 = ldComputeSha256Hex_(bytes);
+  var existing = ldFindDocumentByIdempotency_(sheet, landlordId, contractId, tenantId, normalizedType, idempotencyKey);
+  if (existing) {
+    if (ldText_(existing.sha256) === sha256 && ldText_(existing.mime_type).toLowerCase() === mimeType) {
+      return {
+        success: true,
+        code: 'IDEMPOTENT',
+        message: '重複請求，已直接回傳既有文件',
+        data: {
+          document_id: ldText_(existing.document_id),
+          contract_id: ldText_(existing.contract_id),
+          tenant_id: ldText_(existing.tenant_id),
+          document_type: normalizedType,
+          document_origin: ldText_(existing.document_origin || input.document_origin || 'uploaded'),
+          file_name: ldText_(existing.file_name || fileName),
+          mime_type: ldText_(existing.mime_type || mimeType),
+          byte_size: Number(existing.byte_size || bytes.length),
+          status: ldText_(existing.status || 'stored'),
+          idempotent: true
+        },
+        internal: { drive_file_id: ldText_(existing.drive_file_id) }
+      };
+    }
+    return { success: false, code: 'IDEMPOTENCY_CONFLICT', message: '相同 idempotency_key 已存在但檔案內容不同' };
+  }
+
+  var folder = ldGetContractDocumentFolder_();
+  if (!folder.success) return folder;
+  var extension = mimeType === 'application/pdf' ? '.pdf' : mimeType === 'image/png' ? '.png' : '.jpg';
+  var finalFileName = fileName;
+  if (!/\.pdf$|\.png$|\.jpg$|\.jpeg$/i.test(finalFileName)) finalFileName += extension;
+  var driveFile = null;
+  try {
+    driveFile = folder.data.createFile(Utilities.newBlob(bytes, mimeType, finalFileName));
+    driveFile.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+    var now = ldText_(input.created_at) || new Date().toISOString();
+    var documentId = Utilities.getUuid();
+    var row = {
+      document_id: documentId,
+      workspace_id: workspaceId,
+      landlord_id: landlordId,
+      landlord_line_user_id: ldText_(access.line_user_id || access.principal_line_user_id),
+      tenant_id: tenantId,
+      contract_id: contractId,
+      document_type: normalizedType,
+      file_name: finalFileName,
+      mime_type: mimeType,
+      byte_size: bytes.length,
+      sha256: sha256,
+      idempotency_key: idempotencyKey,
+      drive_file_id: driveFile.getId(),
+      status: 'stored',
+      created_at: now,
+      created_by_user_id: ldText_(input.created_by_user_id || (access.user && access.user.user_id)),
+      note: ldText_(input.note),
+      document_origin: ldText_(input.document_origin || 'uploaded'),
+      source_document_id: ''
+    };
+    var headers = ldGetHeaders_(sheet);
+    sheet.appendRow(headers.map(function(header) { return row[header] === undefined ? '' : row[header]; }));
+    return {
+      success: true,
+      code: 'OK',
+      message: '文件保存成功',
+      data: {
+        document_id: documentId,
+        contract_id: contractId,
+        tenant_id: tenantId,
+        document_type: normalizedType,
+        document_origin: row.document_origin,
+        file_name: finalFileName,
+        mime_type: mimeType,
+        byte_size: bytes.length,
+        status: 'stored',
+        idempotent: false
+      },
+      internal: { drive_file_id: driveFile.getId() }
+    };
+  } catch (error) {
+    if (driveFile && typeof driveFile.setTrashed === 'function') {
+      try { driveFile.setTrashed(true); } catch (_) {}
+    }
+    return { success: false, code: 'DOCUMENT_WRITE_FAILED', message: '私有文件保存失敗' };
+  }
+}
+
+function removeLandlordContractDocumentForBackfill_(documentId) {
+  var id = ldText_(documentId);
+  if (!id) return false;
+  var sheet = ldEnsureContractDocumentsSheet_();
+  var rows = typeof workspaceGetObjectsWithRow_ === 'function'
+    ? workspaceGetObjectsWithRow_(sheet)
+    : ldContractDocumentRowsWithNumber_(sheet);
+  var row = rows.find(function(item) { return ldText_(item.document_id) === id; });
+  if (!row) return false;
+  var driveFileId = ldText_(row.drive_file_id);
+  if (driveFileId) {
+    try {
+      var file = DriveApp.getFileById(driveFileId);
+      if (file && typeof file.setTrashed === 'function') file.setTrashed(true);
+    } catch (_) {}
+  }
+  if (typeof sheet.deleteRow === 'function') sheet.deleteRow(row._sheet_row || row.__row_number);
+  else {
+    var headers = ldGetHeaders_(sheet);
+    var statusColumn = headers.indexOf('status');
+    if (statusColumn >= 0) sheet.getRange(row._sheet_row || row.__row_number, statusColumn + 1).setValue('deleted');
+  }
+  return true;
+}
+
+function ldContractDocumentRowsWithNumber_(sheet) {
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  var values = sheet.getDataRange().getValues();
+  var headers = values.shift().map(ldText_);
+  return values.map(function(valuesRow, index) {
+    var row = { __row_number: index + 2 };
+    headers.forEach(function(header, column) { if (header) row[header] = valuesRow[column]; });
+    return row;
+  });
+}
+
 function getLandlordContractDocumentDownloadByLineUid_(
   landlordLineUserId,
   documentId

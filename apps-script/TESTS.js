@@ -263,3 +263,10 @@ function testInspectRoom603Bill() {
 
   return result;
 }
+
+/**
+ * 只在已核准的 release 步驟執行紙本合約補登 additive-only migration。
+ */
+function testRunV2LandlordPaperContractBackfillProductionMigration() {
+  return runV2LandlordPaperContractBackfillProductionMigration();
+}

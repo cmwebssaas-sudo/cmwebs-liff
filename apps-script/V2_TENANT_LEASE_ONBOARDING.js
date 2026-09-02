@@ -58,7 +58,8 @@ function getLandlordTenantCreateInitByLineUid_(
   lineUserId,
   selectedPropertyId,
   selectedRoomId,
-  previousContractId
+  previousContractId,
+  selectedTenantId
 ) {
   try {
     const startedAt =
@@ -92,6 +93,11 @@ function getLandlordTenantCreateInitByLineUid_(
     previousContractId =
       tenantLeaseText_(
         previousContractId
+      );
+
+    selectedTenantId =
+      tenantLeaseText_(
+        selectedTenantId
       );
 
     const ss =
@@ -149,6 +155,34 @@ function getLandlordTenantCreateInitByLineUid_(
           'landlord_id'
         ]
       );
+
+    const tenants =
+      tenantLeaseGetWorkspaceRows_(
+        ss.getSheetByName(
+          V2_TENANT_LEASE_SHEETS_
+            .tenants
+        ),
+        access,
+        [
+          'landlord_id'
+        ]
+      );
+
+    const selectedTenant =
+      selectedTenantId
+        ? tenants.find(function (tenant) {
+            return tenantLeaseText_(tenant.tenant_id) === selectedTenantId;
+          }) || null
+        : null;
+
+    if (selectedTenant) {
+      if (!selectedPropertyId) {
+        selectedPropertyId = tenantLeaseText_(selectedTenant.property_id);
+      }
+      if (!selectedRoomId) {
+        selectedRoomId = tenantLeaseText_(selectedTenant.room_id);
+      }
+    }
 
     const renewalSource =
       previousContractId
@@ -530,6 +564,53 @@ function getLandlordTenantCreateInitByLineUid_(
           selectedPropertyId,
         selected_room_id:
           selectedRoomId,
+        selected_tenant:
+          selectedTenant
+            ? {
+                tenant_id:
+                  tenantLeaseText_(
+                    selectedTenant.tenant_id
+                  ),
+                tenant_user_id:
+                  tenantLeaseText_(
+                    selectedTenant.tenant_user_id ||
+                    selectedTenant.user_id
+                  ),
+                tenant_name:
+                  tenantLeaseText_(
+                    selectedTenant.tenant_name ||
+                    selectedTenant.name
+                  ),
+                tenant_phone:
+                  tenantLeaseText_(
+                    selectedTenant.tenant_phone ||
+                    selectedTenant.phone
+                  ),
+                tenant_email:
+                  tenantLeaseText_(
+                    selectedTenant.tenant_email ||
+                    selectedTenant.email
+                  ),
+                property_id:
+                  tenantLeaseText_(
+                    selectedTenant.property_id
+                  ),
+                room_id:
+                  tenantLeaseText_(
+                    selectedTenant.room_id
+                  ),
+                contract_start_date:
+                  tenantLeaseFormatDate_(
+                    selectedTenant.contract_start_date ||
+                    selectedTenant.start_date
+                  ),
+                contract_end_date:
+                  tenantLeaseFormatDate_(
+                    selectedTenant.contract_end_date ||
+                    selectedTenant.end_date
+                  )
+              }
+            : null,
         renewal_source:
           renewalSource
             ? {

@@ -340,6 +340,35 @@ dispatcher.
 | `landlord_contract_document_download` | JSONP / bridge | Bound landlord identity and owned document scope | Returns a scoped stored document download payload without exposing Drive identifiers. |
 | `landlord_contract_document_upload` | JSON POST | Bound landlord identity and owned contract scope | Stores an idempotent JPG, PNG, or PDF landlord contract document in the configured private folder. |
 
+## Landlord paper-contract backfill candidate（房東紙本合約補登）
+
+This is a local V2.1 candidate POST action. It does not add a JSONP route, so the
+canonical `83`-route inventory above remains unchanged. It is not deployment
+evidence.
+
+| Route / POST action | Transport | Required authority | Purpose |
+| --- | --- | --- | --- |
+| `landlord_contract_paper_backfill` | JSON POST | Landlord review session with Workspace `contract_write` policy; server-side room, tenant, property and overlap scope | Records a paper-signed contract（紙本簽署合約）directly as an active or upcoming append-only contract. The signed paper contract file is required; identity front/back files are optional and can be uploaded later. It does not create a contract application, electronic invite, signing session, confirmation code, or LINE message. |
+
+- The server validates the Taiwan mobile number, dates, amounts, room vacancy,
+  existing-tenant ownership, duplicate phone, and idempotency payload before any
+  Sheet or private Drive write.
+- The normal POST does not add Sheet headers or run migration. Missing required
+  `V2_contracts` backfill headers returns `PAPER_BACKFILL_SCHEMA_NOT_READY` and
+  requires a separately authorized additive migration before retrying.
+- The release migration entry point is
+  `runV2LandlordPaperContractBackfillProductionMigration`. It only appends the
+  missing `paper_backfill_idempotency_key` and `paper_backfill_payload_hash`
+  headers to the existing `V2_contracts` header row, is idempotent, and never
+  creates a sheet or changes contract rows.
+- The required contract file and optional identity files are stored through the
+  private `V2_contract_documents` path. Public responses contain document
+  summaries only and never expose Drive file IDs or file bytes.
+- The action appends the contract and, for a new paper tenant, the tenant/user
+  rows; it updates room and compatibility-view pointers under the existing
+  landlord contract `ScriptLock`. Existing contracts, bills and historical
+  documents are not overwritten.
+
 ## Signed legacy contract integration webhook
 
 | POST action | Module | Purpose |
