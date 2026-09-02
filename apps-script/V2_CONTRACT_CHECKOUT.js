@@ -88,6 +88,101 @@ function landlordContractCheckoutSettlementPreviousMonth_(value) {
   ].join('-');
 }
 
+function landlordContractCheckoutSettlementNormalizeMonth_(value) {
+  const isDate = value instanceof Date || Object.prototype.toString.call(value) === '[object Date]';
+  if (isDate && !Number.isNaN(value.getTime())) {
+    if (typeof Utilities !== 'undefined' && Utilities && typeof Utilities.formatDate === 'function') {
+      return Utilities.formatDate(value, 'Asia/Taipei', 'yyyy-MM');
+    }
+    return String(value.getUTCFullYear()) + '-' + String(value.getUTCMonth() + 1).padStart(2, '0');
+  }
+  const text = landlordContractCheckoutSettlementText_(value);
+  const compactMatch = /^(\d{4})(\d{2})$/.exec(text);
+  if (compactMatch) {
+    const compactMonth = Number(compactMatch[2]);
+    return compactMonth >= 1 && compactMonth <= 12 ? compactMatch[1] + '-' + compactMatch[2] : '';
+  }
+  const chineseMatch = /^(\d{4})\s*年\s*(\d{1,2})\s*月/.exec(text);
+  const match = chineseMatch || /^(\d{4})[-\/](\d{1,2})(?:[-\/](\d{1,2}))?(?:$|T)/.exec(text);
+  if (!match) return '';
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return '';
+  return match[1] + '-' + String(month).padStart(2, '0');
+}
+
+function landlordContractCheckoutSettlementBillIsUnpaid_(bill) {
+  if (!bill) return false;
+  const statuses = [bill.payment_status, bill.bill_status, bill.status]
+    .map(function(status) { return landlordContractCheckoutSettlementText_(status).toLowerCase(); })
+    .filter(function(status) { return status; });
+  return !statuses.some(function(status) {
+    return V2_CHECKOUT_SETTLEMENT_PAID_STATUSES_.indexOf(status) >= 0;
+  });
+}
+
+function landlordContractCheckoutSettlementRate_(value) {
+  if (value === null || value === undefined || landlordContractCheckoutSettlementText_(value) === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function landlordContractCheckoutSettlementFirstRate_(candidates, fallback) {
+  for (let index = 0; index < candidates.length; index += 1) {
+    const rate = landlordContractCheckoutSettlementRate_(candidates[index]);
+    if (rate !== null) return rate;
+  }
+  const fallbackRate = landlordContractCheckoutSettlementRate_(fallback);
+  return fallbackRate === null ? 0 : fallbackRate;
+}
+
+function landlordContractCheckoutSettlementResolveRates_(ss, access, contract, room, settlementStartDate) {
+  const targetContract = contract || {};
+  const targetRoom = room || {};
+  const settings = typeof settingsIntegrationGetWorkspaceSettings_ === 'function'
+    ? settingsIntegrationGetWorkspaceSettings_(ss, access)
+    : {
+        default_electricity_fee_rate: 3,
+        summer_equipment_fee_rate: 3.5,
+        regular_equipment_fee_rate: 2.5,
+        summer_months: [6, 7, 8, 9]
+      };
+  const summerMonths = typeof settingsIntegrationResolveSummerMonths_ === 'function'
+    ? settingsIntegrationResolveSummerMonths_(targetRoom.equipment_summer_months || targetContract.equipment_summer_months, settings)
+    : (Array.isArray(settings.summer_months) ? settings.summer_months : [6, 7, 8, 9]);
+  const month = Number(String(settlementStartDate || '').slice(5, 7));
+  const electricityFeeRate = landlordContractCheckoutSettlementFirstRate_([
+    targetContract.electricity_fee_rate,
+    targetContract.electricity_rate,
+    targetRoom.electricity_fee_rate,
+    targetRoom.electricity_rate
+  ], settings.default_electricity_fee_rate);
+  const genericEquipmentRate = landlordContractCheckoutSettlementRate_(targetContract.equipment_fee_rate);
+  const roomGenericEquipmentRate = landlordContractCheckoutSettlementRate_(targetRoom.equipment_fee_rate);
+  const equipmentFeeRate = genericEquipmentRate !== null
+    ? genericEquipmentRate
+    : roomGenericEquipmentRate !== null
+      ? roomGenericEquipmentRate
+      : summerMonths.indexOf(month) >= 0
+        ? landlordContractCheckoutSettlementFirstRate_([
+            targetContract.equipment_fee_rate_summer,
+            targetContract.summer_equipment_fee_rate,
+            targetRoom.equipment_fee_rate_summer,
+            targetRoom.summer_equipment_fee_rate
+          ], settings.summer_equipment_fee_rate)
+        : landlordContractCheckoutSettlementFirstRate_([
+            targetContract.equipment_fee_rate_regular,
+            targetContract.regular_equipment_fee_rate,
+            targetContract.non_summer_equipment_fee_rate,
+            targetRoom.equipment_fee_rate_regular,
+            targetRoom.regular_equipment_fee_rate,
+            targetRoom.non_summer_equipment_fee_rate
+          ], settings.regular_equipment_fee_rate);
+  return {
+    electricity_fee_rate: electricityFeeRate,
+    equipment_fee_rate: equipmentFeeRate
+  };
+}
+
 function landlordContractCheckoutSettlementValidateInput_(input) {
   const normalized = input || {};
   const contract = normalized.contract || {};
@@ -116,8 +211,7 @@ function landlordContractCheckoutSettlementValidateInput_(input) {
 function landlordContractCheckoutSettlementPreviousUtility_(previousBill, settlementStartDate) {
   const bill = previousBill || {};
   const expectedMonth = landlordContractCheckoutSettlementPreviousMonth_(settlementStartDate.slice(0, 7));
-  const paymentStatus = landlordContractCheckoutSettlementText_(bill.payment_status || bill.status).toLowerCase();
-  if (!bill || landlordContractCheckoutSettlementText_(bill.bill_month) !== expectedMonth || V2_CHECKOUT_SETTLEMENT_PAID_STATUSES_.indexOf(paymentStatus) >= 0) {
+  if (!bill || landlordContractCheckoutSettlementNormalizeMonth_(bill.bill_month) !== expectedMonth || !landlordContractCheckoutSettlementBillIsUnpaid_(bill)) {
     return { electricity_amount: 0, equipment_amount: 0 };
   }
   return {
@@ -233,7 +327,8 @@ function landlordContractCheckoutSettlementFindPreviousBill_(sheet, access, cont
       landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contract.contract_id) &&
       landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id) &&
       landlordInitiatedContractText_(row.room_id) === landlordInitiatedContractText_(contract.room_id) &&
-      landlordInitiatedContractText_(row.bill_month) === expectedMonth;
+      landlordContractCheckoutSettlementNormalizeMonth_(row.bill_month) === expectedMonth &&
+      landlordContractCheckoutSettlementBillIsUnpaid_(row);
   }) || null;
 }
 
@@ -241,7 +336,7 @@ function landlordContractCheckoutSettlementPublicBill_(bill) {
   if (!bill) return null;
   return {
     bill_id: landlordInitiatedContractText_(bill.bill_id),
-    bill_month: landlordInitiatedContractText_(bill.bill_month),
+    bill_month: landlordContractCheckoutSettlementNormalizeMonth_(bill.bill_month),
     payment_status: landlordInitiatedContractText_(bill.payment_status || bill.status).toLowerCase(),
     electricity_amount: landlordContractCheckoutSettlementRound_(bill.electricity_amount),
     equipment_amount: landlordContractCheckoutSettlementRound_(bill.equipment_amount)
@@ -263,6 +358,7 @@ function landlordContractCheckoutSettlementSource_(schema, access, contractId, m
   if (!eligibility.success) return eligibility;
   const moveOut = landlordContractCheckoutSettlementParseDate_(selectedMoveOutDate);
   const settlementStartDate = landlordContractCheckoutSettlementFormatDate_(new Date(Date.UTC(moveOut.getUTCFullYear(), moveOut.getUTCMonth(), 1)));
+  const rates = landlordContractCheckoutSettlementResolveRates_(SpreadsheetApp.getActiveSpreadsheet(), access, contract, room, settlementStartDate);
   const previousBill = landlordContractCheckoutSettlementFindPreviousBill_(schema.data.bills, access, contract, settlementStartDate);
   const previousUtility = landlordContractCheckoutSettlementPreviousUtility_(previousBill, settlementStartDate);
   return {
@@ -277,13 +373,13 @@ function landlordContractCheckoutSettlementSource_(schema, access, contractId, m
         settlement_start_date: settlementStartDate,
         move_out_date: selectedMoveOutDate,
         previous_bill_id: previousBill ? landlordInitiatedContractText_(previousBill.bill_id) : '',
-        previous_bill_month: previousBill ? landlordInitiatedContractText_(previousBill.bill_month) : '',
+        previous_bill_month: previousBill ? landlordContractCheckoutSettlementNormalizeMonth_(previousBill.bill_month) : '',
         previous_electricity_amount: previousUtility.electricity_amount,
         previous_equipment_amount: previousUtility.equipment_amount,
         rent_amount: landlordContractCheckoutSettlementRound_(contract.rent_amount === undefined ? contract.monthly_rent : contract.rent_amount),
         deposit_amount: landlordContractCheckoutSettlementRound_(contract.deposit_amount),
-        electricity_fee_rate: landlordContractCheckoutSettlementNumber_(contract.electricity_fee_rate, 0),
-        equipment_fee_rate: landlordContractCheckoutSettlementNumber_(contract.equipment_fee_rate, 0)
+        electricity_fee_rate: rates.electricity_fee_rate,
+        equipment_fee_rate: rates.equipment_fee_rate
       }
     }
   };
@@ -306,7 +402,10 @@ function landlordContractCheckoutSettlementPreviewBySession_(sessionToken, input
   const source = landlordContractCheckoutSettlementSource_(schema, access, normalized.contract_id, normalized.move_out_date || normalized.moveOutDate);
   if (!source.success) return source;
   const calculation = landlordContractCheckoutSettlementCalculate_(Object.assign({}, normalized, {
-    contract: source.data.contract,
+    contract: Object.assign({}, source.data.contract, {
+      electricity_fee_rate: source.data.settlement.electricity_fee_rate,
+      equipment_fee_rate: source.data.settlement.equipment_fee_rate
+    }),
     previousBill: source.data.previous_bill
   }));
   if (!calculation.success) return calculation;
@@ -319,8 +418,8 @@ function landlordContractCheckoutSettlementPreviewBySession_(sessionToken, input
       settlement: Object.assign({}, calculation.data, {
         previous_bill_id: source.data.settlement.previous_bill_id,
         previous_bill_month: source.data.settlement.previous_bill_month,
-        electricity_fee_rate: landlordContractCheckoutSettlementNumber_(source.data.contract.electricity_fee_rate, 0),
-        equipment_fee_rate: landlordContractCheckoutSettlementNumber_(source.data.contract.equipment_fee_rate, 0)
+        electricity_fee_rate: source.data.settlement.electricity_fee_rate,
+        equipment_fee_rate: source.data.settlement.equipment_fee_rate
       })
     }
   };
@@ -401,9 +500,10 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
   if (!startMeterDocumentId || !endMeterDocumentId || !landlordContractCheckoutSettlementHasStoredDocument_(schema.data.documents, access, contract, startMeterDocumentId, 'checkout_start_meter') || !landlordContractCheckoutSettlementHasStoredDocument_(schema.data.documents, access, contract, endMeterDocumentId, 'checkout_end_meter')) return landlordContractCheckoutSettlementError_('CHECKOUT_METER_DOCUMENTS_REQUIRED', '退房時必須上傳起始與結束電表照片');
   const parsedMoveOut = landlordContractCheckoutSettlementParseDate_(moveOutDate);
   const settlementStartDate = landlordContractCheckoutSettlementFormatDate_(new Date(Date.UTC(parsedMoveOut.getUTCFullYear(), parsedMoveOut.getUTCMonth(), 1)));
+  const rates = landlordContractCheckoutSettlementResolveRates_(SpreadsheetApp.getActiveSpreadsheet(), access, contract, room, settlementStartDate);
   const previousBill = landlordContractCheckoutSettlementFindPreviousBill_(schema.data.bills, access, contract, settlementStartDate);
   const calculation = landlordContractCheckoutSettlementCalculate_(Object.assign({}, normalized, {
-    contract: contract,
+    contract: Object.assign({}, contract, rates),
     previousBill: previousBill
   }));
   if (!calculation.success) return calculation;
@@ -417,9 +517,9 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
     tenant_id: landlordInitiatedContractText_(contract.tenant_id),
     room_id: landlordInitiatedContractText_(contract.room_id),
     previous_bill_id: previousBill ? landlordInitiatedContractText_(previousBill.bill_id) : '',
-    previous_bill_month: previousBill ? landlordInitiatedContractText_(previousBill.bill_month) : '',
-    electricity_fee_rate: landlordContractCheckoutSettlementNumber_(contract.electricity_fee_rate, 0),
-    equipment_fee_rate: landlordContractCheckoutSettlementNumber_(contract.equipment_fee_rate, 0),
+    previous_bill_month: previousBill ? landlordContractCheckoutSettlementNormalizeMonth_(previousBill.bill_month) : '',
+    electricity_fee_rate: rates.electricity_fee_rate,
+    equipment_fee_rate: rates.equipment_fee_rate,
     start_meter_document_id: startMeterDocumentId,
     end_meter_document_id: endMeterDocumentId,
     settlement_note: landlordContractCheckoutSettlementText_(normalized.settlement_note || normalized.note),

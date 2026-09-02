@@ -128,6 +128,72 @@ assert.equal(paidPreviousBill.success, true, paidPreviousBill.code);
 assert.equal(paidPreviousBill.data.previous_electricity_amount, 0);
 assert.equal(paidPreviousBill.data.previous_equipment_amount, 0);
 
+const sheetDatePreviousBill = context.landlordContractCheckoutSettlementCalculate_({
+  contract,
+  previousBill: {
+    bill_id: 'bill-2026-08-506-date',
+    bill_month: new Date(Date.UTC(2026, 7, 1)),
+    payment_status: 'unpaid',
+    electricity_amount: 120,
+    equipment_amount: 80
+  },
+  moveOutDate: '2026-09-07',
+  startMeterReading: 100,
+  endMeterReading: 100,
+  depositDeductionAmount: 0
+});
+assert.equal(sheetDatePreviousBill.success, true, sheetDatePreviousBill.code);
+assert.equal(sheetDatePreviousBill.data.previous_electricity_amount, 120);
+assert.equal(sheetDatePreviousBill.data.previous_equipment_amount, 80);
+
+const voidPreviousBill = context.landlordContractCheckoutSettlementCalculate_({
+  contract,
+  previousBill: {
+    bill_id: 'bill-2026-08-506-void',
+    bill_month: '2026-08',
+    bill_status: 'voided',
+    electricity_amount: 120,
+    equipment_amount: 80
+  },
+  moveOutDate: '2026-09-07',
+  startMeterReading: 100,
+  endMeterReading: 100,
+  depositDeductionAmount: 0
+});
+assert.equal(voidPreviousBill.success, true, voidPreviousBill.code);
+assert.equal(voidPreviousBill.data.previous_electricity_amount, 0);
+assert.equal(voidPreviousBill.data.previous_equipment_amount, 0);
+
+context.settingsIntegrationGetWorkspaceSettings_ = () => ({
+  default_electricity_fee_rate: 4.2,
+  summer_equipment_fee_rate: 5.5,
+  regular_equipment_fee_rate: 2.1,
+  summer_months: [6, 7, 8, 9]
+});
+context.settingsIntegrationResolveSummerMonths_ = (_sourceValue, settings) => settings.summer_months;
+const settingsRates = context.landlordContractCheckoutSettlementResolveRates_(
+  null,
+  { workspace: { workspace_id: 'W1' } },
+  { electricity_fee_rate: '', equipment_fee_rate: '' },
+  { electricity_rate: '', equipment_fee_rate_regular: '' },
+  '2026-09-01'
+);
+assert.deepEqual(JSON.parse(JSON.stringify(settingsRates)), {
+  electricity_fee_rate: 4.2,
+  equipment_fee_rate: 5.5
+});
+const contractRatesWin = context.landlordContractCheckoutSettlementResolveRates_(
+  null,
+  { workspace: { workspace_id: 'W1' } },
+  { electricity_fee_rate: 3, equipment_fee_rate: 3.5 },
+  {},
+  '2026-09-01'
+);
+assert.deepEqual(JSON.parse(JSON.stringify(contractRatesWin)), {
+  electricity_fee_rate: 3,
+  equipment_fee_rate: 3.5
+});
+
 const absentPreviousBill = context.landlordContractCheckoutSettlementCalculate_({
   contract,
   moveOutDate: '2026-09-07',
@@ -209,7 +275,7 @@ const API_CONTRACT_HEADERS = [...new Set([
 const API_ROOM_HEADERS = ['room_id', 'workspace_id', 'landlord_id', 'property_id', 'room_name', 'room_status', 'account_status', 'current_contract_id', 'current_tenant_id', 'current_tenant_name', 'updated_at'];
 const API_TENANT_HEADERS = ['tenant_id', 'tenant_user_id', 'user_id', 'workspace_id', 'landlord_id', 'tenant_line_user_id', 'line_user_id', 'tenant_name', 'name', 'room_id', 'current_contract_id', 'tenant_binding_status', 'binding_status', 'account_status', 'tenant_account_status', 'updated_at'];
 const API_INVITE_HEADERS = ['invite_id', 'workspace_id', 'contract_id', 'room_id', 'landlord_user_id', 'landlord_membership_id', 'claim_code_hash', 'status', 'expires_at', 'claimed_at', 'claimed_line_user_id', 'cancelled_at', 'created_at', 'updated_at'];
-const API_BILL_HEADERS = ['bill_id', 'workspace_id', 'landlord_id', 'tenant_id', 'contract_id', 'room_id', 'bill_month', 'rent_amount', 'electricity_amount', 'equipment_amount', 'payment_status'];
+const API_BILL_HEADERS = ['bill_id', 'workspace_id', 'landlord_id', 'tenant_id', 'contract_id', 'room_id', 'bill_month', 'rent_amount', 'electricity_amount', 'equipment_amount', 'bill_status', 'payment_status'];
 const API_DOCUMENT_HEADERS = ['document_id', 'workspace_id', 'landlord_id', 'tenant_id', 'contract_id', 'document_type', 'status'];
 const API_SETTLEMENT_HEADERS = [
   'settlement_id', 'workspace_id', 'landlord_id', 'contract_id', 'tenant_id', 'room_id', 'previous_bill_id', 'previous_bill_month',
@@ -247,7 +313,7 @@ function makeSettlementApiRuntime() {
     V2_tenants: new ApiSheet(API_TENANT_HEADERS, [rowFor(API_TENANT_HEADERS, { tenant_id: 'tenant-1', tenant_user_id: 'tenant-user-1', user_id: 'tenant-user-1', workspace_id: 'W1', landlord_id: 'L1', tenant_line_user_id: 'tenant-line', line_user_id: 'tenant-line', tenant_name: '王小明', name: '王小明', room_id: 'R506', current_contract_id: 'old-contract', tenant_binding_status: 'bound', binding_status: 'bound', account_status: 'active', tenant_account_status: 'active' })]),
     V2_contracts: new ApiSheet(API_CONTRACT_HEADERS, [contract]),
     V2_contract_invites: new ApiSheet(API_INVITE_HEADERS, []),
-    V2_bills: new ApiSheet(API_BILL_HEADERS, [rowFor(API_BILL_HEADERS, { bill_id: 'bill-2026-08-506', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', room_id: 'R506', bill_month: '2026-08', rent_amount: 7500, electricity_amount: 120, equipment_amount: 80, payment_status: 'unpaid' })]),
+    V2_bills: new ApiSheet(API_BILL_HEADERS, [rowFor(API_BILL_HEADERS, { bill_id: 'bill-2026-08-506', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', room_id: 'R506', bill_month: new Date(Date.UTC(2026, 7, 1)), rent_amount: 7500, electricity_amount: 120, equipment_amount: 80, bill_status: 'issued', payment_status: 'unpaid' })]),
     V2_contract_documents: new ApiSheet(API_DOCUMENT_HEADERS, [
       rowFor(API_DOCUMENT_HEADERS, { document_id: 'doc-start', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', document_type: 'checkout_start_meter', status: 'stored' }),
       rowFor(API_DOCUMENT_HEADERS, { document_id: 'doc-end', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', contract_id: 'old-contract', document_type: 'checkout_end_meter', status: 'stored' })
@@ -301,6 +367,7 @@ assert.equal(settlementInit.success, true, settlementInit.code);
 assert.equal(settlementInit.data.settlement.settlement_start_date, '2026-09-01');
 assert.equal(settlementInit.data.settlement.previous_electricity_amount, 120);
 assert.equal(settlementInit.data.settlement.previous_equipment_amount, 80);
+assert.equal(settlementInit.data.settlement.previous_bill_month, '2026-08');
 assert.equal(settlementInit.data.settlement.deposit_amount, 15000);
 assert.equal(settlementInit.data.settlement.electricity_fee_rate, 3);
 assert.equal(settlementInit.data.settlement.equipment_fee_rate, 3.5);
