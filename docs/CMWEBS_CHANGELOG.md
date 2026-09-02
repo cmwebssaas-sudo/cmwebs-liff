@@ -2,21 +2,26 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-03 — 房東手動補登紙本合約本地候選
+## 2026-09-03 — 房東手動補登紙本合約正式部署
 
-- 新增房東專用 `landlord_contract_paper_backfill` JSON POST：紙本合約檔案必填，
-  身分證正反面可選填並可後補；直接建立有效／待開始租約，不建立合約申請、
-  電子邀請、確認碼或 LINE 訊息。
+- PR #96 已合併至 `main`，merge commit 為 `b36ec4b`。新增房東專用
+  `landlord_contract_paper_backfill` JSON POST：紙本合約檔案必填，身分證正反面
+  可選填並可後補；直接建立有效／待開始租約，不建立合約申請、電子邀請、確認碼
+  或 LINE 訊息。
 - 物件／房間頁的空房與房客詳細資料均可進入補登頁；既有房客資料會帶入，
   新房客則建立未綁定的系統資料。伺服器以 Workspace/RBAC、房間占用、租期
   重疊、檔案驗證與冪等鍵保護寫入，紙本文件走私有 Drive 路徑。
-- Phase 209 runtime、Phase 210 UI、Phase 211 文件測試與 Phase 212 additive
-  migration test 在隔離 worktree 通過。
-- Release cache key 已更新為 `20260903-paper-contract-backfill-v1`，讓既有
-  LIFF／Pages 頁面載入本次補登入口與最新前端分支。
-  本候選尚未 push、merge、部署 Apps Script／GitHub Pages，也未執行 Sheet、
-  Drive、Properties、Trigger 或 LINE 操作；正式手機／LIFF／Drive 驗證仍為
-  `HUMAN_REQUIRED` / `UNVERIFIED`。
+- Apps Script Version 150 已更新既有 Web App deployment，Version 149 保留
+  rollback，既有 Web App URL 不變。Additive migration 已完成，Production
+  `V2_contracts` header read-back 確認兩個 `paper_backfill_*` 欄位存在，沒有變更
+  合約資料列。
+- Legacy Pages build `1190728482` 已完成，公開頁面 HTTP 200 並確認補登入口、
+  `landlord_contract_paper_backfill` 與 cache key
+  `20260903-paper-contract-backfill-v1`。
+- Phase 209 runtime、Phase 210 UI、Phase 211 文件測試與 Phase 212 migration
+  test 在隔離 worktree 通過。未執行 Drive 文件上傳、租客交易、Properties／Trigger
+  變更或 LINE 訊息；正式手機／LIFF／Drive 驗證仍為 `HUMAN_REQUIRED` /
+  `UNVERIFIED`。
 
 ## 2026-09-03 — 房東簡易新租約正式部署
 

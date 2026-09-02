@@ -340,11 +340,11 @@ dispatcher.
 | `landlord_contract_document_download` | JSONP / bridge | Bound landlord identity and owned document scope | Returns a scoped stored document download payload without exposing Drive identifiers. |
 | `landlord_contract_document_upload` | JSON POST | Bound landlord identity and owned contract scope | Stores an idempotent JPG, PNG, or PDF landlord contract document in the configured private folder. |
 
-## Landlord paper-contract backfill candidate（房東紙本合約補登）
+## Landlord paper-contract backfill（房東紙本合約補登）
 
-This is a local V2.1 candidate POST action. It does not add a JSONP route, so the
-canonical `83`-route inventory above remains unchanged. It is not deployment
-evidence.
+This is a landlord-only V2.1 POST action. It does not add a JSONP route, so the
+canonical `83`-route inventory above remains unchanged. It is deployed in Apps
+Script Version 150 and published with the `main` Pages build for PR #96.
 
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |

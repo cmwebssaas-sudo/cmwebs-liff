@@ -7,12 +7,12 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-03 landlord paper-contract backfill local candidate
+## 2026-09-03 landlord paper-contract backfill formal release
 
-- Isolated worktree `paper-contract-backfill-20260903` on branch
-  `codex/paper-contract-backfill-20260903` contains the landlord-only paper
-  contract backfill flow. The required signed paper contract file is stored
-  privately; identity front/back files are optional and can be added later.
+- PR #96 merged the landlord-only paper contract backfill flow into GitHub
+  `main` as merge commit `b36ec4b`. The required signed paper contract file is
+  stored privately; identity front/back files are optional and can be added
+  later.
 - The flow directly creates an active or upcoming append-only contract after
   server-side Workspace/RBAC, room vacancy, tenant scope, date, amount, file,
   and idempotency checks. It does not create `V2_contract_requests`, an
@@ -20,14 +20,23 @@ version, rollback, and runtime state before every Production action.
 - Empty-room entry is available from the property/room page; existing-tenant
   entry is available from tenant detail. The create page returns a paper-specific
   success state and never falls through to the electronic-invite success UI.
+- Apps Script source was pushed as 53 files, immutable Version 150 was created,
+  and the existing Web App deployment was updated from Version 149 to Version
+  150; the Web App URL was preserved and Version 149 remains the rollback point.
+- The additive migration completed in the authenticated Apps Script editor.
+  Read-only Production Spreadsheet verification found the two
+  `paper_backfill_*` headers appended to the existing `V2_contracts` header row;
+  no contract rows were changed and no sheet was created.
+- Legacy GitHub Pages build `1190728482` completed for `b36ec4b`. Public
+  readback returned HTTP 200 for the release asset, landlord properties, tenant
+  detail, paper-backfill create page, and tenant pages, and confirmed the
+  `landlord_contract_paper_backfill` action, `手動補登紙本合約` entry, and cache
+  key `20260903-paper-contract-backfill-v1`.
 - Local Phase 209 runtime, Phase 210 UI, Phase 211 documentation, and Phase 212
   additive-migration tests passed, together with all Apps Script syntax checks.
-  The frontend release cache key is
-  `20260903-paper-contract-backfill-v1`. This candidate is not canonical
-  `main`, has not been pushed or merged, and has not been deployed to Apps
-  Script or GitHub Pages. No Sheet, Drive, Properties, Trigger or LINE write was
-  performed. Authenticated mobile/LIFF and private Drive UAT remain
-  `HUMAN_REQUIRED` / `UNVERIFIED`.
+  No Drive document upload, Properties/Trigger change, tenant transaction, or
+  LINE message was performed. Authenticated mobile/LIFF and private Drive UAT
+  remain `HUMAN_REQUIRED` / `UNVERIFIED`.
 
 ## 2026-09-03 房東簡易新租約正式部署
 
