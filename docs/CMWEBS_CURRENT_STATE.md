@@ -7,7 +7,7 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-03 紙本補登入口修正候選（尚未部署）
+## 2026-09-03 紙本補登入口修正正式部署
 
 - 截圖所示的 202 房間卡片回傳「已出租／租約中」，因此原 Version 151 前端
   只在空房或未認領電子草稿時顯示紙本入口；這不是按鈕文字或 Pages 靜態檔
@@ -15,9 +15,16 @@ version, rollback, and runtime state before every Production action.
 - 候選版新增伺服器判定：若有效合約沒有同 Workspace 的 `V2_tenants` 對應列、
   且沒有 LINE 綁定，才顯示「補登紙本並建立房客登入」；送出時保留並關閉
   孤兒合約，新增紙本租約與未綁定房客，並以 `previous_contract_id` 留下關聯。
-- 仍有房客資料、LINE 綁定、跨 Workspace 或合約狀態不符時維持拒絕；未執行
-  Production Sheet、Drive、LINE 或房客資料交易。候選分支尚未部署，正式手機／
-  LIFF 驗證仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
+- 仍有房客資料、LINE 綁定、跨 Workspace 或合約狀態不符時維持拒絕。PR #100
+  已合併至 `main`，merge commit 為 `c04ba24`；Apps Script source 已推送，既有
+  Pages-targeted Web App deployment 已由 Version 151 更新至 immutable Version
+  152，Version 151 保留為 rollback，Web App URL 不變。
+- GitHub Pages workflow `33694799930` 已成功完成；公開
+  `landlord-properties.html` 與 `landlord-tenant-create.html` read-back 均為
+  HTTP 200，確認孤兒補登 marker、入口文字與 `orphan_recovery` 模式存在。
+- 本地 `npm run validate`、完整 Node `83/83`、Apps Script syntax check 與
+  `git diff --check` 均通過。未執行 Production Sheet、Drive、LINE 或房客資料
+  交易；正式手機／LIFF 驗證仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
 
 ## 2026-09-03 202 紙本轉換與房客登入入口正式部署
 

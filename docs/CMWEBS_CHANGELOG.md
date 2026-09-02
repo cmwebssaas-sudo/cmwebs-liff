@@ -2,15 +2,21 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-03 — 紙本補登入口修正（候選，尚未部署）
+## 2026-09-03 — 紙本補登入口修正正式部署
 
 - 修正房間仍顯示「已出租／租約中」、但有效合約已找不到對應房客資料時，
   物件／房間頁不顯示紙本補登入口的問題。
 - 新增受控的孤兒合約資料修復路徑：只有同 Workspace、無對應房客且無 LINE
   綁定時才可進入；原合約保留並標記取消，新紙本租約以
   `previous_contract_id` 連結，不建立電子邀請或發送 LINE。
-- Phase 209 runtime、Phase 214 runtime／UI、validator 與完整測試需在正式
-  部署前重新驗證；目前沒有 Production 資料交易。
+- PR #100 已合併至 `main`，merge commit 為 `c04ba24`。Apps Script Version 152
+  已更新 Pages 所用的既有 Web App deployment，Version 151 保留 rollback，既有
+  Web App URL 不變。
+- GitHub Pages workflow `33694799930` 已成功完成，公開頁 read-back HTTP 200
+  並確認孤兒補登入口、`orphan_recovery` 參數與紙本補登說明。
+- Phase 209 runtime、Phase 214 runtime／UI、validator、Apps Script syntax
+  check 與完整 Node `83/83` 均通過。未執行 Production Sheet、Drive、LINE 或
+  房客資料交易；手機／LIFF 真機 UAT 仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
 
 ## 2026-09-03 — 202 紙本轉換與房客登入入口正式部署
 
