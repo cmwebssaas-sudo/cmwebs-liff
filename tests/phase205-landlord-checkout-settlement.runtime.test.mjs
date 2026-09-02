@@ -32,6 +32,14 @@ const contract = {
   electricity_fee_rate: 3,
   equipment_fee_rate: 3.5
 };
+context.landlordInitiatedContractText_ = value => value === undefined || value === null ? '' : String(value).trim();
+
+assert.equal(
+  context.landlordContractCheckoutOriginalEndDate_({
+    end_date: new Date(Date.UTC(2026, 8, 5))
+  }),
+  '2026-09-05'
+);
 
 const result = context.landlordContractCheckoutSettlementCalculate_({
   contract,
@@ -300,7 +308,7 @@ function makeSettlementApiRuntime() {
   const contract = rowFor(API_CONTRACT_HEADERS, {
     contract_id: 'old-contract', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'tenant-1', tenant_name: '王小明',
     property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R506', room_name: '506',
-    start_date: '2025-09-01', contract_start_date: '2025-09-01', end_date: '2026-09-01', contract_end_date: '2026-09-01',
+    start_date: new Date(Date.UTC(2025, 8, 1)), contract_start_date: new Date(Date.UTC(2025, 8, 1)), end_date: new Date(Date.UTC(2026, 8, 5)), contract_end_date: new Date(Date.UTC(2026, 8, 5)),
     rent_amount: 7500, monthly_rent: 7500, management_fee: 0, monthly_management_fee: 0, deposit_amount: 15000,
     payment_day: 5, monthly_payment_day: 5, electricity_fee_rate: 3, equipment_fee_rate: 3.5,
     contract_status: 'expired', status: 'expired', account_status: 'active', signing_mode: 'legacy', invite_id: '',
@@ -342,6 +350,9 @@ assert.match(documentsSource, /checkout_end_meter/);
 assert.equal(settlementRuntime.api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_checkout_settlement_init' }), true);
 assert.equal(settlementRuntime.api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_checkout_settlement_preview' }), true);
 assert.equal(settlementRuntime.api.landlordInitiatedContractIsRequest_({ action: 'landlord_contract_checkout_evidence_upload' }), true);
+const checkoutInit = settlementRuntime.api.landlordContractCheckoutInitBySession_('session-token', 'old-contract');
+assert.equal(checkoutInit.success, true, checkoutInit.code);
+assert.equal(checkoutInit.data.default_move_out_date, '2026-09-05');
 const unsupportedEvidence = settlementRuntime.api.landlordContractCheckoutEvidenceUploadBySession_('session-token', {
   contract_id: 'old-contract', tenant_id: 'tenant-1', document_type: 'identity_front', file_name: 'identity.jpg',
   mime_type: 'image/jpeg', base64: 'aGVsbG8=', idempotency_key: 'evidence-test-1'

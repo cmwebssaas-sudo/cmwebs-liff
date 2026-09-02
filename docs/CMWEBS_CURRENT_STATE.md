@@ -19,6 +19,9 @@ version, rollback, and runtime state before every Production action.
 - Bill-month sources now normalize Google Sheets Date values and exclude paid or
   voided bill statuses; fee resolution preserves explicit contract rates and
   falls back to the existing room／Workspace month settings when absent.
+- Checkout initialization and target validation also normalize contract start／end
+  Date values to `YYYY-MM-DD`, so a Sheet Date cannot become a browser-invalid
+  full Date string.
 - Local Phase 202／205／206／207 tests and checkout-page JavaScript parsing pass.
   The additive migration entry point is
   `runV2CheckoutSettlementProductionMigration`; it has not been run against the

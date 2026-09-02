@@ -183,11 +183,22 @@ function landlordContractCheckoutSettlementResolveRates_(ss, access, contract, r
   };
 }
 
+function landlordContractCheckoutDateText_(value) {
+  const isDate = value instanceof Date || Object.prototype.toString.call(value) === '[object Date]';
+  if (isDate && !Number.isNaN(value.getTime())) {
+    if (typeof Utilities !== 'undefined' && Utilities && typeof Utilities.formatDate === 'function') {
+      return Utilities.formatDate(value, 'Asia/Taipei', 'yyyy-MM-dd');
+    }
+    return landlordContractCheckoutSettlementFormatDate_(value);
+  }
+  return landlordContractCheckoutSettlementText_(value);
+}
+
 function landlordContractCheckoutSettlementValidateInput_(input) {
   const normalized = input || {};
   const contract = normalized.contract || {};
-  const moveOutDate = landlordContractCheckoutSettlementText_(normalized.moveOutDate || normalized.move_out_date);
-  const startDate = landlordContractCheckoutSettlementText_(contract.start_date || contract.contract_start_date);
+  const moveOutDate = landlordContractCheckoutDateText_(normalized.moveOutDate || normalized.move_out_date);
+  const startDate = landlordContractCheckoutDateText_(contract.start_date || contract.contract_start_date);
   const moveOut = landlordContractCheckoutSettlementParseDate_(moveOutDate);
   const leaseStart = landlordContractCheckoutSettlementParseDate_(startDate);
   if (!moveOut || !leaseStart || moveOutDate < startDate) return landlordContractCheckoutSettlementError_('CHECKOUT_MOVE_OUT_DATE_INVALID', '退房日期無效或早於租約起始日');
@@ -739,8 +750,8 @@ function landlordContractCheckoutValidateTarget_(contract, room, siblings, input
   if (landlordInitiatedContractText_(room.current_contract_id) !== landlordInitiatedContractText_(target.contract_id)) return landlordInitiatedContractError_('CHECKOUT_ROOM_POINTER_STALE', '房間目前未指向此合約');
   const status = landlordInitiatedContractText_(target.contract_status || target.status).toLowerCase();
   if (V2_CONTRACT_CHECKOUT_ALLOWED_PREDECESSOR_STATUSES_.indexOf(status) < 0) return landlordInitiatedContractError_('CHECKOUT_STATUS_NOT_ALLOWED', '此合約狀態不可辦理退房');
-  const moveOutDate = landlordInitiatedContractText_(input && input.move_out_date);
-  const startDate = landlordInitiatedContractText_(target.start_date || target.contract_start_date);
+  const moveOutDate = landlordContractCheckoutDateText_(input && input.move_out_date);
+  const startDate = landlordContractCheckoutDateText_(target.start_date || target.contract_start_date);
   if (!landlordInitiatedContractIsIsoDate_(moveOutDate) || !landlordInitiatedContractIsIsoDate_(startDate) || moveOutDate < startDate) return landlordInitiatedContractError_('CHECKOUT_MOVE_OUT_DATE_INVALID', '退房日期無效或早於租約起始日');
   const openSibling = (Array.isArray(siblings) ? siblings : []).find(function(sibling) {
     if (landlordInitiatedContractText_(sibling.workspace_id) !== targetWorkspaceId || landlordInitiatedContractText_(sibling.room_id) !== landlordInitiatedContractText_(target.room_id) || landlordInitiatedContractText_(sibling.contract_id) === landlordInitiatedContractText_(target.contract_id)) return false;
@@ -775,7 +786,7 @@ function landlordContractCheckoutFindSiblings_(sheet, access, contract) {
 }
 
 function landlordContractCheckoutOriginalEndDate_(contract) {
-  return landlordInitiatedContractText_(contract && (contract.end_date || contract.contract_end_date));
+  return landlordContractCheckoutDateText_(contract && (contract.end_date || contract.contract_end_date));
 }
 
 function landlordContractCheckoutClearViews_(ss, contract, timestamp) {
