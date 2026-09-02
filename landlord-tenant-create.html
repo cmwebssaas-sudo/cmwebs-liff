@@ -1048,6 +1048,11 @@
         'supersede_contract_id'
       ) || '';
 
+    const ORPHAN_RECOVERY_MODE =
+      URL_PARAMS.get(
+        'orphan_recovery'
+      ) === '1';
+
     let LINE_USER_ID = '';
     let LANDLORD_REVIEW_SESSION_TOKEN = '';
     let PAGE_DATA = null;
@@ -1833,7 +1838,8 @@
       };
       const startDate = selectedTenant.contract_start_date || PAGE_DATA.defaults && PAGE_DATA.defaults.start_date || '';
       const endDate = selectedTenant.contract_end_date || (startDate ? addOneYearMinusOneDay(startDate) : '');
-      const replacingElectronicContract = Boolean(REQUESTED_SUPERSEDE_CONTRACT_ID);
+      const replacingElectronicContract = Boolean(REQUESTED_SUPERSEDE_CONTRACT_ID) && !ORPHAN_RECOVERY_MODE;
+      const repairingOrphanContract = Boolean(REQUESTED_SUPERSEDE_CONTRACT_ID) && ORPHAN_RECOVERY_MODE;
       const pageTitle = document.getElementById('pageTitle');
       if (pageTitle) pageTitle.textContent = '補登紙本合約';
 
@@ -1842,7 +1848,7 @@
           <div class="hero-content">
             <div class="hero-label">Paper Contract Backfill</div>
             <div class="workspace-name">${safeHtml(workspace.workspace_name || '目前管理團隊')}</div>
-            <div class="hero-desc">${replacingElectronicContract ? '已先建立電子草稿但實際簽紙本，可在此轉換並建立房客登入。' : '已簽紙本合約可由房東直接補登，完成後立即成為系統租約。'}</div>
+            <div class="hero-desc">${replacingElectronicContract ? '已先建立電子草稿但實際簽紙本，可在此轉換並建立房客登入。' : repairingOrphanContract ? '房間原有合約找不到對應房客資料，可保留原紀錄並補登紙本建立新的房客登入。' : '已簽紙本合約可由房東直接補登，完成後立即成為系統租約。'}</div>
           </div>
         </section>
 
@@ -1850,7 +1856,7 @@
           <div class="section-head">
             <div>
               <div class="section-title">房客與房間</div>
-              <div class="section-desc">${replacingElectronicContract ? '這次會保留原電子草稿，改由紙本合約建立正式租約；不會建立第二筆房客。' : selectedTenant.tenant_id ? '已帶入既有房客資料，不會建立第二筆房客。' : '填入紙本合約上的房客資料與入住房間。'}</div>
+              <div class="section-desc">${replacingElectronicContract ? '這次會保留原電子草稿，改由紙本合約建立正式租約；不會建立第二筆房客。' : repairingOrphanContract ? '這次會保留原有不完整合約紀錄並關閉其有效狀態，再建立紙本租約與房客登入。' : selectedTenant.tenant_id ? '已帶入既有房客資料，不會建立第二筆房客。' : '填入紙本合約上的房客資料與入住房間。'}</div>
             </div>
             <div class="section-index">1</div>
           </div>
@@ -1940,7 +1946,7 @@
               <div id="identityBackFileStatus" class="paper-file-status">尚未上傳</div>
             </div>
           </div>
-          <div class="paper-backfill-note">${replacingElectronicContract ? '送出後會保留原電子草稿紀錄並關閉未完成的電子簽署；紙本租約成立後，房客可使用下方的房客登入入口完成手機綁定。' : '補登完成後直接建立有效租約，不會產生合約申請、電子簽署邀請或房客 LINE 訊息。'}</div>
+          <div class="paper-backfill-note">${replacingElectronicContract ? '送出後會保留原電子草稿紀錄並關閉未完成的電子簽署；紙本租約成立後，房客可使用下方的房客登入入口完成手機綁定。' : repairingOrphanContract ? '送出後會保留原有不完整合約紀錄並標記關閉；紙本租約成立後，房客可使用下方的房客登入入口完成手機綁定。' : '補登完成後直接建立有效租約，不會產生合約申請、電子簽署邀請或房客 LINE 訊息。'}</div>
         </section>
 
         <section class="card confirmation-card">

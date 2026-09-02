@@ -7,6 +7,18 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-03 紙本補登入口修正候選（尚未部署）
+
+- 截圖所示的 202 房間卡片回傳「已出租／租約中」，因此原 Version 151 前端
+  只在空房或未認領電子草稿時顯示紙本入口；這不是按鈕文字或 Pages 靜態檔
+  缺失，而是有效合約判定與紙本補登情境的條件缺口。
+- 候選版新增伺服器判定：若有效合約沒有同 Workspace 的 `V2_tenants` 對應列、
+  且沒有 LINE 綁定，才顯示「補登紙本並建立房客登入」；送出時保留並關閉
+  孤兒合約，新增紙本租約與未綁定房客，並以 `previous_contract_id` 留下關聯。
+- 仍有房客資料、LINE 綁定、跨 Workspace 或合約狀態不符時維持拒絕；未執行
+  Production Sheet、Drive、LINE 或房客資料交易。候選分支尚未部署，正式手機／
+  LIFF 驗證仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
+
 ## 2026-09-03 202 紙本轉換與房客登入入口正式部署
 
 - PR #98 merged the guarded `supersede_contract_id` path into GitHub `main` as

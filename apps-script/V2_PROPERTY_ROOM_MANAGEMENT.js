@@ -166,6 +166,30 @@ function getLandlordPropertiesInitByLineUid_(
         ]
       );
 
+    const tenantRows =
+      propertyRoomGetWorkspaceRows_(
+        ss.getSheetByName(
+          'V2_tenants'
+        ),
+        access,
+        [
+          'landlord_id'
+        ]
+      );
+
+    const tenantIdMap = {};
+
+    tenantRows.forEach(function (tenant) {
+      const tenantId =
+        propertyRoomText_(
+          tenant.tenant_id
+        );
+
+      if (tenantId) {
+        tenantIdMap[tenantId] = true;
+      }
+    });
+
     const currentContractRoomMap = {};
     const latestContractRoomMap = {};
 
@@ -321,7 +345,8 @@ function getLandlordPropertiesInitByLineUid_(
           room,
           currentContractRoomMap,
           latestContractRoomMap,
-          latestBillRoomMap
+          latestBillRoomMap,
+          tenantIdMap
         )
       );
     });
@@ -2394,7 +2419,8 @@ function propertyRoomBuildRoomView_(
   room,
   currentContractRoomMap,
   latestContractRoomMap,
-  latestBillRoomMap
+  latestBillRoomMap,
+  tenantIdMap
 ) {
   const roomId =
     propertyRoomText_(
@@ -2460,6 +2486,32 @@ function propertyRoomBuildRoomView_(
   const paperBackfillReplacementEligible =
     Boolean(
       paperBackfillReplacementContract
+    );
+
+  const currentContractTenantId =
+    currentContract
+      ? propertyRoomText_(
+          currentContract.tenant_id
+        )
+      : '';
+
+  const paperBackfillOrphanReplacementContract =
+    currentContract &&
+    !(
+      currentContractTenantId &&
+      tenantIdMap &&
+      tenantIdMap[currentContractTenantId]
+    ) &&
+    propertyRoomText_(
+      currentContract.tenant_line_user_id ||
+      currentContract.line_user_id
+    ) === ''
+      ? currentContract
+      : null;
+
+  const paperBackfillOrphanReplacementEligible =
+    Boolean(
+      paperBackfillOrphanReplacementContract
     );
 
   const financialContract =
@@ -2746,6 +2798,16 @@ function propertyRoomBuildRoomView_(
       paperBackfillReplacementEligible
         ? propertyRoomText_(
             paperBackfillReplacementContract.tenant_name
+          )
+        : '',
+
+    paper_backfill_orphan_replacement_eligible:
+      paperBackfillOrphanReplacementEligible,
+
+    paper_backfill_orphan_replacement_contract_id:
+      paperBackfillOrphanReplacementEligible
+        ? propertyRoomText_(
+            paperBackfillOrphanReplacementContract.contract_id
           )
         : '',
 
