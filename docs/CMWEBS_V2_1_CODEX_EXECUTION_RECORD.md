@@ -42,6 +42,29 @@ be verified for the particular action that needs it.
 | 2026-09-02 | Landlord checkout settlement implementation candidate | User confirmed the 9/1–move-out inclusive calculation, prior unpaid utility carryover, meter photos, deposit offset, and manual checkout rules. Local branch `codex/checkout-settlement-20260902` only; Phase 202／205／206／207 tests are local evidence. No Production migration, Apps Script deployment, Pages publication, Sheet/Drive write, LINE push, PR, merge, or external action is authorized by this record. |
 | 2026-09-02 | Landlord checkout settlement formal deployment | User explicitly requested `部署` after the public old-page diagnosis. This authorizes push, PR, merge, Apps Script immutable redeploy, additive settlement-schema migration, and GitHub Pages publication for the current checkout-settlement/date-normalization candidate. Rollback is to the freshly verified prior Apps Script serving version and prior Pages revision. No tenant checkout transaction or LINE message is part of this deployment; authenticated LIFF/mobile UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
 
+## 2026-09-02 checkout settlement formal release evidence
+
+- Candidate branch `codex/checkout-settlement-20260902` passed the full Node suite
+  (`76 pass, 0 fail`), the authoritative validator (`83/83` routes and
+  handlers), duplicate declaration scan (`0`), credential scan (`0`), and
+  `git diff --check`. `npm run validate` was unavailable because the isolated
+  worktree has no `package.json`.
+- Apps Script was pushed as 52 files, immutable Version 148 was created, and
+  the existing Web App deployment was updated from Version 147 to Version 148.
+  The Web App URL was preserved; Version 147 remains the rollback point.
+- `runV2CheckoutSettlementProductionMigration` completed in the authenticated
+  Apps Script editor. Read-only Spreadsheet verification found
+  `V2_checkout_settlements` with the expected header row and no data rows. No
+  contract, tenant, bill, Drive, Property, Trigger, Script Property, or LINE
+  data was changed.
+- PR #92 merged the release into GitHub `main` as `a2682b3`. Pages workflow
+  `33648496168` completed build, deploy, and status-report jobs. Public readback
+  returned HTTP 200 and found the checkout settlement fields, meter-photo
+  actions, and immutable cache key `20260902-landlord-checkout-settlement-v1`.
+- Authenticated LIFF/mobile checkout, Drive private-upload acceptance, and
+  real 502/506 operational transactions remain `HUMAN_REQUIRED` /
+  `UNVERIFIED`; release evidence does not imply those transactions were run.
+
 ## 2026-08-27 formal release evidence
 
 - Candidate branch `codex/renewal-contract-history-20260827` passed the full

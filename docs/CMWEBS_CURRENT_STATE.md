@@ -7,7 +7,32 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-02 landlord checkout settlement local candidate
+## 2026-09-02 landlord checkout settlement formal release
+
+- PR #92 merged the landlord checkout settlement and Sheet Date normalization
+  candidate into GitHub `main` as merge commit `a2682b3`.
+- Apps Script source was pushed as 52 files. The existing Web App deployment now
+  serves immutable Version 148; Version 147 remains the immediately previous
+  rollback version and the Web App URL was preserved.
+- The additive migration function
+  `runV2CheckoutSettlementProductionMigration` completed in the authenticated
+  Apps Script editor. Read-only Spreadsheet verification found the new
+  `V2_checkout_settlements` sheet with its settlement headers and no settlement
+  data rows; existing contract, tenant, bill, Property, Trigger, Property
+  setting, and LINE data were not changed.
+- GitHub Pages workflow `33648496168` completed build, deploy, and status jobs
+  for `a2682b3`. Public readback returned HTTP 200 and found the checkout
+  settlement form, server preview action, start/end meter fields, two private
+  photo upload actions, deposit deduction, and the immutable cache key
+  `20260902-landlord-checkout-settlement-v1`.
+- Local verification at release freeze: full Node suite `76/76`, authoritative
+  validator `83/83` routes and handlers, duplicate declarations `0`, credential
+  findings `0`, and `git diff --check` passed. `npm run validate` was not
+  applicable because this isolated worktree has no `package.json`.
+- Authenticated LIFF/mobile checkout, real private Drive upload, and a real
+  502/506 checkout transaction remain `HUMAN_REQUIRED` / `UNVERIFIED`.
+
+## 2026-09-02 landlord checkout settlement local candidate (released)
 
 - Candidate branch: `codex/checkout-settlement-20260902`. The approved manual
   landlord checkout settlement is implemented locally with the cache key
@@ -26,11 +51,10 @@ version, rollback, and runtime state before every Production action.
   The additive migration entry point is
   `runV2CheckoutSettlementProductionMigration`; it has not been run against the
   Production Spreadsheet.
-- This candidate has not been pushed, merged, deployed to Apps Script, or
-  published to GitHub Pages. No Production Sheet, Drive, contract, tenant,
-  Trigger, Property, LINE setting or message was changed. Production serving
-  remains Apps Script Version 147 and the prior Pages release until separately
-  authorized.
+- At candidate freeze this had not yet been pushed, merged, deployed to Apps
+  Script, or published to GitHub Pages. The formal release above supersedes that
+  temporary state; no contract, tenant, bill, Drive, Trigger, Property, LINE
+  setting, or LINE message was changed by the release.
 - Authenticated LIFF/mobile checkout, real private Drive uploads, exact
   Production Sheet schema, and 502/506 operational data remain
   `HUMAN_REQUIRED` / `UNVERIFIED`.
