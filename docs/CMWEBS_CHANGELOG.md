@@ -10,7 +10,10 @@
 - 物件／房間頁的空房與房客詳細資料均可進入補登頁；既有房客資料會帶入，
   新房客則建立未綁定的系統資料。伺服器以 Workspace/RBAC、房間占用、租期
   重疊、檔案驗證與冪等鍵保護寫入，紙本文件走私有 Drive 路徑。
-- Phase 209 runtime、Phase 210 UI、Phase 211 文件測試在隔離 worktree 通過。
+- Phase 209 runtime、Phase 210 UI、Phase 211 文件測試與 Phase 212 additive
+  migration test 在隔離 worktree 通過。
+- Release cache key 已更新為 `20260903-paper-contract-backfill-v1`，讓既有
+  LIFF／Pages 頁面載入本次補登入口與最新前端分支。
   本候選尚未 push、merge、部署 Apps Script／GitHub Pages，也未執行 Sheet、
   Drive、Properties、Trigger 或 LINE 操作；正式手機／LIFF／Drive 驗證仍為
   `HUMAN_REQUIRED` / `UNVERIFIED`。

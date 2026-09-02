@@ -181,5 +181,6 @@
 - [x] 房東可補登已完成簽署的紙本合約：必填紙本合約檔案、身分證正反面可後補，直接建立 Workspace 內的有效／待開始租約；不建立合約申請、電子邀請、確認碼或 LINE 訊息，並以冪等鍵避免重複建檔（Phase 209；本地 runtime mock 通過，尚未部署）
 - [x] 房東可從空房的物件／房間頁或房客詳細資料進入「手動補登紙本合約」，補登頁帶入既有房客／房間資料並提供紙本專用完成畫面，不誤顯示電子邀請內容（Phase 210；本地 UI static test 通過，手機／LIFF 尚待驗證）
 - [x] 紙本合約補登的 API 路由、資料邊界、測試與部署狀態已記錄；目前只存在隔離本地候選，未執行 Apps Script、GitHub Pages、Drive、Sheet 或 LINE 操作（Phase 211；本地文件 test 通過）
+- [x] 紙本合約補登的 Production migration 只在既有 `V2_contracts` 標題列尾端追加兩個冪等欄位，重跑不重複追加、缺少資料表會 fail closed，且不改任何資料列（Phase 212；本地 runtime test 通過，尚未執行 Production migration）
 - [x] 房客續約與退租頁改為被動資訊／歷史檢視，不建立新的 `V2_contract_requests` 退租申請；既有歷史 route 保留相容讀取（Phase 203 UI；Pages workflow `33567151637` 已部署，LINE 真機為 `UNVERIFIED`）
 - [ ] 已登入 LIFF／真機、Drive 私有照片上傳與 502／506 已登入正式退房交易 UAT（正式 Sheet schema 與欄位 read-back 已通過；其餘仍為 `HUMAN_REQUIRED` / `UNVERIFIED`）

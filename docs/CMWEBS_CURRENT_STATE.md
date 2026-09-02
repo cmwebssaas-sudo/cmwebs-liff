@@ -20,8 +20,10 @@ version, rollback, and runtime state before every Production action.
 - Empty-room entry is available from the property/room page; existing-tenant
   entry is available from tenant detail. The create page returns a paper-specific
   success state and never falls through to the electronic-invite success UI.
-- Local Phase 209 runtime, Phase 210 UI, Phase 211 documentation tests and
-  changed Apps Script syntax checks passed. This candidate is not canonical
+- Local Phase 209 runtime, Phase 210 UI, Phase 211 documentation, and Phase 212
+  additive-migration tests passed, together with all Apps Script syntax checks.
+  The frontend release cache key is
+  `20260903-paper-contract-backfill-v1`. This candidate is not canonical
   `main`, has not been pushed or merged, and has not been deployed to Apps
   Script or GitHub Pages. No Sheet, Drive, Properties, Trigger or LINE write was
   performed. Authenticated mobile/LIFF and private Drive UAT remain

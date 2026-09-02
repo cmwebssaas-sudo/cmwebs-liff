@@ -15,6 +15,100 @@ var V2_LANDLORD_PAPER_BACKFILL_CONTRACT_HEADERS_ = [
   'paper_backfill_payload_hash'
 ];
 
+function landlordPaperContractBackfillEnsureHeaders_(sheet, requiredHeaders) {
+  if (!sheet || typeof sheet.getLastColumn !== 'function' || typeof sheet.getRange !== 'function') {
+    return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_MIGRATION_NOT_READY', '紙本補登合約資料表尚未就緒', { added_headers: [] });
+  }
+  var currentWidth = Number(sheet.getLastColumn()) || 0;
+  if (currentWidth <= 0) {
+    return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_MIGRATION_NOT_READY', '紙本補登合約資料表缺少既有欄位', { added_headers: [] });
+  }
+  var headerRange = sheet.getRange(1, 1, 1, currentWidth);
+  var headerValues = typeof headerRange.getDisplayValues === 'function'
+    ? headerRange.getDisplayValues()[0]
+    : headerRange.getValues()[0];
+  var currentHeaders = (headerValues || []).map(landlordPaperContractBackfillText_);
+  var missing = (Array.isArray(requiredHeaders) ? requiredHeaders : []).filter(function(header) {
+    return currentHeaders.indexOf(header) < 0;
+  });
+  if (missing.length) sheet.getRange(1, currentWidth + 1, 1, missing.length).setValues([missing]);
+  return { success: true, code: 'OK', data: { added_headers: missing } };
+}
+
+function migrateV2LandlordPaperContractBackfillSchema_(ss) {
+  ss = ss || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+  if (!ss || typeof ss.getSheetByName !== 'function') {
+    return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_MIGRATION_NOT_READY', '找不到 Production 試算表', {
+      missing_sheets: ['V2_contracts'],
+      added_headers: { contracts: [] }
+    });
+  }
+  if (typeof LockService === 'undefined' || !LockService || typeof LockService.getScriptLock !== 'function') {
+    return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_MIGRATION_NOT_READY', '找不到 migration 鎖定模組', {
+      missing_sheets: [],
+      added_headers: { contracts: [] }
+    });
+  }
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    var contracts = ss.getSheetByName('V2_contracts');
+    if (!contracts) {
+      return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_MIGRATION_NOT_READY', '找不到 V2_contracts 資料表', {
+        missing_sheets: ['V2_contracts'],
+        added_headers: { contracts: [] }
+      });
+    }
+    var result = landlordPaperContractBackfillEnsureHeaders_(contracts, V2_LANDLORD_PAPER_BACKFILL_CONTRACT_HEADERS_);
+    if (!result.success) {
+      return landlordPaperContractBackfillError_(result.code, result.message, {
+        missing_sheets: [],
+        added_headers: { contracts: (result.data && result.data.added_headers) || [] }
+      });
+    }
+    return {
+      success: true,
+      code: 'OK',
+      data: {
+        migration: 'paper_contract_backfill_additive_v1',
+        added_headers: { contracts: result.data.added_headers }
+      }
+    };
+  } catch (error) {
+    return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_MIGRATION_FAILED', '紙本補登欄位 migration 失敗', {
+      missing_sheets: [],
+      added_headers: { contracts: [] },
+      error: landlordPaperContractBackfillText_(error && error.message)
+    });
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
+}
+
+function landlordPaperContractBackfillResolveProductionSpreadsheet_() {
+  if (typeof PropertiesService === 'undefined' ||
+      !PropertiesService ||
+      typeof PropertiesService.getScriptProperties !== 'function' ||
+      typeof runtimeSpreadsheet_ !== 'function') {
+    throw new Error('PRODUCTION_SPREADSHEET_RESOLVER_REQUIRED');
+  }
+  var spreadsheetId = landlordPaperContractBackfillText_(
+    PropertiesService.getScriptProperties().getProperty('CMWEBS_SPREADSHEET_ID')
+  );
+  if (!spreadsheetId) throw new Error('PRODUCTION_SPREADSHEET_REFERENCE_REQUIRED');
+  var spreadsheet = runtimeSpreadsheet_(spreadsheetId);
+  if (!spreadsheet || typeof spreadsheet.getSheetByName !== 'function') {
+    throw new Error('PRODUCTION_SPREADSHEET_REFERENCE_REQUIRED');
+  }
+  return spreadsheet;
+}
+
+function runV2LandlordPaperContractBackfillProductionMigration() {
+  return migrateV2LandlordPaperContractBackfillSchema_(
+    landlordPaperContractBackfillResolveProductionSpreadsheet_()
+  );
+}
+
 function landlordPaperContractBackfillError_(code, message, data) {
   return {
     success: false,

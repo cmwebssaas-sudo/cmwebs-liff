@@ -356,6 +356,11 @@ evidence.
 - The normal POST does not add Sheet headers or run migration. Missing required
   `V2_contracts` backfill headers returns `PAPER_BACKFILL_SCHEMA_NOT_READY` and
   requires a separately authorized additive migration before retrying.
+- The release migration entry point is
+  `runV2LandlordPaperContractBackfillProductionMigration`. It only appends the
+  missing `paper_backfill_idempotency_key` and `paper_backfill_payload_hash`
+  headers to the existing `V2_contracts` header row, is idempotent, and never
+  creates a sheet or changes contract rows.
 - The required contract file and optional identity files are stored through the
   private `V2_contract_documents` path. Public responses contain document
   summaries only and never expose Drive file IDs or file bytes.
