@@ -7,23 +7,33 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-03 202 紙本轉換本地候選修正（未部署）
+## 2026-09-03 202 紙本轉換與房客登入入口正式部署
 
-- Candidate branch `codex/202-paper-contract-login-20260903` adds a guarded
-  `supersede_contract_id` path for a matching, unclaimed landlord-initiated
-  electronic contract. It keeps the original contract and invite rows for
-  audit, marks them cancelled, appends the paper contract with
-  `previous_contract_id`, and activates the pending tenant account as
-  `unbound`.
+- PR #98 merged the guarded `supersede_contract_id` path into GitHub `main` as
+  merge commit `4b9ed04`. It accepts only a matching, unclaimed
+  `landlord_initiated` electronic contract for the same Workspace, room and
+  tenant.
+- Apps Script source was pushed as 53 files, immutable Version 151 was created,
+  and the existing Pages-targeted Web App deployment was updated from Version
+  150 to Version 151. The Web App URL was preserved and Version 150 remains
+  the rollback version.
 - The property／room page now exposes the conversion entry for this exact
+  `supersede_contract_id` path for a matching, unclaimed landlord-initiated
   pending-electronic case and carries the tenant／contract context into the
-  paper form. The completed page exposes the existing tenant LIFF URL so the
-  landlord can send a login-binding entry without sending a LINE message.
+  paper form. The original contract and invite remain in the audit trail and
+  are marked cancelled; the new paper contract links back through
+  `previous_contract_id` and activates the pending tenant account as
+  `unbound`.
+- The completed page exposes the existing tenant LIFF URL so the landlord can
+  send a login-binding entry without sending a LINE message. The Pages
+  workflow `33691996413` completed successfully; public read-back returned
+  HTTP 200 for the room page and paper-backfill page and found the new entry
+  and login markers.
 - Local Phase 209, Phase 210, Phase 211, Phase 212 and Phase 213 tests pass;
-  Apps Script syntax checks pass. This candidate has not changed Production
-  Sheets, Drive, Properties, Triggers, LINE, Apps Script deployment or Pages.
-  Authenticated mobile／LIFF and Production 202 data verification remain
-  `HUMAN_REQUIRED` / `UNVERIFIED` until separately authorized and performed.
+  Apps Script syntax checks pass. No Production Sheet, Drive, Property,
+  Trigger, LINE or business-data transaction was performed. Authenticated
+  mobile／LIFF and Production 202 data verification remain
+  `HUMAN_REQUIRED` / `UNVERIFIED`.
 
 ## 2026-09-03 landlord paper-contract backfill formal release
 
