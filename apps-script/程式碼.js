@@ -887,7 +887,8 @@ function doGet(e) {
         e.parameter.property_id || '',
         e.parameter.room_id || '',
         e.parameter.previous_contract_id || '',
-        e.parameter.tenant_id || ''
+        e.parameter.tenant_id || '',
+        e.parameter.supersede_contract_id || ''
       );
 
     return bridge === '1'

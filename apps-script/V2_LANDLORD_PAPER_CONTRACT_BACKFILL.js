@@ -1,6 +1,8 @@
 // V2.1 landlord paper-contract backfill.
 // This is a landlord-only recovery path for contracts already signed on paper.
 // It never creates an electronic invite, signing session, tenant request, or LINE message.
+// A paper conversion may cancel one matching, unclaimed electronic draft so the
+// original row remains auditable without competing with the paper contract.
 
 var V2_LANDLORD_PAPER_BACKFILL_DOCUMENT_MAX_BYTES_ = 8 * 1024 * 1024;
 var V2_LANDLORD_PAPER_BACKFILL_OPEN_STATUSES_ = [
@@ -13,6 +15,15 @@ var V2_LANDLORD_PAPER_BACKFILL_CLOSED_STATUSES_ = [
 var V2_LANDLORD_PAPER_BACKFILL_CONTRACT_HEADERS_ = [
   'paper_backfill_idempotency_key',
   'paper_backfill_payload_hash'
+];
+var V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_STATUSES_ = [
+  'pending_tenant_signature', 'awaiting_tenant_signature'
+];
+var V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_STATUSES_ = [
+  'pending'
+];
+var V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_HEADERS_ = [
+  'invite_id', 'workspace_id', 'contract_id', 'status', 'cancelled_at', 'updated_at'
 ];
 
 function landlordPaperContractBackfillEnsureHeaders_(sheet, requiredHeaders) {
@@ -176,6 +187,7 @@ function landlordPaperContractBackfillValidateInput_(input) {
   var endDate = landlordPaperContractBackfillDate_(source.end_date);
   var paperSignedAt = landlordPaperContractBackfillDate_(source.paper_signed_at || source.signed_at);
   var idempotencyKey = landlordPaperContractBackfillText_(source.idempotency_key);
+  var supersedeContractId = landlordPaperContractBackfillText_(source.supersede_contract_id);
 
   if (!roomId) return landlordPaperContractBackfillError_('ROOM_REQUIRED', '請選擇房間');
   if (!tenantName || tenantName.length > 80) return landlordPaperContractBackfillError_('INVALID_TENANT_NAME', '請輸入 1 至 80 字的房客姓名');
@@ -235,7 +247,8 @@ function landlordPaperContractBackfillValidateInput_(input) {
     idempotency_key: idempotencyKey,
     paper_contract_file: paperFile.data,
     identity_front_file: identityFront.data,
-    identity_back_file: identityBack.data
+    identity_back_file: identityBack.data,
+    supersede_contract_id: supersedeContractId
   };
   normalized.payload_hash = landlordPaperContractBackfillPayloadHash_(normalized);
   return { success: true, code: 'OK', data: normalized };
@@ -265,16 +278,54 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
   }
 
   var roomCurrentContractId = landlordPaperContractBackfillText_(room.current_contract_id);
-  if (landlordPaperContractBackfillText_(room.room_status).toLowerCase() === 'occupied' || (roomCurrentContractId && contracts.some(function(row) {
+  var replacementContract = null;
+  var replacementInvite = null;
+  if (input.supersede_contract_id) {
+    if (!input.tenant_id) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_REQUIRED', '紙本轉換必須指定原電子合約的房客');
+    if (landlordPaperContractBackfillHeaders_(schema.data.contracts).indexOf('previous_contract_id') < 0) {
+      return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_NOT_READY', '紙本轉換需要 previous_contract_id 欄位');
+    }
+    replacementContract = contracts.find(function(row) {
+      return landlordPaperContractBackfillText_(row.contract_id) === input.supersede_contract_id &&
+        landlordPaperContractBackfillText_(row.workspace_id) === workspaceId &&
+        (!landlordPaperContractBackfillText_(row.landlord_id) || landlordPaperContractBackfillText_(row.landlord_id) === landlordId);
+    });
+    if (!replacementContract) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_CONTRACT_NOT_FOUND', '找不到可轉換的原電子合約');
+    if (landlordPaperContractBackfillText_(replacementContract.room_id) !== input.room_id || landlordPaperContractBackfillText_(replacementContract.tenant_id) !== input.tenant_id) {
+      return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCOPE_MISMATCH', '原電子合約與房間／房客資料不一致');
+    }
+    var replacementStatus = landlordPaperContractBackfillText_(replacementContract.contract_status || replacementContract.status || '').toLowerCase();
+    if (landlordPaperContractBackfillText_(replacementContract.contract_origin).toLowerCase() !== 'landlord_initiated' || V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_STATUSES_.indexOf(replacementStatus) < 0) {
+      return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_NOT_ELIGIBLE', '只有尚未完成房客簽署的房東電子合約可以轉為紙本補登');
+    }
+    if (roomCurrentContractId && roomCurrentContractId !== input.supersede_contract_id) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_ROOM_MISMATCH', '房間目前指向其他合約，無法轉換');
+    if (!schema.data.invites) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCHEMA_NOT_READY', '找不到原電子合約邀請資料表');
+    var missingInviteHeaders = V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_HEADERS_.filter(function(header) {
+      return landlordPaperContractBackfillHeaders_(schema.data.invites).indexOf(header) < 0;
+    });
+    if (missingInviteHeaders.length) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCHEMA_NOT_READY', '原電子合約邀請欄位尚未就緒', { missing_headers: missingInviteHeaders });
+    replacementInvite = landlordPaperContractBackfillRows_(schema.data.invites).find(function(row) {
+      return landlordPaperContractBackfillText_(row.invite_id) === landlordPaperContractBackfillText_(replacementContract.invite_id) &&
+        landlordPaperContractBackfillText_(row.contract_id) === input.supersede_contract_id &&
+        landlordPaperContractBackfillText_(row.workspace_id) === workspaceId;
+    });
+    if (!replacementInvite || V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_STATUSES_.indexOf(landlordPaperContractBackfillText_(replacementInvite.status).toLowerCase()) < 0) {
+      return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請不存在、已取消或已被使用');
+    }
+    if (landlordPaperContractBackfillText_(replacementContract.tenant_line_user_id || replacementContract.line_user_id)) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
+  }
+
+  if (!replacementContract && (landlordPaperContractBackfillText_(room.room_status).toLowerCase() === 'occupied' || (roomCurrentContractId && contracts.some(function(row) {
     return landlordPaperContractBackfillText_(row.contract_id) === roomCurrentContractId &&
       V2_LANDLORD_PAPER_BACKFILL_OPEN_STATUSES_.indexOf(landlordPaperContractBackfillText_(row.contract_status || row.status || row.account_status).toLowerCase()) >= 0;
-  }))) return landlordPaperContractBackfillError_('ROOM_ALREADY_OCCUPIED', '房間目前已有有效租約');
+  })))) return landlordPaperContractBackfillError_('ROOM_ALREADY_OCCUPIED', '房間目前已有有效租約');
   if (landlordPaperContractBackfillText_(room.account_status).toLowerCase() === 'archived') return landlordPaperContractBackfillError_('ROOM_ARCHIVED', '房間已封存');
 
   var today = landlordPaperContractBackfillToday_();
   if (input.end_date < today) return landlordPaperContractBackfillError_('LEASE_ALREADY_EXPIRED', '租約結束日已過，請使用歷史合約或退房流程');
   var overlapping = contracts.find(function(row) {
     if (landlordPaperContractBackfillText_(row.workspace_id) !== workspaceId || landlordPaperContractBackfillText_(row.room_id) !== input.room_id) return false;
+    if (replacementContract && landlordPaperContractBackfillText_(row.contract_id) === input.supersede_contract_id) return false;
     var status = landlordPaperContractBackfillText_(row.contract_status || row.status || row.account_status).toLowerCase();
     if (V2_LANDLORD_PAPER_BACKFILL_CLOSED_STATUSES_.indexOf(status) >= 0) return false;
     if (V2_LANDLORD_PAPER_BACKFILL_OPEN_STATUSES_.indexOf(status) < 0) return false;
@@ -293,7 +344,11 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     if (tenantRoomId && tenantRoomId !== input.room_id) return landlordPaperContractBackfillError_('TENANT_ROOM_MISMATCH', '既有房客目前不屬於此房間');
     user = landlordPaperContractBackfillFindScopedRow_(schema.data.users, access, 'user_id', tenant.tenant_user_id || tenant.user_id);
     if (!user) return landlordPaperContractBackfillError_('TENANT_USER_NOT_FOUND', '找不到既有房客使用者資料');
+    if (replacementContract && landlordPaperContractBackfillText_(tenant.tenant_line_user_id || tenant.line_user_id || (user && user.line_user_id))) {
+      return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
+    }
     if (contracts.some(function(row) {
+      if (replacementContract && landlordPaperContractBackfillText_(row.contract_id) === input.supersede_contract_id) return false;
       return landlordPaperContractBackfillText_(row.tenant_id) === input.tenant_id &&
         V2_LANDLORD_PAPER_BACKFILL_OPEN_STATUSES_.indexOf(landlordPaperContractBackfillText_(row.contract_status || row.status || row.account_status).toLowerCase()) >= 0;
     })) return landlordPaperContractBackfillError_('TENANT_ALREADY_ACTIVE', '既有房客已有有效租約');
@@ -313,6 +368,8 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
   var contractId = landlordPaperContractBackfillUuid_('contract');
   var status = input.start_date > today ? 'upcoming' : 'active';
   var roomStatus = status === 'active' ? 'occupied' : (landlordPaperContractBackfillText_(room.room_status) || 'vacant');
+  var contractNote = input.note;
+  if (replacementContract) contractNote = (contractNote ? contractNote + '\n' : '') + '紙本補登取代未完成電子合約：' + input.supersede_contract_id;
   var contract = landlordPaperContractBackfillBuildContract_(access, actor, property, room, input, {
     contract_id: contractId,
     tenant_id: tenantId,
@@ -329,6 +386,7 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     signing_mode: 'paper_backfill',
     contract_origin: 'paper_backfill',
     invite_id: '',
+    previous_contract_id: replacementContract ? input.supersede_contract_id : '',
     contract_content: landlordPaperContractBackfillContent_(access, property, room, input),
     contract_version: 'paper-contract-document-1',
     paper_backfill_idempotency_key: input.idempotency_key,
@@ -337,23 +395,27 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     created_by_membership_id: actor.membership_id,
     created_at: now,
     updated_at: now,
-    note: input.note
+    note: contractNote
   });
   var tenantObject = landlordPaperContractBackfillBuildTenant_(access, actor, property, room, input, tenantId, tenantUserId, contractId, now);
   var userObject = landlordPaperContractBackfillBuildUser_(access, actor, input, tenantUserId, now);
   if (tenant) {
     tenantObject.tenant_line_user_id = landlordPaperContractBackfillText_(tenant.tenant_line_user_id || tenant.line_user_id);
     tenantObject.line_user_id = landlordPaperContractBackfillText_(tenant.line_user_id || tenant.tenant_line_user_id);
-    tenantObject.tenant_binding_status = landlordPaperContractBackfillText_(tenant.tenant_binding_status || tenant.binding_status || 'unbound');
-    tenantObject.binding_status = landlordPaperContractBackfillText_(tenant.binding_status || tenant.tenant_binding_status || 'unbound');
+    tenantObject.tenant_binding_status = replacementContract ? 'unbound' : landlordPaperContractBackfillText_(tenant.tenant_binding_status || tenant.binding_status || 'unbound');
+    tenantObject.binding_status = replacementContract ? 'unbound' : landlordPaperContractBackfillText_(tenant.binding_status || tenant.tenant_binding_status || 'unbound');
+    tenantObject.tenant_line_user_id = replacementContract ? '' : tenantObject.tenant_line_user_id;
+    tenantObject.line_user_id = replacementContract ? '' : tenantObject.line_user_id;
+    tenantObject.account_status = replacementContract ? 'active' : tenantObject.account_status;
+    tenantObject.tenant_account_status = replacementContract ? 'active' : tenantObject.tenant_account_status;
     tenantObject.created_at = tenant.created_at || tenantObject.created_at;
     tenantObject.created_by_user_id = tenant.created_by_user_id || tenantObject.created_by_user_id;
     tenantObject.created_by_membership_id = tenant.created_by_membership_id || tenantObject.created_by_membership_id;
   }
   if (user) {
-    userObject.line_user_id = landlordPaperContractBackfillText_(user.line_user_id);
-    userObject.status = user.status || userObject.status;
-    userObject.account_status = user.account_status || userObject.account_status;
+    userObject.line_user_id = replacementContract ? '' : landlordPaperContractBackfillText_(user.line_user_id);
+    userObject.status = replacementContract ? 'active' : (user.status || userObject.status);
+    userObject.account_status = replacementContract ? 'active' : (user.account_status || userObject.account_status);
     userObject.created_at = user.created_at || userObject.created_at;
     userObject.created_by_user_id = user.created_by_user_id || userObject.created_by_user_id;
   }
@@ -390,6 +452,15 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
 
     landlordPaperContractBackfillAppend_(schema.data.contracts, contract);
     transaction.newRows.push({ sheet: schema.data.contracts, idHeader: 'contract_id', id: contractId });
+    if (replacementContract) {
+      transaction.originalRows.push({ sheet: schema.data.contracts, row: replacementContract });
+      landlordPaperContractBackfillUpdate_(schema.data.contracts, replacementContract, {
+        contract_status: 'cancelled', status: 'cancelled', account_status: 'cancelled', updated_at: now,
+        note: landlordPaperContractBackfillText_(replacementContract.note) + (landlordPaperContractBackfillText_(replacementContract.note) ? '\n' : '') + '紙本補登取代：' + contractId
+      });
+      transaction.originalRows.push({ sheet: schema.data.invites, row: replacementInvite });
+      landlordPaperContractBackfillUpdate_(schema.data.invites, replacementInvite, { status: 'cancelled', cancelled_at: now, updated_at: now });
+    }
     var roomBefore = landlordPaperContractBackfillFindRowById_(schema.data.rooms, 'room_id', input.room_id);
     transaction.originalRows.push({ sheet: schema.data.rooms, row: roomBefore });
     landlordPaperContractBackfillUpdate_(schema.data.rooms, roomBefore, {
@@ -416,7 +487,8 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
         tenant: landlordPaperContractBackfillTenantResponse_(tenantObject),
         contract: landlordPaperContractBackfillContractResponse_(contract),
         room: { room_id: input.room_id, room_name: landlordPaperContractBackfillText_(room.room_name), room_status: roomStatus, current_contract_id: contractId, current_tenant_id: tenantId },
-        paper_document: documentResults.data.documents[0]
+        paper_document: documentResults.data.documents[0],
+        binding: { tenant_id: tenantId, binding_status: 'unbound' }
       }
     };
   } catch (error) {
@@ -435,6 +507,7 @@ function landlordPaperContractBackfillSchema_() {
     users: ss.getSheetByName('V2_users'),
     tenants: ss.getSheetByName('V2_tenants'),
     contracts: ss.getSheetByName('V2_contracts'),
+    invites: ss.getSheetByName('V2_contract_invites'),
     documents: documents,
     landlordTenantListView: ss.getSheetByName('V2_landlord_tenant_list_view'),
     tenantHomeView: ss.getSheetByName('V2_tenant_home_view')
@@ -506,7 +579,7 @@ function landlordPaperContractBackfillBuildContract_(access, actor, property, ro
     electricity_fee_rate: input.electricity_fee_rate, equipment_fee_rate: input.equipment_fee_rate,
     contract_status: 'active', status: 'active', account_status: 'active', signed_at: '', tenant_signed_at: '',
     tenant_signing_submission_status: 'approved', signing_mode: 'paper_backfill', contract_origin: 'paper_backfill',
-    invite_id: '', contract_content: '', contract_version: 'paper-contract-document-1',
+    invite_id: '', contract_content: '', contract_version: 'paper-contract-document-1', previous_contract_id: '',
     created_by_user_id: actor.user_id, created_by_membership_id: actor.membership_id, created_at: '', updated_at: '', note: input.note
   };
   return Object.assign(contract, extra || {});
@@ -567,6 +640,10 @@ function landlordPaperContractBackfillViewValues_(access, actor, property, room,
 
 function landlordPaperContractBackfillExistingResult_(schema, existing, access) {
   var existingStatus = landlordPaperContractBackfillText_(existing.contract_status || existing.status || 'active').toLowerCase();
+  var existingTenant = landlordPaperContractBackfillRows_(schema.data.tenants).find(function(row) {
+    return landlordPaperContractBackfillText_(row.tenant_id) === landlordPaperContractBackfillText_(existing.tenant_id);
+  });
+  var existingBindingStatus = landlordPaperContractBackfillText_((existingTenant && (existingTenant.tenant_binding_status || existingTenant.binding_status)) || (existingTenant && (existingTenant.tenant_line_user_id || existingTenant.line_user_id) ? 'bound' : '') || existing.tenant_binding_status || 'unbound');
   var document = landlordPaperContractBackfillRows_(schema.data.documents).find(function(row) {
     return landlordPaperContractBackfillText_(row.contract_id) === landlordPaperContractBackfillText_(existing.contract_id) &&
       landlordPaperContractBackfillText_(row.document_type) === 'legacy_contract';
@@ -579,7 +656,8 @@ function landlordPaperContractBackfillExistingResult_(schema, existing, access) 
       tenant: { tenant_id: landlordPaperContractBackfillText_(existing.tenant_id), tenant_user_id: landlordPaperContractBackfillText_(existing.tenant_user_id), tenant_name: landlordPaperContractBackfillText_(existing.tenant_name), tenant_phone: landlordPaperContractBackfillMaskPhone_(existing.tenant_phone) },
       contract: landlordPaperContractBackfillContractResponse_(existing),
       room: { room_id: landlordPaperContractBackfillText_(existing.room_id), room_name: landlordPaperContractBackfillText_(existing.room_name), room_status: existingStatus === 'upcoming' ? landlordPaperContractBackfillText_(existing.room_status || 'vacant') : 'occupied', current_contract_id: landlordPaperContractBackfillText_(existing.contract_id), current_tenant_id: landlordPaperContractBackfillText_(existing.tenant_id) },
-      paper_document: document ? { document_id: landlordPaperContractBackfillText_(document.document_id), document_type: 'legacy_contract', document_origin: 'paper_backfill', status: landlordPaperContractBackfillText_(document.status || 'stored') } : null
+      paper_document: document ? { document_id: landlordPaperContractBackfillText_(document.document_id), document_type: 'legacy_contract', document_origin: 'paper_backfill', status: landlordPaperContractBackfillText_(document.status || 'stored') } : null,
+      binding: { tenant_id: landlordPaperContractBackfillText_(existing.tenant_id), binding_status: existingBindingStatus }
     }
   };
 }
@@ -721,7 +799,8 @@ function landlordPaperContractBackfillContractResponse_(contract) {
     signed_at: landlordPaperContractBackfillDate_(contract.signed_at),
     tenant_signing_submission_status: landlordPaperContractBackfillText_(contract.tenant_signing_submission_status),
     signing_mode: landlordPaperContractBackfillText_(contract.signing_mode),
-    contract_origin: landlordPaperContractBackfillText_(contract.contract_origin)
+    contract_origin: landlordPaperContractBackfillText_(contract.contract_origin),
+    previous_contract_id: landlordPaperContractBackfillText_(contract.previous_contract_id)
   };
 }
 
@@ -772,7 +851,7 @@ function landlordPaperContractBackfillPayloadHash_(input) {
     input.room_id, input.property_id, input.tenant_id, input.tenant_name, input.tenant_phone, input.tenant_email,
     input.start_date, input.end_date, input.paper_signed_at, input.rent_amount, input.management_fee,
     input.deposit_months, input.deposit_amount, input.payment_day, input.electricity_fee_rate,
-    input.equipment_fee_rate, input.paper_contract_file.sha256,
+    input.equipment_fee_rate, input.supersede_contract_id, input.paper_contract_file.sha256,
     input.identity_front_file ? input.identity_front_file.sha256 : '', input.identity_back_file ? input.identity_back_file.sha256 : ''
   ].join('|');
   var bytes = [];

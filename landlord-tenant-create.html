@@ -1043,6 +1043,11 @@
         'previous_contract_id'
       ) || '';
 
+    const REQUESTED_SUPERSEDE_CONTRACT_ID =
+      URL_PARAMS.get(
+        'supersede_contract_id'
+      ) || '';
+
     let LINE_USER_ID = '';
     let LANDLORD_REVIEW_SESSION_TOKEN = '';
     let PAGE_DATA = null;
@@ -1813,9 +1818,22 @@
       const selectedRoomId = PRESELECTED_ROOM_ID || selectedTenant.room_id || PAGE_DATA.selected_room_id || (rooms[0] && rooms[0].room_id) || '';
       const selectedRoom = rooms.find(function (room) { return rawText(room.room_id) === rawText(selectedRoomId); }) || rooms[0] || {};
       const selectedPropertyId = PRESELECTED_PROPERTY_ID || selectedTenant.property_id || selectedRoom.property_id || PAGE_DATA.selected_property_id || '';
-      const defaults = resolveRoomLeaseDefaults_(selectedRoom);
+      const roomDefaults = resolveRoomLeaseDefaults_(selectedRoom);
+      const selectedLeaseValue = function (value, fallback) {
+        return rawText(value).trim() === '' ? fallback : Number(value);
+      };
+      const defaults = {
+        rent_amount: selectedLeaseValue(selectedTenant.rent_amount, roomDefaults.rent_amount),
+        management_fee: selectedLeaseValue(selectedTenant.management_fee, roomDefaults.management_fee),
+        deposit_months: selectedLeaseValue(selectedTenant.deposit_months, roomDefaults.deposit_months),
+        deposit_amount: selectedLeaseValue(selectedTenant.deposit_amount, roomDefaults.deposit_amount),
+        payment_day: selectedLeaseValue(selectedTenant.payment_day, roomDefaults.payment_day),
+        electricity_fee_rate: selectedLeaseValue(selectedTenant.electricity_fee_rate, roomDefaults.electricity_fee_rate),
+        equipment_fee_rate: selectedLeaseValue(selectedTenant.equipment_fee_rate, roomDefaults.equipment_fee_rate)
+      };
       const startDate = selectedTenant.contract_start_date || PAGE_DATA.defaults && PAGE_DATA.defaults.start_date || '';
       const endDate = selectedTenant.contract_end_date || (startDate ? addOneYearMinusOneDay(startDate) : '');
+      const replacingElectronicContract = Boolean(REQUESTED_SUPERSEDE_CONTRACT_ID);
       const pageTitle = document.getElementById('pageTitle');
       if (pageTitle) pageTitle.textContent = '補登紙本合約';
 
@@ -1824,7 +1842,7 @@
           <div class="hero-content">
             <div class="hero-label">Paper Contract Backfill</div>
             <div class="workspace-name">${safeHtml(workspace.workspace_name || '目前管理團隊')}</div>
-            <div class="hero-desc">已簽紙本合約可由房東直接補登，完成後立即成為系統租約。</div>
+            <div class="hero-desc">${replacingElectronicContract ? '已先建立電子草稿但實際簽紙本，可在此轉換並建立房客登入。' : '已簽紙本合約可由房東直接補登，完成後立即成為系統租約。'}</div>
           </div>
         </section>
 
@@ -1832,7 +1850,7 @@
           <div class="section-head">
             <div>
               <div class="section-title">房客與房間</div>
-              <div class="section-desc">${selectedTenant.tenant_id ? '已帶入既有房客資料，不會建立第二筆房客。' : '填入紙本合約上的房客資料與入住房間。'}</div>
+              <div class="section-desc">${replacingElectronicContract ? '這次會保留原電子草稿，改由紙本合約建立正式租約；不會建立第二筆房客。' : selectedTenant.tenant_id ? '已帶入既有房客資料，不會建立第二筆房客。' : '填入紙本合約上的房客資料與入住房間。'}</div>
             </div>
             <div class="section-index">1</div>
           </div>
@@ -1922,7 +1940,7 @@
               <div id="identityBackFileStatus" class="paper-file-status">尚未上傳</div>
             </div>
           </div>
-          <div class="paper-backfill-note">補登完成後直接建立有效租約，不會產生合約申請、電子簽署邀請或房客 LINE 訊息。</div>
+          <div class="paper-backfill-note">${replacingElectronicContract ? '送出後會保留原電子草稿紀錄並關閉未完成的電子簽署；紙本租約成立後，房客可使用下方的房客登入入口完成手機綁定。' : '補登完成後直接建立有效租約，不會產生合約申請、電子簽署邀請或房客 LINE 訊息。'}</div>
         </section>
 
         <section class="card confirmation-card">
@@ -2029,6 +2047,7 @@
           rent_amount: inputValue('rentAmount'), management_fee: inputValue('managementFee'), deposit_months: inputValue('depositMonths'), deposit_amount: inputValue('depositAmount'),
           payment_day: inputValue('paymentDay'), electricity_fee_rate: inputValue('electricityRate'), equipment_fee_rate: inputValue('equipmentRate'), paper_signed_at: inputValue('paperSignedAt'),
           paper_contract_file: paperFile, identity_front_file: identityFront, identity_back_file: identityBack, note: inputValue('note'),
+          supersede_contract_id: REQUESTED_SUPERSEDE_CONTRACT_ID,
           idempotency_key: PAPER_BACKFILL_IDEMPOTENCY_KEY || (PAPER_BACKFILL_IDEMPOTENCY_KEY = randomUrlToken(18))
         });
         result.mode = 'paper_backfill';
@@ -3425,13 +3444,17 @@
       const propertyName = contract.property_name || selectedProperty.property_name || selectedRoom.property_name || '';
       const roomName = contract.room_name || room.room_name || selectedRoom.room_name || '';
       const status = rawText(contract.contract_status || contract.status || 'active');
+      const bindingUrl = (CREATED_DATA.binding && CREATED_DATA.binding.tenant_liff_url) || PAGE_DATA.tenant_liff_url || '';
+      const bindingMessage = bindingUrl
+        ? '請用房客本人的 LINE 開啟房客登入入口：\n' + bindingUrl + '\n\n首次登入請輸入紙本合約登記的手機號碼完成綁定。'
+        : '請返回房客名單，在這位房客卡片按「邀請綁定」，再將登入入口傳給房客。';
 
       document.getElementById('app').innerHTML = `
         <section class="card success-card">
           <div class="success-head">
             <div class="success-icon">✓</div>
             <div class="success-title">紙本合約補登完成</div>
-            <div class="success-desc">已建立系統租約並保留原紙本文件；未建立合約申請、電子邀請或房客 LINE 訊息。</div>
+            <div class="success-desc">已建立系統租約並保留原紙本文件；${REQUESTED_SUPERSEDE_CONTRACT_ID ? '原電子草稿已保留紀錄並關閉，' : ''}未發送合約申請或房客 LINE 訊息。</div>
           </div>
           <div class="success-body">
             <div class="success-grid">
@@ -3443,9 +3466,16 @@
               ${successItem('租約期間', (contract.start_date || '') + ' 至 ' + (contract.end_date || ''))}
               ${successItem('租約狀態', status === 'upcoming' ? '待開始' : '有效')}
               ${successItem('紙本文件', paperDocument.file_name || paperDocument.document_id || '已保存')}
+              ${successItem('房客登入', '尚未綁定')}
             </div>
             <div class="paper-backfill-note">身分證正反面若尚未上傳，可從房客資料頁的文件區後續補上。</div>
+            <div class="invite-box">
+              <div class="invite-title">房客登入入口</div>
+              <textarea id="inviteMessage" class="invite-text" readonly>${safeHtml(bindingMessage)}</textarea>
+            </div>
             <div class="success-actions">
+              <button class="success-button primary" type="button" onclick="copyInvitation()">複製登入入口</button>
+              <button class="success-button secondary" type="button" onclick="openTenantLiff()">開啟房客 LIFF</button>
               <button class="success-button primary" type="button" onclick="goPage('landlord-tenants.html')">返回房客名單</button>
               <button class="success-button secondary full" type="button" onclick="resetCreatePage()">繼續補登另一份紙本合約</button>
             </div>
@@ -3609,7 +3639,9 @@
               previous_contract_id:
                 PREVIOUS_CONTRACT_ID,
               tenant_id:
-                PRESELECTED_TENANT_ID
+                PRESELECTED_TENANT_ID,
+              supersede_contract_id:
+                REQUESTED_SUPERSEDE_CONTRACT_ID
             }
           );
 

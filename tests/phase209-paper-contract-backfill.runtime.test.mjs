@@ -14,7 +14,7 @@ const CONTRACT_HEADERS = [
   'deposit_months', 'deposit_amount', 'payment_day', 'monthly_payment_day',
   'electricity_fee_rate', 'equipment_fee_rate', 'contract_status', 'status', 'account_status',
   'signed_at', 'tenant_signed_at', 'tenant_signing_submission_status', 'signing_mode', 'contract_origin',
-  'invite_id', 'contract_content', 'contract_version', 'paper_backfill_idempotency_key', 'paper_backfill_payload_hash',
+  'invite_id', 'contract_content', 'contract_version', 'previous_contract_id', 'paper_backfill_idempotency_key', 'paper_backfill_payload_hash',
   'created_by_user_id', 'created_by_membership_id', 'created_at', 'updated_at', 'note'
 ];
 
@@ -51,6 +51,11 @@ const VIEW_HEADERS = [
   'tenant_user_id', 'tenant_id', 'tenant_name', 'tenant_phone', 'tenant_email', 'tenant_binding_status',
   'property_id', 'property_name', 'room_id', 'room_list', 'tenant_account_status',
   'current_contract_id', 'contract_status', 'contract_start_date', 'contract_end_date', 'created_at', 'updated_at'
+];
+
+const INVITE_HEADERS = [
+  'invite_id', 'workspace_id', 'contract_id', 'room_id', 'landlord_user_id', 'landlord_membership_id',
+  'claim_code_hash', 'status', 'expires_at', 'claimed_at', 'claimed_line_user_id', 'cancelled_at', 'created_at', 'updated_at'
 ];
 
 const PDF_BASE64 = Buffer.from('paper-contract-202', 'utf8').toString('base64');
@@ -126,6 +131,7 @@ function makeRuntime(options = {}) {
       V2_tenants: new FakeSheet('V2_tenants', TENANT_HEADERS, options.tenants || []),
       V2_contracts: new FakeSheet('V2_contracts', CONTRACT_HEADERS, options.contracts || []),
       V2_contract_documents: new FakeSheet('V2_contract_documents', DOCUMENT_HEADERS, options.documents || []),
+      ...(options.contractInvites ? { V2_contract_invites: new FakeSheet('V2_contract_invites', INVITE_HEADERS, options.contractInvites) } : {}),
       V2_landlord_tenant_list_view: new FakeSheet('V2_landlord_tenant_list_view', VIEW_HEADERS, []),
       V2_tenant_home_view: new FakeSheet('V2_tenant_home_view', VIEW_HEADERS, [])
     }
@@ -176,6 +182,7 @@ function makeRuntime(options = {}) {
       tenants: state.sheets.V2_tenants,
       contracts: state.sheets.V2_contracts,
       documents: state.sheets.V2_contract_documents,
+      invites: state.sheets.V2_contract_invites || null,
       landlordTenantListView: state.sheets.V2_landlord_tenant_list_view,
       tenantHomeView: state.sheets.V2_tenant_home_view
     }}),
@@ -271,6 +278,14 @@ function roomRow(runtime) {
   return objects(runtime.state.sheets.V2_rooms)[0];
 }
 
+function userRow(runtime, userId) {
+  return objects(runtime.state.sheets.V2_users).find(row => row.user_id === userId);
+}
+
+function inviteRow(runtime, inviteId) {
+  return objects(runtime.state.sheets.V2_contract_invites).find(row => row.invite_id === inviteId);
+}
+
 assert.equal(typeof makeRuntime, 'function');
 
 {
@@ -335,6 +350,62 @@ for (const inputOverride of [
   const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput());
   assert.equal(result.success, false);
   assert.equal(result.code, 'ROOM_ALREADY_OCCUPIED');
+}
+
+{
+  const pendingTenant = rowFor(TENANT_HEADERS, {
+    tenant_id: 'T202', tenant_user_id: 'U202', user_id: 'U202', workspace_id: 'W1', landlord_id: 'L1',
+    tenant_name: '五先生', name: '五先生', tenant_phone: '0912345678', phone: '0912345678',
+    property_id: 'P1', property_name: '測試公寓', room_id: 'R202', room_name: '202', current_contract_id: 'E202',
+    tenant_binding_status: 'pending_claim', binding_status: 'pending_claim', account_status: 'pending', tenant_account_status: 'pending'
+  });
+  const pendingUser = rowFor(USER_HEADERS, {
+    user_id: 'U202', workspace_id: 'W1', landlord_id: 'L1', role: 'tenant', name: '五先生', phone: '0912345678',
+    status: 'pending', account_status: 'pending'
+  });
+  const pendingContract = rowFor(CONTRACT_HEADERS, {
+    contract_id: 'E202', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T202', tenant_user_id: 'U202',
+    tenant_name: '五先生', tenant_phone: '0912345678', property_id: 'P1', property_name: '測試公寓', room_id: 'R202', room_name: '202',
+    start_date: '2026-09-01', end_date: '2027-08-31', contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending',
+    signing_mode: 'new_tenant', contract_origin: 'landlord_initiated', invite_id: 'I202', note: '簡易新租電子草稿'
+  });
+  const pendingInvite = rowFor(INVITE_HEADERS, {
+    invite_id: 'I202', workspace_id: 'W1', contract_id: 'E202', room_id: 'R202', landlord_user_id: 'landlord-user-1',
+    landlord_membership_id: 'membership-1', claim_code_hash: 'digest', status: 'pending', expires_at: '2026-09-04T00:00:00.000Z'
+  });
+  const runtime = makeRuntime({
+    roomStatus: 'occupied', currentContractId: '', tenants: [pendingTenant], users: [pendingUser],
+    contracts: [pendingContract], contractInvites: [pendingInvite]
+  });
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
+    tenant_id: 'T202', idempotency_key: 'paper-replace-electronic-202', supersede_contract_id: 'E202'
+  }));
+  assert.equal(result.success, true, result.message || result.code);
+  assert.equal(result.data.contract.contract_origin, 'paper_backfill');
+  assert.equal(result.data.contract.signing_mode, 'paper_backfill');
+  assert.equal(result.data.contract.previous_contract_id, 'E202');
+  assert.equal(contractRow(runtime, 'E202').contract_status, 'cancelled');
+  assert.equal(contractRow(runtime, 'E202').status, 'cancelled');
+  assert.equal(contractRow(runtime, 'E202').account_status, 'cancelled');
+  assert.match(contractRow(runtime, 'E202').note, /紙本補登取代/);
+  assert.equal(inviteRow(runtime, 'I202').status, 'cancelled');
+  assert.equal(tenantRow(runtime, 'T202').account_status, 'active');
+  assert.equal(tenantRow(runtime, 'T202').tenant_account_status, 'active');
+  assert.equal(tenantRow(runtime, 'T202').tenant_binding_status, 'unbound');
+  assert.equal(tenantRow(runtime, 'T202').tenant_line_user_id, '');
+  assert.equal(userRow(runtime, 'U202').status, 'active');
+  assert.equal(userRow(runtime, 'U202').account_status, 'active');
+  assert.equal(runtime.state.sheets.V2_contracts.rows.length, 2);
+  assert.equal(runtime.state.sheets.V2_contract_invites.rows.length, 1);
+  assert.equal(runtime.state.lineCalls.length, 0);
+  assert.equal(result.data.binding.binding_status, 'unbound');
+  const beforeReplay = countRows(runtime);
+  const replay = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
+    tenant_id: 'T202', idempotency_key: 'paper-replace-electronic-202', supersede_contract_id: 'E202'
+  }));
+  assert.equal(replay.success, true, replay.message || replay.code);
+  assert.equal(replay.code, 'IDEMPOTENT');
+  assert.deepEqual(countRows(runtime), beforeReplay);
 }
 
 {

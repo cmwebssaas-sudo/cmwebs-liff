@@ -1005,12 +1005,20 @@
       );
     }
 
-    function goTenantPaperBackfill(propertyId, roomId) {
+    function goTenantPaperBackfill(propertyId, roomId, tenantId, supersedeContractId) {
       let url =
         'landlord-tenant-create.html' +
         '?mode=paper_backfill' +
         '&property_id=' + encodeURIComponent(propertyId || '') +
         '&room_id=' + encodeURIComponent(roomId || '');
+
+      if (tenantId) {
+        url += '&tenant_id=' + encodeURIComponent(tenantId);
+      }
+
+      if (supersedeContractId) {
+        url += '&supersede_contract_id=' + encodeURIComponent(supersedeContractId);
+      }
 
       goPage(url);
     }
@@ -1621,10 +1629,20 @@
                     active
                       ? `
                         ${
-                          room.effective_status ===
-                            'vacant' &&
-                          !room.has_active_contract
+                          room.paper_backfill_replacement_eligible
                             ? `
+                              <button
+                                class="small-button secondary"
+                                type="button"
+                                onclick="goTenantPaperBackfill('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}','${safeHtml(room.paper_backfill_replacement_tenant_id)}','${safeHtml(room.paper_backfill_replacement_contract_id)}')"
+                              >
+                                補登紙本並建立房客登入
+                              </button>
+                            `
+                            : room.effective_status ===
+                                'vacant' &&
+                              !room.has_active_contract
+                              ? `
                               <button
                                 class="small-button primary"
                                 type="button"

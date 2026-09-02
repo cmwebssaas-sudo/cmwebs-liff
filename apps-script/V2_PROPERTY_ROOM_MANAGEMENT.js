@@ -2421,6 +2421,47 @@ function propertyRoomBuildRoomView_(
         ]
       : null;
 
+  const paperBackfillReplacementContract =
+    [
+      currentContract,
+      latestContract
+    ].find(function (contract) {
+      if (!contract) {
+        return false;
+      }
+
+      const status =
+        propertyRoomText_(
+          contract.contract_status ||
+          contract.status
+        ).toLowerCase();
+
+      return (
+        propertyRoomText_(
+          contract.contract_origin
+        ).toLowerCase() ===
+          'landlord_initiated' &&
+        [
+          'pending_tenant_signature',
+          'awaiting_tenant_signature'
+        ].indexOf(status) >= 0 &&
+        propertyRoomText_(
+          contract.contract_id
+        ) !== '' &&
+        propertyRoomText_(
+          contract.tenant_id
+        ) !== '' &&
+        propertyRoomText_(
+          contract.invite_id
+        ) !== ''
+      );
+    }) || null;
+
+  const paperBackfillReplacementEligible =
+    Boolean(
+      paperBackfillReplacementContract
+    );
+
   const financialContract =
     currentContract ||
     latestContract ||
@@ -2683,6 +2724,30 @@ function propertyRoomBuildRoomView_(
 
     has_active_contract:
       hasActiveContract,
+
+    paper_backfill_replacement_eligible:
+      paperBackfillReplacementEligible,
+
+    paper_backfill_replacement_contract_id:
+      paperBackfillReplacementEligible
+        ? propertyRoomText_(
+            paperBackfillReplacementContract.contract_id
+          )
+        : '',
+
+    paper_backfill_replacement_tenant_id:
+      paperBackfillReplacementEligible
+        ? propertyRoomText_(
+            paperBackfillReplacementContract.tenant_id
+          )
+        : '',
+
+    paper_backfill_replacement_tenant_name:
+      paperBackfillReplacementEligible
+        ? propertyRoomText_(
+            paperBackfillReplacementContract.tenant_name
+          )
+        : '',
 
     financial_source:
       roomRent > 0

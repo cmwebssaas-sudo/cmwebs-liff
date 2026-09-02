@@ -368,6 +368,18 @@ Script Version 150 and published with the `main` Pages build for PR #96.
   rows; it updates room and compatibility-view pointers under the existing
   landlord contract `ScriptLock`. Existing contracts, bills and historical
   documents are not overwritten.
+- An optional `supersede_contract_id` is accepted only for the same Workspace,
+  room and tenant when the target is an unclaimed `landlord_initiated` contract
+  in `pending_tenant_signature` or `awaiting_tenant_signature`. The target
+  electronic contract row and its pending invite remain in the audit trail and
+  are marked `cancelled`; the new paper row links back through
+  `previous_contract_id`, activates the existing pending tenant account as
+  `unbound`, and does not create a replacement electronic invite or send LINE.
+  Claimed, completed, mismatched, or otherwise active contracts remain blocked.
+
+The landlord tenant-create initialization route also accepts the optional
+`supersede_contract_id` query parameter so the paper form reads the selected
+electronic contract directly, including explicit zero-valued fee fields.
 
 ## Signed legacy contract integration webhook
 
