@@ -2,15 +2,17 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-03 — 202 紙本轉換與房客登入本地候選修正（未部署）
+## 2026-09-03 — 202 紙本轉換與房客登入入口正式部署
 
-- 房東可從物件／房間頁將同房間、同房客且尚未被認領的房東電子草稿轉為
-  紙本補登；原電子合約與待認領邀請保留並標記取消，新紙本合約以
-  `previous_contract_id` 留下關聯。
-- 既有待認領房客／使用者會啟用為未綁定狀態，補登完成頁提供房客 LIFF
-  登入入口，房東可複製傳給房客；不自動發送 LINE 或建立電子邀請。
-- Candidate branch `codex/202-paper-contract-login-20260903` 的本地測試與
-  Apps Script syntax check 已通過；尚未執行 Production 資料異動或部署。
+- PR #98 已合併至 `main`，merge commit 為 `4b9ed04`。房東可從物件／房間頁
+  將同房間、同房客且尚未被認領的房東電子草稿轉為紙本補登；原電子合約與
+  待認領邀請保留並標記取消，新紙本合約以 `previous_contract_id` 留下關聯。
+- Apps Script Version 151 已更新 Pages 所用的既有 Web App deployment，Version
+  150 保留 rollback，既有 Web App URL 不變。GitHub Pages workflow
+  `33691996413` 已成功完成，公開頁 read-back 通過。
+- 既有待認領房客／使用者會啟用為未綁定狀態，補登完成頁提供房客 LIFF 登入
+  入口，房東可複製傳給房客；不自動發送 LINE 或建立電子邀請。未執行
+  Production 資料交易；手機／LIFF 真機 UAT 仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
 
 ## 2026-09-03 — 房東手動補登紙本合約正式部署
 
