@@ -1,11 +1,31 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-02 (Asia/Taipei)**
+**Last verified: 2026-09-03 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-03 landlord paper-contract backfill local candidate
+
+- Isolated worktree `paper-contract-backfill-20260903` on branch
+  `codex/paper-contract-backfill-20260903` contains the landlord-only paper
+  contract backfill flow. The required signed paper contract file is stored
+  privately; identity front/back files are optional and can be added later.
+- The flow directly creates an active or upcoming append-only contract after
+  server-side Workspace/RBAC, room vacancy, tenant scope, date, amount, file,
+  and idempotency checks. It does not create `V2_contract_requests`, an
+  electronic invite, a confirmation code, a signing session, or a LINE message.
+- Empty-room entry is available from the property/room page; existing-tenant
+  entry is available from tenant detail. The create page returns a paper-specific
+  success state and never falls through to the electronic-invite success UI.
+- Local Phase 209 runtime, Phase 210 UI, Phase 211 documentation tests and
+  changed Apps Script syntax checks passed. This candidate is not canonical
+  `main`, has not been pushed or merged, and has not been deployed to Apps
+  Script or GitHub Pages. No Sheet, Drive, Properties, Trigger or LINE write was
+  performed. Authenticated mobile/LIFF and private Drive UAT remain
+  `HUMAN_REQUIRED` / `UNVERIFIED`.
 
 ## 2026-09-03 房東簡易新租約正式部署
 

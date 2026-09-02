@@ -861,6 +861,44 @@
       line-height: 1.65;
     }
 
+    .paper-backfill-hero {
+      background: linear-gradient(145deg, #245c91 0%, #347db8 58%, #246b9a 100%);
+    }
+
+    .paper-backfill-note {
+      margin-top: 10px;
+      padding: 11px;
+      border: 1px solid #dbe7f3;
+      border-radius: 12px;
+      background: #f5f9fd;
+      color: #39536a;
+      font-size: 9px;
+      line-height: 1.65;
+    }
+
+    .paper-file-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px dashed #b7c8d8;
+      border-radius: 11px;
+      background: #f8fbfe;
+      color: #526a7d;
+      font-size: 10px;
+    }
+
+    .paper-file-status {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.5;
+    }
+
+    .paper-optional {
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
     @media (max-width: 430px) {
       .field-grid {
         grid-template-columns: 1fr;
@@ -984,11 +1022,21 @@
       URL_PARAMS.get('mode') ===
       'renewal'
         ? 'renewal'
-        : 'new';
+        : URL_PARAMS.get('mode') === 'paper_backfill'
+          ? 'paper_backfill'
+          : 'new';
 
     const SIMPLE_NEW_MODE =
       REQUESTED_CONTRACT_MODE === 'new' &&
       URL_PARAMS.get('mode') !== 'advanced_new';
+
+    const PAPER_BACKFILL_MODE =
+      REQUESTED_CONTRACT_MODE === 'paper_backfill';
+
+    const PRESELECTED_TENANT_ID =
+      URL_PARAMS.get(
+        'tenant_id'
+      ) || '';
 
     const REQUESTED_PREVIOUS_CONTRACT_ID =
       URL_PARAMS.get(
@@ -1001,6 +1049,7 @@
     let CREATED_DATA = null;
     let CONTRACT_MODE = REQUESTED_CONTRACT_MODE;
     let PREVIOUS_CONTRACT_ID = REQUESTED_PREVIOUS_CONTRACT_ID;
+    let PAPER_BACKFILL_IDEMPOTENCY_KEY = '';
     let toastTimer = null;
 
     function setAppHeight() {
@@ -1748,6 +1797,250 @@
       updateSubmitState();
     }
 
+    function paperBackfillRoomOptions(selectedId, propertyId) {
+      return (PAGE_DATA.rooms || []).filter(function (room) {
+        return !propertyId || rawText(room.property_id) === rawText(propertyId);
+      }).map(function (room) {
+        const roomName = rawText(room.room_name || room.room_id).trim();
+        return `<option value="${safeHtml(room.room_id || '')}" ${rawText(room.room_id) === rawText(selectedId) ? 'selected' : ''}>${safeHtml(room.property_name ? room.property_name + '・' + roomName : roomName)}</option>`;
+      }).join('');
+    }
+
+    function renderPaperBackfillPage() {
+      const workspace = PAGE_DATA.workspace || {};
+      const selectedTenant = PAGE_DATA.selected_tenant || {};
+      const rooms = PAGE_DATA.rooms || [];
+      const selectedRoomId = PRESELECTED_ROOM_ID || selectedTenant.room_id || PAGE_DATA.selected_room_id || (rooms[0] && rooms[0].room_id) || '';
+      const selectedRoom = rooms.find(function (room) { return rawText(room.room_id) === rawText(selectedRoomId); }) || rooms[0] || {};
+      const selectedPropertyId = PRESELECTED_PROPERTY_ID || selectedTenant.property_id || selectedRoom.property_id || PAGE_DATA.selected_property_id || '';
+      const defaults = resolveRoomLeaseDefaults_(selectedRoom);
+      const startDate = selectedTenant.contract_start_date || PAGE_DATA.defaults && PAGE_DATA.defaults.start_date || '';
+      const endDate = selectedTenant.contract_end_date || (startDate ? addOneYearMinusOneDay(startDate) : '');
+      const pageTitle = document.getElementById('pageTitle');
+      if (pageTitle) pageTitle.textContent = '補登紙本合約';
+
+      document.getElementById('app').innerHTML = `
+        <section class="card hero paper-backfill-hero">
+          <div class="hero-content">
+            <div class="hero-label">Paper Contract Backfill</div>
+            <div class="workspace-name">${safeHtml(workspace.workspace_name || '目前管理團隊')}</div>
+            <div class="hero-desc">已簽紙本合約可由房東直接補登，完成後立即成為系統租約。</div>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title">房客與房間</div>
+              <div class="section-desc">${selectedTenant.tenant_id ? '已帶入既有房客資料，不會建立第二筆房客。' : '填入紙本合約上的房客資料與入住房間。'}</div>
+            </div>
+            <div class="section-index">1</div>
+          </div>
+          <input id="tenantId" type="hidden" value="${safeHtml(selectedTenant.tenant_id || PRESELECTED_TENANT_ID)}" />
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label"><span>房客姓名</span><span class="required">必填</span></div>
+              <input id="tenantName" class="input" maxlength="80" value="${safeHtml(selectedTenant.tenant_name || '')}" placeholder="例如：王小明" />
+            </div>
+            <div class="field">
+              <div class="field-label"><span>手機號碼</span><span class="required">必填</span></div>
+              <input id="tenantPhone" class="input" inputmode="numeric" maxlength="10" value="${safeHtml(selectedTenant.tenant_phone || '')}" placeholder="0912345678" onblur="formatPhoneInput()" />
+            </div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label"><span>Email</span><span class="optional">選填</span></div>
+              <input id="tenantEmail" class="input" type="email" maxlength="120" value="${safeHtml(selectedTenant.tenant_email || '')}" placeholder="tenant@example.com" />
+            </div>
+            <div class="field">
+              <div class="field-label"><span>房號</span><span class="required">必填</span></div>
+              <select id="roomId" class="select" onchange="handlePaperBackfillRoomChange()">${paperBackfillRoomOptions(selectedRoomId, selectedPropertyId)}</select>
+            </div>
+          </div>
+          <input id="propertyId" type="hidden" value="${safeHtml(selectedPropertyId)}" />
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title">紙本租約條件</div>
+              <div class="section-desc">紙本已簽資料直接保存；費用會成為這份租約的快照。</div>
+            </div>
+            <div class="section-index">2</div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label"><span>租約開始日</span><span class="required">必填</span></div>
+              <input id="startDate" class="input" type="date" value="${safeHtml(startDate)}" onchange="handlePaperBackfillDateChange()" />
+            </div>
+            <div class="field">
+              <div class="field-label"><span>租約結束日</span><span class="required">必填</span></div>
+              <input id="endDate" class="input" type="date" value="${safeHtml(endDate)}" />
+            </div>
+          </div>
+          <div class="field-grid">
+            ${numberField('rentAmount', '每月租金', defaults.rent_amount, '1', '1')}
+            ${numberField('managementFee', '每月管理費', defaults.management_fee, '0', '1')}
+            ${numberField('depositMonths', '押金月數', defaults.deposit_months, '0', '0.5', '12')}
+            ${numberField('depositAmount', '押金金額', defaults.deposit_amount, '0', '1')}
+            ${numberField('paymentDay', '每月繳款日', defaults.payment_day, '1', '1', '31')}
+            ${numberField('electricityRate', '每度電費', defaults.electricity_fee_rate, '0', '0.1')}
+            ${numberField('equipmentRate', '設備耗損費／度', defaults.equipment_fee_rate, '0', '0.1')}
+          </div>
+          <div class="field">
+            <div class="field-label"><span>紙本簽約日</span><span class="required">必填</span></div>
+            <input id="paperSignedAt" class="input" type="date" value="${safeHtml(startDate)}" />
+          </div>
+          <div class="field">
+            <div class="field-label"><span>備註</span><span class="optional">選填</span></div>
+            <textarea id="note" class="textarea" maxlength="500" placeholder="例如：2026/9/3 現場簽署紙本合約後補登"></textarea>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title">紙本與身分文件</div>
+              <div class="section-desc">紙本合約檔案是補登成立的必要證據；身分證可之後補上。</div>
+            </div>
+            <div class="section-index">3</div>
+          </div>
+          <div class="field">
+            <div class="field-label"><span>已簽紙本合約</span><span class="required">必填</span></div>
+            <input id="paperContractFile" class="paper-file-input" type="file" accept="application/pdf,image/jpeg,image/png" onchange="showPaperFileName('paperContractFile','paperContractFileStatus',true)" />
+            <div id="paperContractFileStatus" class="paper-file-status">請選擇 PDF、JPG 或 PNG，最大 8MB。</div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label"><span>身分證正面</span><span class="optional">選填／可後補</span></div>
+              <input id="identityFrontFile" class="paper-file-input" type="file" accept="image/jpeg,image/png,application/pdf" onchange="showPaperFileName('identityFrontFile','identityFrontFileStatus',false)" />
+              <div id="identityFrontFileStatus" class="paper-file-status">尚未上傳</div>
+            </div>
+            <div class="field">
+              <div class="field-label"><span>身分證反面</span><span class="optional">選填／可後補</span></div>
+              <input id="identityBackFile" class="paper-file-input" type="file" accept="image/jpeg,image/png,application/pdf" onchange="showPaperFileName('identityBackFile','identityBackFileStatus',false)" />
+              <div id="identityBackFileStatus" class="paper-file-status">尚未上傳</div>
+            </div>
+          </div>
+          <div class="paper-backfill-note">補登完成後直接建立有效租約，不會產生合約申請、電子簽署邀請或房客 LINE 訊息。</div>
+        </section>
+
+        <section class="card confirmation-card">
+          <div class="confirmation-row">
+            <input id="confirmCreate" class="confirmation-check" type="checkbox" onchange="updateSubmitState()" />
+            <label class="confirmation-text" for="confirmCreate"><strong>我確認紙本合約已完成簽署，資料與檔案均正確。</strong><span>送出後會直接建立系統租約，原紙本文件會以私有文件保存。</span></label>
+          </div>
+        </section>
+        <button id="submitButton" class="submit-button" type="button" onclick="submitPaperBackfill()" disabled>確認補登紙本合約</button>
+      `;
+
+      handlePaperBackfillRoomChange();
+      updateSubmitState();
+    }
+
+    function handlePaperBackfillRoomChange() {
+      const room = getRoom(inputValue('roomId'));
+      if (!room) return;
+      setInputValue('propertyId', room.property_id || '');
+      const defaults = resolveRoomLeaseDefaults_(room);
+      ['rentAmount', 'managementFee', 'depositMonths', 'depositAmount', 'paymentDay', 'electricityRate', 'equipmentRate'].forEach(function (id) {
+        const element = document.getElementById(id);
+        if (element && !element.value) element.value = defaults[id === 'rentAmount' ? 'rent_amount' : id === 'managementFee' ? 'management_fee' : id === 'depositMonths' ? 'deposit_months' : id === 'depositAmount' ? 'deposit_amount' : id === 'paymentDay' ? 'payment_day' : id === 'electricityRate' ? 'electricity_fee_rate' : 'equipment_fee_rate'];
+      });
+    }
+
+    function handlePaperBackfillDateChange() {
+      const startDate = inputValue('startDate');
+      if (startDate && !inputValue('endDate')) setInputValue('endDate', addOneYearMinusOneDay(startDate));
+      if (startDate && !inputValue('paperSignedAt')) setInputValue('paperSignedAt', startDate);
+    }
+
+    function showPaperFileName(inputId, statusId, required) {
+      const input = document.getElementById(inputId);
+      const status = document.getElementById(statusId);
+      const file = input && input.files && input.files[0];
+      if (status) status.textContent = file ? file.name + '（' + Math.round(file.size / 1024) + ' KB）' : (required ? '請選擇 PDF、JPG 或 PNG，最大 8MB。' : '尚未上傳');
+    }
+
+    function readPaperFile(inputId, required) {
+      return new Promise(function (resolve, reject) {
+        const input = document.getElementById(inputId);
+        const file = input && input.files && input.files[0];
+        if (!file) {
+          if (required) reject(new Error('請上傳已簽紙本合約檔案。'));
+          else resolve(null);
+          return;
+        }
+        if (file.size <= 0 || file.size > 8 * 1024 * 1024) {
+          reject(new Error('檔案大小必須介於 1B 至 8MB。'));
+          return;
+        }
+        if (['application/pdf', 'image/jpeg', 'image/png'].indexOf(file.type) < 0) {
+          reject(new Error('僅支援 PDF、JPG、PNG 檔案。'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function () {
+          const bytes = new Uint8Array(reader.result);
+          let binary = '';
+          for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
+          resolve({ file_name: file.name, mime_type: file.type, base64: btoa(binary) });
+        };
+        reader.onerror = function () { reject(new Error('檔案讀取失敗，請重新選擇。')); };
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    async function postLandlordPaperBackfill(input) {
+      if (!LANDLORD_REVIEW_SESSION_TOKEN) throw new Error('房東審核身分驗證已失效，請重新整理頁面。');
+      const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ action: 'landlord_contract_paper_backfill', session_token: LANDLORD_REVIEW_SESSION_TOKEN, input: input }) });
+      if (!response.ok) throw new Error('紙本合約補登連線失敗。');
+      const result = await response.json();
+      if (!result || result.success !== true) throw new Error((result && result.message) || '紙本合約補登失敗。');
+      return result.data || {};
+    }
+
+    function validatePaperBackfillForm() {
+      if (!inputValue('roomId')) return '請選擇房號。';
+      if (!inputValue('tenantName')) return '請輸入房客姓名。';
+      if (!/^09\d{8}$/.test(normalizePhone(inputValue('tenantPhone')))) return '請輸入正確的台灣手機號碼。';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(inputValue('startDate')) || !/^\d{4}-\d{2}-\d{2}$/.test(inputValue('endDate'))) return '請輸入租約起訖日。';
+      if (inputValue('startDate') > inputValue('endDate')) return '租約結束日不得早於開始日。';
+      if (Number(inputValue('rentAmount')) <= 0) return '每月租金必須大於 0。';
+      if (Number(inputValue('depositAmount')) < 0) return '押金金額不可小於 0。';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(inputValue('paperSignedAt'))) return '請輸入紙本簽約日。';
+      if (!document.getElementById('paperContractFile') || !document.getElementById('paperContractFile').files.length) return '請上傳已簽紙本合約檔案。';
+      return '';
+    }
+
+    async function submitPaperBackfill() {
+      const validation = validatePaperBackfillForm();
+      if (validation) { showToast(validation, true); return; }
+      const button = document.getElementById('submitButton');
+      button.disabled = true;
+      button.textContent = '補登中...';
+      try {
+        const paperFile = await readPaperFile('paperContractFile', true);
+        const identityFront = await readPaperFile('identityFrontFile', false);
+        const identityBack = await readPaperFile('identityBackFile', false);
+        const result = await postLandlordPaperBackfill({
+          tenant_id: inputValue('tenantId'), tenant_name: inputValue('tenantName'), tenant_phone: normalizePhone(inputValue('tenantPhone')), tenant_email: inputValue('tenantEmail'),
+          property_id: inputValue('propertyId'), room_id: inputValue('roomId'), start_date: inputValue('startDate'), end_date: inputValue('endDate'),
+          rent_amount: inputValue('rentAmount'), management_fee: inputValue('managementFee'), deposit_months: inputValue('depositMonths'), deposit_amount: inputValue('depositAmount'),
+          payment_day: inputValue('paymentDay'), electricity_fee_rate: inputValue('electricityRate'), equipment_fee_rate: inputValue('equipmentRate'), paper_signed_at: inputValue('paperSignedAt'),
+          paper_contract_file: paperFile, identity_front_file: identityFront, identity_back_file: identityBack, note: inputValue('note'),
+          idempotency_key: PAPER_BACKFILL_IDEMPOTENCY_KEY || (PAPER_BACKFILL_IDEMPOTENCY_KEY = randomUrlToken(18))
+        });
+        result.mode = 'paper_backfill';
+        CREATED_DATA = result;
+        renderSuccess();
+      } catch (error) {
+        showToast(error && error.message ? error.message : '紙本合約補登失敗', true);
+        button.disabled = false;
+        button.textContent = '確認補登紙本合約';
+      }
+    }
+
     function renderPage() {
       const workspace =
         PAGE_DATA.workspace || {};
@@ -1802,6 +2095,11 @@
           </section>
         `;
 
+        return;
+      }
+
+      if (PAPER_BACKFILL_MODE) {
+        renderPaperBackfillPage();
         return;
       }
 
@@ -2966,6 +3264,11 @@
     }
 
     function renderSuccess() {
+      if (CREATED_DATA && CREATED_DATA.mode === 'paper_backfill') {
+        renderPaperBackfillSuccess();
+        return;
+      }
+
       const tenant =
         CREATED_DATA.tenant || {};
 
@@ -3108,6 +3411,49 @@
       `;
     }
 
+    function renderPaperBackfillSuccess() {
+      const tenant = CREATED_DATA.tenant || {};
+      const contract = CREATED_DATA.contract || {};
+      const room = CREATED_DATA.room || {};
+      const paperDocument = CREATED_DATA.paper_document || {};
+      const selectedRoom = getRoom(contract.room_id || room.room_id) || {};
+      const selectedProperty = (PAGE_DATA && Array.isArray(PAGE_DATA.properties)
+        ? PAGE_DATA.properties.find(function (item) {
+            return rawText(item.property_id) === rawText(contract.property_id);
+          })
+        : null) || {};
+      const propertyName = contract.property_name || selectedProperty.property_name || selectedRoom.property_name || '';
+      const roomName = contract.room_name || room.room_name || selectedRoom.room_name || '';
+      const status = rawText(contract.contract_status || contract.status || 'active');
+
+      document.getElementById('app').innerHTML = `
+        <section class="card success-card">
+          <div class="success-head">
+            <div class="success-icon">✓</div>
+            <div class="success-title">紙本合約補登完成</div>
+            <div class="success-desc">已建立系統租約並保留原紙本文件；未建立合約申請、電子邀請或房客 LINE 訊息。</div>
+          </div>
+          <div class="success-body">
+            <div class="success-grid">
+              ${successItem('房客', contract.tenant_name || tenant.tenant_name)}
+              ${successItem('房客 ID', contract.tenant_id || tenant.tenant_id)}
+              ${successItem('物件', propertyName)}
+              ${successItem('房間', roomName)}
+              ${successItem('租約 ID', contract.contract_id)}
+              ${successItem('租約期間', (contract.start_date || '') + ' 至 ' + (contract.end_date || ''))}
+              ${successItem('租約狀態', status === 'upcoming' ? '待開始' : '有效')}
+              ${successItem('紙本文件', paperDocument.file_name || paperDocument.document_id || '已保存')}
+            </div>
+            <div class="paper-backfill-note">身分證正反面若尚未上傳，可從房客資料頁的文件區後續補上。</div>
+            <div class="success-actions">
+              <button class="success-button primary" type="button" onclick="goPage('landlord-tenants.html')">返回房客名單</button>
+              <button class="success-button secondary full" type="button" onclick="resetCreatePage()">繼續補登另一份紙本合約</button>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
     function successItem(
       label,
       value
@@ -3192,6 +3538,7 @@
       CREATED_DATA =
         null;
       CONTRACT_MODE = 'new';
+      PAPER_BACKFILL_IDEMPOTENCY_KEY = '';
       PREVIOUS_CONTRACT_ID = '';
 
       renderPage();
@@ -3260,7 +3607,9 @@
               room_id:
                 PRESELECTED_ROOM_ID,
               previous_contract_id:
-                PREVIOUS_CONTRACT_ID
+                PREVIOUS_CONTRACT_ID,
+              tenant_id:
+                PRESELECTED_TENANT_ID
             }
           );
 

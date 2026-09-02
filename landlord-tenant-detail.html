@@ -1653,6 +1653,17 @@
       location.href = 'landlord-tenant-create.html?' + params.toString();
     }
 
+    function goTenantPaperBackfill() {
+      const params = new URLSearchParams();
+      params.set('mode', 'paper_backfill');
+      params.set('tenant_id', CURRENT_TENANT && CURRENT_TENANT.tenant_id ? CURRENT_TENANT.tenant_id : TENANT_ID);
+      if (CURRENT_TENANT && rawText(CURRENT_TENANT.property_id).trim()) params.set('property_id', rawText(CURRENT_TENANT.property_id).trim());
+      if (CURRENT_TENANT && rawText(CURRENT_TENANT.room_id).trim()) params.set('room_id', rawText(CURRENT_TENANT.room_id).trim());
+      if (TEST_MODE) params.set('test', '1');
+      params.set('v', window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
+      location.href = 'landlord-tenant-create.html?' + params.toString();
+    }
+
     function goTenantCheckout(contractId) {
       const normalizedContractId = rawText(contractId).trim();
       if (!normalizedContractId) {
@@ -3915,6 +3926,7 @@
                 <div class="contract-history-actions">
                   ${canRenew ? `<button class="primary-button contract-history-button" type="button" onclick="goTenantRenewal('${escapeHtml(contractId)}')">發起續約</button>` : ''}
                   ${canCheckout ? `<button class="${checkoutPending ? 'primary-button' : 'secondary-button'} contract-history-button" type="button" onclick="goTenantCheckout('${escapeHtml(checkoutTargetId)}')">${checkoutPending ? '待辦理退房' : '手動辦理退房'}</button>` : ''}
+                  <button class="secondary-button contract-history-button" type="button" onclick="goTenantPaperBackfill()">手動補登紙本合約</button>
                   <button class="secondary-button contract-history-button" type="button" onclick="goContractVersion('${escapeHtml(contractId)}')">查看完整合約與簽名</button>
                 </div>
               </article>
