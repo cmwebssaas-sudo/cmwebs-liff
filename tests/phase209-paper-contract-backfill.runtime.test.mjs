@@ -422,6 +422,51 @@ for (const inputOverride of [
 }
 
 {
+  const runtime = makeRuntime({
+    roomStatus: 'occupied',
+    currentContractId: 'orphan-contract',
+    contracts: [rowFor(CONTRACT_HEADERS, {
+      contract_id: 'orphan-contract', workspace_id: 'W1', landlord_id: 'L1', room_id: 'R202', tenant_id: 'missing-tenant',
+      start_date: '2026-01-01', end_date: '2026-12-31', contract_status: 'active', status: 'active', account_status: 'active',
+      tenant_line_user_id: '', line_user_id: '', note: '殘留合約，找不到房客資料'
+    })]
+  });
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
+    idempotency_key: 'paper-repair-orphan-202', supersede_contract_id: 'orphan-contract'
+  }));
+  assert.equal(result.success, true, result.message || result.code);
+  assert.equal(result.data.contract.previous_contract_id, 'orphan-contract');
+  assert.equal(contractRow(runtime, 'orphan-contract').contract_status, 'cancelled');
+  assert.equal(contractRow(runtime, 'orphan-contract').status, 'cancelled');
+  assert.equal(roomRow(runtime).current_contract_id, result.data.contract.contract_id);
+  assert.equal(roomRow(runtime).current_tenant_id, result.data.tenant.tenant_id);
+  assert.equal(runtime.state.sheets.V2_tenants.rows.length, 1);
+  assert.equal(runtime.state.sheets.V2_contracts.rows.length, 2);
+  assert.equal(runtime.state.lineCalls.length, 0);
+}
+
+{
+  const runtime = makeRuntime({
+    roomStatus: 'occupied',
+    currentContractId: 'bound-contract',
+    tenants: [rowFor(TENANT_HEADERS, {
+      tenant_id: 'existing-tenant', workspace_id: 'W1', landlord_id: 'L1', room_id: 'R202', tenant_user_id: 'existing-user'
+    })],
+    contracts: [rowFor(CONTRACT_HEADERS, {
+      contract_id: 'bound-contract', workspace_id: 'W1', landlord_id: 'L1', room_id: 'R202', tenant_id: 'existing-tenant',
+      start_date: '2026-01-01', end_date: '2026-12-31', contract_status: 'active', status: 'active', account_status: 'active',
+      tenant_line_user_id: '', line_user_id: ''
+    })]
+  });
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
+    idempotency_key: 'paper-repair-bound-202', supersede_contract_id: 'bound-contract'
+  }));
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'PAPER_REPLACEMENT_TENANT_REQUIRED');
+  assert.equal(runtime.state.sheets.V2_contracts.rows.length, 1);
+}
+
+{
   const runtime = makeRuntime({ contracts: [rowFor(CONTRACT_HEADERS, {
     contract_id: 'old-contract', workspace_id: 'W1', landlord_id: 'L1', room_id: 'R202', tenant_id: 'old-tenant',
     start_date: '2026-09-01', end_date: '2026-09-30', contract_status: 'active'

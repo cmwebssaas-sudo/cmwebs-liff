@@ -2,6 +2,16 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-03 — 紙本補登入口修正（候選，尚未部署）
+
+- 修正房間仍顯示「已出租／租約中」、但有效合約已找不到對應房客資料時，
+  物件／房間頁不顯示紙本補登入口的問題。
+- 新增受控的孤兒合約資料修復路徑：只有同 Workspace、無對應房客且無 LINE
+  綁定時才可進入；原合約保留並標記取消，新紙本租約以
+  `previous_contract_id` 連結，不建立電子邀請或發送 LINE。
+- Phase 209 runtime、Phase 214 runtime／UI、validator 與完整測試需在正式
+  部署前重新驗證；目前沒有 Production 資料交易。
+
 ## 2026-09-03 — 202 紙本轉換與房客登入入口正式部署
 
 - PR #98 已合併至 `main`，merge commit 為 `4b9ed04`。房東可從物件／房間頁

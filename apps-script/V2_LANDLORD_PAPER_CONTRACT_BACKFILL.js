@@ -280,8 +280,8 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
   var roomCurrentContractId = landlordPaperContractBackfillText_(room.current_contract_id);
   var replacementContract = null;
   var replacementInvite = null;
+  var replacementMode = '';
   if (input.supersede_contract_id) {
-    if (!input.tenant_id) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_REQUIRED', '紙本轉換必須指定原電子合約的房客');
     if (landlordPaperContractBackfillHeaders_(schema.data.contracts).indexOf('previous_contract_id') < 0) {
       return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_NOT_READY', '紙本轉換需要 previous_contract_id 欄位');
     }
@@ -291,26 +291,44 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
         (!landlordPaperContractBackfillText_(row.landlord_id) || landlordPaperContractBackfillText_(row.landlord_id) === landlordId);
     });
     if (!replacementContract) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_CONTRACT_NOT_FOUND', '找不到可轉換的原電子合約');
-    if (landlordPaperContractBackfillText_(replacementContract.room_id) !== input.room_id || landlordPaperContractBackfillText_(replacementContract.tenant_id) !== input.tenant_id) {
-      return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCOPE_MISMATCH', '原電子合約與房間／房客資料不一致');
-    }
+    if (landlordPaperContractBackfillText_(replacementContract.room_id) !== input.room_id) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCOPE_MISMATCH', '原合約與房間資料不一致');
     var replacementStatus = landlordPaperContractBackfillText_(replacementContract.contract_status || replacementContract.status || '').toLowerCase();
-    if (landlordPaperContractBackfillText_(replacementContract.contract_origin).toLowerCase() !== 'landlord_initiated' || V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_STATUSES_.indexOf(replacementStatus) < 0) {
-      return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_NOT_ELIGIBLE', '只有尚未完成房客簽署的房東電子合約可以轉為紙本補登');
+    if (input.tenant_id) {
+      replacementMode = 'electronic';
+      if (landlordPaperContractBackfillText_(replacementContract.tenant_id) !== input.tenant_id) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCOPE_MISMATCH', '原電子合約與房客資料不一致');
+      if (landlordPaperContractBackfillText_(replacementContract.contract_origin).toLowerCase() !== 'landlord_initiated' || V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_STATUSES_.indexOf(replacementStatus) < 0) {
+        return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_NOT_ELIGIBLE', '只有尚未完成房客簽署的房東電子合約可以轉為紙本補登');
+      }
+    } else {
+      replacementMode = 'orphan';
+      var sourceTenantId = landlordPaperContractBackfillText_(replacementContract.tenant_id);
+      var sourceTenant = sourceTenantId ? landlordPaperContractBackfillFindScopedRow_(schema.data.tenants, access, 'tenant_id', sourceTenantId) : null;
+      if (sourceTenant) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_REQUIRED', '原合約仍有房客資料，請從房客詳細資料補登');
+      if (V2_LANDLORD_PAPER_BACKFILL_OPEN_STATUSES_.indexOf(replacementStatus) < 0) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_ORPHAN_NOT_ELIGIBLE', '原合約狀態不可進行資料不完整補登');
+      if (landlordPaperContractBackfillText_(replacementContract.tenant_line_user_id || replacementContract.line_user_id)) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_ORPHAN_BOUND', '原合約已有 LINE 綁定，不能以資料不完整方式取代');
     }
     if (roomCurrentContractId && roomCurrentContractId !== input.supersede_contract_id) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_ROOM_MISMATCH', '房間目前指向其他合約，無法轉換');
-    if (!schema.data.invites) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCHEMA_NOT_READY', '找不到原電子合約邀請資料表');
-    var missingInviteHeaders = V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_HEADERS_.filter(function(header) {
-      return landlordPaperContractBackfillHeaders_(schema.data.invites).indexOf(header) < 0;
-    });
-    if (missingInviteHeaders.length) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCHEMA_NOT_READY', '原電子合約邀請欄位尚未就緒', { missing_headers: missingInviteHeaders });
-    replacementInvite = landlordPaperContractBackfillRows_(schema.data.invites).find(function(row) {
-      return landlordPaperContractBackfillText_(row.invite_id) === landlordPaperContractBackfillText_(replacementContract.invite_id) &&
-        landlordPaperContractBackfillText_(row.contract_id) === input.supersede_contract_id &&
-        landlordPaperContractBackfillText_(row.workspace_id) === workspaceId;
-    });
-    if (!replacementInvite || V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_STATUSES_.indexOf(landlordPaperContractBackfillText_(replacementInvite.status).toLowerCase()) < 0) {
-      return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請不存在、已取消或已被使用');
+    if (replacementMode === 'electronic') {
+      if (!schema.data.invites) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCHEMA_NOT_READY', '找不到原電子合約邀請資料表');
+      var missingInviteHeaders = V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_HEADERS_.filter(function(header) {
+        return landlordPaperContractBackfillHeaders_(schema.data.invites).indexOf(header) < 0;
+      });
+      if (missingInviteHeaders.length) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCHEMA_NOT_READY', '原電子合約邀請欄位尚未就緒', { missing_headers: missingInviteHeaders });
+      replacementInvite = landlordPaperContractBackfillRows_(schema.data.invites).find(function(row) {
+        return landlordPaperContractBackfillText_(row.invite_id) === landlordPaperContractBackfillText_(replacementContract.invite_id) &&
+          landlordPaperContractBackfillText_(row.contract_id) === input.supersede_contract_id &&
+          landlordPaperContractBackfillText_(row.workspace_id) === workspaceId;
+      });
+      if (!replacementInvite || V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_STATUSES_.indexOf(landlordPaperContractBackfillText_(replacementInvite.status).toLowerCase()) < 0) {
+        return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請不存在、已取消或已被使用');
+      }
+    } else if (schema.data.invites && landlordPaperContractBackfillText_(replacementContract.invite_id)) {
+      replacementInvite = landlordPaperContractBackfillRows_(schema.data.invites).find(function(row) {
+        return landlordPaperContractBackfillText_(row.invite_id) === landlordPaperContractBackfillText_(replacementContract.invite_id) &&
+          landlordPaperContractBackfillText_(row.contract_id) === input.supersede_contract_id &&
+          landlordPaperContractBackfillText_(row.workspace_id) === workspaceId;
+      }) || null;
+      if (replacementInvite && V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_STATUSES_.indexOf(landlordPaperContractBackfillText_(replacementInvite.status).toLowerCase()) < 0) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_ORPHAN_INVITE_NOT_ELIGIBLE', '原合約邀請已被使用或已關閉，不能進行資料不完整補登');
     }
     if (landlordPaperContractBackfillText_(replacementContract.tenant_line_user_id || replacementContract.line_user_id)) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
   }
@@ -369,7 +387,7 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
   var status = input.start_date > today ? 'upcoming' : 'active';
   var roomStatus = status === 'active' ? 'occupied' : (landlordPaperContractBackfillText_(room.room_status) || 'vacant');
   var contractNote = input.note;
-  if (replacementContract) contractNote = (contractNote ? contractNote + '\n' : '') + '紙本補登取代未完成電子合約：' + input.supersede_contract_id;
+  if (replacementContract) contractNote = (contractNote ? contractNote + '\n' : '') + (replacementMode === 'orphan' ? '紙本補登取代房間既有但缺少房客資料的合約：' : '紙本補登取代未完成電子合約：') + input.supersede_contract_id;
   var contract = landlordPaperContractBackfillBuildContract_(access, actor, property, room, input, {
     contract_id: contractId,
     tenant_id: tenantId,
@@ -458,8 +476,10 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
         contract_status: 'cancelled', status: 'cancelled', account_status: 'cancelled', updated_at: now,
         note: landlordPaperContractBackfillText_(replacementContract.note) + (landlordPaperContractBackfillText_(replacementContract.note) ? '\n' : '') + '紙本補登取代：' + contractId
       });
-      transaction.originalRows.push({ sheet: schema.data.invites, row: replacementInvite });
-      landlordPaperContractBackfillUpdate_(schema.data.invites, replacementInvite, { status: 'cancelled', cancelled_at: now, updated_at: now });
+      if (replacementInvite) {
+        transaction.originalRows.push({ sheet: schema.data.invites, row: replacementInvite });
+        landlordPaperContractBackfillUpdate_(schema.data.invites, replacementInvite, { status: 'cancelled', cancelled_at: now, updated_at: now });
+      }
     }
     var roomBefore = landlordPaperContractBackfillFindRowById_(schema.data.rooms, 'room_id', input.room_id);
     transaction.originalRows.push({ sheet: schema.data.rooms, row: roomBefore });

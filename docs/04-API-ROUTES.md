@@ -343,8 +343,9 @@ dispatcher.
 ## Landlord paper-contract backfill（房東紙本合約補登）
 
 This is a landlord-only V2.1 POST action. It does not add a JSONP route, so the
-canonical `83`-route inventory above remains unchanged. It is deployed in Apps
-Script Version 150 and published with the `main` Pages build for PR #96.
+canonical `83`-route inventory above remains unchanged. The current Production
+release serves it from Apps Script Version 151 and the published `main` Pages
+build.
 
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
@@ -376,6 +377,12 @@ Script Version 150 and published with the `main` Pages build for PR #96.
   `previous_contract_id`, activates the existing pending tenant account as
   `unbound`, and does not create a replacement electronic invite or send LINE.
   Claimed, completed, mismatched, or otherwise active contracts remain blocked.
+- A separate orphan-recovery form of `supersede_contract_id` is accepted only
+  when the same-Workspace source contract has no matching `V2_tenants` row and
+  no LINE identity. The source contract is retained and marked `cancelled`, an
+  optional pending invite is also closed, and the new paper row links through
+  `previous_contract_id`; a source contract with an existing tenant or LINE
+  binding remains blocked.
 
 The landlord tenant-create initialization route also accepts the optional
 `supersede_contract_id` query parameter so the paper form reads the selected

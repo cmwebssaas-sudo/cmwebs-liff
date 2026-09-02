@@ -1005,7 +1005,7 @@
       );
     }
 
-    function goTenantPaperBackfill(propertyId, roomId, tenantId, supersedeContractId) {
+    function goTenantPaperBackfill(propertyId, roomId, tenantId, supersedeContractId, orphanRecovery) {
       let url =
         'landlord-tenant-create.html' +
         '?mode=paper_backfill' +
@@ -1018,6 +1018,10 @@
 
       if (supersedeContractId) {
         url += '&supersede_contract_id=' + encodeURIComponent(supersedeContractId);
+      }
+
+      if (orphanRecovery) {
+        url += '&orphan_recovery=1';
       }
 
       goPage(url);
@@ -1629,12 +1633,13 @@
                     active
                       ? `
                         ${
-                          room.paper_backfill_replacement_eligible
+                          room.paper_backfill_replacement_eligible ||
+                          room.paper_backfill_orphan_replacement_eligible
                             ? `
                               <button
                                 class="small-button secondary"
                                 type="button"
-                                onclick="goTenantPaperBackfill('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}','${safeHtml(room.paper_backfill_replacement_tenant_id)}','${safeHtml(room.paper_backfill_replacement_contract_id)}')"
+                                onclick="goTenantPaperBackfill('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}','${safeHtml(room.paper_backfill_replacement_eligible ? room.paper_backfill_replacement_tenant_id : '')}','${safeHtml(room.paper_backfill_replacement_eligible ? room.paper_backfill_replacement_contract_id : room.paper_backfill_orphan_replacement_contract_id)}',${room.paper_backfill_orphan_replacement_eligible ? 'true' : 'false'})"
                               >
                                 補登紙本並建立房客登入
                               </button>
