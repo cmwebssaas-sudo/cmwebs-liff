@@ -2,13 +2,33 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-02 — 房東手動退房結算本地候選版（尚未部署）
+## 2026-09-02 — 房東手動退房結算正式部署
+
+- PR #92 已將房東手動退房結算與 Google Sheets Date 日期正規化合併到
+  `main`，merge commit 為 `a2682b3`。
+- Apps Script 已推送 52 個檔案，既有 Web App deployment 更新至 immutable
+  Version 148；Version 147 保留為 rollback，既有 Web App URL 不變。
+- 已在正式 Apps Script 編輯器完成增量 migration；試算表已建立
+  `V2_checkout_settlements` 並寫入結算欄位，資料列維持空白，未改動既有
+  合約、房客、帳單、Drive、Properties、Triggers 或 LINE 資料。
+- GitHub Pages workflow `33648496168` 的 build、deploy、status 全部成功；
+  公開頁面 read-back HTTP 200，已確認退房結算、電表起訖、兩張照片、押金
+  扣除與應補繳／押金應退欄位，以及 cache key
+  `20260902-landlord-checkout-settlement-v1`。
+- 版本凍結驗證：Node `76/76` 通過、正式 validator `83/83` routes／handlers
+  通過、duplicate declarations `0`、credential findings `0`、
+  `git diff --check` 通過；`npm run validate` 因 isolated worktree 無
+  `package.json` 不適用。
+- 已登入 LIFF、Drive 私有上傳與 502／506 真實退房交易仍為
+  `HUMAN_REQUIRED` / `UNVERIFIED`。
+
+## 2026-09-02 — 房東手動退房結算本地候選版（已正式部署）
 
 - 房東手動退房新增伺服器結算：結算期間從當月 9/1 到實際退房日，含退房日；例如 9/1–9/7 為 7 天。
 - 上月只帶入未繳電費與設備使用費，不重複計算上月房租；本期房租按當月日曆天數比例計算，本期電費／設備使用費按起始與退房日電表差額計算。
 - 新增 append-only `V2_checkout_settlements` 快照、押金扣除說明、應補繳與押金應退；原合約與既有 `V2_bills` 不覆寫。
 - 退房完成前必須透過房東驗證 session 上傳同一合約的 `checkout_start_meter` 與 `checkout_end_meter` 私有 JPG/PNG 電表照片；缺少結算或照片時 fail closed。
-- 本地候選分支為 `codex/checkout-settlement-20260902`，候選程式切片 commits 為 `7285a82`、`c20c6b1`、`a472d2d`、`eec1689`、`f5d1e98`、`f7fa4ca`；另補強 Google Sheets Date 型態月份正規化、作廢帳單排除及 Workspace／月份費率回退；未執行 Production migration、Apps Script deployment、Pages publication 或正式資料寫入。
+- 本地候選分支為 `codex/checkout-settlement-20260902`，候選程式切片 commits 為 `7285a82`、`c20c6b1`、`a472d2d`、`eec1689`、`f5d1e98`、`f7fa4ca`；另補強 Google Sheets Date 型態月份正規化、作廢帳單排除及 Workspace／月份費率回退；以上為候選階段紀錄，正式部署證據見上節。
 - 另修正退房初始化與日期驗證對 Google Sheets Date 型態的處理，將原合約起始／結束日統一轉為 `YYYY-MM-DD`，避免畫面出現完整 Date 字串而被判定為無效日期。
 - Phase 202／205／206／207 本地測試通過；已登入 LIFF、Drive 私有上傳、正式 Sheet schema 與真機流程仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
 
