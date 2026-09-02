@@ -1162,7 +1162,7 @@
 
     function goCreateTenant() {
       goPage(
-        'landlord-tenant-create.html'
+        'landlord-tenant-create.html?mode=simple_new'
       );
     }
 
@@ -1750,17 +1750,19 @@
               查看房客資料
             </button>
 
-            <button
-              class="tenant-action-button purple"
-              type="button"
-              onclick="goTenantContractRequests('${safeHtml(tenantId)}', event)"
-            >
-              ${
-                contract.totalActive > 0
-                  ? '處理合約申請'
-                  : '合約申請紀錄'
-              }
-            </button>
+            ${
+              contract.totalActive > 0
+                ? `
+                  <button
+                    class="tenant-action-button purple"
+                    type="button"
+                    onclick="goTenantContractRequests('${safeHtml(tenantId)}', event)"
+                  >
+                    ${contract.latestType === 'renewal' ? '處理續約' : '處理合約'}
+                  </button>
+                `
+                : ''
+            }
 
             ${
               bindingStatus === 'unbound'

@@ -778,6 +778,89 @@
       content: "";
     }
 
+    .simple-hero {
+      padding-bottom: 17px;
+    }
+
+    .simple-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .simple-step {
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 9px;
+      line-height: 1.5;
+    }
+
+    .simple-step strong {
+      display: block;
+      color: #ffffff;
+      font-size: 14px;
+    }
+
+    .simple-inherited {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #d9e8de;
+      border-radius: 13px;
+      background: #f7fcf8;
+    }
+
+    .simple-inherited-title {
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .simple-inherited-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .simple-inherited-item {
+      padding: 8px 9px;
+      border-radius: 10px;
+      background: #ffffff;
+    }
+
+    .simple-inherited-label {
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .simple-inherited-value {
+      margin-top: 3px;
+      color: var(--text);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .simple-date-result {
+      margin-top: 8px;
+      color: var(--primary-dark);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .simple-note {
+      margin-top: 10px;
+      padding: 10px 11px;
+      border-radius: 11px;
+      background: var(--orange-soft);
+      color: #74500c;
+      font-size: 9px;
+      line-height: 1.65;
+    }
+
     @media (max-width: 430px) {
       .field-grid {
         grid-template-columns: 1fr;
@@ -796,7 +879,7 @@
       <div class="topbar">
         <div>
           <div class="eyebrow">Tenant Onboarding</div>
-          <div class="page-title">建立房客與租約</div>
+          <div id="pageTitle" class="page-title">建立租約</div>
         </div>
 
         <button
@@ -902,6 +985,10 @@
       'renewal'
         ? 'renewal'
         : 'new';
+
+    const SIMPLE_NEW_MODE =
+      REQUESTED_CONTRACT_MODE === 'new' &&
+      URL_PARAMS.get('mode') !== 'advanced_new';
 
     const REQUESTED_PREVIOUS_CONTRACT_ID =
       URL_PARAMS.get(
@@ -1490,6 +1577,177 @@
       ).join('');
     }
 
+    function simpleRoomOptions(selectedId) {
+      return (PAGE_DATA.rooms || []).map(function (room) {
+        const propertyName = rawText(room.property_name || '').trim();
+        const roomName = rawText(room.room_name || room.room_id || '').trim();
+        const statusHint = room.has_current_or_upcoming_contract
+          ? '（已有租約，送出時檢查租期）'
+          : '';
+        return `
+          <option
+            value="${safeHtml(room.room_id || '')}"
+            ${rawText(room.room_id) === rawText(selectedId) ? 'selected' : ''}
+          >
+            ${safeHtml(propertyName ? propertyName + '・' + roomName : roomName)}${safeHtml(statusHint)}
+          </option>
+        `;
+      }).join('');
+    }
+
+    function simpleContractEndDate_(value, termMonths) {
+      const start = new Date(rawText(value) + 'T00:00:00');
+      const months = Number(termMonths);
+      if (Number.isNaN(start.getTime()) || !Number.isInteger(months) || months < 1) {
+        return '';
+      }
+      start.setMonth(start.getMonth() + months);
+      start.setDate(start.getDate() - 1);
+      return [
+        start.getFullYear(),
+        String(start.getMonth() + 1).padStart(2, '0'),
+        String(start.getDate()).padStart(2, '0')
+      ].join('-');
+    }
+
+    function updateSimpleLeaseEndDate_() {
+      const endDate = simpleContractEndDate_(
+        inputValue('startDate'),
+        inputValue('termMonths')
+      );
+      setInputValue('endDate', endDate);
+      const label = document.getElementById('simpleEndDateLabel');
+      if (label) {
+        label.textContent = endDate ? '自動結束日：' + endDate : '請先填寫開始日與租期';
+      }
+    }
+
+    function handleSimpleRoomChange() {
+      const room = getRoom(inputValue('roomId'));
+      if (!room) return;
+
+      const defaults = resolveRoomLeaseDefaults_(room);
+      setInputValue('propertyId', room.property_id || '');
+      setInputValue('managementFee', defaults.management_fee);
+      setInputValue('depositMonths', defaults.deposit_months);
+      setInputValue('paymentDay', defaults.payment_day);
+      setInputValue('electricityRate', defaults.electricity_fee_rate);
+      setInputValue('equipmentRate', defaults.equipment_fee_rate);
+      setInputValue('rentAmount', defaults.rent_amount);
+      setInputValue('depositAmount', defaults.deposit_amount);
+
+      const summary = document.getElementById('simpleRoomSummary');
+      if (summary) {
+        summary.innerHTML = `
+          <div class="simple-inherited-title">此房間會沿用的費用設定</div>
+          <div class="simple-inherited-grid">
+            <div class="simple-inherited-item"><div class="simple-inherited-label">管理費</div><div class="simple-inherited-value">NT$ ${money(defaults.management_fee)}</div></div>
+            <div class="simple-inherited-item"><div class="simple-inherited-label">每月繳款日</div><div class="simple-inherited-value">每月 ${safeHtml(defaults.payment_day)} 日</div></div>
+            <div class="simple-inherited-item"><div class="simple-inherited-label">每度電費</div><div class="simple-inherited-value">NT$ ${money(defaults.electricity_fee_rate)}</div></div>
+            <div class="simple-inherited-item"><div class="simple-inherited-label">設備耗損費／度</div><div class="simple-inherited-value">NT$ ${money(defaults.equipment_fee_rate)}</div></div>
+          </div>
+        `;
+      }
+    }
+
+    function renderSimpleNewContractPage() {
+      const workspace = PAGE_DATA.workspace || {};
+      const rooms = PAGE_DATA.rooms || [];
+      const defaults = PAGE_DATA.defaults || {};
+      const selectedRoomId = PRESELECTED_ROOM_ID || PAGE_DATA.selected_room_id || (rooms[0] && rooms[0].room_id) || '';
+      const selectedRoom = rooms.find(function (room) {
+        return rawText(room.room_id) === rawText(selectedRoomId);
+      }) || rooms[0] || null;
+      const roomDefaults = resolveRoomLeaseDefaults_(selectedRoom || {});
+      const startDate = rawText(defaults.start_date || '').trim();
+      const termMonths = 12;
+      const endDate = simpleContractEndDate_(startDate, termMonths);
+      const pageTitle = document.getElementById('pageTitle');
+      if (pageTitle) pageTitle.textContent = '建立簡易新租約';
+
+      document.getElementById('app').innerHTML = `
+        <section class="card hero simple-hero">
+          <div class="hero-content">
+            <div class="hero-label">Landlord Contract</div>
+            <div class="workspace-name">${safeHtml(workspace.workspace_name || '目前管理團隊')}</div>
+            <div class="hero-desc">房東只需填寫房號、租金、押金與租期，建立後交給房客簽署及補上證件。</div>
+            <div class="simple-steps">
+              <div class="simple-step"><strong>1</strong>房東填寫條件</div>
+              <div class="simple-step"><strong>2</strong>建立簽署邀請</div>
+              <div class="simple-step"><strong>3</strong>房客補資料簽署</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <div class="section-title">租約基本條件</div>
+              <div class="section-desc">只需填寫五個欄位；其他收費依所選房間的既有設定帶入。</div>
+            </div>
+            <div class="section-index">1</div>
+          </div>
+
+          <input id="propertyId" type="hidden" value="${safeHtml(selectedRoom ? selectedRoom.property_id || '' : '')}" />
+          <input id="managementFee" type="hidden" value="${safeHtml(roomDefaults.management_fee)}" />
+          <input id="depositMonths" type="hidden" value="${safeHtml(roomDefaults.deposit_months)}" />
+          <input id="paymentDay" type="hidden" value="${safeHtml(roomDefaults.payment_day)}" />
+          <input id="electricityRate" type="hidden" value="${safeHtml(roomDefaults.electricity_fee_rate)}" />
+          <input id="equipmentRate" type="hidden" value="${safeHtml(roomDefaults.equipment_fee_rate)}" />
+
+          <div class="field">
+            <div class="field-label"><span>房號</span><span class="required">必填</span></div>
+            <select id="roomId" class="select" onchange="handleSimpleRoomChange()">
+              ${simpleRoomOptions(selectedRoomId)}
+            </select>
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label"><span>租約開始日</span><span class="required">必填</span></div>
+              <input id="startDate" class="input" type="date" value="${safeHtml(startDate)}" oninput="updateSimpleLeaseEndDate_()" />
+            </div>
+            <div class="field">
+              <div class="field-label"><span>租期</span><span class="required">必填</span></div>
+              <input id="termMonths" class="input" type="number" min="1" max="120" step="1" value="${termMonths}" oninput="updateSimpleLeaseEndDate_()" />
+              <div id="simpleEndDateLabel" class="simple-date-result">自動結束日：${safeHtml(endDate || '待計算')}</div>
+              <input id="endDate" type="hidden" value="${safeHtml(endDate)}" />
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label"><span>每月租金</span><span class="required">必填</span></div>
+              <input id="rentAmount" class="input" type="number" min="1" step="1" value="${safeHtml(roomDefaults.rent_amount)}" />
+            </div>
+            <div class="field">
+              <div class="field-label"><span>押金</span><span class="required">必填</span></div>
+              <input id="depositAmount" class="input" type="number" min="1" step="1" value="${safeHtml(roomDefaults.deposit_amount)}" />
+            </div>
+          </div>
+
+          <div id="simpleRoomSummary" class="simple-inherited"></div>
+          <div class="simple-note">建立後會產生一次性簽署連結／QR 與確認碼。房客開啟後補姓名、手機、身分證正反面及簽名，房東審核後租約才生效。</div>
+        </section>
+
+        <section class="card confirmation-card">
+          <div class="confirmation-row">
+            <input id="confirmCreate" class="confirmation-check" type="checkbox" onchange="updateSubmitState()" />
+            <label class="confirmation-text" for="confirmCreate">
+              <strong>我確認房號、租金、押金與租期均正確。</strong>
+              <span>系統會建立待房客簽署的新租約，不會直接啟用。</span>
+            </label>
+          </div>
+        </section>
+
+        <button id="submitButton" class="submit-button" type="button" onclick="submitCreate()" disabled>建立租約並產生簽署邀請</button>
+      `;
+
+      handleSimpleRoomChange();
+      updateSimpleLeaseEndDate_();
+      updateSubmitState();
+    }
+
     function renderPage() {
       const workspace =
         PAGE_DATA.workspace || {};
@@ -1544,6 +1802,11 @@
           </section>
         `;
 
+        return;
+      }
+
+      if (SIMPLE_NEW_MODE) {
+        renderSimpleNewContractPage();
         return;
       }
 
@@ -2231,7 +2494,9 @@
       const confirmationBody = document.getElementById('confirmationBody');
       const submitButton = document.getElementById('submitButton');
       const renewalClauseField = document.getElementById('renewalClauseField');
+      const pageTitle = document.getElementById('pageTitle');
       if (renewalClauseField) renewalClauseField.style.display = renewal ? 'block' : 'none';
+      if (pageTitle) pageTitle.textContent = renewal ? '建立續約' : '建立新租約';
       if (heroDescription) heroDescription.textContent = renewal
         ? '由房東主動建立新的續約版本，房客只需確認差異並完成線上簽名。'
         : '建立待房客認領的新空房合約，現場可先收款，房客再補資料與簽署。';
@@ -2425,6 +2690,22 @@
     }
 
     function validateForm() {
+      if (SIMPLE_NEW_MODE) {
+        const roomId = inputValue('roomId');
+        const startDate = inputValue('startDate');
+        const termMonths = Number(inputValue('termMonths'));
+        const rentAmount = Number(inputValue('rentAmount'));
+        const depositAmount = Number(inputValue('depositAmount'));
+
+        if (!roomId) return '請選擇房號。';
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return '請輸入租約開始日。';
+        if (!Number.isInteger(termMonths) || termMonths < 1 || termMonths > 120) return '租期請輸入 1 至 120 個月。';
+        if (!inputValue('endDate')) return '租約結束日計算失敗，請重新選擇開始日與租期。';
+        if (!Number.isFinite(rentAmount) || rentAmount <= 0) return '每月租金必須大於 0。';
+        if (!Number.isFinite(depositAmount) || depositAmount <= 0) return '押金必須大於 0。';
+        return '';
+      }
+
       const tenantName =
         inputValue(
           'tenantName'
@@ -2621,6 +2902,16 @@
                 inputValue(
                   'equipmentRate'
                 ),
+              term_months:
+                SIMPLE_NEW_MODE
+                  ? inputValue('termMonths')
+                  : '',
+              simple_flow:
+                SIMPLE_NEW_MODE,
+              identity_document_mode:
+                SIMPLE_NEW_MODE
+                  ? 'required'
+                  : undefined,
               note:
                 inputValue(
                   'note'
@@ -2649,6 +2940,7 @@
         }
 
         result.mode = CONTRACT_MODE;
+        result.simple_flow = SIMPLE_NEW_MODE;
         CREATED_DATA = result;
 
         renderSuccess();
@@ -2667,7 +2959,9 @@
 
         button.textContent = CONTRACT_MODE === 'renewal'
           ? '建立新版續約並發送簽署邀請'
-          : '建立待房客認領的合約';
+          : SIMPLE_NEW_MODE
+            ? '建立租約並產生簽署邀請'
+            : '建立待房客認領的合約';
       }
     }
 
@@ -2689,6 +2983,7 @@
       const invite = CREATED_DATA.invite || {};
       const initiated = Boolean(invite.invite_id);
       const renewal = CREATED_DATA.mode === 'renewal';
+      const simpleNew = CREATED_DATA.simple_flow === true;
       const selectedRoom = getRoom(contract.room_id) || {};
       const selectedProperty = (PAGE_DATA && Array.isArray(PAGE_DATA.properties)
         ? PAGE_DATA.properties.find(function(item) { return rawText(item.property_id) === rawText(contract.property_id); })
@@ -2708,11 +3003,11 @@
           <div class="success-head">
             <div class="success-icon">✓</div>
             <div class="success-title">
-              ${initiated && renewal ? '新版續約簽署邀請已建立' : initiated ? '待房客認領的合約已建立' : renewal ? '待房客簽署的續約合約已建立' : '房客與租約已建立'}
+              ${initiated && renewal ? '新版續約簽署邀請已建立' : initiated && simpleNew ? '簡易租約簽署邀請已建立' : initiated ? '待房客認領的合約已建立' : renewal ? '待房客簽署的續約合約已建立' : '房客與租約已建立'}
             </div>
 
             <div class="success-desc">
-              ${initiated && renewal ? '新版合約已建立，請將下方邀請連結與確認碼交給既有房客簽署；舊合約保持不變。' : initiated ? '將下方邀請連結與確認碼交給房客，房客現場完成資料與簽署。' : renewal ? '請通知既有房客開啟合約頁確認差異並簽名；核准前不會改動原合約。' : '現在將下方綁定訊息傳給房客即可。'}
+              ${initiated && renewal ? '新版合約已建立，請將下方邀請連結與確認碼交給既有房客簽署；舊合約保持不變。' : initiated && simpleNew ? '租約已建立，請將下方邀請連結與確認碼交給房客；房客會補上身分資料與簽名，房東審核後才生效。' : initiated ? '將下方邀請連結與確認碼交給房客，房客現場完成資料與簽署。' : renewal ? '請通知既有房客開啟合約頁確認差異並簽名；核准前不會改動原合約。' : '現在將下方綁定訊息傳給房客即可。'}
             </div>
           </div>
 

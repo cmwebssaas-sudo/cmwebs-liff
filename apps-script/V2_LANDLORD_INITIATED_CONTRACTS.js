@@ -115,6 +115,9 @@ function landlordInitiatedContractCreateNewUnlocked_(access, input) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const room = landlordInitiatedContractFindScopedRow_(schema.data.rooms, access, 'room_id', normalized.data.room_id);
   if (!room) return landlordInitiatedContractError_('ROOM_NOT_FOUND', '找不到可出租房間');
+  const resolvedInput = landlordInitiatedContractResolveNewDefaults_(normalized.data, room);
+  if (!resolvedInput.success) return resolvedInput;
+  normalized.data = resolvedInput.data;
   const property = landlordInitiatedContractFindScopedRow_(schema.data.properties, access, 'property_id', normalized.data.property_id || landlordInitiatedContractText_(room.property_id));
   if (!property) return landlordInitiatedContractError_('PROPERTY_NOT_FOUND', '找不到物件');
   if (landlordInitiatedContractText_(room.property_id) !== landlordInitiatedContractText_(property.property_id)) return landlordInitiatedContractError_('ROOM_PROPERTY_MISMATCH', '房間不屬於指定物件');
@@ -1288,16 +1291,25 @@ function landlordInitiatedContractEnsureInviteSheet_(ss) {
 
 function landlordInitiatedContractNormalizeInput_(input) {
   input = input || {};
+  const simpleFlow = landlordInitiatedContractBoolean_(input.simple_flow);
+  const startDate = landlordInitiatedContractText_(input.start_date);
+  const requestedEndDate = landlordInitiatedContractText_(input.end_date);
+  const termMonths = Math.round(landlordInitiatedContractNumber_(input.term_months));
+  const computedEndDate = simpleFlow && startDate && termMonths > 0
+    ? landlordInitiatedContractEndDateForTerm_(startDate, termMonths)
+    : '';
+  if (simpleFlow && !computedEndDate) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '簡易租約的開始日或租期無效');
+  if (simpleFlow && requestedEndDate && requestedEndDate !== computedEndDate) return landlordInitiatedContractError_('CONTRACT_TERM_MISMATCH', '租約結束日與租期不一致');
   const result = {
     property_id: landlordInitiatedContractText_(input.property_id),
     room_id: landlordInitiatedContractText_(input.room_id),
-    start_date: landlordInitiatedContractText_(input.start_date),
-    end_date: landlordInitiatedContractText_(input.end_date),
+    start_date: startDate,
+    end_date: computedEndDate || requestedEndDate,
     rent_amount: landlordInitiatedContractNumber_(input.rent_amount),
     management_fee: landlordInitiatedContractNumber_(input.management_fee),
     deposit_months: landlordInitiatedContractNumber_(input.deposit_months),
     deposit_amount: landlordInitiatedContractNumber_(input.deposit_amount),
-    term_months: Math.round(landlordInitiatedContractNumber_(input.term_months)),
+    term_months: termMonths,
     payment_day: Math.round(landlordInitiatedContractNumber_(input.payment_day || input.monthly_payment_day)),
     electricity_fee_rate: landlordInitiatedContractNumber_(input.electricity_fee_rate),
     equipment_fee_rate: landlordInitiatedContractNumber_(input.equipment_fee_rate),
@@ -1310,17 +1322,43 @@ function landlordInitiatedContractNormalizeInput_(input) {
     special_offer_waiver_type: landlordInitiatedContractText_(input.special_offer_waiver_type || 'breach_penalty_waived'),
     special_offer_clause: landlordInitiatedContractText_(input.special_offer_clause),
     identity_document_mode: landlordInitiatedContractText_(input.identity_document_mode || (input.previous_contract_id ? 'optional' : 'required')),
+    simple_flow: simpleFlow,
     tenant_name: landlordInitiatedContractText_(input.tenant_name || input.name),
     tenant_phone: landlordInitiatedContractNormalizePhone_(input.tenant_phone || input.phone),
     tenant_email: landlordInitiatedContractText_(input.tenant_email || input.email),
     note: landlordInitiatedContractText_(input.note)
   };
-  if ((!result.room_id && !landlordInitiatedContractText_(input.previous_contract_id)) || !result.start_date || !result.end_date || !result.rent_amount || !result.deposit_amount || !result.payment_day) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期、房間、租金、押金與付款日為必要資料');
+  if ((!result.room_id && !landlordInitiatedContractText_(input.previous_contract_id)) || !result.start_date || !result.end_date || !result.rent_amount || !result.deposit_amount || (!result.payment_day && !simpleFlow)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期、房間、租金、押金與付款日為必要資料');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(result.start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(result.end_date) || result.end_date < result.start_date) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期日期無效');
-  if (result.term_months < 0 || result.special_offer_notice_days < 0) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '續約期間或優惠通知天數無效');
+  if ((simpleFlow && result.term_months < 1) || result.term_months < 0 || result.special_offer_notice_days < 0) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租約期間或優惠通知天數無效');
   if (['required', 'optional', 'carried_forward'].indexOf(result.identity_document_mode) === -1) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '身份文件模式無效');
   if (result.tenant_phone && !/^09\d{8}$/.test(result.tenant_phone)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '房客手機格式無效');
   if (result.tenant_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result.tenant_email)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '房客 Email 格式無效');
+  return { success: true, code: 'OK', data: result };
+}
+
+function landlordInitiatedContractEndDateForTerm_(startDate, termMonths) {
+  if (!landlordInitiatedContractIsIsoDate_(startDate) || !Number.isInteger(Number(termMonths)) || Number(termMonths) < 1) return '';
+  const parts = landlordInitiatedContractText_(startDate).split('-').map(Number);
+  const end = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+  end.setUTCMonth(end.getUTCMonth() + Number(termMonths));
+  end.setUTCDate(end.getUTCDate() - 1);
+  return [end.getUTCFullYear(), String(end.getUTCMonth() + 1).padStart(2, '0'), String(end.getUTCDate()).padStart(2, '0')].join('-');
+}
+
+function landlordInitiatedContractResolveNewDefaults_(input, room) {
+  const result = Object.assign({}, input || {});
+  if (result.simple_flow !== true) return { success: true, code: 'OK', data: result };
+  const numberOr = function(value, fallback) {
+    const normalized = landlordInitiatedContractNumber_(value);
+    return normalized > 0 ? normalized : landlordInitiatedContractNumber_(fallback);
+  };
+  result.property_id = result.property_id || landlordInitiatedContractText_(room && room.property_id);
+  result.management_fee = numberOr(result.management_fee, room && room.management_fee);
+  result.deposit_months = numberOr(result.deposit_months, room && room.deposit_months) || 2;
+  result.payment_day = Math.round(numberOr(result.payment_day, room && (room.payment_day || room.monthly_payment_day)) || 10);
+  result.electricity_fee_rate = numberOr(result.electricity_fee_rate, room && room.electricity_fee_rate);
+  result.equipment_fee_rate = numberOr(result.equipment_fee_rate, room && (room.equipment_fee_rate || room.equipment_fee_rate_regular));
   return { success: true, code: 'OK', data: result };
 }
 
