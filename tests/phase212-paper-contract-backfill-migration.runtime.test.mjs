@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../apps-script/V2_LANDLORD_PAPER_CONTRACT_BACKFILL.js', import.meta.url), 'utf8');
+const testSource = readFileSync(new URL('../apps-script/TESTS.js', import.meta.url), 'utf8');
+
+assert.match(testSource, /function testRunV2LandlordPaperContractBackfillProductionMigration\s*\(/);
 
 class FakeSheet {
   constructor(headers, rows = []) {
