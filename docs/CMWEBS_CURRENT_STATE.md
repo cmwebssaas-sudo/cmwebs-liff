@@ -7,6 +7,28 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-03 房東簡易新租約正式部署
+
+- PR #94 已將房東簡易新租約入口合併到 GitHub `main`，merge commit 為
+  `6302b25`。
+- Apps Script 已從候選 worktree 推送 52 個檔案，既有 Web App deployment
+  更新至 immutable Version 149；Version 148 保留為立即回滾版本，既有 Web
+  App URL 不變。
+- 簡易流程由房東填寫房號、租金、押金、租約起始日與租期月數；伺服器計算
+  含首尾日的結束日，並沿用房間／Workspace 預設的管理費、付款日、電費與
+  設備耗損費。未新增 Sheet 欄位，未執行 migration，未改動既有合約、房客、
+  帳單、Drive、Properties、Triggers 或 LINE 資料。
+- GitHub Pages workflow `33656914943` 已完成 build、deploy、status；公開
+  read-back 的房客名單、簡易新租約頁與 release asset 均 HTTP 200，並確認
+  `simple_new` 入口、`建立簡易新租約` 標題與 immutable cache key
+  `20260903-simple-new-lease-v1`。
+- Production API 唯讀 probe 回應 HTTP 200／`MISSING_LINE_UID`，證明正式
+  deployment 可達且未送出身份或寫入資料。版本凍結驗證為 Node `77/77`、
+  validator `83/83` routes／handlers、duplicate declarations `0`、credential
+  findings `0`、HTML links `214/214` 與 `git diff --check` 通過。
+- 已登入 LIFF／手機、房客證件上傳／簽名、正式房東建立新租約與房客簽署仍為
+  `HUMAN_REQUIRED` / `UNVERIFIED`；本次部署沒有建立測試租約或發送 LINE。
+
 ## 2026-09-02 landlord checkout settlement formal release
 
 - PR #92 merged the landlord checkout settlement and Sheet Date normalization

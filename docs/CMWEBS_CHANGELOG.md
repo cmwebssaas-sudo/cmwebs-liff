@@ -2,6 +2,20 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-03 — 房東簡易新租約正式部署
+
+- PR #94 已合併至 `main`，merge commit 為 `6302b25`；房客名單新增房東
+  「建立簡易新租約」入口，簡易表單只需房號、租金、押金、起始日與租期月數。
+- Apps Script Version 149 已更新既有 Web App deployment，Version 148 保留
+  rollback，既有 Web App URL 不變。結束日由伺服器依租期計算，房間／Workspace
+  預設費用與付款條件會補入；房客後續仍走證件上傳與簽署流程。
+- GitHub Pages workflow `33656914943` 已成功發布，公開頁 read-back HTTP 200；
+  cache key 為 `20260903-simple-new-lease-v1`。
+- 本次沒有新增 Sheet schema、migration、既有資料寫入、Drive、Properties、
+  Trigger 或 LINE 操作；本地 Node `77/77`、validator `83/83`、duplicate／
+  credential scan 與 link check 全部通過。正式 LIFF／手機建立與簽署仍為
+  `HUMAN_REQUIRED` / `UNVERIFIED`。
+
 ## 2026-09-02 — 房東手動退房結算正式部署
 
 - PR #92 已將房東手動退房結算與 Google Sheets Date 日期正規化合併到

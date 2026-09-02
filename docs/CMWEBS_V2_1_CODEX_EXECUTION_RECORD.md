@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-09-02 (Asia/Taipei)**
+**Last updated: 2026-09-03 (Asia/Taipei)**
 
 ## Purpose
 
@@ -41,6 +41,31 @@ be verified for the particular action that needs it.
 | 2026-09-02 | Landlord-led renewal and checkout formal release | User requested deployment after implementation confirmation. PR #90 merged the release as `3d8647d`; Apps Script Version 147 serves the existing Web App deployment and Version 139 remains the rollback reference. The additive-only renewal/checkout schema migration completed in the authenticated Apps Script editor. Pages workflow `33567151637` completed successfully. No contract or tenant rows, Properties, triggers, or LINE data were changed; authenticated LINE/mobile UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-02 | Landlord checkout settlement implementation candidate | User confirmed the 9/1–move-out inclusive calculation, prior unpaid utility carryover, meter photos, deposit offset, and manual checkout rules. Local branch `codex/checkout-settlement-20260902` only; Phase 202／205／206／207 tests are local evidence. No Production migration, Apps Script deployment, Pages publication, Sheet/Drive write, LINE push, PR, merge, or external action is authorized by this record. |
 | 2026-09-02 | Landlord checkout settlement formal deployment | User explicitly requested `部署` after the public old-page diagnosis. This authorizes push, PR, merge, Apps Script immutable redeploy, additive settlement-schema migration, and GitHub Pages publication for the current checkout-settlement/date-normalization candidate. Rollback is to the freshly verified prior Apps Script serving version and prior Pages revision. No tenant checkout transaction or LINE message is part of this deployment; authenticated LIFF/mobile UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
+| 2026-09-03 | Landlord simple new-lease formal deployment | User explicitly requested `部署正式環境` after confirming the simplified landlord-first new-lease flow. This authorizes push, PR, merge, Apps Script immutable redeploy, and GitHub Pages publication. No Sheet migration, tenant-data write, Drive upload, Properties/Trigger change, or LINE message is part of this deployment; Version 148 and the prior Pages revision remain rollback references. Authenticated LIFF/mobile creation, identity-document upload, and tenant signing remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
+
+## 2026-09-03 landlord simple new-lease formal release evidence
+
+- Candidate branch `codex/simplify-new-lease-entry-20260903` was merged through
+  PR #94 as `6302b25`. The candidate passed the full Node suite (`77 pass, 0
+  fail`), the authoritative validator (`83/83` routes and handlers), duplicate
+  declaration scan (`0`), credential scan (`0`), HTML link check (`214/214`),
+  and `git diff --check`.
+- Apps Script target identity was re-read from the verified Production binding;
+  Version 148 was the serving rollback baseline. The source was pushed as 52
+  files, immutable Version 149 was created, and the existing Web App deployment
+  was updated to Version 149. The Web App URL was preserved; Version 148 remains
+  selectable for rollback.
+- No new Sheet columns were required, so no migration or Spreadsheet write was
+  run. No contract, tenant, bill, Drive, Property, Trigger, Script Property, or
+  LINE data was changed. No test tenant or contract was created.
+- GitHub Pages workflow `33656914943` completed build, deploy, and status jobs for
+  `6302b25`. Public readback returned HTTP 200 for the landlord tenant list,
+  simple new-lease page, and release asset, with `simple_new`, the simplified
+  form title, and cache key `20260903-simple-new-lease-v1` present.
+- A Production API read-only probe returned HTTP 200 with the expected
+  `MISSING_LINE_UID` guard. It did not send a LINE UID and did not perform a
+  write. Authenticated LIFF/mobile landlord creation, tenant identity-document
+  upload, and tenant signing remain `HUMAN_REQUIRED` / `UNVERIFIED`.
 
 ## 2026-09-02 checkout settlement formal release evidence
 
