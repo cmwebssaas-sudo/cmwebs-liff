@@ -344,7 +344,7 @@ dispatcher.
 
 This is a landlord-only V2.1 POST action. It does not add a JSONP route, so the
 canonical `83`-route inventory above remains unchanged. The current Production
-release serves it from Apps Script Version 151 and the published `main` Pages
+release serves it from Apps Script Version 152 and the published `main` Pages
 build.
 
 | Route / POST action | Transport | Required authority | Purpose |
