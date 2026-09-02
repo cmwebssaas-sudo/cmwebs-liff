@@ -83,7 +83,10 @@
 - 同一 Workspace、同一房間不可存在重疊的有效／即將生效租約，也不可在
   同一補登請求重複建立。
 - 既有合約、歷史合約、帳單與付款資料不覆寫。若房間目前已有有效合約，
-  補登必須拒絕並要求房東先確認正確的續約或退房流程。
+  補登必須拒絕並要求房東先確認正確的續約或退房流程；唯一例外是房東明確
+  指定同一房間／房客、尚未被認領的 `landlord_initiated` 電子合約，作為
+  紙本已簽的轉換來源。此例外只關閉原電子草稿與待認領邀請，不刪除資料，
+  新紙本合約以 `previous_contract_id` 連回原紀錄。
 
 ## 資料保存
 
@@ -103,6 +106,9 @@
 - 紙本簽約日與補登操作人／時間；若現有 schema 沒有獨立紙本簽約日欄位，
   以 `signed_at` 保存紙本簽約日，將補登時間放入既有建立／更新 audit 欄位
   與備註。
+- 紙本轉換時保存 `previous_contract_id`；來源電子合約的日期、金額、全文與
+  `invite_id` 保留在原列，只將其生命週期狀態標記為 `cancelled` 並在備註記錄
+  紙本替代合約 ID。
 
 不新增或偽造 `invite_id`、`tenant_signed_at`、LINE UID、電子簽名資料。
 
@@ -139,7 +145,8 @@
 用途：在一次受保護操作中驗證並建立紙本補登租約。
 
 請求包含房間、房客、租約費用、日期、紙本簽約日、紙本文件 Base64、文件
-metadata、可選身分文件與 `idempotency_key`。`workspace_id`、`landlord_id`、
+metadata、可選身分文件、`idempotency_key`，以及可選的
+`supersede_contract_id`。`workspace_id`、`landlord_id`、
 `tenant_id`、`room_id` 等 scope 由 server session／canonical row 決定或
 重新驗證，不以 body 內容作為授權來源。
 
@@ -161,6 +168,9 @@ metadata、可選身分文件與 `idempotency_key`。`workspace_id`、`landlord_
   權限、Workspace、房間占用、租期重疊與冪等驗證。
 - 所有必要驗證在寫入前完成；紙本檔案必須先通過 MIME、Base64、大小及私有
   Drive 設定驗證。
+- 紙本轉換必須在同一個 ScriptLock 內確認來源電子合約與待認領邀請屬於同一
+  Workspace／房間／房客，且尚未 claimed；成功時只標記來源合約與邀請取消，
+  不取消或重建任何已被使用的電子簽署資料。
 - 合約文件、合約 row、房客 row、房間 pointer、view row 需以固定順序寫入。
   任一寫入失敗時不得回傳成功；需執行可安全執行的補償清理，避免留下可被
   read model 當成有效租約的半筆資料。若外部 Drive 已成功但 Sheet 寫入失敗，

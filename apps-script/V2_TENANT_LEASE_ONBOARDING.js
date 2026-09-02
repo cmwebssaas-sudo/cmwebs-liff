@@ -59,7 +59,8 @@ function getLandlordTenantCreateInitByLineUid_(
   selectedPropertyId,
   selectedRoomId,
   previousContractId,
-  selectedTenantId
+  selectedTenantId,
+  supersedeContractId
 ) {
   try {
     const startedAt =
@@ -174,6 +175,27 @@ function getLandlordTenantCreateInitByLineUid_(
             return tenantLeaseText_(tenant.tenant_id) === selectedTenantId;
           }) || null
         : null;
+
+    const selectedTenantContract =
+      selectedTenant
+        ? contracts.find(function (contract) {
+            const contractId = tenantLeaseText_(contract.contract_id);
+            const requestedContractId = tenantLeaseText_(supersedeContractId);
+            const currentContractId = tenantLeaseText_(selectedTenant.current_contract_id);
+            return (contractId === (requestedContractId || currentContractId)) &&
+              tenantLeaseText_(contract.tenant_id) === tenantLeaseText_(selectedTenant.tenant_id);
+          }) || null
+        : null;
+
+    const selectedTenantContractValue = function (primary, fallback) {
+      if (!selectedTenantContract) return '';
+      const candidates = [primary, fallback];
+      for (let index = 0; index < candidates.length; index += 1) {
+        const value = selectedTenantContract[candidates[index]];
+        if (value !== undefined && value !== null && tenantLeaseText_(value) !== '') return value;
+      }
+      return '';
+    };
 
     if (selectedTenant) {
       if (!selectedPropertyId) {
@@ -601,13 +623,63 @@ function getLandlordTenantCreateInitByLineUid_(
                   ),
                 contract_start_date:
                   tenantLeaseFormatDate_(
-                    selectedTenant.contract_start_date ||
-                    selectedTenant.start_date
+                    selectedTenantContract
+                      ? selectedTenantContract.start_date ||
+                        selectedTenantContract.contract_start_date
+                      : selectedTenant.contract_start_date ||
+                        selectedTenant.start_date
                   ),
                 contract_end_date:
                   tenantLeaseFormatDate_(
-                    selectedTenant.contract_end_date ||
-                    selectedTenant.end_date
+                    selectedTenantContract
+                      ? selectedTenantContract.end_date ||
+                        selectedTenantContract.contract_end_date
+                      : selectedTenant.contract_end_date ||
+                        selectedTenant.end_date
+                  ),
+                contract_id:
+                  tenantLeaseText_(
+                    selectedTenantContract
+                      ? selectedTenantContract.contract_id
+                      : selectedTenant.current_contract_id
+                  ),
+                contract_status:
+                  tenantLeaseText_(
+                    selectedTenantContract
+                      ? selectedTenantContract.contract_status ||
+                        selectedTenantContract.status
+                      : ''
+                  ),
+                rent_amount:
+                  selectedTenantContractValue(
+                    'rent_amount',
+                    'monthly_rent'
+                  ),
+                management_fee:
+                  selectedTenantContractValue(
+                    'management_fee',
+                    'monthly_management_fee'
+                  ),
+                deposit_months:
+                  selectedTenantContractValue(
+                    'deposit_months'
+                  ),
+                deposit_amount:
+                  selectedTenantContractValue(
+                    'deposit_amount'
+                  ),
+                payment_day:
+                  selectedTenantContractValue(
+                    'payment_day',
+                    'monthly_payment_day'
+                  ),
+                electricity_fee_rate:
+                  selectedTenantContractValue(
+                    'electricity_fee_rate'
+                  ),
+                equipment_fee_rate:
+                  selectedTenantContractValue(
+                    'equipment_fee_rate'
                   )
               }
             : null,

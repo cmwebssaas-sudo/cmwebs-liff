@@ -7,6 +7,24 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-03 202 紙本轉換本地候選修正（未部署）
+
+- Candidate branch `codex/202-paper-contract-login-20260903` adds a guarded
+  `supersede_contract_id` path for a matching, unclaimed landlord-initiated
+  electronic contract. It keeps the original contract and invite rows for
+  audit, marks them cancelled, appends the paper contract with
+  `previous_contract_id`, and activates the pending tenant account as
+  `unbound`.
+- The property／room page now exposes the conversion entry for this exact
+  pending-electronic case and carries the tenant／contract context into the
+  paper form. The completed page exposes the existing tenant LIFF URL so the
+  landlord can send a login-binding entry without sending a LINE message.
+- Local Phase 209, Phase 210, Phase 211, Phase 212 and Phase 213 tests pass;
+  Apps Script syntax checks pass. This candidate has not changed Production
+  Sheets, Drive, Properties, Triggers, LINE, Apps Script deployment or Pages.
+  Authenticated mobile／LIFF and Production 202 data verification remain
+  `HUMAN_REQUIRED` / `UNVERIFIED` until separately authorized and performed.
+
 ## 2026-09-03 landlord paper-contract backfill formal release
 
 - PR #96 merged the landlord-only paper contract backfill flow into GitHub

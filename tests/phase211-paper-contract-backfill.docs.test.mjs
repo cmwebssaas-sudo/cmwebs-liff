@@ -11,14 +11,17 @@ const onboardingSource = readFileSync(new URL('../apps-script/V2_TENANT_LEASE_ON
 const backfillSource = readFileSync(new URL('../apps-script/V2_LANDLORD_PAPER_CONTRACT_BACKFILL.js', import.meta.url), 'utf8');
 
 assert.match(routeDoc, /landlord_contract_paper_backfill/);
+assert.match(routeDoc, /supersede_contract_id/);
 assert.match(routeDoc, /紙本合約/);
 assert.match(routeDoc, /不.*電子邀請|不.*LINE|不.*合約申請/);
 assert.match(matrixDoc, /Phase 209|paper contract backfill/i);
+assert.match(matrixDoc, /Phase 213/);
 assert.match(changelogDoc, /補登紙本合約|紙本合約補登/);
 assert.match(currentStateDoc, /paper-contract backfill|paper contract backfill|紙本合約/i);
 assert.match(executionDoc, /paper-contract backfill|paper contract backfill|紙本合約/i);
 assert.match(currentStateDoc, /未部署|尚未部署|HUMAN_REQUIRED/);
 assert.match(dispatcherSource, /landlordPaperContractBackfillIsRequest_\(postBody\)/);
+assert.match(backfillSource, /supersede_contract_id/);
 assert.match(dispatcherSource, /e\.parameter\.tenant_id \|\| ''/);
 assert.match(onboardingSource, /selectedTenantId/);
 assert.match(onboardingSource, /selected_tenant:/);

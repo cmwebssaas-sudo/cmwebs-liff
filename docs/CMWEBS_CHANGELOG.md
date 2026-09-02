@@ -2,6 +2,16 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-03 — 202 紙本轉換與房客登入本地候選修正（未部署）
+
+- 房東可從物件／房間頁將同房間、同房客且尚未被認領的房東電子草稿轉為
+  紙本補登；原電子合約與待認領邀請保留並標記取消，新紙本合約以
+  `previous_contract_id` 留下關聯。
+- 既有待認領房客／使用者會啟用為未綁定狀態，補登完成頁提供房客 LIFF
+  登入入口，房東可複製傳給房客；不自動發送 LINE 或建立電子邀請。
+- Candidate branch `codex/202-paper-contract-login-20260903` 的本地測試與
+  Apps Script syntax check 已通過；尚未執行 Production 資料異動或部署。
+
 ## 2026-09-03 — 房東手動補登紙本合約正式部署
 
 - PR #96 已合併至 `main`，merge commit 為 `b36ec4b`。新增房東專用
