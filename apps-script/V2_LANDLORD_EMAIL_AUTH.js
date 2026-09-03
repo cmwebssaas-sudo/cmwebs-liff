@@ -738,7 +738,9 @@ function landlordEmailAuthUserCanLogin_(
 ) {
   return (
     landlordEmailAuthUserIsActiveLandlord_(user) &&
-    Boolean(landlordEmailAuthNormalizeEmail_(user.email))
+    Boolean(landlordEmailAuthNormalizeEmail_(user.email)) &&
+    Boolean(landlordEmailAuthText_(user.email_verified_at)) &&
+    landlordEmailAuthAcceptedBoolean_(user.email_login_enabled)
   );
 }
 
@@ -1265,6 +1267,22 @@ function landlordEmailAuthActiveStatus_(
     '啟用',
     '有效'
   ].indexOf(landlordEmailAuthText_(status).toLowerCase()) >= 0;
+}
+
+function landlordEmailAuthAcceptedBoolean_(
+  value
+) {
+  if (value === true || value === 1) return true;
+  return [
+    'true',
+    '1',
+    'yes',
+    'y',
+    'enabled',
+    'active',
+    '是',
+    '啟用'
+  ].indexOf(landlordEmailAuthText_(value).toLowerCase()) >= 0;
 }
 
 function landlordEmailAuthGenericLoginFailure_() {

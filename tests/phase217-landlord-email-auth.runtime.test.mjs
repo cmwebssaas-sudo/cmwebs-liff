@@ -257,6 +257,18 @@ function expectedEmailHash(email) {
   return crypto.createHash('sha256').update('email-hash-secret' + String(email).trim().toLowerCase()).digest('hex');
 }
 
+function expectedCodeHash(email, code) {
+  return crypto.createHash('sha256').update('email-hash-secret:' + expectedEmailHash(email) + ':' + String(code).trim()).digest('hex');
+}
+
+function enableVerifiedEmailLogin(sheet, userId) {
+  const userRowIndex = sheet.rows.findIndex((row) => row[sheet.headers.indexOf('user_id')] === userId);
+  assert.notEqual(userRowIndex, -1, 'test fixture user must exist');
+  const headerMap = Object.fromEntries(sheet.headers.map((header, index) => [header, index + 1]));
+  sheet.getRange(userRowIndex + 2, headerMap.email_verified_at).setValue('2026-09-04T00:00:00.000Z');
+  sheet.getRange(userRowIndex + 2, headerMap.email_login_enabled).setValue('true');
+}
+
 function extractOtpCode(delivery) {
   const parts = [];
   if (typeof delivery === 'string') {
@@ -348,6 +360,7 @@ guardedTest('Phase 217 verifies Email codes through the verification handler con
 
 guardedTest('Phase 217 normalizes login Email and stores only hashed login challenge values', () => {
   const { api, sheets, state } = createRuntime();
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
   const request = api.requestLandlordEmailLogin_(' Owner@Example.com ', 'login-request-1');
   assert.equal(request.success, true, request.code);
   assert.equal(state.mailSends.length, 1, 'login request must send exactly one Email');
@@ -358,6 +371,7 @@ guardedTest('Phase 217 normalizes login Email and stores only hashed login chall
 
 guardedTest('Phase 217 stores only a session-token hash when login verification issues a session', () => {
   const { api, sheets, state } = createRuntime();
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
   const requested = api.requestLandlordEmailLogin_('owner@example.com', 'login-request-2');
   assert.equal(requested.success, true, requested.code);
   const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
@@ -379,6 +393,7 @@ guardedTest('Phase 217 stores only a session-token hash when login verification 
 guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resend floods, expired sessions, revoked sessions, and Workspace mismatches', () => {
   {
     const { api, sheets } = createRuntime();
+    enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
     const first = api.requestLandlordEmailLogin_('owner@example.com', 'request-2');
     assert.equal(first.success, true, first.code);
     const challengeId = sheetObjects(sheets.V2_landlord_email_login_challenges)[0].challenge_id;
@@ -390,6 +405,7 @@ guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resen
 
   {
     const { api, sheets, state } = createRuntime({ nowIso: '2026-09-04T01:02:03.000Z' });
+    enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
     api.requestLandlordEmailLogin_('owner@example.com', 'request-5');
     state.nowIso = '2026-09-04T01:02:20.000Z';
     const blocked = api.requestLandlordEmailLogin_('owner@example.com', 'request-6');
@@ -413,6 +429,7 @@ guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resen
 
   {
     const { api, sheets } = createRuntime();
+    enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
     sheets.V2_landlord_email_sessions.appendRow(rowFor(SESSION_HEADERS, {
       session_id: 'session-1',
       session_token_hash: crypto.createHash('sha256').update('opaque-session-token').digest('hex'),
@@ -432,6 +449,7 @@ guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resen
 
   {
     const { api, sheets } = createRuntime({ accessWorkspaceId: 'WS-2' });
+    enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
     sheets.V2_landlord_email_sessions.appendRow(rowFor(SESSION_HEADERS, {
       session_id: 'session-2',
       session_token_hash: crypto.createHash('sha256').update('opaque-session-token-2').digest('hex'),
@@ -450,4 +468,34 @@ guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resen
     const revoked = api.revokeLandlordEmailSession_('opaque-session-token-2', 'request-10');
     assert.equal(revoked.success, true, revoked.code);
   }
+});
+
+guardedTest('Phase 217 rejects desktop login for active landlords without verified enabled Email', () => {
+  const { api, sheets, state } = createRuntime();
+  const unknown = api.requestLandlordEmailLogin_('missing@example.com', 'login-denied-0');
+  const request = api.requestLandlordEmailLogin_('pending@example.com', 'login-denied-1');
+  assert.equal(request.success, false, 'unverified disabled Email login request must fail');
+  assert.equal(request.code, unknown.code, 'request failure must use the generic non-enumerating code');
+  assert.equal(request.message, unknown.message, 'request failure must use the generic non-enumerating message');
+  assert.equal(state.mailSends.length, 0, 'unverified disabled Email login request must not send OTP mail');
+
+  sheets.V2_landlord_email_login_challenges.appendRow(rowFor(CHALLENGE_HEADERS, {
+    challenge_id: 'challenge-disabled',
+    user_id: 'user-2',
+    email_hash: expectedEmailHash('pending@example.com'),
+    code_hash: expectedCodeHash('pending@example.com', '123456'),
+    issued_at: '2026-09-04T01:00:00.000Z',
+    expires_at: '2026-09-04T01:15:00.000Z',
+    attempt_count: 0,
+    last_attempt_at: '',
+    consumed_at: '',
+    status: 'issued',
+    request_id: 'login-denied-challenge'
+  }));
+
+  const verified = api.verifyLandlordEmailLogin_('challenge-disabled', '123456', 'login-denied-2');
+  assert.equal(verified.success, false, 'unverified disabled Email login verification must fail');
+  assert.equal(verified.code, unknown.code, 'verification failure must use the generic non-enumerating code');
+  assert.equal(verified.message, unknown.message, 'verification failure must use the generic non-enumerating message');
+  assert.equal(sheetObjects(sheets.V2_landlord_email_sessions).length, 0, 'unverified disabled Email login must not issue a session');
 });
