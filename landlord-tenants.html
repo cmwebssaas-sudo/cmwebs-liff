@@ -10,6 +10,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
+  <link rel="stylesheet" href="landlord-responsive.css" />
 
   <style>
     :root {
@@ -729,8 +730,41 @@
 </head>
 
 <body>
-  <div class="app-shell">
-    <main class="page">
+  <div class="app-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand">
+          <div class="desktop-brand-label">CMWEBS</div>
+          <div class="desktop-brand-title">智慧租管</div>
+        </div>
+        <nav class="desktop-nav">
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')"><svg viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5"></path><path d="M6.5 10.5V19h11v-8.5"></path><path d="M9.5 19v-5h5v5"></path></svg><span>總覽</span></button>
+          <button class="desktop-nav-item active" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path><path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path><path d="M16 14c2.2.4 3.5 2 4 5"></path></svg><span>房客</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')"><svg viewBox="0 0 24 24"><path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path><path d="M8 20v-7h8v7"></path><path d="M9 8.5h.01M15 8.5h.01"></path></svg><span>物件與房間</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-contract-requests.html')"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l3 3V20H7z"></path><path d="M14 3.5V7h3"></path><path d="M9.5 12h5"></path><path d="M9.5 15.5h5"></path></svg><span>合約</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenant-checkout.html')"><svg viewBox="0 0 24 24"><path d="M4.5 12h11"></path><path d="M11.5 8l4 4-4 4"></path><path d="M19.5 5v14"></path></svg><span>退房</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')"><svg viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="15" rx="2"></rect><path d="M8.5 9h7"></path><path d="M8.5 13h7"></path><path d="M8.5 17h4"></path></svg><span>帳款</span></button>
+        </nav>
+        <div class="desktop-sidebar-footer">
+          <div class="desktop-context-label">Workspace</div>
+          <div id="desktopWorkspaceName" class="desktop-context-value">載入中</div>
+          <div id="desktopRoleLabel" class="desktop-sidebar-role">角色確認中</div>
+          <button id="desktopLogoutButton" class="desktop-logout-button" type="button" onclick="desktopLogout()">登出</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="page desktop-main">
+      <header class="desktop-topbar" hidden>
+        <div>
+          <div class="desktop-page-kicker">Tenant Operations</div>
+          <div class="desktop-page-title">房客</div>
+        </div>
+        <div class="desktop-topbar-meta">
+          <span class="desktop-status-pill">Workspace</span>
+          <span id="desktopTopbarWorkspaceName">載入中</span>
+        </div>
+      </header>
       <div id="app">
         <section class="card loading-card">
           <div class="loading-spinner"></div>
@@ -946,6 +980,45 @@
             ? '&test=1'
             : ''
         );
+    }
+
+    function setDesktopText(id, value) {
+      const element =
+        document.getElementById(id);
+
+      if (element) {
+        element.textContent =
+          rawText(value) || '-';
+      }
+    }
+
+    function updateDesktopChrome(workspaceName, roleLabel) {
+      setDesktopText(
+        'desktopWorkspaceName',
+        workspaceName || '目前 Workspace'
+      );
+      setDesktopText(
+        'desktopTopbarWorkspaceName',
+        workspaceName || '目前 Workspace'
+      );
+      setDesktopText(
+        'desktopRoleLabel',
+        roleLabel || '房東'
+      );
+    }
+
+    function desktopLogout() {
+      if (
+        window.CMWebsLandlordAuth &&
+        typeof window.CMWebsLandlordAuth.logout ===
+          'function'
+      ) {
+        window.CMWebsLandlordAuth.logout();
+        return;
+      }
+
+      location.href =
+        LANDLORD_ENTRY_URL;
     }
 
     function goTenantDetail(
@@ -1868,9 +1941,103 @@
       }
 
       list.innerHTML =
+        renderTenantTable(tenants) +
         tenants
           .map(renderTenantCard)
           .join('');
+    }
+
+    function renderTenantTable(tenants) {
+      return `
+        <div class="tenant-table-wrap desktop-table-wrap" hidden>
+          <table class="tenant-desktop-table">
+            <thead>
+              <tr>
+                <th>房客</th>
+                <th>房間</th>
+                <th>帳款</th>
+                <th>合約</th>
+                <th>綁定</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tenants.map(renderTenantRow).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderTenantRow(tenant) {
+      const tenantId =
+        rawText(
+          tenant.tenant_id
+        ).trim();
+
+      const contract =
+        CONTRACT_SUMMARY_BY_TENANT[
+          tenantId
+        ] || {
+          pending: 0,
+          approved: 0,
+          totalActive: 0
+        };
+
+      const paymentStatus =
+        normalizeStatus(
+          tenant.latest_payment_status
+        );
+
+      const bindingStatus =
+        rawText(
+          tenant.tenant_line_user_id
+        ).trim()
+          ? 'bound'
+          : (
+              tenant.tenant_binding_status ||
+              'unbound'
+            );
+
+      const contractExpiry =
+        formatContractExpiry(
+          tenant.contract_end_date ||
+          tenant.end_date
+        );
+
+      return `
+        <tr>
+          <td>
+            <div class="tenant-desktop-name">${safeHtml(tenant.tenant_name || '未命名房客')}</div>
+            <div class="tenant-desktop-meta">${safeHtml(tenantId || '-')}・${safeHtml(tenant.tenant_phone || '-')}</div>
+          </td>
+          <td>${safeHtml(tenant.room_list || '-')}</td>
+          <td>
+            <span class="${statusBadgeClass(paymentStatus)}">${safeHtml(statusLabel(paymentStatus))}</span>
+            <div class="tenant-desktop-meta">未繳 ${money(tenant.unpaid_total_amount)}</div>
+          </td>
+          <td>
+            ${contractExpiry ? safeHtml(contractExpiry.date) : '-'}
+            <div class="tenant-desktop-meta">
+              待審 ${contract.pending}・待完成 ${contract.approved}
+            </div>
+          </td>
+          <td>
+            <span class="${statusBadgeClass(bindingStatus)}">${safeHtml(statusLabel(bindingStatus))}</span>
+          </td>
+          <td>
+            <div class="tenant-desktop-actions">
+              <button class="tenant-action-button primary" type="button" onclick="goTenantDetail('${safeHtml(tenantId)}')">詳情</button>
+              <button class="tenant-action-button purple" type="button" onclick="goTenantContractRequests('${safeHtml(tenantId)}', event)">合約</button>
+              ${
+                bindingStatus === 'unbound'
+                  ? `<button class="tenant-action-button" type="button" onclick="shareTenantBindingInvite(event)">邀請綁定</button>`
+                  : ''
+              }
+            </div>
+          </td>
+        </tr>
+      `;
     }
 
     function renderPage(
@@ -1902,6 +2069,16 @@
 
       const landlord =
         TENANT_DATA.landlord || {};
+
+      updateDesktopChrome(
+        TENANT_DATA.workspace_name ||
+          TENANT_DATA.workspace &&
+            TENANT_DATA.workspace.workspace_name ||
+          landlord.workspace_name,
+        landlord.role_label ||
+          landlord.role ||
+          '房東'
+      );
 
       const summary =
         TENANT_DATA.summary || {};
