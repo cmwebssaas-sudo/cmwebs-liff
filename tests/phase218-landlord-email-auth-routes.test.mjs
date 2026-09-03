@@ -3,60 +3,113 @@ import { readFileSync } from 'node:fs';
 
 const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
 
-const postOnlyActions = [
-  'landlord_email_verify_request',
-  'landlord_email_verify_code',
-  'landlord_email_login_request',
-  'landlord_email_login_verify',
-  'landlord_email_session_status',
-  'landlord_email_session_revoke'
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const doGetStart = dispatcherSource.indexOf('function doGet(e) {');
+const doPostStart = dispatcherSource.indexOf('function doPost(e) {');
+const doPostEnd = dispatcherSource.indexOf('\n  } catch (err) {', doPostStart);
+
+assert.notEqual(doGetStart, -1, 'dispatcher must define doGet');
+assert.notEqual(doPostStart, -1, 'dispatcher must define doPost');
+assert.notEqual(doPostEnd, -1, 'dispatcher must include the doPost dispatcher body');
+
+const doGetSource = dispatcherSource.slice(doGetStart, doPostStart);
+const doPostSource = dispatcherSource.slice(doPostStart, doPostEnd);
+
+const actionMappings = [
+  {
+    action: 'landlord_email_verify_request',
+    handler: 'requestLandlordEmailVerificationByLineUid_',
+    fields: [
+      "request.line_user_id || ''",
+      "request.email || ''",
+      "request.request_id || ''"
+    ]
+  },
+  {
+    action: 'landlord_email_verify_code',
+    handler: 'verifyLandlordEmailVerificationCodeByLineUid_',
+    fields: [
+      "request.line_user_id || ''",
+      "request.challenge_id || ''",
+      "request.code || ''",
+      "request.request_id || ''"
+    ]
+  },
+  {
+    action: 'landlord_email_login_request',
+    handler: 'requestLandlordEmailLogin_',
+    fields: [
+      "request.email || ''",
+      "request.request_id || ''"
+    ]
+  },
+  {
+    action: 'landlord_email_login_verify',
+    handler: 'verifyLandlordEmailLogin_',
+    fields: [
+      "request.challenge_id || ''",
+      "request.code || ''",
+      "request.request_id || ''"
+    ]
+  },
+  {
+    action: 'landlord_email_session_status',
+    handler: 'getLandlordEmailSessionStatus_',
+    fields: [
+      "request.landlord_session_token || ''",
+      "request.request_id || ''"
+    ]
+  },
+  {
+    action: 'landlord_email_session_revoke',
+    handler: 'revokeLandlordEmailSession_',
+    fields: [
+      "request.landlord_session_token || ''",
+      "request.request_id || ''"
+    ]
+  }
 ];
 
-for (const action of postOnlyActions) {
+for (const mapping of actionMappings) {
+  const actionPattern = new RegExp(`action\\s*===\\s*'${escapeRegExp(mapping.action)}'`, 'g');
   assert.equal(
-    dispatcherSource.includes(`'${action}'`),
-    true,
-    `${action} must be registered in the dispatcher contract`
+    doPostSource.match(actionPattern)?.length || 0,
+    1,
+    `${mapping.action} must have exactly one explicit doPost action mapping`
   );
 
-  const getBranchPattern = new RegExp(`v2Action\\s*===\\s*'${action}'`);
   assert.equal(
-    getBranchPattern.test(dispatcherSource),
+    new RegExp(`v2Action\\s*===\\s*'${escapeRegExp(mapping.action)}'`).test(doGetSource),
     false,
-    `${action} must not be exposed through doGet`
+    `${mapping.action} must not be exposed through doGet`
+  );
+
+  const bodyForwardingPattern = new RegExp(
+    `action\\s*===\\s*'${escapeRegExp(mapping.action)}'[\\s\\S]*?${escapeRegExp(mapping.handler)}\\s*\\([\\s\\S]*?${mapping.fields.map((field) => escapeRegExp(field)).join('[\\s\\S]*?')}[\\s\\S]*?\\)`,
+    'm'
+  );
+  assert.match(
+    doPostSource,
+    bodyForwardingPattern,
+    `${mapping.action} must forward the expected request body fields to ${mapping.handler}`
   );
 }
 
 assert.match(
-  dispatcherSource,
-  /landlordEmailAuthIsRequest_\(postBody\)/,
-  'dispatcher must detect Email auth POST requests exactly once'
+  doPostSource,
+  /const action = String\(request\.(?:action|v2_action) \|\| ''\)\.trim\(\)/,
+  'doPost must normalize the Email auth action from the POST body before dispatch'
 );
-assert.match(
-  dispatcherSource,
-  /landlordEmailAuthHandlePost_\(postBody\)/,
-  'dispatcher must hand Email auth POST requests to a dedicated POST handler'
-);
-assert.equal(
-  dispatcherSource.match(/landlordEmailAuthIsRequest_\(postBody\)/g)?.length || 0,
-  1,
-  'Email auth POST detection must be wired exactly once'
-);
-assert.equal(
-  dispatcherSource.match(/landlordEmailAuthHandlePost_\(postBody\)/g)?.length || 0,
-  1,
-  'Email auth POST dispatch must be wired exactly once'
-);
-
 assert.doesNotMatch(
   dispatcherSource,
   /e\.parameter\.(?:email|otp|code|challenge_id|session_token|landlord_session_token)/,
   'Email auth secrets must never be read from GET parameters'
 );
 assert.doesNotMatch(
-  dispatcherSource,
+  doPostSource,
   /request\.(?:workspace_id|role)\s*\|\|/,
   'desktop Email auth POST bodies must not override server-resolved workspace_id or role'
 );
-
-console.log('Phase 218 landlord email auth dispatcher RED tests passed.');

@@ -1,16 +1,13 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import test from 'node:test';
 import vm from 'node:vm';
 import { existsSync, readFileSync } from 'node:fs';
 
 const moduleUrl = new URL('../apps-script/V2_LANDLORD_EMAIL_AUTH.js', import.meta.url);
-assert.equal(
-  existsSync(moduleUrl),
-  true,
-  'landlord email auth module must exist before the Email OTP contract can be released'
-);
-
-const source = readFileSync(moduleUrl, 'utf8');
+const moduleExists = existsSync(moduleUrl);
+const source = moduleExists ? readFileSync(moduleUrl, 'utf8') : '';
+const guardedTest = moduleExists ? test : test.skip;
 
 class Sheet {
   constructor(headers, rows = []) {
@@ -124,6 +121,10 @@ function rowFor(headers, values) {
   return headers.map((header) => (values[header] === undefined ? '' : values[header]));
 }
 
+function rowObject(headers, row) {
+  return Object.fromEntries(headers.map((header, index) => [header, row[index]]));
+}
+
 function createRuntime(overrides = {}) {
   const nowIso = overrides.nowIso || '2026-09-04T01:02:03.000Z';
   const users = [
@@ -137,8 +138,8 @@ function createRuntime(overrides = {}) {
       status: 'active',
       account_status: 'active',
       active_workspace_id: 'WS-1',
-      email_verified_at: '2026-09-01T00:00:00.000Z',
-      email_login_enabled: 'true',
+      email_verified_at: '',
+      email_login_enabled: '',
       updated_at: '2026-09-01T00:00:00.000Z'
     }),
     rowFor(USER_HEADERS, {
@@ -223,7 +224,7 @@ function createRuntime(overrides = {}) {
       })
     },
     MailApp: {
-      sendEmail: (message) => state.mailSends.push(message)
+      sendEmail: (...args) => state.mailSends.push(args.length === 1 ? args[0] : args)
     },
     workspaceResult_: (success, code, message, data) => ({ success, code, message, data: data || null }),
     workspaceLandlordResolveAccess_: (lineUserId) => lineUserId === 'line-1'
@@ -248,6 +249,30 @@ function createRuntime(overrides = {}) {
   return { api: context, sheets, state };
 }
 
+function sheetObjects(sheet) {
+  return sheet.getDataRange().getValues().slice(1).map((row) => rowObject(sheet.headers, row));
+}
+
+function expectedEmailHash(email) {
+  return crypto.createHash('sha256').update('email-hash-secret' + String(email).trim().toLowerCase()).digest('hex');
+}
+
+function extractOtpCode(delivery) {
+  const parts = [];
+  if (typeof delivery === 'string') {
+    parts.push(delivery);
+  } else if (Array.isArray(delivery)) {
+    parts.push(...delivery.map((item) => String(item)));
+  } else if (delivery && typeof delivery === 'object') {
+    for (const value of Object.values(delivery)) {
+      parts.push(String(value));
+    }
+  }
+  const match = parts.join('\n').match(/\b(\d{6})\b/);
+  assert.ok(match, 'Email OTP mail must expose a six-digit code to the recipient');
+  return match[1];
+}
+
 function loadEmailAuthContract(api) {
   return {
     publicActions() {
@@ -270,7 +295,15 @@ function loadEmailAuthContract(api) {
   };
 }
 
-{
+test('Phase 217 requires the landlord Email auth runtime module', () => {
+  assert.equal(
+    moduleExists,
+    true,
+    'landlord email auth module must exist before the Email OTP contract can be released'
+  );
+});
+
+guardedTest('Phase 217 exposes the fixed Email auth runtime surface', () => {
   const { api } = createRuntime();
   const emailAuth = loadEmailAuthContract(api);
   assert.equal(typeof emailAuth.requestLandlordEmailVerificationByLineUid_, 'function');
@@ -288,92 +321,133 @@ function loadEmailAuthContract(api) {
     'landlord_email_session_status',
     'landlord_email_session_revoke'
   ]);
-}
+});
 
-{
+guardedTest('Phase 217 normalizes verification Email and stores only challenge hashes', () => {
   const { api, sheets, state } = createRuntime();
-  const request = api.requestLandlordEmailLogin_(' Owner@Example.com ', 'request-1');
+  const result = api.requestLandlordEmailVerificationByLineUid_('line-1', ' Owner@Example.com ', 'verify-request-1');
+  assert.equal(result.success, true, result.code);
+  assert.equal(state.mailSends.length, 1, 'verification request must send exactly one Email');
+  const challenges = sheetObjects(sheets.V2_landlord_email_login_challenges);
+  assert.equal(challenges.length, 1);
+  assert.equal(challenges[0].email_hash, expectedEmailHash('owner@example.com'));
+  assert.notEqual(challenges[0].code_hash, extractOtpCode(state.mailSends[0]), 'challenge storage must never persist a raw verification code');
+});
+
+guardedTest('Phase 217 verifies Email codes through the verification handler contract', () => {
+  const { api, sheets, state } = createRuntime();
+  const requested = api.requestLandlordEmailVerificationByLineUid_('line-1', 'owner@example.com', 'verify-request-2');
+  assert.equal(requested.success, true, requested.code);
+  const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
+  const code = extractOtpCode(state.mailSends[0]);
+  const verified = api.verifyLandlordEmailVerificationCodeByLineUid_('line-1', challenge.challenge_id, code, 'verify-request-3');
+  assert.equal(verified.success, true, verified.code);
+  const user = sheetObjects(sheets.V2_users).find((row) => row.user_id === 'user-1');
+  assert.notEqual(String(user.email_verified_at || '').trim(), '', 'successful verification must persist email_verified_at');
+});
+
+guardedTest('Phase 217 normalizes login Email and stores only hashed login challenge values', () => {
+  const { api, sheets, state } = createRuntime();
+  const request = api.requestLandlordEmailLogin_(' Owner@Example.com ', 'login-request-1');
   assert.equal(request.success, true, request.code);
-  const challengeRows = sheets.V2_landlord_email_login_challenges.getDataRange().getValues().slice(1);
-  assert.equal(challengeRows.length, 1);
-  const challenge = Object.fromEntries(CHALLENGE_HEADERS.map((header, index) => [header, challengeRows[0][index]]));
-  assert.equal(challenge.email_hash, crypto.createHash('sha256').update('email-hash-secret' + 'owner@example.com').digest('hex'));
-  assert.notEqual(challenge.code_hash, '123456', 'challenge storage must never persist a raw OTP code');
-  assert.equal(state.mailSends.length, 1, 'login request must send exactly one email');
-}
+  assert.equal(state.mailSends.length, 1, 'login request must send exactly one Email');
+  const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
+  assert.equal(challenge.email_hash, expectedEmailHash('owner@example.com'));
+  assert.notEqual(challenge.code_hash, extractOtpCode(state.mailSends[0]), 'challenge storage must never persist a raw login code');
+});
 
-{
-  const { api, sheets } = createRuntime();
-  const first = api.requestLandlordEmailLogin_('owner@example.com', 'request-2');
-  assert.equal(first.success, true, first.code);
-  const challengeId = sheets.V2_landlord_email_login_challenges.getDataRange().getValues()[1][0];
-  const replay = api.verifyLandlordEmailLogin_(challengeId, '000000', 'request-3');
-  assert.equal(replay.success, false, 'an incorrect code must fail verification');
-  const consumed = api.verifyLandlordEmailLogin_(challengeId, '000000', 'request-4');
-  assert.equal(consumed.success, false, 'a consumed or exhausted challenge must not be reusable');
-}
+guardedTest('Phase 217 stores only a session-token hash when login verification issues a session', () => {
+  const { api, sheets, state } = createRuntime();
+  const requested = api.requestLandlordEmailLogin_('owner@example.com', 'login-request-2');
+  assert.equal(requested.success, true, requested.code);
+  const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
+  const code = extractOtpCode(state.mailSends[0]);
+  const verified = api.verifyLandlordEmailLogin_(challenge.challenge_id, code, 'login-request-3');
+  assert.equal(verified.success, true, verified.code);
+  assert.ok(verified.data && verified.data.session_token, 'successful login verification must return an opaque session token for the client');
+  const rawToken = verified.data.session_token;
+  const sessions = sheetObjects(sheets.V2_landlord_email_sessions);
+  assert.equal(sessions.length, 1);
+  assert.notEqual(sessions[0].session_token_hash, rawToken, 'session storage must not persist the raw session token');
+  assert.equal(
+    sessions.some((row) => Object.values(row).some((value) => String(value) === String(rawToken))),
+    false,
+    'the raw session token must not appear in any persisted session cell'
+  );
+});
 
-{
-  const { api, sheets, state } = createRuntime({ nowIso: '2026-09-04T01:02:03.000Z' });
-  api.requestLandlordEmailLogin_('owner@example.com', 'request-5');
-  state.nowIso = '2026-09-04T01:02:20.000Z';
-  const blocked = api.requestLandlordEmailLogin_('owner@example.com', 'request-6');
-  assert.equal(blocked.success, false, 'a resend inside 60 seconds must fail closed');
-  sheets.V2_landlord_email_login_challenges.appendRow(rowFor(CHALLENGE_HEADERS, {
-    challenge_id: 'challenge-old',
-    user_id: 'user-1',
-    email_hash: crypto.createHash('sha256').update('email-hash-secret' + 'owner@example.com').digest('hex'),
-    code_hash: 'hash',
-    issued_at: '2026-09-04T00:30:00.000Z',
-    expires_at: '2026-09-04T00:45:00.000Z',
-    attempt_count: 5,
-    last_attempt_at: '2026-09-04T00:44:00.000Z',
-    consumed_at: '',
-    status: 'issued',
-    request_id: 'request-old'
-  }));
-  const sixthAttempt = api.verifyLandlordEmailLogin_('challenge-old', '111111', 'request-7');
-  assert.equal(sixthAttempt.success, false, 'the sixth failed attempt must lock the challenge');
-}
+guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resend floods, expired sessions, revoked sessions, and Workspace mismatches', () => {
+  {
+    const { api, sheets } = createRuntime();
+    const first = api.requestLandlordEmailLogin_('owner@example.com', 'request-2');
+    assert.equal(first.success, true, first.code);
+    const challengeId = sheetObjects(sheets.V2_landlord_email_login_challenges)[0].challenge_id;
+    const wrongAttempt = api.verifyLandlordEmailLogin_(challengeId, '000000', 'request-3');
+    assert.equal(wrongAttempt.success, false, 'an incorrect code must fail verification');
+    const consumed = api.verifyLandlordEmailLogin_(challengeId, '000000', 'request-4');
+    assert.equal(consumed.success, false, 'a consumed or exhausted challenge must not be reusable');
+  }
 
-{
-  const { api, sheets } = createRuntime();
-  sheets.V2_landlord_email_sessions.appendRow(rowFor(SESSION_HEADERS, {
-    session_id: 'session-1',
-    session_token_hash: crypto.createHash('sha256').update('opaque-session-token').digest('hex'),
-    user_id: 'user-1',
-    workspace_id: 'WS-1',
-    role: 'owner',
-    issued_at: '2026-09-04T00:00:00.000Z',
-    expires_at: '2026-09-04T00:10:00.000Z',
-    last_seen_at: '2026-09-04T00:00:00.000Z',
-    revoked_at: '',
-    status: 'active',
-    request_id: 'request-session-1'
-  }));
-  const expired = api.getLandlordEmailSessionStatus_('opaque-session-token', 'request-8');
-  assert.equal(expired.code, 'SESSION_EXPIRED');
-}
+  {
+    const { api, sheets, state } = createRuntime({ nowIso: '2026-09-04T01:02:03.000Z' });
+    api.requestLandlordEmailLogin_('owner@example.com', 'request-5');
+    state.nowIso = '2026-09-04T01:02:20.000Z';
+    const blocked = api.requestLandlordEmailLogin_('owner@example.com', 'request-6');
+    assert.equal(blocked.success, false, 'a resend inside 60 seconds must fail closed');
+    sheets.V2_landlord_email_login_challenges.appendRow(rowFor(CHALLENGE_HEADERS, {
+      challenge_id: 'challenge-old',
+      user_id: 'user-1',
+      email_hash: expectedEmailHash('owner@example.com'),
+      code_hash: 'hash',
+      issued_at: '2026-09-04T00:30:00.000Z',
+      expires_at: '2026-09-04T00:45:00.000Z',
+      attempt_count: 5,
+      last_attempt_at: '2026-09-04T00:44:00.000Z',
+      consumed_at: '',
+      status: 'issued',
+      request_id: 'request-old'
+    }));
+    const sixthAttempt = api.verifyLandlordEmailLogin_('challenge-old', '111111', 'request-7');
+    assert.equal(sixthAttempt.success, false, 'the sixth failed attempt must lock the challenge');
+  }
 
-{
-  const { api, sheets } = createRuntime({ accessWorkspaceId: 'WS-2' });
-  sheets.V2_landlord_email_sessions.appendRow(rowFor(SESSION_HEADERS, {
-    session_id: 'session-2',
-    session_token_hash: crypto.createHash('sha256').update('opaque-session-token-2').digest('hex'),
-    user_id: 'user-1',
-    workspace_id: 'WS-1',
-    role: 'owner',
-    issued_at: '2026-09-04T00:00:00.000Z',
-    expires_at: '2026-09-04T02:00:00.000Z',
-    last_seen_at: '2026-09-04T00:00:00.000Z',
-    revoked_at: '',
-    status: 'active',
-    request_id: 'request-session-2'
-  }));
-  const mismatch = api.resolveLandlordEmailSession_('opaque-session-token-2', 'request-9');
-  assert.equal(mismatch.code, 'WORKSPACE_FORBIDDEN');
-  const revoked = api.revokeLandlordEmailSession_('opaque-session-token-2', 'request-10');
-  assert.equal(revoked.success, true, revoked.code);
-}
+  {
+    const { api, sheets } = createRuntime();
+    sheets.V2_landlord_email_sessions.appendRow(rowFor(SESSION_HEADERS, {
+      session_id: 'session-1',
+      session_token_hash: crypto.createHash('sha256').update('opaque-session-token').digest('hex'),
+      user_id: 'user-1',
+      workspace_id: 'WS-1',
+      role: 'owner',
+      issued_at: '2026-09-04T00:00:00.000Z',
+      expires_at: '2026-09-04T00:10:00.000Z',
+      last_seen_at: '2026-09-04T00:00:00.000Z',
+      revoked_at: '',
+      status: 'active',
+      request_id: 'request-session-1'
+    }));
+    const expired = api.getLandlordEmailSessionStatus_('opaque-session-token', 'request-8');
+    assert.equal(expired.code, 'SESSION_EXPIRED');
+  }
 
-console.log('Phase 217 landlord email auth contract runtime RED tests passed.');
+  {
+    const { api, sheets } = createRuntime({ accessWorkspaceId: 'WS-2' });
+    sheets.V2_landlord_email_sessions.appendRow(rowFor(SESSION_HEADERS, {
+      session_id: 'session-2',
+      session_token_hash: crypto.createHash('sha256').update('opaque-session-token-2').digest('hex'),
+      user_id: 'user-1',
+      workspace_id: 'WS-1',
+      role: 'owner',
+      issued_at: '2026-09-04T00:00:00.000Z',
+      expires_at: '2026-09-04T02:00:00.000Z',
+      last_seen_at: '2026-09-04T00:00:00.000Z',
+      revoked_at: '',
+      status: 'active',
+      request_id: 'request-session-2'
+    }));
+    const mismatch = api.resolveLandlordEmailSession_('opaque-session-token-2', 'request-9');
+    assert.equal(mismatch.code, 'WORKSPACE_FORBIDDEN');
+    const revoked = api.revokeLandlordEmailSession_('opaque-session-token-2', 'request-10');
+    assert.equal(revoked.success, true, revoked.code);
+  }
+});
