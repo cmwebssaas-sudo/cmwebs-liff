@@ -7,16 +7,60 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-const doGetStart = dispatcherSource.indexOf('function doGet(e) {');
-const doPostStart = dispatcherSource.indexOf('function doPost(e) {');
-const doPostEnd = dispatcherSource.indexOf('\n  } catch (err) {', doPostStart);
+function extractFunctionSource(source, functionName) {
+  const match = new RegExp(
+    `(?:async\\s+)?function\\s+${functionName}\\s*\\(`
+  ).exec(source);
 
-assert.notEqual(doGetStart, -1, 'dispatcher must define doGet');
-assert.notEqual(doPostStart, -1, 'dispatcher must define doPost');
+  assert.ok(match, `dispatcher must define ${functionName}`);
+
+  const start = match.index;
+  const bodyStart = source.indexOf('{', start);
+  assert.notEqual(bodyStart, -1, `dispatcher ${functionName} must include a body`);
+
+  let depth = 0;
+  let quote = '';
+  let escaped = false;
+
+  for (let index = bodyStart; index < source.length; index += 1) {
+    const character = source[index];
+
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === quote) {
+        quote = '';
+      }
+      continue;
+    }
+
+    if (character === "'" || character === '"' || character === '`') {
+      quote = character;
+      continue;
+    }
+
+    if (character === '{') {
+      depth += 1;
+    } else if (character === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(start, index + 1);
+      }
+    }
+  }
+
+  throw new Error(`unterminated dispatcher function ${functionName}`);
+}
+
+const doGetSource = extractFunctionSource(dispatcherSource, 'doGet');
+const doPostFullSource = extractFunctionSource(dispatcherSource, 'doPost');
+const doPostEnd = doPostFullSource.indexOf('\n  } catch (err) {');
+
 assert.notEqual(doPostEnd, -1, 'dispatcher must include the doPost dispatcher body');
 
-const doGetSource = dispatcherSource.slice(doGetStart, doPostStart);
-const doPostSource = dispatcherSource.slice(doPostStart, doPostEnd);
+const doPostSource = doPostFullSource.slice(0, doPostEnd);
 
 function actionConditionPattern(action) {
   const directAction = `String\\(request\\.(?:action|v2_action)\\s*\\|\\|\\s*''\\)\\s*\\.\\s*trim\\(\\)\\s*===\\s*'${escapeRegExp(action)}'`;
@@ -88,7 +132,7 @@ for (const mapping of actionMappings) {
   );
 
   assert.equal(
-    doGetSource.includes(`'${mapping.action}'`) || doGetSource.includes(`"${mapping.action}"`),
+    doGetSource.includes(mapping.action),
     false,
     `${mapping.action} must not appear anywhere in doGet`
   );
