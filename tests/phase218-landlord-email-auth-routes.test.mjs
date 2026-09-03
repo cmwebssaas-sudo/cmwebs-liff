@@ -88,9 +88,9 @@ for (const mapping of actionMappings) {
   );
 
   assert.equal(
-    new RegExp(`v2Action\\s*===\\s*'${escapeRegExp(mapping.action)}'`).test(doGetSource),
+    doGetSource.includes(`'${mapping.action}'`) || doGetSource.includes(`"${mapping.action}"`),
     false,
-    `${mapping.action} must not be exposed through doGet`
+    `${mapping.action} must not appear anywhere in doGet`
   );
 
   const bodyForwardingPattern = new RegExp(
