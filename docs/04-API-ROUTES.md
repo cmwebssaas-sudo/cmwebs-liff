@@ -234,6 +234,42 @@ candidates the current source inventory has 83 JSONP routes.
   legacy signed-contract integration bridge or reinterpret
   `V2_contract_requests` rows as native signing submissions.
 
+## V2.1 landlord Email OTP candidate routes
+
+These routes are an approved local contract for the desktop landlord Email OTP
+slice. This section is not deployment evidence. The runtime and dispatcher
+implementation are intentionally absent in this RED-only task.
+
+| Route / POST action | Transport | Required authority | Request fields | Contracted response codes | Purpose |
+| --- | --- | --- | --- | --- | --- |
+| `landlord_email_verify_request` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `email` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Start or resend Email verification for the currently logged-in landlord. |
+| `landlord_email_verify_code` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted Email code and write `email_verified_at`. |
+| `landlord_email_login_request` | `doPost` JSON body + controlled bridge | Public desktop entry; server resolves the matching active landlord account | `action`, `request_id`, `email` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Create or resend an Email OTP login challenge without revealing account existence. |
+| `landlord_email_login_verify` | `doPost` JSON body + controlled bridge | Challenge-scoped verification only | `action`, `request_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted challenge code and mint an Email session bound to the server-resolved Workspace and role. |
+| `landlord_email_session_status` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Re-validate the current Email session and return the active auth context. |
+| `landlord_email_session_revoke` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Revoke the current Email session and require a new login. |
+
+- All six Email auth actions are POST-only. `doGet` / JSONP routes stay
+  compatible for existing flows but do not carry Email, OTP code, challenge ID,
+  session token, `workspace_id`, or `role`.
+- The desktop request body cannot override the server-resolved `workspace_id`
+  or `role`. Every protected landlord action must continue to resolve the
+  active Workspace membership and authorization on the server.
+- `landlord_email_login_request` and `landlord_email_login_verify` must return
+  the same outward account-discovery-safe failure surface for unknown, inactive,
+  and unverified accounts. This Task 1 contract does not invent additional
+  action-specific `code` strings before the runtime slice lands.
+- The future Email auth module is expected to publish these fixed action names:
+
+```text
+landlord_email_verify_request
+landlord_email_verify_code
+landlord_email_login_request
+landlord_email_login_verify
+landlord_email_session_status
+landlord_email_session_revoke
+```
+
 ## V2.1 landlord-initiated contract candidate routes
 
 These routes implement the approved flow for new vacant-room contracts and
