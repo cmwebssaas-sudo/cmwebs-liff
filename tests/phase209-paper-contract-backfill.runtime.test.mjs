@@ -409,6 +409,38 @@ for (const inputOverride of [
 }
 
 {
+  const legacyTenant = rowFor(TENANT_HEADERS, {
+    tenant_id: 'T202-LEGACY', tenant_user_id: 'U202-LEGACY', user_id: 'U202-LEGACY', workspace_id: 'W1', landlord_id: 'L1',
+    tenant_name: '五先生', name: '五先生', tenant_phone: '0912345678', phone: '0912345678',
+    property_id: 'P1', property_name: '測試公寓', room_id: 'R202', room_name: '202', current_contract_id: 'LEGACY-202',
+    tenant_binding_status: 'pending', binding_status: 'pending', account_status: 'pending', tenant_account_status: 'pending'
+  });
+  const legacyUser = rowFor(USER_HEADERS, {
+    user_id: 'U202-LEGACY', workspace_id: 'W1', landlord_id: 'L1', role: 'tenant', name: '五先生', phone: '0912345678',
+    status: 'pending', account_status: 'pending'
+  });
+  const legacyContract = rowFor(CONTRACT_HEADERS, {
+    contract_id: 'LEGACY-202', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T202-LEGACY', tenant_user_id: 'U202-LEGACY',
+    tenant_name: '五先生', tenant_phone: '0912345678', property_id: 'P1', property_name: '測試公寓', room_id: 'R202', room_name: '202',
+    start_date: '2026-09-01', end_date: '2027-08-31', contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending',
+    signing_mode: 'legacy', contract_origin: '', invite_id: '', note: '舊格式待啟用資料'
+  });
+  const runtime = makeRuntime({
+    roomStatus: 'occupied', currentContractId: '', tenants: [legacyTenant], users: [legacyUser], contracts: [legacyContract]
+  });
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
+    tenant_id: 'T202-LEGACY', idempotency_key: 'paper-replace-legacy-202', supersede_contract_id: 'LEGACY-202'
+  }));
+  assert.equal(result.success, true, result.message || result.code);
+  assert.equal(result.data.contract.previous_contract_id, 'LEGACY-202');
+  assert.equal(contractRow(runtime, 'LEGACY-202').contract_status, 'cancelled');
+  assert.equal(tenantRow(runtime, 'T202-LEGACY').account_status, 'active');
+  assert.equal(userRow(runtime, 'U202-LEGACY').status, 'active');
+  assert.equal(runtime.state.sheets.V2_contracts.rows.length, 2);
+  assert.equal(runtime.state.lineCalls.length, 0);
+}
+
+{
   const runtime = makeRuntime({
     currentContractId: 'existing-contract',
     contracts: [rowFor(CONTRACT_HEADERS, {

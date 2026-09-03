@@ -1005,7 +1005,7 @@
       );
     }
 
-    function goTenantPaperBackfill(propertyId, roomId, tenantId, supersedeContractId, orphanRecovery) {
+    function goTenantPaperBackfill(propertyId, roomId, tenantId, supersedeContractId, orphanRecovery, legacyPendingRecovery) {
       let url =
         'landlord-tenant-create.html' +
         '?mode=paper_backfill' +
@@ -1022,6 +1022,10 @@
 
       if (orphanRecovery) {
         url += '&orphan_recovery=1';
+      }
+
+      if (legacyPendingRecovery) {
+        url += '&legacy_pending_recovery=1';
       }
 
       goPage(url);
@@ -1634,12 +1638,13 @@
                       ? `
                         ${
                           room.paper_backfill_replacement_eligible ||
+                          room.paper_backfill_legacy_pending_replacement_eligible ||
                           room.paper_backfill_orphan_replacement_eligible
                             ? `
                               <button
                                 class="small-button secondary"
                                 type="button"
-                                onclick="goTenantPaperBackfill('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}','${safeHtml(room.paper_backfill_replacement_eligible ? room.paper_backfill_replacement_tenant_id : '')}','${safeHtml(room.paper_backfill_replacement_eligible ? room.paper_backfill_replacement_contract_id : room.paper_backfill_orphan_replacement_contract_id)}',${room.paper_backfill_orphan_replacement_eligible ? 'true' : 'false'})"
+                                onclick="goTenantPaperBackfill('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}','${safeHtml(room.paper_backfill_replacement_eligible ? room.paper_backfill_replacement_tenant_id : room.paper_backfill_legacy_pending_replacement_eligible ? room.paper_backfill_legacy_pending_replacement_tenant_id : '')}','${safeHtml(room.paper_backfill_replacement_eligible ? room.paper_backfill_replacement_contract_id : room.paper_backfill_legacy_pending_replacement_eligible ? room.paper_backfill_legacy_pending_replacement_contract_id : room.paper_backfill_orphan_replacement_contract_id)}',${room.paper_backfill_orphan_replacement_eligible ? 'true' : 'false'},${room.paper_backfill_legacy_pending_replacement_eligible ? 'true' : 'false'})"
                               >
                                 補登紙本並建立房客登入
                               </button>

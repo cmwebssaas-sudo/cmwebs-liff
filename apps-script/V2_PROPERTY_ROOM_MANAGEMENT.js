@@ -2415,6 +2415,44 @@ function propertyRoomBuildPropertyView_(
 }
 
 
+function propertyRoomLegacyPendingPaperBackfillEligible_(
+  contract
+) {
+  if (!contract) {
+    return false;
+  }
+
+  const status =
+    propertyRoomText_(
+      contract.contract_status ||
+      contract.status
+    ).toLowerCase();
+
+  return [
+    'pending_tenant_signature',
+    'awaiting_tenant_signature'
+  ].indexOf(
+    status
+  ) >= 0 &&
+    propertyRoomText_(
+      contract.contract_id
+    ) !== '' &&
+    propertyRoomText_(
+      contract.tenant_id
+    ) !== '' &&
+    propertyRoomText_(
+      contract.contract_origin
+    ) === '' &&
+    propertyRoomText_(
+      contract.invite_id
+    ) === '' &&
+    propertyRoomText_(
+      contract.tenant_line_user_id ||
+      contract.line_user_id
+    ) === '';
+}
+
+
 function propertyRoomBuildRoomView_(
   room,
   currentContractRoomMap,
@@ -2486,6 +2524,21 @@ function propertyRoomBuildRoomView_(
   const paperBackfillReplacementEligible =
     Boolean(
       paperBackfillReplacementContract
+    );
+
+  const paperBackfillLegacyPendingReplacementContract =
+    [
+      currentContract,
+      latestContract
+    ].find(function (contract) {
+      return propertyRoomLegacyPendingPaperBackfillEligible_(
+        contract
+      );
+    }) || null;
+
+  const paperBackfillLegacyPendingReplacementEligible =
+    Boolean(
+      paperBackfillLegacyPendingReplacementContract
     );
 
   const currentContractTenantId =
@@ -2798,6 +2851,30 @@ function propertyRoomBuildRoomView_(
       paperBackfillReplacementEligible
         ? propertyRoomText_(
             paperBackfillReplacementContract.tenant_name
+          )
+        : '',
+
+    paper_backfill_legacy_pending_replacement_eligible:
+      paperBackfillLegacyPendingReplacementEligible,
+
+    paper_backfill_legacy_pending_replacement_contract_id:
+      paperBackfillLegacyPendingReplacementEligible
+        ? propertyRoomText_(
+            paperBackfillLegacyPendingReplacementContract.contract_id
+          )
+        : '',
+
+    paper_backfill_legacy_pending_replacement_tenant_id:
+      paperBackfillLegacyPendingReplacementEligible
+        ? propertyRoomText_(
+            paperBackfillLegacyPendingReplacementContract.tenant_id
+          )
+        : '',
+
+    paper_backfill_legacy_pending_replacement_tenant_name:
+      paperBackfillLegacyPendingReplacementEligible
+        ? propertyRoomText_(
+            paperBackfillLegacyPendingReplacementContract.tenant_name
           )
         : '',
 

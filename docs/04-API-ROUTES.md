@@ -377,6 +377,11 @@ build.
   `previous_contract_id`, activates the existing pending tenant account as
   `unbound`, and does not create a replacement electronic invite or send LINE.
   Claimed, completed, mismatched, or otherwise active contracts remain blocked.
+- A legacy pending contract with the same Workspace, room and existing tenant,
+  but blank `contract_origin` and `invite_id`, is also eligible when it has no
+  LINE identity. The paper row reuses that tenant/user, closes the legacy
+  pending row as `cancelled`, links through `previous_contract_id`, and keeps
+  the operation LINE-free.
 - A separate orphan-recovery form of `supersede_contract_id` is accepted only
   when the same-Workspace source contract has no matching `V2_tenants` row and
   no LINE identity. The source contract is retained and marked `cancelled`, an
