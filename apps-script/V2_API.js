@@ -4500,6 +4500,173 @@ function htmlBridgeOutput_(obj, requestId) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+function resolveLandlordPrincipal_(request) {
+  request = request || {};
+
+  if (
+    request.landlord_session_token
+  ) {
+    if (
+      typeof resolveLandlordEmailSession_ !==
+      'function'
+    ) {
+      return {
+        success: false,
+        code: 'EMAIL_SESSION_MODULE_REQUIRED',
+        message: '找不到 Email session 模組',
+        data: null
+      };
+    }
+
+    const session =
+      resolveLandlordEmailSession_(
+        request.landlord_session_token || '',
+        request.request_id || ''
+      );
+    if (!session || session.success !== true) {
+      return session || {
+        success: false,
+        code: 'AUTH_REQUIRED',
+        message: '請重新登入',
+        data: null
+      };
+    }
+
+    const data =
+      session.data || {};
+    const user =
+      data.user || {};
+    const workspace =
+      data.workspace || {};
+    const membership =
+      data.membership || {};
+
+    return {
+      success: true,
+      code: 'OK',
+      message: '',
+      data: {
+        source: 'email_session',
+        user: user,
+        workspace: workspace,
+        membership: membership,
+        user_id:
+          data.user_id ||
+          user.user_id ||
+          '',
+        workspace_id:
+          data.workspace_id ||
+          workspace.workspace_id ||
+          '',
+        role:
+          data.role ||
+          membership.role ||
+          '',
+        line_user_id:
+          user.line_user_id ||
+          membership.line_user_id ||
+          '',
+        principal_line_user_id:
+          user.line_user_id ||
+          membership.line_user_id ||
+          ''
+      }
+    };
+  }
+
+  if (
+    typeof workspaceLandlordResolveAccess_ !==
+    'function'
+  ) {
+    return {
+      success: false,
+      code: 'WORKSPACE_MODULE_REQUIRED',
+      message: '找不到 Workspace 基礎模組',
+      data: null
+    };
+  }
+
+  const access =
+    workspaceLandlordResolveAccess_(
+      request.line_user_id || '',
+      {
+        skip_schema_ensure: false,
+        skip_legacy_context_creation: true
+      }
+    );
+  if (!access || access.success !== true) {
+    return access || {
+      success: false,
+      code: 'AUTH_REQUIRED',
+      message: '請先登入',
+      data: null
+    };
+  }
+
+  return {
+    success: true,
+    code: 'OK',
+    message: '',
+    data: {
+      source: 'line',
+      user: access.user || {},
+      workspace: access.workspace || {},
+      membership: access.membership || {},
+      user_id:
+        access.user && access.user.user_id
+          ? access.user.user_id
+          : '',
+      workspace_id:
+        access.workspace &&
+        access.workspace.workspace_id
+          ? access.workspace.workspace_id
+          : '',
+      role:
+        access.membership &&
+        access.membership.role
+          ? access.membership.role
+          : '',
+      line_user_id:
+        access.line_user_id || '',
+      principal_line_user_id:
+        access.principal_line_user_id ||
+        access.line_user_id ||
+        ''
+    }
+  };
+}
+
+function landlordEmailAuthPostMissingField_(fieldName) {
+  return {
+    success: false,
+    code: 'MISSING_REQUIRED_FIELD',
+    message: '缺少必要欄位：' + fieldName,
+    data: {
+      field: fieldName
+    }
+  };
+}
+
+function landlordEmailAuthPostRequires_(request, fields) {
+  for (let index = 0; index < fields.length; index += 1) {
+    const field = fields[index];
+    if (
+      String(
+        request[field] === undefined ||
+          request[field] === null
+          ? ''
+          : request[field]
+      ).trim() === ''
+    ) {
+      return landlordEmailAuthPostMissingField_(
+        field
+      );
+    }
+  }
+
+  return null;
+}
+
 
 // ==================================================
 // Sheet Helpers

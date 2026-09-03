@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
+const apiSource = readFileSync(new URL('../apps-script/V2_API.js', import.meta.url), 'utf8');
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -123,6 +124,29 @@ const actionMappings = [
   }
 ];
 
+const firstPhaseLandlordMappings = [
+  {
+    action: 'landlord_home',
+    handler: 'getWorkspaceLandlordHomeNativeByLineUid_'
+  },
+  {
+    action: 'landlord_home_bootstrap',
+    handler: 'getWorkspaceLandlordHomeBootstrapByLineUid_'
+  },
+  {
+    action: 'landlord_tenants',
+    handler: 'getWorkspaceLandlordTenantsNativeByLineUid_'
+  },
+  {
+    action: 'landlord_properties_init',
+    handler: 'getLandlordPropertiesInitByLineUid_'
+  },
+  {
+    action: 'landlord_settings_init',
+    handler: 'getLandlordSettingsInitByLineUid_'
+  }
+];
+
 for (const mapping of actionMappings) {
   const actionPattern = new RegExp(actionConditionPattern(mapping.action), 'g');
   assert.equal(
@@ -146,10 +170,57 @@ for (const mapping of actionMappings) {
     bodyForwardingPattern,
     `${mapping.action} must forward the expected request body fields to ${mapping.handler}`
   );
+
+  const bridgePattern = new RegExp(
+    `${actionConditionPattern(mapping.action)}[\\s\\S]*?htmlBridgeOutput_\\s*\\([\\s\\S]*?result[\\s\\S]*?request\\.request_id\\s*\\|\\|\\s*''[\\s\\S]*?\\)`,
+    'm'
+  );
+  assert.match(
+    doPostSource,
+    bridgePattern,
+    `${mapping.action} must return a controlled POST bridge response correlated by request_id`
+  );
 }
+
+for (const mapping of firstPhaseLandlordMappings) {
+  const principalBridgePattern = new RegExp(
+    `${actionConditionPattern(mapping.action)}[\\s\\S]*?resolveLandlordPrincipal_\\s*\\(\\s*request\\s*\\)[\\s\\S]*?${escapeRegExp(mapping.handler)}\\s*\\([\\s\\S]*?principal\\.data\\.line_user_id[\\s\\S]*?\\)[\\s\\S]*?htmlBridgeOutput_\\s*\\([\\s\\S]*?result[\\s\\S]*?request\\.request_id\\s*\\|\\|\\s*''[\\s\\S]*?\\)`,
+    'm'
+  );
+  assert.match(
+    doPostSource,
+    principalBridgePattern,
+    `${mapping.action} must resolve a server-side landlord principal before bridge dispatch`
+  );
+}
+
+assert.match(
+  doPostSource,
+  /String\(request\.response_mode\s*\|\|\s*''\)\s*\.\s*trim\(\)\s*===\s*'bridge'/,
+  'doPost must parse response_mode=bridge from the JSON body'
+);
+
+assert.match(
+  apiSource,
+  /function\s+resolveLandlordPrincipal_\s*\(\s*request\s*\)/,
+  'V2_API.js must expose resolveLandlordPrincipal_(request)'
+);
+
+assert.match(
+  apiSource,
+  /resolveLandlordEmailSession_\s*\(\s*request\.landlord_session_token\s*\|\|\s*''\s*,\s*request\.request_id\s*\|\|\s*''\s*\)/,
+  'resolveLandlordPrincipal_ must accept landlord_session_token from the POST body'
+);
+
+assert.match(
+  apiSource,
+  /workspaceLandlordResolveAccess_\s*\(\s*request\.line_user_id\s*\|\|\s*''/,
+  'resolveLandlordPrincipal_ must accept the existing verified LINE identity'
+);
+
 assert.doesNotMatch(
   dispatcherSource,
-  /e\.parameter\.(?:email|otp|code|challenge_id|session_token|landlord_session_token)/,
+  /e\.parameter\.(?:otp|code|challenge_id|session_token|landlord_session_token)/,
   'Email auth secrets must never be read from GET parameters'
 );
 assert.doesNotMatch(

@@ -2349,6 +2349,331 @@ function doPost(e) {
         request = JSON.parse(postBody);
       } catch (_) {}
 
+      if (request) {
+        const action =
+          String(request.action || request.v2_action || '')
+            .trim();
+        const useBridge =
+          String(request.response_mode || '')
+            .trim() === 'bridge';
+        let result = null;
+
+        if (action === 'landlord_email_verify_request') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'line_user_id',
+                'email',
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+
+          if (result && result.success === true) {
+            result =
+              requestLandlordEmailVerificationByLineUid_(
+                request.line_user_id || '',
+                request.email || '',
+                request.request_id || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (action === 'landlord_email_verify_code') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'line_user_id',
+                'challenge_id',
+                'code',
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+
+          if (result && result.success === true) {
+            result =
+              verifyLandlordEmailVerificationCodeByLineUid_(
+                request.line_user_id || '',
+                request.challenge_id || '',
+                request.code || '',
+                request.request_id || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (action === 'landlord_email_login_request') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'email',
+                'request_id'
+              ]
+            );
+
+          if (!result) {
+            result =
+              requestLandlordEmailLogin_(
+                request.email || '',
+                request.request_id || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (action === 'landlord_email_login_verify') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'challenge_id',
+                'code',
+                'request_id'
+              ]
+            );
+
+          if (!result) {
+            result =
+              verifyLandlordEmailLogin_(
+                request.challenge_id || '',
+                request.code || '',
+                request.request_id || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (action === 'landlord_email_session_status') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'landlord_session_token',
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+
+          if (result && result.success === true) {
+            result =
+              getLandlordEmailSessionStatus_(
+                request.landlord_session_token || '',
+                request.request_id || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (action === 'landlord_email_session_revoke') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'landlord_session_token',
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+
+          if (result && result.success === true) {
+            result =
+              revokeLandlordEmailSession_(
+                request.landlord_session_token || '',
+                request.request_id || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && action === 'landlord_home') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getWorkspaceLandlordHomeNativeByLineUid_(
+                principal.data.line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && action === 'landlord_home_bootstrap') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getWorkspaceLandlordHomeBootstrapByLineUid_(
+                principal.data.line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && action === 'landlord_tenants') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getWorkspaceLandlordTenantsNativeByLineUid_(
+                principal.data.line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && action === 'landlord_properties_init') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getLandlordPropertiesInitByLineUid_(
+                principal.data.line_user_id,
+                request.include_archived || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && action === 'landlord_settings_init') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getLandlordSettingsInitByLineUid_(
+                principal.data.line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge) {
+          // Reserved for POST-only landlord auth transports added in later
+          // slices; unrelated JSON POST handlers below keep their JSON output.
+        }
+      }
+
       if (
         request &&
         String(request.v2_action || '')

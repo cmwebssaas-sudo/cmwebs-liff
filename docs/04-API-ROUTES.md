@@ -237,8 +237,9 @@ candidates the current source inventory has 83 JSONP routes.
 ## V2.1 landlord Email OTP candidate routes
 
 These routes are an approved local contract for the desktop landlord Email OTP
-slice. This section is not deployment evidence. The runtime and dispatcher
-implementation are intentionally absent in this RED-only task.
+slice. This section is not deployment evidence. The dispatcher routes are
+handled only through POST JSON body fields and return a controlled HTML bridge
+envelope correlated by `request_id`.
 
 | Route / POST action | Transport | Required authority | Request fields | Contracted response codes | Purpose |
 | --- | --- | --- | --- | --- | --- |
@@ -246,8 +247,8 @@ implementation are intentionally absent in this RED-only task.
 | `landlord_email_verify_code` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted Email code and write `email_verified_at`. |
 | `landlord_email_login_request` | `doPost` JSON body + controlled bridge | Public desktop entry; server resolves the matching active landlord account | `action`, `request_id`, `email` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Create or resend an Email OTP login challenge without revealing account existence. |
 | `landlord_email_login_verify` | `doPost` JSON body + controlled bridge | Challenge-scoped verification only | `action`, `request_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted challenge code and mint an Email session bound to the server-resolved Workspace and role. |
-| `landlord_email_session_status` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Re-validate the current Email session and return the active auth context. |
-| `landlord_email_session_revoke` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Revoke the current Email session and require a new login. |
+| `landlord_email_session_status` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `landlord_session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Re-validate the current Email session and return the active auth context. |
+| `landlord_email_session_revoke` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `landlord_session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Revoke the current Email session and require a new login. |
 
 - All six Email auth actions are POST-only. `doGet` / JSONP routes stay
   compatible for existing flows but do not carry Email, OTP code, challenge ID,
@@ -255,6 +256,16 @@ implementation are intentionally absent in this RED-only task.
 - The desktop request body cannot override the server-resolved `workspace_id`
   or `role`. Every protected landlord action must continue to resolve the
   active Workspace membership and authorization on the server.
+- `resolveLandlordPrincipal_(request)` is the server-side dispatcher boundary
+  for landlord principals. It accepts either the existing verified LINE
+  identity for mobile-compatible requests or `landlord_session_token` for
+  desktop Email sessions, then returns canonical user, Workspace, membership,
+  role and principal values inside Apps Script only.
+- The first-phase landlord read routes `landlord_home`,
+  `landlord_home_bootstrap`, `landlord_tenants`, `landlord_properties_init`,
+  and `landlord_settings_init` may use the same POST bridge. The dispatcher
+  resolves the landlord principal first and forwards only the server-derived
+  LINE-compatible principal to the existing ownership-checked backend helpers.
 - `landlord_email_login_request` and `landlord_email_login_verify` must return
   the same outward account-discovery-safe failure surface for unknown, inactive,
   and unverified accounts. This Task 1 contract does not invent additional
