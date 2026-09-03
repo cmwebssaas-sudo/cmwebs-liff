@@ -2371,11 +2371,15 @@ function doPost(e) {
             resolveLandlordPrincipal_(
               request
             );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
 
-          if (result && result.success === true) {
+          if (principal) {
             result =
               requestLandlordEmailVerificationByLineUid_(
-                request.line_user_id || '',
+                principal.data.principal_line_user_id || '',
                 request.email || '',
                 request.request_id || ''
               );
@@ -2401,11 +2405,15 @@ function doPost(e) {
             resolveLandlordPrincipal_(
               request
             );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
 
-          if (result && result.success === true) {
+          if (principal) {
             result =
               verifyLandlordEmailVerificationCodeByLineUid_(
-                request.line_user_id || '',
+                principal.data.principal_line_user_id || '',
                 request.challenge_id || '',
                 request.code || '',
                 request.request_id || ''
@@ -2527,6 +2535,7 @@ function doPost(e) {
             landlordEmailAuthPostRequires_(
               request,
               [
+                'landlord_session_token',
                 'request_id'
               ]
             ) ||
@@ -2541,7 +2550,7 @@ function doPost(e) {
           if (principal) {
             result =
               getWorkspaceLandlordHomeNativeByLineUid_(
-                principal.data.line_user_id
+                principal.data.principal_line_user_id
               );
           }
 
@@ -2556,6 +2565,7 @@ function doPost(e) {
             landlordEmailAuthPostRequires_(
               request,
               [
+                'landlord_session_token',
                 'request_id'
               ]
             ) ||
@@ -2570,7 +2580,7 @@ function doPost(e) {
           if (principal) {
             result =
               getWorkspaceLandlordHomeBootstrapByLineUid_(
-                principal.data.line_user_id
+                principal.data.principal_line_user_id
               );
           }
 
@@ -2585,6 +2595,7 @@ function doPost(e) {
             landlordEmailAuthPostRequires_(
               request,
               [
+                'landlord_session_token',
                 'request_id'
               ]
             ) ||
@@ -2599,7 +2610,7 @@ function doPost(e) {
           if (principal) {
             result =
               getWorkspaceLandlordTenantsNativeByLineUid_(
-                principal.data.line_user_id
+                principal.data.principal_line_user_id
               );
           }
 
@@ -2614,6 +2625,7 @@ function doPost(e) {
             landlordEmailAuthPostRequires_(
               request,
               [
+                'landlord_session_token',
                 'request_id'
               ]
             ) ||
@@ -2628,7 +2640,7 @@ function doPost(e) {
           if (principal) {
             result =
               getLandlordPropertiesInitByLineUid_(
-                principal.data.line_user_id,
+                principal.data.principal_line_user_id,
                 request.include_archived || ''
               );
           }
@@ -2644,6 +2656,7 @@ function doPost(e) {
             landlordEmailAuthPostRequires_(
               request,
               [
+                'landlord_session_token',
                 'request_id'
               ]
             ) ||
@@ -2658,7 +2671,7 @@ function doPost(e) {
           if (principal) {
             result =
               getLandlordSettingsInitByLineUid_(
-                principal.data.line_user_id
+                principal.data.principal_line_user_id
               );
           }
 

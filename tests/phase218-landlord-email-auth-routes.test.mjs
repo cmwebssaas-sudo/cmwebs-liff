@@ -74,7 +74,7 @@ const actionMappings = [
     action: 'landlord_email_verify_request',
     handler: 'requestLandlordEmailVerificationByLineUid_',
     fields: [
-      "request.line_user_id || ''",
+      "principal.data.principal_line_user_id || ''",
       "request.email || ''",
       "request.request_id || ''"
     ]
@@ -83,7 +83,7 @@ const actionMappings = [
     action: 'landlord_email_verify_code',
     handler: 'verifyLandlordEmailVerificationCodeByLineUid_',
     fields: [
-      "request.line_user_id || ''",
+      "principal.data.principal_line_user_id || ''",
       "request.challenge_id || ''",
       "request.code || ''",
       "request.request_id || ''"
@@ -183,8 +183,18 @@ for (const mapping of actionMappings) {
 }
 
 for (const mapping of firstPhaseLandlordMappings) {
+  const tokenRequiredPattern = new RegExp(
+    `${actionConditionPattern(mapping.action)}[\\s\\S]*?landlordEmailAuthPostRequires_\\s*\\([\\s\\S]*?request[\\s\\S]*?'landlord_session_token'[\\s\\S]*?'request_id'[\\s\\S]*?\\)[\\s\\S]*?resolveLandlordPrincipal_\\s*\\(\\s*request\\s*\\)`,
+    'm'
+  );
+  assert.match(
+    doPostSource,
+    tokenRequiredPattern,
+    `${mapping.action} bridge dispatch must require landlord_session_token before resolving a principal`
+  );
+
   const principalBridgePattern = new RegExp(
-    `${actionConditionPattern(mapping.action)}[\\s\\S]*?resolveLandlordPrincipal_\\s*\\(\\s*request\\s*\\)[\\s\\S]*?${escapeRegExp(mapping.handler)}\\s*\\([\\s\\S]*?principal\\.data\\.line_user_id[\\s\\S]*?\\)[\\s\\S]*?htmlBridgeOutput_\\s*\\([\\s\\S]*?result[\\s\\S]*?request\\.request_id\\s*\\|\\|\\s*''[\\s\\S]*?\\)`,
+    `${actionConditionPattern(mapping.action)}[\\s\\S]*?resolveLandlordPrincipal_\\s*\\(\\s*request\\s*\\)[\\s\\S]*?${escapeRegExp(mapping.handler)}\\s*\\([\\s\\S]*?principal\\.data\\.principal_line_user_id[\\s\\S]*?\\)[\\s\\S]*?htmlBridgeOutput_\\s*\\([\\s\\S]*?result[\\s\\S]*?request\\.request_id\\s*\\|\\|\\s*''[\\s\\S]*?\\)`,
     'm'
   );
   assert.match(

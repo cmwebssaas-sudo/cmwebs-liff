@@ -243,8 +243,8 @@ envelope correlated by `request_id`.
 
 | Route / POST action | Transport | Required authority | Request fields | Contracted response codes | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| `landlord_email_verify_request` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `email` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Start or resend Email verification for the currently logged-in landlord. |
-| `landlord_email_verify_code` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted Email code and write `email_verified_at`. |
+| `landlord_email_verify_request` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `line_user_id`, `email` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Start or resend Email verification for the currently logged-in landlord. |
+| `landlord_email_verify_code` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `line_user_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted Email code and write `email_verified_at`. |
 | `landlord_email_login_request` | `doPost` JSON body + controlled bridge | Public desktop entry; server resolves the matching active landlord account | `action`, `request_id`, `email` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Create or resend an Email OTP login challenge without revealing account existence. |
 | `landlord_email_login_verify` | `doPost` JSON body + controlled bridge | Challenge-scoped verification only | `action`, `request_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted challenge code and mint an Email session bound to the server-resolved Workspace and role. |
 | `landlord_email_session_status` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `landlord_session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Re-validate the current Email session and return the active auth context. |
@@ -261,11 +261,17 @@ envelope correlated by `request_id`.
   identity for mobile-compatible requests or `landlord_session_token` for
   desktop Email sessions, then returns canonical user, Workspace, membership,
   role and principal values inside Apps Script only.
+- The LINE-bound Email verification actions keep the existing LIFF
+  `line_user_id` transport, but after server-side resolution the dispatcher
+  forwards only the resolved canonical principal into the legacy `ByLineUid`
+  helper.
 - The first-phase landlord read routes `landlord_home`,
   `landlord_home_bootstrap`, `landlord_tenants`, `landlord_properties_init`,
-  and `landlord_settings_init` may use the same POST bridge. The dispatcher
-  resolves the landlord principal first and forwards only the server-derived
-  LINE-compatible principal to the existing ownership-checked backend helpers.
+  and `landlord_settings_init` may use the same POST bridge only when
+  `response_mode=bridge` and `landlord_session_token` are present in the POST
+  body. Missing or invalid Email sessions are rejected before any route handler
+  is invoked, and these desktop bridge routes do not fall back to a client
+  `line_user_id`.
 - `landlord_email_login_request` and `landlord_email_login_verify` must return
   the same outward account-discovery-safe failure surface for unknown, inactive,
   and unverified accounts. This Task 1 contract does not invent additional
