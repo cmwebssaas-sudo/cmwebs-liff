@@ -1,11 +1,30 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-03 (Asia/Taipei)**
+**Last verified: 2026-09-04 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-04 紙本補登手機驗證輪詢修正正式部署
+
+- 修正手機 LIFF 開啟 202 紙本補登頁後顯示「建立資料載入失敗／房東身分驗證
+  連線失敗」的前端阻塞。原因是 Apps Script GET 302 轉址在手機 WebView 被誤判
+  為非成功回應；房東驗證狀態與續約狀態查詢改用不帶 LINE UID 的 JSONP 兼容通道，
+  保留一次性 `poll_secret`。
+- 前端正式 commit 為 `884a066`，release marker 為
+  `20260904-paper-contract-backfill-mobile-auth-v1`；GitHub Pages workflow
+  `33801519730` 已成功完成 build、deploy、status。
+- 公開頁 read-back：`frontend-release.js`、紙本補登頁、物件頁與三個房客入口均
+  HTTP 200；確認手機 JSONP helper、`landlord_contract_signing_review_auth_status`、
+  `legacy_pending_recovery` 與新 cache marker 均已發布。
+- 本次為前端-only 修正；Apps Script 既有 immutable Version 153 未變更，Version
+  152 仍為上一個可回滾版本。未執行 Sheet、Properties、Trigger、Drive、LINE 或
+  202／其他房客交易資料寫入。
+- 本地完整 Node suite `85/85`、候選 validator `83/83` routes／handlers、HTML
+  links `214/214`、Apps Script syntax check 與 `git diff --check` 通過。真實手機／
+  LIFF 登入與紙本補登交易仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
 
 ## 2026-09-03 紙本補登入口修正正式部署
 

@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-09-03 (Asia/Taipei)**
+**Last updated: 2026-09-04 (Asia/Taipei)**
 
 ## Purpose
 
@@ -44,6 +44,25 @@ be verified for the particular action that needs it.
 | 2026-09-03 | Landlord simple new-lease formal deployment | User explicitly requested `部署正式環境` after confirming the simplified landlord-first new-lease flow. This authorizes push, PR, merge, Apps Script immutable redeploy, and GitHub Pages publication. No Sheet migration, tenant-data write, Drive upload, Properties/Trigger change, or LINE message is part of this deployment; Version 148 and the prior Pages revision remain rollback references. Authenticated LIFF/mobile creation, identity-document upload, and tenant signing remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-03 | Landlord paper-contract backfill implementation candidate | User explicitly confirmed development of a landlord-only manual backfill for already paper-signed contracts. Scope is isolated source, tests and documentation: required private paper contract file, optional identity files, direct active/upcoming append-only lease, no contract application/electronic invite/LINE. No push, PR, merge, Apps Script or Pages deployment, Sheet/Drive/Properties/Trigger write, or LINE action is authorized by this record; authenticated mobile/LIFF/Drive UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-03 | Landlord paper-contract backfill formal deployment | User explicitly requested `正式部署`. This authorizes the clean candidate push, PR, merge, additive-only `V2_contracts` header migration, immutable Apps Script redeploy, and GitHub Pages publication for the paper-contract backfill flow. It does not authorize tenant/contract transaction creation, Drive document upload, Properties/Trigger changes, or LINE messages; rollback is to the freshly verified Version 149 and prior Pages revision. Authenticated mobile/LIFF and private Drive UAT remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
+
+## 2026-09-04 landlord paper-backfill mobile auth transport corrective release evidence
+
+- The user explicitly authorized `正式部署` after the mobile paper-backfill page
+  showed an auth connection failure. The isolated corrective release changes only
+  the landlord-page status transport and frontend cache marker; it does not change
+  Apps Script source or perform any Production data transaction.
+- Candidate branch `codex/record-paper-backfill-orphan-deploy-20260903` passed the
+  full Node suite (`85 pass, 0 fail`), the authoritative candidate validator
+  (`83/83` routes and handlers), HTML link check (`214/214`), Apps Script syntax
+  check, and `git diff --check`. Commit `884a066` was pushed to `main`.
+- GitHub Pages workflow `33801519730` completed successfully. Public read-back
+  returned HTTP 200 for the release asset, paper-backfill page, landlord property
+  page, and tenant entry pages; the JSONP status helper, auth-status action,
+  orphan-backfill entry, and new cache marker were present.
+- Apps Script immutable Version 153 remains the serving version and Version 152
+  remains the rollback reference. No Sheet, Drive, Properties, Trigger, LINE,
+  tenant, contract, or billing data was changed. Authenticated mobile／LIFF UAT
+  remains `HUMAN_REQUIRED` / `UNVERIFIED`.
 
 ## 2026-09-03 landlord paper-contract backfill formal release evidence
 

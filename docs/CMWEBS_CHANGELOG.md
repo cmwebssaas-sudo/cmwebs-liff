@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-04 — 紙本補登手機驗證輪詢修正正式部署
+
+- 修正手機 LIFF 開啟紙本補登頁時，因 Apps Script 302 轉址被誤判而顯示
+  「房東身分驗證連線失敗」的問題；驗證狀態與續約狀態改用不帶 LINE UID 的
+  JSONP 兼容通道。
+- 前端 commit `884a066`、release marker
+  `20260904-paper-contract-backfill-mobile-auth-v1` 已發布；GitHub Pages
+  workflow `33801519730` 成功完成，公開頁 read-back HTTP 200。
+- Apps Script Version 153 未變更，Version 152 保留 rollback；本次未改動
+  Sheet、房客／合約資料、Drive、Properties、Trigger 或 LINE。手機／LIFF 真機
+  驗證仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
+
 ## 2026-09-03 — 紙本補登入口修正正式部署
 
 - 修正房間仍顯示「已出租／租約中」、但有效合約已找不到對應房客資料時，
