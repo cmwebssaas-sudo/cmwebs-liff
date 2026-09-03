@@ -863,6 +863,27 @@
       );
     }
 
+    function normalizeEmail(value) {
+      return rawText(value)
+        .trim()
+        .toLowerCase();
+    }
+
+    function persistedProfileEmail() {
+      const profile =
+        PAGE_DATA && PAGE_DATA.profile
+          ? PAGE_DATA.profile
+          : {};
+      const currentUser =
+        PAGE_DATA && PAGE_DATA.current_user
+          ? PAGE_DATA.current_user
+          : {};
+      return normalizeEmail(
+        profile.email ||
+        currentUser.email
+      );
+    }
+
     function goPage(page) {
       const separator =
         page.indexOf('?') >= 0
@@ -1409,6 +1430,8 @@
       const currentUser =
         PAGE_DATA.current_user ||
         {};
+      const persistedEmail =
+        persistedProfileEmail();
       const verifiedAt =
         rawText(
           profile.email_verified_at ||
@@ -1420,6 +1443,7 @@
           currentUser.email_login_enabled
         );
       const verified =
+        Boolean(persistedEmail) &&
         Boolean(verifiedAt) &&
         enabled !== 'false' &&
         enabled !== '0';
@@ -1432,7 +1456,9 @@
             ${
               verified
                 ? 'Email 登入已啟用，驗證時間：' + safeHtml(verifiedAt)
-                : '完成驗證後，這個 Email 才能用一次性驗證碼登入桌面版。'
+                : persistedEmail
+                  ? '完成驗證後，這個 Email 才能用一次性驗證碼登入桌面版。'
+                  : '請先儲存 Email，再寄送驗證碼。'
             }
           </div>
 
@@ -2312,6 +2338,8 @@
         inputValue(
           'profileEmail'
         );
+      const persistedEmail =
+        persistedProfileEmail();
 
       if (!auth || !email) {
         showToast(
@@ -2321,10 +2349,18 @@
         return;
       }
 
+      if (normalizeEmail(email) !== persistedEmail) {
+        showToast(
+          '請先儲存 Email，再寄送驗證碼。',
+          true
+        );
+        return;
+      }
+
       try {
         const result =
           await auth.requestEmailVerification(
-            email
+            persistedEmail
           );
         EMAIL_VERIFICATION_CHALLENGE_ID =
           rawText(

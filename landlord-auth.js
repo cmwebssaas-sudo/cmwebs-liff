@@ -87,6 +87,14 @@
     }
   }
 
+  function bridgeOrigin() {
+    try {
+      return new URL(config.apiUrl).origin;
+    } catch (error) {
+      return '';
+    }
+  }
+
   function bridgePost(action, params) {
     if (!config.apiUrl) {
       return Promise.reject(
@@ -111,6 +119,8 @@
           request_id: id
         }
       );
+    const expectedOrigin =
+      bridgeOrigin();
 
     iframe.name =
       'cmwebs_landlord_auth_' + id;
@@ -148,6 +158,11 @@
             ? event.data
             : {};
         if (
+          event.source !== iframe.contentWindow ||
+          (
+            expectedOrigin &&
+            event.origin !== expectedOrigin
+          ) ||
           data.source !== 'CMWEBS_APPS_SCRIPT' ||
           data.requestId !== id
         ) {

@@ -8,6 +8,8 @@ const moduleExists = existsSync(moduleUrl);
 const source = moduleExists ? readFileSync(moduleUrl, 'utf8') : '';
 const guardedTest = moduleExists ? test : test.skip;
 const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
+const entrySource = readFileSync(new URL('../landlord-entry.html', import.meta.url), 'utf8');
+const settingsSource = readFileSync(new URL('../landlord-settings.html', import.meta.url), 'utf8');
 
 function createElement(tagName, ownerDocument) {
   const element = {
@@ -48,6 +50,9 @@ function createElement(tagName, ownerDocument) {
       ownerDocument.submittedForms.push(this);
     }
   };
+  if (element.tagName === 'IFRAME') {
+    element.contentWindow = {};
+  }
   return element;
 }
 
@@ -139,9 +144,9 @@ function createRuntime(width = 1440) {
     removeEventListener(type, callback) {
       if (listeners.has(type)) listeners.get(type).delete(callback);
     },
-    dispatchMessage(data, origin = 'https://script.google.com') {
+    dispatchMessage(data, origin = 'https://script.google.com', sourceWindow = {}) {
       for (const callback of listeners.get('message') || []) {
-        callback({ data, origin, source: {} });
+        callback({ data, origin, source: sourceWindow });
       }
     },
     listenerCount(type) {
@@ -229,13 +234,54 @@ guardedTest('Phase 219 sends Email OTP requests through a hidden POST iframe wit
         challenge_id: 'challenge-1'
       }
     }
-  });
+  }, 'https://script.google.com', iframes[0].contentWindow);
 
   const result = await request;
   assert.equal(result.success, true);
   assert.equal(context.listenerCount('message'), 0);
   assert.equal(iframes[0].parentNode, null, 'bridge iframe must be removed after completion');
   assert.equal(form.parentNode, null, 'bridge form must be removed after completion');
+});
+
+guardedTest('Phase 219 ignores bridge messages from the wrong window or origin', async () => {
+  const { context, document } = createRuntime();
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec'
+  });
+
+  const request = auth.requestEmailCode('owner@example.com');
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
+  const fields = formFields(document.submittedForms[0]);
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: { success: true }
+  }, 'https://script.google.com', {});
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: { success: true }
+  }, 'https://evil.test', iframe.contentWindow);
+
+  assert.equal(context.listenerCount('message'), 1);
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: {
+      success: true,
+      data: {
+        challenge_id: 'challenge-2'
+      }
+    }
+  }, 'https://script.google.com', iframe.contentWindow);
+
+  const result = await request;
+  assert.equal(result.success, true);
+  assert.equal(context.listenerCount('message'), 0);
 });
 
 guardedTest('Phase 219 dispatcher accepts bridge fields from hidden iframe POST forms', () => {
@@ -259,6 +305,7 @@ guardedTest('Phase 219 stores only the opaque landlord Email session token after
   });
 
   const verified = auth.verifyEmailCode('challenge-1', '123456');
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
   const fields = formFields(document.submittedForms[0]);
   assert.equal(fields.action, 'landlord_email_login_verify');
   assert.equal(fields.challenge_id, 'challenge-1');
@@ -279,7 +326,7 @@ guardedTest('Phase 219 stores only the opaque landlord Email session token after
         role: 'owner'
       }
     }
-  });
+  }, 'https://script.google.com', iframe.contentWindow);
 
   await verified;
   assert.equal(storage.get('cmwebs_landlord_session_token'), 'SESSION_TOKEN_ABC');
@@ -300,6 +347,7 @@ guardedTest('Phase 219 clears Email session and redirects through a validated re
   storage.set('cmwebs_landlord_session_token', 'SESSION_TOKEN_ABC');
 
   const status = auth.getSessionStatus();
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
   const fields = formFields(document.submittedForms[0]);
   context.dispatchMessage({
     source: 'CMWEBS_APPS_SCRIPT',
@@ -309,7 +357,7 @@ guardedTest('Phase 219 clears Email session and redirects through a validated re
       code: 'SESSION_EXPIRED',
       message: 'session expired'
     }
-  });
+  }, 'https://script.google.com', iframe.contentWindow);
 
   await assert.rejects(status, /session expired/);
   assert.equal(storage.has('cmwebs_landlord_session_token'), false);
@@ -327,4 +375,40 @@ guardedTest('Phase 219 keeps mobile in LINE mode unless an Email session exists'
 
   assert.equal(auth.getMode(), 'line');
   assert.equal(auth.getRequestAuthParams().line_user_id, 'line-1');
+});
+
+guardedTest('Phase 219 preserves desktop LINE fallback intent across LIFF reloads', () => {
+  assert.match(
+    entrySource,
+    /cmwebs_landlord_line_fallback_intent/,
+    'entry page must persist explicit LINE fallback intent before LIFF redirects'
+  );
+  assert.match(
+    entrySource,
+    /hasLineFallbackIntent\(\)[\s\S]*?initLine\(\)/,
+    'entry page must check fallback intent before the desktop Email-first branch and run the LINE path'
+  );
+  assert.match(
+    entrySource,
+    /clearLineFallbackIntent\(\)[\s\S]*?goPage\(\s*'landlord-home\.html'\s*\)/,
+    'entry page must clear fallback intent after the LINE status path succeeds'
+  );
+});
+
+guardedTest('Phase 219 settings verifies only the persisted bound Email', () => {
+  assert.match(
+    settingsSource,
+    /function\s+persistedProfileEmail\(\)/,
+    'settings page must derive the bound Email from loaded server data'
+  );
+  assert.match(
+    settingsSource,
+    /inputValue\(\s*'profileEmail'\s*\)[\s\S]*?persistedProfileEmail\(\)/,
+    'settings verification must compare the edited Email input to the persisted Email before requesting a code'
+  );
+  assert.match(
+    settingsSource,
+    /先儲存 Email/,
+    'settings page must block unsaved Email verification with a clear save-first state'
+  );
 });

@@ -360,6 +360,9 @@
       URL_PARAMS.get('stay') ===
       '1';
 
+    const LINE_FALLBACK_INTENT_KEY =
+      'cmwebs_landlord_line_fallback_intent';
+
     let RETURN_TO = '';
 
     let LINE_USER_ID = '';
@@ -573,6 +576,25 @@
     function goPage(page) {
       location.replace(
         buildPageUrl(page)
+      );
+    }
+
+    function setLineFallbackIntent() {
+      sessionStorage.setItem(
+        LINE_FALLBACK_INTENT_KEY,
+        '1'
+      );
+    }
+
+    function hasLineFallbackIntent() {
+      return sessionStorage.getItem(
+        LINE_FALLBACK_INTENT_KEY
+      ) === '1';
+    }
+
+    function clearLineFallbackIntent() {
+      sessionStorage.removeItem(
+        LINE_FALLBACK_INTENT_KEY
       );
     }
 
@@ -810,6 +832,7 @@
     }
 
     async function startLineLogin() {
+      setLineFallbackIntent();
       EMAIL_LOGIN_CHALLENGE_ID = '';
       EMAIL_LOGIN_EMAIL = '';
       clearTimeout(EMAIL_LOGIN_COUNTDOWN_TIMER);
@@ -820,6 +843,7 @@
           loadPage();
         }
       } catch (error) {
+        clearLineFallbackIntent();
         renderError(
           error && error.message
             ? error.message
@@ -1211,6 +1235,8 @@
         RETURN_TO;
       const auth =
         initAuthClient();
+      const forceLineFallback =
+        hasLineFallbackIntent();
 
       document.getElementById(
         'app'
@@ -1229,6 +1255,7 @@
       try {
         if (
           !TEST_MODE &&
+          !forceLineFallback &&
           auth &&
           auth.getMode() === 'email'
         ) {
@@ -1284,6 +1311,10 @@
               ? result.message
               : '房東入口狀態查詢失敗'
           );
+        }
+
+        if (forceLineFallback) {
+          clearLineFallbackIntent();
         }
 
         const data =
@@ -1364,6 +1395,9 @@
         );
 
       } catch (error) {
+        if (forceLineFallback) {
+          clearLineFallbackIntent();
+        }
         renderError(
           error &&
           error.message
