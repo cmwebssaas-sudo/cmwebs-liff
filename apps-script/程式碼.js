@@ -2349,6 +2349,14 @@ function doPost(e) {
         request = JSON.parse(postBody);
       } catch (_) {}
 
+      if (
+        !request &&
+        String((e.parameter || {}).response_mode || '')
+          .trim() === 'bridge'
+      ) {
+        request = Object.assign({}, e.parameter || {});
+      }
+
       if (request) {
         const action =
           String(request.action || request.v2_action || '')

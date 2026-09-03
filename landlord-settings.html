@@ -10,6 +10,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
+  <script src="landlord-auth.js"></script>
 
   <style>
     :root {
@@ -368,6 +369,24 @@
       border-color: #f3d7a9;
       background: var(--orange-soft);
       color: #8a5a12;
+    }
+
+    .inline-note.success {
+      border-color: #bfe5cc;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .email-auth-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .email-auth-actions .save-button {
+      width: 100%;
+      min-width: 0;
     }
 
     .save-row {
@@ -787,6 +806,9 @@
     let ACTIVE_TAB = 'profile';
     let toastTimer = null;
     let saving = false;
+    let EMAIL_VERIFICATION_CHALLENGE_ID = '';
+    let EMAIL_VERIFICATION_COUNTDOWN_TIMER = null;
+    let EMAIL_VERIFICATION_COUNTDOWN_UNTIL = 0;
 
     function setAppHeight() {
       const height =
@@ -859,6 +881,22 @@
         );
     }
 
+    function initAuthClient() {
+      if (!window.CMWebsLandlordAuth) {
+        return null;
+      }
+
+      return window.CMWebsLandlordAuth.init({
+        apiUrl: API_URL,
+        liffId: LIFF_ID,
+        lineUserId: LINE_USER_ID,
+        returnTo:
+          location.pathname.split('/').pop() +
+          location.search,
+        entryPage: 'landlord-entry.html'
+      });
+    }
+
     function buildLandlordLoginRedirectUri() {
       const currentUrl =
         new URL(
@@ -916,6 +954,8 @@
         LINE_USER_ID =
           TEST_LINE_USER_ID;
 
+        initAuthClient();
+
         return true;
       }
 
@@ -939,6 +979,8 @@
       LINE_USER_ID =
         profile.userId ||
         '';
+
+      initAuthClient();
 
       return true;
     }
@@ -1148,6 +1190,8 @@
     }
 
     function renderPage() {
+      initAuthClient();
+
       const workspace =
         PAGE_DATA.workspace_profile ||
         {};
@@ -1344,6 +1388,8 @@
               </div>
             </div>
 
+            ${emailVerificationPanel(profile)}
+
             <div class="save-row">
               <button
                 id="profileSaveButton"
@@ -1356,6 +1402,84 @@
             </div>
           </div>
         </section>
+      `;
+    }
+
+    function emailVerificationPanel(profile) {
+      const currentUser =
+        PAGE_DATA.current_user ||
+        {};
+      const verifiedAt =
+        rawText(
+          profile.email_verified_at ||
+          currentUser.email_verified_at
+        );
+      const enabled =
+        rawText(
+          profile.email_login_enabled ||
+          currentUser.email_login_enabled
+        );
+      const verified =
+        Boolean(verifiedAt) &&
+        enabled !== 'false' &&
+        enabled !== '0';
+
+      return `
+        <div class="subsection">
+          <div class="subsection-title">Email 登入驗證</div>
+
+          <div class="inline-note ${verified ? 'success' : ''}">
+            ${
+              verified
+                ? 'Email 登入已啟用，驗證時間：' + safeHtml(verifiedAt)
+                : '完成驗證後，這個 Email 才能用一次性驗證碼登入桌面版。'
+            }
+          </div>
+
+          <div class="form-grid" style="margin-top:12px;">
+            <div class="form-field">
+              <div class="field-label">Email 驗證碼</div>
+              <input
+                id="profileEmailVerificationCode"
+                class="input"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="6 位數驗證碼"
+              />
+            </div>
+
+            <div class="form-field">
+              <div class="readonly-box">
+                <div class="readonly-label">狀態</div>
+                <div class="readonly-value">
+                  ${verified ? '已驗證，可使用 Email 登入' : '尚未驗證'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="email-auth-actions">
+            <button
+              id="emailVerificationRequestButton"
+              class="save-button"
+              type="button"
+              onclick="requestSettingsEmailVerification()"
+            >
+              寄送驗證碼
+            </button>
+
+            <button
+              id="emailVerificationConfirmButton"
+              class="save-button"
+              type="button"
+              onclick="verifySettingsEmailVerification()"
+            >
+              確認驗證碼
+            </button>
+          </div>
+        </div>
       `;
     }
 
@@ -2122,6 +2246,152 @@
         },
         '個人資料已更新'
       );
+    }
+
+    function emailVerificationMessage(code, fallback) {
+      if (code === 'RATE_LIMITED' || code === 'CHALLENGE_RATE_LIMITED') {
+        return '驗證碼請求過於頻繁，請稍後再試。';
+      }
+      if (code === 'INVALID_CODE') {
+        return '驗證碼無效或已過期，請確認後再試。';
+      }
+      if (code === 'CHALLENGE_EXPIRED') {
+        return '驗證碼已過期，請重新寄送驗證碼。';
+      }
+      if (code === 'CHALLENGE_LOCKED') {
+        return '驗證碼嘗試次數過多，請重新寄送驗證碼。';
+      }
+      return fallback || 'Email 驗證失敗';
+    }
+
+    function updateEmailVerificationCountdown() {
+      clearTimeout(
+        EMAIL_VERIFICATION_COUNTDOWN_TIMER
+      );
+
+      const button =
+        document.getElementById(
+          'emailVerificationRequestButton'
+        );
+      if (!button) {
+        return;
+      }
+
+      const remaining =
+        Math.max(
+          0,
+          Math.ceil(
+            (EMAIL_VERIFICATION_COUNTDOWN_UNTIL - Date.now()) /
+            1000
+          )
+        );
+
+      if (remaining > 0) {
+        button.disabled =
+          true;
+        button.textContent =
+          remaining + ' 秒後可重新寄送';
+        EMAIL_VERIFICATION_COUNTDOWN_TIMER =
+          setTimeout(
+            updateEmailVerificationCountdown,
+            1000
+          );
+        return;
+      }
+
+      button.disabled =
+        false;
+      button.textContent =
+        '寄送驗證碼';
+    }
+
+    async function requestSettingsEmailVerification() {
+      const auth =
+        initAuthClient();
+      const email =
+        inputValue(
+          'profileEmail'
+        );
+
+      if (!auth || !email) {
+        showToast(
+          '請先輸入 Email。',
+          true
+        );
+        return;
+      }
+
+      try {
+        const result =
+          await auth.requestEmailVerification(
+            email
+          );
+        EMAIL_VERIFICATION_CHALLENGE_ID =
+          rawText(
+            result &&
+            result.data &&
+            result.data.challenge_id
+          );
+        EMAIL_VERIFICATION_COUNTDOWN_UNTIL =
+          Date.now() + 60000;
+        updateEmailVerificationCountdown();
+        showToast(
+          '若 Email 可使用，我們會寄出一次性驗證碼。'
+        );
+      } catch (error) {
+        showToast(
+          emailVerificationMessage(
+            (error && error.code) ||
+              (error && error.message),
+            'Email 驗證碼寄送失敗'
+          ),
+          true
+        );
+      }
+    }
+
+    async function verifySettingsEmailVerification() {
+      const auth =
+        initAuthClient();
+      const code =
+        inputValue(
+          'profileEmailVerificationCode'
+        );
+
+      if (!auth || !EMAIL_VERIFICATION_CHALLENGE_ID || !code) {
+        showToast(
+          '請先取得並輸入 6 位數驗證碼。',
+          true
+        );
+        return;
+      }
+
+      try {
+        await auth.verifyEmailVerification(
+          EMAIL_VERIFICATION_CHALLENGE_ID,
+          code
+        );
+        EMAIL_VERIFICATION_CHALLENGE_ID = '';
+        clearTimeout(
+          EMAIL_VERIFICATION_COUNTDOWN_TIMER
+        );
+        showToast(
+          'Email 驗證完成，已可使用 Email 登入。'
+        );
+        await loadPage(
+          false,
+          'profile'
+        );
+      } catch (error) {
+        showToast(
+          emailVerificationMessage(
+            (error && error.code) ||
+              (error && error.message),
+            'Email 驗證失敗'
+          ),
+          true
+        );
+      }
     }
 
     async function saveWorkspace() {
