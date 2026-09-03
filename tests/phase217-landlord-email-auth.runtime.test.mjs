@@ -127,6 +127,7 @@ function rowObject(headers, row) {
 
 function createRuntime(overrides = {}) {
   const nowIso = overrides.nowIso || '2026-09-04T01:02:03.000Z';
+  const nowIsoSequence = Array.isArray(overrides.nowIsoSequence) ? overrides.nowIsoSequence.slice() : null;
   const users = [
     rowFor(USER_HEADERS, {
       user_id: 'user-1',
@@ -208,6 +209,7 @@ function createRuntime(overrides = {}) {
         return () => 'uuid-' + (++counter);
       })(),
       computeDigest: (_algorithm, value) => [...crypto.createHash('sha256').update(String(value)).digest()].map((byte) => (byte > 127 ? byte - 256 : byte)),
+      computeHmacSha256Signature: (value, key) => [...crypto.createHmac('sha256', String(key)).update(String(value)).digest()].map((byte) => (byte > 127 ? byte - 256 : byte)),
       base64EncodeWebSafe: (value) => Buffer.from(String(value)).toString('base64url'),
       base64DecodeWebSafe: (value) => Buffer.from(String(value), 'base64url'),
       newBlob: (value) => ({ getDataAsString: () => Buffer.from(value).toString() })
@@ -240,7 +242,7 @@ function createRuntime(overrides = {}) {
       sheet.appendRow(sheet.headers.map((header) => (record[header] === undefined ? '' : record[header])));
       return record;
     },
-    workspaceNowIso_: () => state.nowIso,
+    workspaceNowIso_: () => nowIsoSequence && nowIsoSequence.length ? nowIsoSequence.shift() : state.nowIso,
     workspaceActivityAudit_: (event) => state.auditEvents.push(event)
   };
 
@@ -254,11 +256,15 @@ function sheetObjects(sheet) {
 }
 
 function expectedEmailHash(email) {
-  return crypto.createHash('sha256').update('email-hash-secret' + String(email).trim().toLowerCase()).digest('hex');
+  return crypto.createHmac('sha256', 'email-hash-secret').update('email:' + String(email).trim().toLowerCase()).digest('hex');
 }
 
 function expectedCodeHash(email, code) {
-  return crypto.createHash('sha256').update('email-hash-secret:' + expectedEmailHash(email) + ':' + String(code).trim()).digest('hex');
+  return crypto.createHmac('sha256', 'email-hash-secret').update('code:' + expectedEmailHash(email) + ':' + String(code).trim()).digest('hex');
+}
+
+function expectedSessionTokenHash(token) {
+  return crypto.createHmac('sha256', 'email-hash-secret').update('session:' + String(token).trim()).digest('hex');
 }
 
 function enableVerifiedEmailLogin(sheet, userId) {
@@ -343,11 +349,24 @@ guardedTest('Phase 217 normalizes verification Email and stores only challenge h
   const challenges = sheetObjects(sheets.V2_landlord_email_login_challenges);
   assert.equal(challenges.length, 1);
   assert.equal(challenges[0].email_hash, expectedEmailHash('owner@example.com'));
-  assert.notEqual(challenges[0].code_hash, extractOtpCode(state.mailSends[0]), 'challenge storage must never persist a raw verification code');
+  assert.equal(challenges[0].expires_at, '2026-09-04T01:12:03.000Z', 'Email OTP challenges must expire after 10 minutes');
+  const code = extractOtpCode(state.mailSends[0]);
+  assert.equal(challenges[0].code_hash, expectedCodeHash('owner@example.com', code), 'challenge storage must use a keyed HMAC code hash');
+  assert.notEqual(challenges[0].code_hash, code, 'challenge storage must never persist a raw verification code');
+  assert.match(String(state.mailSends[0].body), /10 分鐘/, 'Email OTP mail copy must tell users the code is valid for 10 minutes');
+  assert.doesNotMatch(String(state.mailSends[0].body), /15 分鐘/, 'Email OTP mail copy must not describe a 15-minute challenge');
 });
 
 guardedTest('Phase 217 verifies Email codes through the verification handler contract', () => {
-  const { api, sheets, state } = createRuntime();
+  const { api, sheets, state } = createRuntime({
+    nowIsoSequence: [
+      '2026-09-04T01:02:03.000Z',
+      '2026-09-04T01:03:04.000Z',
+      '2026-09-04T01:03:05.000Z',
+      '2026-09-04T01:03:06.000Z',
+      '2026-09-04T01:03:07.000Z'
+    ]
+  });
   const requested = api.requestLandlordEmailVerificationByLineUid_('line-1', 'owner@example.com', 'verify-request-2');
   assert.equal(requested.success, true, requested.code);
   const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
@@ -356,6 +375,8 @@ guardedTest('Phase 217 verifies Email codes through the verification handler con
   assert.equal(verified.success, true, verified.code);
   const user = sheetObjects(sheets.V2_users).find((row) => row.user_id === 'user-1');
   assert.notEqual(String(user.email_verified_at || '').trim(), '', 'successful verification must persist email_verified_at');
+  assert.equal(user.email_verified_at, verified.data.email_verified_at, 'persisted email_verified_at must match the returned timestamp');
+  assert.equal(String(user.email_login_enabled), 'true', 'successful verification must enable Email login');
 });
 
 guardedTest('Phase 217 normalizes login Email and stores only hashed login challenge values', () => {
@@ -366,7 +387,9 @@ guardedTest('Phase 217 normalizes login Email and stores only hashed login chall
   assert.equal(state.mailSends.length, 1, 'login request must send exactly one Email');
   const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
   assert.equal(challenge.email_hash, expectedEmailHash('owner@example.com'));
-  assert.notEqual(challenge.code_hash, extractOtpCode(state.mailSends[0]), 'challenge storage must never persist a raw login code');
+  const code = extractOtpCode(state.mailSends[0]);
+  assert.equal(challenge.code_hash, expectedCodeHash('owner@example.com', code), 'login challenge storage must use a keyed HMAC code hash');
+  assert.notEqual(challenge.code_hash, code, 'challenge storage must never persist a raw login code');
 });
 
 guardedTest('Phase 217 stores only a session-token hash when login verification issues a session', () => {
@@ -382,6 +405,7 @@ guardedTest('Phase 217 stores only a session-token hash when login verification 
   const rawToken = verified.data.session_token;
   const sessions = sheetObjects(sheets.V2_landlord_email_sessions);
   assert.equal(sessions.length, 1);
+  assert.equal(sessions[0].session_token_hash, expectedSessionTokenHash(rawToken), 'session storage must use a keyed HMAC token hash');
   assert.notEqual(sessions[0].session_token_hash, rawToken, 'session storage must not persist the raw session token');
   assert.equal(
     sessions.some((row) => Object.values(row).some((value) => String(value) === String(rawToken))),
@@ -416,7 +440,7 @@ guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resen
       email_hash: expectedEmailHash('owner@example.com'),
       code_hash: 'hash',
       issued_at: '2026-09-04T00:30:00.000Z',
-      expires_at: '2026-09-04T00:45:00.000Z',
+      expires_at: '2026-09-04T00:40:00.000Z',
       attempt_count: 5,
       last_attempt_at: '2026-09-04T00:44:00.000Z',
       consumed_at: '',
@@ -432,7 +456,7 @@ guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resen
     enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
     sheets.V2_landlord_email_sessions.appendRow(rowFor(SESSION_HEADERS, {
       session_id: 'session-1',
-      session_token_hash: crypto.createHash('sha256').update('opaque-session-token').digest('hex'),
+      session_token_hash: expectedSessionTokenHash('opaque-session-token'),
       user_id: 'user-1',
       workspace_id: 'WS-1',
       role: 'owner',
@@ -452,7 +476,7 @@ guardedTest('Phase 217 rejects consumed challenges, sixth failed attempts, resen
     enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
     sheets.V2_landlord_email_sessions.appendRow(rowFor(SESSION_HEADERS, {
       session_id: 'session-2',
-      session_token_hash: crypto.createHash('sha256').update('opaque-session-token-2').digest('hex'),
+      session_token_hash: expectedSessionTokenHash('opaque-session-token-2'),
       user_id: 'user-1',
       workspace_id: 'WS-1',
       role: 'owner',
@@ -485,7 +509,7 @@ guardedTest('Phase 217 rejects desktop login for active landlords without verifi
     email_hash: expectedEmailHash('pending@example.com'),
     code_hash: expectedCodeHash('pending@example.com', '123456'),
     issued_at: '2026-09-04T01:00:00.000Z',
-    expires_at: '2026-09-04T01:15:00.000Z',
+    expires_at: '2026-09-04T01:10:00.000Z',
     attempt_count: 0,
     last_attempt_at: '',
     consumed_at: '',
@@ -498,4 +522,32 @@ guardedTest('Phase 217 rejects desktop login for active landlords without verifi
   assert.equal(verified.code, unknown.code, 'verification failure must use the generic non-enumerating code');
   assert.equal(verified.message, unknown.message, 'verification failure must use the generic non-enumerating message');
   assert.equal(sheetObjects(sheets.V2_landlord_email_sessions).length, 0, 'unverified disabled Email login must not issue a session');
+});
+
+guardedTest('Phase 217 accepts Email challenges before 10 minutes and rejects them after 10 minutes', () => {
+  {
+    const { api, sheets, state } = createRuntime({ nowIso: '2026-09-04T01:00:00.000Z' });
+    enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+    const requested = api.requestLandlordEmailLogin_('owner@example.com', 'ttl-request-1');
+    assert.equal(requested.success, true, requested.code);
+    const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
+    assert.equal(challenge.expires_at, '2026-09-04T01:10:00.000Z');
+    const code = extractOtpCode(state.mailSends[0]);
+    state.nowIso = '2026-09-04T01:09:59.000Z';
+    const accepted = api.verifyLandlordEmailLogin_(challenge.challenge_id, code, 'ttl-verify-1');
+    assert.equal(accepted.success, true, accepted.code);
+  }
+
+  {
+    const { api, sheets, state } = createRuntime({ nowIso: '2026-09-04T01:00:00.000Z' });
+    enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+    const requested = api.requestLandlordEmailLogin_('owner@example.com', 'ttl-request-2');
+    assert.equal(requested.success, true, requested.code);
+    const challenge = sheetObjects(sheets.V2_landlord_email_login_challenges)[0];
+    const code = extractOtpCode(state.mailSends[0]);
+    state.nowIso = '2026-09-04T01:10:01.000Z';
+    const expired = api.verifyLandlordEmailLogin_(challenge.challenge_id, code, 'ttl-verify-2');
+    assert.equal(expired.success, false, 'Email challenge must fail after the 10-minute TTL');
+    assert.equal(expired.code, 'CHALLENGE_EXPIRED');
+  }
 });

@@ -7,7 +7,7 @@ const V2_LANDLORD_EMAIL_AUTH_USER_SHEET_ =
 const V2_LANDLORD_EMAIL_AUTH_MEMBER_SHEET_ =
   'V2_workspace_members';
 const V2_LANDLORD_EMAIL_AUTH_CHALLENGE_MIN_SECONDS_ = 60;
-const V2_LANDLORD_EMAIL_AUTH_CHALLENGE_TTL_SECONDS_ = 15 * 60;
+const V2_LANDLORD_EMAIL_AUTH_CHALLENGE_TTL_SECONDS_ = 10 * 60;
 const V2_LANDLORD_EMAIL_AUTH_RATE_WINDOW_SECONDS_ = 15 * 60;
 const V2_LANDLORD_EMAIL_AUTH_RATE_WINDOW_LIMIT_ = 5;
 const V2_LANDLORD_EMAIL_AUTH_MAX_ATTEMPTS_ = 5;
@@ -75,12 +75,15 @@ function verifyLandlordEmailVerificationCodeByLineUid_(
     );
   if (!verified.success) return verified;
 
+  const nowIso =
+    landlordEmailAuthNowIso_();
+
   landlordEmailAuthUpdateUser_(
     access.user,
     {
-      email_verified_at: landlordEmailAuthNowIso_(),
+      email_verified_at: nowIso,
       email_login_enabled: true,
-      updated_at: landlordEmailAuthNowIso_()
+      updated_at: nowIso
     }
   );
 
@@ -92,7 +95,7 @@ function verifyLandlordEmailVerificationCodeByLineUid_(
       user_id: landlordEmailAuthText_(
         access.user.user_id
       ),
-      email_verified_at: landlordEmailAuthNowIso_()
+      email_verified_at: nowIso
     }
   );
 }
@@ -883,7 +886,7 @@ function landlordEmailAuthSendOtpEmail_(
       : 'CMWebs 房東 Email 驗證碼';
   const body =
     '您的 CMWebs 驗證碼是：' + otp + '\n' +
-    '驗證碼 15 分鐘內有效。若不是您本人操作，請忽略此信。';
+    '驗證碼 10 分鐘內有效。若不是您本人操作，請忽略此信。';
   MailApp.sendEmail({
     to: email,
     subject: subject,
@@ -1038,9 +1041,9 @@ function landlordEmailAuthNormalizeEmail_(
 function landlordEmailAuthEmailHash_(
   email
 ) {
-  return landlordEmailAuthSha256Hex_(
-    landlordEmailAuthSecret_() +
-      landlordEmailAuthNormalizeEmail_(email)
+  return landlordEmailAuthHmacHex_(
+    'email:' + landlordEmailAuthNormalizeEmail_(email),
+    landlordEmailAuthSecret_()
   );
 }
 
@@ -1048,18 +1051,20 @@ function landlordEmailAuthCodeHash_(
   code,
   emailHash
 ) {
-  return landlordEmailAuthSha256Hex_(
-    landlordEmailAuthSecret_() + ':' +
+  return landlordEmailAuthHmacHex_(
+    'code:' +
       landlordEmailAuthText_(emailHash) + ':' +
-      landlordEmailAuthText_(code)
+      landlordEmailAuthText_(code),
+    landlordEmailAuthSecret_()
   );
 }
 
 function landlordEmailAuthSessionTokenHash_(
   sessionToken
 ) {
-  return landlordEmailAuthSha256Hex_(
-    landlordEmailAuthText_(sessionToken)
+  return landlordEmailAuthHmacHex_(
+    'session:' + landlordEmailAuthText_(sessionToken),
+    landlordEmailAuthSecret_()
   );
 }
 
@@ -1081,13 +1086,14 @@ function landlordEmailAuthSecret_() {
   return value;
 }
 
-function landlordEmailAuthSha256Hex_(
-  value
+function landlordEmailAuthHmacHex_(
+  value,
+  key
 ) {
   return landlordEmailAuthHex_(
-    Utilities.computeDigest(
-      Utilities.DigestAlgorithm.SHA_256,
-      String(value)
+    Utilities.computeHmacSha256Signature(
+      String(value),
+      String(key)
     )
   );
 }
