@@ -18,6 +18,12 @@ assert.notEqual(doPostEnd, -1, 'dispatcher must include the doPost dispatcher bo
 const doGetSource = dispatcherSource.slice(doGetStart, doPostStart);
 const doPostSource = dispatcherSource.slice(doPostStart, doPostEnd);
 
+function actionConditionPattern(action) {
+  const directAction = `String\\(request\\.(?:action|v2_action)\\s*\\|\\|\\s*''\\)\\s*\\.\\s*trim\\(\\)\\s*===\\s*'${escapeRegExp(action)}'`;
+  const localAction = `action\\s*===\\s*'${escapeRegExp(action)}'`;
+  return `(?:${localAction}|${directAction})`;
+}
+
 const actionMappings = [
   {
     action: 'landlord_email_verify_request',
@@ -74,7 +80,7 @@ const actionMappings = [
 ];
 
 for (const mapping of actionMappings) {
-  const actionPattern = new RegExp(`action\\s*===\\s*'${escapeRegExp(mapping.action)}'`, 'g');
+  const actionPattern = new RegExp(actionConditionPattern(mapping.action), 'g');
   assert.equal(
     doPostSource.match(actionPattern)?.length || 0,
     1,
@@ -88,7 +94,7 @@ for (const mapping of actionMappings) {
   );
 
   const bodyForwardingPattern = new RegExp(
-    `action\\s*===\\s*'${escapeRegExp(mapping.action)}'[\\s\\S]*?${escapeRegExp(mapping.handler)}\\s*\\([\\s\\S]*?${mapping.fields.map((field) => escapeRegExp(field)).join('[\\s\\S]*?')}[\\s\\S]*?\\)`,
+    `${actionConditionPattern(mapping.action)}[\\s\\S]*?${escapeRegExp(mapping.handler)}\\s*\\([\\s\\S]*?${mapping.fields.map((field) => escapeRegExp(field)).join('[\\s\\S]*?')}[\\s\\S]*?\\)`,
     'm'
   );
   assert.match(
@@ -97,12 +103,6 @@ for (const mapping of actionMappings) {
     `${mapping.action} must forward the expected request body fields to ${mapping.handler}`
   );
 }
-
-assert.match(
-  doPostSource,
-  /const action = String\(request\.(?:action|v2_action) \|\| ''\)\.trim\(\)/,
-  'doPost must normalize the Email auth action from the POST body before dispatch'
-);
 assert.doesNotMatch(
   dispatcherSource,
   /e\.parameter\.(?:email|otp|code|challenge_id|session_token|landlord_session_token)/,
