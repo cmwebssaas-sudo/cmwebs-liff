@@ -19,19 +19,23 @@ const cssUrl = new URL('../landlord-responsive.css', import.meta.url);
 const cssExists = existsSync(cssUrl);
 const cssSource = cssExists ? readFileSync(cssUrl, 'utf8') : '';
 
-function stripDesktopMedia(css) {
-  const marker = '@media (min-width: 1024px)';
-  let output = css;
-  let start = output.indexOf(marker);
+function extractAtRuleBlocks(css, atRulePattern) {
+  const blocks = [];
+  let searchIndex = 0;
 
-  while (start >= 0) {
-    const blockStart = output.indexOf('{', start);
-    assert.notEqual(blockStart, -1, 'desktop media block must include an opening brace');
+  while (searchIndex < css.length) {
+    const remaining = css.slice(searchIndex);
+    const match = remaining.match(atRulePattern);
+    if (!match || match.index === undefined) break;
+
+    const start = searchIndex + match.index;
+    const blockStart = css.indexOf('{', start);
+    assert.notEqual(blockStart, -1, 'at-rule block must include an opening brace');
 
     let depth = 0;
     let end = blockStart;
-    for (; end < output.length; end += 1) {
-      const char = output[end];
+    for (; end < css.length; end += 1) {
+      const char = css[end];
       if (char === '{') depth += 1;
       if (char === '}') {
         depth -= 1;
@@ -42,10 +46,24 @@ function stripDesktopMedia(css) {
       }
     }
 
-    output = output.slice(0, start) + output.slice(end);
-    start = output.indexOf(marker);
+    assert.equal(depth, 0, 'at-rule block braces must balance');
+    blocks.push({
+      start,
+      end,
+      body: css.slice(blockStart + 1, end - 1),
+      full: css.slice(start, end)
+    });
+    searchIndex = end;
   }
 
+  return blocks;
+}
+
+function cssWithoutBlocks(css, blocks) {
+  let output = css;
+  for (const block of blocks.toReversed()) {
+    output = output.slice(0, block.start) + output.slice(block.end);
+  }
   return output;
 }
 
@@ -70,15 +88,40 @@ test('Phase 220 links the shared stylesheet and preserves the mobile shell contr
 });
 
 test('Phase 220 keeps desktop selectors inside the 1024px media boundary', () => {
-  const nonDesktopCss = stripDesktopMedia(cssSource);
+  const desktopBlocks = extractAtRuleBlocks(
+    cssSource,
+    /@media\s*\(min-width:\s*1024px\)/
+  );
+  assert.equal(desktopBlocks.length, 1, 'exactly one desktop media block is expected');
+
+  const desktopCss = desktopBlocks.map((block) => block.body).join('\n');
+  const nonDesktopCss = cssWithoutBlocks(cssSource, desktopBlocks);
+
   assert.doesNotMatch(nonDesktopCss, /\.desktop-/);
   assert.doesNotMatch(nonDesktopCss, /\.landlord-desktop-/);
 
   assert.match(cssSource, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
-  assert.match(cssSource, /:focus-visible/);
-  assert.match(cssSource, /min-height:\s*44px/);
-  assert.match(cssSource, /font-size:\s*16px/);
-  assert.match(cssSource, /position:\s*sticky/);
+  assert.match(desktopCss, /:focus-visible/);
+  assert.match(desktopCss, /min-height:\s*44px/);
+  assert.match(desktopCss, /\.desktop-sidebar[\s\S]*?display:\s*flex/);
+  assert.match(desktopCss, /\.desktop-table-wrap[\s\S]*?display:\s*block/);
+  assert.match(desktopCss, /\.bottom-nav[\s\S]*?display:\s*none/);
+  assert.match(desktopCss, /position:\s*sticky/);
+});
+
+test('Phase 220 desktop typography uses at least 16px text', () => {
+  const desktopCss = extractAtRuleBlocks(
+    cssSource,
+    /@media\s*\(min-width:\s*1024px\)/
+  ).map((block) => block.body).join('\n');
+
+  const fontSizes = [...desktopCss.matchAll(/font-size:\s*(\d+)px/g)]
+    .map((match) => Number(match[1]));
+
+  assert.ok(fontSizes.length > 0, 'desktop CSS should declare explicit type sizes');
+  for (const size of fontSizes) {
+    assert.ok(size >= 16, `desktop font-size ${size}px is below 16px`);
+  }
 });
 
 test('Phase 220 provides identical desktop navigation and preserves release-version navigation', () => {
@@ -118,9 +161,43 @@ test('Phase 220 exposes desktop table and panel hooks while preserving existing 
   assert.match(pages['landlord-properties.html'], /openRoomEditor\('/);
 });
 
-test('Phase 220 documents focused viewport checks at required widths', () => {
-  const requiredWidths = [375, 390, 768, 1024, 1440];
-  for (const width of requiredWidths) {
-    assert.match(cssSource, new RegExp(`phase220-width-${width}`));
+test('Phase 220 validates required viewport contracts from actual selectors and properties', () => {
+  assert.doesNotMatch(cssSource, /phase220-width-\d+/);
+
+  const desktopCss = extractAtRuleBlocks(
+    cssSource,
+    /@media\s*\(min-width:\s*1024px\)/
+  ).map((block) => block.body).join('\n');
+
+  const expectations = [
+    { width: 375, desktop: false },
+    { width: 390, desktop: false },
+    { width: 768, desktop: false },
+    { width: 1024, desktop: true },
+    { width: 1440, desktop: true }
+  ];
+
+  for (const expectation of expectations) {
+    for (const [name, source] of Object.entries(pages)) {
+      assert.match(source, /<div class="app-shell desktop-ready">/, `${name} keeps app shell at ${expectation.width}`);
+      assert.match(source, /<main class="page desktop-main">/, `${name} keeps page scroller at ${expectation.width}`);
+      assert.match(source, /<nav class="bottom-nav">/, `${name} keeps bottom nav markup at ${expectation.width}`);
+      assert.match(source, /function setAppHeight\(\)/, `${name} keeps visualViewport app-height handler at ${expectation.width}`);
+      assert.match(source, /env\(safe-area-inset-bottom\)/, `${name} keeps safe-area bottom reserve at ${expectation.width}`);
+      assert.match(source, /class="desktop-sidebar"[^>]*hidden/, `${name} hides desktop sidebar by default at ${expectation.width}`);
+      assert.match(source, /class="desktop-topbar"[^>]*hidden/, `${name} hides desktop topbar by default at ${expectation.width}`);
+    }
+
+    if (expectation.desktop) {
+      assert.match(desktopCss, /\.app-shell\.desktop-ready[\s\S]*?grid-template-columns:\s*var\(--desktop-sidebar-width\) minmax\(0, 1fr\)/);
+      assert.match(desktopCss, /\.desktop-sidebar,\s*\n\s*\.desktop-sidebar\[hidden\][\s\S]*?display:\s*flex/);
+      assert.match(desktopCss, /\.desktop-topbar,\s*\n\s*\.desktop-topbar\[hidden\][\s\S]*?display:\s*flex/);
+      assert.match(desktopCss, /\.desktop-table-wrap,\s*\n\s*\.desktop-table-wrap\[hidden\][\s\S]*?display:\s*block/);
+      assert.match(desktopCss, /\.bottom-nav[\s\S]*?display:\s*none/);
+    } else {
+      assert.doesNotMatch(cssWithoutBlocks(cssSource, extractAtRuleBlocks(cssSource, /@media\s*\(min-width:\s*1024px\)/)), /\.desktop-sidebar[^{]*\{[\s\S]*?display:\s*flex/);
+      assert.doesNotMatch(cssWithoutBlocks(cssSource, extractAtRuleBlocks(cssSource, /@media\s*\(min-width:\s*1024px\)/)), /\.desktop-table-wrap[^{]*\{[\s\S]*?display:\s*block/);
+      assert.doesNotMatch(cssWithoutBlocks(cssSource, extractAtRuleBlocks(cssSource, /@media\s*\(min-width:\s*1024px\)/)), /\.bottom-nav[^{]*\{[\s\S]*?display:\s*none/);
+    }
   }
 });

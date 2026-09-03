@@ -9,12 +9,6 @@
   --desktop-focus-ring: #0b63ce;
 }
 
-/* phase220-width-375 */
-/* phase220-width-390 */
-/* phase220-width-768 */
-/* phase220-width-1024 */
-/* phase220-width-1440 */
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -88,7 +82,7 @@
 
   .desktop-brand-label {
     color: #7de0a3;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 900;
     letter-spacing: 0.08em;
   }
@@ -114,7 +108,7 @@
     border-radius: 8px;
     background: transparent;
     color: var(--desktop-sidebar-muted);
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 800;
     text-align: left;
     cursor: pointer;
@@ -146,7 +140,7 @@
 
   .desktop-context-label {
     color: var(--desktop-sidebar-muted);
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 800;
   }
 
@@ -154,7 +148,7 @@
     margin-top: 5px;
     overflow: hidden;
     color: #ffffff;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 900;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -163,7 +157,7 @@
   .desktop-sidebar-role {
     margin-top: 8px;
     color: #c8d0d8;
-    font-size: 13px;
+    font-size: 16px;
   }
 
   .desktop-logout-button {
@@ -173,7 +167,7 @@
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 900;
     cursor: pointer;
   }
@@ -197,7 +191,7 @@
 
   .desktop-page-kicker {
     color: #426055;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 900;
   }
 
@@ -213,7 +207,7 @@
     align-items: center;
     gap: 10px;
     color: #4a5562;
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .desktop-status-pill {
@@ -225,7 +219,7 @@
     border-radius: 999px;
     background: #ffffff;
     color: #344151;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 900;
   }
 
@@ -333,7 +327,7 @@
     width: 100%;
     min-width: 880px;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .tenant-desktop-table th,
@@ -353,7 +347,7 @@
     z-index: 2;
     background: #f8fafc;
     color: #344151;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 900;
   }
 
@@ -371,7 +365,7 @@
   .room-desktop-meta {
     margin-top: 4px;
     color: var(--text-muted, var(--muted));
-    font-size: 12px;
+    font-size: 16px;
     line-height: 1.45;
   }
 
