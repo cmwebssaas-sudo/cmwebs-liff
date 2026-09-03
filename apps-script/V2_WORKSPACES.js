@@ -28,6 +28,8 @@ const V2_WORKSPACE_SHEETS_ = {
   landlords: 'V2_landlords',
   landlordHomeView: 'V2_landlord_home_view',
   landlordTenantListView: 'V2_landlord_tenant_list_view',
+  landlordEmailLoginChallenges: 'V2_landlord_email_login_challenges',
+  landlordEmailSessions: 'V2_landlord_email_sessions',
 
   workspaces: 'V2_workspaces',
   members: 'V2_workspace_members',
@@ -1387,7 +1389,37 @@ function workspaceEnsureSchema_() {
     'active_workspace_id',
     'profile_display_name',
     'profile_picture_url',
-    'note'
+    'note',
+    'email_verified_at',
+    'email_login_enabled'
+  ]);
+
+  workspaceEnsureSheet_(ss, V2_WORKSPACE_SHEETS_.landlordEmailLoginChallenges, [
+    'challenge_id',
+    'user_id',
+    'email_hash',
+    'code_hash',
+    'issued_at',
+    'expires_at',
+    'attempt_count',
+    'last_attempt_at',
+    'consumed_at',
+    'status',
+    'request_id'
+  ]);
+
+  workspaceEnsureSheet_(ss, V2_WORKSPACE_SHEETS_.landlordEmailSessions, [
+    'session_id',
+    'session_token_hash',
+    'user_id',
+    'workspace_id',
+    'role',
+    'issued_at',
+    'expires_at',
+    'last_seen_at',
+    'revoked_at',
+    'status',
+    'request_id'
   ]);
 
   workspaceEnsureSheet_(ss, V2_WORKSPACE_SHEETS_.landlords, [
