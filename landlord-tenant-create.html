@@ -1222,8 +1222,16 @@
     function jsonpRequest(
       action,
       params,
-      retryCount
+      retryCount,
+      options
     ) {
+      const requestOptions =
+        options || {};
+
+      const includeLineUserId =
+        requestOptions.includeLineUserId !==
+        false;
+
       return new Promise(
         function (resolve, reject) {
           const callbackName =
@@ -1260,7 +1268,8 @@
                   jsonpRequest(
                     action,
                     params,
-                    1
+                    1,
+                    requestOptions
                   ).then(
                     resolve
                   ).catch(
@@ -1315,16 +1324,31 @@
             encodeURIComponent(
               action
             ) +
-            '&line_user_id=' +
-            encodeURIComponent(
-              LINE_USER_ID
-            ) +
             '&callback=' +
             encodeURIComponent(
               callbackName
             ) +
             '&_=' +
             Date.now();
+
+          if (includeLineUserId) {
+            url =
+              API_URL +
+              '?v2_action=' +
+              encodeURIComponent(
+                action
+              ) +
+              '&line_user_id=' +
+              encodeURIComponent(
+                LINE_USER_ID
+              ) +
+              '&callback=' +
+              encodeURIComponent(
+                callbackName
+              ) +
+              '&_=' +
+              Date.now();
+          }
 
           Object.keys(
             params || {}
@@ -1366,6 +1390,22 @@
       );
     }
 
+    function jsonpRequestWithoutLineUserId(
+      action,
+      params,
+      retryCount
+    ) {
+      return jsonpRequest(
+        action,
+        params,
+        retryCount,
+        {
+          includeLineUserId:
+            false
+        }
+      );
+    }
+
     function randomUrlToken(bytes) {
       const value = new Uint8Array(bytes);
       crypto.getRandomValues(value);
@@ -1375,25 +1415,14 @@
         .replace(/=+$/g, '');
     }
 
-    async function fetchStatusJson(url) {
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'omit',
-        cache: 'no-store'
-      });
-      if (!response.ok) {
-        throw new Error('房東身分驗證連線失敗');
-      }
-      return response.json();
-    }
-
     function callLandlordReviewAuthStatus(requestId, pollSecret) {
-      const url = API_URL +
-        '?v2_action=landlord_contract_signing_review_auth_status' +
-        '&request_id=' + encodeURIComponent(requestId) +
-        '&poll_secret=' + encodeURIComponent(pollSecret) +
-        '&_=' + Date.now();
-      return fetchStatusJson(url);
+      return jsonpRequestWithoutLineUserId(
+        'landlord_contract_signing_review_auth_status',
+        {
+          request_id: requestId,
+          poll_secret: pollSecret
+        }
+      );
     }
 
     async function initializeLandlordReviewSession() {
@@ -1415,13 +1444,14 @@
     }
 
     function callLandlordInitiatedStatus(action, requestId, pollSecret) {
-      const url = API_URL +
-        '?v2_action=landlord_contract_initiated_status' +
-        '&operation=' + encodeURIComponent(action) +
-        '&request_id=' + encodeURIComponent(requestId) +
-        '&poll_secret=' + encodeURIComponent(pollSecret) +
-        '&_=' + Date.now();
-      return fetchStatusJson(url);
+      return jsonpRequestWithoutLineUserId(
+        'landlord_contract_initiated_status',
+        {
+          operation: action,
+          request_id: requestId,
+          poll_secret: pollSecret
+        }
+      );
     }
 
     async function postLandlordInitiatedContract(action, input) {

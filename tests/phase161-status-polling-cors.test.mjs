@@ -8,7 +8,6 @@ const productionApiPath = 'AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGo
 
 for (const [name, source] of [
   ['landlord-contract-requests.html', landlordRequestsPage],
-  ['landlord-tenant-create.html', landlordCreatePage],
   ['tenant-contract.html', tenantContractPage]
 ]) {
   assert.match(source, /async function fetchStatusJson\(url\)/, `${name} must use fetch status helper`);
@@ -16,8 +15,14 @@ for (const [name, source] of [
 }
 
 assert.match(landlordRequestsPage, /fetchStatusJson\(url\)/);
-assert.match(landlordCreatePage, /fetchStatusJson\(url\)/);
 assert.match(tenantContractPage, /fetchStatusJson\(url\)/);
+assert.match(landlordCreatePage, /function jsonpRequestWithoutLineUserId\(/);
+assert.match(landlordCreatePage, /landlord_contract_signing_review_auth_status/);
+assert.doesNotMatch(
+  landlordCreatePage.match(/function callLandlordReviewAuthStatus\([\s\S]*?\n    }/)?.[0] || '',
+  /fetchStatusJson\(/,
+  'mobile landlord create auth status must use JSONP instead of fetch redirect handling'
+);
 
 for (const [name, source] of [
   ['landlord-contract-requests.html', landlordRequestsPage],

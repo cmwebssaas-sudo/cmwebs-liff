@@ -3,4 +3,4 @@
  * It is intentionally stable for the lifetime of a release so page-navigation
  * URLs can reuse the browser cache without changing API cache behavior.
  */
-window.CMWEBS_RELEASE_VERSION = '20260903-paper-contract-backfill-v1';
+window.CMWEBS_RELEASE_VERSION = '20260904-paper-contract-backfill-mobile-auth-v1';
