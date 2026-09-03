@@ -265,7 +265,7 @@ duration_ms 672.839167
 ## Fix Round 1: Reviewer Findings
 
 Date: 2026-09-04 Asia/Taipei
-Commit: pending at report-write time
+Commit: `c151b35d4f17d8f1197f9da8927de534684e3bf1`
 
 ### Findings Addressed
 
