@@ -11,6 +11,7 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
   <script src="landlord-auth.js"></script>
+  <link rel="stylesheet" href="landlord-responsive.css" />
 
   <style>
     :root {
@@ -705,8 +706,89 @@
 </head>
 
 <body>
-  <div class="app-shell">
-    <main class="page">
+  <div class="app-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand">
+          <div class="desktop-brand-label">CMWEBS</div>
+          <div class="desktop-brand-title">智慧租管</div>
+        </div>
+
+        <nav class="desktop-nav">
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 11.5L12 5l8 6.5"></path>
+              <path d="M6.5 10.5V19h11v-8.5"></path>
+              <path d="M9.5 19v-5h5v5"></path>
+            </svg>
+            <span>總覽</span>
+          </button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')">
+            <svg viewBox="0 0 24 24">
+              <circle cx="9" cy="8" r="3"></circle>
+              <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+              <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+              <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+            </svg>
+            <span>房客</span>
+          </button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')">
+            <svg viewBox="0 0 24 24">
+              <path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path>
+              <path d="M8 20v-7h8v7"></path>
+              <path d="M9 8.5h.01M15 8.5h.01"></path>
+            </svg>
+            <span>物件與房間</span>
+          </button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-contract-requests.html')">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 3.5h7l3 3V20H7z"></path>
+              <path d="M14 3.5V7h3"></path>
+              <path d="M9.5 12h5"></path>
+              <path d="M9.5 15.5h5"></path>
+            </svg>
+            <span>合約</span>
+          </button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenant-checkout.html')">
+            <svg viewBox="0 0 24 24">
+              <path d="M4.5 12h11"></path>
+              <path d="M11.5 8l4 4-4 4"></path>
+              <path d="M19.5 5v14"></path>
+            </svg>
+            <span>退房</span>
+          </button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')">
+            <svg viewBox="0 0 24 24">
+              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+              <path d="M8.5 9h7"></path>
+              <path d="M8.5 13h7"></path>
+              <path d="M8.5 17h4"></path>
+            </svg>
+            <span>帳款</span>
+          </button>
+        </nav>
+
+        <div class="desktop-sidebar-footer">
+          <div class="desktop-context-label">Workspace</div>
+          <div id="desktopWorkspaceName" class="desktop-context-value">載入中</div>
+          <div id="desktopRoleLabel" class="desktop-sidebar-role">角色確認中</div>
+          <button id="desktopLogoutButton" class="desktop-logout-button" type="button" onclick="desktopLogout()">登出</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="page desktop-main">
+      <header class="desktop-topbar" hidden>
+        <div>
+          <div class="desktop-page-kicker">Workspace Operations</div>
+          <div class="desktop-page-title">系統設定</div>
+        </div>
+        <div class="desktop-topbar-meta">
+          <span class="desktop-status-pill">Workspace</span>
+          <span id="desktopTopbarWorkspaceName">載入中</span>
+        </div>
+      </header>
+
       <div class="topbar">
         <div>
           <div class="eyebrow">System Settings</div>
@@ -914,8 +996,50 @@
         returnTo:
           location.pathname.split('/').pop() +
           location.search,
-        entryPage: 'landlord-entry.html'
+        entryPage: 'landlord-entry.html',
+        testMode: TEST_MODE
       });
+    }
+
+    function setDesktopText(id, value) {
+      const element =
+        document.getElementById(
+          id
+        );
+
+      if (element) {
+        element.textContent =
+          rawText(value) || '-';
+      }
+    }
+
+    function updateDesktopChrome(workspaceName, roleLabel) {
+      setDesktopText(
+        'desktopWorkspaceName',
+        workspaceName || '目前 Workspace'
+      );
+      setDesktopText(
+        'desktopTopbarWorkspaceName',
+        workspaceName || '目前 Workspace'
+      );
+      setDesktopText(
+        'desktopRoleLabel',
+        roleLabel || '房東'
+      );
+    }
+
+    function desktopLogout() {
+      if (
+        window.CMWebsLandlordAuth &&
+        typeof window.CMWebsLandlordAuth.logout ===
+          'function'
+      ) {
+        window.CMWebsLandlordAuth.logout();
+        return;
+      }
+
+      location.href =
+        LANDLORD_ENTRY_URL;
     }
 
     function buildLandlordLoginRedirectUri() {
@@ -1006,6 +1130,35 @@
       return true;
     }
 
+    async function ensureLandlordAuthReady() {
+      const auth =
+        initAuthClient();
+
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+        initAuthClient();
+        return true;
+      }
+
+      if (auth.getMode() === 'email') {
+        await auth.getSessionStatus();
+        return true;
+      }
+
+      if (!LINE_USER_ID) {
+        const ready =
+          await initLine();
+
+        if (!ready) {
+          return false;
+        }
+      }
+
+      initAuthClient();
+      return true;
+    }
+
     function showToast(
       message,
       isError
@@ -1043,8 +1196,37 @@
       params,
       retryCount
     ) {
+      const authParams = window.CMWebsLandlordAuth.getRequestAuthParams();
+
+      if (
+        authParams.response_mode === 'bridge' &&
+        authParams.landlord_session_token
+      ) {
+        return window.CMWebsLandlordAuth.request(
+          action,
+          params || {}
+        );
+      }
+
+      const requestParams =
+        Object.assign(
+          {},
+          params || {},
+          authParams
+        );
+
       return new Promise(
         function (resolve, reject) {
+          if (!authParams.line_user_id) {
+            reject(
+              new Error(
+                '缺少 LINE User ID'
+              )
+            );
+
+            return;
+          }
+
           const callbackName =
             '__cmwebs_settings_' +
             Date.now() +
@@ -1141,6 +1323,21 @@
 
               cleanup();
 
+          if (window.CMWebsLandlordAuth.handleAuthFailure(result)) {
+                const authError =
+                  new Error(
+                    result && result.message
+                      ? result.message
+                      : '房東身分已失效'
+                  );
+                authError.code =
+                  result && result.code
+                    ? result.code
+                    : '';
+                reject(authError);
+                return;
+              }
+
               resolve(
                 result
               );
@@ -1152,10 +1349,6 @@
             encodeURIComponent(
               action
             ) +
-            '&line_user_id=' +
-            encodeURIComponent(
-              LINE_USER_ID
-            ) +
             '&callback=' +
             encodeURIComponent(
               callbackName
@@ -1164,7 +1357,7 @@
             Date.now();
 
           Object.keys(
-            params ||
+            requestParams ||
             {}
           ).forEach(
             function (key) {
@@ -1175,7 +1368,7 @@
                 ) +
                 '=' +
                 encodeURIComponent(
-                  params[
+                  requestParams[
                     key
                   ]
                 );
@@ -1224,6 +1417,13 @@
       const permissions =
         PAGE_DATA.permissions ||
         {};
+
+      updateDesktopChrome(
+        workspace.workspace_name,
+        membership.role ||
+          permissions.role ||
+          '房東'
+      );
 
       document.getElementById(
         'app'
@@ -2794,13 +2994,11 @@
       }
 
       try {
-        if (!LINE_USER_ID) {
-          const ready =
-            await initLine();
+        const ready =
+          await ensureLandlordAuthReady();
 
-          if (!ready) {
-            return;
-          }
+        if (!ready) {
+          return;
         }
 
         const result =

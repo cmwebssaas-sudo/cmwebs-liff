@@ -5,7 +5,8 @@ import { existsSync, readFileSync } from 'node:fs';
 const pageNames = [
   'landlord-home.html',
   'landlord-tenants.html',
-  'landlord-properties.html'
+  'landlord-properties.html',
+  'landlord-settings.html'
 ];
 const entrySource = readFileSync(
   new URL('../landlord-entry.html', import.meta.url),
@@ -306,6 +307,9 @@ test('Phase 220 exposes desktop table and panel hooks while preserving existing 
   assert.match(pages['landlord-properties.html'], /goTenantCreate\('/);
   assert.match(pages['landlord-properties.html'], /toggleRoomAccount\('/);
   assert.match(pages['landlord-properties.html'], /openRoomEditor\('/);
+
+  assert.match(pages['landlord-settings.html'], /emailVerificationPanel\(/);
+  assert.match(pages['landlord-settings.html'], /landlord_settings_init/);
 });
 
 test('Phase 220 integrates the shared landlord auth client before protected page bootstrap', () => {
@@ -335,6 +339,18 @@ test('Phase 220 keeps entry and protected pages on one auth module boundary', ()
       'protected pages must keep Email session transport out of GET/navigation URLs'
     );
   }
+});
+
+test('Phase 220 keeps settings protected bootstrap on the shared auth transport', () => {
+  const source = pages['landlord-settings.html'];
+
+  assert.match(source, /<link[^>]+href="landlord-responsive\.css"/);
+  assert.match(source, /<div class="app-shell desktop-ready">/);
+  assert.match(source, /<main class="page desktop-main">/);
+  assert.match(source, /async function ensureLandlordAuthReady\(\)/);
+  assert.match(source, /const authParams = window\.CMWebsLandlordAuth\.getRequestAuthParams\(\)/);
+  assert.match(source, /handleAuthFailure\(result\)/);
+  assert.doesNotMatch(source, /\?v2_action=[^"']*&line_user_id=/);
 });
 
 test('Phase 220 validates required viewport contracts from actual selectors and properties', () => {
