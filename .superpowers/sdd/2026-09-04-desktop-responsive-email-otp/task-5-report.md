@@ -277,3 +277,122 @@ git diff --check
 ```text
 PASS (no output)
 ```
+
+## Fix Round 2 Evidence
+
+Scoped rereview blocker addressed in Task 5 test files only. Fix commit:
+`b0d3a74` (`test: enforce mobile landlord page shell contract`). No product
+layout, Email-session bootstrap, deployment, or external state was changed.
+
+### Root cause and test change
+
+The prior phase220 viewport test only searched each page source for a generic
+`env(safe-area-inset-bottom)` occurrence. Because `.bottom-nav` and toast CSS
+also use that token, removing the `.page` bottom reserve could still pass.
+
+`tests/phase220-landlord-responsive-ui.test.mjs` now extracts each page's
+inline `<style>` blocks, parses top-level `.page` CSS rules and declarations,
+and requires, for every page, `height: 100%`, `overflow-y: auto`, and a bottom
+padding value whose bottom component contains both `var(--nav-height)` and
+`env(safe-area-inset-bottom)`. The data-driven viewport expectations remain
+`375`, `390`, `768`, `1024`, and `1440`; they call this page-rule contract at
+each width. The generic page-wide env check and marker-comment check were
+removed. Desktop-only assertions continue to use the parsed actual
+`@media (min-width: 1024px)` block.
+
+### TDD / mutation evidence
+
+Baseline after the test change, with all three real page sources intact:
+
+```text
+node --test tests/phase220-landlord-responsive-ui.test.mjs
+tests 8
+pass 8
+fail 0
+```
+
+Temporary mutation: changed only `landlord-home.html`'s `.page` padding to
+`padding: 16px;`, then ran the same focused test:
+
+```text
+tests 8
+pass 6
+fail 2
+```
+
+The two failures were the direct `.page` contract test and the 375px
+viewport-contract iteration, both reporting that `landlord-home.html` must
+keep the top-level `.page` rule with height, overflow, and nav/safe-area
+reserve. The mutation was restored before commit; the final diff contains no
+HTML changes.
+
+### Fix-round verification
+
+```text
+node --check tests/phase220-landlord-responsive-ui.test.mjs
+PASS (no output)
+
+node --test tests/phase220-landlord-responsive-ui.test.mjs
+tests 8
+pass 8
+fail 0
+
+node --input-type=module - <<'NODE'
+...parse edited inline scripts with vm.Script...
+NODE
+landlord-home.html: 1 inline script(s) parse
+landlord-tenants.html: 1 inline script(s) parse
+landlord-properties.html: 1 inline script(s) parse
+
+node --test tests/phase193-landlord-home-dashboard.test.mjs tests/phase194-landlord-tenant-expiry-display.test.mjs tests/phase208-simple-landlord-contract-flow.test.mjs tests/phase210-paper-contract-backfill.ui.test.mjs tests/phase213-paper-contract-login.ui.test.mjs tests/phase214-paper-backfill-orphan-entry.ui.test.mjs tests/phase215-paper-backfill-legacy-pending-entry.test.mjs
+tests 7
+pass 7
+fail 0
+
+node tests/room-account-toggle-page.test.mjs
+Room account toggle page tests passed.
+
+node tests/tenant-binding-invite-share.test.mjs
+Tenant binding invite share tests passed.
+
+npm run validate
+Apps Script files: 35
+HTML files: 46
+Routes: 71 (unique 71, duplicates 0)
+Handler coverage: 71/71
+Common helper coverage: 7/7
+Duplicate top-level declarations: function=0, const=0, let=0, var=0
+Credential scan: blocking=0, review-only=0
+Hardcoded LINE UID: 0
+Manifest: PASS
+HTML links: checked=202, missing=0
+WARNING: Local .clasp.json is present but must remain ignored: apps-script/.clasp.json
+Validation: PASS
+CMWebs validation passed.
+
+git diff --check
+PASS (no output)
+```
+
+### Fix-round self-review and ruling
+
+- Scope is limited to `tests/phase220-landlord-responsive-ui.test.mjs` plus
+  this report; `git diff` confirmed no page or stylesheet changes.
+- The page contract is bound to each page's actual top-level `.page` rule,
+  not a generic token elsewhere and not marker comments.
+- The padding parser supports multiline formatting, `padding` shorthand,
+  `padding-bottom`, `padding-block`, and `padding-block-end`; for shorthand it
+  inspects the CSS bottom component.
+- Desktop sidebar/table/bottom-nav visibility checks remain inside the parsed
+  actual `@media (min-width: 1024px)` block, with the existing isolation guard
+  for desktop selectors outside that block.
+- Existing `.app-shell`, `.page`, `.bottom-nav`, `setAppHeight()`, IDs,
+  handlers, navigation builders, and no-Email-session boundary remain intact.
+- No browser screenshot/rendering evidence is claimed; that remains Task 7.
+
+## Fix Round 2 Concerns
+
+- Static source and parser tests cannot prove browser layout rendering. Browser
+  screenshot evidence remains deferred to Task 7.
+- The report is committed separately from fix commit `b0d3a74` so it can record
+  the exact fix hash and command output.
