@@ -70,9 +70,10 @@
 
 ## V2.1 landlord Email OTP contract headers
 
-Task 1 only locks the schema contract for a later runtime slice. The migration
-remains append-only: it may add missing headers or sheets, but it must not
-reorder headers, delete existing columns, or overwrite existing data rows.
+This local candidate implements the Email OTP schema contract through
+`workspaceEnsureSchema_()`. The migration remains append-only and idempotent:
+it may add missing headers or sheets, but it must not reorder headers, delete
+existing columns, duplicate existing headers, or overwrite existing data rows.
 
 ### `V2_users` appended headers
 
@@ -106,6 +107,8 @@ request_id
 - Does not persist the raw Email verification code.
 - Supports expiry, consumed-at replay protection, the sixth failed attempt
   lockout, and the 60-second resend throttle.
+- Uses HMAC-SHA256 with the required Apps Script Property
+  `CMWEBS_EMAIL_LOGIN_HASH_SECRET`; only the property name is documented.
 
 ### `V2_landlord_email_sessions`
 
@@ -130,6 +133,17 @@ request_id
 - Binds each session to the server-resolved `user_id`, `workspace_id`, and
   `role`, then re-validates those records on status, protected use, expiry, and
   revoke.
+- Uses HMAC-SHA256 with the same required Apps Script Property
+  `CMWEBS_EMAIL_LOGIN_HASH_SECRET`.
+
+### Evidence boundary
+
+- Local tests and static validators can prove the additive schema contract,
+  hashing boundary, and idempotent migration behavior only in the candidate.
+- Production Script Property presence, real Email delivery, first authenticated
+  LINE landlord Email verification, authenticated desktop operation, and
+  browser/real-device UAT are `HUMAN_REQUIRED` / `UNVERIFIED` until explicitly
+  verified in the authorized release workflow.
 
 ## 主鍵原則
 

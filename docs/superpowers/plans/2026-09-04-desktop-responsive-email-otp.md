@@ -349,4 +349,3 @@ Do not run migration, clasp push, Apps Script deploy, MailApp production send, G
 - No task asks an implementer to guess validation, error behavior, schema fields, or authorization rules.
 - The plan does not include tenant Email login, fixed passwords, React migration, iframe desktop shell, or business-data transactions.
 - The root dirty worktree remains outside the plan; all implementation starts from the isolated feature branch.
-

@@ -8,7 +8,9 @@ not a deployment instruction and not evidence that the repository has been
 deployed.
 
 - Dispatcher: `apps-script/程式碼.js`
-- Route count: **83** unique `v2Action` routes
+- Route count: **83** unique `v2Action` routes, plus 6 V2.1 POST-only
+  landlord Email auth actions that are intentionally outside the JSONP route
+  inventory
 - Source tree SHA-256: `c24e33ee91dec312d288fab508e09d8b4c9fefcc3c8eb84ab8b2486a4b2930d0`
 - Scope: read/write route definitions only; every write route still requires its
   existing Workspace, role, and authorization checks.
@@ -234,21 +236,22 @@ candidates the current source inventory has 83 JSONP routes.
   legacy signed-contract integration bridge or reinterpret
   `V2_contract_requests` rows as native signing submissions.
 
-## V2.1 landlord Email OTP candidate routes
+## V2.1 landlord Email OTP candidate POST actions
 
 These routes are an approved local contract for the desktop landlord Email OTP
-slice. This section is not deployment evidence. The dispatcher routes are
+slice. This section is not deployment evidence. The dispatcher actions are
 handled only through POST JSON body fields and return a controlled HTML bridge
-envelope correlated by `request_id`.
+envelope correlated by `request_id`. They are not `doGet` / JSONP
+`v2Action` routes and do not change the validator's 83-route JSONP inventory.
 
 | Route / POST action | Transport | Required authority | Request fields | Contracted response codes | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| `landlord_email_verify_request` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `line_user_id`, `email` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Start or resend Email verification for the currently logged-in landlord. |
-| `landlord_email_verify_code` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `line_user_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted Email code and write `email_verified_at`. |
-| `landlord_email_login_request` | `doPost` JSON body + controlled bridge | Public desktop entry; server resolves the matching active landlord account | `action`, `request_id`, `email` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Create or resend an Email OTP login challenge without revealing account existence. |
-| `landlord_email_login_verify` | `doPost` JSON body + controlled bridge | Challenge-scoped verification only | `action`, `request_id`, `challenge_id`, `code` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Verify the submitted challenge code and mint an Email session bound to the server-resolved Workspace and role. |
-| `landlord_email_session_status` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `landlord_session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Re-validate the current Email session and return the active auth context. |
-| `landlord_email_session_revoke` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `landlord_session_token` | Existing envelope with shared auth/session failures including `AUTH_REQUIRED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN` | Revoke the current Email session and require a new login. |
+| `landlord_email_verify_request` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `line_user_id`, `email` | `OK`, `INVALID_EMAIL`, `EMAIL_NOT_BOUND_TO_LINE_USER`, `EMAIL_DELIVERY_FAILED`, `RATE_LIMITED`, `AUTH_REQUIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED`, `WORKSPACE_MODULE_REQUIRED` | Start or resend Email verification for the currently logged-in landlord. |
+| `landlord_email_verify_code` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `line_user_id`, `challenge_id`, `code` | `OK`, `INVALID_CHALLENGE`, `INVALID_CODE`, `CHALLENGE_CONSUMED`, `CHALLENGE_EXPIRED`, `CHALLENGE_LOCKED`, `AUTH_REQUIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED`, `WORKSPACE_MODULE_REQUIRED` | Verify the submitted Email code and write `email_verified_at`. |
+| `landlord_email_login_request` | `doPost` JSON body + controlled bridge | Public desktop entry; server resolves the matching active landlord account | `action`, `request_id`, `email` | `OK`, `AUTH_REQUIRED`, `EMAIL_DELIVERY_FAILED`, `RATE_LIMITED` | Create or resend an Email OTP login challenge without revealing account existence. |
+| `landlord_email_login_verify` | `doPost` JSON body + controlled bridge | Challenge-scoped verification only | `action`, `request_id`, `challenge_id`, `code` | `OK`, `AUTH_REQUIRED`, `INVALID_CHALLENGE`, `INVALID_CODE`, `CHALLENGE_CONSUMED`, `CHALLENGE_EXPIRED`, `CHALLENGE_LOCKED`, `WORKSPACE_FORBIDDEN` | Verify the submitted challenge code and mint an Email session bound to the server-resolved Workspace and role. |
+| `landlord_email_session_status` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `landlord_session_token` | `OK`, `AUTH_REQUIRED`, `SESSION_REVOKED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED` | Re-validate the current Email session and return the active auth context. |
+| `landlord_email_session_revoke` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `landlord_session_token` | `OK`, `AUTH_REQUIRED`, `SESSION_REVOKED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED` | Revoke the current Email session and require a new login. |
 
 - All six Email auth actions are POST-only. `doGet` / JSONP routes stay
   compatible for existing flows but do not carry Email, OTP code, challenge ID,
@@ -272,11 +275,10 @@ envelope correlated by `request_id`.
   body. Missing or invalid Email sessions are rejected before any route handler
   is invoked, and these desktop bridge routes do not fall back to a client
   `line_user_id`.
-- `landlord_email_login_request` and `landlord_email_login_verify` must return
-  the same outward account-discovery-safe failure surface for unknown, inactive,
-  and unverified accounts. This Task 1 contract does not invent additional
-  action-specific `code` strings before the runtime slice lands.
-- The future Email auth module is expected to publish these fixed action names:
+- `landlord_email_login_request` and `landlord_email_login_verify` return the
+  same outward account-discovery-safe `AUTH_REQUIRED` failure surface for
+  unknown, inactive, and unverified accounts.
+- The Email auth module publishes these fixed action names:
 
 ```text
 landlord_email_verify_request
@@ -286,6 +288,21 @@ landlord_email_login_verify
 landlord_email_session_status
 landlord_email_session_revoke
 ```
+
+- The Email hash, OTP hash and session-token hash all use HMAC-SHA256 with the
+  required Apps Script Property `CMWEBS_EMAIL_LOGIN_HASH_SECRET`. This document
+  records the property name only; the secret value must never be printed,
+  committed, or stored in browser code.
+- `workspaceEnsureSchema_()` is the additive candidate migration boundary for
+  this slice. It appends `email_verified_at` and `email_login_enabled` to
+  `V2_users` when missing and ensures `V2_landlord_email_login_challenges` and
+  `V2_landlord_email_sessions` with the fixed headers. It is idempotent: reruns
+  must not duplicate headers, reorder existing columns, delete data, or rewrite
+  existing rows.
+- Release evidence boundary: real MailApp Email delivery, first landlord Email
+  verification from an authenticated LINE account, authenticated desktop
+  operation, browser viewport capture, and real-device UAT remain
+  `HUMAN_REQUIRED` / `UNVERIFIED` until those exact checks are performed.
 
 ## V2.1 landlord-initiated contract candidate routes
 
