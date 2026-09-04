@@ -1363,6 +1363,11 @@ function landlordInitiatedContractResolveNewDefaults_(input, room) {
   result.payment_day = Math.round(numberOr(result.payment_day, room && (room.payment_day || room.monthly_payment_day)) || 10);
   result.electricity_fee_rate = numberOr(result.electricity_fee_rate, room && room.electricity_fee_rate);
   result.equipment_fee_rate = numberOr(result.equipment_fee_rate, room && (room.equipment_fee_rate || room.equipment_fee_rate_regular));
+  if (result.initial_rent_paid_month && landlordInitiatedContractNumber_(result.initial_rent_paid_amount) > 0) {
+    result.initial_rent_paid_amount =
+      landlordInitiatedContractNumber_(result.rent_amount) +
+      landlordInitiatedContractNumber_(result.management_fee);
+  }
   return { success: true, code: 'OK', data: result };
 }
 

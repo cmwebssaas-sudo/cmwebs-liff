@@ -36,14 +36,15 @@ explicit user choice and is never inferred from dates:
 
 | Header | Meaning |
 |---|---|
-| `initial_rent_paid_month` | `YYYY-MM` month whose rent was collected at signing |
-| `initial_rent_paid_amount` | Rounded rent amount collected at signing |
+| `initial_rent_paid_month` | `YYYY-MM` month whose first-month fixed charges were collected at signing |
+| `initial_rent_paid_amount` | Rounded rent plus management-fee amount collected at signing; the two-month deposit is excluded |
 
 Both headers are additive and must be appended without reordering or replacing
 existing columns. For the matching first bill, the canonical billing flow copies
 the amount into the existing `discount_amount` snapshot and writes a
-tenant-visible explanation. Management, utility, equipment, and other charges
-remain separately payable. A fully credited zero-total bill is stored as paid.
+tenant-visible explanation. The two-month deposit, utility, equipment, and
+other charges remain separately payable. A fully credited zero-total bill is
+stored as paid.
 The landlord tenant-detail document query also follows append-only contract
 links, so documents stored against a prior contract remain visible to the
 current tenant without rewriting document rows.
@@ -190,7 +191,8 @@ request_id
   `payment_status`, and `tenant_visible_note` fields; no new billing column is
   required.
 - The action is an explicit landlord correction for an unpaid bill. It credits
-  at most that bill's rent amount, leaves metered and other charges intact, and
+  at most that bill's first-month fixed charges (rent plus management fee),
+  leaves the two-month deposit, metered, and other charges intact, and
   synchronizes the same snapshot to `V2_tenant_bill_view`.
 
 ## 主鍵原則

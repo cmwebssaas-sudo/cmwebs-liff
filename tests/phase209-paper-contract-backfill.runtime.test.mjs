@@ -592,11 +592,12 @@ for (const inputOverride of [
   const runtime = makeRuntime();
   const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
     idempotency_key: 'paper-paid-at-signing',
-    initial_rent_paid: true
+    initial_rent_paid: true,
+    management_fee: 500
   }));
   assert.equal(result.success, true, result.message || result.code);
   assert.equal(result.data.contract.initial_rent_paid_month, '2026-09');
-  assert.equal(result.data.contract.initial_rent_paid_amount, 7500);
+  assert.equal(result.data.contract.initial_rent_paid_amount, 8000);
 }
 
 {

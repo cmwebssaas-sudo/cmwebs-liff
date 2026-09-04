@@ -18,7 +18,7 @@ assert.match(createPage, /紙本合約.*必填/);
 assert.match(createPage, /initialRentPaid/);
 assert.match(createPage, /initial_rent_paid/);
 assert.match(readFileSync(new URL('../landlord-billing.html', import.meta.url), 'utf8'), /landlord_bill_apply_initial_rent_credit/);
-assert.match(readFileSync(new URL('../landlord-billing.html', import.meta.url), 'utf8'), /本筆租金已於簽約時收取，套用折抵/);
+assert.match(readFileSync(new URL('../landlord-billing.html', import.meta.url), 'utf8'), /首月租金＋管理費已於簽約時收取，套用折抵/);
 assert.match(dispatcher, /landlord_bill_apply_initial_rent_credit/);
 const paperRender = createPage.match(/function renderPaperBackfillPage\(\)[\s\S]*?\n    function handlePaperBackfillRoomChange/);
 assert.ok(paperRender, 'paper backfill render function should exist');

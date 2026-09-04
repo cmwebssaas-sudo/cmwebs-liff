@@ -1484,8 +1484,13 @@
         Number(item.rent_amount || 0) > 0 &&
         Number(item.discount_amount || 0) >=
           Number(item.rent_amount || 0) &&
-        rawText(item.tenant_visible_note).includes(
-          '簽約時已收本月租金'
+        (
+          rawText(item.tenant_visible_note).includes(
+            '簽約時已收首月租金'
+          ) ||
+          rawText(item.tenant_visible_note).includes(
+            '簽約時已收本月租金'
+          )
         );
 
       const checked =
@@ -1707,7 +1712,7 @@
                   type="button"
                   onclick="applyInitialRentCredit(${index})"
                 >
-                  本筆租金已於簽約時收取，套用折抵
+                  首月租金＋管理費已於簽約時收取，套用折抵
                 </button>
               `
               : ''
@@ -1969,8 +1974,8 @@
         !window.confirm(
           '確認將「' +
           (item.room_name || '此房間') +
-          '」本筆租金列為簽約時已收，並在帳單中折抵？\n\n' +
-          '電費、設備耗損費與其他費用仍會保留計算。'
+          '」本筆首月租金與管理費列為簽約時已收，並在帳單中折抵？\n\n' +
+          '電費、設備耗損費與其他費用仍會保留計算；兩個月押金不會從本月帳單折抵。'
         )
       ) {
         return;
@@ -1992,7 +1997,7 @@
           );
         }
 
-        showToast('本筆租金已折抵，房東與房客明細已同步');
+        showToast('首月租金與管理費已折抵，房東與房客明細已同步');
         await loadPage(false);
       } catch (error) {
         showToast(

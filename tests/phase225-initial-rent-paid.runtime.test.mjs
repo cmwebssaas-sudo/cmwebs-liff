@@ -77,21 +77,21 @@ vm.runInNewContext(source.slice(buildStart, buildEnd), context, {
 const room = {
   workspace_id: 'W1', landlord_id: 'L1', room_id: 'R202', room_name: '202',
   property_id: 'P1', property_name: '測試物件', rent_amount: 8500,
-  management_fee: 0, electricity_fee_rate: 0, equipment_fee_rate: 0
+  management_fee: 500, electricity_fee_rate: 0, equipment_fee_rate: 0
 };
 const tenant = { tenant_id: 'T202', tenant_name: '202 房客' };
 const paidAtSigning = {
   contract_id: 'C202', tenant_id: 'T202', start_date: '2026-09-01', end_date: '2027-08-31',
-  rent_amount: 8500, management_fee: 0, electricity_fee_rate: 0, equipment_fee_rate: 0,
-  initial_rent_paid_month: '2026-09', initial_rent_paid_amount: 8500
+  rent_amount: 8500, management_fee: 500, electricity_fee_rate: 0, equipment_fee_rate: 0,
+  initial_rent_paid_month: '2026-09', initial_rent_paid_amount: 9000
 };
 
 const initItem = context.billingBuildInitItem_(
   room, paidAtSigning, tenant, null, null, '2026-09', {}
 );
 
-assert.equal(initItem.discount_amount, 8500, 'signing-time rent payment must become this month credit');
-assert.match(initItem.tenant_visible_note, /簽約時已收本月租金/);
+assert.equal(initItem.discount_amount, 9000, 'signing-time rent plus management fee must become this month credit');
+assert.match(initItem.tenant_visible_note, /簽約時已收首月租金與管理費/);
 
 const calculateContext = Object.assign(context, {
   billingBuildInitItem_: () => initItem
@@ -118,14 +118,15 @@ const calculated = calculateContext.billingCalculateBill_(
   {}
 );
 
-assert.equal(calculated.discount_amount, 8500);
+assert.equal(calculated.discount_amount, 9000);
 assert.equal(calculated.total_amount, 0, 'a fully prepaid zero-fee month must not remain payable');
 assert.equal(calculated.payment_status, 'paid', 'a fully credited bill must not appear as unpaid');
-assert.match(calculated.tenant_visible_note, /簽約時已收本月租金/);
+assert.match(calculated.tenant_visible_note, /簽約時已收首月租金與管理費/);
 
 const existingBill = {
   bill_id: 'B202-09',
   rent_amount: 8500,
+  management_fee: 500,
   payment_status: 'unpaid',
   current_meter_reading: 0
 };
@@ -152,9 +153,9 @@ const existingCalculated = calculateContext.billingCalculateBill_(
   {}
 );
 
-assert.equal(existingCalculated.discount_amount, 8500);
+assert.equal(existingCalculated.discount_amount, 9000);
 assert.equal(existingCalculated.total_amount, 0, 'manual correction must clear an existing unpaid rent-only bill');
 assert.equal(existingCalculated.payment_status, 'paid');
-assert.match(existingCalculated.tenant_visible_note, /簽約時已收本月租金/);
+assert.match(existingCalculated.tenant_visible_note, /簽約時已收首月租金與管理費/);
 
 console.log('Phase 225 initial rent paid runtime tests passed.');

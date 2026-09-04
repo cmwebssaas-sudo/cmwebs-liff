@@ -259,7 +259,7 @@ function landlordPaperContractBackfillValidateInput_(input) {
     electricity_fee_rate: amounts.electricity_fee_rate,
     equipment_fee_rate: amounts.equipment_fee_rate,
     initial_rent_paid_month: initialRentPaid ? startDate.slice(0, 7) : '',
-    initial_rent_paid_amount: initialRentPaid ? amounts.rent_amount : 0,
+    initial_rent_paid_amount: initialRentPaid ? amounts.rent_amount + amounts.management_fee : 0,
     note: landlordPaperContractBackfillText_(source.note),
     idempotency_key: idempotencyKey,
     paper_contract_file: paperFile.data,
