@@ -14,7 +14,8 @@ var V2_LANDLORD_PAPER_BACKFILL_CLOSED_STATUSES_ = [
 ];
 var V2_LANDLORD_PAPER_BACKFILL_CONTRACT_HEADERS_ = [
   'paper_backfill_idempotency_key',
-  'paper_backfill_payload_hash'
+  'paper_backfill_payload_hash',
+  'previous_contract_id'
 ];
 var V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_STATUSES_ = [
   'pending_tenant_signature', 'awaiting_tenant_signature'
@@ -92,7 +93,7 @@ function migrateV2LandlordPaperContractBackfillSchema_(ss) {
       success: true,
       code: 'OK',
       data: {
-        migration: 'paper_contract_backfill_additive_v1',
+        migration: 'paper_contract_backfill_additive_v2',
         added_headers: { contracts: result.data.added_headers }
       }
     };

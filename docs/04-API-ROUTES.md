@@ -429,9 +429,9 @@ build at release commit `a14262f`.
   requires a separately authorized additive migration before retrying.
 - The release migration entry point is
   `runV2LandlordPaperContractBackfillProductionMigration`. It only appends the
-  missing `paper_backfill_idempotency_key` and `paper_backfill_payload_hash`
-  headers to the existing `V2_contracts` header row, is idempotent, and never
-  creates a sheet or changes contract rows.
+  missing `paper_backfill_idempotency_key`, `paper_backfill_payload_hash`, and
+  `previous_contract_id` headers to the existing `V2_contracts` header row, is
+  idempotent, and never creates a sheet or changes contract rows.
 - The required contract file and optional identity files are stored through the
   private `V2_contract_documents` path. Public responses contain document
   summaries only and never expose Drive file IDs or file bytes.

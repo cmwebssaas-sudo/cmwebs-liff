@@ -182,6 +182,7 @@
 - [x] 房東可從空房的物件／房間頁或房客詳細資料進入「手動補登紙本合約」，補登頁帶入既有房客／房間資料並提供紙本專用完成畫面，不誤顯示電子邀請內容（Phase 210；本地 UI static test 通過，手機／LIFF 尚待驗證）
 - [x] 紙本合約補登的 API 路由、資料邊界、測試與部署狀態已記錄；PR #96、Apps Script Version 150 與 legacy Pages build `1190728482` 已部署，公開頁 read-back 通過；Drive 與 LINE 仍未執行（Phase 211；本地文件 test 通過）
 - [x] 紙本合約補登的 Production migration 只在既有 `V2_contracts` 標題列尾端追加兩個冪等欄位，重跑不重複追加、缺少資料表會 fail closed，且不改任何資料列；Production header read-back 通過（Phase 212）
+- [x] 紙本補登 migration 也會追加孤立合約復原所需的 `previous_contract_id`，重跑不重複追加且不改既有資料列；帳單抄表頁於 iOS 虛擬鍵盤開啟時會收起固定操作列／底部導覽並捲動焦點欄位；新建帳單依租約與帳單月的含首尾日重疊天數計算首月／末月租金，既有帳單維持原始快照（Phase 221／222；本地回歸通過，未部署／正式 LIFF UAT 待驗證）
 - [x] 202 已先建立但尚未被房客認領的房東電子租約，可從物件／房間頁以 `supersede_contract_id` 轉成紙本補登；原電子合約與邀請保留並標記取消，新紙本合約以 `previous_contract_id` 連結，既有房客／使用者啟用且維持未綁定 LINE，完成頁提供房客登入入口（Phase 213；PR #98／Apps Script Version 151／Pages workflow `33691996413` 已部署，正式手機／LIFF 尚待驗證）
 - [x] 房間若仍顯示「已出租／租約中」但有效合約找不到對應房客且沒有 LINE 綁定，物件／房間頁顯示「補登紙本並建立房客登入」資料修復入口；送出時保留並關閉孤兒合約、建立新的紙本租約與未綁定房客，並拒絕仍有房客或 LINE 綁定的合約（Phase 214；PR #100／Apps Script Version 152／Pages workflow `33694799930` 已部署，公開頁 read-back HTTP 200；手機／LIFF 尚待驗證）
 - [x] 舊格式待啟用合約若已有未綁定的房客／使用者資料，物件／房間頁仍顯示「補登紙本並建立房客登入」入口；補登時沿用既有房客、不建立第二筆資料，關閉舊待簽合約並以 `previous_contract_id` 連結紙本租約（Phase 215；Apps Script Version 153、GitHub Pages workflow `33794312332` 已部署，公開頁 read-back HTTP 200；手機／LIFF 尚待驗證）

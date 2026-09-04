@@ -92,6 +92,19 @@
         );
     }
 
+    .app-shell.keyboard-open .page {
+      padding-bottom: 24px;
+      scroll-padding-bottom: 24px;
+    }
+
+    .app-shell.keyboard-open .action-bar {
+      display: none;
+    }
+
+    .app-shell.keyboard-open .bottom-nav {
+      display: none;
+    }
+
     .topbar {
       display: flex;
       align-items: center;
@@ -880,6 +893,21 @@
           ? window.visualViewport.height
           : window.innerHeight;
 
+      const appShell =
+        document.querySelector(
+          '.app-shell'
+        );
+
+      if (appShell) {
+        appShell.classList.toggle(
+          'keyboard-open',
+          Boolean(
+            window.visualViewport &&
+            window.innerHeight - height > 120
+          )
+        );
+      }
+
       document.documentElement.style.setProperty(
         '--app-height',
         Math.round(height) + 'px'
@@ -1511,7 +1539,12 @@
           </div>
 
           <div class="base-grid">
-            ${baseItem('月租', 'NT$ ' + money(item.rent_amount))}
+            ${baseItem(
+              item.rent_is_prorated
+                ? '租金（' + item.rent_occupied_days + '/' + item.rent_days_in_month + ' 天）'
+                : '月租',
+              'NT$ ' + money(item.rent_amount)
+            )}
             ${baseItem('管理費', 'NT$ ' + money(item.management_fee))}
             ${baseItem('每度電費', formatRate(item.electricity_fee_rate))}
             ${baseItem('耗損費／度', formatRate(item.equipment_fee_rate))}
@@ -2378,6 +2411,34 @@
         setAppHeight
       );
     }
+
+    document.addEventListener(
+      'focusin',
+      function (event) {
+        const target =
+          event.target;
+
+        if (
+          !target ||
+          !target.matches ||
+          !target.matches(
+            'input, select, textarea'
+          )
+        ) {
+          return;
+        }
+
+        setTimeout(
+          function () {
+            target.scrollIntoView({
+              block: 'center',
+              inline: 'nearest'
+            });
+          },
+          250
+        );
+      }
+    );
 
     loadPage();
   </script>

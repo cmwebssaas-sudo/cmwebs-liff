@@ -1358,6 +1358,141 @@ function generateLandlordBillsByLineUid_(
 // Billing calculations
 // ==================================================
 
+function billingCalculateRentForBillMonth_(
+  monthlyRent,
+  contract,
+  billMonth
+) {
+  const monthlyRentAmount =
+    Math.max(
+      0,
+      Math.round(
+        billingNumber_(
+          monthlyRent
+        )
+      )
+    );
+
+  const contractStart =
+    billingDate_(
+      contract && (
+        contract.start_date ||
+        contract.contract_start_date ||
+        contract.lease_start_date
+      )
+    );
+
+  const contractEnd =
+    billingDate_(
+      contract && (
+        contract.end_date ||
+        contract.contract_end_date ||
+        contract.lease_end_date
+      )
+    );
+
+  const monthStart =
+    billingMonthStart_(
+      billMonth
+    );
+
+  const monthEnd =
+    billingMonthEnd_(
+      billMonth
+    );
+
+  const daysInMonth =
+    monthEnd.getDate();
+
+  if (
+    !contractStart ||
+    !contractEnd ||
+    contractStart.getTime() >
+      contractEnd.getTime()
+  ) {
+    return {
+      monthly_rent_amount:
+        monthlyRentAmount,
+      occupied_days:
+        null,
+      days_in_month:
+        daysInMonth,
+      rent_amount:
+        monthlyRentAmount,
+      is_prorated:
+        false
+    };
+  }
+
+  const occupiedStart =
+    new Date(
+      Math.max(
+        contractStart.getTime(),
+        monthStart.getTime()
+      )
+    );
+
+  const occupiedEnd =
+    new Date(
+      Math.min(
+        contractEnd.getTime(),
+        monthEnd.getTime()
+      )
+    );
+
+  if (
+    occupiedStart.getTime() >
+    occupiedEnd.getTime()
+  ) {
+    return {
+      monthly_rent_amount:
+        monthlyRentAmount,
+      occupied_days:
+        0,
+      days_in_month:
+        daysInMonth,
+      rent_amount:
+        0,
+      is_prorated:
+        true
+    };
+  }
+
+  const occupiedDays =
+    Math.round(
+      (
+        occupiedEnd.getTime() -
+        occupiedStart.getTime()
+      ) /
+      86400000
+    ) +
+    1;
+
+  const isProrated =
+    occupiedDays <
+    daysInMonth;
+
+  return {
+    monthly_rent_amount:
+      monthlyRentAmount,
+    occupied_days:
+      occupiedDays,
+    days_in_month:
+      daysInMonth,
+    rent_amount:
+      isProrated
+        ? Math.round(
+            monthlyRentAmount *
+            occupiedDays /
+            daysInMonth
+          )
+        : monthlyRentAmount,
+    is_prorated:
+      isProrated
+  };
+}
+
+
 function billingBuildInitItem_(
   room,
   contract,
@@ -1424,6 +1559,25 @@ function billingBuildInitItem_(
           .default_management_fee
       )
     );
+
+  const rentCalculation =
+    billingCalculateRentForBillMonth_(
+      rentAmount,
+      contract,
+      billMonth
+    );
+
+  const displayedRentAmount =
+    existingBill
+      ? Math.max(
+          0,
+          Math.round(
+            billingNumber_(
+              existingBill.rent_amount
+            )
+          )
+        )
+      : rentCalculation.rent_amount;
 
   const electricityRate =
     billingResolvePositiveNumber_(
@@ -1573,7 +1727,18 @@ function billingBuildInitItem_(
       tenantLineUserId,
 
     rent_amount:
-      rentAmount,
+      displayedRentAmount,
+    monthly_rent_amount:
+      rentCalculation.monthly_rent_amount,
+    rent_occupied_days:
+      existingBill
+        ? null
+        : rentCalculation.occupied_days,
+    rent_days_in_month:
+      rentCalculation.days_in_month,
+    rent_is_prorated:
+      !existingBill &&
+      rentCalculation.is_prorated,
     management_fee:
       managementFee,
 
@@ -1732,7 +1897,8 @@ function billingCalculateBill_(
       tenant,
       existingBill,
       previousBill,
-      billMonth
+      billMonth,
+      billingSettings
     );
 
   let previousMeter =
