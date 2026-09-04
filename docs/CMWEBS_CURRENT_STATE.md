@@ -1,11 +1,30 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-04 (Asia/Taipei)**
+**Last verified: 2026-09-05 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-05 202 本月租金折抵與快速續約正式部署
+
+- 已建立但未繳的本月帳單，若合約有明確的簽約收款月份／金額，正式 Version
+  158 會在房東正常送出帳務更新時自動折抵租金；電費、設備耗損費、管理費與
+  其他費用照原規則保留，已繳帳單不重算。房客可見折抵說明與房東明細同步。
+- 房客名單對合約 60 天內、30 天內或已到期且有現行合約的房客顯示「快速續約」，
+  以現行合約 ID、房客、房間與物件 context 進入 append-only 續約建立頁。
+- PR #104 merge commit 為 `d5c9c4e`；Apps Script 54 個檔案已推送，公開頁所用
+  的既有 deployment serving immutable Version 158，Version 157 為 rollback，
+  Web App URL 保持不變。公開 endpoint read-only guard HTTP 200／`MISSING_LINE_UID`。
+- Pages workflow `33924128412` 已成功完成；公開房客名單、帳務頁、房客入口與
+  `frontend-release.js` read-back HTTP 200，marker 為
+  `20260905-prepaid-rent-quick-renewal-v1`。
+- 本地完整 Node `92/92`、validator `71/71`、Apps Script syntax、static
+  release-cache validator 與 `git diff --check` 通過。未修改正式 202 或其他
+  房客／帳單資料，未執行 Sheet migration、Drive、Properties、Trigger 或 LINE。
+  真實房東操作、202 帳務結果與手機／LIFF UAT 仍為 `HUMAN_REQUIRED` /
+  `UNVERIFIED`。
 
 ## 2026-09-04 202 legacy-pending 紙本補登帳號復原正式部署
 

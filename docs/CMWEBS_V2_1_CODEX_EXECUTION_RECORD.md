@@ -46,6 +46,25 @@ be verified for the particular action that needs it.
 | 2026-09-03 | Landlord paper-contract backfill formal deployment | User explicitly requested `正式部署`. This authorizes the clean candidate push, PR, merge, additive-only `V2_contracts` header migration, immutable Apps Script redeploy, and GitHub Pages publication for the paper-contract backfill flow. It does not authorize tenant/contract transaction creation, Drive document upload, Properties/Trigger changes, or LINE messages; rollback is to the freshly verified Version 149 and prior Pages revision. Authenticated mobile/LIFF and private Drive UAT remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-05 | Existing prepaid-rent correction and tenant-card quick renewal | User confirmed the requested correction and quick-renewal entry after prior formal-deployment requests. This authorizes the isolated source/test candidate and, after release preflight, push, merge, immutable Apps Script redeploy, and GitHub Pages publication. It does not authorize direct 202 or other business-data writes, Sheet migration, Drive upload, Properties/Trigger changes, or LINE messages; authenticated mobile/LIFF and live 202 billing state remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
 
+## 2026-09-05 prepaid-rent and quick-renewal formal release evidence
+
+- Candidate `a50351f` was merged through PR #104 as `d5c9c4e`. The candidate passed
+  the complete local Node suite (`92/92`), `npm run validate` (`71/71` routes and
+  handlers), Apps Script syntax checks, static release-cache validation, and
+  `git diff --check`.
+- The verified public endpoint deployment matched the repository API target before
+  release and was serving Version 157. Apps Script pushed 54 files, immutable
+  Version 158 was created, and the same deployment was redeployed to Version 158;
+  Version 157 remains the rollback version and the Web App URL was preserved.
+- GitHub Pages workflow `33924128412` completed build, report and deploy. Public
+  read-back returned HTTP 200 for the release asset, landlord tenant list, landlord
+  billing page and tenant bind entry, confirming the new marker and UI strings.
+- No Sheet migration, contract／tenant／bill data write, Drive upload,
+  Properties／Trigger change or LINE message was run. The API read-only guard
+  returned HTTP 200 with `MISSING_LINE_UID`. Authenticated landlord operation,
+  live 202 billing correction and mobile／LIFF UAT remain
+  `HUMAN_REQUIRED` / `UNVERIFIED`.
+
 ## 2026-09-04 landlord paper-backfill mobile auth transport corrective release evidence
 
 - The user explicitly authorized `正式部署` after the mobile paper-backfill page
