@@ -67,6 +67,143 @@ function cssWithoutBlocks(css, blocks) {
   return output;
 }
 
+function extractStyleBlocks(source) {
+  return [...source.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map(
+    (match) => match[1]
+  );
+}
+
+function extractTopLevelCssRuleBlocks(css, selector) {
+  const cssWithoutComments = css.replace(/\/\*[\s\S]*?\*\//g, (comment) =>
+    comment.replace(/[^\n]/g, ' ')
+  );
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const selectorPattern = new RegExp(
+    `(?:^|})\\s*${escapedSelector}\\s*\\{`,
+    'g'
+  );
+  const blocks = [];
+  let match;
+
+  while ((match = selectorPattern.exec(cssWithoutComments))) {
+    const selectorStart = cssWithoutComments.indexOf(selector, match.index);
+    const openingBrace = cssWithoutComments.indexOf('{', selectorStart);
+    assert.notEqual(openingBrace, -1, `${selector} rule must include an opening brace`);
+
+    let depthBefore = 0;
+    for (let index = 0; index < selectorStart; index += 1) {
+      if (cssWithoutComments[index] === '{') depthBefore += 1;
+      if (cssWithoutComments[index] === '}') depthBefore -= 1;
+    }
+
+    let depth = 0;
+    let end = openingBrace;
+    for (; end < cssWithoutComments.length; end += 1) {
+      const char = cssWithoutComments[end];
+      if (char === '{') depth += 1;
+      if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          end += 1;
+          break;
+        }
+      }
+    }
+
+    assert.equal(depth, 0, `${selector} rule braces must balance`);
+    if (depthBefore === 0) {
+      blocks.push({
+        body: cssWithoutComments.slice(openingBrace + 1, end - 1)
+      });
+    }
+    selectorPattern.lastIndex = end;
+  }
+
+  return blocks;
+}
+
+function parseCssDeclarations(ruleBody) {
+  return ruleBody
+    .split(';')
+    .map((declaration) => declaration.match(/^\s*([\w-]+)\s*:\s*([\s\S]+?)\s*$/))
+    .filter(Boolean)
+    .map((match) => ({
+      property: match[1].toLowerCase(),
+      value: match[2]
+    }));
+}
+
+function splitCssValueTokens(value) {
+  const tokens = [];
+  let token = '';
+  let parentheses = 0;
+
+  for (const char of value.trim()) {
+    if (/\s/.test(char) && parentheses === 0) {
+      if (token) {
+        tokens.push(token);
+        token = '';
+      }
+      continue;
+    }
+    token += char;
+    if (char === '(') parentheses += 1;
+    if (char === ')') parentheses -= 1;
+  }
+
+  if (token) tokens.push(token);
+  return tokens;
+}
+
+function hasNavAndSafeAreaReserve(value) {
+  return (
+    /var\s*\(\s*--nav-height(?:\s*,[^)]*)?\s*\)/i.test(value) &&
+    /env\s*\(\s*safe-area-inset-bottom(?:\s*,[^)]*)?\s*\)/i.test(value)
+  );
+}
+
+function hasBottomPaddingReserve(declarations) {
+  return declarations.some(({ property, value }) => {
+    if (property === 'padding-bottom' || property === 'padding-block-end') {
+      return hasNavAndSafeAreaReserve(value);
+    }
+
+    const tokens = splitCssValueTokens(value);
+    if (property === 'padding') {
+      const bottomToken =
+        tokens.length <= 2 ? tokens[0] : tokens[2];
+      return Boolean(bottomToken) && hasNavAndSafeAreaReserve(bottomToken);
+    }
+    if (property === 'padding-block') {
+      const bottomToken = tokens.length > 1 ? tokens[1] : tokens[0];
+      return Boolean(bottomToken) && hasNavAndSafeAreaReserve(bottomToken);
+    }
+    return false;
+  });
+}
+
+function assertMobilePageShellContract(source, name) {
+  const styleSource = extractStyleBlocks(source).join('\n');
+  const pageRules = extractTopLevelCssRuleBlocks(styleSource, '.page');
+  const hasPageContract = pageRules.some((rule) => {
+    const declarations = parseCssDeclarations(rule.body);
+    const height = declarations.find(({ property }) => property === 'height');
+    const overflowY = declarations.find(({ property }) => property === 'overflow-y');
+
+    return (
+      height?.value.replace(/\s+/g, '') === '100%' &&
+      overflowY?.value.replace(/\s+/g, '') === 'auto' &&
+      hasBottomPaddingReserve(declarations)
+    );
+  });
+
+  assert.equal(
+    hasPageContract,
+    true,
+    `${name} must keep a top-level .page rule with height:100%, overflow-y:auto, and nav/safe-area bottom reserve`
+  );
+}
+
 test('Phase 220 requires the shared landlord desktop stylesheet', () => {
   assert.equal(cssExists, true, 'landlord-responsive.css must exist');
   assert.match(cssSource, /--desktop-sidebar-width:\s*256px/);
@@ -84,6 +221,12 @@ test('Phase 220 links the shared stylesheet and preserves the mobile shell contr
     assert.match(source, /function setAppHeight\(\)/, `${name} must keep setAppHeight()`);
     assert.match(source, /html,\s*\n\s*body[\s\S]*?overflow:\s*hidden/, `${name} must keep fixed mobile body shell`);
     assert.match(source, /\.app-shell[\s\S]*?position:\s*relative[\s\S]*?height:\s*var\(--app-height\)[\s\S]*?overflow:\s*hidden/, `${name} must keep fixed app shell`);
+  }
+});
+
+test('Phase 220 binds the mobile .page shell contract to each page CSS rule', () => {
+  for (const [name, source] of Object.entries(pages)) {
+    assertMobilePageShellContract(source, name);
   }
 });
 
@@ -162,8 +305,6 @@ test('Phase 220 exposes desktop table and panel hooks while preserving existing 
 });
 
 test('Phase 220 validates required viewport contracts from actual selectors and properties', () => {
-  assert.doesNotMatch(cssSource, /phase220-width-\d+/);
-
   const desktopCss = extractAtRuleBlocks(
     cssSource,
     /@media\s*\(min-width:\s*1024px\)/
@@ -183,7 +324,7 @@ test('Phase 220 validates required viewport contracts from actual selectors and 
       assert.match(source, /<main class="page desktop-main">/, `${name} keeps page scroller at ${expectation.width}`);
       assert.match(source, /<nav class="bottom-nav">/, `${name} keeps bottom nav markup at ${expectation.width}`);
       assert.match(source, /function setAppHeight\(\)/, `${name} keeps visualViewport app-height handler at ${expectation.width}`);
-      assert.match(source, /env\(safe-area-inset-bottom\)/, `${name} keeps safe-area bottom reserve at ${expectation.width}`);
+      assertMobilePageShellContract(source, `${name} at ${expectation.width}px`);
       assert.match(source, /class="desktop-sidebar"[^>]*hidden/, `${name} hides desktop sidebar by default at ${expectation.width}`);
       assert.match(source, /class="desktop-topbar"[^>]*hidden/, `${name} hides desktop topbar by default at ${expectation.width}`);
     }
