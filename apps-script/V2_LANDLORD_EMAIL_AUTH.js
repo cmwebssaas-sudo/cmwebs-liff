@@ -260,39 +260,41 @@ function landlordEmailAuthIssueChallenge_(
     landlordEmailAuthChallengeSheet_();
   const nowIso =
     landlordEmailAuthNowIso_();
-  const emailHash =
-    landlordEmailAuthEmailHash_(
-      options.email
-    );
-  const rate =
-    landlordEmailAuthCheckChallengeRate_(
-      sheet,
-      landlordEmailAuthText_(options.user.user_id),
-      emailHash,
-      nowIso
-    );
-  if (!rate.success) return rate;
-
-  const otp =
-    landlordEmailAuthOtp_();
-  const record = {
-    challenge_id: landlordEmailAuthUuid_(),
-    user_id: landlordEmailAuthText_(options.user.user_id),
-    email_hash: emailHash,
-    code_hash: landlordEmailAuthCodeHash_(otp, emailHash),
-    issued_at: nowIso,
-    expires_at: landlordEmailAuthIsoAfterSeconds_(
-      nowIso,
-      V2_LANDLORD_EMAIL_AUTH_CHALLENGE_TTL_SECONDS_
-    ),
-    attempt_count: 0,
-    last_attempt_at: '',
-    consumed_at: '',
-    status: 'issued',
-    request_id: landlordEmailAuthText_(options.requestId)
-  };
+  let record = null;
 
   try {
+    const emailHash =
+      landlordEmailAuthEmailHash_(
+        options.email
+      );
+    const rate =
+      landlordEmailAuthCheckChallengeRate_(
+        sheet,
+        landlordEmailAuthText_(options.user.user_id),
+        emailHash,
+        nowIso
+      );
+    if (!rate.success) return rate;
+
+    const otp =
+      landlordEmailAuthOtp_();
+    record = {
+      challenge_id: landlordEmailAuthUuid_(),
+      user_id: landlordEmailAuthText_(options.user.user_id),
+      email_hash: emailHash,
+      code_hash: landlordEmailAuthCodeHash_(otp, emailHash),
+      issued_at: nowIso,
+      expires_at: landlordEmailAuthIsoAfterSeconds_(
+        nowIso,
+        V2_LANDLORD_EMAIL_AUTH_CHALLENGE_TTL_SECONDS_
+      ),
+      attempt_count: 0,
+      last_attempt_at: '',
+      consumed_at: '',
+      status: 'issued',
+      request_id: landlordEmailAuthText_(options.requestId)
+    };
+
     landlordEmailAuthSendOtpEmail_(
       options.email,
       otp,

@@ -24,6 +24,7 @@ const billingContext = {
   Math,
   billingText_: text,
   billingNumber_: value => Number(value) || 0,
+  billingInitialRentCreditForBillMonth_: () => 0,
   billingDate_: value => text(value) || null,
   billingNormalizePaymentStatus_: value => text(value) || 'unpaid',
   billingBuildInitItem_: () => ({

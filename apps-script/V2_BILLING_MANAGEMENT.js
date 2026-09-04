@@ -912,7 +912,10 @@ function generateLandlordBillsByLineUid_(
             ) ||
             null;
 
-          if (existingBill) {
+          if (
+            existingBill &&
+            item.apply_initial_rent_credit !== true
+          ) {
             skipped.push({
               room_id: roomId,
               room_name: billingText_(room.room_name),
@@ -979,47 +982,55 @@ function generateLandlordBillsByLineUid_(
               billingSettings
             );
 
-          let billId =
-            '';
-
           const now =
             new Date();
 
-          billId =
-            workspaceNextId_(
+          let billId =
+            existingBill
+              ? billingText_(existingBill.bill_id)
+              : workspaceNextId_(
+                  billSheet,
+                  'bill_id',
+                  'B',
+                  7
+                );
+
+          if (existingBill) {
+            billingSetValues_(
               billSheet,
-              'bill_id',
-              'B',
-              7
+              existingBill.__row_number,
+              Object.assign(
+                {},
+                calculated,
+                {
+                  bill_id: billId,
+                  updated_at: now,
+                  updated_by_user_id: actor.user_id,
+                  updated_by_membership_id: actor.membership_id
+                }
+              )
             );
+          } else {
+            workspaceAppendObject_(
+              billSheet,
+              Object.assign(
+                {
+                  bill_id: billId,
+                  created_at: now,
+                  created_by_user_id: actor.user_id,
+                  created_by_membership_id: actor.membership_id
+                },
+                calculated,
+                {
+                  updated_at: now,
+                  updated_by_user_id: actor.user_id,
+                  updated_by_membership_id: actor.membership_id
+                }
+              )
+            );
+          }
 
-          workspaceAppendObject_(
-            billSheet,
-            Object.assign(
-              {
-                bill_id:
-                  billId,
-                created_at:
-                  now,
-                created_by_user_id:
-                  actor.user_id,
-                created_by_membership_id:
-                  actor.membership_id
-              },
-              calculated,
-              {
-                updated_at:
-                  now,
-                updated_by_user_id:
-                  actor.user_id,
-                updated_by_membership_id:
-                  actor.membership_id
-              }
-            )
-          );
-
-          calculated.bill_id =
-            billId;
+          calculated.bill_id = billId;
 
           billingSyncBillViews_(
             ss,
@@ -1071,7 +1082,7 @@ function generateLandlordBillsByLineUid_(
             total_amount:
               calculated.total_amount,
             updated_existing:
-              false
+              Boolean(existingBill)
           });
 
         } catch (itemError) {
@@ -1103,6 +1114,11 @@ function generateLandlordBillsByLineUid_(
     if (
       generated.length >
         0 &&
+      generated.some(
+        function (item) {
+          return item.updated_existing !== true;
+        }
+      ) &&
       typeof workspaceNotifyTeam_ ===
         'function'
     ) {
@@ -1354,6 +1370,179 @@ function generateLandlordBillsByLineUid_(
 }
 
 
+/**
+ * 將已建立且尚未繳款帳單的租金標記為簽約時已收。
+ *
+ * 這是給既有 202 等紙本／現場簽約資料的明確人工補正入口；
+ * 不推測任何付款，必須由有帳務權限的房東主動按下確認後才會寫入。
+ * 只折抵帳單中的租金，電費、設備耗損費與其他費用保留。
+ */
+function applyLandlordInitialRentCreditByLineUid_(
+  lineUserId,
+  billId
+) {
+  const lock = LockService.getScriptLock();
+  let locked = false;
+
+  try {
+    billingEnsureSchema_();
+
+    const access = workspaceLandlordResolveAccess_(
+      lineUserId,
+      { require_onboarding: true }
+    );
+
+    if (!access.success) {
+      return access;
+    }
+
+    const permission = billingRequireGenerate_(access);
+    if (!permission.success) {
+      return permission;
+    }
+
+    const safeBillId = billingText_(billId);
+    if (!safeBillId) {
+      return workspaceResult_(
+        false,
+        'INVALID_BILL_ID',
+        '缺少帳單 ID'
+      );
+    }
+
+    lock.waitLock(25000);
+    locked = true;
+
+    const ss = runtimeSpreadsheet_();
+    const billSheet = ss.getSheetByName(V2_BILLING_SHEETS_.bills);
+    const bill = billingGetWorkspaceRows_(billSheet, access).find(
+      function (row) {
+        return billingText_(row.bill_id) === safeBillId;
+      }
+    );
+
+    if (!bill) {
+      return workspaceResult_(
+        false,
+        'BILL_NOT_FOUND',
+        '找不到指定帳單'
+      );
+    }
+
+    if (
+      typeof v2CanonicalBillIsVoided_ === 'function' &&
+      v2CanonicalBillIsVoided_(bill)
+    ) {
+      return workspaceResult_(
+        false,
+        'BILL_VOIDED',
+        '作廢帳單不可套用租金折抵'
+      );
+    }
+
+    if (billingNormalizePaymentStatus_(bill.payment_status) !== 'unpaid') {
+      return workspaceResult_(
+        false,
+        'BILL_NOT_UNPAID',
+        '只有未繳帳單可以套用租金折抵'
+      );
+    }
+
+    const rentAmount = Math.max(
+      0,
+      Math.round(billingNumber_(bill.rent_amount))
+    );
+
+    if (rentAmount <= 0) {
+      return workspaceResult_(
+        false,
+        'INVALID_RENT_AMOUNT',
+        '帳單租金金額不合法，無法套用折抵'
+      );
+    }
+
+    let subtotal = Math.round(billingNumber_(bill.subtotal_amount));
+    if (subtotal <= 0) {
+      subtotal = Math.round(
+        rentAmount +
+        billingNumber_(bill.management_fee) +
+        billingNumber_(bill.electricity_amount) +
+        billingNumber_(bill.equipment_amount) +
+        billingNumber_(bill.other_amount)
+      );
+    }
+
+    const discountAmount = Math.max(
+      Math.round(billingNumber_(bill.discount_amount)),
+      rentAmount
+    );
+    const totalAmount = Math.max(0, subtotal - discountAmount);
+    const existingNote = billingText_(bill.tenant_visible_note);
+    const creditNote = billingInitialRentPaidNote_(rentAmount);
+    const tenantVisibleNote = existingNote
+      ? existingNote.indexOf(creditNote) >= 0
+        ? existingNote
+        : existingNote + '\n' + creditNote
+      : creditNote;
+    const now = new Date();
+    const updated = {
+      discount_amount: discountAmount,
+      subtotal_amount: subtotal,
+      total_amount: totalAmount,
+      payment_status: totalAmount === 0 ? 'paid' : 'unpaid',
+      tenant_visible_note: tenantVisibleNote,
+      updated_at: now,
+      updated_by_user_id: billingText_(access.user.user_id),
+      updated_by_membership_id: billingText_(access.membership.membership_id)
+    };
+
+    billingSetValues_(billSheet, bill.__row_number, updated);
+
+    const updatedBill = Object.assign({}, bill, updated);
+    billingSyncBillViews_(ss, access, updatedBill, now);
+    SpreadsheetApp.flush();
+
+    const result = workspaceResult_(
+      true,
+      'INITIAL_RENT_CREDIT_APPLIED',
+      totalAmount === 0
+        ? '本筆租金已折抵，帳單已結清'
+        : '本筆租金已折抵，剩餘電費／設備費等仍待繳',
+      {
+        bill_id: safeBillId,
+        rent_credit_amount: rentAmount,
+        total_amount: totalAmount,
+        payment_status: updated.payment_status
+      }
+    );
+
+    billingAudit_(
+      access,
+      'landlord_bill_apply_initial_rent_credit',
+      result,
+      {
+        target_type: 'bill',
+        target_id: safeBillId,
+        operation_status: 'success',
+        detail: 'rent_credit=' + rentAmount + ',total=' + totalAmount
+      }
+    );
+
+    return result;
+  } catch (error) {
+    return workspaceResult_(
+      false,
+      'INITIAL_RENT_CREDIT_ERROR',
+      '租金折抵失敗：' + error.message
+    );
+  } finally {
+    if (locked) {
+      lock.releaseLock();
+    }
+  }
+}
+
+
 // ==================================================
 // Billing calculations
 // ==================================================
@@ -1490,6 +1679,25 @@ function billingCalculateRentForBillMonth_(
     is_prorated:
       isProrated
   };
+}
+
+function billingInitialRentCreditForBillMonth_(contract, billMonth, rentAmount) {
+  const paidMonth = billingText_(contract && contract.initial_rent_paid_month);
+  const paidAmount = Math.max(
+    0,
+    Math.round(billingNumber_(contract && contract.initial_rent_paid_amount))
+  );
+  const calculatedRent = Math.max(0, Math.round(billingNumber_(rentAmount)));
+
+  if (!paidMonth || paidMonth !== billingText_(billMonth) || paidAmount <= 0 || calculatedRent <= 0) {
+    return 0;
+  }
+
+  return Math.min(paidAmount, calculatedRent);
+}
+
+function billingInitialRentPaidNote_(amount) {
+  return '簽約時已收本月租金，本次帳單已折抵 NT$ ' + Math.round(amount).toLocaleString('en-US') + '。';
 }
 
 
@@ -1692,6 +1900,14 @@ function billingBuildInitItem_(
       tenant.line_user_id
     );
 
+  const initialRentCredit = billingInitialRentCreditForBillMonth_(
+    contract,
+    billMonth,
+    existingBill
+      ? displayedRentAmount
+      : rentCalculation.rent_amount
+  );
+
   return {
     room_id:
       roomId,
@@ -1813,7 +2029,7 @@ function billingBuildInitItem_(
         ? billingNumber_(
             existingBill.discount_amount
           )
-        : 0,
+        : initialRentCredit,
     note:
       existingBill
         ? billingText_(
@@ -1825,7 +2041,21 @@ function billingBuildInitItem_(
         ? billingText_(
             existingBill.tenant_visible_note
           )
-        : '',
+        : initialRentCredit > 0
+          ? billingInitialRentPaidNote_(initialRentCredit)
+          : '',
+
+    initial_rent_paid_month:
+      billingText_(contract.initial_rent_paid_month),
+    initial_rent_paid_amount:
+      Math.max(
+        0,
+        Math.round(
+          billingNumber_(contract.initial_rent_paid_amount)
+        )
+      ),
+    initial_rent_credit_amount:
+      initialRentCredit,
 
     requires_meter:
       (
@@ -1986,7 +2216,7 @@ function billingCalculateBill_(
       )
     );
 
-  const discountAmount =
+  const requestedDiscountAmount =
     Math.max(
       0,
       Math.round(
@@ -1995,6 +2225,44 @@ function billingCalculateBill_(
         )
       )
     );
+
+  const manuallyAppliedExistingRentCredit =
+    existingBill &&
+    input &&
+    input.apply_initial_rent_credit === true;
+  const initialRentCredit = existingBill
+    ? manuallyAppliedExistingRentCredit
+      ? Math.min(
+          Math.max(
+            0,
+            Math.round(
+              billingNumber_(existingBill.rent_amount)
+            )
+          ),
+          item.rent_amount
+        )
+      : 0
+    : billingInitialRentCreditForBillMonth_(
+        contract,
+        billMonth,
+        item.rent_amount
+      );
+  const discountAmount =
+    initialRentCredit > 0
+      ? Math.max(requestedDiscountAmount, initialRentCredit)
+      : requestedDiscountAmount;
+
+  if (
+    !existingBill &&
+    initialRentCredit > 0 &&
+    requestedDiscountAmount < initialRentCredit
+  ) {
+    throw new Error(
+      item.room_name +
+      ' 已記錄簽約收款，本月租金折抵不得低於 NT$ ' +
+      initialRentCredit.toLocaleString('en-US')
+    );
+  }
 
   const subtotal =
     Math.round(
@@ -2117,12 +2385,15 @@ function billingCalculateBill_(
     bill_status:
       'issued',
     payment_status:
-      existingBill
+      existingBill &&
+      !(manuallyAppliedExistingRentCredit && totalAmount === 0)
         ? billingNormalizePaymentStatus_(
             existingBill
               .payment_status
           )
-        : 'unpaid',
+        : initialRentCredit > 0 && totalAmount === 0
+          ? 'paid'
+          : 'unpaid',
     sent_status:
       existingBill
         ? billingText_(
@@ -2136,9 +2407,10 @@ function billingCalculateBill_(
         input.note
       ),
     tenant_visible_note:
-      billingText_(
-        input.tenant_visible_note
-      )
+      billingText_(input.tenant_visible_note) ||
+      (initialRentCredit > 0
+        ? billingInitialRentPaidNote_(initialRentCredit)
+        : '')
   };
 }
 

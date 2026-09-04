@@ -128,6 +128,9 @@ function rowObject(headers, row) {
 function createRuntime(overrides = {}) {
   const nowIso = overrides.nowIso || '2026-09-04T01:02:03.000Z';
   const nowIsoSequence = Array.isArray(overrides.nowIsoSequence) ? overrides.nowIsoSequence.slice() : null;
+  const emailHashSecret = Object.prototype.hasOwnProperty.call(overrides, 'emailHashSecret')
+    ? overrides.emailHashSecret
+    : 'email-hash-secret';
   const users = [
     rowFor(USER_HEADERS, {
       user_id: 'user-1',
@@ -220,13 +223,16 @@ function createRuntime(overrides = {}) {
     PropertiesService: {
       getScriptProperties: () => ({
         getProperty: (key) => {
-          if (key === 'CMWEBS_EMAIL_LOGIN_HASH_SECRET') return 'email-hash-secret';
+          if (key === 'CMWEBS_EMAIL_LOGIN_HASH_SECRET') return emailHashSecret;
           return null;
         }
       })
     },
     MailApp: {
-      sendEmail: (...args) => state.mailSends.push(args.length === 1 ? args[0] : args)
+      sendEmail: (...args) => {
+        if (overrides.sendEmailError) throw overrides.sendEmailError;
+        state.mailSends.push(args.length === 1 ? args[0] : args);
+      }
     },
     workspaceResult_: (success, code, message, data) => ({ success, code, message, data: data || null }),
     workspaceLandlordResolveAccess_: (lineUserId) => lineUserId === 'line-1'
@@ -390,6 +396,33 @@ guardedTest('Phase 217 normalizes login Email and stores only hashed login chall
   const code = extractOtpCode(state.mailSends[0]);
   assert.equal(challenge.code_hash, expectedCodeHash('owner@example.com', code), 'login challenge storage must use a keyed HMAC code hash');
   assert.notEqual(challenge.code_hash, code, 'challenge storage must never persist a raw login code');
+});
+
+guardedTest('Phase 217 fails closed when the Email hash secret is missing', () => {
+  const { api, sheets, state } = createRuntime({ emailHashSecret: '' });
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+  const result = api.requestLandlordEmailLogin_('owner@example.com', 'missing-secret');
+
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'EMAIL_DELIVERY_FAILED');
+  assert.equal(result.message, 'Email 驗證碼寄送失敗');
+  assert.doesNotMatch(JSON.stringify(result), /CMWEBS_EMAIL_LOGIN_HASH_SECRET/);
+  assert.equal(state.mailSends.length, 0);
+  assert.equal(sheetObjects(sheets.V2_landlord_email_login_challenges).length, 0);
+});
+
+guardedTest('Phase 217 does not persist a challenge when MailApp delivery fails', () => {
+  const { api, sheets, state } = createRuntime({
+    sendEmailError: new Error('MailApp quota or authorization failure')
+  });
+  enableVerifiedEmailLogin(sheets.V2_users, 'user-1');
+  const result = api.requestLandlordEmailLogin_('owner@example.com', 'mail-failure');
+
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'EMAIL_DELIVERY_FAILED');
+  assert.equal(result.message, 'Email 驗證碼寄送失敗');
+  assert.equal(state.mailSends.length, 0);
+  assert.equal(sheetObjects(sheets.V2_landlord_email_login_challenges).length, 0);
 });
 
 guardedTest('Phase 217 stores only a session-token hash when login verification issues a session', () => {

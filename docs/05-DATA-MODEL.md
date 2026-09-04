@@ -28,6 +28,26 @@
 | `V2_tenant_checkins` | 入住報到、鑰匙與入住電表 |
 | `V2_tenant_messages` | 房客訊息與報修基礎資料 |
 
+### `V2_contracts` initial rent payment snapshot
+
+The simplified new-contract and paper-backfill flows may explicitly record that
+the landlord collected the first contract month's rent at signing. This is an
+explicit user choice and is never inferred from dates:
+
+| Header | Meaning |
+|---|---|
+| `initial_rent_paid_month` | `YYYY-MM` month whose rent was collected at signing |
+| `initial_rent_paid_amount` | Rounded rent amount collected at signing |
+
+Both headers are additive and must be appended without reordering or replacing
+existing columns. For the matching first bill, the canonical billing flow copies
+the amount into the existing `discount_amount` snapshot and writes a
+tenant-visible explanation. Management, utility, equipment, and other charges
+remain separately payable. A fully credited zero-total bill is stored as paid.
+The landlord tenant-detail document query also follows append-only contract
+links, so documents stored against a prior contract remain visible to the
+current tenant without rewriting document rows.
+
 ## 帳務與付款
 
 | Sheet | 用途 |
@@ -151,6 +171,27 @@ request_id
   LINE landlord Email verification, authenticated desktop operation, and
   browser/real-device UAT are `HUMAN_REQUIRED` / `UNVERIFIED` until explicitly
   verified in the authorized release workflow.
+
+### Legacy contract document visibility
+
+- `V2_contracts.legacy_signed_pdf_url` is preferred over
+  `legacy_signed_document_url` as the legacy contract document link; identity
+  front／back links use `legacy_identity_front_url` and
+  `legacy_identity_back_url`.
+- The landlord tenant-detail document response merges these links with private
+  `V2_contract_documents` rows across the tenant's append-only contract
+  lineage. Only HTTPS links are exposed, and legacy links are read-only;
+  uploading a replacement still creates a private document row.
+
+### Existing bill initial-rent correction
+
+- `landlord_bill_apply_initial_rent_credit` reuses the existing
+  `V2_bills.discount_amount`, `subtotal_amount`, `total_amount`,
+  `payment_status`, and `tenant_visible_note` fields; no new billing column is
+  required.
+- The action is an explicit landlord correction for an unpaid bill. It credits
+  at most that bill's rent amount, leaves metered and other charges intact, and
+  synchronizes the same snapshot to `V2_tenant_bill_view`.
 
 ## 主鍵原則
 

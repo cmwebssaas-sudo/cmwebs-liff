@@ -46,13 +46,16 @@ const normalized = context.landlordInitiatedContractNormalizeInput_({
   start_date: '2026-09-01',
   term_months: 12,
   rent_amount: '7500',
-  deposit_amount: '15000'
+  deposit_amount: '15000',
+  initial_rent_paid: true
 });
 
 assert.equal(normalized.success, true, normalized.message);
 assert.equal(normalized.data.end_date, '2027-08-31');
 assert.equal(normalized.data.term_months, 12);
 assert.equal(normalized.data.payment_day, 0);
+assert.equal(normalized.data.initial_rent_paid_month, '2026-09');
+assert.equal(normalized.data.initial_rent_paid_amount, 7500);
 
 const resolved = context.landlordInitiatedContractResolveNewDefaults_(normalized.data, {
   property_id: 'P1',

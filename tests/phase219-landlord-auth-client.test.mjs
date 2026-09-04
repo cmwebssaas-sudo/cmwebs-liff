@@ -11,6 +11,48 @@ const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', imp
 const entrySource = readFileSync(new URL('../landlord-entry.html', import.meta.url), 'utf8');
 const settingsSource = readFileSync(new URL('../landlord-settings.html', import.meta.url), 'utf8');
 
+function extractFunctionSource(source, functionName) {
+  const match = new RegExp(`function\\s+${functionName}\\s*\\(`).exec(source);
+  assert.ok(match, `${functionName} must exist in the page source`);
+
+  const bodyStart = source.indexOf('{', match.index);
+  assert.notEqual(bodyStart, -1, `${functionName} must include a body`);
+
+  let depth = 0;
+  let quote = '';
+  let escaped = false;
+
+  for (let index = bodyStart; index < source.length; index += 1) {
+    const character = source[index];
+
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === quote) {
+        quote = '';
+      }
+      continue;
+    }
+
+    if (character === "'" || character === '"' || character === '`') {
+      quote = character;
+      continue;
+    }
+
+    if (character === '{') depth += 1;
+    if (character === '}') {
+      depth -= 1;
+      if (depth === 0) return source.slice(match.index, index + 1);
+    }
+  }
+
+  throw new Error(`unterminated ${functionName}`);
+}
+
+const settingsJsonpRequestSource = extractFunctionSource(settingsSource, 'jsonpRequest');
+
 function createElement(tagName, ownerDocument) {
   const element = {
     tagName: String(tagName).toUpperCase(),
@@ -381,6 +423,58 @@ guardedTest('Phase 219 sends authenticated Email-session page actions through PO
   const result = await request;
   assert.equal(result.success, true);
   assert.deepEqual(result.data, { ok: true });
+});
+
+guardedTest('Phase 219 sends the settings page bootstrap through the authenticated POST bridge', async () => {
+  const { context, document, storage } = createRuntime();
+  context.API_URL = 'https://script.google.com/macros/s/example/exec';
+  context.LINE_USER_ID = 'line-1';
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec',
+    returnTo: 'landlord-settings.html'
+  });
+  storage.set('cmwebs_landlord_session_token', 'SESSION_TOKEN_SETTINGS');
+
+  const settingsJsonpRequest = vm.runInContext(
+    `(${settingsJsonpRequestSource})`,
+    context,
+    { filename: 'landlord-settings.html:jsonpRequest' }
+  );
+  const request = settingsJsonpRequest('landlord_settings_init', {});
+  const form = document.submittedForms[0];
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
+  const fields = formFields(form);
+
+  assert.equal(form.method.toUpperCase(), 'POST');
+  assert.equal(form.action, 'https://script.google.com/macros/s/example/exec');
+  assert.equal(form.action.includes('SESSION_TOKEN_SETTINGS'), false);
+  assert.equal(fields.action, 'landlord_settings_init');
+  assert.equal(fields.v2_action, 'landlord_settings_init');
+  assert.equal(fields.response_mode, 'bridge');
+  assert.equal(fields.landlord_session_token, 'SESSION_TOKEN_SETTINGS');
+  assert.equal(fields.line_user_id, undefined);
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: {
+      success: true,
+      data: {
+        profile: {
+          display_name: 'Owner'
+        }
+      }
+    }
+  }, 'https://script.google.com', iframe.contentWindow);
+
+  const result = await request;
+  assert.equal(result.success, true);
+  assert.deepEqual(result.data, {
+    profile: {
+      display_name: 'Owner'
+    }
+  });
 });
 
 guardedTest('Phase 219 test mode keeps Email actions free of deterministic test LINE identity', async () => {

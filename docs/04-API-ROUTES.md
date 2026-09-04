@@ -8,7 +8,7 @@ not a deployment instruction and not evidence that the repository has been
 deployed.
 
 - Dispatcher: `apps-script/程式碼.js`
-- Route count: **83** unique `v2Action` routes, plus 6 V2.1 POST-only
+- Route count: **84** unique `v2Action` routes, plus 6 V2.1 POST-only
   landlord Email auth actions that are intentionally outside the JSONP route
   inventory
 - Source tree SHA-256: `c24e33ee91dec312d288fab508e09d8b4c9fefcc3c8eb84ab8b2486a4b2930d0`
@@ -32,6 +32,7 @@ landlord_bill_notifications_send
 landlord_bill_reopen
 landlord_billing_init
 landlord_bills_generate
+landlord_bill_apply_initial_rent_credit
 landlord_contract_signing_review_auth_init
 landlord_contract_signing_review_auth_status
 landlord_contract_signing_review_update
@@ -125,6 +126,10 @@ tenant_payment_report_submit
 - When an authorized landlord manually sends or re-sends a bill notification,
   the message includes `tenant_visible_note` when it is non-empty. Existing
   sent LINE messages are immutable and are not retroactively changed.
+- `landlord_bill_apply_initial_rent_credit` is an explicit landlord-only
+  correction for an already-created unpaid bill. It credits only the bill's
+  rent component, preserves electricity／equipment／other charges, synchronizes
+  the landlord and tenant bill views, and records the tenant-visible reason.
 
 ## Landlord revenue dashboard
 
@@ -328,7 +333,7 @@ verified, while authenticated LINE/mobile contract interaction remains
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
 | `landlord_contract_initiated_init` | `doPost` exchange | Landlord review session, Workspace read policy | Lists the session Workspace's pending landlord-initiated contracts without exposing confirmation codes. |
-| `landlord_contract_initiate_new` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a pending new-tenant contract, provisional tenant identity, one-time invite and short confirmation code; it does not activate a room. The simplified landlord entry sends `simple_flow=true` with `room_id`, `start_date`, `term_months`, `rent_amount` and `deposit_amount`; the server computes the inclusive `end_date` (`start + term - 1 day`) and fills omitted management/payment/electricity/equipment defaults from the selected room. |
+| `landlord_contract_initiate_new` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a pending new-tenant contract, provisional tenant identity, one-time invite and short confirmation code; it does not activate a room. The simplified landlord entry sends `simple_flow=true` with `room_id`, `start_date`, `term_months`, `rent_amount` and `deposit_amount`; the server computes the inclusive `end_date` (`start + term - 1 day`) and fills omitted management/payment/electricity/equipment defaults from the selected room. When `initial_rent_paid=true`, it records the start month and rent snapshot so that month's rent is automatically credited on the first bill. |
 | `landlord_contract_initiate_renewal` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates a new `pending_landlord_review` renewal version linked by `previous_contract_id`; it does not overwrite, invite the tenant, or activate the predecessor. |
 | `landlord_contract_initiate_renewal_direct` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Creates an append-only renewal version from an active, expired, approved or completed predecessor, records direct landlord confirmation, creates one signing invite immediately, and moves the new version to `pending_tenant_signature`. |
 | `landlord_contract_renewal_draft_update` | `doPost` exchange | Landlord review session, Workspace `contract_write` policy | Updates dates, amounts, payment day, optional 30-day clause and regenerated full text of an unsigned `pending_landlord_review` renewal draft; it rejects sent/signed versions and never changes the predecessor. |
@@ -447,12 +452,16 @@ build at release commit `a14262f`.
   requires a separately authorized additive migration before retrying.
 - The release migration entry point is
   `runV2LandlordPaperContractBackfillProductionMigration`. It only appends the
-  missing `paper_backfill_idempotency_key`, `paper_backfill_payload_hash`, and
-  `previous_contract_id` headers to the existing `V2_contracts` header row, is
-  idempotent, and never creates a sheet or changes contract rows.
+  missing `paper_backfill_idempotency_key`, `paper_backfill_payload_hash`,
+  `previous_contract_id`, `initial_rent_paid_month`, and
+  `initial_rent_paid_amount` headers to the existing `V2_contracts` header row,
+  is idempotent, and never creates a sheet or changes contract rows.
 - The required contract file and optional identity files are stored through the
-  private `V2_contract_documents` path. Public responses contain document
-  summaries only and never expose Drive file IDs or file bytes.
+  private `V2_contract_documents` path. Existing legacy contract／identity URL
+  fields are also returned as authenticated, read-only HTTPS document links so
+  old room-onboarding files do not disappear from the tenant detail page.
+  Responses contain document summaries only and never expose Drive file IDs or
+  file bytes.
 - The action appends the contract and, for a new paper tenant, the tenant/user
   rows; it updates room and compatibility-view pointers under the existing
   landlord contract `ScriptLock`. Existing contracts, bills and historical
@@ -476,6 +485,17 @@ build at release commit `a14262f`.
   optional pending invite is also closed, and the new paper row links through
   `previous_contract_id`; a source contract with an existing tenant or LINE
   binding remains blocked.
+- The simplified new-contract and paper-backfill forms accept the explicit
+  `initial_rent_paid` flag. It is never inferred from the start date. When true,
+  the server stores the start month and rent amount in `V2_contracts`; the first
+  generated bill uses the existing `discount_amount` plus a tenant-visible
+  explanation, and a fully credited zero-total bill is marked `paid`.
+- A landlord tenant-detail document query with only `tenant_id` includes stored
+  documents linked to that tenant's append-only contract lineage, including a
+  prior `previous_contract_id` / `renewed_from_contract_id` source row whose
+  document row predates the current tenant binding, plus valid HTTPS links from
+  legacy contract rows in that same lineage. An explicit `contract_id` filter
+  remains strict.
 
 The landlord tenant-create initialization route also accepts the optional
 `supersede_contract_id` query parameter so the paper form reads the selected
