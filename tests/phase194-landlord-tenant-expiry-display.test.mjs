@@ -21,8 +21,13 @@ assert.match(
 );
 assert.match(
   nativeDashboardSource,
-  /current_contract_id:\s*workspaceDashboardText_\(\s*currentContract\.contract_id\s*\),\s*contract_end_date:\s*workspaceDashboardFormatDate_\(\s*currentContract\.end_date\s*\|\|\s*currentContract\.contract_end_date\s*\|\|\s*currentContract\.lease_end_date\s*\)/s,
+  /current_contract_id:\s*workspaceDashboardText_\(\s*currentContract\.contract_id\s*\)[\s\S]*?contract_end_date:\s*workspaceDashboardFormatDate_\(\s*currentContract\.end_date\s*\|\|\s*currentContract\.contract_end_date\s*\|\|\s*currentContract\.lease_end_date\s*\)/s,
   'workspace-native landlord_tenants must return the current contract expiry date'
+);
+assert.match(
+  nativeDashboardSource,
+  /property_id:\s*workspaceDashboardText_\(\s*currentContract\.property_id[\s\S]*?room_id:\s*workspaceDashboardText_\(/s,
+  'workspace-native landlord_tenants must return renewal routing context'
 );
 assert.match(
   tenantsPage,

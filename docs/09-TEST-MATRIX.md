@@ -171,6 +171,7 @@
 - [x] 房東首頁在取得身份後即與 bootstrap 並行啟動報表請求，bootstrap 完成後漸進渲染報表；唯讀 JSONP 逾時最多自動重試一次，script error 立即清理並拒絕，圖表失敗不覆蓋已載入首頁（Phase 193；本地自動測試通過）
 - [x] 房東首頁 bootstrap 的付款／訊息唯讀資料共用 request-local snapshot，避免同一次首頁載入重複讀取 Google Sheet（Phase 197；本地回歸測試通過）
 - [x] 房客清單由 `landlord_tenants` 回傳現行合約到期日；房卡明確顯示到期日與剩餘／逾期天數，並以有效、60 天內、30 天內、已到期分級顏色提示（Phase 194；本地 API／UI 回歸測試通過，公開頁與 LIFF 真機尚待驗證）
+- [x] 合約 60 天內、30 天內或已到期的房客卡片提供「快速續約」，沿用現行合約／房客／房間／物件 context 進入 append-only 續約表單（Phase 194／226；本地回歸通過，正式頁與 LIFF 真機待驗證）
 - [x] 房東可修改尚未發送的續約草稿日期，系統同步重建合約全文；已送出／已簽署版本拒絕覆寫，手動簽約日期錯誤改以取消未認領邀請後重建或新增更正續約版本（Phase 195；Apps Script Version 139／GitHub Pages workflow `33449180375` 已發布並完成公開 route/page readback，LINE 真機尚待驗證）
 - [x] 到期續約改由房東先檢視草稿、可修改日期／金額／30 天優惠條款，再發送續約詢問；房客只能回覆同意或暫不續約，同意後房東才可發送正式簽署邀請，舊合約版本維持 append-only（Phase 196；正式 Apps Script Version 140 與 Pages workflow `33456765735` 已發布，LINE 真機仍待驗證）
 - [x] 本地候選新增「直接續約簽署」單頁流程：現有／已到期／已完成合約可建立新版 append-only 合約、可勾選 30 天條款並立即產生邀請；房客續約邀請只要求簽名，房東核准後才封存舊版本（Phase 198 static；Phase 157／158 runtime；尚未部署或進行 LINE 真機 UAT）
@@ -187,6 +188,7 @@
 - [x] 紙本合約補登的 Production migration 只在既有 `V2_contracts` 標題列尾端追加兩個冪等欄位，重跑不重複追加、缺少資料表會 fail closed，且不改任何資料列；Production header read-back 通過（Phase 212）
 - [x] 紙本補登 migration 也會追加孤立合約復原所需的 `previous_contract_id`，重跑不重複追加且不改既有資料列；帳單抄表頁於 iOS 虛擬鍵盤開啟時會收起固定操作列／底部導覽並捲動焦點欄位；新建帳單依租約與帳單月的含首尾日重疊天數計算首月／末月租金，既有帳單維持原始快照（Phase 221／222；本地回歸通過，未部署／正式 LIFF UAT 待驗證）
 - [x] 房客詳細資料會沿合約版本鏈補回房源建檔遺留的合約／身分證 HTTPS 文件連結；簡易新租約／紙本補登勾選「簽約時已收本月租金」時，首月租金以可追溯折抵明細結清，避免重複列帳（Phase 224／225；本地回歸通過，未部署／正式 LIFF UAT 待驗證）
+- [x] 已建立但未繳的本月帳單若對應合約已明確記錄簽約時收取本月租金，房東正常送出帳務更新即可自動折抵租金；已繳帳單維持鎖定，電費／設備／其他費用不受影響，房東與房客均可看到折抵明細（Phase 139／225／226；正式 Apps Script／Pages 已部署，本地回歸通過，正式資料與 LIFF UAT 待驗證）
 - [x] 202 已先建立但尚未被房客認領的房東電子租約，可從物件／房間頁以 `supersede_contract_id` 轉成紙本補登；原電子合約與邀請保留並標記取消，新紙本合約以 `previous_contract_id` 連結，既有房客／使用者啟用且維持未綁定 LINE，完成頁提供房客登入入口（Phase 213；PR #98／Apps Script Version 151／Pages workflow `33691996413` 已部署，正式手機／LIFF 尚待驗證）
 - [x] 房間若仍顯示「已出租／租約中」但有效合約找不到對應房客且沒有 LINE 綁定，物件／房間頁顯示「補登紙本並建立房客登入」資料修復入口；送出時保留並關閉孤兒合約、建立新的紙本租約與未綁定房客，並拒絕仍有房客或 LINE 綁定的合約（Phase 214；PR #100／Apps Script Version 152／Pages workflow `33694799930` 已部署，公開頁 read-back HTTP 200；手機／LIFF 尚待驗證）
 - [x] 舊格式待啟用合約若已有未綁定的房客資料，物件／房間頁仍顯示「補登紙本並建立房客登入」入口；補登時沿用既有房客、不建立第二筆房客資料，關閉舊待簽合約並以 `previous_contract_id` 連結紙本租約。若既有房客列缺少對應 `V2_users` 列，只有同一個未綁定 legacy-pending 恢復分支會補建該房客帳號；已綁定或其他既有房客維持拒絕（Phase 215 runtime regression；Apps Script Version 156、Pages workflow `33886721735` 已部署；手機／LIFF 實際補登仍待驗證）

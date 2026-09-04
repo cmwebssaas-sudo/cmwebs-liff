@@ -77,7 +77,7 @@
     function backToDetail() {
       const params = new URLSearchParams();
       if (TENANT_ID) params.set('tenant_id', TENANT_ID);
-      params.set('v', window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1');
+      params.set('v', (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1'));
       if (TEST_MODE) params.set('test', '1');
       location.href = 'landlord-tenant-detail.html?' + params.toString();
     }

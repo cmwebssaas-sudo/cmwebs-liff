@@ -557,6 +557,14 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    .tenant-actions.has-quick-renewal {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .tenant-actions.has-quick-renewal.has-binding-invite {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
     .tenant-action-button {
       min-height: 44px;
       border: 0;
@@ -1137,6 +1145,53 @@
       }
 
       location.href = url;
+    }
+
+    function goTenantRenewal(
+      tenant,
+      event
+    ) {
+      if (event) {
+        event.stopPropagation();
+      }
+
+      const contractId = rawText(
+        tenant && tenant.current_contract_id
+      ).trim();
+
+      if (!contractId) {
+        showToast('找不到可續約的現行合約');
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('mode', 'renewal');
+      params.set('tenant_id', rawText(tenant.tenant_id).trim());
+      params.set('previous_contract_id', contractId);
+
+      const propertyId = rawText(tenant.property_id).trim();
+      const roomId = rawText(tenant.room_id).trim();
+
+      if (propertyId) {
+        params.set('property_id', propertyId);
+      }
+
+      if (roomId) {
+        params.set('room_id', roomId);
+      }
+
+      params.set(
+        'v',
+        window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1'
+      );
+
+      if (TEST_MODE) {
+        params.set('test', '1');
+      }
+
+      location.href =
+        'landlord-tenant-create.html?' +
+        params.toString();
     }
 
     function tenantBindingInviteUrl() {
@@ -1806,6 +1861,16 @@
           tenant.end_date
         );
 
+      const canQuickRenew = Boolean(
+        tenant.current_contract_id &&
+        contractExpiry &&
+        [
+          'urgent',
+          'soon',
+          'expired'
+        ].indexOf(contractExpiry.level) >= 0
+      );
+
       let contractBadge = '';
 
       if (contract.pending > 0) {
@@ -1924,11 +1989,14 @@
             </div>
           </button>
 
-          <div class="tenant-actions ${
+          <div class="tenant-actions ${[
             bindingStatus === 'unbound'
               ? 'has-binding-invite'
+              : '',
+            canQuickRenew
+              ? 'has-quick-renewal'
               : ''
-          }">
+          ].filter(Boolean).join(' ')}">
             <button
               class="tenant-action-button"
               type="button"
@@ -1946,6 +2014,20 @@
                     onclick="goTenantContractRequests('${safeHtml(tenantId)}', event)"
                   >
                     ${contract.latestType === 'renewal' ? '處理續約' : '處理合約'}
+                  </button>
+                `
+                : ''
+            }
+
+            ${
+              canQuickRenew
+                ? `
+                  <button
+                    class="tenant-action-button primary"
+                    type="button"
+                    onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)"
+                  >
+                    快速續約
                   </button>
                 `
                 : ''
@@ -2119,6 +2201,16 @@
           tenant.end_date
         );
 
+      const canQuickRenew = Boolean(
+        tenant.current_contract_id &&
+        contractExpiry &&
+        [
+          'urgent',
+          'soon',
+          'expired'
+        ].indexOf(contractExpiry.level) >= 0
+      );
+
       return `
         <tr>
           <td>
@@ -2143,6 +2235,11 @@
             <div class="tenant-desktop-actions">
               <button class="tenant-action-button primary" type="button" onclick="goTenantDetail('${safeHtml(tenantId)}')">詳情</button>
               <button class="tenant-action-button purple" type="button" onclick="goTenantContractRequests('${safeHtml(tenantId)}', event)">合約</button>
+              ${
+                canQuickRenew
+                  ? `<button class="tenant-action-button primary" type="button" onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)">快速續約</button>`
+                  : ''
+              }
               ${
                 bindingStatus === 'unbound'
                   ? `<button class="tenant-action-button" type="button" onclick="shareTenantBindingInvite(event)">邀請綁定</button>`
