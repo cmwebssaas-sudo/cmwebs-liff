@@ -7,6 +7,22 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-04 202 legacy-pending 紙本補登帳號復原正式部署
+
+- 修正舊格式待啟用的 202 紙本補登在既有 `V2_tenants` 房客列已存在、但其
+  `V2_users` 使用者列遺失時，提交會回傳「找不到既有房客使用者資料」的阻塞。
+  僅在同一筆未綁定、`legacy_pending` 復原分支補建同一個房客的 tenant 使用者列；
+  已綁定 LINE、跨 Workspace 或其他既有房客情境仍 fail closed。
+- 正式 Apps Script 可編輯來源與候選逐檔核對，54 個原始檔中只有
+  `V2_LANDLORD_PAPER_CONTRACT_BACKFILL.js` 為預期差異。本次 Git commit
+  `378c517` 已推送 `main`；GitHub Pages workflow `33886721735` 已成功完成。
+- 既有 Web App deployment 已由 immutable Version 155 更新至 Version 156，既有
+  Web App URL 不變，Version 155 可立即 rollback。未執行 Sheet migration、
+  Drive 上傳、房客／合約交易、Properties、Trigger 或 LINE 訊息。
+- 本地 `npm run validate`、Apps Script syntax check、`git diff --check` 與完整
+  Node suite `120/120` 均通過。真實手機／LIFF 的 202 補登與私有文件寫入仍為
+  `HUMAN_REQUIRED` / `UNVERIFIED`。
+
 ## 2026-09-04 紙本補登手機驗證輪詢修正正式部署
 
 - 修正手機 LIFF 開啟 202 紙本補登頁後顯示「建立資料載入失敗／房東身分驗證

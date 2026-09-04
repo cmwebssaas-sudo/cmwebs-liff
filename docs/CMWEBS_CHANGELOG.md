@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-04 — 202 legacy-pending 紙本補登帳號復原正式部署
+
+- 修正舊格式待啟用的紙本補登中，既有未綁定房客有 `V2_tenants` 資料、卻遺失
+  `V2_users` 資料時無法送出的問題。只在該 `legacy_pending` 恢復分支補建同一個
+  tenant 使用者，不建立第二筆房客，已綁定或其他情境仍拒絕。
+- commit `378c517` 已推送 `main`；正式來源逐檔核對後，既有 Web App deployment
+  更新至 Apps Script Version 156，Version 155 保留 rollback，既有 Web App URL 不變。
+- GitHub Pages workflow `33886721735` 成功完成。完整 Node `120/120`、validator、
+  Apps Script syntax check 與 `git diff --check` 通過；未執行 Sheet、Drive、房客／
+  合約資料、Properties、Trigger 或 LINE 寫入。手機／LIFF 真機補登仍為
+  `HUMAN_REQUIRED` / `UNVERIFIED`。
+
 ## 2026-09-04 — 紙本補登手機驗證輪詢修正正式部署
 
 - 修正手機 LIFF 開啟紙本補登頁時，因 Apps Script 302 轉址被誤判而顯示
