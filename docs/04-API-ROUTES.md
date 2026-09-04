@@ -430,9 +430,9 @@ dispatcher.
 ## Landlord paper-contract backfill（房東紙本合約補登）
 
 This is a landlord-only V2.1 POST action. It does not add a JSONP route, so the
-canonical `83`-route inventory above remains unchanged. The current Production
-release serves it from Apps Script Version 153 and the published `main` Pages
-build at release commit `a14262f`.
+ canonical `84`-route inventory above remains unchanged. The current Production
+ release serves it from Apps Script Version 157 and the published `main` Pages
+ build at merge commit `c72f921`.
 
 | Route / POST action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
