@@ -1,7 +1,7 @@
 # 房東桌面版完成設計
 
-**日期：** 2026-09-05（Asia/Taipei）  
-**產品分類：** V2.0 內部營運正確性／穩定性完成  
+**日期：** 2026-09-05（Asia/Taipei）
+**產品分類：** V2.0 內部營運正確性／穩定性完成
 **Production 影響：** 需要新的 Apps Script immutable version 與既有 GitHub Pages 發佈；不修改既有房客、合約、帳務資料，不執行 Sheet migration。
 
 ## 目標
