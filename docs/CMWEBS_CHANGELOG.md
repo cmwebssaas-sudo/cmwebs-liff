@@ -2,6 +2,25 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-05 — 202 本月租金自動折抵與房客卡片快速續約正式部署
+
+- 修正已建立但未繳的本月帳單：若對應合約明確記錄簽約時已收本月租金，房東
+  正常送出帳務更新即可自動折抵租金；折抵不影響電費、設備耗損費、管理費與
+  其他費用，既有已繳帳單仍維持鎖定。折抵說明同步保留於房東／房客可見明細。
+- 合約 60 天內、30 天內或已到期的房客卡片新增「快速續約」，沿用現行合約、
+  房客、房間與物件 context 進入既有 append-only 續約表單。
+- PR #104 已合併至 `main`，merge commit 為 `d5c9c4e`。Apps Script 推送 54 個
+  檔案並建立 immutable Version 158；公開頁使用的既有 deployment 已更新至
+  Version 158，Version 157 保留 rollback，既有 Web App URL 不變。
+- GitHub Pages workflow `33924128412` 已成功完成 build、status、deploy；公開
+  `frontend-release.js`、房客名單、帳務頁與房客入口 read-back 均 HTTP 200，
+  release marker 為 `20260905-prepaid-rent-quick-renewal-v1`。
+- 本地完整 Node suite `92/92`、`npm run validate`（71/71 routes／handlers）、
+  Apps Script syntax check、static release-cache validator 與 `git diff --check`
+  均通過。未執行 Sheet migration、202 或其他房客帳單／合約資料寫入、Drive、
+  Properties、Trigger 或 LINE 訊息；正式 202 帳務結果與手機／LIFF UAT 仍為
+  `HUMAN_REQUIRED` / `UNVERIFIED`。
+
 ## 2026-09-04 — 202 legacy-pending 紙本補登帳號復原正式部署
 
 - 修正舊格式待啟用的紙本補登中，既有未綁定房客有 `V2_tenants` 資料、卻遺失
