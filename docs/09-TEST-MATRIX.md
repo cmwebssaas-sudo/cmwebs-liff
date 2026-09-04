@@ -54,7 +54,7 @@
 ## 租約
 
 - [x] 新租約建立：房東簡易流程以房號、租期、租金、押金建立待房客簽署的新租約，結束日由租期自動計算，費用預設由房間帶入（Phase 157／208；已完成本地邏輯與靜態回歸，LIFF 真機簽署仍 `HUMAN_REQUIRED`）
-- [x] 新租約／紙本補登可由房東明確標記「簽約時已收本月租金」；合約保存月份／金額快照，首月帳單以房客可見折抵明細抵銷租金，文件查詢沿用 append-only 合約歷史鏈（Phase 224／225；本地候選，正式部署與真機仍待驗證）
+- [x] 新租約／紙本補登可由房東明確標記「簽約時已收本月租金」；合約保存月份／金額快照，首月帳單以房客可見折抵明細抵銷租金，文件查詢沿用 append-only 合約歷史鏈（Phase 224／225；Apps Script Version 157、PR #102／Pages workflow `33915253610` 已部署；手機／LIFF 真機 UAT 仍待驗證）
 - [ ] 房客端看到正確租約
 - [ ] 續約申請
 - [ ] 提前終止申請
@@ -71,7 +71,7 @@
 - [ ] 新增與更新計數正確
 - [ ] 房客帳單顯示正確
 - [x] 房東帳單分開保存內部備註與房客可見折抵說明；房客帳單與手動重發通知只顯示折抵金額及房客可見說明，不公開內部備註（Phase 223 自動回歸；正式／真機待驗證）
-- [x] 已建立未繳帳單可由房東明確按下「本筆租金已於簽約時收取，套用折抵」；只折抵租金、保留水電設備費，並同步房東／房客明細（Phase 139／225；本地候選，正式部署與真機仍待驗證）
+- [x] 已建立未繳帳單可由房東明確按下「本筆租金已於簽約時收取，套用折抵」；只折抵租金、保留水電設備費，並同步房東／房客明細（Phase 139／225；Apps Script Version 157、PR #102／Pages workflow `33915253610` 已部署；手機／LIFF 真機 UAT 仍待驗證）
 - [ ] 帳單通知只發測試帳號
 - [ ] 房客付款回報
 - [x] 201 已繳帳單的付款回報初始化不產生空白帳單（Phase 145 自動回歸測試；Production Version 102 唯讀 smoke test）
@@ -191,8 +191,8 @@
 - [x] 房間若仍顯示「已出租／租約中」但有效合約找不到對應房客且沒有 LINE 綁定，物件／房間頁顯示「補登紙本並建立房客登入」資料修復入口；送出時保留並關閉孤兒合約、建立新的紙本租約與未綁定房客，並拒絕仍有房客或 LINE 綁定的合約（Phase 214；PR #100／Apps Script Version 152／Pages workflow `33694799930` 已部署，公開頁 read-back HTTP 200；手機／LIFF 尚待驗證）
 - [x] 舊格式待啟用合約若已有未綁定的房客資料，物件／房間頁仍顯示「補登紙本並建立房客登入」入口；補登時沿用既有房客、不建立第二筆房客資料，關閉舊待簽合約並以 `previous_contract_id` 連結紙本租約。若既有房客列缺少對應 `V2_users` 列，只有同一個未綁定 legacy-pending 恢復分支會補建該房客帳號；已綁定或其他既有房客維持拒絕（Phase 215 runtime regression；Apps Script Version 156、Pages workflow `33886721735` 已部署；手機／LIFF 實際補登仍待驗證）
 - [x] 紙本補登頁的房東驗證狀態改用不帶 LINE UID 的 JSONP 兼容通道，避免手機 LIFF 遇到 Apps Script 302 轉址時誤判為驗證連線失敗；續約狀態查詢共用同一通道（Phase 216；commit `884a066`、Pages workflow `33801519730` 已部署，手機／LIFF UAT 仍待驗證）
-- [x] 房東桌面 Email OTP 本地候選：六個 `landlord_email_*` action 只走 `doPost` JSON body + controlled bridge，`doGet` / JSONP 不承載 Email、OTP、challenge 或 session token；Email/session 使用 `CMWEBS_EMAIL_LOGIN_HASH_SECRET` HMAC 雜湊，`V2_users` 追加 `email_verified_at`／`email_login_enabled`，並新增 `V2_landlord_email_login_challenges`、`V2_landlord_email_sessions` additive/idempotent schema（Phase 217／218／219；本地 tests 通過，未部署）
-- [x] 房東第一期桌面響應式本地候選：`landlord-entry.html`、`landlord-home.html`、`landlord-tenants.html`、`landlord-properties.html`、`landlord-settings.html` 共用 `landlord-auth.js` 與 `landlord-responsive.css`；static tests 覆蓋 375／390／768／1024／1440 viewport contract、手機 bottom nav、1024+ desktop sidebar、focus ring 與 auth failure handling（Phase 219／220；實際 browser capture 尚為 `UNVERIFIED`）
+- [x] 房東桌面 Email OTP：六個 `landlord_email_*` action 只走 `doPost` JSON body + controlled bridge，`doGet` / JSONP 不承載 Email、OTP、challenge 或 session token；Email/session 使用 `CMWEBS_EMAIL_LOGIN_HASH_SECRET` HMAC 雜湊，`V2_users` 追加 `email_verified_at`／`email_login_enabled`，並新增 `V2_landlord_email_login_challenges`、`V2_landlord_email_sessions` additive/idempotent schema（Phase 217／218／219；Apps Script Version 157、Pages PR #102 已部署；實際 Email／session UAT 仍待驗證）
+- [x] 房東第一期桌面響應式：`landlord-entry.html`、`landlord-home.html`、`landlord-tenants.html`、`landlord-properties.html`、`landlord-settings.html` 共用 `landlord-auth.js` 與 `landlord-responsive.css`；static tests 覆蓋 375／390／768／1024／1440 viewport contract、手機 bottom nav、1024+ desktop sidebar、focus ring 與 auth failure handling（Phase 219／220；Pages PR #102 已部署；實際 browser capture 尚為 `UNVERIFIED`）
 - [x] 房東桌面完成候選：Email OTP 缺少 hash secret／MailApp 寄送失敗時 fail closed 且不寫入 challenge；`landlord-settings.html` 接入 shared responsive shell 與 authenticated `landlord_settings_init` POST bridge；Phase 217／219／220 全部回歸、全套 124 tests 與 Apps Script syntax 通過（`npm run validate` 解析到 dirty parent package，非本 worktree 證據；既有 static release-cache validator 因鎖定舊 20260822 marker 而 `UNVERIFIED`）
 - [ ] 正式 Email 寄送、已登入 LINE 房東首次 Email 驗證、已驗證房東桌面登入後的 authenticated operation、375／390／768／1024／1440 browser capture 與真機 UAT（候選未部署；全部仍為 `HUMAN_REQUIRED` / `UNVERIFIED`）
 - [x] 房客續約與退租頁改為被動資訊／歷史檢視，不建立新的 `V2_contract_requests` 退租申請；既有歷史 route 保留相容讀取（Phase 203 UI；Pages workflow `33567151637` 已部署，LINE 真機為 `UNVERIFIED`）
