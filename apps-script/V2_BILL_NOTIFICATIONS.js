@@ -1596,6 +1596,10 @@ function billNotificationBuildItem_(
       billNotificationNumber_(
         bill.discount_amount
       ),
+    tenant_visible_note:
+      billNotificationText_(
+        bill.tenant_visible_note
+      ),
     total_amount:
       billNotificationNumber_(
         bill.total_amount
@@ -1732,6 +1736,15 @@ function billNotificationBuildMessage_(
       billNotificationMoneyText_(
         item.discount_amount
       )
+    );
+  }
+
+  if (
+    item.tenant_visible_note
+  ) {
+    lines.push(
+      '帳單說明：' +
+      item.tenant_visible_note
     );
   }
 

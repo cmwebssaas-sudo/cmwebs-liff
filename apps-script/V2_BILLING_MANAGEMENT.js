@@ -1820,6 +1820,12 @@ function billingBuildInitItem_(
             existingBill.note
           )
         : '',
+    tenant_visible_note:
+      existingBill
+        ? billingText_(
+            existingBill.tenant_visible_note
+          )
+        : '',
 
     requires_meter:
       (
@@ -2128,6 +2134,10 @@ function billingCalculateBill_(
     note:
       billingText_(
         input.note
+      ),
+    tenant_visible_note:
+      billingText_(
+        input.tenant_visible_note
       )
   };
 }
@@ -3772,6 +3782,7 @@ function billingBillHeaders_() {
     'created_at',
     'updated_at',
     'note',
+    'tenant_visible_note',
     'cancelled_at',
     'cancelled_by_user_id',
     'cancelled_by_membership_id',

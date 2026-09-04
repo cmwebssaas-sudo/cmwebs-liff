@@ -1762,6 +1762,38 @@
       );
     }
 
+    function tenantVisibleAdjustmentOf(bill) {
+      const amount = Math.max(
+        0,
+        Math.round(
+          pickNumber(
+            bill,
+            [
+              'discount_amount'
+            ],
+            0
+          )
+        )
+      );
+      const note = String(
+        pickValue(
+          bill,
+          [
+            'tenant_visible_note'
+          ],
+          ''
+        )
+      ).trim();
+
+      return {
+        amount,
+        note,
+        visible:
+          amount > 0 ||
+          Boolean(note)
+      };
+    }
+
     function rentAmountOf(bill) {
       return pickNumber(
         bill,
@@ -2823,19 +2855,13 @@
       const otherAmount =
         otherAmountOf(bill);
 
+      const adjustment =
+        tenantVisibleAdjustmentOf(
+          bill
+        );
+
       const report =
         latestReportFor(bill);
-
-      const note =
-        pickValue(
-          bill,
-          [
-            'note',
-            'bill_note',
-            'memo'
-          ],
-          ''
-        );
 
       const paymentMethod =
         pickValue(
@@ -3113,8 +3139,21 @@
               : ''
           }
 
+          ${
+            adjustment.amount > 0
+              ? detailRow(
+                  '本期折抵',
+                  '-' + money(
+                    adjustment.amount
+                  )
+                )
+              : ''
+          }
+
           ${detailRow(
-            '應繳總額',
+            adjustment.amount > 0
+              ? '折抵後應繳'
+              : '應繳總額',
             money(
               totalAmountOf(bill)
             )
@@ -3122,15 +3161,21 @@
         </div>
 
         ${
-          note
+          adjustment.visible
             ? `
               <div class="detail-section">
                 <div class="detail-section-title">
-                  帳單備註
+                  本期折抵說明
                 </div>
 
                 <div class="calculation-box">
-                  ${safeHtml(note)}
+                  ${
+                    adjustment.note
+                      ? safeHtml(
+                          adjustment.note
+                        )
+                      : '本期帳單已套用折抵。'
+                  }
                 </div>
               </div>
             `

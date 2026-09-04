@@ -38,6 +38,13 @@
 | `V2_payment_reminder_logs` | 催繳階段、成功、失敗與人工處理 |
 | `V2_bill...` | 其他帳單通知欄位可能直接擴充在既有表，需由 Schema 匯出確認 |
 
+### `V2_bills` tenant-visible adjustment explanation
+
+`tenant_visible_note` is an additive, tenant-safe explanation for a discount or
+other bill adjustment. It is copied to `V2_tenant_bill_view` by the canonical
+bill synchronization flow. `note` remains a landlord-only internal note and
+must not be returned by the tenant-bills API or rendered in tenant UI.
+
 ## 公告與通知
 
 | Sheet | 用途 |

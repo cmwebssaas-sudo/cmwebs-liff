@@ -1661,7 +1661,7 @@
 
             <div style="margin-top:9px;">
               <div class="field-label">
-                <span>帳單備註</span>
+                <span>房東內部備註</span>
               </div>
 
               <textarea
@@ -1670,6 +1670,20 @@
                 maxlength="300"
                 ${paid ? 'disabled' : ''}
               >${safeHtml(item.note || '')}</textarea>
+            </div>
+
+            <div style="margin-top:9px;">
+              <div class="field-label">
+                <span>房客可見折抵說明</span>
+              </div>
+
+              <textarea
+                id="tenant_visible_note_${index}"
+                class="textarea"
+                maxlength="300"
+                placeholder="例如：8/1–8/6 超收租金折抵"
+                ${paid ? 'disabled' : ''}
+              >${safeHtml(item.tenant_visible_note || '')}</textarea>
             </div>
           </div>
 
@@ -2207,6 +2221,11 @@
               note:
                 inputValue(
                   'note_' +
+                  index
+                ),
+              tenant_visible_note:
+                inputValue(
+                  'tenant_visible_note_' +
                   index
                 )
             };

@@ -114,6 +114,18 @@ tenant_payment_report_submit
 
 ## Payment-report and bill-display contracts
 
+### Tenant-visible bill adjustments
+
+- `landlord_bills_generate` accepts two separate text fields: `note` remains a
+  landlord-only internal note, while `tenant_visible_note` is the explanation
+  that may be displayed to the tenant.
+- `tenant_bills` returns `discount_amount` and `tenant_visible_note`, but never
+  returns the landlord-only `note`. The tenant bill detail renders the discount
+  and its tenant-visible explanation when present.
+- When an authorized landlord manually sends or re-sends a bill notification,
+  the message includes `tenant_visible_note` when it is non-empty. Existing
+  sent LINE messages are immutable and are not retroactively changed.
+
 ## Landlord revenue dashboard
 
 | Route | Transport | Required authority | Purpose |

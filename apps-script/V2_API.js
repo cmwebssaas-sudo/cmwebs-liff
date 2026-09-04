@@ -1075,6 +1075,10 @@ function tenantBillsRuntimePublicBill_(
       tenantBillsRuntimeText_(
         row.sent_status
       ),
+    tenant_visible_note:
+      tenantBillsRuntimeText_(
+        row.tenant_visible_note
+      ),
     updated_at:
       tenantBillsRuntimeJsonSafeValue_(
         row.updated_at
