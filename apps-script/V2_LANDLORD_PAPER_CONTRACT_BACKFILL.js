@@ -375,9 +375,12 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     if (!tenant) return landlordPaperContractBackfillError_('TENANT_NOT_FOUND', '找不到房客或房客不屬於目前 Workspace');
     var tenantRoomId = landlordPaperContractBackfillText_(tenant.room_id);
     if (tenantRoomId && tenantRoomId !== input.room_id) return landlordPaperContractBackfillError_('TENANT_ROOM_MISMATCH', '既有房客目前不屬於此房間');
+    if (replacementContract && landlordPaperContractBackfillText_(tenant.tenant_line_user_id || tenant.line_user_id)) {
+      return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
+    }
     user = landlordPaperContractBackfillFindScopedRow_(schema.data.users, access, 'user_id', tenant.tenant_user_id || tenant.user_id);
-    if (!user) return landlordPaperContractBackfillError_('TENANT_USER_NOT_FOUND', '找不到既有房客使用者資料');
-    if (replacementContract && landlordPaperContractBackfillText_(tenant.tenant_line_user_id || tenant.line_user_id || (user && user.line_user_id))) {
+    if (!user && replacementMode !== 'legacy_pending') return landlordPaperContractBackfillError_('TENANT_USER_NOT_FOUND', '找不到既有房客使用者資料');
+    if (replacementContract && landlordPaperContractBackfillText_(user && user.line_user_id)) {
       return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
     }
     if (contracts.some(function(row) {
@@ -397,7 +400,7 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
   var now = new Date().toISOString();
   var actor = landlordPaperContractBackfillActor_(access);
   var tenantId = tenant ? landlordPaperContractBackfillText_(tenant.tenant_id) : landlordPaperContractBackfillUuid_('tenant');
-  var tenantUserId = tenant ? landlordPaperContractBackfillText_(tenant.tenant_user_id || tenant.user_id) : landlordPaperContractBackfillUuid_('user');
+  var tenantUserId = tenant ? landlordPaperContractBackfillText_(tenant.tenant_user_id || tenant.user_id) || landlordPaperContractBackfillUuid_('user') : landlordPaperContractBackfillUuid_('user');
   var contractId = landlordPaperContractBackfillUuid_('contract');
   var status = input.start_date > today ? 'upcoming' : 'active';
   var roomStatus = status === 'active' ? 'occupied' : (landlordPaperContractBackfillText_(room.room_status) || 'vacant');
@@ -484,8 +487,13 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     } else {
       transaction.originalRows.push({ sheet: schema.data.tenants, row: tenant });
       landlordPaperContractBackfillUpdate_(schema.data.tenants, tenant, tenantObject);
-      transaction.originalRows.push({ sheet: schema.data.users, row: user });
-      landlordPaperContractBackfillUpdate_(schema.data.users, user, userObject);
+      if (user) {
+        transaction.originalRows.push({ sheet: schema.data.users, row: user });
+        landlordPaperContractBackfillUpdate_(schema.data.users, user, userObject);
+      } else {
+        landlordPaperContractBackfillAppend_(schema.data.users, userObject);
+        transaction.newRows.push({ sheet: schema.data.users, idHeader: 'user_id', id: tenantUserId });
+      }
       tenant = landlordPaperContractBackfillFindRowById_(schema.data.tenants, 'tenant_id', tenantId);
       user = landlordPaperContractBackfillFindRowById_(schema.data.users, 'user_id', tenantUserId);
     }

@@ -441,6 +441,36 @@ for (const inputOverride of [
 }
 
 {
+  const legacyTenantWithoutUser = rowFor(TENANT_HEADERS, {
+    tenant_id: 'T202-LEGACY-MISSING-USER', tenant_user_id: 'U202-LEGACY-MISSING-USER', user_id: 'U202-LEGACY-MISSING-USER', workspace_id: 'W1', landlord_id: 'L1',
+    tenant_name: '五先生', name: '五先生', tenant_phone: '0912345678', phone: '0912345678',
+    property_id: 'P1', property_name: '測試公寓', room_id: 'R202', room_name: '202', current_contract_id: 'LEGACY-202-MISSING-USER',
+    tenant_binding_status: 'pending', binding_status: 'pending', account_status: 'pending', tenant_account_status: 'pending'
+  });
+  const legacyContractWithoutUser = rowFor(CONTRACT_HEADERS, {
+    contract_id: 'LEGACY-202-MISSING-USER', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T202-LEGACY-MISSING-USER', tenant_user_id: 'U202-LEGACY-MISSING-USER',
+    tenant_name: '五先生', tenant_phone: '0912345678', property_id: 'P1', property_name: '測試公寓', room_id: 'R202', room_name: '202',
+    start_date: '2026-09-01', end_date: '2027-08-31', contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending',
+    signing_mode: 'legacy', contract_origin: '', invite_id: '', note: '舊格式待啟用資料但遺失使用者列'
+  });
+  const runtime = makeRuntime({
+    roomStatus: 'occupied', currentContractId: '', tenants: [legacyTenantWithoutUser], contracts: [legacyContractWithoutUser]
+  });
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
+    tenant_id: 'T202-LEGACY-MISSING-USER', idempotency_key: 'paper-replace-legacy-missing-user-202', supersede_contract_id: 'LEGACY-202-MISSING-USER'
+  }));
+  assert.equal(result.success, true, result.message || result.code);
+  assert.equal(result.data.tenant.tenant_id, 'T202-LEGACY-MISSING-USER');
+  assert.equal(result.data.tenant.tenant_user_id, 'U202-LEGACY-MISSING-USER');
+  assert.equal(contractRow(runtime, 'LEGACY-202-MISSING-USER').contract_status, 'cancelled');
+  assert.equal(tenantRow(runtime, 'T202-LEGACY-MISSING-USER').tenant_user_id, 'U202-LEGACY-MISSING-USER');
+  assert.equal(userRow(runtime, 'U202-LEGACY-MISSING-USER').role, 'tenant');
+  assert.equal(userRow(runtime, 'U202-LEGACY-MISSING-USER').status, 'active');
+  assert.equal(runtime.state.sheets.V2_users.rows.length, 1);
+  assert.equal(runtime.state.lineCalls.length, 0);
+}
+
+{
   const runtime = makeRuntime({
     currentContractId: 'existing-contract',
     contracts: [rowFor(CONTRACT_HEADERS, {
