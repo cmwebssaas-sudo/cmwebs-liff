@@ -14,7 +14,7 @@ const CONTRACT_HEADERS = [
   'deposit_months', 'deposit_amount', 'payment_day', 'monthly_payment_day',
   'electricity_fee_rate', 'equipment_fee_rate', 'contract_status', 'status', 'account_status',
   'signed_at', 'tenant_signed_at', 'tenant_signing_submission_status', 'signing_mode', 'contract_origin',
-  'invite_id', 'contract_content', 'contract_version', 'previous_contract_id', 'paper_backfill_idempotency_key', 'paper_backfill_payload_hash',
+  'invite_id', 'contract_content', 'contract_version', 'previous_contract_id', 'paper_backfill_idempotency_key', 'paper_backfill_payload_hash', 'initial_rent_paid_month', 'initial_rent_paid_amount',
   'created_by_user_id', 'created_by_membership_id', 'created_at', 'updated_at', 'note'
 ];
 
@@ -586,6 +586,17 @@ for (const inputOverride of [
   }));
   assert.equal(result.success, true, result.message || result.code);
   assert.equal(runtime.state.sheets.V2_contract_documents.rows.length, 1);
+}
+
+{
+  const runtime = makeRuntime();
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
+    idempotency_key: 'paper-paid-at-signing',
+    initial_rent_paid: true
+  }));
+  assert.equal(result.success, true, result.message || result.code);
+  assert.equal(result.data.contract.initial_rent_paid_month, '2026-09');
+  assert.equal(result.data.contract.initial_rent_paid_amount, 7500);
 }
 
 {

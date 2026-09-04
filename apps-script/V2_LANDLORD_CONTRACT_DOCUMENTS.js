@@ -67,6 +67,14 @@ function getLandlordContractDocumentsInitByLineUid_(
       safeContractId,
       safeTenantId
     );
+    documents = documents.concat(
+      ldGetLegacyContractDocuments_(
+        landlord,
+        safeContractId,
+        safeTenantId,
+        documents
+      )
+    );
 
     documents.sort(ldContractDocumentSort_);
 
@@ -708,10 +716,72 @@ function ldGetLandlordContracts_(landlord, contractIdFilter) {
     });
 }
 
+function ldGetContractLineageIdsForTenant_(landlord, tenantId) {
+  var safeTenantId = ldText_(tenantId);
+  if (!safeTenantId) {
+    return {};
+  }
+
+  var contractSheet = runtimeSpreadsheet_().getSheetByName('V2_contracts');
+  if (!contractSheet) {
+    return {};
+  }
+
+  var landlordId = ldText_(landlord.landlord_id);
+  var workspaceId = ldText_(landlord.workspace_id);
+  var rows = lmSheetObjects_(contractSheet).filter(function (row) {
+    if (!row || ldText_(row.landlord_id || row.owner_landlord_id) !== landlordId) {
+      return false;
+    }
+
+    var rowWorkspaceId = ldText_(row.workspace_id);
+    return !workspaceId || !rowWorkspaceId || rowWorkspaceId === workspaceId;
+  });
+  var lineage = {};
+
+  rows.forEach(function (row) {
+    if (ldText_(row.tenant_id) === safeTenantId && ldText_(row.contract_id)) {
+      lineage[ldText_(row.contract_id)] = true;
+    }
+  });
+
+  var changed = true;
+  while (changed) {
+    changed = false;
+    rows.forEach(function (row) {
+      var contractId = ldText_(row.contract_id);
+      var linkedIds = [
+        row.previous_contract_id,
+        row.renewed_from_contract_id,
+        row.renewed_to_contract_id
+      ].map(ldText_).filter(Boolean);
+
+      if (lineage[contractId]) {
+        linkedIds.forEach(function (linkedId) {
+          if (!lineage[linkedId]) {
+            lineage[linkedId] = true;
+            changed = true;
+          }
+        });
+      } else if (linkedIds.some(function (linkedId) { return lineage[linkedId]; })) {
+        if (contractId && !lineage[contractId]) {
+          lineage[contractId] = true;
+          changed = true;
+        }
+      }
+    });
+  }
+
+  return lineage;
+}
+
 function ldGetContractDocuments_(landlord, contractIdFilter, tenantIdFilter) {
   var sheet = ldEnsureContractDocumentsSheet_();
   var rows = lmSheetObjects_(sheet);
   var landlordId = ldText_(landlord.landlord_id);
+  var lineage = tenantIdFilter && !contractIdFilter
+    ? ldGetContractLineageIdsForTenant_(landlord, tenantIdFilter)
+    : {};
 
   return rows
     .filter(function (row) {
@@ -727,7 +797,7 @@ function ldGetContractDocuments_(landlord, contractIdFilter, tenantIdFilter) {
         return false;
       }
 
-      if (tenantIdFilter && ldText_(row.tenant_id) !== tenantIdFilter) {
+      if (tenantIdFilter && ldText_(row.tenant_id) !== tenantIdFilter && !lineage[ldText_(row.contract_id)]) {
         return false;
       }
 
@@ -749,6 +819,152 @@ function ldGetContractDocuments_(landlord, contractIdFilter, tenantIdFilter) {
         source_document_id: ldText_(row.source_document_id)
       };
     });
+}
+
+function ldGetLegacyContractDocuments_(
+  landlord,
+  contractIdFilter,
+  tenantIdFilter,
+  existingDocuments
+) {
+  var contractSheet = runtimeSpreadsheet_().getSheetByName('V2_contracts');
+  if (!contractSheet) {
+    return [];
+  }
+
+  var landlordId = ldText_(landlord.landlord_id);
+  var workspaceId = ldText_(landlord.workspace_id);
+  var safeContractId = ldText_(contractIdFilter);
+  var safeTenantId = ldText_(tenantIdFilter);
+  var lineage = safeTenantId && !safeContractId
+    ? ldGetContractLineageIdsForTenant_(landlord, safeTenantId)
+    : {};
+  var seen = {};
+
+  (Array.isArray(existingDocuments) ? existingDocuments : []).forEach(function (document) {
+    var key =
+      ldText_(document.contract_id) + ':' +
+      ldText_(document.document_type);
+    if (key !== ':') {
+      seen[key] = true;
+    }
+  });
+
+  return lmSheetObjects_(contractSheet)
+    .filter(function (row) {
+      if (!row || ldText_(row.landlord_id || row.owner_landlord_id) !== landlordId) {
+        return false;
+      }
+
+      var rowWorkspaceId = ldText_(row.workspace_id);
+      if (workspaceId && rowWorkspaceId && rowWorkspaceId !== workspaceId) {
+        return false;
+      }
+
+      var rowContractId = ldText_(row.contract_id);
+      if (!rowContractId || (safeContractId && rowContractId !== safeContractId)) {
+        return false;
+      }
+
+      if (
+        safeTenantId &&
+        ldText_(row.tenant_id) !== safeTenantId &&
+        !lineage[rowContractId]
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+    .reduce(function (documents, row) {
+      var contractId = ldText_(row.contract_id);
+      var createdAt = ldText_(row.legacy_signed_at || row.created_at || '');
+      var contractUrl = ldLegacyContractUrl_(row);
+      var candidates = [
+        {
+          type: 'legacy_contract',
+          url: contractUrl,
+          fallbackName: '既有合約文件'
+        },
+        {
+          type: 'identity_front',
+          url: row.legacy_identity_front_url,
+          fallbackName: '身分證正面'
+        },
+        {
+          type: 'identity_back',
+          url: row.legacy_identity_back_url,
+          fallbackName: '身分證反面'
+        }
+      ];
+
+      candidates.forEach(function (candidate) {
+        var url = ldLegacyHttpsUrl_(candidate.url);
+        var key = contractId + ':' + candidate.type;
+        if (!url || seen[key]) {
+          return;
+        }
+
+        seen[key] = true;
+        documents.push({
+          document_id: 'legacy:' + contractId + ':' + candidate.type,
+          contract_id: contractId,
+          tenant_id: ldText_(row.tenant_id),
+          document_type: candidate.type,
+          file_name: ldLegacyDocumentFileName_(url, candidate.fallbackName),
+          mime_type: ldLegacyDocumentMimeType_(url),
+          byte_size: 0,
+          created_at: createdAt,
+          status: 'linked',
+          note: '既有房源建檔文件連結',
+          document_origin: 'legacy_contract_link',
+          source_document_id: '',
+          external_url: url
+        });
+      });
+
+      return documents;
+    }, []);
+}
+
+function ldLegacyContractUrl_(row) {
+  var pdfUrl = ldLegacyHttpsUrl_(row.legacy_signed_pdf_url);
+  return pdfUrl || ldLegacyHttpsUrl_(row.legacy_signed_document_url);
+}
+
+function ldLegacyHttpsUrl_(value) {
+  var url = ldText_(value);
+  return /^https:\/\/[^\s]+$/i.test(url) ? url : '';
+}
+
+function ldLegacyDocumentFileName_(url, fallbackName) {
+  var value = ldText_(url).split('#')[0].split('?')[0];
+  var parts = value.split('/');
+  var name = parts.length ? ldText_(parts[parts.length - 1]) : '';
+
+  if (!name) {
+    return fallbackName;
+  }
+
+  try {
+    return decodeURIComponent(name);
+  } catch (_) {
+    return name;
+  }
+}
+
+function ldLegacyDocumentMimeType_(url) {
+  var value = ldText_(url).toLowerCase().split('#')[0].split('?')[0];
+  if (/\.pdf$/.test(value)) {
+    return 'application/pdf';
+  }
+  if (/\.(jpe?g)$/.test(value)) {
+    return 'image/jpeg';
+  }
+  if (/\.png$/.test(value)) {
+    return 'image/png';
+  }
+  return 'application/octet-stream';
 }
 
 function carryForwardLandlordContractDocumentsByLineUid_(

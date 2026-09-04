@@ -880,6 +880,24 @@ function doGet(e) {
         );
   }
 
+  if (v2Action === 'landlord_bill_apply_initial_rent_credit') {
+    const result =
+      applyLandlordInitialRentCreditByLineUid_(
+        lineUserId,
+        e.parameter.bill_id || ''
+      );
+
+    return bridge === '1'
+      ? htmlBridgeOutput_(
+          result,
+          requestId
+        )
+      : jsonOutput_(
+          result,
+          callback
+        );
+  }
+
   if (v2Action === 'landlord_tenant_create_init') {
     const result =
       getLandlordTenantCreateInitByLineUid_(

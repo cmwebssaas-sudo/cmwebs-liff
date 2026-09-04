@@ -15,7 +15,9 @@ var V2_LANDLORD_PAPER_BACKFILL_CLOSED_STATUSES_ = [
 var V2_LANDLORD_PAPER_BACKFILL_CONTRACT_HEADERS_ = [
   'paper_backfill_idempotency_key',
   'paper_backfill_payload_hash',
-  'previous_contract_id'
+  'previous_contract_id',
+  'initial_rent_paid_month',
+  'initial_rent_paid_amount'
 ];
 var V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_STATUSES_ = [
   'pending_tenant_signature', 'awaiting_tenant_signature'
@@ -200,6 +202,7 @@ function landlordPaperContractBackfillValidateInput_(input) {
   var paperSignedAt = landlordPaperContractBackfillDate_(source.paper_signed_at || source.signed_at);
   var idempotencyKey = landlordPaperContractBackfillText_(source.idempotency_key);
   var supersedeContractId = landlordPaperContractBackfillText_(source.supersede_contract_id);
+  var initialRentPaid = landlordPaperContractBackfillBoolean_(source.initial_rent_paid);
 
   if (!roomId) return landlordPaperContractBackfillError_('ROOM_REQUIRED', '請選擇房間');
   if (!tenantName || tenantName.length > 80) return landlordPaperContractBackfillError_('INVALID_TENANT_NAME', '請輸入 1 至 80 字的房客姓名');
@@ -255,6 +258,8 @@ function landlordPaperContractBackfillValidateInput_(input) {
     payment_day: paymentDay,
     electricity_fee_rate: amounts.electricity_fee_rate,
     equipment_fee_rate: amounts.equipment_fee_rate,
+    initial_rent_paid_month: initialRentPaid ? startDate.slice(0, 7) : '',
+    initial_rent_paid_amount: initialRentPaid ? amounts.rent_amount : 0,
     note: landlordPaperContractBackfillText_(source.note),
     idempotency_key: idempotencyKey,
     paper_contract_file: paperFile.data,
@@ -434,6 +439,8 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     contract_version: 'paper-contract-document-1',
     paper_backfill_idempotency_key: input.idempotency_key,
     paper_backfill_payload_hash: input.payload_hash,
+    initial_rent_paid_month: input.initial_rent_paid_month,
+    initial_rent_paid_amount: input.initial_rent_paid_amount,
     created_by_user_id: actor.user_id,
     created_by_membership_id: actor.membership_id,
     created_at: now,
@@ -624,6 +631,8 @@ function landlordPaperContractBackfillBuildContract_(access, actor, property, ro
     end_date: input.end_date, contract_end_date: input.end_date,
     rent_amount: input.rent_amount, monthly_rent: input.rent_amount,
     management_fee: input.management_fee, monthly_management_fee: input.management_fee,
+    initial_rent_paid_month: input.initial_rent_paid_month,
+    initial_rent_paid_amount: input.initial_rent_paid_amount,
     deposit_months: input.deposit_months, deposit_amount: input.deposit_amount,
     payment_day: input.payment_day, monthly_payment_day: input.payment_day,
     electricity_fee_rate: input.electricity_fee_rate, equipment_fee_rate: input.equipment_fee_rate,
@@ -846,6 +855,8 @@ function landlordPaperContractBackfillContractResponse_(contract) {
     rent_amount: landlordPaperContractBackfillMoney_(contract.rent_amount || contract.monthly_rent),
     management_fee: landlordPaperContractBackfillMoney_(contract.management_fee || contract.monthly_management_fee),
     deposit_amount: landlordPaperContractBackfillMoney_(contract.deposit_amount),
+    initial_rent_paid_month: landlordPaperContractBackfillText_(contract.initial_rent_paid_month),
+    initial_rent_paid_amount: landlordPaperContractBackfillMoney_(contract.initial_rent_paid_amount),
     signed_at: landlordPaperContractBackfillDate_(contract.signed_at),
     tenant_signing_submission_status: landlordPaperContractBackfillText_(contract.tenant_signing_submission_status),
     signing_mode: landlordPaperContractBackfillText_(contract.signing_mode),
@@ -901,7 +912,8 @@ function landlordPaperContractBackfillPayloadHash_(input) {
     input.room_id, input.property_id, input.tenant_id, input.tenant_name, input.tenant_phone, input.tenant_email,
     input.start_date, input.end_date, input.paper_signed_at, input.rent_amount, input.management_fee,
     input.deposit_months, input.deposit_amount, input.payment_day, input.electricity_fee_rate,
-    input.equipment_fee_rate, input.supersede_contract_id, input.paper_contract_file.sha256,
+    input.equipment_fee_rate, input.initial_rent_paid_month, input.initial_rent_paid_amount,
+    input.supersede_contract_id, input.paper_contract_file.sha256,
     input.identity_front_file ? input.identity_front_file.sha256 : '', input.identity_back_file ? input.identity_back_file.sha256 : ''
   ].join('|');
   var bytes = [];
@@ -939,6 +951,11 @@ function landlordPaperContractBackfillMoney_(value) {
 function landlordPaperContractBackfillNumber_(value) {
   var number = Number(landlordPaperContractBackfillText_(value).replace(/,/g, ''));
   return isFinite(number) ? number : 0;
+}
+
+function landlordPaperContractBackfillBoolean_(value) {
+  if (value === true || value === false) return value;
+  return ['true', '1', 'yes', 'y', 'on', 'enabled'].indexOf(landlordPaperContractBackfillText_(value).toLowerCase()) >= 0;
 }
 
 function landlordPaperContractBackfillNormalizePhone_(value) {

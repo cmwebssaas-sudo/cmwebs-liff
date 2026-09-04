@@ -1474,6 +1474,11 @@
         .replace(/'/g, '&#039;');
     }
 
+    function tenantDocumentExternalUrl(value) {
+      const url = rawText(value).trim();
+      return /^https:\/\/[^\s]+$/i.test(url) ? url : '';
+    }
+
     function escapeHtml(value) {
       return safeHtml(value);
     }
@@ -2200,7 +2205,7 @@
         });
     }
 
-    function bindTenantDocumentPreviewActions(item, documentId) {
+    function bindTenantDocumentPreviewActions(item, documentId, externalUrl) {
       if (!item) {
         return;
       }
@@ -2212,21 +2217,38 @@
         '[data-tenant-document-preview-action]'
       );
       const safeDocumentId = rawText(documentId).trim();
+      const safeExternalUrl = tenantDocumentExternalUrl(externalUrl);
+      const hasAction = Boolean(safeDocumentId || safeExternalUrl);
 
       if (actions) {
-        actions.hidden = !safeDocumentId;
+        actions.hidden = !hasAction;
       }
 
       if (button) {
-        button.disabled = !safeDocumentId;
+        button.disabled = !hasAction;
 
-        if (safeDocumentId) {
+        if (safeExternalUrl) {
+          button.removeAttribute('data-document-id');
+          button.setAttribute('data-external-url', safeExternalUrl);
+          button.textContent = '查看既有文件';
+          button.onclick = function () {
+            window.open(
+              safeExternalUrl,
+              '_blank',
+              'noopener,noreferrer'
+            );
+          };
+        } else if (safeDocumentId) {
           button.setAttribute('data-document-id', safeDocumentId);
+          button.removeAttribute('data-external-url');
+          button.textContent = '預覽';
           button.onclick = function () {
             previewTenantDocument(safeDocumentId);
           };
         } else {
           button.removeAttribute('data-document-id');
+          button.removeAttribute('data-external-url');
+          button.textContent = '預覽';
           button.onclick = null;
         }
       }
@@ -2284,7 +2306,7 @@
             status.textContent = '';
           }
 
-          bindTenantDocumentPreviewActions(item, '');
+          bindTenantDocumentPreviewActions(item, '', '');
         });
     }
 
@@ -2306,6 +2328,9 @@
         documentData && documentData.file_name
           ? documentData.file_name
           : ''
+      );
+      const externalUrl = tenantDocumentExternalUrl(
+        documentData && documentData.external_url
       );
 
       item.classList.add('is-complete');
@@ -2332,14 +2357,17 @@
 
       if (status) {
         status.hidden = false;
-        status.textContent = fileName
-          ? '已歸檔：' + fileName
-          : '已歸檔，無需重複上傳';
+        status.textContent = externalUrl
+          ? '既有文件連結：' + (fileName || '點擊查看')
+          : fileName
+            ? '已歸檔：' + fileName
+            : '已歸檔，無需重複上傳';
       }
 
       bindTenantDocumentPreviewActions(
         item,
-        documentData && documentData.document_id
+        documentData && documentData.document_id,
+        externalUrl
       );
     }
 
@@ -2751,6 +2779,14 @@
       list.innerHTML = rows
         .map(function (documentData) {
           const fileName = rawText(documentData.file_name || '未命名檔案');
+          const externalUrl = tenantDocumentExternalUrl(
+            documentData.external_url
+          );
+          const externalLink = externalUrl
+            ? '<a class="tenant-document-external-link" href="' +
+              safeHtml(externalUrl) +
+              '" target="_blank" rel="noopener noreferrer">查看既有文件</a>'
+            : '';
 
           return `
             <div class="tenant-document-item">
@@ -2767,6 +2803,7 @@
                   <div class="tenant-document-meta">
                     租約：${safeHtml(documentData.contract_id || '未綁定特定租約')}
                   </div>
+                  ${externalLink}
                 </div>
               </div>
             </div>

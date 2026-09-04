@@ -60,14 +60,18 @@ function makeRuntime(headers = ['contract_id', 'workspace_id']) {
   assert.deepEqual(Array.from(result.data.added_headers.contracts), [
     'paper_backfill_idempotency_key',
     'paper_backfill_payload_hash',
-    'previous_contract_id'
+    'previous_contract_id',
+    'initial_rent_paid_month',
+    'initial_rent_paid_amount'
   ]);
   assert.deepEqual(Array.from(runtime.sheet.headers), [
     'contract_id',
     'workspace_id',
     'paper_backfill_idempotency_key',
     'paper_backfill_payload_hash',
-    'previous_contract_id'
+    'previous_contract_id',
+    'initial_rent_paid_month',
+    'initial_rent_paid_amount'
   ]);
   assert.deepEqual(runtime.sheet.rows, beforeRows);
 }
@@ -78,13 +82,15 @@ function makeRuntime(headers = ['contract_id', 'workspace_id']) {
     'workspace_id',
     'paper_backfill_idempotency_key',
     'paper_backfill_payload_hash',
-    'previous_contract_id'
+    'previous_contract_id',
+    'initial_rent_paid_month',
+    'initial_rent_paid_amount'
   ]);
   const result = runtime.context.migrateV2LandlordPaperContractBackfillSchema_();
 
   assert.equal(result.success, true, result.message || result.code);
   assert.deepEqual(Array.from(result.data.added_headers.contracts), []);
-  assert.equal(runtime.sheet.headers.length, 5);
+  assert.equal(runtime.sheet.headers.length, 7);
 }
 
 {

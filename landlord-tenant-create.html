@@ -1820,6 +1820,11 @@
             </div>
           </div>
 
+          <label class="confirmation-row initial-rent-paid-row" for="initialRentPaid">
+            <input id="initialRentPaid" class="confirmation-check" type="checkbox" />
+            <span class="confirmation-text"><strong>簽約時已收本月租金</strong><span>勾選後，租約開始月份的租金會自動折抵；管理費、水電與設備費仍依帳單計算。</span></span>
+          </label>
+
           <div id="simpleRoomSummary" class="simple-inherited"></div>
           <div class="simple-note">建立後會產生一次性簽署連結／QR 與確認碼。房客開啟後補姓名、手機、身分證正反面及簽名，房東審核後租約才生效。</div>
         </section>
@@ -1947,6 +1952,10 @@
             ${numberField('electricityRate', '每度電費', defaults.electricity_fee_rate, '0', '0.1')}
             ${numberField('equipmentRate', '設備耗損費／度', defaults.equipment_fee_rate, '0', '0.1')}
           </div>
+          <label class="confirmation-row initial-rent-paid-row" for="initialRentPaid">
+            <input id="initialRentPaid" class="confirmation-check" type="checkbox" />
+            <span class="confirmation-text"><strong>簽約時已收本月租金</strong><span>勾選後，租約開始月份的租金會自動折抵；管理費、水電與設備費仍依帳單計算。</span></span>
+          </label>
           <div class="field">
             <div class="field-label"><span>紙本簽約日</span><span class="required">必填</span></div>
             <input id="paperSignedAt" class="input" type="date" value="${safeHtml(startDate)}" />
@@ -2089,6 +2098,7 @@
           rent_amount: inputValue('rentAmount'), management_fee: inputValue('managementFee'), deposit_months: inputValue('depositMonths'), deposit_amount: inputValue('depositAmount'),
           payment_day: inputValue('paymentDay'), electricity_fee_rate: inputValue('electricityRate'), equipment_fee_rate: inputValue('equipmentRate'), paper_signed_at: inputValue('paperSignedAt'),
           paper_contract_file: paperFile, identity_front_file: identityFront, identity_back_file: identityBack, note: inputValue('note'),
+          initial_rent_paid: Boolean(document.getElementById('initialRentPaid') && document.getElementById('initialRentPaid').checked),
           supersede_contract_id: REQUESTED_SUPERSEDE_CONTRACT_ID,
           idempotency_key: PAPER_BACKFILL_IDEMPOTENCY_KEY || (PAPER_BACKFILL_IDEMPOTENCY_KEY = randomUrlToken(18))
         });
@@ -3271,6 +3281,9 @@
                 SIMPLE_NEW_MODE
                   ? 'required'
                   : undefined,
+              initial_rent_paid:
+                SIMPLE_NEW_MODE &&
+                Boolean(document.getElementById('initialRentPaid') && document.getElementById('initialRentPaid').checked),
               note:
                 inputValue(
                   'note'

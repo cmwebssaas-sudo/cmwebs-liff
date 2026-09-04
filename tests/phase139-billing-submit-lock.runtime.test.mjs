@@ -91,7 +91,9 @@ function createRuntime(existingBills, options = {}) {
       return {
         success: true,
         workspace: { workspace_id: 'workspace-a' },
-        principal_landlord_id: 'landlord-a'
+        principal_landlord_id: 'landlord-a',
+        user: { user_id: 'user-a' },
+        membership: { membership_id: 'membership-a', role: 'owner' }
       };
     },
     billingRequireGenerate_() { return { success: true }; },
@@ -108,6 +110,7 @@ function createRuntime(existingBills, options = {}) {
       return { tenant_id: roomId === 'R001' ? 'T001' : 'T002' };
     },
     billingIsPaidStatus_() { return false; },
+    billingNormalizePaymentStatus_() { return 'unpaid'; },
     billingMergeReferenceBills_(bills) { return bills; },
     billingResolvePreviousBill_() { return null; },
     billingCalculateBill_(room, contract, tenant, _existing, _previous, billMonth, item) {
@@ -122,7 +125,9 @@ function createRuntime(existingBills, options = {}) {
         electricity_usage: 1,
         electricity_fee_rate: 3,
         equipment_fee_rate: 2.5,
-        total_amount: 100
+        discount_amount: item.apply_initial_rent_credit ? 8500 : 0,
+        total_amount: item.apply_initial_rent_credit ? 0 : 100,
+        payment_status: item.apply_initial_rent_credit ? 'paid' : 'unpaid'
       };
     },
     workspaceNextId_() { return 'B0000001'; },
@@ -143,6 +148,7 @@ function createRuntime(existingBills, options = {}) {
     billingRefreshWorkspaceSummaries_() { fixtures.summaryRefreshes += 1; },
     billingFormatDate_() { return '2026-08-10'; },
     billingNumber_(value) { return Number(value) || 0; },
+    billingInitialRentPaidNote_(value) { return '簽約時已收本月租金，本次帳單已折抵 NT$ ' + value + '。'; },
     workspaceResult_(success, code, message, data) { return { success, code, message, data }; },
     workspaceNotifyTeam_() {
       fixtures.teamNotifications += 1;
@@ -157,7 +163,11 @@ function createRuntime(existingBills, options = {}) {
     "const V2_BILLING_SHEETS_ = { bills: 'V2_bills', tenantBillView: 'V2_tenant_bill_view', properties: 'V2_properties', rooms: 'V2_rooms', contracts: 'V2_contracts', tenants: 'V2_tenants' };\n" + source.slice(start, end),
     context
   );
-  return { fixtures, generate: context.generateLandlordBillsByLineUid_ };
+  return {
+    fixtures,
+    generate: context.generateLandlordBillsByLineUid_,
+    applyCredit: context.applyLandlordInitialRentCreditByLineUid_
+  };
 }
 
 {
@@ -185,6 +195,36 @@ function createRuntime(existingBills, options = {}) {
 }
 
 {
+  const { fixtures, applyCredit } = createRuntime([
+    {
+      bill_id: 'B0000011',
+      room_id: 'R001',
+      bill_month: '2026-08',
+      rent_amount: 8500,
+      management_fee: 0,
+      electricity_amount: 120,
+      equipment_amount: 80,
+      other_amount: 0,
+      subtotal_amount: 8700,
+      discount_amount: 0,
+      total_amount: 8700,
+      payment_status: 'unpaid',
+      tenant_visible_note: '',
+      __row_number: 2
+    }
+  ]);
+  const result = applyCredit('landlord-a', 'B0000011');
+
+  assert.equal(result.success, true);
+  assert.equal(result.code, 'INITIAL_RENT_CREDIT_APPLIED');
+  assert.equal(result.data.rent_credit_amount, 8500);
+  assert.equal(result.data.total_amount, 200);
+  assert.equal(result.data.payment_status, 'unpaid');
+  assert.equal(fixtures.billWrites, 1);
+  assert.equal(fixtures.billViewSyncs, 1);
+}
+
+{
   const { fixtures, generate } = createRuntime([
     { bill_id: 'B0000009', room_id: 'R001', bill_month: '2026-08', payment_status: 'unpaid', __row_number: 2 }
   ]);
@@ -208,6 +248,33 @@ function createRuntime(existingBills, options = {}) {
   assert.equal(fixtures.billViewSyncs, 1);
   assert.equal(fixtures.summaryRefreshes, 1);
   assert.equal(fixtures.teamNotifications, 1);
+}
+
+{
+  const { fixtures, generate } = createRuntime([
+    { bill_id: 'B0000010', room_id: 'R001', bill_month: '2026-08', payment_status: 'unpaid', __row_number: 2 }
+  ]);
+  const result = generate(
+    'landlord-a',
+    '2026-08',
+    JSON.stringify([
+      {
+        selected: true,
+        room_id: 'R001',
+        current_meter_reading: 999,
+        due_date: '2026-08-10',
+        apply_initial_rent_credit: true
+      }
+    ])
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.generated_count, 1);
+  assert.equal(result.data.generated[0].updated_existing, true);
+  assert.equal(fixtures.billWrites, 1, 'manual credit must update the existing bill row');
+  assert.equal(fixtures.billViewSyncs, 1, 'manual credit must sync the tenant bill view');
+  assert.equal(fixtures.summaryRefreshes, 1);
+  assert.equal(fixtures.teamNotifications, 0, 'manual correction must not announce a new bill');
 }
 
 {

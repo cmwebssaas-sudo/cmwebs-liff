@@ -1479,6 +1479,15 @@
         existing.payment_status ===
           'paid';
 
+      const initialRentCreditApplied =
+        existing &&
+        Number(item.rent_amount || 0) > 0 &&
+        Number(item.discount_amount || 0) >=
+          Number(item.rent_amount || 0) &&
+        rawText(item.tenant_visible_note).includes(
+          '簽約時已收本月租金'
+        );
+
       const checked =
         !paid;
 
@@ -1686,6 +1695,23 @@
               >${safeHtml(item.tenant_visible_note || '')}</textarea>
             </div>
           </div>
+
+          ${
+            existing &&
+            !paid &&
+            !initialRentCreditApplied &&
+            item.existing_bill.bill_id
+              ? `
+                <button
+                  class="detail-toggle initial-rent-credit-button"
+                  type="button"
+                  onclick="applyInitialRentCredit(${index})"
+                >
+                  本筆租金已於簽約時收取，套用折抵
+                </button>
+              `
+              : ''
+          }
 
           <div class="calculation-box">
             <div class="calculation-grid">
@@ -1928,6 +1954,54 @@
       ).classList.toggle(
         'show'
       );
+    }
+
+    async function applyInitialRentCredit(index) {
+      const item = PAGE_DATA.items[index];
+      const existing = item && item.existing_bill;
+
+      if (!existing || !existing.bill_id) {
+        showToast('找不到可調整的帳單', true);
+        return;
+      }
+
+      if (
+        !window.confirm(
+          '確認將「' +
+          (item.room_name || '此房間') +
+          '」本筆租金列為簽約時已收，並在帳單中折抵？\n\n' +
+          '電費、設備耗損費與其他費用仍會保留計算。'
+        )
+      ) {
+        return;
+      }
+
+      try {
+        const result = await jsonpRequest(
+          'landlord_bill_apply_initial_rent_credit',
+          {
+            bill_id: existing.bill_id
+          }
+        );
+
+        if (!result || result.success !== true) {
+          throw new Error(
+            result && result.message
+              ? result.message
+              : '租金折抵失敗'
+          );
+        }
+
+        showToast('本筆租金已折抵，房東與房客明細已同步');
+        await loadPage(false);
+      } catch (error) {
+        showToast(
+          error && error.message
+            ? error.message
+            : '租金折抵失敗',
+          true
+        );
+      }
     }
 
     function toggleAll() {
