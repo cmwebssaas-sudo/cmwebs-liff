@@ -1409,7 +1409,7 @@ function generateLandlordBillsByLineUid_(
  *
  * 這是給既有 202 等紙本／現場簽約資料的明確人工補正入口；
  * 不推測任何付款，必須由有帳務權限的房東主動按下確認後才會寫入。
- * 只折抵帳單中的租金，電費、設備耗損費與其他費用保留。
+ * 折抵首月租金與管理費，電費、設備耗損費與其他費用保留。
  */
 function applyLandlordInitialRentCreditByLineUid_(
   lineUserId,
@@ -1506,13 +1506,17 @@ function applyLandlordInitialRentCreditByLineUid_(
       );
     }
 
+    const fixedChargeAmount = Math.round(
+      rentAmount +
+      Math.max(0, billingNumber_(bill.management_fee))
+    );
     const discountAmount = Math.max(
       Math.round(billingNumber_(bill.discount_amount)),
-      rentAmount
+      fixedChargeAmount
     );
     const totalAmount = Math.max(0, subtotal - discountAmount);
     const existingNote = billingText_(bill.tenant_visible_note);
-    const creditNote = billingInitialRentPaidNote_(rentAmount);
+    const creditNote = billingInitialRentPaidNote_(fixedChargeAmount);
     const tenantVisibleNote = existingNote
       ? existingNote.indexOf(creditNote) >= 0
         ? existingNote
@@ -1540,11 +1544,16 @@ function applyLandlordInitialRentCreditByLineUid_(
       true,
       'INITIAL_RENT_CREDIT_APPLIED',
       totalAmount === 0
-        ? '本筆租金已折抵，帳單已結清'
-        : '本筆租金已折抵，剩餘電費／設備費等仍待繳',
+        ? '本筆首月租金與管理費已折抵，帳單已結清'
+        : '本筆首月租金與管理費已折抵，剩餘電費／設備費等仍待繳',
       {
         bill_id: safeBillId,
         rent_credit_amount: rentAmount,
+        management_fee_credit_amount: Math.max(
+          0,
+          fixedChargeAmount - rentAmount
+        ),
+        fixed_charge_credit_amount: fixedChargeAmount,
         total_amount: totalAmount,
         payment_status: updated.payment_status
       }
@@ -1558,7 +1567,7 @@ function applyLandlordInitialRentCreditByLineUid_(
         target_type: 'bill',
         target_id: safeBillId,
         operation_status: 'success',
-        detail: 'rent_credit=' + rentAmount + ',total=' + totalAmount
+        detail: 'fixed_charge_credit=' + fixedChargeAmount + ',total=' + totalAmount
       }
     );
 
@@ -1715,19 +1724,36 @@ function billingCalculateRentForBillMonth_(
   };
 }
 
-function billingInitialRentCreditForBillMonth_(contract, billMonth, rentAmount) {
+function billingInitialRentCreditForBillMonth_(
+  contract,
+  billMonth,
+  rentAmount,
+  managementFee
+) {
   const paidMonth = billingText_(contract && contract.initial_rent_paid_month);
   const paidAmount = Math.max(
     0,
     Math.round(billingNumber_(contract && contract.initial_rent_paid_amount))
   );
   const calculatedRent = Math.max(0, Math.round(billingNumber_(rentAmount)));
+  const calculatedManagementFee = Math.max(
+    0,
+    Math.round(billingNumber_(managementFee))
+  );
+  const calculatedFixedCharges =
+    calculatedRent +
+    calculatedManagementFee;
 
-  if (!paidMonth || paidMonth !== billingText_(billMonth) || paidAmount <= 0 || calculatedRent <= 0) {
+  if (
+    !paidMonth ||
+    paidMonth !== billingText_(billMonth) ||
+    paidAmount <= 0 ||
+    calculatedFixedCharges <= 0
+  ) {
     return 0;
   }
 
-  return Math.min(paidAmount, calculatedRent);
+  return Math.min(paidAmount, calculatedFixedCharges);
 }
 
 function billingHasInitialRentCreditForBillMonth_(contract, billMonth) {
@@ -1745,7 +1771,7 @@ function billingHasInitialRentCreditForBillMonth_(contract, billMonth) {
 }
 
 function billingInitialRentPaidNote_(amount) {
-  return '簽約時已收本月租金，本次帳單已折抵 NT$ ' + Math.round(amount).toLocaleString('en-US') + '。';
+  return '簽約時已收首月租金與管理費，本次帳單已折抵 NT$ ' + Math.round(amount).toLocaleString('en-US') + '。';
 }
 
 function billingAppendInitialRentPaidNote_(note, amount) {
@@ -1755,7 +1781,10 @@ function billingAppendInitialRentPaidNote_(note, amount) {
     return currentNote;
   }
 
-  if (currentNote.indexOf('簽約時已收本月租金') >= 0) {
+  if (
+    currentNote.indexOf('簽約時已收本月租金') >= 0 ||
+    currentNote.indexOf('簽約時已收首月租金') >= 0
+  ) {
     return currentNote;
   }
 
@@ -1982,7 +2011,8 @@ function billingBuildInitItem_(
           billMonth,
           existingBill
             ? displayedRentAmount
-            : rentCalculation.rent_amount
+            : rentCalculation.rent_amount,
+          managementFee
         )
       : 0;
 
@@ -2335,7 +2365,8 @@ function billingCalculateBill_(
       ? billingInitialRentCreditForBillMonth_(
           contract,
           billMonth,
-          item.rent_amount
+          item.rent_amount,
+          item.management_fee
         )
       : 0;
 
@@ -2347,17 +2378,20 @@ function billingCalculateBill_(
               Math.max(
                 0,
                 Math.round(
-                  billingNumber_(existingBill.rent_amount)
+                  billingNumber_(existingBill.rent_amount) +
+                  billingNumber_(existingBill.management_fee)
                 )
               ),
-              item.rent_amount
+              item.rent_amount +
+              Math.max(0, billingNumber_(item.management_fee))
             )
           : 0
       )
     : billingInitialRentCreditForBillMonth_(
         contract,
         billMonth,
-        item.rent_amount
+        item.rent_amount,
+        item.management_fee
       );
   const discountAmount =
     initialRentCredit > 0
@@ -2397,7 +2431,10 @@ function billingCalculateBill_(
 
   const tenantVisibleNote =
     initialRentCredit > 0
-      ? currentTenantVisibleNote.indexOf('簽約時已收本月租金') >= 0
+      ? (
+          currentTenantVisibleNote.indexOf('簽約時已收本月租金') >= 0 ||
+          currentTenantVisibleNote.indexOf('簽約時已收首月租金') >= 0
+        )
         ? currentTenantVisibleNote
         : currentTenantVisibleNote
           ? currentTenantVisibleNote + '\n' + billingInitialRentPaidNote_(initialRentCredit)

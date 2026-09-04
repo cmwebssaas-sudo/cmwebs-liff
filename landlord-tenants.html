@@ -587,6 +587,22 @@
       color: var(--primary-dark);
     }
 
+    .tenant-action-button.quick-renewal {
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 12px;
+      letter-spacing: 0.01em;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+    }
+
+    .tenant-action-button.quick-renewal small {
+      display: block;
+      margin-top: 2px;
+      font-size: 9px;
+      font-weight: 800;
+      opacity: 0.92;
+    }
+
     .tenant-action-button:active {
       background: #f7f8fa;
     }
@@ -2023,11 +2039,12 @@
               canQuickRenew
                 ? `
                   <button
-                    class="tenant-action-button primary"
+                    class="tenant-action-button quick-renewal"
                     type="button"
                     onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)"
                   >
                     快速續約
+                    <small>合約即將到期／已到期</small>
                   </button>
                 `
                 : ''
@@ -2237,7 +2254,7 @@
               <button class="tenant-action-button purple" type="button" onclick="goTenantContractRequests('${safeHtml(tenantId)}', event)">合約</button>
               ${
                 canQuickRenew
-                  ? `<button class="tenant-action-button primary" type="button" onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)">快速續約</button>`
+                  ? `<button class="tenant-action-button quick-renewal" type="button" aria-label="快速續約" onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)">快速續約<small>合約即將到期／已到期</small></button>`
                   : ''
               }
               ${

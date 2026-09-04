@@ -82,7 +82,7 @@ const room = {
   property_id: 'P1',
   property_name: '測試物件',
   rent_amount: 8500,
-  management_fee: 0,
+  management_fee: 500,
   electricity_fee_rate: 0,
   equipment_fee_rate: 0
 };
@@ -93,15 +93,16 @@ const paidAtSigning = {
   start_date: '2026-09-01',
   end_date: '2027-08-31',
   rent_amount: 8500,
-  management_fee: 0,
+  management_fee: 500,
   electricity_fee_rate: 0,
   equipment_fee_rate: 0,
   initial_rent_paid_month: '2026-09',
-  initial_rent_paid_amount: 8500
+  initial_rent_paid_amount: 9000
 };
 const existingBill = {
   bill_id: 'B202-09',
   rent_amount: 8500,
+  management_fee: 500,
   payment_status: 'unpaid',
   current_meter_reading: 0
 };
@@ -128,10 +129,23 @@ const existingCalculated = context.billingCalculateBill_(
   {}
 );
 
-assert.equal(existingCalculated.discount_amount, 8500);
+assert.equal(existingCalculated.discount_amount, 9000);
 assert.equal(existingCalculated.total_amount, 0);
 assert.equal(existingCalculated.payment_status, 'paid');
-assert.match(existingCalculated.tenant_visible_note, /簽約時已收本月租金/);
+assert.match(existingCalculated.tenant_visible_note, /簽約時已收首月租金與管理費/);
+
+const onboardingPage = readFileSync(
+  new URL('../landlord-tenant-create.html', import.meta.url),
+  'utf8'
+);
+assert.match(onboardingPage, /租金[＋+]管理費/);
+assert.doesNotMatch(onboardingPage, /管理費、水電與設備費仍依帳單計算/);
+
+const billingPage = readFileSync(
+  new URL('../landlord-billing.html', import.meta.url),
+  'utf8'
+);
+assert.match(billingPage, /首月租金[＋+]管理費已於簽約時收取/);
 
 const tenantsPage = readFileSync(
   new URL('../landlord-tenants.html', import.meta.url),
@@ -139,6 +153,8 @@ const tenantsPage = readFileSync(
 );
 
 assert.match(tenantsPage, /快速續約/);
+assert.match(tenantsPage, /tenant-action-button quick-renewal/);
+assert.match(tenantsPage, /快速續約[\s\S]*?即將到期/);
 assert.match(tenantsPage, /function goTenantRenewal\(\s*tenant,\s*event\s*\)/);
 assert.match(
   tenantsPage,

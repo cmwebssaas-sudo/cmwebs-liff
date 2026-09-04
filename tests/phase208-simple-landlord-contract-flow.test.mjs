@@ -69,6 +69,7 @@ const resolved = context.landlordInitiatedContractResolveNewDefaults_(normalized
 assert.equal(resolved.success, true, resolved.message);
 assert.equal(resolved.data.property_id, 'P1');
 assert.equal(resolved.data.management_fee, 500);
+assert.equal(resolved.data.initial_rent_paid_amount, 8000);
 assert.equal(resolved.data.deposit_months, 2);
 assert.equal(resolved.data.payment_day, 5);
 assert.equal(resolved.data.electricity_fee_rate, 3);

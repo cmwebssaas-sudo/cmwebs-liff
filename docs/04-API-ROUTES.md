@@ -127,9 +127,11 @@ tenant_payment_report_submit
   the message includes `tenant_visible_note` when it is non-empty. Existing
   sent LINE messages are immutable and are not retroactively changed.
 - `landlord_bill_apply_initial_rent_credit` is an explicit landlord-only
-  correction for an already-created unpaid bill. It credits only the bill's
-  rent component, preserves electricity／equipment／other charges, synchronizes
-  the landlord and tenant bill views, and records the tenant-visible reason.
+  correction for an already-created unpaid bill. It credits the bill's
+  first-month rent plus management-fee components, preserves
+  electricity／equipment／other charges, does not credit the two-month deposit,
+  synchronizes the landlord and tenant bill views, and records the
+  tenant-visible reason.
 
 ## Landlord revenue dashboard
 
