@@ -15,7 +15,8 @@
     liffId: '',
     lineUserId: '',
     returnTo: '',
-    entryPage: 'landlord-entry.html'
+    entryPage: 'landlord-entry.html',
+    testMode: false
   };
 
   function text(value) {
@@ -176,13 +177,7 @@
           data.payload || {};
         const code =
           text(result.code);
-        if (
-          result.success !== true &&
-          AUTH_FAILURE_CODES[code]
-        ) {
-          setSessionToken('');
-          redirectToEntry();
-        }
+        maybeHandleAuthFailure(result);
 
         if (result.success === true) {
           resolve(result);
@@ -285,6 +280,32 @@
     return result;
   }
 
+  function maybeHandleAuthFailure(result) {
+    const code =
+      text(result && result.code);
+    if (
+      result &&
+      result.success !== true &&
+      AUTH_FAILURE_CODES[code]
+    ) {
+      setSessionToken('');
+      redirectToEntry(
+        result.message || code
+      );
+      return true;
+    }
+    return false;
+  }
+
+  function lineAuthParams() {
+    if (config.testMode) {
+      return {};
+    }
+    return {
+      line_user_id: text(config.lineUserId)
+    };
+  }
+
   const api = {
     init(options) {
       config =
@@ -320,6 +341,28 @@
       };
     },
 
+    request(action, params) {
+      const authParams =
+        api.getRequestAuthParams();
+      if (authParams.landlord_session_token) {
+        return bridgePost(
+          action,
+          Object.assign(
+            {},
+            params || {},
+            authParams
+          )
+        );
+      }
+      return Promise.reject(
+        new Error('EMAIL_SESSION_REQUIRED')
+      );
+    },
+
+    handleAuthFailure(result) {
+      return maybeHandleAuthFailure(result);
+    },
+
     requestEmailCode(email) {
       return bridgePost(
         'landlord_email_login_request',
@@ -342,21 +385,27 @@
     requestEmailVerification(email) {
       return bridgePost(
         'landlord_email_verify_request',
-        {
-          line_user_id: text(config.lineUserId),
-          email: text(email).trim()
-        }
+        Object.assign(
+          {},
+          lineAuthParams(),
+          {
+            email: text(email).trim()
+          }
+        )
       );
     },
 
     verifyEmailVerification(challengeId, code) {
       return bridgePost(
         'landlord_email_verify_code',
-        {
-          line_user_id: text(config.lineUserId),
-          challenge_id: text(challengeId).trim(),
-          code: text(code).trim()
-        }
+        Object.assign(
+          {},
+          lineAuthParams(),
+          {
+            challenge_id: text(challengeId).trim(),
+            code: text(code).trim()
+          }
+        )
       );
     },
 

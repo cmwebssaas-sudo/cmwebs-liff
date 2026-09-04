@@ -337,6 +337,84 @@ guardedTest('Phase 219 stores only the opaque landlord Email session token after
   assert.equal(authParams.landlord_session_token, 'SESSION_TOKEN_ABC');
 });
 
+guardedTest('Phase 219 sends authenticated Email-session page actions through POST bridge only', async () => {
+  const { context, document, storage } = createRuntime();
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec',
+    returnTo: 'landlord-home.html'
+  });
+  storage.set('cmwebs_landlord_session_token', 'SESSION_TOKEN_ABC');
+
+  assert.equal(typeof auth.request, 'function');
+
+  const request = auth.request('landlord_home_bootstrap', {
+    filter: 'current'
+  });
+  assert.equal(document.submittedForms.length, 1);
+  const form = document.submittedForms[0];
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
+  assert.equal(form.method.toUpperCase(), 'POST');
+  assert.equal(form.action, 'https://script.google.com/macros/s/example/exec');
+  assert.equal(form.action.includes('SESSION_TOKEN_ABC'), false);
+  assert.equal(form.action.includes('landlord_home_bootstrap'), false);
+
+  const fields = formFields(form);
+  assert.equal(fields.action, 'landlord_home_bootstrap');
+  assert.equal(fields.v2_action, 'landlord_home_bootstrap');
+  assert.equal(fields.response_mode, 'bridge');
+  assert.equal(fields.landlord_session_token, 'SESSION_TOKEN_ABC');
+  assert.equal(fields.line_user_id, undefined);
+  assert.equal(fields.filter, 'current');
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: {
+      success: true,
+      data: {
+        ok: true
+      }
+    }
+  }, 'https://script.google.com', iframe.contentWindow);
+
+  const result = await request;
+  assert.equal(result.success, true);
+  assert.deepEqual(result.data, { ok: true });
+});
+
+guardedTest('Phase 219 test mode keeps Email actions free of deterministic test LINE identity', async () => {
+  const { context, document } = createRuntime();
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec',
+    lineUserId: 'TEST_LINE_USER_ID_SHOULD_NOT_LEAK',
+    testMode: true
+  });
+
+  const request = auth.requestEmailVerification('owner@example.com');
+  const form = document.submittedForms[0];
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
+  const fields = formFields(form);
+  assert.equal(fields.action, 'landlord_email_verify_request');
+  assert.equal(fields.email, 'owner@example.com');
+  assert.equal(fields.line_user_id, undefined);
+  assert.equal(JSON.stringify(fields).includes('TEST_LINE_USER_ID_SHOULD_NOT_LEAK'), false);
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: {
+      success: true,
+      data: {
+        challenge_id: 'challenge-verify-1'
+      }
+    }
+  }, 'https://script.google.com', iframe.contentWindow);
+
+  await request;
+});
+
 guardedTest('Phase 219 clears Email session and redirects through a validated return_to on auth failures', async () => {
   const { context, document, storage } = createRuntime();
   const auth = context.window.CMWebsLandlordAuth;
@@ -363,6 +441,28 @@ guardedTest('Phase 219 clears Email session and redirects through a validated re
   assert.equal(storage.has('cmwebs_landlord_session_token'), false);
   assert.match(context.location.replacedWith, /^landlord-entry\.html/);
   assert.equal(context.location.replacedWith.includes('evil.test'), false);
+});
+
+guardedTest('Phase 219 exposes uniform auth failure handling without retrying or switching identity', () => {
+  const { context, storage } = createRuntime();
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec',
+    returnTo: 'landlord-properties.html?test=1'
+  });
+  storage.set('cmwebs_landlord_session_token', 'SESSION_TOKEN_ABC');
+
+  assert.equal(typeof auth.handleAuthFailure, 'function');
+  const handled = auth.handleAuthFailure({
+    success: false,
+    code: 'WORKSPACE_FORBIDDEN',
+    message: 'workspace forbidden'
+  });
+
+  assert.equal(handled, true);
+  assert.equal(storage.has('cmwebs_landlord_session_token'), false);
+  assert.match(context.location.replacedWith, /^landlord-entry\.html/);
+  assert.match(context.location.replacedWith, /return_to=landlord-properties\.html%3Ftest%3D1/);
 });
 
 guardedTest('Phase 219 keeps mobile in LINE mode unless an Email session exists', () => {

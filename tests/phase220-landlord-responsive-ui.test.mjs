@@ -7,6 +7,10 @@ const pageNames = [
   'landlord-tenants.html',
   'landlord-properties.html'
 ];
+const entrySource = readFileSync(
+  new URL('../landlord-entry.html', import.meta.url),
+  'utf8'
+);
 
 const pages = Object.fromEntries(
   pageNames.map((name) => [
@@ -302,6 +306,35 @@ test('Phase 220 exposes desktop table and panel hooks while preserving existing 
   assert.match(pages['landlord-properties.html'], /goTenantCreate\('/);
   assert.match(pages['landlord-properties.html'], /toggleRoomAccount\('/);
   assert.match(pages['landlord-properties.html'], /openRoomEditor\('/);
+});
+
+test('Phase 220 integrates the shared landlord auth client before protected page bootstrap', () => {
+  for (const [name, source] of Object.entries(pages)) {
+    assert.match(source, /<script src="landlord-auth\.js"><\/script>/, `${name} must load the shared auth client`);
+    assert.match(source, /async function ensureLandlordAuthReady\(\)/, `${name} must expose a shared auth readiness gate`);
+    assert.match(source, /await ensureLandlordAuthReady\(\)[\s\S]*?jsonpRequest\(/, `${name} must await auth before the first page API bootstrap`);
+    assert.match(source, /window\.CMWebsLandlordAuth\.getRequestAuthParams\(\)/, `${name} must derive request identity from the shared auth envelope`);
+    assert.match(source, /handleAuthFailure\(result\)/, `${name} must route auth failures through the shared handler`);
+    assert.doesNotMatch(source, /['"]&line_user_id=|&line_user_id=/, `${name} must not hard-code line_user_id into page JSONP URLs`);
+  }
+});
+
+test('Phase 220 keeps entry and protected pages on one auth module boundary', () => {
+  assert.match(entrySource, /<script src="landlord-auth\.js"><\/script>/);
+  assert.match(entrySource, /getRequestAuthParams\(\)/);
+  assert.doesNotMatch(
+    entrySource,
+    /landlord_session_token[\s\S]{0,120}(?:location\.href|location\.replace|buildPageUrl)/,
+    'entry page must not place Email session tokens in navigation URLs'
+  );
+
+  for (const source of Object.values(pages)) {
+    assert.doesNotMatch(
+      source,
+      /landlord_session_token[\s\S]{0,120}(?:script\.src|url\s*\+=|location\.href|location\.replace)/,
+      'protected pages must keep Email session transport out of GET/navigation URLs'
+    );
+  }
 });
 
 test('Phase 220 validates required viewport contracts from actual selectors and properties', () => {

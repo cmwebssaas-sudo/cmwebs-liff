@@ -314,6 +314,19 @@ function createJsonpRuntime(appendScript) {
     }
   };
   runtime.window = runtime;
+  runtime.window.CMWebsLandlordAuth = {
+    getRequestAuthParams() {
+      return {
+        line_user_id: runtime.LINE_USER_ID
+      };
+    },
+    handleAuthFailure() {
+      return false;
+    },
+    request() {
+      throw new Error('Email bridge is outside this JSONP retry test');
+    }
+  };
   return runtime;
 }
 

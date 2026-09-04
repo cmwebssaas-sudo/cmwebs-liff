@@ -9,6 +9,7 @@
   <title>CMWebs 物件與房間</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
+  <script src="landlord-auth.js"></script>
   <link rel="stylesheet" href="landlord-responsive.css" />
 
   <style>
@@ -962,6 +963,7 @@
       '1';
 
     let LINE_USER_ID = '';
+    let LANDLORD_AUTH = null;
     let PAGE_DATA = null;
     let FILTER = 'active';
     let toastTimer = null;
@@ -1017,6 +1019,79 @@
             ? '&test=1'
             : ''
         );
+    }
+
+    function currentReturnTo() {
+      const url =
+        new URL(location.href);
+
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(function (key) {
+        url.searchParams.delete(key);
+      });
+
+      return (
+        url.pathname.split('/').pop() +
+        (
+          url.searchParams.toString()
+            ? '?' + url.searchParams.toString()
+            : ''
+        )
+      );
+    }
+
+    function initLandlordAuthClient() {
+      if (!window.CMWebsLandlordAuth) {
+        throw new Error('房東身分驗證模組載入失敗');
+      }
+
+      LANDLORD_AUTH =
+        window.CMWebsLandlordAuth.init({
+          apiUrl: API_URL,
+          liffId: LIFF_ID,
+          lineUserId: LINE_USER_ID,
+          returnTo: currentReturnTo(),
+          entryPage: 'landlord-entry.html',
+          testMode: TEST_MODE
+        });
+
+      return LANDLORD_AUTH;
+    }
+
+    async function ensureLandlordAuthReady() {
+      const auth =
+        LANDLORD_AUTH ||
+        initLandlordAuthClient();
+
+      if (TEST_MODE) {
+        LINE_USER_ID =
+          TEST_LINE_USER_ID;
+        initLandlordAuthClient();
+        return true;
+      }
+
+      if (auth.getMode() === 'email') {
+        await auth.getSessionStatus();
+        return true;
+      }
+
+      if (!LINE_USER_ID) {
+        const ready =
+          await initLine();
+
+        if (!ready) {
+          return false;
+        }
+      }
+
+      initLandlordAuthClient();
+      return true;
     }
 
     function setDesktopText(id, value) {
@@ -1199,8 +1274,37 @@
       params,
       retryCount
     ) {
+      const authParams = window.CMWebsLandlordAuth.getRequestAuthParams();
+
+      if (
+        authParams.response_mode === 'bridge' &&
+        authParams.landlord_session_token
+      ) {
+        return window.CMWebsLandlordAuth.request(
+          action,
+          params || {}
+        );
+      }
+
+      const requestParams =
+        Object.assign(
+          {},
+          params || {},
+          authParams
+        );
+
       return new Promise(
         function (resolve, reject) {
+          if (!authParams.line_user_id) {
+            reject(
+              new Error(
+                '缺少 LINE User ID'
+              )
+            );
+
+            return;
+          }
+
           const callbackName =
             '__cmwebs_properties_' +
             Date.now() +
@@ -1281,6 +1385,20 @@
 
               finished = true;
               cleanup();
+              if (window.CMWebsLandlordAuth.handleAuthFailure(result)) {
+                const authError =
+                  new Error(
+                    result && result.message
+                      ? result.message
+                      : '房東身分已失效'
+                  );
+                authError.code =
+                  result && result.code
+                    ? result.code
+                    : '';
+                reject(authError);
+                return;
+              }
               resolve(result);
             };
 
@@ -1290,10 +1408,6 @@
             encodeURIComponent(
               action
             ) +
-            '&line_user_id=' +
-            encodeURIComponent(
-              LINE_USER_ID
-            ) +
             '&callback=' +
             encodeURIComponent(
               callbackName
@@ -1302,9 +1416,19 @@
             Date.now();
 
           Object.keys(
-            params || {}
+            requestParams
           ).forEach(
             function (key) {
+              const value =
+                requestParams[key];
+
+              if (
+                value === undefined ||
+                value === null
+              ) {
+                return;
+              }
+
               url +=
                 '&' +
                 encodeURIComponent(
@@ -1312,7 +1436,7 @@
                 ) +
                 '=' +
                 encodeURIComponent(
-                  params[key]
+                  value
                 );
             }
           );
@@ -2895,13 +3019,11 @@
       }
 
       try {
-        if (!LINE_USER_ID) {
-          const ready =
-            await initLine();
+        const ready =
+          await ensureLandlordAuthReady();
 
-          if (!ready) {
-            return;
-          }
+        if (!ready) {
+          return;
         }
 
         const result =
