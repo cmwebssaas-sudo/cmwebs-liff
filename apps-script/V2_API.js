@@ -2593,6 +2593,7 @@ function getLandlordTenantsByLineUid(lineUserId) {
         tenant_id: row.tenant_id,
         tenant_name: row.tenant_name,
         workspace_id: row.workspace_id,
+        property_id: row.property_id,
         room_id: row.room_id,
         current_contract_id: row.current_contract_id,
         contract_end_date: row.contract_end_date || row.end_date || '',

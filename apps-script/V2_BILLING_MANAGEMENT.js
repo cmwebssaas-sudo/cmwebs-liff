@@ -912,19 +912,6 @@ function generateLandlordBillsByLineUid_(
             ) ||
             null;
 
-          if (
-            existingBill &&
-            item.apply_initial_rent_credit !== true
-          ) {
-            skipped.push({
-              room_id: roomId,
-              room_name: billingText_(room.room_name),
-              code: 'BILL_ALREADY_CREATED_LOCKED',
-              message: '此房間本月帳單已建立，請至帳單管理更正'
-            });
-            return;
-          }
-
           const contract =
             billingResolveRoomContractForMonth_(
               contractRows,
@@ -934,9 +921,56 @@ function generateLandlordBillsByLineUid_(
             );
 
           if (!contract) {
+            if (
+              existingBill &&
+              item.apply_initial_rent_credit !== true
+            ) {
+              skipped.push({
+                room_id: roomId,
+                room_name: billingText_(room.room_name),
+                code: 'BILL_ALREADY_CREATED_LOCKED',
+                message: '此房間本月帳單已建立，請至帳單管理更正'
+              });
+              return;
+            }
+
             throw new Error(
               '此房間在帳單月份沒有有效租約'
             );
+          }
+
+          const existingBillIsUnpaid =
+            existingBill &&
+            billingNormalizePaymentStatus_(
+              existingBill.payment_status
+            ) === 'unpaid';
+
+          const hasAutomaticInitialRentCredit =
+            existingBillIsUnpaid &&
+            billingText_(
+              contract.initial_rent_paid_month
+            ) === billingText_(billMonth) &&
+            Math.max(
+              0,
+              Math.round(
+                billingNumber_(
+                  contract.initial_rent_paid_amount
+                )
+              )
+            ) > 0;
+
+          if (
+            existingBill &&
+            item.apply_initial_rent_credit !== true &&
+            !hasAutomaticInitialRentCredit
+          ) {
+            skipped.push({
+              room_id: roomId,
+              room_name: billingText_(room.room_name),
+              code: 'BILL_ALREADY_CREATED_LOCKED',
+              message: '此房間本月帳單已建立，請至帳單管理更正'
+            });
+            return;
           }
 
           const tenantId =
@@ -1696,8 +1730,39 @@ function billingInitialRentCreditForBillMonth_(contract, billMonth, rentAmount) 
   return Math.min(paidAmount, calculatedRent);
 }
 
+function billingHasInitialRentCreditForBillMonth_(contract, billMonth) {
+  const paidMonth = billingText_(contract && contract.initial_rent_paid_month);
+  const paidAmount = Math.max(
+    0,
+    Math.round(billingNumber_(contract && contract.initial_rent_paid_amount))
+  );
+
+  return Boolean(
+    paidMonth &&
+    paidMonth === billingText_(billMonth) &&
+    paidAmount > 0
+  );
+}
+
 function billingInitialRentPaidNote_(amount) {
   return '簽約時已收本月租金，本次帳單已折抵 NT$ ' + Math.round(amount).toLocaleString('en-US') + '。';
+}
+
+function billingAppendInitialRentPaidNote_(note, amount) {
+  const currentNote = billingText_(note);
+
+  if (amount <= 0) {
+    return currentNote;
+  }
+
+  if (currentNote.indexOf('簽約時已收本月租金') >= 0) {
+    return currentNote;
+  }
+
+  const creditNote = billingInitialRentPaidNote_(amount);
+  return currentNote
+    ? currentNote + '\n' + creditNote
+    : creditNote;
 }
 
 
@@ -1900,13 +1965,46 @@ function billingBuildInitItem_(
       tenant.line_user_id
     );
 
-  const initialRentCredit = billingInitialRentCreditForBillMonth_(
-    contract,
-    billMonth,
+  const existingBillIsUnpaid =
+    existingBill &&
+    billingNormalizePaymentStatus_(
+      existingBill.payment_status
+    ) === 'unpaid';
+
+  const initialRentCredit =
+    (!existingBill || existingBillIsUnpaid) &&
+    billingHasInitialRentCreditForBillMonth_(
+      contract,
+      billMonth
+    )
+      ? billingInitialRentCreditForBillMonth_(
+          contract,
+          billMonth,
+          existingBill
+            ? displayedRentAmount
+            : rentCalculation.rent_amount
+        )
+      : 0;
+
+  const existingDiscountAmount =
     existingBill
-      ? displayedRentAmount
-      : rentCalculation.rent_amount
-  );
+      ? Math.max(
+          0,
+          Math.round(
+            billingNumber_(
+              existingBill.discount_amount
+            )
+          )
+        )
+      : 0;
+
+  const initialRentCreditNote =
+    billingAppendInitialRentPaidNote_(
+      existingBill
+        ? existingBill.tenant_visible_note
+        : '',
+      initialRentCredit
+    );
 
   return {
     room_id:
@@ -2026,8 +2124,9 @@ function billingBuildInitItem_(
         : 0,
     discount_amount:
       existingBill
-        ? billingNumber_(
-            existingBill.discount_amount
+        ? Math.max(
+            existingDiscountAmount,
+            initialRentCredit
           )
         : initialRentCredit,
     note:
@@ -2037,13 +2136,7 @@ function billingBuildInitItem_(
           )
         : '',
     tenant_visible_note:
-      existingBill
-        ? billingText_(
-            existingBill.tenant_visible_note
-          )
-        : initialRentCredit > 0
-          ? billingInitialRentPaidNote_(initialRentCredit)
-          : '',
+      initialRentCreditNote,
 
     initial_rent_paid_month:
       billingText_(contract.initial_rent_paid_month),
@@ -2226,22 +2319,41 @@ function billingCalculateBill_(
       )
     );
 
-  const manuallyAppliedExistingRentCredit =
+  const existingBillIsUnpaid =
     existingBill &&
+    billingNormalizePaymentStatus_(
+      existingBill.payment_status
+    ) === 'unpaid';
+
+  const manuallyAppliedExistingRentCredit =
+    existingBillIsUnpaid &&
     input &&
     input.apply_initial_rent_credit === true;
-  const initialRentCredit = existingBill
-    ? manuallyAppliedExistingRentCredit
-      ? Math.min(
-          Math.max(
-            0,
-            Math.round(
-              billingNumber_(existingBill.rent_amount)
-            )
-          ),
+
+  const automaticExistingRentCredit =
+    existingBillIsUnpaid
+      ? billingInitialRentCreditForBillMonth_(
+          contract,
+          billMonth,
           item.rent_amount
         )
-      : 0
+      : 0;
+
+  const initialRentCredit = existingBill
+    ? Math.max(
+        automaticExistingRentCredit,
+        manuallyAppliedExistingRentCredit
+          ? Math.min(
+              Math.max(
+                0,
+                Math.round(
+                  billingNumber_(existingBill.rent_amount)
+                )
+              ),
+              item.rent_amount
+            )
+          : 0
+      )
     : billingInitialRentCreditForBillMonth_(
         contract,
         billMonth,
@@ -2279,6 +2391,18 @@ function billingCalculateBill_(
       subtotal -
       discountAmount
     );
+
+  const currentTenantVisibleNote =
+    billingText_(input.tenant_visible_note);
+
+  const tenantVisibleNote =
+    initialRentCredit > 0
+      ? currentTenantVisibleNote.indexOf('簽約時已收本月租金') >= 0
+        ? currentTenantVisibleNote
+        : currentTenantVisibleNote
+          ? currentTenantVisibleNote + '\n' + billingInitialRentPaidNote_(initialRentCredit)
+          : billingInitialRentPaidNote_(initialRentCredit)
+      : currentTenantVisibleNote;
 
   const dueDate =
     billingDate_(
@@ -2386,7 +2510,11 @@ function billingCalculateBill_(
       'issued',
     payment_status:
       existingBill &&
-      !(manuallyAppliedExistingRentCredit && totalAmount === 0)
+      !(
+        initialRentCredit > 0 &&
+        existingBillIsUnpaid &&
+        totalAmount === 0
+      )
         ? billingNormalizePaymentStatus_(
             existingBill
               .payment_status
@@ -2407,10 +2535,7 @@ function billingCalculateBill_(
         input.note
       ),
     tenant_visible_note:
-      billingText_(input.tenant_visible_note) ||
-      (initialRentCredit > 0
-        ? billingInitialRentPaidNote_(initialRentCredit)
-        : '')
+      tenantVisibleNote
   };
 }
 

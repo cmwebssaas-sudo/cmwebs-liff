@@ -11,7 +11,7 @@ const releaseScript = fs.readFileSync(
   'utf8'
 );
 
-if (!/CMWEBS_RELEASE_VERSION\s*=\s*'20260822-tenant-binding-invite-v1'/.test(releaseScript)) {
+if (!/CMWEBS_RELEASE_VERSION\s*=\s*'20260905-prepaid-rent-quick-renewal-v1'/.test(releaseScript)) {
   throw new Error('frontend-release.js must define the approved stable release version.');
 }
 
@@ -69,7 +69,7 @@ htmlFiles.forEach(name => {
   releaseVersionUses += usesReleaseVersion;
   apiAntiCacheKeys += (source.match(/&_/g) || []).length;
 
-  if (usesReleaseVersion > 0 && !source.includes('src="frontend-release.js"')) {
+  if (usesReleaseVersion > 0 && !/src="frontend-release\.js(?:\?[^\"]*)?"/.test(source)) {
     throw new Error(`${name} uses CMWEBS_RELEASE_VERSION without frontend-release.js.`);
   }
 

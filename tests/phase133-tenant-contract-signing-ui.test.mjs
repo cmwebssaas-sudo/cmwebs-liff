@@ -63,13 +63,13 @@ assert.match(source, /const LIFF_ID\s*=\s*'2010314940-iJB1D6sN'/);
 assert.match(source, /AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ\/exec/);
 assert.match(
   releaseSource,
-    /20260904-paper-contract-backfill-mobile-auth-v1/,
+    /20260905-prepaid-rent-quick-renewal-v1/,
   'the frontend cache version must advance when the tenant contract preview changes'
 );
 for (const pageSource of [tenantBindSource, tenantHomeSource, source]) {
   assert.match(
     pageSource,
-    /frontend-release\.js\?v=20260904-paper-contract-backfill-mobile-auth-v1/,
+    /frontend-release\.js\?v=20260905-prepaid-rent-quick-renewal-v1/,
     'tenant entry pages must bypass the cached frontend release script'
   );
 }

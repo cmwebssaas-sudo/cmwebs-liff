@@ -107,13 +107,22 @@ function createRuntime(existingBills, options = {}) {
     billingActor_() { return { user_id: 'user-a', membership_id: 'membership-a' }; },
     billingResolveRoomContractForMonth_(_contracts, roomId) {
       if (options.resolveContract === false) return null;
-      return { tenant_id: roomId === 'R001' ? 'T001' : 'T002' };
+      return {
+        tenant_id: roomId === 'R001' ? 'T001' : 'T002',
+        ...(options.initialRentPaid && roomId === 'R001'
+          ? { initial_rent_paid_month: '2026-08', initial_rent_paid_amount: 8500 }
+          : {})
+      };
     },
     billingIsPaidStatus_() { return false; },
     billingNormalizePaymentStatus_() { return 'unpaid'; },
     billingMergeReferenceBills_(bills) { return bills; },
     billingResolvePreviousBill_() { return null; },
     billingCalculateBill_(room, contract, tenant, _existing, _previous, billMonth, item) {
+      const initialRentPaid =
+        contract.initial_rent_paid_month === billMonth &&
+        Number(contract.initial_rent_paid_amount) > 0;
+      const rentCredit = item.apply_initial_rent_credit || initialRentPaid;
       return {
         room_id: room.room_id,
         room_name: room.room_name,
@@ -125,9 +134,9 @@ function createRuntime(existingBills, options = {}) {
         electricity_usage: 1,
         electricity_fee_rate: 3,
         equipment_fee_rate: 2.5,
-        discount_amount: item.apply_initial_rent_credit ? 8500 : 0,
-        total_amount: item.apply_initial_rent_credit ? 0 : 100,
-        payment_status: item.apply_initial_rent_credit ? 'paid' : 'unpaid'
+        discount_amount: rentCredit ? 8500 : 0,
+        total_amount: rentCredit ? 0 : 100,
+        payment_status: rentCredit ? 'paid' : 'unpaid'
       };
     },
     workspaceNextId_() { return 'B0000001'; },
@@ -275,6 +284,34 @@ function createRuntime(existingBills, options = {}) {
   assert.equal(fixtures.billViewSyncs, 1, 'manual credit must sync the tenant bill view');
   assert.equal(fixtures.summaryRefreshes, 1);
   assert.equal(fixtures.teamNotifications, 0, 'manual correction must not announce a new bill');
+}
+
+{
+  const { fixtures, generate } = createRuntime(
+    [
+      {
+        bill_id: 'B0000012',
+        room_id: 'R001',
+        bill_month: '2026-08',
+        payment_status: 'unpaid',
+        __row_number: 2
+      }
+    ],
+    { initialRentPaid: true }
+  );
+  const result = generate(
+    'landlord-a',
+    '2026-08',
+    JSON.stringify([
+      { selected: true, room_id: 'R001', current_meter_reading: 999 }
+    ])
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.generated_count, 1, 'a prepaid existing bill must be updateable without a manual flag');
+  assert.equal(result.data.generated[0].total_amount, 0);
+  assert.equal(fixtures.billWrites, 1);
+  assert.equal(fixtures.billViewSyncs, 1);
 }
 
 {
