@@ -554,11 +554,12 @@ function billNotificationSendLandlordMonthlySummary_(
       }
   };
 
-  billNotificationQueueMonthlySummaryRetry_(
-    group,
-    billMonth,
-    notificationPayload
-  );
+  const summaryOutboxQueued =
+    billNotificationQueueMonthlySummaryRetry_(
+      group,
+      billMonth,
+      notificationPayload
+    );
 
   let result;
 
@@ -575,7 +576,34 @@ function billNotificationSendLandlordMonthlySummary_(
       message:
         error && error.message
           ? error.message
-          : String(error)
+      : String(error)
+    };
+  }
+
+  if (
+    summaryOutboxQueued ===
+      null &&
+    !(
+      result &&
+      result.data &&
+      result.data.notification_id
+    )
+  ) {
+    result = {
+      success:
+        false,
+      code:
+        'MONTHLY_BILL_SUMMARY_OUTBOX_ERROR',
+      message:
+        '房東摘要重試佇列寫入失敗，請人工確認',
+      data: {
+        sent_count:
+          0,
+        failed_count:
+          1,
+        skipped_count:
+          0
+      }
     };
   }
 
@@ -726,6 +754,8 @@ function billNotificationWriteMonthlySummaryOutbox_(
         {}
       )
     );
+
+  return true;
 }
 
 
@@ -779,7 +809,7 @@ function billNotificationQueueMonthlySummaryRetry_(
     return;
   }
 
-  billNotificationWithSummaryOutboxLock_(
+  return billNotificationWithSummaryOutboxLock_(
     function () {
       const records =
         billNotificationReadMonthlySummaryOutbox_();
@@ -821,7 +851,7 @@ function billNotificationQueueMonthlySummaryRetry_(
           new Date().toISOString()
       };
 
-      billNotificationWriteMonthlySummaryOutbox_(
+      return billNotificationWriteMonthlySummaryOutbox_(
         records
       );
     }
