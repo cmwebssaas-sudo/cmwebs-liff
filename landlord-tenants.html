@@ -559,10 +559,33 @@
 
     .tenant-actions.has-quick-renewal {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      padding: 7px;
     }
 
     .tenant-actions.has-quick-renewal.has-binding-invite {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .tenant-actions.has-quick-renewal .tenant-action-button {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .tenant-actions.has-quick-renewal .tenant-action-button + .tenant-action-button {
+      border-left: 1px solid var(--border);
+    }
+
+    .tenant-actions.has-quick-renewal.has-binding-invite .tenant-action-button.quick-renewal {
+      flex-direction: column;
+      gap: 2px;
+      padding-right: 3px;
+      padding-left: 3px;
+    }
+
+    .tenant-actions.has-quick-renewal.has-binding-invite .quick-renewal-copy {
+      align-items: center;
     }
 
     .tenant-action-button {
@@ -588,11 +611,73 @@
     }
 
     .tenant-action-button.quick-renewal {
-      background: var(--primary);
+      min-height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 6px 9px;
+      border-color: rgba(6, 199, 85, 0.35);
+      background:
+        linear-gradient(
+          135deg,
+          #06c755 0%,
+          #049b48 100%
+        );
       color: #ffffff;
       font-size: 12px;
       letter-spacing: 0.01em;
       text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 7px 14px rgba(6, 199, 85, 0.2);
+      transition:
+        transform 180ms ease,
+        box-shadow 180ms ease,
+        filter 180ms ease;
+    }
+
+    .tenant-action-button.quick-renewal:hover {
+      filter: saturate(1.06) brightness(1.02);
+      box-shadow: 0 9px 18px rgba(6, 199, 85, 0.26);
+    }
+
+    .tenant-action-button.quick-renewal:focus-visible {
+      outline: 3px solid rgba(36, 107, 253, 0.42);
+      outline-offset: 2px;
+    }
+
+    .tenant-action-button.quick-renewal:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 9px rgba(6, 199, 85, 0.18);
+    }
+
+    .quick-renewal-icon {
+      width: 25px;
+      height: 25px;
+      flex: 0 0 25px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .quick-renewal-icon svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .quick-renewal-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.2;
     }
 
     .tenant-action-button.quick-renewal small {
@@ -603,7 +688,17 @@
       opacity: 0.92;
     }
 
-    .tenant-action-button:active {
+    @media (prefers-reduced-motion: reduce) {
+      .tenant-action-button.quick-renewal {
+        transition: none;
+      }
+
+      .tenant-action-button.quick-renewal:active {
+        transform: none;
+      }
+    }
+
+    .tenant-action-button:not(.quick-renewal):active {
       background: #f7f8fa;
     }
 
@@ -2041,10 +2136,21 @@
                   <button
                     class="tenant-action-button quick-renewal"
                     type="button"
+                    aria-label="快速續約"
                     onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)"
                   >
-                    快速續約
-                    <small>合約即將到期／已到期</small>
+                    <span class="quick-renewal-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M20 11a8 8 0 0 0-14.7-4L3 10"></path>
+                        <path d="M3 5v5h5"></path>
+                        <path d="M4 13a8 8 0 0 0 14.7 4L21 14"></path>
+                        <path d="M21 19v-5h-5"></path>
+                      </svg>
+                    </span>
+                    <span class="quick-renewal-copy">
+                      <span>快速續約</span>
+                      <small>合約即將到期／已到期</small>
+                    </span>
                   </button>
                 `
                 : ''
@@ -2254,7 +2360,7 @@
               <button class="tenant-action-button purple" type="button" onclick="goTenantContractRequests('${safeHtml(tenantId)}', event)">合約</button>
               ${
                 canQuickRenew
-                  ? `<button class="tenant-action-button quick-renewal" type="button" aria-label="快速續約" onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)">快速續約<small>合約即將到期／已到期</small></button>`
+                  ? `<button class="tenant-action-button quick-renewal" type="button" aria-label="快速續約" onclick="goTenantRenewal(${safeHtml(JSON.stringify(tenant))}, event)"><span class="quick-renewal-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 11a8 8 0 0 0-14.7-4L3 10"></path><path d="M3 5v5h5"></path><path d="M4 13a8 8 0 0 0 14.7 4L21 14"></path><path d="M21 19v-5h-5"></path></svg></span><span class="quick-renewal-copy"><span>快速續約</span><small>合約即將到期／已到期</small></span></button>`
                   : ''
               }
               ${

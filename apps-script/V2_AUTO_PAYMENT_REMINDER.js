@@ -243,6 +243,39 @@ function runV2AutomaticPaymentReminders() {
         new Date()
     });
 
+  /*
+   * 帳單通知與逾期催繳共用既有每小時 Dispatcher，
+   * 避免另外安裝第二組重複觸發器。月初通知只會挑選
+   * 當月 issued + unpaid + not_sent 帳單，並由通知模組
+   * 寫回 sent_status 防止成功後重複發送。
+   */
+  if (
+    typeof runV2MonthlyBillNotifications ===
+    'function'
+  ) {
+    const monthlyBillResult =
+      runV2MonthlyBillNotifications();
+
+    if (
+      result &&
+      result.data
+    ) {
+      result.data.monthly_bill_notifications =
+        monthlyBillResult;
+
+      if (
+        monthlyBillResult &&
+        monthlyBillResult.success === false
+      ) {
+        result.success = false;
+        result.code =
+          'AUTOMATION_PARTIAL_FAILURE';
+        result.message =
+          '自動催繳完成，但每月租金帳單通知失敗';
+      }
+    }
+  }
+
   Logger.log(
     JSON.stringify(
       result,
