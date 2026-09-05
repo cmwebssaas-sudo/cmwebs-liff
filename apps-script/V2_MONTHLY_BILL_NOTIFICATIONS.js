@@ -24,6 +24,9 @@ const V2_MONTHLY_BILL_NOTIFICATION_BILLS_SHEET_ =
 const V2_MONTHLY_BILL_SUMMARY_OUTBOX_PROPERTY_ =
   'V2_MONTHLY_BILL_SUMMARY_OUTBOX';
 
+const V2_MONTHLY_BILL_NOTIFICATION_SENDING_TIMEOUT_MS_ =
+  2 * 60 * 60 * 1000;
+
 
 function billNotificationIsMonthlyDispatchDue_(
   dayOfMonth
@@ -235,6 +238,117 @@ function billNotificationBuildMonthlyDispatchGroups_(
         };
       }
     );
+}
+
+
+function billNotificationRecoverStaleSendingBills_(
+  ss,
+  billSheet,
+  bills,
+  billMonth
+) {
+  if (
+    !ss ||
+    !billSheet ||
+    typeof billNotificationSetRowValues_ !==
+      'function'
+  ) {
+    return 0;
+  }
+
+  const tenantBillSheet =
+    typeof V2_BILL_NOTIFICATION_SHEETS_ ===
+      'undefined'
+      ? null
+      : ss.getSheetByName(
+          V2_BILL_NOTIFICATION_SHEETS_
+            .tenantBillView
+        );
+
+  const now =
+    new Date();
+
+  let recoveredCount =
+    0;
+
+  (bills || []).forEach(
+    function (bill) {
+      const sentStatus =
+        monthlyBillNotificationText_(
+          bill &&
+          bill.sent_status
+        ).toLowerCase();
+
+      if (
+        sentStatus !==
+        'sending' ||
+        monthlyBillNotificationNormalizeBillMonth_(
+          bill &&
+          bill.bill_month
+        ) !==
+        monthlyBillNotificationNormalizeBillMonth_(
+          billMonth
+        )
+      ) {
+        return;
+      }
+
+      const updatedAt =
+        bill &&
+        bill.updated_at;
+
+      const updatedAtMs =
+        updatedAt instanceof Date
+          ? updatedAt.getTime()
+          : new Date(
+              updatedAt
+            ).getTime();
+
+      if (
+        !isFinite(updatedAtMs) ||
+        now.getTime() - updatedAtMs <
+          V2_MONTHLY_BILL_NOTIFICATION_SENDING_TIMEOUT_MS_
+      ) {
+        return;
+      }
+
+      const values = {
+        sent_status:
+          'failed',
+        last_send_error:
+          '上次帳單通知中斷，為避免重複發送已轉為失敗，請人工確認後重試',
+        updated_at:
+          now
+      };
+
+      try {
+        billNotificationSetRowValues_(
+          billSheet,
+          bill.__row_number,
+          values
+        );
+
+        if (
+          tenantBillSheet &&
+          typeof billNotificationSyncViewStatus_ ===
+            'function'
+        ) {
+          billNotificationSyncViewStatus_(
+            tenantBillSheet,
+            bill.bill_id,
+            values
+          );
+        }
+
+        recoveredCount +=
+          1;
+      } catch (error) {
+        // 保留 sending，等待下一次唯讀／人工處理，避免未知結果自動重發。
+      }
+    }
+  );
+
+  return recoveredCount;
 }
 
 
@@ -473,10 +587,19 @@ function billNotificationSendLandlordMonthlySummary_(
   if (
     resultData.notification_id
   ) {
-    billNotificationRemoveMonthlySummaryRetry_(
-      group,
-      billMonth
-    );
+    try {
+      billNotificationMarkMonthlySummaryRecorded_(
+        group,
+        billMonth,
+        resultData.notification_id
+      );
+      billNotificationRemoveMonthlySummaryRetry_(
+        group,
+        billMonth
+      );
+    } catch (error) {
+      // 保留帶有 notification_id 的 outbox 記錄，下一輪不會重送成功通知。
+    }
   }
 
   const sent = Number(
@@ -726,6 +849,66 @@ function billNotificationRemoveMonthlySummaryRetry_(
 }
 
 
+function billNotificationMarkMonthlySummaryRecorded_(
+  group,
+  billMonth,
+  notificationId
+) {
+  if (
+    typeof PropertiesService ===
+      'undefined'
+  ) {
+    return;
+  }
+
+  const records =
+    billNotificationReadMonthlySummaryOutbox_();
+
+  const workspaceId =
+    monthlyBillNotificationText_(
+      group &&
+      group.workspace_id
+    ).toUpperCase();
+
+  const normalizedMonth =
+    monthlyBillNotificationNormalizeBillMonth_(
+      billMonth
+    );
+
+  Object.keys(
+    records
+  ).forEach(
+    function (key) {
+      const record =
+        records[key] ||
+        {};
+
+      if (
+        monthlyBillNotificationText_(
+          record.workspace_id
+        ).toUpperCase() ===
+        workspaceId &&
+        monthlyBillNotificationNormalizeBillMonth_(
+          record.bill_month
+        ) ===
+        normalizedMonth
+      ) {
+        record.notification_id =
+          monthlyBillNotificationText_(
+            notificationId
+          );
+        records[key] =
+          record;
+      }
+    }
+  );
+
+  billNotificationWriteMonthlySummaryOutbox_(
+    records
+  );
+}
+
+
 function billNotificationGetMonthlySummaryOutboxCandidates_(
   billMonth
 ) {
@@ -749,6 +932,7 @@ function billNotificationGetMonthlySummaryOutboxCandidates_(
       function (record) {
         return (
           record &&
+          !record.notification_id &&
           monthlyBillNotificationNormalizeBillMonth_(
             record.bill_month
           ) ===
@@ -1068,13 +1252,25 @@ function billNotificationRetryPendingMonthlySummaries_(
       if (
         data.notification_id
       ) {
-        billNotificationRemoveMonthlySummaryRetry_(
-          {
-            workspace_id:
-              item.workspace_id
-          },
-          billMonth
-        );
+        try {
+          billNotificationMarkMonthlySummaryRecorded_(
+            {
+              workspace_id:
+                item.workspace_id
+            },
+            billMonth,
+            data.notification_id
+          );
+          billNotificationRemoveMonthlySummaryRetry_(
+            {
+              workspace_id:
+                item.workspace_id
+            },
+            billMonth
+          );
+        } catch (error) {
+          // 保留帶有 notification_id 的 outbox 記錄，下一輪不會重送成功通知。
+        }
       }
 
       return {
@@ -1215,6 +1411,14 @@ function runV2MonthlyBillNotifications(
     const bills =
       workspaceGetObjectsWithRow_(
         billSheet
+      );
+
+    const staleSendingRecoveredCount =
+      billNotificationRecoverStaleSendingBills_(
+        ss,
+        billSheet,
+        bills,
+        billMonth
       );
 
     const groups =
@@ -1568,6 +1772,8 @@ function runV2MonthlyBillNotifications(
               failedCount,
             skipped_count:
               skippedCount,
+            stale_sending_recovered_count:
+              staleSendingRecoveredCount,
             landlord_summary_sent_count:
               landlordSummarySentCount,
             landlord_summary_failed_count:

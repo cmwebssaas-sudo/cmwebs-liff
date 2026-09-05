@@ -392,6 +392,11 @@ assert.match(
   /billNotificationRetryPendingMonthlySummaries_/,
   'failed landlord summaries must have an independent retry path'
 );
+assert.match(
+  monthlySource,
+  /billNotificationRecoverStaleSendingBills_/,
+  'stale sending claims must have a reconciliation path'
+);
 const autoReminderSource = readFileSync(
   new URL('../apps-script/V2_AUTO_PAYMENT_REMINDER.js', import.meta.url),
   'utf8'
@@ -405,6 +410,16 @@ assert.match(
   billNotificationSource,
   /LINE 批次傳送結果不明，為避免自動重發已標記失敗/,
   'ambiguous LINE batch delivery must not remain eligible for automatic resend'
+);
+assert.match(
+  billNotificationSource,
+  /sent_status:\s*['"]sending['"]/,
+  'bill notification must claim sending state before external delivery'
+);
+assert.match(
+  billNotificationSource,
+  /finalization_warnings:/,
+  'post-send bookkeeping failures must not erase the per-bill delivery counts'
 );
 const requestedBillSelectorStart = billNotificationSource.indexOf(
   'function billNotificationSelectRequestedBills_('

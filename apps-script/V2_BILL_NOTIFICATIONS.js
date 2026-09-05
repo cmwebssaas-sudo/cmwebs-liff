@@ -1164,12 +1164,38 @@ function sendLandlordBillNotificationsByLineUid_(
       }
     );
 
-    billNotificationAppendLogs_(
-      ss,
-      logRows
-    );
+    const finalizationWarnings = [];
 
-    SpreadsheetApp.flush();
+    try {
+      billNotificationAppendLogs_(
+        ss,
+        logRows
+      );
+    } catch (error) {
+      finalizationWarnings.push(
+        '帳單通知稽核紀錄寫入失敗：' +
+        (
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        )
+      );
+    }
+
+    try {
+      SpreadsheetApp.flush();
+    } catch (error) {
+      finalizationWarnings.push(
+        '帳單通知資料同步警告：' +
+        (
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        )
+      );
+    }
 
     const result =
       workspaceResult_(
@@ -1202,7 +1228,9 @@ function sendLandlordBillNotificationsByLineUid_(
           failed:
             failed,
           skipped:
-            skipped
+            skipped,
+          finalization_warnings:
+            finalizationWarnings
         }
       );
 
