@@ -2,6 +2,19 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-06 — 202 快速續約 CTA 與每月帳單通知 dispatcher（local candidate）
+
+- 快速續約按鈕改為帶 SVG 循環圖示、到期情境副標、清楚 focus／press 狀態與
+  reduced-motion 支援；不改變原本的到期條件、續約 URL 或 append-only 流程。
+- 確認目前正式 Apps Script 專案的三組觸發器只有逾期催繳、合約到期與 V1
+  付款同步，沒有每月帳單通知排程；畫面中的 2026-09 帳單則是已建立但未發送。
+- 新增每月帳單通知 dispatcher：沿用既有每小時催繳觸發器，台北時間每月 5 號起
+  補發當月 `issued`／`unpaid`／`not_sent` 帳單，成功後沿用 `sent_status`、LINE
+  綁定、權限、稽核與發送紀錄，避免重複發送。此變更不自動建立帳單，避免在缺少
+  本期電錶時改變既有計費規則。
+- Phase 231 focused test 通過；本地候選尚未部署 Apps Script／Pages，尚未改動
+  Production trigger、Properties、Sheet、LINE 或進行手機／LIFF UAT。
+
 ## 2026-09-06 — 202 清除金額完成提示與防重送 UI 已發布
 
 - 房東帳務頁的清除金額操作改為每個 `bill_id` 具備處理中／已完成鎖定，避免快速
