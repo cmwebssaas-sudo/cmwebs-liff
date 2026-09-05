@@ -23,6 +23,8 @@
   `notify_bill_created` 偏好、Workspace 隔離、通知中心與 LINE delivery log。
 - 背景發送在 ScriptLock 內重新檢查 `sent_status`，並以帳單的
   `workspace_id` 解析指定 Workspace，避免重疊執行重發或誤用房東目前 active Workspace。
+- LINE 批次傳送若回傳不明，帳單會標記為失敗以阻止排程自動重發；整組失敗與摘要
+  失敗會計入結果，房東摘要會揭露 0 筆成功／失敗／未送出，且失敗摘要只重試原失敗收件人。
 - Phase 231 回歸測試通過；Apps Script 部署與房東 LINE 實際收件仍待獨立發布授權。
 
 ## 2026-09-06 — 202 清除金額完成提示與防重送 UI 已發布

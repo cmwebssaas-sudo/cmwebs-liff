@@ -834,14 +834,43 @@ function sendLandlordBillNotificationsByLineUid_(
 
     chunks.forEach(
       function (chunk) {
-        const responses =
-          UrlFetchApp.fetchAll(
+        let responses;
+
+        try {
+          responses =
+            UrlFetchApp.fetchAll(
+              chunk.map(
+                function (entry) {
+                  return entry.request;
+                }
+              )
+            );
+        } catch (error) {
+          const errorMessage =
+            'LINE 批次傳送結果不明，為避免自動重發已標記失敗：' +
+            (
+              error &&
+              error.message
+                ? error.message
+                : String(error)
+            );
+
+          responses =
             chunk.map(
-              function (entry) {
-                return entry.request;
+              function () {
+                return {
+                  getResponseCode:
+                    function () {
+                      return 599;
+                    },
+                  getContentText:
+                    function () {
+                      return errorMessage;
+                    }
+                };
               }
-            )
-          );
+            );
+        }
 
         responses.forEach(
           function (response, index) {
@@ -849,6 +878,19 @@ function sendLandlordBillNotificationsByLineUid_(
               chunk[
                 index
               ];
+
+            response =
+              response ||
+              {
+                getResponseCode:
+                  function () {
+                    return 599;
+                  },
+                getContentText:
+                  function () {
+                    return 'LINE 批次傳送未回傳對應結果，為避免自動重發已標記失敗';
+                  }
+              };
 
             const item =
               entry.item;

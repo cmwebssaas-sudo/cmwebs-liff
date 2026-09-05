@@ -250,6 +250,11 @@ assert.equal(
   '本月（2026年9月）租金帳單已發出，共 2 筆；另有 1 筆發送失敗，請查看帳單通知紀錄。',
   'landlord summary must disclose partial send failures'
 );
+assert.equal(
+  context.billNotificationBuildLandlordMonthlySummaryText_('2026-09', 0, 1, 1),
+  '本月（2026年9月）租金帳單已發出，共 0 筆；另有 1 筆發送失敗，請查看帳單通知紀錄；另有 1 筆未送出，請查看帳單通知紀錄。',
+  'landlord summary must disclose total failures and skipped bills'
+);
 
 const summarySendStart = monthlySource.indexOf(
   'function billNotificationSendLandlordMonthlySummary_('
@@ -308,8 +313,50 @@ const skippedSummaryResult = context.billNotificationSendLandlordMonthlySummary_
   0,
   1
 );
-assert.equal(skippedSummaryResult.delivered, false, 'zero successful bills must not notify the landlord');
-assert.equal(summaryCalls.length, 1, 'zero successful bills must not create an extra landlord notification');
+assert.equal(skippedSummaryResult.delivered, true, 'total tenant bill failures must still notify the landlord');
+assert.equal(summaryCalls.length, 2, 'total tenant bill failures must create a landlord notification');
+assert.match(
+  summaryCalls[1].body,
+  /共 0 筆；另有 1 筆發送失敗/,
+  'total tenant bill failures must be visible in the landlord message'
+);
+
+context.V2_WORKSPACE_NOTIFICATION_SHEETS_ = {
+  notifications: 'notifications',
+  deliveries: 'deliveries'
+};
+const retryRows = new Map([
+  ['notifications', [
+    {
+      notification_id: 'NTF-1',
+      workspace_id: 'WS-1',
+      event_type: 'bill_created',
+      target_type: 'monthly_bill_dispatch',
+      target_id: '2026-09',
+      event_body: '本月（2026年9月）租金帳單已發出，共 2 筆。',
+      status: 'failed'
+    }
+  ]],
+  ['deliveries', [
+    {
+      notification_id: 'NTF-1',
+      delivery_status: 'failed',
+      line_user_id: 'Uretry123456789012345678901'
+    }
+  ]]
+]);
+context.workspaceGetObjectsWithRow_ = sheet => retryRows.get(sheet) || [];
+const retryResults = context.billNotificationRetryPendingMonthlySummaries_(
+  { getSheetByName: name => name },
+  '2026-09'
+);
+assert.equal(retryResults.length, 1, 'failed landlord summaries must be retried independently');
+assert.deepEqual(
+  summaryCalls[2].recipient_line_user_ids,
+  ['Uretry123456789012345678901'],
+  'summary retries must target only the failed LINE recipient'
+);
+assert.equal(retryResults[0].sent_count, 1, 'successful summary retry must be counted');
 
 assert.match(
   monthlySource,
@@ -321,7 +368,11 @@ assert.match(
   /event_type:\s*['"]bill_created['"]/,
   'landlord summary must use the existing bill notification preference and recipient rules'
 );
-
+assert.match(
+  monthlySource,
+  /billNotificationRetryPendingMonthlySummaries_/,
+  'failed landlord summaries must have an independent retry path'
+);
 const autoReminderSource = readFileSync(
   new URL('../apps-script/V2_AUTO_PAYMENT_REMINDER.js', import.meta.url),
   'utf8'
@@ -330,6 +381,11 @@ const autoReminderSource = readFileSync(
 const billNotificationSource = readFileSync(
   new URL('../apps-script/V2_BILL_NOTIFICATIONS.js', import.meta.url),
   'utf8'
+);
+assert.match(
+  billNotificationSource,
+  /LINE 批次傳送結果不明，為避免自動重發已標記失敗/,
+  'ambiguous LINE batch delivery must not remain eligible for automatic resend'
 );
 const requestedBillSelectorStart = billNotificationSource.indexOf(
   'function billNotificationSelectRequestedBills_('
