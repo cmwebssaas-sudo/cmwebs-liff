@@ -475,6 +475,24 @@
       cursor: pointer;
     }
 
+    .detail-toggle:disabled {
+      opacity: 0.7;
+      cursor: default;
+      background: var(--surface-soft);
+    }
+
+    .initial-rent-credit-status {
+      margin-top: 10px;
+      padding: 10px 11px;
+      border: 1px solid #bfe4cc;
+      border-radius: 10px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1.55;
+    }
+
     .extra-fields {
       display: none;
       margin-top: 10px;
@@ -885,6 +903,8 @@
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
     let toastTimer = null;
+    const initialRentCreditPendingBillIds = new Set();
+    const initialRentCreditCompletedBillIds = new Set();
 
     function setAppHeight() {
       const height =
@@ -1042,7 +1062,7 @@
       return entryUrl.href;
     }
 
-    function showToast(message, isError) {
+    function showToast(message, isError, duration) {
       const toast =
         document.getElementById(
           'toast'
@@ -1066,7 +1086,7 @@
             toast.className =
               'toast';
           },
-          3000
+          Number(duration || 3000)
         );
     }
 
@@ -1470,6 +1490,32 @@
       `;
     }
 
+    function hasInitialRentCreditApplied(item) {
+      const existing =
+        item && item.existing_bill;
+
+      const fixedChargeAmount =
+        Number(item && item.rent_amount || 0) +
+        Math.max(
+          0,
+          Number(item && item.management_fee || 0)
+        );
+
+      return Boolean(
+        existing &&
+        fixedChargeAmount > 0 &&
+        Number(item.discount_amount || 0) >= fixedChargeAmount &&
+        (
+          rawText(item.tenant_visible_note).includes(
+            '簽約時已收首月租金'
+          ) ||
+          rawText(item.tenant_visible_note).includes(
+            '簽約時已收本月租金'
+          )
+        )
+      );
+    }
+
     function billCard(item, index) {
       const existing =
         item.existing_bill;
@@ -1480,19 +1526,12 @@
           'paid';
 
       const initialRentCreditApplied =
+        hasInitialRentCreditApplied(item);
+
+      const initialRentCreditCompleted =
         existing &&
-        Number(item.rent_amount || 0) +
-          Math.max(0, Number(item.management_fee || 0)) > 0 &&
-        Number(item.discount_amount || 0) >=
-          Number(item.rent_amount || 0) +
-            Math.max(0, Number(item.management_fee || 0)) &&
-        (
-          rawText(item.tenant_visible_note).includes(
-            '簽約時已收首月租金'
-          ) ||
-          rawText(item.tenant_visible_note).includes(
-            '簽約時已收本月租金'
-          )
+        initialRentCreditCompletedBillIds.has(
+          existing.bill_id
         );
 
       const checked =
@@ -1707,15 +1746,34 @@
             existing &&
             !paid &&
             !initialRentCreditApplied &&
-            item.existing_bill.bill_id
+            item.existing_bill.bill_id &&
+            !initialRentCreditCompleted
               ? `
                 <button
                   class="detail-toggle initial-rent-credit-button"
+                  data-bill-id="${safeHtml(item.existing_bill.bill_id)}"
                   type="button"
                   onclick="applyInitialRentCredit(${index})"
                 >
                   首月租金＋管理費已於簽約時收取，套用折抵
                 </button>
+              `
+            : ''
+          }
+
+          ${
+            existing &&
+            !paid &&
+            !initialRentCreditApplied &&
+            item.existing_bill.bill_id &&
+            initialRentCreditCompleted
+              ? `
+                <div
+                  class="initial-rent-credit-status"
+                  aria-live="polite"
+                >
+                  ✓ 清除金額已完成，帳單明細已同步；請勿重複操作。
+                </div>
               `
               : ''
           }
@@ -1963,12 +2021,111 @@
       );
     }
 
+    function findInitialRentCreditButton(billId) {
+      const buttons = document.querySelectorAll(
+        '.initial-rent-credit-button'
+      );
+
+      for (let index = 0; index < buttons.length; index += 1) {
+        if (
+          buttons[index].getAttribute('data-bill-id') ===
+          billId
+        ) {
+          return buttons[index];
+        }
+      }
+
+      return null;
+    }
+
+    function setInitialRentCreditButtonState(
+      billId,
+      state
+    ) {
+      const button =
+        findInitialRentCreditButton(billId);
+
+      if (!button) {
+        return;
+      }
+
+      if (state === 'pending') {
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        button.textContent = '清除金額處理中，請勿重複按…';
+        return;
+      }
+
+      if (state === 'completed') {
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'false');
+        button.textContent = '✓ 清除金額已完成，明細已同步';
+        return;
+      }
+
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      button.textContent =
+        '首月租金＋管理費已於簽約時收取，套用折抵';
+    }
+
+    function hasInitialRentCreditForBill(billId) {
+      const items =
+        PAGE_DATA &&
+        Array.isArray(PAGE_DATA.items)
+          ? PAGE_DATA.items
+          : [];
+
+      return items.some(
+        function (item) {
+          return Boolean(
+            item &&
+            item.existing_bill &&
+            item.existing_bill.bill_id === billId &&
+            hasInitialRentCreditApplied(item)
+          );
+        }
+      );
+    }
+
+    function isRequestTimeout(error) {
+      return Boolean(
+        error &&
+        error.message &&
+        error.message.indexOf('API 載入逾時') >= 0
+      );
+    }
+
     async function applyInitialRentCredit(index) {
       const item = PAGE_DATA.items[index];
       const existing = item && item.existing_bill;
 
       if (!existing || !existing.bill_id) {
         showToast('找不到可調整的帳單', true);
+        return;
+      }
+
+      const billId = existing.bill_id;
+
+      if (
+        initialRentCreditPendingBillIds.has(billId)
+      ) {
+        showToast(
+          '清除金額正在處理，請等待完成提示，不要重複按。',
+          false,
+          5000
+        );
+        return;
+      }
+
+      if (
+        initialRentCreditCompletedBillIds.has(billId)
+      ) {
+        showToast(
+          '清除金額已完成，帳單明細已同步，請勿重複操作。',
+          false,
+          5000
+        );
         return;
       }
 
@@ -1983,12 +2140,19 @@
         return;
       }
 
+      initialRentCreditPendingBillIds.add(billId);
+      setInitialRentCreditButtonState(
+        billId,
+        'pending'
+      );
+
       try {
         const result = await jsonpRequest(
           'landlord_bill_apply_initial_rent_credit',
           {
-            bill_id: existing.bill_id
-          }
+            bill_id: billId
+          },
+          1
         );
 
         if (!result || result.success !== true) {
@@ -1999,14 +2163,80 @@
           );
         }
 
-        showToast('首月租金與管理費已折抵，房東與房客明細已同步');
-        await loadPage(false);
+        initialRentCreditCompletedBillIds.add(billId);
+        initialRentCreditPendingBillIds.delete(billId);
+        setInitialRentCreditButtonState(
+          billId,
+          'completed'
+        );
+
+        const refreshResult = await loadPage(
+          false,
+          { suppressError: true }
+        );
+
+        if (refreshResult.success) {
+          showToast(
+            '清除金額完成：' +
+              (
+                result.message ||
+                '首月租金與管理費已折抵，帳單明細已同步。'
+              ),
+            false,
+            6000
+          );
+        } else {
+          showToast(
+            '清除金額已完成；頁面重新整理逾時，請按重新整理確認。',
+            false,
+            6000
+          );
+        }
       } catch (error) {
+        let verified = false;
+
+        try {
+          const verificationResult = await loadPage(
+            false,
+            { suppressError: true }
+          );
+
+          verified =
+            verificationResult.success &&
+            hasInitialRentCreditForBill(billId);
+        } catch (verificationError) {
+          verified = false;
+        }
+
+        if (verified) {
+          initialRentCreditCompletedBillIds.add(billId);
+          initialRentCreditPendingBillIds.delete(billId);
+          setInitialRentCreditButtonState(
+            billId,
+            'completed'
+          );
+          showToast(
+            '清除金額完成：已重新讀取帳單確認，請勿重複操作。',
+            false,
+            6000
+          );
+          return;
+        }
+
+        initialRentCreditPendingBillIds.delete(billId);
+        setInitialRentCreditButtonState(
+          billId,
+          'idle'
+        );
+
         showToast(
-          error && error.message
+          isRequestTimeout(error)
+            ? '清除金額結果未確認，請先按重新整理確認；未再次送出。'
+            : error && error.message
             ? error.message
             : '租金折抵失敗',
-          true
+          true,
+          6000
         );
       }
     }
@@ -2435,7 +2665,10 @@
         'none';
     }
 
-    async function loadPage(showLoading) {
+    async function loadPage(showLoading, options) {
+      const loadOptions =
+        options || {};
+
       const previousMonth =
         getSelectedMonth();
 
@@ -2455,7 +2688,10 @@
             await initLine();
 
           if (!ready) {
-            return;
+            return {
+              success: false,
+              error: new Error('LINE 登入尚未完成')
+            };
           }
         }
 
@@ -2488,13 +2724,25 @@
 
         renderPage();
 
+        return {
+          success: true,
+          data: PAGE_DATA
+        };
+
       } catch (error) {
-        renderError(
-          error &&
-          error.message
-            ? error.message
-            : String(error)
-        );
+        if (!loadOptions.suppressError) {
+          renderError(
+            error &&
+            error.message
+              ? error.message
+              : String(error)
+          );
+        }
+
+        return {
+          success: false,
+          error
+        };
       }
     }
 
