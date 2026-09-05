@@ -72,6 +72,7 @@ const context = {
   Object,
   Array,
   V2_MONTHLY_BILL_NOTIFICATION_DAY_: 5,
+  V2_MONTHLY_BILL_NOTIFICATION_SENDING_TIMEOUT_MS_: 2 * 60 * 60 * 1000,
   monthlyBillNotificationText_: value => value == null ? '' : String(value).trim(),
   monthlyBillNotificationNormalizeBillMonth_: value => {
     const text = String(value == null ? '' : value).trim();
@@ -109,6 +110,33 @@ assert.equal(
   true,
   'monthly bill notification must catch up after a missed fifth'
 );
+
+const recoveredWrites = [];
+context.V2_BILL_NOTIFICATION_SHEETS_ = {
+  tenantBillView: 'tenant-bill-view'
+};
+context.billNotificationSetRowValues_ = (sheet, rowNumber, values) => {
+  recoveredWrites.push({ sheet, rowNumber, values });
+};
+context.billNotificationSyncViewStatus_ = () => {};
+const staleSendingBill = {
+  bill_id: 'B-stale',
+  workspace_id: 'WS-1',
+  landlord_id: 'L-1',
+  landlord_line_user_id: 'Uowner123456789012345678901',
+  bill_month: '2026-09',
+  sent_status: 'sending',
+  updated_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+  __row_number: 42
+};
+const recoveredStaleBills = context.billNotificationRecoverStaleSendingBills_(
+  { getSheetByName: name => name },
+  'V2_bills',
+  [staleSendingBill],
+  '2026-09'
+);
+assert.equal(recoveredStaleBills.length, 1, 'stale sending claims must be recovered');
+assert.equal(recoveredWrites[0].values.sent_status, 'failed', 'stale sending claims must become visible failures');
 
 const groups = context.billNotificationBuildMonthlyDispatchGroups_(
   [
@@ -396,6 +424,16 @@ assert.match(
   monthlySource,
   /billNotificationRecoverStaleSendingBills_/,
   'stale sending claims must have a reconciliation path'
+);
+assert.match(
+  monthlySource,
+  /billNotificationWithSummaryOutboxLock_/,
+  'summary outbox mutations must be serialized'
+);
+assert.match(
+  monthlySource,
+  /finalization_warning_count:/,
+  'monthly accounting must expose post-send finalization warnings'
 );
 const autoReminderSource = readFileSync(
   new URL('../apps-script/V2_AUTO_PAYMENT_REMINDER.js', import.meta.url),
