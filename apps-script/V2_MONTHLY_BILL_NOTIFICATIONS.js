@@ -146,6 +146,16 @@ function billNotificationBuildMonthlyDispatchGroups_(
           bill && bill.landlord_line_user_id
         );
 
+      const workspaceId =
+        monthlyBillNotificationText_(
+          bill && bill.workspace_id
+        ).toUpperCase();
+
+      const landlordId =
+        monthlyBillNotificationText_(
+          bill && bill.landlord_id
+        );
+
       const sentStatus =
         monthlyBillNotificationText_(
           bill && bill.sent_status ||
@@ -176,11 +186,27 @@ function billNotificationBuildMonthlyDispatchGroups_(
         return;
       }
 
-      if (!groups[landlordLineUserId]) {
-        groups[landlordLineUserId] = [];
+      const groupKey = [
+        workspaceId,
+        landlordId,
+        landlordLineUserId
+      ].join(
+        '\u0000'
+      );
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          workspace_id:
+            workspaceId,
+          landlord_id:
+            landlordId,
+          landlord_line_user_id:
+            landlordLineUserId,
+          bill_ids: []
+        };
       }
 
-      groups[landlordLineUserId].push(
+      groups[groupKey].bill_ids.push(
         billId
       );
     }
@@ -189,17 +215,243 @@ function billNotificationBuildMonthlyDispatchGroups_(
   return Object.keys(groups)
     .sort()
     .map(
-      function (landlordLineUserId) {
+      function (groupKey) {
+        const group = groups[groupKey];
+
         return {
+          workspace_id:
+            group.workspace_id,
+          landlord_id:
+            group.landlord_id,
           landlord_line_user_id:
-            landlordLineUserId,
+            group.landlord_line_user_id,
           bill_ids:
-            groups[landlordLineUserId]
+            group.bill_ids
               .slice()
               .sort()
         };
       }
     );
+}
+
+
+function billNotificationBuildLandlordMonthlySummaryText_(
+  billMonth,
+  sentCount,
+  failedCount
+) {
+  const normalizedMonth =
+    monthlyBillNotificationNormalizeBillMonth_(
+      billMonth
+    );
+
+  const monthMatch =
+    normalizedMonth.match(
+      /^(\d{4})-(\d{2})$/
+    );
+
+  const monthLabel =
+    monthMatch
+      ? monthMatch[1] +
+        '年' +
+        Number(
+          monthMatch[2]
+        ) +
+        '月'
+      : normalizedMonth;
+
+  const sent = Math.max(
+    0,
+    Math.round(
+      Number(
+        sentCount
+      ) ||
+      0
+    )
+  );
+
+  const failed = Math.max(
+    0,
+    Math.round(
+      Number(
+        failedCount
+      ) ||
+      0
+    )
+  );
+
+  return (
+    '本月（' +
+    monthLabel +
+    '）租金帳單已發出，共 ' +
+    sent +
+    ' 筆' +
+    (
+      failed >
+      0
+        ? '；另有 ' +
+          failed +
+          ' 筆發送失敗，請查看帳單通知紀錄'
+        : ''
+    ) +
+    '。'
+  );
+}
+
+
+function billNotificationSendLandlordMonthlySummary_(
+  group,
+  billMonth,
+  sentCount,
+  failedCount
+) {
+  if (
+    Number(
+      sentCount
+    ) <=
+    0
+  ) {
+    return {
+      success:
+        true,
+      delivered:
+        false,
+      code:
+        'MONTHLY_BILL_LANDLORD_SUMMARY_SKIPPED',
+      message:
+        '沒有成功發送的帳單，不發送房東摘要',
+      data: {
+        sent_count:
+          0,
+        failed_count:
+          0,
+        skipped_count:
+          1
+      }
+    };
+  }
+
+  if (
+    typeof workspaceNotifyTeam_ !==
+    'function'
+  ) {
+    return {
+      success:
+        false,
+      delivered:
+        false,
+      code:
+        'WORKSPACE_NOTIFICATION_MODULE_REQUIRED',
+      message:
+        '找不到團隊通知模組',
+      data: {
+        sent_count:
+          0,
+        failed_count:
+          1,
+        skipped_count:
+          0
+      }
+    };
+  }
+
+  const result =
+    workspaceNotifyTeam_({
+      workspace_id:
+        group.workspace_id,
+      landlord_id:
+        group.landlord_id,
+      event_type:
+        'bill_created',
+      title:
+        '本月租金帳單已發出',
+      body:
+        billNotificationBuildLandlordMonthlySummaryText_(
+          billMonth,
+          sentCount,
+          failedCount
+        ),
+      target_type:
+        'monthly_bill_dispatch',
+      target_id:
+        billMonth,
+      severity:
+        Number(
+          failedCount
+        ) >
+        0
+          ? 'warning'
+          : 'info',
+      source:
+        'monthly_bill_notification_dispatcher',
+      fallback_line_user_id:
+        group.landlord_line_user_id,
+      metadata: {
+        bill_month:
+          billMonth,
+        sent_count:
+          Number(
+            sentCount
+          ) ||
+          0,
+        failed_count:
+          Number(
+            failedCount
+          ) ||
+          0
+      }
+    });
+
+  const resultData =
+    result && result.data
+      ? result.data
+      : {};
+
+  const sent = Number(
+    resultData.sent_count
+  ) ||
+    0;
+
+  const failed = Number(
+    resultData.failed_count
+  ) ||
+    0;
+
+  const skipped = Number(
+    resultData.skipped_count
+  ) ||
+    0;
+
+  return {
+    success:
+      Boolean(
+        result &&
+        result.success ===
+          true
+      ),
+    delivered:
+      sent >
+      0,
+    code:
+      result && result.code
+        ? result.code
+        : '',
+    message:
+      result && result.message
+        ? result.message
+        : '',
+    data: {
+      sent_count:
+        sent,
+      failed_count:
+        failed,
+      skipped_count:
+        skipped,
+      status:
+        resultData.status ||
+        ''
+    }
+  };
 }
 
 
@@ -267,6 +519,14 @@ function runV2MonthlyBillNotifications(
               0,
             skipped_count:
               0,
+            landlord_summary_sent_count:
+              0,
+            landlord_summary_failed_count:
+              0,
+            landlord_summary_skipped_count:
+              0,
+            landlord_summaries:
+              [],
             groups: []
           }
         )
@@ -300,9 +560,14 @@ function runV2MonthlyBillNotifications(
       );
 
     const groupResults = [];
+    const landlordSummaries = {};
+    const landlordSummaryResults = [];
     let sentCount = 0;
     let failedCount = 0;
     let skippedCount = 0;
+    let landlordSummarySentCount = 0;
+    let landlordSummaryFailedCount = 0;
+    let landlordSummarySkippedCount = 0;
 
     groups.forEach(
       function (group) {
@@ -350,7 +615,52 @@ function runV2MonthlyBillNotifications(
         failedCount += failed;
         skippedCount += skipped;
 
+        const summaryKey = [
+          group.workspace_id
+            ? 'workspace'
+            : 'legacy',
+          group.workspace_id ||
+            group.landlord_id,
+          group.workspace_id
+            ? ''
+            : group.landlord_line_user_id
+        ].join(
+          '\u0000'
+        );
+
+        if (!landlordSummaries[summaryKey]) {
+          landlordSummaries[summaryKey] = {
+            workspace_id:
+              group.workspace_id,
+            landlord_id:
+              group.landlord_id,
+            landlord_line_user_id:
+              group.landlord_line_user_id,
+            requested_count:
+              0,
+            sent_count:
+              0,
+            failed_count:
+              0,
+            skipped_count:
+              0
+          };
+        }
+
+        landlordSummaries[summaryKey].requested_count +=
+          group.bill_ids.length;
+        landlordSummaries[summaryKey].sent_count +=
+          sent;
+        landlordSummaries[summaryKey].failed_count +=
+          failed;
+        landlordSummaries[summaryKey].skipped_count +=
+          skipped;
+
         groupResults.push({
+          workspace_id:
+            group.workspace_id,
+          landlord_id:
+            group.landlord_id,
           landlord_line_user_id:
             group.landlord_line_user_id,
           requested_count:
@@ -378,6 +688,115 @@ function runV2MonthlyBillNotifications(
       }
     );
 
+    Object.keys(
+      landlordSummaries
+    )
+      .sort()
+      .forEach(
+        function (summaryKey) {
+          const summary =
+            landlordSummaries[
+              summaryKey
+            ];
+
+          if (
+            summary.sent_count <=
+            0
+          ) {
+            return;
+          }
+
+          const summaryResult =
+            billNotificationSendLandlordMonthlySummary_(
+              summary,
+              billMonth,
+              summary.sent_count,
+              summary.failed_count
+            );
+
+          const summaryData =
+            summaryResult &&
+            summaryResult.data
+              ? summaryResult.data
+              : {};
+
+          const sent = Number(
+            summaryData.sent_count
+          ) ||
+            0;
+
+          const failed = Number(
+            summaryData.failed_count
+          ) ||
+            0;
+
+          const skipped = Number(
+            summaryData.skipped_count
+          ) ||
+            0;
+
+          landlordSummarySentCount +=
+            sent;
+          landlordSummaryFailedCount +=
+            failed;
+
+          if (
+            skipped >
+            0 ||
+            (
+              sent ===
+              0 &&
+              failed ===
+              0
+            )
+          ) {
+            landlordSummarySkippedCount +=
+              Math.max(
+                1,
+                skipped
+              );
+          }
+
+          landlordSummaryResults.push({
+            workspace_id:
+              summary.workspace_id,
+            landlord_id:
+              summary.landlord_id,
+            landlord_line_user_id:
+              summary.landlord_line_user_id,
+            bill_count:
+              summary.sent_count,
+            bill_failed_count:
+              summary.failed_count,
+            sent_count:
+              sent,
+            failed_count:
+              failed,
+            skipped_count:
+              skipped,
+            delivered:
+              Boolean(
+                summaryResult &&
+                summaryResult.delivered ===
+                  true
+              ),
+            code:
+              summaryResult &&
+              summaryResult.code
+                ? summaryResult.code
+                : '',
+            message:
+              summaryResult &&
+              summaryResult.message
+                ? summaryResult.message
+                : '',
+            status:
+              summaryData.status ||
+              ''
+          });
+        }
+      );
+
     const candidateCount =
       groups.reduce(
         function (total, group) {
@@ -388,14 +807,22 @@ function runV2MonthlyBillNotifications(
 
     return {
       success:
-        failedCount === 0,
+        failedCount === 0 &&
+        landlordSummaryFailedCount === 0,
       code:
-        failedCount === 0
+        failedCount === 0 &&
+        landlordSummaryFailedCount === 0
           ? 'MONTHLY_BILL_NOTIFICATIONS_SENT'
           : 'MONTHLY_BILL_NOTIFICATIONS_PARTIAL',
       message:
-        failedCount === 0
-          ? '每月租金帳單通知 Dispatcher 執行完成'
+        failedCount === 0 &&
+        landlordSummaryFailedCount === 0
+          ? (
+              landlordSummarySkippedCount >
+              0
+                ? '每月租金帳單已發送，但房東摘要未透過 LINE 送達'
+                : '每月租金帳單通知 Dispatcher 執行完成'
+            )
           : '每月租金帳單通知部分失敗，請查看帳單通知紀錄',
       data:
         Object.assign(
@@ -412,6 +839,14 @@ function runV2MonthlyBillNotifications(
               failedCount,
             skipped_count:
               skippedCount,
+            landlord_summary_sent_count:
+              landlordSummarySentCount,
+            landlord_summary_failed_count:
+              landlordSummaryFailedCount,
+            landlord_summary_skipped_count:
+              landlordSummarySkippedCount,
+            landlord_summaries:
+              landlordSummaryResults,
             groups:
               groupResults
           }
@@ -446,6 +881,14 @@ function runV2MonthlyBillNotifications(
               0,
             skipped_count:
               0,
+            landlord_summary_sent_count:
+              0,
+            landlord_summary_failed_count:
+              0,
+            landlord_summary_skipped_count:
+              0,
+            landlord_summaries:
+              [],
             groups: []
           }
         )

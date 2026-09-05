@@ -15,6 +15,14 @@
 - Phase 231 focused test 通過；本地候選尚未部署 Apps Script／Pages，尚未改動
   Production trigger、Properties、Sheet、LINE 或進行手機／LIFF UAT。
 
+## 2026-09-06 — 房東收到本月帳單發送筆數摘要（local candidate）
+
+- 每月帳單成功發給房客後，沿用既有 Workspace 團隊通知中心，通知房東／團隊本月
+  實際成功發出的帳單筆數。
+- 部分帳單發送失敗時，摘要會同時列出失敗筆數；通知遵守既有
+  `notify_bill_created` 偏好、Workspace 隔離、通知中心與 LINE delivery log。
+- Phase 231 回歸測試通過；Apps Script 部署與房東 LINE 實際收件仍待獨立發布授權。
+
 ## 2026-09-06 — 202 清除金額完成提示與防重送 UI 已發布
 
 - 房東帳務頁的清除金額操作改為每個 `bill_id` 具備處理中／已完成鎖定，避免快速

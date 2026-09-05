@@ -51,11 +51,20 @@ const groupEnd = monthlySource.indexOf(
   '\n\nfunction runV2MonthlyBillNotifications',
   groupStart
 );
+const summaryStart = monthlySource.indexOf(
+  'function billNotificationBuildLandlordMonthlySummaryText_('
+);
+const summaryEnd = monthlySource.indexOf(
+  '\n\nfunction billNotificationSendLandlordMonthlySummary_',
+  summaryStart
+);
 
 assert.notEqual(monthlyStart, -1, 'monthly dispatch due helper must exist');
 assert.notEqual(monthlyEnd, -1, 'monthly dispatch due helper must have a boundary');
 assert.notEqual(groupStart, -1, 'monthly dispatch grouping helper must exist');
 assert.notEqual(groupEnd, -1, 'monthly dispatch grouping helper must have a boundary');
+assert.notEqual(summaryStart, -1, 'landlord monthly summary text helper must exist');
+assert.notEqual(summaryEnd, -1, 'landlord monthly summary text helper must have a boundary');
 
 const context = {
   Number,
@@ -70,7 +79,8 @@ const context = {
     return match
       ? `${match[1]}-${String(Number(match[2])).padStart(2, '0')}`
       : text;
-  }
+  },
+  billNotificationText_: value => value == null ? '' : String(value).trim()
 };
 
 vm.runInNewContext(
@@ -104,6 +114,8 @@ const groups = context.billNotificationBuildMonthlyDispatchGroups_(
   [
     {
       bill_id: 'B-2',
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
       bill_month: '2026/09',
       bill_status: 'issued',
       payment_status: 'unpaid',
@@ -112,6 +124,8 @@ const groups = context.billNotificationBuildMonthlyDispatchGroups_(
     },
     {
       bill_id: 'B-paid',
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
       bill_month: '2026-09',
       bill_status: 'issued',
       payment_status: 'paid',
@@ -120,6 +134,8 @@ const groups = context.billNotificationBuildMonthlyDispatchGroups_(
     },
     {
       bill_id: 'B-sent',
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
       bill_month: '2026-09',
       bill_status: 'issued',
       payment_status: 'unpaid',
@@ -128,6 +144,8 @@ const groups = context.billNotificationBuildMonthlyDispatchGroups_(
     },
     {
       bill_id: 'B-void',
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
       bill_month: '2026-09',
       bill_status: 'cancelled',
       payment_status: 'unpaid',
@@ -136,6 +154,8 @@ const groups = context.billNotificationBuildMonthlyDispatchGroups_(
     },
     {
       bill_id: 'B-draft',
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
       bill_month: '2026-09',
       bill_status: 'draft',
       payment_status: 'unpaid',
@@ -144,6 +164,8 @@ const groups = context.billNotificationBuildMonthlyDispatchGroups_(
     },
     {
       bill_id: 'B-1',
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
       bill_month: '2026-09',
       bill_status: 'issued',
       payment_status: 'unpaid',
@@ -158,11 +180,146 @@ assert.deepEqual(
   JSON.parse(JSON.stringify(groups)),
   [
     {
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
       landlord_line_user_id: 'Uowner123456789012345678901',
       bill_ids: ['B-1', 'B-2']
     }
   ],
   'dispatcher must select only current-month unpaid, issued, not-sent bills and sort ids deterministically'
+);
+
+const isolatedGroups = context.billNotificationBuildMonthlyDispatchGroups_(
+  [
+    {
+      bill_id: 'WS1-BILL',
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
+      bill_month: '2026-09',
+      bill_status: 'issued',
+      payment_status: 'unpaid',
+      sent_status: 'not_sent',
+      landlord_line_user_id: 'Uowner123456789012345678901'
+    },
+    {
+      bill_id: 'WS2-BILL',
+      workspace_id: 'WS-2',
+      landlord_id: 'L-2',
+      bill_month: '2026-09',
+      bill_status: 'issued',
+      payment_status: 'unpaid',
+      sent_status: 'not_sent',
+      landlord_line_user_id: 'Uowner123456789012345678901'
+    }
+  ],
+  '2026-09'
+);
+
+assert.deepEqual(
+  JSON.parse(JSON.stringify(isolatedGroups)),
+  [
+    {
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
+      landlord_line_user_id: 'Uowner123456789012345678901',
+      bill_ids: ['WS1-BILL']
+    },
+    {
+      workspace_id: 'WS-2',
+      landlord_id: 'L-2',
+      landlord_line_user_id: 'Uowner123456789012345678901',
+      bill_ids: ['WS2-BILL']
+    }
+  ],
+  'monthly bill summaries must not merge different Workspaces that reuse a LINE identity'
+);
+
+vm.runInNewContext(
+  monthlySource.slice(summaryStart, summaryEnd),
+  context,
+  { filename: 'V2_MONTHLY_BILL_NOTIFICATIONS.js' }
+);
+
+assert.equal(
+  context.billNotificationBuildLandlordMonthlySummaryText_('2026-09', 2, 0),
+  '本月（2026年9月）租金帳單已發出，共 2 筆。',
+  'landlord summary must state the bill month and successful send count'
+);
+assert.equal(
+  context.billNotificationBuildLandlordMonthlySummaryText_('2026-09', 2, 1),
+  '本月（2026年9月）租金帳單已發出，共 2 筆；另有 1 筆發送失敗，請查看帳單通知紀錄。',
+  'landlord summary must disclose partial send failures'
+);
+
+const summarySendStart = monthlySource.indexOf(
+  'function billNotificationSendLandlordMonthlySummary_('
+);
+const summarySendEnd = monthlySource.indexOf(
+  '\n\nfunction runV2MonthlyBillNotifications',
+  summarySendStart
+);
+assert.notEqual(summarySendStart, -1, 'landlord monthly summary sender must exist');
+assert.notEqual(summarySendEnd, -1, 'landlord monthly summary sender must have a boundary');
+
+const summaryCalls = [];
+context.workspaceNotifyTeam_ = payload => {
+  summaryCalls.push(payload);
+  return {
+    success: true,
+    code: 'NOTIFICATION_RECORDED',
+    data: {
+      sent_count: 1,
+      failed_count: 0,
+      skipped_count: 0,
+      status: 'sent'
+    }
+  };
+};
+vm.runInNewContext(
+  monthlySource.slice(summarySendStart, summarySendEnd),
+  context,
+  { filename: 'V2_MONTHLY_BILL_NOTIFICATIONS.js' }
+);
+
+const summarySendResult = context.billNotificationSendLandlordMonthlySummary_(
+  {
+    workspace_id: 'WS-1',
+    landlord_id: 'L-1',
+    landlord_line_user_id: 'Uowner123456789012345678901'
+  },
+  '2026-09',
+  2,
+  0
+);
+assert.equal(summarySendResult.delivered, true, 'successful landlord summary delivery must be reported');
+assert.equal(summaryCalls.length, 1, 'one landlord summary notification must be recorded');
+assert.equal(summaryCalls[0].workspace_id, 'WS-1', 'landlord summary must stay in the bill Workspace');
+assert.equal(summaryCalls[0].fallback_line_user_id, 'Uowner123456789012345678901');
+assert.equal(summaryCalls[0].event_type, 'bill_created');
+assert.equal(summaryCalls[0].body, '本月（2026年9月）租金帳單已發出，共 2 筆。');
+
+const skippedSummaryResult = context.billNotificationSendLandlordMonthlySummary_(
+  {
+    workspace_id: 'WS-1',
+    landlord_id: 'L-1',
+    landlord_line_user_id: 'Uowner123456789012345678901'
+  },
+  '2026-09',
+  0,
+  1
+);
+assert.equal(skippedSummaryResult.delivered, false, 'zero successful bills must not notify the landlord');
+assert.equal(summaryCalls.length, 1, 'zero successful bills must not create an extra landlord notification');
+
+assert.match(
+  monthlySource,
+  /workspaceNotifyTeam_\(/,
+  'monthly dispatcher must record and deliver the landlord summary through the workspace notification center'
+);
+assert.match(
+  monthlySource,
+  /event_type:\s*['"]bill_created['"]/,
+  'landlord summary must use the existing bill notification preference and recipient rules'
 );
 
 const autoReminderSource = readFileSync(
