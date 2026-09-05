@@ -1669,28 +1669,49 @@ function v2ResolveLandlordArrearsTenantIdentity_(
       const candidateName = String(
         candidate.tenant_name || candidate.display_name || candidate.name || ''
       ).trim();
+      const candidateRoomName = String(
+        candidate.room_name || candidate.room_list || ''
+      ).trim();
+      const roomMatch = Boolean(
+        billRoomId &&
+        candidateRoomId &&
+        candidateRoomId === billRoomId
+      );
+      const roomNameMatch = Boolean(
+        source.room_name &&
+        candidateRoomName &&
+        candidateRoomName === String(source.room_name).trim()
+      );
+      const tenantMatch = Boolean(
+        billTenantId &&
+        candidateTenantId === billTenantId
+      );
+      const userMatch = Boolean(
+        billUserId &&
+        candidateUserId === billUserId
+      );
 
       if (
         !candidateName ||
         (safeLandlordId && candidateLandlordId && candidateLandlordId !== safeLandlordId) ||
         (billWorkspaceId && candidateWorkspaceId && candidateWorkspaceId !== billWorkspaceId) ||
-        (billTenantId && candidateTenantId !== billTenantId) ||
-        (!billTenantId && billUserId && candidateUserId !== billUserId) ||
-        (!billTenantId && !billUserId) ||
-        (billRoomId && candidateRoomId && candidateRoomId !== billRoomId)
+        (!tenantMatch && !userMatch && !roomMatch && !roomNameMatch)
       ) {
         return;
       }
 
       let score = sourceGroup.sourcePriority * 1000;
-      if (billTenantId && candidateTenantId === billTenantId) {
+      if (roomMatch) {
+        score += 300;
+      }
+      if (roomNameMatch) {
+        score += 40;
+      }
+      if (tenantMatch) {
         score += 100;
       }
-      if (billUserId && candidateUserId === billUserId) {
+      if (userMatch) {
         score += 80;
-      }
-      if (billRoomId && candidateRoomId === billRoomId) {
-        score += 30;
       }
 
       candidates.push({

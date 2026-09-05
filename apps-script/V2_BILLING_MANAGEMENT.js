@@ -2776,7 +2776,10 @@ function billingSyncBillViews_(
     tenantBillSheet,
     'bill_id',
     bill.bill_id,
-    viewValues
+    viewValues,
+    {
+      allowSameWorkspaceDuplicates: true
+    }
   );
 
   const allBills =
@@ -3070,9 +3073,91 @@ function billingUpsertById_(
   sheet,
   idHeader,
   idValue,
-  values
+  values,
+  options
 ) {
   if (!sheet) {
+    return;
+  }
+
+  if (
+    options &&
+    options.allowSameWorkspaceDuplicates === true
+  ) {
+    const matches =
+      workspaceGetObjectsWithRow_(
+        sheet
+      ).filter(
+        function (row) {
+          return (
+            billingText_(
+              row[idHeader]
+            ) ===
+            billingText_(
+              idValue
+            )
+          );
+        }
+      );
+    const requestedWorkspaceId =
+      billingText_(
+        values && values.workspace_id
+      ).toUpperCase();
+    const workspaceIds = [];
+
+    matches.forEach(function (row) {
+      const workspaceId =
+        billingText_(
+          row.workspace_id
+        ).toUpperCase();
+
+      if (
+        workspaceId &&
+        workspaceIds.indexOf(workspaceId) === -1
+      ) {
+        workspaceIds.push(workspaceId);
+      }
+    });
+
+    if (
+      (
+        requestedWorkspaceId &&
+        workspaceIds.some(
+          function (workspaceId) {
+            return workspaceId !== requestedWorkspaceId;
+          }
+        )
+      ) ||
+      (
+        !requestedWorkspaceId &&
+        workspaceIds.length > 1
+      )
+    ) {
+      throw new Error(
+        sheet.getName() +
+        ' 的 ' +
+        idHeader +
+        ' canonical key 衝突'
+      );
+    }
+
+    if (matches.length > 0) {
+      matches.forEach(function (row) {
+        billingSetValues_(
+          sheet,
+          row.__row_number,
+          values
+        );
+      });
+
+      return;
+    }
+
+    workspaceAppendObject_(
+      sheet,
+      values
+    );
+
     return;
   }
 
