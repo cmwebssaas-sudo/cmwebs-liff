@@ -1481,9 +1481,11 @@
 
       const initialRentCreditApplied =
         existing &&
-        Number(item.rent_amount || 0) > 0 &&
+        Number(item.rent_amount || 0) +
+          Math.max(0, Number(item.management_fee || 0)) > 0 &&
         Number(item.discount_amount || 0) >=
-          Number(item.rent_amount || 0) &&
+          Number(item.rent_amount || 0) +
+            Math.max(0, Number(item.management_fee || 0)) &&
         (
           rawText(item.tenant_visible_note).includes(
             '簽約時已收首月租金'
