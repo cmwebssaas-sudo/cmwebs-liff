@@ -1,11 +1,43 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-05 (Asia/Taipei)**
+**Last verified: 2026-09-06 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-06 202 清除金額完成提示與防重送 UI 候選
+
+- 根因確認：房東帳務頁的 `landlord_bill_apply_initial_rent_credit` 是寫入操作，
+  但前端未鎖定按鈕，且沿用 JSONP 的自動重試；第一次寫入若已完成但回應逾時，
+  再次點擊或自動重試可能造成「已完成後又顯示失敗」的誤導。
+- 前端候選修正：寫入操作停用自動重送；每個 `bill_id` 增加處理中／已完成狀態，
+  按鈕會顯示「處理中，請勿重複按」或「清除金額已完成」；成功後以明確完成提示
+  告知，逾時只做一次唯讀帳單重新讀取確認，不再次送出寫入。
+- Phase 230 UI 回歸、`npm run validate`、Apps Script syntax、完整 Node `132/132`
+  與 `git diff --check` 通過；本次未修改正式帳單／Sheet 資料。
+- 此候選尚未發布 GitHub Pages；正式公開前端仍是先前已發布的 UI，Apps Script 實際
+  deployment Version 161 不變。分支為 `codex/fix-room-202-clear-feedback-20260906`；
+  Pages 發布與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
+## 2026-09-06 202 帳務折抵與欠繳身份修正重新部署至實際前端 deployment
+
+- 根因確認：GitHub Pages 所有房東／房客頁實際引用的既有 Apps Script deployment
+  仍 serving Version 158；前次 Version 160 更新的是另一個未被頁面引用的 deployment，
+  因此手機仍看見舊行為。
+- 修正折抵寫入：`V2_tenant_bill_view` 若有同 Workspace 的 legacy duplicate
+  `bill_id`，折抵同步會更新同一帳單的所有同 Workspace view rows；若跨 Workspace
+  collision 仍 fail closed，不把資料寫到其他 Workspace。
+- 修正欠繳身份：若 `V2_bills.tenant_id` 是過期快照，優先用同 Workspace 房東名單的
+  `room_id`／`room_name` 解析目前房客姓名，再回退 tenant／user identity。
+- commit `b601e65` 已推送至隔離候選；正式 Apps Script 54 檔案已推送並建立
+  immutable Version 161，前端實際使用的既有 deployment 已更新至 Version 161，
+  Version 158 保留 rollback，既有 Web App URL 不變。
+- 本地完整 Node `131/131`、Apps Script syntax、`git diff --check` 通過；Version 161
+  逐檔 clone exact match，前端實際 URL read-back HTTP 200／`MISSING_LINE_UID`。
+  未修改 202 或其他帳單／Sheet 資料；實際折抵按鈕操作與手機／LIFF UAT 仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-05 202 本月租金折抵與快速續約正式部署
 

@@ -6,9 +6,13 @@ const source = readFileSync(
   new URL('../landlord-billing.html', import.meta.url),
   'utf8'
 );
+const helperStart = source.indexOf(
+  'function hasInitialRentCreditApplied('
+);
 const start = source.indexOf('function billCard(');
 const end = source.indexOf('\n    function baseItem(', start);
 
+assert.notEqual(helperStart, -1, 'the initial credit helper must exist');
 assert.notEqual(start, -1, 'billCard must exist');
 assert.notEqual(end, -1, 'billCard must have a stable boundary');
 
@@ -21,10 +25,11 @@ const context = {
   money: value => String(Math.round(Number(value || 0))),
   formatRate: value => String(value == null ? '' : value),
   baseItem: (label, value) => `<base>${label}:${value}</base>`,
-  calculationItem: (_index, key, label) => `<calc>${key}:${label}</calc>`
+  calculationItem: (_index, key, label) => `<calc>${key}:${label}</calc>`,
+  initialRentCreditCompletedBillIds: new Set()
 };
 
-vm.runInNewContext(source.slice(start, end), context, {
+vm.runInNewContext(source.slice(helperStart, end), context, {
   filename: 'landlord-billing.html'
 });
 

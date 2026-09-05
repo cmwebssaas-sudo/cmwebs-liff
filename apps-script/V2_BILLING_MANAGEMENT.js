@@ -1405,6 +1405,113 @@ function generateLandlordBillsByLineUid_(
 
 
 /**
+ * 建立既有帳單的首月固定費用折抵結果。
+ *
+ * 既有資料可能已先折抵租金，導致帳單剩下管理費且 rent_amount
+ * 已為 0；只要帳單已有首月租金折抵痕跡，就應補上管理費，而不是
+ * 以 rent_amount === 0 誤判成無效帳單。
+ */
+function billingBuildInitialRentCreditUpdate_(bill) {
+  const source = bill || {};
+  const rentAmount = Math.max(
+    0,
+    Math.round(billingNumber_(source.rent_amount))
+  );
+  const managementFee = Math.max(
+    0,
+    Math.round(billingNumber_(source.management_fee))
+  );
+  const existingDiscount = Math.max(
+    0,
+    Math.round(billingNumber_(source.discount_amount))
+  );
+  const existingNote = billingText_(source.tenant_visible_note);
+  const hasPriorInitialRentCredit =
+    existingNote.indexOf('簽約時已收本月租金') >= 0 ||
+    existingNote.indexOf('簽約時已收首月租金') >= 0;
+  const hasCompleteInitialRentCredit =
+    existingNote.indexOf('簽約時已收首月租金與管理費') >= 0;
+
+  if (
+    rentAmount <= 0 &&
+    !(
+      hasPriorInitialRentCredit &&
+      existingDiscount > 0 &&
+      managementFee > 0
+    )
+  ) {
+    return {
+      success: false,
+      code: 'INVALID_RENT_AMOUNT',
+      message: '帳單租金金額不合法，無法套用折抵'
+    };
+  }
+
+  let subtotal = Math.round(
+    billingNumber_(source.subtotal_amount)
+  );
+  if (subtotal <= 0) {
+    subtotal = Math.round(
+      rentAmount +
+      managementFee +
+      billingNumber_(source.electricity_amount) +
+      billingNumber_(source.equipment_amount) +
+      billingNumber_(source.other_amount)
+    );
+  }
+
+  const currentFixedChargeAmount =
+    rentAmount + managementFee;
+  const priorRentPlusManagementFee =
+    rentAmount <= 0 &&
+    hasPriorInitialRentCredit &&
+    !hasCompleteInitialRentCredit &&
+    existingDiscount > 0
+      ? existingDiscount + managementFee
+      : 0;
+  const fixedChargeAmount = Math.max(
+    currentFixedChargeAmount,
+    existingDiscount,
+    priorRentPlusManagementFee
+  );
+  const discountAmount = Math.max(
+    existingDiscount,
+    fixedChargeAmount
+  );
+  const totalAmount = Math.max(
+    0,
+    subtotal - discountAmount
+  );
+  const creditNote = billingInitialRentPaidNote_(fixedChargeAmount);
+  const tenantVisibleNote = existingNote
+    ? existingNote.indexOf(creditNote) >= 0
+      ? existingNote
+      : existingNote + '\n' + creditNote
+    : creditNote;
+
+  return {
+    success: true,
+    fixed_charge_credit_amount: fixedChargeAmount,
+    rent_credit_amount: Math.max(
+      rentAmount,
+      fixedChargeAmount - managementFee
+    ),
+    management_fee_credit_amount: Math.max(
+      0,
+      fixedChargeAmount - Math.max(rentAmount, existingDiscount)
+    ),
+    updated: {
+      discount_amount: discountAmount,
+      subtotal_amount: subtotal,
+      total_amount: totalAmount,
+      payment_status: totalAmount === 0 ? 'paid' : 'unpaid',
+      tenant_visible_note: tenantVisibleNote
+    }
+  };
+}
+
+
+/**
  * 將已建立且尚未繳款帳單的租金標記為簽約時已收。
  *
  * 這是給既有 202 等紙本／現場簽約資料的明確人工補正入口；
@@ -1482,57 +1589,21 @@ function applyLandlordInitialRentCreditByLineUid_(
       );
     }
 
-    const rentAmount = Math.max(
-      0,
-      Math.round(billingNumber_(bill.rent_amount))
-    );
-
-    if (rentAmount <= 0) {
+    const adjustment = billingBuildInitialRentCreditUpdate_(bill);
+    if (!adjustment.success) {
       return workspaceResult_(
         false,
-        'INVALID_RENT_AMOUNT',
-        '帳單租金金額不合法，無法套用折抵'
+        adjustment.code,
+        adjustment.message
       );
     }
 
-    let subtotal = Math.round(billingNumber_(bill.subtotal_amount));
-    if (subtotal <= 0) {
-      subtotal = Math.round(
-        rentAmount +
-        billingNumber_(bill.management_fee) +
-        billingNumber_(bill.electricity_amount) +
-        billingNumber_(bill.equipment_amount) +
-        billingNumber_(bill.other_amount)
-      );
-    }
-
-    const fixedChargeAmount = Math.round(
-      rentAmount +
-      Math.max(0, billingNumber_(bill.management_fee))
-    );
-    const discountAmount = Math.max(
-      Math.round(billingNumber_(bill.discount_amount)),
-      fixedChargeAmount
-    );
-    const totalAmount = Math.max(0, subtotal - discountAmount);
-    const existingNote = billingText_(bill.tenant_visible_note);
-    const creditNote = billingInitialRentPaidNote_(fixedChargeAmount);
-    const tenantVisibleNote = existingNote
-      ? existingNote.indexOf(creditNote) >= 0
-        ? existingNote
-        : existingNote + '\n' + creditNote
-      : creditNote;
     const now = new Date();
-    const updated = {
-      discount_amount: discountAmount,
-      subtotal_amount: subtotal,
-      total_amount: totalAmount,
-      payment_status: totalAmount === 0 ? 'paid' : 'unpaid',
-      tenant_visible_note: tenantVisibleNote,
+    const updated = Object.assign({}, adjustment.updated, {
       updated_at: now,
       updated_by_user_id: billingText_(access.user.user_id),
       updated_by_membership_id: billingText_(access.membership.membership_id)
-    };
+    });
 
     billingSetValues_(billSheet, bill.__row_number, updated);
 
@@ -1543,18 +1614,15 @@ function applyLandlordInitialRentCreditByLineUid_(
     const result = workspaceResult_(
       true,
       'INITIAL_RENT_CREDIT_APPLIED',
-      totalAmount === 0
+      adjustment.updated.total_amount === 0
         ? '本筆首月租金與管理費已折抵，帳單已結清'
         : '本筆首月租金與管理費已折抵，剩餘電費／設備費等仍待繳',
       {
         bill_id: safeBillId,
-        rent_credit_amount: rentAmount,
-        management_fee_credit_amount: Math.max(
-          0,
-          fixedChargeAmount - rentAmount
-        ),
-        fixed_charge_credit_amount: fixedChargeAmount,
-        total_amount: totalAmount,
+        rent_credit_amount: adjustment.rent_credit_amount,
+        management_fee_credit_amount: adjustment.management_fee_credit_amount,
+        fixed_charge_credit_amount: adjustment.fixed_charge_credit_amount,
+        total_amount: adjustment.updated.total_amount,
         payment_status: updated.payment_status
       }
     );
@@ -1567,7 +1635,8 @@ function applyLandlordInitialRentCreditByLineUid_(
         target_type: 'bill',
         target_id: safeBillId,
         operation_status: 'success',
-        detail: 'fixed_charge_credit=' + fixedChargeAmount + ',total=' + totalAmount
+        detail: 'fixed_charge_credit=' + adjustment.fixed_charge_credit_amount +
+          ',total=' + adjustment.updated.total_amount
       }
     );
 
@@ -2707,7 +2776,10 @@ function billingSyncBillViews_(
     tenantBillSheet,
     'bill_id',
     bill.bill_id,
-    viewValues
+    viewValues,
+    {
+      allowSameWorkspaceDuplicates: true
+    }
   );
 
   const allBills =
@@ -3001,9 +3073,91 @@ function billingUpsertById_(
   sheet,
   idHeader,
   idValue,
-  values
+  values,
+  options
 ) {
   if (!sheet) {
+    return;
+  }
+
+  if (
+    options &&
+    options.allowSameWorkspaceDuplicates === true
+  ) {
+    const matches =
+      workspaceGetObjectsWithRow_(
+        sheet
+      ).filter(
+        function (row) {
+          return (
+            billingText_(
+              row[idHeader]
+            ) ===
+            billingText_(
+              idValue
+            )
+          );
+        }
+      );
+    const requestedWorkspaceId =
+      billingText_(
+        values && values.workspace_id
+      ).toUpperCase();
+    const workspaceIds = [];
+
+    matches.forEach(function (row) {
+      const workspaceId =
+        billingText_(
+          row.workspace_id
+        ).toUpperCase();
+
+      if (
+        workspaceId &&
+        workspaceIds.indexOf(workspaceId) === -1
+      ) {
+        workspaceIds.push(workspaceId);
+      }
+    });
+
+    if (
+      (
+        requestedWorkspaceId &&
+        workspaceIds.some(
+          function (workspaceId) {
+            return workspaceId !== requestedWorkspaceId;
+          }
+        )
+      ) ||
+      (
+        !requestedWorkspaceId &&
+        workspaceIds.length > 1
+      )
+    ) {
+      throw new Error(
+        sheet.getName() +
+        ' 的 ' +
+        idHeader +
+        ' canonical key 衝突'
+      );
+    }
+
+    if (matches.length > 0) {
+      matches.forEach(function (row) {
+        billingSetValues_(
+          sheet,
+          row.__row_number,
+          values
+        );
+      });
+
+      return;
+    }
+
+    workspaceAppendObject_(
+      sheet,
+      values
+    );
+
     return;
   }
 
