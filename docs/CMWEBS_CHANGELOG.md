@@ -2,6 +2,19 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-06 — 202 帳務折抵失敗與欠繳姓名錯誤修正重新部署
+
+- 根因是公開頁實際引用的既有 Apps Script deployment 仍在 Version 158；前次修正
+  部署到另一個未被公開頁引用的 deployment，故手機仍重現舊問題。
+- 修正同 Workspace legacy duplicate `bill_id` 的帳單 view 同步：同一帳單的重複
+  view rows 全部更新，跨 Workspace canonical collision 維持 fail closed。
+- 欠繳頁在帳單 tenant_id 過期時，改以房東名單的同房號／房號名稱優先解析姓名，
+  不再直接顯示舊的 `V2_bills.tenant_name` 快照。
+- commit `b601e65`、Apps Script 54 檔案與 immutable Version 161 已部署到公開頁實際
+  使用的既有 deployment；Version 158 保留 rollback，Web App URL 不變。
+- 本地 Node `131/131`、syntax、source exact match 與公開 HTTP guard read-back 通過；
+  未寫入 202／其他帳單資料，手機／LIFF 真機 UAT 仍待驗證。
+
 ## 2026-09-05 — 202 本月租金自動折抵與房客卡片快速續約正式部署
 
 - 修正已建立但未繳的本月帳單：若對應合約明確記錄簽約時已收本月租金，房東
