@@ -1615,6 +1615,102 @@ function testGetLandlordHomeByLineUid() {
 // 欠款頁直接讀取 V2_bills 即時狀態
 // ==================================================
 
+/**
+ * 解析欠款頁的房客顯示身份。
+ *
+ * V2_bills 內的 tenant_name 是建立帳單時留下的快照，紙本補登、
+ * 重新綁定或房客名稱修正後可能變成舊值。房東房客名單 view 才是
+ * 房東目前看到的同房號身份；先用 tenant_id + room_id 精確比對，
+ * 再退回同 tenant_id 的房客主檔，最後才保留帳單快照。
+ */
+function v2ResolveLandlordArrearsTenantIdentity_(
+  bill,
+  landlordId,
+  landlordTenantRows,
+  tenantRows
+) {
+  const source = bill || {};
+  const safeLandlordId = String(landlordId || '').trim();
+  const billTenantId = String(source.tenant_id || '').trim();
+  const billUserId = String(
+    source.tenant_user_id || source.user_id || ''
+  ).trim();
+  const billWorkspaceId = String(source.workspace_id || '').trim();
+  const billRoomId = String(source.room_id || '').trim();
+  const candidates = [];
+
+  [
+    {
+      rows: Array.isArray(landlordTenantRows) ? landlordTenantRows : [],
+      sourcePriority: 2
+    },
+    {
+      rows: Array.isArray(tenantRows) ? tenantRows : [],
+      sourcePriority: 1
+    }
+  ].forEach(function (sourceGroup) {
+    sourceGroup.rows.forEach(function (row) {
+      const candidate = row || {};
+      const candidateLandlordId = String(
+        candidate.landlord_id || ''
+      ).trim();
+      const candidateWorkspaceId = String(
+        candidate.workspace_id || ''
+      ).trim();
+      const candidateTenantId = String(
+        candidate.tenant_id || ''
+      ).trim();
+      const candidateUserId = String(
+        candidate.tenant_user_id || candidate.user_id || ''
+      ).trim();
+      const candidateRoomId = String(
+        candidate.room_id || ''
+      ).trim();
+      const candidateName = String(
+        candidate.tenant_name || candidate.display_name || candidate.name || ''
+      ).trim();
+
+      if (
+        !candidateName ||
+        (safeLandlordId && candidateLandlordId && candidateLandlordId !== safeLandlordId) ||
+        (billWorkspaceId && candidateWorkspaceId && candidateWorkspaceId !== billWorkspaceId) ||
+        (billTenantId && candidateTenantId !== billTenantId) ||
+        (!billTenantId && billUserId && candidateUserId !== billUserId) ||
+        (!billTenantId && !billUserId) ||
+        (billRoomId && candidateRoomId && candidateRoomId !== billRoomId)
+      ) {
+        return;
+      }
+
+      let score = sourceGroup.sourcePriority * 1000;
+      if (billTenantId && candidateTenantId === billTenantId) {
+        score += 100;
+      }
+      if (billUserId && candidateUserId === billUserId) {
+        score += 80;
+      }
+      if (billRoomId && candidateRoomId === billRoomId) {
+        score += 30;
+      }
+
+      candidates.push({
+        score,
+        tenant_name: candidateName
+      });
+    });
+  });
+
+  candidates.sort(function (left, right) {
+    return right.score - left.score;
+  });
+
+  return {
+    tenant_name: candidates.length > 0
+      ? candidates[0].tenant_name
+      : String(source.tenant_name || '').trim()
+  };
+}
+
 function getLandlordArrearsByLineUid(
   lineUserId
 ) {
@@ -1733,6 +1829,14 @@ function getLandlordArrearsByLineUid(
       getSheetObjects_(
         V2_SHEETS.bills
       );
+    const landlordTenantRows =
+      getSheetObjects_(
+        V2_SHEETS.landlordTenantListView
+      );
+    const tenantRows =
+      getSheetObjects_(
+        V2_SHEETS.tenants
+      );
 
     const arrears =
       billRows
@@ -1751,6 +1855,13 @@ function getLandlordArrearsByLineUid(
           );
         })
         .map(function (row) {
+          const tenantIdentity =
+            v2ResolveLandlordArrearsTenantIdentity_(
+              row,
+              landlordId,
+              landlordTenantRows,
+              tenantRows
+            );
           const daysOverdue =
             calculateV2ArrearsDaysOverdue_(
               row.due_date
@@ -1810,7 +1921,7 @@ function getLandlordArrearsByLineUid(
               row.tenant_id || '',
 
             tenant_name:
-              row.tenant_name || '',
+              tenantIdentity.tenant_name || '',
 
             room_id:
               row.room_id || '',
