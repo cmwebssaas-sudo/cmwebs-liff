@@ -2,7 +2,7 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-06 — 202 清除金額完成提示與防重送 UI 候選
+## 2026-09-06 — 202 清除金額完成提示與防重送 UI 已發布
 
 - 房東帳務頁的清除金額操作改為每個 `bill_id` 具備處理中／已完成鎖定，避免快速
   連按；寫入 API 不再自動重送，避免第一次已寫入但回應逾時時重複提交。
@@ -10,7 +10,9 @@
   確認已完成就提示完成，無法確認則明確告知「未再次送出」並恢復可重試狀態。
 - Phase 230、validator、Apps Script syntax、完整 Node `132/132` 與
   `git diff --check` 通過；沒有寫入正式 202 或其他帳單資料。
-- 目前只在隔離分支完成，尚未發布 GitHub Pages；Apps Script Version 161 不變，
+- PR #108 merge commit `7009fcd` 已合併至 `main`；GitHub Pages workflow
+  `33985625051` build／deploy／status 均成功，公開帳務頁 HTTP 200 read-back 並確認
+  新完成提示、防重送與逾時唯讀確認邏輯已發布。Apps Script Version 161 不變，
   手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-06 — 202 帳務折抵失敗與欠繳姓名錯誤修正重新部署

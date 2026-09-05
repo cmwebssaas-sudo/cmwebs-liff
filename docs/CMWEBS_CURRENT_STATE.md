@@ -7,7 +7,7 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-06 202 清除金額完成提示與防重送 UI 候選
+## 2026-09-06 202 清除金額完成提示與防重送 UI 已發布
 
 - 根因確認：房東帳務頁的 `landlord_bill_apply_initial_rent_credit` 是寫入操作，
   但前端未鎖定按鈕，且沿用 JSONP 的自動重試；第一次寫入若已完成但回應逾時，
@@ -17,9 +17,11 @@ version, rollback, and runtime state before every Production action.
   告知，逾時只做一次唯讀帳單重新讀取確認，不再次送出寫入。
 - Phase 230 UI 回歸、`npm run validate`、Apps Script syntax、完整 Node `132/132`
   與 `git diff --check` 通過；本次未修改正式帳單／Sheet 資料。
-- 此候選尚未發布 GitHub Pages；正式公開前端仍是先前已發布的 UI，Apps Script 實際
-  deployment Version 161 不變。分支為 `codex/fix-room-202-clear-feedback-20260906`；
-  Pages 發布與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+- PR #108 已以 merge commit `7009fcd` 合併至 `main`；GitHub Pages workflow
+  `33985625051` build／deploy／status 均成功。公開 `landlord-billing.html` read-back
+  HTTP 200，已確認完成提示、防重送與逾時唯讀確認程式均已發布。
+- Apps Script 實際 deployment Version 161 不變；本次未修改正式帳單／Sheet 資料。
+  真實房東操作與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-06 202 帳務折抵與欠繳身份修正重新部署至實際前端 deployment
 
