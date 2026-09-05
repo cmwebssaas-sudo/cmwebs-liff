@@ -1244,7 +1244,13 @@ function billNotificationFindPendingMonthlySummaryRetries_(
         candidate.workspace_id &&
         latestByWorkspace[
           candidate.workspace_id
-        ]
+        ] &&
+        monthlyBillNotificationText_(
+          latestByWorkspace[
+            candidate.workspace_id
+          ].status
+        ).toLowerCase() !==
+        'pending'
       ) {
         return;
       }
