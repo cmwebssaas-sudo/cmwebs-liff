@@ -326,6 +326,135 @@ const autoReminderSource = readFileSync(
   new URL('../apps-script/V2_AUTO_PAYMENT_REMINDER.js', import.meta.url),
   'utf8'
 );
+
+const billNotificationSource = readFileSync(
+  new URL('../apps-script/V2_BILL_NOTIFICATIONS.js', import.meta.url),
+  'utf8'
+);
+const requestedBillSelectorStart = billNotificationSource.indexOf(
+  'function billNotificationSelectRequestedBills_('
+);
+const requestedBillSelectorEnd = billNotificationSource.indexOf(
+  '\n\nfunction sendLandlordBillNotificationsByLineUid_',
+  requestedBillSelectorStart
+);
+assert.notEqual(
+  requestedBillSelectorStart,
+  -1,
+  'bill notification dispatch must have a requested-bill selector'
+);
+assert.notEqual(
+  requestedBillSelectorEnd,
+  -1,
+  'bill notification requested-bill selector must have a boundary'
+);
+
+const billSelectorContext = {
+  Boolean,
+  String,
+  Object,
+  Array,
+  billNotificationText_: value => value == null ? '' : String(value).trim()
+};
+vm.runInNewContext(
+  billNotificationSource.slice(requestedBillSelectorStart, requestedBillSelectorEnd),
+  billSelectorContext,
+  { filename: 'V2_BILL_NOTIFICATIONS.js' }
+);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(
+    billSelectorContext.billNotificationSelectRequestedBills_(
+      [
+        { bill_id: 'B-1', sent_status: 'not_sent' },
+        { bill_id: 'B-2', sent_status: 'sent' }
+      ],
+      ['B-1', 'B-2'],
+      { only_unsent: true }
+    )
+  )),
+  [{ bill_id: 'B-1', sent_status: 'not_sent' }],
+  'monthly dispatch must re-check sent_status after acquiring the send lock'
+);
+
+const workspacesSource = readFileSync(
+  new URL('../apps-script/V2_WORKSPACES.js', import.meta.url),
+  'utf8'
+);
+const contextResolverStart = workspacesSource.indexOf(
+  'function workspaceResolveContextByLineUid_('
+);
+const contextResolverEnd = workspacesSource.indexOf(
+  '\n\nfunction workspaceBuildEntryData_',
+  contextResolverStart
+);
+assert.notEqual(contextResolverStart, -1, 'workspace context resolver must exist');
+assert.notEqual(contextResolverEnd, -1, 'workspace context resolver must have a boundary');
+
+const sheetRows = new Map([
+  ['users', [{ user_id: 'U-1', line_user_id: 'line-owner', active_workspace_id: 'WS-1' }]],
+  ['members', [
+    { user_id: 'U-1', workspace_id: 'WS-1', is_primary: true, member_status: 'active' },
+    { user_id: 'U-1', workspace_id: 'WS-2', is_primary: false, member_status: 'active' }
+  ]],
+  ['workspaces', [
+    { workspace_id: 'WS-1', account_status: 'active' },
+    { workspace_id: 'WS-2', account_status: 'active' }
+  ]]
+]);
+const contextResolver = {
+  workspaceText_: value => value == null ? '' : String(value).trim(),
+  workspaceGetObjectsWithRow_: sheet => sheetRows.get(sheet) || [],
+  workspaceIsActiveStatus_: value => String(value || 'active').toLowerCase() === 'active',
+  workspaceBoolean_: value => value === true || String(value).toLowerCase() === 'true',
+  V2_WORKSPACE_SHEETS_: { users: 'users', members: 'members', workspaces: 'workspaces' }
+};
+vm.runInNewContext(
+  workspacesSource.slice(contextResolverStart, contextResolverEnd),
+  contextResolver,
+  { filename: 'V2_WORKSPACES.js' }
+);
+const requestedWorkspaceContext = contextResolver.workspaceResolveContextByLineUid_(
+  { getSheetByName: name => name },
+  'line-owner',
+  { workspace_id: 'WS-2' }
+);
+assert.equal(
+  requestedWorkspaceContext.activeWorkspace.workspace_id,
+  'WS-2',
+  'background bill dispatch must resolve the explicitly requested Workspace'
+);
+assert.equal(
+  requestedWorkspaceContext.activeMembership.workspace_id,
+  'WS-2',
+  'background bill dispatch must use the requested Workspace membership'
+);
+
+context.workspaceNotifyTeam_ = () => ({
+  success: false,
+  code: 'WORKSPACE_NOTIFICATION_ERROR',
+  message: 'notification failed'
+});
+const failedSummaryResult = context.billNotificationSendLandlordMonthlySummary_(
+  {
+    workspace_id: 'WS-1',
+    landlord_id: 'L-1',
+    landlord_line_user_id: 'Uowner123456789012345678901'
+  },
+  '2026-09',
+  2,
+  0
+);
+assert.equal(
+  failedSummaryResult.success,
+  false,
+  'failed landlord summary delivery must not be reported as successful'
+);
+assert.equal(
+  failedSummaryResult.data.failed_count,
+  1,
+  'failed landlord summary delivery must count an error without a data payload'
+);
+
 assert.match(
   autoReminderSource,
   /runV2MonthlyBillNotifications\(\)/,

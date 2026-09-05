@@ -442,10 +442,70 @@ function getLandlordBillNotificationsInitByLineUid_(
  * billIdsJson:
  * ["B0000001", "B0000002"]
  */
+function billNotificationSelectRequestedBills_(
+  bills,
+  billIds,
+  options
+) {
+  options =
+    options ||
+    {};
+
+  const billIdMap = {};
+
+  (billIds || []).forEach(
+    function (billId) {
+      billIdMap[
+        billNotificationText_(
+          billId
+        )
+      ] = true;
+    }
+  );
+
+  return (
+    bills ||
+    []
+  ).filter(
+    function (bill) {
+      const billId =
+        billNotificationText_(
+          bill && bill.bill_id
+        );
+
+      if (!billIdMap[billId]) {
+        return false;
+      }
+
+      if (
+        options.only_unsent !==
+        true
+      ) {
+        return true;
+      }
+
+      const sentStatus =
+        billNotificationText_(
+          bill && bill.sent_status ||
+          'not_sent'
+        ).toLowerCase();
+
+      return sentStatus ===
+        'not_sent';
+    }
+  );
+}
+
+
 function sendLandlordBillNotificationsByLineUid_(
   lineUserId,
-  billIdsJson
+  billIdsJson,
+  options
 ) {
+  options =
+    options ||
+    {};
+
   const lock =
     LockService.getScriptLock();
 
@@ -459,7 +519,10 @@ function sendLandlordBillNotificationsByLineUid_(
         lineUserId,
         {
           require_onboarding:
-            true
+            true,
+          workspace_id:
+            options.workspace_id ||
+            ''
         }
       );
 
@@ -583,26 +646,14 @@ function sendLandlordBillNotificationsByLineUid_(
         access
       );
 
-    const billIdMap = {};
-
-    billIds.forEach(
-      function (billId) {
-        billIdMap[
-          billId
-        ] = true;
-      }
-    );
-
     const selectedBills =
-      bills.filter(
-        function (bill) {
-          return Boolean(
-            billIdMap[
-              billNotificationText_(
-                bill.bill_id
-              )
-            ]
-          );
+      billNotificationSelectRequestedBills_(
+        bills,
+        billIds,
+        {
+          only_unsent:
+            options.only_unsent ===
+            true
         }
       );
 

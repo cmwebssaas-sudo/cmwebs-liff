@@ -1016,7 +1016,8 @@ function workspaceLandlordResolveAccess_(
   const context =
     workspaceResolveContextByLineUid_(
       ss,
-      lineUserId
+      lineUserId,
+      options
     );
 
   if (!context.user) {

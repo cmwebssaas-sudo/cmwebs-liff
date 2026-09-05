@@ -21,6 +21,8 @@
   實際成功發出的帳單筆數。
 - 部分帳單發送失敗時，摘要會同時列出失敗筆數；通知遵守既有
   `notify_bill_created` 偏好、Workspace 隔離、通知中心與 LINE delivery log。
+- 背景發送在 ScriptLock 內重新檢查 `sent_status`，並以帳單的
+  `workspace_id` 解析指定 Workspace，避免重疊執行重發或誤用房東目前 active Workspace。
 - Phase 231 回歸測試通過；Apps Script 部署與房東 LINE 實際收件仍待獨立發布授權。
 
 ## 2026-09-06 — 202 清除金額完成提示與防重送 UI 已發布

@@ -415,7 +415,13 @@ function billNotificationSendLandlordMonthlySummary_(
   const failed = Number(
     resultData.failed_count
   ) ||
-    0;
+    (
+      result &&
+      result.success ===
+        false
+        ? 1
+        : 0
+    );
 
   const skipped = Number(
     resultData.skipped_count
@@ -579,7 +585,13 @@ function runV2MonthlyBillNotifications(
               group.landlord_line_user_id,
               JSON.stringify(
                 group.bill_ids
-              )
+              ),
+              {
+                workspace_id:
+                  group.workspace_id,
+                only_unsent:
+                  true
+              }
             );
         } catch (error) {
           result = {

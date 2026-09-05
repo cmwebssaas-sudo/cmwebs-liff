@@ -1148,7 +1148,9 @@ function workspaceEnsureLegacyLandlordContext_(ss, lineUserId) {
 // Context resolution
 // ==================================================
 
-function workspaceResolveContextByLineUid_(ss, lineUserId) {
+function workspaceResolveContextByLineUid_(ss, lineUserId, options) {
+  options = options || {};
+
   const usersSheet = ss.getSheetByName(V2_WORKSPACE_SHEETS_.users);
   const memberSheet = ss.getSheetByName(V2_WORKSPACE_SHEETS_.members);
   const workspaceSheet = ss.getSheetByName(V2_WORKSPACE_SHEETS_.workspaces);
@@ -1177,18 +1179,25 @@ function workspaceResolveContextByLineUid_(ss, lineUserId) {
     return workspaceText_(row.user_id) === userId;
   });
 
-  let activeWorkspaceId = workspaceText_(
+  const requestedWorkspaceId = workspaceText_(
+    options.workspace_id
+  ).toUpperCase();
+
+  let activeWorkspaceId = requestedWorkspaceId || workspaceText_(
     user.active_workspace_id
   ).toUpperCase();
 
   if (
-    !activeWorkspaceId ||
-    !memberships.some(function (row) {
-      return (
-        workspaceText_(row.workspace_id).toUpperCase() === activeWorkspaceId &&
-        workspaceIsActiveStatus_(row.member_status || 'active')
-      );
-    })
+    !requestedWorkspaceId &&
+    (
+      !activeWorkspaceId ||
+      !memberships.some(function (row) {
+        return (
+          workspaceText_(row.workspace_id).toUpperCase() === activeWorkspaceId &&
+          workspaceIsActiveStatus_(row.member_status || 'active')
+        );
+      })
+    )
   ) {
     const primaryMembership = memberships.find(function (row) {
       return (
