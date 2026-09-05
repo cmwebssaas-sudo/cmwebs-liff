@@ -1150,19 +1150,38 @@ function billNotificationFindPendingMonthlySummaryRetries_(
             workspaceId
           ];
 
+        const notificationStatus =
+          monthlyBillNotificationText_(
+            notification.status
+          ).toLowerCase();
+
         if (
           [
             'failed',
-            'partial'
+            'partial',
+            'pending'
           ].indexOf(
-            monthlyBillNotificationText_(
-              notification.status
-            ).toLowerCase()
+            notificationStatus
           ) <
           0
         ) {
           return null;
         }
+
+        const notificationDeliveries =
+          deliveries.filter(
+            function (delivery) {
+              return (
+                monthlyBillNotificationText_(
+                  delivery &&
+                  delivery.notification_id
+                ) ===
+                monthlyBillNotificationText_(
+                  notification.notification_id
+                )
+              );
+            }
+          );
 
         const recipientLineUserIds = {};
 
@@ -1211,7 +1230,13 @@ function billNotificationFindPendingMonthlySummaryRetries_(
 
         if (
           lineUserIds.length ===
-          0
+            0 &&
+          (
+            notificationStatus !==
+              'pending' ||
+            notificationDeliveries.length >
+              0
+          )
         ) {
           return null;
         }

@@ -381,10 +381,15 @@ const retryRows = new Map([
       target_type: 'monthly_bill_dispatch',
       target_id: '2026-09',
       event_body: '本月（2026年9月）租金帳單已發出，共 2 筆。',
-      status: 'failed'
+      status: 'pending'
     }
   ]],
   ['deliveries', [
+    {
+      notification_id: 'NTF-1',
+      delivery_status: 'sent',
+      line_user_id: 'Usuccess12345678901234567890'
+    },
     {
       notification_id: 'NTF-1',
       delivery_status: 'failed',
