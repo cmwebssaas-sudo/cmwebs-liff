@@ -1006,7 +1006,13 @@ function workspaceLandlordResolveAccess_(
   const ss =
     runtimeSpreadsheet_();
 
-  if (options.skip_legacy_context_creation !== true) {
+  if (
+    options.skip_legacy_context_creation !==
+      true &&
+    !workspaceText_(
+      options.workspace_id
+    )
+  ) {
     workspaceEnsureLegacyLandlordContext_(
       ss,
       lineUserId

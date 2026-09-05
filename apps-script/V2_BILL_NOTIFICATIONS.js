@@ -826,9 +826,76 @@ function sendLandlordBillNotificationsByLineUid_(
     const sent = [];
     const failed = [];
 
+    const preparedForSend = [];
+
+    prepared.forEach(
+      function (entry) {
+        const claimValues = {
+          tenant_line_user_id:
+            entry.item.tenant_line_user_id,
+          sent_status:
+            'sending',
+          last_send_error:
+            '',
+          updated_at:
+            new Date()
+        };
+
+        try {
+          billNotificationSetRowValues_(
+            billSheet,
+            entry.bill.__row_number,
+            claimValues
+          );
+
+          billNotificationSyncViewStatus_(
+            tenantBillSheet,
+            entry.item.bill_id,
+            claimValues
+          );
+
+          preparedForSend.push(
+            entry
+          );
+        } catch (error) {
+          const errorMessage =
+            '帳單發送前狀態鎖定失敗，未發送：' +
+            (
+              error &&
+              error.message
+                ? error.message
+                : String(error)
+            );
+
+          failed.push({
+            bill_id:
+              entry.item.bill_id,
+            room_name:
+              entry.item.room_name,
+            tenant_name:
+              entry.item.tenant_name,
+            status_code:
+              0,
+            message:
+              errorMessage
+          });
+
+          logRows.push(
+            billNotificationBuildLogRow_(
+              access,
+              entry.item,
+              entry.message,
+              'failed',
+              errorMessage
+            )
+          );
+        }
+      }
+    );
+
     const chunks =
       billNotificationChunk_(
-        prepared,
+        preparedForSend,
         50
       );
 
@@ -879,6 +946,14 @@ function sendLandlordBillNotificationsByLineUid_(
                 index
               ];
 
+            const item =
+              entry.item;
+
+            const bill =
+              entry.bill;
+
+            try {
+
             response =
               response ||
               {
@@ -891,12 +966,6 @@ function sendLandlordBillNotificationsByLineUid_(
                     return 'LINE 批次傳送未回傳對應結果，為避免自動重發已標記失敗';
                   }
               };
-
-            const item =
-              entry.item;
-
-            const bill =
-              entry.bill;
 
             const statusCode =
               response
@@ -1039,6 +1108,43 @@ function sendLandlordBillNotificationsByLineUid_(
                   errorMessage
                 )
               );
+            }
+            } catch (error) {
+              const errorMessage =
+                'LINE 回覆後帳單狀態寫入失敗，為避免自動重發保留處理中狀態：' +
+                (
+                  error &&
+                  error.message
+                    ? error.message
+                    : String(error)
+                );
+
+              failed.push({
+                bill_id:
+                  item.bill_id,
+                room_name:
+                  item.room_name,
+                tenant_name:
+                  item.tenant_name,
+                status_code:
+                  0,
+                message:
+                  errorMessage
+              });
+
+              try {
+                logRows.push(
+                  billNotificationBuildLogRow_(
+                    access,
+                    item,
+                    entry.message,
+                    'failed',
+                    errorMessage
+                  )
+                );
+              } catch (logError) {
+                // 保留帳單的 sending 狀態，不因稽核紀錄失敗而自動重送。
+              }
             }
           }
         );

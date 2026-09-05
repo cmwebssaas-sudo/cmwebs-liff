@@ -21,6 +21,9 @@ const V2_MONTHLY_BILL_NOTIFICATION_DAY_ =
 const V2_MONTHLY_BILL_NOTIFICATION_BILLS_SHEET_ =
   'V2_bills';
 
+const V2_MONTHLY_BILL_SUMMARY_OUTBOX_PROPERTY_ =
+  'V2_MONTHLY_BILL_SUMMARY_OUTBOX';
+
 
 function billNotificationIsMonthlyDispatchDue_(
   dayOfMonth
@@ -333,6 +336,10 @@ function billNotificationSendLandlordMonthlySummary_(
     Number(
       failedCount
     ) <=
+    0 &&
+    Number(
+      skippedCount
+    ) <=
     0
   ) {
     return {
@@ -343,7 +350,7 @@ function billNotificationSendLandlordMonthlySummary_(
       code:
         'MONTHLY_BILL_LANDLORD_SUMMARY_SKIPPED',
       message:
-        '沒有成功發送的帳單，不發送房東摘要',
+        '沒有成功、失敗或未送出的帳單，不發送房東摘要',
       data: {
         sent_count:
           0,
@@ -379,8 +386,7 @@ function billNotificationSendLandlordMonthlySummary_(
     };
   }
 
-  const result =
-    workspaceNotifyTeam_({
+  const notificationPayload = {
       workspace_id:
         group.workspace_id,
       landlord_id:
@@ -410,7 +416,9 @@ function billNotificationSendLandlordMonthlySummary_(
       source:
         'monthly_bill_notification_dispatcher',
       fallback_line_user_id:
-        group.landlord_line_user_id,
+        group.workspace_id
+          ? ''
+          : group.landlord_line_user_id,
       metadata: {
         bill_month:
           billMonth,
@@ -430,12 +438,46 @@ function billNotificationSendLandlordMonthlySummary_(
           ) ||
           0
       }
-    });
+  };
+
+  billNotificationQueueMonthlySummaryRetry_(
+    group,
+    billMonth,
+    notificationPayload
+  );
+
+  let result;
+
+  try {
+    result = workspaceNotifyTeam_(
+      notificationPayload
+    );
+  } catch (error) {
+    result = {
+      success:
+        false,
+      code:
+        'WORKSPACE_NOTIFICATION_ERROR',
+      message:
+        error && error.message
+          ? error.message
+          : String(error)
+    };
+  }
 
   const resultData =
     result && result.data
       ? result.data
       : {};
+
+  if (
+    resultData.notification_id
+  ) {
+    billNotificationRemoveMonthlySummaryRetry_(
+      group,
+      billMonth
+    );
+  }
 
   const sent = Number(
     resultData.sent_count
@@ -491,6 +533,261 @@ function billNotificationSendLandlordMonthlySummary_(
 }
 
 
+function billNotificationSummaryOutboxKey_(
+  group,
+  billMonth
+) {
+  return [
+    monthlyBillNotificationText_(
+      group &&
+      group.workspace_id
+    ).toUpperCase() ||
+      monthlyBillNotificationText_(
+        group &&
+        group.landlord_id
+      ),
+    monthlyBillNotificationNormalizeBillMonth_(
+      billMonth
+    ),
+    monthlyBillNotificationText_(
+      group &&
+      group.landlord_line_user_id
+    )
+  ].join(
+    '\u0000'
+  );
+}
+
+
+function billNotificationReadMonthlySummaryOutbox_() {
+  if (
+    typeof PropertiesService ===
+      'undefined'
+  ) {
+    return {};
+  }
+
+  try {
+    const raw =
+      PropertiesService
+        .getScriptProperties()
+        .getProperty(
+          V2_MONTHLY_BILL_SUMMARY_OUTBOX_PROPERTY_
+        );
+
+    return raw
+      ? JSON.parse(raw)
+      : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+
+function billNotificationWriteMonthlySummaryOutbox_(
+  records
+) {
+  if (
+    typeof PropertiesService ===
+      'undefined'
+  ) {
+    return;
+  }
+
+  PropertiesService
+    .getScriptProperties()
+    .setProperty(
+      V2_MONTHLY_BILL_SUMMARY_OUTBOX_PROPERTY_,
+      JSON.stringify(
+        records ||
+        {}
+      )
+    );
+}
+
+
+function billNotificationQueueMonthlySummaryRetry_(
+  group,
+  billMonth,
+  payload
+) {
+  if (
+    typeof PropertiesService ===
+      'undefined'
+  ) {
+    return;
+  }
+
+  const records =
+    billNotificationReadMonthlySummaryOutbox_();
+
+  const key =
+    billNotificationSummaryOutboxKey_(
+      group,
+      billMonth
+    );
+
+  records[key] = {
+    workspace_id:
+      monthlyBillNotificationText_(
+        group &&
+        group.workspace_id
+      ).toUpperCase(),
+    bill_month:
+      monthlyBillNotificationNormalizeBillMonth_(
+        billMonth
+      ),
+    body:
+      monthlyBillNotificationText_(
+        payload &&
+        payload.body
+      ),
+    fallback_line_user_id:
+      monthlyBillNotificationText_(
+        payload &&
+        payload.fallback_line_user_id
+      ),
+    recipient_line_user_ids:
+      Array.isArray(
+        payload &&
+        payload.recipient_line_user_ids
+      )
+        ? payload.recipient_line_user_ids
+        : [],
+    queued_at:
+      new Date().toISOString()
+  };
+
+  billNotificationWriteMonthlySummaryOutbox_(
+    records
+  );
+}
+
+
+function billNotificationRemoveMonthlySummaryRetry_(
+  group,
+  billMonth
+) {
+  if (
+    typeof PropertiesService ===
+      'undefined'
+  ) {
+    return;
+  }
+
+  const records =
+    billNotificationReadMonthlySummaryOutbox_();
+
+  const exactKey =
+    billNotificationSummaryOutboxKey_(
+      group,
+      billMonth
+    );
+
+  delete records[exactKey];
+
+  const workspaceId =
+    monthlyBillNotificationText_(
+      group &&
+      group.workspace_id
+    ).toUpperCase();
+
+  const normalizedMonth =
+    monthlyBillNotificationNormalizeBillMonth_(
+      billMonth
+    );
+
+  Object.keys(
+    records
+  ).forEach(
+    function (key) {
+      const record =
+        records[key] ||
+        {};
+
+      if (
+        monthlyBillNotificationText_(
+          record.workspace_id
+        ).toUpperCase() ===
+        workspaceId &&
+        monthlyBillNotificationNormalizeBillMonth_(
+          record.bill_month
+        ) ===
+        normalizedMonth
+      ) {
+        delete records[key];
+      }
+    }
+  );
+
+  billNotificationWriteMonthlySummaryOutbox_(
+    records
+  );
+}
+
+
+function billNotificationGetMonthlySummaryOutboxCandidates_(
+  billMonth
+) {
+  const records =
+    billNotificationReadMonthlySummaryOutbox_();
+
+  const normalizedMonth =
+    monthlyBillNotificationNormalizeBillMonth_(
+      billMonth
+    );
+
+  return Object.keys(
+    records
+  )
+    .map(
+      function (key) {
+        return records[key];
+      }
+    )
+    .filter(
+      function (record) {
+        return (
+          record &&
+          monthlyBillNotificationNormalizeBillMonth_(
+            record.bill_month
+          ) ===
+          normalizedMonth &&
+          monthlyBillNotificationText_(
+            record.body
+          )
+        );
+      }
+    )
+    .map(
+      function (record) {
+        return {
+          notification_id:
+            '',
+          workspace_id:
+            monthlyBillNotificationText_(
+              record.workspace_id
+            ).toUpperCase(),
+          body:
+            monthlyBillNotificationText_(
+              record.body
+            ),
+          fallback_line_user_id:
+            monthlyBillNotificationText_(
+              record.fallback_line_user_id
+            ),
+          recipient_line_user_ids:
+            Array.isArray(
+              record.recipient_line_user_ids
+            )
+              ? record.recipient_line_user_ids
+              : []
+        };
+      }
+    );
+}
+
+
 function billNotificationFindPendingMonthlySummaryRetries_(
   ss,
   billMonth
@@ -502,7 +799,9 @@ function billNotificationFindPendingMonthlySummaryRetries_(
     typeof V2_WORKSPACE_NOTIFICATION_SHEETS_ ===
       'undefined'
   ) {
-    return [];
+    return billNotificationGetMonthlySummaryOutboxCandidates_(
+      billMonth
+    );
   }
 
   const notificationSheet =
@@ -518,7 +817,9 @@ function billNotificationFindPendingMonthlySummaryRetries_(
     );
 
   if (!notificationSheet || !deliverySheet) {
-    return [];
+    return billNotificationGetMonthlySummaryOutboxCandidates_(
+      billMonth
+    );
   }
 
   const normalizedMonth =
@@ -574,7 +875,7 @@ function billNotificationFindPendingMonthlySummaryRetries_(
     }
   );
 
-  return Object.keys(
+  const pending = Object.keys(
     latestByWorkspace
   )
     .sort()
@@ -662,12 +963,35 @@ function billNotificationFindPendingMonthlySummaryRetries_(
             monthlyBillNotificationText_(
               notification.event_body
             ),
+          fallback_line_user_id:
+            '',
           recipient_line_user_ids:
             lineUserIds
         };
       }
     )
     .filter(Boolean);
+
+  billNotificationGetMonthlySummaryOutboxCandidates_(
+    billMonth
+  ).forEach(
+    function (candidate) {
+      if (
+        !pending.some(
+          function (item) {
+            return (
+              item.workspace_id ===
+              candidate.workspace_id
+            );
+          }
+        )
+      ) {
+        pending.push(candidate);
+      }
+    }
+  );
+
+  return pending;
 }
 
 
@@ -714,6 +1038,9 @@ function billNotificationRetryPendingMonthlySummaries_(
             'monthly_bill_notification_dispatcher_retry',
           recipient_line_user_ids:
             item.recipient_line_user_ids,
+          fallback_line_user_id:
+            item.fallback_line_user_id ||
+            '',
           metadata: {
             bill_month:
               billMonth,
@@ -737,6 +1064,18 @@ function billNotificationRetryPendingMonthlySummaries_(
         result.data
           ? result.data
           : {};
+
+      if (
+        data.notification_id
+      ) {
+        billNotificationRemoveMonthlySummaryRetry_(
+          {
+            workspace_id:
+              item.workspace_id
+          },
+          billMonth
+        );
+      }
 
       return {
         workspace_id:
@@ -1088,6 +1427,8 @@ function runV2MonthlyBillNotifications(
             summary.sent_count <=
             0 &&
             summary.failed_count <=
+            0 &&
+            summary.skipped_count <=
             0
           ) {
             return;

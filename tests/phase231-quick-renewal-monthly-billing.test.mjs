@@ -299,7 +299,7 @@ const summarySendResult = context.billNotificationSendLandlordMonthlySummary_(
 assert.equal(summarySendResult.delivered, true, 'successful landlord summary delivery must be reported');
 assert.equal(summaryCalls.length, 1, 'one landlord summary notification must be recorded');
 assert.equal(summaryCalls[0].workspace_id, 'WS-1', 'landlord summary must stay in the bill Workspace');
-assert.equal(summaryCalls[0].fallback_line_user_id, 'Uowner123456789012345678901');
+assert.equal(summaryCalls[0].fallback_line_user_id, '', 'Workspace summaries must not bypass membership validation with a fallback LINE UID');
 assert.equal(summaryCalls[0].event_type, 'bill_created');
 assert.equal(summaryCalls[0].body, '本月（2026年9月）租金帳單已發出，共 2 筆。');
 
@@ -319,6 +319,25 @@ assert.match(
   summaryCalls[1].body,
   /共 0 筆；另有 1 筆發送失敗/,
   'total tenant bill failures must be visible in the landlord message'
+);
+
+const skippedOnlySummaryResult = context.billNotificationSendLandlordMonthlySummary_(
+  {
+    workspace_id: 'WS-1',
+    landlord_id: 'L-1',
+    landlord_line_user_id: 'Uowner123456789012345678901'
+  },
+  '2026-09',
+  0,
+  0,
+  1
+);
+assert.equal(skippedOnlySummaryResult.delivered, true, 'all skipped bills must still notify the landlord');
+assert.equal(summaryCalls.length, 3, 'all skipped bills must create a landlord notification');
+assert.match(
+  summaryCalls[2].body,
+  /共 0 筆；另有 1 筆未送出/,
+  'all skipped bills must be visible in the landlord message'
 );
 
 context.V2_WORKSPACE_NOTIFICATION_SHEETS_ = {
@@ -352,7 +371,7 @@ const retryResults = context.billNotificationRetryPendingMonthlySummaries_(
 );
 assert.equal(retryResults.length, 1, 'failed landlord summaries must be retried independently');
 assert.deepEqual(
-  summaryCalls[2].recipient_line_user_ids,
+  summaryCalls[3].recipient_line_user_ids,
   ['Uretry123456789012345678901'],
   'summary retries must target only the failed LINE recipient'
 );
