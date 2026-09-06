@@ -81,6 +81,7 @@ function manualSettleLandlordBillByLineUid_(
   let billWriteAttempted = false;
   let canonicalSettlementCompleted = false;
   let paymentAppendUnverified = false;
+  let postCommitWarnings = [];
 
   try {
     landlordLineUserId =
@@ -678,15 +679,33 @@ function manualSettleLandlordBillByLineUid_(
      * V1 同步錯誤不會回滾 V2 正式付款，
      * 但會完整寫入稽核紀錄。
      */
-    const legacySyncResult =
-      manualSettlementSyncLegacy_(
+    const legacySyncAttempt =
+      manualSettlementSyncLegacySafely_(
         ss,
         bill,
         paymentDate,
         paymentId
       );
 
-    SpreadsheetApp.flush();
+    const legacySyncResult =
+      legacySyncAttempt.result;
+
+    if (legacySyncAttempt.warning) {
+      postCommitWarnings.push(
+        legacySyncAttempt.warning
+      );
+    }
+
+    try {
+      SpreadsheetApp.flush();
+    } catch (flushError) {
+      postCommitWarnings.push(
+        manualSettlementPostCommitWarning_(
+          'SETTLEMENT_FLUSH_FAILED',
+          flushError
+        )
+      );
+    }
 
     let tenantNotificationResult = {
       requested:
@@ -748,82 +767,102 @@ function manualSettleLandlordBillByLineUid_(
       shouldNotifyTenant &&
       tenantLineUserId
     ) {
-      const pushResult =
-        pushLineTextMessage_(
-          tenantLineUserId,
-          noticeText
+      try {
+        const pushResult =
+          pushLineTextMessage_(
+            tenantLineUserId,
+            noticeText
+          );
+
+        tenantNotificationResult = {
+          requested:
+            true,
+
+          success:
+            pushResult &&
+            pushResult.success === true,
+
+          code:
+            pushResult &&
+            pushResult.code
+              ? pushResult.code
+              : '',
+
+          message:
+            pushResult &&
+            pushResult.message
+              ? pushResult.message
+              : ''
+        };
+
+        cmwebsLogLineMessage_({
+          direction:
+            'outgoing',
+
+          source:
+            'landlord_manual_settlement',
+
+          landlord_line_user_id:
+            landlordLineUserId,
+
+          tenant_line_user_id:
+            tenantLineUserId,
+
+          tenant_id:
+            bill.tenant_id || '',
+
+          tenant_user_id:
+            bill.user_id || '',
+
+          tenant_name:
+            tenantIdentity &&
+            tenantIdentity.tenant_name
+              ? tenantIdentity.tenant_name
+              : bill.tenant_name || '',
+
+          room_list:
+            bill.room_name || '',
+
+          message_type:
+            'manual_payment_settlement_confirmed',
+
+          message_text:
+            noticeText,
+
+          status:
+            tenantNotificationResult.success
+              ? 'success'
+              : 'failed',
+
+          note:
+            tenantNotificationResult.success
+              ? 'manual settlement notice sent'
+              : tenantNotificationResult.message
+        });
+      } catch (notificationError) {
+        tenantNotificationResult = {
+          requested: true,
+          success: false,
+          code: 'TENANT_NOTIFICATION_ERROR',
+          message: manualSettlementText_(
+            notificationError &&
+            notificationError.message
+          ) || '房客通知後續處理失敗'
+        };
+
+        postCommitWarnings.push(
+          manualSettlementPostCommitWarning_(
+            'TENANT_NOTIFICATION_ERROR',
+            notificationError
+          )
         );
-
-      tenantNotificationResult = {
-        requested:
-          true,
-
-        success:
-          pushResult &&
-          pushResult.success === true,
-
-        code:
-          pushResult &&
-          pushResult.code
-            ? pushResult.code
-            : '',
-
-        message:
-          pushResult &&
-          pushResult.message
-            ? pushResult.message
-            : ''
-      };
-
-      cmwebsLogLineMessage_({
-        direction:
-          'outgoing',
-
-        source:
-          'landlord_manual_settlement',
-
-        landlord_line_user_id:
-          landlordLineUserId,
-
-        tenant_line_user_id:
-          tenantLineUserId,
-
-        tenant_id:
-          bill.tenant_id || '',
-
-        tenant_user_id:
-          bill.user_id || '',
-
-        tenant_name:
-          tenantIdentity &&
-          tenantIdentity.tenant_name
-            ? tenantIdentity.tenant_name
-            : bill.tenant_name || '',
-
-        room_list:
-          bill.room_name || '',
-
-        message_type:
-          'manual_payment_settlement_confirmed',
-
-        message_text:
-          noticeText,
-
-        status:
-          tenantNotificationResult.success
-            ? 'success'
-            : 'failed',
-
-        note:
-          tenantNotificationResult.success
-            ? 'manual settlement notice sent'
-            : tenantNotificationResult.message
-      });
+      }
     }
 
-    manualSettlementWriteAuditLog_(
-      ss,
-      {
+    try {
+      manualSettlementWriteAuditLog_(
+        ss,
+        {
         action:
           action,
 
@@ -887,14 +926,23 @@ function manualSettleLandlordBillByLineUid_(
         error_message:
           '',
 
-        note:
-          landlordNote || ''
-      }
-    );
+          note:
+            landlordNote || ''
+        }
+      );
+    } catch (auditError) {
+      postCommitWarnings.push(
+        manualSettlementPostCommitWarning_(
+          'AUDIT_LOG_FAILED',
+          auditError
+        )
+      );
+    }
 
-    logLiffAccess_({
-      lineUserId:
-        landlordLineUserId,
+    try {
+      logLiffAccess_({
+        lineUserId:
+          landlordLineUserId,
 
       userId:
         landlordIdentity.user_id || '',
@@ -914,8 +962,8 @@ function manualSettleLandlordBillByLineUid_(
       errorMessage:
         '',
 
-      notes:
-        [
+        notes:
+          [
           'payment_id=' +
             paymentId,
 
@@ -926,8 +974,16 @@ function manualSettleLandlordBillByLineUid_(
           'legacy_history=' +
             legacySyncResult
               .history.status
-        ].join(', ')
-    });
+          ].join(', ')
+      });
+    } catch (accessLogError) {
+      postCommitWarnings.push(
+        manualSettlementPostCommitWarning_(
+          'ACCESS_LOG_FAILED',
+          accessLogError
+        )
+      );
+    }
 
     let message =
       '帳單已完成手動銷帳';
@@ -947,6 +1003,11 @@ function manualSettleLandlordBillByLineUid_(
     ) {
       message +=
         '。V1 同步結果請查看稽核紀錄';
+    }
+
+    if (postCommitWarnings.length > 0) {
+      message +=
+        '。帳單已入帳；部分後續同步未完成，請勿重複銷帳';
     }
 
     return {
@@ -989,7 +1050,10 @@ function manualSettleLandlordBillByLineUid_(
 
           history:
             legacySyncResult.history
-        }
+        },
+
+        post_commit_warnings:
+          postCommitWarnings
       }
     };
 
@@ -1181,6 +1245,71 @@ function manualSettleLandlordBillByLineUid_(
       // 尚未取得鎖定時忽略
     }
   }
+}
+
+
+/**
+ * V2 正式銷帳已驗證後，V1 相容同步不可再把已入帳結果改回失敗。
+ */
+function manualSettlementSyncLegacySafely_(
+  ss,
+  bill,
+  paymentDate,
+  paymentId
+) {
+  try {
+    return {
+      result:
+        manualSettlementSyncLegacy_(
+          ss,
+          bill,
+          paymentDate,
+          paymentId
+        ),
+
+      warning: null
+    };
+  } catch (error) {
+    const warning =
+      manualSettlementPostCommitWarning_(
+        'LEGACY_SYNC_FAILED',
+        error
+      );
+
+    return {
+      result: {
+        monthly: {
+          status: 'error',
+          updated_count: 0,
+          message: warning.message
+        },
+
+        history: {
+          status: 'error',
+          updated_count: 0,
+          message: warning.message
+        }
+      },
+
+      warning: warning
+    };
+  }
+}
+
+
+function manualSettlementPostCommitWarning_(
+  code,
+  error
+) {
+  return {
+    code: code,
+
+    message:
+      manualSettlementText_(
+        error &&
+        error.message
+      ) || '後續同步處理失敗'
+  };
 }
 
 

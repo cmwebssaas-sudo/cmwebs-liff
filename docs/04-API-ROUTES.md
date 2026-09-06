@@ -29,6 +29,11 @@ It sends only the selected month’s existing `issued` and unpaid bills whose
 send-permission checks. The candidate source therefore has 85 routes; the
 canonical 84-route inventory remains the release baseline until deployment.
 
+The static landlord caller treats this as a non-idempotent write: it does not
+automatically retry on `API_TIMEOUT`. It refreshes the read-only notification
+status and tells the landlord to confirm the per-bill `已發送` marker before
+choosing a subsequent action.
+
 The older Gate 0 checklist value of 68 routes is superseded for this Version 85
 candidate by this evidence-backed inventory. Any later route change must update
 this document and its static validation.
@@ -212,6 +217,11 @@ and submit consent; landlord review remains the activation boundary.
   return `SETTLEMENT_COMPENSATION_UNVERIFIED`. It makes no speculative repair
   write; the exceptional state remains available to existing audit handling for
   controlled follow-up.
+- Once the canonical bill and payment writes have completed and been verified,
+  a V1 compatibility sync, notification, audit-log, access-log, or final flush
+  issue does not change the settlement result back to failure. The route returns
+  `OK` with `data.post_commit_warnings` so the already-settled bill is not
+  submitted a second time; the warning identifies the required follow-up.
 
 ### `tenant_payment_report_submit`
 
