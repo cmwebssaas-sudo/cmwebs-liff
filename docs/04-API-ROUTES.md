@@ -208,6 +208,9 @@ and submit consent; landlord review remains the activation boundary.
   bill cannot regress a newer bill's summary.
 - Outstanding totals are derived only from canonical unpaid, non-voided bills;
   paid, cancelled, and voided bills remain excluded.
+- Worksheet row metadata is reserved as `__row_number`; a same-named sheet
+  column cannot overwrite the internal numeric row index used by settlement
+  view synchronization writes.
 - A bill with a nonblank `workspace_id` must exactly match the authenticated
   Workspace. A blank-workspace legacy bill is compatible only when its nonblank
   `landlord_id` matches an authorized principal in that authenticated access
