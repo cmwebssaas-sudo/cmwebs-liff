@@ -98,6 +98,76 @@
         linear-gradient(145deg, rgba(6, 199, 85, 0.09), rgba(255, 255, 255, 0.96) 58%);
     }
 
+    .desktop-entry-card {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 14px;
+      padding: 15px 16px;
+      border: 1px solid rgba(6, 199, 85, 0.22);
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, #effcf4 0%, #ffffff 72%);
+      color: var(--text-main);
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(6, 199, 85, 0.11);
+      transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease;
+    }
+
+    .desktop-entry-card:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 14px rgba(6, 199, 85, 0.09);
+    }
+
+    .desktop-entry-icon {
+      width: 45px;
+      height: 45px;
+      flex: 0 0 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 7px 17px rgba(6, 199, 85, 0.22);
+    }
+
+    .desktop-entry-icon svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .desktop-entry-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .desktop-entry-title {
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .desktop-entry-desc {
+      margin-top: 4px;
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .desktop-entry-arrow {
+      flex: 0 0 auto;
+      color: var(--primary);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
     .hero-row {
       display: flex;
       align-items: flex-start;
@@ -525,6 +595,33 @@
           </div>
         </div>
       </section>
+
+      <a
+        id="desktopEntryButton"
+        class="desktop-entry-card"
+        href="landlord-entry.html?return_to=landlord-home.html"
+        target="_blank"
+        rel="noopener"
+        aria-label="開啟房東桌面版 Email 驗證碼登入"
+      >
+        <div class="desktop-entry-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <rect x="3.5" y="5" width="17" height="14" rx="2"></rect>
+            <path d="m4.5 7 7.5 6 7.5-6"></path>
+            <path d="M15.5 3.5h5v5"></path>
+            <path d="m20.5 3.5-5 5"></path>
+          </svg>
+        </div>
+
+        <div class="desktop-entry-main">
+          <div class="desktop-entry-title">開啟桌面版</div>
+          <div class="desktop-entry-desc">
+            使用 Email 驗證碼登入，適合在電腦上管理房客、帳款與團隊。
+          </div>
+        </div>
+
+        <div class="desktop-entry-arrow" aria-hidden="true">›</div>
+      </a>
 
       <section class="card">
         <div class="section-title-row">
