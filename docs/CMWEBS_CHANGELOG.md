@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-06 — 月帳單中文狀態篩選修正（正式部署）
+
+- 既有帳單的 `已建立`／`已開立`／`開立` 狀態現在與英文 `issued` 一致，會被自動
+  月帳單 dispatcher 與房東「手動發送本月帳單」正確挑選，修正畫面有待發送帳單卻顯示
+  「本月沒有可發送的帳單」的問題；已成功發送的帳單仍受 `sent_status` 防重保護。
+- 補上中文狀態的 Phase 231／233 回歸測試；完整 Node suite `135/135`、Apps Script
+  syntax、`npm run validate` 與 `git diff --check` 通過。
+- PR #115 已合併至 `main`，merge commit `d860d041`；既有 Apps Script deployment
+  更新至 Version 165，Version 164 保留作 rollback。此次未修改 GitHub Pages，未執行帳單或
+  LINE 發送；唯讀 Production endpoint HTTP 200，手機／LIFF／LINE 實際收件仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-06 — Email 欄位鍵盤遮擋與 9 月帳單手動補發（local candidate）
 
 - 系統設定頁追蹤 iOS 可視區高度；Email／文字欄位取得焦點時隱藏固定底部導覽，並
