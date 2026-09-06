@@ -12,6 +12,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
+  <script src="landlord-api.js"></script>
 
   <style>
     :root {
@@ -2272,6 +2273,19 @@
       params,
       timeoutMs
     ) {
+      if (window.CMWebsLandlordApi) {
+        return window.CMWebsLandlordApi.request({
+          apiUrl: API_URL,
+          action: action,
+          params: params || {},
+          lineUserId: LINE_USER_ID,
+          testMode: TEST_MODE,
+          timeoutMs: timeoutMs,
+          callbackPrefix: 'cmwebsJsonp_',
+          rejectOnFailure: true
+        });
+      }
+
       return new Promise(
         function (
           resolve,

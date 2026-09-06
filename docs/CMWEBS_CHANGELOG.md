@@ -119,7 +119,9 @@
   Version 158，Version 157 保留 rollback，既有 Web App URL 不變。
 - GitHub Pages workflow `33924128412` 已成功完成 build、status、deploy；公開
   `frontend-release.js`、房客名單、帳務頁與房客入口 read-back 均 HTTP 200，
-  release marker 為 `20260905-prepaid-rent-quick-renewal-v1`。
+  已發布 release marker 為 `20260905-prepaid-rent-quick-renewal-v1`。房東 API
+  resilience 本地候選將 marker 推進至
+  `20260906-landlord-api-resilience-v1`；此候選目前尚未部署。
 - 本地完整 Node suite `92/92`、`npm run validate`（71/71 routes／handlers）、
   Apps Script syntax check、static release-cache validator 與 `git diff --check`
   均通過。未執行 Sheet migration、202 或其他房客帳單／合約資料寫入、Drive、

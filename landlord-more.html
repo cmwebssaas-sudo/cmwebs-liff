@@ -10,6 +10,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
+  <script src="landlord-api.js"></script>
 
   <style>
     :root {
@@ -1249,6 +1250,17 @@
     }
 
     function jsonpRequest(action, params) {
+      if (window.CMWebsLandlordApi) {
+        return window.CMWebsLandlordApi.request({
+          apiUrl: API_URL,
+          action: action,
+          params: params || {},
+          lineUserId: LINE_USER_ID,
+          testMode: TEST_MODE,
+          callbackPrefix: '__cmwebs_more_'
+        });
+      }
+
       return new Promise(function (resolve, reject) {
         const callbackName =
           '__cmwebs_more_' +
