@@ -10,7 +10,9 @@
   綠底白字按鈕；不改變既有的合約到期資格、續約 URL 或簽約流程。
 - 手動銷帳在 V2 canonical 帳單與付款資料已讀回驗證後，V1 同步、通知、稽核或存取
   紀錄的後續例外改列 `post_commit_warnings`，仍明確回覆已入帳及不可重複銷帳。
-- Phase 141／234 focused tests 通過；本地候選尚未部署 Apps Script／Pages，未執行正式
+- Workspace 工作表讀取器保留內部 `__row_number` 列號；同名的空白資料欄位不再覆寫
+  帳單檢視同步所需的數字列號，避免手動銷帳回覆 `Cannot convert "" to int`。
+- Phase 141／234／235 focused tests 通過；本地候選尚未部署 Apps Script／Pages，未執行正式
   帳單發送、手動銷帳、LINE 通知或任何 Sheet 寫入，真機／LIFF UAT 為
   `HUMAN_REQUIRED`／`UNVERIFIED`。
 

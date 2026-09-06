@@ -1721,7 +1721,8 @@ function workspaceGetObjectsWithRow_(sheet) {
     };
 
     headers.forEach(function (header, column) {
-      if (header) {
+      // This is internal metadata for write-back helpers, never sheet data.
+      if (header && header !== '__row_number') {
         object[header] = row[column];
       }
     });
