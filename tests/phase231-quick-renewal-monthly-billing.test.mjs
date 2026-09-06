@@ -410,6 +410,22 @@ assert.deepEqual(
 );
 assert.equal(retryResults[0].sent_count, 1, 'successful summary retry must be counted');
 
+retryRows.set('deliveries', [
+  {
+    notification_id: 'NTF-1',
+    delivery_status: 'sent',
+    line_user_id: 'Usuccess12345678901234567890'
+  }
+]);
+assert.equal(
+  context.billNotificationFindPendingMonthlySummaryRetries_(
+    { getSheetByName: name => name },
+    '2026-09'
+  ).length,
+  0,
+  'pending summaries with persisted deliveries but no failed recipient must not retry everyone'
+);
+
 assert.match(
   monthlySource,
   /workspaceNotifyTeam_\(/,

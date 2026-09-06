@@ -1270,12 +1270,29 @@ function billNotificationFindPendingMonthlySummaryRetries_(
         latestByWorkspace[
           candidate.workspace_id
         ] &&
-        monthlyBillNotificationText_(
-          latestByWorkspace[
-            candidate.workspace_id
-          ].status
-        ).toLowerCase() !==
-        'pending'
+        (
+          monthlyBillNotificationText_(
+            latestByWorkspace[
+              candidate.workspace_id
+            ].status
+          ).toLowerCase() !==
+            'pending' ||
+          deliveries.some(
+            function (delivery) {
+              return (
+                monthlyBillNotificationText_(
+                  delivery &&
+                  delivery.notification_id
+                ) ===
+                monthlyBillNotificationText_(
+                  latestByWorkspace[
+                    candidate.workspace_id
+                  ].notification_id
+                )
+              );
+            }
+          )
+        )
       ) {
         return;
       }
