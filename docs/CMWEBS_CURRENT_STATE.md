@@ -1,13 +1,13 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-06 (Asia/Taipei)**
+**Last verified: 2026-09-07 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-06 房客付款回報金額一致性修正待部署
+## 2026-09-07 房客付款回報金額一致性修正正式部署
 
 - 房號 302 的回報顯示 `NT$8,790`、LINE 正式帳單顯示 `NT$7,145`；差額
   `NT$1,645` 與帳單折抵完全一致。根因是付款回報只讀取尚未同步折抵的
@@ -18,9 +18,14 @@ version, rollback, and runtime state before every Production action.
 - 跨 Workspace 同 ID、相關重複主表 ID 或主表身份衝突現在明確 fail closed，不再因
   runtime 先篩選房客列而誤判為可回退。Phase 140 已覆蓋上述負向案例及正式應繳
   `NT$7,145` 的 init／submit 一致性；同房客不同 bill ID 的舊合約帳單不阻擋目前帳單。
-  最終完整驗證結果記錄於本候選交付前的最新執行。
-- 尚未執行 Apps Script 部署、正式資料修復、Apps Script Sheet-backed 測試或手機／
-  LIFF UAT；Production 狀態仍為 `UNVERIFIED`。
+- PR #121 已以 merge commit `74ae25bc9df4e09895235b266e416f7d1b481ddf`
+  合併至 `main`；合併結果完整 Node `138/138` 通過。正式 Apps Script 54 個程式檔案
+  加 manifest 已推送，前端實際使用的既有 deployment 已由 Version 167 更新至
+  immutable Version 168；Version 167 保留 rollback，Web App URL 不變。
+- Version 168 匯出後與 `main` 的 `apps-script/` 逐檔 exact match；既有 Production
+  URL HTTP 200，`tenant_payment_report_init` 無身份 guard 回傳 `MISSING_LINE_UID`。
+  未修改既有帳單、付款回報或 Sheet 資料；Apps Script Sheet-backed 測試與手機／
+  LIFF 真實房客流程仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-06 房東頁 API 韌性與切頁載入改善已發布
 
