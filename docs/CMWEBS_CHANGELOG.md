@@ -2,15 +2,20 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-06 — 房東後台新增桌面版 Email 登入入口（local candidate）
+## 2026-09-06 — 房東後台新增桌面版 Email 登入入口（正式發布）
 
 - 在 `landlord-more.html` 的「更多」頁新增醒目的「開啟桌面版」入口，開啟既有
   `landlord-entry.html` Email OTP 登入頁，不新增資料欄位或改變房東／管理團隊的
   Email 驗證流程。
 - 入口使用新分頁與 `rel="noopener"`，並保留 `return_to=landlord-home.html`，讓
   Email 登入完成後回到房東首頁。
-- Phase 232 static regression test 通過；本地候選尚未部署 Pages，瀏覽器點擊與
-  Email/session 真機 UAT 仍待發布後驗證。
+- Phase 232 static regression test 通過；PR #112 已合併至 `main`，merge commit
+  `39c2b8469dd0ab76af0ccf280654d2ee12e2ffdb`，GitHub Pages workflow
+  `34016014898` 成功發布。公開 `landlord-more.html` 與 `landlord-entry.html`
+  read-back 均 HTTP 200 並確認新入口存在；瀏覽器點擊與 Email/session 真機 UAT
+  仍為 `HUMAN_REQUIRED` / `UNVERIFIED`。
+- 此次為純 GitHub Pages 前端發布，未變更 Apps Script、Sheet、Properties、Trigger、
+  LINE 或帳務資料。
 
 ## 2026-09-06 — 202 快速續約 CTA 與每月帳單通知 dispatcher（local candidate）
 
