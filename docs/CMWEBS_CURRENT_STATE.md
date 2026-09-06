@@ -7,6 +7,21 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-06 房客付款回報金額一致性修正待部署
+
+- 房號 302 的回報顯示 `NT$8,790`、LINE 正式帳單顯示 `NT$7,145`；差額
+  `NT$1,645` 與帳單折抵完全一致。根因是付款回報只讀取尚未同步折抵的
+  `V2_tenant_bill_view`，而 LINE 帳單與銷帳均以 `V2_bills` 為準。
+- 本地候選已把付款回報初始化與送出改為 `V2_bills` 主表優先；同一 bill ID 的過期
+  view 不得覆蓋主表；全域主表缺少該帳單且 view 精確匹配房客 LINE UID 時才保留
+  legacy 回退。主表列另要求 tenant／contract／room／Workspace 完整匹配。
+- 跨 Workspace 同 ID、相關重複主表 ID 或主表身份衝突現在明確 fail closed，不再因
+  runtime 先篩選房客列而誤判為可回退。Phase 140 已覆蓋上述負向案例及正式應繳
+  `NT$7,145` 的 init／submit 一致性；同房客不同 bill ID 的舊合約帳單不阻擋目前帳單。
+  最終完整驗證結果記錄於本候選交付前的最新執行。
+- 尚未執行 Apps Script 部署、正式資料修復、Apps Script Sheet-backed 測試或手機／
+  LIFF UAT；Production 狀態仍為 `UNVERIFIED`。
+
 ## 2026-09-06 房東頁 API 韌性與切頁載入改善已發布
 
 - 房東端共用 `landlord-api.js` 已正式發布：相同唯讀請求會合併，唯讀逾時或網路

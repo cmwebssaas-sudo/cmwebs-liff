@@ -24,7 +24,7 @@ function tenantPaymentReportResolveCanonicalContext_(
       lineUserId,
       {
         include_bill_master:
-          false,
+          true,
         include_landlord_tenant_list_view:
           false
       }
@@ -53,6 +53,300 @@ function tenantPaymentReportResolveCanonicalContext_(
     runtimeIdentity.message || '房客 runtime 身份解析成功',
     runtimeIdentity.data || {}
   );
+}
+
+
+function tenantPaymentReportBillMatchesCanonical_(
+  row,
+  canonical,
+  lineUserId,
+  options
+) {
+  row = row || {};
+  canonical = canonical || {};
+  options = options || {};
+
+  lineUserId =
+    String(
+      lineUserId || ''
+    ).trim();
+
+  if (
+    !lineUserId ||
+    String(
+      canonical.line_user_id || ''
+    ).trim() !== lineUserId
+  ) {
+    return false;
+  }
+
+  const rowLineUserId =
+    String(
+      row.tenant_line_user_id ||
+      row.tenant_line_uid ||
+      row.line_user_id ||
+      ''
+    ).trim();
+
+  if (
+    (
+      options.require_line_user_id === true &&
+      rowLineUserId !== lineUserId
+    ) ||
+    (
+      options.require_line_user_id !== true &&
+      rowLineUserId &&
+      rowLineUserId !== lineUserId
+    )
+  ) {
+    return false;
+  }
+
+  return [
+    'tenant_id',
+    'contract_id',
+    'room_id',
+    'workspace_id'
+  ].every(function (field) {
+    const rowValue =
+      String(
+        row[field] || ''
+      ).trim();
+    const canonicalValue =
+      String(
+        canonical[field] || ''
+      ).trim();
+
+    if (
+      options.require_complete_identity === true
+    ) {
+      return Boolean(
+        rowValue &&
+        canonicalValue &&
+        rowValue === canonicalValue
+      );
+    }
+
+    return (
+      !rowValue ||
+      rowValue === canonicalValue
+    );
+  });
+}
+
+
+function tenantPaymentReportSelectionError_(
+  code,
+  message
+) {
+  const error = new Error(message || code);
+  error.code = code;
+  return error;
+}
+
+
+/**
+ * 付款與銷帳金額必須以 V2_bills 為準。
+ *
+ * 舊資料可能只存在 V2_tenant_bill_view，因此僅在正式主表沒有相同
+ * bill_id 時保留相容回退；相同 bill_id 的過期 view 不得覆蓋主表金額。
+ */
+function tenantPaymentReportCanonicalBillRows_(
+  canonical,
+  lineUserId,
+  options
+) {
+  canonical = canonical || {};
+  options = options || {};
+
+  const rows = [];
+  const masterBillIds = {};
+  const localMasterBillCounts = {};
+  const selectedBillIds = {};
+  const viewCandidateBillIds = {};
+  const masterBillCounts = {};
+  const requestedBillKey =
+    String(
+      options.bill_id || ''
+    ).trim().toUpperCase();
+  const masterRows =
+    Array.isArray(canonical.bill_rows)
+      ? canonical.bill_rows
+      : [];
+  const viewRows =
+    Array.isArray(canonical.tenant_bill_rows)
+      ? canonical.tenant_bill_rows
+      : [];
+
+  Object.keys(
+    canonical.bill_master_id_counts || {}
+  ).forEach(function (key) {
+    masterBillCounts[
+      String(key || '').trim().toUpperCase()
+    ] = Number(
+      canonical.bill_master_id_counts[key] || 0
+    );
+  });
+
+  masterRows.forEach(function (row) {
+    const key =
+      String(
+        row && row.bill_id || ''
+      ).trim().toUpperCase();
+
+    if (key) {
+      localMasterBillCounts[key] =
+        (localMasterBillCounts[key] || 0) + 1;
+    }
+  });
+
+  viewRows.forEach(function (row) {
+    const key =
+      String(
+        row && row.bill_id || ''
+      ).trim().toUpperCase();
+
+    if (
+      key &&
+      tenantPaymentReportBillMatchesCanonical_(
+        row,
+        canonical,
+        lineUserId,
+        {
+          require_line_user_id: true
+        }
+      )
+    ) {
+      viewCandidateBillIds[key] = true;
+    }
+  });
+
+  masterRows.forEach(function (row) {
+    const billId =
+      String(
+        row && row.bill_id || ''
+      ).trim();
+
+    if (!billId) {
+      return;
+    }
+
+    const key = billId.toUpperCase();
+    const masterCount = Math.max(
+      Number(masterBillCounts[key] || 0),
+      Number(localMasterBillCounts[key] || 0)
+    );
+    const matchesCanonical =
+      tenantPaymentReportBillMatchesCanonical_(
+        row,
+        canonical,
+        lineUserId,
+        {
+          require_complete_identity: true
+        }
+      );
+
+    if (!matchesCanonical) {
+      if (
+        key === requestedBillKey ||
+        viewCandidateBillIds[key]
+      ) {
+        throw tenantPaymentReportSelectionError_(
+          masterCount > 1
+            ? 'DUPLICATE_BILL_ID'
+            : 'BILL_ID_SCOPE_CONFLICT',
+          masterCount > 1
+            ? '帳單編號存在重複資料'
+            : '帳單編號與房客或 Workspace 範圍不一致'
+        );
+      }
+
+      return;
+    }
+
+    if (masterCount > 1) {
+      throw tenantPaymentReportSelectionError_(
+        'DUPLICATE_BILL_ID',
+        '帳單編號存在重複資料'
+      );
+    }
+
+    masterBillIds[key] = true;
+
+    if (selectedBillIds[key]) {
+      return;
+    }
+
+    selectedBillIds[key] = true;
+    rows.push(row);
+  });
+
+  viewRows.forEach(function (row) {
+    const billId =
+      String(
+        row && row.bill_id || ''
+      ).trim();
+
+    if (!billId) {
+      return;
+    }
+
+    const key = billId.toUpperCase();
+
+    if (!viewCandidateBillIds[key]) {
+      return;
+    }
+
+    const masterCount =
+      Number(masterBillCounts[key] || 0);
+
+    if (masterCount > 1) {
+      throw tenantPaymentReportSelectionError_(
+        'DUPLICATE_BILL_ID',
+        '帳單編號存在重複資料'
+      );
+    }
+
+    if (
+      masterCount === 1 &&
+      !masterBillIds[key]
+    ) {
+      throw tenantPaymentReportSelectionError_(
+        'BILL_ID_SCOPE_CONFLICT',
+        '帳單編號與房客或 Workspace 範圍不一致'
+      );
+    }
+
+    if (
+      masterBillIds[key] ||
+      selectedBillIds[key]
+    ) {
+      return;
+    }
+
+    selectedBillIds[key] = true;
+    rows.push(row);
+  });
+
+  if (
+    requestedBillKey &&
+    !masterBillIds[requestedBillKey] &&
+    Number(masterBillCounts[requestedBillKey] || 0) > 0
+  ) {
+    const requestedCount =
+      Number(masterBillCounts[requestedBillKey] || 0);
+
+    throw tenantPaymentReportSelectionError_(
+      requestedCount > 1
+        ? 'DUPLICATE_BILL_ID'
+        : 'BILL_ID_SCOPE_CONFLICT',
+      requestedCount > 1
+        ? '帳單編號存在重複資料'
+        : '帳單編號與房客或 Workspace 範圍不一致'
+    );
+  }
+
+  return rows;
 }
 
 
@@ -143,9 +437,10 @@ function getTenantPaymentReportInitByLineUid(
       tenantPaymentReportBuildTenant_(canonical);
 
     const billRows =
-      Array.isArray(canonical.tenant_bill_rows)
-        ? canonical.tenant_bill_rows
-        : [];
+      tenantPaymentReportCanonicalBillRows_(
+        canonical,
+        lineUserId
+      );
 
     const bills =
       billRows
@@ -153,14 +448,6 @@ function getTenantPaymentReportInitByLineUid(
           const billId =
             String(
               row.bill_id ||
-              ''
-            ).trim();
-
-          const rowLineUserId =
-            String(
-              row.line_user_id ||
-              row.tenant_line_user_id ||
-              row.tenant_line_uid ||
               ''
             ).trim();
 
@@ -174,8 +461,6 @@ function getTenantPaymentReportInitByLineUid(
 
           return (
             billId &&
-            rowLineUserId ===
-              lineUserId &&
             status !== 'paid' &&
             !v2CanonicalBillIsVoided_(
               row
@@ -256,9 +541,12 @@ function getTenantPaymentReportInitByLineUid(
 
     return tenantPaymentReportResult_(
       false,
-      'SYSTEM_ERROR',
-      '系統錯誤：' +
-        error.message,
+      error && error.code
+        ? error.code
+        : 'SYSTEM_ERROR',
+      error && error.code
+        ? error.message
+        : '系統錯誤：' + error.message,
       {
         tenant: null,
         bills: [],
@@ -404,42 +692,22 @@ function submitTenantPaymentReportByLineUid_(
     }
 
     const billRows =
-      Array.isArray(canonical.tenant_bill_rows)
-        ? canonical.tenant_bill_rows
-        : [];
+      tenantPaymentReportCanonicalBillRows_(
+        canonical,
+        lineUserId,
+        {
+          bill_id: billId
+        }
+      );
 
     const bill =
       billRows.find(function (row) {
         return (
           String(
-            row.line_user_id ||
-            row.tenant_line_user_id ||
-            row.tenant_line_uid ||
-            ''
-          ).trim() ===
-            lineUserId &&
-          String(
-            canonical.line_user_id ||
-            ''
-          ).trim() ===
-            lineUserId &&
-          String(
             row.bill_id ||
             ''
           ).trim() ===
-            billId &&
-          (!row.tenant_id ||
-            String(row.tenant_id).trim() ===
-              String(canonical.tenant_id || '').trim()) &&
-          (!row.contract_id ||
-            String(row.contract_id).trim() ===
-              String(canonical.contract_id || '').trim()) &&
-          (!row.room_id ||
-            String(row.room_id).trim() ===
-              String(canonical.room_id || '').trim()) &&
-          (!row.workspace_id ||
-            String(row.workspace_id).trim() ===
-              String(canonical.workspace_id || '').trim())
+            billId
         );
       });
 
@@ -760,9 +1028,12 @@ function submitTenantPaymentReportByLineUid_(
 
     return tenantPaymentReportResult_(
       false,
-      'SYSTEM_ERROR',
-      '系統錯誤：' +
-        error.message
+      error && error.code
+        ? error.code
+        : 'SYSTEM_ERROR',
+      error && error.code
+        ? error.message
+        : '系統錯誤：' + error.message
     );
   }
 }
