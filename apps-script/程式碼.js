@@ -842,6 +842,24 @@ function doGet(e) {
         );
   }
 
+  if (v2Action === 'landlord_monthly_bill_notifications_send') {
+    const result =
+      sendLandlordMonthlyBillNotificationsByLineUid_(
+        lineUserId,
+        e.parameter.bill_month || ''
+      );
+
+    return bridge === '1'
+      ? htmlBridgeOutput_(
+          result,
+          requestId
+        )
+      : jsonOutput_(
+          result,
+          callback
+        );
+  }
+
   if (v2Action === 'landlord_billing_init') {
     const result =
       getLandlordBillingInitByLineUid_(

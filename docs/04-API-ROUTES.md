@@ -15,6 +15,20 @@ deployed.
 - Scope: read/write route definitions only; every write route still requires its
   existing Workspace, role, and authorization checks.
 
+## Local candidate route addition
+
+The current local repair candidate adds the following route; it is not part of
+the immutable Version 85 baseline above and has not been deployed:
+
+```text
+landlord_monthly_bill_notifications_send
+```
+
+It sends only the selected month’s existing `issued` and unpaid bills whose
+`sent_status` is `not_sent` or `failed`, after the existing Workspace and
+send-permission checks. The candidate source therefore has 85 routes; the
+canonical 84-route inventory remains the release baseline until deployment.
+
 The older Gate 0 checklist value of 68 routes is superseded for this Version 85
 candidate by this evidence-backed inventory. Any later route change must update
 this document and its static validation.
