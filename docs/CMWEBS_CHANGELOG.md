@@ -2,6 +2,21 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-06 — 房東頁 API 韌性與切頁載入改善（正式發布）
+
+- 新增共用 `landlord-api.js`：相同唯讀請求合併、唯讀逾時或網路失敗最多補試一次；
+  寫入操作維持單次送出，避免帳務、通知與其他變更因自動重試而重複執行。
+- 房客名單先呈現主要資料，再非阻塞補入合約請求狀態，減少切頁等待；五個主要房東
+  頁面已改用共享 client，並保留 Email bridge／LINE JSONP 相容路徑。
+- PR #119 已合併至 `main`，merge commit
+  `4e2ae896ad8fba6adbce729afc80cf535d4912f4`；GitHub Pages workflow
+  `34039861775` 成功完成。
+- 公開 release asset、共享 client 與房客名單頁 read-back 均為 HTTP 200，發布 marker
+  為 `20260906-landlord-api-resilience-v1`。本地 `npm run validate`、完整 Node
+  `138/138`、JavaScript syntax 與 diff whitespace 檢查通過。
+- 本次未變更 Apps Script、Sheet、Properties、Trigger、帳單或 LINE；真實手機／LIFF
+  流暢度與各 API runtime 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-06 — 帳單發送逾時、快速續約顯示與手動銷帳回應修正（local candidate）
 
 - 房東手動發送本月帳單的 JSONP 寫入逾時不再自動補送第二次；改為唯讀重新載入通知

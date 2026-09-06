@@ -7,6 +7,23 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-06 房東頁 API 韌性與切頁載入改善已發布
+
+- 房東端共用 `landlord-api.js` 已正式發布：相同唯讀請求會合併，唯讀逾時或網路
+  失敗最多補試一次；所有寫入操作仍只送出一次，避免帳務或通知重複寫入。
+- 房客名單改為先完成主要名單讀取與畫面呈現，再補入合約請求資料，降低切頁時被
+  次要 API 阻塞的等待感；既有 Email bridge 與 LINE JSONP 路徑均保留。
+- PR #119 已以 merge commit `4e2ae896ad8fba6adbce729afc80cf535d4912f4`
+  合併至 `main`；GitHub Pages workflow `34039861775` 的 build、deploy 與狀態回報
+  均成功。
+- 公開 `frontend-release.js`、`landlord-api.js` 與 `landlord-tenants.html` read-back
+  均為 HTTP 200；已確認 release marker `20260906-landlord-api-resilience-v1`、共享
+  client 與頁面引用存在。
+- `npm run validate`、完整 Node `138/138`、`node --check landlord-api.js` 與
+  `git diff --check` 均通過。本次為 GitHub Pages 前端-only 發布，Apps Script、
+  Sheet、Properties、Trigger、帳單與 LINE 發送均未變更；真實手機／LIFF 操作速度
+  與各 API 回應仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-06 202 清除金額完成提示與防重送 UI 已發布
 
 - 根因確認：房東帳務頁的 `landlord_bill_apply_initial_rent_credit` 是寫入操作，
@@ -55,7 +72,7 @@ version, rollback, and runtime state before every Production action.
   `frontend-release.js` read-back HTTP 200，已發布 marker 為
   `20260905-prepaid-rent-quick-renewal-v1`。本地隔離候選新增房東端共用 API
   resilience client，候選 marker 為 `20260906-landlord-api-resilience-v1`；
-  尚未推送、合併或部署，Production 仍需另行驗證。
+  此為當時候選狀態，已由本文件上方 PR #119 的正式發布紀錄取代。
 - 本地完整 Node `92/92`、validator `71/71`、Apps Script syntax、static
   release-cache validator 與 `git diff --check` 通過。未修改正式 202 或其他
   房客／帳單資料，未執行 Sheet migration、Drive、Properties、Trigger 或 LINE。
