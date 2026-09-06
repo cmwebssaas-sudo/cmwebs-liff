@@ -2,6 +2,19 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-06 — Email 欄位鍵盤遮擋與 9 月帳單手動補發（local candidate）
+
+- 系統設定頁追蹤 iOS 可視區高度；Email／文字欄位取得焦點時隱藏固定底部導覽，並
+  將欄位捲到可視區中央，鍵盤收起後恢復導覽。
+- 每月帳單補發不再依賴「是否有啟用逾期催繳 Workspace」來保留 dispatcher；即使
+  逾期催繳全部停用，仍保留每小時觸發器供每月 5 號帳單補發使用。
+- 帳單通知頁新增「手動發送本月帳單」；後端只挑選目前 Workspace、指定月份、已建立、
+  未繳且 `not_sent`／`failed` 的帳單，沿用既有權限、LINE 綁定、ScriptLock、狀態寫回
+  與稽核流程，已成功發送的帳單不會被此按鈕重送。
+- Phase 233 focused test、Apps Script syntax、candidate route validator 與完整 Node
+  suite 待本次驗證；本地候選尚未部署 Pages／Apps Script，未修改正式帳單、Trigger、
+  Properties 或發送 LINE，手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-06 — 房東後台新增桌面版 Email 登入入口（正式發布）
 
 - 在 `landlord-more.html` 的「更多」頁新增醒目的「開啟桌面版」入口，開啟既有

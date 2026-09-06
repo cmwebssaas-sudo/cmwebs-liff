@@ -362,7 +362,7 @@ function installV2AutomaticPaymentReminderTrigger() {
  * 依全部 Workspace 的啟用狀態同步觸發器。
  *
  * - 至少一個 Workspace 啟用：確保存在一個每小時觸發器。
- * - 全部停用：移除觸發器。
+ * - 全部停用逾期催繳時仍保留觸發器，供每月帳單 dispatcher 使用。
  */
 function syncV2AutomaticPaymentReminderTrigger() {
   const ss =
@@ -403,26 +403,15 @@ function syncV2AutomaticPaymentReminderTrigger() {
     'unchanged';
 
   if (
-    enabledCount >
-      0 &&
     currentTriggers.length ===
       0
   ) {
     installV2AutomaticPaymentReminderTrigger();
 
     action =
-      'installed';
-
-  } else if (
-    enabledCount ===
-      0 &&
-    currentTriggers.length >
-      0
-  ) {
-    removeV2AutomaticPaymentReminderTrigger();
-
-    action =
-      'removed';
+      enabledCount > 0
+        ? 'installed'
+        : 'installed_for_monthly_billing';
 
   } else if (
     currentTriggers.length >

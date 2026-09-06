@@ -98,6 +98,7 @@
 - [ ] 最終階段下一天轉人工
 - [ ] trigger 只有一個
 - [x] 每月帳單通知與逾期催繳共用既有每小時 dispatcher，漏過 5 號可於後續小時補發，成功不重送（Phase 231；本地候選，正式 Apps Script read-back／LINE UAT 待驗證）
+- [x] 月初帳單補發修正：停用全部逾期催繳 Workspace 時仍保留每小時 dispatcher；房東可按「手動發送本月帳單」補發當月既有未發送／失敗帳單，且不重發已成功帳單（Phase 233；本地候選，正式 Apps Script trigger／LINE UAT 待驗證）
 - [ ] LINE 失敗進入通知中心
 
 ## 訊息／報修
@@ -145,6 +146,7 @@
 - [ ] 手機 Safari／LINE WebView
 - [ ] Android LINE WebView
 - [ ] 頁面不被 bottom nav 遮擋
+- [x] 系統設定手機鍵盤開啟時隱藏固定 bottom nav，並將 Email／文字欄位捲動至可視區（Phase 233；真機 Safari／LINE WebView 待驗證）
 - [ ] API 逾時提示
 - [ ] Google Sheets 容量
 - [ ] 100／500／1,000 房客資料量測試

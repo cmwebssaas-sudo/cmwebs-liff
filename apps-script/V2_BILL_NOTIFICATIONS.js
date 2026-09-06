@@ -4,6 +4,7 @@
  * API:
  * - landlord_bill_notifications_init
  * - landlord_bill_notifications_send
+ * - landlord_monthly_bill_notifications_send
  *
  * 核心規則：
  * - 只允許目前 Workspace 的房東團隊操作。
@@ -477,6 +478,36 @@ function billNotificationSelectRequestedBills_(
         return false;
       }
 
+      const sentStatus =
+        billNotificationText_(
+          bill && bill.sent_status ||
+          'not_sent'
+        ).toLowerCase();
+
+      const allowedSentStatuses =
+        Array.isArray(
+          options.allowed_sent_statuses
+        )
+          ? options.allowed_sent_statuses
+              .map(
+                function (status) {
+                  return billNotificationText_(
+                    status
+                  ).toLowerCase();
+                }
+              )
+              .filter(Boolean)
+          : [];
+
+      if (
+        allowedSentStatuses.length > 0 &&
+        allowedSentStatuses.indexOf(
+          sentStatus
+        ) === -1
+      ) {
+        return false;
+      }
+
       if (
         options.only_unsent !==
         true
@@ -484,16 +515,205 @@ function billNotificationSelectRequestedBills_(
         return true;
       }
 
-      const sentStatus =
-        billNotificationText_(
-          bill && bill.sent_status ||
-          'not_sent'
-        ).toLowerCase();
-
       return sentStatus ===
         'not_sent';
     }
   );
+}
+
+
+function billNotificationIsManualMonthlyBillEligible_(
+  bill,
+  billMonth
+) {
+  const sentStatus =
+    billNotificationText_(
+      bill && bill.sent_status ||
+      'not_sent'
+    ).toLowerCase();
+
+  const billStatus =
+    billNotificationText_(
+      bill && bill.bill_status ||
+      'issued'
+    ).toLowerCase();
+
+  const paymentStatus =
+    billNotificationText_(
+      bill && bill.payment_status
+    ).toLowerCase();
+
+  const voided = [
+    'void',
+    'voided',
+    'cancel',
+    'cancelled',
+    'canceled',
+    '作廢',
+    '取消',
+    '已取消'
+  ].indexOf(
+    billStatus
+  ) >= 0;
+
+  const paid = [
+    'paid',
+    'settled',
+    'confirmed',
+    'complete',
+    'completed',
+    '已繳',
+    '已繳清',
+    '已付款'
+  ].indexOf(
+    paymentStatus
+  ) >= 0;
+
+  return Boolean(
+    billNotificationText_(
+      bill && bill.bill_id
+    ) &&
+    billNotificationNormalizeBillMonth_(
+      bill && bill.bill_month
+    ) === billMonth &&
+    (
+      sentStatus === 'not_sent' ||
+      sentStatus === 'failed'
+    ) &&
+    (
+      billStatus === '' ||
+      billStatus === 'issued'
+    ) &&
+    !voided &&
+    !paid
+  );
+}
+
+
+function sendLandlordMonthlyBillNotificationsByLineUid_(
+  lineUserId,
+  billMonth
+) {
+  try {
+    const normalizedMonth =
+      billNotificationNormalizeBillMonth_(
+        billMonth
+      ) ||
+      Utilities.formatDate(
+        new Date(),
+        'Asia/Taipei',
+        'yyyy-MM'
+      );
+
+    const access =
+      workspaceLandlordResolveAccess_(
+        lineUserId,
+        {
+          require_onboarding:
+            true
+        }
+      );
+
+    if (!access.success) {
+      return access;
+    }
+
+    const permission =
+      billNotificationRequireSend_(
+        access
+      );
+
+    if (!permission.success) {
+      return permission;
+    }
+
+    const ss =
+      runtimeSpreadsheet_();
+
+    const bills =
+      billNotificationGetWorkspaceRows_(
+        ss.getSheetByName(
+          V2_BILL_NOTIFICATION_SHEETS_.bills
+        ),
+        access
+      );
+
+    const billIds =
+      bills
+        .filter(
+          function (bill) {
+            return billNotificationIsManualMonthlyBillEligible_(
+              bill,
+              normalizedMonth
+            );
+          }
+        )
+        .map(
+          function (bill) {
+            return billNotificationText_(
+              bill.bill_id
+            );
+          }
+        );
+
+    if (billIds.length === 0) {
+      return workspaceResult_(
+        true,
+        'NO_MONTHLY_BILLS_TO_SEND',
+        '本月沒有可手動發送的帳單',
+        {
+          bill_month:
+            normalizedMonth,
+          candidate_count:
+            0,
+          requested_count:
+            0,
+          sent_count:
+            0,
+          failed_count:
+            0,
+          skipped_count:
+            0
+        }
+      );
+    }
+
+    const result =
+      sendLandlordBillNotificationsByLineUid_(
+        lineUserId,
+        JSON.stringify(billIds),
+        {
+          workspace_id:
+            access.workspace.workspace_id,
+          allowed_sent_statuses: [
+            'not_sent',
+            'failed'
+          ],
+          audit_action:
+            'landlord_monthly_bill_notifications_send'
+        }
+      );
+
+    if (
+      result &&
+      result.data
+    ) {
+      result.data.bill_month =
+        normalizedMonth;
+      result.data.candidate_count =
+        billIds.length;
+    }
+
+    return result;
+
+  } catch (error) {
+    return workspaceResult_(
+      false,
+      'MONTHLY_BILL_NOTIFICATIONS_SEND_ERROR',
+      '本月帳單發送失敗：' +
+        error.message
+    );
+  }
 }
 
 
@@ -653,7 +873,9 @@ function sendLandlordBillNotificationsByLineUid_(
         {
           only_unsent:
             options.only_unsent ===
-            true
+            true,
+          allowed_sent_statuses:
+            options.allowed_sent_statuses
         }
       );
 
@@ -1236,7 +1458,8 @@ function sendLandlordBillNotificationsByLineUid_(
 
     billNotificationAudit_(
       access,
-      'landlord_bill_notifications_send',
+      options.audit_action ||
+        'landlord_bill_notifications_send',
       result,
       {
         target_type:

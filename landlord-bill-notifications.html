@@ -616,6 +616,24 @@
       box-shadow: none;
     }
 
+    .manual-monthly-button {
+      min-height: 46px;
+      flex: 0 0 auto;
+      padding: 0 16px;
+      border: 1px solid #b8e9ca;
+      border-radius: 12px;
+      background: #f2fff6;
+      color: var(--primary-dark);
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .manual-monthly-button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
     .toast {
       position: absolute;
       z-index: 2100;
@@ -789,6 +807,15 @@
           onclick="sendSelected()"
         >
           發送所選通知
+        </button>
+
+        <button
+          id="manualMonthlySendButton"
+          class="manual-monthly-button"
+          type="button"
+          onclick="sendCurrentMonthNotSent()"
+        >
+          手動發送本月帳單
         </button>
       </div>
     </div>
@@ -1502,7 +1529,6 @@
         'actionBar'
       ).style.display =
         (
-          items.length &&
           PAGE_DATA.can_send
         )
           ? 'block'
@@ -1938,6 +1964,82 @@
 
         button.textContent =
           '發送所選通知';
+      }
+    }
+
+    async function sendCurrentMonthNotSent() {
+      const button =
+        document.getElementById(
+          'manualMonthlySendButton'
+        );
+
+      if (!button) {
+        return;
+      }
+
+      const billMonth =
+        getSelectedMonth();
+
+      button.disabled = true;
+      button.textContent = '本月帳單發送中...';
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_monthly_bill_notifications_send',
+            {
+              bill_month: billMonth
+            }
+          );
+
+        const data =
+          result && result.data
+            ? result.data
+            : {};
+
+        if (!result || result.success !== true) {
+          throw new Error(
+            result && result.message
+              ? result.message
+              : '本月帳單發送失敗'
+          );
+        }
+
+        const sentCount =
+          Number(data.sent_count || 0);
+        const failedCount =
+          Number(data.failed_count || 0);
+        const skippedCount =
+          Number(data.skipped_count || 0);
+
+        showToast(
+          sentCount > 0
+            ? '本月帳單已手動發送 ' +
+              sentCount +
+              ' 筆' +
+              (failedCount > 0
+                ? '，失敗 ' + failedCount + ' 筆'
+                : '') +
+              (skippedCount > 0
+                ? '，略過 ' + skippedCount + ' 筆'
+                : '')
+            : '本月沒有可發送的帳單。',
+          failedCount > 0
+        );
+
+        await loadPage(false);
+
+      } catch (error) {
+        showToast(
+          error && error.message
+            ? error.message
+            : '本月帳單發送失敗',
+          true
+        );
+
+      } finally {
+        button.disabled = false;
+        button.textContent = '手動發送本月帳單';
       }
     }
 

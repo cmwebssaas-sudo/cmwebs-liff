@@ -98,6 +98,10 @@
         );
     }
 
+    .keyboard-open .page {
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+    }
+
     .topbar {
       display: flex;
       align-items: center;
@@ -638,6 +642,10 @@
       backdrop-filter: blur(12px);
     }
 
+    .keyboard-open .bottom-nav {
+      display: none;
+    }
+
     .bottom-nav-inner {
       height: var(--nav-height);
       display: grid;
@@ -891,6 +899,7 @@
     let EMAIL_VERIFICATION_CHALLENGE_ID = '';
     let EMAIL_VERIFICATION_COUNTDOWN_TIMER = null;
     let EMAIL_VERIFICATION_COUNTDOWN_UNTIL = 0;
+    let keyboardOpen = false;
 
     function setAppHeight() {
       const height =
@@ -902,6 +911,94 @@
       document.documentElement.style.setProperty(
         '--app-height',
         Math.round(height) + 'px'
+      );
+    }
+
+    function setKeyboardOpen(nextOpen) {
+      keyboardOpen = Boolean(nextOpen);
+      document.documentElement.classList.toggle(
+        'keyboard-open',
+        keyboardOpen
+      );
+    }
+
+    function syncKeyboardState() {
+      const viewport = window.visualViewport;
+      const visibleHeight = viewport && viewport.height
+        ? viewport.height
+        : window.innerHeight;
+      const layoutHeight = window.innerHeight;
+      const keyboardThreshold = Math.max(
+        120,
+        Math.round(layoutHeight * 0.18)
+      );
+
+      setKeyboardOpen(
+        Boolean(
+          viewport &&
+          visibleHeight < layoutHeight - keyboardThreshold
+        )
+      );
+      setAppHeight();
+    }
+
+    document.addEventListener(
+      'focusin',
+      scrollFocusedFieldIntoView
+    );
+
+    function scrollFocusedFieldIntoView(event) {
+      const field = event.target;
+
+      if (
+        !field ||
+        typeof field.matches !== 'function' ||
+        !field.matches('input, select, textarea')
+      ) {
+        return;
+      }
+
+      setKeyboardOpen(true);
+
+      window.setTimeout(
+        function () {
+          if (
+            document.activeElement === field &&
+            typeof field.scrollIntoView === 'function'
+          ) {
+            field.scrollIntoView({
+              block: 'center',
+              inline: 'nearest'
+            });
+          }
+        },
+        180
+      );
+    }
+
+    function restoreKeyboardNavigation(event) {
+      const field = event.target;
+
+      if (
+        !field ||
+        typeof field.matches !== 'function' ||
+        !field.matches('input, select, textarea')
+      ) {
+        return;
+      }
+
+      window.setTimeout(
+        function () {
+          const active = document.activeElement;
+          setKeyboardOpen(
+            Boolean(
+              active &&
+              typeof active.matches === 'function' &&
+              active.matches('input, select, textarea')
+            )
+          );
+        },
+        250
       );
     }
 
@@ -3042,7 +3139,12 @@
 
     window.addEventListener(
       'resize',
-      setAppHeight
+      syncKeyboardState
+    );
+
+    document.addEventListener(
+      'focusout',
+      restoreKeyboardNavigation
     );
 
     if (
@@ -3050,7 +3152,11 @@
     ) {
       window.visualViewport.addEventListener(
         'resize',
-        setAppHeight
+        syncKeyboardState
+      );
+      window.visualViewport.addEventListener(
+        'scroll',
+        syncKeyboardState
       );
     }
 
