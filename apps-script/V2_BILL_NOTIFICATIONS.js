@@ -442,10 +442,70 @@ function getLandlordBillNotificationsInitByLineUid_(
  * billIdsJson:
  * ["B0000001", "B0000002"]
  */
+function billNotificationSelectRequestedBills_(
+  bills,
+  billIds,
+  options
+) {
+  options =
+    options ||
+    {};
+
+  const billIdMap = {};
+
+  (billIds || []).forEach(
+    function (billId) {
+      billIdMap[
+        billNotificationText_(
+          billId
+        )
+      ] = true;
+    }
+  );
+
+  return (
+    bills ||
+    []
+  ).filter(
+    function (bill) {
+      const billId =
+        billNotificationText_(
+          bill && bill.bill_id
+        );
+
+      if (!billIdMap[billId]) {
+        return false;
+      }
+
+      if (
+        options.only_unsent !==
+        true
+      ) {
+        return true;
+      }
+
+      const sentStatus =
+        billNotificationText_(
+          bill && bill.sent_status ||
+          'not_sent'
+        ).toLowerCase();
+
+      return sentStatus ===
+        'not_sent';
+    }
+  );
+}
+
+
 function sendLandlordBillNotificationsByLineUid_(
   lineUserId,
-  billIdsJson
+  billIdsJson,
+  options
 ) {
+  options =
+    options ||
+    {};
+
   const lock =
     LockService.getScriptLock();
 
@@ -459,7 +519,10 @@ function sendLandlordBillNotificationsByLineUid_(
         lineUserId,
         {
           require_onboarding:
-            true
+            true,
+          workspace_id:
+            options.workspace_id ||
+            ''
         }
       );
 
@@ -583,26 +646,14 @@ function sendLandlordBillNotificationsByLineUid_(
         access
       );
 
-    const billIdMap = {};
-
-    billIds.forEach(
-      function (billId) {
-        billIdMap[
-          billId
-        ] = true;
-      }
-    );
-
     const selectedBills =
-      bills.filter(
-        function (bill) {
-          return Boolean(
-            billIdMap[
-              billNotificationText_(
-                bill.bill_id
-              )
-            ]
-          );
+      billNotificationSelectRequestedBills_(
+        bills,
+        billIds,
+        {
+          only_unsent:
+            options.only_unsent ===
+            true
         }
       );
 
@@ -775,22 +826,118 @@ function sendLandlordBillNotificationsByLineUid_(
     const sent = [];
     const failed = [];
 
+    const preparedForSend = [];
+
+    prepared.forEach(
+      function (entry) {
+        const claimValues = {
+          tenant_line_user_id:
+            entry.item.tenant_line_user_id,
+          sent_status:
+            'sending',
+          last_send_error:
+            '',
+          updated_at:
+            new Date()
+        };
+
+        try {
+          billNotificationSetRowValues_(
+            billSheet,
+            entry.bill.__row_number,
+            claimValues
+          );
+
+          billNotificationSyncViewStatus_(
+            tenantBillSheet,
+            entry.item.bill_id,
+            claimValues
+          );
+
+          preparedForSend.push(
+            entry
+          );
+        } catch (error) {
+          const errorMessage =
+            '帳單發送前狀態鎖定失敗，未發送：' +
+            (
+              error &&
+              error.message
+                ? error.message
+                : String(error)
+            );
+
+          failed.push({
+            bill_id:
+              entry.item.bill_id,
+            room_name:
+              entry.item.room_name,
+            tenant_name:
+              entry.item.tenant_name,
+            status_code:
+              0,
+            message:
+              errorMessage
+          });
+
+          logRows.push(
+            billNotificationBuildLogRow_(
+              access,
+              entry.item,
+              entry.message,
+              'failed',
+              errorMessage
+            )
+          );
+        }
+      }
+    );
+
     const chunks =
       billNotificationChunk_(
-        prepared,
+        preparedForSend,
         50
       );
 
     chunks.forEach(
       function (chunk) {
-        const responses =
-          UrlFetchApp.fetchAll(
+        let responses;
+
+        try {
+          responses =
+            UrlFetchApp.fetchAll(
+              chunk.map(
+                function (entry) {
+                  return entry.request;
+                }
+              )
+            );
+        } catch (error) {
+          const errorMessage =
+            'LINE 批次傳送結果不明，為避免自動重發已標記失敗：' +
+            (
+              error &&
+              error.message
+                ? error.message
+                : String(error)
+            );
+
+          responses =
             chunk.map(
-              function (entry) {
-                return entry.request;
+              function () {
+                return {
+                  getResponseCode:
+                    function () {
+                      return 599;
+                    },
+                  getContentText:
+                    function () {
+                      return errorMessage;
+                    }
+                };
               }
-            )
-          );
+            );
+        }
 
         responses.forEach(
           function (response, index) {
@@ -804,6 +951,21 @@ function sendLandlordBillNotificationsByLineUid_(
 
             const bill =
               entry.bill;
+
+            try {
+
+            response =
+              response ||
+              {
+                getResponseCode:
+                  function () {
+                    return 599;
+                  },
+                getContentText:
+                  function () {
+                    return 'LINE 批次傳送未回傳對應結果，為避免自動重發已標記失敗';
+                  }
+              };
 
             const statusCode =
               response
@@ -947,6 +1109,43 @@ function sendLandlordBillNotificationsByLineUid_(
                 )
               );
             }
+            } catch (error) {
+              const errorMessage =
+                'LINE 回覆後帳單狀態寫入失敗，為避免自動重發保留處理中狀態：' +
+                (
+                  error &&
+                  error.message
+                    ? error.message
+                    : String(error)
+                );
+
+              failed.push({
+                bill_id:
+                  item.bill_id,
+                room_name:
+                  item.room_name,
+                tenant_name:
+                  item.tenant_name,
+                status_code:
+                  0,
+                message:
+                  errorMessage
+              });
+
+              try {
+                logRows.push(
+                  billNotificationBuildLogRow_(
+                    access,
+                    item,
+                    entry.message,
+                    'failed',
+                    errorMessage
+                  )
+                );
+              } catch (logError) {
+                // 保留帳單的 sending 狀態，不因稽核紀錄失敗而自動重送。
+              }
+            }
           }
         );
       }
@@ -965,12 +1164,38 @@ function sendLandlordBillNotificationsByLineUid_(
       }
     );
 
-    billNotificationAppendLogs_(
-      ss,
-      logRows
-    );
+    const finalizationWarnings = [];
 
-    SpreadsheetApp.flush();
+    try {
+      billNotificationAppendLogs_(
+        ss,
+        logRows
+      );
+    } catch (error) {
+      finalizationWarnings.push(
+        '帳單通知稽核紀錄寫入失敗：' +
+        (
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        )
+      );
+    }
+
+    try {
+      SpreadsheetApp.flush();
+    } catch (error) {
+      finalizationWarnings.push(
+        '帳單通知資料同步警告：' +
+        (
+          error &&
+          error.message
+            ? error.message
+            : String(error)
+        )
+      );
+    }
 
     const result =
       workspaceResult_(
@@ -1003,7 +1228,9 @@ function sendLandlordBillNotificationsByLineUid_(
           failed:
             failed,
           skipped:
-            skipped
+            skipped,
+          finalization_warnings:
+            finalizationWarnings
         }
       );
 

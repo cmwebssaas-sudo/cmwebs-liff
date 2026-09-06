@@ -1109,6 +1109,35 @@ function workspaceNotificationRecipients_(
   config,
   payload
 ) {
+  const requestedLineUserIds = {};
+
+  (
+    payload &&
+    Array.isArray(
+      payload.recipient_line_user_ids
+    )
+      ? payload.recipient_line_user_ids
+      : []
+  ).forEach(
+    function (lineUserId) {
+      const normalized =
+        workspaceNotificationText_(
+          lineUserId
+        );
+
+      if (normalized) {
+        requestedLineUserIds[
+          normalized
+        ] = true;
+      }
+    }
+  );
+
+  const hasRecipientFilter =
+    Object.keys(
+      requestedLineUserIds
+    ).length > 0;
+
   const users =
     workspaceNotificationObjects_(
       ss.getSheetByName(
@@ -1212,6 +1241,15 @@ function workspaceNotificationRecipients_(
     )
     .filter(
       function (recipient) {
+        if (
+          hasRecipientFilter &&
+          !requestedLineUserIds[
+            recipient.line_user_id
+          ]
+        ) {
+          return false;
+        }
+
         const userKey =
           recipient.user_id ||
           recipient.membership_id;
