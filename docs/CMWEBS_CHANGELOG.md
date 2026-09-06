@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-06 — 帳單發送逾時、快速續約顯示與手動銷帳回應修正（local candidate）
+
+- 房東手動發送本月帳單的 JSONP 寫入逾時不再自動補送第二次；改為唯讀重新載入通知
+  狀態，並明確提示系統未重送，避免已發送帳單被誤判為失敗。
+- 手機版房客名單的快速續約 CTA 補上高優先權選擇器，避免 action-grid 白底規則覆蓋
+  綠底白字按鈕；不改變既有的合約到期資格、續約 URL 或簽約流程。
+- 手動銷帳在 V2 canonical 帳單與付款資料已讀回驗證後，V1 同步、通知、稽核或存取
+  紀錄的後續例外改列 `post_commit_warnings`，仍明確回覆已入帳及不可重複銷帳。
+- Phase 141／234 focused tests 通過；本地候選尚未部署 Apps Script／Pages，未執行正式
+  帳單發送、手動銷帳、LINE 通知或任何 Sheet 寫入，真機／LIFF UAT 為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-06 — 月帳單中文狀態篩選修正（正式部署）
 
 - 既有帳單的 `已建立`／`已開立`／`開立` 狀態現在與英文 `issued` 一致，會被自動

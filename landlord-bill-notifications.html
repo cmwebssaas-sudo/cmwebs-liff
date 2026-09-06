@@ -1069,8 +1069,11 @@
     function jsonpRequest(
       action,
       params,
-      retryCount
+      retryCount,
+      options
     ) {
+      options = options || {};
+
       return new Promise(
         function (resolve, reject) {
           const callbackName =
@@ -1100,6 +1103,7 @@
                 cleanup();
 
                 if (
+                  options.retryOnTimeout !== false &&
                   Number(
                     retryCount || 0
                   ) < 1
@@ -1107,7 +1111,8 @@
                   jsonpRequest(
                     action,
                     params,
-                    1
+                    1,
+                    options
                   ).then(
                     resolve
                   ).catch(
@@ -1117,11 +1122,15 @@
                   return;
                 }
 
-                reject(
+                const timeoutError =
                   new Error(
-                    'API 載入逾時，請確認帳單通知後端已部署。'
-                  )
-                );
+                    '帳單通知回應逾時，系統尚未確認發送結果。'
+                  );
+
+                timeoutError.code =
+                  'API_TIMEOUT';
+
+                reject(timeoutError);
               },
               45000
             );
@@ -1989,6 +1998,10 @@
             'landlord_monthly_bill_notifications_send',
             {
               bill_month: billMonth
+            },
+            0,
+            {
+              retryOnTimeout: false
             }
           );
 
@@ -2030,6 +2043,27 @@
         await loadPage(false);
 
       } catch (error) {
+        if (
+          error &&
+          error.code === 'API_TIMEOUT'
+        ) {
+          try {
+            await loadPage(false);
+
+            showToast(
+              '帳單發送回應逾時，已重新載入最新狀態；系統未自動重送，請確認「已發送」標示後再操作。',
+              false
+            );
+          } catch (refreshError) {
+            showToast(
+              '帳單發送回應逾時；系統未自動重送。請重新載入並確認「已發送」標示後再操作。',
+              false
+            );
+          }
+
+          return;
+        }
+
         showToast(
           error && error.message
             ? error.message

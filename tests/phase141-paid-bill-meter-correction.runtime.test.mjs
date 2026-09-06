@@ -461,7 +461,9 @@ function createManualSettlementScopeRuntime({
   forcePaymentAppendIdentityMismatch = false,
   forcePaymentVoidFailure = false,
   forcePaymentReadbackFailure = false,
-  forceBillRestoreFailure = false
+  forceBillRestoreFailure = false,
+  forceLegacySyncFailure = false,
+  forceAuditFailure = false
 }) {
   const source = fs.readFileSync(
     'apps-script/V2_MANUAL_SETTLEMENT.js',
@@ -475,6 +477,7 @@ function createManualSettlementScopeRuntime({
   );
   const writes = [];
   const syncCalls = [];
+  const legacySyncCalls = [];
   const scopeCalls = [];
   const ensureCalls = [];
   let downstreamCalls = 0;
@@ -607,7 +610,24 @@ function createManualSettlementScopeRuntime({
       syncCalls.push(true);
       if (forceSyncFailure) throw new Error('forced view sync failure');
     },
-    manualSettlementWriteAuditLog_() {},
+    billingRefreshWorkspaceSummaries_() {},
+    manualSettlementSyncLegacy_() {
+      legacySyncCalls.push(true);
+      if (forceLegacySyncFailure) {
+        throw new Error('Cannot convert "" to int');
+      }
+      return {
+        monthly: { status: 'updated' },
+        history: { status: 'updated' }
+      };
+    },
+    manualSettlementBuildTenantNotice_() { return ''; },
+    SpreadsheetApp: { flush() {} },
+    manualSettlementWriteAuditLog_() {
+      if (forceAuditFailure) {
+        throw new Error('forced audit write failure');
+      }
+    },
     logLiffAccess_() {}
   };
 
@@ -630,6 +650,7 @@ function createManualSettlementScopeRuntime({
     },
     writes,
     syncCalls,
+    legacySyncCalls,
     scopeCalls,
     ensureCalls,
     sheets,
@@ -710,6 +731,58 @@ function assertSettlementScopeGate(runtimeFactory) {
 
 assertSettlementScopeGate(createPaymentSettlementScopeRuntime);
 assertSettlementScopeGate(createManualSettlementScopeRuntime);
+
+for (const [label, options, expectedWarning] of [
+  [
+    'legacy synchronisation',
+    { forceLegacySyncFailure: true },
+    'LEGACY_SYNC_FAILED'
+  ],
+  [
+    'operation audit',
+    { forceAuditFailure: true },
+    'AUDIT_LOG_FAILED'
+  ]
+]) {
+  const bill = {
+    bill_id: `B-post-commit-${label}`,
+    workspace_id: 'W-current',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    payment_id: '',
+    paid_at: '',
+    updated_at: 'before',
+    notes: 'original note',
+    total_amount: 100
+  };
+  const runtime = createManualSettlementScopeRuntime({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principals: [{ landlord_id: 'legacy-owner' }]
+    },
+    existingPayment: false,
+    ...options
+  });
+
+  const result = runtime.settle();
+
+  assert.equal(
+    result.success,
+    true,
+    `${label} failure after the canonical payment commit must not invite the landlord to settle the same bill again`
+  );
+  assert.equal(bill.payment_status, 'paid');
+  assert.equal(runtime.sheets.V2_payments.row.status, 'confirmed');
+  assert.ok(
+    result.data.post_commit_warnings.some(
+      (warning) => warning.code === expectedWarning
+    ),
+    `${label} failure must remain visible as a non-financial warning`
+  );
+}
 
 {
   const bill = {
