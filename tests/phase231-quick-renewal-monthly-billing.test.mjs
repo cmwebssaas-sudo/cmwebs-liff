@@ -151,6 +151,16 @@ const groups = context.billNotificationBuildMonthlyDispatchGroups_(
       landlord_line_user_id: 'Uowner123456789012345678901'
     },
     {
+      bill_id: 'B-cn',
+      workspace_id: 'WS-1',
+      landlord_id: 'L-1',
+      bill_month: '2026-09',
+      bill_status: '已建立',
+      payment_status: 'unpaid',
+      sent_status: 'not_sent',
+      landlord_line_user_id: 'Uowner123456789012345678901'
+    },
+    {
       bill_id: 'B-paid',
       workspace_id: 'WS-1',
       landlord_id: 'L-1',
@@ -211,7 +221,7 @@ assert.deepEqual(
       workspace_id: 'WS-1',
       landlord_id: 'L-1',
       landlord_line_user_id: 'Uowner123456789012345678901',
-      bill_ids: ['B-1', 'B-2']
+      bill_ids: ['B-1', 'B-2', 'B-cn']
     }
   ],
   'dispatcher must select only current-month unpaid, issued, not-sent bills and sort ids deterministically'

@@ -130,6 +130,14 @@ assert.equal(
   ),
   true
 );
+assert.equal(
+  eligibilityContext.billNotificationIsManualMonthlyBillEligible_(
+    { bill_id: 'B2-cn', bill_month: '2026-09', bill_status: '已建立', payment_status: 'unpaid', sent_status: 'not_sent' },
+    '2026-09'
+  ),
+  true,
+  'manual monthly send must accept the existing Chinese issued status'
+);
 for (const bill of [
   { bill_id: 'B3', bill_month: '2026-09', payment_status: 'unpaid', sent_status: 'sent' },
   { bill_id: 'B4', bill_month: '2026-09', payment_status: 'paid', sent_status: 'not_sent' },

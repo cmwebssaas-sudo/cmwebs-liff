@@ -538,6 +538,15 @@ function billNotificationIsManualMonthlyBillEligible_(
       'issued'
     ).toLowerCase();
 
+  const issued = [
+    'issued',
+    '已建立',
+    '已開立',
+    '開立'
+  ].indexOf(
+    billStatus
+  ) >= 0;
+
   const paymentStatus =
     billNotificationText_(
       bill && bill.payment_status
@@ -581,8 +590,7 @@ function billNotificationIsManualMonthlyBillEligible_(
       sentStatus === 'failed'
     ) &&
     (
-      billStatus === '' ||
-      billStatus === 'issued'
+      issued
     ) &&
     !voided &&
     !paid
