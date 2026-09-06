@@ -2,6 +2,27 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-06 — 房客付款回報金額與正式帳單一致（local candidate）
+
+- 根因確認：房客付款回報初始化與送出只讀取衍生的
+  `V2_tenant_bill_view`；當正式 `V2_bills` 已套用折抵、衍生 view 尚未同步時，付款
+  回報會顯示並記錄折抵前金額，後續銷帳則依正式帳單金額拒絕，造成兩邊不一致。
+- 付款回報現在以同一 `bill_id` 的 `V2_bills` 為權威來源；只有主表缺少該帳單時才
+  相容回退 view，且 legacy view 必須精確匹配房客 LINE UID；主表列則必須完整匹配
+  房客、合約、房間與 Workspace。
+- runtime 在既有單次帳單快照中建立全域 bill ID 計數；跨 Workspace 同 ID、相關的
+  重複主表 ID 或主表身份衝突會分別以 `BILL_ID_SCOPE_CONFLICT`／
+  `DUPLICATE_BILL_ID` 明確停止，不會回退衍生 view，也沒有增加 Sheet 讀取次數；
+  同房客不同 bill ID 的舊合約歷史帳單則忽略，不阻擋目前付款回報。
+- Phase 140 新增折抵前 view `NT$8,790`、正式應繳 `NT$7,145` 的回歸案例，確認選單
+  顯示與新付款回報均記錄 `NT$7,145`，並覆蓋合法 legacy 回退、空白 LINE、跨
+  Workspace 同 ID、重複主表 ID 與續約歷史帳單。最終完整驗證結果記錄於本候選交付
+  前的最新執行。
+- 本地候選尚未部署 Apps Script，既有付款回報與正式 Sheet 資料均未修改，正式／
+  LIFF／銷帳 UAT 仍為 `UNVERIFIED`。隔離 worktree 沒有 `package.json`，因此
+  `npm run validate` 不可用；既有 static release-cache validator 仍鎖定舊 release
+  marker，屬與本次 Apps Script-only 修正無關的基線限制。
+
 ## 2026-09-06 — 房東頁 API 韌性與切頁載入改善（正式發布）
 
 - 新增共用 `landlord-api.js`：相同唯讀請求合併、唯讀逾時或網路失敗最多補試一次；

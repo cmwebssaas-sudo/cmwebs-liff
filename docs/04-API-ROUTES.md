@@ -551,12 +551,21 @@ electronic contract directly, including explicit zero-valued fee fields.
 This section records a local reconciliation candidate only. It is not the
 canonical source, a deployment record, or authorization to change Production.
 
-- `tenant_payment_report_init` reads the canonical tenant runtime bill rows and
-  excludes rows without a nonblank `bill_id`, preventing blank payment-report
-  cards from being rendered.
-- `tenant_payment_report_submit` uses the same canonical bill-row source and
-  preserves the existing tenant, contract, room, Workspace, duplicate-report,
-  paid-bill, and voided-bill checks.
+- `tenant_payment_report_init` uses the matching `V2_bills` row as the
+  authoritative amount source. `V2_tenant_bill_view` is used only when the bill
+  ID is absent from `V2_bills`; a stale view row with the same bill ID cannot
+  override rent, fees, discount, or payable total from the master bill. Legacy
+  fallback requires an exact tenant LINE UID match.
+- `tenant_payment_report_submit` uses the same master-first bill selection and
+  preserves the existing LINE identity, tenant, contract, room, Workspace,
+  duplicate-report, paid-bill, and voided-bill checks. The amount recorded in a
+  new payment report therefore matches the canonical payable total used by
+  settlement.
+- Relevant duplicate master bill IDs return `DUPLICATE_BILL_ID`. A master bill
+  ID that exists only outside the resolved tenant／Workspace scope returns
+  `BILL_ID_SCOPE_CONFLICT`; neither condition falls back to the derived view.
+  Master rows from an older contract with a different bill ID are ignored and
+  do not block the current tenant's payment-report page.
 - `landlord_payment_reports_init` derives an effective report status from the
   matching `V2_bills` row. A legacy `pending`/`payment_reported` report whose
   bill is already `paid` is returned as `confirmed`, so it is excluded from

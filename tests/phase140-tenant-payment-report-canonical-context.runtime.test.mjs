@@ -34,6 +34,18 @@ function canonicalBill(overrides = {}) {
   };
 }
 
+function billIdCounts(rows) {
+  return (rows || []).reduce((counts, row) => {
+    const key = String(row.bill_id || '').trim().toUpperCase();
+
+    if (key) {
+      counts[key] = (counts[key] || 0) + 1;
+    }
+
+    return counts;
+  }, {});
+}
+
 function createRuntime(options = {}) {
   const fixtures = {
     appendedReports: [],
@@ -46,6 +58,12 @@ function createRuntime(options = {}) {
     ],
     V2_payment_reports: options.reports || []
   };
+  const masterBills = options.masterBills !== undefined
+    ? options.masterBills
+    : [
+        options.masterBill ||
+        rowsBySheet.V2_tenant_bill_view[0]
+      ];
   const context = {
     Boolean,
     Date,
@@ -86,6 +104,8 @@ function createRuntime(options = {}) {
         message: '房客 runtime 身份解析成功',
         data: {
           ...CANONICAL_CONTEXT,
+          bill_rows: masterBills,
+          bill_master_id_counts: billIdCounts(masterBills),
           tenant_bill_rows: [rowsBySheet.V2_tenant_bill_view[0]]
         }
       };
@@ -114,6 +134,7 @@ function createRuntime(options = {}) {
 
   return {
     fixtures,
+    init: context.getTenantPaymentReportInitByLineUid,
     submit: context.submitTenantPaymentReportByLineUid_
   };
 }
@@ -170,7 +191,10 @@ function createResolverBackedRuntime(options = {}) {
       property_id: CANONICAL_CONTEXT.property_id
     }],
     V2_tenant_home_view: [],
-    V2_tenant_bill_view: [options.bill || canonicalBill()]
+    V2_tenant_bill_view: [options.bill || canonicalBill()],
+    V2_bills: options.masterBills !== undefined
+      ? options.masterBills
+      : [options.masterBill || options.bill || canonicalBill()]
   };
   const sheets = Object.fromEntries(
     Object.entries(sheetRows)
@@ -240,6 +264,7 @@ function createResolverBackedRuntime(options = {}) {
 
   return {
     fixtures,
+    init: context.getTenantPaymentReportInitByLineUid,
     resolve: context.resolveCanonicalTenantRuntimeByLineUid_,
     submit: context.submitTenantPaymentReportByLineUid_
   };
@@ -318,7 +343,154 @@ function submit(runtime, options = {}) {
   assert.equal(runtime.fixtures.appendedReports.length, 1);
   assert.equal(runtime.fixtures.resolverCalls, 1);
   assert.equal(runtime.fixtures.resolverLineUserId, CANONICAL_CONTEXT.line_user_id);
-  assert.equal(runtime.fixtures.resolverOptions.include_bill_master, false);
+  assert.equal(runtime.fixtures.resolverOptions.include_bill_master, true);
+}
+
+{
+  const runtime = createResolverBackedRuntime({
+    bill: canonicalBill({
+      bill_id: 'B0000024',
+      room_name: '302',
+      discount_amount: 0,
+      total_amount: 8790
+    }),
+    masterBill: canonicalBill({
+      line_user_id: '',
+      bill_id: 'B0000024',
+      room_name: '302',
+      discount_amount: 1645,
+      total_amount: 7145
+    })
+  });
+  const init = runtime.init(CANONICAL_CONTEXT.line_user_id);
+  const result = submit(runtime, { billId: 'B0000024' });
+  const report = runtime.fixtures.appendedReports[0];
+
+  assert.equal(init.success, true);
+  assert.equal(init.data.bills.length, 1);
+  assert.equal(
+    init.data.bills[0].total_amount,
+    7145,
+    'payment report selection must prefer the canonical bill amount over a stale tenant view'
+  );
+  assert.equal(result.success, true);
+  assert.equal(report.bill_total_amount, 7145);
+  assert.equal(report.reported_amount, 7145);
+}
+
+{
+  const runtime = createResolverBackedRuntime({
+    masterBills: [],
+    bill: canonicalBill({
+      bill_id: 'legacy-view-only'
+    })
+  });
+  const init = runtime.init(CANONICAL_CONTEXT.line_user_id);
+  const result = submit(runtime, { billId: 'legacy-view-only' });
+
+  assert.equal(init.success, true);
+  assert.equal(init.data.bills.length, 1);
+  assert.equal(result.success, true);
+  assert.equal(runtime.fixtures.appendedReports.length, 1);
+}
+
+{
+  const runtime = createResolverBackedRuntime({
+    masterBills: [],
+    bill: canonicalBill({
+      line_user_id: '',
+      bill_id: 'blank-line-view'
+    })
+  });
+  const init = runtime.init(CANONICAL_CONTEXT.line_user_id);
+  const result = submit(runtime, { billId: 'blank-line-view' });
+
+  assert.equal(init.success, true);
+  assert.equal(init.data.bills.length, 0);
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'BILL_NOT_FOUND');
+  assert.equal(runtime.fixtures.appendedReports.length, 0);
+}
+
+{
+  const first = canonicalBill({
+    bill_id: 'duplicate-master',
+    total_amount: 7145
+  });
+  const runtime = createResolverBackedRuntime({
+    bill: canonicalBill({
+      bill_id: 'duplicate-master',
+      total_amount: 8790
+    }),
+    masterBills: [
+      first,
+      { ...first, total_amount: 8790 }
+    ]
+  });
+  const init = runtime.init(CANONICAL_CONTEXT.line_user_id);
+  const result = submit(runtime, { billId: 'duplicate-master' });
+
+  assert.equal(init.success, false);
+  assert.equal(init.code, 'DUPLICATE_BILL_ID');
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'DUPLICATE_BILL_ID');
+  assert.equal(runtime.fixtures.appendedReports.length, 0);
+}
+
+{
+  const billId = 'foreign-master-collision';
+  const runtime = createResolverBackedRuntime({
+    bill: canonicalBill({ bill_id: billId }),
+    masterBills: [canonicalBill({
+      line_user_id: '',
+      tenant_id: 'foreign-tenant',
+      contract_id: 'foreign-contract',
+      workspace_id: 'foreign-workspace',
+      room_id: 'foreign-room',
+      bill_id: billId
+    })]
+  });
+  const init = runtime.init(CANONICAL_CONTEXT.line_user_id);
+  const result = submit(runtime, { billId });
+
+  assert.equal(init.success, false);
+  assert.equal(init.code, 'BILL_ID_SCOPE_CONFLICT');
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'BILL_ID_SCOPE_CONFLICT');
+  assert.equal(runtime.fixtures.appendedReports.length, 0);
+}
+
+{
+  const currentBill = canonicalBill({
+    bill_id: 'current-contract-bill',
+    total_amount: 7145
+  });
+  const runtime = createResolverBackedRuntime({
+    bill: currentBill,
+    masterBills: [
+      currentBill,
+      canonicalBill({
+        bill_id: 'historical-contract-bill',
+        contract_id: 'historical-contract',
+        room_id: 'historical-room',
+        total_amount: 8790
+      })
+    ]
+  });
+  const init = runtime.init(CANONICAL_CONTEXT.line_user_id);
+  const result = submit(runtime, {
+    billId: 'current-contract-bill'
+  });
+
+  assert.equal(init.success, true);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(
+      init.data.bills.map((bill) => bill.bill_id)
+    )),
+    ['current-contract-bill']
+  );
+  assert.equal(result.success, true);
+  assert.equal(runtime.fixtures.appendedReports.length, 1);
 }
 
 {
@@ -350,16 +522,17 @@ for (const [field, conflictingValue] of [
   const result = submit(runtime);
 
   assert.equal(result.success, false, `${field} conflict must fail closed`);
-  assert.equal(result.code, 'BILL_NOT_FOUND');
+  assert.equal(result.code, 'BILL_ID_SCOPE_CONFLICT');
   assert.equal(runtime.fixtures.appendedReports.length, 0);
   assert.equal(runtime.fixtures.teamNotifications.length, 0);
 }
 
-for (const [name, runtimeOptions, submitOptions] of [
+for (const [name, runtimeOptions, submitOptions, expectedCode] of [
   [
     'bill line_user_id',
     { bill: canonicalBill({ line_user_id: 'different-bill-line' }) },
-    {}
+    {},
+    'BILL_ID_SCOPE_CONFLICT'
   ],
   [
     'canonical LINE UID',
@@ -374,15 +547,16 @@ for (const [name, runtimeOptions, submitOptions] of [
         }
       }
     },
-    {}
+    {},
+    'BILL_NOT_FOUND'
   ],
-  ['bill ID', {}, { billId: 'bill-mismatch' }]
+  ['bill ID', {}, { billId: 'bill-mismatch' }, 'BILL_NOT_FOUND']
 ]) {
   const runtime = createRuntime(runtimeOptions);
   const result = submit(runtime, submitOptions);
 
   assert.equal(result.success, false, `${name} mismatch must fail closed`);
-  assert.equal(result.code, 'BILL_NOT_FOUND');
+  assert.equal(result.code, expectedCode);
   assert.equal(runtime.fixtures.appendedReports.length, 0);
   assert.equal(runtime.fixtures.teamNotifications.length, 0);
 }

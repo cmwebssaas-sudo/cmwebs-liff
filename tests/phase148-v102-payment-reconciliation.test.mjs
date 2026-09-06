@@ -52,6 +52,9 @@ function runTenantPaymentReportInit(sourcePath) {
           tenant_id: 'tenant-148',
           tenant_user_id: 'tenant-user-148',
           tenant_name: 'Tenant 148',
+          contract_id: 'contract-148',
+          workspace_id: 'workspace-148',
+          room_id: 'room-148',
           tenant_bill_rows: [malformedBill, validBill]
         }
       };
@@ -85,7 +88,9 @@ function runTenantPaymentReportInit(sourcePath) {
 
   assert.equal(result.success, true);
   assert.deepEqual(
-    result.data.bills.map((bill) => bill.bill_id),
+    JSON.parse(JSON.stringify(
+      result.data.bills.map((bill) => bill.bill_id)
+    )),
     ['bill-148'],
     'tenant payment report init must not expose a blank bill row'
   );

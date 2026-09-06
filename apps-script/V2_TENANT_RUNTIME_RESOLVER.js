@@ -1211,13 +1211,31 @@ function tenantRuntimeResolveCanonicalFromSnapshot_(
 
   const includeBillMaster =
     options.include_bill_master !== false;
+  const billMasterRows = includeBillMaster
+    ? tenantRuntimeRequireSheet_(
+        source,
+        V2_TENANT_RUNTIME_DATA_SHEETS_.bills
+      ).rows
+    : [];
+
+  canonical.bill_master_id_counts = {};
+
+  billMasterRows.forEach(function (row) {
+    const billId =
+      tenantRuntimeUpper_(row.bill_id);
+
+    if (billId) {
+      canonical.bill_master_id_counts[billId] =
+        (
+          canonical.bill_master_id_counts[billId] ||
+          0
+        ) + 1;
+    }
+  });
 
   canonical.bill_rows = includeBillMaster
     ? tenantRuntimeRowsRelatedToTenant_(
-        tenantRuntimeRequireSheet_(
-          source,
-          V2_TENANT_RUNTIME_DATA_SHEETS_.bills
-        ).rows,
+        billMasterRows,
         canonical,
         { include_generic_line: false }
       )
