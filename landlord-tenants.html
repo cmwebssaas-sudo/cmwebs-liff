@@ -11,6 +11,7 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
   <script src="landlord-auth.js"></script>
+  <script src="landlord-api.js"></script>
   <link rel="stylesheet" href="landlord-responsive.css" />
 
   <style>
@@ -1509,6 +1510,17 @@
     }
 
     function jsonpRequest(action, params) {
+      if (window.CMWebsLandlordApi) {
+        return window.CMWebsLandlordApi.request({
+          apiUrl: API_URL,
+          action: action,
+          params: params || {},
+          lineUserId: LINE_USER_ID,
+          testMode: TEST_MODE,
+          callbackPrefix: '__cmwebs_tenants_'
+        });
+      }
+
       const authParams = window.CMWebsLandlordAuth.getRequestAuthParams();
 
       if (
@@ -2385,6 +2397,56 @@
       `;
     }
 
+    function setContractData(
+      contractData
+    ) {
+      CONTRACT_REQUESTS =
+        contractData &&
+        Array.isArray(
+          contractData.requests
+        )
+          ? contractData.requests
+          : [];
+
+      CONTRACT_SUMMARY_BY_TENANT =
+        buildContractSummary(
+          CONTRACT_REQUESTS
+        );
+    }
+
+    function countActiveContractTenants() {
+      return Object.keys(
+        CONTRACT_SUMMARY_BY_TENANT
+      ).filter(function (tenantId) {
+        return (
+          CONTRACT_SUMMARY_BY_TENANT[
+            tenantId
+          ].totalActive > 0
+        );
+      }).length;
+    }
+
+    function applyContractData(
+      contractData
+    ) {
+      setContractData(
+        contractData
+      );
+
+      const countElement =
+        document.getElementById(
+          'activeContractTenantCount'
+        );
+
+      if (countElement) {
+        countElement.textContent =
+          countActiveContractTenants() +
+          ' 位';
+      }
+
+      renderTenantList();
+    }
+
     function renderPage(
       tenantData,
       contractData
@@ -2399,18 +2461,9 @@
           ? TENANT_DATA.tenants
           : [];
 
-      CONTRACT_REQUESTS =
-        contractData &&
-        Array.isArray(
-          contractData.requests
-        )
-          ? contractData.requests
-          : [];
-
-      CONTRACT_SUMMARY_BY_TENANT =
-        buildContractSummary(
-          CONTRACT_REQUESTS
-        );
+      setContractData(
+        contractData
+      );
 
       const landlord =
         TENANT_DATA.landlord || {};
@@ -2445,15 +2498,7 @@
         );
 
       const activeContractTenantCount =
-        Object.keys(
-          CONTRACT_SUMMARY_BY_TENANT
-        ).filter(function (tenantId) {
-          return (
-            CONTRACT_SUMMARY_BY_TENANT[
-              tenantId
-            ].totalActive > 0
-          );
-        }).length;
+        countActiveContractTenants();
 
       document.getElementById(
         'app'
@@ -2515,7 +2560,10 @@
 
             <div class="summary-box">
               <div class="summary-label">合約待處理房客</div>
-              <div class="summary-value purple">
+              <div
+                id="activeContractTenantCount"
+                class="summary-value purple"
+              >
                 ${activeContractTenantCount} 位
               </div>
             </div>
@@ -2685,55 +2733,43 @@
           return;
         }
 
-        const results =
-          await Promise.allSettled([
-            jsonpRequest(
-              'landlord_tenants',
-              {}
-            ),
-            jsonpRequest(
-              'landlord_contract_requests_init',
-              {}
-            )
-          ]);
-
-        if (
-          results[0].status !==
-          'fulfilled'
-        ) {
-          throw results[0].reason;
-        }
+        const contractRequest =
+          jsonpRequest(
+            'landlord_contract_requests_init',
+            {}
+          );
 
         const tenantData =
           unwrapData(
-            results[0].value
+            await jsonpRequest(
+              'landlord_tenants',
+              {}
+            )
           );
 
         let contractData = {
           requests: []
         };
 
-        if (
-          results[1].status ===
-          'fulfilled'
-        ) {
-          try {
-            contractData =
-              unwrapData(
-                results[1].value
-              );
-          } catch (error) {
-            console.warn(
-              '合約申請資料讀取失敗：',
-              error
-            );
-          }
-        }
-
         renderPage(
           tenantData,
           contractData
         );
+
+        try {
+          contractData =
+            unwrapData(
+              await contractRequest
+            );
+          applyContractData(
+            contractData
+          );
+        } catch (error) {
+          console.warn(
+            '合約申請資料讀取失敗：',
+            error
+          );
+        }
       } catch (error) {
         renderError(
           error && error.message

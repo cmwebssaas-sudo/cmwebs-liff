@@ -52,8 +52,10 @@ version, rollback, and runtime state before every Production action.
   的既有 deployment serving immutable Version 158，Version 157 為 rollback，
   Web App URL 保持不變。公開 endpoint read-only guard HTTP 200／`MISSING_LINE_UID`。
 - Pages workflow `33924128412` 已成功完成；公開房客名單、帳務頁、房客入口與
-  `frontend-release.js` read-back HTTP 200，marker 為
-  `20260905-prepaid-rent-quick-renewal-v1`。
+  `frontend-release.js` read-back HTTP 200，已發布 marker 為
+  `20260905-prepaid-rent-quick-renewal-v1`。本地隔離候選新增房東端共用 API
+  resilience client，候選 marker 為 `20260906-landlord-api-resilience-v1`；
+  尚未推送、合併或部署，Production 仍需另行驗證。
 - 本地完整 Node `92/92`、validator `71/71`、Apps Script syntax、static
   release-cache validator 與 `git diff --check` 通過。未修改正式 202 或其他
   房客／帳單資料，未執行 Sheet migration、Drive、Properties、Trigger 或 LINE。
