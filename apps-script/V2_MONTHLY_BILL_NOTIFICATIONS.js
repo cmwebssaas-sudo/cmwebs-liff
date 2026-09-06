@@ -126,11 +126,14 @@ function billNotificationIsMonthlyBillIssued_(
       'issued'
     ).toLowerCase();
 
-  return (
-    status ===
-      'issued' ||
-    status === ''
-  );
+  return [
+    'issued',
+    '已建立',
+    '已開立',
+    '開立'
+  ].indexOf(
+    status
+  ) >= 0;
 }
 
 
