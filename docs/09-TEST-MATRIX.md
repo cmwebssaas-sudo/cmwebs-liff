@@ -79,7 +79,8 @@
   `V2_tenant_bill_view`（含尚未套用折抵的舊總額）不得覆蓋正式應繳總額，只有主表
   全域缺少該帳單且 view 精確匹配房客 LINE UID 時才相容回退；空白 LINE、跨
   Workspace 同 ID 與重複主表 ID 均 fail closed，不同 bill ID 的舊合約歷史帳單不
-  阻擋目前帳單（Phase 140 自動回歸；正式／真機待驗證）
+  阻擋目前帳單（Phase 140 自動回歸；PR #121／Apps Script Version 168 source exact
+  match／公開 guard read-back 通過；Sheet-backed 與 LIFF 真機待驗證）
 - [x] 201 已繳帳單的付款回報初始化不產生空白帳單（Phase 145 自動回歸測試；Production Version 102 唯讀 smoke test）
 - [x] 已銷帳帳單的舊付款回報不再計入房東待審核統計（Phase 144 自動回歸測試；Production Version 102 唯讀 smoke test）
 - [x] 房東首頁與付款回報審核頁的底部導覽樣式一致（Phase 144 自動回歸測試）

@@ -2,7 +2,7 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-06 — 房客付款回報金額與正式帳單一致（local candidate）
+## 2026-09-07 — 房客付款回報金額與正式帳單一致（正式部署）
 
 - 根因確認：房客付款回報初始化與送出只讀取衍生的
   `V2_tenant_bill_view`；當正式 `V2_bills` 已套用折抵、衍生 view 尚未同步時，付款
@@ -16,12 +16,16 @@
   同房客不同 bill ID 的舊合約歷史帳單則忽略，不阻擋目前付款回報。
 - Phase 140 新增折抵前 view `NT$8,790`、正式應繳 `NT$7,145` 的回歸案例，確認選單
   顯示與新付款回報均記錄 `NT$7,145`，並覆蓋合法 legacy 回退、空白 LINE、跨
-  Workspace 同 ID、重複主表 ID 與續約歷史帳單。最終完整驗證結果記錄於本候選交付
-  前的最新執行。
-- 本地候選尚未部署 Apps Script，既有付款回報與正式 Sheet 資料均未修改，正式／
-  LIFF／銷帳 UAT 仍為 `UNVERIFIED`。隔離 worktree 沒有 `package.json`，因此
-  `npm run validate` 不可用；既有 static release-cache validator 仍鎖定舊 release
-  marker，屬與本次 Apps Script-only 修正無關的基線限制。
+  Workspace 同 ID、重複主表 ID 與續約歷史帳單；合併結果完整 Node `138/138` 通過。
+- PR #121 已合併至 `main`，merge commit 為
+  `74ae25bc9df4e09895235b266e416f7d1b481ddf`。既有 Production Apps Script
+  deployment 已由 Version 167 更新至 immutable Version 168，Version 167 保留為
+  rollback，Web App URL 不變；Version 168 匯出與 `main` source exact match，公開
+  payment-report guard HTTP 200／`MISSING_LINE_UID`。
+- 既有付款回報、正式帳單與 Sheet 資料均未修改，Apps Script Sheet-backed 測試與
+  LIFF／銷帳真實流程仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。隔離 worktree 沒有
+  `package.json`，因此 `npm run validate` 不可用；既有 static release-cache validator
+  仍鎖定舊 release marker，屬與本次 Apps Script-only 修正無關的基線限制。
 
 ## 2026-09-06 — 房東頁 API 韌性與切頁載入改善（正式發布）
 
