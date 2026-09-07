@@ -17,17 +17,30 @@ deployed.
 
 ## Local candidate route addition
 
-The current local repair candidate adds the following route; it is not part of
-the immutable Version 85 baseline above and has not been deployed:
+The current local repair candidate adds the following routes; they are not part
+of the immutable Version 85 baseline above and have not been deployed:
 
 ```text
 landlord_monthly_bill_notifications_send
+landlord_settings_upload_payment_account_cover
+tenant_payment_account_cover
 ```
 
 It sends only the selected month’s existing `issued` and unpaid bills whose
 `sent_status` is `not_sent` or `failed`, after the existing Workspace and
-send-permission checks. The candidate source therefore has 85 routes; the
+send-permission checks. The candidate source therefore has 87 routes; the
 canonical 84-route inventory remains the release baseline until deployment.
+
+`landlord_settings_upload_payment_account_cover` accepts a private JPG/PNG
+cover image through the authenticated landlord POST bridge, binds it to the
+current Workspace default payment account, and stores only private Drive file
+metadata in `V2_workspace_payment_accounts`. The API response never returns a
+Drive file ID. `tenant_payment_account_cover` resolves the authenticated
+tenant's active-contract Workspace and returns the cover image only through the
+same tenant route; it does not accept a client-supplied Workspace, landlord, or
+Drive identifier. Deployment must set the Script Property
+`CMWEBS_PAYMENT_ACCOUNT_COVER_DRIVE_ROOT_FOLDER_ID` to a private Drive folder
+before upload is enabled.
 
 The static landlord caller treats this as a non-idempotent write: it does not
 automatically retry on `API_TIMEOUT`. It refreshes the read-only notification
@@ -93,6 +106,7 @@ landlord_room_account_toggle
 landlord_send_tenant_message
 landlord_settings_init
 landlord_settings_save_payment
+landlord_settings_upload_payment_account_cover
 landlord_settings_save_preferences
 landlord_settings_save_profile
 landlord_settings_save_workspace
@@ -130,6 +144,7 @@ tenant_message_init
 tenant_message_submit
 tenant_payment_report_init
 tenant_payment_report_submit
+tenant_payment_account_cover
 ```
 
 ## Payment-report and bill-display contracts
@@ -161,6 +176,12 @@ tenant_payment_report_submit
   receiving account is configured. The primary tenant bill page, bill detail,
   and payment-report page render this as the transfer instruction and do not
   receive Workspace, contract, member, or audit data.
+- The same two bill routes expose only the boolean
+  `bank_account_cover_available` and display-safe
+  `bank_account_cover_file_name`. The cover bytes are lazy-loaded through
+  `tenant_payment_account_cover` after tenant authentication, and the cover
+  route returns only a bounded image data URL plus file metadata. Private Drive
+  IDs and raw Drive URLs never enter tenant payloads.
 - When an authorized landlord manually sends or re-sends a bill notification,
   the message includes `tenant_visible_note` when it is non-empty. Existing
   sent LINE messages are immutable and are not retroactively changed.

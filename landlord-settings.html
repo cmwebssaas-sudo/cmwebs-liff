@@ -417,6 +417,11 @@
       box-shadow: 0 8px 20px rgba(6, 199, 85, 0.17);
     }
 
+    .upload-button {
+      background: var(--blue);
+      box-shadow: 0 8px 20px rgba(26, 115, 232, 0.17);
+    }
+
     .save-button:disabled {
       opacity: 0.5;
       cursor: default;
@@ -2029,6 +2034,42 @@
                   ${editable ? '' : 'disabled'}
                 >${safeHtml(payment.payment_note || '')}</textarea>
               </div>
+
+              <div class="form-field full">
+                <div class="field-label">
+                  <span>銀行帳戶封面</span>
+                  <span class="field-hint">
+                    JPG／PNG，最大 2 MB
+                  </span>
+                </div>
+
+                <input
+                  id="bankAccountCover"
+                  class="input"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  ${editable ? '' : 'disabled'}
+                />
+
+                <div
+                  id="bankAccountCoverStatus"
+                  class="inline-note ${
+                    payment.bank_account_cover_available
+                      ? 'success'
+                      : ''
+                  }"
+                >
+                  ${
+                    payment.bank_account_cover_available
+                      ? '目前封面：' +
+                        safeHtml(
+                          payment.bank_account_cover_file_name ||
+                          '已上傳'
+                        )
+                      : '上傳後，房客可在帳單內直接查看房東帳戶封面。'
+                  }
+                </div>
+              </div>
             </div>
 
             <div class="inline-note warning">
@@ -2044,6 +2085,16 @@
                 ${editable ? '' : 'disabled'}
               >
                 儲存收款帳號
+              </button>
+
+              <button
+                id="paymentAccountCoverUploadButton"
+                class="save-button upload-button"
+                type="button"
+                onclick="uploadPaymentAccountCover()"
+                ${editable ? '' : 'disabled'}
+              >
+                上傳帳戶封面
               </button>
             </div>
           </div>
@@ -2797,6 +2848,150 @@
         },
         '收款帳號已更新'
       );
+    }
+
+    async function uploadPaymentAccountCover() {
+      if (saving) {
+        return;
+      }
+
+      const input =
+        document.getElementById(
+          'bankAccountCover'
+        );
+      const button =
+        document.getElementById(
+          'paymentAccountCoverUploadButton'
+        );
+      const file =
+        input && input.files
+          ? input.files[0]
+          : null;
+
+      if (!file) {
+        showToast(
+          '請先選擇銀行帳戶封面圖片',
+          true
+        );
+        return;
+      }
+
+      if (
+        ['image/jpeg', 'image/png'].indexOf(
+          rawText(file.type).toLowerCase()
+        ) === -1
+      ) {
+        showToast(
+          '只支援 JPG 或 PNG 圖片',
+          true
+        );
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast(
+          '帳戶封面不可超過 2 MB',
+          true
+        );
+        return;
+      }
+
+      if (
+        !window.CMWebsLandlordAuth ||
+        typeof window.CMWebsLandlordAuth
+          .requestProtected !==
+          'function'
+      ) {
+        showToast(
+          '目前登入方式不支援上傳，請重新登入後再試',
+          true
+        );
+        return;
+      }
+
+      saving = true;
+      const originalText =
+        button
+          ? button.textContent
+          : '';
+
+      if (button) {
+        button.disabled = true;
+        button.textContent = '上傳中...';
+      }
+
+      try {
+        const base64 =
+          await new Promise(function (resolve, reject) {
+            const reader = new FileReader();
+
+            reader.onload = function () {
+              const value =
+                rawText(reader.result);
+              const separator =
+                value.indexOf(',');
+              resolve(
+                separator >= 0
+                  ? value.slice(separator + 1)
+                  : value
+              );
+            };
+
+            reader.onerror = function () {
+              reject(
+                new Error('圖片讀取失敗')
+              );
+            };
+
+            reader.readAsDataURL(file);
+          });
+
+        const result =
+          await window.CMWebsLandlordAuth
+            .requestProtected(
+              'landlord_settings_upload_payment_account_cover',
+              {
+                mime_type: file.type,
+                file_name: file.name,
+                base64: base64
+              }
+            );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result && result.message
+              ? result.message
+              : '帳戶封面上傳失敗'
+          );
+        }
+
+        showToast(
+          result.message ||
+          '銀行帳戶封面已更新'
+        );
+
+        await loadPage(
+          false,
+          ACTIVE_TAB
+        );
+      } catch (error) {
+        showToast(
+          error && error.message
+            ? error.message
+            : '帳戶封面上傳失敗',
+          true
+        );
+      } finally {
+        saving = false;
+
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
     }
 
     function collectPreferencePayload() {

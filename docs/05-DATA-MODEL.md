@@ -15,6 +15,25 @@
 | `V2_workspace_payment_accounts` | Workspace 收款帳號 |
 | `V2_payment_accounts` | 舊版／相容付款帳號，需在整併時確認去留 |
 
+`V2_workspace_payment_accounts.bank_account` is a text field. Writers must set
+the sheet cell number format to `@` before writing and must not coerce the
+value through a numeric type, so account numbers such as `001234567890` retain
+all leading zeros. Existing rows whose zeros were previously stripped cannot be
+reconstructed from the stored numeric value; the landlord must re-enter the
+complete account number once after the repair is released.
+
+The following additive, private-cover metadata belongs to the same Workspace
+payment-account row:
+
+| Column | Meaning |
+| --- | --- |
+| `bank_account_cover_file_id` | Private Drive file ID; server-only, never returned to tenants |
+| `bank_account_cover_file_name` | Display-safe original filename |
+| `bank_account_cover_mime_type` | Validated `image/jpeg` or `image/png` |
+| `bank_account_cover_byte_size` | Validated byte size, maximum 2 MB |
+| `bank_account_cover_sha256` | Integrity hash of the uploaded bytes |
+| `bank_account_cover_updated_at` | Last successful cover metadata update |
+
 ## 房源、房客與租約
 
 | Sheet | 用途 |

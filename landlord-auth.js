@@ -359,6 +359,17 @@
       );
     },
 
+    requestProtected(action, params) {
+      return bridgePost(
+        action,
+        Object.assign(
+          {},
+          params || {},
+          api.getRequestAuthParams()
+        )
+      );
+    },
+
     handleAuthFailure(result) {
       return maybeHandleAuthFailure(result);
     },

@@ -1214,6 +1214,19 @@ if (v2Action === 'tenant_message_submit') {
     return jsonOutput_(result, callback);
   }
 
+  if (v2Action === 'tenant_payment_account_cover') {
+    const result =
+      getTenantPaymentAccountCoverByLineUid_(
+        lineUserId
+      );
+
+    if (bridge === '1') {
+      return htmlBridgeOutput_(result, requestId);
+    }
+
+    return jsonOutput_(result, callback);
+  }
+
   if (v2Action === 'landlord_home') {
     const result = getWorkspaceLandlordHomeNativeByLineUid_(lineUserId);
 
@@ -2716,6 +2729,33 @@ function doPost(e) {
             result =
               getLandlordSettingsInitByLineUid_(
                 principal.data.principal_line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_settings_upload_payment_account_cover'
+        ) {
+          result =
+            resolveLandlordPrincipal_(
+              request
+            );
+
+          if (
+            result &&
+            result.success === true
+          ) {
+            result =
+              uploadLandlordPaymentAccountCover_(
+                result,
+                request
               );
           }
 

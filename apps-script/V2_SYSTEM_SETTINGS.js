@@ -1627,6 +1627,18 @@ function systemSettingsBuildPaymentView_(
         payment.payment_note
       ),
 
+    bank_account_cover_available:
+      Boolean(
+        systemSettingsText_(
+          payment.bank_account_cover_file_id
+        )
+      ),
+
+    bank_account_cover_file_name:
+      systemSettingsText_(
+        payment.bank_account_cover_file_name
+      ),
+
     is_default:
       systemSettingsBoolean_(
         payment.is_default
@@ -2418,6 +2430,32 @@ function systemSettingsSetRowValues_(
     }
   );
 
+  /*
+   * 銀行帳號必須以純文字保存，避免 Google Sheets
+   * 將 0 開頭的帳號轉成數字後移除前導 0。
+   */
+  if (
+    values &&
+    values.bank_account !== undefined
+  ) {
+    const bankAccountIndex =
+      headers.indexOf('bank_account');
+
+    if (bankAccountIndex >= 0) {
+      sheet
+        .getRange(
+          rowNumber,
+          bankAccountIndex + 1
+        )
+        .setNumberFormat('@');
+
+      row[bankAccountIndex] =
+        systemSettingsText_(
+          values.bank_account
+        ).replace(/\s/g, '');
+    }
+  }
+
   sheet
     .getRange(
       rowNumber,
@@ -2448,7 +2486,7 @@ function systemSettingsAppendObject_(
         systemSettingsText_
       );
 
-  sheet.appendRow(
+  const rowValues =
     headers.map(
       function (header) {
         return object[
@@ -2460,7 +2498,47 @@ function systemSettingsAppendObject_(
             ]
           : '';
       }
-    )
+    );
+
+  const bankAccountIndex =
+    headers.indexOf('bank_account');
+
+  if (
+    bankAccountIndex >= 0 &&
+    object &&
+    object.bank_account !== undefined
+  ) {
+    const nextRow =
+      sheet.getLastRow() + 1;
+
+    sheet
+      .getRange(
+        nextRow,
+        bankAccountIndex + 1
+      )
+      .setNumberFormat('@');
+
+    rowValues[bankAccountIndex] =
+      systemSettingsText_(
+        object.bank_account
+      ).replace(/\s/g, '');
+
+    sheet
+      .getRange(
+        nextRow,
+        1,
+        1,
+        headers.length
+      )
+      .setValues([
+        rowValues
+      ]);
+
+    return;
+  }
+
+  sheet.appendRow(
+    rowValues
   );
 }
 
@@ -2494,6 +2572,12 @@ function systemSettingsEnsureSchema_() {
       'bank_account',
       'bank_account_name',
       'payment_note',
+      'bank_account_cover_file_id',
+      'bank_account_cover_file_name',
+      'bank_account_cover_mime_type',
+      'bank_account_cover_byte_size',
+      'bank_account_cover_sha256',
+      'bank_account_cover_updated_at',
       'is_default',
       'account_status',
       'created_by_user_id',
