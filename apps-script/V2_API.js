@@ -9,6 +9,7 @@ const V2_PAYMENT_REMINDER_MIN_DAYS_OVERDUE = 1;
 const V2_SHEETS = {
   tenants: 'V2_tenants',
   contracts: 'V2_contracts',
+  landlords: 'V2_landlords',
   tenantHomeView: 'V2_tenant_home_view',
   tenantBillView: 'V2_tenant_bill_view',
   landlordHomeView: 'V2_landlord_home_view',
@@ -1169,10 +1170,26 @@ function tenantBillsRuntimeDefaultPaymentAccount_(
     accounts[0] ||
     null;
 
-  return tenantBillsRuntimePublicPaymentAccount_(
-    payment
-  ) || tenantBillsRuntimeContractPaymentAccount_(
-    identity.contract_row
+  const workspacePaymentAccount =
+    tenantBillsRuntimePublicPaymentAccount_(
+      payment
+    );
+
+  if (workspacePaymentAccount) {
+    return workspacePaymentAccount;
+  }
+
+  const contractPaymentAccount =
+    tenantBillsRuntimeContractPaymentAccount_(
+      identity.contract_row
+    );
+
+  if (contractPaymentAccount) {
+    return contractPaymentAccount;
+  }
+
+  return tenantBillsRuntimeContractLandlordPaymentAccount_(
+    identity
   );
 }
 
@@ -1265,6 +1282,115 @@ function tenantBillsRuntimeContractPaymentAccount_(
       tenantBillsRuntimeFirst_(
         contract,
         ['payment_note', 'bank_note']
+      )
+  });
+}
+
+
+function tenantBillsRuntimeContractLandlordPaymentAccount_(
+  identity
+) {
+  identity = identity || {};
+
+  const contract =
+    identity.contract_row || {};
+  const landlordId =
+    tenantBillsRuntimeUpper_(
+      tenantBillsRuntimeFirst_(
+        contract,
+        ['landlord_id']
+      )
+    );
+  const workspaceId =
+    tenantBillsRuntimeUpper_(
+      identity.workspace_id
+    );
+
+  if (!landlordId || !workspaceId) {
+    return null;
+  }
+
+  const matchingLandlords =
+    getSheetObjects_(
+      V2_SHEETS.landlords
+    ).filter(function (landlord) {
+      const status =
+        tenantBillsRuntimeText_(
+          landlord.account_status || 'active'
+        ).toLowerCase();
+
+      return (
+        tenantBillsRuntimeUpper_(
+          landlord.landlord_id
+        ) === landlordId &&
+        tenantBillsRuntimeUpper_(
+          landlord.workspace_id
+        ) === workspaceId &&
+        ['archived', 'inactive', 'disabled'].indexOf(
+          status
+        ) < 0
+      );
+    });
+
+  if (matchingLandlords.length !== 1) {
+    return null;
+  }
+
+  const landlord = matchingLandlords[0];
+
+  return tenantBillsRuntimePublicPaymentAccount_({
+    bank_code:
+      tenantBillsRuntimeFirst_(
+        landlord,
+        ['bank_code', 'landlord_bank_code']
+      ),
+    bank_name:
+      tenantBillsRuntimeFirst_(
+        landlord,
+        [
+          'bank_name',
+          'landlord_bank_name',
+          'remittance_bank',
+          '銀行',
+          '銀行名稱'
+        ]
+      ),
+    branch_name:
+      tenantBillsRuntimeFirst_(
+        landlord,
+        [
+          'branch_name',
+          'bank_branch',
+          'landlord_bank_branch'
+        ]
+      ),
+    bank_account:
+      tenantBillsRuntimeFirst_(
+        landlord,
+        [
+          'bank_account',
+          'landlord_bank_account',
+          'payment_account',
+          'remittance_account',
+          '銀行帳號',
+          '匯款帳號'
+        ]
+      ),
+    bank_account_name:
+      tenantBillsRuntimeFirst_(
+        landlord,
+        [
+          'bank_account_name',
+          'landlord_bank_account_name',
+          'account_name',
+          '戶名',
+          '帳戶名稱'
+        ]
+      ),
+    payment_note:
+      tenantBillsRuntimeFirst_(
+        landlord,
+        ['payment_note', 'bank_note', '匯款備註']
       )
   });
 }
