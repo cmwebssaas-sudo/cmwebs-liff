@@ -935,6 +935,7 @@ function tenantBillsRuntimeResolveIdentity_(
         tenant,
         ['room_name', 'room_no', 'room_list']
       ),
+    contract_row: contract,
     account_status: accountStatus
   };
 }
@@ -1168,9 +1169,18 @@ function tenantBillsRuntimeDefaultPaymentAccount_(
     accounts[0] ||
     null;
 
-  if (!payment) {
-    return null;
-  }
+  return tenantBillsRuntimePublicPaymentAccount_(
+    payment
+  ) || tenantBillsRuntimeContractPaymentAccount_(
+    identity.contract_row
+  );
+}
+
+
+function tenantBillsRuntimePublicPaymentAccount_(
+  payment
+) {
+  payment = payment || {};
 
   const bankAccount =
     tenantBillsRuntimeText_(
@@ -1205,6 +1215,58 @@ function tenantBillsRuntimeDefaultPaymentAccount_(
         payment.payment_note
       )
   };
+}
+
+
+function tenantBillsRuntimeContractPaymentAccount_(
+  contract
+) {
+  contract = contract || {};
+
+  return tenantBillsRuntimePublicPaymentAccount_({
+    bank_code:
+      tenantBillsRuntimeFirst_(
+        contract,
+        ['bank_code', 'landlord_bank_code']
+      ),
+    bank_name:
+      tenantBillsRuntimeFirst_(
+        contract,
+        ['bank_name', 'landlord_bank_name']
+      ),
+    branch_name:
+      tenantBillsRuntimeFirst_(
+        contract,
+        [
+          'branch_name',
+          'bank_branch',
+          'landlord_bank_branch'
+        ]
+      ),
+    bank_account:
+      tenantBillsRuntimeFirst_(
+        contract,
+        [
+          'bank_account',
+          'landlord_bank_account',
+          'payment_account'
+        ]
+      ),
+    bank_account_name:
+      tenantBillsRuntimeFirst_(
+        contract,
+        [
+          'bank_account_name',
+          'landlord_bank_account_name',
+          'account_name'
+        ]
+      ),
+    payment_note:
+      tenantBillsRuntimeFirst_(
+        contract,
+        ['payment_note', 'bank_note']
+      )
+  });
 }
 
 
