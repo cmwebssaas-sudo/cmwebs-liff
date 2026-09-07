@@ -1229,6 +1229,16 @@ function tenantBillsRuntimePublicPaymentAccount_(
       tenantBillsRuntimeText_(
         payment.bank_account_name
       ),
+    bank_account_cover_available:
+      Boolean(
+        tenantBillsRuntimeText_(
+          payment.bank_account_cover_file_id
+        )
+      ),
+    bank_account_cover_file_name:
+      tenantBillsRuntimeText_(
+        payment.bank_account_cover_file_name
+      ),
     payment_note:
       tenantBillsRuntimeText_(
         payment.payment_note

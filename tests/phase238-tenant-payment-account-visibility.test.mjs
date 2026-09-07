@@ -161,6 +161,8 @@ test('tenant bills fall back to the matching active contract account when the Wo
       branch_name: '',
       bank_account: '238001122334',
       bank_account_name: '合約收款戶名',
+      bank_account_cover_available: false,
+      bank_account_cover_file_name: '',
       payment_note: ''
     }
   );
@@ -222,6 +224,8 @@ test('tenant bills fall back to the active contract landlord account when the Wo
       branch_name: '中山分行',
       bank_account: '239001122334',
       bank_account_name: '房東收款帳戶',
+      bank_account_cover_available: false,
+      bank_account_cover_file_name: '',
       payment_note: '請填寫匯款後五碼'
     }
   );
@@ -296,6 +300,8 @@ test('tenant bills resolve the landlord through the same-workspace room and prop
       branch_name: '',
       bank_account: '603001122334',
       bank_account_name: '房東 603',
+      bank_account_cover_available: false,
+      bank_account_cover_file_name: '',
       payment_note: ''
     }
   );
@@ -350,6 +356,8 @@ test('tenant bills preserve compatible landlord account column aliases used by t
       branch_name: '',
       bank_account: '239998877665',
       bank_account_name: '相容收款戶名',
+      bank_account_cover_available: false,
+      bank_account_cover_file_name: '',
       payment_note: '請保留交易明細'
     }
   );
