@@ -399,7 +399,8 @@ function getTenantPaymentReportInitByLineUid(
         {
           tenant: null,
           bills: [],
-          reports: []
+          reports: [],
+          payment_account: null
         }
       );
     }
@@ -426,7 +427,8 @@ function getTenantPaymentReportInitByLineUid(
         {
           tenant: null,
           bills: [],
-          reports: []
+          reports: [],
+          payment_account: null
         }
       );
     }
@@ -435,6 +437,10 @@ function getTenantPaymentReportInitByLineUid(
       canonicalResult.data || {};
     const tenant =
       tenantPaymentReportBuildTenant_(canonical);
+    const paymentAccount =
+      tenantPaymentReportPaymentAccount_(
+        canonical
+      );
 
     const billRows =
       tenantPaymentReportCanonicalBillRows_(
@@ -517,7 +523,9 @@ function getTenantPaymentReportInitByLineUid(
         bills:
           bills,
         reports:
-          reports
+          reports,
+        payment_account:
+          paymentAccount
       }
     );
 
@@ -550,9 +558,27 @@ function getTenantPaymentReportInitByLineUid(
       {
         tenant: null,
         bills: [],
-        reports: []
+        reports: [],
+        payment_account: null
       }
     );
+  }
+}
+
+
+function tenantPaymentReportPaymentAccount_(canonical) {
+  if (typeof tenantBillsRuntimeDefaultPaymentAccount_ !== 'function') {
+    return null;
+  }
+
+  try {
+    return tenantBillsRuntimeDefaultPaymentAccount_(canonical) || null;
+  } catch (error) {
+    console.warn(
+      '[tenant_payment_report_init] payment account unavailable',
+      error && error.message ? error.message : error
+    );
+    return null;
   }
 }
 

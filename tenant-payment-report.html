@@ -2530,12 +2530,107 @@
           `;
     }
 
+    function tenantPaymentAccountCardHtml_(
+      paymentAccount
+    ) {
+      paymentAccount = paymentAccount || {};
+
+      const bankAccount =
+        rawText(
+          paymentAccount.bank_account
+        ).trim();
+
+      if (!bankAccount) {
+        return `
+          <section class="card notice-card danger">
+            尚未設定收款帳號，請聯絡管理員。
+          </section>
+        `;
+      }
+
+      const bankName = [
+        rawText(
+          paymentAccount.bank_code
+        ).trim(),
+        rawText(
+          paymentAccount.bank_name
+        ).trim()
+      ]
+        .filter(Boolean)
+        .join(' ');
+      const branchName =
+        rawText(
+          paymentAccount.branch_name
+        ).trim();
+      const accountName =
+        rawText(
+          paymentAccount.bank_account_name
+        ).trim();
+      const paymentNote =
+        rawText(
+          paymentAccount.payment_note
+        ).trim();
+
+      return `
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="section-title">
+              轉帳收款資訊
+            </div>
+            <div class="section-hint">
+              請依此帳號匯款
+            </div>
+          </div>
+
+          <div class="tenant-grid">
+            <div class="info-box">
+              <div class="info-label">收款銀行</div>
+              <div class="info-value">${safeHtml(
+                bankName || '-'
+              )}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">分行</div>
+              <div class="info-value">${safeHtml(
+                branchName || '-'
+              )}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">轉帳帳號</div>
+              <div class="info-value">${safeHtml(
+                bankAccount
+              )}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">戶名</div>
+              <div class="info-value">${safeHtml(
+                accountName || '-'
+              )}</div>
+            </div>
+          </div>
+
+          ${
+            paymentNote
+              ? `
+                <div class="notice-card success">
+                  ${safeHtml(paymentNote)}
+                </div>
+              `
+              : ''
+          }
+        </section>
+      `;
+    }
+
     function renderPage(data) {
       PAGE_DATA =
         data || {};
 
       const tenant =
         PAGE_DATA.tenant || {};
+      const paymentAccount =
+        PAGE_DATA.payment_account ||
+        null;
 
       ALL_BILLS =
         Array.isArray(
@@ -2617,6 +2712,8 @@
             </div>
           </div>
         </section>
+
+        ${tenantPaymentAccountCardHtml_(paymentAccount)}
 
         ${
           !PAYMENT_REPORT_BACKEND_READY
