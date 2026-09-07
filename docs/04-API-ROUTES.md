@@ -149,9 +149,13 @@ tenant_payment_report_submit
   account exists may they use bank fields from that already-authenticated
   tenant's single active contract in the same Workspace. If that contract has
   no usable account, they may use exactly one active `V2_landlords` row whose
-  `landlord_id` comes from that contract and whose `workspace_id` is the same
-  verified Workspace. Property rows and legacy bill data are never used for
-  this tenant billing fallback. They expose only
+  `workspace_id` is the same verified Workspace. Its `landlord_id` normally
+  comes from the contract; when the legacy active contract omits that field,
+  the route may derive it only through one active `V2_rooms` row and one active
+  `V2_properties` row with exact matching `workspace_id`, `room_id`, and
+  `property_id`. Room and property rows identify the landlord but never supply
+  bank fields, and legacy bill data is never used for this tenant billing
+  fallback. They expose only
   `bank_code`, `bank_name`, `branch_name`, `bank_account`,
   `bank_account_name`, and `payment_note`; they return `null` when no usable
   receiving account is configured. The primary tenant bill page, bill detail,
