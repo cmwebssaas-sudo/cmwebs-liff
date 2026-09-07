@@ -21,6 +21,8 @@ const V2_SHEETS = {
   tenantMessages: 'V2_tenant_messages',
 
   bills: 'V2_bills',
+  rooms: 'V2_rooms',
+  properties: 'V2_properties',
   workspacePaymentAccounts:
     'V2_workspace_payment_accounts',
   legacyBillHistory: '3.歷史帳單總表'
@@ -1292,13 +1294,10 @@ function tenantBillsRuntimeContractLandlordPaymentAccount_(
 ) {
   identity = identity || {};
 
-  const contract =
-    identity.contract_row || {};
   const landlordId =
     tenantBillsRuntimeUpper_(
-      tenantBillsRuntimeFirst_(
-        contract,
-        ['landlord_id']
+      tenantBillsRuntimeCanonicalLandlordId_(
+        identity
       )
     );
   const workspaceId =
@@ -1393,6 +1392,142 @@ function tenantBillsRuntimeContractLandlordPaymentAccount_(
         ['payment_note', 'bank_note', '匯款備註']
       )
   });
+}
+
+
+function tenantBillsRuntimeCanonicalLandlordId_(
+  identity
+) {
+  identity = identity || {};
+
+  const contract =
+    identity.contract_row || {};
+  const directLandlordId =
+    tenantBillsRuntimeFirst_(
+      contract,
+      ['landlord_id']
+    );
+
+  if (directLandlordId) {
+    return directLandlordId;
+  }
+
+  const workspaceId =
+    tenantBillsRuntimeUpper_(
+      identity.workspace_id
+    );
+  const roomId =
+    tenantBillsRuntimeUpper_(
+      identity.room_id
+    );
+  const identityPropertyId =
+    tenantBillsRuntimeUpper_(
+      identity.property_id
+    );
+
+  if (!workspaceId || !roomId) {
+    return '';
+  }
+
+  const ss = runtimeSpreadsheet_();
+
+  if (
+    !ss.getSheetByName(V2_SHEETS.rooms) ||
+    !ss.getSheetByName(V2_SHEETS.properties)
+  ) {
+    return '';
+  }
+
+  const matchingRooms =
+    getSheetObjects_(
+      V2_SHEETS.rooms
+    ).filter(function (room) {
+      const status =
+        tenantBillsRuntimeText_(
+          room.account_status ||
+          room.room_status ||
+          'active'
+        ).toLowerCase();
+
+      return (
+        tenantBillsRuntimeUpper_(
+          room.workspace_id
+        ) === workspaceId &&
+        tenantBillsRuntimeUpper_(
+          room.room_id
+        ) === roomId &&
+        ['archived', 'inactive', 'disabled'].indexOf(
+          status
+        ) < 0
+      );
+    });
+
+  if (matchingRooms.length !== 1) {
+    return '';
+  }
+
+  const room = matchingRooms[0];
+  const roomPropertyId =
+    tenantBillsRuntimeUpper_(
+      room.property_id
+    );
+
+  if (
+    !roomPropertyId ||
+    (
+      identityPropertyId &&
+      roomPropertyId !== identityPropertyId
+    )
+  ) {
+    return '';
+  }
+
+  const matchingProperties =
+    getSheetObjects_(
+      V2_SHEETS.properties
+    ).filter(function (property) {
+      const status =
+        tenantBillsRuntimeText_(
+          property.account_status ||
+          property.property_status ||
+          'active'
+        ).toLowerCase();
+
+      return (
+        tenantBillsRuntimeUpper_(
+          property.workspace_id
+        ) === workspaceId &&
+        tenantBillsRuntimeUpper_(
+          property.property_id
+        ) === roomPropertyId &&
+        ['archived', 'inactive', 'disabled'].indexOf(
+          status
+        ) < 0
+      );
+    });
+
+  if (matchingProperties.length !== 1) {
+    return '';
+  }
+
+  const property = matchingProperties[0];
+  const landlordIds = {};
+
+  [
+    room.landlord_id,
+    property.landlord_id
+  ].forEach(function (value) {
+    const normalized =
+      tenantBillsRuntimeUpper_(value);
+
+    if (normalized) {
+      landlordIds[normalized] = true;
+    }
+  });
+
+  return Object.keys(landlordIds).length === 1
+    ? Object.keys(landlordIds)[0]
+    : '';
 }
 
 

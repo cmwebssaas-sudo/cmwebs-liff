@@ -227,6 +227,80 @@ test('tenant bills fall back to the active contract landlord account when the Wo
   );
 });
 
+test('tenant bills resolve the landlord through the same-workspace room and property when the active contract omits landlord_id', () => {
+  const result = tenantBillsPayload({
+    V2_tenants: [{
+      tenant_id: 'T-603',
+      tenant_line_user_id: 'line-tenant',
+      tenant_user_id: 'U-603',
+      tenant_name: '房客 603',
+      workspace_id: 'WS-603',
+      property_id: 'P-603',
+      room_id: 'R-603',
+      current_contract_id: 'C-603',
+      account_status: 'active'
+    }],
+    V2_contracts: [{
+      contract_id: 'C-603',
+      tenant_id: 'T-603',
+      tenant_user_id: 'U-603',
+      workspace_id: 'WS-603',
+      property_id: 'P-603',
+      room_id: 'R-603',
+      room_name: '603',
+      contract_status: 'active'
+    }],
+    V2_rooms: [{
+      room_id: 'R-603',
+      workspace_id: 'WS-603',
+      property_id: 'P-603',
+      landlord_id: 'L-603',
+      room_name: '603',
+      account_status: 'active'
+    }],
+    V2_properties: [{
+      property_id: 'P-603',
+      workspace_id: 'WS-603',
+      landlord_id: 'L-603',
+      account_status: 'active'
+    }],
+    V2_bills: [{
+      bill_id: 'B-603',
+      tenant_id: 'T-603',
+      tenant_user_id: 'U-603',
+      workspace_id: 'WS-603',
+      contract_id: 'C-603',
+      room_id: 'R-603',
+      room_name: '603',
+      bill_month: '2026-09',
+      due_date: '2026-09-10',
+      total_amount: 24500,
+      payment_status: 'unpaid'
+    }],
+    V2_workspace_payment_accounts: [],
+    V2_landlords: [{
+      landlord_id: 'L-603',
+      workspace_id: 'WS-603',
+      bank_code: '004',
+      bank_name: '臺灣銀行',
+      bank_account: '603001122334',
+      bank_account_name: '房東 603'
+    }]
+  });
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(result.data.payment_account)),
+    {
+      bank_code: '004',
+      bank_name: '臺灣銀行',
+      branch_name: '',
+      bank_account: '603001122334',
+      bank_account_name: '房東 603',
+      payment_note: ''
+    }
+  );
+});
+
 test('tenant bills preserve compatible landlord account column aliases used by the contract page', () => {
   const result = tenantBillsPayload({
     V2_tenants: [{
