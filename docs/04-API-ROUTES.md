@@ -15,10 +15,12 @@ deployed.
 - Scope: read/write route definitions only; every write route still requires its
   existing Workspace, role, and authorization checks.
 
-## Local candidate route addition
+## 2026-09-07 formal release additions
 
-The current local repair candidate adds the following routes; they are not part
-of the immutable Version 85 baseline above and have not been deployed:
+The formal release merged as PR #127 (`f7c3361f`) adds the following routes.
+They are not part of the historical immutable Version 85 baseline above; the
+existing Production Web App deployment now serves Apps Script Version 173 and
+the previous Version 172 remains the rollback target:
 
 ```text
 landlord_monthly_bill_notifications_send
@@ -28,8 +30,8 @@ tenant_payment_account_cover
 
 It sends only the selected month’s existing `issued` and unpaid bills whose
 `sent_status` is `not_sent` or `failed`, after the existing Workspace and
-send-permission checks. The candidate source therefore has 87 routes; the
-canonical 84-route inventory remains the release baseline until deployment.
+send-permission checks. The released source therefore has 87 routes; the
+canonical 84-route inventory remains the historical Version 85 baseline.
 
 `landlord_settings_upload_payment_account_cover` accepts a private JPG/PNG
 cover image through the authenticated landlord POST bridge, binds it to the
