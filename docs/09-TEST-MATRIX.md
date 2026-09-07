@@ -144,7 +144,7 @@
 - [ ] 個人資料與手機前導 0
 - [ ] Workspace 名稱、時區、幣別
 - [ ] 收款帳號權限與遮罩
-- [ ] 收款帳號前導 0 保留、私有帳戶封面上傳與房客帳單預覽
+- [x] 收款帳號前導 0 保留、私有帳戶封面上傳與房客帳單預覽（Phase 239；PR #127／Apps Script Version 173／GitHub Pages workflow `34126765101`；Web App URL 不變；真實房東上傳、房客 LIFF 與手機 UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`）
 - [ ] 帳務預設
 - [ ] 通知偏好
 - [ ] 單筆已讀

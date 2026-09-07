@@ -7,6 +7,22 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-07 匯款帳號前導 0 與銀行帳戶封面正式部署
+
+- Workspace 收款帳號寫入現在先設定 Google Sheets 純文字格式 `@`，保留完整的
+  前導 `0`；既有已被截掉的數字無法從舊值還原，房東需重新輸入一次完整帳號。
+- 房東設定頁新增私有 JPG／PNG 銀行帳戶封面上傳；房客「我的帳單」與付款回報頁
+  只顯示安全的封面可用狀態與檔名，圖片內容經已驗證的租客路由延遲載入，Drive ID
+  不進入租客 payload。上傳前需設定 Script Property
+  `CMWEBS_PAYMENT_ACCOUNT_COVER_DRIVE_ROOT_FOLDER_ID`。
+- PR #127 已合併至 `main`，merge commit `f7c3361f257d032210ab5740022fddcde8168646`；
+  既有 Production deployment `AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ`
+  已由 Version 172 更新至 immutable Version 173，Version 172 保留 rollback，Web App
+  URL 不變。
+- GitHub Pages workflow `34126765101` 成功完成；公開房客帳單頁與房東設定頁均 HTTP
+  200，已 read-back 新路由、封面按鈕與上傳按鈕；未修改帳單、付款、Sheet 資料或
+  LINE 發送。真實封面上傳、房客 LIFF／手機流程仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-07 房客付款回報金額一致性修正正式部署
 
 - 房號 302 的回報顯示 `NT$8,790`、LINE 正式帳單顯示 `NT$7,145`；差額

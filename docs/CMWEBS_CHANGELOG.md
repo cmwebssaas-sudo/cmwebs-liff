@@ -2,6 +2,21 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-07 — 匯款帳號前導 0 與銀行帳戶封面（正式部署）
+
+- Workspace 收款帳號改以純文字欄位寫入，Google Sheets 先設定 `@`，不再因數字轉換
+  清除前導 `0`；舊資料已遺失的前導 `0` 需由房東重新輸入。
+- 新增房東私有銀行帳戶封面上傳，以及房客帳單／付款回報頁的延遲預覽；Drive ID
+  僅留在伺服器端，租客只取得封面檔名與受限圖片資料。
+- PR #127 以 merge commit `f7c3361f257d032210ab5740022fddcde8168646` 合併；既有
+  Production Apps Script deployment 由 Version 172 更新至 Version 173，Version 172
+  保留 rollback，Web App URL 不變。Pages workflow `34126765101` 成功完成。
+- 本地完整 Node `155/155`、`npm run validate`、Apps Script syntax 與
+  `git diff --check` 均通過；Production API／公開房客帳單頁／房東設定頁 read-back
+  均 HTTP 200。未執行 Sheet 帳務資料寫入或 LINE 發送；真實手機／LIFF UAT 仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。上傳功能正式使用前需設定
+  `CMWEBS_PAYMENT_ACCOUNT_COVER_DRIVE_ROOT_FOLDER_ID`。
+
 ## 2026-09-07 — 房客付款回報金額與正式帳單一致（正式部署）
 
 - 根因確認：房客付款回報初始化與送出只讀取衍生的
