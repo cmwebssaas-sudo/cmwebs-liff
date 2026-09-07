@@ -2798,6 +2798,99 @@
       `;
     }
 
+    function tenantBillPaymentAccountDetailHtml_(
+      paymentAccount
+    ) {
+      paymentAccount = paymentAccount || {};
+
+      const bankAccount =
+        rawText(
+          paymentAccount.bank_account
+        ).trim();
+
+      if (!bankAccount) {
+        return `
+          <div class="detail-section">
+            <div class="detail-section-title">
+              轉帳收款資訊
+            </div>
+
+            <div class="calculation-box">
+              目前尚未設定收款帳號，請聯絡管理員。
+            </div>
+          </div>
+        `;
+      }
+
+      const bankName = [
+        rawText(
+          paymentAccount.bank_code
+        ).trim(),
+        rawText(
+          paymentAccount.bank_name
+        ).trim()
+      ]
+        .filter(Boolean)
+        .join(' ');
+      const branchName =
+        rawText(
+          paymentAccount.branch_name
+        ).trim();
+      const accountName =
+        rawText(
+          paymentAccount.bank_account_name
+        ).trim();
+      const paymentNote =
+        rawText(
+          paymentAccount.payment_note
+        ).trim();
+      const rows = [
+        ['收款銀行', bankName],
+        ['分行', branchName],
+        ['轉帳帳號', bankAccount],
+        ['戶名', accountName]
+      ].filter(function (row) {
+        return row[1];
+      });
+
+      return `
+        <div class="detail-section">
+          <div class="detail-section-title">
+            轉帳收款資訊
+          </div>
+
+          ${
+            rows
+              .map(function (row) {
+                return `
+                  <div class="detail-row">
+                    <div class="detail-label">
+                      ${safeHtml(row[0])}
+                    </div>
+                    <div class="detail-value">
+                      ${safeHtml(row[1])}
+                    </div>
+                  </div>
+                `;
+              })
+              .join('')
+          }
+
+          ${
+            paymentNote
+              ? `
+                <div class="calculation-box">
+                  付款備註：${safeHtml(
+                    paymentNote
+                  )}
+                </div>
+              `
+              : ''
+          }
+        </div>
+      `;
+    }
+
     function openBillDetail(
       billId
     ) {
@@ -2882,6 +2975,11 @@
           ],
           ''
         );
+      const paymentAccount =
+        PAGE_DATA &&
+        PAGE_DATA.payment_account
+          ? PAGE_DATA.payment_account
+          : null;
 
       const detailSheet =
         document.getElementById(
@@ -3181,6 +3279,10 @@
             `
             : ''
         }
+
+        ${tenantBillPaymentAccountDetailHtml_(
+          paymentAccount
+        )}
 
         <div class="detail-section">
           <div class="detail-section-title">
