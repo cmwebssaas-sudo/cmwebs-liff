@@ -142,6 +142,13 @@ tenant_payment_report_submit
 - `tenant_bills` returns `discount_amount` and `tenant_visible_note`, but never
   returns the landlord-only `note`. The tenant bill detail renders the discount
   and its tenant-visible explanation when present.
+- `tenant_bills` also returns a top-level `payment_account` for the
+  authenticated tenant's active-contract Workspace. It selects that Workspace's
+  non-archived default receiving account (or its first eligible account) and
+  exposes only `bank_code`, `bank_name`, `branch_name`, `bank_account`,
+  `bank_account_name`, and `payment_note`; it returns `null` when no usable
+  receiving account is configured. The tenant bill detail renders this as the
+  transfer instruction and does not receive Workspace, member, or audit data.
 - When an authorized landlord manually sends or re-sends a bill notification,
   the message includes `tenant_visible_note` when it is non-empty. Existing
   sent LINE messages are immutable and are not retroactively changed.

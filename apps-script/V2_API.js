@@ -20,6 +20,8 @@ const V2_SHEETS = {
   tenantMessages: 'V2_tenant_messages',
 
   bills: 'V2_bills',
+  workspacePaymentAccounts:
+    'V2_workspace_payment_accounts',
   legacyBillHistory: '3.歷史帳單總表'
 };
 
@@ -1087,6 +1089,125 @@ function tenantBillsRuntimePublicBill_(
 }
 
 
+function tenantBillsRuntimePaymentAccountRows_() {
+  const ss = runtimeSpreadsheet_();
+  const sheet = ss.getSheetByName(
+    V2_SHEETS.workspacePaymentAccounts
+  );
+
+  if (!sheet) {
+    return [];
+  }
+
+  const values =
+    runtimeSnapshotGetValues_(sheet);
+
+  if (!values || values.length < 2) {
+    return [];
+  }
+
+  const headers = values[0].map(
+    tenantBillsRuntimeText_
+  );
+
+  return values
+    .slice(1)
+    .filter(function (row) {
+      return row.some(function (cell) {
+        return cell !== '' && cell !== null;
+      });
+    })
+    .map(function (row) {
+      const payment = {};
+
+      headers.forEach(function (header, index) {
+        if (header) {
+          payment[header] = row[index];
+        }
+      });
+
+      return payment;
+    });
+}
+
+
+function tenantBillsRuntimeDefaultPaymentAccount_(
+  identity
+) {
+  const workspaceId =
+    tenantBillsRuntimeUpper_(
+      identity.workspace_id
+    );
+  const accounts =
+    tenantBillsRuntimePaymentAccountRows_()
+      .filter(function (payment) {
+        return (
+          tenantBillsRuntimeUpper_(
+            payment.workspace_id
+          ) === workspaceId &&
+          tenantBillsRuntimeText_(
+            payment.account_status ||
+            'active'
+          ).toLowerCase() !== 'archived'
+        );
+      });
+  const payment =
+    accounts.find(function (item) {
+      return [
+        'true',
+        '1',
+        'yes',
+        'y',
+        '是'
+      ].indexOf(
+        tenantBillsRuntimeText_(
+          item.is_default
+        ).toLowerCase()
+      ) >= 0;
+    }) ||
+    accounts[0] ||
+    null;
+
+  if (!payment) {
+    return null;
+  }
+
+  const bankAccount =
+    tenantBillsRuntimeText_(
+      payment.bank_account
+    );
+
+  if (!bankAccount) {
+    return null;
+  }
+
+  return {
+    bank_code:
+      tenantBillsRuntimeText_(
+        payment.bank_code
+      ),
+    bank_name:
+      tenantBillsRuntimeText_(
+        payment.bank_name
+      ),
+    branch_name:
+      tenantBillsRuntimeText_(
+        payment.branch_name
+      ),
+    bank_account:
+      bankAccount,
+    bank_account_name:
+      tenantBillsRuntimeText_(
+        payment.bank_account_name
+      ),
+    payment_note:
+      tenantBillsRuntimeText_(
+        payment.payment_note
+      )
+  };
+}
+
+
 function tenantBillsRuntimePayload_(lineUserId) {
   const identity =
     tenantBillsRuntimeResolveIdentity_(
@@ -1106,6 +1227,10 @@ function tenantBillsRuntimePayload_(lineUserId) {
       identity
     );
   const rows = billing.bills;
+  const paymentAccount =
+    tenantBillsRuntimeDefaultPaymentAccount_(
+      identity
+    );
 
   tenantBillsRuntimeRowsByBillId_(rows);
 
@@ -1149,6 +1274,8 @@ function tenantBillsRuntimePayload_(lineUserId) {
   const payload = {
     tenant: tenant,
     bills: bills,
+    payment_account:
+      paymentAccount,
     count: bills.length
   };
 
@@ -1166,6 +1293,8 @@ function tenantBillsRuntimePayload_(lineUserId) {
     tenant: tenant,
     bills: bills,
     items: bills,
+    payment_account:
+      paymentAccount,
     count: bills.length,
     source: source,
     identity_match:
@@ -1189,6 +1318,7 @@ function tenantBillsRuntimeFailure_(error) {
   const payload = {
     tenant: null,
     bills: [],
+    payment_account: null,
     count: 0
   };
 
@@ -1200,6 +1330,7 @@ function tenantBillsRuntimeFailure_(error) {
     tenant: null,
     bills: [],
     items: [],
+    payment_account: null,
     count: 0,
     data: payload
   };
