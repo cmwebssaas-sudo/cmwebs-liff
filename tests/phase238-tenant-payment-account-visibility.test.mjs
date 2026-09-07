@@ -166,6 +166,169 @@ test('tenant bills fall back to the matching active contract account when the Wo
   );
 });
 
+test('tenant bills fall back to the active contract landlord account when the Workspace default and contract account are absent', () => {
+  const result = tenantBillsPayload({
+    V2_tenants: [{
+      tenant_id: 'T-239',
+      tenant_line_user_id: 'line-tenant',
+      tenant_user_id: 'U-239',
+      tenant_name: '房客 239',
+      workspace_id: 'WS-239',
+      current_contract_id: 'C-239',
+      account_status: 'active'
+    }],
+    V2_contracts: [{
+      contract_id: 'C-239',
+      tenant_id: 'T-239',
+      tenant_user_id: 'U-239',
+      landlord_id: 'L-239',
+      workspace_id: 'WS-239',
+      property_id: 'P-239',
+      room_id: 'R-239',
+      room_name: '239',
+      contract_status: 'active'
+    }],
+    V2_bills: [{
+      bill_id: 'B-239',
+      tenant_id: 'T-239',
+      tenant_user_id: 'U-239',
+      workspace_id: 'WS-239',
+      contract_id: 'C-239',
+      room_id: 'R-239',
+      room_name: '239',
+      bill_month: '2026-09',
+      due_date: '2026-09-10',
+      total_amount: 8500,
+      payment_status: 'unpaid'
+    }],
+    V2_workspace_payment_accounts: [],
+    V2_landlords: [{
+      landlord_id: 'L-239',
+      workspace_id: 'WS-239',
+      bank_code: '004',
+      bank_name: '臺灣銀行',
+      bank_branch: '中山分行',
+      bank_account: '239001122334',
+      bank_account_name: '房東收款帳戶',
+      payment_note: '請填寫匯款後五碼'
+    }]
+  });
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(result.data.payment_account)),
+    {
+      bank_code: '004',
+      bank_name: '臺灣銀行',
+      branch_name: '中山分行',
+      bank_account: '239001122334',
+      bank_account_name: '房東收款帳戶',
+      payment_note: '請填寫匯款後五碼'
+    }
+  );
+});
+
+test('tenant bills preserve compatible landlord account column aliases used by the contract page', () => {
+  const result = tenantBillsPayload({
+    V2_tenants: [{
+      tenant_id: 'T-239-ALIAS',
+      tenant_line_user_id: 'line-tenant',
+      workspace_id: 'WS-239-ALIAS',
+      current_contract_id: 'C-239-ALIAS',
+      account_status: 'active'
+    }],
+    V2_contracts: [{
+      contract_id: 'C-239-ALIAS',
+      tenant_id: 'T-239-ALIAS',
+      landlord_id: 'L-239-ALIAS',
+      workspace_id: 'WS-239-ALIAS',
+      room_id: 'R-239-ALIAS',
+      room_name: '239-A',
+      contract_status: 'active'
+    }],
+    V2_bills: [{
+      bill_id: 'B-239-ALIAS',
+      tenant_id: 'T-239-ALIAS',
+      workspace_id: 'WS-239-ALIAS',
+      contract_id: 'C-239-ALIAS',
+      room_id: 'R-239-ALIAS',
+      room_name: '239-A',
+      bill_month: '2026-09',
+      due_date: '2026-09-10',
+      total_amount: 8500,
+      payment_status: 'unpaid'
+    }],
+    V2_workspace_payment_accounts: [],
+    V2_landlords: [{
+      landlord_id: 'L-239-ALIAS',
+      workspace_id: 'WS-239-ALIAS',
+      銀行名稱: '相容銀行',
+      匯款帳號: '239998877665',
+      戶名: '相容收款戶名',
+      匯款備註: '請保留交易明細'
+    }]
+  });
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(result.data.payment_account)),
+    {
+      bank_code: '',
+      bank_name: '相容銀行',
+      branch_name: '',
+      bank_account: '239998877665',
+      bank_account_name: '相容收款戶名',
+      payment_note: '請保留交易明細'
+    }
+  );
+});
+
+test('tenant bills never use a landlord account outside the active lease Workspace or landlord', () => {
+  const result = tenantBillsPayload({
+    V2_tenants: [{
+      tenant_id: 'T-239',
+      tenant_line_user_id: 'line-tenant',
+      tenant_user_id: 'U-239',
+      workspace_id: 'WS-239',
+      current_contract_id: 'C-239',
+      account_status: 'active'
+    }],
+    V2_contracts: [{
+      contract_id: 'C-239',
+      tenant_id: 'T-239',
+      tenant_user_id: 'U-239',
+      landlord_id: 'L-239',
+      workspace_id: 'WS-239',
+      room_id: 'R-239',
+      room_name: '239',
+      contract_status: 'active'
+    }],
+    V2_bills: [{
+      bill_id: 'B-239',
+      tenant_id: 'T-239',
+      tenant_user_id: 'U-239',
+      workspace_id: 'WS-239',
+      contract_id: 'C-239',
+      room_id: 'R-239',
+      room_name: '239',
+      bill_month: '2026-09',
+      due_date: '2026-09-10',
+      total_amount: 8500,
+      payment_status: 'unpaid'
+    }],
+    V2_workspace_payment_accounts: [],
+    V2_landlords: [{
+      landlord_id: 'L-239',
+      workspace_id: 'WS-OTHER',
+      bank_account: 'should-not-leak'
+    }, {
+      landlord_id: 'L-OTHER',
+      workspace_id: 'WS-239',
+      bank_account: 'should-not-leak'
+    }]
+  });
+
+  assert.equal(result.data.payment_account, null);
+});
+
 test('My Bills renders the receiving account in a visible page card', () => {
   const context = htmlContext();
 

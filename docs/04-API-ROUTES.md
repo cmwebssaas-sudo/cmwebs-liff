@@ -147,7 +147,11 @@ tenant_payment_report_submit
   They first select that Workspace's non-archived default receiving account
   (or its first eligible account). Only when no usable Workspace receiving
   account exists may they use bank fields from that already-authenticated
-  tenant's single active contract in the same Workspace. They expose only
+  tenant's single active contract in the same Workspace. If that contract has
+  no usable account, they may use exactly one active `V2_landlords` row whose
+  `landlord_id` comes from that contract and whose `workspace_id` is the same
+  verified Workspace. Property rows and legacy bill data are never used for
+  this tenant billing fallback. They expose only
   `bank_code`, `bank_name`, `branch_name`, `bank_account`,
   `bank_account_name`, and `payment_note`; they return `null` when no usable
   receiving account is configured. The primary tenant bill page, bill detail,
