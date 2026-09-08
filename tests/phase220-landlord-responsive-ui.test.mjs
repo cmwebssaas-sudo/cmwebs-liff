@@ -219,6 +219,29 @@ test('Phase 220 requires the shared landlord desktop stylesheet', () => {
   assert.match(cssSource, /@media\s*\(min-width:\s*1024px\)/);
 });
 
+test('Phase 244 keeps the entry bottom navigation inside the mobile app shell contract', () => {
+  assert.match(
+    entrySource,
+    /<div class="app-shell desktop-ready">[\s\S]*?<main class="page desktop-main">[\s\S]*?<\/main>\s*<nav class="bottom-nav">/,
+    'entry bottom navigation must remain an app-shell child after the full-height page'
+  );
+  assertMobilePageShellContract(entrySource, 'landlord-entry.html');
+
+  const entryStyles = extractStyleBlocks(entrySource).join('\n');
+  const bottomNavRules = extractTopLevelCssRuleBlocks(entryStyles, '.bottom-nav');
+  assert.equal(bottomNavRules.some((rule) => {
+    const declarations = parseCssDeclarations(rule.body);
+    return declarations.some(({ property, value }) => property === 'position' && value === 'absolute') &&
+      declarations.some(({ property, value }) => property === 'bottom' && value === '0') &&
+      declarations.some(({ property, value }) => property === 'padding-bottom' && /safe-area-inset-bottom/.test(value));
+  }), true, 'entry bottom navigation must be positioned within the overflow-hidden shell with safe-area clearance');
+
+  const desktopCss = extractAtRuleBlocks(cssSource, /@media\s*\(min-width:\s*1024px\)/)
+    .map((block) => block.full)
+    .join('\n');
+  assert.match(desktopCss, /\.bottom-nav[\s\S]*?display:\s*none/);
+});
+
 test('Phase 220 links the shared stylesheet and preserves the mobile shell contract', () => {
   for (const [name, source] of Object.entries(pages)) {
     assert.match(source, /<link[^>]+href="landlord-responsive\.css"/, `${name} must link shared CSS`);

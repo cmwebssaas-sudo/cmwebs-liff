@@ -29,6 +29,12 @@ function createEntryRuntime() {
   const storage = new Map();
   const timers = new Set();
   const submittedLocations = [];
+  let now = Date.now();
+  const RuntimeDate = class extends Date {
+    static now() {
+      return now;
+    }
+  };
 
   function createElement(tagName, id = '') {
     const attributes = new Map();
@@ -114,7 +120,7 @@ function createEntryRuntime() {
     URLSearchParams,
     JSON,
     Math,
-    Date,
+    Date: RuntimeDate,
     Error,
     String,
     Number,
@@ -181,7 +187,15 @@ function createEntryRuntime() {
     { filename: 'landlord-entry.html:inline-script' }
   );
 
-  return { context, elements, auth, authCalls };
+  return {
+    context,
+    elements,
+    auth,
+    authCalls,
+    advanceTime(milliseconds) {
+      now += milliseconds;
+    }
+  };
 }
 
 function accessibleNamePattern(id) {
@@ -393,7 +407,72 @@ test('Phase 244 executes verify duplicate-click, busy, and failure recovery beha
   const recoveredVerifyButton = elements.get('emailLoginVerifyButton');
   assert.equal(recoveredVerifyButton?.disabled, false);
   assert.notEqual(recoveredVerifyButton?.getAttribute('aria-busy'), 'true');
+  assert.doesNotMatch(elements.get('app').innerHTML, /(?:is-busy|驗證中…)/);
   assert.match(elements.get('app').innerHTML, /(?:無效|過期|失敗|錯誤|再試)/);
+});
+
+test('Phase 244 restores a failed initial request to a retryable non-busy action', async () => {
+  const runtime = createEntryRuntime();
+  const { context, elements, auth, authCalls } = runtime;
+
+  const failedRequest = context.requestEmailLoginCode();
+  await Promise.resolve();
+  auth.requestDeferred.reject(new Error('synthetic request failure'));
+  await failedRequest;
+
+  const recoveredRequestButton = elements.get('emailLoginRequestButton');
+  assert.equal(recoveredRequestButton?.disabled, false);
+  assert.notEqual(recoveredRequestButton?.getAttribute('aria-busy'), 'true');
+  assert.doesNotMatch(elements.get('app').innerHTML, /(?:is-busy|寄送中…)/);
+  assert.match(elements.get('app').innerHTML, /(?:失敗|錯誤|再試)/);
+
+  auth.requestDeferred = createDeferred();
+  const retry = context.requestEmailLoginCode();
+  await Promise.resolve();
+  assert.equal(authCalls.request.length, 2, 'a recovered request must be retryable');
+  auth.requestDeferred.resolve({ data: { challenge_id: `retry-${Date.now()}` } });
+  await retry;
+});
+
+test('Phase 244 renders resend as the busy request action and restores retry after failure', async () => {
+  const runtime = createEntryRuntime();
+  const { context, elements, auth, authCalls, advanceTime } = runtime;
+
+  const initialRequest = context.requestEmailLoginCode();
+  auth.requestDeferred.resolve({ data: { challenge_id: `synthetic-${Date.now()}` } });
+  await initialRequest;
+
+  advanceTime(60001);
+  context.updateEmailLoginCountdown();
+  assert.equal(elements.get('emailResendButton')?.disabled, false);
+
+  auth.requestDeferred = createDeferred();
+  const resend = context.requestEmailLoginCode();
+  await Promise.resolve();
+  const resendButton = elements.get('emailResendButton');
+  assert.equal(authCalls.request.length, 2);
+  assert.equal(resendButton?.disabled, true);
+  assert.equal(resendButton?.getAttribute('aria-busy'), 'true');
+  assert.match(elements.get('app').innerHTML, /寄送中…/);
+
+  const duplicate = context.requestEmailLoginCode();
+  await Promise.resolve();
+  assert.equal(authCalls.request.length, 2, 'a pending resend must ignore rapid re-entry');
+
+  auth.requestDeferred.reject(new Error('synthetic resend failure'));
+  await Promise.all([resend, duplicate]);
+
+  const recoveredResendButton = elements.get('emailResendButton');
+  assert.equal(recoveredResendButton?.disabled, false);
+  assert.notEqual(recoveredResendButton?.getAttribute('aria-busy'), 'true');
+  assert.doesNotMatch(elements.get('app').innerHTML, /(?:is-busy|寄送中…)/);
+
+  auth.requestDeferred = createDeferred();
+  const retry = context.requestEmailLoginCode();
+  await Promise.resolve();
+  assert.equal(authCalls.request.length, 3, 'a failed resend must be retryable');
+  auth.requestDeferred.resolve({ data: { challenge_id: `retry-${Date.now()}` } });
+  await retry;
 });
 
 test('Phase 244 gives OTP errors a live accessible region and names every form field', () => {

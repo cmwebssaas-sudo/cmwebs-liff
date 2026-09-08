@@ -15,6 +15,7 @@
   <style>
     :root {
       --app-height: 100vh;
+      --nav-height: 64px;
       --primary: #06c755;
       --primary-dark: #079641;
       --primary-soft: #edf9f2;
@@ -82,7 +83,11 @@
       padding:
         max(22px, env(safe-area-inset-top))
         16px
-        calc(30px + env(safe-area-inset-bottom));
+        calc(
+          var(--nav-height) +
+          30px +
+          env(safe-area-inset-bottom)
+        );
     }
 
     .brand {
@@ -304,6 +309,36 @@
       border-color: #f1c4c0;
       background: var(--danger-soft);
       color: var(--danger);
+    }
+
+    .bottom-nav {
+      position: absolute;
+      z-index: 30;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      padding-bottom: env(safe-area-inset-bottom);
+      border-top: 1px solid rgba(231, 234, 238, 0.94);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 -8px 24px rgba(25, 35, 55, 0.08);
+    }
+
+    .bottom-nav-inner {
+      height: var(--nav-height);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .nav-item {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .nav-item.active {
+      color: var(--primary-dark);
     }
 
     @media (max-width: 390px) {
@@ -748,12 +783,12 @@
                 </button>
                 <button
                   id="emailResendButton"
-                  class="secondary-button entry-auth-action"
+                  class="secondary-button entry-auth-action ${requestBusy ? 'is-busy' : ''}"
                   type="button"
                   onclick="requestEmailLoginCode()"
-                  disabled
+                  ${requestBusy ? 'disabled aria-busy="true"' : 'aria-busy="false"'}
                 >
-                  60 秒後可重新寄送
+                  ${requestBusy ? '寄送中…' : '60 秒後可重新寄送'}
                 </button>
               `
               : `
@@ -789,6 +824,7 @@
 
       if (remaining > 0) {
         button.disabled = true;
+        button.setAttribute('aria-busy', 'false');
         button.textContent = remaining + ' 秒後可重新寄送';
         EMAIL_LOGIN_COUNTDOWN_TIMER =
           setTimeout(updateEmailLoginCountdown, 1000);
@@ -796,6 +832,7 @@
       }
 
       button.disabled = false;
+      button.setAttribute('aria-busy', 'false');
       button.textContent = '重新寄送驗證碼';
     }
 
@@ -821,16 +858,21 @@
         return;
       }
 
+      const isResend =
+        Boolean(EMAIL_LOGIN_CHALLENGE_ID);
+      let requestSucceeded = false;
       EMAIL_LOGIN_REQUEST_IN_FLIGHT = true;
       try {
         renderEmailLogin({
           message: '寄送中…'
         });
         const requestButton =
-          document.getElementById('emailLoginRequestButton');
+          document.getElementById('emailLoginRequestButton') ||
+          document.getElementById('emailResendButton');
         if (requestButton) {
           requestButton.disabled = true;
           requestButton.setAttribute('aria-busy', 'true');
+          requestButton.textContent = '寄送中…';
         }
         const result =
           await auth.requestEmailCode(email);
@@ -843,23 +885,29 @@
         EMAIL_LOGIN_COUNTDOWN_UNTIL =
           Date.now() + 60000;
         EMAIL_LOGIN_REQUEST_IN_FLIGHT = false;
+        requestSucceeded = true;
         renderEmailLogin({
           message: '驗證碼已寄出。請在 10 分鐘內完成輸入。'
         });
       } catch (error) {
+        EMAIL_LOGIN_REQUEST_IN_FLIGHT = false;
+        if (isResend) {
+          EMAIL_LOGIN_COUNTDOWN_UNTIL = 0;
+        }
         renderEmailLogin({
           error: true,
           message: emailMessageText(
             (error && error.code) ||
               (error && error.message),
-            '若 Email 可使用，我們會寄出一次性驗證碼。'
+            '驗證碼寄送失敗，請確認網路後再試。'
           )
         });
       } finally {
         EMAIL_LOGIN_REQUEST_IN_FLIGHT = false;
         const button =
-          document.getElementById('emailLoginRequestButton');
-        if (button && !EMAIL_LOGIN_CHALLENGE_ID) {
+          document.getElementById('emailLoginRequestButton') ||
+          document.getElementById('emailResendButton');
+        if (button && !requestSucceeded) {
           button.disabled = false;
           button.setAttribute('aria-busy', 'false');
         }
@@ -889,6 +937,7 @@
         return;
       }
 
+      let verifySucceeded = false;
       EMAIL_LOGIN_VERIFY_IN_FLIGHT = true;
       try {
         renderEmailLogin({
@@ -904,11 +953,14 @@
           challengeId,
           code
         );
+        EMAIL_LOGIN_VERIFY_IN_FLIGHT = false;
+        verifySucceeded = true;
         if (goReturnTo()) {
           return;
         }
         goPage('landlord-home.html');
       } catch (error) {
+        EMAIL_LOGIN_VERIFY_IN_FLIGHT = false;
         renderEmailLogin({
           error: true,
           message: emailMessageText(
@@ -921,7 +973,7 @@
         EMAIL_LOGIN_VERIFY_IN_FLIGHT = false;
         const button =
           document.getElementById('emailLoginVerifyButton');
-        if (button) {
+        if (button && !verifySucceeded) {
           button.disabled = false;
           button.setAttribute('aria-busy', 'false');
         }
