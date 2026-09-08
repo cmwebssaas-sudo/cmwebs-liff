@@ -70,6 +70,52 @@ function makeBridgeRuntime(request) {
 }
 
 {
+  let requestedTimeout = null;
+  const context = {
+    URL,
+    Promise,
+    Math,
+    Date,
+    console,
+    setTimeout,
+    clearTimeout,
+    window: null
+  };
+
+  context.window = context;
+  context.CMWebsLandlordAuth = {
+    getRequestAuthParams() {
+      return {
+        response_mode: 'bridge',
+        landlord_session_token: 'session-token'
+      };
+    },
+    handleAuthFailure() {
+      return false;
+    },
+    request(action, params, options) {
+      requestedTimeout = options && options.timeoutMs;
+      return Promise.resolve({ success: true, data: { action, params } });
+    }
+  };
+
+  vm.createContext(context);
+  vm.runInContext(apiSource, context);
+
+  await context.CMWebsLandlordApi.request({
+    action: 'landlord_bill_manual_settle',
+    params: { bill_id: 'B1' },
+    timeoutMs: 60000
+  });
+
+  assert.equal(
+    requestedTimeout,
+    60000,
+    'bridge writes must receive the page-specific timeout instead of using the auth default'
+  );
+}
+
+{
   let attempts = 0;
   const api = makeBridgeRuntime(async () => {
     attempts += 1;

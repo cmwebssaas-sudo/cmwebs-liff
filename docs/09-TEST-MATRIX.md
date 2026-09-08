@@ -148,6 +148,7 @@
 - [ ] 收款帳號權限與遮罩
 - [x] 收款帳號前導 0 保留、私有帳戶封面上傳與房客帳單預覽（Phase 239；PR #127／Apps Script Version 173／GitHub Pages workflow `34126765101`；Web App URL 不變；真實房東上傳、房客 LIFF 與手機 UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`）
 - [x] Apps Script sandbox bridge、帳戶封面鎖定與手動銷帳逾時回歸（Phase 240；sandbox 回應僅以受限 Google origin 與 request nonce 接受；帳戶封面與手動銷帳分別在 8 秒回覆忙碌，手動銷帳完成帳務寫入後才釋放通知；Production／真機 UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`）
+- [x] 手動銷帳與銀行帳戶封面上傳沿用頁面指定的 60 秒 bridge timeout，避免共享 auth client 將長操作截斷（Phase 236／239 follow-up；Production／真機 UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`）
 - [ ] 帳務預設
 - [ ] 通知偏好
 - [ ] 單筆已讀

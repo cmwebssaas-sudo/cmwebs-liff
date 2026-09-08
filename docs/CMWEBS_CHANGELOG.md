@@ -2,6 +2,14 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-09 — 付款帳號封面與手動銷帳 bridge timeout（本地候選）
+
+- 修正房東手動銷帳與銀行帳戶封面上傳在 Email／bridge 路徑忽略頁面指定逾時值的問題；
+  兩者現在可使用 60 秒上限，仍不啟用自動重試，避免重複寫入。
+- 新增 Phase 236／239 回歸測試，確認長操作逾時值由 API client 傳遞至 auth bridge。
+- 本地完整 Node 測試與 Apps Script syntax 已通過；尚未宣稱 Production 部署，真實
+  房東封面上傳、房客帳單顯示與手動銷帳仍需部署後 `HUMAN_REQUIRED`／`UNVERIFIED` 驗證。
+
 ## 2026-09-07 — 匯款帳號前導 0 與銀行帳戶封面（正式部署）
 
 - Workspace 收款帳號改以純文字欄位寫入，Google Sheets 先設定 `@`，不再因數字轉換
