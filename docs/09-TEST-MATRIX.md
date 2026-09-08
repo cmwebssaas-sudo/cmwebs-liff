@@ -224,3 +224,15 @@
 - [ ] 正式 Email 寄送、已登入 LINE 房東首次 Email 驗證、已驗證房東桌面登入後的 authenticated operation、375／390／768／1024／1440 browser capture 與真機 UAT（候選未部署；全部仍為 `HUMAN_REQUIRED` / `UNVERIFIED`）
 - [x] 房客續約與退租頁改為被動資訊／歷史檢視，不建立新的 `V2_contract_requests` 退租申請；既有歷史 route 保留相容讀取（Phase 203 UI；Pages workflow `33567151637` 已部署，LINE 真機為 `UNVERIFIED`）
 - [ ] 已登入 LIFF／真機、Drive 私有照片上傳與 502／506 已登入正式退房交易 UAT（正式 Sheet schema 與欄位 read-back 已通過；其餘仍為 `HUMAN_REQUIRED` / `UNVERIFIED`）
+
+## 2026-09-09 房東桌面版登入與操作頁本地候選
+
+- [x] 桌面入口提供寬版登入 shell、Email／OTP 欄位標籤、錯誤／成功狀態與鍵盤 focus；寄送、重寄、驗證均有立即 busy／disabled／`aria-busy` 回饋、重複點擊保護與失敗復原（Phase 244；commits `11be3e4`–`964570a`）。
+- [x] 房東欠款與合約申請頁接上共用桌面 shell、側欄、頁面內滾動與 modal stacking；手機 375／390／768 shell 與 bottom nav 保留（Phase 220；commits `d0dd3f0`–`0345db5`）。
+- [x] Email bridge 保留業務 `request_id` 與 transport correlation id，bridge timeout 正規化為 `API_TIMEOUT`；原生簽署 session 不與房東 Email session 混用（Phase 219／220）。
+- [x] 桌面 Email 對目前沒有既有 Apps Script dispatcher 支援的欠款／合約原生操作明確 fail closed，顯示可理解的未支援提示；不得假裝成功或逾時後重複寫入。手機 LINE／JSONP 路徑保持原狀（Phase 220）。
+- [x] 本地自動驗證：`node --test tests/*.test.mjs` 185/185；Phase 192、219、220、244 focused 39/39；Apps Script／目標 HTML inline script syntax check 通過；`git diff --check` 通過。
+- [ ] `npm run validate`：`UNVERIFIED`，本 worktree 沒有 tracked `package.json`／validate script，未借用 parent checkout 結果。
+- [ ] `node scripts/validate-static-release-cache.js`：`UNVERIFIED`，基線 `frontend-release.js` marker 與 validator 期待值不一致；本候選未改 release marker。
+- [ ] 真實桌面瀏覽器 Email 登入、欠款／合約頁 authenticated operation、手機 LIFF／LINE、375／390／768／1024／1440 viewport capture：`HUMAN_REQUIRED`／`UNVERIFIED`。
+- [ ] GitHub push、GitHub Pages publish、Apps Script deployment：本候選尚未執行，需另行明確授權；rollback 為依序 revert `11be3e4`、`14fae7a`、`964570a`、`d0dd3f0`、`9f861f9`、`e24c8a2` 及文件 commits。
