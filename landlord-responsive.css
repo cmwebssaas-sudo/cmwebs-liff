@@ -425,4 +425,120 @@
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
   }
+
+  .desktop-main .entry-auth-panel {
+    position: relative;
+    z-index: 10;
+    width: min(100%, 980px);
+    margin: 64px auto 0;
+    padding: 40px;
+    border-color: #d7e3ed;
+    background: linear-gradient(135deg, #ffffff 0%, #f3f8fb 100%);
+  }
+
+  .desktop-main .entry-auth-panel::before {
+    position: absolute;
+    z-index: 20;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    border-radius: 20px 20px 0 0;
+    background: linear-gradient(90deg, #067e8c, #0b63ce);
+    content: '';
+  }
+
+  .desktop-main .entry-auth-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+    max-width: 760px;
+    margin: 28px auto 0;
+  }
+
+  .desktop-main .entry-field-row {
+    min-width: 0;
+  }
+
+  .desktop-main .entry-field-row .field-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #344151;
+    font-size: 16px;
+  }
+
+  .desktop-main .entry-field-row .input {
+    min-height: 44px;
+    height: 48px;
+    border-color: #c6d2dd;
+    transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+  }
+
+  .desktop-main .entry-field-row .input:focus-visible {
+    border-color: #0b63ce;
+    box-shadow: 0 0 0 3px rgba(11, 99, 206, 0.18);
+  }
+
+  .desktop-main .entry-status-region {
+    z-index: 30;
+    grid-column: 1 / -1;
+    margin-top: 0;
+    border-color: #b9d8df;
+    background: #edf8fa;
+    color: #155765;
+  }
+
+  .desktop-main .entry-status-region.error {
+    border-color: #efbbb6;
+  }
+
+  .desktop-main .entry-auth-action {
+    position: relative;
+    z-index: 20;
+    min-height: 44px;
+    margin-top: 16px;
+    transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+  }
+
+  .desktop-main .entry-auth-action:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .desktop-main .entry-auth-action:disabled,
+  .desktop-main .entry-auth-action.is-busy {
+    cursor: wait;
+    opacity: 0.66;
+  }
+
+  .desktop-main .entry-auth-action.is-busy::after {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 8px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: entry-auth-spin 750ms linear infinite;
+    content: '';
+  }
+
+  .desktop-main .entry-auth-icon {
+    z-index: 50;
+    background: #e4f4f6;
+    color: #067e8c;
+  }
+
+  .desktop-main .entry-auth-icon svg {
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+
+  @keyframes entry-auth-spin {
+    to { transform: rotate(360deg); }
+  }
 }

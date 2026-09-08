@@ -10,6 +10,7 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="frontend-release.js"></script>
   <script src="landlord-auth.js"></script>
+  <link rel="stylesheet" href="landlord-responsive.css" />
 
   <style>
     :root {
@@ -319,8 +320,38 @@
 </head>
 
 <body>
-  <div class="app-shell">
-    <main class="page">
+  <div class="app-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand">
+          <div class="desktop-brand-label">CMWEBS</div>
+          <div class="desktop-brand-title">智慧租管</div>
+        </div>
+
+        <nav class="desktop-nav" aria-label="房東功能">
+          <button class="desktop-nav-item active" type="button" onclick="goPage('landlord-entry.html')">帳號登入</button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')">管理首頁</button>
+        </nav>
+
+        <div class="desktop-sidebar-footer">
+          <div class="desktop-context-label">登入方式</div>
+          <div class="desktop-context-value">Email 驗證碼</div>
+          <div class="desktop-sidebar-role">桌面版房東入口</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="page desktop-main">
+      <header class="desktop-topbar" hidden>
+        <div>
+          <div class="desktop-page-kicker">Landlord Workspace</div>
+          <div class="desktop-page-title">房東登入</div>
+        </div>
+        <div class="desktop-topbar-meta">
+          <span class="desktop-status-pill">安全驗證</span>
+        </div>
+      </header>
+
       <div class="brand">
         <div class="brand-icon">CM</div>
 
@@ -340,6 +371,13 @@
         </section>
       </div>
     </main>
+
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="nav-item active" type="button" onclick="goPage('landlord-entry.html')">登入</button>
+        <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">首頁</button>
+      </div>
+    </nav>
   </div>
 
   <script>
@@ -370,6 +408,8 @@
     let EMAIL_LOGIN_EMAIL = '';
     let EMAIL_LOGIN_COUNTDOWN_TIMER = null;
     let EMAIL_LOGIN_COUNTDOWN_UNTIL = 0;
+    let EMAIL_LOGIN_REQUEST_IN_FLIGHT = false;
+    let EMAIL_LOGIN_VERIFY_IN_FLIGHT = false;
 
     function setAppHeight() {
       const height =
@@ -640,10 +680,19 @@
           : '已完成 Email 驗證的房東可用一次性驗證碼登入桌面版。';
       const isCodeStep =
         Boolean(EMAIL_LOGIN_CHALLENGE_ID);
+      const requestBusy =
+        EMAIL_LOGIN_REQUEST_IN_FLIGHT;
+      const verifyBusy =
+        EMAIL_LOGIN_VERIFY_IN_FLIGHT;
 
       document.getElementById('app').innerHTML = `
-        <section class="card state-card">
-          <div class="state-icon">✉</div>
+        <section class="card state-card entry-auth-panel">
+          <div class="state-icon entry-auth-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M3.5 6.5h17v11h-17z"></path>
+              <path d="m4.5 7.5 7.5 5.5 7.5-5.5"></path>
+            </svg>
+          </div>
 
           <div class="state-title">房東 Email 登入</div>
 
@@ -651,8 +700,9 @@
             手機版維持 LINE 登入；桌面可使用已驗證的 Email 一次性驗證碼。
           </div>
 
-          <div class="email-login-form">
-            <div class="field-label">Email</div>
+          <div class="email-login-form entry-auth-form">
+            <div class="entry-field-row">
+              <label class="field-label" for="emailLoginInput">Email</label>
             <input
               id="emailLoginInput"
               class="input"
@@ -661,13 +711,15 @@
               inputmode="email"
               value="${safeHtml(EMAIL_LOGIN_EMAIL)}"
               placeholder="owner@example.com"
+              aria-describedby="emailLoginMessage"
             />
+            </div>
 
             ${
               isCodeStep
                 ? `
-                  <div style="height:12px;"></div>
-                  <div class="field-label">驗證碼</div>
+                  <div class="entry-field-row">
+                  <label class="field-label" for="emailLoginCodeInput">驗證碼</label>
                   <input
                     id="emailLoginCodeInput"
                     class="input"
@@ -676,12 +728,14 @@
                     autocomplete="one-time-code"
                     maxlength="6"
                     placeholder="6 位數驗證碼"
+                    aria-describedby="emailLoginMessage"
                   />
+                  </div>
                 `
                 : ''
             }
 
-            <div class="email-message ${state && state.error ? 'error' : ''}">
+            <div id="emailLoginMessage" class="email-message entry-status-region ${state && state.error ? 'error' : ''}" role="alert" aria-live="assertive">
               ${safeHtml(message)}
             </div>
           </div>
@@ -689,12 +743,12 @@
           ${
             isCodeStep
               ? `
-                <button class="primary-button" type="button" onclick="verifyEmailLoginCode()">
-                  驗證並登入
+                <button id="emailLoginVerifyButton" class="primary-button entry-auth-action ${verifyBusy ? 'is-busy' : ''}" type="button" onclick="verifyEmailLoginCode()" ${verifyBusy ? 'disabled aria-busy="true"' : 'aria-busy="false"'}>
+                  ${verifyBusy ? '驗證中…' : '驗證並登入'}
                 </button>
                 <button
                   id="emailResendButton"
-                  class="secondary-button"
+                  class="secondary-button entry-auth-action"
                   type="button"
                   onclick="requestEmailLoginCode()"
                   disabled
@@ -703,13 +757,13 @@
                 </button>
               `
               : `
-                <button class="primary-button" type="button" onclick="requestEmailLoginCode()">
-                  寄送驗證碼
+                <button id="emailLoginRequestButton" class="primary-button entry-auth-action ${requestBusy ? 'is-busy' : ''}" type="button" onclick="requestEmailLoginCode()" ${requestBusy ? 'disabled aria-busy="true"' : 'aria-busy="false"'}>
+                  ${requestBusy ? '寄送中…' : '寄送驗證碼'}
                 </button>
               `
           }
 
-          <button class="secondary-button" type="button" onclick="startLineLogin()">
+          <button id="lineLoginButton" class="secondary-button entry-auth-action" type="button" onclick="startLineLogin()">
             使用 LINE 登入
           </button>
         </section>
@@ -746,6 +800,10 @@
     }
 
     async function requestEmailLoginCode() {
+      if (EMAIL_LOGIN_REQUEST_IN_FLIGHT) {
+        return;
+      }
+
       const auth =
         emailLoginAuth();
       const input =
@@ -763,10 +821,17 @@
         return;
       }
 
+      EMAIL_LOGIN_REQUEST_IN_FLIGHT = true;
       try {
         renderEmailLogin({
-          message: '正在寄送驗證碼...'
+          message: '寄送中…'
         });
+        const requestButton =
+          document.getElementById('emailLoginRequestButton');
+        if (requestButton) {
+          requestButton.disabled = true;
+          requestButton.setAttribute('aria-busy', 'true');
+        }
         const result =
           await auth.requestEmailCode(email);
         EMAIL_LOGIN_CHALLENGE_ID =
@@ -777,8 +842,9 @@
           );
         EMAIL_LOGIN_COUNTDOWN_UNTIL =
           Date.now() + 60000;
+        EMAIL_LOGIN_REQUEST_IN_FLIGHT = false;
         renderEmailLogin({
-          message: '若 Email 可使用，我們會寄出一次性驗證碼。請在 10 分鐘內完成輸入。'
+          message: '驗證碼已寄出。請在 10 分鐘內完成輸入。'
         });
       } catch (error) {
         renderEmailLogin({
@@ -789,10 +855,22 @@
             '若 Email 可使用，我們會寄出一次性驗證碼。'
           )
         });
+      } finally {
+        EMAIL_LOGIN_REQUEST_IN_FLIGHT = false;
+        const button =
+          document.getElementById('emailLoginRequestButton');
+        if (button && !EMAIL_LOGIN_CHALLENGE_ID) {
+          button.disabled = false;
+          button.setAttribute('aria-busy', 'false');
+        }
       }
     }
 
     async function verifyEmailLoginCode() {
+      if (EMAIL_LOGIN_VERIFY_IN_FLIGHT) {
+        return;
+      }
+
       const auth =
         emailLoginAuth();
       const input =
@@ -800,7 +878,10 @@
       const code =
         input ? rawText(input.value).trim() : '';
 
-      if (!auth || !EMAIL_LOGIN_CHALLENGE_ID || !code) {
+      const challengeId =
+        EMAIL_LOGIN_CHALLENGE_ID;
+
+      if (!auth || !challengeId || !code) {
         renderEmailLogin({
           error: true,
           message: '請輸入 6 位數驗證碼。'
@@ -808,12 +889,19 @@
         return;
       }
 
+      EMAIL_LOGIN_VERIFY_IN_FLIGHT = true;
       try {
         renderEmailLogin({
-          message: '正在確認驗證碼...'
+          message: '驗證中…'
         });
+        const verifyButton =
+          document.getElementById('emailLoginVerifyButton');
+        if (verifyButton) {
+          verifyButton.disabled = true;
+          verifyButton.setAttribute('aria-busy', 'true');
+        }
         await auth.verifyEmailCode(
-          EMAIL_LOGIN_CHALLENGE_ID,
+          challengeId,
           code
         );
         if (goReturnTo()) {
@@ -829,6 +917,14 @@
             '驗證碼無效或已過期，請確認後再試。'
           )
         });
+      } finally {
+        EMAIL_LOGIN_VERIFY_IN_FLIGHT = false;
+        const button =
+          document.getElementById('emailLoginVerifyButton');
+        if (button) {
+          button.disabled = false;
+          button.setAttribute('aria-busy', 'false');
+        }
       }
     }
 
