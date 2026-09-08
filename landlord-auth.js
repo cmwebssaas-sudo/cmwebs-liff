@@ -111,7 +111,7 @@
     }
   }
 
-  function bridgePost(action, params) {
+  function bridgePost(action, params, timeoutMs) {
     if (!config.apiUrl) {
       return Promise.reject(
         new Error('API_URL_REQUIRED')
@@ -166,7 +166,7 @@
           finished = true;
           cleanupBridge(iframe, form, listener, timer);
           reject(new Error('API 載入逾時'));
-        }, BRIDGE_TIMEOUT_MS);
+        }, Number(timeoutMs) > 0 ? Number(timeoutMs) : BRIDGE_TIMEOUT_MS);
 
       function listener(event) {
         const data =
@@ -362,7 +362,7 @@
       };
     },
 
-    request(action, params) {
+    request(action, params, options) {
       const authParams =
         api.getRequestAuthParams();
       if (authParams.landlord_session_token) {
@@ -372,7 +372,8 @@
             {},
             params || {},
             authParams
-          )
+          ),
+          options && options.timeoutMs
         );
       }
       return Promise.reject(
@@ -380,14 +381,15 @@
       );
     },
 
-    requestProtected(action, params) {
+    requestProtected(action, params, options) {
       return bridgePost(
         action,
         Object.assign(
           {},
           params || {},
           api.getRequestAuthParams()
-        )
+        ),
+        options && options.timeoutMs
       );
     },
 

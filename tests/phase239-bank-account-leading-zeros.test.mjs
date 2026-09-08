@@ -243,6 +243,11 @@ test('landlord and tenant pages expose the payment-account cover flow', () => {
     landlordSettingsSource,
     /function uploadPaymentAccountCover\(/
   );
+  assert.match(
+    landlordSettingsSource,
+    /requestProtected\(\s*['"]landlord_settings_upload_payment_account_cover['"][\s\S]*?\{\s*timeoutMs:\s*60000\s*\}\s*\)/,
+    'bank-account cover uploads must use the bounded long bridge timeout'
+  );
   assert.match(tenantBillsPageSource, /查看銀行帳戶封面/);
   assert.match(
     tenantBillsPageSource,

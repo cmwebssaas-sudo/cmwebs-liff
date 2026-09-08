@@ -71,7 +71,11 @@
       global.CMWebsLandlordAuth &&
       typeof global.CMWebsLandlordAuth.request === 'function'
     ) {
-      return global.CMWebsLandlordAuth.request(action, params);
+      return global.CMWebsLandlordAuth.request(
+        action,
+        params,
+        { timeoutMs: timeoutMs }
+      );
     }
 
     const requestParams = Object.assign({}, params, authParams);
