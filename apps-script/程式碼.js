@@ -652,7 +652,32 @@ function doGet(e) {
         e.parameter.branch_name || '',
         e.parameter.bank_account || '',
         e.parameter.bank_account_name || '',
-        e.parameter.payment_note || ''
+        e.parameter.payment_note || '',
+        e.parameter.payment_account_id || '',
+        e.parameter.account_name || '',
+        e.parameter.activate || '',
+        e.parameter.create_new || ''
+      );
+
+    return bridge === '1'
+      ? htmlBridgeOutput_(
+          result,
+          requestId
+        )
+      : jsonOutput_(
+          result,
+        callback
+        );
+  }
+
+  if (
+    v2Action ===
+    'landlord_settings_set_default_payment'
+  ) {
+    const result =
+      setLandlordSettingsDefaultPaymentByLineUid_(
+        lineUserId,
+        e.parameter.payment_account_id || ''
       );
 
     return bridge === '1'
@@ -2729,6 +2754,86 @@ function doPost(e) {
             result =
               getLandlordSettingsInitByLineUid_(
                 principal.data.principal_line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_settings_save_payment'
+        ) {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'landlord_session_token',
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              saveLandlordSettingsPaymentByLineUid_(
+                principal.data.principal_line_user_id,
+                request.bank_code || '',
+                request.bank_name || '',
+                request.branch_name || '',
+                request.bank_account || '',
+                request.bank_account_name || '',
+                request.payment_note || '',
+                request.payment_account_id || '',
+                request.account_name || '',
+                request.activate || '',
+                request.create_new || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_settings_set_default_payment'
+        ) {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'landlord_session_token',
+                'request_id',
+                'payment_account_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request
+            );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              setLandlordSettingsDefaultPaymentByLineUid_(
+                principal.data.principal_line_user_id,
+                request.payment_account_id || ''
               );
           }
 

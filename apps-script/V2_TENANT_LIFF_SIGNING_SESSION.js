@@ -182,7 +182,8 @@ function tenantLiffSigningContractView_(contracts, contract, signingMode, tenant
     tenant_name: contract.tenant_name || (tenant && (tenant.tenant_name || tenant.name)),
     room_name: contract.room_name || (tenant && tenant.room_name)
   });
-const terms = tenantLiffSigningTermsDocument_(documentContract, tenant);
+  const paymentAccount = tenantLiffSigningContractPaymentAccount_(contract);
+  const terms = tenantLiffSigningTermsDocument_(documentContract, tenant);
   return {
     contract_id: tenantLiffSigningText_(contract.contract_id),
     contract_status: tenantLiffSigningText_(contract.contract_status),
@@ -192,9 +193,14 @@ const terms = tenantLiffSigningTermsDocument_(documentContract, tenant);
     property_name: tenantLiffSigningText_(contract.property_name),
     property_address: tenantLiffSigningText_(contract.property_address || contract.address),
     room_name: tenantLiffSigningText_(contract.room_name || (tenant && tenant.room_name)),
-    bank_name: tenantLiffSigningText_(contract.bank_name || contract.landlord_bank_name),
-    bank_account: tenantLiffSigningText_(contract.bank_account || contract.landlord_bank_account || contract.payment_account),
-    bank_account_name: tenantLiffSigningText_(contract.bank_account_name || contract.account_name),
+    bank_code: tenantLiffSigningText_(paymentAccount.bank_code),
+    bank_name: tenantLiffSigningText_(paymentAccount.bank_name),
+    bank_branch: tenantLiffSigningText_(paymentAccount.branch_name || paymentAccount.bank_branch),
+    bank_account: tenantLiffSigningText_(paymentAccount.bank_account),
+    bank_account_name: tenantLiffSigningText_(paymentAccount.bank_account_name),
+    bank_account_cover_available: paymentAccount.bank_account_cover_available === true,
+    bank_account_cover_file_name: tenantLiffSigningText_(paymentAccount.bank_account_cover_file_name),
+    payment_note: tenantLiffSigningText_(paymentAccount.payment_note),
     start_date: contract.start_date || contract.contract_start_date || '',
     end_date: contract.end_date || contract.contract_end_date || '',
     rent_amount: contract.rent_amount || contract.monthly_rent || '',
@@ -224,6 +230,38 @@ const terms = tenantLiffSigningTermsDocument_(documentContract, tenant);
     terms_document: terms,
     renewal_comparison: tenantLiffSigningRenewalComparison_(previous, contract, signingMode)
   };
+}
+
+function tenantLiffSigningContractPaymentAccount_(contract) {
+  contract = contract || {};
+  const direct = {
+    bank_code: tenantLiffSigningText_(contract.bank_code || contract.landlord_bank_code),
+    bank_name: tenantLiffSigningText_(contract.bank_name || contract.landlord_bank_name),
+    branch_name: tenantLiffSigningText_(contract.branch_name || contract.bank_branch || contract.landlord_bank_branch),
+    bank_account: tenantLiffSigningText_(contract.bank_account || contract.landlord_bank_account || contract.payment_account),
+    bank_account_name: tenantLiffSigningText_(contract.bank_account_name || contract.landlord_bank_account_name || contract.account_name),
+    payment_note: tenantLiffSigningText_(contract.payment_note || contract.bank_note),
+    bank_account_cover_available: tenantLiffSigningText_(contract.bank_account_cover_file_id) !== '',
+    bank_account_cover_file_name: tenantLiffSigningText_(contract.bank_account_cover_file_name)
+  };
+
+  // The landlord-selected Workspace account is authoritative for new signing
+  // instructions. A legacy contract snapshot is only a fallback for older
+  // contracts whose Workspace has no active receiving account.
+  if (typeof tenantBillsRuntimeDefaultPaymentAccount_ === 'function') {
+    try {
+      const fallback = tenantBillsRuntimeDefaultPaymentAccount_({
+        workspace_id: tenantLiffSigningText_(contract.workspace_id),
+        landlord_id: tenantLiffSigningText_(contract.landlord_id),
+        contract_row: contract
+      });
+      if (fallback && tenantLiffSigningText_(fallback.bank_account)) {
+        return fallback;
+      }
+    } catch (_) {}
+  }
+
+  return direct;
 }
 
 function tenantLiffSigningTermsDocument_(contract, tenant) {

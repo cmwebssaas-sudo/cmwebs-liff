@@ -1203,6 +1203,96 @@
       color: #222222;
     }
 
+    .signing-payment-card {
+      padding: 15px;
+      margin-top: 15px;
+      border: 1px solid #bfe8cd;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #f1fff5 0%, #ffffff 100%);
+    }
+
+    .signing-payment-card-title {
+      color: #147a3d;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .signing-payment-card-help {
+      margin-top: 5px;
+      color: #5e7466;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .signing-payment-total {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      margin-top: 12px;
+      border-top: 1px solid #d8efe0;
+      border-bottom: 1px solid #d8efe0;
+      color: #557061;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .signing-payment-total strong {
+      color: #147a3d;
+      font-size: 18px;
+      white-space: nowrap;
+    }
+
+    .signing-payment-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .signing-payment-item {
+      min-width: 0;
+      padding: 10px 11px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .signing-payment-label {
+      color: #728278;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .signing-payment-value {
+      margin-top: 4px;
+      color: #26332b;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .signing-payment-account {
+      grid-column: 1 / -1;
+    }
+
+    .signing-payment-account .signing-payment-value {
+      color: #147a3d;
+      font-size: 20px;
+      letter-spacing: 0.7px;
+    }
+
+    .signing-payment-cover-note {
+      padding: 10px 11px;
+      margin-top: 10px;
+      border-radius: 10px;
+      background: #eaf7ff;
+      color: #2f6382;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
     .contract-history-list {
       display: grid;
       gap: 10px;
@@ -1579,6 +1669,7 @@
       .price-comparison,
       .approved-grid,
       .signing-summary,
+      .signing-payment-grid,
       .contract-history-item-grid {
         grid-template-columns: 1fr;
       }
@@ -2831,6 +2922,55 @@
       `;
     }
 
+    function renderTenantSigningPaymentInfo(contract) {
+      contract = contract || {};
+      const rentAmount = Number(contract.rent_amount || 0);
+      const depositAmount = Number(contract.deposit_amount || 0);
+      const totalAmount =
+        (isFinite(rentAmount) ? rentAmount : 0) +
+        (isFinite(depositAmount) ? depositAmount : 0);
+      const bankAccount = rawText(contract.bank_account).trim();
+      const bankName = rawText(contract.bank_name).trim();
+      const bankBranch = rawText(contract.bank_branch || contract.branch_name).trim();
+      const accountName = rawText(contract.bank_account_name).trim();
+      const paymentNote = rawText(contract.payment_note).trim();
+
+      return `
+        <div class="signing-payment-card">
+          <div class="signing-payment-card-title">簽約付款資訊</div>
+          <div class="signing-payment-card-help">押金與首月租金請依下列房東收款帳號支付；匯款前請先核對帳號。</div>
+          <div class="signing-payment-total">
+            <span>押金／首月租金合計</span>
+            <strong>${money(totalAmount)}</strong>
+          </div>
+          ${bankAccount ? `
+            <div class="signing-payment-grid">
+              <div class="signing-payment-item signing-payment-account">
+                <div class="signing-payment-label">房東匯款帳號（完整帳號）</div>
+                <div class="signing-payment-value">${safeText(bankAccount)}</div>
+              </div>
+              <div class="signing-payment-item">
+                <div class="signing-payment-label">收款銀行</div>
+                <div class="signing-payment-value">${safeText(bankName)}</div>
+              </div>
+              <div class="signing-payment-item">
+                <div class="signing-payment-label">分行</div>
+                <div class="signing-payment-value">${safeText(bankBranch)}</div>
+              </div>
+              <div class="signing-payment-item">
+                <div class="signing-payment-label">戶名</div>
+                <div class="signing-payment-value">${safeText(accountName)}</div>
+              </div>
+            </div>
+            ${paymentNote ? `<div class="signing-payment-card-help">付款備註：${safeText(paymentNote)}</div>` : ''}
+            ${contract.bank_account_cover_available === true ? '<div class="signing-payment-cover-note">房東已提供存摺封面，可在「我的帳單」查看。</div>' : ''}
+          ` : `
+            <div class="signing-notice warning">尚未提供房東收款帳號，簽約前請勿匯款，請聯絡房東補充。</div>
+          `}
+        </div>
+      `;
+    }
+
     function tenantSigningSignatureImageHtml_(signatureImage) {
       const image = signatureImage || {};
       const mimeType = rawText(image.mime_type).toLowerCase();
@@ -3018,6 +3158,7 @@
           <h2 class="signing-section-title">合約重要摘要</h2>
           <p class="signing-section-help">請先確認下列主要條件。</p>
           <div class="signing-summary">${summary}</div>
+          ${renderTenantSigningPaymentInfo(contract)}
         </section>
 
         ${renderTenantContractHistory_(data.contract_history, contract.contract_id)}

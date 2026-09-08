@@ -300,11 +300,24 @@ function uploadLandlordPaymentAccountCover_(
       V2_SYSTEM_SETTINGS_SHEETS_
         .paymentAccounts
     );
-  const payment =
-    systemSettingsFindDefaultPaymentAccount_(
-      ss,
-      workspaceId
+  const requestedPaymentAccountId =
+    paymentAccountCoverText_(
+      request &&
+        request.payment_account_id
     );
+  const payment =
+    requestedPaymentAccountId &&
+    typeof systemSettingsFindPaymentAccountById_ ===
+      'function'
+      ? systemSettingsFindPaymentAccountById_(
+          ss,
+          workspaceId,
+          requestedPaymentAccountId
+        )
+      : systemSettingsFindDefaultPaymentAccount_(
+          ss,
+          workspaceId
+        );
 
   if (!payment || !payment.__row_number) {
     return paymentAccountCoverError_(
