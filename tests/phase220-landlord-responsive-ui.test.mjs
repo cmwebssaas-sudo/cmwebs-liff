@@ -6,7 +6,9 @@ const pageNames = [
   'landlord-home.html',
   'landlord-tenants.html',
   'landlord-properties.html',
-  'landlord-settings.html'
+  'landlord-settings.html',
+  'landlord-arrears.html',
+  'landlord-contract-requests.html'
 ];
 const entrySource = readFileSync(
   new URL('../landlord-entry.html', import.meta.url),
