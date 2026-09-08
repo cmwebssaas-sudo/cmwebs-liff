@@ -17,11 +17,22 @@
 - Kept native contract signing review on its separate `NATIVE_SIGNING_REVIEW_SESSION_TOKEN`. Desktop Email sessions fail closed with an explicit unsupported-flow message instead of reusing the landlord Email session.
 - Added Phase 220 coverage for the two legacy operational pages, modal/action preservation, desktop auth readiness, URL-boundary checks, and native-session separation.
 
+## Fix round 1 — reviewer findings
+
+- Fix commit: `9f861f9` (`fix(landlord): close unsupported desktop operations`)
+- Finding 1: verified the existing Apps Script POST dispatcher does not expose the legacy arrears or contract-request actions. Both pages now throw `DESKTOP_EMAIL_UNSUPPORTED` before entering the Email bridge for those protected actions; the mobile LINE/JSONP path remains unchanged.
+- Finding 2: `landlord-auth.js` keeps the existing bridge `request_id` as the transport correlation ID and carries an incoming business `request_id` separately as `business_request_id`, without changing the bridge response protocol or mutating caller parameters.
+- Finding 3: removed the unsupported `landlord-tenant-checkout.html` link from both legacy desktop sidebars; the page requires `contract_id` and is outside this task scope.
+- Finding 4: bridge timeout errors now carry `API_TIMEOUT`, preserving the arrears manual-settlement authoritative recheck path.
+- Added Phase 219 regressions for business-ID preservation and timeout normalization, plus Phase 220 regressions for fail-closed unsupported actions and checkout-link exclusion.
+
 ## Changed files
 
 - `landlord-arrears.html`
+- `landlord-auth.js` (Fix round 1)
 - `landlord-contract-requests.html`
 - `landlord-responsive.css`
+- `tests/phase219-landlord-auth-client.test.mjs` (Fix round 1)
 - `tests/phase220-landlord-responsive-ui.test.mjs`
 
 ## Verification
@@ -33,6 +44,12 @@ Passed:
 - `node --check landlord-auth.js` and `node --check landlord-api.js` — passed.
 - `node --check` for all `apps-script/**/*.js` — passed.
 - `git diff --check` — passed.
+
+Round 1 latest verification:
+
+- `node --test tests/phase219-landlord-auth-client.test.mjs tests/phase220-landlord-responsive-ui.test.mjs` — 36 passed, 0 failed.
+- Inline target-page syntax, `landlord-auth.js`/`landlord-api.js` syntax, and all `apps-script/**/*.js` syntax — passed.
+- `git diff --check` — passed before the fix commit.
 
 Failed or unavailable without scope expansion:
 
