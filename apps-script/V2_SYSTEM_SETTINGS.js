@@ -6,12 +6,13 @@
  * - landlord_settings_save_profile
  * - landlord_settings_save_workspace
  * - landlord_settings_save_payment
+ * - landlord_settings_set_default_payment
  * - landlord_settings_save_preferences
  *
  * 功能：
  * - 編輯目前登入成員的個人資料。
  * - 編輯目前 Workspace 名稱、時區與幣別。
- * - 編輯 Workspace 預設收款帳號。
+ * - 編輯 Workspace 多組收款帳號並啟用其中一組。
  * - 設定帳務預設值、夏月耗損費與通知偏好。
  *
  * 依賴：
@@ -201,6 +202,12 @@ function getLandlordSettingsInitByLineUid_(
       ) ||
       {};
 
+    const paymentAccounts =
+      systemSettingsFindPaymentAccounts_(
+        ss,
+        workspaceId
+      );
+
     const setting =
       systemSettingsGetOrCreateWorkspaceSettings_(
         ss,
@@ -348,6 +355,12 @@ function getLandlordSettingsInitByLineUid_(
 
         payment_account:
           paymentAccount,
+
+        payment_accounts:
+          systemSettingsBuildPaymentAccountsViews_(
+            paymentAccounts,
+            permissions.can_edit_payment
+          ),
 
         preferences:
           systemSettingsBuildPreferencesView_(
@@ -949,7 +962,11 @@ function saveLandlordSettingsPaymentByLineUid_(
   branchName,
   bankAccount,
   bankAccountName,
-  paymentNote
+  paymentNote,
+  paymentAccountId,
+  accountName,
+  activate,
+  createNew
 ) {
   const lock =
     LockService.getScriptLock();
@@ -1024,6 +1041,45 @@ function saveLandlordSettingsPaymentByLineUid_(
         500
       );
 
+    paymentAccountId =
+      systemSettingsText_(
+        paymentAccountId
+      );
+
+    accountName =
+      systemSettingsText_(
+        accountName
+      ).slice(
+        0,
+        80
+      );
+
+    const activateRequested =
+      [
+        'true',
+        '1',
+        'yes',
+        'y',
+        '是'
+      ].indexOf(
+        systemSettingsText_(
+          activate
+        ).toLowerCase()
+      ) >= 0;
+
+    const createNewRequested =
+      [
+        'true',
+        '1',
+        'yes',
+        'y',
+        '是'
+      ].indexOf(
+        systemSettingsText_(
+          createNew
+        ).toLowerCase()
+      ) >= 0;
+
     if (
       !/^\d{3}$/.test(
         bankCode
@@ -1086,20 +1142,60 @@ function saveLandlordSettingsPaymentByLineUid_(
           .paymentAccounts
       );
 
-    const existing =
-      systemSettingsFindDefaultPaymentAccount_(
+    const accounts =
+      systemSettingsFindPaymentAccounts_(
         ss,
         workspaceId
       );
 
+    const existing =
+      createNewRequested
+        ? null
+        : paymentAccountId
+          ? accounts.find(
+              function (row) {
+                return systemSettingsText_(
+                  row.payment_account_id
+                ) === paymentAccountId;
+              }
+            ) || null
+          : systemSettingsFindDefaultPaymentAccount_(
+              ss,
+              workspaceId
+            );
+
+    if (
+      paymentAccountId &&
+      !existing
+    ) {
+      return workspaceResult_(
+        false,
+        'PAYMENT_ACCOUNT_NOT_FOUND',
+        '找不到要更新的收款帳號'
+      );
+    }
+
+    const hasDefault =
+      accounts.some(
+        function (row) {
+          return systemSettingsBoolean_(
+            row.is_default
+          );
+        }
+      );
+
+    const activateThisAccount =
+      activateRequested ||
+      !hasDefault;
+
     const now =
       new Date();
 
-    let paymentAccountId =
+    let savedPaymentAccountId =
       '';
 
     if (existing) {
-      paymentAccountId =
+      savedPaymentAccountId =
         systemSettingsText_(
           existing.payment_account_id
         );
@@ -1126,8 +1222,18 @@ function saveLandlordSettingsPaymentByLineUid_(
           payment_note:
             paymentNote,
 
+          account_name:
+            accountName ||
+            systemSettingsText_(
+              existing.account_name
+            ) ||
+            '收款帳號',
+
           is_default:
-            true,
+            activateThisAccount ||
+            systemSettingsBoolean_(
+              existing.is_default
+            ),
 
           account_status:
             'active',
@@ -1138,7 +1244,7 @@ function saveLandlordSettingsPaymentByLineUid_(
       );
 
     } else {
-      paymentAccountId =
+      savedPaymentAccountId =
         systemSettingsGenerateId_(
           'PA'
         );
@@ -1147,13 +1253,15 @@ function saveLandlordSettingsPaymentByLineUid_(
         paymentSheet,
         {
           payment_account_id:
-            paymentAccountId,
+            savedPaymentAccountId,
 
           workspace_id:
             workspaceId,
 
           account_name:
-            '預設收款帳號',
+            accountName ||
+            '收款帳號 ' +
+            (accounts.length + 1),
 
           bank_code:
             bankCode,
@@ -1174,7 +1282,7 @@ function saveLandlordSettingsPaymentByLineUid_(
             paymentNote,
 
           is_default:
-            true,
+            activateThisAccount,
 
           account_status:
             'active',
@@ -1195,71 +1303,29 @@ function saveLandlordSettingsPaymentByLineUid_(
       );
     }
 
-    const workspaceSheet =
-      ss.getSheetByName(
-        V2_SYSTEM_SETTINGS_SHEETS_
-          .workspaces
-      );
+    if (activateThisAccount) {
+      const activationResult =
+        systemSettingsSetDefaultPaymentAccount_(
+          ss,
+          workspaceId,
+          savedPaymentAccountId,
+          access,
+          now
+        );
 
-    const workspace =
-      systemSettingsFindRow_(
-        workspaceSheet,
-        'workspace_id',
-        workspaceId
-      );
-
-    if (workspace) {
-      systemSettingsSetRowValues_(
-        workspaceSheet,
-        workspace.__row_number,
-        {
-          default_payment_account_id:
-            paymentAccountId,
-
-          updated_at:
-            now
-        }
-      );
-    }
-
-    const landlord =
-      systemSettingsFindLandlord_(
+      if (!activationResult.success) {
+        return activationResult;
+      }
+    } else {
+      systemSettingsSyncLegacyDefaultPaymentAccount_(
         ss,
-        access
-      );
-
-    if (landlord) {
-      systemSettingsSetRowValues_(
-        ss.getSheetByName(
-          V2_SYSTEM_SETTINGS_SHEETS_
-            .landlords
+        workspaceId,
+        access,
+        systemSettingsFindDefaultPaymentAccount_(
+          ss,
+          workspaceId
         ),
-        landlord.__row_number,
-        {
-          bank_code:
-            bankCode,
-
-          bank_name:
-            bankName,
-
-          bank_branch:
-            branchName,
-
-          bank_account:
-            bankAccount,
-
-          bank_account_name:
-            bankAccountName,
-
-          payment_note:
-            paymentNote,
-
-          default_payment_account_id:
-            paymentAccountId,
-
-          updated_at:
-            now
-        }
+        now
       );
     }
 
@@ -1272,7 +1338,7 @@ function saveLandlordSettingsPaymentByLineUid_(
         '收款帳號已更新',
         {
           payment_account_id:
-            paymentAccountId,
+            savedPaymentAccountId,
 
           bank_code:
             bankCode,
@@ -1305,7 +1371,7 @@ function saveLandlordSettingsPaymentByLineUid_(
           'payment_account',
 
         target_id:
-          paymentAccountId,
+          savedPaymentAccountId,
 
         operation_status:
           'success',
@@ -1322,6 +1388,118 @@ function saveLandlordSettingsPaymentByLineUid_(
       false,
       'PAYMENT_SETTINGS_SAVE_ERROR',
       '收款帳號儲存失敗：' +
+        error.message
+    );
+
+  } finally {
+    if (locked) {
+      lock.releaseLock();
+    }
+  }
+}
+
+
+/**
+ * 啟用指定的 Workspace 收款帳號。
+ */
+function setLandlordSettingsDefaultPaymentByLineUid_(
+  lineUserId,
+  paymentAccountId
+) {
+  const lock =
+    LockService.getScriptLock();
+
+  let locked =
+    false;
+
+  try {
+    systemSettingsEnsureSchema_();
+
+    const access =
+      workspaceLandlordResolveAccess_(
+        lineUserId,
+        {
+          require_onboarding:
+            true
+        }
+      );
+
+    if (!access.success) {
+      return access;
+    }
+
+    const permissions =
+      systemSettingsBuildPermissions_(
+        access
+      );
+
+    if (!permissions.can_edit_payment) {
+      return workspaceResult_(
+        false,
+        'PERMISSION_DENIED',
+        '目前角色沒有編輯收款帳號的權限'
+      );
+    }
+
+    paymentAccountId =
+      systemSettingsText_(
+        paymentAccountId
+      );
+
+    if (!paymentAccountId) {
+      return workspaceResult_(
+        false,
+        'PAYMENT_ACCOUNT_REQUIRED',
+        '請選擇要啟用的收款帳號'
+      );
+    }
+
+    lock.waitLock(
+      25000
+    );
+    locked = true;
+
+    const ss =
+      runtimeSpreadsheet_();
+    const workspaceId =
+      systemSettingsText_(
+        access.workspace.workspace_id
+      ).toUpperCase();
+    const result =
+      systemSettingsSetDefaultPaymentAccount_(
+        ss,
+        workspaceId,
+        paymentAccountId,
+        access,
+        new Date()
+      );
+
+    if (result.success) {
+      SpreadsheetApp.flush();
+      systemSettingsAudit_(
+        access,
+        'landlord_settings_set_default_payment',
+        result,
+        {
+          target_type:
+            'payment_account',
+          target_id:
+            paymentAccountId,
+          operation_status:
+            'success',
+          detail:
+            'workspace payment account enabled'
+        }
+      );
+    }
+
+    return result;
+
+  } catch (error) {
+    return workspaceResult_(
+      false,
+      'PAYMENT_ACCOUNT_ENABLE_ERROR',
+      '收款帳號啟用失敗：' +
         error.message
     );
 
@@ -2150,7 +2328,7 @@ function systemSettingsFindLandlord_(
 }
 
 
-function systemSettingsFindDefaultPaymentAccount_(
+function systemSettingsFindPaymentAccounts_(
   ss,
   workspaceId
 ) {
@@ -2161,26 +2339,256 @@ function systemSettingsFindDefaultPaymentAccount_(
     );
 
   if (!sheet) {
+    return [];
+  }
+
+  return workspaceGetObjectsWithRow_(
+    sheet
+  ).filter(
+    function (row) {
+      return (
+        systemSettingsText_(
+          row.payment_account_id
+        ) !== '' &&
+        systemSettingsText_(
+          row.workspace_id
+        ).toUpperCase() ===
+        systemSettingsText_(
+          workspaceId
+        ).toUpperCase() &&
+        systemSettingsText_(
+          row.account_status ||
+          'active'
+        ).toLowerCase() !==
+        'archived'
+      );
+    }
+  );
+}
+
+
+function systemSettingsFindPaymentAccountById_(
+  ss,
+  workspaceId,
+  paymentAccountId
+) {
+  const id =
+    systemSettingsText_(
+      paymentAccountId
+    );
+
+  if (!id) {
     return null;
   }
 
-  const rows =
-    workspaceGetObjectsWithRow_(
-      sheet
-    ).filter(
-      function (row) {
-        return (
-          systemSettingsText_(
-            row.workspace_id
-          ).toUpperCase() ===
-          workspaceId &&
-          systemSettingsText_(
-            row.account_status ||
-            'active'
-          ).toLowerCase() !==
-          'archived'
-        );
+  return systemSettingsFindPaymentAccounts_(
+    ss,
+    workspaceId
+  ).find(
+    function (row) {
+      return systemSettingsText_(
+        row.payment_account_id
+      ) === id;
+    }
+  ) || null;
+}
+
+
+function systemSettingsBuildPaymentAccountsViews_(
+  accounts,
+  canEdit
+) {
+  return (accounts || []).filter(
+    function (payment) {
+      return systemSettingsText_(
+        payment && payment.account_status ||
+        'active'
+      ).toLowerCase() !== 'archived';
+    }
+  ).map(
+    function (payment) {
+      return systemSettingsBuildPaymentView_(
+        payment,
+        canEdit
+      );
+    }
+  );
+}
+
+
+function systemSettingsSyncLegacyDefaultPaymentAccount_(
+  ss,
+  workspaceId,
+  access,
+  payment,
+  now
+) {
+  if (!payment) {
+    return null;
+  }
+
+  const workspaceSheet =
+    ss.getSheetByName(
+      V2_SYSTEM_SETTINGS_SHEETS_
+        .workspaces
+    );
+
+  const workspace =
+    systemSettingsFindRow_(
+      workspaceSheet,
+      'workspace_id',
+      workspaceId
+    );
+
+  const paymentAccountId =
+    systemSettingsText_(
+      payment.payment_account_id
+    );
+
+  if (workspace) {
+    systemSettingsSetRowValues_(
+      workspaceSheet,
+      workspace.__row_number,
+      {
+        default_payment_account_id:
+          paymentAccountId,
+        updated_at:
+          now
       }
+    );
+  }
+
+  const landlord =
+    systemSettingsFindLandlord_(
+      ss,
+      access
+    );
+
+  if (landlord) {
+    systemSettingsSetRowValues_(
+      ss.getSheetByName(
+        V2_SYSTEM_SETTINGS_SHEETS_
+          .landlords
+      ),
+      landlord.__row_number,
+      {
+        bank_code:
+          systemSettingsText_(
+            payment.bank_code
+          ),
+        bank_name:
+          systemSettingsText_(
+            payment.bank_name
+          ),
+        bank_branch:
+          systemSettingsText_(
+            payment.branch_name
+          ),
+        bank_account:
+          systemSettingsText_(
+            payment.bank_account
+          ),
+        bank_account_name:
+          systemSettingsText_(
+            payment.bank_account_name
+          ),
+        payment_note:
+          systemSettingsText_(
+            payment.payment_note
+          ),
+        default_payment_account_id:
+          paymentAccountId,
+        updated_at:
+          now
+      }
+    );
+  }
+
+  return payment;
+}
+
+
+function systemSettingsSetDefaultPaymentAccount_(
+  ss,
+  workspaceId,
+  paymentAccountId,
+  access,
+  now
+) {
+  const target =
+    systemSettingsFindPaymentAccountById_(
+      ss,
+      workspaceId,
+      paymentAccountId
+    );
+
+  if (!target) {
+    return workspaceResult_(
+      false,
+      'PAYMENT_ACCOUNT_NOT_FOUND',
+      '找不到要啟用的收款帳號'
+    );
+  }
+
+  const sheet =
+    ss.getSheetByName(
+      V2_SYSTEM_SETTINGS_SHEETS_
+        .paymentAccounts
+    );
+
+  systemSettingsFindPaymentAccounts_(
+    ss,
+    workspaceId
+  ).forEach(
+    function (row) {
+      systemSettingsSetRowValues_(
+        sheet,
+        row.__row_number,
+        {
+          is_default:
+            systemSettingsText_(
+              row.payment_account_id
+            ) ===
+            systemSettingsText_(
+              paymentAccountId
+            ),
+          updated_at:
+            now
+        }
+      );
+    }
+  );
+
+  systemSettingsSyncLegacyDefaultPaymentAccount_(
+    ss,
+    workspaceId,
+    access,
+    target,
+    now
+  );
+
+  return workspaceResult_(
+    true,
+    'PAYMENT_ACCOUNT_ENABLED',
+    '收款帳號已啟用',
+    {
+      payment_account_id:
+        systemSettingsText_(
+          target.payment_account_id
+        )
+    }
+  );
+}
+
+
+function systemSettingsFindDefaultPaymentAccount_(
+  ss,
+  workspaceId
+) {
+  const rows =
+    systemSettingsFindPaymentAccounts_(
+      ss,
+      workspaceId
     );
 
   return rows.find(

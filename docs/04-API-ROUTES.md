@@ -35,12 +35,13 @@ canonical 84-route inventory remains the historical Version 85 baseline.
 
 `landlord_settings_upload_payment_account_cover` accepts a private JPG/PNG
 cover image through the authenticated landlord POST bridge, binds it to the
-current Workspace default payment account, and stores only private Drive file
-metadata in `V2_workspace_payment_accounts`. The API response never returns a
-Drive file ID. `tenant_payment_account_cover` resolves the authenticated
-tenant's active-contract Workspace and returns the cover image only through the
-same tenant route; it does not accept a client-supplied Workspace, landlord, or
-Drive identifier. Deployment must set the Script Property
+requested `payment_account_id` (or the current Workspace default for legacy
+callers), and stores only private Drive file metadata in
+`V2_workspace_payment_accounts`. The API response never returns a Drive file
+ID. `tenant_payment_account_cover` resolves the authenticated tenant's
+active-contract Workspace and returns the active account's cover image only
+through the same tenant route; it does not accept a client-supplied Workspace,
+landlord, or Drive identifier. Deployment must set the Script Property
 `CMWEBS_PAYMENT_ACCOUNT_COVER_DRIVE_ROOT_FOLDER_ID` to a private Drive folder
 before upload is enabled. The Apps Script bridge response is emitted to the
 caller top window from the `*.googleusercontent.com` sandbox; the landlord
@@ -121,6 +122,7 @@ landlord_room_account_toggle
 landlord_send_tenant_message
 landlord_settings_init
 landlord_settings_save_payment
+landlord_settings_set_default_payment
 landlord_settings_upload_payment_account_cover
 landlord_settings_save_preferences
 landlord_settings_save_profile
@@ -191,12 +193,28 @@ tenant_payment_account_cover
   receiving account is configured. The primary tenant bill page, bill detail,
   and payment-report page render this as the transfer instruction and do not
   receive Workspace, contract, member, or audit data.
+- `landlord_settings_init` returns every non-archived Workspace receiving
+  account in `payment_accounts`. `landlord_settings_save_payment` updates a
+  selected account or creates a new one when `create_new=1`; it treats bank
+  account values as text so leading zeroes are retained.
+  `landlord_settings_set_default_payment` makes exactly one account the active
+  account. The active account is used by new tenant bills, payment reports,
+  and tenant contract-signing payment instructions; inactive accounts remain
+  available to the authorized landlord for later selection.
 - The same two bill routes expose only the boolean
   `bank_account_cover_available` and display-safe
   `bank_account_cover_file_name`. The cover bytes are lazy-loaded through
   `tenant_payment_account_cover` after tenant authentication, and the cover
   route returns only a bounded image data URL plus file metadata. Private Drive
   IDs and raw Drive URLs never enter tenant payloads.
+- `tenant_contract_auth_init` / `tenant_contract_invite_auth_init` return the
+  signing session's `data.contract` with the complete active Workspace payment
+  account fields required before signing: `bank_code`, `bank_name`,
+  `bank_branch`, `bank_account`, `bank_account_name`, and `payment_note`.
+  The account is treated as text so leading zeroes are preserved. A legacy
+  contract-specific account is used only when no active Workspace account is
+  available. The signing page displays the deposit plus first-month rent total
+  beside this account; it does not accept a browser-supplied account.
 - When an authorized landlord manually sends or re-sends a bill notification,
   the message includes `tenant_visible_note` when it is non-empty. Existing
   sent LINE messages are immutable and are not retroactively changed.

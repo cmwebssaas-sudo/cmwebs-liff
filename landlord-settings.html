@@ -428,6 +428,56 @@
       box-shadow: none;
     }
 
+    .payment-account-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 9px;
+      margin-bottom: 13px;
+    }
+
+    .payment-account-toolbar .save-button {
+      min-width: 112px;
+      min-height: 43px;
+    }
+
+    .payment-account-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 13px;
+      padding: 10px 11px;
+      border: 1px solid #bfe5cc;
+      border-radius: 11px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .payment-account-status.warning {
+      border-color: #f3d7a9;
+      background: var(--orange-soft);
+      color: #8a5a12;
+    }
+
+    .payment-account-status .save-button {
+      min-width: 92px;
+      min-height: 34px;
+      padding: 0 11px;
+      font-size: 9px;
+    }
+
+    .payment-account-empty {
+      margin-bottom: 13px;
+      padding: 11px;
+      border: 1px dashed #cbd3df;
+      border-radius: 11px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
     .subsection {
       margin-top: 15px;
       padding-top: 15px;
@@ -900,6 +950,8 @@
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
     let ACTIVE_TAB = 'profile';
+    let PAYMENT_EDITOR_ID = '';
+    let PAYMENT_EDITOR_IS_NEW = false;
     let toastTimer = null;
     let saving = false;
     let EMAIL_VERIFICATION_CHALLENGE_ID = '';
@@ -1939,10 +1991,158 @@
       `;
     }
 
-    function paymentPanel() {
-      const payment =
+    function paymentAccounts() {
+      return Array.isArray(
+        PAGE_DATA &&
+        PAGE_DATA.payment_accounts
+      )
+        ? PAGE_DATA.payment_accounts
+        : PAGE_DATA &&
+            PAGE_DATA.payment_account &&
+            PAGE_DATA.payment_account.payment_account_id
+          ? [PAGE_DATA.payment_account]
+          : [];
+    }
+
+    function selectedPaymentAccountId() {
+      if (PAYMENT_EDITOR_IS_NEW) {
+        return '';
+      }
+
+      return (
+        PAYMENT_EDITOR_ID ||
+        rawText(
+          PAGE_DATA &&
+            PAGE_DATA.payment_account &&
+            PAGE_DATA.payment_account.payment_account_id
+        )
+      );
+    }
+
+    function paymentEditorAccount() {
+      if (PAYMENT_EDITOR_IS_NEW) {
+        return {
+          account_name: '',
+          bank_code: '',
+          bank_name: '',
+          branch_name: '',
+          bank_account: '',
+          bank_account_name: '',
+          payment_note: '',
+          bank_account_cover_available: false
+        };
+      }
+
+      const selectedId =
+        selectedPaymentAccountId();
+      const selected =
+        paymentAccounts().find(
+          function (item) {
+            return rawText(
+              item.payment_account_id
+            ) === selectedId;
+          }
+        );
+
+      return selected ||
         PAGE_DATA.payment_account ||
         {};
+    }
+
+    function paymentAccountLabel(item) {
+      return [
+        item.account_name ||
+          '收款帳號',
+        item.bank_name,
+        item.bank_account_masked ||
+          item.bank_account
+          ? '末五碼 ' +
+            rawText(
+              item.bank_account_masked ||
+                item.bank_account
+            ).slice(-5)
+          : ''
+      ].filter(Boolean).join('・');
+    }
+
+    function selectPaymentAccount(paymentAccountId) {
+      PAYMENT_EDITOR_IS_NEW = false;
+      PAYMENT_EDITOR_ID = rawText(
+        paymentAccountId
+      );
+      renderPage();
+      setActiveTab('payment');
+    }
+
+    function startNewPaymentAccount() {
+      PAYMENT_EDITOR_IS_NEW = true;
+      PAYMENT_EDITOR_ID = '';
+      renderPage();
+      setActiveTab('payment');
+    }
+
+    async function activatePaymentAccount(
+      paymentAccountId
+    ) {
+      if (saving || !paymentAccountId) {
+        return;
+      }
+
+      saving = true;
+
+      try {
+        const result =
+          await jsonpRequest(
+            'landlord_settings_set_default_payment',
+            {
+              payment_account_id:
+                paymentAccountId
+            }
+          );
+
+        if (!result || result.success !== true) {
+          throw new Error(
+            result && result.message
+              ? result.message
+              : '收款帳號啟用失敗'
+          );
+        }
+
+        PAYMENT_EDITOR_IS_NEW = false;
+        PAYMENT_EDITOR_ID =
+          paymentAccountId;
+        showToast(
+          result.message ||
+            '收款帳號已啟用'
+        );
+        await loadPage(false, 'payment');
+      } catch (error) {
+        showToast(
+          error && error.message
+            ? error.message
+            : '收款帳號啟用失敗',
+          true
+        );
+      } finally {
+        saving = false;
+      }
+    }
+
+    function paymentPanel() {
+      const payment =
+        paymentEditorAccount();
+
+      const accounts =
+        paymentAccounts();
+
+      const selectedId =
+        selectedPaymentAccountId();
+
+      const activeId =
+        rawText(
+          PAGE_DATA.payment_account &&
+            PAGE_DATA.payment_account.payment_account_id
+        );
 
       const permissions =
         PAGE_DATA.permissions ||
@@ -1957,16 +2157,100 @@
           ? payment.bank_account || ''
           : payment.bank_account_masked || '';
 
+      const accountOptions =
+        accounts.map(
+          function (item) {
+            const id = rawText(
+              item.payment_account_id
+            );
+            return `
+              <option
+                value="${safeHtml(id)}"
+                ${id === selectedId ? 'selected' : ''}
+              >
+                ${safeHtml(
+                  paymentAccountLabel(item) +
+                  (
+                    id === activeId
+                      ? '・目前啟用'
+                      : ''
+                  )
+                )}
+              </option>
+            `;
+          }
+        ).join('');
+
+      const needsActivation =
+        Boolean(selectedId) &&
+        selectedId !== activeId;
+
       return `
         <section id="panel_payment" class="settings-panel">
           <div class="card section-card">
             ${sectionHeader(
-              '預設收款帳號',
-              '房客帳單、付款說明與租約付款資訊會優先使用此帳號。',
+              '收款帳號',
+              '可保存多組帳號；只有目前啟用的帳號會顯示在房客帳單與簽約付款流程。',
               editable
             )}
 
+            <div class="payment-account-toolbar">
+              <select
+                id="paymentAccountSelector"
+                class="select"
+                onchange="selectPaymentAccount(this.value)"
+                ${editable ? '' : 'disabled'}
+              >
+                ${
+                  accountOptions ||
+                  '<option value="">尚未建立收款帳號</option>'
+                }
+              </select>
+
+              <button
+                class="save-button upload-button"
+                type="button"
+                onclick="startNewPaymentAccount()"
+                ${editable ? '' : 'disabled'}
+              >
+                新增帳號
+              </button>
+            </div>
+
+            ${
+              accounts.length === 0
+                ? '<div class="payment-account-empty">尚未建立收款帳號。儲存第一組帳號後，房客才會看到轉帳資訊。</div>'
+                : needsActivation
+                  ? `
+                    <div class="payment-account-status warning">
+                      <span>目前編輯的是備用帳號；房客仍會看到另一組啟用中的帳號。</span>
+                      <button
+                        class="save-button"
+                        type="button"
+                        onclick="activatePaymentAccount('${safeHtml(selectedId)}')"
+                        ${editable ? '' : 'disabled'}
+                      >
+                        啟用此帳號
+                      </button>
+                    </div>
+                  `
+                  : `
+                    <div class="payment-account-status">
+                      <span>${PAYMENT_EDITOR_IS_NEW ? '新增帳號尚未儲存，儲存後可再啟用。' : '這是房客帳單與簽約流程目前使用的帳號。'}</span>
+                    </div>
+                  `
+            }
+
             <div class="form-grid">
+              ${textField(
+                'paymentAccountName',
+                '帳號名稱',
+                payment.account_name,
+                '例如：郵局主帳戶',
+                'text',
+                !editable
+              )}
+
               ${textField(
                 'bankCode',
                 '銀行代碼',
@@ -2092,7 +2376,7 @@
                 class="save-button upload-button"
                 type="button"
                 onclick="uploadPaymentAccountCover()"
-                ${editable ? '' : 'disabled'}
+                ${editable && selectedId ? '' : 'disabled'}
               >
                 上傳帳戶封面
               </button>
@@ -2821,6 +3105,12 @@
         'paymentSaveButton',
         'landlord_settings_save_payment',
         {
+          payment_account_id:
+            selectedPaymentAccountId(),
+          account_name:
+            inputValue(
+              'paymentAccountName'
+            ),
           bank_code:
             inputValue(
               'bankCode'
@@ -2844,14 +3134,44 @@
           payment_note:
             inputValue(
               'paymentNote'
-            )
+            ),
+          create_new:
+            PAYMENT_EDITOR_IS_NEW
+              ? '1'
+              : ''
         },
-        '收款帳號已更新'
+        '收款帳號已更新',
+        function (result) {
+          const savedId =
+            result &&
+            result.data &&
+            result.data.payment_account_id
+              ? rawText(
+                  result.data.payment_account_id
+                )
+              : '';
+
+          if (savedId) {
+            PAYMENT_EDITOR_ID = savedId;
+            PAYMENT_EDITOR_IS_NEW = false;
+          }
+        }
       );
     }
 
     async function uploadPaymentAccountCover() {
       if (saving) {
+        return;
+      }
+
+      const paymentAccountId =
+        selectedPaymentAccountId();
+
+      if (!paymentAccountId) {
+        showToast(
+          '請先儲存收款帳號，再上傳帳戶封面',
+          true
+        );
         return;
       }
 
@@ -2951,6 +3271,8 @@
             .requestProtected(
               'landlord_settings_upload_payment_account_cover',
               {
+                payment_account_id:
+                  paymentAccountId,
                 mime_type: file.type,
                 file_name: file.name,
                 base64: base64
@@ -3164,7 +3486,8 @@
       buttonId,
       action,
       params,
-      fallbackMessage
+      fallbackMessage,
+      onSuccess
     ) {
       if (saving) {
         return;
@@ -3214,6 +3537,10 @@
           result.message ||
           fallbackMessage
         );
+
+        if (typeof onSuccess === 'function') {
+          onSuccess(result);
+        }
 
         await loadPage(
           false,
