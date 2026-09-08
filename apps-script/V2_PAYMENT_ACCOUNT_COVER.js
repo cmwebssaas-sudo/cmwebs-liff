@@ -3,6 +3,8 @@ const V2_PAYMENT_ACCOUNT_COVER_ROOT_PROPERTY_ =
   'CMWEBS_PAYMENT_ACCOUNT_COVER_DRIVE_ROOT_FOLDER_ID';
 const V2_PAYMENT_ACCOUNT_COVER_MAX_BYTES_ =
   2 * 1024 * 1024;
+const V2_PAYMENT_ACCOUNT_COVER_LOCK_WAIT_MS_ =
+  8000;
 
 function paymentAccountCoverText_(value) {
   return value === null || value === undefined
@@ -324,7 +326,17 @@ function uploadLandlordPaymentAccountCover_(
   let driveFile = null;
 
   try {
-    lock.waitLock(25000);
+    if (
+      !lock.tryLock(
+        V2_PAYMENT_ACCOUNT_COVER_LOCK_WAIT_MS_
+      )
+    ) {
+      return paymentAccountCoverError_(
+        'PAYMENT_ACCOUNT_COVER_BUSY',
+        '系統正在處理其他作業，請稍後再試'
+      );
+    }
+
     locked = true;
 
     const originalName =

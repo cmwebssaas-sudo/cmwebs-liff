@@ -42,7 +42,20 @@ tenant's active-contract Workspace and returns the cover image only through the
 same tenant route; it does not accept a client-supplied Workspace, landlord, or
 Drive identifier. Deployment must set the Script Property
 `CMWEBS_PAYMENT_ACCOUNT_COVER_DRIVE_ROOT_FOLDER_ID` to a private Drive folder
-before upload is enabled.
+before upload is enabled. The Apps Script bridge response is emitted to the
+caller top window from the `*.googleusercontent.com` sandbox; the landlord
+client accepts only that Apps Script sandbox origin together with its exact,
+per-request nonce. Cover upload lock acquisition is bounded at 8 seconds and
+returns `PAYMENT_ACCOUNT_COVER_BUSY` rather than leaving the caller to infer a
+transport timeout.
+
+`landlord_bill_manual_settle` keeps its canonical V2 payment, bill, and view
+updates under a bounded 8-second ScriptLock attempt. A contended request returns
+`REQUEST_BUSY` before the caller timeout. Once the canonical settlement is
+durable, the lock is released before the optional LINE notice and audit/access
+logging; those post-commit failures remain warnings and never undo or invite a
+duplicate payment. The landlord caller permits this one non-idempotent request
+up to 60 seconds but still never automatically retries it.
 
 The static landlord caller treats this as a non-idempotent write: it does not
 automatically retry on `API_TIMEOUT`. It refreshes the read-only notification

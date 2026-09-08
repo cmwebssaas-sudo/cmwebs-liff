@@ -96,6 +96,21 @@
     }
   }
 
+  function isAppsScriptSandboxOrigin(origin) {
+    try {
+      const url =
+        new URL(origin);
+      return (
+        url.protocol === 'https:' &&
+        /^n-[a-z0-9-]+-script\.googleusercontent\.com$/i.test(
+          url.hostname
+        )
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
   function bridgePost(action, params) {
     if (!config.apiUrl) {
       return Promise.reject(
@@ -158,12 +173,18 @@
           event && event.data
             ? event.data
             : {};
+        const isExpectedFrame =
+          event.source === iframe.contentWindow;
+        const isExpectedOrigin =
+          Boolean(expectedOrigin) &&
+          event.origin === expectedOrigin;
+        const isAppsScriptSandbox =
+          isAppsScriptSandboxOrigin(
+            event.origin
+          );
         if (
-          event.source !== iframe.contentWindow ||
-          (
-            expectedOrigin &&
-            event.origin !== expectedOrigin
-          ) ||
+          (!isExpectedFrame && !isAppsScriptSandbox) ||
+          (!isExpectedOrigin && !isAppsScriptSandbox) ||
           data.source !== 'CMWEBS_APPS_SCRIPT' ||
           data.requestId !== id
         ) {

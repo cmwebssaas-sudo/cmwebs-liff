@@ -3,11 +3,14 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { existsSync, readFileSync } from 'node:fs';
 
+const hostSetTimeout = globalThis.setTimeout;
+const hostClearTimeout = globalThis.clearTimeout;
 const moduleUrl = new URL('../landlord-auth.js', import.meta.url);
 const moduleExists = existsSync(moduleUrl);
 const source = moduleExists ? readFileSync(moduleUrl, 'utf8') : '';
 const guardedTest = moduleExists ? test : test.skip;
 const dispatcherSource = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
+const apiOutputSource = readFileSync(new URL('../apps-script/V2_API.js', import.meta.url), 'utf8');
 const entrySource = readFileSync(new URL('../landlord-entry.html', import.meta.url), 'utf8');
 const settingsSource = readFileSync(new URL('../landlord-settings.html', import.meta.url), 'utf8');
 
@@ -111,7 +114,7 @@ function formFields(form) {
   return fields;
 }
 
-function createRuntime(width = 1440) {
+function createRuntime(width = 1440, options = {}) {
   const listeners = new Map();
   const storage = new Map();
   const document = {
@@ -140,8 +143,15 @@ function createRuntime(width = 1440) {
     Date,
     Error,
     Promise,
-    clearTimeout,
-    setTimeout,
+    clearTimeout(timer) {
+      return hostClearTimeout(timer);
+    },
+    setTimeout(callback, delay, ...args) {
+      const timeoutDelayMs = Number.isFinite(options.timerDelayMs)
+        ? options.timerDelayMs
+        : delay;
+      return hostSetTimeout(callback, timeoutDelayMs, ...args);
+    },
     document,
     location: {
       href: 'https://example.test/landlord-entry.html?return_to=landlord-home.html',
@@ -324,6 +334,58 @@ guardedTest('Phase 219 ignores bridge messages from the wrong window or origin',
   const result = await request;
   assert.equal(result.success, true);
   assert.equal(context.listenerCount('message'), 0);
+});
+
+guardedTest('Phase 240 accepts the Apps Script sandbox bridge response only for the matching request', async () => {
+  const { context, document } = createRuntime(1440, { timerDelayMs: 0 });
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec'
+  });
+
+  const request = auth.requestProtected(
+    'landlord_settings_upload_payment_account_cover',
+    { file_name: 'cover.png' }
+  );
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
+  const fields = formFields(document.submittedForms[0]);
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: { success: true }
+  }, 'https://evil.test', { sandbox: true });
+
+  assert.equal(
+    context.listenerCount('message'),
+    1,
+    'an unrelated origin must not resolve a pending protected request'
+  );
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: {
+      success: true,
+      data: { available: true }
+    }
+  }, 'https://n-lna42oh3ebizt3gkhgecbqoum6tzet6b5vrakaa-0lu-script.googleusercontent.com', {
+    sandbox: true
+  });
+
+  const result = await request;
+  assert.equal(result.success, true);
+  assert.deepEqual(result.data, { available: true });
+  assert.equal(context.listenerCount('message'), 0);
+  assert.equal(iframe.parentNode, null);
+});
+
+test('Phase 240 bridge output posts from the Apps Script sandbox to the caller top window', () => {
+  assert.match(
+    apiOutputSource,
+    /function\s+htmlBridgeOutput_\([\s\S]*?window\.top\.postMessage\(/,
+    'Apps Script HTML runs in a googleusercontent sandbox and must post to the original caller, not only its sandbox parent'
+  );
 });
 
 guardedTest('Phase 219 dispatcher accepts bridge fields from hidden iframe POST forms', () => {
