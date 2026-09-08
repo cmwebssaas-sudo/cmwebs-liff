@@ -2,6 +2,15 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-09 — Email 驗證碼 bridge timeout 與失敗提示（本地候選）
+
+- Email 登入與已登入房東首次 Email 驗證的 hidden POST bridge 改用 60 秒逾時，避免
+  Apps Script MailApp 寄信或回應稍慢時被原本 25 秒前端逾時誤判。
+- 設定頁區分 `EMAIL_DELIVERY_FAILED` 與 `API 載入逾時`，分別提示管理員檢查寄信設定／授權
+  或稍後重試；不暴露密鑰、不自動重送 OTP。
+- Phase 242 本地回歸通過；正式 Email 寄送、MailApp 設定與首次驗證仍需部署後
+  `HUMAN_REQUIRED`／`UNVERIFIED` 驗證。
+
 ## 2026-09-09 — 付款帳號封面與手動銷帳 bridge timeout（本地候選）
 
 - 修正房東手動銷帳與銀行帳戶封面上傳在 Email／bridge 路徑忽略頁面指定逾時值的問題；

@@ -9,6 +9,7 @@
     WORKSPACE_FORBIDDEN: true
   };
   const BRIDGE_TIMEOUT_MS = 25000;
+  const EMAIL_BRIDGE_TIMEOUT_MS = 60000;
 
   let config = {
     apiUrl: '',
@@ -402,7 +403,8 @@
         'landlord_email_login_request',
         {
           email: text(email).trim()
-        }
+        },
+        EMAIL_BRIDGE_TIMEOUT_MS
       );
     },
 
@@ -412,7 +414,8 @@
         {
           challenge_id: text(challengeId).trim(),
           code: text(code).trim()
-        }
+        },
+        EMAIL_BRIDGE_TIMEOUT_MS
       ).then(maybeStoreSession);
     },
 
@@ -425,7 +428,8 @@
           {
             email: text(email).trim()
           }
-        )
+        ),
+        EMAIL_BRIDGE_TIMEOUT_MS
       );
     },
 
@@ -439,7 +443,8 @@
             challenge_id: text(challengeId).trim(),
             code: text(code).trim()
           }
-        )
+        ),
+        EMAIL_BRIDGE_TIMEOUT_MS
       );
     },
 
