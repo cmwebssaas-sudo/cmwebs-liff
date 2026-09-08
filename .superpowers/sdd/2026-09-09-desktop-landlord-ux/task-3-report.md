@@ -26,6 +26,13 @@
 - Finding 4: bridge timeout errors now carry `API_TIMEOUT`, preserving the arrears manual-settlement authoritative recheck path.
 - Added Phase 219 regressions for business-ID preservation and timeout normalization, plus Phase 220 regressions for fail-closed unsupported actions and checkout-link exclusion.
 
+## Fix round 2 — isolated contract readback regression
+
+- Fix commit: `e24c8a2` (`fix(landlord): preserve isolated contract readback guards`)
+- `callNativeSigningReviewApi()` and `loadPage()` now compute a local Email-session predicate guarded by `typeof window`, the auth client, and `typeof isEmailAuthSession === 'function'`. Missing isolated-runtime helpers therefore mean “no Email session”; a real browser with the existing auth client still executes `isEmailAuthSession()` and keeps the desktop Email fail-closed behavior.
+- `loadPage()` also treats an absent isolated native-session variable/initializer as unavailable without changing the real browser native-session initialization path.
+- Updated the Phase 192 VM fixture to provide the current auth-readiness/JSONP seams while intentionally omitting `window` and `isEmailAuthSession`, so the regression remains focused on the source boundary.
+
 ## Changed files
 
 - `landlord-arrears.html`
@@ -33,6 +40,7 @@
 - `landlord-contract-requests.html`
 - `landlord-responsive.css`
 - `tests/phase219-landlord-auth-client.test.mjs` (Fix round 1)
+- `tests/phase192-test-mode-contract-readback.test.mjs` (Fix round 2)
 - `tests/phase220-landlord-responsive-ui.test.mjs`
 
 ## Verification
@@ -50,6 +58,13 @@ Round 1 latest verification:
 - `node --test tests/phase219-landlord-auth-client.test.mjs tests/phase220-landlord-responsive-ui.test.mjs` — 36 passed, 0 failed.
 - Inline target-page syntax, `landlord-auth.js`/`landlord-api.js` syntax, and all `apps-script/**/*.js` syntax — passed.
 - `git diff --check` — passed before the fix commit.
+
+Round 2 latest verification:
+
+- `node --test tests/phase192-test-mode-contract-readback.test.mjs` — 3 passed, 0 failed.
+- `node --test tests/phase219-landlord-auth-client.test.mjs tests/phase220-landlord-responsive-ui.test.mjs` — 36 passed, 0 failed.
+- `node --test tests/*.test.mjs` — 185 passed, 0 failed.
+- Inline target-page syntax, `landlord-auth.js`/`landlord-api.js` syntax, all `apps-script/**/*.js` syntax, and `git diff --check` — passed.
 
 Failed or unavailable without scope expansion:
 
