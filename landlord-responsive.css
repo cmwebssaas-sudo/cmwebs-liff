@@ -247,8 +247,51 @@
   }
 
   .dashboard-page-header,
-  .topbar {
+  .topbar,
+  .desktop-main > #app > .page-header {
     display: none;
+  }
+
+  .desktop-main .page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .desktop-main .page-actions > * {
+    min-width: 180px;
+    flex: 0 1 auto;
+  }
+
+  .desktop-main #arrearsList,
+  .desktop-main #requestList {
+    display: grid;
+    gap: 16px;
+  }
+
+  .desktop-main #arrearsList > .card,
+  .desktop-main #requestList > .request-card {
+    margin-bottom: 0;
+  }
+
+  .desktop-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 400000;
+    align-items: center;
+    padding: 24px;
+  }
+
+  .desktop-modal .modal-sheet {
+    max-height: calc(100% - 48px);
+    max-width: 760px;
+    overflow-y: auto;
+    border-radius: 18px;
+  }
+
+  .desktop-modal.alert-mask .alert-box {
+    max-height: calc(100% - 48px);
+    overflow-y: auto;
   }
 
   .dashboard-kpi-grid.desktop-kpi-row,
