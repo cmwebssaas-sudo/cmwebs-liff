@@ -117,6 +117,7 @@ function formFields(form) {
 function createRuntime(width = 1440, options = {}) {
   const listeners = new Map();
   const storage = new Map();
+  const timeouts = [];
   const document = {
     submittedForms: [],
     created: [],
@@ -147,6 +148,7 @@ function createRuntime(width = 1440, options = {}) {
       return hostClearTimeout(timer);
     },
     setTimeout(callback, delay, ...args) {
+      timeouts.push(delay);
       const timeoutDelayMs = Number.isFinite(options.timerDelayMs)
         ? options.timerDelayMs
         : delay;
@@ -212,7 +214,7 @@ function createRuntime(width = 1440, options = {}) {
   context.window = context;
   vm.createContext(context);
   vm.runInContext(source, context, { filename: 'landlord-auth.js' });
-  return { context, document, storage };
+  return { context, document, storage, timeouts };
 }
 
 test('Phase 219 requires the shared landlord auth client module', () => {
@@ -569,6 +571,43 @@ guardedTest('Phase 219 test mode keeps Email actions free of deterministic test 
   }, 'https://script.google.com', iframe.contentWindow);
 
   await request;
+});
+
+guardedTest('Phase 242 gives Email verification requests enough bridge time for Apps Script MailApp delivery', async () => {
+  const { context, document, timeouts } = createRuntime(1440, { timerDelayMs: 0 });
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec',
+    lineUserId: 'line-1'
+  });
+
+  const request = auth.requestEmailVerification('owner@example.com');
+  assert.equal(timeouts.at(-1), 60000);
+
+  const form = document.submittedForms[0];
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
+  const fields = formFields(form);
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: {
+      success: true,
+      data: { challenge_id: 'challenge-verify-timeout' }
+    }
+  }, 'https://script.google.com', iframe.contentWindow);
+
+  await request;
+});
+
+test('Phase 242 gives Email delivery failures an actionable settings message', () => {
+  assert.match(
+    settingsSource,
+    /code\s*===\s*'EMAIL_DELIVERY_FAILED'[\s\S]*管理員確認寄信設定與授權/
+  );
+  assert.match(
+    settingsSource,
+    /code\s*===\s*'API 載入逾時'[\s\S]*Email 驗證服務回應逾時/
+  );
 });
 
 guardedTest('Phase 219 clears Email session and redirects through a validated return_to on auth failures', async () => {
