@@ -1916,7 +1916,13 @@
     }
 
     async function callNativeSigningReviewApi(action, params) {
-      if (isEmailAuthSession()) {
+      const emailSessionActive =
+        typeof window !== 'undefined' &&
+        Boolean(window.CMWebsLandlordAuth) &&
+        typeof isEmailAuthSession === 'function' &&
+        isEmailAuthSession();
+
+      if (emailSessionActive) {
         throw desktopNativeUnsupportedError();
       }
 
@@ -3683,7 +3689,21 @@
           return;
         }
 
-        if (!isEmailAuthSession() && !NATIVE_SIGNING_REVIEW_SESSION_TOKEN) {
+        const emailSessionActive =
+          typeof window !== 'undefined' &&
+          Boolean(window.CMWebsLandlordAuth) &&
+          typeof isEmailAuthSession === 'function' &&
+          isEmailAuthSession();
+        const nativeSessionToken =
+          typeof NATIVE_SIGNING_REVIEW_SESSION_TOKEN === 'string'
+            ? NATIVE_SIGNING_REVIEW_SESSION_TOKEN
+            : '';
+
+        if (
+          !emailSessionActive &&
+          !nativeSessionToken &&
+          typeof initializeNativeSigningReviewSession === 'function'
+        ) {
           try {
             await initializeNativeSigningReviewSession();
           } catch (error) {
@@ -3695,7 +3715,7 @@
           jsonpRequest('landlord_contract_requests_init'),
           (async function() {
             try {
-              if (isEmailAuthSession()) {
+              if (emailSessionActive) {
                 throw desktopNativeUnsupportedError();
               }
 
@@ -3731,7 +3751,7 @@
           })(),
           (async function() {
             try {
-              if (isEmailAuthSession()) {
+              if (emailSessionActive) {
                 throw desktopNativeUnsupportedError();
               }
 

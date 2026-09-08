@@ -118,10 +118,13 @@ async function runLoadPage(testMode) {
       `let TEST_MODE = ${testMode};`,
       'let CONTRACT_FILTER_ID = "C000019";',
       'let TENANT_FILTER_ID = "T000020";',
+      'let NATIVE_SIGNING_REVIEW_SESSION_TOKEN = "";',
       'function renderLoading() {}',
       'function renderPage(data) { state.renderedData = data; }',
       'function renderError(error) { state.error = String(error && error.message || error); }',
+      'function ensureLandlordAuthReady() { return Promise.resolve(true); }',
       'function callApi(action) { state.calls.push(action); return Promise.resolve({ requests: [] }); }',
+      'function jsonpRequest(action) { return callApi(action); }',
       'function callNativeSigningReviewApi() { state.calls.push("native-signing-review"); return Promise.resolve({ items: [] }); }',
       'function callLandlordInitiatedApi(action) { state.calls.push(action); return Promise.resolve({ items: [] }); }',
       extractFunction('loadPage')
