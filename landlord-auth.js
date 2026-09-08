@@ -121,6 +121,8 @@
 
     const id =
       requestId();
+    const businessRequestId =
+      text(params && params.request_id);
     const iframe =
       document.createElement('iframe');
     const form =
@@ -136,6 +138,10 @@
           request_id: id
         }
       );
+    if (businessRequestId) {
+      payload.business_request_id =
+        businessRequestId;
+    }
     const expectedOrigin =
       bridgeOrigin();
 
@@ -166,7 +172,11 @@
           if (finished) return;
           finished = true;
           cleanupBridge(iframe, form, listener, timer);
-          reject(new Error('API 載入逾時'));
+          const error =
+            new Error('API 載入逾時');
+          error.code =
+            'API_TIMEOUT';
+          reject(error);
         }, Number(timeoutMs) > 0 ? Number(timeoutMs) : BRIDGE_TIMEOUT_MS);
 
       function listener(event) {

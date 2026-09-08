@@ -305,6 +305,9 @@ test('Phase 220 desktop typography uses at least 16px text', () => {
 test('Phase 220 provides identical desktop navigation and preserves release-version navigation', () => {
   const labels = ['總覽', '房客', '物件與房間', '合約', '退房', '帳款'];
   for (const [name, source] of Object.entries(pages)) {
+    const expectedLabels = legacyOperationalPages.includes(name)
+      ? labels.filter((label) => label !== '退房')
+      : labels;
     assert.match(source, /class="desktop-sidebar"/, `${name} must render desktop sidebar`);
     assert.match(source, /class="desktop-topbar"/, `${name} must render desktop topbar`);
     assert.match(source, /desktopWorkspaceName/, `${name} must expose workspace label`);
@@ -316,7 +319,7 @@ test('Phase 220 provides identical desktop navigation and preserves release-vers
       /TEST_MODE[\s\S]*(?:'\&test=1'|params\.set\('test',\s*'1'\))/,
       `${name} must preserve test-mode navigation params`
     );
-    for (const label of labels) {
+    for (const label of expectedLabels) {
       assert.match(source, new RegExp(label), `${name} missing desktop nav label ${label}`);
     }
   }
@@ -422,6 +425,26 @@ test('Phase 220 completes the shared desktop shell for legacy operational pages'
   }
 });
 
+test('Phase 220 fails closed before unsupported desktop Email operations can timeout or claim success', () => {
+  for (const name of legacyOperationalPages) {
+    const source = pages[name];
+    const callApiStart = source.indexOf('function callApi');
+    const bridgeCall = source.indexOf('window.CMWebsLandlordAuth.request(', callApiStart);
+    const guardCall = source.indexOf('assertDesktopEmailActionSupported(action)', callApiStart);
+
+    assert.ok(callApiStart >= 0, `${name} must expose its API boundary`);
+    assert.ok(guardCall >= 0, `${name} must guard unsupported desktop Email actions`);
+    assert.ok(bridgeCall > guardCall, `${name} must fail before entering the Email bridge`);
+    assert.match(
+      source,
+      /function assertDesktopEmailActionSupported\([\s\S]*?throw error;/,
+      `${name} must throw an explicit unsupported-state error`
+    );
+    assert.match(source, /DESKTOP_EMAIL_UNSUPPORTED/);
+    assert.match(source, /桌面 Email 版目前尚未支援/);
+  }
+});
+
 test('Phase 220 preserves legacy action and modal contracts while making desktop modals usable', () => {
   const arrears = pages['landlord-arrears.html'];
   assert.match(arrears, /id="app"/);
@@ -478,6 +501,16 @@ test('Phase 220 keeps native contract sessions separate and fails closed on desk
   assert.match(nativeSource, /session_token:\s*NATIVE_SIGNING_REVIEW_SESSION_TOKEN/);
   assert.match(source, /DESKTOP_EMAIL_UNSUPPORTED/);
   assert.match(source, /僅支援 LINE 手機流程/);
+});
+
+test('Phase 220 does not expose a broken checkout page from the desktop operational sidebar', () => {
+  for (const name of legacyOperationalPages) {
+    assert.doesNotMatch(
+      pages[name],
+      /landlord-tenant-checkout\.html/,
+      `${name} must not expose checkout without its required contract_id and auth shell`
+    );
+  }
 });
 
 test('Phase 220 validates required viewport contracts from actual selectors and properties', () => {

@@ -489,6 +489,56 @@ guardedTest('Phase 219 sends authenticated Email-session page actions through PO
   assert.deepEqual(result.data, { ok: true });
 });
 
+guardedTest('Phase 219 preserves business request IDs separately from bridge correlation IDs', async () => {
+  const { context, document, storage } = createRuntime();
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec'
+  });
+  storage.set('cmwebs_landlord_session_token', 'SESSION_TOKEN_ABC');
+
+  const params = {
+    request_id: 'contract-request-42'
+  };
+  const request = auth.request('landlord_contract_request_update', params);
+  const form = document.submittedForms[0];
+  const iframe = document.created.find((element) => element.tagName === 'IFRAME');
+  const fields = formFields(form);
+
+  assert.equal(params.request_id, 'contract-request-42');
+  assert.equal(fields.business_request_id, 'contract-request-42');
+  assert.match(fields.request_id, /^cmwebs_auth_/);
+  assert.notEqual(fields.request_id, fields.business_request_id);
+
+  context.dispatchMessage({
+    source: 'CMWEBS_APPS_SCRIPT',
+    requestId: fields.request_id,
+    payload: {
+      success: true,
+      data: { preserved: true }
+    }
+  }, 'https://script.google.com', iframe.contentWindow);
+
+  const result = await request;
+  assert.equal(result.success, true);
+  assert.deepEqual(result.data, { preserved: true });
+});
+
+guardedTest('Phase 219 normalizes hidden POST bridge timeouts to API_TIMEOUT', async () => {
+  const { context, document, storage } = createRuntime(1440, { timerDelayMs: 0 });
+  const auth = context.window.CMWebsLandlordAuth;
+  auth.init({
+    apiUrl: 'https://script.google.com/macros/s/example/exec'
+  });
+  storage.set('cmwebs_landlord_session_token', 'SESSION_TOKEN_ABC');
+
+  await assert.rejects(
+    auth.request('landlord_bill_manual_settle', {}, { timeoutMs: 5000 }),
+    (error) => error && error.code === 'API_TIMEOUT'
+  );
+  assert.equal(document.submittedForms.length, 1);
+});
+
 guardedTest('Phase 219 sends the settings page bootstrap through the authenticated POST bridge', async () => {
   const { context, document, storage } = createRuntime();
   context.API_URL = 'https://script.google.com/macros/s/example/exec';
