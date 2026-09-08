@@ -133,5 +133,10 @@ assert.doesNotMatch(
   /landlord_bill_manual_settle/,
   'timeout recovery must never submit manual settlement a second time'
 );
+assert.match(
+  extractFunction(arrearsSource, 'submitManualSettlement'),
+  /await\s+callApi\(\s*'landlord_bill_manual_settle',[\s\S]*?\}\s*,\s*60000\s*\)/,
+  'a manual settlement must allow the bounded server-side commit to finish before its client request expires'
+);
 
 console.log('Phase 147 payment timeout recovery tests passed.');

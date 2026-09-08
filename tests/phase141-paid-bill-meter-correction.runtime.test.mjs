@@ -463,7 +463,8 @@ function createManualSettlementScopeRuntime({
   forcePaymentReadbackFailure = false,
   forceBillRestoreFailure = false,
   forceLegacySyncFailure = false,
-  forceAuditFailure = false
+  forceAuditFailure = false,
+  notifyTenant = false
 }) {
   const source = fs.readFileSync(
     'apps-script/V2_MANUAL_SETTLEMENT.js',
@@ -480,6 +481,10 @@ function createManualSettlementScopeRuntime({
   const legacySyncCalls = [];
   const scopeCalls = [];
   const ensureCalls = [];
+  const lockAttempts = [];
+  const notificationLockStates = [];
+  let lockHeld = false;
+  let lockReleaseCount = 0;
   let downstreamCalls = 0;
   const sheets = {
     V2_bills: { row: bill },
@@ -487,15 +492,26 @@ function createManualSettlementScopeRuntime({
   };
   const context = {
     MANUAL_SETTLEMENT_BILLS_SHEET: 'V2_bills',
+    MANUAL_SETTLEMENT_LOCK_WAIT_MS_: 8000,
     LockService: {
       getScriptLock() {
-        return { tryLock() { return true; }, releaseLock() {} };
+        return {
+          tryLock(timeoutMs) {
+            lockAttempts.push(timeoutMs);
+            lockHeld = true;
+            return true;
+          },
+          releaseLock() {
+            lockReleaseCount += 1;
+            lockHeld = false;
+          }
+        };
       }
     },
     manualSettlementText_(value) {
       return value == null ? '' : String(value).trim();
     },
-    manualSettlementBoolean_() { return false; },
+    manualSettlementBoolean_() { return notifyTenant; },
     manualSettlementParseDate_() { return new Date('2026-08-09T00:00:00Z'); },
     runtimeSpreadsheet_() {
       return { getSheetByName(name) { return sheets[name] || null; } };
@@ -538,7 +554,14 @@ function createManualSettlementScopeRuntime({
       return existingPayment ? { payment_id: 'EXISTING-1' } : null;
     },
     manualSettlementMakePaymentId_() { return 'PAY-MANUAL-1'; },
-    manualSettlementResolveTenant_() { return null; },
+    manualSettlementResolveTenant_() {
+      return notifyTenant
+        ? {
+            tenant_line_user_id: 'tenant-line-id',
+            tenant_name: 'Tenant'
+          }
+        : null;
+    },
     manualSettlementConfirmationSourceText_() { return '私訊'; },
     manualSettlementAppendNote_(_current, appended) { return appended; },
     manualSettlementAppendObjectRow_(sheet, object) {
@@ -621,7 +644,12 @@ function createManualSettlementScopeRuntime({
         history: { status: 'updated' }
       };
     },
-    manualSettlementBuildTenantNotice_() { return ''; },
+    manualSettlementBuildTenantNotice_() { return 'settlement confirmed'; },
+    pushLineTextMessage_() {
+      notificationLockStates.push(lockHeld);
+      return { success: true, code: 'OK', message: '' };
+    },
+    cmwebsLogLineMessage_() {},
     SpreadsheetApp: { flush() {} },
     manualSettlementWriteAuditLog_() {
       if (forceAuditFailure) {
@@ -645,7 +673,7 @@ function createManualSettlementScopeRuntime({
         '',
         'private_message',
         '',
-        false
+        notifyTenant
       );
     },
     writes,
@@ -653,6 +681,9 @@ function createManualSettlementScopeRuntime({
     legacySyncCalls,
     scopeCalls,
     ensureCalls,
+    lockAttempts,
+    notificationLockStates,
+    get lockReleaseCount() { return lockReleaseCount; },
     sheets,
     get downstreamCalls() { return downstreamCalls; }
   };
@@ -781,6 +812,50 @@ for (const [label, options, expectedWarning] of [
       (warning) => warning.code === expectedWarning
     ),
     `${label} failure must remain visible as a non-financial warning`
+  );
+}
+
+{
+  const bill = {
+    bill_id: 'B-manual-settlement-lock-budget',
+    workspace_id: 'W-current',
+    landlord_id: 'legacy-owner',
+    tenant_id: 'T-1',
+    payment_status: 'unpaid',
+    payment_id: '',
+    paid_at: '',
+    updated_at: 'before',
+    notes: 'original note',
+    total_amount: 100
+  };
+  const runtime = createManualSettlementScopeRuntime({
+    bill,
+    access: {
+      success: true,
+      workspace: { workspace_id: 'W-current' },
+      principals: [{ landlord_id: 'legacy-owner' }]
+    },
+    existingPayment: false,
+    notifyTenant: true
+  });
+
+  const result = runtime.settle();
+
+  assert.equal(result.success, true, result.code);
+  assert.deepEqual(
+    runtime.lockAttempts,
+    [8000],
+    'manual settlement must return REQUEST_BUSY before the client request budget is exhausted'
+  );
+  assert.deepEqual(
+    runtime.notificationLockStates,
+    [false],
+    'tenant LINE delivery must run after the canonical settlement lock is released'
+  );
+  assert.equal(
+    runtime.lockReleaseCount,
+    1,
+    'the settlement lock must be released exactly once after the durable bill update'
   );
 }
 

@@ -5088,7 +5088,7 @@ function htmlBridgeOutput_(obj, requestId) {
 </head>
 <body>
 <script>
-  window.parent.postMessage(${JSON.stringify(envelope).replace(/</g, '\\u003c')}, '*');
+  window.top.postMessage(${JSON.stringify(envelope).replace(/</g, '\\u003c')}, '*');
 </script>
 </body>
 </html>

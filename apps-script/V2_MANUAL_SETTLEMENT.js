@@ -33,6 +33,9 @@ const MANUAL_SETTLEMENT_LEGACY_HISTORY_SHEET =
 const MANUAL_SETTLEMENT_AUDIT_SHEET =
   'V2_manual_settlement_logs';
 
+const MANUAL_SETTLEMENT_LOCK_WAIT_MS_ =
+  8000;
+
 
 // ==================================================
 // 主函式
@@ -82,6 +85,7 @@ function manualSettleLandlordBillByLineUid_(
   let canonicalSettlementCompleted = false;
   let paymentAppendUnverified = false;
   let postCommitWarnings = [];
+  let lockHeld = false;
 
   try {
     landlordLineUserId =
@@ -236,7 +240,7 @@ function manualSettleLandlordBillByLineUid_(
       };
     }
 
-    if (!lock.tryLock(30000)) {
+    if (!lock.tryLock(MANUAL_SETTLEMENT_LOCK_WAIT_MS_)) {
       return {
         success: false,
         code:
@@ -245,6 +249,8 @@ function manualSettleLandlordBillByLineUid_(
           '系統正在處理其他付款，請稍後再試'
       };
     }
+
+    lockHeld = true;
 
     const ss =
       runtimeSpreadsheet_();
@@ -703,6 +709,23 @@ function manualSettleLandlordBillByLineUid_(
         manualSettlementPostCommitWarning_(
           'SETTLEMENT_FLUSH_FAILED',
           flushError
+        )
+      );
+    }
+
+    /*
+     * V2 付款、帳單與必要帳務投影均已完成，後續 LINE、稽核與
+     * 存取紀錄不得繼續佔用全域 ScriptLock，以免其他帳務操作等到
+     * 前端逾時。這些後續動作失敗時一律保留已銷帳結果與警告。
+    */
+    try {
+      lock.releaseLock();
+      lockHeld = false;
+    } catch (releaseError) {
+      postCommitWarnings.push(
+        manualSettlementPostCommitWarning_(
+          'SETTLEMENT_LOCK_RELEASE_FAILED',
+          releaseError
         )
       );
     }
@@ -1239,10 +1262,12 @@ function manualSettleLandlordBillByLineUid_(
     };
 
   } finally {
-    try {
-      lock.releaseLock();
-    } catch (error) {
-      // 尚未取得鎖定時忽略
+    if (lockHeld) {
+      try {
+        lock.releaseLock();
+      } catch (error) {
+        // 尚未取得鎖定時忽略
+      }
     }
   }
 }

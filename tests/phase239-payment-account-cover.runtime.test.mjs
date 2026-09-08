@@ -22,6 +22,7 @@ test('landlord can privately replace the Workspace payment account cover', () =>
   const state = {
     saved: null,
     files: [],
+    lockWaitMs: null,
     props: new Map([
       ['CMWEBS_PAYMENT_ACCOUNT_COVER_DRIVE_ROOT_FOLDER_ID', 'cover-root']
     ])
@@ -81,7 +82,10 @@ test('landlord can privately replace the Workspace payment account cover', () =>
     LockService: {
       getScriptLock() {
         return {
-          waitLock() {},
+          tryLock(timeoutMs) {
+            state.lockWaitMs = timeoutMs;
+            return true;
+          },
           releaseLock() {}
         };
       }
@@ -139,6 +143,11 @@ test('landlord can privately replace the Workspace payment account cover', () =>
   });
 
   assert.equal(result.success, true, result.code);
+  assert.equal(
+    state.lockWaitMs,
+    8000,
+    'cover uploads must return a typed busy state before the client bridge timeout instead of waiting 25 seconds on the global lock'
+  );
   assert.equal(state.files.length, 1);
   assert.deepEqual(state.files[0].sharing, ['PRIVATE', 'NONE']);
   assert.equal(state.saved.rowNumber, 2);
