@@ -2,6 +2,20 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-10 — 房東桌面多頁 POST bridge 逾時修正（正式部署）
+
+- 桌面 Email hidden iframe POST bridge 補齊帳款、合約唯讀初始化、通知、付款回報、
+  營收圖表、Workspace context 與手動銷帳狀態查詢的伺服器回應；帳款／合約頁只放行
+  唯讀 action，寫入與合約異動仍 fail closed。
+- PR #147 merge commit `f72cfee37013fe3952445d32ed41ceac757cf72c`；既有 Production
+  Apps Script deployment 由 Version 182 更新至 immutable Version 183，Version 182
+  保留 rollback，Web App URL 不變。
+- GitHub Pages workflow `34410925756` 成功；公開六個房東頁與共用 API/auth 資產 HTTP
+  200，未登入 bridge smoke check HTTP 200。完整 Node `195/195`、Apps Script syntax、
+  static release-cache validator、`git diff --check` 通過。
+- 真實已登入 Chrome／Email session 多頁載入、圖表、側欄角色狀態仍需
+  `HUMAN_REQUIRED`；未以公開 HTTP 或 smoke check 宣稱完成桌面 UAT。
+
 ## 2026-09-10 — 房東桌面多頁 API 讀取逾時修正（正式部署）
 
 - `landlord_arrears`、`landlord_billing_init`、`landlord_contract_requests_init`、

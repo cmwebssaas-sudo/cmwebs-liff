@@ -1,11 +1,31 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-09 (Asia/Taipei)**
+**Last verified: 2026-09-10 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-10 房東桌面多頁 POST bridge 逾時修正正式部署
+
+- 根因是桌面 Email session 使用隱藏 iframe POST bridge，但帳款、合約唯讀初始化、
+  通知、付款回報、營收圖表、Workspace context 與手動銷帳狀態等 route 沒有回傳
+  `postMessage` bridge 結果，請求因此等到前端逾時；本次補上伺服器驗證後的 bridge
+  dispatch，並讓桌面帳款／合約唯讀頁走相同路徑，寫入與合約異動仍維持保護。
+- PR #147 merge commit `f72cfee37013fe3952445d32ed41ceac757cf72c`；既有 Production
+  Apps Script deployment 已由 immutable Version 182 更新至 Version 183，Version 182
+  保留 rollback，Web App URL 不變。推送候選為 56 個 Apps Script 檔案。
+- GitHub Pages workflow `34410925756` 成功完成；公開房東首頁、房客、物件、合約、
+  欠款、帳款頁與共用 `landlord-api.js`／`landlord-auth.js` read-back 均 HTTP 200。
+  未登入 bridge smoke check HTTP 200 並正確回傳 bridge marker；未執行 Sheet、Drive、
+  帳務或 LINE 寫入。
+- 本次驗證：完整 Node `195/195`、Apps Script 全檔 syntax、static release-cache
+  validator 與 `git diff --check` 通過。候選 validator 仍只報既有巢狀
+  `tenant_payment_account_cover` handler 偵測限制，沒有新增 route 缺漏。
+- 仍需 `HUMAN_REQUIRED`：房東以真實 Chrome／Email session 登入後，重新整理並逐一
+  驗證總覽圖表、房客、物件與房間、合約、帳款／欠款，以及側欄 Workspace／角色狀態。
+  HTTP 200、bridge smoke 與 deployment 版本本身不等於已登入桌面流程完成驗收。
 
 ## 2026-09-10 房東桌面多頁 API 讀取逾時修正正式部署
 
