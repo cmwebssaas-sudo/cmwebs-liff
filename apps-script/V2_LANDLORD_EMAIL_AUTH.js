@@ -942,9 +942,12 @@ function landlordEmailAuthRequiredSheet_(
 function landlordEmailAuthRows_(
   sheet
 ) {
-  if (!sheet || sheet.getLastRow() < 2) return [];
+  if (!sheet) return [];
   const values =
-    sheet.getDataRange().getValues();
+    typeof runtimeSnapshotGetValues_ === 'function'
+      ? runtimeSnapshotGetValues_(sheet)
+      : sheet.getDataRange().getValues();
+  if (!values || values.length < 2) return [];
   const headers =
     values[0].map(landlordEmailAuthText_);
   return values.slice(1).map(function (row, index) {

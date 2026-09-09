@@ -23,6 +23,29 @@ expected 71 routes vs current 87 and nested cover handler detection is stale.
 Actual authenticated latency is UNVERIFIED; Chrome automation dispatch itself
 timed out. No claim of App-like speed from source/HTTP checks alone.
 
+## Follow-up: authenticated desktop home timeout
+
+User-reported symptom after Version 180: the desktop shell rendered, but the
+Workspace label remained loading and `landlord_home_bootstrap` ended with `API
+載入逾時`.
+
+Root cause found in the current code path: Email-session bridge requests
+repeatedly ran `workspaceEnsureSchema_`, reread the same Workspace/session
+tables through different helpers, and scanned Sheet metadata before each full
+read. The previous snapshot allowlist reduced only one part of that work.
+
+Minimal repair: read-only Web App actions now bypass schema mutation checks;
+Workspace row conversion and landlord Email-auth rows use the request-local
+snapshot; resolved Workspace access is cached within one request; legacy
+context migration is attempted only after the normal context lookup is absent;
+and the bootstrap reuses the runtime spreadsheet handle.
+
+Verification: full Node suite `191/191`; all Apps Script files pass
+`node --check`; static release-cache validator and `git diff --check` pass.
+Authenticated desktop/mobile latency and the actual serving Apps Script version
+remain `HUMAN_REQUIRED` / `UNVERIFIED` until the new backend is deployed and
+the reported account is tested in Chrome and LINE LIFF.
+
 Release order: deploy immutable backend version first (old frontend compatible),
 then merge/publish frontend. Rollback backend to version 177 on the same deployment
 URL; revert this PR for Pages. If rolling backend back first, section-less old

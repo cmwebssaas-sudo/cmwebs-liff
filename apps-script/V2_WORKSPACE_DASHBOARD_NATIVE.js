@@ -521,6 +521,8 @@ function workspaceDashboardExecute_(
         lineUserId,
         {
           require_onboarding:
+            true,
+          skip_schema_ensure:
             true
         }
       );

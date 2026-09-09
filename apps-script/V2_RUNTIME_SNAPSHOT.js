@@ -17,6 +17,14 @@ const V2_RUNTIME_SNAPSHOT_READ_ACTIONS_ = {
 let V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ = null;
 
 
+function runtimeSnapshotIsReadEnabled_() {
+  return Boolean(
+    V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ &&
+    V2_REQUEST_RUNTIME_SNAPSHOT_STATE_.enabled === true
+  );
+}
+
+
 function runtimeSnapshotBegin_(action) {
   action = String(action || '').trim();
 
