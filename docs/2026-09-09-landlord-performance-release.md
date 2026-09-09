@@ -27,3 +27,18 @@ Release order: deploy immutable backend version first (old frontend compatible),
 then merge/publish frontend. Rollback backend to version 177 on the same deployment
 URL; revert this PR for Pages. If rolling backend back first, section-less old
 behavior remains compatible, though reads become heavier again.
+
+## Deployment evidence
+
+- PR #136 merged as `4dda11ae77504eff405a7e09bbf3434212db65ee`.
+- Serving Apps Script deployment updated to immutable version **178**, with the
+  existing Web App URL unchanged. Re-export of version 178: 56/56 files exactly
+  match candidate source. Editor HEAD before push matched serving v177.
+- GitHub Pages run **34328288321** completed successfully.
+- Public `landlord-home.html` and `frontend-release.js` return HTTP 200 with the
+  new progressive-home markers. Source identity is not authenticated acceptance.
+- Final full Node suite 187/187; static release-cache validator passed after
+  advancing its release marker with this approved release.
+- Still UNVERIFIED: logged-in first-render latency, real mobile LIFF interaction,
+  and other pages' timeout rates. This is the first scoped repair, not a claim
+  that all Apps Script latency or timeout sources have been eliminated.
