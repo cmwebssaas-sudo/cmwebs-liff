@@ -5,6 +5,7 @@
   const DEFAULT_RETRY_DELAY_MS = 350;
   const READ_ONLY_ACTIONS = {
     landlord_arrears: true,
+    landlord_bill_manual_settlement_status: true,
     landlord_billing_init: true,
     landlord_contract_requests_init: true,
     landlord_home_bootstrap: true,

@@ -2490,6 +2490,15 @@
         return;
       }
 
+      const desktopReadActions = {
+        landlord_arrears: true,
+        landlord_bill_manual_settlement_status: true
+      };
+
+      if (desktopReadActions[action] === true) {
+        return;
+      }
+
       const error = desktopEmailUnsupportedError();
       error.action = action;
       throw error;

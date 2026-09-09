@@ -2879,6 +2879,219 @@ function doPost(e) {
           );
         }
 
+        // Desktop Email sessions use the hidden iframe POST bridge for every
+        // protected read. Keep these routes on the same server-side principal
+        // resolution path as the existing home/properties handlers; otherwise
+        // the request falls through to the LINE webhook response and the
+        // browser waits until its bridge timeout.
+        function resolveLandlordReadBridgePrincipal_() {
+          return landlordEmailAuthPostRequires_(
+            request,
+            [
+              'landlord_session_token',
+              'request_id'
+            ]
+          ) ||
+          resolveLandlordPrincipal_(
+            request
+          );
+        }
+
+        if (useBridge && action === 'landlord_arrears') {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getWorkspaceLandlordArrearsNativeByLineUid_(
+                principal.data.principal_line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_bill_manual_settlement_status'
+        ) {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getManualSettlementStatusByLineUid_(
+                principal.data.principal_line_user_id,
+                request.bill_id || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && action === 'landlord_billing_init') {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getLandlordBillingInitByLineUid_(
+                principal.data.principal_line_user_id,
+                request.bill_month || '',
+                request.property_id || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_contract_requests_init'
+        ) {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getWorkspaceLandlordContractRequestsInitByLineUid_(
+                principal.data.principal_line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_notifications_init'
+        ) {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getLandlordNotificationsInitByLineUid_(
+                principal.data.principal_line_user_id,
+                request.status_filter || 'all',
+                request.event_filter || 'all'
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_payment_reports_init'
+        ) {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getWorkspaceLandlordPaymentReportsInitByLineUid_(
+                principal.data.principal_line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_revenue_dashboard_init'
+        ) {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getLandlordRevenueDashboardByLineUid_(
+                principal.data.principal_line_user_id,
+                {
+                  range: request.range || '',
+                  from_month: request.from_month || '',
+                  to_month: request.to_month || '',
+                  property_id: request.property_id || ''
+                }
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_workspace_context'
+        ) {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getLandlordWorkspaceContextByLineUid_(
+                principal.data.principal_line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
         if (useBridge) {
           // Reserved for POST-only landlord auth transports added in later
           // slices; unrelated JSON POST handlers below keep their JSON output.

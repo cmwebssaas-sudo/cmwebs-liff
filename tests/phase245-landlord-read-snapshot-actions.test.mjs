@@ -36,14 +36,17 @@ vm.runInContext(
 
 const readActions = [
   'landlord_arrears',
+  'landlord_bill_manual_settlement_status',
   'landlord_billing_init',
   'landlord_contract_requests_init',
   'landlord_home_bootstrap',
+  'landlord_notifications_init',
   'landlord_payment_reports_init',
   'landlord_properties_init',
   'landlord_revenue_dashboard_init',
   'landlord_settings_init',
-  'landlord_tenants'
+  'landlord_tenants',
+  'landlord_workspace_context'
 ];
 
 for (const action of readActions) {
@@ -86,6 +89,11 @@ assert.match(
   landlordApiSource,
   /landlord_properties_init:\s*true/,
   'properties init must use the shared read retry and dedupe client'
+);
+assert.match(
+  landlordApiSource,
+  /landlord_bill_manual_settlement_status:\s*true/,
+  'manual settlement status must use the shared read retry and dedupe client'
 );
 
 console.log('Phase 245 landlord read snapshot action regression test passed.');
