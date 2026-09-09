@@ -1838,6 +1838,17 @@ function workspaceNextId_(sheet, headerName, prefix, digits) {
 // ==================================================
 
 function workspaceWriteActivityLog_(record) {
+  // Read-only Web App requests must stay read-only. Desktop pages load the
+  // sidebar and page data at the same time; appending an audit row here (and
+  // in logLiffAccess_) makes those reads compete for the Sheets write path and
+  // can leave the iframe bridge waiting until its timeout.
+  if (
+    typeof runtimeSnapshotIsReadEnabled_ === 'function' &&
+    runtimeSnapshotIsReadEnabled_()
+  ) {
+    return;
+  }
+
   try {
     const ss = runtimeSpreadsheet_();
     const sheet = workspaceEnsureSheet_(

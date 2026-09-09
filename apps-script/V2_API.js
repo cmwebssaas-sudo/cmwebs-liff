@@ -5312,6 +5312,16 @@ function getSheetObjects_(sheetName) {
 // ==================================================
 
 function logLiffAccess_(params) {
+  // The landlord desktop read bridge is intentionally read-only. Do not
+  // append a second access-log row for every parallel page read; the write
+  // contention can delay the actual response beyond the browser timeout.
+  if (
+    typeof runtimeSnapshotIsReadEnabled_ === 'function' &&
+    runtimeSnapshotIsReadEnabled_()
+  ) {
+    return;
+  }
+
   try {
     const ss = runtimeSpreadsheet_();
     let sheet = ss.getSheetByName(V2_SHEETS.liffAccessLogs);

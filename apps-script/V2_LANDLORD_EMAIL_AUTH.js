@@ -246,10 +246,14 @@ function resolveLandlordEmailSession_(
   sessionToken,
   requestId
 ) {
+  const readOnly =
+    typeof runtimeSnapshotIsReadEnabled_ === 'function' &&
+    runtimeSnapshotIsReadEnabled_();
+
   return landlordEmailAuthResolveSession_(
     sessionToken,
     requestId,
-    true
+    !readOnly
   );
 }
 
