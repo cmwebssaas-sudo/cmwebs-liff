@@ -69,7 +69,7 @@ this document and its static validation.
 
 ## Route inventory
 
-### 2026-09-09 settlement timeout candidate (not yet deployed)
+### 2026-09-09 settlement timeout repair (version179 / PR138)
 
 `landlord_bill_manual_settlement_status` adds one GET route (88 current source
 routes). Inputs: authenticated LINE identity and `bill_id`. Workspace read policy

@@ -23,7 +23,7 @@ Explicit static validation has a preexisting nested cover-handler detection
 failure; syntax, unique declarations, 88 unique routes and links pass.
 Parent npm validator targets legacy files and is not candidate evidence.
 
-Deployment authorized by the user on 2026-09-09; release in progress. This is uncertainty/retry protection, not proof that the original
+Deployment authorized by the user on 2026-09-09 and completed below. This is uncertainty/retry protection, not proof that the original
 write is faster. Follow-up needs serving phase timing and a genuine authorized
 operation. Do not mark original performance issue resolved yet.
 
@@ -38,3 +38,20 @@ and immutable178 match each other and origin/main, 56/56 source files.
 Release marker: 20260909-settlement-status-v1. Full188 tests and static release
 cache validation passed again after advancing the marker. No financial testing
 or messages authorized by this deployment.
+
+## Deployment evidence
+
+- Source commit ca5c8396725d94d867c45a0aaf9cb16c07a5bc9b.
+- PR138 merged as e9007776bf71242185bb5bc154e9704c6fcfb29b.
+- Existing Web App now serves immutable179; rollback178 retained. Export179
+  matches all56 candidate files exactly. No URL or deployment permissions change.
+- Read-only anonymous new-route probe returned MISSING_ID as expected, not
+  account/financial data. This is not authenticated payment acceptance.
+- Pages run34333318588 succeeded. Public landlord-arrears.html,
+  frontend-release.js and landlord-home.html returned HTTP200 and their SHA256
+  matched this candidate byte-for-byte.
+- Full188 tests and static release-cache validation passed. Known legacy
+  validator limitation remains documented above; no claim of a clean candidate
+  npm validator or a live Apps Script transaction test.
+- No payment, bank, account, schema, Properties, trigger or LINE-send operation
+  performed. Mobile acceptance and actual write latency remain UNVERIFIED.
