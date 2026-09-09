@@ -413,7 +413,10 @@ function getWorkspaceLandlordHomeBootstrapByLineUid_(
       const data = section === 'actions' ? null :
         workspaceDashboardLoadData_(
           ss,
-          access
+          access,
+          {
+            mode: section === 'home' ? 'home' : 'full'
+          }
         );
 
       const homeResult = section === 'actions' ? { success: true, data: {} } :

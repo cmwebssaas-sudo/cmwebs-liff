@@ -2630,7 +2630,8 @@ function doPost(e) {
               ]
             ) ||
             resolveLandlordPrincipal_(
-              request
+              request,
+              { require_onboarding: true }
             );
           const principal =
             result && result.success === true
@@ -2660,7 +2661,8 @@ function doPost(e) {
               ]
             ) ||
             resolveLandlordPrincipal_(
-              request
+              request,
+              { require_onboarding: true }
             );
           const principal =
             result && result.success === true
@@ -2691,7 +2693,8 @@ function doPost(e) {
               ]
             ) ||
             resolveLandlordPrincipal_(
-              request
+              request,
+              { require_onboarding: true }
             );
           const principal =
             result && result.success === true
@@ -2721,7 +2724,8 @@ function doPost(e) {
               ]
             ) ||
             resolveLandlordPrincipal_(
-              request
+              request,
+              { require_onboarding: true }
             );
           const principal =
             result && result.success === true
@@ -2752,7 +2756,8 @@ function doPost(e) {
               ]
             ) ||
             resolveLandlordPrincipal_(
-              request
+              request,
+              { require_onboarding: true }
             );
           const principal =
             result && result.success === true
@@ -2786,7 +2791,8 @@ function doPost(e) {
               ]
             ) ||
             resolveLandlordPrincipal_(
-              request
+              request,
+              { require_onboarding: true }
             );
           const principal =
             result && result.success === true
@@ -2831,7 +2837,8 @@ function doPost(e) {
               ]
             ) ||
             resolveLandlordPrincipal_(
-              request
+              request,
+              { require_onboarding: true }
             );
           const principal =
             result && result.success === true
@@ -2859,7 +2866,8 @@ function doPost(e) {
         ) {
           result =
             resolveLandlordPrincipal_(
-              request
+              request,
+              { require_onboarding: true }
             );
 
           if (
@@ -2893,7 +2901,8 @@ function doPost(e) {
             ]
           ) ||
           resolveLandlordPrincipal_(
-            request
+            request,
+            { require_onboarding: true }
           );
         }
 
