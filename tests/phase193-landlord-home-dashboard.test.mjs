@@ -264,13 +264,13 @@ assert.equal(
 const loadPageSource = extractFunction('loadPage');
 assert.ok(
   source.includes('function requestDashboardReport_('),
-  'dashboard report requests must be startable before the homepage bootstrap finishes'
+  'dashboard report requests have an independent loader'
 );
 const reportRequestStartIndex = loadPageSource.indexOf('requestDashboardReport_(');
 const bootstrapRequestIndex = loadPageSource.indexOf("'landlord_home_bootstrap'");
 assert.ok(
-  reportRequestStartIndex >= 0 && reportRequestStartIndex < bootstrapRequestIndex,
-  'dashboard report request must start before the blocking homepage bootstrap request'
+  reportRequestStartIndex > bootstrapRequestIndex && reportRequestStartIndex > loadPageSource.indexOf('renderHome('),
+  'secondary reports must wait until lightweight home has rendered'
 );
 assert.ok(
   loadPageSource.indexOf('renderHome(') >= 0,

@@ -650,3 +650,17 @@ canonical source, a deployment record, or authorization to change Production.
 The route names and public request envelopes are unchanged. Any Production
 release still requires a separate immutable-version, rollback, schema, and
 authenticated runtime verification packet.
+
+## 2026-09-09 Progressive landlord home
+
+- Existing `landlord_home_bootstrap` GET and authenticated Email POST accept
+  optional `section=home` (core dashboard only) or `section=actions` (existing
+  four action modules only; no repeated dashboard scan). Omitted/unknown section
+  preserves the combined response for existing clients.
+- Workspace resolution, onboarding and read permission checks run for both
+  sections. No new route, schema, credentials, or subscription behavior.
+- POST resets the request-local snapshot before dispatch just like GET; only
+  existing allowlisted read routes enable value reuse. Writes remain uncached.
+  Timing logs contain action/read counts/duration, never payloads or identifiers.
+- Home uses the protected bootstrap as its Email session validation rather than
+  a redundant preceding session-status request. Backend verification is unchanged.

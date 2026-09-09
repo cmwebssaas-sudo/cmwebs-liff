@@ -397,7 +397,8 @@ function getWorkspaceLandlordContractRequestsInitByLineUid_(
  * 既有資料建立函式。舊 route 保持不變，供各自頁面與相容性使用。
  */
 function getWorkspaceLandlordHomeBootstrapByLineUid_(
-  lineUserId
+  lineUserId,
+  section
 ) {
   return workspaceLandlordProxy_(
     lineUserId,
@@ -407,13 +408,13 @@ function getWorkspaceLandlordHomeBootstrapByLineUid_(
       const ss =
         SpreadsheetApp.getActiveSpreadsheet();
 
-      const data =
+      const data = section === 'actions' ? null :
         workspaceDashboardLoadData_(
           ss,
           access
         );
 
-      const homeResult =
+      const homeResult = section === 'actions' ? { success: true, data: {} } :
         workspaceDashboardBuildHomeResult_(
           access,
           data
@@ -429,6 +430,10 @@ function getWorkspaceLandlordHomeBootstrapByLineUid_(
             'LANDLORD_HOME_BOOTSTRAP_ERROR',
             '首頁資料讀取失敗'
           );
+      }
+
+      if (section === 'home') {
+        return { success: true, code: 'OK', message: '查詢成功', data: { home: homeResult.data || {} } };
       }
 
       const landlord =
@@ -466,6 +471,14 @@ function getWorkspaceLandlordHomeBootstrapByLineUid_(
               'LANDLORD_INITIATED_CONTRACT_MODULE_REQUIRED',
               '找不到房東發起合約模組'
             );
+
+      if (section === 'actions') {
+        const failed = [contractResult, paymentResult, messageResult, initiatedContractResult]
+          .filter(function (result) { return !result || result.success !== true; });
+        if (failed.length) {
+          return failed[0] || workspaceResult_(false, 'HOME_ACTIONS_ERROR', '待辦資料讀取失敗');
+        }
+      }
 
       return {
         success: true,
