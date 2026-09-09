@@ -406,7 +406,9 @@ function getWorkspaceLandlordHomeBootstrapByLineUid_(
     'read',
     function (principalLineUserId, access) {
       const ss =
-        SpreadsheetApp.getActiveSpreadsheet();
+        typeof runtimeSpreadsheet_ === 'function'
+          ? runtimeSpreadsheet_()
+          : SpreadsheetApp.getActiveSpreadsheet();
 
       const data = section === 'actions' ? null :
         workspaceDashboardLoadData_(
@@ -918,7 +920,9 @@ function workspaceLandlordProxy_(
         lineUserId,
         {
           require_onboarding:
-            true
+            true,
+          skip_schema_ensure:
+            policy === 'read'
         }
       );
 
@@ -1001,6 +1005,19 @@ function workspaceLandlordResolveAccess_(
     );
   }
 
+  const accessCacheKey =
+    lineUserId + '|' +
+    workspaceText_(options.workspace_id) + '|' +
+    (options.require_onboarding === true ? 'onboarding' : 'any');
+  const cachedAccess =
+    typeof runtimeSnapshotGetContext_ === 'function'
+      ? runtimeSnapshotGetContext_('workspace_access', accessCacheKey)
+      : null;
+
+  if (cachedAccess) {
+    return cachedAccess;
+  }
+
   if (
     typeof workspaceEnsureSchema_ !==
     'function'
@@ -1019,25 +1036,28 @@ function workspaceLandlordResolveAccess_(
   const ss =
     runtimeSpreadsheet_();
 
-  if (
-    options.skip_legacy_context_creation !==
-      true &&
-    !workspaceText_(
-      options.workspace_id
-    )
-  ) {
-    workspaceEnsureLegacyLandlordContext_(
-      ss,
-      lineUserId
-    );
-  }
-
-  const context =
+  let context =
     workspaceResolveContextByLineUid_(
       ss,
       lineUserId,
       options
     );
+
+  if (
+    !context.user &&
+    options.skip_legacy_context_creation !== true &&
+    !workspaceText_(options.workspace_id)
+  ) {
+    workspaceEnsureLegacyLandlordContext_(
+      ss,
+      lineUserId
+    );
+    context = workspaceResolveContextByLineUid_(
+      ss,
+      lineUserId,
+      options
+    );
+  }
 
   if (!context.user) {
     return workspaceResult_(
@@ -1142,7 +1162,7 @@ function workspaceLandlordResolveAccess_(
     );
   }
 
-  return {
+  const resolvedAccess = {
     success: true,
     line_user_id:
       lineUserId,
@@ -1168,6 +1188,16 @@ function workspaceLandlordResolveAccess_(
       principal.line_user_id !==
       lineUserId
   };
+
+  if (typeof runtimeSnapshotSetContext_ === 'function') {
+    runtimeSnapshotSetContext_(
+      'workspace_access',
+      accessCacheKey,
+      resolvedAccess
+    );
+  }
+
+  return resolvedAccess;
 }
 
 

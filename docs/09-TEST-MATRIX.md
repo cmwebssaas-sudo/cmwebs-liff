@@ -1,5 +1,14 @@
 # V2 回歸測試矩陣
 
+## 2026-09-09 桌面版首頁 API 逾時後續修正（候選，待部署）
+
+- [x] Read-only Web App actions skip repeated schema mutation checks；寫入路徑仍保留 schema protection。
+- [x] Workspace row helper、Email auth rows、Workspace access resolution 共用單次 request snapshot/cache，避免同一個 Email bridge request 重複掃描相同資料。
+- [x] `tests/phase243-landlord-request-cache.test.mjs` 通過。
+- [x] 完整 Node suite `191/191` 通過；Apps Script syntax、static release-cache validator、`git diff --check` 通過。
+- [ ] Apps Script immutable version deploy 與既有 Web App URL read-back。
+- [ ] 已登入桌面版／手機 LIFF 首頁與房客頁實機驗收；仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-09 桌面版 landlord API 讀取逾時修正（已部署）
 
 - [x] `landlord_home_bootstrap` 與 `landlord_tenants` 共用同一個 request-local

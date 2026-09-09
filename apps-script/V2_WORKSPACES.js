@@ -1383,6 +1383,13 @@ function workspaceEmptyEntryData_() {
 // ==================================================
 
 function workspaceEnsureSchema_() {
+  if (
+    typeof runtimeSnapshotIsReadEnabled_ === 'function' &&
+    runtimeSnapshotIsReadEnabled_()
+  ) {
+    return true;
+  }
+
   const ss = runtimeSpreadsheet_();
 
   workspaceEnsureSheet_(ss, V2_WORKSPACE_SHEETS_.users, [
@@ -1707,13 +1714,22 @@ function workspaceResolveLegacyLandlordStats_(ss, lineUserId, landlordId) {
 // ==================================================
 
 function workspaceGetObjectsWithRow_(sheet) {
-  if (!sheet || sheet.getLastRow() < 2 || sheet.getLastColumn() < 1) {
+  if (!sheet) {
     return [];
   }
 
   const values =
-    runtimeSnapshotGetValues_(sheet);
-  const headers = values[0].map(workspaceText_);
+    typeof runtimeSnapshotGetValues_ === 'function'
+      ? runtimeSnapshotGetValues_(sheet)
+      : sheet.getDataRange().getValues();
+  const headers =
+    values && values[0]
+      ? values[0].map(workspaceText_)
+      : [];
+
+  if (values.length < 2 || headers.length < 1 || !headers.some(Boolean)) {
+    return [];
+  }
 
   return values.slice(1).map(function (row, index) {
     const object = {
