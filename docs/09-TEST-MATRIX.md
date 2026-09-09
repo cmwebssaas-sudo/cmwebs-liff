@@ -1,5 +1,14 @@
 # V2 回歸測試矩陣
 
+## 2026-09-09 桌面版 landlord API 讀取逾時修正（待部署）
+
+- [x] `landlord_home_bootstrap` 與 `landlord_tenants` 共用同一個 request-local
+  Sheet snapshot，避免同一個 API request 重複掃描相同工作表。
+- [x] `landlord-read-snapshot-regression.test.mjs` 通過；完整 Node suite
+  `190/190` 通過；`git diff --check` 通過。
+- [ ] Apps Script immutable version redeploy、公開 endpoint read-back，以及
+  已登入桌面版首頁／房客名單驗收。
+
 ## 2026-09-09 房東入口登入過期修正（已部署）
 
 - [x] LIFF 初始化／getProfile 憑證過期顯示重新登入，不導向註冊。
