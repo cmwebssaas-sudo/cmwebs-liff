@@ -36,6 +36,45 @@ const MANUAL_SETTLEMENT_AUDIT_SHEET =
 const MANUAL_SETTLEMENT_LOCK_WAIT_MS_ =
   8000;
 
+// Read-only confirmation after a lost/late write response. Never infer payment
+// from disappearance from an arrears projection. Do not read a half-transaction.
+function getManualSettlementStatusByLineUid_(lineUserId, billId) {
+  billId = manualSettlementText_(billId);
+  if (!lineUserId || !billId) return { success: false, code: 'MISSING_ID', message: '缺少查核資料' };
+  const access = workspaceLandlordResolveAccess_(lineUserId, {
+    require_onboarding: true, skip_schema_ensure: true, skip_legacy_context_creation: true
+  });
+  if (!access.success) return access;
+  const permission = workspaceLandlordCheckPolicy_(access, 'read');
+  if (!permission.success) return permission;
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1)) return { success: true, data: { bill_id: billId, committed: false, state: 'pending' } };
+  try {
+    const ss = runtimeSpreadsheet_();
+    const row = manualSettlementFindRowByHeader_(ss.getSheetByName(MANUAL_SETTLEMENT_BILLS_SHEET), 'bill_id', billId);
+    if (!row || !billingBillMatchesAccessScope_(row.object, access)) {
+      return { success: false, code: 'BILL_NOT_ACCESSIBLE', message: '無法查核此帳單' };
+    }
+    const bill = row.object;
+    const paymentRow = bill.payment_id ? manualSettlementFindRowByHeader_(
+      ss.getSheetByName(MANUAL_SETTLEMENT_PAYMENTS_SHEET), 'payment_id', bill.payment_id
+    ) : null;
+    const payment = paymentRow && paymentRow.object;
+    const committed = !v2CanonicalBillIsVoided_(bill) &&
+      manualSettlementText_(bill.payment_status).toLowerCase() === 'paid' &&
+      Boolean(payment) && manualSettlementText_(payment.bill_id) === billId &&
+      manualSettlementText_(payment.payment_id) === manualSettlementText_(bill.payment_id) &&
+      manualSettlementText_(payment.status).toLowerCase() === 'confirmed' &&
+      (!payment.workspace_id || manualSettlementText_(payment.workspace_id) === manualSettlementText_(bill.workspace_id)) &&
+      payment.amount !== '' && payment.amount != null && bill.total_amount !== '' && bill.total_amount != null &&
+      Number.isFinite(Number(payment.amount)) && Number(payment.amount) === Number(bill.total_amount);
+    return { success: true, data: { bill_id: billId, committed: committed,
+      state: committed ? 'committed' : 'unconfirmed' } };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 
 // ==================================================
 // 主函式
@@ -68,6 +107,8 @@ function manualSettleLandlordBillByLineUid_(
   landlordNote,
   notifyTenant
 ) {
+  const operationStartedAt = Date.now();
+  manualSettlementTrace_(operationStartedAt, 'start');
   const action =
     'landlord_bill_manual_settle';
 
@@ -251,6 +292,7 @@ function manualSettleLandlordBillByLineUid_(
     }
 
     lockHeld = true;
+    manualSettlementTrace_(operationStartedAt, 'lock_acquired');
 
     const ss =
       runtimeSpreadsheet_();
@@ -665,6 +707,7 @@ function manualSettleLandlordBillByLineUid_(
         bill,
         billSettlementState
       );
+    manualSettlementTrace_(operationStartedAt, 'canonical_rows_written');
 
     billingSyncBillViews_(
       ss,
@@ -679,6 +722,7 @@ function manualSettleLandlordBillByLineUid_(
     );
 
     canonicalSettlementCompleted = true;
+    manualSettlementTrace_(operationStartedAt, 'projections_completed');
 
     /*
      * 同步回 V1。
@@ -695,6 +739,7 @@ function manualSettleLandlordBillByLineUid_(
 
     const legacySyncResult =
       legacySyncAttempt.result;
+    manualSettlementTrace_(operationStartedAt, 'legacy_sync_completed');
 
     if (legacySyncAttempt.warning) {
       postCommitWarnings.push(
@@ -882,6 +927,7 @@ function manualSettleLandlordBillByLineUid_(
       }
     }
 
+    manualSettlementTrace_(operationStartedAt, 'notification_completed');
     try {
       manualSettlementWriteAuditLog_(
         ss,
@@ -1010,6 +1056,7 @@ function manualSettleLandlordBillByLineUid_(
 
     let message =
       '帳單已完成手動銷帳';
+    manualSettlementTrace_(operationStartedAt, 'response_ready');
 
     if (shouldNotifyTenant) {
       message +=
@@ -1276,6 +1323,14 @@ function manualSettleLandlordBillByLineUid_(
 /**
  * V2 正式銷帳已驗證後，V1 相容同步不可再把已入帳結果改回失敗。
  */
+function manualSettlementTrace_(startedAt, stage) {
+  try {
+    Logger.log('[MANUAL_SETTLEMENT_TIMING] ' + JSON.stringify({
+      stage: stage, elapsed_ms: Math.max(0, Date.now() - startedAt)
+    }));
+  } catch (_) { /* Diagnostics must not affect a financial transaction. */ }
+}
+
 function manualSettlementSyncLegacySafely_(
   ss,
   bill,

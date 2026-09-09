@@ -1,5 +1,20 @@
 # V2 回歸測試矩陣
 
+## 2026-09-09 手動銷帳逾時候選修正（未部署）
+
+- [x] 狀態查核要求同 Workspace、正式已繳帳單、對應 confirmed 付款及相同金額。
+- [x] 鎖忙碌、付款不符、越權或查詢失敗不得當成已銷帳。
+- [x] 按鈕處理中連按只送一次；逾時後再按只查核，不再寫入付款。
+- [x] 回復改成單次特定帳單查核，不再以欠款清單消失判定成功。
+- [x] Node regression suite: 188/188（含 manual-settlement-status、phase147）。
+- [ ] 正式手機 LIFF 銷帳成功／通知結果／实际耗時驗收。
+- [ ] 正式 Apps Script 各階段耗時紀錄；不得用執行完成推論付款成功。
+
+獨立 worktree 的 npm run validate 誤用上層 legacy package，不能視為候選
+通過。顯式指定候選的 validator：88 unique routes、無重複宣告、語法及連結
+通過；既有巢狀 tenant_payment_account_cover handler 未被舊檢查器辨識，
+整體 exit 1。此限制不是新增狀態查核 route 的錯誤。
+
 ## Gate 0：靜態驗證
 
 - [ ] 所有 `.gs` 通過 JavaScript syntax check

@@ -69,12 +69,32 @@ this document and its static validation.
 
 ## Route inventory
 
+### 2026-09-09 settlement timeout candidate (not yet deployed)
+
+`landlord_bill_manual_settlement_status` adds one GET route (88 current source
+routes). Inputs: authenticated LINE identity and `bill_id`. Workspace read policy
+and bill scope are required. Response data: `bill_id`, boolean `committed`, and
+`state` (`pending`, `unconfirmed`, `committed`). No financial write or notification
+is performed. A one-millisecond lock attempt avoids reading a half-transaction.
+Only a paid, non-void canonical bill with its matching confirmed payment and
+matching amount is considered committed. A missing arrears-list entry is never
+proof of payment. No Email/POST capability is added.
+
+On settlement transport uncertainty, the client makes one 30-second status read,
+not repeated five-second full arrears reads. If unknown, subsequent clicks in
+that page session are status checks only. Reloading does not preserve this UI
+guard; existing server-side settlement idempotency remains mandatory.
+`MANUAL_SETTLEMENT_TIMING` logs contain only stage and elapsed milliseconds,
+not bill IDs, account numbers or amounts. Original write latency remains under
+investigation; this candidate does not claim a faster canonical write.
+
 ```text
 landlord_announcement_retry
 landlord_announcement_send
 landlord_announcements_init
 landlord_arrears
 landlord_bill_manual_settle
+landlord_bill_manual_settlement_status
 landlord_bill_notifications_init
 landlord_bill_notifications_send
 landlord_bill_reopen

@@ -11,7 +11,7 @@
   <title>CMWebs 房客欠款</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js"></script>
+  <script src="frontend-release.js?v=20260909-settlement-status-v1"></script>
   <script src="landlord-auth.js"></script>
   <script src="landlord-api.js"></script>
   <link rel="stylesheet" href="landlord-responsive.css" />
@@ -3358,115 +3358,34 @@
     // 手動確認已繳
     // ==================================================
 
-    function hasManualSettlementCommitted(
-      data,
-      billId
-    ) {
-      const arrears =
-        data &&
-        Array.isArray(data.arrears)
-          ? data.arrears
-          : null;
-
-      if (!arrears) {
-        return false;
-      }
-
-      const targetId =
-        rawText(billId).trim();
-
-      const item =
-        arrears.find(
-          function (candidate) {
-            return (
-              rawText(
-                candidate &&
-                candidate.bill_id
-              ).trim() === targetId
-            );
-          }
-        );
-
-      if (!item) {
-        return true;
-      }
-
-      const statuses = [
-        item.payment_status,
-        item.bill_status,
-        item.status
-      ].map(
-        function (value) {
-          return rawText(value).toLowerCase();
-        }
-      );
-
-      return (
-        Boolean(item.payment_id) ||
-        statuses.some(
-          function (status) {
-            return [
-              'paid',
-              'settled',
-              'completed',
-              'confirmed',
-              '已繳',
-              '已銷帳'
-            ].indexOf(status) !== -1;
-          }
-        )
-      );
-    }
-
-    function waitForManualSettlementRecoveryDelay() {
-      return new Promise(
-        function (resolve) {
-          setTimeout(resolve, 1200);
-        }
-      );
-    }
 
     async function recoverTimedOutManualSettlement(
       billId
     ) {
-      for (
-        let attempt = 0;
-        attempt < 3;
-        attempt += 1
-      ) {
-        try {
-          const response =
-            await callApi(
-              'landlord_arrears',
-              {},
-              5000
-            );
-
-          if (
-            response &&
-            response.success === true &&
-            hasManualSettlementCommitted(
-              response.data || {},
-              billId
-            )
-          ) {
-            return true;
-          }
-        } catch (error) {
-          // The write response is already uncertain; keep checking authoritative state.
-        }
-
-        if (attempt < 2) {
-          await waitForManualSettlementRecoveryDelay();
-        }
+      try {
+        const response = await callApi('landlord_bill_manual_settlement_status', { bill_id: billId }, 30000);
+        return Boolean(response && response.success === true && response.data &&
+          response.data.bill_id === billId && response.data.committed === true);
+      } catch (error) {
+        // Unknown is not failed. Do not generate another expensive query here.
+        return false;
       }
-
-      return false;
     }
+
+    let settlementInFlight_ = false;
+    const uncertainSettlementBills_ = new Set();
 
     function openSettlementModal(
       billId
     ) {
+      if (settlementInFlight_) {
+        showAlert('銷帳或查核仍在處理中，請稍候。');
+        return;
+      }
+      const submitButton = document.getElementById('submitSettlementBtn');
+      submitButton.disabled = false;
+      submitButton.textContent = uncertainSettlementBills_.has(rawText(billId).trim())
+        ? '查核銷帳結果（不重送）' : '確認已繳並銷帳';
       const item =
         findArrearByBillId(
           billId
@@ -3669,6 +3588,28 @@
     }
 
     async function submitManualSettlement() {
+      if (settlementInFlight_) return;
+      const submittedBillId = ACTIVE_BILL_ID;
+      if (uncertainSettlementBills_.has(submittedBillId)) {
+        settlementInFlight_ = true;
+        const checkButton = document.getElementById('submitSettlementBtn');
+        checkButton.disabled = true;
+        checkButton.textContent = '正在查核銷帳結果...';
+        try {
+          if (await recoverTimedOutManualSettlement(submittedBillId)) {
+            uncertainSettlementBills_.delete(submittedBillId);
+            closeSettlementModal();
+            showAlert('已查證帳單與付款紀錄完成銷帳；通知結果請另行確認。', loadPage);
+          } else {
+            showAlert('銷帳結果仍待確認，未再次送出付款。請稍後按「查核銷帳結果」。');
+          }
+        } finally {
+          settlementInFlight_ = false;
+          checkButton.disabled = false;
+          checkButton.textContent = '查核銷帳結果（不重送）';
+        }
+        return;
+      }
       if (!ACTIVE_BILL_ID) {
         showAlert(
           '缺少帳單 ID'
@@ -3807,6 +3748,7 @@
         );
 
       try {
+        settlementInFlight_ = true;
         button.disabled = true;
 
         button.textContent =
@@ -3817,7 +3759,7 @@
             'landlord_bill_manual_settle',
             {
               bill_id:
-                ACTIVE_BILL_ID,
+                submittedBillId,
 
               payment_date:
                 paymentDate,
@@ -3899,14 +3841,17 @@
       } catch (error) {
         if (
           error &&
-          error.code === 'API_TIMEOUT'
+          (error.code === 'API_TIMEOUT' || error.code === 'API_NETWORK_ERROR' || error.message === 'API 載入逾時')
         ) {
+          uncertainSettlementBills_.add(submittedBillId);
+          button.textContent = '回應較慢，正在查核銷帳結果...';
           const committed =
             await recoverTimedOutManualSettlement(
-              ACTIVE_BILL_ID
+              submittedBillId
             );
 
           if (committed) {
+            uncertainSettlementBills_.delete(submittedBillId);
             closeSettlementModal();
             showAlert(
               '帳單已完成銷帳。',
@@ -3919,6 +3864,8 @@
             );
             return;
           }
+          showAlert('請求回應逾時，銷帳結果尚待確認；未自動重送。請稍後按「查核銷帳結果」，不要重複銷帳。');
+          return;
         }
 
         showAlert(
@@ -3927,11 +3874,12 @@
         );
 
       } finally {
+        settlementInFlight_ = false;
         button.disabled =
           false;
 
         button.textContent =
-          '確認已繳並銷帳';
+          uncertainSettlementBills_.has(submittedBillId) ? '查核銷帳結果（不重送）' : '確認已繳並銷帳';
       }
     }
 

@@ -76,37 +76,16 @@ const arrearsContext = { Array, String };
 vm.runInNewContext(
   [
     extractFunction(arrearsSource, 'rawText'),
-    extractFunction(arrearsSource, 'hasManualSettlementCommitted'),
-    extractFunction(arrearsSource, 'waitForManualSettlementRecoveryDelay'),
     extractFunction(arrearsSource, 'recoverTimedOutManualSettlement')
   ].join('\n'),
   arrearsContext
 );
 
-assert.equal(
-  arrearsContext.hasManualSettlementCommitted(
-    { arrears: [{ bill_id: 'BILL-1', payment_status: 'paid', payment_id: 'PAY-1' }] },
-    'BILL-1'
-  ),
-  true
-);
-assert.equal(
-  arrearsContext.hasManualSettlementCommitted(
-    { arrears: [{ bill_id: 'BILL-1', payment_status: 'unpaid', bill_status: 'open' }] },
-    'BILL-1'
-  ),
-  false
-);
-assert.equal(
-  arrearsContext.hasManualSettlementCommitted({ arrears: [] }, 'BILL-1'),
-  true,
-  'a successful arrears read with the target removed means it is no longer outstanding'
-);
-
 arrearsContext.setTimeout = (callback) => callback();
-arrearsContext.callApi = async (action) => {
-  assert.equal(action, 'landlord_arrears');
-  return { success: true, data: { arrears: [] } };
+arrearsContext.callApi = async (action, params) => {
+  assert.equal(action, 'landlord_bill_manual_settlement_status');
+  assert.equal(params.bill_id, 'BILL-1');
+  return { success: true, data: { bill_id: 'BILL-1', committed: true } };
 };
 assert.equal(
   await arrearsContext.recoverTimedOutManualSettlement('BILL-1'),
@@ -130,7 +109,7 @@ assert.doesNotMatch(
 );
 assert.doesNotMatch(
   extractFunction(arrearsSource, 'recoverTimedOutManualSettlement'),
-  /landlord_bill_manual_settle/,
+  /'landlord_bill_manual_settle'/,
   'timeout recovery must never submit manual settlement a second time'
 );
 assert.match(

@@ -1509,6 +1509,11 @@ if (v2Action === 'landlord_payment_report_settle') {
   );
 }
 
+if (v2Action === 'landlord_bill_manual_settlement_status') {
+  const result = getManualSettlementStatusByLineUid_(lineUserId, e.parameter.bill_id || '');
+  return bridge === '1' ? htmlBridgeOutput_(result, requestId) : jsonOutput_(result, callback);
+}
+
 if (v2Action === 'landlord_bill_manual_settle') {
   const billId = String(
     e.parameter.bill_id || ''
