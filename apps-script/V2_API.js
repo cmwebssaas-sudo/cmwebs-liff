@@ -5101,8 +5101,9 @@ function htmlBridgeOutput_(obj, requestId) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function resolveLandlordPrincipal_(request) {
+function resolveLandlordPrincipal_(request, options) {
   request = request || {};
+  options = options || {};
 
   if (
     request.landlord_session_token
@@ -5122,7 +5123,8 @@ function resolveLandlordPrincipal_(request) {
     const session =
       resolveLandlordEmailSession_(
         request.landlord_session_token || '',
-        request.request_id || ''
+        request.request_id || '',
+        options
       );
     if (!session || session.success !== true) {
       return session || {
@@ -5312,6 +5314,16 @@ function getSheetObjects_(sheetName) {
 // ==================================================
 
 function logLiffAccess_(params) {
+  // The landlord desktop read bridge is intentionally read-only. Do not
+  // append a second access-log row for every parallel page read; the write
+  // contention can delay the actual response beyond the browser timeout.
+  if (
+    typeof runtimeSnapshotIsReadEnabled_ === 'function' &&
+    runtimeSnapshotIsReadEnabled_()
+  ) {
+    return;
+  }
+
   try {
     const ss = runtimeSpreadsheet_();
     let sheet = ss.getSheetByName(V2_SHEETS.liffAccessLogs);

@@ -1077,7 +1077,8 @@
       }
 
       if (auth.getMode() === 'email') {
-        await auth.getSessionStatus();
+        // The protected read bridge validates the session and returns the
+        // authoritative expiry error. Avoid a serial status request here.
         return true;
       }
 

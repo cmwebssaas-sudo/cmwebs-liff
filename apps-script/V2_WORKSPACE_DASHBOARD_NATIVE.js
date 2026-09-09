@@ -537,7 +537,15 @@ function workspaceDashboardExecute_(
     const data =
       workspaceDashboardLoadData_(
         ss,
-        access
+        access,
+        {
+          mode:
+            action === 'landlord_arrears'
+              ? 'arrears'
+              : action === 'landlord_home'
+                ? 'home'
+                : 'full'
+        }
       );
 
     const result =
@@ -585,8 +593,16 @@ function workspaceDashboardExecute_(
 
 function workspaceDashboardLoadData_(
   ss,
-  access
+  access,
+  options
 ) {
+  options = options || {};
+  const mode =
+    workspaceDashboardText_(
+      options.mode || 'full'
+    ).toLowerCase();
+  const arrearsOnly = mode === 'arrears';
+
   const propertyRows =
     workspaceDashboardRowsForAccess_(
       ss.getSheetByName(
@@ -615,24 +631,28 @@ function workspaceDashboardLoadData_(
   );
 
   const rooms =
-    workspaceDashboardRowsForAccess_(
-      ss.getSheetByName(
-        V2_WORKSPACE_DASHBOARD_SHEETS_
-          .rooms
-      ),
-      access,
-      propertyIdMap
-    );
+    arrearsOnly
+      ? []
+      : workspaceDashboardRowsForAccess_(
+          ss.getSheetByName(
+            V2_WORKSPACE_DASHBOARD_SHEETS_
+              .rooms
+          ),
+          access,
+          propertyIdMap
+        );
 
   const contracts =
-    workspaceDashboardRowsForAccess_(
-      ss.getSheetByName(
-        V2_WORKSPACE_DASHBOARD_SHEETS_
-          .contracts
-      ),
-      access,
-      propertyIdMap
-    );
+    arrearsOnly
+      ? []
+      : workspaceDashboardRowsForAccess_(
+          ss.getSheetByName(
+            V2_WORKSPACE_DASHBOARD_SHEETS_
+              .contracts
+          ),
+          access,
+          propertyIdMap
+        );
 
   const bills =
     workspaceDashboardRowsForAccess_(
@@ -643,6 +663,21 @@ function workspaceDashboardLoadData_(
       access,
       propertyIdMap
     );
+
+  if (arrearsOnly) {
+    return {
+      properties:
+        propertyRows,
+      property_id_map:
+        propertyIdMap,
+      rooms: [],
+      contracts: [],
+      tenants: [],
+      users: [],
+      bills: bills,
+      tenant_view_rows: []
+    };
+  }
 
   const contractTenantIdMap = {};
 
@@ -729,10 +764,12 @@ function workspaceDashboardLoadData_(
       : [];
 
   const tenantViewSheet =
-    ss.getSheetByName(
-      V2_WORKSPACE_DASHBOARD_SHEETS_
-        .landlordTenantListView
-    );
+    mode === 'home'
+      ? null
+      : ss.getSheetByName(
+          V2_WORKSPACE_DASHBOARD_SHEETS_
+            .landlordTenantListView
+        );
 
   const tenantViewRows =
     tenantViewSheet

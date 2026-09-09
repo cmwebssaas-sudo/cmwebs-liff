@@ -184,7 +184,7 @@ for (const mapping of actionMappings) {
 
 for (const mapping of firstPhaseLandlordMappings) {
   const tokenRequiredPattern = new RegExp(
-    `${actionConditionPattern(mapping.action)}[\\s\\S]*?landlordEmailAuthPostRequires_\\s*\\([\\s\\S]*?request[\\s\\S]*?'landlord_session_token'[\\s\\S]*?'request_id'[\\s\\S]*?\\)[\\s\\S]*?resolveLandlordPrincipal_\\s*\\(\\s*request\\s*\\)`,
+    `${actionConditionPattern(mapping.action)}[\\s\\S]*?landlordEmailAuthPostRequires_\\s*\\([\\s\\S]*?request[\\s\\S]*?'landlord_session_token'[\\s\\S]*?'request_id'[\\s\\S]*?\\)[\\s\\S]*?resolveLandlordPrincipal_\\s*\\(\\s*request(?:\\s*,[\\s\\S]*?require_onboarding\\s*:\\s*true[\\s\\S]*?)?\\)`,
     'm'
   );
   assert.match(
@@ -194,7 +194,7 @@ for (const mapping of firstPhaseLandlordMappings) {
   );
 
   const principalBridgePattern = new RegExp(
-    `${actionConditionPattern(mapping.action)}[\\s\\S]*?resolveLandlordPrincipal_\\s*\\(\\s*request\\s*\\)[\\s\\S]*?${escapeRegExp(mapping.handler)}\\s*\\([\\s\\S]*?principal\\.data\\.principal_line_user_id[\\s\\S]*?\\)[\\s\\S]*?htmlBridgeOutput_\\s*\\([\\s\\S]*?result[\\s\\S]*?request\\.request_id\\s*\\|\\|\\s*''[\\s\\S]*?\\)`,
+    `${actionConditionPattern(mapping.action)}[\\s\\S]*?resolveLandlordPrincipal_\\s*\\(\\s*request(?:\\s*,[\\s\\S]*?require_onboarding\\s*:\\s*true[\\s\\S]*?)?\\)[\\s\\S]*?${escapeRegExp(mapping.handler)}\\s*\\([\\s\\S]*?principal\\.data\\.principal_line_user_id[\\s\\S]*?\\)[\\s\\S]*?htmlBridgeOutput_\\s*\\([\\s\\S]*?result[\\s\\S]*?request\\.request_id\\s*\\|\\|\\s*''[\\s\\S]*?\\)`,
     'm'
   );
   assert.match(
@@ -212,13 +212,13 @@ assert.match(
 
 assert.match(
   apiSource,
-  /function\s+resolveLandlordPrincipal_\s*\(\s*request\s*\)/,
+  /function\s+resolveLandlordPrincipal_\s*\(\s*request(?:\s*,\s*options)?\s*\)/,
   'V2_API.js must expose resolveLandlordPrincipal_(request)'
 );
 
 assert.match(
   apiSource,
-  /resolveLandlordEmailSession_\s*\(\s*request\.landlord_session_token\s*\|\|\s*''\s*,\s*request\.request_id\s*\|\|\s*''\s*\)/,
+  /resolveLandlordEmailSession_\s*\(\s*request\.landlord_session_token\s*\|\|\s*''\s*,\s*request\.request_id\s*\|\|\s*''[\s\S]*?options[\s\S]*?\)/,
   'resolveLandlordPrincipal_ must accept landlord_session_token from the POST body'
 );
 

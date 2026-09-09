@@ -244,12 +244,18 @@ function revokeLandlordEmailSession_(
 
 function resolveLandlordEmailSession_(
   sessionToken,
-  requestId
+  requestId,
+  options
 ) {
+  const readOnly =
+    typeof runtimeSnapshotIsReadEnabled_ === 'function' &&
+    runtimeSnapshotIsReadEnabled_();
+
   return landlordEmailAuthResolveSession_(
     sessionToken,
     requestId,
-    true
+    !readOnly,
+    options
   );
 }
 
@@ -460,7 +466,8 @@ function landlordEmailAuthVerifyChallenge_(
 function landlordEmailAuthResolveSession_(
   sessionToken,
   requestId,
-  touch
+  touch,
+  options
 ) {
   const sheet =
     landlordEmailAuthSessionSheet_();
@@ -525,7 +532,8 @@ function landlordEmailAuthResolveSession_(
 
   const access =
     landlordEmailAuthResolveUserAccess_(
-      user
+      user,
+      options
     );
   if (!access.success) {
     return landlordEmailAuthResult_(
@@ -632,21 +640,29 @@ function landlordEmailAuthResolveLineAccess_(
 }
 
 function landlordEmailAuthResolveUserAccess_(
-  user
+  user,
+  options
 ) {
   user = user || {};
+  options = options || {};
 
   if (
     user.line_user_id &&
     typeof workspaceLandlordResolveAccess_ === 'function'
   ) {
+    const accessOptions = {
+      skip_schema_ensure: false,
+      skip_legacy_context_creation: true
+    };
+    if (options.require_onboarding === true) {
+      accessOptions.require_onboarding = true;
+      accessOptions.skip_schema_ensure = true;
+    }
+
     const access =
       workspaceLandlordResolveAccess_(
         user.line_user_id,
-        {
-          skip_schema_ensure: false,
-          skip_legacy_context_creation: true
-        }
+        accessOptions
       );
     if (access && access.success === true) {
       return landlordEmailAuthNormalizeAccess_(

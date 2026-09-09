@@ -1,8 +1,10 @@
 /**
  * Request-local runtime snapshot for allowlisted read-only Web App routes.
  *
- * The state is reset at the beginning of every doGet/doPost execution and is never
- * shared through CacheService, PropertiesService or another request.
+ * The in-request state is reset at the beginning of every doGet/doPost execution.
+ * A short-lived, size-limited CacheService copy may warm read-only sheet values
+ * across requests; write-like requests bump the cache namespace version so this
+ * optimization cannot intentionally serve an older snapshot after a write.
  */
 
 const V2_RUNTIME_SNAPSHOT_READ_ACTIONS_ = {
@@ -23,6 +25,15 @@ const V2_RUNTIME_SNAPSHOT_READ_ACTIONS_ = {
   landlord_tenants: true,
   landlord_workspace_context: true
 };
+
+const V2_RUNTIME_READ_CACHE_PREFIX_ =
+  'cmwebs:v2:readonly-sheet:';
+const V2_RUNTIME_READ_CACHE_VERSION_KEY_ =
+  'cmwebs:v2:readonly-sheet-version';
+const V2_RUNTIME_READ_CACHE_TTL_SECONDS_ =
+  30;
+const V2_RUNTIME_READ_CACHE_MAX_BYTES_ =
+  95000;
 
 let V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ = null;
 
@@ -50,7 +61,8 @@ function runtimeSnapshotBegin_(action) {
     contexts: {},
     full_sheet_reads_before: 0,
     full_sheet_reads_after: 0,
-    cache_hits: 0
+    cache_hits: 0,
+    shared_cache_hits: 0
   };
 }
 
@@ -136,13 +148,122 @@ function runtimeSnapshotGetValues_(sheet) {
     return state.values_by_sheet[key];
   }
 
+  const sharedCache =
+    runtimeSnapshotReadCache_();
+  const sharedKey =
+    runtimeSnapshotSharedCacheKey_(
+      sheet
+    );
+
+  if (sharedCache && sharedKey) {
+    try {
+      const cached =
+        sharedCache.get(sharedKey);
+      if (cached) {
+        const parsed =
+          JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          state.cache_hits += 1;
+          state.shared_cache_hits += 1;
+          state.values_by_sheet[key] = parsed;
+          return parsed;
+        }
+      }
+    } catch (error) {
+      // Shared cache is an optimization only; fall through to Sheets.
+    }
+  }
+
   const values =
     sheet.getDataRange().getValues();
 
   state.full_sheet_reads_after += 1;
   state.values_by_sheet[key] = values;
 
+  if (sharedCache && sharedKey) {
+    try {
+      const serialized =
+        JSON.stringify(values);
+      if (
+        serialized.length <=
+        V2_RUNTIME_READ_CACHE_MAX_BYTES_
+      ) {
+        sharedCache.put(
+          sharedKey,
+          serialized,
+          V2_RUNTIME_READ_CACHE_TTL_SECONDS_
+        );
+      }
+    } catch (error) {
+      // A cache write must never affect the response.
+    }
+  }
+
   return values;
+}
+
+
+function runtimeSnapshotReadCache_() {
+  try {
+    if (typeof CacheService === 'undefined') {
+      return null;
+    }
+    return CacheService.getScriptCache();
+  } catch (error) {
+    return null;
+  }
+}
+
+
+function runtimeSnapshotReadCacheVersion_() {
+  const cache =
+    runtimeSnapshotReadCache_();
+  if (!cache) {
+    return 'disabled';
+  }
+
+  try {
+    return String(
+      cache.get(
+        V2_RUNTIME_READ_CACHE_VERSION_KEY_
+      ) || '1'
+    );
+  } catch (error) {
+    return '1';
+  }
+}
+
+
+function runtimeSnapshotSharedCacheKey_(sheet) {
+  if (!sheet) {
+    return '';
+  }
+
+  return (
+    V2_RUNTIME_READ_CACHE_PREFIX_ +
+    runtimeSnapshotReadCacheVersion_() +
+    ':' +
+    runtimeSnapshotSheetKey_(sheet)
+  );
+}
+
+
+function runtimeSnapshotBumpReadCacheVersion_() {
+  const cache =
+    runtimeSnapshotReadCache_();
+  if (!cache) {
+    return;
+  }
+
+  try {
+    cache.put(
+      V2_RUNTIME_READ_CACHE_VERSION_KEY_,
+      String(Date.now()),
+      21600
+    );
+  } catch (error) {
+    // Cache invalidation is best effort.
+  }
 }
 
 
@@ -239,6 +360,8 @@ function runtimeSnapshotFinish_() {
       state.full_sheet_reads_before -
       state.full_sheet_reads_after,
     cache_hits: state.cache_hits,
+    shared_cache_hits:
+      state.shared_cache_hits,
     snapshot_sheet_count:
       Object.keys(
         state.values_by_sheet
@@ -246,6 +369,10 @@ function runtimeSnapshotFinish_() {
   };
 
   V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ = null;
+
+  if (!report.enabled) {
+    runtimeSnapshotBumpReadCacheVersion_();
+  }
 
   if (
     report.enabled ||
