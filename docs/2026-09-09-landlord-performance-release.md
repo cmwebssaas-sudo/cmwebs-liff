@@ -42,9 +42,13 @@ and the bootstrap reuses the runtime spreadsheet handle.
 
 Verification: full Node suite `191/191`; all Apps Script files pass
 `node --check`; static release-cache validator and `git diff --check` pass.
-Authenticated desktop/mobile latency and the actual serving Apps Script version
-remain `HUMAN_REQUIRED` / `UNVERIFIED` until the new backend is deployed and
-the reported account is tested in Chrome and LINE LIFF.
+Deployment evidence: candidate commit `ff2e342` pushed 56 Apps Script files,
+then immutable Apps Script Version 181 was created and assigned to the existing
+Web App deployment. The deployment list read back Version 181 and the public
+`landlord-home.html` read back HTTP 200 with the active API endpoint. Version
+180 remains the immediate rollback target. Authenticated desktop/mobile latency
+and the reported account's Chrome／LINE LIFF acceptance remain
+`HUMAN_REQUIRED` / `UNVERIFIED`.
 
 Release order: deploy immutable backend version first (old frontend compatible),
 then merge/publish frontend. Rollback backend to version 177 on the same deployment
