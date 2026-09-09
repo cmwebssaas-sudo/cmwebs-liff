@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-09 — 房東 LINE 入口過期登入與 file:// 回跳（正式部署）
+
+- `landlord-entry.html` 在 LINE access token 過期／無效時顯示重新登入，不再誤導
+  房東重新註冊；登入按鈕立即鎖定，避免重複跳轉。
+- 外部瀏覽器與本機 `file://` 測試不再把無效檔案網址送給 LINE，也不重播 OAuth
+  `code`／`state`；所有舊 cache query 已更新至 marker
+  `20260909-entry-expired-login-v1`。
+- PR #140 merge commit `17843ecae0094fbf15153bbca806a9aff347a0f7`、Pages workflow
+  `34338782441` 成功；公開入口資產 read-back HTTP 200。Apps Script、Sheet、Email、
+  LINE 發送與財務資料均未變更；真實手機／外部瀏覽器登入驗收仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-09 — Email 驗證碼 bridge timeout 與失敗提示（本地候選）
 
 - Email 登入與已登入房東首次 Email 驗證的 hidden POST bridge 改用 60 秒逾時，避免

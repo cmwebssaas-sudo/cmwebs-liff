@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-09-09 房東入口登入過期修正（本地，未部署）
+## 2026-09-09 房東入口登入過期修正（已部署）
 
 - [x] LIFF 初始化／getProfile 憑證過期顯示重新登入，不導向註冊。
 - [x] 過期身份不繼續呼叫房東狀態 API；錯誤顯示不自動跳轉。
@@ -10,6 +10,8 @@
 - [x] 本機 `file://` 測試與未登入分支改用正式 GitHub Pages HTTPS 入口，不再把 file URL 傳給 LINE。
 - [x] 一般網路失敗不登出，正常登入路徑不變。
 - [x] 完整 Node `189/189`、Apps Script／前端 JavaScript syntax、靜態 release cache validator 與 `git diff --check` 通過。
+- [x] PR #140 merge commit `17843ecae0094fbf15153bbca806a9aff347a0f7` 已合併至 `main`；Pages workflow `34338782441` 成功。
+- [x] 公開 `landlord-entry.html`、`landlord-home.html`、`frontend-release.js`、`landlord-arrears.html`、房客入口頁均 HTTP 200；公開 marker 與 HTTPS 回跳函式 read-back 通過。
 - [ ] iPhone LINE 與外部瀏覽器重新取得憑證、登入返回的實機驗收。
 
 ## 2026-09-09 手動銷帳逾時保護（version179 / PR138）
