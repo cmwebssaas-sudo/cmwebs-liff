@@ -6,7 +6,9 @@ const pageNames = [
   'landlord-home.html',
   'landlord-tenants.html',
   'landlord-properties.html',
-  'landlord-settings.html'
+  'landlord-settings.html',
+  'landlord-arrears.html',
+  'landlord-contract-requests.html'
 ];
 const entrySource = readFileSync(
   new URL('../landlord-entry.html', import.meta.url),
@@ -19,6 +21,11 @@ const pages = Object.fromEntries(
     readFileSync(new URL('../' + name, import.meta.url), 'utf8')
   ])
 );
+
+const legacyOperationalPages = [
+  'landlord-arrears.html',
+  'landlord-contract-requests.html'
+];
 
 const cssUrl = new URL('../landlord-responsive.css', import.meta.url);
 const cssExists = existsSync(cssUrl);
@@ -217,6 +224,29 @@ test('Phase 220 requires the shared landlord desktop stylesheet', () => {
   assert.match(cssSource, /@media\s*\(min-width:\s*1024px\)/);
 });
 
+test('Phase 244 keeps the entry bottom navigation inside the mobile app shell contract', () => {
+  assert.match(
+    entrySource,
+    /<div class="app-shell desktop-ready">[\s\S]*?<main class="page desktop-main">[\s\S]*?<\/main>\s*<nav class="bottom-nav">/,
+    'entry bottom navigation must remain an app-shell child after the full-height page'
+  );
+  assertMobilePageShellContract(entrySource, 'landlord-entry.html');
+
+  const entryStyles = extractStyleBlocks(entrySource).join('\n');
+  const bottomNavRules = extractTopLevelCssRuleBlocks(entryStyles, '.bottom-nav');
+  assert.equal(bottomNavRules.some((rule) => {
+    const declarations = parseCssDeclarations(rule.body);
+    return declarations.some(({ property, value }) => property === 'position' && value === 'absolute') &&
+      declarations.some(({ property, value }) => property === 'bottom' && value === '0') &&
+      declarations.some(({ property, value }) => property === 'padding-bottom' && /safe-area-inset-bottom/.test(value));
+  }), true, 'entry bottom navigation must be positioned within the overflow-hidden shell with safe-area clearance');
+
+  const desktopCss = extractAtRuleBlocks(cssSource, /@media\s*\(min-width:\s*1024px\)/)
+    .map((block) => block.full)
+    .join('\n');
+  assert.match(desktopCss, /\.bottom-nav[\s\S]*?display:\s*none/);
+});
+
 test('Phase 220 links the shared stylesheet and preserves the mobile shell contract', () => {
   for (const [name, source] of Object.entries(pages)) {
     assert.match(source, /<link[^>]+href="landlord-responsive\.css"/, `${name} must link shared CSS`);
@@ -275,14 +305,21 @@ test('Phase 220 desktop typography uses at least 16px text', () => {
 test('Phase 220 provides identical desktop navigation and preserves release-version navigation', () => {
   const labels = ['總覽', '房客', '物件與房間', '合約', '退房', '帳款'];
   for (const [name, source] of Object.entries(pages)) {
+    const expectedLabels = legacyOperationalPages.includes(name)
+      ? labels.filter((label) => label !== '退房')
+      : labels;
     assert.match(source, /class="desktop-sidebar"/, `${name} must render desktop sidebar`);
     assert.match(source, /class="desktop-topbar"/, `${name} must render desktop topbar`);
     assert.match(source, /desktopWorkspaceName/, `${name} must expose workspace label`);
     assert.match(source, /desktopRoleLabel/, `${name} must expose role label`);
     assert.match(source, /desktopLogoutButton/, `${name} must expose logout action`);
     assert.match(source, /window\.CMWEBS_RELEASE_VERSION/, `${name} must use release-version navigation`);
-    assert.match(source, /TEST_MODE[\s\S]*?'\&test=1'/, `${name} must preserve test-mode navigation params`);
-    for (const label of labels) {
+    assert.match(
+      source,
+      /TEST_MODE[\s\S]*(?:'\&test=1'|params\.set\('test',\s*'1'\))/,
+      `${name} must preserve test-mode navigation params`
+    );
+    for (const label of expectedLabels) {
       assert.match(source, new RegExp(label), `${name} missing desktop nav label ${label}`);
     }
   }
@@ -351,6 +388,129 @@ test('Phase 220 keeps settings protected bootstrap on the shared auth transport'
   assert.match(source, /const authParams = window\.CMWebsLandlordAuth\.getRequestAuthParams\(\)/);
   assert.match(source, /handleAuthFailure\(result\)/);
   assert.doesNotMatch(source, /\?v2_action=[^"']*&line_user_id=/);
+});
+
+test('Phase 220 completes the shared desktop shell for legacy operational pages', () => {
+  for (const name of legacyOperationalPages) {
+    const source = pages[name];
+
+    assert.match(source, /<link[^>]+href="landlord-responsive\.css"/);
+    assert.match(source, /<script src="landlord-auth\.js"><\/script>/);
+    assert.match(source, /<script src="landlord-api\.js"><\/script>/);
+    assert.match(source, /<div class="app-shell desktop-ready">/);
+    assert.match(source, /<aside class="desktop-sidebar"[^>]+hidden>/);
+    assert.match(source, /<main class="page desktop-main">/);
+    assert.match(source, /<header class="desktop-topbar"[^>]+hidden>/);
+    assert.match(source, /class="desktop-nav"[\s\S]*?landlord-home\.html/);
+    assert.match(source, /landlord-contract-requests\.html/);
+    assert.match(source, /landlord-arrears\.html/);
+    assert.match(source, /desktopWorkspaceName/);
+    assert.match(source, /desktopRoleLabel/);
+    assert.match(source, /desktopLogoutButton/);
+    assert.match(source, /function setAppHeight\(\)/);
+    assert.match(source, /function desktopLogout\(\)/);
+    assert.match(source, /function updateDesktopChrome\(/);
+    assert.match(
+      source,
+      /async function ensureLandlordAuthReady\(\)[\s\S]*?await ensureLandlordAuthReady\(\)[\s\S]*?jsonpRequest\(/,
+      `${name} must await the shared auth boundary before its protected bootstrap`
+    );
+    assert.match(source, /window\.CMWebsLandlordAuth\.getRequestAuthParams\(\)/);
+    assert.doesNotMatch(source, /['"]&line_user_id=|&line_user_id=/);
+    assert.doesNotMatch(
+      source,
+      /landlord_session_token[\s\S]{0,120}(?:script\.src|url\s*\+=|location\.href|location\.replace)/,
+      `${name} must not place the Email session token in a URL`
+    );
+  }
+});
+
+test('Phase 220 fails closed before unsupported desktop Email operations can timeout or claim success', () => {
+  for (const name of legacyOperationalPages) {
+    const source = pages[name];
+    const callApiStart = source.indexOf('function callApi');
+    const bridgeCall = source.indexOf('window.CMWebsLandlordAuth.request(', callApiStart);
+    const guardCall = source.indexOf('assertDesktopEmailActionSupported(action)', callApiStart);
+
+    assert.ok(callApiStart >= 0, `${name} must expose its API boundary`);
+    assert.ok(guardCall >= 0, `${name} must guard unsupported desktop Email actions`);
+    assert.ok(bridgeCall > guardCall, `${name} must fail before entering the Email bridge`);
+    assert.match(
+      source,
+      /function assertDesktopEmailActionSupported\([\s\S]*?throw error;/,
+      `${name} must throw an explicit unsupported-state error`
+    );
+    assert.match(source, /DESKTOP_EMAIL_UNSUPPORTED/);
+    assert.match(source, /桌面 Email 版目前尚未支援/);
+  }
+});
+
+test('Phase 220 preserves legacy action and modal contracts while making desktop modals usable', () => {
+  const arrears = pages['landlord-arrears.html'];
+  assert.match(arrears, /id="app"/);
+  assert.match(arrears, /id="manualReminderModal"[^>]*class="modal-mask desktop-modal"/);
+  assert.match(arrears, /id="settlementModal"[^>]*class="modal-mask desktop-modal"/);
+  assert.match(arrears, /id="alertModal"[^>]*class="alert-mask desktop-modal"/);
+  for (const marker of [
+    'openManualReminderModal',
+    'closeManualReminderModal',
+    'submitManualReminder',
+    'openSettlementModal',
+    'closeSettlementModal',
+    'submitSettlement',
+    'loadPage'
+  ]) {
+    assert.match(arrears, new RegExp(`(?:function|onclick=)[\\s\\S]*${marker}`));
+  }
+
+  const contracts = pages['landlord-contract-requests.html'];
+  assert.match(contracts, /id="app"/);
+  assert.match(contracts, /id="requestModal"[^>]*class="modal-mask desktop-modal"/);
+  assert.match(contracts, /id="landlordInviteModal"[^>]*class="modal-mask desktop-modal"/);
+  assert.match(contracts, /id="confirmModal"[^>]*class="modal-mask desktop-modal"/);
+  assert.match(contracts, /id="alertModal"[^>]*class="modal-mask desktop-modal"/);
+  for (const marker of [
+    'openRequestModal',
+    'closeRequestModal',
+    'approveActiveRequest',
+    'rejectActiveRequest',
+    'requestComplete',
+    'loadPage'
+  ]) {
+    assert.match(contracts, new RegExp(`(?:function|onclick=)[\\s\\S]*${marker}`));
+  }
+  assert.match(
+    contracts,
+    /@media\s*\(min-width:\s*1024px\)[\s\S]*?#requestModal\.desktop-modal[\s\S]*?bottom:\s*0/
+  );
+  assert.match(
+    contracts,
+    /#requestModal\.desktop-modal \.modal-sheet[\s\S]*?overflow-y:\s*auto/
+  );
+});
+
+test('Phase 220 keeps native contract sessions separate and fails closed on desktop Email auth', () => {
+  const source = pages['landlord-contract-requests.html'];
+  const nativeStart = source.indexOf('async function callNativeSigningReviewApi');
+  const initiatedStart = source.indexOf('async function callLandlordInitiatedApi');
+  assert.ok(nativeStart >= 0);
+  assert.ok(initiatedStart > nativeStart);
+
+  const nativeSource = source.slice(nativeStart, initiatedStart);
+  assert.doesNotMatch(nativeSource, /landlord_session_token/);
+  assert.match(nativeSource, /session_token:\s*NATIVE_SIGNING_REVIEW_SESSION_TOKEN/);
+  assert.match(source, /DESKTOP_EMAIL_UNSUPPORTED/);
+  assert.match(source, /僅支援 LINE 手機流程/);
+});
+
+test('Phase 220 does not expose a broken checkout page from the desktop operational sidebar', () => {
+  for (const name of legacyOperationalPages) {
+    assert.doesNotMatch(
+      pages[name],
+      /landlord-tenant-checkout\.html/,
+      `${name} must not expose checkout without its required contract_id and auth shell`
+    );
+  }
 });
 
 test('Phase 220 validates required viewport contracts from actual selectors and properties', () => {
