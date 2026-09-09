@@ -2,6 +2,16 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-09 — 桌面版 landlord API 讀取逾時修正（正式部署）
+
+- `landlord_home_bootstrap` 與 `landlord_tenants` 共用 request-local Sheet snapshot，
+  減少同一個 API request 的重複工作表掃描；不改帳務、Sheet schema、登入、通知或
+  其他 Production 資料。
+- Candidate commit `44c1abf`；Apps Script immutable Version 180 已更新目前公開頁使用
+  的既有 Web App deployment，Version 179 保留 rollback，Web App URL 不變。
+- 兩個 landlord read route 的未登入唯讀 smoke check HTTP 200；GitHub Pages 無前端
+  變更。已登入桌面版真實首屏／房客名單驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-09 — 房東 LINE 入口過期登入與 file:// 回跳（正式部署）
 
 - `landlord-entry.html` 在 LINE access token 過期／無效時顯示重新登入，不再誤導
