@@ -1,11 +1,26 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-07 (Asia/Taipei)**
+**Last verified: 2026-09-09 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-09 房東入口過期登入與 file:// 回跳修復正式部署
+
+- `landlord-entry.html` 對 LINE expired／invalid access token 顯示重新登入狀態，
+  不再把房東導向註冊；按鈕立即鎖定，避免重複登入請求。
+- 外部瀏覽器與本機 `file://` 測試的回跳不重播 OAuth `code`／`state`；無效的
+  `file://` 回跳改用正式 GitHub Pages HTTPS 入口。未修改 Apps Script、Sheet、
+  Email、LINE 發送或財務資料。
+- PR #140 merge commit `17843ecae0094fbf15153bbca806a9aff347a0f7` 已合併；GitHub
+  Pages workflow `34338782441` 成功，release marker 為
+  `20260909-entry-expired-login-v1`。
+- 公開 landlord／tenant entry assets read-back 均 HTTP 200，公開 source 已確認
+  過期登入 renderer、HTTPS fallback 與 `entryReloginUrl(false)`；rollback 為
+  回復前端至 `b5c086f`。真實 iPhone／外部瀏覽器登入回跳仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-07 匯款帳號前導 0 與銀行帳戶封面正式部署
 

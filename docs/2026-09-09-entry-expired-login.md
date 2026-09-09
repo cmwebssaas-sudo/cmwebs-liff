@@ -33,9 +33,11 @@ passes syntax, declarations and links, but retains the pre-existing nested
 tenant_payment_account_cover handler-detection failure (87/88); no route was
 added or modified by this repair.
 
-Release marker is prepared as `20260909-entry-expired-login-v1`; all pages with
-an explicit older cache query were advanced to this marker. The candidate is
-ready for the user-authorized frontend release; after merge, verify Pages source
-and then real iPhone/external login return.
+Release marker `20260909-entry-expired-login-v1` is deployed. PR #140 merged as
+`17843ecae0094fbf15153bbca806a9aff347a0f7`; Pages workflow `34338782441`
+completed successfully. Public read-back returned HTTP 200 for the landlord
+entry, landlord home, arrears, tenant home, tenant contract, tenant bind, and
+release-marker assets, and confirmed the HTTPS fallback is served. Real
+iPhone/external login return remains a `HUMAN_REQUIRED` acceptance boundary.
 No Apps Script redeployment required. Rollback is frontend revert to b5c086f;
 data and account records must not be changed as rollback.
