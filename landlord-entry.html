@@ -8,7 +8,7 @@
   />
   <title>CMWebs 房東入口</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js"></script>
+  <script src="frontend-release.js?v=20260909-entry-expired-login-v1"></script>
   <script src="landlord-auth.js"></script>
   <link rel="stylesheet" href="landlord-responsive.css" />
 
@@ -1102,6 +1102,71 @@
       }
     }
 
+    let entryReloginInFlight_ = false;
+
+    function isEntryLineSessionError(error) {
+      const message = String(error && error.message || error || '');
+      return /access token.*(expired|invalid)|invalid.*access token/i.test(message);
+    }
+
+    function entryWebRedirectUri() {
+      const protocol = String(location.protocol || '').toLowerCase();
+      const isWebUrl = protocol === 'http:' || protocol === 'https:';
+      return isWebUrl
+        ? location.origin + location.pathname
+        : 'https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html';
+    }
+
+    function entryReloginUrl(inClient) {
+      // Never replay OAuth code/state or accept an arbitrary redirect URL.
+      const target = new URL(inClient
+        ? 'https://liff.line.me/' + LIFF_ID
+        : entryWebRedirectUri());
+      const returnTo = resolveReturnTo();
+      if (returnTo) target.searchParams.set('return_to', returnTo);
+      if (STAY_MODE) target.searchParams.set('stay', '1');
+      return target.href;
+    }
+
+    function renderEntryLoginExpired() {
+      LINE_USER_ID = '';
+      document.getElementById('app').innerHTML = `
+        <section class="card error-card" role="status">
+          <div class="state-icon red">!</div>
+          <div class="state-title">LINE 登入已過期</div>
+          <div class="state-text">請重新登入，無需重新註冊。帳號與帳單資料不會被刪除。</div>
+          <button id="entryReloginBtn" class="primary-button" type="button"
+            onclick="restartEntryLineLogin()">重新登入 LINE</button>
+          <div class="state-text">若未跳轉，請關閉此頁，再從 LINE 官方帳號的房東入口重新開啟。</div>
+        </section>`;
+    }
+
+    async function restartEntryLineLogin() {
+      if (entryReloginInFlight_) return;
+      entryReloginInFlight_ = true;
+      const button = document.getElementById('entryReloginBtn');
+      if (button) {
+        button.disabled = true;
+        button.textContent = '正在重新登入…';
+      }
+      try {
+        LINE_USER_ID = '';
+        const inClient = liff.isInClient();
+        const redirectUri = entryReloginUrl(inClient);
+        if (inClient) {
+          // login/logout are not supported in LIFF browser; reopen its entry.
+          location.replace(redirectUri);
+        } else {
+          liff.logout();
+          await liff.login({ redirectUri: redirectUri });
+        }
+      } catch (error) {
+        entryReloginInFlight_ = false;
+        if (button) button.disabled = false;
+        renderEntryLoginExpired();
+      }
+    }
+
     async function initLine() {
       if (TEST_MODE) {
         LINE_USER_ID =
@@ -1130,16 +1195,26 @@
         RETURN_TO;
 
       if (!liff.isLoggedIn()) {
+        if (liff.isInClient()) {
+          renderEntryLoginExpired();
+          return false;
+        }
         liff.login({
           redirectUri:
-            location.href
+            entryReloginUrl(false)
         });
 
         return false;
       }
 
-      const profile =
-        await liff.getProfile();
+      let profile;
+      try {
+        profile = await liff.getProfile();
+      } catch (error) {
+        if (!isEntryLineSessionError(error)) throw error;
+        renderEntryLoginExpired();
+        return false;
+      }
 
       LINE_USER_ID =
         profile.userId || '';
@@ -1292,6 +1367,10 @@
     }
 
     function renderError(message) {
+      if (isEntryLineSessionError(message)) {
+        renderEntryLoginExpired();
+        return;
+      }
       document.getElementById(
         'app'
       ).innerHTML = `

@@ -1,5 +1,17 @@
 # V2 回歸測試矩陣
 
+## 2026-09-09 房東入口登入過期修正（本地，未部署）
+
+- [x] LIFF 初始化／getProfile 憑證過期顯示重新登入，不導向註冊。
+- [x] 過期身份不繼續呼叫房東狀態 API；錯誤顯示不自動跳轉。
+- [x] 外部瀏覽器按一次後 logout/login，LIFF 內按一次後重開 LIFF URL。
+- [x] 重新登入立即禁用按鈕防連按；SDK 失敗可再操作。
+- [x] OAuth code/state 不沿用；既有安全 return_to 保留。
+- [x] 本機 `file://` 測試與未登入分支改用正式 GitHub Pages HTTPS 入口，不再把 file URL 傳給 LINE。
+- [x] 一般網路失敗不登出，正常登入路徑不變。
+- [x] 完整 Node `189/189`、Apps Script／前端 JavaScript syntax、靜態 release cache validator 與 `git diff --check` 通過。
+- [ ] iPhone LINE 與外部瀏覽器重新取得憑證、登入返回的實機驗收。
+
 ## 2026-09-09 手動銷帳逾時保護（version179 / PR138）
 
 - [x] 狀態查核要求同 Workspace、正式已繳帳單、對應 confirmed 付款及相同金額。
