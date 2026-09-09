@@ -2,6 +2,20 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-10 — 房東桌面多頁 API 讀取逾時修正（正式部署）
+
+- `landlord_arrears`、`landlord_billing_init`、`landlord_contract_requests_init`、
+  `landlord_properties_init`、`landlord_tenants` 等唯讀房東 route 啟用 request-local
+  Sheet snapshot，避免每次切頁重新重複 schema／Workspace／工作表掃描；不改登入、帳務、
+  Sheet schema、Drive 或 LINE 發送流程。
+- PR #145 merge commit `ba44d10d2ee4c752f3c6cd646807af77b40a2647`、候選 commit
+  `0c8e885`；既有 Production Apps Script deployment 由 Version 181 更新至
+  immutable Version 182，Version 181 保留 rollback，Web App URL 不變。
+- GitHub Pages workflow `34380231863` 成功；`npm run validate`、完整 Node `192/192`、
+  Apps Script syntax、static release-cache validator 與 `git diff --check` 均通過。
+- 未登入 HTTP read-back 為 200；已登入 Chrome／LINE 四頁真實逾時率與速度仍需
+  `HUMAN_REQUIRED` 驗收，不能只由 source／HTTP 檢查推論已達 App 般流暢。
+
 ## 2026-09-09 — 桌面版 landlord API 讀取逾時修正（正式部署）
 
 - `landlord_home_bootstrap` 與 `landlord_tenants` 共用 request-local Sheet snapshot，

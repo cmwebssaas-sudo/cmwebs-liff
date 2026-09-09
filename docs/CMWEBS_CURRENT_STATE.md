@@ -7,6 +7,23 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-10 房東桌面多頁 API 讀取逾時修正正式部署
+
+- `landlord_arrears`、`landlord_billing_init`、`landlord_contract_requests_init`、
+  `landlord_properties_init`、`landlord_tenants` 與其他唯讀房東頁 route 現在都
+  啟用同一個 request-local Sheet snapshot；同一次 API request 不再重複進行
+  schema／Workspace／相同工作表讀取。未改登入、Sheet schema、帳務資料、Properties、
+  Trigger、Drive 或 LINE 發送流程。
+- PR #145 merge commit `ba44d10d2ee4c752f3c6cd646807af77b40a2647`；候選 commit
+  `0c8e885` 已推送並建立 Apps Script immutable Version 182，更新目前公開頁使用的
+  既有 Production deployment；Version 181 保留為 rollback，Web App URL 不變。
+- GitHub Pages workflow `34380231863` 成功完成；前端公開頁沿用同一個 Production
+  API endpoint。未登入 API／公開頁 read-back 為 HTTP 200，未執行 Sheet、Drive、LINE
+  或財務資料寫入。
+- 仍需 `HUMAN_REQUIRED`：房東以真實 Chrome／LINE 登入後，重新整理並逐一驗證總覽、
+  房客、物件與房間、合約、帳款／欠款頁；HTTP 200 與 deployment 版本本身不等於
+  已登入桌面流程完成驗收。
+
 ## 2026-09-09 桌面版房東 API 讀取逾時修正正式部署
 
 - `landlord_home_bootstrap` 與 `landlord_tenants` 現在都啟用同一個
