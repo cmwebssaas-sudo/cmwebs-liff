@@ -7,6 +7,17 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-09 桌面版房東 API 讀取逾時修正正式部署
+
+- `landlord_home_bootstrap` 與 `landlord_tenants` 現在都啟用同一個
+  request-local Sheet snapshot，避免單次 API request 重複掃描相同工作表；不改
+  Sheet schema、帳務資料、登入、Properties、Trigger 或通知流程。
+- 候選 commit `44c1abf`；Apps Script immutable Version 180 已更新目前公開頁使用的
+  既有 Web App deployment，Version 179 保留 rollback，Web App URL 不變。
+- 部署後兩個 landlord read route 的未登入唯讀 smoke check 均 HTTP 200；未帶入
+  session、房客資料或任何寫入。GitHub Pages 本輪沒有前端程式變更，仍沿用既有
+  已發布前端；已登入桌面版實際首屏／房客名單速度仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-09 房東入口過期登入與 file:// 回跳修復正式部署
 
 - `landlord-entry.html` 對 LINE expired／invalid access token 顯示重新登入狀態，

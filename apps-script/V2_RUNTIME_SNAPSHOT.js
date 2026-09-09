@@ -10,7 +10,8 @@ const V2_RUNTIME_SNAPSHOT_READ_ACTIONS_ = {
   tenant_bills: true,
   tenant_message_init: true,
   tenant_contract_init: true,
-  landlord_home_bootstrap: true
+  landlord_home_bootstrap: true,
+  landlord_tenants: true
 };
 
 let V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ = null;
