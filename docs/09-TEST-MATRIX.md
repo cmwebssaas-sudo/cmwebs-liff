@@ -214,6 +214,7 @@
 - [ ] 頁面不被 bottom nav 遮擋
 - [x] 系統設定手機鍵盤開啟時隱藏固定 bottom nav，並將 Email／文字欄位捲動至可視區（Phase 233；真機 Safari／LINE WebView 待驗證）
 - [ ] API 逾時提示
+- [x] 房東桌面帳款、合約、物件、欠款與房客讀取 route 啟用 request-local snapshot，避免受保護 iframe bridge 重複掃描 Workspace schema（Phase 245 自動回歸測試；仍需真機／Production 驗證）
 - [ ] Google Sheets 容量
 - [ ] 100／500／1,000 房客資料量測試
 - [ ] LINE API 配額與錯誤
