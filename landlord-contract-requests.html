@@ -1816,7 +1816,10 @@
     }
 
     function assertDesktopEmailActionSupported(action) {
-      if (!isEmailAuthSession()) {
+      if (
+        !isEmailAuthSession() ||
+        action === 'landlord_contract_requests_init'
+      ) {
         return;
       }
 

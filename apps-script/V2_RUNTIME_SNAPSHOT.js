@@ -11,14 +11,17 @@ const V2_RUNTIME_SNAPSHOT_READ_ACTIONS_ = {
   tenant_message_init: true,
   tenant_contract_init: true,
   landlord_arrears: true,
+  landlord_bill_manual_settlement_status: true,
   landlord_billing_init: true,
   landlord_contract_requests_init: true,
   landlord_home_bootstrap: true,
+  landlord_notifications_init: true,
   landlord_payment_reports_init: true,
   landlord_properties_init: true,
   landlord_revenue_dashboard_init: true,
   landlord_settings_init: true,
-  landlord_tenants: true
+  landlord_tenants: true,
+  landlord_workspace_context: true
 };
 
 let V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ = null;
