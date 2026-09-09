@@ -9,8 +9,9 @@
   <title>CMWebs 房東首頁</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js"></script>
+  <script src="frontend-release.js?v=20260909-landlord-progressive-home-v1"></script>
   <script src="landlord-auth.js"></script>
+  <script src="landlord-api.js"></script>
   <link rel="stylesheet" href="landlord-responsive.css" />
 
   <style>
@@ -942,6 +943,7 @@
         padding-left: 13px;
       }
     }
+    .actions-pending .badge, .actions-pending .action-desc { display: none; }
   </style>
 </head>
 
@@ -1241,7 +1243,8 @@
       }
 
       if (auth.getMode() === 'email') {
-        await auth.getSessionStatus();
+        // The protected bootstrap validates the session and Workspace itself.
+        // Avoid a redundant serial Apps Script round trip before it.
         return true;
       }
 
@@ -1332,7 +1335,8 @@
       ) {
         return window.CMWebsLandlordAuth.request(
           action,
-          params || {}
+          params || {},
+          { timeoutMs: timeoutMs }
         );
       }
 
@@ -1503,6 +1507,15 @@
     ) {
       const requestOptions =
         options || {};
+      if (window.CMWebsLandlordApi) {
+        return window.CMWebsLandlordApi.request({
+          apiUrl: API_URL, action: action, params: params || {},
+          lineUserId: LINE_USER_ID, testMode: TEST_MODE,
+          timeoutMs: requestOptions.timeoutMs || JSONP_REQUEST_TIMEOUT_MS,
+          maxAttempts: requestOptions.maxAttempts || 1,
+          retryDelayMs: JSONP_REQUEST_RETRY_DELAY_MS
+        });
+      }
       const timeoutMs =
         Number(
           requestOptions.timeoutMs ||
@@ -1674,11 +1687,13 @@
         );
       }
 
-      throw new Error(
+      const error = new Error(
         result && result.message
           ? result.message
           : '查詢失敗'
       );
+      error.code = result && result.code || '';
+      throw error;
     }
 
     function findSummaryNumber(
@@ -2543,6 +2558,8 @@
       null;
 
     let pageRequestToken_ = 0;
+    let homeLoadInProgress_ = false;
+    let homeRendered_ = false;
 
     function requestDashboardReport_(
       requestToken
@@ -2666,8 +2683,12 @@
 
     function renderHome(
       home,
-      actionSummary
+      actionSummary,
+      preserveDashboard
     ) {
+      const previousDashboard = preserveDashboard && document.getElementById('landlordDashboardState');
+      const actionsPending = !actionSummary;
+      actionSummary = actionSummary || buildActionSummary({}, {}, {}, {});
       const workspaceContext =
         home.workspace_context || {};
 
@@ -2816,10 +2837,10 @@
         </div>
 
         <div class="desktop-panel-grid">
-        <section class="card section-card">
+        <section class="card section-card ${actionsPending ? 'actions-pending' : ''}" id="homeActionSection">
           <div class="section-title-row">
             <div class="section-title">待處理事項</div>
-            <div class="section-hint">點擊直接處理</div>
+            <div class="section-hint" id="homeActionStatus" role="status">${actionsPending ? '待辦數量載入中；可先進入功能' : '點擊直接處理'}</div>
           </div>
 
           <div class="action-list">
@@ -3081,6 +3102,10 @@
         </section>
         </div>
       `;
+      if (previousDashboard) {
+        document.getElementById('landlordDashboardState').replaceWith(previousDashboard);
+      }
+      setRefreshLoading(homeLoadInProgress_);
     }
 
     function renderError(message) {
@@ -3119,6 +3144,10 @@
         return;
       }
 
+      button.disabled = Boolean(loading);
+      button.setAttribute('aria-busy', String(Boolean(loading)));
+      button.setAttribute('aria-label', loading ? '更新中' : '重新整理');
+
       button.classList.toggle(
         'loading',
         Boolean(loading)
@@ -3126,6 +3155,8 @@
     }
 
     async function loadPage() {
+      if (homeLoadInProgress_) return;
+      homeLoadInProgress_ = true;
       const requestToken =
         pageRequestToken_ + 1;
 
@@ -3142,74 +3173,58 @@
           return;
         }
 
-        const dashboardReportPromise =
-          requestDashboardReport_(
-            requestToken
-          );
-
-        dashboardReportPromise.catch(
-          function () {}
-        );
-
-        const bootstrapResult =
+        const homeResult =
           await jsonpRequest(
             'landlord_home_bootstrap',
-            {},
+            { section: 'home' },
             {
-              maxAttempts:
-                JSONP_REQUEST_MAX_ATTEMPTS,
-              retryOnTimeout: true
+              maxAttempts: 1
             }
           );
+        const home = unwrapData(homeResult).home || {};
+        if (requestToken !== pageRequestToken_) return;
+        renderHome(home, null);
+        homeRendered_ = true;
 
-        const bootstrap =
-          unwrapData(bootstrapResult);
-
-        const home =
-          bootstrap.home || {};
-
-        const contractData =
-          bootstrap.contract_requests || {};
-
-        const paymentData =
-          bootstrap.payment_reports || {};
-
-        const messageData =
-          bootstrap.messages || {};
-
-        const initiatedContractData =
-          bootstrap.landlord_initiated_contracts || {};
-
-        const actionSummary =
-          buildActionSummary(
-            contractData,
-            paymentData,
-            messageData,
-            initiatedContractData
-          );
-
-        renderHome(
-          home,
-          actionSummary
-        );
-
-        loadDashboardReport_(
-          requestToken,
-          dashboardReportPromise
-        );
+        // Secondary work cannot delay the useful first render. Both sections
+        // remain independently usable if the other fails.
+        const dashboardReportPromise = requestDashboardReport_(requestToken);
+        loadDashboardReport_(requestToken, dashboardReportPromise);
+        try {
+          const bootstrap = unwrapData(await jsonpRequest(
+            'landlord_home_bootstrap', { section: 'actions' }, { maxAttempts: 1 }
+          ));
+          if (requestToken !== pageRequestToken_) return;
+          renderHome(home, buildActionSummary(
+            bootstrap.contract_requests || {}, bootstrap.payment_reports || {},
+            bootstrap.messages || {}, bootstrap.landlord_initiated_contracts || {}
+          ), true);
+        } catch (error) {
+          if (requestToken !== pageRequestToken_) return;
+          if (/AUTH|SESSION|FORBIDDEN|PERMISSION|WORKSPACE|MEMBERSHIP/.test(error.code || '')) throw error;
+          const status = document.getElementById('homeActionStatus');
+          if (status) status.textContent = '待辦數量暫時無法更新；可直接進入功能查看';
+        }
       } catch (error) {
         if (
           requestToken ===
           pageRequestToken_
         ) {
-          renderError(
-            error && error.message
-              ? error.message
-              : String(error)
-          );
+          const message = error && error.message ? error.message : String(error);
+          const transient = /API_TIMEOUT|API_NETWORK_ERROR/.test(error.code || '') ||
+            /API 載入逾時|網路/.test(message);
+          if (homeRendered_ && transient) {
+            showToast('更新失敗，畫面保留上次資料：' + message);
+          } else {
+            homeRendered_ = false;
+            renderError(message);
+          }
         }
       } finally {
-        setRefreshLoading(false);
+        if (requestToken === pageRequestToken_) {
+          homeLoadInProgress_ = false;
+          setRefreshLoading(false);
+        }
       }
     }
 

@@ -227,6 +227,24 @@
 
 ## 2026-09-09 房東桌面版登入與操作頁本地候選
 
+### 同日：現有系統首頁效能修復
+
+- [x] `landlord-post-read-snapshot.test.mjs`: actual POST dispatcher with mocked
+  services proves one physical read per sheet per request, fresh reads across
+  requests, and uncached write actions.
+- [x] `landlord-home-progressive.test.mjs`: core renders before secondary work;
+  rapid refresh deduplication; secondary failure isolation; transient refresh
+  retains current-page data with warning; auth failure clears it; section actions
+  does not rescan dashboard; legacy response remains compatible.
+- [x] Full Node suite 187/187. No billing, LINE push, email send or bank writes
+  executed by these tests.
+- [ ] Authenticated desktop/mobile latency and real-device acceptance remain
+  UNVERIFIED. Browser click instrumentation timed out before dispatch.
+- [ ] `npm run validate` is not a candidate check: npm resolved the parent's
+  package. Explicit candidate-root legacy validator reports 87 vs expected 71
+  routes and existing nested handler `tenant_payment_account_cover` not detected.
+
+
 - [x] 桌面入口提供寬版登入 shell、Email／OTP 欄位標籤、錯誤／成功狀態與鍵盤 focus；寄送、重寄、驗證均有立即 busy／disabled／`aria-busy` 回饋、重複點擊保護與失敗復原（Phase 244；commits `11be3e4`–`964570a`）。
 - [x] 房東欠款與合約申請頁接上共用桌面 shell、側欄、頁面內滾動與 modal stacking；手機 375／390／768 shell 與 bottom nav 保留（Phase 220；commits `d0dd3f0`–`0345db5`）。
 - [x] Email bridge 保留業務 `request_id` 與 transport correlation id，bridge timeout 正規化為 `API_TIMEOUT`；原生簽署 session 不與房東 Email session 混用（Phase 219／220）。

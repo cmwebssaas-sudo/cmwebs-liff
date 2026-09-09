@@ -1264,7 +1264,8 @@ if (v2Action === 'tenant_message_submit') {
 
   if (v2Action === 'landlord_home_bootstrap') {
     const result = getWorkspaceLandlordHomeBootstrapByLineUid_(
-      lineUserId
+      lineUserId,
+      e.parameter.section || ''
     );
 
     if (bridge === '1') {
@@ -2408,6 +2409,7 @@ function escapeHtmlForInput_(value) {
  * LINE Developers Webhook URL 會用 POST 打到這裡
  */
 function doPost(e) {
+  runtimeSnapshotBegin_('POST');
   try {
     e = e || {};
 
@@ -2435,6 +2437,7 @@ function doPost(e) {
         const action =
           String(request.action || request.v2_action || '')
             .trim();
+        runtimeSnapshotBegin_(action);
         const useBridge =
           String(request.response_mode || '')
             .trim() === 'bridge';
@@ -2662,7 +2665,8 @@ function doPost(e) {
           if (principal) {
             result =
               getWorkspaceLandlordHomeBootstrapByLineUid_(
-                principal.data.principal_line_user_id
+                principal.data.principal_line_user_id,
+                request.section || ''
               );
           }
 
@@ -2965,5 +2969,7 @@ function doPost(e) {
     return ContentService
       .createTextOutput(JSON.stringify(errorResult))
       .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    runtimeSnapshotFinish_();
   }
 }

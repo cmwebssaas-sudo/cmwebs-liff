@@ -1,7 +1,7 @@
 /**
- * Request-local runtime snapshot for read-only tenant Web App routes.
+ * Request-local runtime snapshot for allowlisted read-only Web App routes.
  *
- * The state is reset at the beginning of every doGet execution and is never
+ * The state is reset at the beginning of every doGet/doPost execution and is never
  * shared through CacheService, PropertiesService or another request.
  */
 
@@ -21,6 +21,7 @@ function runtimeSnapshotBegin_(action) {
 
   V2_REQUEST_RUNTIME_SNAPSHOT_STATE_ = {
     action: action,
+    started_at: Date.now(),
     enabled:
       V2_RUNTIME_SNAPSHOT_READ_ACTIONS_[action] === true,
     spreadsheet_handles: {},
@@ -205,6 +206,7 @@ function runtimeSnapshotFinish_() {
 
   const report = {
     action: state.action,
+    elapsed_ms: Math.max(0, Date.now() - state.started_at),
     enabled: state.enabled,
     spreadsheet_handle_created:
       state.spreadsheet_handle_created,
