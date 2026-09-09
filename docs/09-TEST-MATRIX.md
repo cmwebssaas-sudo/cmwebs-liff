@@ -1,5 +1,22 @@
 # V2 回歸測試矩陣
 
+## 2026-09-10 房東桌面多頁 POST bridge 逾時修正（已部署）
+
+- [x] `doPost` 對帳款、合約唯讀初始化、通知、付款回報、營收圖表、Workspace context
+  與手動銷帳狀態查詢回傳 hidden iframe bridge response，並沿用 server-side principal
+  verification。
+- [x] 桌面帳款／合約頁允許唯讀初始化；人工銷帳、合約申請異動與其他寫入仍被
+  `DESKTOP_EMAIL_UNSUPPORTED` 保護。
+- [x] `landlord_bill_manual_settlement_status` 納入 request-local read snapshot 與
+  shared read retry/dedupe action allowlist。
+- [x] `tests/phase246-landlord-post-read-bridge.test.mjs` 通過；完整 Node `195/195`、
+  Apps Script 全檔 syntax、static release-cache validator、`git diff --check` 通過。
+- [x] PR #147 merge commit `f72cfee37013fe3952445d32ed41ceac757cf72c`；Apps Script
+  Version 183 已部署至既有 Web App deployment，Version 182 保留 rollback；Pages
+  workflow `34410925756` 成功。
+- [ ] 已登入 Chrome／Email session 實際驗證總覽圖表、全部側欄頁面、Workspace／角色
+  狀態；仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-09 桌面版首頁 API 逾時後續修正（已部署）
 
 - [x] Read-only Web App actions skip repeated schema mutation checks；寫入路徑仍保留 schema protection。
