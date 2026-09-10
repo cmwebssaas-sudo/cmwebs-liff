@@ -195,7 +195,7 @@ for (const filename of protectedPages) {
   const source = fs.readFileSync(path.join(rootDir, filename), 'utf8');
   assert.match(
     source,
-    /<script src="landlord-api\.js"><\/script>/,
+    /<script src="landlord-api\.js(?:\?v=[^"]+)?"><\/script>/,
     `${filename} must load the shared resilient landlord API client`
   );
   assert.match(
