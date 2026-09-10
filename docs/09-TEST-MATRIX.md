@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-09-10 房東共用腳本快取版本修正（候選，待部署）
+## 2026-09-10 房東共用腳本快取版本修正（已部署）
 
 - [x] 房東頁面的 `frontend-release.js`、`landlord-auth.js` 與 `landlord-api.js` 使用
   同一個固定 cache-busted marker `20260910-landlord-read-bridge-v2`。
@@ -8,7 +8,8 @@
   不會再以未版本化網址載入共用登入／API 腳本。
 - [x] `npm run validate` 通過；`git diff --check` 通過。
 - [x] 完整 Node suite `198/198` 通過；Phase 209 測試使用固定測試時間，避免日期漂移。
-- [ ] 推送／合併、GitHub Pages workflow 與公開新 marker read-back。
+- [x] PR #150 merge commit `2cc882a33654e8d027cbce3514170c450374a9e1` 已合併；GitHub
+  Pages workflow `34423919614` 成功，公開新 marker HTML／共用腳本 read-back 通過。
 - [ ] 已登入 Chrome／手機重新登入後驗證首頁、圖表、房客、物件、合約、帳款及側欄
   Workspace／角色狀態；仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
