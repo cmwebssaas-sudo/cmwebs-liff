@@ -164,6 +164,7 @@ function makeRuntime(options = {}) {
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: name => state.sheets[name] || null }) },
     Utilities: {
       getUuid: () => `generated-${++state.uuid}`,
+      formatDate: () => state.now.slice(0, 10),
       base64Decode: value => Array.from(Buffer.from(String(value), 'base64')),
       computeDigest: (_algorithm, value) => Array.from(Buffer.from(String(value), 'utf8'))
     },

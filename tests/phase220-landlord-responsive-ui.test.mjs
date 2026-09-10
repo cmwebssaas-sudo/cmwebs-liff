@@ -351,7 +351,7 @@ test('Phase 220 exposes desktop table and panel hooks while preserving existing 
 
 test('Phase 220 integrates the shared landlord auth client before protected page bootstrap', () => {
   for (const [name, source] of Object.entries(pages)) {
-    assert.match(source, /<script src="landlord-auth\.js"><\/script>/, `${name} must load the shared auth client`);
+    assert.match(source, /<script src="landlord-auth\.js(?:\?v=[^"]+)?"><\/script>/, `${name} must load the shared auth client`);
     assert.match(source, /async function ensureLandlordAuthReady\(\)/, `${name} must expose a shared auth readiness gate`);
     assert.match(source, /await ensureLandlordAuthReady\(\)[\s\S]*?jsonpRequest\(/, `${name} must await auth before the first page API bootstrap`);
     assert.match(source, /window\.CMWebsLandlordAuth\.getRequestAuthParams\(\)/, `${name} must derive request identity from the shared auth envelope`);
@@ -361,7 +361,7 @@ test('Phase 220 integrates the shared landlord auth client before protected page
 });
 
 test('Phase 220 keeps entry and protected pages on one auth module boundary', () => {
-  assert.match(entrySource, /<script src="landlord-auth\.js"><\/script>/);
+  assert.match(entrySource, /<script src="landlord-auth\.js(?:\?v=[^"]+)?"><\/script>/);
   assert.match(entrySource, /getRequestAuthParams\(\)/);
   assert.doesNotMatch(
     entrySource,
@@ -395,8 +395,8 @@ test('Phase 220 completes the shared desktop shell for legacy operational pages'
     const source = pages[name];
 
     assert.match(source, /<link[^>]+href="landlord-responsive\.css"/);
-    assert.match(source, /<script src="landlord-auth\.js"><\/script>/);
-    assert.match(source, /<script src="landlord-api\.js"><\/script>/);
+    assert.match(source, /<script src="landlord-auth\.js(?:\?v=[^"]+)?"><\/script>/);
+    assert.match(source, /<script src="landlord-api\.js(?:\?v=[^"]+)?"><\/script>/);
     assert.match(source, /<div class="app-shell desktop-ready">/);
     assert.match(source, /<aside class="desktop-sidebar"[^>]+hidden>/);
     assert.match(source, /<main class="page desktop-main">/);

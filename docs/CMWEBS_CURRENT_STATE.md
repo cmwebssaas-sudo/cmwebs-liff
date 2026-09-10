@@ -7,6 +7,22 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-10 房東共用腳本快取版本修正（本候選，待部署）
+
+- 前一版 Apps Script Version 185 的後端唯讀診斷可回傳，但桌面／手機頁面仍以
+  未版本化的 `landlord-auth.js`／`landlord-api.js` 載入共用橋接；既有瀏覽器工作階段
+  因而可能持續使用舊的 25 秒逾時腳本。本候選將 `frontend-release.js` marker 更新為
+  `20260910-landlord-read-bridge-v2`，並讓所有房東頁及共用登入／API 腳本使用同一個
+  cache-busted URL。
+- 本候選只改 GitHub Pages 靜態資產與回歸測試，不改 Apps Script、登入資料、Sheet、
+  Drive、Properties、Trigger、帳務或 LINE；Apps Script Version 185 與既有 Web App
+  URL 保持不變。
+- `npm run validate` 通過；Phase 249 快取版本回歸通過；完整 Node suite `198/198`
+  通過。另將 Phase 209 的日期判定改為使用測試固定時間，避免測試隨真實日期漂移。
+- 待完成：推送／合併後等待 GitHub Pages workflow，重新 read-back 帶新 marker 的公開
+  HTML／共用腳本；真實已登入 Chrome／手機驗收仍為 `HUMAN_REQUIRED`，不能由靜態
+  read-back 宣稱完成。
+
 ## 2026-09-10 房東桌面多頁 POST bridge 逾時修正正式部署
 
 - 根因是桌面 Email session 使用隱藏 iframe POST bridge，但帳款、合約唯讀初始化、
