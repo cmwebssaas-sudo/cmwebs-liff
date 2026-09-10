@@ -2,7 +2,7 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-10 — 房東共用腳本快取版本修正（本候選，待部署）
+## 2026-09-10 — 房東共用腳本快取版本修正（正式部署）
 
 - 前一版後端已修正唯讀讀取路徑，但公開頁的 `landlord-auth.js`／`landlord-api.js`
   仍是未版本化資產，舊瀏覽器工作階段可能繼續執行舊的逾時橋接。所有房東頁與共用
@@ -11,7 +11,10 @@
   Sheet、Drive、Properties、帳務或 LINE。Apps Script Version 185 不需重部署。
 - `npm run validate`、Phase 249 與完整 Node suite `198/198` 通過；Phase 209 測試改用
   固定測試時間，避免狀態判定隨真實日期漂移。
-- 待推送、合併、Pages publish/read-back，以及真實已登入桌面／手機流程驗收。
+- PR #150 merge commit `2cc882a33654e8d027cbce3514170c450374a9e1` 已合併；Pages workflow
+  `34423919614` 成功，公開房東主要頁面與三個共用腳本 read-back HTTP 200 且 SHA-256
+  一致。新未登入分頁會進入正常 LINE 登入流程；真實已登入桌面／手機流程仍需
+  `HUMAN_REQUIRED` 驗收。
 
 ## 2026-09-10 — 房東桌面多頁 POST bridge 逾時修正（正式部署）
 

@@ -7,7 +7,7 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-10 房東共用腳本快取版本修正（本候選，待部署）
+## 2026-09-10 房東共用腳本快取版本修正（正式部署）
 
 - 前一版 Apps Script Version 185 的後端唯讀診斷可回傳，但桌面／手機頁面仍以
   未版本化的 `landlord-auth.js`／`landlord-api.js` 載入共用橋接；既有瀏覽器工作階段
@@ -19,9 +19,12 @@ version, rollback, and runtime state before every Production action.
   URL 保持不變。
 - `npm run validate` 通過；Phase 249 快取版本回歸通過；完整 Node suite `198/198`
   通過。另將 Phase 209 的日期判定改為使用測試固定時間，避免測試隨真實日期漂移。
-- 待完成：推送／合併後等待 GitHub Pages workflow，重新 read-back 帶新 marker 的公開
-  HTML／共用腳本；真實已登入 Chrome／手機驗收仍為 `HUMAN_REQUIRED`，不能由靜態
-  read-back 宣稱完成。
+- PR #150 merge commit `2cc882a33654e8d027cbce3514170c450374a9e1` 已合併至 `main`；
+  GitHub Pages workflow `34423919614` 成功完成。公開房東入口、首頁、房客、物件、
+  欠款、合約與設定頁均 HTTP 200，三個共用腳本 read-back 與候選 SHA-256 一致。
+- 新開未登入瀏覽器分頁會進入正常 LINE 登入流程；既有已登入 Chrome／手機仍需
+  重新開啟新 marker URL 並完成真實流程驗收，狀態仍為 `HUMAN_REQUIRED`，不能由
+  靜態 read-back 宣稱圖表與所有資料頁已完成。
 
 ## 2026-09-10 房東桌面多頁 POST bridge 逾時修正正式部署
 
