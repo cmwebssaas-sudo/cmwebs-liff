@@ -5,8 +5,14 @@ const source = readFileSync('landlord-more.html', 'utf8');
 
 assert.match(
   source,
-  /<a[^>]+id="desktopEntryButton"[^>]+href="landlord-entry\.html\?mode=email&return_to=landlord-home\.html"[^>]+target="_blank"[^>]+rel="noopener"/s,
-  'landlord more page must expose a safe external desktop-entry Email link'
+  /<button[^>]+id="desktopEntryButton"[^>]+type="button"[^>]+onclick="openDesktopShareModal\(\)"/s,
+  'landlord more page must open a share modal before the desktop entry flow'
+);
+
+assert.doesNotMatch(
+  source,
+  /id="desktopEntryButton"[^>]+href=/s,
+  'the desktop entry must not navigate before the user shares the URL'
 );
 
 assert.match(

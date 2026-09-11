@@ -110,8 +110,11 @@
       background:
         linear-gradient(135deg, #effcf4 0%, #ffffff 72%);
       color: var(--text-main);
+      font: inherit;
+      text-align: left;
       text-decoration: none;
       box-shadow: 0 8px 24px rgba(6, 199, 85, 0.11);
+      cursor: pointer;
       transition:
         transform 0.16s ease,
         box-shadow 0.16s ease;
@@ -540,6 +543,132 @@
       display: block;
     }
 
+    .desktop-share-modal {
+      position: absolute;
+      z-index: 2200;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+      background: rgba(17, 24, 39, 0.52);
+    }
+
+    .desktop-share-modal[hidden] {
+      display: none;
+    }
+
+    .desktop-share-card {
+      width: 100%;
+      max-width: 520px;
+      padding: 20px 18px 18px;
+      border: 1px solid rgba(231, 235, 240, 0.9);
+      border-radius: 22px;
+      background: #ffffff;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+    }
+
+    .desktop-share-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .desktop-share-title {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .desktop-share-subtitle {
+      margin-top: 6px;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .desktop-share-close {
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      border: 0;
+      border-radius: 11px;
+      background: #f2f4f6;
+      color: #656c76;
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .desktop-share-label {
+      display: block;
+      margin-top: 18px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .desktop-share-url-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 7px;
+    }
+
+    .desktop-share-url {
+      min-width: 0;
+      flex: 1;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid #dfe5eb;
+      border-radius: 12px;
+      background: #f8fafb;
+      color: #303641;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .desktop-share-url:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.13);
+    }
+
+    .desktop-share-button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .desktop-share-copy {
+      flex: 0 0 76px;
+      background: #edf8f1;
+      color: #079641;
+    }
+
+    .desktop-share-native {
+      width: 100%;
+      margin-top: 12px;
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 7px 17px rgba(6, 199, 85, 0.2);
+    }
+
+    .desktop-share-note {
+      margin-top: 13px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f4f7fa;
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
     @media (max-width: 380px) {
       .status-strip {
         grid-template-columns: 1fr;
@@ -597,13 +726,12 @@
         </div>
       </section>
 
-      <a
+      <button
         id="desktopEntryButton"
         class="desktop-entry-card"
-        href="landlord-entry.html?mode=email&return_to=landlord-home.html"
-        target="_blank"
-        rel="noopener"
-        aria-label="開啟房東桌面版 Email 驗證碼登入"
+        type="button"
+        onclick="openDesktopShareModal()"
+        aria-label="分享房東桌面版 Email 驗證碼登入網址"
       >
         <div class="desktop-entry-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">
@@ -622,7 +750,7 @@
         </div>
 
         <div class="desktop-entry-arrow" aria-hidden="true">›</div>
-      </a>
+      </button>
 
       <section class="card">
         <div class="section-title-row">
@@ -1122,6 +1250,82 @@
     </nav>
 
     <div id="toast" class="toast"></div>
+
+    <div
+      id="desktopShareModal"
+      class="desktop-share-modal"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="desktopShareTitle"
+      aria-describedby="desktopShareSubtitle"
+      onclick="handleDesktopShareMaskClick(event)"
+    >
+      <div
+        class="desktop-share-card"
+        onclick="event.stopPropagation()"
+      >
+        <div class="desktop-share-header">
+          <div>
+            <div id="desktopShareTitle" class="desktop-share-title">
+              分享桌面版登入網址
+            </div>
+            <div id="desktopShareSubtitle" class="desktop-share-subtitle">
+              將網址傳到電腦後，在電腦開啟即可使用 Email 驗證碼登入。
+            </div>
+          </div>
+
+          <button
+            id="closeDesktopShareModalButton"
+            class="desktop-share-close"
+            type="button"
+            onclick="closeDesktopShareModal()"
+            aria-label="關閉分享視窗"
+          >
+            ×
+          </button>
+        </div>
+
+        <label
+          class="desktop-share-label"
+          for="desktopShareUrl"
+        >
+          桌面版固定網址
+        </label>
+
+        <div class="desktop-share-url-row">
+          <input
+            id="desktopShareUrl"
+            class="desktop-share-url"
+            type="url"
+            readonly
+            onclick="this.select()"
+            aria-label="桌面版固定網址"
+          />
+          <button
+            id="copyDesktopShareUrlButton"
+            class="desktop-share-button desktop-share-copy"
+            type="button"
+            onclick="copyDesktopShareUrl()"
+          >
+            複製
+          </button>
+        </div>
+
+        <button
+          id="nativeDesktopShareButton"
+          class="desktop-share-button desktop-share-native"
+          type="button"
+          onclick="shareDesktopUrl()"
+        >
+          使用手機系統分享
+        </button>
+
+        <div class="desktop-share-note">
+          分享內容只包含固定登入網址，不會包含 Email、驗證碼或登入狀態。
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1248,6 +1452,195 @@
           toast.classList.remove('show');
         }, 2200);
     }
+
+    function buildDesktopShareUrl() {
+      const entryUrl =
+        new URL(
+          LANDLORD_ENTRY_URL
+        );
+
+      entryUrl.search = '';
+      entryUrl.hash = '';
+      entryUrl.searchParams.set(
+        'mode',
+        'email'
+      );
+      entryUrl.searchParams.set(
+        'return_to',
+        'landlord-home.html'
+      );
+
+      return entryUrl.href;
+    }
+
+    function openDesktopShareModal() {
+      const modal =
+        document.getElementById(
+          'desktopShareModal'
+        );
+      const input =
+        document.getElementById(
+          'desktopShareUrl'
+        );
+
+      if (!modal || !input) {
+        return;
+      }
+
+      input.value =
+        buildDesktopShareUrl();
+      modal.hidden = false;
+      modal.setAttribute(
+        'aria-hidden',
+        'false'
+      );
+      document.body.classList.add(
+        'modal-open'
+      );
+
+      const closeButton =
+        document.getElementById(
+          'closeDesktopShareModalButton'
+        );
+
+      if (closeButton) {
+        closeButton.focus();
+      }
+    }
+
+    function closeDesktopShareModal() {
+      const modal =
+        document.getElementById(
+          'desktopShareModal'
+        );
+
+      if (!modal) {
+        return;
+      }
+
+      modal.hidden = true;
+      modal.setAttribute(
+        'aria-hidden',
+        'true'
+      );
+      document.body.classList.remove(
+        'modal-open'
+      );
+    }
+
+    function handleDesktopShareMaskClick(event) {
+      if (
+        event &&
+        event.target === event.currentTarget
+      ) {
+        closeDesktopShareModal();
+      }
+    }
+
+    async function copyText(value) {
+      if (
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+        try {
+          await navigator.clipboard.writeText(
+            value
+          );
+          return true;
+        } catch (error) {
+          // Continue with the selection fallback below.
+        }
+      }
+
+      const textarea =
+        document.createElement(
+          'textarea'
+        );
+
+      textarea.value = value;
+      textarea.setAttribute(
+        'readonly',
+        ''
+      );
+      textarea.style.position =
+        'fixed';
+      textarea.style.opacity =
+        '0';
+      document.body.appendChild(
+        textarea
+      );
+      textarea.select();
+
+      let copied = false;
+
+      try {
+        copied = Boolean(
+          document.execCommand &&
+          document.execCommand('copy')
+        );
+      } catch (error) {
+        copied = false;
+      }
+
+      textarea.remove();
+      return copied;
+    }
+
+    async function copyDesktopShareUrl() {
+      const copied =
+        await copyText(
+          buildDesktopShareUrl()
+        );
+
+      showToast(
+        copied
+          ? '桌面版網址已複製，可傳到電腦開啟'
+          : '請長按網址後選擇複製'
+      );
+    }
+
+    async function shareDesktopUrl() {
+      const shareUrl =
+        buildDesktopShareUrl();
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'CMWebs 桌面版登入',
+            text: '請在電腦開啟 CMWebs 桌面版登入網址',
+            url: shareUrl
+          });
+          return;
+        } catch (error) {
+          if (
+            error &&
+            error.name === 'AbortError'
+          ) {
+            return;
+          }
+        }
+      }
+
+      const copied =
+        await copyText(shareUrl);
+
+      showToast(
+        copied
+          ? '此裝置不支援系統分享，網址已複製'
+          : '請使用上方複製按鈕分享網址'
+      );
+    }
+
+    document.addEventListener(
+      'keydown',
+      function (event) {
+        if (
+          event.key === 'Escape'
+        ) {
+          closeDesktopShareModal();
+        }
+      }
+    );
 
     function jsonpRequest(action, params) {
       if (window.CMWebsLandlordApi) {
