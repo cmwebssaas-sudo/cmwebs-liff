@@ -1,5 +1,14 @@
 # V2 回歸測試矩陣
 
+## 2026-09-11 房東桌面版手機分享網址（本地候選）
+
+- [x] 「更多功能 → 開啟桌面版」開啟分享面板，不再直接導覽。
+- [x] 面板顯示不含 session 的固定 Email 登入網址，支援複製與手機系統分享。
+- [x] Phase 232／250／251 focused tests 通過；Email mode 仍在 LINE 初始化前分流。
+- [ ] 推送、合併、GitHub Pages 發布與公開 read-back。
+- [ ] 真實手機分享網址後在電腦開啟、Email OTP 登入與回到房東首頁；狀態為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-11 房東桌面入口 Email mode 分流（本地候選）
 
 - [x] 「更多功能 → 開啟桌面版」連結明確帶 `mode=email` 與安全 `return_to`。

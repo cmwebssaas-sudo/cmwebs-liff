@@ -45,8 +45,18 @@ function extractFunction(source, name) {
 
 assert.match(
   moreSource,
-  /href="landlord-entry\.html\?mode=email&return_to=landlord-home\.html"/,
-  'the desktop entry link must explicitly request Email mode'
+  /<button[^>]+id="desktopEntryButton"[^>]+onclick="openDesktopShareModal\(\)"/s,
+  'the desktop entry must open the share modal before the Email flow'
+);
+assert.match(
+  moreSource,
+  /id="desktopShareModal"[^>]+role="dialog"[^>]+aria-modal="true"/s,
+  'the desktop share modal must be present'
+);
+assert.match(
+  moreSource,
+  /function buildDesktopShareUrl[\s\S]*searchParams\.set\([\s\S]*['"]mode['"][\s\S]*['"]email['"]/,
+  'the shared desktop URL must explicitly request Email mode'
 );
 
 const loadPageSource = extractFunction(entrySource, 'loadPage');

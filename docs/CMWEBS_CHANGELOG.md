@@ -2,6 +2,16 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-11 — 房東桌面版網址改為手機分享流程（本地候選）
+
+- 「更多功能 → 開啟桌面版」改為先顯示分享面板，不再讓手機直接導覽；面板提供固定
+  桌面 Email 登入網址、複製與手機系統分享，沒有系結 Email、OTP、LINE UID 或登入
+  狀態。
+- 延續既有 `mode=email` 與安全 `return_to` 分流；手機一般 LINE 入口與 Email OTP
+  登入流程不變。
+- 只改 `landlord-more.html` 與 Phase 232／250／251 回歸測試；focused tests 已通過，
+  尚未推送、合併、GitHub Pages 發布或完成真實手機／桌面驗收。
+
 ## 2026-09-11 — 房東開啟桌面版誤走過期 LINE 登入（本地候選）
 
 - 修正「更多功能 → 開啟桌面版」在手機 LINE WebView 仍依裝置模式初始化 LINE，
