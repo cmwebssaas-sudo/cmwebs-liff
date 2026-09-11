@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>CMWebs 辦理房客退房</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20260910-landlord-read-bridge-v2"></script>
+<script src="frontend-release.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
   <style>
     :root { --app-height: 100vh; --nav-height: 64px; --primary: #06c755; --primary-dark: #079641; --page-bg: #f4f6fa; --surface: #fff; --text: #171a1f; --muted: #747b85; --border: #e7ebf0; --danger: #e5484d; --warning: #a46b00; --warning-bg: #fff7df; --shadow: 0 7px 24px rgba(30, 40, 60, .07); }
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--page-bg); color: var(--text); font-family: Arial, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
     button, input, textarea { font: inherit; }
     .app-shell { position: relative; width: 100%; max-width: 560px; height: var(--app-height); margin: 0 auto; overflow: hidden; background: var(--page-bg); }
-    .page { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: max(16px, env(safe-area-inset-top)) 16px calc(var(--nav-height) + 28px + env(safe-area-inset-bottom)); }
+    .page { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: max(16px, env(safe-area-inset-top)) 16px calc(var(--nav-height) + 112px + env(safe-area-inset-bottom)); scroll-padding-bottom: calc(var(--nav-height) + 112px + env(safe-area-inset-bottom)); }
     .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
     .back-button { width: 42px; height: 42px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); color: #606773; font-size: 21px; cursor: pointer; }
     .topbar-title { min-width: 0; flex: 1; font-size: 19px; font-weight: 900; }
@@ -27,6 +27,10 @@
     .detail-label { color: var(--muted); font-size: 11px; }
     .detail-value { margin-top: 4px; font-size: 14px; font-weight: 900; word-break: break-word; }
     .settlement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .mode-button { min-height: 42px; border: 1px solid var(--border); border-radius: 12px; background: #fff; color: var(--muted); font-weight: 900; cursor: pointer; }
+    .mode-button.active { border-color: var(--primary); background: #e9fff1; color: var(--primary-dark); }
+    .is-hidden { display: none !important; }
     .summary { display: grid; gap: 8px; margin-top: 14px; padding: 13px; border-radius: 13px; background: #f7f9fb; }
     .summary-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
     .summary-row strong { color: var(--text); text-align: right; }
@@ -68,12 +72,17 @@
     const METER_DOCUMENTS = { start: '', end: '' };
     let IS_SUBMITTING = false;
     let PREVIEW_SEQUENCE = 0;
+    let SETTLEMENT_MODE = 'manual';
 
     function rawText(value) { return value === undefined || value === null ? '' : String(value); }
     function escapeHtml(value) { return rawText(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
     function randomUrlToken(bytes) { const value = new Uint8Array(bytes); crypto.getRandomValues(value); return btoa(String.fromCharCode.apply(null, value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, ''); }
     function setAppHeight() { const height = window.visualViewport ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty('--app-height', Math.max(320, Math.round(height)) + 'px'); }
     setAppHeight(); window.addEventListener('resize', setAppHeight); if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+    document.addEventListener('focusin', function(event) {
+      if (!event.target || !event.target.matches || !event.target.matches('input, textarea, select')) return;
+      window.setTimeout(function() { event.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 120);
+    });
     function backToDetail() {
       const params = new URLSearchParams();
       if (TENANT_ID) params.set('tenant_id', TENANT_ID);
@@ -123,21 +132,49 @@
     function currentSettlementInput() {
       return {
         contract_id: CONTRACT_ID,
+        settlement_mode: SETTLEMENT_MODE,
         move_out_date: (document.getElementById('moveOutDate') || {}).value || '',
         start_meter_reading: numericValue('startMeterReading'),
         end_meter_reading: numericValue('endMeterReading'),
+        manual_receivable_amount: numericValue('manualReceivableAmount'),
+        manual_refund_amount: numericValue('manualRefundAmount'),
         deposit_deduction_amount: numericValue('depositDeductionAmount'),
         deposit_deduction_note: ((document.getElementById('depositDeductionNote') || {}).value || '').trim()
       };
     }
     function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
+    function setSettlementMode(mode) {
+      SETTLEMENT_MODE = mode === 'metered' ? 'metered' : 'manual';
+      const manual = SETTLEMENT_MODE === 'manual';
+      const manualFields = document.getElementById('manualSettlementFields');
+      const meteredFields = document.getElementById('meteredSettlementFields');
+      if (manualFields) manualFields.classList.toggle('is-hidden', !manual);
+      if (meteredFields) meteredFields.classList.toggle('is-hidden', manual);
+      document.querySelectorAll('[data-settlement-mode]').forEach(function(button) {
+        const active = button.getAttribute('data-settlement-mode') === SETTLEMENT_MODE;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      document.querySelectorAll('.manual-only').forEach(function(element) { element.classList.toggle('is-hidden', !manual); });
+      document.querySelectorAll('.metered-only').forEach(function(element) { element.classList.toggle('is-hidden', manual); });
+      setText('settlementNotice', manual ? '快速結案：不要求電表讀數或電表照片，直接以房東輸入的手動應收金額與實際退款金額完成最終結算。' : '完整電表結算：需要輸入起訖電表度數並上傳兩張現場照片。');
+      setText('previewState', manual ? '快速結案金額會在送出時由伺服器驗證並寫入。' : '輸入度數後由伺服器試算');
+      const button = document.getElementById('submitButton');
+      if (button && !IS_SUBMITTING) button.textContent = manual ? '確認快速結案' : '確認辦理退房';
+      updateCompleteState();
+    }
     function updateCompleteState() {
       const input = currentSettlementInput();
-      const valid = CHECKOUT_DATA && CHECKOUT_DATA.eligibility && CHECKOUT_DATA.eligibility.can_checkout === true &&
-        input.move_out_date && input.start_meter_reading !== null && input.end_meter_reading !== null &&
-        input.end_meter_reading >= input.start_meter_reading && input.deposit_deduction_amount !== null &&
-        input.deposit_deduction_amount >= 0 && (input.deposit_deduction_amount === 0 || input.deposit_deduction_note) &&
-        METER_DOCUMENTS.start && METER_DOCUMENTS.end;
+      const settlement = SETTLEMENT_DATA && (SETTLEMENT_DATA.settlement || SETTLEMENT_DATA) || {};
+      const depositAmount = Number(settlement.deposit_amount || 0);
+      const commonValid = CHECKOUT_DATA && CHECKOUT_DATA.eligibility && CHECKOUT_DATA.eligibility.can_checkout === true &&
+        input.move_out_date && input.deposit_deduction_amount !== null && input.deposit_deduction_amount >= 0 &&
+        (input.deposit_deduction_amount === 0 || input.deposit_deduction_note);
+      const valid = SETTLEMENT_MODE === 'manual'
+        ? commonValid && input.manual_receivable_amount !== null && input.manual_receivable_amount >= 0 &&
+          input.manual_refund_amount !== null && input.manual_refund_amount >= 0 && input.manual_refund_amount <= depositAmount
+        : commonValid && input.start_meter_reading !== null && input.end_meter_reading !== null &&
+          input.end_meter_reading >= input.start_meter_reading && METER_DOCUMENTS.start && METER_DOCUMENTS.end;
       const button = document.getElementById('submitButton');
       if (button) button.disabled = IS_SUBMITTING || !valid;
     }
@@ -153,10 +190,25 @@
       setText('tenantBalanceDue', calculated ? formatMoney(value.tenant_balance_due) : '待計算');
       setText('depositRefundAmount', calculated ? formatMoney(value.deposit_refund_amount) : '待計算');
       setText('meterUsage', value.electricity_usage === undefined ? '待輸入' : rawText(value.electricity_usage) + ' 度');
+      setText('manualSummaryReceivable', value.manual_receivable_amount === undefined ? '待輸入' : formatMoney(value.manual_receivable_amount));
+      setText('manualSummaryRefund', value.manual_refund_amount === undefined ? '待輸入' : formatMoney(value.manual_refund_amount));
     }
     async function previewSettlement() {
       if (!SETTLEMENT_DATA) return;
       const input = currentSettlementInput();
+      if (SETTLEMENT_MODE === 'manual') {
+        const settlement = SETTLEMENT_DATA.settlement || SETTLEMENT_DATA;
+        renderSettlementSummary(Object.assign({}, settlement, {
+          settlement_mode: 'manual',
+          manual_receivable_amount: input.manual_receivable_amount,
+          manual_refund_amount: input.manual_refund_amount,
+          subtotal_amount: input.manual_receivable_amount === null ? undefined : input.manual_receivable_amount,
+          tenant_balance_due: input.manual_receivable_amount === null ? undefined : input.manual_receivable_amount,
+          deposit_refund_amount: input.manual_refund_amount === null ? undefined : input.manual_refund_amount
+        }));
+        updateCompleteState();
+        return;
+      }
       if (!input.move_out_date || input.start_meter_reading === null || input.end_meter_reading === null || input.deposit_deduction_amount === null) {
         renderSettlementSummary(SETTLEMENT_DATA.settlement || SETTLEMENT_DATA);
         updateCompleteState();
@@ -234,6 +286,15 @@
         updateCompleteState();
       }
     }
+    function renderCheckoutPageMarkup(contract, tenant, room, eligible, originalEnd, settlement, settlementStart) {
+      return `<div class="topbar"><button class="back-button" type="button" onclick="backToDetail()" aria-label="返回">‹</button><div><div class="topbar-title">辦理房客退房</div><div class="topbar-subtitle">房東手動完成點交與退房</div></div></div>
+        <section class="card hero"><h1>房東退房流程</h1><p>退房由房東主動處理。完成後房間會恢復為空房，原合約全文與帳務紀錄仍會保留。</p></section>
+        <section class="card"><div class="section-title">退房對象</div><div class="detail-grid"><div><div class="detail-label">房客</div><div class="detail-value">${escapeHtml(tenant.tenant_name || contract.tenant_name || '-')}</div></div><div><div class="detail-label">房號</div><div class="detail-value">${escapeHtml(room.room_name || contract.room_name || '-')}</div></div><div><div class="detail-label">原合約到期日</div><div class="detail-value">${escapeHtml(originalEnd || '-')}</div></div><div><div class="detail-label">目前狀態</div><div class="detail-value">${escapeHtml(contract.contract_status || '-')}</div></div></div></section>
+        <section class="card"><div class="section-title">退房結算</div><div class="mode-switch" role="group" aria-label="結算方式"><button class="mode-button active" type="button" data-settlement-mode="manual" aria-pressed="true" onclick="setSettlementMode('manual')">快速結案</button><button class="mode-button" type="button" data-settlement-mode="metered" aria-pressed="false" onclick="setSettlementMode('metered')">完整電表結算</button></div><div class="notice" id="settlementNotice">快速結案：不要求電表讀數或電表照片，直接以房東輸入的手動應收金額與實際退款金額完成最終結算。</div><label for="moveOutDate">實際退房日<input id="moveOutDate" type="date" value="${escapeHtml(originalEnd)}" onchange="handleSettlementInputChange()"></label>
+        <div id="manualSettlementFields"><p class="hint">快速結案會直接完成退房，不要求電表照片；以下兩個金額是最終結算依據。</p><div class="settlement-grid"><label for="manualReceivableAmount">手動應收金額<input id="manualReceivableAmount" type="number" min="0" step="1" placeholder="例如 0 或 3200" oninput="handleSettlementInputChange()"></label><label for="manualRefundAmount">實際退款金額<input id="manualRefundAmount" type="number" min="0" step="1" placeholder="例如 10000" oninput="handleSettlementInputChange()"></label></div></div>
+        <div id="meteredSettlementFields" class="is-hidden"><div class="settlement-grid"><label for="startMeterReading">9/1 電表度數<input id="startMeterReading" type="number" min="0" step="0.01" placeholder="請輸入起始度數" oninput="handleSettlementInputChange()"></label><label for="endMeterReading">退房日電表度數<input id="endMeterReading" type="number" min="0" step="0.01" placeholder="請輸入結束度數" oninput="handleSettlementInputChange()"></label></div><p class="hint">電費與設備使用費依兩次電表差額計算，不依天數拆分。完整電表結算需上傳兩張電表照片；結算期間示例：含退房日，共 7 天（例如 9/1 到 9/7）。</p><div class="upload-row"><label for="startMeterPhoto">9/1 電表現場照片<input id="startMeterPhoto" class="file-input" type="file" accept="image/jpeg,image/png"></label><button class="btn btn-light" type="button" id="startMeterUploadButton" onclick="uploadMeterDocument('start', 'startMeterPhoto')">上傳照片</button></div><div class="upload-state" id="startMeterUploadState">尚未上傳</div><div class="upload-row"><label for="endMeterPhoto">退房日電表現場照片<input id="endMeterPhoto" class="file-input" type="file" accept="image/jpeg,image/png"></label><button class="btn btn-light" type="button" id="endMeterUploadButton" onclick="uploadMeterDocument('end', 'endMeterPhoto')">上傳照片</button></div><div class="upload-state" id="endMeterUploadState">尚未上傳</div></div>
+        <label for="depositDeductionAmount">押金扣除<input id="depositDeductionAmount" type="number" min="0" step="1" value="0" oninput="handleSettlementInputChange()"></label><label for="depositDeductionNote">押金扣除說明（有扣除時必填）<textarea id="depositDeductionNote" placeholder="請說明扣除原因" oninput="handleSettlementInputChange()"></textarea></label><div class="summary"><div class="summary-row manual-only"><span>手動應收金額</span><strong id="manualSummaryReceivable">待輸入</strong></div><div class="summary-row manual-only"><span>實際退款金額</span><strong id="manualSummaryRefund">待輸入</strong></div><div class="summary-row metered-only is-hidden"><span>上月未繳電費＋設備使用費</span><strong id="previousUtilityAmount">${formatMoney(Number(settlement.previous_electricity_amount || 0) + Number(settlement.previous_equipment_amount || 0))}</strong></div><div class="summary-row metered-only is-hidden"><span>本期房租</span><strong id="currentRentAmount">待輸入電表後試算</strong></div><div class="summary-row metered-only is-hidden"><span>本期電費</span><strong id="currentElectricityAmount">待輸入電表後試算</strong></div><div class="summary-row metered-only is-hidden"><span>本期設備使用費</span><strong id="currentEquipmentAmount">待輸入電表後試算</strong></div><div class="summary-row metered-only is-hidden"><span>本期用電</span><strong id="meterUsage">待輸入</strong></div><div class="summary-row total"><span>結算小計</span><strong id="subtotalAmount">待計算</strong></div><div class="summary-row"><span>押金快照</span><strong id="depositAmount">${formatMoney(settlement.deposit_amount)}</strong></div><div class="summary-row total"><span>應補繳</span><strong id="tenantBalanceDue">待計算</strong></div><div class="summary-row total"><span>押金應退</span><strong id="depositRefundAmount">待計算</strong></div></div><p class="hint" id="previewState">快速結案金額會在送出時由伺服器驗證並寫入。</p><label for="checkoutNote">點交備註（選填）<textarea id="checkoutNote" placeholder="例如：已完成點交、鑰匙已返還…"></textarea></label><div id="resultMessage"></div><div class="actions"><button class="btn btn-light" type="button" onclick="backToDetail()">取消</button><button class="btn btn-primary" type="button" id="submitButton" onclick="submitCheckout()" ${eligible ? '' : 'disabled'}>確認快速結案</button></div></section>`;
+    }
     function renderPage(data, settlementData) {
       CHECKOUT_DATA = data || {};
       SETTLEMENT_DATA = settlementData || SETTLEMENT_DATA || {};
@@ -244,31 +305,45 @@
       const originalEnd = rawText(CHECKOUT_DATA.default_move_out_date || contract.original_end_date || contract.end_date);
       const settlement = SETTLEMENT_DATA.settlement || SETTLEMENT_DATA || {};
       const settlementStart = rawText(settlement.settlement_start_date || originalEnd.slice(0, 7) + '-01');
-      document.getElementById('app').innerHTML = '<div class="topbar"><button class="back-button" type="button" onclick="backToDetail()" aria-label="返回">‹</button><div><div class="topbar-title">辦理房客退房</div><div class="topbar-subtitle">房東手動完成點交與退房</div></div></div>' +
-        '<section class="card hero"><h1>房東退房流程</h1><p>退房由房東主動處理。完成後房間會恢復為空房，原合約全文與帳務紀錄仍會保留。</p></section>' +
-        '<section class="card"><div class="section-title">退房對象</div><div class="detail-grid"><div><div class="detail-label">房客</div><div class="detail-value">' + escapeHtml(tenant.tenant_name || contract.tenant_name || '-') + '</div></div><div><div class="detail-label">房號</div><div class="detail-value">' + escapeHtml(room.room_name || contract.room_name || '-') + '</div></div><div><div class="detail-label">原合約到期日</div><div class="detail-value">' + escapeHtml(originalEnd || '-') + '</div></div><div><div class="detail-label">目前狀態</div><div class="detail-value">' + escapeHtml(contract.contract_status || '-') + '</div></div></div></section>' +
-        '<section class="card"><div class="section-title">退房結算</div><div class="notice">結算期間為 ' + escapeHtml(settlementStart) + ' 至實際退房日，含退房日，共 7 天（例如 9/1 到 9/7）。上月只帶入未繳電費與設備使用費，不重複計算上月房租。完成前必須上傳兩張電表照片。</div><label for="moveOutDate">實際退房日<input id="moveOutDate" type="date" value="' + escapeHtml(originalEnd) + '" onchange="handleSettlementInputChange()"></label><div class="settlement-grid"><label for="startMeterReading">9/1 電表度數<input id="startMeterReading" type="number" min="0" step="0.01" placeholder="請輸入起始度數" oninput="handleSettlementInputChange()"></label><label for="endMeterReading">退房日電表度數<input id="endMeterReading" type="number" min="0" step="0.01" placeholder="請輸入結束度數" oninput="handleSettlementInputChange()"></label></div><p class="hint">電費與設備使用費依兩次電表差額計算，不依天數拆分。</p><div class="upload-row"><label for="startMeterPhoto">9/1 電表現場照片<input id="startMeterPhoto" class="file-input" type="file" accept="image/jpeg,image/png"></label><button class="btn btn-light" type="button" id="startMeterUploadButton" onclick="uploadMeterDocument(\'start\', \'startMeterPhoto\')">上傳照片</button></div><div class="upload-state" id="startMeterUploadState">尚未上傳</div><div class="upload-row"><label for="endMeterPhoto">退房日電表現場照片<input id="endMeterPhoto" class="file-input" type="file" accept="image/jpeg,image/png"></label><button class="btn btn-light" type="button" id="endMeterUploadButton" onclick="uploadMeterDocument(\'end\', \'endMeterPhoto\')">上傳照片</button></div><div class="upload-state" id="endMeterUploadState">尚未上傳</div><label for="depositDeductionAmount">押金扣除<input id="depositDeductionAmount" type="number" min="0" step="1" value="0" oninput="handleSettlementInputChange()"></label><label for="depositDeductionNote">押金扣除說明（有扣除時必填）<textarea id="depositDeductionNote" placeholder="請說明扣除原因" oninput="handleSettlementInputChange()"></textarea></label><div class="summary"><div class="summary-row"><span>上月未繳電費＋設備使用費</span><strong id="previousUtilityAmount">' + formatMoney(Number(settlement.previous_electricity_amount || 0) + Number(settlement.previous_equipment_amount || 0)) + '</strong></div><div class="summary-row"><span>本期房租</span><strong id="currentRentAmount">待輸入電表後試算</strong></div><div class="summary-row"><span>本期電費</span><strong id="currentElectricityAmount">待輸入電表後試算</strong></div><div class="summary-row"><span>本期設備使用費</span><strong id="currentEquipmentAmount">待輸入電表後試算</strong></div><div class="summary-row"><span>本期用電</span><strong id="meterUsage">待輸入</strong></div><div class="summary-row total"><span>結算小計</span><strong id="subtotalAmount">待計算</strong></div><div class="summary-row"><span>押金快照</span><strong id="depositAmount">' + formatMoney(settlement.deposit_amount) + '</strong></div><div class="summary-row total"><span>應補繳</span><strong id="tenantBalanceDue">待計算</strong></div><div class="summary-row total"><span>押金應退</span><strong id="depositRefundAmount">待計算</strong></div></div><p class="hint" id="previewState">輸入度數後由伺服器試算</p><label for="checkoutNote">點交備註（選填）<textarea id="checkoutNote" placeholder="例如：已完成點交、鑰匙已返還…"></textarea></label><div id="resultMessage"></div><div class="actions"><button class="btn btn-light" type="button" onclick="backToDetail()">取消</button><button class="btn btn-primary" type="button" id="submitButton" onclick="submitCheckout()" ' + (eligible ? '' : 'disabled') + '>確認辦理退房</button></div></section>';
+      document.getElementById('app').innerHTML = renderCheckoutPageMarkup(contract, tenant, room, eligible, originalEnd, settlement, settlementStart);
       if (!eligible) document.getElementById('resultMessage').innerHTML = '<p class="error">' + escapeHtml((CHECKOUT_DATA.eligibility && CHECKOUT_DATA.eligibility.message) || '此合約目前不可辦理退房，請先重新整理資料。') + '</p>';
+      setSettlementMode(SETTLEMENT_MODE);
       renderSettlementSummary(settlement);
       updateCompleteState();
     }
     async function submitCheckout() {
-      if (IS_SUBMITTING || !CHECKOUT_DATA || !CHECKOUT_DATA.contract) return;
-      const settlementInput = currentSettlementInput();
-      const note = document.getElementById('checkoutNote').value.trim();
-      if (!settlementInput.move_out_date || settlementInput.start_meter_reading === null || settlementInput.end_meter_reading === null || settlementInput.deposit_deduction_amount === null || !METER_DOCUMENTS.start || !METER_DOCUMENTS.end) { document.getElementById('resultMessage').innerHTML = '<p class="error">請完成退房日、兩次電表度數與兩張現場照片。</p>'; return; }
-      if (settlementInput.end_meter_reading < settlementInput.start_meter_reading) { document.getElementById('resultMessage').innerHTML = '<p class="error">退房日電表度數不可低於 9/1 度數。</p>'; return; }
-      if (settlementInput.deposit_deduction_amount > 0 && !settlementInput.deposit_deduction_note) { document.getElementById('resultMessage').innerHTML = '<p class="error">有押金扣除時，請填寫扣除說明。</p>'; return; }
-      if (!window.confirm('確認已完成點交並辦理退房嗎？原合約內容不會被修改。')) return;
-      IS_SUBMITTING = true; document.getElementById('submitButton').disabled = true;
-      const idempotencyKey = 'checkout-' + CONTRACT_ID + '-' + randomUrlToken(12);
-      try {
-        const result = await callLandlordCheckoutApi('landlord_contract_checkout_complete', { input: Object.assign({}, settlementInput, { note, settlement_note: note, start_meter_document_id: METER_DOCUMENTS.start, end_meter_document_id: METER_DOCUMENTS.end, idempotency_key: idempotencyKey }) });
-        document.getElementById('resultMessage').innerHTML = '<p class="success">退房已完成：應補繳 ' + escapeHtml(formatMoney(result.tenant_balance_due)) + '，押金應退 ' + escapeHtml(formatMoney(result.deposit_refund_amount)) + '。原合約日期、全文、帳務與簽名紀錄均已保留。</p>';
-        setTimeout(backToDetail, 1800);
-      } catch (error) {
-        document.getElementById('resultMessage').innerHTML = '<p class="error">' + escapeHtml(error.message || '退房未完成，請重新整理後再試。') + '</p>';
-        IS_SUBMITTING = false; document.getElementById('submitButton').disabled = false;
+      {
+        if (IS_SUBMITTING || !CHECKOUT_DATA || !CHECKOUT_DATA.contract) return;
+        const settlementInput = currentSettlementInput();
+        const resultMessage = document.getElementById('resultMessage');
+        const submitButton = document.getElementById('submitButton');
+        const note = ((document.getElementById('checkoutNote') || {}).value || '').trim();
+        const settlement = SETTLEMENT_DATA && (SETTLEMENT_DATA.settlement || SETTLEMENT_DATA) || {};
+        const depositAmount = Number(settlement.deposit_amount || 0);
+        if (!settlementInput.move_out_date || settlementInput.deposit_deduction_amount === null) { resultMessage.innerHTML = '<p class="error">請完成退房日與押金欄位。</p>'; return; }
+        if (settlementInput.deposit_deduction_amount > 0 && !settlementInput.deposit_deduction_note) { resultMessage.innerHTML = '<p class="error">有押金扣除時，請填寫扣除說明。</p>'; return; }
+        if (SETTLEMENT_MODE === 'manual') {
+          if (settlementInput.manual_receivable_amount === null || settlementInput.manual_refund_amount === null) { resultMessage.innerHTML = '<p class="error">請填寫手動應收金額與實際退款金額。</p>'; return; }
+          if (settlementInput.manual_refund_amount > depositAmount) { resultMessage.innerHTML = '<p class="error">實際退款金額不可超過押金快照。</p>'; return; }
+        } else {
+          if (settlementInput.start_meter_reading === null || settlementInput.end_meter_reading === null || !METER_DOCUMENTS.start || !METER_DOCUMENTS.end) { resultMessage.innerHTML = '<p class="error">請完成退房日、兩次電表度數與兩張現場照片。</p>'; return; }
+          if (settlementInput.end_meter_reading < settlementInput.start_meter_reading) { resultMessage.innerHTML = '<p class="error">退房日電表度數不可低於 9/1 度數。</p>'; return; }
+        }
+        if (!window.confirm(SETTLEMENT_MODE === 'manual' ? '確認以手動應收金額與實際退款金額直接完成退房嗎？' : '確認已完成點交並辦理退房嗎？原合約內容不會被修改。')) return;
+        IS_SUBMITTING = true;
+        if (submitButton) { submitButton.disabled = true; submitButton.textContent = '處理中，請勿重複按'; }
+        const idempotencyKey = 'checkout-' + CONTRACT_ID + '-' + randomUrlToken(12);
+        try {
+          const payload = Object.assign({}, settlementInput, { note, settlement_note: note, idempotency_key: idempotencyKey });
+          if (SETTLEMENT_MODE === 'metered') Object.assign(payload, { start_meter_document_id: METER_DOCUMENTS.start, end_meter_document_id: METER_DOCUMENTS.end });
+          const result = await callLandlordCheckoutApi('landlord_contract_checkout_complete', { input: payload });
+          resultMessage.innerHTML = '<p class="success">退房已完成：應補繳 ' + escapeHtml(formatMoney(result.tenant_balance_due)) + '，押金應退 ' + escapeHtml(formatMoney(result.deposit_refund_amount)) + '。原合約日期、全文、帳務與簽名紀錄均已保留。</p>';
+          setTimeout(backToDetail, 1800);
+        } catch (error) {
+          resultMessage.innerHTML = '<p class="error">' + escapeHtml(error.message || '退房未完成，請重新整理後再試。') + '</p>';
+          IS_SUBMITTING = false;
+          if (submitButton) { submitButton.disabled = false; submitButton.textContent = SETTLEMENT_MODE === 'manual' ? '確認快速結案' : '確認辦理退房'; }
+        }
       }
     }
     async function loadPage() {
