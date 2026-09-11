@@ -1,5 +1,19 @@
 # V2 回歸測試矩陣
 
+## 2026-09-11 房東退房快速結案（已部署）
+
+- [x] 快速結案不要求電表讀數或照片，使用房東輸入的手動應收金額與實際退款金額完成最終結算。
+- [x] 伺服器驗證押金上限、押金扣除說明與冪等鍵；完整電表結算流程保留。
+- [x] Phase 252／253／254 通過；完整 Node suite `203/203`、Apps Script syntax、static
+  release-cache validator 與 `git diff --check` 通過。
+- [x] PR #155 merge commit `6fa0bba63f4b0a07bd72b2d2bf8dfb061869dc92` 已合併；Apps Script
+  Production Version 186 已部署至既有 Web App，Version 185 保留 rollback；必要的
+  `runV2CheckoutSettlementProductionMigration` 已在已登入 Apps Script 編輯器執行完畢。
+- [x] GitHub Pages workflow `34598441945` 成功；公開房東頁與退房頁 read-back HTTP 200，
+  新 marker、快速結案欄位與「處理中，請勿重複按」均已確認。
+- [ ] 真實房東帳號手機／Chrome／LIFF 退房操作與實際資料結果；狀態為
+  `HUMAN_REQUIRED`／`UNVERIFIED`，未執行真實退房交易。
+
 ## 2026-09-11 房東桌面版手機分享網址（已部署）
 
 - [x] 「更多功能 → 開啟桌面版」開啟分享面板，不再直接導覽。

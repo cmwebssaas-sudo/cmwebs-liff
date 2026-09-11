@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-09-04 (Asia/Taipei)**
+**Last updated: 2026-09-11 (Asia/Taipei)**
 
 ## Purpose
 
@@ -46,6 +46,25 @@ be verified for the particular action that needs it.
 | 2026-09-03 | Landlord paper-contract backfill formal deployment | User explicitly requested `正式部署`. This authorizes the clean candidate push, PR, merge, additive-only `V2_contracts` header migration, immutable Apps Script redeploy, and GitHub Pages publication for the paper-contract backfill flow. It does not authorize tenant/contract transaction creation, Drive document upload, Properties/Trigger changes, or LINE messages; rollback is to the freshly verified Version 149 and prior Pages revision. Authenticated mobile/LIFF and private Drive UAT remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-05 | Existing prepaid-rent correction and tenant-card quick renewal | User confirmed the requested correction and quick-renewal entry after prior formal-deployment requests. This authorizes the isolated source/test candidate and, after release preflight, push, merge, immutable Apps Script redeploy, and GitHub Pages publication. It does not authorize direct 202 or other business-data writes, Sheet migration, Drive upload, Properties/Trigger changes, or LINE messages; authenticated mobile/LIFF and live 202 billing state remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-11 | Landlord checkout quick closeout implementation candidate | User confirmed quick closeout: no meter photos, direct checkout completion, and landlord-entered manual receivable/refund amounts as final settlement. Isolated source, tests and documentation only on `codex/landlord-checkout-quick-closeout-20260911`; no push, merge, Apps Script deployment, Pages publication, Sheet/Drive write, or LINE action is authorized by this record. Mobile/LIFF UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
+| 2026-09-11 | Landlord checkout quick closeout formal deployment | User explicitly requested formal website deployment. PR #155 merged as `6fa0bba`; Apps Script Production Version 186 serves the existing Web App deployment and Version 185 remains rollback; the additive `runV2CheckoutSettlementProductionMigration` completed in the authenticated Apps Script editor. GitHub Pages workflow `34598441945` completed successfully. No real checkout transaction, LINE message, or tenant financial data write was run; mobile/LIFF UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
+
+## 2026-09-11 landlord checkout quick closeout formal release evidence
+
+- Candidate commit `4320ea2` was pushed through PR #155; the merge commit is
+  `6fa0bba63f4b0a07bd72b2d2bf8dfb061869dc92`. The release preserves the existing
+  Web App URL and keeps Apps Script Version 185 as the rollback target.
+- Apps Script pushed 56 source files, immutable Version 186 was created, and the
+  existing Production deployment was updated to Version 186. The additive schema
+  migration completed in the authenticated Apps Script editor; it only ensures
+  the settlement sheet and appends missing headers, without changing existing rows.
+- GitHub Pages workflow `34598441945` completed successfully. Public read-back
+  returned HTTP 200 for the release marker and landlord pages, confirming the
+  quick-closeout fields and duplicate-submit feedback are served.
+- Local evidence: complete Node suite `203/203`, Apps Script syntax, static
+  release-cache validation, and `git diff --check` passed. No real checkout,
+  payment, tenant financial-data, Drive, Properties, Trigger, or LINE operation
+  was run. Authenticated mobile／Chrome／LIFF acceptance remains
+  `HUMAN_REQUIRED`／`UNVERIFIED`.
 
 ## 2026-09-05 prepaid-rent and quick-renewal formal release evidence
 
