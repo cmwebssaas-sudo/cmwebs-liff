@@ -10,15 +10,17 @@
   押金扣除說明等欄位被遮住。
 - Phase 252／253／254 本地回歸通過；尚未推送、合併、部署或完成真實手機／LIFF UAT。
 
-## 2026-09-11 — 房東桌面版網址改為手機分享流程（本地候選）
+## 2026-09-11 — 房東桌面版網址改為手機分享流程（正式部署）
 
 - 「更多功能 → 開啟桌面版」改為先顯示分享面板，不再讓手機直接導覽；面板提供固定
   桌面 Email 登入網址、複製與手機系統分享，沒有系結 Email、OTP、LINE UID 或登入
   狀態。
 - 延續既有 `mode=email` 與安全 `return_to` 分流；手機一般 LINE 入口與 Email OTP
   登入流程不變。
-- 只改 `landlord-more.html` 與 Phase 232／250／251 回歸測試；focused tests 已通過，
-  尚未推送、合併、GitHub Pages 發布或完成真實手機／桌面驗收。
+- 只改 `landlord-more.html` 與 Phase 232／250／251 回歸測試；PR #153 merge commit
+  `a497b5a1ce9ab5741599c1a8435a1d3b01f2ef0b` 已合併，GitHub Pages workflow
+  `34584013793` 成功。公開頁與 Email mode 入口 read-back HTTP 200，真實手機／桌面
+  驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-11 — 房東開啟桌面版誤走過期 LINE 登入（本地候選）
 

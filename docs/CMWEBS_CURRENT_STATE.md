@@ -17,7 +17,7 @@ version, rollback, and runtime state before every Production action.
   本地修改與測試，尚未推送、合併、發布或進行真實手機／LIFF UAT，狀態為
   `HUMAN_REQUIRED`／`UNVERIFIED`。
 
-## 2026-09-11 房東桌面版網址改為手機分享流程（本地候選）
+## 2026-09-11 房東桌面版網址改為手機分享流程（正式部署）
 
 - 「更多功能 → 開啟桌面版」不再由手機直接跳轉；現在開啟可關閉的分享面板，顯示
   穩定的 `landlord-entry.html?mode=email&return_to=landlord-home.html` 入口，提供複製
@@ -26,8 +26,13 @@ version, rollback, and runtime state before every Production action.
 - 只改 GitHub Pages 靜態前端 `landlord-more.html` 與 Phase 232／250／251 回歸測試；
   不改 Apps Script、登入資料、Sheet、Drive、Properties、Trigger、帳務資料或 LINE
   設定。候選分支為 `codex/desktop-share-url-20260911`。
-- Focused tests 已通過；尚未推送、合併、發布或完成真實手機分享／桌面 Email 登入
-  驗收，狀態為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+- Commit `2f991b7` 已由 PR #153 合併至 `main`，merge commit 為
+  `a497b5a1ce9ab5741599c1a8435a1d3b01f2ef0b`；GitHub Pages workflow `34584013793`
+  成功完成。公開 `landlord-more.html` HTTP 200 read-back 已確認分享面板、複製／系統
+  分享按鈕與新按鈕入口存在，舊的直接跳轉 anchor 已移除；固定入口的 Email mode
+  read-back 亦為 HTTP 200。
+- 真實手機按鈕、系統分享後在電腦開啟及 Email OTP/session 驗收仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-11 房東「開啟桌面版」避免誤走過期 LINE 登入（本地候選）
 
