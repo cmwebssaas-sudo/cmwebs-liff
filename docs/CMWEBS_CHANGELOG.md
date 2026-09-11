@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-11 — 房東開啟桌面版誤走過期 LINE 登入（本地候選）
+
+- 修正「更多功能 → 開啟桌面版」在手機 LINE WebView 仍依裝置模式初始化 LINE，
+  因 access token 過期而顯示「LINE 登入已過期」的流程；連結現在明確帶入
+  `mode=email`，入口頁會在 LINE 初始化前顯示 Email OTP 登入。
+- 手機一般 LINE 入口、LINE 重新登入與既有 Email/session 驗證不變；未把任何 Email、
+  OTP、challenge、session 或 LINE UID 放入網址。
+- 只改 `landlord-more.html`、`landlord-entry.html` 與 Phase 232／250 回歸測試；未改
+  Apps Script、Sheet、Drive、Properties、Trigger、帳務資料或 LINE 設定。
+- 本地 focused tests 通過；尚未推送／合併／GitHub Pages 發布，真實手機點擊與桌面
+  Email/session 驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-10 — 房東共用腳本快取版本修正（正式部署）
 
 - 前一版後端已修正唯讀讀取路徑，但公開頁的 `landlord-auth.js`／`landlord-api.js`

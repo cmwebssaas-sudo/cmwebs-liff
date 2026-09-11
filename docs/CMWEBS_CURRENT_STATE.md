@@ -1,11 +1,26 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-10 (Asia/Taipei)**
+**Last verified: 2026-09-11 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-11 房東「開啟桌面版」避免誤走過期 LINE 登入（本地候選）
+
+- 根因是「更多功能 → 開啟桌面版」只帶 `return_to`；手機 LINE WebView 開啟後仍
+  依裝置模式先初始化 LINE，遇到過期 access token 就停在「LINE 登入已過期」，尚未
+  進入 Email OTP 桌面登入。修正後連結明確帶 `mode=email`，入口頁在 LINE 初始化前
+  直接顯示房東 Email 登入表單；一般手機入口與使用者主動按「使用 LINE 登入」的流程
+  維持不變。
+- 只改 GitHub Pages 靜態前端與回歸測試，不改 Apps Script、登入資料、Sheet、Drive、
+  Properties、Trigger、帳務或 LINE 設定。候選分支為
+  `codex/fix-desktop-entry-expired-line-20260911`。
+- Phase 232 舊網址測試已同步改為新 Email mode contract；新增 Phase 250 覆蓋連結、
+  URL mode 分流與「不得初始化過期 LINE」行為。相關 focused tests 全部通過；尚未
+  推送、合併、發布或完成真實手機／桌面 Email/session 驗收，狀態為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-10 房東共用腳本快取版本修正（正式部署）
 
