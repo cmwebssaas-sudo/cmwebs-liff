@@ -5,8 +5,8 @@ const source = readFileSync('landlord-more.html', 'utf8');
 
 assert.match(
   source,
-  /<a[^>]+id="desktopEntryButton"[^>]+href="landlord-entry\.html\?return_to=landlord-home\.html"[^>]+target="_blank"[^>]+rel="noopener"/s,
-  'landlord more page must expose a safe external desktop-entry link'
+  /<a[^>]+id="desktopEntryButton"[^>]+href="landlord-entry\.html\?mode=email&return_to=landlord-home\.html"[^>]+target="_blank"[^>]+rel="noopener"/s,
+  'landlord more page must expose a safe external desktop-entry Email link'
 );
 
 assert.match(

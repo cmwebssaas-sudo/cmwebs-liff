@@ -433,6 +433,10 @@
       URL_PARAMS.get('stay') ===
       '1';
 
+    const EMAIL_LOGIN_MODE =
+      URL_PARAMS.get('mode') ===
+      'email';
+
     const LINE_FALLBACK_INTENT_KEY =
       'cmwebs_landlord_line_fallback_intent';
 
@@ -1464,6 +1468,7 @@
       const auth =
         initAuthClient();
       const forceLineFallback =
+        !EMAIL_LOGIN_MODE &&
         hasLineFallbackIntent();
 
       document.getElementById(
@@ -1485,7 +1490,10 @@
           !TEST_MODE &&
           !forceLineFallback &&
           auth &&
-          auth.getMode() === 'email'
+          (
+            EMAIL_LOGIN_MODE ||
+            auth.getMode() === 'email'
+          )
         ) {
           const params =
             auth.getRequestAuthParams();

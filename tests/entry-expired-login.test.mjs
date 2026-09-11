@@ -19,7 +19,7 @@ function fixture(inClient=false, locationOverrides={}) {
     href:'https://example.test/cmwebs/landlord-entry.html?code=private&state=private',replace:url=>calls.push(['replace',url]),
     ...locationOverrides};
   const context=vm.createContext({
-    TEST_MODE:false,LIFF_ID:'fixture-liff',STAY_MODE:false,RETURN_TO:'landlord-home.html',LINE_USER_ID:'',
+    TEST_MODE:false,EMAIL_LOGIN_MODE:false,LIFF_ID:'fixture-liff',STAY_MODE:false,RETURN_TO:'landlord-home.html',LINE_USER_ID:'',
     safeHtml:String,URL,initAuthClient:()=>null,hasLineFallbackIntent:()=>false,
     fetchStatusJson:async()=>{calls.push(['status']);throw new Error('must not request status with expired identity');},
     resolveReturnTo:()=> 'landlord-home.html',

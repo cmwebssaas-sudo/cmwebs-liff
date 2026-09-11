@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-09-11 房東桌面入口 Email mode 分流（本地候選）
+
+- [x] 「更多功能 → 開啟桌面版」連結明確帶 `mode=email` 與安全 `return_to`。
+- [x] `landlord-entry.html` 在 Email mode 先顯示 Email OTP，不初始化手機 LINE session。
+- [x] 一般 LINE 入口與主動「使用 LINE 登入」分支維持原流程。
+- [x] Phase 232 更新、Phase 250 新增回歸測試均通過。
+- [ ] 推送、合併、GitHub Pages 發布與公開 read-back。
+- [ ] 真實手機 LINE WebView 點擊桌面版、桌面 Email OTP 登入與返回首頁；狀態為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-10 房東共用腳本快取版本修正（已部署）
 
 - [x] 房東頁面的 `frontend-release.js`、`landlord-auth.js` 與 `landlord-api.js` 使用
