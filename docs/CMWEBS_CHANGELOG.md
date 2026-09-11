@@ -2,13 +2,19 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-09-11 — 房東退房快速結案（本地候選）
+## 2026-09-11 — 房東退房快速結案（正式部署）
 
 - 退房頁新增「快速結案」模式：不要求電表讀數或照片，直接使用房東輸入的「手動應收金額」
   與「實際退款金額」作為最終結算，伺服器仍會驗證押金上限、押金扣除說明與冪等鍵。
 - 完整電表結算保留；新增結算模式切換、表單 focus 自動捲動與底部導覽安全間距，避免
   押金扣除說明等欄位被遮住。
-- Phase 252／253／254 本地回歸通過；尚未推送、合併、部署或完成真實手機／LIFF UAT。
+- Phase 252／253／254、完整 Node suite `203/203`、Apps Script syntax、static release-cache
+  validator 與 `git diff --check` 通過。PR #155 merge commit `6fa0bba` 已合併；Apps Script
+  Production Version 186 已部署至既有 Web App，Version 185 保留 rollback；必要的
+  `runV2CheckoutSettlementProductionMigration` 已在已登入 Apps Script 編輯器執行完畢。
+- GitHub Pages workflow `34598441945` 成功，公開房東頁與退房頁 read-back HTTP 200，已確認
+  快速結案欄位、新 cache marker 與「處理中，請勿重複按」。真實手機／LIFF UAT 仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`，未執行真實退房交易。
 
 ## 2026-09-11 — 房東桌面版網址改為手機分享流程（正式部署）
 

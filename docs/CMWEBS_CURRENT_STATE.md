@@ -7,15 +7,21 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-11 房東退房快速結案（本地候選）
+## 2026-09-11 房東退房快速結案（正式部署）
 
 - 新增 `settlement_mode=manual` 快速結案。房東不需填寫電表讀數或上傳照片，輸入
   `manual_receivable_amount` 與 `manual_refund_amount` 後，後端重新驗證並以兩者寫入
   `V2_checkout_settlements` 的最終應收／退款欄位；押金扣除說明仍保留稽核用途。
 - 退房表單增加快速結案／完整電表結算切換、輸入欄位自動捲動與底部導覽安全間距。
-- 候選分支為 `codex/landlord-checkout-quick-closeout-20260911`；只完成隔離 worktree
-  本地修改與測試，尚未推送、合併、發布或進行真實手機／LIFF UAT，狀態為
-  `HUMAN_REQUIRED`／`UNVERIFIED`。
+- PR #155 merge commit `6fa0bba63f4b0a07bd72b2d2bf8dfb061869dc92` 已合併；Apps Script
+  Production Version 186 已部署至既有 Web App，Version 185 保留 rollback，Web App URL
+  不變。必要的 `runV2CheckoutSettlementProductionMigration` 已在已登入 Apps Script
+  編輯器執行完畢，僅補缺少欄位，不改既有資料列。
+- GitHub Pages workflow `34598441945` 成功；公開房東頁與退房頁 read-back HTTP 200，
+  新 cache marker、快速結案欄位與防重複提交回饋均已確認。完整 Node suite `203/203`、
+  Apps Script syntax、static release-cache validator 與 `git diff --check` 通過。
+- 真實房東帳號手機／Chrome／LIFF 退房操作與實際資料結果仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`；本次未執行真實退房交易。
 
 ## 2026-09-11 房東桌面版網址改為手機分享流程（正式部署）
 
