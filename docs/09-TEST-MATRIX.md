@@ -303,6 +303,7 @@
 - [x] 房東確認續約後自動發送房客詢問；房客同意後自動建立新版簽署邀請並透過 LINE 發送，拒絕後建立 `tenant_declined` 待退房狀態；邀請與通知具冪等保護（Phase 202 runtime；Apps Script Version 147 已部署，LINE 真機／正式觸發器為 `UNVERIFIED`）
 - [x] 房東可從房客詳細資料直接進入手動退房；退房完成後清除房間、房客與檢視指向，保留原合約日期／全文／帳務／簽名資料，且不發房客 LINE（Phase 202 runtime／203 UI；Apps Script Version 147／Pages workflow `33567151637` 已部署，登入後 UAT 為 `UNVERIFIED`）
 - [x] 房東退房結算已正式部署：9/1 到退房日含當日計算、上月只帶入未繳電費／設備使用費、本期房租按日曆天數拆分、本期水電設備按電表差額計算、押金扣除／應補繳／押金應退與兩張私有電表照片（Phase 205／Phase 206／Phase 207；Apps Script Version 148、PR #92／Pages workflow `33648496168`；公開頁與正式 `V2_checkout_settlements` schema read-back 通過）
+- [x] 本地候選新增房東退房「快速結案」：不要求電表讀數／照片，以手動應收金額與實際退款金額作為最終結算，並增加表單 focus 自動捲動與底部導覽安全間距（Phase 252 runtime／Phase 253 UI／Phase 254 docs；尚未推送、合併或部署，真實手機／LIFF UAT 為 `HUMAN_REQUIRED`／`UNVERIFIED`）
 - [x] 房東可從房客名單直接建立簡易新租約：填寫房號、租金、押金、起始日與租期月數，伺服器計算含首尾日結束日並補入房間／Workspace 預設費用，後續連接房客證件上傳與簽署（Phase 208；Apps Script Version 149、PR #94／Pages workflow `33656914943`；公開頁與 Production API guard read-back 通過）
 - [x] 房東可補登已完成簽署的紙本合約：必填紙本合約檔案、身分證正反面可後補，直接建立 Workspace 內的有效／待開始租約；不建立合約申請、電子邀請、確認碼或 LINE 訊息，並以冪等鍵避免重複建檔（Phase 209；Apps Script Version 150／PR #96 已部署，Production migration read-back 通過）
 - [x] 房東可從空房的物件／房間頁或房客詳細資料進入「手動補登紙本合約」，補登頁帶入既有房客／房間資料並提供紙本專用完成畫面，不誤顯示電子邀請內容（Phase 210；本地 UI static test 通過，手機／LIFF 尚待驗證）

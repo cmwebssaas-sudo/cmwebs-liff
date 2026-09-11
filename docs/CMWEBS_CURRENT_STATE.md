@@ -7,6 +7,16 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-11 房東退房快速結案（本地候選）
+
+- 新增 `settlement_mode=manual` 快速結案。房東不需填寫電表讀數或上傳照片，輸入
+  `manual_receivable_amount` 與 `manual_refund_amount` 後，後端重新驗證並以兩者寫入
+  `V2_checkout_settlements` 的最終應收／退款欄位；押金扣除說明仍保留稽核用途。
+- 退房表單增加快速結案／完整電表結算切換、輸入欄位自動捲動與底部導覽安全間距。
+- 候選分支為 `codex/landlord-checkout-quick-closeout-20260911`；只完成隔離 worktree
+  本地修改與測試，尚未推送、合併、發布或進行真實手機／LIFF UAT，狀態為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-11 房東桌面版網址改為手機分享流程（正式部署）
 
 - 「更多功能 → 開啟桌面版」不再由手機直接跳轉；現在開啟可關閉的分享面板，顯示

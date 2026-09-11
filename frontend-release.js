@@ -3,4 +3,4 @@
  * It is intentionally stable for the lifetime of a release so page-navigation
  * URLs can reuse the browser cache without changing API cache behavior.
  */
-window.CMWEBS_RELEASE_VERSION = '20260910-landlord-read-bridge-v2';
+window.CMWEBS_RELEASE_VERSION = '20260911-landlord-checkout-quick-closeout-v1';

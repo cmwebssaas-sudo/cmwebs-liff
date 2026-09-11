@@ -28,7 +28,8 @@ const V2_CHECKOUT_SETTLEMENT_HEADERS_ = [
   'deposit_refund_amount', 'subtotal_amount', 'tenant_balance_due',
   'start_meter_document_id', 'end_meter_document_id', 'settlement_note',
   'settlement_status', 'idempotency_key', 'created_at', 'created_by_user_id',
-  'completed_at'
+  'completed_at', 'settlement_mode', 'manual_receivable_amount',
+  'manual_refund_amount', 'deposit_deduction_note'
 ];
 
 const V2_CHECKOUT_SETTLEMENT_PAID_STATUSES_ = [
@@ -50,6 +51,12 @@ function landlordContractCheckoutSettlementNumber_(value, fallback) {
 
 function landlordContractCheckoutSettlementRound_(value) {
   return Math.round(landlordContractCheckoutSettlementNumber_(value, 0));
+}
+
+function landlordContractCheckoutSettlementMode_(input) {
+  const normalized = input || {};
+  const mode = landlordContractCheckoutSettlementText_(normalized.settlement_mode || normalized.settlementMode).toLowerCase();
+  return mode === 'manual' ? 'manual' : 'metered';
 }
 
 function landlordContractCheckoutSettlementParseDate_(value) {
@@ -203,12 +210,7 @@ function landlordContractCheckoutSettlementValidateInput_(input) {
   const leaseStart = landlordContractCheckoutSettlementParseDate_(startDate);
   if (!moveOut || !leaseStart || moveOutDate < startDate) return landlordContractCheckoutSettlementError_('CHECKOUT_MOVE_OUT_DATE_INVALID', '退房日期無效或早於租約起始日');
 
-  const startMeterReading = landlordContractCheckoutSettlementNumber_(normalized.startMeterReading === undefined ? normalized.start_meter_reading : normalized.startMeterReading, NaN);
-  const endMeterReading = landlordContractCheckoutSettlementNumber_(normalized.endMeterReading === undefined ? normalized.end_meter_reading : normalized.endMeterReading, NaN);
-  if (!Number.isFinite(startMeterReading) || !Number.isFinite(endMeterReading) || startMeterReading < 0 || endMeterReading < startMeterReading) {
-    return landlordContractCheckoutSettlementError_('CHECKOUT_METER_READING_INVALID', '電表起始或結束度數無效');
-  }
-
+  const settlementMode = landlordContractCheckoutSettlementMode_(normalized);
   const depositAmount = landlordContractCheckoutSettlementRound_(contract.deposit_amount);
   const depositDeductionAmount = landlordContractCheckoutSettlementNumber_(normalized.depositDeductionAmount === undefined ? normalized.deposit_deduction_amount : normalized.depositDeductionAmount, NaN);
   if (!Number.isFinite(depositAmount) || depositAmount < 0 || !Number.isFinite(depositDeductionAmount) || depositDeductionAmount < 0 || depositDeductionAmount > depositAmount) {
@@ -216,6 +218,23 @@ function landlordContractCheckoutSettlementValidateInput_(input) {
   }
   const deductionNote = landlordContractCheckoutSettlementText_(normalized.depositDeductionNote || normalized.deposit_deduction_note);
   if (depositDeductionAmount > 0 && !deductionNote) return landlordContractCheckoutSettlementError_('CHECKOUT_DEPOSIT_DEDUCTION_NOTE_REQUIRED', '有押金扣除時必須填寫說明');
+
+  if (settlementMode === 'manual') {
+    const manualReceivableAmount = landlordContractCheckoutSettlementNumber_(normalized.manualReceivableAmount === undefined ? normalized.manual_receivable_amount : normalized.manualReceivableAmount, NaN);
+    const manualRefundAmount = landlordContractCheckoutSettlementNumber_(normalized.manualRefundAmount === undefined ? normalized.manual_refund_amount : normalized.manualRefundAmount, NaN);
+    if (!Number.isFinite(manualReceivableAmount) || manualReceivableAmount < 0 || !Number.isFinite(manualRefundAmount) || manualRefundAmount < 0) {
+      return landlordContractCheckoutSettlementError_('CHECKOUT_MANUAL_SETTLEMENT_REQUIRED', '快速結案必須填寫手動應收金額與實際退款金額');
+    }
+    if (manualRefundAmount > depositAmount) return landlordContractCheckoutSettlementError_('CHECKOUT_MANUAL_REFUND_INVALID', '實際退款金額不可超過押金');
+    return { success: true, code: 'OK' };
+  }
+
+  const startMeterReading = landlordContractCheckoutSettlementNumber_(normalized.startMeterReading === undefined ? normalized.start_meter_reading : normalized.startMeterReading, NaN);
+  const endMeterReading = landlordContractCheckoutSettlementNumber_(normalized.endMeterReading === undefined ? normalized.end_meter_reading : normalized.endMeterReading, NaN);
+  if (!Number.isFinite(startMeterReading) || !Number.isFinite(endMeterReading) || startMeterReading < 0 || endMeterReading < startMeterReading) {
+    return landlordContractCheckoutSettlementError_('CHECKOUT_METER_READING_INVALID', '電表起始或結束度數無效');
+  }
+
   return { success: true, code: 'OK' };
 }
 
@@ -242,6 +261,38 @@ function landlordContractCheckoutSettlementCalculate_(input) {
   const settlementStartDate = landlordContractCheckoutSettlementFormatDate_(new Date(Date.UTC(moveOut.getUTCFullYear(), moveOut.getUTCMonth(), 1)));
   const daysInMonth = landlordContractCheckoutSettlementDaysInMonth_(moveOutDate);
   const rentDays = moveOut.getUTCDate();
+  const depositAmount = landlordContractCheckoutSettlementRound_(contract.deposit_amount);
+  const depositDeductionAmount = landlordContractCheckoutSettlementRound_(normalized.depositDeductionAmount === undefined ? normalized.deposit_deduction_amount : normalized.depositDeductionAmount);
+  if (landlordContractCheckoutSettlementMode_(normalized) === 'manual') {
+    const manualReceivableAmount = landlordContractCheckoutSettlementRound_(normalized.manualReceivableAmount === undefined ? normalized.manual_receivable_amount : normalized.manualReceivableAmount);
+    const manualRefundAmount = landlordContractCheckoutSettlementRound_(normalized.manualRefundAmount === undefined ? normalized.manual_refund_amount : normalized.manualRefundAmount);
+    return {
+      success: true,
+      code: 'OK',
+      data: {
+        settlement_mode: 'manual',
+        settlement_start_date: settlementStartDate,
+        move_out_date: moveOutDate,
+        rent_days: rentDays,
+        days_in_month: daysInMonth,
+        rent_amount: 0,
+        start_meter_reading: 0,
+        end_meter_reading: 0,
+        electricity_usage: 0,
+        electricity_amount: 0,
+        equipment_amount: 0,
+        previous_electricity_amount: 0,
+        previous_equipment_amount: 0,
+        subtotal_amount: manualReceivableAmount,
+        deposit_amount: depositAmount,
+        deposit_deduction_amount: depositDeductionAmount,
+        deposit_refund_amount: manualRefundAmount,
+        tenant_balance_due: manualReceivableAmount,
+        manual_receivable_amount: manualReceivableAmount,
+        manual_refund_amount: manualRefundAmount
+      }
+    };
+  }
   const rentAmount = landlordContractCheckoutSettlementRound_(landlordContractCheckoutSettlementNumber_(contract.rent_amount === undefined ? contract.monthly_rent : contract.rent_amount, 0) * rentDays / daysInMonth);
   const startMeterReading = landlordContractCheckoutSettlementNumber_(normalized.startMeterReading === undefined ? normalized.start_meter_reading : normalized.startMeterReading, 0);
   const endMeterReading = landlordContractCheckoutSettlementNumber_(normalized.endMeterReading === undefined ? normalized.end_meter_reading : normalized.endMeterReading, 0);
@@ -251,8 +302,6 @@ function landlordContractCheckoutSettlementCalculate_(input) {
   const electricityAmount = landlordContractCheckoutSettlementRound_(electricityUsage * electricityFeeRate);
   const equipmentAmount = landlordContractCheckoutSettlementRound_(electricityUsage * equipmentFeeRate);
   const previousUtility = landlordContractCheckoutSettlementPreviousUtility_(normalized.previousBill, settlementStartDate);
-  const depositAmount = landlordContractCheckoutSettlementRound_(contract.deposit_amount);
-  const depositDeductionAmount = landlordContractCheckoutSettlementRound_(normalized.depositDeductionAmount === undefined ? normalized.deposit_deduction_amount : normalized.depositDeductionAmount);
   const subtotalAmount = landlordContractCheckoutSettlementRound_(previousUtility.electricity_amount + previousUtility.equipment_amount + rentAmount + electricityAmount + equipmentAmount);
   return {
     success: true,
@@ -464,11 +513,14 @@ function landlordContractCheckoutSettlementResult_(row, calculation, idempotent)
       settlement_id: landlordInitiatedContractText_(row.settlement_id),
       contract_id: landlordInitiatedContractText_(row.contract_id),
       tenant_id: landlordInitiatedContractText_(row.tenant_id),
+      settlement_mode: landlordContractCheckoutSettlementText_(row.settlement_mode || calculation.settlement_mode || 'metered'),
       settlement_status: landlordInitiatedContractText_(row.settlement_status),
       subtotal_amount: calculation.subtotal_amount,
       deposit_deduction_amount: calculation.deposit_deduction_amount,
       tenant_balance_due: calculation.tenant_balance_due,
       deposit_refund_amount: calculation.deposit_refund_amount,
+      manual_receivable_amount: landlordContractCheckoutSettlementRound_(row.manual_receivable_amount || calculation.manual_receivable_amount),
+      manual_refund_amount: landlordContractCheckoutSettlementRound_(row.manual_refund_amount || calculation.manual_refund_amount),
       idempotent: idempotent === true
     }
   };
@@ -506,9 +558,10 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
     move_out_date: moveOutDate
   });
   if (!validation.success) return validation;
+  const settlementMode = landlordContractCheckoutSettlementMode_(normalized);
   const startMeterDocumentId = landlordContractCheckoutSettlementText_(normalized.start_meter_document_id || normalized.startMeterDocumentId);
   const endMeterDocumentId = landlordContractCheckoutSettlementText_(normalized.end_meter_document_id || normalized.endMeterDocumentId);
-  if (!startMeterDocumentId || !endMeterDocumentId || !landlordContractCheckoutSettlementHasStoredDocument_(schema.data.documents, access, contract, startMeterDocumentId, 'checkout_start_meter') || !landlordContractCheckoutSettlementHasStoredDocument_(schema.data.documents, access, contract, endMeterDocumentId, 'checkout_end_meter')) return landlordContractCheckoutSettlementError_('CHECKOUT_METER_DOCUMENTS_REQUIRED', '退房時必須上傳起始與結束電表照片');
+  if (settlementMode !== 'manual' && (!startMeterDocumentId || !endMeterDocumentId || !landlordContractCheckoutSettlementHasStoredDocument_(schema.data.documents, access, contract, startMeterDocumentId, 'checkout_start_meter') || !landlordContractCheckoutSettlementHasStoredDocument_(schema.data.documents, access, contract, endMeterDocumentId, 'checkout_end_meter'))) return landlordContractCheckoutSettlementError_('CHECKOUT_METER_DOCUMENTS_REQUIRED', '退房時必須上傳起始與結束電表照片');
   const parsedMoveOut = landlordContractCheckoutSettlementParseDate_(moveOutDate);
   const settlementStartDate = landlordContractCheckoutSettlementFormatDate_(new Date(Date.UTC(parsedMoveOut.getUTCFullYear(), parsedMoveOut.getUTCMonth(), 1)));
   const rates = landlordContractCheckoutSettlementResolveRates_(SpreadsheetApp.getActiveSpreadsheet(), access, contract, room, settlementStartDate);
@@ -531,9 +584,13 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
     previous_bill_month: previousBill ? landlordContractCheckoutSettlementNormalizeMonth_(previousBill.bill_month) : '',
     electricity_fee_rate: rates.electricity_fee_rate,
     equipment_fee_rate: rates.equipment_fee_rate,
-    start_meter_document_id: startMeterDocumentId,
-    end_meter_document_id: endMeterDocumentId,
+    start_meter_document_id: settlementMode === 'manual' ? '' : startMeterDocumentId,
+    end_meter_document_id: settlementMode === 'manual' ? '' : endMeterDocumentId,
     settlement_note: landlordContractCheckoutSettlementText_(normalized.settlement_note || normalized.note),
+    settlement_mode: settlementMode,
+    manual_receivable_amount: calculation.data.manual_receivable_amount === undefined ? '' : calculation.data.manual_receivable_amount,
+    manual_refund_amount: calculation.data.manual_refund_amount === undefined ? '' : calculation.data.manual_refund_amount,
+    deposit_deduction_note: landlordContractCheckoutSettlementText_(normalized.deposit_deduction_note || normalized.depositDeductionNote),
     settlement_status: 'completed',
     idempotency_key: idempotencyKey,
     created_at: nowIso,
@@ -662,12 +719,20 @@ function landlordContractCheckoutApplyUnlocked_(access, schema, input) {
     return landlordInitiatedContractError_('CHECKOUT_ALREADY_COMPLETED', '此合約已完成退房');
   }
 
-  const hasStartMeter = normalizedInput.start_meter_reading !== undefined || normalizedInput.startMeterReading !== undefined;
-  const hasEndMeter = normalizedInput.end_meter_reading !== undefined || normalizedInput.endMeterReading !== undefined;
   const hasDepositDeduction = normalizedInput.deposit_deduction_amount !== undefined || normalizedInput.depositDeductionAmount !== undefined;
-  const hasStartDocument = landlordContractCheckoutSettlementText_(normalizedInput.start_meter_document_id || normalizedInput.startMeterDocumentId);
-  const hasEndDocument = landlordContractCheckoutSettlementText_(normalizedInput.end_meter_document_id || normalizedInput.endMeterDocumentId);
-  if (!hasStartMeter || !hasEndMeter || !hasDepositDeduction || !hasStartDocument || !hasEndDocument) return landlordInitiatedContractError_('CHECKOUT_SETTLEMENT_REQUIRED', '完成退房前必須完成結算、電表度數與兩張電表照片');
+  const settlementMode = landlordContractCheckoutSettlementMode_(normalizedInput);
+  if (!hasDepositDeduction) return landlordInitiatedContractError_('CHECKOUT_SETTLEMENT_REQUIRED', '完成退房前必須完成結算與押金欄位');
+  if (settlementMode === 'manual') {
+    const hasManualReceivable = normalizedInput.manual_receivable_amount !== undefined || normalizedInput.manualReceivableAmount !== undefined;
+    const hasManualRefund = normalizedInput.manual_refund_amount !== undefined || normalizedInput.manualRefundAmount !== undefined;
+    if (!hasManualReceivable || !hasManualRefund) return landlordInitiatedContractError_('CHECKOUT_SETTLEMENT_REQUIRED', '快速結案前必須填寫手動應收金額與實際退款金額');
+  } else {
+    const hasStartMeter = normalizedInput.start_meter_reading !== undefined || normalizedInput.startMeterReading !== undefined;
+    const hasEndMeter = normalizedInput.end_meter_reading !== undefined || normalizedInput.endMeterReading !== undefined;
+    const hasStartDocument = landlordContractCheckoutSettlementText_(normalizedInput.start_meter_document_id || normalizedInput.startMeterDocumentId);
+    const hasEndDocument = landlordContractCheckoutSettlementText_(normalizedInput.end_meter_document_id || normalizedInput.endMeterDocumentId);
+    if (!hasStartMeter || !hasEndMeter || !hasStartDocument || !hasEndDocument) return landlordInitiatedContractError_('CHECKOUT_SETTLEMENT_REQUIRED', '完成退房前必須完成結算、電表度數與兩張電表照片');
+  }
 
   const settlement = landlordContractCheckoutSettlementApplyUnlocked_(access, schema, normalizedInput);
   if (!settlement.success) return settlement.code === 'CHECKOUT_METER_DOCUMENTS_REQUIRED' ? landlordInitiatedContractError_('CHECKOUT_SETTLEMENT_REQUIRED', '完成退房前必須完成結算、電表度數與兩張電表照片') : settlement;
@@ -729,10 +794,13 @@ function landlordContractCheckoutResult_(access, contract, idempotent, settlemen
   };
   if (settlement) {
     data.settlement_id = landlordInitiatedContractText_(settlement.settlement_id);
+    data.settlement_mode = landlordInitiatedContractText_(settlement.settlement_mode || 'metered');
     data.subtotal_amount = landlordContractCheckoutSettlementRound_(settlement.subtotal_amount);
     data.deposit_deduction_amount = landlordContractCheckoutSettlementRound_(settlement.deposit_deduction_amount);
     data.tenant_balance_due = landlordContractCheckoutSettlementRound_(settlement.tenant_balance_due);
     data.deposit_refund_amount = landlordContractCheckoutSettlementRound_(settlement.deposit_refund_amount);
+    data.manual_receivable_amount = landlordContractCheckoutSettlementRound_(settlement.manual_receivable_amount);
+    data.manual_refund_amount = landlordContractCheckoutSettlementRound_(settlement.manual_refund_amount);
   }
   return {
     success: true,

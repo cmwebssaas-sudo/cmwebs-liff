@@ -214,6 +214,23 @@ request_id
   leaves the two-month deposit, metered, and other charges intact, and
   synchronizes the same snapshot to `V2_tenant_bill_view`.
 
+### `V2_checkout_settlements` 退房結算快照
+
+退房結算仍採 append-only 快照。既有完整電表結算保留原規則；房東也可在
+退房頁選擇 `settlement_mode=manual` 快速結案。快速結案不要求電表讀數或照片，
+並以房東輸入的兩個最終金額為準：
+
+| Header | Meaning |
+|---|---|
+| `settlement_mode` | `metered` 或 `manual`；缺省既有資料視為 `metered` |
+| `manual_receivable_amount` | 快速結案時房東確認的最終手動應收金額 |
+| `manual_refund_amount` | 快速結案時房東確認的實際退款金額；不得超過押金快照 |
+| `deposit_deduction_note` | 押金扣除說明；押金扣除大於 0 時必填 |
+
+快速結案會同步寫入既有 `subtotal_amount`、`tenant_balance_due` 與
+`deposit_refund_amount`，分別等於手動應收金額與實際退款金額（押金扣除欄位仍
+保留為稽核說明）。上述欄位均以 migration 方式追加，不重排或刪除既有欄位。
+
 ## 主鍵原則
 
 - `workspace_id`：多租戶邊界
