@@ -7,7 +7,7 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-12 房東退房鍵盤遮罩修正候選（尚未部署）
+## 2026-09-12 房東退房鍵盤遮罩修正（正式部署）
 
 - IMG_4797.MP4 顯示 iOS 鍵盤開啟後，退房表單的押金扣除說明及其下方欄位
   留在不可視區；這不是退房確認視窗，也不是帳務／資料寫入錯誤。
@@ -17,10 +17,12 @@ version, rollback, and runtime state before every Production action.
 - Phase 255 更新、Phase 256、新增鍵盤回歸測試、完整 Node suite 205/205、
   inline JavaScript syntax、npm run validate、static release-cache validator
   與 git diff --check 通過。
-- 候選 branch 為 codex/checkout-table-overlay-20260912，目前只修改退房 HTML、
-  前端回歸測試與本地文件；沒有 Apps Script／Sheet／Drive／帳務／登入變更，
-  也尚未 push、merge 或部署 GitHub Pages。
-- 真實 iPhone／LINE LIFF 操作仍為 HUMAN_REQUIRED／UNVERIFIED，需部署後由房東
+- PR #159 已合併至 `main`，merge commit `5d8eeb97dc5f8d505e355b75f28913fd36aecba1`；
+  GitHub Pages workflow `34697177348` 成功，公開退房頁 HTTP 200 read-back 已確認
+  `visualViewport`、多階段焦點欄位校正與 `scrollIntoView({ behavior: 'auto', block: 'nearest' })`
+  已發布。GitHub Pages rollback target 為前一個已驗證提交 `fb80e0de398f2a910d927be3713049b2aa311232`。
+- 本次只修改退房 HTML、前端回歸測試與文件；沒有 Apps Script／Sheet／Drive／帳務／登入變更。
+- 真實 iPhone／LINE LIFF 操作仍為 HUMAN_REQUIRED／UNVERIFIED，需由房東
   實機確認每個退房欄位均可輸入、鍵盤不遮住欄位且完整流程仍可送出。
 
 ## 2026-09-12 房東退房欄位遮罩修正（正式部署）
