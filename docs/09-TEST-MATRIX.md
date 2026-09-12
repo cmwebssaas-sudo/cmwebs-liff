@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-09-12 房東退房鍵盤遮罩修正（本地候選，尚未部署）
+
+- [x] 鍵盤開啟時退房頁收起不必要的底部安全間距，並以 visualViewport 可視範圍重新校正目前焦點欄位。
+- [x] 手動退房的押金扣除說明、點交備註與完整電表欄位沿用同一套焦點可視化處理。
+- [x] Phase 255 更新／Phase 256 通過；完整 Node suite 205/205、Apps Script syntax、
+  inline JavaScript syntax、npm run validate、static release-cache validator 與
+  git diff --check 通過。
+- [ ] GitHub push、merge 與正式 Pages 部署尚未執行；真實 iPhone／LINE LIFF 欄位操作為
+  HUMAN_REQUIRED／UNVERIFIED。
+
 ## 2026-09-11 房東退房快速結案（已部署）
 
 - [x] 快速結案不要求電表讀數或照片，使用房東輸入的手動應收金額與實際退款金額完成最終結算。

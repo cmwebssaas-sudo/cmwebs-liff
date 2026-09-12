@@ -14,6 +14,7 @@
     .app-shell { position: relative; width: 100%; max-width: 560px; height: var(--app-height); margin: 0 auto; overflow: hidden; background: var(--page-bg); }
     .page { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: max(16px, env(safe-area-inset-top)) 16px calc(var(--nav-height) + 112px + env(safe-area-inset-bottom)); scroll-padding-bottom: calc(var(--nav-height) + 112px + env(safe-area-inset-bottom)); }
     .checkout-shell .page { padding-bottom: calc(32px + env(safe-area-inset-bottom)); scroll-padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+    .checkout-shell.keyboard-open .page { padding-bottom: max(24px, env(safe-area-inset-bottom)); scroll-padding-bottom: max(24px, env(safe-area-inset-bottom)); }
     .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
     .back-button { width: 42px; height: 42px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); color: #606773; font-size: 21px; cursor: pointer; }
     .topbar-title { min-width: 0; flex: 1; font-size: 19px; font-weight: 900; }
@@ -75,19 +76,72 @@
     let IS_SUBMITTING = false;
     let PREVIEW_SEQUENCE = 0;
     let SETTLEMENT_MODE = 'manual';
+    let ACTIVE_CHECKOUT_FIELD = null;
+    let CHECKOUT_FIELD_REVEAL_TIMERS = [];
 
     function rawText(value) { return value === undefined || value === null ? '' : String(value); }
     function escapeHtml(value) { return rawText(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
     function randomUrlToken(bytes) { const value = new Uint8Array(bytes); crypto.getRandomValues(value); return btoa(String.fromCharCode.apply(null, value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, ''); }
-    function setAppHeight() { const height = window.visualViewport ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty('--app-height', Math.max(320, Math.round(height)) + 'px'); }
-    setAppHeight(); window.addEventListener('resize', setAppHeight); if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+    function setAppHeight() {
+      const height = window.visualViewport && window.visualViewport.height ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', Math.max(1, Math.round(height)) + 'px');
+    }
+    function syncCheckoutKeyboardState() {
+      const viewport = window.visualViewport;
+      const visibleHeight = viewport && viewport.height ? viewport.height : window.innerHeight;
+      const layoutHeight = window.innerHeight;
+      const keyboardThreshold = Math.max(120, Math.round(layoutHeight * 0.18));
+      const keyboardOpen = Boolean(viewport && visibleHeight < layoutHeight - keyboardThreshold);
+      const appShell = document.querySelector('.checkout-shell');
+      if (appShell) appShell.classList.toggle('keyboard-open', keyboardOpen);
+      setAppHeight();
+      if (keyboardOpen && ACTIVE_CHECKOUT_FIELD) {
+        window.requestAnimationFrame(function() { revealCheckoutField(ACTIVE_CHECKOUT_FIELD); });
+      }
+    }
+    function revealCheckoutField(field) {
+      if (!field || !field.isConnected) return;
+      const page = field.closest && field.closest('.page');
+      if (!page) return;
+      const viewport = window.visualViewport;
+      const viewportTop = viewport && Number.isFinite(viewport.offsetTop) ? viewport.offsetTop : 0;
+      const viewportHeight = viewport && viewport.height ? viewport.height : window.innerHeight;
+      const margin = Math.max(12, Math.min(28, Math.round(viewportHeight * 0.06)));
+      const rect = field.getBoundingClientRect();
+      const visibleTop = viewportTop + margin;
+      const visibleBottom = viewportTop + viewportHeight - margin;
+      let delta = 0;
+      if (rect.bottom > visibleBottom) delta = rect.bottom - visibleBottom;
+      else if (rect.top < visibleTop) delta = rect.top - visibleTop;
+      if (delta) page.scrollTop += delta;
+      if (typeof field.scrollIntoView === 'function') field.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+    }
+    function scheduleCheckoutFieldReveal(field) {
+      CHECKOUT_FIELD_REVEAL_TIMERS.forEach(function(timer) { window.clearTimeout(timer); });
+      CHECKOUT_FIELD_REVEAL_TIMERS = [];
+      ACTIVE_CHECKOUT_FIELD = field;
+      [0, 120, 280, 480].forEach(function(delay) {
+        CHECKOUT_FIELD_REVEAL_TIMERS.push(window.setTimeout(function() {
+          if (ACTIVE_CHECKOUT_FIELD === field && document.activeElement === field) revealCheckoutField(field);
+        }, delay));
+      });
+    }
+    setAppHeight();
+    window.addEventListener('resize', syncCheckoutKeyboardState);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncCheckoutKeyboardState);
+      window.visualViewport.addEventListener('scroll', syncCheckoutKeyboardState);
+    }
     document.addEventListener('focusin', function(event) {
       if (!event.target || !event.target.matches || !event.target.matches('input, textarea, select')) return;
-      const target = event.target;
+      scheduleCheckoutFieldReveal(event.target);
+      syncCheckoutKeyboardState();
+    });
+    document.addEventListener('focusout', function(event) {
+      if (ACTIVE_CHECKOUT_FIELD !== event.target) return;
       window.setTimeout(function() {
-        if (!target.isConnected) return;
-        target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      }, 120);
+        if (document.activeElement !== event.target) ACTIVE_CHECKOUT_FIELD = null;
+      }, 250);
     });
     function backToDetail() {
       const params = new URLSearchParams();
