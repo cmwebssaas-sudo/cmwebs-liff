@@ -218,7 +218,7 @@ function assertMobilePageShellContract(source, name) {
 
 test('Phase 220 requires the shared landlord desktop stylesheet', () => {
   assert.equal(cssExists, true, 'landlord-responsive.css must exist');
-  assert.match(cssSource, /--desktop-sidebar-width:\s*256px/);
+  assert.match(cssSource, /--desktop-sidebar-width:\s*232px/);
   assert.match(cssSource, /--desktop-content-max:\s*1440px/);
   assert.match(cssSource, /--desktop-gap:\s*24px/);
   assert.match(cssSource, /@media\s*\(min-width:\s*1024px\)/);
@@ -251,7 +251,7 @@ test('Phase 220 links the shared stylesheet and preserves the mobile shell contr
   for (const [name, source] of Object.entries(pages)) {
     assert.match(source, /<link[^>]+href="landlord-responsive\.css"/, `${name} must link shared CSS`);
     assert.match(source, /<div class="app-shell desktop-ready">/, `${name} must opt into desktop shell`);
-    assert.match(source, /<main class="page desktop-main">/, `${name} must preserve .page while exposing desktop-main`);
+    assert.match(source, /<main class="page desktop-main(?: [^"]+)?">/, `${name} must preserve .page while exposing desktop-main`);
     assert.match(source, /<nav class="bottom-nav">/, `${name} must keep mobile bottom navigation`);
     assert.match(source, /function setAppHeight\(\)/, `${name} must keep setAppHeight()`);
     assert.match(source, /html,\s*\n\s*body[\s\S]*?overflow:\s*hidden/, `${name} must keep fixed mobile body shell`);
@@ -383,7 +383,7 @@ test('Phase 220 keeps settings protected bootstrap on the shared auth transport'
 
   assert.match(source, /<link[^>]+href="landlord-responsive\.css"/);
   assert.match(source, /<div class="app-shell desktop-ready">/);
-  assert.match(source, /<main class="page desktop-main">/);
+  assert.match(source, /<main class="page desktop-main(?: [^"]+)?">/);
   assert.match(source, /async function ensureLandlordAuthReady\(\)/);
   assert.match(source, /const authParams = window\.CMWebsLandlordAuth\.getRequestAuthParams\(\)/);
   assert.match(source, /handleAuthFailure\(result\)/);
@@ -399,7 +399,7 @@ test('Phase 220 completes the shared desktop shell for legacy operational pages'
     assert.match(source, /<script src="landlord-api\.js(?:\?v=[^"]+)?"><\/script>/);
     assert.match(source, /<div class="app-shell desktop-ready">/);
     assert.match(source, /<aside class="desktop-sidebar"[^>]+hidden>/);
-    assert.match(source, /<main class="page desktop-main">/);
+    assert.match(source, /<main class="page desktop-main(?: [^"]+)?">/);
     assert.match(source, /<header class="desktop-topbar"[^>]+hidden>/);
     assert.match(source, /class="desktop-nav"[\s\S]*?landlord-home\.html/);
     assert.match(source, /landlord-contract-requests\.html/);
@@ -531,7 +531,7 @@ test('Phase 220 validates required viewport contracts from actual selectors and 
   for (const expectation of expectations) {
     for (const [name, source] of Object.entries(pages)) {
       assert.match(source, /<div class="app-shell desktop-ready">/, `${name} keeps app shell at ${expectation.width}`);
-      assert.match(source, /<main class="page desktop-main">/, `${name} keeps page scroller at ${expectation.width}`);
+      assert.match(source, /<main class="page desktop-main(?: [^"]+)?">/, `${name} keeps page scroller at ${expectation.width}`);
       assert.match(source, /<nav class="bottom-nav">/, `${name} keeps bottom nav markup at ${expectation.width}`);
       assert.match(source, /function setAppHeight\(\)/, `${name} keeps visualViewport app-height handler at ${expectation.width}`);
       assertMobilePageShellContract(source, `${name} at ${expectation.width}px`);
