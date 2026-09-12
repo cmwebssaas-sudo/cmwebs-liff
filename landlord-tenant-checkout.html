@@ -13,6 +13,7 @@
     button, input, textarea { font: inherit; }
     .app-shell { position: relative; width: 100%; max-width: 560px; height: var(--app-height); margin: 0 auto; overflow: hidden; background: var(--page-bg); }
     .page { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: max(16px, env(safe-area-inset-top)) 16px calc(var(--nav-height) + 112px + env(safe-area-inset-bottom)); scroll-padding-bottom: calc(var(--nav-height) + 112px + env(safe-area-inset-bottom)); }
+    .checkout-shell .page { padding-bottom: calc(32px + env(safe-area-inset-bottom)); scroll-padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
     .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
     .back-button { width: 42px; height: 42px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); color: #606773; font-size: 21px; cursor: pointer; }
     .topbar-title { min-width: 0; flex: 1; font-size: 19px; font-weight: 900; }
@@ -51,13 +52,14 @@
     .error { color: var(--danger); line-height: 1.65; }
     .success { color: var(--primary-dark); line-height: 1.65; }
     .bottom-nav { position: absolute; right: 0; bottom: 0; left: 0; z-index: 10; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--border); background: rgba(255,255,255,.96); }
+    .checkout-shell .bottom-nav { display: none !important; }
     .bottom-nav-inner { display: flex; height: var(--nav-height); align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <main class="page" id="app"><section class="card">載入退房資料中…</section></main>
-    <nav class="bottom-nav"><div class="bottom-nav-inner">CMWebs 房東營運</div></nav>
+  <div class="app-shell checkout-shell">
+    <main class="page checkout-page" id="app"><section class="card">載入退房資料中…</section></main>
+    <nav class="bottom-nav" aria-hidden="true"><div class="bottom-nav-inner">CMWebs 房東營運</div></nav>
   </div>
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
@@ -81,7 +83,11 @@
     setAppHeight(); window.addEventListener('resize', setAppHeight); if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
     document.addEventListener('focusin', function(event) {
       if (!event.target || !event.target.matches || !event.target.matches('input, textarea, select')) return;
-      window.setTimeout(function() { event.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 120);
+      const target = event.target;
+      window.setTimeout(function() {
+        if (!target.isConnected) return;
+        target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }, 120);
     });
     function backToDetail() {
       const params = new URLSearchParams();

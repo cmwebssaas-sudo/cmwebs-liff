@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-12 — 房東退房欄位遮罩修正（本地候選）
+
+- 根因為退房頁沿用固定底部營運列；在手機鍵盤開啟或捲動到表單下方時，固定列會蓋住
+  「押金扣除說明」、「點交備註」與結案按鈕，並攔截欄位觸控。
+- 退房專用 shell 現在隱藏不提供導覽功能的底部列，縮減表單底部多餘安全間距；欄位
+  focus 仍會自動捲到可視區中央，並保留 `inline: nearest` 的橫向定位。
+- 只修改 `landlord-tenant-checkout.html` 與新增 Phase 255 UI 回歸測試；不改 Apps Script、
+  Sheet、Drive、帳務資料、登入或退房結算規則。Phase 253／255、完整 Node suite `204/204`、
+  Apps Script syntax、static release-cache validator 與 `git diff --check` 通過。
+- 候選分支為 `codex/checkout-fields-overlay-20260912`，尚未推送、合併或發布；正式網站仍是
+  既有版本，真實手機／LIFF 驗收為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-11 — 房東退房快速結案（正式部署）
 
 - 退房頁新增「快速結案」模式：不要求電表讀數或照片，直接使用房東輸入的「手動應收金額」

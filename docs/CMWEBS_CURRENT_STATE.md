@@ -1,11 +1,23 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-11 (Asia/Taipei)**
+**Last verified: 2026-09-12 (Asia/Taipei)**
 
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
+
+## 2026-09-12 房東退房欄位遮罩修正（本地候選）
+
+- 根因是退房頁的固定底部營運列在鍵盤開啟或表單捲動時覆蓋下方欄位，導致押金扣除說明、
+  點交備註與結案按鈕無法正常點擊；既有欄位資料與快速結案結算規則不變。
+- `landlord-tenant-checkout.html` 改用退房專用 shell：隱藏不提供操作的固定底部列、使用較小
+  的表單底部安全間距，並將聚焦欄位以 `inline: nearest` 捲至可視區中央。
+- Phase 255 UI 回歸、Phase 253、完整 Node suite `204/204`、Apps Script syntax、static
+  release-cache validator 與 `git diff --check` 通過。只涉及靜態前端，沒有 Apps Script／Sheet／
+  Drive／帳務或登入變更。
+- 候選分支 `codex/checkout-fields-overlay-20260912` 尚未推送、合併或部署；Production 仍為
+  2026-09-11 快速結案版本。真實手機／LIFF 欄位操作仍是 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-11 房東退房快速結案（正式部署）
 
