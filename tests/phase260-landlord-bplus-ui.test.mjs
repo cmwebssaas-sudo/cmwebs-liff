@@ -72,3 +72,27 @@ test('B+ desktop changes stay inside the desktop media boundary', () => {
   assert.match(desktopCss, /min-height:\s*44px/);
   assert.doesNotMatch(mobileCss, /\.desktop-overview/);
 });
+
+test('B+ desktop sidebar controls use layered shadows for clear interaction feedback', () => {
+  const desktopCss = desktopCssSource();
+
+  assert.match(css, /--desktop-nav-shadow:\s*0 2px 8px rgba\(37,\s*48,\s*44,\s*0\.08\)/);
+  assert.match(css, /--desktop-nav-shadow-hover:\s*0 6px 14px rgba\(15,\s*118,\s*110,\s*0\.14\)/);
+  assert.match(css, /--desktop-nav-shadow-active:\s*0 3px 8px rgba\(15,\s*118,\s*110,\s*0\.18\)/);
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow\)/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item:hover\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow-hover\)/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item\.active\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow-active\)/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-logout-button\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow\)/
+  );
+});

@@ -9,6 +9,9 @@
   --desktop-accent: #0f766e;
   --desktop-accent-soft: #e8f5f1;
   --desktop-focus-ring: #0f766e;
+  --desktop-nav-shadow: 0 2px 8px rgba(37, 48, 44, 0.08);
+  --desktop-nav-shadow-hover: 0 6px 14px rgba(15, 118, 110, 0.14);
+  --desktop-nav-shadow-active: 0 3px 8px rgba(15, 118, 110, 0.18);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -107,14 +110,16 @@
     align-items: center;
     gap: 12px;
     padding: 0 12px;
-    border: 1px solid transparent;
+    border: 1px solid var(--desktop-sidebar-border);
     border-radius: 12px;
-    background: transparent;
+    background: #ffffff;
     color: var(--desktop-sidebar-muted);
     font-size: 16px;
     font-weight: 800;
     text-align: left;
     cursor: pointer;
+    box-shadow: var(--desktop-nav-shadow);
+    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
   }
 
   .desktop-nav-item svg {
@@ -128,11 +133,22 @@
     stroke-width: 1.9;
   }
 
-  .desktop-nav-item:hover,
+  .desktop-nav-item:hover {
+    border-color: #c4e1d8;
+    background: #ffffff;
+    color: var(--desktop-accent);
+    box-shadow: var(--desktop-nav-shadow-hover);
+  }
+
+  .desktop-nav-item:active {
+    box-shadow: var(--desktop-nav-shadow-active);
+  }
+
   .desktop-nav-item.active {
-    border-color: transparent;
+    border-color: #b8ddcf;
     background: var(--desktop-accent-soft);
     color: var(--desktop-accent);
+    box-shadow: var(--desktop-nav-shadow-active);
   }
 
   .desktop-sidebar-footer {
@@ -173,13 +189,20 @@
     font-size: 16px;
     font-weight: 900;
     cursor: pointer;
-    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, transform 180ms ease;
+    box-shadow: var(--desktop-nav-shadow);
+    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
   }
 
   .desktop-logout-button:hover {
     border-color: #b7ddd1;
     background: var(--desktop-accent-soft);
+    box-shadow: var(--desktop-nav-shadow-hover);
     transform: translateY(-1px);
+  }
+
+  .desktop-logout-button:active {
+    box-shadow: var(--desktop-nav-shadow-active);
+    transform: translateY(0);
   }
 
   .desktop-main {
