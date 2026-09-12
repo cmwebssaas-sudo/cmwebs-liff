@@ -125,6 +125,12 @@ function makeRuntime(options = {}) {
           data: sessionClaims
         }
       : { success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' },
+    resolveLandlordContractSigningReviewSession_: () => state.sessionValid
+      ? {
+          success: true,
+          data: sessionClaims
+        }
+      : { success: false, code: 'LANDLORD_REVIEW_SESSION_INVALID' },
     landlordContractSigningReviewSessionSecret_: () => 'review-exchange-secret',
     landlordContractSigningReviewHmacHex_: (value, key) => crypto.createHmac('sha256', String(key)).update(String(value)).digest('hex'),
     landlordContractSigningReviewConstantEquals_: (left, right) => String(left) === String(right),

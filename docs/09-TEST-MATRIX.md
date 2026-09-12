@@ -1,5 +1,12 @@
 # V2 回歸測試矩陣
 
+## 2026-09-13 桌面房客詳細／合約 Email 唯讀 session 修正（本地待部署）
+
+- [x] 房客詳細頁載入共用桌面 responsive shell，桌面寬度顯示側欄與桌面主內容，不再以手機底部導覽殼層呈現。
+- [x] 原生簽署審核與房東發起合約的唯讀初始化改用共用 session resolver；有效 Email session 可讀取，合約寫入仍不接受 Email fallback。
+- [x] 新增 Phase 259 靜態／runtime 回歸測試；Phase 140、157、258 與 Phase 259 通過，`git diff --check` 通過。
+- [ ] `npm run validate`、完整 suite、GitHub Pages 部署與正式桌面／Email 真實點擊驗收；目前為 `UNVERIFIED`，尚未宣稱 Production 已修復。
+
 ## 2026-09-13 房東桌面 Email 詳細／合約讀取路由修正（已部署）
 
 - [x] 房客詳細與帳款頁改由共用 `landlord-auth.js`／`landlord-api.js` 啟動；桌面 Email session
