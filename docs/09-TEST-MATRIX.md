@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-09-13 房東桌面 Email 詳細／合約讀取路由修正（本地候選）
+## 2026-09-13 房東桌面 Email 詳細／合約讀取路由修正（已部署）
 
 - [x] 房客詳細與帳款頁改由共用 `landlord-auth.js`／`landlord-api.js` 啟動；桌面 Email session
   會走已驗證的 hidden POST bridge，不再把受保護讀取誤送到 LINE LIFF。
@@ -8,7 +8,9 @@
   仍對尚未支援的寫入操作保留 `DESKTOP_EMAIL_UNSUPPORTED` fail-closed 行為。
 - [x] 新增 Phase 258 回歸測試；完整 Node suite `207/207`、`npm run validate`、static
   release-cache validator、`node --check` 與 `git diff --check` 通過。
-- [ ] 推送、合併、GitHub Pages 發布與已登入 Chrome 實際點擊驗收；目前狀態為
+- [x] 已合併至 `main`，merge commit `2b39136c016ee1592536c70f4ad69f41683fee6a`；GitHub Pages
+  workflow `34706637008` 成功，公開房客詳細、帳款與合約頁 read-back 已確認新程式已發布。
+- [ ] 已登入 Chrome 實際點擊房客詳細、帳款查看房客與合約清單；狀態仍為
   `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-12 房東退房欄位 iOS 自動放大修正（已部署）
