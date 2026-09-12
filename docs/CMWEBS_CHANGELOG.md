@@ -2,6 +2,14 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-13 — 桌面房客詳細／合約 Email 唯讀 session 修正（本地待部署）
+
+- 修正房客詳細頁缺少共用桌面 responsive shell，桌面版不再錯誤呈現手機版窄欄與底部導覽。
+- 修正合約頁將桌面 Email session token 直接交給原生 LINE review verifier，造成
+  `LANDLORD_REVIEW_SESSION_INVALID`；唯讀清單現在由獨立 resolver 驗證 Email session，非唯讀政策不會 fallback。
+- 未修改登入、帳號、訂閱、Sheet schema、帳務資料或任何正式部署；Phase 259 與受影響回歸測試已在隔離分支通過。
+- 本修正尚未合併、推送或部署，正式 Chrome／Email／LINE 驗收仍為 `UNVERIFIED`。
+
 ## 2026-09-13 — 房東桌面 Email 詳細／合約讀取路由修正（正式部署）
 
 - 修正桌面版房客詳細與帳款讀取仍沿用 LINE-only 初始化，導致 Chrome 被送往 LINE OAuth

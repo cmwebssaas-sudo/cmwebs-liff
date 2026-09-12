@@ -262,10 +262,10 @@ function updateLandlordContractSigningReviewByLineUid_() {
 }
 
 function tenantContractSigningReviewAccessFromSession_(sessionToken, policy) {
-  if (typeof verifyLandlordContractSigningReviewSessionToken_ !== 'function') {
+  if (typeof resolveLandlordContractSigningReviewSession_ !== 'function') {
     return tenantContractSigningReviewError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED');
   }
-  const session = verifyLandlordContractSigningReviewSessionToken_(sessionToken);
+  const session = resolveLandlordContractSigningReviewSession_(sessionToken, policy);
   if (!session || session.success !== true || !session.data) {
     return tenantContractSigningReviewError_((session && session.code) || 'LANDLORD_REVIEW_SESSION_INVALID');
   }

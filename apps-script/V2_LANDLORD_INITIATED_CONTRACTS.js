@@ -1220,8 +1220,8 @@ function landlordInitiatedContractExchangeSecret_() {
 function landlordInitiatedContractHmacHex_(value, key) { return Utilities.computeHmacSha256Signature(String(value), String(key)).map(function (byte) { return ('0' + (byte < 0 ? byte + 256 : byte).toString(16)).slice(-2); }).join(''); }
 
 function landlordInitiatedContractAccessFromSession_(sessionToken, policy) {
-  if (typeof verifyLandlordContractSigningReviewSessionToken_ !== 'function') return landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED', '找不到房東 session 模組');
-  const session = verifyLandlordContractSigningReviewSessionToken_(sessionToken);
+  if (typeof resolveLandlordContractSigningReviewSession_ !== 'function') return landlordInitiatedContractError_('LANDLORD_REVIEW_SESSION_MODULE_REQUIRED', '找不到房東 session 模組');
+  const session = resolveLandlordContractSigningReviewSession_(sessionToken, policy);
   if (!session || session.success !== true || !session.data) return landlordInitiatedContractError_((session && session.code) || 'LANDLORD_REVIEW_SESSION_INVALID', '房東 session 無效');
   if (typeof workspaceLandlordResolveAccess_ !== 'function' || typeof workspaceLandlordCheckPolicy_ !== 'function') return landlordInitiatedContractError_('WORKSPACE_ACCESS_MODULE_REQUIRED', '找不到 Workspace 權限模組');
   const access = workspaceLandlordResolveAccess_(session.data.line_sub, { skip_schema_ensure: true, skip_legacy_context_creation: true });

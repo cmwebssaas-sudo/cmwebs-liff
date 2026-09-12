@@ -141,6 +141,90 @@ function verifyLandlordContractSigningReviewSessionToken_(token) {
   return { success: true, code: 'OK', data: claims };
 }
 
+function resolveLandlordContractSigningReviewSession_(token, policy) {
+  const nativeSession =
+    verifyLandlordContractSigningReviewSessionToken_(token);
+  if (
+    nativeSession &&
+    nativeSession.success === true &&
+    nativeSession.data
+  ) {
+    return nativeSession;
+  }
+
+  // Desktop Email login may read contract lists, but it must never be
+  // promoted into the native LINE signing-review write flow.
+  if (
+    String(policy || '').trim().toLowerCase() !== 'read' ||
+    typeof landlordEmailAuthResolveSession_ !== 'function'
+  ) {
+    return nativeSession;
+  }
+
+  const emailSession = landlordEmailAuthResolveSession_(
+    token,
+    '',
+    false,
+    { require_onboarding: true }
+  );
+  if (
+    !emailSession ||
+    emailSession.success !== true ||
+    !emailSession.data
+  ) {
+    return nativeSession;
+  }
+
+  const data = emailSession.data || {};
+  const user = data.user || {};
+  const membership = data.membership || {};
+  const lineSub = String(
+    user.line_user_id ||
+    membership.line_user_id ||
+    ''
+  ).trim();
+  const userId = String(
+    data.user_id ||
+    user.user_id ||
+    ''
+  ).trim();
+  const workspaceId = String(
+    data.workspace_id ||
+    (data.workspace && data.workspace.workspace_id) ||
+    ''
+  ).trim();
+  const membershipId = String(
+    membership.membership_id ||
+    ''
+  ).trim();
+
+  if (!lineSub || !userId || !workspaceId || !membershipId) {
+    return landlordContractSigningReviewSessionError_(
+      'LANDLORD_REVIEW_SESSION_PRINCIPAL_INVALID'
+    );
+  }
+
+  return {
+    success: true,
+    code: 'OK',
+    data: {
+      version: 1,
+      purpose: V2_LANDLORD_SIGNING_REVIEW_AUTH_PURPOSE_,
+      source: 'email_session',
+      line_sub: lineSub,
+      user_id: userId,
+      membership_id: membershipId,
+      workspace_id: workspaceId,
+      issued_at: Math.floor(
+        new Date(data.session && data.session.issued_at || 0).getTime() / 1000
+      ) || 0,
+      expires_at: Math.floor(
+        new Date(data.session && data.session.expires_at || 0).getTime() / 1000
+      ) || 0
+    }
+  };
+}
+
 function landlordContractSigningReviewSessionSecret_() {
   const secret = PropertiesService.getScriptProperties().getProperty('CMWEBS_LIFF_SESSION_HMAC_SECRET');
   if (!secret) throw new Error('CMWEBS_LIFF_SESSION_HMAC_SECRET is not configured');
