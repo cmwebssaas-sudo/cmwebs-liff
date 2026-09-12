@@ -1,5 +1,13 @@
 # V2 回歸測試矩陣
 
+## 2026-09-12 房東退房欄位 iOS 自動放大修正（本地候選，未部署）
+
+- [x] 退房頁 `input`／`textarea`／`select` 明確使用 `16px`，避免 iOS 聚焦時自動放大並讓欄位跳離視窗。
+- [x] 檔案欄位不再使用小於 `16px` 的字級；原有 `visualViewport` 鍵盤避讓與焦點捲動邏輯保留。
+- [x] Phase 257 通過；完整 Node suite `206/206`、`npm run validate` 與 `git diff --check` 通過。
+- [ ] 候選分支 `codex/checkout-input-zoom-20260912` 尚未推送、合併或部署。
+- [ ] 真實 iPhone／LINE LIFF 欄位操作；狀態為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-12 房東退房鍵盤遮罩修正（已部署）
 
 - [x] 鍵盤開啟時退房頁收起不必要的底部安全間距，並以 visualViewport 可視範圍重新校正目前焦點欄位。
