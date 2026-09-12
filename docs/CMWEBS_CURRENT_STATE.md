@@ -7,6 +7,18 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-12 房東退房欄位 iOS 自動放大修正（本地候選，未部署）
+
+- 使用者回報前一版鍵盤避讓後，點擊退房欄位仍會在手機上急速放大並讓畫面跳離欄位。
+- 根因是退房表單欄位位於 `12px` 的 `label` 內，輸入控制項未明確設定字級；iOS 對小於
+  `16px` 的聚焦欄位會自動縮放 WebView，原有 `visualViewport` 捲動修正因此無法單獨解決。
+- 候選修正為退房 shell 的 `input`／`textarea`／`select` 一律使用 `16px`，檔案欄位也不再使用
+  `12px`；沒有 Apps Script／Sheet／Drive／帳務／登入或退房結算規則變更。
+- 新增 Phase 257 輸入放大回歸測試；完整 Node suite `206/206`、`npm run validate` 與
+  `git diff --check` 已通過。候選分支為 `codex/checkout-input-zoom-20260912`，尚未推送、合併或部署。
+- 真實 iPhone／LINE LIFF 操作仍為 `HUMAN_REQUIRED`／`UNVERIFIED`，需在正式裝置確認所有欄位
+  不再自動放大、畫面不跳離且快速結案／完整電表流程仍可送出。
+
 ## 2026-09-12 房東退房鍵盤遮罩修正（正式部署）
 
 - IMG_4797.MP4 顯示 iOS 鍵盤開啟後，退房表單的押金扣除說明及其下方欄位
