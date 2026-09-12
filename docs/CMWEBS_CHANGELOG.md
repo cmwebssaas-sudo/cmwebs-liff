@@ -2,6 +2,18 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-13 — 房東桌面 Email 詳細／合約讀取路由修正（本地候選）
+
+- 修正桌面版房客詳細與帳款讀取仍沿用 LINE-only 初始化，導致 Chrome 被送往 LINE OAuth
+  `400 invalid_url` 或頁面顯示 API 逾時；兩頁現在共用 Email auth session 與 POST bridge。
+- 修正合約頁對「原生合約簽署審核」及「房東發起合約」唯讀初始化的桌面 Email 擋板，
+  改為沿用已驗證的 session token；未支援的合約寫入操作仍維持 fail-closed。
+- 只修改靜態前端與回歸測試，未修改 Apps Script、Sheet、Drive、帳務、登入資料或訂閱資料。
+  Phase 258 與完整 Node suite `207/207`、`npm run validate`、static release-cache validator、
+  `node --check`、`git diff --check` 通過；尚未推送、合併或部署。
+- 正式網站仍需已登入桌面 Chrome 實機驗收房客詳細、帳款查看房客、合約清單，狀態為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-12 — 房東退房欄位 iOS 自動放大修正（正式部署）
 
 - 修正退房表單欄位在 iPhone／LINE WebView 聚焦時可能因字級小於 `16px` 而自動放大，導致

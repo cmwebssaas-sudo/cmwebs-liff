@@ -10,6 +10,8 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="frontend-release.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-auth.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-api.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
 
   <style>
@@ -1417,6 +1419,12 @@
     const LIFF_ID =
       '2010314940-EjX1qbb8';
 
+    const LANDLORD_ENTRY_URL =
+      new URL(
+        'landlord-entry.html',
+        location.href
+      ).href.split('?')[0];
+
     const TEST_LINE_USER_ID =
       'Uf708ece75c9c985cfe1dbda48d123511';
 
@@ -1432,6 +1440,7 @@
       ).trim();
 
     let LINE_USER_ID = '';
+    let LANDLORD_AUTH = null;
     let CURRENT_TENANT = null;
     let CURRENT_REQUESTS = [];
     let CURRENT_TENANT_DOCUMENTS = [];
@@ -1560,6 +1569,75 @@
             ? '&test=1'
             : ''
         );
+    }
+
+    function currentReturnTo() {
+      const currentUrl = new URL(location.href);
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(function (key) {
+        currentUrl.searchParams.delete(key);
+      });
+
+      return currentUrl.pathname.split('/').pop() +
+        (currentUrl.searchParams.toString()
+          ? '?' + currentUrl.searchParams.toString()
+          : '');
+    }
+
+    function initLandlordAuthClient() {
+      if (!window.CMWebsLandlordAuth) {
+        throw new Error('房東身分驗證模組載入失敗');
+      }
+
+      LANDLORD_AUTH = window.CMWebsLandlordAuth.init({
+        apiUrl: API_URL,
+        liffId: LIFF_ID,
+        lineUserId: LINE_USER_ID,
+        returnTo: currentReturnTo(),
+        entryPage: 'landlord-entry.html',
+        testMode: TEST_MODE
+      });
+
+      return LANDLORD_AUTH;
+    }
+
+    async function ensureLandlordAuthReady() {
+      const auth = LANDLORD_AUTH || initLandlordAuthClient();
+
+      if (TEST_MODE) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        initLandlordAuthClient();
+        return true;
+      }
+
+      if (auth.getMode() === 'email') {
+        const authParams = auth.getRequestAuthParams();
+        if (authParams.landlord_session_token) {
+          return true;
+        }
+
+        const entryUrl = new URL(LANDLORD_ENTRY_URL);
+        entryUrl.searchParams.set('mode', 'email');
+        entryUrl.searchParams.set('return_to', currentReturnTo());
+        location.replace(entryUrl.href);
+        return false;
+      }
+
+      if (!LINE_USER_ID) {
+        const ready = await initLineUserId();
+        if (!ready) {
+          return false;
+        }
+      }
+
+      initLandlordAuthClient();
+      return true;
     }
 
     function goTenantLogs() {
@@ -1701,6 +1779,23 @@
     }
 
     async function fetchStatusJson(action, params) {
+      if (window.CMWebsLandlordApi) {
+        return window.CMWebsLandlordApi.request({
+          apiUrl: API_URL,
+          action: action,
+          params: params || {},
+          lineUserId: LINE_USER_ID,
+          testMode: TEST_MODE,
+          callbackPrefix: '__cmwebs_tenant_detail_',
+          rejectOnFailure: true
+        }).then(function (result) {
+          if (window.CMWebsLandlordAuth) {
+            window.CMWebsLandlordAuth.handleAuthFailure(result);
+          }
+          return result;
+        });
+      }
+
       const controller =
         new AbortController();
 
@@ -4053,13 +4148,9 @@
           );
         }
 
-        if (!LINE_USER_ID) {
-          const ready =
-            await initLineUserId();
-
-          if (!ready) {
-            return;
-          }
+        const ready = await ensureLandlordAuthReady();
+        if (!ready) {
+          return;
         }
 
         const results =
