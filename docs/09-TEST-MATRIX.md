@@ -1,11 +1,14 @@
 # V2 回歸測試矩陣
 
-## 2026-09-13 桌面房客詳細／合約 Email 唯讀 session 修正（本地待部署）
+## 2026-09-13 桌面房客詳細／合約 Email 唯讀 session 修正（已部署）
 
 - [x] 房客詳細頁載入共用桌面 responsive shell，桌面寬度顯示側欄與桌面主內容，不再以手機底部導覽殼層呈現。
 - [x] 原生簽署審核與房東發起合約的唯讀初始化改用共用 session resolver；有效 Email session 可讀取，合約寫入仍不接受 Email fallback。
-- [x] 新增 Phase 259 靜態／runtime 回歸測試；Phase 140、157、258 與 Phase 259 通過，`git diff --check` 通過。
-- [ ] `npm run validate`、完整 suite、GitHub Pages 部署與正式桌面／Email 真實點擊驗收；目前為 `UNVERIFIED`，尚未宣稱 Production 已修復。
+- [x] 新增 Phase 259 靜態／runtime 回歸測試；完整 Node suite `131/131`、Apps Script 全檔語法、房客詳細頁 inline JS、static release-cache validator 與 `git diff --check` 通過。
+- [x] merge commit `662e20ad1f350da1d8fd71a129c1faf7a16aa1e9` 已推送至 `main`；GitHub Pages workflow `34709094999` 成功，公開房客詳細與合約頁 read-back 已確認新程式已發布。
+- [x] 正式 Apps Script 專案與候選來源唯讀比對僅有本次 3 個後端檔案差異；已更新前端實際使用的既有 Web App 至 Production Version `187`，原 Version `160` 保留為 rollback。
+- [ ] `npm run validate` 未列為通過：乾淨 `main` 沒有 `package.json`；根目錄舊 validator 另以過期的 71 條 route 預期檢查 88 條 route，並誤判 `tenant_payment_account_cover` 首層 handler。此為既有檢查器基線限制，未以它冒充 release pass。
+- [ ] 正式 Chrome／Email／LINE 真實點擊驗收；狀態仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-13 房東桌面 Email 詳細／合約讀取路由修正（已部署）
 
