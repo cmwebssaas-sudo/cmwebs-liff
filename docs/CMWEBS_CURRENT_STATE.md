@@ -7,7 +7,7 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-12 房東退房欄位遮罩修正（本地候選）
+## 2026-09-12 房東退房欄位遮罩修正（正式部署）
 
 - 根因是退房頁的固定底部營運列在鍵盤開啟或表單捲動時覆蓋下方欄位，導致押金扣除說明、
   點交備註與結案按鈕無法正常點擊；既有欄位資料與快速結案結算規則不變。
@@ -16,8 +16,10 @@ version, rollback, and runtime state before every Production action.
 - Phase 255 UI 回歸、Phase 253、完整 Node suite `204/204`、Apps Script syntax、static
   release-cache validator 與 `git diff --check` 通過。只涉及靜態前端，沒有 Apps Script／Sheet／
   Drive／帳務或登入變更。
-- 候選分支 `codex/checkout-fields-overlay-20260912` 尚未推送、合併或部署；Production 仍為
-  2026-09-11 快速結案版本。真實手機／LIFF 欄位操作仍是 `HUMAN_REQUIRED`／`UNVERIFIED`。
+- PR #157 已合併至 `main`，merge commit `d938520e80af738f82dcba301f78cee9200df8c8`；GitHub
+  Pages workflow `34688134508` 成功，公開退房頁 HTTP 200 read-back 已確認新 shell、固定
+  底部列隱藏與欄位捲動修正。這是純前端發布，Apps Script／Sheet／Drive／帳務／登入不變。
+- 真實手機／LIFF 欄位操作仍是 `HUMAN_REQUIRED`／`UNVERIFIED`，需在正式裝置實際點擊確認。
 
 ## 2026-09-11 房東退房快速結案（正式部署）
 
