@@ -2,6 +2,14 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-12 — 房東退房鍵盤遮罩修正（正式部署）
+
+- 修正手機鍵盤開啟時退房表單下方欄位被遮住、無法填寫的問題，包含押金扣除說明、點交備註與結案欄位。
+- PR #159 已合併至 `main`，merge commit `5d8eeb97dc5f8d505e355b75f28913fd36aecba1`；
+  GitHub Pages workflow `34697177348` 成功，公開退房頁 read-back 已確認鍵盤可視性修正已發布。
+- 本次為純前端發布，不修改 Apps Script、Sheet、Drive、帳務、登入或 LINE；真實手機／LIFF 驗收仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-12 — 房東退房欄位遮罩修正（正式部署）
 
 - 根因為退房頁沿用固定底部營運列；在手機鍵盤開啟或捲動到表單下方時，固定列會蓋住
