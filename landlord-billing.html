@@ -10,6 +10,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="frontend-release.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-auth.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
   <script src="landlord-api.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
 
   <style>
@@ -902,6 +903,7 @@
       '1';
 
     let LINE_USER_ID = '';
+    let LANDLORD_AUTH = null;
     let PAGE_DATA = null;
     let toastTimer = null;
     const initialRentCreditPendingBillIds = new Set();
@@ -1009,6 +1011,75 @@
             ? '&test=1'
             : ''
         );
+    }
+
+    function currentReturnTo() {
+      const currentUrl = new URL(location.href);
+      [
+        'code',
+        'state',
+        'liff.state',
+        'friendship_status_changed',
+        'error',
+        'error_description'
+      ].forEach(function (key) {
+        currentUrl.searchParams.delete(key);
+      });
+
+      return currentUrl.pathname.split('/').pop() +
+        (currentUrl.searchParams.toString()
+          ? '?' + currentUrl.searchParams.toString()
+          : '');
+    }
+
+    function initLandlordAuthClient() {
+      if (!window.CMWebsLandlordAuth) {
+        throw new Error('房東身分驗證模組載入失敗');
+      }
+
+      LANDLORD_AUTH = window.CMWebsLandlordAuth.init({
+        apiUrl: API_URL,
+        liffId: LIFF_ID,
+        lineUserId: LINE_USER_ID,
+        returnTo: currentReturnTo(),
+        entryPage: 'landlord-entry.html',
+        testMode: TEST_MODE
+      });
+
+      return LANDLORD_AUTH;
+    }
+
+    async function ensureLandlordAuthReady() {
+      const auth = LANDLORD_AUTH || initLandlordAuthClient();
+
+      if (TEST_MODE) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        initLandlordAuthClient();
+        return true;
+      }
+
+      if (auth.getMode() === 'email') {
+        const authParams = auth.getRequestAuthParams();
+        if (authParams.landlord_session_token) {
+          return true;
+        }
+
+        const entryUrl = new URL(LANDLORD_ENTRY_URL);
+        entryUrl.searchParams.set('mode', 'email');
+        entryUrl.searchParams.set('return_to', currentReturnTo());
+        location.replace(entryUrl.href);
+        return false;
+      }
+
+      if (!LINE_USER_ID) {
+        const ready = await initLine();
+        if (!ready) {
+          return false;
+        }
+      }
+
+      initLandlordAuthClient();
+      return true;
     }
 
     function buildLandlordLoginRedirectUri() {
@@ -2695,16 +2766,12 @@
       }
 
       try {
-        if (!LINE_USER_ID) {
-          const ready =
-            await initLine();
-
-          if (!ready) {
-            return {
-              success: false,
-              error: new Error('LINE 登入尚未完成')
-            };
-          }
+        const ready = await ensureLandlordAuthReady();
+        if (!ready) {
+          return {
+            success: false,
+            error: new Error('房東登入尚未完成')
+          };
         }
 
         const result =

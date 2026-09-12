@@ -1927,7 +1927,10 @@
         isEmailAuthSession();
 
       if (emailSessionActive) {
-        throw desktopNativeUnsupportedError();
+        const authParams =
+          window.CMWebsLandlordAuth.getRequestAuthParams();
+        NATIVE_SIGNING_REVIEW_SESSION_TOKEN =
+          authParams.landlord_session_token || '';
       }
 
       if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) {
@@ -1982,7 +1985,11 @@
 
     async function callLandlordInitiatedApi(action, params) {
       if (isEmailAuthSession()) {
-        throw desktopNativeUnsupportedError();
+        const authParams =
+          window.CMWebsLandlordAuth.getRequestAuthParams();
+        NATIVE_SIGNING_REVIEW_SESSION_TOKEN =
+          authParams.landlord_session_token ||
+          NATIVE_SIGNING_REVIEW_SESSION_TOKEN;
       }
 
       if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) throw new Error('房東身分驗證已失效，請重新整理頁面。');
@@ -3719,10 +3726,6 @@
           jsonpRequest('landlord_contract_requests_init'),
           (async function() {
             try {
-              if (emailSessionActive) {
-                throw desktopNativeUnsupportedError();
-              }
-
               if (TEST_MODE) {
                 return {
                   items: [],
@@ -3755,10 +3758,6 @@
           })(),
           (async function() {
             try {
-              if (emailSessionActive) {
-                throw desktopNativeUnsupportedError();
-              }
-
               const initiatedContracts = await callLandlordInitiatedApi('landlord_contract_initiated_init');
               return {
                 items: Array.isArray(initiatedContracts.items)

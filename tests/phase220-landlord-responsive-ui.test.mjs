@@ -489,7 +489,7 @@ test('Phase 220 preserves legacy action and modal contracts while making desktop
   );
 });
 
-test('Phase 220 keeps native contract sessions separate and fails closed on desktop Email auth', () => {
+test('Phase 220 reuses the verified Email session for native contract reads', () => {
   const source = pages['landlord-contract-requests.html'];
   const nativeStart = source.indexOf('async function callNativeSigningReviewApi');
   const initiatedStart = source.indexOf('async function callLandlordInitiatedApi');
@@ -497,10 +497,11 @@ test('Phase 220 keeps native contract sessions separate and fails closed on desk
   assert.ok(initiatedStart > nativeStart);
 
   const nativeSource = source.slice(nativeStart, initiatedStart);
-  assert.doesNotMatch(nativeSource, /landlord_session_token/);
+  assert.match(nativeSource, /landlord_session_token/);
   assert.match(nativeSource, /session_token:\s*NATIVE_SIGNING_REVIEW_SESSION_TOKEN/);
+  assert.doesNotMatch(nativeSource, /throw desktopNativeUnsupportedError\(\)/);
   assert.match(source, /DESKTOP_EMAIL_UNSUPPORTED/);
-  assert.match(source, /僅支援 LINE 手機流程/);
+  assert.match(source, /桌面 Email 版目前尚未支援/);
 });
 
 test('Phase 220 does not expose a broken checkout page from the desktop operational sidebar', () => {
