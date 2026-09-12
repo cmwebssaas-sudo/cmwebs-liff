@@ -73,7 +73,7 @@ test('B+ desktop changes stay inside the desktop media boundary', () => {
   assert.doesNotMatch(mobileCss, /\.desktop-overview/);
 });
 
-test('B+ desktop sidebar controls use layered shadows for clear interaction feedback', () => {
+test('B+ desktop sidebar selected and action controls use layered shadows', () => {
   const desktopCss = desktopCssSource();
 
   assert.match(css, /--desktop-nav-shadow:\s*0 2px 8px rgba\(37,\s*48,\s*44,\s*0\.08\)/);
@@ -81,18 +81,52 @@ test('B+ desktop sidebar controls use layered shadows for clear interaction feed
   assert.match(css, /--desktop-nav-shadow-active:\s*0 3px 8px rgba\(15,\s*118,\s*110,\s*0\.18\)/);
   assert.match(
     desktopCss,
-    /\.desktop-nav-item\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow\)/
-  );
-  assert.match(
-    desktopCss,
-    /\.desktop-nav-item:hover\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow-hover\)/
-  );
-  assert.match(
-    desktopCss,
     /\.desktop-nav-item\.active\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow-active\)/
   );
   assert.match(
     desktopCss,
+    /\.desktop-logout-button:hover\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow-hover\)/
+  );
+  assert.match(
+    desktopCss,
     /\.desktop-logout-button\s*\{[\s\S]*?box-shadow:\s*var\(--desktop-nav-shadow\)/
+  );
+});
+
+test('B+ desktop sidebar leaves unselected navigation items visually open', () => {
+  const desktopCss = desktopCssSource();
+
+  assert.match(css, /--desktop-sidebar-hover-bg:\s*#f7fbf9/);
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item\s*\{[\s\S]*?border:\s*1px solid transparent/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item\s*\{[\s\S]*?background:\s*transparent/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item\s*\{[\s\S]*?box-shadow:\s*none/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item:hover\s*\{[\s\S]*?border-color:\s*transparent/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item:hover\s*\{[\s\S]*?background:\s*var\(--desktop-sidebar-hover-bg\)/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item:hover\s*\{[\s\S]*?box-shadow:\s*none/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item\.active\s*\{[\s\S]*?border-color:\s*#b8ddcf/
+  );
+  assert.match(
+    desktopCss,
+    /\.desktop-nav-item\.active\s*\{[\s\S]*?background:\s*var\(--desktop-accent-soft\)/
   );
 });

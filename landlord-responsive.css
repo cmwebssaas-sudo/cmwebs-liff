@@ -6,6 +6,7 @@
   --desktop-sidebar-bg: #fffdfb;
   --desktop-sidebar-muted: #6b706c;
   --desktop-sidebar-border: #e8e6e1;
+  --desktop-sidebar-hover-bg: #f7fbf9;
   --desktop-accent: #0f766e;
   --desktop-accent-soft: #e8f5f1;
   --desktop-focus-ring: #0f766e;
@@ -110,15 +111,15 @@
     align-items: center;
     gap: 12px;
     padding: 0 12px;
-    border: 1px solid var(--desktop-sidebar-border);
+    border: 1px solid transparent;
     border-radius: 12px;
-    background: #ffffff;
+    background: transparent;
     color: var(--desktop-sidebar-muted);
     font-size: 16px;
     font-weight: 800;
     text-align: left;
     cursor: pointer;
-    box-shadow: var(--desktop-nav-shadow);
+    box-shadow: none;
     transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
   }
 
@@ -134,14 +135,15 @@
   }
 
   .desktop-nav-item:hover {
-    border-color: #c4e1d8;
-    background: #ffffff;
+    border-color: transparent;
+    background: var(--desktop-sidebar-hover-bg);
     color: var(--desktop-accent);
-    box-shadow: var(--desktop-nav-shadow-hover);
+    box-shadow: none;
   }
 
   .desktop-nav-item:active {
-    box-shadow: var(--desktop-nav-shadow-active);
+    background: var(--desktop-sidebar-hover-bg);
+    box-shadow: none;
   }
 
   .desktop-nav-item.active {
