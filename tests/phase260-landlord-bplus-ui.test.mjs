@@ -10,6 +10,22 @@ const home = readFileSync(
   new URL('../landlord-home.html', import.meta.url),
   'utf8'
 );
+const landlordPageNames = [
+  'landlord-entry.html',
+  'landlord-home.html',
+  'landlord-tenants.html',
+  'landlord-tenant-detail.html',
+  'landlord-properties.html',
+  'landlord-settings.html',
+  'landlord-arrears.html',
+  'landlord-contract-requests.html'
+];
+const landlordPages = Object.fromEntries(
+  landlordPageNames.map((name) => [
+    name,
+    readFileSync(new URL('../' + name, import.meta.url), 'utf8')
+  ])
+);
 
 function desktopCssSource() {
   const desktopStart = css.indexOf('@media (min-width: 1024px)');
@@ -129,4 +145,14 @@ test('B+ desktop sidebar leaves unselected navigation items visually open', () =
     desktopCss,
     /\.desktop-nav-item\.active\s*\{[\s\S]*?background:\s*var\(--desktop-accent-soft\)/
   );
+});
+
+test('B+ landlord pages cache-bust the shared desktop stylesheet', () => {
+  for (const [name, source] of Object.entries(landlordPages)) {
+    assert.match(
+      source,
+      /<link rel="stylesheet" href="landlord-responsive\.css\?v=20260913-desktop-sidebar-flat-nav-v1"\s*\/>/,
+      `${name} must use the cache-busted shared desktop stylesheet`
+    );
+  }
 });

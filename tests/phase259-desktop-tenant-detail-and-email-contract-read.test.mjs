@@ -18,7 +18,7 @@ const initiatedContracts = readFileSync(
 
 assert.match(
   tenantDetail,
-  /<link rel="stylesheet" href="landlord-responsive\.css" \/>/,
+  /<link rel="stylesheet" href="landlord-responsive\.css(?:\?v=[^"]+)?" \/>/,
   'tenant detail must load the shared desktop responsive shell'
 );
 assert.match(

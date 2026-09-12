@@ -249,7 +249,7 @@ test('Phase 244 keeps the entry bottom navigation inside the mobile app shell co
 
 test('Phase 220 links the shared stylesheet and preserves the mobile shell contract', () => {
   for (const [name, source] of Object.entries(pages)) {
-    assert.match(source, /<link[^>]+href="landlord-responsive\.css"/, `${name} must link shared CSS`);
+    assert.match(source, /<link[^>]+href="landlord-responsive\.css(?:\?v=[^"]+)?"/, `${name} must link shared CSS`);
     assert.match(source, /<div class="app-shell desktop-ready">/, `${name} must opt into desktop shell`);
     assert.match(source, /<main class="page desktop-main(?: [^"]+)?">/, `${name} must preserve .page while exposing desktop-main`);
     assert.match(source, /<nav class="bottom-nav">/, `${name} must keep mobile bottom navigation`);
@@ -381,7 +381,7 @@ test('Phase 220 keeps entry and protected pages on one auth module boundary', ()
 test('Phase 220 keeps settings protected bootstrap on the shared auth transport', () => {
   const source = pages['landlord-settings.html'];
 
-  assert.match(source, /<link[^>]+href="landlord-responsive\.css"/);
+  assert.match(source, /<link[^>]+href="landlord-responsive\.css(?:\?v=[^"]+)?"/);
   assert.match(source, /<div class="app-shell desktop-ready">/);
   assert.match(source, /<main class="page desktop-main(?: [^"]+)?">/);
   assert.match(source, /async function ensureLandlordAuthReady\(\)/);
@@ -394,7 +394,7 @@ test('Phase 220 completes the shared desktop shell for legacy operational pages'
   for (const name of legacyOperationalPages) {
     const source = pages[name];
 
-    assert.match(source, /<link[^>]+href="landlord-responsive\.css"/);
+    assert.match(source, /<link[^>]+href="landlord-responsive\.css(?:\?v=[^"]+)?"/);
     assert.match(source, /<script src="landlord-auth\.js(?:\?v=[^"]+)?"><\/script>/);
     assert.match(source, /<script src="landlord-api\.js(?:\?v=[^"]+)?"><\/script>/);
     assert.match(source, /<div class="app-shell desktop-ready">/);

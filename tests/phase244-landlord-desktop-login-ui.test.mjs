@@ -248,7 +248,7 @@ function extractFunctionSource(functionName) {
 test('Phase 244 exposes the desktop landlord entry shell and stable auth controls', () => {
   assert.match(
     source,
-    /<link[^>]+href="landlord-responsive\.css"/,
+    /<link[^>]+href="landlord-responsive\.css(?:\?v=[^"]+)?"/,
     'landlord-entry.html must load the shared responsive stylesheet'
   );
   assert.match(
