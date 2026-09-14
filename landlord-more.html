@@ -172,6 +172,41 @@
       font-weight: 900;
     }
 
+    .quick-lease-entry {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      width: 100%;
+      margin-bottom: 14px;
+      padding: 15px 16px;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, #f4efff 0%, #ffffff 72%);
+      color: var(--text-main);
+      font: inherit;
+      text-align: left;
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.1);
+      cursor: pointer;
+      transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease;
+    }
+
+    .quick-lease-entry:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.08);
+    }
+
+    .quick-lease-entry .desktop-entry-icon {
+      background: var(--purple);
+      box-shadow: 0 7px 17px rgba(124, 58, 237, 0.22);
+    }
+
+    .quick-lease-entry .desktop-entry-arrow {
+      color: var(--purple);
+    }
+
     .hero-row {
       display: flex;
       align-items: flex-start;
@@ -746,6 +781,32 @@
           <div class="desktop-entry-title">開啟桌面版</div>
           <div class="desktop-entry-desc">
             使用 Email 驗證碼登入，適合在電腦上管理房客、帳款與團隊。
+          </div>
+        </div>
+
+        <div class="desktop-entry-arrow" aria-hidden="true">›</div>
+      </button>
+
+      <button
+        id="quickLeaseEntry"
+        class="quick-lease-entry"
+        type="button"
+        onclick="goPage('landlord-tenant-create.html?mode=new')"
+        aria-label="快速建立租約"
+      >
+        <div class="desktop-entry-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 3.5h9l3 3V20H6z"></path>
+            <path d="M15 3.5V7h3"></path>
+            <path d="M9 12h6"></path>
+            <path d="M12 9v6"></path>
+          </svg>
+        </div>
+
+        <div class="desktop-entry-main">
+          <div class="desktop-entry-title">快速建立租約</div>
+          <div class="desktop-entry-desc">
+            選房間後帶入原房價，可修改租金並送出簽署邀請。
           </div>
         </div>
 
