@@ -342,14 +342,18 @@ query parameter.
    Confirm `writes: 0`. The preview scans only
    `V2_tenant_messages.message_category === 'repair'` and returns candidate
    source IDs, unresolved source IDs, `missing_room_count`, and any
-   `link_reconciliation_source_message_ids` without adding sheets, headers,
-   tickets, events, or source links.
+   `link_reconciliation_source_message_ids` or
+   `duplicate_source_message_ids` without adding sheets, headers, tickets,
+   events, or source links.
 2. Inspect the result. Resolve every `unresolved_source_message_ids` entry
    manually; in particular, records without `room_id` stay untouched and must
    not be assigned a guessed room. A source message that already has a ticket
    by `source_message_id` but has a blank `repair_ticket_id` is a link-only
    reconciliation candidate, not a new ticket. Confirm the candidate and
-   reconciliation counts with the operations owner.
+   reconciliation counts with the operations owner. Repeated normalized source
+   IDs in the same batch are reported as `duplicate_source_message_ids`; only
+   the first row creates the ticket and event, while subsequent duplicate rows
+   receive the same additive source link during apply.
 3. Take and verify a read-only backup/export of the three affected sheets:
    `V2_tenant_messages`, `V2_repair_tickets`, and `V2_repair_events`. Record
    each header row and row count before proceeding.
@@ -366,10 +370,17 @@ query parameter.
    or missing-room rows.
 5. Reconcile counts: `created_count` must equal the increase in
    `V2_repair_tickets` rows and in linked source rows; `V2_repair_events` must
-   increase by twice `created_count` (`created` plus `legacy_backfill`). The
-   returned `writes` is four per newly created ticket and one per link-only
-   reconciliation. Repeat `preview` and confirm that eligible rows and link
-   reconciliations no longer appear before any further batch.
+   increase by twice `created_count` (`created` plus `legacy_backfill`), even
+   when multiple source rows normalize to the same source ID. `writes` is the
+   exact count of migration-initiated Sheet cell mutation calls:
+   `appendRow`, `setValue`, and `setValues`. It includes ticket/event rows,
+   status projection, source links, and any header provisioning; it excludes
+   read calls and `insertSheet` tab creation. A first-run single ticket on two
+   new repair sheets therefore reports seven writes (two headers, ticket,
+   `created` event, `legacy_backfill` event, status projection, source link);
+   each additional source-link reconciliation reports one. Repeat `preview`
+   and confirm that eligible rows and link reconciliations no longer appear
+   before any further batch.
 6. Rollback is source-code and access rollback, not destructive data removal:
    stop further apply runs, retain the backup and every appended ticket/event
    row, and revert/disable the migration caller if necessary. Any correction to

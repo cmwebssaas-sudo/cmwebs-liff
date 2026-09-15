@@ -140,8 +140,8 @@ test('repair-ticket backfill preview is no-write and reports only eligible repai
   assert.equal(sheets.V2_repair_tickets, undefined);
 });
 
-test('repair-ticket backfill apply preserves legacy snapshots and does not duplicate a source message', () => {
-  const { context, sheets } = createRuntime([messageRow()]);
+test('repair-ticket backfill apply preserves legacy snapshots and reports every first-run sheet mutation', () => {
+  const { context, sheets, writes } = createRuntime([messageRow()]);
 
   const first = context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
   const second = context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
@@ -151,10 +151,12 @@ test('repair-ticket backfill apply preserves legacy snapshots and does not dupli
   const repairTicketColumn = MESSAGE_HEADERS.indexOf('repair_ticket_id');
 
   assert.equal(first.created_count, 1);
-  assert.equal(first.writes, 4);
+  assert.equal(first.writes, writes.length);
+  assert.equal(first.writes, 7);
   assert.deepEqual(Array.from(first.created_ids), [ticket.repair_ticket_id]);
   assert.equal(second.created_count, 0);
   assert.equal(second.writes, 0);
+  assert.equal(second.writes, writes.length - first.writes);
   assert.equal(sheets.V2_repair_tickets.getLastRow(), 2);
   assert.equal(ticket.tenant_id_snapshot, 'TENANT-A');
   assert.equal(ticket.lease_id_snapshot, 'LEASE-A');
@@ -234,7 +236,9 @@ test('repair-ticket backfill reconciles an unlinked existing source ticket witho
   writes.length = 0;
 
   const preview = context.repairTicketBackfillLegacyMessages_({ mode: 'preview', limit: 100 });
+  const writesBeforeFirst = writes.length;
   const first = context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
+  const writesBeforeSecond = writes.length;
   const second = context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
   const sourceRows = sheets.V2_tenant_messages.getDataRange().getValues();
   const eventRows = sheets.V2_repair_events.getDataRange().getValues();
@@ -248,9 +252,9 @@ test('repair-ticket backfill reconciles an unlinked existing source ticket witho
   );
   assert.equal(first.created_count, 0);
   assert.equal(first.reconciled_link_count, 1);
-  assert.equal(first.writes, 1);
+  assert.equal(first.writes, writesBeforeSecond - writesBeforeFirst);
   assert.equal(second.reconciled_link_count, 0);
-  assert.equal(second.writes, 0);
+  assert.equal(second.writes, writes.length - writesBeforeSecond);
   assert.equal(sourceRows[1][MESSAGE_HEADERS.indexOf('repair_ticket_id')], existingTicket.repair_ticket_id);
   assert.equal(eventRows.filter(row => row[3] === 'legacy_backfill').length, 0);
   assert.equal(sheets.V2_repair_tickets.getLastRow(), 2);
@@ -301,4 +305,30 @@ test('repair-ticket backfill holds one migration lock across scan and apply retr
   assert.equal(retry.created_count, 0);
   assert.equal(runtime.sheets.V2_repair_tickets.getLastRow(), 2);
   assert.equal(events.filter(row => row[3] === 'legacy_backfill').length, 1);
+});
+
+test('repair-ticket backfill deduplicates same-batch source IDs without duplicate events', () => {
+  const { context, sheets, writes } = createRuntime([
+    messageRow({ message_id: 'MESSAGE-DUP' }),
+    messageRow({ message_id: ' MESSAGE-DUP ' })
+  ]);
+
+  const preview = context.repairTicketBackfillLegacyMessages_({ mode: 'preview', limit: 100 });
+  const result = context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
+  const sourceRows = sheets.V2_tenant_messages.getDataRange().getValues();
+  const events = sheets.V2_repair_events.getDataRange().getValues();
+  const ticket = context.repairTicketFindBySourceMessageId_('MESSAGE-DUP');
+  const repairTicketColumn = MESSAGE_HEADERS.indexOf('repair_ticket_id');
+
+  assert.deepEqual(Array.from(preview.created_candidates), ['MESSAGE-DUP']);
+  assert.deepEqual(Array.from(preview.duplicate_source_message_ids), ['MESSAGE-DUP']);
+  assert.equal(result.created_count, 1);
+  assert.deepEqual(Array.from(result.created_ids), [ticket.repair_ticket_id]);
+  assert.equal(result.reconciled_link_count, 1);
+  assert.deepEqual(Array.from(result.reconciled_source_message_ids), ['MESSAGE-DUP']);
+  assert.equal(result.writes, writes.length);
+  assert.equal(sheets.V2_repair_tickets.getLastRow(), 2);
+  assert.equal(events.filter(row => row[3] === 'legacy_backfill').length, 1);
+  assert.equal(sourceRows[1][repairTicketColumn], ticket.repair_ticket_id);
+  assert.equal(sourceRows[2][repairTicketColumn], ticket.repair_ticket_id);
 });

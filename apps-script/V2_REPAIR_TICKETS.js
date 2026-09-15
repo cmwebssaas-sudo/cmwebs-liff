@@ -32,18 +32,20 @@ const V2_REPAIR_TICKET_TENANT_ALLOWED_FIELDS_ = [
   'closed_at', 'public_note'
 ];
 
-function repairTicketEnsureSheets_() {
+function repairTicketEnsureSheets_(mutationCounter) {
   const spreadsheet = runtimeSpreadsheet_();
   return {
     tickets: repairTicketEnsureSheet_(
       spreadsheet,
       V2_REPAIR_TICKET_SHEETS_.tickets,
-      V2_REPAIR_TICKET_HEADERS_
+      V2_REPAIR_TICKET_HEADERS_,
+      mutationCounter
     ),
     events: repairTicketEnsureSheet_(
       spreadsheet,
       V2_REPAIR_TICKET_SHEETS_.events,
-      V2_REPAIR_EVENT_HEADERS_
+      V2_REPAIR_EVENT_HEADERS_,
+      mutationCounter
     )
   };
 }
@@ -60,7 +62,7 @@ function repairTicketCreateFromMessage_(messageRecord, canonicalIdentity) {
   }
 }
 
-function repairTicketCreateFromMessageLocked_(messageRecord, canonicalIdentity) {
+function repairTicketCreateFromMessageLocked_(messageRecord, canonicalIdentity, mutationCounter) {
   const message = messageRecord || {};
   const identity = canonicalIdentity || {};
   const workspaceId = repairTicketText_(identity.workspace_id);
@@ -72,10 +74,10 @@ function repairTicketCreateFromMessageLocked_(messageRecord, canonicalIdentity) 
     throw new Error('REPAIR_TICKET_IDENTITY_REQUIRED');
   }
 
-  const existing = repairTicketFindBySourceMessageId_(sourceMessageId);
+  const existing = repairTicketFindBySourceMessageId_(sourceMessageId, mutationCounter);
   if (existing) return existing;
 
-  const sheets = repairTicketEnsureSheets_();
+  const sheets = repairTicketEnsureSheets_(mutationCounter);
   const now = new Date();
   const ticket = {
     workspace_id: workspaceId,
@@ -99,7 +101,7 @@ function repairTicketCreateFromMessageLocked_(messageRecord, canonicalIdentity) 
     closed_at: ''
   };
 
-  repairTicketAppendRow_(sheets.tickets, ticket);
+  repairTicketAppendRow_(sheets.tickets, ticket, mutationCounter);
   repairTicketAppendEventRow_(sheets.events, {
     workspace_id: ticket.workspace_id,
     repair_ticket_id: ticket.repair_ticket_id,
@@ -112,12 +114,12 @@ function repairTicketCreateFromMessageLocked_(messageRecord, canonicalIdentity) 
     internal_note: '',
     public_note: '',
     created_at: now
-  });
+  }, mutationCounter);
   return ticket;
 }
 
-function repairTicketAppendEvent_(ticketId, eventInput, actor) {
-  const target = repairTicketFindTicketRow_(ticketId);
+function repairTicketAppendEvent_(ticketId, eventInput, actor, mutationCounter) {
+  const target = repairTicketFindTicketRow_(ticketId, mutationCounter);
   if (!target) throw new Error('REPAIR_TICKET_NOT_FOUND');
 
   const event = eventInput || {};
@@ -127,7 +129,7 @@ function repairTicketAppendEvent_(ticketId, eventInput, actor) {
     throw new Error('REPAIR_TICKET_STATUS_INVALID');
   }
 
-  const sheets = repairTicketEnsureSheets_();
+  const sheets = repairTicketEnsureSheets_(mutationCounter);
   const now = new Date();
   repairTicketAppendEventRow_(sheets.events, {
     workspace_id: target.workspace_id,
@@ -141,27 +143,29 @@ function repairTicketAppendEvent_(ticketId, eventInput, actor) {
     internal_note: repairTicketText_(event.internal_note),
     public_note: repairTicketText_(event.public_note),
     created_at: now
-  });
+  }, mutationCounter);
 
   repairTicketSetTicketProjectionValue_(
     sheets.tickets,
     target._sheet_row,
     'status',
-    nextStatus
+    nextStatus,
+    mutationCounter
   );
   if (nextStatus === 'closed') {
     repairTicketSetTicketProjectionValue_(
       sheets.tickets,
       target._sheet_row,
       'closed_at',
-      now
+      now,
+      mutationCounter
     );
   }
-  return repairTicketFindTicketById_(ticketId);
+  return repairTicketFindTicketById_(ticketId, mutationCounter);
 }
 
-function repairTicketFindBySourceMessageId_(sourceMessageId) {
-  const sheets = repairTicketEnsureSheets_();
+function repairTicketFindBySourceMessageId_(sourceMessageId, mutationCounter) {
+  const sheets = repairTicketEnsureSheets_(mutationCounter);
   const target = repairTicketRows_(sheets.tickets).find(function(row) {
     return repairTicketText_(row.source_message_id) === repairTicketText_(sourceMessageId);
   });
@@ -206,40 +210,59 @@ function repairTicketBackfillLegacyMessagesApplyLocked_(limit) {
   const messageSheet = spreadsheet.getSheetByName(V2_REPAIR_TICKET_MESSAGE_SHEET_);
   const scan = repairTicketBackfillScan_(messageSheet, spreadsheet, limit);
   const result = repairTicketBackfillResult_('apply', limit, scan);
+  const mutationCounter = { count: 0 };
+  const createdTicketsBySourceId = {};
 
   scan.candidates.forEach(function(message) {
     const ticket = repairTicketCreateFromMessageLocked_(
       message,
-      repairTicketBackfillIdentity_(message)
+      repairTicketBackfillIdentity_(message),
+      mutationCounter
     );
+    const sourceMessageId = repairTicketText_(message.message_id);
+    createdTicketsBySourceId[sourceMessageId] = ticket;
     repairTicketAppendEvent_(ticket.repair_ticket_id, {
       event_type: 'legacy_backfill',
       to_status: ticket.status
     }, {
       actor_type: 'system',
       actor_id: 'repair_ticket_backfill'
-    });
+    }, mutationCounter);
     repairTicketSetLegacyMessageRepairTicketId_(
       messageSheet,
       message._sheet_row,
-      ticket.repair_ticket_id
+      ticket.repair_ticket_id,
+      mutationCounter
     );
     result.created_count += 1;
     result.created_ids.push(ticket.repair_ticket_id);
-    result.writes += 4;
   });
   scan.linkReconciliationCandidates.forEach(function(candidate) {
     repairTicketSetLegacyMessageRepairTicketId_(
       messageSheet,
       candidate.message._sheet_row,
-      candidate.ticket.repair_ticket_id
+      candidate.ticket.repair_ticket_id,
+      mutationCounter
     );
     result.reconciled_link_count += 1;
     result.reconciled_source_message_ids.push(
       repairTicketText_(candidate.message.message_id)
     );
-    result.writes += 1;
   });
+  scan.duplicateCandidates.forEach(function(message) {
+    const sourceMessageId = repairTicketText_(message.message_id);
+    const ticket = createdTicketsBySourceId[sourceMessageId];
+    if (!ticket) return;
+    repairTicketSetLegacyMessageRepairTicketId_(
+      messageSheet,
+      message._sheet_row,
+      ticket.repair_ticket_id,
+      mutationCounter
+    );
+    result.reconciled_link_count += 1;
+    result.reconciled_source_message_ids.push(sourceMessageId);
+  });
+  result.writes = mutationCounter.count;
   return result;
 }
 
@@ -256,6 +279,7 @@ function repairTicketBackfillResult_(mode, limit, scan) {
     link_reconciliation_source_message_ids: scan.linkReconciliationCandidates.map(
       function(candidate) { return repairTicketText_(candidate.message.message_id); }
     ),
+    duplicate_source_message_ids: scan.duplicateSourceMessageIds,
     reconciled_link_count: 0,
     reconciled_source_message_ids: [],
     non_repair_count: scan.nonRepairCount,
@@ -276,6 +300,8 @@ function repairTicketBackfillScan_(messageSheet, spreadsheet, limit) {
     existingTicketCount: 0,
     existingLinkCount: 0,
     linkReconciliationCandidates: [],
+    duplicateCandidates: [],
+    duplicateSourceMessageIds: [],
     nonRepairCount: 0,
     missingRoomCount: 0,
     unresolvedSourceMessageIds: []
@@ -285,6 +311,7 @@ function repairTicketBackfillScan_(messageSheet, spreadsheet, limit) {
   const messageHeaders = repairTicketSheetHeaders_(messageSheet);
   const hasRepairTicketLink = messageHeaders.indexOf('repair_ticket_id') !== -1;
   const existingTicketsBySourceId = {};
+  const candidateBySourceId = {};
   const ticketSheet = spreadsheet.getSheetByName(V2_REPAIR_TICKET_SHEETS_.tickets);
   if (ticketSheet) {
     repairTicketRows_(ticketSheet).forEach(function(ticket) {
@@ -328,7 +355,15 @@ function repairTicketBackfillScan_(messageSheet, spreadsheet, limit) {
       scan.unresolvedSourceMessageIds.push(sourceMessageId);
       return;
     }
-    if (scan.candidates.length < limit) scan.candidates.push(message);
+    if (candidateBySourceId[sourceMessageId]) {
+      scan.duplicateCandidates.push(message);
+      scan.duplicateSourceMessageIds.push(sourceMessageId);
+      return;
+    }
+    if (scan.candidates.length < limit) {
+      scan.candidates.push(message);
+      candidateBySourceId[sourceMessageId] = message;
+    }
   });
   return scan;
 }
@@ -354,11 +389,12 @@ function repairTicketBackfillLimit_(value) {
   return limit;
 }
 
-function repairTicketSetLegacyMessageRepairTicketId_(sheet, row, ticketId) {
+function repairTicketSetLegacyMessageRepairTicketId_(sheet, row, ticketId, mutationCounter) {
   const headers = repairTicketSheetHeaders_(sheet);
   const column = headers.indexOf('repair_ticket_id') + 1;
   if (column < 1) throw new Error('REPAIR_TICKET_MESSAGE_LINK_SCHEMA_REQUIRED');
   sheet.getRange(row, column).setValue(ticketId);
+  repairTicketCountMutation_(mutationCounter);
 }
 
 function repairTicketSheetHeaders_(sheet) {
@@ -405,11 +441,12 @@ function repairTicketLatestPublicNote_(ticketId) {
   return '';
 }
 
-function repairTicketEnsureSheet_(spreadsheet, sheetName, headers) {
+function repairTicketEnsureSheet_(spreadsheet, sheetName, headers, mutationCounter) {
   let sheet = spreadsheet.getSheetByName(sheetName);
   if (!sheet) {
     sheet = spreadsheet.insertSheet(sheetName);
     sheet.appendRow(headers);
+    repairTicketCountMutation_(mutationCounter);
     return sheet;
   }
   const width = Math.max(sheet.getLastColumn(), 1);
@@ -417,6 +454,7 @@ function repairTicketEnsureSheet_(spreadsheet, sheetName, headers) {
     .map(repairTicketText_);
   if (currentHeaders.every(function(header) { return header === ''; })) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    repairTicketCountMutation_(mutationCounter);
     return sheet;
   }
   const missing = headers.filter(function(header) {
@@ -424,6 +462,7 @@ function repairTicketEnsureSheet_(spreadsheet, sheetName, headers) {
   });
   if (missing.length) {
     sheet.getRange(1, currentHeaders.length + 1, 1, missing.length).setValues([missing]);
+    repairTicketCountMutation_(mutationCounter);
   }
   return sheet;
 }
@@ -439,35 +478,43 @@ function repairTicketRows_(sheet) {
   });
 }
 
-function repairTicketFindTicketRow_(ticketId) {
-  const sheets = repairTicketEnsureSheets_();
+function repairTicketFindTicketRow_(ticketId, mutationCounter) {
+  const sheets = repairTicketEnsureSheets_(mutationCounter);
   return repairTicketRows_(sheets.tickets).find(function(row) {
     return repairTicketText_(row.repair_ticket_id) === repairTicketText_(ticketId);
   }) || null;
 }
 
-function repairTicketFindTicketById_(ticketId) {
-  const row = repairTicketFindTicketRow_(ticketId);
+function repairTicketFindTicketById_(ticketId, mutationCounter) {
+  const row = repairTicketFindTicketRow_(ticketId, mutationCounter);
   return row ? repairTicketPublicRow_(row) : null;
 }
 
-function repairTicketAppendRow_(sheet, record) {
+function repairTicketAppendRow_(sheet, record, mutationCounter) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
     .map(repairTicketText_);
   sheet.appendRow(headers.map(function(header) {
     return record[header] === undefined ? '' : record[header];
   }));
+  repairTicketCountMutation_(mutationCounter);
 }
 
-function repairTicketAppendEventRow_(sheet, record) {
-  repairTicketAppendRow_(sheet, record);
+function repairTicketAppendEventRow_(sheet, record, mutationCounter) {
+  repairTicketAppendRow_(sheet, record, mutationCounter);
 }
 
-function repairTicketSetTicketProjectionValue_(sheet, row, header, value) {
+function repairTicketSetTicketProjectionValue_(sheet, row, header, value, mutationCounter) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
     .map(repairTicketText_);
   const column = headers.indexOf(header) + 1;
-  if (column > 0) sheet.getRange(row, column).setValue(value);
+  if (column > 0) {
+    sheet.getRange(row, column).setValue(value);
+    repairTicketCountMutation_(mutationCounter);
+  }
+}
+
+function repairTicketCountMutation_(mutationCounter) {
+  if (mutationCounter) mutationCounter.count += 1;
 }
 
 function repairTicketMakeId_(workspaceId, roomId) {
