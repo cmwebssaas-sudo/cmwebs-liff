@@ -2,9 +2,14 @@
 
 ## 2026-09-15 房間報修工單 Task 6 本地 release-boundary record
 
-- [x] Release candidate source commit is `3b12c61`; this is a local candidate
-  record only and has not been deployed, pushed, merged, or reconciled against
-  live Apps Script or Google Sheets.
+- [x] Implementation source candidate is
+  `3b12c617216040974700fa6b3238db2e9652f310` (`3b12c61`), the verified Task 5
+  code/UI commit. The separate Task 6 documentation/release-verification
+  record is `73ad047ffde25ee636e197b37360b70e8fc8129f` (`73ad047`), a
+  documentation-only child commit. Neither value is the fix-round commit for
+  this correction; the documentation record remains local and has not been
+  deployed, pushed, merged, or reconciled against live Apps Script or Google
+  Sheets.
 - [x] Focused repair-ticket command passed `26/26`: contract, runtime/RBAC,
   migration idempotency/preview, and tenant/landlord privacy UI tests.
 - [x] `npm run validate` passed: `57` backend files parsed, `37` endpoint

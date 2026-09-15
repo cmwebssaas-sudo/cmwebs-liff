@@ -706,9 +706,16 @@ the body principal.
 
 ### Task 6 local release-boundary record
 
-The repair-ticket release candidate is source commit `3b12c61` (`fix: preserve
-repair feedback and strengthen privacy UI tests`). Local verification is not a
-deployment or a Production readiness claim. The focused repair-ticket suite
+The verified implementation source candidate is commit
+`3b12c617216040974700fa6b3238db2e9652f310` (`3b12c61`, `fix: preserve repair
+feedback and strengthen privacy UI tests`). The separate Task 6 documentation
+and release-verification record is commit
+`73ad047ffde25ee636e197b37360b70e8fc8129f` (`73ad047`, `test: record repair
+ticket release checks`), whose parent is the implementation source candidate.
+The latter is a documentation/release-record commit, not the implementation
+source. This fix-round documentation correction is intentionally not embedded
+as its own future commit hash. Local verification is not a deployment or a
+Production readiness claim. The focused repair-ticket suite
 passed `26/26`; the full repository suite ran `242` tests with `240` passing and
 two pre-existing landlord POST/read bridge snapshot failures. The failures are
 `tests/landlord-post-read-snapshot.test.mjs` (expected `true`, received

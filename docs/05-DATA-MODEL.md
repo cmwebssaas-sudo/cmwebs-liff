@@ -393,7 +393,13 @@ query parameter.
 
 ### Task 6 verification and migration boundary
 
-The local release candidate is commit `3b12c61`. The focused contract, runtime,
+The verified implementation source candidate is
+`3b12c617216040974700fa6b3238db2e9652f310` (`3b12c61`), the Task 5 code/UI
+commit. The separate Task 6 documentation/release-verification record is
+`73ad047ffde25ee636e197b37360b70e8fc8129f` (`73ad047`), the documentation-only
+child commit whose parent is that implementation source candidate. These two
+hashes have different roles; neither label identifies the fix-round commit
+that carries this documentation correction. The focused contract, runtime,
 migration, and privacy UI tests passed `26/26`. The complete local Node suite
 ran `242` tests: `240` passed and `2` failed in the pre-existing landlord
 POST/read bridge snapshot coverage. The exact failures are recorded in the Task
