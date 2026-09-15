@@ -328,6 +328,12 @@ test('repair-ticket backfill deduplicates same-batch source IDs without duplicat
   assert.deepEqual(Array.from(result.reconciled_source_message_ids), ['MESSAGE-DUP']);
   assert.equal(result.writes, writes.length);
   assert.equal(sheets.V2_repair_tickets.getLastRow(), 2);
+  assert.equal(sheets.V2_repair_tickets.getLastRow() - 1, result.created_count);
+  assert.equal(
+    sourceRows.slice(1).filter(row => row[repairTicketColumn]).length,
+    result.created_count + result.reconciled_link_count
+  );
+  assert.equal(events.length - 1, 2 * result.created_count);
   assert.equal(events.filter(row => row[3] === 'legacy_backfill').length, 1);
   assert.equal(sourceRows[1][repairTicketColumn], ticket.repair_ticket_id);
   assert.equal(sourceRows[2][repairTicketColumn], ticket.repair_ticket_id);

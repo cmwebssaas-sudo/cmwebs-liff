@@ -368,11 +368,14 @@ query parameter.
    creation, and link reconciliation, so a waiting concurrent apply rechecks
    the completed state before it can write. It does not alter non-repair rows
    or missing-room rows.
-5. Reconcile counts: `created_count` must equal the increase in
-   `V2_repair_tickets` rows and in linked source rows; `V2_repair_events` must
-   increase by twice `created_count` (`created` plus `legacy_backfill`), even
-   when multiple source rows normalize to the same source ID. `writes` is the
-   exact count of migration-initiated Sheet cell mutation calls:
+5. Reconcile counts independently: `created_count` must equal the increase in
+   `V2_repair_tickets` rows. The increase in newly written source links must
+   equal `created_count + reconciled_link_count`; rows already carrying a
+   `repair_ticket_id` are `existing_link_count` and are not new link writes.
+   `V2_repair_events` must increase by exactly `2 * created_count` (`created`
+   plus `legacy_backfill`), even when multiple source rows normalize to the
+   same source ID. `writes` is the exact count of migration-initiated Sheet
+   cell mutation calls:
    `appendRow`, `setValue`, and `setValues`. It includes ticket/event rows,
    status projection, source links, and any header provisioning; it excludes
    read calls and `insertSheet` tab creation. A first-run single ticket on two
