@@ -11,10 +11,22 @@ const tenantMessageSource = readFileSync(
   new URL('../apps-script/V2_TENANT_MESSAGES.js', import.meta.url),
   'utf8'
 );
+const workspaceLandlordAccessSource = readFileSync(
+  new URL('../apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js', import.meta.url),
+  'utf8'
+);
+const landlordManagementSource = readFileSync(
+  new URL('../apps-script/V2_LANDLORD_MANAGEMENT.js', import.meta.url),
+  'utf8'
+);
 
 function extractFunction(source, name) {
   const start = source.indexOf(`function ${name}(`);
-  const end = source.indexOf('\n\n/**', start);
+  const nextComment = source.indexOf('\n\n/**', start + 1);
+  const nextFunction = source.indexOf('\n\nfunction ', start + 1);
+  const end = [nextComment, nextFunction]
+    .filter(index => index !== -1)
+    .sort((left, right) => left - right)[0];
   assert.notEqual(start, -1, `${name} must exist`);
   assert.notEqual(end, -1, `${name} must end before the next function comment`);
   return source.slice(start, end);
@@ -316,4 +328,163 @@ test('repair message intake links its post-create ticket while other message cat
     ticketId: 'repair-WS-1-ROOM-101-uuid-1'
   }]);
   assert.equal(appended.length, 2);
+});
+
+test('tenant repair route derives the owner scope from LINE identity and rejects forged identity filters', () => {
+  const ownerTicket = {
+    workspace_id: 'WS-1', room_id: 'ROOM-B', tenant_id_snapshot: 'TENANT-B',
+    repair_ticket_id: 'TICKET-B', tenant_name_snapshot: '房客 B', description: 'B repair'
+  };
+  const priorTenantTicket = {
+    workspace_id: 'WS-1', room_id: 'ROOM-B', tenant_id_snapshot: 'TENANT-A',
+    repair_ticket_id: 'TICKET-A', tenant_name_snapshot: '房客 A', description: 'A repair'
+  };
+  const context = {
+    Object,
+    String,
+    resolveCanonicalTenantRuntimeByLineUid_(lineUserId) {
+      assert.equal(lineUserId, 'TENANT-B-LINE');
+      return {
+        success: true,
+        data: { workspace_id: 'WS-1', room_id: 'ROOM-B', tenant_id: 'TENANT-B' }
+      };
+    },
+    repairTicketEnsureSheets_() { return { tickets: {} }; },
+    repairTicketRows_() { return [ownerTicket, priorTenantTicket]; },
+    repairTicketToTenantProjection_(ticket, identity) {
+      if (ticket.tenant_id_snapshot !== identity.tenant_id) return null;
+      return { repair_ticket_id: ticket.repair_ticket_id, description: ticket.description };
+    }
+  };
+  vm.runInNewContext(
+    extractFunction(tenantMessageSource, 'getTenantRepairTicketsInitByLineUid'),
+    context,
+    { filename: 'V2_TENANT_MESSAGES.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(tenantMessageSource, 'invokeTenantRepairRoute_'),
+    context,
+    { filename: 'V2_TENANT_MESSAGES.js' }
+  );
+
+  const result = context.getTenantRepairTicketsInitByLineUid('TENANT-B-LINE');
+  const forged = context.invokeTenantRepairRoute_('TENANT-B-LINE', {
+    tenant_id: 'TENANT-A', room_id: 'ROOM-A', ticket_id: 'TICKET-A'
+  });
+
+  assert.deepEqual(result.data.tickets, [{ repair_ticket_id: 'TICKET-B', description: 'B repair' }]);
+  assert.equal(forged.code, 'TENANT_ACCESS_DENIED');
+  assert.equal(JSON.stringify(result.data.tickets).includes('房客'), false);
+});
+
+test('landlord repair proxies enforce workspace authorization and strip non-allowlisted update fields', () => {
+  const calls = [];
+  const context = {
+    Object,
+    workspaceResult_(success, code, message) { return { success, code, message }; },
+    workspaceLandlordProxy_(lineUserId, action, policy, handler) {
+      if (lineUserId === 'OTHER-LANDLORD-LINE') {
+        return { success: false, code: 'WORKSPACE_ACCESS_DENIED' };
+      }
+      return handler('LANDLORD-PRINCIPAL-LINE', {
+        workspace: { workspace_id: 'WS-1' },
+        principal: { landlord_id: 'LANDLORD-1' }
+      });
+    },
+    getLandlordRepairTicketsInitByLineUid_(lineUserId, access, filters) {
+      calls.push({ type: 'read', lineUserId, access, filters });
+      return { success: true, code: 'OK', data: { tickets: [] } };
+    },
+    updateLandlordRepairTicketByLineUid_(lineUserId, ticketId, input, access) {
+      calls.push({ type: 'update', lineUserId, ticketId, input, access });
+      return { success: true, code: 'OK', data: { repair_ticket_id: ticketId } };
+    }
+  };
+  vm.runInNewContext(
+    extractFunction(workspaceLandlordAccessSource, 'getWorkspaceLandlordRepairTicketsInitByLineUid_'),
+    context,
+    { filename: 'V2_WORKSPACE_LANDLORD_ACCESS.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(workspaceLandlordAccessSource, 'updateWorkspaceLandlordRepairTicketByLineUid_'),
+    context,
+    { filename: 'V2_WORKSPACE_LANDLORD_ACCESS.js' }
+  );
+
+  const allowedRead = context.getWorkspaceLandlordRepairTicketsInitByLineUid_('LANDLORD-LINE', {
+    workspace_id: 'FORGED-WS', room_id: 'ROOM-B'
+  });
+  const deniedRead = context.getWorkspaceLandlordRepairTicketsInitByLineUid_('OTHER-LANDLORD-LINE', {});
+  const update = context.updateWorkspaceLandlordRepairTicketByLineUid_(
+    'LANDLORD-LINE', 'TICKET-B', {
+      status: 'in_progress', public_reply: '已安排處理', responsibility_party: 'landlord',
+      actual_cost: '300', workspace_id: 'FORGED-WS', tenant_id: 'TENANT-A', internal_note: 'private'
+    }
+  );
+
+  assert.equal(allowedRead.success, true);
+  assert.equal(deniedRead.code, 'WORKSPACE_ACCESS_DENIED');
+  assert.equal(update.success, true);
+  assert.equal(JSON.stringify(calls[0].filters), JSON.stringify({ room_id: 'ROOM-B' }));
+  assert.equal(JSON.stringify(calls[1].input), JSON.stringify({
+    status: 'in_progress', public_reply: '已安排處理', responsibility_party: 'landlord',
+    estimated_cost: '', actual_cost: '300'
+  }));
+  assert.equal(Object.hasOwn(calls[1].input, 'workspace_id'), false);
+  assert.equal(Object.hasOwn(calls[1].input, 'internal_note'), false);
+});
+
+test('landlord repair update keeps a Workspace boundary and appends a landlord audit event', () => {
+  const events = [];
+  const writes = [];
+  const target = {
+    _sheet_row: 7,
+    workspace_id: 'WS-1',
+    repair_ticket_id: 'TICKET-B',
+    status: 'open', tenant_id_snapshot: 'TENANT-B', lease_id_snapshot: 'LEASE-B'
+  };
+  const context = {
+    String,
+    lmText_(value) { return String(value || '').trim(); },
+    repairTicketIsStatus_(status) { return ['open', 'in_progress'].includes(status); },
+    repairTicketFindTicketRow_() { return target; },
+    repairTicketAppendEvent_(ticketId, input, actor) {
+      events.push({ ticketId, input, actor });
+      return { ...target, status: input.to_status };
+    },
+    repairTicketEnsureSheets_() { return { tickets: {} }; },
+    repairTicketSetTicketProjectionValue_(sheet, row, field, value) {
+      writes.push({ sheet, row, field, value });
+    },
+    repairTicketToLandlordProjection_(ticket) { return ticket; }
+  };
+  vm.runInNewContext(
+    extractFunction(landlordManagementSource, 'repairTicketLandlordAllowlistedInput_'),
+    context,
+    { filename: 'V2_LANDLORD_MANAGEMENT.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(landlordManagementSource, 'repairTicketLandlordHasUpdate_'),
+    context,
+    { filename: 'V2_LANDLORD_MANAGEMENT.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(landlordManagementSource, 'updateLandlordRepairTicketByLineUid_'),
+    context,
+    { filename: 'V2_LANDLORD_MANAGEMENT.js' }
+  );
+
+  const result = context.updateLandlordRepairTicketByLineUid_(
+    'LANDLORD-LINE', 'TICKET-B',
+    { status: 'in_progress', public_reply: '已安排處理', actual_cost: '300', tenant_id: 'TENANT-A' },
+    { workspace: { workspace_id: 'WS-1' }, principal: { landlord_id: 'LANDLORD-1' } }
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].actor.actor_id, 'LANDLORD-1');
+  assert.equal(events[0].input.internal_note, '');
+  assert.deepEqual(writes.map(write => [write.row, write.field, write.value]), [[7, 'actual_cost', '300']]);
+  assert.equal(target.tenant_id_snapshot, 'TENANT-B');
+  assert.equal(target.lease_id_snapshot, 'LEASE-B');
 });

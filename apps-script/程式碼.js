@@ -1205,6 +1205,16 @@ if (v2Action === 'tenant_message_init') {
   return jsonOutput_(result, callback);
 }
 
+if (v2Action === 'tenant_repair_tickets_init') {
+  const result = invokeTenantRepairRoute_(lineUserId, e.parameter);
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(result, requestId);
+  }
+
+  return jsonOutput_(result, callback);
+}
+
 if (v2Action === 'tenant_message_submit') {
   const messageCategory = e.parameter.message_category || '';
   const messageTitle = e.parameter.message_title || '';
@@ -1354,6 +1364,42 @@ if (v2Action === 'landlord_send_tenant_message') {
 
 if (v2Action === 'landlord_messages_init') {
   const result = getWorkspaceLandlordMessagesInitByLineUid_(lineUserId);
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(result, requestId);
+  }
+
+  return jsonOutput_(result, callback);
+}
+
+if (v2Action === 'landlord_repair_tickets_init') {
+  const result = getWorkspaceLandlordRepairTicketsInitByLineUid_(
+    lineUserId,
+    {
+      room_id: e.parameter.room_id || '',
+      status: e.parameter.status || ''
+    }
+  );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(result, requestId);
+  }
+
+  return jsonOutput_(result, callback);
+}
+
+if (v2Action === 'landlord_repair_ticket_update') {
+  const result = updateWorkspaceLandlordRepairTicketByLineUid_(
+    lineUserId,
+    e.parameter.ticket_id || '',
+    {
+      status: e.parameter.status || '',
+      public_reply: e.parameter.public_reply || '',
+      responsibility_party: e.parameter.responsibility_party || '',
+      estimated_cost: e.parameter.estimated_cost || '',
+      actual_cost: e.parameter.actual_cost || ''
+    }
+  );
 
   if (bridge === '1') {
     return htmlBridgeOutput_(result, requestId);

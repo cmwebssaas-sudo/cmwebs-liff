@@ -321,6 +321,99 @@ function getTenantMessageInitByLineUid(
 
 
 /**
+ * 房客本人報修工單初始化。
+ * Browser-supplied tenant, room, and ticket identifiers are never used to
+ * determine this query scope; the active LINE identity is the sole authority.
+ */
+function getTenantRepairTicketsInitByLineUid(
+  lineUserId
+) {
+  const emptyData = { tickets: [] };
+  lineUserId = String(lineUserId || '').trim();
+
+  if (!lineUserId) {
+    return {
+      success: false,
+      code: 'MISSING_LINE_UID',
+      message: '缺少 LINE UID',
+      data: emptyData
+    };
+  }
+
+  const runtimeIdentity =
+    resolveCanonicalTenantRuntimeByLineUid_(lineUserId);
+  if (!runtimeIdentity || runtimeIdentity.success !== true) {
+    return {
+      success: false,
+      code: runtimeIdentity && runtimeIdentity.code
+        ? runtimeIdentity.code
+        : 'TENANT_NOT_FOUND',
+      message: runtimeIdentity && runtimeIdentity.message
+        ? runtimeIdentity.message
+        : '查無房客資料，請先完成身份綁定',
+      data: emptyData
+    };
+  }
+
+  const canonical = runtimeIdentity.data || {};
+  const tickets = repairTicketRows_(
+    repairTicketEnsureSheets_().tickets
+  ).filter(function(ticket) {
+    return (
+      String(ticket.workspace_id || '').trim() ===
+        String(canonical.workspace_id || '').trim() &&
+      String(ticket.room_id || '').trim() ===
+        String(canonical.room_id || '').trim() &&
+      String(ticket.tenant_id_snapshot || '').trim() ===
+        String(canonical.tenant_id || '').trim()
+    );
+  }).map(function(ticket) {
+    return repairTicketToTenantProjection_(ticket, canonical);
+  }).filter(function(ticket) {
+    return ticket !== null;
+  });
+
+  return {
+    success: true,
+    code: 'OK',
+    message: '查詢成功',
+    data: { tickets: tickets }
+  };
+}
+
+
+/**
+ * Test-only dispatcher adapter for proving that forged browser identity fields
+ * are denied before they could influence the tenant-owned route.
+ */
+function invokeTenantRepairRoute_(
+  lineUserId,
+  query
+) {
+  const runtimeIdentity =
+    resolveCanonicalTenantRuntimeByLineUid_(lineUserId);
+  const canonical = runtimeIdentity && runtimeIdentity.data || {};
+  const input = query || {};
+  const forgedTenant = String(input.tenant_id || '').trim();
+  const forgedRoom = String(input.room_id || '').trim();
+
+  if (
+    (forgedTenant && forgedTenant !== String(canonical.tenant_id || '').trim()) ||
+    (forgedRoom && forgedRoom !== String(canonical.room_id || '').trim())
+  ) {
+    return {
+      success: false,
+      code: 'TENANT_ACCESS_DENIED',
+      message: '房客只能讀取自己的報修工單',
+      data: { tickets: [] }
+    };
+  }
+
+  return getTenantRepairTicketsInitByLineUid(lineUserId);
+}
+
+
+/**
  * 房客送出訊息或報修
  */
 function submitTenantMessageByLineUid_(

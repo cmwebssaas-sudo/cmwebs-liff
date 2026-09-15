@@ -307,6 +307,37 @@ function getWorkspaceLandlordMessagesInitByLineUid_(
 }
 
 
+function getWorkspaceLandlordRepairTicketsInitByLineUid_(
+  lineUserId,
+  filters
+) {
+  const sourceFilters = filters || {};
+  const safeFilters = {};
+  if (sourceFilters.room_id) safeFilters.room_id = sourceFilters.room_id;
+  if (sourceFilters.status) safeFilters.status = sourceFilters.status;
+
+  return workspaceLandlordProxy_(
+    lineUserId,
+    'landlord_repair_tickets_init',
+    'read',
+    function(principalLineUserId, access) {
+      if (typeof getLandlordRepairTicketsInitByLineUid_ !== 'function') {
+        return workspaceResult_(
+          false,
+          'REPAIR_TICKET_MODULE_REQUIRED',
+          '找不到報修工單查詢函式'
+        );
+      }
+      return getLandlordRepairTicketsInitByLineUid_(
+        principalLineUserId,
+        access,
+        safeFilters
+      );
+    }
+  );
+}
+
+
 function getWorkspaceLandlordPaymentReportsInitByLineUid_(
   lineUserId
 ) {
@@ -647,6 +678,43 @@ function updateWorkspaceLandlordTenantMessageByLineUid_(
         messageId,
         status,
         landlordReply
+      );
+    }
+  );
+}
+
+
+function updateWorkspaceLandlordRepairTicketByLineUid_(
+  lineUserId,
+  ticketId,
+  input
+) {
+  const sourceInput = input || {};
+  const safeInput = {
+    status: sourceInput.status || '',
+    public_reply: sourceInput.public_reply || '',
+    responsibility_party: sourceInput.responsibility_party || '',
+    estimated_cost: sourceInput.estimated_cost || '',
+    actual_cost: sourceInput.actual_cost || ''
+  };
+
+  return workspaceLandlordProxy_(
+    lineUserId,
+    'landlord_repair_ticket_update',
+    'message_write',
+    function(principalLineUserId, access) {
+      if (typeof updateLandlordRepairTicketByLineUid_ !== 'function') {
+        return workspaceResult_(
+          false,
+          'REPAIR_TICKET_MODULE_REQUIRED',
+          '找不到報修工單更新函式'
+        );
+      }
+      return updateLandlordRepairTicketByLineUid_(
+        principalLineUserId,
+        ticketId,
+        safeInput,
+        access
       );
     }
   );

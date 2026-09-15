@@ -629,14 +629,50 @@ electronic contract directly, including explicit zero-valued fee fields.
 
 | Action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
-| `tenant_repair_tickets_init` | JSONP / controlled bridge | Verified tenant identity and active Workspace/room scope | Returns only the current tenant's own tickets and safe events. |
+| `tenant_repair_tickets_init` | JSONP / controlled bridge | Verified tenant identity and active Workspace/room scope | Returns only the current tenant's own safe ticket projection. |
 | `landlord_repair_tickets_init` | JSONP / controlled bridge | Verified landlord/team membership and Workspace read permission | Returns complete room-scoped ticket history, including protected historical tenant/lease references. |
-| `landlord_repair_ticket_update` | POST / controlled bridge | Verified landlord/team membership and Workspace repair-write permission | Appends a ticket event and updates the ticket status without rewriting history. |
+| `landlord_repair_ticket_update` | JSONP / controlled bridge | Verified landlord/team membership and existing `message_write` permission | Appends a ticket event and updates only allowlisted current ticket fields without rewriting history. |
 
 The tenant route filters the authorized query set on the server before response
 serialization. Replacing `tenant_id`, `room_id`, or a ticket ID in the query
 string cannot expand the result set; undocumented query-string actions are not
 accepted.
+
+### Repair-ticket permission, error, and projection contract
+
+- `tenant_repair_tickets_init` takes no tenant, room, Workspace, or ticket
+  identifier as an authority input. It derives the active `workspace_id`,
+  `room_id`, and `tenant_id` from the authenticated LINE identity, filters that
+  exact three-part scope before projection, then returns each ticket using only
+  `repair_ticket_id`, `property_id`, `room_id`, `room_name_snapshot`,
+  `category`, `title`, `description`, `priority`, `status`, `created_at`,
+  `closed_at`, and the latest `public_note`. It never serializes historical
+  tenant PII, `lease_id_snapshot`, raw internal events, `internal_note`, or
+  attachment storage identifiers. Missing or unresolved identity returns
+  `MISSING_LINE_UID` or the canonical tenant-resolution error. Browser identity
+  fields are not authority inputs, but a supplied mismatched `tenant_id` or
+  `room_id` is rejected as `TENANT_ACCESS_DENIED` by the same dispatcher helper
+  exercised by the test-only adapter.
+- `landlord_repair_tickets_init` accepts optional `room_id` and `status`
+  filters only. It obtains the Workspace from the existing authenticated
+  membership proxy, ignores client Workspace/landlord identifiers, and returns
+  only ticket rows whose `workspace_id` exactly matches that membership.
+  Workspace/membership failures return the existing proxy denial codes (such as
+  `WORKSPACE_ACCESS_DENIED`); no cross-Workspace ticket existence is exposed.
+- `landlord_repair_ticket_update` accepts `ticket_id` plus only `status`,
+  `public_reply`, `responsibility_party`, `estimated_cost`, and `actual_cost`.
+  The existing `message_write` policy is required. All other fields, including
+  `workspace_id`, landlord/tenant/lease identity, `internal_note`, attachments,
+  and source-message fields are discarded before the update service. Missing ID,
+  empty updates, invalid status, oversized public reply, out-of-scope or absent
+  tickets return respectively `MISSING_REPAIR_TICKET_ID`,
+  `INVALID_REPAIR_TICKET_UPDATE`, `INVALID_REPAIR_TICKET_STATUS`,
+  `REPAIR_TICKET_REPLY_TOO_LONG`, or `REPAIR_TICKET_NOT_FOUND`.
+- The JSONP and HTML bridge envelopes remain the centralized dispatcher
+  behavior. `tenant_repair_tickets_init` is eligible for the existing
+  read-only runtime snapshot because it contains only the tenant-safe
+  projection. Neither landlord repair read/write actions nor any landlord write
+  are added to that cache allowlist.
 
 ## Signed legacy contract integration webhook
 
