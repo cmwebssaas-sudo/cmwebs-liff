@@ -43,6 +43,28 @@ function repairRouteAuthError_(code, message) {
 }
 
 
+function repairRouteDoGetRejected_() {
+  return repairRouteAuthError_(
+    'AUTH_METHOD_REQUIRED',
+    '報修工單 action 必須使用已驗證的 POST bridge'
+  );
+}
+
+
+function dispatchRepairPostRoute_(action, request) {
+  if (action === 'tenant_repair_tickets_init') {
+    return dispatchTenantRepairTicketsInit_(request || {});
+  }
+  if (
+    action === 'landlord_repair_tickets_init' ||
+    action === 'landlord_repair_ticket_update'
+  ) {
+    return dispatchLandlordRepairRoute_(action, request || {});
+  }
+  return repairRouteAuthError_('INVALID_ACTION', '不支援的報修工單 action');
+}
+
+
 function resolveTenantRepairRoutePrincipal_(parameter) {
   const request = parameter || {};
   const sessionToken = String(request.tenant_session_token || '').trim();
@@ -249,19 +271,13 @@ function doGet(e) {
     );
   }
 
-  if (v2Action === 'tenant_repair_tickets_init') {
-    runtimeSnapshotBegin_(v2Action);
-    const result = dispatchTenantRepairTicketsInit_(e.parameter);
-    if (bridge === '1') return htmlBridgeOutput_(result, requestId);
-    return jsonOutput_(result, callback);
-  }
-
   if (
+    v2Action === 'tenant_repair_tickets_init' ||
     v2Action === 'landlord_repair_tickets_init' ||
     v2Action === 'landlord_repair_ticket_update'
   ) {
     runtimeSnapshotBegin_(v2Action);
-    const result = dispatchLandlordRepairRoute_(v2Action, e.parameter);
+    const result = repairRouteDoGetRejected_();
     if (bridge === '1') return htmlBridgeOutput_(result, requestId);
     return jsonOutput_(result, callback);
   }
@@ -2585,6 +2601,20 @@ function doPost(e) {
           String(request.response_mode || '')
             .trim() === 'bridge';
         let result = null;
+
+        if (
+          action === 'tenant_repair_tickets_init' ||
+          action === 'landlord_repair_tickets_init' ||
+          action === 'landlord_repair_ticket_update'
+        ) {
+          result = dispatchRepairPostRoute_(action, request);
+          if (useBridge) {
+            return htmlBridgeOutput_(result, request.request_id || '');
+          }
+          return ContentService
+            .createTextOutput(JSON.stringify(result))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
 
         if (action === 'landlord_email_verify_request') {
           result =

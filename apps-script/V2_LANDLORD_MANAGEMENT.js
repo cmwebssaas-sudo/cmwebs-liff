@@ -632,7 +632,9 @@ function updateLandlordRepairTicketByLineUid_(
   }, {
     actor_type: 'landlord',
     actor_id: lmText_(
-      access && access.principal && access.principal.landlord_id
+      access && access.user && access.user.user_id
+    ) || lmText_(
+      access && access.line_user_id
     ) || lmText_(landlordLineUserId)
   });
   var sheet = repairTicketEnsureSheets_().tickets;

@@ -495,12 +495,17 @@ test('landlord repair update keeps a Workspace boundary and appends a landlord a
   const result = context.updateLandlordRepairTicketByLineUid_(
     'LANDLORD-LINE', 'TICKET-B',
     { status: 'in_progress', public_reply: '已安排處理', actual_cost: '300', tenant_id: 'TENANT-A' },
-    { workspace: { workspace_id: 'WS-1' }, principal: { landlord_id: 'LANDLORD-1' } }
+    {
+      workspace: { workspace_id: 'WS-1' },
+      principal: { landlord_id: 'LANDLORD-OWNER' },
+      line_user_id: 'LANDLORD-MAINTENANCE-LINE',
+      user: { user_id: 'USER-MAINTENANCE' }
+    }
   );
 
   assert.equal(result.success, true);
   assert.equal(events.length, 1);
-  assert.equal(events[0].actor.actor_id, 'LANDLORD-1');
+  assert.equal(events[0].actor.actor_id, 'USER-MAINTENANCE');
   assert.equal(events[0].input.internal_note, '');
   assert.deepEqual(writes.map(write => [write.row, write.field, write.value]), [[7, 'actual_cost', '300']]);
   assert.equal(target.tenant_id_snapshot, 'TENANT-B');
@@ -628,4 +633,50 @@ test('tenant repair response suppresses stored raw message bodies even though de
   assert.equal(result.success, true);
   assert.equal(result.data.tickets[0].description, '');
   assert.equal(JSON.stringify(result.data).includes('原始房客訊息'), false);
+});
+
+test('repair route boundary rejects credential-bearing GET and accepts only verified POST body principals', () => {
+  const calls = [];
+  const context = {
+    repairRouteAuthError_(code, message) { return { success: false, code, message, data: { tickets: [] } }; },
+    dispatchTenantRepairTicketsInit_(request) {
+      calls.push({ type: 'tenant-post', request });
+      return { success: true, code: 'OK', data: { tickets: [] } };
+    },
+    dispatchLandlordRepairRoute_(action, request) {
+      calls.push({ type: 'landlord-post', action, request });
+      return { success: true, code: 'OK', data: {} };
+    }
+  };
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'repairRouteDoGetRejected_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'dispatchRepairPostRoute_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+
+  const getTenant = context.repairRouteDoGetRejected_('tenant_repair_tickets_init', {
+    line_user_id: 'FORGED', tenant_session_token: 'query-secret', id_token: 'query-token'
+  });
+  const getLandlord = context.repairRouteDoGetRejected_('landlord_repair_ticket_update', {
+    line_user_id: 'FORGED', landlord_session_token: 'query-secret'
+  });
+  const postTenant = context.dispatchRepairPostRoute_('tenant_repair_tickets_init', {
+    tenant_session_token: 'body-session', tenant_id: 'FORGED', room_id: 'FORGED'
+  });
+  const postLandlord = context.dispatchRepairPostRoute_('landlord_repair_tickets_init', {
+    landlord_session_token: 'body-session'
+  });
+
+  assert.equal(getTenant.code, 'AUTH_METHOD_REQUIRED');
+  assert.equal(getLandlord.code, 'AUTH_METHOD_REQUIRED');
+  assert.equal(postTenant.success, true);
+  assert.equal(postLandlord.success, true);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].request.tenant_session_token, 'body-session');
+  assert.equal(calls[1].request.landlord_session_token, 'body-session');
 });
