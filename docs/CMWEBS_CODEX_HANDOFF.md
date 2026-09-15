@@ -16,6 +16,8 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
+- Latest verified source/deployment reconciliation: [PRODUCTION-DELIVERY.md](PRODUCTION-DELIVERY.md), 2026-09-15. Public Pages assets use the verified v187 deployment; its 56 exported files match `main` at `c47efa0`. The old v160 endpoint in the dirty root is not the current public target. Start from current remote `main`, not the historical dirty root. Run the checked-in validation commands before release; do not create another cloud project for an update.
+
 - Gate 0 / Production Consolidation: PASS for canonical source reconciliation
   on 2026-08-03.
 - Canonical V2 source baseline: immutable Apps Script Version 89 source is

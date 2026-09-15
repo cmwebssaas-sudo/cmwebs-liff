@@ -1,0 +1,5 @@
+node_modules/
+.worktrees/
+.clasp.json
+.clasprc.json
+.clasp.*.json
