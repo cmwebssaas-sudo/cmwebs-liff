@@ -33,6 +33,127 @@ function getEcpayConfig_() {
   };
 }
 
+function repairRouteAuthError_(code, message) {
+  return {
+    success: false,
+    code: code,
+    message: message,
+    data: { tickets: [] }
+  };
+}
+
+
+function resolveTenantRepairRoutePrincipal_(parameter) {
+  const request = parameter || {};
+  const sessionToken = String(request.tenant_session_token || '').trim();
+  const idToken = String(request.id_token || '').trim();
+  let verified;
+
+  if (!sessionToken && !idToken) {
+    return repairRouteAuthError_('AUTH_REQUIRED', '請提供已驗證的房客 LIFF session');
+  }
+  if (sessionToken) {
+    if (typeof verifyTenantLiffSessionToken_ !== 'function') {
+      return repairRouteAuthError_('TENANT_REPAIR_AUTH_MODULE_REQUIRED', '找不到房客 LIFF session 驗證模組');
+    }
+    try {
+      verified = verifyTenantLiffSessionToken_(sessionToken);
+    } catch (_) {
+      return repairRouteAuthError_('AUTH_REQUIRED', '房客 LIFF session 驗證失敗');
+    }
+  } else {
+    if (typeof tenantLiffSigningVerifyIdTokenClaims_ !== 'function') {
+      return repairRouteAuthError_('TENANT_REPAIR_AUTH_MODULE_REQUIRED', '找不到房客 ID token 驗證模組');
+    }
+    try {
+      verified = tenantLiffSigningVerifyIdTokenClaims_(idToken);
+    } catch (_) {
+      return repairRouteAuthError_('AUTH_REQUIRED', '房客 ID token 驗證失敗');
+    }
+  }
+  if (!verified || verified.success !== true) {
+    return verified || repairRouteAuthError_('AUTH_REQUIRED', '房客驗證失敗');
+  }
+
+  const claims = verified.data || {};
+  const lineUserId = String(claims.line_sub || claims.sub || '').trim();
+  if (!lineUserId) {
+    return repairRouteAuthError_('AUTH_REQUIRED', '房客驗證結果缺少身份');
+  }
+  if (typeof resolveCanonicalTenantRuntimeByLineUid_ !== 'function') {
+    return repairRouteAuthError_('TENANT_REPAIR_AUTH_MODULE_REQUIRED', '找不到房客身份解析模組');
+  }
+  const canonical = resolveCanonicalTenantRuntimeByLineUid_(lineUserId);
+  if (!canonical || canonical.success !== true) {
+    return canonical || repairRouteAuthError_('AUTH_REQUIRED', '無法解析房客身份');
+  }
+  return {
+    success: true,
+    code: 'OK',
+    message: '',
+    data: {
+      principal_line_user_id: lineUserId,
+      canonical: canonical.data || {}
+    }
+  };
+}
+
+
+function dispatchTenantRepairTicketsInit_(parameter) {
+  const principal = resolveTenantRepairRoutePrincipal_(parameter);
+  if (!principal || principal.success !== true) return principal;
+  return invokeTenantRepairRoute_(principal.data, parameter || {});
+}
+
+
+function resolveLandlordRepairRoutePrincipal_(parameter) {
+  const request = parameter || {};
+  if (!String(request.landlord_session_token || '').trim()) {
+    return repairRouteAuthError_('AUTH_REQUIRED', '請提供房東登入 session');
+  }
+  if (typeof resolveLandlordPrincipal_ !== 'function') {
+    return repairRouteAuthError_('LANDLORD_REPAIR_AUTH_MODULE_REQUIRED', '找不到房東 session 驗證模組');
+  }
+  const principal = resolveLandlordPrincipal_(request, { require_onboarding: true });
+  if (!principal || principal.success !== true) {
+    return principal || repairRouteAuthError_('AUTH_REQUIRED', '房東驗證失敗');
+  }
+  if (!String(principal.data && principal.data.principal_line_user_id || '').trim()) {
+    return repairRouteAuthError_('AUTH_REQUIRED', '房東驗證結果缺少身份');
+  }
+  return principal;
+}
+
+
+function dispatchLandlordRepairRoute_(action, parameter) {
+  const request = parameter || {};
+  const principal = resolveLandlordRepairRoutePrincipal_(request);
+  if (!principal || principal.success !== true) return principal;
+  const lineUserId = principal.data.principal_line_user_id;
+
+  if (action === 'landlord_repair_tickets_init') {
+    return getWorkspaceLandlordRepairTicketsInitByLineUid_(lineUserId, {
+      room_id: request.room_id || '',
+      status: request.status || ''
+    });
+  }
+  if (action === 'landlord_repair_ticket_update') {
+    return updateWorkspaceLandlordRepairTicketByLineUid_(
+      lineUserId,
+      request.ticket_id || '',
+      {
+        status: request.status || '',
+        public_reply: request.public_reply || '',
+        responsibility_party: request.responsibility_party || '',
+        estimated_cost: request.estimated_cost || '',
+        actual_cost: request.actual_cost || ''
+      }
+    );
+  }
+  return repairRouteAuthError_('INVALID_ACTION', '不支援的報修工單 action');
+}
+
+
 function doGet(e) {
   e = e || { parameter: {} };
 
@@ -126,6 +247,23 @@ function doGet(e) {
       ),
       callback
     );
+  }
+
+  if (v2Action === 'tenant_repair_tickets_init') {
+    runtimeSnapshotBegin_(v2Action);
+    const result = dispatchTenantRepairTicketsInit_(e.parameter);
+    if (bridge === '1') return htmlBridgeOutput_(result, requestId);
+    return jsonOutput_(result, callback);
+  }
+
+  if (
+    v2Action === 'landlord_repair_tickets_init' ||
+    v2Action === 'landlord_repair_ticket_update'
+  ) {
+    runtimeSnapshotBegin_(v2Action);
+    const result = dispatchLandlordRepairRoute_(v2Action, e.parameter);
+    if (bridge === '1') return htmlBridgeOutput_(result, requestId);
+    return jsonOutput_(result, callback);
   }
 
   if ([
@@ -1205,16 +1343,6 @@ if (v2Action === 'tenant_message_init') {
   return jsonOutput_(result, callback);
 }
 
-if (v2Action === 'tenant_repair_tickets_init') {
-  const result = invokeTenantRepairRoute_(lineUserId, e.parameter);
-
-  if (bridge === '1') {
-    return htmlBridgeOutput_(result, requestId);
-  }
-
-  return jsonOutput_(result, callback);
-}
-
 if (v2Action === 'tenant_message_submit') {
   const messageCategory = e.parameter.message_category || '';
   const messageTitle = e.parameter.message_title || '';
@@ -1364,42 +1492,6 @@ if (v2Action === 'landlord_send_tenant_message') {
 
 if (v2Action === 'landlord_messages_init') {
   const result = getWorkspaceLandlordMessagesInitByLineUid_(lineUserId);
-
-  if (bridge === '1') {
-    return htmlBridgeOutput_(result, requestId);
-  }
-
-  return jsonOutput_(result, callback);
-}
-
-if (v2Action === 'landlord_repair_tickets_init') {
-  const result = getWorkspaceLandlordRepairTicketsInitByLineUid_(
-    lineUserId,
-    {
-      room_id: e.parameter.room_id || '',
-      status: e.parameter.status || ''
-    }
-  );
-
-  if (bridge === '1') {
-    return htmlBridgeOutput_(result, requestId);
-  }
-
-  return jsonOutput_(result, callback);
-}
-
-if (v2Action === 'landlord_repair_ticket_update') {
-  const result = updateWorkspaceLandlordRepairTicketByLineUid_(
-    lineUserId,
-    e.parameter.ticket_id || '',
-    {
-      status: e.parameter.status || '',
-      public_reply: e.parameter.public_reply || '',
-      responsibility_party: e.parameter.responsibility_party || '',
-      estimated_cost: e.parameter.estimated_cost || '',
-      actual_cost: e.parameter.actual_cost || ''
-    }
-  );
 
   if (bridge === '1') {
     return htmlBridgeOutput_(result, requestId);

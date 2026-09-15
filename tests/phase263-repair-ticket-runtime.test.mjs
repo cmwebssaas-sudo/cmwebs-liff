@@ -19,6 +19,10 @@ const landlordManagementSource = readFileSync(
   new URL('../apps-script/V2_LANDLORD_MANAGEMENT.js', import.meta.url),
   'utf8'
 );
+const dispatcherSource = readFileSync(
+  new URL('../apps-script/程式碼.js', import.meta.url),
+  'utf8'
+);
 
 function extractFunction(source, name) {
   const start = source.indexOf(`function ${name}(`);
@@ -198,6 +202,7 @@ test('repair ticket source message is idempotent and tenant projection excludes 
   ]);
   assert.equal(Object.hasOwn(ownerView, 'tenant_name_snapshot'), false);
   assert.equal(Object.hasOwn(ownerView, 'internal_note'), false);
+  assert.equal(ownerView.description, '');
 });
 
 test('concurrent-style creation cannot append a second source-message ticket', () => {
@@ -362,17 +367,25 @@ test('tenant repair route derives the owner scope from LINE identity and rejects
     { filename: 'V2_TENANT_MESSAGES.js' }
   );
   vm.runInNewContext(
+    extractFunction(tenantMessageSource, 'getTenantRepairTicketsInitByPrincipal_'),
+    context,
+    { filename: 'V2_TENANT_MESSAGES.js' }
+  );
+  vm.runInNewContext(
     extractFunction(tenantMessageSource, 'invokeTenantRepairRoute_'),
     context,
     { filename: 'V2_TENANT_MESSAGES.js' }
   );
 
   const result = context.getTenantRepairTicketsInitByLineUid('TENANT-B-LINE');
-  const forged = context.invokeTenantRepairRoute_('TENANT-B-LINE', {
+  const forged = context.invokeTenantRepairRoute_({
+    principal_line_user_id: 'TENANT-B-LINE',
+    canonical: { workspace_id: 'WS-1', room_id: 'ROOM-B', tenant_id: 'TENANT-B' }
+  }, {
     tenant_id: 'TENANT-A', room_id: 'ROOM-A', ticket_id: 'TICKET-A'
   });
 
-  assert.deepEqual(result.data.tickets, [{ repair_ticket_id: 'TICKET-B', description: 'B repair' }]);
+  assert.deepEqual(result.data.tickets, [{ repair_ticket_id: 'TICKET-B', description: '' }]);
   assert.equal(forged.code, 'TENANT_ACCESS_DENIED');
   assert.equal(JSON.stringify(result.data.tickets).includes('房客'), false);
 });
@@ -400,6 +413,11 @@ test('landlord repair proxies enforce workspace authorization and strip non-allo
       return { success: true, code: 'OK', data: { repair_ticket_id: ticketId } };
     }
   };
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'repairRouteAuthError_'),
+    context,
+    { filename: '程式碼.js' }
+  );
   vm.runInNewContext(
     extractFunction(workspaceLandlordAccessSource, 'getWorkspaceLandlordRepairTicketsInitByLineUid_'),
     context,
@@ -487,4 +505,127 @@ test('landlord repair update keeps a Workspace boundary and appends a landlord a
   assert.deepEqual(writes.map(write => [write.row, write.field, write.value]), [[7, 'actual_cost', '300']]);
   assert.equal(target.tenant_id_snapshot, 'TENANT-B');
   assert.equal(target.lease_id_snapshot, 'LEASE-B');
+});
+
+test('repair route auth rejects bare browser UIDs and passes only verified principals to repair handlers', () => {
+  const calls = [];
+  const context = {
+    String,
+    resolveLandlordPrincipal_(request) {
+      calls.push({ type: 'landlord-auth', request });
+      return {
+        success: true,
+        data: { principal_line_user_id: 'LANDLORD-VERIFIED-LINE' }
+      };
+    },
+    verifyTenantLiffSessionToken_(token) {
+      calls.push({ type: 'tenant-session', token });
+      return { success: true, data: { line_sub: 'TENANT-VERIFIED-LINE' } };
+    },
+    resolveCanonicalTenantRuntimeByLineUid_(lineUserId) {
+      calls.push({ type: 'tenant-canonical', lineUserId });
+      return {
+        success: true,
+        data: { workspace_id: 'WS-1', room_id: 'ROOM-B', tenant_id: 'TENANT-B' }
+      };
+    },
+    invokeTenantRepairRoute_(principal, query) {
+      calls.push({ type: 'tenant-route', principal, query });
+      return { success: true, code: 'OK', data: { tickets: [] } };
+    },
+    getWorkspaceLandlordRepairTicketsInitByLineUid_(lineUserId, filters) {
+      calls.push({ type: 'landlord-read', lineUserId, filters });
+      return { success: true, code: 'OK', data: { tickets: [] } };
+    },
+    updateWorkspaceLandlordRepairTicketByLineUid_(lineUserId, ticketId, input) {
+      calls.push({ type: 'landlord-update', lineUserId, ticketId, input });
+      return { success: true, code: 'OK', data: {} };
+    }
+  };
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'repairRouteAuthError_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'resolveTenantRepairRoutePrincipal_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'dispatchTenantRepairTicketsInit_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'resolveLandlordRepairRoutePrincipal_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'dispatchLandlordRepairRoute_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+
+  const bareTenant = context.dispatchTenantRepairTicketsInit_({
+    line_user_id: 'TENANT-FORGED-LINE'
+  });
+  const verifiedTenant = context.dispatchTenantRepairTicketsInit_({
+    tenant_session_token: 'verified-session', tenant_id: 'TENANT-A', room_id: 'ROOM-A'
+  });
+  const bareLandlord = context.dispatchLandlordRepairRoute_(
+    'landlord_repair_tickets_init', { line_user_id: 'LANDLORD-FORGED-LINE' }
+  );
+  const verifiedLandlord = context.dispatchLandlordRepairRoute_(
+    'landlord_repair_ticket_update', {
+      landlord_session_token: 'verified-session', ticket_id: 'TICKET-B',
+      status: 'in_progress', internal_note: 'discard me'
+    }
+  );
+
+  assert.equal(bareTenant.code, 'AUTH_REQUIRED');
+  assert.equal(bareLandlord.code, 'AUTH_REQUIRED');
+  assert.equal(verifiedTenant.success, true);
+  assert.equal(verifiedLandlord.success, true);
+  assert.equal(calls.some(call => call.lineUserId === 'TENANT-FORGED-LINE'), false);
+  assert.equal(calls.some(call => call.lineUserId === 'LANDLORD-FORGED-LINE'), false);
+  assert.equal(calls.find(call => call.type === 'tenant-route').principal.principal_line_user_id, 'TENANT-VERIFIED-LINE');
+  assert.equal(calls.find(call => call.type === 'landlord-update').lineUserId, 'LANDLORD-VERIFIED-LINE');
+  assert.equal(Object.hasOwn(calls.find(call => call.type === 'landlord-update').input, 'internal_note'), false);
+});
+
+test('tenant repair response suppresses stored raw message bodies even though description remains a stored header', () => {
+  const context = {
+    String,
+    resolveCanonicalTenantRuntimeByLineUid_() {
+      return { success: true, data: { workspace_id: 'WS-1', room_id: 'ROOM-B', tenant_id: 'TENANT-B' } };
+    },
+    repairTicketEnsureSheets_() { return { tickets: {} }; },
+    repairTicketRows_() {
+      return [{
+        workspace_id: 'WS-1', room_id: 'ROOM-B', tenant_id_snapshot: 'TENANT-B',
+        repair_ticket_id: 'TICKET-B', description: '原始房客訊息內容不得回傳'
+      }];
+    },
+    repairTicketToTenantProjection_(ticket) {
+      return { repair_ticket_id: ticket.repair_ticket_id, description: ticket.description };
+    }
+  };
+  vm.runInNewContext(
+    extractFunction(tenantMessageSource, 'getTenantRepairTicketsInitByLineUid'),
+    context,
+    { filename: 'V2_TENANT_MESSAGES.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(tenantMessageSource, 'getTenantRepairTicketsInitByPrincipal_'),
+    context,
+    { filename: 'V2_TENANT_MESSAGES.js' }
+  );
+
+  const result = context.getTenantRepairTicketsInitByLineUid('TENANT-B-LINE');
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.tickets[0].description, '');
+  assert.equal(JSON.stringify(result.data).includes('原始房客訊息'), false);
 });

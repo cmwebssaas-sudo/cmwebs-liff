@@ -355,7 +355,34 @@ function getTenantRepairTicketsInitByLineUid(
     };
   }
 
-  const canonical = runtimeIdentity.data || {};
+  return getTenantRepairTicketsInitByPrincipal_(
+    runtimeIdentity.data || {}
+  );
+}
+
+
+/**
+ * Builds a tenant-safe repair response from a principal already resolved by a
+ * verified authentication path. This deliberately accepts no browser scope.
+ */
+function getTenantRepairTicketsInitByPrincipal_(
+  canonical
+) {
+  canonical = canonical || {};
+  const emptyData = { tickets: [] };
+  if (
+    !String(canonical.workspace_id || '').trim() ||
+    !String(canonical.room_id || '').trim() ||
+    !String(canonical.tenant_id || '').trim()
+  ) {
+    return {
+      success: false,
+      code: 'AUTH_REQUIRED',
+      message: '缺少已驗證的房客身份',
+      data: emptyData
+    };
+  }
+
   const tickets = repairTicketRows_(
     repairTicketEnsureSheets_().tickets
   ).filter(function(ticket) {
@@ -368,7 +395,9 @@ function getTenantRepairTicketsInitByLineUid(
         String(canonical.tenant_id || '').trim()
     );
   }).map(function(ticket) {
-    return repairTicketToTenantProjection_(ticket, canonical);
+    const projection = repairTicketToTenantProjection_(ticket, canonical);
+    if (projection) projection.description = '';
+    return projection;
   }).filter(function(ticket) {
     return ticket !== null;
   });
@@ -387,12 +416,11 @@ function getTenantRepairTicketsInitByLineUid(
  * are denied before they could influence the tenant-owned route.
  */
 function invokeTenantRepairRoute_(
-  lineUserId,
+  trustedPrincipal,
   query
 ) {
-  const runtimeIdentity =
-    resolveCanonicalTenantRuntimeByLineUid_(lineUserId);
-  const canonical = runtimeIdentity && runtimeIdentity.data || {};
+  const principal = trustedPrincipal || {};
+  const canonical = principal.canonical || principal;
   const input = query || {};
   const forgedTenant = String(input.tenant_id || '').trim();
   const forgedRoom = String(input.room_id || '').trim();
@@ -409,7 +437,7 @@ function invokeTenantRepairRoute_(
     };
   }
 
-  return getTenantRepairTicketsInitByLineUid(lineUserId);
+  return getTenantRepairTicketsInitByPrincipal_(canonical);
 }
 
 

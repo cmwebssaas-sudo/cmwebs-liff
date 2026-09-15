@@ -181,7 +181,9 @@ function repairTicketToTenantProjection_(ticket, currentTenant) {
   V2_REPAIR_TICKET_TENANT_ALLOWED_FIELDS_.forEach(function(field) {
     projection[field] = field === 'public_note'
       ? repairTicketLatestPublicNote_(source.repair_ticket_id)
-      : source[field] === undefined ? '' : source[field];
+      : field === 'description'
+        ? ''
+        : source[field] === undefined ? '' : source[field];
   });
   return projection;
 }

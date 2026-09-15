@@ -640,28 +640,43 @@ accepted.
 
 ### Repair-ticket permission, error, and projection contract
 
-- `tenant_repair_tickets_init` takes no tenant, room, Workspace, or ticket
-  identifier as an authority input. It derives the active `workspace_id`,
-  `room_id`, and `tenant_id` from the authenticated LINE identity, filters that
-  exact three-part scope before projection, then returns each ticket using only
-  `repair_ticket_id`, `property_id`, `room_id`, `room_name_snapshot`,
-  `category`, `title`, `description`, `priority`, `status`, `created_at`,
-  `closed_at`, and the latest `public_note`. It never serializes historical
-  tenant PII, `lease_id_snapshot`, raw internal events, `internal_note`, or
-  attachment storage identifiers. Missing or unresolved identity returns
-  `MISSING_LINE_UID` or the canonical tenant-resolution error. Browser identity
-  fields are not authority inputs, but a supplied mismatched `tenant_id` or
-  `room_id` is rejected as `TENANT_ACCESS_DENIED` by the same dispatcher helper
-  exercised by the test-only adapter.
+- `tenant_repair_tickets_init` requires either `tenant_session_token` verified
+  by `verifyTenantLiffSessionToken_`, or an `id_token` verified by
+  `tenantLiffSigningVerifyIdTokenClaims_`; its LINE subject is then resolved by
+  `resolveCanonicalTenantRuntimeByLineUid_`. A bare `line_user_id` is never
+  accepted. Missing credentials return `AUTH_REQUIRED`; an unavailable verifier
+  or canonical resolver returns `TENANT_REPAIR_AUTH_MODULE_REQUIRED`; verifier
+  failures return their existing explicit auth errors. The derived
+  `workspace_id`, `room_id`, and `tenant_id` filter the exact three-part scope
+  before projection. Browser `tenant_id`, `room_id`, Workspace, and ticket
+  fields are not authority inputs; a supplied mismatched tenant/room is
+  rejected as `TENANT_ACCESS_DENIED` by the same dispatcher helper exercised by
+  the test-only adapter.
+- The frozen tenant field list retains `description` as a storage/projection
+  shape key, but its response value is always the empty string: the canonical
+  `V2_tenant_messages.message_body` is stored only for the protected landlord
+  history and is never returned to a tenant. Tenant responses otherwise return
+  only `repair_ticket_id`, `property_id`, `room_id`, `room_name_snapshot`,
+  `category`, `title`, `priority`, `status`, `created_at`, `closed_at`, and the
+  latest `public_note`; they never serialize historical tenant PII,
+  `lease_id_snapshot`, raw internal events, `internal_note`, attachments, or
+  attachment storage identifiers.
 - `landlord_repair_tickets_init` accepts optional `room_id` and `status`
-  filters only. It obtains the Workspace from the existing authenticated
-  membership proxy, ignores client Workspace/landlord identifiers, and returns
-  only ticket rows whose `workspace_id` exactly matches that membership.
-  Workspace/membership failures return the existing proxy denial codes (such as
-  `WORKSPACE_ACCESS_DENIED`); no cross-Workspace ticket existence is exposed.
+  filters only and requires `landlord_session_token`, resolved through
+  `resolveLandlordPrincipal_` and the existing email-session implementation.
+  A bare `line_user_id` is never accepted. Missing session returns
+  `AUTH_REQUIRED`; an unavailable resolver returns
+  `LANDLORD_REPAIR_AUTH_MODULE_REQUIRED`; existing session verification errors
+  pass through. The verified `principal_line_user_id` is the only value passed
+  to the Workspace proxy. Client Workspace and landlord identifiers are
+  ignored, and only ticket rows whose `workspace_id` exactly matches the
+  membership are returned. Workspace/membership failures return the existing
+  proxy denial codes (such as `WORKSPACE_ACCESS_DENIED`); no cross-Workspace
+  ticket existence is exposed.
 - `landlord_repair_ticket_update` accepts `ticket_id` plus only `status`,
   `public_reply`, `responsibility_party`, `estimated_cost`, and `actual_cost`.
-  The existing `message_write` policy is required. All other fields, including
+  It requires the same verified `landlord_session_token` principal and existing
+  `message_write` policy. All other fields, including
   `workspace_id`, landlord/tenant/lease identity, `internal_note`, attachments,
   and source-message fields are discarded before the update service. Missing ID,
   empty updates, invalid status, oversized public reply, out-of-scope or absent
