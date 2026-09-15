@@ -93,3 +93,43 @@
 - No live authenticated session, LIFF id token, deployment, push, merge, or
   external write was used. The deployed module inventory and real browser
   session compatibility remain `HUMAN_REQUIRED`.
+
+## Fix round 2 — POST-only credentials and delegated audit actor
+
+### Fix commit
+
+- `f26407122a82bbc4460afa8940a10ee3576c59ea` — `fix: require post bridge for repair actions`
+
+### Changes
+
+- The three repair actions are now POST-only. `doGet` returns
+  `AUTH_METHOD_REQUIRED` through its existing JSONP/HTML envelope before the
+  generic LINE UID fallback, and never reads query credentials or
+  `line_user_id` for these actions.
+- `doPost` dispatches the repair actions from the verified request body and
+  returns either the existing controlled HTML bridge response or a JSON body.
+  Tenant credentials remain `tenant_session_token` or `id_token`; landlord
+  credentials remain `landlord_session_token`.
+- Landlord repair-event `actor_id` now prefers the authenticated Workspace
+  member's stable `access.user.user_id`, then that member's
+  `access.line_user_id`; it no longer records the Workspace primary owner for
+  a delegated member.
+- Route-boundary tests cover credential-bearing GET rejection, POST dispatcher
+  acceptance, and a delegated maintenance member audit actor. Tenant raw-body
+  exclusion and frozen storage headers remain unchanged.
+
+### Fix-round verification
+
+| Command | Result |
+| --- | --- |
+| `node --test tests/phase263-repair-ticket-runtime.test.mjs` | PASS — 11 tests, 0 failures |
+| `node --test tests/phase262-repair-ticket-contract.test.mjs` | PASS — 2 tests, 0 failures |
+| `node --check` for all Task 3 affected Apps Script files | PASS |
+| `npm run validate` | PASS — 57 backend files parsed; 37 endpoint references; static cache validation passed |
+| `git diff --check` | PASS |
+
+### Remaining risks
+
+- No live POST bridge, authenticated tenant/landlord session, LIFF token,
+  deployment, push, merge, or external write was used. Production bridge and
+  browser compatibility remain `HUMAN_REQUIRED`.
