@@ -1,0 +1,10 @@
+{
+  "name": "cmwebs-liff",
+  "private": true,
+  "scripts": {
+    "validate": "node scripts/verify-production-source.mjs && node scripts/validate-static-release-cache.js",
+    "test": "node --test tests/*.test.mjs",
+    "verify:production": "node scripts/verify-production-source.mjs --live"
+  },
+  "engines": { "node": ">=22" }
+}

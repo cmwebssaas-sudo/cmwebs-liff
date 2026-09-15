@@ -3,6 +3,10 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-09-12 (Asia/Taipei)**
 
+## 2026-09-15 正式來源與交付入口重新對帳
+
+最新證據見 [PRODUCTION-DELIVERY.md](PRODUCTION-DELIVERY.md)。公開 Pages 建置為 `c47efa0`，實際引用 Apps Script Version 187 部署；56 個唯讀匯出檔案與 `main` 完全一致，11 個公開資產逐位元組相符，既有 216 項測試通過。正式容器 Sheet 的 76 個工作表 metadata／第一列欄名已盤點，業務資料列未讀取。舊工作目錄的 Version 160 部署引用不能當成現行正式來源。新增 `npm run validate`、`npm test` 與 `npm run verify:production` 供後續一致核對。這不代表報修工單已實作或真實登入交易已驗收。
+
 This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.

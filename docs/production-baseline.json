@@ -1,0 +1,24 @@
+{
+  "verified_on": "2026-09-15",
+  "source_commit": "c47efa03de396b2dafd4a64b654950e4a7d41f98",
+  "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
+  "backend_version": 187,
+  "backend_file_count": 56,
+  "backend_tree_sha256": "d11b1b348d1e34d52b55d0781627a84b6ca94516d4e230b748209d53e99c78a7",
+  "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
+  "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
+  "public_files": [
+    "landlord-entry.html",
+    "landlord-home.html",
+    "landlord-more.html",
+    "landlord-tenants.html",
+    "landlord-tenant-detail.html",
+    "landlord-contract-requests.html",
+    "landlord-tenant-checkout.html",
+    "landlord-tenant-create.html",
+    "tenant-home.html",
+    "frontend-release.js",
+    "landlord-responsive.css"
+  ],
+  "scope": "Source and public asset identity only; not authenticated operational or current Sheet schema acceptance."
+}
