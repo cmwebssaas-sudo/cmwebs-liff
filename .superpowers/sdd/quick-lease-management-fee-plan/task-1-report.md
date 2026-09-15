@@ -3,12 +3,13 @@
 ## Scope and boundary
 
 - Recommended execution model/speed: `gpt-5.6-terra`, `medium`.
-- Changed only the simple `mode=new` renderer in `landlord-tenant-create.html`
-  plus its focused static regression coverage and the existing simple-flow copy
-  assertion.
-- The advanced renderer, room-defaulting handler, submit action, and backend
-  `management_fee` contract were preserved. No Apps Script, schema, deployment,
-  external account, or Production-data action was performed.
+- Changed the simple `mode=new` renderer in `landlord-tenant-create.html`, the
+  simple-flow validation/default-resolution path in
+  `apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js`, and focused regression
+  coverage/copy assertions.
+- The advanced renderer and backend path, room-defaulting handler, submit
+  action, and `management_fee` API/schema contract were preserved. No
+  deployment, external account, or Production-data action was performed.
 
 ## TDD evidence
 
@@ -64,6 +65,7 @@ The complete Node suite retains the two documented pre-existing failures from
 ## Commit and release boundary
 
 - In-scope files are `landlord-tenant-create.html`,
+  `apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js`,
   `tests/phase208-simple-landlord-contract-flow.test.mjs`,
   `tests/phase261-landlord-more-quick-lease.test.mjs`, and this report.
 - The task commit is local only. No push, merge, deployment, or release action
@@ -111,6 +113,16 @@ the new simple-flow management-fee path; the advanced flow remains unchanged.
 | `node --check apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js` | Pass. |
 | Extracted `landlord-tenant-create.html` inline script + `node --check` | Pass. |
 | `git diff --check` | Pass. |
+
+## Documentation scope correction
+
+The approved Task 1 scope includes the minimal, simple-flow-only backend
+validation/default-resolution changes added in fix rounds 1 and 2. They
+preserve explicit numeric `0`, reject negative and malformed non-empty
+management fees fail-closed, and retain room fallback for omitted/blank input.
+They do not change the advanced flow, API route/request field, schema, or
+migration surface. This documentation-only correction does not modify
+production code or tests.
 
 The unchanged full-suite baseline failures are
 `tests/landlord-post-read-snapshot.test.mjs` (`undefined` vs `true`) and
