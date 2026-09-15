@@ -629,7 +629,7 @@ electronic contract directly, including explicit zero-valued fee fields.
 
 | Action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
-| `tenant_repair_tickets_init` | POST JSON body / controlled HTML bridge | Verified tenant identity and active Workspace/room scope | Returns only the current tenant's own safe ticket projection. |
+| `tenant_repair_tickets_init` | Raw POST body / controlled HTML bridge | Verified tenant identity and active Workspace/room scope | Returns only the current tenant's own safe ticket projection. |
 | `landlord_repair_tickets_init` | POST JSON body / controlled HTML bridge | Verified landlord/team membership and Workspace read permission | Returns complete room-scoped ticket history, including protected historical tenant/lease references. |
 | `landlord_repair_ticket_update` | POST JSON body / controlled HTML bridge | Verified landlord/team membership and existing `message_write` permission | Appends a ticket event and updates only allowlisted current ticket fields without rewriting history. |
 
@@ -645,7 +645,8 @@ the body principal.
 
 ### Repair-ticket permission, error, and projection contract
 
-- `tenant_repair_tickets_init` requires a POST JSON body containing either
+- `tenant_repair_tickets_init` requires a raw POST body (JSON or the
+  URL-encoded controlled-bridge form) containing either
   `tenant_session_token` verified
   by `verifyTenantLiffSessionToken_`, or an `id_token` verified by
   `tenantLiffSigningVerifyIdTokenClaims_`; its LINE subject is then resolved by
