@@ -55,4 +55,12 @@ test('簡易快速租約讓房東編輯房間預設管理費並保留送出契�
     tenantCreate,
     /management_fee:\s*inputValue\(\s*'managementFee'\s*\)/
   );
+  assert.match(
+    tenantCreate,
+    /const managementFee = Number\(inputValue\('managementFee'\)\);/
+  );
+  assert.match(
+    tenantCreate,
+    /!Number\.isFinite\(managementFee\) \|\| managementFee < 0/
+  );
 });

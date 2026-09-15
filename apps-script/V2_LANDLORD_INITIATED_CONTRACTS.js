@@ -1332,8 +1332,10 @@ function landlordInitiatedContractNormalizeInput_(input) {
     tenant_email: landlordInitiatedContractText_(input.tenant_email || input.email),
     note: landlordInitiatedContractText_(input.note)
   };
+  if (simpleFlow) result.management_fee_provided = landlordInitiatedContractText_(input.management_fee) !== '';
   if ((!result.room_id && !landlordInitiatedContractText_(input.previous_contract_id)) || !result.start_date || !result.end_date || !result.rent_amount || !result.deposit_amount || (!result.payment_day && !simpleFlow)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期、房間、租金、押金與付款日為必要資料');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(result.start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(result.end_date) || result.end_date < result.start_date) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期日期無效');
+  if (simpleFlow && result.management_fee < 0) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '每月管理費不可小於 0。');
   if ((simpleFlow && result.term_months < 1) || result.term_months < 0 || result.special_offer_notice_days < 0) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租約期間或優惠通知天數無效');
   if (['required', 'optional', 'carried_forward'].indexOf(result.identity_document_mode) === -1) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '身份文件模式無效');
   if (result.tenant_phone && !/^09\d{8}$/.test(result.tenant_phone)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '房客手機格式無效');
@@ -1358,7 +1360,9 @@ function landlordInitiatedContractResolveNewDefaults_(input, room) {
     return normalized > 0 ? normalized : landlordInitiatedContractNumber_(fallback);
   };
   result.property_id = result.property_id || landlordInitiatedContractText_(room && room.property_id);
-  result.management_fee = numberOr(result.management_fee, room && room.management_fee);
+  result.management_fee = result.management_fee_provided
+    ? landlordInitiatedContractNumber_(result.management_fee)
+    : numberOr(result.management_fee, room && room.management_fee);
   result.deposit_months = numberOr(result.deposit_months, room && room.deposit_months) || 2;
   result.payment_day = Math.round(numberOr(result.payment_day, room && (room.payment_day || room.monthly_payment_day)) || 10);
   result.electricity_fee_rate = numberOr(result.electricity_fee_rate, room && room.electricity_fee_rate);

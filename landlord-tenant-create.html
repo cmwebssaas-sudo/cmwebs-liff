@@ -3067,6 +3067,7 @@
         const startDate = inputValue('startDate');
         const termMonths = Number(inputValue('termMonths'));
         const rentAmount = Number(inputValue('rentAmount'));
+        const managementFee = Number(inputValue('managementFee'));
         const depositAmount = Number(inputValue('depositAmount'));
 
         if (!roomId) return '請選擇房號。';
@@ -3074,6 +3075,7 @@
         if (!Number.isInteger(termMonths) || termMonths < 1 || termMonths > 120) return '租期請輸入 1 至 120 個月。';
         if (!inputValue('endDate')) return '租約結束日計算失敗，請重新選擇開始日與租期。';
         if (!Number.isFinite(rentAmount) || rentAmount <= 0) return '每月租金必須大於 0。';
+        if (!Number.isFinite(managementFee) || managementFee < 0) return '每月管理費不可小於 0。';
         if (!Number.isFinite(depositAmount) || depositAmount <= 0) return '押金必須大於 0。';
         return '';
       }
