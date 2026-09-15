@@ -123,6 +123,19 @@ const negativeManagementFee = context.landlordInitiatedContractNormalizeInput_({
 assert.equal(negativeManagementFee.success, false);
 assert.equal(negativeManagementFee.code, 'CONTRACT_INITIATION_INVALID');
 
+const malformedManagementFee = context.landlordInitiatedContractNormalizeInput_({
+  simple_flow: true,
+  room_id: 'R506',
+  start_date: '2026-09-01',
+  term_months: 12,
+  rent_amount: '7500',
+  management_fee: 'abc',
+  deposit_amount: '15000'
+});
+
+assert.equal(malformedManagementFee.success, false);
+assert.equal(malformedManagementFee.code, 'CONTRACT_INITIATION_INVALID');
+
 const mismatch = context.landlordInitiatedContractNormalizeInput_({
   simple_flow: true,
   room_id: 'R506',

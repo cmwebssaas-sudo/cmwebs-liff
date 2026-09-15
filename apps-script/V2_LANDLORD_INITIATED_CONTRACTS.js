@@ -1296,6 +1296,7 @@ function landlordInitiatedContractNormalizeInput_(input) {
   const simpleFlow = landlordInitiatedContractBoolean_(input.simple_flow);
   const startDate = landlordInitiatedContractText_(input.start_date);
   const requestedEndDate = landlordInitiatedContractText_(input.end_date);
+  const managementFeeText = landlordInitiatedContractText_(input.management_fee);
   const termMonths = Math.round(landlordInitiatedContractNumber_(input.term_months));
   const computedEndDate = simpleFlow && startDate && termMonths > 0
     ? landlordInitiatedContractEndDateForTerm_(startDate, termMonths)
@@ -1308,7 +1309,7 @@ function landlordInitiatedContractNormalizeInput_(input) {
     start_date: startDate,
     end_date: computedEndDate || requestedEndDate,
     rent_amount: landlordInitiatedContractNumber_(input.rent_amount),
-    management_fee: landlordInitiatedContractNumber_(input.management_fee),
+    management_fee: landlordInitiatedContractNumber_(managementFeeText),
     deposit_months: landlordInitiatedContractNumber_(input.deposit_months),
     deposit_amount: landlordInitiatedContractNumber_(input.deposit_amount),
     term_months: termMonths,
@@ -1332,7 +1333,12 @@ function landlordInitiatedContractNormalizeInput_(input) {
     tenant_email: landlordInitiatedContractText_(input.tenant_email || input.email),
     note: landlordInitiatedContractText_(input.note)
   };
-  if (simpleFlow) result.management_fee_provided = landlordInitiatedContractText_(input.management_fee) !== '';
+  if (simpleFlow) {
+    result.management_fee_provided = managementFeeText !== '';
+    if (result.management_fee_provided && !Number.isFinite(Number(managementFeeText.replace(/,/g, '')))) {
+      return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '每月管理費格式無效。');
+    }
+  }
   if ((!result.room_id && !landlordInitiatedContractText_(input.previous_contract_id)) || !result.start_date || !result.end_date || !result.rent_amount || !result.deposit_amount || (!result.payment_day && !simpleFlow)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期、房間、租金、押金與付款日為必要資料');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(result.start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(result.end_date) || result.end_date < result.start_date) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '租期日期無效');
   if (simpleFlow && result.management_fee < 0) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '每月管理費不可小於 0。');

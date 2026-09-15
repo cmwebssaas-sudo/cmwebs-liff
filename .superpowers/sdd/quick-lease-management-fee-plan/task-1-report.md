@@ -116,3 +116,36 @@ The unchanged full-suite baseline failures are
 `tests/landlord-post-read-snapshot.test.mjs` (`undefined` vs `true`) and
 `tests/phase246-landlord-post-read-bridge.test.mjs` (`fallback` vs `bridge`).
 They do not intersect the amended simple-lease management-fee path.
+
+## Fix round 2 — reject malformed management fee
+
+### Root cause and TDD evidence
+
+`management_fee_provided` correctly distinguished explicit `0` from a missing
+value, but `landlordInitiatedContractNumber_` intentionally converts malformed
+text to `0` for legacy normalization. Thus a non-empty simple-flow value such
+as `abc` was marked provided and silently treated as explicit zero.
+
+1. Before production edits, added a real normalizer behavior case in
+   `tests/phase208-simple-landlord-contract-flow.test.mjs` for
+   `management_fee: 'abc'`. It expects
+   `CONTRACT_INITIATION_INVALID`.
+2. RED command: `node --test tests/phase208-simple-landlord-contract-flow.test.mjs`.
+   It failed as expected because the malformed input returned `success: true`.
+3. The minimal fix retains the shared legacy number normalizer and adds a
+   simple-flow-only finite-number check for non-empty management-fee text,
+   after comma removal to match the existing parser. It now fails closed with
+   `CONTRACT_INITIATION_INVALID`; explicit numeric `0`, negative-value
+   rejection, advanced flow, API fields, and schema remain unchanged.
+4. GREEN command:
+   `node --test tests/phase208-simple-landlord-contract-flow.test.mjs tests/phase261-landlord-more-quick-lease.test.mjs`.
+   Result: `4/4` passed.
+
+### Fix-round verification
+
+| Command | Result |
+| --- | --- |
+| Focused Phase 208 + Phase 261 tests | Pass: `4/4`. |
+| `npm run validate` | Pass: `57` backend files parsed, `37` endpoint references matched, static release-cache validation passed. |
+| `node --check apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js` | Pass. |
+| `git diff --check` | Pass. |
