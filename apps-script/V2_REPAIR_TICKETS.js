@@ -49,6 +49,18 @@ function repairTicketEnsureSheets_() {
 }
 
 function repairTicketCreateFromMessage_(messageRecord, canonicalIdentity) {
+  const lock = LockService.getScriptLock();
+  let lockHeld = false;
+  try {
+    lock.waitLock(30000);
+    lockHeld = true;
+    return repairTicketCreateFromMessageLocked_(messageRecord, canonicalIdentity);
+  } finally {
+    if (lockHeld) lock.releaseLock();
+  }
+}
+
+function repairTicketCreateFromMessageLocked_(messageRecord, canonicalIdentity) {
   const message = messageRecord || {};
   const identity = canonicalIdentity || {};
   const workspaceId = repairTicketText_(identity.workspace_id);
@@ -60,57 +72,48 @@ function repairTicketCreateFromMessage_(messageRecord, canonicalIdentity) {
     throw new Error('REPAIR_TICKET_IDENTITY_REQUIRED');
   }
 
-  const lock = LockService.getScriptLock();
-  let lockHeld = false;
-  try {
-    lock.waitLock(30000);
-    lockHeld = true;
+  const existing = repairTicketFindBySourceMessageId_(sourceMessageId);
+  if (existing) return existing;
 
-    const existing = repairTicketFindBySourceMessageId_(sourceMessageId);
-    if (existing) return existing;
+  const sheets = repairTicketEnsureSheets_();
+  const now = new Date();
+  const ticket = {
+    workspace_id: workspaceId,
+    repair_ticket_id: repairTicketMakeId_(workspaceId, roomId),
+    source_message_id: sourceMessageId,
+    property_id: repairTicketText_(identity.property_id || message.property_id),
+    room_id: roomId,
+    room_name_snapshot: repairTicketText_(identity.room_name || message.room_name),
+    tenant_id_snapshot: tenantId,
+    lease_id_snapshot: repairTicketText_(identity.lease_id || identity.contract_id),
+    tenant_name_snapshot: repairTicketText_(identity.tenant_name || message.tenant_name),
+    category: repairTicketText_(message.message_category || 'repair'),
+    title: repairTicketText_(message.message_title),
+    description: repairTicketText_(message.message_body),
+    priority: repairTicketText_(message.priority || 'normal'),
+    status: 'open',
+    responsibility_party: '',
+    estimated_cost: '',
+    actual_cost: '',
+    created_at: now,
+    closed_at: ''
+  };
 
-    const sheets = repairTicketEnsureSheets_();
-    const now = new Date();
-    const ticket = {
-      workspace_id: workspaceId,
-      repair_ticket_id: repairTicketMakeId_(workspaceId, roomId),
-      source_message_id: sourceMessageId,
-      property_id: repairTicketText_(identity.property_id || message.property_id),
-      room_id: roomId,
-      room_name_snapshot: repairTicketText_(identity.room_name || message.room_name),
-      tenant_id_snapshot: tenantId,
-      lease_id_snapshot: repairTicketText_(identity.lease_id || identity.contract_id),
-      tenant_name_snapshot: repairTicketText_(identity.tenant_name || message.tenant_name),
-      category: repairTicketText_(message.message_category || 'repair'),
-      title: repairTicketText_(message.message_title),
-      description: repairTicketText_(message.message_body),
-      priority: repairTicketText_(message.priority || 'normal'),
-      status: 'open',
-      responsibility_party: '',
-      estimated_cost: '',
-      actual_cost: '',
-      created_at: now,
-      closed_at: ''
-    };
-
-    repairTicketAppendRow_(sheets.tickets, ticket);
-    repairTicketAppendEventRow_(sheets.events, {
-      workspace_id: ticket.workspace_id,
-      repair_ticket_id: ticket.repair_ticket_id,
-      event_id: repairTicketMakeEventId_(),
-      event_type: 'created',
-      from_status: '',
-      to_status: ticket.status,
-      actor_type: 'tenant',
-      actor_id: ticket.tenant_id_snapshot,
-      internal_note: '',
-      public_note: '',
-      created_at: now
-    });
-    return ticket;
-  } finally {
-    if (lockHeld) lock.releaseLock();
-  }
+  repairTicketAppendRow_(sheets.tickets, ticket);
+  repairTicketAppendEventRow_(sheets.events, {
+    workspace_id: ticket.workspace_id,
+    repair_ticket_id: ticket.repair_ticket_id,
+    event_id: repairTicketMakeEventId_(),
+    event_type: 'created',
+    from_status: '',
+    to_status: ticket.status,
+    actor_type: 'tenant',
+    actor_id: ticket.tenant_id_snapshot,
+    internal_note: '',
+    public_note: '',
+    created_at: now
+  });
+  return ticket;
 }
 
 function repairTicketAppendEvent_(ticketId, eventInput, actor) {
@@ -177,31 +180,35 @@ function repairTicketBackfillLegacyMessages_(input) {
   }
 
   const limit = repairTicketBackfillLimit_(request.limit);
+  if (request.mode === 'preview') {
+    const spreadsheet = runtimeSpreadsheet_();
+    const messageSheet = spreadsheet.getSheetByName(V2_REPAIR_TICKET_MESSAGE_SHEET_);
+    return repairTicketBackfillResult_(
+      request.mode,
+      limit,
+      repairTicketBackfillScan_(messageSheet, spreadsheet, limit)
+    );
+  }
+
+  const lock = LockService.getScriptLock();
+  let lockHeld = false;
+  try {
+    lock.waitLock(30000);
+    lockHeld = true;
+    return repairTicketBackfillLegacyMessagesApplyLocked_(limit);
+  } finally {
+    if (lockHeld) lock.releaseLock();
+  }
+}
+
+function repairTicketBackfillLegacyMessagesApplyLocked_(limit) {
   const spreadsheet = runtimeSpreadsheet_();
   const messageSheet = spreadsheet.getSheetByName(V2_REPAIR_TICKET_MESSAGE_SHEET_);
   const scan = repairTicketBackfillScan_(messageSheet, spreadsheet, limit);
-  const result = {
-    mode: request.mode,
-    limit: limit,
-    repair_message_count: scan.repairMessages.length,
-    candidate_count: scan.candidates.length,
-    created_count: 0,
-    existing_ticket_count: scan.existingTicketCount,
-    existing_link_count: scan.existingLinkCount,
-    non_repair_count: scan.nonRepairCount,
-    missing_room_count: scan.missingRoomCount,
-    unresolved_source_message_ids: scan.unresolvedSourceMessageIds,
-    created_candidates: scan.candidates.map(function(message) {
-      return repairTicketText_(message.message_id);
-    }),
-    created_ids: [],
-    writes: 0
-  };
-
-  if (request.mode === 'preview') return result;
+  const result = repairTicketBackfillResult_('apply', limit, scan);
 
   scan.candidates.forEach(function(message) {
-    const ticket = repairTicketCreateFromMessage_(
+    const ticket = repairTicketCreateFromMessageLocked_(
       message,
       repairTicketBackfillIdentity_(message)
     );
@@ -221,7 +228,45 @@ function repairTicketBackfillLegacyMessages_(input) {
     result.created_ids.push(ticket.repair_ticket_id);
     result.writes += 4;
   });
+  scan.linkReconciliationCandidates.forEach(function(candidate) {
+    repairTicketSetLegacyMessageRepairTicketId_(
+      messageSheet,
+      candidate.message._sheet_row,
+      candidate.ticket.repair_ticket_id
+    );
+    result.reconciled_link_count += 1;
+    result.reconciled_source_message_ids.push(
+      repairTicketText_(candidate.message.message_id)
+    );
+    result.writes += 1;
+  });
   return result;
+}
+
+function repairTicketBackfillResult_(mode, limit, scan) {
+  return {
+    mode: mode,
+    limit: limit,
+    repair_message_count: scan.repairMessages.length,
+    candidate_count: scan.candidates.length,
+    created_count: 0,
+    existing_ticket_count: scan.existingTicketCount,
+    existing_link_count: scan.existingLinkCount,
+    link_reconciliation_count: scan.linkReconciliationCandidates.length,
+    link_reconciliation_source_message_ids: scan.linkReconciliationCandidates.map(
+      function(candidate) { return repairTicketText_(candidate.message.message_id); }
+    ),
+    reconciled_link_count: 0,
+    reconciled_source_message_ids: [],
+    non_repair_count: scan.nonRepairCount,
+    missing_room_count: scan.missingRoomCount,
+    unresolved_source_message_ids: scan.unresolvedSourceMessageIds,
+    created_candidates: scan.candidates.map(function(message) {
+      return repairTicketText_(message.message_id);
+    }),
+    created_ids: [],
+    writes: 0
+  };
 }
 
 function repairTicketBackfillScan_(messageSheet, spreadsheet, limit) {
@@ -230,6 +275,7 @@ function repairTicketBackfillScan_(messageSheet, spreadsheet, limit) {
     candidates: [],
     existingTicketCount: 0,
     existingLinkCount: 0,
+    linkReconciliationCandidates: [],
     nonRepairCount: 0,
     missingRoomCount: 0,
     unresolvedSourceMessageIds: []
@@ -238,12 +284,12 @@ function repairTicketBackfillScan_(messageSheet, spreadsheet, limit) {
 
   const messageHeaders = repairTicketSheetHeaders_(messageSheet);
   const hasRepairTicketLink = messageHeaders.indexOf('repair_ticket_id') !== -1;
-  const existingTicketSourceIds = {};
+  const existingTicketsBySourceId = {};
   const ticketSheet = spreadsheet.getSheetByName(V2_REPAIR_TICKET_SHEETS_.tickets);
   if (ticketSheet) {
     repairTicketRows_(ticketSheet).forEach(function(ticket) {
       const sourceMessageId = repairTicketText_(ticket.source_message_id);
-      if (sourceMessageId) existingTicketSourceIds[sourceMessageId] = true;
+      if (sourceMessageId) existingTicketsBySourceId[sourceMessageId] = ticket;
     });
   }
 
@@ -267,8 +313,12 @@ function repairTicketBackfillScan_(messageSheet, spreadsheet, limit) {
       scan.existingLinkCount += 1;
       return;
     }
-    if (existingTicketSourceIds[sourceMessageId]) {
+    if (existingTicketsBySourceId[sourceMessageId]) {
       scan.existingTicketCount += 1;
+      scan.linkReconciliationCandidates.push({
+        message: message,
+        ticket: existingTicketsBySourceId[sourceMessageId]
+      });
       return;
     }
     if (

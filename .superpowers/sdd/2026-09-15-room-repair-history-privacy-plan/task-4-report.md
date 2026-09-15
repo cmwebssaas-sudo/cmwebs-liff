@@ -9,6 +9,7 @@
 ## Local verification
 
 - `node --test tests/phase264-repair-ticket-migration.test.mjs`
+- `node --test tests/phase262-repair-ticket-contract.test.mjs`
 - `node --test tests/phase263-repair-ticket-runtime.test.mjs`
 - `node --check apps-script/V2_REPAIR_TICKETS.js`
 - `npm run validate`
@@ -17,6 +18,17 @@
 ## Commit
 
 - Local commit: `feat: add idempotent repair ticket backfill`
+- Fix round 1 local commit: `fix: serialize repair ticket backfill`.
+
+## Fix round 1
+
+- Apply now acquires one `ScriptLock` before a fresh scan and retains it through
+  ticket/event creation and source-link reconciliation. The normal ticket-intake
+  helper retains its independent locking path; migration uses a lock-held helper
+  to avoid nested lock deadlock.
+- Existing tickets with blank source `repair_ticket_id` are reported in preview
+  and reconciled with one source-link write in apply, without a second
+  `legacy_backfill` event.
 
 ## Remaining boundaries
 

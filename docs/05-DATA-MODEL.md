@@ -341,12 +341,15 @@ query parameter.
    `repairTicketBackfillLegacyMessages_({ mode: 'preview', limit: 1000 })`.
    Confirm `writes: 0`. The preview scans only
    `V2_tenant_messages.message_category === 'repair'` and returns candidate
-   source IDs, unresolved source IDs, and `missing_room_count` without adding
-   sheets, headers, tickets, events, or source links.
+   source IDs, unresolved source IDs, `missing_room_count`, and any
+   `link_reconciliation_source_message_ids` without adding sheets, headers,
+   tickets, events, or source links.
 2. Inspect the result. Resolve every `unresolved_source_message_ids` entry
    manually; in particular, records without `room_id` stay untouched and must
-   not be assigned a guessed room. Confirm the candidate count and existing
-   ticket/link counts with the operations owner.
+   not be assigned a guessed room. A source message that already has a ticket
+   by `source_message_id` but has a blank `repair_ticket_id` is a link-only
+   reconciliation candidate, not a new ticket. Confirm the candidate and
+   reconciliation counts with the operations owner.
 3. Take and verify a read-only backup/export of the three affected sheets:
    `V2_tenant_messages`, `V2_repair_tickets`, and `V2_repair_events`. Record
    each header row and row count before proceeding.
@@ -355,13 +358,18 @@ query parameter.
    that same operator context. It creates one ticket from each eligible source
    message, preserves its original tenant/lease/message snapshots, appends one
    `legacy_backfill` event, and writes the additive `repair_ticket_id` source
-   link. It does not alter non-repair rows or missing-room rows.
+   link. Existing source tickets with a blank source link receive only that
+   additive link; they never receive another `legacy_backfill` event. Apply
+   holds one migration-wide `ScriptLock` across its fresh scan, ticket/event
+   creation, and link reconciliation, so a waiting concurrent apply rechecks
+   the completed state before it can write. It does not alter non-repair rows
+   or missing-room rows.
 5. Reconcile counts: `created_count` must equal the increase in
    `V2_repair_tickets` rows and in linked source rows; `V2_repair_events` must
    increase by twice `created_count` (`created` plus `legacy_backfill`). The
-   returned `writes` is four per newly created ticket. Repeat `preview` and
-   confirm that eligible rows no longer appear as candidates before any further
-   batch.
+   returned `writes` is four per newly created ticket and one per link-only
+   reconciliation. Repeat `preview` and confirm that eligible rows and link
+   reconciliations no longer appear before any further batch.
 6. Rollback is source-code and access rollback, not destructive data removal:
    stop further apply runs, retain the backup and every appended ticket/event
    row, and revert/disable the migration caller if necessary. Any correction to

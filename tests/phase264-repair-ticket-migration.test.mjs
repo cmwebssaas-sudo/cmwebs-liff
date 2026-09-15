@@ -82,7 +82,7 @@ function messageRow(overrides = {}) {
   return MESSAGE_HEADERS.map(header => record[header]);
 }
 
-function createRuntime(messageRows) {
+function createRuntime(messageRows, options = {}) {
   const writes = [];
   const sheets = {
     V2_tenant_messages: createSheet([MESSAGE_HEADERS, ...messageRows], writes)
@@ -94,11 +94,14 @@ function createRuntime(messageRows) {
     Math,
     Object,
     String,
-    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    LockService: options.LockService || {
+      getScriptLock: () => ({ waitLock() {}, releaseLock() {} })
+    },
     Utilities: { getUuid: () => `uuid-${++uuid}` },
     runtimeSpreadsheet_() {
       return {
         getSheetByName(name) {
+          if (options.onGetSheet) options.onGetSheet(name);
           return sheets[name] || null;
         },
         insertSheet(name) {
@@ -210,4 +213,92 @@ test('repair-ticket backfill limit bounds candidates without hiding manual-revie
   assert.deepEqual(Array.from(preview.created_candidates), ['MESSAGE-1']);
   assert.equal(preview.missing_room_count, 1);
   assert.deepEqual(Array.from(preview.unresolved_source_message_ids), ['MESSAGE-NO-ROOM']);
+});
+
+test('repair-ticket backfill reconciles an unlinked existing source ticket without another event', () => {
+  const { context, sheets, writes } = createRuntime([messageRow()]);
+  const existingTicket = context.repairTicketCreateFromMessage_(
+    {
+      message_id: 'MESSAGE-1',
+      message_category: 'repair',
+      message_title: '冷氣漏水',
+      message_body: '原始報修內容',
+      priority: 'urgent'
+    },
+    {
+      workspace_id: 'WS-1', property_id: 'PROPERTY-1', room_id: 'ROOM-101',
+      room_name: '101', tenant_id: 'TENANT-A', lease_id: 'LEASE-A',
+      tenant_name: '原始房客 A'
+    }
+  );
+  writes.length = 0;
+
+  const preview = context.repairTicketBackfillLegacyMessages_({ mode: 'preview', limit: 100 });
+  const first = context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
+  const second = context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
+  const sourceRows = sheets.V2_tenant_messages.getDataRange().getValues();
+  const eventRows = sheets.V2_repair_events.getDataRange().getValues();
+
+  assert.equal(preview.writes, 0);
+  assert.equal(preview.created_count, 0);
+  assert.equal(preview.link_reconciliation_count, 1);
+  assert.deepEqual(
+    Array.from(preview.link_reconciliation_source_message_ids),
+    ['MESSAGE-1']
+  );
+  assert.equal(first.created_count, 0);
+  assert.equal(first.reconciled_link_count, 1);
+  assert.equal(first.writes, 1);
+  assert.equal(second.reconciled_link_count, 0);
+  assert.equal(second.writes, 0);
+  assert.equal(sourceRows[1][MESSAGE_HEADERS.indexOf('repair_ticket_id')], existingTicket.repair_ticket_id);
+  assert.equal(eventRows.filter(row => row[3] === 'legacy_backfill').length, 0);
+  assert.equal(sheets.V2_repair_tickets.getLastRow(), 2);
+});
+
+test('repair-ticket backfill holds one migration lock across scan and apply retries', () => {
+  const lockState = { held: false, maxActive: 0, scanOutsideLock: false, nestedError: null };
+  const LockService = {
+    getScriptLock() {
+      return {
+        waitLock() {
+          if (lockState.held) throw new Error('LOCK_BUSY');
+          lockState.held = true;
+          lockState.maxActive = Math.max(lockState.maxActive, 1);
+          if (!lockState.attemptedNested) {
+            lockState.attemptedNested = true;
+            try {
+              lockState.runNested();
+            } catch (error) {
+              lockState.nestedError = error;
+            }
+          }
+        },
+        releaseLock() {
+          lockState.held = false;
+        }
+      };
+    }
+  };
+  const runtime = createRuntime([messageRow()], {
+    LockService,
+    onGetSheet() {
+      if (!lockState.held) lockState.scanOutsideLock = true;
+    }
+  });
+  lockState.runNested = () => runtime.context.repairTicketBackfillLegacyMessages_(
+    { mode: 'apply', limit: 100 }
+  );
+
+  const first = runtime.context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
+  const retry = runtime.context.repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 100 });
+  const events = runtime.sheets.V2_repair_events.getDataRange().getValues();
+
+  assert.match(lockState.nestedError.message, /LOCK_BUSY/);
+  assert.equal(lockState.scanOutsideLock, false);
+  assert.equal(lockState.maxActive, 1);
+  assert.equal(first.created_count, 1);
+  assert.equal(retry.created_count, 0);
+  assert.equal(runtime.sheets.V2_repair_tickets.getLastRow(), 2);
+  assert.equal(events.filter(row => row[3] === 'legacy_backfill').length, 1);
 });
