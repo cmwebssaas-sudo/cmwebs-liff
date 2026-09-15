@@ -183,6 +183,14 @@
 - [ ] 工單狀態只使用 `open`、`in_progress`、`awaiting_confirmation`、`completed`、`closed`；每次更新均新增 append-only event 與 actor audit。
 - [ ] 只接受 `tenant_repair_tickets_init`、`landlord_repair_tickets_init`、`landlord_repair_ticket_update` 三個 documented actions；未知 query-string action 必須拒絕。
 
+## 報修工單 UI 與房客投影（Phase 265）
+
+- [x] 房東訊息頁保留既有一般訊息清單與篩選，並以既有受驗證房東 POST bridge 讀取 `landlord_repair_tickets_init`；房間與工單狀態可篩選，按 `room_id` 分組顯示狀態、優先程度、原房客／租約快照、責任、費用與最新公開事件摘要。
+- [x] 房東 repair 更新在按鈕 busy 時鎖定，僅以一次 `landlord_repair_ticket_update` POST bridge 提交 `ticket_id`、狀態與公開回覆；成功或失敗在頁面回饋，不會傳送 Workspace、房東、房客或租約識別作為 authority。
+- [x] 房客頁只在 LIFF 已取得 `id_token` 後，以 controlled HTML POST bridge 呼叫 `tenant_repair_tickets_init`；repair renderer 只插入類型、標題、優先程度、狀態、建立／完成日期與公開摘要，絕不讀取或以 CSS 隱藏歷史原始訊息、房客／租約快照、內部備註、附件／儲存 ID、電話、Email 或 LINE identifier。
+- [x] Tenant A／Tenant B 負向 fixture 驗證 Tenant B 的 repair payload 與 render output 不含 Tenant A 的姓名、電話、Email、LINE ID、原始訊息、私有附件檔名或租約 ID（`tests/phase265-repair-ticket-privacy.ui.test.mjs`）。
+- [ ] `HUMAN_REQUIRED`：以真實已登入房東 Email session、房客 LIFF session 與換租 Tenant A/B fixture，在裝置／瀏覽器確認 bridge origin、讀寫回饋、房間篩選與跨房客畫面隔離；靜態測試不代表 authenticated Production acceptance。
+
 - [ ] 未登入房東導向 LIFF 登入
 - [ ] 登入後返回原頁
 - [ ] 新房東註冊
