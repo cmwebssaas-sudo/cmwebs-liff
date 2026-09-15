@@ -133,3 +133,42 @@
 - No live POST bridge, authenticated tenant/landlord session, LIFF token,
   deployment, push, merge, or external write was used. Production bridge and
   browser compatibility remain `HUMAN_REQUIRED`.
+
+## Fix round 3 — raw POST body guard
+
+### Fix commit
+
+- `84c123ffc0a3c6c7783e661c55119291232cdebf` — `fix: enforce raw repair post bodies`
+
+### Changes
+
+- Added `repairRouteRequestFromPostBody_`, the guard invoked directly by
+  `doPost` before the legacy request parser. It accepts only a JSON object or
+  URL-encoded controlled-bridge form decoded from `e.postData.contents`.
+- Repair credentials are never copied from `e.parameter`. A repair action
+  found only in the raw query string, including a request with no parseable
+  repair body, returns `AUTH_METHOD_REQUIRED` before the legacy fallback.
+  Query credentials cannot override body credentials.
+- The legacy `e.parameter` parser remains after this guard for non-repair
+  actions only. The existing POST JSON/HTML bridge behavior, tenant raw-body
+  exclusion, delegated-member audit actor, and landlord update allowlist are
+  unchanged.
+- Added focused coverage for JSON body acceptance, URL-encoded bridge body
+  acceptance, query-only rejection, and forged `e.parameter`/query credentials
+  being unable to replace a body credential. The test evaluates the exact
+  helper called by `doPost`.
+
+### Fix-round verification
+
+| Command | Result |
+| --- | --- |
+| `node --test tests/phase262-repair-ticket-contract.test.mjs tests/phase263-repair-ticket-runtime.test.mjs` | PASS — 14 tests, 0 failures |
+| `node --check` for all Task 3 affected Apps Script files | PASS |
+| `npm run validate` | PASS — 57 backend files parsed; 37 endpoint references; static cache validation passed |
+| `git diff --check` | PASS |
+
+### Remaining risks
+
+- No live POST bridge, authenticated tenant/landlord session, LIFF token,
+  deployment, push, merge, or external write was used. Serving Apps Script
+  event-shape and browser bridge acceptance remain `HUMAN_REQUIRED`.
