@@ -58,48 +58,57 @@ function repairTicketCreateFromMessage_(messageRecord, canonicalIdentity) {
     throw new Error('REPAIR_TICKET_IDENTITY_REQUIRED');
   }
 
-  const existing = repairTicketFindBySourceMessageId_(sourceMessageId);
-  if (existing) return existing;
+  const lock = LockService.getScriptLock();
+  let lockHeld = false;
+  try {
+    lock.waitLock(30000);
+    lockHeld = true;
 
-  const sheets = repairTicketEnsureSheets_();
-  const now = new Date();
-  const ticket = {
-    workspace_id: workspaceId,
-    repair_ticket_id: repairTicketMakeId_(workspaceId, roomId),
-    source_message_id: sourceMessageId,
-    property_id: repairTicketText_(identity.property_id || message.property_id),
-    room_id: roomId,
-    room_name_snapshot: repairTicketText_(identity.room_name || message.room_name),
-    tenant_id_snapshot: tenantId,
-    lease_id_snapshot: repairTicketText_(identity.lease_id || identity.contract_id),
-    tenant_name_snapshot: repairTicketText_(identity.tenant_name || message.tenant_name),
-    category: repairTicketText_(message.message_category || 'repair'),
-    title: repairTicketText_(message.message_title),
-    description: repairTicketText_(message.message_body),
-    priority: repairTicketText_(message.priority || 'normal'),
-    status: 'open',
-    responsibility_party: '',
-    estimated_cost: '',
-    actual_cost: '',
-    created_at: now,
-    closed_at: ''
-  };
+    const existing = repairTicketFindBySourceMessageId_(sourceMessageId);
+    if (existing) return existing;
 
-  repairTicketAppendRow_(sheets.tickets, ticket);
-  repairTicketAppendEventRow_(sheets.events, {
-    workspace_id: ticket.workspace_id,
-    repair_ticket_id: ticket.repair_ticket_id,
-    event_id: repairTicketMakeEventId_(),
-    event_type: 'created',
-    from_status: '',
-    to_status: ticket.status,
-    actor_type: 'tenant',
-    actor_id: ticket.tenant_id_snapshot,
-    internal_note: '',
-    public_note: '',
-    created_at: now
-  });
-  return ticket;
+    const sheets = repairTicketEnsureSheets_();
+    const now = new Date();
+    const ticket = {
+      workspace_id: workspaceId,
+      repair_ticket_id: repairTicketMakeId_(workspaceId, roomId),
+      source_message_id: sourceMessageId,
+      property_id: repairTicketText_(identity.property_id || message.property_id),
+      room_id: roomId,
+      room_name_snapshot: repairTicketText_(identity.room_name || message.room_name),
+      tenant_id_snapshot: tenantId,
+      lease_id_snapshot: repairTicketText_(identity.lease_id || identity.contract_id),
+      tenant_name_snapshot: repairTicketText_(identity.tenant_name || message.tenant_name),
+      category: repairTicketText_(message.message_category || 'repair'),
+      title: repairTicketText_(message.message_title),
+      description: repairTicketText_(message.message_body),
+      priority: repairTicketText_(message.priority || 'normal'),
+      status: 'open',
+      responsibility_party: '',
+      estimated_cost: '',
+      actual_cost: '',
+      created_at: now,
+      closed_at: ''
+    };
+
+    repairTicketAppendRow_(sheets.tickets, ticket);
+    repairTicketAppendEventRow_(sheets.events, {
+      workspace_id: ticket.workspace_id,
+      repair_ticket_id: ticket.repair_ticket_id,
+      event_id: repairTicketMakeEventId_(),
+      event_type: 'created',
+      from_status: '',
+      to_status: ticket.status,
+      actor_type: 'tenant',
+      actor_id: ticket.tenant_id_snapshot,
+      internal_note: '',
+      public_note: '',
+      created_at: now
+    });
+    return ticket;
+  } finally {
+    if (lockHeld) lock.releaseLock();
+  }
 }
 
 function repairTicketAppendEvent_(ticketId, eventInput, actor) {
@@ -171,10 +180,24 @@ function repairTicketToTenantProjection_(ticket, currentTenant) {
   const projection = {};
   V2_REPAIR_TICKET_TENANT_ALLOWED_FIELDS_.forEach(function(field) {
     projection[field] = field === 'public_note'
-      ? repairTicketText_(source.public_note)
+      ? repairTicketLatestPublicNote_(source.repair_ticket_id)
       : source[field] === undefined ? '' : source[field];
   });
   return projection;
+}
+
+function repairTicketLatestPublicNote_(ticketId) {
+  const sheets = repairTicketEnsureSheets_();
+  const events = repairTicketRows_(sheets.events);
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    if (
+      repairTicketText_(events[index].repair_ticket_id) === repairTicketText_(ticketId) &&
+      repairTicketText_(events[index].public_note)
+    ) {
+      return repairTicketText_(events[index].public_note);
+    }
+  }
+  return '';
 }
 
 function repairTicketEnsureSheet_(spreadsheet, sheetName, headers) {

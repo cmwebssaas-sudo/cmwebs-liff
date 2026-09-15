@@ -20,10 +20,11 @@ function extractFunction(source, name) {
   return source.slice(start, end);
 }
 
-function createSheet() {
+function createSheet(options) {
   const values = [];
   return {
     appendRow(row) {
+      if (options && options.beforeAppend) options.beforeAppend(row, values);
       values.push(row.slice());
     },
     getDataRange() {
@@ -65,7 +66,7 @@ function createSheet() {
   };
 }
 
-function createRuntime() {
+function createRuntime(options = {}) {
   const sheets = {};
   let uuid = 0;
   const context = {
@@ -75,6 +76,11 @@ function createRuntime() {
     Math,
     Object,
     String,
+    LockService: options.LockService || {
+      getScriptLock() {
+        return { waitLock() {}, releaseLock() {} };
+      }
+    },
     Utilities: { getUuid: () => `uuid-${++uuid}` },
     runtimeSpreadsheet_() {
       return {
@@ -82,7 +88,7 @@ function createRuntime() {
           return sheets[name] || null;
         },
         insertSheet(name) {
-          const sheet = createSheet();
+          const sheet = createSheet(options);
           sheets[name] = sheet;
           return sheet;
         }
@@ -180,6 +186,76 @@ test('repair ticket source message is idempotent and tenant projection excludes 
   ]);
   assert.equal(Object.hasOwn(ownerView, 'tenant_name_snapshot'), false);
   assert.equal(Object.hasOwn(ownerView, 'internal_note'), false);
+});
+
+test('concurrent-style creation cannot append a second source-message ticket', () => {
+  let runtime;
+  let lockHeld = false;
+  let secondAttemptError = null;
+  let triggered = false;
+  const message = {
+    message_id: 'MESSAGE-LOCK',
+    tenant_name: '房客 A',
+    message_category: 'repair',
+    message_title: '冷氣漏水',
+    message_body: '臥室冷氣漏水',
+    priority: 'normal'
+  };
+  const identity = {
+    workspace_id: 'WS-1', property_id: 'PROPERTY-1', room_id: 'ROOM-101',
+    room_name: '101', tenant_id: 'TENANT-A', lease_id: 'LEASE-A'
+  };
+  const lock = {
+    waitLock() {
+      if (lockHeld) throw new Error('LOCK_BUSY');
+      lockHeld = true;
+    },
+    releaseLock() { lockHeld = false; }
+  };
+  runtime = createRuntime({
+    LockService: { getScriptLock: () => lock },
+    beforeAppend(row) {
+      if (!triggered && row[2] === 'MESSAGE-LOCK') {
+        triggered = true;
+        try {
+          runtime.context.repairTicketCreateFromMessage_(message, identity);
+        } catch (error) {
+          secondAttemptError = error;
+        }
+      }
+    }
+  });
+
+  runtime.context.repairTicketCreateFromMessage_(message, identity);
+
+  assert.equal(runtime.sheets.V2_repair_tickets.getLastRow(), 2);
+  assert.match(secondAttemptError.message, /LOCK_BUSY/);
+});
+
+test('tenant projection derives the latest public event note without internal details', () => {
+  const { context } = createRuntime();
+  const identity = {
+    workspace_id: 'WS-1', property_id: 'PROPERTY-1', room_id: 'ROOM-101',
+    room_name: '101', tenant_id: 'TENANT-A', lease_id: 'LEASE-A'
+  };
+  const ticket = context.repairTicketCreateFromMessage_({
+    message_id: 'MESSAGE-PUBLIC-NOTE', tenant_name: '房客 A',
+    message_category: 'repair', message_title: '冷氣漏水',
+    message_body: '臥室冷氣漏水', priority: 'normal'
+  }, identity);
+  context.repairTicketAppendEvent_(ticket.repair_ticket_id, {
+    event_type: 'reply',
+    internal_note: '廠商電話與房客資料僅供內部使用',
+    public_note: '師傅將於明日上午到訪'
+  }, {
+    actor_type: 'landlord', actor_id: 'LANDLORD-1'
+  });
+
+  const projection = context.repairTicketToTenantProjection_(ticket, identity);
+
+  assert.equal(projection.public_note, '師傅將於明日上午到訪');
+  assert.equal(Object.hasOwn(projection, 'internal_note'), false);
+  assert.equal(JSON.stringify(projection).includes('廠商電話'), false);
 });
 
 test('repair message intake links its post-create ticket while other message categories do not', () => {
