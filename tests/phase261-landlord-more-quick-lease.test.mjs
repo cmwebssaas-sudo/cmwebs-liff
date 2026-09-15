@@ -32,3 +32,27 @@ test('快速建立租約沿用房間租金預填與可編輯簽署流程', () =>
   );
   assert.match(tenantCreate, /'landlord_contract_initiate_new'/);
 });
+
+test('簡易快速租約讓房東編輯房間預設管理費並保留送出契約', () => {
+  const simpleRenderer = tenantCreate.slice(
+    tenantCreate.indexOf('function renderSimpleNewContractPage()'),
+    tenantCreate.indexOf('function renderPaperBackfillPage()')
+  );
+
+  assert.match(
+    simpleRenderer,
+    /<input id="managementFee" class="input" type="number" min="0" step="1" value="\$\{safeHtml\(roomDefaults\.management_fee\)\}" \/>/
+  );
+  assert.doesNotMatch(
+    simpleRenderer,
+    /<input id="managementFee" type="hidden"/
+  );
+  assert.match(
+    tenantCreate,
+    /setInputValue\('managementFee', defaults\.management_fee\)/
+  );
+  assert.match(
+    tenantCreate,
+    /management_fee:\s*inputValue\(\s*'managementFee'\s*\)/
+  );
+});

@@ -1733,9 +1733,9 @@
       const summary = document.getElementById('simpleRoomSummary');
       if (summary) {
         summary.innerHTML = `
-          <div class="simple-inherited-title">此房間會沿用的費用設定</div>
+          <div class="simple-inherited-title">此房間的預設收費（管理費可修改）</div>
           <div class="simple-inherited-grid">
-            <div class="simple-inherited-item"><div class="simple-inherited-label">管理費</div><div class="simple-inherited-value">NT$ ${money(defaults.management_fee)}</div></div>
+            <div class="simple-inherited-item"><div class="simple-inherited-label">管理費（可修改）</div><div class="simple-inherited-value">NT$ ${money(defaults.management_fee)}</div></div>
             <div class="simple-inherited-item"><div class="simple-inherited-label">每月繳款日</div><div class="simple-inherited-value">每月 ${safeHtml(defaults.payment_day)} 日</div></div>
             <div class="simple-inherited-item"><div class="simple-inherited-label">每度電費</div><div class="simple-inherited-value">NT$ ${money(defaults.electricity_fee_rate)}</div></div>
             <div class="simple-inherited-item"><div class="simple-inherited-label">設備耗損費／度</div><div class="simple-inherited-value">NT$ ${money(defaults.equipment_fee_rate)}</div></div>
@@ -1764,7 +1764,7 @@
           <div class="hero-content">
             <div class="hero-label">Landlord Contract</div>
             <div class="workspace-name">${safeHtml(workspace.workspace_name || '目前管理團隊')}</div>
-            <div class="hero-desc">房東只需填寫房號、租金、押金與租期，建立後交給房客簽署及補上證件。</div>
+            <div class="hero-desc">房東只需填寫房號、租金、管理費、押金與租期，建立後交給房客簽署及補上證件。</div>
             <div class="simple-steps">
               <div class="simple-step"><strong>1</strong>房東填寫條件</div>
               <div class="simple-step"><strong>2</strong>建立簽署邀請</div>
@@ -1777,13 +1777,12 @@
           <div class="section-head">
             <div>
               <div class="section-title">租約基本條件</div>
-              <div class="section-desc">只需填寫五個欄位；其他收費依所選房間的既有設定帶入。</div>
+              <div class="section-desc">請確認房號、租金、管理費、押金與租期；管理費會先帶入所選房間的既有設定，仍可修改。</div>
             </div>
             <div class="section-index">1</div>
           </div>
 
           <input id="propertyId" type="hidden" value="${safeHtml(selectedRoom ? selectedRoom.property_id || '' : '')}" />
-          <input id="managementFee" type="hidden" value="${safeHtml(roomDefaults.management_fee)}" />
           <input id="depositMonths" type="hidden" value="${safeHtml(roomDefaults.deposit_months)}" />
           <input id="paymentDay" type="hidden" value="${safeHtml(roomDefaults.payment_day)}" />
           <input id="electricityRate" type="hidden" value="${safeHtml(roomDefaults.electricity_fee_rate)}" />
@@ -1815,6 +1814,10 @@
               <input id="rentAmount" class="input" type="number" min="1" step="1" value="${safeHtml(roomDefaults.rent_amount)}" />
             </div>
             <div class="field">
+              <div class="field-label"><span>每月管理費</span><span class="required">必填</span></div>
+              <input id="managementFee" class="input" type="number" min="0" step="1" value="${safeHtml(roomDefaults.management_fee)}" />
+            </div>
+            <div class="field">
               <div class="field-label"><span>押金</span><span class="required">必填</span></div>
               <input id="depositAmount" class="input" type="number" min="1" step="1" value="${safeHtml(roomDefaults.deposit_amount)}" />
             </div>
@@ -1833,7 +1836,7 @@
           <div class="confirmation-row">
             <input id="confirmCreate" class="confirmation-check" type="checkbox" onchange="updateSubmitState()" />
             <label class="confirmation-text" for="confirmCreate">
-              <strong>我確認房號、租金、押金與租期均正確。</strong>
+              <strong>我確認房號、租金、管理費、押金與租期均正確。</strong>
               <span>系統會建立待房客簽署的新租約，不會直接啟用。</span>
             </label>
           </div>

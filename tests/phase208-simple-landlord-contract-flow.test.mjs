@@ -11,7 +11,7 @@ assert.match(createPage, /SIMPLE_NEW_MODE/);
 assert.match(createPage, /function renderSimpleNewContractPage\(/);
 assert.match(createPage, /simple_flow:\s*SIMPLE_NEW_MODE/);
 assert.match(createPage, /id="termMonths"/);
-assert.match(createPage, /房東只需填寫房號、租金、押金與租期/);
+assert.match(createPage, /房東只需填寫房號、租金、管理費、押金與租期/);
 assert.match(createPage, /identity_document_mode/);
 
 const tenantActionSource = tenantsPage.slice(
