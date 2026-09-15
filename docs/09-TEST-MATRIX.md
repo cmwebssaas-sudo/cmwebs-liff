@@ -1,5 +1,44 @@
 # V2 回歸測試矩陣
 
+## 2026-09-15 房間報修工單 Task 6 本地 release-boundary record
+
+- [x] Implementation source candidate is
+  `3b12c617216040974700fa6b3238db2e9652f310` (`3b12c61`), the verified Task 5
+  code/UI commit. The separate Task 6 documentation/release-verification
+  record is `73ad047ffde25ee636e197b37360b70e8fc8129f` (`73ad047`), a
+  documentation-only child commit. Neither value is the fix-round commit for
+  this correction; the documentation record remains local and has not been
+  deployed, pushed, merged, or reconciled against live Apps Script or Google
+  Sheets.
+- [x] Focused repair-ticket command passed `26/26`: contract, runtime/RBAC,
+  migration idempotency/preview, and tenant/landlord privacy UI tests.
+- [x] `npm run validate` passed: `57` backend files parsed, `37` endpoint
+  references matched, and static release-cache validation passed.
+- [x] Required Apps Script syntax checks passed for the six specified files:
+  `V2_REPAIR_TICKETS.js`, `V2_TENANT_MESSAGES.js`,
+  `V2_LANDLORD_MANAGEMENT.js`, `V2_WORKSPACE_LANDLORD_ACCESS.js`,
+  `V2_RUNTIME_SNAPSHOT.js`, and `程式碼.js`.
+- [ ] Full `npm test` is not green at this baseline: `242` tests ran, `240`
+  passed and `2` failed. The failures are
+  `tests/landlord-post-read-snapshot.test.mjs` (expected `true`, got
+  `undefined`) and `tests/phase246-landlord-post-read-bridge.test.mjs`
+  (`landlord_arrears` expected `htmlBridgeOutput_` / `bridge`, got `fallback`).
+  They are pre-existing baseline failures in landlord POST/read bridge coverage;
+  no evidence attributes either failure to repair-ticket changes.
+- [x] Repair-ticket tests assert server-side Workspace/tenant filtering,
+  allowlisted projections, POST-only bridge transport, append-only event
+  history, source-message idempotency, and preview no-write behavior.
+- [ ] Authenticated landlord Email session, authenticated tenant LIFF session,
+  real Tenant A/B room-transfer privacy validation, actual bridge origin/live
+  update feedback, and actual Apps Script preview plus backup/header/row-count
+  reconciliation remain `HUMAN_REQUIRED` / `UNVERIFIED`.
+- [x] No migration apply, deployment, Google Sheets change, LINE send, push,
+  merge, or authenticated external-service action was performed. Local checks
+  must not be reported as Production readiness.
+- [x] Rollback boundary: revert or disable the repair API/UI caller (including
+  the tenant route or optional room summary) and retain all append-only repair
+  ticket/event rows plus legacy message rows. Do not delete or rewrite history.
+
 ## 2026-09-13 桌面房客詳細／合約 Email 唯讀 session 修正（已部署）
 
 - [x] 房客詳細頁載入共用桌面 responsive shell，桌面寬度顯示側欄與桌面主內容，不再以手機底部導覽殼層呈現。
@@ -174,6 +213,22 @@
 - [ ] 無密鑰與 token
 
 ## 身份與入口
+
+## 報修工單歷史與個資隔離（Phase 262 contract）
+
+- [ ] 房客 A 建立報修後換租，房東仍可依 `workspace_id + room_id` 查到完整歷史，且原 `tenant_id_snapshot + lease_id_snapshot` 不被覆寫。
+- [ ] 房客 B 的 response 在序列化前即完成 Workspace、房客與房間篩選；不得包含 A 的姓名、電話、Email、LINE ID、原始訊息、內部備註或附件 metadata。
+- [ ] 房客 B 替換 `tenant_id`、`room_id` 或工單 ID 時，伺服器拒絕或回傳空集合，不洩漏其他房客資料。
+- [ ] 工單狀態只使用 `open`、`in_progress`、`awaiting_confirmation`、`completed`、`closed`；每次更新均新增 append-only event 與 actor audit。
+- [ ] 只接受 `tenant_repair_tickets_init`、`landlord_repair_tickets_init`、`landlord_repair_ticket_update` 三個 documented actions；未知 query-string action 必須拒絕。
+
+## 報修工單 UI 與房客投影（Phase 265）
+
+- [x] 房東訊息頁保留既有一般訊息清單與篩選，並以既有受驗證房東 POST bridge 讀取 `landlord_repair_tickets_init`；房間與工單狀態可篩選，按 `room_id` 分組顯示狀態、優先程度、原房客／租約快照、責任、費用與最新公開事件摘要。
+- [x] 房東 repair 更新在按鈕 busy 時鎖定，僅以一次 `landlord_repair_ticket_update` POST bridge 提交 `ticket_id`、狀態與公開回覆；成功或失敗在頁面回饋，不會傳送 Workspace、房東、房客或租約識別作為 authority。
+- [x] 房客頁只在 LIFF 已取得 `id_token` 後，以 controlled HTML POST bridge 呼叫 `tenant_repair_tickets_init`；repair renderer 只插入類型、標題、優先程度、狀態、建立／完成日期與公開摘要，絕不讀取或以 CSS 隱藏歷史原始訊息、房客／租約快照、內部備註、附件／儲存 ID、電話、Email 或 LINE identifier。
+- [x] Tenant A／Tenant B 負向 fixture 驗證 Tenant B 的 repair payload 與 render output 不含 Tenant A 的姓名、電話、Email、LINE ID、原始訊息、私有附件檔名或租約 ID（`tests/phase265-repair-ticket-privacy.ui.test.mjs`）。
+- [ ] `HUMAN_REQUIRED`：以真實已登入房東 Email session、房客 LIFF session 與換租 Tenant A/B fixture，在裝置／瀏覽器確認 bridge origin、讀寫回饋、房間篩選與跨房客畫面隔離；靜態測試不代表 authenticated Production acceptance。
 
 - [ ] 未登入房東導向 LIFF 登入
 - [ ] 登入後返回原頁

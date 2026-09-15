@@ -321,6 +321,127 @@ function getTenantMessageInitByLineUid(
 
 
 /**
+ * 房客本人報修工單初始化。
+ * Browser-supplied tenant, room, and ticket identifiers are never used to
+ * determine this query scope; the active LINE identity is the sole authority.
+ */
+function getTenantRepairTicketsInitByLineUid(
+  lineUserId
+) {
+  const emptyData = { tickets: [] };
+  lineUserId = String(lineUserId || '').trim();
+
+  if (!lineUserId) {
+    return {
+      success: false,
+      code: 'MISSING_LINE_UID',
+      message: '缺少 LINE UID',
+      data: emptyData
+    };
+  }
+
+  const runtimeIdentity =
+    resolveCanonicalTenantRuntimeByLineUid_(lineUserId);
+  if (!runtimeIdentity || runtimeIdentity.success !== true) {
+    return {
+      success: false,
+      code: runtimeIdentity && runtimeIdentity.code
+        ? runtimeIdentity.code
+        : 'TENANT_NOT_FOUND',
+      message: runtimeIdentity && runtimeIdentity.message
+        ? runtimeIdentity.message
+        : '查無房客資料，請先完成身份綁定',
+      data: emptyData
+    };
+  }
+
+  return getTenantRepairTicketsInitByPrincipal_(
+    runtimeIdentity.data || {}
+  );
+}
+
+
+/**
+ * Builds a tenant-safe repair response from a principal already resolved by a
+ * verified authentication path. This deliberately accepts no browser scope.
+ */
+function getTenantRepairTicketsInitByPrincipal_(
+  canonical
+) {
+  canonical = canonical || {};
+  const emptyData = { tickets: [] };
+  if (
+    !String(canonical.workspace_id || '').trim() ||
+    !String(canonical.room_id || '').trim() ||
+    !String(canonical.tenant_id || '').trim()
+  ) {
+    return {
+      success: false,
+      code: 'AUTH_REQUIRED',
+      message: '缺少已驗證的房客身份',
+      data: emptyData
+    };
+  }
+
+  const tickets = repairTicketRows_(
+    repairTicketEnsureSheets_().tickets
+  ).filter(function(ticket) {
+    return (
+      String(ticket.workspace_id || '').trim() ===
+        String(canonical.workspace_id || '').trim() &&
+      String(ticket.room_id || '').trim() ===
+        String(canonical.room_id || '').trim() &&
+      String(ticket.tenant_id_snapshot || '').trim() ===
+        String(canonical.tenant_id || '').trim()
+    );
+  }).map(function(ticket) {
+    const projection = repairTicketToTenantProjection_(ticket, canonical);
+    if (projection) projection.description = '';
+    return projection;
+  }).filter(function(ticket) {
+    return ticket !== null;
+  });
+
+  return {
+    success: true,
+    code: 'OK',
+    message: '查詢成功',
+    data: { tickets: tickets }
+  };
+}
+
+
+/**
+ * Test-only dispatcher adapter for proving that forged browser identity fields
+ * are denied before they could influence the tenant-owned route.
+ */
+function invokeTenantRepairRoute_(
+  trustedPrincipal,
+  query
+) {
+  const principal = trustedPrincipal || {};
+  const canonical = principal.canonical || principal;
+  const input = query || {};
+  const forgedTenant = String(input.tenant_id || '').trim();
+  const forgedRoom = String(input.room_id || '').trim();
+
+  if (
+    (forgedTenant && forgedTenant !== String(canonical.tenant_id || '').trim()) ||
+    (forgedRoom && forgedRoom !== String(canonical.room_id || '').trim())
+  ) {
+    return {
+      success: false,
+      code: 'TENANT_ACCESS_DENIED',
+      message: '房客只能讀取自己的報修工單',
+      data: { tickets: [] }
+    };
+  }
+
+  return getTenantRepairTicketsInitByPrincipal_(canonical);
+}
+
+
+/**
  * 房客送出訊息或報修
  */
 function submitTenantMessageByLineUid_(
@@ -549,6 +670,9 @@ function submitTenantMessageByLineUid_(
         tenantLink.room_name ||
         '',
 
+      repair_ticket_id:
+        '',
+
       message_category:
         messageCategory,
       message_title:
@@ -577,6 +701,41 @@ function submitTenantMessageByLineUid_(
     appendTenantMessage_(
       messageRecord
     );
+
+    if (
+      messageCategory === 'repair'
+    ) {
+      const repairTicket =
+        repairTicketCreateFromMessage_(
+          messageRecord,
+          {
+            workspace_id:
+              canonical.workspace_id,
+            property_id:
+              canonical.property_id,
+            room_id:
+              canonical.room_id,
+            room_name:
+              canonical.room_name,
+            tenant_id:
+              canonical.tenant_id,
+            lease_id:
+              canonical.contract_id,
+            tenant_name:
+              tenant.tenant_name ||
+              tenantLink.tenant_name ||
+              ''
+          }
+        );
+
+      messageRecord.repair_ticket_id =
+        repairTicket.repair_ticket_id;
+
+      tenantMessageSetRepairTicketId_(
+        messageRecord.message_id,
+        messageRecord.repair_ticket_id
+      );
+    }
 
     const notifyText =
       buildTenantMessageNoticeText_(
@@ -720,6 +879,8 @@ function submitTenantMessageByLineUid_(
       data: {
         message_id:
           messageId,
+        repair_ticket_id:
+          messageRecord.repair_ticket_id,
         message_category:
           messageCategory,
         message_title:
@@ -988,6 +1149,8 @@ function ensureTenantMessageSheet_() {
     'room_id',
     'room_name',
 
+    'repair_ticket_id',
+
     'message_category',
     'message_title',
     'message_body',
@@ -1087,6 +1250,54 @@ function ensureTenantMessageSheet_() {
   );
 
   return sheet;
+}
+
+
+function tenantMessageSetRepairTicketId_(
+  messageId,
+  repairTicketId
+) {
+  const sheet =
+    ensureTenantMessageSheet_();
+  const values =
+    sheet.getDataRange().getValues();
+  const headers =
+    values[0].map(function(header) {
+      return String(header || '').trim();
+    });
+  const messageColumn =
+    headers.indexOf('message_id');
+  const repairTicketColumn =
+    headers.indexOf('repair_ticket_id');
+
+  if (
+    messageColumn < 0 ||
+    repairTicketColumn < 0
+  ) {
+    return;
+  }
+
+  for (
+    let row = 1;
+    row < values.length;
+    row += 1
+  ) {
+    if (
+      String(
+        values[row][messageColumn] || ''
+      ).trim() === messageId
+    ) {
+      sheet
+        .getRange(
+          row + 1,
+          repairTicketColumn + 1
+        )
+        .setValue(
+          repairTicketId
+        );
+      return;
+    }
+  }
 }
 
 

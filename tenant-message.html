@@ -737,6 +737,7 @@
       URL_PARAMS.get('test') === '1';
 
     let LINE_USER_ID = '';
+    let TENANT_ID_TOKEN = '';
     let PAGE_DATA = null;
     let SELECTED_CATEGORY = 'general';
     let SELECTED_PRIORITY = 'normal';
@@ -1189,6 +1190,74 @@
       );
     }
 
+    function tenantRepairBridgeRequest() {
+      if (!TENANT_ID_TOKEN) {
+        return Promise.reject(new Error('房客登入驗證尚未完成'));
+      }
+
+      const requestId = 'tenant_repair_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+      const iframe = document.createElement('iframe');
+      const form = document.createElement('form');
+      const expectedOrigin = new URL(API_URL).origin;
+
+      function isAppsScriptSandboxOrigin(origin) {
+        try {
+          const url = new URL(origin);
+          return url.protocol === 'https:' &&
+            /^n-[a-z0-9-]+-script\.googleusercontent\.com$/i.test(url.hostname);
+        } catch (error) {
+          return false;
+        }
+      }
+      iframe.name = requestId;
+      iframe.hidden = true;
+      form.method = 'POST';
+      form.action = API_URL;
+      form.target = iframe.name;
+      form.hidden = true;
+
+      [{ name: 'action', value: 'tenant_repair_tickets_init' }, { name: 'v2_action', value: 'tenant_repair_tickets_init' }, { name: 'response_mode', value: 'bridge' }, { name: 'request_id', value: requestId }, { name: 'id_token', value: TENANT_ID_TOKEN }]
+        .forEach(function(field) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = field.name;
+          input.value = field.value;
+          form.appendChild(input);
+        });
+
+      return new Promise(function(resolve, reject) {
+        let finished = false;
+        const timer = setTimeout(finishError, 30000, new Error('報修工單讀取逾時'));
+        function cleanup() {
+          clearTimeout(timer);
+          window.removeEventListener('message', receive);
+          iframe.remove();
+          form.remove();
+        }
+        function finishError(error) {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          reject(error);
+        }
+        function receive(event) {
+          const data = event && event.data ? event.data : {};
+          if ((event.origin !== expectedOrigin && !isAppsScriptSandboxOrigin(event.origin)) || event.source !== iframe.contentWindow || data.source !== 'CMWEBS_APPS_SCRIPT' || data.requestId !== requestId) return;
+          finished = true;
+          cleanup();
+          if (!data.payload || data.payload.success !== true) {
+            reject(new Error(data.payload && data.payload.message ? data.payload.message : '報修工單讀取失敗'));
+            return;
+          }
+          resolve(data.payload.data || {});
+        }
+        window.addEventListener('message', receive);
+        document.body.appendChild(iframe);
+        document.body.appendChild(form);
+        form.submit();
+      });
+    }
+
     async function initLineUserId() {
       if (
         typeof liff === 'undefined'
@@ -1221,6 +1290,12 @@
         throw new Error(
           '無法取得房客 LINE User ID'
         );
+      }
+
+      TENANT_ID_TOKEN = liff.getIDToken() || '';
+
+      if (!TENANT_ID_TOKEN) {
+        throw new Error('無法取得房客登入驗證');
       }
 
       return true;
@@ -1397,6 +1472,33 @@
           }
         </div>
       `;
+    }
+
+    function renderTenantRepairTickets(tickets) {
+      const safeTickets = Array.isArray(tickets) ? tickets : [];
+      if (!safeTickets.length) {
+        return '<div class="empty-state"><div class="empty-title">尚無我的報修紀錄</div><div class="empty-text">送出報修後，這裡會顯示處理進度。</div></div>';
+      }
+      return safeTickets.map(function(ticket) {
+        return `
+          <article class="message-card ${safeHtml(normalizeStatus(ticket.status))}">
+            <div class="message-head"><div><div class="message-title">${safeHtml(ticket.title || '報修')}</div><div class="message-meta">${safeHtml(categoryText(ticket.category))}・${safeHtml(formatDateTime(ticket.created_at))}</div></div><span class="${statusBadgeClass(ticket.status)}">${safeHtml(statusText(ticket.status))}</span></div>
+            ${ticket.public_note ? `<div class="reply-box"><div class="reply-label">處理摘要</div><div class="reply-text">${safeHtml(ticket.public_note)}</div></div>` : ''}
+            ${ticket.closed_at ? `<div class="message-meta">完成時間：${safeHtml(formatDateTime(ticket.closed_at))}</div>` : ''}
+          </article>
+        `;
+      }).join('');
+    }
+
+    async function loadTenantRepairTickets() {
+      const container = document.getElementById('tenantRepairTicketList');
+      if (!container) return;
+      try {
+        const data = await tenantRepairBridgeRequest();
+        container.innerHTML = renderTenantRepairTickets(data.tickets);
+      } catch (error) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-text">' + safeHtml(error.message || '報修工單讀取失敗') + '</div></div>';
+      }
     }
 
     function renderPage(data) {
@@ -1628,6 +1730,11 @@
         </section>
 
         <section class="card section-card">
+          <div class="section-title-row"><div class="section-title">我的報修</div><div class="section-hint">只顯示我的工單</div></div>
+          <div id="tenantRepairTicketList"><div class="loading-text">讀取報修進度中...</div></div>
+        </section>
+
+        <section class="card section-card">
           <div class="section-title-row">
             <div class="section-title">
               我的訊息紀錄
@@ -1854,6 +1961,7 @@
           );
 
         renderPage(data);
+        loadTenantRepairTickets();
       } catch (error) {
         renderError(
           error &&

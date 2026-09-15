@@ -515,6 +515,193 @@ function updateLandlordPaymentReportByLineUid_(
 // ==================================================
 
 /**
+ * Workspace-scoped landlord repair ticket read model.
+ * The access object is resolved by the Workspace proxy; filters cannot widen
+ * the workspace derived from that authenticated membership.
+ */
+function getLandlordRepairTicketsInitByLineUid_(
+  landlordLineUserId,
+  access,
+  filters
+) {
+  var workspaceId = lmText_(
+    access && access.workspace && access.workspace.workspace_id
+  );
+  var safeFilters = filters || {};
+  var roomId = lmText_(safeFilters.room_id);
+  var status = lmText_(safeFilters.status).toLowerCase();
+
+  if (!workspaceId) {
+    return {
+      success: false,
+      code: 'WORKSPACE_ACCESS_DENIED',
+      message: '找不到可存取的管理團隊',
+      data: { tickets: [], summary: repairTicketLandlordSummary_([]) }
+    };
+  }
+
+  var tickets = repairTicketRows_(
+    repairTicketEnsureSheets_().tickets
+  ).filter(function(ticket) {
+    return lmText_(ticket.workspace_id) === workspaceId &&
+      (!roomId || lmText_(ticket.room_id) === roomId) &&
+      (!status || lmText_(ticket.status).toLowerCase() === status);
+  }).map(function(ticket) {
+    return repairTicketToLandlordProjection_(ticket);
+  });
+
+  return {
+    success: true,
+    code: 'OK',
+    message: '查詢成功',
+    data: {
+      tickets: tickets,
+      summary: repairTicketLandlordSummary_(tickets)
+    }
+  };
+}
+
+
+/**
+ * Workspace-scoped landlord repair-ticket update. Only the current status,
+ * tenant-visible reply, responsibility and cost projection fields may change;
+ * the original tenant and lease snapshots remain immutable.
+ */
+function updateLandlordRepairTicketByLineUid_(
+  landlordLineUserId,
+  ticketId,
+  input,
+  access
+) {
+  ticketId = lmText_(ticketId);
+  var workspaceId = lmText_(
+    access && access.workspace && access.workspace.workspace_id
+  );
+  var updates = repairTicketLandlordAllowlistedInput_(input);
+
+  if (!workspaceId) {
+    return {
+      success: false,
+      code: 'WORKSPACE_ACCESS_DENIED',
+      message: '找不到可存取的管理團隊'
+    };
+  }
+  if (!ticketId) {
+    return {
+      success: false,
+      code: 'MISSING_REPAIR_TICKET_ID',
+      message: '缺少報修工單 ID'
+    };
+  }
+  if (!repairTicketLandlordHasUpdate_(updates)) {
+    return {
+      success: false,
+      code: 'INVALID_REPAIR_TICKET_UPDATE',
+      message: '請提供可更新的報修欄位'
+    };
+  }
+  if (updates.status && !repairTicketIsStatus_(updates.status)) {
+    return {
+      success: false,
+      code: 'INVALID_REPAIR_TICKET_STATUS',
+      message: '報修工單狀態不正確'
+    };
+  }
+  if (updates.public_reply.length > 500) {
+    return {
+      success: false,
+      code: 'REPAIR_TICKET_REPLY_TOO_LONG',
+      message: '房東回覆最多 500 字'
+    };
+  }
+
+  var target = repairTicketFindTicketRow_(ticketId);
+  if (!target || lmText_(target.workspace_id) !== workspaceId) {
+    return {
+      success: false,
+      code: 'REPAIR_TICKET_NOT_FOUND',
+      message: '找不到指定報修工單'
+    };
+  }
+
+  var updated = repairTicketAppendEvent_(ticketId, {
+    event_type: 'landlord_update',
+    to_status: updates.status || target.status,
+    internal_note: '',
+    public_note: updates.public_reply
+  }, {
+    actor_type: 'landlord',
+    actor_id: lmText_(
+      access && access.user && access.user.user_id
+    ) || lmText_(
+      access && access.line_user_id
+    ) || lmText_(landlordLineUserId)
+  });
+  var sheet = repairTicketEnsureSheets_().tickets;
+
+  ['responsibility_party', 'estimated_cost', 'actual_cost'].forEach(function(field) {
+    if (updates[field] !== '') {
+      repairTicketSetTicketProjectionValue_(
+        sheet,
+        target._sheet_row,
+        field,
+        updates[field]
+      );
+    }
+  });
+
+  return {
+    success: true,
+    code: 'OK',
+    message: '報修工單已更新',
+    data: repairTicketToLandlordProjection_(updated)
+  };
+}
+
+
+/**
+ * Only route-supported landlord update fields enter the repair-ticket model.
+ */
+function repairTicketLandlordAllowlistedInput_(input) {
+  input = input || {};
+  return {
+    status: lmText_(input.status).toLowerCase(),
+    public_reply: lmText_(input.public_reply),
+    responsibility_party: lmText_(input.responsibility_party),
+    estimated_cost: lmText_(input.estimated_cost),
+    actual_cost: lmText_(input.actual_cost)
+  };
+}
+
+
+function repairTicketLandlordHasUpdate_(input) {
+  return [
+    input.status,
+    input.public_reply,
+    input.responsibility_party,
+    input.estimated_cost,
+    input.actual_cost
+  ].some(function(value) {
+    return value !== '';
+  });
+}
+
+
+function repairTicketLandlordSummary_(tickets) {
+  return {
+    total: tickets.length,
+    open: tickets.filter(function(ticket) { return ticket.status === 'open'; }).length,
+    in_progress: tickets.filter(function(ticket) { return ticket.status === 'in_progress'; }).length,
+    awaiting_confirmation: tickets.filter(function(ticket) {
+      return ticket.status === 'awaiting_confirmation';
+    }).length,
+    completed: tickets.filter(function(ticket) { return ticket.status === 'completed'; }).length,
+    closed: tickets.filter(function(ticket) { return ticket.status === 'closed'; }).length
+  };
+}
+
+
+/**
  * 房東訊息管理頁初始化
  * v2_action=landlord_messages_init
  */

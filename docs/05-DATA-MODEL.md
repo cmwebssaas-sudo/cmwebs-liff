@@ -248,3 +248,177 @@ request_id
 2. Google Sheets 曾接近 1,000 萬儲存格上限。
 3. 新建工作表前已有容量壓縮函式，但不是長期資料庫方案。
 4. Production consolidation 必須輸出每張表的 header、row count、column count、max rows 與 max columns。
+
+## V2 repair-ticket privacy contract
+
+`V2_repair_tickets` is an append-only room-scoped repair-ticket projection. It
+keeps `source_message_id` as the preserved `V2_tenant_messages.message_id` link
+and keeps the creation-time tenant/lease references for landlord-authorized
+history. The original `V2_tenant_messages` record is neither overwritten nor
+deleted; changing occupants never rewrites those values.
+
+### `V2_repair_tickets` headers
+
+```text
+workspace_id
+repair_ticket_id
+source_message_id
+property_id
+room_id
+room_name_snapshot
+tenant_id_snapshot
+lease_id_snapshot
+tenant_name_snapshot
+category
+title
+description
+priority
+status
+responsibility_party
+estimated_cost
+actual_cost
+created_at
+closed_at
+```
+
+### `V2_repair_tickets` statuses
+
+| Status | Meaning |
+| --- | --- |
+| open | 待處理 |
+| in_progress | 處理中 |
+| awaiting_confirmation | 待確認 |
+| completed | 已完成 |
+| closed | 已關閉 |
+
+### `V2_repair_events` headers
+
+```text
+workspace_id
+repair_ticket_id
+event_id
+event_type
+from_status
+to_status
+actor_type
+actor_id
+internal_note
+public_note
+created_at
+```
+
+### `tenant_repair_allowed_fields`
+
+```text
+repair_ticket_id
+property_id
+room_id
+room_name_snapshot
+category
+title
+description
+priority
+status
+created_at
+closed_at
+public_note
+```
+
+Tenant reads are server-filtered by the verified `workspace_id`, `tenant_id`,
+and `room_id` before serialization. Tenant projections never include tenant
+identity snapshots, LINE IDs, email addresses, phone numbers, internal notes,
+original message payloads, attachment IDs or other attachment identifiers,
+attachment filenames, private attachment metadata, or permanent download URLs.
+
+### Legacy repair-message backfill runbook
+
+`repairTicketBackfillLegacyMessages_({ mode, limit })` is a private operator
+helper in `V2_REPAIR_TICKETS.js`, not a public HTTP action. `mode` must be
+exactly `preview` or `apply`; it must never be selected from a web request or a
+query parameter.
+
+1. In the authorized Apps Script operator context, run
+   `repairTicketBackfillLegacyMessages_({ mode: 'preview', limit: 1000 })`.
+   Confirm `writes: 0`. The preview scans only
+   `V2_tenant_messages.message_category === 'repair'` and returns candidate
+   source IDs, unresolved source IDs, `missing_room_count`, and any
+   `link_reconciliation_source_message_ids` or
+   `duplicate_source_message_ids` without adding sheets, headers, tickets,
+   events, or source links.
+2. Inspect the result. Resolve every `unresolved_source_message_ids` entry
+   manually; in particular, records without `room_id` stay untouched and must
+   not be assigned a guessed room. A source message that already has a ticket
+   by `source_message_id` but has a blank `repair_ticket_id` is a link-only
+   reconciliation candidate, not a new ticket. Confirm the candidate and
+   reconciliation counts with the operations owner. Repeated normalized source
+   IDs in the same batch are reported as `duplicate_source_message_ids`; only
+   the first row creates the ticket and event, while subsequent duplicate rows
+   receive the same additive source link during apply.
+3. Take and verify a read-only backup/export of the three affected sheets:
+   `V2_tenant_messages`, `V2_repair_tickets`, and `V2_repair_events`. Record
+   each header row and row count before proceeding.
+4. Only after explicit operator authorization and the verified backup, run
+   `repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 1000 })` in
+   that same operator context. It creates one ticket from each eligible source
+   message, preserves its original tenant/lease/message snapshots, appends one
+   `legacy_backfill` event, and writes the additive `repair_ticket_id` source
+   link. Existing source tickets with a blank source link receive only that
+   additive link; they never receive another `legacy_backfill` event. Apply
+   holds one migration-wide `ScriptLock` across its fresh scan, ticket/event
+   creation, and link reconciliation, so a waiting concurrent apply rechecks
+   the completed state before it can write. It does not alter non-repair rows
+   or missing-room rows.
+5. Reconcile counts independently: `created_count` must equal the increase in
+   `V2_repair_tickets` rows. The increase in newly written source links must
+   equal `created_count + reconciled_link_count`; rows already carrying a
+   `repair_ticket_id` are `existing_link_count` and are not new link writes.
+   `V2_repair_events` must increase by exactly `2 * created_count` (`created`
+   plus `legacy_backfill`), even when multiple source rows normalize to the
+   same source ID. `writes` is the exact count of migration-initiated Sheet
+   cell mutation calls:
+   `appendRow`, `setValue`, and `setValues`. It includes ticket/event rows,
+   status projection, source links, and any header provisioning; it excludes
+   read calls and `insertSheet` tab creation. A first-run single ticket on two
+   new repair sheets therefore reports seven writes (two headers, ticket,
+   `created` event, `legacy_backfill` event, status projection, source link);
+   each additional source-link reconciliation reports one. Repeat `preview`
+   and confirm that eligible rows and link reconciliations no longer appear
+   before any further batch.
+6. Rollback is source-code and access rollback, not destructive data removal:
+   stop further apply runs, retain the backup and every appended ticket/event
+   row, and revert/disable the migration caller if necessary. Any correction to
+   a completed batch requires a separately authorized, audited remediation;
+   never delete or rewrite the preserved legacy messages, ticket snapshots, or
+   events as a shortcut.
+
+### Task 6 verification and migration boundary
+
+The verified implementation source candidate is
+`3b12c617216040974700fa6b3238db2e9652f310` (`3b12c61`), the Task 5 code/UI
+commit. The separate Task 6 documentation/release-verification record is
+`73ad047ffde25ee636e197b37360b70e8fc8129f` (`73ad047`), the documentation-only
+child commit whose parent is that implementation source candidate. These two
+hashes have different roles; neither label identifies the fix-round commit
+that carries this documentation correction. The focused contract, runtime,
+migration, and privacy UI tests passed `26/26`. The complete local Node suite
+ran `242` tests: `240` passed and `2` failed in the pre-existing landlord
+POST/read bridge snapshot coverage. The exact failures are recorded in the Task
+6 report and must not be treated as repair-ticket migration failures. The
+candidate also passed `npm run validate` and all six required Apps Script syntax
+checks. These checks establish a candidate source/documentation state only;
+they do not establish current Google Sheets headers, row counts, deployed
+Apps Script code, or Production readiness.
+
+No real migration preview or backup reconciliation was run in Task 6. An
+authorized Apps Script operator must still run the exact `preview` helper,
+confirm `writes: 0`, export and reconcile the headers and row counts of
+`V2_tenant_messages`, `V2_repair_tickets`, and `V2_repair_events`, and review
+unresolved room IDs before any separately authorized `apply`. This boundary is
+`HUMAN_REQUIRED`; a local mock is not evidence. Apply remains operator-only,
+never a web request, and is outside this task.
+
+Rollback stops further apply work and disables or reverts the migration/API/UI
+caller if necessary. It retains every appended ticket/event row, original
+tenant/lease snapshot, source message, and backup. Rollback must not delete,
+rewrite, or remap historical data; remediation after an apply requires a new
+authorization and audit record.

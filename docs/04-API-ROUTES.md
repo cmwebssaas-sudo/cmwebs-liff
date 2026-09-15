@@ -625,6 +625,128 @@ The landlord tenant-create initialization route also accepts the optional
 `supersede_contract_id` query parameter so the paper form reads the selected
 electronic contract directly, including explicit zero-valued fee fields.
 
+## Repair-ticket actions
+
+| Action | Transport | Required authority | Purpose |
+| --- | --- | --- | --- |
+| `tenant_repair_tickets_init` | Raw POST body / controlled HTML bridge | Verified tenant identity and active Workspace/room scope | Returns only the current tenant's own safe ticket projection. |
+| `landlord_repair_tickets_init` | POST JSON body / controlled HTML bridge | Verified landlord/team membership and Workspace read permission | Returns complete room-scoped ticket history, including protected historical tenant/lease references. |
+| `landlord_repair_ticket_update` | POST JSON body / controlled HTML bridge | Verified landlord/team membership and existing `message_write` permission | Appends a ticket event and updates only allowlisted current ticket fields without rewriting history. |
+
+These actions are POST-only. Their `doGet` / JSONP action paths never read
+credentials or browser identity fields and return `AUTH_METHOD_REQUIRED` through
+the existing JSONP or HTML bridge envelope; undocumented query-string actions are not accepted.
+`doPost` reads repair credentials only from the raw `postData.contents`: either
+a JSON object or an `application/x-www-form-urlencoded` controlled-bridge body.
+It does not merge `e.parameter` into a repair request. A repair action found
+only in the query string, or a query token paired with a missing/unparseable
+repair body, returns `AUTH_METHOD_REQUIRED`; a query token can never override
+the body principal.
+
+### Repair-ticket permission, error, and projection contract
+
+- `tenant_repair_tickets_init` requires a raw POST body (JSON or the
+  URL-encoded controlled-bridge form) containing either
+  `tenant_session_token` verified
+  by `verifyTenantLiffSessionToken_`, or an `id_token` verified by
+  `tenantLiffSigningVerifyIdTokenClaims_`; its LINE subject is then resolved by
+  `resolveCanonicalTenantRuntimeByLineUid_`. A bare `line_user_id` is never
+  accepted. Missing body credentials return `AUTH_REQUIRED`; credential-bearing
+  GET requests return `AUTH_METHOD_REQUIRED`; an unavailable verifier or
+  canonical resolver returns `TENANT_REPAIR_AUTH_MODULE_REQUIRED`; verifier
+  failures return their existing explicit auth errors. The derived
+  `workspace_id`, `room_id`, and `tenant_id` filter the exact three-part scope
+  before projection. Browser `tenant_id`, `room_id`, Workspace, and ticket
+  fields are not authority inputs; a supplied mismatched tenant/room is
+  rejected as `TENANT_ACCESS_DENIED` by the same dispatcher helper exercised by
+  the test-only adapter.
+- The frozen tenant field list retains `description` as a storage/projection
+  shape key, but its response value is always the empty string: the canonical
+  `V2_tenant_messages.message_body` is stored only for the protected landlord
+  history and is never returned to a tenant. Tenant responses otherwise return
+  only `repair_ticket_id`, `property_id`, `room_id`, `room_name_snapshot`,
+  `category`, `title`, `priority`, `status`, `created_at`, `closed_at`, and the
+  latest `public_note`; they never serialize historical tenant PII,
+  `lease_id_snapshot`, raw internal events, `internal_note`, attachments, or
+  attachment storage identifiers.
+- `landlord_repair_tickets_init` accepts optional POST body `room_id` and
+  `status` filters only and requires POST body `landlord_session_token`, resolved through
+  `resolveLandlordPrincipal_` and the existing email-session implementation.
+  A bare `line_user_id` is never accepted. Missing session returns
+  `AUTH_REQUIRED`; credential-bearing GET requests return
+  `AUTH_METHOD_REQUIRED`; an unavailable resolver returns
+  `LANDLORD_REPAIR_AUTH_MODULE_REQUIRED`; existing session verification errors
+  pass through. The verified `principal_line_user_id` is the only value passed
+  to the Workspace proxy. Client Workspace and landlord identifiers are
+  ignored, and only ticket rows whose `workspace_id` exactly matches the
+  membership are returned. Workspace/membership failures return the existing
+  proxy denial codes (such as `WORKSPACE_ACCESS_DENIED`); no cross-Workspace
+  ticket existence is exposed.
+- `landlord_repair_ticket_update` accepts `ticket_id` plus only `status`,
+  `public_reply`, `responsibility_party`, `estimated_cost`, and `actual_cost`.
+  It requires the same verified POST body `landlord_session_token` principal and existing
+  `message_write` policy. All other fields, including
+  `workspace_id`, landlord/tenant/lease identity, `internal_note`, attachments,
+  and source-message fields are discarded before the update service. Missing ID,
+  empty updates, invalid status, oversized public reply, out-of-scope or absent
+  tickets return respectively `MISSING_REPAIR_TICKET_ID`,
+  `INVALID_REPAIR_TICKET_UPDATE`, `INVALID_REPAIR_TICKET_STATUS`,
+  `REPAIR_TICKET_REPLY_TOO_LONG`, or `REPAIR_TICKET_NOT_FOUND`.
+- The landlord update event always records `actor_type=landlord` and uses the
+  actual authenticated Workspace member's stable `access.user.user_id` as
+  `actor_id`; only if unavailable does it fall back to that member's
+  `access.line_user_id`. It never records the delegated member as the legacy
+  primary-owner principal.
+- The JSONP and HTML bridge envelopes remain the centralized dispatcher
+  behavior for GET rejection; successful repair calls use POST JSON output or
+  the existing HTML bridge response. `tenant_repair_tickets_init` is eligible for the existing
+  read-only runtime snapshot because it contains only the tenant-safe
+  projection. Neither landlord repair read/write actions nor any landlord write
+  are added to that cache allowlist.
+
+### Task 6 local release-boundary record
+
+The verified implementation source candidate is commit
+`3b12c617216040974700fa6b3238db2e9652f310` (`3b12c61`, `fix: preserve repair
+feedback and strengthen privacy UI tests`). The separate Task 6 documentation
+and release-verification record is commit
+`73ad047ffde25ee636e197b37360b70e8fc8129f` (`73ad047`, `test: record repair
+ticket release checks`), whose parent is the implementation source candidate.
+The latter is a documentation/release-record commit, not the implementation
+source. This fix-round documentation correction is intentionally not embedded
+as its own future commit hash. Local verification is not a deployment or a
+Production readiness claim. The focused repair-ticket suite
+passed `26/26`; the full repository suite ran `242` tests with `240` passing and
+two pre-existing landlord POST/read bridge snapshot failures. The failures are
+`tests/landlord-post-read-snapshot.test.mjs` (expected `true`, received
+`undefined`) and `tests/phase246-landlord-post-read-bridge.test.mjs`
+(`landlord_arrears must resolve through htmlBridgeOutput_ for desktop Email`,
+received `fallback`, expected `bridge`). They are recorded as baseline failures
+and are not attributed to this feature without separate evidence.
+
+`npm run validate` passed (`57` backend files parsed, `37` endpoint references
+matched, static release-cache validation passed). The six required Apps Script
+`node --check` commands passed for `V2_REPAIR_TICKETS.js`,
+`V2_TENANT_MESSAGES.js`, `V2_LANDLORD_MANAGEMENT.js`,
+`V2_WORKSPACE_LANDLORD_ACCESS.js`, `V2_RUNTIME_SNAPSHOT.js`, and `程式碼.js`.
+`git diff --check` is required again after this documentation commit.
+
+The three routes remain POST-only and server-authorized. No route is a waiver for
+the following acceptance boundaries: authenticated landlord Email session,
+authenticated tenant LIFF session, a real Tenant A to Tenant B room-transfer
+scenario, the actual Apps Script sandbox bridge origin and live update feedback,
+or an authorized Apps Script preview plus read-only backup/header/row-count
+reconciliation. Each is `HUMAN_REQUIRED`; local fixtures and syntax checks do
+not substitute for them. No deployment, migration apply, LINE notification,
+Google Sheets write, or authenticated external-service action is part of this
+candidate.
+
+If the candidate must be rolled back, revert or disable the new repair API/UI
+caller (including the tenant route or room-summary surface) while retaining all
+append-only `V2_repair_tickets` and `V2_repair_events` rows and the legacy
+`V2_tenant_messages` data. Do not delete or rewrite historical rows as part of
+rollback; any data correction requires a separately authorized, audited action.
+
 ## Signed legacy contract integration webhook
 
 | POST action | Module | Purpose |

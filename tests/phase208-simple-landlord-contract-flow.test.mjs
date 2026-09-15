@@ -11,7 +11,7 @@ assert.match(createPage, /SIMPLE_NEW_MODE/);
 assert.match(createPage, /function renderSimpleNewContractPage\(/);
 assert.match(createPage, /simple_flow:\s*SIMPLE_NEW_MODE/);
 assert.match(createPage, /id="termMonths"/);
-assert.match(createPage, /房東只需填寫房號、租金、押金與租期/);
+assert.match(createPage, /房東只需填寫房號、租金、管理費、押金與租期/);
 assert.match(createPage, /identity_document_mode/);
 
 const tenantActionSource = tenantsPage.slice(
@@ -74,6 +74,67 @@ assert.equal(resolved.data.deposit_months, 2);
 assert.equal(resolved.data.payment_day, 5);
 assert.equal(resolved.data.electricity_fee_rate, 3);
 assert.equal(resolved.data.equipment_fee_rate, 3.5);
+
+const zeroManagementFee = context.landlordInitiatedContractNormalizeInput_({
+  simple_flow: true,
+  room_id: 'R506',
+  start_date: '2026-09-01',
+  term_months: 12,
+  rent_amount: '7500',
+  management_fee: '0',
+  deposit_amount: '15000',
+  initial_rent_paid: true
+});
+const zeroManagementFeeResolved = context.landlordInitiatedContractResolveNewDefaults_(
+  zeroManagementFee.data,
+  {
+    property_id: 'P1',
+    management_fee: 500,
+    deposit_months: 2,
+    payment_day: 5,
+    electricity_fee_rate: 3,
+    equipment_fee_rate: 3.5
+  }
+);
+
+assert.equal(zeroManagementFee.success, true, zeroManagementFee.message);
+assert.equal(zeroManagementFeeResolved.success, true, zeroManagementFeeResolved.message);
+assert.equal(
+  zeroManagementFeeResolved.data.management_fee,
+  0,
+  'a landlord-entered zero management fee must not fall back to the room default'
+);
+assert.equal(
+  zeroManagementFeeResolved.data.initial_rent_paid_amount,
+  7500,
+  'the initial paid amount must use the entered zero management fee'
+);
+
+const negativeManagementFee = context.landlordInitiatedContractNormalizeInput_({
+  simple_flow: true,
+  room_id: 'R506',
+  start_date: '2026-09-01',
+  term_months: 12,
+  rent_amount: '7500',
+  management_fee: '-1',
+  deposit_amount: '15000'
+});
+
+assert.equal(negativeManagementFee.success, false);
+assert.equal(negativeManagementFee.code, 'CONTRACT_INITIATION_INVALID');
+
+const malformedManagementFee = context.landlordInitiatedContractNormalizeInput_({
+  simple_flow: true,
+  room_id: 'R506',
+  start_date: '2026-09-01',
+  term_months: 12,
+  rent_amount: '7500',
+  management_fee: 'abc',
+  deposit_amount: '15000'
+});
+
+assert.equal(malformedManagementFee.success, false);
+assert.equal(malformedManagementFee.code, 'CONTRACT_INITIATION_INVALID');
 
 const mismatch = context.landlordInitiatedContractNormalizeInput_({
   simple_flow: true,

@@ -12,6 +12,7 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="frontend-release.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-auth.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
 
   <style>
     :root {
@@ -949,6 +950,8 @@
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
     let ALL_MESSAGES = [];
+    let REPAIR_TICKETS = [];
+    let LANDLORD_REPAIR_AUTH = null;
     let ACTIVE_MESSAGE_ID = '';
     let ALERT_CALLBACK = null;
 
@@ -1086,7 +1089,10 @@
     function statusText(value) {
       const map = {
         pending: '待處理',
+        open: '待處理',
         processing: '處理中',
+        in_progress: '處理中',
+        awaiting_confirmation: '待確認',
         replied: '已回覆',
         completed: '已完成',
         closed: '已結案',
@@ -1105,11 +1111,11 @@
       const status =
         rawText(value).toLowerCase();
 
-      if (status === 'pending') {
+      if (status === 'pending' || status === 'open') {
         return 'badge badge-yellow';
       }
 
-      if (status === 'processing') {
+      if (status === 'processing' || status === 'in_progress') {
         return 'badge badge-blue';
       }
 
@@ -1365,6 +1371,29 @@
         LINE_USER_ID =
           TEST_LANDLORD_LINE_USER_ID;
       }
+    }
+
+    function initLandlordRepairAuth() {
+      if (!window.CMWebsLandlordAuth) {
+        throw new Error('房東身分驗證模組載入失敗');
+      }
+
+      LANDLORD_REPAIR_AUTH = window.CMWebsLandlordAuth.init({
+        apiUrl: API_URL,
+        liffId: LIFF_ID,
+        lineUserId: LINE_USER_ID,
+        returnTo: 'landlord-messages.html',
+        entryPage: 'landlord-entry.html'
+      });
+
+      return LANDLORD_REPAIR_AUTH;
+    }
+
+    function landlordRepairRequest(action, params) {
+      const auth = LANDLORD_REPAIR_AUTH || initLandlordRepairAuth();
+      return auth.request(action, params || {}).then(function(result) {
+        return result && result.data ? result.data : {};
+      });
     }
 
     // =========================================================
@@ -1780,6 +1809,147 @@
           .join('');
     }
 
+    function groupRepairTicketsByRoom(tickets) {
+      return (tickets || []).reduce(function(groups, ticket) {
+        const roomId = rawText(ticket.room_id) || 'unknown-room';
+        if (!groups[roomId]) {
+          groups[roomId] = {
+            room_id: roomId,
+            room_name_snapshot: ticket.room_name_snapshot || roomId,
+            tickets: []
+          };
+        }
+        groups[roomId].tickets.push(ticket);
+        return groups;
+      }, {});
+    }
+
+    function repairStatusOptions(selected) {
+      return ['open', 'in_progress', 'awaiting_confirmation', 'completed', 'closed']
+        .map(function(value) {
+          return '<option value="' + value + '"' +
+            (value === rawText(selected) ? ' selected' : '') + '>' +
+            statusText(value) + '</option>';
+        })
+        .join('');
+    }
+
+    function renderRepairTimeline(tickets) {
+      const groups = groupRepairTicketsByRoom(tickets);
+      const roomGroups = Object.keys(groups).map(function(roomId) {
+        const room = groups[roomId];
+        return `
+          <section class="card" data-repair-room-id="${safeText(room.room_id)}">
+            <div class="section-title">房號 ${safeText(room.room_name_snapshot)} 的報修紀錄</div>
+            ${room.tickets.map(function(ticket) {
+              const ticketId = rawText(ticket.repair_ticket_id);
+              return `
+                <article class="message-card" data-repair-ticket-id="${safeText(ticketId)}">
+                  <div class="message-head">
+                    <div>
+                      <div class="message-title">${safeText(ticket.title || '未命名報修')}</div>
+                      <div class="badge-row">
+                        <span class="${statusBadgeClass(ticket.status)}">${statusText(ticket.status)}</span>
+                        <span class="badge badge-red">${priorityText(ticket.priority)}</span>
+                      </div>
+                    </div>
+                    <div class="message-time">${formatDateTime(ticket.created_at)}</div>
+                  </div>
+                  <div class="info-row"><div class="info-label">原房客／租約</div><div class="info-value">${safeText(ticket.tenant_name_snapshot)}／${safeText(ticket.lease_id_snapshot)}</div></div>
+                  <div class="info-row"><div class="info-label">責任</div><div class="info-value">${safeText(ticket.responsibility_party)}</div></div>
+                  <div class="info-row"><div class="info-label">預估／實際費用</div><div class="info-value">${safeText(ticket.estimated_cost)}／${safeText(ticket.actual_cost)}</div></div>
+                  <div class="reply-box"><div class="reply-label">事件摘要</div>建立：${formatDateTime(ticket.created_at)}<br>最新公開紀錄：${safeText(ticket.public_note)}</div>
+                  <div class="field"><label class="field-label" for="repairStatus_${safeText(ticketId)}">更新狀態</label><select class="field-select" id="repairStatus_${safeText(ticketId)}">${repairStatusOptions(ticket.status)}</select></div>
+                  <div class="field"><label class="field-label" for="repairReply_${safeText(ticketId)}">公開回覆</label><textarea class="field-textarea" id="repairReply_${safeText(ticketId)}" maxlength="500">${safeText(ticket.public_note)}</textarea></div>
+                  <button class="btn btn-primary" type="button" onclick="updateRepairTicket('${escapeHtml(ticketId)}')">儲存報修更新</button>
+                </article>
+              `;
+            }).join('')}
+          </section>
+        `;
+      });
+
+      return roomGroups.length
+        ? roomGroups.join('')
+        : '<section class="card empty"><div class="empty-title">目前沒有符合條件的報修工單</div></section>';
+    }
+
+    function renderRepairTickets() {
+      const container = document.getElementById('repairTicketList');
+      if (!container) return;
+      const roomFilter = rawText(document.getElementById('repairRoomFilter') && document.getElementById('repairRoomFilter').value);
+      const statusFilter = rawText(document.getElementById('repairStatusFilter') && document.getElementById('repairStatusFilter').value);
+      const visible = REPAIR_TICKETS.filter(function(ticket) {
+        return (!roomFilter || rawText(ticket.room_id) === roomFilter) &&
+          (!statusFilter || rawText(ticket.status) === statusFilter);
+      });
+      container.innerHTML = renderRepairTimeline(visible);
+    }
+
+    function applyRepairFilters() {
+      renderRepairTickets();
+    }
+
+    function renderRepairFeedback(message, isError) {
+      const feedback = document.getElementById('repairFeedback');
+      if (!feedback) return;
+      feedback.textContent = message || '';
+      feedback.className = isError ? 'error-text' : 'landlord-desc';
+    }
+
+    async function loadRepairTickets(options) {
+      const requestOptions = options || {};
+      try {
+        const data = await landlordRepairRequest('landlord_repair_tickets_init', {});
+        REPAIR_TICKETS = Array.isArray(data.tickets) ? data.tickets : [];
+        const roomFilter = document.getElementById('repairRoomFilter');
+        if (roomFilter) {
+          const groups = groupRepairTicketsByRoom(REPAIR_TICKETS);
+          roomFilter.innerHTML = '<option value="">全部房間</option>' + Object.keys(groups)
+            .map(function(roomId) {
+              return '<option value="' + escapeHtml(roomId) + '">房號 ' + safeText(groups[roomId].room_name_snapshot) + '</option>';
+            }).join('');
+        }
+        renderRepairTickets();
+        if (!requestOptions.preserveFeedback) {
+          renderRepairFeedback('', false);
+        }
+        return true;
+      } catch (error) {
+        REPAIR_TICKETS = [];
+        renderRepairTickets();
+        renderRepairFeedback(error.message || '報修工單讀取失敗', true);
+        return false;
+      }
+    }
+
+    async function updateRepairTicket(ticketId) {
+      const status = document.getElementById('repairStatus_' + ticketId);
+      const reply = document.getElementById('repairReply_' + ticketId);
+      const button = document.querySelector('[data-repair-ticket-id="' + ticketId + '"] button');
+      if (!status || !reply || !button) return;
+
+      button.disabled = true;
+      button.textContent = '儲存中...';
+      renderRepairFeedback('報修更新處理中，請勿重複按下。', false);
+      try {
+        await landlordRepairRequest('landlord_repair_ticket_update', {
+          ticket_id: ticketId,
+          status: status.value,
+          public_reply: reply.value
+        });
+        const refreshed = await loadRepairTickets({ preserveFeedback: true });
+        if (refreshed) {
+          renderRepairFeedback('報修工單已更新。', false);
+        }
+      } catch (error) {
+        renderRepairFeedback(error.message || '報修更新失敗', true);
+      } finally {
+        button.disabled = false;
+        button.textContent = '儲存報修更新';
+      }
+    }
+
     function renderPage(data) {
       PAGE_DATA = data || {};
 
@@ -1846,6 +2016,17 @@
         </section>
 
         ${renderToolbar()}
+
+        <section class="card">
+          <div class="section-title">房間報修歷史</div>
+          <div id="repairFeedback" class="landlord-desc">讀取受驗證的報修工單中...</div>
+          <div class="filter-row">
+            <select id="repairRoomFilter" class="filter-select" onchange="applyRepairFilters()"><option value="">全部房間</option></select>
+            <select id="repairStatusFilter" class="filter-select" onchange="applyRepairFilters()"><option value="">全部狀態</option><option value="open">待處理</option><option value="in_progress">處理中</option><option value="awaiting_confirmation">待確認</option><option value="completed">已完成</option><option value="closed">已結案</option></select>
+          </div>
+        </section>
+
+        <section id="repairTicketList"></section>
 
         <section id="messageList"></section>
 
@@ -2386,12 +2567,12 @@
           );
         }
 
-        const data =
-          await callApi(
-            'landlord_messages_init'
-          );
+        initLandlordRepairAuth();
+
+        const data = await callApi('landlord_messages_init');
 
         renderPage(data);
+        loadRepairTickets();
 
       } catch (error) {
         renderError(
