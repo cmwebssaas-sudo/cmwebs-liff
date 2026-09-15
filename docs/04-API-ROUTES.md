@@ -625,9 +625,7 @@ The landlord tenant-create initialization route also accepts the optional
 `supersede_contract_id` query parameter so the paper form reads the selected
 electronic contract directly, including explicit zero-valued fee fields.
 
-## Signed legacy contract integration webhook
-
-### Repair-ticket actions
+## Repair-ticket actions
 
 | Action | Transport | Required authority | Purpose |
 | --- | --- | --- | --- |
@@ -639,6 +637,8 @@ The tenant route filters the authorized query set on the server before response
 serialization. Replacing `tenant_id`, `room_id`, or a ticket ID in the query
 string cannot expand the result set; undocumented query-string actions are not
 accepted.
+
+## Signed legacy contract integration webhook
 
 | POST action | Module | Purpose |
 | --- | --- | --- |

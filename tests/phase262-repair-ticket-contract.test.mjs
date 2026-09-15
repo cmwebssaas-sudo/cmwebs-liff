@@ -18,28 +18,34 @@ function tableValues(document, heading, column) {
     .map((m) => m[1].trim())
     .filter((value) => value !== column && value !== '---')
     .map((value) => value.replaceAll('`', ''))
-    .filter((value) => !value.includes(' '))
-    .filter((value) => column !== 'Action' || value.includes('repair_ticket'));
+    .filter((value) => !value.includes(' '));
 }
 
 test('freezes repair ticket headers and tenant privacy projection', () => {
   const REPAIR_TICKET_HEADERS = fencedList(dataModel, '### `V2_repair_tickets` headers');
   const TENANT_REPAIR_ALLOWED_FIELDS = fencedList(dataModel, '### `tenant_repair_allowed_fields`');
 
-  assert.deepEqual(REPAIR_TICKET_HEADERS.slice(0, 6), [
-    'workspace_id', 'repair_ticket_id', 'source_message_id', 'property_id', 'room_id', 'room_name_snapshot'
+  assert.deepEqual(REPAIR_TICKET_HEADERS, [
+    'workspace_id', 'repair_ticket_id', 'source_message_id', 'property_id', 'room_id', 'room_name_snapshot',
+    'tenant_id_snapshot', 'lease_id_snapshot', 'tenant_name_snapshot', 'category', 'title', 'description',
+    'priority', 'status', 'responsibility_party', 'estimated_cost', 'actual_cost', 'created_at', 'closed_at'
   ]);
-  assert.equal(TENANT_REPAIR_ALLOWED_FIELDS.includes('tenant_name_snapshot'), false);
-  assert.equal(TENANT_REPAIR_ALLOWED_FIELDS.includes('tenant_line_user_id'), false);
-  assert.equal(TENANT_REPAIR_ALLOWED_FIELDS.includes('description'), true);
-  assert.equal(TENANT_REPAIR_ALLOWED_FIELDS.includes('status'), true);
+  assert.deepEqual(TENANT_REPAIR_ALLOWED_FIELDS, [
+    'repair_ticket_id', 'property_id', 'room_id', 'room_name_snapshot', 'category', 'title', 'description',
+    'priority', 'status', 'created_at', 'closed_at', 'public_note'
+  ]);
+  for (const denied of ['tenant_name_snapshot', 'tenant_id_snapshot', 'tenant_line_user_id', 'email', 'phone',
+    'description_original', 'attachment_id', 'attachment_ids', 'attachment_file_id', 'attachment_url',
+    'download_url', 'permanent_download_url', 'internal_note']) {
+    assert.equal(TENANT_REPAIR_ALLOWED_FIELDS.includes(denied), false, `tenant denylist contains ${denied}`);
+  }
 });
 
 test('freezes repair ticket statuses and documented actions', () => {
   assert.deepEqual(tableValues(dataModel, '### `V2_repair_tickets` statuses', 'Status'), [
     'open', 'in_progress', 'awaiting_confirmation', 'completed', 'closed'
   ]);
-  assert.deepEqual(tableValues(apiRoutes, '### Repair-ticket actions', 'Action'), [
+  assert.deepEqual(tableValues(apiRoutes, '## Repair-ticket actions', 'Action'), [
     'tenant_repair_tickets_init', 'landlord_repair_tickets_init', 'landlord_repair_ticket_update'
   ]);
   assert.match(apiRoutes, /undocumented query-string actions are not\s+accepted/);

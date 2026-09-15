@@ -252,8 +252,10 @@ request_id
 ## V2 repair-ticket privacy contract
 
 `V2_repair_tickets` is an append-only room-scoped repair-ticket projection. It
-keeps the source message and creation-time tenant/lease references for
-landlord-authorized history; changing occupants never rewrites those values.
+keeps `source_message_id` as the preserved `V2_tenant_messages.message_id` link
+and keeps the creation-time tenant/lease references for landlord-authorized
+history. The original `V2_tenant_messages` record is neither overwritten nor
+deleted; changing occupants never rewrites those values.
 
 ### `V2_repair_tickets` headers
 
@@ -324,5 +326,6 @@ public_note
 
 Tenant reads are server-filtered by the verified `workspace_id`, `tenant_id`,
 and `room_id` before serialization. Tenant projections never include tenant
-identity snapshots, LINE IDs, internal notes, original message payloads, or
-private attachment metadata.
+identity snapshots, LINE IDs, email addresses, phone numbers, internal notes,
+original message payloads, attachment IDs or other attachment identifiers,
+attachment filenames, private attachment metadata, or permanent download URLs.

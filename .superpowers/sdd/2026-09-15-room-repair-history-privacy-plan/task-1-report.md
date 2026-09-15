@@ -71,3 +71,64 @@ clean and is ahead of `origin/main` by three commits.
   runtime test because the brief limits the change to documentation and the
   contract test. Production and authenticated real-device acceptance remain
   outside this task.
+
+## Review-fix report — 2026-09-15
+
+### Findings fixed
+
+- Added the complete tenant response denylist for identity data, email, phone,
+  LINE IDs, original message content, internal notes, attachment IDs and
+  identifiers, filenames, private metadata, and permanent download URLs; the
+  focused test now asserts every denied field is absent.
+- Changed the contract test from partial checks to exact complete ticket
+  headers, exact complete tenant allowlist, and exact three action names.
+- Explicitly defined `source_message_id` as the preserved
+  `V2_tenant_messages.message_id` link and prohibited overwriting or deleting
+  the original message row.
+- Moved the repair-ticket API section out from under the signed legacy webhook
+  section into a standalone `## Repair-ticket actions` section.
+
+### Changed files
+
+- `docs/05-DATA-MODEL.md`
+- `docs/04-API-ROUTES.md`
+- `tests/phase262-repair-ticket-contract.test.mjs`
+- This report file
+
+### RED / GREEN and validation commands
+
+RED after tightening the test was verified with:
+
+```text
+node --test tests/phase262-repair-ticket-contract.test.mjs
+✔ freezes repair ticket headers and tenant privacy projection
+✖ freezes repair ticket statuses and documented actions
+AssertionError: missing ### Repair-ticket actions section
+```
+
+The failure was expected from the test/document heading mismatch introduced by
+the standalone-section correction; the test was then aligned to the canonical
+`## Repair-ticket actions` heading.
+
+GREEN and required validation were run with:
+
+```text
+node --test tests/phase262-repair-ticket-contract.test.mjs
+✔ freezes repair ticket headers and tenant privacy projection
+✔ freezes repair ticket statuses and documented actions
+ℹ tests 2
+ℹ pass 2
+ℹ fail 0
+
+npm run validate
+PASS: 56 backend files parsed; 37 endpoint references match the recorded deployment.
+Static release cache validation passed: safe version uses=66, API anti-cache keys=42, fallback tests=4, URL tests=8, static cache bust remaining=0.
+
+git diff --check
+PASS (no output)
+```
+
+### Fix commit
+
+`2f29562590ef3ccc15fee7be4c946ebcc45f58cf` —
+`docs: tighten repair ticket privacy contract`
