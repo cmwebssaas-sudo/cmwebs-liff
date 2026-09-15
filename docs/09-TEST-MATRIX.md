@@ -1,5 +1,39 @@
 # V2 回歸測試矩陣
 
+## 2026-09-15 房間報修工單 Task 6 本地 release-boundary record
+
+- [x] Release candidate source commit is `3b12c61`; this is a local candidate
+  record only and has not been deployed, pushed, merged, or reconciled against
+  live Apps Script or Google Sheets.
+- [x] Focused repair-ticket command passed `26/26`: contract, runtime/RBAC,
+  migration idempotency/preview, and tenant/landlord privacy UI tests.
+- [x] `npm run validate` passed: `57` backend files parsed, `37` endpoint
+  references matched, and static release-cache validation passed.
+- [x] Required Apps Script syntax checks passed for the six specified files:
+  `V2_REPAIR_TICKETS.js`, `V2_TENANT_MESSAGES.js`,
+  `V2_LANDLORD_MANAGEMENT.js`, `V2_WORKSPACE_LANDLORD_ACCESS.js`,
+  `V2_RUNTIME_SNAPSHOT.js`, and `程式碼.js`.
+- [ ] Full `npm test` is not green at this baseline: `242` tests ran, `240`
+  passed and `2` failed. The failures are
+  `tests/landlord-post-read-snapshot.test.mjs` (expected `true`, got
+  `undefined`) and `tests/phase246-landlord-post-read-bridge.test.mjs`
+  (`landlord_arrears` expected `htmlBridgeOutput_` / `bridge`, got `fallback`).
+  They are pre-existing baseline failures in landlord POST/read bridge coverage;
+  no evidence attributes either failure to repair-ticket changes.
+- [x] Repair-ticket tests assert server-side Workspace/tenant filtering,
+  allowlisted projections, POST-only bridge transport, append-only event
+  history, source-message idempotency, and preview no-write behavior.
+- [ ] Authenticated landlord Email session, authenticated tenant LIFF session,
+  real Tenant A/B room-transfer privacy validation, actual bridge origin/live
+  update feedback, and actual Apps Script preview plus backup/header/row-count
+  reconciliation remain `HUMAN_REQUIRED` / `UNVERIFIED`.
+- [x] No migration apply, deployment, Google Sheets change, LINE send, push,
+  merge, or authenticated external-service action was performed. Local checks
+  must not be reported as Production readiness.
+- [x] Rollback boundary: revert or disable the repair API/UI caller (including
+  the tenant route or optional room summary) and retain all append-only repair
+  ticket/event rows plus legacy message rows. Do not delete or rewrite history.
+
 ## 2026-09-13 桌面房客詳細／合約 Email 唯讀 session 修正（已部署）
 
 - [x] 房客詳細頁載入共用桌面 responsive shell，桌面寬度顯示側欄與桌面主內容，不再以手機底部導覽殼層呈現。

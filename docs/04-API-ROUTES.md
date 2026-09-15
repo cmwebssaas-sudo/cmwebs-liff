@@ -704,6 +704,42 @@ the body principal.
   projection. Neither landlord repair read/write actions nor any landlord write
   are added to that cache allowlist.
 
+### Task 6 local release-boundary record
+
+The repair-ticket release candidate is source commit `3b12c61` (`fix: preserve
+repair feedback and strengthen privacy UI tests`). Local verification is not a
+deployment or a Production readiness claim. The focused repair-ticket suite
+passed `26/26`; the full repository suite ran `242` tests with `240` passing and
+two pre-existing landlord POST/read bridge snapshot failures. The failures are
+`tests/landlord-post-read-snapshot.test.mjs` (expected `true`, received
+`undefined`) and `tests/phase246-landlord-post-read-bridge.test.mjs`
+(`landlord_arrears must resolve through htmlBridgeOutput_ for desktop Email`,
+received `fallback`, expected `bridge`). They are recorded as baseline failures
+and are not attributed to this feature without separate evidence.
+
+`npm run validate` passed (`57` backend files parsed, `37` endpoint references
+matched, static release-cache validation passed). The six required Apps Script
+`node --check` commands passed for `V2_REPAIR_TICKETS.js`,
+`V2_TENANT_MESSAGES.js`, `V2_LANDLORD_MANAGEMENT.js`,
+`V2_WORKSPACE_LANDLORD_ACCESS.js`, `V2_RUNTIME_SNAPSHOT.js`, and `程式碼.js`.
+`git diff --check` is required again after this documentation commit.
+
+The three routes remain POST-only and server-authorized. No route is a waiver for
+the following acceptance boundaries: authenticated landlord Email session,
+authenticated tenant LIFF session, a real Tenant A to Tenant B room-transfer
+scenario, the actual Apps Script sandbox bridge origin and live update feedback,
+or an authorized Apps Script preview plus read-only backup/header/row-count
+reconciliation. Each is `HUMAN_REQUIRED`; local fixtures and syntax checks do
+not substitute for them. No deployment, migration apply, LINE notification,
+Google Sheets write, or authenticated external-service action is part of this
+candidate.
+
+If the candidate must be rolled back, revert or disable the new repair API/UI
+caller (including the tenant route or room-summary surface) while retaining all
+append-only `V2_repair_tickets` and `V2_repair_events` rows and the legacy
+`V2_tenant_messages` data. Do not delete or rewrite historical rows as part of
+rollback; any data correction requires a separately authorized, audited action.
+
 ## Signed legacy contract integration webhook
 
 | POST action | Module | Purpose |

@@ -390,3 +390,29 @@ query parameter.
    a completed batch requires a separately authorized, audited remediation;
    never delete or rewrite the preserved legacy messages, ticket snapshots, or
    events as a shortcut.
+
+### Task 6 verification and migration boundary
+
+The local release candidate is commit `3b12c61`. The focused contract, runtime,
+migration, and privacy UI tests passed `26/26`. The complete local Node suite
+ran `242` tests: `240` passed and `2` failed in the pre-existing landlord
+POST/read bridge snapshot coverage. The exact failures are recorded in the Task
+6 report and must not be treated as repair-ticket migration failures. The
+candidate also passed `npm run validate` and all six required Apps Script syntax
+checks. These checks establish a candidate source/documentation state only;
+they do not establish current Google Sheets headers, row counts, deployed
+Apps Script code, or Production readiness.
+
+No real migration preview or backup reconciliation was run in Task 6. An
+authorized Apps Script operator must still run the exact `preview` helper,
+confirm `writes: 0`, export and reconcile the headers and row counts of
+`V2_tenant_messages`, `V2_repair_tickets`, and `V2_repair_events`, and review
+unresolved room IDs before any separately authorized `apply`. This boundary is
+`HUMAN_REQUIRED`; a local mock is not evidence. Apply remains operator-only,
+never a web request, and is outside this task.
+
+Rollback stops further apply work and disables or reverts the migration/API/UI
+caller if necessary. It retains every appended ticket/event row, original
+tenant/lease snapshot, source message, and backup. Rollback must not delete,
+rewrite, or remap historical data; remediation after an apply requires a new
+authorization and audit record.
