@@ -1897,7 +1897,8 @@
       feedback.className = isError ? 'error-text' : 'landlord-desc';
     }
 
-    async function loadRepairTickets() {
+    async function loadRepairTickets(options) {
+      const requestOptions = options || {};
       try {
         const data = await landlordRepairRequest('landlord_repair_tickets_init', {});
         REPAIR_TICKETS = Array.isArray(data.tickets) ? data.tickets : [];
@@ -1910,11 +1911,15 @@
             }).join('');
         }
         renderRepairTickets();
-        renderRepairFeedback('', false);
+        if (!requestOptions.preserveFeedback) {
+          renderRepairFeedback('', false);
+        }
+        return true;
       } catch (error) {
         REPAIR_TICKETS = [];
         renderRepairTickets();
         renderRepairFeedback(error.message || '報修工單讀取失敗', true);
+        return false;
       }
     }
 
@@ -1933,8 +1938,10 @@
           status: status.value,
           public_reply: reply.value
         });
-        renderRepairFeedback('報修工單已更新。', false);
-        await loadRepairTickets();
+        const refreshed = await loadRepairTickets({ preserveFeedback: true });
+        if (refreshed) {
+          renderRepairFeedback('報修工單已更新。', false);
+        }
       } catch (error) {
         renderRepairFeedback(error.message || '報修更新失敗', true);
       } finally {

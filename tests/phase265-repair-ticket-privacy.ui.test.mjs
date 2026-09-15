@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import vm from 'node:vm';
 
 const landlordHtml = readFileSync(
   new URL('../landlord-messages.html', import.meta.url),
@@ -18,7 +19,8 @@ const TENANT_A_PRIVATE_VALUES = [
   'TENANT-A-LINE',
   '前房客原始報修內容',
   'private-attachment-a.jpg',
-  'LEASE-A'
+  'LEASE-A',
+  '前房客私人備註'
 ];
 
 const tenantARepairTicket = {
@@ -42,7 +44,7 @@ const tenantBSafeProjection = {
   category: 'repair',
   title: '浴室排水維修',
   priority: 'normal',
-  status: 'processing',
+  status: 'in_progress',
   created_at: '2026-09-15T09:00:00+08:00',
   closed_at: '',
   public_note: '師傅預計下午到訪。'
@@ -52,20 +54,50 @@ function repairRendererSource(html, functionName) {
   const marker = 'function ' + functionName + '(';
   const start = html.indexOf(marker);
   assert.notEqual(start, -1, 'missing ' + functionName);
-  const nextFunction = html.indexOf('\n    function ', start + marker.length);
-  return html.slice(start, nextFunction === -1 ? html.length : nextFunction);
+  const remainder = html.slice(start + marker.length);
+  const nextFunctionOffset = remainder.search(/\n    (?:async )?function /);
+  return html.slice(
+    start,
+    nextFunctionOffset === -1
+      ? html.length
+      : start + marker.length + nextFunctionOffset
+  );
 }
 
-function renderSafeFixture(ticket) {
-  return [
-    ticket.category,
-    ticket.title,
-    ticket.priority,
-    ticket.status,
-    ticket.created_at,
-    ticket.closed_at,
-    ticket.public_note
-  ].filter(Boolean).join(' | ');
+function createTenantRepairRenderer() {
+  const context = {
+    safeHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[character];
+      });
+    },
+    normalizeStatus(value) {
+      return String(value == null ? '' : value).trim().toLowerCase();
+    },
+    categoryText(value) {
+      return value === 'repair' ? '報修' : String(value || '-');
+    },
+    formatDateTime(value) {
+      return String(value || '-');
+    },
+    statusText(value) {
+      return value === 'in_progress' ? '處理中' : String(value || '-');
+    },
+    statusBadgeClass() {
+      return 'badge';
+    }
+  };
+
+  return vm.runInNewContext(
+    '(' + repairRendererSource(tenantHtml, 'renderTenantRepairTickets') + ')',
+    context
+  );
 }
 
 test('landlord repair history keeps the existing message UI and uses the authenticated repair bridge', () => {
@@ -78,10 +110,21 @@ test('landlord repair history keeps the existing message UI and uses the authent
   assert.match(landlordHtml, /applyRepairFilters/);
   assert.match(landlordHtml, /landlord_repair_tickets_init/);
   assert.match(landlordHtml, /landlord_repair_ticket_update/);
+  assert.equal(
+    (landlordHtml.match(/await landlordRepairRequest\('landlord_repair_ticket_update'/g) || []).length,
+    1
+  );
   assert.match(landlordHtml, /renderRepairTimeline/);
   assert.match(landlordHtml, /groupRepairTicketsByRoom/);
   assert.match(landlordHtml, /LANDLORD_REPAIR_AUTH \|\| initLandlordRepairAuth\(\)/);
   assert.match(landlordHtml, /auth\.request\(action, params \|\| \{\}\)/);
+});
+
+test('landlord repair update keeps success feedback visible after the authenticated refresh', () => {
+  assert.match(landlordHtml, /async function loadRepairTickets\(options\)/);
+  assert.match(landlordHtml, /preserveFeedback/);
+  assert.match(landlordHtml, /const refreshed = await loadRepairTickets\(\{ preserveFeedback: true \}\)/);
+  assert.match(landlordHtml, /if \(refreshed\) \{[\s\S]*renderRepairFeedback\('報修工單已更新。', false\)/);
 });
 
 test('tenant repair renderer requests only the authenticated tenant projection and contains no denied repair fields', () => {
@@ -109,7 +152,7 @@ test('tenant repair renderer requests only the authenticated tenant projection a
 
 test('tenant B fixture payload and rendered output exclude every tenant A private value', () => {
   const payload = JSON.stringify({ tickets: [tenantBSafeProjection] });
-  const rendered = renderSafeFixture(tenantBSafeProjection);
+  const rendered = createTenantRepairRenderer()([tenantBSafeProjection]);
   assert.deepEqual(Object.keys(tenantBSafeProjection).sort(), [
     'category', 'closed_at', 'created_at', 'priority', 'property_id',
     'public_note', 'repair_ticket_id', 'room_id', 'room_name_snapshot',
@@ -119,5 +162,7 @@ test('tenant B fixture payload and rendered output exclude every tenant A privat
     assert.doesNotMatch(payload, new RegExp(privateValue));
     assert.doesNotMatch(rendered, new RegExp(privateValue));
   }
+  assert.match(rendered, /浴室排水維修/);
+  assert.match(rendered, /in_progress/);
   assert.ok(tenantARepairTicket.internal_note);
 });
