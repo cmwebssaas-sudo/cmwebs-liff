@@ -1,10 +1,10 @@
 {
   "verified_on": "2026-09-15",
-  "source_commit": "c47efa03de396b2dafd4a64b654950e4a7d41f98",
+  "source_commit": "2d49354d28fb100811ed0886d31f30b1d3611fff",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 187,
-  "backend_file_count": 56,
-  "backend_tree_sha256": "d11b1b348d1e34d52b55d0781627a84b6ca94516d4e230b748209d53e99c78a7",
+  "backend_version": 188,
+  "backend_file_count": 57,
+  "backend_tree_sha256": "5e9d99ffa8de14b54d455ea75b48b8893a590a2049753b4493d31cbf677db150",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
