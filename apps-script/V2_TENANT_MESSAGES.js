@@ -549,6 +549,9 @@ function submitTenantMessageByLineUid_(
         tenantLink.room_name ||
         '',
 
+      repair_ticket_id:
+        '',
+
       message_category:
         messageCategory,
       message_title:
@@ -577,6 +580,41 @@ function submitTenantMessageByLineUid_(
     appendTenantMessage_(
       messageRecord
     );
+
+    if (
+      messageCategory === 'repair'
+    ) {
+      const repairTicket =
+        repairTicketCreateFromMessage_(
+          messageRecord,
+          {
+            workspace_id:
+              canonical.workspace_id,
+            property_id:
+              canonical.property_id,
+            room_id:
+              canonical.room_id,
+            room_name:
+              canonical.room_name,
+            tenant_id:
+              canonical.tenant_id,
+            lease_id:
+              canonical.contract_id,
+            tenant_name:
+              tenant.tenant_name ||
+              tenantLink.tenant_name ||
+              ''
+          }
+        );
+
+      messageRecord.repair_ticket_id =
+        repairTicket.repair_ticket_id;
+
+      tenantMessageSetRepairTicketId_(
+        messageRecord.message_id,
+        messageRecord.repair_ticket_id
+      );
+    }
 
     const notifyText =
       buildTenantMessageNoticeText_(
@@ -720,6 +758,8 @@ function submitTenantMessageByLineUid_(
       data: {
         message_id:
           messageId,
+        repair_ticket_id:
+          messageRecord.repair_ticket_id,
         message_category:
           messageCategory,
         message_title:
@@ -988,6 +1028,8 @@ function ensureTenantMessageSheet_() {
     'room_id',
     'room_name',
 
+    'repair_ticket_id',
+
     'message_category',
     'message_title',
     'message_body',
@@ -1087,6 +1129,54 @@ function ensureTenantMessageSheet_() {
   );
 
   return sheet;
+}
+
+
+function tenantMessageSetRepairTicketId_(
+  messageId,
+  repairTicketId
+) {
+  const sheet =
+    ensureTenantMessageSheet_();
+  const values =
+    sheet.getDataRange().getValues();
+  const headers =
+    values[0].map(function(header) {
+      return String(header || '').trim();
+    });
+  const messageColumn =
+    headers.indexOf('message_id');
+  const repairTicketColumn =
+    headers.indexOf('repair_ticket_id');
+
+  if (
+    messageColumn < 0 ||
+    repairTicketColumn < 0
+  ) {
+    return;
+  }
+
+  for (
+    let row = 1;
+    row < values.length;
+    row += 1
+  ) {
+    if (
+      String(
+        values[row][messageColumn] || ''
+      ).trim() === messageId
+    ) {
+      sheet
+        .getRange(
+          row + 1,
+          repairTicketColumn + 1
+        )
+        .setValue(
+          repairTicketId
+        );
+      return;
+    }
+  }
 }
 
 
