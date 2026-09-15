@@ -175,6 +175,14 @@
 
 ## 身份與入口
 
+## 報修工單歷史與個資隔離（Phase 262 contract）
+
+- [ ] 房客 A 建立報修後換租，房東仍可依 `workspace_id + room_id` 查到完整歷史，且原 `tenant_id_snapshot + lease_id_snapshot` 不被覆寫。
+- [ ] 房客 B 的 response 在序列化前即完成 Workspace、房客與房間篩選；不得包含 A 的姓名、電話、Email、LINE ID、原始訊息、內部備註或附件 metadata。
+- [ ] 房客 B 替換 `tenant_id`、`room_id` 或工單 ID 時，伺服器拒絕或回傳空集合，不洩漏其他房客資料。
+- [ ] 工單狀態只使用 `open`、`in_progress`、`awaiting_confirmation`、`completed`、`closed`；每次更新均新增 append-only event 與 actor audit。
+- [ ] 只接受 `tenant_repair_tickets_init`、`landlord_repair_tickets_init`、`landlord_repair_ticket_update` 三個 documented actions；未知 query-string action 必須拒絕。
+
 - [ ] 未登入房東導向 LIFF 登入
 - [ ] 登入後返回原頁
 - [ ] 新房東註冊

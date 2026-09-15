@@ -248,3 +248,81 @@ request_id
 2. Google Sheets 曾接近 1,000 萬儲存格上限。
 3. 新建工作表前已有容量壓縮函式，但不是長期資料庫方案。
 4. Production consolidation 必須輸出每張表的 header、row count、column count、max rows 與 max columns。
+
+## V2 repair-ticket privacy contract
+
+`V2_repair_tickets` is an append-only room-scoped repair-ticket projection. It
+keeps the source message and creation-time tenant/lease references for
+landlord-authorized history; changing occupants never rewrites those values.
+
+### `V2_repair_tickets` headers
+
+```text
+workspace_id
+repair_ticket_id
+source_message_id
+property_id
+room_id
+room_name_snapshot
+tenant_id_snapshot
+lease_id_snapshot
+tenant_name_snapshot
+category
+title
+description
+priority
+status
+responsibility_party
+estimated_cost
+actual_cost
+created_at
+closed_at
+```
+
+### `V2_repair_tickets` statuses
+
+| Status | Meaning |
+| --- | --- |
+| open | 待處理 |
+| in_progress | 處理中 |
+| awaiting_confirmation | 待確認 |
+| completed | 已完成 |
+| closed | 已關閉 |
+
+### `V2_repair_events` headers
+
+```text
+workspace_id
+repair_ticket_id
+event_id
+event_type
+from_status
+to_status
+actor_type
+actor_id
+internal_note
+public_note
+created_at
+```
+
+### `tenant_repair_allowed_fields`
+
+```text
+repair_ticket_id
+property_id
+room_id
+room_name_snapshot
+category
+title
+description
+priority
+status
+created_at
+closed_at
+public_note
+```
+
+Tenant reads are server-filtered by the verified `workspace_id`, `tenant_id`,
+and `room_id` before serialization. Tenant projections never include tenant
+identity snapshots, LINE IDs, internal notes, original message payloads, or
+private attachment metadata.

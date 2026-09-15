@@ -627,6 +627,19 @@ electronic contract directly, including explicit zero-valued fee fields.
 
 ## Signed legacy contract integration webhook
 
+### Repair-ticket actions
+
+| Action | Transport | Required authority | Purpose |
+| --- | --- | --- | --- |
+| `tenant_repair_tickets_init` | JSONP / controlled bridge | Verified tenant identity and active Workspace/room scope | Returns only the current tenant's own tickets and safe events. |
+| `landlord_repair_tickets_init` | JSONP / controlled bridge | Verified landlord/team membership and Workspace read permission | Returns complete room-scoped ticket history, including protected historical tenant/lease references. |
+| `landlord_repair_ticket_update` | POST / controlled bridge | Verified landlord/team membership and Workspace repair-write permission | Appends a ticket event and updates the ticket status without rewriting history. |
+
+The tenant route filters the authorized query set on the server before response
+serialization. Replacing `tenant_id`, `room_id`, or a ticket ID in the query
+string cannot expand the result set; undocumented query-string actions are not
+accepted.
+
 | POST action | Module | Purpose |
 | --- | --- | --- |
 | `legacy_contract_signed_sync` | `V2_LEGACY_CONTRACT_SIGNED_SYNC.js` | Accepts only the legacy signed-contract integration's HMAC-authenticated JSON body, verifies its existing V1/V2 contract, tenant LINE UID, Workspace write access, and updates metadata on an existing V2 contract. |
