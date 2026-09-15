@@ -23,12 +23,17 @@ function tableValues(document, heading, column) {
 
 test('freezes repair ticket headers and tenant privacy projection', () => {
   const REPAIR_TICKET_HEADERS = fencedList(dataModel, '### `V2_repair_tickets` headers');
+  const REPAIR_EVENT_HEADERS = fencedList(dataModel, '### `V2_repair_events` headers');
   const TENANT_REPAIR_ALLOWED_FIELDS = fencedList(dataModel, '### `tenant_repair_allowed_fields`');
 
   assert.deepEqual(REPAIR_TICKET_HEADERS, [
     'workspace_id', 'repair_ticket_id', 'source_message_id', 'property_id', 'room_id', 'room_name_snapshot',
     'tenant_id_snapshot', 'lease_id_snapshot', 'tenant_name_snapshot', 'category', 'title', 'description',
     'priority', 'status', 'responsibility_party', 'estimated_cost', 'actual_cost', 'created_at', 'closed_at'
+  ]);
+  assert.deepEqual(REPAIR_EVENT_HEADERS, [
+    'workspace_id', 'repair_ticket_id', 'event_id', 'event_type', 'from_status', 'to_status',
+    'actor_type', 'actor_id', 'internal_note', 'public_note', 'created_at'
   ]);
   assert.deepEqual(TENANT_REPAIR_ALLOWED_FIELDS, [
     'repair_ticket_id', 'property_id', 'room_id', 'room_name_snapshot', 'category', 'title', 'description',

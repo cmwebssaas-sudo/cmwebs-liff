@@ -132,3 +132,37 @@ PASS (no output)
 
 `2f29562590ef3ccc15fee7be4c946ebcc45f58cf` —
 `docs: tighten repair ticket privacy contract`
+
+## Review-fix round 2 report — 2026-09-15
+
+### Finding fixed
+
+Added an exact assertion for the complete `V2_repair_events` header list in
+`tests/phase262-repair-ticket-contract.test.mjs`, aligned with the canonical
+text block in `docs/05-DATA-MODEL.md`. No documentation change was needed because
+the documented event header block already contained the approved complete list.
+
+### Changed files
+
+- `tests/phase262-repair-ticket-contract.test.mjs`
+- This report file
+
+### Commands and exact output
+
+```text
+node --test tests/phase262-repair-ticket-contract.test.mjs
+✔ freezes repair ticket headers and tenant privacy projection
+✔ freezes repair ticket statuses and documented actions
+ℹ tests 2
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+
+npm run validate
+PASS: 56 backend files parsed; 37 endpoint references match the recorded deployment.
+Static release cache validation passed: safe version uses=66, API anti-cache keys=42, fallback tests=4, URL tests=8, static cache bust remaining=0.
+
+git diff --check
+PASS (no output)
+```
