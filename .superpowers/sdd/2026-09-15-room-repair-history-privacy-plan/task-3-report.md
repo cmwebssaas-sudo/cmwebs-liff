@@ -52,3 +52,44 @@
 - The tenant adapter tests the forged-identity guard and the server-side
   projection boundary. Future UI work must consume only the documented tenant
   projection and must not introduce an alternate room-history endpoint.
+
+## Fix round 1 — review auth and raw-body remediation
+
+### Fix commit
+
+- `b01dadf018caec1baba42f18e857db5a1060722c` — `fix: require verified repair route principals`
+
+### Root cause and repair
+
+- The initial three `doGet` branches were reached after the generic tenant
+  fallback had accepted `e.parameter.line_user_id`. The repair actions now
+  return before that fallback and require route-specific verified principals:
+  `landlord_session_token` resolves through `resolveLandlordPrincipal_`; tenant
+  access requires `tenant_session_token` through
+  `verifyTenantLiffSessionToken_` or a verified `id_token` through
+  `tenantLiffSigningVerifyIdTokenClaims_`, followed by canonical tenant
+  resolution. Missing authentication returns `AUTH_REQUIRED`; unavailable
+  helpers return explicit route module-required errors.
+- `description` remains in the frozen storage/header contract but is always an
+  empty string in tenant projections. The canonical source message body stays
+  in protected ticket storage for authorized landlord history only.
+- Focused tests now cover bare browser UID rejection, verified principal
+  propagation into repair handlers, forged query isolation, and raw-body
+  exclusion. Existing landlord update allowlisting and snapshot scope remain
+  unchanged.
+
+### Fix-round verification
+
+| Command | Result |
+| --- | --- |
+| `node --test tests/phase263-repair-ticket-runtime.test.mjs` | PASS — 10 tests, 0 failures |
+| `node --test tests/phase262-repair-ticket-contract.test.mjs` | PASS — 2 tests, 0 failures |
+| `node --check` for `V2_REPAIR_TICKETS.js` and all Task 3 affected Apps Script files | PASS |
+| `npm run validate` | PASS — 57 backend files parsed; 37 endpoint references; static cache validation passed |
+| `git diff --check` | PASS |
+
+### Remaining risks
+
+- No live authenticated session, LIFF id token, deployment, push, merge, or
+  external write was used. The deployed module inventory and real browser
+  session compatibility remain `HUMAN_REQUIRED`.
