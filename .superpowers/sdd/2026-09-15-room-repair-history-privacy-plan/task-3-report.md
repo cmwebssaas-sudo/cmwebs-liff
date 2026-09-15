@@ -172,3 +172,23 @@
 - No live POST bridge, authenticated tenant/landlord session, LIFF token,
   deployment, push, merge, or external write was used. Serving Apps Script
   event-shape and browser bridge acceptance remain `HUMAN_REQUIRED`.
+
+## Final documentation fix — tenant raw POST transport
+
+### Documentation commit
+
+- `5c806e64a42554c83adbe92636d0916158ef7b31` — `docs: clarify tenant repair raw post transport`
+
+### Change
+
+- Corrected the `tenant_repair_tickets_init` transport wording in
+  `docs/04-API-ROUTES.md` from `POST JSON body` to `Raw POST body`, and made
+  the permission contract explicitly name both JSON and the URL-encoded
+  controlled-bridge form. No code or runtime behavior changed.
+
+### Verification
+
+| Command | Result |
+| --- | --- |
+| `node --test tests/phase262-repair-ticket-contract.test.mjs tests/phase263-repair-ticket-runtime.test.mjs` | PASS — 14 tests, 0 failures |
+| `git diff --check` | PASS |
