@@ -10,6 +10,8 @@ const V2_REPAIR_TICKET_SHEETS_ = {
   events: 'V2_repair_events'
 };
 
+const V2_REPAIR_TICKET_MESSAGE_SHEET_ = 'V2_tenant_messages';
+
 const V2_REPAIR_TICKET_HEADERS_ = [
   'workspace_id', 'repair_ticket_id', 'source_message_id', 'property_id',
   'room_id', 'room_name_snapshot', 'tenant_id_snapshot', 'lease_id_snapshot',
@@ -161,6 +163,157 @@ function repairTicketFindBySourceMessageId_(sourceMessageId) {
     return repairTicketText_(row.source_message_id) === repairTicketText_(sourceMessageId);
   });
   return target ? repairTicketPublicRow_(target) : null;
+}
+
+/**
+ * Controlled operator migration for legacy repair messages. This helper is
+ * intentionally not an HTTP action: callers must run preview, inspect and
+ * back up first, then explicitly authorize apply in an operator context.
+ */
+function repairTicketBackfillLegacyMessages_(input) {
+  const request = input || {};
+  if (request.mode !== 'preview' && request.mode !== 'apply') {
+    throw new Error('REPAIR_TICKET_BACKFILL_MODE_INVALID');
+  }
+
+  const limit = repairTicketBackfillLimit_(request.limit);
+  const spreadsheet = runtimeSpreadsheet_();
+  const messageSheet = spreadsheet.getSheetByName(V2_REPAIR_TICKET_MESSAGE_SHEET_);
+  const scan = repairTicketBackfillScan_(messageSheet, spreadsheet, limit);
+  const result = {
+    mode: request.mode,
+    limit: limit,
+    repair_message_count: scan.repairMessages.length,
+    candidate_count: scan.candidates.length,
+    created_count: 0,
+    existing_ticket_count: scan.existingTicketCount,
+    existing_link_count: scan.existingLinkCount,
+    non_repair_count: scan.nonRepairCount,
+    missing_room_count: scan.missingRoomCount,
+    unresolved_source_message_ids: scan.unresolvedSourceMessageIds,
+    created_candidates: scan.candidates.map(function(message) {
+      return repairTicketText_(message.message_id);
+    }),
+    created_ids: [],
+    writes: 0
+  };
+
+  if (request.mode === 'preview') return result;
+
+  scan.candidates.forEach(function(message) {
+    const ticket = repairTicketCreateFromMessage_(
+      message,
+      repairTicketBackfillIdentity_(message)
+    );
+    repairTicketAppendEvent_(ticket.repair_ticket_id, {
+      event_type: 'legacy_backfill',
+      to_status: ticket.status
+    }, {
+      actor_type: 'system',
+      actor_id: 'repair_ticket_backfill'
+    });
+    repairTicketSetLegacyMessageRepairTicketId_(
+      messageSheet,
+      message._sheet_row,
+      ticket.repair_ticket_id
+    );
+    result.created_count += 1;
+    result.created_ids.push(ticket.repair_ticket_id);
+    result.writes += 4;
+  });
+  return result;
+}
+
+function repairTicketBackfillScan_(messageSheet, spreadsheet, limit) {
+  const scan = {
+    repairMessages: [],
+    candidates: [],
+    existingTicketCount: 0,
+    existingLinkCount: 0,
+    nonRepairCount: 0,
+    missingRoomCount: 0,
+    unresolvedSourceMessageIds: []
+  };
+  if (!messageSheet) return scan;
+
+  const messageHeaders = repairTicketSheetHeaders_(messageSheet);
+  const hasRepairTicketLink = messageHeaders.indexOf('repair_ticket_id') !== -1;
+  const existingTicketSourceIds = {};
+  const ticketSheet = spreadsheet.getSheetByName(V2_REPAIR_TICKET_SHEETS_.tickets);
+  if (ticketSheet) {
+    repairTicketRows_(ticketSheet).forEach(function(ticket) {
+      const sourceMessageId = repairTicketText_(ticket.source_message_id);
+      if (sourceMessageId) existingTicketSourceIds[sourceMessageId] = true;
+    });
+  }
+
+  repairTicketRows_(messageSheet).forEach(function(message) {
+    if (message.message_category !== 'repair') {
+      scan.nonRepairCount += 1;
+      return;
+    }
+    scan.repairMessages.push(message);
+    const sourceMessageId = repairTicketText_(message.message_id);
+    if (!sourceMessageId || !repairTicketText_(message.room_id)) {
+      if (!repairTicketText_(message.room_id)) scan.missingRoomCount += 1;
+      if (sourceMessageId) scan.unresolvedSourceMessageIds.push(sourceMessageId);
+      return;
+    }
+    if (!hasRepairTicketLink) {
+      scan.unresolvedSourceMessageIds.push(sourceMessageId);
+      return;
+    }
+    if (repairTicketText_(message.repair_ticket_id)) {
+      scan.existingLinkCount += 1;
+      return;
+    }
+    if (existingTicketSourceIds[sourceMessageId]) {
+      scan.existingTicketCount += 1;
+      return;
+    }
+    if (
+      !repairTicketText_(message.workspace_id) ||
+      !repairTicketText_(message.tenant_id)
+    ) {
+      scan.unresolvedSourceMessageIds.push(sourceMessageId);
+      return;
+    }
+    if (scan.candidates.length < limit) scan.candidates.push(message);
+  });
+  return scan;
+}
+
+function repairTicketBackfillIdentity_(message) {
+  return {
+    workspace_id: message.workspace_id,
+    property_id: message.property_id,
+    room_id: message.room_id,
+    room_name: message.room_name,
+    tenant_id: message.tenant_id,
+    lease_id: message.lease_id,
+    tenant_name: message.tenant_name
+  };
+}
+
+function repairTicketBackfillLimit_(value) {
+  if (value === undefined || value === null || value === '') return 100;
+  const limit = Number(value);
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error('REPAIR_TICKET_BACKFILL_LIMIT_INVALID');
+  }
+  return limit;
+}
+
+function repairTicketSetLegacyMessageRepairTicketId_(sheet, row, ticketId) {
+  const headers = repairTicketSheetHeaders_(sheet);
+  const column = headers.indexOf('repair_ticket_id') + 1;
+  if (column < 1) throw new Error('REPAIR_TICKET_MESSAGE_LINK_SCHEMA_REQUIRED');
+  sheet.getRange(row, column).setValue(ticketId);
+}
+
+function repairTicketSheetHeaders_(sheet) {
+  const width = Math.max(sheet.getLastColumn(), 1);
+  return sheet.getRange(1, 1, 1, width).getValues()[0].map(repairTicketText_);
 }
 
 function repairTicketToLandlordProjection_(ticket) {

@@ -329,3 +329,42 @@ and `room_id` before serialization. Tenant projections never include tenant
 identity snapshots, LINE IDs, email addresses, phone numbers, internal notes,
 original message payloads, attachment IDs or other attachment identifiers,
 attachment filenames, private attachment metadata, or permanent download URLs.
+
+### Legacy repair-message backfill runbook
+
+`repairTicketBackfillLegacyMessages_({ mode, limit })` is a private operator
+helper in `V2_REPAIR_TICKETS.js`, not a public HTTP action. `mode` must be
+exactly `preview` or `apply`; it must never be selected from a web request or a
+query parameter.
+
+1. In the authorized Apps Script operator context, run
+   `repairTicketBackfillLegacyMessages_({ mode: 'preview', limit: 1000 })`.
+   Confirm `writes: 0`. The preview scans only
+   `V2_tenant_messages.message_category === 'repair'` and returns candidate
+   source IDs, unresolved source IDs, and `missing_room_count` without adding
+   sheets, headers, tickets, events, or source links.
+2. Inspect the result. Resolve every `unresolved_source_message_ids` entry
+   manually; in particular, records without `room_id` stay untouched and must
+   not be assigned a guessed room. Confirm the candidate count and existing
+   ticket/link counts with the operations owner.
+3. Take and verify a read-only backup/export of the three affected sheets:
+   `V2_tenant_messages`, `V2_repair_tickets`, and `V2_repair_events`. Record
+   each header row and row count before proceeding.
+4. Only after explicit operator authorization and the verified backup, run
+   `repairTicketBackfillLegacyMessages_({ mode: 'apply', limit: 1000 })` in
+   that same operator context. It creates one ticket from each eligible source
+   message, preserves its original tenant/lease/message snapshots, appends one
+   `legacy_backfill` event, and writes the additive `repair_ticket_id` source
+   link. It does not alter non-repair rows or missing-room rows.
+5. Reconcile counts: `created_count` must equal the increase in
+   `V2_repair_tickets` rows and in linked source rows; `V2_repair_events` must
+   increase by twice `created_count` (`created` plus `legacy_backfill`). The
+   returned `writes` is four per newly created ticket. Repeat `preview` and
+   confirm that eligible rows no longer appear as candidates before any further
+   batch.
+6. Rollback is source-code and access rollback, not destructive data removal:
+   stop further apply runs, retain the backup and every appended ticket/event
+   row, and revert/disable the migration caller if necessary. Any correction to
+   a completed batch requires a separately authorized, audited remediation;
+   never delete or rewrite the preserved legacy messages, ticket snapshots, or
+   events as a shortcut.
