@@ -51,6 +51,86 @@ function repairRouteDoGetRejected_() {
 }
 
 
+function repairRouteIsAction_(action) {
+  return (
+    action === 'tenant_repair_tickets_init' ||
+    action === 'landlord_repair_tickets_init' ||
+    action === 'landlord_repair_ticket_update'
+  );
+}
+
+
+function repairRouteDecodeFormBody_(body) {
+  const request = {};
+  const raw = String(body || '').replace(/^\?/, '');
+  if (!raw) return request;
+
+  raw.split('&').forEach(function(pair) {
+    if (!pair) return;
+    const separator = pair.indexOf('=');
+    const rawKey = separator === -1 ? pair : pair.slice(0, separator);
+    const rawValue = separator === -1 ? '' : pair.slice(separator + 1);
+    let key = '';
+    let value = '';
+    try {
+      key = decodeURIComponent(rawKey.replace(/\+/g, ' '));
+      value = decodeURIComponent(rawValue.replace(/\+/g, ' '));
+    } catch (_) {
+      return;
+    }
+    if (key) request[key] = value;
+  });
+  return request;
+}
+
+
+function repairRouteQueryAction_(e) {
+  const query = e && e.queryString ? e.queryString : '';
+  const request = repairRouteDecodeFormBody_(query);
+  return String(request.action || request.v2_action || '').trim();
+}
+
+
+function repairRouteRequestFromPostBody_(e) {
+  const raw =
+    e && e.postData && typeof e.postData.contents === 'string'
+      ? e.postData.contents
+      : '';
+  let request = null;
+
+  if (raw) {
+    try {
+      request = JSON.parse(raw);
+    } catch (_) {
+      request = repairRouteDecodeFormBody_(raw);
+    }
+    if (!request || typeof request !== 'object' || Array.isArray(request)) {
+      request = null;
+    }
+    const action = String(request && (request.action || request.v2_action) || '').trim();
+    if (repairRouteIsAction_(action)) {
+      return {
+        handled: true,
+        success: true,
+        action: action,
+        request: request
+      };
+    }
+  }
+
+  if (repairRouteIsAction_(repairRouteQueryAction_(e))) {
+    return {
+      handled: true,
+      success: false,
+      code: 'AUTH_METHOD_REQUIRED',
+      message: '報修工單 action 必須在 POST body 提供已驗證的 credentials',
+      request: null
+    };
+  }
+  return { handled: false, success: false, request: null };
+}
+
+
 function dispatchRepairPostRoute_(action, request) {
   if (action === 'tenant_repair_tickets_init') {
     return dispatchTenantRepairTicketsInit_(request || {});
@@ -2571,6 +2651,24 @@ function doPost(e) {
   runtimeSnapshotBegin_('POST');
   try {
     e = e || {};
+
+    const repairPostRequest = repairRouteRequestFromPostBody_(e);
+    if (repairPostRequest.handled) {
+      const repairRequest = repairPostRequest.request || {};
+      const result = repairPostRequest.success
+        ? dispatchRepairPostRoute_(repairPostRequest.action, repairRequest)
+        : repairRouteAuthError_(
+          repairPostRequest.code,
+          repairPostRequest.message
+        );
+      runtimeSnapshotBegin_(repairPostRequest.action || 'repair_auth_rejected');
+      if (String(repairRequest.response_mode || '').trim() === 'bridge') {
+        return htmlBridgeOutput_(result, repairRequest.request_id || '');
+      }
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
     const postBody =
       e.postData && e.postData.contents

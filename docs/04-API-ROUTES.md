@@ -636,6 +636,12 @@ electronic contract directly, including explicit zero-valued fee fields.
 These actions are POST-only. Their `doGet` / JSONP action paths never read
 credentials or browser identity fields and return `AUTH_METHOD_REQUIRED` through
 the existing JSONP or HTML bridge envelope; undocumented query-string actions are not accepted.
+`doPost` reads repair credentials only from the raw `postData.contents`: either
+a JSON object or an `application/x-www-form-urlencoded` controlled-bridge body.
+It does not merge `e.parameter` into a repair request. A repair action found
+only in the query string, or a query token paired with a missing/unparseable
+repair body, returns `AUTH_METHOD_REQUIRED`; a query token can never override
+the body principal.
 
 ### Repair-ticket permission, error, and projection contract
 

@@ -680,3 +680,72 @@ test('repair route boundary rejects credential-bearing GET and accepts only veri
   assert.equal(calls[0].request.tenant_session_token, 'body-session');
   assert.equal(calls[1].request.landlord_session_token, 'body-session');
 });
+
+test('repair POST guard parses only raw bodies and cannot inherit query credentials', () => {
+  const context = {
+    String,
+    Object,
+    JSON,
+    decodeURIComponent,
+    repairRouteAuthError_(code, message) {
+      return { success: false, code, message, data: { tickets: [] } };
+    }
+  };
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'repairRouteIsAction_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'repairRouteDecodeFormBody_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'repairRouteQueryAction_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+  vm.runInNewContext(
+    extractFunction(dispatcherSource, 'repairRouteRequestFromPostBody_'),
+    context,
+    { filename: '程式碼.js' }
+  );
+
+  const jsonRequest = context.repairRouteRequestFromPostBody_({
+    postData: {
+      contents: JSON.stringify({
+        v2_action: 'tenant_repair_tickets_init',
+        tenant_session_token: 'body-tenant-session'
+      })
+    },
+    queryString: 'tenant_session_token=query-tenant-session',
+    parameter: { tenant_session_token: 'parameter-tenant-session' }
+  });
+  const formRequest = context.repairRouteRequestFromPostBody_({
+    postData: {
+      contents: 'action=landlord_repair_tickets_init&landlord_session_token=body%2Dlandlord%2Dsession&response_mode=bridge'
+    },
+    queryString: 'landlord_session_token=query-landlord-session',
+    parameter: { landlord_session_token: 'parameter-landlord-session' }
+  });
+  const queryOnly = context.repairRouteRequestFromPostBody_({
+    postData: { contents: '' },
+    queryString: 'v2_action=tenant_repair_tickets_init&tenant_session_token=query-tenant-session',
+    parameter: {
+      v2_action: 'tenant_repair_tickets_init',
+      tenant_session_token: 'parameter-tenant-session'
+    }
+  });
+
+  assert.equal(jsonRequest.handled, true);
+  assert.equal(jsonRequest.success, true);
+  assert.equal(jsonRequest.request.tenant_session_token, 'body-tenant-session');
+  assert.equal(formRequest.handled, true);
+  assert.equal(formRequest.success, true);
+  assert.equal(formRequest.request.landlord_session_token, 'body-landlord-session');
+  assert.equal(formRequest.request.response_mode, 'bridge');
+  assert.equal(queryOnly.handled, true);
+  assert.equal(queryOnly.success, false);
+  assert.equal(queryOnly.code, 'AUTH_METHOD_REQUIRED');
+});
