@@ -1005,6 +1005,50 @@
       word-break: break-word;
     }
 
+    .archive-success-notice {
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 16px;
+      margin-bottom: 14px;
+      border: 1px solid #bfe8cf;
+      border-radius: 16px;
+      background: var(--success-soft);
+      box-shadow: 0 4px 16px rgba(16, 137, 62, 0.08);
+    }
+
+    .archive-success-notice.show {
+      display: flex;
+    }
+
+    .archive-success-notice-title {
+      color: var(--success);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .archive-success-notice-message {
+      margin-top: 4px;
+      color: #356244;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .archive-success-notice-close {
+      flex: 0 0 auto;
+      min-width: 32px;
+      min-height: 32px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--success);
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+    }
+
     /* ==================================================
        底部導覽列
        ================================================== */
@@ -1119,6 +1163,28 @@
           <span id="desktopTopbarWorkspaceName">載入中</span>
         </div>
       </header>
+      <div
+        id="archiveSuccessNotice"
+        class="archive-success-notice"
+        role="status"
+        aria-live="polite"
+      >
+        <div>
+          <div class="archive-success-notice-title">作廢成功</div>
+          <div
+            id="archiveSuccessNoticeMessage"
+            class="archive-success-notice-message"
+          ></div>
+        </div>
+        <button
+          class="archive-success-notice-close"
+          type="button"
+          aria-label="關閉作廢成功提示"
+          onclick="hideArchiveSuccessNotice()"
+        >
+          ×
+        </button>
+      </div>
       <div id="app" class="loading">
         資料載入中...
       </div>
@@ -3440,9 +3506,16 @@
           60000
         );
 
+        showArchiveSuccessNotice(
+          rawText(billId).trim()
+        );
+
         showAlert(
-          response.message ||
-          '測試帳單已作廢並封存。',
+          '作廢成功。\n\n' +
+          (
+            response.message ||
+            '測試帳單已作廢並封存。'
+          ),
           function () {
             setTimeout(loadPage, 500);
           }
@@ -3988,6 +4061,41 @@
     // ==================================================
     // 提示視窗
     // ==================================================
+
+    function showArchiveSuccessNotice(
+      billId
+    ) {
+      const notice = document.getElementById(
+        'archiveSuccessNotice'
+      );
+      const message = document.getElementById(
+        'archiveSuccessNoticeMessage'
+      );
+
+      if (!notice || !message) {
+        return;
+      }
+
+      const normalizedBillId =
+        rawText(billId).trim();
+
+      message.textContent =
+        '測試帳單 ' +
+        (normalizedBillId || '-') +
+        ' 已封存，重新整理後不會再列入欠款清單。';
+
+      notice.classList.add('show');
+    }
+
+    function hideArchiveSuccessNotice() {
+      const notice = document.getElementById(
+        'archiveSuccessNotice'
+      );
+
+      if (notice) {
+        notice.classList.remove('show');
+      }
+    }
 
     function showAlert(
       message,
