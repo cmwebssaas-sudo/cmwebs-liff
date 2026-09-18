@@ -798,7 +798,7 @@ function v2BillCancellationResolveExactBillReadOnly_(billSheet, billId) {
 
 
 function v2BillCancellationTargetChecks_(bill, access, target) {
-  return {
+  const checks = {
     workspace_id:
       v2CanonicalBillingKey_(bill.workspace_id) ===
         v2CanonicalBillingKey_(
@@ -827,6 +827,36 @@ function v2BillCancellationTargetChecks_(bill, access, target) {
     cancellation_fields_blank:
       v2BillCancellationAuditFieldsBlank_(bill)
   };
+
+  if (target && target.require_closed_room_account === true) {
+    const roomSheet = runtimeSpreadsheet_().getSheetByName('V2_rooms');
+    const roomRows =
+      typeof billingGetWorkspaceRows_ === 'function'
+        ? billingGetWorkspaceRows_(roomSheet, access)
+        : [];
+    const room = roomRows.find(function (row) {
+      return workspaceText_(row.room_id) ===
+        workspaceText_(bill.room_id);
+    });
+    const accountStatus = workspaceText_(
+      room && room.account_status || 'active'
+    ).toLowerCase();
+
+    checks.room_account_closed = Boolean(
+      room && [
+        'inactive',
+        'disabled',
+        'closed',
+        'archived',
+        '停用',
+        '關閉',
+        '已關閉',
+        '封存'
+      ].indexOf(accountStatus) >= 0
+    );
+  }
+
+  return checks;
 }
 
 

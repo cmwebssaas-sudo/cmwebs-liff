@@ -10,6 +10,7 @@ const dispatcherSource = readFileSync(
 
 const actions = [
   'landlord_arrears',
+  'landlord_bill_test_archive_candidates',
   'landlord_billing_init',
   'landlord_contract_requests_init',
   'landlord_bill_manual_settlement_status',
@@ -115,6 +116,8 @@ function createDispatcherContext() {
     context[
       action === 'landlord_arrears'
         ? 'getWorkspaceLandlordArrearsNativeByLineUid_'
+        : action === 'landlord_bill_test_archive_candidates'
+          ? 'getWorkspaceLandlordTestBillArchiveCandidatesByLineUid_'
         : action === 'landlord_billing_init'
           ? 'getLandlordBillingInitByLineUid_'
           : action === 'landlord_contract_requests_init'
