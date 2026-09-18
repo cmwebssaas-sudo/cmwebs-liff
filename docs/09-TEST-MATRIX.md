@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-09-18 一次性測試帳單作廢／封存候選
+## 2026-09-18 一次性測試帳單作廢／封存正式發布
 
 - [x] 已新增 `landlord_bill_test_archive_candidates` 唯讀候選查詢；主
   `landlord_arrears` 快速路徑維持只讀取物件與帳單，候選查詢才讀取房間狀態。
@@ -9,8 +9,14 @@
   LINE、不刪除資料，並寫入 Workspace 操作稽核。
 - [x] 已加入封存按鈕、冪等已封存回應、純函式／靜態回歸測試；本地 focused
   tests 通過，正式 Sheet、登入後欠款頁與一次性操作仍待 authenticated UAT。
-- [ ] 本候選尚未合併、推送、部署或修改正式 Google Sheets；正式發布前需另行
-  取得部署授權並完成 Apps Script／GitHub Pages 對帳。
+- [x] PR #169 merge commit `257093b6b03838275342d67944ce6988edf57d3b` 已合併至
+  `main`；Apps Script Version `190` 已更新既有正式 Web App，Version `189` 保留 rollback。
+- [x] GitHub Pages workflow `35339276140` 的 build、deploy、status jobs 全部成功；公開
+  `landlord-arrears.html` HTTP 200 read-back 已確認封存按鈕與兩個新 route 已發布。
+- [x] Version 190 唯讀匯出 58 個檔案與候選 `apps-script/` 逐檔一致；本次未修改正式
+  Google Sheets 業務資料列、Drive、Properties、Trigger 或 LINE。
+- [ ] 登入後欠款頁的真實房東一次性操作、手機／LIFF UAT；狀態仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-15 房間報修工單 Task 6 本地 release-boundary record
 
