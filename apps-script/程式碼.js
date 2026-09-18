@@ -1519,6 +1519,19 @@ if (v2Action === 'tenant_message_submit') {
     return jsonOutput_(result, callback);
   }
 
+  if (v2Action === 'landlord_bill_test_archive_candidates') {
+    const result =
+      getWorkspaceLandlordTestBillArchiveCandidatesByLineUid_(
+        lineUserId
+      );
+
+    if (bridge === '1') {
+      return htmlBridgeOutput_(result, requestId);
+    }
+
+    return jsonOutput_(result, callback);
+  }
+
   if (v2Action === 'landlord_tenants') {
   const result = getWorkspaceLandlordTenantsNativeByLineUid_(lineUserId);
 
@@ -1834,6 +1847,35 @@ if (v2Action === 'landlord_bill_reopen') {
       billId,
       reversalReason,
       notifyTenant
+    );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(
+      result,
+      requestId
+    );
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
+if (v2Action === 'landlord_bill_test_archive') {
+  const billId = String(
+    e.parameter.bill_id || ''
+  ).trim();
+
+  const archiveReason = String(
+    e.parameter.archive_reason || ''
+  ).trim();
+
+  const result =
+    archiveTestWorkspaceLandlordBillByLineUid_(
+      lineUserId,
+      billId,
+      archiveReason
     );
 
   if (bridge === '1') {
@@ -3182,6 +3224,30 @@ function doPost(e) {
           if (principal) {
             result =
               getWorkspaceLandlordArrearsNativeByLineUid_(
+                principal.data.principal_line_user_id
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
+          useBridge &&
+          action ===
+            'landlord_bill_test_archive_candidates'
+        ) {
+          result = resolveLandlordReadBridgePrincipal_();
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getWorkspaceLandlordTestBillArchiveCandidatesByLineUid_(
                 principal.data.principal_line_user_id
               );
           }

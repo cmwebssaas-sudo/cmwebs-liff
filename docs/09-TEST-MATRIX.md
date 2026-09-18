@@ -1,5 +1,17 @@
 # V2 回歸測試矩陣
 
+## 2026-09-18 一次性測試帳單作廢／封存候選
+
+- [x] 已新增 `landlord_bill_test_archive_candidates` 唯讀候選查詢；主
+  `landlord_arrears` 快速路徑維持只讀取物件與帳單，候選查詢才讀取房間狀態。
+- [x] 已新增 `landlord_bill_test_archive`；後端重新驗證 Workspace、房間帳號
+  已關閉、帳單未付款且無付款紀錄，沿用共用取消核心服務，不建立付款、不發送
+  LINE、不刪除資料，並寫入 Workspace 操作稽核。
+- [x] 已加入封存按鈕、冪等已封存回應、純函式／靜態回歸測試；本地 focused
+  tests 通過，正式 Sheet、登入後欠款頁與一次性操作仍待 authenticated UAT。
+- [ ] 本候選尚未合併、推送、部署或修改正式 Google Sheets；正式發布前需另行
+  取得部署授權並完成 Apps Script／GitHub Pages 對帳。
+
 ## 2026-09-15 房間報修工單 Task 6 本地 release-boundary record
 
 - [x] Implementation source candidate is
@@ -396,6 +408,14 @@
 - [ ] LINE API 配額與錯誤
 - [ ] Apps Script 執行時間
 - [ ] 備份與還原演練
+
+## 2026-09-18 一次性測試帳單作廢／封存
+
+- [x] 欠款頁只對已關閉房間帳號的未付款帳單顯示「作廢測試帳單」；啟用中房間不顯示。
+- [x] 後端重新驗證 Workspace、房間狀態、未付款狀態與付款紀錄；不依賴 `test=1`。
+- [x] 作廢只更新帳單狀態與內部備註，保留帳單／檢視歷史，不建立付款、不發送 LINE、不刪除資料。
+- [x] Workspace 操作紀錄保存實際操作人、時間、帳單／房間目標與封存原因。
+- [x] 已加入靜態與純函式回歸測試；正式 Sheet、登入後欠款頁與一次性測試帳單操作尚待 authenticated UAT。
 
 ## V2.1 本地候選：線上合約簽署與營收儀表板
 

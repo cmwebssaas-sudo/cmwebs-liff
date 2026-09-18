@@ -20,6 +20,8 @@
  * - settleWorkspaceLandlordPaymentReportByLineUid_
  * - manualSettleWorkspaceLandlordBillByLineUid_
  * - reopenWorkspaceLandlordBillByLineUid_
+ * - getWorkspaceLandlordTestBillArchiveCandidatesByLineUid_
+ * - archiveTestWorkspaceLandlordBillByLineUid_
  * - getWorkspaceLandlordPaidBillsInitByLineUid_
  * - getWorkspaceLandlordContractRequestsInitByLineUid_
  * - updateWorkspaceLandlordContractRequestByLineUid_
@@ -203,6 +205,87 @@ function getWorkspaceLandlordArrearsByLineUid_(
 
       return getLandlordArrearsByLineUid(
         principalLineUserId
+      );
+    }
+  );
+}
+
+
+function getWorkspaceLandlordTestBillArchiveCandidatesByLineUid_(
+  lineUserId
+) {
+  return workspaceLandlordProxy_(
+    lineUserId,
+    'landlord_bill_test_archive_candidates',
+    'read',
+    function (principalLineUserId, access) {
+      const ss = runtimeSpreadsheet_();
+      const billSheet = ss.getSheetByName(
+        V2_BILLING_SHEETS_.bills
+      );
+      const roomSheet = ss.getSheetByName(
+        V2_BILLING_SHEETS_.rooms
+      );
+
+      const bills =
+        typeof billingGetWorkspaceRows_ === 'function'
+          ? billingGetWorkspaceRows_(billSheet, access)
+          : [];
+      const rooms =
+        typeof billingGetWorkspaceRows_ === 'function'
+          ? billingGetWorkspaceRows_(roomSheet, access)
+          : [];
+      const roomsById = {};
+
+      rooms.forEach(function (room) {
+        const roomId = String(
+          room && room.room_id || ''
+        ).trim();
+
+        if (roomId) {
+          roomsById[roomId] = room;
+        }
+      });
+
+      const candidates = bills
+        .filter(function (bill) {
+          const room = roomsById[
+            String(bill && bill.room_id || '').trim()
+          ];
+
+          return (
+            room &&
+            typeof landlordTestBillArchiveIsClosedRoom_ === 'function' &&
+            landlordTestBillArchiveIsClosedRoom_(room) &&
+            typeof landlordTestBillArchiveIsUnpaid_ === 'function' &&
+            landlordTestBillArchiveIsUnpaid_(bill)
+          );
+        })
+        .map(function (bill) {
+          const room = roomsById[
+            String(bill && bill.room_id || '').trim()
+          ];
+
+          return {
+            bill_id: String(bill.bill_id || '').trim(),
+            room_id: String(bill.room_id || '').trim(),
+            room_name: String(
+              bill.room_name || room.room_name || ''
+            ).trim(),
+            room_account_status: String(
+              room.account_status || ''
+            ).trim().toLowerCase()
+          };
+        })
+        .filter(function (candidate) {
+          return Boolean(candidate.bill_id);
+        });
+
+      return workspaceResult_(
+        true,
+        'OK',
+        '查詢成功',
+        { candidates: candidates }
       );
     }
   );
@@ -857,6 +940,37 @@ function reopenWorkspaceLandlordBillByLineUid_(
         billId,
         reversalReason,
         notifyTenant
+      );
+    }
+  );
+}
+
+
+function archiveTestWorkspaceLandlordBillByLineUid_(
+  lineUserId,
+  billId,
+  archiveReason
+) {
+  return workspaceLandlordProxy_(
+    lineUserId,
+    'landlord_bill_test_archive',
+    'payment_write',
+    function (principalLineUserId) {
+      if (
+        typeof archiveTestLandlordBillByLineUid_ !==
+        'function'
+      ) {
+        return workspaceResult_(
+          false,
+          'TEST_BILL_ARCHIVE_FUNCTION_NOT_FOUND',
+          '找不到測試帳單封存函式'
+        );
+      }
+
+      return archiveTestLandlordBillByLineUid_(
+        principalLineUserId,
+        billId,
+        archiveReason
       );
     }
   );

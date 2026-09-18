@@ -1029,6 +1029,8 @@ function workspaceAuditActionLabel_(
       '手動銷帳',
     landlord_bill_reopen:
       '撤銷銷帳',
+    landlord_bill_test_archive:
+      '作廢測試帳單',
     landlord_bills_generate:
       '建立或更新月租帳單',
     landlord_bill_notifications_send:

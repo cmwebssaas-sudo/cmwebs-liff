@@ -1510,6 +1510,7 @@
     let LANDLORD_AUTH = null;
     let PAGE_DATA = null;
     let ARREARS = [];
+    let TEST_ARCHIVE_CANDIDATE_IDS = new Set();
     let ACTIVE_BILL_ID = '';
     let ACTIVE_REMINDER_BILL_ID = '';
     let ALERT_CALLBACK = null;
@@ -2493,7 +2494,8 @@
 
       const desktopReadActions = {
         landlord_arrears: true,
-        landlord_bill_manual_settlement_status: true
+        landlord_bill_manual_settlement_status: true,
+        landlord_bill_test_archive_candidates: true
       };
 
       if (desktopReadActions[action] === true) {
@@ -2747,6 +2749,30 @@
             >
               手動確認已繳
             </button>
+
+            ${
+              TEST_ARCHIVE_CANDIDATE_IDS.has(billId)
+                ? `
+                  <button
+                    class="btn btn-danger-soft full-action"
+                    data-bill-id="${escapeHtml(
+                      billId
+                    )}"
+                    onclick="archiveTestBill(
+                      this.dataset.billId
+                    )"
+                    ${
+                      billId
+                        ? ''
+                        : 'disabled'
+                    }
+                    title="僅限已關閉房間的未付款測試帳單"
+                  >
+                    作廢測試帳單
+                  </button>
+                `
+                : ''
+            }
           </div>
         </article>
       `;
@@ -3360,6 +3386,72 @@
         button.disabled = false;
         button.textContent =
           '確認傳送 LINE';
+      }
+    }
+
+
+    // ==================================================
+    // 測試帳單一次性作廢／封存
+    // ==================================================
+
+    async function archiveTestBill(
+      billId
+    ) {
+      const item =
+        findArrearByBillId(
+          billId
+        );
+
+      if (!item) {
+        showAlert('找不到指定帳單');
+        return;
+      }
+
+      if (!TEST_ARCHIVE_CANDIDATE_IDS.has(rawText(billId).trim())) {
+        showAlert('只有已關閉的房間帳號可以封存測試帳單');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        '這是一次性測試資料處理。\n\n作廢後不會建立付款紀錄、不會發送 LINE，帳單會保留在歷史資料中但不再列入欠款。\n\n確定要繼續嗎？'
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      const reason = window.prompt(
+        '請輸入封存原因（至少 3 個字）',
+        '測試帳單清理'
+      );
+
+      if (!reason || reason.trim().length < 3) {
+        showAlert('封存原因至少需要 3 個字');
+        return;
+      }
+
+      try {
+        const response = await callApi(
+          'landlord_bill_test_archive',
+          {
+            bill_id: rawText(billId).trim(),
+            archive_reason: reason.trim()
+          },
+          60000
+        );
+
+        showAlert(
+          response.message ||
+          '測試帳單已作廢並封存。',
+          function () {
+            setTimeout(loadPage, 500);
+          }
+        );
+      } catch (error) {
+        showAlert(
+          error.message ||
+          String(error)
+        );
       }
     }
 
@@ -3989,6 +4081,38 @@
     // 載入資料
     // ==================================================
 
+    async function loadTestBillArchiveCandidates() {
+      try {
+        const response = await jsonpRequest(
+          'landlord_bill_test_archive_candidates',
+          {},
+          30000
+        );
+        const candidates =
+          response &&
+          response.data &&
+          Array.isArray(response.data.candidates)
+            ? response.data.candidates
+            : [];
+
+        TEST_ARCHIVE_CANDIDATE_IDS = new Set(
+          candidates
+            .map(function (candidate) {
+              return rawText(candidate && candidate.bill_id).trim();
+            })
+            .filter(Boolean)
+        );
+
+        if (PAGE_DATA) {
+          renderPage(PAGE_DATA);
+        }
+      } catch (error) {
+        // This is an optional read. Keep the arrears page usable when the
+        // room-status candidate lookup is unavailable.
+        TEST_ARCHIVE_CANDIDATE_IDS = new Set();
+      }
+    }
+
     async function loadPage() {
       try {
         const ready = await ensureLandlordAuthReady();
@@ -3998,6 +4122,8 @@
 
         app.className =
           'loading';
+
+        TEST_ARCHIVE_CANDIDATE_IDS = new Set();
 
         app.innerHTML =
           '資料載入中...';
@@ -4011,6 +4137,10 @@
           response.data ||
           {}
         );
+
+        // Keep the primary arrears fast path limited to properties and bills;
+        // room status is fetched separately only for this one-time cleanup UI.
+        loadTestBillArchiveCandidates();
 
       } catch (error) {
         renderError(

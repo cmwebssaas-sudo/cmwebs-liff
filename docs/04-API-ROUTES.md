@@ -67,6 +67,33 @@ The older Gate 0 checklist value of 68 routes is superseded for this Version 85
 candidate by this evidence-backed inventory. Any later route change must update
 this document and its static validation.
 
+### 2026-09-18 one-time test bill archival candidate
+
+`landlord_bill_test_archive_candidates` is the read-only companion route used
+by the arrears page to identify unpaid bills whose room account is already
+closed. It is intentionally separate from `landlord_arrears`, so the normal
+arrears fast path still reads only its existing property and bill sources.
+It returns bill and room identifiers needed to render the one-time cleanup
+button and does not change billing data or expose prior-tenant details.
+
+`landlord_bill_test_archive` is a bounded landlord write route for cleaning up
+test data after a room account has been closed. It requires the authenticated
+Workspace landlord's existing payment-write permission, resolves the bill and
+room inside that Workspace, and then requires all of the following:
+
+- the room account is inactive, disabled, closed, or archived;
+- the bill is unpaid; and
+- the bill has no payment record and is not already voided.
+
+The route accepts `bill_id` and a required `archive_reason`. It writes the
+existing cancellation fields and `bill_status=cancelled` (the canonical
+billing reader treats this as voided), keeps the bill row and view history,
+and records the authenticated actor, timestamp, target, and reason in the
+Workspace operation audit. It never creates a payment, sends LINE, deletes
+data, or treats `test=1` as an authorization signal. Repeated calls on an
+already voided bill are handled by the shared cancellation service without
+rewriting the original cancellation record.
+
 ## Route inventory
 
 ### 2026-09-09 settlement timeout repair (version179 / PR138)
@@ -98,6 +125,8 @@ landlord_bill_manual_settlement_status
 landlord_bill_notifications_init
 landlord_bill_notifications_send
 landlord_bill_reopen
+landlord_bill_test_archive_candidates
+landlord_bill_test_archive
 landlord_billing_init
 landlord_bills_generate
 landlord_bill_apply_initial_rent_credit
