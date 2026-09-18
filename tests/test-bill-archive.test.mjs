@@ -126,5 +126,8 @@ assert.match(dispatcher, /landlord_bill_test_archive/);
 assert.match(dispatcher, /landlord_bill_test_archive_candidates/);
 assert.match(arrearsPage, /archiveTestBill/);
 assert.match(arrearsPage, /作廢測試帳單/);
+assert.match(arrearsPage, /archiveSuccessNotice/);
+assert.match(arrearsPage, /作廢成功/);
+assert.match(arrearsPage, /aria-live="polite"/);
 
 console.log('Test bill archive tests passed.');
