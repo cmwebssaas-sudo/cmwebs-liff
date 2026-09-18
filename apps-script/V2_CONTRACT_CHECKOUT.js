@@ -33,7 +33,7 @@ const V2_CHECKOUT_SETTLEMENT_HEADERS_ = [
 ];
 
 const V2_CHECKOUT_SETTLEMENT_PAID_STATUSES_ = [
-  'paid', 'confirmed', 'cancelled', 'canceled', 'void', 'voided'
+  'paid', 'settled', 'confirmed', 'cancelled', 'canceled', 'void', 'voided'
 ];
 
 function landlordContractCheckoutSettlementError_(code, message) {
@@ -392,6 +392,73 @@ function landlordContractCheckoutSettlementFindPreviousBill_(sheet, access, cont
   }) || null;
 }
 
+function landlordContractCheckoutSettlementSettleOutstandingBills_(ss, access, schema, contract, settlementId, nowIso) {
+  const billSheet = schema && schema.data && schema.data.bills;
+  if (!billSheet || !contract) return { count: 0, ids: [] };
+
+  const workspaceId = landlordInitiatedContractWorkspaceId_(access);
+  const landlordId = landlordInitiatedContractText_(
+    landlordInitiatedContractLandlordId_(access) || contract.landlord_id
+  );
+  const contractId = landlordInitiatedContractText_(contract.contract_id);
+  const tenantId = landlordInitiatedContractText_(contract.tenant_id);
+  const roomId = landlordInitiatedContractText_(contract.room_id);
+  const settledIds = [];
+  const syncedIds = [];
+  const billHeaders = landlordInitiatedContractHeaders_(billSheet);
+  const noteHeader = billHeaders.indexOf('notes') >= 0
+    ? 'notes'
+    : billHeaders.indexOf('note') >= 0
+      ? 'note'
+      : '';
+  const settlementMarker = '退房退款結算已結清（結算單 ' + landlordInitiatedContractText_(settlementId) + '）';
+
+  landlordContractCheckoutRows_(billSheet).forEach(function(bill) {
+    const billLandlordId = landlordInitiatedContractText_(bill.landlord_id);
+    const billNote = landlordInitiatedContractText_(bill[noteHeader] || bill.notes || bill.note);
+    const isMarkedByThisSettlement = billNote.indexOf(settlementMarker) >= 0;
+    const shouldSettle = landlordContractCheckoutSettlementBillIsUnpaid_(bill);
+    const shouldResync = shouldSettle || (
+      !shouldSettle &&
+      landlordInitiatedContractText_(bill.payment_status).toLowerCase() === 'paid' &&
+      isMarkedByThisSettlement
+    );
+    if (landlordInitiatedContractText_(bill.workspace_id) !== workspaceId ||
+        (billLandlordId && landlordId && billLandlordId !== landlordId) ||
+        landlordInitiatedContractText_(bill.contract_id) !== contractId ||
+        landlordInitiatedContractText_(bill.tenant_id) !== tenantId ||
+        landlordInitiatedContractText_(bill.room_id) !== roomId ||
+        !shouldResync) return;
+
+    const updates = {
+      updated_at: nowIso
+    };
+    if (shouldSettle) {
+      updates.payment_status = 'paid';
+      updates.paid_at = nowIso;
+      updates.updated_by_user_id = landlordInitiatedContractText_(access && access.user && access.user.user_id);
+      updates.updated_by_membership_id = landlordInitiatedContractText_(access && access.membership && access.membership.membership_id);
+      if (noteHeader) updates[noteHeader] = billNote ? billNote + '；' + settlementMarker : settlementMarker;
+    }
+
+    if (shouldSettle) {
+      landlordInitiatedContractUpdate_(billSheet, bill, updates);
+      Object.assign(bill, updates);
+      settledIds.push(landlordInitiatedContractText_(bill.bill_id));
+    }
+
+    if (typeof billingSyncBillViews_ === 'function' && ss) {
+      billingSyncBillViews_(ss, access, bill, nowIso);
+      syncedIds.push(landlordInitiatedContractText_(bill.bill_id));
+    }
+  });
+
+  if (syncedIds.length > 0 && typeof billingRefreshWorkspaceSummaries_ === 'function' && ss) {
+    billingRefreshWorkspaceSummaries_(ss, access);
+  }
+  return { count: settledIds.length, ids: settledIds };
+}
+
 function landlordContractCheckoutSettlementPublicBill_(bill) {
   if (!bill) return null;
   return {
@@ -505,7 +572,8 @@ function landlordContractCheckoutSettlementHasStoredDocument_(sheet, access, con
   });
 }
 
-function landlordContractCheckoutSettlementResult_(row, calculation, idempotent) {
+function landlordContractCheckoutSettlementResult_(row, calculation, idempotent, settledBills) {
+  const settled = settledBills || { count: 0, ids: [] };
   return {
     success: true,
     code: idempotent ? 'IDEMPOTENT' : 'OK',
@@ -521,6 +589,8 @@ function landlordContractCheckoutSettlementResult_(row, calculation, idempotent)
       deposit_refund_amount: calculation.deposit_refund_amount,
       manual_receivable_amount: landlordContractCheckoutSettlementRound_(row.manual_receivable_amount || calculation.manual_receivable_amount),
       manual_refund_amount: landlordContractCheckoutSettlementRound_(row.manual_refund_amount || calculation.manual_refund_amount),
+      settled_bill_count: Number(settled.count) || 0,
+      settled_bill_ids: Array.isArray(settled.ids) ? settled.ids.slice() : [],
       idempotent: idempotent === true
     }
   };
@@ -537,12 +607,22 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
   const existing = landlordContractCheckoutSettlementFindExisting_(settlementSheet, access, contractId);
   if (existing) {
     if (landlordInitiatedContractText_(existing.idempotency_key) === idempotencyKey && landlordInitiatedContractText_(existing.settlement_status).toLowerCase() === 'completed') {
+      const existingBills = landlordContractCheckoutSettlementText_(existing.settlement_mode).toLowerCase() === 'manual'
+        ? landlordContractCheckoutSettlementSettleOutstandingBills_(
+            SpreadsheetApp.getActiveSpreadsheet(),
+            access,
+            schema,
+            existing,
+            existing.settlement_id,
+            new Date().toISOString()
+          )
+        : { count: 0, ids: [] };
       return landlordContractCheckoutSettlementResult_(existing, {
         subtotal_amount: landlordContractCheckoutSettlementRound_(existing.subtotal_amount),
         deposit_deduction_amount: landlordContractCheckoutSettlementRound_(existing.deposit_deduction_amount),
         tenant_balance_due: landlordContractCheckoutSettlementRound_(existing.tenant_balance_due),
         deposit_refund_amount: landlordContractCheckoutSettlementRound_(existing.deposit_refund_amount)
-      }, true);
+      }, true, existingBills);
     }
     return landlordContractCheckoutSettlementError_('CHECKOUT_SETTLEMENT_ALREADY_EXISTS', '此合約已有退房結算紀錄');
   }
@@ -598,7 +678,17 @@ function landlordContractCheckoutSettlementApplyUnlocked_(access, schema, input)
     completed_at: nowIso
   });
   landlordInitiatedContractAppend_(settlementSheet, row);
-  return landlordContractCheckoutSettlementResult_(row, calculation.data, false);
+  const settledBills = settlementMode === 'manual'
+    ? landlordContractCheckoutSettlementSettleOutstandingBills_(
+        SpreadsheetApp.getActiveSpreadsheet(),
+        access,
+        schema,
+        contract,
+        settlementId,
+        nowIso
+      )
+    : { count: 0, ids: [] };
+  return landlordContractCheckoutSettlementResult_(row, calculation.data, false, settledBills);
 }
 
 function landlordContractCheckoutEvidenceUploadBySession_(sessionToken, input) {
@@ -801,6 +891,8 @@ function landlordContractCheckoutResult_(access, contract, idempotent, settlemen
     data.deposit_refund_amount = landlordContractCheckoutSettlementRound_(settlement.deposit_refund_amount);
     data.manual_receivable_amount = landlordContractCheckoutSettlementRound_(settlement.manual_receivable_amount);
     data.manual_refund_amount = landlordContractCheckoutSettlementRound_(settlement.manual_refund_amount);
+    data.settled_bill_count = Number(settlement.settled_bill_count) || 0;
+    data.settled_bill_ids = Array.isArray(settlement.settled_bill_ids) ? settlement.settled_bill_ids.slice() : [];
   }
   return {
     success: true,

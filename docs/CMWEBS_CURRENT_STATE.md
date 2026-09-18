@@ -19,6 +19,17 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
+## 2026-09-18 快速結案同步帳單（本地候選，尚未部署）
+
+- 使用者確認退房退款時已一併結清帳務；既有快速結案只追加
+  `V2_checkout_settlements`，沒有更新同一合約的 `V2_bills`，因此帳務頁仍會顯示未繳。
+- 本地候選修正：`settlement_mode=manual` 完成快速結案時，將同一 Workspace、房東、房客、房間與
+  合約範圍內的未繳帳單更新為既有正式銷帳使用的 `payment_status=paid`，保留原帳單金額與原始列，
+  並同步帳單檢視／Workspace 摘要；已繳帳單與其他合約不受影響。
+- 不建立虛假的 `V2_payments` 付款紀錄；退房結算表仍是退款結清的操作稽核來源，重送同一
+  idempotency key 只補齊尚未同步的帳單。
+- 目前僅完成隔離分支與本地回歸測試；尚未推送、合併或部署 Production，正式帳務資料仍待授權後驗證。
+
 ## 2026-09-12 房東退房欄位 iOS 自動放大修正（正式部署）
 
 - 使用者回報前一版鍵盤避讓後，點擊退房欄位仍會在手機上急速放大並讓畫面跳離欄位。

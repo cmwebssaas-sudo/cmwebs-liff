@@ -115,6 +115,11 @@ const contractHeaders = [
 ];
 const roomHeaders = ['room_id', 'workspace_id', 'landlord_id', 'room_status', 'current_contract_id', 'current_tenant_id', 'current_tenant_name'];
 const tenantHeaders = ['tenant_id', 'workspace_id', 'landlord_id', 'current_contract_id'];
+const billHeaders = [
+  'bill_id', 'workspace_id', 'landlord_id', 'tenant_id', 'contract_id', 'room_id', 'bill_month',
+  'rent_amount', 'electricity_amount', 'equipment_amount', 'bill_status', 'payment_status', 'paid_at',
+  'updated_at', 'updated_by_user_id', 'updated_by_membership_id', 'notes'
+];
 const settlementHeaders = [
   'settlement_id', 'workspace_id', 'landlord_id', 'contract_id', 'tenant_id', 'room_id', 'settlement_start_date',
   'move_out_date', 'rent_days', 'days_in_month', 'rent_amount', 'start_meter_reading', 'end_meter_reading',
@@ -137,11 +142,51 @@ const manualApplySheets = {
   V2_tenants: new ApiSheet(tenantHeaders, [rowFor(tenantHeaders, {
     tenant_id: 'T1', workspace_id: 'W1', landlord_id: 'L1', current_contract_id: 'manual-contract'
   })]),
+  V2_bills: new ApiSheet(billHeaders, [
+    rowFor(billHeaders, {
+      bill_id: 'bill-manual-2026-08', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T1',
+      contract_id: 'manual-contract', room_id: 'R1', bill_month: '2026-08', bill_status: 'issued', payment_status: 'unpaid'
+    }),
+    rowFor(billHeaders, {
+      bill_id: 'bill-manual-2026-09', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T1',
+      contract_id: 'manual-contract', room_id: 'R1', bill_month: '2026-09', bill_status: 'issued', payment_status: 'unpaid'
+    }),
+    rowFor(billHeaders, {
+      bill_id: 'bill-manual-already-paid', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T1',
+      contract_id: 'manual-contract', room_id: 'R1', bill_month: '2026-07', bill_status: 'issued', payment_status: 'paid'
+    }),
+    rowFor(billHeaders, {
+      bill_id: 'bill-other-contract', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T2',
+      contract_id: 'other-contract', room_id: 'R2', bill_month: '2026-09', bill_status: 'issued', payment_status: 'unpaid'
+    }),
+    rowFor(billHeaders, {
+      bill_id: 'bill-wrong-landlord', workspace_id: 'W1', landlord_id: 'L2', tenant_id: 'T1',
+      contract_id: 'manual-contract', room_id: 'R1', bill_month: '2026-10', bill_status: 'issued', payment_status: 'unpaid'
+    })
+  ]),
   V2_checkout_settlements: new ApiSheet(settlementHeaders)
 };
+const billViewSyncCalls = [];
+const billSummaryRefreshCalls = [];
+let failNextBillViewSync = false;
+let failNextSummaryRefresh = false;
 const manualApplyContext = {
   Date, Math, Number, String, Object, Array, JSON, RegExp, console,
   SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: name => manualApplySheets[name] || null }) },
+  billingSyncBillViews_: (_ss, _access, bill) => {
+    if (failNextBillViewSync) {
+      failNextBillViewSync = false;
+      throw new Error('simulated bill view sync failure');
+    }
+    billViewSyncCalls.push(bill.bill_id);
+  },
+  billingRefreshWorkspaceSummaries_: () => {
+    if (failNextSummaryRefresh) {
+      failNextSummaryRefresh = false;
+      throw new Error('simulated summary refresh failure');
+    }
+    billSummaryRefreshCalls.push(true);
+  },
   Utilities: { getUuid: () => 'manual-settlement-id-1' }
 };
 vm.createContext(manualApplyContext);
@@ -160,7 +205,7 @@ const manualApplyResult = manualApplyContext.landlordContractCheckoutSettlementA
     contracts: manualApplySheets.V2_contracts,
     rooms: manualApplySheets.V2_rooms,
     tenants: manualApplySheets.V2_tenants,
-    bills: null,
+    bills: manualApplySheets.V2_bills,
     documents: null,
     settlements: manualApplySheets.V2_checkout_settlements
   } },
@@ -174,12 +219,141 @@ assert.equal(manualApplyResult.success, true, manualApplyResult.code);
 assert.equal(manualApplyResult.data.settlement_mode, 'manual');
 assert.equal(manualApplyResult.data.tenant_balance_due, 3200);
 assert.equal(manualApplyResult.data.deposit_refund_amount, 10000);
+assert.equal(manualApplyResult.data.settled_bill_count, 2);
+assert.deepEqual(JSON.parse(JSON.stringify(manualApplyResult.data.settled_bill_ids)), ['bill-manual-2026-08', 'bill-manual-2026-09']);
 assert.equal(manualApplySheets.V2_checkout_settlements.rows.length, 1);
 const manualRow = manualApplySheets.V2_checkout_settlements.rows[0];
 assert.equal(manualRow[settlementHeaders.indexOf('start_meter_document_id')], '');
 assert.equal(manualRow[settlementHeaders.indexOf('end_meter_document_id')], '');
 assert.equal(manualRow[settlementHeaders.indexOf('manual_receivable_amount')], 3200);
 assert.equal(manualRow[settlementHeaders.indexOf('manual_refund_amount')], 10000);
+assert.equal(manualApplySheets.V2_bills.rows[0][billHeaders.indexOf('payment_status')], 'paid');
+assert.equal(manualApplySheets.V2_bills.rows[1][billHeaders.indexOf('payment_status')], 'paid');
+assert.equal(manualApplySheets.V2_bills.rows[2][billHeaders.indexOf('payment_status')], 'paid');
+assert.equal(manualApplySheets.V2_bills.rows[3][billHeaders.indexOf('payment_status')], 'unpaid');
+assert.equal(manualApplySheets.V2_bills.rows[4][billHeaders.indexOf('payment_status')], 'unpaid');
+assert.deepEqual(billViewSyncCalls, ['bill-manual-2026-08', 'bill-manual-2026-09']);
+assert.equal(billSummaryRefreshCalls.length, 1);
+
+const idempotentManualApplyResult = manualApplyContext.landlordContractCheckoutSettlementApplyUnlocked_(
+  manualApplyAccess,
+  { data: {
+    contracts: manualApplySheets.V2_contracts,
+    rooms: manualApplySheets.V2_rooms,
+    tenants: manualApplySheets.V2_tenants,
+    bills: manualApplySheets.V2_bills,
+    documents: null,
+    settlements: manualApplySheets.V2_checkout_settlements
+  } },
+  {
+    contract_id: 'manual-contract', settlement_mode: 'manual', move_out_date: '2026-09-07',
+    manual_receivable_amount: 3200, manual_refund_amount: 10000, deposit_deduction_amount: 500,
+    deposit_deduction_note: '家具清潔費', idempotency_key: 'manual-settlement-operation-1'
+  }
+);
+assert.equal(idempotentManualApplyResult.success, true);
+assert.equal(idempotentManualApplyResult.code, 'IDEMPOTENT');
+assert.equal(idempotentManualApplyResult.data.settled_bill_count, 0);
+
+manualApplySheets.V2_contracts.rows.push(rowFor(contractHeaders, {
+  contract_id: 'partial-contract', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T3', room_id: 'R3',
+  start_date: '2025-09-01', end_date: '2026-09-05', rent_amount: 7500, deposit_amount: 12000,
+  contract_status: 'expired', status: 'expired'
+}));
+manualApplySheets.V2_rooms.rows.push(rowFor(roomHeaders, {
+  room_id: 'R3', workspace_id: 'W1', landlord_id: 'L1', room_status: 'occupied',
+  current_contract_id: 'partial-contract', current_tenant_id: 'T3', current_tenant_name: '陳小華'
+}));
+manualApplySheets.V2_tenants.rows.push(rowFor(tenantHeaders, {
+  tenant_id: 'T3', workspace_id: 'W1', landlord_id: 'L1', current_contract_id: 'partial-contract'
+}));
+manualApplySheets.V2_bills.rows.push(
+  rowFor(billHeaders, {
+    bill_id: 'bill-partial-1', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T3',
+    contract_id: 'partial-contract', room_id: 'R3', bill_month: '2026-08', bill_status: 'issued', payment_status: 'unpaid'
+  }),
+  rowFor(billHeaders, {
+    bill_id: 'bill-partial-2', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T3',
+    contract_id: 'partial-contract', room_id: 'R3', bill_month: '2026-09', bill_status: 'issued', payment_status: 'unpaid'
+  })
+);
+const partialInput = {
+  contract_id: 'partial-contract', settlement_mode: 'manual', move_out_date: '2026-09-07',
+  manual_receivable_amount: 1800, manual_refund_amount: 9000, deposit_deduction_amount: 0,
+  idempotency_key: 'partial-settlement-operation-1'
+};
+failNextBillViewSync = true;
+assert.throws(() => manualApplyContext.landlordContractCheckoutSettlementApplyUnlocked_(
+  manualApplyAccess,
+  { data: {
+    contracts: manualApplySheets.V2_contracts,
+    rooms: manualApplySheets.V2_rooms,
+    tenants: manualApplySheets.V2_tenants,
+    bills: manualApplySheets.V2_bills,
+    documents: null,
+    settlements: manualApplySheets.V2_checkout_settlements
+  } },
+  partialInput
+), /simulated bill view sync failure/);
+assert.equal(manualApplySheets.V2_bills.rows[5][billHeaders.indexOf('payment_status')], 'paid');
+assert.equal(manualApplySheets.V2_bills.rows[6][billHeaders.indexOf('payment_status')], 'unpaid');
+
+const partialRetryResult = manualApplyContext.landlordContractCheckoutSettlementApplyUnlocked_(
+  manualApplyAccess,
+  { data: {
+    contracts: manualApplySheets.V2_contracts,
+    rooms: manualApplySheets.V2_rooms,
+    tenants: manualApplySheets.V2_tenants,
+    bills: manualApplySheets.V2_bills,
+    documents: null,
+    settlements: manualApplySheets.V2_checkout_settlements
+  } },
+  partialInput
+);
+assert.equal(partialRetryResult.success, true);
+assert.equal(partialRetryResult.code, 'IDEMPOTENT');
+assert.equal(partialRetryResult.data.settled_bill_count, 1);
+assert.equal(manualApplySheets.V2_bills.rows[5][billHeaders.indexOf('payment_status')], 'paid');
+assert.equal(manualApplySheets.V2_bills.rows[6][billHeaders.indexOf('payment_status')], 'paid');
+assert.equal(billSummaryRefreshCalls.length, 3);
+
+failNextSummaryRefresh = true;
+assert.throws(() => manualApplyContext.landlordContractCheckoutSettlementApplyUnlocked_(
+  manualApplyAccess,
+  { data: {
+    contracts: manualApplySheets.V2_contracts,
+    rooms: manualApplySheets.V2_rooms,
+    tenants: manualApplySheets.V2_tenants,
+    bills: manualApplySheets.V2_bills,
+    documents: null,
+    settlements: manualApplySheets.V2_checkout_settlements
+  } },
+  {
+    contract_id: 'manual-contract', settlement_mode: 'manual', move_out_date: '2026-09-07',
+    manual_receivable_amount: 3200, manual_refund_amount: 10000, deposit_deduction_amount: 500,
+    deposit_deduction_note: '家具清潔費', idempotency_key: 'manual-settlement-operation-1'
+  }
+), /simulated summary refresh failure/);
+const summaryRetryResult = manualApplyContext.landlordContractCheckoutSettlementApplyUnlocked_(
+  manualApplyAccess,
+  { data: {
+    contracts: manualApplySheets.V2_contracts,
+    rooms: manualApplySheets.V2_rooms,
+    tenants: manualApplySheets.V2_tenants,
+    bills: manualApplySheets.V2_bills,
+    documents: null,
+    settlements: manualApplySheets.V2_checkout_settlements
+  } },
+  {
+    contract_id: 'manual-contract', settlement_mode: 'manual', move_out_date: '2026-09-07',
+    manual_receivable_amount: 3200, manual_refund_amount: 10000, deposit_deduction_amount: 500,
+    deposit_deduction_note: '家具清潔費', idempotency_key: 'manual-settlement-operation-1'
+  }
+);
+assert.equal(summaryRetryResult.success, true);
+assert.equal(summaryRetryResult.code, 'IDEMPOTENT');
+assert.equal(summaryRetryResult.data.settled_bill_count, 0);
+assert.equal(billSummaryRefreshCalls.length, 4);
 
 manualApplySheets.V2_contracts.rows.push(rowFor(contractHeaders, {
   contract_id: 'manual-complete-contract', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T2', room_id: 'R2',
@@ -199,7 +373,7 @@ const completedCheckout = manualApplyContext.landlordContractCheckoutApplyUnlock
     contracts: manualApplySheets.V2_contracts,
     rooms: manualApplySheets.V2_rooms,
     tenants: manualApplySheets.V2_tenants,
-    bills: null,
+    bills: manualApplySheets.V2_bills,
     documents: null,
     settlements: manualApplySheets.V2_checkout_settlements
   } },
@@ -213,9 +387,9 @@ assert.equal(completedCheckout.success, true, completedCheckout.code);
 assert.equal(completedCheckout.data.settlement_mode, 'manual');
 assert.equal(completedCheckout.data.tenant_balance_due, 1800);
 assert.equal(completedCheckout.data.deposit_refund_amount, 9000);
-const completedContractRow = manualApplySheets.V2_contracts.rows[1];
-const completedRoomRow = manualApplySheets.V2_rooms.rows[1];
-const completedTenantRow = manualApplySheets.V2_tenants.rows[1];
+const completedContractRow = manualApplySheets.V2_contracts.rows[2];
+const completedRoomRow = manualApplySheets.V2_rooms.rows[2];
+const completedTenantRow = manualApplySheets.V2_tenants.rows[2];
 assert.equal(completedContractRow[contractHeaders.indexOf('checkout_status')], 'completed');
 assert.equal(completedRoomRow[roomHeaders.indexOf('room_status')], 'vacant');
 assert.equal(completedRoomRow[roomHeaders.indexOf('current_contract_id')], '');
