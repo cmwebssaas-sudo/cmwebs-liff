@@ -99,14 +99,16 @@
 - [ ] 真實房東帳號手機／Chrome／LIFF 退房操作與實際資料結果；狀態為
   `HUMAN_REQUIRED`／`UNVERIFIED`，未執行真實退房交易。
 
-## 2026-09-18 快速結案同步退房帳務（本地候選，尚未部署）
+## 2026-09-18 快速結案同步退房帳務（已部署）
 
 - [x] 快速結案將同一 Workspace／房客／房間／合約範圍內的未繳 `V2_bills` 更新為
   `payment_status=paid`，已繳帳單與其他合約帳單不受影響。
 - [x] 同步帳單不改原始金額、不建立虛假 `V2_payments`；重送相同 idempotency key
   不重複處理，並回傳已同步帳單數量／ID。
-- [ ] 正式 Apps Script／帳務資料／房東登入流程驗證與部署；狀態為
-  `HUMAN_REQUIRED`／`UNVERIFIED`，需另行授權。
+- [x] PR #167 merge commit `4069e6fd0523a3c5f3d5caf307a5a76c4155c6a6`、GitHub Pages
+  workflow `35326158352` 與 Apps Script immutable Version 189 已完成；Version 188 為 rollback。
+- [ ] 正式房東登入、手機／LINE 退房操作與實際帳單結果；狀態為
+  `HUMAN_REQUIRED`／`UNVERIFIED`，未執行真實退款或業務資料寫入。
 
 ## 2026-09-11 房東桌面版手機分享網址（已部署）
 

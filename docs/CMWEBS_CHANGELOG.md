@@ -2,6 +2,13 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-18 — 退房退款同步結清帳單（正式部署）
+
+- 修正房東以「快速結案」完成退款後，同一租約的未繳帳單仍顯示未繳的問題；現在會沿用既有 `paid` 狀態結清同一 Workspace／房東／房客／房間／合約範圍內的帳單。
+- 保留原帳單金額與原始列，不新增虛假付款紀錄；帳單 view／Workspace summary 同步，冪等重試可修復部分同步失敗；完整電表結算不受影響。
+- PR #167 merge commit `4069e6fd0523a3c5f3d5caf307a5a76c4155c6a6`；Pages workflow `35326158352` 成功；Apps Script Version 189 已更新既有正式 deployment，Version 188 保留 rollback，正式 URL 不變。
+- 本次未執行真實退款、Sheet 業務資料列、Drive、Properties、Trigger 或 LINE 寫入；實機／登入後驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-13 — 桌面房客詳細／合約 Email 唯讀 session 修正（正式部署）
 
 - 修正房客詳細頁缺少共用桌面 responsive shell，桌面版不再錯誤呈現手機版窄欄與底部導覽。
