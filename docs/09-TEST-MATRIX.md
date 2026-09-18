@@ -5,7 +5,8 @@
 - [x] 作廢測試帳單成功後，欠款頁顯示獨立的「作廢成功」提示，包含帳單 ID。
 - [x] 成功提示說明帳單已封存，重新整理後不會再列入欠款清單；提示不會被欠款清單重繪覆蓋，並可由房東關閉。
 - [x] 成功提示使用 `role="status"` 與 `aria-live="polite"`，並由 `tests/test-bill-archive.test.mjs` 靜態回歸鎖定。
-- [ ] 正式 Pages 發布後，需由已登入房東在手機／桌面實際作廢一次測試帳單並確認提示可見；目前尚未部署，狀態為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+- [x] PR #171 merge commit `31515af` 已發布；Pages workflow `35344387333` 成功，公開欠款頁 HTTP 200 read-back 已確認提示節點與文字已服務。
+- [ ] 仍需由已登入房東在手機／桌面實際作廢一次測試帳單並確認提示可見；狀態為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-18 一次性測試帳單作廢／封存正式發布
 

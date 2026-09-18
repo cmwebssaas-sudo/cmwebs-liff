@@ -3,6 +3,14 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-09-18 (Asia/Taipei)**
 
+## 2026-09-18 作廢帳單成功提示正式發布
+
+PR #171 merge commit `31515af0958cb8a3e7039da506b1676a4c441345` 已發布至 GitHub Pages，workflow `35344387333` 成功；Apps Script 沒有變更，正式 Version 190 與 Version 189 rollback 維持不變。
+
+- 欠款頁作廢測試帳單成功後，同時顯示成功彈窗與頁面內的「作廢成功」提示；提示包含帳單 ID，並可在清單自動重新整理後繼續看到。
+- 公開 `landlord-arrears.html` HTTP 200 read-back 已確認 `archiveSuccessNotice`、`作廢成功` 與 `aria-live="polite"` 已提供。
+- 本次沒有 Sheet 業務資料列、Drive、Properties、Trigger、付款或 LINE 寫入；Pages rollback target 為 `f9dc5fd7d657cad352fe741cbb7c28364facb3f2`，登入後與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-18 一次性測試帳單作廢／封存正式發布
 
 PR #169 merge commit `257093b6b03838275342d67944ce6988edf57d3b` 已發布至 GitHub Pages，workflow `35339276140` 的 build、deploy、status jobs 全部成功；同一個正式 Apps Script Web App deployment 已由 Version 189 更新至 immutable Version 190，Version 189 保留 rollback，正式 URL 不變。

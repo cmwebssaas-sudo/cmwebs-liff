@@ -46,6 +46,14 @@ git diff --check
 - Pages 公開讀回確認 `landlord-arrears.html` HTTP 200 且包含兩個新 route 與封存按鈕；Version 190 唯讀匯出 58 個檔案與候選 `apps-script/` 逐檔一致。
 - 本次未執行 Google Sheets 業務資料列、Drive、Properties、Trigger、付款或 LINE 寫入。完整 Node suite 為 244 項中 242 項通過；2 項既有 landlord bridge baseline failures 未因本次變更新增。登入後房東操作與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
+## 2026-09-18 作廢帳單成功提示正式發布
+
+- PR #171 merge commit `31515af0958cb8a3e7039da506b1676a4c441345` 已發布至 GitHub Pages；workflow `35344387333` 的部署結果為 `success`。
+- 本次只有 `landlord-arrears.html` 的成功回饋與回歸測試變更，沒有 Apps Script 後端變更；正式 Apps Script Version 190 維持服務，Version 189 維持 rollback。
+- 作廢成功後，欠款頁會顯示「作廢成功」彈窗與獨立的頁面提示；提示包含帳單 ID，並說明重新整理欠款清單後不再列入欠款。提示區塊不會被清單重繪覆蓋，並提供關閉控制。
+- 公開 `landlord-arrears.html` HTTP 200 read-back 已確認 `archiveSuccessNotice`、`作廢成功` 與 `aria-live="polite"` 已由正式網站提供。
+- 本次未執行 Google Sheets 業務資料列、Drive、Properties、Trigger、付款或 LINE 寫入；Pages rollback target 為前一個已驗證的 `main` commit `f9dc5fd7d657cad352fe741cbb7c28364facb3f2`。登入後房東操作與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 兼容性待辦：目前已部署的單一 dispatcher 檔案為 `apps-script/程式碼.js`（雲端 `.gs`），與規則中預期的 `Code.gs` 名稱不一致。本次保留已逐位元組驗證的正式來源，後續更名須同步修正工具／測試引用並單獨驗證，不以悄悄更名宣稱無差異。
 
 本次未執行 Google Sheets 業務資料列回填、真實退房交易或 LINE 通知；Apps Script rollback target 為版本 188，Pages rollback target 為前一個已驗證 `main` 提交 `e77591e40c2fda875039ea6ec1c35d9354b8ed46`。將來後端變更前應匯出並保留當時服務版本作為該次 rollback 目標。
