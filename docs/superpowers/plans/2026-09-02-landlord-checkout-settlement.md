@@ -169,7 +169,7 @@ git commit -m "feat: calculate landlord checkout settlement"
 
 - [ ] **Step 1: Write the failing init/preview/persistence assertions**
 
-Extend the fake-sheet runtime with `V2_bills` and `V2_checkout_settlements`. Assert init returns the scoped contract, `settlement_start_date`, prior bill component values, deposit snapshot, rates, and no mutation. Assert preview returns the exact 506 calculation and leaves settlement rows empty. Assert a completion helper appends one settlement row with source bill ID and all calculated amounts.
+Extend the fake-sheet runtime with `V2_bills` and `V2_checkout_settlements`. Assert init returns the scoped contract, `settlement_start_date`, prior bill component values, deposit snapshot, rates, and no mutation. Assert preview returns the exact 506 calculation and leaves settlement rows and bill payment status empty. Assert a completion helper appends one settlement row with source bill ID and all calculated amounts; for manual quick closeout it also marks only the same contract's unpaid bills as `paid` without changing bill amounts or creating a payment row.
 
 - [ ] **Step 2: Run the test and confirm RED**
 
@@ -177,7 +177,7 @@ Run the focused Phase 205 test. Expected: the new session/init or persistence in
 
 - [ ] **Step 3: Implement scoped source loading**
 
-Reuse `landlordContractCheckoutAccessFromSession_`, `landlordContractCheckoutFindContract_`, room/tenant scope checks, and the existing sibling validation. Read `V2_bills` by the same Workspace, room, tenant, contract, and immediately preceding month; do not return unrelated bills. Locate an existing settlement by `contract_id` and Workspace and return it idempotently when already completed.
+Reuse `landlordContractCheckoutAccessFromSession_`, `landlordContractCheckoutFindContract_`, room/tenant scope checks, and the existing sibling validation. Read `V2_bills` by the same Workspace, room, tenant, contract, and immediately preceding month; do not return unrelated bills. On manual quick closeout, mark all unpaid bills in that same scope as `paid`, while preserving bill amounts and synchronizing existing views and summaries. Locate an existing settlement by `contract_id` and Workspace and return it idempotently when already completed; an idempotent retry may only repair an incomplete bill-status synchronization.
 
 - [ ] **Step 4: Implement preview without writes**
 

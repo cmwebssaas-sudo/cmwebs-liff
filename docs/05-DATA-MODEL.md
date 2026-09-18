@@ -231,6 +231,11 @@ request_id
 `deposit_refund_amount`，分別等於手動應收金額與實際退款金額（押金扣除欄位仍
 保留為稽核說明）。上述欄位均以 migration 方式追加，不重排或刪除既有欄位。
 
+快速結案完成也會以同一 Workspace、房客、房間與合約範圍查找 `V2_bills` 的未繳帳單，
+將其 `payment_status` 更新為既有正式銷帳使用的 `paid`，讓帳務頁與 Workspace 摘要反映退款時已結清。
+原帳單金額、帳單列與 `V2_checkout_settlements` 快照保留；不建立沒有實際付款對應的
+`V2_payments` 紀錄。完整電表結算不套用這個快速結案同步規則。
+
 ## 主鍵原則
 
 - `workspace_id`：多租戶邊界
