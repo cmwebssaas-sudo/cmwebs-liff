@@ -2,6 +2,13 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-18 — 一次性測試帳單作廢／封存（正式部署）
+
+- 欠款頁新增一次性「作廢測試帳單」入口，只對已關閉房間帳號的未繳、無付款紀錄帳單顯示；後端不依賴 `test=1`，會重新驗證 Workspace、房間狀態與付款條件。
+- 作廢沿用既有取消核心，保留帳單／檢視歷史並寫入 Workspace 操作稽核；不建立付款、不發送 LINE、不刪除資料，重送會回傳冪等結果。
+- PR #169 merge commit `257093b6b03838275342d67944ce6988edf57d3b`；Pages workflow `35339276140` 成功；Apps Script Version 190 已更新既有正式 deployment，Version 189 保留 rollback，正式 URL 不變。
+- 本次未執行真實帳單作廢、Sheet 業務資料列、Drive、Properties、Trigger 或 LINE 寫入；完整 Node suite `242/244`，2 個既有 landlord bridge baseline failures 未因本次變更新增，實機／登入後驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-18 — 退房退款同步結清帳單（正式部署）
 
 - 修正房東以「快速結案」完成退款後，同一租約的未繳帳單仍顯示未繳的問題；現在會沿用既有 `paid` 狀態結清同一 Workspace／房東／房客／房間／合約範圍內的帳單。

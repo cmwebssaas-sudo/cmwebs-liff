@@ -3,6 +3,15 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-09-18 (Asia/Taipei)**
 
+## 2026-09-18 一次性測試帳單作廢／封存正式發布
+
+PR #169 merge commit `257093b6b03838275342d67944ce6988edf57d3b` 已發布至 GitHub Pages，workflow `35339276140` 的 build、deploy、status jobs 全部成功；同一個正式 Apps Script Web App deployment 已由 Version 189 更新至 immutable Version 190，Version 189 保留 rollback，正式 URL 不變。
+
+- 欠款頁只會對已關閉房間帳號的未繳、無付款紀錄帳單顯示「作廢測試帳單」；啟用中房間不顯示。
+- 後端重新驗證 Workspace、房間狀態、帳單付款狀態與付款紀錄，沿用既有取消核心，保留帳單列／檢視歷史並新增 Workspace 操作稽核；不建立虛假付款、不發 LINE、不刪資料，重送具冪等性。
+- Pages 欠款頁公開讀回 HTTP 200，Version 190 唯讀匯出 58 個檔案與候選來源逐檔一致；本次未執行 Sheet 業務列、Drive、Properties、Trigger、付款或 LINE 寫入。
+- 完整 Node suite 為 244 項中 242 項通過，2 項既有 landlord bridge baseline failures 未因本次變更新增；登入後房東操作與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-18 退房退款同步結清帳單正式發布
 
 PR #167 merge commit `4069e6fd0523a3c5f3d5caf307a5a76c4155c6a6` 已發布至 GitHub Pages，workflow `35326158352` 成功；同一個正式 Apps Script Web App deployment 已由 Version 188 更新至 immutable Version 189，Version 188 保留為 rollback，正式 URL 不變。公開 11 個資產逐位元組讀回通過；完整測試 243 項中 241 項通過，2 項為既有 landlord bridge baseline failures，未因本次變更新增。

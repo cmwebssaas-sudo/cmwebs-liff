@@ -67,7 +67,7 @@ The older Gate 0 checklist value of 68 routes is superseded for this Version 85
 candidate by this evidence-backed inventory. Any later route change must update
 this document and its static validation.
 
-### 2026-09-18 one-time test bill archival candidate
+### 2026-09-18 one-time test bill archival (Production Version 190)
 
 `landlord_bill_test_archive_candidates` is the read-only companion route used
 by the arrears page to identify unpaid bills whose room account is already
