@@ -1,16 +1,16 @@
 # CMWebs 正式交付入口
 
-核對日期：2026-09-15。產品範圍：V2 正式來源整併。
+核對日期：2026-09-18。產品範圍：V2 正式來源整併與退房退款帳務結清修正。
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
 ## 唯一正式來源
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
-- 本次核對來源：`2d49354d28fb100811ed0886d31f30b1d3611fff`（PR #165 merge commit）。
+- 本次核對來源：`4069e6fd0523a3c5f3d5caf307a5a76c4155c6a6`（PR #167 merge commit）。
 - 公開網站：GitHub Pages；合併後建置狀態 `built`，公開檔案已完成 HTTP 讀回及逐位元組比對。
-- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **188**，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
-- 實際後端：版本 188 的 57 個檔案，與 `main/apps-script/` 逐位元組一致。
+- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **189**，Version **188** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
+- 實際後端：版本 189 的 57 個檔案，與 `main/apps-script/` 逐位元組一致。
 - 正式資料表：從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`，未讀取第 2 列以後的業務資料。
 - 舊部署版本 160 仍存在，但公開網站目前不使用它。不得因舊工作目錄引用它，便把它當作正式服務版本。
 
@@ -40,4 +40,11 @@ git diff --check
 
 兼容性待辦：目前已部署的單一 dispatcher 檔案為 `apps-script/程式碼.js`（雲端 `.gs`），與規則中預期的 `Code.gs` 名稱不一致。本次保留已逐位元組驗證的正式來源，後續更名須同步修正工具／測試引用並單獨驗證，不以悄悄更名宣稱無差異。
 
-本次未執行 Google Sheets 業務資料列回填或 LINE 通知；Apps Script rollback target 為版本 187，Pages rollback target 為前一個 `main` 提交 `6a203d9aba611ad52509c3cfff628804b95e99ed`。將來後端變更前應匯出並保留當時服務版本作為該次 rollback 目標。
+本次未執行 Google Sheets 業務資料列回填、真實退房交易或 LINE 通知；Apps Script rollback target 為版本 188，Pages rollback target 為前一個已驗證 `main` 提交 `e77591e40c2fda875039ea6ec1c35d9354b8ed46`。將來後端變更前應匯出並保留當時服務版本作為該次 rollback 目標。
+
+## 2026-09-18 退房退款同步結清帳單正式發布
+
+- PR #167 merge commit `4069e6fd0523a3c5f3d5caf307a5a76c4155c6a6` 已發布至 GitHub Pages；workflow `35326158352` 成功。
+- Apps Script 同一正式專案已由 Version 188 更新至 immutable Version 189，原 Web App deployment 與正式 URL 維持不變；Version 188 保留 rollback。
+- `manual` 快速結案會將同一 Workspace／房東／房客／房間／合約範圍的未繳帳單標記為既有正式 `paid` 狀態，保留原金額並同步帳單 view／Workspace summary；完整電表結算不自動改帳。
+- 部署未執行 Sheet 業務列、真實退房／退款交易、Drive、Properties、Trigger 或 LINE 寫入；手機／LINE／登入後實際操作仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。

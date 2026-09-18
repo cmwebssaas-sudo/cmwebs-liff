@@ -1,7 +1,7 @@
 # CMWebs V2.1 Codex Execution Record
 
 **Status: AUTHORITATIVE V2.1 execution record**
-**Last updated: 2026-09-11 (Asia/Taipei)**
+**Last updated: 2026-09-18 (Asia/Taipei)**
 
 ## Purpose
 
@@ -47,6 +47,7 @@ be verified for the particular action that needs it.
 | 2026-09-05 | Existing prepaid-rent correction and tenant-card quick renewal | User confirmed the requested correction and quick-renewal entry after prior formal-deployment requests. This authorizes the isolated source/test candidate and, after release preflight, push, merge, immutable Apps Script redeploy, and GitHub Pages publication. It does not authorize direct 202 or other business-data writes, Sheet migration, Drive upload, Properties/Trigger changes, or LINE messages; authenticated mobile/LIFF and live 202 billing state remain `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-11 | Landlord checkout quick closeout implementation candidate | User confirmed quick closeout: no meter photos, direct checkout completion, and landlord-entered manual receivable/refund amounts as final settlement. Isolated source, tests and documentation only on `codex/landlord-checkout-quick-closeout-20260911`; no push, merge, Apps Script deployment, Pages publication, Sheet/Drive write, or LINE action is authorized by this record. Mobile/LIFF UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
 | 2026-09-11 | Landlord checkout quick closeout formal deployment | User explicitly requested formal website deployment. PR #155 merged as `6fa0bba`; Apps Script Production Version 186 serves the existing Web App deployment and Version 185 remains rollback; the additive `runV2CheckoutSettlementProductionMigration` completed in the authenticated Apps Script editor. GitHub Pages workflow `34598441945` completed successfully. No real checkout transaction, LINE message, or tenant financial data write was run; mobile/LIFF UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
+| 2026-09-18 | Manual checkout refund bill-settlement formal deployment | User explicitly requested `部署正式網站` after confirming that refund completion means all related bills are settled. PR #167 merged as `4069e6f`; Apps Script Version 189 serves the existing Web App deployment and Version 188 remains rollback; GitHub Pages workflow `35326158352` completed successfully. No real checkout/refund transaction, Sheet business-row write, Drive, Properties, Trigger, or LINE action was run; authenticated landlord/mobile/LIFF UAT remains `HUMAN_REQUIRED` / `UNVERIFIED`. |
 
 ## 2026-09-11 landlord checkout quick closeout formal release evidence
 

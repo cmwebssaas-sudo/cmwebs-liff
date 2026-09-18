@@ -1,7 +1,16 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-15 (Asia/Taipei)**
+**Last verified: 2026-09-18 (Asia/Taipei)**
+
+## 2026-09-18 退房退款同步結清帳單正式發布
+
+PR #167 merge commit `4069e6fd0523a3c5f3d5caf307a5a76c4155c6a6` 已發布至 GitHub Pages，workflow `35326158352` 成功；同一個正式 Apps Script Web App deployment 已由 Version 188 更新至 immutable Version 189，Version 188 保留為 rollback，正式 URL 不變。公開 11 個資產逐位元組讀回通過；完整測試 243 項中 241 項通過，2 項為既有 landlord bridge baseline failures，未因本次變更新增。
+
+- `manual` 快速結案／退款完成後，同一 Workspace、房東、房客、房間與合約範圍內的未繳 `V2_bills` 會更新為正式 `payment_status=paid`。
+- 原帳單金額與原始列保留，不建立虛假的 `V2_payments`；帳單 view 與 Workspace summary 會同步，冪等重試會補回部分同步失敗。
+- 已繳帳單、其他合約與完整電表結算流程不受影響；本次未寫入 Google Sheets 業務資料列、Drive、Properties、Trigger 或 LINE。
+- 真實房東登入、手機／LINE 退房與實際帳單結果仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-15 正式來源與交付入口重新對帳
 
@@ -19,7 +28,7 @@ This record distinguishes verified source reconciliation from live Production
 state. It is not deployment authority. Re-verify the relevant target, account,
 version, rollback, and runtime state before every Production action.
 
-## 2026-09-18 快速結案同步帳單（本地候選，尚未部署）
+## 2026-09-18 快速結案同步帳單（已部署）
 
 - 使用者確認退房退款時已一併結清帳務；既有快速結案只追加
   `V2_checkout_settlements`，沒有更新同一合約的 `V2_bills`，因此帳務頁仍會顯示未繳。
@@ -28,7 +37,7 @@ version, rollback, and runtime state before every Production action.
   並同步帳單檢視／Workspace 摘要；已繳帳單與其他合約不受影響。
 - 不建立虛假的 `V2_payments` 付款紀錄；退房結算表仍是退款結清的操作稽核來源，重送同一
   idempotency key 只補齊尚未同步的帳單。
-- 目前僅完成隔離分支與本地回歸測試；尚未推送、合併或部署 Production，正式帳務資料仍待授權後驗證。
+- PR #167 已合併，Apps Script Version 189 與 GitHub Pages workflow `35326158352` 已完成；正式帳務資料未由本次部署直接修改。
 
 ## 2026-09-12 房東退房欄位 iOS 自動放大修正（正式部署）
 
