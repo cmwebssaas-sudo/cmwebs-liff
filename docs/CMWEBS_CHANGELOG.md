@@ -2,6 +2,13 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-09-18 — 作廢帳單成功提示（正式部署）
+
+- 作廢測試帳單成功後，欠款頁新增獨立的「作廢成功」頁面提示，顯示帳單 ID，並說明重新整理後不再列入欠款清單；提示不會被清單重新載入覆蓋。
+- 同時保留既有成功彈窗，並提供可關閉的 `role="status"`／`aria-live="polite"` 提示區塊。
+- PR #171 merge commit `31515af0958cb8a3e7039da506b1676a4c441345`；Pages workflow `35344387333` 成功；本次沒有 Apps Script 後端變更，Version 190 與 Version 189 rollback 維持不變。
+- 公開欠款頁 HTTP 200 read-back 已確認新提示文字與節點已發布；未執行 Sheet 業務資料列、Drive、Properties、Trigger、付款或 LINE 寫入，登入後／手機／LIFF 實機驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 2026-09-18 — 一次性測試帳單作廢／封存（正式部署）
 
 - 欠款頁新增一次性「作廢測試帳單」入口，只對已關閉房間帳號的未繳、無付款紀錄帳單顯示；後端不依賴 `test=1`，會重新驗證 Workspace、房間狀態與付款條件。
