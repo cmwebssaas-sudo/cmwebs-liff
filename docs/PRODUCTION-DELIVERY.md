@@ -1,16 +1,16 @@
 # CMWebs 正式交付入口
 
-核對日期：2026-09-18。產品範圍：V2 正式來源整併、退房退款帳務結清與一次性測試帳單封存。
+核對日期：2026-09-23。產品範圍：V2 正式來源整併、退房退款帳務結清、一次性測試帳單封存，以及正式 Workspace 房間中心。
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
 ## 唯一正式來源
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
-- 本次核對來源：`257093b6b03838275342d67944ce6988edf57d3b`（PR #169 merge commit）。
+- 本次核對來源：`b8cfd9499e50dcbfda9aab504928cf90fffdc25f`（PR #173 merge commit）。
 - 公開網站：GitHub Pages；合併後建置狀態 `built`，公開檔案已完成 HTTP 讀回及逐位元組比對。
-- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **190**，Version **189** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
-- 實際後端：版本 190 的 58 個檔案，與 `main/apps-script/` 逐位元組一致。
+- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **191**，Version **190** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
+- 實際後端：版本 191 的 59 個檔案，與 `main/apps-script/` 逐位元組一致。
 - 正式資料表：從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`，未讀取第 2 列以後的業務資料。
 - 舊部署版本 160 仍存在，但公開網站目前不使用它。不得因舊工作目錄引用它，便把它當作正式服務版本。
 
@@ -28,7 +28,7 @@ node scripts/verify-production-source.mjs --export /absolute/path/to/read-only-e
 git diff --check
 ```
 
-匯出使用既有 `clasp clone-script SCRIPT_ID VERSION`，它只下載既有版本到空白本地目錄，不建立雲端專案。`--export` 核對 `.clasp.json` 的專案指紋及後端內容；目前服務版本仍須以 `clasp list-deployments SCRIPT_ID` 另行核對。`--live` 檢查 11 個公開資產與目前 checkout 一致，適用部署前基線和部署後讀回。
+匯出使用既有 `clasp clone-script SCRIPT_ID VERSION`，它只下載既有版本到空白本地目錄，不建立雲端專案。`--export` 核對 `.clasp.json` 的專案指紋及後端內容；目前服務版本仍須以 `clasp list-deployments SCRIPT_ID` 另行核對。`--live` 檢查 12 個公開資產與目前 checkout 一致，適用部署前基線和部署後讀回。
 
 `production-baseline.json` 是帶日期的證據；後續後端發布時，經匯出、版本及部署核對後更新它。不要為通過檢查任意替換指紋。
 
@@ -37,6 +37,14 @@ git diff --check
 本次 Gate 0 的現行來源、部署與 schema 盤點已完成：57 個後端檔案一致、76 個工作表欄名已記錄、11 個公開資產逐位元組相符。已確認正式入口呈現 Email 登入畫面，未要求或代填驗證碼。這是可重現的 V2 internal-beta 來源基線；正式帳號登入後的交易及真實 iPhone／LINE 操作尚未驗收，不能以此宣稱完整營運驗收通過。
 
 報修工單歷史與房客個資隔離程式已隨本次版本發布；新工單會以房間保留歷史、以租約隔離房客存取，前房客姓名、聯絡方式、描述中的個資及附件不得因換租而對新房客公開。既有 `V2_tenant_messages` 的 legacy backfill 尚未執行；需先完成 preview、備份與操作員授權，再以 additive-only migration 回填，不能把尚未回填當作已完成歷史遷移。
+
+## 2026-09-23 正式 Workspace 房間中心發布
+
+- PR #173 merge commit `b8cfd9499e50dcbfda9aab504928cf90fffdc25f` 已發布至 GitHub Pages；workflow `35796607625` 成功，`landlord-rooms.html` 正式網址 HTTP 200。
+- Apps Script 同一正式專案已由 Version 190 更新至 immutable Version 191；原 Web App deployment 與正式 URL 維持不變，Version 190 保留 rollback。
+- 新增正式唯讀 route `landlord_room_center_init` 與正式頁面 `landlord-rooms.html`，由目前登入的 Workspace 解析全部房間，支援搜尋、狀態篩選與包含已封存房間；「更多」頁提供房間中心入口。
+- API 僅回傳 `workspace_id`、房間／物件識別、房間狀態、租金與公開費用設定；不回傳房客、租約、帳務、押金、付款或報修內容，也沒有執行 Sheet migration 或 z3House 寫入。
+- 本次只做正式 source push、immutable version、既有 deployment slot 更新與 GitHub Pages 發布；沒有寫入房間資料。靜態頁與原有生產資產已完成 HTTP／逐位元組回讀；登入後正式 Workspace 的實際房間數與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-18 一次性測試帳單作廢／封存正式發布
 
