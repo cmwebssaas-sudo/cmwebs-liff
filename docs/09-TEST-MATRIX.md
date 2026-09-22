@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-09-23 正式 Workspace 房間中心（本地 release candidate）
+## 2026-09-23 正式 Workspace 房間中心（已發布）
 
 - [x] 新增 `landlord_room_center_init` 唯讀路由，依登入房東的 Workspace
   scope 回傳全部房間；房間中心預設要求包含已封存房間，前端可再篩選。
@@ -11,10 +11,14 @@
   不使用 staging Workspace 或測試房間資料。
 - [x] `tests/room-center-production.test.mjs`、新 Apps Script 全檔
   `node --check` 通過。
-- [ ] 正式 Apps Script immutable version、GitHub Pages merge/deploy、正式
-  Workspace 登入後全房間回讀與手機／桌面 UAT：`HUMAN_REQUIRED`／`UNVERIFIED`。
-- [ ] rollback：Pages 回退到上一個 verified commit；Apps Script 保留新版本
-  上一個 immutable version 作為 rollback target；本功能只讀，不涉及 Sheets
+- [x] Apps Script Version 191 已部署至原正式 Web App deployment slot，Version
+  190 保留 rollback；GitHub Pages workflow `35796607625` 以 PR #173 merge
+  commit `b8cfd949` 成功發布，`landlord-rooms.html` HTTP 200。
+- [x] `npm run verify:production -- --live` 通過，12 個公開資產與 checkout
+  逐位元組一致；正式頁不使用 staging Workspace 或測試房間資料。
+- [ ] 正式 Workspace 登入後全房間數量回讀與手機／桌面 UAT：
+  `HUMAN_REQUIRED`／`UNVERIFIED`。rollback target 為 Pages 上一個 verified
+  commit `dce1f02` 與 Apps Script Version 190；本功能只讀，不涉及 Sheets
   migration 或資料列寫入。
 
 ## 2026-09-18 作廢帳單成功提示（本地候選）
