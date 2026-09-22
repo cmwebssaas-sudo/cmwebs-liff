@@ -1241,6 +1241,18 @@ function doGet(e) {
       : jsonOutput_(result, callback);
   }
 
+  if (v2Action === 'landlord_room_center_init') {
+    const result =
+      getLandlordRoomCenterInitByLineUid_(
+        lineUserId,
+        e.parameter.include_archived || ''
+      );
+
+    return bridge === '1'
+      ? htmlBridgeOutput_(result, requestId)
+      : jsonOutput_(result, callback);
+  }
+
   if (v2Action === 'landlord_property_save') {
     const result =
       saveLandlordPropertyByLineUid_(
@@ -3043,6 +3055,38 @@ function doPost(e) {
           if (principal) {
             result =
               getLandlordPropertiesInitByLineUid_(
+                principal.data.principal_line_user_id,
+                request.include_archived || ''
+              );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && action === 'landlord_room_center_init') {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              [
+                'landlord_session_token',
+                'request_id'
+              ]
+            ) ||
+            resolveLandlordPrincipal_(
+              request,
+              { require_onboarding: true }
+            );
+          const principal =
+            result && result.success === true
+              ? result
+              : null;
+
+          if (principal) {
+            result =
+              getLandlordRoomCenterInitByLineUid_(
                 principal.data.principal_line_user_id,
                 request.include_archived || ''
               );

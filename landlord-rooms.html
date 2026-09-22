@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>CMWebs 房間中心</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="frontend-release.js?v=20260923-room-center-v1"></script>
+  <script src="landlord-auth.js?v=20260923-room-center-v1"></script>
+  <script src="landlord-api.js?v=20260923-room-center-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
+  <style>
+    :root {
+      --app-height: 100vh;
+      --nav-height: 68px;
+      --primary: #0f766e;
+      --primary-soft: #e8f5f1;
+      --page-bg: #f6f8f7;
+      --surface: #ffffff;
+      --text: #25302c;
+      --muted: #6b706c;
+      --border: #e3e9e5;
+      --shadow: 0 12px 30px rgba(37, 48, 44, 0.08);
+      --danger: #c2414b;
+      --danger-soft: #fff0f1;
+      --warning: #9a6700;
+      --warning-soft: #fff7df;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: Arial, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    }
+    button, input { font: inherit; }
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: 1180px;
+      height: var(--app-height);
+      margin: 0 auto;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+    .page {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 24px 26px calc(var(--nav-height) + 34px + env(safe-area-inset-bottom));
+    }
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .eyebrow {
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .05em;
+    }
+    .page-title { margin-top: 5px; font-size: 30px; font-weight: 900; letter-spacing: -.04em; }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+    .outline-button, .refresh-button {
+      min-height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: var(--surface);
+      color: var(--primary);
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(37,48,44,.05);
+    }
+    .outline-button { padding: 0 15px; }
+    .refresh-button { width: 44px; font-size: 20px; }
+    .card {
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 25px;
+      background: linear-gradient(135deg, #e9f8f1 0%, #ffffff 72%);
+    }
+    .hero-kicker { color: var(--primary); font-size: 13px; font-weight: 900; }
+    .hero h1 { margin: 7px 0 0; font-size: 32px; letter-spacing: -.04em; }
+    .hero p { margin: 9px 0 0; max-width: 700px; color: var(--muted); line-height: 1.6; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+    .pill { display: inline-flex; align-items: center; min-height: 30px; padding: 0 11px; border-radius: 999px; background: #fff; color: var(--primary); font-size: 12px; font-weight: 900; }
+    .toolbar { padding: 16px; }
+    .toolbar-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+    .search { flex: 1 1 260px; min-height: 46px; padding: 0 15px; border: 1px solid var(--border); border-radius: 13px; background: #fbfcfb; color: var(--text); }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; }
+    .filter { min-height: 42px; padding: 0 13px; border: 1px solid var(--border); border-radius: 999px; background: #fff; color: var(--muted); font-size: 13px; font-weight: 900; cursor: pointer; }
+    .filter.active { border-color: #a9daca; background: var(--primary-soft); color: var(--primary); }
+    .section-heading { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin: 22px 2px 12px; }
+    .section-heading h2 { margin: 0; font-size: 21px; }
+    .section-heading span { color: var(--muted); font-size: 13px; }
+    .room-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .room-card { padding: 18px; }
+    .room-head { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+    .property-name { color: var(--primary); font-size: 12px; font-weight: 900; }
+    .room-name { margin-top: 5px; font-size: 23px; font-weight: 900; letter-spacing: -.03em; }
+    .room-id { margin-top: 5px; color: var(--muted); font-size: 12px; }
+    .status { display: inline-flex; align-items: center; min-height: 27px; padding: 0 10px; border-radius: 999px; background: #f0f2f1; color: var(--muted); font-size: 11px; font-weight: 900; white-space: nowrap; }
+    .status.active, .status.vacant { background: var(--primary-soft); color: var(--primary); }
+    .status.maintenance, .status.unavailable { background: var(--warning-soft); color: var(--warning); }
+    .status.archived { background: var(--danger-soft); color: var(--danger); }
+    .room-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 15px; }
+    .summary-cell { padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: #fbfcfb; }
+    .summary-label { color: var(--muted); font-size: 11px; }
+    .summary-value { margin-top: 5px; overflow: hidden; font-size: 15px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+    .room-note { margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .loading, .empty, .error { padding: 38px 20px; text-align: center; color: var(--muted); }
+    .loading-title, .empty-title, .error-title { margin-bottom: 7px; color: var(--text); font-size: 18px; font-weight: 900; }
+    .error-title { color: var(--danger); }
+    .retry-button { min-height: 44px; margin-top: 17px; padding: 0 18px; border: 0; border-radius: 12px; background: #06c755; color: #fff; font-weight: 900; cursor: pointer; }
+    .toast { position: fixed; right: 20px; bottom: 24px; z-index: 1200; max-width: min(420px, calc(100vw - 40px)); padding: 13px 16px; border-radius: 13px; background: #26312d; color: #fff; font-size: 13px; opacity: 0; pointer-events: none; transform: translateY(12px); transition: opacity .18s ease, transform .18s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 700px) {
+      .page { padding: 18px 15px calc(var(--nav-height) + 26px + env(safe-area-inset-bottom)); }
+      .topbar { align-items: center; }
+      .page-title { font-size: 25px; }
+      .hero { padding: 20px; }
+      .hero h1 { font-size: 27px; }
+      .room-grid { grid-template-columns: 1fr; }
+      .outline-button { display: none; }
+    }
+    @media (max-width: 430px) {
+      .room-summary { grid-template-columns: 1fr 1fr; }
+      .toolbar-row { align-items: stretch; }
+      .filters { width: 100%; }
+      .filter { flex: 1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand"><div class="desktop-brand-label">CMWEBS</div><div class="desktop-brand-title">智慧租管</div></div>
+        <nav class="desktop-nav">
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')"><span>⌂</span><span>總覽</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><span>♙</span><span>房客</span></button>
+          <button class="desktop-nav-item active" type="button" onclick="goPage('landlord-rooms.html')"><span>⌂</span><span>房間</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')"><span>▤</span><span>物件管理</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-contract-requests.html')"><span>▧</span><span>合約</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')"><span>▣</span><span>帳款</span></button>
+        </nav>
+        <div class="desktop-sidebar-footer"><div class="desktop-context-label">Workspace</div><div id="desktopWorkspaceName" class="desktop-context-value">載入中</div><div id="desktopRoleLabel" class="desktop-sidebar-role">房東</div><button class="desktop-logout-button" type="button" onclick="desktopLogout()">登出</button></div>
+      </div>
+    </aside>
+    <main class="page desktop-main">
+      <header class="desktop-topbar" hidden><div><div class="desktop-page-kicker">Room Operations</div><div class="desktop-page-title">房間中心</div></div><div class="desktop-topbar-meta"><span class="desktop-status-pill">Workspace</span><span id="desktopTopbarWorkspaceName">載入中</span></div></header>
+      <div class="topbar"><div><div class="eyebrow">ROOM OPERATIONS</div><div class="page-title">房間中心</div></div><div class="topbar-actions"><button class="outline-button" type="button" onclick="goPage('landlord-properties.html')">管理物件與房間</button><button class="refresh-button" type="button" onclick="loadPage(false)" aria-label="重新整理">↻</button></div></div>
+      <section class="card hero"><div class="hero-kicker">目前登入的正式 Workspace</div><h1 id="workspaceHeading">房間清單</h1><p>一次查看目前管理團隊的全部房間與基本營運資料。這個頁面不顯示房客、租約、帳款、押金或報修內容。</p><div class="hero-meta"><span class="pill" id="roomCountPill">讀取中</span><span class="pill">正式 Workspace 資料</span></div></section>
+      <section class="card toolbar"><div class="toolbar-row"><input id="roomSearch" class="search" type="search" placeholder="搜尋物件、房號或房間 ID" autocomplete="off" /><div class="filters" role="group" aria-label="房間篩選"><button class="filter active" type="button" data-filter="all">所有房間</button><button class="filter" type="button" data-filter="active">啟用中</button><button class="filter" type="button" data-filter="vacant">空房</button><button class="filter" type="button" data-filter="occupied">已出租</button><button class="filter" type="button" data-filter="archived">已封存</button></div></div></section>
+      <div id="app"><section class="card loading"><div class="loading-title">房間資料載入中</div>正在讀取目前 Workspace 的全部房間。</section></div>
+    </main>
+    <nav class="bottom-nav"><div class="bottom-nav-inner"><button class="nav-item" type="button" onclick="goPage('landlord-home.html')"><span>⌂</span><span>首頁</span></button><button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')"><span>▣</span><span>欠款</span></button><button class="nav-item active" type="button" onclick="goPage('landlord-rooms.html')"><span>⌂</span><span>房間</span></button><button class="nav-item" type="button" onclick="goPage('landlord-more.html')"><span>•••</span><span>更多</span></button></div></nav>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
+    const LIFF_ID = '2010314940-EjX1qbb8';
+    const LANDLORD_ENTRY_URL = new URL('landlord-entry.html', location.href).href.split('?')[0];
+    let LINE_USER_ID = '';
+    let LANDLORD_AUTH = null;
+    let PAGE_DATA = { rooms: [], workspace: {}, summary: {} };
+    let FILTER = 'all';
+    let toastTimer = null;
+
+    function text(value) { return value === undefined || value === null ? '' : String(value); }
+    function safeHtml(value) { return text(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+    function money(value) { const amount = Number(value); return Number.isFinite(amount) && amount > 0 ? 'NT$ ' + new Intl.NumberFormat('zh-TW').format(amount) : '未設定'; }
+    function setAppHeight() { const height = window.visualViewport && window.visualViewport.height ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty('--app-height', Math.round(height) + 'px'); }
+    function goPage(page) { const separator = text(page).indexOf('?') >= 0 ? '&' : '?'; location.href = page + separator + 'v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1'); }
+    function currentReturnTo() { const url = new URL(location.href); ['code', 'state', 'liff.state', 'friendship_status_changed', 'error', 'error_description'].forEach(function (key) { url.searchParams.delete(key); }); return url.pathname.split('/').pop() + (url.searchParams.toString() ? '?' + url.searchParams.toString() : ''); }
+    function loginRedirect() { const url = new URL(LANDLORD_ENTRY_URL); url.searchParams.set('return_to', currentReturnTo()); sessionStorage.setItem('cmwebs_landlord_return_to', currentReturnTo()); return url.href; }
+    function initAuth() { LANDLORD_AUTH = window.CMWebsLandlordAuth.init({ apiUrl: API_URL, liffId: LIFF_ID, lineUserId: LINE_USER_ID, returnTo: currentReturnTo(), entryPage: 'landlord-entry.html', testMode: false }); return LANDLORD_AUTH; }
+    async function ensureAuth() {
+      const auth = LANDLORD_AUTH || initAuth();
+      if (auth.getMode() === 'email') return true;
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) { liff.login({ redirectUri: loginRedirect() }); return false; }
+      const profile = await liff.getProfile();
+      LINE_USER_ID = profile.userId || '';
+      initAuth();
+      return Boolean(LINE_USER_ID);
+    }
+    function desktopLogout() { if (window.CMWebsLandlordAuth && typeof window.CMWebsLandlordAuth.logout === 'function') { window.CMWebsLandlordAuth.logout().finally(function () { location.href = LANDLORD_ENTRY_URL; }); return; } location.href = LANDLORD_ENTRY_URL; }
+    function showToast(message) { const node = document.getElementById('toast'); node.textContent = message; node.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { node.classList.remove('show'); }, 2400); }
+    function statusLabel(room) { if (room.account_status === 'archived') return '已封存'; if (room.room_status === 'occupied') return '已出租'; if (room.room_status === 'maintenance') return '維修中'; if (room.room_status === 'unavailable') return '暫停使用'; return '空房'; }
+    function statusClass(room) { if (room.account_status === 'archived') return 'archived'; return room.room_status || 'vacant'; }
+    function matches(room) { const query = text(document.getElementById('roomSearch').value).trim().toLowerCase(); const haystack = [room.property_name, room.room_name, room.room_id].map(function (value) { return text(value).toLowerCase(); }).join(' '); if (query && haystack.indexOf(query) < 0) return false; if (FILTER === 'all') return true; if (FILTER === 'archived') return room.account_status === 'archived'; if (FILTER === 'active') return room.account_status === 'active'; return room.account_status === 'active' && room.room_status === FILTER; }
+    function roomCard(room) { return '<article class="card room-card"><div class="room-head"><div><div class="property-name">' + safeHtml(room.property_name || '未命名物件') + '</div><div class="room-name">' + safeHtml(room.room_name || '未命名房間') + '</div><div class="room-id">房間 ID：' + safeHtml(room.room_id) + '</div></div><span class="status ' + safeHtml(statusClass(room)) + '">' + safeHtml(statusLabel(room)) + '</span></div><div class="room-summary"><div class="summary-cell"><div class="summary-label">月租</div><div class="summary-value">' + safeHtml(money(room.rent_amount)) + '</div></div><div class="summary-cell"><div class="summary-label">管理費</div><div class="summary-value">' + safeHtml(room.management_fee || '未設定') + '</div></div><div class="summary-cell"><div class="summary-label">電費單價</div><div class="summary-value">' + safeHtml(room.electricity_fee_rate ? 'NT$ ' + room.electricity_fee_rate : '未設定') + '</div></div><div class="summary-cell"><div class="summary-label">帳號狀態</div><div class="summary-value">' + safeHtml(room.account_status === 'archived' ? '已封存' : '啟用中') + '</div></div></div><div class="room-note">僅顯示房間營運資料；房客、租約與帳務資料不在此頁載入。</div></article>'; }
+    function render() { const rooms = (PAGE_DATA.rooms || []).filter(matches); const count = rooms.length; document.getElementById('roomCountPill').textContent = '目前顯示 ' + count + ' 間'; const app = document.getElementById('app'); if (!count) { app.innerHTML = '<section class="card empty"><div class="empty-title">沒有符合條件的房間</div>請調整搜尋或篩選條件。</section>'; return; } app.innerHTML = '<div class="section-heading"><h2>房間清單</h2><span>共 ' + count + ' 間</span></div><section class="room-grid">' + rooms.map(roomCard).join('') + '</section>'; }
+    function renderError(error) { document.getElementById('app').innerHTML = '<section class="card error"><div class="error-title">房間資料載入失敗</div>' + safeHtml(error && error.message ? error.message : '請稍後再試') + '<br><button class="retry-button" type="button" onclick="loadPage(false)">重新整理</button></section>'; }
+    async function loadPage(showLoading) { if (showLoading !== false) document.getElementById('app').innerHTML = '<section class="card loading"><div class="loading-title">房間資料載入中</div>正在讀取目前 Workspace 的全部房間。</section>'; try { const ready = await ensureAuth(); if (!ready) return; const result = await window.CMWebsLandlordApi.request({ action: 'landlord_room_center_init', params: { include_archived: '1' }, rejectOnFailure: true }); PAGE_DATA = result.data || {}; const workspace = PAGE_DATA.workspace || {}; document.getElementById('workspaceHeading').textContent = workspace.workspace_name ? workspace.workspace_name + '・房間清單' : '房間清單'; document.getElementById('desktopWorkspaceName').textContent = workspace.workspace_name || '目前 Workspace'; document.getElementById('desktopTopbarWorkspaceName').textContent = workspace.workspace_name || '目前 Workspace'; render(); } catch (error) { renderError(error); } }
+    document.querySelectorAll('[data-filter]').forEach(function (button) { button.addEventListener('click', function () { FILTER = button.dataset.filter || 'all'; document.querySelectorAll('[data-filter]').forEach(function (item) { item.classList.toggle('active', item === button); }); render(); }); });
+    document.getElementById('roomSearch').addEventListener('input', render);
+    setAppHeight(); window.addEventListener('resize', setAppHeight); if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight); loadPage(true);
+  </script>
+</body>
+</html>
