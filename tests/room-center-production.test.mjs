@@ -19,6 +19,8 @@ assert.doesNotMatch(backend, /contract_id/);
 assert.match(dispatcher, /landlord_room_center_init/);
 assert.match(api, /landlord_room_center_init: true/);
 assert.match(page, /landlord_room_center_init/);
+assert.match(page, /apiUrl:\s*API_URL/);
+assert.match(page, /lineUserId:\s*LINE_USER_ID/);
 assert.match(page, /房間清單/);
 assert.match(page, /所有房間/);
 assert.match(more, /landlord-rooms\.html/);

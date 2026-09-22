@@ -21,6 +21,7 @@ const V2_RUNTIME_SNAPSHOT_READ_ACTIONS_ = {
   landlord_notifications_init: true,
   landlord_payment_reports_init: true,
   landlord_properties_init: true,
+  landlord_room_center_init: true,
   landlord_revenue_dashboard_init: true,
   landlord_settings_init: true,
   landlord_tenants: true,
