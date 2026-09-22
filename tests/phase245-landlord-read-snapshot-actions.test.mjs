@@ -43,6 +43,7 @@ const readActions = [
   'landlord_notifications_init',
   'landlord_payment_reports_init',
   'landlord_properties_init',
+  'landlord_room_center_init',
   'landlord_revenue_dashboard_init',
   'landlord_settings_init',
   'landlord_tenants',
@@ -94,6 +95,12 @@ assert.match(
   landlordApiSource,
   /landlord_bill_manual_settlement_status:\s*true/,
   'manual settlement status must use the shared read retry and dedupe client'
+);
+
+assert.match(
+  landlordApiSource,
+  /landlord_room_center_init:\s*true/,
+  'room center init must use the shared read retry and dedupe client'
 );
 
 console.log('Phase 245 landlord read snapshot action regression test passed.');
