@@ -1,5 +1,22 @@
 # V2 回歸測試矩陣
 
+## 2026-09-23 正式 Workspace 房間中心（本地 release candidate）
+
+- [x] 新增 `landlord_room_center_init` 唯讀路由，依登入房東的 Workspace
+  scope 回傳全部房間；房間中心預設要求包含已封存房間，前端可再篩選。
+- [x] 後端使用明確 allowlist projection，不回傳房客、租約、帳單、押金、
+  付款帳戶、物件所有人或報修資料；桌面 Email 走既有 POST bridge，手機 LINE
+  走既有 JSONP read path。
+- [x] 房間中心加入正式站入口、搜尋與所有／啟用／空房／已出租／已封存篩選，
+  不使用 staging Workspace 或測試房間資料。
+- [x] `tests/room-center-production.test.mjs`、新 Apps Script 全檔
+  `node --check` 通過。
+- [ ] 正式 Apps Script immutable version、GitHub Pages merge/deploy、正式
+  Workspace 登入後全房間回讀與手機／桌面 UAT：`HUMAN_REQUIRED`／`UNVERIFIED`。
+- [ ] rollback：Pages 回退到上一個 verified commit；Apps Script 保留新版本
+  上一個 immutable version 作為 rollback target；本功能只讀，不涉及 Sheets
+  migration 或資料列寫入。
+
 ## 2026-09-18 作廢帳單成功提示（本地候選）
 
 - [x] 作廢測試帳單成功後，欠款頁顯示獨立的「作廢成功」提示，包含帳單 ID。
