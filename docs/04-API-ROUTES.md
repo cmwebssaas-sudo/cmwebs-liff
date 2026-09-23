@@ -135,6 +135,32 @@ The projection rejects non-HTTPS media/site URLs and has no tenant, contract,
 bill, deposit, repair, or payment fields. This candidate is local-only until
 the external bridge contract and authenticated staging UAT are complete.
 
+#### Local candidate: z3House server event receiver (not deployed)
+
+`POST` requests whose JSON `action` is `z3house_listing_event` are accepted only
+through the existing Apps Script dispatcher branch with an external
+`signature` query parameter. The signature is HMAC-SHA256 over the exact raw
+JSON body using Script Property `CMWEBS_Z3HOUSE_BRIDGE_HMAC_SECRET`. The body
+must contain a recent Unix `timestamp`, unique `nonce`, unique `event_id`, and
+one of `listing.snapshot`, `publication.hidden`, or `binding.unbound`.
+
+The local candidate validates that `binding.workspace_id` and `binding.room_id`
+already identify a CMWebs room in that Workspace before any bridge row is
+written. It stores only the public listing allowlist: title, summary,
+description, monthly price, display fees, availability, publication state,
+HTTPS photo URLs and ordering, independent-site URL, source IDs, revision, and
+timestamps. Unknown fields and nested operational or personal fields are
+rejected; the raw request body is never stored.
+
+Successful events are append-recorded in `V3_listing_integration_events` with
+the payload hash. Reusing the same event ID and body is idempotent; reusing an
+event ID with a different body returns `IDEMPOTENCY_CONFLICT`, and reusing a
+nonce for another event returns `NONCE_REPLAY`. Hidden or unbound events mark
+the public channel hidden and retain the CMWebs room and historical rows.
+The receiver is a local source candidate only: no Script Property, Sheet
+schema, z3House API credential, external callback, deployment, or authenticated
+staging UAT has been performed.
+
 ### 2026-09-09 settlement timeout repair (version179 / PR138)
 
 `landlord_bill_manual_settlement_status` adds one GET route (88 current source

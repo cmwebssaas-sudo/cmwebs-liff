@@ -3547,8 +3547,15 @@ function doPost(e) {
             ? landlordInitiatedContractHandlePost_(postBody)
       : tenantContractArtifactIsUploadRequest_(postBody)
         ? tenantContractArtifactHandleUploadPost_(postBody)
-        : tenantContractSigningIsSubmitRequest_(postBody)
-          ? tenantContractSigningHandleSubmitPost_(postBody)
+          : tenantContractSigningIsSubmitRequest_(postBody)
+            ? tenantContractSigningHandleSubmitPost_(postBody)
+          : z3houseListingBridgeIsRequest_(postBody)
+            ? handleZ3houseListingBridgePost_(
+                postBody,
+                e.parameter && e.parameter.signature
+                  ? e.parameter.signature
+                  : ''
+              )
           : legacyContractSignedSyncIsRequest_(postBody)
             ? handleLegacyContractSignedSyncPost_(
                 postBody,

@@ -42,6 +42,24 @@
   `UNVERIFIED`／尚未授權部署。本候選沒有寫入正式 Sheets、沒有部署 Apps Script
   或 GitHub Pages，也沒有修改 z3House 專案。
 
+## 2026-09-23 z3House 公開房源事件橋接候選（未部署）
+
+- [x] `z3house_listing_event` 僅走 Apps Script POST dispatcher，使用
+  `CMWEBS_Z3HOUSE_BRIDGE_HMAC_SECRET`、timestamp、nonce、event_id 與 raw-body
+  HMAC；沒有瀏覽器直連 z3House API。
+- [x] 只接受公開房源 allowlist，先驗證 `workspace_id + room_id` 屬於既有
+  CMWebs Workspace；unknown 欄位與不允許的個人／營運欄位 fail closed。
+- [x] `listing.snapshot`、`publication.hidden`、`binding.unbound` 都以
+  `V3_listing_integration_events` 保存 payload hash；相同 event/body 冪等，
+  event ID 衝突與 nonce replay 拒絕。
+- [x] 下架／解除綁定只標記公開渠道或 binding 狀態，不刪除 CMWebs 房間；
+  不保存 raw payload。
+- [x] `tests/phase263-z3house-bridge-contract.test.mjs`、橋接檔與 dispatcher
+  `node --check`、`npm run validate`、`git diff --check` 應在提交前通過。
+- [ ] 尚未建立正式 Script Property、尚未修改正式 Google Sheets、尚未提供
+  z3House server-to-server provisioning API、尚未部署或做 authenticated staging
+  UAT；狀態為 `UNVERIFIED`／`HUMAN_REQUIRED`。
+
 ## 2026-09-18 作廢帳單成功提示（本地候選）
 
 - [x] 作廢測試帳單成功後，欠款頁顯示獨立的「作廢成功」提示，包含帳單 ID。

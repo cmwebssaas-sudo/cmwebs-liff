@@ -57,14 +57,18 @@ are provisioned by the server-side integration:
 |---|---|
 | `V3_listing_integrations` | `workspace_id` + `room_id` 與 z3House organization/site/listing 的 binding 狀態、同步時間與外部 revision |
 | `V3_listing_integration_snapshots` | 已綁定房源的公開快照：名稱、縮圖、獨立站 URL、出租／公開狀態、更新時間與 revision |
+| `V3_listing_integration_events` | z3House 公開房源事件的 append-only 冪等紀錄：event ID、nonce、payload hash、事件類型、來源 revision 與處理結果；不保存 raw payload |
 
 The projection is workspace-scoped and returns only public listing metadata.
 It must never contain or expose current/previous tenant identity, contracts,
 bills, deposits, repair tickets, payment data, or private listing operations.
 Missing bridge rows produce an explicit `unbound` state; z3House unpublishing
-marks the public channel hidden and does not delete the CMWebs room. Binding and
-unbinding writes, idempotency keys, and server-to-server HMAC delivery remain
-outside this read-only candidate until the external provisioning API exists.
+marks the public channel hidden and does not delete the CMWebs room. The local
+bridge candidate accepts only signed public snapshot events, validates the
+existing Workspace room, and uses the three tables above. It never stores raw
+payloads or personal / operational records. z3House binding, unbinding, and
+publication-hidden events remain append-recorded while the CMWebs room stays
+intact; the candidate is not a deployed Production integration.
 
 ### `V2_contracts` initial rent payment snapshot
 
