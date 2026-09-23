@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-09-23 正式 Workspace 房間中心（已發布）
+## 2026-09-23 正式 Workspace 房間中心（已發布，Version 192）
 
 - [x] 新增 `landlord_room_center_init` 唯讀路由，依登入房東的 Workspace
   scope 回傳全部房間；房間中心預設要求包含已封存房間，前端可再篩選。
@@ -11,9 +11,15 @@
   不使用 staging Workspace 或測試房間資料。
 - [x] `tests/room-center-production.test.mjs`、新 Apps Script 全檔
   `node --check` 通過。
-- [x] Apps Script Version 191 已部署至原正式 Web App deployment slot，Version
-  190 保留 rollback；GitHub Pages workflow `35796607625` 以 PR #173 merge
-  commit `b8cfd949` 成功發布，`landlord-rooms.html` HTTP 200。
+- [x] Apps Script Version 192 已部署至原正式 Web App deployment slot，Version
+  191 保留 rollback；GitHub Pages workflow `35799969425` 以 PR #175 merge
+  commit `d01d2253` 成功發布，`landlord-rooms.html` HTTP 200。
+- [x] 正式登入回讀確認目前正式 Workspace 顯示 22 間房；包含 101、201、202、
+  203、301、302、303、305、306、401、402、403、405、406、501、502、503、
+  505、506、601、602、603。頁面只顯示房間營運資料，沒有房客個資、租約或帳務。
+- [x] 初版逾時根因已回歸覆蓋：房間頁必須把 `apiUrl: API_URL` 與
+  `lineUserId: LINE_USER_ID` 傳給共用 API client；否則 JSONP 會回到 Pages 文件並
+  造成 `Unexpected token '<'`。`tests/room-center-production.test.mjs` 已鎖定此契約。
 - [x] `npm run verify:production -- --live` 通過，12 個公開資產與 checkout
   逐位元組一致；正式頁不使用 staging Workspace 或測試房間資料。
 - [ ] 正式 Workspace 登入後全房間數量回讀與手機／桌面 UAT：

@@ -96,7 +96,7 @@ rewriting the original cancellation record.
 
 ## Route inventory
 
-### 2026-09-23 formal Workspace room center (Production Version 191 / PR #173)
+### 2026-09-23 formal Workspace room center (Production Version 192 / PR #173 + PR #175)
 
 `landlord_room_center_init` is a read-only landlord route for the formal room
 center. It resolves the authenticated landlord's current Workspace and returns
@@ -106,9 +106,12 @@ room/property identifiers, room status, account status, rent, management fee,
 and utility rates. It does not reuse `landlord_properties_init`, and therefore
 does not return tenants, contracts, bills, deposits, owners, payment accounts,
 or repair data. Email sessions use the existing authenticated POST bridge;
-mobile LINE sessions use the existing JSONP read path. Version 191 does not
-write Sheets, create bindings, or call z3House; Version 190 is the rollback
-target.
+mobile LINE sessions use the existing JSONP read path. Version 192 also puts
+the route on the request-local read snapshot allowlist and fixes the page to
+pass the formal Apps Script URL to the shared client; without that URL the
+browser would call the GitHub Pages document and parse HTML as JavaScript.
+The route does not write Sheets, create bindings, or call z3House. Version 191
+is the rollback target.
 
 ### 2026-09-09 settlement timeout repair (version179 / PR138)
 
