@@ -40,11 +40,11 @@ git diff --check
 
 ## 2026-09-23 正式 Workspace 房間中心發布
 
-- PR #173 merge commit `b8cfd9499e50dcbfda9aab504928cf90fffdc25f` 已發布至 GitHub Pages；workflow `35796607625` 成功，`landlord-rooms.html` 正式網址 HTTP 200。
-- Apps Script 同一正式專案已由 Version 190 更新至 immutable Version 191；原 Web App deployment 與正式 URL 維持不變，Version 190 保留 rollback。
+- PR #173 merge commit `b8cfd9499e50dcbfda9aab504928cf90fffdc25f` 先發布了房間中心；PR #175 merge commit `d01d22536157232c8c7ef0d73ab7599b697d549c` 修正正式 API 路由，GitHub Pages workflow `35799969425` 成功，`landlord-rooms.html` 正式網址 HTTP 200。
+- Apps Script 同一正式專案已由 Version 190 更新至 immutable Version 192；Version 191 保留為前一版 rollback，原 Web App deployment 與正式 URL 維持不變。
 - 新增正式唯讀 route `landlord_room_center_init` 與正式頁面 `landlord-rooms.html`，由目前登入的 Workspace 解析全部房間，支援搜尋、狀態篩選與包含已封存房間；「更多」頁提供房間中心入口。
 - API 僅回傳 `workspace_id`、房間／物件識別、房間狀態、租金與公開費用設定；不回傳房客、租約、帳務、押金、付款或報修內容，也沒有執行 Sheet migration 或 z3House 寫入。
-- 本次只做正式 source push、immutable version、既有 deployment slot 更新與 GitHub Pages 發布；沒有寫入房間資料。靜態頁與原有生產資產已完成 HTTP／逐位元組回讀；登入後正式 Workspace 的實際房間數與手機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+- 初版房間頁因漏傳共用 API client 的正式 `apiUrl`，曾把 JSONP 請求送回 GitHub Pages 文件而顯示逾時；Version 192／PR #175 已補正並由正式登入回讀確認 22 間房間。此次只做正式 source push、immutable version、既有 deployment slot 更新與 GitHub Pages 發布；沒有寫入房間資料，也沒有呼叫 z3House。
 
 ## 2026-09-18 一次性測試帳單作廢／封存正式發布
 
