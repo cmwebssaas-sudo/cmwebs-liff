@@ -113,6 +113,28 @@ browser would call the GitHub Pages document and parse HTML as JavaScript.
 The route does not write Sheets, create bindings, or call z3House. Version 191
 is the rollback target.
 
+#### Local candidate: safe z3House public snapshot projection (not deployed)
+
+The room-center candidate may optionally read two append-only integration sheets
+when they already exist: `V3_listing_integrations` and
+`V3_listing_integration_snapshots`. This is a server-side read projection only;
+the browser still calls CMWebs' existing `landlord_room_center_init` route and
+never calls z3House directly. Each room returns a `z3house` object with only
+binding/public-channel fields: `binding_status`, z3House organization/site/
+listing IDs, `last_synced_at`, `external_revision`, public `title`,
+`thumbnail_url`, `independent_site_url`, `availability`, `published`, and
+`updated_at`.
+
+If the optional integration sheets are absent, or if a room has no bound
+listing, the response explicitly returns `binding_status=unbound` and
+`publication_status=not_connected`; it does not invent an external ID or URL.
+An unbound or hidden listing never removes the CMWebs room. The candidate does
+not create bindings, provision z3House listings, or implement the missing
+server-to-server provisioning API; those remain the next bridge boundary.
+The projection rejects non-HTTPS media/site URLs and has no tenant, contract,
+bill, deposit, repair, or payment fields. This candidate is local-only until
+the external bridge contract and authenticated staging UAT are complete.
+
 ### 2026-09-09 settlement timeout repair (version179 / PR138)
 
 `landlord_bill_manual_settlement_status` adds one GET route (88 current source

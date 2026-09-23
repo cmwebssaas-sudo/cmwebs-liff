@@ -509,7 +509,7 @@
     .bottom-nav-inner {
       height: var(--nav-height);
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
     }
 
     .nav-item {
@@ -1168,7 +1168,7 @@
               <div class="menu-title-row">
                 <div class="menu-title">房間中心</div>
               </div>
-              <div class="menu-desc">查看目前正式 Workspace 的全部房間，不顯示房客與帳務個資</div>
+              <div class="menu-desc">查看全部房間；新房東可先建立房間，再由後端橋接服務連結 z3House 公開房源</div>
             </div>
             <div class="menu-arrow">›</div>
           </button>
@@ -1314,6 +1314,15 @@
             <path d="M16 14c2.2.4 3.5 2 4 5"></path>
           </svg>
           <span>房客</span>
+        </button>
+
+        <button class="nav-item" type="button" onclick="goPage('landlord-rooms.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path>
+            <path d="M8 20v-7h8v7"></path>
+            <path d="M9 8.5h.01M15 8.5h.01"></path>
+          </svg>
+          <span>房間</span>
         </button>
 
         <button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">

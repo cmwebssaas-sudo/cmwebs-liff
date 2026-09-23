@@ -1044,7 +1044,7 @@
 
     .bottom-nav-inner {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       height: var(--nav-height);
     }
 
@@ -1266,6 +1266,15 @@
             <path d="M16 14c2.2.4 3.5 2 4 5"></path>
           </svg>
           <span>房客</span>
+        </button>
+
+        <button class="nav-item" onclick="goPage('landlord-rooms.html')">
+          <svg viewBox="0 0 24 24">
+            <path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path>
+            <path d="M8 20v-7h8v7"></path>
+            <path d="M9 8.5h.01M15 8.5h.01"></path>
+          </svg>
+          <span>房間</span>
         </button>
 
         <button class="nav-item active" onclick="goPage('landlord-more.html')">

@@ -47,6 +47,25 @@ payment-account row:
 | `V2_tenant_checkins` | 入住報到、鑰匙與入住電表 |
 | `V2_tenant_messages` | 房客訊息與報修基礎資料 |
 
+### Local z3House public-room bridge projection (not deployed)
+
+CMWebs does not copy z3House's listing-management data model or UI. The room
+center candidate reads these optional, append-only bridge projections when they
+are provisioned by the server-side integration:
+
+| Sheet | 用途 |
+|---|---|
+| `V3_listing_integrations` | `workspace_id` + `room_id` 與 z3House organization/site/listing 的 binding 狀態、同步時間與外部 revision |
+| `V3_listing_integration_snapshots` | 已綁定房源的公開快照：名稱、縮圖、獨立站 URL、出租／公開狀態、更新時間與 revision |
+
+The projection is workspace-scoped and returns only public listing metadata.
+It must never contain or expose current/previous tenant identity, contracts,
+bills, deposits, repair tickets, payment data, or private listing operations.
+Missing bridge rows produce an explicit `unbound` state; z3House unpublishing
+marks the public channel hidden and does not delete the CMWebs room. Binding and
+unbinding writes, idempotency keys, and server-to-server HMAC delivery remain
+outside this read-only candidate until the external provisioning API exists.
+
 ### `V2_contracts` initial rent payment snapshot
 
 The simplified new-contract and paper-backfill flows may explicitly record that

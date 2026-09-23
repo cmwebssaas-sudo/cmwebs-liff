@@ -27,6 +27,21 @@
   commit `dce1f02` 與 Apps Script Version 190；本功能只讀，不涉及 Sheets
   migration 或資料列寫入。
 
+## 2026-09-23 房間導覽與 z3House 公開房源卡片候選（未部署）
+
+- [x] 所有房東頁面的手機底部導覽保留首頁、欠款、房客、房間、更多五個入口；
+  房間中心本身標示為目前頁面。
+- [x] 房間卡片可安全呈現後端提供的 z3House 綁定狀態、公開縮圖與獨立站連結；
+  只接受 HTTPS URL，外部連結使用 `noopener noreferrer`。
+- [x] 未綁定房間顯示「尚未連結 z3House」，不產生假 listing ID、假 URL 或瀏覽器端
+  z3House API 呼叫；新房東可先使用 CMWebs 房間資料。
+- [x] `tests/phase262-room-nav-z3house-card.test.mjs`、
+  `node --check apps-script/V2_LANDLORD_ROOM_CENTER.js` 通過。
+- [ ] z3House server-to-server provisioning/binding API、實際 bridge sheets、
+  authenticated staging UAT、所有正式 Workspace 房間回讀與正式部署：
+  `UNVERIFIED`／尚未授權部署。本候選沒有寫入正式 Sheets、沒有部署 Apps Script
+  或 GitHub Pages，也沒有修改 z3House 專案。
+
 ## 2026-09-18 作廢帳單成功提示（本地候選）
 
 - [x] 作廢測試帳單成功後，欠款頁顯示獨立的「作廢成功」提示，包含帳單 ID。

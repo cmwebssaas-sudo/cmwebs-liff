@@ -96,6 +96,7 @@
     .hero p { margin: 9px 0 0; max-width: 700px; color: var(--muted); line-height: 1.6; }
     .hero-meta { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
     .pill { display: inline-flex; align-items: center; min-height: 30px; padding: 0 11px; border-radius: 999px; background: #fff; color: var(--primary); font-size: 12px; font-weight: 900; }
+    .hero-action { min-height: 34px; padding: 0 13px; border: 1px solid #b8ddcf; border-radius: 999px; background: var(--primary); color: #fff; font-size: 12px; font-weight: 900; cursor: pointer; }
     .toolbar { padding: 16px; }
     .toolbar-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
     .search { flex: 1 1 260px; min-height: 46px; padding: 0 15px; border: 1px solid var(--border); border-radius: 13px; background: #fbfcfb; color: var(--text); }
@@ -106,7 +107,22 @@
     .section-heading h2 { margin: 0; font-size: 21px; }
     .section-heading span { color: var(--muted); font-size: 13px; }
     .room-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .room-card { padding: 18px; }
+    .room-card { overflow: hidden; padding: 0; }
+    .room-card-body { padding: 18px; }
+    .z3house-card { margin-top: 15px; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: #fbfcfb; }
+    .z3house-media { display: flex; aspect-ratio: 16 / 9; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(135deg, #e8f5f1, #f6f8f7); color: var(--muted); font-size: 12px; font-weight: 800; text-align: center; }
+    .z3house-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .z3house-body { padding: 13px; }
+    .z3house-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .z3house-label { color: var(--primary); font-size: 11px; font-weight: 900; letter-spacing: .03em; }
+    .z3house-title { margin-top: 5px; overflow: hidden; font-size: 15px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+    .z3house-status { display: inline-flex; min-height: 25px; align-items: center; padding: 0 9px; border-radius: 999px; background: #eef1ef; color: var(--muted); font-size: 11px; font-weight: 900; white-space: nowrap; }
+    .z3house-status.published { background: var(--primary-soft); color: var(--primary); }
+    .z3house-status.hidden { background: var(--warning-soft); color: var(--warning); }
+    .z3house-link { display: inline-flex; margin-top: 11px; color: var(--primary); font-size: 12px; font-weight: 900; text-decoration: none; }
+    .z3house-link:hover { text-decoration: underline; }
+    .z3house-meta { margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .desktop-main #app .room-card { display: block; }
     .room-head { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
     .property-name { color: var(--primary); font-size: 12px; font-weight: 900; }
     .room-name { margin-top: 5px; font-size: 23px; font-weight: 900; letter-spacing: -.03em; }
@@ -126,6 +142,14 @@
     .retry-button { min-height: 44px; margin-top: 17px; padding: 0 18px; border: 0; border-radius: 12px; background: #06c755; color: #fff; font-weight: 900; cursor: pointer; }
     .toast { position: fixed; right: 20px; bottom: 24px; z-index: 1200; max-width: min(420px, calc(100vw - 40px)); padding: 13px 16px; border-radius: 13px; background: #26312d; color: #fff; font-size: 13px; opacity: 0; pointer-events: none; transform: translateY(12px); transition: opacity .18s ease, transform .18s ease; }
     .toast.show { opacity: 1; transform: translateY(0); }
+    .bottom-nav { position: absolute; right: 0; bottom: 0; left: 0; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid rgba(227, 233, 229, .9); background: rgba(255, 255, 255, .94); backdrop-filter: blur(12px); }
+    .bottom-nav-inner { display: grid; height: var(--nav-height); grid-template-columns: repeat(5, 1fr); }
+    .nav-item { position: relative; display: flex; align-items: center; justify-content: center; gap: 3px; min-width: 0; border: 0; background: transparent; color: #8b9490; cursor: pointer; flex-direction: column; font-size: 11px; font-weight: 700; }
+    .nav-item svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+    .nav-item.active { color: var(--primary); font-weight: 900; }
+    .nav-item.active::after { position: absolute; bottom: 5px; width: 18px; height: 3px; border-radius: 999px; background: var(--primary); content: ""; }
+    .nav-item:active { opacity: .65; }
+    @media (min-width: 1024px) { .bottom-nav { display: none; } }
     @media (max-width: 700px) {
       .page { padding: 18px 15px calc(var(--nav-height) + 26px + env(safe-area-inset-bottom)); }
       .topbar { align-items: center; }
@@ -162,11 +186,11 @@
     <main class="page desktop-main">
       <header class="desktop-topbar" hidden><div><div class="desktop-page-kicker">Room Operations</div><div class="desktop-page-title">房間中心</div></div><div class="desktop-topbar-meta"><span class="desktop-status-pill">Workspace</span><span id="desktopTopbarWorkspaceName">載入中</span></div></header>
       <div class="topbar"><div><div class="eyebrow">ROOM OPERATIONS</div><div class="page-title">房間中心</div></div><div class="topbar-actions"><button class="outline-button" type="button" onclick="goPage('landlord-properties.html')">管理物件與房間</button><button class="refresh-button" type="button" onclick="loadPage(false)" aria-label="重新整理">↻</button></div></div>
-      <section class="card hero"><div class="hero-kicker">目前登入的正式 Workspace</div><h1 id="workspaceHeading">房間清單</h1><p>一次查看目前管理團隊的全部房間與基本營運資料。這個頁面不顯示房客、租約、帳款、押金或報修內容。</p><div class="hero-meta"><span class="pill" id="roomCountPill">讀取中</span><span class="pill">正式 Workspace 資料</span></div></section>
+      <section class="card hero"><div class="hero-kicker">目前登入的正式 Workspace</div><h1 id="workspaceHeading">房間清單</h1><p>一次查看目前管理團隊的全部房間與基本營運資料。這個頁面不顯示房客、租約、帳款、押金或報修內容。</p><div class="hero-meta"><span class="pill" id="roomCountPill">讀取中</span><span class="pill">正式 Workspace 資料</span><button class="hero-action" type="button" onclick="goPage('landlord-properties.html')">建立新房間</button></div></section>
       <section class="card toolbar"><div class="toolbar-row"><input id="roomSearch" class="search" type="search" placeholder="搜尋物件、房號或房間 ID" autocomplete="off" /><div class="filters" role="group" aria-label="房間篩選"><button class="filter active" type="button" data-filter="all">所有房間</button><button class="filter" type="button" data-filter="active">啟用中</button><button class="filter" type="button" data-filter="vacant">空房</button><button class="filter" type="button" data-filter="occupied">已出租</button><button class="filter" type="button" data-filter="archived">已封存</button></div></div></section>
       <div id="app"><section class="card loading"><div class="loading-title">房間資料載入中</div>正在讀取目前 Workspace 的全部房間。</section></div>
     </main>
-    <nav class="bottom-nav"><div class="bottom-nav-inner"><button class="nav-item" type="button" onclick="goPage('landlord-home.html')"><span>⌂</span><span>首頁</span></button><button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')"><span>▣</span><span>欠款</span></button><button class="nav-item active" type="button" onclick="goPage('landlord-rooms.html')"><span>⌂</span><span>房間</span></button><button class="nav-item" type="button" onclick="goPage('landlord-more.html')"><span>•••</span><span>更多</span></button></div></nav>
+    <nav class="bottom-nav"><div class="bottom-nav-inner"><button class="nav-item" type="button" onclick="goPage('landlord-home.html')"><span>⌂</span><span>首頁</span></button><button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')"><span>▣</span><span>欠款</span></button><button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')"><span>♙</span><span>房客</span></button><button class="nav-item active" type="button" onclick="goPage('landlord-rooms.html')"><span>⌂</span><span>房間</span></button><button class="nav-item" type="button" onclick="goPage('landlord-more.html')"><span>•••</span><span>更多</span></button></div></nav>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
   <script>
@@ -201,8 +225,29 @@
     function showToast(message) { const node = document.getElementById('toast'); node.textContent = message; node.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { node.classList.remove('show'); }, 2400); }
     function statusLabel(room) { if (room.account_status === 'archived') return '已封存'; if (room.room_status === 'occupied') return '已出租'; if (room.room_status === 'maintenance') return '維修中'; if (room.room_status === 'unavailable') return '暫停使用'; return '空房'; }
     function statusClass(room) { if (room.account_status === 'archived') return 'archived'; return room.room_status || 'vacant'; }
+    function safeExternalUrl(value) { const url = text(value).trim(); return /^https:\/\/[^\s"'<>]+$/i.test(url) ? url : ''; }
+    function z3houseStatusLabel(listing) { if (!listing || listing.binding_status === 'unbound') return '尚未連結 z3House'; if (listing.binding_status !== 'bound') return '連結待處理'; if (listing.publication_status === 'published') return '已公開'; if (listing.publication_status === 'hidden') return '未公開'; return '已連結'; }
+    function z3houseStatusClass(listing) { if (listing && listing.publication_status === 'published') return 'published'; if (listing && listing.publication_status === 'hidden') return 'hidden'; return ''; }
     function matches(room) { const query = text(document.getElementById('roomSearch').value).trim().toLowerCase(); const haystack = [room.property_name, room.room_name, room.room_id].map(function (value) { return text(value).toLowerCase(); }).join(' '); if (query && haystack.indexOf(query) < 0) return false; if (FILTER === 'all') return true; if (FILTER === 'archived') return room.account_status === 'archived'; if (FILTER === 'active') return room.account_status === 'active'; return room.account_status === 'active' && room.room_status === FILTER; }
-    function roomCard(room) { return '<article class="card room-card"><div class="room-head"><div><div class="property-name">' + safeHtml(room.property_name || '未命名物件') + '</div><div class="room-name">' + safeHtml(room.room_name || '未命名房間') + '</div><div class="room-id">房間 ID：' + safeHtml(room.room_id) + '</div></div><span class="status ' + safeHtml(statusClass(room)) + '">' + safeHtml(statusLabel(room)) + '</span></div><div class="room-summary"><div class="summary-cell"><div class="summary-label">月租</div><div class="summary-value">' + safeHtml(money(room.rent_amount)) + '</div></div><div class="summary-cell"><div class="summary-label">管理費</div><div class="summary-value">' + safeHtml(room.management_fee || '未設定') + '</div></div><div class="summary-cell"><div class="summary-label">電費單價</div><div class="summary-value">' + safeHtml(room.electricity_fee_rate ? 'NT$ ' + room.electricity_fee_rate : '未設定') + '</div></div><div class="summary-cell"><div class="summary-label">帳號狀態</div><div class="summary-value">' + safeHtml(room.account_status === 'archived' ? '已封存' : '啟用中') + '</div></div></div><div class="room-note">僅顯示房間營運資料；房客、租約與帳務資料不在此頁載入。</div></article>'; }
+    function roomCard(room) {
+      const listing = room.z3house || {};
+      const thumbnailUrl = safeExternalUrl(listing.thumbnail_url);
+      const independentSiteUrl = safeExternalUrl(listing.independent_site_url);
+      const media = thumbnailUrl
+        ? '<img src="' + safeHtml(thumbnailUrl) + '" alt="z3House 公開房源縮圖" loading="lazy" referrerpolicy="no-referrer">'
+        : '<span>尚未同步房源照片</span>';
+      const link = independentSiteUrl
+        ? '<a class="z3house-link" href="' + safeHtml(independentSiteUrl) + '" target="_blank" rel="noopener noreferrer">開啟獨立站 ↗</a>'
+        : '<span class="z3house-meta">建立房間後可由後端橋接服務綁定公開房源</span>';
+      return '<article class="card room-card">' +
+        '<div class="room-card-body">' +
+          '<div class="room-head"><div><div class="property-name">' + safeHtml(room.property_name || '未命名物件') + '</div><div class="room-name">' + safeHtml(room.room_name || '未命名房間') + '</div><div class="room-id">房間 ID：' + safeHtml(room.room_id) + '</div></div><span class="status ' + safeHtml(statusClass(room)) + '">' + safeHtml(statusLabel(room)) + '</span></div>' +
+          '<div class="room-summary"><div class="summary-cell"><div class="summary-label">月租</div><div class="summary-value">' + safeHtml(money(room.rent_amount)) + '</div></div><div class="summary-cell"><div class="summary-label">管理費</div><div class="summary-value">' + safeHtml(room.management_fee || '未設定') + '</div></div><div class="summary-cell"><div class="summary-label">電費單價</div><div class="summary-value">' + safeHtml(room.electricity_fee_rate ? 'NT$ ' + room.electricity_fee_rate : '未設定') + '</div></div><div class="summary-cell"><div class="summary-label">帳號狀態</div><div class="summary-value">' + safeHtml(room.account_status === 'archived' ? '已封存' : '啟用中') + '</div></div></div>' +
+          '<section class="z3house-card" aria-label="z3House 公開房源"><div class="z3house-media">' + media + '</div><div class="z3house-body"><div class="z3house-row"><span class="z3house-label">z3HOUSE 房源</span><span class="z3house-status ' + safeHtml(z3houseStatusClass(listing)) + '">' + safeHtml(z3houseStatusLabel(listing)) + '</span></div><div class="z3house-title">' + safeHtml(listing.title || '尚未同步公開房源名稱') + '</div>' + link + '</div></section>' +
+          '<div class="room-note">僅顯示房間營運資料與 z3House 公開房源摘要；房客、租約、帳務、押金與報修資料不在此頁載入。</div>' +
+        '</div>' +
+      '</article>';
+    }
     function render() { const rooms = (PAGE_DATA.rooms || []).filter(matches); const count = rooms.length; document.getElementById('roomCountPill').textContent = '目前顯示 ' + count + ' 間'; const app = document.getElementById('app'); if (!count) { app.innerHTML = '<section class="card empty"><div class="empty-title">沒有符合條件的房間</div>請調整搜尋或篩選條件。</section>'; return; } app.innerHTML = '<div class="section-heading"><h2>房間清單</h2><span>共 ' + count + ' 間</span></div><section class="room-grid">' + rooms.map(roomCard).join('') + '</section>'; }
     function renderError(error) { document.getElementById('app').innerHTML = '<section class="card error"><div class="error-title">房間資料載入失敗</div>' + safeHtml(error && error.message ? error.message : '請稍後再試') + '<br><button class="retry-button" type="button" onclick="loadPage(false)">重新整理</button></section>'; }
     async function loadPage(showLoading) { if (showLoading !== false) document.getElementById('app').innerHTML = '<section class="card loading"><div class="loading-title">房間資料載入中</div>正在讀取目前 Workspace 的全部房間。</section>'; try { const ready = await ensureAuth(); if (!ready) return; const result = await window.CMWebsLandlordApi.request({ apiUrl: API_URL, action: 'landlord_room_center_init', params: { include_archived: '1' }, lineUserId: LINE_USER_ID, testMode: false, rejectOnFailure: true }); PAGE_DATA = result.data || {}; const workspace = PAGE_DATA.workspace || {}; document.getElementById('workspaceHeading').textContent = workspace.workspace_name ? workspace.workspace_name + '・房間清單' : '房間清單'; document.getElementById('desktopWorkspaceName').textContent = workspace.workspace_name || '目前 Workspace'; document.getElementById('desktopTopbarWorkspaceName').textContent = workspace.workspace_name || '目前 Workspace'; render(); } catch (error) { renderError(error); } }
