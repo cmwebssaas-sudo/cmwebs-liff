@@ -1,5 +1,20 @@
 # V2 回歸測試矩陣
 
+## 2026-09-27 房東 POST/read bridge 測試夾具修正（測試／文件限定）
+
+- [x] 根因確認：舊測試只抽取 `doPost(e)`，漏載正式 dispatcher 在入口呼叫的
+  `repairRouteRequestFromPostBody_` 及相依 helper，所以測試 VM 發生
+  `ReferenceError` 後落入 fallback；正式 Apps Script dispatcher 並沒有此缺漏。
+- [x] Bridge 測試改載正式 repair pre-dispatch helpers，並確認房東唯讀 action
+  會放行至主 dispatcher、真正 repair action 仍由 repair handler 接手；snapshot
+  測試則明確 stub 無關的 repair pre-dispatch，以專注驗證 request-local snapshot。
+- [x] Focused regression `5/5`、完整 `npm test` `246/246`、`npm run validate`
+  通過（59 backend files、38 endpoint references、static release-cache validator），
+  `git diff --check` 通過。
+- [x] 僅變更測試與文件；Apps Script、前端、API 行為及正式資料均未修改，故本次
+  不需也不應觸發正式網站部署。這是測試品質修正，不宣稱修復了任何 Production
+  runtime 故障；實際登入後 Email／LINE bridge 驗收仍為 `HUMAN_REQUIRED`。
+
 ## 2026-09-23 正式 Workspace 房間中心（已發布，Version 192）
 
 - [x] 新增 `landlord_room_center_init` 唯讀路由，依登入房東的 Workspace
@@ -71,13 +86,11 @@
   `V2_REPAIR_TICKETS.js`, `V2_TENANT_MESSAGES.js`,
   `V2_LANDLORD_MANAGEMENT.js`, `V2_WORKSPACE_LANDLORD_ACCESS.js`,
   `V2_RUNTIME_SNAPSHOT.js`, and `程式碼.js`.
-- [ ] Full `npm test` is not green at this baseline: `242` tests ran, `240`
-  passed and `2` failed. The failures are
-  `tests/landlord-post-read-snapshot.test.mjs` (expected `true`, got
-  `undefined`) and `tests/phase246-landlord-post-read-bridge.test.mjs`
-  (`landlord_arrears` expected `htmlBridgeOutput_` / `bridge`, got `fallback`).
-  They are pre-existing baseline failures in landlord POST/read bridge coverage;
-  no evidence attributes either failure to repair-ticket changes.
+- [x] Historical baseline note (corrected 2026-09-27): the two failures recorded
+  above were test-VM harness omissions, not dispatcher regressions. The isolated
+  fixture correction and production-helper pass-through regression now pass;
+  see the 2026-09-27 test-only entry above. No repair-ticket runtime change was
+  needed or made.
 - [x] Repair-ticket tests assert server-side Workspace/tenant filtering,
   allowlisted projections, POST-only bridge transport, append-only event
   history, source-message idempotency, and preview no-write behavior.

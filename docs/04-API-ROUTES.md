@@ -759,16 +759,19 @@ and release-verification record is commit
 `73ad047ffde25ee636e197b37360b70e8fc8129f` (`73ad047`, `test: record repair
 ticket release checks`), whose parent is the implementation source candidate.
 The latter is a documentation/release-record commit, not the implementation
-source. This fix-round documentation correction is intentionally not embedded
-as its own future commit hash. Local verification is not a deployment or a
-Production readiness claim. The focused repair-ticket suite
-passed `26/26`; the full repository suite ran `242` tests with `240` passing and
-two pre-existing landlord POST/read bridge snapshot failures. The failures are
-`tests/landlord-post-read-snapshot.test.mjs` (expected `true`, received
-`undefined`) and `tests/phase246-landlord-post-read-bridge.test.mjs`
-(`landlord_arrears must resolve through htmlBridgeOutput_ for desktop Email`,
-received `fallback`, expected `bridge`). They are recorded as baseline failures
-and are not attributed to this feature without separate evidence.
+source. Local verification is not a deployment or a Production readiness claim.
+The focused repair-ticket suite passed `26/26`.
+
+2026-09-27 correction: the previously recorded full-suite failures in
+`tests/landlord-post-read-snapshot.test.mjs` and
+`tests/phase246-landlord-post-read-bridge.test.mjs` were caused by their isolated
+test VM omitting the production `repairRouteRequestFromPostBody_` pre-dispatch
+helper, not by a missing Production route. The harness now stubs that unrelated
+pre-dispatch in the snapshot-specific test and loads the actual helper chain in
+the bridge test; a regression asserts that landlord reads pass through while
+repair POST actions remain intercepted. The current isolated candidate passes
+`npm test` (`246/246`) and `npm run validate`; it makes no Apps Script or frontend
+runtime change and is not deployment evidence.
 
 `npm run validate` passed (`57` backend files parsed, `37` endpoint references
 matched, static release-cache validation passed). The six required Apps Script
