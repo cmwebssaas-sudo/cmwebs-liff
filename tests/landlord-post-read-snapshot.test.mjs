@@ -12,6 +12,13 @@ const sheet = {
 };
 const context = vm.createContext({
   Logger: { log: value => logs.push(value) },
+  // This test targets snapshot semantics; repair-route pre-dispatch is tested
+  // against its production helpers in phase246-landlord-post-read-bridge.
+  repairRouteRequestFromPostBody_: () => ({
+    handled: false,
+    success: false,
+    request: null
+  }),
   landlordEmailAuthPostRequires_: () => null,
   resolveLandlordPrincipal_: () => ({ success: true, data: { principal_line_user_id: 'fixture' } }),
   ContentService: { MimeType: { JSON: 'json' }, createTextOutput: value => ({ setMimeType: () => value }) }

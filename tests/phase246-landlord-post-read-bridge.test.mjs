@@ -19,6 +19,12 @@ const actions = [
   'landlord_revenue_dashboard_init',
   'landlord_workspace_context'
 ];
+const repairPostPreDispatchHelpers = [
+  'repairRouteIsAction_',
+  'repairRouteDecodeFormBody_',
+  'repairRouteQueryAction_',
+  'repairRouteRequestFromPostBody_'
+];
 
 function extractFunctionSource(source, functionName) {
   const match = new RegExp(`function\\s+${functionName}\\s*\\(`).exec(source);
@@ -139,12 +145,38 @@ function createDispatcherContext() {
 
   vm.createContext(context);
   vm.runInContext(
+    repairPostPreDispatchHelpers
+      .map((name) => extractFunctionSource(dispatcherSource, name))
+      .join('\n\n'),
+    context
+  );
+  vm.runInContext(
     dispatcherSource.slice(dispatcherSource.indexOf('function doPost(e)')),
     context
   );
 
   return { context, calls };
 }
+
+test('repair POST pre-dispatch leaves landlord reads for the main dispatcher', () => {
+  const { context } = createDispatcherContext();
+
+  for (const action of actions) {
+    const result = context.repairRouteRequestFromPostBody_({
+      postData: { contents: JSON.stringify({ action }) }
+    });
+
+    assert.equal(result.handled, false, `${action} is not a repair action`);
+  }
+
+  const repairResult = context.repairRouteRequestFromPostBody_({
+    postData: {
+      contents: JSON.stringify({ action: 'landlord_repair_tickets_init' })
+    }
+  });
+  assert.equal(repairResult.handled, true);
+  assert.equal(repairResult.success, true);
+});
 
 test('desktop landlord read actions return the iframe bridge response', () => {
   for (const action of actions) {
