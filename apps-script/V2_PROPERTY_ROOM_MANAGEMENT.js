@@ -178,6 +178,7 @@ function getLandlordPropertiesInitByLineUid_(
       );
 
     const tenantIdMap = {};
+    const activeTenantIdMap = {};
 
     tenantRows.forEach(function (tenant) {
       const tenantId =
@@ -187,6 +188,17 @@ function getLandlordPropertiesInitByLineUid_(
 
       if (tenantId) {
         tenantIdMap[tenantId] = true;
+
+        if ([
+          'archived',
+          'inactive',
+          'disabled',
+          'closed'
+        ].indexOf(
+          propertyRoomText_(tenant.account_status).toLowerCase()
+        ) < 0) {
+          activeTenantIdMap[tenantId] = true;
+        }
       }
     });
 
@@ -346,7 +358,8 @@ function getLandlordPropertiesInitByLineUid_(
           currentContractRoomMap,
           latestContractRoomMap,
           latestBillRoomMap,
-          tenantIdMap
+          tenantIdMap,
+          activeTenantIdMap
         )
       );
     });
@@ -589,7 +602,8 @@ function saveLandlordPropertyByLineUid_(
   propertyAddress,
   propertyType,
   paymentAccountId,
-  note
+  note,
+  expectedWorkspaceId
 ) {
   const lock =
     LockService.getScriptLock();
@@ -603,7 +617,8 @@ function saveLandlordPropertyByLineUid_(
       workspaceLandlordResolveAccess_(
         lineUserId,
         {
-          require_onboarding: true
+          require_onboarding: true,
+          workspace_id: propertyRoomText_(expectedWorkspaceId)
         }
       );
 
@@ -926,7 +941,8 @@ function saveLandlordPropertyByLineUid_(
 function archiveLandlordPropertyByLineUid_(
   lineUserId,
   propertyId,
-  archiveReason
+  archiveReason,
+  expectedWorkspaceId
 ) {
   const lock =
     LockService.getScriptLock();
@@ -940,7 +956,8 @@ function archiveLandlordPropertyByLineUid_(
       workspaceLandlordResolveAccess_(
         lineUserId,
         {
-          require_onboarding: true
+          require_onboarding: true,
+          workspace_id: propertyRoomText_(expectedWorkspaceId)
         }
       );
 
@@ -985,6 +1002,9 @@ function archiveLandlordPropertyByLineUid_(
 
     lock.waitLock(20000);
     locked = true;
+
+    const ss =
+      runtimeSpreadsheet_();
 
     const propertySheet =
       ss.getSheetByName(
@@ -1122,7 +1142,8 @@ function saveLandlordRoomByLineUid_(
   depositMonths,
   depositAmount,
   roomStatus,
-  note
+  note,
+  expectedWorkspaceId
 ) {
   const lock =
     LockService.getScriptLock();
@@ -1136,7 +1157,8 @@ function saveLandlordRoomByLineUid_(
       workspaceLandlordResolveAccess_(
         lineUserId,
         {
-          require_onboarding: true
+          require_onboarding: true,
+          workspace_id: propertyRoomText_(expectedWorkspaceId)
         }
       );
 
@@ -1606,6 +1628,25 @@ function saveLandlordRoomByLineUid_(
           )
         : false;
 
+    if (
+      existing &&
+      !hasActiveContract &&
+      propertyRoomHasActiveTenantLink_(
+        ss,
+        access,
+        existing
+      ) &&
+      roomStatus !== propertyRoomText_(
+        existing.room_status
+      ).toLowerCase()
+    ) {
+      return workspaceResult_(
+        false,
+        'ROOM_TENANT_REVIEW_REQUIRED',
+        '房客關聯尚待核對，不能直接變更房況'
+      );
+    }
+
     if (hasActiveContract) {
       roomStatus =
         'occupied';
@@ -1777,7 +1818,8 @@ function saveLandlordRoomByLineUid_(
 function setLandlordRoomAccountToggleByLineUid_(
   lineUserId,
   roomId,
-  enabled
+  enabled,
+  expectedWorkspaceId
 ) {
   const lock =
     LockService.getScriptLock();
@@ -1791,7 +1833,8 @@ function setLandlordRoomAccountToggleByLineUid_(
       workspaceLandlordResolveAccess_(
         lineUserId,
         {
-          require_onboarding: true
+          require_onboarding: true,
+          workspace_id: propertyRoomText_(expectedWorkspaceId)
         }
       );
 
@@ -1952,7 +1995,8 @@ function setLandlordRoomAccountToggleByLineUid_(
 function archiveLandlordRoomByLineUid_(
   lineUserId,
   roomId,
-  archiveReason
+  archiveReason,
+  expectedWorkspaceId
 ) {
   const lock =
     LockService.getScriptLock();
@@ -1966,7 +2010,8 @@ function archiveLandlordRoomByLineUid_(
       workspaceLandlordResolveAccess_(
         lineUserId,
         {
-          require_onboarding: true
+          require_onboarding: true,
+          workspace_id: propertyRoomText_(expectedWorkspaceId)
         }
       );
 
@@ -2051,6 +2096,20 @@ function archiveLandlordRoomByLineUid_(
         false,
         'ROOM_HAS_ACTIVE_CONTRACT',
         '此房間仍有有效租約，不能封存'
+      );
+    }
+
+    if (
+      propertyRoomHasActiveTenantLink_(
+        ss,
+        access,
+        room
+      )
+    ) {
+      return workspaceResult_(
+        false,
+        'ROOM_TENANT_REVIEW_REQUIRED',
+        '此房間仍有有效房客關聯，請先核對後再封存'
       );
     }
 
@@ -2458,7 +2517,8 @@ function propertyRoomBuildRoomView_(
   currentContractRoomMap,
   latestContractRoomMap,
   latestBillRoomMap,
-  tenantIdMap
+  tenantIdMap,
+  activeTenantIdMap
 ) {
   const roomId =
     propertyRoomText_(
@@ -2583,10 +2643,35 @@ function propertyRoomBuildRoomView_(
       'vacant'
     ).toLowerCase();
 
+  const linkedTenantIsActive =
+    Boolean(
+      (
+        activeTenantIdMap &&
+        activeTenantIdMap[propertyRoomText_(room.current_tenant_id)]
+      ) ||
+      (
+        propertyRoomText_(room.current_tenant_id) &&
+        !(tenantIdMap && tenantIdMap[propertyRoomText_(room.current_tenant_id)])
+      ) ||
+      (
+        activeTenantIdMap &&
+        (
+          storedStatus === 'occupied' &&
+          activeTenantIdMap[propertyRoomText_(latestContract && latestContract.tenant_id)]
+        )
+      )
+    );
+
+  const needsOccupancyReview =
+    !hasActiveContract &&
+    linkedTenantIsActive;
+
   const effectiveStatus =
     hasActiveContract
       ? 'occupied'
-      : (
+      : needsOccupancyReview
+        ? 'needs_review'
+        : (
           storedStatus ===
             'occupied'
             ? 'vacant'
@@ -2666,6 +2751,8 @@ function propertyRoomBuildRoomView_(
       propertyRoomRoomStatusLabel_(
         effectiveStatus
       ),
+    needs_occupancy_review:
+      needsOccupancyReview,
     account_status:
       propertyRoomText_(
         room.account_status ||
@@ -2950,6 +3037,53 @@ function propertyRoomHasActiveContract_(
       propertyRoomContractIsActive_(
         contract
       )
+    );
+  });
+}
+
+
+function propertyRoomHasActiveTenantLink_(
+  ss,
+  access,
+  room
+) {
+  const tenantId =
+    propertyRoomText_(room.current_tenant_id);
+
+  if (!tenantId) {
+    return false;
+  }
+
+  const tenantSheet =
+    ss.getSheetByName('V2_tenants');
+
+  if (!tenantSheet) {
+    return true;
+  }
+
+  const linkedTenants =
+    propertyRoomGetWorkspaceRows_(
+      tenantSheet,
+      access,
+      ['landlord_id']
+    ).filter(function (tenant) {
+      return propertyRoomText_(tenant.tenant_id) === tenantId;
+    });
+
+  if (!linkedTenants.length) {
+    return true;
+  }
+
+  return linkedTenants.some(function (tenant) {
+    return (
+      [
+        'archived',
+        'inactive',
+        'disabled',
+        'closed'
+      ].indexOf(
+        propertyRoomText_(tenant.account_status).toLowerCase()
+      ) < 0
     );
   });
 }
@@ -3763,6 +3897,8 @@ function propertyRoomRoomStatusLabel_(
       '空房',
     occupied:
       '已出租',
+    needs_review:
+      '待核對',
     maintenance:
       '維修中',
     unavailable:

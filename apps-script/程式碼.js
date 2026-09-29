@@ -2736,12 +2736,13 @@ function doPost(e) {
         request = JSON.parse(postBody);
       } catch (_) {}
 
-      if (
-        !request &&
-        String((e.parameter || {}).response_mode || '')
-          .trim() === 'bridge'
-      ) {
-        request = Object.assign({}, e.parameter || {});
+      if (!request && postBody) {
+        // Apps Script merges query and form fields into e.parameter. Read the
+        // raw POST body so query credentials can never authorize a bridge.
+        const formRequest = repairRouteDecodeFormBody_(postBody);
+        if (String(formRequest.response_mode || '').trim() === 'bridge') {
+          request = formRequest;
+        }
       }
 
       if (request) {
@@ -3058,6 +3059,99 @@ function doPost(e) {
                 principal.data.principal_line_user_id,
                 request.include_archived || ''
               );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (useBridge && [
+          'landlord_property_save',
+          'landlord_property_archive',
+          'landlord_room_save',
+          'landlord_room_account_toggle',
+          'landlord_room_archive'
+        ].indexOf(action) >= 0) {
+          result =
+            landlordEmailAuthPostRequires_(
+              request,
+              ['landlord_session_token', 'request_id']
+            ) ||
+            resolveLandlordPrincipal_(
+              request,
+              { require_onboarding: true }
+            );
+
+          if (result && result.success === true) {
+            const principalLineUserId =
+              String(result.data && result.data.principal_line_user_id || '').trim();
+            const principalWorkspaceId =
+              String(result.data && result.data.workspace_id || '').trim();
+
+            if (!principalLineUserId || !principalWorkspaceId) {
+              result = {
+                success: false,
+                code: 'AUTH_REQUIRED',
+                message: '房東驗證結果缺少身份或管理團隊'
+              };
+            } else if (action === 'landlord_property_save') {
+              result = saveLandlordPropertyByLineUid_(
+                principalLineUserId,
+                request.property_id || '',
+                request.property_name || '',
+                request.city || '',
+                request.district || '',
+                request.property_address || '',
+                request.property_type || '',
+                request.payment_account_id || '',
+                request.note || '',
+                principalWorkspaceId
+              );
+            } else if (action === 'landlord_property_archive') {
+              result = archiveLandlordPropertyByLineUid_(
+                principalLineUserId,
+                request.property_id || '',
+                request.archive_reason || '',
+                principalWorkspaceId
+              );
+            } else if (action === 'landlord_room_save') {
+              result = saveLandlordRoomByLineUid_(
+                principalLineUserId,
+                request.room_id || '',
+                request.property_id || '',
+                request.room_name || '',
+                request.rent_amount || '',
+                request.management_fee || '',
+                request.electricity_fee_rate || '',
+                request.equipment_fee_rate || '',
+                request.equipment_fee_rate_summer || '',
+                request.equipment_fee_rate_regular || '',
+                request.payment_day || '',
+                request.deposit_months || '',
+                request.deposit_amount || '',
+                request.room_status || '',
+                request.note || '',
+                principalWorkspaceId
+              );
+            } else if (action === 'landlord_room_account_toggle') {
+              result = setLandlordRoomAccountToggleByLineUid_(
+                principalLineUserId,
+                request.room_id || '',
+                request.enabled !== undefined && request.enabled !== null && request.enabled !== ''
+                  ? request.enabled
+                  : request.account_status || '',
+                principalWorkspaceId
+              );
+            } else {
+              result = archiveLandlordRoomByLineUid_(
+                principalLineUserId,
+                request.room_id || '',
+                request.archive_reason || '',
+                principalWorkspaceId
+              );
+            }
           }
 
           return htmlBridgeOutput_(
