@@ -1,5 +1,35 @@
 # V2 回歸測試矩陣
 
+## 2026-09-29 506 快速租約回找與桌面 Email 建立流程（本地候選，未發布）
+
+- [x] 只讀核對正式資料：`V2_contracts` 的 506（`R000016`）有一筆
+  `pending_tenant_signature` 合約；`V2_contract_invites` 有對應的 `pending`
+  邀請且仍在有效期限內。未讀取房客姓名、電話、Email、確認碼雜湊或其他密鑰值。
+- [x] 後端列表在正式表缺少 `contract_origin`／`invite_id` 表頭時，改以同 Workspace
+  的邀請表 `contract_id` 關聯回找 pending 邀請，並回傳邀請連結；不做 Sheet
+  表頭補建、資料列回填或其他正式資料寫入。
+- [x] 桌面 Email session 的快速租約初始化與房東發起新租約改走已驗證的 POST
+  bridge；伺服器先解析 Email session、Workspace 與角色權限，再呼叫既有 handler。
+  無效 session 直接拒絕，不落回 LINE webhook；手機 LINE JSONP 路徑保留。
+- [x] `landlord-desktop-quick-lease-bridge.test.mjs` 與 Phase 163 邀請回找測試
+  已先失敗再通過；尚未宣稱真人登入、瀏覽器、LINE 或正式站驗收。
+- [ ] 本候選尚未推送、合併或部署；正式 506 顯示與邀請連結仍需取得明確的
+  Production 發布授權後，再做登入後瀏覽器驗收。
+
+## 2026-09-29 簡易新租約的過期已出租房間提示（本地候選，未發布）
+
+- [x] 後端初始化資料已有 `room_status` 與 `has_current_or_upcoming_contract`；
+  租約已過期、房間仍標示 `occupied` 時，簡易新租約房號選單顯示
+  「房況待核對，勿作空房」，不再以沒有當前租約推論為空房。
+- [x] 仍標示 `occupied` 的房間在送出前由前端驗證攔下，提示先確認續約
+  或完成退房；若另有當前／未來租約，選單會明示「已出租，已有租約」，
+  不再暗示可以直接建立新房客租約。真正 `vacant` 的房間仍可通過驗證。
+  `landlord-simple-lease-expired-occupancy.test.mjs` 已先失敗再通過。
+- [x] `npm test` 267/267、`npm run validate` 與 `git diff --check` 通過；
+  本次未修改 Apps Script，既有房況與建約回歸包含在完整測試內。
+- [ ] 此為本地前端修正，不改 502 的正式房況、房客、租約或帳務資料；
+  尚未推送、合併或部署，也未完成真人登入後的網站驗收。
+
 ## 2026-09-29 房東寫入登入循環／房況誤判（Version 193／PR #178 已發布）
 
 - [x] `landlord-tenant-create.html` 與 `landlord-tenant-checkin.html` 的 LINE

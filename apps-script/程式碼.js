@@ -2756,6 +2756,59 @@ function doPost(e) {
         let result = null;
 
         if (
+          useBridge &&
+          (
+            action === 'landlord_tenant_create_init' ||
+            action === 'landlord_contract_initiated_init' ||
+            action === 'landlord_contract_initiate_new' ||
+            action === 'landlord_contract_initiate_renewal' ||
+            action === 'landlord_contract_initiate_renewal_direct'
+          )
+        ) {
+          const policy = action === 'landlord_tenant_create_init' ||
+            action === 'landlord_contract_initiated_init'
+            ? 'read'
+            : 'contract_write';
+          result = resolveLandlordQuickLeaseBridgeAccess_(request, policy);
+          const access = result && result.success === true
+            ? result
+            : null;
+
+          if (access && action === 'landlord_tenant_create_init') {
+            result = getLandlordTenantCreateInitByLineUid_(
+              access.principal_line_user_id,
+              request.property_id || '',
+              request.room_id || '',
+              request.previous_contract_id || '',
+              request.tenant_id || '',
+              request.supersede_contract_id || ''
+            );
+          } else if (access && action === 'landlord_contract_initiated_init') {
+            result = landlordInitiatedContractListByAccess_(access);
+          } else if (access && action === 'landlord_contract_initiate_new') {
+            result = landlordInitiatedContractCreateNew_(
+              access,
+              request.input && typeof request.input === 'object' ? request.input : request
+            );
+          } else if (access && action === 'landlord_contract_initiate_renewal') {
+            result = landlordInitiatedContractCreateRenewal_(
+              access,
+              request.input && typeof request.input === 'object' ? request.input : request
+            );
+          } else if (access && action === 'landlord_contract_initiate_renewal_direct') {
+            result = landlordInitiatedContractCreateDirectRenewal_(
+              access,
+              request.input && typeof request.input === 'object' ? request.input : request
+            );
+          }
+
+          return htmlBridgeOutput_(
+            result,
+            request.request_id || ''
+          );
+        }
+
+        if (
           action === 'tenant_repair_tickets_init' ||
           action === 'landlord_repair_tickets_init' ||
           action === 'landlord_repair_ticket_update'
@@ -3669,4 +3722,45 @@ function doPost(e) {
   } finally {
     runtimeSnapshotFinish_();
   }
+}
+
+function resolveLandlordQuickLeaseBridgeAccess_(request, policy) {
+  const missing = landlordEmailAuthPostRequires_(request || {}, [
+    'landlord_session_token',
+    'request_id'
+  ]);
+  if (missing) return missing;
+
+  const principal = resolveLandlordPrincipal_(request, { require_onboarding: true });
+  if (!principal || principal.success !== true || !principal.data) {
+    return principal || landlordInitiatedContractError_('AUTH_REQUIRED', '請重新登入');
+  }
+
+  const data = principal.data;
+  const access = {
+    success: true,
+    code: 'OK',
+    source: data.source || 'email_session',
+    line_user_id: data.principal_line_user_id || data.line_user_id || '',
+    principal_line_user_id: data.principal_line_user_id || data.line_user_id || '',
+    user: data.user || {},
+    workspace: data.workspace || {},
+    membership: data.membership || {}
+  };
+  if (
+    typeof workspaceLandlordCheckPolicy_ !== 'function' ||
+    !access.workspace ||
+    !access.user ||
+    !access.membership
+  ) {
+    return landlordInitiatedContractError_('WORKSPACE_ACCESS_MODULE_REQUIRED', '找不到 Workspace 權限模組');
+  }
+  const permission = workspaceLandlordCheckPolicy_(access, policy);
+  if (!permission || permission.success !== true) {
+    return landlordInitiatedContractError_(
+      permission && permission.code || 'WORKSPACE_PERMISSION_DENIED',
+      permission && permission.message || '沒有房東操作權限'
+    );
+  }
+  return access;
 }
