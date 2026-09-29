@@ -96,7 +96,7 @@ rewriting the original cancellation record.
 
 ## Route inventory
 
-### 2026-09-29 local V2 room-occupancy and LINE-return correction (not deployed)
+### 2026-09-29 V2 room-occupancy and LINE-return correction (Production Version 193 / PR #178)
 
 `landlord_properties_init` still derives `has_active_contract` only from a
 currently valid contract. If no current lease remains but the room still links
@@ -131,8 +131,9 @@ fails closed. Explicit `enabled=false` is preserved for account toggles.
 For form bridges the dispatcher decodes the raw POST body rather than the
 Apps Script `e.parameter` merge, which may also contain query parameters.
 Neither a browser-supplied LINE UID nor a query parameter authorizes a write.
-The existing LINE JSONP routes remain unchanged. This local candidate has not
-been deployed or exercised against Production data.
+The existing LINE JSONP routes remain unchanged. Version 193 and the public
+Pages files were read back after release; authenticated writes and 502 record
+reconciliation have not been exercised.
 
 ### 2026-09-23 formal Workspace room center (Production Version 192 / PR #173 + PR #175)
 

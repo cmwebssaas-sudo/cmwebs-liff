@@ -1,17 +1,17 @@
 # CMWebs 正式交付入口
 
-核對日期：2026-09-23。產品範圍：V2 正式來源整併、退房退款帳務結清、一次性測試帳單封存，以及正式 Workspace 房間中心。
+核對日期：2026-09-29。產品範圍：V2 正式來源整併與已授權的 Production 正確性修復。
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
 ## 唯一正式來源
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
-- 本次核對來源：`b8cfd9499e50dcbfda9aab504928cf90fffdc25f`（PR #173 merge commit）。
+- 本次核對來源：`533c718bfb9146c126c65e15db3c222ec9d98e1d`（PR #178 merge commit）。
 - 公開網站：GitHub Pages；合併後建置狀態 `built`，公開檔案已完成 HTTP 讀回及逐位元組比對。
-- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **191**，Version **190** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
-- 實際後端：版本 191 的 59 個檔案，與 `main/apps-script/` 逐位元組一致。
-- 正式資料表：從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`，未讀取第 2 列以後的業務資料。
+- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **193**，Version **192** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
+- 實際後端：版本 193 的 59 個檔案，與 `main/apps-script/` 逐位元組一致。
+- 正式資料表：2026-09-23 的唯讀 snapshot 從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`；本次發布未重讀業務資料列，也未重新宣稱當前 schema 狀態。
 - 舊部署版本 160 仍存在，但公開網站目前不使用它。不得因舊工作目錄引用它，便把它當作正式服務版本。
 
 專案名稱及更新時間不能辨識正式來源。正式部署必須從公開網站的 Web App ID 對回 Apps Script 專案。Git worktree 是同一 repository 的工作副本；不需要為更新建立新的雲端 Apps Script 專案。
@@ -37,6 +37,14 @@ git diff --check
 本次 Gate 0 的現行來源、部署與 schema 盤點已完成：57 個後端檔案一致、76 個工作表欄名已記錄、11 個公開資產逐位元組相符。已確認正式入口呈現 Email 登入畫面，未要求或代填驗證碼。這是可重現的 V2 internal-beta 來源基線；正式帳號登入後的交易及真實 iPhone／LINE 操作尚未驗收，不能以此宣稱完整營運驗收通過。
 
 報修工單歷史與房客個資隔離程式已隨本次版本發布；新工單會以房間保留歷史、以租約隔離房客存取，前房客姓名、聯絡方式、描述中的個資及附件不得因換租而對新房客公開。既有 `V2_tenant_messages` 的 legacy backfill 尚未執行；需先完成 preview、備份與操作員授權，再以 additive-only migration 回填，不能把尚未回填當作已完成歷史遷移。
+
+## 2026-09-29 房東登入回旋與房況誤判修復
+
+- PR #178 已合併至 `main`（merge commit `533c718bfb9146c126c65e15db3c222ec9d98e1d`）；GitHub Pages workflow `36560361285` 建置完成，15 個公開資產與來源逐位元組相符。
+- 同一正式 Apps Script 專案的 59 個來源檔推送後建立 immutable Version 193；Version 193 唯讀匯出與 `main/apps-script/` 逐檔一致，原 Web App deployment 已由 Version 192 更新到 193，URL 不變。
+- 房客建立／報到保留 LINE OAuth 返回意圖；Email session 的物件／房間寫入走受控 POST bridge，後端再次綁定 session Workspace。502 類型的房客關聯未核對時標示「待核對」並阻止誤建、誤改房況及封存；不自動修正業務資料。
+- 此次未讀取或寫入 502 的正式業務資料列，未進行 Sheet migration、Properties、Trigger、LINE 發送或驗證碼操作。正式帳號寫入、502 實際占用判定及真機／LIFF UAT 仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+- 回滾目標：Apps Script 原 deployment 指回 Version 192；GitHub Pages 將正式來源回復至 `bccaab58b10d6258ec0d26431a046d948fdf0f27`。回滾不覆蓋 Sheets 資料。
 
 ## 2026-09-23 正式 Workspace 房間中心發布
 

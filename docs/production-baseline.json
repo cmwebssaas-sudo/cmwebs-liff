@@ -1,10 +1,10 @@
 {
-  "verified_on": "2026-09-23",
-  "source_commit": "d01d22536157232c8c7ef0d73ab7599b697d549c",
+  "verified_on": "2026-09-29",
+  "source_commit": "533c718bfb9146c126c65e15db3c222ec9d98e1d",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 192,
+  "backend_version": 193,
   "backend_file_count": 59,
-  "backend_tree_sha256": "ef4dda386fe81cb672b4cd1cb2fe0888fde6e670c2caf86fd33a35fe846a38a8",
+  "backend_tree_sha256": "687399d07b60c48e5aa112bd8bc343436a08bade94a08463e13c518b7c4cf26d",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -13,11 +13,13 @@
     "landlord-more.html",
     "landlord-rooms.html",
     "landlord-tenants.html",
+    "landlord-properties.html",
     "landlord-tenant-detail.html",
     "landlord-contract-requests.html",
     "landlord-arrears.html",
     "landlord-tenant-checkout.html",
     "landlord-tenant-create.html",
+    "landlord-tenant-checkin.html",
     "tenant-home.html",
     "frontend-release.js",
     "landlord-responsive.css"

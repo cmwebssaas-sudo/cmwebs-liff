@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-09-29 房東寫入登入循環／房況誤判（本地候選，未部署）
+## 2026-09-29 房東寫入登入循環／房況誤判（Version 193／PR #178 已發布）
 
 - [x] `landlord-tenant-create.html` 與 `landlord-tenant-checkin.html` 的 LINE
   OAuth 返回路徑保留一次性 LINE 意圖；桌面已有 Email session 也不能把原生合約
@@ -24,8 +24,12 @@
   現只解讀原始 POST body，既有 read-bridge 定向回歸仍通過。
 - [ ] 正式 502 房間的實際占用仍需人工核對，不能宣稱資料已修復；Email 驗證碼路徑
   未變更，使用者回報其寄送失敗僅發生於重複回旋之後，不能把它當獨立根因。
-- [ ] 本地候選未 push、未合併、未部署；須先完成發布驗證，
-  並由真人在 Chrome 與 LINE 完成登入、建立／報到及房況回歸驗收。
+- [x] `npm run validate`、265/265 Node 測試與獨立複審通過；PR #178 已合併，
+  Apps Script 同一正式 deployment 更新至 Version 193，GitHub Pages merge commit
+  `533c718` 建置完成，公開 15 個資產逐位元組讀回一致。Version 192 與前一個
+  Pages commit `bccaab5` 保留為回滾目標；未改 Sheet 業務資料。
+- [ ] 真人在 Chrome 與 LINE 完成登入、建立／報到及房況回歸驗收，仍為
+  `HUMAN_REQUIRED`／`UNVERIFIED`。
 
 ## 2026-09-27 房東 POST/read bridge 測試夾具修正（測試／文件限定）
 
