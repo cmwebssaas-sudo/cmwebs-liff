@@ -1,5 +1,32 @@
 # V2 回歸測試矩陣
 
+## 2026-09-29 房東寫入登入循環／房況誤判（本地候選，未部署）
+
+- [x] `landlord-tenant-create.html` 與 `landlord-tenant-checkin.html` 的 LINE
+  OAuth 返回路徑保留一次性 LINE 意圖；桌面已有 Email session 也不能把原生合約
+  寫入流程攔回 Email 驗證碼頁。`landlord-tenant-create-line-return.test.mjs`
+  已先重現失敗，再驗證局部修正。
+- [x] 租約過期但房間仍關聯啟用房客時，物件頁標示「待核對」而非「空房」；不提供
+  重複建立房客／編輯／封存入口。即使租約顯示已結束，只要仍關聯啟用房客也先待核對；
+  無房客關聯的已結束租約才顯示空房。不改正式租約或房況資料。
+  `landlord-room-expired-occupancy-review.test.mjs` 已先失敗再通過。
+- [x] `landlord-room-write-guards.test.mjs` 先重現編輯 502 可能誤寫空房、封存
+  未核對房客及物件封存 handler 未取得 Spreadsheet 的缺陷；現禁止待核對房間編輯／
+  寫入／封存，後端重查啟用房客或缺失的房客關聯。另驗證唯讀角色及跨 Workspace
+  房間不能寫入；正常有效租約的房間仍可更新租金／備註而維持已出租。
+- [x] 桌面 Email session 的物件／房間儲存、封存與房間帳號切換五個既有 action
+  改走受控 POST bridge；伺服器先驗證 Email session，再交給既有 Workspace／
+  寫入權限 handler。`landlord-property-email-write-bridge.test.mjs` 覆蓋
+  正確路由、參數及無效／缺少 session 時零寫入，並使用實際 session resolver 驗證撤銷、
+  過期、停用、Workspace／角色變更；驗證每個寫入 handler 均綁定 session 的
+  Workspace、缺少 Workspace 時拒絕、`enabled=false` 不遺失；已先重現失敗再修正。
+  另以失敗用例驗證表單 bridge 不可從 URL query 繼承 session token；dispatcher
+  現只解讀原始 POST body，既有 read-bridge 定向回歸仍通過。
+- [ ] 正式 502 房間的實際占用仍需人工核對，不能宣稱資料已修復；Email 驗證碼路徑
+  未變更，使用者回報其寄送失敗僅發生於重複回旋之後，不能把它當獨立根因。
+- [ ] 本地候選未 push、未合併、未部署；須先完成發布驗證，
+  並由真人在 Chrome 與 LINE 完成登入、建立／報到及房況回歸驗收。
+
 ## 2026-09-27 房東 POST/read bridge 測試夾具修正（測試／文件限定）
 
 - [x] 根因確認：舊測試只抽取 `doPost(e)`，漏載正式 dispatcher 在入口呼叫的

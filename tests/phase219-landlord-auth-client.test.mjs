@@ -390,16 +390,16 @@ test('Phase 240 bridge output posts from the Apps Script sandbox to the caller t
   );
 });
 
-guardedTest('Phase 219 dispatcher accepts bridge fields from hidden iframe POST forms', () => {
+guardedTest('Phase 219 dispatcher accepts hidden iframe POST forms from the raw body without query credentials', () => {
   assert.match(
     dispatcherSource,
-    /request\s*=\s*Object\.assign\(\s*\{\}\s*,\s*e\.parameter\s*\|\|\s*\{\}\s*\)/,
-    'doPost must accept hidden iframe POST form fields when the body is not JSON'
+    /repairRouteDecodeFormBody_\(postBody\)/,
+    'doPost must decode form fields from the POST body when JSON parsing fails'
   );
   assert.doesNotMatch(
     dispatcherSource,
-    /e\.parameter\.(?:code|session_token|landlord_session_token)/,
-    'bridge form fallback must copy POST parameters as a request object, not read OTP/session secrets from GET-specific fields'
+    /request\s*=\s*Object\.assign\(\s*\{\}\s*,\s*e\.parameter\s*\|\|\s*\{\}\s*\)/,
+    'merged query/form parameters cannot authorize a hidden iframe bridge'
   );
 });
 

@@ -96,6 +96,44 @@ rewriting the original cancellation record.
 
 ## Route inventory
 
+### 2026-09-29 local V2 room-occupancy and LINE-return correction (not deployed)
+
+`landlord_properties_init` still derives `has_active_contract` only from a
+currently valid contract. If no current lease remains but the room still links
+an active tenant, the room view reports `effective_status=needs_review`,
+`effective_status_label=待核對`, and `needs_occupancy_review=true` instead of
+calling the room vacant. This is a read-only reconciliation warning; it does
+not extend a lease, assert physical occupancy, or update a Sheet row. The
+property UI omits duplicate tenant creation, room editing and room archival
+actions until the landlord reconciles the records. A room with no linked active
+tenant retains the existing vacant behavior, including after a lease ends.
+The server also rejects changing the status or archiving a room still linked
+to an active tenant or a dangling tenant pointer, even when its stored status
+says vacant. A room with a current active lease can still update ordinary
+fields; its effective status remains occupied. This is a guard, not a migration
+or automatic lease extension.
+
+The LINE-only `landlord-tenant-create.html` and `landlord-tenant-checkin.html`
+entry flows now carry a one-shot sessionStorage intent through LINE OAuth so
+the desktop Email landing mode does not intercept their return. No new API
+route is introduced, and Email sessions are not accepted as native contract
+write sessions.
+
+The existing `landlord_property_save`, `landlord_property_archive`,
+`landlord_room_save`, `landlord_room_account_toggle`, and
+`landlord_room_archive` actions also accept the controlled `doPost` Email
+bridge. They require an opaque `landlord_session_token` and `request_id` in
+the POST body; the server resolves the principal and passes only its verified
+LINE identity and session Workspace ID to the existing permission-checking
+handlers. The handlers resolve access against that exact Workspace, rather
+than whichever Workspace becomes active later. A missing session Workspace
+fails closed. Explicit `enabled=false` is preserved for account toggles.
+For form bridges the dispatcher decodes the raw POST body rather than the
+Apps Script `e.parameter` merge, which may also contain query parameters.
+Neither a browser-supplied LINE UID nor a query parameter authorizes a write.
+The existing LINE JSONP routes remain unchanged. This local candidate has not
+been deployed or exercised against Production data.
+
 ### 2026-09-23 formal Workspace room center (Production Version 192 / PR #173 + PR #175)
 
 `landlord_room_center_init` is a read-only landlord route for the formal room

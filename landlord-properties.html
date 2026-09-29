@@ -468,6 +468,11 @@
       color: #9b6200;
     }
 
+    .room-status.needs_review {
+      background: var(--orange-soft);
+      color: #9b6200;
+    }
+
     .room-status.unavailable,
     .room-status.archived {
       background: var(--danger-soft);
@@ -1858,7 +1863,9 @@
                       active
                         ? `
                           ${
-                            room.paper_backfill_replacement_eligible ||
+                            room.needs_occupancy_review
+                              ? '<span class="room-desktop-meta">請先核對房客與租約</span>'
+                              : room.paper_backfill_replacement_eligible ||
                             room.paper_backfill_legacy_pending_replacement_eligible ||
                             room.paper_backfill_orphan_replacement_eligible
                               ? `<button class="small-button secondary" type="button" onclick="goTenantPaperBackfill('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}','${safeHtml(room.paper_backfill_replacement_eligible ? room.paper_backfill_replacement_tenant_id : room.paper_backfill_legacy_pending_replacement_eligible ? room.paper_backfill_legacy_pending_replacement_tenant_id : '')}','${safeHtml(room.paper_backfill_replacement_eligible ? room.paper_backfill_replacement_contract_id : room.paper_backfill_legacy_pending_replacement_eligible ? room.paper_backfill_legacy_pending_replacement_contract_id : room.paper_backfill_orphan_replacement_contract_id)}',${room.paper_backfill_orphan_replacement_eligible ? 'true' : 'false'},${room.paper_backfill_legacy_pending_replacement_eligible ? 'true' : 'false'})">補登紙本並建立房客登入</button>`
@@ -1866,8 +1873,8 @@
                                 ? `<button class="small-button primary" type="button" onclick="goTenantCreate('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')">建立房客</button><button class="small-button secondary" type="button" onclick="goTenantPaperBackfill('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')">手動補登紙本合約</button>`
                                 : ''
                           }
-                          <button class="small-button secondary" type="button" onclick="openRoomEditor('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')">編輯</button>
-                          <button class="small-button danger" type="button" ${room.has_active_contract ? 'disabled' : ''} onclick="openArchiveEditor('room','${safeHtml(room.room_id)}','${safeHtml(room.room_name)}')">${room.has_active_contract ? '租約中' : '封存'}</button>
+                          ${room.needs_occupancy_review ? '' : `<button class="small-button secondary" type="button" onclick="openRoomEditor('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')">編輯</button>`}
+                          ${room.needs_occupancy_review ? '' : `<button class="small-button danger" type="button" ${room.has_active_contract ? 'disabled' : ''} onclick="openArchiveEditor('room','${safeHtml(room.room_id)}','${safeHtml(room.room_name)}')">${room.has_active_contract ? '租約中' : '封存'}</button>`}
                         `
                         : ''
                     }
@@ -1929,7 +1936,9 @@
                     active
                       ? `
                         ${
-                          room.paper_backfill_replacement_eligible ||
+                          room.needs_occupancy_review
+                            ? '<span class="room-desktop-meta">請先核對房客與租約</span>'
+                            : room.paper_backfill_replacement_eligible ||
                           room.paper_backfill_legacy_pending_replacement_eligible ||
                           room.paper_backfill_orphan_replacement_eligible
                             ? `
@@ -1963,22 +1972,24 @@
                             : ''
                         }
 
-                        <button
+                        ${room.needs_occupancy_review ? '' : `<button
                           class="small-button secondary"
                           type="button"
                           onclick="openRoomEditor('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')"
                         >
                           編輯
-                        </button>
+                        </button>`}
 
-                        <button
-                          class="small-button danger"
-                          type="button"
-                          ${room.has_active_contract ? 'disabled' : ''}
-                          onclick="openArchiveEditor('room','${safeHtml(room.room_id)}','${safeHtml(room.room_name)}')"
-                        >
-                          ${room.has_active_contract ? '租約中' : '封存'}
-                        </button>
+                        ${room.needs_occupancy_review ? '' : `
+                          <button
+                            class="small-button danger"
+                            type="button"
+                            ${room.has_active_contract ? 'disabled' : ''}
+                            onclick="openArchiveEditor('room','${safeHtml(room.room_id)}','${safeHtml(room.room_name)}')"
+                          >
+                            ${room.has_active_contract ? '租約中' : '封存'}
+                          </button>
+                        `}
                       `
                       : ''
                   }
@@ -2438,6 +2449,11 @@
           ? getRoom(roomId)
           : null;
 
+      if (room && room.needs_occupancy_review) {
+        showToast('房客與租約尚待核對，暫停編輯房間。', true);
+        return;
+      }
+
       const roomDefaults =
         PAGE_DATA.room_defaults ||
         {
@@ -2737,6 +2753,11 @@
         roomId
           ? getRoom(roomId)
           : null;
+
+      if (room && room.needs_occupancy_review) {
+        showToast('房客與租約尚待核對，暫停儲存房間。', true);
+        return;
+      }
 
       const values = {
         room_id:
