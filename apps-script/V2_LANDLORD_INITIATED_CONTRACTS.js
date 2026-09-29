@@ -1350,6 +1350,7 @@ function landlordInitiatedContractNormalizeInput_(input) {
     tenant_email: landlordInitiatedContractText_(input.tenant_email || input.email),
     note: landlordInitiatedContractText_(input.note)
   };
+  if (result.note.length > 500) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '補充約定最多 500 字。');
   if (simpleFlow) {
     result.management_fee_provided = managementFeeText !== '';
     if (result.management_fee_provided && !Number.isFinite(Number(managementFeeText.replace(/,/g, '')))) {
@@ -1438,6 +1439,7 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
           rent_amount: input.rent_amount,
           management_fee: input.management_fee,
           deposit_amount: input.deposit_amount,
+          note: input.note,
           special_offer_enabled: input.special_offer_enabled,
           special_offer_notice_days: input.special_offer_notice_days,
           special_offer_clause: input.special_offer_clause

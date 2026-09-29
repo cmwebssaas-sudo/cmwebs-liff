@@ -47,6 +47,15 @@ payment-account row:
 | `V2_tenant_checkins` | 入住報到、鑰匙與入住電表 |
 | `V2_tenant_messages` | 房客訊息與報修基礎資料 |
 
+### `V2_contracts.note` 補充約定
+
+新租約及續約建立時，房東選填的最多 500 字補充條件沿用既有的
+`V2_contracts.note` 欄；它屬於該次待簽租約版本的內容，房客簽署前的
+固定範本預覽及簽署版文件應一致顯示。空白不追加條款，既有已簽約版本
+不回寫。此欄不同於下文僅供房東內部使用的 `V2_bills.note`。本次不新增
+正式 Sheet 欄位；正式環境中 `contract_content` 等欄位的缺口另依 Gate 0
+程序處理，不以此改動代替遷移。
+
 ### `V2_contracts` initial rent payment snapshot
 
 The simplified new-contract and paper-backfill flows may explicitly record that

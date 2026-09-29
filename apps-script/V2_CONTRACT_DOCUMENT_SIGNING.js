@@ -76,9 +76,46 @@ function tenantContractDocumentBuildPreviewText_(
     templateText,
     fields
   ).replace(/\{\{[^{}]+\}\}/g, '—');
+  content = tenantContractDocumentInsertSupplementalConditionsText_(
+    content,
+    templateText,
+    contract
+  );
   return signed
     ? tenantContractDocumentSignedEvidenceText_(content)
     : tenantContractDocumentPendingEvidenceText_(content);
+}
+
+function tenantContractDocumentSupplementalConditions_(contract) {
+  var note = tenantContractDocumentFirst_(contract, ['note', 'landlord_note']);
+  return note ? '補充約定（本合約之一部分）：\n' + note : '';
+}
+
+function tenantContractDocumentInsertSupplementalConditionsText_(content, templateText, contract) {
+  var clause = tenantContractDocumentSupplementalConditions_(contract);
+  if (!clause || String(templateText || '').indexOf('{{備註}}') >= 0) return content;
+  var marker = '乙方簽名（線上簽署）';
+  var index = content.indexOf(marker);
+  return index >= 0
+    ? content.slice(0, index) + clause + '\n' + content.slice(index)
+    : content + '\n\n' + clause;
+}
+
+function tenantContractDocumentEnsureSupplementalConditionsInBody_(body, templateText, contract) {
+  var clause = tenantContractDocumentSupplementalConditions_(contract);
+  if (!clause || String(templateText || '').indexOf('{{備註}}') >= 0) return;
+  var match = body.findText(tenantContractDocumentRegexLiteral_('乙方簽名（線上簽署）'));
+  if (match) {
+    var child = match.getElement();
+    while (child && child.getParent && child.getParent() !== body) {
+      child = child.getParent();
+    }
+    if (child && child.getParent && child.getParent() === body) {
+      body.insertParagraph(body.getChildIndex(child), clause);
+      return;
+    }
+  }
+  body.appendParagraph(clause);
 }
 
 function tenantContractDocumentIsSubmitted_(contract) {
@@ -678,6 +715,7 @@ function tenantContractDocumentMaterialize_(
     copy.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
     var document = DocumentApp.openById(copy.getId());
     var body = document.getBody();
+    var templateText = body.getText();
     var context = tenantContractDocumentResolveContext_(
       SpreadsheetApp.getActiveSpreadsheet(),
       contract,
@@ -696,6 +734,11 @@ function tenantContractDocumentMaterialize_(
         tenantContractDocumentRegexReplacement_(fields[key])
       );
     });
+    tenantContractDocumentEnsureSupplementalConditionsInBody_(
+      body,
+      templateText,
+      contract
+    );
     var editableEvidence = body.editAsText();
     [
       '簽署狀態：待房客完成線上簽署。',
