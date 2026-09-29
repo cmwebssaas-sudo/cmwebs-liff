@@ -4,7 +4,7 @@
 
 **Goal:** 房東在新租約與續約填寫的補充條件會成為房客實際預覽、簽署的文件內容。
 
-**Architecture:** 沿用既有 `V2_contracts.note`，簡易新約補上表單輸入；後端沿用共用建立 payload，固定範本預覽及簽署版共用條件插入規則。無 Sheet schema 或外部範本變更。
+**Architecture:** 表單輸入先以 `note` 傳送，但只有新建立時寫入既有 `terms_snapshot_json.cmwebs_contract_conditions_v1`、並綁定本次 `contract_id` 的文字才進入合約。簡易新約補上表單輸入，續約不繼承舊備註；固定範本預覽及簽署版共用條件插入規則。無 Sheet schema 或外部範本變更。
 
 **Tech Stack:** 靜態 HTML、Apps Script JavaScript、Node `node:test`。
 
@@ -23,6 +23,7 @@
 - 空白條件：不產生空的額外條款。
 - 超過 500 字的直接 API 請求：後端拒絕。
 - 新約／續約：都使用共用欄位，不覆蓋舊合約。
+- 歷史 `note` 不進入合約；前版條件不繼承；無簽名前插入點時拒絕，不能附在簽名後。
 
 ---
 

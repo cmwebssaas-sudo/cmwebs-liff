@@ -2979,7 +2979,9 @@
       setInputValue('paymentDay', previous.payment_day || previous.monthly_payment_day || 10);
       setInputValue('electricityRate', previous.electricity_fee_rate || 0);
       setInputValue('equipmentRate', previous.equipment_fee_rate || 0);
-      setInputValue('note', previous.note || '');
+      // A renewal's new condition must be entered deliberately; old notes may
+      // be internal operational history, not terms agreed for this version.
+      setInputValue('note', '');
 
       if (previous.end_date) {
         const nextStart = rawText(previous.end_date).trim();

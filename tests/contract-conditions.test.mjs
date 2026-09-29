@@ -6,6 +6,11 @@ import vm from 'node:vm';
 const page = readFileSync(new URL('../landlord-tenant-create.html', import.meta.url), 'utf8');
 const initiated = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
 const signing = readFileSync(new URL('../apps-script/V2_CONTRACT_DOCUMENT_SIGNING.js', import.meta.url), 'utf8');
+const expiry = readFileSync(new URL('../apps-script/V2_CONTRACT_EXPIRY_RENEWALS.js', import.meta.url), 'utf8');
+
+const conditions = (contractId, value) => JSON.stringify({
+  cmwebs_contract_conditions_v1: { contract_id: contractId, text: value }
+});
 
 test('simple new lease renders an optional contract condition field', () => {
   const start = page.indexOf('function renderSimpleNewContractPage()');
@@ -59,12 +64,12 @@ test('landlord fixed-template contract preview receives the condition for a new 
   vm.runInContext(initiated, context);
   context.tenantContractDocumentPreview_ = contract => ({
     available: true,
-    content: `固定合約\n${contract.note || ''}`
+    content: `固定合約\n${JSON.parse(contract.terms_snapshot_json).cmwebs_contract_conditions_v1.text}`
   });
   for (const previousContractId of ['', 'C-OLD']) {
     const text = context.landlordInitiatedContractBuildDocument_(
       { user: { name: '房東' } }, { property_id: 'P1' }, { room_id: 'R506' },
-      { start_date: '2026-09-11', end_date: '2027-09-10', rent_amount: 8500, management_fee: 500, deposit_amount: 18000, note: '入住前先完成冷氣清潔', previous_contract_id: previousContractId },
+      { contract_id: 'C-NEW', terms_snapshot_json: conditions('C-NEW', '入住前先完成冷氣清潔'), start_date: '2026-09-11', end_date: '2027-09-10', rent_amount: 8500, management_fee: 500, deposit_amount: 18000, note: '入住前先完成冷氣清潔', previous_contract_id: previousContractId },
       '房客'
     );
     assert.match(text, /固定合約\n入住前先完成冷氣清潔/);
@@ -85,7 +90,7 @@ test('fixed contract preview inserts conditions before signature when template h
   const context = signingContext();
   const template = '標準租約正文\n乙方簽名（線上簽署）：＿＿＿＿（待簽署）';
   const preview = context.tenantContractDocumentBuildPreviewText_(
-    template, { note: '入住前先完成冷氣清潔' }, {}, new Date('2026-09-30T00:00:00Z'), {}
+    template, { contract_id: 'C-NEW', terms_snapshot_json: conditions('C-NEW', '入住前先完成冷氣清潔') }, {}, new Date('2026-09-30T00:00:00Z'), {}
   );
   assert.match(preview, /標準租約正文[\s\S]*補充約定（本合約之一部分）：\n入住前先完成冷氣清潔[\s\S]*乙方簽名/);
   assert.equal(preview.split('入住前先完成冷氣清潔').length - 1, 1);
@@ -95,7 +100,7 @@ test('existing note placeholder is not duplicated and blank notes add no clause'
   const context = signingContext();
   const withSlot = context.tenantContractDocumentBuildPreviewText_(
     '補充約定：{{備註}}\n乙方簽名（線上簽署）',
-    { note: '水費每月結算' }, {}, new Date('2026-09-30T00:00:00Z'), {}
+    { contract_id: 'C-NEW', terms_snapshot_json: conditions('C-NEW', '水費每月結算') }, {}, new Date('2026-09-30T00:00:00Z'), {}
   );
   assert.equal(withSlot.split('水費每月結算').length - 1, 1);
   const withoutNote = context.tenantContractDocumentBuildPreviewText_(
@@ -118,7 +123,131 @@ test('signed copy inserts the same condition before its signature block', () => 
   body.appendParagraph = value => body.children.push({ text: value, getParent: () => body });
   context.tenantContractDocumentEnsureSupplementalConditionsInBody_(
     body, '標準租約正文\n乙方簽名（線上簽署）',
-    { note: '入住前先完成冷氣清潔' }
+    { contract_id: 'C-NEW', terms_snapshot_json: conditions('C-NEW', '入住前先完成冷氣清潔') }
   );
   assert.match(body.getText(), /標準租約正文\n補充約定（本合約之一部分）：\n入住前先完成冷氣清潔\n乙方簽名/);
+});
+
+test('legacy notes and copied previous-version conditions never enter a new signature', () => {
+  const context = signingContext();
+  const template = '補充約定：{{備註}}\n乙方簽名（線上簽署）';
+  for (const contract of [
+    { contract_id: 'C-NEW', note: '內部催繳紀錄', landlord_note: '不對房客公開' },
+    { contract_id: 'C-NEW', note: '舊條件', terms_snapshot_json: conditions('C-OLD', '舊約不可沿用') }
+  ]) {
+    const preview = context.tenantContractDocumentBuildPreviewText_(template, contract, {}, new Date('2026-09-30T00:00:00Z'), {});
+    assert.doesNotMatch(preview, /內部催繳|不對房客公開|舊約不可沿用|舊條件/);
+  }
+});
+
+test('only newly entered conditions are marked for the newly generated version', () => {
+  const context = { Date, Math, Number, String, Object, Array, JSON, RegExp };
+  vm.createContext(context);
+  vm.runInContext(initiated, context);
+  const inherited = conditions('C-OLD', '舊約條件');
+  const fresh = context.landlordInitiatedContractConditionsSnapshot_(inherited, '新條件', 'C-NEW');
+  assert.equal(fresh.success, true);
+  assert.deepEqual(JSON.parse(fresh.data).cmwebs_contract_conditions_v1, { contract_id: 'C-NEW', text: '新條件' });
+  const blank = context.landlordInitiatedContractConditionsSnapshot_(inherited, '', 'C-NEW');
+  assert.equal(blank.success, true);
+  assert.equal(blank.data, '');
+  assert.equal(context.landlordInitiatedContractConditionsSnapshot_('not-json', '新條件', 'C-NEW').success, false);
+  assert.doesNotMatch(expiry, /note:\s*previous\.note\s*\|\|/);
+});
+
+test('landlord contract creation refuses to save a condition when the fixed preview cannot place it', () => {
+  assert.match(initiated, /const newContent = landlordInitiatedContractBuildDocument_\(/);
+  assert.match(initiated, /if \(normalized\.data\.note && !newContent\) return landlordInitiatedContractError_\(/);
+  assert.match(initiated, /const renewalContent = landlordInitiatedContractBuildDocument_\(/);
+  assert.match(initiated, /if \(normalized\.data\.note && !renewalContent\) return landlordInitiatedContractError_\(/);
+});
+
+test('inline-image-only signature template rejects a condition unless it has a note slot', () => {
+  const context = signingContext();
+  const contract = { contract_id: 'C-NEW', terms_snapshot_json: conditions('C-NEW', '新條件') };
+  assert.throws(() => context.tenantContractDocumentBuildPreviewText_('標準租約正文\n簽名圖片', contract, {}, new Date(), {}), /CONTRACT_CONDITIONS_SLOT_NOT_FOUND/);
+  const body = { findText: () => null, appendParagraph: () => assert.fail('must not append after signature') };
+  assert.throws(() => context.tenantContractDocumentEnsureSupplementalConditionsInBody_(body, '標準租約正文\n簽名圖片', contract), /CONTRACT_CONDITIONS_SLOT_NOT_FOUND/);
+  assert.match(context.tenantContractDocumentBuildPreviewText_('補充約定：{{備註}}\n簽名圖片', contract, {}, new Date(), {}), /新條件/);
+});
+
+test('new and renewal fixed-template preview agree with the signed copy, without releasing an unsafe image-slot copy', () => {
+  for (const { kind, template, value, shouldFail } of [
+    { kind: 'new', template: '租約正文\n乙方簽名（線上簽署）', value: '新約現場條件' },
+    { kind: 'renewal', template: '租約正文\n補充約定：{{備註}}\n乙方簽名（線上簽署）', value: '續約新條件' },
+    { kind: 'renewal', template: '租約正文\n乙方簽名（線上簽署）', value: '' },
+    { kind: 'new', template: '租約正文\n簽名圖片', value: '必須在簽名前', shouldFail: true }
+  ]) {
+    const context = signingContext();
+    const contract = {
+      contract_id: `C-${kind}`, workspace_id: 'W1', tenant_id: 'T1',
+      note: '舊的內部紀錄',
+      terms_snapshot_json: value ? conditions(`C-${kind}`, value) : ''
+    };
+    const makeBody = () => {
+      const body = { children: [] };
+      body.children = template.split('\n').map(text => ({ text, getParent: () => body }));
+      body.getText = () => body.children.map(child => child.text).join('\n');
+      body.getChildIndex = child => body.children.indexOf(child);
+      body.findText = () => {
+        const child = body.children.find(entry => entry.text.includes('乙方簽名（線上簽署）'));
+        return child ? { getElement: () => ({ getParent: () => child }) } : null;
+      };
+      body.insertParagraph = (index, text) => body.children.splice(index, 0, { text, getParent: () => body });
+      body.editAsText = () => ({ replaceText: (pattern, replacement) => {
+        body.children.forEach(child => { child.text = child.text.replace(new RegExp(pattern, 'g'), replacement); });
+      } });
+      return body;
+    };
+    const templateBody = makeBody();
+    const copyBody = makeBody();
+    let trashed = false;
+    let saved = false;
+    let appended = false;
+    const copy = {
+      getId: () => 'copy-id', setSharing: () => {},
+      setTrashed: value => { trashed = value; }
+    };
+    context.tenantContractDocumentTemplateId_ = () => 'template-id';
+    context.tenantContractDocumentRootFolder_ = () => ({ success: true, data: {} });
+    context.tenantContractDocumentResolveContext_ = () => ({});
+    context.tenantContractDocumentEnsureSchema_ = () => ({});
+    context.tenantContractDocumentFindExisting_ = () => null;
+    context.tenantContractDocumentReplaceSignature_ = () => true;
+    context.tenantContractDocumentAppend_ = () => { appended = true; };
+    context.SpreadsheetApp = { getActiveSpreadsheet: () => ({}) };
+    context.Utilities.getUuid = () => 'document-record-id';
+    context.DocumentApp = { openById: id => ({
+      getBody: () => id === 'template-id' ? templateBody : copyBody,
+      saveAndClose: () => { saved = true; }
+    }) };
+    context.DriveApp = {
+      Access: { PRIVATE: 'PRIVATE' }, Permission: { NONE: 'NONE' },
+      getFileById: id => id === 'template-id'
+        ? { makeCopy: () => copy }
+        : { getBlob: () => ({}) }
+    };
+    const preview = context.tenantContractDocumentPreview_(contract, {});
+    const materialized = context.tenantContractDocumentMaterialize_(contract, {}, 'artifact-id', 'signature-id');
+    if (shouldFail) {
+      assert.equal(preview.available, false);
+      assert.equal(materialized.success, false);
+      assert.equal(trashed, true);
+      assert.equal(appended, false);
+      continue;
+    }
+    assert.equal(preview.available, true);
+    assert.equal(materialized.success, true);
+    assert.equal(saved, true);
+    assert.equal(appended, true);
+    assert.doesNotMatch(preview.content, /舊的內部紀錄/);
+    assert.doesNotMatch(copyBody.getText(), /舊的內部紀錄/);
+    if (value) {
+      assert.ok(preview.content.indexOf(value) < preview.content.indexOf('乙方簽名'));
+      assert.ok(copyBody.getText().indexOf(value) < copyBody.getText().indexOf('乙方簽名'));
+    } else {
+      assert.doesNotMatch(preview.content, /補充約定/);
+      assert.doesNotMatch(copyBody.getText(), /補充約定/);
+    }
+  }
 });

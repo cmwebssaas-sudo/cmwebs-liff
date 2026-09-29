@@ -89,7 +89,7 @@ function contractExpiryRenewalPrepareDraft_(previous, rows, roomsSheet, properti
   const input = landlordInitiatedContractNormalizeInput_(Object.assign({}, defaults, {
     property_id: previous.property_id, room_id: previous.room_id, payment_day: defaults.monthly_payment_day || previous.payment_day,
     tenant_name: previous.tenant_name || previous.name, tenant_phone: previous.tenant_phone || previous.phone,
-    tenant_email: previous.tenant_email || previous.email, note: previous.note || '', identity_document_mode: 'carried_forward'
+    tenant_email: previous.tenant_email || previous.email, note: '', identity_document_mode: 'carried_forward'
   }));
   if (!input.success) return input;
   const access = { success: true, workspace: { workspace_id: previous.workspace_id }, user: { user_id: previous.created_by_user_id || 'system', name: previous.landlord_name || '房東' }, membership: { membership_id: previous.created_by_membership_id || 'system' }, principals: [{ landlord_id: previous.landlord_id }] };
