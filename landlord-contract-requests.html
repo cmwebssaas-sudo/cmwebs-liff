@@ -2517,7 +2517,25 @@
       const includeOffer = window.confirm('是否加入「提前 30 天通知免收違約金」優惠條款？目前設定：' + (offerDefault ? '加入' : '不加入'));
       const specialOfferClause = includeOffer ? window.prompt('優惠條款內容：', rawText(contract.special_offer_clause).trim() || '租約期滿如不再續約，提前30個日曆日通知，免收違約金。') : '';
       if (includeOffer && specialOfferClause === null) return;
-      if (!window.confirm('確定更新續約日期、金額及優惠條款嗎？修改後會重新產生合約全文。')) return;
+      let existingCondition = '';
+      try {
+        const snapshot = typeof contract.terms_snapshot_json === 'string'
+          ? JSON.parse(contract.terms_snapshot_json || '{}')
+          : (contract.terms_snapshot_json || {});
+        const condition = snapshot.cmwebs_contract_conditions_v1;
+        if (condition && rawText(condition.contract_id).trim() === normalizedContractId) {
+          existingCondition = rawText(condition.text).trim();
+        }
+      } catch (_) {
+        // A legacy or unreadable snapshot must not become a signed condition.
+      }
+      const conditionNote = window.prompt('合約補充約定／現場備註（選填，最多 500 字；留空可移除草稿中的約定）：', existingCondition);
+      if (conditionNote === null) return;
+      if (conditionNote.length > 500) {
+        showAlert('備註過長', '合約補充約定最多 500 字，請縮短後重試。');
+        return;
+      }
+      if (!window.confirm('確定更新續約日期、金額、優惠條款及補充約定嗎？修改後會重新產生合約全文。')) return;
       try {
         await callLandlordInitiatedApi('landlord_contract_renewal_draft_update', {
           input: {
@@ -2530,10 +2548,11 @@
             payment_day: paymentDay,
             special_offer_enabled: includeOffer,
             special_offer_notice_days: 30,
-            special_offer_clause: includeOffer ? specialOfferClause : ''
+            special_offer_clause: includeOffer ? specialOfferClause : '',
+            note: conditionNote
           }
         });
-        showAlert('續約條件已更新', '日期、金額及優惠條款已同步到合約全文，請重新檢視後完成房東審查。', function() { loadPage(false); });
+        showAlert('續約條件已更新', '日期、金額、優惠條款及補充約定已同步到合約全文，請重新檢視後完成房東審查。', function() { loadPage(false); });
       } catch (error) {
         showAlert('修改失敗', error.message || '請重新整理後再試。');
       }

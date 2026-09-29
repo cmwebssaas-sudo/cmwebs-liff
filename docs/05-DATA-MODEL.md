@@ -47,6 +47,21 @@ payment-account row:
 | `V2_tenant_checkins` | 入住報到、鑰匙與入住電表 |
 | `V2_tenant_messages` | 房客訊息與報修基礎資料 |
 
+### `V2_contracts` 補充約定版本邊界
+
+新租約及續約建立時，房東可選填最多 500 字的補充條件。新條件只在
+`terms_snapshot_json.cmwebs_contract_conditions_v1` 保存 `{contract_id,text}`；
+房客預覽與簽署版只在其中 `contract_id` 等於本租約 ID 時顯示。既有
+`V2_contracts.note` 仍可供房東管理，但歷史 `note`／`landlord_note` 不自動成為
+新租約條款，也不帶入續約輸入框。舊約條件即使被複製到新版本的快照，
+其 ID 不同亦不會顯示；要沿用須由房東在新版本重新輸入。空白不追加條款，
+已簽版本不回寫。
+
+固定範本有 `{{備註}}` 時取代該位置；否則須能在簽名區之前定位插入點。
+若本次有新條件但無法定位，建立流程拒絕保存該待簽合約，簽署文件流程
+亦不留存失敗副本。本次不新增正式 Sheet 欄位；正式環境中
+`contract_content` 等欄位的缺口另依 Gate 0 程序處理，不以此改動代替遷移。
+
 ### `V2_contracts` initial rent payment snapshot
 
 The simplified new-contract and paper-backfill flows may explicitly record that

@@ -37,7 +37,7 @@ const headers = {
   rooms: ['room_id', 'workspace_id', 'landlord_id', 'property_id', 'room_name', 'room_status', 'account_status', 'current_contract_id', 'current_tenant_id', 'current_tenant_name', 'updated_at'],
   users: ['user_id', 'workspace_id', 'landlord_id', 'line_user_id', 'role', 'status', 'account_status', 'active_workspace_id', 'updated_at'],
   tenants: ['tenant_id', 'tenant_user_id', 'user_id', 'workspace_id', 'landlord_id', 'tenant_line_user_id', 'line_user_id', 'tenant_name', 'name', 'tenant_phone', 'phone', 'tenant_email', 'email', 'property_id', 'property_name', 'room_id', 'room_name', 'current_contract_id', 'tenant_binding_status', 'binding_status', 'account_status', 'tenant_account_status', 'bound_at', 'updated_at'],
-  contracts: ['contract_id', 'workspace_id', 'landlord_id', 'landlord_line_user_id', 'landlord_name', 'tenant_id', 'tenant_user_id', 'tenant_line_user_id', 'tenant_name', 'tenant_phone', 'tenant_email', 'property_id', 'property_name', 'property_address', 'room_id', 'room_name', 'start_date', 'contract_start_date', 'end_date', 'contract_end_date', 'rent_amount', 'monthly_rent', 'management_fee', 'monthly_management_fee', 'deposit_amount', 'payment_day', 'monthly_payment_day', 'contract_status', 'status', 'account_status', 'signing_mode', 'contract_origin', 'invite_id', 'contract_content', 'contract_version', 'previous_contract_id', 'renewed_to_contract_id', 'tenant_signed_at', 'tenant_signature_artifact_id', 'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'tenant_signing_reviewed_at', 'tenant_signing_reviewed_by_user_id', 'tenant_signing_reviewed_by_membership_id', 'tenant_signing_review_note', 'created_by_user_id', 'created_by_membership_id', 'created_at', 'updated_at'],
+  contracts: ['contract_id', 'workspace_id', 'landlord_id', 'landlord_line_user_id', 'landlord_name', 'tenant_id', 'tenant_user_id', 'tenant_line_user_id', 'tenant_name', 'tenant_phone', 'tenant_email', 'property_id', 'property_name', 'property_address', 'room_id', 'room_name', 'start_date', 'contract_start_date', 'end_date', 'contract_end_date', 'rent_amount', 'monthly_rent', 'management_fee', 'monthly_management_fee', 'deposit_amount', 'payment_day', 'monthly_payment_day', 'contract_status', 'status', 'account_status', 'signing_mode', 'contract_origin', 'invite_id', 'contract_content', 'contract_version', 'previous_contract_id', 'renewed_to_contract_id', 'tenant_signed_at', 'tenant_signature_artifact_id', 'tenant_signing_submission_status', 'tenant_signing_submitted_at', 'tenant_signing_reviewed_at', 'tenant_signing_reviewed_by_user_id', 'tenant_signing_reviewed_by_membership_id', 'tenant_signing_review_note', 'created_by_user_id', 'created_by_membership_id', 'created_at', 'updated_at', 'terms_snapshot_json', 'note'],
   invites: ['invite_id', 'workspace_id', 'contract_id', 'room_id', 'landlord_user_id', 'landlord_membership_id', 'claim_code_hash', 'status', 'expires_at', 'claimed_at', 'claimed_line_user_id', 'cancelled_at', 'created_at', 'updated_at'],
   artifacts: ['artifact_id', 'workspace_id', 'tenant_id', 'contract_id', 'artifact_type', 'status'],
   landlordView: ['tenant_id', 'workspace_id', 'tenant_user_id', 'tenant_line_user_id', 'tenant_name', 'tenant_phone', 'tenant_binding_status', 'tenant_account_status', 'property_id', 'property_name', 'room_id', 'room_list', 'current_contract_id', 'contract_status', 'contract_start_date', 'contract_end_date', 'updated_at'],
@@ -220,7 +220,8 @@ function markSubmitted(runtime, contractId, tenantId, mode) {
   assert.equal(invalidDate.code, 'CONTRACT_DRAFT_DATE_INVALID');
   const updated = runtime.api.landlordInitiatedContractUpdateRenewalDraft_(access, created.data.contract.contract_id, {
     start_date: '2026-09-01',
-    end_date: '2027-08-31'
+    end_date: '2027-08-31',
+    note: '續約前修繕漏水'
   });
   assert.equal(updated.success, true, updated.code);
   assert.equal(updated.data.contract.start_date, '2026-09-01');
@@ -229,13 +230,27 @@ function markSubmitted(runtime, contractId, tenantId, mode) {
   assert.equal(updated.data.contract.contract_end_date, '2027-08-31');
   assert.match(updated.data.contract.contract_content, /2026-09-01/);
   assert.match(updated.data.contract.contract_content, /2027-08-31/);
+  assert.ok(updated.data.contract.terms_snapshot_json, 'the edited renewal must persist a version-bound condition');
+  assert.equal(JSON.parse(updated.data.contract.terms_snapshot_json).cmwebs_contract_conditions_v1.text, '續約前修繕漏水');
+  assert.match(updated.data.contract.contract_content, /續約前修繕漏水/);
+  const invalidNote = runtime.api.landlordInitiatedContractUpdateRenewalDraft_(access, created.data.contract.contract_id, {
+    note: '甲'.repeat(501)
+  });
+  assert.equal(invalidNote.code, 'CONTRACT_INITIATION_INVALID');
+  const cleared = runtime.api.landlordInitiatedContractUpdateRenewalDraft_(access, created.data.contract.contract_id, {
+    note: ''
+  });
+  assert.equal(cleared.success, true, cleared.code);
+  assert.equal(cleared.data.contract.terms_snapshot_json, '');
+  assert.doesNotMatch(cleared.data.contract.contract_content, /續約前修繕漏水/);
   assert.deepEqual(runtime.sheets.V2_contracts.rows[0], oldContractBefore);
 
   const confirmed = runtime.api.landlordInitiatedContractConfirmRenewalReview_(access, created.data.contract.contract_id);
   assert.equal(confirmed.success, true, confirmed.code);
   const afterSent = runtime.api.landlordInitiatedContractUpdateRenewalDraft_(access, created.data.contract.contract_id, {
     start_date: '2026-10-01',
-    end_date: '2027-09-30'
+    end_date: '2027-09-30',
+    note: '不得在已送出版本新增條件'
   });
   assert.equal(afterSent.code, 'CONTRACT_DRAFT_NOT_EDITABLE');
 }

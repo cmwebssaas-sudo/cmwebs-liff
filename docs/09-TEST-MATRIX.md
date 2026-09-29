@@ -591,6 +591,14 @@
 - [x] 房客續約與退租頁改為被動資訊／歷史檢視，不建立新的 `V2_contract_requests` 退租申請；既有歷史 route 保留相容讀取（Phase 203 UI；Pages workflow `33567151637` 已部署，LINE 真機為 `UNVERIFIED`）
 - [ ] 已登入 LIFF／真機、Drive 私有照片上傳與 502／506 已登入正式退房交易 UAT（正式 Sheet schema 與欄位 read-back 已通過；其餘仍為 `HUMAN_REQUIRED` / `UNVERIFIED`）
 
+## 2026-09-30 新約／續約補充條件本機候選
+
+- [x] 簡易新租約提供選填的 500 字「補充約定／現場備註」；一般新約及續約由房東在本次版本輸入，直接 API 超長輸入由後端拒絕；舊 `note` 不預填，也不因續約複製而公開（`contract-conditions.test.mjs`）。
+- [x] 條件標記於 `terms_snapshot_json` 並綁定本次 `contract_id`；歷史內部 `note`／`landlord_note` 與前版條件不進入房客合約（`contract-conditions.test.mjs`）。
+- [x] 自動備妥的未送出續約草稿可在房東合約頁編輯選填補充約定；只預填同一草稿版本的約定，後端重新產生合約全文並拒絕超過 500 字或已送出的版本（`contract-conditions.test.mjs`、`phase158-landlord-initiated-contract-activation.runtime.test.mjs`）。
+- [x] 固定 Google Docs 範本有 `{{備註}}` 時取代該位置；沒有時，房客預覽與簽署版皆插入簽名區之前；無法定位時拒絕含條件的新建／簽署版，不把條件附在簽名後；空白不追加（`contract-conditions.test.mjs`）。
+- [ ] 正式範本排版、真實 Drive 複本、已登入房東／房客瀏覽器及 LINE 真機簽署驗收：`HUMAN_REQUIRED`／`UNVERIFIED`。此本機候選尚未發布；未改正式 Sheet、Properties、範本或業務資料。
+
 ## 2026-09-09 房東桌面版登入與操作頁本地候選
 
 ### 同日：現有系統首頁效能修復

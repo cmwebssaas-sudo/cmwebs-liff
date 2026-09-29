@@ -132,6 +132,10 @@ function landlordInitiatedContractCreateNewUnlocked_(access, input) {
   const now = new Date();
   const actor = landlordInitiatedContractActor_(access);
   const contractId = landlordInitiatedContractUuid_();
+  const conditions = landlordInitiatedContractConditionsSnapshot_(normalized.data.terms_snapshot_json, normalized.data.note, contractId);
+  if (!conditions.success) return conditions;
+  normalized.data.terms_snapshot_json = conditions.data;
+  normalized.data.contract_id = contractId;
   const tenantId = 'tenant-' + landlordInitiatedContractUuid_();
   const tenantUserId = 'user-' + landlordInitiatedContractUuid_();
   const inviteId = landlordInitiatedContractUuid_();
@@ -139,6 +143,8 @@ function landlordInitiatedContractCreateNewUnlocked_(access, input) {
   const expiresAt = new Date(now.getTime() + V2_LANDLORD_INITIATED_CONTRACT_INVITE_TTL_MS_).toISOString();
   const landlordId = landlordInitiatedContractLandlordId_(access);
   const tenantName = normalized.data.tenant_name;
+  const newContent = landlordInitiatedContractBuildDocument_(access, property, room, normalized.data, tenantName);
+  if (normalized.data.note && !newContent) return landlordInitiatedContractError_('CONTRACT_TEMPLATE_UNAVAILABLE', '補充約定無法置於簽名前，請檢查固定合約範本');
   const contract = landlordInitiatedContractContractObject_(access, actor, property, room, normalized.data, {
     contract_id: contractId,
     tenant_id: tenantId,
@@ -152,7 +158,7 @@ function landlordInitiatedContractCreateNewUnlocked_(access, input) {
     signing_mode: 'new_tenant',
     contract_origin: 'landlord_initiated',
     invite_id: inviteId,
-    contract_content: landlordInitiatedContractBuildDocument_(access, property, room, normalized.data, tenantName),
+    contract_content: newContent,
     contract_version: 'fixed-google-doc-template-1',
     previous_contract_id: '',
     renewed_to_contract_id: '',
@@ -269,7 +275,7 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     tenant_name: previous.tenant_name || previous.name || '',
     tenant_phone: previous.tenant_phone || previous.phone || '',
     tenant_email: previous.tenant_email || previous.email || '',
-    note: previous.note || ''
+    note: ''
   }, rawInput);
   const normalized = landlordInitiatedContractNormalizeInput_(renewalInput);
   if (!normalized.success) return normalized;
@@ -281,12 +287,20 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
   const now = new Date();
   const actor = landlordInitiatedContractActor_(access);
   const contractId = landlordInitiatedContractUuid_();
+  const conditions = landlordInitiatedContractConditionsSnapshot_(normalized.data.terms_snapshot_json, normalized.data.note, contractId);
+  if (!conditions.success) return conditions;
+  normalized.data.terms_snapshot_json = conditions.data;
+  normalized.data.contract_id = contractId;
   const versionFields = contractRenewalHistoryBuildVersionFields_(previous, normalized.data, {
     contract_id: contractId,
     renewal_request_id: rawInput.renewal_request_id,
     existing_rows: contracts
   });
   const contractInput = Object.assign({}, normalized.data, versionFields);
+  contractInput.terms_snapshot_json = conditions.data;
+  contractInput.contract_id = contractId;
+  const renewalContent = landlordInitiatedContractBuildDocument_(access, property, room, contractInput, previous.tenant_name || previous.name || '');
+  if (normalized.data.note && !renewalContent) return landlordInitiatedContractError_('CONTRACT_TEMPLATE_UNAVAILABLE', '補充約定無法置於簽名前，請檢查固定合約範本');
   const contract = landlordInitiatedContractContractObject_(access, actor, property, room, contractInput, {
     contract_id: contractId,
     tenant_id: previous.tenant_id,
@@ -301,7 +315,7 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     signing_mode: 'renewal',
     contract_origin: 'landlord_initiated',
     invite_id: '',
-    contract_content: landlordInitiatedContractBuildDocument_(access, property, room, normalized.data, previous.tenant_name || previous.name || ''),
+    contract_content: renewalContent,
     contract_version: 'fixed-google-doc-template-1',
     previous_contract_id: previousId,
     renewed_to_contract_id: '',
@@ -317,7 +331,7 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
     created_by_membership_id: actor.membership_id,
     created_at: now.toISOString(),
     updated_at: now.toISOString(),
-    note: normalized.data.note || previous.note || ''
+    note: normalized.data.note
   });
   landlordInitiatedContractAppend_(schema.data.contracts, contract);
   let documentReferences = null;
@@ -471,6 +485,14 @@ function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId
   }
 
   const documentInput = landlordInitiatedContractRenewalDraftInput_(contract, input);
+  const noteProvided = Object.prototype.hasOwnProperty.call(input || {}, 'note');
+  if (noteProvided) {
+    documentInput.note = landlordInitiatedContractText_(input.note);
+    if (documentInput.note.length > 500) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '補充約定最多 500 字。');
+    const conditions = landlordInitiatedContractConditionsSnapshot_(contract.terms_snapshot_json, documentInput.note, normalizedContractId);
+    if (!conditions.success) return conditions;
+    documentInput.terms_snapshot_json = conditions.data;
+  }
   const startDate = documentInput.start_date;
   const endDate = documentInput.end_date;
   if (!landlordInitiatedContractIsIsoDate_(startDate) || !landlordInitiatedContractIsIsoDate_(endDate) || endDate < startDate) {
@@ -490,6 +512,7 @@ function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId
     documentInput,
     contract.tenant_name || contract.name || ''
   );
+  if (noteProvided && documentInput.note && !contractContent) return landlordInitiatedContractError_('CONTRACT_TEMPLATE_UNAVAILABLE', '補充約定無法置於簽名前，請檢查固定合約範本');
   landlordInitiatedContractUpdate_(schema.data.contracts, contract, {
     start_date: documentInput.start_date,
     contract_start_date: documentInput.contract_start_date,
@@ -507,6 +530,8 @@ function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId
     special_offer_applies_to: documentInput.special_offer_applies_to,
     special_offer_waiver_type: documentInput.special_offer_waiver_type,
     special_offer_clause: documentInput.special_offer_clause,
+    terms_snapshot_json: documentInput.terms_snapshot_json,
+    note: documentInput.note,
     contract_content: contractContent,
     updated_at: updatedAt
   });
@@ -1350,6 +1375,7 @@ function landlordInitiatedContractNormalizeInput_(input) {
     tenant_email: landlordInitiatedContractText_(input.tenant_email || input.email),
     note: landlordInitiatedContractText_(input.note)
   };
+  if (result.note.length > 500) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '補充約定最多 500 字。');
   if (simpleFlow) {
     result.management_fee_provided = managementFeeText !== '';
     if (result.management_fee_provided && !Number.isFinite(Number(managementFeeText.replace(/,/g, '')))) {
@@ -1364,6 +1390,34 @@ function landlordInitiatedContractNormalizeInput_(input) {
   if (result.tenant_phone && !/^09\d{8}$/.test(result.tenant_phone)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '房客手機格式無效');
   if (result.tenant_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result.tenant_email)) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '房客 Email 格式無效');
   return { success: true, code: 'OK', data: result };
+}
+
+// A contract condition is opt-in for this version only. Historical `note` is
+// operational data, and an inherited snapshot must never become a new term.
+function landlordInitiatedContractConditionsSnapshot_(snapshotText, note, contractId) {
+  var source = landlordInitiatedContractText_(snapshotText);
+  var condition = landlordInitiatedContractText_(note);
+  var snapshot = {};
+  if (source) {
+    try {
+      snapshot = JSON.parse(source);
+    } catch (_) {
+      return condition
+        ? landlordInitiatedContractError_('CONTRACT_TERMS_INVALID', '租約條件快照格式無效，無法加入補充約定')
+        : { success: true, code: 'OK', data: source };
+    }
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+      return landlordInitiatedContractError_('CONTRACT_TERMS_INVALID', '租約條件快照格式無效');
+    }
+  }
+  delete snapshot.cmwebs_contract_conditions_v1;
+  if (condition) {
+    snapshot.cmwebs_contract_conditions_v1 = {
+      contract_id: landlordInitiatedContractText_(contractId),
+      text: condition
+    };
+  }
+  return { success: true, code: 'OK', data: Object.keys(snapshot).length ? JSON.stringify(snapshot) : '' };
 }
 
 function landlordInitiatedContractEndDateForTerm_(startDate, termMonths) {
@@ -1438,6 +1492,9 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
           rent_amount: input.rent_amount,
           management_fee: input.management_fee,
           deposit_amount: input.deposit_amount,
+          contract_id: input.contract_id,
+          terms_snapshot_json: input.terms_snapshot_json,
+          note: input.note,
           special_offer_enabled: input.special_offer_enabled,
           special_offer_notice_days: input.special_offer_notice_days,
           special_offer_clause: input.special_offer_clause
@@ -1509,7 +1566,17 @@ function landlordInitiatedContractBuildDocument_(access, property, room, input, 
     '本契約未約定事項依中華民國相關法令及誠信原則處理。',
     '',
     '第十一條　補充約定',
-    input.note || '無',
+    (function() {
+      try {
+        var parsed = JSON.parse(input.terms_snapshot_json || '{}');
+        var entry = parsed && parsed.cmwebs_contract_conditions_v1;
+        return entry && entry.contract_id === input.contract_id
+          ? landlordInitiatedContractText_(entry.text) || '無'
+          : '無';
+      } catch (_) {
+        return '無';
+      }
+    })(),
     '',
     '第十二條　簽署確認',
     '雙方已閱讀本契約全部條款及重要條件，並以線上簽名及送交紀錄確認本次簽署意旨。合約是否生效仍以房東審核完成及系統狀態為準。'

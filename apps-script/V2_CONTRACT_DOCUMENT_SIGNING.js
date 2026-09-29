@@ -76,9 +76,61 @@ function tenantContractDocumentBuildPreviewText_(
     templateText,
     fields
   ).replace(/\{\{[^{}]+\}\}/g, '—');
+  content = tenantContractDocumentInsertSupplementalConditionsText_(
+    content,
+    templateText,
+    contract
+  );
   return signed
     ? tenantContractDocumentSignedEvidenceText_(content)
     : tenantContractDocumentPendingEvidenceText_(content);
+}
+
+function tenantContractDocumentSupplementalConditions_(contract) {
+  var note = tenantContractDocumentConditionText_(contract);
+  return note ? '補充約定（本合約之一部分）：\n' + note : '';
+}
+
+function tenantContractDocumentConditionText_(contract) {
+  contract = contract || {};
+  var id = tenantContractDocumentText_(contract.contract_id);
+  var source = tenantContractDocumentText_(contract.terms_snapshot_json);
+  if (!id || !source) return '';
+  try {
+    var snapshot = JSON.parse(source);
+    var entry = snapshot && snapshot.cmwebs_contract_conditions_v1;
+    return entry && tenantContractDocumentText_(entry.contract_id) === id
+      ? tenantContractDocumentText_(entry.text)
+      : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function tenantContractDocumentInsertSupplementalConditionsText_(content, templateText, contract) {
+  var clause = tenantContractDocumentSupplementalConditions_(contract);
+  if (!clause || String(templateText || '').indexOf('{{備註}}') >= 0) return content;
+  var marker = '乙方簽名（線上簽署）';
+  var index = content.indexOf(marker);
+  if (index < 0) throw new Error('CONTRACT_CONDITIONS_SLOT_NOT_FOUND');
+  return content.slice(0, index) + clause + '\n' + content.slice(index);
+}
+
+function tenantContractDocumentEnsureSupplementalConditionsInBody_(body, templateText, contract) {
+  var clause = tenantContractDocumentSupplementalConditions_(contract);
+  if (!clause || String(templateText || '').indexOf('{{備註}}') >= 0) return;
+  var match = body.findText(tenantContractDocumentRegexLiteral_('乙方簽名（線上簽署）'));
+  if (match) {
+    var child = match.getElement();
+    while (child && child.getParent && child.getParent() !== body) {
+      child = child.getParent();
+    }
+    if (child && child.getParent && child.getParent() === body) {
+      body.insertParagraph(body.getChildIndex(child), clause);
+      return;
+    }
+  }
+  throw new Error('CONTRACT_CONDITIONS_SLOT_NOT_FOUND');
 }
 
 function tenantContractDocumentIsSubmitted_(contract) {
@@ -427,10 +479,7 @@ function tenantContractDocumentFields_(contract, tenant, context, now) {
     簽約年: signed.year,
     簽約月: signed.month,
     簽約日: signed.day,
-    備註: tenantContractDocumentFirst_(contract, [
-      'note',
-      'landlord_note'
-    ])
+    備註: tenantContractDocumentConditionText_(contract)
   };
 }
 
@@ -678,6 +727,7 @@ function tenantContractDocumentMaterialize_(
     copy.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
     var document = DocumentApp.openById(copy.getId());
     var body = document.getBody();
+    var templateText = body.getText();
     var context = tenantContractDocumentResolveContext_(
       SpreadsheetApp.getActiveSpreadsheet(),
       contract,
@@ -696,6 +746,11 @@ function tenantContractDocumentMaterialize_(
         tenantContractDocumentRegexReplacement_(fields[key])
       );
     });
+    tenantContractDocumentEnsureSupplementalConditionsInBody_(
+      body,
+      templateText,
+      contract
+    );
     var editableEvidence = body.editAsText();
     [
       '簽署狀態：待房客完成線上簽署。',
