@@ -485,6 +485,14 @@ function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId
   }
 
   const documentInput = landlordInitiatedContractRenewalDraftInput_(contract, input);
+  const noteProvided = Object.prototype.hasOwnProperty.call(input || {}, 'note');
+  if (noteProvided) {
+    documentInput.note = landlordInitiatedContractText_(input.note);
+    if (documentInput.note.length > 500) return landlordInitiatedContractError_('CONTRACT_INITIATION_INVALID', '補充約定最多 500 字。');
+    const conditions = landlordInitiatedContractConditionsSnapshot_(contract.terms_snapshot_json, documentInput.note, normalizedContractId);
+    if (!conditions.success) return conditions;
+    documentInput.terms_snapshot_json = conditions.data;
+  }
   const startDate = documentInput.start_date;
   const endDate = documentInput.end_date;
   if (!landlordInitiatedContractIsIsoDate_(startDate) || !landlordInitiatedContractIsIsoDate_(endDate) || endDate < startDate) {
@@ -504,6 +512,7 @@ function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId
     documentInput,
     contract.tenant_name || contract.name || ''
   );
+  if (noteProvided && documentInput.note && !contractContent) return landlordInitiatedContractError_('CONTRACT_TEMPLATE_UNAVAILABLE', '補充約定無法置於簽名前，請檢查固定合約範本');
   landlordInitiatedContractUpdate_(schema.data.contracts, contract, {
     start_date: documentInput.start_date,
     contract_start_date: documentInput.contract_start_date,
@@ -521,6 +530,8 @@ function landlordInitiatedContractUpdateRenewalDraftUnlocked_(access, contractId
     special_offer_applies_to: documentInput.special_offer_applies_to,
     special_offer_waiver_type: documentInput.special_offer_waiver_type,
     special_offer_clause: documentInput.special_offer_clause,
+    terms_snapshot_json: documentInput.terms_snapshot_json,
+    note: documentInput.note,
     contract_content: contractContent,
     updated_at: updatedAt
   });

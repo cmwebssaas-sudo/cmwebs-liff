@@ -7,6 +7,7 @@ const page = readFileSync(new URL('../landlord-tenant-create.html', import.meta.
 const initiated = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
 const signing = readFileSync(new URL('../apps-script/V2_CONTRACT_DOCUMENT_SIGNING.js', import.meta.url), 'utf8');
 const expiry = readFileSync(new URL('../apps-script/V2_CONTRACT_EXPIRY_RENEWALS.js', import.meta.url), 'utf8');
+const requestsPage = readFileSync(new URL('../landlord-contract-requests.html', import.meta.url), 'utf8');
 
 const conditions = (contractId, value) => JSON.stringify({
   cmwebs_contract_conditions_v1: { contract_id: contractId, text: value }
@@ -56,6 +57,40 @@ test('both new and renewal inputs preserve a condition; a direct 501-character r
     ...common, note: '甲'.repeat(501)
   });
   assert.equal(tooLong.success, false);
+});
+
+test('editing an unsigned renewal draft sends a new condition, not a historical internal note', async () => {
+  const start = requestsPage.indexOf('async function editRenewalDraft(contractId)');
+  const end = requestsPage.indexOf('async function confirmRenewalReview(contractId)', start);
+  assert.ok(start >= 0 && end > start);
+  const prompts = [];
+  const answers = ['2026-09-01', '2027-08-31', '8500', '500', '18000', '10', '入住前修繕漏水'];
+  let submitted;
+  const context = {
+    INITIATED_CONTRACTS: [{
+      contract_id: 'C-DRAFT', signing_mode: 'renewal', contract_status: 'pending_landlord_review',
+      invite_id: '', note: '內部作業紀錄',
+      terms_snapshot_json: conditions('C-DRAFT', '原草稿條件'),
+      start_date: '2026-09-01', end_date: '2027-08-31',
+      rent_amount: 8500, management_fee: 500, deposit_amount: 18000, payment_day: 10
+    }],
+    rawText: value => String(value ?? ''),
+    normalizeStatus: value => String(value ?? '').toLowerCase(),
+    formatDate: value => String(value ?? ''),
+    numberValue: (value, fallback) => Number(value ?? fallback),
+    window: {
+      prompt: (label, defaultValue) => { prompts.push({ label, defaultValue }); return answers.shift(); },
+      confirm: label => !label.startsWith('是否加入')
+    },
+    showAlert: () => {},
+    callLandlordInitiatedApi: async (_action, request) => { submitted = request.input; },
+    loadPage: () => {}
+  };
+  vm.createContext(context);
+  vm.runInContext(requestsPage.slice(start, end), context);
+  await context.editRenewalDraft('C-DRAFT');
+  assert.equal(submitted.note, '入住前修繕漏水');
+  assert.equal(prompts.at(-1).defaultValue, '原草稿條件');
 });
 
 test('landlord fixed-template contract preview receives the condition for a new or renewed version', () => {
