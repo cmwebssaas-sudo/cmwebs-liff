@@ -153,4 +153,27 @@ const input = {
   assert.equal(missing.code, 'INVITE_NOT_FOUND');
 }
 
+{
+  const { api, sheets } = makeRuntime();
+  sheets.V2_contracts = new Sheet(
+    ['contract_id', 'workspace_id', 'room_id', 'contract_status', 'status'],
+    [['legacy-quick-506', 'W1', 'R506', 'pending_tenant_signature', 'pending']]
+  );
+  sheets.V2_contract_invites.appendRow(rowFor(INVITE_HEADERS, {
+    invite_id: 'invite-506',
+    workspace_id: 'W1',
+    contract_id: 'legacy-quick-506',
+    room_id: 'R506',
+    status: 'pending',
+    expires_at: '2026-10-01T00:00:00.000Z'
+  }));
+
+  const listed = api.landlordInitiatedContractListByAccess_(access);
+  assert.equal(listed.success, true, listed.code);
+  assert.equal(listed.data.items.length, 1,
+    'an invite-linked quick lease must remain visible when legacy contract headers are absent');
+  assert.equal(listed.data.items[0].invite_id, 'invite-506');
+  assert.match(listed.data.items[0].invite_url, /invite-506/);
+}
+
 console.log('Phase 163 landlord contract invite retrieval runtime RED/GREEN tests passed.');

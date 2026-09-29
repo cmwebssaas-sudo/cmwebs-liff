@@ -535,28 +535,45 @@ function landlordInitiatedContractListByAccess_(access) {
   const schema = landlordInitiatedContractSchema_(SpreadsheetApp.getActiveSpreadsheet());
   if (!schema.success) return schema;
   const workspaceId = landlordInitiatedContractWorkspaceId_(access);
-  const contracts = landlordInitiatedContractRows_(schema.data.contracts).filter(function (row) {
-    return landlordInitiatedContractText_(row.workspace_id) === workspaceId &&
-      ['landlord_initiated', 'expiry_prepared_renewal'].indexOf(landlordInitiatedContractText_(row.contract_origin)) >= 0 &&
-      ['pending_landlord_review', 'pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(landlordInitiatedContractText_(row.contract_status)) >= 0;
-  });
   const invites = landlordInitiatedContractRows_(schema.data.invites).filter(function (row) {
     return landlordInitiatedContractText_(row.workspace_id) === workspaceId;
+  });
+  const contracts = landlordInitiatedContractRows_(schema.data.contracts).filter(function (row) {
+    const origin = landlordInitiatedContractText_(row.contract_origin).toLowerCase();
+    const hasInitiatedOrigin = ['landlord_initiated', 'expiry_prepared_renewal'].indexOf(origin) >= 0;
+    const invite = landlordInitiatedContractInviteForRow_(row, invites);
+    return landlordInitiatedContractText_(row.workspace_id) === workspaceId &&
+      (hasInitiatedOrigin || Boolean(invite && landlordInitiatedContractText_(invite.invite_id))) &&
+      ['pending_landlord_review', 'pending_tenant_signature', 'awaiting_tenant_signature'].indexOf(landlordInitiatedContractText_(row.contract_status)) >= 0;
   });
   return {
     success: true,
     code: 'OK',
     data: {
       items: contracts.map(function (contract) {
-        const currentInviteId = landlordInitiatedContractText_(contract.invite_id);
-        const invite = invites.find(function (row) {
-          return landlordInitiatedContractText_(row.contract_id) === landlordInitiatedContractText_(contract.contract_id) &&
-            landlordInitiatedContractText_(row.invite_id) === currentInviteId;
-        });
+        const invite = landlordInitiatedContractInviteForRow_(contract, invites);
         return landlordInitiatedContractPublicContract_(contract, {}, invite || {});
       })
     }
   };
+}
+
+function landlordInitiatedContractInviteForRow_(contract, invites) {
+  const contractId = landlordInitiatedContractText_(contract && contract.contract_id);
+  const currentInviteId = landlordInitiatedContractText_(contract && contract.invite_id);
+  const candidates = (Array.isArray(invites) ? invites : []).filter(function (row) {
+    return landlordInitiatedContractText_(row.contract_id) === contractId &&
+      (!currentInviteId || landlordInitiatedContractText_(row.invite_id) === currentInviteId);
+  });
+  if (!candidates.length) return null;
+  return candidates.slice().sort(function (left, right) {
+    const leftPending = landlordInitiatedContractText_(left.status).toLowerCase() === 'pending' ? 1 : 0;
+    const rightPending = landlordInitiatedContractText_(right.status).toLowerCase() === 'pending' ? 1 : 0;
+    return rightPending - leftPending ||
+      landlordInitiatedContractText_(right.updated_at || right.created_at).localeCompare(
+        landlordInitiatedContractText_(left.updated_at || left.created_at)
+      );
+  })[0];
 }
 
 function landlordInitiatedContractReissueBySession_(sessionToken, inviteId) {

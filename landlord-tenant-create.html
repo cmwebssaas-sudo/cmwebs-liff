@@ -8,8 +8,10 @@
   />
   <title>CMWebs 建立房客與租約</title>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="frontend-release.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-auth.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-api.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
 
   <style>
     :root {
@@ -1059,6 +1061,7 @@
       ) === '1';
 
     let LINE_USER_ID = '';
+    let LANDLORD_AUTH = null;
     let LANDLORD_REVIEW_SESSION_TOKEN = '';
     let PAGE_DATA = null;
     let CREATED_DATA = null;
@@ -1193,6 +1196,55 @@
       );
 
       return entryUrl.href;
+    }
+
+    function initLandlordAuthClient() {
+      if (!window.CMWebsLandlordAuth) {
+        return null;
+      }
+
+      LANDLORD_AUTH = window.CMWebsLandlordAuth.init({
+        apiUrl: API_URL,
+        liffId: LIFF_ID,
+        lineUserId: LINE_USER_ID,
+        returnTo: location.pathname.split('/').pop() + location.search,
+        entryPage: 'landlord-entry.html',
+        testMode: TEST_MODE
+      });
+      return LANDLORD_AUTH;
+    }
+
+    function desktopEmailSessionActive() {
+      if (
+        !window.CMWebsLandlordAuth ||
+        typeof window.CMWebsLandlordAuth.getRequestAuthParams !== 'function'
+      ) {
+        return false;
+      }
+      const authParams = window.CMWebsLandlordAuth.getRequestAuthParams();
+      return Boolean(authParams && authParams.landlord_session_token);
+    }
+
+    function requestLandlordTenantCreateAction(action, params) {
+      if (
+        desktopEmailSessionActive() &&
+        window.CMWebsLandlordApi &&
+        typeof window.CMWebsLandlordApi.request === 'function'
+      ) {
+        return window.CMWebsLandlordApi.request({
+          apiUrl: API_URL,
+          action: action,
+          params: params || {},
+          lineUserId: LINE_USER_ID,
+          testMode: TEST_MODE,
+          callbackPrefix: 'cmwebsTenantCreate_',
+          rejectOnFailure: true
+        }).then(function(result) {
+          return result && result.data ? result.data : {};
+        });
+      }
+
+      return jsonpRequest(action, params || {});
     }
 
     function showToast(
@@ -1462,6 +1514,9 @@
     }
 
     async function postLandlordInitiatedContract(action, input) {
+      if (desktopEmailSessionActive()) {
+        return requestLandlordTenantCreateAction(action, input || {});
+      }
       if (!LANDLORD_REVIEW_SESSION_TOKEN) throw new Error('房東審核身分驗證已失效，請重新整理頁面。');
       const requestId = randomUrlToken(16);
       const pollSecret = randomUrlToken(32);
@@ -1682,9 +1737,13 @@
       return (PAGE_DATA.rooms || []).map(function (room) {
         const propertyName = rawText(room.property_name || '').trim();
         const roomName = rawText(room.room_name || room.room_id || '').trim();
-        const statusHint = room.has_current_or_upcoming_contract
-          ? '（已有租約，送出時檢查租期）'
-          : '';
+        const statusHint = rawText(room.room_status).toLowerCase() === 'occupied'
+          ? room.has_current_or_upcoming_contract
+            ? '（已出租，已有租約，請勿建立新房客租約）'
+            : '（房況待核對，勿作空房）'
+          : room.has_current_or_upcoming_contract
+            ? '（已有租約，送出時檢查租期）'
+            : '';
         return `
           <option
             value="${safeHtml(room.room_id || '')}"
@@ -3078,6 +3137,13 @@
         const depositAmount = Number(inputValue('depositAmount'));
 
         if (!roomId) return '請選擇房號。';
+        const room = getRoom(roomId);
+        if (room && rawText(room.room_status).toLowerCase() === 'occupied') {
+          return (room.has_current_or_upcoming_contract
+            ? '此房間已出租且已有租約：'
+            : '房況待核對：此房間仍標示已出租，') +
+            '請先確認續約或完成退房，再建立新房客租約。';
+        }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return '請輸入租約開始日。';
         if (!Number.isInteger(termMonths) || termMonths < 1 || termMonths > 120) return '租期請輸入 1 至 120 個月。';
         if (!inputValue('endDate')) return '租約結束日計算失敗，請重新選擇開始日與租期。';
@@ -3682,6 +3748,24 @@
       renderLoading();
 
       try {
+        initLandlordAuthClient();
+
+        if (desktopEmailSessionActive()) {
+          const result = await requestLandlordTenantCreateAction(
+            'landlord_tenant_create_init',
+            {
+              property_id: PRESELECTED_PROPERTY_ID,
+              room_id: PRESELECTED_ROOM_ID,
+              previous_contract_id: PREVIOUS_CONTRACT_ID,
+              tenant_id: PRESELECTED_TENANT_ID,
+              supersede_contract_id: REQUESTED_SUPERSEDE_CONTRACT_ID
+            }
+          );
+          PAGE_DATA = result || {};
+          renderPage();
+          return;
+        }
+
         if (!LINE_USER_ID) {
           const ready =
             await initLine();
