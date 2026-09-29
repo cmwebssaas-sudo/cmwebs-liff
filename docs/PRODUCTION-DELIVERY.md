@@ -1,16 +1,16 @@
 # CMWebs 正式交付入口
 
-核對日期：2026-09-29。產品範圍：V2 正式來源整併與已授權的 Production 正確性修復。
+核對日期：2026-09-30。產品範圍：V2 正式來源整併與已授權的 Production 正確性修復。
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
 ## 唯一正式來源
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
-- 本次核對來源：`533c718bfb9146c126c65e15db3c222ec9d98e1d`（PR #178 merge commit）。
+- 本次核對來源：`b650ca3ba376fd0ed6a62cb8b48b577ef4b99667`（PR #181 merge commit）。
 - 公開網站：GitHub Pages；合併後建置狀態 `built`，公開檔案已完成 HTTP 讀回及逐位元組比對。
-- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **193**，Version **192** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
-- 實際後端：版本 193 的 59 個檔案，與 `main/apps-script/` 逐位元組一致。
+- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **195**，Version **194** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
+- 實際後端：版本 195 的 59 個檔案，與 `main/apps-script/` 逐位元組一致。
 - 正式資料表：2026-09-23 的唯讀 snapshot 從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`；本次發布未重讀業務資料列，也未重新宣稱當前 schema 狀態。
 - 舊部署版本 160 仍存在，但公開網站目前不使用它。不得因舊工作目錄引用它，便把它當作正式服務版本。
 
@@ -37,6 +37,15 @@ git diff --check
 本次 Gate 0 的現行來源、部署與 schema 盤點已完成：57 個後端檔案一致、76 個工作表欄名已記錄、11 個公開資產逐位元組相符。已確認正式入口呈現 Email 登入畫面，未要求或代填驗證碼。這是可重現的 V2 internal-beta 來源基線；正式帳號登入後的交易及真實 iPhone／LINE 操作尚未驗收，不能以此宣稱完整營運驗收通過。
 
 報修工單歷史與房客個資隔離程式已隨本次版本發布；新工單會以房間保留歷史、以租約隔離房客存取，前房客姓名、聯絡方式、描述中的個資及附件不得因換租而對新房客公開。既有 `V2_tenant_messages` 的 legacy backfill 尚未執行；需先完成 preview、備份與操作員授權，再以 additive-only migration 回填，不能把尚未回填當作已完成歷史遷移。
+
+## 2026-09-30 新約與續約補充約定正式發布
+
+- PR #181 合併為 `b650ca3ba376fd0ed6a62cb8b48b577ef4b99667`；GitHub Pages workflow `36634573071` 的 build、report、deploy 均成功。15 個公開檔案與合併後來源逐位元組相符。
+- 正式 Apps Script HEAD 在發布前與 serving Version 194 的 59 個檔案完全一致；推送隔離候選後建立 immutable Version 195。Version 195 唯讀匯出與本次 59 個檔案逐位元組相符，同一 Web App deployment 已由 194 更新至 195，URL 不變。
+- 簡易新約及續約可輸入最多 500 字的「補充約定／現場備註」。新版本以 `contract_id` 綁定條件快照，不沿用舊約內部備註；房客預覽與簽署版須在簽名前顯示同一條件，位置不明則拒絕生成。
+- 正式 `V2_contracts` 僅核對第一列：129 個唯一欄名，包含 `contract_id`、`note`、`terms_snapshot_json`、`contract_content`、`contract_origin`、`invite_id`；沒有讀取或改寫業務資料列，也沒有改範本、Properties、trigger 或送 LINE。
+- `npm test` 282/282、`npm run validate`、`npm run verify:production` 與 `git diff --check` 通過。未登入瀏覽器會導向 LINE；房東登入後建立／編輯與房客實際簽署、真機／LIFF 驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+- 回滾：既有 Web App deployment 指回 immutable Version 194；Pages 依核准流程恢復前一個 `main` `f9199bf7938af3c1310fc7294b120272abf9ccc6`。資料列不回滾。
 
 ## 2026-09-29 房東登入回旋與房況誤判修復
 
