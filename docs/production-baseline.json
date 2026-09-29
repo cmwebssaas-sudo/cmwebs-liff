@@ -1,10 +1,10 @@
 {
-  "verified_on": "2026-09-29",
-  "source_commit": "533c718bfb9146c126c65e15db3c222ec9d98e1d",
+  "verified_on": "2026-09-30",
+  "source_commit": "b650ca3ba376fd0ed6a62cb8b48b577ef4b99667",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 193,
+  "backend_version": 195,
   "backend_file_count": 59,
-  "backend_tree_sha256": "687399d07b60c48e5aa112bd8bc343436a08bade94a08463e13c518b7c4cf26d",
+  "backend_tree_sha256": "529074bed334538e5f5bd26c41ae228031c59a0c3517095d8c31690696923e85",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -24,5 +24,5 @@
     "frontend-release.js",
     "landlord-responsive.css"
   ],
-  "scope": "Source and public asset identity only; not authenticated operational or current Sheet schema acceptance."
+  "scope": "Source and public asset identity plus bounded V2_contracts header read only; not authenticated contract creation, signing, or real-device acceptance."
 }

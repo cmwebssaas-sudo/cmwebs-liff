@@ -1,7 +1,11 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-18 (Asia/Taipei)**
+**Last verified: 2026-09-30 (Asia/Taipei)**
+
+## 2026-09-30 合約補充約定正式發布
+
+PR #181 已合併至 `main` (`b650ca3`)，既有 Apps Script Web App deployment 服務 immutable Version 195（Version 194 為 rollback），GitHub Pages workflow `36634573071` 成功，15 個公開檔案與合併來源逐位元組一致。新約與續約的選填補充條件只綁定本次合約版本；不沿用歷史內部備註。Node 測試 282/282、`npm run validate`、公開檔案核對通過。正式表僅確認欄名；未登入瀏覽器導向 LINE，登入後建約、房客簽署及真機驗收為 `HUMAN_REQUIRED`／`UNVERIFIED`。詳見 [PRODUCTION-DELIVERY.md](PRODUCTION-DELIVERY.md)。
 
 ## 2026-09-18 作廢帳單成功提示正式發布
 
