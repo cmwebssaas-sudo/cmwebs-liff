@@ -7,10 +7,10 @@
 ## 唯一正式來源
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
-- 本次核對來源：`fd806f1092a0b06c13f11281cbb20327cfd03c30`（PR #183 merge commit）。
-- 公開網站：GitHub Pages；PR #183 合併後的 workflow `36739429004` 已成功，公開檔案已完成 HTTP 讀回及逐位元組比對。
-- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **197**，Version **196** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
-- 實際後端：版本 197 的 59 個檔案，與 `main/apps-script/` 逐位元組一致。
+- 本次核對來源：`5a7d57ad80189955e014f26eaa85d71c8ca709c1`（PR #185 merge commit）。
+- 公開網站：GitHub Pages；PR #185 合併後的 workflow `36792021356` 已成功，17 個公開檔案已完成 HTTP 讀回及逐位元組比對。
+- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **198**，Version **197** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
+- 實際後端：版本 198 的 59 個檔案，與 `main/apps-script/` 逐位元組一致。
 - 正式資料表：2026-09-23 的唯讀 snapshot 從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`；本次發布未重讀業務資料列，也未重新宣稱當前 schema 狀態。
 - 舊部署版本 160 仍存在，但公開網站目前不使用它。不得因舊工作目錄引用它，便把它當作正式服務版本。
 
@@ -28,9 +28,19 @@ node scripts/verify-production-source.mjs --export /absolute/path/to/read-only-e
 git diff --check
 ```
 
-匯出使用既有 `clasp clone-script SCRIPT_ID VERSION`，它只下載既有版本到空白本地目錄，不建立雲端專案。`--export` 核對 `.clasp.json` 的專案指紋及後端內容；目前服務版本仍須以 `clasp list-deployments SCRIPT_ID` 另行核對。`npm run verify:production` 檢查基線所列 15 個公開資產與目前 checkout 一致，適用部署前基線和部署後讀回。
+匯出使用既有 `clasp clone-script SCRIPT_ID VERSION`，它只下載既有版本到空白本地目錄，不建立雲端專案。`--export` 核對 `.clasp.json` 的專案指紋及後端內容；目前服務版本仍須以 `clasp list-deployments SCRIPT_ID` 另行核對。`npm run verify:production` 檢查基線所列 17 個公開資產與目前 checkout 一致，適用部署前基線和部署後讀回。
 
 `production-baseline.json` 是帶日期的證據；後續後端發布時，經匯出、版本及部署核對後更新它。不要為通過檢查任意替換指紋。
+
+## 2026-10-01 紙本補登入口與桌面文件驗證修復
+
+- PR #185 合併為 `5a7d57ad80189955e014f26eaa85d71c8ca709c1`；Pages workflow `36792021356` 成功，17 個公開檔案與本次來源逐位元組一致。
+- 發布前 editor HEAD 及 serving Version 197 的 59 檔與前一個 `main` 完全一致。推送隔離候選後建立 immutable Version 198，唯讀匯出確認 59 檔與修正版逐位元組一致；既有正式 deployment 讀回為 198，URL 不變。
+- 修復 506 類型、具連結邀請的空白 `contract_origin` 待簽合約，讓房間頁顯示「補登紙本並建立房客登入」；補登成功才關閉原電子合約及邀請，保留稽核與既有房客，不提前刪列或清空房間。
+- 桌面「更多」、紙本補登、房客文件上傳及文件總覽保留 Email session。實際角色權限及已驗證 Workspace 約束所有文件操作，拒絕跨 Workspace 或房客／租約不一致；手機 LINE 路徑保留。
+- `npm test` 293/293、`npm run validate`、immutable export 及 `npm run verify:production` 通過。未執行業務列、私有檔案、Properties、trigger 或 LINE 寫入。登入後 506 按鈕、真實紙本／身分證上傳與房客綁定仍為 `HUMAN_REQUIRED`／`UNVERIFIED`；沒有簽妥紙本檔案不得代送補登。
+- 使用入口：物件與房間 → 506 → 補登紙本並建立房客登入；之後身分證補傳：房客 → 506 詳細資料 → 文件與身份驗證。不是房間金額編輯視窗。
+- 回滾：同一 Web App deployment 指回 immutable Version 197；Pages 依核准流程恢復前一個 `main` `f79b9b2dc0ec0c912b2a1fe47ff98594b35d708a`。不覆蓋業務資料。
 
 ## 2026-09-30 506 邀請重發／取消修復正式發布
 
@@ -42,7 +52,7 @@ git diff --check
 
 ## 驗收邊界與下一步
 
-本次 Gate 0 的現行來源、部署與 schema 盤點已完成：59 個後端檔案一致、76 個工作表欄名已記錄、15 個公開資產逐位元組相符。已確認正式入口呈現 Email 登入畫面，未要求或代填驗證碼。這是可重現的 V2 internal-beta 來源基線；正式帳號登入後的交易及真實 iPhone／LINE 操作尚未驗收，不能以此宣稱完整營運驗收通過。
+現行來源與部署對帳：59 個後端檔案及 17 個公開資產逐位元組相符；76 個工作表欄名僅引用 2026-09-23 既有 snapshot，本次未重讀或重新宣稱當前 schema。已確認正式入口呈現 Email 登入畫面，未要求或代填驗證碼。這是可重現的 V2 internal-beta 來源基線；正式帳號登入後的交易及真實 iPhone／LINE 操作尚未驗收，不能以此宣稱完整 Gate 0 營運驗收通過。
 
 報修工單歷史與房客個資隔離程式已隨本次版本發布；新工單會以房間保留歷史、以租約隔離房客存取，前房客姓名、聯絡方式、描述中的個資及附件不得因換租而對新房客公開。既有 `V2_tenant_messages` 的 legacy backfill 尚未執行；需先完成 preview、備份與操作員授權，再以 additive-only migration 回填，不能把尚未回填當作已完成歷史遷移。
 
