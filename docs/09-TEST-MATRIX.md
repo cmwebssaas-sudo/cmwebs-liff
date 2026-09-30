@@ -1,5 +1,23 @@
 # V2 回歸測試矩陣
 
+## 2026-09-30 506 Email session／舊格式邀請重發與取消
+
+- [x] 房東桌面 Email session 可在有效且完成 onboarding、重新核對目前
+  Workspace 與 `contract_write` 權限後，使用既有邀請重發／取消入口；房客簽署
+  審核 session 驗證不放寬，身分或權限不符仍拒絕。
+- [x] Phase 163 先重現 `LANDLORD_REVIEW_SESSION_INVALID`，再驗證 Email session
+  可重發及取消，且無寫入權限時邀請與合約狀態維持原值。
+- [x] 舊合約缺少 `contract_origin`／`invite_id` 時，只在邀請、合約、房間與
+  Workspace 關聯相符且唯一有效邀請可確認時允許重發／取消；來源衝突、邀請不明確
+  或跨 Workspace 合約均拒絕或只取消指定舊邀請，不誤改合約狀態。
+- [x] Phase 163 定向測試、完整 `npm test`（282/282）、`npm run validate` 與
+  `git diff --check` 通過。
+- [x] 唯讀核對正式 Web App deployment 指紋符合公開網站，現服務 Version 196；
+  Version 196 的 59 個來源檔與 GitHub `main` 只在本檔的 Email session 權限修正有差異，
+  與本地候選只在舊格式邀請關聯／取消範圍修正有差異。
+- [ ] 舊格式邀請修正仍是本地候選，正式新版尚未發布；沒有修改 Sheets、Properties、
+  Triggers、LINE 或 GitHub Pages。真人登入後的重發／取消驗收尚未完成。
+
 ## 2026-09-29 506 快速租約回找與桌面 Email 建立流程（本地候選，未發布）
 
 - [x] 只讀核對正式資料：`V2_contracts` 的 506（`R000016`）有一筆
