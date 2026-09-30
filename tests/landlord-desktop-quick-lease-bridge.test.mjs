@@ -7,6 +7,8 @@ const page = readFileSync(new URL('../landlord-tenant-create.html', import.meta.
 const detailPage = readFileSync(new URL('../landlord-tenant-detail.html', import.meta.url), 'utf8');
 const dispatcher = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
 const initiated = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
+const workspaceSource = readFileSync(new URL('../apps-script/V2_WORKSPACES.js', import.meta.url), 'utf8');
+const policySource = readFileSync(new URL('../apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js', import.meta.url), 'utf8');
 
 function extractFunction(source, name) {
   const match = new RegExp(`function\\s+${name}\\s*\\(`).exec(source);
@@ -63,9 +65,9 @@ function makeDispatcher() {
           }
         : { success: false, code: 'SESSION_EXPIRED' };
     },
-    workspaceLandlordCheckPolicy_() {
-      return { success: true, code: 'OK' };
-    },
+    workspaceText_: value => String(value ?? '').trim(),
+    workspaceBoolean_: value => value === true || value === 1 || value === 'true',
+    workspaceResult_: (success, code, message) => ({ success, code, message }),
     htmlBridgeOutput_(result, requestId) {
       return { transport: 'bridge', result, requestId };
     },
@@ -134,6 +136,9 @@ function makeDispatcher() {
   };
 
   vm.createContext(context);
+  vm.runInContext(extractFunction(workspaceSource, 'workspaceDefaultPermissions_'), context);
+  vm.runInContext(extractFunction(workspaceSource, 'workspaceBuildPermissionView_'), context);
+  vm.runInContext(extractFunction(policySource, 'workspaceLandlordCheckPolicy_'), context);
   vm.runInContext([
     'repairRouteIsAction_',
     'repairRouteDecodeFormBody_',
@@ -253,10 +258,22 @@ test('desktop Email identity-document read and upload use server-resolved landlo
     assert.equal(response.result.code, 'OK');
     assert.equal(calls.length, 1);
     assert.equal(calls[0].args[0], 'SERVER_RESOLVED');
+    assert.equal(calls[0].args.at(-1), 'W1', 'document handlers must receive the verified Workspace, not a client filter');
   }
   const { context, calls } = makeDispatcher();
   const denied = context.doPost({ postData: { contents: JSON.stringify(request('landlord_contract_document_upload', 'EXPIRED')) } });
   assert.equal(denied.transport, 'bridge');
+  assert.equal(denied.result.success, false);
+  assert.equal(calls.length, 0);
+});
+
+test('desktop document writes deny read-only membership using the real permission policy', () => {
+  const { context, calls } = makeDispatcher();
+  context.resolveLandlordPrincipal_ = () => ({ success: true, data: {
+    principal_line_user_id: 'SERVER_RESOLVED', user: { user_id: 'U1' },
+    workspace: { workspace_id: 'W1' }, membership: { membership_id: 'M1', role: 'viewer' }
+  } });
+  const denied = context.doPost({ postData: { contents: JSON.stringify(request('landlord_contract_document_upload')) } });
   assert.equal(denied.result.success, false);
   assert.equal(calls.length, 0);
 });

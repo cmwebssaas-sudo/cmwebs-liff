@@ -658,9 +658,13 @@ and the unbound tenant before it closes either record. This is not a delete API.
 The existing `landlord_contract_documents_init`,
 `landlord_contract_document_download`, and
 `landlord_contract_document_upload` actions also accept the desktop Email-session
-POST bridge, with server-resolved landlord identity and `read`/`contract_write`
-permission respectively. No new action, Sheet column, credential, or LINE send
-is introduced.
+POST bridge, with server-resolved landlord identity, exact verified Workspace,
+and `read`/`contract_write` permission respectively. Permissions derive from the
+resolved server membership, not client claims. Listing, download, upload and
+idempotency checks retain that Workspace; upload additionally requires an owned
+contract and matching tenant. The optional scope is supplied by the dispatcher,
+not a client document filter. Mobile LINE paths retain their existing authority.
+No new action, Sheet column, credential, or LINE send is introduced.
 
 - The server validates the Taiwan mobile number, dates, amounts, room vacancy,
   existing-tenant ownership, duplicate phone, and idempotency payload before any

@@ -2836,12 +2836,14 @@ function doPost(e) {
               result = getLandlordContractDocumentsInitByLineUid_(
                 landlordLineUserId,
                 request.contract_id || '',
-                request.tenant_id || ''
+                request.tenant_id || '',
+                access.workspace.workspace_id
               );
             } else if (action === 'landlord_contract_document_download') {
               result = getLandlordContractDocumentDownloadByLineUid_(
                 landlordLineUserId,
-                request.document_id || ''
+                request.document_id || '',
+                access.workspace.workspace_id
               );
             } else {
               result = uploadLandlordContractDocumentByLineUid_(
@@ -2853,7 +2855,8 @@ function doPost(e) {
                 request.mime_type || '',
                 request.base64 || '',
                 request.idempotency_key || '',
-                request.note || ''
+                request.note || '',
+                access.workspace.workspace_id
               );
             }
           }
@@ -3799,6 +3802,9 @@ function resolveLandlordQuickLeaseBridgeAccess_(request, policy) {
     workspace: data.workspace || {},
     membership: data.membership || {}
   };
+  access.permissions = typeof workspaceBuildPermissionView_ === 'function'
+    ? workspaceBuildPermissionView_(access.membership)
+    : {};
   if (
     typeof workspaceLandlordCheckPolicy_ !== 'function' ||
     !access.workspace ||
