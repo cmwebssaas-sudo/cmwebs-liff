@@ -1,10 +1,10 @@
 {
   "verified_on": "2026-10-01",
-  "source_commit": "fd806f1092a0b06c13f11281cbb20327cfd03c30",
+  "source_commit": "5a7d57ad80189955e014f26eaa85d71c8ca709c1",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 197,
+  "backend_version": 198,
   "backend_file_count": 59,
-  "backend_tree_sha256": "83a025a49c448db52e81f4126b83e0c2f3b036098a08d90fc0b2aeeab0f3c4ed",
+  "backend_tree_sha256": "a744a3bb5aa4e18f2b6ad1cf4294a08788a64c1763fa2d8ee593df9488837136",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -15,6 +15,7 @@
     "landlord-tenants.html",
     "landlord-properties.html",
     "landlord-tenant-detail.html",
+    "landlord-contract-documents.html",
     "landlord-contract-requests.html",
     "landlord-arrears.html",
     "landlord-tenant-checkout.html",
@@ -22,7 +23,8 @@
     "landlord-tenant-checkin.html",
     "tenant-home.html",
     "frontend-release.js",
+    "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "Source and public asset identity plus previous bounded V2_contracts header read only; not authenticated invitation reissue/cancel, contract creation, signing, or real-device acceptance."
+  "scope": "Source and public asset identity; paper backfill and desktop document auth repair. No business-row, private-file, Properties, trigger or LINE writes during publication. Authenticated real-file upload, paper conversion, tenant binding and real-device acceptance remain unverified."
 }

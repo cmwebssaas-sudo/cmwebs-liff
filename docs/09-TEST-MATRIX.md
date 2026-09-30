@@ -653,7 +653,7 @@
 - [ ] 真實桌面瀏覽器 Email 登入、欠款／合約頁 authenticated operation、手機 LIFF／LINE、375／390／768／1024／1440 viewport capture：`HUMAN_REQUIRED`／`UNVERIFIED`。
 - [x] GitHub push 與 GitHub Pages publish 已完成：PR #134 merge commit `1b24ec2` 已合併至 `main`；Pages run `34313575139` 成功，公開 `landlord-entry.html`、`landlord-arrears.html`、`landlord-contract-requests.html`、`landlord-responsive.css` 與 `landlord-auth.js` 均 HTTP 200 並完成 marker read-back。Apps Script deployment 未執行，因本候選沒有 `apps-script/` 差異；rollback 為回復 `main` 至 merge 前 revision `341ca17`。
 
-## 2026-10-01 506 紙本補登與桌面「更多」本機候選
+## 2026-10-01 506 紙本補登與桌面「更多」正式修復
 
 - [x] 506 類型的待簽電子合約即使 `contract_origin` 空白，只要有邀請 ID，房間頁會顯示「補登紙本並建立房客登入」；提交仍須精確匹配同 Workspace 的待處理邀請，拒絕錯誤邀請、已認領房客及跨範圍資料（Phase 209／215 回歸）。原電子合約及邀請保留稽核並在紙本補登成功後關閉；不是直接刪列或提前清空房間。
 - [x] 電腦版「更多」使用共用房東 Email session 與桌面 shell；有 session 的讀取走既有 POST bridge，無 session 回 Email 入口，不跳 LINE；手機 LINE 路徑保留（`landlord-more-desktop-auth.test.mjs`）。
@@ -661,4 +661,5 @@
 - [x] 「更多 → 文件總覽」沿用 Email session 讀取及預覽；桌面缺少 session 回 Email 入口，手機 LINE 驗證保留（`landlord-document-overview-auth.test.mjs`）。
 - [x] Email bridge 使用實際 Workspace 權限建構及 policy，合法房東可寫入、唯讀成員拒絕；文件清單、下載、上傳及冪等查找都綁定已驗證 Workspace，拒絕同房東的另一 Workspace 或房客／租約不一致（`landlord-desktop-quick-lease-bridge.test.mjs`、`landlord-document-workspace-scope.test.mjs`）。
 - [x] 本地 `npm test` 293/293、`npm run validate` 與 `git diff --check` 通過；此證據不等於正式網站發布或實際上傳驗收。
-- [ ] 正式 Apps Script、GitHub Pages 發布，以及已登入房東瀏覽器／手機的 506 紙本文件上傳與房客綁定驗收：`UNVERIFIED`。本地候選未改正式房客、房間、合約、邀請、私有文件或 LINE；沒有簽妥紙本檔案時不得代送補登。
+- [x] Apps Script immutable Version 198 唯讀匯出 59 檔與修正版逐位元組一致；既有正式 deployment 讀回為 198，網址不變。PR #185 合併為 `5a7d57a`，Pages workflow `36792021356` 成功；17 個公開檔案與來源逐位元組一致。
+- [ ] 已登入房東瀏覽器／手機的 506 入口、紙本文件上傳與房客綁定驗收：`HUMAN_REQUIRED`／`UNVERIFIED`。此次發布未改正式房客、房間、合約、邀請、私有文件、Properties、trigger 或 LINE；沒有簽妥紙本檔案時不得代送補登。

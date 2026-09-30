@@ -647,7 +647,7 @@ This is a landlord-only V2.1 POST action. It does not add a JSONP route, so the
 | --- | --- | --- | --- |
 | `landlord_contract_paper_backfill` | JSON POST | Landlord review session with Workspace `contract_write` policy; server-side room, tenant, property and overlap scope | Records a paper-signed contract（紙本簽署合約）directly as an active or upcoming append-only contract. The signed paper contract file is required; identity front/back files are optional and can be uploaded later. It does not create a contract application, electronic invite, signing session, confirmation code, or LINE message. |
 
-2026-10-01 local correction candidate (not yet deployed): the existing paper-backfill
+2026-10-01 correction published in Apps Script Version 198 / PR #185: the existing paper-backfill
 action additionally accepts the desktop Email-session POST bridge with `input_json`
 (serialized paper form and file payload), subject to the same Workspace
 `contract_write` check and unchanged record/overlap validation. The existing
