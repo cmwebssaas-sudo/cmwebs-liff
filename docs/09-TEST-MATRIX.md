@@ -12,11 +12,17 @@
   或跨 Workspace 合約均拒絕或只取消指定舊邀請，不誤改合約狀態。
 - [x] Phase 163 定向測試、完整 `npm test`（282/282）、`npm run validate` 與
   `git diff --check` 通過。
-- [x] 唯讀核對正式 Web App deployment 指紋符合公開網站，現服務 Version 196；
-  Version 196 的 59 個來源檔與 GitHub `main` 只在本檔的 Email session 權限修正有差異，
-  與本地候選只在舊格式邀請關聯／取消範圍修正有差異。
-- [ ] 舊格式邀請修正仍是本地候選，正式新版尚未發布；沒有修改 Sheets、Properties、
-  Triggers、LINE 或 GitHub Pages。真人登入後的重發／取消驗收尚未完成。
+- [x] 發布前唯讀核對正式 Web App deployment 指紋符合公開網站，當時服務 Version 196；
+  59 個來源檔與當時 GitHub `main` 只在 Email session 權限修正有差異，
+  與本次候選只在舊格式邀請關聯／取消範圍修正有差異。
+- [x] PR #183 合併後，Version 197 唯讀匯出與 `main/apps-script/` 的 59 個檔案
+  逐位元組一致；既有正式 Web App deployment 讀回服務 Version 197，Version 196
+  保留回退。未修改 Sheets 業務資料列、Properties、Triggers 或發送 LINE；
+  GitHub Pages 15 個公開檔案與合併來源逐位元組一致。
+- [x] 2026-10-01 跨月重新執行時，Phase 162 夏月費率與 Phase 177 當前租約
+  兩項測試的隱含「今日」假設被揭露；測試夾具固定於 2026-09-30，未改產品程式。
+- [ ] 真人登入後對 506 邀請實際執行重發／取消的驗收尚未完成；本次部署驗證
+  不代表已執行任何邀請交易。
 
 ## 2026-09-29 506 快速租約回找與桌面 Email 建立流程（本地候選，未發布）
 

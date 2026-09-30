@@ -2,6 +2,17 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
+// Exercise the September seasonal rate regardless of the day the suite runs.
+class FixedDate extends Date {
+  constructor(...args) {
+    super(...(args.length ? args : [2026, 8, 30, 12]));
+  }
+
+  static now() {
+    return new Date(2026, 8, 30, 12).getTime();
+  }
+}
+
 const createPage = readFileSync(new URL('../landlord-tenant-create.html', import.meta.url), 'utf8');
 const propertiesPage = readFileSync(new URL('../landlord-properties.html', import.meta.url), 'utf8');
 const onboardingSource = readFileSync(new URL('../apps-script/V2_TENANT_LEASE_ONBOARDING.js', import.meta.url), 'utf8');
@@ -21,7 +32,7 @@ assert.match(onboardingSource, /equipment_fee_rate_regular/);
 assert.match(onboardingSource, /tenantLeaseCurrentEquipmentRate_/);
 
 const onboardingContext = {
-  Date,
+  Date: FixedDate,
   Math,
   Number,
   String,
