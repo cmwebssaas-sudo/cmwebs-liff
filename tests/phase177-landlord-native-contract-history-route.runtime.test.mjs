@@ -2,6 +2,17 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
+// The fixture's original lease is current through September 30.
+class FixedDate extends Date {
+  constructor(...args) {
+    super(...(args.length ? args : [2026, 8, 30, 12]));
+  }
+
+  static now() {
+    return new Date(2026, 8, 30, 12).getTime();
+  }
+}
+
 const renewalSource = readFileSync(
   new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url),
   'utf8'
@@ -96,7 +107,7 @@ const data = {
 };
 
 const context = {
-  Date,
+  Date: FixedDate,
   Math,
   Number,
   String,
