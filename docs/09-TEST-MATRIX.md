@@ -658,5 +658,6 @@
 - [x] 506 類型的待簽電子合約即使 `contract_origin` 空白，只要有邀請 ID，房間頁會顯示「補登紙本並建立房客登入」；提交仍須精確匹配同 Workspace 的待處理邀請，拒絕錯誤邀請、已認領房客及跨範圍資料（Phase 209／215 回歸）。原電子合約及邀請保留稽核並在紙本補登成功後關閉；不是直接刪列或提前清空房間。
 - [x] 電腦版「更多」使用共用房東 Email session 與桌面 shell；有 session 的讀取走既有 POST bridge，無 session 回 Email 入口，不跳 LINE；手機 LINE 路徑保留（`landlord-more-desktop-auth.test.mjs`）。
 - [x] 紙本補登表單在電腦版可用既有 Email session POST bridge 上傳已簽紙本與選填身分證；房客詳細資料的文件清單、預覽、後補身分證上傳也可用此 bridge。後端以 server-resolved 房東及 Workspace `read`／`contract_write` 權限處理，拒絕失效 session 與無效 payload（`landlord-desktop-quick-lease-bridge.test.mjs`）。
-- [x] 本地 `npm test` 287/287、`npm run validate` 與 `git diff --check` 通過；此證據不等於正式網站發布或實際上傳驗收。
+- [x] 「更多 → 文件總覽」沿用 Email session 讀取及預覽；桌面缺少 session 回 Email 入口，手機 LINE 驗證保留（`landlord-document-overview-auth.test.mjs`）。
+- [x] 本地 `npm test` 288/288、`npm run validate` 與 `git diff --check` 通過；此證據不等於正式網站發布或實際上傳驗收。
 - [ ] 正式 Apps Script、GitHub Pages 發布，以及已登入房東瀏覽器／手機的 506 紙本文件上傳與房客綁定驗收：`UNVERIFIED`。本地候選未改正式房客、房間、合約、邀請、私有文件或 LINE；沒有簽妥紙本檔案時不得代送補登。
