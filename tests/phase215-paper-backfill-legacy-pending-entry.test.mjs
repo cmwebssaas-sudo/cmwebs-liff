@@ -89,6 +89,20 @@ assert.equal(legacyView.paper_backfill_legacy_pending_replacement_contract_id, '
 assert.equal(legacyView.paper_backfill_legacy_pending_replacement_tenant_id, 'T202');
 assert.equal(legacyView.paper_backfill_orphan_replacement_eligible, false);
 
+const blankOriginInviteView = context.propertyRoomBuildRoomView_({
+  room_id: 'R506', property_id: 'P1', room_name: '506',
+  room_status: 'vacant', account_status: 'active'
+}, {
+  R506: {
+    contract_id: 'E506', tenant_id: 'T506', contract_status: 'pending_tenant_signature',
+    contract_origin: '', invite_id: 'I506', tenant_line_user_id: '',
+    start_date: '2026-09-11', end_date: '2027-09-10'
+  }
+}, {}, {}, { T506: true });
+assert.equal(blankOriginInviteView.paper_backfill_replacement_eligible, true);
+assert.equal(blankOriginInviteView.paper_backfill_replacement_contract_id, 'E506');
+assert.equal(blankOriginInviteView.paper_backfill_replacement_tenant_id, 'T506');
+
 assert.match(propertiesPage, /paper_backfill_legacy_pending_replacement_eligible/);
 assert.match(propertiesPage, /legacy_pending_recovery/);
 assert.match(createPage, /LEGACY_PENDING_RECOVERY_MODE/);

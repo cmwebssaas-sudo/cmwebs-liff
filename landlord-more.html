@@ -11,6 +11,7 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="frontend-release.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
   <script src="landlord-api.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-auth.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
 
   <style>
     :root {
@@ -714,12 +715,56 @@
         padding-left: 13px;
       }
     }
+
+    @media (min-width: 1024px) {
+      .desktop-main .desktop-entry-card {
+        display: none;
+      }
+
+      .desktop-main .status-strip {
+        gap: 16px;
+      }
+
+      .desktop-main .menu-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 20px;
+      }
+    }
   </style>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 </head>
 
 <body>
-  <div class="app-shell">
-    <main class="page">
+  <div class="app-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand">
+          <div class="desktop-brand-label">CMWEBS</div>
+          <div class="desktop-brand-title">智慧租管</div>
+        </div>
+        <nav class="desktop-nav">
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')">總覽</button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')">房客</button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')">物件與房間</button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-contract-requests.html')">合約</button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')">帳款</button>
+          <button class="desktop-nav-item active" type="button" onclick="goPage('landlord-more.html')">更多</button>
+        </nav>
+        <div class="desktop-sidebar-footer">
+          <div class="desktop-context-label">Workspace</div>
+          <div id="desktopWorkspaceName" class="desktop-context-value">載入中</div>
+          <div class="desktop-sidebar-role">房東</div>
+        </div>
+      </div>
+    </aside>
+    <main class="page desktop-main">
+      <header class="desktop-topbar" hidden>
+        <div>
+          <div class="desktop-page-kicker">Landlord Workspace</div>
+          <div class="desktop-page-title">更多功能</div>
+        </div>
+      </header>
       <section class="hero-card">
         <div class="hero-row">
           <div>
@@ -1429,6 +1474,7 @@
       URL_PARAMS.get('test') === '1';
 
     let LINE_USER_ID = '';
+    let LANDLORD_AUTH = null;
     let toastTimer = null;
 
     function setAppHeight() {
@@ -1721,6 +1767,12 @@
     );
 
     function jsonpRequest(action, params) {
+      const auth = LANDLORD_AUTH || initLandlordAuthClient();
+      const authParams = auth.getRequestAuthParams();
+      if (authParams.landlord_session_token) {
+        return auth.request(action, params || {});
+      }
+
       if (window.CMWebsLandlordApi) {
         return window.CMWebsLandlordApi.request({
           apiUrl: API_URL,
@@ -1928,6 +1980,44 @@
       return true;
     }
 
+    function initLandlordAuthClient() {
+      if (!window.CMWebsLandlordAuth) {
+        throw new Error('房東身分驗證模組載入失敗');
+      }
+      LANDLORD_AUTH = window.CMWebsLandlordAuth.init({
+        apiUrl: API_URL,
+        liffId: LIFF_ID,
+        lineUserId: LINE_USER_ID,
+        returnTo: 'landlord-more.html',
+        entryPage: 'landlord-entry.html',
+        testMode: TEST_MODE
+      });
+      return LANDLORD_AUTH;
+    }
+
+    async function ensureLandlordAuthReady() {
+      const auth = LANDLORD_AUTH || initLandlordAuthClient();
+      if (TEST_MODE) {
+        LINE_USER_ID = TEST_LINE_USER_ID;
+        initLandlordAuthClient();
+        return true;
+      }
+      if (auth.getMode() === 'email') {
+        if (auth.getRequestAuthParams().landlord_session_token) {
+          return true;
+        }
+        const entry = new URL(buildLandlordLoginRedirectUri());
+        entry.searchParams.set('mode', 'email');
+        location.replace(entry.href);
+        return false;
+      }
+      if (!LINE_USER_ID && !(await initLineUserId())) {
+        return false;
+      }
+      initLandlordAuthClient();
+      return true;
+    }
+
     function setWorkspaceSummary(data) {
       const activeWorkspace =
         data && data.active_workspace
@@ -1957,6 +2047,13 @@
       workspaceValue.textContent =
         activeWorkspace.workspace_name ||
         '未設定';
+
+      const desktopWorkspaceName =
+        document.getElementById('desktopWorkspaceName');
+      if (desktopWorkspaceName) {
+        desktopWorkspaceName.textContent =
+          activeWorkspace.workspace_name || '目前 Workspace';
+      }
 
       workspaceCountValue.textContent =
         workspaces.length + ' 個';
@@ -2114,13 +2211,8 @@
       );
 
       try {
-        if (!LINE_USER_ID) {
-          const ready =
-            await initLineUserId();
-
-          if (!ready) {
-            return;
-          }
+        if (!(await ensureLandlordAuthReady())) {
+          return;
         }
 
         const results =

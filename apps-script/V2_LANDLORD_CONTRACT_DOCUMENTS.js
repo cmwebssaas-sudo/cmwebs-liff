@@ -32,17 +32,38 @@ var LD_CONTRACT_DOCUMENT_HEADERS_ = [
   'source_document_id'
 ];
 
+// The optional Workspace is supplied only by the verified Email bridge.
+// Resolve that exact scope rather than choosing the first legacy owner row.
+function ldResolveLandlordForWorkspace_(lineUserId, workspaceId) {
+  var expected = ldText_(workspaceId);
+  if (!expected) return lmResolveLandlord_(lineUserId);
+  if (typeof workspaceLandlordResolveAccess_ !== 'function') return null;
+  var access = workspaceLandlordResolveAccess_(lineUserId, {
+    workspace_id: expected, skip_schema_ensure: true, skip_legacy_context_creation: true
+  });
+  if (!access || access.success !== true ||
+      ldText_(access.workspace && access.workspace.workspace_id) !== expected ||
+      !ldText_(access.principal_landlord_id)) return null;
+  return {
+    landlord_id: access.principal_landlord_id,
+    landlord_user_id: access.user && access.user.user_id || '',
+    landlord_line_user_id: access.principal_line_user_id || lineUserId,
+    workspace_id: expected
+  };
+}
+
 function getLandlordContractDocumentsInitByLineUid_(
   landlordLineUserId,
   contractId,
-  tenantId
+  tenantId,
+  expectedWorkspaceId
 ) {
   var action = 'landlord_contract_documents_init';
   var safeContractId = ldText_(contractId);
   var safeTenantId = ldText_(tenantId);
 
   try {
-    var landlord = lmResolveLandlord_(landlordLineUserId);
+    var landlord = ldResolveLandlordForWorkspace_(landlordLineUserId, expectedWorkspaceId);
 
     if (!landlord) {
       return {
@@ -141,12 +162,13 @@ function uploadLandlordContractDocumentByLineUid_(
   mimeType,
   base64,
   idempotencyKey,
-  note
+  note,
+  expectedWorkspaceId
 ) {
   var action = 'landlord_contract_document_upload';
 
   try {
-    var landlord = lmResolveLandlord_(landlordLineUserId);
+    var landlord = ldResolveLandlordForWorkspace_(landlordLineUserId, expectedWorkspaceId);
 
     if (!landlord) {
       return {
@@ -226,6 +248,9 @@ function uploadLandlordContractDocumentByLineUid_(
       };
     }
 
+    if (expectedWorkspaceId && !normalizedContractId) {
+      return { success: false, code: 'CONTRACT_REQUIRED', message: '請先選擇此房客的租約' };
+    }
     if (normalizedContractId) {
       var contract = ldGetOwnedContractById_(landlord, normalizedContractId);
 
@@ -239,6 +264,9 @@ function uploadLandlordContractDocumentByLineUid_(
 
       if (!normalizedTenantId) {
         normalizedTenantId = ldText_(contract.tenant_id);
+      }
+      if (expectedWorkspaceId && normalizedTenantId !== ldText_(contract.tenant_id)) {
+        return { success: false, code: 'TENANT_SCOPE_MISMATCH', message: '文件房客與租約不一致' };
       }
     }
 
@@ -263,7 +291,8 @@ function uploadLandlordContractDocumentByLineUid_(
         normalizedContractId,
         normalizedTenantId,
         normalizedType,
-        safeIdempotencyKey
+        safeIdempotencyKey,
+        expectedWorkspaceId
       );
 
       if (existing) {
@@ -551,12 +580,13 @@ function ldContractDocumentRowsWithNumber_(sheet) {
 
 function getLandlordContractDocumentDownloadByLineUid_(
   landlordLineUserId,
-  documentId
+  documentId,
+  expectedWorkspaceId
 ) {
   var action = 'landlord_contract_document_download';
 
   try {
-    var landlord = lmResolveLandlord_(landlordLineUserId);
+    var landlord = ldResolveLandlordForWorkspace_(landlordLineUserId, expectedWorkspaceId);
 
     if (!landlord) {
       return {
@@ -594,8 +624,11 @@ function getLandlordContractDocumentDownloadByLineUid_(
     }
 
     if (
+      (expectedWorkspaceId && ldText_(row.workspace_id) !== ldText_(expectedWorkspaceId)) ||
+      (
       ldText_(row.landlord_line_user_id) !== landlordLineUserId &&
       ldText_(row.landlord_id) !== ldText_(landlord.landlord_id)
+      )
     ) {
       return {
         success: false,
@@ -692,6 +725,7 @@ function ldGetLandlordContracts_(landlord, contractIdFilter) {
       if (!rowLandlordId || rowLandlordId !== landlordId) {
         return false;
       }
+      if (landlord.workspace_id && ldText_(row.workspace_id) !== ldText_(landlord.workspace_id)) return false;
 
       if (contractIdFilter && ldText_(row.contract_id) !== contractIdFilter) {
         return false;
@@ -735,7 +769,7 @@ function ldGetContractLineageIdsForTenant_(landlord, tenantId) {
     }
 
     var rowWorkspaceId = ldText_(row.workspace_id);
-    return !workspaceId || !rowWorkspaceId || rowWorkspaceId === workspaceId;
+    return !workspaceId || rowWorkspaceId === workspaceId;
   });
   var lineage = {};
 
@@ -792,6 +826,7 @@ function ldGetContractDocuments_(landlord, contractIdFilter, tenantIdFilter) {
       if (ldText_(row.landlord_id) !== landlordId) {
         return false;
       }
+      if (landlord.workspace_id && ldText_(row.workspace_id) !== ldText_(landlord.workspace_id)) return false;
 
       if (contractIdFilter && ldText_(row.contract_id) !== contractIdFilter) {
         return false;
@@ -857,7 +892,7 @@ function ldGetLegacyContractDocuments_(
       }
 
       var rowWorkspaceId = ldText_(row.workspace_id);
-      if (workspaceId && rowWorkspaceId && rowWorkspaceId !== workspaceId) {
+      if (workspaceId && rowWorkspaceId !== workspaceId) {
         return false;
       }
 
@@ -1084,7 +1119,8 @@ function ldGetOwnedContractById_(landlord, contractId) {
   for (var i = 0; i < rows.length; i++) {
     if (
       ldText_(rows[i].contract_id) === contractId &&
-      ldText_(rows[i].landlord_id || rows[i].owner_landlord_id) === landlordId
+      ldText_(rows[i].landlord_id || rows[i].owner_landlord_id) === landlordId &&
+      (!landlord.workspace_id || ldText_(rows[i].workspace_id) === ldText_(landlord.workspace_id))
     ) {
       return rows[i];
     }
@@ -1099,12 +1135,14 @@ function ldFindDocumentByIdempotency_(
   contractId,
   tenantId,
   documentType,
-  idempotencyKey
+  idempotencyKey,
+  expectedWorkspaceId
 ) {
   var rows = lmSheetObjects_(sheet);
 
   for (var i = 0; i < rows.length; i++) {
     var row = rows[i];
+    if (expectedWorkspaceId && ldText_(row.workspace_id) !== ldText_(expectedWorkspaceId)) continue;
 
     if (ldText_(row.landlord_id) !== landlordId) {
       continue;

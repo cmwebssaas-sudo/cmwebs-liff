@@ -2007,6 +2007,14 @@
     }
 
     function jsonpRequest(action, params) {
+      const auth = LANDLORD_AUTH || initLandlordAuthClient();
+      if (
+        (action === 'landlord_contract_documents_init' ||
+          action === 'landlord_contract_document_download') &&
+        auth.getRequestAuthParams().landlord_session_token
+      ) {
+        return LANDLORD_AUTH.request(action, params || {});
+      }
       return new Promise(function (resolve, reject) {
         const callbackName =
           '__cmwebs_tenant_detail_' +
@@ -2206,6 +2214,16 @@
     }
 
     async function postJsonBody(payload) {
+      const auth = LANDLORD_AUTH || initLandlordAuthClient();
+      if (
+        payload &&
+        payload.v2_action === 'landlord_contract_document_upload' &&
+        auth.getRequestAuthParams().landlord_session_token
+      ) {
+        return LANDLORD_AUTH.request('landlord_contract_document_upload', payload, {
+          timeoutMs: 120000
+        });
+      }
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {

@@ -647,6 +647,25 @@ This is a landlord-only V2.1 POST action. It does not add a JSONP route, so the
 | --- | --- | --- | --- |
 | `landlord_contract_paper_backfill` | JSON POST | Landlord review session with Workspace `contract_write` policy; server-side room, tenant, property and overlap scope | Records a paper-signed contract（紙本簽署合約）directly as an active or upcoming append-only contract. The signed paper contract file is required; identity front/back files are optional and can be uploaded later. It does not create a contract application, electronic invite, signing session, confirmation code, or LINE message. |
 
+2026-10-01 local correction candidate (not yet deployed): the existing paper-backfill
+action additionally accepts the desktop Email-session POST bridge with `input_json`
+(serialized paper form and file payload), subject to the same Workspace
+`contract_write` check and unchanged record/overlap validation. The existing
+mobile verified-LINE JSON POST remains available. An older pending electronic
+contract with a blank `contract_origin` is eligible for paper replacement only
+when it has a linked pending invitation; the server checks that exact invitation
+and the unbound tenant before it closes either record. This is not a delete API.
+The existing `landlord_contract_documents_init`,
+`landlord_contract_document_download`, and
+`landlord_contract_document_upload` actions also accept the desktop Email-session
+POST bridge, with server-resolved landlord identity, exact verified Workspace,
+and `read`/`contract_write` permission respectively. Permissions derive from the
+resolved server membership, not client claims. Listing, download, upload and
+idempotency checks retain that Workspace; upload additionally requires an owned
+contract and matching tenant. The optional scope is supplied by the dispatcher,
+not a client document filter. Mobile LINE paths retain their existing authority.
+No new action, Sheet column, credential, or LINE send is introduced.
+
 - The server validates the Taiwan mobile number, dates, amounts, room vacancy,
   existing-tenant ownership, duplicate phone, and idempotency payload before any
   Sheet or private Drive write.

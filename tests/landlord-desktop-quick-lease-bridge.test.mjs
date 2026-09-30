@@ -4,8 +4,11 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const page = readFileSync(new URL('../landlord-tenant-create.html', import.meta.url), 'utf8');
+const detailPage = readFileSync(new URL('../landlord-tenant-detail.html', import.meta.url), 'utf8');
 const dispatcher = readFileSync(new URL('../apps-script/程式碼.js', import.meta.url), 'utf8');
 const initiated = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
+const workspaceSource = readFileSync(new URL('../apps-script/V2_WORKSPACES.js', import.meta.url), 'utf8');
+const policySource = readFileSync(new URL('../apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js', import.meta.url), 'utf8');
 
 function extractFunction(source, name) {
   const match = new RegExp(`function\\s+${name}\\s*\\(`).exec(source);
@@ -62,9 +65,9 @@ function makeDispatcher() {
           }
         : { success: false, code: 'SESSION_EXPIRED' };
     },
-    workspaceLandlordCheckPolicy_() {
-      return { success: true, code: 'OK' };
-    },
+    workspaceText_: value => String(value ?? '').trim(),
+    workspaceBoolean_: value => value === true || value === 1 || value === 'true',
+    workspaceResult_: (success, code, message) => ({ success, code, message }),
     htmlBridgeOutput_(result, requestId) {
       return { transport: 'bridge', result, requestId };
     },
@@ -115,8 +118,27 @@ function makeDispatcher() {
     return { success: true, code: 'OK', data: { action: 'landlord_contract_initiate_renewal_direct' } };
   };
   context.landlordInitiatedContractError_ = (code, message) => ({ success: false, code, message });
+  context.landlordPaperContractBackfillByAccess_ = (...args) => {
+    calls.push({ action: 'landlord_contract_paper_backfill', args });
+    return { success: true, code: 'OK', data: { mode: 'paper_backfill' } };
+  };
+  context.getLandlordContractDocumentsInitByLineUid_ = (...args) => {
+    calls.push({ action: 'landlord_contract_documents_init', args });
+    return { success: true, code: 'OK', data: { documents: [] } };
+  };
+  context.getLandlordContractDocumentDownloadByLineUid_ = (...args) => {
+    calls.push({ action: 'landlord_contract_document_download', args });
+    return { success: true, code: 'OK', data: { document: {} } };
+  };
+  context.uploadLandlordContractDocumentByLineUid_ = (...args) => {
+    calls.push({ action: 'landlord_contract_document_upload', args });
+    return { success: true, code: 'OK', data: { document_id: 'D1' } };
+  };
 
   vm.createContext(context);
+  vm.runInContext(extractFunction(workspaceSource, 'workspaceDefaultPermissions_'), context);
+  vm.runInContext(extractFunction(workspaceSource, 'workspaceBuildPermissionView_'), context);
+  vm.runInContext(extractFunction(policySource, 'workspaceLandlordCheckPolicy_'), context);
   vm.runInContext([
     'repairRouteIsAction_',
     'repairRouteDecodeFormBody_',
@@ -186,6 +208,79 @@ test('desktop quick-lease page loads the shared Email bridge and delegates authe
   assert.match(page, /requestLandlordTenantCreateAction\(/);
   assert.match(page, /landlord_tenant_create_init/);
   assert.match(page, /landlord_contract_initiate_new/);
+});
+
+test('desktop Email paper backfill accepts only a scoped, authenticated JSON payload', () => {
+  const input = { room_id: 'R506', paper_contract_file: { file_name: 'signed.pdf', base64: 'dGVzdA==' } };
+  const valid = makeDispatcher();
+  const response = valid.context.doPost({ postData: { contents: JSON.stringify({
+    ...request('landlord_contract_paper_backfill'), input_json: JSON.stringify(input)
+  }) } });
+  assert.equal(response.transport, 'bridge');
+  assert.equal(response.result.code, 'OK');
+  assert.equal(valid.calls.length, 1);
+  assert.equal(valid.calls[0].args[0].workspace.workspace_id, 'W1');
+  assert.deepEqual(JSON.parse(JSON.stringify(valid.calls[0].args[1])), input);
+
+  for (const invalid of [
+    { ...request('landlord_contract_paper_backfill', 'EXPIRED'), input_json: JSON.stringify(input) },
+    { ...request('landlord_contract_paper_backfill'), input_json: '{bad' }
+  ]) {
+    const attempt = makeDispatcher();
+    const rejected = attempt.context.doPost({ postData: { contents: JSON.stringify(invalid) } });
+    assert.equal(rejected.transport, 'bridge');
+    assert.equal(rejected.result.success, false);
+    assert.equal(attempt.calls.length, 0, 'invalid requests must not touch paper-contract data');
+  }
+});
+
+test('desktop paper upload uses Email session bridge; mobile retains verified LINE session', () => {
+  assert.match(page, /async function postLandlordPaperBackfill\(input\)[\s\S]*?desktopEmailSessionActive\(\)/);
+  assert.match(page, /auth\.request\(\s*'landlord_contract_paper_backfill'/);
+  assert.match(page, /input_json:\s*JSON\.stringify\(input\)/);
+  assert.match(page, /if \(!LANDLORD_REVIEW_SESSION_TOKEN\) throw new Error\('房東審核身分驗證已失效/);
+});
+
+test('desktop Email identity-document read and upload use server-resolved landlord authority', () => {
+  for (const action of [
+    'landlord_contract_documents_init',
+    'landlord_contract_document_download',
+    'landlord_contract_document_upload'
+  ]) {
+    const { context, calls } = makeDispatcher();
+    const response = context.doPost({ postData: { contents: JSON.stringify({
+      ...request(action), tenant_id: 'T506', contract_id: 'C506',
+      document_id: 'D506', document_type: 'identity_front',
+      file_name: 'front.jpg', mime_type: 'image/jpeg', base64: 'dGVzdA==',
+      idempotency_key: 'UPLOAD1', line_user_id: 'SPOOFED'
+    }) } });
+    assert.equal(response.transport, 'bridge');
+    assert.equal(response.result.code, 'OK');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].args[0], 'SERVER_RESOLVED');
+    assert.equal(calls[0].args.at(-1), 'W1', 'document handlers must receive the verified Workspace, not a client filter');
+  }
+  const { context, calls } = makeDispatcher();
+  const denied = context.doPost({ postData: { contents: JSON.stringify(request('landlord_contract_document_upload', 'EXPIRED')) } });
+  assert.equal(denied.transport, 'bridge');
+  assert.equal(denied.result.success, false);
+  assert.equal(calls.length, 0);
+});
+
+test('desktop document writes deny read-only membership using the real permission policy', () => {
+  const { context, calls } = makeDispatcher();
+  context.resolveLandlordPrincipal_ = () => ({ success: true, data: {
+    principal_line_user_id: 'SERVER_RESOLVED', user: { user_id: 'U1' },
+    workspace: { workspace_id: 'W1' }, membership: { membership_id: 'M1', role: 'viewer' }
+  } });
+  const denied = context.doPost({ postData: { contents: JSON.stringify(request('landlord_contract_document_upload')) } });
+  assert.equal(denied.result.success, false);
+  assert.equal(calls.length, 0);
+});
+
+test('desktop tenant detail reads and uploads identity files through Email bridge', () => {
+  assert.match(detailPage, /function jsonpRequest\(action, params\)\s*\{[\s\S]*?LANDLORD_AUTH\.request\(action/);
+  assert.match(detailPage, /async function postJsonBody\(payload\)\s*\{[\s\S]*?LANDLORD_AUTH\.request\(\s*'landlord_contract_document_upload'/);
 });
 
 console.log('Desktop quick-lease Email bridge tests passed.');

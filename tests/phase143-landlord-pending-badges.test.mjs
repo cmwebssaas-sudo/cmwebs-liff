@@ -212,6 +212,7 @@ vm.runInNewContext(
       return Promise.resolve(summaryResponses[action]);
     };`,
     "const initLineUserId = async function () { throw new Error('unexpected LIFF initialisation'); };",
+    "const ensureLandlordAuthReady = async function () { return true; };",
     extractFunction('normalisePendingBadgeCount'),
     extractFunction('formatPendingBadgeCount'),
     extractFunction('setPendingBadge'),

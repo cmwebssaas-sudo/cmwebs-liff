@@ -179,6 +179,11 @@ function landlordPaperContractBackfillBySession_(sessionToken, input) {
   var access = landlordInitiatedContractAccessFromSession_(sessionToken, 'contract_write');
   if (!access || access.success !== true) return access || landlordPaperContractBackfillError_('LANDLORD_REVIEW_SESSION_INVALID', '房東 session 無效');
 
+  return landlordPaperContractBackfillByAccess_(access, input);
+}
+
+function landlordPaperContractBackfillByAccess_(access, input) {
+  if (!access || access.success !== true) return landlordPaperContractBackfillError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
   var normalized = landlordPaperContractBackfillValidateInput_(input || {});
   if (!normalized.success) return normalized;
   if (typeof landlordInitiatedContractWithScriptLock_ !== 'function') {
@@ -312,7 +317,9 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     var replacementStatus = landlordPaperContractBackfillText_(replacementContract.contract_status || replacementContract.status || '').toLowerCase();
     if (input.tenant_id) {
       if (landlordPaperContractBackfillText_(replacementContract.tenant_id) !== input.tenant_id) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCOPE_MISMATCH', '原電子合約與房客資料不一致');
-      if (landlordPaperContractBackfillText_(replacementContract.contract_origin).toLowerCase() === 'landlord_initiated' && V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_STATUSES_.indexOf(replacementStatus) >= 0) {
+      var sourceOrigin = landlordPaperContractBackfillText_(replacementContract.contract_origin).toLowerCase();
+      var hasLinkedInvite = landlordPaperContractBackfillText_(replacementContract.invite_id) !== '';
+      if ((sourceOrigin === 'landlord_initiated' || (sourceOrigin === '' && hasLinkedInvite)) && V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_STATUSES_.indexOf(replacementStatus) >= 0) {
         replacementMode = 'electronic';
       } else if (landlordPaperContractBackfillLegacyPendingReplacementEligible_(replacementContract)) {
         replacementMode = 'legacy_pending';

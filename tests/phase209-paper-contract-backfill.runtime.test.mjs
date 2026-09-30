@@ -353,7 +353,7 @@ for (const inputOverride of [
   assert.equal(result.code, 'ROOM_ALREADY_OCCUPIED');
 }
 
-{
+for (const sourceOrigin of ['landlord_initiated', '']) {
   const pendingTenant = rowFor(TENANT_HEADERS, {
     tenant_id: 'T202', tenant_user_id: 'U202', user_id: 'U202', workspace_id: 'W1', landlord_id: 'L1',
     tenant_name: '五先生', name: '五先生', tenant_phone: '0912345678', phone: '0912345678',
@@ -368,12 +368,26 @@ for (const inputOverride of [
     contract_id: 'E202', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T202', tenant_user_id: 'U202',
     tenant_name: '五先生', tenant_phone: '0912345678', property_id: 'P1', property_name: '測試公寓', room_id: 'R202', room_name: '202',
     start_date: '2026-09-01', end_date: '2027-08-31', contract_status: 'pending_tenant_signature', status: 'pending', account_status: 'pending',
-    signing_mode: 'new_tenant', contract_origin: 'landlord_initiated', invite_id: 'I202', note: '簡易新租電子草稿'
+    signing_mode: 'new_tenant', contract_origin: sourceOrigin, invite_id: 'I202', note: '簡易新租電子草稿'
   });
   const pendingInvite = rowFor(INVITE_HEADERS, {
     invite_id: 'I202', workspace_id: 'W1', contract_id: 'E202', room_id: 'R202', landlord_user_id: 'landlord-user-1',
     landlord_membership_id: 'membership-1', claim_code_hash: 'digest', status: 'pending', expires_at: '2026-09-04T00:00:00.000Z'
   });
+  if (sourceOrigin === '') {
+    const mismatchedInvite = pendingInvite.slice();
+    mismatchedInvite[INVITE_HEADERS.indexOf('contract_id')] = 'OTHER-CONTRACT';
+    const mismatch = makeRuntime({
+      roomStatus: 'occupied', tenants: [pendingTenant], users: [pendingUser],
+      contracts: [pendingContract], contractInvites: [mismatchedInvite]
+    });
+    const rejected = mismatch.context.landlordPaperContractBackfillBySession_('session-1', baseInput({
+      tenant_id: 'T202', idempotency_key: 'paper-replace-mismatch', supersede_contract_id: 'E202'
+    }));
+    assert.equal(rejected.success, false);
+    assert.equal(rejected.code, 'PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE');
+    assert.equal(mismatch.state.sheets.V2_contracts.rows.length, 1);
+  }
   const runtime = makeRuntime({
     roomStatus: 'occupied', currentContractId: '', tenants: [pendingTenant], users: [pendingUser],
     contracts: [pendingContract], contractInvites: [pendingInvite]
