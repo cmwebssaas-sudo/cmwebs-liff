@@ -2560,11 +2560,16 @@ function propertyRoomBuildRoomView_(
           contract.status
         ).toLowerCase();
 
+      const contractOrigin = propertyRoomText_(
+        contract.contract_origin
+      ).toLowerCase();
+      const hasInviteId = propertyRoomText_(
+        contract.invite_id
+      ) !== '';
+
       return (
-        propertyRoomText_(
-          contract.contract_origin
-        ).toLowerCase() ===
-          'landlord_initiated' &&
+        (contractOrigin === 'landlord_initiated' ||
+          (contractOrigin === '' && hasInviteId)) &&
         [
           'pending_tenant_signature',
           'awaiting_tenant_signature'

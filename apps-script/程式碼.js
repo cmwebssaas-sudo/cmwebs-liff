@@ -2762,7 +2762,8 @@ function doPost(e) {
             action === 'landlord_contract_initiated_init' ||
             action === 'landlord_contract_initiate_new' ||
             action === 'landlord_contract_initiate_renewal' ||
-            action === 'landlord_contract_initiate_renewal_direct'
+            action === 'landlord_contract_initiate_renewal_direct' ||
+            action === 'landlord_contract_paper_backfill'
           )
         ) {
           const policy = action === 'landlord_tenant_create_init' ||
@@ -2800,12 +2801,63 @@ function doPost(e) {
               access,
               request.input && typeof request.input === 'object' ? request.input : request
             );
+          } else if (access && action === 'landlord_contract_paper_backfill') {
+            let paperInput = null;
+            try {
+              paperInput = JSON.parse(String(request.input_json || ''));
+            } catch (_) {}
+            result = paperInput && typeof paperInput === 'object' && !Array.isArray(paperInput)
+              ? landlordPaperContractBackfillByAccess_(access, paperInput)
+              : landlordInitiatedContractError_('INVALID_PAPER_PAYLOAD', '紙本合約補登資料格式無效');
           }
 
           return htmlBridgeOutput_(
             result,
             request.request_id || ''
           );
+        }
+
+        if (
+          useBridge &&
+          [
+            'landlord_contract_documents_init',
+            'landlord_contract_document_download',
+            'landlord_contract_document_upload'
+          ].indexOf(action) >= 0
+        ) {
+          const policy = action === 'landlord_contract_document_upload'
+            ? 'contract_write'
+            : 'read';
+          const access = resolveLandlordQuickLeaseBridgeAccess_(request, policy);
+          result = access;
+          if (access && access.success === true) {
+            const landlordLineUserId = access.principal_line_user_id;
+            if (action === 'landlord_contract_documents_init') {
+              result = getLandlordContractDocumentsInitByLineUid_(
+                landlordLineUserId,
+                request.contract_id || '',
+                request.tenant_id || ''
+              );
+            } else if (action === 'landlord_contract_document_download') {
+              result = getLandlordContractDocumentDownloadByLineUid_(
+                landlordLineUserId,
+                request.document_id || ''
+              );
+            } else {
+              result = uploadLandlordContractDocumentByLineUid_(
+                landlordLineUserId,
+                request.contract_id || '',
+                request.tenant_id || '',
+                request.document_type || '',
+                request.file_name || '',
+                request.mime_type || '',
+                request.base64 || '',
+                request.idempotency_key || '',
+                request.note || ''
+              );
+            }
+          }
+          return htmlBridgeOutput_(result, request.request_id || '');
         }
 
         if (

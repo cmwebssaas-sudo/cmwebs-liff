@@ -2136,6 +2136,13 @@
     }
 
     async function postLandlordPaperBackfill(input) {
+      if (desktopEmailSessionActive()) {
+        const auth = LANDLORD_AUTH || initLandlordAuthClient();
+        const result = await auth.request('landlord_contract_paper_backfill', {
+          input_json: JSON.stringify(input)
+        }, { timeoutMs: 120000 });
+        return result && result.data ? result.data : {};
+      }
       if (!LANDLORD_REVIEW_SESSION_TOKEN) throw new Error('房東審核身分驗證已失效，請重新整理頁面。');
       const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ action: 'landlord_contract_paper_backfill', session_token: LANDLORD_REVIEW_SESSION_TOKEN, input: input }) });
       if (!response.ok) throw new Error('紙本合約補登連線失敗。');
