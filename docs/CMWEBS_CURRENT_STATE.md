@@ -3,6 +3,12 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
+## 2026-10-02 506 關聯漏查已重現，canonical ID 候選尚未發布
+
+登入後唯讀頁面顯示 0 份文件／沒有租約，雖然房客清單有當前租約。已重現原因：native 清單對外回傳 uppercase lookup key，原始 lowercase tenant ID 因精確關聯而漏查文件／歷史／電表。隔離分支 `codex/tenant-canonical-id-20261002` 保留原始 ID，並讓舊大寫網址在已驗證 Workspace 回應中唯一解析；不改身份資料、租約、文件、房間、帳單、Schema 或權限。
+
+定向 29/29、全套 431/431、validate、49 個 inline scripts／58 個 Apps Script 合併全域語法、diff-check 通過。正式後端仍 v201，v200 保留；沒有 source push、PR、Pages 或 deployment 變更。後端已滿 200 個版本，之前只刪 v199 的批准不涵蓋其他版本；新清理需要特定版本的授權。原目錄 408 筆混合 WIP 原樣保留；506 未知初始讀數不代填，私有文件不要求重傳，正式恢復仍待發布後登入唯讀驗證。
+
 ## 2026-10-02 房客文件／電表查看修復已發布
 
 從最新正式 `main` `ed412c2` 的隔離分支修復文件查詢阻塞電表、歷史私有文件缺少逐筆查看入口，以及詳細頁缺少直達區段入口。新增 5 項實際 renderer／loadPage 回歸，全套 425/425、validate 及 diff-check 通過；既有租約缺失基準才可補填，0 有效，已保存值不可覆寫。其他頁只同步固定 cache tag，後端／API／Schema 不變。

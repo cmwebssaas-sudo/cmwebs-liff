@@ -303,3 +303,30 @@ approved V2.0 correctness repair, not new V2.1 scope or feature-freeze evidence.
   acceptance unverified. No automatic recalculation of issued bills.
 - Rollback: same Web App to v200; Pages restore pre-release main `fbc90d2`
   through approved PR workflow. Never overwrite business data for rollback.
+
+## 2026-10-02 V2.0 tenant identity linkage correction candidate
+
+Recommended model/speed: `gpt-5.6-terra` / `medium`. Scope continues the
+explicitly approved Production correctness repair; no new V2.1 feature.
+
+- Authenticated read-only tenant detail showed no contract history, zero
+  documents and no usable meter form while the native tenant list had a lease.
+  Actual helpers reproduced a lowercase stored ID being replaced by the
+  uppercase native lookup key. No original identity file was opened or uploaded.
+- Isolated branch `codex/tenant-canonical-id-20261002` from `d4bb0ac` preserves
+  stored IDs in native output/history and uniquely resolves old uppercase URLs
+  from the verified Workspace response. Contract requests are exact-matched
+  only after canonical resolution; a review-found case-collision regression
+  was reproduced and corrected. No authorization or schema is relaxed.
+- Six additional regression tests; focused 29/29, complete 431/431, validate,
+  49 inline scripts, combined 58 Apps Script files and diff-check pass locally.
+  Production remains v201; no push, PR, merge or deployment was performed.
+- Version cap is again 200. Version 198 has no current deployment reference;
+  read-only backup `/private/tmp/cmwebs-unused-v198.vvfZIP` contains 59 files
+  byte-identical to Git `103e307`, with verified project binding. Deletion
+  requires separate exact approval/action-time confirmation; earlier authority
+  to delete only v199 is not reusable. Retain v201 and rollback v200.
+- No tenant/contract/bill, private-file, Properties, trigger, LINE or unknown
+  meter-value write; root WIP remains 408 entries / 49 tracked / zero staged.
+  A future release must reverify/export HEAD and v201, then publish a new
+  immutable version and Pages before authenticated read-only acceptance.

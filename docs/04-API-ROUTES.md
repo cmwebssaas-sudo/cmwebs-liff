@@ -1,5 +1,16 @@
 # CMWebs V2 API Routes
 
+## 2026-10-02 房客 ID 原始值修復（本地候選）
+
+`landlord_tenants` 保留內部不區分大小寫的 lookup key，但回傳儲存的原始
+`tenant_id`，並以同一原始值建立 `contract_history`。不可把 uppercase map key
+當成租約、文件或初始電表的外部識別。沒有新增 route、權限或 Schema。
+
+舊大寫詳細頁網址只在已驗證的 Workspace 房客回應中解析唯一匹配，後續文件、
+電表與寫入仍使用伺服器回傳的原始 ID 並保留既有嚴格權限／關聯檢查。
+回應中出現多個大小寫等價 ID 時停止載入；不改儲存資料或公開私有檔案。
+本地候選尚未發布，正式後端仍為 v201。
+
 ## 2026-10-01 入住初始電表修復
 
 `landlord_tenant_initial_meter_init` 與 `landlord_tenant_initial_meter_save` 均為

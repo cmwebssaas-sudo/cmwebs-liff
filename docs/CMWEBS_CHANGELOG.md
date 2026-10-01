@@ -2,6 +2,12 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
+## 2026-10-02 — 房客 canonical ID 修復候選，發布待授權
+
+- 登入唯讀核對揭露 native 清單把房客 ID 轉為大寫，租約及文件仍以原始小寫 ID 精確查找，導致 506 漏查。不是文件已確認遺失，不重建房客／租約／文件或帳單。
+- Native 回傳原始 ID，歷史使用相同 ID；舊大寫網址只依已驗證 Workspace 回應唯一解析，保留後端嚴格權限與精確關聯。定向 29/29、全套 431/431、validate、全域／inline 語法及 diff-check 通過。
+- 隔離分支 `codex/tenant-canonical-id-20261002`，共享 cache tag `20261002-tenant-canonical-id-v1`。正式 v201／Pages 未改；200-version cap 需要另取得特定未引用舊版本的永久刪除授權，保留 v201 與 v200。不開無關專案討論。
+
 ## 2026-10-02 — 房客文件／電表查看修復正式發布
 
 - 電表表單不再等待文件查詢完成；文件失敗保留房客頁和獨立電表區。舊房客缺少租約歷史時，仍以文件回應中同房客租約補載電表。

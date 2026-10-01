@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-10-02 房客 canonical ID 關聯修復（本地候選，未發布）
+
+- [x] 登入後唯讀重現 506 詳細頁「0 份文件／無租約／無法補填初始電表」；沒有開啟原始身分證、重傳文件或改業務資料。測試以虛構 ID，不提交真人個資。
+- [x] RED/GREEN：新增 6 項 regression；最初 4 項在舊程式失敗，審查另揭露申請 case-fold 錯連並以新增測試重現，再修為 canonical 解析後精確過濾。定向 29/29 通過。Native projection → 真正合約歷史及文件 metadata helper：小寫生成 ID、沒有 tenant master 時的合約 fallback、既有大寫 ID；跨 Workspace／房東／其他房客文件保持排除，資料快照不變。
+- [x] 實際 `loadPage`：舊大寫網址先唯一解析伺服器原始 ID，文件及電表查詢均用 canonical ID，既有申請保留，三筆文件可預覽且電表欄位呈現；大小寫碰撞在任何私有文件／電表查詢前拒絕。
+- [x] 全套 431/431、`npm run validate`、49 個 inline scripts、58 個 Apps Script 合併全域語法、`git diff --check` 通過。固定 cache tag 為 `20261002-tenant-canonical-id-v1`；其他頁只有機械式 tag 更新。
+- [x] 獨立審查先揭露申請 case-fold 錯連，新增 RED/GREEN 後精確關聯；follow-up 29/29 與 diff-check 通過，無 Critical／Important／Minor，候選可進行下一階段發布 preflight。
+- [ ] Apps Script 已滿 200 個版本，尚未 source push／建立新版／更新 deployment／Pages／PR。正式後端讀回 v201，v200 保留；此前只刪 v199 的授權不涵蓋其他版本。
+- [ ] 正式候選發布後，需登入唯讀確認 506 原有租約、文件及電表欄位；本地測試不等於原檔已恢復或真機驗收。
+
 ## 2026-10-02 房客文件與初始電表查看修復
 
 - [x] 真正執行 `loadPage` 的 RED/GREEN 重現：文件請求未完成時，電表原先沒有讀數／照片控制項；修正為獨立載入，文件失敗也不移除房客頁及電表表單。

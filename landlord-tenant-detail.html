@@ -9,9 +9,9 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261002-tenant-evidence-discovery-v1"></script>
-  <script src="landlord-auth.js?v=20261002-tenant-evidence-discovery-v1"></script>
-  <script src="landlord-api.js?v=20261002-tenant-evidence-discovery-v1"></script>
+  <script src="frontend-release.js?v=20261002-tenant-canonical-id-v1"></script>
+  <script src="landlord-auth.js?v=20261002-tenant-canonical-id-v1"></script>
+  <script src="landlord-api.js?v=20261002-tenant-canonical-id-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
@@ -1549,7 +1549,7 @@
     const TEST_MODE =
       URL_PARAMS.get('test') === '1';
 
-    const TENANT_ID =
+    let TENANT_ID =
       String(
         URL_PARAMS.get('tenant_id') || ''
       ).trim();
@@ -4005,23 +4005,34 @@
           ? tenantData.tenants
           : [];
 
-      const item =
-        tenants.find(
+      // Older native-list links used the uppercase lookup key. Resolve them
+      // only against this verified Workspace response, then keep its raw ID.
+      const matches =
+        tenants.filter(
           function (tenant) {
             return (
               rawText(
                 tenant.tenant_id
-              ).trim() === TENANT_ID
+              ).trim().toUpperCase() === TENANT_ID.toUpperCase()
             );
           }
         );
 
+      if (matches.length > 1) {
+        throw new Error('房客識別資料不唯一，請先核對房客資料');
+      }
+
+      const item = matches[0];
       if (!item) {
         throw new Error(
           '找不到指定房客資料，請從房客名單重新進入'
         );
       }
 
+      TENANT_ID = rawText(item.tenant_id).trim();
+      requests = (Array.isArray(requests) ? requests : []).filter(function (request) {
+        return rawText(request.tenant_id).trim() === TENANT_ID;
+      });
       CURRENT_TENANT = item;
       CURRENT_REQUESTS = requests;
       CURRENT_TENANT_CONTRACTS = Array.isArray(item.contract_history)
@@ -4571,16 +4582,7 @@
                 contractData.requests
               )
                 ? contractData.requests
-                    .filter(
-                      function (request) {
-                        return (
-                          rawText(
-                            request.tenant_id
-                          ).trim() ===
-                          TENANT_ID
-                        );
-                      }
-                    )
+                    .slice()
                     .sort(
                       function (a, b) {
                         const aTime =
