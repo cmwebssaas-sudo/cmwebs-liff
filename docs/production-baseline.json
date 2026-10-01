@@ -26,5 +26,13 @@
     "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "Source and public asset identity; paper backfill global tenant identity lookup and common invitation eligibility repair. Scoped read-only 506 identity and binding checks confirmed the root cause; no PII, private-file contents or secret values read. No business-row, private-file, Properties, trigger or LINE writes during publication. Authenticated real-file upload, paper conversion, tenant binding and real-device acceptance remain unverified. Rollback version 198; unserved version 199 is superseded."
+  "scope": "Source and public asset identity; paper backfill global tenant identity lookup and common invitation eligibility repair. Scoped read-only 506 identity and binding checks confirmed the root cause; no PII, private-file contents or secret values read. No business-row, private-file, Properties, trigger or LINE writes during publication. Authenticated real-file upload, paper conversion, tenant binding and real-device acceptance remain unverified. Rollback version 198; unserved version 199 is superseded.",
+  "release_hold": {
+    "candidate_source_commit": "b2251851b4ad45266d05675a7d05a9965d7cb09f",
+    "reason": "Apps Script create-version failed at the 200-version limit; reviewed initial-meter repair is not delivered.",
+    "safe_revert_main": "da77a4efd3d7a8bb6daf6256b5ffc2ff5f724d37",
+    "restored_public_file_count": 17,
+    "editor_head_restored_to_version": 200,
+    "required_approval": "Delete only unreferenced and locally exported version 199; retain version 200 and all existing deployments/data."
+  }
 }

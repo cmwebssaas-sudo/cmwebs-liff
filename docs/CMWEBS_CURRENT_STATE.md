@@ -1,7 +1,13 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-09-30 (Asia/Taipei)**
+**Last verified: 2026-10-01 (Asia/Taipei)**
+
+## 2026-10-01 初始電表修復發布暫停
+
+候選 `b225185` / PR #188 已完成初始電表、照片／自拍及文件查看修復，420/420 測試與審查通過。但 Apps Script 建立新版被 200-version cap 拒絕，正式 deployment 維持 Version 200。Editor HEAD 已恢復 v200 的相同 59 檔；PR #189 / `da77a4e` 回退前端，Pages workflow `36869725199` 成功。未刪歷史版本或修改業務資料；候選尚不可稱為已發布／可用。
+
+唯一待授權操作：只刪除目前沒有部署引用、已完整唯讀匯出的歷史 Version 199，保留 Version 200 作回退，再恢復候選發布。不得自行擴大到其他版本／部署／資料。詳見 [PRODUCTION-DELIVERY.md](PRODUCTION-DELIVERY.md)。
 
 ## 2026-09-30 合約補充約定正式發布
 

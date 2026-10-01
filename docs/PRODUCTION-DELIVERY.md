@@ -4,6 +4,15 @@
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
+## 2026-10-01 初始電表修復：版本上限，發布暫停
+
+- 已審查候選 `b2251851b4ad45266d05675a7d05a9965d7cb09f`（`codex/paper-initial-meter-20261001`、PR #188）修復紙本初始電表必填、選填電表照片／自拍、既有租約缺失基準補填及私有文件查看。全套 420/420、validate、全域／前端語法及獨立審查通過；沒有 Critical／Important。
+- `clasp push` 曾成功，但建立 immutable version 被 Google 拒絕：專案已達 **200 個版本上限**。既有正式 Web App 一直服務 Version 200，未切換或建立新版；此候選**尚未正式交付**。
+- PR #188 的 Pages workflow `36869269841` 雖被取消，deploy step 仍回報成功，公開讀回確認曾出現候選前端，不能把「取消」當作未發布。安全回退 PR #189 合併為 `da77a4efd3d7a8bb6daf6256b5ffc2ff5f724d37`；Pages workflow `36869725199` 成功，`npm run verify:production` 已確認 17 個公開資產逐位元組回復原正式版本。
+- Apps Script editor HEAD 已恢復，59 檔唯讀匯出與 immutable Version 200、目前回退來源逐位元組相同。根目錄 408 筆混合 dirty WIP 原樣保留；未操作 506 業務資料、真實文件、Properties、trigger 或 LINE。
+- 未被任何目前部署引用的 Version 199 已保存完整本地唯讀匯出，但**沒有刪除授權**，尚未刪除。需要使用者明確批准只刪 Version 199；保留 Version 200 及現有部署，再恢復經審查候選、建立新版並核對同一 URL／Pages。不得自動清理其他歷史版本、部署或資料。
+- 恢復候選須在最新 `main` 建立 feature branch 並重新套用 `b225185` 的修正；PR #189 已回退它，直接 merge 舊候選分支不會重新帶回已回退的變更。506 的實際度數未知，不可代填；真人保存與真機驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+
 ## 唯一正式來源
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
