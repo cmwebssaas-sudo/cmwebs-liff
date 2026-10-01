@@ -3,11 +3,13 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
-## 2026-10-02 97 個歷史版本已刪除；後端 v203 已發布，Pages 待發布
+## 2026-10-02 97 個歷史版本清理／v203 與 Pages 已發布；電表登入唯讀驗收通過
 
 使用者在永久刪除最後畫面確認「刪除這 97 個版本並發布」後，只刪 1–100 排除 10、76、85 的 97 版。Google 成功畫面及 CLI 精確差集一致：刪除後 103 版、全部 protected versions 保留、五個 deployment 不變。完整 owner-only 備份及 checksum 清單保留，成功證據在備份目錄 `delete-completed.png`。原版本編號不能恢復，但原始碼可重建新版；没有刪除任何租約、房客、帳務或私有文件。
 
-Fresh editor HEAD 與 serving v202 的 59 檔相同後，推送已審查 `71b68df`，建立 immutable **203**。完整 59 檔匯出與候選逐位元組相同，tree SHA-256 `ee0b56f1f6af1d8677d111eff07133dc49bf13f8e56e53ced4a4665820a071f4`，既有正式 Web App 讀回 203，URL 不變。保留 v202 回退及 v200／201；新版占用一個位置後剩餘 96 個位置，Google 200-version 上限仍存在。前端尚未發布，本紀錄不等於完整交付；下一步走既有 PR／Pages 流程、17 檔公開讀回及登入後唯讀驗證。
+Fresh editor HEAD 與 serving v202 的 59 檔相同後，推送已審查 `71b68df`，建立 immutable **203**。完整 59 檔匯出與候選逐位元組相同，tree SHA-256 `ee0b56f1f6af1d8677d111eff07133dc49bf13f8e56e53ced4a4665820a071f4`，既有正式 Web App 讀回 203，URL 不變。保留 v202 回退及 v200／201；新版占用一個位置後剩餘 96 個位置，Google 200-version 上限仍存在。PR **#197** 合併為 **cc984fe**，Pages workflow **36936708163** build／report／deploy 成功；17 個公開檔案及 v203 匯出逐位元組相同，合併後再次 validate／441/441／diff-check 通過。
+
+正式登入後唯讀驗收通過：過期憑證顯示明確手動恢復，使用既有房東 LINE 帳號重新登入後返回同一 canonical 房客／選定租約／電表錨點；不再驗證失敗，初始讀數、選填照片及儲存控制項可見。506 租期顯示 2026-09-11～2027-09-10，既有紙本／身分證三份文件紀錄與私有預覽入口保留。初始讀數／照片實際仍缺少，未填寫或提交，原檔未開啟；真實存檔／上傳與實體手機驗收仍 UNVERIFIED。成功畫面在私有備份目錄 `production-meter-form-restored.png`，使用者頁面停留在可補填區。
 
 本次只修過期 LINE 憑證的手動恢復及台北日期；不代填未知電表讀數、不重算已出帳、不改 Properties／trigger／LINE。Rollback：同一 Web App v202、Pages `add86f5`。根目錄 408 筆混合 WIP 保留；不開無關專案討論。
 

@@ -3,8 +3,8 @@
   "source_commit": "71b68df136ef5428f0ab994ee66f1f335f7833ca",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 203,
-  "frontend_revision": "b79ab46fcde67ec18b0e6885e13165a57cad38c8",
-  "frontend_workflow": "36926064476",
+  "frontend_revision": "cc984fe95e4c2643887796271dec7f7ca2ce1048",
+  "frontend_workflow": "36936708163",
   "frontend_public_file_count_verified": 17,
   "backend_file_count": 59,
   "backend_tree_sha256": "ee0b56f1f6af1d8677d111eff07133dc49bf13f8e56e53ced4a4665820a071f4",
@@ -29,7 +29,7 @@
     "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "Authorized expired LINE identity recovery and Taipei lease-date repair: immutable v203 export is byte-identical to all 59 reviewed backend files and the existing formal deployment reads back v203 at the unchanged URL. Candidate frontend publication is pending; frontend revision/workflow above still describe the prior public runtime, not acceptance of this candidate. The earlier failed request used an expired LINE ID token; fresh-login initial-meter browser acceptance remains UNVERIFIED. No authentication bypass, business-row, private-file content/upload, Properties, trigger or LINE writes. Rollback: existing Web App v202; frontend pre-release add86f5; v200/v201 additionally retained. The exact authorized 97-version batch was backed up and deleted; 104 versions remain with 96 available slots, not an unlimited quota.",
+  "scope": "Authorized expired LINE identity recovery and Taipei lease-date repair: immutable v203 export is byte-identical to all 59 reviewed backend files and the existing formal deployment reads back v203 at the unchanged URL. PR 197 merged at cc984fe; Pages workflow 36936708163 succeeded and all 17 public files are byte-identical. Authenticated read-only browser acceptance: expired identity shows manual recovery, existing LINE landlord re-login returns to the same canonical tenant/selected lease/meter anchor, and the initial reading, optional photo and save controls load. Taipei lease dates are correct and three existing paper-contract/ID metadata records and private-preview controls remain visible. The real initial reading/photo remain missing; no value or file was submitted. Real write/upload and physical-device acceptance remain UNVERIFIED. No authentication bypass, business-row, private-file content/upload, Properties, trigger or LINE writes. Rollback: existing Web App v202; frontend pre-release add86f5; v200/v201 additionally retained. The exact authorized 97-version batch was backed up and deleted; 104 versions remain with 96 available slots, not an unlimited quota.",
   "rollback": {
     "backend_version": 202,
     "frontend_revision": "add86f5dec34066b8fca08d344b5b41f153da347"

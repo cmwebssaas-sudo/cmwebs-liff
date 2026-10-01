@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-10-02 電表驗證恢復／台北日期（後端 v203；Pages 待發布）
+## 2026-10-02 電表驗證恢復／台北日期（v203／Pages 已發布；登入唯讀通過）
 
 - [x] 最小化唯讀 metadata 確認失敗请求的 ID token 已過期；不保存 token／subject／秘密值，沒有讀私有原檔或寫业务資料。
 - [x] RED/GREEN：過期 SDK token 不送 exchange、不自動跳轉；provider 拒絕保留明確手動恢復且不查電表／raw UID fallback。cached review session 到期重取；存檔失敗不自動重送，保留讀數／照片並清除已過期 session。
@@ -12,8 +12,9 @@
 - [x] 合併全域 58 個 Apps Script／49 個 inline scripts 語法通過；隔離 browser fixture 禁止任何外部請求，實際按鈕返回同房客／所選租約／電表錨點，日期正確、讀數／照片控制項可見。畫面證據 `/private/tmp/cmwebs-meter-session-proof.hpI9lm`；不代表正式／真機通過。
 - [x] 使用者於最後永久刪除畫面確認精確97版批次；完整來源／checksum 備份、Google成功畫面及 CLI 刪除差集相符，保留引用／76／85／200／201／202，五個 deployment 不變，沒有業務資料刪除。
 - [x] Fresh HEAD／serving v202 匯出一致，candidate `71b68df` 建立 immutable203，59 檔完全一致；既有 Web App deployment 讀回203、URL不變。新版後104版／96可用位置，rollback202。
-- [ ] Pages PR／合併／17檔公開核對待完成。
-- [ ] 登入後新鮮憑證／真機／真實初始電表補填未驗收；未知讀數不代填，不重算已出帳。
+- [x] PR #197／cc984fe、Pages workflow36936708163成功；17個公開檔案逐位元組相同，合併後再跑441/441／validate／diff-check通過。
+- [x] 正式登入後唯讀：過期提示→既有房東LINE重新登入→同一canonical房客／選定租約／電表錨點；初始讀數、選填照片及儲存控制項載入。台北租期和原三份文件metadata／私有預覽入口可見，未開原檔。
+- [ ] 真機／真實初始電表補填及照片交易未驗收；實際讀數／照片仍缺，不代填、不重算已出帳。
 
 ## 2026-10-02 房客 canonical ID 關聯修復（本地候選，未發布）
 
