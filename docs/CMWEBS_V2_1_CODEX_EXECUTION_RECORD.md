@@ -279,3 +279,27 @@ V2.1 is complete only after separately authorized scope work and operational
 evidence satisfy the product and release rules, at which point
 `V2_FEATURE_FREEZE=FINAL` may be recorded. This document does not make that
 declaration.
+
+## 2026-10-01 V2.0 Production correction: initial meter and backfill documents
+
+Recommended model/speed: `gpt-5.6-terra` / `medium`. This is the explicitly
+approved V2.0 correctness repair, not new V2.1 scope or feature-freeze evidence.
+
+- Reapplied the reviewed candidate on an isolated feature branch from verified
+  main `fbc90d2`; runtime commit `99e4db5`. Mixed dirty root stayed unchanged
+  (408 entries, 49 tracked; its original branch and HEAD retained).
+- User confirmed at the permanent-deletion dialog: delete only version 199.
+  Its complete 59-file backup matches Git `ebce4b8`; version 199 was removed,
+  version 200 retained, no other version/deployment deleted.
+- Fresh editor HEAD matched v200 before source push. Immutable v201 export
+  matches all 59 candidate files; the same formal Web App reads back v201,
+  URL unchanged, four other deployment bindings unchanged.
+- PR #191 merged as `2c570ae`; Pages workflow `36881380576` succeeded.
+  Full suite 420/420, validate, combined/inline syntax, immutable export,
+  public 17-file byte identity and diff-check passed. Anonymous correct
+  `v2_action` initial-meter GET returned POST_REQUIRED.
+- No business-row, private-file, Properties, trigger or LINE transaction;
+  actual 506 meter reading remains unknown. Human upload and real-device
+  acceptance unverified. No automatic recalculation of issued bills.
+- Rollback: same Web App to v200; Pages restore pre-release main `fbc90d2`
+  through approved PR workflow. Never overwrite business data for rollback.

@@ -2,10 +2,10 @@
 
 **Status: AUTHORITATIVE product-memory changelog**
 
-## 2026-10-01 — 初始電表修復後端發布，Pages 待核對
+## 2026-10-01 — 初始電表與補登資料查看正式發布
 
 - 使用者在永久刪除對話框最終確認只刪 v199，執行後核對其不存在、完整來源備份保存、v200 及五個既有部署保留。
-- Runtime `99e4db5` 重新套用審查候選，420/420／validate／語法／diff-check 通過。新 immutable Version 201 匯出 59 檔與候選完全一致，同一正式 Web App 讀回 v201，URL 不變；Pages 尚待合併／部署／公開讀回。
+- Runtime `99e4db5` 重新套用審查候選，420/420／validate／語法／diff-check 通過。新 immutable Version 201 匯出 59 檔與候選完全一致，同一正式 Web App 讀回 v201，URL 不變；PR #191／`2c570ae`、Pages workflow `36881380576` 成功，17 個公開資產逐位元組核對通過。
 - 紙本必填初始電表、選填照片／自拍；既有租約缺失基準補填與私有文件查看恢復，不重算已出帳、不代填 506／改資料／送 LINE。Rollback v200、Pages 發布前 main `fbc90d2`；真人文件／手機驗收未宣稱完成。
 
 ## 2026-10-01 — 初始電表修復候選，版本上限阻擋發布（歷史）

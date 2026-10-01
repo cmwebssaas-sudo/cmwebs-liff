@@ -5,7 +5,7 @@
 - [x] 只對已核對的 v199 取得操作當下永久刪除確認並執行；59 檔備份逐位元組相同，CLI 核對 v199 不存在、v200 保留，沒有刪其他版本／部署。
 - [x] 新 immutable v201 匯出 59 檔與 `99e4db5` 相同；既有正式 deployment 讀回 v201，URL 不變，另四個部署 HEAD／160／10／139 不變。
 - [x] 再次執行全套 420/420、validate、全域 Apps Script／三頁 inline 語法及 diff-check 通過。
-- [ ] Pages 合併部署後的 17 個公開資產逐位元組核對。
+- [x] PR #191／`2c570ae` 合併，Pages workflow `36881380576` 成功；`npm run verify:production` 確認 17 個公開資產逐位元組一致，`--export` 核對 v201 通過，正確匿名 v2_action init GET 回傳 POST_REQUIRED。
 - [ ] 真實 506 初始度數、私有照片／登入後操作及手機真機驗收未完成；無業務列、私有檔案、Properties／trigger／LINE 交易。
 
 ## 2026-10-01 初始電表候選發布阻擋與回退（歷史）

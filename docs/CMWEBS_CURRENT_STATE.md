@@ -3,11 +3,11 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-01 (Asia/Taipei)**
 
-## 2026-10-01 初始電表修復：後端 Version 201，Pages 待核對
+## 2026-10-01 初始電表與補登文件查看已發布
 
-使用者操作當下確認後，只永久刪除已完整備份且無目前部署引用的 Version 199。Version 200 和全部既有部署保留。重新套用已審查候選的 runtime `99e4db5` 通過 420/420、validate、全域／inline 語法及 diff-check；immutable Version 201 匯出 59 檔完全一致，同一正式 Web App 讀回 201，URL 不變。Pages 合併及公開讀回尚待完成。
+使用者操作當下確認後，只永久刪除已完整備份且無目前部署引用的 Version 199。Version 200 和全部既有部署保留。重新套用已審查候選的 runtime `99e4db5` 通過 420/420、validate、全域／inline 語法及 diff-check；immutable Version 201 匯出 59 檔完全一致，同一正式 Web App 讀回 201，URL 不變。PR #191 合併為 `2c570ae`，Pages workflow `36881380576` 成功，17 個公開資產逐位元組一致；匿名正確路由 GET 拒絕未驗證 POST，無業務資料存取。
 
-本次沒有代填 506 未知初始度數、改業務列、私有文件、Properties、trigger 或送 LINE，也不重算已出帳。Rollback 為 Apps Script v200／前端發布前 main `fbc90d2`。真實上傳與手機验收未完成；詳見 [PRODUCTION-DELIVERY.md](PRODUCTION-DELIVERY.md)。
+使用入口為「房客 → 506 詳細資料 → 入住初始電表」及「文件與身份驗證」。本次沒有代填 506 未知初始度數、改業務列、私有文件、Properties、trigger 或送 LINE，也不重算已出帳；根目錄 408 筆混合 WIP／49 tracked 原樣保留。Rollback 為 Apps Script v200／前端發布前 main `fbc90d2`。真實上傳與手機驗收未完成；詳見 [PRODUCTION-DELIVERY.md](PRODUCTION-DELIVERY.md)。
 
 ## 2026-10-01 初始電表修復發布暫停（歷史）
 
