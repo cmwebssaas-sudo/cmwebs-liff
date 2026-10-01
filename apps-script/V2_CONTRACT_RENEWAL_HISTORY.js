@@ -78,17 +78,17 @@ function contractRenewalHistoryText_(value) {
 
 function contractRenewalHistoryDateOnly_(value) {
   if (value instanceof Date && !isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
+    return Utilities.formatDate(value, 'Asia/Taipei', 'yyyy-MM-dd');
   }
 
   const text = contractRenewalHistoryText_(value);
-  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (match) {
     return match[1] + '-' + match[2] + '-' + match[3];
   }
 
   const parsed = new Date(text);
-  return isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+  return isNaN(parsed.getTime()) ? '' : Utilities.formatDate(parsed, 'Asia/Taipei', 'yyyy-MM-dd');
 }
 
 function contractRenewalHistoryUtcDate_(dateOnly) {

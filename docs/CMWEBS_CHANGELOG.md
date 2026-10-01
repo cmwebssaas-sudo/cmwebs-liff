@@ -1,5 +1,13 @@
 # CMWebs Changelog
 
+## 2026-10-02 — 電表過期憑證恢復與租期日期修正（本地候選，未發布）
+
+- 失敗的 LINE review exchange 確認送出已過期 ID token。電表區提供明確手動重新登入、保留同房客／租約返回位置，不再送過期 token；cached review session 到期重取。授權失敗不自動重送存檔，保留未儲存讀數／選取照片。
+- LINE provider 明確過期錯誤回傳 `LINE_ID_TOKEN_EXPIRED`；其餘 token 驗證／Workspace／角色／HMAC 規則不放寬，不使用 raw UID 或 decoded profile 作授權。
+- 合約歷史、電表及文件租期統一使用台北日期，修正 UTC 截取顯示前一天；不改租約資料、金額或已出帳。
+- 新增 10 項 RED/GREEN 回歸；定向 36/36、全套 441/441、validate、全域／inline 語法、diff-check 通過。獨立審查補齊 session expiry／provider response 邊界後 39/39、無殘留發現。隔離瀏覽器確認登入恢復／正確日期／讀數及照片欄位，不接觸正式 API。
+- 固定 cache tag `20261002-tenant-meter-session-dates-v1`；其他頁僅機械式 tag 更新。正式 v202／Pages 未改，另行發布／版本清理待授權；保留 v200、201、202。v197 無目前部署引用且完整來源已備份核對，但未刪除。
+
 ## 2026-10-02 — canonical tenant ID 正式發布，文件恢復與電表未解項
 
 - 依操作當下確認只刪除已備份、未部署引用的 v198；保留 v200、v201。

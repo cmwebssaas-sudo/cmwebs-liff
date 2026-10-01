@@ -485,6 +485,14 @@ candidates the current source inventory has 83 JSONP routes.
 - The JSONP result exchange carries only a one-time `request_id` and
   `poll_secret`; its cached result expires after 60 seconds and is removed on
   successful redemption.
+- Candidate error contract (2026-10-02, not deployment evidence): when LINE's
+  ID-token verifier returns HTTP 400 with the exact allowlisted description
+  `IdToken expired.`, authentication is denied with `LINE_ID_TOKEN_EXPIRED`.
+  Other provider errors remain `LINE_TOKEN_VERIFY_FAILED`; raw provider
+  descriptions and credentials are never echoed. No session/principal is
+  created on either failure. The tenant initial-meter UI offers manual LINE
+  re-login and returns to the same tenant/contract; it never automatically
+  replays a failed write or substitutes a decoded profile/raw LINE UID.
 - The review update is idempotent only for the same already-final decision. An
   opposite decision after finalization returns an error and does not overwrite
   the audit record.

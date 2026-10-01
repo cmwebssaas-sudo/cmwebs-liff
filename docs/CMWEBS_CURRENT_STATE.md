@@ -3,6 +3,18 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
+## 2026-10-02 電表過期 LINE 憑證／台北租期日期修復（本地候選，未發布）
+
+建議模型／速度：`gpt-5.6-terra / medium`。隔離分支 `codex/tenant-meter-auth-dates-20261002`，基線 `add86f5`。使用者授權開始修復；本輪沒有推送、PR、合併、部署或版本刪除，不開無關專案討論。
+
+失敗請求的最小化唯讀證據確認 LINE ID token 在請求當下已過期；只檢查 expiry／issuer／公開 LIFF channel audience 的布林結果，不保存或揭露原 token／subject。前端不再送已過期憑證，提供手動重新登入、返回同一 canonical 房客／選定租約／電表區；不自動跳轉或重送寫入。已過期 review session 清除；存檔授權失敗保留讀數和選取照片，離頁重新登入後需重選照片。後端仍嚴格驗證 ID token；只有 LINE provider 的明確 `IdToken expired.` 回應映射 `LINE_ID_TOKEN_EXPIRED`，其他拒絕保持 generic fail-closed，沒有 raw UID fallback。新登入是否能通過正式 Channel 配置仍待驗證。
+
+租期差一天已重現為 UTC 日期截取：後端 history helper 與前端 timestamp／文件選單統一以 `Asia/Taipei` 顯示；原租約日期與金額不改。新增 10 項具名回歸，定向 36/36、全套 441/441、validate、58 個 Apps Script 合併全域語法／49 個 inline scripts、diff-check 通過。共享 cache tag 為 `20261002-tenant-meter-session-dates-v1`，其他頁只做機械式 tag 更新。獨立審查補齊 session 剩餘 20／31 秒及 malformed/null/provider status 邊界後，follow-up 39/39、無 Critical／Important／Minor。隔離 browser fixture 禁止外部請求，確認手動登入按鈕、同房客／租約／電表區返回與讀數／照片欄位；這不是正式登入驗收。
+
+正式基線仍 v202／Pages `add86f5` 的 runtime；200、201、202 保留。200-version cap 未解除，先前只刪 198 的批准不得擴大。本候選發布及額外特定版本永久刪除須另取得授權。回退為同一 Web App v202、Pages `add86f5`；原目錄 408 筆混合 WIP 保留，無業務／私有檔案／Properties／trigger／LINE 寫入，不代填未知初始讀數、不重算已出帳。正式登入／真機／實際補填仍 UNVERIFIED。
+
+唯讀部署／版本清單確認現有 200 個 immutable versions，五個部署不引用 v197。該版本完整 59 檔匯出至 `/private/tmp/cmwebs-unused-v197.SFe6dI`（0700），與 Git `fd806f1` 完全相符，來源 tree SHA-256 `83a025a49c448db52e81f4126b83e0c2f3b036098a08d90fc0b2aeeab0f3c4ed`。尚未刪除；刪除原版本編號不可恢復，備份可重建另一新版。
+
 ## 2026-10-02 canonical ID v202／Pages 已發布；506 文件已恢復，電表仍受阻
 
 依使用者在最後對話框的確認，只永久刪除未部署引用且已備份的 v198；200、201 保留。Fresh HEAD／serving v201 與來源一致後，已審查 `78d4d60` 建立 immutable v202，59 檔匯出逐位元組一致，同一正式 Web App 讀回 202、URL 不變，其他四個部署不變。431/431、validate、diff-check 通過。PR #195／`b79ab46`、Pages workflow `36926064476` 成功，17 個公開檔案逐位元組一致。
