@@ -4,7 +4,15 @@
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
-## 2026-10-02 發布授權與舊程式版本整批清理（待當下永久刪除確認）
+## 2026-10-02 舊版本清理完成及後端 v203 發布（Pages 待發布）
+
+- 已取得最後畫面的精確批次確認，只永久刪除版本 1–9、11–75、77–84、86–100，共 **97** 版；Google UI 成功及 CLI 差集相符。刪除後 103 版，保留全部引用版本、76／85 舊基線、200／201／202，五個 deployment 不變。沒有租約、房客、帳務、私有文件刪除。
+- 97 版完整備份／1859 檔／72,263,091 bytes 位於 `/Users/hans/CMWebs/apps-script-history-20261002.2iQztI`；來源逐檔 checksum 已驗證，原 manifest 保留。刪除成功畫面 `delete-completed.png`。原版本編號不能恢復，來源可建立另一个新版。
+- Fresh HEAD／v202 完整匯出一致後，候選 `71b68df` 建立 immutable **203**。59 檔完整匯出逐位元組一致，tree SHA-256 `ee0b56f1f6af1d8677d111eff07133dc49bf13f8e56e53ced4a4665820a071f4`；既有正式 Web App deployment 讀回 **203**，URL 不變。新版建立後 104 版，剩 **96** 個位置，不取消 200-version 上限。
+- Pages 候選尚未合併／公開核對。正式新憑證登入／電表欄位仍未驗收，不宣稱全部修復或真人寫入完成。只修過期登入恢复與台北日期，不填未知讀數、不上傳私有檔、不改帳單／Properties／trigger／LINE。
+- Rollback：現有同一 Web App 指回 **202**，Pages 經 PR 恢復 **add86f5**；200／201 另外保留，不回滾業務資料。下一步只發布已授權候選前端，逐檔讀回及登入後唯讀核對。
+
+## 2026-10-02 發布授權與整批清理（刪除前歷史紀錄）
 
 - 發布候選 `71b68df` 已獲授權；fresh `origin/main` 仍 `add86f5`，validate／441 項測試通過。正式網站仍 v202，沒有後端 push／版本建立／Pages 合併。
 - 不刪業務資料、私有檔案或 deployment。只選 **1–100 排除 10、76、85，共 97 個舊程式版本**；10 被部署引用，76／85 為保留的歷史基線；所有 101 以上近期版本含 200、201、202 保留。五個 deployment 仍 HEAD／160／10／202／139。

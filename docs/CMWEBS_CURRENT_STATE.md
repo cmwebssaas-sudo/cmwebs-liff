@@ -3,7 +3,15 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
-## 2026-10-02 發布已授權；97 個歷史程式版本已備份，待永久刪除當下確認
+## 2026-10-02 97 個歷史版本已刪除；後端 v203 已發布，Pages 待發布
+
+使用者在永久刪除最後畫面確認「刪除這 97 個版本並發布」後，只刪 1–100 排除 10、76、85 的 97 版。Google 成功畫面及 CLI 精確差集一致：刪除後 103 版、全部 protected versions 保留、五個 deployment 不變。完整 owner-only 備份及 checksum 清單保留，成功證據在備份目錄 `delete-completed.png`。原版本編號不能恢復，但原始碼可重建新版；没有刪除任何租約、房客、帳務或私有文件。
+
+Fresh editor HEAD 與 serving v202 的 59 檔相同後，推送已審查 `71b68df`，建立 immutable **203**。完整 59 檔匯出與候選逐位元組相同，tree SHA-256 `ee0b56f1f6af1d8677d111eff07133dc49bf13f8e56e53ced4a4665820a071f4`，既有正式 Web App 讀回 203，URL 不變。保留 v202 回退及 v200／201；新版占用一個位置後剩餘 96 個位置，Google 200-version 上限仍存在。前端尚未發布，本紀錄不等於完整交付；下一步走既有 PR／Pages 流程、17 檔公開讀回及登入後唯讀驗證。
+
+本次只修過期 LINE 憑證的手動恢復及台北日期；不代填未知電表讀數、不重算已出帳、不改 Properties／trigger／LINE。Rollback：同一 Web App v202、Pages `add86f5`。根目錄 408 筆混合 WIP 保留；不開無關專案討論。
+
+## 2026-10-02 發布授權及97版備份（刪除前歷史紀錄）
 
 使用者已授權發布電表憑證／台北日期修正版，以及清理較舊、沒有用途的程式版本；不涵蓋房客、租約、文件、帳務資料或部署刪除。Fresh `origin/main` 仍 `add86f5`，隔離候選 `71b68df`，validate／441 項測試通過。原目錄仍 408 筆混合 WIP／49 個 tracked 修改／無 staged，沒有清理或覆寫。
 
