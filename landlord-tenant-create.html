@@ -9,9 +9,9 @@
   <title>CMWebs 建立房客與租約</title>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261001-paper-initial-meter-v1"></script>
-  <script src="landlord-auth.js?v=20261001-paper-initial-meter-v1"></script>
-  <script src="landlord-api.js?v=20261001-paper-initial-meter-v1"></script>
+<script src="frontend-release.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-auth.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
+  <script src="landlord-api.js?v=20260911-landlord-checkout-quick-closeout-v1"></script>
 
   <style>
     :root {
@@ -2027,10 +2027,6 @@
             ${numberField('electricityRate', '每度電費', defaults.electricity_fee_rate, '0', '0.1')}
             ${numberField('equipmentRate', '設備耗損費／度', defaults.equipment_fee_rate, '0', '0.1')}
           </div>
-          <div class="field">
-            <label class="field-label" for="firstMeterReading"><span>入住初始電表讀數</span><span class="required">必填</span></label>
-            <input id="firstMeterReading" class="input" type="number" min="0" step="0.001" required placeholder="請填入入住時的實際讀數，0 亦有效" />
-          </div>
           <label class="confirmation-row initial-rent-paid-row" for="initialRentPaid">
             <input id="initialRentPaid" class="confirmation-check" type="checkbox" />
             <span class="confirmation-text"><strong>簽約時已收首月租金＋管理費</strong><span>勾選後，租約開始月份的租金與管理費會自動折抵；2 個月押金仍保留在合約資料，不會從月帳單折抵。</span></span>
@@ -2049,7 +2045,7 @@
           <div class="section-head">
             <div>
               <div class="section-title">紙本與身分文件</div>
-              <div class="section-desc">紙本合約檔案是補登成立的必要證據；身分證、初始電表照片與自拍照可之後補上。</div>
+              <div class="section-desc">紙本合約檔案是補登成立的必要證據；身分證可之後補上。</div>
             </div>
             <div class="section-index">3</div>
           </div>
@@ -2068,16 +2064,6 @@
               <div class="field-label"><span>身分證反面</span><span class="optional">選填／可後補</span></div>
               <input id="identityBackFile" class="paper-file-input" type="file" accept="image/jpeg,image/png,application/pdf" onchange="showPaperFileName('identityBackFile','identityBackFileStatus',false)" />
               <div id="identityBackFileStatus" class="paper-file-status">尚未上傳</div>
-            </div>
-            <div class="field">
-              <label class="field-label" for="initialMeterFile"><span>初始電表照片</span><span class="optional">選填／可後補</span></label>
-              <input id="initialMeterFile" class="paper-file-input" type="file" accept="image/jpeg,image/png" onchange="showPaperFileName('initialMeterFile','initialMeterFileStatus',false)" />
-              <div id="initialMeterFileStatus" class="paper-file-status">JPG 或 PNG，最大 8MB。</div>
-            </div>
-            <div class="field">
-              <label class="field-label" for="selfieFile"><span>自拍照</span><span class="optional">選填／可後補</span></label>
-              <input id="selfieFile" class="paper-file-input" type="file" accept="image/jpeg,image/png" onchange="showPaperFileName('selfieFile','selfieFileStatus',false)" />
-              <div id="selfieFileStatus" class="paper-file-status">JPG 或 PNG，最大 8MB。</div>
             </div>
           </div>
           <div class="paper-backfill-note">${replacingElectronicContract ? '送出後會保留原電子草稿紀錄並關閉未完成的電子簽署；紙本租約成立後，房客可使用下方的房客登入入口完成手機綁定。' : repairingOrphanContract ? '送出後會保留原有不完整合約紀錄並標記關閉；紙本租約成立後，房客可使用下方的房客登入入口完成手機綁定。' : '補登完成後直接建立有效租約，不會產生合約申請、電子簽署邀請或房客 LINE 訊息。'}</div>
@@ -2133,10 +2119,8 @@
           reject(new Error('檔案大小必須介於 1B 至 8MB。'));
           return;
         }
-        const imageOnly = inputId === 'initialMeterFile' || inputId === 'selfieFile';
-        const allowedTypes = imageOnly ? ['image/jpeg', 'image/png'] : ['application/pdf', 'image/jpeg', 'image/png'];
-        if (allowedTypes.indexOf(file.type) < 0) {
-          reject(new Error(imageOnly ? '照片僅支援 JPG、PNG 檔案。' : '僅支援 PDF、JPG、PNG 檔案。'));
+        if (['application/pdf', 'image/jpeg', 'image/png'].indexOf(file.type) < 0) {
+          reject(new Error('僅支援 PDF、JPG、PNG 檔案。'));
           return;
         }
         const reader = new FileReader();
@@ -2175,8 +2159,6 @@
       if (inputValue('startDate') > inputValue('endDate')) return '租約結束日不得早於開始日。';
       if (Number(inputValue('rentAmount')) <= 0) return '每月租金必須大於 0。';
       if (Number(inputValue('depositAmount')) < 0) return '押金金額不可小於 0。';
-      const firstMeterReading = inputValue('firstMeterReading');
-      if (firstMeterReading === '' || !Number.isFinite(Number(firstMeterReading)) || Number(firstMeterReading) < 0) return '請輸入大於或等於 0 的初始電表讀數。';
       if (!/^\d{4}-\d{2}-\d{2}$/.test(inputValue('paperSignedAt'))) return '請輸入紙本簽約日。';
       if (!document.getElementById('paperContractFile') || !document.getElementById('paperContractFile').files.length) return '請上傳已簽紙本合約檔案。';
       return '';
@@ -2192,15 +2174,12 @@
         const paperFile = await readPaperFile('paperContractFile', true);
         const identityFront = await readPaperFile('identityFrontFile', false);
         const identityBack = await readPaperFile('identityBackFile', false);
-        const initialMeter = await readPaperFile('initialMeterFile', false);
-        const selfie = await readPaperFile('selfieFile', false);
         const result = await postLandlordPaperBackfill({
           tenant_id: inputValue('tenantId'), tenant_name: inputValue('tenantName'), tenant_phone: normalizePhone(inputValue('tenantPhone')), tenant_email: inputValue('tenantEmail'),
           property_id: inputValue('propertyId'), room_id: inputValue('roomId'), start_date: inputValue('startDate'), end_date: inputValue('endDate'),
           rent_amount: inputValue('rentAmount'), management_fee: inputValue('managementFee'), deposit_months: inputValue('depositMonths'), deposit_amount: inputValue('depositAmount'),
           payment_day: inputValue('paymentDay'), electricity_fee_rate: inputValue('electricityRate'), equipment_fee_rate: inputValue('equipmentRate'), paper_signed_at: inputValue('paperSignedAt'),
           paper_contract_file: paperFile, identity_front_file: identityFront, identity_back_file: identityBack, note: inputValue('note'),
-          first_meter_reading: Number(inputValue('firstMeterReading')), initial_meter_file: initialMeter, selfie_file: selfie,
           initial_rent_paid: Boolean(document.getElementById('initialRentPaid') && document.getElementById('initialRentPaid').checked),
           supersede_contract_id: REQUESTED_SUPERSEDE_CONTRACT_ID,
           idempotency_key: PAPER_BACKFILL_IDEMPOTENCY_KEY || (PAPER_BACKFILL_IDEMPOTENCY_KEY = randomUrlToken(18))
@@ -3636,10 +3615,9 @@
               ${successItem('租約期間', (contract.start_date || '') + ' 至 ' + (contract.end_date || ''))}
               ${successItem('租約狀態', status === 'upcoming' ? '待開始' : '有效')}
               ${successItem('紙本文件', paperDocument.file_name || paperDocument.document_id || '已保存')}
-              ${successItem('入住初始電表', '已保存，請從房客資料查看')}
               ${successItem('房客登入', '尚未綁定')}
             </div>
-            <div class="paper-backfill-note">可從房客資料頁查看初始電表讀數與照片，並補上身分證、自拍照等文件。已出帳的帳單不會因補登變更。</div>
+            <div class="paper-backfill-note">身分證正反面若尚未上傳，可從房客資料頁的文件區後續補上。</div>
             <div class="invite-box">
               <div class="invite-title">房客登入入口</div>
               <textarea id="inviteMessage" class="invite-text" readonly>${safeHtml(bindingMessage)}</textarea>
@@ -3648,7 +3626,6 @@
               <button class="success-button primary" type="button" onclick="copyInvitation()">複製登入入口</button>
               <button class="success-button secondary" type="button" onclick="openTenantLiff()">開啟房客 LIFF</button>
               <button class="success-button primary" type="button" onclick="goPage('landlord-tenants.html')">返回房客名單</button>
-              <button class="success-button secondary" type="button" onclick="goPage('landlord-tenant-detail.html?tenant_id=${safeHtml(encodeURIComponent(contract.tenant_id || tenant.tenant_id || ''))}&contract_id=${safeHtml(encodeURIComponent(contract.contract_id || ''))}')">查看房客資料與初始電表</button>
               <button class="success-button secondary full" type="button" onclick="resetCreatePage()">繼續補登另一份紙本合約</button>
             </div>
           </div>

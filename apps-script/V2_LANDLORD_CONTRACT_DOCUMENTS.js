@@ -7,7 +7,6 @@ var LD_CONTRACT_DOCUMENT_TYPES_ = [
   'identity_front',
   'identity_back',
   'selfie',
-  'checkin_initial_meter',
   'checkout_start_meter',
   'checkout_end_meter'
 ];

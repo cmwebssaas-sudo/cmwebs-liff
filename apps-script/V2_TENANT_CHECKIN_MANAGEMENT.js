@@ -683,17 +683,18 @@ function saveLandlordTenantCheckinByLineUid_(
         undefined
     ) {
       firstMeterReading =
-        landlordInitialMeterReading_(
+        tenantCheckinNumber_(
           firstMeterReading
         );
 
       if (
-        firstMeterReading === null
+        firstMeterReading <
+        0
       ) {
         return workspaceResult_(
           false,
           'INVALID_FIRST_METER',
-          '入住電錶必須是非負有限數值'
+          '入住電錶不得小於 0'
         );
       }
     } else {
@@ -767,23 +768,6 @@ function saveLandlordTenantCheckinByLineUid_(
         }
       ) ||
       null;
-
-    const sameContractCheckins = checkins.filter(function(row) {
-      return tenantCheckinText_(row.contract_id) === contractId;
-    });
-    if (sameContractCheckins.length > 1 || (existing &&
-        (tenantCheckinText_(existing.tenant_id) !== tenantCheckinText_(contract.tenant_id) ||
-         tenantCheckinText_(existing.room_id) !== tenantCheckinText_(contract.room_id)))) {
-      return workspaceResult_(false, 'INITIAL_METER_SCOPE_CONFLICT', '入住電表關聯不一致，未寫入資料');
-    }
-    const storedInitialMeter = existing ? landlordInitialMeterReading_(existing.first_meter_reading) : null;
-    if (storedInitialMeter !== null) {
-      if (firstMeterReading !== '' && firstMeterReading !== storedInitialMeter) {
-        return workspaceResult_(false, 'INITIAL_METER_ALREADY_SET', '初始電表已有度數，不能覆寫既有計費基準');
-      }
-      // Updating keys/check-in must not erase the initial paper-contract meter.
-      firstMeterReading = storedInitialMeter;
-    }
 
     const now =
       new Date();
