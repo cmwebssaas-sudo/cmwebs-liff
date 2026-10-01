@@ -4,6 +4,14 @@
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
+## 2026-10-02 發布授權與舊程式版本整批清理（待當下永久刪除確認）
+
+- 發布候選 `71b68df` 已獲授權；fresh `origin/main` 仍 `add86f5`，validate／441 項測試通過。正式網站仍 v202，沒有後端 push／版本建立／Pages 合併。
+- 不刪業務資料、私有檔案或 deployment。只選 **1–100 排除 10、76、85，共 97 個舊程式版本**；10 被部署引用，76／85 為保留的歷史基線；所有 101 以上近期版本含 200、201、202 保留。五個 deployment 仍 HEAD／160／10／202／139。
+- 備份 `/Users/hans/CMWebs/apps-script-history-20261002.2iQztI`：97 版／1859 份來源檔／72,263,091 bytes，owner-only，逐檔 checksum 重讀相符，匯出前後引用與版本清單不變。`cleanup-manifest.json` hash `fc7d272a1e25b43cdf3cb0ccbc0c053054e1f5b06d0e3329d69a121ac53f0c8e`；UI 待確認證據 `pending-delete-selection.png`。
+- **尚未刪除、尚未發布**。清理可空出 97 個位置，不能取消 200-version 上限。永久刪除後原版本編號不能恢復，但來源可重建新版本；需在操作當下確認整批精確範圍。
+- 確認後：讀回精確刪除差異／保留部署 → fresh editor HEAD、serving v202 匯出 → 推送已審查候選、建立 immutable 新版 → 同一正式 deployment／完整 export 核對 → 再合併 Pages、17 檔公開讀回及登入後唯讀驗證。Rollback 是 v202／Pages `add86f5`，不回滾業務資料；不代填未知初始讀數或重算已出帳。
+
 ## 2026-10-02 電表過期憑證與租期日期修復候選（未發布）
 
 建議模型／速度 `gpt-5.6-terra / medium`；隔離分支 `codex/tenant-meter-auth-dates-20261002`，基線 `add86f5`。兩個已重現的 Production 正確性修復，不新增功能或重寫架構。

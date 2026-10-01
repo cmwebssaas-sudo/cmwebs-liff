@@ -3,6 +3,16 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
+## 2026-10-02 發布已授權；97 個歷史程式版本已備份，待永久刪除當下確認
+
+使用者已授權發布電表憑證／台北日期修正版，以及清理較舊、沒有用途的程式版本；不涵蓋房客、租約、文件、帳務資料或部署刪除。Fresh `origin/main` 仍 `add86f5`，隔離候選 `71b68df`，validate／441 項測試通過。原目錄仍 408 筆混合 WIP／49 個 tracked 修改／無 staged，沒有清理或覆寫。
+
+已核對五個 deployment：HEAD／160／10／202／139，版本總數仍 200。只選取 **1–100 排除 10、76、85，共 97 個版本**；76 保留 RC1 封存、85 保留歷史對帳來源，101 以上近期版本和現行／回退 200、201、202 全部保留。不透過更改舊部署來使引用中的版本可刪。
+
+完整來源及清單備份在 `/Users/hans/CMWebs/apps-script-history-20261002.2iQztI`，owner-only 0700 目錄／0600 檔案。97 個版本、1859 份來源檔、72,263,091 bytes；獨立重讀逐檔 SHA-256 全部相符，備份前後 deployment／version 清單相同。`cleanup-manifest.json` SHA-256 `fc7d272a1e25b43cdf3cb0ccbc0c053054e1f5b06d0e3329d69a121ac53f0c8e`。Google UI 跨頁勾選已核對，但 **尚未點擊刪除、尚未發布**；待當下確認畫面為備份目錄的 `pending-delete-selection.png`。
+
+下一步只需這一批永久刪除的操作當下確認。來源可重建成新版本，但原版本編號不可恢復；刪 97 個將增加 97 個可用位置，**不取消 Google 的 200-version 上限**。确认后再核對保留版本／部署、匯出 HEAD／serving v202，按已授權範圍發布修正版、同一 URL 與 Pages 逐檔驗證；真實讀數／私有檔案寫入不在本次清理範圍。不開無關專案討論。
+
 ## 2026-10-02 電表過期 LINE 憑證／台北租期日期修復（本地候選，未發布）
 
 建議模型／速度：`gpt-5.6-terra / medium`。隔離分支 `codex/tenant-meter-auth-dates-20261002`，基線 `add86f5`。使用者授權開始修復；本輪沒有推送、PR、合併、部署或版本刪除，不開無關專案討論。
