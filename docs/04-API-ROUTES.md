@@ -669,6 +669,13 @@ No new action, Sheet column, credential, or LINE send is introduced.
 - The server validates the Taiwan mobile number, dates, amounts, room vacancy,
   existing-tenant ownership, duplicate phone, and idempotency payload before any
   Sheet or private Drive write.
+- Canonical `V2_users` has no `workspace_id` or `landlord_id` columns. After
+  verifying the Workspace-owned tenant, room and replacement contract, backfill
+  resolves the exact unique global tenant user through the stored tenant user ID.
+  It rejects non-tenant roles, another active Workspace, inconsistent contract
+  linkage, another tenant referencing the same identity, and binding evidence
+  for replacement. Existing identities are reused, not duplicated; the POST
+  never adds scope columns to the global identity table.
 - For a guarded `legacy_pending` replacement or an electronic replacement with
   an exact, pending, unclaimed invitation, an existing unbound tenant
   row whose linked `V2_users` row is missing is recovered by creating that

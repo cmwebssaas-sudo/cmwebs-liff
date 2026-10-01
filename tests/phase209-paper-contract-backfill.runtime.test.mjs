@@ -128,7 +128,7 @@ function makeRuntime(options = {}) {
       V2_rooms: new FakeSheet('V2_rooms', ROOM_HEADERS, [rowFor(ROOM_HEADERS, {
         room_id: 'R202', workspace_id: 'W1', landlord_id: 'L1', property_id: 'P1', property_name: '測試公寓', room_name: '202', room_status: options.roomStatus || 'vacant', account_status: 'active', current_contract_id: options.currentContractId || '', current_tenant_id: '', current_tenant_name: ''
       })]),
-      V2_users: new FakeSheet('V2_users', USER_HEADERS, options.users || []),
+      V2_users: new FakeSheet('V2_users', options.userHeaders || USER_HEADERS, options.users || []),
       V2_tenants: new FakeSheet('V2_tenants', TENANT_HEADERS, options.tenants || []),
       V2_contracts: new FakeSheet('V2_contracts', CONTRACT_HEADERS, options.contracts || []),
       V2_contract_documents: new FakeSheet('V2_contract_documents', DOCUMENT_HEADERS, options.documents || []),
@@ -288,7 +288,7 @@ function inviteRow(runtime, inviteId) {
   return objects(runtime.state.sheets.V2_contract_invites).find(row => row.invite_id === inviteId);
 }
 
-function electronicDraftMissingUser({ origin = '', userId = 'U202', user = null, invite = {}, contract = {}, tenant = {} } = {}) {
+function electronicDraftMissingUser({ origin = '', userId = 'U202', user = null, userHeaders = USER_HEADERS, invite = {}, contract = {}, tenant = {} } = {}) {
   return makeRuntime({
     roomStatus: 'occupied', currentContractId: 'E202',
     tenants: [rowFor(TENANT_HEADERS, {
@@ -296,7 +296,7 @@ function electronicDraftMissingUser({ origin = '', userId = 'U202', user = null,
       room_id: 'R202', property_id: 'P1', current_contract_id: 'E202',
       tenant_binding_status: 'pending_claim', account_status: 'pending', ...tenant
     })],
-    users: user ? [rowFor(USER_HEADERS, user)] : [],
+    userHeaders, users: user ? [rowFor(userHeaders, user)] : [],
     contracts: [rowFor(CONTRACT_HEADERS, {
       contract_id: 'E202', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T202', tenant_user_id: userId,
       room_id: 'R202', property_id: 'P1', start_date: '2026-09-01', end_date: '2027-08-31',
@@ -369,6 +369,76 @@ test('missing electronic user recovery rolls back recovered user and original in
   assert.equal(result.code, 'PAPER_BACKFILL_WRITE_FAILED');
   assert.equal(JSON.stringify(runtime.state.sheets), before);
   assert.equal(runtime.state.lineCalls.length, 0);
+});
+
+// Production V2_users is a global identity table, not a Workspace-owned table.
+const GLOBAL_USER_HEADERS = ['user_id', 'line_user_id', 'role', 'phone', 'email', 'binding_status', 'account_status', 'name', 'active_workspace_id', 'created_at', 'updated_at', 'note', 'bound_at'];
+
+function globalUserDraft(user = {}) {
+  return electronicDraftMissingUser({
+    userHeaders: GLOBAL_USER_HEADERS,
+    user: { user_id: 'U202', role: 'tenant', account_status: 'pending', ...user }
+  });
+}
+
+test('paper conversion reuses existing canonical global tenant user without duplicating identity', () => {
+  const runtime = globalUserDraft();
+  const input = { ...electronicPaperInput(),
+    identity_front_file: { file_name: 'id-front.jpg', mime_type: 'image/jpeg', base64: ID_FRONT_BASE64 },
+    identity_back_file: { file_name: 'id-back.jpg', mime_type: 'image/jpeg', base64: ID_BACK_BASE64 }
+  };
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', input);
+  assert.equal(result.success, true, result.message || result.code);
+  assert.equal(result.data.tenant.tenant_user_id, 'U202');
+  assert.equal(userRow(runtime, 'U202').account_status, 'active');
+  assert.equal(runtime.state.sheets.V2_users.rows.length, 1);
+  assert.equal(runtime.state.sheets.V2_tenants.rows.length, 1);
+  assert.equal(runtime.state.sheets.V2_contract_documents.rows.length, 3);
+  assert.deepEqual(runtime.state.sheets.V2_users.headers, GLOBAL_USER_HEADERS);
+  const beforeReplay = JSON.stringify(runtime.state.sheets);
+  assert.equal(runtime.context.landlordPaperContractBackfillBySession_('session-1', input).code, 'IDEMPOTENT');
+  assert.equal(JSON.stringify(runtime.state.sheets), beforeReplay);
+  assert.equal(runtime.state.lineCalls.length, 0);
+});
+
+for (const [label, overrides] of [
+  ['landlord identity', { role: 'landlord' }],
+  ['another active Workspace', { active_workspace_id: 'W2' }],
+  ['bound LINE identity', { line_user_id: 'Ubound' }],
+  ['binding evidence without a LINE id', { binding_status: 'bound' }]
+]) {
+  test(`global tenant user lookup refuses ${label} before writes`, () => {
+    const runtime = globalUserDraft(overrides);
+    const before = JSON.stringify(runtime.state.sheets);
+    const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', electronicPaperInput());
+    assert.equal(result.success, false);
+    assert.equal(JSON.stringify(runtime.state.sheets), before);
+    assert.equal(runtime.state.driveFiles.length, 0);
+  });
+}
+
+test('global tenant user lookup rejects conflicting tenant linkage and duplicate identities', () => {
+  for (const conflict of ['tenant', 'duplicate']) {
+    const runtime = globalUserDraft();
+    if (conflict === 'tenant') runtime.state.sheets.V2_tenants.appendRow(rowFor(TENANT_HEADERS, {
+      tenant_id: 'OTHER-TENANT', user_id: 'U202', workspace_id: 'W2', account_status: 'active'
+    }));
+    else runtime.state.sheets.V2_users.appendRow(rowFor(GLOBAL_USER_HEADERS, { user_id: 'U202', role: 'tenant' }));
+    const before = JSON.stringify(runtime.state.sheets);
+    const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', electronicPaperInput());
+    assert.equal(result.success, false);
+    assert.equal(JSON.stringify(runtime.state.sheets), before);
+    assert.equal(runtime.state.driveFiles.length, 0);
+  }
+});
+
+test('global user update rolls back to original pending identity if paper conversion fails', () => {
+  const runtime = globalUserDraft();
+  const before = JSON.stringify(runtime.state.sheets);
+  runtime.state.sheets.V2_tenant_home_view.appendRow = () => { throw new Error('simulated view failure'); };
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', electronicPaperInput());
+  assert.equal(result.code, 'PAPER_BACKFILL_WRITE_FAILED');
+  assert.equal(JSON.stringify(runtime.state.sheets), before);
 });
 
 assert.equal(typeof makeRuntime, 'function');

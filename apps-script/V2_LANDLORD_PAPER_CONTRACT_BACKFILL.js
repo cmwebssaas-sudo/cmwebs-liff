@@ -390,7 +390,9 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     if (replacementContract && landlordPaperContractBackfillText_(tenant.tenant_line_user_id || tenant.line_user_id)) {
       return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
     }
-    user = landlordPaperContractBackfillFindScopedRow_(schema.data.users, access, 'user_id', tenant.tenant_user_id || tenant.user_id);
+    var userResult = landlordPaperContractBackfillResolveTenantUser_(schema.data, access, tenant, replacementContract);
+    if (!userResult.success) return userResult;
+    user = userResult.data.user;
     if (!user) {
       // An unclaimed electronic draft can have the same incomplete user linkage
       // as a legacy pending draft. Recover only after the replacement scope and
@@ -781,6 +783,40 @@ function landlordPaperContractBackfillFindScopedRow_(sheet, access, idHeader, id
     var rowWorkspace = landlordPaperContractBackfillText_(row.workspace_id);
     return rowWorkspace === workspaceId || (!rowWorkspace && landlordIds.indexOf(landlordPaperContractBackfillText_(row.landlord_id)) >= 0);
   }) || null;
+}
+
+function landlordPaperContractBackfillResolveTenantUser_(sheets, access, tenant, replacementContract) {
+  var userId = landlordPaperContractBackfillText_(tenant.tenant_user_id || tenant.user_id);
+  var user = userId ? landlordPaperContractBackfillFindScopedRow_(sheets.users, access, 'user_id', userId) : null;
+  if (user || !userId) return { success: true, data: { user: user } };
+  var headers = landlordPaperContractBackfillHeaders_(sheets.users);
+  // Canonical V2_users is global. Ownership was verified on the tenant, room and
+  // contract above; do not require nonexistent Workspace columns on this table.
+  if (headers.indexOf('workspace_id') >= 0 || headers.indexOf('landlord_id') >= 0) return { success: true, data: { user: null } };
+  var matches = landlordPaperContractBackfillRows_(sheets.users).filter(function(row) {
+    return landlordPaperContractBackfillText_(row.user_id) === userId;
+  });
+  if (!matches.length) return { success: true, data: { user: null } };
+  if (matches.length !== 1) return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客帳號關聯不唯一，請先核對帳號資料');
+  user = matches[0];
+  var activeWorkspace = landlordPaperContractBackfillText_(user.active_workspace_id);
+  var linkedContractUserId = landlordPaperContractBackfillText_(replacementContract && replacementContract.tenant_user_id);
+  if (landlordPaperContractBackfillText_(user.role).toLowerCase() !== 'tenant' ||
+      (activeWorkspace && activeWorkspace !== landlordPaperContractBackfillWorkspaceId_(access)) ||
+      (linkedContractUserId && linkedContractUserId !== userId)) {
+    return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客使用者資料與目前租約關聯不一致');
+  }
+  var conflict = landlordPaperContractBackfillRows_(sheets.tenants).some(function(row) {
+    return landlordPaperContractBackfillText_(row.tenant_id) !== landlordPaperContractBackfillText_(tenant.tenant_id) &&
+      landlordPaperContractBackfillText_(row.tenant_user_id || row.user_id) === userId;
+  });
+  if (conflict) return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客帳號仍關聯其他房客資料，請先核對');
+  if (replacementContract && (landlordPaperContractBackfillText_(user.line_user_id) ||
+      landlordPaperContractBackfillText_(user.binding_status).toLowerCase() === 'bound' ||
+      landlordPaperContractBackfillText_(user.bound_at))) {
+    return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客綁定，請先走原簽署流程');
+  }
+  return { success: true, data: { user: user } };
 }
 
 function landlordPaperContractBackfillFindRowById_(sheet, idHeader, idValue) {
