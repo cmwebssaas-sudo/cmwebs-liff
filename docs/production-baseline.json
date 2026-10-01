@@ -3,6 +3,9 @@
   "source_commit": "99e4db526ed5063dda8d364829f0a6f58dbb4f0e",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 201,
+  "frontend_revision": "2c570ae130f7d8f7e30b173e962de85228f27d85",
+  "frontend_workflow": "36881380576",
+  "frontend_public_file_count_verified": 17,
   "backend_file_count": 59,
   "backend_tree_sha256": "b4a9cd607267265e4b1f6f1856b70b3ec5e30e5812d1436b67b57e155eb0af28",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
@@ -26,7 +29,7 @@
     "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "Immutable v201 export and current deployment verified for required paper initial meter, optional meter photo/selfie, existing-lease missing-baseline recovery, private document discovery and contract-scoped billing baseline guards. Frontend publication/read-back pending. No business-row, private-file, Properties, trigger or LINE writes during publication. Actual 506 reading unknown; authenticated real-file upload and real-device acceptance remain unverified. Rollback v200 and pre-release main fbc90d2.",
+  "scope": "Immutable v201 export and current deployment verified for required paper initial meter, optional meter photo/selfie, existing-lease missing-baseline recovery, private document discovery and contract-scoped billing baseline guards. PR 191 merged; Pages workflow 36881380576 succeeded; all 17 public files byte-identical to frontend revision 2c570ae. Anonymous v2_action init GET returned POST_REQUIRED. No business-row, private-file, Properties, trigger or LINE writes during publication. Actual 506 reading unknown; authenticated real-file upload and real-device acceptance remain unverified. Rollback v200 and pre-release main fbc90d2.",
   "version_cleanup": {
     "deleted_version": 199,
     "authority": "Explicit action-time confirmation to permanently delete only version 199",
