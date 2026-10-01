@@ -1,10 +1,10 @@
 {
   "verified_on": "2026-10-01",
-  "source_commit": "3e5ba4589576104f32ed027c769d733727a764db",
+  "source_commit": "99e4db526ed5063dda8d364829f0a6f58dbb4f0e",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 200,
+  "backend_version": 201,
   "backend_file_count": 59,
-  "backend_tree_sha256": "5368a79340d5837f3c6eeb5833d2a4b34ea1765cc3238eb3881412a954472560",
+  "backend_tree_sha256": "b4a9cd607267265e4b1f6f1856b70b3ec5e30e5812d1436b67b57e155eb0af28",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -26,8 +26,16 @@
     "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "Source and public asset identity; paper backfill global tenant identity lookup and common invitation eligibility repair. Scoped read-only 506 identity and binding checks confirmed the root cause; no PII, private-file contents or secret values read. No business-row, private-file, Properties, trigger or LINE writes during publication. Authenticated real-file upload, paper conversion, tenant binding and real-device acceptance remain unverified. Rollback version 198; unserved version 199 is superseded.",
-  "release_hold": {
+  "scope": "Immutable v201 export and current deployment verified for required paper initial meter, optional meter photo/selfie, existing-lease missing-baseline recovery, private document discovery and contract-scoped billing baseline guards. Frontend publication/read-back pending. No business-row, private-file, Properties, trigger or LINE writes during publication. Actual 506 reading unknown; authenticated real-file upload and real-device acceptance remain unverified. Rollback v200 and pre-release main fbc90d2.",
+  "version_cleanup": {
+    "deleted_version": 199,
+    "authority": "Explicit action-time confirmation to permanently delete only version 199",
+    "source_backup_commit": "ebce4b8",
+    "source_backup_file_count": 59,
+    "rollback_version_retained": 200,
+    "other_deployments_unchanged": true
+  },
+  "previous_release_hold": {
     "candidate_source_commit": "b2251851b4ad45266d05675a7d05a9965d7cb09f",
     "reason": "Apps Script create-version failed at the 200-version limit; reviewed initial-meter repair is not delivered.",
     "safe_revert_main": "da77a4efd3d7a8bb6daf6256b5ffc2ff5f724d37",

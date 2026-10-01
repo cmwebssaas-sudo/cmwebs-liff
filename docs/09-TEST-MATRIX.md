@@ -1,6 +1,14 @@
 # V2 回歸測試矩陣
 
-## 2026-10-01 初始電表候選發布阻擋與回退
+## 2026-10-01 初始電表發布恢復
+
+- [x] 只對已核對的 v199 取得操作當下永久刪除確認並執行；59 檔備份逐位元組相同，CLI 核對 v199 不存在、v200 保留，沒有刪其他版本／部署。
+- [x] 新 immutable v201 匯出 59 檔與 `99e4db5` 相同；既有正式 deployment 讀回 v201，URL 不變，另四個部署 HEAD／160／10／139 不變。
+- [x] 再次執行全套 420/420、validate、全域 Apps Script／三頁 inline 語法及 diff-check 通過。
+- [ ] Pages 合併部署後的 17 個公開資產逐位元組核對。
+- [ ] 真實 506 初始度數、私有照片／登入後操作及手機真機驗收未完成；無業務列、私有檔案、Properties／trigger／LINE 交易。
+
+## 2026-10-01 初始電表候選發布阻擋與回退（歷史）
 
 - [x] 候選 `b225185` 全套 420/420、validate、全域／前端語法、diff-check 與獨立審查通過；功能不因部署失敗而丟失。
 - [x] 建立 Apps Script 新版本回傳 200-version cap；正式 deployment 仍為 v200，沒有宣稱新版已生效。
@@ -9,14 +17,14 @@
 - [ ] 只刪未部署引用的歷史 v199 需明確批准；未執行版本刪除、業務資料／私有文件／Properties／trigger／LINE 寫入。
 - [ ] 新版完整發布與真人 506 初始讀數／照片／手機驗收尚未完成；不可將候選測試或使用者前次紙本成功回報當成本次驗收。
 
-## 2026-10-01 紙本補登初始電表與資料查看修復（候選）
+## 2026-10-01 紙本補登初始電表與資料查看修復
 
 - [x] Phase 209 runtime 重現缺失讀數被接受、照片／自拍未保存、舊報到更新可覆寫基準後修復。缺失／負數／非有限／布林拒絕；真實零保存；租約 scoped 基準和文件一起回滾／冪等。
 - [x] 既有租約只補初始電表，不改房客／租约／房間／使用者列；既有值不可覆寫，跨 Workspace、錯誤 tenant 與重複 checkin 拒絕。報到資料更新不得抹掉已補的基準。
 - [x] 新 POST bridge 的實際 dispatcher 測試：read／contract_write、零度序列化、過期／缺失 session、query 憑證與 malformed input 拒絕；viewer 可讀不可寫。
 - [x] 舊入住列 Workspace 空白且初始讀數為 0 時，讀取／補填先拒絕關聯衝突；不當作缺失追加第二個基準，不做欄位 migration。
 - [x] Frontend runtime／DOM 18/18、Billing 實際 handler runtime 81/81、全套 420/420、validate、後端合併全域語法、三頁 inline scripts 與 diff-check 通過；獨立審查無 Critical／Important。共用固定 release cache tag 同步為 `20261001-paper-initial-meter-v1`。
-- [ ] 正式 backend immutable export／deployment 與 Pages 公開讀回核對。
+- [x] 正式 backend v201 immutable export／deployment 核對；Pages 公開讀回另見上方發布恢復清單。
 - [ ] 真人 506 實際讀數／私有照片補傳、登入後操作與手機真機為 HUMAN_REQUIRED／UNVERIFIED。發布本身不代填資料、不重算已出帳、不發 LINE。
 
 ## 2026-10-01 紙本轉換房客使用者查找修復（Version 200）
