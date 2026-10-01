@@ -9,9 +9,9 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261001-paper-initial-meter-v1"></script>
-  <script src="landlord-auth.js?v=20261001-paper-initial-meter-v1"></script>
-  <script src="landlord-api.js?v=20261001-paper-initial-meter-v1"></script>
+  <script src="frontend-release.js?v=20261002-tenant-evidence-discovery-v1"></script>
+  <script src="landlord-auth.js?v=20261002-tenant-evidence-discovery-v1"></script>
+  <script src="landlord-api.js?v=20261002-tenant-evidence-discovery-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
@@ -666,6 +666,25 @@
       font-size: 11px;
     }
 
+    .tenant-evidence-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .tenant-evidence-links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--primary-dark);
+      background: var(--primary-soft);
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+    }
     .tenant-initial-meter-content { margin-top: 14px; }
     .tenant-initial-meter-input {
       display: block; width: 100%; min-width: 0; min-height: 44px;
@@ -2836,7 +2855,7 @@
         : '房客';
 
       return `
-        <section class="card section-card">
+        <section class="card section-card" id="tenant-documents">
           <div class="section-title-row">
             <div class="section-title">文件與身份驗證</div>
             <div id="tenantDocumentCount" class="section-hint">載入中</div>
@@ -3222,6 +3241,11 @@
               safeHtml(externalUrl) +
               '" target="_blank" rel="noopener noreferrer">查看既有文件</a>'
             : '';
+          const documentId = rawText(documentData.document_id).trim();
+          const preview = !externalUrl && documentId
+            ? '<button class="tenant-document-preview-button" type="button" data-tenant-document-preview-id="' +
+              safeHtml(documentId) + '">查看文件</button>'
+            : '';
 
           return `
             <div class="tenant-document-item">
@@ -3239,12 +3263,18 @@
                     租約：${safeHtml(documentData.contract_id || '未綁定特定租約')}
                   </div>
                   ${externalLink}
+                  ${preview}
                 </div>
               </div>
             </div>
           `;
         })
         .join('');
+      list.querySelectorAll('[data-tenant-document-preview-id]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          previewTenantDocument(button.getAttribute('data-tenant-document-preview-id'));
+        });
+      });
     }
 
     async function loadTenantDocuments() {
@@ -4124,6 +4154,10 @@
               </div>
             </div>
           </div>
+          <nav class="tenant-evidence-links" aria-label="房客文件與入住電表">
+            <a href="#tenant-documents">查看／補傳合約與身分證</a>
+            <a href="#tenant-initial-meter">查看／補填入住電表</a>
+          </nav>
         </section>
 
         <section class="card section-card">
@@ -4580,12 +4614,22 @@
           requests
         );
 
+        // A slow private-document list must not hold the meter form hostage.
+        const hadMeterContracts = CURRENT_TENANT_CONTRACTS.length > 0;
+        const initialMeterLoad = loadTenantInitialMeterContracts().catch(function (error) {
+          const content = document.getElementById('tenantInitialMeterContent');
+          if (content) content.textContent = '初始電表載入失敗：' + rawText(error.message || '請重試');
+        });
         try {
           await loadTenantDocuments();
         } catch (error) {
           renderTenantDocumentError(error);
         }
-        await loadTenantInitialMeterContracts();
+        await initialMeterLoad;
+        // Legacy tenants can obtain their lease list from the document response.
+        if (!hadMeterContracts && CURRENT_TENANT_CONTRACTS.length) {
+          await loadTenantInitialMeterContracts();
+        }
       } catch (error) {
         renderError(
           error && error.message
