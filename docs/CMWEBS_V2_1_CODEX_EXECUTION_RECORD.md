@@ -342,8 +342,16 @@ Recommended model/speed: `gpt-5.6-terra` / `medium`.
   reviewed `78d4d60` source, created immutable v202, exported and compared all
   59 files byte-for-byte; formal existing deployment reads back v202 with the
   same URL. Other four deployment bindings unchanged.
-- Fresh complete suite 431/431, validate and diff-check passed. Frontend PR /
-  Pages and authenticated 506 readback are pending, not claimed complete.
+- Fresh complete suite 431/431, validate and diff-check passed. PR #195 merged
+  as `b79ab46`; Pages workflow 36926064476 build/report/deploy succeeded and
+  all 17 public assets read back byte-identically.
+- Authenticated room 506 readback restored original lease history and three
+  existing paper-contract/ID document records with private preview controls.
+  No government ID content was opened. Initial meter still fails native LINE
+  verification: a fresh reload returned `LINE_TOKEN_VERIFY_FAILED`. Expiry
+  versus channel configuration mismatch is not established; no auth bypass
+  or meter availability claim. Version cap is again 200; further deletion
+  requires distinct specific authority.
 - No business-row, private-file, Properties, trigger or LINE writes; rollback
   v201 / frontend pre-release `d4bb0ac`, additionally retain v200. Mixed root
   WIP preserved. Unknown initial reading was not supplied.
