@@ -349,6 +349,11 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
       if (!replacementInvite || V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_STATUSES_.indexOf(landlordPaperContractBackfillText_(replacementInvite.status).toLowerCase()) < 0) {
         return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請不存在、已取消或已被使用');
       }
+      if (landlordPaperContractBackfillText_(replacementInvite.room_id) !== input.room_id ||
+        landlordPaperContractBackfillText_(replacementInvite.claimed_at) !== '' ||
+        landlordPaperContractBackfillText_(replacementInvite.claimed_line_user_id) !== '') {
+        return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請已被使用或房間關聯不一致');
+      }
     } else if (replacementMode === 'orphan' && schema.data.invites && landlordPaperContractBackfillText_(replacementContract.invite_id)) {
       replacementInvite = landlordPaperContractBackfillRows_(schema.data.invites).find(function(row) {
         return landlordPaperContractBackfillText_(row.invite_id) === landlordPaperContractBackfillText_(replacementContract.invite_id) &&
@@ -390,8 +395,19 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     if (replacementContract && landlordPaperContractBackfillText_(tenant.tenant_line_user_id || tenant.line_user_id)) {
       return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
     }
-    user = landlordPaperContractBackfillFindScopedRow_(schema.data.users, access, 'user_id', tenant.tenant_user_id || tenant.user_id);
-    if (!user && replacementMode !== 'legacy_pending') return landlordPaperContractBackfillError_('TENANT_USER_NOT_FOUND', '找不到既有房客使用者資料');
+    var userResult = landlordPaperContractBackfillResolveTenantUser_(schema.data, access, tenant, replacementContract);
+    if (!userResult.success) return userResult;
+    user = userResult.data.user;
+    if (!user) {
+      // An unclaimed electronic draft can have the same incomplete user linkage
+      // as a legacy pending draft. Recover only after the replacement scope and
+      // unbound tenant guards above have passed; never adopt another workspace's user.
+      if (replacementMode !== 'legacy_pending' && replacementMode !== 'electronic') return landlordPaperContractBackfillError_('TENANT_USER_NOT_FOUND', '找不到既有房客使用者資料');
+      var existingTenantUserId = landlordPaperContractBackfillText_(tenant.tenant_user_id || tenant.user_id);
+      var replacementUserId = landlordPaperContractBackfillText_(replacementContract.tenant_user_id);
+      if (replacementUserId && replacementUserId !== existingTenantUserId) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCOPE_MISMATCH', '原合約與房客使用者關聯不一致');
+      if (existingTenantUserId && landlordPaperContractBackfillFindRowById_(schema.data.users, 'user_id', existingTenantUserId)) return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客使用者資料不屬於目前 Workspace，請先核對帳號關聯');
+    }
     if (replacementContract && landlordPaperContractBackfillText_(user && user.line_user_id)) {
       return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
     }
@@ -767,6 +783,40 @@ function landlordPaperContractBackfillFindScopedRow_(sheet, access, idHeader, id
     var rowWorkspace = landlordPaperContractBackfillText_(row.workspace_id);
     return rowWorkspace === workspaceId || (!rowWorkspace && landlordIds.indexOf(landlordPaperContractBackfillText_(row.landlord_id)) >= 0);
   }) || null;
+}
+
+function landlordPaperContractBackfillResolveTenantUser_(sheets, access, tenant, replacementContract) {
+  var userId = landlordPaperContractBackfillText_(tenant.tenant_user_id || tenant.user_id);
+  var user = userId ? landlordPaperContractBackfillFindScopedRow_(sheets.users, access, 'user_id', userId) : null;
+  if (user || !userId) return { success: true, data: { user: user } };
+  var headers = landlordPaperContractBackfillHeaders_(sheets.users);
+  // Canonical V2_users is global. Ownership was verified on the tenant, room and
+  // contract above; do not require nonexistent Workspace columns on this table.
+  if (headers.indexOf('workspace_id') >= 0 || headers.indexOf('landlord_id') >= 0) return { success: true, data: { user: null } };
+  var matches = landlordPaperContractBackfillRows_(sheets.users).filter(function(row) {
+    return landlordPaperContractBackfillText_(row.user_id) === userId;
+  });
+  if (!matches.length) return { success: true, data: { user: null } };
+  if (matches.length !== 1) return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客帳號關聯不唯一，請先核對帳號資料');
+  user = matches[0];
+  var activeWorkspace = landlordPaperContractBackfillText_(user.active_workspace_id);
+  var linkedContractUserId = landlordPaperContractBackfillText_(replacementContract && replacementContract.tenant_user_id);
+  if (landlordPaperContractBackfillText_(user.role).toLowerCase() !== 'tenant' ||
+      (activeWorkspace && activeWorkspace !== landlordPaperContractBackfillWorkspaceId_(access)) ||
+      (linkedContractUserId && linkedContractUserId !== userId)) {
+    return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客使用者資料與目前租約關聯不一致');
+  }
+  var conflict = landlordPaperContractBackfillRows_(sheets.tenants).some(function(row) {
+    return landlordPaperContractBackfillText_(row.tenant_id) !== landlordPaperContractBackfillText_(tenant.tenant_id) &&
+      landlordPaperContractBackfillText_(row.tenant_user_id || row.user_id) === userId;
+  });
+  if (conflict) return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客帳號仍關聯其他房客資料，請先核對');
+  if (replacementContract && (landlordPaperContractBackfillText_(user.line_user_id) ||
+      landlordPaperContractBackfillText_(user.binding_status).toLowerCase() === 'bound' ||
+      landlordPaperContractBackfillText_(user.bound_at))) {
+    return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客綁定，請先走原簽署流程');
+  }
+  return { success: true, data: { user: user } };
 }
 
 function landlordPaperContractBackfillFindRowById_(sheet, idHeader, idValue) {

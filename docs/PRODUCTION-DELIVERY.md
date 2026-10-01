@@ -7,11 +7,11 @@
 ## 唯一正式來源
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
-- 本次核對來源：`5a7d57ad80189955e014f26eaa85d71c8ca709c1`（PR #185 merge commit）。
-- 公開網站：GitHub Pages；PR #185 合併後的 workflow `36792021356` 已成功，17 個公開檔案已完成 HTTP 讀回及逐位元組比對。
-- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **198**，Version **197** 保留為 rollback，既有正式網址維持不變。專案及部署指紋見 `production-baseline.json`。
-- 實際後端：版本 198 的 59 個檔案，與 `main/apps-script/` 逐位元組一致。
-- 正式資料表：2026-09-23 的唯讀 snapshot 從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`；本次發布未重讀業務資料列，也未重新宣稱當前 schema 狀態。
+- 本次核對後端來源：`3e5ba4589576104f32ed027c769d733727a764db`（PR #187 經審查的修正提交）；版本及指紋見 `production-baseline.json`。
+- 公開網站：GitHub Pages；PR #185 workflow `36792021356` 已成功。這次不修改前端，17 個公開檔案以逐檔 HTTP 讀回及逐位元組比對確認仍相符；Node 並行 fetch 驗證本次網路失敗，改以有 timeout 的 sequential curl 完成同等比對，不將失敗指令記為通過。
+- Apps Script：已驗證的同一個正式專案，既有 Web App deployment 已更新為版本 **200**，Version **198** 保留為 rollback，既有正式網址維持不變。未服務的 Version **199** 已被後續審查修正取代，不作發布或回退目標。
+- 實際後端：版本 200 的 59 個檔案，與 PR #187 的 `3e5ba45/apps-script/` 逐位元組一致；僅紙本補登模組與前一正式版本不同。
+- 正式資料表：2026-09-23 的唯讀 snapshot 從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`；本次只針對 506 核對四個資料表的表頭、對應 ID／角色／狀態／綁定，未讀個資、私有文件、秘密值，也未重新宣稱全部當前 schema 狀態。
 - 舊部署版本 160 仍存在，但公開網站目前不使用它。不得因舊工作目錄引用它，便把它當作正式服務版本。
 
 專案名稱及更新時間不能辨識正式來源。正式部署必須從公開網站的 Web App ID 對回 Apps Script 專案。Git worktree 是同一 repository 的工作副本；不需要為更新建立新的雲端 Apps Script 專案。
@@ -31,6 +31,14 @@ git diff --check
 匯出使用既有 `clasp clone-script SCRIPT_ID VERSION`，它只下載既有版本到空白本地目錄，不建立雲端專案。`--export` 核對 `.clasp.json` 的專案指紋及後端內容；目前服務版本仍須以 `clasp list-deployments SCRIPT_ID` 另行核對。`npm run verify:production` 檢查基線所列 17 個公開資產與目前 checkout 一致，適用部署前基線和部署後讀回。
 
 `production-baseline.json` 是帶日期的證據；後續後端發布時，經匯出、版本及部署核對後更新它。不要為通過檢查任意替換指紋。
+
+## 2026-10-01 506 紙本轉換「找不到既有房客使用者資料」修復
+
+- 唯讀證據確認 506 的原房客與 user ID 關聯一致且帳號存在，沒有 LINE／認領綁定。正式 `V2_users` 是不含 Workspace／房東欄位的全域身份表；舊 Workspace-scoped 查找因此誤報不存在。
+- 後端先驗證 Workspace-owned 房客、房間與原合約，再沿用其唯一全域房客身份；拒絕錯誤角色、active Workspace 衝突、重複身份或其他房客參照。帳號真正缺列時的受限修復保留原房客，不建立第二筆房客。無論帳號是否存在，原電子邀請已認領或房間不符時都在寫入前拒絕。
+- `3e5ba45` 通過最後審查，`npm test` 313/313、Phase 209／215、`npm run validate`、`git diff --check` 通過。immutable Version 200 唯讀匯出 59 檔與候選逐位元組一致，既有正式 deployment 讀回為 200；前端及正式 URL 不變。Version 199 未服務；rollback 為 198。
+- 這是程式發布與來源驗證，不是 506 真實紙本交易已完成。沒有代送照片、寫入 Sheets 業務列／私有 Drive 文件、變更 Properties／trigger 或送 LINE。真實照片上傳、補登、房客綁定及手機／LINE 驗收仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。
+- 若原表單與照片選取仍保留，可不重新整理，確認資料後只重送一次；已關閉則從「物件與房間 → 506 → 補登紙本並建立房客登入」進入。補登成功才關閉原電子合約及邀請，保留稽核；不可為避開錯誤提前刪除 506 的資料。
 
 ## 2026-10-01 紙本補登入口與桌面文件驗證修復
 

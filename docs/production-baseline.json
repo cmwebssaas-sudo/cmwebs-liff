@@ -1,10 +1,10 @@
 {
   "verified_on": "2026-10-01",
-  "source_commit": "5a7d57ad80189955e014f26eaa85d71c8ca709c1",
+  "source_commit": "3e5ba4589576104f32ed027c769d733727a764db",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 198,
+  "backend_version": 200,
   "backend_file_count": 59,
-  "backend_tree_sha256": "a744a3bb5aa4e18f2b6ad1cf4294a08788a64c1763fa2d8ee593df9488837136",
+  "backend_tree_sha256": "5368a79340d5837f3c6eeb5833d2a4b34ea1765cc3238eb3881412a954472560",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -26,5 +26,5 @@
     "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "Source and public asset identity; paper backfill and desktop document auth repair. No business-row, private-file, Properties, trigger or LINE writes during publication. Authenticated real-file upload, paper conversion, tenant binding and real-device acceptance remain unverified."
+  "scope": "Source and public asset identity; paper backfill global tenant identity lookup and common invitation eligibility repair. Scoped read-only 506 identity and binding checks confirmed the root cause; no PII, private-file contents or secret values read. No business-row, private-file, Properties, trigger or LINE writes during publication. Authenticated real-file upload, paper conversion, tenant binding and real-device acceptance remain unverified. Rollback version 198; unserved version 199 is superseded."
 }

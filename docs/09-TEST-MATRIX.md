@@ -1,5 +1,16 @@
 # V2 回歸測試矩陣
 
+## 2026-10-01 紙本轉換房客使用者查找修復（Version 200）
+
+- [x] 正式唯讀核對僅讀 506 的合約／房客／邀請關聯 ID、狀態及對應使用者的角色／綁定狀態：帳號已存在且未綁定，ID 關聯一致；`V2_users` 無 `workspace_id`／`landlord_id` 欄，舊查找因此誤報不存在。未讀姓名、電話、Email、身分證、檔案內容或邀請 hash。
+- [x] 正式全域 user schema 夾具先重現失敗，再驗證依已核對的 tenant user ID 沿用唯一既有帳號；不追加欄位或重建身份。拒絕錯誤角色、其他 active Workspace、LINE／binding 證據、重複 user ID 或其他房客參照，並測試原帳號回復與冪等重送。
+- [x] Phase 209 真正執行補登 handler，先重現「找不到既有房客使用者資料」：具 pending 邀請的電子草稿缺少 `V2_users` 時，舊 guard 只接受 `legacy_pending`，錯誤阻擋電子轉紙本。
+- [x] 空白／標準 `contract_origin`、保留／缺少 user ID 四種情境均能在原房客上補齊帳號，保留原合約與邀請稽核，不建立第二筆房客；重送為冪等結果，不發 LINE。
+- [x] 跨 Workspace user ID、合約／房客 user ID 不一致、邀請已認領／有認領時間、邀請房間不一致、房客已綁定均在任何 Sheet／Drive 寫入前拒絕；邀請檢查不受帳號存在與否影響，正式全域既有帳號三種負向情境先重現繞過後修復。下游失敗會回復原房客／合約／邀請並移除本次新帳號／文件紀錄。
+- [x] 21 項新增具名回歸及既有 Phase 209／215 通過；完整 `npm test` 313/313、`npm run validate`、`git diff --check` 通過。
+- [x] 正式帳號、專案與既有 deployment 再次核對；本輪首次推送前 serving Version 198 及 editor HEAD 59 檔與前一正式來源相符。本次僅紙本補登模組改變。Version 200 唯讀匯出 59 檔與修正版 `3e5ba45` 逐位元組一致；同一正式 deployment 讀回為 Version 200，URL 不變，Version 198 保留回退。審查揭露的 Version 199 未服務且已被取代。
+- [ ] 真實 506 紙本／身分證上傳、補登後綁定仍為 `HUMAN_REQUIRED`／`UNVERIFIED`。沒有代送交易、改寫業務列、讀寫私有文件、變更 Properties／trigger 或送 LINE。
+
 ## 2026-09-30 506 Email session／舊格式邀請重發與取消
 
 - [x] 房東桌面 Email session 可在有效且完成 onboarding、重新核對目前

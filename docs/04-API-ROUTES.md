@@ -669,12 +669,25 @@ No new action, Sheet column, credential, or LINE send is introduced.
 - The server validates the Taiwan mobile number, dates, amounts, room vacancy,
   existing-tenant ownership, duplicate phone, and idempotency payload before any
   Sheet or private Drive write.
-- For the guarded `legacy_pending` replacement only, an existing unbound tenant
+- Canonical `V2_users` has no `workspace_id` or `landlord_id` columns. After
+  verifying the Workspace-owned tenant, room and replacement contract, backfill
+  resolves the exact unique global tenant user through the stored tenant user ID.
+  It rejects non-tenant roles, another active Workspace, inconsistent contract
+  linkage, another tenant referencing the same identity, and binding evidence
+  for replacement. Existing identities are reused, not duplicated; the POST
+  never adds scope columns to the global identity table.
+- Electronic replacements reject an invitation for another room or with any
+  claim evidence before writes, whether the linked user already exists or needs
+  recovery. An existing global identity does not bypass invitation eligibility.
+- For a guarded `legacy_pending` replacement or an electronic replacement with
+  an exact, pending, unclaimed invitation, an existing unbound tenant
   row whose linked `V2_users` row is missing is recovered by creating that
   tenant user with the existing user ID (or a new ID when the legacy row has no
   user ID). The original tenant ID is retained. This recovery still rejects any
-  tenant or user with a LINE binding and does not create an electronic invite or
-  send LINE.
+  tenant or user with a LINE binding. Recovery additionally rejects an existing
+  user ID outside the verified Workspace, inconsistent contract/tenant user IDs,
+  and electronic invitations with another room or any claim evidence, before
+  Sheet or Drive writes. It does not create an electronic invite or send LINE.
 - The normal POST does not add Sheet headers or run migration. Missing required
   `V2_contracts` backfill headers returns `PAPER_BACKFILL_SCHEMA_NOT_READY` and
   requires a separately authorized additive migration before retrying.
