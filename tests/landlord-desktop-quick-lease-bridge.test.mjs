@@ -82,6 +82,7 @@ function makeDispatcher() {
     landlordContractSigningReviewIsAuthRequest_: () => false,
     landlordContractSigningReviewIsExchangeRequest_: () => false,
     landlordPaperContractBackfillIsRequest_: () => false,
+    landlordInitialMeterIsRequest_: () => false,
     landlordInitiatedContractIsRequest_: body => {
       const request = typeof body === 'string' ? JSON.parse(body) : body;
       return [
@@ -121,6 +122,10 @@ function makeDispatcher() {
   context.landlordPaperContractBackfillByAccess_ = (...args) => {
     calls.push({ action: 'landlord_contract_paper_backfill', args });
     return { success: true, code: 'OK', data: { mode: 'paper_backfill' } };
+  };
+  context.landlordInitialMeterByAccess_ = (...args) => {
+    calls.push({action:'initial_meter',args});
+    return {success:true,code:'OK',data:{first_meter_reading:0}};
   };
   context.getLandlordContractDocumentsInitByLineUid_ = (...args) => {
     calls.push({ action: 'landlord_contract_documents_init', args });
@@ -168,6 +173,26 @@ function request(action, token = 'VALID') {
     deposit_amount: '18000'
   };
 }
+
+test('initial meter Email bridge resolves read/write permissions and never accepts query credentials', () => {
+  const r = makeDispatcher();
+  const init = request('landlord_tenant_initial_meter_init');
+  init.contract_id = 'C506'; init.tenant_id = 'T506';
+  const viewed = r.context.doPost({postData:{contents:JSON.stringify(init)},parameter:{}});
+  assert.equal(viewed.result.success,true);
+  assert.equal(r.calls[0].args[1].contract_id,'C506');
+  assert.equal(r.calls[0].args[2],false);
+  const saved = r.context.doPost({postData:{contents:JSON.stringify({...init,action:'landlord_tenant_initial_meter_save',input_json:JSON.stringify({contract_id:'C506',tenant_id:'T506',first_meter_reading:0})})},parameter:{}});
+  assert.equal(saved.result.success,true);
+  assert.equal(r.calls[1].args[1].first_meter_reading,0);
+  assert.equal(r.calls[1].args[2],true);
+  const denied = r.context.doPost({postData:{contents:JSON.stringify({...init,action:'landlord_tenant_initial_meter_save',landlord_session_token:''})},parameter:{landlord_session_token:'VALID'}});
+  assert.equal(denied.result.success,false);
+  assert.equal(r.calls.length,2);
+  const malformed = r.context.doPost({postData:{contents:JSON.stringify({...init,action:'landlord_tenant_initial_meter_save',input_json:'['})},parameter:{}});
+  assert.equal(malformed.result.success,false);
+  assert.equal(r.calls.length,2);
+});
 
 test('desktop Email quick-lease actions use the server-resolved principal', () => {
   for (const action of [
@@ -276,6 +301,12 @@ test('desktop document writes deny read-only membership using the real permissio
   const denied = context.doPost({ postData: { contents: JSON.stringify(request('landlord_contract_document_upload')) } });
   assert.equal(denied.result.success, false);
   assert.equal(calls.length, 0);
+  const meterDenied = context.doPost({postData:{contents:JSON.stringify({...request('landlord_tenant_initial_meter_save'),input_json:'{"contract_id":"C506","tenant_id":"T506","first_meter_reading":0}'})}});
+  assert.equal(meterDenied.result.success,false);
+  assert.equal(calls.length,0);
+  const meterRead = context.doPost({postData:{contents:JSON.stringify({...request('landlord_tenant_initial_meter_init'),contract_id:'C506',tenant_id:'T506'})}});
+  assert.equal(meterRead.result.success,true);
+  assert.equal(calls.length,1);
 });
 
 test('desktop tenant detail reads and uploads identity files through Email bridge', () => {
