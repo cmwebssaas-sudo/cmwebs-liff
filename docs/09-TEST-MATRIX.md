@@ -9,6 +9,16 @@
 - [ ] 只刪未部署引用的歷史 v199 需明確批准；未執行版本刪除、業務資料／私有文件／Properties／trigger／LINE 寫入。
 - [ ] 新版完整發布與真人 506 初始讀數／照片／手機驗收尚未完成；不可將候選測試或使用者前次紙本成功回報當成本次驗收。
 
+## 2026-10-01 紙本補登初始電表與資料查看修復（候選）
+
+- [x] Phase 209 runtime 重現缺失讀數被接受、照片／自拍未保存、舊報到更新可覆寫基準後修復。缺失／負數／非有限／布林拒絕；真實零保存；租約 scoped 基準和文件一起回滾／冪等。
+- [x] 既有租約只補初始電表，不改房客／租约／房間／使用者列；既有值不可覆寫，跨 Workspace、錯誤 tenant 與重複 checkin 拒絕。報到資料更新不得抹掉已補的基準。
+- [x] 新 POST bridge 的實際 dispatcher 測試：read／contract_write、零度序列化、過期／缺失 session、query 憑證與 malformed input 拒絕；viewer 可讀不可寫。
+- [x] 舊入住列 Workspace 空白且初始讀數為 0 時，讀取／補填先拒絕關聯衝突；不當作缺失追加第二個基準，不做欄位 migration。
+- [x] Frontend runtime／DOM 18/18、Billing 實際 handler runtime 81/81、全套 420/420、validate、後端合併全域語法、三頁 inline scripts 與 diff-check 通過；獨立審查無 Critical／Important。共用固定 release cache tag 同步為 `20261001-paper-initial-meter-v1`。
+- [ ] 正式 backend immutable export／deployment 與 Pages 公開讀回核對。
+- [ ] 真人 506 實際讀數／私有照片補傳、登入後操作與手機真機為 HUMAN_REQUIRED／UNVERIFIED。發布本身不代填資料、不重算已出帳、不發 LINE。
+
 ## 2026-10-01 紙本轉換房客使用者查找修復（Version 200）
 
 - [x] 正式唯讀核對僅讀 506 的合約／房客／邀請關聯 ID、狀態及對應使用者的角色／綁定狀態：帳號已存在且未綁定，ID 關聯一致；`V2_users` 無 `workspace_id`／`landlord_id` 欄，舊查找因此誤報不存在。未讀姓名、電話、Email、身分證、檔案內容或邀請 hash。

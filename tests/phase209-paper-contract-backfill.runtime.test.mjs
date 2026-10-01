@@ -24,6 +24,7 @@ const DOCUMENT_HEADERS = [
   'document_type', 'file_name', 'mime_type', 'byte_size', 'sha256', 'idempotency_key', 'drive_file_id',
   'status', 'created_at', 'created_by_user_id', 'note', 'document_origin', 'source_document_id'
 ];
+const CHECKIN_HEADERS = ['checkin_id','workspace_id','landlord_id','contract_id','tenant_id','tenant_user_id','tenant_name','tenant_phone','tenant_line_user_id','property_id','property_name','room_id','room_name','contract_start_date','contract_end_date','scheduled_checkin_date','checkin_status','checked_in_at','checked_in_by_user_id','checked_in_by_membership_id','key_handover_status','first_meter_reading','note','welcome_sent_status','welcome_sent_at','welcome_last_attempt_at','welcome_send_count','welcome_last_error','created_by_user_id','created_by_membership_id','created_at','updated_at'];
 
 const ROOM_HEADERS = [
   'room_id', 'workspace_id', 'landlord_id', 'property_id', 'property_name', 'room_name',
@@ -132,6 +133,7 @@ function makeRuntime(options = {}) {
       V2_tenants: new FakeSheet('V2_tenants', TENANT_HEADERS, options.tenants || []),
       V2_contracts: new FakeSheet('V2_contracts', CONTRACT_HEADERS, options.contracts || []),
       V2_contract_documents: new FakeSheet('V2_contract_documents', DOCUMENT_HEADERS, options.documents || []),
+      V2_tenant_checkins: new FakeSheet('V2_tenant_checkins', CHECKIN_HEADERS, options.checkins || []),
       ...(options.contractInvites ? { V2_contract_invites: new FakeSheet('V2_contract_invites', INVITE_HEADERS, options.contractInvites) } : {}),
       V2_landlord_tenant_list_view: new FakeSheet('V2_landlord_tenant_list_view', VIEW_HEADERS, []),
       V2_tenant_home_view: new FakeSheet('V2_tenant_home_view', VIEW_HEADERS, [])
@@ -190,7 +192,7 @@ function makeRuntime(options = {}) {
     }}),
     landlordInitiatedContractActor_: () => ({ user_id: 'landlord-user-1', membership_id: 'membership-1', name: '房東' }),
     landlordInitiatedContractLandlordId_: () => 'L1',
-    landlordInitiatedContractWorkspaceId_: () => 'W1',
+    landlordInitiatedContractWorkspaceId_: received => received.workspace.workspace_id,
     landlordInitiatedContractText_: value => value === undefined || value === null ? '' : String(value).trim(),
     landlordInitiatedContractNormalizePhone_: value => {
       let digits = String(value || '').replace(/\D/g, '');
@@ -252,6 +254,7 @@ function baseInput(overrides = {}) {
     payment_day: 5,
     electricity_fee_rate: 3,
     equipment_fee_rate: 3.5,
+    first_meter_reading: 1234.5,
     paper_signed_at: '2026-09-03',
     paper_contract_file: {
       file_name: '202-紙本租約.pdf',
@@ -267,6 +270,125 @@ function baseInput(overrides = {}) {
 function countRows(runtime) {
   return Object.fromEntries(Object.entries(runtime.state.sheets).map(([name, sheet]) => [name, sheet.rows.length]));
 }
+
+test('paper backfill refuses missing/invalid initial meter before any rows or private files', () => {
+  for (const value of [undefined, null, '', '  ', -1, Infinity, NaN, true, 'abc']) {
+    const r = makeRuntime();
+    const before = countRows(r);
+    const result = r.context.landlordPaperContractBackfillBySession_('session-1', baseInput({first_meter_reading:value}));
+    assert.equal(result.success, false, String(value));
+    assert.match(result.code, /INITIAL_METER/);
+    assert.deepEqual(countRows(r), before);
+    assert.equal(r.state.driveFiles.length, 0);
+  }
+});
+
+test('paper backfill saves real zero and initial photo/selfie scoped to the new lease without LINE', () => {
+  const r = makeRuntime();
+  const image = {file_name:'meter.png',mime_type:'image/png',base64:Buffer.from('image-fixture').toString('base64')};
+  const input = baseInput({first_meter_reading:0,initial_meter_file:image,selfie_file:{...image,file_name:'selfie.png'}});
+  const result = r.context.landlordPaperContractBackfillBySession_('session-1', input);
+  assert.equal(result.success, true, result.message);
+  const checkins = objects(r.state.sheets.V2_tenant_checkins);
+  assert.equal(checkins.length,1);
+  assert.equal(checkins[0].first_meter_reading,0);
+  assert.equal(checkins[0].contract_id,result.data.contract.contract_id);
+  assert.equal(checkins[0].tenant_id,result.data.tenant.tenant_id);
+  assert.equal(checkins[0].workspace_id,'W1');
+  assert.equal(checkins[0].checkin_status,'pending');
+  assert.deepEqual(objects(r.state.sheets.V2_contract_documents).map(x=>x.document_type),['legacy_contract','checkin_initial_meter','selfie']);
+  assert.equal(r.state.lineCalls.length,0);
+  assert.equal(r.context.landlordPaperContractBackfillBySession_('session-1',input).success,true);
+  assert.equal(r.state.sheets.V2_tenant_checkins.rows.length,1);
+  assert.equal(r.context.landlordPaperContractBackfillBySession_('session-1',{...input,first_meter_reading:1}).code,'IDEMPOTENCY_CONFLICT');
+});
+
+test('initial meter missing schema and mid-write failure leave no paper lease or files', () => {
+  const r = makeRuntime();
+  delete r.state.sheets.V2_tenant_checkins;
+  const before = countRows(r);
+  assert.equal(r.context.landlordPaperContractBackfillBySession_('session-1',baseInput()).success,false);
+  assert.deepEqual(countRows(r),before);
+  const failed = makeRuntime();
+  failed.state.sheets.V2_tenant_checkins.appendRow = () => {throw Error('fixture meter write failure');};
+  const prior = countRows(failed);
+  assert.equal(failed.context.landlordPaperContractBackfillBySession_('session-1',baseInput()).success,false);
+  assert.deepEqual(countRows(failed),prior);
+  assert.equal(failed.state.sheets.V2_contract_documents.rows.length,0);
+});
+
+test('existing lease fills meter only, keeps tenancy/status and rejects overwrite and foreign scope', () => {
+  const r = makeRuntime();
+  const created = r.context.landlordPaperContractBackfillBySession_('session-1',baseInput());
+  assert.equal(created.success,true);
+  r.state.sheets.V2_tenant_checkins.rows = [];
+  const input = {contract_id:created.data.contract.contract_id,tenant_id:created.data.tenant.tenant_id,first_meter_reading:4567.25};
+  const before = JSON.stringify({contracts:r.state.sheets.V2_contracts.rows,tenants:r.state.sheets.V2_tenants.rows,rooms:r.state.sheets.V2_rooms.rows,users:r.state.sheets.V2_users.rows});
+  const init = r.context.landlordInitialMeterByAccess_(r.access,input,false);
+  assert.equal(init.data.has_initial_meter,false);
+  assert.equal(init.data.first_meter_reading,'');
+  assert.equal(r.context.landlordInitialMeterByAccess_(r.access,input,true).success,true);
+  assert.equal(r.context.landlordInitialMeterByAccess_(r.access,input,false).data.first_meter_reading,4567.25);
+  assert.equal(r.context.landlordInitialMeterByAccess_(r.access,input,true).success,true);
+  assert.equal(r.context.landlordInitialMeterByAccess_(r.access,{...input,first_meter_reading:0},true).code,'INITIAL_METER_ALREADY_SET');
+  assert.equal(r.context.landlordInitialMeterByAccess_({...r.access,workspace:{workspace_id:'OTHER'}},input,true).success,false);
+  assert.equal(r.context.landlordInitialMeterByAccess_(r.access,{...input,tenant_id:'other'},true).success,false);
+  assert.equal(JSON.stringify({contracts:r.state.sheets.V2_contracts.rows,tenants:r.state.sheets.V2_tenants.rows,rooms:r.state.sheets.V2_rooms.rows,users:r.state.sheets.V2_users.rows}),before);
+  assert.equal(r.state.lineCalls.length,0);
+});
+
+test('duplicate or mismatched checkin identity cannot supply or overwrite initial meter', () => {
+  const r = makeRuntime();
+  const created = r.context.landlordPaperContractBackfillBySession_('session-1',baseInput());
+  const input = {contract_id:created.data.contract.contract_id,tenant_id:created.data.tenant.tenant_id,first_meter_reading:1234.5};
+  r.state.sheets.V2_tenant_checkins.rows.push(r.state.sheets.V2_tenant_checkins.rows[0].slice());
+  const before = JSON.stringify(r.state.sheets.V2_tenant_checkins.rows);
+  assert.equal(r.context.landlordInitialMeterByAccess_(r.access,input,true).code,'INITIAL_METER_SCOPE_CONFLICT');
+  assert.equal(JSON.stringify(r.state.sheets.V2_tenant_checkins.rows),before);
+});
+
+test('legacy blank Workspace checkin with real zero blocks a second baseline without migration', () => {
+  for (const alsoCanonical of [false, true]) {
+    const r = makeRuntime();
+    const created = r.context.landlordPaperContractBackfillBySession_('session-1',baseInput({first_meter_reading:0}));
+    assert.equal(created.success,true);
+    const row = r.state.sheets.V2_tenant_checkins.rows[0];
+    const legacy = row.slice();
+    legacy[CHECKIN_HEADERS.indexOf('workspace_id')] = '';
+    r.state.sheets.V2_tenant_checkins.rows = alsoCanonical ? [row, legacy] : [legacy];
+    const input = {contract_id:created.data.contract.contract_id,tenant_id:created.data.tenant.tenant_id,first_meter_reading:999};
+    const before = JSON.stringify(Object.values(r.state.sheets).map(sheet=>({headers:sheet.headers,rows:sheet.rows})));
+    for (const save of [false,true]) {
+      const result = r.context.landlordInitialMeterByAccess_(r.access,input,save);
+      assert.equal(result.success,false,JSON.stringify(result));
+      assert.equal(result.code,'INITIAL_METER_SCOPE_CONFLICT');
+    }
+    assert.equal(JSON.stringify(Object.values(r.state.sheets).map(sheet=>({headers:sheet.headers,rows:sheet.rows}))),before);
+    assert.equal(r.state.lineCalls.length,0);
+  }
+});
+
+test('reporting checkin cannot erase or overwrite a previously saved paper meter baseline', () => {
+  const r = makeRuntime();
+  const created = r.context.landlordPaperContractBackfillBySession_('session-1',baseInput({first_meter_reading:0}));
+  vm.runInContext(readFileSync(new URL('../apps-script/V2_TENANT_CHECKIN_MANAGEMENT.js',import.meta.url),'utf8'),r.context);
+  Object.assign(r.context,{
+    LockService:{getScriptLock:()=>({waitLock(){},releaseLock(){}})},
+    tenantCheckinEnsureSchema_:()=>true,
+    workspaceLandlordResolveAccess_:()=>r.access,
+    tenantCheckinRequireManage_:()=>({success:true}),
+    runtimeSpreadsheet_:()=>({getSheetByName:name=>r.state.sheets[name]}),
+    tenantCheckinGetWorkspaceRows_:sheet=>objects(sheet).map(row=>({...row,__row_number:row._sheet_row})),
+    workspaceResult_:(success,code,message,data)=>({success,code,message,data}),
+    tenantCheckinSyncViews_(){},tenantCheckinAudit_(){},
+    SpreadsheetApp:{...r.context.SpreadsheetApp,flush(){}}
+  });
+  const changed = r.context.saveLandlordTenantCheckinByLineUid_('owner',created.data.contract.contract_id,'2026-09-01','pending','pending',200,'');
+  assert.equal(changed.code,'INITIAL_METER_ALREADY_SET',JSON.stringify(changed));
+  const blank = r.context.saveLandlordTenantCheckinByLineUid_('owner',created.data.contract.contract_id,'2026-09-01','pending','pending','','');
+  assert.equal(blank.success,true,blank.message);
+  assert.equal(objects(r.state.sheets.V2_tenant_checkins)[0].first_meter_reading,0);
+});
 
 function tenantRow(runtime, tenantId) {
   return objects(runtime.state.sheets.V2_tenants).find(row => row.tenant_id === tenantId);
