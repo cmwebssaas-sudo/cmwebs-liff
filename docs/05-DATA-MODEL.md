@@ -1,17 +1,5 @@
 # Google Sheets 資料模型
 
-## 入住初始電表（2026-10-01 修復）
-
-- 唯一入住計費基準：`V2_tenant_checkins.first_meter_reading`，完整關聯為
-  `workspace_id + contract_id + tenant_id + room_id`。零是有效實測讀數，空白不是零。
-- 紙本補登直接保存此基準；既有租約可只補缺失值。原 checkin 狀態／鑰匙／歡迎訊息
-  不變，新基準列只標為 `pending`，不能聲稱完成報到；既有初始值不得由此入口覆寫。
-- 電表照片使用既有文件表的新增枚舉值 `document_type=checkin_initial_meter`，
-  與紙本、身分證、自拍照一樣採私有 Drive 存放及 Workspace／租約／房客範圍驗證。
-- 不新增欄位／工作表，不批次補值或讀取業務列；2026-10-01 已唯讀確認正式
-  `V2_tenant_checkins!A1:AF1` 的 32 欄及 `V2_contract_documents!A1:Z1` 的 19 個非空欄名。
-- 新帳單無可靠前期／入住基準時阻止電費計算；已出帳不回算，已繳帳單快照保持不變。
-
 ## 身份、Workspace 與權限
 
 | Sheet | 用途 |

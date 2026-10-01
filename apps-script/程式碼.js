@@ -375,8 +375,6 @@ function doGet(e) {
     'landlord_contract_checkout_complete',
     'landlord_contract_checkout_evidence_upload',
     'landlord_contract_paper_backfill',
-    'landlord_tenant_initial_meter_init',
-    'landlord_tenant_initial_meter_save',
     'landlord_contract_invite_cancel',
     'landlord_contract_invite_reissue'
   ].indexOf(v2Action) >= 0) {
@@ -2765,14 +2763,11 @@ function doPost(e) {
             action === 'landlord_contract_initiate_new' ||
             action === 'landlord_contract_initiate_renewal' ||
             action === 'landlord_contract_initiate_renewal_direct' ||
-            action === 'landlord_contract_paper_backfill' ||
-            action === 'landlord_tenant_initial_meter_init' ||
-            action === 'landlord_tenant_initial_meter_save'
+            action === 'landlord_contract_paper_backfill'
           )
         ) {
           const policy = action === 'landlord_tenant_create_init' ||
-            action === 'landlord_contract_initiated_init' ||
-            action === 'landlord_tenant_initial_meter_init'
+            action === 'landlord_contract_initiated_init'
             ? 'read'
             : 'contract_write';
           result = resolveLandlordQuickLeaseBridgeAccess_(request, policy);
@@ -2814,15 +2809,6 @@ function doPost(e) {
             result = paperInput && typeof paperInput === 'object' && !Array.isArray(paperInput)
               ? landlordPaperContractBackfillByAccess_(access, paperInput)
               : landlordInitiatedContractError_('INVALID_PAPER_PAYLOAD', '紙本合約補登資料格式無效');
-          } else if (access && (action === 'landlord_tenant_initial_meter_init' || action === 'landlord_tenant_initial_meter_save')) {
-            let meterInput = request;
-            if (request.input_json) {
-              try { meterInput = JSON.parse(String(request.input_json)); }
-              catch (_) { meterInput = null; }
-            }
-            result = meterInput && typeof meterInput === 'object' && !Array.isArray(meterInput)
-              ? landlordInitialMeterByAccess_(access, meterInput, action === 'landlord_tenant_initial_meter_save')
-              : landlordInitiatedContractError_('INVALID_METER_PAYLOAD', '初始電表資料格式無效');
           }
 
           return htmlBridgeOutput_(
@@ -3757,8 +3743,6 @@ function doPost(e) {
         ? landlordContractSigningReviewHandleAuthPost_(postBody)
         : landlordContractSigningReviewIsExchangeRequest_(postBody)
           ? landlordContractSigningReviewHandleExchangePost_(postBody)
-          : landlordInitialMeterIsRequest_(postBody)
-            ? landlordInitialMeterHandlePost_(postBody)
           : landlordPaperContractBackfillIsRequest_(postBody)
             ? landlordPaperContractBackfillHandlePost_(postBody)
           : landlordInitiatedContractIsRequest_(postBody)
