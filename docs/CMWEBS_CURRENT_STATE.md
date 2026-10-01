@@ -3,9 +3,11 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
-## 2026-10-02 canonical ID 後端 v202 已發布，Pages 待完成
+## 2026-10-02 canonical ID v202／Pages 已發布；506 文件已恢復，電表仍受阻
 
-依使用者在最後對話框的確認，只永久刪除未部署引用且已備份的 v198；200、201 保留。Fresh HEAD／serving v201 與來源一致後，已審查 `78d4d60` 建立 immutable v202，59 檔匯出逐位元組一致，同一正式 Web App 讀回 202、URL 不變，其他四個部署不變。431/431、validate、diff-check 通過；Pages 與登入後 506 唯讀結果仍待核對，不宣稱原文件已恢復。無業務／私有文件／Properties／trigger／LINE 寫入。回退 v201／Pages `d4bb0ac`，根目錄混合 WIP 保留。
+依使用者在最後對話框的確認，只永久刪除未部署引用且已備份的 v198；200、201 保留。Fresh HEAD／serving v201 與來源一致後，已審查 `78d4d60` 建立 immutable v202，59 檔匯出逐位元組一致，同一正式 Web App 讀回 202、URL 不變，其他四個部署不變。431/431、validate、diff-check 通過。PR #195／`b79ab46`、Pages workflow `36926064476` 成功，17 個公開檔案逐位元組一致。
+
+登入後 506 唯讀頁面已恢復原租約歷史與紙本／身分證正反面 3 份文件紀錄，既有已上傳標示及私有預覽入口可見，未開啟證件原檔。但初始電表仍 `BLOCKED`：LINE review exchange 在重新載入後回傳 `LINE_TOKEN_VERIFY_FAILED`，尚未判定憑證過期或 Channel 配置不一致；不跳過驗證，也不宣稱電表可用。無業務／私有文件／Properties／trigger／LINE 寫入，未知初始讀數不代填。回退 v201／Pages `d4bb0ac`，根目錄混合 WIP 保留；版本再次達 200 上限，任何其他刪除須另行特定授權。不開無關專案討論。
 
 ## 2026-10-02 506 關聯漏查已重現，canonical ID 候選（歷史）
 

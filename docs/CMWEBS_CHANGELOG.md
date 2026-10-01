@@ -1,10 +1,11 @@
 # CMWebs Changelog
 
-## 2026-10-02 — canonical tenant ID 後端正式發布，前端待核對
+## 2026-10-02 — canonical tenant ID 正式發布，文件恢復與電表未解項
 
 - 依操作當下確認只刪除已備份、未部署引用的 v198；保留 v200、v201。
 - Runtime `78d4d60` immutable v202 匯出 59 檔逐位元組一致；既有正式 Web App 讀回 202，URL 和其他 deployment 不變。
-- 431/431、validate、diff-check 通過；Pages／登入後 506 恢復仍待驗證。無業務資料或私有檔案寫入；rollback v201／Pages `d4bb0ac`。
+- 431/431、validate、diff-check 通過；PR #195／`b79ab46`、Pages workflow `36926064476` 成功，17 個公開檔案逐位元組一致。登入後 506 原租約及紙本／身分證共 3 份文件紀錄已恢復，私有預覽入口可見；未開啟證件原檔。
+- 初始電表仍顯示身分驗證失敗，重新載入讀回 `LINE_TOKEN_VERIFY_FAILED`；過期或 Channel 配置原因尚未確認，未放寬驗證或宣稱可用。無業務資料、私有檔案、Properties 或 LINE 寫入；rollback v201／Pages `d4bb0ac`。只刪 v198 的授權不可擴大到其他版本。
 
 **Status: AUTHORITATIVE product-memory changelog**
 

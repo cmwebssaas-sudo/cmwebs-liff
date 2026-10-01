@@ -4,11 +4,13 @@
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
-## 2026-10-02 506 canonical ID 修復：後端已發布，Pages 待完成
+## 2026-10-02 506 canonical ID 修復已發布；原文件恢復，電表驗證仍失敗
 
 - 使用者在 Google 永久刪除確認畫面回覆「確認刪除 198 並發布」後，只刪除無部署引用的 Version 198。完整 59 檔備份與 Git `103e307` 一致，來源 hash 如下方歷史候選紀錄；原版本編號不可恢復，但可由來源重建另一新版。200、201 保留，其他部署未刪除。
 - Fresh editor HEAD 與 serving v201 匯出 59 檔完全一致後，推送已審查 runtime `78d4d60`，建立 immutable **Version 202**。新版 59 檔逐位元組一致，tree SHA-256 `99390a474255a4c3974cca14953e95f8c09cf63449ddafac279284b2d43c437a`；既有正式 deployment 讀回 202，URL 不變，另外四個部署仍 HEAD／160／10／139。
-- 全套 431/431、validate、diff-check 再次通過。前端 Pages 尚待 PR 合併／公開內容核對；登入後 506 恢復尚未宣稱完成。Rollback 為同一 Web App v201、Pages 發布前 `d4bb0ac`；另外保留 v200。沒有改业务列、私有檔案、Properties、trigger 或 LINE。
+- 全套 431/431、validate、diff-check 再次通過。PR **#195** 合併為 `b79ab46fcde67ec18b0e6885e13165a57cad38c8`；Pages workflow **36926064476** build／report／deploy 成功，17 個公開檔案逐位元組一致。
+- 登入後 506 唯讀頁面已恢復原租約歷史、紙本合約及身分證正反面共 **3 份既有文件紀錄**，已上傳標示及私有預覽按鈕可見；沒有打開證件原檔或要求重傳。但初始電表區仍顯示「房東審核身分驗證失敗」，重新載入後僅讀取驗證錯誤碼，確認 **`LINE_TOKEN_VERIFY_FAILED`**。尚未判定是憑證過期或 Channel 配置不一致，不能宣稱電表讀取／補填已可用，也不能放寬驗證。
+- Rollback 為同一 Web App v201、Pages 發布前 `d4bb0ac`；另外保留 v200。沒有改業務列、私有檔案、Properties、trigger 或 LINE，也沒有代填未知讀數。專案再次達 200-version cap，不得沿用只刪 v198 的批准去刪其他版本。
 
 ## 2026-10-02 506 canonical ID 修復候選（發布前歷史）
 
@@ -53,10 +55,10 @@
 ## 唯一正式來源
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
-- 本次核對後端來源：`99e4db526ed5063dda8d364829f0a6f58dbb4f0e`（重新套用已審查候選）；版本及指紋見 `production-baseline.json`。
-- 公開網站：GitHub Pages；最新前端 PR #193／`3e6affb`、workflow `36913724284` 成功，17 個公開檔案逐位元組讀回通過。
-- Apps Script：已驗證的同一正式專案，既有 Web App deployment 已更新為 **201**，**200** 保留 rollback，正式網址不變。只刪除已備份且未被目前部署引用的歷史 **199**。
-- 實際後端：Version 201 的 59 檔與 `99e4db5/apps-script/` 逐位元組一致；新增初始電表修復，保留 v200 的全域房客身份／邀請 guard。
+- 本次核對後端來源：`78d4d608e17b44020a09edf017d53fe4f0ec1ac9`（已審查 canonical tenant identity 修復）；版本及指紋見 `production-baseline.json`。
+- 公開網站：GitHub Pages；最新程式前端 PR #195／`b79ab46`、workflow `36926064476` 成功，17 個公開檔案逐位元組讀回通過。
+- Apps Script：已驗證的同一正式專案，既有 Web App deployment 已更新為 **202**，**201** 為 rollback、**200** 另外保留，正式網址不變。歷史 **199**、**198** 各依特定操作當下確認刪除，來源備份保留。
+- 實際後端：Version 202 的 59 檔與 `78d4d60/apps-script/` 逐位元組一致；保留 v201 初始電表及 v200 全域房客身份／邀請 guard。文件恢復已登入唯讀確認；LINE 初始電表驗證仍失敗，不等於全部功能驗收完成。
 - 正式資料表：2026-09-23 的唯讀 snapshot 從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`；本次只針對 506 核對四個資料表的表頭、對應 ID／角色／狀態／綁定，未讀個資、私有文件、秘密值，也未重新宣稱全部當前 schema 狀態。
 - 舊部署版本 160 仍存在，但公開網站目前不使用它。不得因舊工作目錄引用它，便把它當作正式服務版本。
 

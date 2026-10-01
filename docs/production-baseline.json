@@ -3,8 +3,8 @@
   "source_commit": "78d4d608e17b44020a09edf017d53fe4f0ec1ac9",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 202,
-  "frontend_revision": "3e6affb3b64a2366655478c8d68d5ac146c5c16f",
-  "frontend_workflow": "36913724284",
+  "frontend_revision": "b79ab46fcde67ec18b0e6885e13165a57cad38c8",
+  "frontend_workflow": "36926064476",
   "frontend_public_file_count_verified": 17,
   "backend_file_count": 59,
   "backend_tree_sha256": "99390a474255a4c3974cca14953e95f8c09cf63449ddafac279284b2d43c437a",
@@ -29,7 +29,7 @@
     "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "Canonical tenant identity correction: immutable v202 export is byte-identical to all 59 candidate backend files and the existing formal deployment reads back v202. Raw stored tenant IDs remain unchanged; native lookup keys no longer leak into history/document/meter joins. Frontend release is pending; recorded frontend evidence still describes PR 193. No business-row, private-file content/upload, Properties, trigger or LINE writes. Authenticated 506 restoration awaits Pages and browser readback. Rollback: existing Web App v201; frontend pre-release d4bb0ac; v200 additionally retained.",
+  "scope": "Canonical tenant identity correction: immutable v202 export is byte-identical to all 59 candidate backend files and the existing formal deployment reads back v202. PR 195 / Pages workflow 36926064476 completed; all 17 public files are byte-identical. Authenticated room 506 readback restored original lease history and three existing paper-contract/ID document records with private preview controls. Initial meter remains BLOCKED: native LINE verification returns LINE_TOKEN_VERIFY_FAILED; expired token versus channel configuration mismatch is not established. No authentication bypass, business-row, private-file content/upload, Properties, trigger or LINE writes. Rollback: existing Web App v201; frontend pre-release d4bb0ac; v200 additionally retained. Version limit is again 200; no additional deletion is authorized.",
   "version_cleanup": {
     "deleted_version": 198,
     "authority": "Explicit action-time confirmation at Google's permanent-deletion dialog to delete only version 198 and publish",
