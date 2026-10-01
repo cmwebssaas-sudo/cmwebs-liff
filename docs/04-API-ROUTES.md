@@ -676,6 +676,9 @@ No new action, Sheet column, credential, or LINE send is introduced.
   linkage, another tenant referencing the same identity, and binding evidence
   for replacement. Existing identities are reused, not duplicated; the POST
   never adds scope columns to the global identity table.
+- Electronic replacements reject an invitation for another room or with any
+  claim evidence before writes, whether the linked user already exists or needs
+  recovery. An existing global identity does not bypass invitation eligibility.
 - For a guarded `legacy_pending` replacement or an electronic replacement with
   an exact, pending, unclaimed invitation, an existing unbound tenant
   row whose linked `V2_users` row is missing is recovered by creating that

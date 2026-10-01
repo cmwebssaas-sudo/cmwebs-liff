@@ -374,10 +374,28 @@ test('missing electronic user recovery rolls back recovered user and original in
 // Production V2_users is a global identity table, not a Workspace-owned table.
 const GLOBAL_USER_HEADERS = ['user_id', 'line_user_id', 'role', 'phone', 'email', 'binding_status', 'account_status', 'name', 'active_workspace_id', 'created_at', 'updated_at', 'note', 'bound_at'];
 
-function globalUserDraft(user = {}) {
+function globalUserDraft(user = {}, invite = {}) {
   return electronicDraftMissingUser({
     userHeaders: GLOBAL_USER_HEADERS,
-    user: { user_id: 'U202', role: 'tenant', account_status: 'pending', ...user }
+    user: { user_id: 'U202', role: 'tenant', account_status: 'pending', ...user },
+    invite
+  });
+}
+
+for (const [label, invite] of [
+  ['claimed LINE identity', { claimed_line_user_id: 'Uclaimed' }],
+  ['claim timestamp', { claimed_at: '2026-09-02T00:00:00Z' }],
+  ['another room', { room_id: 'OTHER-ROOM' }]
+]) {
+  test(`existing global user paper conversion rejects invitation with ${label} without writes`, () => {
+    const runtime = globalUserDraft({}, invite);
+    const before = JSON.stringify(runtime.state.sheets);
+    const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', electronicPaperInput());
+    assert.equal(result.success, false);
+    assert.equal(result.code, 'PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE');
+    assert.equal(JSON.stringify(runtime.state.sheets), before);
+    assert.equal(runtime.state.driveFiles.length, 0);
+    assert.equal(runtime.state.lineCalls.length, 0);
   });
 }
 

@@ -349,6 +349,11 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
       if (!replacementInvite || V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_STATUSES_.indexOf(landlordPaperContractBackfillText_(replacementInvite.status).toLowerCase()) < 0) {
         return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請不存在、已取消或已被使用');
       }
+      if (landlordPaperContractBackfillText_(replacementInvite.room_id) !== input.room_id ||
+        landlordPaperContractBackfillText_(replacementInvite.claimed_at) !== '' ||
+        landlordPaperContractBackfillText_(replacementInvite.claimed_line_user_id) !== '') {
+        return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請已被使用或房間關聯不一致');
+      }
     } else if (replacementMode === 'orphan' && schema.data.invites && landlordPaperContractBackfillText_(replacementContract.invite_id)) {
       replacementInvite = landlordPaperContractBackfillRows_(schema.data.invites).find(function(row) {
         return landlordPaperContractBackfillText_(row.invite_id) === landlordPaperContractBackfillText_(replacementContract.invite_id) &&
@@ -402,11 +407,6 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
       var replacementUserId = landlordPaperContractBackfillText_(replacementContract.tenant_user_id);
       if (replacementUserId && replacementUserId !== existingTenantUserId) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCOPE_MISMATCH', '原合約與房客使用者關聯不一致');
       if (existingTenantUserId && landlordPaperContractBackfillFindRowById_(schema.data.users, 'user_id', existingTenantUserId)) return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客使用者資料不屬於目前 Workspace，請先核對帳號關聯');
-      if (replacementMode === 'electronic' && (
-        landlordPaperContractBackfillText_(replacementInvite.room_id) !== input.room_id ||
-        landlordPaperContractBackfillText_(replacementInvite.claimed_at) !== '' ||
-        landlordPaperContractBackfillText_(replacementInvite.claimed_line_user_id) !== ''
-      )) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請已被使用或房間關聯不一致');
     }
     if (replacementContract && landlordPaperContractBackfillText_(user && user.line_user_id)) {
       return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
