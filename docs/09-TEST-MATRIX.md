@@ -7,8 +7,8 @@
 - [x] 歷史文件清單每筆私有文件都有 `document_id` 預覽入口，不只各類最新一筆；沿用既有已驗證下載權限，不公開 Drive ID 或檔案內容。
 - [x] 房客頁上方有「查看／補傳合約與身分證」及「查看／補填入住電表」錨點；固定 shell／頁內捲動保留。
 - [x] 定向 frontend runtime 23/23，全套 425/425，`npm run validate`、`git diff --check` 通過；共用靜態 cache tag 同步為 `20261002-tenant-evidence-discovery-v1`，其他頁僅更新 cache tag。
-- [ ] GitHub Pages 發布與公開資產 read-back 待核對；Apps Script／API／Schema 無變更，不需新增後端版本。
-- [ ] 未核對真人 506 的文件 metadata／內容、實際讀數或登入後／手機畫面；不能把測試夾具當成既有文件已找回，不要求先重傳，也未代填／上传或更動業務資料。
+- [x] PR #193 合併為 `3e6affb`，Pages workflow `36913724284` 成功；17 個公開資產與合併来源逐位元組一致。v201 匯出 59 檔仍相同，正式 deployment 仍讀回 v201；Apps Script／API／Schema 無變更。
+- [ ] 正式新版入口瀏覽器仍呈現 Email 登入頁；未核對真人 506 的文件 metadata／內容、實際讀數或登入後／手機畫面。不能把測試夾具當成既有文件已找回，不要求先重傳，也未代填／上傳或更動業務資料。
 
 ## 2026-10-01 初始電表發布恢復
 

@@ -4,12 +4,13 @@
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
-## 2026-10-02 文件與電表查看修復（發布待核對）
+## 2026-10-02 文件與電表查看修復正式發布
 
-- 從正式 `main` `ed412c2` 的隔離分支修復兩個已重現的前端缺口：文件請求卡住會阻止電表表單載入；歷史文件清單只有 metadata、沒有每筆私有預覽。文件與電表改為独立載入；舊房客從文件回應補得租約時仍重載電表。
+- 從正式 `main` `ed412c2` 的隔離分支修復兩個已重現的前端缺口：文件請求卡住會阻止電表表單載入；歷史文件清單只有 metadata、沒有每筆私有預覽。文件與電表改為獨立載入；舊房客從文件回應補得租約時仍重載電表。
 - 房客頁上方提供「查看／補傳合約與身分證」及「查看／補填入住電表」直達入口；原有上傳／補填與私有預覽權限不變。歷史文件逐筆查看沿用既有權限，不生成公開 Drive 連結。
 - 定向 runtime 23/23、全套 425/425、validate／diff-check 通過。共享 cache tag 為 `20261002-tenant-evidence-discovery-v1`；其他頁僅更新 cache tag。API、Schema、Apps Script 無變更，正式後端維持 v201。
-- Pages 發布及公開來源讀回仍待核對。前端 rollback 為發布前 `ed412c2`；無業務列、私有檔案／上傳、Properties／trigger／LINE 交易。506 文件實際歸檔、讀數及登入後／手機驗收仍 `UNVERIFIED`，不可宣稱已找回原檔。
+- PR **#193** 合併為 `3e6affb3b64a2366655478c8d68d5ac146c5c16f`；Pages workflow **36913724284** build／report／deploy 成功。`npm run verify:production` 核對 17 個公開檔案逐位元組一致；v201 完整匯出 59 檔仍與本地相符，deployment 讀回仍為 v201。沒有後端版本／部署變更。
+- 正式新入口瀏覽器呈現 Email 登入頁，尚未代送驗證碼或登入交易。前端 rollback 為發布前 `ed412c2`；無業務列、私有檔案／上傳、Properties／trigger／LINE 交易。506 文件實際歸檔、讀數及登入後／手機驗收仍 `UNVERIFIED`，不可宣稱已找回原檔。
 
 ## 2026-10-01 初始電表與補登資料查看正式發布
 
@@ -34,7 +35,7 @@
 
 - 程式來源：GitHub `cmwebssaas-sudo/cmwebs-liff` 的 `main`。
 - 本次核對後端來源：`99e4db526ed5063dda8d364829f0a6f58dbb4f0e`（重新套用已審查候選）；版本及指紋見 `production-baseline.json`。
-- 公開網站：GitHub Pages；PR #191／`2c570ae`、workflow `36881380576` 成功，17 個公開檔案逐位元組讀回通過。
+- 公開網站：GitHub Pages；最新前端 PR #193／`3e6affb`、workflow `36913724284` 成功，17 個公開檔案逐位元組讀回通過。
 - Apps Script：已驗證的同一正式專案，既有 Web App deployment 已更新為 **201**，**200** 保留 rollback，正式網址不變。只刪除已備份且未被目前部署引用的歷史 **199**。
 - 實際後端：Version 201 的 59 檔與 `99e4db5/apps-script/` 逐位元組一致；新增初始電表修復，保留 v200 的全域房客身份／邀請 guard。
 - 正式資料表：2026-09-23 的唯讀 snapshot 從該專案的容器連結確認，完成全部 76 個工作表的欄名及配置列／欄數盤點，其中 52 個 V2 工作表沒有重複的非空欄名。配置儲存格為 5,547,896；這是容量，不是實際資料筆數。見 `production-schema-snapshot.json`；本次只針對 506 核對四個資料表的表頭、對應 ID／角色／狀態／綁定，未讀個資、私有文件、秘密值，也未重新宣稱全部當前 schema 狀態。
