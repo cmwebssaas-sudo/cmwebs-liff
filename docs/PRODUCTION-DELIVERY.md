@@ -1,8 +1,15 @@
 # CMWebs 正式交付入口
 
-核對日期：2026-10-01。產品範圍：V2 正式來源整併與已授權的 Production 正確性修復。
+核對日期：2026-10-02。產品範圍：V2 正式來源整併與已授權的 Production 正確性修復。
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
+
+## 2026-10-02 文件與電表查看修復（發布待核對）
+
+- 從正式 `main` `ed412c2` 的隔離分支修復兩個已重現的前端缺口：文件請求卡住會阻止電表表單載入；歷史文件清單只有 metadata、沒有每筆私有預覽。文件與電表改為独立載入；舊房客從文件回應補得租約時仍重載電表。
+- 房客頁上方提供「查看／補傳合約與身分證」及「查看／補填入住電表」直達入口；原有上傳／補填與私有預覽權限不變。歷史文件逐筆查看沿用既有權限，不生成公開 Drive 連結。
+- 定向 runtime 23/23、全套 425/425、validate／diff-check 通過。共享 cache tag 為 `20261002-tenant-evidence-discovery-v1`；其他頁僅更新 cache tag。API、Schema、Apps Script 無變更，正式後端維持 v201。
+- Pages 發布及公開來源讀回仍待核對。前端 rollback 為發布前 `ed412c2`；無業務列、私有檔案／上傳、Properties／trigger／LINE 交易。506 文件實際歸檔、讀數及登入後／手機驗收仍 `UNVERIFIED`，不可宣稱已找回原檔。
 
 ## 2026-10-01 初始電表與補登資料查看正式發布
 

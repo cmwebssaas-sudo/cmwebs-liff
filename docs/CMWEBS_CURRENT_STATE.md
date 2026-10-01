@@ -1,7 +1,13 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-10-01 (Asia/Taipei)**
+**Last verified: 2026-10-02 (Asia/Taipei)**
+
+## 2026-10-02 房客文件／電表查看候選
+
+從最新正式 `main` `ed412c2` 的隔離分支修復文件查詢阻塞電表、歷史私有文件缺少逐筆查看入口，以及詳細頁缺少直達區段入口。新增 5 項實際 renderer／loadPage 回歸，全套 425/425、validate 及 diff-check 通過；既有租約缺失基準才可補填，0 有效，已保存值不可覆寫。其他頁只同步固定 cache tag，後端／API／Schema 不變。
+
+仍須完成 Pages 發布讀回；後端保持 v201，不建立新版或修改正式資料。506 既有文件是否正確歸檔及登入後／手機畫面仍未確認。不要要求使用者先重傳，也不代填未知初始度數。前端 rollback 為 `ed412c2`，根目錄 408 筆混合 WIP 原樣保留；不開無關討論。
 
 ## 2026-10-01 初始電表與補登文件查看已發布
 

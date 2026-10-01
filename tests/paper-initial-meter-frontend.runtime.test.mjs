@@ -140,6 +140,93 @@ function detailFixture() {
 }
 const meterData = (changes = {}) => ({contract_id:'C-current',tenant_id:'T-fixture',room_id:'R-fixture',first_meter_reading:'',has_initial_meter:false,can_fill:true,documents:[], ...changes});
 
+function detailLoadFixture(history = [{contract_id:'C-current',tenant_id:'T-fixture',is_current:true}]) {
+  const r = detailFixture();
+  r.context.__tenantResponse = {success:true,data:{tenants:[{
+    tenant_id:'T-fixture',tenant_name:'Fixture tenant',room_list:'506',contract_history:history
+  }]}};
+  r.context.__meterResponse = meterData();
+  let finishDocuments;
+  r.context.__documentsResponse = new Promise(resolve => { finishDocuments = resolve; });
+  r.run(`
+    ensureLandlordAuthReady = async function() { return true; };
+    fetchStatusJson = async function(action) {
+      return action === 'landlord_tenants' ? __tenantResponse : {success:true,data:{requests:[]}};
+    };
+    jsonpRequest = async function(action) {
+      if (action !== 'landlord_contract_documents_init') throw new Error('Unexpected document action');
+      return __documentsResponse;
+    };
+    requestTenantInitialMeterAction = async function() { return __meterResponse; };
+  `);
+  return {r,finishDocuments};
+}
+
+test('tenant detail exposes the meter form before a slow document list finishes', async () => {
+  const {r,finishDocuments} = detailLoadFixture();
+  const loading = r.run('loadPage()');
+  try {
+    // Flush the page promises, not a wall-clock/network delay.
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    assert.ok(r.nodes.get('tenantInitialMeterReading'), 'slow private-document lookup must not block the meter form');
+    assert.ok(r.nodes.get('tenantInitialMeterFile'), 'the independent meter request exposes its photo input');
+    assert.match(r.nodes.get('app').innerHTML, /文件與身份驗證/);
+  } finally {
+    finishDocuments({success:true,data:{contracts:[],documents:[]}});
+    await loading;
+  }
+});
+
+test('document failure keeps the tenant profile and independent meter form visible', async () => {
+  const {r,finishDocuments} = detailLoadFixture();
+  const loading = r.run('loadPage()');
+  finishDocuments({success:false,code:'DOCUMENT_LOOKUP_FAILED',message:'Fixture document failure'});
+  await loading;
+  assert.ok(r.nodes.get('tenantInitialMeterReading'));
+  assert.match(r.nodes.get('app').innerHTML, /Fixture tenant/);
+  assert.match(r.nodes.get('tenantDocumentsState').textContent, /Fixture document failure/);
+  assert.doesNotMatch(r.nodes.get('app').innerHTML, /房客資料讀取失敗/);
+});
+
+test('legacy tenant without history can load the meter after document contracts arrive', async () => {
+  const {r,finishDocuments} = detailLoadFixture([]);
+  const loading = r.run('loadPage()');
+  finishDocuments({success:true,data:{contracts:[{contract_id:'C-current',tenant_id:'T-fixture'}],documents:[]}});
+  await loading;
+  assert.equal(r.nodes.get('tenantInitialMeterContractSelect').value, 'C-current');
+  assert.ok(r.nodes.get('tenantInitialMeterReading'));
+});
+
+test('tenant profile offers direct in-page links to the meter and document sections', async () => {
+  const {r,finishDocuments} = detailLoadFixture();
+  const loading = r.run('loadPage()');
+  finishDocuments({success:true,data:{contracts:[],documents:[]}});
+  await loading;
+  const markup = r.nodes.get('app').innerHTML;
+  const profile = markup.slice(0, markup.indexOf('聯絡資料'));
+  assert.match(profile, /href="#tenant-initial-meter"/);
+  assert.match(profile, /href="#tenant-documents"/);
+  assert.ok(r.nodes.get('tenant-initial-meter'));
+  assert.ok(r.nodes.get('tenant-documents'));
+});
+
+test('tenant document list gives every stored historical file its own private preview', () => {
+  const r = detailFixture();
+  r.nodes.get('app').innerHTML = r.run('tenantDocumentPanelHtml()');
+  r.context.__documents = [
+    {document_id:'D-new-paper',document_type:'legacy_contract',file_name:'new.pdf',contract_id:'C-current'},
+    {document_id:'D-old-paper',document_type:'legacy_contract',file_name:'old.pdf',contract_id:'C-old'},
+    {document_id:'D-old-id',document_type:'identity_front',file_name:'id.jpg',contract_id:'C-old'}
+  ];
+  r.context.__previews = [];
+  r.run('previewTenantDocument = function(id) { __previews.push(id); }; renderTenantDocumentList(__documents);');
+  const buttons = r.nodes.get('tenantDocumentsList').querySelectorAll('[data-tenant-document-preview-id]');
+  assert.equal(buttons.length, 3, 'the type upload tile cannot substitute for historical-file access');
+  for (const button of buttons) button.listeners.click();
+  assert.deepEqual(Array.from(r.context.__previews), ['D-new-paper','D-old-paper','D-old-id']);
+  assert.doesNotMatch(r.nodes.get('tenantDocumentsList').innerHTML, /drive_file_id|base64/);
+});
+
 test('existing tenant meter section selects the current owned contract and displays its version context', async () => {
   const r = detailFixture();
   assert.equal(typeof r.context.tenantInitialMeterPanelHtml, 'function', 'tenant detail must offer the meter section');
