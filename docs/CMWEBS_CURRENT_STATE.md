@@ -3,6 +3,36 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
+## 2026-10-02 97 個歷史版本已刪除；後端 v203 已發布，Pages 待發布
+
+使用者在永久刪除最後畫面確認「刪除這 97 個版本並發布」後，只刪 1–100 排除 10、76、85 的 97 版。Google 成功畫面及 CLI 精確差集一致：刪除後 103 版、全部 protected versions 保留、五個 deployment 不變。完整 owner-only 備份及 checksum 清單保留，成功證據在備份目錄 `delete-completed.png`。原版本編號不能恢復，但原始碼可重建新版；没有刪除任何租約、房客、帳務或私有文件。
+
+Fresh editor HEAD 與 serving v202 的 59 檔相同後，推送已審查 `71b68df`，建立 immutable **203**。完整 59 檔匯出與候選逐位元組相同，tree SHA-256 `ee0b56f1f6af1d8677d111eff07133dc49bf13f8e56e53ced4a4665820a071f4`，既有正式 Web App 讀回 203，URL 不變。保留 v202 回退及 v200／201；新版占用一個位置後剩餘 96 個位置，Google 200-version 上限仍存在。前端尚未發布，本紀錄不等於完整交付；下一步走既有 PR／Pages 流程、17 檔公開讀回及登入後唯讀驗證。
+
+本次只修過期 LINE 憑證的手動恢復及台北日期；不代填未知電表讀數、不重算已出帳、不改 Properties／trigger／LINE。Rollback：同一 Web App v202、Pages `add86f5`。根目錄 408 筆混合 WIP 保留；不開無關專案討論。
+
+## 2026-10-02 發布授權及97版備份（刪除前歷史紀錄）
+
+使用者已授權發布電表憑證／台北日期修正版，以及清理較舊、沒有用途的程式版本；不涵蓋房客、租約、文件、帳務資料或部署刪除。Fresh `origin/main` 仍 `add86f5`，隔離候選 `71b68df`，validate／441 項測試通過。原目錄仍 408 筆混合 WIP／49 個 tracked 修改／無 staged，沒有清理或覆寫。
+
+已核對五個 deployment：HEAD／160／10／202／139，版本總數仍 200。只選取 **1–100 排除 10、76、85，共 97 個版本**；76 保留 RC1 封存、85 保留歷史對帳來源，101 以上近期版本和現行／回退 200、201、202 全部保留。不透過更改舊部署來使引用中的版本可刪。
+
+完整來源及清單備份在 `/Users/hans/CMWebs/apps-script-history-20261002.2iQztI`，owner-only 0700 目錄／0600 檔案。97 個版本、1859 份來源檔、72,263,091 bytes；獨立重讀逐檔 SHA-256 全部相符，備份前後 deployment／version 清單相同。`cleanup-manifest.json` SHA-256 `fc7d272a1e25b43cdf3cb0ccbc0c053054e1f5b06d0e3329d69a121ac53f0c8e`。Google UI 跨頁勾選已核對，但 **尚未點擊刪除、尚未發布**；待當下確認畫面為備份目錄的 `pending-delete-selection.png`。
+
+下一步只需這一批永久刪除的操作當下確認。來源可重建成新版本，但原版本編號不可恢復；刪 97 個將增加 97 個可用位置，**不取消 Google 的 200-version 上限**。确认后再核對保留版本／部署、匯出 HEAD／serving v202，按已授權範圍發布修正版、同一 URL 與 Pages 逐檔驗證；真實讀數／私有檔案寫入不在本次清理範圍。不開無關專案討論。
+
+## 2026-10-02 電表過期 LINE 憑證／台北租期日期修復（本地候選，未發布）
+
+建議模型／速度：`gpt-5.6-terra / medium`。隔離分支 `codex/tenant-meter-auth-dates-20261002`，基線 `add86f5`。使用者授權開始修復；本輪沒有推送、PR、合併、部署或版本刪除，不開無關專案討論。
+
+失敗請求的最小化唯讀證據確認 LINE ID token 在請求當下已過期；只檢查 expiry／issuer／公開 LIFF channel audience 的布林結果，不保存或揭露原 token／subject。前端不再送已過期憑證，提供手動重新登入、返回同一 canonical 房客／選定租約／電表區；不自動跳轉或重送寫入。已過期 review session 清除；存檔授權失敗保留讀數和選取照片，離頁重新登入後需重選照片。後端仍嚴格驗證 ID token；只有 LINE provider 的明確 `IdToken expired.` 回應映射 `LINE_ID_TOKEN_EXPIRED`，其他拒絕保持 generic fail-closed，沒有 raw UID fallback。新登入是否能通過正式 Channel 配置仍待驗證。
+
+租期差一天已重現為 UTC 日期截取：後端 history helper 與前端 timestamp／文件選單統一以 `Asia/Taipei` 顯示；原租約日期與金額不改。新增 10 項具名回歸，定向 36/36、全套 441/441、validate、58 個 Apps Script 合併全域語法／49 個 inline scripts、diff-check 通過。共享 cache tag 為 `20261002-tenant-meter-session-dates-v1`，其他頁只做機械式 tag 更新。獨立審查補齊 session 剩餘 20／31 秒及 malformed/null/provider status 邊界後，follow-up 39/39、無 Critical／Important／Minor。隔離 browser fixture 禁止外部請求，確認手動登入按鈕、同房客／租約／電表區返回與讀數／照片欄位；這不是正式登入驗收。
+
+正式基線仍 v202／Pages `add86f5` 的 runtime；200、201、202 保留。200-version cap 未解除，先前只刪 198 的批准不得擴大。本候選發布及額外特定版本永久刪除須另取得授權。回退為同一 Web App v202、Pages `add86f5`；原目錄 408 筆混合 WIP 保留，無業務／私有檔案／Properties／trigger／LINE 寫入，不代填未知初始讀數、不重算已出帳。正式登入／真機／實際補填仍 UNVERIFIED。
+
+唯讀部署／版本清單確認現有 200 個 immutable versions，五個部署不引用 v197。該版本完整 59 檔匯出至 `/private/tmp/cmwebs-unused-v197.SFe6dI`（0700），與 Git `fd806f1` 完全相符，來源 tree SHA-256 `83a025a49c448db52e81f4126b83e0c2f3b036098a08d90fc0b2aeeab0f3c4ed`。尚未刪除；刪除原版本編號不可恢復，備份可重建另一新版。
+
 ## 2026-10-02 canonical ID v202／Pages 已發布；506 文件已恢復，電表仍受阻
 
 依使用者在最後對話框的確認，只永久刪除未部署引用且已備份的 v198；200、201 保留。Fresh HEAD／serving v201 與來源一致後，已審查 `78d4d60` 建立 immutable v202，59 檔匯出逐位元組一致，同一正式 Web App 讀回 202、URL 不變，其他四個部署不變。431/431、validate、diff-check 通過。PR #195／`b79ab46`、Pages workflow `36926064476` 成功，17 個公開檔案逐位元組一致。

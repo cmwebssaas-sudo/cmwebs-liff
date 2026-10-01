@@ -9,9 +9,9 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261002-tenant-canonical-id-v1"></script>
-  <script src="landlord-auth.js?v=20261002-tenant-canonical-id-v1"></script>
-  <script src="landlord-api.js?v=20261002-tenant-canonical-id-v1"></script>
+  <script src="frontend-release.js?v=20261002-tenant-meter-session-dates-v1"></script>
+  <script src="landlord-auth.js?v=20261002-tenant-meter-session-dates-v1"></script>
+  <script src="landlord-api.js?v=20261002-tenant-meter-session-dates-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
@@ -1561,10 +1561,12 @@
     let CURRENT_TENANT_DOCUMENTS = [];
     let CURRENT_TENANT_CONTRACTS = [];
     let LANDLORD_REVIEW_SESSION_TOKEN = '';
+    let LANDLORD_REVIEW_SESSION_EXPIRES_AT = 0;
     let TENANT_INITIAL_METER_DATA = null;
     let TENANT_INITIAL_METER_LOAD = 0;
     let TENANT_INITIAL_METER_SAVING = false;
     let TENANT_INITIAL_METER_AUTH = null;
+    let TENANT_INITIAL_METER_RELOGIN = false;
     let CURRENT_TENANT_DOCUMENT_OBJECT_URL = '';
     let CURRENT_TENANT_DOCUMENT_BLOB = null;
     let CURRENT_TENANT_DOCUMENT_FILE_NAME = '';
@@ -1639,7 +1641,7 @@
 
       const match =
         text.match(
-          /^(\d{4})-(\d{2})-(\d{2})/
+          /^(\d{4})-(\d{2})-(\d{2})$/
         );
 
       if (match) {
@@ -1663,14 +1665,12 @@
         return text;
       }
 
-      return date.toLocaleDateString(
-        'zh-TW',
-        {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }
-      );
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).formatToParts(date);
+      return ['year', 'month', 'day'].map(function (type) {
+        return parts.find(function (part) { return part.type === type; }).value;
+      }).join('-');
     }
 
     function goPage(page) {
@@ -2670,12 +2670,72 @@
       return Boolean(item && item.classList.contains('is-complete'));
     }
 
+    function tenantInitialMeterAuthError(code, message) {
+      const error = new Error(message);
+      error.code = code;
+      return error;
+    }
+
+    function isTenantInitialMeterAuthError(error) {
+      return ['LINE_ID_TOKEN_EXPIRED', 'LINE_TOKEN_VERIFY_FAILED', 'MISSING_ID_TOKEN',
+        'LANDLORD_REVIEW_SESSION_EXPIRED', 'LANDLORD_REVIEW_SESSION_INVALID'].indexOf(error && error.code) >= 0;
+    }
+
+    function renderTenantInitialMeterError(error) {
+      const content = document.getElementById('tenantInitialMeterAuthNotice') || document.getElementById('tenantInitialMeterContent');
+      if (!content) return;
+      if (!isTenantInitialMeterAuthError(error)) {
+        content.textContent = '初始電表載入失敗：' + rawText(error.message || '請重試');
+        return;
+      }
+      content.innerHTML = `<p role="status">${safeHtml(error.message || 'LINE 登入已失效，請重新登入。')}</p>
+        <button id="tenantInitialMeterRelogin" class="primary-button" type="button" onclick="reloginTenantInitialMeter()">重新登入 LINE 並返回此房客</button>
+        <p class="tenant-document-context">不會重建租約或改動已出帳的帳單。若有未儲存讀數請先記下；重新登入後須再次選取檔案。</p>`;
+    }
+
+    async function reloginTenantInitialMeter() {
+      if (TENANT_INITIAL_METER_RELOGIN || TEST_MODE) return;
+      TENANT_INITIAL_METER_RELOGIN = true;
+      const button = document.getElementById('tenantInitialMeterRelogin');
+      if (button) button.disabled = true;
+      try {
+        const returned = new URL(currentReturnTo(), location.href);
+        returned.searchParams.set('tenant_id', TENANT_ID);
+        const select = document.getElementById('tenantInitialMeterContractSelect');
+        if (select && select.value) returned.searchParams.set('contract_id', select.value);
+        returned.hash = '#tenant-initial-meter';
+        const inClient = liff.isInClient();
+        const target = new URL(inClient ? 'https://liff.line.me/' + LIFF_ID : LANDLORD_ENTRY_URL);
+        target.searchParams.set('return_to', returned.pathname.split('/').pop() + returned.search + returned.hash);
+        sessionStorage.setItem('cmwebs_landlord_line_fallback_intent', '1');
+        LANDLORD_REVIEW_SESSION_TOKEN = '';
+        LANDLORD_REVIEW_SESSION_EXPIRES_AT = 0;
+        if (inClient) location.replace(target.href);
+        else {
+          liff.logout();
+          await liff.login({redirectUri: target.href});
+        }
+      } catch (error) {
+        TENANT_INITIAL_METER_RELOGIN = false;
+        if (button) button.disabled = false;
+        showToast('重新登入失敗，請從 LINE 官方帳號的房東入口開啟。');
+      }
+    }
+
     async function initializeTenantInitialMeterReviewSession() {
-      if (LANDLORD_REVIEW_SESSION_TOKEN) return;
+      if (LANDLORD_REVIEW_SESSION_TOKEN && (!LANDLORD_REVIEW_SESSION_EXPIRES_AT || LANDLORD_REVIEW_SESSION_EXPIRES_AT > Date.now() + 30000)) return;
+      LANDLORD_REVIEW_SESSION_TOKEN = '';
+      LANDLORD_REVIEW_SESSION_EXPIRES_AT = 0;
       if (TENANT_INITIAL_METER_AUTH) return TENANT_INITIAL_METER_AUTH;
       TENANT_INITIAL_METER_AUTH = (async function () {
         const idToken = typeof liff !== 'undefined' && liff.getIDToken();
-        if (!idToken || TEST_MODE) throw new Error('房東審核身分憑證已失效，請重新整理或從房東入口登入。');
+        if (!idToken || TEST_MODE) throw tenantInitialMeterAuthError('MISSING_ID_TOKEN', '房東審核身分憑證已失效，請重新登入。');
+        // Local expiry is a UX preflight only; all authorization still requires
+        // the server's LINE verification and current Workspace policy.
+        const decoded = typeof liff.getDecodedIDToken === 'function' && liff.getDecodedIDToken();
+        if (decoded && Number.isFinite(Number(decoded.exp)) && Number(decoded.exp) * 1000 <= Date.now() + 30000) {
+          throw tenantInitialMeterAuthError('LINE_ID_TOKEN_EXPIRED', 'LINE 登入憑證已過期，請重新登入。');
+        }
         const token = function (length) {
           const bytes = new Uint8Array(length);
           crypto.getRandomValues(bytes);
@@ -2694,8 +2754,9 @@
             request_id: requestId, poll_secret: pollSecret
           });
           if (result && result.code === 'AUTH_EXCHANGE_NOT_FOUND') continue;
-          if (!result || result.success !== true || !result.data || !result.data.session_token) throw new Error((result && result.message) || '房東審核身分驗證失敗。');
+          if (!result || result.success !== true || !result.data || !result.data.session_token) throw tenantInitialMeterAuthError(result && result.code, (result && result.message) || '房東審核身分驗證失敗。');
           LANDLORD_REVIEW_SESSION_TOKEN = result.data.session_token;
+          LANDLORD_REVIEW_SESSION_EXPIRES_AT = new Date(result.data.session_expires_at || '').getTime() || Date.now() + 540000;
           return;
         }
         throw new Error('房東審核身分驗證逾時，請重新整理。');
@@ -2719,7 +2780,13 @@
         if (!response.ok) throw new Error('初始電表連線失敗。');
         result = await response.json();
       }
-      if (!result || result.success !== true) throw new Error((result && result.message) || '初始電表操作失敗。');
+      if (!result || result.success !== true) {
+        if (result && ['LANDLORD_REVIEW_SESSION_EXPIRED', 'LANDLORD_REVIEW_SESSION_INVALID'].indexOf(result.code) >= 0) {
+          LANDLORD_REVIEW_SESSION_TOKEN = '';
+          LANDLORD_REVIEW_SESSION_EXPIRES_AT = 0;
+        }
+        throw tenantInitialMeterAuthError(result && result.code, (result && result.message) || '初始電表操作失敗。');
+      }
       return result.data || {};
     }
 
@@ -2774,7 +2841,7 @@
         if (rawText(data.contract_id) !== contractId || rawText(data.tenant_id) !== TENANT_ID) throw new Error('回傳的租約／房客資料不符。');
         renderTenantInitialMeter(data);
       } catch (error) {
-        if (requestNumber === TENANT_INITIAL_METER_LOAD) content.textContent = '初始電表載入失敗：' + rawText(error.message || '請重試');
+        if (requestNumber === TENANT_INITIAL_METER_LOAD) renderTenantInitialMeterError(error);
       }
     }
 
@@ -2797,6 +2864,7 @@
           <input id="tenantInitialMeterFile" class="tenant-initial-meter-input" type="file" accept="image/jpeg,image/png" />
           <p class="tenant-document-context">JPG 或 PNG，最大 8MB。</p>
           <button id="tenantInitialMeterSave" class="primary-button" type="button" onclick="saveTenantInitialMeter()">${hasReading ? '補傳初始電表照片' : '儲存初始電表'}</button>
+          <div id="tenantInitialMeterAuthNotice" aria-live="polite"></div>
         ` : `<p class="tenant-document-context">${hasReading ? '初始電表已保存。' : '目前無法補填此租約，請確認合約權限。'}</p>`}
         <div id="tenantInitialMeterDocuments">${documents.length ? documents.map(function (item) {
           return `<div class="tenant-document-item"><div class="tenant-document-meta">${tenantDocumentTypeIcon('checkin_initial_meter')} 初始電表照片 · ${safeHtml(item.file_name || '照片')}</div><button class="secondary-button" type="button" data-initial-meter-document="${safeHtml(item.document_id)}">查看照片</button></div>`;
@@ -2841,6 +2909,7 @@
         try { await loadTenantDocuments(); } catch (error) { renderTenantDocumentError(error); }
       } catch (error) {
         showToast(rawText(error.message || '初始電表保存失敗。'), true);
+        if (isTenantInitialMeterAuthError(error)) renderTenantInitialMeterError(error);
       } finally {
         TENANT_INITIAL_METER_SAVING = false;
         if (select) select.disabled = false;
@@ -3194,9 +3263,9 @@
           '租約 ' +
           rawText(contract.contract_id || '-') +
           '（' +
-          rawText(contract.contract_start || '-') +
+          formatDate(contract.start_date || contract.contract_start_date || contract.contract_start) +
           ' ～ ' +
-          rawText(contract.contract_end || '-') +
+          formatDate(contract.end_date || contract.contract_end_date || contract.contract_end) +
           '）';
         select.appendChild(option);
       });

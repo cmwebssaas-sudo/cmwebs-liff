@@ -138,6 +138,123 @@ function detailFixture() {
   r.run(`CURRENT_TENANT = {tenant_id:'T-fixture'}; CURRENT_TENANT_CONTRACTS = [{contract_id:'C-old',tenant_id:'T-fixture',start_date:'2025-01-01',end_date:'2025-12-31'}, {contract_id:'C-current',tenant_id:'T-fixture',is_current:true,start_date:'2026-01-01',end_date:'2026-12-31'}];`);
   return r;
 }
+
+test('Taipei lease days stay consistent for timestamp history, meter and document selectors', async () => {
+  const r = detailFixture();
+  r.context.__contracts = [{contract_id:'C-current',tenant_id:'T-fixture',is_current:true,
+    start_date:'2026-09-10T16:00:00.000Z',end_date:'2027-09-09T16:00:00.000Z',
+    contract_start:'Fri Sep 11 2026 00:00:00 GMT+0800 (Taipei Standard Time)',
+    contract_end:'Fri Sep 10 2027 00:00:00 GMT+0800 (Taipei Standard Time)'}];
+  r.run('CURRENT_TENANT_CONTRACTS = __contracts;');
+  r.nodes.get('app').innerHTML = r.run('tenantInitialMeterPanelHtml() + tenantDocumentPanelHtml()');
+  await r.run('loadTenantInitialMeterContracts()');
+  r.run('renderTenantDocumentContracts(__contracts)');
+  assert.equal(r.run("formatDate('2026-09-11')"), '2026-09-11');
+  assert.equal(r.run("formatDate('2026-09-10T16:00:00.000Z')"), '2026-09-11');
+  assert.match(r.run('renderContractHistory(__contracts)'), /2026-09-11 ～ 2027-09-10/);
+  assert.match(r.nodes.get('tenantInitialMeterContractSelect').innerHTML, /2026-09-11 ～ 2027-09-10/);
+  assert.match(r.nodes.get('tenantDocumentContractSelect').children[0].textContent, /2026-09-11 ～ 2027-09-10/);
+});
+
+test('expired LINE identity does not send an exchange or redirect, and offers explicit recovery', async () => {
+  const r = detailFixture();
+  r.run("LANDLORD_AUTH = {getMode:()=> 'line',getRequestAuthParams:()=>({line_user_id:'untrusted-fixture'})};");
+  r.context.liff.getIDToken = () => 'expired-fixture-id-token';
+  r.context.liff.getDecodedIDToken = () => ({exp:Math.floor(Date.now()/1000)-1});
+  r.run("jsonpRequest = async function() { return {success:false,code:'LINE_TOKEN_VERIFY_FAILED',message:'房東審核身分驗證失敗'}; };");
+  r.nodes.get('app').innerHTML = r.run('tenantInitialMeterPanelHtml()');
+  await r.run('loadTenantInitialMeterContracts()');
+  assert.equal(r.calls.length, 0, 'known expired identity must never be submitted to the server');
+  assert.match(r.nodes.get('tenantInitialMeterContent').innerHTML, /登入.*過期/);
+  assert.ok(r.nodes.get('tenantInitialMeterRelogin'), 'manual recovery must not restart login by itself');
+  assert.match(r.context.location.href, /landlord-tenant-detail/);
+});
+
+test('meter re-login uses the LINE entry and keeps canonical tenant, selected lease and anchor without OAuth replay', async () => {
+  for (const inClient of [false,true]) {
+    const r = detailFixture();
+    r.context.location.href = 'https://fixture.invalid/landlord-tenant-detail.html?tenant_id=T-fixture&code=private&state=private&liff.state=private';
+    r.nodes.get('app').innerHTML = r.run('tenantInitialMeterPanelHtml()');
+    r.set('tenantInitialMeterContractSelect','C-current');
+    const actions = [], storage = new Map();
+    r.context.sessionStorage = {setItem:(key,value)=>storage.set(key,value)};
+    r.context.location.replace = url => actions.push(['replace',url]);
+    r.context.liff.isInClient = () => inClient;
+    r.context.liff.logout = () => actions.push(['logout']);
+    r.context.liff.login = options => actions.push(['login',options.redirectUri]);
+    await r.run('reloginTenantInitialMeter()');
+    await r.run('reloginTenantInitialMeter()');
+    assert.equal(actions.length, inClient ? 1 : 2, 'double click cannot start a second authentication');
+    const target = new URL(actions.at(-1)[1]);
+    assert.equal(target.hostname, inClient ? 'liff.line.me' : 'fixture.invalid');
+    if (!inClient) assert.equal(target.pathname, '/landlord-entry.html');
+    const returned = new URL(target.searchParams.get('return_to'), 'https://fixture.invalid/');
+    assert.equal(returned.searchParams.get('tenant_id'),'T-fixture');
+    assert.equal(returned.searchParams.get('contract_id'),'C-current');
+    assert.equal(returned.hash,'#tenant-initial-meter');
+    assert.equal(returned.searchParams.has('code'),false);
+    assert.equal(returned.searchParams.has('state'),false);
+    assert.equal(returned.searchParams.has('liff.state'),false);
+    assert.equal(storage.get('cmwebs_landlord_line_fallback_intent'), '1');
+  }
+});
+
+test('server denied auth exchange renders recovery once without identity fallback or meter calls', async () => {
+  const r = detailFixture();
+  r.run("LANDLORD_AUTH = {getMode:()=> 'line',getRequestAuthParams:()=>({line_user_id:'untrusted-fixture'})};");
+  r.context.liff.getIDToken = () => 'fixture-id-token';
+  const append = r.context.document.body.appendChild.bind(r.context.document.body);
+  r.context.document.body.appendChild = node => {
+    append(node);
+    if (node.tagName === 'SCRIPT') {
+      const url = new URL(node.src);
+      r.context.window[url.searchParams.get('callback')]({success:false,code:'LINE_TOKEN_VERIFY_FAILED',message:'房東審核身分驗證失敗'});
+    }
+    return node;
+  };
+  r.nodes.get('app').innerHTML = r.run('tenantInitialMeterPanelHtml()');
+  await r.run('loadTenantInitialMeterContracts()');
+  assert.equal(r.calls.length,1);
+  assert.equal(JSON.parse(r.calls[0].body).action,'landlord_contract_signing_review_auth_init');
+  assert.ok(r.nodes.get('tenantInitialMeterRelogin'));
+  assert.match(r.context.location.href, /landlord-tenant-detail/);
+});
+
+test('meter cached review session refreshes before expiry without reusing the stale credential', async () => {
+  for (const remainingMs of [-1, 20000, 31000]) {
+    const r = detailFixture();
+    r.context.__remainingMs = remainingMs;
+    r.run("LANDLORD_AUTH = {getMode:()=> 'line',getRequestAuthParams:()=>({})}; LANDLORD_REVIEW_SESSION_TOKEN='old-fixture'; LANDLORD_REVIEW_SESSION_EXPIRES_AT=Date.now()+__remainingMs;");
+    r.context.liff.getIDToken = () => 'fresh-fixture-id-token';
+    r.run("jsonpRequest = async function() { return {success:true,data:{session_token:'fresh-fixture',session_expires_at:new Date(Date.now()+600000).toISOString()}}; };");
+    await r.run("requestTenantInitialMeterAction('landlord_tenant_initial_meter_init',{contract_id:'C-current',tenant_id:'T-fixture'})");
+    const shouldRefresh = remainingMs < 30000;
+    assert.equal(r.calls.length, shouldRefresh ? 2 : 1);
+    assert.equal(JSON.parse(r.calls.at(-1).body).session_token, shouldRefresh ? 'fresh-fixture' : 'old-fixture');
+  }
+});
+
+test('expired meter save never auto-replays and keeps unsaved reading and photo for manual recovery', async () => {
+  const r = detailFixture();
+  r.nodes.get('app').innerHTML = r.run('tenantInitialMeterPanelHtml()');
+  r.context.__data = meterData();
+  r.run("renderTenantInitialMeter(__data); LANDLORD_AUTH = {getMode:()=> 'line',getRequestAuthParams:()=>({})}; LANDLORD_REVIEW_SESSION_TOKEN='old-fixture';");
+  r.set('tenantInitialMeterContractSelect','C-current');
+  r.set('tenantInitialMeterReading','123.456');
+  const file = {name:'meter.jpg',type:'image/jpeg',size:3};
+  r.nodes.get('tenantInitialMeterFile').files = [file];
+  r.context.fetch = async (_url,options) => {
+    r.calls.push(options);
+    return {ok:true,json:async()=>({success:false,code:'LANDLORD_REVIEW_SESSION_EXPIRED',message:'房東 session 無效'})};
+  };
+  await r.run('saveTenantInitialMeter()');
+  assert.equal(r.calls.length,1);
+  assert.equal(r.nodes.get('tenantInitialMeterReading').value,'123.456');
+  assert.equal(r.nodes.get('tenantInitialMeterFile').files[0],file);
+  assert.equal(r.run('LANDLORD_REVIEW_SESSION_TOKEN'),'');
+  assert.ok(r.nodes.get('tenantInitialMeterRelogin'));
+  assert.equal(r.nodes.get('tenantInitialMeterSave').disabled,false);
+});
 const meterData = (changes = {}) => ({contract_id:'C-current',tenant_id:'T-fixture',room_id:'R-fixture',first_meter_reading:'',has_initial_meter:false,can_fill:true,documents:[], ...changes});
 
 function detailLoadFixture(history = [{contract_id:'C-current',tenant_id:'T-fixture',is_current:true}]) {

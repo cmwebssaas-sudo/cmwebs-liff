@@ -1,5 +1,20 @@
 # V2 回歸測試矩陣
 
+## 2026-10-02 電表驗證恢復／台北日期（後端 v203；Pages 待發布）
+
+- [x] 最小化唯讀 metadata 確認失敗请求的 ID token 已過期；不保存 token／subject／秘密值，沒有讀私有原檔或寫业务資料。
+- [x] RED/GREEN：過期 SDK token 不送 exchange、不自動跳轉；provider 拒絕保留明確手動恢復且不查電表／raw UID fallback。cached review session 到期重取；存檔失敗不自動重送，保留讀數／照片並清除已過期 session。
+- [x] 外部瀏覽器重新登入保留 canonical tenant、所選 contract、電表錨點且剔除 OAuth code／state／liff.state；重複點擊一次登入。在 LIFF client 使用既有 LIFF 入口，不呼叫不支援的 logout／login。
+- [x] 後端 allowlist 只有明確 `IdToken expired.` 映射 expired code，audience／malformed／不安全描述仍拒絕且不回顯，不建立身份或 session。
+- [x] Taipei 午夜 Date／ISO offset／Google Date／date-only 正確；真正 history read model 和 frontend renderer 的文件／歷史／電表日期一致。租約原始列與金額不變，日期加減規則不變。
+- [x] 新增 10 項具名回歸，定向 36/36、全套 441/441、validate、diff-check 通過。共享 cache tag `20261002-tenant-meter-session-dates-v1`；其餘頁只有 tag 更新。
+- [x] 獨立審查兩項 Minor 測試盲點已補入：剩餘 20 秒 renew／31 秒沿用、malformed/null 400、非 400 expiry、200 錯誤 audience 都 fail-closed。follow-up 定向含 cache 39/39、validate／diff-check，無 Critical／Important／Minor。
+- [x] 合併全域 58 個 Apps Script／49 個 inline scripts 語法通過；隔離 browser fixture 禁止任何外部請求，實際按鈕返回同房客／所選租約／電表錨點，日期正確、讀數／照片控制項可見。畫面證據 `/private/tmp/cmwebs-meter-session-proof.hpI9lm`；不代表正式／真機通過。
+- [x] 使用者於最後永久刪除畫面確認精確97版批次；完整來源／checksum 備份、Google成功畫面及 CLI 刪除差集相符，保留引用／76／85／200／201／202，五個 deployment 不變，沒有業務資料刪除。
+- [x] Fresh HEAD／serving v202 匯出一致，candidate `71b68df` 建立 immutable203，59 檔完全一致；既有 Web App deployment 讀回203、URL不變。新版後104版／96可用位置，rollback202。
+- [ ] Pages PR／合併／17檔公開核對待完成。
+- [ ] 登入後新鮮憑證／真機／真實初始電表補填未驗收；未知讀數不代填，不重算已出帳。
+
 ## 2026-10-02 房客 canonical ID 關聯修復（本地候選，未發布）
 
 - [x] 登入後唯讀重現 506 詳細頁「0 份文件／無租約／無法補填初始電表」；沒有開啟原始身分證、重傳文件或改業務資料。測試以虛構 ID，不提交真人個資。

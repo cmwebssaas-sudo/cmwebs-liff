@@ -1,5 +1,25 @@
 # CMWebs Changelog
 
+## 2026-10-02 — 97 個舊程式版本清理完成；後端 v203 發布
+
+- 使用者在最後畫面確認精確批次，已刪除 1–100 排除 10、76、85 共 97 版；Google 成功及 CLI 差集一致，103 版及所有引用／保留版仍存在，五個 deployment 不變。原始碼完整備份保留，原版本編號不可恢復，業務資料未動。
+- Fresh HEAD／serving v202 相同後，已審查 runtime `71b68df` 建立 immutable **203**，59 檔完整匯出逐位元組一致；既有正式 Web App 指向 203，URL 不變。新版建立後剩餘 96 個位置，200-version 上限不變。
+- 前端 Pages 待發布及登入後唯讀驗證；尚未宣稱完整交付或電表真實存檔成功。Rollback 是 v202／Pages `add86f5`，另保留 200／201。根目錄混合 WIP、帳單、未知初始電表、私有文件、Properties／trigger／LINE 未動。
+
+## 2026-10-02 — 歷史程式版本備份與發布授權（刪除前歷史）
+
+- 使用者授權發布已審查的電表憑證／台北日期候選 `71b68df`，以及清理未使用的較舊程式版本；不涵蓋租約／文件／帳務或 deployment 刪除。
+- 整批精確範圍為版本 1–100 排除 10、76、85，共 97 個。所有部署引用、RC1／歷史對帳基線、101 以上近期版本及 200／201／202 保留。
+- 97 個版本、1859 份來源檔已完整備份至 owner-only `/Users/hans/CMWebs/apps-script-history-20261002.2iQztI`，逐檔 SHA-256 重讀相符；備份前後外部引用不變。尚未刪除，待操作當下確認；只能釋放位置，不能取消 Google 版本上限。validate／441 項測試再次通過，正式 v202／Pages 未改，原目錄 408 筆 WIP 保留。
+
+## 2026-10-02 — 電表過期憑證恢復與租期日期修正（本地候選，未發布）
+
+- 失敗的 LINE review exchange 確認送出已過期 ID token。電表區提供明確手動重新登入、保留同房客／租約返回位置，不再送過期 token；cached review session 到期重取。授權失敗不自動重送存檔，保留未儲存讀數／選取照片。
+- LINE provider 明確過期錯誤回傳 `LINE_ID_TOKEN_EXPIRED`；其餘 token 驗證／Workspace／角色／HMAC 規則不放寬，不使用 raw UID 或 decoded profile 作授權。
+- 合約歷史、電表及文件租期統一使用台北日期，修正 UTC 截取顯示前一天；不改租約資料、金額或已出帳。
+- 新增 10 項 RED/GREEN 回歸；定向 36/36、全套 441/441、validate、全域／inline 語法、diff-check 通過。獨立審查補齊 session expiry／provider response 邊界後 39/39、無殘留發現。隔離瀏覽器確認登入恢復／正確日期／讀數及照片欄位，不接觸正式 API。
+- 固定 cache tag `20261002-tenant-meter-session-dates-v1`；其他頁僅機械式 tag 更新。正式 v202／Pages 未改，另行發布／版本清理待授權；保留 v200、201、202。v197 無目前部署引用且完整來源已備份核對，但未刪除。
+
 ## 2026-10-02 — canonical tenant ID 正式發布，文件恢復與電表未解項
 
 - 依操作當下確認只刪除已備份、未部署引用的 v198；保留 v200、v201。

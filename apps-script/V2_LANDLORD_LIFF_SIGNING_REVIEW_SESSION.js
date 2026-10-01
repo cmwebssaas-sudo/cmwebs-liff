@@ -67,7 +67,18 @@ function landlordContractSigningReviewAuthenticate_(idToken) {
       payload: { id_token: String(idToken), client_id: channelId }
     });
   } catch (_) { return landlordContractSigningReviewSessionError_('LINE_TOKEN_VERIFY_FAILED'); }
-  if (response.getResponseCode() !== 200) return landlordContractSigningReviewSessionError_('LINE_TOKEN_VERIFY_FAILED');
+  if (response.getResponseCode() !== 200) {
+    // Only a provider-verified, allowlisted expiry may request re-login. Never
+    // echo provider payloads or authorize from locally decoded JWT claims.
+    if (response.getResponseCode() === 400) {
+      try {
+        if (JSON.parse(response.getContentText()).error_description === 'IdToken expired.') {
+          return landlordContractSigningReviewSessionError_('LINE_ID_TOKEN_EXPIRED');
+        }
+      } catch (_) {}
+    }
+    return landlordContractSigningReviewSessionError_('LINE_TOKEN_VERIFY_FAILED');
+  }
   let claims;
   try { claims = JSON.parse(response.getContentText()); } catch (_) { return landlordContractSigningReviewSessionError_('LINE_TOKEN_VERIFY_FAILED'); }
   const now = Math.floor(Date.now() / 1000);
@@ -240,4 +251,7 @@ function landlordContractSigningReviewHmacHex_(value, key) {
 function landlordContractSigningReviewExchangeKey_(requestId) { return 'landlord_signing_review_auth:' + String(requestId || ''); }
 function landlordContractSigningReviewSessionText_(value) { return String(value == null ? '' : value).trim(); }
 function landlordContractSigningReviewConstantEquals_(left, right) { left = String(left || ''); right = String(right || ''); let difference = left.length ^ right.length; for (let index = 0; index < Math.max(left.length, right.length); index += 1) difference |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0); return difference === 0; }
-function landlordContractSigningReviewSessionError_(code) { return { success: false, code: code, message: '房東審核身分驗證失敗' }; }
+function landlordContractSigningReviewSessionError_(code) {
+  return { success: false, code: code, message: code === 'LINE_ID_TOKEN_EXPIRED'
+    ? 'LINE 登入憑證已過期，請重新登入。' : '房東審核身分驗證失敗' };
+}
