@@ -3,7 +3,11 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
-## 2026-10-02 506 關聯漏查已重現，canonical ID 候選尚未發布
+## 2026-10-02 canonical ID 後端 v202 已發布，Pages 待完成
+
+依使用者在最後對話框的確認，只永久刪除未部署引用且已備份的 v198；200、201 保留。Fresh HEAD／serving v201 與來源一致後，已審查 `78d4d60` 建立 immutable v202，59 檔匯出逐位元組一致，同一正式 Web App 讀回 202、URL 不變，其他四個部署不變。431/431、validate、diff-check 通過；Pages 與登入後 506 唯讀結果仍待核對，不宣稱原文件已恢復。無業務／私有文件／Properties／trigger／LINE 寫入。回退 v201／Pages `d4bb0ac`，根目錄混合 WIP 保留。
+
+## 2026-10-02 506 關聯漏查已重現，canonical ID 候選（歷史）
 
 登入後唯讀頁面顯示 0 份文件／沒有租約，雖然房客清單有當前租約。已重現原因：native 清單對外回傳 uppercase lookup key，原始 lowercase tenant ID 因精確關聯而漏查文件／歷史／電表。隔離分支 `codex/tenant-canonical-id-20261002` 保留原始 ID，並讓舊大寫網址在已驗證 Workspace 回應中唯一解析；不改身份資料、租約、文件、房間、帳單、Schema 或權限。
 

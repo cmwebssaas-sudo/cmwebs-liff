@@ -1,5 +1,11 @@
 # CMWebs Changelog
 
+## 2026-10-02 — canonical tenant ID 後端正式發布，前端待核對
+
+- 依操作當下確認只刪除已備份、未部署引用的 v198；保留 v200、v201。
+- Runtime `78d4d60` immutable v202 匯出 59 檔逐位元組一致；既有正式 Web App 讀回 202，URL 和其他 deployment 不變。
+- 431/431、validate、diff-check 通過；Pages／登入後 506 恢復仍待驗證。無業務資料或私有檔案寫入；rollback v201／Pages `d4bb0ac`。
+
 **Status: AUTHORITATIVE product-memory changelog**
 
 ## 2026-10-02 — 房客 canonical ID 修復候選，發布待授權

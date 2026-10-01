@@ -330,3 +330,20 @@ explicitly approved Production correctness repair; no new V2.1 feature.
   meter-value write; root WIP remains 408 entries / 49 tracked / zero staged.
   A future release must reverify/export HEAD and v201, then publish a new
   immutable version and Pages before authenticated read-only acceptance.
+
+## 2026-10-02 V2.0 canonical identity backend release
+
+Recommended model/speed: `gpt-5.6-terra` / `medium`.
+
+- User confirmed at the visible permanent-deletion dialog: delete only v198
+  and publish. v198 removed; full 59-file verified backup retained; v200 and
+  v201 retained. No other version or deployment removed.
+- Fresh editor HEAD and serving v201 exports matched Git `99e4db5`. Pushed
+  reviewed `78d4d60` source, created immutable v202, exported and compared all
+  59 files byte-for-byte; formal existing deployment reads back v202 with the
+  same URL. Other four deployment bindings unchanged.
+- Fresh complete suite 431/431, validate and diff-check passed. Frontend PR /
+  Pages and authenticated 506 readback are pending, not claimed complete.
+- No business-row, private-file, Properties, trigger or LINE writes; rollback
+  v201 / frontend pre-release `d4bb0ac`, additionally retain v200. Mixed root
+  WIP preserved. Unknown initial reading was not supplied.

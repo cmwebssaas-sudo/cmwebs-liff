@@ -1,13 +1,13 @@
 {
   "verified_on": "2026-10-02",
-  "source_commit": "99e4db526ed5063dda8d364829f0a6f58dbb4f0e",
+  "source_commit": "78d4d608e17b44020a09edf017d53fe4f0ec1ac9",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 201,
+  "backend_version": 202,
   "frontend_revision": "3e6affb3b64a2366655478c8d68d5ac146c5c16f",
   "frontend_workflow": "36913724284",
   "frontend_public_file_count_verified": 17,
   "backend_file_count": 59,
-  "backend_tree_sha256": "b4a9cd607267265e4b1f6f1856b70b3ec5e30e5812d1436b67b57e155eb0af28",
+  "backend_tree_sha256": "99390a474255a4c3974cca14953e95f8c09cf63449ddafac279284b2d43c437a",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -29,8 +29,18 @@
     "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "Frontend-only document/meter discovery correction: independent meter loading, per-row historical private previews, profile section links and synchronized shared cache tag. PR 193 merged; Pages workflow 36913724284 succeeded; all 17 public files byte-identical to frontend revision 3e6affb. Apps Script remains v201; current deployment and immutable 59-file export verified unchanged. No business-row, private-file content/upload, Properties, trigger or LINE writes. Fresh live browser shows Email login; actual 506 metadata/files, reading and authenticated/mobile acceptance remain unverified. Frontend rollback ed412c2; previous backend rollback v200 retained.",
+  "scope": "Canonical tenant identity correction: immutable v202 export is byte-identical to all 59 candidate backend files and the existing formal deployment reads back v202. Raw stored tenant IDs remain unchanged; native lookup keys no longer leak into history/document/meter joins. Frontend release is pending; recorded frontend evidence still describes PR 193. No business-row, private-file content/upload, Properties, trigger or LINE writes. Authenticated 506 restoration awaits Pages and browser readback. Rollback: existing Web App v201; frontend pre-release d4bb0ac; v200 additionally retained.",
   "version_cleanup": {
+    "deleted_version": 198,
+    "authority": "Explicit action-time confirmation at Google's permanent-deletion dialog to delete only version 198 and publish",
+    "source_backup_commit": "103e30787aaf8eb20abc59b82b707cdf4c6b8e38",
+    "source_backup_file_count": 59,
+    "source_backup_tree_sha256": "a744a3bb5aa4e18f2b6ad1cf4294a08788a64c1763fa2d8ee593df9488837136",
+    "rollback_version_retained": 201,
+    "additional_version_retained": 200,
+    "other_deployments_unchanged": true
+  },
+  "previous_version_cleanup": {
     "deleted_version": 199,
     "authority": "Explicit action-time confirmation to permanently delete only version 199",
     "source_backup_commit": "ebce4b8",

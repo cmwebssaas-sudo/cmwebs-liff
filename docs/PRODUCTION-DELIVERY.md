@@ -4,7 +4,13 @@
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
-## 2026-10-02 506 canonical ID 修復候選：尚未發布
+## 2026-10-02 506 canonical ID 修復：後端已發布，Pages 待完成
+
+- 使用者在 Google 永久刪除確認畫面回覆「確認刪除 198 並發布」後，只刪除無部署引用的 Version 198。完整 59 檔備份與 Git `103e307` 一致，來源 hash 如下方歷史候選紀錄；原版本編號不可恢復，但可由來源重建另一新版。200、201 保留，其他部署未刪除。
+- Fresh editor HEAD 與 serving v201 匯出 59 檔完全一致後，推送已審查 runtime `78d4d60`，建立 immutable **Version 202**。新版 59 檔逐位元組一致，tree SHA-256 `99390a474255a4c3974cca14953e95f8c09cf63449ddafac279284b2d43c437a`；既有正式 deployment 讀回 202，URL 不變，另外四個部署仍 HEAD／160／10／139。
+- 全套 431/431、validate、diff-check 再次通過。前端 Pages 尚待 PR 合併／公開內容核對；登入後 506 恢復尚未宣稱完成。Rollback 為同一 Web App v201、Pages 發布前 `d4bb0ac`；另外保留 v200。沒有改业务列、私有檔案、Properties、trigger 或 LINE。
+
+## 2026-10-02 506 canonical ID 修復候選（發布前歷史）
 
 建議模型／速度：`gpt-5.6-terra / medium`。只修既有 Production 關聯漏查。
 
