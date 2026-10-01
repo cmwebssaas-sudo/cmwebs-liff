@@ -222,6 +222,8 @@ function getLandlordBillingInitByLineUid_(
         access
       );
 
+    billingAttachInitialMeterBaselines_(ss, access, contracts);
+
     const tenants =
       billingGetWorkspaceRows_(
         ss.getSheetByName(
@@ -464,10 +466,14 @@ function getLandlordBillingInitByLineUid_(
               null;
 
             const previousBill =
-              previousBillMap[
-                roomId
-              ] ||
-              null;
+              existingBill
+                ? previousBillMap[roomId] || null
+                : billingResolvePreviousBill_(
+                    referenceBills,
+                    roomId,
+                    billMonth,
+                    contract
+                  );
 
             return billingBuildInitItem_(
               room,
@@ -804,6 +810,8 @@ function generateLandlordBillsByLineUid_(
         access
       );
 
+    billingAttachInitialMeterBaselines_(ss, access, contractRows);
+
     const tenantRows =
       billingGetWorkspaceRows_(
         ss.getSheetByName(
@@ -1001,7 +1009,8 @@ function generateLandlordBillsByLineUid_(
             billingResolvePreviousBill_(
               referenceBillRows,
               roomId,
-              billMonth
+              billMonth,
+              existingBill ? null : contract
             );
 
           const calculated =
@@ -1120,12 +1129,16 @@ function generateLandlordBillsByLineUid_(
           });
 
         } catch (itemError) {
-          errors.push({
+          const itemFailure = {
             room_id:
               roomId,
             message:
               itemError.message
-          });
+          };
+          if (itemError.code) {
+            itemFailure.code = itemError.code;
+          }
+          errors.push(itemFailure);
         }
       }
     );
@@ -1655,6 +1668,52 @@ function applyLandlordInitialRentCreditByLineUid_(
 }
 
 
+/** Read only: attach a unique, exact lease checkin reading to request-local rows. */
+function billingAttachInitialMeterBaselines_(ss, access, contracts) {
+  const workspaceId = billingText_(access.workspace.workspace_id).toUpperCase();
+  const sheet = ss.getSheetByName('V2_tenant_checkins');
+  const checkins = sheet ? workspaceGetObjectsWithRow_(sheet) : [];
+  const checkinsByContract = {};
+
+  checkins.forEach(function (row) {
+    // Include unscoped legacy rows only to block same-contract ambiguity.
+    const ids = [row.workspace_id, row.contract_id]
+      .map(function (value) { return billingText_(value).toUpperCase(); });
+    if (!ids[1] || (ids[0] && ids[0] !== workspaceId)) {
+      return;
+    }
+    const key = JSON.stringify([ids[0] || workspaceId, ids[1]]);
+    if (!checkinsByContract[key]) {
+      checkinsByContract[key] = [];
+    }
+    checkinsByContract[key].push(row);
+  });
+
+  (contracts || []).forEach(function (contract) {
+    // Never carry an earlier request's attachment when the source is missing.
+    contract.__billing_initial_meter_reading = null;
+    const ids = [contract.workspace_id, contract.contract_id, contract.tenant_id, contract.room_id]
+      .map(function (value) { return billingText_(value).toUpperCase(); });
+    if (ids.some(function (value) { return !value; }) || ids[0] !== workspaceId) {
+      return;
+    }
+    const matches = checkinsByContract[JSON.stringify(ids.slice(0, 2))] || [];
+    if (matches.length !== 1) {
+      return;
+    }
+    const checkin = matches[0];
+    if (
+      billingText_(checkin.workspace_id).toUpperCase() !== ids[0] ||
+      billingText_(checkin.tenant_id).toUpperCase() !== ids[2] ||
+      billingText_(checkin.room_id).toUpperCase() !== ids[3]
+    ) {
+      return;
+    }
+    contract.__billing_initial_meter_reading = billingParseMeterReading_(checkin.first_meter_reading);
+  });
+}
+
+
 // ==================================================
 // Billing calculations
 // ==================================================
@@ -2030,7 +2089,7 @@ function billingBuildInitItem_(
       existingBill,
       previousBill,
       billMonth,
-      billingSettings
+      contract
     );
 
   const previousMeter =
@@ -2332,7 +2391,22 @@ function billingCalculateBill_(
   let previousMeter =
     item.previous_meter;
 
-  if (
+  if (!existingBill) {
+    if (!item.previous_meter_locked) {
+      previousMeter = billingParseMeterReading_(input.previous_meter);
+    }
+    if (billingParseMeterReading_(previousMeter) === null) {
+      if (item.requires_meter) {
+        const error = new Error(
+          item.room_name + ' 缺少可靠的起始電表讀數，請到房客資料補填此租約的初始電表'
+        );
+        error.code = 'INITIAL_METER_READING_REQUIRED';
+        throw error;
+      }
+      // Keep the existing zero-utility/prepaid billing arithmetic numeric.
+      previousMeter = 0;
+    }
+  } else if (
     !item.previous_meter_locked &&
     billingText_(
       input.previous_meter
@@ -2643,6 +2717,24 @@ function billingCalculateBill_(
     tenant_visible_note:
       tenantVisibleNote
   };
+}
+
+
+/** Unlike billingNumber_, missing or malformed meter readings are not zero. */
+function billingParseMeterReading_(value) {
+  if (typeof value !== 'number' && typeof value !== 'string') {
+    return null;
+  }
+  const text = billingText_(value);
+  if (!text) {
+    return null;
+  }
+  const numericText = text.replace(/,/g, '').trim();
+  if (!numericText) {
+    return null;
+  }
+  const number = Number(numericText);
+  return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
 
@@ -3619,8 +3711,61 @@ function billingResolvePreviousMeter_(
   room,
   existingBill,
   previousBill,
-  billMonth
+  billMonth,
+  contract
 ) {
+  if (
+    existingBill && contract &&
+    [existingBill.workspace_id, existingBill.contract_id, existingBill.tenant_id, existingBill.room_id]
+      .every(function (value) { return billingText_(value) !== ''; })
+  ) {
+    const snapshotPrevious = billingParseMeterReading_(existingBill.previous_meter);
+    if (snapshotPrevious !== null) {
+      // A complete issued snapshot, including a real zero, is immutable.
+      return {
+        value: snapshotPrevious,
+        locked: true,
+        source: 'existing_bill',
+        label: '本期既有帳單',
+        previous_bill_month: previousBill ? billingNormalizeBillMonth_(previousBill.bill_month) : ''
+      };
+    }
+  }
+
+  if (!existingBill && contract) {
+    const previousCurrent = billingResolveCurrentMeter_(previousBill, true);
+    if (
+      previousCurrent !== '' &&
+      billingPreviousBillMatchesContract_(previousBill, contract, billMonth)
+    ) {
+      const month = billingNormalizeBillMonth_(previousBill.bill_month);
+      return {
+        value: previousCurrent,
+        locked: true,
+        source: 'previous_bill',
+        label: '同租約前期帳單 ' + month,
+        previous_bill_month: month
+      };
+    }
+    const initialMeter = billingParseMeterReading_(contract.__billing_initial_meter_reading);
+    if (initialMeter !== null) {
+      return {
+        value: initialMeter,
+        locked: true,
+        source: 'initial_meter',
+        label: '同租約入住初始電表',
+        previous_bill_month: ''
+      };
+    }
+    return {
+      value: '',
+      locked: false,
+      source: 'manual',
+      label: '請到房客資料補填此租約的初始電表',
+      previous_bill_month: ''
+    };
+  }
+
   const existingPrevious =
     billingResolveMeterCandidate_(
       existingBill
@@ -3785,7 +3930,8 @@ function billingResolvePreviousMeter_(
 
 
 function billingResolveCurrentMeter_(
-  bill
+  bill,
+  strict
 ) {
   if (!bill) {
     return '';
@@ -3808,7 +3954,8 @@ function billingResolveCurrentMeter_(
         bill['本月電表'],
         bill['本期度數'],
         bill['本月度數']
-      ]
+      ],
+      strict
     );
 
   return value ===
@@ -3819,7 +3966,8 @@ function billingResolveCurrentMeter_(
 
 
 function billingResolveMeterCandidate_(
-  candidates
+  candidates,
+  strict
 ) {
   const values =
     candidates || [];
@@ -3844,11 +3992,12 @@ function billingResolveMeterCandidate_(
     }
 
     const number =
-      billingNumber_(
-        raw
-      );
+      strict
+        ? billingParseMeterReading_(values[index])
+        : billingNumber_(raw);
 
     if (
+      number !== null &&
       Number.isFinite(
         number
       ) &&
@@ -4023,7 +4172,8 @@ function billingContractPriority_(
 function billingResolvePreviousBill_(
   bills,
   roomId,
-  billMonth
+  billMonth,
+  contract
 ) {
   return (
     bills || []
@@ -4042,7 +4192,11 @@ function billingResolvePreviousBill_(
             roomId &&
           month &&
           month <
-            billMonth
+            billMonth &&
+          (!contract || (
+            billingPreviousBillMatchesContract_(bill, contract, billMonth) &&
+            billingResolveCurrentMeter_(bill, true) !== ''
+          ))
         );
       }
     )
@@ -4058,6 +4212,52 @@ function billingResolvePreviousBill_(
       }
     )[0] ||
     null;
+}
+
+
+/** Legacy rows without contract_id need the same tenant and a whole month within this lease. */
+function billingPreviousBillMatchesContract_(bill, contract, billMonth) {
+  if (!bill || !contract) {
+    return false;
+  }
+  const workspaceId = billingText_(contract.workspace_id).toUpperCase();
+  const billWorkspaceId = billingText_(bill.workspace_id).toUpperCase();
+  if (!workspaceId || (billWorkspaceId && billWorkspaceId !== workspaceId)) {
+    return false;
+  }
+  if (!billWorkspaceId) {
+    const landlordId = billingText_(contract.landlord_id).toUpperCase();
+    if (!landlordId || billingText_(bill.landlord_id).toUpperCase() !== landlordId) {
+      return false;
+    }
+  }
+  const tenantId = billingText_(contract.tenant_id).toUpperCase();
+  const roomId = billingText_(contract.room_id).toUpperCase();
+  const contractId = billingText_(contract.contract_id).toUpperCase();
+  const billContractId = billingText_(bill.contract_id).toUpperCase();
+  if (
+    !tenantId || !roomId || !contractId ||
+    billingText_(bill.tenant_id).toUpperCase() !== tenantId ||
+    billingText_(bill.room_id).toUpperCase() !== roomId ||
+    (billContractId && billContractId !== contractId)
+  ) {
+    return false;
+  }
+  if (['cancelled', 'canceled', 'void', 'voided', 'deleted', 'archived'].indexOf(
+    billingText_(bill.bill_status).toLowerCase()
+  ) >= 0) {
+    return false;
+  }
+  const month = billingNormalizeBillMonth_(bill.bill_month);
+  const start = billingDate_(contract.start_date || contract.contract_start_date || contract.lease_start_date);
+  const startMonth = start ? billingNormalizeBillMonth_(start) : '';
+  return Boolean(
+    month && month < billMonth &&
+    (!startMonth || month >= startMonth) &&
+    (billContractId || (
+      startMonth && month + '-01' >= billingFormatDate_(start)
+    ))
+  );
 }
 
 

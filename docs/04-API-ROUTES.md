@@ -1,5 +1,26 @@
 # CMWebs V2 API Routes
 
+## 2026-10-01 入住初始電表修復
+
+`landlord_tenant_initial_meter_init` 與 `landlord_tenant_initial_meter_save` 均為
+POST-only，不接受 JSONP／GET 的裸 LINE UID。桌面沿用 Email session hidden-iframe
+bridge，手機沿用已核對的房東 review session；由後端解析 Workspace 與目前角色。
+
+| Action | Policy | Input / Result |
+|---|---|---|
+| `landlord_tenant_initial_meter_init` | `read` | `contract_id`, `tenant_id`；回傳同租約 `first_meter_reading`、`has_initial_meter`、`can_fill` 與初始電表照片 metadata |
+| `landlord_tenant_initial_meter_save` | `contract_write` | 同上，加必填非負有限 `first_meter_reading`，選填 JPG／PNG `initial_meter_file`（8MB）；只補缺失值，既有值只接受相同值／照片補傳 |
+
+Email save 使用 `input_json`；手機 JSON 使用 `{action, session_token, input}`。
+讀數 `0` 有效，空白／null／布林／非有限值無效；未核對的租約／房客／房間、
+跨 Workspace、重複或不一致 checkin 關聯在寫入前拒絕。既有 checkin 的 Workspace
+空白時回 `INITIAL_METER_SCOPE_CONFLICT`，不追加第二列或做 migration。不建立新房客或租約、
+不完成入住、不交付鑰匙、不通知 LINE、不改已出帳。
+
+`landlord_contract_paper_backfill` 新增必填 `first_meter_reading`，選填
+`initial_meter_file`、`selfie_file`。讀數與私有文件一起納入交易／回滾和冪等 hash。
+全部沿用既有 `V2_tenant_checkins`／`V2_contract_documents` 欄位，不自動 migration。
+
 ## Canonical baseline
 
 This inventory is generated from the verified, immutable Production Apps Script

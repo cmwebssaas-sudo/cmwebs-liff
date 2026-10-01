@@ -28,6 +28,192 @@ var V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_STATUSES_ = [
 var V2_LANDLORD_PAPER_BACKFILL_REPLACEMENT_INVITE_HEADERS_ = [
   'invite_id', 'workspace_id', 'contract_id', 'status', 'cancelled_at', 'updated_at'
 ];
+var V2_INITIAL_METER_HEADERS_ = [
+  'checkin_id', 'workspace_id', 'landlord_id', 'contract_id', 'tenant_id',
+  'room_id', 'first_meter_reading', 'created_at', 'updated_at'
+];
+
+// Initial meter is a contract-scoped billing baseline, not a check-in completion.
+// These routes deliberately do not ensure/migrate schemas or send notifications.
+function landlordInitialMeterIsRequest_(body) {
+  try {
+    var request = typeof body === 'string' ? JSON.parse(body) : body;
+    return ['landlord_tenant_initial_meter_init', 'landlord_tenant_initial_meter_save'].indexOf(
+      landlordPaperContractBackfillText_(request && (request.action || request.v2_action))
+    ) >= 0;
+  } catch (_) { return false; }
+}
+
+function landlordInitialMeterHandlePost_(body) {
+  var request;
+  try { request = typeof body === 'string' ? JSON.parse(body) : body; }
+  catch (_) { return landlordPaperContractBackfillError_('INVALID_JSON', '初始電表資料格式無效'); }
+  if (!landlordInitialMeterIsRequest_(request)) return landlordPaperContractBackfillError_('INVALID_ACTION', '初始電表操作無效');
+  var save = (request.action || request.v2_action) === 'landlord_tenant_initial_meter_save';
+  var access = landlordInitiatedContractAccessFromSession_(request.session_token || '', save ? 'contract_write' : 'read');
+  if (!access || access.success !== true) return access || landlordPaperContractBackfillError_('WORKSPACE_ACCESS_DENIED', '房東權限無效');
+  return landlordInitialMeterByAccess_(access, request.input || request, save);
+}
+
+function landlordInitialMeterReading_(value) {
+  if ((typeof value !== 'number' && typeof value !== 'string') || landlordPaperContractBackfillText_(value) === '') return null;
+  var number = Number(value);
+  return isFinite(number) && number >= 0 ? number : null;
+}
+
+function landlordInitialMeterImage_(value, label) {
+  var result = landlordPaperContractBackfillNormalizeFile_(value, false, label);
+  if (result.success && result.data && ['image/jpeg', 'image/png'].indexOf(result.data.mime_type) < 0) {
+    return landlordPaperContractBackfillError_('INVALID_FILE_MIME_TYPE', '電表照片與自拍照僅支援 JPG、PNG');
+  }
+  return result;
+}
+
+function landlordInitialMeterSchema_(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = {};
+  ['contracts', 'tenants', 'rooms', 'contract_documents', 'tenant_checkins'].forEach(function(name) {
+    sheets[name] = ss && ss.getSheetByName('V2_' + name);
+  });
+  if (Object.keys(sheets).some(function(name) { return !sheets[name]; })) {
+    return landlordPaperContractBackfillError_('INITIAL_METER_SCHEMA_NOT_READY', '初始電表資料表尚未就緒');
+  }
+  var headers = landlordPaperContractBackfillHeaders_(sheets.tenant_checkins);
+  if (V2_INITIAL_METER_HEADERS_.some(function(header) { return headers.indexOf(header) < 0 || headers.indexOf(header) !== headers.lastIndexOf(header); })) {
+    return landlordPaperContractBackfillError_('INITIAL_METER_SCHEMA_NOT_READY', '初始電表必要欄位缺少或重複');
+  }
+  return { success: true, data: sheets };
+}
+
+function landlordInitialMeterFindCheckin_(sheet, access, contract) {
+  var workspaceId = landlordPaperContractBackfillWorkspaceId_(access);
+  var sameContractRows = landlordPaperContractBackfillRows_(sheet).filter(function(row) {
+    return landlordPaperContractBackfillText_(row.contract_id) === landlordPaperContractBackfillText_(contract.contract_id);
+  });
+  // A legacy check-in must not look absent and permit a second billing baseline.
+  // Resolve its ownership separately; this path never migrates Workspace fields.
+  if (sameContractRows.some(function(row) { return !landlordPaperContractBackfillText_(row.workspace_id); })) {
+    return landlordPaperContractBackfillError_('INITIAL_METER_SCOPE_CONFLICT', '既有入住電表需先核對 Workspace 關聯，未寫入資料');
+  }
+  var rows = sameContractRows.filter(function(row) {
+    return landlordPaperContractBackfillText_(row.workspace_id) === workspaceId &&
+      landlordPaperContractBackfillText_(row.contract_id) === landlordPaperContractBackfillText_(contract.contract_id);
+  });
+  if (rows.length > 1 || rows.some(function(row) {
+    return landlordPaperContractBackfillText_(row.tenant_id) !== landlordPaperContractBackfillText_(contract.tenant_id) ||
+      landlordPaperContractBackfillText_(row.room_id) !== landlordPaperContractBackfillText_(contract.room_id) ||
+      (landlordPaperContractBackfillText_(row.landlord_id) && landlordPaperContractBackfillText_(row.landlord_id) !== landlordPaperContractBackfillLandlordId_(access));
+  })) return landlordPaperContractBackfillError_('INITIAL_METER_SCOPE_CONFLICT', '入住電表關聯不一致，未寫入資料');
+  return { success: true, data: rows[0] || null };
+}
+
+function landlordInitialMeterStore_(access, sheet, contract, tenant, room, reading, transaction) {
+  var match = landlordInitialMeterFindCheckin_(sheet, access, contract);
+  if (!match.success) return match;
+  var existing = match.data;
+  var storedReading = existing ? landlordInitialMeterReading_(existing.first_meter_reading) : null;
+  if (storedReading !== null && storedReading !== reading) return landlordPaperContractBackfillError_('INITIAL_METER_ALREADY_SET', '初始電表已有度數，不能覆寫既有計費基準');
+  if (storedReading !== null) return { success: true, data: existing, idempotent: true };
+  var now = new Date().toISOString();
+  var actor = landlordPaperContractBackfillActor_(access);
+  if (existing) {
+    transaction.originalRows.push({ sheet: sheet, row: existing });
+    landlordPaperContractBackfillUpdate_(sheet, existing, { first_meter_reading: reading, updated_at: now });
+    return { success: true, data: Object.assign({}, existing, { first_meter_reading: reading }) };
+  }
+  var row = {
+    checkin_id: landlordPaperContractBackfillUuid_('checkin'),
+    workspace_id: landlordPaperContractBackfillWorkspaceId_(access),
+    landlord_id: landlordPaperContractBackfillLandlordId_(access),
+    contract_id: contract.contract_id, tenant_id: contract.tenant_id,
+    tenant_user_id: tenant.tenant_user_id || tenant.user_id || '',
+    tenant_name: tenant.tenant_name || contract.tenant_name || '', tenant_phone: tenant.tenant_phone || '',
+    tenant_line_user_id: tenant.tenant_line_user_id || '', property_id: contract.property_id || room.property_id,
+    property_name: contract.property_name || room.property_name || '', room_id: contract.room_id,
+    room_name: room.room_name || contract.room_name || '',
+    contract_start_date: contract.start_date || contract.contract_start_date,
+    contract_end_date: contract.end_date || contract.contract_end_date,
+    scheduled_checkin_date: contract.start_date || contract.contract_start_date,
+    checkin_status: 'pending', key_handover_status: 'pending', first_meter_reading: reading,
+    created_by_user_id: actor.user_id, created_by_membership_id: actor.membership_id,
+    created_at: now, updated_at: now
+  };
+  // Register before append so even a downstream failure can remove this exact row.
+  transaction.newRows.push({ sheet: sheet, idHeader: 'checkin_id', id: row.checkin_id });
+  landlordPaperContractBackfillAppend_(sheet, row);
+  return { success: true, data: row };
+}
+
+function landlordInitialMeterByAccess_(access, input, save) {
+  if (!access || access.success !== true) return landlordPaperContractBackfillError_('WORKSPACE_ACCESS_DENIED', 'Workspace 權限無效');
+  input = input || {};
+  var operation = function() {
+    var schema = landlordInitialMeterSchema_();
+    if (!schema.success) return schema;
+    var sheets = schema.data;
+    var workspaceId = landlordPaperContractBackfillWorkspaceId_(access);
+    var contractId = landlordPaperContractBackfillText_(input.contract_id);
+    var tenantId = landlordPaperContractBackfillText_(input.tenant_id);
+    var contracts = landlordPaperContractBackfillRows_(sheets.contracts).filter(function(row) {
+      return landlordPaperContractBackfillText_(row.workspace_id) === workspaceId && landlordPaperContractBackfillText_(row.contract_id) === contractId;
+    });
+    var contract = contracts.length === 1 ? contracts[0] : null;
+    if (!contract || !tenantId || landlordPaperContractBackfillText_(contract.tenant_id) !== tenantId ||
+        (landlordPaperContractBackfillText_(contract.landlord_id) && landlordPaperContractBackfillText_(contract.landlord_id) !== landlordPaperContractBackfillLandlordId_(access)) ||
+        ['cancelled', 'deleted', 'voided', 'rejected'].indexOf(landlordPaperContractBackfillText_(contract.contract_status || contract.status).toLowerCase()) >= 0) {
+      return landlordPaperContractBackfillError_('CONTRACT_NOT_FOUND', '找不到目前 Workspace 的房客租約');
+    }
+    var tenant = landlordPaperContractBackfillFindScopedRow_(sheets.tenants, access, 'tenant_id', tenantId);
+    var room = landlordPaperContractBackfillFindScopedRow_(sheets.rooms, access, 'room_id', contract.room_id);
+    if (!tenant || !room || landlordPaperContractBackfillText_(tenant.room_id) !== landlordPaperContractBackfillText_(contract.room_id)) {
+      return landlordPaperContractBackfillError_('INITIAL_METER_SCOPE_CONFLICT', '房客、租約與房間關聯不一致');
+    }
+    var match = landlordInitialMeterFindCheckin_(sheets.tenant_checkins, access, contract);
+    if (!match.success) return match;
+    var reading = match.data ? landlordInitialMeterReading_(match.data.first_meter_reading) : null;
+    if (save) {
+      var requested = landlordInitialMeterReading_(input.first_meter_reading);
+      if (requested === null) return landlordPaperContractBackfillError_('INITIAL_METER_READING_REQUIRED', '請填入有效的入住初始電表度數（可為 0）');
+      if (reading !== null && reading !== requested) return landlordPaperContractBackfillError_('INITIAL_METER_ALREADY_SET', '初始電表已有度數，不能覆寫既有計費基準');
+      var image = landlordInitialMeterImage_(input.initial_meter_file, 'INITIAL_METER');
+      if (!image.success) return image;
+      var transaction = { newRows: [], originalRows: [], documents: [], createdViewRows: [] };
+      try {
+        var result = landlordInitialMeterStore_(access, sheets.tenant_checkins, contract, tenant, room, requested, transaction);
+        if (!result.success) return result;
+        if (image.data) {
+          var photo = image.data;
+          var documentResult = storeLandlordContractDocumentForAccess_(access, {
+            tenant_id: tenantId, contract_id: contractId, document_type: 'checkin_initial_meter',
+            file_name: photo.file_name, mime_type: photo.mime_type, base64: photo.base64,
+            file_bytes: photo.bytes, byte_size: photo.byte_size, sha256: photo.sha256,
+            idempotency_key: 'initial-meter:' + contractId + ':' + photo.sha256,
+            document_origin: 'checkin_initial_meter', note: '入住初始電表度數：' + requested
+          }, { lock_held: true, sheet: sheets.contract_documents });
+          if (!documentResult || documentResult.success !== true) {
+            return landlordPaperContractBackfillRollbackResult_(transaction, documentResult || landlordPaperContractBackfillError_('INITIAL_METER_PHOTO_FAILED', '初始電表照片保存失敗'));
+          }
+          if (!documentResult.data.idempotent) transaction.documents.push(documentResult.data);
+        }
+        if (SpreadsheetApp.flush) SpreadsheetApp.flush();
+        reading = requested;
+      } catch (error) {
+        landlordPaperContractBackfillRollback_(transaction);
+        return landlordPaperContractBackfillError_('INITIAL_METER_WRITE_FAILED', '初始電表保存失敗，未變更既有租約');
+      }
+    }
+    return { success: true, code: save ? 'INITIAL_METER_SAVED' : 'OK', data: {
+      contract_id: contractId, tenant_id: tenantId, room_id: contract.room_id,
+      first_meter_reading: reading === null ? '' : reading,
+      has_initial_meter: reading !== null, can_fill: reading === null,
+      documents: landlordPaperContractBackfillRows_(sheets.contract_documents).filter(function(row) {
+        return landlordPaperContractBackfillText_(row.workspace_id) === workspaceId && landlordPaperContractBackfillText_(row.contract_id) === contractId &&
+          landlordPaperContractBackfillText_(row.tenant_id) === tenantId && row.document_type === 'checkin_initial_meter' && row.status === 'stored';
+      }).map(function(row) { return { document_id: row.document_id, document_type: row.document_type, file_name: row.file_name, created_at: row.created_at }; })
+    }};
+  };
+  return save ? landlordInitiatedContractWithScriptLock_(operation) : operation();
+}
 
 function landlordPaperContractBackfillLegacyPendingReplacementEligible_(contract) {
   if (!contract) return false;
@@ -216,6 +402,8 @@ function landlordPaperContractBackfillValidateInput_(input) {
   if (!startDate || !endDate || startDate > endDate) return landlordPaperContractBackfillError_('INVALID_LEASE_DATE', '租約起訖日不正確');
   if (!paperSignedAt) return landlordPaperContractBackfillError_('INVALID_PAPER_SIGNED_DATE', '請輸入紙本簽約日');
   if (!idempotencyKey || idempotencyKey.length > 160) return landlordPaperContractBackfillError_('INVALID_IDEMPOTENCY_KEY', '缺少或不正確的補登冪等鍵');
+  var firstMeter = landlordInitialMeterReading_(source.first_meter_reading);
+  if (firstMeter === null) return landlordPaperContractBackfillError_('INITIAL_METER_READING_REQUIRED', '請填入有效的入住初始電表度數（可為 0）');
 
   var moneyFields = [
     ['rent_amount', 'INVALID_RENT_AMOUNT', true],
@@ -245,6 +433,10 @@ function landlordPaperContractBackfillValidateInput_(input) {
   if (!identityFront.success) return identityFront;
   var identityBack = landlordPaperContractBackfillNormalizeFile_(source.identity_back_file, false, 'IDENTITY_BACK');
   if (!identityBack.success) return identityBack;
+  var meterPhoto = landlordInitialMeterImage_(source.initial_meter_file, 'INITIAL_METER');
+  if (!meterPhoto.success) return meterPhoto;
+  var selfie = landlordInitialMeterImage_(source.selfie_file, 'SELFIE');
+  if (!selfie.success) return selfie;
 
   var normalized = {
     room_id: roomId,
@@ -270,6 +462,9 @@ function landlordPaperContractBackfillValidateInput_(input) {
     paper_contract_file: paperFile.data,
     identity_front_file: identityFront.data,
     identity_back_file: identityBack.data,
+    first_meter_reading: firstMeter,
+    initial_meter_file: meterPhoto.data,
+    selfie_file: selfie.data,
     supersede_contract_id: supersedeContractId
   };
   normalized.payload_hash = landlordPaperContractBackfillPayloadHash_(normalized);
@@ -530,6 +725,8 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
 
     landlordPaperContractBackfillAppend_(schema.data.contracts, contract);
     transaction.newRows.push({ sheet: schema.data.contracts, idHeader: 'contract_id', id: contractId });
+    var initialMeter = landlordInitialMeterStore_(access, schema.data.checkins, contract, tenantObject, room, input.first_meter_reading, transaction);
+    if (!initialMeter.success) return landlordPaperContractBackfillRollbackResult_(transaction, initialMeter);
     if (replacementContract) {
       transaction.originalRows.push({ sheet: schema.data.contracts, row: replacementContract });
       landlordPaperContractBackfillUpdate_(schema.data.contracts, replacementContract, {
@@ -568,6 +765,7 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
         contract: landlordPaperContractBackfillContractResponse_(contract),
         room: { room_id: input.room_id, room_name: landlordPaperContractBackfillText_(room.room_name), room_status: roomStatus, current_contract_id: contractId, current_tenant_id: tenantId },
         paper_document: documentResults.data.documents[0],
+        first_meter_reading: input.first_meter_reading,
         binding: { tenant_id: tenantId, binding_status: 'unbound' }
       }
     };
@@ -589,6 +787,7 @@ function landlordPaperContractBackfillSchema_() {
     contracts: ss.getSheetByName('V2_contracts'),
     invites: ss.getSheetByName('V2_contract_invites'),
     documents: documents,
+    checkins: ss.getSheetByName('V2_tenant_checkins'),
     landlordTenantListView: ss.getSheetByName('V2_landlord_tenant_list_view'),
     tenantHomeView: ss.getSheetByName('V2_tenant_home_view')
   };
@@ -597,6 +796,8 @@ function landlordPaperContractBackfillSchema_() {
   var headers = landlordPaperContractBackfillHeaders_(sheets.contracts);
   var missing = V2_LANDLORD_PAPER_BACKFILL_CONTRACT_HEADERS_.filter(function(header) { return headers.indexOf(header) < 0; });
   if (missing.length) return landlordPaperContractBackfillError_('PAPER_BACKFILL_SCHEMA_NOT_READY', '紙本補登欄位尚未就緒', { missing_headers: missing });
+  var meterSchema = landlordInitialMeterSchema_(ss);
+  if (!meterSchema.success) return meterSchema;
   return { success: true, code: 'OK', data: sheets };
 }
 
@@ -605,7 +806,9 @@ function landlordPaperContractBackfillStoreDocuments_(access, sheet, input, tena
   var files = [
     { type: 'legacy_contract', file: input.paper_contract_file },
     { type: 'identity_front', file: input.identity_front_file },
-    { type: 'identity_back', file: input.identity_back_file }
+    { type: 'identity_back', file: input.identity_back_file },
+    { type: 'checkin_initial_meter', file: input.initial_meter_file },
+    { type: 'selfie', file: input.selfie_file }
   ];
   var stored = [];
   for (var i = 0; i < files.length; i += 1) {
@@ -971,7 +1174,8 @@ function landlordPaperContractBackfillPayloadHash_(input) {
     input.deposit_months, input.deposit_amount, input.payment_day, input.electricity_fee_rate,
     input.equipment_fee_rate, input.initial_rent_paid_month, input.initial_rent_paid_amount,
     input.supersede_contract_id, input.paper_contract_file.sha256,
-    input.identity_front_file ? input.identity_front_file.sha256 : '', input.identity_back_file ? input.identity_back_file.sha256 : ''
+    input.identity_front_file ? input.identity_front_file.sha256 : '', input.identity_back_file ? input.identity_back_file.sha256 : '',
+    input.first_meter_reading, input.initial_meter_file ? input.initial_meter_file.sha256 : '', input.selfie_file ? input.selfie_file.sha256 : ''
   ].join('|');
   var bytes = [];
   for (var i = 0; i < payload.length; i += 1) bytes.push(payload.charCodeAt(i));
