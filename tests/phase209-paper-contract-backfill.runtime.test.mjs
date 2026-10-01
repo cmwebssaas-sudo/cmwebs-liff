@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import test from 'node:test';
 
 const backfillPath = new URL('../apps-script/V2_LANDLORD_PAPER_CONTRACT_BACKFILL.js', import.meta.url);
 const backfillSource = existsSync(backfillPath) ? readFileSync(backfillPath, 'utf8') : '';
@@ -286,6 +287,89 @@ function userRow(runtime, userId) {
 function inviteRow(runtime, inviteId) {
   return objects(runtime.state.sheets.V2_contract_invites).find(row => row.invite_id === inviteId);
 }
+
+function electronicDraftMissingUser({ origin = '', userId = 'U202', user = null, invite = {}, contract = {}, tenant = {} } = {}) {
+  return makeRuntime({
+    roomStatus: 'occupied', currentContractId: 'E202',
+    tenants: [rowFor(TENANT_HEADERS, {
+      tenant_id: 'T202', tenant_user_id: userId, user_id: userId, workspace_id: 'W1', landlord_id: 'L1',
+      room_id: 'R202', property_id: 'P1', current_contract_id: 'E202',
+      tenant_binding_status: 'pending_claim', account_status: 'pending', ...tenant
+    })],
+    users: user ? [rowFor(USER_HEADERS, user)] : [],
+    contracts: [rowFor(CONTRACT_HEADERS, {
+      contract_id: 'E202', workspace_id: 'W1', landlord_id: 'L1', tenant_id: 'T202', tenant_user_id: userId,
+      room_id: 'R202', property_id: 'P1', start_date: '2026-09-01', end_date: '2027-08-31',
+      contract_status: 'pending_tenant_signature', contract_origin: origin, invite_id: 'I202', ...contract
+    })],
+    contractInvites: [rowFor(INVITE_HEADERS, {
+      invite_id: 'I202', workspace_id: 'W1', contract_id: 'E202', room_id: 'R202', status: 'pending', ...invite
+    })]
+  });
+}
+
+function electronicPaperInput() {
+  return baseInput({ tenant_id: 'T202', supersede_contract_id: 'E202', idempotency_key: 'electronic-missing-user' });
+}
+
+for (const origin of ['', 'landlord_initiated']) {
+  for (const userId of ['U202', '']) {
+    test(`paper conversion recovers missing user for linked electronic draft (${origin || 'legacy origin'}, ${userId || 'no user id'})`, () => {
+      const runtime = electronicDraftMissingUser({ origin, userId });
+      const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', electronicPaperInput());
+      assert.equal(result.success, true, result.message || result.code);
+      const recoveredId = result.data.tenant.tenant_user_id;
+      assert.ok(recoveredId);
+      if (userId) assert.equal(recoveredId, userId);
+      assert.equal(result.data.tenant.tenant_id, 'T202');
+      assert.equal(userRow(runtime, recoveredId).role, 'tenant');
+      assert.equal(userRow(runtime, recoveredId).workspace_id, 'W1');
+      assert.equal(userRow(runtime, recoveredId).line_user_id, '');
+      assert.equal(tenantRow(runtime, 'T202').tenant_user_id, recoveredId);
+      assert.equal(contractRow(runtime, result.data.contract.contract_id).tenant_user_id, recoveredId);
+      assert.equal(contractRow(runtime, 'E202').contract_status, 'cancelled');
+      assert.equal(inviteRow(runtime, 'I202').status, 'cancelled');
+      assert.equal(roomRow(runtime).current_tenant_id, 'T202');
+      assert.equal(runtime.state.sheets.V2_tenants.rows.length, 1);
+      assert.equal(runtime.state.sheets.V2_users.rows.length, 1);
+      assert.equal(runtime.state.lineCalls.length, 0);
+      const beforeReplay = countRows(runtime);
+      const replay = runtime.context.landlordPaperContractBackfillBySession_('session-1', electronicPaperInput());
+      assert.equal(replay.code, 'IDEMPOTENT');
+      assert.deepEqual(countRows(runtime), beforeReplay);
+    });
+  }
+}
+
+for (const [label, options, code] of [
+  ['user id belongs to another workspace', { user: { user_id: 'U202', workspace_id: 'W2', role: 'tenant' } }, 'TENANT_USER_SCOPE_MISMATCH'],
+  ['contract and tenant user ids differ', { contract: { tenant_user_id: 'OTHER-USER' } }, 'PAPER_REPLACEMENT_SCOPE_MISMATCH'],
+  ['invite is claimed despite pending status', { invite: { claimed_line_user_id: 'Uclaimed' } }, 'PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE'],
+  ['invite has a claim timestamp', { invite: { claimed_at: '2026-09-02T00:00:00Z' } }, 'PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE'],
+  ['invite belongs to another room', { invite: { room_id: 'OTHER-ROOM' } }, 'PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE'],
+  ['tenant is already LINE bound', { tenant: { tenant_line_user_id: 'Ubound' } }, 'PAPER_REPLACEMENT_TENANT_BOUND']
+]) {
+  test(`missing electronic user recovery refuses ${label} without writes`, () => {
+    const runtime = electronicDraftMissingUser(options);
+    const before = JSON.stringify(runtime.state.sheets);
+    const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', electronicPaperInput());
+    assert.equal(result.success, false);
+    assert.equal(result.code, code);
+    assert.equal(JSON.stringify(runtime.state.sheets), before);
+    assert.equal(runtime.state.driveFiles.length, 0);
+    assert.equal(runtime.state.lineCalls.length, 0);
+  });
+}
+
+test('missing electronic user recovery rolls back recovered user and original invitation on downstream failure', () => {
+  const runtime = electronicDraftMissingUser();
+  const before = JSON.stringify(runtime.state.sheets);
+  runtime.state.sheets.V2_tenant_home_view.appendRow = () => { throw new Error('simulated view failure'); };
+  const result = runtime.context.landlordPaperContractBackfillBySession_('session-1', electronicPaperInput());
+  assert.equal(result.code, 'PAPER_BACKFILL_WRITE_FAILED');
+  assert.equal(JSON.stringify(runtime.state.sheets), before);
+  assert.equal(runtime.state.lineCalls.length, 0);
+});
 
 assert.equal(typeof makeRuntime, 'function');
 

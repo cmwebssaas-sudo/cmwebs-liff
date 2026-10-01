@@ -1,5 +1,13 @@
 # V2 回歸測試矩陣
 
+## 2026-10-01 紙本轉換缺少房客使用者修復（本地候選）
+
+- [x] Phase 209 真正執行補登 handler，先重現「找不到既有房客使用者資料」：具 pending 邀請的電子草稿缺少 `V2_users` 時，舊 guard 只接受 `legacy_pending`，錯誤阻擋電子轉紙本。
+- [x] 空白／標準 `contract_origin`、保留／缺少 user ID 四種情境均能在原房客上補齊帳號，保留原合約與邀請稽核，不建立第二筆房客；重送為冪等結果，不發 LINE。
+- [x] 跨 Workspace user ID、合約／房客 user ID 不一致、邀請已認領／有認領時間、邀請房間不一致、房客已綁定均在任何 Sheet／Drive 寫入前拒絕；下游失敗會回復原房客／合約／邀請並移除本次新帳號／文件紀錄。
+- [x] 11 項新增具名回歸及既有 Phase 209／215 通過；完整 `npm test` 303/303、`npm run validate`、`git diff --check` 通過。
+- [ ] 正式發布及真實 506 紙本／身分證上傳、補登後綁定：尚未由本候選證明。沒有代送交易，也沒有讀寫業務列、私有文件、Properties、trigger 或 LINE。
+
 ## 2026-09-30 506 Email session／舊格式邀請重發與取消
 
 - [x] 房東桌面 Email session 可在有效且完成 onboarding、重新核對目前

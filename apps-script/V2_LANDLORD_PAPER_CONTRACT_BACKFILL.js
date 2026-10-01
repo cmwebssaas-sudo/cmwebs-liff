@@ -391,7 +391,21 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
       return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
     }
     user = landlordPaperContractBackfillFindScopedRow_(schema.data.users, access, 'user_id', tenant.tenant_user_id || tenant.user_id);
-    if (!user && replacementMode !== 'legacy_pending') return landlordPaperContractBackfillError_('TENANT_USER_NOT_FOUND', '找不到既有房客使用者資料');
+    if (!user) {
+      // An unclaimed electronic draft can have the same incomplete user linkage
+      // as a legacy pending draft. Recover only after the replacement scope and
+      // unbound tenant guards above have passed; never adopt another workspace's user.
+      if (replacementMode !== 'legacy_pending' && replacementMode !== 'electronic') return landlordPaperContractBackfillError_('TENANT_USER_NOT_FOUND', '找不到既有房客使用者資料');
+      var existingTenantUserId = landlordPaperContractBackfillText_(tenant.tenant_user_id || tenant.user_id);
+      var replacementUserId = landlordPaperContractBackfillText_(replacementContract.tenant_user_id);
+      if (replacementUserId && replacementUserId !== existingTenantUserId) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_SCOPE_MISMATCH', '原合約與房客使用者關聯不一致');
+      if (existingTenantUserId && landlordPaperContractBackfillFindRowById_(schema.data.users, 'user_id', existingTenantUserId)) return landlordPaperContractBackfillError_('TENANT_USER_SCOPE_MISMATCH', '房客使用者資料不屬於目前 Workspace，請先核對帳號關聯');
+      if (replacementMode === 'electronic' && (
+        landlordPaperContractBackfillText_(replacementInvite.room_id) !== input.room_id ||
+        landlordPaperContractBackfillText_(replacementInvite.claimed_at) !== '' ||
+        landlordPaperContractBackfillText_(replacementInvite.claimed_line_user_id) !== ''
+      )) return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_INVITE_NOT_ELIGIBLE', '原電子合約邀請已被使用或房間關聯不一致');
+    }
     if (replacementContract && landlordPaperContractBackfillText_(user && user.line_user_id)) {
       return landlordPaperContractBackfillError_('PAPER_REPLACEMENT_TENANT_BOUND', '原電子合約已有房客 LINE 綁定，請先走原簽署流程');
     }
