@@ -1555,6 +1555,15 @@ function workspaceDashboardBuildTenantList_(
           return null;
         }
 
+        // Case-folded map keys are only for lookup; API consumers need the
+        // stored identity for exact contract, document and meter associations.
+        const canonicalTenantId =
+          workspaceDashboardText_(
+            tenant.tenant_id ||
+            currentContract.tenant_id ||
+            view.tenant_id
+          );
+
         const tenantBills =
           (
             billsByTenantId[
@@ -1693,7 +1702,7 @@ function workspaceDashboardBuildTenantList_(
             tenantUserId,
 
           tenant_id:
-            tenantId,
+            canonicalTenantId,
 
           tenant_name:
             workspaceDashboardText_(
@@ -1812,7 +1821,7 @@ function workspaceDashboardBuildTenantList_(
                   contracts,
                   {
                     tenant_id:
-                      tenantId,
+                      canonicalTenantId,
                     workspace_id:
                       access.workspace &&
                       access.workspace.workspace_id,

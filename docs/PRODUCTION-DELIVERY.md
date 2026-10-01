@@ -4,6 +4,25 @@
 
 房東日常使用：[開啟正式桌面版](https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-entry.html?mode=email&return_to=landlord-home.html)。手機繼續從既有 LINE 官方帳號進入。「更多」已提供桌面網址分享及快速建立租約。
 
+## 2026-10-02 506 canonical ID 修復：後端已發布，Pages 待完成
+
+- 使用者在 Google 永久刪除確認畫面回覆「確認刪除 198 並發布」後，只刪除無部署引用的 Version 198。完整 59 檔備份與 Git `103e307` 一致，來源 hash 如下方歷史候選紀錄；原版本編號不可恢復，但可由來源重建另一新版。200、201 保留，其他部署未刪除。
+- Fresh editor HEAD 與 serving v201 匯出 59 檔完全一致後，推送已審查 runtime `78d4d60`，建立 immutable **Version 202**。新版 59 檔逐位元組一致，tree SHA-256 `99390a474255a4c3974cca14953e95f8c09cf63449ddafac279284b2d43c437a`；既有正式 deployment 讀回 202，URL 不變，另外四個部署仍 HEAD／160／10／139。
+- 全套 431/431、validate、diff-check 再次通過。前端 Pages 尚待 PR 合併／公開內容核對；登入後 506 恢復尚未宣稱完成。Rollback 為同一 Web App v201、Pages 發布前 `d4bb0ac`；另外保留 v200。沒有改业务列、私有檔案、Properties、trigger 或 LINE。
+
+## 2026-10-02 506 canonical ID 修復候選（發布前歷史）
+
+建議模型／速度：`gpt-5.6-terra / medium`。只修既有 Production 關聯漏查。
+
+- 正式登入後唯讀重現：清單有當前租約，詳細頁卻無租約／0 份文件／無電表表單。Native API 回傳大寫 lookup key，與儲存的小寫房客 ID 不同；實際函式的虛構夾具重現了歷史及文件漏查。未確認文件遺失，沒有重建／重傳／代填。
+- 隔離分支從 `d4bb0ac` 修復 native 原始 ID 回傳、歷史及舊網址唯一解析。只一個後端模組、詳細頁行為及回歸測試變更；其他前端檔案機械式同步 cache tag。無新 route、Schema、權限變更；所有文件／電表操作仍由後端驗證 Workspace、角色及原始 ID。
+- 定向 29/29、全套 431/431、validate、49 個 inline scripts、58 個 Apps Script 合併全域語法與 diff-check 通過。本地候選不是正式網站已恢復；部署後仍須登入唯讀核對原租約、文件 metadata 與電表欄位，不能用測試夾具宣稱 506 原檔已找回。
+- 獨立審查指出申請需 canonical 解析後再精確過濾，已用新增失敗測試重現並修正；follow-up 獨立 29/29 通過，沒有剩餘 Critical／Important／Minor。
+- Fresh deployment 讀回仍為 v201，v200 保留 rollback；其他四個部署 HEAD／160／10／139 不變。專案已滿 200 個版本，v199 已在之前批准後刪除；不能自行刪另一版本、push editor HEAD 或先合併候選前端。
+- 下一步只提議刪 **Version 198**：目前五個部署都未引用它。已唯讀匯出至 `/private/tmp/cmwebs-unused-v198.vvfZIP`，專案指紋已核對，59 檔與 Git `103e30787aaf8eb20abc59b82b707cdf4c6b8e38` 逐位元組一致，來源 tree SHA-256 `a744a3bb5aa4e18f2b6ad1cf4294a08788a64c1763fa2d8ee593df9488837136`。仍需特定永久刪除確認；原版本編號刪除後不能恢復，来源備份可重建另一新版。尚未刪除任何版本或改 deployment。
+- 發布順序：取得特定舊版本刪除批准／操作當下確認 → 再核對部署及匯出 HEAD、serving v201 → 清理一個版本 → 從隔離候選建立新 immutable version → 核對 export／同一 URL deployment → 才合併並核對 Pages。版本限制未解除前保持正式網站不變。
+- 本次 rollback 為同一 Web App v201、Pages 發布前 `d4bb0ac`；另外保留 v200。不回滾或覆蓋業務資料，原目錄 408 筆混合 WIP 不變。
+
 ## 2026-10-02 文件與電表查看修復正式發布
 
 - 從正式 `main` `ed412c2` 的隔離分支修復兩個已重現的前端缺口：文件請求卡住會阻止電表表單載入；歷史文件清單只有 metadata、沒有每筆私有預覽。文件與電表改為獨立載入；舊房客從文件回應補得租約時仍重載電表。

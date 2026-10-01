@@ -162,6 +162,67 @@ function detailLoadFixture(history = [{contract_id:'C-current',tenant_id:'T-fixt
   return {r,finishDocuments};
 }
 
+function canonicalDetailFixture(tenants) {
+  const r = pageRuntime('landlord-tenant-detail.html', '?tenant_id=TENANT-FIXTURE-UUID');
+  r.context.__tenants = tenants;
+  r.context.__reads = [];
+  r.context.__requests = [{request_id:'REQ-fixture',tenant_id:'tenant-fixture-uuid',request_type:'new'}];
+  r.context.__documents = ['legacy_contract', 'identity_front', 'identity_back'].map(type => ({
+    document_id: 'D-' + type, contract_id: 'C-current', tenant_id: 'tenant-fixture-uuid',
+    document_type: type, file_name: type + '.jpg'
+  }));
+  r.context.__meterResponse = meterData({tenant_id:'tenant-fixture-uuid'});
+  r.run(`
+    ensureLandlordAuthReady = async function() { return true; };
+    fetchStatusJson = async function(action) {
+      return {success:true,data:action === 'landlord_tenants' ? {tenants:__tenants} : {
+        requests:__requests
+      }};
+    };
+    jsonpRequest = async function(action,input) {
+      __reads.push({action,input});
+      return {success:true,data:{contracts:[{contract_id:'C-current',tenant_id:'tenant-fixture-uuid'}],documents:__documents}};
+    };
+    requestTenantInitialMeterAction = async function(action,input) {
+      __reads.push({action,input}); return __meterResponse;
+    };
+  `);
+  return r;
+}
+
+test('old uppercase tenant URL resolves the server canonical ID before document and meter reads', async () => {
+  const r = canonicalDetailFixture([{
+    tenant_id:'tenant-fixture-uuid',tenant_name:'Fixture tenant',room_list:'Fixture room',
+    contract_history:[{contract_id:'C-current',tenant_id:'tenant-fixture-uuid',is_current:true}]
+  }]);
+  await r.run('loadPage()');
+  assert.equal(r.run('TENANT_ID'), 'tenant-fixture-uuid');
+  assert.equal(r.run('CURRENT_REQUESTS.length'), 1, 'existing lowercase requests remain visible through the old URL');
+  assert.equal(r.context.__reads.length, 2);
+  assert.ok(r.context.__reads.every(read => read.input.tenant_id === 'tenant-fixture-uuid'));
+  assert.equal(r.nodes.get('tenantInitialMeterContractSelect').value, 'C-current');
+  assert.ok(r.nodes.get('tenantInitialMeterReading'), 'canonical contract exposes the meter form');
+  assert.equal(r.nodes.get('tenantDocumentsList').querySelectorAll('[data-tenant-document-preview-id]').length, 3);
+});
+
+test('case-colliding tenant IDs fail closed before private-document or meter requests', async () => {
+  const r = canonicalDetailFixture([
+    {tenant_id:'tenant-fixture-uuid',tenant_name:'First tenant',contract_history:[]},
+    {tenant_id:'TENANT-FIXTURE-UUID',tenant_name:'Second tenant',contract_history:[]}
+  ]);
+  await r.run('loadPage()');
+  assert.match(r.nodes.get('app').innerHTML, /房客識別資料不唯一/);
+  assert.equal(r.context.__reads.length, 0);
+  assert.equal(r.run('CURRENT_TENANT'), null);
+});
+
+test('canonical resolution keeps contract requests linked by exact stored identity', async () => {
+  const r = canonicalDetailFixture([{tenant_id:'tenant-fixture-uuid',tenant_name:'Fixture tenant',contract_history:[]}]);
+  r.context.__requests.push({request_id:'REQ-other-case',tenant_id:'TENANT-FIXTURE-UUID',request_type:'renewal'});
+  await r.run('loadPage()');
+  assert.deepEqual(Array.from(r.run('CURRENT_REQUESTS'), request => request.request_id), ['REQ-fixture']);
+});
+
 test('tenant detail exposes the meter form before a slow document list finishes', async () => {
   const {r,finishDocuments} = detailLoadFixture();
   const loading = r.run('loadPage()');
