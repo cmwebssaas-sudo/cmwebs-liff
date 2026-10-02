@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../apps-script/V2_LANDLORD_CONTRACT_DOCUMENTS.js', import.meta.url), 'utf8');
+const historySource = readFileSync(new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url), 'utf8');
 function fixture() {
   let driveReads = 0;
   const contracts = { rows: [
@@ -34,7 +35,9 @@ function fixture() {
       return { getBlob: () => ({ getBytes: () => [1] }) };
     } }
   };
-  vm.runInNewContext(source, context);
+  vm.createContext(context);
+  vm.runInContext(historySource, context);
+  vm.runInContext(source, context);
   context.ldEnsureContractDocumentsSheet_ = () => docs;
   context.ldComputeSha256Hex_ = () => 'HASH';
   return { context, driveReads: () => driveReads };
@@ -43,7 +46,7 @@ function fixture() {
 test('Email document listing is limited to its verified Workspace even with a shared owner', () => {
   const { context } = fixture();
   const result = context.getLandlordContractDocumentsInitByLineUid_('OWNER', '', '', 'W2');
-  assert.equal(result.success, true);
+  assert.equal(result.success, true, result.message);
   assert.deepEqual(Array.from(result.data.contracts, row => row.contract_id), ['C2']);
   assert.deepEqual(Array.from(result.data.documents, row => row.document_id), ['D2']);
 });

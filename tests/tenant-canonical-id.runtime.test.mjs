@@ -90,3 +90,26 @@ for (const [label, tenantId, includeTenant] of [
     assert.equal(JSON.stringify({ data, sheets }), before, 'read projection must not rewrite stored identities or records');
   });
 }
+
+for (const [label, fields, expected] of [
+  ['explicit zero before stale aliases', {rent_amount:0,monthly_rent:9999,management_fee:0,monthly_management_fee:888,deposit_amount:0,electricity_fee_rate:0,equipment_fee_rate:0,other_fixed_fee_amount:0,monthly_payment_day:10}, [0,0,0,0,0,0,10]],
+  ['unknown amounts stay unknown', {rent_amount:'',management_fee:' ',deposit_amount:null,electricity_fee_rate:'',equipment_fee_rate:'invalid',other_fixed_fee_amount:undefined}, [null,null,null,null,null,null,null]],
+  ['legacy aliases only when canonical is blank', {rent_amount:'',monthly_rent:'12800',management_fee:null,monthly_management_fee:'500',deposit_amount:'25600',payment_day:'10'}, [12800,500,25600,null,null,null,10]]
+]) {
+  test('actual native history and document projections preserve ' + label, () => {
+    const {context,data,sheets} = fixture('tenant-fixture-uuid');
+    Object.assign(data.contracts[0], fields);
+    const before = JSON.stringify({data,sheets});
+    const response = context.getWorkspaceLandlordTenantsNativeByLineUid_('fixture-landlord-line');
+    const tenant = response.data.tenants[0];
+    assert.equal(tenant.current_contract_id, 'C-current');
+    const history = tenant.contract_history[0];
+    const docs = context.ldGetLandlordContracts_({landlord_id:'L1',workspace_id:'W1'}, 'C-current');
+    const names = ['rent_amount','management_fee','deposit_amount','electricity_fee_rate','equipment_fee_rate','other_fixed_fee_amount','monthly_payment_day'];
+    for (const row of [history,docs[0]]) {
+      assert.deepEqual(names.map(name => row[name]), expected);
+    }
+    assert.equal(docs.length, 1, 'owner and workspace isolation remains enforced');
+    assert.equal(JSON.stringify({data,sheets}), before, 'projections must not change stored amounts');
+  });
+}

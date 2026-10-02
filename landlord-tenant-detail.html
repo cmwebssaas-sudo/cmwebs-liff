@@ -9,9 +9,9 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261002-paper-backfill-room-tenant-v1"></script>
-  <script src="landlord-auth.js?v=20261002-paper-backfill-room-tenant-v1"></script>
-  <script src="landlord-api.js?v=20261002-paper-backfill-room-tenant-v1"></script>
+  <script src="frontend-release.js?v=20261002-tenant-lease-summary-v1"></script>
+  <script src="landlord-auth.js?v=20261002-tenant-lease-summary-v1"></script>
+  <script src="landlord-api.js?v=20261002-tenant-lease-summary-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
@@ -3252,7 +3252,21 @@
       }
 
       const rows = Array.isArray(contracts) ? contracts : [];
-      if (!CURRENT_TENANT_CONTRACTS.length) CURRENT_TENANT_CONTRACTS = rows;
+      if (!CURRENT_TENANT_CONTRACTS.length && rows.length) {
+        CURRENT_TENANT_CONTRACTS = rows.map(function (row) {
+          return Object.assign({}, row, {
+            start_date: row.start_date || row.contract_start_date || row.contract_start,
+            end_date: row.end_date || row.contract_end_date || row.contract_end,
+            is_current: Boolean(CURRENT_TENANT && CURRENT_TENANT.current_contract_id &&
+              rawText(row.contract_id) === rawText(CURRENT_TENANT.current_contract_id)),
+            read_only: true
+          });
+        });
+        const summary = document.getElementById('tenantContractSummary');
+        const history = document.getElementById('tenantContractHistory');
+        if (summary) summary.innerHTML = tenantContractSummaryHtml(CURRENT_TENANT, CURRENT_TENANT_CONTRACTS);
+        if (history) history.innerHTML = renderContractHistory(CURRENT_TENANT_CONTRACTS);
+      }
       select.innerHTML =
         '<option value="">不綁定特定租約（仍歸此房客）</option>';
 
@@ -4235,10 +4249,13 @@
             </div>
           </div>
           <nav class="tenant-evidence-links" aria-label="房客文件與入住電表">
+            <a href="#tenant-contract-summary">租金／押金與租約資料</a>
             <a href="#tenant-documents">查看／補傳合約與身分證</a>
             <a href="#tenant-initial-meter">查看／補填入住電表</a>
           </nav>
         </section>
+
+        <div id="tenantContractSummary">${tenantContractSummaryHtml(item, CURRENT_TENANT_CONTRACTS)}</div>
 
         <section class="card section-card">
           <div class="section-title-row">
@@ -4358,7 +4375,7 @@
           </div>
         </section>
 
-        ${renderContractHistory(CURRENT_TENANT_CONTRACTS)}
+        <div id="tenantContractHistory">${renderContractHistory(CURRENT_TENANT_CONTRACTS)}</div>
         ${tenantInitialMeterPanelHtml()}
 
         <section class="card section-card">
@@ -4479,6 +4496,61 @@
       bindTenantDocumentDropZones();
     }
 
+    function tenantContractMoney(value) {
+      if ((typeof value !== 'number' && typeof value !== 'string') ||
+          !rawText(value).trim() || !Number.isFinite(Number(value)) || Number(value) < 0) return '未提供';
+      return 'NT$ ' + Number(value).toLocaleString('zh-TW', { maximumFractionDigits: 3 });
+    }
+
+    function tenantContractSummaryHtml(tenant, contracts) {
+      const item = tenant || {};
+      const currentId = rawText(item.current_contract_id).trim();
+      const matches = (Array.isArray(contracts) ? contracts : []).filter(function (contract) {
+        return currentId && rawText(contract.contract_id).trim() === currentId;
+      });
+      const contract = matches.length === 1 ? matches[0] : null;
+      const status = normalizedStatus(contract && (contract.effective_contract_status || contract.contract_status || contract.status));
+      const usable = contract && !['cancelled', 'canceled', 'void', 'rejected'].includes(status);
+      if (!usable) {
+        return `<section class="card section-card" id="tenant-contract-summary">
+          <div class="section-title">目前租約資料</div>
+          <p class="tenant-document-context">尚無可確認的目前租約，請重新整理或核對下方合約版本；不以房間預設值代替合約金額。</p>
+          <a class="tenant-document-overview-link" href="#contract-history">查看合約版本紀錄 →</a>
+        </section>`;
+      }
+      const labels = { active: '租約有效', current: '租約有效', upcoming: '待起租', pending_start: '待起租', expired: '已到期／待確認續約', terminated: '已終止' };
+      const day = Number(contract.monthly_payment_day);
+      const cell = function (label, value) {
+        return `<div><span>${safeHtml(label)}</span><strong>${safeHtml(value)}</strong></div>`;
+      };
+      return `<section class="card section-card" id="tenant-contract-summary">
+        <div class="section-title-row">
+          <div class="section-title">目前租約資料</div>
+          <span class="badge">${safeHtml(labels[status] || statusText(status))}</span>
+        </div>
+        <div class="contract-history-grid">
+          ${cell('每月租金', tenantContractMoney(contract.rent_amount))}
+          ${cell('每月管理費', tenantContractMoney(contract.management_fee))}
+          ${cell('合約押金', tenantContractMoney(contract.deposit_amount))}
+          ${cell('每月繳款日', Number.isInteger(day) && day >= 1 && day <= 31 ? '每月 ' + day + ' 日' : '未提供')}
+          ${cell('租期', formatDate(contract.start_date || contract.contract_start) + ' ～ ' + formatDate(contract.end_date || contract.contract_end))}
+          ${cell('合約方式', contract.signing_mode === 'paper_backfill' || contract.contract_origin === 'paper_backfill' ? '已簽紙本補登' : '請見合約版本紀錄')}
+        </div>
+        <details>
+          <summary>其他合約費用與細節</summary>
+          <div class="contract-history-grid">
+            ${cell('合約電費單價／度', tenantContractMoney(contract.electricity_fee_rate))}
+            ${cell('合約設備耗損費／度', tenantContractMoney(contract.equipment_fee_rate))}
+            ${cell('其他固定費用', tenantContractMoney(contract.other_fixed_fee_amount))}
+            ${cell('其他費用說明', rawText(contract.other_fixed_fee_note).trim() || '未提供')}
+          </div>
+          <div class="contract-history-id">合約編號：${safeHtml(contract.contract_id)}</div>
+        </details>
+        <p class="tenant-document-context">以上為此版本合約約定，押金金額不代表已收款；不是房間預設值或本期帳單。既有帳單不會因查看資料而變更。</p>
+        <a class="tenant-document-overview-link" href="#contract-history">查看各次合約與續約紀錄 →</a>
+      </section>`;
+    }
+
     function renderContractHistory(contracts) {
       const rows = Array.isArray(contracts) ? contracts : [];
       const body = rows.length
@@ -4506,8 +4578,8 @@
                 </div>
                 <div class="contract-history-grid">
                   <div><span>租期</span><strong>${safeHtml(formatDate(contract.start_date))} ～ ${safeHtml(formatDate(contract.end_date))}</strong></div>
-                  <div><span>月租／管理費</span><strong>${money(contract.rent_amount)}／${money(contract.management_fee)}</strong></div>
-                  <div><span>押金／繳款日</span><strong>${money(contract.deposit_amount)}／每月 ${numberValue(contract.monthly_payment_day, 0) || '-'} 日</strong></div>
+                  <div><span>月租／管理費</span><strong>${tenantContractMoney(contract.rent_amount)}／${tenantContractMoney(contract.management_fee)}</strong></div>
+                  <div><span>押金／繳款日</span><strong>${tenantContractMoney(contract.deposit_amount)}／每月 ${numberValue(contract.monthly_payment_day, 0) || '-'} 日</strong></div>
                   <div><span>簽署狀態</span><strong>${safeHtml(statusText(contract.tenant_signing_submission_status || contract.contract_status || '-'))}</strong></div>
                 </div>
                 <div class="contract-history-actions">

@@ -735,7 +735,7 @@ function ldGetLandlordContracts_(landlord, contractIdFilter) {
       return true;
     })
     .map(function (row) {
-      return {
+      return Object.assign({
         contract_id: ldText_(row.contract_id),
         tenant_id: ldText_(row.tenant_id),
         tenant_name: ldText_(row.tenant_name),
@@ -744,10 +744,11 @@ function ldGetLandlordContracts_(landlord, contractIdFilter) {
         contract_status: ldText_(row.contract_status),
         contract_start: ldText_(row.start_date || row.contract_start),
         contract_end: ldText_(row.end_date || row.contract_end),
-        rent_amount: Number(row.rent_amount || 0),
-        management_fee: Number(row.management_fee || 0),
+        other_fixed_fee_note: ldText_(row.other_fixed_fee_note),
+        signing_mode: ldText_(row.signing_mode),
+        contract_origin: ldText_(row.contract_origin),
         created_at: ldText_(row.created_at || row.created_time || '')
-      };
+      }, contractRenewalHistoryReadFinancials_(row));
     });
 }
 
