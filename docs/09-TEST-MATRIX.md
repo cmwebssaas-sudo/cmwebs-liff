@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-10-02 首頁載入／手機展示（本機候選，未發布）
+
+- [x] `landlord-home-loading.test.mjs` 8項：原版6項RED（parser-blocking SDK、LINE lazy load、error／timeout／缺失SDK重試、待辦重建整頁）修正後全綠；另保留Email bridge與已載入SDK／登出LINE重導流程回歸。執行實際首頁inline與shared auth，不以mock登入函式代替。
+- [x] 不再在HTML parser critical path下載第三方SDK；Email session不用LINE SDK。LINE仍依既有LIFF ID初始化、讀profile、登入重導；30秒載入失敗有提示，移除失敗script並允許手動重試，舊callback不影響新請求。
+- [x] 待辦數量原本每次回應重寫整個app，現只更新3個badge與文字。合成browser驗證app direct-child mutations=0、chart node及focus相同、scrollTop 300→300；單次局部更新約0.6ms僅為本機觀察，不是正式API效能數字。
+- [x] 手機預覽 `/mobile` RED404→GREEN：same-origin iframe採真實手機寬度，保留原responsive renderer；僅loopback可用，CSP仍禁止外部請求及form提交，私有檔案404／POST405。373px內容寬度=scrollWidth，金額不截斷，可捲動；手機預览不是另做一套Production頁面。
+- [x] 全套503/503、validate與diff-check通過；既有progressive home→actions/report、request dedupe、錯誤隔離及失效權限清除舊資料回歸保留。
+- [x] 2026-10-03 續作補齊獨立審查的兩項測試缺口：DOM替身由實際renderer輸出建立節點，斷言原節點保留且pending class清除；手機父頁CSP明確允許同源iframe。9項定向回歸通過。
+- [ ] 正式API／LINE真機首屏時間及登入後驗收未測，不宣稱端到端快幾秒。沒有Apps Script變更或正式測試呼叫；沒有帳務緩存／業務列／Properties／LINE寫入。
+
 ## 2026-10-02 房東首頁動態設計（本機預覽，未發布）
 
 - [x] `landlord-home-motion.test.mjs` 九項 RED/GREEN：播放／暫停不改金額、OS reduced-motion 不可被按鈕覆寫、偏好切換保留手動暫停、hidden/offscreen 停播、重繪清理舊控制項／observer、錯誤卸載清理；恢復播放／退出 reduced-motion 不重播已靜止的進場圖，實際整頁錯誤 renderer 卸載舊圖表。

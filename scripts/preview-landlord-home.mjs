@@ -63,11 +63,25 @@ export function createPreviewServer() {
   return createServer((request, response) => {
     const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
     response.setHeader('Cache-Control', 'no-store');
-    response.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'");
+    response.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-src 'self'; frame-ancestors 'self'");
     if (request.method !== 'GET') { response.writeHead(405); response.end(); return; }
     if (pathname === '/') {
       response.setHeader('Content-Type', 'text/html; charset=utf-8');
       response.end(previewHtml());
+    } else if (pathname === '/mobile') {
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      response.end(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+        <title>CMWebs 手機版首頁預覽</title><style>
+        *{box-sizing:border-box}body{margin:0;background:#e9eeea;color:#173e2c;font-family:system-ui,sans-serif}
+        header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;max-width:700px;margin:auto}
+        h1{font-size:18px;margin:0}p{font-size:12px;margin:4px 0 0;color:#426151}
+        a{color:#173e2c;background:white;border:1px solid #b7cbbd;border-radius:8px;padding:12px;font-size:13px;text-decoration:none;white-space:nowrap}
+        a:focus-visible{outline:3px solid #14704c;outline-offset:3px}
+        main{width:min(390px,calc(100% - 20px));height:calc(100dvh - 92px);min-height:320px;margin:0 auto 12px;border:1px solid #afc2b6;border-radius:24px;overflow:hidden;background:#fff;box-shadow:0 12px 35px #173e2c16}
+        iframe{width:100%;height:100%;border:0;display:block}
+        </style></head><body><header><div><h1>手機版首頁</h1><p>可直接捲動 · 合成數據 · 尚未發布</p></div><a href="/">查看桌面版</a></header>
+        <main><iframe src="/" title="手機版房東首頁預覽"></iframe></main></body></html>`);
     } else if (assets.has(pathname)) {
       response.setHeader('Content-Type', assets.get(pathname) + '; charset=utf-8');
       response.end(readFileSync(new URL(pathname.slice(1), root)));

@@ -8,8 +8,7 @@
   />
   <title>CMWebs 房東首頁</title>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261002-tenant-lease-summary-v1"></script>
+  <script src="frontend-release.js?v=20261002-tenant-lease-summary-v1"></script>
   <script src="landlord-auth.js?v=20261002-tenant-lease-summary-v1"></script>
   <script src="landlord-api.js?v=20261002-tenant-lease-summary-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
@@ -1115,6 +1114,7 @@
     let LINE_USER_ID = '';
     let LANDLORD_AUTH = null;
     let toastTimer = null;
+    let homeLineSdkPromise_ = null;
 
     function setAppHeight() {
       const height =
@@ -1632,6 +1632,42 @@
       return entryUrl.href;
     }
 
+    function loadHomeLineSdk_() {
+      if (window.liff && typeof window.liff.init === 'function') return Promise.resolve(window.liff);
+      if (homeLineSdkPromise_) return homeLineSdkPromise_;
+      // Email sessions never need this download. LINE still authenticates via
+      // the same SDK, but the shell can paint while its async script arrives.
+      homeLineSdkPromise_ = new Promise(function (resolve, reject) {
+        const script = document.createElement('script');
+        let settled = false;
+        const timer = setTimeout(function () {
+          finish(new Error('LIFF SDK 載入逾時，請重新整理再試'));
+        }, 30000);
+        function finish(error) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          script.onload = script.onerror = null;
+          if (error) {
+            script.remove();
+            reject(error);
+          } else resolve(window.liff);
+        }
+        script.async = true;
+        script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
+        script.onload = function () {
+          finish(window.liff && typeof window.liff.init === 'function'
+            ? null : new Error('LIFF SDK 載入失敗，請重新整理再試'));
+        };
+        script.onerror = function () { finish(new Error('LIFF SDK 載入失敗，請重新整理再試')); };
+        document.head.appendChild(script);
+      }).catch(function (error) {
+        homeLineSdkPromise_ = null;
+        throw error;
+      });
+      return homeLineSdkPromise_;
+    }
+
     async function initLineUserId() {
       if (TEST_MODE) {
         LINE_USER_ID =
@@ -1640,14 +1676,7 @@
         return true;
       }
 
-      if (
-        typeof liff ===
-        'undefined'
-      ) {
-        throw new Error(
-          'LIFF SDK 載入失敗'
-        );
-      }
+      await loadHomeLineSdk_();
 
       await liff.init({
         liffId: LIFF_ID
@@ -2771,6 +2800,27 @@
         actionSummary.messagePending +
         actionSummary.messageProcessing;
 
+      // Late secondary counts must not rebuild the useful first render. Keep
+      // the chart connected, keyboard focus and mobile scroll position intact.
+      if (preserveDashboard && !actionsPending) {
+        const section = document.getElementById('homeActionSection');
+        const updates = [
+          ['homePaymentBadge', 'innerHTML', badgeHtml(actionSummary.paymentPending, '無待審', 'warning')],
+          ['homeContractBadge', 'innerHTML', badgeHtml(contractActionCount, '無待處理', 'purple')],
+          ['homeMessageBadge', 'innerHTML', actionSummary.messageUrgent > 0
+            ? '<span class="badge danger">緊急 ' + actionSummary.messageUrgent + '</span>'
+            : badgeHtml(messageActionCount, '無待處理', 'warning')],
+          ['homeContractDesc', 'textContent', '待審 ' + actionSummary.contractPending + ' 筆・待完成 ' + actionSummary.contractApproved + ' 筆・房東發起 ' + actionSummary.landlordInitiatedPending + ' 筆'],
+          ['homeMessageDesc', 'textContent', '待處理 ' + actionSummary.messagePending + ' 筆・處理中 ' + actionSummary.messageProcessing + ' 筆'],
+          ['homeActionStatus', 'textContent', '點擊直接處理']
+        ].map(function (item) { return [document.getElementById(item[0]), item[1], item[2]]; });
+        if (section && updates.every(function (item) { return item[0]; })) {
+          updates.forEach(function (item) { item[0][item[1]] = item[2]; });
+          section.classList.remove('actions-pending');
+          return;
+        }
+      }
+
       const app =
         document.getElementById('app');
 
@@ -2871,11 +2921,11 @@
               <div class="action-main">
                 <div class="action-title-row">
                   <div class="action-title">付款回報審核</div>
-                  ${badgeHtml(
+                  <span id="homePaymentBadge">${badgeHtml(
                     actionSummary.paymentPending,
                     '無待審',
                     'warning'
-                  )}
+                  )}</span>
                 </div>
                 <div class="action-desc">
                   核對匯款日期、後五碼及付款帳款
@@ -2902,6 +2952,7 @@
               <div class="action-main">
                 <div class="action-title-row">
                   <div class="action-title">合約申請管理</div>
+                  <span id="homeContractBadge">
                   ${
                     contractActionCount > 0
                       ? (
@@ -2913,8 +2964,9 @@
                           '<span class="badge green">無待處理</span>'
                         )
                   }
+                  </span>
                 </div>
-                <div class="action-desc">
+                <div class="action-desc" id="homeContractDesc">
                   待審 ${actionSummary.contractPending} 筆・待完成 ${actionSummary.contractApproved} 筆・房東發起 ${actionSummary.landlordInitiatedPending} 筆
                 </div>
               </div>
@@ -2938,6 +2990,7 @@
               <div class="action-main">
                 <div class="action-title-row">
                   <div class="action-title">房客訊息</div>
+                  <span id="homeMessageBadge">
                   ${
                     actionSummary.messageUrgent > 0
                       ? (
@@ -2951,8 +3004,9 @@
                           'warning'
                         )
                   }
+                  </span>
                 </div>
-                <div class="action-desc">
+                <div class="action-desc" id="homeMessageDesc">
                   待處理 ${actionSummary.messagePending} 筆・處理中 ${actionSummary.messageProcessing} 筆
                 </div>
               </div>

@@ -1,5 +1,13 @@
 # CMWebs Changelog
 
+## 2026-10-02 — 首頁載入與手機預覽改善（未發布）
+
+- 移除首頁head中阻塞HTML解析的LINE SDK。只在既有LINE驗證路徑非同步載入，Email模式不再下載；成功SDK沿用，失敗／30秒逾時可手動重試。不改驗證條件、API或憑證儲存。
+- 待辦資料回傳只更新badge與說明，不再重建整個首頁；保留圖表節點、焦點與手機捲動。既有先顯示主要金額、圖表及待辦獨立載入的順序不變。
+- 8項載入回歸加1項手機preview route保護測試、全套503/503、validate通過；合成browser確認局部更新0次app子節點替換且保留焦點／捲動。`node scripts/preview-landlord-home.mjs`輸出網址加`/mobile`可直接查看手機框，無需改瀏覽器寬度；只開同源合成頁iframe，不放寬外部請求或正式操作。不代表實體手機或Production效能驗收。
+- 2026-10-03 斷線續作：獨立審查無Critical／Important；補強實際模板節點、pending狀態與手機父頁iframe CSP檢查，9項定向回歸通過。不擴大發布授權。
+- 沿用本機候選分支，未push／PR／merge／deploy；release tag不變。發布前仍需批准Pages版本、更新cache tag及正式登入檢查；可回退本次homepage loading改動至3886cf8，不涉及後端或資料還原。
+
 ## 2026-10-02 — 房東首頁動態設計（本機候選，未發布）
 
 - 使用者同意既有首頁動態／綠色視覺方向及可操作本機預覽。新樣式只由 `landlord-home.html` 引用，不改共享 sidebar、其他頁、登入、數據計算或 API。

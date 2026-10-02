@@ -1,7 +1,19 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-10-02 (Asia/Taipei)**
+**Last verified: 2026-10-03 (Asia/Taipei; local homepage candidate only)**
+
+## 2026-10-02 首頁載入／手機展示：本機候選延伸，未發布
+
+使用者要求加快載入並直接展示手機介面。沿用 `codex/landlord-home-motion-preview-20261002` 的已完成視覺候選3886cf8；root408筆WIP保留。不開專案討論，不碰先前待登入501資料。
+
+找到兩項前端等待／重繪：head LINE SDK阻塞解析，Email亦下載；次要待辦回來時重建整個app。現SDK只在LINE路徑async載入，失敗／30秒逾時清理並可手動重試；Email直接沿用原保護bootstrap。待辦更新局部badge／描述，保留chart node、focus及scroll。原API／權限／金額算法／progressive順序／錯誤隔離不變；不新增持久帳務緩存。8項載入回歸（6 RED→GREEN）加1項手機preview路由RED→GREEN、全套503/503／validate通過，本機browser確認0次app子節點替換、焦點及300px捲動保留。預覽程式輸出的loopback網址加`/mobile`直接展示可捲動手機框，不需瀏覽器viewport override；373px內容無水平溢出。合成數據、不是正式登入或真機驗收，端到端正式載入秒數未量測。
+
+2026-10-03 斷線續作fresh Git仍為候選3886cf8、root408筆WIP；獨立審查APPROVE WITH NITS（僅本機候選，無Critical／Important）。兩項Minor測試缺口已補強：實際renderer節點來源／pending class清除，以及手機父頁frame-src同源放行；9項定向回歸通過。此日期不代表重新核對正式版本。
+
+續作最終validate／503項完整回歸／diff-check全數通過。斷線後重啟本機loopback preview，重新開啟可操作手機框；373px clientWidth=scrollWidth，實際捲動至576px可查看趨勢及營運圖表。新分頁console記錄一條MutationObserver observe TypeError（source URL未提供；本次允許的preview來源無此API），不將其當作正式網站缺陷或宣稱console-clean。正式登入／SDK／真機及端到端速度仍未驗收。
+
+沒有發布授權，故未push／PR／merge／Pages／Apps Script或業務資料操作；共享release tag保留原值。後續使用者批准後，僅首頁frontend slice沿既有Pages流程、新cache tag／公開讀回／登入核對；新效能slice可回退至3886cf8，整體視覺候選可回退至133549e。Apps Script v205與先前501待登入狀態不因此改變。
 
 ## 2026-10-02 房東首頁動態視覺：本機預覽候選，未發布
 
