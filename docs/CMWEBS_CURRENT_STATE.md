@@ -3,7 +3,15 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
-## 2026-10-02 房客租約金額摘要修復候選
+## 2026-10-02 房客租約摘要 v205／Pages 已發布；登入驗收待完成
+
+已審查候選 `c583d36` 建立 immutable **205**，完整59檔匯出與候選一致，tree SHA-256 `28e2c9680297d1ad60b898e1abf6de32990904903c950fa6d571d5b65c8beca1`。原正式 Web App CLI讀回205，URL不變，其他四個 deployment與rollback204保留；106版本／94可用位置，未刪版本。PR **#201** 合併為 **657ec08**，Pages workflow **36985692299** 成功；41個公開檔案逐位元組與合併來源相同，合併後validate／485/485／diff-check通過。
+
+房客→查看資料→「目前租約資料」直接顯示租金／管理費／合約押金／租期／繳款日；「其他合約費用與細節」展開既有費率與費用說明。只依明確current租約，缺值不冒充0，押金不是實收證明。文件／電表／歷史版本保留。獨立審查原Important讀值問題與Minor無current選版問題已修，scoped複驗48/48及8個數值邊界通過，無剩餘確認finding。
+
+**正式登入畫面及手機真機未驗收，501先前授權三欄仍未保存。** 瀏覽器仍是房東Email登入頁，已請使用者登入；不直接改Sheets繞過房東權限。没有改業務列、原租約／日期／歷史帳單、私人檔案、Schema、Properties、trigger或LINE。原root408筆混合WIP保留。Rollback同Web App **v204**／Pages **cc01e81**；owner-only HEAD/v204/v205匯出留在本機，不提交私有資料。
+
+## 2026-10-02 房客租約金額摘要修復候選（發布前歷史）
 
 使用者回報房客詳細資料未連動租金、押金與細節。隔離分支 `codex/tenant-lease-details-20261002` 從 fresh main `cc01e81` 開始，建議模型／速度 `gpt-5.6-terra / medium`。程式追查確認既有 `landlord_tenants.contract_history` 已有金額，但只在帳款下方版本紀錄顯示；文件補回歷史後沒有重繪合約區。候選在個人資料下方顯示 exact current lease 的租金／管理費／押金／租期／繳款日及既有費率，保留歷史版與文件／電表入口。0 與缺值分開，不以房間舊預設、帳單或任意歷史金額替代。
 

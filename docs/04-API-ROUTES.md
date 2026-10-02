@@ -1,6 +1,6 @@
 # CMWebs V2 API Routes
 
-## 2026-10-02 房客租約金額讀回（發布候選）
+## 2026-10-02 房客租約金額讀回（v205／Pages已發布）
 
 既有 `landlord_tenants.contract_history` 及 `landlord_contract_documents_init.contracts` 的租金、管理費、押金、電費單價、設備耗損單價、其他固定費與繳款日為唯讀 number／null。明確0不得由legacy alias覆蓋；canonical空白才取既有alias，缺失／非法非負數回null而非捏造0。文件回應另保留同租約的費用說明、紙本來源與簽署方式，既有Workspace／房東／合約filter不變。
 

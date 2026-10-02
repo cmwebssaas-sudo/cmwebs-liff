@@ -1,13 +1,13 @@
 {
   "verified_on": "2026-10-02",
-  "source_commit": "018a70b7b056fde7e75b377efbb578c134a2d0d9",
+  "source_commit": "c583d36374d19af4b526af229828b8dded4d0290",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 204,
-  "frontend_revision": "2143a27dbc612ca83ccfa0d7eda9f7159e960d7e",
-  "frontend_workflow": "36975283281",
+  "backend_version": 205,
+  "frontend_revision": "657ec08274faa1150af082906f7c9ecb84b4b89e",
+  "frontend_workflow": "36985692299",
   "frontend_public_file_count_verified": 41,
   "backend_file_count": 59,
-  "backend_tree_sha256": "4f18ba0690d56ad0ca35586f14b95a5cce4295d444d68566b527870eec7190cd",
+  "backend_tree_sha256": "28e2c9680297d1ad60b898e1abf6de32990904903c950fa6d571d5b65c8beca1",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -29,16 +29,16 @@
     "landlord-auth.js",
     "landlord-responsive.css"
   ],
-  "scope": "User-confirmed V2.0 paper-backfill room-money synchronization and exact scheduled-paper tenant lifecycle repair. Fresh serving and editor HEAD v203 exports matched the 59-file Git baseline; candidate 018a70b created immutable v204 with all 59 files byte-identical. Existing formal deployment reads back v204 in CLI and Google UI at the unchanged URL; four other deployments and rollback v203 remain unchanged. PR 199 merged at 2143a27; Pages workflow 36975283281 succeeded and 41 public files (changed root public files plus the original verification list) are byte-identical. Post-merge validate and 477/477 passed. Only room 501 settings rent 19570, management 0 and deposit 39140 are approved for an authenticated edit; that save and authenticated browser acceptance are PENDING because the handed-off browser is at the Email login entrance. No business-row, lease/date/history, private-file, schema, Properties, trigger or LINE writes were performed. Do not substitute HTTP/local tests for authenticated or physical-device acceptance. Prior 506 document/meter recovery and 502 expired-occupied safeguards are retained; missing real initial readings must not be invented. No version deletion in this release. Rollback: existing Web App v203; frontend f59e205.",
+  "scope": "V2.0 tenant detail correctness repair: exact current-lease rent, management, contractual deposit, Taipei dates/payment day and existing rates. Read projections retain explicit zero and null for unknown values without changing write/default normalizers; document fallback refreshes only summary/history, preserving meter and file forms. Fresh serving/editor HEAD v204 exports matched all 59 baseline files; reviewed c583d36 created immutable v205, all 59 files byte-identical. Existing formal deployment CLI reads back v205 at unchanged URL; four other deployments unchanged and v204 rollback retained. PR201 merged at657ec08; Pages workflow36985692299 succeeded and 41 public files are byte-identical. Post-merge validate, 485/485 tests and diff-check pass. No business-row, lease/date/history, private-file, schema, Properties, trigger or LINE writes, and no version deletion. Authenticated browser/physical-device acceptance and previously approved room501-only settings save (rent19570, management0, deposit39140) remain PENDING: browser is at landlord Email login; no direct Sheets write or auth bypass. Prior506 document/meter recovery and502 expired-occupied protection remain. Rollback same Web App v204, frontend cc01e81.",
   "rollback": {
-    "backend_version": 203,
-    "frontend_revision": "f59e20527d1c6cbb10beff236aa03246748f3763"
+    "backend_version": 204,
+    "frontend_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
   "version_inventory_verified": {
-    "highest_version": 204,
-    "remaining_version_count": 105,
-    "available_slots": 95,
-    "rollback_203_retained": true,
+    "highest_version": 205,
+    "remaining_version_count": 106,
+    "available_slots": 94,
+    "rollback_204_retained": true,
     "deleted_versions_in_this_release": 0
   },
   "historical_batch_cleanup": {
