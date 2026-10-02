@@ -3,7 +3,17 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
-## 2026-10-02 紙本補登金額／待起租房客候選（未發布）
+## 2026-10-02 紙本補登金額／待起租房客 v204 與 Pages 已發布；501 三欄同步待登入
+
+使用者確認發布修正版，並只將 501 房間設定同步為月租 NT$19,570、管理費 NT$0、押金 NT$39,140；不改租約、租期或歷史帳單。Fresh Git main 為 `f59e205`，正式 Web App 與 editor HEAD 的 59 檔皆符合 v203；正式專案／帳戶及原 deployment 已核對。原目錄仍保留 408 筆混合 WIP，不開無關專案討論。
+
+已審查候選 `018a70b` 建立 immutable **204**，完整 59 檔匯出逐位元組一致，tree SHA-256 `4f18ba0690d56ad0ca35586f14b95a5cce4295d444d68566b527870eec7190cd`。既有正式 Web App 在 CLI 與 Google 管理部署畫面讀回 204，URL 不變；另四個 deployment 及 v203 rollback 保留，未刪版本。PR **#199** 合併為 **2143a27**，Pages workflow **36975283281** 的 build／report／deploy 成功；41 個公開檔案（所有本次修改的頂層公開檔加原驗證清單）逐位元組與合併來源相同，合併後 validate／477/477／diff-check 通過。
+
+發布前 501 定點唯讀核對仍符合原診斷：房間 canonical 金額是舊值，新租約金額與日期及房客／room／contract 指標一致、租約待起租。**尚未修改 501 三欄，登入後畫面驗收仍未完成**：交付瀏覽器仍停在 Email 登入入口，已請使用者登入。不得使用 Sheets 直接寫入來略過既有房東編輯權限，也不得以本地／HTTP／部署證據替代 authenticated 或真機驗收。
+
+只在使用者完成登入後，從既有 501 房間編輯入口保存已授權三欄，讀回房間新值並唯讀核對租約／租期不變與房客待起租入口。未重送補登、未建新房客／租約／邀請，未開私人原檔、代填電表、改歷史帳單／Schema／Properties／trigger 或發 LINE。本次沒有更動任何業務列；506 文件與電表路線及 502 到期未確認的待核對保護保留。Rollback：同一 Web App **v203**，Pages **f59e205**。Owner-only 發布前 HEAD／v203 與新 v204 匯出及 Google 部署畫面留存在本機私有備份目錄，不提交原始識別碼或私有資料。
+
+## 2026-10-02 紙本補登金額／待起租房客候選（發布前歷史）
 
 建議模型／速度 `gpt-5.6-terra / medium`。隔離分支 `codex/paper-lease-room-tenant-20261002`，基線 `f59e205`；主目錄 408 筆混合 WIP 保留，不開無關專案討論。
 

@@ -1,6 +1,13 @@
 # CMWebs Changelog
 
-## 2026-10-02 — 紙本補登金額同步與待起租房客（本地候選，未發布）
+## 2026-10-02 — 紙本補登金額／待起租房客 v204 與 Pages 發布
+
+- 使用者確認發布及只同步 501 的三個房間金額；租約／租期／歷史帳單不在資料寫入範圍。Fresh serving／HEAD v203 59 檔與 Git main 相同，候選 `018a70b` 已完整核對。
+- Immutable v204 的 59 檔與候選逐位元組一致；原正式 deployment 在 CLI／Google UI 讀回 204、URL 不變，另四個 deployment 及 rollback203 保留，未刪版本。
+- PR #199 合併 `2143a27`，Pages workflow `36975283281` 成功，41 個公開檔案與合併來源相同；合併後 validate／477/477／diff-check 通過。共享 cache tag `20261002-paper-backfill-room-tenant-v1` 已發布。
+- 501 三欄正式同步及登入畫面驗收仍待使用者登入；目前沒有業務列／私人原檔／Schema／Properties／trigger／LINE 寫入，不把部署或測試當成真人驗收。Rollback v203／Pages `f59e205`，原混合 WIP 保留。
+
+## 2026-10-02 — 紙本補登金額同步與待起租房客（發布前候選歷史）
 
 - 修正補登只寫租約金額、房間仍保留舊預設的缺口：在原回滾交易同步租金／管理費／押金，0 不被當缺失；失敗會還原原值／指標，冪等重送不重建。
 - 已補登、未起租的紙本房客不再從清單消失；僅同 Workspace 且 canonical 房客／房間／current 指標一致的簽署紙本顯示「待起租」，附起租日及查看入口。未簽電子草稿、錯誤指標與跨 Workspace 仍拒絕。
