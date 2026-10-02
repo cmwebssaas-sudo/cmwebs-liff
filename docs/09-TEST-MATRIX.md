@@ -1,5 +1,12 @@
 # V2 回歸測試矩陣
 
+## 2026-10-03 首頁前端正式發布（已授權，執行中）
+
+- [x] fresh Pages來源main根目錄、built commit133549e與origin/main一致；回退目標記錄，root408筆WIP保留。
+- [x] 新cache tag20261003-landlord-home-motion-loading-v1；503/503完整回歸、validate及diff-check通過。42個既有靜態標記／驗證／測試檔的未提交變更只有固定tag替換，Apps Script diff為空。
+- [ ] PR／Pages及所有變更靜態資產逐檔讀回。
+- [ ] 正式登入後首頁／LINE實體手機驗收；本機手機預覽不等同此項。後端／API／Schema不變，沒有測試業務寫入或LINE發送。
+
 ## 2026-10-02 首頁載入／手機展示（本機候選，未發布）
 
 - [x] `landlord-home-loading.test.mjs` 8項：原版6項RED（parser-blocking SDK、LINE lazy load、error／timeout／缺失SDK重試、待辦重建整頁）修正後全綠；另保留Email bridge與已載入SDK／登出LINE重導流程回歸。執行實際首頁inline與shared auth，不以mock登入函式代替。

@@ -3,6 +3,12 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-03 (Asia/Taipei; local homepage candidate only)**
 
+## 2026-10-03 首頁前端發布授權：執行中
+
+使用者在查看手機本機預覽後明確要求「發布到正式網站」。本次範圍為V2.1既有首頁視覺／動畫與載入整併，候選286ebe3（含3886cf8），不增加報表、API、資料欄位或後端功能。fresh origin/main與Pages最新built皆為133549eed5d3a5ae57f2d3c112953780ef1369f6，Pages來源main根目錄；isolated分支乾淨，root408筆WIP不碰。
+
+新固定cache tag為20261003-landlord-home-motion-loading-v1；其他頁僅同步靜態asset標記與測試預期。不改Apps Script／Schema／Properties／trigger／LINE／房客或帳務資料；後端最後記錄v205保留，本次不建立新版。發布前端回退基線為133549e（保留本次local分支），循PR→merge main→Pages→逐檔公開讀回；Production登入／真機驗收與實際端到端秒數分開記錄，不能以本機503項測試或示範數據代替。
+
 ## 2026-10-02 首頁載入／手機展示：本機候選延伸，未發布
 
 使用者要求加快載入並直接展示手機介面。沿用 `codex/landlord-home-motion-preview-20261002` 的已完成視覺候選3886cf8；root408筆WIP保留。不開專案討論，不碰先前待登入501資料。

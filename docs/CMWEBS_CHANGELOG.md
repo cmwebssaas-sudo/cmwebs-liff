@@ -1,5 +1,10 @@
 # CMWebs Changelog
 
+## 2026-10-03 — 首頁前端正式發布授權（進行中）
+
+- 使用者批准發布本機已驗證候選286ebe3：既有首頁綠色視覺、圖表進場／圓環旋轉、手動暫停／reduced-motion、Email省去LINE SDK下載、待辦原地更新。正式mobile仍是同一responsive homepage；`/mobile`只屬本機預覽，不建立新正式路由。
+- 核對origin/main及Pages built133549e作frontend rollback，cache tag更新20261003-landlord-home-motion-loading-v1；其他頁僅機械式靜態標記同步。Apps Script／API／Schema／業務資料不變，最後記錄v205不因本次前端發布宣稱重新驗證。待PR／Pages及公開逐檔比對完成後另記成功證據。
+
 ## 2026-10-02 — 首頁載入與手機預覽改善（未發布）
 
 - 移除首頁head中阻塞HTML解析的LINE SDK。只在既有LINE驗證路徑非同步載入，Email模式不再下載；成功SDK沿用，失敗／30秒逾時可手動重試。不改驗證條件、API或憑證儲存。
