@@ -1,5 +1,17 @@
 # V2 回歸測試矩陣
 
+## 2026-10-02 房東首頁動態設計（本機預覽，未發布）
+
+- [x] `landlord-home-motion.test.mjs` 九項 RED/GREEN：播放／暫停不改金額、OS reduced-motion 不可被按鈕覆寫、偏好切換保留手動暫停、hidden/offscreen 停播、重繪清理舊控制項／observer、錯誤卸載清理；恢復播放／退出 reduced-motion 不重播已靜止的進場圖，實際整頁錯誤 renderer 卸載舊圖表。
+- [x] 既有首頁 renderer／12 月合計／30-60-90 buckets／語意色及 progressive bootstrap 回歸保留；全套 494/494、`npm run validate`、inline syntax、`git diff --check` 通過。
+- [x] 本機合成資料瀏覽器：桌面、390px、375px、844×390 橫向無水平溢出；金額完整，底部導覽固定。新動畫／明細控制項至少44px高。
+- [x] 實際點擊暫停後圓環 animation-play-state=paused，線／柱顯示最終完整幾何；中央文字 transform=none。模擬系統 reduced-motion 後三圖 animation=none。
+- [x] 審查後再次 browser 點擊恢復播放：circle orbit=running，line／bar animation-name 仍為 none，沒有回零重播；重新載入才開始新一輪進場。
+- [x] Preview server 只監聽 loopback，allowlist 僅首頁與3個靜態素材；CSP 禁止外部請求，移除正式 SDK／auth／API scripts，直接使用合成 fixture 呼叫實際 renderer，沒有登入／業務 API 呼叫。預覽的業務連結不執行正式操作。
+- [ ] 正式發布、登入驗收及手機真機驗收：未執行；這次使用者只核准本機設計預覽。
+
+沒有新增圖表種類、API／Schema／業務寫入；只是既有首頁的視覺和動態。Apps Script 模組沒有修改，未呼叫正式測試函式。後續需單獨授權 frontend release；不可把本機 preview 當成 Production acceptance。
+
 ## 2026-10-02 房客租約摘要（v205／Pages已發布）
 
 - [x] 5 項 RED/GREEN 實際 loadPage／renderer 回歸：目前租約的租金、零管理費、押金、台北租期與繳款日放在聯絡資料前；不使用帳單／房間預設或任意歷史版本。

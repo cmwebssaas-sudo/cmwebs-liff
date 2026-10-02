@@ -945,6 +945,8 @@
     }
     .actions-pending .badge, .actions-pending .action-desc { display: none; }
   </style>
+  <link rel="stylesheet" href="landlord-home.css?v=20261002-tenant-lease-summary-v1" />
+  <script src="landlord-home-motion.js?v=20261002-tenant-lease-summary-v1"></script>
 </head>
 
 <body>
@@ -2280,7 +2282,7 @@
       const paths = series
         .map(function (key) {
           return (
-            '<path d="' +
+            '<path class="dashboard-line dashboard-entrance" pathLength="1" d="' +
             path(key) +
             '" fill="none" stroke="' +
             dashboardSeriesColor_(key) +
@@ -2295,7 +2297,7 @@
           return safeRows
             .map(function (row, index) {
               return (
-                '<circle cx="' +
+                '<circle class="dashboard-point dashboard-entrance" style="--point-delay:' + (index * 55) + 'ms" cx="' +
                 x(index).toFixed(1) +
                 '" cy="' +
                 y(row && row[key]).toFixed(1) +
@@ -2381,13 +2383,13 @@
         ) +
         '</title><circle cx="60" cy="60" r="' +
         radius +
-        '" fill="none" stroke="#E7EDF0" stroke-width="13"/><circle cx="60" cy="60" r="' +
+        '" fill="none" stroke="#E7EDF0" stroke-width="13"/><g class="dashboard-orbit"><circle class="dashboard-arc dashboard-entrance" cx="60" cy="60" r="' +
         radius +
-        '" fill="none" stroke="#06C755" stroke-width="13" stroke-linecap="round" stroke-dasharray="' +
+        '" fill="none" stroke="#06C755" stroke-width="13" stroke-linecap="' + (ratio === 0 ? 'butt' : 'round') + '" stroke-dasharray="' +
         (circumference * ratio).toFixed(1) +
         ' ' +
         circumference.toFixed(1) +
-        '" transform="rotate(-90 60 60)"/><text x="60" y="65" text-anchor="middle" fill="#17211B" font-size="20" font-weight="900">' +
+        '" transform="rotate(-90 60 60)"/></g><text x="60" y="65" text-anchor="middle" fill="#17211B" font-size="20" font-weight="900">' +
         dashboardEscape_(
           dashboardPercent_(ratio)
         ) +
@@ -2423,7 +2425,7 @@
           const y = baseline - barHeight;
 
           return (
-            '<rect x="' +
+            '<rect class="dashboard-bar dashboard-entrance" style="--bar-delay:' + (index * 90) + 'ms" x="' +
             x +
             '" y="' +
             y.toFixed(1) +
@@ -2494,6 +2496,10 @@
         dashboardTrendTotals_(rows);
 
       host.innerHTML = `
+        <div class="dashboard-motion-toolbar">
+          <div class="dashboard-motion-copy"><strong>營運數據，一目了然</strong><span data-motion-status></span></div>
+          <button type="button" class="dashboard-motion-toggle" data-motion-toggle aria-pressed="false" aria-controls="landlordRevenueChart landlordOccupancyChart landlordContractExpiryChart">暫停動畫</button>
+        </div>
         <section class="dashboard-card trend-card">
           <div class="dashboard-section-heading">
             <div>
@@ -2531,11 +2537,13 @@
           </div>
         </section>
       `;
+      if (typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.mount(host);
     }
 
     function renderLandlordDashboardError_(
       message
     ) {
+      if (typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.unmount();
       const host =
         document.getElementById(
           'landlordDashboardState'
@@ -2687,6 +2695,7 @@
       preserveDashboard
     ) {
       const previousDashboard = preserveDashboard && document.getElementById('landlordDashboardState');
+      if (!previousDashboard && typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.unmount();
       const actionsPending = !actionSummary;
       actionSummary = actionSummary || buildActionSummary({}, {}, {}, {});
       const workspaceContext =
@@ -2768,6 +2777,7 @@
       app.innerHTML = `
         <header class="dashboard-page-header">
           <div>
+            <div class="dashboard-brand">CMWEBS · LANDLORD WORKSPACE</div>
             <h1 class="dashboard-page-title">
               您好，${safeHtml(home.landlord_name || '房東')}
             </h1>
@@ -3109,6 +3119,7 @@
     }
 
     function renderError(message) {
+      if (typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.unmount();
       const app =
         document.getElementById('app');
 

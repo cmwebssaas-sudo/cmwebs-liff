@@ -1,5 +1,13 @@
 # CMWebs Changelog
 
+## 2026-10-02 — 房東首頁動態設計（本機候選，未發布）
+
+- 使用者同意既有首頁動態／綠色視覺方向及可操作本機預覽。新樣式只由 `landlord-home.html` 引用，不改共享 sidebar、其他頁、登入、數據計算或 API。
+- 入住率弧線展開後緩慢轉動，中央比例保持固定；收租線條逐段描繪、資料點淡入，到期長條依序上升。可暫停，尊重 reduced-motion，hidden／offscreen 停播；無 JS 時仍是完整靜態圖。
+- 桌面雙欄、手機上下排；改善留白、字級、卡片及金額閱讀，保留藍應收／綠已收／紅欠款及完整固定 shell。
+- 全套494/494、validate、桌面／375／390／橫向合成預覽及暫停／reduced-motion通過。獨立審查後補修恢復動畫不重播進場、整頁錯誤卸載監聽；新增三項RED/GREEN並再次確認browser狀態。沒有部署；靜態 release tag 尚未更新，Apps Script／Sheets／LINE 未動。
+- 本機啟動：`node scripts/preview-landlord-home.mjs`，使用輸出的 loopback URL。僅示範資料，不可用來管理真實房客。未批准發布前保留候選；若日後發布，僅 Pages frontend slice／新cache tag，回退本次三個 runtime 檔即可，無 backend rollback。
+
 ## 2026-10-02 — 房客租約摘要 v205／Pages 已發布
 
 - v205完整59檔與已審查c583d36一致；原Web App URL不變、CLI讀回205，其他部署與v204 rollback保留，未刪版本。

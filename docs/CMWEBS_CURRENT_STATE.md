@@ -3,6 +3,14 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
+## 2026-10-02 房東首頁動態視覺：本機預覽候選，未發布
+
+使用者同意「旋轉入住圓環／固定中央數字、長條與趨勢線進場、暫停及 reduced-motion、綠色精緻 UI」方向，只核准可操作本機預覽。`codex/landlord-home-motion-preview-20261002` 由 fresh `origin/main` / `133549e` 建立，沿用既有隔離 worktree；主目錄408筆混合WIP保持不動。不開無關專案討論。
+
+只更動 `landlord-home.html` 視覺標記及新增 home-scoped CSS／motion controller，既有金額、12月合計、KPI、API、登入、業務連結和固定shell不變。九項新motion RED/GREEN／全套494項／validate／inline syntax／diff-check通過；桌面、375／390px及橫向合成瀏覽器預覽無水平溢出，暫停／系統reduced-motion實際控制已核對。審查發現的恢復播放重播進場與整頁錯誤未卸載listener已補修並回歸，browser確認恢復時line/bar仍靜止完整。此證據不是Production登入或真機驗收。
+
+預覽：`node scripts/preview-landlord-home.mjs`，隨機loopback port，合成資料且CSP阻擋外部請求／正式操作。沒有push、PR、merge、Pages／Apps Script發布、業務列、Properties／trigger或LINE操作；共享release tag保留正式既有值。待使用者檢視後另行批准發布，屆時更新靜態cache tag並沿既有Pages流程；回退只涉及homepage runtime三檔，無後端變更。先前v205已發布／501三欄待登入的狀態未被本次視覺候選取代。
+
 ## 2026-10-02 房客租約摘要 v205／Pages 已發布；登入驗收待完成
 
 已審查候選 `c583d36` 建立 immutable **205**，完整59檔匯出與候選一致，tree SHA-256 `28e2c9680297d1ad60b898e1abf6de32990904903c950fa6d571d5b65c8beca1`。原正式 Web App CLI讀回205，URL不變，其他四個 deployment與rollback204保留；106版本／94可用位置，未刪版本。PR **#201** 合併為 **657ec08**，Pages workflow **36985692299** 成功；41個公開檔案逐位元組與合併來源相同，合併後validate／485/485／diff-check通過。
