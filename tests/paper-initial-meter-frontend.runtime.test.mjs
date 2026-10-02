@@ -260,7 +260,7 @@ const meterData = (changes = {}) => ({contract_id:'C-current',tenant_id:'T-fixtu
 function detailLoadFixture(history = [{contract_id:'C-current',tenant_id:'T-fixture',is_current:true}]) {
   const r = detailFixture();
   r.context.__tenantResponse = {success:true,data:{tenants:[{
-    tenant_id:'T-fixture',tenant_name:'Fixture tenant',room_list:'506',contract_history:history
+    tenant_id:'T-fixture',tenant_name:'Fixture tenant',room_list:'506',current_contract_id:'C-current',contract_history:history
   }]}};
   r.context.__meterResponse = meterData();
   let finishDocuments;
@@ -353,6 +353,7 @@ test('tenant summary does not guess a current lease when its pointer is missing 
   for (const [pointer,history] of [
     ['C-missing',[{contract_id:'C-other',is_current:true,rent_amount:99000}]],
     ['', [{contract_id:'C-old',rent_amount:99000}]],
+    ['', [{contract_id:'C-old',is_current:true,rent_amount:99000}]],
     ['C-current',[{contract_id:'C-current',rent_amount:99000},{contract_id:'C-current',rent_amount:88000}]]
   ]) {
     r.context.__tenant = {tenant_id:'T-fixture',current_contract_id:pointer,contract_history:history};

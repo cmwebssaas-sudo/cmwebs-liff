@@ -4506,7 +4506,7 @@
       const item = tenant || {};
       const currentId = rawText(item.current_contract_id).trim();
       const matches = (Array.isArray(contracts) ? contracts : []).filter(function (contract) {
-        return currentId ? rawText(contract.contract_id).trim() === currentId : contract.is_current === true;
+        return currentId && rawText(contract.contract_id).trim() === currentId;
       });
       const contract = matches.length === 1 ? matches[0] : null;
       const status = normalizedStatus(contract && (contract.effective_contract_status || contract.contract_status || contract.status));

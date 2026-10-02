@@ -280,9 +280,33 @@ function contractRenewalHistoryEvaluateNotice_(contract, noticeDate, options) {
   };
 }
 
+// Read models must not borrow the write/default normalizer's missing-to-zero
+// behavior. Explicit zero wins over legacy aliases; absent/invalid is unknown.
+function contractRenewalHistoryReadFinancials_(row) {
+  const source = row || {};
+  const number = function (key, alias) {
+    let value = source[key];
+    if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) {
+      value = alias ? source[alias] : null;
+    }
+    if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  };
+  return {
+    rent_amount: number('rent_amount', 'monthly_rent'),
+    management_fee: number('management_fee', 'monthly_management_fee'),
+    deposit_amount: number('deposit_amount'),
+    electricity_fee_rate: number('electricity_fee_rate'),
+    equipment_fee_rate: number('equipment_fee_rate'),
+    other_fixed_fee_amount: number('other_fixed_fee_amount'),
+    monthly_payment_day: number('monthly_payment_day', 'payment_day')
+  };
+}
+
 function contractRenewalHistoryList_(rows) {
   const normalizedRows = (Array.isArray(rows) ? rows : []).map(function (row) {
-    return Object.assign({}, row, contractRenewalHistoryNormalizeContract_(row), {
+    return Object.assign({}, row, contractRenewalHistoryNormalizeContract_(row), contractRenewalHistoryReadFinancials_(row), {
       read_only: true,
       is_current: false
     });

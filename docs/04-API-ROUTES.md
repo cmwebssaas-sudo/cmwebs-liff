@@ -1,5 +1,11 @@
 # CMWebs V2 API Routes
 
+## 2026-10-02 房客租約金額讀回（發布候選）
+
+既有 `landlord_tenants.contract_history` 及 `landlord_contract_documents_init.contracts` 的租金、管理費、押金、電費單價、設備耗損單價、其他固定費與繳款日為唯讀 number／null。明確0不得由legacy alias覆蓋；canonical空白才取既有alias，缺失／非法非負數回null而非捏造0。文件回應另保留同租約的費用說明、紙本來源與簽署方式，既有Workspace／房東／合約filter不變。
+
+房客摘要只接受明確 `current_contract_id` 唯一匹配，不用歷史推定flag、房間預設或帳單替代；null顯示未提供。原寫入與續約預設normalizer不變，不新增route或Schema，不回寫任何資料。
+
 ## 2026-10-02 紙本補登金額與待起租房客（本地候選，未發布）
 
 - 既有 `landlord_contract_paper_backfill` 在同一交易同步 `V2_rooms.rent_amount`、`management_fee`、`deposit_amount`；零元管理費是明確值，失敗與房客／租約／文件／檢視一起回滾。不改已出帳、不在讀取時修資料、不自動遷移舊列。
