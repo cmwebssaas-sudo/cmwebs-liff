@@ -8,10 +8,9 @@
   />
   <title>CMWebs 房東首頁</title>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261002-tenant-lease-summary-v1"></script>
-  <script src="landlord-auth.js?v=20261002-tenant-lease-summary-v1"></script>
-  <script src="landlord-api.js?v=20261002-tenant-lease-summary-v1"></script>
+  <script src="frontend-release.js?v=20261003-landlord-home-motion-loading-v1"></script>
+  <script src="landlord-auth.js?v=20261003-landlord-home-motion-loading-v1"></script>
+  <script src="landlord-api.js?v=20261003-landlord-home-motion-loading-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
   <style>
@@ -945,6 +944,8 @@
     }
     .actions-pending .badge, .actions-pending .action-desc { display: none; }
   </style>
+  <link rel="stylesheet" href="landlord-home.css?v=20261003-landlord-home-motion-loading-v1" />
+  <script src="landlord-home-motion.js?v=20261003-landlord-home-motion-loading-v1"></script>
 </head>
 
 <body>
@@ -1113,6 +1114,7 @@
     let LINE_USER_ID = '';
     let LANDLORD_AUTH = null;
     let toastTimer = null;
+    let homeLineSdkPromise_ = null;
 
     function setAppHeight() {
       const height =
@@ -1630,6 +1632,42 @@
       return entryUrl.href;
     }
 
+    function loadHomeLineSdk_() {
+      if (window.liff && typeof window.liff.init === 'function') return Promise.resolve(window.liff);
+      if (homeLineSdkPromise_) return homeLineSdkPromise_;
+      // Email sessions never need this download. LINE still authenticates via
+      // the same SDK, but the shell can paint while its async script arrives.
+      homeLineSdkPromise_ = new Promise(function (resolve, reject) {
+        const script = document.createElement('script');
+        let settled = false;
+        const timer = setTimeout(function () {
+          finish(new Error('LIFF SDK 載入逾時，請重新整理再試'));
+        }, 30000);
+        function finish(error) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          script.onload = script.onerror = null;
+          if (error) {
+            script.remove();
+            reject(error);
+          } else resolve(window.liff);
+        }
+        script.async = true;
+        script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
+        script.onload = function () {
+          finish(window.liff && typeof window.liff.init === 'function'
+            ? null : new Error('LIFF SDK 載入失敗，請重新整理再試'));
+        };
+        script.onerror = function () { finish(new Error('LIFF SDK 載入失敗，請重新整理再試')); };
+        document.head.appendChild(script);
+      }).catch(function (error) {
+        homeLineSdkPromise_ = null;
+        throw error;
+      });
+      return homeLineSdkPromise_;
+    }
+
     async function initLineUserId() {
       if (TEST_MODE) {
         LINE_USER_ID =
@@ -1638,14 +1676,7 @@
         return true;
       }
 
-      if (
-        typeof liff ===
-        'undefined'
-      ) {
-        throw new Error(
-          'LIFF SDK 載入失敗'
-        );
-      }
+      await loadHomeLineSdk_();
 
       await liff.init({
         liffId: LIFF_ID
@@ -2280,7 +2311,7 @@
       const paths = series
         .map(function (key) {
           return (
-            '<path d="' +
+            '<path class="dashboard-line dashboard-entrance" pathLength="1" d="' +
             path(key) +
             '" fill="none" stroke="' +
             dashboardSeriesColor_(key) +
@@ -2295,7 +2326,7 @@
           return safeRows
             .map(function (row, index) {
               return (
-                '<circle cx="' +
+                '<circle class="dashboard-point dashboard-entrance" style="--point-delay:' + (index * 55) + 'ms" cx="' +
                 x(index).toFixed(1) +
                 '" cy="' +
                 y(row && row[key]).toFixed(1) +
@@ -2381,13 +2412,13 @@
         ) +
         '</title><circle cx="60" cy="60" r="' +
         radius +
-        '" fill="none" stroke="#E7EDF0" stroke-width="13"/><circle cx="60" cy="60" r="' +
+        '" fill="none" stroke="#E7EDF0" stroke-width="13"/><g class="dashboard-orbit"><circle class="dashboard-arc dashboard-entrance" cx="60" cy="60" r="' +
         radius +
-        '" fill="none" stroke="#06C755" stroke-width="13" stroke-linecap="round" stroke-dasharray="' +
+        '" fill="none" stroke="#06C755" stroke-width="13" stroke-linecap="' + (ratio === 0 ? 'butt' : 'round') + '" stroke-dasharray="' +
         (circumference * ratio).toFixed(1) +
         ' ' +
         circumference.toFixed(1) +
-        '" transform="rotate(-90 60 60)"/><text x="60" y="65" text-anchor="middle" fill="#17211B" font-size="20" font-weight="900">' +
+        '" transform="rotate(-90 60 60)"/></g><text x="60" y="65" text-anchor="middle" fill="#17211B" font-size="20" font-weight="900">' +
         dashboardEscape_(
           dashboardPercent_(ratio)
         ) +
@@ -2423,7 +2454,7 @@
           const y = baseline - barHeight;
 
           return (
-            '<rect x="' +
+            '<rect class="dashboard-bar dashboard-entrance" style="--bar-delay:' + (index * 90) + 'ms" x="' +
             x +
             '" y="' +
             y.toFixed(1) +
@@ -2494,6 +2525,10 @@
         dashboardTrendTotals_(rows);
 
       host.innerHTML = `
+        <div class="dashboard-motion-toolbar">
+          <div class="dashboard-motion-copy"><strong>營運數據，一目了然</strong><span data-motion-status></span></div>
+          <button type="button" class="dashboard-motion-toggle" data-motion-toggle aria-pressed="false" aria-controls="landlordRevenueChart landlordOccupancyChart landlordContractExpiryChart">暫停動畫</button>
+        </div>
         <section class="dashboard-card trend-card">
           <div class="dashboard-section-heading">
             <div>
@@ -2531,11 +2566,13 @@
           </div>
         </section>
       `;
+      if (typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.mount(host);
     }
 
     function renderLandlordDashboardError_(
       message
     ) {
+      if (typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.unmount();
       const host =
         document.getElementById(
           'landlordDashboardState'
@@ -2687,6 +2724,7 @@
       preserveDashboard
     ) {
       const previousDashboard = preserveDashboard && document.getElementById('landlordDashboardState');
+      if (!previousDashboard && typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.unmount();
       const actionsPending = !actionSummary;
       actionSummary = actionSummary || buildActionSummary({}, {}, {}, {});
       const workspaceContext =
@@ -2762,12 +2800,34 @@
         actionSummary.messagePending +
         actionSummary.messageProcessing;
 
+      // Late secondary counts must not rebuild the useful first render. Keep
+      // the chart connected, keyboard focus and mobile scroll position intact.
+      if (preserveDashboard && !actionsPending) {
+        const section = document.getElementById('homeActionSection');
+        const updates = [
+          ['homePaymentBadge', 'innerHTML', badgeHtml(actionSummary.paymentPending, '無待審', 'warning')],
+          ['homeContractBadge', 'innerHTML', badgeHtml(contractActionCount, '無待處理', 'purple')],
+          ['homeMessageBadge', 'innerHTML', actionSummary.messageUrgent > 0
+            ? '<span class="badge danger">緊急 ' + actionSummary.messageUrgent + '</span>'
+            : badgeHtml(messageActionCount, '無待處理', 'warning')],
+          ['homeContractDesc', 'textContent', '待審 ' + actionSummary.contractPending + ' 筆・待完成 ' + actionSummary.contractApproved + ' 筆・房東發起 ' + actionSummary.landlordInitiatedPending + ' 筆'],
+          ['homeMessageDesc', 'textContent', '待處理 ' + actionSummary.messagePending + ' 筆・處理中 ' + actionSummary.messageProcessing + ' 筆'],
+          ['homeActionStatus', 'textContent', '點擊直接處理']
+        ].map(function (item) { return [document.getElementById(item[0]), item[1], item[2]]; });
+        if (section && updates.every(function (item) { return item[0]; })) {
+          updates.forEach(function (item) { item[0][item[1]] = item[2]; });
+          section.classList.remove('actions-pending');
+          return;
+        }
+      }
+
       const app =
         document.getElementById('app');
 
       app.innerHTML = `
         <header class="dashboard-page-header">
           <div>
+            <div class="dashboard-brand">CMWEBS · LANDLORD WORKSPACE</div>
             <h1 class="dashboard-page-title">
               您好，${safeHtml(home.landlord_name || '房東')}
             </h1>
@@ -2861,11 +2921,11 @@
               <div class="action-main">
                 <div class="action-title-row">
                   <div class="action-title">付款回報審核</div>
-                  ${badgeHtml(
+                  <span id="homePaymentBadge">${badgeHtml(
                     actionSummary.paymentPending,
                     '無待審',
                     'warning'
-                  )}
+                  )}</span>
                 </div>
                 <div class="action-desc">
                   核對匯款日期、後五碼及付款帳款
@@ -2892,6 +2952,7 @@
               <div class="action-main">
                 <div class="action-title-row">
                   <div class="action-title">合約申請管理</div>
+                  <span id="homeContractBadge">
                   ${
                     contractActionCount > 0
                       ? (
@@ -2903,8 +2964,9 @@
                           '<span class="badge green">無待處理</span>'
                         )
                   }
+                  </span>
                 </div>
-                <div class="action-desc">
+                <div class="action-desc" id="homeContractDesc">
                   待審 ${actionSummary.contractPending} 筆・待完成 ${actionSummary.contractApproved} 筆・房東發起 ${actionSummary.landlordInitiatedPending} 筆
                 </div>
               </div>
@@ -2928,6 +2990,7 @@
               <div class="action-main">
                 <div class="action-title-row">
                   <div class="action-title">房客訊息</div>
+                  <span id="homeMessageBadge">
                   ${
                     actionSummary.messageUrgent > 0
                       ? (
@@ -2941,8 +3004,9 @@
                           'warning'
                         )
                   }
+                  </span>
                 </div>
-                <div class="action-desc">
+                <div class="action-desc" id="homeMessageDesc">
                   待處理 ${actionSummary.messagePending} 筆・處理中 ${actionSummary.messageProcessing} 筆
                 </div>
               </div>
@@ -3109,6 +3173,7 @@
     }
 
     function renderError(message) {
+      if (typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.unmount();
       const app =
         document.getElementById('app');
 

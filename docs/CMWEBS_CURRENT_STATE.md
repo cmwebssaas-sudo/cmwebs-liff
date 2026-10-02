@@ -1,7 +1,33 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-10-02 (Asia/Taipei)**
+**Last verified: 2026-10-03 (Asia/Taipei; local homepage candidate only)**
+
+## 2026-10-03 首頁前端發布授權：執行中
+
+使用者在查看手機本機預覽後明確要求「發布到正式網站」。本次範圍為V2.1既有首頁視覺／動畫與載入整併，候選286ebe3（含3886cf8），不增加報表、API、資料欄位或後端功能。fresh origin/main與Pages最新built皆為133549eed5d3a5ae57f2d3c112953780ef1369f6，Pages來源main根目錄；isolated分支乾淨，root408筆WIP不碰。
+
+新固定cache tag為20261003-landlord-home-motion-loading-v1；其他頁僅同步靜態asset標記與測試預期。不改Apps Script／Schema／Properties／trigger／LINE／房客或帳務資料；後端最後記錄v205保留，本次不建立新版。發布前端回退基線為133549e（保留本次local分支），循PR→merge main→Pages→逐檔公開讀回；Production登入／真機驗收與實際端到端秒數分開記錄，不能以本機503項測試或示範數據代替。
+
+## 2026-10-02 首頁載入／手機展示：本機候選延伸，未發布
+
+使用者要求加快載入並直接展示手機介面。沿用 `codex/landlord-home-motion-preview-20261002` 的已完成視覺候選3886cf8；root408筆WIP保留。不開專案討論，不碰先前待登入501資料。
+
+找到兩項前端等待／重繪：head LINE SDK阻塞解析，Email亦下載；次要待辦回來時重建整個app。現SDK只在LINE路徑async載入，失敗／30秒逾時清理並可手動重試；Email直接沿用原保護bootstrap。待辦更新局部badge／描述，保留chart node、focus及scroll。原API／權限／金額算法／progressive順序／錯誤隔離不變；不新增持久帳務緩存。8項載入回歸（6 RED→GREEN）加1項手機preview路由RED→GREEN、全套503/503／validate通過，本機browser確認0次app子節點替換、焦點及300px捲動保留。預覽程式輸出的loopback網址加`/mobile`直接展示可捲動手機框，不需瀏覽器viewport override；373px內容無水平溢出。合成數據、不是正式登入或真機驗收，端到端正式載入秒數未量測。
+
+2026-10-03 斷線續作fresh Git仍為候選3886cf8、root408筆WIP；獨立審查APPROVE WITH NITS（僅本機候選，無Critical／Important）。兩項Minor測試缺口已補強：實際renderer節點來源／pending class清除，以及手機父頁frame-src同源放行；9項定向回歸通過。此日期不代表重新核對正式版本。
+
+續作最終validate／503項完整回歸／diff-check全數通過。斷線後重啟本機loopback preview，重新開啟可操作手機框；373px clientWidth=scrollWidth，實際捲動至576px可查看趨勢及營運圖表。新分頁console記錄一條MutationObserver observe TypeError（source URL未提供；本次允許的preview來源無此API），不將其當作正式網站缺陷或宣稱console-clean。正式登入／SDK／真機及端到端速度仍未驗收。
+
+沒有發布授權，故未push／PR／merge／Pages／Apps Script或業務資料操作；共享release tag保留原值。後續使用者批准後，僅首頁frontend slice沿既有Pages流程、新cache tag／公開讀回／登入核對；新效能slice可回退至3886cf8，整體視覺候選可回退至133549e。Apps Script v205與先前501待登入狀態不因此改變。
+
+## 2026-10-02 房東首頁動態視覺：本機預覽候選，未發布
+
+使用者同意「旋轉入住圓環／固定中央數字、長條與趨勢線進場、暫停及 reduced-motion、綠色精緻 UI」方向，只核准可操作本機預覽。`codex/landlord-home-motion-preview-20261002` 由 fresh `origin/main` / `133549e` 建立，沿用既有隔離 worktree；主目錄408筆混合WIP保持不動。不開無關專案討論。
+
+只更動 `landlord-home.html` 視覺標記及新增 home-scoped CSS／motion controller，既有金額、12月合計、KPI、API、登入、業務連結和固定shell不變。九項新motion RED/GREEN／全套494項／validate／inline syntax／diff-check通過；桌面、375／390px及橫向合成瀏覽器預覽無水平溢出，暫停／系統reduced-motion實際控制已核對。審查發現的恢復播放重播進場與整頁錯誤未卸載listener已補修並回歸，browser確認恢復時line/bar仍靜止完整。此證據不是Production登入或真機驗收。
+
+預覽：`node scripts/preview-landlord-home.mjs`，隨機loopback port，合成資料且CSP阻擋外部請求／正式操作。沒有push、PR、merge、Pages／Apps Script發布、業務列、Properties／trigger或LINE操作；共享release tag保留正式既有值。待使用者檢視後另行批准發布，屆時更新靜態cache tag並沿既有Pages流程；回退只涉及homepage runtime三檔，無後端變更。先前v205已發布／501三欄待登入的狀態未被本次視覺候選取代。
 
 ## 2026-10-02 房客租約摘要 v205／Pages 已發布；登入驗收待完成
 
