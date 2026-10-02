@@ -1,10 +1,11 @@
 # V2 回歸測試矩陣
 
-## 2026-10-03 首頁前端正式發布（已授權，執行中）
+## 2026-10-03 首頁前端正式發布（Pages完成，登入／真機待驗收）
 
 - [x] fresh Pages來源main根目錄、built commit133549e與origin/main一致；回退目標記錄，root408筆WIP保留。
 - [x] 新cache tag20261003-landlord-home-motion-loading-v1；503/503完整回歸、validate及diff-check通過。42個既有靜態標記／驗證／測試檔的未提交變更只有固定tag替換，Apps Script diff為空。
-- [ ] PR／Pages及所有變更靜態資產逐檔讀回。
+- [x] PR203合併074c225，Pages workflow37068482843 success，latest build built且commit一致；40個變更靜態檔加既有清單共43/43逐位元組相同。合併main與候選首頁三檔及release標記一致；root仍408筆WIP、原branch／HEAD未變。
+- [x] 正式browser缺少已驗證session，直接首頁顯示「缺少 LINE User ID」；已交付明確Email登入入口，return_to新版首頁，未發送OTP或以示範登入替代。
 - [ ] 正式登入後首頁／LINE實體手機驗收；本機手機預覽不等同此項。後端／API／Schema不變，沒有測試業務寫入或LINE發送。
 
 ## 2026-10-02 首頁載入／手機展示（本機候選，未發布）

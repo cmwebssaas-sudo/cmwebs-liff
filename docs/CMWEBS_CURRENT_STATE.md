@@ -1,13 +1,17 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-10-03 (Asia/Taipei; local homepage candidate only)**
+**Last verified: 2026-10-03 (Asia/Taipei; homepage Pages release and public static files; authenticated/device acceptance pending)**
 
-## 2026-10-03 首頁前端發布授權：執行中
+## 2026-10-03 首頁前端已正式發布；登入／真機驗收待完成
 
 使用者在查看手機本機預覽後明確要求「發布到正式網站」。本次範圍為V2.1既有首頁視覺／動畫與載入整併，候選286ebe3（含3886cf8），不增加報表、API、資料欄位或後端功能。fresh origin/main與Pages最新built皆為133549eed5d3a5ae57f2d3c112953780ef1369f6，Pages來源main根目錄；isolated分支乾淨，root408筆WIP不碰。
 
 新固定cache tag為20261003-landlord-home-motion-loading-v1；其他頁僅同步靜態asset標記與測試預期。不改Apps Script／Schema／Properties／trigger／LINE／房客或帳務資料；後端最後記錄v205保留，本次不建立新版。發布前端回退基線為133549e（保留本次local分支），循PR→merge main→Pages→逐檔公開讀回；Production登入／真機驗收與實際端到端秒數分開記錄，不能以本機503項測試或示範數據代替。
+
+發布候選500f0f8經PR **#203** 合併為 **074c225d27d271291f68f8347c0e8c6c9e8fe11e**；Pages workflow **37068482843** success，latest build讀回相同commit且built。40個本次變更公開靜態檔加既有驗證清單，共 **43/43** HTTP逐位元組與合併來源相同，無mismatch。發布前validate／503/503／diff-check通過；合併main與候選首頁三檔及release標記一致。原root仍408筆WIP、原branch／HEAD未變。
+
+正式browser直接開首頁顯示「缺少 LINE User ID」，未取得可驗證的登入session；已開啟 `landlord-entry.html?mode=email&return_to=landlord-home.html&v=20261003-landlord-home-motion-loading-v1` 供使用者登入，未寄OTP、未代登入或以fixture替代。本輪未完成登入後圖表、LINE真機或端到端速度驗收；501先前三欄仍待登入保存，不因本次首頁發布宣稱已完成。正式手機仍是同一responsive首頁，`/mobile`僅local preview。
 
 ## 2026-10-02 首頁載入／手機展示：本機候選延伸，未發布
 

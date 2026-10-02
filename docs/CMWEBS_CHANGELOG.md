@@ -1,9 +1,11 @@
 # CMWebs Changelog
 
-## 2026-10-03 — 首頁前端正式發布授權（進行中）
+## 2026-10-03 — 首頁前端已正式發布
 
 - 使用者批准發布本機已驗證候選286ebe3：既有首頁綠色視覺、圖表進場／圓環旋轉、手動暫停／reduced-motion、Email省去LINE SDK下載、待辦原地更新。正式mobile仍是同一responsive homepage；`/mobile`只屬本機預覽，不建立新正式路由。
-- 核對origin/main及Pages built133549e作frontend rollback，cache tag更新20261003-landlord-home-motion-loading-v1；其他頁僅機械式靜態標記同步。Apps Script／API／Schema／業務資料不變，最後記錄v205不因本次前端發布宣稱重新驗證。待PR／Pages及公開逐檔比對完成後另記成功證據。
+- 核對origin/main及Pages built133549e作frontend rollback，cache tag更新20261003-landlord-home-motion-loading-v1；其他頁僅機械式靜態標記同步。Apps Script／API／Schema／業務資料不變，最後記錄v205不因本次前端發布宣稱重新驗證。
+- 500f0f8／PR203合併074c225，Pages workflow37068482843 success，latest build commit一致；40個本次變更靜態檔加既有清單共43/43公開檔逐位元組相同。validate／503/503／diff-check通過，root408筆WIP與原branch／HEAD保留。
+- 正式browser尚未取得登入session，直接首頁顯示缺少LINE User ID；交付Email入口登入後回新版首頁，未寄OTP或代登入。登入後／LINE真機／端到端速度仍待验收；501先前三欄保存未被本次前端發布取代。
 
 ## 2026-10-02 — 首頁載入與手機預覽改善（未發布）
 
