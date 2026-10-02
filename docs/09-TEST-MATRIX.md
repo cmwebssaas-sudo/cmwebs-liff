@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-10-02 房客租約摘要（發布候選）
+## 2026-10-02 房客租約摘要（v205／Pages已發布）
 
 - [x] 5 項 RED/GREEN 實際 loadPage／renderer 回歸：目前租約的租金、零管理費、押金、台北租期與繳款日放在聯絡資料前；不使用帳單／房間預設或任意歷史版本。
 - [x] 待起租與已到期仍顯示該版本條件；缺少／重複 current 指標不猜測。缺值顯示未提供、0 正常，費用說明 escape。
@@ -9,8 +9,8 @@
 - [x] 沒有current ID時即使歷史標記is_current也不冒充目前租約；原續約寫入／預設normalizer保留。
 - [x] 全套 485/485、validate、diff-check 通過；桌面與 390px 手機實際 renderer 的合成資料預覽可讀、展開可用，CSP 禁止所有外部請求。不是正式登入／真機驗收。
 - [x] Fresh serving v204及editor HEAD完整匯出，59檔與基線相同。
-- [ ] 原Web App新版建立、來源比對及deployment讀回；保留v204 rollback。
-- [ ] Pages 發布與公開檔案逐位元組讀回。
+- [x] 原Web App immutable205完整59檔與c583d36相同，CLI deployment讀回205、URL與其他四個部署不變；保留v204 rollback，未刪版本。
+- [x] PR201／657ec08、Pages workflow36985692299成功，41公開檔逐位元組相同；合併後485/485、validate、diff-check通過。
 - [ ] 正式登入驗收與先前授權的 501 三欄保存：目前瀏覽器仍在 Email 登入入口。
 
 Apps Script只改既有read response；無新增route／Schema／業務資料／Properties／trigger／LINE或版本刪除。前端 rollback 為 `cc01e81`，後端為v204。
