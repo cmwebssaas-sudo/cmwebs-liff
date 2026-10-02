@@ -908,7 +908,9 @@ function landlordContractCheckoutValidateTarget_(contract, room, siblings, input
   if (!targetWorkspaceId || (inputWorkspaceId && inputWorkspaceId !== targetWorkspaceId)) return landlordInitiatedContractError_('WORKSPACE_ACCESS_DENIED', '退房合約不屬於目前 Workspace');
   if (!room || landlordInitiatedContractText_(room.workspace_id) !== targetWorkspaceId || landlordInitiatedContractText_(room.room_id) !== landlordInitiatedContractText_(target.room_id)) return landlordInitiatedContractError_('CHECKOUT_ROOM_SCOPE_INVALID', '房間不屬於目前合約');
   if (landlordInitiatedContractText_(room.current_contract_id) !== landlordInitiatedContractText_(target.contract_id)) return landlordInitiatedContractError_('CHECKOUT_ROOM_POINTER_STALE', '房間目前未指向此合約');
-  const status = landlordInitiatedContractText_(target.contract_status || target.status).toLowerCase();
+  const status = typeof contractRenewalHistoryEffectiveStatus_ === 'function'
+    ? contractRenewalHistoryEffectiveStatus_(target)
+    : landlordInitiatedContractText_(target.contract_status || target.status).toLowerCase();
   if (V2_CONTRACT_CHECKOUT_ALLOWED_PREDECESSOR_STATUSES_.indexOf(status) < 0) return landlordInitiatedContractError_('CHECKOUT_STATUS_NOT_ALLOWED', '此合約狀態不可辦理退房');
   const moveOutDate = landlordContractCheckoutDateText_(input && input.move_out_date);
   const startDate = landlordContractCheckoutDateText_(target.start_date || target.contract_start_date);

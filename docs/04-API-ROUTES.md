@@ -1,5 +1,14 @@
 # CMWebs V2 API Routes
 
+## 2026-10-02 紙本補登金額與待起租房客（本地候選，未發布）
+
+- 既有 `landlord_contract_paper_backfill` 在同一交易同步 `V2_rooms.rent_amount`、`management_fee`、`deposit_amount`；零元管理費是明確值，失敗與房客／租約／文件／檢視一起回滾。不改已出帳、不在讀取時修資料、不自動遷移舊列。
+- `landlord_tenants` 的 scheduled-paper fallback 僅接受已補登的 `paper_backfill`／`upcoming` 或 `pending_start`，且 Workspace、property、房客、房間與雙方 current 指標精確一致。回傳 canonical `tenant_id`、`contract_start_date` 與待起租狀態，便於查看既有文件／初始電表；起租後及到期後仍保留同一房客，不將未簽電子草稿當成房客。
+- `landlord_properties_init` 增加唯讀 `has_upcoming_contract`、`contract_start_date`；`effective_status=upcoming`／標籤「待起租」不表示今天已入住。仍不允許重複建立房客或封存。已簽紙本在台北起租日開始才以有效出租狀態顯示，不回寫狀態列。
+- 待起租房間依已 scoped 的 `room.current_contract_id` 取 canonical 租約，並核對實際房客的 Workspace／property／room／current 指標；不以較晚日期的已取消舊租約蓋過目前紙本租約，重複 ID fail-closed。起租日後的 active-map 候選仍需通過相同完整核對，不能因日期已到而略過關聯驗證。
+- 既有 `contract_history` 增加唯讀 `effective_contract_status`，保留原 `contract_status`；只對完整、日期有效的 scheduled paper 記錄按台北日期推導 active／expired。詳細頁的按鈕及實際點擊、既有續約建立／核准啟用與退房狀態 guard 使用相同推導，不變更 Workspace／角色／room pointer／sibling 驗證。未起租仍不開放續約或退房；讀取不回寫紙本狀態，只有既有明確續約核准才封存前版。
+- 房間→租約→Workspace 的帳務預設優先序、原有 Workspace／角色驗證及私人文件授權不变；沒有新增 route／Schema。已補登但房間保留舊金額的個案需另以已驗證的既有房間編輯流程定點同步，不重送補登或重建租約。
+
 ## 2026-10-02 房客 ID 原始值修復（本地候選）
 
 `landlord_tenants` 保留內部不區分大小寫的 lookup key，但回傳儲存的原始

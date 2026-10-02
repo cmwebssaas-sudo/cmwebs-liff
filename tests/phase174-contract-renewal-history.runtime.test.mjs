@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import test from 'node:test';
 
 const sourcePath = new URL('../apps-script/V2_CONTRACT_RENEWAL_HISTORY.js', import.meta.url);
 const landlordSource = readFileSync(new URL('../apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js', import.meta.url), 'utf8');
@@ -313,8 +314,11 @@ function landlordRowFor(headers, values) {
   return headers.map(header => values[header] === undefined ? '' : values[header]);
 }
 
-function makeLandlordRuntime() {
-  const previous = landlordRowFor(landlordContractHeaders, {
+function makeLandlordRuntime(options = {}) {
+  class Clock extends Date {
+    constructor(...args) { super(...(args.length || !options.today ? args : [options.today + 'T12:00:00+08:00'])); }
+  }
+  const previous = landlordRowFor(landlordContractHeaders, Object.assign({
     contract_id: 'C603-2026', workspace_id: 'W1', landlord_id: 'L1', landlord_line_user_id: 'landlord-line', landlord_name: '房東甲',
     tenant_id: 'T603', tenant_user_id: 'U603', tenant_line_user_id: 'tenant-line', tenant_name: '測試房客', tenant_phone: '0912345678',
     property_id: 'P1', property_name: '幸福公寓', property_address: '台北市測試路 1 號', room_id: 'R603', room_name: '603',
@@ -325,7 +329,7 @@ function makeLandlordRuntime() {
     contract_status: 'active', status: 'active', account_status: 'active', contract_origin: 'legacy',
     special_offer_enabled: true, special_offer_notice_days: 30, special_offer_clause: '舊條款',
     identity_document_mode: 'required', created_at: '2025-09-01T00:00:00.000Z', updated_at: '2025-09-01T00:00:00.000Z'
-  });
+  }, options.previous || {}));
   const sheets = {
     V2_properties: new Sheet(['property_id', 'workspace_id', 'landlord_id', 'property_name', 'property_address'], [['P1', 'W1', 'L1', '幸福公寓', '台北市測試路 1 號']]),
     V2_rooms: new Sheet(['room_id', 'workspace_id', 'landlord_id', 'property_id', 'room_name', 'room_status', 'account_status', 'current_contract_id', 'current_tenant_id'], [['R603', 'W1', 'L1', 'P1', '603', 'occupied', 'active', 'C603-2026', 'T603']]),
@@ -336,10 +340,11 @@ function makeLandlordRuntime() {
   };
   let uuid = 0;
   const context = {
-    Date, Math, Number, String, Object, Array, JSON, RegExp,
+    Date:Clock, Math, Number, String, Object, Array, JSON, RegExp,
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: name => sheets[name] || null }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     Utilities: {
+      formatDate:date => new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Taipei'}).format(new Date(date)),
       getUuid: () => 'landlord-renewal-' + (++uuid),
       computeDigest: (_algorithm, value) => [...crypto.createHash('sha256').update(String(value)).digest()].map(byte => byte > 127 ? byte - 256 : byte),
       DigestAlgorithm: { SHA_256: 'SHA_256' }
@@ -360,6 +365,44 @@ const landlordAccess = {
   membership: { membership_id: 'membership-1', role: 'owner' },
   principals: [{ landlord_id: 'L1' }]
 };
+
+for (const [day,allowed] of [['2026-10-14',false], ['2026-10-15',true], ['2028-10-15',true]]) {
+  test('signed paper renewal eligibility follows its saved start/end dates on ' + day, () => {
+    const {api,sheets} = makeLandlordRuntime({today:day, previous:{
+      start_date:'2026-10-15', contract_start_date:'2026-10-15', end_date:'2028-10-14', contract_end_date:'2028-10-14',
+      contract_status:'upcoming', status:'upcoming', account_status:'upcoming', signing_mode:'paper_backfill', contract_origin:'paper_backfill'
+    }});
+    const result = api.landlordInitiatedContractCreateRenewal_(landlordAccess, {previous_contract_id:'C603-2026'});
+    assert.equal(result.success, allowed, result.code);
+    assert.equal(sheets.V2_contracts.rows.length, allowed ? 2 : 1);
+    assert.equal(sheets.V2_contracts.rows[0][landlordContractHeaders.indexOf('contract_status')], 'upcoming');
+  });
+}
+
+for (const day of ['2026-10-15', '2028-10-15']) {
+  test('actual approval finalizes renewal from a dated paper predecessor on ' + day, () => {
+    const {api,sheets} = makeLandlordRuntime({today:day, previous:{
+      start_date:'2026-10-15', contract_start_date:'2026-10-15', end_date:'2028-10-14', contract_end_date:'2028-10-14',
+      contract_status:'upcoming', status:'upcoming', account_status:'upcoming', signing_mode:'paper_backfill', contract_origin:'paper_backfill'
+    }});
+    sheets.V2_users.appendRow(landlordRowFor(sheets.V2_users.headers, {user_id:'U603', workspace_id:'W1', line_user_id:'tenant-line', role:'tenant', status:'active', account_status:'active'}));
+    sheets.V2_tenants.appendRow(landlordRowFor(sheets.V2_tenants.headers, {tenant_id:'T603', tenant_user_id:'U603', user_id:'U603', workspace_id:'W1', property_id:'P1', room_id:'R603', current_contract_id:'C603-2026', tenant_line_user_id:'tenant-line', tenant_binding_status:'bound', account_status:'active', tenant_account_status:'active'}));
+    const viewHeaders = ['tenant_id','workspace_id','current_contract_id','contract_status'];
+    sheets.V2_landlord_tenant_list_view = new Sheet(viewHeaders);
+    sheets.V2_tenant_home_view = new Sheet(viewHeaders);
+    const created = api.landlordInitiatedContractCreateRenewal_(landlordAccess, {previous_contract_id:'C603-2026'});
+    assert.equal(created.success, true, created.code);
+    assert.equal(sheets.V2_contracts.rows[0][landlordContractHeaders.indexOf('contract_status')], 'upcoming');
+    const approvalRow = api.landlordInitiatedContractRows_(sheets.V2_contracts).find(row => row.contract_id === created.data.contract.contract_id);
+    const approved = api.landlordInitiatedContractFinalizeApproval_({getSheetByName:name => sheets[name] || null}, landlordAccess, approvalRow);
+    assert.equal(approved.success, true, approved.code);
+    assert.equal(sheets.V2_rooms.rows[0][sheets.V2_rooms.headers.indexOf('current_contract_id')], created.data.contract.contract_id);
+    assert.equal(sheets.V2_contracts.rows[0][landlordContractHeaders.indexOf('contract_status')], 'renewed', 'only explicit approval archives the predecessor');
+    assert.equal(sheets.V2_contracts.rows[1][landlordContractHeaders.indexOf('contract_status')], 'active');
+    assert.equal(sheets.V2_landlord_tenant_list_view.rows[0][viewHeaders.indexOf('current_contract_id')], created.data.contract.contract_id);
+    assert.equal(sheets.V2_tenant_home_view.rows[0][viewHeaders.indexOf('current_contract_id')], created.data.contract.contract_id);
+  });
+}
 
 {
   const { api, sheets, previous } = makeLandlordRuntime();

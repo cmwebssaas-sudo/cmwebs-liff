@@ -259,7 +259,10 @@ function landlordInitiatedContractCreateRenewalUnlocked_(access, input) {
       landlordInitiatedContractText_(row.workspace_id) === workspaceId;
   });
   if (!previous) return landlordInitiatedContractError_('PREVIOUS_CONTRACT_NOT_FOUND', '找不到前一份合約');
-  if (['active', 'expired', 'approved', 'completed'].indexOf(landlordInitiatedContractText_(previous.contract_status || previous.status).toLowerCase()) === -1) return landlordInitiatedContractError_('PREVIOUS_CONTRACT_NOT_ACTIVE', '只有有效、已到期、已核准或已完成合約可以續約');
+  const previousStatus = typeof contractRenewalHistoryEffectiveStatus_ === 'function'
+    ? contractRenewalHistoryEffectiveStatus_(previous)
+    : landlordInitiatedContractText_(previous.contract_status || previous.status).toLowerCase();
+  if (['active', 'expired', 'approved', 'completed'].indexOf(previousStatus) === -1) return landlordInitiatedContractError_('PREVIOUS_CONTRACT_NOT_ACTIVE', '只有有效、已到期、已核准或已完成合約可以續約');
   if (!landlordInitiatedContractText_(previous.tenant_id)) return landlordInitiatedContractError_('PREVIOUS_TENANT_NOT_READY', '前一份合約缺少房客資料');
   if (landlordInitiatedContractHasOpenSibling_(contracts, access, previous.room_id, previousId)) return landlordInitiatedContractError_('ROOM_ALREADY_RESERVED', '房間已有其他待處理合約');
 
@@ -868,7 +871,10 @@ function landlordInitiatedContractFinalizeApproval_(ss, access, contract, now) {
     const previous = landlordInitiatedContractRows_(schema.data.contracts).find(function (row) {
       return landlordInitiatedContractText_(row.contract_id) === previousId && landlordInitiatedContractText_(row.workspace_id) === workspaceId && landlordInitiatedContractText_(row.tenant_id) === landlordInitiatedContractText_(contract.tenant_id);
     });
-    if (!previous || ['active', 'expired', 'approved', 'completed'].indexOf(landlordInitiatedContractText_(previous.contract_status || previous.status).toLowerCase()) === -1) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_PREVIOUS_NOT_ACTIVE', '前一份合約目前不是可續約狀態');
+    const previousStatus = typeof contractRenewalHistoryEffectiveStatus_ === 'function'
+      ? contractRenewalHistoryEffectiveStatus_(previous)
+      : landlordInitiatedContractText_(previous && (previous.contract_status || previous.status)).toLowerCase();
+    if (!previous || ['active', 'expired', 'approved', 'completed'].indexOf(previousStatus) === -1) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_PREVIOUS_NOT_ACTIVE', '前一份合約目前不是可續約狀態');
     if (landlordInitiatedContractText_(previous.renewed_to_contract_id) && landlordInitiatedContractText_(previous.renewed_to_contract_id) !== contractId) return landlordInitiatedContractError_('CONTRACT_FINALIZATION_RENEWAL_CONFLICT', '前一份合約已有其他續約版本');
     const lineSub = landlordInitiatedContractText_(contract.tenant_line_user_id || tenant.tenant_line_user_id || tenant.line_user_id);
     landlordInitiatedContractUpdate_(schema.data.contracts, previous, { contract_status: 'renewed', status: 'archived', account_status: 'archived', renewed_to_contract_id: contractId, updated_at: timestamp });

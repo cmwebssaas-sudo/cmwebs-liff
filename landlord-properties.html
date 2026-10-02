@@ -8,8 +8,8 @@
   />
   <title>CMWebs 物件與房間</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261002-tenant-meter-session-dates-v1"></script>
-  <script src="landlord-auth.js?v=20261002-tenant-meter-session-dates-v1"></script>
+<script src="frontend-release.js?v=20261002-paper-backfill-room-tenant-v1"></script>
+  <script src="landlord-auth.js?v=20261002-paper-backfill-room-tenant-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
   <style>
@@ -468,7 +468,8 @@
       color: #9b6200;
     }
 
-    .room-status.needs_review {
+    .room-status.needs_review,
+    .room-status.upcoming {
       background: var(--orange-soft);
       color: #9b6200;
     }
@@ -1190,6 +1191,12 @@
       goPage(url);
     }
 
+    function goRoomTenant(tenantId) {
+      if (tenantId) {
+        goPage('landlord-tenant-detail.html?tenant_id=' + encodeURIComponent(tenantId));
+      }
+    }
+
     function buildLandlordLoginRedirectUri() {
       const currentUrl =
         new URL(
@@ -1865,6 +1872,8 @@
                           ${
                             room.needs_occupancy_review
                               ? '<span class="room-desktop-meta">請先核對房客與租約</span>'
+                              : room.has_upcoming_contract
+                                ? `<button class="small-button primary" type="button" onclick="goRoomTenant('${safeHtml(room.current_tenant_id)}')">查看房客</button><span class="room-desktop-meta">${safeHtml(room.contract_start_date)} 起租</span>`
                               : room.paper_backfill_replacement_eligible ||
                             room.paper_backfill_legacy_pending_replacement_eligible ||
                             room.paper_backfill_orphan_replacement_eligible
@@ -1874,7 +1883,7 @@
                                 : ''
                           }
                           ${room.needs_occupancy_review ? '' : `<button class="small-button secondary" type="button" onclick="openRoomEditor('${safeHtml(property.property_id)}','${safeHtml(room.room_id)}')">編輯</button>`}
-                          ${room.needs_occupancy_review ? '' : `<button class="small-button danger" type="button" ${room.has_active_contract ? 'disabled' : ''} onclick="openArchiveEditor('room','${safeHtml(room.room_id)}','${safeHtml(room.room_name)}')">${room.has_active_contract ? '租約中' : '封存'}</button>`}
+                          ${room.needs_occupancy_review || room.has_upcoming_contract ? '' : `<button class="small-button danger" type="button" ${room.has_active_contract ? 'disabled' : ''} onclick="openArchiveEditor('room','${safeHtml(room.room_id)}','${safeHtml(room.room_name)}')">${room.has_active_contract ? '租約中' : '封存'}</button>`}
                         `
                         : ''
                     }
@@ -1938,6 +1947,8 @@
                         ${
                           room.needs_occupancy_review
                             ? '<span class="room-desktop-meta">請先核對房客與租約</span>'
+                            : room.has_upcoming_contract
+                              ? `<button class="small-button primary" type="button" onclick="goRoomTenant('${safeHtml(room.current_tenant_id)}')">查看房客</button><span class="room-desktop-meta">${safeHtml(room.contract_start_date)} 起租</span>`
                             : room.paper_backfill_replacement_eligible ||
                           room.paper_backfill_legacy_pending_replacement_eligible ||
                           room.paper_backfill_orphan_replacement_eligible
@@ -1980,7 +1991,7 @@
                           編輯
                         </button>`}
 
-                        ${room.needs_occupancy_review ? '' : `
+                        ${room.needs_occupancy_review || room.has_upcoming_contract ? '' : `
                           <button
                             class="small-button danger"
                             type="button"
@@ -2107,6 +2118,9 @@
     }
 
     function roomStatusOptions(selected, locked) {
+      if (selected === 'upcoming') {
+        return '<option value="upcoming" selected>待起租（由已補登租約控制）</option>';
+      }
       if (locked) {
         return `
           <option value="occupied" selected>
@@ -2611,7 +2625,7 @@
           <select
             id="roomStatus"
             class="select"
-            ${room && room.has_active_contract ? 'disabled' : ''}
+            ${room && (room.has_active_contract || room.has_upcoming_contract) ? 'disabled' : ''}
           >
             ${roomStatusOptions(
               room
@@ -2622,6 +2636,12 @@
             )}
           </select>
         </div>
+
+        ${
+          room && room.has_upcoming_contract
+            ? `<div class="modal-note">已補登紙本租約，${safeHtml(room.contract_start_date)} 起租；不可直接改為空房或再建立房客。</div>`
+            : ''
+        }
 
         ${
           room &&
@@ -2789,9 +2809,8 @@
         deposit_amount:
           inputValue('roomDepositAmount'),
         room_status:
-          room &&
-          room.has_active_contract
-            ? 'vacant'
+          room && (room.has_active_contract || room.has_upcoming_contract)
+            ? (room.has_upcoming_contract ? room.room_status : 'vacant')
             : inputValue('roomStatus'),
         note:
           inputValue('roomNote')
@@ -2859,6 +2878,11 @@
     }
 
     function openArchiveEditor(type, id, name) {
+      const room = type === 'room' ? getRoom(id) : null;
+      if (room && room.has_upcoming_contract) {
+        showToast('此房間已有待起租租約，不能封存。', true);
+        return;
+      }
       document.getElementById(
         'editorSheet'
       ).innerHTML = `

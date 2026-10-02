@@ -3357,6 +3357,7 @@ function landlordContractHistoryView_(contractRows, tenantRow, landlord) {
       special_offer_notice_days: Number(row.special_offer_notice_days || 30),
       special_offer_clause: String(row.special_offer_clause || '').trim(),
       contract_status: String(row.contract_status || row.status || '').trim(),
+      effective_contract_status: contractRenewalHistoryEffectiveStatus_(row),
       signing_mode: String(row.signing_mode || '').trim(),
       contract_origin: String(row.contract_origin || '').trim(),
       identity_document_mode: String(row.identity_document_mode || '').trim(),

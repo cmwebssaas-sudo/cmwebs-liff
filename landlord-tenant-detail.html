@@ -9,9 +9,9 @@
   <title>CMWebs 房客詳細資料</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="frontend-release.js?v=20261002-tenant-meter-session-dates-v1"></script>
-  <script src="landlord-auth.js?v=20261002-tenant-meter-session-dates-v1"></script>
-  <script src="landlord-api.js?v=20261002-tenant-meter-session-dates-v1"></script>
+  <script src="frontend-release.js?v=20261002-paper-backfill-room-tenant-v1"></script>
+  <script src="landlord-auth.js?v=20261002-paper-backfill-room-tenant-v1"></script>
+  <script src="landlord-api.js?v=20261002-paper-backfill-room-tenant-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
@@ -1876,7 +1876,7 @@
       const contract = CURRENT_TENANT_CONTRACTS.find(function (item) {
         return rawText(item.contract_id).trim() === normalizedContractId;
       });
-      const status = normalizedStatus(contract && (contract.contract_status || contract.status));
+      const status = normalizedStatus(contract && (contract.effective_contract_status || contract.contract_status || contract.status));
       if (!contract || !normalizedContractId || ['active', 'expired', 'approved', 'completed'].indexOf(status) < 0) {
         showToast('目前合約不可發起續約');
         return;
@@ -4487,7 +4487,7 @@
             const sequence = numberValue(contract.renewal_sequence, 1);
             const current = contract.is_current === true;
             const readOnly = contract.read_only !== false;
-            const status = normalizedStatus(contract.contract_status || contract.status);
+            const status = normalizedStatus(contract.effective_contract_status || contract.contract_status || contract.status);
             const canRenew = ['active', 'expired', 'approved', 'completed'].indexOf(status) >= 0;
             const renewalIntent = normalizedStatus(contract.renewal_tenant_intent);
             const checkoutPending = normalizedStatus(contract.checkout_status) === 'pending' || renewalIntent === 'declined';
