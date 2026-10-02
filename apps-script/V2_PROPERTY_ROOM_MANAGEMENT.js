@@ -179,6 +179,7 @@ function getLandlordPropertiesInitByLineUid_(
 
     const tenantIdMap = {};
     const activeTenantIdMap = {};
+    const tenantByIdMap = {};
 
     tenantRows.forEach(function (tenant) {
       const tenantId =
@@ -188,6 +189,7 @@ function getLandlordPropertiesInitByLineUid_(
 
       if (tenantId) {
         tenantIdMap[tenantId] = true;
+        tenantByIdMap[tenantId] = Object.prototype.hasOwnProperty.call(tenantByIdMap, tenantId) ? null : tenant;
 
         if ([
           'archived',
@@ -204,9 +206,14 @@ function getLandlordPropertiesInitByLineUid_(
 
     const currentContractRoomMap = {};
     const latestContractRoomMap = {};
+    const contractByIdMap = {};
 
     contractRows.forEach(
       function (contract) {
+        const contractId = propertyRoomText_(contract.contract_id);
+        if (contractId) {
+          contractByIdMap[contractId] = Object.prototype.hasOwnProperty.call(contractByIdMap, contractId) ? null : contract;
+        }
         const roomId =
           propertyRoomText_(
             contract.room_id
@@ -359,7 +366,8 @@ function getLandlordPropertiesInitByLineUid_(
           latestContractRoomMap,
           latestBillRoomMap,
           tenantIdMap,
-          activeTenantIdMap
+          activeTenantIdMap,
+          { contracts: contractByIdMap, tenants: tenantByIdMap }
         )
       );
     });
@@ -2518,14 +2526,15 @@ function propertyRoomBuildRoomView_(
   latestContractRoomMap,
   latestBillRoomMap,
   tenantIdMap,
-  activeTenantIdMap
+  activeTenantIdMap,
+  associationMaps
 ) {
   const roomId =
     propertyRoomText_(
       room.room_id
     );
 
-  const currentContract =
+  const candidateCurrentContract =
     currentContractRoomMap &&
     currentContractRoomMap[
       roomId
@@ -2544,6 +2553,27 @@ function propertyRoomBuildRoomView_(
           roomId
         ]
       : null;
+
+  const pointedContract = associationMaps && associationMaps.contracts
+    ? associationMaps.contracts[propertyRoomText_(room.current_contract_id)]
+    : null;
+  // Scheduled paper records keep their exact association guards even after
+  // the saved start day makes them date-eligible for the active map.
+  const currentContract =
+    candidateCurrentContract &&
+    (!propertyRoomPaperContractIsScheduled_(candidateCurrentContract) ||
+      propertyRoomScheduledPaperMatchesRoom_(room, candidateCurrentContract, activeTenantIdMap, associationMaps))
+      ? candidateCurrentContract
+      : propertyRoomScheduledPaperMatchesRoom_(room, pointedContract, activeTenantIdMap, associationMaps) &&
+        propertyRoomContractIsActive_(pointedContract)
+        ? pointedContract
+        : null;
+  const upcomingContract =
+    !currentContract &&
+    propertyRoomUpcomingPaperBackfillForRoom_(room, pointedContract, activeTenantIdMap, associationMaps)
+      ? pointedContract
+      : null;
+  const linkedContract = currentContract || upcomingContract;
 
   const paperBackfillReplacementContract =
     [
@@ -2634,6 +2664,7 @@ function propertyRoomBuildRoomView_(
 
   const financialContract =
     currentContract ||
+    upcomingContract ||
     latestContract ||
     {};
 
@@ -2669,12 +2700,15 @@ function propertyRoomBuildRoomView_(
 
   const needsOccupancyReview =
     !hasActiveContract &&
+    !upcomingContract &&
     linkedTenantIsActive;
 
   const effectiveStatus =
     hasActiveContract
       ? 'occupied'
-      : needsOccupancyReview
+      : upcomingContract
+        ? 'upcoming'
+        : needsOccupancyReview
         ? 'needs_review'
         : (
           storedStatus ===
@@ -2888,9 +2922,9 @@ function propertyRoomBuildRoomView_(
       depositAmount,
 
     current_contract_id:
-      currentContract
+      linkedContract
         ? propertyRoomText_(
-            currentContract.contract_id
+            linkedContract.contract_id
           )
         : '',
 
@@ -2902,18 +2936,18 @@ function propertyRoomBuildRoomView_(
         : '',
 
     current_tenant_id:
-      currentContract
+      linkedContract
         ? propertyRoomText_(
-            currentContract.tenant_id
+            linkedContract.tenant_id
           )
         : propertyRoomText_(
             room.current_tenant_id
           ),
 
     current_tenant_name:
-      currentContract
+      linkedContract
         ? propertyRoomText_(
-            currentContract.tenant_name
+            linkedContract.tenant_name
           )
         : propertyRoomText_(
             room.current_tenant_name
@@ -2921,6 +2955,14 @@ function propertyRoomBuildRoomView_(
 
     has_active_contract:
       hasActiveContract,
+
+    has_upcoming_contract:
+      Boolean(upcomingContract),
+
+    contract_start_date:
+      upcomingContract
+        ? propertyRoomContractDay_(upcomingContract.start_date || upcomingContract.contract_start_date)
+        : '',
 
     paper_backfill_replacement_eligible:
       paperBackfillReplacementEligible,
@@ -3134,6 +3176,12 @@ function propertyRoomContractIsActive_(
       contract.status
     ).toLowerCase();
 
+  if (propertyRoomPaperContractIsScheduled_(contract)) {
+    const todayKey = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
+    return propertyRoomContractDay_(contract.start_date || contract.contract_start_date) <= todayKey &&
+      propertyRoomContractDay_(contract.end_date || contract.contract_end_date) >= todayKey;
+  }
+
   if (
     [
       'terminated',
@@ -3197,10 +3245,14 @@ function propertyRoomContractIsActive_(
     return false;
   }
 
+  if (['upcoming', 'pending_start'].indexOf(status) >= 0) {
+    // Signed paper leases were evaluated above using Taipei calendar dates.
+    // Other future drafts must not become active merely because dates match.
+    return false;
+  }
+
   if (
     [
-      'upcoming',
-      'pending_start',
       'draft',
       'pending',
       'requested'
@@ -3234,6 +3286,58 @@ function propertyRoomContractIsActive_(
       endDate.getTime() >=
         today.getTime()
     )
+  );
+}
+
+
+function propertyRoomPaperContractIsScheduled_(contract) {
+  if (!contract) return false;
+  const text = propertyRoomText_;
+  const start = propertyRoomDate_(contract.start_date || contract.contract_start_date);
+  const end = propertyRoomDate_(contract.end_date || contract.contract_end_date);
+  return Boolean(
+    text(contract.contract_origin) === 'paper_backfill' &&
+    text(contract.signing_mode) === 'paper_backfill' &&
+    ['upcoming', 'pending_start'].indexOf(text(contract.contract_status || contract.status).toLowerCase()) >= 0 &&
+    text(contract.contract_id) && text(contract.tenant_id) &&
+    start && end && end.getTime() >= start.getTime()
+  );
+}
+
+
+function propertyRoomContractDay_(value) {
+  const text = propertyRoomText_(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const date = propertyRoomDate_(value);
+  return date ? Utilities.formatDate(date, 'Asia/Taipei', 'yyyy-MM-dd') : '';
+}
+
+
+function propertyRoomUpcomingPaperBackfillForRoom_(room, contract, activeTenantIdMap, associationMaps) {
+  return propertyRoomScheduledPaperMatchesRoom_(room, contract, activeTenantIdMap, associationMaps) &&
+    propertyRoomContractDay_(contract.start_date || contract.contract_start_date) >
+      Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
+}
+
+
+function propertyRoomScheduledPaperMatchesRoom_(room, contract, activeTenantIdMap, associationMaps) {
+  if (!propertyRoomPaperContractIsScheduled_(contract)) return false;
+  const text = propertyRoomText_;
+  const tenant = associationMaps && associationMaps.tenants && associationMaps.tenants[text(contract.tenant_id)];
+  return Boolean(
+    tenant && associationMaps.contracts[text(contract.contract_id)] === contract &&
+    text(room.workspace_id) && text(contract.workspace_id) === text(room.workspace_id) &&
+    text(tenant.workspace_id) === text(room.workspace_id) &&
+    text(tenant.property_id) === text(room.property_id) &&
+    text(tenant.room_id) === text(room.room_id) &&
+    text(tenant.current_contract_id) === text(contract.contract_id) &&
+    text(contract.room_id) === text(room.room_id) &&
+    text(room.property_id) &&
+    text(contract.property_id) === text(room.property_id) &&
+    text(room.current_contract_id) === text(contract.contract_id) &&
+    text(room.current_tenant_id) === text(contract.tenant_id) &&
+    activeTenantIdMap && activeTenantIdMap[text(contract.tenant_id)] &&
+    text(room.account_status).toLowerCase() === 'active'
   );
 }
 
@@ -3904,6 +4008,8 @@ function propertyRoomRoomStatusLabel_(
       '已出租',
     needs_review:
       '待核對',
+    upcoming:
+      '待起租',
     maintenance:
       '維修中',
     unavailable:

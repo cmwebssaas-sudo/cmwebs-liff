@@ -41,6 +41,10 @@ const context = vm.createContext({
 });
 vm.runInContext([
   extract(backend, 'propertyRoomRoomStatusLabel_'),
+  extract(backend, 'propertyRoomPaperContractIsScheduled_'),
+  extract(backend, 'propertyRoomContractDay_'),
+  extract(backend, 'propertyRoomScheduledPaperMatchesRoom_'),
+  extract(backend, 'propertyRoomUpcomingPaperBackfillForRoom_'),
   extract(backend, 'propertyRoomBuildRoomView_')
 ].join('\n'), context);
 

@@ -743,6 +743,11 @@ function landlordPaperContractBackfillCreateUnlocked_(access, input) {
     landlordPaperContractBackfillUpdate_(schema.data.rooms, roomBefore, {
       room_status: roomStatus,
       account_status: 'active',
+      // Room settings are the canonical billing defaults. Keep them in the
+      // same rollback transaction as the newly signed paper lease (0 is valid).
+      rent_amount: input.rent_amount,
+      management_fee: input.management_fee,
+      deposit_amount: input.deposit_amount,
       current_contract_id: contractId,
       current_tenant_id: tenantId,
       current_tenant_name: input.tenant_name,

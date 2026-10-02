@@ -3,6 +3,22 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
+## 2026-10-02 紙本補登金額／待起租房客候選（未發布）
+
+建議模型／速度 `gpt-5.6-terra / medium`。隔離分支 `codex/paper-lease-room-tenant-20261002`，基線 `f59e205`；主目錄 408 筆混合 WIP 保留，不開無關專案討論。
+
+使用者要求修正新紙本補登房客漏顯示及房間仍使用舊金額。501 定點唯讀核對確認：新紙本租約與房客已保存、Workspace／room／tenant／contract 指標一致，但租約尚未起租，native 清單只選今日有效或到期續約，因此漏掉；房況則因 active tenant 指標被標為待核對。補登交易只寫租約金額／房間指標，沒有同步三個 canonical 房間金額；不是房客或私人文件已確認遺失。未讀證件原檔、密鑰或其他房客資料。
+
+候選在既有補登回滾交易同步 room rent／management／deposit，明確保存 0；future 紙本租約只在同 Workspace、canonical 房客及 current 指標完全符合時顯示「待起租」，並提供既有房客查看入口。起租日依台北日期開始才視為已出租；不改實際租約或入住狀態、不重複補登、不回寫已出帳，也不把 unsigned future 電子草稿納入。房間→租約→Workspace 預設規則保留。
+
+審查邊界已補入回歸：用 scoped canonical contract／tenant maps 核對雙方 Workspace／property／room／current 指標，重複 ID 拒絕，不讓較晚日期的取消舊合約遮蔽目前紙本；起租日後的 active map 不能略過完整關聯核對。scheduled-paper 房客在起租與到期後繼續可查；歷史增加唯讀 effective 狀態，實際詳細頁按鈕／點擊、續約建立／核准啟用及退房 guard 按台北日期推導。讀取不改原狀態，既有角色／範圍驗證不變，只有明確續約核准才封存前版。未起租不可續約或退房；到期未確認仍待核對而非空房。
+
+最後本地全套 477/477、validate、58 個後端合併語法／49 個 inline scripts、diff-check 通過；實際桌面／手機 renderer 的合成隔離畫面已查看，外部請求禁止。Cache tag `20261002-paper-backfill-room-tenant-v1` 為未發布候選。正式 Apps Script 測試寫入、authenticated browser／實體手機驗收未以本地 fixture 代替。
+
+獨立 reviewer 的 8 個 Important 發現已 RED 重現並補修，最後 scoped 複驗 48/48、無已確認 Critical／Important／Minor。該審查不判定正式／登入／私有文件或部署完成。本地分支與隔離 worktree 保留，未 push／PR／merge／deploy。
+
+已定點補登但房間仍是舊值的 501，仍需透過已驗證房東的既有房間編輯入口同步三個金額；本候選不在 read init 隱式寫入或掃描／改寫其他房間。正式 Apps Script／Pages 尚未變更，亦未改 501 正式資料；本地測試與隔離 renderer 不代表正式登入或真機驗收。發布需先核對 serving／HEAD 基線、同 Web App URL 建立新版、經 PR 發布 Pages，逐檔讀回並登入唯讀驗收；rollback 是 v203 與 Pages `f59e205`。版本刪除、Properties／trigger／LINE 都不在範圍內。
+
 ## 2026-10-02 97 個歷史版本清理／v203 與 Pages 已發布；電表登入唯讀驗收通過
 
 使用者在永久刪除最後畫面確認「刪除這 97 個版本並發布」後，只刪 1–100 排除 10、76、85 的 97 版。Google 成功畫面及 CLI 精確差集一致：刪除後 103 版、全部 protected versions 保留、五個 deployment 不變。完整 owner-only 備份及 checksum 清單保留，成功證據在備份目錄 `delete-completed.png`。原版本編號不能恢復，但原始碼可重建新版；没有刪除任何租約、房客、帳務或私有文件。

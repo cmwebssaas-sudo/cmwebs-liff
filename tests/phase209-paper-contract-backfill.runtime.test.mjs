@@ -28,7 +28,8 @@ const CHECKIN_HEADERS = ['checkin_id','workspace_id','landlord_id','contract_id'
 
 const ROOM_HEADERS = [
   'room_id', 'workspace_id', 'landlord_id', 'property_id', 'property_name', 'room_name',
-  'room_status', 'account_status', 'current_contract_id', 'current_tenant_id', 'current_tenant_name'
+  'room_status', 'account_status', 'current_contract_id', 'current_tenant_id', 'current_tenant_name',
+  'rent_amount', 'management_fee', 'deposit_amount'
 ];
 
 const TENANT_HEADERS = [
@@ -127,7 +128,8 @@ function makeRuntime(options = {}) {
         property_id: 'P1', workspace_id: 'W1', landlord_id: 'L1', property_name: '測試公寓', property_address: '台北市測試路', account_status: 'active'
       })]),
       V2_rooms: new FakeSheet('V2_rooms', ROOM_HEADERS, [rowFor(ROOM_HEADERS, {
-        room_id: 'R202', workspace_id: 'W1', landlord_id: 'L1', property_id: 'P1', property_name: '測試公寓', room_name: '202', room_status: options.roomStatus || 'vacant', account_status: 'active', current_contract_id: options.currentContractId || '', current_tenant_id: '', current_tenant_name: ''
+        room_id: 'R202', workspace_id: 'W1', landlord_id: 'L1', property_id: 'P1', property_name: '測試公寓', room_name: '202', room_status: options.roomStatus || 'vacant', account_status: 'active', current_contract_id: options.currentContractId || '', current_tenant_id: '', current_tenant_name: '',
+        rent_amount: 19000, management_fee: 500, deposit_amount: 39000
       })]),
       V2_users: new FakeSheet('V2_users', options.userHeaders || USER_HEADERS, options.users || []),
       V2_tenants: new FakeSheet('V2_tenants', TENANT_HEADERS, options.tenants || []),
@@ -270,6 +272,35 @@ function baseInput(overrides = {}) {
 function countRows(runtime) {
   return Object.fromEntries(Object.entries(runtime.state.sheets).map(([name, sheet]) => [name, sheet.rows.length]));
 }
+
+for (const startDate of ['2026-09-01', '2026-09-10']) {
+  test(`paper backfill synchronizes room money including zero management fee (${startDate})`, () => {
+    const r = makeRuntime();
+    const input = baseInput({start_date:startDate, rent_amount:19570, management_fee:0, deposit_amount:39140});
+    const result = r.context.landlordPaperContractBackfillBySession_('session-1', input);
+    assert.equal(result.success, true, result.message);
+    const room = roomRow(r);
+    assert.deepEqual([room.rent_amount, room.management_fee, room.deposit_amount], [19570, 0, 39140]);
+    const before = JSON.stringify(r.state.sheets.V2_rooms.rows);
+    const retry = r.context.landlordPaperContractBackfillBySession_('session-1', input);
+    assert.equal(retry.success, true);
+    assert.equal(JSON.stringify(r.state.sheets.V2_rooms.rows), before, 'an idempotent retry must not apply money twice');
+    assert.equal(r.state.sheets.V2_contracts.rows.length, 1);
+    assert.equal(r.state.lineCalls.length, 0);
+  });
+}
+
+test('a downstream view failure restores all original room money and pointers', () => {
+  const r = makeRuntime();
+  const before = JSON.stringify(r.state.sheets.V2_rooms.rows);
+  r.state.sheets.V2_tenant_home_view.appendRow = () => { throw new Error('fixture view failure'); };
+  const result = r.context.landlordPaperContractBackfillBySession_('session-1', baseInput({rent_amount:19570, management_fee:0, deposit_amount:39140}));
+  assert.equal(result.success, false);
+  assert.equal(result.code, 'PAPER_BACKFILL_WRITE_FAILED');
+  assert.equal(JSON.stringify(r.state.sheets.V2_rooms.rows), before);
+  assert.equal(r.state.sheets.V2_contracts.rows.length, 0);
+  assert.equal(r.state.sheets.V2_tenants.rows.length, 0);
+});
 
 test('paper backfill refuses missing/invalid initial meter before any rows or private files', () => {
   for (const value of [undefined, null, '', '  ', -1, Infinity, NaN, true, 'abc']) {

@@ -9,9 +9,9 @@
   <title>CMWebs 房客名單</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261002-tenant-meter-session-dates-v1"></script>
-  <script src="landlord-auth.js?v=20261002-tenant-meter-session-dates-v1"></script>
-  <script src="landlord-api.js?v=20261002-tenant-meter-session-dates-v1"></script>
+<script src="frontend-release.js?v=20261002-paper-backfill-room-tenant-v1"></script>
+  <script src="landlord-auth.js?v=20261002-paper-backfill-room-tenant-v1"></script>
+  <script src="landlord-api.js?v=20261002-paper-backfill-room-tenant-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
   <style>
@@ -2061,6 +2061,10 @@
                   ・${safeHtml(tenantId || '-')}
                 </div>
 
+                ${['upcoming', 'pending_start'].indexOf(tenant.current_contract_status) >= 0
+                  ? `<div class="tenant-meta"><span class="badge warning">待起租</span> ${safeHtml(tenant.contract_start_date || '-')} 起租</div>`
+                  : ''}
+
                 ${
                   contractExpiry
                     ? `
@@ -2364,7 +2368,11 @@
             <div class="tenant-desktop-name">${safeHtml(tenant.tenant_name || '未命名房客')}</div>
             <div class="tenant-desktop-meta">${safeHtml(tenantId || '-')}・${safeHtml(tenant.tenant_phone || '-')}</div>
           </td>
-          <td>${safeHtml(tenant.room_list || '-')}</td>
+          <td>${safeHtml(tenant.room_list || '-')}
+            ${['upcoming', 'pending_start'].indexOf(tenant.current_contract_status) >= 0
+              ? `<div class="tenant-desktop-meta"><span class="badge warning">待起租</span> ${safeHtml(tenant.contract_start_date || '-')} 起租</div>`
+              : ''}
+          </td>
           <td>
             <span class="${statusBadgeClass(paymentStatus)}">${safeHtml(statusLabel(paymentStatus))}</span>
             <div class="tenant-desktop-meta">未繳 ${money(tenant.unpaid_total_amount)}</div>

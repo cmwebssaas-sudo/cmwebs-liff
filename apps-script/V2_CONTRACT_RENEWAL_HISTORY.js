@@ -99,6 +99,25 @@ function contractRenewalHistoryUtcDate_(dateOnly) {
   return isNaN(date.getTime()) ? null : date;
 }
 
+// Derived lifecycle only: the original signed paper record remains unchanged.
+function contractRenewalHistoryEffectiveStatus_(contract) {
+  const row = contract || {};
+  const text = contractRenewalHistoryText_;
+  const status = text(row.contract_status || row.status).toLowerCase();
+  if (text(row.contract_origin) !== 'paper_backfill' || text(row.signing_mode) !== 'paper_backfill' ||
+      ['upcoming', 'pending_start'].indexOf(status) < 0) return status;
+  const start = contractRenewalHistoryDateOnly_(row.start_date || row.contract_start_date);
+  const end = contractRenewalHistoryDateOnly_(row.end_date || row.contract_end_date);
+  const validDay = function(day) {
+    const parsed = contractRenewalHistoryUtcDate_(day);
+    return Boolean(parsed && parsed.toISOString().slice(0, 10) === day);
+  };
+  if (!text(row.contract_id) || !text(row.workspace_id) || !text(row.property_id) ||
+      !text(row.room_id) || !text(row.tenant_id) || !validDay(start) || !validDay(end) || end < start) return status;
+  const today = contractRenewalHistoryDateOnly_(new Date());
+  return today < start ? status : (today > end ? 'expired' : 'active');
+}
+
 function contractRenewalHistoryAddDays_(dateOnly, days) {
   const date = contractRenewalHistoryUtcDate_(dateOnly);
   if (!date) return '';

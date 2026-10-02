@@ -1535,8 +1535,20 @@ function workspaceDashboardBuildTenantList_(
 
         const currentContract =
           contracts.find(
-            workspaceDashboardContractIsCurrent_
+            function (contract) {
+              // Scheduled paper records always need the exact association
+              // fallback, including after their start date has arrived.
+              const scheduledPaper = contract.contract_origin === 'paper_backfill' &&
+                contract.signing_mode === 'paper_backfill' &&
+                ['upcoming', 'pending_start'].indexOf(workspaceDashboardText_(contract.contract_status || contract.status).toLowerCase()) >= 0;
+              return !scheduledPaper && workspaceDashboardContractIsCurrent_(contract);
+            }
           ) ||
+          contracts.find(function (contract) {
+            return workspaceDashboardUpcomingPaperBackfillForTenant_(
+              contract, tenant, roomsById, access
+            );
+          }) ||
           contracts.find(
             workspaceDashboardContractIsRenewalRecoveryEligible_
           ) ||
@@ -1808,11 +1820,15 @@ function workspaceDashboardBuildTenantList_(
               currentContract.lease_end_date
             ),
 
-          current_contract_status:
-            workspaceDashboardText_(
-              currentContract.contract_status ||
-              currentContract.status
+          contract_start_date:
+            workspaceDashboardFormatDate_(
+              currentContract.start_date ||
+              currentContract.contract_start_date ||
+              currentContract.lease_start_date
             ),
+
+          current_contract_status:
+            contractRenewalHistoryEffectiveStatus_(currentContract),
 
           contract_history:
             typeof landlordContractHistoryView_ ===
@@ -2118,6 +2134,35 @@ function workspaceDashboardContractIsCurrent_(
   ].indexOf(
     status
   ) >= 0;
+}
+
+
+function workspaceDashboardUpcomingPaperBackfillForTenant_(contract, tenant, roomsById, access) {
+  const text = workspaceDashboardText_;
+  const room = roomsById[text(contract.room_id)];
+  const workspaceId = text(access.workspace.workspace_id);
+  const start = workspaceDashboardDate_(contract.start_date || contract.contract_start_date);
+  const end = workspaceDashboardDate_(contract.end_date || contract.contract_end_date);
+  // A future electronic/unknown contract is not tenancy evidence. A signed
+  // paper backfill is discoverable only through its exact current associations.
+  return Boolean(
+    room && workspaceId &&
+    text(contract.workspace_id) === workspaceId &&
+    text(tenant.workspace_id) === workspaceId &&
+    text(room.workspace_id) === workspaceId &&
+    text(room.property_id) &&
+    text(contract.property_id) === text(room.property_id) &&
+    text(tenant.property_id) === text(room.property_id) &&
+    text(contract.contract_origin) === 'paper_backfill' &&
+    text(contract.signing_mode) === 'paper_backfill' &&
+    ['upcoming', 'pending_start'].indexOf(text(contract.contract_status || contract.status).toLowerCase()) >= 0 &&
+    text(contract.contract_id) && text(contract.tenant_id) === text(tenant.tenant_id) &&
+    text(room.current_contract_id) === text(contract.contract_id) &&
+    text(tenant.current_contract_id) === text(contract.contract_id) &&
+    text(room.current_tenant_id) === text(tenant.tenant_id) &&
+    text(tenant.room_id) === text(room.room_id) &&
+    start && end && end.getTime() >= start.getTime()
+  );
 }
 
 

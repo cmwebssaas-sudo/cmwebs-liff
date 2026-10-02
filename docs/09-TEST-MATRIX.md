@@ -1,5 +1,18 @@
 # V2 回歸測試矩陣
 
+## 2026-10-02 紙本補登房間金額／待起租房客（本地候選，未發布）
+
+- [x] RED/GREEN：active／upcoming 補登的 canonical room rent、management（含 0）、deposit 同步；下游 view 失敗回復原金額與指標，冪等重送不建立第二份租約或發 LINE。
+- [x] future 紙本租約保留 canonical 房客、起租日及歷史；房間為待起租，不是空房／已入住／待核對。臺北起租日當天起才按有效出租顯示，原狀態列不變。
+- [x] 跨 Workspace、inactive tenant／archived room、錯誤 room／tenant current 指標、unsigned electronic／cancelled／未核對的 future active 不使用新 fallback；既有到期續約保留。
+- [x] 實際 desktop／mobile renderer 顯示待起租日期和查看房客；無重複建客或封存入口。獨立房間金額編輯沿用舊 API，狀態由租約控制。
+- [x] 審查後 RED/GREEN：較晚日期的取消舊租約不遮蔽 canonical 紙本；tenant-side Workspace／property／room／current 指標錯誤保留待核對，缺少／不一致 property 不進房客 fallback。
+- [x] scheduled paper 起租日與到期後房客仍可查；history 原狀態不變、effective 狀態正確。實際詳細頁 renderer／點擊導航、續約建立與核准啟用、退房 target validation 在未起租拒絕，起租日／到期後保留既有入口及權限 guard。合成 Sheets 核准 fixture 確認僅明確核准才封存前版並更新房客／房間／views；未執行正式續約／退房。
+- [x] 實際 properties init 在起租前、起租日及租期末日，tenant／contract／property 指標不符或重複 tenant／contract ID 仍為待核對；不得透過日期 active map 繞過完整關聯 guard。
+- [x] 最後全套 477/477、`npm run validate`、58 個後端合併語法／49 個 inline scripts 及 `git diff --check` 通過。隔離桌面／手機畫面使用實際 renderer 與合成資料，禁止外部請求；不是正式登入／真機驗收。Cache tag `20261002-paper-backfill-room-tenant-v1` 尚未發布。
+- [x] 獨立審查的 8 個 Important 發現均已 RED 重現並補修；最後 scoped follow-up 48/48、無已確認 Critical／Important／Minor。review 不涵蓋正式資料、登入／私有文件及部署驗收。
+- [ ] 正式 Apps Script／Pages 發布、501 既有 room 三欄定點同步及正式登入／手機验收未完成。本候選不在任何 read path 修正式資料，也不重送補登交易。
+
 ## 2026-10-02 電表驗證恢復／台北日期（v203／Pages 已發布；登入唯讀通過）
 
 - [x] 最小化唯讀 metadata 確認失敗请求的 ID token 已過期；不保存 token／subject／秘密值，沒有讀私有原檔或寫业务資料。
