@@ -307,6 +307,88 @@ function canonicalDetailFixture(tenants) {
   return r;
 }
 
+// The profile must show terms from its exact current lease, not a bill, room
+// default, cancelled draft, or whichever history row happens to sort first.
+test('tenant load displays current lease money and dates above contact and billing', async () => {
+  const history = [
+    {contract_id:'C-cancelled',contract_status:'cancelled',rent_amount:99000},
+    {contract_id:'C-old',rent_amount:11000,management_fee:800,deposit_amount:22000},
+    {contract_id:'C-current',is_current:true,contract_status:'active',start_date:'2026-09-10T16:00:00.000Z',end_date:'2027-09-09T16:00:00.000Z',rent_amount:12800,management_fee:0,deposit_amount:25600,monthly_payment_day:10,electricity_fee_rate:3.5,equipment_fee_rate:2.5}
+  ];
+  const {r,finishDocuments} = detailLoadFixture(history);
+  Object.assign(r.context.__tenantResponse.data.tenants[0], {current_contract_id:'C-current',rent_amount:999,deposit_amount:999,latest_total_amount:555});
+  const before = JSON.stringify(history);
+  const loading = r.run('loadPage()');
+  finishDocuments({success:true,data:{contracts:[],documents:[]}});
+  await loading;
+  const page = r.nodes.get('app').innerHTML;
+  const summary = page.match(/<section[^>]+id="tenant-contract-summary"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(summary, /每月租金[\s\S]*NT\$ 12,800/);
+  assert.match(summary, /每月管理費[\s\S]*NT\$ 0/);
+  assert.match(summary, /合約押金[\s\S]*NT\$ 25,600/);
+  assert.match(summary, /2026-09-11 ～ 2027-09-10/);
+  assert.match(summary, /每月 10 日/);
+  assert.match(summary, /3\.5/);
+  assert.doesNotMatch(summary, /99,000|11,000|999|555/);
+  assert.ok(page.indexOf('id="tenant-contract-summary"') < page.indexOf('聯絡資料'));
+  assert.match(page, /C-old/);
+  assert.equal(JSON.stringify(history), before);
+  assert.equal(r.calls.length, 0, 'viewing lease details must not write records');
+});
+
+test('tenant summary keeps upcoming and expired lease terms visible with their lifecycle labels', () => {
+  const r = detailFixture();
+  for (const [status,label] of [['upcoming','待起租'],['expired','已到期']]) {
+    r.context.__tenant = {tenant_id:'T-fixture',current_contract_id:'C-current',contract_history:[{contract_id:'C-current',is_current:true,effective_contract_status:status,rent_amount:12800,deposit_amount:25600}]};
+    r.run('renderPage({tenants:[__tenant]}, [])');
+    const summary = r.nodes.get('app').innerHTML.match(/<section[^>]+id="tenant-contract-summary"[\s\S]*?<\/section>/)?.[0] || '';
+    assert.ok(summary.includes(label));
+    assert.match(summary, /12,800/);
+    assert.doesNotMatch(summary, /空房/);
+  }
+});
+
+test('tenant summary does not guess a current lease when its pointer is missing or ambiguous', () => {
+  const r = detailFixture();
+  for (const [pointer,history] of [
+    ['C-missing',[{contract_id:'C-other',is_current:true,rent_amount:99000}]],
+    ['', [{contract_id:'C-old',rent_amount:99000}]],
+    ['C-current',[{contract_id:'C-current',rent_amount:99000},{contract_id:'C-current',rent_amount:88000}]]
+  ]) {
+    r.context.__tenant = {tenant_id:'T-fixture',current_contract_id:pointer,contract_history:history};
+    r.run('renderPage({tenants:[__tenant]}, [])');
+    const summary = r.nodes.get('app').innerHTML.match(/<section[^>]+id="tenant-contract-summary"[\s\S]*?<\/section>/)?.[0] || '';
+    assert.match(summary, /尚無可確認的目前租約/);
+    assert.doesNotMatch(summary, /99,000|88,000/);
+  }
+});
+
+test('document fallback refreshes the visible lease summary without inventing a missing deposit', async () => {
+  const {r,finishDocuments} = detailLoadFixture([]);
+  r.context.__tenantResponse.data.tenants[0].current_contract_id = 'C-current';
+  const loading = r.run('loadPage()');
+  finishDocuments({success:true,data:{contracts:[{contract_id:'C-current',tenant_id:'T-fixture',contract_status:'active',contract_start:'2026-01-01',contract_end:'2026-12-31',rent_amount:12800,management_fee:0}],documents:[]}});
+  await loading;
+  const summary = r.nodes.get('tenantContractSummary')?.innerHTML || '';
+  assert.match(summary, /12,800/);
+  assert.match(summary, /合約押金[\s\S]*未提供/);
+  assert.match(summary, /2026-01-01 ～ 2026-12-31/);
+  assert.match(r.nodes.get('tenantContractHistory')?.innerHTML || '', /C-current/);
+  assert.ok(r.nodes.get('tenantInitialMeterReading'), 'refresh must preserve the meter form');
+});
+
+test('lease detail formatting distinguishes zero from missing money and escapes fee notes', () => {
+  const r = detailFixture();
+  r.context.__tenant = {tenant_id:'T-fixture',current_contract_id:'C-current',contract_history:[{contract_id:'C-current',rent_amount:0,management_fee:null,deposit_amount:'',other_fixed_fee_note:'<img src=x onerror=alert(1)>'}]};
+  r.run('renderPage({tenants:[__tenant]}, [])');
+  const summary = r.nodes.get('app').innerHTML.match(/<section[^>]+id="tenant-contract-summary"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(summary, /每月租金[\s\S]*NT\$ 0/);
+  assert.match(summary, /每月管理費[\s\S]*未提供/);
+  assert.match(summary, /合約押金[\s\S]*未提供/);
+  assert.doesNotMatch(summary, /<img/);
+  assert.match(summary, /&lt;img/);
+});
+
 test('old uppercase tenant URL resolves the server canonical ID before document and meter reads', async () => {
   const r = canonicalDetailFixture([{
     tenant_id:'tenant-fixture-uuid',tenant_name:'Fixture tenant',room_list:'Fixture room',

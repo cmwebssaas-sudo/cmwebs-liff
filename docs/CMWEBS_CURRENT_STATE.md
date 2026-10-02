@@ -3,6 +3,14 @@
 **Status: AUTHORITATIVE current-state record**
 **Last verified: 2026-10-02 (Asia/Taipei)**
 
+## 2026-10-02 房客租約金額摘要修復候選
+
+使用者回報房客詳細資料未連動租金、押金與細節。隔離分支 `codex/tenant-lease-details-20261002` 從 fresh main `cc01e81` 開始，建議模型／速度 `gpt-5.6-terra / medium`。程式追查確認既有 `landlord_tenants.contract_history` 已有金額，但只在帳款下方版本紀錄顯示；文件補回歷史後沒有重繪合約區。候選在個人資料下方顯示 exact current lease 的租金／管理費／押金／租期／繳款日及既有費率，保留歷史版與文件／電表入口。0 與缺值分開，不以房間舊預設、帳單或任意歷史金額替代。
+
+5 項 RED/GREEN、全套482/482、validate、diff-check通過；桌面與390px合成隔離預覽可讀且費用展開可用。共享 cache tag `20261002-tenant-lease-summary-v1`，其餘頁僅機械同步。Apps Script 無變更，CLI正式仍v204，無API／Schema／業務資料／私有檔案／Properties／trigger／LINE寫入或版本刪除。待Pages發布／公開讀回；rollback前端 `cc01e81`，後端v204保留。
+
+正式登入仍未完成；先前501三個金額保存仍待既有房東登入，不使用直接Sheets寫入繞過權限，不宣稱authenticated／手機真機已驗收。原混合WIP不變；不開無關專案討論。
+
 ## 2026-10-02 紙本補登金額／待起租房客 v204 與 Pages 已發布；501 三欄同步待登入
 
 使用者確認發布修正版，並只將 501 房間設定同步為月租 NT$19,570、管理費 NT$0、押金 NT$39,140；不改租約、租期或歷史帳單。Fresh Git main 為 `f59e205`，正式 Web App 與 editor HEAD 的 59 檔皆符合 v203；正式專案／帳戶及原 deployment 已核對。原目錄仍保留 408 筆混合 WIP，不開無關專案討論。

@@ -128,7 +128,7 @@ test('a dated paper lease keeps effective history and recovery after expiry with
 });
 
 test('detail renewal/checkout controls follow effective paper status, not a stale stored upcoming label', () => {
-  const c = pageFunctions('landlord-tenant-detail.html', ['renderContractHistory'], {
+  const c = pageFunctions('landlord-tenant-detail.html', ['tenantContractMoney', 'renderContractHistory'], {
     rawText:value => String(value ?? ''), normalizedStatus:value => String(value ?? '').toLowerCase(),
     numberValue:(value,fallback) => Number(value) || fallback, safeHtml:value => String(value ?? ''),
     escapeHtml:value => String(value ?? ''), money:value => String(value ?? 0), formatDate:value => value,
