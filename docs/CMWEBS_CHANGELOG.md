@@ -981,3 +981,6 @@
 - Recorded authoritative V2/V3/V4 boundaries, BYO LINE OA ownership, standard
   branding, no functional customization, and the V2 performance priorities.
 - Added a new-conversation handoff contract and release-safety rules.
+# 2026-10-04 出租收益與估值出售試算（本機候選）
+
+新增預計售價、出售費用、剩餘貸款、歷年營運支出；分開出售獲利、出售回報率、含出租總淨獲利及現金。成本水平線與出售比較圖即時更新，缺值不假設零，未發布、不改營收資料或後端。
