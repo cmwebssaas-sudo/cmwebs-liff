@@ -1,5 +1,13 @@
 # V2 回歸測試矩陣
 
+## 2026-10-04 年度收益估值（本機候選，未發布）
+
+- [x] `asset-income-valuation.test.mjs`：跨 Workspace／物件、付款確認、歷年與 as-of cutoff、本期 KPI 不變；四率公式、最高／平均、空／零／負／badInput 成本、缺年／無估值點、空資料與舊 backend fallback。
+- [x] 桌面 Email 不初始化 LINE；沒有 Email token 的已登入 LINE 可使用原路徑；共用 auth/API 處理權限。
+- [x] 合成 browser 核對 2% 預設、最高／平均／不完整年 opt-in、四率切換、成本錯誤與年份圓餅圖；桌面 1280px／手機預覽保留固定 shell。
+- [ ] 正式發布、authenticated API／瀏覽器／LINE 真機尚未執行。沒有正式帳務寫入或 schema 變更。
+
+
 ## 2026-10-03 首頁前端正式發布（Pages完成，登入／真機待驗收）
 
 - [x] fresh Pages來源main根目錄、built commit133549e與origin/main一致；回退目標記錄，root408筆WIP保留。

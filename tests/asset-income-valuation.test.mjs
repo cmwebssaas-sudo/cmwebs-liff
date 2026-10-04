@@ -1,0 +1,167 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync } from 'node:fs';
+import vm from 'node:vm';
+import { createPreviewServer } from '../scripts/preview-asset-valuation.mjs';
+
+const backend = vm.createContext({ console, Date });
+vm.runInContext(readFileSync(new URL('../apps-script/V2_REPORTING_DASHBOARD.js', import.meta.url), 'utf8'), backend);
+const url = new URL('../assets/js/cmwebs-asset-valuation.js', import.meta.url);
+const frontend = vm.createContext({});
+if (existsSync(url)) vm.runInContext(readFileSync(url, 'utf8'), frontend);
+const plain = value => JSON.parse(JSON.stringify(value));
+
+test('all-history income respects workspace/property, paid confirmation and cutoff without changing period KPIs', () => {
+  const bill = (id, month, amount, extra = {}) => ({ bill_id: id, bill_month: month, total_amount: amount, payment_status: 'paid', workspace_id: 'W1', property_id: 'P1', ...extra });
+  const result = backend.revenueDashboardAggregate_({
+    properties: [{ property_id: 'P1', workspace_id: 'W1' }, { property_id: 'P2', workspace_id: 'W1' }],
+    bills: [bill('old', '2013-07', 1200, { notes: '人工按月分配' }), bill('zero', '2013-08', 300, { payment_status: 'pending' }),
+      bill('current', '2026-01', 900), bill('partial', '2026-02', 1000, { payment_status: 'pending' }),
+      bill('void', '2026-01', 100, { bill_status: 'cancelled' }), bill('future', '2026-12', 900),
+      bill('other-workspace', '2026-01', 800, { workspace_id: 'W2' }), bill('other-property', '2026-01', 700, { property_id: 'P2' })],
+    payments: [{ bill_id: 'partial', amount: 200, status: 'confirmed', workspace_id: 'W1' },
+      { bill_id: 'partial', amount: 500, status: 'pending', workspace_id: 'W1' },
+      { bill_id: 'partial', amount: 800, status: 'confirmed', workspace_id: 'W2' }]
+  }, { workspace_id: 'W1', property_id: 'P1', from_month: '2026-01', to_month: '2026-01', as_of: '2026-10-04' });
+  assert.equal(result.kpis.collected, 900);
+  assert.deepEqual(plain(result.annual_income), [
+    { year: 2013, collected: 1200, recorded_months: 2, allocated_bill_count: 1, months: [{ month: '2013-07', collected: 1200 }, { month: '2013-08', collected: 0 }] },
+    { year: 2026, collected: 1100, recorded_months: 2, allocated_bill_count: 0, months: [{ month: '2026-01', collected: 900 }, { month: '2026-02', collected: 200 }] }
+  ]);
+});
+
+test('four rate scenarios use recorded annual income, never annualize a partial year', () => {
+  assert.ok(frontend.CMWebsAssetValuation, 'valuation model not yet implemented');
+  for (const [rate, expected] of [[2, 6000000], [3, 4000000], [4, 3000000], [4.5, 2666666.6666666665]]) {
+    const value = frontend.CMWebsAssetValuation.calculate({ collected: 120000, recorded_months: 6 }, rate, '');
+    assert.ok(Math.abs(value.gross_value - expected) < .000001);
+    assert.equal(value.net_value, null);
+  }
+});
+
+test('net scenario requires an explicit expense, rejects invalid rates/costs and nonpositive income', () => {
+  assert.ok(frontend.CMWebsAssetValuation);
+  const calculate = frontend.CMWebsAssetValuation.calculate;
+  assert.equal(calculate({ collected: 120000 }, 4, '20000').net_value, 2500000);
+  assert.equal(calculate({ collected: 120000 }, 4, '0').net_value, 3000000);
+  assert.equal(calculate({ collected: 120000 }, 4, '120000').net_value, null);
+  assert.equal(calculate({ collected: 0 }, 4, '').gross_value, null);
+  assert.throws(() => calculate({ collected: 120000 }, 0, ''), /rate/i);
+  for (const value of ['-1', 'abc', 'Infinity']) assert.throws(() => calculate({ collected: 120000 }, 4, value), /expense/i);
+});
+
+test('desktop email report reuses shared session without LINE init or redirect', async () => {
+  const page = readFileSync(new URL('../landlord-revenue-dashboard.html', import.meta.url), 'utf8');
+  const script = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(match => match[1]).find(body => body.includes('async function initLineUserId'));
+  let lineCalls = 0;
+  let requestConfig;
+  const context = vm.createContext({ URL, URLSearchParams, location: { href: 'https://example.test/landlord-revenue-dashboard.html', search: '' },
+    document: { documentElement: { style: { setProperty() {} } } },
+    liff: { async init() { lineCalls++; }, isLoggedIn() { return false; } },
+    CMWebsLandlordAuth: { init() { return this; }, getMode() { return 'email'; }, getRequestAuthParams() { return { landlord_session_token: 'synthetic-session' }; } },
+    CMWebsLandlordApi: { async request(config) { requestConfig = config; return { success: true, data: { annual_income: [] } }; } },
+    innerHeight: 800, addEventListener() {}, setTimeout, clearTimeout, console });
+  context.window = context;
+  vm.runInContext(script.replace(/\(async function \(\) \{ try \{ if \(await initLineUserId\(\)\)[\s\S]*?\}\(\)\);/, ''), context);
+  assert.equal(await context.initLineUserId(), true);
+  assert.equal(lineCalls, 0);
+  const response = await context.jsonpRequest('landlord_revenue_dashboard_init', { range: '12m' });
+  assert.equal(response.success, true);
+  assert.equal(requestConfig.action, 'landlord_revenue_dashboard_init');
+  assert.equal(requestConfig.params.range, '12m');
+});
+
+test('valuation curves neither bridge a missing year nor plot unavailable value as zero', () => {
+  const nodes = new Map();
+  const node = () => ({ innerHTML: '', textContent: '', value: '', insertAdjacentHTML() {}, addEventListener() {}, setAttribute() {}, removeAttribute() {} });
+  const host = { innerHTML: '', querySelector(selector) { if (!nodes.has(selector)) nodes.set(selector, node()); return nodes.get(selector); }, querySelectorAll() { return []; } };
+  frontend.CMWebsAssetValuation.mount(host, [
+    { year: 2023, collected: 100, recorded_months: 1, months: [] },
+    { year: 2025, collected: 200, recorded_months: 1, months: [] },
+    { year: 2026, collected: 0, recorded_months: 1, months: [] }
+  ]);
+  const graphs = nodes.get('[data-charts]').innerHTML;
+  const valuation = graphs.split('<article>')[3];
+  assert.equal((valuation.match(/<circle /g) || []).length, 2, 'zero income has no asset estimate point');
+  assert.equal((valuation.match(/<polyline /g) || []).length, 0, 'missing year must not be bridged');
+});
+
+test('empty annual response never manufactures income', () => {
+  const result = backend.revenueDashboardAggregate_({}, { workspace_id: 'W1', from_month: '2026-01', to_month: '2026-01', as_of: '2026-10-04' });
+  assert.deepEqual(plain(result.annual_income), []);
+  const host = { innerHTML: '' };
+  frontend.CMWebsAssetValuation.mount(host, []);
+  assert.match(host.innerHTML, /沒有可用/);
+  frontend.CMWebsAssetValuation.mount(host, undefined);
+  assert.match(host.innerHTML, /尚未提供年度資料/);
+});
+
+test('highest and average valuation choose real annual income and exclude partial years by default', () => {
+  assert.equal(typeof frontend.CMWebsAssetValuation.basis, 'function');
+  const rows = [{year:2023,collected:120000,recorded_months:12}, {year:2024,collected:180000,recorded_months:12}, {year:2025,collected:10000,recorded_months:2}];
+  assert.equal(frontend.CMWebsAssetValuation.basis(rows, 'highest', 2025).row.collected, 180000);
+  assert.equal(frontend.CMWebsAssetValuation.basis(rows, 'highest', 2025).row.year, 2024);
+  assert.equal(frontend.CMWebsAssetValuation.basis(rows, 'average', 2025).row.collected, 150000);
+  assert.equal(frontend.CMWebsAssetValuation.basis(rows, 'average', 2025, true).row.collected, 310000 / 3);
+  assert.equal(frontend.CMWebsAssetValuation.basis([rows[2]], 'average', 2025).row, null);
+  assert.equal(frontend.CMWebsAssetValuation.calculate({collected:150000}, 2, '').gross_value, 7500000);
+});
+
+test('badInput on expense control cannot be mistaken for a blank cost', () => {
+  const nodes = new Map();
+  const node = () => ({innerHTML:'',textContent:'',value:'',validity:{badInput:false},insertAdjacentHTML() {},addEventListener() {},setAttribute() {},removeAttribute() {}});
+  const host = {innerHTML:'',querySelector(selector) {if (!nodes.has(selector)) nodes.set(selector,node());return nodes.get(selector);},querySelectorAll(){return [];} };
+  nodes.set('[data-expense]', {...node(),validity:{badInput:true}});
+  frontend.CMWebsAssetValuation.mount(host,[{year:2026,collected:144000,recorded_months:6,months:[]}]);
+  assert.match(nodes.get('[data-error]').textContent,/請輸入/);
+});
+
+test('average basis visibly requests average costs for the same included years', () => {
+  const nodes = new Map();
+  const node = () => ({innerHTML:'',textContent:'',value:'',insertAdjacentHTML(){},addEventListener(type, fn){this[type]=fn;},setAttribute(){},removeAttribute(){}});
+  const average = {...node(),dataset:{basis:'average'}};
+  const host = {innerHTML:'',querySelector(selector){if(!nodes.has(selector))nodes.set(selector,node());return nodes.get(selector);},querySelectorAll(selector){return selector==='[data-basis]'?[average]:[];}};
+  frontend.CMWebsAssetValuation.mount(host,[{year:2023,collected:120,recorded_months:12,months:[]},{year:2024,collected:180,recorded_months:12,months:[]},{year:2026,collected:50,recorded_months:1,months:[]}]);
+  average.click();
+  assert.match(nodes.get('[data-cost-label]')?.textContent || '',/平均年度營運成本/);
+  assert.match(nodes.get('[data-cost-label]').textContent,/2023、2024/);
+});
+
+test('desktop existing LINE login remains usable without an email token', async () => {
+  const page = readFileSync(new URL('../landlord-revenue-dashboard.html', import.meta.url), 'utf8');
+  const script = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(match => match[1]).find(body => body.includes('async function initLineUserId'));
+  let lineCalls = 0;
+  const context = vm.createContext({URL,URLSearchParams,location:{href:'https://example.test/landlord-revenue-dashboard.html',search:''},document:{documentElement:{style:{setProperty(){}}}},
+    CMWebsLandlordAuth:{init(){return this;},getMode(){return 'email';},getRequestAuthParams(){return {}; }},
+    liff:{async init(){lineCalls++;},isLoggedIn(){return true;},async getProfile(){return {userId:'synthetic-line-id'};}},
+    innerHeight:800,addEventListener(){},setTimeout,clearTimeout,console });
+  context.window=context;
+  vm.runInContext(script.replace(/\(async function \(\) \{ try \{ if \(await initLineUserId\(\)\)[\s\S]*?\}\(\)\);/, ''),context);
+  assert.equal(await context.initLineUserId(),true);
+  assert.equal(lineCalls,1);
+  assert.equal(context.location.href,'https://example.test/landlord-revenue-dashboard.html');
+});
+
+test('annual and existing period income share the exact same status rules', () => {
+  const result = backend.revenueDashboardAggregate_({properties:[{property_id:'P1',workspace_id:'W1'}],bills:[
+    {bill_id:'B1',bill_month:'2026-01',workspace_id:'W1',property_id:'P1',total_amount:1200,bill_status:'reversed',payment_status:'paid'}
+  ]},{workspace_id:'W1',from_month:'2026-01',to_month:'2026-01',as_of:'2026-10-04'});
+  assert.equal(result.annual_income[0]?.collected,result.kpis.collected);
+});
+
+test('preview is loopback-only synthetic output and denies private files and POST', async () => {
+  const server = createPreviewServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const base = 'http://127.0.0.1:' + server.address().port;
+    const response = await fetch(base + '/');
+    assert.equal(response.status,200);
+    assert.match(response.headers.get('content-security-policy'),/connect-src 'none'/);
+    const page = await response.text();
+    assert.match(page,/本機功能預覽/);
+    assert.doesNotMatch(page,/<script src="https:/);
+    assert.equal((await fetch(base + '/docs/CMWEBS_CURRENT_STATE.md')).status,404);
+    assert.equal((await fetch(base + '/', {method:'POST'})).status,405);
+    assert.equal((await fetch(base + '/mobile')).status,200);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});

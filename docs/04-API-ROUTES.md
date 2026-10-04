@@ -381,7 +381,7 @@ tenant_payment_account_cover
 
 | Route | Transport | Required authority | Purpose |
 |---|---|---|---|
-| `landlord_revenue_dashboard_init` | JSONP / bridge | Active Workspace landlord read access | Returns Workspace-scoped revenue KPIs, monthly receivable/collected/outstanding aggregates, payment-status distribution, overdue ratio/ageing, occupancy, contract-expiry distribution, property aggregates, and range metadata. It never returns raw bills, payments, tenant names, LINE IDs, or bank data. |
+| `landlord_revenue_dashboard_init` | JSONP / bridge | Active Workspace landlord read access | Returns Workspace-scoped revenue KPIs, monthly receivable/collected/outstanding aggregates, payment-status distribution, overdue ratio/ageing, occupancy, contract-expiry distribution, property aggregates, and range metadata. Local candidate adds `annual_income` (all-history through as-of month, same Workspace/property/payment rules; each year includes `collected`, `recorded_months`, `allocated_bill_count`, `months`). Period KPIs and the 24-month range limit remain unchanged. It never returns raw bills, payments, tenant names, LINE IDs, notes, or bank data. |
 
 - Required filters are `range` (`month`, `3m`, or `12m`) or an explicit
   `from_month`/`to_month` pair. `property_id` is optional and cannot expand the

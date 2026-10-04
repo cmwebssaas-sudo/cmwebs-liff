@@ -1,10 +1,10 @@
 {
   "verified_on": "2026-10-03",
   "source_commit": "500f0f8db2e0c05653904d815de373f5d54920f6",
-  "backend_verified_on": "2026-10-02",
-  "backend_source_commit": "c583d36374d19af4b526af229828b8dded4d0290",
+  "backend_verified_on": "2026-10-04",
+  "backend_source_commit": "5abc7f6",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 205,
+  "backend_version": 206,
   "frontend_revision": "074c225d27d271291f68f8347c0e8c6c9e8fe11e",
   "frontend_workflow": "37068482843",
   "frontend_public_file_count_verified": 43,
@@ -20,13 +20,16 @@
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
   "backend_file_count": 59,
-  "backend_tree_sha256": "28e2c9680297d1ad60b898e1abf6de32990904903c950fa6d571d5b65c8beca1",
+  "backend_tree_sha256": "2bff8b1a913a8e7ed16bc889a963accc78fc32fcf9d2e8091cae152191784223",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
+    "assets/css/cmwebs-asset-valuation.css",
+    "assets/js/cmwebs-asset-valuation.js",
     "frontend-release.js",
     "landlord-activity.html",
     "landlord-announcements.html",
+    "landlord-api.js",
     "landlord-arrears.html",
     "landlord-auth.js",
     "landlord-bill-notifications.html",
@@ -81,14 +84,40 @@
     "deleted_versions_in_this_release": 0
   },
   "historical_batch_cleanup": {
-    "deleted_ranges": [[1, 9], [11, 75], [77, 84], [86, 100]],
+    "deleted_ranges": [
+      [
+        1,
+        9
+      ],
+      [
+        11,
+        75
+      ],
+      [
+        77,
+        84
+      ],
+      [
+        86,
+        100
+      ]
+    ],
     "deleted_count": 97,
     "authority": "User confirmed the exact 97-version batch and publication at the final permanent-deletion dialog",
     "source_backup_version_count": 97,
     "source_backup_file_count": 1859,
     "source_backup_bytes": 72263091,
     "manifest_sha256": "fc7d272a1e25b43cdf3cb0ccbc0c053054e1f5b06d0e3329d69a121ac53f0c8e",
-    "protected_versions": [10, 76, 85, 139, 160, 200, 201, 202],
+    "protected_versions": [
+      10,
+      76,
+      85,
+      139,
+      160,
+      200,
+      201,
+      202
+    ],
     "deployments_unchanged_at_deletion": true,
     "remaining_version_count_after_release": 104,
     "available_slots_after_release": 96,
@@ -119,5 +148,14 @@
     "restored_public_file_count": 17,
     "editor_head_restored_to_version": 200,
     "required_approval": "Delete only unreferenced and locally exported version 199; retain version 200 and all existing deployments/data."
+  },
+  "backend_rollback_version": 205,
+  "asset_income_valuation": {
+    "scope": "Authorized V2.1 annual income reporting and asset yield scenarios; default2 percent highest or average or selected year. Immutable206 export59 files matches candidate, existing URL unchanged. Frontend publication and authenticated acceptance pending.",
+    "verified_on": "2026-10-04",
+    "frontend_release_tag": "20261004-asset-income-valuation-v1",
+    "candidate": "5abc7f6",
+    "frontend_rollback_revision": "566be22728364fe87ca7c62b03d479c5b29bdf01",
+    "tests_passed": 515
   }
 }

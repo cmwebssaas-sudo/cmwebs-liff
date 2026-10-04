@@ -1,5 +1,12 @@
 # CMWebs Changelog
 
+## 2026-10-04 — 年度收益回推資產情境估值（本機候選，未發布）
+
+- 使用者批准既有營收頁擴充；後續指定最高年度營收／平均年度營收基準，預設 2% 與 3%、4%、4.5% 選項。平均預設 12 個月有紀錄年份，可勾選包含不完整年；不年化、不補零、不當成正式市場鑑價。
+- authorized reporting snapshot 同一 scan 增加年度聚合，不新增 Sheet 欄位／API route／讀取；原本範圍 KPI 保留。UI 提供年度柱狀、收入及估值曲線、月份圓餅與明細；可填記憶體內成本試算，刷新不保存。
+- 共用 Email／LINE auth，保留 fixed shell。獨立審查後修正桌面既有 LINE session、年度 status 規則一致、invalid number badInput、缺年曲線／無估值不畫零。
+- feature branch `codex/asset-income-valuation-20261004`，root mixed WIP 不動；preview 全合成且 CSP 禁止正式 API。尚未 push／PR／merge／Pages／Apps Script／正式資料操作。詳見 `ASSET-INCOME-VALUATION.md`。
+
 ## 2026-10-03 — 首頁前端已正式發布
 
 - 使用者批准發布本機已驗證候選286ebe3：既有首頁綠色視覺、圖表進場／圓環旋轉、手動暫停／reduced-motion、Email省去LINE SDK下載、待辦原地更新。正式mobile仍是同一responsive homepage；`/mobile`只屬本機預覽，不建立新正式路由。
