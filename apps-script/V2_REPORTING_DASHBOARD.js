@@ -228,6 +228,10 @@ function revenueDashboardAggregate_(
   });
 
   const monthMap = {};
+  // All-history read model shares the authorized snapshot and payment logic.
+  // The existing bounded report range/KPIs remain unchanged.
+  const annualMap = {};
+  const incomeCutoff = revenueDashboardNormalizeMonth_(asOfDate);
   const propertyTotals = {};
   const statusTotals = revenueDashboardStatusTotals_();
   const agingTotals = revenueDashboardAgingTotals_();
@@ -254,7 +258,6 @@ function revenueDashboardAggregate_(
         options,
         propertyMap
       ) ||
-      !revenueDashboardMonthInRange_(month, fromMonth, toMonth) ||
       (propertyFilter && propertyFilter !== propertyId) ||
       !revenueDashboardBillIsIncluded_(bill) ||
       amount <= 0
@@ -268,6 +271,15 @@ function revenueDashboardAggregate_(
       paymentTotals[billId] || 0,
       amount
     );
+    if (month <= incomeCutoff) {
+      const year = Number(month.slice(0, 4));
+      if (!annualMap[year]) annualMap[year] = { year: year, collected: 0, allocated_bill_count: 0, month_totals: {} };
+      const annual = annualMap[year];
+      annual.collected += collected;
+      annual.month_totals[month] = (annual.month_totals[month] || 0) + collected;
+      if (/人工|平均|分配|allocat|manual/i.test(revenueDashboardText_(bill.notes || bill.note || bill.remark))) annual.allocated_bill_count += 1;
+    }
+    if (!revenueDashboardMonthInRange_(month, fromMonth, toMonth)) return;
     const paymentState = revenueDashboardPaymentState_(
       bill,
       collected,
@@ -404,6 +416,17 @@ function revenueDashboardAggregate_(
       collection_rate: kpis.collection_rate
     },
     months: months,
+    annual_income: Object.keys(annualMap).sort().map(function (year) {
+      const row = annualMap[year];
+      const recordedMonths = Object.keys(row.month_totals).sort();
+      return {
+        year: row.year,
+        collected: row.collected,
+        recorded_months: recordedMonths.length,
+        allocated_bill_count: row.allocated_bill_count,
+        months: recordedMonths.map(function (month) { return { month: month, collected: row.month_totals[month] }; })
+      };
+    }),
     properties: propertyRows,
     metrics: {
       bill_count: billCount,

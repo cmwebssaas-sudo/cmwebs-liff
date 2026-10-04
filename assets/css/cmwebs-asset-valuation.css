@@ -1,0 +1,28 @@
+.av h2 { margin: 5px 0 12px; font-size: 25px; letter-spacing: -.04em; }
+.av-note { color: #6b778c; font-size: 12px; line-height: 1.8; }
+.av-rates { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
+.av-rates button { min-width: 64px; min-height: 44px; border: 1px solid #dce5ef; border-radius: 12px; background: #f6f9fd; color: #152238; cursor: pointer; font-weight: 800; }
+.av-rates button[aria-pressed=true] { background: #152238; color: white; border-color: #152238; }
+.av button:focus-visible, .av select:focus-visible, .av input:focus-visible, .av summary:focus-visible { outline: 3px solid #246bfd; outline-offset: 3px; }
+.av-controls { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+.av-controls label { font-size: 12px; color: #6b778c; }
+.av-controls input, .av-controls select { display: block; width: 100%; min-height: 44px; margin-top: 7px; padding: 10px; border: 1px solid #dce5ef; border-radius: 10px; background: white; color: #152238; font: inherit; }
+.av-metrics { display: grid; gap: 12px; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 18px; }
+.av-metrics > div { padding: 16px; border-radius: 12px; background: #f1f6fc; }
+.av-metrics small { display: block; color: #6b778c; line-height: 1.6; }
+.av-metrics strong { display: block; margin-top: 8px; font-size: clamp(18px,2vw,26px); color: #152238; overflow-wrap: anywhere; }
+.av-warning { padding: 12px; border-left: 3px solid #eb9a38; background: #fff9eb; color: #765725; font-size: 12px; line-height: 1.7; }
+.av-error { color: #c83c4a; font-size: 13px; }
+.av-chart-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 24px 0; }
+.av-chart-grid article { border: 1px solid #e5eaf1; border-radius: 14px; padding: 14px; min-width: 0; overflow-x: auto; }
+.av-chart-grid h3 { font-size: 14px; margin: 0 0 16px; }
+.av-chart-grid svg { width: 100%; min-width: 440px; display: block; }
+.av-pie { display: flex; align-items: center; gap: 12px; min-width: 350px; }
+.av-pie svg { min-width: 150px; width: 150px; flex-shrink: 0; }
+.av-pie ul { list-style: none; margin: 0; padding: 0; width: 100%; font-size: 11px; }
+.av-pie li { display: flex; align-items: center; gap: 6px; padding: 5px 0; }
+.av-pie li span { margin-left: auto; }
+.av-pie i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.av summary { cursor: pointer; min-height: 44px; font-size: 13px; padding: 12px 0; }
+@media(min-width:800px) { html .app-shell { max-width: 1200px; } .app-shell .page { padding-left: 28px; padding-right: 28px; } }
+@media(max-width:600px) { .av-controls, .av-chart-grid, .av-metrics { grid-template-columns: 1fr; } .av-pie { min-width: 0; flex-direction: column; } }
