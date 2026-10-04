@@ -710,6 +710,45 @@ guardedTest('Phase 219 exposes uniform auth failure handling without retrying or
   assert.match(context.location.replacedWith, /return_to=landlord-properties\.html%3Ftest%3D1/);
 });
 
+for (const page of ['landlord-home.html', 'landlord-tenants.html', 'landlord-properties.html', 'landlord-contract-requests.html', 'landlord-arrears.html']) {
+  guardedTest(`desktop LINE bootstrap obtains identity before reading ${page}`, async () => {
+    const { context } = createRuntime(1280);
+    const pageSource = readFileSync(new URL('../' + page, import.meta.url), 'utf8');
+    vm.runInContext(`
+      const TEST_MODE = false;
+      let LINE_USER_ID = '';
+      let LANDLORD_AUTH = null;
+      let lineInitializations = 0;
+      function initLandlordAuthClient() {
+        return LANDLORD_AUTH = window.CMWebsLandlordAuth.init({lineUserId: LINE_USER_ID});
+      }
+      async function initLineUserId() {
+        lineInitializations++;
+        LINE_USER_ID = 'synthetic-line-principal';
+        return true;
+      }
+      let initLine = initLineUserId;
+      async ${extractFunctionSource(pageSource, 'ensureLandlordAuthReady')}
+    `, context);
+    assert.equal(await context.ensureLandlordAuthReady(), true);
+    assert.equal(vm.runInContext('lineInitializations', context), 1);
+    assert.equal(context.CMWebsLandlordAuth.getRequestAuthParams().line_user_id, 'synthetic-line-principal');
+    vm.runInContext("LINE_USER_ID = ''; LANDLORD_AUTH = null; lineInitializations = 0;", context);
+    context.sessionStorage.setItem('cmwebs_landlord_session_token', 'synthetic-email-session');
+    assert.equal(await context.ensureLandlordAuthReady(), true);
+    assert.equal(vm.runInContext('lineInitializations', context), 0);
+    assert.equal(context.CMWebsLandlordAuth.getRequestAuthParams().landlord_session_token, 'synthetic-email-session');
+    context.sessionStorage.removeItem('cmwebs_landlord_session_token');
+    vm.runInContext("LANDLORD_AUTH = null; initLine = initLineUserId = async () => false;", context);
+    assert.equal(await context.ensureLandlordAuthReady(), false);
+  });
+}
+
+guardedTest('desktop without an Email session uses LINE authentication, not screen size', () => {
+  const { context } = createRuntime(1280);
+  assert.equal(context.CMWebsLandlordAuth.getMode(), 'line');
+});
+
 guardedTest('Phase 219 keeps mobile in LINE mode unless an Email session exists', () => {
   const { context } = createRuntime(390);
   const auth = context.window.CMWebsLandlordAuth;

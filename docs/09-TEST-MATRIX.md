@@ -1,5 +1,12 @@
 # V2 回歸測試矩陣
 
+## 2026-10-05 電腦版登入後缺少 LINE 身分修正
+
+- 五頁實際 ensureLandlordAuthReady 與真實 shared auth 重現：無 Email token 的桌面被誤判 Email，LINE 初始化次數為 0；新增六項回歸 RED→GREEN。
+- getMode 只依 Email session 判斷，沒有 token 則進 LINE 初始化；桌面 Email 表單偏好只在入口決定，不代表已登入。五頁同時測 Email session 不啟動 LINE、LINE redirect pending 不讀資料。
+- 發布範圍沿用使用者登入修正授權；只有前端、cache 標記及測試文件，無 Apps Script／Schema／正式業務資料修改。回退 main c7b2530。
+- 真實桌面 LINE OAuth 與登入後跨頁資料验收仍待確認，單元測試不等於此驗收。
+
 ## 2026-10-05 電腦版 Email 入口手動 LINE 選擇（未發布）
 
 - [x] phase244 實際 entry script 重現 mode=email + 已登入 LINE：按下 LINE 後不再回 Email，完成既有 home 導覽；RED→GREEN。

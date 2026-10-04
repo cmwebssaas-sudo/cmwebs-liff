@@ -51,16 +51,6 @@
     }
   }
 
-  function isDesktop() {
-    if (
-      window.matchMedia &&
-      window.matchMedia('(min-width: 1024px)').matches
-    ) {
-      return true;
-    }
-    return Number(window.innerWidth || 0) >= 1024;
-  }
-
   function requestId() {
     const random =
       Math.random()
@@ -353,9 +343,9 @@
       if (getSessionToken()) {
         return 'email';
       }
-      return isDesktop()
-        ? 'email'
-        : 'line';
+      // A desktop layout is not proof of an Email session. Protected pages
+      // must initialize LIFF when no authenticated Email token exists.
+      return 'line';
     },
 
     getRequestAuthParams() {
