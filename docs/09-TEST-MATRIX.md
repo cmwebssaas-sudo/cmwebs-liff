@@ -2,6 +2,8 @@
 
 ## 2026-10-05 導覽／退房選擇與合約驗證狀態（候選）
 
+- 使用者明確批准「將這次前端修正發布」；候選 35adf9c，正式 cache tag `20261005-landlord-navigation-review-v1`。僅發布已記錄前端修正，回退 b183c22，不部署 Apps Script 或更動業務資料。
+
 - 九個既有桌面側欄核對八個既有入口，退房先開房客名單；營收頁補退房入口。沒有 contract_id 的退房網址顯示選擇指引，不建立 session、不寫資料；單筆退房仍從房客詳細資料帶入既有合約。
 - 合約 auth／review／initiated status 沿用共用 JSONP，dispatcher 原本已支援 callback；不經 callApi 的 data unwrap。驗證失敗保留原始碼與訊息，缺失／確認過期 LINE 憑證才顯示手動重登入，不繞過伺服器 Workspace 與角色驗證。
 - 本機重現側欄缺項／錯誤退房網址、cross-origin fetch 失敗與原始驗證錯誤遭遮蔽；根因不同於上一版資料讀取缺少 LINE ID。真實合約驗證最初失敗的 provider／網路原因尚未被正式登入證據確定，不能因本機測試宣稱所有合約已恢復。
