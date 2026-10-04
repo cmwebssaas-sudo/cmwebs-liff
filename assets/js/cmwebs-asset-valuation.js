@@ -30,6 +30,28 @@
       net_value: net !== null && net > 0 ? net / (Number(rate) / 100) : null };
   }
 
+  function investmentReturns(rows, annualIncome, costs, expense) {
+    const amounts = ['purchase', 'renovation', 'other'].map(key => {
+      const raw = costs[key];
+      if (raw === undefined || raw === null || String(raw).trim() === '') return key === 'other' ? 0 : null;
+      const value = Number(raw);
+      if (!Number.isFinite(value) || value < 0) throw new Error('Invalid investment');
+      return value;
+    });
+    const invested = amounts.includes(null) ? null : amounts.reduce((sum, value) => sum + value, 0);
+    if (invested !== null && !Number.isFinite(invested)) throw new Error('Invalid investment');
+    const total = rows.reduce((sum, row) => {
+      const value = Number(row.collected);
+      if (!Number.isFinite(value) || value < 0) throw new Error('Invalid income');
+      return sum + value;
+    }, 0);
+    if (!Number.isFinite(total)) throw new Error('Invalid income');
+    const net = annualIncome === null ? null : calculate({ collected: annualIncome }, 2, expense).net_income;
+    const percent = value => invested > 0 && value !== null && Number.isFinite(value / invested * 100) ? value / invested * 100 : null;
+    return { total_collected: total, total_invested: invested, annual_gross_return: percent(annualIncome),
+      cumulative_gross_return: percent(total), annual_net_return: percent(net) };
+  }
+
   function chart(rows, key, label, bars) {
     if (!rows.length) return '<p class="av-note">沒有年度資料。</p>';
     const max = Math.max(1, ...rows.map(row => Number(row[key]) || 0));
@@ -43,7 +65,15 @@
     });
     const ticks = [0, .5, 1].map(ratio => '<line x1="64" x2="620" y1="' + (186 - ratio * 140) + '" y2="' + (186 - ratio * 140) + '" stroke="#e3eaf3"/><text x="58" y="' + (190 - ratio * 140) + '" text-anchor="end" font-size="10" fill="#6b778c">' + (max * ratio / 10000).toFixed(1) + '萬</text>').join('');
     const series = bars ? points.map(p => '<rect x="' + (p.x - slot * .29) + '" y="' + p.y + '" width="' + slot * .58 + '" height="' + (186 - p.y) + '" rx="3" fill="#246bfd"><title>' + escape(p.row.year) + '：' + money(p.row[key]) + '</title></rect>').join('') : segments.filter(segment => segment.length > 1).map(segment => '<polyline points="' + segment.map(p => p.x + ',' + p.y).join(' ') + '" fill="none" stroke="#09a77b" stroke-width="3"/>').join('') + points.map(p => '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="#09a77b"><title>' + escape(p.row.year) + '：' + money(p.row[key]) + '</title></circle>').join('');
-    return '<svg viewBox="0 0 640 220" role="img" aria-label="' + escape(label) + '">' + ticks + series + points.map(p => '<text x="' + p.x + '" y="210" text-anchor="middle" font-size="10" fill="#6b778c">' + escape(p.row.year) + '</text>').join('') + '</svg>';
+    const interactive = series.replace(/<(rect|circle) /g, '<$1 class="av-mark" ').replace(/<polyline /g, '<polyline pathLength="1" ');
+    // A group owns each visible mark and the larger transparent tap target.
+    let index = 0;
+    const marks = interactive.replace(/<(rect|circle)\b[\s\S]*?<\/\1>/g, mark => {
+      const p = points[index++];
+      return '<g role="button" tabindex="0" data-chart-year="' + p.row.year + '" aria-label="' + escape(p.row.year + ' 年，' + label + '，' + money(p.row[key]) + '，查看明細') + '">' + mark + '<rect x="' + (p.x - Math.max(12, slot * .3)) + '" y="' + (bars ? Math.min(p.y, 162) : p.y - 12) + '" width="' + Math.max(24, slot * .6) + '" height="' + (bars ? Math.max(24, 186 - p.y) : 24) + '" fill="transparent"/></g>';
+    });
+    const extrema = points.length ? '<p class="av-note">最高：' + money(Math.max(...points.map(p => p.row[key]))) + ' · 最低：' + money(Math.min(...points.map(p => p.row[key]))) + '</p>' : '';
+    return '<svg viewBox="0 0 640 220" role="group" aria-label="' + escape(label) + '">' + ticks + marks + points.map(p => '<text x="' + p.x + '" y="210" text-anchor="middle" font-size="10" fill="#6b778c">' + escape(p.row.year) + '</text>').join('') + '</svg>' + extrema;
   }
 
   function pie(months) {
@@ -53,11 +83,18 @@
     const arcs = months.map(row => {
       const index = Number(row.month.slice(5)) - 1;
       const share = row.collected / total;
-      const segment = '<circle cx="100" cy="100" r="66" fill="none" stroke="' + colors[index] + '" stroke-width="28" pathLength="100" stroke-dasharray="' + share * 100 + ' ' + (100 - share * 100) + '" stroke-dashoffset="' + (-offset) + '" transform="rotate(-90 100 100)"><title>' + escape(row.month) + '：' + money(row.collected) + '</title></circle>';
+      const point = (radius, angle) => [100 + radius * Math.cos(angle), 100 + radius * Math.sin(angle)].join(' ');
+      const start = offset / 100 * Math.PI * 2 - Math.PI / 2;
+      const end = start + share * Math.PI * 2;
+      const large = share > .5 ? 1 : 0;
+      const path = share >= 1
+        ? 'M 100 20 A 80 80 0 1 1 100 180 A 80 80 0 1 1 100 20 M 100 48 A 52 52 0 1 0 100 152 A 52 52 0 1 0 100 48 Z'
+        : 'M ' + point(80, start) + ' A 80 80 0 ' + large + ' 1 ' + point(80, end) + ' L ' + point(52, end) + ' A 52 52 0 ' + large + ' 0 ' + point(52, start) + ' Z';
+      const segment = share > 0 ? '<path data-pie-month="' + escape(row.month) + '" data-rotation="' + (-(offset + share * 50) * 3.6) + '" d="' + path + '" fill="' + colors[index] + '" fill-rule="evenodd"><title>' + escape(row.month) + '：' + money(row.collected) + '</title></path>' : '';
       offset += share * 100;
       return segment;
     }).join('');
-    return '<div class="av-pie"><svg viewBox="0 0 200 200" role="img" aria-label="所選年度每月實收比例">' + arcs + '<text x="100" y="97" text-anchor="middle" fill="#152238" font-size="15">月份收入</text><text x="100" y="117" text-anchor="middle" fill="#6b778c" font-size="12">實收占比</text></svg><ul>' + months.map(row => '<li><i style="background:' + colors[Number(row.month.slice(5)) - 1] + '"></i>' + escape(row.month) + ' <span>' + money(row.collected) + '</span></li>').join('') + '</ul></div>';
+    return '<div class="av-pie"><svg viewBox="0 0 200 200" role="group" aria-label="所選年度每月實收比例"><g data-pie-ring>' + arcs + '</g><text x="100" y="97" text-anchor="middle" fill="#152238" font-size="15">月份收入</text><text x="100" y="117" text-anchor="middle" fill="#6b778c" font-size="12">實收占比</text></svg><ul>' + months.map(row => '<li><button type="button" data-pie-month="' + escape(row.month) + '"><i style="background:' + colors[Number(row.month.slice(5)) - 1] + '"></i>' + escape(row.month) + ' <span>' + money(row.collected) + '</span></button></li>').join('') + '</ul></div>';
   }
 
   function mount(element, rows) {
@@ -69,12 +106,17 @@
     let includePartial = false;
     let selected = rows[rows.length - 1].year;
     const expenses = {};
+    const investments = { purchase: '', renovation: '', other: '' };
     element.innerHTML = '<section class="card section av"><div class="eyebrow">INCOME → ASSET</div><h2>資產收益估值</h2><p class="av-note">以各年已確認實收反推收益情境。含管理費、電費等帳單收入，並非純租金；未扣成本時不是淨收益估價。</p><div class="av-rates" role="group" aria-label="估值收益率">' + rates.map(value => '<button type="button" data-rate="' + value + '" aria-pressed="' + (value === rate) + '">' + value + '%</button>').join('') + '</div><div class="av-controls"><label>選擇年度<select data-year>' + rows.map(row => '<option value="' + row.year + '"' + (row.year === selected ? ' selected' : '') + '>' + row.year + '</option>').join('') + '</select></label><label><span data-cost-label>年度營運成本（NT$）</span><input data-expense type="number" min="0" step="any" inputmode="decimal" placeholder="選填，空白不推算淨值"></label></div><p data-error role="alert" class="av-error"></p><div data-result aria-live="polite"></div><p class="av-note">年度實收 ÷ 所選收益率。僅為情境估算，非市場成交價或正式鑑價；不自動年化。帳單月份歸屬不代表實際銀行入帳日期。</p><div data-charts></div><details><summary>查看每年收入與估值明細</summary><div data-table class="table-wrap"></div></details></section>';
     const costInput = element.querySelector('[data-expense]');
     const controls = element.querySelector('.av-controls');
+    controls.insertAdjacentHTML('afterend', '<fieldset class="av-investment"><legend>投入成本與回報率試算</legend><div class="av-controls">' + [['purchase', '物件購入總價'], ['renovation', '裝修成本'], ['other', '其他投入（選填）']].map(([key, label]) => '<label>' + label + '（NT$）<input data-investment="' + key + '" type="number" min="0" step="any" inputmode="decimal" placeholder="' + (key === 'other' ? '空白以 0 計算' : '請填金額；無成本請填 0') + '"></label>').join('') + '</div><p class="av-note">成本僅供本次瀏覽試算，重新載入會清除。購入與裝修皆填寫後才計算回報率；不是利息、IRR 或淨利。</p><p data-investment-error role="alert" class="av-error"></p><div data-returns aria-live="polite"></div></fieldset>');
+    element.querySelector('[data-charts]').insertAdjacentHTML('beforebegin', '<button type="button" class="av-motion" data-motion aria-pressed="false">暫停圖表動畫</button><p class="av-note">點擊柱、曲線資料點或月份，查看明細。</p>');
+    element.querySelector('[data-charts]').insertAdjacentHTML('afterend', '<div data-chart-detail class="av-detail" aria-live="polite"></div>');
     controls.insertAdjacentHTML('beforebegin', '<div class="av-rates" role="group" aria-label="估值營收基準"><button type="button" data-basis="highest">最高年度營收</button><button type="button" data-basis="average">平均年度營收</button><button type="button" data-basis="year">指定年度</button></div><label class="av-note"><input type="checkbox" data-partial> 平均值包含不足 12 個有紀錄月份的年份</label><p class="av-note">營運成本僅供本次瀏覽試算，切換基準分開保存，重新載入不保留。</p>');
     function expenseKey() { return mode + ':' + (mode === 'year' ? selected : mode === 'average' ? includePartial : basis(rows, mode, selected).row.year); }
-    function update() {
+    let paused = false;
+    function update(redraw = true) {
       const row = rows.find(value => value.year === selected);
       const chosen = basis(rows, mode, selected, includePartial);
       const error = element.querySelector('[data-error]');
@@ -90,8 +132,29 @@
         : '有紀錄 ' + chosen.row.recorded_months + '／12 月。' + (chosen.row.recorded_months < 12 ? '非完整年度，不自動補足或年化。' : '12 個有紀錄月份不等於全部帳單已完整對帳。');
       const allocated = mode === 'average' ? rows.filter(value => chosen.years.includes(value.year)).reduce((sum, value) => sum + (value.allocated_bill_count || 0), 0) : chosen.row.allocated_bill_count;
       element.querySelector('[data-result]').innerHTML = '<div class="av-metrics"><div><small>' + escape(chosen.label) + '</small><strong>' + money(result.income) + '</strong></div><div><small>' + rate + '% 毛收益情境估值</small><strong data-gross>' + money(result.gross_value) + '</strong></div><div><small>扣該基準年度成本後淨收益情境估值</small><strong data-net>' + money(result.net_value) + '</strong></div></div><p class="av-warning">' + escape(warning) + (allocated ? ' 含 ' + allocated + ' 筆人工分配資料。' : '') + ' 資料完整性仍須核對。缺失年份不補零、曲線不跨缺年連接。' + (result.net_income !== null && result.net_income <= 0 ? ' 淨收益非正數，不產生正資產估值。' : '') + '</p>';
+      const investmentError = element.querySelector('[data-investment-error]');
+      try {
+        element.querySelectorAll('[data-investment]').forEach(input => {
+          if (input.validity && input.validity.badInput) throw new Error('Invalid investment');
+        });
+        const value = investmentReturns(rows, result.income, investments, error.textContent ? '' : expenses[expenseKey()]);
+        const percentage = number => number === null ? '—' : number.toLocaleString('zh-TW', { maximumFractionDigits: 2 }) + '%';
+        element.querySelector('[data-returns]').innerHTML = '<div class="av-metrics">' + [
+          ['歷年累計已確認實收', money(value.total_collected)], ['總投入成本', money(value.total_invested)],
+          [chosen.label + ' · 毛回報率', percentage(value.annual_gross_return)],
+          ['歷年累計毛回報率（非年化）', percentage(value.cumulative_gross_return)],
+          ['該基準年度淨回報率', percentage(value.annual_net_return)]
+        ].map(([label, amount]) => '<div><small>' + escape(label) + '</small><strong>' + amount + '</strong></div>').join('') + '</div><p class="av-note">毛回報率＝實收 ÷ 總投入。年度淨回報率須填該基準營運成本；未計算歷年累計淨回報率。累計實收含管理費、電費等，不能當作純租金或利息。</p>';
+        investmentError.textContent = '';
+      } catch (failure) {
+        investmentError.textContent = '投入成本請填有限的 0 或正數金額。';
+        element.querySelector('[data-returns]').innerHTML = '';
+      }
       const modeled = rows.map(value => ({ ...value, ...calculate(value, rate, '') }));
-      element.querySelector('[data-charts]').innerHTML = '<div class="av-chart-grid"><article><h3>每年實收 · 柱狀圖</h3>' + chart(modeled, 'income', '各年已確認實收柱狀圖', true) + '</article><article><h3>每年實收 · 高低曲線</h3>' + chart(modeled, 'income', '各年已確認實收曲線', false) + '</article><article><h3>毛收益情境估值 · ' + rate + '%</h3>' + chart(modeled, 'gross_value', '各年毛收益情境估值曲線', false) + '</article><article><h3>' + selected + ' 年 · 月份圓餅圖</h3>' + pie(row.months || []) + '</article></div>';
+      if (redraw) {
+        element.querySelector('[data-charts]').innerHTML = '<div class="av-chart-grid"' + (paused ? ' data-paused="true"' : '') + '><article><h3>每年實收 · 柱狀圖</h3>' + chart(modeled, 'income', '各年已確認實收柱狀圖', true) + '</article><article><h3>每年實收 · 高低曲線</h3>' + chart(modeled, 'income', '各年已確認實收曲線', false) + '</article><article><h3>毛收益情境估值 · ' + rate + '%</h3>' + chart(modeled, 'gross_value', '各年毛收益情境估值曲線', false) + '</article><article><h3>' + selected + ' 年 · 月份圓餅圖</h3>' + pie(row.months || []) + '</article></div>';
+        element.querySelector('[data-chart-detail]').innerHTML = '';
+      }
       element.querySelector('[data-table]').innerHTML = '<table><thead><tr><th>年度</th><th>實收</th><th>情境估值 ' + rate + '%</th><th>有紀錄月份</th></tr></thead><tbody>' + modeled.map(value => '<tr><td>' + value.year + '</td><td>' + money(value.income) + '</td><td>' + money(value.gross_value) + '</td><td>' + value.recorded_months + '／12</td></tr>').join('') + '</tbody></table>';
       element.querySelectorAll('[data-rate]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.rate) === rate)));
       element.querySelectorAll('[data-basis]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.basis === mode)));
@@ -103,8 +166,38 @@
     element.querySelectorAll('[data-basis]').forEach(button => button.addEventListener('click', () => { mode = button.dataset.basis; costInput.value = expenses[expenseKey()] || ''; update(); }));
     element.querySelector('[data-partial]').addEventListener('change', event => { includePartial = event.target.checked; costInput.value = expenses[expenseKey()] || ''; update(); });
     element.querySelector('[data-year]').addEventListener('change', event => { selected = Number(event.target.value); costInput.value = expenses[expenseKey()] || ''; update(); });
-    costInput.addEventListener('input', () => { expenses[expenseKey()] = costInput.value; update(); });
+    costInput.addEventListener('input', () => { expenses[expenseKey()] = costInput.value; update(false); });
+    element.querySelectorAll('[data-investment]').forEach(input => input.addEventListener('input', () => { investments[input.dataset.investment] = input.value; update(false); }));
+    element.querySelector('[data-motion]').addEventListener('click', event => {
+      paused = !paused;
+      event.currentTarget.setAttribute('aria-pressed', String(paused));
+      event.currentTarget.textContent = paused ? '繼續圖表動畫' : '暫停圖表動畫';
+      element.querySelector('.av-chart-grid').setAttribute('data-paused', String(paused));
+    });
+    function showDetail(event) {
+      if (event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
+      const target = event.target.closest('[data-chart-year], [data-pie-month]');
+      if (!target) return;
+      if (event.type === 'keydown') event.preventDefault();
+      const month = target.dataset.pieMonth;
+      const row = rows.find(value => value.year === (month ? selected : Number(target.dataset.chartYear)));
+      if (!row) return;
+      const months = row.months || [];
+      if (month) {
+        const value = months.find(value => value.month === month);
+        if (!value) return;
+        const total = months.reduce((sum, value) => sum + value.collected, 0);
+        element.querySelector('[data-chart-detail]').innerHTML = '<h3>' + escape(month) + ' 月份明細</h3><p>已確認實收 ' + money(value.collected) + ' · 年內占比 ' + (total > 0 ? (value.collected / total * 100).toFixed(2) : '0.00') + '%</p>';
+        const arc = Array.from(element.querySelectorAll('[data-rotation]')).find(arc => arc.dataset.pieMonth === month);
+        const ring = element.querySelector('[data-pie-ring]');
+        if (arc && ring) ring.style.transform = 'rotate(' + arc.dataset.rotation + 'deg)';
+      } else {
+        element.querySelector('[data-chart-detail]').innerHTML = '<h3>' + row.year + ' 年明細</h3><p>已確認實收 ' + money(row.collected) + ' · ' + rate + '% 情境估值 ' + money(calculate(row, rate, '').gross_value) + ' · 有紀錄 ' + row.recorded_months + '／12 月</p><ul>' + months.map(value => '<li>' + escape(value.month) + '：' + money(value.collected) + '</li>').join('') + '</ul>';
+      }
+    }
+    element.querySelector('[data-charts]').addEventListener('click', showDetail);
+    element.querySelector('[data-charts]').addEventListener('keydown', showDetail);
     update();
   }
-  root.CMWebsAssetValuation = { calculate, basis, mount };
+  root.CMWebsAssetValuation = { calculate, basis, investmentReturns, mount };
 })(globalThis);

@@ -24,5 +24,27 @@
 .av-pie li span { margin-left: auto; }
 .av-pie i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .av summary { cursor: pointer; min-height: 44px; font-size: 13px; padding: 12px 0; }
+.av-investment { margin: 22px 0; padding: 18px; border: 1px solid #dce5ef; border-radius: 16px; background: #fafcff; }
+.av-investment legend { font-weight: 800; color: #152238; padding: 0 8px; }
+.av-investment .av-controls { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.av-controls input, .av-controls select { box-sizing: border-box; font-size: 16px; }
+.av-motion { min-height: 44px; border: 1px solid #dce5ef; border-radius: 10px; padding: 10px 16px; background: white; cursor: pointer; }
+.av-detail:empty { display: none; }
+.av-detail { padding: 18px; border-radius: 14px; border: 1px solid #b6d2ff; background: #f1f7ff; line-height: 1.8; }
+.av-detail ul { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; list-style: none; padding: 0; }
+.av-pie li button { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 44px; padding: 6px; border: 0; border-radius: 8px; background: transparent; font: inherit; color: #152238; cursor: pointer; }
+.av-pie li button:hover { background: #edf4ff; }
+.av-chart-grid [role=button], .av-pie [data-pie-month] { cursor: pointer; }
+.av-chart-grid [role=button]:focus-visible { outline: 3px solid #246bfd; }
+.av-chart-grid [role=button]:hover .av-mark { fill: #725ac1; }
+.av-mark { animation: av-arrive 700ms ease-out both; }
+.av-chart-grid rect.av-mark { transform-box: fill-box; transform-origin: center bottom; animation: av-grow 700ms cubic-bezier(.22,1,.36,1) both; }
+.av-pie [data-pie-ring] { transform-origin: 100px 100px; transition: transform 650ms cubic-bezier(.22,1,.36,1); }
+.av-chart-grid polyline { stroke-dasharray: 1; animation: av-draw 900ms ease-out both; }
+.av-chart-grid[data-paused=true] * { animation: none !important; transition: none; }
+@keyframes av-arrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes av-grow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+@keyframes av-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@media(prefers-reduced-motion:reduce) { .av-chart-grid * { animation: none !important; transition: none !important; } }
 @media(min-width:800px) { html .app-shell { max-width: 1200px; } .app-shell .page { padding-left: 28px; padding-right: 28px; } }
-@media(max-width:600px) { .av-controls, .av-chart-grid, .av-metrics { grid-template-columns: 1fr; } .av-pie { min-width: 0; flex-direction: column; } }
+@media(max-width:600px) { .av-controls, .av-investment .av-controls, .av-chart-grid, .av-metrics, .av-detail ul { grid-template-columns: 1fr; } .av-pie { min-width: 0; flex-direction: column; } }

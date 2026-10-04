@@ -1,6 +1,12 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
+
+## 2026-10-04 投入成本及互動圖表本機候選
+
+使用者批准設計實作，隔離 branch `codex/asset-return-chart-interactions-20261004`、基底 `484deebed7fc224dc37e5e1c3e0c98b3a81b4c8f`。購入／裝修／其他成本、本次瀏覽年度／累計毛 ROI 及明確成本後年度淨 ROI；既有柱／曲線／圓餅動態與點擊明細。無成本持久化，刷新清除；不冒充利息、純租金或 IRR。詳見 ASSET-INCOME-VALUATION.md。
+
+獨立審查提出暫停重繪透明起點，已補 RED/GREEN 與 browser final geometry 核對。桌面／390px 合成預覽，年度／月份及鍵盤點擊、暫停／reduced-motion 已核對；不代表正式登入或手機真機。尚未 push／PR／merge／發布。本輪無業務資料讀寫、Schema／route／Properties／trigger／LINE 變更；正式版本與匯入證據保留下方原紀錄。
 **Last verified: 2026-10-04 (Asia/Taipei; June import, backend 206 and valuation Pages verified; authenticated acceptance pending)**
 
 ## 2026-10-04 歷史收入補入與資產估值發布

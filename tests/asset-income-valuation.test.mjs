@@ -11,6 +11,74 @@ const frontend = vm.createContext({});
 if (existsSync(url)) vm.runInContext(readFileSync(url, 'utf8'), frontend);
 const plain = value => JSON.parse(JSON.stringify(value));
 
+test('investment returns distinguish actual collected income, invested capital and annual expenses', () => {
+  const returns = frontend.CMWebsAssetValuation.investmentReturns;
+  assert.equal(typeof returns, 'function');
+  const rows = [{ collected: 100 }, { collected: 200 }];
+  const value = returns(rows, 200, { purchase: '1000', renovation: '200', other: '' }, '50');
+  assert.equal(value.total_collected, 300);
+  assert.equal(value.total_invested, 1200);
+  assert.equal(value.cumulative_gross_return, 25);
+  assert.equal(value.annual_gross_return, 200 / 1200 * 100);
+  assert.equal(value.annual_net_return, 12.5);
+  assert.equal(returns(rows, 200, { purchase: '', renovation: '200' }, '').annual_gross_return, null);
+  assert.equal(returns(rows, 200, { purchase: '0', renovation: '0' }, '0').cumulative_gross_return, null);
+  assert.equal(returns(rows, 200, { purchase: '1000', renovation: '0' }, '').annual_net_return, null);
+  for (const bad of ['-1', 'Infinity', 'abc']) assert.throws(() => returns(rows, 200, { purchase: bad, renovation: '0' }, ''), /investment/i);
+  assert.throws(() => returns(rows, 200, { purchase: '1e308', renovation: '1e308' }, ''), /investment/i);
+});
+
+test('actual widget events show year/month details, rotate pie and retain charts during cost entry', () => {
+  const nodes = new Map();
+  const node = () => ({ innerHTML: '', textContent: '', value: '', style: {}, dataset: {}, handlers: {}, attrs: {},
+    insertAdjacentHTML() {}, addEventListener(name, handler) { this.handlers[name] = handler; },
+    setAttribute(name, value) { this.attrs[name] = value; }, removeAttribute(name) { delete this.attrs[name]; } });
+  const purchase = Object.assign(node(), { dataset: { investment: 'purchase' } });
+  const renovation = Object.assign(node(), { dataset: { investment: 'renovation' } });
+  const arc = Object.assign(node(), { dataset: { pieMonth: '2024-01', rotation: '-90' } });
+  const host = { innerHTML: '', querySelector(selector) { if (!nodes.has(selector)) nodes.set(selector, node()); return nodes.get(selector); },
+    querySelectorAll(selector) { return selector === '[data-investment]' ? [purchase, renovation] : selector === '[data-rotation]' ? [arc] : []; } };
+  frontend.CMWebsAssetValuation.mount(host, [{ year: 2024, collected: 100, recorded_months: 2, months: [{ month: '2024-01', collected: 50 }, { month: '2024-02', collected: 50 }] }]);
+  const charts = nodes.get('[data-charts]');
+  assert.match(charts.innerHTML, /data-chart-year="2024"/);
+  assert.match(charts.innerHTML, /<path data-pie-month="2024-01"/);
+  assert.match(charts.innerHTML, /最高：NT\$ 100 · 最低：NT\$ 100/);
+  const originalCharts = charts.innerHTML;
+  purchase.value = '1000'; purchase.handlers.input();
+  renovation.value = '0'; renovation.handlers.input();
+  assert.equal(charts.innerHTML, originalCharts);
+  assert.match(nodes.get('[data-returns]').innerHTML, /10%/);
+  charts.handlers.click({ type: 'click', target: { closest() { return { dataset: { chartYear: '2024' } }; } } });
+  assert.match(nodes.get('[data-chart-detail]').innerHTML, /2024-02：NT\$ 50/);
+  let prevented = false;
+  charts.handlers.keydown({ type: 'keydown', key: 'Enter', preventDefault() { prevented = true; }, target: { closest() { return { dataset: { pieMonth: '2024-01' } }; } } });
+  assert.equal(prevented, true);
+  assert.match(nodes.get('[data-chart-detail]').innerHTML, /50\.00%/);
+  assert.equal(nodes.get('[data-pie-ring]').style.transform, 'rotate(-90deg)');
+  const motion = nodes.get('[data-motion]');
+  motion.handlers.click({ currentTarget: motion });
+  assert.equal(nodes.get('.av-chart-grid').attrs['data-paused'], 'true');
+  assert.equal(motion.textContent, '繼續圖表動畫');
+  purchase.validity = { badInput: true }; purchase.handlers.input();
+  assert.match(nodes.get('[data-investment-error]').textContent, /投入成本/);
+  assert.equal(nodes.get('[data-returns]').innerHTML, '');
+});
+
+test('motion is finite, reduced-motion cannot be overridden, and full-share pie uses a real ring path', () => {
+  const css = readFileSync(new URL('../assets/css/cmwebs-asset-valuation.css', import.meta.url), 'utf8');
+  assert.match(css, /@keyframes av-grow/);
+  assert.match(css, /@keyframes av-draw/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+  assert.match(css, /animation: none !important; transition: none !important/);
+  assert.doesNotMatch(css, /infinite/);
+  assert.match(css, /data-paused=true\] \* \{ animation: none !important; transition: none;/, 'paused redraw must show final geometry, not freeze the invisible first frame');
+  const nodes = new Map();
+  const host = { innerHTML: '', querySelector(selector) { if (!nodes.has(selector)) nodes.set(selector, { innerHTML: '', textContent: '', value: '', insertAdjacentHTML() {}, addEventListener() {}, setAttribute() {}, removeAttribute() {} }); return nodes.get(selector); }, querySelectorAll() { return []; } };
+  frontend.CMWebsAssetValuation.mount(host, [{ year: 2024, collected: 100, recorded_months: 1, months: [{ month: '2024-01', collected: 100 }] }]);
+  assert.match(nodes.get('[data-charts]').innerHTML, /fill-rule="evenodd"/);
+  assert.doesNotMatch(nodes.get('[data-charts]').innerHTML, /NaN|Infinity/);
+});
+
 test('all-history income respects workspace/property, paid confirmation and cutoff without changing period KPIs', () => {
   const bill = (id, month, amount, extra = {}) => ({ bill_id: id, bill_month: month, total_amount: amount, payment_status: 'paid', workspace_id: 'W1', property_id: 'P1', ...extra });
   const result = backend.revenueDashboardAggregate_({
