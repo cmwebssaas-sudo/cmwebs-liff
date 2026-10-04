@@ -22,13 +22,14 @@ export function previewHtml(empty = false) {
     { property_id: 'preview-b', property_name: '示範物件 B（合成）' }
   ], updated_at: '' };
   return page.replace(/<script src="(?!assets\/js\/cmwebs-asset-valuation\.js)[^"]+"><\/script>/g, '')
+    .replace('</head>', '<style>.av-metrics small::before,.metric-label::before,.av-chart-grid h3::before{content:"示範｜";color:#a45c00;font-weight:800}.av-warning.preview-notice{position:sticky;top:0;z-index:1100;border:2px solid #eb9a38;background:#fff9eb;font-size:15px}</style></head>')
     .replace(startup, `function loadPreviewReport() {
         const report = ${JSON.stringify(report)};
         const factor = SELECTED_PROPERTY === 'preview-a' ? .6 : SELECTED_PROPERTY === 'preview-b' ? .4 : 1;
         report.annual_income = report.annual_income.map(row => ({ ...row, collected: row.collected * factor,
           months: row.months.map(month => ({ ...month, collected: month.collected * factor })) }));
         render(report);
-        document.getElementById('app').insertAdjacentHTML('afterbegin', '<p class="av-warning">本機功能預覽 · 全部合成數據 · 尚未發布。年度估值不受本期月份篩選影響。</p>');
+        document.getElementById('app').insertAdjacentHTML('afterbegin', '<p class="av-warning preview-notice">本機功能預覽｜這是示範數字，不是您的實際帳務。尚未連接您的正式收入資料；物件 A／B、累計收入、最高收入及估值均為合成示範，不能用來核對收款。尚未發布。</p>');
       }
       loadReport = loadPreviewReport;
       goPage = function() { showToast('預覽不開啟正式網站'); };

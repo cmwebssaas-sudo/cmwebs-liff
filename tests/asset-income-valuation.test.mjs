@@ -35,6 +35,14 @@ test('preview property selection rerenders scoped synthetic years without a prod
   assert.equal(data.annual_income.reduce((sum, row) => sum + row.collected, 0), all);
 });
 
+test('synthetic preview identifies every money card as demonstration instead of real accounting', () => {
+  const html = previewHtml();
+  assert.match(html, /這是示範數字，不是您的實際帳務/);
+  assert.match(html, /\.av-metrics small::before/);
+  assert.match(html, /示範｜/);
+  assert.match(html, /尚未連接您的正式收入資料/);
+});
+
 test('revenue page has desktop navigation while mobile keeps its fixed bottom shell', () => {
   const page = readFileSync(new URL('../landlord-revenue-dashboard.html', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../assets/css/cmwebs-asset-valuation.css', import.meta.url), 'utf8');
