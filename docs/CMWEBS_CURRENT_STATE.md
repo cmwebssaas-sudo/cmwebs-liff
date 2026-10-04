@@ -1,5 +1,13 @@
 # CMWebs Current State
 
+## 2026-10-05 摘要數字翻滾前端發布授權
+
+使用者明確要求發布已驗收的本機動畫候選 `b71f846`。V2.1 既有營收頁視覺範圍：兩個摘要金額逐位翻滾、暫停與減少動態；計算、API、權限與正式帳務不變。
+
+fresh `origin/main` 為 `867035609515ab0bd1dac8bfe934aa9963e148e9`，Pages 來源 main 根目錄，狀態 built。沿用隔離分支 `codex/asset-summary-number-roll-20261005`；本次觀察 root 有 180 筆混合 WIP，不 stage 或修改。固定 release cache `20261005-asset-summary-number-roll-v1`；rollback 前端 `8670356`。沒有 Apps Script 差異，既有後端不重新部署；最後記錄版本 206 不是本次新增的後端驗收。
+
+依 PR → merge main → Pages → 公開逐檔讀回發布。正式登入後動畫及 LINE 真機驗收與發布證據分開；不以合成預覽宣稱正式財務／登入驗收。
+
 **Status: AUTHORITATIVE current-state record**
 
 ## 2026-10-05 手機分享電腦版入口 LINE 選擇（本機修正，未發布）

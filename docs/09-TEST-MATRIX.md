@@ -1,6 +1,6 @@
 # V2 回歸測試矩陣
 
-## 2026-10-05 導覽／退房選擇與合約驗證狀態（候選）
+## 2026-10-05 導覽／退房選擇與合約驗證狀態（Pages 已發布，登入待驗收）
 
 - 使用者明確批准「將這次前端修正發布」；候選 35adf9c，正式 cache tag `20261005-landlord-navigation-review-v1`。僅發布已記錄前端修正，回退 b183c22，不部署 Apps Script 或更動業務資料。
 
@@ -8,7 +8,8 @@
 - 合約 auth／review／initiated status 沿用共用 JSONP，dispatcher 原本已支援 callback；不經 callApi 的 data unwrap。驗證失敗保留原始碼與訊息，缺失／確認過期 LINE 憑證才顯示手動重登入，不繞過伺服器 Workspace 與角色驗證。
 - 本機重現側欄缺項／錯誤退房網址、cross-origin fetch 失敗與原始驗證錯誤遭遮蔽；根因不同於上一版資料讀取缺少 LINE ID。真實合約驗證最初失敗的 provider／網路原因尚未被正式登入證據確定，不能因本機測試宣稱所有合約已恢復。
 - 後端／API route／Schema／正式資料無變更，Apps Script 測試函式不適用；rollback b183c22。登入後、退房頁讀取（不結案）與手機真機尚待驗收。
-- `npm run validate`、`npm test` 545/545、diff-check 通過。新增 14 項包含九頁導覽可點擊路由、JSONP status 參數、驗證原始錯誤保留、無合約 ID 不發請求、缺失憑證碼、手動 OAuth 回跳參數清理。尚未發布；root 408 筆 WIP 保持。
+- `npm run validate`、`npm test` 545/545、diff-check 通過。新增 14 項包含九頁導覽可點擊路由、JSONP status 參數、驗證原始錯誤保留、無合約 ID 不發請求、缺失憑證碼、手動 OAuth 回跳參數清理。
+- 發布證據：PR #212 合併 `867035609515ab0bd1dac8bfe934aa9963e148e9`；Pages run `37230018142` success，latest build built 且 commit 相同。39/39 修改 runtime 公開檔案逐位元組相同；候選 runtime 與 origin/main 相同，Apps Script diff 為空。root 408 筆 WIP、branch 與 HEAD 未變。此證據不代表登入後合約驗證或手機真機已通過。
 
 ## 2026-10-05 電腦版登入後缺少 LINE 身分修正
 
@@ -850,6 +851,13 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - [x] 本地 `npm test` 293/293、`npm run validate` 與 `git diff --check` 通過；此證據不等於正式網站發布或實際上傳驗收。
 - [x] Apps Script immutable Version 198 唯讀匯出 59 檔與修正版逐位元組一致；既有正式 deployment 讀回為 198，網址不變。PR #185 合併為 `5a7d57a`，Pages workflow `36792021356` 成功；17 個公開檔案與來源逐位元組一致。
 - [ ] 已登入房東瀏覽器／手機的 506 入口、紙本文件上傳與房客綁定驗收：`HUMAN_REQUIRED`／`UNVERIFIED`。此次發布未改正式房客、房間、合約、邀請、私有文件、Properties、trigger 或 LINE；沒有簽妥紙本檔案時不得代送補登。
+## 2026-10-05 摘要數字翻滾（本機，未發布）
+
+- [x] `asset-number-roll.test.mjs` 七項：逐位最終落點、下降與四捨五入、不變／暫停／缺值、物件 remount 接續、成本不重播、減少動態、暫停跨 remount。
+- [x] `npm run validate`、完整 Node 552/552、`git diff --check`；未修改後端，Apps Script 模組測試不適用，未執行正式資料寫入。
+- [x] 合成 browser 390px／1280px 無水平溢出；4% 後最終數字 5,200,000，示範物件 A 6,240,000／416,400；無障礙標籤只有最終金額。不是正式帳務核對。
+- [ ] 正式發布與已登入／真機驗收尚未執行；保留既有固定 shell。發布時更新靜態 cache、核對 Pages 並保留 `8670356` rollback。
+
 # 2026-10-04 出租／出售双算法候選
 
 - `tests/asset-income-valuation.test.mjs`：售價自訂／估值 fallback、出售費完整性、貸款現金／獲利分離、累計營運支出缺失、零投入、虧損、非有限輸入及 overflow；實際 mount 輸入事件即時更新出售結果與成本水平線、保留其他收入圖、badInput 清除過期結果。
