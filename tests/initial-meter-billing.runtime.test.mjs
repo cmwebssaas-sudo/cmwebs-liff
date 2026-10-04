@@ -35,7 +35,7 @@ function createRuntime(options = {}) {
       ...options.room
     }],
     V2_contracts: [{ ...contract, ...options.contract }],
-    V2_tenants: [{ workspace_id: 'W1', tenant_id: 'T1', tenant_name: '新房客', user_id: 'GLOBAL-USER', ...options.tenant }],
+    V2_tenants: options.tenants || [{ workspace_id: 'W1', tenant_id: 'T1', tenant_name: '新房客', user_id: 'GLOBAL-USER', ...options.tenant }],
     V2_bills: options.bills || [],
     V2_tenant_bill_view: options.viewBills || [],
     V2_tenant_checkins: options.checkins || []
@@ -163,6 +163,41 @@ test('meter review never revives completed checkout, former tenant, archived acc
     const result=runtime.context.getLandlordBillingInitByLineUid_('owner','2026-10','');
     assert.equal(result.success,true,result.message);
     assert.equal(result.data.items.length,0);
+    assert.equal(runtime.writes.length,0);
+  }
+});
+
+test('expired review uses already authorized legacy landlord scope when contract has no workspace column value', () => {
+  const runtime = createRuntime({
+    contract: {workspace_id:'',landlord_id:'L1',start_date:'2025-09-02',end_date:'2026-09-01'},
+    room: {room_name:'502',current_contract_id:'C1'}, bills:[priorBill]
+  });
+  const item = runtime.init('2026-10');
+  assert.equal(item.needs_occupancy_review,true);
+  assert.equal(item.previous_meter,150);
+  assert.equal(runtime.submit({},'2026-10').success,false);
+  assert.equal(runtime.writes.length,0);
+});
+
+test('expired review resolves unique unscoped legacy tenant only through authorized room and contract', () => {
+  const runtime=createRuntime({tenant:{workspace_id:'',landlord_id:''},room:{current_contract_id:'C1'},
+    contract:{start_date:'2025-09-02',end_date:'2026/9/1'},bills:[priorBill]});
+  const item=runtime.init('2026-10');
+  assert.equal(item.needs_occupancy_review,true);
+  assert.equal(item.previous_meter,150);
+  assert.equal(runtime.submit({},'2026-10').success,false);
+  assert.equal(runtime.writes.length,0);
+});
+
+test('legacy tenant continuity rejects duplicate, inactive and explicitly foreign landlord identities', () => {
+  for (const tenants of [
+    [{tenant_id:'T1'}, {tenant_id:'T1'}],
+    [{tenant_id:'T1',account_status:'inactive'}],
+    [{tenant_id:'T1',landlord_id:'OTHER'}],
+    [{tenant_id:'T1',workspace_id:'OTHER'}]
+  ]) {
+    const runtime=createRuntime({tenants,room:{current_contract_id:'C1'},contract:{start_date:'2025-09-02',end_date:'2026/9/1'}});
+    assert.equal(runtime.context.getLandlordBillingInitByLineUid_('owner','2026-10','').data.items.length,0);
     assert.equal(runtime.writes.length,0);
   }
 });

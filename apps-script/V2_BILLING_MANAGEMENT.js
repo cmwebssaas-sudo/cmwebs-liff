@@ -246,6 +246,28 @@ function getLandlordBillingInitByLineUid_(
       }
     );
 
+    // Legacy tenant rows may predate both scope columns. Read them only when
+    // an authorized room AND authorized contract agree on the exact tenant.
+    // Explicit foreign scope and duplicate identities never qualify.
+    const legacyTenantSheet = ss.getSheetByName(V2_BILLING_SHEETS_.tenants);
+    const legacyTenantRows = legacyTenantSheet ? workspaceGetObjectsWithRow_(legacyTenantSheet) : [];
+    roomRows.forEach(function (room) {
+      const tenantId = billingText_(room.current_tenant_id);
+      if (!tenantId || tenantMap[tenantId]) return;
+      const linked = contracts.some(function (contract) {
+        return billingText_(contract.room_id) === billingText_(room.room_id) &&
+          billingText_(contract.tenant_id) === tenantId &&
+          (!room.current_contract_id || billingText_(contract.contract_id) === billingText_(room.current_contract_id));
+      });
+      if (!linked) return;
+      const matches = legacyTenantRows.filter(function (tenant) {
+        return billingText_(tenant.tenant_id) === tenantId;
+      });
+      if (matches.length === 1 && !billingText_(matches[0].workspace_id) && !billingText_(matches[0].landlord_id)) {
+        tenantMap[tenantId] = matches[0];
+      }
+    });
+
     const bills =
       billingGetWorkspaceRows_(
         ss.getSheetByName(
@@ -4117,7 +4139,11 @@ function billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMa
     return billingText_(contract.room_id) === billingText_(room.room_id) &&
       billingText_(contract.tenant_id) === tenantId &&
       (!room.current_contract_id || billingText_(room.current_contract_id) === billingText_(contract.contract_id)) &&
-      (!room.workspace_id || billingText_(contract.workspace_id) === billingText_(room.workspace_id)) &&
+      // Both arrays have already passed billingGetWorkspaceRows_ authorization,
+      // including the existing legacy landlord_id fallback. A blank legacy
+      // contract workspace must not contradict that authorized scope.
+      (!room.workspace_id || !billingText_(contract.workspace_id) ||
+        billingText_(contract.workspace_id).toUpperCase() === billingText_(room.workspace_id).toUpperCase()) &&
       ['expired', 'active', 'current', 'effective', 'signed', 'approved'].indexOf(status) >= 0 &&
       billingText_(contract.checkout_status).toLowerCase() !== 'completed' && !contract.checkout_completed_at &&
       start && end && start <= end && end < monthStart;
@@ -4125,7 +4151,12 @@ function billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMa
   candidates.sort(function (a, b) {
     return billingDate_(b.end_date || b.contract_end_date || b.lease_end_date) - billingDate_(a.end_date || a.contract_end_date || a.lease_end_date);
   });
-  return candidates[0] || null;
+  if (!candidates.length) return null;
+  // Carry the authorized room scope into the read-only meter resolver without
+  // migrating or modifying the legacy signed contract row.
+  return Object.assign({}, candidates[0], {
+    workspace_id: candidates[0].workspace_id || room.workspace_id || tenant.workspace_id || ''
+  });
 }
 
 function billingContractOverlapsMonth_(

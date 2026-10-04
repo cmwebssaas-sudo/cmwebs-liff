@@ -1,5 +1,13 @@
 # CMWebs Current State
 
+## 2026-10-05 抄表修正正式驗收補記
+
+前端 PR #214 合併 b030ad9fee8945feb24bc4f1f21ea6be5ccd4e05；Pages37237549394 success，46 個公開檔案與修正版逐位元組相同。Apps Script 同既有 URL 更新207後發現502／602仍漏列；208補上舊租約scope相容，209再修正唯一無scope舊房客經已授權room／contract精確關聯讀取。209 immutable export59檔逐位元組與來源相同，tree hash7ad778e6d9cbbc3af00d283f8b0be6cde06a92d977fa23735780f7fab1ac3681。
+
+正式登入唯讀驗收：22張房間卡片，502／602恢復「到期待核對」並保留同租約2026-09上期電表；未確認租約前不可出帳，輸入只供試算未保存。202／506原未繳帳單顯示讀數／折扣／備註更正入口，但未提交真實帳務折抵。桌面側欄及雙欄可見；手機斷點為合成版型驗證，非LINE真機證據。validate、563/563、diff-check通過。
+
+唯讀Sheets必要欄位確認兩間room／contract正確scope、旧tenant active但workspace_id／landlord_id空白；沒有更動Sheets／Schema／Properties／trigger，root180筆WIP保持不動。後端可回退208（完整本次修復前為206），前端回退c8335c4；程式回退不會撤銷已保存的業務紀錄。
+
 ## 2026-10-05 抄表工作區與原帳單更正發布
 
 使用者確認發布前端及 Apps Script 候選 `f15cb8c`。本次為 V2 既有抄表／帳單正確性修復：到期但仍有活躍房客連結的房間保留 review-only item；桌面共用侧欄與寬版；明確勾選、更正同租約未繳原帳單並驗證 bill ID／舊金額。不得自動续約、退租或代送 202／506 真實折抵。
