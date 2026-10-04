@@ -5,7 +5,6 @@
 
 ## 2026-10-03 首頁前端已正式發布；登入／真機驗收待完成
 
-<!-- 2026-10-04 release work is recorded below; the dated evidence remains historical. -->
 
 使用者在查看手機本機預覽後明確要求「發布到正式網站」。本次範圍為V2.1既有首頁視覺／動畫與載入整併，候選286ebe3（含3886cf8），不增加報表、API、資料欄位或後端功能。fresh origin/main與Pages最新built皆為133549eed5d3a5ae57f2d3c112953780ef1369f6，Pages來源main根目錄；isolated分支乾淨，root408筆WIP不碰。
 
