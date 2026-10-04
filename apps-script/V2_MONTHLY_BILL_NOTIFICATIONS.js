@@ -2,8 +2,8 @@
  * CMWebs V2 每月租金帳單通知 Dispatcher
  *
  * 規則：
- * - 每小時由既有的 V2 自動催繳 dispatcher 呼叫一次。
- * - 台北時間每月 5 號起，補發當月已建立但尚未發送的未繳帳單。
+ * - 正式安裝的時間觸發器每 5 分鐘檢查；既有每小時催繳仍可作為補送入口。
+ * - 台北時間每月 5 號 12:00 起，補發當月已建立但尚未發送的未繳帳單。
  * - 只挑選 issued、unpaid、not_sent 帳單；已發送、已繳、取消帳單不重送。
  * - 實際 LINE 發送沿用 landlord_bill_notifications_send 的權限、綁定、
  *   log 與 sent_status 寫回流程。
@@ -18,6 +18,9 @@ const V2_MONTHLY_BILL_NOTIFICATION_TIMEZONE_ =
 const V2_MONTHLY_BILL_NOTIFICATION_DAY_ =
   5;
 
+const V2_MONTHLY_BILL_NOTIFICATION_HOUR_ =
+  12;
+
 const V2_MONTHLY_BILL_NOTIFICATION_BILLS_SHEET_ =
   'V2_bills';
 
@@ -29,11 +32,13 @@ const V2_MONTHLY_BILL_NOTIFICATION_SENDING_TIMEOUT_MS_ =
 
 
 function billNotificationIsMonthlyDispatchDue_(
-  dayOfMonth
+  dayOfMonth,
+  localHour
 ) {
   return (
-    Number(dayOfMonth) >=
-    V2_MONTHLY_BILL_NOTIFICATION_DAY_
+    Number(dayOfMonth) > V2_MONTHLY_BILL_NOTIFICATION_DAY_ ||
+    (Number(dayOfMonth) === V2_MONTHLY_BILL_NOTIFICATION_DAY_ &&
+      Number(localHour) >= V2_MONTHLY_BILL_NOTIFICATION_HOUR_)
   );
 }
 
@@ -1478,6 +1483,10 @@ function runV2MonthlyBillNotifications(
       'yyyy-MM'
     );
 
+  const localHour = Number(
+    Utilities.formatDate(now, V2_MONTHLY_BILL_NOTIFICATION_TIMEZONE_, 'H')
+  );
+
   const baseData = {
     bill_month:
       billMonth,
@@ -1485,6 +1494,10 @@ function runV2MonthlyBillNotifications(
       dayOfMonth,
     dispatch_day:
       V2_MONTHLY_BILL_NOTIFICATION_DAY_,
+    dispatch_hour:
+      V2_MONTHLY_BILL_NOTIFICATION_HOUR_,
+    local_hour:
+      localHour,
     timezone:
       V2_MONTHLY_BILL_NOTIFICATION_TIMEZONE_,
     catch_up:
@@ -1494,7 +1507,8 @@ function runV2MonthlyBillNotifications(
 
   if (
     !billNotificationIsMonthlyDispatchDue_(
-      dayOfMonth
+      dayOfMonth,
+      localHour
     )
   ) {
     return {
@@ -1503,7 +1517,7 @@ function runV2MonthlyBillNotifications(
       code:
         'MONTHLY_BILL_NOT_DUE',
       message:
-        '尚未到每月帳單通知日',
+        '尚未到每月 5 日中午 12 點帳單通知時間',
       data:
         Object.assign(
           {},
