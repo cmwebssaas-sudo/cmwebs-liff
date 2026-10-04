@@ -4,6 +4,8 @@
 
 ## 2026-10-05 出租收益／估值出售試算發布授權
 
+發布完成：PR #208 合併為 `a2230a28f8d83016b080177b57eb5179f637aaf6`，Pages run **37216070139** success，latest build 同 commit 且 built。39 個修改的公開 runtime 檔案全部逐位元組與合併來源一致，0 mismatch。Chrome新分頁沿既有登入成功載入正式報表，已可見出售售價／稅費／仲介費／剩餘貸款／歷年營運支出欄位及缺值提示；未輸入成本或業務金額，不清除原分頁的試算內容。正式發布證據不代表所有試算輸入或手機真機驗收；本機 523/523 與合成互動驗收另記。原 root 408 筆 WIP 保留，Apps Script 及營收資料未改。回退前端 68c7f3b。
+
 使用者批准此次前端候選發布，V2.1 固定報表擴充，建議 gpt-5.6-terra / medium。隔離分支 `codex/valuation-sale-scenarios-20261004`，候選 f0cf328；fresh origin/main 與 Pages latest built 同為 `68c7f3be565f8883bfed58daaa1d3adcfd296e71`，Pages main 根目錄。新 cache tag `20261005-rental-sale-returns-v1`，其他頁只做靜態 cache 機械同步。前端 rollback 為 68c7f3b；Apps Script 206 保留，不改 Schema／Properties／trigger／LINE 或業務資料。523/523、validate 與 diff-check 通過。此次發布與公開讀回結果另記；本機合成預覽不代表正式登入或手機真機驗收。
 
 ## 2026-10-04 投入成本及互動圖表本機候選
