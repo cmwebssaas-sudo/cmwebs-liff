@@ -22,7 +22,7 @@ export function previewHtml(empty = false) {
     { property_id: 'preview-b', property_name: '示範物件 B（合成）' }
   ], updated_at: '' };
   return page.replace(/<script src="(?!assets\/js\/cmwebs-asset-valuation\.js)[^"]+"><\/script>/g, '')
-    .replace('</head>', '<style>.av-metrics small::before,.metric-label::before,.av-chart-grid h3::before{content:"示範｜";color:#a45c00;font-weight:800}.av-warning.preview-notice{position:sticky;top:0;z-index:1100;border:2px solid #eb9a38;background:#fff9eb;font-size:15px}</style></head>')
+    .replace('</head>', '<style>.av-metrics small::before,.metric-label::before,.av-chart-grid h3::before{content:"示範｜";color:#a45c00;font-weight:800}.av-overview small::before{content:"示範｜";font-weight:800}.av-warning.preview-notice{position:sticky;top:0;z-index:1100;border:2px solid #eb9a38;background:#fff9eb;font-size:15px}</style></head>')
     .replace(startup, `function loadPreviewReport() {
         const report = ${JSON.stringify(report)};
         const factor = SELECTED_PROPERTY === 'preview-a' ? .6 : SELECTED_PROPERTY === 'preview-b' ? .4 : 1;
