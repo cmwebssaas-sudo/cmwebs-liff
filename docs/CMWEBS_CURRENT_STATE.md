@@ -1,7 +1,15 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-10-03 (Asia/Taipei; homepage Pages release and public static files; authenticated/device acceptance pending)**
+**Last verified: 2026-10-04 (Asia/Taipei; June import and immutable backend 206 verified; valuation Pages publication pending)**
+
+## 2026-10-04 歷史收入補入與資產估值發布
+
+使用者確認提供的歷史收入皆已繳且確實入帳，並授權寫入及發布。2026 年 6 月缺少的 17 筆 NT$216,606 已補入 V2_bills；既有 306／402 不重複，共 19 筆 NT$234,637。完整讀回確認原 2,851 筆未改動、新增 17 筆所有欄位一致，無公式或通知。實際入帳日期未知，paid_at 留空；保留來源年月與房號追溯，不綁目前房客或租約。2013 年 1–6 月無資料為使用者確認的正常邊界。
+
+資產估值候選 5abc7f6：預設 2%，支援最高、完整年度平均、指定年度收入及 3%／4%／4.5% 情境，四種圖表與選填成本。實收帳單收入含其他費用，不冒充純租金、淨收益或正式市場鑑價；不補零或擅自年化缺月。515/515、validate、獨立審查通過，沿用既有 Workspace 權限與 route。
+
+正式 Apps Script immutable **206** 已發布到原 Web App URL；新版本匯出 59 檔與候選一致，tree SHA-256 `2bff8b1a913a8e7ed16bc889a963accc78fc32fcf9d2e8091cae152191784223`，部署清單讀回 206。回退 **205**，其他部署保留；未改 Properties／trigger／LINE／Schema。Pages 候選 PR #205、release tag `20261004-asset-income-valuation-v1`，前端回退 `566be22728364fe87ca7c62b03d479c5b29bdf01`；公開讀回及登入驗收另記，未以本機合成預覽替代。私有寫入前備份及完整讀回保存在 owner-only 目錄，未提交業務資料。原 root 408 筆混合 WIP 保留。
 
 ## 2026-10-03 首頁前端已正式發布；登入／真機驗收待完成
 
