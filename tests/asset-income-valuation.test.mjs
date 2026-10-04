@@ -11,6 +11,24 @@ const frontend = vm.createContext({});
 if (existsSync(url)) vm.runInContext(readFileSync(url, 'utf8'), frontend);
 const plain = value => JSON.parse(JSON.stringify(value));
 
+test('summary remains available before cost entry and reflects selected valuation rate', () => {
+  const nodes = new Map();
+  const node = () => ({ innerHTML: '', textContent: '', value: '', dataset: {}, handlers: {}, insertAdjacentHTML() {}, addEventListener(type, fn) { this.handlers[type] = fn; }, setAttribute() {}, removeAttribute() {} });
+  const rate = Object.assign(node(), { dataset: { rate: '4' } });
+  const purchase = Object.assign(node(), { dataset: { investment: 'purchase' } });
+  const host = { innerHTML: '', querySelector(key) { if (!nodes.has(key)) nodes.set(key, node()); return nodes.get(key); }, querySelectorAll(key) { return key === '[data-rate]' ? [rate] : key === '[data-investment]' ? [purchase] : []; } };
+  frontend.CMWebsAssetValuation.mount(host, [{ year: 2024, collected: 100000, recorded_months: 12, months: [] }, { year: 2025, collected: 80000, recorded_months: 12, months: [] }]);
+  assert.ok(host.innerHTML.indexOf('data-overview') >= 0, 'results-first summary is missing');
+  assert.ok(host.innerHTML.indexOf('data-overview') < host.innerHTML.indexOf('data-charts'));
+  assert.ok(host.innerHTML.indexOf('data-charts') < host.innerHTML.indexOf('data-expense'), 'cost fields must follow charts');
+  assert.match(nodes.get('[data-overview]').innerHTML, /NT\$ 5,000,000/);
+  assert.match(nodes.get('[data-overview]').innerHTML, /NT\$ 180,000/);
+  rate.handlers.click();
+  assert.match(nodes.get('[data-overview]').innerHTML, /NT\$ 2,500,000/);
+  purchase.validity = { badInput: true }; purchase.handlers.input();
+  assert.match(nodes.get('[data-overview]').innerHTML, /NT\$ 180,000/, 'invalid cost must not hide collected income');
+});
+
 test('sale scenario separates profit from cash after debt and never treats gross rent as net', () => {
   const sale = frontend.CMWebsAssetValuation.saleScenario;
   assert.equal(typeof sale, 'function');
