@@ -5,6 +5,7 @@
 - [x] phase244 實際 entry script 重現 mode=email + 已登入 LINE：按下 LINE 後不再回 Email，完成既有 home 導覽；RED→GREEN。
 - [x] phase250 保留 mode=email 首次載入忽略舊 fallback intent，避免自動 LINE 循環。validate、525/525、diff-check 通過。
 - [ ] 真實 LINE OAuth／正式登入後 browser 驗收及發布尚未進行；Apps Script 無修改。
+- [x] 發布狀態更新：使用者批准後 PR #210／c7b2530 與 Pages run 37224933796 success；38/38 修改 runtime 公開檔案讀回一致。真實 LINE OAuth／登入後驗收仍未完成。
 
 ## 2026-10-05 摘要優先與營收入口（本機候選，未發布）
 
