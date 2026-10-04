@@ -1,11 +1,18 @@
 # V2 回歸測試矩陣
 
+## 2026-10-05 電腦版 Email 入口手動 LINE 選擇（未發布）
+
+- [x] phase244 實際 entry script 重現 mode=email + 已登入 LINE：按下 LINE 後不再回 Email，完成既有 home 導覽；RED→GREEN。
+- [x] phase250 保留 mode=email 首次載入忽略舊 fallback intent，避免自動 LINE 循環。validate、525/525、diff-check 通過。
+- [ ] 真實 LINE OAuth／正式登入後 browser 驗收及發布尚未進行；Apps Script 無修改。
+
 ## 2026-10-05 摘要優先與營收入口（本機候選，未發布）
 
 - [x] RED/GREEN：頂部估值／累計實收位於圖表與成本前；最高年度 100,000 在 2%／4% 下為 5,000,000／2,500,000；累計 180,000 不受空成本／badInput 影響。
 - [x] 合成 390px browser DOM 核對摘要先估值後實收，圖表在成本與出售試算前。原有固定底導覽保留。
 - [x] `npm run validate`、`npm test` 524/524、`git diff --check` 通過；browser 2%→4% 估值 10,400,000→5,200,000，合成累計 694,000 保持。手機摘要截圖已保存，不代表正式金額。
 - [ ] 正式發布、登入後與手機真機驗收尚未進行；沒有 Apps Script 改動，無正式 Apps Script 測試函式呼叫。
+- [x] 2026-10-05 已批准並完成正式發布：PR #209／5fb4b48，Pages run 37223696358 success，40/40 runtime 公開讀回一致。上述未發布勾選狀態已由此證據更新；登入後及手機真機驗收仍未完成。
 
 ## 2026-10-04 投入成本與互動報表（本機候選，未發布）
 

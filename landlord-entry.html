@@ -8,8 +8,8 @@
   />
   <title>CMWebs 房東入口</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261005-asset-summary-navigation-v1"></script>
-  <script src="landlord-auth.js?v=20261005-asset-summary-navigation-v1"></script>
+<script src="frontend-release.js?v=20261005-desktop-line-choice-v1"></script>
+  <script src="landlord-auth.js?v=20261005-desktop-line-choice-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
   <style>
@@ -439,6 +439,8 @@
 
     const LINE_FALLBACK_INTENT_KEY =
       'cmwebs_landlord_line_fallback_intent';
+
+    let EXPLICIT_LINE_LOGIN_CHOICE = false;
 
     let RETURN_TO = '';
 
@@ -985,6 +987,7 @@
     }
 
     async function startLineLogin() {
+      EXPLICIT_LINE_LOGIN_CHOICE = true;
       setLineFallbackIntent();
       EMAIL_LOGIN_CHALLENGE_ID = '';
       EMAIL_LOGIN_EMAIL = '';
@@ -996,6 +999,7 @@
           loadPage();
         }
       } catch (error) {
+        EXPLICIT_LINE_LOGIN_CHOICE = false;
         clearLineFallbackIntent();
         renderError(
           error && error.message
@@ -1468,7 +1472,7 @@
       const auth =
         initAuthClient();
       const forceLineFallback =
-        !EMAIL_LOGIN_MODE &&
+        (!EMAIL_LOGIN_MODE || EXPLICIT_LINE_LOGIN_CHOICE) &&
         hasLineFallbackIntent();
 
       document.getElementById(
