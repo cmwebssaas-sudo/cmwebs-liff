@@ -1,5 +1,9 @@
 # CMWebs V2 API Routes
 
+抄表 review-only 舊租約相容：contracts 已經由既有 Workspace／legacy landlord_id 權限篩選；空白 workspace_id 不再次排除。唯讀副本採房間授權 Workspace 查找上期電表，不寫回 Schema 或租約；出帳資格不變。
+
+舊房客兩個 scope 欄位均空白時，只能經已授權 room／contract 共同精確 tenant_id 關聯取得唯一列，並通過帳號狀態檢查供 review 讀取。不得以 LINE/user_id、姓名、房號或未授權租約猜配；重複與顯式外部範圍拒絕。寫入流程的 tenant／contract 及付款權限不變。
+
 ## 2026-10-02 房客租約金額讀回（v205／Pages已發布）
 
 既有 `landlord_tenants.contract_history` 及 `landlord_contract_documents_init.contracts` 的租金、管理費、押金、電費單價、設備耗損單價、其他固定費與繳款日為唯讀 number／null。明確0不得由legacy alias覆蓋；canonical空白才取既有alias，缺失／非法非負數回null而非捏造0。文件回應另保留同租約的費用說明、紙本來源與簽署方式，既有Workspace／房東／合約filter不變。
