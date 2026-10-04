@@ -4,6 +4,8 @@
 
 ## 2026-10-04 投入成本及互動圖表本機候選
 
+發布完成：PR #207合併commit 68c7f3be565f8883bfed58daaa1d3adcfd296e71；Pages run37209405437 success，latest build同commit且built。40個本次改動公開runtime檔逐位元組一致（0 mismatch）。登入Chrome正式報表重載可見桌面側欄、購入／裝修／其他成本及累計29,614,290；柱狀圖點2024顯示12月明細，圓餅點2026-06顯示234,637、年內占比11.32%。未輸入成本或改業務資料；手機真機未重新驗收，成本為本次瀏覽試算且重載清除，原始收入完整對帳仍未完成。Apps Script v206保持不動，回退前端484deeb。
+
 使用者明確批准發布目前前端候選。fresh origin/main=484deeb，Pages來源main根目錄；root仍408筆WIP、原branch與HEAD不變。新cache tag為20261004-asset-return-interactions-v1，僅營收互動／投入成本試算／桌面導覽及其他頁靜態cache機械同步；不更動Apps Script v206、Schema、Properties、trigger或帳務列。回退前端484deeb。發布前521/521與validate通過，發布與公開讀回結果另記。
 
 正式Chrome登入後唯讀核對14個年度表格：頁面歷年實收合計29,614,290、最高2024=2,581,696；2%情境值129,084,800與公式一致，2026九個月實收合計2,072,087。這只是頁面聚合數學核對，不是來源完整性／重複匯入或銀行對帳證明；含管理費電費等，非純租金或市場鑑價。先前Email tab等待狀態不再代表Chrome登入狀態。
