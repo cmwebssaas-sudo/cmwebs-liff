@@ -3,4 +3,4 @@
  * It is intentionally stable for the lifetime of a release so page-navigation
  * URLs can reuse the browser cache without changing API cache behavior.
  */
-window.CMWEBS_RELEASE_VERSION = '20261004-asset-income-valuation-v1';
+window.CMWEBS_RELEASE_VERSION = '20261004-asset-return-interactions-v1';

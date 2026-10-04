@@ -1,6 +1,20 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
+
+## 2026-10-04 投入成本及互動圖表本機候選
+
+使用者明確批准發布目前前端候選。fresh origin/main=484deeb，Pages來源main根目錄；root仍408筆WIP、原branch與HEAD不變。新cache tag為20261004-asset-return-interactions-v1，僅營收互動／投入成本試算／桌面導覽及其他頁靜態cache機械同步；不更動Apps Script v206、Schema、Properties、trigger或帳務列。回退前端484deeb。發布前521/521與validate通過，發布與公開讀回結果另記。
+
+正式Chrome登入後唯讀核對14個年度表格：頁面歷年實收合計29,614,290、最高2024=2,581,696；2%情境值129,084,800與公式一致，2026九個月實收合計2,072,087。這只是頁面聚合數學核對，不是來源完整性／重複匯入或銀行對帳證明；含管理費電費等，非純租金或市場鑑價。先前Email tab等待狀態不再代表Chrome登入狀態。
+
+使用者回報預覽金額不符；核對64086實際來源為sampleYears合成資料，不是正式帳務。示範四年158,000／208,000／184,000／144,000合計694,000、最高208,000；A／B60/40分配只是fixture。預覽加上常駐明確警示與每張金額卡片／圖表示範標記，未改真實收入或推造真實總額。正式報表tab仍為Email登入入口，真實累計／最高年度金額尚未重新驗證，需使用者完成正式登入後再核對。
+
+後續預覽回報已修正：fixture 的空物件清單與無重載 handler 改為兩個合成物件 scope rerender；≥1024px營收頁改左側桌面導覽，小螢幕保留底導覽。520/520、validate、定向17/17及獨立審查通過。browser 三範圍金額與desktop/mobile visibility核對；未發布、無正式資料操作。
+
+使用者批准設計實作，隔離 branch `codex/asset-return-chart-interactions-20261004`、基底 `484deebed7fc224dc37e5e1c3e0c98b3a81b4c8f`。購入／裝修／其他成本、本次瀏覽年度／累計毛 ROI 及明確成本後年度淨 ROI；既有柱／曲線／圓餅動態與點擊明細。無成本持久化，刷新清除；不冒充利息、純租金或 IRR。詳見 ASSET-INCOME-VALUATION.md。
+
+獨立審查提出暫停重繪透明起點，已補 RED/GREEN 與 browser final geometry 核對。桌面／390px 合成預覽，年度／月份及鍵盤點擊、暫停／reduced-motion 已核對；不代表正式登入或手機真機。尚未 push／PR／merge／發布。本輪無業務資料讀寫、Schema／route／Properties／trigger／LINE 變更；正式版本與匯入證據保留下方原紀錄。
 **Last verified: 2026-10-04 (Asia/Taipei; June import, backend 206 and valuation Pages verified; authenticated acceptance pending)**
 
 ## 2026-10-04 歷史收入補入與資產估值發布

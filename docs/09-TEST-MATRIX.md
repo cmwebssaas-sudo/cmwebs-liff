@@ -1,5 +1,16 @@
 # V2 回歸測試矩陣
 
+## 2026-10-04 投入成本與互動報表（本機候選，未發布）
+
+- [x] 預覽物件清單／範圍重新渲染與桌面側欄回歸 17/17；browser A／B／全部實收各 416,400／277,600／694,000，手機375px無外層溢出。桌面側欄／手機底導覽依1024px切換，不發起登入。
+
+- [x] 投入成本公式 RED（缺少實作）→ GREEN；購入／裝修明確填寫、選填其他、零本金、空成本／零成本、負數／非有限數／overflow，不推造累計淨 ROI。
+- [x] 實際 mount 事件：成本输入不重繪圖表；年／月明細與占比、圓餅旋轉、Enter、badInput、暫停控制；缺年曲線及無估值點既有回歸保留。
+- [x] 審查發現暫停後重繪凍結起點；新增 RED/GREEN 回歸，改為 final static geometry。合成 browser 驗證 animation=none、opacity=1、transform=none、curve dashoffset=0；reduced-motion 不可由繼續按鈕覆寫，rotation transition=0s。
+- [x] 桌面及 390px 同一頁試算；手機外層無水平溢出（375／375）。合成值與財務公式、點擊／鍵盤年度明細、月份旋轉核對，無 console error。
+- [x] `npm test` 518/518、定向 15/15、`npm run validate`、`git diff --check` 通過；Apps Script 沒有修改，不呼叫正式測試函式。
+- [ ] 本次前端擴充尚未正式發布／登入驗收／LINE 真機驗收。無業務寫入、API／Schema／Apps Script 變更。
+
 ## 2026-10-04 年度收益估值（本機候選，未發布）
 
 - [x] `asset-income-valuation.test.mjs`：跨 Workspace／物件、付款確認、歷年與 as-of cutoff、本期 KPI 不變；四率公式、最高／平均、空／零／負／badInput 成本、缺年／無估值點、空資料與舊 backend fallback。

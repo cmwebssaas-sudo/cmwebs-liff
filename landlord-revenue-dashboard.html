@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 營收儀表板</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261004-asset-income-valuation-v1"></script>
-  <script src="landlord-auth.js?v=20261004-asset-income-valuation-v1"></script>
-  <script src="landlord-api.js?v=20261004-asset-income-valuation-v1"></script>
-  <link rel="stylesheet" href="assets/css/cmwebs-asset-valuation.css">
-  <script src="assets/js/cmwebs-asset-valuation.js"></script>
+<script src="frontend-release.js?v=20261004-asset-return-interactions-v1"></script>
+  <script src="landlord-auth.js?v=20261004-asset-return-interactions-v1"></script>
+  <script src="landlord-api.js?v=20261004-asset-return-interactions-v1"></script>
+  <link rel="stylesheet" href="assets/css/cmwebs-asset-valuation.css?v=20261004-asset-return-interactions-v1">
+  <script src="assets/js/cmwebs-asset-valuation.js?v=20261004-asset-return-interactions-v1"></script>
   <style>
     :root { --app-height: 100vh; --nav-height: 64px; --ink: #152238; --muted: #6b778c; --line: #e5eaf1; --brand: #06c755; --blue: #246bfd; --surface: #fff; --canvas: #f4f7fb; --danger: #c83c4a; }
     * { box-sizing: border-box; }
@@ -81,7 +81,19 @@
   </style>
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-shell av-desktop">
+    <aside class="av-sidebar" aria-label="房東桌面導覽">
+      <div class="eyebrow">CMWEBS</div><h2>智慧租管</h2>
+      <nav>
+        <button type="button" onclick="goPage('landlord-home.html')">總覽</button>
+        <button type="button" onclick="goPage('landlord-tenants.html')">房客</button>
+        <button type="button" onclick="goPage('landlord-properties.html')">物件與房間</button>
+        <button type="button" onclick="goPage('landlord-contract-requests.html')">合約</button>
+        <button type="button" onclick="goPage('landlord-arrears.html')">帳款</button>
+        <button type="button" aria-current="page">營收與資產</button>
+        <button type="button" onclick="goPage('landlord-more.html')">更多工具</button>
+      </nav>
+    </aside>
     <main id="app" class="page" aria-live="polite">
       <section class="card state">
         <div class="state-title">正在載入營收儀表板</div>
