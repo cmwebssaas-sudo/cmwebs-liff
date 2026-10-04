@@ -11,6 +11,50 @@ const frontend = vm.createContext({});
 if (existsSync(url)) vm.runInContext(readFileSync(url, 'utf8'), frontend);
 const plain = value => JSON.parse(JSON.stringify(value));
 
+test('sale scenario separates profit from cash after debt and never treats gross rent as net', () => {
+  const sale = frontend.CMWebsAssetValuation.saleScenario;
+  assert.equal(typeof sale, 'function');
+  const inputs = { price: '3000000', tax: '100000', agent: '60000', other: '', loan: '500000', operating: '200000' };
+  const value = sale(4000000, 2000000, 800000, inputs);
+  assert.equal(value.sale_price, 3000000);
+  assert.equal(value.sale_profit, 840000);
+  assert.equal(value.sale_return, 42);
+  assert.equal(value.cash_received, 2340000);
+  assert.equal(value.total_profit, 1440000);
+  assert.equal(value.total_return, 72);
+  assert.equal(sale(4000000, 2000000, 800000, { ...inputs, price: '' }).sale_profit, 1840000);
+  assert.equal(sale(4000000, 2000000, 800000, { ...inputs, operating: '' }).total_profit, null);
+  assert.equal(sale(4000000, 2000000, 800000, { ...inputs, loan: '' }).cash_received, null);
+  assert.equal(sale(4000000, 2000000, 800000, { ...inputs, tax: '' }).sale_profit, null);
+  assert.equal(sale(4000000, null, 800000, inputs).sale_profit, null);
+  assert.equal(sale(4000000, 0, 800000, inputs).sale_return, null);
+  assert.equal(sale(null, 2000000, 800000, { ...inputs, price: '' }).sale_profit, null);
+  assert.ok(Math.abs(sale(4000000, 2000000, 800000, { ...inputs, price: '1000000' }).sale_return + 58) < 1e-10);
+  for (const bad of ['-1', 'Infinity', 'abc']) assert.throws(() => sale(4000000, 2000000, 800000, { ...inputs, tax: bad }), /sale/i);
+  assert.throws(() => sale(4000000, 2000000, 800000, { ...inputs, tax: '1e308', agent: '1e308' }), /sale/i);
+});
+
+test('sale inputs immediately update profit and cost reference without changing income charts', () => {
+  const nodes = new Map();
+  const node = () => ({ innerHTML: '', textContent: '', value: '', dataset: {}, handlers: {}, insertAdjacentHTML() {}, addEventListener(type, fn) { this.handlers[type] = fn; }, setAttribute() {}, removeAttribute() {} });
+  const investments = ['purchase', 'renovation'].map(key => Object.assign(node(), { dataset: { investment: key } }));
+  const inputs = ['price', 'tax', 'agent', 'other', 'loan', 'operating'].map(key => Object.assign(node(), { dataset: { sale: key } }));
+  const host = { innerHTML: '', querySelector(key) { if (!nodes.has(key)) nodes.set(key, node()); return nodes.get(key); }, querySelectorAll(key) { return key === '[data-investment]' ? investments : key === '[data-sale]' ? inputs : []; } };
+  frontend.CMWebsAssetValuation.mount(host, [{ year: 2024, collected: 100000, recorded_months: 12, months: [] }]);
+  const original = nodes.get('[data-charts]').innerHTML;
+  investments[0].value = '2000000'; investments[0].handlers.input();
+  assert.match(nodes.get('[data-investment-error]').textContent, /裝修/);
+  investments[1].value = '0'; investments[1].handlers.input();
+  assert.match(nodes.get('[data-valuation-chart]').innerHTML, /總投入成本.*2,000,000/);
+  for (const input of inputs) { input.value = input.dataset.sale === 'price' ? '3000000' : '0'; input.handlers.input(); }
+  assert.match(nodes.get('[data-sale-result]').innerHTML, /NT\$ 1,000,000/);
+  assert.match(nodes.get('[data-sale-result]').innerHTML, /50%/);
+  assert.match(nodes.get('[data-sale-chart]').innerHTML, /3,000,000/);
+  assert.equal(nodes.get('[data-charts]').innerHTML, original);
+  inputs[1].validity = { badInput: true }; inputs[1].handlers.input();
+  assert.equal(nodes.get('[data-sale-result]').innerHTML, '');
+});
+
 test('preview property selection rerenders scoped synthetic years without a production request', () => {
   const html = previewHtml();
   const startup = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(match => match[1]).find(body => body.includes('async function initLineUserId'));

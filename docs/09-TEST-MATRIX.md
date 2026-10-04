@@ -817,3 +817,7 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - [x] 本地 `npm test` 293/293、`npm run validate` 與 `git diff --check` 通過；此證據不等於正式網站發布或實際上傳驗收。
 - [x] Apps Script immutable Version 198 唯讀匯出 59 檔與修正版逐位元組一致；既有正式 deployment 讀回為 198，網址不變。PR #185 合併為 `5a7d57a`，Pages workflow `36792021356` 成功；17 個公開檔案與來源逐位元組一致。
 - [ ] 已登入房東瀏覽器／手機的 506 入口、紙本文件上傳與房客綁定驗收：`HUMAN_REQUIRED`／`UNVERIFIED`。此次發布未改正式房客、房間、合約、邀請、私有文件、Properties、trigger 或 LINE；沒有簽妥紙本檔案時不得代送補登。
+# 2026-10-04 出租／出售双算法候選
+
+- `tests/asset-income-valuation.test.mjs`：售價自訂／估值 fallback、出售費完整性、貸款現金／獲利分離、累計營運支出缺失、零投入、虧損、非有限輸入及 overflow；實際 mount 輸入事件即時更新出售結果與成本水平線、保留其他收入圖、badInput 清除過期結果。
+- Browser：本機合成桌面試算 840,000／42%、虧損 -1,160,000／-58%；390px 手機框可見出售欄位與缺值提示。非正式或真機驗收。
