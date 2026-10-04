@@ -7,7 +7,6 @@ const tenantContractPage = readFileSync(new URL('../tenant-contract.html', impor
 const productionApiPath = 'AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ';
 
 for (const [name, source] of [
-  ['landlord-contract-requests.html', landlordRequestsPage],
   ['tenant-contract.html', tenantContractPage]
 ]) {
   assert.match(source, /async function fetchStatusJson\(url\)/, `${name} must use fetch status helper`);
@@ -15,6 +14,8 @@ for (const [name, source] of [
 }
 
 assert.match(landlordRequestsPage, /fetchStatusJson\(url\)/);
+// Native landlord exchange behavior is covered by the runtime regression:
+// Apps Script status JSONP avoids dependence on redirect CORS response access.
 assert.match(tenantContractPage, /fetchStatusJson\(url\)/);
 assert.match(landlordCreatePage, /function jsonpRequestWithoutLineUserId\(/);
 assert.match(landlordCreatePage, /landlord_contract_signing_review_auth_status/);

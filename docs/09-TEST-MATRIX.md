@@ -1,11 +1,22 @@
 # V2 回歸測試矩陣
 
+## 2026-10-05 導覽／退房選擇與合約驗證狀態（候選）
+
+- 使用者明確批准「將這次前端修正發布」；候選 35adf9c，正式 cache tag `20261005-landlord-navigation-review-v1`。僅發布已記錄前端修正，回退 b183c22，不部署 Apps Script 或更動業務資料。
+
+- 九個既有桌面側欄核對八個既有入口，退房先開房客名單；營收頁補退房入口。沒有 contract_id 的退房網址顯示選擇指引，不建立 session、不寫資料；單筆退房仍從房客詳細資料帶入既有合約。
+- 合約 auth／review／initiated status 沿用共用 JSONP，dispatcher 原本已支援 callback；不經 callApi 的 data unwrap。驗證失敗保留原始碼與訊息，缺失／確認過期 LINE 憑證才顯示手動重登入，不繞過伺服器 Workspace 與角色驗證。
+- 本機重現側欄缺項／錯誤退房網址、cross-origin fetch 失敗與原始驗證錯誤遭遮蔽；根因不同於上一版資料讀取缺少 LINE ID。真實合約驗證最初失敗的 provider／網路原因尚未被正式登入證據確定，不能因本機測試宣稱所有合約已恢復。
+- 後端／API route／Schema／正式資料無變更，Apps Script 測試函式不適用；rollback b183c22。登入後、退房頁讀取（不結案）與手機真機尚待驗收。
+- `npm run validate`、`npm test` 545/545、diff-check 通過。新增 14 項包含九頁導覽可點擊路由、JSONP status 參數、驗證原始錯誤保留、無合約 ID 不發請求、缺失憑證碼、手動 OAuth 回跳參數清理。尚未發布；root 408 筆 WIP 保持。
+
 ## 2026-10-05 電腦版登入後缺少 LINE 身分修正
 
 - 五頁實際 ensureLandlordAuthReady 與真實 shared auth 重現：無 Email token 的桌面被誤判 Email，LINE 初始化次數為 0；新增六項回歸 RED→GREEN。
 - getMode 只依 Email session 判斷，沒有 token 則進 LINE 初始化；桌面 Email 表單偏好只在入口決定，不代表已登入。五頁同時測 Email session 不啟動 LINE、LINE redirect pending 不讀資料。
 - 發布範圍沿用使用者登入修正授權；只有前端、cache 標記及測試文件，無 Apps Script／Schema／正式業務資料修改。回退 main c7b2530。
 - 真實桌面 LINE OAuth 與登入後跨頁資料验收仍待確認，單元測試不等於此驗收。
+- 發布完成：validate／531/531／diff-check 通過；PR #211 合併 b183c22，Pages run 37227859933 success，latest build built 且 commit 一致；39/39 修改 runtime 公開檔案逐位元組相同。root 408 筆 WIP、branch 與 HEAD 未變。
 
 ## 2026-10-05 電腦版 Email 入口手動 LINE 選擇（未發布）
 

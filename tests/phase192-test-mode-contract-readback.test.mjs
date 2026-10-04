@@ -44,6 +44,7 @@ test('test mode skips authenticated signing-review network calls', async () => {
     [
       'let TEST_MODE = true;',
       'let NATIVE_SIGNING_REVIEW_SESSION_TOKEN = "";',
+      'let NATIVE_SIGNING_REVIEW_AUTH_ERROR = null;',
       extractFunction('initializeNativeSigningReviewSession'),
       extractFunction('callNativeSigningReviewApi')
     ].join('\n'),

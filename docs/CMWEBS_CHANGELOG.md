@@ -1,5 +1,11 @@
 # CMWebs Changelog
 
+## 2026-10-05 — 桌面導覽與合約驗證狀態候選
+
+- 統一既有桌面頁的營收與資產、退房、更多工具等入口；退房先選房客，不再開缺少 contract_id 的單筆操作；保留從詳情帶合約 ID 的正式流程。
+- 合約驗證 status 改用既有 callback transport 並保留最初的驗證錯誤；僅缺失／過期憑證顯示手動 LINE 重登入，不自動 OAuth 迴圈。這是連線韌性及診斷修正，實際 provider 根因與登入後讀取仍待驗收。
+- 不改合約、房況、帳務、Apps Script 或 LINE 設定。
+
 ## 2026-10-05 — 桌面 LINE 登入後資料載入修正
 
 - 使用者六張正式頁截圖皆顯示缺少 LINE User ID；根因為共用 auth 把桌面寬度當作 Email session，保護頁跳過 LIFF 身分取得。

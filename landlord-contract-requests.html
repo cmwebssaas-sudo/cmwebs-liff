@@ -8,9 +8,9 @@
   />
   <title>CMWebs 合約申請管理</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261005-desktop-line-readiness-v1"></script>
-  <script src="landlord-auth.js?v=20261005-desktop-line-readiness-v1"></script>
-  <script src="landlord-api.js?v=20261005-desktop-line-readiness-v1"></script>
+<script src="frontend-release.js?v=20261005-landlord-navigation-review-v1"></script>
+  <script src="landlord-auth.js?v=20261005-landlord-navigation-review-v1"></script>
+  <script src="landlord-api.js?v=20261005-landlord-navigation-review-v1"></script>
   <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
 
   <style>
@@ -1186,12 +1186,53 @@
           <div class="desktop-brand-label">CMWEBS</div>
           <div class="desktop-brand-title">智慧租管</div>
         </div>
-        <nav class="desktop-nav">
-          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')"><svg viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5"></path><path d="M6.5 10.5V19h11v-8.5"></path><path d="M9.5 19v-5h5v5"></path></svg><span>總覽</span></button>
-          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path><path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path><path d="M16 14c2.2.4 3.5 2 4 5"></path></svg><span>房客</span></button>
-          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')"><svg viewBox="0 0 24 24"><path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path><path d="M8 20v-7h8v7"></path><path d="M9 8.5h.01M15 8.5h.01"></path></svg><span>物件與房間</span></button>
-          <button class="desktop-nav-item active" type="button" onclick="goPage('landlord-contract-requests.html')"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l3 3V20H7z"></path><path d="M14 3.5V7h3"></path><path d="M9.5 12h5"></path><path d="M9.5 15.5h5"></path></svg><span>合約</span></button>
-          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')"><svg viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="15" rx="2"></rect><path d="M8.5 9h7"></path><path d="M8.5 13h7"></path><path d="M8.5 17h4"></path></svg><span>帳款</span></button>
+<nav class="desktop-nav">
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-home.html')"><svg viewBox="0 0 24 24">
+              <path d="M4 11.5L12 5l8 6.5"></path>
+              <path d="M6.5 10.5V19h11v-8.5"></path>
+              <path d="M9.5 19v-5h5v5"></path>
+            </svg><span>總覽</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+              <circle cx="9" cy="8" r="3"></circle>
+              <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+              <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+              <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+            </svg><span>房客</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-properties.html')"><svg viewBox="0 0 24 24">
+              <path d="M4.5 20V8.5L12 4l7.5 4.5V20"></path>
+              <path d="M8 20v-7h8v7"></path>
+              <path d="M9 8.5h.01M15 8.5h.01"></path>
+            </svg><span>物件與房間</span></button>
+          <button class="desktop-nav-item active" type="button" onclick="goPage('landlord-contract-requests.html')"><svg viewBox="0 0 24 24">
+              <path d="M7 3.5h7l3 3V20H7z"></path>
+              <path d="M14 3.5V7h3"></path>
+              <path d="M9.5 12h5"></path>
+              <path d="M9.5 15.5h5"></path>
+            </svg><span>合約</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+              <path d="M8.5 9h7"></path>
+              <path d="M8.5 13h7"></path>
+              <path d="M8.5 17h4"></path>
+            </svg><span>退房</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-arrears.html')"><svg viewBox="0 0 24 24">
+              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+              <path d="M8.5 9h7"></path>
+              <path d="M8.5 13h7"></path>
+              <path d="M8.5 17h4"></path>
+            </svg><span>帳款</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-revenue-dashboard.html')"><svg viewBox="0 0 24 24">
+              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+              <path d="M8.5 9h7"></path>
+              <path d="M8.5 13h7"></path>
+              <path d="M8.5 17h4"></path>
+            </svg><span>營收與資產</span></button>
+          <button class="desktop-nav-item" type="button" onclick="goPage('landlord-more.html')"><svg viewBox="0 0 24 24">
+              <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+              <path d="M8.5 9h7"></path>
+              <path d="M8.5 13h7"></path>
+              <path d="M8.5 17h4"></path>
+            </svg><span>更多工具</span></button>
         </nav>
         <div class="desktop-sidebar-footer">
           <div class="desktop-context-label">Workspace</div>
@@ -1340,6 +1381,7 @@
     let LINE_USER_ID = '';
     let LANDLORD_AUTH = null;
     let NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
+    let NATIVE_SIGNING_REVIEW_AUTH_ERROR = null;
     let PAGE_DATA = null;
     let ALL_REQUESTS = [];
     let SIGNING_REVIEWS = [];
@@ -1856,15 +1898,18 @@
     }
 
     async function fetchStatusJson(url) {
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'omit',
-        cache: 'no-store'
+      const endpoint = new URL(url);
+      const params = Object.fromEntries(endpoint.searchParams);
+      const action = params.v2_action;
+      delete params.v2_action;
+      delete params._;
+      // Use the existing JSONP transport; Apps Script redirect responses
+      // must not depend on cross-origin fetch response access.
+      return window.CMWebsLandlordApi.request({
+        apiUrl: API_URL, action: action, params: params,
+        lineUserId: LINE_USER_ID, testMode: TEST_MODE,
+        callbackPrefix: 'cmwebsReviewStatus_', rejectOnFailure: false
       });
-      if (!response.ok) {
-        throw new Error('房東審核身分驗證連線失敗');
-      }
-      return response.json();
     }
 
     function callNativeSigningReviewAuthStatus(requestId, pollSecret) {
@@ -1879,7 +1924,11 @@
     async function initializeNativeSigningReviewSession() {
       if (TEST_MODE) return false;
       const idToken = liff.getIDToken();
-      if (!idToken) throw new Error('無法取得房東審核身分憑證');
+      if (!idToken) {
+        const error = new Error('LINE 合約驗證憑證已失效，請重新登入 LINE。');
+        error.code = 'MISSING_ID_TOKEN';
+        throw error;
+      }
       const requestId = randomUrlToken(16);
       const pollSecret = randomUrlToken(32);
       await fetch(API_URL, {
@@ -1919,6 +1968,20 @@
       return fetchStatusJson(url);
     }
 
+    function renderNativeAuthRecovery(error) {
+      if (!error || ['MISSING_ID_TOKEN', 'LINE_ID_TOKEN_EXPIRED'].indexOf(error.code) < 0) return '';
+      return '<button class="btn btn-primary" type="button" onclick="retryContractLineLogin()">重新登入 LINE</button>';
+    }
+
+    function retryContractLineLogin() {
+      // Explicit user action only: no automatic OAuth retry loop and no
+      // contract writes. Remove old OAuth parameters from the return URL.
+      const target = new URL(location.href);
+      ['code', 'state', 'liff.state', 'error', 'error_description'].forEach(function(key) { target.searchParams.delete(key); });
+      liff.logout();
+      liff.login({redirectUri: target.href});
+    }
+
     async function callNativeSigningReviewApi(action, params) {
       const emailSessionActive =
         typeof window !== 'undefined' &&
@@ -1934,6 +1997,7 @@
       }
 
       if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) {
+        if (NATIVE_SIGNING_REVIEW_AUTH_ERROR) throw NATIVE_SIGNING_REVIEW_AUTH_ERROR;
         throw new Error('房東審核身分驗證已失效，請重新整理頁面。');
       }
       const operation = action === 'landlord_contract_signing_reviews_init'
@@ -1992,7 +2056,10 @@
           NATIVE_SIGNING_REVIEW_SESSION_TOKEN;
       }
 
-      if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) throw new Error('房東身分驗證已失效，請重新整理頁面。');
+      if (!NATIVE_SIGNING_REVIEW_SESSION_TOKEN) {
+        if (NATIVE_SIGNING_REVIEW_AUTH_ERROR) throw NATIVE_SIGNING_REVIEW_AUTH_ERROR;
+        throw new Error('房東身分驗證已失效，請重新整理頁面。');
+      }
       const requestId = randomUrlToken(16);
       const pollSecret = randomUrlToken(32);
       await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(Object.assign({}, params || {}, { action: action, request_id: requestId, poll_secret: pollSecret, session_token: NATIVE_SIGNING_REVIEW_SESSION_TOKEN })) });
@@ -2411,6 +2478,7 @@
             <div class="error-title">房東發起合約讀取失敗</div>
             <div class="error-message">${safeText(INITIATED_CONTRACTS_ERROR.message || '請重新整理後再試。')}</div>
             <button class="btn btn-primary" type="button" onclick="loadPage(false)">重新整理</button>
+            ${renderNativeAuthRecovery(INITIATED_CONTRACTS_ERROR)}
           </section>
         `;
       }
@@ -2748,6 +2816,7 @@
                 <div class="list-count">需要處理</div>
               </div>
               <div class="review-contract-meta">${safeText(reviewError.message || '房東端暫時無法讀取新租約。')}（錯誤碼：${safeText(reviewError.code || 'UNKNOWN')}）</div>
+              ${renderNativeAuthRecovery(reviewError)}
             </section>
           `;
         }
@@ -3735,9 +3804,11 @@
           typeof initializeNativeSigningReviewSession === 'function'
         ) {
           try {
+            NATIVE_SIGNING_REVIEW_AUTH_ERROR = null;
             await initializeNativeSigningReviewSession();
           } catch (error) {
             NATIVE_SIGNING_REVIEW_SESSION_TOKEN = '';
+            NATIVE_SIGNING_REVIEW_AUTH_ERROR = error;
           }
         }
 
