@@ -35,7 +35,7 @@ function createRuntime(options = {}) {
       ...options.room
     }],
     V2_contracts: [{ ...contract, ...options.contract }],
-    V2_tenants: [{ workspace_id: 'W1', tenant_id: 'T1', tenant_name: '新房客', user_id: 'GLOBAL-USER' }],
+    V2_tenants: [{ workspace_id: 'W1', tenant_id: 'T1', tenant_name: '新房客', user_id: 'GLOBAL-USER', ...options.tenant }],
     V2_bills: options.bills || [],
     V2_tenant_bill_view: options.viewBills || [],
     V2_tenant_checkins: options.checkins || []
@@ -132,6 +132,40 @@ function assertRequired(runtime, input = {}, month = '2026-09') {
   assert.match(result.data.errors[0].message, /房客資料.*初始電[表錶]/);
   assert.equal(runtime.writes.length, 0, 'no bill/room persistence after failure');
 }
+
+for (const [roomName, status] of [['502', 'expired'], ['602', 'active']]) {
+  test(`expired occupied ${roomName} stays in meter init for review without automatic billing`, () => {
+    const runtime = createRuntime({ room: {room_name:roomName,current_contract_id:'C1'},
+      contract:{contract_status:status,start_date:'2025-01-01',end_date:'2026-08-31'},bills:[priorBill] });
+    const item = runtime.init('2026-10');
+    assert.equal(item.needs_occupancy_review,true);
+    assert.equal(item.previous_meter,150);
+    assert.equal(item.rent_amount,9000);
+    const result = runtime.context.getLandlordBillingInitByLineUid_('owner','2026-10','');
+    assert.equal(result.data.summary.billable_room_count,0);
+    assert.equal(result.data.summary.occupancy_review_count,1);
+    assert.equal(runtime.submit({},'2026-10').success,false);
+    assert.equal(runtime.writes.length,0);
+    assert.equal(runtime.sheets.V2_contracts.rows[0].end_date,'2026-08-31');
+  });
+}
+
+test('meter review never revives completed checkout, former tenant, archived account or foreign workspace', () => {
+  for (const options of [
+    {contract:{checkout_status:'completed'}}, {contract:{checkout_completed_at:'2026-08-31'}},
+    {contract:{contract_status:'ended'}}, {room:{current_tenant_id:'OTHER'}},
+    {room:{current_contract_id:'OTHER'}}, {room:{account_status:'archived'}},
+    {contract:{workspace_id:'OTHER'}}, {tenant:{account_status:'inactive'}},
+    {tenant:{workspace_id:'OTHER'}}, {contract:{start_date:''}},
+    {contract:{end_date:'2027-08-31'}}
+  ]) {
+    const runtime=createRuntime({...options,contract:{contract_status:'expired',start_date:'2025-01-01',end_date:'2026-08-31',...options.contract}});
+    const result=runtime.context.getLandlordBillingInitByLineUid_('owner','2026-10','');
+    assert.equal(result.success,true,result.message);
+    assert.equal(result.data.items.length,0);
+    assert.equal(runtime.writes.length,0);
+  }
+});
 
 for (const value of [undefined, null, '', '   ', -1, 'garbage', 'Infinity', 'NaN', true, ',']) {
   test(`missing/invalid checkin baseline ${String(value)} cannot become zero`, () => {
@@ -477,6 +511,31 @@ test('missing baseline also fails closed on direct submit without running init',
   assert.equal(result.success, false);
   assert.equal(result.data.errors[0].code, 'INITIAL_METER_READING_REQUIRED');
   assert.equal(runtime.writes.length, 0);
+});
+
+test('explicit unpaid bill correction updates the same bill with a manual credit', () => {
+  const bill={...priorBill,payment_status:'unpaid',previous_meter_reading:100,current_meter_reading:150,rent_amount:9000,management_fee:0,electricity_fee_rate:3,equipment_fee_rate:2,total_amount:9250};
+  const runtime=createRuntime({bills:[bill]});
+  const result=runtime.submit({edit_existing_bill:true,bill_id:'B1',expected_total_amount:9250,current_meter_reading:150,discount_amount:500,tenant_visible_note:'入住前多收款折抵'});
+  assert.equal(result.success,true,result.message);
+  assert.equal(result.data.generated_count,1);
+  assert.equal(runtime.sheets.V2_bills.rows.length,1);
+  assert.equal(runtime.sheets.V2_bills.rows[0].bill_id,'B1');
+  assert.equal(runtime.sheets.V2_bills.rows[0].discount_amount,500);
+  assert.equal(runtime.sheets.V2_bills.rows[0].total_amount,8750);
+  const repeated=runtime.submit({edit_existing_bill:true,bill_id:'B1',expected_total_amount:8750,current_meter_reading:150,discount_amount:500});
+  assert.equal(repeated.data.generated_count,1);
+  assert.equal(runtime.sheets.V2_bills.rows[0].total_amount,8750);
+  assert.equal(runtime.sheets.V2_bills.rows.length,1);
+});
+
+test('bill correction rejects paid bills and stale bill identity without writes',()=>{
+  for(const [status,id] of [['paid','B1'],['unpaid','OTHER'],['unpaid','B1']]){
+    const runtime=createRuntime({bills:[{...priorBill,payment_status:status}]});
+    const result=runtime.submit({edit_existing_bill:true,bill_id:id,expected_total_amount:999999,discount_amount:500});
+    assert.equal(result.data.generated_count,0);
+    assert.equal(runtime.writes.length,0);
+  }
 });
 
 test('no-meter-fee bill still generates without an initial reading', () => {

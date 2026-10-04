@@ -320,6 +320,20 @@ tenant_payment_account_cover
 
 ### Tenant-visible bill adjustments
 
+- Local candidate 2026-10-05: `landlord_billing_init` additionally returns
+  `items[].needs_occupancy_review` and `summary.occupancy_review_count`.
+  Still-linked active tenants with a past-end lease remain visible for review;
+  completed checkout, archived/inactive tenants and foreign Workspace rows are
+  excluded. `billable_room_count` excludes these review-only entries. This is
+  not automatic renewal or permission to create a new bill.
+- Local candidate: explicit correction through `landlord_bills_generate` uses
+  `edit_existing_bill:true`, exact `bill_id`, and `expected_total_amount`.
+  Server rechecks unpaid status, lease/tenant identity and current total under
+  the existing lock/Workspace permission. The original bill ID is updated;
+  `discount_amount` is the replacement total discount, not an incremental credit.
+  Paid bills remain locked; absent/stale identity or total fails without writes.
+  No new route or schema is introduced. Production deployment is pending.
+
 - `landlord_bills_generate` accepts two separate text fields: `note` remains a
   landlord-only internal note, while `tenant_visible_note` is the explanation
   that may be displayed to the tenant.

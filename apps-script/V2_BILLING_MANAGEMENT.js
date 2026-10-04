@@ -441,7 +441,7 @@ function getLandlordBillingInitByLineUid_(
             const contract =
               contractRoomMap[
                 roomId
-              ];
+              ] || billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMap, billMonthDate);
 
             if (!contract) {
               return null;
@@ -475,7 +475,7 @@ function getLandlordBillingInitByLineUid_(
                     contract
                   );
 
-            return billingBuildInitItem_(
+            const item = billingBuildInitItem_(
               room,
               contract,
               tenant,
@@ -484,6 +484,12 @@ function getLandlordBillingInitByLineUid_(
               billMonth,
               billingSettings
             );
+            item.needs_occupancy_review = !contractRoomMap[roomId];
+            if (item.needs_occupancy_review && !existingBill) {
+              item.rent_amount = item.monthly_rent_amount;
+              item.rent_is_prorated = false;
+            }
+            return item;
           }
         )
         .filter(Boolean)
@@ -511,7 +517,9 @@ function getLandlordBillingInitByLineUid_(
 
     const summary = {
       billable_room_count:
-        items.length,
+        items.filter(function (item) { return !item.needs_occupancy_review; }).length,
+      occupancy_review_count:
+        items.filter(function (item) { return item.needs_occupancy_review; }).length,
       generated_count:
         items.filter(
           function (item) {
@@ -967,10 +975,27 @@ function generateLandlordBillsByLineUid_(
               )
             ) > 0;
 
+          const editExistingBill = item.edit_existing_bill === true;
+          if (editExistingBill) {
+            if (!existingBill || !existingBillIsUnpaid ||
+                billingText_(item.bill_id) !== billingText_(existingBill.bill_id) ||
+                billingText_(existingBill.contract_id) !== billingText_(contract.contract_id) ||
+                billingText_(existingBill.tenant_id) !== billingText_(contract.tenant_id)) {
+              throw new Error('只能更正同一租約的未繳帳單；請重新載入核對帳單');
+            }
+            const expected = Number(item.expected_total_amount);
+            if (item.expected_total_amount === undefined || item.expected_total_amount === null ||
+                billingText_(item.expected_total_amount) === '' || !isFinite(expected) ||
+                expected !== Number(existingBill.total_amount)) {
+              throw new Error('帳單金額已變動，請重新載入再更正');
+            }
+          }
+
           if (
             existingBill &&
             item.apply_initial_rent_credit !== true &&
-            !hasAutomaticInitialRentCredit
+            !hasAutomaticInitialRentCredit &&
+            !editExistingBill
           ) {
             skipped.push({
               room_id: roomId,
@@ -4079,6 +4104,29 @@ function billingResolveRoomContractForMonth_(
     null;
 }
 
+
+// Read-only continuity for a still-linked occupant; never changes bill eligibility.
+function billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMap, monthStart) {
+  const tenantId = billingText_(room.current_tenant_id);
+  const tenant = tenantMap[tenantId];
+  if (!tenant || ['archived', 'inactive', 'disabled', 'closed'].indexOf(billingText_(tenant.account_status).toLowerCase()) >= 0) return null;
+  const candidates = contracts.filter(function (contract) {
+    const status = billingText_(contract.contract_status || contract.status).toLowerCase();
+    const start = billingDate_(contract.start_date || contract.contract_start_date || contract.lease_start_date);
+    const end = billingDate_(contract.end_date || contract.contract_end_date || contract.lease_end_date);
+    return billingText_(contract.room_id) === billingText_(room.room_id) &&
+      billingText_(contract.tenant_id) === tenantId &&
+      (!room.current_contract_id || billingText_(room.current_contract_id) === billingText_(contract.contract_id)) &&
+      (!room.workspace_id || billingText_(contract.workspace_id) === billingText_(room.workspace_id)) &&
+      ['expired', 'active', 'current', 'effective', 'signed', 'approved'].indexOf(status) >= 0 &&
+      billingText_(contract.checkout_status).toLowerCase() !== 'completed' && !contract.checkout_completed_at &&
+      start && end && start <= end && end < monthStart;
+  });
+  candidates.sort(function (a, b) {
+    return billingDate_(b.end_date || b.contract_end_date || b.lease_end_date) - billingDate_(a.end_date || a.contract_end_date || a.lease_end_date);
+  });
+  return candidates[0] || null;
+}
 
 function billingContractOverlapsMonth_(
   contract,

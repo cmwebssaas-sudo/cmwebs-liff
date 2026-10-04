@@ -31,7 +31,7 @@ function loadBillingGenerationResultFormatter() {
       code: 'BILLS_CREATED',
       data: { generated_count: 2, skipped_count: 1, error_count: 0 }
     }),
-    '已建立 2 筆帳單，略過 1 筆已建立帳單'
+    '已儲存 2 筆帳單，略過 1 筆已建立帳單'
   );
 
   assert.equal(
@@ -39,7 +39,7 @@ function loadBillingGenerationResultFormatter() {
       code: 'BILLS_CREATED_WITH_ERRORS',
       data: { generated_count: 2, skipped_count: 1, error_count: 3 }
     }),
-    '已建立 2 筆帳單，另有 3 筆失敗，略過 1 筆已建立帳單'
+    '已儲存 2 筆帳單，另有 3 筆失敗，略過 1 筆已建立帳單'
   );
 }
 
