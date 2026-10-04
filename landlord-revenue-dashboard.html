@@ -129,6 +129,7 @@
     const TEST_MODE = URL_PARAMS.get('test') === '1';
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
+    let VALUATION_VISUAL_STATE = null;
     let SELECTED_RANGE = '12m';
     let SELECTED_PROPERTY = '';
     let toastTimer = null;
@@ -269,7 +270,7 @@
       document.getElementById('app').innerHTML = dashboard;
       const valuation = document.createElement('div');
       document.getElementById('app').insertBefore(valuation, document.getElementById('app').querySelector('.summary'));
-      CMWebsAssetValuation.mount(valuation, PAGE_DATA.annual_income);
+      VALUATION_VISUAL_STATE = CMWebsAssetValuation.mount(valuation, PAGE_DATA.annual_income, VALUATION_VISUAL_STATE);
       if (PAGE_DATA.has_data) { renderChart(rows); renderVisualCharts(); }
     }
     async function loadReport() {
@@ -280,6 +281,7 @@
         if (!result || result.success !== true) throw new Error(result && result.message ? result.message : '營收儀表板讀取失敗');
         render(result.data || {});
       } catch (error) {
+        VALUATION_VISUAL_STATE = null;
         app.innerHTML = '<section class="card state"><div class="state-title">營收儀表板載入失敗</div><div class="state-text">' + safeHtml(error.message || '請稍後再試') + '</div></section>';
         showToast(error.message || '營收儀表板載入失敗', true);
       } finally { app.removeAttribute('aria-busy'); }

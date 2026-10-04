@@ -7,6 +7,14 @@
 .av-overview small { font-size: 14px; font-weight: 700; }
 .av-overview strong { font-size: clamp(25px, 6vw, 36px); letter-spacing: -.04em; margin: 10px 0; overflow-wrap: anywhere; }
 .av-overview span { font-size: 12px; line-height: 1.7; }
+.av-overview .av-number, .av-overview .av-number span { font-size: inherit; line-height: 1; }
+.av-overview .av-number { display: inline-block; max-width: 100%; font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+.av-overview .av-number-visual { display: inline-flex; flex-wrap: wrap; align-items: baseline; }
+.av-overview .av-number-digit { display: inline-block; height: 1em; width: .64em; overflow: hidden; text-align: center; }
+.av-overview .av-number-track { display: block; transform: translateY(var(--roll-end)); animation: av-number-roll 850ms cubic-bezier(.2,.75,.25,1) var(--roll-delay) both; }
+.av-number-track i { display: block; font-style: normal; line-height: 1em; height: 1em; }
+@keyframes av-number-roll { from { transform: translateY(0); } to { transform: translateY(var(--roll-end)); } }
+@media(prefers-reduced-motion:reduce) { .av-overview .av-number-track { animation: none !important; } }
 @media(min-width:1024px) { .av-overview { grid-template-columns: 1.2fr 1fr; } }
 .av-note { color: #6b778c; font-size: 12px; line-height: 1.8; }
 .av-rates { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }

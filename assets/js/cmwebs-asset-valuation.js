@@ -5,6 +5,28 @@
   const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const money = value => value === null ? '—' : 'NT$ ' + Math.round(value).toLocaleString('zh-TW');
 
+  function rollingMoney(value, previous, animate) {
+    if (value === null || !Number.isFinite(value)) return '—';
+    const target = Math.round(value);
+    const old = previous === null || !Number.isFinite(previous) ? null : Math.round(previous);
+    if (!animate || target === old || target < 0) return money(target);
+    const digits = String(target);
+    const before = String(old === null ? 0 : old).padStart(digits.length, '0');
+    const direction = old !== null && target < old ? -1 : 1;
+    let index = 0;
+    const visual = target.toLocaleString('zh-TW').split('').map(char => {
+      if (!/\d/.test(char)) return '<span class="av-number-separator">' + char + '</span>';
+      const start = Number(before[before.length - digits.length + index] || 0);
+      const end = Number(char);
+      const delay = index++ * 12;
+      if (old !== null && start === end) return '<span class="av-number-digit">' + char + '</span>';
+      const steps = ((end - start) * direction + 10) % 10 + (old === null ? 10 : 0);
+      const frames = Array.from({ length: steps + 1 }, (_, n) => '<i>' + ((start + n * direction + 20) % 10) + '</i>').join('');
+      return '<span class="av-number-digit"><span class="av-number-track" style="--roll-end:-' + steps + 'em;--roll-delay:' + delay + 'ms">' + frames + '</span></span>';
+    }).join('');
+    return '<span class="av-number" role="img" aria-label="' + money(target) + '"><span class="av-number-visual" aria-hidden="true"><span class="av-number-currency">NT$&nbsp;</span>' + visual + '</span></span>';
+  }
+
   function basis(rows, mode, year, includePartial) {
     if (mode === 'highest') {
       const row = rows.reduce((best, value) => !best || value.collected > best.collected ? value : best, null);
@@ -133,7 +155,7 @@
     return '<div class="av-pie"><svg viewBox="0 0 200 200" role="group" aria-label="所選年度每月實收比例"><g data-pie-ring>' + arcs + '</g><text x="100" y="97" text-anchor="middle" fill="#152238" font-size="15">月份收入</text><text x="100" y="117" text-anchor="middle" fill="#6b778c" font-size="12">實收占比</text></svg><ul>' + months.map(row => '<li><button type="button" data-pie-month="' + escape(row.month) + '"><i style="background:' + colors[Number(row.month.slice(5)) - 1] + '"></i>' + escape(row.month) + ' <span>' + money(row.collected) + '</span></button></li>').join('') + '</ul></div>';
   }
 
-  function mount(element, rows) {
+  function mount(element, rows, previous) {
     if (!element) return;
     if (!Array.isArray(rows)) { element.innerHTML = '<section class="card section"><h2>資產收益估值</h2><p class="av-note">目前後端尚未提供年度資料；不以近 12 個月假裝歷年收益。</p></section>'; return; }
     if (!rows.length) { element.innerHTML = '<section class="card section"><h2>資產收益估值</h2><p class="av-note">目前沒有可用的歷年收入資料。</p></section>'; return; }
@@ -154,7 +176,11 @@
     element.querySelector('.av-rates').insertAdjacentHTML('afterend', '<div class="av-rates" role="group" aria-label="估值營收基準"><button type="button" data-basis="highest">最高年度營收</button><button type="button" data-basis="average">平均年度營收</button><button type="button" data-basis="year">指定年度</button></div>');
     controls.insertAdjacentHTML('beforebegin', '<label class="av-note"><input type="checkbox" data-partial> 平均值包含不足 12 個有紀錄月份的年份</label><p class="av-note">營運成本僅供本次瀏覽試算，切換基準分開保存，重新載入不保留。</p>');
     function expenseKey() { return mode + ':' + (mode === 'year' ? selected : mode === 'average' ? includePartial : basis(rows, mode, selected).row.year); }
-    let paused = false;
+    const visualState = { gross: previous ? previous.gross : null, collected: previous ? previous.collected : null, paused: Boolean(previous && previous.paused) };
+    let paused = visualState.paused;
+    let overviewKey = '';
+    let previousGross = visualState.gross;
+    let previousCollected = visualState.collected;
     function update(redraw = true) {
       const row = rows.find(value => value.year === selected);
       const chosen = basis(rows, mode, selected, includePartial);
@@ -173,7 +199,17 @@
       element.querySelector('[data-result]').innerHTML = '<div class="av-metrics"><div><small>' + escape(chosen.label) + '</small><strong>' + money(result.income) + '</strong></div><div><small>' + rate + '% 毛收益情境估值</small><strong data-gross>' + money(result.gross_value) + '</strong></div><div><small>扣該基準年度成本後淨收益情境估值</small><strong data-net>' + money(result.net_value) + '</strong></div></div><p class="av-warning">' + escape(warning) + (allocated ? ' 含 ' + allocated + ' 筆人工分配資料。' : '') + ' 資料完整性仍須核對。缺失年份不補零、曲線不跨缺年連接。' + (result.net_income !== null && result.net_income <= 0 ? ' 淨收益非正數，不產生正資產估值。' : '') + '</p>';
       const investmentError = element.querySelector('[data-investment-error]');
       const overviewCollected = rows.reduce((sum, row) => sum + Number(row.collected || 0), 0);
-      element.querySelector('[data-overview]').innerHTML = '<div class="av-overview-value"><small>目前資產估值（收益情境）</small><strong>' + money(result.gross_value) + '</strong><span>' + escape(chosen.label) + ' ／ ' + rate + '% 收益率</span></div><div class="av-overview-income"><small>歷年累計已確認實收</small><strong>' + money(overviewCollected) + '</strong><span>目前物件範圍內全部有紀錄年度，含管理費與電費</span></div>';
+      const nextOverviewKey = JSON.stringify([result.gross_value, overviewCollected, chosen.label, rate, paused]);
+      if (overviewKey !== nextOverviewKey) {
+        const animate = !paused && !(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        element.querySelector('[data-overview]').innerHTML = '<div class="av-overview-value"><small>目前資產估值（收益情境）</small><strong>' + rollingMoney(result.gross_value, previousGross, animate) + '</strong><span>' + escape(chosen.label) + ' ／ ' + rate + '% 收益率</span></div><div class="av-overview-income"><small>歷年累計已確認實收</small><strong>' + rollingMoney(overviewCollected, previousCollected, animate) + '</strong><span>目前物件範圍內全部有紀錄年度，含管理費與電費</span></div>';
+        previousGross = result.gross_value;
+        previousCollected = overviewCollected;
+        visualState.gross = previousGross;
+        visualState.collected = previousCollected;
+        visualState.paused = paused;
+        overviewKey = nextOverviewKey;
+      }
       let invested = null;
       let collected = null;
       try {
@@ -239,6 +275,7 @@
       event.currentTarget.textContent = paused ? '繼續圖表動畫' : '暫停圖表動畫';
       element.querySelector('.av-chart-grid').setAttribute('data-paused', String(paused));
       element.querySelector('[data-sale-chart]').setAttribute('data-paused', String(paused));
+      update(false);
     });
     function showDetail(event) {
       if (event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
@@ -263,7 +300,12 @@
     }
     element.querySelector('[data-charts]').addEventListener('click', showDetail);
     element.querySelector('[data-charts]').addEventListener('keydown', showDetail);
+    if (paused) {
+      element.querySelector('[data-motion]').setAttribute('aria-pressed', 'true');
+      element.querySelector('[data-motion]').textContent = '繼續圖表動畫';
+    }
     update();
+    return visualState;
   }
-  root.CMWebsAssetValuation = { calculate, basis, investmentReturns, saleScenario, mount };
+  root.CMWebsAssetValuation = { calculate, basis, investmentReturns, saleScenario, rollingMoney, mount };
 })(globalThis);
