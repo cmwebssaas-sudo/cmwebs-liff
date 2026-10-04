@@ -1,5 +1,13 @@
 # CMWebs Current State
 
+## 2026-10-05 抄表工作區與原帳單更正發布
+
+使用者確認發布前端及 Apps Script 候選 `f15cb8c`。本次為 V2 既有抄表／帳單正確性修復：到期但仍有活躍房客連結的房間保留 review-only item；桌面共用侧欄與寬版；明確勾選、更正同租約未繳原帳單並驗證 bill ID／舊金額。不得自動续約、退租或代送 202／506 真實折抵。
+
+fresh main／Pages built 為 `c8335c4`；root 180 筆混合 WIP 未動。正式 Apps Script deployment 唯讀查得 206，immutable export 59 檔 hash 與 recorded baseline 一致，remote editor HEAD 與 206 一致；candidate 只有 billing module 差異。新 immutable 207 的 59 檔逐位元組匹配候選，保留既有 Web App URL。rollback 後端 206、前端 `c8335c4`；回退程式不會撤銷另行保存的帳務更正。本次沒有實際帳單／抄表提交。
+
+前端 cache `20261005-meter-review-bill-correction-v1`；validate、560/560、diff-check 通過。依 PR→main→Pages→公開讀回→登入唯讀確認流程發布；部署 metadata、Pages 結果與實際 502／602 顯示須另記，不用測試數代替正式驗收。建議模型／速度 `gpt-5.6-terra`／`medium`。
+
 ## 2026-10-05 摘要數字翻滾前端發布授權
 
 使用者明確要求發布已驗收的本機動畫候選 `b71f846`。V2.1 既有營收頁視覺範圍：兩個摘要金額逐位翻滾、暫停與減少動態；計算、API、權限與正式帳務不變。
