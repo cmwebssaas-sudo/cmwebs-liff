@@ -4,6 +4,8 @@
 
 ## 2026-10-05 手機分享電腦版入口 LINE 選擇（本機修正，未發布）
 
+使用者明確授權發布此登入修正。fresh origin/main 與 Pages latest built 同為 `5fb4b4852a061b29175ee56ea415584c8cca16fd`，前端 rollback 同 revision。新 cache tag `20261005-desktop-line-choice-v1`，其餘頁只有靜態 cache 機械同步。Apps Script 與業務資料保持不動；正式发布與公開檔案讀回結果另記，真實 LINE OAuth 驗收不能由測試或部署代替。
+
 使用者指出「更多→電腦版」Email 登入頁的 LINE 按鈕沒有反應。正式公開 entry 仍含 `!EMAIL_LOGIN_MODE && hasLineFallbackIntent()`；本機 VM 重現手動 LINE 已取得 profile 後再次 render Email 表單。新增本頁明確點擊旗標，只有手動選擇才可覆蓋 mode=email；舊 session fallback 不得自動啟動 LINE，保留 phase250 測試。分支 `codex/desktop-entry-line-choice-20261005`；建議 gpt-5.6-terra / medium。RED→GREEN、validate、525/525、diff-check 通過。沒有真實 LINE OAuth／使用者電腦 browser 驗收，不宣稱所有無反應原因已排除。無後端／業務資料更動；尚未發布，部署仍需本項授權，rollback 為正式 5fb4b48。
 
 ## 2026-10-05 營收與資產摘要優先排列（本機候選，未發布）
