@@ -4,6 +4,8 @@
 
 ## 2026-10-05 營收與資產摘要優先排列（本機候選，未發布）
 
+使用者已明確批准發布此候選。發布前 fresh origin/main 與 Pages latest built 都為 a2230a28f8d83016b080177b57eb5179f637aaf6；前端 rollback 同 revision。靜態 cache tag 更新為 `20261005-asset-summary-navigation-v1`，其他頁只有 cache 機械同步；後端來源無 diff，保持既有部署，不碰 Sheets／Properties／trigger／LINE。發布結果與公開讀回證據另記。
+
 使用者確認範圍；建議 gpt-5.6-terra / medium。隔離分支 `codex/valuation-summary-navigation-20261005`，基底 23630c2；保留 root 408 筆 WIP。目前資產收益情境估值與歷年已確認實收置前；成本／出售欄位移到圖表之後，公式、記憶體內成本及既有動畫不變。首頁桌面側欄補「營收與資產」，手機更多工具統一名稱。只改前端與合成預覽，不改 Apps Script／Schema／業務資料；未 push／PR／merge／發布。後續批准發布時沿 Pages 流程，前端可回退至既有正式 a2230a2，後端不動。合成預覽不代表正式登入或手機真機驗收。
 
 ## 2026-10-05 出租收益／估值出售試算發布授權
