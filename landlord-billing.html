@@ -1212,6 +1212,7 @@
           params: params || {},
           lineUserId: LINE_USER_ID,
           testMode: TEST_MODE,
+          timeoutMs: action === 'landlord_bills_generate' ? 120000 : 45000,
           callbackPrefix: '__cmwebs_billing_'
         });
       }
@@ -1269,7 +1270,7 @@
                   )
                 );
               },
-              45000
+              action === 'landlord_bills_generate' ? 120000 : 45000
             );
 
           function cleanup() {
@@ -1525,7 +1526,7 @@
           </div>
 
           <div class="season-note">
-            本月套用
+            用電月份 <strong>${safeHtml(PAGE_DATA.electricity_usage_month || '-')}</strong>，套用
             <strong>${safeHtml(PAGE_DATA.season_label || '-')}</strong>
             設備耗損費率。${safeHtml(
               PAGE_DATA.billing_defaults &&
@@ -1534,7 +1535,7 @@
                 ? PAGE_DATA.billing_defaults
                     .summer_months_label
                 : '6–9 月'
-            )}使用夏月費率，其餘月份使用一般費率；房間未設定時會套用系統預設。
+            )}用電使用夏月費率，其餘月份使用一般費率。電費次月收取，租金仍依帳單月份計算；房間未設定時會套用系統預設。既有帳單不會自動改價，試算後須確認更新。
           </div>
         </section>
 
@@ -1689,7 +1690,7 @@
               class="room-checkbox"
               type="checkbox"
               ${checked ? 'checked' : ''}
-              ${paid || needsReview ? 'disabled' : ''}
+              ${paid ? 'disabled' : ''}
               onchange="updateSelectionSummary()"
             />
 
@@ -1716,7 +1717,7 @@
             </div>
           </div>
 
-          ${needsReview ? '<div class="occupancy-review">合約到期待核對：房客仍連結此房間，保留抄表資料。請先確認續住或退租；核對租約前不建立新帳單。輸入度數僅供本次試算，尚未保存。</div>' : ''}
+          ${needsReview ? '<div class="occupancy-review">合約到期待核對：可單獨勾選並修改抄表資料。送出前須確認房客仍在住，按原約金額計算本期租金，不會自動續約；已退租請勿勾選。</div>' : ''}
           ${existing && !paid && !needsReview ? '<div class="occupancy-review">此帳單已建立。可修改度數、其他費用與折扣，勾選此房間後更新原帳單。多收款請填在「其他費用、折扣與備註」的折扣金額，並記錄原因；折扣是總額，不是每次新增扣款。</div>' : ''}
           <div class="base-grid">
             ${baseItem(
@@ -1984,6 +1985,16 @@
     function calculateRow(index) {
       const item =
         PAGE_DATA.items[index];
+
+      const saved = item.existing_bill;
+      if (saved && saved.payment_status === 'paid') {
+        document.getElementById('usage_' + index).textContent = formatUsage(saved.electricity_usage) + ' 度';
+        document.getElementById('electricity_' + index).textContent = 'NT$ ' + money(saved.electricity_amount);
+        document.getElementById('equipment_' + index).textContent = 'NT$ ' + money(saved.equipment_amount);
+        document.getElementById('total_' + index).textContent = 'NT$ ' + money(saved.total_amount);
+        updateSelectionSummary();
+        return;
+      }
 
       const previous =
         numberValue(
@@ -2372,7 +2383,8 @@
           PAGE_DATA.items ||
           []
         ).map(
-          function (_, index) {
+          function (item, index) {
+            if (item.needs_occupancy_review) return null;
             return document.getElementById(
               'selected_' +
               index
@@ -2613,6 +2625,24 @@
       return result && result.message ? result.message : '帳單更正結果未確認';
     }
 
+    function billingSavedItemsMatch(items, refresh) {
+      if (!refresh || !refresh.success || !refresh.data || !Array.isArray(refresh.data.items)) return false;
+      return items.every(function (input) {
+        const row = refresh.data.items.find(function (candidate) { return candidate.room_id === input.room_id; });
+        const bill = row && row.existing_bill;
+        if (!bill || (input.bill_id && bill.bill_id !== input.bill_id)) return false;
+        if (!Number.isFinite(input.expected_saved_total_amount) ||
+            Number(bill.total_amount) !== input.expected_saved_total_amount) return false;
+        const numeric = ['previous_meter', 'current_meter_reading', 'other_amount', 'discount_amount'];
+        const text = ['due_date', 'note', 'tenant_visible_note'];
+        return numeric.every(function (key) {
+          return bill[key] !== undefined && Number(bill[key]) === Number(input[key]);
+        }) && text.every(function (key) {
+          return bill[key] !== undefined && String(bill[key] || '').trim() === String(input[key] || '').trim();
+        });
+      });
+    }
+
     async function generateBills() {
       if (billingSaveInFlight || billingSaveNeedsRefresh) return;
       const error =
@@ -2639,6 +2669,8 @@
               ];
 
             return {
+              expected_saved_total_amount: Number(document.getElementById('total_' + index).textContent.replace(/[^\d.-]/g, '')),
+              confirm_occupied_after_expiry: item.needs_occupancy_review === true,
               edit_existing_bill: Boolean(item.existing_bill),
               bill_id: item.existing_bill ? item.existing_bill.bill_id : '',
               expected_total_amount: item.existing_bill ? item.existing_bill.total_amount : null,
@@ -2687,6 +2719,9 @@
 
       if (items.some(item => item.edit_existing_bill) &&
           !window.confirm('將更新勾選的未繳原帳單，折扣以本次填寫總額取代原值，不會另建帳單。確認保存？')) return;
+
+      if (items.some(item => item.confirm_occupied_after_expiry) &&
+          !window.confirm('確認勾選的到期房客仍在住，按原約金額計算本期租金並保存抄表帳單？這不會延長租約；已退租請取消。')) return;
 
       const button =
         document.getElementById(
@@ -2746,11 +2781,13 @@
         billingSaveNeedsRefresh = !refresh || refresh.success !== true;
         const response = requestError.response;
         const savedCount = Number(response && response.data && response.data.generated_count || 0);
+        const savedMatches = !response && billingSavedItemsMatch(items, refresh);
         showToast(
+          savedMatches ? '已核對最新帳單，' + items.length + ' 筆修改資料均已保存；未重複送出。' :
           (savedCount > 0 ? '已儲存 ' + savedCount + ' 筆；' : '') +
           (response ? billingSaveFailureMessage(response) : requestError.message || '帳單結果未確認') +
           (billingSaveNeedsRefresh ? '；請先重新整理確認，未再次送出。' : '；已重新讀取最新帳單，請核對後再操作。'),
-          true, 6000
+          !savedMatches, 6000
         );
 
       } finally {

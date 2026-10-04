@@ -65,3 +65,29 @@ test('legacy JSONP timeout never automatically resubmits a billing write',async(
   assert.equal(scripts.length,1,'a timed out write must not be retried');
   await rejection;
 });
+
+test('a timed-out correction confirms matching saved fields through read-only refresh',async()=>{
+  const r=runtime(null);
+  r.context.jsonpRequest=async()=>{throw new Error('API 載入逾時');};
+  r.context.loadPage=async()=>({success:true,data:{items:[{room_id:'R1',existing_bill:{bill_id:'B1',previous_meter:0,current_meter_reading:0,other_amount:0,discount_amount:600,note:'',tenant_visible_note:'',due_date:'',total_amount:9350}}]}});
+  await r.context.generateBills();
+  assert.match(r.toasts.at(-1).message,/已核對.*保存/);
+  assert.equal(r.toasts.at(-1).error,false);
+});
+
+test('a timed-out correction with mismatched saved discount is never called successful',async()=>{
+  const r=runtime(null);
+  r.context.jsonpRequest=async()=>{throw new Error('API 載入逾時');};
+  r.context.loadPage=async()=>({success:true,data:{items:[{room_id:'R1',discount_amount:0,existing_bill:{bill_id:'B1',total_amount:9350}}]}});
+  await r.context.generateBills();
+  assert.equal(r.toasts.at(-1).error,true);
+  assert.doesNotMatch(r.toasts.at(-1).message,/已核對.*保存/);
+});
+
+test('matching inputs without the expected recalculated total cannot confirm a timeout',async()=>{
+  const r=runtime(null);
+  r.context.jsonpRequest=async()=>{throw new Error('API 載入逾時');};
+  r.context.loadPage=async()=>({success:true,data:{items:[{room_id:'R1',existing_bill:{bill_id:'B1',previous_meter:0,current_meter_reading:0,other_amount:0,discount_amount:600,note:'',tenant_visible_note:'',due_date:'',total_amount:9950}}]}});
+  await r.context.generateBills();
+  assert.equal(r.toasts.at(-1).error,true);
+});

@@ -1,5 +1,15 @@
 # CMWebs Current State
 
+## 2026-10-05 用電月份與抄表延續修復（本機候選，未發布）
+
+分支 `codex/billing-usage-month-rates-20261005`，基底 `e7559936a3a23fbb7587c33c92ff43fb866af401`；建議模型／速度 gpt-5.6-terra／medium。隔離 worktree 實作，root WIP 保留。範圍：上月用電夏月費率、502／602 到期在住個別確認、603 型關閉帳號排除、儲存逾時唯讀核對。沒有直接修改任何正式房間、租約或帳單。
+
+發布順序：先唯讀匯出核對實際部署的 Apps Script，再授權後發布新版本至既有 Web App URL，最後透過 PR/main/Pages 更新前端快取。前端 rollback 為本次基底；後端 rollback 需發布前取得实际部署版本。程式回退不撤銷已保存帳務；验收不得重送金融操作。
+
+本機測試使用正式 Apps Script handler／計算與合成持久層，不代表雲端寫入驗收。此候選尚未發布；舊帳單須房東明確選取後更正，不做自動批次重算。
+
+驗證：完整 `npm test` 589/589、`npm run validate`、`git diff --check` 通過。新增回歸均經 RED→GREEN，包括前月費率、在住確認、關閉房間、逾時保存核對與已繳快照；沒有以本機 fixture 宣稱 603 正式資料已驗收。
+
 ## 2026-10-05 帳單更正回復前端發布授權
 
 使用者明確授權發布候選 `a4beb3b`。fresh origin/main 與 Pages latest built 同為 `45870e10dff14e5a4fcd5287c38c7c3ef02b40b4`，Pages 來源 main 根目錄；前端 rollback 同 revision。隔離 worktree／分支沿用本項，root 180 筆 WIP 與原 HEAD 保留。

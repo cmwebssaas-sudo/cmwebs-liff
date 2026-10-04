@@ -7,9 +7,8 @@
  *
  * 核心規則：
  * - 以 Workspace 隔離資料。
- * - 依帳單月份決定設備耗損費：
- *   6–9 月使用 equipment_fee_rate_summer；
- *   其他月份使用 equipment_fee_rate_regular。
+ * - 電費為次月收取：依帳單前一個月的用電月份決定設備耗損費。
+ *   夏月範圍依房間／租約／Workspace 設定，不依收款月份判斷。
  * - 電費與耗損費都依本期用電度數計算。
  * - 已繳帳單禁止覆寫。
  * - 同房間、同月份只保留一筆正式帳單。
@@ -249,24 +248,7 @@ function getLandlordBillingInitByLineUid_(
     // Legacy tenant rows may predate both scope columns. Read them only when
     // an authorized room AND authorized contract agree on the exact tenant.
     // Explicit foreign scope and duplicate identities never qualify.
-    const legacyTenantSheet = ss.getSheetByName(V2_BILLING_SHEETS_.tenants);
-    const legacyTenantRows = legacyTenantSheet ? workspaceGetObjectsWithRow_(legacyTenantSheet) : [];
-    roomRows.forEach(function (room) {
-      const tenantId = billingText_(room.current_tenant_id);
-      if (!tenantId || tenantMap[tenantId]) return;
-      const linked = contracts.some(function (contract) {
-        return billingText_(contract.room_id) === billingText_(room.room_id) &&
-          billingText_(contract.tenant_id) === tenantId &&
-          (!room.current_contract_id || billingText_(contract.contract_id) === billingText_(room.current_contract_id));
-      });
-      if (!linked) return;
-      const matches = legacyTenantRows.filter(function (tenant) {
-        return billingText_(tenant.tenant_id) === tenantId;
-      });
-      if (matches.length === 1 && !billingText_(matches[0].workspace_id) && !billingText_(matches[0].landlord_id)) {
-        tenantMap[tenantId] = matches[0];
-      }
-    });
+    billingAttachAuthorizedLegacyTenants_(ss, roomRows, contracts, tenantMap);
 
     const bills =
       billingGetWorkspaceRows_(
@@ -606,16 +588,18 @@ function getLandlordBillingInitByLineUid_(
           ),
         bill_month:
           billMonth,
+        electricity_usage_month:
+          billingElectricityUsageMonth_(billMonth),
         season:
           billingIsSummerMonth_(
-            billMonth,
+            billingElectricityUsageMonth_(billMonth),
             billingSettings
           )
             ? 'summer'
             : 'regular',
         season_label:
           billingIsSummerMonth_(
-            billMonth,
+            billingElectricityUsageMonth_(billMonth),
             billingSettings
           )
             ? (
@@ -870,6 +854,8 @@ function generateLandlordBillsByLineUid_(
           .bills
       );
 
+    billingAttachAuthorizedLegacyTenants_(ss, roomRows, contractRows, tenantMap);
+
     const billRows =
       billingGetWorkspaceRows_(
         billSheet,
@@ -950,13 +936,21 @@ function generateLandlordBillsByLineUid_(
             ) ||
             null;
 
-          const contract =
+          let contract =
             billingResolveRoomContractForMonth_(
               contractRows,
               roomId,
               monthStart,
               monthEnd
             );
+
+          if (!contract && item.confirm_occupied_after_expiry === true) {
+            contract = billingResolveExpiredOccupancyReviewContract_(contractRows, room, tenantMap, monthStart);
+            if (contract) {
+              // Calculation-only confirmation. Never renew or modify the signed lease.
+              contract = Object.assign({}, contract, { __billing_confirmed_occupied: true });
+            }
+          }
 
           if (!contract) {
             if (
@@ -1172,7 +1166,9 @@ function generateLandlordBillsByLineUid_(
             total_amount:
               calculated.total_amount,
             updated_existing:
-              Boolean(existingBill)
+              Boolean(existingBill),
+            confirmed_occupied_after_expiry:
+              contract.__billing_confirmed_occupied === true
           });
 
         } catch (itemError) {
@@ -1442,7 +1438,10 @@ function generateLandlordBillsByLineUid_(
           ', skipped=' +
           skipped.length +
           ', errors=' +
-          errors.length
+          errors.length +
+          ', confirmed_occupied_rooms=' + generated.filter(function (bill) {
+            return bill.confirmed_occupied_after_expiry;
+          }).map(function (bill) { return bill.room_id; }).join('|')
       }
     );
 
@@ -1812,6 +1811,7 @@ function billingCalculateRentForBillMonth_(
     monthEnd.getDate();
 
   if (
+    (contract && contract.__billing_confirmed_occupied === true) ||
     !contractStart ||
     !contractEnd ||
     contractStart.getTime() >
@@ -1970,6 +1970,15 @@ function billingAppendInitialRentPaidNote_(note, amount) {
 }
 
 
+// Monthly utility consumption is collected the following month; rent stays current.
+function billingElectricityUsageMonth_(billMonth) {
+  const match = String(billMonth || '').match(/^(\d{4})-(\d{2})$/);
+  if (!match || Number(match[2]) < 1 || Number(match[2]) > 12) return '';
+  const month = Number(match[2]);
+  return (month === 1 ? Number(match[1]) - 1 : Number(match[1])) + '-' +
+    String(month === 1 ? 12 : month - 1).padStart(2, '0');
+}
+
 function billingBuildInitItem_(
   room,
   contract,
@@ -2122,9 +2131,10 @@ function billingBuildInitItem_(
       )
     );
 
+  const electricityUsageMonth = billingElectricityUsageMonth_(billMonth);
   const equipmentRate =
     billingIsSummerMonth_(
-      billMonth,
+      electricityUsageMonth,
       summerMonths
     )
       ? summerRate
@@ -2284,6 +2294,8 @@ function billingBuildInitItem_(
 
     electricity_fee_rate:
       electricityRate,
+    electricity_usage_month:
+      electricityUsageMonth,
     equipment_fee_rate_summer:
       summerRate,
     equipment_fee_rate_regular:
@@ -2300,14 +2312,14 @@ function billingBuildInitItem_(
 
     season:
       billingIsSummerMonth_(
-        billMonth,
+        electricityUsageMonth,
         summerMonths
       )
         ? 'summer'
         : 'regular',
     season_label:
       billingIsSummerMonth_(
-        billMonth,
+        electricityUsageMonth,
         summerMonths
       )
         ? (
@@ -2407,7 +2419,12 @@ function billingBuildInitItem_(
             total_amount:
               billingNumber_(
                 existingBill.total_amount
-              )
+              ),
+            due_date: dueDate,
+            other_amount: billingNumber_(existingBill.other_amount),
+            discount_amount: billingNumber_(existingBill.discount_amount),
+            note: billingText_(existingBill.note),
+            tenant_visible_note: billingText_(existingBill.tenant_visible_note)
           }
         : null
   };
@@ -3603,6 +3620,9 @@ function billingGetWorkspaceRoomRows_(
     sheet
   ).filter(
     function (row) {
+      if (['inactive', 'closed', 'disabled', 'archived'].indexOf(
+        billingText_(row.account_status).toLowerCase()
+      ) >= 0) return false;
       const rowWorkspaceId =
         billingText_(
           row.workspace_id
@@ -4127,7 +4147,26 @@ function billingResolveRoomContractForMonth_(
 }
 
 
-// Read-only continuity for a still-linked occupant; never changes bill eligibility.
+// Read-only identity continuity after rooms and contracts pass scope authorization.
+function billingAttachAuthorizedLegacyTenants_(ss, rooms, contracts, tenantMap) {
+  const sheet = ss.getSheetByName(V2_BILLING_SHEETS_.tenants);
+  const rows = sheet ? workspaceGetObjectsWithRow_(sheet) : [];
+  rooms.forEach(function (room) {
+    const tenantId = billingText_(room.current_tenant_id);
+    if (!tenantId || tenantMap[tenantId]) return;
+    const linked = contracts.some(function (contract) {
+      return billingText_(contract.room_id) === billingText_(room.room_id) &&
+        billingText_(contract.tenant_id) === tenantId &&
+        (!room.current_contract_id || billingText_(contract.contract_id) === billingText_(room.current_contract_id));
+    });
+    if (!linked) return;
+    const matches = rows.filter(function (tenant) { return billingText_(tenant.tenant_id) === tenantId; });
+    if (matches.length === 1 && !billingText_(matches[0].workspace_id) && !billingText_(matches[0].landlord_id)) {
+      tenantMap[tenantId] = matches[0];
+    }
+  });
+}
+
 function billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMap, monthStart) {
   const tenantId = billingText_(room.current_tenant_id);
   const tenant = tenantMap[tenantId];
@@ -4897,10 +4936,12 @@ function billingIsSummerMonth_(
       )[1]
     );
 
-  return (
-    month >= 6 &&
-    month <= 9
-  );
+  const months = Array.isArray(settingsOrMonths)
+    ? settingsOrMonths
+    : settingsOrMonths && Array.isArray(settingsOrMonths.summer_months)
+      ? settingsOrMonths.summer_months
+      : [6, 7, 8, 9];
+  return months.map(Number).indexOf(month) >= 0;
 }
 
 
