@@ -1,15 +1,15 @@
 {
-  "verified_on": "2026-10-03",
-  "source_commit": "500f0f8db2e0c05653904d815de373f5d54920f6",
+  "verified_on": "2026-10-04",
+  "source_commit": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "backend_verified_on": "2026-10-04",
   "backend_source_commit": "5abc7f6",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 206,
-  "frontend_revision": "074c225d27d271291f68f8347c0e8c6c9e8fe11e",
-  "frontend_workflow": "37068482843",
-  "frontend_public_file_count_verified": 43,
-  "frontend_release_tag": "20261003-landlord-home-motion-loading-v1",
-  "frontend_authenticated_acceptance": "PENDING: no verified browser session; Email login entry opened with return_to homepage",
+  "frontend_revision": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
+  "frontend_workflow": "37192744518",
+  "frontend_public_file_count_verified": 46,
+  "frontend_release_tag": "20261004-asset-income-valuation-v1",
+  "frontend_authenticated_acceptance": "PENDING: formal Email login entry opened with return_to revenue dashboard; no verified session or OTP sent",
   "frontend_physical_device_acceptance": "PENDING",
   "frontend_scope": "Authorized V2.1 existing homepage frontend slice: responsive visual polish and motion, reduced-motion/pause, lazy LINE SDK and in-place secondary action updates. No backend/API/schema/auth/financial/business-data changes. PR203 merged074c225; Pages37068482843 succeeded; all40 changed public assets plus the prior manifest union,43/43, were byte-identical. Fresh validate and503/503 tests pass. Direct homepage browser had no verified session and displayed missing LINE User ID; explicit Email login entry opened, no OTP sent. Authenticated/real-device/end-to-end timing acceptance pending. The v205 backend evidence below remains dated2026-10-02 and was not freshly exported or deployed by this frontend release.",
   "prior_frontend_release": {
@@ -73,8 +73,8 @@
   ],
   "scope": "V2.0 tenant detail correctness repair: exact current-lease rent, management, contractual deposit, Taipei dates/payment day and existing rates. Read projections retain explicit zero and null for unknown values without changing write/default normalizers; document fallback refreshes only summary/history, preserving meter and file forms. Fresh serving/editor HEAD v204 exports matched all 59 baseline files; reviewed c583d36 created immutable v205, all 59 files byte-identical. Existing formal deployment CLI reads back v205 at unchanged URL; four other deployments unchanged and v204 rollback retained. PR201 merged at657ec08; Pages workflow36985692299 succeeded and 41 public files are byte-identical. Post-merge validate, 485/485 tests and diff-check pass. No business-row, lease/date/history, private-file, schema, Properties, trigger or LINE writes, and no version deletion. Authenticated browser/physical-device acceptance and previously approved room501-only settings save (rent19570, management0, deposit39140) remain PENDING: browser is at landlord Email login; no direct Sheets write or auth bypass. Prior506 document/meter recovery and502 expired-occupied protection remain. Rollback same Web App v204, frontend cc01e81.",
   "rollback": {
-    "backend_version": 204,
-    "frontend_revision": "133549eed5d3a5ae57f2d3c112953780ef1369f6"
+    "backend_version": 205,
+    "frontend_revision": "566be22728364fe87ca7c62b03d479c5b29bdf01"
   },
   "version_inventory_verified": {
     "highest_version": 205,
@@ -151,7 +151,7 @@
   },
   "backend_rollback_version": 205,
   "asset_income_valuation": {
-    "scope": "Authorized V2.1 annual income reporting and asset yield scenarios; default2 percent highest or average or selected year. Immutable206 export59 files matches candidate, existing URL unchanged. Frontend publication and authenticated acceptance pending.",
+    "scope": "Authorized V2.1 annual income reporting and asset yield scenarios; default2 percent highest or average or selected year. Immutable206 export59 files matches candidate, existing URL unchanged. PR205 merged7507e939; Pages37192744518 success; 46 public runtime files match source. June17 paid rows216606 appended and verified without changing prior2851 rows. Authenticated and physical device acceptance pending.",
     "verified_on": "2026-10-04",
     "frontend_release_tag": "20261004-asset-income-valuation-v1",
     "candidate": "5abc7f6",

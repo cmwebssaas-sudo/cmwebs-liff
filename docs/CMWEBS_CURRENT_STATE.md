@@ -1,9 +1,11 @@
 # CMWebs Current State
 
 **Status: AUTHORITATIVE current-state record**
-**Last verified: 2026-10-04 (Asia/Taipei; June import and immutable backend 206 verified; valuation Pages publication pending)**
+**Last verified: 2026-10-04 (Asia/Taipei; June import, backend 206 and valuation Pages verified; authenticated acceptance pending)**
 
 ## 2026-10-04 歷史收入補入與資產估值發布
+
+PR **#205** 已合併為 `7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f`，Pages workflow **37192744518** success、latest build 同 commit 且 built。所有修改的公開 runtime 加驗證清單共 **46/46** 逐位元組與來源一致；Node fetch 曾遇網路失敗，改用 curl 逐檔讀回完成。合併後 validate／515/515／diff-check 通過。正式瀏覽器已開啟收入報表的 Email 登入入口，尚無已驗證 session，未寄 OTP 或代登入，登入後圖表／手機真機驗收仍待使用者登入。原 root 408 筆、branch／HEAD 未變。
 
 使用者確認提供的歷史收入皆已繳且確實入帳，並授權寫入及發布。2026 年 6 月缺少的 17 筆 NT$216,606 已補入 V2_bills；既有 306／402 不重複，共 19 筆 NT$234,637。完整讀回確認原 2,851 筆未改動、新增 17 筆所有欄位一致，無公式或通知。實際入帳日期未知，paid_at 留空；保留來源年月與房號追溯，不綁目前房客或租約。2013 年 1–6 月無資料為使用者確認的正常邊界。
 
