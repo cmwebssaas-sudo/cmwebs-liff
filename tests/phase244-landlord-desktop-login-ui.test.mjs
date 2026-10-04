@@ -24,7 +24,7 @@ function createDeferred() {
   return { promise, resolve, reject };
 }
 
-function createEntryRuntime() {
+function createEntryRuntime(search = '') {
   const elements = new Map();
   const storage = new Map();
   const timers = new Set();
@@ -136,7 +136,7 @@ function createEntryRuntime() {
       href: 'https://example.test/landlord-entry.html',
       origin: 'https://example.test',
       pathname: '/landlord-entry.html',
-      search: '',
+      search,
       hash: '',
       replace(value) {
         submittedLocations.push(value);
@@ -197,6 +197,18 @@ function createEntryRuntime() {
     }
   };
 }
+
+test('desktop share Email mode permits an explicit LINE choice without returning to Email form', async () => {
+  const runtime = createEntryRuntime('?mode=email&return_to=landlord-home.html');
+  runtime.context.liff = { init: async () => {}, isLoggedIn: () => true, isInClient: () => false, getProfile: async () => ({ userId: 'line-fixture' }) };
+  runtime.context.fetch = async () => ({ ok: true, json: async () => ({ success: true, data: { route: 'home' } }) });
+  await runtime.context.loadPage();
+  assert.match(runtime.elements.get('app').innerHTML, /emailLoginInput/);
+  await runtime.context.startLineLogin();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.doesNotMatch(runtime.elements.get('app').innerHTML, /emailLoginInput/, 'explicit LINE choice must not return to the Email form');
+  assert.ok(runtime.context.submittedLocations.some(value => value.includes('landlord-home.html')));
+});
 
 function accessibleNamePattern(id) {
   return new RegExp(

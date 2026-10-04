@@ -440,6 +440,8 @@
     const LINE_FALLBACK_INTENT_KEY =
       'cmwebs_landlord_line_fallback_intent';
 
+    let EXPLICIT_LINE_LOGIN_CHOICE = false;
+
     let RETURN_TO = '';
 
     let LINE_USER_ID = '';
@@ -985,6 +987,7 @@
     }
 
     async function startLineLogin() {
+      EXPLICIT_LINE_LOGIN_CHOICE = true;
       setLineFallbackIntent();
       EMAIL_LOGIN_CHALLENGE_ID = '';
       EMAIL_LOGIN_EMAIL = '';
@@ -996,6 +999,7 @@
           loadPage();
         }
       } catch (error) {
+        EXPLICIT_LINE_LOGIN_CHOICE = false;
         clearLineFallbackIntent();
         renderError(
           error && error.message
@@ -1468,7 +1472,7 @@
       const auth =
         initAuthClient();
       const forceLineFallback =
-        !EMAIL_LOGIN_MODE &&
+        (!EMAIL_LOGIN_MODE || EXPLICIT_LINE_LOGIN_CHOICE) &&
         hasLineFallbackIntent();
 
       document.getElementById(

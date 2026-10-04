@@ -2,6 +2,10 @@
 
 **Status: AUTHORITATIVE current-state record**
 
+## 2026-10-05 手機分享電腦版入口 LINE 選擇（本機修正，未發布）
+
+使用者指出「更多→電腦版」Email 登入頁的 LINE 按鈕沒有反應。正式公開 entry 仍含 `!EMAIL_LOGIN_MODE && hasLineFallbackIntent()`；本機 VM 重現手動 LINE 已取得 profile 後再次 render Email 表單。新增本頁明確點擊旗標，只有手動選擇才可覆蓋 mode=email；舊 session fallback 不得自動啟動 LINE，保留 phase250 測試。分支 `codex/desktop-entry-line-choice-20261005`；建議 gpt-5.6-terra / medium。RED→GREEN、validate、525/525、diff-check 通過。沒有真實 LINE OAuth／使用者電腦 browser 驗收，不宣稱所有無反應原因已排除。無後端／業務資料更動；尚未發布，部署仍需本項授權，rollback 為正式 5fb4b48。
+
 ## 2026-10-05 營收與資產摘要優先排列（本機候選，未發布）
 
 發布完成：PR #209 合併為 `5fb4b4852a061b29175ee56ea415584c8cca16fd`，Pages run **37223696358** success，latest build 同 commit 且 built。40 個本次修改的公開 runtime 檔案逐位元組與來源相同，0 mismatch。發布前 validate、524/524 與 diff-check 通過，原 root 408 筆 WIP 保留。沒有 Apps Script 或資料更動。這是部署及公開檔案讀回證據；本輪未進行正式登入後互動或手機真機驗收，合成預覽不能替代這些驗收。rollback 前端 a2230a2。
