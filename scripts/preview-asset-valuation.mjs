@@ -17,12 +17,22 @@ export function previewHtml(empty = false) {
   const page = readFileSync(new URL('landlord-revenue-dashboard.html', root), 'utf8');
   const startup = "(async function () { try { if (await initLineUserId()) await loadReport(); } catch (error) { showToast(error.message || '登入失敗', true); } }());";
   if (page.split(startup).length !== 2) throw new Error('Revenue startup changed; review preview isolation.');
-  const report = { annual_income: empty ? [] : sampleYears, has_data: false, months: [], properties: [], updated_at: '' };
+  const report = { annual_income: empty ? [] : sampleYears, has_data: false, months: [], properties: empty ? [] : [
+    { property_id: 'preview-a', property_name: '示範物件 A（合成）' },
+    { property_id: 'preview-b', property_name: '示範物件 B（合成）' }
+  ], updated_at: '' };
   return page.replace(/<script src="(?!assets\/js\/cmwebs-asset-valuation\.js)[^"]+"><\/script>/g, '')
-    .replace(startup, `render(${JSON.stringify(report)});
-      document.getElementById('app').insertAdjacentHTML('afterbegin', '<p class="av-warning">本機功能預覽 · 全部合成數據 · 尚未發布。年度估值不受本期月份篩選影響。</p>');
-      loadReport = function() { showToast('合成資料預覽，不呼叫正式 API'); };
-      goPage = function() { showToast('預覽不開啟正式網站'); };`);
+    .replace(startup, `function loadPreviewReport() {
+        const report = ${JSON.stringify(report)};
+        const factor = SELECTED_PROPERTY === 'preview-a' ? .6 : SELECTED_PROPERTY === 'preview-b' ? .4 : 1;
+        report.annual_income = report.annual_income.map(row => ({ ...row, collected: row.collected * factor,
+          months: row.months.map(month => ({ ...month, collected: month.collected * factor })) }));
+        render(report);
+        document.getElementById('app').insertAdjacentHTML('afterbegin', '<p class="av-warning">本機功能預覽 · 全部合成數據 · 尚未發布。年度估值不受本期月份篩選影響。</p>');
+      }
+      loadReport = loadPreviewReport;
+      goPage = function() { showToast('預覽不開啟正式網站'); };
+      loadPreviewReport();`);
 }
 
 export function createPreviewServer() {

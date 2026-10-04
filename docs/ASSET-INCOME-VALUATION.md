@@ -2,6 +2,11 @@
 
 ## 2026-10-04 投入成本／互動圖表擴充（本機候選，未發布）
 
+### 使用者預覽問題修正
+
+原 loopback fixture 的 properties 為空、loadReport 只提示；因此只有「全部物件」且切換不更新。現提供兩個明確合成物件，選取後在本機重新聚合年度與月金額（A 60%、B 40%）；合成 browser 核對全部 694,000、A 416,400、B 277,600，回到全部恢復原值，無正式 API。
+營收頁原只有手機底部導覽；現 ≥1024px 用固定左側桌面導覽及主內容捲動，隱藏底導覽；小螢幕維持原固定 shell。browser 桌面 aside visible／bottom-nav hidden，390px iframe 相反且 page width／scrollWidth 375／375。正式網站尚未發布此次修正。
+
 使用者批准此設計實作。隔離 branch `codex/asset-return-chart-interactions-20261004`；只改既有報表前端，不新增 route、Schema、正式資料寫入或 Apps Script 版本。
 
 - 購入總價、裝修成本須明確填金額（無成本填 0）；其他投入選填、空白按 0。總投入為三者相加。欄位只在本次頁面記憶體保存，刷新／報表重載清除，非房東資料持久化。

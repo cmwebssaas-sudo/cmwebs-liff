@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import vm from 'node:vm';
-import { createPreviewServer } from '../scripts/preview-asset-valuation.mjs';
+import { createPreviewServer, previewHtml } from '../scripts/preview-asset-valuation.mjs';
 
 const backend = vm.createContext({ console, Date });
 vm.runInContext(readFileSync(new URL('../apps-script/V2_REPORTING_DASHBOARD.js', import.meta.url), 'utf8'), backend);
@@ -10,6 +10,41 @@ const url = new URL('../assets/js/cmwebs-asset-valuation.js', import.meta.url);
 const frontend = vm.createContext({});
 if (existsSync(url)) vm.runInContext(readFileSync(url, 'utf8'), frontend);
 const plain = value => JSON.parse(JSON.stringify(value));
+
+test('preview property selection rerenders scoped synthetic years without a production request', () => {
+  const html = previewHtml();
+  const startup = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(match => match[1]).find(body => body.includes('async function initLineUserId'));
+  let data;
+  const context = vm.createContext({ URL, URLSearchParams, location: { href: 'http://127.0.0.1/', search: '' }, innerHeight: 800,
+    document: { documentElement: { style: { setProperty() {} } }, getElementById() { return { insertAdjacentHTML() {} }; } }, addEventListener() {}, console });
+  context.window = context;
+  assert.ok(startup.includes('function loadPreviewReport'), 'preview has no usable property reload');
+  vm.runInContext(startup.slice(0, startup.lastIndexOf('function loadPreviewReport')), context);
+  context.render = value => { data = value; };
+  context.showToast = () => {};
+  const previewStart = startup.slice(startup.lastIndexOf('function loadPreviewReport'));
+  assert.ok(previewStart.startsWith('function loadPreviewReport'), 'preview has no usable property reload');
+  vm.runInContext(previewStart, context);
+  assert.equal(data.properties.length, 2);
+  const all = data.annual_income.reduce((sum, row) => sum + row.collected, 0);
+  context.changeProperty('preview-a');
+  assert.equal(data.annual_income.reduce((sum, row) => sum + row.collected, 0), all * .6);
+  context.changeProperty('preview-b');
+  assert.equal(data.annual_income.reduce((sum, row) => sum + row.collected, 0), all * .4);
+  context.changeProperty('');
+  assert.equal(data.annual_income.reduce((sum, row) => sum + row.collected, 0), all);
+});
+
+test('revenue page has desktop navigation while mobile keeps its fixed bottom shell', () => {
+  const page = readFileSync(new URL('../landlord-revenue-dashboard.html', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../assets/css/cmwebs-asset-valuation.css', import.meta.url), 'utf8');
+  assert.match(page, /class="app-shell av-desktop"/);
+  assert.match(page, /aria-label="房東桌面導覽"/);
+  assert.match(page, /aria-current="page"[^>]*>營收與資產/);
+  assert.match(css, /min-width:1024px/);
+  assert.match(css, /\.av-desktop \.bottom-nav \{ display: none;/);
+  assert.match(page, /\.bottom-nav \{ position:absolute/);
+});
 
 test('investment returns distinguish actual collected income, invested capital and annual expenses', () => {
   const returns = frontend.CMWebsAssetValuation.investmentReturns;
