@@ -409,7 +409,10 @@
     }
     async function loadPage() {
       try {
-        if (!CONTRACT_ID) throw new Error('網址缺少 contract_id');
+        if (!CONTRACT_ID) {
+          document.getElementById('app').innerHTML = '<section class="card"><h2>選擇退房房客</h2><p>請先到房客名單選擇房客，進入詳細資料，再點「辦理退房」。系統會帶入正確的合約，不會直接更改房況。</p><a class="btn btn-light" href="landlord-tenants.html">開啟房客名單</a></section>';
+          return;
+        }
         const ready = await initializeNativeSigningReviewSession();
         if (!ready) return;
         const data = await callLandlordCheckoutApi('landlord_contract_checkout_init', { contract_id: CONTRACT_ID });

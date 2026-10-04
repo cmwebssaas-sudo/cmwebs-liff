@@ -1,5 +1,13 @@
 # V2 回歸測試矩陣
 
+## 2026-10-05 導覽／退房選擇與合約驗證狀態（候選）
+
+- 九個既有桌面側欄核對八個既有入口，退房先開房客名單；營收頁補退房入口。沒有 contract_id 的退房網址顯示選擇指引，不建立 session、不寫資料；單筆退房仍從房客詳細資料帶入既有合約。
+- 合約 auth／review／initiated status 沿用共用 JSONP，dispatcher 原本已支援 callback；不經 callApi 的 data unwrap。驗證失敗保留原始碼與訊息，缺失／確認過期 LINE 憑證才顯示手動重登入，不繞過伺服器 Workspace 與角色驗證。
+- 本機重現側欄缺項／錯誤退房網址、cross-origin fetch 失敗與原始驗證錯誤遭遮蔽；根因不同於上一版資料讀取缺少 LINE ID。真實合約驗證最初失敗的 provider／網路原因尚未被正式登入證據確定，不能因本機測試宣稱所有合約已恢復。
+- 後端／API route／Schema／正式資料無變更，Apps Script 測試函式不適用；rollback b183c22。登入後、退房頁讀取（不結案）與手機真機尚待驗收。
+- `npm run validate`、`npm test` 545/545、diff-check 通過。新增 14 項包含九頁導覽可點擊路由、JSONP status 參數、驗證原始錯誤保留、無合約 ID 不發請求、缺失憑證碼、手動 OAuth 回跳參數清理。尚未發布；root 408 筆 WIP 保持。
+
 ## 2026-10-05 電腦版登入後缺少 LINE 身分修正
 
 - 五頁實際 ensureLandlordAuthReady 與真實 shared auth 重現：無 Email token 的桌面被誤判 Email，LINE 初始化次數為 0；新增六項回歸 RED→GREEN。
