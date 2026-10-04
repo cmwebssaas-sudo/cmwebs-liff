@@ -2,6 +2,10 @@
 
 **Status: AUTHORITATIVE current-state record**
 
+## 2026-10-05 出租收益／估值出售試算發布授權
+
+使用者批准此次前端候選發布，V2.1 固定報表擴充，建議 gpt-5.6-terra / medium。隔離分支 `codex/valuation-sale-scenarios-20261004`，候選 f0cf328；fresh origin/main 與 Pages latest built 同為 `68c7f3be565f8883bfed58daaa1d3adcfd296e71`，Pages main 根目錄。新 cache tag `20261005-rental-sale-returns-v1`，其他頁只做靜態 cache 機械同步。前端 rollback 為 68c7f3b；Apps Script 206 保留，不改 Schema／Properties／trigger／LINE 或業務資料。523/523、validate 與 diff-check 通過。此次發布與公開讀回結果另記；本機合成預覽不代表正式登入或手機真機驗收。
+
 ## 2026-10-04 投入成本及互動圖表本機候選
 
 發布完成：PR #207合併commit 68c7f3be565f8883bfed58daaa1d3adcfd296e71；Pages run37209405437 success，latest build同commit且built。40個本次改動公開runtime檔逐位元組一致（0 mismatch）。登入Chrome正式報表重載可見桌面側欄、購入／裝修／其他成本及累計29,614,290；柱狀圖點2024顯示12月明細，圓餅點2026-06顯示234,637、年內占比11.32%。未輸入成本或改業務資料；手機真機未重新驗收，成本為本次瀏覽試算且重載清除，原始收入完整對帳仍未完成。Apps Script v206保持不動，回退前端484deeb。
