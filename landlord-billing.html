@@ -942,6 +942,8 @@
     let LANDLORD_AUTH = null;
     let PAGE_DATA = null;
     let toastTimer = null;
+    let billingSaveInFlight = false;
+    let billingSaveNeedsRefresh = false;
     const initialRentCreditPendingBillIds = new Set();
     const initialRentCreditCompletedBillIds = new Set();
 
@@ -1243,6 +1245,7 @@
                 cleanup();
 
                 if (
+                  action === 'landlord_billing_init' &&
                   Number(
                     retryCount || 0
                   ) < 1
@@ -2471,7 +2474,7 @@
 
       if (button) {
         button.disabled =
-          indexes.length === 0;
+          billingSaveInFlight || billingSaveNeedsRefresh || indexes.length === 0;
       }
     }
 
@@ -2597,7 +2600,21 @@
       );
     }
 
+    function billingSaveFailureMessage(result) {
+      const errors = result && result.data && result.data.errors;
+      if (Array.isArray(errors) && errors.length) {
+        return errors.slice(0, 3).map(function (error) {
+          const item = (PAGE_DATA.items || []).find(function (row) {
+            return row.room_id === error.room_id;
+          });
+          return (item ? item.room_name + '：' : '') + (error.message || error.code || '帳單更正失敗');
+        }).join('；');
+      }
+      return result && result.message ? result.message : '帳單更正結果未確認';
+    }
+
     async function generateBills() {
+      if (billingSaveInFlight || billingSaveNeedsRefresh) return;
       const error =
         validateSelected();
 
@@ -2681,6 +2698,8 @@
 
       button.textContent =
         '儲存中...';
+      billingSaveInFlight = true;
+      billingSaveNeedsRefresh = true;
 
       try {
         const result =
@@ -2708,38 +2727,34 @@
           )
         ) {
           throw new Error(
-            result &&
-            result.message
-              ? result.message
-              : '帳單建立失敗'
+            billingSaveFailureMessage(result)
           );
         }
 
         const data =
           result.data || {};
 
-        showToast(
-          formatBillingGenerationResult(
-            result
-          ),
-          Number(
-            data.error_count ||
-            0
-          ) > 0
-        );
-
-        await loadPage(
-          false
-        );
+        const refresh = await loadPage(false, { suppressError: true });
+        billingSaveNeedsRefresh = !refresh || refresh.success !== true;
+        showToast(formatBillingGenerationResult(result) +
+          (Number(data.error_count || 0) > 0 ? '：' + billingSaveFailureMessage(result) : '') +
+          (billingSaveNeedsRefresh ? '；已儲存，但最新資料讀取失敗，請先重新整理，勿重複送出。' : ''),
+          Number(data.error_count || 0) > 0 || billingSaveNeedsRefresh, 6000);
 
       } catch (requestError) {
+        const refresh = await loadPage(false, { suppressError: true });
+        billingSaveNeedsRefresh = !refresh || refresh.success !== true;
+        const response = requestError.response;
+        const savedCount = Number(response && response.data && response.data.generated_count || 0);
         showToast(
-          requestError.message ||
-          '帳單建立失敗',
-          true
+          (savedCount > 0 ? '已儲存 ' + savedCount + ' 筆；' : '') +
+          (response ? billingSaveFailureMessage(response) : requestError.message || '帳單結果未確認') +
+          (billingSaveNeedsRefresh ? '；請先重新整理確認，未再次送出。' : '；已重新讀取最新帳單，請核對後再操作。'),
+          true, 6000
         );
 
       } finally {
+        billingSaveInFlight = false;
         button.textContent =
           '建立／更新所選帳單';
         updateSelectionSummary();
@@ -2843,6 +2858,7 @@
 
         PAGE_DATA =
           result.data || {};
+        billingSaveNeedsRefresh = false;
 
         renderPage();
 

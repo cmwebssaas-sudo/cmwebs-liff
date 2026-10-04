@@ -1,5 +1,13 @@
 # CMWebs Current State
 
+## 2026-10-05 帳單更正失敗回復（本機候選，未發布）
+
+分支 `codex/billing-correction-sync-20261005`，基底 `45870e1`；建議模型／速度 gpt-5.6-terra／medium。正式登入及 Sheets 唯讀核對：202 的 B0000042 已扣 600，原帳單與 tenant bill/home view 同為 NT$9,350；6:21:38 操作成功，其後四次操作失敗。稽核沒有保存子錯誤，不能斷言這四次確切拒絕原因；過期 expected total 的保護已在隔離測試重現。沒有重送正式帳務或更動 Sheets。
+
+前端保留後端子錯誤及 Email bridge 業務回應、保存期间提交鎖、失败後唯讀刷新；保存後刷新失敗仍鎖定，要求重新整理。legacy JSONP 僅讀取可重試，寫入逾時不自動重送。後端原金額／租約／權限保護不變；沒有 API／Schema／Apps Script 變更。
+
+完整測試 569/569、validate、diff-check 通過；新增五項帳單流程與 Email bridge payload 回歸。候選尚未發布，正式瀏覽器只驗收既有帳單金額；不能以本機測試宣稱正式提交修復驗收。發布需本項明確授權，前端 rollback `45870e1`，回退程式不會撤銷已保存的折抵。
+
 ## 2026-10-05 抄表修正正式驗收補記
 
 前端 PR #214 合併 b030ad9fee8945feb24bc4f1f21ea6be5ccd4e05；Pages37237549394 success，46 個公開檔案與修正版逐位元組相同。Apps Script 同既有 URL 更新207後發現502／602仍漏列；208補上舊租約scope相容，209再修正唯一無scope舊房客經已授權room／contract精確關聯讀取。209 immutable export59檔逐位元組與來源相同，tree hash7ad778e6d9cbbc3af00d283f8b0be6cde06a92d977fa23735780f7fab1ac3681。

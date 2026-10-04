@@ -539,6 +539,19 @@ guardedTest('Phase 219 normalizes hidden POST bridge timeouts to API_TIMEOUT', a
   assert.equal(document.submittedForms.length, 1);
 });
 
+guardedTest('Email bridge preserves business error details without changing rejection or origin validation', async () => {
+  const {context,document,storage}=createRuntime();
+  const auth=context.window.CMWebsLandlordAuth;
+  auth.init({apiUrl:'https://script.google.com/macros/s/example/exec'});
+  storage.set('cmwebs_landlord_session_token','SESSION_TOKEN_ABC');
+  const request=auth.request('landlord_bills_generate',{});
+  const fields=formFields(document.submittedForms[0]);
+  const iframe=document.created.find(element=>element.tagName==='IFRAME');
+  const payload={success:false,code:'BILLS_GENERATE_FAILED',message:'帳單建立失敗',data:{errors:[{room_id:'R1',message:'帳單金額已變動'}]}};
+  context.dispatchMessage({source:'CMWEBS_APPS_SCRIPT',requestId:fields.request_id,payload},'https://script.google.com',iframe.contentWindow);
+  await assert.rejects(request,error=>error.code==='BILLS_GENERATE_FAILED' && error.response?.data.errors[0].message==='帳單金額已變動');
+});
+
 guardedTest('Phase 219 sends the settings page bootstrap through the authenticated POST bridge', async () => {
   const { context, document, storage } = createRuntime();
   context.API_URL = 'https://script.google.com/macros/s/example/exec';
