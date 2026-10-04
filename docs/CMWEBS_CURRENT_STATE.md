@@ -1,5 +1,11 @@
 # CMWebs Current State
 
+## 2026-10-05 用電月份／抄表修正發布進行中
+
+使用者明確確認授權發布。fresh main `e7559936a3a23fbb7587c33c92ff43fb866af401`，原部署209與 editor HEAD 的59檔相同；只有 billing module 差異。候選 `0bca6f9` 已推送並建立 immutable210，59檔匯出逐位元組一致，tree hash `9d6c5aa00da2c7b722e87db681232745c73b229290258ca97204cae51589f6b3`。既有 Web App deployment 讀回210，其他四部署未變，209保留回退。沒有修改業務資料或代送帳單。
+
+frontend cache `20261005-utility-meter-save-v1`；等待 PR/main/Pages 公開檔案核對，不能把後端發布視為完整交付。前端回退 `e755993`、後端209；正式金融提交及手機真機驗收未做。
+
 ## 2026-10-05 用電月份與抄表延續修復（本機候選，未發布）
 
 分支 `codex/billing-usage-month-rates-20261005`，基底 `e7559936a3a23fbb7587c33c92ff43fb866af401`；建議模型／速度 gpt-5.6-terra／medium。隔離 worktree 實作，root WIP 保留。範圍：上月用電夏月費率、502／602 到期在住個別確認、603 型關閉帳號排除、儲存逾時唯讀核對。沒有直接修改任何正式房間、租約或帳單。
