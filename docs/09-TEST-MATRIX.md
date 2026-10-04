@@ -6,6 +6,7 @@
 - getMode 只依 Email session 判斷，沒有 token 則進 LINE 初始化；桌面 Email 表單偏好只在入口決定，不代表已登入。五頁同時測 Email session 不啟動 LINE、LINE redirect pending 不讀資料。
 - 發布範圍沿用使用者登入修正授權；只有前端、cache 標記及測試文件，無 Apps Script／Schema／正式業務資料修改。回退 main c7b2530。
 - 真實桌面 LINE OAuth 與登入後跨頁資料验收仍待確認，單元測試不等於此驗收。
+- 發布完成：validate／531/531／diff-check 通過；PR #211 合併 b183c22，Pages run 37227859933 success，latest build built 且 commit 一致；39/39 修改 runtime 公開檔案逐位元組相同。root 408 筆 WIP、branch 與 HEAD 未變。
 
 ## 2026-10-05 電腦版 Email 入口手動 LINE 選擇（未發布）
 
