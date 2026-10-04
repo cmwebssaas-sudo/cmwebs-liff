@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../apps-script/V2_BILLING_MANAGEMENT.js', import.meta.url), 'utf8');
+const settingsSource = readFileSync(new URL('../apps-script/V2_SETTINGS_INTEGRATION.js', import.meta.url), 'utf8');
 
 const contract = {
   workspace_id: 'W1', landlord_id: 'L1', contract_id: 'C1', tenant_id: 'T1',
@@ -51,11 +52,11 @@ function createRuntime(options = {}) {
   const settings = options.noMeterFees ? {
     default_payment_day: 10, default_electricity_fee_rate: 0,
     summer_equipment_fee_rate: 0, regular_equipment_fee_rate: 0,
-    default_management_fee: 0, summer_months: [6, 7, 8, 9]
+    default_management_fee: 0, summer_months: [6, 7, 8, 9], ...options.settings
   } : {
     default_payment_day: 10, default_electricity_fee_rate: 3,
     summer_equipment_fee_rate: 2, regular_equipment_fee_rate: 2,
-    default_management_fee: 0, summer_months: [6, 7, 8, 9]
+    default_management_fee: 0, summer_months: [6, 7, 8, 9], ...options.settings
   };
   const access = {
     success: true, workspace: { workspace_id: 'W1' },
@@ -93,6 +94,10 @@ function createRuntime(options = {}) {
     tenantCheckinEnsureSchema_() { throw new Error('checkin schema writes are forbidden'); }
   });
   vm.runInContext(source, context, { filename: 'V2_BILLING_MANAGEMENT.js' });
+  if (options.withSettingsIntegration) {
+    vm.runInContext(settingsSource, context);
+    context.settingsIntegrationGetWorkspaceSettings_ = () => settings;
+  }
   Object.assign(context, {
     billingEnsureSchema_() {},
     billingAudit_() {},
@@ -134,6 +139,15 @@ function assertRequired(runtime, input = {}, month = '2026-09') {
 }
 
 for (const [roomName, status] of [['502', 'expired'], ['602', 'active']]) {
+  test(`owner can explicitly confirm occupied ${roomName} without renewing the expired lease`, () => {
+    const runtime = createRuntime({ room: {room_name:roomName,current_contract_id:'C1'},
+      contract:{contract_status:status,start_date:'2025-01-01',end_date:'2026-08-31'},bills:[priorBill] });
+    const result = runtime.submit({confirm_occupied_after_expiry:true,current_meter_reading:180},'2026-10');
+    assert.equal(result.success,true,result.message);
+    assert.equal(runtime.newBill().rent_amount,9000);
+    assert.equal(runtime.sheets.V2_contracts.rows[0].end_date,'2026-08-31');
+    assert.equal(runtime.sheets.V2_contracts.rows[0].contract_status,status);
+  });
   test(`expired occupied ${roomName} stays in meter init for review without automatic billing`, () => {
     const runtime = createRuntime({ room: {room_name:roomName,current_contract_id:'C1'},
       contract:{contract_status:status,start_date:'2025-01-01',end_date:'2026-08-31'},bills:[priorBill] });
@@ -147,6 +161,39 @@ for (const [roomName, status] of [['502', 'expired'], ['602', 'active']]) {
     assert.equal(runtime.submit({},'2026-10').success,false);
     assert.equal(runtime.writes.length,0);
     assert.equal(runtime.sheets.V2_contracts.rows[0].end_date,'2026-08-31');
+  });
+}
+
+test('expiry confirmation cannot revive a completed checkout', () => {
+  const runtime=createRuntime({room:{current_contract_id:'C1'},contract:{contract_status:'expired',start_date:'2025-01-01',end_date:'2026-08-31',checkout_status:'completed'},bills:[priorBill]});
+  assert.equal(runtime.submit({confirm_occupied_after_expiry:true},'2026-10').success,false);
+  assert.equal(runtime.writes.length,0);
+});
+
+test('real settings integration honors room summer override on previous usage month', () => {
+  const runtime=createRuntime({withSettingsIntegration:true,room:{equipment_summer_months:'12',equipment_fee_rate_summer:4,equipment_fee_rate_regular:2},
+    contract:{start_date:'2025-01-01',end_date:'2028-12-31'},bills:[{...priorBill,bill_month:'2026-12'}]});
+  const item=runtime.init('2027-01');
+  assert.equal(item.electricity_usage_month,'2026-12');
+  assert.equal(item.equipment_fee_rate,4);
+  assert.equal(runtime.submit({current_meter_reading:250},'2027-01').success,true);
+  assert.equal(runtime.newBill().equipment_amount,400);
+});
+
+test('owner occupancy confirmation preserves the authorized legacy tenant scope', () => {
+  const runtime=createRuntime({tenant:{workspace_id:'',landlord_id:''},room:{current_contract_id:'C1'},
+    contract:{start_date:'2025-01-01',end_date:'2026-08-31'},bills:[priorBill]});
+  assert.equal(runtime.submit({confirm_occupied_after_expiry:true,current_meter_reading:180},'2026-10').success,true);
+  assert.equal(runtime.newBill().rent_amount,9000);
+});
+
+for (const status of ['inactive', 'closed', 'disabled', 'archived']) {
+  test(`closed test room 603 (${status}) is excluded from meter reads and writes`, () => {
+    const runtime=createRuntime({room:{room_name:'603',account_status:status},checkins:[checkin]});
+    const result=runtime.context.getLandlordBillingInitByLineUid_('owner','2026-09','');
+    assert.equal(result.data.items.length,0);
+    assert.equal(runtime.submit({confirm_occupied_after_expiry:true}).success,false);
+    assert.equal(runtime.writes.length,0);
   });
 }
 
@@ -582,4 +629,65 @@ test('no-meter-fee bill still generates without an initial reading', () => {
   assert.equal(runtime.submit({ current_meter_reading: '' }).success, true);
   assert.equal(runtime.newBill().electricity_usage, 0);
   assert.equal(runtime.newBill().total_amount, 4800);
+});
+
+// Fail if seasonal pricing follows collection month instead of consumed month.
+for (const [month, usageMonth, rate, season] of [
+  ['2026-06', '2026-05', 2, 'regular'],
+  ['2026-07', '2026-06', 4, 'summer'],
+  ['2026-10', '2026-09', 4, 'summer'],
+  ['2026-11', '2026-10', 2, 'regular'],
+  ['2027-01', '2026-12', 2, 'regular']
+]) {
+  test(`${month} charges ${usageMonth} meter usage with its seasonal rate`, () => {
+    const runtime = createRuntime({
+      contract: { start_date: '2025-01-01', end_date: '2028-12-31' },
+      room: { equipment_fee_rate_regular: 2, equipment_fee_rate_summer: 4 },
+      bills: [{ ...priorBill, bill_month: usageMonth, current_meter_reading: 150 }]
+    });
+    const response = runtime.context.getLandlordBillingInitByLineUid_('owner', month, '');
+    assert.equal(response.success, true, response.message);
+    assert.equal(response.data.electricity_usage_month, usageMonth);
+    assert.equal(response.data.season, season);
+    const item = response.data.items[0];
+    assert.equal(item.electricity_usage_month, usageMonth);
+    assert.equal(item.equipment_fee_rate, rate);
+    assert.equal(runtime.writes.length, 0);
+    const result = runtime.submit({ current_meter_reading: 250 }, month);
+    assert.equal(result.success, true, result.message);
+    assert.equal(runtime.newBill().bill_month, month, 'rent and due month do not shift');
+    assert.equal(runtime.newBill().equipment_amount, rate * 100);
+    assert.equal(runtime.newBill().total_amount, rate === 4 ? 9700 : 9500);
+  });
+}
+
+test('January consumption pricing honors configured December summer month without a settings helper', () => {
+  const runtime = createRuntime({
+    contract: { start_date: '2025-01-01', end_date: '2028-12-31' },
+    room: { equipment_fee_rate_regular: 2, equipment_fee_rate_summer: 4 },
+    settings: { summer_months: [12] },
+    bills: [{ ...priorBill, bill_month: '2026-12', current_meter_reading: 150 }]
+  });
+  assert.equal(runtime.init('2027-01').equipment_fee_rate, 4);
+});
+
+test('October rate preview does not rewrite saved bills and explicit correction retains its discount', () => {
+  const bill = { ...priorBill, bill_month: '2026-10', payment_status: 'unpaid',
+    previous_meter: 150, current_meter_reading: 250, electricity_usage: 100,
+    rent_amount: 9000, management_fee: 0, electricity_amount: 300,
+    equipment_amount: 200, equipment_fee_rate: 2, discount_amount: 600,
+    total_amount: 8900, tenant_visible_note: '入住前溢收折抵' };
+  const runtime = createRuntime({ bills: [bill], room: { equipment_fee_rate_summer: 4 } });
+  const before = JSON.stringify(runtime.sheets.V2_bills.rows);
+  assert.equal(runtime.init('2026-10').equipment_fee_rate, 4);
+  assert.equal(JSON.stringify(runtime.sheets.V2_bills.rows), before);
+  assert.equal(runtime.writes.length, 0);
+  const result = runtime.submit({ edit_existing_bill: true, bill_id: 'B1',
+    expected_total_amount: 8900, current_meter_reading: 250, discount_amount: 600,
+    tenant_visible_note: '入住前溢收折抵' }, '2026-10');
+  assert.equal(result.success, true, result.message);
+  assert.equal(runtime.sheets.V2_bills.rows.length, 1);
+  assert.equal(runtime.sheets.V2_bills.rows[0].total_amount, 9100);
+  assert.equal(runtime.sheets.V2_bills.rows[0].discount_amount, 600);
+  assert.equal(runtime.sheets.V2_bills.rows[0].tenant_visible_note, '入住前溢收折抵');
 });

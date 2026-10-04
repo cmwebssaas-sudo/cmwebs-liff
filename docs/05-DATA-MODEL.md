@@ -454,3 +454,13 @@ caller if necessary. It retains every appended ticket/event row, original
 tenant/lease snapshot, source message, and backup. Rollback must not delete,
 rewrite, or remap historical data; remediation after an apply requires a new
 authorization and audit record.
+
+## 2026-10-05 billing consumption-month clarification (local candidate)
+
+No Sheet column or migration is added. `V2_bills.bill_month` remains the rent/
+collection month; electricity and equipment charges correspond to its preceding
+consumption month (October collection -> September usage). Configured summer
+months apply to consumption, not collection. Saved paid amounts are immutable;
+unpaid bills change only through explicit authorized corrections. Closed room
+accounts are not eligible for meter/bill work. Owner-confirmed continued
+occupancy is calculation-only and audit-recorded, not a lease-date amendment.

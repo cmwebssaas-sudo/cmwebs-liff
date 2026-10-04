@@ -324,6 +324,25 @@ tenant_payment_account_cover
 
 ### Tenant-visible bill adjustments
 
+- Local candidate 2026-10-05: `landlord_billing_init` returns
+  `electricity_usage_month` both at top level and per item: the month preceding
+  `bill_month`. Seasonal equipment rates use this consumption month, respecting
+  room/lease/Workspace summer settings; rent and due dates retain bill month.
+- `landlord_bills_generate` accepts `confirm_occupied_after_expiry:true` only
+  after explicit owner confirmation. Server rechecks the authorized room,
+  still-linked active tenant and eligible past-end lease; completed checkout,
+  ended leases, foreign scope and inactive/closed/disabled/archived rooms remain
+  excluded. Calculation uses original monthly rent without changing lease dates.
+  Confirmation is recorded in the existing billing audit detail and returned
+  per generated item. Existing unpaid correction still requires bill ID and old
+  total. No automatic renewal or bulk selection of review entries.
+- `items[].existing_bill` includes due date, other amount, discount and both note
+  fields for read-only reconciliation after a transport failure. UI confirms
+  matching saved values and expected recalculated total only; it never
+  automatically retries a billing write. `expected_saved_total_amount` is a UI
+  reconciliation hint, not a server-authorized price; server calculates totals.
+  Backend and frontend publication remain pending for this candidate.
+
 - Local candidate 2026-10-05: `landlord_billing_init` additionally returns
   `items[].needs_occupancy_review` and `summary.occupancy_review_count`.
   Still-linked active tenants with a past-end lease remain visible for review;

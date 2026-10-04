@@ -101,6 +101,7 @@ function createRuntime(existingBills, options = {}) {
     billingParseItemsJson_(value) { return JSON.parse(value); },
     billingText_(value) { return value == null ? '' : String(value); },
     billingGetWorkspaceRows_(sheet) { return sheet.rows; },
+    workspaceGetObjectsWithRow_(sheet) { return sheet.rows; },
     billingGetWorkspaceRoomRows_(_ss, _access, _propertyMap) { return sheets.V2_rooms.rows; },
     billingMonthStart_() { return new Date('2026-08-01T00:00:00Z'); },
     billingMonthEnd_() { return new Date('2026-08-31T00:00:00Z'); },
@@ -168,8 +169,10 @@ function createRuntime(existingBills, options = {}) {
   const source = fs.readFileSync('apps-script/V2_BILLING_MANAGEMENT.js', 'utf8');
   const start = source.indexOf('function generateLandlordBillsByLineUid_(');
   const end = source.indexOf('// ==================================================\n// Billing calculations', start);
+  const legacyStart = source.indexOf('function billingAttachAuthorizedLegacyTenants_(');
+  const legacyEnd = source.indexOf('function billingResolveExpiredOccupancyReviewContract_(', legacyStart);
   vm.runInNewContext(
-    "const V2_BILLING_SHEETS_ = { bills: 'V2_bills', tenantBillView: 'V2_tenant_bill_view', properties: 'V2_properties', rooms: 'V2_rooms', contracts: 'V2_contracts', tenants: 'V2_tenants' };\n" + source.slice(start, end),
+    "const V2_BILLING_SHEETS_ = { bills: 'V2_bills', tenantBillView: 'V2_tenant_bill_view', properties: 'V2_properties', rooms: 'V2_rooms', contracts: 'V2_contracts', tenants: 'V2_tenants' };\n" + source.slice(legacyStart, legacyEnd) + source.slice(start, end),
     context
   );
   return {

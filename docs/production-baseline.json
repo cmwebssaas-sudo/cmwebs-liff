@@ -2,9 +2,9 @@
   "verified_on": "2026-10-04",
   "source_commit": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "backend_verified_on": "2026-10-05",
-  "backend_source_commit": "meter legacy authorized scope follow-up to f15cb8c",
+  "backend_source_commit": "0bca6f9",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 209,
+  "backend_version": 210,
   "frontend_revision": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "frontend_workflow": "37192744518",
   "frontend_public_file_count_verified": 46,
@@ -20,7 +20,7 @@
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
   "backend_file_count": 59,
-  "backend_tree_sha256": "7ad778e6d9cbbc3af00d283f8b0be6cde06a92d977fa23735780f7fab1ac3681",
+  "backend_tree_sha256": "9d6c5aa00da2c7b722e87db681232745c73b229290258ca97204cae51589f6b3",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -149,7 +149,7 @@
     "editor_head_restored_to_version": 200,
     "required_approval": "Delete only unreferenced and locally exported version 199; retain version 200 and all existing deployments/data."
   },
-  "backend_rollback_version": 208,
+  "backend_rollback_version": 209,
   "meter_review_bill_correction": {
     "verified_on": "2026-10-05",
     "candidate": "f15cb8c",
