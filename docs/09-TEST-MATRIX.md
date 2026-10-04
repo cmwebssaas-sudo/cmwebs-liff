@@ -1,5 +1,12 @@
 # V2 回歸測試矩陣
 
+## 2026-10-05 帳單更正回復（本機，未發布）
+
+- `billing-correction-recovery.test.mjs` RED→GREEN：輸入事件不解除 pending 提交鎖、過期金額顯示具體原因且只刷新、已保存但刷新失敗保持鎖定、Email 業務子錯誤、legacy JSONP 寫入逾時不重送。
+- `phase219-landlord-auth-client.test.mjs` RED→GREEN：來源與 request correlation 驗證後保留業務拒絕 payload；原拒絕／權限語意不變。
+- 完整 npm test 569/569、npm run validate、git diff --check 通過；既有後端原帳單 optimistic lock 回歸保留。沒有修改 Apps Script，未執行雲端寫入測試。
+- 正式唯讀：202 B0000042 及 tenant bill/home projection 同為 9,350，discount=600；先成功、後四次失敗。具體失敗子錯誤未取得，不代送重現；候選正式發布／提交驗收尚未完成。
+
 ## 2026-10-05 舊租約工作區相容補修
 
 - RED: 已通過 landlord_id 權限篩選但 workspace_id 空白的到期租約仍被 review resolver 排除。

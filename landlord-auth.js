@@ -211,6 +211,7 @@
               'API 路由執行失敗'
             );
           error.code = code;
+          error.response = result;
           reject(error);
         }
       }
