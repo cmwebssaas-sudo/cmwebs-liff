@@ -1,5 +1,11 @@
 # CMWebs Current State
 
+## 2026-10-05 帳單更正回復前端發布授權
+
+使用者明確授權發布候選 `a4beb3b`。fresh origin/main 與 Pages latest built 同為 `45870e10dff14e5a4fcd5287c38c7c3ef02b40b4`，Pages 來源 main 根目錄；前端 rollback 同 revision。隔離 worktree／分支沿用本項，root 180 筆 WIP 與原 HEAD 保留。
+
+V2.0 正確性／穩定性修复；cache `20261005-billing-correction-recovery-v1`，其他頁只同步靜態快取鍵。沒有 Apps Script 差異，不重新部署後端；不提交任何金融操作。依 PR→main→Pages→公開檔案讀回流程發布，結果另記；正式寫入或手機真機驗收不由部署取代。
+
 ## 2026-10-05 帳單更正失敗回復（本機候選，未發布）
 
 分支 `codex/billing-correction-sync-20261005`，基底 `45870e1`；建議模型／速度 gpt-5.6-terra／medium。正式登入及 Sheets 唯讀核對：202 的 B0000042 已扣 600，原帳單與 tenant bill/home view 同為 NT$9,350；6:21:38 操作成功，其後四次操作失敗。稽核沒有保存子錯誤，不能斷言這四次確切拒絕原因；過期 expected total 的保護已在隔離測試重現。沒有重送正式帳務或更動 Sheets。
