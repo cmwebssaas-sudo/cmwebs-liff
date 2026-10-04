@@ -1,6 +1,8 @@
 # CMWebs Current State
 
-## 2026-10-05 用電月份／抄表修正發布進行中
+## 2026-10-05 用電月份／抄表修正發布完成
+
+PR #217 已合併 `386590516a62067f2b00b70277daf9bd3ecf9d14`，Pages run `37243948830` success。46 個公開檔案與修正版逐位元組一致；Apps Script 210 的59檔 immutable export 與來源及 baseline 相同。正式登入唯讀驗收：21張卡片，502／602 checkbox enabled，603不存在，2026-10帳單顯示2026-09用電與設定的夏月費率。沒有提交或更改真實帳務；儲存成功／逾時回復仍需房東實際操作驗收。589/589、validate、diff-check通過；回退前端e755993、後端209，不回退業務資料。
 
 使用者明確確認授權發布。fresh main `e7559936a3a23fbb7587c33c92ff43fb866af401`，原部署209與 editor HEAD 的59檔相同；只有 billing module 差異。候選 `0bca6f9` 已推送並建立 immutable210，59檔匯出逐位元組一致，tree hash `9d6c5aa00da2c7b722e87db681232745c73b229290258ca97204cae51589f6b3`。既有 Web App deployment 讀回210，其他四部署未變，209保留回退。沒有修改業務資料或代送帳單。
 
