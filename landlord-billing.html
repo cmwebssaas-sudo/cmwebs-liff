@@ -7,11 +7,12 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
   <title>CMWebs 帳單與抄表</title>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261005-meter-review-bill-correction-v1" />
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261005-asset-summary-number-roll-v1"></script>
-  <script src="landlord-auth.js?v=20261005-asset-summary-number-roll-v1"></script>
-  <script src="landlord-api.js?v=20261005-asset-summary-number-roll-v1"></script>
+<script src="frontend-release.js?v=20261005-meter-review-bill-correction-v1"></script>
+  <script src="landlord-auth.js?v=20261005-meter-review-bill-correction-v1"></script>
+  <script src="landlord-api.js?v=20261005-meter-review-bill-correction-v1"></script>
 
   <style>
     :root {
@@ -787,12 +788,47 @@
         width: 100%;
       }
     }
+    @media (min-width: 1024px) {
+      .app-shell { max-width: none; }
+      .page { padding-left: 32px; padding-right: 32px; }
+      #app, .topbar { max-width: 1440px; margin-left: auto; margin-right: auto; }
+      .meter-work-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+      .meter-work-list .bill-card { min-width: 0; margin: 0; padding: 24px; }
+      .page-title { font-size: 28px; }
+      .room-title { font-size: 22px; }
+      .field-label, .base-label, .room-meta, .meter-source, .selection-summary { font-size: 14px; }
+      .base-value, .input, .generate-button { font-size: 16px; }
+      .action-inner { max-width: 1440px; margin: auto; }
+      .app-shell .action-bar { left: var(--desktop-sidebar-width); bottom: 0; }
+      .app-shell .bottom-nav { display: none; }
+      .app-shell .page { padding-bottom: 120px; }
+    }
+    @media (min-width: 1024px) and (max-width: 1199px) {
+      .meter-work-list { grid-template-columns: 1fr; }
+    }
+    .occupancy-review { padding: 12px; margin: 12px 0; background: var(--orange-soft); color: #845500; border-radius: 10px; font-size: 14px; line-height: 1.6; }
   </style>
 </head>
 
 <body>
-  <div class="app-shell">
-    <main class="page">
+  <div class="app-shell desktop-ready">
+    <aside class="desktop-sidebar" aria-label="房東桌面導覽" hidden>
+      <div class="desktop-sidebar-inner">
+        <div class="desktop-brand"><div class="desktop-brand-label">CMWEBS</div><div class="desktop-brand-title">智慧租管</div></div>
+        <nav class="desktop-nav">
+          <button class="desktop-nav-item" onclick="goPage('landlord-home.html')">總覽</button>
+          <button class="desktop-nav-item" onclick="goPage('landlord-tenants.html')">房客</button>
+          <button class="desktop-nav-item" onclick="goPage('landlord-properties.html')">物件與房間</button>
+          <button class="desktop-nav-item" onclick="goPage('landlord-contract-requests.html')">合約</button>
+          <button class="desktop-nav-item" onclick="goPage('landlord-tenants.html')">退房</button>
+          <button class="desktop-nav-item" onclick="goPage('landlord-arrears.html')">帳款</button>
+          <button class="desktop-nav-item active" aria-current="page" onclick="goPage('landlord-billing.html')">帳單與抄表</button>
+          <button class="desktop-nav-item" onclick="goPage('landlord-revenue-dashboard.html')">營收與資產</button>
+          <button class="desktop-nav-item" onclick="goPage('landlord-more.html')">更多工具</button>
+        </nav>
+      </div>
+    </aside>
+    <main class="page desktop-main">
       <div class="topbar">
         <div>
           <div class="eyebrow">Billing & Meter</div>
@@ -827,7 +863,7 @@
           type="button"
           onclick="generateBills()"
         >
-          建立所選帳單
+          建立／更新所選帳單
         </button>
       </div>
     </div>
@@ -1518,10 +1554,10 @@
 
         <div class="section-head">
           <div class="section-title">房間帳單</div>
-          <div class="section-count">${items.length} 間</div>
+          <div class="section-count">${items.length} 間${summary.occupancy_review_count ? ' · ' + summary.occupancy_review_count + ' 間到期待核對' : ''}</div>
         </div>
 
-        ${
+        <div class="meter-work-list">${
           items.length
             ? items.map(
                 function (item, index) {
@@ -1536,7 +1572,7 @@
                 此月份沒有符合條件的有效租約房間。
               </section>
             `
-        }
+        }</div>
       `;
 
       document.getElementById(
@@ -1600,6 +1636,7 @@
     }
 
     function billCard(item, index) {
+      const needsReview = item.needs_occupancy_review === true;
       const existing =
         item.existing_bill;
 
@@ -1618,7 +1655,7 @@
         );
 
       const checked =
-        !paid;
+        !paid && !needsReview && !existing;
 
       const badgeClass =
         !existing
@@ -1630,7 +1667,7 @@
             );
 
       const badgeLabel =
-        !existing
+        needsReview ? '到期待核對' : !existing
           ? '尚未建立'
           : (
               paid
@@ -1649,7 +1686,7 @@
               class="room-checkbox"
               type="checkbox"
               ${checked ? 'checked' : ''}
-              ${paid ? 'disabled' : ''}
+              ${paid || needsReview ? 'disabled' : ''}
               onchange="updateSelectionSummary()"
             />
 
@@ -1676,9 +1713,11 @@
             </div>
           </div>
 
+          ${needsReview ? '<div class="occupancy-review">合約到期待核對：房客仍連結此房間，保留抄表資料。請先確認續住或退租；核對租約前不建立新帳單。輸入度數僅供本次試算，尚未保存。</div>' : ''}
+          ${existing && !paid && !needsReview ? '<div class="occupancy-review">此帳單已建立。可修改度數、其他費用與折扣，勾選此房間後更新原帳單。多收款請填在「其他費用、折扣與備註」的折扣金額，並記錄原因；折扣是總額，不是每次新增扣款。</div>' : ''}
           <div class="base-grid">
             ${baseItem(
-              item.rent_is_prorated
+              needsReview ? '原約月租（待核對）' : item.rent_is_prorated
                 ? '租金（' + item.rent_occupied_days + '/' + item.rent_days_in_month + ' 天）'
                 : '月租',
               'NT$ ' + money(item.rent_amount)
@@ -2538,7 +2577,7 @@
         );
 
       return (
-        '已建立 ' +
+        '已儲存 ' +
         generatedCount +
         ' 筆帳單' +
         (
@@ -2583,6 +2622,9 @@
               ];
 
             return {
+              edit_existing_bill: Boolean(item.existing_bill),
+              bill_id: item.existing_bill ? item.existing_bill.bill_id : '',
+              expected_total_amount: item.existing_bill ? item.existing_bill.total_amount : null,
               selected:
                 true,
               room_id:
@@ -2626,6 +2668,9 @@
           }
         );
 
+      if (items.some(item => item.edit_existing_bill) &&
+          !window.confirm('將更新勾選的未繳原帳單，折扣以本次填寫總額取代原值，不會另建帳單。確認保存？')) return;
+
       const button =
         document.getElementById(
           'generateButton'
@@ -2635,7 +2680,7 @@
         true;
 
       button.textContent =
-        '建立中...';
+        '儲存中...';
 
       try {
         const result =
@@ -2695,11 +2740,9 @@
         );
 
       } finally {
-        button.disabled =
-          false;
-
         button.textContent =
-          '建立所選帳單';
+          '建立／更新所選帳單';
+        updateSelectionSummary();
       }
     }
 

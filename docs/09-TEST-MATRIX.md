@@ -1,5 +1,16 @@
 # V2 回歸測試矩陣
 
+## 2026-10-05 抄表延續／桌面工作區／未繳原帳單更正（本機候選，未發布）
+
+- [x] 502 expired／602 active 但結束日已過：仍連結同 Workspace 活躍房客時保留抄表 item，標記待核對；上期讀數保留，不自動續約、退租或新增帳單。
+- [x] completed checkout、已結束合約、封存房間、inactive／跨 Workspace 房客、不同 current tenant／contract、未來或缺失日期均不復活。
+- [x] 未繳原帳單只有明確 edit flag、bill ID、同租約房客及舊 total 相符才更正；保留 ID，折扣取代原總額，重複保存不重複扣款。已繳／錯誤 ID／金額已改拒絕寫入。
+- [x] 卡片 renderer 保留讀數欄位，review 不可勾選；未繳已建帳單不預先勾選，明確保存確認。
+- [x] 本機合成 browser 1440px 寬版側欄／雙欄、390px 單欄；兩尺寸無水平溢出。不是正式帳單或真機驗收。
+- [x] `npm run validate`、Node 全套 560/560、focused 89/89、`git diff --check`。真實 Apps Script service 執行與正式部署未執行；runtime 測試使用正式計算入口及合成持久層。
+- [ ] 202／506 實際折抵金額、正式原帳單更正與 502／602 正式顯示待核對：尚未修改 Production 資料。到期項目目前只供查看／試算，不保存新讀數，不等同房東已确认續住。
+- [ ] 部署：先唯讀匯出對帳既有 Apps Script，再發布此後端版本（保留 Web App URL），最後更新 frontend cache／Pages。須新授權；rollback 前端至 `c8335c4`、後端至部署前核對版本，回退程式不會撤銷已保存帳單更正，故發布驗收不代送帳單。
+
 ## 2026-10-05 導覽／退房選擇與合約驗證狀態（Pages 已發布，登入待驗收）
 
 - 使用者明確批准「將這次前端修正發布」；候選 35adf9c，正式 cache tag `20261005-landlord-navigation-review-v1`。僅發布已記錄前端修正，回退 b183c22，不部署 Apps Script 或更動業務資料。
