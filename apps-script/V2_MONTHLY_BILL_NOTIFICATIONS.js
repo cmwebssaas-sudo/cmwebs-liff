@@ -1460,6 +1460,39 @@ function billNotificationRetryPendingMonthlySummaries_(
 }
 
 
+// Short ScriptLock only claims a dispatcher lease, never held during LINE or
+// notification module calls. Ten-minute recovery exceeds the six-minute runtime
+// limit; existing per-bill and uncertain-delivery protections remain in place.
+function billNotificationClaimMonthlyDispatcher_() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return null;
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const key = 'V2_MONTHLY_BILL_DISPATCH_CLAIM';
+    const existing = JSON.parse(props.getProperty(key) || 'null');
+    const now = Date.now();
+    if (existing && Number(existing.expires_at) > now) return null;
+    const claim = { token: Utilities.getUuid(), expires_at: now + 10 * 60 * 1000 };
+    props.setProperty(key, JSON.stringify(claim));
+    return claim;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function billNotificationReleaseMonthlyDispatcher_(claim) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return; // lease expires if finalization cannot lock
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const key = 'V2_MONTHLY_BILL_DISPATCH_CLAIM';
+    const existing = JSON.parse(props.getProperty(key) || 'null');
+    if (existing && existing.token === claim.token) props.deleteProperty(key);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function runV2MonthlyBillNotifications(
   nowOverride
 ) {
@@ -1547,7 +1580,14 @@ function runV2MonthlyBillNotifications(
     };
   }
 
+  let dispatchClaim = null;
   try {
+    dispatchClaim = billNotificationClaimMonthlyDispatcher_();
+    if (!dispatchClaim) {
+      return { success: true, code: 'MONTHLY_BILL_DISPATCH_BUSY',
+        message: '另一個月帳單排程正在處理，留待下一輪檢查',
+        data: Object.assign({}, baseData, { sent_count: 0 }) };
+    }
     const ss =
       runtimeSpreadsheet_();
 
@@ -2084,5 +2124,10 @@ function runV2MonthlyBillNotifications(
           }
         )
     };
+  } finally {
+    if (dispatchClaim) {
+      try { billNotificationReleaseMonthlyDispatcher_(dispatchClaim); }
+      catch (error) { /* fail closed until the lease expires */ }
+    }
   }
 }

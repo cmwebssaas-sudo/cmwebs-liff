@@ -667,6 +667,8 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 
 ## 帳單與付款
 
+- [x] 月帳單5分鐘／每小時入口重疊：Script Properties 原子認領 dispatcher，短 ScriptLock 在通知前釋放，不持鎖呼叫通知模組；重疊入口跳過、錯誤 finally 釋放、10分鐘過期恢復（超過單次6分鐘限制）。真handler重入回歸 RED→GREEN；593/593通過。正式LINE收件仍未驗證。
+
 - [ ] `landlord_billing_init`
 - [ ] 上期電表正確
 - [ ] 批次建立帳單

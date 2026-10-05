@@ -79,7 +79,7 @@ landlord_settings_upload_payment_account_cover
 tenant_payment_account_cover
 ```
 
-月帳單排程入口 `runV2MonthlyBillNotifications`（不是新增公開 route）：台北時間每月 5 日 12:00 起，每 5 分鐘檢查已建立、未繳且 `not_sent` 的當月帳單；5 日中午前直接回傳 `MONTHLY_BILL_NOT_DUE`，後續日保留補送。回傳 metadata 增加 `dispatch_hour`、`local_hour`。原催繳排程與手動發送權限不變；沒有自動建立或改價帳單。
+月帳單排程入口 `runV2MonthlyBillNotifications`（不是新增公開 route）：台北時間每月 5 日 12:00 起，每 5 分鐘檢查已建立、未繳且 `not_sent` 的當月帳單；5 日中午前直接回傳 `MONTHLY_BILL_NOT_DUE`，後續日保留補送。回傳 metadata 增加 `dispatch_hour`、`local_hour`。短 ScriptLock＋`V2_MONTHLY_BILL_DISPATCH_CLAIM` Script Property 原子認領，通知前釋放锁；重疊入口回傳 `MONTHLY_BILL_DISPATCH_BUSY`，10分鐘過期或 finally 釋放，防止兩入口重送房東摘要。原催繳排程與手動發送權限不變；沒有自動建立或改價帳單。
 
 It sends only the selected month’s existing `issued` and unpaid bills whose
 `sent_status` is `not_sent` or `failed`, after the existing Workspace and

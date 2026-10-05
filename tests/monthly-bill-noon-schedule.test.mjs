@@ -5,6 +5,7 @@ import test from 'node:test';
 
 const source = readFileSync(new URL('../apps-script/V2_MONTHLY_BILL_NOTIFICATIONS.js', import.meta.url), 'utf8');
 function runtime() {
+  const stored = new Map();
   const context = { Date, Utilities: { formatDate(date, timezone, format) {
     const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
       timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
@@ -15,6 +16,13 @@ function runtime() {
     if (format === 'yyyy-MM') return `${parts.year}-${parts.month}`;
     throw new Error(`Unexpected format ${format}`);
   } } };
+  context.LockService = { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) };
+  context.PropertiesService = { getScriptProperties: () => ({
+    getProperty: key => stored.get(key) || null,
+    setProperty: (key, value) => stored.set(key, value),
+    deleteProperty: key => stored.delete(key)
+  }) };
+  context.Utilities.getUuid = () => 'synthetic-claim';
   vm.runInNewContext(source, context);
   return context;
 }
@@ -46,4 +54,35 @@ test('real dispatcher reaches billing storage only from noon, including catch-up
     assert.equal(result.code, 'MONTHLY_BILL_NOTIFICATIONS_ERROR');
     assert.match(result.message, /storage-boundary-reached/);
   }
+});
+
+test('overlapping timer entrances skip while first dispatch owns claim, then release', () => {
+  const context = runtime();
+  const properties = new Map();
+  let held = false;
+  const lock = {
+    tryLock() { assert.equal(held, false); held = true; return true; },
+    releaseLock() { held = false; }
+  };
+  context.LockService = { getScriptLock: () => lock };
+  context.PropertiesService = { getScriptProperties: () => ({
+    getProperty: key => properties.get(key) || null,
+    setProperty: (key, value) => properties.set(key, value),
+    deleteProperty: key => properties.delete(key)
+  }) };
+  context.Utilities.getUuid = () => 'synthetic-claim';
+  let storageCalls = 0;
+  context.runtimeSpreadsheet_ = () => {
+    assert.equal(held, false, 'claim lock must be released before notification module locks');
+    storageCalls++;
+    const nested = context.runV2MonthlyBillNotifications(new Date('2026-10-05T04:00:00Z'));
+    assert.equal(nested.code, 'MONTHLY_BILL_DISPATCH_BUSY');
+    throw new Error('storage-boundary-reached');
+  };
+  for (let invocation = 0; invocation < 2; invocation++) {
+    const result = context.runV2MonthlyBillNotifications(new Date('2026-10-05T04:00:00Z'));
+    assert.equal(result.code, 'MONTHLY_BILL_NOTIFICATIONS_ERROR');
+    assert.equal(properties.size, 0, 'claim released after error');
+  }
+  assert.equal(storageCalls, 2);
 });
