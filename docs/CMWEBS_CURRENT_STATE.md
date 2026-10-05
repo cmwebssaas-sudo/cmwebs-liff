@@ -1,5 +1,13 @@
 # CMWebs Current State
 
+## 2026-10-05 月帳單漏送原因及單次補送（修復候選待發布）
+
+使用者要求補送並修復未自動發送原因。正式 noon execution 12:01:21 已完成，但20筆仍待送；不是 trigger 不存在。已授權後只點一次「手動發送本月帳單」，前端逾時不重送。唯讀 Sheets及正式頁確認20筆 LINE HTTP200、sent／send_count=1，16:14–16:15補送完成，待送0／已送20／失敗0／已繳1。未改金額、不發已繳帳單；provider接受不代表房客閱讀。
+
+正式21筆本月 bill_month 為日期序號，Apps Script getValues 回傳 Date；月排程 helper 只 String(Date) 後比對 yyyy-MM，全部漏選。手動helper已有Date分支。隔離分支`codex/monthly-bill-dispatch-recovery-20261005`由fresh main `a01902d`修正 valid Date以Asia/Taipei正規化，保留文字格式與原防重／scope／鎖規則。兩項 RED→GREEN、完整600/600、validate及diff-check通過；root WIP未動。
+
+這是 V2.0 穩定性修復，建議gpt-5.6-terra／medium。Apps Script仍fresh讀回213，後端發布需本項授權、新immutable版本、保持原Web App URL並逐檔匯出核對；rollback為213。不改前端、Schema、Properties、trigger或帳單金額，不重送本次已成功20筆。候選尚未發布，不把本機測試稱為下月自然排程收件驗收。
+
 ## 2026-10-05 403／505月中到期續住租金修正（正式213）
 
 使用者確認兩間仍在住、10月月租各7500，並明確授權發布及只更正兩筆未繳帳單。隔離分支`codex/billing-expiry-rent-403-505-20261005`，來源`2cef885`；root WIP未動。正式212與editor HEAD fresh匯出59檔一致，僅billing module變更；immutable213匯出59檔與候選一致，tree hash `0a58f422a5cdfc778897a9ed1488689f775ab3eed4c0f47b2b01245c3faddc65`，原Web App讀回213、其他四部署不變。598/598、validate、diff-check通過，獨立審查未見Critical／Important。
