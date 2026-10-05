@@ -138,6 +138,66 @@ function assertRequired(runtime, input = {}, month = '2026-09') {
   assert.equal(runtime.writes.length, 0, 'no bill/room persistence after failure');
 }
 
+for (const [roomName, current, electricity, equipment, total] of [
+  ['403', 550, 1200, 1400, 3326], ['505', 619.2, 1408, 1642, 3776]
+]) {
+  test(`${roomName} mid-month expiry requires occupancy confirmation and corrects only unpaid rent`, () => {
+    const bill = {...priorBill, bill_id:'B-OCT', bill_month:'2026-10',
+      previous_meter_reading:150,current_meter_reading:current,rent_amount:726,
+      electricity_amount:electricity,equipment_amount:equipment,total_amount:total,
+      payment_status:'unpaid',sent_status:'not_sent',discount_amount:0};
+    const runtime=createRuntime({room:{room_name:roomName,current_contract_id:'C1',rent_amount:7500,equipment_fee_rate_summer:3.5},
+      contract:{start_date:'2025-01-01',end_date:'2026-10-03',rent_amount:7500},bills:[priorBill,bill]});
+    const preview=runtime.init('2026-10');
+    assert.equal(preview.needs_occupancy_review,true);
+    assert.equal(preview.rent_amount,7500);
+    assert.equal(runtime.writes.length,0);
+    const input={edit_existing_bill:true,bill_id:'B-OCT',expected_total_amount:total,
+      current_meter_reading:current,discount_amount:0};
+    assert.equal(runtime.submit(input,'2026-10').success,false);
+    assert.equal(runtime.writes.length,0);
+    const result=runtime.submit({...input,confirm_occupied_after_expiry:true},'2026-10');
+    assert.equal(result.success,true,result.message);
+    const saved=runtime.sheets.V2_bills.rows.find(row=>row.bill_id==='B-OCT');
+    assert.equal(saved.rent_amount,7500);
+    assert.equal(saved.total_amount,total+7500-726);
+    assert.equal(saved.current_meter_reading,current);
+    assert.equal(saved.payment_status,'unpaid');
+    assert.equal(saved.sent_status,'not_sent');
+    assert.equal(runtime.sheets.V2_bills.rows.length,2);
+    assert.equal(runtime.sheets.V2_contracts.rows[0].end_date,'2026-10-03');
+  });
+}
+
+test('confirmed continued occupancy ignores expiry but still prorates the move-in date',()=>{
+  const runtime=createRuntime({noMeterFees:true,room:{rent_amount:7500,current_contract_id:'C1',electricity_fee_rate:0,equipment_fee_rate_regular:0,equipment_fee_rate_summer:0},
+    contract:{start_date:'2026-10-20',end_date:'2026-10-25',rent_amount:7500}});
+  const result=runtime.submit({confirm_occupied_after_expiry:true},'2026-10');
+  assert.equal(result.success,true,result.message);
+  assert.equal(runtime.newBill().rent_amount,Math.round(7500*12/31));
+});
+
+test('mid-month expiry cannot overwrite a paid snapshot or stale unpaid total',()=>{
+  for (const payment of ['paid','unpaid']) {
+    const bill={...priorBill,bill_id:'B-OCT',bill_month:'2026-10',rent_amount:726,total_amount:3326,
+      previous_meter_reading:150,current_meter_reading:550,payment_status:payment};
+    const runtime=createRuntime({room:{current_contract_id:'C1',rent_amount:7500},
+      contract:{start_date:'2025-01-01',end_date:'2026-10-03'},bills:[priorBill,bill]});
+    if(payment==='paid') assert.equal(runtime.init('2026-10').rent_amount,726);
+    assert.equal(runtime.submit({confirm_occupied_after_expiry:true,edit_existing_bill:true,
+      bill_id:'B-OCT',expected_total_amount:99999,current_meter_reading:550},'2026-10').success,false);
+    assert.equal(runtime.writes.length,0);
+  }
+});
+
+test('client expiry confirmation cannot extend a completed checkout mid-month',()=>{
+  const runtime=createRuntime({noMeterFees:true,room:{current_contract_id:'C1',rent_amount:7500,electricity_fee_rate:0,equipment_fee_rate_regular:0,equipment_fee_rate_summer:0},
+    contract:{start_date:'2025-01-01',end_date:'2026-10-03',checkout_status:'completed'}});
+  const result=runtime.submit({confirm_occupied_after_expiry:true},'2026-10');
+  assert.equal(result.success,true,result.message);
+  assert.equal(runtime.newBill().rent_amount,726);
+});
+
 for (const [roomName, status] of [['502', 'expired'], ['602', 'active']]) {
   test(`owner can explicitly confirm occupied ${roomName} without renewing the expired lease`, () => {
     const runtime = createRuntime({ room: {room_name:roomName,current_contract_id:'C1'},

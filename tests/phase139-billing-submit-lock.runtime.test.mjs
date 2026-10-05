@@ -115,6 +115,7 @@ function createRuntime(existingBills, options = {}) {
           : {})
       };
     },
+    billingResolveExpiredOccupancyReviewContract_() { return null; },
     billingIsPaidStatus_() { return false; },
     billingNormalizePaymentStatus_() { return 'unpaid'; },
     billingMergeReferenceBills_(bills) { return bills; },

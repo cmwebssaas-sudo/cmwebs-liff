@@ -442,10 +442,11 @@ function getLandlordBillingInitByLineUid_(
                 room.room_id
               );
 
+            const reviewContract = billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMap, billingMonthEnd_(billMonth));
             const contract =
               contractRoomMap[
                 roomId
-              ] || billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMap, billMonthDate);
+              ] || reviewContract;
 
             if (!contract) {
               return null;
@@ -488,10 +489,11 @@ function getLandlordBillingInitByLineUid_(
               billMonth,
               billingSettings
             );
-            item.needs_occupancy_review = !contractRoomMap[roomId];
-            if (item.needs_occupancy_review && !existingBill) {
-              item.rent_amount = item.monthly_rent_amount;
-              item.rent_is_prorated = false;
+            item.needs_occupancy_review = !!reviewContract && billingText_(reviewContract.contract_id) === billingText_(contract.contract_id);
+            if (item.needs_occupancy_review && (!existingBill || billingNormalizePaymentStatus_(existingBill.payment_status) === 'unpaid')) {
+              const previewRent = billingCalculateRentForBillMonth_(item.monthly_rent_amount, Object.assign({}, contract, {__billing_confirmed_occupied:true}), billMonth);
+              item.rent_amount = previewRent.rent_amount;
+              item.rent_is_prorated = previewRent.is_prorated;
             }
             return item;
           }
@@ -944,12 +946,13 @@ function generateLandlordBillsByLineUid_(
               monthEnd
             );
 
-          if (!contract && item.confirm_occupied_after_expiry === true) {
-            contract = billingResolveExpiredOccupancyReviewContract_(contractRows, room, tenantMap, monthStart);
-            if (contract) {
-              // Calculation-only confirmation. Never renew or modify the signed lease.
-              contract = Object.assign({}, contract, { __billing_confirmed_occupied: true });
+          const reviewContract = billingResolveExpiredOccupancyReviewContract_(contractRows, room, tenantMap, monthEnd);
+          if (reviewContract && (!contract || billingText_(reviewContract.contract_id) === billingText_(contract.contract_id))) {
+            if (item.confirm_occupied_after_expiry !== true) {
+              throw new Error('租約到期，請先確認房客仍續住後再更新帳單');
             }
+            // Calculation-only confirmation. Never renew or modify the signed lease.
+            contract = Object.assign({}, reviewContract, { __billing_confirmed_occupied: true });
           }
 
           if (!contract) {
@@ -1811,7 +1814,6 @@ function billingCalculateRentForBillMonth_(
     monthEnd.getDate();
 
   if (
-    (contract && contract.__billing_confirmed_occupied === true) ||
     !contractStart ||
     !contractEnd ||
     contractStart.getTime() >
@@ -1842,7 +1844,7 @@ function billingCalculateRentForBillMonth_(
   const occupiedEnd =
     new Date(
       Math.min(
-        contractEnd.getTime(),
+        contract && contract.__billing_confirmed_occupied === true ? monthEnd.getTime() : contractEnd.getTime(),
         monthEnd.getTime()
       )
     );
@@ -2054,7 +2056,7 @@ function billingBuildInitItem_(
     );
 
   const displayedRentAmount =
-    existingBill
+    existingBill && !(contract && contract.__billing_confirmed_occupied === true && billingNormalizePaymentStatus_(existingBill.payment_status) === 'unpaid')
       ? Math.max(
           0,
           Math.round(
@@ -4167,7 +4169,7 @@ function billingAttachAuthorizedLegacyTenants_(ss, rooms, contracts, tenantMap) 
   });
 }
 
-function billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMap, monthStart) {
+function billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMap, monthEnd) {
   const tenantId = billingText_(room.current_tenant_id);
   const tenant = tenantMap[tenantId];
   if (!tenant || ['archived', 'inactive', 'disabled', 'closed'].indexOf(billingText_(tenant.account_status).toLowerCase()) >= 0) return null;
@@ -4185,7 +4187,7 @@ function billingResolveExpiredOccupancyReviewContract_(contracts, room, tenantMa
         billingText_(contract.workspace_id).toUpperCase() === billingText_(room.workspace_id).toUpperCase()) &&
       ['expired', 'active', 'current', 'effective', 'signed', 'approved'].indexOf(status) >= 0 &&
       billingText_(contract.checkout_status).toLowerCase() !== 'completed' && !contract.checkout_completed_at &&
-      start && end && start <= end && end < monthStart;
+      start && end && start <= end && end < monthEnd;
   });
   candidates.sort(function (a, b) {
     return billingDate_(b.end_date || b.contract_end_date || b.lease_end_date) - billingDate_(a.end_date || a.contract_end_date || a.lease_end_date);
