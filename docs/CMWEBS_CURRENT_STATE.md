@@ -1,5 +1,17 @@
 # CMWebs Current State
 
+## 2026-10-05 月帳單中午排程與重疊防護（最終正式212）
+
+程式審查發現5分鐘與每小時入口可能重複重試房東摘要，7cc1fb3增加dispatcher原子認領／10分鐘過期／token-specific finally，通知前短ScriptLock已釋放，無巢狀鎖。審查複驗Ready to merge；593/593、validate、diff-check通過。immutable212的59檔與來源逐位元組一致，hash ec67a1c388159494a51ac4a5a8234a8495ee9172b3c00d5255445f637dee1710，既有URL部署讀回212、其他部署不變。4個trigger保留本次每5分鐘設定。回退Web App與editor HEAD到210，移除僅本次新增trigger；不刪資料。211為本輪過渡版，不是最終版本。實際中午LINE收件仍未驗證；403／505／501金額未更正。
+
+## 2026-10-05 月帳單中午排程（正式211已發布）
+
+新增trigger自然執行紀錄：2026-10-05 08:01:21，2.815秒，已完成。此證據只證明trigger可執行，當時尚未到中午；沒有手動Run或實際LINE收件證據。設定截圖在本機 `/tmp/cmwebs-monthly-noon-interval-20261005.jpg`（暫存，不作永久證據儲存）。
+
+建議模型／速度 gpt-5.6-terra／medium；隔離分支 `codex/monthly-bill-noon-20261005`，fresh main eb5d9d5，root WIP 不動。只改月帳單時間 gate 與新增每5分鐘檢查的 trigger，不改原催繳10點設定、不手動送 LINE、不改財務資料。592/592 與 validate 通過。cloud HEAD發布前59檔與 immutable210一致；候選49e1d80推送後immutable211匯出59檔逐位元组一致，hash a37e6679418bc445aacc65917c4b99633b421e010a7674078bafb6985bcff9c2。原URL部署讀回211，其餘4部署未變。正式UI新增後4個trigger，重新開啟核對 `runV2MonthlyBillNotifications`／HEAD／分鐘計時器／每5分鐘；原三個保留。預期首輪12:00–12:05，非精確分鐘保證。後端及editor HEAD rollback210，撤銷新增trigger；正式收件尚未驗證。來源文件透過PR對齊main，無前端runtime變更。
+
+唯讀發現：403／505 租約到期2026-10-03造成10月租金726（7500×3/31）；501房間19000/管理500/押39000與租約19570/管理0/押39140不符。尚未更改這些業務資料。排程07:38自然執行不等於實際發送成功；之前06:38候選帳單為0，需另核對帳單是否具發送資格。
+
 ## 2026-10-05 用電月份／抄表修正發布完成
 
 PR #217 已合併 `386590516a62067f2b00b70277daf9bd3ecf9d14`，Pages run `37243948830` success。46 個公開檔案與修正版逐位元組一致；Apps Script 210 的59檔 immutable export 與來源及 baseline 相同。正式登入唯讀驗收：21張卡片，502／602 checkbox enabled，603不存在，2026-10帳單顯示2026-09用電與設定的夏月費率。沒有提交或更改真實帳務；儲存成功／逾時回復仍需房東實際操作驗收。589/589、validate、diff-check通過；回退前端e755993、後端209，不回退業務資料。

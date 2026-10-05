@@ -2,9 +2,9 @@
   "verified_on": "2026-10-04",
   "source_commit": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "backend_verified_on": "2026-10-05",
-  "backend_source_commit": "0bca6f9",
+  "backend_source_commit": "7cc1fb3",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 210,
+  "backend_version": 212,
   "frontend_revision": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "frontend_workflow": "37192744518",
   "frontend_public_file_count_verified": 46,
@@ -20,7 +20,7 @@
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
   "backend_file_count": 59,
-  "backend_tree_sha256": "9d6c5aa00da2c7b722e87db681232745c73b229290258ca97204cae51589f6b3",
+  "backend_tree_sha256": "ec67a1c388159494a51ac4a5a8234a8495ee9172b3c00d5255445f637dee1710",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -149,7 +149,23 @@
     "editor_head_restored_to_version": 200,
     "required_approval": "Delete only unreferenced and locally exported version 199; retain version 200 and all existing deployments/data."
   },
-  "backend_rollback_version": 209,
+  "backend_rollback_version": 210,
+  "monthly_bill_noon_schedule": {
+    "verified_on": "2026-10-05",
+    "source_commit": "7cc1fb3",
+    "backend_version": 212,
+    "timezone": "Asia/Taipei",
+    "dispatch_day": 5,
+    "dispatch_hour": 12,
+    "poll_minutes": 5,
+    "trigger_handler": "runV2MonthlyBillNotifications",
+    "trigger_deployment": "HEAD",
+    "trigger_count_after": 4,
+    "existing_three_triggers_unchanged": true,
+    "status": "Immutable212 export59 files matches source byte-for-byte; existing Web App reads212; live UI saved and reopened five-minute HEAD trigger. Natural trigger execution08:01:21 completed; noon LINE delivery not verified. Dispatcher claim prevents overlapping timer summary retries. No manual sends or financial writes.",
+    "tests_passed": 593,
+    "rollback": "Restore Web App and editor HEAD to retained210 and remove only the newly added monthly trigger; do not alter financial data."
+  },
   "meter_review_bill_correction": {
     "verified_on": "2026-10-05",
     "candidate": "f15cb8c",

@@ -72,6 +72,7 @@ const context = {
   Object,
   Array,
   V2_MONTHLY_BILL_NOTIFICATION_DAY_: 5,
+  V2_MONTHLY_BILL_NOTIFICATION_HOUR_: 12,
   V2_MONTHLY_BILL_NOTIFICATION_SENDING_TIMEOUT_MS_: 2 * 60 * 60 * 1000,
   monthlyBillNotificationText_: value => value == null ? '' : String(value).trim(),
   monthlyBillNotificationNormalizeBillMonth_: value => {
@@ -101,7 +102,7 @@ assert.equal(
   'monthly bill notification must not run before the fifth'
 );
 assert.equal(
-  context.billNotificationIsMonthlyDispatchDue_(5),
+  context.billNotificationIsMonthlyDispatchDue_(5, 12),
   true,
   'monthly bill notification must run on the fifth'
 );

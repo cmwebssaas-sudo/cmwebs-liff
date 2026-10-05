@@ -667,6 +667,8 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 
 ## 帳單與付款
 
+- [x] 月帳單5分鐘／每小時入口重疊：Script Properties 原子認領 dispatcher，短 ScriptLock 在通知前釋放，不持鎖呼叫通知模組；重疊入口跳過、錯誤 finally 釋放、10分鐘過期恢復（超過單次6分鐘限制）。真handler重入回歸 RED→GREEN；593/593通過。正式LINE收件仍未驗證。
+
 - [ ] `landlord_billing_init`
 - [ ] 上期電表正確
 - [ ] 批次建立帳單
@@ -677,7 +679,7 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - [x] 房客「我的帳單」與付款回報首頁直接顯示同一份轉帳收款資訊；Workspace 預設帳號優先，其次是該已驗證房客、同 Workspace 的有效租約帳號，最後才是同 Workspace 的單一有效 `V2_landlords` 收款資料；舊租約缺少 `landlord_id` 時，只能由同 Workspace、同 `room_id`／`property_id` 的唯一有效房間與物件推導房東，房間與物件不得直接提供銀行欄位，跨 Workspace、不同房東及舊帳單資料不得作為備援，且回傳不含 Workspace／租約／稽核資料（Phase 238 擴充自動回歸；正式／LIFF 真機待驗證）
 - [x] 房客簽約流程在送交簽署前顯示押金／首月租金合計與完整房東收款帳號；合約缺少專屬帳號時只回退到已驗證 Workspace 收款帳號，帳號以文字保留前導 0，缺少帳號時顯示勿匯款警示；銀行封面仍由房客「我的帳單」透過受保護路由查看（Phase 240；本地候選，Apps Script／Pages 部署與 LIFF 真機 UAT 待驗證）
 - [x] 房東可在系統設定保存多組未封存收款帳號、逐組上傳存摺封面並明確啟用唯一一組；房客帳單、付款回報與簽約流程使用啟用帳號，銀行帳號前導 0 以文字保留（Phase 241；本地候選，Apps Script／Pages 部署與手機 UAT 待驗證）
-- [x] 每月 5 號起共用既有每小時 dispatcher 補發當月已建立、未繳且尚未發送的帳單；成功沿用 `sent_status` 防重，缺少本期電錶時不自動建立新帳單（Phase 231；本地候選，正式部署／觸發器／LINE／LIFF 待驗證）
+- [x] 台北時間每月 5 日 12:00 起補發當月已建立、未繳且尚未發送的帳單；專屬每 5 分鐘檢查、原每小時 dispatcher 保留備援。成功沿用 `sent_status` 防重，不自動建立帳單。`monthly-bill-noon-schedule.test.mjs` 驗證 11:59 無 Sheets／LINE 存取、12:00／12:05 可進入處理、6 日漏發補送；592/592 通過。正式觸發器／實際 LINE 收件需分開核對。
 - [x] 每月帳單成功發給房客後，房東／團隊通知中心記錄本月成功發送筆數；整組失敗／未送出會在摘要中揭露，LINE 批次結果不明不自動重發，失敗摘要只重試原失敗收件人，並沿用 `notify_bill_created` 偏好與 Workspace 隔離（Phase 231；本地候選，正式部署／房東 LINE UAT 待驗證）
 - [x] 已建立未繳帳單可由房東明確按下「首月租金＋管理費已於簽約時收取，套用折抵」；只折抵首月固定費用、保留兩個月押金、水電、設備費與其他費用，並同步房東／房客明細（Phase 139／225／226；本次修正待部署與手機／LIFF 真機 UAT）
 - [ ] 帳單通知只發測試帳號

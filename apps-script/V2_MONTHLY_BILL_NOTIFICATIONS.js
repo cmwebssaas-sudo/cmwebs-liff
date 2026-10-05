@@ -2,8 +2,8 @@
  * CMWebs V2 每月租金帳單通知 Dispatcher
  *
  * 規則：
- * - 每小時由既有的 V2 自動催繳 dispatcher 呼叫一次。
- * - 台北時間每月 5 號起，補發當月已建立但尚未發送的未繳帳單。
+ * - 正式安裝的時間觸發器每 5 分鐘檢查；既有每小時催繳仍可作為補送入口。
+ * - 台北時間每月 5 號 12:00 起，補發當月已建立但尚未發送的未繳帳單。
  * - 只挑選 issued、unpaid、not_sent 帳單；已發送、已繳、取消帳單不重送。
  * - 實際 LINE 發送沿用 landlord_bill_notifications_send 的權限、綁定、
  *   log 與 sent_status 寫回流程。
@@ -18,6 +18,9 @@ const V2_MONTHLY_BILL_NOTIFICATION_TIMEZONE_ =
 const V2_MONTHLY_BILL_NOTIFICATION_DAY_ =
   5;
 
+const V2_MONTHLY_BILL_NOTIFICATION_HOUR_ =
+  12;
+
 const V2_MONTHLY_BILL_NOTIFICATION_BILLS_SHEET_ =
   'V2_bills';
 
@@ -29,11 +32,13 @@ const V2_MONTHLY_BILL_NOTIFICATION_SENDING_TIMEOUT_MS_ =
 
 
 function billNotificationIsMonthlyDispatchDue_(
-  dayOfMonth
+  dayOfMonth,
+  localHour
 ) {
   return (
-    Number(dayOfMonth) >=
-    V2_MONTHLY_BILL_NOTIFICATION_DAY_
+    Number(dayOfMonth) > V2_MONTHLY_BILL_NOTIFICATION_DAY_ ||
+    (Number(dayOfMonth) === V2_MONTHLY_BILL_NOTIFICATION_DAY_ &&
+      Number(localHour) >= V2_MONTHLY_BILL_NOTIFICATION_HOUR_)
   );
 }
 
@@ -1455,6 +1460,39 @@ function billNotificationRetryPendingMonthlySummaries_(
 }
 
 
+// Short ScriptLock only claims a dispatcher lease, never held during LINE or
+// notification module calls. Ten-minute recovery exceeds the six-minute runtime
+// limit; existing per-bill and uncertain-delivery protections remain in place.
+function billNotificationClaimMonthlyDispatcher_() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return null;
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const key = 'V2_MONTHLY_BILL_DISPATCH_CLAIM';
+    const existing = JSON.parse(props.getProperty(key) || 'null');
+    const now = Date.now();
+    if (existing && Number(existing.expires_at) > now) return null;
+    const claim = { token: Utilities.getUuid(), expires_at: now + 10 * 60 * 1000 };
+    props.setProperty(key, JSON.stringify(claim));
+    return claim;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function billNotificationReleaseMonthlyDispatcher_(claim) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return; // lease expires if finalization cannot lock
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const key = 'V2_MONTHLY_BILL_DISPATCH_CLAIM';
+    const existing = JSON.parse(props.getProperty(key) || 'null');
+    if (existing && existing.token === claim.token) props.deleteProperty(key);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function runV2MonthlyBillNotifications(
   nowOverride
 ) {
@@ -1478,6 +1516,10 @@ function runV2MonthlyBillNotifications(
       'yyyy-MM'
     );
 
+  const localHour = Number(
+    Utilities.formatDate(now, V2_MONTHLY_BILL_NOTIFICATION_TIMEZONE_, 'H')
+  );
+
   const baseData = {
     bill_month:
       billMonth,
@@ -1485,6 +1527,10 @@ function runV2MonthlyBillNotifications(
       dayOfMonth,
     dispatch_day:
       V2_MONTHLY_BILL_NOTIFICATION_DAY_,
+    dispatch_hour:
+      V2_MONTHLY_BILL_NOTIFICATION_HOUR_,
+    local_hour:
+      localHour,
     timezone:
       V2_MONTHLY_BILL_NOTIFICATION_TIMEZONE_,
     catch_up:
@@ -1494,7 +1540,8 @@ function runV2MonthlyBillNotifications(
 
   if (
     !billNotificationIsMonthlyDispatchDue_(
-      dayOfMonth
+      dayOfMonth,
+      localHour
     )
   ) {
     return {
@@ -1503,7 +1550,7 @@ function runV2MonthlyBillNotifications(
       code:
         'MONTHLY_BILL_NOT_DUE',
       message:
-        '尚未到每月帳單通知日',
+        '尚未到每月 5 日中午 12 點帳單通知時間',
       data:
         Object.assign(
           {},
@@ -1533,7 +1580,14 @@ function runV2MonthlyBillNotifications(
     };
   }
 
+  let dispatchClaim = null;
   try {
+    dispatchClaim = billNotificationClaimMonthlyDispatcher_();
+    if (!dispatchClaim) {
+      return { success: true, code: 'MONTHLY_BILL_DISPATCH_BUSY',
+        message: '另一個月帳單排程正在處理，留待下一輪檢查',
+        data: Object.assign({}, baseData, { sent_count: 0 }) };
+    }
     const ss =
       runtimeSpreadsheet_();
 
@@ -2070,5 +2124,10 @@ function runV2MonthlyBillNotifications(
           }
         )
     };
+  } finally {
+    if (dispatchClaim) {
+      try { billNotificationReleaseMonthlyDispatcher_(dispatchClaim); }
+      catch (error) { /* fail closed until the lease expires */ }
+    }
   }
 }
