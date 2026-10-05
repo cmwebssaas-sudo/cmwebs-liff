@@ -1,5 +1,12 @@
 # V2 回歸測試矩陣
 
+## 2026-10-05 月帳單排程日期型別（本機修復，待發布）
+
+- `monthly-bill-noon-schedule.test.mjs` 新增 RED→GREEN：Sheets Date 月份可選中待送帳單，台北午夜跨月正確；文字月份相容，已送／已繳／取消／其他月份／無效日期不送。
+- 正式月底日期儲存為 Sheets 日期序號，`workspaceGetObjectsWithRow_` 使用 `getValues()` 保留 Date；旧 monthly normalizer 字串化 Date，候選為零。手動入口已有 Date 正規化。
+- 使用者授權後，僅一次手動本月發送；正式 LINE 紀錄20筆 HTTP200，帳單20筆 `sent`／send_count=1，已繳1筆未送；正式頁待送0／成功20／失敗0。這是 provider 接受及保存證據，不等於房客已閱讀。
+- 完整600/600、validate與diff-check通過。只修改 monthly normalizer，API／Schema／金額／trigger 不變。未在雲端執行可能發訊息的測試函式。
+
 ## 2026-10-05 月中到期但續住的未繳租金更正
 
 - RED→GREEN：403／505型10月3日到期仍在住，init標記個別待確認、預覽7500但不寫入；未確認拒絕，確認後同一未繳bill ID租金726→7500。保存度數、付款／發送狀態，不改租約日期、不新增帳單。

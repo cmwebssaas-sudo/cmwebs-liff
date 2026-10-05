@@ -37,6 +37,37 @@ test('monthly notification cannot open before Taiwan noon on the fifth', () => {
   assert.equal(context.billNotificationIsMonthlyDispatchDue_(6, 0), true);
 });
 
+test('monthly dispatch selects date-valued Sheet months without resending sent or paid bills', () => {
+  const context = runtime();
+  const bill = {
+    bill_id: 'SYNTHETIC-OCT', workspace_id: 'SYNTHETIC-WORKSPACE',
+    landlord_id: 'SYNTHETIC-LANDLORD', landlord_line_user_id: 'synthetic-owner',
+    bill_month: new Date('2026-09-30T16:00:00Z'),
+    bill_status: 'issued', payment_status: 'unpaid', sent_status: 'not_sent'
+  };
+  const groups = context.billNotificationBuildMonthlyDispatchGroups_([
+    bill,
+    { ...bill, bill_id: 'SENT', sent_status: 'sent' },
+    { ...bill, bill_id: 'PAID', payment_status: 'paid' },
+    { ...bill, bill_id: 'VOID', bill_status: 'cancelled' },
+    { ...bill, bill_id: 'SEPT', bill_month: new Date('2026-09-01T00:00:00Z') },
+    { ...bill, bill_id: 'INVALID', bill_month: new Date(NaN) }
+  ], '2026-10');
+  assert.deepEqual(JSON.parse(JSON.stringify(groups)), [{
+    workspace_id: 'SYNTHETIC-WORKSPACE', landlord_id: 'SYNTHETIC-LANDLORD',
+    landlord_line_user_id: 'synthetic-owner', bill_ids: ['SYNTHETIC-OCT']
+  }]);
+});
+
+test('monthly month normalization preserves Taiwan boundary and text compatibility', () => {
+  const context = runtime();
+  for (const [input, expected] of [
+    [new Date('2026-09-30T15:59:59Z'), '2026-09'],
+    [new Date('2026-09-30T16:00:00Z'), '2026-10'],
+    ['2026/10/01', '2026-10'], ['2026-10', '2026-10']
+  ]) assert.equal(context.monthlyBillNotificationNormalizeBillMonth_(input), expected);
+});
+
 test('real dispatcher returns before reading bills or sending at 11:59 Taiwan', () => {
   const result = runtime().runV2MonthlyBillNotifications(new Date('2026-10-05T03:59:59Z'));
   assert.equal(result.success, true);

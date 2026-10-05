@@ -58,6 +58,18 @@ function monthlyBillNotificationText_(
 function monthlyBillNotificationNormalizeBillMonth_(
   value
 ) {
+  // Sheets date-formatted month cells are returned as Date, not text.
+  if (
+    value instanceof Date &&
+    !Number.isNaN(value.getTime())
+  ) {
+    return Utilities.formatDate(
+      value,
+      V2_MONTHLY_BILL_NOTIFICATION_TIMEZONE_,
+      'yyyy-MM'
+    );
+  }
+
   const text =
     monthlyBillNotificationText_(
       value
