@@ -1,5 +1,11 @@
 # CMWebs Current State
 
+## 2026-10-05 月帳單日期辨識修復發布（正式214）
+
+使用者明確授權發布。正式213及editor HEAD fresh唯讀匯出各59檔與main a01902d一致，唯一runtime差異是月排程Date月份辨識。候選a7b58e4推送editor HEAD並建立immutable214，59檔逐位元組相同，tree SHA256 a486da8cf4b6d261c0f83d8859adea87cc3c4672a26efae3aeccecee941fada7；原Web App部署讀回214，其他四部署不變。既有HEAD排程使用修正版，不改trigger、Properties、Schema、帳單金額，也不手動重送已成功20筆。
+
+本次fresh validate、日期排程6項測試通過，先前完整600/600與獨立審查通過。下次自然月排程仍須實際執行／送達記錄驗收，不把發布證據當作未來收件保證。保留213；回退須將同一Web App及editor HEAD還原213，不回退已送帳單狀態或業務資料。私有來源備份 `/tmp/cmwebs-monthly-date-release.NdyXu8/serving213`。
+
 ## 2026-10-05 月帳單漏送原因及單次補送（修復候選待發布）
 
 使用者要求補送並修復未自動發送原因。正式 noon execution 12:01:21 已完成，但20筆仍待送；不是 trigger 不存在。已授權後只點一次「手動發送本月帳單」，前端逾時不重送。唯讀 Sheets及正式頁確認20筆 LINE HTTP200、sent／send_count=1，16:14–16:15補送完成，待送0／已送20／失敗0／已繳1。未改金額、不發已繳帳單；provider接受不代表房客閱讀。

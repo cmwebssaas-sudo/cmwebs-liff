@@ -1,5 +1,10 @@
 # CMWebs Changelog
 
+## 2026-10-05 — 月帳單日期辨識修復已發布214
+
+- 明確授權後，editor HEAD與原正式Web App已發布214；immutable59檔與a7b58e4逐位元組一致，其他四部署不變。
+- 保留213回退；不改觸發器、金額、Schema或Properties，不重送已成功20筆。下月自然排程送達仍待實際驗收。
+
 ## 2026-10-05 — 月帳單 Date 月份漏選修復候選
 
 - 月排程將 Google Sheets Date 以台北時區正規化為 yyyy-MM；修正 trigger 已執行但挑不到日期型別帳單的問題，防重、權限、時間gate與帳單金額不變。

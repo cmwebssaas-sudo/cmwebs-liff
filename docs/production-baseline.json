@@ -2,9 +2,16 @@
   "verified_on": "2026-10-04",
   "source_commit": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "backend_verified_on": "2026-10-05",
-  "backend_source_commit": "2cef885",
+  "backend_source_commit": "a7b58e4",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 213,
+  "backend_version": 214,
+  "monthly_bill_date_normalization": {
+    "verified_on": "2026-10-05",
+    "source_commit": "a7b58e4",
+    "backend_version": 214,
+    "rollback_backend_version": 213,
+    "status": "User explicitly authorized production release. Fresh serving213 and editor HEAD exports matched main59 files. Immutable214 matches candidate59 files byte-for-byte; original Web App reads214, other four deployments unchanged. Editor HEAD updated for existing timer. No trigger, Properties, Schema or amount changes; no manual resend. Next natural monthly delivery remains unverified."
+  },
   "continued_occupancy_rent_correction": {
     "verified_on": "2026-10-05",
     "source_commit": "2cef885",
@@ -27,7 +34,7 @@
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
   "backend_file_count": 59,
-  "backend_tree_sha256": "0a58f422a5cdfc778897a9ed1488689f775ab3eed4c0f47b2b01245c3faddc65",
+  "backend_tree_sha256": "a486da8cf4b6d261c0f83d8859adea87cc3c4672a26efae3aeccecee941fada7",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
