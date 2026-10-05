@@ -2,6 +2,8 @@
 
 ## 2026-10-05 月帳單中午排程（正式211已發布）
 
+新增trigger自然執行紀錄：2026-10-05 08:01:21，2.815秒，已完成。此證據只證明trigger可執行，當時尚未到中午；沒有手動Run或實際LINE收件證據。設定截圖在本機 `/tmp/cmwebs-monthly-noon-interval-20261005.jpg`（暫存，不作永久證據儲存）。
+
 建議模型／速度 gpt-5.6-terra／medium；隔離分支 `codex/monthly-bill-noon-20261005`，fresh main eb5d9d5，root WIP 不動。只改月帳單時間 gate 與新增每5分鐘檢查的 trigger，不改原催繳10點設定、不手動送 LINE、不改財務資料。592/592 與 validate 通過。cloud HEAD發布前59檔與 immutable210一致；候選49e1d80推送後immutable211匯出59檔逐位元组一致，hash a37e6679418bc445aacc65917c4b99633b421e010a7674078bafb6985bcff9c2。原URL部署讀回211，其餘4部署未變。正式UI新增後4個trigger，重新開啟核對 `runV2MonthlyBillNotifications`／HEAD／分鐘計時器／每5分鐘；原三個保留。預期首輪12:00–12:05，非精確分鐘保證。後端及editor HEAD rollback210，撤銷新增trigger；正式收件尚未驗證。來源文件透過PR對齊main，無前端runtime變更。
 
 唯讀發現：403／505 租約到期2026-10-03造成10月租金726（7500×3/31）；501房間19000/管理500/押39000與租約19570/管理0/押39140不符。尚未更改這些業務資料。排程07:38自然執行不等於實際發送成功；之前06:38候選帳單為0，需另核對帳單是否具發送資格。
