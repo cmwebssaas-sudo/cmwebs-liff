@@ -1,5 +1,11 @@
 # CMWebs Current State
 
+## 2026-10-05 403／505月中到期續住租金修正（正式213）
+
+使用者確認兩間仍在住、10月月租各7500，並明確授權發布及只更正兩筆未繳帳單。隔離分支`codex/billing-expiry-rent-403-505-20261005`，來源`2cef885`；root WIP未動。正式212與editor HEAD fresh匯出59檔一致，僅billing module變更；immutable213匯出59檔與候選一致，tree hash `0a58f422a5cdfc778897a9ed1488689f775ab3eed4c0f47b2b01245c3faddc65`，原Web App讀回213、其他四部署不變。598/598、validate、diff-check通過，獨立審查未見Critical／Important。
+
+月中到期也需要個別在住確認；確認後僅解除結束日限制，保留入住日比例、已繳／過期金額／Workspace及退租保護，不續約、不自動改價、不手動發送LINE。正式兩筆帳單更正讀回驗收尚進行中。回退Web App及editor HEAD到212（備份`/tmp/cmwebs-expiry-release.Xj6SM1/serving212`）；程式回退不回退業務資料，不移除或更改現有trigger。
+
 ## 2026-10-05 月帳單中午排程與重疊防護（最終正式212）
 
 程式審查發現5分鐘與每小時入口可能重複重試房東摘要，7cc1fb3增加dispatcher原子認領／10分鐘過期／token-specific finally，通知前短ScriptLock已釋放，無巢狀鎖。審查複驗Ready to merge；593/593、validate、diff-check通過。immutable212的59檔與來源逐位元組一致，hash ec67a1c388159494a51ac4a5a8234a8495ee9172b3c00d5255445f637dee1710，既有URL部署讀回212、其他部署不變。4個trigger保留本次每5分鐘設定。回退Web App與editor HEAD到210，移除僅本次新增trigger；不刪資料。211為本輪過渡版，不是最終版本。實際中午LINE收件仍未驗證；403／505／501金額未更正。
