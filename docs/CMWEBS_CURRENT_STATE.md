@@ -4,7 +4,7 @@
 
 使用者確認兩間仍在住、10月月租各7500，並明確授權發布及只更正兩筆未繳帳單。隔離分支`codex/billing-expiry-rent-403-505-20261005`，來源`2cef885`；root WIP未動。正式212與editor HEAD fresh匯出59檔一致，僅billing module變更；immutable213匯出59檔與候選一致，tree hash `0a58f422a5cdfc778897a9ed1488689f775ab3eed4c0f47b2b01245c3faddc65`，原Web App讀回213、其他四部署不變。598/598、validate、diff-check通過，獨立審查未見Critical／Important。
 
-月中到期也需要個別在住確認；確認後僅解除結束日限制，保留入住日比例、已繳／過期金額／Workspace及退租保護，不續約、不自動改價、不手動發送LINE。正式兩筆帳單更正讀回驗收尚進行中。回退Web App及editor HEAD到212（備份`/tmp/cmwebs-expiry-release.Xj6SM1/serving212`）；程式回退不回退業務資料，不移除或更改現有trigger。
+月中到期也需要個別在住確認；確認後僅解除結束日限制，保留入住日比例、已繳／過期金額／Workspace及退租保護，不續約、不自動改價、不手動發送LINE。正式更正已讀回驗收：使用者完成browser確認後，頁面顯示「2筆修改資料均已保存；未重複送出」，403/B0000051租7500總10100，505/B0000056租7500總10550。度數、期限、零折扣及空白備註不變，其他19卡DOM snapshot相同；未重新提交。暫存截圖`/tmp/cmwebs-403-505-saved-20261005.png`。回退Web App及editor HEAD到212（備份`/tmp/cmwebs-expiry-release.Xj6SM1/serving212`）；程式回退不回退業務資料，不移除或更改現有trigger。
 
 ## 2026-10-05 月帳單中午排程與重疊防護（最終正式212）
 
