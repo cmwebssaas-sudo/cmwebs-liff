@@ -11,10 +11,10 @@
   <title>CMWebs 房客欠款</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261005-utility-meter-save-v1"></script>
-  <script src="landlord-auth.js?v=20261005-utility-meter-save-v1"></script>
-  <script src="landlord-api.js?v=20261005-utility-meter-save-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20260913-desktop-sidebar-flat-nav-v1" />
+<script src="frontend-release.js?v=20261007-room-website-v1"></script>
+  <script src="landlord-auth.js?v=20261007-room-website-v1"></script>
+  <script src="landlord-api.js?v=20261007-room-website-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261007-room-website-v1" />
 
   <style>
     :root {
@@ -1232,7 +1232,7 @@
     </main>
 
   <!-- 固定底部導覽列 -->
-  <nav class="bottom-nav">
+<nav class="bottom-nav">
     <div class="bottom-nav-inner">
       <button
         class="nav-item"
@@ -1278,7 +1278,8 @@
         <span>房客</span>
       </button>
 
-      <button
+      <button class="nav-item" type="button" onclick="goPage('landlord-rooms.html')"><span aria-hidden="true">⌂</span><span>房源</span></button>
+<button
         class="nav-item"
         onclick="goPage('landlord-more.html')"
       >

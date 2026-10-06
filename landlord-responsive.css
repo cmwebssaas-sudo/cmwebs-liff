@@ -725,3 +725,6 @@
     to { transform: rotate(360deg); }
   }
 }
+.bottom-nav .bottom-nav-inner:has([onclick*="landlord-rooms.html"]) {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
