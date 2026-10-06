@@ -471,3 +471,8 @@ occupancy is calculation-only and audit-recorded, not a lease-date amendment.
 只有已授權、精確找到 Workspace 房間後的網址保存才補上缺少欄名；不批次
 改寫既有房間，不刪舊欄，不改任何帳務。讀取缺欄視為空白。回退程式保留
 此欄及已保存網址，不删除資料。
+
+2026-10-07 封面連動候選：`room_website_cover` 是 API 衍生投影，不是新 Sheet
+欄位。從已保存網址讀公开房源第一張照片；圖片 URL 與狀態只作短期公開
+快取，失效後重取。既有網址不需重新保存即可在讀取時取圖；不建立或更改
+V3 listing binding，不改房間／租約金額。程式回退不影響已保存網址。

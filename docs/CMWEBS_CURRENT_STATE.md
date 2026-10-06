@@ -1,5 +1,16 @@
 # CMWebs Current State
 
+## 2026-10-07 房源網址封面連動（修復候選，未發布）
+
+使用者同意實作從房源網址取原本單張主圖。隔離分支
+`codex/room-website-cover-20261007`，基底 main `0a65960`，root WIP未動。
+既有 protected save 與 room init 回傳衍生 cover；只讀 z3House 公開房源
+照片集第一張，不取 og:image、不跟隨 redirect，不讀後台；保存鎖外取圖、
+平行查詢及公開 URL 短期快取。既有網址重新載入即可查圖，無新 Sheet 欄。
+623/623、validate、diff-check通過；使用者提供公開房源主圖 GET200 image/png。
+沒有正式登入保存／雲端 UrlFetch／手機真機驗收，也尚未部署。發布需本項
+授權及 fresh immutable 匯出核對；最後紀錄後端216，前端回退0a65960。
+
 ## 2026-10-05 月帳單日期辨識修復發布（正式214）
 
 使用者明確授權發布。正式213及editor HEAD fresh唯讀匯出各59檔與main a01902d一致，唯一runtime差異是月排程Date月份辨識。候選a7b58e4推送editor HEAD並建立immutable214，59檔逐位元組相同，tree SHA256 a486da8cf4b6d261c0f83d8859adea87cc3c4672a26efae3aeccecee941fada7；原Web App部署讀回214，其他四部署不變。既有HEAD排程使用修正版，不改trigger、Properties、Schema、帳單金額，也不手動重送已成功20筆。
