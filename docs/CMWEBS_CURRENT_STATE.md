@@ -1184,7 +1184,7 @@ evidence; do not redeploy Apps Script or change Sheets/Properties blindly. The
 direct nested-page LIFF 400 and deep-link redirect hardening remain separate
 follow-up work.
 ```
-## 2026-10-07 房源手動網址候選（待發布）
+## 2026-10-07 房源手動網址（後端216，前端待發布）
 
 使用者確認每間房源由房東自行填 HTTPS 網址，並沿用整合發布授權。
 隔離分支 `codex/room-source-integration-20261007`，基底 d107206；root WIP
@@ -1196,7 +1196,8 @@ GET 拒絕寫入，不憑 raw UID 寫入。儲存只更新該卡片，不丟其�
 
 608/608、validate、diff-check 及獨立審查通過。fresh serving214/editor HEAD
 59檔與 origin/main 逐位元組一致。備份在 `/tmp/cmwebs-room-website-release.37LxFP`。
-發布需 immutable 新版本與同 URL 讀回、PR→main→Pages 公開資產核對。
+immutable216已匯出59檔與候選逐位元組相同，原Web App讀回216，URL不變。
+215匯出比對不符，未部署；不删除任何版本。PR222等待main/Pages公開核對。
 Rollback 後端214及本次前端基底 d107206，保留新增網址欄與資料。
 網址欄只在授權房東首次儲存時加欄，不代填任何真實網址；自動橋接仍未
 建立正式綁定，不覆蓋網站端 WIP。真實儲存／重載及手機 LINE 尚未驗收。
