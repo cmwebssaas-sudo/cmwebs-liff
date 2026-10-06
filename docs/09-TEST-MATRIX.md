@@ -927,3 +927,9 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - `tests/room-nav-icons.test.mjs`：十個整合頁的房源入口使用 SVG，不再依賴字型符號；房源頁五個 SVG 與首頁一致，房源建築圖示不同於首頁。
 - 房源頁使用相同 23px 圖示、1.9 線寬與 5px 圖文間距。純前端修改，不變更 API、Schema 或房間資料。
 - 正式发布及真實手機視覺驗收仍待執行；rollback 可還原本次 HTML 圖示變更，無資料回復操作。
+# 房源照片圖卡（2026-10-07，未發布）
+
+- `tests/room-photo-cards.test.mjs`：照片置頂、簡短標題／房號／月租、網址管理預設收合，未綁定或不安全照片不顯示，標題跳脫 HTML。
+- 手機單欄、電腦多欄；沿用底部 SVG 導覽和單卡受保護網址儲存。不新增 API 或 Schema，不修改房間資料。
+- 已綁定房源縮圖仍是唯一照片來源；網址不會自動抓圖。無照片及圖片載入失敗各有明確狀態。
+- 正式發布需另行授權；rollback 還原本次 `landlord-rooms.html`，無資料回復操作。
