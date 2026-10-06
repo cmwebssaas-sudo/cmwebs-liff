@@ -36,6 +36,79 @@ function landlordRoomCenterHttpsUrl_(value) {
   return /^https:\/\/[^\s"'<>]+$/i.test(url) ? url : '';
 }
 
+// Only public room-detail pages on z3House are eligible for server-side reads.
+// Never fetch arbitrary landlord URLs, admin pages, credentials or redirects.
+function landlordRoomWebsiteCoverTarget_(value) {
+  const match = propertyRoomText_(value).match(/^https:\/\/([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.z3house\.com)(\/spaces\/[a-z0-9_-]+\/?)(?:[?#][^\s"'<>\\]*)?$/i);
+  if (!match || match[1].toLowerCase() === 'admin.z3house.com') return null;
+  const origin = 'https://' + match[1].toLowerCase();
+  return { origin: origin, url: origin + match[2] };
+}
+
+function landlordRoomWebsiteCoverFromHtml_(html, target) {
+  if (!html || html.length > 1000000) return '';
+  const section = html.match(/<section\b[^>]*\sclass=["'][^"']*\bspace-detail__media\b[^"']*["'][^>]*>([\s\S]*?)<\/section>/i);
+  const image = section && section[1].match(/<img\b[^>]*\ssrc=["']([^"']+)["']/i);
+  const url = image && image[1];
+  return url && url.indexOf(target.origin + '/api/public/media/') === 0 &&
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(url.slice((target.origin + '/api/public/media/').length)) ? url : '';
+}
+
+function landlordRoomWebsiteCovers_(values, refresh) {
+  const result = {};
+  const pending = [];
+  const targets = {};
+  let cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (_) {}
+  values.forEach(function (value) {
+    const key = propertyRoomText_(value);
+    if (Object.prototype.hasOwnProperty.call(result, key)) return;
+    result[key] = { url: '', status: key ? 'unsupported' : 'none' };
+    const target = landlordRoomWebsiteCoverTarget_(key);
+    if (!target) return;
+    result[key].status = 'unavailable';
+    if (!targets[target.url]) {
+      const item = { target: target, keys: [], cacheKey: '' };
+      try {
+        item.cacheKey = 'room-cover-v1:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, target.url));
+        const cached = !refresh && cache && cache.get(item.cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (['available', 'missing', 'unavailable'].indexOf(parsed.status) >= 0 &&
+              (!parsed.url || landlordRoomWebsiteCoverFromHtml_('<section class="space-detail__media"><img src="' + parsed.url + '"></section>', target) === parsed.url)) item.cover = parsed;
+        }
+      } catch (_) {}
+      targets[target.url] = item;
+      if (!item.cover) pending.push(item);
+    }
+    targets[target.url].keys.push(key);
+  });
+  if (pending.length) {
+    let responses = [];
+    try {
+      responses = UrlFetchApp.fetchAll(pending.map(function (item) {
+        return { url: item.target.url, method: 'get', followRedirects: false, muteHttpExceptions: true };
+      }));
+    } catch (_) {}
+    pending.forEach(function (item, index) {
+      item.cover = { url: '', status: 'unavailable' };
+      try {
+        const response = responses[index];
+        if (response && response.getResponseCode() === 200) {
+          item.cover.url = landlordRoomWebsiteCoverFromHtml_(response.getContentText(), item.target);
+          item.cover.status = item.cover.url ? 'available' : 'missing';
+        }
+      } catch (_) {}
+      // Public image URLs only; no HTML, identity or financial data in cache.
+      try { if (cache && item.cacheKey) cache.put(item.cacheKey, JSON.stringify(item.cover), item.cover.url ? 21600 : 60); } catch (_) {}
+    });
+  }
+  Object.keys(targets).forEach(function (url) {
+    targets[url].keys.forEach(function (key) { result[key] = targets[url].cover; });
+  });
+  return result;
+}
+
 
 function landlordRoomCenterBoolean_(value) {
   if (value === true) return true;
@@ -185,6 +258,7 @@ function getLandlordRoomCenterInitByLineUid_(
       showArchived
     );
     const z3houseByRoom = landlordRoomCenterZ3houseByRoom_(ss, access);
+    const websiteCovers = landlordRoomWebsiteCovers_(rooms.map(function (room) { return room.room_website_url; }));
 
     const safeRooms = rooms.map(function (room) {
       const propertyId = propertyRoomText_(room.property_id);
@@ -193,6 +267,7 @@ function getLandlordRoomCenterInitByLineUid_(
       return {
         room_id: roomId,
         room_website_url: landlordRoomCenterHttpsUrl_(room.room_website_url),
+        room_website_cover: websiteCovers[propertyRoomText_(room.room_website_url)] || { url: '', status: 'none' },
         property_id: propertyId,
         property_name: propertyRoomText_(
           room.property_name || property.property_name
@@ -269,6 +344,7 @@ function getLandlordRoomCenterInitByLineUid_(
 function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expectedWorkspaceId) {
   const lock = LockService.getScriptLock();
   let locked = false;
+  let saved;
   try {
     const access = workspaceLandlordResolveAccess_(lineUserId, { require_onboarding: true, workspace_id: propertyRoomText_(expectedWorkspaceId) });
     if (!access.success) return access;
@@ -286,12 +362,16 @@ function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expec
     if (!room) return workspaceResult_(false, 'ROOM_NOT_FOUND', '找不到房源或無權限修改');
     propertyRoomEnsureSheet_(ss, 'V2_rooms', ['room_website_url']);
     propertyRoomSetValues_(sheet, room.__row_number, { room_website_url: url });
-    return workspaceResult_(true, 'ROOM_WEBSITE_SAVED', url ? '房源網址已儲存' : '房源網址已清除', {room_id: propertyRoomText_(roomId), room_website_url: url});
+    saved = workspaceResult_(true, 'ROOM_WEBSITE_SAVED', url ? '房源網址已儲存' : '房源網址已清除', {room_id: propertyRoomText_(roomId), room_website_url: url});
   } catch (error) {
     return workspaceResult_(false, 'ROOM_WEBSITE_SAVE_FAILED', '房源網址儲存失敗：' + error.message);
   } finally {
     if (locked) lock.releaseLock();
   }
+  // The URL is already committed. Photo lookup must not hold the write lock
+  // or turn a successful write into a failure (and encourage resubmission).
+  saved.data.room_website_cover = landlordRoomWebsiteCovers_([saved.data.room_website_url], true)[saved.data.room_website_url];
+  return saved;
 }
 function resolveRoomWebsitePrincipal_(request) {
   if (request.landlord_session_token) return resolveLandlordPrincipal_(request, {require_onboarding:true});

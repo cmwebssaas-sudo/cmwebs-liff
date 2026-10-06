@@ -208,7 +208,8 @@ to the authenticated Workspace. Snapshots must match the exact room and bound
 listing ID. The `z3house` projection exposes only public title, HTTPS thumbnail,
 public site URL, publication status and synchronization metadata. Missing tables
 leave cards explicitly unbound; no schema or binding is created automatically.
-The route does not write Sheets, create bindings, or call z3House. Version 191
+The route does not write Sheets or create bindings. The 2026-10-07 cover repair
+may read public z3House room pages as described below. Version 191
 is the rollback target.
 
 ### 2026-09-09 settlement timeout repair (version179 / PR138)
@@ -223,6 +224,21 @@ Workspace 由後端 principal 決定。owner/admin/manager 才可修改自身 Wo
 房間。只保存 `V2_rooms.room_website_url`，不改租金、狀態、租約或同步綁定。
 空字串清除，非空值限 HTTPS、2048 字及無帳號密碼；寫入不自動重試。
 手動網址优先於公開房源同步網址；缺少手動網址才使用已綁定同步網址。
+
+### 2026-10-07 房源網址封面連動（修復候選）
+
+上述 save 回應及 `landlord_room_center_init` 的房間投影增加
+`room_website_cover: {url, status}`；status 為 available／missing／unavailable／
+unsupported／none。由後端從已授權房間的手動網址推導，不接受 caller 傳圖片。
+僅讀 HTTPS `<site>.z3house.com/spaces/<slug>/` 公開房源頁，排除 admin、port、
+帳密與任意外站，不跟隨 redirect、不攜帶登入憑證。取房源照片集第一張
+same-origin `/api/public/media/<uuid>`，不取 logo 或 og:image。
+
+冷查詢按唯一網址平行 fetchAll；只快取公開圖片 URL／狀態（成功6小時、
+失敗60秒），不快取 HTML、房客或金融資料。保存同網址會重新取圖。保存
+先完成網址寫入並釋放 ScriptLock，取圖失敗仍回保存成功；前端提示照片
+不可取得，不自動重送寫入。清除手動網址清除衍生照片並恢復既有 exact-bound
+快照 fallback。無新路由、Sheet 欄位、綁定或批次遷移。
 
 `landlord_bill_manual_settlement_status` adds one GET route (88 current source
 routes). Inputs: authenticated LINE identity and `bill_id`. Workspace read policy
