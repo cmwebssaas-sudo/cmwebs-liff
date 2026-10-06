@@ -1,6 +1,6 @@
 # CMWebs Current State
 
-## 2026-10-07 房源網址封面連動（修復候選，未發布）
+## 2026-10-07 房源網址封面連動（正式後端217，前端發布中）
 
 使用者同意實作從房源網址取原本單張主圖。隔離分支
 `codex/room-website-cover-20261007`，基底 main `0a65960`，root WIP未動。
@@ -8,8 +8,11 @@
 照片集第一張，不取 og:image、不跟隨 redirect，不讀後台；保存鎖外取圖、
 平行查詢及公開 URL 短期快取。既有網址重新載入即可查圖，無新 Sheet 欄。
 623/623、validate、diff-check通過；使用者提供公開房源主圖 GET200 image/png。
-沒有正式登入保存／雲端 UrlFetch／手機真機驗收，也尚未部署。發布需本項
-授權及 fresh immutable 匯出核對；最後紀錄後端216，前端回退0a65960。
+使用者已授權前後端正式發布。fresh serving216與editor HEAD各59檔與
+origin/main一致；候選2e6d2ef推送後，HEAD與immutable217各59檔逐位元組
+核對一致；原Web App更新217，URL不變。前端合併／Pages與46公開檔核對
+待完成。沒有正式登入保存／雲端取圖／手機真機驗收；不改業務資料。
+回退同一Web App及editor HEAD到216、前端0a65960；不清除已存網址。
 
 ## 2026-10-05 月帳單日期辨識修復發布（正式214）
 

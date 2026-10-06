@@ -2,9 +2,17 @@
   "verified_on": "2026-10-04",
   "source_commit": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "backend_verified_on": "2026-10-07",
-  "backend_source_commit": "d07fb7d",
+  "backend_source_commit": "2e6d2ef7f917960f01831fd0d7d4f19df5691708",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 216,
+  "backend_version": 217,
+  "room_website_cover_release": {
+    "verified_on": "2026-10-07",
+    "source_commit": "2e6d2ef7f917960f01831fd0d7d4f19df5691708",
+    "backend_version": 217,
+    "rollback_backend_version": 216,
+    "rollback_frontend_revision": "0a65960ff029762dbde95112d9f9fb9eae96bd01",
+    "status": "User authorized frontend and backend publication. Fresh serving216 and editor HEAD59 files match origin/main. Candidate HEAD and immutable217 match candidate59 files byte-for-byte; original deployment redeployed217. Only public z3House room first gallery image fetched after save lock release or authorized room read, no redirects or admin access. No business URL, financial, Schema, trigger, Properties or LINE writes. Frontend merge/Pages/live readback pending; authenticated save/reload and physical device acceptance pending."
+  },
   "room_website_release": {
     "backend_version": 216,
     "source_commit": "d07fb7d",
@@ -40,7 +48,7 @@
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
   "backend_file_count": 59,
-  "backend_tree_sha256": "5414442a9487d174d9cfa704d2c64e28f2c4d43e5c5b6fddd86601abefc49946",
+  "backend_tree_sha256": "e1e2b82ae22ab6b0555357d62bf3dbe5c01c0c838409d7c141e2815beb17c2b1",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [

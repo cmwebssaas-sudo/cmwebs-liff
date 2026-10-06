@@ -934,7 +934,7 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - 已綁定房源縮圖仍是唯一照片來源；網址不會自動抓圖。無照片及圖片載入失敗各有明確狀態。
 - 使用者已授權前端發布；rollback 回復發布前 `a135399` 的 `landlord-rooms.html`，後端 216 不變，無資料回復操作。合併及 Pages／公開檔案核對仍為獨立發布驗收。
 - 每張圖卡直接顯示「管理刊登房源」，不收進「管理」：開啟固定 `https://admin.z3house.com/` 統一登入入口；新分頁加 `noopener noreferrer`，不帶房間／Workspace／登入憑證。不是特定刊登編輯深連結，不改外部後台權限。
-# 房源網址封面連動（2026-10-07，修復候選）
+# 房源網址封面連動（2026-10-07，正式後端217）
 
 `tests/room-website-cover.test.mjs` 執行真實後端及圖卡／儲存函式：網址保存
 後鎖外取主圖、平行與重載快取、外站／admin／帳密／port 拒絕取圖、轉址／
@@ -945,6 +945,8 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 
 唯讀公開實測：使用者提供 z3House 房源照片集第一張可 GET 200 image/png；
 HEAD 回404不能作圖片不存在的判定。沒有保存正式資料或更動 z3House。
-候選回退前端為 0a65960、後端最後紀錄216（發布前仍須 fresh 匯出核對）。
+回退前端為 0a65960、後端216。fresh serving216及editor HEAD與main各59檔
+一致；推送後HEAD及immutable217與候選各59檔逐位元組一致，原API更新217。
 本次候選完整 `npm test` 623/623、`npm run validate`、`git diff --check`
-通過；尚未發布，不改 Schema／trigger／Properties／LINE／帳務。
+通過；使用者授權前後端發布，前端Pages／公開核對待完成。
+不改 Schema／trigger／Properties／LINE／帳務。正式登入保存及真機待驗收。
