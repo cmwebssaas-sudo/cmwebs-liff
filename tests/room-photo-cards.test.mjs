@@ -33,5 +33,8 @@ test('every room offers the shared admin login without forwarding room or tenant
     const html=render(room);
     assert.match(html,/<a class="room-admin-link" href="https:\/\/admin\.z3house\.com\/" target="_blank" rel="noopener noreferrer">管理刊登房源 ↗<\/a>/);
     assert.doesNotMatch(html,/admin\.z3house\.com\/\?/);
+    const management=html.match(/<details class="room-management">([\s\S]*?)<\/details>/)?.[1] || '';
+    assert.doesNotMatch(management,/room-admin-link/);
+    assert.ok(html.indexOf('room-admin-link')<html.indexOf('<details class="room-management">'));
   }
 });
