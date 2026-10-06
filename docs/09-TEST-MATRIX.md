@@ -948,5 +948,7 @@ HEAD 回404不能作圖片不存在的判定。沒有保存正式資料或更動
 回退前端為 0a65960、後端216。fresh serving216及editor HEAD與main各59檔
 一致；推送後HEAD及immutable217與候選各59檔逐位元組一致，原API更新217。
 本次候選完整 `npm test` 623/623、`npm run validate`、`git diff --check`
-通過；使用者授權前後端發布，前端Pages／公開核對待完成。
-不改 Schema／trigger／Properties／LINE／帳務。正式登入保存及真機待驗收。
+通過；使用者授權前後端發布。PR225合併379a82d，Pages37542783526成功，
+46公開檔逐位元組一致。已登入正式房源頁唯讀重載101：既有網址的第一張
+照片complete=true、natural1672x941。未重送保存，不改 Schema／trigger／
+Properties／LINE／帳務。新保存交易及手機LINE真機待驗收。

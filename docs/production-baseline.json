@@ -11,7 +11,10 @@
     "backend_version": 217,
     "rollback_backend_version": 216,
     "rollback_frontend_revision": "0a65960ff029762dbde95112d9f9fb9eae96bd01",
-    "status": "User authorized frontend and backend publication. Fresh serving216 and editor HEAD59 files match origin/main. Candidate HEAD and immutable217 match candidate59 files byte-for-byte; original deployment redeployed217. Only public z3House room first gallery image fetched after save lock release or authorized room read, no redirects or admin access. No business URL, financial, Schema, trigger, Properties or LINE writes. Frontend merge/Pages/live readback pending; authenticated save/reload and physical device acceptance pending."
+    "frontend_revision": "379a82dcd61a6a3fea39cdac14b83c6275d025f2",
+    "frontend_workflow": "37542783526",
+    "public_files_verified": 46,
+    "status": "User authorized frontend and backend publication. Fresh serving216 and editor HEAD59 files match origin/main. Candidate HEAD and immutable217 match candidate59 files byte-for-byte; original deployment reads217 and other4 unchanged. PR225 merged379a82d, Pages37542783526 succeeded;46 public assets byte-identical. Authenticated existing room101 reload shows exact first gallery image, complete=true natural1672x941. No save resubmission or business URL, financial, Schema, trigger, Properties or LINE writes. New save transaction and physical LINE device acceptance pending."
   },
   "room_website_release": {
     "backend_version": 216,
