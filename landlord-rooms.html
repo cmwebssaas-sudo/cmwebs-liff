@@ -144,8 +144,8 @@
     .toast.show { opacity: 1; transform: translateY(0); }
     .bottom-nav { position: absolute; right: 0; bottom: 0; left: 0; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid rgba(227, 233, 229, .9); background: rgba(255, 255, 255, .94); backdrop-filter: blur(12px); }
     .bottom-nav-inner { display: grid; height: var(--nav-height); grid-template-columns: repeat(5, 1fr); }
-    .nav-item { position: relative; display: flex; align-items: center; justify-content: center; gap: 3px; min-width: 0; border: 0; background: transparent; color: #8b9490; cursor: pointer; flex-direction: column; font-size: 11px; font-weight: 700; }
-    .nav-item svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+    .nav-item { position: relative; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; border: 0; background: transparent; color: #8b919a; cursor: pointer; flex-direction: column; font-size: 11px; font-weight: 700; }
+    .nav-item svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.9; }
     .nav-item.active { color: var(--primary); font-weight: 900; }
     .nav-item.active::after { position: absolute; bottom: 5px; width: 18px; height: 3px; border-radius: 999px; background: var(--primary); content: ""; }
     .nav-item:active { opacity: .65; }
@@ -230,7 +230,25 @@
       <section class="card toolbar"><div class="toolbar-row"><input id="roomSearch" class="search" type="search" placeholder="搜尋物件、房號或房間 ID" autocomplete="off" /><div class="filters" role="group" aria-label="房間篩選"><button class="filter active" type="button" data-filter="all">所有房間</button><button class="filter" type="button" data-filter="active">啟用中</button><button class="filter" type="button" data-filter="vacant">空房</button><button class="filter" type="button" data-filter="occupied">已出租</button><button class="filter" type="button" data-filter="archived">已封存</button></div></div></section>
       <div id="app"><section class="card loading"><div class="loading-title">房間資料載入中</div>正在讀取目前 Workspace 的全部房間。</section></div>
     </main>
-<nav class="bottom-nav"><div class="bottom-nav-inner"><button class="nav-item" type="button" onclick="goPage('landlord-home.html')"><span>⌂</span><span>首頁</span></button><button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')"><span>▣</span><span>欠款</span></button><button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')"><span>♙</span><span>房客</span></button><button class="nav-item active" type="button" onclick="goPage('landlord-rooms.html')"><span>⌂</span><span>房源</span></button><button class="nav-item" type="button" onclick="goPage('landlord-more.html')"><span>•••</span><span>更多</span></button></div></nav>
+<nav class="bottom-nav"><div class="bottom-nav-inner"><button class="nav-item" type="button" onclick="goPage('landlord-home.html')"><svg viewBox="0 0 24 24">
+            <path d="M4 11.5L12 5l8 6.5"></path>
+            <path d="M6.5 10.5V19h11v-8.5"></path>
+            <path d="M9.5 19v-5h5v5"></path>
+          </svg><span>首頁</span></button><button class="nav-item" type="button" onclick="goPage('landlord-arrears.html')"><svg viewBox="0 0 24 24">
+            <rect x="5" y="4.5" width="14" height="15" rx="2"></rect>
+            <path d="M8.5 9h7"></path>
+            <path d="M8.5 13h7"></path>
+            <path d="M8.5 17h4"></path>
+          </svg><span>欠款</span></button><button class="nav-item" type="button" onclick="goPage('landlord-tenants.html')"><svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3"></circle>
+            <path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path>
+            <path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path>
+            <path d="M16 14c2.2.4 3.5 2 4 5"></path>
+          </svg><span>房客</span></button><button class="nav-item active" type="button" onclick="goPage('landlord-rooms.html')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 7h1m4 0h1M9 11h1m4 0h1M10 21v-6h4v6"></path></svg><span>房源</span></button><button class="nav-item" type="button" onclick="goPage('landlord-more.html')"><svg viewBox="0 0 24 24">
+            <circle cx="6" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="18" cy="12" r="1.5"></circle>
+          </svg><span>更多</span></button></div></nav>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
   <script>
