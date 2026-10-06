@@ -933,3 +933,4 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 - 手機單欄、電腦多欄；沿用底部 SVG 導覽和單卡受保護網址儲存。不新增 API 或 Schema，不修改房間資料。
 - 已綁定房源縮圖仍是唯一照片來源；網址不會自動抓圖。無照片及圖片載入失敗各有明確狀態。
 - 正式發布需另行授權；rollback 還原本次 `landlord-rooms.html`，無資料回復操作。
+- 每張圖卡提供「管理刊登房源」：開啟固定 `https://admin.z3house.com/` 統一登入入口；新分頁加 `noopener noreferrer`，不帶房間／Workspace／登入憑證。不是特定刊登編輯深連結，不改外部後台權限。

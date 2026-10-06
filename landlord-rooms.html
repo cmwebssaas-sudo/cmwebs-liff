@@ -116,8 +116,10 @@
     .room-card-meta { margin: 7px 0 12px; color: var(--muted); font-size: 13px; }
     .room-card-rent { color: var(--primary); font-size: 24px; font-weight: 900; }
     .room-card-rent small { margin-left: 4px; font-size: 12px; font-weight: 500; }
-    .room-card-actions { margin-top: 14px; }
+    .room-card-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 14px; }
     .room-card-actions .z3house-link { display: flex; justify-content: center; align-items: center; min-height: 44px; margin: 0; border-radius: 10px; background: var(--primary); color: #fff; font-size: 14px; text-decoration: none; }
+    .room-admin-link { display: flex; align-items: center; justify-content: center; min-height: 44px; border: 1px solid #b8ddcf; border-radius: 10px; color: var(--primary); background: #fff; font-size: 13px; font-weight: 800; text-decoration: none; }
+    .room-admin-link:hover { background: var(--primary-soft); }
     .room-management { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
     .room-management summary { width: fit-content; min-height: 32px; color: var(--muted); font-size: 13px; cursor: pointer; }
     .room-website-editor label { display: block; font-size: 13px; }
@@ -317,7 +319,7 @@
           '<h2 class="room-card-title">' + safeHtml(title) + '</h2>' +
           '<div class="room-card-meta">' + safeHtml(room.property_name || '未命名物件') + ' · ' + safeHtml(room.room_name || '未命名房間') + '</div>' +
           '<div class="room-card-rent">' + safeHtml(money(room.rent_amount)) + (Number(room.rent_amount) > 0 ? '<small>／月</small>' : '') + '</div>' +
-          (link ? '<div class="room-card-actions">' + link + '</div>' : '') +
+          '<div class="room-card-actions">' + link + '<a class="room-admin-link" href="https://admin.z3house.com/" target="_blank" rel="noopener noreferrer">管理刊登房源 ↗</a></div>' +
           '<details class="room-management"><summary>管理</summary>' +
           '<div class="room-website-editor"><label>房源網站網址（選填）<input type="url" class="search" maxlength="2048" placeholder="https://你的房源網站" value="' + safeHtml(room.room_website_url || '') + '"></label><button type="button" class="outline-button" data-room-id="' + safeHtml(room.room_id) + '" onclick="saveRoomWebsite(this)">儲存網址</button><p class="room-note">手動網址優先；清空後儲存即可移除。只更新網址，不更動租金或租約。</p><div class="room-website-result" role="status" aria-live="polite"></div></div>' +
           '</details>' +

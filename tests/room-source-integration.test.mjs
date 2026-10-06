@@ -46,11 +46,11 @@ test('room cards expose only safe URLs for confirmed bindings', () => {
   const room={room_id:'R1',z3house:{binding_status:'bound',independent_site_url:'https://rooms.example/one'}};
   assert.match(context.roomCard(room),/href="https:\/\/rooms.example\/one"/);
   room.z3house.binding_status='unbound';
-  assert.doesNotMatch(context.roomCard(room),/<a /);
+  assert.doesNotMatch(context.roomCard(room),/<a class="z3house-link"/);
   room.room_website_url='https://manual.example/';
   assert.match(context.roomCard(room),/href="https:\/\/manual.example\/"/);
   room.room_website_url='';
   room.z3house.binding_status='bound';
   room.z3house.independent_site_url='javascript:alert(1)';
-  assert.doesNotMatch(context.roomCard(room),/<a /);
+  assert.doesNotMatch(context.roomCard(room),/<a class="z3house-link"/);
 });

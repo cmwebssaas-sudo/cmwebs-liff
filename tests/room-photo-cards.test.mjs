@@ -28,3 +28,10 @@ test('room card escapes listing titles and uses a room name when no public title
   assert.match(render({room_id:'R1',room_name:'506',z3house:{binding_status:'bound',title:'<script>bad</script>'}}),/&lt;script>/);
   assert.match(render({room_id:'R2',room_name:'502',z3house:{}}),/502/);
 });
+test('every room offers the shared admin login without forwarding room or tenant data',()=>{
+  for(const room of [{room_id:'R1',room_website_url:'https://public.example/'},{room_id:'R2',z3house:{}}]){
+    const html=render(room);
+    assert.match(html,/<a class="room-admin-link" href="https:\/\/admin\.z3house\.com\/" target="_blank" rel="noopener noreferrer">管理刊登房源 ↗<\/a>/);
+    assert.doesNotMatch(html,/admin\.z3house\.com\/\?/);
+  }
+});
