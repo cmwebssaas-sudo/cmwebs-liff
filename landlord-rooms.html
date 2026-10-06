@@ -123,7 +123,7 @@
     .room-management { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
     .room-management summary { width: fit-content; min-height: 32px; color: var(--muted); font-size: 13px; cursor: pointer; }
     .room-website-editor label { display: block; font-size: 13px; }
-    .room-website-editor input { display: block; width: 100%; margin: 8px 0; }
+    .room-website-editor input { display: block; width: 100%; margin: 8px 0; font-size: 16px; }
     .z3house-card { margin-top: 15px; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: #fbfcfb; }
     .z3house-media { display: flex; aspect-ratio: 16 / 9; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(135deg, #e8f5f1, #f6f8f7); color: var(--muted); font-size: 12px; font-weight: 800; text-align: center; }
     .z3house-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -165,6 +165,10 @@
     .nav-item.active::after { position: absolute; bottom: 5px; width: 18px; height: 3px; border-radius: 999px; background: var(--primary); content: ""; }
     .nav-item:active { opacity: .65; }
     @media (min-width: 1024px) { .bottom-nav { display: none; } .desktop-main > .topbar { display: none; } }
+    @media (max-width: 1023px) {
+      .room-input-active .bottom-nav { display: none; }
+      .room-input-active .page { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+    }
     @media (max-width: 700px) {
       .page { padding: 18px 15px calc(var(--nav-height) + 26px + env(safe-area-inset-bottom)); }
       .topbar { align-items: center; }
@@ -279,7 +283,29 @@
     function text(value) { return value === undefined || value === null ? '' : String(value); }
     function safeHtml(value) { return text(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
     function money(value) { const amount = Number(value); return Number.isFinite(amount) && amount > 0 ? 'NT$ ' + new Intl.NumberFormat('zh-TW').format(amount) : '未設定'; }
-    function setAppHeight() { const height = window.visualViewport && window.visualViewport.height ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty('--app-height', Math.round(height) + 'px'); }
+    function setAppHeight() {
+      const height = window.visualViewport && window.visualViewport.height ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', Math.round(height) + 'px');
+      const field = document.activeElement;
+      const editing = window.innerWidth < 1024 && !!(field && field.matches('input, textarea, select'));
+      document.documentElement.classList.toggle('room-input-active', editing);
+      if (!editing) return;
+      requestAnimationFrame(function () {
+        if (document.activeElement !== field) return;
+        const page = document.querySelector('.page');
+        if (!page) return;
+        const bounds = page.getBoundingClientRect();
+        const inputBounds = field.getBoundingClientRect();
+        const editor = field.closest('.room-website-editor');
+        const save = editor && editor.querySelector('button');
+        const bottom = save ? save.getBoundingClientRect().bottom : inputBounds.bottom;
+        // Keep both the input and save action visible; prioritize the input on very short screens.
+        const fits = bottom - inputBounds.top <= bounds.bottom - bounds.top - 32;
+        const end = fits ? bottom : inputBounds.bottom;
+        if (inputBounds.top < bounds.top + 16) page.scrollTop += inputBounds.top - bounds.top - 16;
+        else if (end > bounds.bottom - 16) page.scrollTop += end - bounds.bottom + 16;
+      });
+    }
     function goPage(page) { const separator = text(page).indexOf('?') >= 0 ? '&' : '?'; location.href = page + separator + 'v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1'); }
     function currentReturnTo() { const url = new URL(location.href); ['code', 'state', 'liff.state', 'friendship_status_changed', 'error', 'error_description'].forEach(function (key) { url.searchParams.delete(key); }); return url.pathname.split('/').pop() + (url.searchParams.toString() ? '?' + url.searchParams.toString() : ''); }
     function loginRedirect() { const url = new URL(LANDLORD_ENTRY_URL); url.searchParams.set('return_to', currentReturnTo()); sessionStorage.setItem('cmwebs_landlord_return_to', currentReturnTo()); return url.href; }
@@ -359,7 +385,14 @@
     async function loadPage(showLoading) { if (showLoading !== false) document.getElementById('app').innerHTML = '<section class="card loading"><div class="loading-title">房間資料載入中</div>正在讀取目前 Workspace 的全部房間。</section>'; try { const ready = await ensureAuth(); if (!ready) return; const result = await window.CMWebsLandlordApi.request({ apiUrl: API_URL, action: 'landlord_room_center_init', params: { include_archived: '1' }, lineUserId: LINE_USER_ID, testMode: false, rejectOnFailure: true }); PAGE_DATA = result.data || {}; const workspace = PAGE_DATA.workspace || {}; document.getElementById('workspaceHeading').textContent = workspace.workspace_name ? workspace.workspace_name + '・房間清單' : '房間清單'; document.getElementById('desktopWorkspaceName').textContent = workspace.workspace_name || '目前 Workspace'; document.getElementById('desktopTopbarWorkspaceName').textContent = workspace.workspace_name || '目前 Workspace'; render(); } catch (error) { renderError(error); } }
     document.querySelectorAll('[data-filter]').forEach(function (button) { button.addEventListener('click', function () { FILTER = button.dataset.filter || 'all'; document.querySelectorAll('[data-filter]').forEach(function (item) { item.classList.toggle('active', item === button); }); render(); }); });
     document.getElementById('roomSearch').addEventListener('input', render);
-    setAppHeight(); window.addEventListener('resize', setAppHeight); if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight); loadPage(true);
+    document.addEventListener('focusin', setAppHeight);
+    document.addEventListener('focusout', function () { requestAnimationFrame(setAppHeight); });
+    setAppHeight(); window.addEventListener('resize', setAppHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setAppHeight);
+      window.visualViewport.addEventListener('scroll', setAppHeight);
+    }
+    loadPage(true);
   </script>
 </body>
 </html>

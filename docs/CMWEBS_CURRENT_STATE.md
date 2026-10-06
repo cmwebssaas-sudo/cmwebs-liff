@@ -1,5 +1,16 @@
 # CMWebs Current State
 
+## 2026-10-07 房源網址手機鍵盤避讓（本機候選，尚未發布）
+
+使用者回報手機鍵盤遮住網址輸入。隔離分支
+`codex/room-website-mobile-keyboard-20261007`，基底c84c01e，root WIP未動。
+只改landlord-rooms.html：16px避免小字自動放大，手機focus暫收底導覽，
+viewport resize/scroll及focus時捲動讓網址與保存按鈕可見，blur恢復導覽。
+不改protected save、照片、租金、租約或後端。TDD三項及完整626/626、
+validate、diff-check通過；本機390×340合成圖卡欄位及按鈕可見，blur後草稿
+保留。正式發布尚待本次授權，LINE軟鍵盤真機仍待驗收。回退前端c84c01e，
+正式後端217保持不變。
+
 ## 2026-10-07 房源網址封面連動（正式後端217，前端已發布）
 
 使用者同意實作從房源網址取原本單張主圖。隔離分支
