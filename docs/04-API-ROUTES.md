@@ -202,10 +202,27 @@ mobile LINE sessions use the existing JSONP read path. Version 192 also puts
 the route on the request-local read snapshot allowlist and fixes the page to
 pass the formal Apps Script URL to the shared client; without that URL the
 browser would call the GitHub Pages document and parse HTML as JavaScript.
+The room-source integration candidate additionally reads optional
+`V3_listing_integrations` and `V3_listing_integration_snapshots` tables, scoped
+to the authenticated Workspace. Snapshots must match the exact room and bound
+listing ID. The `z3house` projection exposes only public title, HTTPS thumbnail,
+public site URL, publication status and synchronization metadata. Missing tables
+leave cards explicitly unbound; no schema or binding is created automatically.
 The route does not write Sheets, create bindings, or call z3House. Version 191
 is the rollback target.
 
 ### 2026-09-09 settlement timeout repair (version179 / PR138)
+
+### 2026-10-07 房源手動網站網址
+
+`landlord_room_website_save` 寫入路由接受 `room_id`、`room_website_url`。
+LINE 使用既有受保護 POST bridge 傳送 ID token，由 LINE provider 驗證後
+取得 principal；GET 明確拒絕網址寫入，不接受 caller-supplied UID。
+Email 使用已驗證 session/principal 的 POST bridge，
+Workspace 由後端 principal 決定。owner/admin/manager 才可修改自身 Workspace
+房間。只保存 `V2_rooms.room_website_url`，不改租金、狀態、租約或同步綁定。
+空字串清除，非空值限 HTTPS、2048 字及無帳號密碼；寫入不自動重試。
+手動網址优先於公開房源同步網址；缺少手動網址才使用已綁定同步網址。
 
 `landlord_bill_manual_settlement_status` adds one GET route (88 current source
 routes). Inputs: authenticated LINE identity and `bill_id`. Workspace read policy

@@ -464,3 +464,10 @@ months apply to consumption, not collection. Saved paid amounts are immutable;
 unpaid bills change only through explicit authorized corrections. Closed room
 accounts are not eligible for meter/bill work. Owner-confirmed continued
 occupancy is calculation-only and audit-recorded, not a lease-date amendment.
+## 2026-10-07 房源手動網址（加欄候選）
+
+`V2_rooms.room_website_url`：選填 HTTPS 網址、最多 2048 字，空白代表無手動
+網址。與 `V3_listing_integration_snapshots.independent_site_url` 分開保存。
+只有已授權、精確找到 Workspace 房間後的網址保存才補上缺少欄名；不批次
+改寫既有房間，不刪舊欄，不改任何帳務。讀取缺欄視為空白。回退程式保留
+此欄及已保存網址，不删除資料。

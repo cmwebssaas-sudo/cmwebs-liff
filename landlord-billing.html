@@ -7,12 +7,12 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
   <title>CMWebs 帳單與抄表</title>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261005-utility-meter-save-v1" />
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261007-room-website-v1" />
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261005-utility-meter-save-v1"></script>
-  <script src="landlord-auth.js?v=20261005-utility-meter-save-v1"></script>
-  <script src="landlord-api.js?v=20261005-utility-meter-save-v1"></script>
+<script src="frontend-release.js?v=20261007-room-website-v1"></script>
+  <script src="landlord-auth.js?v=20261007-room-website-v1"></script>
+  <script src="landlord-api.js?v=20261007-room-website-v1"></script>
 
   <style>
     :root {
@@ -868,7 +868,7 @@
       </div>
     </div>
 
-    <nav class="bottom-nav">
+<nav class="bottom-nav">
       <div class="bottom-nav-inner">
         <button class="nav-item" type="button" onclick="goPage('landlord-home.html')">
           <svg viewBox="0 0 24 24">
@@ -899,7 +899,8 @@
           <span>房客</span>
         </button>
 
-        <button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">
+        <button class="nav-item" type="button" onclick="goPage('landlord-rooms.html')"><span aria-hidden="true">⌂</span><span>房源</span></button>
+<button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">
           <svg viewBox="0 0 24 24">
             <circle cx="6" cy="12" r="1.5"></circle>
             <circle cx="12" cy="12" r="1.5"></circle>

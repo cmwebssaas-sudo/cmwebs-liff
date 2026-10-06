@@ -912,3 +912,13 @@ Apps Script只改既有read response；無新增route／Schema／業務資料／
 
 - `tests/asset-income-valuation.test.mjs`：售價自訂／估值 fallback、出售費完整性、貸款現金／獲利分離、累計營運支出缺失、零投入、虧損、非有限輸入及 overflow；實際 mount 輸入事件即時更新出售結果與成本水平線、保留其他收入圖、badInput 清除過期結果。
 - Browser：本機合成桌面試算 840,000／42%、虧損 -1,160,000／-58%；390px 手機框可見出售欄位與缺值提示。非正式或真機驗收。
+## 2026-10-07 房源入口與手動網址候選版（尚未發布）
+
+- 手機核心十頁導覽保留房客入口，新增「房源」連結與五欄排列。
+- `room-source-integration.test.mjs` 驗證 Workspace 隔離、exact listing ID、
+  缺表時未綁定狀態，以及卡片僅接受已綁定的 HTTPS 連結。
+- `room-website-save.test.mjs` 驗證 HTTPS／清除／非法網址／權限拒絕，租金不變。
+- 房東自行填手動網址，不需先建立自動同步綁定；自動同步仍需後續核對。
+- 網站端未提交修改保留原狀，不併入本次候選版。
+- 部署前核對實際 Apps Script 部署；目前沒有發布證據。實際保存與重載驗收
+  不由本機合成持久層測試替代，未代填真實房源網址。

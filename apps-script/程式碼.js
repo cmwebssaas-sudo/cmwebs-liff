@@ -1287,6 +1287,11 @@ function doGet(e) {
       : jsonOutput_(result, callback);
   }
 
+  if (v2Action === 'landlord_room_website_save') {
+    const result = workspaceResult_(false, 'AUTH_REQUIRED', '房源網址請由已驗證的登入 POST 儲存');
+    return bridge === '1' ? htmlBridgeOutput_(result, requestId) : jsonOutput_(result, callback);
+  }
+
   if (v2Action === 'landlord_room_save') {
     const result =
       saveLandlordRoomByLineUid_(
@@ -3193,11 +3198,12 @@ function doPost(e) {
           'landlord_property_save',
           'landlord_property_archive',
           'landlord_room_save',
+          'landlord_room_website_save',
           'landlord_room_account_toggle',
           'landlord_room_archive'
         ].indexOf(action) >= 0) {
           result =
-            landlordEmailAuthPostRequires_(
+            action === 'landlord_room_website_save' ? resolveRoomWebsitePrincipal_(request) : landlordEmailAuthPostRequires_(
               request,
               ['landlord_session_token', 'request_id']
             ) ||
@@ -3238,6 +3244,8 @@ function doPost(e) {
                 request.archive_reason || '',
                 principalWorkspaceId
               );
+            } else if (action === 'landlord_room_website_save') {
+              result = saveLandlordRoomWebsiteByLineUid_(principalLineUserId, request.room_id || '', request.room_website_url || '', principalWorkspaceId);
             } else if (action === 'landlord_room_save') {
               result = saveLandlordRoomByLineUid_(
                 principalLineUserId,
