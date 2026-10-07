@@ -31,6 +31,17 @@ test('native share sends only public URL and title; cancellation does not copy',
   await c.shareRoomWebsite(button);assert.deepEqual(JSON.parse(JSON.stringify(sent)),[{title:'查看房源',url:room.room_website_url}]);
   c.navigator.share=async()=>{throw Object.assign(Error(),{name:'AbortError'});};await c.shareRoomWebsite(button);assert.equal(copied,0);
 });
+test('compact share uses a32px visual circle and17px icon while preserving44px touch target',()=>{
+  const css=selector=>html.slice(html.indexOf('<style>'),html.indexOf('</style>')).match(new RegExp(selector+'\\s*\\{([^}]+)\\}'))?.[1]||'';
+  const button=css('\\.room-share');
+  assert.match(button,/width:\s*44px/);assert.match(button,/height:\s*44px/);
+  assert.match(button,/background:\s*transparent/);
+  const circle=css('\\.room-share::before');
+  assert.match(circle,/inset:\s*6px/);assert.match(circle,/pointer-events:\s*none/);
+  assert.match(circle,/border-radius:\s*50%/);
+  const icon=css('\\.room-share svg');
+  assert.match(icon,/width:\s*17px/);assert.match(icon,/height:\s*17px/);
+});
 test('share falls back to clipboard or visible manual link without automatic navigation',async()=>{
   let copied='';const status={hidden:true,textContent:''};const button=shareButton(status);
   const c=context({navigator:{clipboard:{writeText:async v=>copied=v}},showToast:()=>{}});
