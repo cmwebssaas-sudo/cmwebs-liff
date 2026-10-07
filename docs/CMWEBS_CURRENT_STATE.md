@@ -1,5 +1,22 @@
 # CMWebs Current State
 
+## 2026-10-07 房源鍵盤視窗上緣同步（已授權前端發布）
+
+使用者提供22.56秒LINE/iPhone錄影，上一版正式修正仍失敗：鍵盤彈出後圖卡
+在上緣被截斷，輸入區消失且留下大片空白，手動拉回才可輸入。錄影未提供
+實際visualViewport數值，不能宣稱已確定裝置所有座標或已完成真機修復。
+程式可重現缺口為只同步height，shell仍留在layout原點；offsetTop大於縮小
+shell高度時可見交集為空、reveal提前返回，晚於resize的pan事件也不重查。
+隔離分支codex/room-keyboard-pan-diagnosis-20261007，基底6a64047；root WIP不動。
+候選只在手機欄位focus期間以offsetTop同步shell上緣，blur／桌面清零，pan事件
+同resize穩定後只揭露被遮住input，不追求露出save、不改驗證或保存邏輯。
+三項新增回歸先失敗再通過；10項定向、全套633/633、validate、diff-check通過。
+隔離browser用真實CSS／函式及合成viewport340高、600上緣驗證：shell600–940、
+input675–699.5，可見。無正式API、資料、憑證或保存操作；不是LINE真機驗收。
+使用者已授權發布本次前端候選b4a4973，fresh main6a64047、633/633、validate與
+diff-check再次通過。PR／Pages與公開核對待完成；LINE真機重測仍待驗收。
+Rollback前端6a64047；後端、房源網址與租管資料不動。
+
 ## 2026-10-07 房源鍵盤過度捲動修正（前端已發布）
 
 使用者回報點URL欄位會滑過頭。隔離分支

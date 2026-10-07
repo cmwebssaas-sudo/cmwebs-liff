@@ -40,6 +40,7 @@
     button, input { font: inherit; }
     .app-shell {
       position: relative;
+      top: var(--app-offset-top, 0px);
       width: 100%;
       max-width: 1180px;
       height: var(--app-height);
@@ -289,6 +290,10 @@
       const field = document.activeElement;
       const editing = window.innerWidth < 1024 && !!(field && field.matches('input, textarea, select'));
       document.documentElement.classList.toggle('room-input-active', editing);
+      // iOS can pan the visual viewport after shrinking it. Height alone leaves
+      // the clipped shell above the keyboard; keep its origin visible as well.
+      const offset = editing && window.visualViewport ? Math.max(0, Number(window.visualViewport.offsetTop) || 0) : 0;
+      document.documentElement.style.setProperty('--app-offset-top', offset + 'px');
     }
     let roomInputRevealTimer = null;
     function scheduleRoomInputReveal() {
@@ -396,7 +401,7 @@
     setAppHeight(); window.addEventListener('resize', scheduleRoomInputReveal);
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', scheduleRoomInputReveal);
-      window.visualViewport.addEventListener('scroll', setAppHeight);
+      window.visualViewport.addEventListener('scroll', scheduleRoomInputReveal);
     }
     loadPage(true);
   </script>
