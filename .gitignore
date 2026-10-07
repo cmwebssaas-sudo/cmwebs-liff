@@ -3,3 +3,4 @@ node_modules/
 .clasp.json
 .clasprc.json
 .clasp.*.json
+.codex-local/vendor-work-orders/
