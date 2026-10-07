@@ -977,3 +977,12 @@ validate及diff-check通過。本機合成390×340 input277.95–323.95完整可
 並可輸入；未按save。使用者授權本次發布，候選2706b84重新630/630、
 validate與diff-check通過；PR229合併17f6ae2，Pages37605820852成功，
 46個公開檔案逐位元一致。LINE真機未驗收，回退47a26ac；本次無後端部署或資料寫入。
+
+## 2026-10-07 房源鍵盤視窗上緣同步（本機未發布）
+
+LINE/iPhone錄影推翻上一版真機可用假設；新增大於shell高度的offsetTop、
+resize結束後才pan、blur／桌面清零三項，均先RED後GREEN。
+10項定向、633/633全套、validate、diff-check通過。隔離browser真實CSS與
+函式配合合成viewport340/offset600，shell600–940、input675–699.5可見。
+只證明受控座標模型，實際LINE值／軟鍵盤仍未驗證；未發布或保存正式網址。
+本次候選rollback6a64047，後端不動。
