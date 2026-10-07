@@ -5,6 +5,15 @@
   "backend_source_commit": "2e6d2ef7f917960f01831fd0d7d4f19df5691708",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 217,
+  "room_mobile_keyboard_frontend_release": {
+    "verified_on": "2026-10-07",
+    "source_commit": "1d12250",
+    "frontend_revision": "6f54f67238c224cba606e3585aa2773c45eaf1e2",
+    "frontend_workflow": "37576022956",
+    "public_files_verified": 46,
+    "rollback_frontend_revision": "c84c01e8358d5ea20cc77ac205b5a5feec9496d0",
+    "status": "User authorized frontend-only release. PR227 merged; Pages succeeded and46 public assets byte-identical.626 tests, validate and diff-check pass. Local synthetic390x340 URL and save visible,16px input, nav hidden on input and restored on blur with draft retained. Physical LINE soft keyboard acceptance pending. No Apps Script deployment, business save, Schema, trigger, Properties or LINE writes."
+  },
   "room_website_cover_release": {
     "verified_on": "2026-10-07",
     "source_commit": "2e6d2ef7f917960f01831fd0d7d4f19df5691708",
