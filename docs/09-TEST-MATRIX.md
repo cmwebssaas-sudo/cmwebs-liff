@@ -964,4 +964,5 @@ blur不捲動。完整626/626、validate、diff-check通過。
 top279.95 bottom323.95，page bottom340，font16px、nav none；離開輸入後
 nav block且網址草稿保留。未點保存，不寫正式資料。這不是LINE軟鍵盤真機
 驗收。使用者已授權前端發布，候選1d12250重新626/626、validate及diff-check
-通過，Pages／公開讀回待完成。回退前端c84c01e；後端217不動。
+通過。PR227合併6f54f67、Pages37576022956成功，46公開檔案逐位元組
+核對一致。回退前端c84c01e；後端217不動。

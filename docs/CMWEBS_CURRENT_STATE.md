@@ -1,6 +1,6 @@
 # CMWebs Current State
 
-## 2026-10-07 房源網址手機鍵盤避讓（已授權前端發布）
+## 2026-10-07 房源網址手機鍵盤避讓（前端已發布）
 
 使用者回報手機鍵盤遮住網址輸入。隔離分支
 `codex/room-website-mobile-keyboard-20261007`，基底c84c01e，root WIP未動。
@@ -9,7 +9,8 @@ viewport resize/scroll及focus時捲動讓網址與保存按鈕可見，blur恢�
 不改protected save、照片、租金、租約或後端。TDD三項及完整626/626、
 validate、diff-check通過；本機390×340合成圖卡欄位及按鈕可見，blur後草稿
 保留。使用者已明確授權本次前端發布，候選1d12250重新626/626、validate
-及diff-check通過，Pages及公開讀回待完成。LINE軟鍵盤真機仍待驗收。
+及diff-check通過。PR227合併6f54f67，Pages37576022956成功，46公開檔案
+逐位元組核對一致。LINE軟鍵盤真機仍待驗收。
 回退前端c84c01e，正式後端217保持不變；不推送Apps Script或保存業務資料。
 
 ## 2026-10-07 房源網址封面連動（正式後端217，前端已發布）
