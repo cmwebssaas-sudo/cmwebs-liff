@@ -289,22 +289,28 @@
       const field = document.activeElement;
       const editing = window.innerWidth < 1024 && !!(field && field.matches('input, textarea, select'));
       document.documentElement.classList.toggle('room-input-active', editing);
-      if (!editing) return;
-      requestAnimationFrame(function () {
-        if (document.activeElement !== field) return;
+    }
+    let roomInputRevealTimer = null;
+    function scheduleRoomInputReveal() {
+      setAppHeight();
+      clearTimeout(roomInputRevealTimer);
+      const field = document.activeElement;
+      if (window.innerWidth >= 1024 || !field || !field.matches('input, textarea, select')) return;
+      // Let the browser finish its native keyboard pan before doing any fallback scroll.
+      roomInputRevealTimer = setTimeout(function () {
+        if (document.activeElement !== field || window.innerWidth >= 1024) return;
         const page = document.querySelector('.page');
         if (!page) return;
         const bounds = page.getBoundingClientRect();
         const inputBounds = field.getBoundingClientRect();
-        const editor = field.closest('.room-website-editor');
-        const save = editor && editor.querySelector('button');
-        const bottom = save ? save.getBoundingClientRect().bottom : inputBounds.bottom;
-        // Keep both the input and save action visible; prioritize the input on very short screens.
-        const fits = bottom - inputBounds.top <= bounds.bottom - bounds.top - 32;
-        const end = fits ? bottom : inputBounds.bottom;
-        if (inputBounds.top < bounds.top + 16) page.scrollTop += inputBounds.top - bounds.top - 16;
-        else if (end > bounds.bottom - 16) page.scrollTop += end - bounds.bottom + 16;
-      });
+        const viewport = window.visualViewport;
+        const top = Math.max(bounds.top, viewport ? viewport.offsetTop || 0 : 0);
+        const bottom = Math.min(bounds.bottom, viewport ? (viewport.offsetTop || 0) + viewport.height : window.innerHeight);
+        if (bottom - top < inputBounds.bottom - inputBounds.top + 32) return;
+        // Already-visible inputs must not move just to reveal the save button below them.
+        if (inputBounds.top < top + 16) page.scrollTop += inputBounds.top - top - 16;
+        else if (inputBounds.bottom > bottom - 16) page.scrollTop += inputBounds.bottom - bottom + 16;
+      }, 180);
     }
     function goPage(page) { const separator = text(page).indexOf('?') >= 0 ? '&' : '?'; location.href = page + separator + 'v=' + (window.CMWEBS_RELEASE_VERSION || 'v2.1-p0-1'); }
     function currentReturnTo() { const url = new URL(location.href); ['code', 'state', 'liff.state', 'friendship_status_changed', 'error', 'error_description'].forEach(function (key) { url.searchParams.delete(key); }); return url.pathname.split('/').pop() + (url.searchParams.toString() ? '?' + url.searchParams.toString() : ''); }
@@ -387,9 +393,9 @@
     document.getElementById('roomSearch').addEventListener('input', render);
     document.addEventListener('focusin', setAppHeight);
     document.addEventListener('focusout', function () { requestAnimationFrame(setAppHeight); });
-    setAppHeight(); window.addEventListener('resize', setAppHeight);
+    setAppHeight(); window.addEventListener('resize', scheduleRoomInputReveal);
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setAppHeight);
+      window.visualViewport.addEventListener('resize', scheduleRoomInputReveal);
       window.visualViewport.addEventListener('scroll', setAppHeight);
     }
     loadPage(true);

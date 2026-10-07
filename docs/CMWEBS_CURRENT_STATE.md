@@ -1,5 +1,20 @@
 # CMWebs Current State
 
+## 2026-10-07 房源鍵盤過度捲動修正（已授權前端發布）
+
+使用者回報點URL欄位會滑過頭。隔離分支
+`codex/room-keyboard-scroll-stability-20261007`，基底47a26ac，root WIP不動。
+上一版focus／viewport scroll都直接捲動，並追求露出save，會與原生鍵盤
+pan重複作用；新候選focus及viewport scroll只更新shell，resize穩定180ms
+後才檢查input，已可見不捲動；使用visualViewport.offsetTop與page交集，
+只移動仍遮住的欄位，不為save滑過頭。保留16px及輸入時底導覽避讓。
+七項runtime測試，focus原版760而預期400的回歸先失敗再通過，完整630/630、
+validate、diff-check通過。本機390×340合成圖卡input top277.95 bottom323.95
+且可輸入；未按保存，不寫正式資料。使用者已授權本次修正發布；候選2706b84
+重新630/630、validate及diff-check通過，Pages與公開讀回待完成。
+LINE真機仍待驗收。
+Rollback前端47a26ac；後端、API、租金、租約及已存網址均不動。
+
 ## 2026-10-07 房源網址手機鍵盤避讓（前端已發布）
 
 使用者回報手機鍵盤遮住網址輸入。隔離分支
