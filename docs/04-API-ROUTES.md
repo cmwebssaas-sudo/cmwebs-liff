@@ -216,6 +216,12 @@ is the rollback target.
 
 ### 2026-10-07 房源手動網站網址
 
+入住狀態一致性候選（未發布）：`landlord_room_center_init` 的每間room新增
+`effective_status`（occupied/upcoming/needs_review/vacant/既有停用狀態）。
+保留原room_status；用Workspace範圍內的租約／房客關聯套用管理頁canonical
+判定，重複／衝突關聯與到期仍有房客保留待確認。僅輸出狀態，不輸出房客姓名、
+tenant_id、contract_id或合約日期。無新route、Schema或寫入。
+
 `landlord_room_website_save` 寫入路由接受 `room_id`、`room_website_url`。
 LINE 使用既有受保護 POST bridge 傳送 ID token，由 LINE provider 驗證後
 取得 principal；GET 明確拒絕網址寫入，不接受 caller-supplied UID。

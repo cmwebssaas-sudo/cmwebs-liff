@@ -1,5 +1,21 @@
 # CMWebs Current State
 
+## 2026-10-07 手機照片分享覆層與入住狀態一致性（本機完成，未發布）
+
+使用者確認：手機隱藏照片箭頭、保留 swipe/count，分享改為照片右上角
+44px圓形圖示；桌面保留箭頭。推薦模型gpt-5.6-terra、medium。
+隔離分支codex/room-mobile-share-occupancy-20261007，基底bf17208，root WIP不動。
+只新增room init的effective_status，使用同一canonical管理頁租約狀態判定，
+不回傳房客姓名／租約識別資料，不寫Sheets。501正式管理頁唯讀診斷為待起租，
+卡片候選顯示「已出租・待起租」並列入已出租篩選；到期仍有房客需待確認。
+646/646、validate、diff-check及獨立審查通過。390×844手機覆層44px、
+箭頭display:none、照片1/2→2/2；1366×900桌面保留箭頭且無橫向溢出。
+本機preview-room-cards.mjs用合成狀態／公開網站照片，不登入、不調API、不保存。
+既有鍵盤shell及URL管理區不動。LINE/iPhone手指滑動／分享仍待真機驗收。
+尚未push、合併或部署；Production仍為前一分享圖庫release／Apps Script218。
+發布需另行授權並fresh對帳218/editor/main，建立新immutable版本、維持Web App
+URL，再合併前端及核對Pages。Rollback後端218、前端bf17208；無Schema或資料回退。
+
 ## 2026-10-07 房源分享與公開照片圖庫（前後端已發布）
 
 使用者授權前後端發布；隔離分支codex/room-share-gallery-20261007，

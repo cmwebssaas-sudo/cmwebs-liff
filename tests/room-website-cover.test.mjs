@@ -23,6 +23,7 @@ function setup({html=gallery,code=200,fail=false}={}) {
       if(fail)throw Error('network');return requests.map(()=>({getResponseCode:()=>code,getContentText:()=>html}));}}
   });
   vm.runInContext(fs.readFileSync('apps-script/V2_LANDLORD_ROOM_CENTER.js','utf8'),c);
+  c.landlordRoomCenterOccupancyByRoom_=()=>({R1:'vacant'});
   return {c,room,cache,batches:()=>batches};
 }
 test('saving a room URL returns its first gallery image after the write lock is released',()=>{
@@ -77,6 +78,7 @@ test('room reload derives cover from only authorized rooms and remains read-only
   const s=setup();Object.assign(s.c,{
     propertyRoomRequireReadSchema_:()=>{},propertyRoomBoolean_:()=>false,
     propertyRoomGetWorkspaceProperties_:()=>[],propertyRoomGetWorkspaceRooms_:()=>[{...s.room,room_website_url:site}],
+    landlordRoomCenterOccupancyByRoom_:()=>({R1:'vacant'}),
     workspaceGetObjectsWithRow_:()=>[],propertyRoomCompareText_:(a,b)=>a.localeCompare(b),propertyRoomNumber_:v=>Number(v)||0
   });
   const result=s.c.getLandlordRoomCenterInitByLineUid_('U',false);

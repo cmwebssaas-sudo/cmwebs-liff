@@ -270,6 +270,7 @@ function getLandlordRoomCenterInitByLineUid_(
       access,
       showArchived
     );
+    const occupancyByRoom = landlordRoomCenterOccupancyByRoom_(ss, access, rooms);
     const z3houseByRoom = landlordRoomCenterZ3houseByRoom_(ss, access);
     const publicUrlByRoom = {};
     rooms.forEach(function (room) {
@@ -295,6 +296,7 @@ function getLandlordRoomCenterInitByLineUid_(
         room_status: propertyRoomText_(
           room.room_status || 'vacant'
         ).toLowerCase(),
+        effective_status: occupancyByRoom[roomId],
         account_status: propertyRoomText_(
           room.account_status || 'active'
         ).toLowerCase(),
@@ -359,6 +361,33 @@ function getLandlordRoomCenterInitByLineUid_(
       '房間資料載入失敗：' + error.message
     );
   }
+}
+// Reuse the management page's canonical occupancy guards. Associations stay
+// internal: the public room projection receives only the derived status.
+function landlordRoomCenterOccupancyByRoom_(ss, access, rooms) {
+  const tenants = propertyRoomGetWorkspaceRows_(ss.getSheetByName('V2_tenants'), access, ['landlord_id']);
+  const contracts = propertyRoomGetWorkspaceRows_(ss.getSheetByName('V2_contracts'), access, ['landlord_id']);
+  const tenantIds = {}, activeTenantIds = {}, tenantsById = {};
+  tenants.forEach(function (tenant) {
+    const id = propertyRoomText_(tenant.tenant_id);
+    if (!id) return;
+    tenantIds[id] = true;
+    tenantsById[id] = Object.prototype.hasOwnProperty.call(tenantsById, id) ? null : tenant;
+    if (['archived', 'inactive', 'disabled', 'closed'].indexOf(propertyRoomText_(tenant.account_status).toLowerCase()) < 0) activeTenantIds[id] = true;
+  });
+  const current = {}, latest = {}, contractsById = {};
+  contracts.forEach(function (contract) {
+    const id = propertyRoomText_(contract.contract_id), roomId = propertyRoomText_(contract.room_id);
+    if (id) contractsById[id] = Object.prototype.hasOwnProperty.call(contractsById, id) ? null : contract;
+    if (!roomId) return;
+    if (!latest[roomId] || propertyRoomContractTimeValue_(contract) >= propertyRoomContractTimeValue_(latest[roomId])) latest[roomId] = contract;
+    if (propertyRoomContractIsActive_(contract) && (!current[roomId] || propertyRoomContractTimeValue_(contract) >= propertyRoomContractTimeValue_(current[roomId]))) current[roomId] = contract;
+  });
+  const statuses = {};
+  rooms.forEach(function (room) {
+    statuses[propertyRoomText_(room.room_id)] = propertyRoomBuildRoomView_(room, current, latest, {}, tenantIds, activeTenantIds, {contracts: contractsById, tenants: tenantsById}).effective_status;
+  });
+  return statuses;
 }
 function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expectedWorkspaceId) {
   const lock = LockService.getScriptLock();

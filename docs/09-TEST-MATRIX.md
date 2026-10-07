@@ -1,5 +1,20 @@
 # V2 回歸測試矩陣
 
+## 2026-10-07 手機分享覆層／501待起租（候選未發布）
+
+- `room-center-occupancy.test.mjs`：真實canonical函式的未来／起租當日／
+  到期仍入住狀態、關聯衝突、重複記錄、外Workspace、非501通用行為；
+  回應無私人ID／姓名／日期，資料前後相同；標籤與空房／已出租篩選一致。
+- `room-share-gallery.test.mjs`：分享在照片內、aria-label、44px覆層，
+  手機隱藏箭頭；手動複製狀態仍在card body；分享拒絕／取消回歸保留。
+- RED先重現4項新需求失敗；GREEN全套646/646，validate及diff-check通過。
+- 實際本機renderer：390×844無箭頭，鍵盤右方向切圖1/2→2/2；分享44×44；
+  501示範待起租包含已出租、排除空房。1366×900仍有箭頭，無橫向溢出。
+  公開照片正常載入。独立審查55項focused測試與validate通過。
+- 既有鍵盤視窗測試在全套內通過；真機LINE/iPhone滑動／分享仍需人驗收。
+  未寫正式資料／未發分享。前後端需成對另行授權發布，後端新增兩張scoped
+  sheet讀取，需正式驗證載入延遲；rollback backend218/frontend bf17208。
+
 ## 2026-10-05 月帳單排程日期型別（本機修復，待發布）
 
 - `monthly-bill-noon-schedule.test.mjs` 新增 RED→GREEN：Sheets Date 月份可選中待送帳單，台北午夜跨月正確；文字月份相容，已送／已繳／取消／其他月份／無效日期不送。

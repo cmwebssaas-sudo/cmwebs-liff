@@ -117,7 +117,11 @@
     .room-photo-arrow[data-photo-prev] { left: 10px; }
     .room-photo-arrow[data-photo-next] { right: 10px; }
     .room-photo-arrow:disabled { opacity: .35; cursor: default; }
-    .room-share { width: 100%; margin-top: 14px; }
+    .room-share { position: absolute; top: 12px; right: 12px; z-index: 2; width: 44px; height: 44px; padding: 0; border: 1px solid rgba(0,0,0,.08); border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.95); color: #24332f; box-shadow: 0 2px 8px rgba(0,0,0,.08); cursor: pointer; }
+    .room-share svg { width: 22px; height: 22px; }
+    .room-share:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+    .room-share:disabled { opacity: .55; cursor: wait; }
+    @media (max-width: 767px) { .room-photo-arrow { display: none; } }
     .room-share-fallback { overflow-wrap: anywhere; user-select: text; font-size: 13px; color: var(--primary); }
     .room-photo [hidden] { display: none !important; }
     .room-photo-empty { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; height: 100%; color: var(--muted); font-size: 13px; }
@@ -343,8 +347,9 @@
     }
     function desktopLogout() { if (window.CMWebsLandlordAuth && typeof window.CMWebsLandlordAuth.logout === 'function') { window.CMWebsLandlordAuth.logout().finally(function () { location.href = LANDLORD_ENTRY_URL; }); return; } location.href = LANDLORD_ENTRY_URL; }
     function showToast(message) { const node = document.getElementById('toast'); node.textContent = message; node.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { node.classList.remove('show'); }, 2400); }
-    function statusLabel(room) { if (room.account_status === 'archived') return '已封存'; if (room.room_status === 'occupied') return '已出租'; if (room.room_status === 'maintenance') return '維修中'; if (room.room_status === 'unavailable') return '暫停使用'; return '空房'; }
-    function statusClass(room) { if (room.account_status === 'archived') return 'archived'; return room.room_status || 'vacant'; }
+    function roomOccupancy(room) { return room.effective_status || room.room_status || 'vacant'; }
+    function statusLabel(room) { if (room.account_status === 'archived') return '已封存'; const status = roomOccupancy(room); if (status === 'upcoming') return '已出租・待起租'; if (status === 'needs_review') return '入住狀態待確認'; if (status === 'occupied') return '已出租'; if (status === 'maintenance') return '維修中'; if (status === 'unavailable') return '暫停使用'; return '空房'; }
+    function statusClass(room) { if (room.account_status === 'archived') return 'archived'; return roomOccupancy(room); }
     function safeExternalUrl(value) { const url = text(value).trim(); return /^https:\/\/[^\s"'<>]+$/i.test(url) ? url : ''; }
     function publicRoomShareUrl(value) {
       // Only the supported public listing path is shareable. Never forward
@@ -369,7 +374,7 @@
       const url = publicRoomShareUrl(button.dataset.shareUrl);
       if (!url) return;
       button.disabled = true;
-      const fallback = button.nextElementSibling;
+      const fallback = button.closest('.room-card').querySelector('.room-share-fallback');
       fallback.hidden = true;
       try {
         if (typeof navigator.share === 'function') {
@@ -382,7 +387,7 @@
     }
     function z3houseStatusLabel(listing) { if (!listing || listing.binding_status === 'unbound') return '尚未連結 z3House'; if (listing.binding_status !== 'bound') return '連結待處理'; if (listing.publication_status === 'published') return '已公開'; if (listing.publication_status === 'hidden') return '未公開'; return '已連結'; }
     function z3houseStatusClass(listing) { if (listing && listing.publication_status === 'published') return 'published'; if (listing && listing.publication_status === 'hidden') return 'hidden'; return ''; }
-    function matches(room) { const query = text(document.getElementById('roomSearch').value).trim().toLowerCase(); const haystack = [room.property_name, room.room_name, room.room_id].map(function (value) { return text(value).toLowerCase(); }).join(' '); if (query && haystack.indexOf(query) < 0) return false; if (FILTER === 'all') return true; if (FILTER === 'archived') return room.account_status === 'archived'; if (FILTER === 'active') return room.account_status === 'active'; return room.account_status === 'active' && room.room_status === FILTER; }
+    function matches(room) { const query = text(document.getElementById('roomSearch').value).trim().toLowerCase(); const haystack = [room.property_name, room.room_name, room.room_id].map(function (value) { return text(value).toLowerCase(); }).join(' '); if (query && haystack.indexOf(query) < 0) return false; if (FILTER === 'all') return true; if (FILTER === 'archived') return room.account_status === 'archived'; if (FILTER === 'active') return room.account_status === 'active'; const status = roomOccupancy(room); return room.account_status === 'active' && (status === FILTER || (FILTER === 'occupied' && status === 'upcoming')); }
     function roomCard(room) {
       const listing = room.z3house || {};
       const manualUrl = safeExternalUrl(room.room_website_url);
@@ -401,12 +406,13 @@
         ? '<a class="z3house-link" href="' + safeHtml(independentSiteUrl) + '" target="_blank" rel="noopener noreferrer">查看房源網站 ↗</a>'
         : '';
       return '<article class="card room-card">' +
-        '<div class="room-photo">' + media + '<span class="status ' + safeHtml(statusClass(room)) + '">' + safeHtml(statusLabel(room)) + '</span></div>' +
+        '<div class="room-photo">' + media + '<span class="status ' + safeHtml(statusClass(room)) + '">' + safeHtml(statusLabel(room)) + '</span>' +
+          (shareUrl ? '<button type="button" class="room-share" aria-label="分享房源" title="分享房源" data-share-url="' + safeHtml(shareUrl) + '" data-share-title="查看房源" onclick="shareRoomWebsite(this)"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg></button>' : '') + '</div>' +
         '<div class="room-card-body">' +
           '<h2 class="room-card-title">' + safeHtml(title) + '</h2>' +
           '<div class="room-card-meta">' + safeHtml(room.property_name || '未命名物件') + ' · ' + safeHtml(room.room_name || '未命名房間') + '</div>' +
           '<div class="room-card-rent">' + safeHtml(money(room.rent_amount)) + (Number(room.rent_amount) > 0 ? '<small>／月</small>' : '') + '</div>' +
-          (shareUrl ? '<button type="button" class="outline-button room-share" data-share-url="' + safeHtml(shareUrl) + '" data-share-title="查看房源" onclick="shareRoomWebsite(this)">分享房源 ↗</button><p class="room-share-fallback" hidden role="status"></p>' : '') +
+          (shareUrl ? '<p class="room-share-fallback" hidden role="status"></p>' : '') +
           '<div class="room-card-actions">' + link + '<a class="room-admin-link" href="https://admin.z3house.com/" target="_blank" rel="noopener noreferrer">管理刊登房源 ↗</a></div>' +
           '<details class="room-management"><summary>管理</summary>' +
           '<div class="room-website-editor"><label>房源網站網址（選填）<input type="url" class="search" maxlength="2048" placeholder="https://你的房源網站" value="' + safeHtml(room.room_website_url || '') + '"></label><button type="button" class="outline-button" data-room-id="' + safeHtml(room.room_id) + '" onclick="saveRoomWebsite(this)">儲存網址</button><p class="room-note">手動網址優先；清空後儲存即可移除。只更新網址，不更動租金或租約。</p><div class="room-website-result" role="status" aria-live="polite"></div></div>' +
