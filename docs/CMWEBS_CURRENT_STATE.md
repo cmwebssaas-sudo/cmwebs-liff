@@ -1,6 +1,6 @@
 # CMWebs Current State
 
-## 2026-10-07 房源鍵盤過度捲動修正（已授權前端發布）
+## 2026-10-07 房源鍵盤過度捲動修正（前端已發布）
 
 使用者回報點URL欄位會滑過頭。隔離分支
 `codex/room-keyboard-scroll-stability-20261007`，基底47a26ac，root WIP不動。
@@ -11,7 +11,9 @@ pan重複作用；新候選focus及viewport scroll只更新shell，resize穩定1
 七項runtime測試，focus原版760而預期400的回歸先失敗再通過，完整630/630、
 validate、diff-check通過。本機390×340合成圖卡input top277.95 bottom323.95
 且可輸入；未按保存，不寫正式資料。使用者已授權本次修正發布；候選2706b84
-重新630/630、validate及diff-check通過，Pages與公開讀回待完成。
+重新630/630、validate及diff-check通過。PR229合併17f6ae2，Pages37605820852
+成功，46個公開檔案與候選逐位元一致。新版入口標記為
+`20261007-room-keyboard-stability-v1`。
 LINE真機仍待驗收。
 Rollback前端47a26ac；後端、API、租金、租約及已存網址均不動。
 

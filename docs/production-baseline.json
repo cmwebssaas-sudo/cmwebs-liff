@@ -5,6 +5,17 @@
   "backend_source_commit": "2e6d2ef7f917960f01831fd0d7d4f19df5691708",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 217,
+  "room_keyboard_scroll_stability_frontend_release": {
+    "verified_on": "2026-10-07",
+    "source_commit": "2706b84",
+    "frontend_revision": "17f6ae2ef891e49b22c05f35a9292312e77e3282",
+    "frontend_workflow": "37605820852",
+    "frontend_release_tag": "20261007-room-keyboard-stability-v1",
+    "public_files_verified": 46,
+    "tests_passed": 630,
+    "rollback_frontend_revision": "47a26acaa8a7713f0ca15f940177d30f04b5140d",
+    "status": "User authorized frontend-only release. PR229 merged; Pages succeeded and46 public assets byte-identical.630 tests, validate and diff-check pass. Focus and viewport pan no longer force scrolling; debounced resize reveals only still-obscured input using viewport offset. Local synthetic390x340 URL field visible and editable. Physical LINE soft keyboard acceptance pending. No Apps Script deployment, business save, Schema, trigger, Properties or LINE writes."
+  },
   "room_mobile_keyboard_frontend_release": {
     "verified_on": "2026-10-07",
     "source_commit": "1d12250",
