@@ -30,7 +30,7 @@ async function api(path, method = 'GET', body) {
   if (!response.ok || data.success !== true) throw Object.assign(new Error(data.code || '無法讀取回應'), { uncertain: write && response.status >= 500, code: data.code });
   return data.data;
 }
-async function readAll(orderId) {
+async function readAll(orderId, beforeRender) {
   // Session is rechecked on every refresh; a removed member cannot keep a stale view.
   const session = await api('/api/session');
   const landlord = session.actor.role === 'landlord';
@@ -40,7 +40,8 @@ async function readAll(orderId) {
   ]);
   const current = orderId ? await api(`/api/work-orders/${id(orderId)}`) : null;
   Object.assign(state, { actor: session.actor, orders: current ? orders.map(w => w.id === current.id ? current : w) : orders, partners, agreements, inbox, priorities });
-  render(); return current;
+  const afterRender = beforeRender?.();
+  render(); afterRender?.(); return current;
 }
 function clearUnauthorized(error) {
   if (['SESSION_REQUIRED', 'FORBIDDEN'].includes(error.code)) {
@@ -74,6 +75,7 @@ const money = value => `TWD ${Number(value).toLocaleString('zh-TW')}`;
 const partnerName = value => state.partners.find(p => p.id === value)?.name || value;
 const partnerOptions = () => state.partners.filter(p => p.active).map(p => [p.id, p.name]);
 function eligibleAgreementOptions(order, partnerId) {
+  if (order.trade === 'repair') return [];
   const latest = new Map();
   for (const agreement of state.agreements) {
     const agreementId = agreement.agreement_id || agreement.id;
@@ -190,16 +192,18 @@ async function upload(form, w) {
   const file = form.elements.file.files[0];
   if (!file || file.size > 10 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) { feedback('未上傳：只接受 JPEG、PNG、WebP、PDF，且最多 10 MiB。', true); return; }
   const completionSelector = `form[data-form="completion"][data-order="${CSS.escape(w.id)}"]`;
-  const completion = document.querySelector(completionSelector);
-  const completionDraft = completion ? {
-    description: completion.elements.description.value,
-    actual_amount_twd: completion.elements.actual_amount_twd.value,
-  } : null;
-  const restoreCompletionDraft = () => {
-    const current = completionDraft && document.querySelector(completionSelector);
-    if (!current) return;
-    current.elements.description.value = completionDraft.description;
-    current.elements.actual_amount_twd.value = completionDraft.actual_amount_twd;
+  const preserveCompletionDraft = () => {
+    // Capture after all authoritative GETs, immediately before replacing the DOM.
+    const completion = document.querySelector(completionSelector);
+    if (!completion) return;
+    const draft = { description: completion.elements.description.value,
+      actual_amount_twd: completion.elements.actual_amount_twd.value };
+    return () => {
+      const current = document.querySelector(completionSelector);
+      if (!current) return;
+      current.elements.description.value = draft.description;
+      current.elements.actual_amount_twd.value = draft.actual_amount_twd;
+    };
   };
   lock(true); feedback('附件上傳中…'); let committed = false;
   try {
@@ -214,11 +218,11 @@ async function upload(form, w) {
       };
       xhr.onerror = xhr.ontimeout = () => reject(Object.assign(new Error('回應結果不明'), { uncertain: true })); xhr.send(file);
     });
-    committed = true; state.progress.set(w.id, 100); await readAll(w.id); restoreCompletionDraft(); feedback('已保存並讀回私有附件。');
+    committed = true; state.progress.set(w.id, 100); await readAll(w.id, preserveCompletionDraft); feedback('已保存並讀回私有附件。');
   } catch (error) {
     state.progress.set(w.id, 0); form.querySelector('progress').value = 0; clearUnauthorized(error);
     if (error.uncertain || committed) {
-      try { await readAll(w.id); restoreCompletionDraft(); feedback('附件回應結果不明；已讀回附件清單，請核對後再操作。未自動重送。', true); }
+      try { await readAll(w.id, preserveCompletionDraft); feedback('附件回應結果不明；已讀回附件清單，請核對後再操作。未自動重送。', true); }
       catch (readError) { clearUnauthorized(readError); feedback('附件結果不明且讀回失敗；請重新讀取。未自動重送。', true); }
     } else feedback(`未上傳：${error.message}`, true);
   } finally { lock(false); }

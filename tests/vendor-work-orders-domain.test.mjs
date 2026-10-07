@@ -285,6 +285,27 @@ test('accepts_company_and_individual_partners', () => {
   assert.equal(state.schema_version, 1);
 });
 
+test('property_id_is_landlord_only_for_invited_and_assigned_vendor_projections', () => {
+  for (const f of [sourced(), fixedAssignment()]) {
+    f.state.work_orders[0].property_id = 'private-property-a';
+    f.state.work_orders[0].landlord_secret = 'PRIVATE_SENTINEL';
+    assert.equal(projectWorkOrderForActor(f.state, f.principals.landlord_a, 'wo-1').property_id, 'private-property-a');
+    for (const actor of [f.principals.company_a_manager, f.principals.company_a_worker]) {
+      const view = projectWorkOrderForActor(f.state, actor, 'wo-1');
+      assert.equal(Object.hasOwn(view, 'property_id'), false);
+      assert.doesNotMatch(JSON.stringify(view), /private-property-a|PRIVATE_SENTINEL|landlord_secret/);
+    }
+  }
+});
+
+test('landlord_projection_without_property_remains_lossless_json', () => {
+  const f = setup('cleaning');
+  delete f.state.work_orders[0].property_id;
+  const view = projectWorkOrderForActor(f.state, f.principals.landlord_a, 'wo-1');
+  assert.equal(Object.hasOwn(view, 'property_id'), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(view)), view);
+});
+
 test('allows_multiple_members_without_cross_workspace_access', () => {
   const { state, principals } = sourced();
   for (const actor of [principals.company_a_manager, principals.company_a_worker]) {

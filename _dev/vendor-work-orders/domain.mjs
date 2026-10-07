@@ -787,6 +787,7 @@ export function projectWorkOrderForActor(state, actor, workOrderId) {
   const view = { id: order.id, workspace_id: order.workspace_id, title: order.title,
     trade: order.trade, area: order.area, status: order.status, version: order.version,
     created_at: order.created_at, updated_at: order.updated_at };
+  if (landlord && order.property_id !== undefined) view.property_id = order.property_id;
   if (landlord || assigned) { view.location = order.location; view.instructions = order.instructions; }
   view.invitations = state.invitations.filter(i => belongs(i, order) && (landlord || i.partner_id === principal.partner_id)).map(i => ({
     id: i.id, partner_id: i.partner_id, status: i.status, round_id: i.round_id,

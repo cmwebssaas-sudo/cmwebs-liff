@@ -170,35 +170,81 @@ test('fixed_price_choices_use_latest_eligible_snapshot_for_selected_partner', as
       version, price_twd, active, starts_at, ends_at,
     });
     state.service_agreements.push(
-      row('repair-v1', 'repair-a', 'company-a', 'repair', '', 1, 1200, true, validFrom, validUntil),
-      row('repair-v2', 'repair-a', 'company-a', 'repair', '', 2, 2400, true, validFrom, validUntil),
-      row('repair-sunset-v1', 'repair-sunset', 'company-a', 'repair', '', 1, 800, true, validFrom, validUntil),
-      row('repair-sunset-v2', 'repair-sunset', 'company-a', 'repair', '', 2, 900, false, validFrom, validUntil),
-      row('wrong-partner', 'wrong-partner', 'individual-a', 'repair', '', 1, 3100, true, validFrom, validUntil),
-      row('wrong-property', 'wrong-property', 'company-a', 'repair', 'property-b', 1, 3200, true, validFrom, validUntil),
-      row('expired', 'expired', 'company-a', 'repair', '', 1, 3300, true, validFrom, new Date(now - 60000).toISOString()),
-      row('future', 'future', 'company-a', 'repair', '', 1, 3400, true, new Date(now + day).toISOString(), validUntil),
-      row('wrong-trade', 'wrong-trade', 'company-a', 'cleaning', '', 1, 3500, true, validFrom, validUntil),
-      row('individual-repair', 'individual-repair', 'individual-a', 'repair', '', 1, 4100, true, validFrom, validUntil),
+      row('cleaning-v1', 'cleaning-a', 'company-a', 'cleaning', '', 1, 1200, true, validFrom, validUntil),
+      row('cleaning-v2', 'cleaning-a', 'company-a', 'cleaning', '', 2, 2400, true, validFrom, validUntil),
+      row('cleaning-sunset-v1', 'cleaning-sunset', 'company-a', 'cleaning', '', 1, 800, true, validFrom, validUntil),
+      row('cleaning-sunset-v2', 'cleaning-sunset', 'company-a', 'cleaning', '', 2, 900, false, validFrom, validUntil),
+      row('wrong-partner', 'wrong-partner', 'individual-a', 'cleaning', '', 1, 3100, true, validFrom, validUntil),
+      row('wrong-property', 'wrong-property', 'company-a', 'cleaning', 'property-b', 1, 3200, true, validFrom, validUntil),
+      row('expired', 'expired', 'company-a', 'cleaning', '', 1, 3300, true, validFrom, new Date(now - 60000).toISOString()),
+      row('future', 'future', 'company-a', 'cleaning', '', 1, 3400, true, new Date(now + day).toISOString(), validUntil),
+      row('wrong-trade', 'wrong-trade', 'company-a', 'repair', '', 1, 3500, true, validFrom, validUntil),
+      row('individual-cleaning', 'individual-cleaning', 'individual-a', 'cleaning', '', 1, 4100, true, validFrom, validUntil),
     );
     return state;
   });
-  await h.order(false, false, '合成固定價候選測試');
+  await h.order(true, false, '合成固定價候選測試');
   const p = await h.page();
   const card = p.locator('article.work-order').filter({ hasText: '合成固定價候選測試' });
   const partner = card.getByLabel('指定合作對象');
   const agreement = card.locator('select[name="agreement_id"]');
   const visible = () => agreement.locator('option').allTextContents();
   let options = await visible();
-  assert.ok(options.some(text => text.includes('repair-v2') && text.includes('2,400') && text.includes('v2')));
-  assert.equal(options.some(text => text.includes('repair-v1')), false, 'older revision is not offered');
-  for (const stale of ['repair-sunset-v1', 'repair-sunset-v2', 'wrong-partner', 'wrong-property', 'expired', 'future', 'wrong-trade', 'individual-repair']) {
+  assert.ok(options.some(text => text.includes('cleaning-v2') && text.includes('2,400') && text.includes('v2')));
+  assert.equal(options.some(text => text.includes('cleaning-v1')), false, 'older revision is not offered');
+  for (const stale of ['cleaning-sunset-v1', 'cleaning-sunset-v2', 'wrong-partner', 'wrong-property', 'expired', 'future', 'wrong-trade', 'individual-cleaning']) {
     assert.equal(options.some(text => text.includes(stale)), false, `${stale} must not be offered to company A for this job`);
   }
   await partner.selectOption('individual-a');
   options = await visible();
-  assert.ok(options.some(text => text.includes('individual-repair') && text.includes('4,100') && text.includes('v1')));
-  assert.equal(options.some(text => text.includes('repair-v2')), false, 'other partner agreement is not selectable');
+  assert.ok(options.some(text => text.includes('individual-cleaning') && text.includes('4,100') && text.includes('v1')));
+  assert.equal(options.some(text => text.includes('cleaning-v2')), false, 'other partner agreement is not selectable');
+});
+
+test('property_scoped_fixed_price_is_selectable_and_dispatches_with_correct_snapshot', async t => {
+  const h = await harness(t);
+  await h.server.store.transact(state => {
+    state.service_agreements.push({ id: 'property-cleaning', agreement_id: 'property-cleaning',
+      workspace_id: 'ws-a', partner_id: 'company-a', title: '物件專屬清潔', trade: 'cleaning',
+      property_id: 'property-a', version: 1, price_twd: 1200, active: true,
+      starts_at: '2026-01-01T00:00:00Z', ends_at: '2099-12-31T00:00:00Z' });
+    return state;
+  });
+  const jobs = [];
+  for (const property_id of ['property-a', 'property-b']) jobs.push(await h.api('landlord_a', '/api/work-orders', {
+    title: `專屬價格 ${property_id}`, trade: 'cleaning', area: '合成區域', property_id,
+  }));
+  const p = await h.page();
+  const matching = p.locator('article.work-order').filter({ hasText: '專屬價格 property-a' });
+  const other = p.locator('article.work-order').filter({ hasText: '專屬價格 property-b' });
+  assert.equal(await matching.locator('select[name="agreement_id"] option[value="property-cleaning"]').count(), 1);
+  assert.equal(await other.locator('select[name="agreement_id"] option[value="property-cleaning"]').count(), 0);
+  await matching.getByLabel('邀請方式').selectOption('manual');
+  await matching.getByLabel('價格方式').selectOption('property-cleaning');
+  await matching.getByRole('button', { name: '確認邀請／固定價派工' }).click(); await saved(p);
+  let w = await h.api('landlord_a', `/api/work-orders/${jobs[0].id}`, undefined, 'GET');
+  assert.equal(w.invitations[0].agreement_snapshot.price_twd, 1200);
+  w = await h.api('company_a_worker', `/api/assignments/${w.invitations[0].assignment_id}/accept`, { expected_version: w.version });
+  assert.equal(w.status, 'assigned');
+  assert.equal(w.assignment.approved_amount_twd, 1200);
+  assert.equal(w.assignment.agreement_snapshot.price_twd, 1200);
+  assert.equal(w.assignment.agreement_snapshot.version, 1);
+  assert.equal(Object.hasOwn(w, 'property_id'), false);
+});
+
+test('repair_jobs_offer_only_quotation_even_when_fixed_agreements_exist', async t => {
+  const h = await harness(t);
+  await h.server.store.transact(state => {
+    state.service_agreements.push({ id: 'repair-fixed', workspace_id: 'ws-a', partner_id: 'company-a',
+      title: '不可直接派工的維修固定價', trade: 'repair', version: 1, price_twd: 1200, active: true,
+      starts_at: '2026-01-01T00:00:00Z', ends_at: '2099-12-31T00:00:00Z' });
+    return state;
+  });
+  await h.order();
+  const p = await h.page(), card = p.locator('article.work-order');
+  assert.deepEqual(await card.locator('select[name="agreement_id"] option').allTextContents(), ['先報價再核准']);
+  await card.getByLabel('指定合作對象').selectOption('individual-a');
+  assert.deepEqual(await card.locator('select[name="agreement_id"] option').allTextContents(), ['先報價再核准']);
 });
 
 test('landlord_can_compare_approve_and_accept_work', async t => {
@@ -276,6 +322,56 @@ test('uncertain_attachment_upload_keeps_completion_draft_after_authoritative_rea
   const savedState = await h.server.store.readSnapshot();
   assert.equal(savedState.private_attachments.length, 1);
   assert.equal(savedState.completion_reports.length, 0);
+});
+
+for (const uncertain of [false, true]) test(`attachment_${uncertain ? 'uncertain' : 'success'}_preserves_edits_during_upload_and_readback`, async t => {
+  const h = await harness(t), w = await inProgressFixture(h);
+  const p = await h.page('company_a_worker');
+  const card = p.locator('article.work-order').filter({ hasText: w.title });
+  function barrier() {
+    let arrive, release;
+    const reached = new Promise(resolve => { arrive = resolve; });
+    const released = new Promise(resolve => { release = resolve; });
+    t.after(release);
+    return { reached, released, arrive, release };
+  }
+  const post = barrier(), get = barrier();
+  let uploadPosts = 0, detailGets = 0;
+  await p.route(`**/api/work-orders/${w.id}/attachments`, async route => {
+    uploadPosts++;
+    const response = await route.fetch();
+    assert.equal(response.status(), 200);
+    post.arrive(); await post.released;
+    if (uncertain) await route.abort('failed');
+    else await route.fulfill({ response });
+  });
+  await p.route(`**/api/work-orders/${w.id}`, async route => {
+    detailGets++;
+    const response = await route.fetch();
+    assert.equal(response.status(), 200);
+    get.arrive(); await get.released;
+    await route.fulfill({ response });
+  });
+  await card.getByLabel('完工說明').fill('上傳前');
+  await card.getByLabel('實際費用 TWD').fill('1200');
+  await card.getByLabel('私有附件').setInputFiles({ name: 'barrier.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\nlocal barrier upload') });
+  await card.getByRole('button', { name: '上傳附件' }).click();
+  await post.reached;
+  assert.equal((await h.server.store.readSnapshot()).private_attachments.length, 1, 'server committed before response release');
+  await card.getByLabel('完工說明').fill('上傳期間修改');
+  await card.getByLabel('實際費用 TWD').fill('1350');
+  post.release(); await get.reached;
+  await card.getByLabel('完工說明').fill('讀回期間的最新修改');
+  await card.getByLabel('實際費用 TWD').fill('1475');
+  get.release(); await saved(p, uncertain ? '附件回應結果不明' : '已保存');
+  assert.equal(await card.getByLabel('完工說明').inputValue(), '讀回期間的最新修改');
+  assert.equal(await card.getByLabel('實際費用 TWD').inputValue(), '1475');
+  assert.equal(await card.getByRole('link', { name: /下載私有附件/ }).count(), 1);
+  assert.equal(uploadPosts, 1, 'upload is never automatically resubmitted');
+  assert.equal(detailGets, 1, 'uses authoritative detail GET');
+  const stored = await h.server.store.readSnapshot();
+  assert.equal(stored.private_attachments.length, 1);
+  assert.equal(stored.completion_reports.length, 0, 'draft is not submitted by readback');
 });
 
 test('rework_reason_is_visible_to_assigned_vendor', async t => {
