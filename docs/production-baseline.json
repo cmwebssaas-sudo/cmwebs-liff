@@ -7,13 +7,13 @@
   "backend_version": 219,
   "room_photo_share_occupancy_release": {
     "verified_on": "2026-10-07",
-    "source_commit": "aeda946",
+    "source_commit": "b8a409e0581613b580471e527bd540aa28d4417a",
     "backend_version": 219,
     "rollback_backend_version": 218,
     "rollback_frontend_revision": "bf17208ead095b25eff42bdfdc923275c78c75c7",
     "frontend_release_tag": "20261007-room-photo-share-occupancy-v1",
     "tests_passed": 646,
-    "status": "User authorized PR237 merge and frontend/backend release. Fresh serving218 and editor HEAD59 files match origin/main;46 existing public assets match main. Candidate HEAD and immutable219 each59 files byte-identical. Existing formal Web App reads219 at unchanged URL; other4 deployments unchanged. Frontend merge/Pages and authenticated runtime verification pending. No business-data, Schema, trigger, Properties or LINE writes. Physical LINE swipe/share pending."
+    "status": "User authorized PR237 merge and frontend/backend release. Fresh serving218 and editor HEAD59 files match origin/main;46 existing public assets match main. Candidate HEAD and immutable219 each59 files byte-identical. Existing formal Web App reads219 at unchanged URL; other4 deployments unchanged. PR237 merged b8a409e; Pages37628045514 succeeded;46 public files byte-identical; postmerge646 tests pass. Existing authenticated tab reload reads22 rooms and501 occupied/upcoming. Formal390x844 shows hidden arrows,44x44 photo-overlay share and loaded photos. Fresh tab encountered Failed to fetch; separate new-tab authentication not verified. No business-data, Schema, trigger, Properties or LINE writes; no actual share sent. Physical LINE swipe/share pending."
   },
   "room_share_gallery_release": {
     "verified_on": "2026-10-07",

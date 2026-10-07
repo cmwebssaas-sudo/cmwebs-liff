@@ -1,6 +1,6 @@
 # CMWebs Current State
 
-## 2026-10-07 手機照片分享覆層與入住狀態一致性（後端219，前端發布中）
+## 2026-10-07 手機照片分享覆層與入住狀態一致性（前後端已發布）
 
 使用者確認：手機隱藏照片箭頭、保留 swipe/count，分享改為照片右上角
 44px圓形圖示；桌面保留箭頭。推薦模型gpt-5.6-terra、medium。
@@ -15,8 +15,13 @@
 使用者先選推送建立PR237，再授權合併並發布前後端。Fresh serving218/editor HEAD
 各59檔及46公開資產均與origin/main一致。快取版本更新為
 20261007-room-photo-share-occupancy-v1，候選aeda946；HEAD與immutable219各59檔
-逐位元一致。原Web App部署讀回219、URL不變、其他四部署不变；前端合併／Pages
-與正式登入驗證待完成。Rollback後端218、前端bf17208；無Schema或資料回退。
+逐位元一致。原Web App部署讀回219、URL不變、其他四部署不变；PR237合併
+b8a409e，Pages37628045514成功，46公開檔案逐位元一致，合併後646/646通過。
+正式原登入分頁重新載入新版，22間成功讀取，501顯示「已出租・待起租」。
+390×844正式頁箭頭display:none、分享44×44，照片載入成功；保存畫面
+/tmp/cmwebs-room-501-production-mobile.png。新建分頁曾Failed to fetch，
+原登入分頁成功不代表新分頁登入問題已修復。未按保存或實際發送分享。
+Rollback後端218、前端bf17208；無Schema或資料回退。LINE/iPhone真機仍待驗收。
 
 ## 2026-10-07 房源分享與公開照片圖庫（前後端已發布）
 
