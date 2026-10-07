@@ -41,6 +41,16 @@ export function validatePartnerInput(input) {
   return { type: input.type, name: text(input.name, 'INVALID_PARTNER') };
 }
 
+/** Canonical membership identity must fit a single decoded URL path segment.
+ * Percent is rejected so double encoding cannot become a second decoding step. */
+export function normalizeMemberId(value) {
+  const id = text(value, 'INVALID_MEMBER');
+  if (id === '.' || id === '..' || /[/\\%?#\u0000-\u001f\u007f]/u.test(id)) fail('INVALID_MEMBER');
+  try { encodeURIComponent(id); } // Reject unpaired surrogates that cannot round-trip through a URL.
+  catch { fail('INVALID_MEMBER'); }
+  return id;
+}
+
 export function validateQuoteInput(input) {
   if (!input) fail('INVALID_QUOTE');
   const labor_twd = amount(input.labor_twd);
@@ -278,7 +288,7 @@ export function normalizeDirectoryInput(action, input) {
     case 'member-create':
     case 'member-update':
       data = {};
-      if (action === 'member-create') data.actor_id = text(input.actor_id, 'INVALID_MEMBER');
+      if (action === 'member-create') data.actor_id = normalizeMemberId(input.actor_id);
       if (action === 'member-create' || input.member_role !== undefined) {
         if (!['manager', 'worker', 'contact'].includes(input.member_role)) fail('INVALID_MEMBER');
         data.member_role = input.member_role;

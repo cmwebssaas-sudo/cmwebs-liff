@@ -7,6 +7,7 @@ import { request } from 'node:http';
 import { createWorkOrderStore } from '../_dev/vendor-work-orders/store.mjs';
 import { createVendorWorkOrderServer } from '../_dev/vendor-work-orders/server.mjs';
 import { createSyntheticFixtures } from '../_dev/vendor-work-orders/fixtures.mjs';
+import { projectDirectory } from '../_dev/vendor-work-orders/domain.mjs';
 
 async function directory(t) {
   const dir = await mkdtemp(join(tmpdir(), 'vendor-api-'));
@@ -224,6 +225,40 @@ test('disabled_member_loses_access_but_events_remain', async t => {
   assert.equal((await a.api('/api/partners/company-a', 'PATCH', { active: false }, 'disable')).status, 200);
   const manager = await authenticated(t, 'landlord_b', a.server);
   assert.equal((await manager.api('/api/partners')).json.data.length, 1);
+});
+
+test('accepted_non_alphanumeric_member_id_can_be_deactivated_without_losing_history', async t => {
+  const { server, api } = await authenticated(t);
+  const actor_id = 'worker@example.com';
+  const actor = { actor_id, workspace_id: 'ws-a', partner_id: 'company-a', role: 'vendor' };
+  const created = await api('/api/partners/company-a/memberships', 'POST', { actor_id, member_role: 'worker' }, 'create-email');
+  assert.equal(created.status, 200);
+  const before = await server.store.readSnapshot();
+  assert.equal(projectDirectory(before, actor, 'partners')[0].id, 'company-a');
+  const changed = await api(`/api/partners/company-a/memberships/${encodeURIComponent(actor_id)}`, 'PATCH', { active: false }, 'disable-email');
+  assert.equal(changed.status, 200);
+  const after = await server.store.readSnapshot();
+  assert.throws(() => projectDirectory(after, actor, 'partners'), { code: 'FORBIDDEN' });
+  assert.deepEqual(after.work_order_events.slice(0, before.work_order_events.length), before.work_order_events);
+  assert.equal(after.work_order_events.length, before.work_order_events.length + 1);
+  assert.equal(after.partner_memberships.find(m => m.actor_id === actor_id).active, false);
+  const replay = await api('/api/partners/company-a/memberships/worker%40example.com', 'PATCH', { active: false }, 'disable-email');
+  assert.deepEqual(replay.json.data, changed.json.data);
+  assert.deepEqual(await server.store.readSnapshot(), after);
+});
+
+test('membership_ids_reject_encoded_route_traversal_and_malformed_segments', async t => {
+  const { server, api } = await authenticated(t);
+  const before = await server.store.readSnapshot();
+  for (const actor_id of ['../worker', 'a/b', 'a\\b', '.', '..', 'worker%40example.com', 'a?b', 'a#b', 'a\u0000b', '\ud800']) {
+    assert.equal((await api('/api/partners/company-a/memberships', 'POST', { actor_id, member_role: 'worker' }, actor_id.replace(/[^a-z]/g, '') || 'dots')).json.code, 'INVALID_MEMBER');
+  }
+  for (const segment of ['%2e%2e%2fworker-a', 'worker-a%2f..', 'worker-a%5c..', '%252e%252e', '%2e%2e', '%', '%ZZ', 'worker-a%3Ffoo', 'worker-a%23foo']) {
+    const response = await api(`/api/partners/company-a/memberships/${segment}`, 'PATCH', { active: false }, 'invalid-segment');
+    assert.equal(response.status, 400);
+    assert.equal(response.json.code, 'INVALID_MEMBER');
+  }
+  assert.deepEqual(await server.store.readSnapshot(), before);
 });
 test('priority_rank_is_unique_per_trade_scope', async t => {
   const { api } = await authenticated(t);

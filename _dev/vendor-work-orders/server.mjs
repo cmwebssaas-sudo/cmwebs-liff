@@ -5,7 +5,7 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createWorkOrderStore } from './store.mjs';
 import { createSyntheticFixtures } from './fixtures.mjs';
-import { normalizeActor, normalizeDirectoryInput, mutateDirectory, projectDirectory } from './domain.mjs';
+import { normalizeActor, normalizeMemberId, normalizeDirectoryInput, mutateDirectory, projectDirectory } from './domain.mjs';
 
 const contexts = new WeakMap();
 const hours8 = 8 * 60 * 60 * 1000;
@@ -123,7 +123,9 @@ export function createVendorWorkOrderServer(options = {}) {
         send(200, { success: true, data: { actor: requireSession(request) } });
         return;
       }
-      const partnerPath = /^\/api\/partners\/([A-Za-z0-9_-]+)(?:\/memberships(?:\/([A-Za-z0-9_-]+))?)?$/.exec(path);
+      // Match raw path structure first, then decode only the one membership ID
+      // segment. Never normalize/decode the entire route or decode an ID twice.
+      const partnerPath = /^\/api\/partners\/([A-Za-z0-9_-]+)(?:\/memberships(?:\/([^/]+))?)?$/.exec(path);
       const collection = ['/api/partners', '/api/priority-rules', '/api/service-agreements'].includes(path) ? path.slice(5) : null;
       let action, resource = {};
       if (collection === 'partners' && request.method === 'POST') action = 'partner-create';
@@ -132,7 +134,10 @@ export function createVendorWorkOrderServer(options = {}) {
         if (!path.includes('/memberships') && request.method === 'PATCH') action = 'partner-update';
         else if (path.endsWith('/memberships') && request.method === 'POST') action = 'member-create';
         else if (partnerPath[2] && request.method === 'PATCH') {
-          action = 'member-update'; resource.actor_id = partnerPath[2];
+          let decoded;
+          try { decoded = decodeURIComponent(partnerPath[2]); }
+          catch { fail('INVALID_MEMBER'); }
+          action = 'member-update'; resource.actor_id = normalizeMemberId(decoded);
         }
       }
       if (collection === 'priority-rules' && request.method === 'PUT') action = 'priority-set';
