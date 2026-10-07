@@ -262,7 +262,6 @@ export function authorizeAttachment(state, actor, workOrderId, write = false) {
     const assignment = assignmentFor(state, order);
     if (!vendorAllowed(state, principal) || !assignment || assignment.partner_id !== principal.partner_id) fail('FORBIDDEN');
   }
-  if (write && ['completed', 'cancelled'].includes(order.status)) fail('INVALID_TRANSITION');
   return order;
 }
 
@@ -278,6 +277,7 @@ export function recordAttachmentAccess(state, actor, action, workOrderId, id, no
   const from = order.status;
   const at = timestamp(now);
   if (action === 'attachment-upload') {
+    if (['completed', 'cancelled'].includes(order.status)) fail('INVALID_TRANSITION');
     if (!Number.isSafeInteger(expectedVersion) || expectedVersion !== order.version) fail('VERSION_CONFLICT');
     next.private_attachments.push(attachmentMetadata({ ...metadata, id, workspace_id: order.workspace_id,
       work_order_id: order.id, actor: principal, at }));

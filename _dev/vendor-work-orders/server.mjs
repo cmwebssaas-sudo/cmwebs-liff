@@ -1,9 +1,10 @@
 import { createServer } from 'node:http';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
-import { readFile, mkdir, chmod, lstat, realpath, readdir, unlink, open } from 'node:fs/promises';
+import { mkdir, chmod, lstat, realpath, readdir, unlink, open } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
-import { resolve, dirname, join, relative, isAbsolute } from 'node:path';
+import { Readable } from 'node:stream';
+import { resolve, dirname, basename, join, relative, isAbsolute } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createWorkOrderStore } from './store.mjs';
 import { createSyntheticFixtures } from './fixtures.mjs';
@@ -44,6 +45,38 @@ async function attachmentBody(request) {
 function inside(parent, child) {
   const path = relative(parent, child);
   return path === '' || !path.startsWith('..') && !isAbsolute(path);
+}
+// Local mitigation, not openat/dirfd anchoring: Node has no portable relative-fd
+// filesystem API. Pin canonical ancestors and check their identity around IO.
+async function directoryAnchor(configured, allowMissing = false) {
+  let info;
+  try { info = await lstat(configured); }
+  catch (error) { if (!allowMissing || error.code !== 'ENOENT') throw error; }
+  if (info && !info.isDirectory()) fail('INVALID_ATTACHMENT_STORAGE');
+  const path = info ? await realpath(configured) : join(await realpath(dirname(configured)), basename(configured));
+  const ancestors = [];
+  let current = info ? path : dirname(path);
+  for (;;) {
+    const stat = await lstat(current);
+    if (!stat.isDirectory()) fail('INVALID_ATTACHMENT_STORAGE');
+    ancestors.push({ path: current, dev: stat.dev, ino: stat.ino });
+    if (dirname(current) === current) break;
+    current = dirname(current);
+  }
+  return { configured, path, missing: !info, ancestors };
+}
+async function validateAnchor(anchor) {
+  for (const saved of anchor.ancestors) {
+    const current = await lstat(saved.path);
+    if (!current.isDirectory() || current.dev !== saved.dev || current.ino !== saved.ino) fail('INVALID_ATTACHMENT_STORAGE');
+  }
+  if (anchor.missing) {
+    try { await lstat(anchor.configured); fail('INVALID_ATTACHMENT_STORAGE'); }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+    if (join(await realpath(dirname(anchor.configured)), basename(anchor.configured)) !== anchor.path) fail('INVALID_ATTACHMENT_STORAGE');
+  } else {
+    if (!(await lstat(anchor.configured)).isDirectory() || await realpath(anchor.configured) !== anchor.path) fail('INVALID_ATTACHMENT_STORAGE');
+  }
 }
 const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
@@ -97,21 +130,31 @@ export function createVendorWorkOrderServer(options = {}) {
   if (host !== '127.0.0.1') fail('LOOPBACK_ONLY');
   if (!Number.isInteger(port) || port < 0 || port > 65535) fail('INVALID_PORT');
   const store = createWorkOrderStore({ filePath: dataFile });
+  const staticDir = resolve(options.staticDir || publicDir);
   const privateDir = resolve(options.attachmentDir || join(dirname(resolve(dataFile)), 'attachments'));
-  if (inside(publicDir, privateDir) || inside(privateDir, publicDir)) fail('INVALID_ATTACHMENT_STORAGE');
+  if (inside(staticDir, privateDir) || inside(privateDir, staticDir)) fail('INVALID_ATTACHMENT_STORAGE');
+  let privateAnchor, staticAnchor;
+  async function validateDirectories() {
+    await validateAnchor(privateAnchor);
+    await validateAnchor(staticAnchor);
+    if (inside(staticAnchor.path, privateAnchor.path) || inside(privateAnchor.path, staticAnchor.path)) fail('INVALID_ATTACHMENT_STORAGE');
+  }
   async function prepareAttachments() {
     await mkdir(privateDir, { recursive: true, mode: 0o700 });
-    if (!(await lstat(privateDir)).isDirectory()) fail('INVALID_ATTACHMENT_STORAGE');
-    const canonical = await realpath(privateDir);
-    const staticRoot = join(await realpath(dirname(publicDir)), 'public');
-    if (inside(staticRoot, canonical) || inside(canonical, staticRoot)) fail('INVALID_ATTACHMENT_STORAGE');
-    await chmod(privateDir, 0o700);
+    privateAnchor = await directoryAnchor(privateDir);
+    staticAnchor = await directoryAnchor(staticDir, true);
+    await validateDirectories();
+    await chmod(privateAnchor.path, 0o700);
+    await validateDirectories();
     const state = await store.readSnapshot();
     const referenced = new Set(state.private_attachments.map(a => a.id));
     // A single local writer owns this directory, as it owns the JSON snapshot.
     // Recovery deletes only our opaque orphan IDs; operator files are preserved.
-    for (const id of await readdir(privateDir)) {
-      if (blobId.test(id) && !referenced.has(id)) await unlink(join(privateDir, id));
+    for (const id of await readdir(privateAnchor.path)) {
+      if (blobId.test(id) && !referenced.has(id)) {
+        await validateDirectories();
+        await unlink(join(privateAnchor.path, id));
+      }
     }
   }
   const sessions = new Map();
@@ -138,7 +181,17 @@ export function createVendorWorkOrderServer(options = {}) {
       if (request.method === 'GET' && assets.has(path)) {
         const [file, type] = assets.get(path);
         let bytes;
-        try { bytes = await readFile(join(publicDir, file)); }
+        try {
+          await validateDirectories();
+          if (staticAnchor.missing) fail('NOT_FOUND', 404);
+          const handle = await open(join(staticAnchor.path, file), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+          try {
+            if (!(await handle.stat()).isFile()) fail('INTERNAL_ERROR', 500);
+            await validateDirectories();
+            bytes = await handle.readFile();
+            await validateDirectories();
+          } finally { await handle.close(); }
+        }
         catch (error) { if (error.code === 'ENOENT') fail('NOT_FOUND', 404); throw error; }
         response.writeHead(200, { 'content-type': type, 'cache-control': 'no-store',
           'x-content-type-options': 'nosniff', 'content-security-policy': "default-src 'self'; frame-ancestors 'none'" });
@@ -203,6 +256,7 @@ export function createVendorWorkOrderServer(options = {}) {
                 data = structuredClone(previous.result);
                 return state;
               }
+              if (['completed', 'cancelled'].includes(order.status)) fail('INVALID_TRANSITION');
               if (order.version !== expectedVersion) fail('VERSION_CONFLICT');
               const id = randomUUID();
               const next = recordAttachmentAccess(state, currentActor, 'attachment-upload', order.id, id,
@@ -210,19 +264,29 @@ export function createVendorWorkOrderServer(options = {}) {
               data = attachmentMetadata(next.private_attachments.at(-1));
               next.idempotency_records.push({ id: randomUUID(), workspace_id: currentActor.workspace_id,
                 actor_id: currentActor.actor_id, scope, key, normalized_body, result: structuredClone(data) });
-              const handle = await open(join(privateDir, id), 'wx', 0o600);
-              written = join(privateDir, id);
-              try { await handle.writeFile(body.bytes); await handle.sync(); }
+              await validateDirectories();
+              const handle = await open(join(privateAnchor.path, id), 'wx', 0o600);
+              written = join(privateAnchor.path, id);
+              try {
+                await validateDirectories();
+                await handle.writeFile(body.bytes); await handle.sync();
+                await validateDirectories();
+              }
               finally { await handle.close(); }
               return next;
             });
           } catch (error) {
-            if (written) await unlink(written);
+            if (written) {
+              // On directory replacement fail closed, retaining an inaccessible
+              // orphan instead of following the replacement during cleanup.
+              await validateDirectories();
+              await unlink(written);
+            }
             throw error;
           }
           send(200, { success: true, data });
         } else {
-          let handle, metadata;
+          let handle, metadata, bytes;
           try {
             await store.transact(async state => {
               contexts.set(request, { sessions, now, state });
@@ -231,21 +295,32 @@ export function createVendorWorkOrderServer(options = {}) {
               if (!metadata) fail('NOT_FOUND', 404);
               authorizeAttachment(state, currentActor, metadata.work_order_id);
               if (!Object.hasOwn(extensions, metadata.content_type)) fail('INTERNAL_ERROR', 500);
-              handle = await open(join(privateDir, metadata.id), constants.O_RDONLY | constants.O_NOFOLLOW);
+              await validateDirectories();
+              handle = await open(join(privateAnchor.path, metadata.id), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
               const stat = await handle.stat();
-              if (!stat.isFile() || stat.size !== metadata.size_bytes || stat.size > maxAttachment) fail('INTERNAL_ERROR', 500);
-              const hash = createHash('sha256');
-              for await (const chunk of handle.createReadStream({ autoClose: false })) hash.update(chunk);
-              if (hash.digest('hex') !== metadata.sha256) fail('INTERNAL_ERROR', 500);
+              if (!stat.isFile() || !Number.isSafeInteger(metadata.size_bytes) || metadata.size_bytes <= 0 ||
+                  stat.size !== metadata.size_bytes || stat.size > maxAttachment) fail('INTERNAL_ERROR', 500);
+              await validateDirectories();
+              bytes = Buffer.alloc(metadata.size_bytes);
+              let offset = 0;
+              while (offset < bytes.length) {
+                const { bytesRead } = await handle.read(bytes, offset, bytes.length - offset, offset);
+                if (!bytesRead) fail('INTERNAL_ERROR', 500);
+                offset += bytesRead;
+              }
+              if (createHash('sha256').update(bytes).digest('hex') !== metadata.sha256) fail('INTERNAL_ERROR', 500);
+              await handle.close(); handle = undefined;
+              await validateDirectories();
               return recordAttachmentAccess(state, currentActor, 'attachment-download', metadata.work_order_id,
                 randomUUID(), new Date(now()).toISOString(), { attachment_id: metadata.id });
             });
             // No headers or bytes escape before the read audit has committed.
+            await validateDirectories();
             response.writeHead(200, { 'content-type': metadata.content_type, 'content-length': metadata.size_bytes,
               'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
               'content-disposition': `attachment; filename="${metadata.id}.${extensions[metadata.content_type]}"`,
               'content-security-policy': "default-src 'none'; sandbox" });
-            await pipeline(handle.createReadStream({ start: 0, autoClose: false }), response);
+            await pipeline(Readable.from([bytes]), response);
           } finally { await handle?.close(); }
         }
         return;

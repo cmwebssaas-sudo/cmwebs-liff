@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readdir, readFile, writeFile, mkdir, symlink, stat } from 'node:fs/promises';
+import { mkdtemp, rm, readdir, readFile, writeFile, mkdir, symlink, stat, rename, open, appendFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { request } from 'node:http';
@@ -24,11 +26,11 @@ function raw(server, path, { method = 'GET', headers = {}, bytes } = {}) {
     req.on('error', reject); req.end(bytes);
   });
 }
-async function fixture(t) {
+async function fixture(t, options = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'wo-attachments-'));
   const attachmentDir = join(dir, 'private');
   const dataFile = join(dir, 'state.json');
-  const server = createVendorWorkOrderServer({ dataFile, attachmentDir, developmentMode: true, clock: () => Date.parse('2026-10-08T04:00:00Z') });
+  const server = createVendorWorkOrderServer({ dataFile, attachmentDir, developmentMode: true, clock: () => Date.parse('2026-10-08T04:00:00Z'), ...options });
   await server.start();
   t.after(async () => { await server.close(); await rm(dir, { recursive: true, force: true }); });
   async function cookie(principal) {
@@ -74,6 +76,126 @@ test('accepts_only_jpeg_png_webp_or_pdf_within_10_mib', async t => {
   assert.equal((await readdir(f.attachmentDir)).length, 5);
   assert.equal(JSON.stringify(state.private_attachments).includes(f.dir), false);
   assert.equal((await raw(f.server, `/attachments/${state.private_attachments[0].id}`)).status, 404);
+});
+
+test('rejects_private_directory_and_ancestor_replacement_after_startup', async t => {
+  for (const replaceAncestor of [false, true]) {
+    const f = await fixture(t);
+    const uploaded = await f.upload(); assert.equal(uploaded.status, 200);
+    const before = await f.server.store.readSnapshot();
+    const target = replaceAncestor ? f.dir : f.attachmentDir;
+    const moved = `${target}-original`;
+    await rename(target, moved);
+    await symlink(moved, target);
+    try {
+      assert.equal((await f.upload()).status, 500);
+      assert.equal((await raw(f.server, `/api/attachments/${uploaded.json.data.id}`, { headers: { cookie: f.owner } })).status, 500);
+      assert.deepEqual(await f.server.store.readSnapshot(), before);
+      assert.equal((await readdir(f.attachmentDir)).length, 1);
+    } finally { await rm(target); await rename(moved, target); }
+  }
+});
+
+test('rejects_static_root_symlink_at_startup_and_after_startup', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'wo-static-boundary-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const privateDir = join(dir, 'private'); await mkdir(privateDir);
+  await writeFile(join(privateDir, 'index.html'), 'private evidence');
+  const staticDir = join(dir, 'public'); await symlink(privateDir, staticDir);
+  const server = createVendorWorkOrderServer({ dataFile: join(dir, 'state.json'), attachmentDir: privateDir, staticDir });
+  let rejected = false;
+  try { await server.start(); } catch (error) { rejected = error.code === 'INVALID_ATTACHMENT_STORAGE'; }
+  await server.close(); assert.equal(rejected, true);
+  await rm(staticDir); await mkdir(staticDir);
+  const f = await fixture(t, { staticDir });
+  await rm(staticDir, { recursive: true }); await symlink(f.attachmentDir, staticDir);
+  const before = await f.server.store.readSnapshot();
+  assert.equal((await raw(f.server, '/index.html')).status, 500);
+  assert.equal((await f.upload()).status, 500);
+  assert.deepEqual(await f.server.store.readSnapshot(), before);
+});
+
+test('download_releases_exact_verified_snapshot_after_overwrite_or_append', async t => {
+  for (const mutate of ['overwrite', 'append']) {
+    const f = await fixture(t);
+    const uploaded = await f.upload(); assert.equal(uploaded.status, 200);
+    const original = f.server.store.transact;
+    t.mock.method(f.server.store, 'transact', mutator => original(async state => {
+      const next = await mutator(state);
+      if (next.work_order_events.at(-1)?.action === 'attachment-download') {
+        const path = join(f.attachmentDir, uploaded.json.data.id);
+        if (mutate === 'overwrite') await writeFile(path, Buffer.alloc(samples[1][1].length, 65));
+        else await appendFile(path, Buffer.alloc(max + 1));
+      }
+      return next;
+    }));
+    const r = await raw(f.server, `/api/attachments/${uploaded.json.data.id}`, { headers: { cookie: f.owner } });
+    assert.equal(r.status, 200); assert.deepEqual(r.bytes, samples[1][1]);
+    assert.equal((await f.server.store.readSnapshot()).work_order_events.filter(e => e.action === 'attachment-download').length, 1);
+  }
+});
+
+test('download_actual_reads_are_capped_even_if_file_grows_after_stat', async t => {
+  const f = await fixture(t);
+  const uploaded = await f.upload(); assert.equal(uploaded.status, 200);
+  const path = join(f.attachmentDir, uploaded.json.data.id);
+  const probe = await open(path, 'r'); const proto = Object.getPrototypeOf(probe); await probe.close();
+  const originalStat = proto.stat, originalRead = proto.read;
+  let targetFd, requested = 0;
+  t.mock.method(proto, 'stat', async function (...args) {
+    const result = await originalStat.apply(this, args);
+    if (result.isFile() && result.size === samples[1][1].length) {
+      targetFd = this.fd; await appendFile(path, Buffer.alloc(max + 1));
+    }
+    return result;
+  });
+  t.mock.method(proto, 'read', async function (...args) {
+    if (this.fd === targetFd) requested += typeof args[2] === 'number' ? args[2] : args[0]?.length || args[0]?.buffer?.length || 0;
+    return originalRead.apply(this, args);
+  });
+  const r = await raw(f.server, `/api/attachments/${uploaded.json.data.id}`, { headers: { cookie: f.owner } });
+  assert.equal(r.status, 200); assert.deepEqual(r.bytes, samples[1][1]);
+  assert.ok(requested > 0 && requested <= samples[1][1].length, `requested ${requested} bytes`);
+});
+
+test('fifo_substitution_rejects_promptly_without_blocking_transaction_queue', async t => {
+  const f = await fixture(t);
+  const uploaded = await f.upload(); assert.equal(uploaded.status, 200);
+  const path = join(f.attachmentDir, uploaded.json.data.id);
+  await rm(path); execFileSync('/usr/bin/mkfifo', [path]);
+  const before = await f.server.store.readSnapshot();
+  const pending = raw(f.server, `/api/attachments/${uploaded.json.data.id}`, { headers: { cookie: f.owner } });
+  let timer;
+  const result = await Promise.race([pending, new Promise(resolve => { timer = setTimeout(() => resolve(null), 1000); })]);
+  clearTimeout(timer);
+  if (!result) {
+    // Unblock the old blocking open so the RED test cannot hang teardown/other tests.
+    const writer = await open(path, constants.O_RDWR | constants.O_NONBLOCK);
+    await pending; await writer.close();
+  }
+  assert.ok(result, 'FIFO open blocked beyond 1 second');
+  assert.equal(result.status, 500);
+  assert.deepEqual(await f.server.store.readSnapshot(), before);
+  assert.equal((await f.upload()).status, 200);
+});
+
+test('upload_replays_after_completion_but_mismatch_and_new_writes_do_not_mutate', async t => {
+  const f = await fixture(t);
+  const headers = { 'idempotency-key': 'saved', 'x-work-order-version': '1' };
+  const first = await f.upload(undefined, undefined, headers); assert.equal(first.status, 200);
+  for (const [path, cookie, body] of [
+    ['/api/assignments/as/completion', f.vendor, { expected_version: 2, description: 'Done', actual_amount_twd: 1500 }],
+    ['/api/work-orders/wo/acceptance', f.owner, { expected_version: 3, decision: 'accept' }],
+  ]) assert.equal((await raw(f.server, path, { method: 'POST', headers: { cookie, 'content-type': 'application/json', 'idempotency-key': path }, bytes: Buffer.from(JSON.stringify(body)) })).status, 200);
+  const before = await f.server.store.readSnapshot();
+  const replay = await f.upload(undefined, undefined, headers);
+  assert.equal(replay.status, 200); assert.deepEqual(replay.json.data, first.json.data);
+  assert.equal((await f.upload('application/pdf', samples[3][1], headers)).json.code, 'IDEMPOTENCY_CONFLICT');
+  assert.equal((await f.upload()).json.code, 'INVALID_TRANSITION');
+  assert.deepEqual(await f.server.store.readSnapshot(), before);
+  assert.equal((await readdir(f.attachmentDir)).length, 1);
+  await f.server.store.transact(s => { s.partner_memberships.find(m => m.actor_id === 'worker-a').active = false; return s; });
+  assert.equal((await f.upload(undefined, undefined, headers)).status, 403);
 });
 test('rejects_content_type_signature_mismatch', async t => {
   const f = await fixture(t); const before = await f.server.store.readSnapshot();
