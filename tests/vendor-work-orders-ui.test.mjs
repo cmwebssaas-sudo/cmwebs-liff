@@ -71,6 +71,11 @@ async function completeFixture(h) {
   w = await h.api('company_a_worker', `/api/assignments/${w.assignment.id}/start`, { expected_version: w.version });
   return h.api('company_a_worker', `/api/assignments/${w.assignment.id}/completion`, { expected_version: w.version, description: '合成清潔已完成', actual_amount_twd: 1500 });
 }
+async function inProgressFixture(h, title = '合成固定價施工中') {
+  let w = await h.order(true, false, title);
+  w = await h.api('company_a_worker', `/api/assignments/${w.invitations[0].assignment_id}/accept`, { expected_version: w.version });
+  return h.api('company_a_worker', `/api/assignments/${w.assignment.id}/start`, { expected_version: w.version });
+}
 
 test('renders_partner_setup_and_ranked_services', async t => {
   const h = await harness(t), p = await h.page();
@@ -78,8 +83,8 @@ test('renders_partner_setup_and_ranked_services', async t => {
   const f = p.locator('#partner-create');
   await f.getByLabel('合作名稱').fill('合成油漆個人');
   await f.getByLabel('合作類型').selectOption('individual');
-  await f.getByLabel('其他工種').check();
-  await f.getByLabel('工種名稱').fill('油漆');
+  await f.getByRole('checkbox', { name: '其他工種', exact: true }).check();
+  await f.getByLabel('其他工種名稱（每行一項）').fill('油漆');
   await f.getByLabel('服務區域').fill('合成區域');
   await f.getByRole('button', { name: '保存合作對象' }).click(); await saved(p);
   assert.equal(await p.getByRole('heading', { name: '合成油漆個人' }).count(), 1);
@@ -108,6 +113,32 @@ test('renders_partner_setup_and_ranked_services', async t => {
   assert.match(await p.locator('#agreement-list').innerText(), /合成除草固定價.*2,000/s);
 });
 
+test('partner_edit_preserves_all_named_other_trade_skills', async t => {
+  const h = await harness(t);
+  await h.server.store.transact(state => {
+    state.partner_skills.push(
+      { workspace_id: 'ws-a', partner_id: 'company-a', trade: 'other', name: '油漆' },
+      { workspace_id: 'ws-a', partner_id: 'company-a', trade: 'other', name: '除草' },
+    );
+    return state;
+  });
+  const p = await h.page();
+  await p.getByRole('button', { name: '合作設定', exact: true }).click();
+  const partner = p.locator('article[data-partner="company-a"]');
+  const skills = partner.getByLabel('其他工種名稱（每行一項）');
+  assert.equal(await skills.inputValue(), '油漆\n除草');
+  await partner.getByLabel('服務區域').fill('更新後的合成服務區');
+  await partner.getByRole('button', { name: '更新合作設定' }).click(); await saved(p);
+  await p.reload(); await p.locator('#refresh').waitFor();
+  await p.getByRole('button', { name: '合作設定', exact: true }).click();
+  const reloaded = p.locator('article[data-partner="company-a"]');
+  assert.equal(await reloaded.getByLabel('其他工種名稱（每行一項）').inputValue(), '油漆\n除草');
+  const directory = await h.api('landlord_a', '/api/partners', undefined, 'GET');
+  const savedPartner = directory.find(item => item.id === 'company-a');
+  assert.equal(savedPartner.service_areas[0], '更新後的合成服務區');
+  assert.deepEqual(savedPartner.skills.filter(skill => skill.trade === 'other').map(skill => skill.name), ['油漆', '除草']);
+});
+
 test('landlord_can_create_quote_and_fixed_price_jobs', async t => {
   const h = await harness(t), p = await h.page();
   for (const fixed of [false, true]) {
@@ -129,6 +160,47 @@ test('landlord_can_create_quote_and_fixed_price_jobs', async t => {
   assert.equal(state.invitations.filter(i => i.agreement_snapshot).length, 1);
 });
 
+test('fixed_price_choices_use_latest_eligible_snapshot_for_selected_partner', async t => {
+  const h = await harness(t);
+  const now = Date.now(), day = 24 * 60 * 60 * 1000;
+  const validFrom = new Date(now - day).toISOString(), validUntil = new Date(now + day).toISOString();
+  await h.server.store.transact(state => {
+    const row = (id, agreement_id, partner_id, trade, property_id, version, price_twd, active, starts_at, ends_at) => ({
+      id, agreement_id, workspace_id: 'ws-a', partner_id, title: id, trade, property_id,
+      version, price_twd, active, starts_at, ends_at,
+    });
+    state.service_agreements.push(
+      row('repair-v1', 'repair-a', 'company-a', 'repair', '', 1, 1200, true, validFrom, validUntil),
+      row('repair-v2', 'repair-a', 'company-a', 'repair', '', 2, 2400, true, validFrom, validUntil),
+      row('repair-sunset-v1', 'repair-sunset', 'company-a', 'repair', '', 1, 800, true, validFrom, validUntil),
+      row('repair-sunset-v2', 'repair-sunset', 'company-a', 'repair', '', 2, 900, false, validFrom, validUntil),
+      row('wrong-partner', 'wrong-partner', 'individual-a', 'repair', '', 1, 3100, true, validFrom, validUntil),
+      row('wrong-property', 'wrong-property', 'company-a', 'repair', 'property-b', 1, 3200, true, validFrom, validUntil),
+      row('expired', 'expired', 'company-a', 'repair', '', 1, 3300, true, validFrom, new Date(now - 60000).toISOString()),
+      row('future', 'future', 'company-a', 'repair', '', 1, 3400, true, new Date(now + day).toISOString(), validUntil),
+      row('wrong-trade', 'wrong-trade', 'company-a', 'cleaning', '', 1, 3500, true, validFrom, validUntil),
+      row('individual-repair', 'individual-repair', 'individual-a', 'repair', '', 1, 4100, true, validFrom, validUntil),
+    );
+    return state;
+  });
+  await h.order(false, false, '合成固定價候選測試');
+  const p = await h.page();
+  const card = p.locator('article.work-order').filter({ hasText: '合成固定價候選測試' });
+  const partner = card.getByLabel('指定合作對象');
+  const agreement = card.locator('select[name="agreement_id"]');
+  const visible = () => agreement.locator('option').allTextContents();
+  let options = await visible();
+  assert.ok(options.some(text => text.includes('repair-v2') && text.includes('2,400') && text.includes('v2')));
+  assert.equal(options.some(text => text.includes('repair-v1')), false, 'older revision is not offered');
+  for (const stale of ['repair-sunset-v1', 'repair-sunset-v2', 'wrong-partner', 'wrong-property', 'expired', 'future', 'wrong-trade', 'individual-repair']) {
+    assert.equal(options.some(text => text.includes(stale)), false, `${stale} must not be offered to company A for this job`);
+  }
+  await partner.selectOption('individual-a');
+  options = await visible();
+  assert.ok(options.some(text => text.includes('individual-repair') && text.includes('4,100') && text.includes('v1')));
+  assert.equal(options.some(text => text.includes('repair-v2')), false, 'other partner agreement is not selectable');
+});
+
 test('landlord_can_compare_approve_and_accept_work', async t => {
   const h = await harness(t); let w = await h.order(false, true);
   for (const [index, principal] of ['company_a_worker', 'individual_worker'].entries()) {
@@ -148,7 +220,7 @@ test('landlord_can_compare_approve_and_accept_work', async t => {
 });
 
 test('vendor_can_quote_accept_and_report_completion', async t => {
-  const h = await harness(t); await h.order(); await h.order(true, false, '合成固定清潔');
+  const h = await harness(t); await h.order(); const w = await h.order(true, false, '合成固定清潔');
   const p = await h.page('company_a_manager');
   const repair = p.locator('article.work-order').filter({ hasText: '合成公共區域工作' });
   await repair.getByLabel('工資 TWD').fill('1000');
@@ -158,16 +230,52 @@ test('vendor_can_quote_accept_and_report_completion', async t => {
   const card = p.locator('article.work-order').filter({ hasText: '合成固定清潔' });
   await card.getByRole('button', { name: '接受固定價工作' }).click(); await saved(p);
   await card.getByRole('button', { name: '開始施工' }).click(); await saved(p);
+  await card.getByLabel('完工說明').fill('先填的合成完工說明');
+  await card.getByLabel('實際費用 TWD').fill('1450');
+  let orderReadbacks = 0;
+  p.on('request', request => {
+    if (request.method() === 'GET' && request.url().endsWith(`/api/work-orders/${w.id}`)) orderReadbacks++;
+  });
   await card.getByLabel('私有附件').setInputFiles({ name: 'synthetic.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\nsynthetic only') });
   await card.getByRole('button', { name: '上傳附件' }).click(); await saved(p);
   assert.equal(await card.getByRole('progressbar').getAttribute('value'), '100');
   assert.equal(await card.getByRole('link', { name: /下載私有附件/ }).count(), 1);
-  await card.getByLabel('完工說明').fill('合成清潔完成');
-  await card.getByLabel('實際費用 TWD').fill('1500');
+  assert.ok(orderReadbacks > 0, 'successful upload performs an authoritative work-order GET');
+  assert.equal(await card.getByLabel('完工說明').inputValue(), '先填的合成完工說明');
+  assert.equal(await card.getByLabel('實際費用 TWD').inputValue(), '1450');
   await card.getByRole('button', { name: '提交完工回報' }).click(); await saved(p);
   assert.match(await card.innerText(), /待驗收/);
   const state = await h.server.store.readSnapshot(); assert.equal(state.completion_reports[0].attachment_ids.length, 1);
   assert.equal(state.acceptances.length, 0);
+});
+
+test('uncertain_attachment_upload_keeps_completion_draft_after_authoritative_readback', async t => {
+  const h = await harness(t), w = await inProgressFixture(h);
+  const p = await h.page('company_a_worker');
+  const card = p.locator('article.work-order').filter({ hasText: w.title });
+  await card.getByLabel('完工說明').fill('timeout 後仍要保留的合成說明');
+  await card.getByLabel('實際費用 TWD').fill('1425');
+  let uploadPosts = 0, orderReadbacks = 0;
+  p.on('request', request => {
+    if (request.method() === 'GET' && request.url().endsWith(`/api/work-orders/${w.id}`)) orderReadbacks++;
+  });
+  await p.route(`**/api/work-orders/${w.id}/attachments`, async route => {
+    uploadPosts++;
+    await route.fetch();
+    await route.abort('failed');
+  });
+  await card.getByLabel('私有附件').setInputFiles({ name: 'uncertain.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\ncommitted before response loss') });
+  await card.getByRole('button', { name: '上傳附件' }).click();
+  await saved(p, '附件回應結果不明');
+  const current = p.locator('article.work-order').filter({ hasText: w.title });
+  assert.equal(await current.getByLabel('完工說明').inputValue(), 'timeout 後仍要保留的合成說明');
+  assert.equal(await current.getByLabel('實際費用 TWD').inputValue(), '1425');
+  assert.equal(await current.getByRole('link', { name: /下載私有附件/ }).count(), 1);
+  assert.equal(uploadPosts, 1, 'uncertain upload is not blindly resubmitted');
+  assert.ok(orderReadbacks > 0, 'uncertain upload performs an authoritative work-order GET');
+  const savedState = await h.server.store.readSnapshot();
+  assert.equal(savedState.private_attachments.length, 1);
+  assert.equal(savedState.completion_reports.length, 0);
 });
 
 test('rework_reason_is_visible_to_assigned_vendor', async t => {

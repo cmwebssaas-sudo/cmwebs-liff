@@ -69,10 +69,30 @@ async function write(path, body, method = 'POST', orderId) {
 const options = (rows, selected) => rows.map(([value, title]) => `<option value="${esc(value)}"${String(value) === String(selected) ? ' selected' : ''}>${esc(title)}</option>`).join('');
 const input = (name, title, value = '', type = 'text', required = true) => `<label>${esc(title)}<input name="${name}" type="${type}" value="${esc(value)}"${required ? ' required' : ''}${type === 'number' ? ' min="0" max="9007199254740991" step="1"' : ''}></label>`;
 const select = (name, title, rows, selected) => `<label>${esc(title)}<select name="${name}">${options(rows, selected)}</select></label>`;
-const textarea = (name, title, required = false) => `<label>${esc(title)}<textarea name="${name}"${required ? ' required' : ''}></textarea></label>`;
+const textarea = (name, title, required = false, value = '') => `<label>${esc(title)}<textarea name="${name}"${required ? ' required' : ''}>${esc(value)}</textarea></label>`;
 const money = value => `TWD ${Number(value).toLocaleString('zh-TW')}`;
 const partnerName = value => state.partners.find(p => p.id === value)?.name || value;
 const partnerOptions = () => state.partners.filter(p => p.active).map(p => [p.id, p.name]);
+function eligibleAgreementOptions(order, partnerId) {
+  const latest = new Map();
+  for (const agreement of state.agreements) {
+    const agreementId = agreement.agreement_id || agreement.id;
+    const previous = latest.get(agreementId);
+    if (!previous || agreement.version > previous.version) latest.set(agreementId, agreement);
+  }
+  const now = Date.now();
+  return [...latest.values()].filter(agreement => agreement.active === true && agreement.partner_id === partnerId &&
+    agreement.trade === order.trade && (!agreement.property_id || agreement.property_id === order.property_id) &&
+    Date.parse(agreement.starts_at) <= now && Date.parse(agreement.ends_at) >= now)
+    .sort((a, b) => a.title.localeCompare(b.title) || a.agreement_id.localeCompare(b.agreement_id))
+    .map(agreement => [agreement.agreement_id || agreement.id, `${agreement.title} · ${money(agreement.price_twd)} · v${agreement.version}`]);
+}
+function refreshAgreementChoices(form, order, partnerId) {
+  const selectControl = form.querySelector('select[name="agreement_id"]');
+  const rows = [['', '先報價再核准'], ...eligibleAgreementOptions(order, partnerId)];
+  selectControl.innerHTML = options(rows);
+  selectControl.value = '';
+}
 const localDate = date => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const future = () => localDate(new Date(Date.now() + 86400000));
 function quoteFields() {
@@ -80,8 +100,10 @@ function quoteFields() {
     input('estimated_days', '預計工期（天）', 1, 'number') + input('expires_at', '報價有效期限', future(), 'datetime-local');
 }
 function skillsFields(p = {}) {
+  const otherNames = [...new Set((p.skills || []).filter(skill => skill.trade === 'other')
+    .map(skill => skill.name.trim()).filter(name => name && name !== 'other' && name !== '其他工種'))];
   return `<fieldset><legend>服務工種</legend>${trades.map(([trade, title]) => `<label class="check"><input type="checkbox" name="trades" value="${trade}"${p.trades?.includes(trade) ? ' checked' : ''}>${title}</label>`).join('')}</fieldset>` +
-    input('skill_name', '工種名稱', p.skills?.find(s => s.trade === 'other')?.name || '', 'text', false) + input('service_areas', '服務區域', p.service_areas?.join('、') || '', 'text', false);
+    textarea('skill_names', '其他工種名稱（每行一項）', false, otherNames.join('\n')) + input('service_areas', '服務區域', p.service_areas?.join('、') || '', 'text', false);
 }
 function directory() {
   return `<h2>合作設定</h2><section class="panel"><h3>新增公司或個人</h3><form id="partner-create" data-form="partner-create">${input('name', '合作名稱')}${select('type', '合作類型', [['company', '公司'], ['individual', '個人']])}${skillsFields()}<button>保存合作對象</button></form></section>` +
@@ -97,10 +119,16 @@ function directory() {
 function inviteForm(w) {
   return `<form data-form="invite" data-order="${esc(w.id)}">${select('mode', '邀請方式', [['ranked', '依順位邀請'], ['manual', '手動指定'], ['parallel', '明確邀請多家報價']])}${select('partner_id', '指定合作對象', partnerOptions())}
     <fieldset><legend>多家報價對象（僅多家模式）</legend>${partnerOptions().map(([key, name]) => `<label class="check"><input name="partner_ids" type="checkbox" value="${esc(key)}">${esc(name)}</label>`).join('')}</fieldset>
-    ${select('agreement_id', '價格方式', [['', '先報價再核准'], ...state.agreements.filter(a => a.active && a.trade === w.trade).map(a => [a.agreement_id, `${a.title} · ${money(a.price_twd)} · v${a.version}`])])}
+    ${select('agreement_id', '價格方式', [['', '先報價再核准'], ...eligibleAgreementOptions(w, partnerOptions()[0]?.[0])])}
     ${input('reply_hours', '回覆期限（小時）', 24, 'number')}<label class="check"><input name="continue_round" type="checkbox">拒絕報價後，繼續下一順位</label>
     <p class="muted">確認固定價派工即核准約定快照；廠商接單後才建立承接紀錄。</p><button>確認邀請／固定價派工</button></form>`;
 }
+document.addEventListener('change', event => {
+  const form = event.target.closest('form[data-form="invite"]');
+  if (!form || event.target.name !== 'partner_id') return;
+  const order = state.orders.find(candidate => candidate.id === form.dataset.order);
+  if (order) refreshAgreementChoices(form, order, event.target.value);
+});
 function orderCard(w) {
   const landlord = state.actor.role === 'landlord';
   let content = `<article class="work-order" data-order="${esc(w.id)}"><h3>${esc(w.title)}</h3><p><span class="badge">${esc(labels[w.status] || w.status)}</span> · 版本 ${w.version}</p><p class="muted">工單 ${esc(w.id)}</p><p>${esc(w.trade)} · ${esc(w.area)}</p>`;
@@ -151,11 +179,28 @@ function fields(form) { return Object.fromEntries(new FormData(form)); }
 function quoteInput(f) { return { labor_twd: Number(f.labor_twd), materials_twd: Number(f.materials_twd), tax_twd: Number(f.tax_twd), estimated_days: Number(f.estimated_days), expires_at: new Date(f.expires_at).toISOString() }; }
 function partnerInput(form, f) {
   const chosen = new FormData(form).getAll('trades');
-  return { name: f.name, skills: chosen.map(trade => ({ trade, name: trade === 'other' ? f.skill_name || '其他工種' : trades.find(t => t[0] === trade)[1] })), service_areas: f.service_areas.split(/[、,，]/).map(v => v.trim()).filter(Boolean) };
+  const skills = chosen.filter(trade => trade !== 'other').map(trade => ({ trade, name: trades.find(t => t[0] === trade)[1] }));
+  if (chosen.includes('other')) {
+    const names = [...new Set(f.skill_names.split(/\r?\n/).map(name => name.trim()).filter(Boolean))];
+    skills.push(...(names.length ? names : ['其他工種']).map(name => ({ trade: 'other', name })));
+  }
+  return { name: f.name, skills, service_areas: f.service_areas.split(/[、,，]/).map(v => v.trim()).filter(Boolean) };
 }
 async function upload(form, w) {
   const file = form.elements.file.files[0];
   if (!file || file.size > 10 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) { feedback('未上傳：只接受 JPEG、PNG、WebP、PDF，且最多 10 MiB。', true); return; }
+  const completionSelector = `form[data-form="completion"][data-order="${CSS.escape(w.id)}"]`;
+  const completion = document.querySelector(completionSelector);
+  const completionDraft = completion ? {
+    description: completion.elements.description.value,
+    actual_amount_twd: completion.elements.actual_amount_twd.value,
+  } : null;
+  const restoreCompletionDraft = () => {
+    const current = completionDraft && document.querySelector(completionSelector);
+    if (!current) return;
+    current.elements.description.value = completionDraft.description;
+    current.elements.actual_amount_twd.value = completionDraft.actual_amount_twd;
+  };
   lock(true); feedback('附件上傳中…'); let committed = false;
   try {
     await new Promise((resolve, reject) => {
@@ -169,11 +214,11 @@ async function upload(form, w) {
       };
       xhr.onerror = xhr.ontimeout = () => reject(Object.assign(new Error('回應結果不明'), { uncertain: true })); xhr.send(file);
     });
-    committed = true; state.progress.set(w.id, 100); await readAll(w.id); feedback('已保存並讀回私有附件。');
+    committed = true; state.progress.set(w.id, 100); await readAll(w.id); restoreCompletionDraft(); feedback('已保存並讀回私有附件。');
   } catch (error) {
     state.progress.set(w.id, 0); form.querySelector('progress').value = 0; clearUnauthorized(error);
     if (error.uncertain || committed) {
-      try { await readAll(w.id); feedback('附件回應結果不明；已讀回附件清單，請核對後再操作。未自動重送。', true); }
+      try { await readAll(w.id); restoreCompletionDraft(); feedback('附件回應結果不明；已讀回附件清單，請核對後再操作。未自動重送。', true); }
       catch (readError) { clearUnauthorized(readError); feedback('附件結果不明且讀回失敗；請重新讀取。未自動重送。', true); }
     } else feedback(`未上傳：${error.message}`, true);
   } finally { lock(false); }

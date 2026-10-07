@@ -84,17 +84,21 @@ async function running(t, options = {}) {
   t.after(() => server.close());
   return server;
 }
-function call(server, path, { method = 'GET', headers = {}, body } = {}) {
+function rawCall(server, path, { method = 'GET', headers = {}, body } = {}) {
   return new Promise((resolve, reject) => {
     const req = request({ hostname: '127.0.0.1', port: server.address().port, path, method, headers }, res => {
       let text = '';
       res.setEncoding('utf8');
       res.on('data', chunk => { text += chunk; });
-      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, text, json: JSON.parse(text) }));
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, text }));
     });
     req.on('error', reject);
     req.end(body === undefined ? undefined : JSON.stringify(body));
   });
+}
+async function call(server, path, options) {
+  const response = await rawCall(server, path, options);
+  return { ...response, json: JSON.parse(response.text) };
 }
 const login = (server, principal = 'landlord_a') => call(server, '/api/dev/session', {
   method: 'POST', headers: { 'content-type': 'application/json', 'idempotency-key': 'session-key' }, body: { principal },
@@ -200,7 +204,7 @@ test('rejects_nonloopback_host_origin_and_unlisted_paths_without_leaks', async t
     assert.equal((await call(server, '/api/session', { headers })).status, 403);
   }
   for (const path of ['/../store.mjs', '/%2e%2e/store.mjs', '/public/../../README.md',
-    '/fixtures.mjs', '/api/work-orders/unknown/completion', '/.codex-local/vendor-work-orders/state.json', '/index.html']) {
+    '/fixtures.mjs', '/api/work-orders/unknown/completion', '/.codex-local/vendor-work-orders/state.json']) {
     const result = await call(server, path);
     assert.equal(result.status, 404);
     assert.equal(result.json.success, false);
@@ -211,6 +215,20 @@ test('rejects_nonloopback_host_origin_and_unlisted_paths_without_leaks', async t
     headers: { 'content-type': 'application/json', 'idempotency-key': 'bad' }, body: { principal: {} } });
   assert.equal(malformed.status, 400);
   assert.doesNotMatch(malformed.text, /stack|TypeError/);
+});
+test('serves_allowlisted_ui_assets_over_http_with_their_content_types', async t => {
+  const server = await running(t, { developmentMode: true });
+  for (const [path, contentType, marker] of [
+    ['/', 'text/html; charset=utf-8', '<h1>合作工作台</h1>'],
+    ['/index.html', 'text/html; charset=utf-8', '<h1>合作工作台</h1>'],
+    ['/app.js', 'text/javascript; charset=utf-8', 'eligibleAgreementOptions'],
+    ['/app.css', 'text/css; charset=utf-8', '.app-shell'],
+  ]) {
+    const response = await rawCall(server, path);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers['content-type'], contentType, path);
+    assert.ok(response.text.includes(marker), `expected ${path} response body to contain ${marker}`);
+  }
 });
 
 async function authenticated(t, principal = 'landlord_a', server) {
