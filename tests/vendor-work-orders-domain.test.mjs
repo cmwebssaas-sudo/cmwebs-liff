@@ -6,10 +6,10 @@ import { createSyntheticFixtures } from '../_dev/vendor-work-orders/fixtures.mjs
 
 const now = '2026-10-08T04:00:00.000Z';
 const fails = (code) => (error) => error.code === code;
-function setup() {
+function setup(trade = 'repair') {
   const { state, principals } = createSyntheticFixtures();
   const result = transitionWorkOrder(state, principals.landlord_a, 'create', {
-    id: 'wo-1', title: 'Synthetic sink repair', trade: 'repair', area: 'Test north zone',
+    id: 'wo-1', title: trade === 'cleaning' ? 'Synthetic room cleaning' : 'Synthetic sink repair', trade, area: 'Test north zone',
     location: 'Synthetic room 101', instructions: 'Synthetic work instructions',
   }, now);
   return { state: result.state, principals };
@@ -19,14 +19,14 @@ function step(state, actor, action, extra = {}) {
     work_order_id: 'wo-1', expected_version: state.work_orders[0].version, ...extra,
   }, now);
 }
-function sourced() {
-  const f = setup();
+function sourced(trade = 'repair') {
+  const f = setup(trade);
   f.state = step(f.state, f.principals.landlord_a, 'source').state;
   f.state.invitations.push({ id: 'inv-1', workspace_id: 'ws-a', work_order_id: 'wo-1', partner_id: 'company-a', status: 'sent' });
   return f;
 }
 function fixedAssignment() {
-  const f = sourced();
+  const f = sourced('cleaning');
   f.state = step(f.state, f.principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' }).state;
   return f;
 }
@@ -75,7 +75,8 @@ test('requires_quote_before_nonfixed_assignment', () => {
 });
 
 test('snapshots_fixed_price_agreement', () => {
-  const { state, principals } = sourced();
+  const { state, principals } = sourced('cleaning');
+  assert.equal(state.service_agreements[0].trade, 'cleaning');
   const assigned = step(state, principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' });
   const snapshot = assigned.state.assignments[0].agreement_snapshot;
   assert.equal(snapshot.price_twd, 1500);
@@ -86,10 +87,31 @@ test('snapshots_fixed_price_agreement', () => {
   assert.throws(() => step(state, principals.company_a_manager, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' }), fails('FORBIDDEN'));
 });
 
+test('repair_assignment_requires_approved_quote_even_with_fixed_price_agreement', () => {
+  const { state, principals } = sourced();
+  const before = structuredClone(state);
+  const input = { partner_id: 'company-a', agreement_id: 'agreement-a' };
+  assert.throws(() => step(state, principals.landlord_a, 'assign', input), fails('QUOTE_REQUIRED'));
+  assert.deepEqual(state, before);
+  state.quotes.push({ id: 'quote-repair', workspace_id: 'ws-a', work_order_id: 'wo-1',
+    partner_id: 'company-a', version: 1, status: 'submitted', total_twd: 1200,
+    expires_at: '2026-10-09T04:00:00.000Z' });
+  const withQuote = { ...input, quote_id: 'quote-repair' };
+  const unapproved = structuredClone(state);
+  assert.throws(() => step(state, principals.landlord_a, 'assign', withQuote), fails('QUOTE_NOT_APPROVED'));
+  assert.deepEqual(state, unapproved);
+  state.quotes[0].status = 'approved';
+  const assigned = step(state, principals.landlord_a, 'assign', withQuote).state;
+  assert.equal(assigned.work_orders[0].status, 'assigned');
+  assert.equal(assigned.assignments[0].quote_id, 'quote-repair');
+  assert.equal(assigned.assignments[0].approved_amount_twd, 1200);
+  assert.equal('agreement_snapshot' in assigned.assignments[0], false);
+});
+
 test('completion_waits_for_landlord_acceptance', () => {
   const f = fixedAssignment();
   let state = step(f.state, f.principals.company_a_worker, 'start').state;
-  state = step(state, f.principals.company_a_worker, 'complete', { description: 'Synthetic repair complete', actual_amount_twd: 1500 }).state;
+  state = step(state, f.principals.company_a_worker, 'complete', { description: 'Synthetic cleaning complete', actual_amount_twd: 1500 }).state;
   assert.equal(state.work_orders[0].status, 'awaiting_acceptance');
   assert.throws(() => step(state, f.principals.company_a_worker, 'accept'), fails('FORBIDDEN'));
   const completed = step(state, f.principals.landlord_a, 'accept').state;
@@ -144,7 +166,7 @@ test('rejects_forged_actor_and_allowlists_vendor_projection', () => {
 });
 
 test('rejects_expired_or_wrong_scope_agreements_and_invalid_completion', () => {
-  const f = sourced();
+  const f = sourced('cleaning');
   f.state.service_agreements[0].ends_at = '2026-10-07T04:00:00.000Z';
   assert.throws(() => step(f.state, f.principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' }), fails('INVALID_AGREEMENT'));
   f.state.service_agreements[0].workspace_id = 'ws-b';

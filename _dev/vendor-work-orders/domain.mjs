@@ -78,7 +78,7 @@ function belongs(row, order) { return row.work_order_id === order.id && row.work
 
 /** Action contract: create, source, assign, start, complete, accept, rework, cancel.
  * Existing-order actions require work_order_id + expected_version.
- * assign consumes an already-approved quote or a currently valid fixed-price agreement.
+ * assign requires an approved quote for repairs; other trades may use a valid fixed-price agreement.
  * Invitation/quote creation and approval orchestration are later tasks.
  */
 export function transitionWorkOrder(state, actor, action, input, now) {
@@ -118,7 +118,7 @@ export function transitionWorkOrder(state, actor, action, input, now) {
         if (!partnerActive(next, principal.workspace_id, input.partner_id)) fail('FORBIDDEN');
         const row = { id: `assignment-${order.id}`, workspace_id: order.workspace_id,
           work_order_id: order.id, partner_id: input.partner_id, status: 'assigned', created_at: at };
-        if (input.agreement_id) {
+        if (input.agreement_id && order.trade !== 'repair') {
           const agreement = next.service_agreements.find(a => a.id === input.agreement_id &&
             a.workspace_id === order.workspace_id && a.partner_id === input.partner_id);
           if (!agreement || agreement.active !== true || !Number.isSafeInteger(agreement.version) || agreement.version < 1 ||
