@@ -46,12 +46,22 @@ function landlordRoomWebsiteCoverTarget_(value) {
 }
 
 function landlordRoomWebsiteCoverFromHtml_(html, target) {
-  if (!html || html.length > 1000000) return '';
+  return landlordRoomWebsitePhotosFromHtml_(html, target)[0] || '';
+}
+
+function landlordRoomWebsitePhotosFromHtml_(html, target) {
+  if (!html || html.length > 1000000) return [];
   const section = html.match(/<section\b[^>]*\sclass=["'][^"']*\bspace-detail__media\b[^"']*["'][^>]*>([\s\S]*?)<\/section>/i);
-  const image = section && section[1].match(/<img\b[^>]*\ssrc=["']([^"']+)["']/i);
-  const url = image && image[1];
-  return url && url.indexOf(target.origin + '/api/public/media/') === 0 &&
-    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(url.slice((target.origin + '/api/public/media/').length)) ? url : '';
+  const photos = [];
+  if (!section) return photos;
+  const pattern = /<img\b[^>]*\ssrc=["']([^"']+)["']/gi;
+  let image;
+  while ((image = pattern.exec(section[1])) && photos.length < 100) {
+    const url = image[1];
+    if (url.indexOf(target.origin + '/api/public/media/') === 0 &&
+        /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(url.slice((target.origin + '/api/public/media/').length)) && photos.indexOf(url) < 0) photos.push(url);
+  }
+  return photos;
 }
 
 function landlordRoomWebsiteCovers_(values, refresh) {
@@ -70,12 +80,14 @@ function landlordRoomWebsiteCovers_(values, refresh) {
     if (!targets[target.url]) {
       const item = { target: target, keys: [], cacheKey: '' };
       try {
-        item.cacheKey = 'room-cover-v1:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, target.url));
+        item.cacheKey = 'room-gallery-v2:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, target.url));
         const cached = !refresh && cache && cache.get(item.cacheKey);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (['available', 'missing', 'unavailable'].indexOf(parsed.status) >= 0 &&
-              (!parsed.url || landlordRoomWebsiteCoverFromHtml_('<section class="space-detail__media"><img src="' + parsed.url + '"></section>', target) === parsed.url)) item.cover = parsed;
+              Array.isArray(parsed.photos) && parsed.photos.length <= 100 &&
+              parsed.photos.every(function (url) { return typeof url === 'string' && landlordRoomWebsiteCoverFromHtml_('<section class="space-detail__media"><img src="' + url + '"></section>', target) === url; }) &&
+              parsed.url === (parsed.photos[0] || '')) item.cover = parsed;
         }
       } catch (_) {}
       targets[target.url] = item;
@@ -91,11 +103,12 @@ function landlordRoomWebsiteCovers_(values, refresh) {
       }));
     } catch (_) {}
     pending.forEach(function (item, index) {
-      item.cover = { url: '', status: 'unavailable' };
+      item.cover = { url: '', photos: [], status: 'unavailable' };
       try {
         const response = responses[index];
         if (response && response.getResponseCode() === 200) {
-          item.cover.url = landlordRoomWebsiteCoverFromHtml_(response.getContentText(), item.target);
+          item.cover.photos = landlordRoomWebsitePhotosFromHtml_(response.getContentText(), item.target);
+          item.cover.url = item.cover.photos[0] || '';
           item.cover.status = item.cover.url ? 'available' : 'missing';
         }
       } catch (_) {}
@@ -258,7 +271,13 @@ function getLandlordRoomCenterInitByLineUid_(
       showArchived
     );
     const z3houseByRoom = landlordRoomCenterZ3houseByRoom_(ss, access);
-    const websiteCovers = landlordRoomWebsiteCovers_(rooms.map(function (room) { return room.room_website_url; }));
+    const publicUrlByRoom = {};
+    rooms.forEach(function (room) {
+      const roomId = propertyRoomText_(room.room_id);
+      const listing = z3houseByRoom[roomId] || {};
+      publicUrlByRoom[roomId] = propertyRoomText_(room.room_website_url) || (listing.binding_status === 'bound' ? propertyRoomText_(listing.independent_site_url) : '');
+    });
+    const websiteCovers = landlordRoomWebsiteCovers_(Object.keys(publicUrlByRoom).map(function (id) { return publicUrlByRoom[id]; }));
 
     const safeRooms = rooms.map(function (room) {
       const propertyId = propertyRoomText_(room.property_id);
@@ -267,7 +286,7 @@ function getLandlordRoomCenterInitByLineUid_(
       return {
         room_id: roomId,
         room_website_url: landlordRoomCenterHttpsUrl_(room.room_website_url),
-        room_website_cover: websiteCovers[propertyRoomText_(room.room_website_url)] || { url: '', status: 'none' },
+        room_website_cover: websiteCovers[publicUrlByRoom[roomId]] || { url: '', status: 'none' },
         property_id: propertyId,
         property_name: propertyRoomText_(
           room.property_name || property.property_name
@@ -345,6 +364,7 @@ function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expec
   const lock = LockService.getScriptLock();
   let locked = false;
   let saved;
+  let coverAccess;
   try {
     const access = workspaceLandlordResolveAccess_(lineUserId, { require_onboarding: true, workspace_id: propertyRoomText_(expectedWorkspaceId) });
     if (!access.success) return access;
@@ -362,6 +382,7 @@ function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expec
     if (!room) return workspaceResult_(false, 'ROOM_NOT_FOUND', '找不到房源或無權限修改');
     propertyRoomEnsureSheet_(ss, 'V2_rooms', ['room_website_url']);
     propertyRoomSetValues_(sheet, room.__row_number, { room_website_url: url });
+    coverAccess = access;
     saved = workspaceResult_(true, 'ROOM_WEBSITE_SAVED', url ? '房源網址已儲存' : '房源網址已清除', {room_id: propertyRoomText_(roomId), room_website_url: url});
   } catch (error) {
     return workspaceResult_(false, 'ROOM_WEBSITE_SAVE_FAILED', '房源網址儲存失敗：' + error.message);
@@ -370,7 +391,14 @@ function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expec
   }
   // The URL is already committed. Photo lookup must not hold the write lock
   // or turn a successful write into a failure (and encourage resubmission).
-  saved.data.room_website_cover = landlordRoomWebsiteCovers_([saved.data.room_website_url], true)[saved.data.room_website_url];
+  let photoTarget = saved.data.room_website_url;
+  if (!photoTarget) {
+    try {
+      const listing = landlordRoomCenterZ3houseByRoom_(runtimeSpreadsheet_(), coverAccess)[saved.data.room_id] || {};
+      if (listing.binding_status === 'bound') photoTarget = propertyRoomText_(listing.independent_site_url);
+    } catch (_) {} // Optional public bridge failure must never reverse a committed save.
+  }
+  saved.data.room_website_cover = landlordRoomWebsiteCovers_([photoTarget], true)[photoTarget];
   return saved;
 }
 function resolveRoomWebsitePrincipal_(request) {
