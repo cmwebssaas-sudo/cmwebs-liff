@@ -18,7 +18,7 @@ function validateJson(value, key = '') {
 
 /** Validate every table and JSON value before any bytes are written. Domain transitions
  * retain responsibility for action-specific relationships and permission checks. */
-function validateSnapshot(state) {
+function validateSnapshot(state, previous) {
   const template = createInitialState();
   if (!state || state.schema_version !== 1 || Object.keys(state).length !== Object.keys(template).length) invalid();
   validateJson(state);
@@ -34,6 +34,31 @@ function validateSnapshot(state) {
       for (const key of ['workspace_id', 'actor_id', 'partner_id', 'work_order_id']) {
         if (Object.hasOwn(row, key) && (typeof row[key] !== 'string' || !row[key].trim())) invalid();
       }
+    }
+  }
+  const unique = (rows, key) => {
+    const seen = new Set();
+    for (const row of rows) {
+      const value = JSON.stringify(key(row));
+      if (seen.has(value)) invalid();
+      seen.add(value);
+    }
+  };
+  unique(state.workspace_partners, r => [r.workspace_id, r.partner_id]);
+  unique(state.partner_memberships, r => [r.workspace_id, r.partner_id, r.actor_id]);
+  unique(state.partner_skills, r => [r.workspace_id, r.partner_id, r.trade, r.name || r.trade]);
+  unique(state.priority_rules, r => [r.workspace_id, r.property_id, r.trade, r.rank]);
+  unique(state.priority_rules, r => [r.workspace_id, r.property_id, r.trade, r.partner_id]);
+  unique(state.service_agreements, r => [r.workspace_id, r.agreement_id || r.id, r.version]);
+  unique(state.idempotency_records, r => [r.scope, r.key]);
+  for (const row of state.priority_rules) {
+    if (!Number.isSafeInteger(row.rank) || row.rank < 1 || !['repair', 'cleaning', 'other'].includes(row.trade) ||
+        typeof row.property_id !== 'string' || !row.property_id.trim()) invalid();
+  }
+  if (previous) {
+    for (const table of ['service_agreements', 'work_order_events', 'idempotency_records']) {
+      if (state[table].length < previous[table].length || previous[table].some((row, i) =>
+        JSON.stringify(row) !== JSON.stringify(state[table][i]))) invalid();
     }
   }
   return state;
@@ -65,7 +90,7 @@ export function createWorkOrderStore({ filePath } = {}) {
   function transact(mutator) {
     const transaction = queue.then(async () => {
       await load();
-      const candidate = validateSnapshot(await mutator(structuredClone(snapshot)));
+      const candidate = validateSnapshot(await mutator(structuredClone(snapshot)), snapshot);
       // Detach before awaiting IO, so a retained mutator reference cannot change
       // the validated bytes or the committed in-memory snapshot.
       const committed = JSON.parse(JSON.stringify(candidate));

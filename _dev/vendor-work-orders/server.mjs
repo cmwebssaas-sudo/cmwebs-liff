@@ -5,7 +5,7 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createWorkOrderStore } from './store.mjs';
 import { createSyntheticFixtures } from './fixtures.mjs';
-import { normalizeActor } from './domain.mjs';
+import { normalizeActor, normalizeDirectoryInput, mutateDirectory, projectDirectory } from './domain.mjs';
 
 const contexts = new WeakMap();
 const hours8 = 8 * 60 * 60 * 1000;
@@ -123,13 +123,68 @@ export function createVendorWorkOrderServer(options = {}) {
         send(200, { success: true, data: { actor: requireSession(request) } });
         return;
       }
+      const partnerPath = /^\/api\/partners\/([A-Za-z0-9_-]+)(?:\/memberships(?:\/([A-Za-z0-9_-]+))?)?$/.exec(path);
+      const collection = ['/api/partners', '/api/priority-rules', '/api/service-agreements'].includes(path) ? path.slice(5) : null;
+      let action, resource = {};
+      if (collection === 'partners' && request.method === 'POST') action = 'partner-create';
+      if (partnerPath) {
+        resource = { partner_id: partnerPath[1] };
+        if (!path.includes('/memberships') && request.method === 'PATCH') action = 'partner-update';
+        else if (path.endsWith('/memberships') && request.method === 'POST') action = 'member-create';
+        else if (partnerPath[2] && request.method === 'PATCH') {
+          action = 'member-update'; resource.actor_id = partnerPath[2];
+        }
+      }
+      if (collection === 'priority-rules' && request.method === 'PUT') action = 'priority-set';
+      if (collection === 'service-agreements' && request.method === 'POST') action = 'agreement-save';
+      if ((collection && request.method === 'GET') || action) {
+        contexts.set(request, { sessions, now, state: await store.readSnapshot() });
+        const actor = requireSession(request);
+        if (!action) {
+          send(200, { success: true, data: projectDirectory(contexts.get(request).state, actor, collection) });
+          return;
+        }
+        const key = request.headers['idempotency-key'];
+        if (typeof key !== 'string' || !/^[\x21-\x7e]{1,128}$/.test(key)) fail('IDEMPOTENCY_KEY_REQUIRED');
+        const input = normalizeDirectoryInput(action, await jsonBody(request));
+        if (action === 'priority-set') resource = { property_id: input.property_id, trade: input.trade };
+        if (action === 'agreement-save') resource = { agreement_id: input.agreement_id || 'new' };
+        const scope = JSON.stringify([actor.workspace_id, actor.actor_id, action, resource]);
+        const normalizedBody = JSON.stringify(input);
+        let data;
+        await store.transact(state => {
+          // Refresh authorization inside the serialized commit boundary, including replays.
+          contexts.set(request, { sessions, now, state });
+          const currentActor = requireSession(request);
+          const membership = state.workspace_memberships.find(m => m.workspace_id === currentActor.workspace_id &&
+            m.actor_id === currentActor.actor_id && m.active === true);
+          if (currentActor.role !== 'landlord' || !membership?.permissions.includes('work_order_dispatch')) fail('FORBIDDEN', 403);
+          const previous = state.idempotency_records.find(r => r.scope === scope && r.key === key);
+          if (previous) {
+            if (previous.normalized_body !== normalizedBody) fail('IDEMPOTENCY_CONFLICT', 409);
+            data = structuredClone(previous.result);
+            return state;
+          }
+          const mutation = mutateDirectory(state, currentActor, action, input, resource, new Date(now()).toISOString(), randomUUID());
+          data = mutation.data;
+          mutation.state.idempotency_records.push({ id: randomUUID(), workspace_id: currentActor.workspace_id,
+            actor_id: currentActor.actor_id, scope, key, normalized_body: normalizedBody, result: structuredClone(data) });
+          return mutation.state;
+        });
+        send(200, { success: true, data });
+        return;
+      }
       fail('NOT_FOUND', 404);
     } catch (error) {
       // Only explicit safe protocol codes are returned. Never forward error.message.
       const codes = new Set(['LOOPBACK_REQUIRED', 'ORIGIN_REJECTED', 'NOT_FOUND', 'SESSION_REQUIRED',
-        'INVALID_BODY', 'BODY_TOO_LARGE', 'INVALID_PRINCIPAL', 'IDEMPOTENCY_KEY_REQUIRED', 'IDEMPOTENCY_CONFLICT', 'FORBIDDEN']);
+        'INVALID_BODY', 'BODY_TOO_LARGE', 'INVALID_PRINCIPAL', 'IDEMPOTENCY_KEY_REQUIRED', 'IDEMPOTENCY_CONFLICT', 'FORBIDDEN',
+        'INVALID_INPUT', 'INVALID_PARTNER', 'INVALID_MEMBER', 'INVALID_TRADE', 'INVALID_PRIORITY', 'PRIORITY_CONFLICT',
+        'INVALID_AGREEMENT', 'INVALID_AMOUNT', 'ALREADY_EXISTS', 'VERSION_CONFLICT']);
       const code = codes.has(error.code) ? error.code : 'INTERNAL_ERROR';
-      send(codes.has(error.code) ? error.status : 500, { success: false, code, message: code });
+      const status = error.status || (code === 'FORBIDDEN' ? 403 : code === 'NOT_FOUND' ? 404 :
+        ['ALREADY_EXISTS', 'VERSION_CONFLICT', 'PRIORITY_CONFLICT', 'IDEMPOTENCY_CONFLICT'].includes(code) ? 409 : 400);
+      send(codes.has(error.code) ? status : 500, { success: false, code, message: code });
     }
   });
   let started = false;

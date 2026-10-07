@@ -87,6 +87,30 @@ test('snapshots_fixed_price_agreement', () => {
   assert.throws(() => step(state, principals.company_a_manager, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' }), fails('FORBIDDEN'));
 });
 
+test('fixed_price_requires_matching_trade_property_and_latest_active_version', () => {
+  const f = sourced('cleaning');
+  const assign = s => step(s, f.principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' });
+  f.state.service_agreements[0].trade = 'other';
+  assert.throws(() => assign(f.state), fails('INVALID_AGREEMENT'));
+  f.state.service_agreements[0].trade = 'cleaning';
+  f.state.service_agreements[0].property_id = 'different';
+  assert.throws(() => assign(f.state), fails('INVALID_AGREEMENT'));
+  f.state.work_orders[0].property_id = 'different';
+  f.state.service_agreements.push({ ...f.state.service_agreements[0], id: 'agreement-revision-2',
+    agreement_id: 'agreement-a', version: 2, active: false });
+  assert.throws(() => assign(f.state), fails('INVALID_AGREEMENT'));
+  f.state.service_agreements[1].active = true;
+  f.state.service_agreements[1].price_twd = 1700;
+  assert.equal(assign(f.state).state.assignments[0].agreement_snapshot.version, 2);
+});
+
+test('work_order_creation_preserves_property_scope_for_fixed_price', () => {
+  const { state, principals } = createSyntheticFixtures();
+  const created = transitionWorkOrder(state, principals.landlord_a, 'create', {
+    id: 'scoped-cleaning', title: 'Cleaning', trade: 'cleaning', area: 'North', property_id: 'p1' }, now).state;
+  assert.equal(created.work_orders[0].property_id, 'p1');
+});
+
 test('repair_assignment_requires_approved_quote_even_with_fixed_price_agreement', () => {
   const { state, principals } = sourced();
   const before = structuredClone(state);

@@ -136,7 +136,7 @@ test('rejects_nonloopback_host_origin_and_unlisted_paths_without_leaks', async t
     assert.equal((await call(server, '/api/session', { headers })).status, 403);
   }
   for (const path of ['/../store.mjs', '/%2e%2e/store.mjs', '/public/../../README.md',
-    '/fixtures.mjs', '/api/partners', '/api/work-orders', '/.codex-local/vendor-work-orders/state.json', '/index.html']) {
+    '/fixtures.mjs', '/api/work-orders', '/.codex-local/vendor-work-orders/state.json', '/index.html']) {
     const result = await call(server, path);
     assert.equal(result.status, 404);
     assert.equal(result.json.success, false);
@@ -147,6 +147,195 @@ test('rejects_nonloopback_host_origin_and_unlisted_paths_without_leaks', async t
     headers: { 'content-type': 'application/json', 'idempotency-key': 'bad' }, body: { principal: {} } });
   assert.equal(malformed.status, 400);
   assert.doesNotMatch(malformed.text, /stack|TypeError/);
+});
+
+async function authenticated(t, principal = 'landlord_a', server) {
+  server ||= await running(t, { developmentMode: true });
+  const result = await call(server, '/api/dev/session', { method: 'POST',
+    headers: { 'content-type': 'application/json', 'idempotency-key': `login-${principal}` }, body: { principal } });
+  const cookie = result.headers['set-cookie'][0].split(';')[0];
+  return { server, api: (path, method = 'GET', body, key = 'key') => call(server, path, {
+    method, headers: { cookie, 'content-type': 'application/json', 'idempotency-key': key }, body }) };
+}
+const agreementInput = { partner_id: 'company-a', title: 'Cleaning', trade: 'cleaning', property_id: 'property-a',
+  price_twd: 1600, starts_at: '2026-01-01T00:00:00Z', ends_at: '2027-01-01T00:00:00Z', active: true };
+
+test('creates_company_and_individual_partner', async t => {
+  const { server, api } = await authenticated(t);
+  for (const type of ['company', 'individual']) {
+    const r = await api('/api/partners', 'POST', { type, name: `  Test ${type}  `, trades: ['cleaning', 'other'],
+      service_areas: ['north'], workspace_id: 'ws-b', role: 'admin', secret: 'hidden' }, type);
+    assert.equal(r.status, 200);
+    assert.equal(r.json.data.name, `Test ${type}`);
+    assert.equal(r.json.data.workspace_id, 'ws-a');
+    assert.equal('secret' in r.json.data, false);
+  }
+  assert.equal((await api('/api/partners')).json.data.length, 4);
+  assert.equal((await server.store.readSnapshot()).work_order_events.length, 2);
+});
+
+test('partner_skills_allow_multiple_named_other_trades_and_private_fields_never_escape', async t => {
+  const { server, api } = await authenticated(t);
+  const skills = [{ trade: 'other', name: 'Painting' }, { trade: 'other', name: 'Pruning' }];
+  const changed = await api('/api/partners/company-a', 'PATCH', { skills, service_areas: ['north', 'south'] });
+  assert.equal(changed.status, 200);
+  assert.deepEqual(changed.json.data.skills, skills);
+  await server.store.transact(s => {
+    s.partner_skills[0].private_note = 'hidden';
+    s.partner_memberships[0].private_note = 'hidden';
+    s.priority_rules.push({ workspace_id: 'ws-a', property_id: 'p', trade: 'other', partner_id: 'company-a', rank: 1, private_note: 'hidden' });
+    return s;
+  });
+  for (const path of ['/api/partners', '/api/service-agreements', '/api/priority-rules']) {
+    assert.equal(JSON.stringify((await api(path)).json.data).includes('hidden'), false);
+  }
+});
+test('partner_list_is_workspace_scoped', async t => {
+  const a = await authenticated(t);
+  const b = await authenticated(t, 'landlord_b', a.server);
+  assert.deepEqual((await b.api('/api/partners')).json.data.map(p => p.id), ['company-b']);
+  await a.server.store.transact(s => { s.partners[0].bank = 'hidden'; s.workspace_partners[0].private_note = 'hidden'; return s; });
+  const view = (await a.api('/api/partners')).json.data;
+  assert.equal(view.length, 2);
+  assert.equal(JSON.stringify(view).includes('hidden'), false);
+  assert.equal((await b.api('/api/partners/company-a', 'PATCH', { name: 'Intruder' })).status, 404);
+});
+test('scopes_member_permissions_to_active_membership', async t => {
+  const a = await authenticated(t);
+  const worker = await authenticated(t, 'company_a_worker', a.server);
+  assert.deepEqual((await worker.api('/api/partners')).json.data.map(p => p.id), ['company-a']);
+  assert.equal((await worker.api('/api/partners', 'POST', { type: 'company', name: 'Forbidden', role: 'landlord' })).status, 403);
+  assert.equal((await worker.api('/api/priority-rules')).status, 403);
+  const added = await a.api('/api/partners/company-a/memberships', 'POST', { actor_id: 'synthetic-extra', member_role: 'worker', active: true });
+  assert.equal(added.status, 200);
+  assert.equal(added.json.data.actor_id, 'synthetic-extra');
+  assert.equal((await a.server.store.readSnapshot()).partner_memberships.filter(m => m.partner_id === 'company-a').length, 3);
+});
+test('disabled_member_loses_access_but_events_remain', async t => {
+  const a = await authenticated(t);
+  const worker = await authenticated(t, 'company_a_worker', a.server);
+  const r = await a.api('/api/partners/company-a/memberships/worker-a', 'PATCH', { active: false });
+  assert.equal(r.status, 200);
+  const before = await a.server.store.readSnapshot();
+  assert.equal((await worker.api('/api/partners')).status, 403);
+  assert.deepEqual((await a.server.store.readSnapshot()).work_order_events, before.work_order_events);
+  assert.equal(before.partner_memberships.find(m => m.actor_id === 'worker-a').active, false);
+  assert.equal(before.work_order_events.length, 1);
+  assert.equal((await a.api('/api/partners/company-a', 'PATCH', { active: false }, 'disable')).status, 200);
+  const manager = await authenticated(t, 'landlord_b', a.server);
+  assert.equal((await manager.api('/api/partners')).json.data.length, 1);
+});
+test('priority_rank_is_unique_per_trade_scope', async t => {
+  const { api } = await authenticated(t);
+  const body = { property_id: 'p1', trade: 'cleaning', rules: [{ partner_id: 'company-a', rank: 1 }, { partner_id: 'individual-a', rank: 2 }] };
+  assert.equal((await api('/api/partners/company-a', 'PATCH', { trades: ['cleaning'] }, 'skills-a')).status, 200);
+  assert.equal((await api('/api/partners/individual-a', 'PATCH', { trades: ['cleaning'] }, 'skills-i')).status, 200);
+  assert.equal((await api('/api/priority-rules', 'PUT', body)).status, 200);
+  assert.equal((await api('/api/priority-rules', 'PUT', { ...body, rules: body.rules.map(r => ({ ...r, rank: 1 })) }, 'duplicate')).json.code, 'PRIORITY_CONFLICT');
+  assert.equal((await api('/api/priority-rules', 'PUT', { ...body, property_id: 'p2' }, 'other-property')).status, 200);
+  assert.equal((await api('/api/priority-rules')).json.data.length, 4);
+});
+test('agreement_edit_does_not_change_existing_price_snapshot', async t => {
+  const { server, api } = await authenticated(t);
+  await api('/api/partners/company-a', 'PATCH', { trades: ['cleaning'] }, 'skills');
+  const created = await api('/api/service-agreements', 'POST', agreementInput);
+  assert.equal(created.status, 200);
+  const first = created.json.data;
+  await server.store.transact(s => { s.assignments.push({ id: 'historic', workspace_id: 'ws-a', agreement_snapshot: first }); return s; });
+  const edited = await api('/api/service-agreements', 'POST', { ...agreementInput, agreement_id: first.agreement_id,
+    expected_version: 1, price_twd: 2000 }, 'edit');
+  assert.equal(edited.status, 200);
+  assert.equal(edited.json.data.version, 2);
+  const s = await server.store.readSnapshot();
+  assert.equal(s.service_agreements.filter(a => a.agreement_id === first.agreement_id).length, 2);
+  assert.equal(s.assignments[0].agreement_snapshot.price_twd, 1600);
+  const worker = await authenticated(t, 'company_a_worker', server);
+  assert.equal((await worker.api('/api/service-agreements')).json.data.every(a => a.partner_id === 'company-a'), true);
+});
+test('invalid_partner_or_priority_transaction_writes_nothing', async t => {
+  const { server, api } = await authenticated(t);
+  const before = await server.store.readSnapshot();
+  for (const [path, method, body, code] of [
+    ['/api/partners', 'POST', { type: 'company', name: '' }, 'INVALID_PARTNER'],
+    ['/api/partners/company-a', 'PATCH', { trades: ['invalid'] }, 'INVALID_TRADE'],
+    ['/api/priority-rules', 'PUT', { property_id: 'p', trade: 'cleaning', rules: [{ partner_id: 'foreign', rank: 1 }] }, 'INVALID_PARTNER'],
+    ['/api/service-agreements', 'POST', { ...agreementInput, price_twd: -1 }, 'INVALID_AMOUNT'],
+  ]) {
+    assert.equal((await api(path, method, body, code)).json.code, code);
+    assert.deepEqual(await server.store.readSnapshot(), before);
+  }
+});
+test('directory_mutations_replay_normalized_body_and_reject_conflicts', async t => {
+  const { server, api } = await authenticated(t);
+  const first = await api('/api/partners', 'POST', { type: 'company', name: ' Example ' });
+  assert.equal(first.status, 200);
+  const before = await server.store.readSnapshot();
+  const replay = await api('/api/partners', 'POST', { name: 'Example', type: 'company', workspace_id: 'ignored' });
+  assert.deepEqual(replay.json.data, first.json.data);
+  assert.deepEqual(await server.store.readSnapshot(), before);
+  assert.equal((await api('/api/partners', 'POST', { type: 'company', name: 'Different' })).json.code, 'IDEMPOTENCY_CONFLICT');
+  assert.deepEqual(await server.store.readSnapshot(), before);
+  const pair = await Promise.all([api('/api/partners', 'POST', { type: 'individual', name: 'Concurrent' }, 'race'), api('/api/partners', 'POST', { type: 'individual', name: 'Concurrent' }, 'race')]);
+  assert.deepEqual(pair[0].json.data, pair[1].json.data);
+  const reopened = createWorkOrderStore({ filePath: join(await directory(t), 'other.json') });
+  await reopened.transact(() => before);
+  assert.equal((await reopened.readSnapshot()).idempotency_records.length, 1);
+});
+
+test('store_rejects_duplicate_directory_keys_and_rewriting_history', async t => {
+  const { server, api } = await authenticated(t);
+  await api('/api/partners', 'POST', { name: 'History', type: 'individual' });
+  const before = await server.store.readSnapshot();
+  for (const damage of [
+    s => s.partner_memberships.push({ ...s.partner_memberships[0] }),
+    s => s.workspace_partners.push({ ...s.workspace_partners[0] }),
+    s => s.service_agreements.push({ ...s.service_agreements[0], id: 'duplicate-version', agreement_id: 'agreement-a' }),
+    s => { s.service_agreements[0].price_twd = 9999; },
+    s => { s.work_order_events[0].action = 'forged'; },
+    s => s.priority_rules.push(...[1, 2].map(i => ({ workspace_id: 'ws-a', property_id: 'p', trade: 'cleaning', partner_id: `p${i}`, rank: 1 }))),
+  ]) {
+    await assert.rejects(server.store.transact(s => { damage(s); return s; }), { code: 'INVALID_SNAPSHOT' });
+    assert.deepEqual(await server.store.readSnapshot(), before);
+  }
+});
+test('every_directory_mutation_requires_key_and_rechecks_permission_on_replay', async t => {
+  const a = await authenticated(t);
+  const loggedIn = await call(a.server, '/api/dev/session', { method: 'POST',
+    headers: { 'content-type': 'application/json', 'idempotency-key': 'login-landlord_a' }, body: { principal: 'landlord_a' } });
+  const cookie = loggedIn.headers['set-cookie'][0].split(';')[0];
+  for (const [path, method, body] of [
+    ['/api/partners', 'POST', { name: 'Test', type: 'company' }],
+    ['/api/partners/company-a', 'PATCH', { active: false }],
+    ['/api/partners/company-a/memberships', 'POST', { actor_id: 'extra', member_role: 'worker' }],
+    ['/api/partners/company-a/memberships/worker-a', 'PATCH', { active: false }],
+    ['/api/priority-rules', 'PUT', { property_id: 'p', trade: 'cleaning', rules: [] }],
+    ['/api/service-agreements', 'POST', agreementInput],
+  ]) {
+    assert.equal((await call(a.server, path, { method, headers: { cookie, 'content-type': 'application/json' }, body })).json.code, 'IDEMPOTENCY_KEY_REQUIRED');
+  }
+  const input = { name: 'Original', type: 'company' };
+  const created = await a.api('/api/partners', 'POST', input, 'original');
+  await a.api(`/api/partners/${created.json.data.id}`, 'PATCH', { name: 'Changed' }, 'edit');
+  assert.deepEqual((await a.api('/api/partners', 'POST', input, 'original')).json.data, created.json.data);
+  await a.server.store.transact(s => { s.workspace_memberships[0].permissions = ['work_order_read']; return s; });
+  const before = await a.server.store.readSnapshot();
+  assert.equal((await a.api('/api/partners', 'POST', input, 'original')).status, 403);
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+});
+test('agreement_rejects_unsupported_trade_stale_version_and_cross_workspace_edits', async t => {
+  const a = await authenticated(t);
+  assert.equal((await a.api('/api/service-agreements', 'POST', agreementInput)).json.code, 'INVALID_TRADE');
+  await a.api('/api/partners/company-a', 'PATCH', { trades: ['cleaning'] }, 'skills');
+  const created = await a.api('/api/service-agreements', 'POST', agreementInput);
+  const id = created.json.data.agreement_id;
+  const input = { ...agreementInput, agreement_id: id, expected_version: 1, active: false };
+  assert.equal((await a.api('/api/service-agreements', 'POST', input, 'disable')).status, 200);
+  assert.equal((await a.api('/api/service-agreements', 'POST', input, 'stale')).json.code, 'VERSION_CONFLICT');
+  const b = await authenticated(t, 'landlord_b', a.server);
+  assert.equal((await b.api('/api/service-agreements', 'POST', { ...input, partner_id: 'company-b' })).json.code, 'INVALID_TRADE');
+  await b.api('/api/partners/company-b', 'PATCH', { trades: ['cleaning'] }, 'skills');
+  assert.equal((await b.api('/api/service-agreements', 'POST', { ...input, partner_id: 'company-b' })).status, 404);
+  assert.equal((await a.api('/api/service-agreements', 'POST', { ...agreementInput, ends_at: '2025-01-01T00:00:00Z' }, 'dates')).json.code, 'INVALID_AGREEMENT');
 });
 test('session_creation_requires_key_and_replays_without_new_cookie', async t => {
   const server = await running(t, { developmentMode: true });
