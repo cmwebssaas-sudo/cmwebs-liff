@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const root = new URL('../', import.meta.url);
-const releaseVersion = '20261007-room-website-v1';
+const releaseVersion = '20261007-room-share-gallery-v1';
 const releaseSource = readFileSync(new URL('frontend-release.js', root), 'utf8');
 
 assert.match(
