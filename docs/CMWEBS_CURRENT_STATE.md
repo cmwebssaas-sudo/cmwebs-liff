@@ -1,6 +1,6 @@
 # CMWebs Current State
 
-## 2026-10-07 手機照片分享覆層與入住狀態一致性（本機完成，未發布）
+## 2026-10-07 手機照片分享覆層與入住狀態一致性（後端219，前端發布中）
 
 使用者確認：手機隱藏照片箭頭、保留 swipe/count，分享改為照片右上角
 44px圓形圖示；桌面保留箭頭。推薦模型gpt-5.6-terra、medium。
@@ -12,9 +12,11 @@
 箭頭display:none、照片1/2→2/2；1366×900桌面保留箭頭且無橫向溢出。
 本機preview-room-cards.mjs用合成狀態／公開網站照片，不登入、不調API、不保存。
 既有鍵盤shell及URL管理區不動。LINE/iPhone手指滑動／分享仍待真機驗收。
-尚未push、合併或部署；Production仍為前一分享圖庫release／Apps Script218。
-發布需另行授權並fresh對帳218/editor/main，建立新immutable版本、維持Web App
-URL，再合併前端及核對Pages。Rollback後端218、前端bf17208；無Schema或資料回退。
+使用者先選推送建立PR237，再授權合併並發布前後端。Fresh serving218/editor HEAD
+各59檔及46公開資產均與origin/main一致。快取版本更新為
+20261007-room-photo-share-occupancy-v1，候選aeda946；HEAD與immutable219各59檔
+逐位元一致。原Web App部署讀回219、URL不變、其他四部署不变；前端合併／Pages
+與正式登入驗證待完成。Rollback後端218、前端bf17208；無Schema或資料回退。
 
 ## 2026-10-07 房源分享與公開照片圖庫（前後端已發布）
 
