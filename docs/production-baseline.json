@@ -12,8 +12,11 @@
     "rollback_backend_version": 217,
     "rollback_frontend_revision": "1a173696f264e7f37eed022f62e23fdd01c3a530",
     "frontend_release_tag": "20261007-room-share-gallery-v1",
+    "frontend_revision": "7185d03f8c9556d71dd4fde2f68cd6f61f87fcac",
+    "frontend_workflow": "37616018575",
+    "public_files_verified": 46,
     "tests_passed": 642,
-    "status": "Authorized frontend and backend publication. Fresh serving217 and editor HEAD59 files match origin/main. Candidate HEAD and immutable218 each59 files byte-identical. Existing formal Web App reads218; other4 deployments unchanged. Frontend Pages publication pending. No business-data saves, LINE sends, Schema, trigger or Properties changes. Physical LINE share and swipe acceptance pending."
+    "status": "Authorized frontend and backend publication. Fresh serving217 and editor HEAD59 files match origin/main. Candidate HEAD and immutable218 each59 files byte-identical. Existing formal Web App reads218; other4 deployments unchanged. PR235 merged7185d03; Pages37616018575 succeeded;46 public files byte-identical. Authenticated room101 has8 photos, share button and next-arrow counter1/8 to2/8; first3 nearby lazy photos loaded. No save or actual share sent. No business-data saves, LINE sends, Schema, trigger or Properties changes. Physical LINE share and swipe acceptance pending."
   },
   "room_keyboard_viewport_origin_frontend_release": {
     "verified_on": "2026-10-07",

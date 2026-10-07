@@ -1,6 +1,6 @@
 # CMWebs Current State
 
-## 2026-10-07 房源分享與公開照片圖庫（正式後端218，前端發布中）
+## 2026-10-07 房源分享與公開照片圖庫（前後端已發布）
 
 使用者授權前後端發布；隔離分支codex/room-share-gallery-20261007，
 基底1a17369，root WIP不動。分享按鈕在原動作上方，只分享公開z3House
@@ -8,7 +8,9 @@ spaces網址；公開照片按原順序左右scroll-snap瀏覽，保留管理及
 642/642、validate、diff-check及獨立審查通過；合成手機／桌面驗證不代替真機。
 fresh serving217/editor HEAD各59檔與origin/main一致；候選b101afc推送後
 HEAD與immutable218各59檔逐位元相同，原Web App讀回218、URL不變，其他
-四部署不變。前端Pages及46公開資產核對待完成。
+四部署不變。PR235合併7185d03，Pages37616018575成功，46公開資產
+逐位元一致。合併後642/642通過；正式已登入101圖卡8張照片，分享按鈕
+顯示，下一張計數1/8→2/8，前三張鄰近lazy照片已載入；未實際發送分享。
 無業務網址保存、租約、帳單、Schema、trigger、Properties或LINE發送。
 Rollback同一Web App及editor HEAD217、前端1a17369，不清除已存網址。
 手機LINE原生分享及手指滑動仍需真機驗收。
