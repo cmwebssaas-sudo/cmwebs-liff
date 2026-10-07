@@ -96,6 +96,12 @@ test('bound public listing gallery works without a manual URL, unbound URLs neve
   s.c.landlordRoomCenterZ3houseByRoom_=()=>({R1:{binding_status:'unbound',independent_site_url:'https://rooms.z3house.com/spaces/102/'}});
   s.c.getLandlordRoomCenterInitByLineUid_('U',false);assert.equal(s.batches(),1);
 });
+test('clearing a manual URL immediately retains authorized bound gallery without another reload',()=>{
+  const s=setup();s.c.landlordRoomCenterZ3houseByRoom_=()=>({R1:{binding_status:'bound',independent_site_url:site}});
+  const cleared=s.c.saveLandlordRoomWebsiteByLineUid_('U','R1','','W1');
+  assert.equal(cleared.success,true);assert.equal(cleared.data.room_website_url,'');
+  assert.deepEqual(Array.from(cleared.data.room_website_cover.photos),[photo]);assert.equal(s.batches(),1);
+});
 test('protected save response immediately replaces only the saved card with its cover',async()=>{
   const html=fs.readFileSync('landlord-rooms.html','utf8');const card={outerHTML:''};const input={value:site};const status={};
   const room={room_id:'R1',room_name:'101'};const other={room_id:'R2',room_website_url:'https://draft.test/'};

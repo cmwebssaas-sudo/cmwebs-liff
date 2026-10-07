@@ -364,6 +364,7 @@ function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expec
   const lock = LockService.getScriptLock();
   let locked = false;
   let saved;
+  let coverAccess;
   try {
     const access = workspaceLandlordResolveAccess_(lineUserId, { require_onboarding: true, workspace_id: propertyRoomText_(expectedWorkspaceId) });
     if (!access.success) return access;
@@ -381,6 +382,7 @@ function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expec
     if (!room) return workspaceResult_(false, 'ROOM_NOT_FOUND', '找不到房源或無權限修改');
     propertyRoomEnsureSheet_(ss, 'V2_rooms', ['room_website_url']);
     propertyRoomSetValues_(sheet, room.__row_number, { room_website_url: url });
+    coverAccess = access;
     saved = workspaceResult_(true, 'ROOM_WEBSITE_SAVED', url ? '房源網址已儲存' : '房源網址已清除', {room_id: propertyRoomText_(roomId), room_website_url: url});
   } catch (error) {
     return workspaceResult_(false, 'ROOM_WEBSITE_SAVE_FAILED', '房源網址儲存失敗：' + error.message);
@@ -389,7 +391,14 @@ function saveLandlordRoomWebsiteByLineUid_(lineUserId, roomId, websiteUrl, expec
   }
   // The URL is already committed. Photo lookup must not hold the write lock
   // or turn a successful write into a failure (and encourage resubmission).
-  saved.data.room_website_cover = landlordRoomWebsiteCovers_([saved.data.room_website_url], true)[saved.data.room_website_url];
+  let photoTarget = saved.data.room_website_url;
+  if (!photoTarget) {
+    try {
+      const listing = landlordRoomCenterZ3houseByRoom_(runtimeSpreadsheet_(), coverAccess)[saved.data.room_id] || {};
+      if (listing.binding_status === 'bound') photoTarget = propertyRoomText_(listing.independent_site_url);
+    } catch (_) {} // Optional public bridge failure must never reverse a committed save.
+  }
+  saved.data.room_website_cover = landlordRoomWebsiteCovers_([photoTarget], true)[photoTarget];
   return saved;
 }
 function resolveRoomWebsitePrincipal_(request) {

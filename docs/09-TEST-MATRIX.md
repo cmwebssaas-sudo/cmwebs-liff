@@ -1001,7 +1001,9 @@ save 及 authorized bound fallback。先觀察未實作的 RED，再實作 GREEN
 固定shell與鍵盤回歸保留。照片不寫Sheets，只由公開網站衍生。
 尚未部署Apps Script或GitHub Pages，未寫正式網址、未實際發送分享。
 手機LINE原生分享及手指滑動需真機驗收；browser尺寸測試不等於真機。
-全套641/641、npm run validate、git diff --check通過。
+全套642/642、npm run validate、git diff --check通過。
+獨立審查發現並修正分享私人網址／內部標題、清空手動網址後圖庫消失三項。
+清空保存回應也在釋放write lock後使用已授權bound網址衍生圖庫，不必重載。
 桌面1366×900兩欄525.5px，分享y766.32在原動作y824.32上方，無橫向溢出。
 部署需先fresh export核對正式後端217基線，建立新immutable版本並保留Web
 App URL，再合併前端及驗證Pages。回退到本次基底1a17369與已核對後端217；
