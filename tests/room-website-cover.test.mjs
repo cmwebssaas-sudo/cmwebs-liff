@@ -30,6 +30,15 @@ test('saving a room URL returns its first gallery image after the write lock is 
   assert.equal(result.success,true);assert.equal(room.room_website_url,site);assert.equal(room.rent_amount,8500);
   assert.equal(result.data.room_website_cover.url,photo);assert.equal(result.data.room_website_cover.status,'available');
 });
+test('public gallery returns ordered unique safe images, survives cache and protected save',()=>{
+  const second=photo.replace('11111111-1111','22222222-2222');
+  const s=setup({html:gallery.replace('</section>',`<img src="${second}"><img src="${photo}"><img src="https://evil.test/private"></section><img src="${second}">`)});
+  const saved=s.c.saveLandlordRoomWebsiteByLineUid_('U','R1',site,'W1');
+  assert.deepEqual(Array.from(saved.data.room_website_cover.photos),[photo,second]);
+  assert.deepEqual(Array.from(s.c.landlordRoomWebsiteCovers_([site])[site].photos),[photo,second]);
+  assert.equal(s.batches(),1);
+  assert.equal(s.room.rent_amount,8500);
+});
 test('cover lookup batches distinct pages and reuses public cover cache on reload',()=>{
   const s=setup();const second='https://rooms.z3house.com/spaces/102/';
   const result=s.c.landlordRoomWebsiteCovers_([site,site,second]);assert.equal(result[site].url,photo);assert.equal(s.batches(),1);
@@ -72,8 +81,20 @@ test('room reload derives cover from only authorized rooms and remains read-only
   });
   const result=s.c.getLandlordRoomCenterInitByLineUid_('U',false);
   assert.equal(result.success,true);assert.equal(result.data.rooms[0].room_website_cover.url,photo);assert.equal(s.room.room_website_url,undefined);
+  assert.deepEqual(Array.from(result.data.rooms[0].room_website_cover.photos),[photo]);
   s.c.workspaceLandlordResolveAccess_=()=>({success:false,code:'DENIED'});
   assert.equal(s.c.getLandlordRoomCenterInitByLineUid_('U',false).success,false);assert.equal(s.batches(),1);
+});
+test('bound public listing gallery works without a manual URL, unbound URLs never fetch',()=>{
+  const s=setup();Object.assign(s.c,{
+    propertyRoomRequireReadSchema_:()=>{},propertyRoomBoolean_:()=>false,
+    propertyRoomGetWorkspaceProperties_:()=>[],propertyRoomGetWorkspaceRooms_:()=>[{...s.room}],
+    propertyRoomCompareText_:(a,b)=>a.localeCompare(b),propertyRoomNumber_:v=>Number(v)||0,
+    landlordRoomCenterZ3houseByRoom_:()=>({R1:{binding_status:'bound',independent_site_url:site}})
+  });
+  assert.deepEqual(Array.from(s.c.getLandlordRoomCenterInitByLineUid_('U',false).data.rooms[0].room_website_cover.photos),[photo]);
+  s.c.landlordRoomCenterZ3houseByRoom_=()=>({R1:{binding_status:'unbound',independent_site_url:'https://rooms.z3house.com/spaces/102/'}});
+  s.c.getLandlordRoomCenterInitByLineUid_('U',false);assert.equal(s.batches(),1);
 });
 test('protected save response immediately replaces only the saved card with its cover',async()=>{
   const html=fs.readFileSync('landlord-rooms.html','utf8');const card={outerHTML:''};const input={value:site};const status={};
