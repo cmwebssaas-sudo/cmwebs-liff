@@ -89,9 +89,17 @@ function eligibleAgreementOptions(order, partnerId) {
     .sort((a, b) => a.title.localeCompare(b.title) || a.agreement_id.localeCompare(b.agreement_id))
     .map(agreement => [agreement.agreement_id || agreement.id, `${agreement.title} · ${money(agreement.price_twd)} · v${agreement.version}`]);
 }
-function refreshAgreementChoices(form, order, partnerId) {
+function invitationPartner(order, mode = 'ranked', selectedPartner) {
+  if (mode === 'manual') return selectedPartner;
+  if (mode !== 'ranked') return undefined;
+  return state.priorities.filter(rule => rule.workspace_id === state.actor.workspace_id &&
+    rule.property_id === order.property_id && rule.trade === order.trade)
+    .sort((a, b) => a.rank - b.rank)[0]?.partner_id;
+}
+function refreshAgreementChoices(form, order) {
   const selectControl = form.querySelector('select[name="agreement_id"]');
-  const rows = [['', '先報價再核准'], ...eligibleAgreementOptions(order, partnerId)];
+  const rows = [['', '先報價再核准'], ...eligibleAgreementOptions(order,
+    invitationPartner(order, form.elements.mode.value, form.elements.partner_id.value))];
   selectControl.innerHTML = options(rows);
   selectControl.value = '';
 }
@@ -121,15 +129,15 @@ function directory() {
 function inviteForm(w) {
   return `<form data-form="invite" data-order="${esc(w.id)}">${select('mode', '邀請方式', [['ranked', '依順位邀請'], ['manual', '手動指定'], ['parallel', '明確邀請多家報價']])}${select('partner_id', '指定合作對象', partnerOptions())}
     <fieldset><legend>多家報價對象（僅多家模式）</legend>${partnerOptions().map(([key, name]) => `<label class="check"><input name="partner_ids" type="checkbox" value="${esc(key)}">${esc(name)}</label>`).join('')}</fieldset>
-    ${select('agreement_id', '價格方式', [['', '先報價再核准'], ...eligibleAgreementOptions(w, partnerOptions()[0]?.[0])])}
+    ${select('agreement_id', '價格方式', [['', '先報價再核准'], ...eligibleAgreementOptions(w, invitationPartner(w))])}
     ${input('reply_hours', '回覆期限（小時）', 24, 'number')}<label class="check"><input name="continue_round" type="checkbox">拒絕報價後，繼續下一順位</label>
     <p class="muted">確認固定價派工即核准約定快照；廠商接單後才建立承接紀錄。</p><button>確認邀請／固定價派工</button></form>`;
 }
 document.addEventListener('change', event => {
   const form = event.target.closest('form[data-form="invite"]');
-  if (!form || event.target.name !== 'partner_id') return;
+  if (!form || !['partner_id', 'mode'].includes(event.target.name)) return;
   const order = state.orders.find(candidate => candidate.id === form.dataset.order);
-  if (order) refreshAgreementChoices(form, order, event.target.value);
+  if (order) refreshAgreementChoices(form, order);
 });
 function orderCard(w) {
   const landlord = state.actor.role === 'landlord';
@@ -191,18 +199,23 @@ function partnerInput(form, f) {
 async function upload(form, w) {
   const file = form.elements.file.files[0];
   if (!file || file.size > 10 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) { feedback('未上傳：只接受 JPEG、PNG、WebP、PDF，且最多 10 MiB。', true); return; }
-  const completionSelector = `form[data-form="completion"][data-order="${CSS.escape(w.id)}"]`;
+  // Ephemeral to this authenticated upload/readback, never shared or persisted.
+  const actorScope = actor => JSON.stringify([actor?.workspace_id, actor?.actor_id, actor?.role, actor?.partner_id]);
+  const uploadScope = actorScope(state.actor);
   const preserveCompletionDraft = () => {
     // Capture after all authoritative GETs, immediately before replacing the DOM.
-    const completion = document.querySelector(completionSelector);
-    if (!completion) return;
-    const draft = { description: completion.elements.description.value,
-      actual_amount_twd: completion.elements.actual_amount_twd.value };
+    if (actorScope(state.actor) !== uploadScope) return;
+    const drafts = new Map([...document.querySelectorAll('form[data-form="completion"]')].map(completion =>
+      [completion.dataset.order, { description: completion.elements.description.value,
+        actual_amount_twd: completion.elements.actual_amount_twd.value }]));
     return () => {
-      const current = document.querySelector(completionSelector);
-      if (!current) return;
-      current.elements.description.value = draft.description;
-      current.elements.actual_amount_twd.value = draft.actual_amount_twd;
+      if (actorScope(state.actor) !== uploadScope) return;
+      for (const current of document.querySelectorAll('form[data-form="completion"]')) {
+        const draft = drafts.get(current.dataset.order);
+        if (!draft) continue; // Only forms still editable in the server projection.
+        current.elements.description.value = draft.description;
+        current.elements.actual_amount_twd.value = draft.actual_amount_twd;
+      }
     };
   };
   lock(true); feedback('附件上傳中…'); let committed = false;
