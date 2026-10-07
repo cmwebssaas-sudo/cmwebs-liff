@@ -5,6 +5,17 @@
   "backend_source_commit": "2e6d2ef7f917960f01831fd0d7d4f19df5691708",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 217,
+  "room_keyboard_viewport_origin_frontend_release": {
+    "verified_on": "2026-10-07",
+    "source_commit": "b4a4973",
+    "frontend_revision": "ab6bac646878f9ee96571b42d40d6d0b25ba848c",
+    "frontend_workflow": "37610069412",
+    "frontend_release_tag": "20261007-room-keyboard-pan-v1",
+    "public_files_verified": 46,
+    "tests_passed": 633,
+    "rollback_frontend_revision": "6a64047b649d5ea14ba1ebd467d01840dcbf4758",
+    "status": "Authorized frontend-only release. PR233 merged; Pages succeeded;46 public assets byte-identical.633 tests, validate and diff-check pass. Mobile focused shell tracks visualViewport.offsetTop; late pan schedules obscured-input reveal; blur and desktop clear offset. Real CSS with synthetic viewport340/offset600 keeps input675–699.5 within600–940. User recording disproved prior real-device acceptance; this release still requires physical LINE keyboard retest. No backend deployment or business-data save."
+  },
   "room_keyboard_scroll_stability_frontend_release": {
     "verified_on": "2026-10-07",
     "source_commit": "2706b84",
