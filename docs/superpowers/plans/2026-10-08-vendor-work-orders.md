@@ -52,7 +52,6 @@
 - Create: `tests/vendor-work-orders-ui.test.mjs` — UI rendering、操作與安全輸出 tests。
 - Create: `tests/vendor-work-orders-attachments.test.mjs` — 本機附件 MIME/大小/權限/非公開路徑 tests。
 - Modify: `.gitignore` — 只忽略 `.codex-local/vendor-work-orders/` 的本機狀態與私有附件。
-- Modify: `.gitignore` — 只忽略 `.codex-local/vendor-work-orders/` 的本機狀態與私有附件。
 
 ## API and Domain Interfaces
 
@@ -62,7 +61,7 @@
 - `projectWorkOrderForActor(state, actor, workOrderId)` returns a landlord or vendor allowlisted projection; it never returns all raw rows to the browser.
 - `createVendorWorkOrderServer({ host, port, dataFile, attachmentDir, clock })` binds only to `127.0.0.1` and exposes `start()`/`close()` for development and tests.
 - `POST /api/dev/session` is available only in loopback development mode and accepts a fixture principal key; it returns an HttpOnly SameSite session cookie expiring in 8 hours. This route is absent from any future staging/production build.
-- Successful API response is `{ success: true, data, request_id }`; rejected response is `{ success: false, code, message, request_id }`. Mutating work-order requests require `Idempotency-Key`.
+- Successful API response is `{ success: true, data, request_id }`; rejected response is `{ success: false, code, message, request_id }`. Every mutation requires an `Idempotency-Key` scoped by server-derived Workspace, actor, canonical resource/action, and key. Reusing a key with the same normalized body returns the original result; reusing it with a different normalized body fails with `IDEMPOTENCY_CONFLICT` before any write.
 - Work-order API actions: `GET/POST /api/work-orders`, `GET /api/work-orders/:id`, `POST /api/work-orders/:id/invitations`, `POST /api/invitations/:id/quote`, `POST /api/work-orders/:id/quote-approval`, `POST /api/assignments/:id/accept`, `POST /api/assignments/:id/completion`, `POST /api/work-orders/:id/acceptance`.
 - Partner API actions: `GET/POST /api/partners`, `PATCH /api/partners/:id`, `PUT /api/priority-rules`, `GET/POST /api/service-agreements`.
 - Notification readback: `GET /api/inbox`; work-order mutations append a deduplicated local inbox item in the same store transaction.
@@ -123,7 +122,7 @@
 - [ ] **Step 1: Add failing partner API tests** named `creates_company_and_individual_partner`, `scopes_member_permissions_to_active_membership`, `disabled_member_loses_access_but_events_remain`, `partner_list_is_workspace_scoped`, `priority_rank_is_unique_per_trade_scope`, and `agreement_edit_does_not_change_existing_price_snapshot`.
 - [ ] **Step 2: Implement allowlisted partner projections and server-side membership checks**; never accept caller-supplied Workspace/role as authority.
 - [ ] **Step 3: Implement partner and priority mutations as validated store transactions**; preserve event history and do not silently reorder existing sourcing rounds.
-- [ ] **Step 4: Add failing tests** that update an agreement but prove an already-created work order's agreed amount/version remains unchanged.
+- [ ] **Step 4: Add failing atomicity tests** named `invalid_partner_or_priority_transaction_writes_nothing`; prove validation failure preserves the prior snapshot and event history.
 - [ ] **Step 5: Run focused domain/API tests** and commit `feat: manage isolated work order partners and priorities`.
 
 ### Task 4: Implement invitations, quote approval, and one-winner assignment
@@ -141,7 +140,7 @@
 
 - [ ] **Step 1: Add failing transition tests** named `fixed_price_dispatch_requires_explicit_landlord_action` and `quote_requires_landlord_approval_before_assignment`.
 - [ ] **Step 2: Add failing tests** named `invites_first_rank_before_second`, `decline_or_24_hour_timeout_advances_rank`, `valid_quote_pauses_rank_escalation`, `manual_override_records_actor`, `parallel_quote_round_requires_explicit_choice`, and `expired_invitation_cannot_be_accepted`.
-- [ ] **Step 3: Add race/idempotency tests** named `only_one_concurrent_acceptance_creates_assignment`, `same_idempotency_key_creates_one_event_and_inbox_item`, and `ambiguous_action_is_resolved_by_readback`.
+- [ ] **Step 3: Add race/idempotency tests** named `only_one_concurrent_acceptance_creates_assignment`, `same_idempotency_key_creates_one_event_and_inbox_item`, `same_idempotency_key_with_different_body_is_rejected_without_writes`, and `ambiguous_action_is_resolved_by_readback`.
 - [ ] **Step 4: Implement deadline processing** using an injected clock, a due-invitation sweep at server start and a 60-second timer while running; `start()` starts it and `close()` clears it. Each expiry advances one ranked round transactionally and stops if a valid quote is awaiting the landlord.
 - [ ] **Step 5: Implement invitation/quote/assignment APIs** using a store transaction that rechecks Workspace, membership, current status, version, deadline, and idempotency key before commit.
 - [ ] **Step 6: Implement the local notification inbox** in the same transaction as the state event; use neutral text and never include tenant identity, private location instructions, or attachments.
