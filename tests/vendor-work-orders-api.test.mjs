@@ -137,7 +137,7 @@ test('rejects_nonloopback_host_origin_and_unlisted_paths_without_leaks', async t
     assert.equal((await call(server, '/api/session', { headers })).status, 403);
   }
   for (const path of ['/../store.mjs', '/%2e%2e/store.mjs', '/public/../../README.md',
-    '/fixtures.mjs', '/api/work-orders', '/.codex-local/vendor-work-orders/state.json', '/index.html']) {
+    '/fixtures.mjs', '/api/work-orders/unknown/completion', '/.codex-local/vendor-work-orders/state.json', '/index.html']) {
     const result = await call(server, path);
     assert.equal(result.status, 404);
     assert.equal(result.json.success, false);
@@ -160,6 +160,219 @@ async function authenticated(t, principal = 'landlord_a', server) {
 }
 const agreementInput = { partner_id: 'company-a', title: 'Cleaning', trade: 'cleaning', property_id: 'property-a',
   price_twd: 1600, starts_at: '2026-01-01T00:00:00Z', ends_at: '2027-01-01T00:00:00Z', active: true };
+
+async function sourcingApi(t, trade = 'cleaning') {
+  let time = Date.parse('2026-10-08T04:00:00Z');
+  const server = await running(t, { developmentMode: true, clock: () => time });
+  const a = await authenticated(t, 'landlord_a', server);
+  for (const partner of ['company-a', 'individual-a']) await a.api(`/api/partners/${partner}`, 'PATCH', { trades: [trade] }, partner);
+  await a.api('/api/priority-rules', 'PUT', { property_id: 'property-a', trade,
+    rules: [{ partner_id: 'company-a', rank: 1 }, { partner_id: 'individual-a', rank: 2 }] });
+  const created = await a.api('/api/work-orders', 'POST', { title: 'Synthetic work', area: 'North', property_id: 'property-a', trade,
+    location: 'PRIVATE LOCATION', instructions: 'PRIVATE INSTRUCTIONS', tenant_name: 'SECRET TENANT' });
+  assert.equal(created.status, 200);
+  return { ...a, id: created.json.data.id, setTime: value => { time = Date.parse(value); } };
+}
+async function fixedInvite(t) {
+  const a = await sourcingApi(t);
+  const r = await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', {
+    expected_version: 1, mode: 'manual', partner_id: 'company-a', agreement_id: 'agreement-a' });
+  assert.equal(r.status, 200);
+  const vendor = await authenticated(t, 'company_a_worker', a.server);
+  const view = (await vendor.api(`/api/work-orders/${a.id}`)).json.data;
+  assert.equal(view.invitations.length, 1);
+  return { ...a, vendor, invitation: view.invitations[0] };
+}
+test('only_one_concurrent_acceptance_creates_assignment', async t => {
+  const a = await fixedInvite(t);
+  assert.equal((await a.server.store.readSnapshot()).assignments.length, 0);
+  const manager = await authenticated(t, 'company_a_manager', a.server);
+  const path = `/api/assignments/${a.invitation.assignment_id}/accept`;
+  const results = await Promise.all([a.vendor.api(path, 'POST', { expected_version: 2 }, 'worker'), manager.api(path, 'POST', { expected_version: 2 }, 'manager')]);
+  assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
+  const s = await a.server.store.readSnapshot();
+  assert.equal(s.assignments.length, 1);
+  assert.equal(s.work_order_events.filter(e => e.action === 'accept-assignment').length, 1);
+  assert.equal(s.assignments[0].id, a.invitation.assignment_id);
+});
+test('same_idempotency_key_creates_one_event_and_inbox_item', async t => {
+  const a = await sourcingApi(t, 'repair');
+  const path = `/api/work-orders/${a.id}/invitations`;
+  const before = await a.server.store.readSnapshot();
+  const first = await a.api(path, 'POST', { expected_version: 1 });
+  assert.equal(first.status, 200);
+  const saved = await a.server.store.readSnapshot();
+  assert.equal(saved.work_order_events.length, before.work_order_events.length + 1);
+  assert.equal(saved.notification_outbox.length, before.notification_outbox.length + 1);
+  const replay = await a.api(path, 'POST', { mode: 'ranked', expected_version: 1, workspace_id: 'forged' });
+  assert.deepEqual(replay.json.data, first.json.data);
+  assert.deepEqual(await a.server.store.readSnapshot(), saved);
+  const vendor = await authenticated(t, 'company_a_worker', a.server);
+  const inbox = await vendor.api('/api/inbox');
+  assert.equal(inbox.json.data.length, 1);
+  assert.doesNotMatch(inbox.text, /PRIVATE|SECRET|tenant|attachments/);
+});
+test('same_idempotency_key_with_different_body_is_rejected_without_writes', async t => {
+  const a = await sourcingApi(t, 'repair');
+  const path = `/api/work-orders/${a.id}/invitations`;
+  await a.api(path, 'POST', { expected_version: 1 });
+  const before = await a.server.store.readSnapshot();
+  assert.equal((await a.api(path, 'POST', { expected_version: 1, reply_hours: 12 })).json.code, 'IDEMPOTENCY_CONFLICT');
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+});
+test('ambiguous_action_is_resolved_by_readback', async t => {
+  const a = await fixedInvite(t);
+  const path = `/api/assignments/${a.invitation.assignment_id}/accept`;
+  // Discard the successful response, as when the client loses its result after commit.
+  await a.vendor.api(path, 'POST', { expected_version: 2 }, 'unknown-result');
+  const s = await a.server.store.readSnapshot();
+  const view = await a.vendor.api(`/api/work-orders/${a.id}`);
+  assert.equal(view.json.data.status, 'assigned');
+  assert.equal(view.json.data.assignment.id, a.invitation.assignment_id);
+  assert.equal(view.json.data.events.filter(e => e.action === 'accept-assignment').length, 1);
+  assert.deepEqual(await a.server.store.readSnapshot(), s);
+  assert.equal((await a.vendor.api(path, 'POST', { expected_version: 2 }, 'unknown-result')).status, 200);
+  assert.deepEqual(await a.server.store.readSnapshot(), s);
+});
+test('start_sweeps_due_invitations_and_timer_advances_with_injected_clock', async t => {
+  const a = await sourcingApi(t, 'repair');
+  await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 1 });
+  await a.server.close();
+  a.setTime('2026-10-09T04:00:00Z');
+  await a.server.start();
+  let s = await a.server.store.readSnapshot();
+  assert.equal(s.invitations[0].status, 'expired');
+  assert.equal(s.invitations[1].partner_id, 'individual-a');
+  // Native timers are virtualized; the real server callback and store still execute.
+  t.mock.timers.enable({ apis: ['setInterval'] });
+  await a.server.close();
+  await a.server.start();
+  a.setTime('2026-10-10T04:00:00Z');
+  t.mock.timers.tick(59999);
+  assert.equal((await a.server.store.readSnapshot()).invitations[1].status, 'sent');
+  t.mock.timers.tick(1);
+  s = await a.server.store.readSnapshot();
+  assert.equal(s.invitations[1].status, 'expired');
+  await a.server.close();
+  const closed = await a.server.store.readSnapshot();
+  t.mock.timers.tick(60000);
+  assert.deepEqual(await a.server.store.readSnapshot(), closed);
+});
+test('quote_revisions_approval_and_vendor_privacy_are_transactional', async t => {
+  const a = await sourcingApi(t, 'repair');
+  await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 1, mode: 'parallel', partner_ids: ['company-a', 'individual-a'] });
+  const v = await authenticated(t, 'company_a_worker', a.server);
+  const other = await authenticated(t, 'individual_worker', a.server);
+  const invitation = (await v.api(`/api/work-orders/${a.id}`)).json.data.invitations[0];
+  const q = { expected_version: 2, labor_twd: 1000, materials_twd: 0, tax_twd: 0, estimated_days: 1, expires_at: '2026-10-10T04:00:00Z' };
+  const first = await v.api(`/api/invitations/${invitation.id}/quote`, 'POST', q);
+  assert.equal(first.status, 200);
+  assert.equal((await a.server.store.readSnapshot()).assignments.length, 0);
+  const second = await v.api(`/api/invitations/${invitation.id}/quote`, 'POST', { ...q, expected_version: 3, labor_twd: 1200 }, 'revision');
+  assert.equal(second.status, 200);
+  const before = await a.server.store.readSnapshot();
+  assert.equal(before.quote_revisions.length, 2);
+  assert.equal((await other.api(`/api/work-orders/${a.id}`)).json.data.quotes.length, 0);
+  assert.equal((await other.api(`/api/invitations/${invitation.id}/quote`, 'POST', q, 'forged')).status, 403);
+  assert.equal((await a.api(`/api/work-orders/${a.id}/quote-approval`, 'POST', { expected_version: 4, quote_id: before.quotes[0].id, quote_version: 1 })).json.code, 'VERSION_CONFLICT');
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+  const approved = await a.api(`/api/work-orders/${a.id}/quote-approval`, 'POST', { expected_version: 4, quote_id: before.quotes[0].id, quote_version: 2 }, 'approve');
+  assert.equal(approved.status, 200);
+  const saved = await a.server.store.readSnapshot();
+  assert.equal(saved.assignments[0].approved_amount_twd, 1200);
+  assert.equal(saved.invitations[1].status, 'cancelled');
+});
+
+test('api_decline_advances_rank_and_retains_authoritative_readback', async t => {
+  const a = await sourcingApi(t, 'repair');
+  const invited = await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 1 });
+  const v = await authenticated(t, 'company_a_worker', a.server);
+  const invitation = invited.json.data.invitations[0];
+  const declined = await v.api(`/api/invitations/${invitation.id}/decline`, 'POST', { expected_version: 2 });
+  assert.equal(declined.status, 200);
+  const s = await a.server.store.readSnapshot();
+  assert.equal(s.invitations[0].status, 'declined');
+  assert.equal(s.invitations[1].partner_id, 'individual-a');
+  assert.equal(s.assignments.length, 0);
+  const read = await v.api(`/api/work-orders/${a.id}`);
+  assert.equal(read.json.data.invitations[0].status, 'declined');
+  assert.equal(read.json.data.invitations.length, 1);
+  assert.equal('location' in read.json.data, false);
+});
+test('acceptance_rechecks_deadline_permissions_scope_and_key_without_writes', async t => {
+  const a = await fixedInvite(t);
+  const path = `/api/assignments/${a.invitation.assignment_id}/accept`;
+  const other = await authenticated(t, 'individual_worker', a.server);
+  const b = await authenticated(t, 'landlord_b', a.server);
+  let before = await a.server.store.readSnapshot();
+  assert.equal((await other.api(path, 'POST', { expected_version: 2 })).status, 403);
+  assert.equal((await b.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 2 })).status, 404);
+  assert.equal((await a.vendor.api(path, 'POST', { expected_version: 1 })).json.code, 'VERSION_CONFLICT');
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+  // Renew session before the deadline, so expiry is tested with a valid session.
+  a.setTime('2026-10-09T03:00:00Z');
+  const v = await authenticated(t, 'company_a_worker', a.server);
+  a.setTime('2026-10-09T04:00:00Z');
+  assert.equal((await v.api(path, 'POST', { expected_version: 2 })).json.code, 'INVITATION_EXPIRED');
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+  a.setTime('2026-10-08T04:00:00Z');
+  const success = await v.api(path, 'POST', { expected_version: 2 }, 'accepted');
+  assert.equal(success.status, 200);
+  before = await a.server.store.readSnapshot();
+  assert.equal((await v.api(path, 'POST', { expected_version: 3 }, 'accepted')).json.code, 'IDEMPOTENCY_CONFLICT');
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+  await a.server.store.transact(s => { s.partner_memberships.find(m => m.actor_id === 'worker-a').active = false; return s; });
+  before = await a.server.store.readSnapshot();
+  assert.equal((await v.api(path, 'POST', { expected_version: 2 }, 'accepted')).status, 403);
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+});
+test('work_order_mutations_require_key_and_approval_permission', async t => {
+  const a = await sourcingApi(t, 'repair');
+  const logged = await call(a.server, '/api/dev/session', { method: 'POST', headers: { 'content-type': 'application/json', 'idempotency-key': 'missing-key-session' }, body: { principal: 'landlord_a' } });
+  const cookie = logged.headers['set-cookie'][0].split(';')[0];
+  const before = await a.server.store.readSnapshot();
+  for (const [path, body] of [
+    ['/api/work-orders', { title: 'Test', area: 'North', trade: 'repair' }],
+    [`/api/work-orders/${a.id}/invitations`, { expected_version: 1 }],
+    [`/api/work-orders/${a.id}/quote-approval`, { expected_version: 1, quote_id: 'unknown', quote_version: 1 }],
+    ['/api/invitations/unknown/quote', { expected_version: 1 }],
+    ['/api/invitations/unknown/decline', { expected_version: 1 }],
+    ['/api/assignments/unknown/accept', { expected_version: 1 }],
+  ]) assert.equal((await call(a.server, path, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body })).json.code, 'IDEMPOTENCY_KEY_REQUIRED');
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+  await a.server.store.transact(s => { s.workspace_memberships[0].permissions = ['work_order_read', 'work_order_dispatch']; return s; });
+  assert.equal((await a.api(`/api/work-orders/${a.id}/quote-approval`, 'POST', { expected_version: 1, quote_id: 'unknown', quote_version: 1 })).status, 403);
+});
+test('store_enforces_one_winner_and_immutable_quote_inbox_history', async t => {
+  const a = await fixedInvite(t);
+  await a.vendor.api(`/api/assignments/${a.invitation.assignment_id}/accept`, 'POST', { expected_version: 2 });
+  await a.server.store.transact(s => {
+    s.quote_revisions.push({ id: 'historical', quote_id: 'q', version: 1, workspace_id: 'ws-a', total_twd: 100 }); return s;
+  });
+  const before = await a.server.store.readSnapshot();
+  for (const damage of [
+    s => s.assignments.push({ ...s.assignments[0], id: 'second-winner' }),
+    s => s.invitations.push({ ...s.invitations[0], id: 'second-reservation' }),
+    s => s.notification_outbox.push({ ...s.notification_outbox[0], id: 'duplicate-inbox' }),
+    s => { s.notification_outbox[0].message = 'changed'; },
+    s => s.quote_revisions.push({ ...s.quote_revisions[0], id: 'duplicate-revision' }),
+    s => { s.quote_revisions[0].total_twd = 200; },
+  ]) {
+    await assert.rejects(a.server.store.transact(s => { damage(s); return s; }), { code: 'INVALID_SNAPSHOT' });
+    assert.deepEqual(await a.server.store.readSnapshot(), before);
+  }
+});
+test('replay_rechecks_landlord_read_permission_before_returning_private_result', async t => {
+  const a = await sourcingApi(t, 'repair');
+  const path = `/api/work-orders/${a.id}/invitations`;
+  assert.equal((await a.api(path, 'POST', { expected_version: 1 })).status, 200);
+  await a.server.store.transact(s => { s.workspace_memberships[0].permissions = ['work_order_dispatch']; return s; });
+  const before = await a.server.store.readSnapshot();
+  const replay = await a.api(path, 'POST', { expected_version: 1 });
+  assert.equal(replay.status, 403);
+  assert.doesNotMatch(replay.text, /PRIVATE/);
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+});
 
 test('creates_company_and_individual_partner', async t => {
   const { server, api } = await authenticated(t);

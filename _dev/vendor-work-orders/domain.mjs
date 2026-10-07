@@ -2,6 +2,8 @@
  * Authority is checked against state memberships, never actor permission labels.
  * All successful transitions return a new snapshot; rejected transitions mutate nothing.
  */
+import { createHash } from 'node:crypto';
+
 const tables = ['partners', 'partner_memberships', 'workspace_memberships', 'workspace_partners',
   'partner_skills', 'priority_rules', 'service_agreements', 'work_orders', 'invitations',
   'quotes', 'quote_revisions', 'assignments', 'completion_reports', 'acceptances',
@@ -11,6 +13,8 @@ const permissions = { create: 'work_order_dispatch', source: 'work_order_dispatc
   rework: 'work_order_accept', cancel: 'work_order_dispatch' };
 
 function fail(code) { const error = new Error(code); error.code = code; throw error; }
+// Deterministic within a pure transition; the server-generated order ID provides opacity.
+function opaqueId(...parts) { return createHash('sha256').update(JSON.stringify(parts)).digest('hex'); }
 function text(value, code) {
   if (typeof value !== 'string' || !value.trim()) fail(code);
   return value.trim();
@@ -89,9 +93,12 @@ function belongs(row, order) { return row.work_order_id === order.id && row.work
 /** Action contract: create, source, assign, start, complete, accept, rework, cancel.
  * Existing-order actions require work_order_id + expected_version.
  * assign requires an approved quote for repairs; other trades may use a valid fixed-price agreement.
- * Invitation/quote creation and approval orchestration are later tasks.
+ * invite, quote, approve-quote, decline, accept-assignment use the Task 4 sourcing contract below.
  */
 export function transitionWorkOrder(state, actor, action, input, now) {
+  if (['invite', 'quote', 'approve-quote', 'decline', 'accept-assignment'].includes(action)) {
+    return sourcingTransition(state, actor, action, input, now);
+  }
   const principal = normalizeActor(actor);
   const at = timestamp(now);
   if (!Object.hasOwn(permissions, action)) fail('INVALID_ACTION');
@@ -397,23 +404,266 @@ export function mutateDirectory(state, actor, action, input, resource, now, id) 
   return { state: next, data: structuredClone(result) };
 }
 
+/** Task 4 inputs are allowlisted and normalized before persistent replay comparison. */
+export function normalizeWorkOrderInput(action, input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_INPUT');
+  if (action === 'create') {
+    const data = { title: text(input.title, 'INVALID_INPUT'), trade: trade(input.trade), area: text(input.area, 'INVALID_INPUT'),
+      location: typeof input.location === 'string' ? input.location.trim() : '',
+      instructions: typeof input.instructions === 'string' ? input.instructions.trim() : '' };
+    if (input.property_id !== undefined) data.property_id = text(input.property_id, 'INVALID_INPUT');
+    return data;
+  }
+  if (!Number.isSafeInteger(input.expected_version) || input.expected_version < 1) fail('VERSION_CONFLICT');
+  const data = { expected_version: input.expected_version };
+  if (action === 'invite') {
+    data.mode = input.mode === undefined ? 'ranked' : input.mode;
+    if (!['ranked', 'manual', 'parallel'].includes(data.mode)) fail('INVALID_INPUT');
+    data.reply_hours = input.reply_hours === undefined ? 24 : input.reply_hours;
+    if (!Number.isSafeInteger(data.reply_hours) || data.reply_hours < 1 || data.reply_hours > 168) fail('INVALID_INPUT');
+    data.continue_round = input.continue_round === undefined ? false : boolean(input.continue_round);
+    if (input.partner_ids !== undefined) {
+      if (data.mode !== 'parallel') fail('PARALLEL_CHOICE_REQUIRED');
+      data.partner_ids = strings(input.partner_ids, 'INVALID_PARTNER');
+      if (data.partner_ids.length < 2) fail('PARALLEL_CHOICE_REQUIRED');
+    }
+    if (data.mode === 'parallel' && !data.partner_ids) fail('PARALLEL_CHOICE_REQUIRED');
+    if (data.mode === 'manual') data.partner_id = text(input.partner_id, 'INVALID_PARTNER');
+    if (input.agreement_id !== undefined) data.agreement_id = text(input.agreement_id, 'INVALID_AGREEMENT');
+    if (data.mode === 'parallel' && data.agreement_id) fail('INVALID_AGREEMENT');
+  } else if (action === 'quote') Object.assign(data, validateQuoteInput(input));
+  else if (action === 'approve-quote') {
+    data.quote_id = text(input.quote_id, 'INVALID_QUOTE');
+    if (!Number.isSafeInteger(input.quote_version) || input.quote_version < 1) fail('VERSION_CONFLICT');
+    data.quote_version = input.quote_version;
+    data.decision = input.decision === undefined ? 'approve' : input.decision;
+    if (!['approve', 'reject'].includes(data.decision)) fail('INVALID_INPUT');
+  } else if (!['decline', 'accept-assignment'].includes(action)) fail('INVALID_ACTION');
+  return data;
+}
+
+/** Also called inside replay transactions, so revoked membership never replays privileged data. */
+export function authorizeWorkOrderAction(state, actor, action, resource = {}) {
+  const principal = normalizeActor(actor);
+  if (['create', 'invite', 'approve-quote'].includes(action)) {
+    if (!landlordAllowed(state, principal, 'work_order_read') ||
+        !landlordAllowed(state, principal, action === 'approve-quote' ? 'work_order_approve' : 'work_order_dispatch')) fail('FORBIDDEN');
+    if (action !== 'create') findOrder(state, principal, resource.work_order_id);
+    return;
+  }
+  if (!vendorAllowed(state, principal)) fail('FORBIDDEN');
+  const invitation = state.invitations.find(i => i.workspace_id === principal.workspace_id &&
+    (action === 'accept-assignment' ? i.assignment_id === resource.assignment_id : i.id === resource.invitation_id));
+  if (!invitation) fail('NOT_FOUND');
+  if (invitation.partner_id !== principal.partner_id) fail('FORBIDDEN');
+}
+function quoteWaiting(state, order, at) {
+  return state.quotes.some(q => belongs(q, order) && q.status === 'submitted' && q.expires_at > at);
+}
+function agreementSnapshot(agreement) {
+  return { id: agreement.id, version: agreement.version, title: agreement.title,
+    price_twd: amount(agreement.price_twd), currency: 'TWD', starts_at: agreement.starts_at, ends_at: agreement.ends_at };
+}
+function validAgreement(a, order, partnerId, at) {
+  return a && a.active === true && a.partner_id === partnerId && a.trade === order.trade && order.trade !== 'repair' &&
+    (!a.property_id || a.property_id === order.property_id) && a.starts_at <= at && a.ends_at >= at;
+}
+function recordSourcingEvent(state, order, actor, action, at, from, recipients) {
+  order.version += 1;
+  order.updated_at = at;
+  const event = { id: `event-${order.id}-${order.version}`, workspace_id: order.workspace_id,
+    work_order_id: order.id, actor: structuredClone(actor), action, at, from, to: order.status,
+    version: order.version, visibility: ['accept-assignment', 'approve-quote'].includes(action) ? 'public' : 'internal' };
+  state.work_order_events.push(event);
+  for (const recipient of new Set(recipients)) {
+    const [recipient_type, recipient_id] = recipient.split(':');
+    state.notification_outbox.push({ id: opaqueId(event.id, recipient, 'local'), workspace_id: order.workspace_id, work_order_id: order.id,
+      event_id: event.id, recipient_type, recipient_id, channel: 'local', status: 'saved', at,
+      message: `Work order ${order.trade}: update available.`, login_path: '/' });
+  }
+  return event;
+}
+function sendCandidate(state, order, candidate, at) {
+  if (!partnerActive(state, order.workspace_id, candidate.partner_id)) return null;
+  const round = order.sourcing_round;
+  const invitation = { id: opaqueId(round.id, candidate.partner_id, 'invitation'), workspace_id: order.workspace_id, work_order_id: order.id,
+    partner_id: candidate.partner_id, round_id: round.id, status: 'sent', sent_at: at,
+    deadline_at: new Date(Date.parse(at) + round.reply_hours * 3600000).toISOString() };
+  if (candidate.agreement_snapshot) {
+    // Price approval is the explicit landlord dispatch's immutable snapshot, not the sweep's decision.
+    invitation.agreement_snapshot = structuredClone(candidate.agreement_snapshot);
+    invitation.assignment_id = opaqueId(invitation.id, 'reserved-assignment');
+  }
+  state.invitations.push(invitation);
+  return `partner:${candidate.partner_id}`;
+}
+function advanceRank(state, order, at) {
+  const round = order.sourcing_round;
+  if (!round || round.mode !== 'ranked' || assignmentFor(state, order) || quoteWaiting(state, order, at) ||
+      state.invitations.some(i => belongs(i, order) && i.round_id === round.id && i.status === 'sent')) return [];
+  while (round.cursor < round.ranking.length) {
+    const candidate = round.ranking[round.cursor++];
+    const recipient = sendCandidate(state, order, candidate, at);
+    if (recipient) return [recipient];
+  }
+  return [];
+}
+function revokeOtherInvitations(state, order, winner) {
+  for (const i of state.invitations.filter(i => belongs(i, order) && i.id !== winner)) {
+    if (['sent', 'pending', 'quoted'].includes(i.status)) i.status = 'cancelled';
+  }
+}
+function sourcingTransition(state, actor, action, input, now) {
+  const principal = normalizeActor(actor);
+  const at = timestamp(now);
+  const data = normalizeWorkOrderInput(action, input);
+  authorizeWorkOrderAction(state, principal, action, input);
+  const next = structuredClone(state);
+  const invitation = next.invitations.find(i => i.workspace_id === principal.workspace_id &&
+    (action === 'accept-assignment' ? i.assignment_id === input.assignment_id : i.id === input.invitation_id));
+  const order = findOrder(next, principal, invitation?.work_order_id || input.work_order_id);
+  if (order.version !== data.expected_version) fail('VERSION_CONFLICT');
+  if (!['draft', 'sourcing', 'awaiting_approval'].includes(order.status) || assignmentFor(next, order)) fail('INVALID_TRANSITION');
+  const from = order.status;
+  let recipients = [];
+  if (action === 'invite') {
+    if (quoteWaiting(next, order, at)) fail('QUOTE_AWAITING_APPROVAL');
+    if (data.continue_round) {
+      if (!order.sourcing_round || order.sourcing_round.mode !== 'ranked' || data.mode !== 'ranked' || data.agreement_id) fail('INVALID_TRANSITION');
+      order.status = 'sourcing';
+      recipients = advanceRank(next, order, at);
+      if (!recipients.length) fail('NO_CANDIDATE');
+    } else {
+      let ranking = data.mode === 'ranked' ? next.priority_rules.filter(r => r.workspace_id === order.workspace_id &&
+        r.property_id === order.property_id && r.trade === order.trade).sort((a, b) => a.rank - b.rank).map(r => ({ partner_id: r.partner_id, rank: r.rank }))
+        : (data.mode === 'manual' ? [data.partner_id] : data.partner_ids).map(partner_id => ({ partner_id }));
+      if (!ranking.length) fail('NO_CANDIDATE');
+      for (const candidate of ranking) {
+        if (!partnerActive(next, order.workspace_id, candidate.partner_id)) fail('INVALID_PARTNER');
+        if (!next.partner_skills.some(s => s.workspace_id === order.workspace_id && s.partner_id === candidate.partner_id && s.trade === order.trade)) fail('INVALID_TRADE');
+        if (data.agreement_id) {
+          const agreement = candidate === ranking[0] ? latestAgreement(next, order.workspace_id, data.agreement_id)
+            : next.service_agreements.filter(a => a.workspace_id === order.workspace_id && validAgreement(a, order, candidate.partner_id, at) &&
+              latestAgreement(next, order.workspace_id, a.agreement_id || a.id)?.id === a.id).sort((a, b) => b.version - a.version)[0];
+          if (!validAgreement(agreement, order, candidate.partner_id, at)) fail('INVALID_AGREEMENT');
+          candidate.agreement_snapshot = agreementSnapshot(agreement);
+        }
+      }
+      revokeOtherInvitations(next, order);
+      order.sourcing_round = { id: opaqueId(order.id, order.version + 1, 'round'), mode: data.mode, ranking, cursor: 0, reply_hours: data.reply_hours, actor: principal, at };
+      order.status = 'sourcing';
+      if (data.mode === 'ranked') recipients = advanceRank(next, order, at);
+      else recipients = ranking.map(candidate => sendCandidate(next, order, candidate, at)).filter(Boolean);
+    }
+  } else if (action === 'quote' || action === 'decline' || action === 'accept-assignment') {
+    if (!invitation || invitation.deadline_at <= at || ['expired', 'declined', 'cancelled'].includes(invitation.status)) fail('INVITATION_EXPIRED');
+    if (!['sent', 'quoted'].includes(invitation.status)) fail('INVALID_TRANSITION');
+    if (action === 'quote') {
+      if (invitation.agreement_snapshot || data.expires_at <= at) fail('INVALID_QUOTE');
+      let quote = next.quotes.find(q => q.invitation_id === invitation.id && belongs(q, order));
+      if (quote && quote.status !== 'submitted') fail('INVALID_TRANSITION');
+      const quoteId = quote?.id || opaqueId(invitation.id, 'quote');
+      const revision = { ...validateQuoteInput(data), id: opaqueId(quoteId, (quote?.version || 0) + 1), workspace_id: order.workspace_id,
+        work_order_id: order.id, partner_id: principal.partner_id, invitation_id: invitation.id,
+        quote_id: quoteId, version: (quote?.version || 0) + 1, actor: principal, at };
+      next.quote_revisions.push(revision);
+      if (!quote) { quote = { id: revision.quote_id }; next.quotes.push(quote); }
+      Object.assign(quote, revision, { id: revision.quote_id, status: 'submitted' });
+      invitation.status = 'quoted';
+      order.status = 'awaiting_approval';
+      recipients = [`workspace:${order.workspace_id}`];
+    } else if (action === 'decline') {
+      invitation.status = 'declined';
+      for (const q of next.quotes.filter(q => q.invitation_id === invitation.id && belongs(q, order))) q.status = 'withdrawn';
+      if (!quoteWaiting(next, order, at)) order.status = 'sourcing';
+      recipients = advanceRank(next, order, at);
+      if (!recipients.length) recipients = [`workspace:${order.workspace_id}`];
+    } else {
+      if (!invitation.agreement_snapshot || invitation.status !== 'sent') fail('QUOTE_NOT_APPROVED');
+      invitation.status = 'accepted';
+      next.assignments.push({ id: invitation.assignment_id, workspace_id: order.workspace_id, work_order_id: order.id,
+        partner_id: principal.partner_id, status: 'assigned', actor: principal, created_at: at,
+        agreement_snapshot: structuredClone(invitation.agreement_snapshot), approved_amount_twd: invitation.agreement_snapshot.price_twd });
+      order.status = 'assigned';
+      revokeOtherInvitations(next, order, invitation.id);
+      recipients = [`workspace:${order.workspace_id}`];
+    }
+  } else {
+    const quote = next.quotes.find(q => q.id === data.quote_id && belongs(q, order));
+    if (!quote || quote.status !== 'submitted') fail('QUOTE_NOT_APPROVED');
+    if (quote.version !== data.quote_version) fail('VERSION_CONFLICT');
+    if (quote.expires_at <= at) fail('QUOTE_EXPIRED');
+    if (!partnerActive(next, order.workspace_id, quote.partner_id)) fail('FORBIDDEN');
+    const quotedInvite = next.invitations.find(i => i.id === quote.invitation_id && belongs(i, order) && i.status === 'quoted');
+    if (!quotedInvite) fail('INVALID_TRANSITION');
+    quote.status = data.decision === 'approve' ? 'approved' : 'rejected';
+    if (data.decision === 'approve') {
+      next.assignments.push({ id: opaqueId(quote.id, quote.version, 'approved-assignment'), workspace_id: order.workspace_id, work_order_id: order.id,
+        partner_id: quote.partner_id, status: 'assigned', actor: principal, created_at: at,
+        quote_id: quote.id, quote_version: quote.version, approved_amount_twd: quote.total_twd });
+      order.status = 'assigned';
+      quotedInvite.status = 'accepted';
+      revokeOtherInvitations(next, order, quotedInvite.id);
+    } else {
+      quotedInvite.status = 'declined';
+      order.status = quoteWaiting(next, order, at) ? 'awaiting_approval' : 'sourcing';
+      // Moving beyond a rejected quote is a separate explicit landlord action.
+      order.sourcing_round.escalation_paused = true;
+    }
+    recipients = [`partner:${quote.partner_id}`];
+  }
+  const event = recordSourcingEvent(next, order, principal, action, at, from, recipients);
+  if (action === 'invite' && data.continue_round) order.sourcing_round.escalation_paused = false;
+  return { state: next, events: [structuredClone(event)], notifications: next.notification_outbox.filter(n => n.event_id === event.id) };
+}
+
+/** One expiry event is atomic with the next ranked invitation; no actor permissions are manufactured. */
+export function expireDueInvitations(state, now) {
+  const at = timestamp(now);
+  const next = structuredClone(state);
+  for (const invitation of next.invitations.filter(i => i.status === 'sent' && i.deadline_at <= at)) {
+    const order = next.work_orders.find(w => belongs(invitation, w));
+    if (!order || !['sourcing', 'awaiting_approval'].includes(order.status) || assignmentFor(next, order)) continue;
+    invitation.status = 'expired';
+    const from = order.status;
+    const recipients = order.sourcing_round?.escalation_paused ? [] : advanceRank(next, order, at);
+    recordSourcingEvent(next, order, { role: 'system', actor_id: 'invitation-sweeper' }, 'invitation-expired', at, from,
+      recipients.length ? recipients : [`workspace:${order.workspace_id}`]);
+  }
+  return next;
+}
+
+export function projectInbox(state, actor) {
+  const principal = normalizeActor(actor);
+  if (principal.role === 'vendor' ? !vendorAllowed(state, principal) : !landlordAllowed(state, principal, 'work_order_read')) fail('FORBIDDEN');
+  return state.notification_outbox.filter(n => n.workspace_id === principal.workspace_id && n.channel === 'local' &&
+    (principal.role === 'landlord' ? n.recipient_type === 'workspace' && n.recipient_id === principal.workspace_id
+      : n.recipient_type === 'partner' && n.recipient_id === principal.partner_id)).map(n => ({
+    id: n.id, work_order_id: n.work_order_id, event_id: n.event_id, message: n.message, login_path: n.login_path, at: n.at, status: n.status }));
+}
+
 export function projectWorkOrderForActor(state, actor, workOrderId) {
   const principal = normalizeActor(actor);
   const order = findOrder(state, principal, workOrderId);
   const landlord = landlordAllowed(state, principal, 'work_order_read');
   const assignment = assignmentFor(state, order);
   const vendor = vendorAllowed(state, principal);
-  const invited = vendor && state.invitations.some(i => belongs(i, order) &&
-    i.partner_id === principal.partner_id && ['sent', 'quoted', 'accepted'].includes(i.status));
+  const invited = vendor && state.invitations.some(i => belongs(i, order) && i.partner_id === principal.partner_id);
   const assigned = vendor && assignment?.partner_id === principal.partner_id;
   if (!landlord && !invited && !assigned) fail('FORBIDDEN');
   const view = { id: order.id, workspace_id: order.workspace_id, title: order.title,
     trade: order.trade, area: order.area, status: order.status, version: order.version,
     created_at: order.created_at, updated_at: order.updated_at };
   if (landlord || assigned) { view.location = order.location; view.instructions = order.instructions; }
+  view.invitations = state.invitations.filter(i => belongs(i, order) && (landlord || i.partner_id === principal.partner_id)).map(i => ({
+    id: i.id, partner_id: i.partner_id, status: i.status, round_id: i.round_id,
+    deadline_at: i.deadline_at, assignment_id: i.assignment_id || null,
+    ...(i.agreement_snapshot ? { agreement_snapshot: agreementSnapshot(i.agreement_snapshot) } : {}),
+  }));
   view.quotes = state.quotes.filter(q => belongs(q, order) && (landlord || q.partner_id === principal.partner_id)).map(q => ({
     id: q.id, partner_id: q.partner_id, version: q.version, status: q.status,
-    total_twd: q.total_twd, expires_at: q.expires_at,
+    labor_twd: q.labor_twd, materials_twd: q.materials_twd, tax_twd: q.tax_twd,
+    total_twd: q.total_twd, expires_at: q.expires_at, estimated_days: q.estimated_days,
   }));
   view.assignment = assignment && (landlord || assigned) ? {
     id: assignment.id, partner_id: assignment.partner_id, status: assignment.status,
@@ -428,7 +678,7 @@ export function projectWorkOrderForActor(state, actor, workOrderId) {
   } : null;
   view.events = state.work_order_events.filter(e => belongs(e, order) && (landlord || e.visibility === 'public')).map(e => ({
     id: e.id, at: e.at, action: e.action, from: e.from, to: e.to, version: e.version,
-    ...(landlord ? { actor: normalizeActor(e.actor), visibility: e.visibility } : {}),
+    ...(landlord ? { actor: e.actor.role === 'system' ? { role: 'system', actor_id: 'invitation-sweeper' } : normalizeActor(e.actor), visibility: e.visibility } : {}),
   }));
   return structuredClone(view);
 }

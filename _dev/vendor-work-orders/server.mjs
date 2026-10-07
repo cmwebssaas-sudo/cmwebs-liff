@@ -5,7 +5,9 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createWorkOrderStore } from './store.mjs';
 import { createSyntheticFixtures } from './fixtures.mjs';
-import { normalizeActor, normalizeMemberId, normalizeDirectoryInput, mutateDirectory, projectDirectory } from './domain.mjs';
+import { normalizeActor, normalizeMemberId, normalizeDirectoryInput, mutateDirectory, projectDirectory,
+  normalizeWorkOrderInput, authorizeWorkOrderAction, transitionWorkOrder, projectWorkOrderForActor,
+  projectInbox, expireDueInvitations } from './domain.mjs';
 
 const contexts = new WeakMap();
 const hours8 = 8 * 60 * 60 * 1000;
@@ -123,6 +125,61 @@ export function createVendorWorkOrderServer(options = {}) {
         send(200, { success: true, data: { actor: requireSession(request) } });
         return;
       }
+      const orderPath = /^\/api\/work-orders\/([A-Za-z0-9_-]+)(?:\/(invitations|quote-approval))?$/.exec(path);
+      const invitePath = /^\/api\/invitations\/([A-Za-z0-9_-]+)\/(quote|decline)$/.exec(path);
+      const acceptPath = /^\/api\/assignments\/([A-Za-z0-9_-]+)\/accept$/.exec(path);
+      const orderCollection = path === '/api/work-orders';
+      const inbox = path === '/api/inbox';
+      const orderAction = request.method === 'POST' ? orderCollection ? 'create'
+        : orderPath?.[2] === 'invitations' ? 'invite' : orderPath?.[2] === 'quote-approval' ? 'approve-quote'
+          : invitePath ? invitePath[2] : acceptPath ? 'accept-assignment' : null : null;
+      if (orderAction || request.method === 'GET' && (orderCollection || inbox || orderPath && !orderPath[2])) {
+        contexts.set(request, { sessions, now, state: await store.readSnapshot() });
+        const actor = requireSession(request);
+        if (!orderAction) {
+          const state = contexts.get(request).state;
+          let data;
+          if (inbox) data = projectInbox(state, actor);
+          else if (orderCollection) {
+            // Check the read capability even when the collection is empty.
+            projectInbox(state, actor);
+            data = state.work_orders.filter(w => w.workspace_id === actor.workspace_id).flatMap(w => {
+              try { return [projectWorkOrderForActor(state, actor, w.id)]; }
+              catch (error) { if (error.code === 'FORBIDDEN') return []; throw error; }
+            });
+          } else data = projectWorkOrderForActor(state, actor, orderPath[1]);
+          send(200, { success: true, data });
+          return;
+        }
+        const key = request.headers['idempotency-key'];
+        if (typeof key !== 'string' || !/^[\x21-\x7e]{1,128}$/.test(key)) fail('IDEMPOTENCY_KEY_REQUIRED');
+        const input = normalizeWorkOrderInput(orderAction, await jsonBody(request));
+        const resource = orderPath ? { work_order_id: orderPath[1] } : invitePath ? { invitation_id: invitePath[1] }
+          : acceptPath ? { assignment_id: acceptPath[1] } : {};
+        const scope = JSON.stringify([actor.workspace_id, actor.actor_id, orderAction, resource]);
+        const normalizedBody = JSON.stringify(input);
+        let data;
+        await store.transact(state => {
+          contexts.set(request, { sessions, now, state });
+          const currentActor = requireSession(request);
+          authorizeWorkOrderAction(state, currentActor, orderAction, resource);
+          const previous = state.idempotency_records.find(r => r.scope === scope && r.key === key);
+          if (previous) {
+            if (previous.normalized_body !== normalizedBody) fail('IDEMPOTENCY_CONFLICT', 409);
+            data = structuredClone(previous.result);
+            return state;
+          }
+          const mutation = transitionWorkOrder(state, currentActor, orderAction,
+            { ...input, ...resource, ...(orderAction === 'create' ? { id: randomUUID() } : {}) }, new Date(now()).toISOString());
+          const orderId = mutation.events[0].work_order_id;
+          data = projectWorkOrderForActor(mutation.state, currentActor, orderId);
+          mutation.state.idempotency_records.push({ id: randomUUID(), workspace_id: currentActor.workspace_id,
+            actor_id: currentActor.actor_id, scope, key, normalized_body: normalizedBody, result: structuredClone(data) });
+          return mutation.state;
+        });
+        send(200, { success: true, data });
+        return;
+      }
       // Match raw path structure first, then decode only the one membership ID
       // segment. Never normalize/decode the entire route or decode an ID twice.
       const partnerPath = /^\/api\/partners\/([A-Za-z0-9_-]+)(?:\/memberships(?:\/([^/]+))?)?$/.exec(path);
@@ -185,14 +242,19 @@ export function createVendorWorkOrderServer(options = {}) {
       const codes = new Set(['LOOPBACK_REQUIRED', 'ORIGIN_REJECTED', 'NOT_FOUND', 'SESSION_REQUIRED',
         'INVALID_BODY', 'BODY_TOO_LARGE', 'INVALID_PRINCIPAL', 'IDEMPOTENCY_KEY_REQUIRED', 'IDEMPOTENCY_CONFLICT', 'FORBIDDEN',
         'INVALID_INPUT', 'INVALID_PARTNER', 'INVALID_MEMBER', 'INVALID_TRADE', 'INVALID_PRIORITY', 'PRIORITY_CONFLICT',
-        'INVALID_AGREEMENT', 'INVALID_AMOUNT', 'ALREADY_EXISTS', 'VERSION_CONFLICT']);
+        'INVALID_AGREEMENT', 'INVALID_AMOUNT', 'ALREADY_EXISTS', 'VERSION_CONFLICT', 'INVALID_TRANSITION',
+        'INVALID_QUOTE', 'QUOTE_NOT_APPROVED', 'QUOTE_EXPIRED', 'INVITATION_EXPIRED', 'NO_CANDIDATE',
+        'QUOTE_AWAITING_APPROVAL', 'PARALLEL_CHOICE_REQUIRED']);
       const code = codes.has(error.code) ? error.code : 'INTERNAL_ERROR';
       const status = error.status || (code === 'FORBIDDEN' ? 403 : code === 'NOT_FOUND' ? 404 :
-        ['ALREADY_EXISTS', 'VERSION_CONFLICT', 'PRIORITY_CONFLICT', 'IDEMPOTENCY_CONFLICT'].includes(code) ? 409 : 400);
+        ['ALREADY_EXISTS', 'VERSION_CONFLICT', 'PRIORITY_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'INVALID_TRANSITION',
+          'INVITATION_EXPIRED', 'QUOTE_EXPIRED', 'QUOTE_AWAITING_APPROVAL'].includes(code) ? 409 : 400);
       send(codes.has(error.code) ? status : 500, { success: false, code, message: code });
     }
   });
   let started = false;
+  let sweepTimer;
+  const sweep = () => store.transact(state => expireDueInvitations(state, new Date(now()).toISOString()));
   return {
     store,
     address: () => server.address(),
@@ -203,15 +265,23 @@ export function createVendorWorkOrderServer(options = {}) {
         await store.transact(state => Object.values(state).every(value => !Array.isArray(value) || value.length === 0)
           ? fixtures.state : state);
       }
+      await sweep();
       await new Promise((resolveStart, reject) => {
         server.once('error', reject);
         server.listen(port, host, () => { server.off('error', reject); resolveStart(); });
       });
       started = true;
+      sweepTimer = setInterval(() => {
+        sweep().catch(() => { process.stderr.write('Local invitation sweep failed; next tick will retry.\n'); });
+      }, 60000);
+      sweepTimer.unref?.();
       return server.address();
     },
     async close() {
+      clearInterval(sweepTimer);
+      sweepTimer = undefined;
       if (started) await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()));
+      await store.readSnapshot(); // Drain any expiry transaction already queued before timer cancellation.
       started = false;
       sessions.clear();
       bootstrapKeys.clear();

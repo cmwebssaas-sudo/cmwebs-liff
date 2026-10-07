@@ -3,8 +3,127 @@ import assert from 'node:assert/strict';
 import { createInitialState, normalizeActor, transitionWorkOrder, projectWorkOrderForActor,
   validatePartnerInput, validateQuoteInput } from '../_dev/vendor-work-orders/domain.mjs';
 import { createSyntheticFixtures } from '../_dev/vendor-work-orders/fixtures.mjs';
+import * as domain from '../_dev/vendor-work-orders/domain.mjs';
 
 const now = '2026-10-08T04:00:00.000Z';
+const later = '2026-10-09T04:00:00.000Z';
+const quoteInput = { labor_twd: 1000, materials_twd: 200, tax_twd: 60, estimated_days: 2,
+  expires_at: '2026-10-10T04:00:00.000Z' };
+function ranked(trade = 'repair') {
+  const f = setup(trade);
+  f.state.work_orders[0].property_id = 'property-a';
+  f.state.partner_skills.push(...['company-a', 'individual-a'].map(partner_id => ({ workspace_id: 'ws-a', partner_id, trade })));
+  f.state.priority_rules.push(...['company-a', 'individual-a'].map((partner_id, i) => ({ workspace_id: 'ws-a', property_id: 'property-a', trade, partner_id, rank: i + 1 })));
+  return f;
+}
+function invite(f, input = {}) {
+  f.state = step(f.state, f.principals.landlord_a, 'invite', input).state;
+  return f;
+}
+function respond(f, action, extra = {}, time = now, actor = f.principals.company_a_worker) {
+  return transitionWorkOrder(f.state, actor, action, { work_order_id: 'wo-1',
+    invitation_id: f.state.invitations[0].id, expected_version: f.state.work_orders[0].version, ...extra }, time);
+}
+
+test('fixed_price_dispatch_requires_explicit_landlord_action', () => {
+  const f = ranked('cleaning');
+  assert.throws(() => step(f.state, f.principals.company_a_worker, 'invite', { mode: 'manual', partner_id: 'company-a', agreement_id: 'agreement-a' }), fails('FORBIDDEN'));
+  invite(f, { mode: 'manual', partner_id: 'company-a', agreement_id: 'agreement-a' });
+  assert.equal(f.state.assignments.length, 0);
+  assert.equal(f.state.invitations[0].agreement_snapshot.price_twd, 1500);
+  assert.ok(f.state.invitations[0].assignment_id);
+  const result = respond(f, 'accept-assignment', { assignment_id: f.state.invitations[0].assignment_id });
+  assert.equal(result.state.assignments.length, 1);
+  assert.equal(result.state.assignments[0].approved_amount_twd, 1500);
+});
+test('quote_requires_landlord_approval_before_assignment', () => {
+  const f = invite(ranked());
+  f.state = respond(f, 'quote', quoteInput).state;
+  assert.equal(f.state.assignments.length, 0);
+  assert.equal(f.state.work_orders[0].status, 'awaiting_approval');
+  const q = f.state.quotes[0];
+  assert.throws(() => step(f.state, f.principals.company_a_worker, 'approve-quote', { quote_id: q.id, quote_version: 1 }), fails('FORBIDDEN'));
+  const approved = step(f.state, f.principals.landlord_a, 'approve-quote', { quote_id: q.id, quote_version: 1 }).state;
+  assert.equal(approved.assignments[0].approved_amount_twd, 1260);
+  assert.equal(approved.assignments[0].quote_version, 1);
+  assert.equal(approved.work_orders[0].status, 'assigned');
+});
+test('invites_first_rank_before_second', () => {
+  const f = invite(ranked());
+  assert.deepEqual(f.state.invitations.map(i => i.partner_id), ['company-a']);
+  f.state.priority_rules.reverse();
+  f.state.priority_rules[0].rank = 9;
+  const next = respond(f, 'decline').state;
+  assert.deepEqual(next.invitations.map(i => i.partner_id), ['company-a', 'individual-a']);
+  assert.equal(next.invitations[0].status, 'declined');
+});
+test('decline_or_24_hour_timeout_advances_rank', () => {
+  const f = invite(ranked());
+  assert.equal(f.state.invitations[0].deadline_at, later);
+  const expired = domain.expireDueInvitations(f.state, later);
+  assert.equal(expired.invitations[0].status, 'expired');
+  assert.equal(expired.invitations[1].partner_id, 'individual-a');
+  assert.equal(expired.invitations[1].deadline_at, '2026-10-10T04:00:00.000Z');
+  assert.deepEqual(domain.expireDueInvitations(expired, later), expired);
+});
+test('valid_quote_pauses_rank_escalation', () => {
+  const f = invite(ranked());
+  f.state = respond(f, 'quote', quoteInput).state;
+  const swept = domain.expireDueInvitations(f.state, later);
+  assert.equal(swept.invitations.length, 1);
+  assert.equal(swept.work_orders[0].status, 'awaiting_approval');
+  const rejected = step(swept, f.principals.landlord_a, 'approve-quote', { quote_id: swept.quotes[0].id, quote_version: 1, decision: 'reject' }).state;
+  assert.equal(rejected.invitations.length, 1);
+  const continued = step(rejected, f.principals.landlord_a, 'invite', { mode: 'ranked', continue_round: true }).state;
+  assert.equal(continued.invitations[1].partner_id, 'individual-a');
+});
+test('manual_override_records_actor', () => {
+  const f = invite(ranked(), { mode: 'manual', partner_id: 'individual-a' });
+  assert.equal(f.state.invitations[0].partner_id, 'individual-a');
+  assert.equal(f.state.work_order_events.at(-1).actor.actor_id, 'landlord-a');
+  assert.equal(f.state.work_orders[0].sourcing_round.mode, 'manual');
+});
+test('parallel_quote_round_requires_explicit_choice', () => {
+  const f = ranked();
+  assert.throws(() => step(f.state, f.principals.landlord_a, 'invite', { partner_ids: ['company-a', 'individual-a'] }), fails('PARALLEL_CHOICE_REQUIRED'));
+  invite(f, { mode: 'parallel', partner_ids: ['company-a', 'individual-a'] });
+  assert.equal(f.state.invitations.length, 2);
+  f.state = respond(f, 'quote', quoteInput).state;
+  const expired = domain.expireDueInvitations(f.state, later);
+  assert.equal(expired.invitations[1].status, 'expired');
+  assert.equal(expired.invitations.length, 2);
+});
+test('expired_invitation_cannot_be_accepted', () => {
+  const f = invite(ranked('cleaning'), { mode: 'manual', partner_id: 'company-a', agreement_id: 'agreement-a' });
+  const before = structuredClone(f.state);
+  assert.throws(() => respond(f, 'accept-assignment', { assignment_id: f.state.invitations[0].assignment_id }, later), fails('INVITATION_EXPIRED'));
+  assert.deepEqual(f.state, before);
+});
+test('sourcing_is_pure_and_invitation_price_projection_is_allowlisted', () => {
+  const f = ranked('cleaning');
+  const input = { mode: 'manual', partner_id: 'company-a', agreement_id: 'agreement-a' };
+  const first = step(f.state, f.principals.landlord_a, 'invite', input);
+  assert.deepEqual(step(f.state, f.principals.landlord_a, 'invite', input), first);
+  first.state.invitations[0].agreement_snapshot.private_document_url = 'SECRET';
+  assert.doesNotMatch(JSON.stringify(projectWorkOrderForActor(first.state, f.principals.company_a_worker, 'wo-1')), /SECRET|private_document/);
+});
+test('fixed_rank_decline_and_expiry_keep_dispatch_price_snapshots_without_preassignment', () => {
+  for (const decline of [true, false]) {
+    const f = ranked('cleaning');
+    f.state.service_agreements.push({ ...f.state.service_agreements[0], id: 'individual-agreement', partner_id: 'individual-a', price_twd: 1800 });
+    invite(f, { agreement_id: 'agreement-a' });
+    assert.equal(f.state.assignments.length, 0);
+    f.state.service_agreements.push({ ...f.state.service_agreements[1], id: 'changed', agreement_id: 'individual-agreement', version: 2, price_twd: 9999 });
+    f.state = decline ? respond(f, 'decline').state : domain.expireDueInvitations(f.state, later);
+    assert.equal(f.state.invitations[0].status, decline ? 'declined' : 'expired');
+    assert.equal(f.state.invitations[1].agreement_snapshot.price_twd, 1800);
+    assert.equal(f.state.assignments.length, 0);
+    const result = respond(f, 'accept-assignment', { assignment_id: f.state.invitations[1].assignment_id }, decline ? now : later, f.principals.individual_worker).state;
+    assert.equal(result.assignments.length, 1);
+    assert.equal(result.assignments[0].partner_id, 'individual-a');
+    assert.equal(result.assignments[0].approved_amount_twd, 1800);
+  }
+});
 const fails = (code) => (error) => error.code === code;
 function setup(trade = 'repair') {
   const { state, principals } = createSyntheticFixtures();

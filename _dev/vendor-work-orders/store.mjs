@@ -51,12 +51,17 @@ function validateSnapshot(state, previous) {
   unique(state.priority_rules, r => [r.workspace_id, r.property_id, r.trade, r.partner_id]);
   unique(state.service_agreements, r => [r.workspace_id, r.agreement_id || r.id, r.version]);
   unique(state.idempotency_records, r => [r.scope, r.key]);
+  unique(state.assignments.filter(r => r.status !== 'cancelled'), r => [r.workspace_id, r.work_order_id]);
+  unique(state.invitations.filter(r => r.assignment_id), r => r.assignment_id);
+  unique(state.quotes.filter(r => r.invitation_id), r => [r.workspace_id, r.invitation_id]);
+  unique(state.quote_revisions, r => [r.workspace_id, r.quote_id, r.version]);
+  unique(state.notification_outbox, r => [r.event_id, r.recipient_type, r.recipient_id, r.channel]);
   for (const row of state.priority_rules) {
     if (!Number.isSafeInteger(row.rank) || row.rank < 1 || !['repair', 'cleaning', 'other'].includes(row.trade) ||
         typeof row.property_id !== 'string' || !row.property_id.trim()) invalid();
   }
   if (previous) {
-    for (const table of ['service_agreements', 'work_order_events', 'idempotency_records']) {
+    for (const table of ['service_agreements', 'work_order_events', 'idempotency_records', 'quote_revisions', 'notification_outbox']) {
       if (state[table].length < previous[table].length || previous[table].some((row, i) =>
         JSON.stringify(row) !== JSON.stringify(state[table][i]))) invalid();
     }
@@ -94,6 +99,7 @@ export function createWorkOrderStore({ filePath } = {}) {
       // Detach before awaiting IO, so a retained mutator reference cannot change
       // the validated bytes or the committed in-memory snapshot.
       const committed = JSON.parse(JSON.stringify(candidate));
+      if (JSON.stringify(committed) === JSON.stringify(snapshot)) return structuredClone(snapshot);
       await mkdir(dirname(target), { recursive: true, mode: 0o700 });
       const temp = join(dirname(target), `.${basename(target)}.${randomUUID()}.tmp`);
       let handle;
