@@ -2,9 +2,19 @@
   "verified_on": "2026-10-04",
   "source_commit": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "backend_verified_on": "2026-10-07",
-  "backend_source_commit": "2e6d2ef7f917960f01831fd0d7d4f19df5691708",
+  "backend_source_commit": "b101afc",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 217,
+  "backend_version": 218,
+  "room_share_gallery_release": {
+    "verified_on": "2026-10-07",
+    "source_commit": "b101afc",
+    "backend_version": 218,
+    "rollback_backend_version": 217,
+    "rollback_frontend_revision": "1a173696f264e7f37eed022f62e23fdd01c3a530",
+    "frontend_release_tag": "20261007-room-share-gallery-v1",
+    "tests_passed": 642,
+    "status": "Authorized frontend and backend publication. Fresh serving217 and editor HEAD59 files match origin/main. Candidate HEAD and immutable218 each59 files byte-identical. Existing formal Web App reads218; other4 deployments unchanged. Frontend Pages publication pending. No business-data saves, LINE sends, Schema, trigger or Properties changes. Physical LINE share and swipe acceptance pending."
+  },
   "room_keyboard_viewport_origin_frontend_release": {
     "verified_on": "2026-10-07",
     "source_commit": "b4a4973",
@@ -82,7 +92,7 @@
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
   "backend_file_count": 59,
-  "backend_tree_sha256": "e1e2b82ae22ab6b0555357d62bf3dbe5c01c0c838409d7c141e2815beb17c2b1",
+  "backend_tree_sha256": "b1b5aa44c0d2ce59e09aea4a222ba466d0779cb98b108ea0210017353f146f40",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [

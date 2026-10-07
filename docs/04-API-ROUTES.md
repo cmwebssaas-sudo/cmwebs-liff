@@ -234,7 +234,7 @@ unsupported／none。由後端從已授權房間的手動網址推導，不接�
 帳密與任意外站，不跟隨 redirect、不攜帶登入憑證。取房源照片集第一張
 same-origin `/api/public/media/<uuid>`，不取 logo 或 og:image。
 
-2026-10-07 分享／圖庫候選（尚未發布）：增加 `photos: string[]`，按公開
+2026-10-07 分享／圖庫（正式後端218）：增加 `photos: string[]`，按公開
 照片集的 img src 順序去重，最多100張，既有 `url` 仍為第一張供舊版相容。
 僅已授權房間的手動網址或 bound 公開同步網址可作查詢來源；手動值優先。
 快取鍵更新為 room-gallery-v2，命中時逐張重新檢查同來源 public media UUID。

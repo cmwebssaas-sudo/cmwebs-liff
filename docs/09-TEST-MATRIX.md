@@ -990,7 +990,7 @@ PR233合併ab6bac6，Pages37610069412成功，46個公開檔案逐位元組一�
 正式入口20261007-room-keyboard-pan-v1；LINE真機重測尚未完成。
 本次候選rollback6a64047，後端不動。
 
-## 2026-10-07 房源分享與公開照片圖庫（本機候選，未發布）
+## 2026-10-07 房源分享與公開照片圖庫（後端218，前端發布中）
 
 新增 room-share-gallery.test.mjs，實際函式驗證原生分享、取消不複製、
 失敗後剪貼簿／手動複製、公開網址限制、參數移除、中性標題與切換計數。
@@ -999,7 +999,8 @@ save 及 authorized bound fallback。先觀察未實作的 RED，再實作 GREEN
 本機390×844圖卡三张合成圖片均載入，按箭頭1/3→2/3→3/3，末張右箭頭
 停用，body寬390無橫向溢出，實際scroll-snap-type為x mandatory。
 固定shell與鍵盤回歸保留。照片不寫Sheets，只由公開網站衍生。
-尚未部署Apps Script或GitHub Pages，未寫正式網址、未實際發送分享。
+使用者授權後Apps Script218已部署，59檔immutable與候選一致，URL不變；
+其他四部署不變。GitHub Pages發布中，未寫正式網址、未實際發送分享。
 手機LINE原生分享及手指滑動需真機驗收；browser尺寸測試不等於真機。
 全套642/642、npm run validate、git diff --check通過。
 獨立審查發現並修正分享私人網址／內部標題、清空手動網址後圖庫消失三項。
