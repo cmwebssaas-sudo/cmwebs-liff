@@ -952,3 +952,16 @@ HEAD 回404不能作圖片不存在的判定。沒有保存正式資料或更動
 46公開檔逐位元組一致。已登入正式房源頁唯讀重載101：既有網址的第一張
 照片complete=true、natural1672x941。未重送保存，不改 Schema／trigger／
 Properties／LINE／帳務。新保存交易及手機LINE真機待驗收。
+
+## 2026-10-07 房源網址手機鍵盤避讓（本機候選）
+
+網址 input 繼承 label13px，未處理 focus／viewport scroll，固定導覽在
+縮小視窗內仍占68px。現在明確16px，手機輸入時隱藏底導覽，resize／scroll／
+focus調整page捲動，優先保持網址及儲存按鈕可見，blur恢復導覽。不禁用縮放。
+`room-website-keyboard.test.mjs` 三項先失敗再通過：縮小高度、桌面不捲動、
+blur不捲動。完整626/626、validate、diff-check通過。
+本機合成201圖卡，390×340實際DOM：input top225.95 bottom271.95，save
+top279.95 bottom323.95，page bottom340，font16px、nav none；離開輸入後
+nav block且網址草稿保留。未點保存，不寫正式資料。這不是LINE軟鍵盤真機
+驗收。使用者已授權前端發布，候選1d12250重新626/626、validate及diff-check
+通過，Pages／公開讀回待完成。回退前端c84c01e；後端217不動。
