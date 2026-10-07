@@ -15,7 +15,9 @@ assert.match(backend, /management_fee/);
 assert.doesNotMatch(backend, /current_tenant_name/);
 assert.doesNotMatch(backend, /tenant_name/);
 assert.doesNotMatch(backend, /bill_id/);
-assert.doesNotMatch(backend, /contract_id/);
+// Internal scoped associations are permitted; runtime projection tests ensure
+// their IDs and private fields are never returned to the room cards.
+assert.match(backend, /effective_status: occupancyByRoom\[roomId\]/);
 assert.match(dispatcher, /landlord_room_center_init/);
 assert.match(api, /landlord_room_center_init: true/);
 assert.match(page, /landlord_room_center_init/);

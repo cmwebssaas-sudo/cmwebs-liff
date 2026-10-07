@@ -8,6 +8,7 @@ function context(extra={}) {
   vm.runInContext(html.slice(html.indexOf('    function safeExternalUrl('),html.indexOf('    async function saveRoomWebsite(')),c);return c;
 }
 const room={room_name:'101',room_id:'private-id',room_website_url:'https://rooms.z3house.com/spaces/101/',room_website_cover:{url:'https://rooms.z3house.com/a',photos:['https://rooms.z3house.com/a','https://rooms.z3house.com/b','javascript:bad'],status:'available'}};
+function shareButton(status={hidden:true}) { return {dataset:{shareUrl:room.room_website_url,shareTitle:'101'},closest:()=>({querySelector:()=>status})}; }
 test('gallery renders safe slides, counter and controls; share precedes original actions',()=>{
   const card=context().roomCard(room);
   assert.match(card,/class="room-photo-track"/);assert.match(card,/1 \/ 2/);assert.match(card,/下一張照片/);
@@ -17,14 +18,21 @@ test('gallery renders safe slides, counter and controls; share precedes original
   assert.doesNotMatch(context().roomCard({room_name:'empty'}),/分享房源/);
   assert.match(context().roomCard({...room,room_website_url:'',z3house:{binding_status:'bound',independent_site_url:room.room_website_url}}),/1 \/ 2/);
 });
+test('share is an accessible photo overlay; mobile hides arrows without disabling native swipe',()=>{
+  const card=context().roomCard(room);
+  assert.ok(card.indexOf('class="room-share"')<card.indexOf('class="room-card-body"'));
+  assert.match(card,/aria-label="分享房源"/);
+  assert.match(html,/@media\s*\(max-width:\s*767px\)[\s\S]*?\.room-photo-arrow\s*\{\s*display:\s*none/);
+  assert.match(html,/\.room-share\s*\{[^}]*position:\s*absolute/);
+});
 test('native share sends only public URL and title; cancellation does not copy',async()=>{
-  const sent=[];let copied=0;const button={dataset:{shareUrl:room.room_website_url,shareTitle:'101'},nextElementSibling:{hidden:true}};
+  const sent=[];let copied=0;const button=shareButton();
   const c=context({navigator:{share:async v=>sent.push(v),clipboard:{writeText:async()=>copied++}},showToast:()=>{}});
   await c.shareRoomWebsite(button);assert.deepEqual(JSON.parse(JSON.stringify(sent)),[{title:'查看房源',url:room.room_website_url}]);
   c.navigator.share=async()=>{throw Object.assign(Error(),{name:'AbortError'});};await c.shareRoomWebsite(button);assert.equal(copied,0);
 });
 test('share falls back to clipboard or visible manual link without automatic navigation',async()=>{
-  let copied='';const status={hidden:true,textContent:''};const button={dataset:{shareUrl:room.room_website_url,shareTitle:'101'},nextElementSibling:status};
+  let copied='';const status={hidden:true,textContent:''};const button=shareButton(status);
   const c=context({navigator:{clipboard:{writeText:async v=>copied=v}},showToast:()=>{}});
   await c.shareRoomWebsite(button);assert.equal(copied,room.room_website_url);
   c.navigator.clipboard.writeText=async()=>{throw Error('denied');};await c.shareRoomWebsite(button);assert.equal(status.hidden,false);assert.match(status.textContent,/https:/);
@@ -37,11 +45,12 @@ test('sharing rejects admin and unrelated targets, strips queries and uses a neu
   assert.equal(sent.length,0);
   const card=c.roomCard({...room,room_name:'Internal customer reference',room_website_url:room.room_website_url+'?preview_token=synthetic#private'});
   assert.match(card,/data-share-title="查看房源"/);assert.doesNotMatch(card,/data-share-url="[^"]*preview_token/);
-  await c.shareRoomWebsite({dataset:{shareUrl:room.room_website_url+'?preview_token=synthetic',shareTitle:'Internal customer'},nextElementSibling:{}});
+  const button=shareButton();button.dataset={shareUrl:room.room_website_url+'?preview_token=synthetic',shareTitle:'Internal customer'};
+  await c.shareRoomWebsite(button);
   assert.deepEqual(JSON.parse(JSON.stringify(sent)),[{title:'查看房源',url:room.room_website_url}]);
 });
 test('native share rejection uses copy fallback; missing clipboard exposes manual copy',async()=>{
-  let copied='';const fallback={hidden:true};const button={dataset:{shareUrl:room.room_website_url},nextElementSibling:fallback};
+  let copied='';const fallback={hidden:true};const button=shareButton(fallback);
   const c=context({navigator:{share:async()=>{throw Error('unsupported');},clipboard:{writeText:async v=>copied=v}},showToast:()=>{}});
   await c.shareRoomWebsite(button);assert.equal(copied,room.room_website_url);assert.equal(button.disabled,false);
   delete c.navigator.clipboard;await c.shareRoomWebsite(button);assert.equal(fallback.hidden,false);assert.match(fallback.textContent,/https:/);

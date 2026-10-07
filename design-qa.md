@@ -1,5 +1,25 @@
 # Landlord Home Dashboard Design QA
 
+## 2026-10-07 Room photo controls — local PASS, device UNVERIFIED
+
+Compared the user's Airbnb screenshot and local 390×844 room-card capture in
+one image inspection. Scope is the two approved photo controls, not an Airbnb
+page clone. Intentional differences: preserve CMWebs shell, original public
+listing photos, card text, listing management and occupancy badge; no favorite.
+
+- Share: top-right circular white 44px control, dark 22px Heroicons arrow-up-tray;
+  accessible name and visible keyboard focus. Source uses the same placement.
+- Mobile: no gallery arrows; native horizontal scroll-snap and bottom-right
+  count remain. Actual local counter moved 1/2 → 2/2 via keyboard scroll.
+- Desktop 1366×900: arrows remain, next button enabled, no horizontal overflow.
+- Synthetic 501 status is 已出租・待起租; only included in occupied, not vacant.
+- Local evidence: `/tmp/cmwebs-room-mobile-share-preview.png` and
+  `/tmp/cmwebs-room-desktop-share-preview.png`. Run `node scripts/preview-room-cards.mjs`.
+- This preview uses synthetic room identities/status and photos from the public
+  1f-store listing, not a claim those are room 501's production photos.
+- No Production deployment or business writes. Native LINE/iPhone swipe,
+  native share and authenticated post-deploy status remain unverified.
+
 ## Source and implementation
 
 - Source visual truth: `docs/superpowers/specs/assets/2026-08-31-landlord-home-dashboard-selected.png`
