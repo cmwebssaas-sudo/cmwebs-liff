@@ -258,6 +258,48 @@ test('start_sweeps_due_invitations_and_timer_advances_with_injected_clock', asyn
   t.mock.timers.tick(60000);
   assert.deepEqual(await a.server.store.readSnapshot(), closed);
 });
+for (const trigger of ['start', 'timer']) {
+  test(`quote_expiry_progresses_rank_through_server_${trigger}`, async t => {
+    const a = await sourcingApi(t, 'repair');
+    const invited = await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 1 });
+    const v = await authenticated(t, 'company_a_worker', a.server);
+    const invitation = invited.json.data.invitations[0];
+    const body = { expected_version: 2, labor_twd: 1000, materials_twd: 0, tax_twd: 0,
+      estimated_days: 1, expires_at: '2026-10-08T06:00:00Z' };
+    const path = `/api/invitations/${invitation.id}/quote`;
+    assert.equal((await v.api(path, 'POST', body)).status, 200);
+    const before = await a.server.store.readSnapshot();
+    const quote = before.quotes[0];
+    await a.server.close();
+    if (trigger === 'timer') {
+      t.mock.timers.enable({ apis: ['setInterval'] });
+      await a.server.start();
+    }
+    a.setTime('2026-10-08T06:00:00Z');
+    if (trigger === 'start') await a.server.start();
+    else t.mock.timers.tick(60000);
+    const swept = await a.server.store.readSnapshot();
+    assert.equal(swept.quotes[0].status, 'expired');
+    assert.equal(swept.invitations[0].status, 'expired');
+    assert.equal(swept.invitations[1].partner_id, 'individual-a');
+    assert.equal(swept.work_orders[0].status, 'sourcing');
+    assert.equal(swept.work_order_events.length, before.work_order_events.length + 1);
+    assert.equal(swept.notification_outbox.length, before.notification_outbox.length + 1);
+    assert.deepEqual(swept.quote_revisions, before.quote_revisions);
+    assert.equal(swept.assignments.length, 0);
+    const renewed = await authenticated(t, 'company_a_worker', a.server);
+    assert.deepEqual((await renewed.api(path, 'POST', body)).json.data.quotes[0].status, 'submitted');
+    assert.equal((await renewed.api(path, 'POST', { ...body, labor_twd: 1200 })).json.code, 'IDEMPOTENCY_CONFLICT');
+    assert.equal((await renewed.api(path, 'POST', { ...body, expected_version: 4 }, 'stale-quote')).json.code, 'INVITATION_EXPIRED');
+    const landlord = await authenticated(t, 'landlord_a', a.server);
+    assert.equal((await landlord.api(`/api/work-orders/${a.id}/quote-approval`, 'POST', {
+      expected_version: 4, quote_id: quote.id, quote_version: 1 }, 'expired-approval')).json.code, 'QUOTE_NOT_APPROVED');
+    assert.deepEqual(await a.server.store.readSnapshot(), swept);
+    await a.server.close();
+    await a.server.start();
+    assert.deepEqual(await a.server.store.readSnapshot(), swept);
+  });
+}
 test('quote_revisions_approval_and_vendor_privacy_are_transactional', async t => {
   const a = await sourcingApi(t, 'repair');
   await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 1, mode: 'parallel', partner_ids: ['company-a', 'individual-a'] });

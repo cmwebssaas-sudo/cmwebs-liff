@@ -621,6 +621,19 @@ function sourcingTransition(state, actor, action, input, now) {
 export function expireDueInvitations(state, now) {
   const at = timestamp(now);
   const next = structuredClone(state);
+  for (const quote of next.quotes.filter(q => q.status === 'submitted' && q.expires_at <= at)) {
+    const order = next.work_orders.find(w => belongs(quote, w));
+    if (!order || !['sourcing', 'awaiting_approval'].includes(order.status) || assignmentFor(next, order)) continue;
+    const invitation = next.invitations.find(i => belongs(i, order) && i.id === quote.invitation_id && i.status === 'quoted');
+    if (!invitation) continue; // Cancelled/selected rounds cannot be revived by expiry.
+    const from = order.status;
+    quote.status = 'expired';
+    invitation.status = 'expired';
+    order.status = quoteWaiting(next, order, at) ? 'awaiting_approval' : 'sourcing';
+    const recipients = order.sourcing_round?.escalation_paused ? [] : advanceRank(next, order, at);
+    recordSourcingEvent(next, order, { role: 'system', actor_id: 'invitation-sweeper' }, 'quote-expired', at, from,
+      recipients.length ? recipients : [`workspace:${order.workspace_id}`]);
+  }
   for (const invitation of next.invitations.filter(i => i.status === 'sent' && i.deadline_at <= at)) {
     const order = next.work_orders.find(w => belongs(invitation, w));
     if (!order || !['sourcing', 'awaiting_approval'].includes(order.status) || assignmentFor(next, order)) continue;

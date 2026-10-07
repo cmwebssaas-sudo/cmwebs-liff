@@ -77,6 +77,50 @@ test('valid_quote_pauses_rank_escalation', () => {
   const continued = step(rejected, f.principals.landlord_a, 'invite', { mode: 'ranked', continue_round: true }).state;
   assert.equal(continued.invitations[1].partner_id, 'individual-a');
 });
+test('expired_submitted_quote_advances_frozen_rank_atomically_at_exact_deadline', () => {
+  const f = invite(ranked());
+  f.state = respond(f, 'quote', { ...quoteInput, expires_at: later }).state;
+  const before = structuredClone(f.state);
+  const quote = f.state.quotes[0];
+  assert.throws(() => transitionWorkOrder(f.state, f.principals.landlord_a, 'approve-quote', {
+    work_order_id: 'wo-1', expected_version: 3, quote_id: quote.id, quote_version: 1 }, later), fails('QUOTE_EXPIRED'));
+  assert.throws(() => respond(f, 'quote', quoteInput, later), fails('INVITATION_EXPIRED'));
+  assert.deepEqual(f.state, before);
+  f.state.priority_rules = [];
+  const swept = domain.expireDueInvitations(f.state, later);
+  assert.equal(swept.quotes[0].status, 'expired');
+  assert.equal(swept.invitations[0].status, 'expired');
+  assert.equal(swept.invitations[1].partner_id, 'individual-a');
+  assert.equal(swept.invitations[1].status, 'sent');
+  assert.equal(swept.work_orders[0].status, 'sourcing');
+  assert.equal(swept.work_orders[0].version, 4);
+  assert.equal(swept.work_order_events.at(-1).action, 'quote-expired');
+  assert.equal(swept.notification_outbox.at(-1).event_id, swept.work_order_events.at(-1).id);
+  assert.equal(swept.notification_outbox.at(-1).recipient_id, 'individual-a');
+  assert.doesNotMatch(swept.notification_outbox.at(-1).message, /Synthetic|instructions|101/);
+  assert.deepEqual(swept.quote_revisions, before.quote_revisions);
+  assert.equal(swept.assignments.length, 0);
+  assert.deepEqual(domain.expireDueInvitations(swept, later), swept);
+});
+test('quote_expiry_preserves_other_valid_quote_or_active_sent_invitation_pause', () => {
+  for (const otherStatus of ['quoted', 'sent']) {
+    const f = invite(ranked());
+    f.state = respond(f, 'quote', { ...quoteInput, expires_at: later }).state;
+    // Controlled concurrent-wait state: the next frozen candidate must not be sent twice.
+    f.state.invitations.push({ ...f.state.invitations[0], id: 'other-wait', partner_id: 'individual-a',
+      status: otherStatus, deadline_at: '2026-10-10T04:00:00.000Z' });
+    if (otherStatus === 'quoted') f.state.quotes.push({ ...f.state.quotes[0], id: 'other-quote',
+      invitation_id: 'other-wait', partner_id: 'individual-a', expires_at: '2026-10-10T04:00:00.000Z' });
+    const swept = domain.expireDueInvitations(f.state, later);
+    assert.equal(swept.quotes[0].status, 'expired');
+    assert.equal(swept.invitations[0].status, 'expired');
+    assert.equal(swept.invitations.length, 2);
+    assert.equal(swept.invitations[1].status, otherStatus);
+    assert.equal(swept.work_orders[0].status, otherStatus === 'quoted' ? 'awaiting_approval' : 'sourcing');
+    assert.equal(swept.work_orders[0].sourcing_round.cursor, 1);
+    assert.deepEqual(domain.expireDueInvitations(swept, later), swept);
+  }
+});
 test('manual_override_records_actor', () => {
   const f = invite(ranked(), { mode: 'manual', partner_id: 'individual-a' });
   assert.equal(f.state.invitations[0].partner_id, 'individual-a');
