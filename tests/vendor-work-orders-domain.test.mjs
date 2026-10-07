@@ -5,6 +5,86 @@ import { createInitialState, normalizeActor, transitionWorkOrder, projectWorkOrd
 import { createSyntheticFixtures } from '../_dev/vendor-work-orders/fixtures.mjs';
 import * as domain from '../_dev/vendor-work-orders/domain.mjs';
 
+function executing() {
+  const f = fixedAssignment();
+  f.state = step(f.state, f.principals.company_a_worker, 'start').state;
+  return f;
+}
+function finished() {
+  const f = executing();
+  f.result = step(f.state, f.principals.company_a_worker, 'complete', { description: 'Done', actual_amount_twd: 1500 });
+  f.state = f.result.state;
+  return f;
+}
+test('completion_enters_awaiting_acceptance', () => {
+  const f = finished();
+  assert.equal(f.state.work_orders[0].status, 'awaiting_acceptance');
+  assert.equal(f.result.notifications.length, 1);
+  assert.equal(f.result.notifications[0].recipient_type, 'workspace');
+  assert.equal(f.result.notifications[0].event_id, f.result.events[0].id);
+  assert.equal(f.state.completion_reports[0].version, f.state.work_orders[0].version);
+  assert.equal(domain.projectWorkOrderForActor(f.state, f.principals.landlord_a, 'wo-1').completion_reports[0].description, 'Done');
+});
+test('landlord_acceptance_completes_order', () => {
+  const f = finished();
+  const r = step(f.state, f.principals.landlord_a, 'accept');
+  assert.equal(r.state.work_orders[0].status, 'completed');
+  assert.equal(r.notifications.length, 1);
+  assert.equal(r.notifications[0].recipient_id, 'company-a');
+  assert.equal(r.state.acceptances[0].version, r.state.work_orders[0].version);
+});
+test('landlord_rework_returns_order_to_progress', () => {
+  const f = finished();
+  assert.throws(() => step(f.state, f.principals.landlord_a, 'rework', { reason: '' }), fails('INVALID_ACCEPTANCE'));
+  const r = step(f.state, f.principals.landlord_a, 'rework', { reason: 'Leak remains' });
+  assert.equal(r.state.work_orders[0].status, 'in_progress');
+  assert.equal(r.notifications.length, 1);
+  assert.equal(r.notifications[0].recipient_id, 'company-a');
+  const again = step(r.state, f.principals.company_a_worker, 'complete', { description: 'Fixed leak', actual_amount_twd: 1500 });
+  assert.equal(again.state.completion_reports.length, 2);
+  assert.deepEqual(again.state.completion_reports[0], f.state.completion_reports[0]);
+});
+test('completion_never_auto_closes_order', () => {
+  const f = finished();
+  const swept = domain.expireDueInvitations(f.state, later);
+  assert.equal(swept.work_orders[0].status, 'awaiting_acceptance');
+  assert.equal(swept.acceptances.length, 0);
+  assert.equal(domain.projectInbox(swept, f.principals.landlord_a).filter(n => n.event_id === f.result.events[0].id).length, 1);
+});
+test('over_budget_completion_requires_approved_supplement', () => {
+  const f = executing();
+  const complete = s => step(s, f.principals.company_a_worker, 'complete', { description: 'Extra materials', actual_amount_twd: 1800 });
+  assert.throws(() => complete(f.state), fails('SUPPLEMENT_REQUIRED'));
+  const requested = step(f.state, f.principals.company_a_worker, 'request-supplement', { ...quoteInput, labor_twd: 0, materials_twd: 300, tax_twd: 0, reason: 'Extra materials' }).state;
+  assert.throws(() => complete(requested), fails('SUPPLEMENT_REQUIRED'));
+  const supplement = requested.quote_revisions.at(-1);
+  const approval = { supplement_id: supplement.id, supplement_version: supplement.version };
+  assert.throws(() => step(requested, f.principals.company_a_worker, 'approve-supplement', approval), fails('FORBIDDEN'));
+  assert.throws(() => step(requested, f.principals.landlord_a, 'approve-supplement', { ...approval, supplement_version: 2 }), fails('VERSION_CONFLICT'));
+  const approved = step(requested, f.principals.landlord_a, 'approve-supplement', approval).state;
+  assert.equal(complete(approved).state.work_orders[0].status, 'awaiting_acceptance');
+  assert.equal(approved.assignments[0].approved_amount_twd, 1500);
+  assert.throws(() => step(approved, f.principals.landlord_a, 'approve-supplement', approval), fails('INVALID_TRANSITION'));
+});
+test('costs_are_safe_integer_twd', () => {
+  const f = executing();
+  for (const value of [-1, 0.5, Number.MAX_SAFE_INTEGER + 1, NaN, Infinity, '1500']) {
+    assert.throws(() => step(f.state, f.principals.company_a_worker, 'complete', { description: 'Done', actual_amount_twd: value }), fails('INVALID_AMOUNT'));
+    assert.throws(() => step(f.state, f.principals.company_a_worker, 'request-supplement', { ...quoteInput, labor_twd: value, reason: 'Extra' }), fails('INVALID_AMOUNT'));
+  }
+  const requested = step(f.state, f.principals.company_a_worker, 'request-supplement', { ...quoteInput, labor_twd: Number.MAX_SAFE_INTEGER, materials_twd: 0, tax_twd: 0, reason: 'Extra' }).state;
+  assert.throws(() => step(requested, f.principals.landlord_a, 'approve-supplement', { supplement_id: requested.quote_revisions.at(-1).id, supplement_version: 1 }), fails('INVALID_AMOUNT'));
+});
+
+test('completion_and_acceptance_require_landlord_read_permission_and_matching_assignment', () => {
+  const f = finished();
+  f.state.workspace_memberships.find(m => m.actor_id === 'landlord-a').permissions = ['work_order_accept'];
+  assert.throws(() => step(f.state, f.principals.landlord_a, 'accept'), fails('FORBIDDEN'));
+  const g = executing();
+  assert.throws(() => step(g.state, g.principals.company_a_worker, 'complete', {
+    assignment_id: 'other', description: 'Done', actual_amount_twd: 1500 }), fails('NOT_FOUND'));
+});
+
 const now = '2026-10-08T04:00:00.000Z';
 const later = '2026-10-09T04:00:00.000Z';
 const quoteInput = { labor_twd: 1000, materials_twd: 200, tax_twd: 60, estimated_days: 2,

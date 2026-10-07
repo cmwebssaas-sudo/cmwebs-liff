@@ -10,7 +10,8 @@ const tables = ['partners', 'partner_memberships', 'workspace_memberships', 'wor
   'work_order_events', 'private_attachments', 'notification_outbox', 'idempotency_records'];
 const permissions = { create: 'work_order_dispatch', source: 'work_order_dispatch',
   assign: 'work_order_approve', start: null, complete: null, accept: 'work_order_accept',
-  rework: 'work_order_accept', cancel: 'work_order_dispatch' };
+  rework: 'work_order_accept', cancel: 'work_order_dispatch',
+  'request-supplement': null, 'approve-supplement': 'work_order_approve' };
 
 function fail(code) { const error = new Error(code); error.code = code; throw error; }
 // Deterministic within a pure transition; the server-generated order ID provides opacity.
@@ -121,10 +122,13 @@ export function transitionWorkOrder(state, actor, action, input, now) {
   } else {
     order = findOrder(next, principal, input.work_order_id);
     if (['completed', 'cancelled'].includes(order.status)) fail('INVALID_TRANSITION');
+    if (['start', 'complete', 'request-supplement', 'accept', 'rework', 'approve-supplement'].includes(action)) {
+      authorizeWorkOrderAction(state, principal, action, input);
+    }
     if (!Number.isSafeInteger(input.expected_version) || input.expected_version !== order.version) fail('VERSION_CONFLICT');
     from = order.status;
     const assignment = assignmentFor(next, order);
-    if (['start', 'complete'].includes(action) &&
+    if (['start', 'complete', 'request-supplement'].includes(action) &&
         (!vendorAllowed(next, principal) || !assignment || assignment.partner_id !== principal.partner_id)) fail('FORBIDDEN');
     switch (action) {
       case 'source':
@@ -167,9 +171,14 @@ export function transitionWorkOrder(state, actor, action, input, now) {
       case 'complete': {
         if (order.status !== 'in_progress') fail('INVALID_TRANSITION');
         const actual = amount(input.actual_amount_twd);
-        if (actual > assignment.approved_amount_twd) fail('SUPPLEMENT_REQUIRED');
+        if (actual > approvedLimit(next, order, assignment)) fail('SUPPLEMENT_REQUIRED');
+        const attachment_ids = input.attachment_ids === undefined ? [] : strings(input.attachment_ids, 'INVALID_ATTACHMENT');
+        for (const id of attachment_ids) {
+          if (!next.private_attachments.some(a => a.id === id && belongs(a, order))) fail('INVALID_ATTACHMENT');
+        }
         next.completion_reports.push({ id: `completion-${order.id}-${order.version + 1}`, workspace_id: order.workspace_id,
           work_order_id: order.id, assignment_id: assignment.id, actor: principal, at,
+          version: order.version + 1, attachment_ids,
           description: text(input.description, 'INVALID_COMPLETION'), actual_amount_twd: actual });
         order.status = 'awaiting_acceptance';
         assignment.status = 'awaiting_acceptance';
@@ -179,11 +188,33 @@ export function transitionWorkOrder(state, actor, action, input, now) {
       case 'rework':
         if (order.status !== 'awaiting_acceptance' || !assignment) fail('INVALID_TRANSITION');
         next.acceptances.push({ id: `acceptance-${order.id}-${order.version + 1}`, workspace_id: order.workspace_id,
-          work_order_id: order.id, actor: principal, at, decision: action,
+          work_order_id: order.id, actor: principal, at, version: order.version + 1, decision: action,
           reason: action === 'rework' ? text(input.reason, 'INVALID_ACCEPTANCE') : '' });
         order.status = action === 'accept' ? 'completed' : 'in_progress';
         assignment.status = order.status;
         break;
+      case 'request-supplement': {
+        if (order.status !== 'in_progress') fail('INVALID_TRANSITION');
+        const quote = validateQuoteInput(input);
+        if (quote.expires_at <= at) fail('QUOTE_EXPIRED');
+        next.quote_revisions.push({ id: opaqueId(order.id, order.version + 1, 'supplement'),
+          quote_id: opaqueId(order.id, order.version + 1, 'supplement'),
+          kind: 'supplement', workspace_id: order.workspace_id, work_order_id: order.id,
+          assignment_id: assignment.id, partner_id: assignment.partner_id, version: 1,
+          ...quote, reason: text(input.reason, 'INVALID_QUOTE'), actor: principal, at });
+        break;
+      }
+      case 'approve-supplement': {
+        if (order.status !== 'in_progress' || !assignment) fail('INVALID_TRANSITION');
+        const supplement = next.quote_revisions.find(q => q.id === input.supplement_id && q.kind === 'supplement' &&
+          belongs(q, order) && q.assignment_id === assignment.id && q.partner_id === assignment.partner_id);
+        if (!supplement) fail('NOT_FOUND');
+        if (supplement.version !== input.supplement_version) fail('VERSION_CONFLICT');
+        if (supplement.expires_at <= at) fail('QUOTE_EXPIRED');
+        if (next.work_order_events.some(e => belongs(e, order) && e.action === 'approve-supplement' && e.supplement_id === supplement.id)) fail('INVALID_TRANSITION');
+        amount(approvedLimit(next, order, assignment) + amount(supplement.total_twd));
+        break;
+      }
       case 'cancel':
         order.status = 'cancelled';
         if (assignment) assignment.status = 'cancelled';
@@ -195,8 +226,68 @@ export function transitionWorkOrder(state, actor, action, input, now) {
   const event = { id: `event-${order.id}-${order.version}`, workspace_id: order.workspace_id,
     work_order_id: order.id, actor: principal, action, at, from, to: order.status,
     version: order.version, visibility: ['start', 'complete', 'accept', 'rework'].includes(action) ? 'public' : 'internal' };
+  if (action === 'approve-supplement') {
+    const supplement = next.quote_revisions.find(q => q.id === input.supplement_id && belongs(q, order));
+    Object.assign(event, { supplement_id: supplement.id, supplement_version: supplement.version,
+      assignment_id: supplement.assignment_id, approved_extra_twd: supplement.total_twd });
+  }
   next.work_order_events.push(event);
-  return { state: next, events: [structuredClone(event)], notifications: [] };
+  const assignment = assignmentFor(next, order);
+  const recipients = ['start', 'complete', 'request-supplement'].includes(action) ? [{ type: 'workspace', id: order.workspace_id }]
+    : ['accept', 'rework', 'approve-supplement'].includes(action) ? [{ type: 'partner', id: assignment.partner_id }] : [];
+  appendNotices(next, order, event, recipients);
+  return { state: next, events: [structuredClone(event)], notifications: next.notification_outbox.filter(n => n.event_id === event.id) };
+}
+
+function approvedLimit(state, order, assignment) {
+  return state.work_order_events.filter(e => belongs(e, order) && e.action === 'approve-supplement' && e.assignment_id === assignment.id)
+    .reduce((sum, e) => amount(sum + amount(e.approved_extra_twd)), amount(assignment.approved_amount_twd));
+}
+function appendNotices(state, order, event, recipients) {
+  for (const { type, id } of recipients) {
+    state.notification_outbox.push({ id: opaqueId(event.id, type, id, 'local'), workspace_id: order.workspace_id,
+      work_order_id: order.id, event_id: event.id, recipient_type: type, recipient_id: id,
+      channel: 'local', status: 'saved', at: event.at, message: `Work order ${order.trade}: update available.`, login_path: '/' });
+  }
+}
+
+/** Attachment authority is deliberately stricter than invitation summary visibility. */
+export function authorizeAttachment(state, actor, workOrderId, write = false) {
+  const principal = normalizeActor(actor);
+  const order = findOrder(state, principal, workOrderId);
+  if (principal.role === 'landlord') {
+    if (!landlordAllowed(state, principal, 'work_order_read') ||
+        write && !landlordAllowed(state, principal, 'work_order_dispatch')) fail('FORBIDDEN');
+  } else {
+    const assignment = assignmentFor(state, order);
+    if (!vendorAllowed(state, principal) || !assignment || assignment.partner_id !== principal.partner_id) fail('FORBIDDEN');
+  }
+  if (write && ['completed', 'cancelled'].includes(order.status)) fail('INVALID_TRANSITION');
+  return order;
+}
+
+export function attachmentMetadata(row) {
+  return { id: row.id, workspace_id: row.workspace_id, work_order_id: row.work_order_id,
+    content_type: row.content_type, size_bytes: row.size_bytes, sha256: row.sha256, actor: normalizeActor(row.actor), at: row.at };
+}
+
+export function recordAttachmentAccess(state, actor, action, workOrderId, id, now, metadata, expectedVersion) {
+  const principal = normalizeActor(actor);
+  const next = structuredClone(state);
+  const order = authorizeAttachment(next, principal, workOrderId, action === 'attachment-upload');
+  const from = order.status;
+  const at = timestamp(now);
+  if (action === 'attachment-upload') {
+    if (!Number.isSafeInteger(expectedVersion) || expectedVersion !== order.version) fail('VERSION_CONFLICT');
+    next.private_attachments.push(attachmentMetadata({ ...metadata, id, workspace_id: order.workspace_id,
+      work_order_id: order.id, actor: principal, at }));
+    order.version += 1; order.updated_at = at;
+  } else if (action !== 'attachment-download') fail('INVALID_ACTION');
+  const event = { id: action === 'attachment-upload' ? `event-${order.id}-${order.version}` : `attachment-access-${id}`,
+    workspace_id: order.workspace_id, work_order_id: order.id, actor: principal, action, at,
+    from, to: order.status, version: order.version, visibility: 'internal', attachment_id: metadata?.attachment_id || id };
+  next.work_order_events.push(event);
+  return next;
 }
 
 // Directory contracts are independent of work-order orchestration. All inputs are
@@ -432,19 +523,48 @@ export function normalizeWorkOrderInput(action, input) {
     if (input.agreement_id !== undefined) data.agreement_id = text(input.agreement_id, 'INVALID_AGREEMENT');
     if (data.mode === 'parallel' && data.agreement_id) fail('INVALID_AGREEMENT');
   } else if (action === 'quote') Object.assign(data, validateQuoteInput(input));
+  else if (action === 'request-supplement') Object.assign(data, validateQuoteInput(input), { reason: text(input.reason, 'INVALID_QUOTE') });
+  else if (action === 'approve-supplement') {
+    data.supplement_id = text(input.supplement_id, 'INVALID_QUOTE');
+    if (!Number.isSafeInteger(input.supplement_version) || input.supplement_version < 1) fail('VERSION_CONFLICT');
+    data.supplement_version = input.supplement_version;
+  } else if (action === 'complete') {
+    data.description = text(input.description, 'INVALID_COMPLETION');
+    data.actual_amount_twd = amount(input.actual_amount_twd);
+    data.attachment_ids = input.attachment_ids === undefined ? [] : strings(input.attachment_ids, 'INVALID_ATTACHMENT');
+  } else if (action === 'accept' || action === 'rework') {
+    data.reason = action === 'rework' ? text(input.reason, 'INVALID_ACCEPTANCE') : '';
+  }
   else if (action === 'approve-quote') {
     data.quote_id = text(input.quote_id, 'INVALID_QUOTE');
     if (!Number.isSafeInteger(input.quote_version) || input.quote_version < 1) fail('VERSION_CONFLICT');
     data.quote_version = input.quote_version;
     data.decision = input.decision === undefined ? 'approve' : input.decision;
     if (!['approve', 'reject'].includes(data.decision)) fail('INVALID_INPUT');
-  } else if (!['decline', 'accept-assignment'].includes(action)) fail('INVALID_ACTION');
+  } else if (!['decline', 'accept-assignment', 'start', 'complete', 'accept', 'rework', 'request-supplement', 'approve-supplement'].includes(action)) fail('INVALID_ACTION');
   return data;
 }
 
 /** Also called inside replay transactions, so revoked membership never replays privileged data. */
 export function authorizeWorkOrderAction(state, actor, action, resource = {}) {
   const principal = normalizeActor(actor);
+  if (['start', 'complete', 'request-supplement', 'accept', 'rework', 'approve-supplement'].includes(action)) {
+    let order;
+    if (resource.assignment_id) {
+      const assignment = state.assignments.find(a => a.id === resource.assignment_id && a.workspace_id === principal.workspace_id);
+      if (!assignment) fail('NOT_FOUND');
+      order = findOrder(state, principal, assignment.work_order_id);
+    } else order = findOrder(state, principal, resource.work_order_id);
+    if (['accept', 'rework', 'approve-supplement'].includes(action)) {
+      if (!landlordAllowed(state, principal, 'work_order_read') ||
+          !landlordAllowed(state, principal, action === 'approve-supplement' ? 'work_order_approve' : 'work_order_accept')) fail('FORBIDDEN');
+    } else {
+      const assignment = assignmentFor(state, order);
+      if (!vendorAllowed(state, principal) || !assignment || assignment.partner_id !== principal.partner_id ||
+          resource.assignment_id && assignment.id !== resource.assignment_id) fail('FORBIDDEN');
+    }
+    return;
+  }
   if (['create', 'invite', 'approve-quote'].includes(action)) {
     if (!landlordAllowed(state, principal, 'work_order_read') ||
         !landlordAllowed(state, principal, action === 'approve-quote' ? 'work_order_approve' : 'work_order_dispatch')) fail('FORBIDDEN');
@@ -693,5 +813,17 @@ export function projectWorkOrderForActor(state, actor, workOrderId) {
     id: e.id, at: e.at, action: e.action, from: e.from, to: e.to, version: e.version,
     ...(landlord ? { actor: e.actor.role === 'system' ? { role: 'system', actor_id: 'invitation-sweeper' } : normalizeActor(e.actor), visibility: e.visibility } : {}),
   }));
+  if (landlord || assigned) {
+    view.completion_reports = state.completion_reports.filter(r => belongs(r, order)).map(r => ({
+      id: r.id, assignment_id: r.assignment_id, description: r.description, actual_amount_twd: r.actual_amount_twd,
+      attachment_ids: r.attachment_ids || [], actor: normalizeActor(r.actor), at: r.at, version: r.version }));
+    view.acceptances = state.acceptances.filter(r => belongs(r, order)).map(r => ({
+      id: r.id, decision: r.decision, reason: r.reason, actor: normalizeActor(r.actor), at: r.at, version: r.version }));
+    view.attachments = state.private_attachments.filter(r => belongs(r, order)).map(attachmentMetadata);
+    view.supplements = state.quote_revisions.filter(r => belongs(r, order) && r.kind === 'supplement' && r.assignment_id === assignment?.id).map(r => ({
+      id: r.id, version: r.version, labor_twd: r.labor_twd, materials_twd: r.materials_twd, tax_twd: r.tax_twd,
+      total_twd: r.total_twd, reason: r.reason, expires_at: r.expires_at, at: r.at,
+      approved: state.work_order_events.some(e => belongs(e, order) && e.action === 'approve-supplement' && e.supplement_id === r.id && e.supplement_version === r.version) }));
+  }
   return structuredClone(view);
 }

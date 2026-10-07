@@ -9,6 +9,69 @@ import { createVendorWorkOrderServer } from '../_dev/vendor-work-orders/server.m
 import { createSyntheticFixtures } from '../_dev/vendor-work-orders/fixtures.mjs';
 import { projectDirectory } from '../_dev/vendor-work-orders/domain.mjs';
 
+test('completion_acceptance_rework_and_supplement_round_trip_are_atomic_and_idempotent', async t => {
+  const a = await fixedInvite(t);
+  a.assignmentId = a.invitation.assignment_id;
+  const v = await authenticated(t, 'company_a_worker', a.server);
+  let r = await v.api(`/api/assignments/${a.assignmentId}/accept`, 'POST', { expected_version: 2 });
+  assert.equal(r.status, 200);
+  r = await v.api(`/api/assignments/${a.assignmentId}/start`, 'POST', { expected_version: r.json.data.version });
+  assert.equal(r.status, 200);
+  const before = await a.server.store.readSnapshot();
+  const completion = { expected_version: r.json.data.version, actual_amount_twd: 1500, description: 'Cleaned' };
+  const path = `/api/assignments/${a.assignmentId}/completion`;
+  const bad = await v.api(path, 'POST', { ...completion, actual_amount_twd: 1501 }, 'over');
+  assert.equal(bad.json.code, 'SUPPLEMENT_REQUIRED');
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+  r = await v.api(path, 'POST', completion, 'complete');
+  assert.equal(r.status, 200); assert.equal(r.json.data.status, 'awaiting_acceptance');
+  assert.equal(r.json.data.completion_reports[0].description, 'Cleaned');
+  const saved = await a.server.store.readSnapshot();
+  assert.deepEqual((await v.api(path, 'POST', completion, 'complete')).json.data, r.json.data);
+  assert.deepEqual(await a.server.store.readSnapshot(), saved);
+  assert.equal((await a.api('/api/inbox')).json.data.some(n => n.event_id === r.json.data.events.at(-1).id), true);
+  assert.equal((await v.api(`/api/work-orders/${a.id}/acceptance`, 'POST', { expected_version: r.json.data.version, decision: 'accept' })).status, 403);
+  r = await a.api(`/api/work-orders/${a.id}/acceptance`, 'POST', { expected_version: r.json.data.version, decision: 'rework', reason: 'Missed corner' }, 'rework');
+  assert.equal(r.status, 200); assert.equal(r.json.data.status, 'in_progress');
+  const supplement = await v.api(`/api/assignments/${a.assignmentId}/supplements`, 'POST', { expected_version: r.json.data.version,
+    labor_twd: 100, materials_twd: 0, tax_twd: 0, estimated_days: 1, expires_at: '2026-10-10T00:00:00Z', reason: 'Extra corner' }, 'supplement');
+  assert.equal(supplement.status, 200);
+  const row = supplement.json.data.supplements[0];
+  r = await a.api(`/api/work-orders/${a.id}/supplement-approval`, 'POST', { expected_version: supplement.json.data.version,
+    supplement_id: row.id, supplement_version: row.version }, 'approve-extra');
+  assert.equal(r.status, 200);
+  const extra2 = await v.api(`/api/assignments/${a.assignmentId}/supplements`, 'POST', { expected_version: r.json.data.version,
+    labor_twd: 0, materials_twd: 50, tax_twd: 0, estimated_days: 1, expires_at: '2026-10-10T00:00:00Z', reason: 'Another material' }, 'supplement-two');
+  assert.equal(extra2.status, 200);
+  assert.equal(extra2.json.data.supplements.length, 2);
+  r = extra2;
+  r = await v.api(path, 'POST', { expected_version: r.json.data.version, description: 'Reworked', actual_amount_twd: 1600 }, 'complete-again');
+  assert.equal(r.status, 200);
+  r = await a.api(`/api/work-orders/${a.id}/acceptance`, 'POST', { expected_version: r.json.data.version, decision: 'accept' }, 'accept');
+  assert.equal(r.status, 200); assert.equal(r.json.data.status, 'completed');
+  assert.equal(r.json.data.completion_reports.length, 2); assert.equal(r.json.data.acceptances.length, 2);
+  assert.equal((await v.api(`/api/work-orders/${a.id}`)).json.data.status, 'completed');
+});
+test('execution_checks_assignment_scope_membership_permissions_and_stale_version', async t => {
+  const a = await fixedInvite(t);
+  a.assignmentId = a.invitation.assignment_id;
+  const v = await authenticated(t, 'company_a_worker', a.server);
+  const accepted = await v.api(`/api/assignments/${a.assignmentId}/accept`, 'POST', { expected_version: 2 });
+  const path = `/api/assignments/${a.assignmentId}/start`;
+  const input = { expected_version: accepted.json.data.version };
+  const other = await authenticated(t, 'individual_worker', a.server);
+  const b = await authenticated(t, 'landlord_b', a.server);
+  const before = await a.server.store.readSnapshot();
+  assert.equal((await other.api(path, 'POST', input)).status, 403);
+  assert.equal((await b.api(path, 'POST', input)).status, 404);
+  assert.equal((await a.api(path, 'POST', input)).status, 403);
+  assert.equal((await v.api(path, 'POST', { expected_version: 1 })).json.code, 'VERSION_CONFLICT');
+  assert.deepEqual(await a.server.store.readSnapshot(), before);
+  assert.equal((await v.api(path, 'POST', input, 'start')).status, 200);
+  await a.server.store.transact(s => { s.partner_memberships.find(m => m.actor_id === 'worker-a').active = false; return s; });
+  assert.equal((await v.api(path, 'POST', input, 'start')).status, 403);
+});
+
 async function directory(t) {
   const dir = await mkdtemp(join(tmpdir(), 'vendor-api-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
