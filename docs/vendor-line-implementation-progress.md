@@ -18,7 +18,7 @@ LINE API、未新增 secrets、未部署。
 新增 `_dev/vendor-work-orders-cloud/`，包括 Worker router、D1 state/auth store、
 Web Crypto LINE Login PKCE、Webhook 驗簽／去重、R2 私有附件、Session、工作單讀取與
 指派動作 idempotency。新建獨立 D1／R2，套用 migration，Worker version
-`973dffe3-29be-44ca-9add-81dfe0e97a6a` 已綁定 `workorders-test.cmwebs.com`。
+`15f8acdb-1ed1-4807-9703-0dff52220939` 已綁定 `workorders-test.cmwebs.com`。
 遠端 health、首頁及 LINE status 均 HTTP 200；目前 login_ready=false 是因為 secret
 尚未注入，notification_ready 保持 false。沒有改既有 Worker、OA webhook 或發送訊息。
 

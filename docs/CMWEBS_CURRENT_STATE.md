@@ -3,7 +3,7 @@
 2026-10-10續作確認：隔離工單 WIP 已建立 Cloudflare staging 垂直切片；LINE
 Developers Login channel 2011937202 的 callback 為
 `https://workorders-test.cmwebs.com/auth/line/callback`。Worker
-`vendor-work-orders-staging` version `973dffe3-29be-44ca-9add-81dfe0e97a6a` 已
+`vendor-work-orders-staging` version `15f8acdb-1ed1-4807-9703-0dff52220939` 已
 部署並綁定 `workorders-test.cmwebs.com`；獨立 D1 ID
 `23557e55-6e12-4a2a-9c08-ef9e445efbe7`、R2
 `vendor-work-orders-attachments-staging` 已建立並完成第一個 migration。
