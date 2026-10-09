@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 付款回報審核</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261010-payment-review-login-v1"></script>
-  <script src="landlord-auth.js?v=20261010-payment-review-login-v1"></script>
+<script src="frontend-release.js?v=20261010-payment-review-submit-v1"></script>
+  <script src="landlord-auth.js?v=20261010-payment-review-submit-v1"></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -68,7 +68,7 @@
     .state-title { font-size: 17px; font-weight: 800; }
     .state-text { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
     .bottom-nav { position: absolute; z-index: 1000; right: 0; bottom: 0; left: 0; border-top: 1px solid #e8ecf1; background: rgba(255, 255, 255, .98); padding-bottom: env(safe-area-inset-bottom); backdrop-filter: blur(12px); }
-    .bottom-nav-inner { height: 64px; display: grid; grid-template-columns: repeat(4, 1fr); }
+    .bottom-nav-inner { height: 64px; display: grid; grid-template-columns: repeat(5, 1fr); }
     .nav-item { position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 5px; border: 0; background: transparent; color: #8b919a; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
     .nav-item svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
     .nav-item.active { color: #06c755; font-weight: 900; }
@@ -113,6 +113,7 @@
           <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"></path><path d="M15.5 7.5a2.5 2.5 0 0 1 0 5"></path><path d="M16 14c2.2.4 3.5 2 4 5"></path></svg>
           <span>房客</span>
         </button>
+        <button class="nav-item" type="button" onclick="goPage('landlord-rooms.html')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 7h1m4 0h1M9 11h1m4 0h1M10 21v-6h4v6"></path></svg><span>房源</span></button>
         <button class="nav-item active" type="button" onclick="goPage('landlord-more.html')">
           <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="18" cy="12" r="1.5"></circle></svg>
           <span>更多</span>
@@ -385,7 +386,7 @@
         params.id_token = liff.getIDToken();
         if (!params.id_token) throw new Error('登入憑證已過期，請從房東入口重新登入。');
       }
-      return REVIEW_AUTH.requestProtected(action,params,{timeoutMs:120000});
+      return REVIEW_AUTH.requestProtected(action,params,{timeoutMs:action==='landlord_bank_receipt_confirm'?240000:60000});
     }
 
     async function loadBankReceipts() {
@@ -395,42 +396,60 @@
       BANK_RECEIPT_ERROR = '';
       // A successful read allows an explicit retry using the same receipt ID.
       // Never automatically resend the confirmation.
-      BANK_RECEIPT_UNCERTAIN = '';
+      if (BANK_RECEIPT_UNCERTAIN && (BANK_RECEIPT_DATA.receipts||[]).some(function(r){return r.receipt_id===BANK_RECEIPT_UNCERTAIN && ['settled','other'].indexOf(r.status)>=0;})) BANK_RECEIPT_UNCERTAIN = '';
       return BANK_RECEIPT_DATA;
     }
 
     async function submitBankReceipt(button,receiptId,decision) {
-      if (BANK_RECEIPT_BUSY) return;
-      if (BANK_RECEIPT_UNCERTAIN === receiptId) {showToast('銷帳結果尚未確認，請重新整理核對。',true);return;}
+      if (BANK_RECEIPT_BUSY) {showToast('目前正在處理另一筆入帳，請稍候。',true);return;}
+      if (BANK_RECEIPT_UNCERTAIN) {showToast('上一筆銷帳結果尚未確認，請先重新整理核對。',true);return;}
       const receipt = (BANK_RECEIPT_DATA.receipts||[]).find(function(r){return r.receipt_id===receiptId;});
-      if (!receipt) return;
+      if (!receipt || ['pending','unmatched'].indexOf(receipt.status)<0) return;
       const card = button.closest('.bank-receipt');
       const billId = decision==='confirm' ? receipt.match_bill_id : card.querySelector('.bank-select').value;
       if (decision!=='other'&&!billId) {showToast('請先選擇帳單。',true);return;}
       BANK_RECEIPT_BUSY = true;
-      document.querySelectorAll('.bank-receipt button').forEach(function(b){b.disabled=true;});
+      const originalLabel = button.textContent;
+      button.textContent = '處理中…';
+      card.setAttribute('aria-busy','true');
+      card.querySelectorAll('button').forEach(function(b){b.disabled=true;});
       try {
         const result = await bankReceiptRequest('landlord_bank_receipt_confirm',{receipt_id:receiptId,bill_id:billId,decision:decision==='other'?'other':'confirm'});
-        if (!result || result.success!==true) {
-          if (result && ['BANK_RECEIPT_FAILED','SETTLEMENT_UNVERIFIED','SETTLEMENT_PENDING'].indexOf(result.code)>=0) BANK_RECEIPT_UNCERTAIN=receiptId;
-          throw new Error(result&&result.message||'入帳通知處理失敗');
+        const outcome = result && result.data;
+        if (!result || result.success!==true || !outcome || (outcome.status==='settled'&&outcome.receipt_id!==receiptId) || ['settled','other'].indexOf(outcome.status)<0) {
+          BANK_RECEIPT_UNCERTAIN=receiptId;
+          throw new Error(result&&result.message||'入帳通知處理結果尚未確認');
         }
-        await loadBankReceipts();
+        // The verified write response already confirms this receipt. A later
+        // list-refresh failure must never turn that success into uncertainty.
+        receipt.status = outcome.status;
+        receipt.payment_id = outcome.payment_id || receipt.payment_id;
+        BANK_RECEIPT_UNCERTAIN='';
         renderPage();
-        showToast(decision==='other'?'已標記為其他款項。':'已確認銷帳。');
+        showToast(outcome.status==='other'?'已標記為其他款項。':'已確認銷帳。');
+        try {await loadBankReceipts();renderPage();}
+        catch (_) {showToast(outcome.status==='other'?'已標記為其他款項；清單更新暫時失敗，請重新整理。':'已確認銷帳；清單更新暫時失敗，請重新整理。');}
       } catch (error) {
-        if (error && error.code==='API_TIMEOUT') BANK_RECEIPT_UNCERTAIN=receiptId;
-        try {
-          await loadBankReceipts();
-          const current = (BANK_RECEIPT_DATA.receipts||[]).find(function(r){return r.receipt_id===receiptId;});
-          if (current && (current.status==='settled'||current.status==='other')) {
-            BANK_RECEIPT_UNCERTAIN='';renderPage();showToast(current.status==='settled'?'已確認銷帳。':'已標記為其他款項。');return;
-          }
-          renderPage();
-        } catch (_) {BANK_RECEIPT_UNCERTAIN=receiptId;}
+        if (error && (error.code==='API_TIMEOUT' || ['BANK_RECEIPT_FAILED','SETTLEMENT_UNVERIFIED','SETTLEMENT_PENDING'].indexOf(error.code)>=0)) BANK_RECEIPT_UNCERTAIN=receiptId;
+        // A timed-out write can still be running. Poll only reads; never retry
+        // the confirmation automatically or release its uncertainty on pending.
+        for (let attempt=0;attempt<3;attempt++) {
+          try {
+            await loadBankReceipts();
+            const current = (BANK_RECEIPT_DATA.receipts||[]).find(function(r){return r.receipt_id===receiptId;});
+            if (current && ['settled','other'].indexOf(current.status)>=0) {
+              BANK_RECEIPT_UNCERTAIN='';renderPage();showToast(current.status==='settled'?'已確認銷帳。':'已標記為其他款項。');return;
+            }
+            if (!BANK_RECEIPT_UNCERTAIN) break;
+          } catch (_) {BANK_RECEIPT_UNCERTAIN=receiptId;}
+          if (attempt<2) await new Promise(function(resolve){setTimeout(resolve,5000);});
+        }
+        renderPage();
         showToast(BANK_RECEIPT_UNCERTAIN?'銷帳結果尚未確認，請重新整理核對。':error.message,true);
       } finally {
         BANK_RECEIPT_BUSY=false;
+        button.textContent=originalLabel;
+        card.setAttribute('aria-busy','false');
         document.querySelectorAll('.bank-receipt button').forEach(function(b){b.disabled=BANK_RECEIPT_UNCERTAIN===b.closest('.bank-receipt').dataset.receiptId;});
       }
     }
