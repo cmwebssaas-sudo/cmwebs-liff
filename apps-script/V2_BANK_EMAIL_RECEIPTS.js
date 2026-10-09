@@ -284,6 +284,29 @@ function bankReceiptDispatch_(action,request) {
   if(request.input_json){try{input=JSON.parse(request.input_json);}catch(_){return bankReceiptError_('INVALID_INPUT','資料格式錯誤');}}
   return action==='landlord_bank_receipts_init'?bankReceiptInit_(access):bankReceiptConfirm_(access,input);
 }
+// A read may recognize an existing human-approved tenant payment. It never
+// creates a payment or learns a payer identity from this projection.
+function bankReceiptPaymentDay_(value) {
+  if(value instanceof Date)return Utilities.formatDate(value,'Asia/Taipei','yyyy-MM-dd');
+  return bankReceiptText_(value).replace(/\//g,'-').slice(0,10);
+}
+function bankReceiptExistingSettlement_(row,tables,receipts) {
+  if(row.report_id || !row.match_bill_id || ['pending','unmatched'].indexOf(row.status)<0)return null;
+  const bills=tables.bills.filter(function(b){return b.bill_id===row.match_bill_id&&bankReceiptBillInWorkspace_(b,row.workspace_id,tables.scope);});
+  if(bills.length!==1||bills[0].payment_status!=='paid')return null;
+  const review={status:'paid_bill_review'},bill=bills[0];
+  if(Number(bill.total_amount)!==Number(row.amount)||!bill.payment_id||!/^\d{5}$/.test(row.payer_last5))return review;
+  if(receipts.some(function(r){return r.receipt_id!==row.receipt_id&&r.workspace_id===row.workspace_id&&(r.match_bill_id===bill.bill_id||r.payment_id===bill.payment_id)&&r.status!=='other';}))return review;
+  const reports=tables.reports.filter(function(r){return r.bill_id===bill.bill_id&&r.status==='confirmed'&&r.matched_payment_id===bill.payment_id&&r.tenant_id===bill.tenant_id&&r.landlord_id===bill.landlord_id&&Number(r.reported_amount)===Number(row.amount)&&bankReceiptText_(r.reported_last5)===row.payer_last5&&bankReceiptPaymentDay_(r.reported_paid_date)===row.payment_at.slice(0,10)&&r.confirmed_by&&r.confirmed_at&&(!r.workspace_id||r.workspace_id===row.workspace_id);});
+  if(reports.length!==1)return review;
+  const payments=tables.payments.filter(function(p){return p.payment_id===bill.payment_id;});
+  if(payments.length!==1)return review;
+  const p=payments[0],report=reports[0];
+  if(p.bill_id!==bill.bill_id||p.status!=='confirmed'||p.source_ref_id!==report.report_id||Number(p.amount)!==Number(row.amount)||
+    (p.workspace_id&&p.workspace_id!==row.workspace_id)||(p.tenant_id&&p.tenant_id!==bill.tenant_id)||(p.landlord_id&&p.landlord_id!==bill.landlord_id)||
+    (p.bank_last5&&bankReceiptText_(p.bank_last5)!==row.payer_last5)||(p.payment_date&&bankReceiptPaymentDay_(p.payment_date)!==row.payment_at.slice(0,10)))return review;
+  return {status:'settled',report_id:report.report_id,payment_id:p.payment_id};
+}
 function bankReceiptInit_(access) {
   const workspaceId=bankReceiptText_(access.workspace.workspace_id);
   const lock=LockService.getScriptLock();lock.waitLock(25000);
@@ -296,8 +319,14 @@ function bankReceiptInit_(access) {
       candidates.map(function(row){return {row:row,payment:bankReceiptCommittedPayment_(row,tables)};}).filter(function(item){return !!item.payment;}).slice(0,25).forEach(function(item){bankReceiptFinish_(item.row,access,item.payment,tables.bills.find(function(b){return b.bill_id===item.row.match_bill_id&&bankReceiptBillInWorkspace_(b,workspaceId,access);}));});
     }
   } finally {lock.releaseLock();}
-  const bills=bankReceiptRows_('V2_bills').filter(function(b){return bankReceiptBillEligible_(b,workspaceId,access);});
+  const allBills=bankReceiptRows_('V2_bills');
+  const bills=allBills.filter(function(b){return bankReceiptBillEligible_(b,workspaceId,access);});
   const receipts=bankReceiptRows_('V2_bank_email_receipts').filter(function(r){return r.workspace_id===workspaceId;}).sort(function(a,b){return String(b.created_at).localeCompare(String(a.created_at));});
+  const existingCandidates=receipts.filter(function(row){return !row.report_id&&['pending','unmatched'].indexOf(row.status)>=0&&allBills.some(function(b){return b.bill_id===row.match_bill_id&&b.payment_status==='paid'&&bankReceiptBillInWorkspace_(b,workspaceId,access);});});
+  if(existingCandidates.length){
+    const existingTables={bills:allBills,reports:bankReceiptRows_('V2_payment_reports'),payments:bankReceiptRows_('V2_payments'),scope:access};
+    existingCandidates.forEach(function(row){const resolved=bankReceiptExistingSettlement_(row,existingTables,receipts);if(resolved)Object.assign(row,resolved);});
+  }
   return {success:true,code:'OK',data:{can_approve_payment:!!(access.permissions&&access.permissions.can_approve_payment),
     receipts:receipts.filter(function(r){return ['pending','unmatched'].indexOf(r.status)>=0;}).concat(receipts.filter(function(r){return ['pending','unmatched'].indexOf(r.status)<0;}).slice(0,25)).map(function(r){return {receipt_id:r.receipt_id,amount:r.amount,payment_at:r.payment_at,payer_bank:r.payer_bank,payer_last5:r.payer_last5,
       source_kind:r.source_kind,status:r.status,match_bill_id:r.match_bill_id,report_id:r.report_id,payment_id:r.payment_id};}),
@@ -344,6 +373,8 @@ function bankReceiptConfirm_(access,input) {
     const found=bankReceiptRows_('V2_bank_email_receipts').filter(function(r){return r.receipt_id===bankReceiptText_(input.receipt_id)&&r.workspace_id===workspaceId;});
     if(found.length!==1)return bankReceiptError_('RECEIPT_NOT_FOUND','找不到此入帳紀錄');row=found[0];
     const committed=bankReceiptCommittedPayment_(row);if(committed)return bankReceiptFinish_(row,access,committed);
+    const existing=bankReceiptExistingSettlement_(row,{bills:bankReceiptRows_('V2_bills'),reports:bankReceiptRows_('V2_payment_reports'),payments:bankReceiptRows_('V2_payments'),scope:access},bankReceiptRows_('V2_bank_email_receipts'));
+    if(existing)return bankReceiptError_(existing.status==='settled'?'RECEIPT_ALREADY_SETTLED':'RECEIPT_REVIEW_REQUIRED',existing.status==='settled'?'原帳單已銷帳，請重新整理核對':'原帳單已繳清，請人工核對入帳，不可重複銷帳');
     if(row.status==='settled'||row.status==='other')return bankReceiptError_('RECEIPT_CLOSED','此入帳紀錄已處理');
     if(input.decision==='other'){
       if(row.report_id)return bankReceiptError_('SETTLEMENT_PENDING','此筆銷帳處理中，請先核對結果');
@@ -391,4 +422,31 @@ function testBankEmailReceiptParser() {
   const parsed=bankReceiptParsePostal_('入帳通知(No.123456)','轉入帳號：1234*****56789\n轉入金額：6,432元\n轉入時間：115/10/09\n09:07\n轉出帳號：987654*****01234\n轉出行庫：合成銀行');
   if(!parsed||parsed.amount!==6432||parsed.payer_last5!=='01234')throw new Error('Postal receipt parser regression');
   return {success:true,code:'OK'};
+}
+
+function testBankReceiptExistingSettlementProjection() {
+  const row={receipt_id:'synthetic-receipt',workspace_id:'synthetic-workspace',match_bill_id:'synthetic-bill',status:'pending',amount:100,payer_last5:'01234',payment_at:'2026-10-09T09:00:00+08:00'};
+  const bill={bill_id:'synthetic-bill',workspace_id:row.workspace_id,payment_status:'paid',payment_id:'synthetic-payment',total_amount:100,tenant_id:'synthetic-tenant',landlord_id:'synthetic-owner'};
+  const report={report_id:'synthetic-report',bill_id:bill.bill_id,status:'confirmed',matched_payment_id:bill.payment_id,tenant_id:bill.tenant_id,landlord_id:bill.landlord_id,reported_amount:100,reported_last5:'01234',reported_paid_date:'2026-10-09',confirmed_by:'synthetic-human',confirmed_at:'2026-10-10'};
+  const payment={payment_id:bill.payment_id,bill_id:bill.bill_id,status:'confirmed',source_ref_id:report.report_id,amount:100};
+  const tables={bills:[bill],reports:[report],payments:[payment],scope:{workspace:{workspace_id:row.workspace_id}}};
+  if(bankReceiptExistingSettlement_(row,tables,[row]).status!=='settled')throw new Error('Existing settlement projection failed');
+  report.reported_last5='99999';
+  if(bankReceiptExistingSettlement_(row,tables,[row]).status!=='paid_bill_review')throw new Error('Existing settlement mismatch must require review');
+  Logger.log('Existing settlement projection PASS; synthetic only, no writes');
+}
+
+function testBankReceiptExistingSettlementReadOnly() {
+  const config=bankReceiptReadConfig_();
+  if(!config.enabled)throw new Error('Intake disabled');
+  const receipts=bankReceiptRows_('V2_bank_email_receipts'),bills=bankReceiptRows_('V2_bills'),reports=bankReceiptRows_('V2_payment_reports'),payments=bankReceiptRows_('V2_payments');
+  const result=[];
+  config.accounts.forEach(function(account){
+    const tables={bills:bills,reports:reports,payments:payments,scope:bankReceiptWorkspaceScope_(account.workspace_id)};
+    receipts.filter(function(row){return row.workspace_id===account.workspace_id&&row.payment_account_id===account.payment_account_id;}).forEach(function(row){
+      const resolved=bankReceiptExistingSettlement_(row,tables,receipts);
+      result.push({amount:Number(row.amount),stored_status:row.status,display_status:resolved?resolved.status:row.status});
+    });
+  });
+  Logger.log(JSON.stringify({success:true,read_only:true,receipts:result}));
 }

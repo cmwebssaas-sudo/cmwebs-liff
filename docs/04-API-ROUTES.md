@@ -1080,3 +1080,14 @@ authenticated runtime verification packet.
   Timing logs contain action/read counts/duration, never payloads or identifiers.
 - Home uses the protected bootstrap as its Email session validation rather than
   a redundant preceding session-status request. Backend verification is unchanged.
+
+
+### Bank receipt existing-payment projection (2026-10-10)
+
+`landlord_bank_receipts_init` recognizes a human-confirmed tenant payment on
+an already matched paid bill through bill/report/payment identity, amount,
+payer suffix and payment-date checks. It returns `settled` with existing
+report/payment IDs without altering any receipt or financial row. Ambiguous
+paid-bill evidence returns `paid_bill_review`; it cannot be submitted again or
+reassigned through `landlord_bank_receipt_confirm` (`RECEIPT_ALREADY_SETTLED`
+or `RECEIPT_REVIEW_REQUIRED`). No new route or Schema field.
