@@ -4,7 +4,7 @@
   "backend_verified_on": "2026-10-07",
   "backend_source_commit": "aeda946",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 219,
+  "backend_version": 220,
   "room_photo_share_occupancy_release": {
     "verified_on": "2026-10-07",
     "source_commit": "b8a409e0581613b580471e527bd540aa28d4417a",
@@ -287,6 +287,43 @@
     "gmail_scope_granted": false,
     "real_line_delivery_verified": false,
     "real_settlement_verified": false,
-    "status": "Correct saas Chrome profile and Apps Script owner identity verified. Existing Spreadsheet binding matches the inspected Sheet. Added two empty receipt tables and one disabled intake property; existing fifteen properties retained. Formal Apps Script parser test completed. Web App219 and Pages unchanged; no new Gmail grant, timer, LINE send or financial settlement."
+    "status": "Correct saas Chrome profile and Apps Script owner identity verified. Existing Spreadsheet binding matches the inspected Sheet. Added two empty receipt tables and one disabled intake property; existing fifteen properties retained. Formal Apps Script parser test completed. Web App219 and Pages unchanged; no new Gmail grant, timer, LINE send or financial settlement.",
+    "phase": "historical pre-consent snapshot; superseded by postal_email_release"
+  },
+  "postal_email_release": {
+    "date": "2026-10-09",
+    "pull_request": 241,
+    "main_merge_commit": "0e679069bf6a9c40307f398fd43d741b44290d3b",
+    "backend_version": 220,
+    "rollback_backend_version": 219,
+    "head_files_matched": 60,
+    "immutable_files_matched": 60,
+    "public_files_matched": 46,
+    "pages_build": 1271979520,
+    "frontend_release_tag": "20261009-postal-payment-review-v1",
+    "tests_passed": 678,
+    "focused_tests_passed": 31,
+    "gmail_readonly_granted": true,
+    "intake_enabled": true,
+    "trigger_interval_minutes": 5,
+    "intake_trigger_count": 1,
+    "existing_triggers_retained": 4,
+    "natural_execution": {
+      "local_time": "22:54:41 Asia/Taipei",
+      "status": "completed",
+      "duration_seconds": 6.742
+    },
+    "real_receipt_count": 1,
+    "real_receipt_status": "pending",
+    "real_payment_created": false,
+    "notification_provider_accepted": 3,
+    "delivery_send_counts": [
+      1,
+      1,
+      1
+    ],
+    "physical_line_receipt": "UNVERIFIED",
+    "authenticated_review": "UNVERIFIED; logged-out browser redirects to login",
+    "real_settlement": "NOT_PERFORMED; landlord confirmation required"
   }
 }
