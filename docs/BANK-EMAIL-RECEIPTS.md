@@ -1,5 +1,14 @@
 # 郵局 Email 入帳與房東確認銷帳
 
+2026-10-09 HTML 原信解析修正：郵局原信包含註解中的舊帳號欄位，舊版 HTML
+轉文字把隱藏欄位也留下，因此第二封真實通知被當成重複欄位而拒絕。
+先移除 HTML 註解再解析；可見重複通知仍拒絕。合成重現 RED→GREEN，完整679/679
+及 validate 通過；沒有更改配對、權限、通知或人工銷帳規則。正式Web App已更新v221（原URL），immutable60來源檔逐檔一致；v220保留作回退。
+正式parser與補讀執行成功；有界回讀兩筆真實通知均matched/pending及sent，
+兩筆report_id／payment_id空白。第二筆通知三個delivery為sent且各send_count=1。
+手機收件／人工确认仍UNVERIFIED；未改前端、Schema、Properties或trigger。
+建議模型／速度：gpt-5.6-terra／medium；隔離分支codex/postal-html-comments-20261009。
+
 2026-10-09 已發布並啟用。使用者明確授權此標準流程的實作；建議模型
 `gpt-5.6-terra`／`medium`。隔離分支 `codex/postal-payment-review-20261009`，
 基底 `origin/main@6af4b28`。不修改 root WIP；正式 Web App v220／Pages 已發布，Gmail 唯讀收信已啟用。

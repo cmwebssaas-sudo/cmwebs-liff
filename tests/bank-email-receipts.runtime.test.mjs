@@ -57,6 +57,17 @@ test('postal parser separates payer/receiver, preserves zero suffix and ROC time
   assert.equal(c.bankReceiptParsePostal_('入帳通知(No.123456)',sample.replace('115/10/09','115/02/30')),null);
   assert.equal(c.bankReceiptParsePostal_('入帳通知(No.123456)',sample+'\n'+sample),null);
 });
+test('postal HTML comments do not create duplicate payment fields',()=>{
+  const c=runtime().ctx;
+  const visible=sample.split('\n').map(line=>`<tr><td><p>${line}</p></td></tr>`).join('\n');
+  const html=`<html><body><!--<tr><td><p>轉入帳號：1234*****56789</p></td></tr>-->${visible}</body></html>`;
+  const decode=text=>c.bankReceiptGmailBody_({mimeType:'text/html',body:{data:Buffer.from(text).toString('base64url')}});
+  const parsed=c.bankReceiptParsePostal_('入帳通知(No.123456)',decode(html));
+  assert.ok(parsed,'visible postal notification must parse despite commented legacy field');
+  assert.equal(parsed.amount,6432);
+  assert.equal(parsed.payment_at,'2026-10-09T09:07:00+08:00');
+  assert.equal(c.bankReceiptParsePostal_('入帳通知(No.123456)',decode(visible+visible)),null,'visible duplicate notices remain rejected');
+});
 test('match only unpaid same-workspace bills; duplicate amounts remain unmatched',()=>{
   const c=runtime().ctx;const r=receipt({workspace_id:'ws-a',payment_account_id:'acct-a'});
   assert.equal(c.bankReceiptMatch_(r,[bill(),bill('foreign',{workspace_id:'ws-b'})],[]).bill_id,'bill-a');

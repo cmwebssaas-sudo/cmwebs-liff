@@ -196,6 +196,7 @@ function bankReceiptGmailBody_(part) {
   const children=part.parts||[];
   for(let i=0;i<children.length;i++){const text=bankReceiptGmailBody_(children[i]);if(text)return text;}
   if(part.mimeType==='text/html'&&part.body&&part.body.data)return Utilities.newBlob(Utilities.base64DecodeWebSafe(part.body.data)).getDataAsString()
+    .replace(/<!--[\s\S]*?-->/g,'')
     .replace(/<(?:br\b[^>]*|\/p|\/div|\/tr)>/gi,'\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&#(\d+);/g,function(_,n){return String.fromCharCode(Number(n));});
   return '';
 }
