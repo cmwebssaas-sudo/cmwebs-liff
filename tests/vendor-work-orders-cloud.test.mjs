@@ -142,3 +142,17 @@ test('Worker exposes health and non-secret LINE status', async () => {
   assert.equal(data.data.channel_id, '2011937202');
   assert.equal(Object.hasOwn(data.data, 'channel_secret'), false);
 });
+
+test('cloud diagnostic and unknown API routes never expose business state or fall back to HTML', async () => {
+  let assetCalls = 0;
+  const worker = createWorker({ env: {
+    DB: memoryD1(), PUBLIC_ORIGIN: 'https://workorders-test.cmwebs.com',
+    ASSETS: { fetch: async () => { assetCalls++; return new Response('<html>app</html>'); } },
+  } });
+  for (const path of ['/api/cloud/state', '/api/partners', '/auth/unknown']) {
+    const response = await worker.fetch(new Request(`https://workorders-test.cmwebs.com${path}`));
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { success: false, error: 'NOT_FOUND' });
+  }
+  assert.equal(assetCalls, 0);
+});

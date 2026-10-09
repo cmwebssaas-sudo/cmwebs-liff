@@ -287,11 +287,7 @@ export function createWorker({ env = {}, clock = Date.now, lineFetchImpl = fetch
         await store.transact(state => applyWebhookEvents(state, events, Number(clock())));
         return json({ success: true, data: { accepted_events: events.length } });
       }
-      if (request.method === 'GET' && url.pathname === '/api/cloud/state') {
-        if (!store) return json({ success: false, error: 'D1_NOT_CONFIGURED' }, 503);
-        const state = await store.read();
-        return json({ success: true, data: { schema_version: state.schema_version, table_counts: Object.fromEntries(Object.entries(state).filter(([key]) => key !== 'schema_version').map(([key, rows]) => [key, rows.length])) } });
-      }
+      if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return json({ success: false, error: 'NOT_FOUND' }, 404);
       if (request.method === 'GET' && env.ASSETS && typeof env.ASSETS.fetch === 'function') return env.ASSETS.fetch(request);
       return json({ success: false, error: 'NOT_FOUND' }, 404);
     },

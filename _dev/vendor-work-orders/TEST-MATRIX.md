@@ -43,3 +43,5 @@
 - 未驗收：LINE Login callback、真實手機綁定、LINE 通知收件。尚未發布。
 
 2026-10-10 登入修正：LINE token request 改採 manual redirect，callback 捕捉 provider 失敗，避免未處理例外造成 Cloudflare 1101。正確 Secret 寫入後，真實回呼已到達 membership gate（HTTP 403，無例外、無 provider 拒絕）；尚未建立合作 membership，不能宣稱完整登入 session 或工單驗收。雲端測試 14/14、完整測試 805/805、validate 通過。回復方式：回滾 Worker 到前一版本；Secret 仍維持獨立 staging 設定。
+
+2026-10-10 正式部署準備：移除公開 cloud/state 診斷，未知 API／auth 回傳 JSON 404 而非 HTML fallback。回歸先確認公開端點測試失敗，修正後 cloud 15/15、完整 806/806、validate 及 diff-check 通過。staging Worker 42383aca-5964-45cf-aa66-8b0466dbcb1c 實際讀回 diagnostic 404、login_ready=true。正式發布阻礙見 docs/releases/vendor-work-orders-production-readiness.md；尚未正式部署。
