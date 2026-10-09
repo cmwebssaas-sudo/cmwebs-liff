@@ -1,10 +1,10 @@
-# Vendor Work Orders Cloud Staging
+# Vendor Work Orders Cloud
 
 This directory is the isolated Cloudflare Worker deployment for the vendor
-work-order test flow. It is separate from the CMWebs production Worker and the
+work-order service. It is separate from the CMWebs production Worker and the
 existing No.88/Libenest services.
 
-## Target resources
+## Staging resources
 
 - Worker: `vendor-work-orders-staging`
 - D1: `vendor-work-orders-staging`
@@ -41,8 +41,8 @@ secret environment variables:
 node _dev/vendor-work-orders-cloud/scripts/deploy-cloud.mjs
 ```
 
-The first migration is additive and is applied remotely before the Worker
-version is uploaded. The script does not set `LINE_CHANNEL_SECRET`.
+All migrations are additive and must be applied remotely before the Worker
+version is uploaded. Runtime queries do not create the schema. The script does not set `LINE_CHANNEL_SECRET`.
 
 ## Configure the isolated Login secret
 
@@ -54,6 +54,22 @@ npx --yes wrangler@4.149.0 secret put LINE_CHANNEL_SECRET \
   --config _dev/vendor-work-orders-cloud/wrangler.jsonc
 ```
 
-The secret is required for `/auth/line/start`, `/auth/line/callback`, and
-webhook signature verification. Until it is set, `/api/line/status` reports
+The secret is required for `/auth/line/start` and `/auth/line/callback`.
+Webhook verification requires a separate `LINE_MESSAGING_SECRET`; never substitute the Login secret. Until it is set, `/api/line/status` reports
 `login_ready: false` and notifications remain disabled.
+
+## Production
+
+The independent production service is <https://workorders.cmwebs.com>.
+See [deployment evidence and rollback](../../docs/releases/vendor-work-orders-production-readiness.md).
+Use the explicit production config, never repoint the staging database:
+
+```sh
+npx --yes wrangler@4.149.0 d1 migrations apply vendor-work-orders-production --remote \
+  --config _dev/vendor-work-orders-cloud/wrangler.production.jsonc
+npx --yes wrangler@4.149.0 deploy --config _dev/vendor-work-orders-cloud/wrangler.production.jsonc
+```
+
+`OWNER_ACTOR_ID` is a Worker Secret holding the hash of the explicitly verified owner identity;
+`OWNER_WORKSPACE_ID` is the fixed workspace. Other users require approved partner membership.
+No partners are seeded, no public administrator self-registration is provided, and LINE push remains disabled.

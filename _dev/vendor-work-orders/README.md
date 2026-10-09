@@ -2,6 +2,8 @@
 
 此原型用來驗證多家廠商、多工種優先順序、報價、施工回報與房東驗收的流程。它是隔離的本機開發工具，不是已接入 CMWebs 正式帳號的功能。
 
+正式獨立工單服務的部署與驗收紀錄見 [雲端部署文件](../vendor-work-orders-cloud/README.md)。本目錄的 server 與 fixtures 仍僅供本機合成測試；共用 domain 規則由雲端 Worker 引用。
+
 ## 本機啟動
 
 需求：Node.js 22 以上。在 repository 根目錄執行：
