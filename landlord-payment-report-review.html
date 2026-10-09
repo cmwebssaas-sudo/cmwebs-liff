@@ -6,6 +6,7 @@
   <title>CMWebs 付款回報審核</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="frontend-release.js?v=20261007-room-photo-share-occupancy-v1"></script>
+  <script src="landlord-auth.js?v=20261007-room-photo-share-occupancy-v1"></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -83,6 +84,11 @@
     .toast { position: absolute; z-index: 3000; right: 18px; bottom: calc(64px + 22px + env(safe-area-inset-bottom)); left: 18px; display: none; border-radius: 13px; padding: 13px 15px; background: rgba(25, 28, 33, .94); color: #fff; text-align: center; font-size: 13px; font-weight: 700; line-height: 1.5; box-shadow: 0 8px 28px rgba(0, 0, 0, .18); }
     .toast.show { display: block; }
     .toast.error { background: var(--danger); }
+    .bank-select { width:100%; margin:12px 0 0; min-height:44px; padding:8px; border:1px solid var(--line); border-radius:10px; background:white; font:inherit; font-size:16px; }
+    .bank-receipt .actions { flex-wrap:wrap; }
+    .bank-receipt .button { min-height:44px; }
+    .bank-receipt details { margin-top:12px; }
+    .bank-receipt summary { cursor:pointer; min-height:44px; padding-top:12px; color:var(--brand); }
   </style>
 </head>
 <body>
@@ -122,6 +128,11 @@
     const LIFF_ID = '2010314940-EjX1qbb8';
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
+    let BANK_RECEIPT_DATA = null;
+    let BANK_RECEIPT_ERROR = '';
+    let BANK_RECEIPT_BUSY = false;
+    let BANK_RECEIPT_UNCERTAIN = '';
+    let REVIEW_AUTH = null;
     let toastTimer = null;
 
     function setAppHeight() {
@@ -209,6 +220,8 @@
     }
 
     async function initLine() {
+      REVIEW_AUTH = window.CMWebsLandlordAuth.init({apiUrl:API_URL,liffId:LIFF_ID});
+      if (REVIEW_AUTH.getMode() === 'email') return true;
       if (typeof liff === 'undefined') {
         throw new Error('LIFF SDK 載入失敗');
       }
@@ -221,6 +234,7 @@
       }
       const profile = await liff.getProfile();
       LINE_USER_ID = profile.userId || '';
+      REVIEW_AUTH.init({lineUserId:LINE_USER_ID});
       if (!LINE_USER_ID) {
         throw new Error('無法取得房東 LINE User ID');
       }
@@ -228,6 +242,9 @@
     }
 
     function jsonpRequest(action, params, timeoutMs) {
+      if (REVIEW_AUTH && REVIEW_AUTH.getMode() === 'email') {
+        return REVIEW_AUTH.request(action,params||{},{timeoutMs:timeoutMs||30000});
+      }
       return new Promise(function (resolve, reject) {
         const callbackName = '__cmwebs_payment_review_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
         const script = document.createElement('script');
@@ -302,7 +319,83 @@
     }
 
     function renderError(message) {
-      document.getElementById('app').innerHTML = '<section class="card state"><div class="state-title">付款回報載入失敗</div><div class="state-text">' + safeHtml(message) + '</div><button class="button secondary" type="button" onclick="loadPage()">重新整理</button></section>';
+      document.getElementById('app').innerHTML = bankReceiptPanel() + '<section class="card state"><div class="state-title">付款回報載入失敗</div><div class="state-text">' + safeHtml(message) + '</div><button class="button secondary" type="button" onclick="loadPage()">重新整理</button></section>';
+    }
+
+    function bankReceiptPanel() {
+      if (BANK_RECEIPT_ERROR) return '<section class="card state"><div class="state-title">入帳通知暫時無法載入</div><p class="state-text">'+safeHtml(BANK_RECEIPT_ERROR)+'</p><button class="button secondary" onclick="loadPage()">重新整理</button></section>';
+      const data = BANK_RECEIPT_DATA;
+      if (!data || !Array.isArray(data.receipts) || !data.receipts.length) return '';
+      const bills = Array.isArray(data.bills) ? data.bills : [];
+      const canApprove = data.can_approve_payment === true;
+      const label = function(bill) {return (bill.room_name||'房間')+'／'+rawText(bill.bill_month).slice(0,7)+'／'+money(bill.total_amount);};
+      return '<div class="section-title">銀行入帳通知</div><section class="card">'+data.receipts.map(function(receipt) {
+        const pending = receipt.status === 'pending' || receipt.status === 'unmatched';
+        const matched = bills.find(function(bill){return bill.bill_id===receipt.match_bill_id && Number(bill.total_amount)===Number(receipt.amount);});
+        const title = pending ? (matched ? '收到入帳，待確認銷帳' : '收到入帳，但無法配對') : (receipt.status==='settled'?'已銷帳':'其他款項');
+        const eligible = bills.filter(function(bill){return Number(bill.total_amount)===Number(receipt.amount);});
+        const options = '<option value="">請選擇帳單</option>'+eligible.map(function(bill){return '<option value="'+safeHtml(bill.bill_id)+'"'+(matched&&matched.bill_id===bill.bill_id?' selected':'')+'>'+safeHtml(label(bill))+'</option>';}).join('');
+        const selector = '<select class="bank-select" aria-label="選擇對應帳單">'+options+'</select><div class="actions"><button class="button primary" onclick="submitBankReceipt(this,\''+safeHtml(receipt.receipt_id)+'\',\'choose\')">選擇帳單並確認銷帳</button><button class="button secondary" onclick="submitBankReceipt(this,\''+safeHtml(receipt.receipt_id)+'\',\'other\')">其他款項</button></div>';
+        let controls = '';
+        if (pending && canApprove) controls = matched ? '<div class="actions"><button class="button primary" onclick="submitBankReceipt(this,\''+safeHtml(receipt.receipt_id)+'\',\'confirm\')">確認銷帳</button></div><details><summary>配對有誤</summary>'+selector+'</details>' : selector;
+        return '<article class="report bank-receipt" data-receipt-id="'+safeHtml(receipt.receipt_id)+'"><div class="report-name">'+safeHtml(title)+'</div><div class="amount">'+money(receipt.amount)+'</div><div class="report-meta">'+safeHtml(receipt.payer_bank||'未提供銀行')+'／末五碼 '+safeHtml(receipt.payer_last5||'未提供')+'<br>入帳時間：'+safeHtml(rawText(receipt.payment_at).replace('T',' ').replace('+08:00',''))+'</div>'+(matched?'<div class="report-meta">配對帳單：'+safeHtml(label(matched))+'</div>':'')+(receipt.source_kind==='forwarded'?'<div class="report-meta">來源：轉寄通知，請核對收款紀錄。</div>':'')+controls+'</article>';
+      }).join('')+'</section>';
+    }
+
+    async function bankReceiptRequest(action,input) {
+      const params = {input_json:JSON.stringify(input||{})};
+      if (REVIEW_AUTH.getMode() !== 'email') {
+        params.id_token = liff.getIDToken();
+        if (!params.id_token) throw new Error('登入憑證已過期，請從房東入口重新登入。');
+      }
+      return REVIEW_AUTH.requestProtected(action,params,{timeoutMs:120000});
+    }
+
+    async function loadBankReceipts() {
+      const result = await bankReceiptRequest('landlord_bank_receipts_init',{});
+      if (!result || result.success !== true) throw new Error(result&&result.message||'入帳通知載入失敗');
+      BANK_RECEIPT_DATA = result.data || {};
+      BANK_RECEIPT_ERROR = '';
+      // A successful read allows an explicit retry using the same receipt ID.
+      // Never automatically resend the confirmation.
+      BANK_RECEIPT_UNCERTAIN = '';
+      return BANK_RECEIPT_DATA;
+    }
+
+    async function submitBankReceipt(button,receiptId,decision) {
+      if (BANK_RECEIPT_BUSY) return;
+      if (BANK_RECEIPT_UNCERTAIN === receiptId) {showToast('銷帳結果尚未確認，請重新整理核對。',true);return;}
+      const receipt = (BANK_RECEIPT_DATA.receipts||[]).find(function(r){return r.receipt_id===receiptId;});
+      if (!receipt) return;
+      const card = button.closest('.bank-receipt');
+      const billId = decision==='confirm' ? receipt.match_bill_id : card.querySelector('.bank-select').value;
+      if (decision!=='other'&&!billId) {showToast('請先選擇帳單。',true);return;}
+      BANK_RECEIPT_BUSY = true;
+      document.querySelectorAll('.bank-receipt button').forEach(function(b){b.disabled=true;});
+      try {
+        const result = await bankReceiptRequest('landlord_bank_receipt_confirm',{receipt_id:receiptId,bill_id:billId,decision:decision==='other'?'other':'confirm'});
+        if (!result || result.success!==true) {
+          if (result && ['BANK_RECEIPT_FAILED','SETTLEMENT_UNVERIFIED','SETTLEMENT_PENDING'].indexOf(result.code)>=0) BANK_RECEIPT_UNCERTAIN=receiptId;
+          throw new Error(result&&result.message||'入帳通知處理失敗');
+        }
+        await loadBankReceipts();
+        renderPage();
+        showToast(decision==='other'?'已標記為其他款項。':'已確認銷帳。');
+      } catch (error) {
+        if (error && error.code==='API_TIMEOUT') BANK_RECEIPT_UNCERTAIN=receiptId;
+        try {
+          await loadBankReceipts();
+          const current = (BANK_RECEIPT_DATA.receipts||[]).find(function(r){return r.receipt_id===receiptId;});
+          if (current && (current.status==='settled'||current.status==='other')) {
+            BANK_RECEIPT_UNCERTAIN='';renderPage();showToast(current.status==='settled'?'已確認銷帳。':'已標記為其他款項。');return;
+          }
+          renderPage();
+        } catch (_) {BANK_RECEIPT_UNCERTAIN=receiptId;}
+        showToast(BANK_RECEIPT_UNCERTAIN?'銷帳結果尚未確認，請重新整理核對。':error.message,true);
+      } finally {
+        BANK_RECEIPT_BUSY=false;
+        document.querySelectorAll('.bank-receipt button').forEach(function(b){b.disabled=BANK_RECEIPT_UNCERTAIN===b.closest('.bank-receipt').dataset.receiptId;});
+      }
     }
 
     function reportCard(report, canApprove) {
@@ -319,19 +412,27 @@
 
     function renderPage() {
       const data = PAGE_DATA || {};
-      const summary = buildReviewSummary(data);
-      const reports = Array.isArray(data.reports) ? data.reports : [];
+      const reports = Array.isArray(data.reports) ? data.reports.filter(function(r){return !/^BPR-/.test(r.report_id||'');}) : [];
+      const summary = buildReviewSummary(Object.assign({},data,{reports:reports,summary:null}));
       const canApprove = Boolean(data.permissions && data.permissions.can_approve_payment);
       const pending = reports.filter(isPending);
       const historical = reports.filter(function (report) { return !isPending(report); });
       document.getElementById('app').innerHTML =
         '<header class="header"><div><div class="eyebrow">LANDLORD WORKSPACE</div><h1>付款回報審核</h1><p class="subtitle">只顯示目前已授權工作區的付款回報。</p></div><button class="refresh" type="button" onclick="loadPage()">重新整理</button></header>' +
+        bankReceiptPanel() +
         '<section class="card summary"><div class="metric"><div class="metric-label">待審核</div><div class="metric-value warning">' + Number(summary.pending || 0) + '</div></div><div class="metric"><div class="metric-label">全部回報</div><div class="metric-value">' + Number(summary.total || 0) + '</div></div><div class="metric"><div class="metric-label">已確認</div><div class="metric-value">' + Number(summary.confirmed || 0) + '</div></div><div class="metric"><div class="metric-label">已駁回／撤銷</div><div class="metric-value">' + (Number(summary.rejected || 0) + Number(summary.voided || 0)) + '</div></div></section>' +
         '<div class="section-title">待處理</div>' +
         (pending.length ? '<section class="card">' + pending.map(function (report) { return reportCard(report, canApprove); }).join('') + '</section>' : '<section class="card empty"><div class="state-title">目前沒有待審核付款回報</div><div class="state-text">新的付款回報會顯示在這裡。</div></section>') +
         '<div class="section-title">歷史紀錄</div>' +
         (historical.length ? '<section class="card">' + historical.map(function (report) { return reportCard(report, false); }).join('') + '</section>' : '<section class="card empty"><div class="state-text">尚無歷史付款回報。</div></section>') +
         (!canApprove ? '<div class="subtitle">目前角色僅可檢視付款回報，沒有付款確認或銷帳權限。</div>' : '');
+    }
+
+    function focusBankReceipt() {
+      const id = new URLSearchParams(window.location.search).get('receipt_id') || '';
+      if (!/^BRE-[a-f0-9]{32}$/.test(id)) return;
+      const card = Array.from(document.querySelectorAll('.bank-receipt')).find(function(el){return el.dataset.receiptId===id;});
+      if (card) {card.style.outline='2px solid var(--brand)';card.scrollIntoView({block:'start'});}
     }
 
     function openDecision(reportId, decision) {
@@ -388,10 +489,12 @@
       try {
         const ready = await initLine();
         if (!ready) return;
+        try {await loadBankReceipts();} catch (error) {BANK_RECEIPT_DATA=null;BANK_RECEIPT_ERROR=error.message;}
         const result = await jsonpRequest('landlord_payment_reports_init');
         if (!result || result.success !== true) throw new Error(result && result.message ? result.message : '付款回報資料載入失敗');
         PAGE_DATA = result.data || {};
         renderPage();
+        focusBankReceipt();
       } catch (error) {
         renderError(error.message || String(error));
       }

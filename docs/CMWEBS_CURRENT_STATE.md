@@ -1,5 +1,19 @@
 # CMWebs Current State
 
+2026-10-09 本機驗證：新增30/30、完整677/677、validate、diff-check通過；
+Apps Script parser測試函式於本機VM通過。未代表正式收信／部署／銷帳驗收。
+
+## 2026-10-09 郵局 Email 配對與房東確認銷帳（本機候選）
+
+使用者授權最簡流程：匹配完整即通知房東確認；不匹配亦通知，由房東選帳單或
+其他款項。首次唯一金額、確認成功後學習銀行＋末五碼；收信不寫已繳帳单。
+建議gpt-5.6-terra／medium，隔離分支codex/postal-payment-review-20261009，
+基底origin/main 6af4b28；root混合WIP不動。新增Gmail readonly intake、兩張附加表、
+已驗證POST審核及既有付款頁銀行區塊；沿用正式付款服務及團隊通知偏好。
+包含持久化通知重試、付款中斷恢復、原批准人、exact amount及Workspace保護。
+未操作正式Google帳戶／資料／LINE／trigger／deployment；指定收信帳戶待確認。
+部署、OAuth、migration、啟用與回退見BANK-EMAIL-RECEIPTS.md。
+
 ## 2026-10-07 房源分享按鈕縮小（前端已發布）
 
 使用者確認32px圓形、17px圖示、44px觸控範圍；建議gpt-5.6-terra、medium。

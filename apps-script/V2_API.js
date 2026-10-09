@@ -4471,7 +4471,7 @@ function buildTenantLineMessage_(tenant, messageType, messageText) {
 /**
  * 呼叫 LINE Messaging API Push Message
  */
-function pushLineTextMessage_(toLineUserId, text) {
+function pushLineTextMessage_(toLineUserId, text, retryKey) {
   const token = PropertiesService
     .getScriptProperties()
     .getProperty('LINE_CHANNEL_ACCESS_TOKEN');
@@ -4485,6 +4485,8 @@ function pushLineTextMessage_(toLineUserId, text) {
   }
 
   const url = 'https://api.line.me/v2/bot/message/push';
+  const headers = { Authorization: 'Bearer ' + token };
+  if (retryKey) headers['X-Line-Retry-Key'] = retryKey;
 
   const payload = {
     to: toLineUserId,
@@ -4499,9 +4501,7 @@ function pushLineTextMessage_(toLineUserId, text) {
   const res = UrlFetchApp.fetch(url, {
     method: 'post',
     contentType: 'application/json',
-    headers: {
-      Authorization: 'Bearer ' + token
-    },
+    headers: headers,
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
   });
@@ -4509,7 +4509,7 @@ function pushLineTextMessage_(toLineUserId, text) {
   const statusCode = res.getResponseCode();
   const body = res.getContentText();
 
-  if (statusCode >= 200 && statusCode < 300) {
+  if ((statusCode >= 200 && statusCode < 300) || (retryKey && statusCode === 409)) {
     return {
       success: true,
       code: 'OK',
@@ -4519,8 +4519,8 @@ function pushLineTextMessage_(toLineUserId, text) {
 
   return {
     success: false,
-    code: 'LINE_PUSH_FAILED',
-    message: 'LINE push message failed: HTTP ' + statusCode + ' / ' + body
+    code: retryKey && statusCode >= 400 && statusCode < 500 ? 'LINE_PUSH_PERMANENT' : 'LINE_PUSH_FAILED',
+    message: 'LINE push message failed: HTTP ' + statusCode + (retryKey ? '' : ' / ' + body)
   };
 }
 

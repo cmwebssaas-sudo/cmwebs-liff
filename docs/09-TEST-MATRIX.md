@@ -1,5 +1,25 @@
 # V2 回歸測試矩陣
 
+2026-10-09 本機驗證：新增30/30、完整677/677、validate、diff-check通過；
+Apps Script parser測試函式於本機VM通過。未代表正式收信／部署／銷帳驗收。
+
+## 2026-10-09 郵局入帳通知（本機候選）
+
+- bank-email-receipts.runtime.test.mjs：ROC日期／前置0／重複通知欄位、唯一金額、
+  同額歧義、已知付款人與共用帳戶、Workspace與legacy canonical policy、
+  Gmail最新頁＋backlog／信箱身份／台北cutoff／cursor恢復、disabled gate。
+- 通知在ScriptLock外，持久化投遞／固定LINE retry key／409及4xx／退避；
+  Gmail失敗仍重試、terminal unbound不佔滿恢復窗口。
+- 實際載入既有付款服務：一筆付款、報表尾端中斷恢復、原批准人保存、
+  鎖內金額變動、確定失敗釋放claim；25未提交claim不遮擋後續已提交交易。
+- 新route拒絕GET、裸UID、query credentials、過期session及membership變動。
+- bank-email-review.ui.test.mjs：匹配／未匹配操作、只讀權限與逾時不自動重送。
+- 既有POST dispatcher隔離fixture同步包含新的前置分派helpers；原Email登入、
+  quick lease、property writes與read snapshot回歸保留。
+- 390×844合成浏览器預覽：無橫向溢出、銀行按鈕至少44px；兩種確認操作完成。
+
+正式Gmail／OAuth／trigger／通知收件／指定真實交易仍UNVERIFIED。
+
 ## 2026-10-07 手機分享覆層／501待起租（候選未發布）
 
 - `room-center-occupancy.test.mjs`：真實canonical函式的未来／起租當日／

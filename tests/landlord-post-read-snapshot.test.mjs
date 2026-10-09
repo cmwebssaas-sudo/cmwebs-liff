@@ -14,6 +14,7 @@ const context = vm.createContext({
   Logger: { log: value => logs.push(value) },
   // This test targets snapshot semantics; repair-route pre-dispatch is tested
   // against its production helpers in phase246-landlord-post-read-bridge.
+  bankReceiptPostRequest_: () => ({ handled: false }),
   repairRouteRequestFromPostBody_: () => ({
     handled: false,
     success: false,

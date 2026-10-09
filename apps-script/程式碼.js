@@ -256,6 +256,21 @@ function dispatchLandlordRepairRoute_(action, parameter) {
 }
 
 
+function bankReceiptIsAction_(action) {
+  return action === 'landlord_bank_receipts_init' || action === 'landlord_bank_receipt_confirm';
+}
+
+function bankReceiptPostRequest_(e) {
+  const raw = e && e.postData && e.postData.contents || '';
+  let request;
+  try { request = JSON.parse(raw); } catch (_) { request = repairRouteDecodeFormBody_(raw); }
+  const action = String(request && (request.action || request.v2_action) || '').trim();
+  if (bankReceiptIsAction_(action)) return { handled: true, action: action, request: request };
+  const query = repairRouteDecodeFormBody_(e && e.queryString || '');
+  if (bankReceiptIsAction_(query.action || query.v2_action)) return { handled: true, action: query.action || query.v2_action, request: {} };
+  return { handled: false };
+}
+
 function doGet(e) {
   e = e || { parameter: {} };
 
@@ -265,6 +280,10 @@ function doGet(e) {
   const requestId = e.parameter.request_id || '';
   let lineUserId =
     e.parameter.line_user_id || '';
+
+  if (bankReceiptIsAction_(v2Action)) {
+    return jsonOutput_(bankReceiptError_('POST_REQUIRED', '入帳通知需使用已驗證的 POST'), callback);
+  }
 
   // Native tenant-contract exchanges authenticate by their short-lived
   // exchange credentials before any general LIFF identity resolution.
@@ -2712,6 +2731,17 @@ function doPost(e) {
   runtimeSnapshotBegin_('POST');
   try {
     e = e || {};
+
+    const bankRequest = bankReceiptPostRequest_(e);
+    if (bankRequest.handled) {
+      let bankResult;
+      try { bankResult = bankReceiptDispatch_(bankRequest.action, bankRequest.request); }
+      catch (_) { bankResult = bankReceiptError_('BANK_RECEIPT_FAILED', '入帳通知處理未完成，請重新整理核對結果'); }
+      if (bankRequest.request.response_mode === 'bridge') {
+        return htmlBridgeOutput_(bankResult, bankRequest.request.request_id || '');
+      }
+      return ContentService.createTextOutput(JSON.stringify(bankResult)).setMimeType(ContentService.MimeType.JSON);
+    }
 
     const repairPostRequest = repairRouteRequestFromPostBody_(e);
     if (repairPostRequest.handled) {

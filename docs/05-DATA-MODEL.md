@@ -1,5 +1,22 @@
 # Google Sheets 資料模型
 
+## 2026-10-09 入帳通知附加表（本機候選，尚未 migration）
+
+`V2_bank_email_receipts`：receipt_id、workspace_id、payment_account_id、
+notification_number、gmail_message_id、received_at、payment_at、amount、payer_bank、
+payer_last5、source_kind、status、match_bill_id、match_reason、report_id、payment_id、
+confirmed_by、confirmed_at、notification_id、notification_status、created_at、updated_at。
+status 為 pending／unmatched／settled／other；notification_status 為技術投遞狀態。
+
+`V2_bank_payer_links`：link_id、workspace_id、payment_account_id、payer_bank、
+payer_last5、tenant_id、contract_id、status、confirmed_by、confirmed_at。
+末五碼按文字儲存，只在已確認付款後建立關聯。銀行＋末五碼不作全域唯一身份。
+
+由顯式 runBankEmailReceiptMigration 增補表／欄位；不自動變更原帳單。
+BPR付款回報沿用原V2_payment_reports與V2_payments，不刪legacy欄位。
+銀行設定與信箱對應僅存Script Properties，不保存原信或完整付款人帳號。
+詳細規則見 [BANK-EMAIL-RECEIPTS.md](BANK-EMAIL-RECEIPTS.md)。
+
 ## 入住初始電表（2026-10-01 修復）
 
 - 唯一入住計費基準：`V2_tenant_checkins.first_meter_reading`，完整關聯為

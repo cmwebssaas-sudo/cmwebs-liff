@@ -469,8 +469,9 @@ const matchedPaymentId =
      * 未來要支援部分付款時再增加 balance。
      */
     if (
-      Math.round(billAmount) !==
-      Math.round(reportedAmount)
+      /^BPR-/.test(reportId)
+        ? (!Number.isSafeInteger(billAmount) || !Number.isSafeInteger(reportedAmount) || billAmount !== reportedAmount)
+        : Math.round(billAmount) !== Math.round(reportedAmount)
     ) {
       return {
         success: false,
