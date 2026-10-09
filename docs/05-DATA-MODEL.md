@@ -1,5 +1,13 @@
 # Google Sheets 資料模型
 
+## 2026-10-10 唯一金額自動銷帳
+
+`CMWEBS_BANK_EMAIL_INTAKE_CONFIG.auto_settle_unique_amount=true` 時，郵局通知先以
+Workspace 內未繳帳單的金額配對。只有單一金額候選才自動建立付款回報並交由既有
+正式銷帳服務處理；同額候選會先用已保存的銀行＋轉出末五碼歷史關聯縮小範圍，
+仍不唯一就保留人工確認。末五碼可隨月份變動，僅作同額時的輔助證據；沒有末五碼
+時仍可依唯一金額自動銷帳。自動路徑具交易鎖與既有付款服務的冪等／讀回保護。
+
 ## 2026-10-09 入帳通知附加表（本機候選，尚未 migration）
 
 `V2_bank_email_receipts`：receipt_id、workspace_id、payment_account_id、

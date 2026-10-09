@@ -26,9 +26,9 @@ function sheet(objects = []) {
       setValue(value){rows[r-1] ||= [];rows[r-1][c-1]=value;}})};
 }
 function runtime() {
-  const sheets = {V2_bills:sheet([bill()]), V2_workspace_payment_accounts:sheet([{payment_account_id:'acct-a',workspace_id:'ws-a',bank_account:'12340000056789',account_status:'active'}]),V2_payment_reports:sheet(),V2_payments:sheet([{payment_id:'',bill_id:'',status:'',amount:'',source_ref_id:'',workspace_id:'',tenant_id:'',landlord_id:'',bank_last5:'',payment_date:''}])};
+  const sheets = {V2_bills:sheet([bill()]), V2_workspace_payment_accounts:sheet([{payment_account_id:'acct-a',workspace_id:'ws-a',bank_account:'12340000056789',account_status:'active'}]), V2_workspaces:sheet([{workspace_id:'ws-a',workspace_status:'active',created_by_user_id:'user-a'}]), V2_bank_payer_links:sheet([{link_id:'',workspace_id:'',payment_account_id:'',payer_bank:'',payer_last5:'',tenant_id:'',contract_id:'',status:'',confirmed_by:'',confirmed_at:''}]),V2_payment_reports:sheet(),V2_payments:sheet([{payment_id:'',bill_id:'',status:'',amount:'',source_ref_id:'',workspace_id:'',tenant_id:'',landlord_id:'',bank_last5:'',payment_date:''}])};
   const notices = []; let held = false; let calls = 0;
-  const access = {success:true, workspace:{workspace_id:'ws-a'},membership:{membership_id:'member-a'},user:{user_id:'user-a'},principal_line_user_id:'line-a',principal_landlord_id:'owner-a', permissions:{can_approve_payment:true}};
+  const access = {success:true, workspace:{workspace_id:'ws-a'},membership:{membership_id:'member-a'},user:{user_id:'user-a'},principal_line_user_id:'U'+'a'.repeat(32),principal_landlord_id:'owner-a', permissions:{can_approve_payment:true}};
   const config = {enabled:true,mailbox_email:'reconcile@example.test',start_after:'2026-10-09',trusted_forwarders:['relay@example.test'],accounts:[{workspace_id:'ws-a',payment_account_id:'acct-a',receiver_mask:'1234*****56789'}]};
   const props = new Map([['CMWEBS_BANK_EMAIL_INTAKE_CONFIG',JSON.stringify(config)]]);
   const ctx = {console, Date, String, Number, Math, Object, Array, JSON, Error,
@@ -40,6 +40,7 @@ function runtime() {
     workspaceLandlordCheckPolicy_:(a,p)=>({success:p==='read'||a.permissions.can_approve_payment===true}),
     resolveLandlordQuickLeaseBridgeAccess_:()=>access,
     workspaceLandlordResolveAccess_:()=>access,
+    workspaceLandlordResolvePrincipals_:()=>[{landlord_id:'owner-a',line_user_id:access.principal_line_user_id}],
     workspaceNotifyTeam_(p){assert.equal(held,false,'notify outside ScriptLock');notices.push(p);return {success:true,data:{notification_id:'notice-'+notices.length,status:'sent'}};},
     settleWorkspaceLandlordPaymentReportByLineUid_(_,id){assert.equal(held,false);calls++; const reports=ctx.bankReceiptRows_('V2_payment_reports');const r=reports.find(r=>r.report_id===id);const b=ctx.bankReceiptRows_('V2_bills').find(b=>b.bill_id===r.bill_id);if(Number(r.reported_amount)!==Number(b.total_amount))return {success:false,code:'PAYMENT_AMOUNT_MISMATCH'};if(b.payment_status==='paid')return {success:false,code:'BILL_ALREADY_PAID'};const pid='payment-'+calls;ctx.bankReceiptAppend_('V2_payments',{payment_id:pid,bill_id:b.bill_id,status:'confirmed',amount:r.reported_amount,source_ref_id:id});ctx.bankReceiptUpdate_('V2_bills','bill_id',b.bill_id,{payment_status:'paid',payment_id:pid});ctx.bankReceiptUpdate_('V2_payment_reports','report_id',id,{status:'confirmed',matched_payment_id:pid});return {success:true,data:{payment_id:pid}};},
     tenantPaymentReportEnsureSheet_(){const headers=['report_id','created_at','updated_at','landlord_id','landlord_line_user_id','tenant_id','tenant_user_id','tenant_line_user_id','tenant_name','room_id','room_name','bill_id','bill_month','bill_total_amount','reported_amount','reported_last5','reported_paid_date','status','matched_payment_id','confirmed_at','confirmed_by','note'];if(!sheets.V2_payment_reports.getLastRow())sheets.V2_payment_reports.getRange(1,1,1,headers.length).setValues([headers]);return sheets.V2_payment_reports;},
@@ -85,6 +86,58 @@ test('intake persists and notifies once, never pays a bill; distinct notice IDs 
   assert.equal(r.ctx.bankReceiptRows_('V2_bank_email_receipts').length,2);assert.equal(r.notices.length,2);
   assert.equal(r.ctx.bankReceiptRows_('V2_bills')[0].payment_status,'unpaid');assert.equal(r.calls,0);
   assert.match(r.notices[0].body,/待確認銷帳/);
+});
+test('unique amount intake automatically settles exactly one matching bill',()=>{
+  const r=runtime();
+  r.config.auto_settle_unique_amount=true;
+  r.ctx.settleWorkspaceLandlordPaymentReportByLineUid_=function(uid,reportId){
+    const report=r.ctx.bankReceiptRows_('V2_payment_reports').find(x=>x.report_id===reportId);
+    const b=r.ctx.bankReceiptRows_('V2_bills').find(x=>x.bill_id===report.bill_id);
+    const paymentId='auto-payment-1';
+    r.ctx.bankReceiptAppend_('V2_payments',{payment_id:paymentId,bill_id:b.bill_id,status:'confirmed',amount:report.reported_amount,source_ref_id:reportId});
+    r.ctx.bankReceiptUpdate_('V2_bills','bill_id',b.bill_id,{payment_status:'paid',payment_id:paymentId});
+    r.ctx.bankReceiptUpdate_('V2_payment_reports','report_id',reportId,{status:'confirmed',matched_payment_id:paymentId,confirmed_by:uid,confirmed_at:new Date().toISOString()});
+    return {success:true,data:{payment_id:paymentId}};
+  };
+  intake(r);
+  const receipt=r.ctx.bankReceiptRows_('V2_bank_email_receipts')[0];
+  assert.equal(receipt.status,'settled');
+  assert.equal(receipt.payment_id,'auto-payment-1');
+  assert.equal(r.ctx.bankReceiptRows_('V2_bills')[0].payment_status,'paid');
+  assert.equal(r.calls,0,'automatic path must not use landlord confirmation counter');
+});
+test('unique amount auto-settles even when the postal notice has no payer suffix',()=>{
+  const r=runtime();
+  r.config.auto_settle_unique_amount=true;
+  r.ctx.settleWorkspaceLandlordPaymentReportByLineUid_=function(uid,reportId){
+    const report=r.ctx.bankReceiptRows_('V2_payment_reports').find(x=>x.report_id===reportId);
+    const b=r.ctx.bankReceiptRows_('V2_bills').find(x=>x.bill_id===report.bill_id);
+    r.ctx.bankReceiptAppend_('V2_payments',{payment_id:'auto-payment-no-suffix',bill_id:b.bill_id,status:'confirmed',amount:report.reported_amount,source_ref_id:reportId});
+    r.ctx.bankReceiptUpdate_('V2_bills','bill_id',b.bill_id,{payment_status:'paid',payment_id:'auto-payment-no-suffix'});
+    r.ctx.bankReceiptUpdate_('V2_payment_reports','report_id',reportId,{status:'confirmed',matched_payment_id:'auto-payment-no-suffix',confirmed_by:uid,confirmed_at:new Date().toISOString()});
+    return {success:true};
+  };
+  intake(r,{payer_bank:'',payer_last5:''});
+  assert.equal(r.ctx.bankReceiptRows_('V2_bank_email_receipts')[0].status,'settled');
+});
+test('duplicate amount intake stays pending for landlord selection',()=>{
+  const r=runtime();
+  r.config.auto_settle_unique_amount=true;
+  r.ctx.bankReceiptAppend_('V2_bills',bill('bill-b'));
+  intake(r);
+  const receipt=r.ctx.bankReceiptRows_('V2_bank_email_receipts')[0];
+  assert.ok(['pending','unmatched'].includes(receipt.status));
+  assert.equal(receipt.match_bill_id,'');
+  assert.equal(r.ctx.bankReceiptRows_('V2_bills').filter(x=>x.payment_status==='paid').length,0);
+  assert.match(r.notices[0].body,/待確認|無法配對/);
+});
+test('duplicate amount uses a matching historical payer suffix as a tie breaker',()=>{
+  const r=runtime();
+  r.ctx.bankReceiptAppend_('V2_bills',bill('bill-b',{tenant_id:'tenant-b',contract_id:'lease-b'}));
+  r.ctx.bankReceiptAppend_('V2_bank_payer_links',{link_id:'known',workspace_id:'ws-a',payment_account_id:'acct-a',payer_bank:'合成銀行',payer_last5:'01234',tenant_id:'tenant-a',contract_id:'lease-a',status:'active'});
+  const match=r.ctx.bankReceiptMatch_(receipt({workspace_id:'ws-a',payment_account_id:'acct-a'}),r.ctx.bankReceiptRows_('V2_bills'),r.ctx.bankReceiptRows_('V2_bank_payer_links'),{});
+  assert.equal(match.bill_id,'bill-a');
+  assert.equal(match.reason,'payer_and_amount');
 });
 test('unmatched intake still notifies landlord and preserves funds for manual selection',()=>{
   const r=runtime();intake(r,{amount:9999});assert.equal(r.notices.length,1);assert.match(r.notices[0].body,/無法配對/);assert.equal(r.ctx.bankReceiptRows_('V2_bank_email_receipts')[0].status,'unmatched');

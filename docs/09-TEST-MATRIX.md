@@ -1,5 +1,11 @@
 # V2 回歸測試矩陣
 
+## 2026-10-10 郵局唯一金額自動銷帳
+
+新增唯一金額（含無後五碼）自動銷帳、同額保留人工確認、同額後五碼輔助配對及
+冪等／既有付款回讀案例；完整 699 項測試、`npm run validate`、`git diff --check`
+通過。正式開關只在 `CMWEBS_BANK_EMAIL_INTAKE_CONFIG` 內保存，不新增 Schema 欄位。
+
 ## 2026-10-10 入帳通知辨識既有房客回報銷帳
 
 V2.0正確性修復；建議gpt-5.6-terra／medium。隔離branch
@@ -12,7 +18,7 @@ tenant、landlord及Workspace；一致顯示settled，歧義顯示paid_bill_revi
 新增四項測試，前三RED→GREEN；695項完整、validate、diff-check通過。
 正確owner fresh HEAD60檔與既有main一致；只修改入帳模組。
 Apps Script合成projection及正式唯讀測試：兩筆display_status均settled，
-read_only:true。immutable222匯出60檔與候選逐位元一致；正式URL維持，rollback221。
+read_only:true。immutable223匯出60檔與候選逐位元一致；正式URL維持，rollback222。
 前端tag20261010-receipt-existing-payment-v1，rollbacked66d14；Schema不變。
 同步修正baseline舊count59／treehash未涵蓋已存在第60檔問題，記錄完整候選清單hash。
 LINE手機顯示仍待使用者重新整理驗收。
