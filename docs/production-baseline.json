@@ -4,7 +4,7 @@
   "backend_verified_on": "2026-10-07",
   "backend_source_commit": "aeda946",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 220,
+  "backend_version": 221,
   "room_photo_share_occupancy_release": {
     "verified_on": "2026-10-07",
     "source_commit": "b8a409e0581613b580471e527bd540aa28d4417a",
@@ -325,5 +325,26 @@
     "physical_line_receipt": "UNVERIFIED",
     "authenticated_review": "UNVERIFIED; logged-out browser redirects to login",
     "real_settlement": "NOT_PERFORMED; landlord confirmation required"
+  },
+  "postal_html_comment_fix": {
+    "date": "2026-10-09",
+    "backend_version": 221,
+    "rollback_backend_version": 220,
+    "immutable_files_matched": 60,
+    "tests_passed": 679,
+    "real_receipt_count": 2,
+    "receipt_statuses": [
+      "pending",
+      "pending"
+    ],
+    "real_payments_created": 0,
+    "second_notification_deliveries": 3,
+    "second_delivery_send_counts": [
+      1,
+      1,
+      1
+    ],
+    "physical_line_receipt": "UNVERIFIED",
+    "status": "Strip HTML comments before extracting visible fields; visible duplicate notifications remain rejected. Both real emails matched, awaiting landlord confirmation."
   }
 }
