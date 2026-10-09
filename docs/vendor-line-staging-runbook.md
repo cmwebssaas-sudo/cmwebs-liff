@@ -18,6 +18,15 @@
 - 以上只代表管理台設定已存在；網址尚無 DNS／公開服務，因此仍未完成真實
   LINE Login 或手機驗收。
 
+## 2026-10-10 部署前置檢查
+
+- `cmwebs.com` 的權威 DNS 為 Cloudflare；`workorders-test.cmwebs.com` 目前查無
+  A／CNAME 記錄。
+- 本機沒有 `cloudflared`、Wrangler、Docker、Fly、Railway 或 Vercel 部署 CLI，
+  repository 也沒有既定 staging launcher 或主機設定。
+- Cloudflare 控制台目前要求人工登入；在沒有已驗證的帳戶 session／staging 主機
+  前，不建立 DNS、不猜測 origin、不把 loopback server 暴露到網路。
+
 ## 2026-10-08 設定核對與授權（歷史紀錄）
 
 - 使用者已明確授權在同一 Provider 新增工單測試 LINE Login channel，並選定 `https://workorders-test.cmwebs.com`。

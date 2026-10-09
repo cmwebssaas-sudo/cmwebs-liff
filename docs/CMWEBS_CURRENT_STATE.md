@@ -12,6 +12,11 @@
 Dialogflow webhook URL；Login channel 2011937202 已關聯該測試 OA。本輪只讀取
 既有 webhook，沒有替換 webhook 或存取 token。
 
+部署前置已查明：`cmwebs.com` 使用 Cloudflare nameserver，但
+`workorders-test.cmwebs.com` 無 DNS 記錄；本機沒有可用 deployment CLI 或既定
+staging 主機。Cloudflare 控制台目前需要人工登入，故尚未建立 DNS、公開 origin
+或注入任何 secret。
+
 ## 2026-10-08 收工：隔離合作工單 LINE 測試（未部署）
 
 建議模型／速度：gpt-5.6-terra／medium。只在隔離 worktree
