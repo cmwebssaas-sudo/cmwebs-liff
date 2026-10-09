@@ -148,7 +148,9 @@ function makeDispatcher() {
     'repairRouteIsAction_',
     'repairRouteDecodeFormBody_',
     'repairRouteQueryAction_',
-    'repairRouteRequestFromPostBody_'
+    'repairRouteRequestFromPostBody_',
+    'bankReceiptIsAction_',
+    'bankReceiptPostRequest_'
   ].map(name => extractFunction(dispatcher, name)).join('\n'), context);
   vm.runInContext(extractFunction(dispatcher, 'resolveLandlordQuickLeaseBridgeAccess_'), context);
   vm.runInContext(extractFunction(dispatcher, 'doPost'), context);

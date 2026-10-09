@@ -1,5 +1,16 @@
 # CMWebs V2 API Routes
 
+## 2026-10-09 郵局入帳人工確認（本機候選）
+
+新增 POST-only `landlord_bank_receipts_init`（read）及
+`landlord_bank_receipt_confirm`（payment_write），dispatcher 為 `apps-script/程式碼.js`。
+授權只讀 POST body 的 landlord_session_token/request_id 或 provider-verified id_token；
+裸UID、query credentials與GET拒絕。沿用response_mode=bridge及request_id。
+confirm 的 input_json 只含 receipt_id、bill_id、decision（confirm／other）；
+Workspace、目前金額及角色由伺服器重新解析。收信不銷帳，房東確認後才呼叫既有
+正式settlement；init可完成已提交交易的尾端修復，不能啟動新付款。
+完整啟用／回退與驗收邊界見 [BANK-EMAIL-RECEIPTS.md](BANK-EMAIL-RECEIPTS.md)。
+
 抄表 review-only 舊租約相容：contracts 已經由既有 Workspace／legacy landlord_id 權限篩選；空白 workspace_id 不再次排除。唯讀副本採房間授權 Workspace 查找上期電表，不寫回 Schema 或租約；出帳資格不變。
 
 舊房客兩個 scope 欄位均空白時，只能經已授權 room／contract 共同精確 tenant_id 關聯取得唯一列，並通過帳號狀態檢查供 review 讀取。不得以 LINE/user_id、姓名、房號或未授權租約猜配；重複與顯式外部範圍拒絕。寫入流程的 tenant／contract 及付款權限不變。

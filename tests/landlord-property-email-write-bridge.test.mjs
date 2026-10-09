@@ -131,7 +131,7 @@ function fixture(authState, principalWorkspaceId = 'W1') {
   }
   vm.runInContext([
     'repairRouteIsAction_', 'repairRouteDecodeFormBody_',
-    'repairRouteQueryAction_', 'repairRouteRequestFromPostBody_'
+    'repairRouteQueryAction_', 'repairRouteRequestFromPostBody_', 'bankReceiptIsAction_', 'bankReceiptPostRequest_'
   ].map(name => extract(name)).join('\n'), context);
   vm.runInContext(source.slice(source.indexOf('function doPost(e)')), context);
   return { context, calls };

@@ -23,7 +23,9 @@ const repairPostPreDispatchHelpers = [
   'repairRouteIsAction_',
   'repairRouteDecodeFormBody_',
   'repairRouteQueryAction_',
-  'repairRouteRequestFromPostBody_'
+  'repairRouteRequestFromPostBody_',
+  'bankReceiptIsAction_',
+  'bankReceiptPostRequest_'
 ];
 
 function extractFunctionSource(source, functionName) {

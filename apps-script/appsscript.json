@@ -1,11 +1,14 @@
 {
   "timeZone": "Asia/Taipei",
-  "dependencies": {},
+  "dependencies": {
+    "enabledAdvancedServices": [{ "userSymbol": "Gmail", "version": "v1", "serviceId": "gmail" }]
+  },
   "webapp": {
     "executeAs": "USER_DEPLOYING",
     "access": "ANYONE_ANONYMOUS"
   },
   "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/documents",
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/spreadsheets",

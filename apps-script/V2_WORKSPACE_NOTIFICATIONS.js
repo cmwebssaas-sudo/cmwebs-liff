@@ -213,12 +213,27 @@ function workspaceNotifyTeam_(
     const now =
       new Date();
 
-    const notificationId =
-      workspaceNotificationId_(
-        'NTF'
+    // Stable internal bank-receipt ID closes the insert/send/response retry gap.
+    // Existing event producers keep their generated IDs and behavior.
+    const stableBankId = payload.source === 'bank_email_receipt' &&
+      /^BN-[a-f0-9]{32}$/.test(String(payload.notification_id || ''))
+      ? String(payload.notification_id) : '';
+    let existingBankNotification = null;
+    if (stableBankId) {
+      const existing = workspaceNotificationFind_(
+        ss.getSheetByName(V2_WORKSPACE_NOTIFICATION_SHEETS_.notifications),
+        'notification_id', stableBankId
       );
+      if (existing) {
+        if (String(existing.workspace_id) !== workspaceId) {
+          return workspaceNotificationResult_(false, 'WORKSPACE_MISMATCH', '通知工作區不一致');
+        }
+        existingBankNotification = existing;
+      }
+    }
+    const notificationId = stableBankId || workspaceNotificationId_('NTF');
 
-    const notification = {
+    const notification = existingBankNotification || {
       notification_id:
         notificationId,
 
@@ -306,7 +321,7 @@ function workspaceNotifyTeam_(
         now
     };
 
-    workspaceNotificationAppend_(
+    if (!existingBankNotification) workspaceNotificationAppend_(
       ss.getSheetByName(
         V2_WORKSPACE_NOTIFICATION_SHEETS_
           .notifications
@@ -340,8 +355,7 @@ function workspaceNotifyTeam_(
       deliveries.filter(
         function (item) {
           return (
-            item.delivery_status ===
-            'failed'
+            ['failed', 'failed_permanent', 'pending'].indexOf(item.delivery_status) >= 0
           );
         }
       ).length;
@@ -1323,12 +1337,62 @@ function workspaceNotificationEligible_(
 }
 
 
+// Persist before sending so ambiguous transport failures reuse the same LINE key.
+// This retry path applies only to bank receipts; existing event behavior is unchanged.
+function workspaceNotificationBankDeliver_(notification, recipient, preferenceEnabled, now) {
+  const sheet = runtimeSpreadsheet_().getSheetByName(V2_WORKSPACE_NOTIFICATION_SHEETS_.deliveries);
+  const digest = bankReceiptHash_(notification.notification_id + '|' + recipient.user_id + '|' + recipient.line_user_id);
+  const deliveryId = 'BND-' + digest.slice(0, 32);
+  let delivery = workspaceNotificationFind_(sheet, 'delivery_id', deliveryId);
+  if (!delivery) {
+    delivery = {
+      delivery_id: deliveryId, notification_id: notification.notification_id,
+      workspace_id: notification.workspace_id, membership_id: recipient.membership_id || '',
+      user_id: recipient.user_id || '', line_user_id: recipient.line_user_id || '',
+      display_name: recipient.display_name || '', role: recipient.role || '',
+      delivery_status: !preferenceEnabled ? 'skipped_disabled' : !recipient.line_user_id ? 'skipped_unbound' : 'pending',
+      delivered_at: '', read_status: 'unread', read_at: '', send_count: 0,
+      last_error: '', created_at: now, updated_at: now
+    };
+    workspaceNotificationAppend_(sheet, delivery);
+  }
+  if (['sent', 'skipped_disabled', 'skipped_unbound', 'failed_permanent'].indexOf(delivery.delivery_status) >= 0) return delivery;
+  const elapsed = new Date(now).getTime() - new Date(delivery.created_at).getTime();
+  if (elapsed >= 23 * 60 * 60 * 1000 || Number(delivery.send_count) >= 8) {
+    delivery.delivery_status = 'failed_permanent';
+    delivery.last_error = '通知重試已停止，請由通知中心核對';
+    workspaceNotificationUpdateByKey_(sheet, 'delivery_id', deliveryId, delivery);
+    return delivery;
+  }
+  const attempts = Number(delivery.send_count) || 0;
+  const delay = Math.min(3600000, 300000 * Math.pow(2, attempts - 1));
+  if (attempts && new Date(now).getTime() - new Date(delivery.updated_at).getTime() < delay) return delivery;
+  const retryKey = digest.slice(0, 8) + '-' + digest.slice(8, 12) + '-4' + digest.slice(13, 16) + '-8' + digest.slice(17, 20) + '-' + digest.slice(20, 32);
+  delivery.send_count = attempts + 1;
+  delivery.updated_at = now;
+  workspaceNotificationUpdateByKey_(sheet, 'delivery_id', deliveryId, delivery);
+  let result;
+  try {
+    result = pushLineTextMessage_(delivery.line_user_id, workspaceNotificationLineText_(notification, delivery), retryKey);
+  } catch (_) {
+    result = {success: false, code: 'LINE_TRANSPORT_FAILED'};
+  }
+  delivery.delivery_status = result && result.success === true ? 'sent' : result && result.code === 'LINE_PUSH_PERMANENT' ? 'failed_permanent' : 'failed';
+  delivery.delivered_at = delivery.delivery_status === 'sent' ? now : '';
+  delivery.last_error = delivery.delivery_status === 'sent' ? '' : '通知尚未送達，請由通知中心核對';
+  workspaceNotificationUpdateByKey_(sheet, 'delivery_id', deliveryId, delivery);
+  return delivery;
+}
+
 function workspaceNotificationDeliver_(
   notification,
   recipient,
   preferenceEnabled,
   now
 ) {
+  if (notification.source === 'bank_email_receipt') {
+    return workspaceNotificationBankDeliver_(notification, recipient, preferenceEnabled, now);
+  }
   const delivery = {
     delivery_id:
       workspaceNotificationId_(

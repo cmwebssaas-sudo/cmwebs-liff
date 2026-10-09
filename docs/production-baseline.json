@@ -268,5 +268,25 @@
     "candidate": "5abc7f6",
     "frontend_rollback_revision": "566be22728364fe87ca7c62b03d479c5b29bdf01",
     "tests_passed": 515
+  },
+  "postal_email_activation_preparation": {
+    "date": "2026-10-09",
+    "branch": "codex/postal-payment-review-20261009",
+    "pull_request": 241,
+    "base_main": "6af4b28c595329682b05dad90bc2a8dee7c23b20",
+    "serving_version_unchanged": 219,
+    "fresh_original_head_files_matched": 59,
+    "preauthorization_head_files_matched": 60,
+    "preauthorization_manifest": "Original serving manifest and scopes retained; Gmail scope and advanced service are candidate-only until action-time consent.",
+    "schema_headers_verified": {
+      "V2_bank_email_receipts": 22,
+      "V2_bank_payer_links": 10
+    },
+    "intake_config_enabled": false,
+    "new_trigger_installed": false,
+    "gmail_scope_granted": false,
+    "real_line_delivery_verified": false,
+    "real_settlement_verified": false,
+    "status": "Correct saas Chrome profile and Apps Script owner identity verified. Existing Spreadsheet binding matches the inspected Sheet. Added two empty receipt tables and one disabled intake property; existing fifteen properties retained. Formal Apps Script parser test completed. Web App219 and Pages unchanged; no new Gmail grant, timer, LINE send or financial settlement."
   }
 }

@@ -1,5 +1,22 @@
 # CMWebs Current State
 
+2026-10-09 本機驗證：新增31/31、完整678/678、validate、diff-check通過；
+Apps Script parser測試已在正式環境完成，兩張附加表及停用設定已建立。
+Gmail readonly新增授權待使用者同意；正式收信／Web App發布／銷帳仍未驗收。
+
+## 2026-10-09 郵局 Email 配對與房東確認銷帳（本機候選）
+
+使用者授權最簡流程：匹配完整即通知房東確認；不匹配亦通知，由房東選帳單或
+其他款項。首次唯一金額、確認成功後學習銀行＋末五碼；收信不寫已繳帳单。
+建議gpt-5.6-terra／medium，隔離分支codex/postal-payment-review-20261009，
+基底origin/main 6af4b28；root混合WIP不動。新增Gmail readonly intake、兩張附加表、
+已驗證POST審核及既有付款頁銀行區塊；沿用正式付款服務及團隊通知偏好。
+包含持久化通知重試、付款中斷恢復、原批准人、exact amount及Workspace保護。
+正式帳戶已核對，預備HEAD60來源檔與回讀一致並保留原manifest/scopes。
+正式Web App219／Pages不變；新增兩張空表及enabled=false設定，未發LINE、
+安裝新trigger或銷帳。Gmail授權仍待使用者行動時同意。
+部署、OAuth、migration、啟用與回退見BANK-EMAIL-RECEIPTS.md。
+
 ## 2026-10-07 房源分享按鈕縮小（前端已發布）
 
 使用者確認32px圓形、17px圖示、44px觸控範圍；建議gpt-5.6-terra、medium。
@@ -1319,3 +1336,11 @@ immutable216已匯出59檔與候選逐位元組相同，原Web App讀回216，UR
 Rollback 後端214及本次前端基底 d107206，保留新增網址欄與資料。
 網址欄只在授權房東首次儲存時加欄，不代填任何真實網址；自動橋接仍未
 建立正式綁定，不覆蓋網站端 WIP。真實儲存／重載及手機 LINE 尚未驗收。
+# 郵局 Email 啟用準備（2026-10-09）
+
+指定信箱的 Gmail／Drive／clasp 身份、真實轉寄解析及唯一收款帳戶遮罩已核對。
+正式 serving219/editor HEAD 各59來源檔與 origin/main6af4b28 一致。
+候選 cache tag20261009-postal-payment-review-v1。Chrome saas帳戶登入已核對；
+新增Gmail readonly授權待使用者同意。附加表及停用Properties已建立，
+預備HEAD保留原scopes；Web App219及Pages不變。未安裝新觸發器、發送LINE
+或確認真實款項。參見BANK-EMAIL-RECEIPTS.md。
