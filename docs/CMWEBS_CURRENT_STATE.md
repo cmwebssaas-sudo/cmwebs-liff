@@ -1,5 +1,14 @@
 # CMWebs Current State
 
+## 2026-10-10 郵局入帳唯一金額自動銷帳
+
+V2.0正確性與營運自動化修復；建議gpt-5.6-terra／medium。郵局 Email 以金額找
+Workspace 未繳帳單；唯一候選自動建立付款回報並使用既有正式銷帳服務，沒有房東
+再次確認步驟。金額重複時才使用歷史銀行＋轉出末五碼輔助縮小候選；仍不唯一或
+沒有足夠證據則保留房東確認。末五碼只作輔助，不要求跨月份固定，也不阻擋唯一
+金額。功能由 `auto_settle_unique_amount` 設定開關控制，開啟前已完成 699 項回歸。
+不自動處理重複金額，不新增付款，不重複銷帳；通知房客沿用既有付款成功通知路徑。
+
 ## 2026-10-10 入帳通知辨識既有房客回報銷帳
 
 V2.0正確性修復；建議gpt-5.6-terra／medium。隔離branch
@@ -12,7 +21,7 @@ tenant、landlord及Workspace；一致顯示settled，歧義顯示paid_bill_revi
 新增四項測試，前三RED→GREEN；695項完整、validate、diff-check通過。
 正確owner fresh HEAD60檔與既有main一致；只修改入帳模組。
 Apps Script合成projection及正式唯讀測試：兩筆display_status均settled，
-read_only:true。immutable222匯出60檔與候選逐位元一致；正式URL維持，rollback221。
+read_only:true。immutable223匯出60檔與候選逐位元一致；正式URL維持，rollback222。
 前端tag20261010-receipt-existing-payment-v1，rollbacked66d14；Schema不變。
 同步修正baseline舊count59／treehash未涵蓋已存在第60檔問題，記錄完整候選清單hash。
 LINE手機顯示仍待使用者重新整理驗收。

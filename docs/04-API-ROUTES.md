@@ -1091,3 +1091,12 @@ report/payment IDs without altering any receipt or financial row. Ambiguous
 paid-bill evidence returns `paid_bill_review`; it cannot be submitted again or
 reassigned through `landlord_bank_receipt_confirm` (`RECEIPT_ALREADY_SETTLED`
 or `RECEIPT_REVIEW_REQUIRED`). No new route or Schema field.
+
+### Bank receipt unique-amount auto-settlement (2026-10-10)
+
+When `CMWEBS_BANK_EMAIL_INTAKE_CONFIG.auto_settle_unique_amount` is enabled,
+the Gmail intake worker may create and settle a payment report only when the
+amount has one eligible bill. Duplicate amounts are narrowed with historical
+bank and payer suffix links; unresolved duplicates remain for
+`landlord_bank_receipt_confirm`. A missing suffix does not block a unique
+amount. This is an intake setting, not a new API route or Schema field.

@@ -129,6 +129,43 @@ function bankReceiptReadConfig_() {
   config.mailbox_email=config.mailbox_email.toLowerCase();
   return config;
 }
+function bankReceiptTenantLineUserId_(tenantId) {
+  const tenant=bankReceiptRows_('V2_tenants').find(function(row){return bankReceiptText_(row.tenant_id)===bankReceiptText_(tenantId);});
+  return tenant?bankReceiptText_(tenant.tenant_line_user_id||tenant.line_user_id):'';
+}
+function bankReceiptAutoPrincipal_(workspaceId) {
+  const principals=bankReceiptWorkspaceScope_(workspaceId).principals||[];
+  const valid=principals.filter(function(principal){return /^U[a-f0-9]{32}$/.test(bankReceiptText_(principal.line_user_id));});
+  return valid.length===1?valid[0]:null;
+}
+function bankReceiptAutoSettleUnique_(row) {
+  if(!row||['pending','unmatched'].indexOf(row.status)<0||!row.match_bill_id)return row;
+  const workspaceId=bankReceiptText_(row.workspace_id),scope=bankReceiptWorkspaceScope_(workspaceId),bills=bankReceiptRows_('V2_bills'),links=bankReceiptRows_('V2_bank_payer_links');
+  const match=bankReceiptMatch_(row,bills,links,scope);
+  if(match.bill_id!==row.match_bill_id||!['amount','payer_and_amount'].includes(match.reason))return row;
+  const principal=bankReceiptAutoPrincipal_(workspaceId);if(!principal)return row;
+  const bill=bills.find(function(item){return item.bill_id===row.match_bill_id&&bankReceiptBillEligible_(item,workspaceId,scope);});if(!bill)return row;
+  const reportId='BPR-'+bankReceiptHash_(row.receipt_id+'|'+bill.bill_id).slice(0,32),now=new Date().toISOString(),autoActor='system:bank_email_auto';
+  const lock=LockService.getScriptLock();lock.waitLock(25000);
+  try {
+    const current=bankReceiptRows_('V2_bank_email_receipts').find(function(item){return item.receipt_id===row.receipt_id&&item.workspace_id===workspaceId;});
+    if(!current||['settled','other'].indexOf(current.status)>=0)return current||row;
+    const existingReport=bankReceiptRows_('V2_payment_reports').find(function(item){return item.report_id===reportId;});
+    if(!existingReport){
+      tenantPaymentReportEnsureSheet_();
+      bankReceiptAppend_('V2_payment_reports',{report_id:reportId,created_at:now,updated_at:now,landlord_id:bill.landlord_id,landlord_line_user_id:principal.line_user_id,tenant_id:bill.tenant_id,tenant_user_id:bill.user_id||'',tenant_line_user_id:bankReceiptTenantLineUserId_(bill.tenant_id),tenant_name:bill.tenant_name||'',room_id:bill.room_id,room_name:bill.room_name,bill_id:bill.bill_id,bill_month:bill.bill_month,bill_total_amount:row.amount,reported_amount:row.amount,reported_last5:row.payer_last5,reported_paid_date:row.payment_at.slice(0,10),status:'pending',matched_payment_id:'',confirmed_at:'',confirmed_by:'',note:'郵局入帳通知依唯一金額自動銷帳／'+row.receipt_id});
+    }
+    bankReceiptUpdate_('V2_bank_email_receipts','receipt_id',row.receipt_id,{report_id:reportId,match_bill_id:bill.bill_id,status:'pending',confirmed_by:autoActor,confirmed_at:now,updated_at:now});
+    row=Object.assign({},current,{report_id:reportId,match_bill_id:bill.bill_id,status:'pending',confirmed_by:autoActor,confirmed_at:now});
+  } finally {lock.releaseLock();}
+  const result=settleWorkspaceLandlordPaymentReportByLineUid_(principal.line_user_id,reportId,'郵局入帳通知唯一金額自動銷帳／'+row.receipt_id);
+  lock.waitLock(25000);
+  try {
+    row=bankReceiptRows_('V2_bank_email_receipts').find(function(item){return item.receipt_id===row.receipt_id&&item.workspace_id===workspaceId;})||row;
+    const committed=bankReceiptCommittedPayment_(row);if(committed)return bankReceiptFinish_(row,{workspace:{workspace_id:workspaceId},principal_line_user_id:principal.line_user_id},committed,bill);
+  } finally {lock.releaseLock();}
+  return result&&result.success?bankReceiptError_('SETTLEMENT_UNVERIFIED','自動銷帳結果待核對'):row;
+}
 function bankReceiptAccept_(parsed,message,config) {
   bankReceiptSheet_('V2_bank_email_receipts');bankReceiptSheet_('V2_bank_payer_links');
   if(new Date(parsed.payment_at).getTime()<new Date(config.start_after+'T00:00:00+08:00').getTime())return {success:true,code:'BEFORE_START'};
@@ -155,6 +192,7 @@ function bankReceiptAccept_(parsed,message,config) {
       bankReceiptAppend_('V2_bank_email_receipts',row);
     }
   } finally {lock.releaseLock();}
+  if(config.auto_settle_unique_amount===true&&['pending','unmatched'].indexOf(row.status)>=0)row=bankReceiptAutoSettleUnique_(row);
   if(bankReceiptNeedsNotification_(row))bankReceiptNotify_(row);
   return {success:true,code:'OK',data:{receipt_id:id}};
 }
