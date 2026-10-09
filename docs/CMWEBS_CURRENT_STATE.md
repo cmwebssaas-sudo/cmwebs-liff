@@ -9,7 +9,8 @@
 `d80243c` 提供。root 混合 WIP 未修改。
 
 指定 Messaging API 測試 OA `@mmz7030n`／channel 1592018523 仍使用既有
-Dialogflow webhook URL；本輪只讀取，沒有替換 webhook 或存取 token。
+Dialogflow webhook URL；Login channel 2011937202 已關聯該測試 OA。本輪只讀取
+既有 webhook，沒有替換 webhook 或存取 token。
 
 ## 2026-10-08 收工：隔離合作工單 LINE 測試（未部署）
 

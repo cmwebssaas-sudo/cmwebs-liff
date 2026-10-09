@@ -9,6 +9,8 @@
   `2011937202`，目前狀態為 Developing。
 - Web app Callback URL 已設定為
   `https://workorders-test.cmwebs.com/auth/line/callback`。
+- Login channel 已關聯指定測試 OA `@mmz7030n/redbox 美拍美印`；這只提供
+  測試登入流程的加好友選項，不改動該 OA 既有 webhook。
 - 頻道密鑰已在管理台存在，但只允許注入 staging secret storage；不寫入
   repository、聊天、截圖或日誌。
 - 指定 Messaging API 測試 OA `@mmz7030n`（channel 1592018523）仍指向既有

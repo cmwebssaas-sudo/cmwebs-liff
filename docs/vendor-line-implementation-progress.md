@@ -42,7 +42,8 @@ server 候選新增 start/callback、確認綁定／待審核讀回；callback �
 核對同一個 Login channel「CMWebs 工單測試」（Channel ID 2011937202），狀態為
 Developing；Web app Callback URL 已設定為
 `https://workorders-test.cmwebs.com/auth/line/callback`。只記錄非秘密的管理台
-證據，未讀取或保存 channel secret。
+證據，未讀取或保存 channel secret。Login channel 也已關聯指定測試 OA
+`@mmz7030n/redbox 美拍美印`；既有 OA webhook 沒有改動。
 
 這仍不是公開服務或真實登入證據：`workorders-test.cmwebs.com` 尚無 DNS／固定
 HTTPS reverse proxy，login secret 也尚未注入 staging；通知保持關閉。下一步是
