@@ -1,12 +1,19 @@
 # CMWebs Current State
 
-2026-10-10續作確認：隔離工單WIP保留；LINE Developers 已登入並完成新 Login
-通道2011937202的 Provider／類型／callback 唯讀核對。Callback 已設定為
-`https://workorders-test.cmwebs.com/auth/line/callback`；獨立測試服務仍未部署、
-未注入秘密、未發送通知。本次交接見`project-memory/worklogs/2026-10-09.md`。
+2026-10-10續作確認：隔離工單 WIP 已建立 Cloudflare staging 垂直切片；LINE
+Developers Login channel 2011937202 的 callback 為
+`https://workorders-test.cmwebs.com/auth/line/callback`。Worker
+`vendor-work-orders-staging` version `973dffe3-29be-44ca-9add-81dfe0e97a6a` 已
+部署並綁定 `workorders-test.cmwebs.com`；獨立 D1 ID
+`23557e55-6e12-4a2a-9c08-ef9e445efbe7`、R2
+`vendor-work-orders-attachments-staging` 已建立並完成第一個 migration。
+遠端 health、首頁、LINE status 均 HTTP 200；`login_ready=false` 僅因 channel
+secret 尚未注入，`notification_ready=false` 仍保持關閉。root 混合 WIP 未修改。
 
-本 worktree 文件狀態 commit 為 `ce64733`；程式候選仍由前一個隔離 commit
-`d80243c` 提供。root 混合 WIP 未修改。
+本 worktree 最新設計／計畫／雲端程式均在隔離 branch
+`codex/vendor-work-orders-design-20261007`；新增 resource 與 secret 沒有重用或
+修改任何既有正式 Worker、OA webhook、Sheets 或 Apps Script。完成 secret 注入後才
+可做真實登入／手機驗收。
 
 指定 Messaging API 測試 OA `@mmz7030n`／channel 1592018523 仍使用既有
 Dialogflow webhook URL；Login channel 2011937202 已關聯該測試 OA。本輪只讀取

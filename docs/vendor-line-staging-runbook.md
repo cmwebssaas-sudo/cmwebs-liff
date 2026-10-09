@@ -1,4 +1,4 @@
-# 工單 LINE 獨立測試入口：尚未部署
+# 工單 LINE 獨立測試入口：Cloudflare staging 已部署
 
 範圍：隔離 V3 原型，僅 @mmz7030n；不改 V2 Apps Script／Sheets／GitHub Pages 或其他官方帳號。
 
@@ -18,7 +18,7 @@
 - 以上只代表管理台設定已存在；網址尚無 DNS／公開服務，因此仍未完成真實
   LINE Login 或手機驗收。
 
-## 2026-10-10 部署前置檢查
+## 2026-10-10 部署前置檢查（完成前紀錄）
 
 - `cmwebs.com` 的權威 DNS 為 Cloudflare；`workorders-test.cmwebs.com` 目前查無
   A／CNAME 記錄。
@@ -26,6 +26,38 @@
   repository 也沒有既定 staging launcher 或主機設定。
 - Cloudflare 控制台目前要求人工登入；在沒有已驗證的帳戶 session／staging 主機
   前，不建立 DNS、不猜測 origin、不把 loopback server 暴露到網路。
+
+## 2026-10-10 Cloudflare staging 部署結果
+
+- 已在同一 Cloudflare 帳戶建立全新的 Worker `vendor-work-orders-staging`，沒有
+  重用現有 CMWebs、No.88 或 Libenest Worker。
+- 已建立全新的 D1 `vendor-work-orders-staging`（ID
+  `23557e55-6e12-4a2a-9c08-ef9e445efbe7`）及 R2
+  `vendor-work-orders-attachments-staging`；D1 migration
+  `0001_vendor_work_orders.sql` 已套用。
+- Worker version `973dffe3-29be-44ca-9add-81dfe0e97a6a` 已部署至
+  `https://vendor-work-orders-staging.buyhotart.workers.dev`，並綁定
+  `https://workorders-test.cmwebs.com`。
+- 遠端讀回：`GET /health` HTTP 200；首頁 HTTP 200；`GET /api/line/status`
+  HTTP 200，且只回報 `login_ready=false`、`notification_ready=false`，沒有
+  回傳任何秘密。
+- Cloudflare Workers Free／D1／標準 R2 guardrail 已寫入 Worker 設定；沒有啟用
+  Workers Paid、R2 Infrequent Access、R2 SQL 或通知推送。
+- `LINE_CHANNEL_SECRET` 尚未注入 Worker Secret，因此目前不能完成真實 LINE
+  Login callback 或 webhook 驗簽；這是唯一待人工輸入的敏感設定。
+- 現有測試 OA 的 Dialogflow webhook 沒有改動；本次沒有發送 LINE 訊息。
+
+### 待完成的單一人工步驟
+
+由管理者在本機終端機以互動方式輸入 LINE Developers 的 channel secret：
+
+```sh
+npx --yes wrangler@4.149.0 secret put LINE_CHANNEL_SECRET \
+  --config _dev/vendor-work-orders-cloud/wrangler.jsonc
+```
+
+不要把 secret 貼到聊天、Git、截圖或 shell history。完成後再讀取
+`/api/line/status`，確認 `login_ready=true`，才進行登入與手機驗收。
 
 ## 2026-10-08 設定核對與授權（歷史紀錄）
 
@@ -49,22 +81,17 @@
 - 本機驗證：工單專項 144/144、repository `npm test` 791/791、`npm run validate`
   與 `git diff --check` 通過。這些只代表本機合成測試，不代表真實 LINE 收件。
 
-## 下一步：獨立 staging 前置 gate
+## 後續：LINE secret 與真實驗收 gate
 
-1. 已完成 LINE Developers 登入與同 Provider 核對；下一步只可在部署環境以
-   secret storage 注入 Login channel secret，禁止聊天／Git／日誌。
-2. 使用者選定獨立 HTTPS 網址，核實 host／持久資料及附件儲存。現有 server 綁定 loopback、拒絕外部 Host／Origin，尚不可直接對外暴露；必須先完成固定可信 reverse proxy origin 與測試，不得移除檢查來湊通。
-3. 目前無 CLI 環境設定與部署 launcher；不得把注入測試 adapter 或例子 URL 當作正式配置。
-4. 真實房東測試 session 尚需受控 identity bootstrap（不可允許合成房東遠端登入），合作對象只能邀請／確認／房東核准後建立 membership。
-5. 發送保持關閉。先以獨立 staging 驗證 webhook；不要替換現有 webhook，也不要
-   啟用真實推播，直到 Provider、HTTPS、secret storage、測試 subject 都核對完成。
-6. 由使用者在 LINE Developers 完成同一 Provider 的 Login channel 建立並取得
-   channel ID／secret；secret 只注入 staging 環境，不回傳聊天或提交 Git。
-7. 部署 loopback server 後面的固定 HTTPS reverse proxy，先只做健康檢查、登入關閉、
-   webhook 簽章驗證與持久 snapshot；確認錯誤 Host／Origin、偽造簽章與未登入工單
-   都拒絕。
-8. 再由指定測試人員完成好友、登入、邀請確認、房東核准與重新登入；最後才允許
-   一個白名單 subject 發送一則中性通知，人工確認手機收件。
+1. 由管理者互動輸入 `LINE_CHANNEL_SECRET` 到 Cloudflare Worker Secret；禁止聊天、
+   Git、截圖與日誌出現秘密。
+2. 讀取 `/api/line/status`，確認 `login_ready=true`；若仍為 false，不進行真實登入。
+3. 完成 LINE Login callback、單一 membership、session 持久性、Webhook raw-body
+   驗簽與 event ID 去重測試。
+4. 由指定測試人員完成好友、登入、邀請確認、房東核准與重新登入；目前 Worker
+   僅提供受控 staging，不允許合成身份遠端登入。
+5. 發送保持關閉。只有在 Provider、HTTPS、secret storage、測試 subject 與手機收件
+   都核對完成後，才可另行授權一則中性通知。
 
 ## 本機 API 候選
 

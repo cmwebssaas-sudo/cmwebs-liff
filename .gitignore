@@ -4,3 +4,6 @@ node_modules/
 .clasprc.json
 .clasp.*.json
 .codex-local/vendor-work-orders/
+
+.wrangler/
+.wrangler-dry-run/

@@ -14,9 +14,19 @@ HMAC timing-safe 驗證、event ID 去重、follow／unfollow 狀態與舊事件
 時啟用，事件先驗證再寫入本機 snapshot。完整工單專項 144/144 通過；未啟用真實
 LINE API、未新增 secrets、未部署。
 
+2026-10-10：按已核准的 Cloudflare Worker + D1 + R2 設計完成第一個雲端垂直切片。
+新增 `_dev/vendor-work-orders-cloud/`，包括 Worker router、D1 state/auth store、
+Web Crypto LINE Login PKCE、Webhook 驗簽／去重、R2 私有附件、Session、工作單讀取與
+指派動作 idempotency。新建獨立 D1／R2，套用 migration，Worker version
+`973dffe3-29be-44ca-9add-81dfe0e97a6a` 已綁定 `workorders-test.cmwebs.com`。
+遠端 health、首頁及 LINE status 均 HTTP 200；目前 login_ready=false 是因為 secret
+尚未注入，notification_ready 保持 false。沒有改既有 Worker、OA webhook 或發送訊息。
+
 本機介面回歸驗證建立、重載保留及撤銷。尚無公開申請 endpoint，不接受使用者提交假 LINE identity。
 
-待完成：真正 LINE Login 的伺服器驗證、HTTPS 獨立測試入口、通知與手機驗收。`/api/line/status` 明確回報 login_ready=false、notification_ready=false；目前不能完成真實綁定或發送。沒有 webhook、秘密或正式發送設定變更。需確認同 Provider 的測試 Login channel 與獨立 HTTPS 部署位置，不能拿其他既有服務的入口代用。
+待完成：由管理者互動注入 `LINE_CHANNEL_SECRET` 後，完成真正 LINE Login callback、webhook
+簽章驗證、合作綁定與手機驗收。`notification_ready` 仍需維持 false，直到另外的通知
+啟用 gate 通過。秘密不寫入聊天、Git 或日誌。
 
 驗證：新核心測試 2/2；`npm run validate` 通過；`git diff --check` 通過。這些不是 LINE 收件或完整工單綁定證據。
 

@@ -22,7 +22,7 @@
 
 | 項目 | 結果 | 說明 |
 | --- | --- | --- |
-| 獨立 staging 身分、資料隔離與部署 | NOT RUN | 本次沒有 staging 環境或部署授權。 |
+| 獨立 staging 身分、資料隔離與部署 | PARTIAL | Cloudflare Worker／D1／R2 已建立並部署；health、首頁、LINE status HTTP 200。LINE secret 尚未注入，真實登入未驗收。 |
 | 真實 LINE OA 登入、訊息及通知 | NOT RUN | 只使用合成 fixture session，未連接 LINE。 |
 | iOS／Android LINE 內建瀏覽器實機操作 | NOT RUN | 本機自動化測試不代表實機鍵盤、相機或附件體驗。 |
 | 真實公司／個人廠商報價、施工與驗收 | NOT RUN | 沒有建立外部聯絡、派單或真實作業。 |
@@ -34,7 +34,7 @@
 
 2026-10-08 中文介面更新：示範名稱、成員職責、登入身分、金額單位、版本及錯誤提示改為中文，保留內部識別代號。合作設定測試檢查可見文字沒有原本英文示範名稱及角色；更新後全套 `npm test` 774/774 通過，`npm run validate` 通過。只更新本機原型。
 
-2026-10-10 本次專項重跑結果：`node --test tests/vendor-work-orders*.test.mjs` 為 144/144 通過；新增 webhook route 只接受 loopback、原始 body 簽章與注入的測試 secret。session cookie 改以 `Max-Age` 配合伺服器端固定時鐘驗證，避免本機瀏覽器時鐘偏差丟失有效測試 session。隨後完整 `npm test` 為 791/791、`npm run validate` 與 `git diff --check` 通過；不可將本機測試推論為 staging、LINE、實機或 Production 驗收。
+2026-10-10 本次專項重跑結果：`node --test tests/vendor-work-orders*.test.mjs` 為 144/144 通過；新增 webhook route 只接受 loopback、原始 body 簽章與注入的測試 secret。session cookie 改以 `Max-Age` 配合伺服器端固定時鐘驗證，避免本機瀏覽器時鐘偏差丟失有效測試 session。雲端新增測試 `node --test tests/vendor-work-orders-cloud*.test.mjs` 為 12/12 通過；完整 `npm test` 為 803/803、`npm run validate` 與 `git diff --check` 通過。Cloudflare Worker version `973dffe3-29be-44ca-9add-81dfe0e97a6a` 已綁定 `workorders-test.cmwebs.com`；不可將本機或 HTTP smoke test 推論為 LINE 真實登入、實機或 Production 驗收。
 # LINE 綁定操作介面（2026-10-08）
 
 - API：房東邀請保存、跨工作區隔離、廠商拒絕、列表隱藏 token／identity、真實登入能力標記未接通。

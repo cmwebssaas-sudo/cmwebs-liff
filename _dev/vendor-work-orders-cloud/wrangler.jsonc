@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vendor-work-orders-staging",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-10-09",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "PUBLIC_ORIGIN": "https://workorders-test.cmwebs.com",
+    "LINE_CHANNEL_ID": "2011937202",
+    "LINE_PROVIDER_ID": "1631758156"
+  },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/auth/*", "/health"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vendor-work-orders-staging",
+      "database_id": "23557e55-6e12-4a2a-9c08-ef9e445efbe7",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ATTACHMENTS",
+      "bucket_name": "vendor-work-orders-attachments-staging"
+    }
+  ],
+  "observability": { "enabled": true }
+}
