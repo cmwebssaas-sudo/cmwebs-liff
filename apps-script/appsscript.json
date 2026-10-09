@@ -1,6 +1,8 @@
 {
   "timeZone": "Asia/Taipei",
-  "dependencies": {},
+  "dependencies": {
+    "enabledAdvancedServices": [{ "userSymbol": "Gmail", "version": "v1", "serviceId": "gmail" }]
+  },
   "webapp": {
     "executeAs": "USER_DEPLOYING",
     "access": "ANYONE_ANONYMOUS"

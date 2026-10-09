@@ -1,7 +1,8 @@
 # CMWebs Current State
 
-2026-10-09 本機驗證：新增30/30、完整677/677、validate、diff-check通過；
-Apps Script parser測試函式於本機VM通過。未代表正式收信／部署／銷帳驗收。
+2026-10-09 本機驗證：新增31/31、完整678/678、validate、diff-check通過；
+Apps Script parser測試已在正式環境完成，兩張附加表及停用設定已建立。
+Gmail readonly新增授權待使用者同意；正式收信／Web App發布／銷帳仍未驗收。
 
 ## 2026-10-09 郵局 Email 配對與房東確認銷帳（本機候選）
 
@@ -11,7 +12,9 @@ Apps Script parser測試函式於本機VM通過。未代表正式收信／部署
 基底origin/main 6af4b28；root混合WIP不動。新增Gmail readonly intake、兩張附加表、
 已驗證POST審核及既有付款頁銀行區塊；沿用正式付款服務及團隊通知偏好。
 包含持久化通知重試、付款中斷恢復、原批准人、exact amount及Workspace保護。
-未操作正式Google帳戶／資料／LINE／trigger／deployment；指定收信帳戶待確認。
+正式帳戶已核對，預備HEAD60來源檔與回讀一致並保留原manifest/scopes。
+正式Web App219／Pages不變；新增兩張空表及enabled=false設定，未發LINE、
+安裝新trigger或銷帳。Gmail授權仍待使用者行動時同意。
 部署、OAuth、migration、啟用與回退見BANK-EMAIL-RECEIPTS.md。
 
 ## 2026-10-07 房源分享按鈕縮小（前端已發布）
@@ -1337,6 +1340,7 @@ Rollback 後端214及本次前端基底 d107206，保留新增網址欄與資料
 
 指定信箱的 Gmail／Drive／clasp 身份、真實轉寄解析及唯一收款帳戶遮罩已核對。
 正式 serving219/editor HEAD 各59來源檔與 origin/main6af4b28 一致。
-候選 cache tag20261009-postal-payment-review-v1。Chrome 指定帳戶登入與新增
-Gmail readonly 授權待使用者操作；尚未發布、建立正式表、修改 Properties、
-安裝觸發器、發送 LINE 或確認真實款項。參見 BANK-EMAIL-RECEIPTS.md。
+候選 cache tag20261009-postal-payment-review-v1。Chrome saas帳戶登入已核對；
+新增Gmail readonly授權待使用者同意。附加表及停用Properties已建立，
+預備HEAD保留原scopes；Web App219及Pages不變。未安裝新觸發器、發送LINE
+或確認真實款項。參見BANK-EMAIL-RECEIPTS.md。

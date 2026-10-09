@@ -2,7 +2,7 @@
 
 2026-10-09 本機候選。使用者明確授權此標準流程的實作；建議模型
 `gpt-5.6-terra`／`medium`。隔離分支 `codex/postal-payment-review-20261009`，
-基底 `origin/main@6af4b28`。不修改 root WIP；尚未發布或啟用正式信箱。
+基底 `origin/main@6af4b28`。不修改 root WIP；Web App／Pages 尚未發布，正式信箱未啟用。
 
 ## 房東看到的流程
 
@@ -50,17 +50,28 @@
 使用者已指定專用 Gmail 並授權實作及啟用。Gmail connector、Drive connector
 與 clasp 執行身份已核對為同一指定帳戶；真實轉寄通知的解析已通過，
 唯一啟用收款帳戶的前後碼與通知遮罩一致。實際信件、銀行帳號及設定
-僅保存在本機受限暫存檔，不提交 Git。設定目前為停用，尚未寫入 Script Properties。
+不提交 Git。設定已保存在正式 Script Properties，`enabled=false`；原15個屬性保留。
 
 重新匯出正式 Web App version219 與 editor HEAD，各59個來源檔均與
 `origin/main@6af4b28` 逐檔一致；保留兩份隔離匯出供回退。新候選前端
 cache tag 為 `20261009-postal-payment-review-v1`，尚未發布。
 
-Chrome 尚未登入指定 Google 帳戶；Google 登入頁開啟時另一個 extension
-介面阻擋自動操作，需要使用者完成登入。新增 Gmail readonly 授權尚未
-同意。正式 Sheet 的新表、設定、觸發器、後端與 Pages 均尚未變更。
+使用者指出正確 Chrome profile 為 saas；已核對 Apps Script 登入身份、
+既有 `CMWEBS_SPREADSHEET_ID` 與已檢查 Sheet 一致，Cloud project 為預設。
+預備 HEAD60來源檔已推送並匯出逐檔核對；暫時保留原始 manifest/scopes，
+不增加既有排程的授權要求。此 HEAD 與候選 Git manifest 的差別僅為尚未啟用
+的 Gmail readonly scope／進階服務；正式 Web App 仍為219，Pages未更新。
 
-## 設定與啟用步驟（尚未執行）
+正式執行 migration 已完成，只建立兩張附加表；回讀22／10欄位完全相符且
+尚無款項資料。`testBankEmailReceiptParser` 已在正式 Apps Script 環境執行成功。
+未安裝新 trigger、發送 LINE 或銷帳。新增 Gmail readonly 授權需行動時確認，
+目前等待使用者同意，收到後才推送完整 manifest／重新授權及啟用。
+
+候選 manifest 宣告 Gmail v1 進階服務，讓預設 Cloud project 在服務啟用時
+啟用 Gmail API；原 scopes 保留，只增加 gmail.readonly。正式 grants 尚未變更。
+依據 [Google 進階服務啟用說明](https://developers.google.com/apps-script/guides/services/advanced)。
+
+## 設定與啟用 Runbook（上述項目已完成，其餘待執行）
 
 1. 取得正式發布授權；重新核對 serving source、HEAD、正式 Sheet Schema，
    保留當前部署版本及備份。先使用隔離試算表和合成 Email 驗證。
@@ -129,8 +140,9 @@ Node VM 覆蓋合成 Gmail API → 擷取／匹配 → 保存／通知；另實�
 可完成合成狀態轉換。此預覽沒有登入、呼叫正式 API、讀真實信件或發 LINE。
 
 Gmail／Drive connector、clasp 身份、真實轉寄標頭／格式、收款帳戶遮罩及 serving
-source 已核對。Apps Script Gmail OAuth／API、觸發器、正式 Schema migration、
-發布、LINE 手機收件及正式銷帳仍 **UNVERIFIED／未執行**。
+source 已核對。附加 Schema migration 與正式環境 parser 測試已完成。
+Apps Script Gmail OAuth／API、觸發器、Web App／Pages發布、LINE 手機收件
+及正式銷帳仍 **UNVERIFIED／未執行**。
 
 API 行為依據：[Gmail search timezone](https://developers.google.com/workspace/gmail/api/guides/filtering)、
 [LINE request retry](https://developers.line.biz/en/docs/messaging-api/retrying-api-request/)。
