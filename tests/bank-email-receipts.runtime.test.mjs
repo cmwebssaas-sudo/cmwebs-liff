@@ -26,7 +26,7 @@ function sheet(objects = []) {
       setValue(value){rows[r-1] ||= [];rows[r-1][c-1]=value;}})};
 }
 function runtime() {
-  const sheets = {V2_bills:sheet([bill()]), V2_workspace_payment_accounts:sheet([{payment_account_id:'acct-a',workspace_id:'ws-a',bank_account:'12340000056789',account_status:'active'}]),V2_payment_reports:sheet(),V2_payments:sheet([{payment_id:'',bill_id:'',status:'',amount:'',source_ref_id:''}])};
+  const sheets = {V2_bills:sheet([bill()]), V2_workspace_payment_accounts:sheet([{payment_account_id:'acct-a',workspace_id:'ws-a',bank_account:'12340000056789',account_status:'active'}]),V2_payment_reports:sheet(),V2_payments:sheet([{payment_id:'',bill_id:'',status:'',amount:'',source_ref_id:'',workspace_id:'',tenant_id:'',landlord_id:'',bank_last5:'',payment_date:''}])};
   const notices = []; let held = false; let calls = 0;
   const access = {success:true, workspace:{workspace_id:'ws-a'},membership:{membership_id:'member-a'},user:{user_id:'user-a'},principal_line_user_id:'line-a',principal_landlord_id:'owner-a', permissions:{can_approve_payment:true}};
   const config = {enabled:true,mailbox_email:'reconcile@example.test',start_after:'2026-10-09',trusted_forwarders:['relay@example.test'],accounts:[{workspace_id:'ws-a',payment_account_id:'acct-a',receiver_mask:'1234*****56789'}]};
@@ -293,4 +293,33 @@ test('enabled intake refuses a different authenticated Gmail mailbox',()=>{
 
 test('postal direct envelope supports the observed official sender spelling',()=>{
  const r=runtime();assert.equal(r.ctx.bankReceiptMailSource_([{name:'From',value:'bsnsnotify@mail.post.gov.tw'},{name:'Authentication-Results',value:'mx.google.com; dmarc=pass header.from=post.gov.tw'}],{trusted_forwarders:[]}),'direct');
+});
+
+function existingSettlement(r){
+ intake(r);const row=r.ctx.bankReceiptRows_('V2_bank_email_receipts')[0];
+ r.ctx.bankReceiptUpdate_('V2_bills','bill_id','bill-a',{payment_status:'paid',payment_id:'external-payment'});
+ r.ctx.tenantPaymentReportEnsureSheet_();
+ r.ctx.bankReceiptAppend_('V2_payment_reports',{report_id:'tenant-report',landlord_id:'owner-a',tenant_id:'tenant-a',bill_id:'bill-a',reported_amount:6432,reported_last5:'01234',reported_paid_date:'2026-10-09',status:'confirmed',matched_payment_id:'external-payment',confirmed_by:'human',confirmed_at:'2026-10-10'});
+ r.ctx.bankReceiptAppend_('V2_payments',{payment_id:'external-payment',bill_id:'bill-a',status:'confirmed',amount:6432,source_ref_id:'tenant-report'});return row;
+}
+test('existing tenant settlement projects receipt as settled without creating or changing payments',()=>{
+ const r=runtime();const row=existingSettlement(r);const before=JSON.stringify(r.ctx.bankReceiptRows_('V2_payments'));
+ const data=r.ctx.bankReceiptInit_(r.access).data;assert.equal(data.receipts[0].status,'settled');assert.equal(data.receipts[0].payment_id,'external-payment');assert.equal(r.calls,0);assert.equal(JSON.stringify(r.ctx.bankReceiptRows_('V2_payments')),before);
+ assert.equal(r.ctx.bankReceiptRows_('V2_bank_email_receipts')[0].status,'pending','read projection does not mutate receipt');
+});
+test('paid original bill cannot be reassigned to another unpaid bill',()=>{
+ const r=runtime();const row=existingSettlement(r);r.ctx.bankReceiptAppend_('V2_bills',bill('bill-b'));
+ const result=r.ctx.bankReceiptConfirm_(r.access,{receipt_id:row.receipt_id,bill_id:'bill-b',decision:'confirm'});assert.equal(result.success,false);assert.equal(result.code,'RECEIPT_ALREADY_SETTLED');assert.equal(r.calls,0);
+});
+test('paid original bill with insufficient evidence is review-needed, never a new payment selector',()=>{
+ const r=runtime();existingSettlement(r);r.ctx.bankReceiptUpdate_('V2_payment_reports','report_id','tenant-report',{reported_last5:'99999'});
+ assert.equal(r.ctx.bankReceiptInit_(r.access).data.receipts[0].status,'paid_bill_review');assert.equal(r.calls,0);
+});
+
+test('existing settlement rejects ambiguous receipts and foreign or inconsistent payments',()=>{
+ for(const changed of [{workspace_id:'foreign'},{bank_last5:'99999'},{tenant_id:'foreign'},{source_ref_id:'other-report'},{status:'void'}]){
+  const r=runtime();existingSettlement(r);r.ctx.bankReceiptUpdate_('V2_payments','payment_id','external-payment',changed);
+  assert.equal(r.ctx.bankReceiptInit_(r.access).data.receipts[0].status,'paid_bill_review');
+ }
+ const r=runtime();const row=existingSettlement(r);r.ctx.bankReceiptAppend_('V2_bank_email_receipts',{...row,receipt_id:'another-receipt'});assert.equal(r.ctx.bankReceiptInit_(r.access).data.receipts[0].status,'paid_bill_review');
 });

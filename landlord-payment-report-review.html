@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 付款回報審核</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261010-payment-report-decision-v1"></script>
-  <script src="landlord-auth.js?v=20261010-payment-report-decision-v1"></script>
+<script src="frontend-release.js?v=20261010-receipt-existing-payment-v1"></script>
+  <script src="landlord-auth.js?v=20261010-receipt-existing-payment-v1"></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -372,11 +372,11 @@
       return '<div class="section-title">銀行入帳通知</div><section class="card">'+data.receipts.map(function(receipt) {
         const pending = receipt.status === 'pending' || receipt.status === 'unmatched';
         const matched = bills.find(function(bill){return bill.bill_id===receipt.match_bill_id && Number(bill.total_amount)===Number(receipt.amount);});
-        const title = pending ? (matched ? '收到入帳，待確認銷帳' : '收到入帳，但無法配對') : (receipt.status==='settled'?'已銷帳':'其他款項');
+        const title = pending ? (matched ? '收到入帳，待確認銷帳' : '收到入帳，但無法配對') : (receipt.status==='settled'?'已銷帳':receipt.status==='paid_bill_review'?'原帳單已銷帳，入帳待核對':'其他款項');
         const eligible = bills.filter(function(bill){return Number(bill.total_amount)===Number(receipt.amount);});
         const options = '<option value="">請選擇帳單</option>'+eligible.map(function(bill){return '<option value="'+safeHtml(bill.bill_id)+'"'+(matched&&matched.bill_id===bill.bill_id?' selected':'')+'>'+safeHtml(label(bill))+'</option>';}).join('');
         const selector = '<select class="bank-select" aria-label="選擇對應帳單">'+options+'</select><div class="actions"><button class="button primary" onclick="submitBankReceipt(this,\''+safeHtml(receipt.receipt_id)+'\',\'choose\')">選擇帳單並確認銷帳</button><button class="button secondary" onclick="submitBankReceipt(this,\''+safeHtml(receipt.receipt_id)+'\',\'other\')">其他款項</button></div>';
-        let controls = '';
+        let controls = receipt.status==='paid_bill_review'?'<div class="report-meta">請核對原付款紀錄；此通知不再提供重複銷帳。</div>':'';
         if (pending && canApprove) controls = matched ? '<div class="actions"><button class="button primary" onclick="submitBankReceipt(this,\''+safeHtml(receipt.receipt_id)+'\',\'confirm\')">確認銷帳</button></div><details><summary>配對有誤</summary>'+selector+'</details>' : selector;
         return '<article class="report bank-receipt" data-receipt-id="'+safeHtml(receipt.receipt_id)+'"><div class="report-name">'+safeHtml(title)+'</div><div class="amount">'+money(receipt.amount)+'</div><div class="report-meta">'+safeHtml(receipt.payer_bank||'未提供銀行')+'／末五碼 '+safeHtml(receipt.payer_last5||'未提供')+'<br>入帳時間：'+safeHtml(rawText(receipt.payment_at).replace('T',' ').replace('+08:00',''))+'</div>'+(matched?'<div class="report-meta">配對帳單：'+safeHtml(label(matched))+'</div>':'')+(receipt.source_kind==='forwarded'?'<div class="report-meta">來源：轉寄通知，請核對收款紀錄。</div>':'')+controls+'</article>';
       }).join('')+'</section>';

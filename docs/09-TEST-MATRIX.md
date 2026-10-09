@@ -1,5 +1,22 @@
 # V2 回歸測試矩陣
 
+## 2026-10-10 入帳通知辨識既有房客回報銷帳
+
+V2.0正確性修復；建議gpt-5.6-terra／medium。隔離branch
+codex/receipt-existing-payment-reconciliation-20261010，基底ed66d14，root WIP保留。
+房客付款回報已銷帳時，原郵局入帳仍pending，UI找不到未繳帳單而誤顯無法配對。
+後端唯讀投影核對原bill、confirmed report及payment ID、金額、付款日期、末五碼、
+tenant、landlord及Workspace；一致顯示settled，歧義顯示paid_bill_review並移除
+再次銷帳選項。確認route也拒絕將已繳清原帳單的通知改配其他帳單。
+不新增付款、不修改原receipt／report／bill／payment、不學習payer、不重發通知。
+新增四項測試，前三RED→GREEN；695項完整、validate、diff-check通過。
+正確owner fresh HEAD60檔與既有main一致；只修改入帳模組。
+Apps Script合成projection及正式唯讀測試：兩筆display_status均settled，
+read_only:true。immutable222匯出60檔與候選逐位元一致；正式URL維持，rollback221。
+前端tag20261010-receipt-existing-payment-v1，rollbacked66d14；Schema不變。
+同步修正baseline舊count59／treehash未涵蓋已存在第60檔問題，記錄完整候選清單hash。
+LINE手機顯示仍待使用者重新整理驗收。
+
 ## 2026-10-10 一般付款回報確認逾時修正
 
 一般付款回報送出原等候30秒，逾時恢復讀取只等5秒；正式唯讀確認使用者
