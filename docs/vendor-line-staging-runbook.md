@@ -2,11 +2,26 @@
 
 範圍：隔離 V3 原型，僅 @mmz7030n；不改 V2 Apps Script／Sheets／GitHub Pages 或其他官方帳號。
 
-## 2026-10-08 設定核對與授權
+## 2026-10-10 LINE Developers 核對結果
+
+- 已登入 LINE Developers，唯讀核對 Provider `dialogflow`（1631758156）。
+- 同一 Provider 已建立 Login channel「CMWebs 工單測試」，Channel ID
+  `2011937202`，目前狀態為 Developing。
+- Web app Callback URL 已設定為
+  `https://workorders-test.cmwebs.com/auth/line/callback`。
+- 頻道密鑰已在管理台存在，但只允許注入 staging secret storage；不寫入
+  repository、聊天、截圖或日誌。
+- 以上只代表管理台設定已存在；網址尚無 DNS／公開服務，因此仍未完成真實
+  LINE Login 或手機驗收。
+
+## 2026-10-08 設定核對與授權（歷史紀錄）
 
 - 使用者已明確授權在同一 Provider 新增工單測試 LINE Login channel，並選定 `https://workorders-test.cmwebs.com`。
-- 登入後唯讀核對 Provider `dialogflow`（1631758156）有兩個 Messaging API channels；指定測試 OA 對應 1592018523。當時沒有 LINE Login channel，不能借用其他 Provider 的登入通道。
-- 已在該 Provider 填入「CMWebs 工單測試」建立表單，Web app、台灣服務地區／所在地；未提交。LINE Developers Agreement 尚未同意，Create 仍 disabled；需使用者確認條款並完成建立。沒有 Channel ID 或秘密可用。
+- 登入後唯讀核對 Provider `dialogflow`（1631758156）有兩個 Messaging API
+  channels；指定測試 OA 對應 1592018523。當時沒有 LINE Login channel，不能
+  借用其他 Provider 的登入通道。
+- 當時已在該 Provider 填入「CMWebs 工單測試」建立表單，但尚未同意條款或
+  提交；本段保留作為建立前的歷史狀態。
 - DNS 查詢該測試網址未回傳記錄；這不是已部署入口。尚未建立 DNS、公開服務或儲存資源。前置 gate 仍須完成，不能直接公開 loopback 原型。
 - 本次沒有改 webhook、發送訊息、更改其他 OA 或部署 V2。
 
@@ -23,7 +38,8 @@
 
 ## 下一步：獨立 staging 前置 gate
 
-1. 人工登入 LINE Developers 後核對 Login 與指定 Messaging channel 同一 Provider；秘密透過伺服器 secret storage 注入，禁止聊天／Git／日誌。
+1. 已完成 LINE Developers 登入與同 Provider 核對；下一步只可在部署環境以
+   secret storage 注入 Login channel secret，禁止聊天／Git／日誌。
 2. 使用者選定獨立 HTTPS 網址，核實 host／持久資料及附件儲存。現有 server 綁定 loopback、拒絕外部 Host／Origin，尚不可直接對外暴露；必須先完成固定可信 reverse proxy origin 與測試，不得移除檢查來湊通。
 3. 目前無 CLI 環境設定與部署 launcher；不得把注入測試 adapter 或例子 URL 當作正式配置。
 4. 真實房東測試 session 尚需受控 identity bootstrap（不可允許合成房東遠端登入），合作對象只能邀請／確認／房東核准後建立 membership。

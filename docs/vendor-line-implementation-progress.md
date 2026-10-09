@@ -35,3 +35,16 @@ server 候選新增 start/callback、確認綁定／待審核讀回；callback �
 官方依據：https://developers.line.biz/en/reference/line-login/ 及 https://developers.line.biz/en/docs/line-login/integrate-pkce/ 。同 Provider 是管理台配置核對，不能從 ID token 猜測。
 
 最終本輪：完整786/786、validate、diff-check通過；核心及測試commit b7bbe74。API／UI候選仍與既有原型WIP一起保留，尚未合併。重啟8787讀回能力仍為login_ready=false及notification_ready=false。剩餘部署gate見vendor-line-staging-runbook.md。
+
+## 2026-10-10 LINE Developers 設定核對
+
+使用者已完成 LINE Developers 登入。已在 `dialogflow` Provider（1631758156）
+核對同一個 Login channel「CMWebs 工單測試」（Channel ID 2011937202），狀態為
+Developing；Web app Callback URL 已設定為
+`https://workorders-test.cmwebs.com/auth/line/callback`。只記錄非秘密的管理台
+證據，未讀取或保存 channel secret。
+
+這仍不是公開服務或真實登入證據：`workorders-test.cmwebs.com` 尚無 DNS／固定
+HTTPS reverse proxy，login secret 也尚未注入 staging；通知保持關閉。下一步是
+完成獨立 staging 的 host、持久儲存與 secret storage，再做 callback、webhook
+簽章及受控手機驗收。
