@@ -151,7 +151,7 @@ test('B+ landlord pages cache-bust the shared desktop stylesheet', () => {
   for (const [name, source] of Object.entries(landlordPages)) {
     assert.match(
       source,
-      /<link rel="stylesheet" href="landlord-responsive\.css\?v=20261010-payment-review-login-v1"\s*\/>/,
+      /<link rel="stylesheet" href="landlord-responsive\.css\?v=20261010-payment-review-submit-v1"\s*\/>/,
       `${name} must use the cache-busted shared desktop stylesheet`
     );
   }

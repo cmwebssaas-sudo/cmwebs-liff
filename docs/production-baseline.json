@@ -356,5 +356,20 @@
     "tests_passed": 683,
     "focused_tests_passed": 4,
     "status": "Expired profile recovery renders re-login; native LIFF entry or external gateway preserves receipt query. Local browser and runtime tests passed; authenticated phone re-login pending."
+  },
+  "payment_review_submit_recovery": {
+    "date": "2026-10-10",
+    "base_main": "f4654932240daff1d235b872f80141e59099b39e",
+    "frontend_release_tag": "20261010-payment-review-submit-v1",
+    "backend_version_unchanged": 221,
+    "tests_passed": 687,
+    "observed_write_duration_seconds": 163.613,
+    "confirmation_timeout_ms": 240000,
+    "read_timeout_ms": 60000,
+    "readback_max_attempts": 3,
+    "readback_retry_delay_ms": 5000,
+    "navigation_destinations": 5,
+    "business_writes_performed": 0,
+    "known_limitation": "Postal payment reports currently leave tenant_line_user_id blank; tenant LINE notification wiring pending."
   }
 }

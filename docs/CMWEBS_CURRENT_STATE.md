@@ -1,5 +1,23 @@
 # CMWebs Current State
 
+## 2026-10-10 入帳銷帳等待與五項導覽修復
+
+建議gpt-5.6-terra／medium；隔離分支codex/payment-review-submit-navigation-20261010，
+基底f465493；root WIP保留。正式唯讀確認一筆settled、一筆pending；付款POST
+執行163.613秒，超過前端120秒期限，早啟動的讀回33.065秒仍遇到未完成交易。
+前端確認等候延長240秒、讀取60秒；只有選定卡片顯示處理中，其餘卡片不改樣式，
+仍以單次提交guard防同時寫入。確認成功即使用已驗證回應更新該卡，後續清單更新
+失敗不再改成銷帳未知。逾時最多三次唯讀核對、間隔5秒，不自動重送确认；
+pending讀回不解除原交易不確定旗標。補上與首頁一致的房源入口及五欄導覽。
+新增4項行為測試RED→GREEN，完整687/687、validate及diff-check通過。
+只發布前端及cache tag20261010-payment-review-submit-v1；後端v221／Schema／
+Properties／觸發器不變，不代點真實銷帳。回退前端f465493。
+正式手機操作與逾時完成後回讀仍待驗收。
+
+已知限制：郵局付款回報目前tenant_line_user_id留空，因此本次房客通知記錄failed／
+未綁定；此記錄不能證明房客本身未綁定。房客通知接線需另外補齊正確身份來源，
+本次前端修復沒有發送或補送房客訊息。
+
 ## 2026-10-10 入帳審核連結登入過期修復
 
 使用者手機顯示 The access token expired；審核頁未捕捉 getProfile 過期，重新整理
