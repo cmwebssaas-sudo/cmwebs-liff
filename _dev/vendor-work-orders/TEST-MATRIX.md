@@ -22,7 +22,7 @@
 
 | 項目 | 結果 | 說明 |
 | --- | --- | --- |
-| 獨立 staging 身分、資料隔離與部署 | PARTIAL | Cloudflare Worker／D1／R2 已建立並部署；health、首頁、LINE status HTTP 200。LINE secret 尚未注入，真實登入未驗收。 |
+| 獨立 staging 身分、資料隔離與部署 | PARTIAL | Cloudflare Worker／D1／R2 已建立並部署；health、首頁、LINE status HTTP 200，`login_ready=true`。真實登入仍未驗收。 |
 | 真實 LINE OA 登入、訊息及通知 | NOT RUN | 只使用合成 fixture session，未連接 LINE。 |
 | iOS／Android LINE 內建瀏覽器實機操作 | NOT RUN | 本機自動化測試不代表實機鍵盤、相機或附件體驗。 |
 | 真實公司／個人廠商報價、施工與驗收 | NOT RUN | 沒有建立外部聯絡、派單或真實作業。 |

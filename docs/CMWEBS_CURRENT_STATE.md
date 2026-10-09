@@ -7,22 +7,21 @@ Developers Login channel 2011937202 的 callback 為
 部署並綁定 `workorders-test.cmwebs.com`；獨立 D1 ID
 `23557e55-6e12-4a2a-9c08-ef9e445efbe7`、R2
 `vendor-work-orders-attachments-staging` 已建立並完成第一個 migration。
-遠端 health、首頁、LINE status 均 HTTP 200；`login_ready=false` 僅因 channel
-secret 尚未注入，`notification_ready=false` 仍保持關閉。root 混合 WIP 未修改。
+遠端 health、首頁、LINE status 均 HTTP 200；`login_ready=true` 代表 channel
+secret 已注入，`notification_ready=false` 仍保持關閉。root 混合 WIP 未修改。
 
 本 worktree 最新設計／計畫／雲端程式均在隔離 branch
 `codex/vendor-work-orders-design-20261007`；新增 resource 與 secret 沒有重用或
-修改任何既有正式 Worker、OA webhook、Sheets 或 Apps Script。完成 secret 注入後才
-可做真實登入／手機驗收。
+修改任何既有正式 Worker、OA webhook、Sheets 或 Apps Script。Secret 已注入，仍待
+真實登入／手機驗收。
 
 指定 Messaging API 測試 OA `@mmz7030n`／channel 1592018523 仍使用既有
 Dialogflow webhook URL；Login channel 2011937202 已關聯該測試 OA。本輪只讀取
 既有 webhook，沒有替換 webhook 或存取 token。
 
-部署前置已查明：`cmwebs.com` 使用 Cloudflare nameserver，但
-`workorders-test.cmwebs.com` 無 DNS 記錄；本機沒有可用 deployment CLI 或既定
-staging 主機。Cloudflare 控制台目前需要人工登入，故尚未建立 DNS、公開 origin
-或注入任何 secret。
+部署前置紀錄曾查明：`cmwebs.com` 使用 Cloudflare nameserver，且本機沒有既定
+staging 主機；目前已建立 `workorders-test.cmwebs.com` 公開 staging 入口並完成
+Worker Secret 注入。
 
 ## 2026-10-08 收工：隔離合作工單 LINE 測試（未部署）
 

@@ -19,14 +19,15 @@ LINE API、未新增 secrets、未部署。
 Web Crypto LINE Login PKCE、Webhook 驗簽／去重、R2 私有附件、Session、工作單讀取與
 指派動作 idempotency。新建獨立 D1／R2，套用 migration，Worker version
 `15f8acdb-1ed1-4807-9703-0dff52220939` 已綁定 `workorders-test.cmwebs.com`。
-遠端 health、首頁及 LINE status 均 HTTP 200；目前 login_ready=false 是因為 secret
-尚未注入，notification_ready 保持 false。沒有改既有 Worker、OA webhook 或發送訊息。
+遠端 health、首頁及 LINE status 均 HTTP 200；目前 `login_ready=true`，代表 secret
+已注入並可啟動 LINE Login，`notification_ready` 保持 false。沒有改既有 Worker、
+OA webhook 或發送訊息。
 
 本機介面回歸驗證建立、重載保留及撤銷。尚無公開申請 endpoint，不接受使用者提交假 LINE identity。
 
-待完成：由管理者互動注入 `LINE_CHANNEL_SECRET` 後，完成真正 LINE Login callback、webhook
-簽章驗證、合作綁定與手機驗收。`notification_ready` 仍需維持 false，直到另外的通知
-啟用 gate 通過。秘密不寫入聊天、Git 或日誌。
+下一步：完成真正 LINE Login callback、webhook 簽章驗證、合作綁定與手機驗收。
+`notification_ready` 仍需維持 false，直到另外的通知啟用 gate 通過。秘密不寫入
+聊天、Git 或日誌。
 
 驗證：新核心測試 2/2；`npm run validate` 通過；`git diff --check` 通過。這些不是 LINE 收件或完整工單綁定證據。
 

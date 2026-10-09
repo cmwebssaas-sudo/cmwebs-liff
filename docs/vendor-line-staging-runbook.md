@@ -15,8 +15,8 @@
   repository、聊天、截圖或日誌。
 - 指定 Messaging API 測試 OA `@mmz7030n`（channel 1592018523）仍指向既有
   Dialogflow webhook；本輪只讀取，不能用工單原型取代或改寫該 webhook。
-- 以上只代表管理台設定已存在；網址尚無 DNS／公開服務，因此仍未完成真實
-  LINE Login 或手機驗收。
+- 管理台設定已在目前 staging 生效；Worker 公開入口已可讀取，但真實 LINE
+  Login 與手機驗收仍待執行。
 
 ## 2026-10-10 部署前置檢查（完成前紀錄）
 
@@ -39,25 +39,20 @@
   `https://vendor-work-orders-staging.buyhotart.workers.dev`，並綁定
   `https://workorders-test.cmwebs.com`。
 - 遠端讀回：`GET /health` HTTP 200；首頁 HTTP 200；`GET /api/line/status`
-  HTTP 200，且只回報 `login_ready=false`、`notification_ready=false`，沒有
-  回傳任何秘密。
+  HTTP 200，回報 `login_ready=true`、`notification_ready=false`，沒有回傳任何
+  秘密。
 - Cloudflare Workers Free／D1／標準 R2 guardrail 已寫入 Worker 設定；沒有啟用
   Workers Paid、R2 Infrequent Access、R2 SQL 或通知推送。
-- `LINE_CHANNEL_SECRET` 尚未注入 Worker Secret，因此目前不能完成真實 LINE
-  Login callback 或 webhook 驗簽；這是唯一待人工輸入的敏感設定。
+- `LINE_CHANNEL_SECRET` 已由管理者以 Wrangler 互動方式注入 Worker Secret；密鑰
+  沒有寫入 repository、聊天、截圖或日誌，LINE Login callback 與 webhook 驗簽
+  已具備啟動條件。
 - 現有測試 OA 的 Dialogflow webhook 沒有改動；本次沒有發送 LINE 訊息。
 
-### 待完成的單一人工步驟
+### 待完成的真實驗收
 
-由管理者在本機終端機以互動方式輸入 LINE Developers 的 channel secret：
-
-```sh
-npx --yes wrangler@4.149.0 secret put LINE_CHANNEL_SECRET \
-  --config _dev/vendor-work-orders-cloud/wrangler.jsonc
-```
-
-不要把 secret 貼到聊天、Git、截圖或 shell history。完成後再讀取
-`/api/line/status`，確認 `login_ready=true`，才進行登入與手機驗收。
+密鑰已完成注入，不要重複輸入或把 secret 貼到聊天、Git、截圖及 shell history。
+目前已確認 `/api/line/status` 回報 `login_ready=true`；下一步是進行真實
+LINE Login callback、手機操作及受控 webhook 驗收。
 
 ## 2026-10-08 設定核對與授權（歷史紀錄）
 
@@ -83,9 +78,9 @@ npx --yes wrangler@4.149.0 secret put LINE_CHANNEL_SECRET \
 
 ## 後續：LINE secret 與真實驗收 gate
 
-1. 由管理者互動輸入 `LINE_CHANNEL_SECRET` 到 Cloudflare Worker Secret；禁止聊天、
+1. `LINE_CHANNEL_SECRET` 已由管理者互動注入 Cloudflare Worker Secret；禁止聊天、
    Git、截圖與日誌出現秘密。
-2. 讀取 `/api/line/status`，確認 `login_ready=true`；若仍為 false，不進行真實登入。
+2. 已讀取 `/api/line/status` 並確認 `login_ready=true`；可進行真實登入。
 3. 完成 LINE Login callback、單一 membership、session 持久性、Webhook raw-body
    驗簽與 event ID 去重測試。
 4. 由指定測試人員完成好友、登入、邀請確認、房東核准與重新登入；目前 Worker
@@ -100,7 +95,8 @@ npx --yes wrangler@4.149.0 secret put LINE_CHANNEL_SECRET \
 - GET /api/line/pending：browser cookie 專屬、無原始 LINE identity。
 - POST /api/line/confirm：JSON＋CSRF，明確確認；保存申請不啟用 membership。
 - POST /api/line/bindings/:id/approve：房東 scoped 核准。
-- GET /api/line/status：只回傳公開能力，尚未配置時 login_ready=false。
+- GET /api/line/status：只回傳公開能力；目前 `login_ready=true`，通知能力仍
+  由 `notification_ready=false` 表示關閉。
 
 ## 驗收與 rollback
 
