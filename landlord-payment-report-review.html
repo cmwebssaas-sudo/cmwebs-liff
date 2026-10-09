@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 付款回報審核</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261009-postal-payment-review-v1"></script>
-  <script src="landlord-auth.js?v=20261009-postal-payment-review-v1"></script>
+<script src="frontend-release.js?v=20261010-payment-review-login-v1"></script>
+  <script src="landlord-auth.js?v=20261010-payment-review-login-v1"></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -232,13 +232,50 @@
         location.replace(buildLandlordEntryUrl());
         return false;
       }
-      const profile = await liff.getProfile();
+      let profile;
+      try {
+        profile = await liff.getProfile();
+      } catch (error) {
+        if (!/access token.*(expired|invalid)|invalid.*access token/i.test(String(error && error.message || error || ''))) throw error;
+        renderReviewLoginExpired();
+        return false;
+      }
       LINE_USER_ID = profile.userId || '';
       REVIEW_AUTH.init({lineUserId:LINE_USER_ID});
       if (!LINE_USER_ID) {
         throw new Error('無法取得房東 LINE User ID');
       }
       return true;
+    }
+
+    let reviewReloginInFlight = false;
+
+    function renderReviewLoginExpired() {
+      LINE_USER_ID = '';
+      PAGE_DATA = null;
+      BANK_RECEIPT_DATA = null;
+      document.getElementById('app').innerHTML = '<section class="card state" role="status"><div class="state-title">LINE 登入已過期</div><p class="state-text">請重新登入後確認入帳，原本的入帳紀錄會保留。</p><button id="reviewReloginBtn" class="button primary" type="button" onclick="restartReviewLineLogin()">重新登入 LINE</button><p class="state-text">若未跳轉，請關閉此頁，再從原本的通知連結開啟。</p></section>';
+    }
+
+    async function restartReviewLineLogin() {
+      if (reviewReloginInFlight) return;
+      reviewReloginInFlight = true;
+      const button = document.getElementById('reviewReloginBtn');
+      if (button) button.disabled = true;
+      try {
+        const gateway = new URL(buildLandlordEntryUrl());
+        if (liff.isInClient()) {
+          const entry = new URL('https://liff.line.me/' + LIFF_ID);
+          entry.searchParams.set('return_to', gateway.searchParams.get('return_to'));
+          location.replace(entry.href);
+        } else {
+          liff.logout();
+          location.replace(gateway.href);
+        }
+      } catch (error) {
+        reviewReloginInFlight = false;
+        renderReviewLoginExpired();
+      }
     }
 
     function jsonpRequest(action, params, timeoutMs) {

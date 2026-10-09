@@ -1,5 +1,19 @@
 # CMWebs Current State
 
+## 2026-10-10 入帳審核連結登入過期修復
+
+使用者手機顯示 The access token expired；審核頁未捕捉 getProfile 過期，重新整理
+只重複錯誤。改為顯示「重新登入 LINE」，保留 receipt_id／Workspace 等原查詢，
+移除 OAuth code/state 等暫存參數；LINE內建瀏覽器重開既有LIFF入口，一般瀏覽器
+清除過期LINE會話並回房東登入gateway，不在 sibling page 呼叫login。
+網路錯誤仍正常報錯、Email登入不變；重複點擊只導航一次，不重新提交付款。
+建議gpt-5.6-terra／medium；隔離分支codex/payment-review-expired-login-20261010，
+基底80c2544，root WIP保留。新增4項恢復測試RED→GREEN，完整683/683、validate
+及diff-check通過；隔離過期SDK頁面顯示重新登入。正式手機LINE重登與銷帳待驗收。
+前端release tag20261010-payment-review-login-v1；只發布前端與cache標記，
+Apps Script保持v221，無API／Schema／Properties／排程或業務寫入。
+回退前端80c2544；原通知連結可沿用，不重送LINE。
+
 2026-10-09 HTML 原信解析修正：郵局原信包含註解中的舊帳號欄位，舊版 HTML
 轉文字把隱藏欄位也留下，因此第二封真實通知被當成重複欄位而拒絕。
 先移除 HTML 註解再解析；可見重複通知仍拒絕。合成重現 RED→GREEN，完整679/679
