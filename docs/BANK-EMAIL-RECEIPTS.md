@@ -1,8 +1,8 @@
 # 郵局 Email 入帳與房東確認銷帳
 
-2026-10-09 本機候選。使用者明確授權此標準流程的實作；建議模型
+2026-10-09 已發布並啟用。使用者明確授權此標準流程的實作；建議模型
 `gpt-5.6-terra`／`medium`。隔離分支 `codex/postal-payment-review-20261009`，
-基底 `origin/main@6af4b28`。不修改 root WIP；Web App／Pages 尚未發布，正式信箱未啟用。
+基底 `origin/main@6af4b28`。不修改 root WIP；正式 Web App v220／Pages 已發布，Gmail 唯讀收信已啟用。
 
 ## 房東看到的流程
 
@@ -45,38 +45,37 @@
 通知沿用現有團隊 payment_report 偏好與通知中心，關閉 LINE push 仍保存事件。
 本工作沒有新增共用 OA 代發的 SaaS 功能。
 
-## 2026-10-09 啟用準備核對
+## 2026-10-09 正式啟用證據
 
-使用者已指定專用 Gmail 並授權實作及啟用。Gmail connector、Drive connector
-與 clasp 執行身份已核對為同一指定帳戶；真實轉寄通知的解析已通過，
-唯一啟用收款帳戶的前後碼與通知遮罩一致。實際信件、銀行帳號及設定
-不提交 Git。設定已保存在正式 Script Properties，`enabled=false`；原15個屬性保留。
+使用者明確同意 Gmail 唯讀權限並接續啟用。正確 Chrome saas profile、
+Gmail／Drive／clasp 身份及正式 Spreadsheet 綁定已核對；新增 gmail.readonly
+授權已接受，保留原六項 scopes。預設 Cloud project 宣告 Gmail v1 進階服務，
+真實 REST 收信成功。實際信件、銀行帳號、收款映射與私人識別碼不提交 Git。
 
-重新匯出正式 Web App version219 與 editor HEAD，各59個來源檔均與
-`origin/main@6af4b28` 逐檔一致；保留兩份隔離匯出供回退。新候選前端
-cache tag 為 `20261009-postal-payment-review-v1`，尚未發布。
+發布前 serving v219／editor HEAD 各59來源檔與 main6af4b28 一致。
+完整授權後 HEAD 與 immutable v220 各60檔逐檔匹配候選。既有正式 Web App
+URL 維持不變，其他四個部署保留，v219 作回退；未刪除版本。
+PR241 合併為0e679069bf6a9c40307f398fd43d741b44290d3b，Pages build1271979520
+為 built，46個公開檔案逐檔相符，cache tag20261009-postal-payment-review-v1。
 
-使用者指出正確 Chrome profile 為 saas；已核對 Apps Script 登入身份、
-既有 `CMWEBS_SPREADSHEET_ID` 與已檢查 Sheet 一致，Cloud project 為預設。
-預備 HEAD60來源檔已推送並匯出逐檔核對；暫時保留原始 manifest/scopes，
-不增加既有排程的授權要求。此 HEAD 與候選 Git manifest 的差別僅為尚未啟用
-的 Gmail readonly scope／進階服務；正式 Web App 仍為219，Pages未更新。
+migration 只新增兩張附加表，22／10欄位回讀相符；原15個 Script Properties
+保留，收信配置 enabled=true。正式 parser 測試成功。
+22:52 首次真實收信保存一筆 matched/pending 紀錄；report_id／payment_id 均空白。
+唯一通知事件的三個成員 delivery 為 sent、各 send_count=1，失敗0。
+這是通知中心及 LINE provider 接受證據，手機實際收件／閱讀仍 UNVERIFIED。
 
-正式執行 migration 已完成，只建立兩張附加表；回讀22／10欄位完全相符且
-尚無款項資料。`testBankEmailReceiptParser` 已在正式 Apps Script 環境執行成功。
-未安裝新 trigger、發送 LINE 或銷帳。新增 Gmail readonly 授權需行動時確認，
-目前等待使用者同意，收到後才推送完整 manifest／重新授權及啟用。
+安裝唯一 runBankEmailReceiptIntake 時間觸發器，每5分鐘；既有四個排程保留。
+22:54:41 第一次自然排程已完成（6.742秒）。其後有界回讀仍只有一筆 pending
+入帳、三筆 sent delivery 且各 send_count=1，沒有重複通知或付款。
+正式審核連結在未登入 Chrome 導向登入入口；登入後頁面與房東人工確認／
+真實銷帳尚未驗收。未代房東按確認，未新增付款人關聯。
 
-候選 manifest 宣告 Gmail v1 進階服務，讓預設 Cloud project 在服務啟用時
-啟用 Gmail API；原 scopes 保留，只增加 gmail.readonly。正式 grants 尚未變更。
-依據 [Google 進階服務啟用說明](https://developers.google.com/apps-script/guides/services/advanced)。
-
-## 設定與啟用 Runbook（上述項目已完成，其餘待執行）
+## 設定與啟用 Runbook（本次步驟1–7已完成）
 
 1. 取得正式發布授權；重新核對 serving source、HEAD、正式 Sheet Schema，
    保留當前部署版本及備份。先使用隔離試算表和合成 Email 驗證。
 2. 確認 Google 執行身份及指定信箱；啟用其 Cloud project 的 Gmail API，
-   以本人操作重新授權新增的 `gmail.readonly` scope。保留原有 OAuth scopes。
+   經操作當下同意後授權新增的 `gmail.readonly` scope。保留原有 OAuth scopes。
 3. 發布完整後端（含 `V2_BANK_EMAIL_RECEIPTS.js`、dispatcher、通知及付款服務），
    建立新 Apps Script Web App 版本且維持既有 URL；發布審核頁及既有 shared auth。
    前端發布需按既有流程更新 release cache tag。
@@ -101,7 +100,7 @@ cache tag 為 `20261009-postal-payment-review-v1`，尚未發布。
 
 6. 郵局 APP 開啟 Email 入帳通知；如轉寄，設定到上述實際可讀信箱，
    並驗證直寄或可信外層寄件人的真實郵件標頭。不要只憑截圖推定格式驗收。
-7. 手動執行一次 `runBankEmailReceiptIntake()` 核對隔離合成資料，
+7. 先以隔離合成資料驗證，再執行一次 `runBankEmailReceiptIntake()` 核對已授權真實收信，
    再用 `installBankEmailReceiptTrigger()` 安裝每五分鐘觸發器；installer
    核對信箱與 Schema，重複執行不再安裝第二個相同 handler。
 8. 正式驗收須另行授權一筆指定交易：真實收信 → 正確配對 → 通知中心／

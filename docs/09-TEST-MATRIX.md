@@ -1,9 +1,9 @@
 # V2 回歸測試矩陣
 
-2026-10-09 本機驗證：新增30/30、完整677/677、validate、diff-check通過；
-Apps Script parser測試函式於本機VM通過。未代表正式收信／部署／銷帳驗收。
+2026-10-09 本機驗證：新增31/31、完整678/678、validate、diff-check通過；
+Apps Script parser於本機VM與正式環境通過。真實銷帳仍需房東確認。
 
-## 2026-10-09 郵局入帳通知（本機候選）
+## 2026-10-09 郵局入帳通知（已發布並啟用）
 
 - bank-email-receipts.runtime.test.mjs：ROC日期／前置0／重複通知欄位、唯一金額、
   同額歧義、已知付款人與共用帳戶、Workspace與legacy canonical policy、
@@ -18,7 +18,13 @@ Apps Script parser測試函式於本機VM通過。未代表正式收信／部署
   quick lease、property writes與read snapshot回歸保留。
 - 390×844合成浏览器預覽：無橫向溢出、銀行按鈕至少44px；兩種確認操作完成。
 
-正式Gmail／OAuth／trigger／通知收件／指定真實交易仍UNVERIFIED。
+- 正式 OAuth 唯讀同意、Gmail profile及真實收信成功；附加表22／10欄位一致。
+- Web App v220／HEAD60檔、Pages46檔相符；完整678/678、validate通過。
+- 一筆真實入帳matched/pending；report_id／payment_id空白，未銷帳。
+- 通知中心三筆delivery sent且各send_count=1；LINE手機收件UNVERIFIED。
+- 唯一每5分鐘收信trigger；22:54:41自然執行完成6.742秒。其後仍一筆pending、
+  三筆sent且send_count=1，沒有重複通知／付款。原四個排程保留。
+- 未登入審核連結正確到登入入口；authenticated review及指定真實銷帳UNVERIFIED。
 
 ## 2026-10-07 手機分享覆層／501待起租（候選未發布）
 
