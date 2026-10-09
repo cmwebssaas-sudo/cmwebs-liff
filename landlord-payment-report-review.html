@@ -402,7 +402,7 @@
 
     async function submitBankReceipt(button,receiptId,decision) {
       if (BANK_RECEIPT_BUSY) {showToast('目前正在處理另一筆入帳，請稍候。',true);return;}
-      if (BANK_RECEIPT_UNCERTAIN === receiptId) {showToast('銷帳結果尚未確認，請重新整理核對。',true);return;}
+      if (BANK_RECEIPT_UNCERTAIN) {showToast('上一筆銷帳結果尚未確認，請先重新整理核對。',true);return;}
       const receipt = (BANK_RECEIPT_DATA.receipts||[]).find(function(r){return r.receipt_id===receiptId;});
       if (!receipt || ['pending','unmatched'].indexOf(receipt.status)<0) return;
       const card = button.closest('.bank-receipt');

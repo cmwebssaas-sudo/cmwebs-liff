@@ -22,12 +22,12 @@ test('only selected receipt shows processing and second click never submits a se
  assert.equal(r.state().data.receipts[0].status,'settled');assert.equal(r.state().data.receipts[1].status,'pending');assert.equal(r.state().uncertain,'');assert.ok(r.messages.some(m=>m.includes('已確認銷帳')));
 });
 test('timeout polls read-only until completed without resending confirmation',async()=>{
- const r=fixture();let writes=0,reads=0;r.ctx.bankReceiptRequest=async action=>{if(action==='landlord_bank_receipt_confirm'){writes++;throw Object.assign(Error('timeout'),{code:'API_TIMEOUT'});}reads++;return {success:true,data:{receipts:[{receipt_id:'a',status:reads===1?'pending':'settled'},{receipt_id:'b',status:'pending'}]}};};
+ const r=fixture();let writes=0,reads=0;r.ctx.bankReceiptRequest=async action=>{if(action==='landlord_bank_receipt_confirm'){writes++;throw Object.assign(Error('timeout'),{code:'API_TIMEOUT'});}reads++;return {success:true,data:{receipts:[{receipt_id:'a',status:reads===1?'pending':'settled'},{receipt_id:'b',status:'pending',match_bill_id:'bill-b'}]}};};
  await r.ctx.submitBankReceipt(r.buttons[0],'a','confirm');assert.equal(writes,1);assert.equal(reads,2);assert.equal(r.state().data.receipts[0].status,'settled');assert.equal(r.state().data.receipts[1].status,'pending');
 });
 test('pending timeout remains guarded after readback and cannot be resubmitted',async()=>{
- const r=fixture();let writes=0;r.ctx.bankReceiptRequest=async action=>{if(action==='landlord_bank_receipt_confirm'){writes++;throw Object.assign(Error('timeout'),{code:'API_TIMEOUT'});}return {success:true,data:{receipts:[{receipt_id:'a',status:'pending'},{receipt_id:'b',status:'pending'}]}};};
- await r.ctx.submitBankReceipt(r.buttons[0],'a','confirm');assert.equal(r.state().uncertain,'a');await r.ctx.submitBankReceipt(r.buttons[0],'a','confirm');assert.equal(writes,1);
+ const r=fixture();let writes=0;r.ctx.bankReceiptRequest=async action=>{if(action==='landlord_bank_receipt_confirm'){writes++;throw Object.assign(Error('timeout'),{code:'API_TIMEOUT'});}return {success:true,data:{receipts:[{receipt_id:'a',status:'pending'},{receipt_id:'b',status:'pending',match_bill_id:'bill-b'}]}};};
+ await r.ctx.submitBankReceipt(r.buttons[0],'a','confirm');assert.equal(r.state().uncertain,'a');await r.ctx.submitBankReceipt(r.buttons[0],'a','confirm');assert.equal(writes,1);await r.ctx.submitBankReceipt(r.buttons[1],'b','confirm');assert.equal(writes,1,'another receipt must not erase an unresolved transaction');
 });
 test('review navigation includes the same five destinations as landlord home',()=>{
  const nav=html.match(/<nav class="bottom-nav"[\s\S]*?<\/nav>/)[0];const home=fs.readFileSync('landlord-home.html','utf8').match(/<nav class="bottom-nav"[\s\S]*?<\/nav>/)[0];const routes=s=>[...s.matchAll(/goPage\('([^']+)'\)/g)].map(m=>m[1]);assert.deepEqual(routes(nav),routes(home));
