@@ -346,5 +346,15 @@
     ],
     "physical_line_receipt": "UNVERIFIED",
     "status": "Strip HTML comments before extracting visible fields; visible duplicate notifications remain rejected. Both real emails matched, awaiting landlord confirmation."
+  },
+  "payment_review_login_recovery": {
+    "date": "2026-10-10",
+    "branch": "codex/payment-review-expired-login-20261010",
+    "base_main": "80c25444b1f36852d9e10697f82fc08ab445d532",
+    "frontend_release_tag": "20261010-payment-review-login-v1",
+    "backend_version_unchanged": 221,
+    "tests_passed": 683,
+    "focused_tests_passed": 4,
+    "status": "Expired profile recovery renders re-login; native LIFF entry or external gateway preserves receipt query. Local browser and runtime tests passed; authenticated phone re-login pending."
   }
 }
