@@ -1069,3 +1069,28 @@ authenticated runtime verification packet.
   Timing logs contain action/read counts/duration, never payloads or identifiers.
 - Home uses the protected bootstrap as its Email session validation rather than
   a redundant preceding session-status request. Backend verification is unchanged.
+
+## 獨立工單服務（2026-10-10）
+
+本節不是 V2 Code.gs route；正式服務 workorders.cmwebs.com 使用 Worker + LINE session cookie。
+詳細部署及資料權限見 [工單部署紀錄](releases/vendor-work-orders-production-readiness.md)。
+
+| 路徑 | 方法 | 權限／目的 |
+| --- | --- | --- |
+| /auth/line/start、/auth/line/callback | GET | PKCE／nonce，指定 owner 或已核准 membership 建立 session |
+| /api/session | GET | 每次重新查 membership |
+| /api/work-orders、/api/work-orders/:id | GET、POST(collection) | 角色投影／房東建立草稿 |
+| /api/work-orders/:id/invitations、quote-approval、acceptance、supplement-approval | POST | 房東派工、報價／追加核准、驗收 |
+| /api/invitations/:id/quote、decline | POST | 受邀廠商 |
+| /api/assignments/:id/accept、start、completion、supplements | POST | 指定角色／施工者 |
+| /api/partners、priority-rules、service-agreements | GET；POST(partners/agreements)、PUT(priority-rules) | 工作區目錄，寫入要求 dispatch |
+| /api/partners/:id、/api/partners/:id/memberships/:actor | PATCH；POST(memberships collection) | 房東管理 |
+| /api/line/status、bindings、pending | GET | status 無 secrets；bindings 房東；pending 綁定 browser |
+| /api/line/invites、confirm、bindings/:id/approve、invites/:id/revoke | POST | 一次性邀请、CSRF、房東核准／撤銷 |
+| /api/work-orders/:id/attachments、/api/attachments/:id | POST(upload)、GET(download) | private R2，版本／audit／投影權限 |
+| /api/line/webhook | POST | 獨立 LINE_MESSAGING_SECRET 簽章；正式未配置 |
+
+業務寫入要求 Idempotency-Key（confirm 使用 browser CSRF）；不得用公開 dev/session 或診斷取得權限。
+D1 tables 為 vendor_work_orders_rows（table_name,row_id,workspace_id,payload_json,updated_at）、
+meta（schema_version,revision）、auth（key_hash,kind,payload_json,expires_at,created_at）及 commit_guard。
+0002 的 CHECK revision_guard_ok 與 atomic batch 防止跨 Worker 失去更新。

@@ -45,3 +45,11 @@
 2026-10-10 登入修正：LINE token request 改採 manual redirect，callback 捕捉 provider 失敗，避免未處理例外造成 Cloudflare 1101。正確 Secret 寫入後，真實回呼已到達 membership gate（HTTP 403，無例外、無 provider 拒絕）；尚未建立合作 membership，不能宣稱完整登入 session 或工單驗收。雲端測試 14/14、完整測試 805/805、validate 通過。回復方式：回滾 Worker 到前一版本；Secret 仍維持獨立 staging 設定。
 
 2026-10-10 正式部署準備：移除公開 cloud/state 診斷，未知 API／auth 回傳 JSON 404 而非 HTML fallback。回歸先確認公開端點測試失敗，修正後 cloud 15/15、完整 806/806、validate 及 diff-check 通過。staging Worker 42383aca-5964-45cf-aa66-8b0466dbcb1c 實際讀回 diagnostic 404、login_ready=true。正式發布阻礙見 docs/releases/vendor-work-orders-production-readiness.md；尚未正式部署。
+
+## 2026-10-10 獨立工單正式環境
+
+正式入口 workorders.cmwebs.com；production config、D1/private R2 與 staging 分離。
+Cloud 19/19；完整回歸 810/810；npm validate 通過。
+真實 Hans LINE 登入、房東頁、空合作清單及草稿保存重载可驗證。
+完整派工到驗收／附件／綁定路由用 SQLite-backed cloud tests 驗證，尚無合作人員手機或 LINE push 驗收。
+部署版本與回退／備份界限見 docs/releases/vendor-work-orders-production-readiness.md。

@@ -1,4 +1,4 @@
-/* Local fixture sessions only; authority and projections always come from the server. */
+/* Authority and projections always come from the authenticated cloud server. */
 'use strict';
 const $ = selector => document.querySelector(selector);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
@@ -80,7 +80,7 @@ async function write(path, body, method = 'POST', orderId) {
     if (result?.token && result?.invite && state.line.login_ready) {
       state.inviteLinks.set(result.invite.id, `${state.line.public_origin}/auth/line/start?invite=${encodeURIComponent(result.token)}`); render();
     }
-    feedback(`已保存並讀回${current ? `：${labels[current.status] || current.status} · 版本 ${current.version}` : '合作設定'}。通知狀態請查看本機收件匣。`);
+    feedback(`已保存並讀回${current ? `：${labels[current.status] || current.status} · 版本 ${current.version}` : '合作設定'}。通知請查看通知中心。`);
   } catch (error) {
     clearUnauthorized(error);
     if (error.uncertain || committed) {
@@ -171,20 +171,21 @@ function directory() {
     state.partners.map(p => `<article data-partner="${esc(p.id)}"><h3>${esc(displayName(p.name))}</h3><p>${p.type === 'company' ? '公司' : '個人'} · ${p.active ? '合作中' : '已停用'}</p>
       <details data-disclosure="edit-${esc(p.id)}"><summary>修改合作資料</summary><form data-form="partner-update" data-partner="${esc(p.id)}">${input('name', '合作名稱', displayName(p.name))}${skillsFields(p)}${select('active', '合作狀態', [['true', '啟用'], ['false', '停用']], p.active)}<button>更新合作設定</button></form></details>
       ${bindingPanel(p)}<p>成員：${p.members.map(m => `${esc(displayName(m.actor_id))}（${esc(roleName(m.member_role))}，${m.active ? '啟用' : '停用'}）`).join('、') || '尚無'}</p>
-      <details data-disclosure="members-${esc(p.id)}"><summary>新增公司成員／聯絡窗口</summary><p class="muted">管理者負責報價與接單；施工者回報完工；窗口查看進度。本機示範以成員代號加入。</p><form data-form="member-create" data-partner="${esc(p.id)}">${input('actor_id', '成員代號')}${select('member_role', '成員職責', [['worker', '施工者'], ['manager', '管理者'], ['contact', '窗口']])}<button>加入成員</button></form></details></article>`).join('') +
+      <p class="muted">合作人員透過上方的 LINE 綁定邀請加入，確認後由房東核准。</p></article>`).join('') +
     `<details class="panel" data-disclosure="priorities"><summary>設定第一、第二優先順序</summary><p class="muted">同一物件與工種：填 1 代表優先聯絡，填 2 代表第二順位；不合作的對象留白。</p><form id="priority-form" data-form="priority">${input('property_id', '物件代號')}${select('trade', '工種', trades)}${tradeNameField('其他工種名稱')}${partnerOptions().map(([key, name]) => input(`rank:${key}`, `${name} 順位`, '', 'number', false)).join('')}<button>保存順位</button></form>
       <div id="priority-list">${state.priorities.slice().sort((a, b) => a.rank - b.rank).map(r => `<p>${esc(displayName(r.property_id))} · ${esc(trades.find(t => t[0] === r.trade)?.[1])}${r.trade_name ? `（${esc(r.trade_name)}）` : ''} · ${r.rank}：${esc(partnerName(r.partner_id))}</p>`).join('') || '<p>尚未設定順位</p>'}</div></details>
     <details class="panel" data-disclosure="agreements"><summary>已有固定收費？設定服務約定</summary><p class="muted">例如每次清潔 1,500 元。有約定才需要設定；一般維修可直接請廠商報價。</p><form id="agreement-form" data-form="agreement">${input('title', '約定標題')}${select('partner_id', '合作對象', partnerOptions())}${select('trade', '工種', trades, 'cleaning')}${tradeNameField('其他工種名稱')}${input('property_id', '物件代號', '', 'text', false)}${input('price_twd', '固定價（元）', 0, 'number')}${input('starts_at', '開始日期', localDate(new Date()), 'datetime-local')}${input('ends_at', '結束日期', localDate(new Date(Date.now() + 365 * 86400000)), 'datetime-local')}<button>保存固定價約定</button></form>
       <div id="agreement-list">${state.agreements.map(a => `<p>${esc(displayName(a.title))} · ${esc(partnerName(a.partner_id))} · ${esc(a.trade_name || tradeName(a.trade))} · ${money(a.price_twd)} · 版本 ${a.version} · ${esc(a.starts_at)} — ${esc(a.ends_at)}</p>`).join('')}</div></details>`;
 }
 function inviteForm(w) {
+  if (!partnerOptions().length) return '<p class="muted">草稿已保存。尚無合作對象，未來到「合作設定」加入後即可派工。</p>';
   const defaultMode = invitationPartner(w) ? 'ranked' : 'manual';
   const firstPartner = defaultMode === 'ranked' ? invitationPartner(w) : partnerOptions()[0]?.[0];
   return `<p class="muted">選一位廠商即可詢價；已有固定價約定時，可在價格方式選擇。</p><form data-form="invite" data-order="${esc(w.id)}">${select('mode', '邀請方式', [['ranked', '依順位邀請'], ['manual', '手動指定'], ['parallel', '明確邀請多家報價']], defaultMode)}${select('partner_id', '指定合作對象', partnerOptions())}
     <fieldset data-parallel-partners hidden><legend>選擇要詢價的廠商</legend>${partnerOptions().map(([key, name]) => `<label class="check"><input name="partner_ids" type="checkbox" value="${esc(key)}">${esc(name)}</label>`).join('')}</fieldset>
     ${select('agreement_id', '價格方式', [['', '先報價再核准'], ...eligibleAgreementOptions(w, firstPartner)])}
     <details class="optional"><summary>回覆期限與順位遞補設定</summary><div class="form-fields">${input('reply_hours', '回覆期限（小時）', 24, 'number')}<label class="check"><input name="continue_round" type="checkbox">拒絕報價後，繼續下一順位</label></div></details>
-    <p class="muted">確認固定價派工即核准約定快照；廠商接單後才建立承接紀錄。</p><button>確認邀請／固定價派工</button></form>`;
+    <p class="muted">確認後會使用目前的固定價約定派工，等待廠商接單。</p><button>確認邀請／固定價派工</button></form>`;
 }
 document.addEventListener('change', event => {
   const changedForm = event.target.closest('form[data-form]');
@@ -236,7 +237,7 @@ function render() {
     }
     if (!state.line.development_mode) {
       $('#identity').textContent = '尚未登入'; $('#navigation').replaceChildren();
-      $('#content').innerHTML = `<section class="panel"><h2>${state.line.login_ready ? '合作人員登入' : 'LINE 登入尚未設定'}</h2>${state.line.login_ready ? '<a href="/auth/line/start">使用 LINE 登入</a><p>初次使用請先向房東取得綁定邀請。</p>' : '<p>尚未接通真實登入，請等待測試入口設定完成。</p>'}</section>`; return;
+      $('#content').innerHTML = `<section class="panel"><h2>${state.line.login_ready ? 'LINE 登入' : 'LINE 登入尚未設定'}</h2>${state.line.login_ready ? '<a href="/auth/line/start">使用 LINE 登入</a><p>房東可直接登入管理；合作人員初次使用請先取得綁定邀請。</p>' : '<p>尚未接通真實登入，請等待測試入口設定完成。</p>'}</section>`; return;
     }
     $('#identity').textContent = '尚未登入本機測試身份'; $('#navigation').replaceChildren();
     $('#content').innerHTML = `<section class="panel"><h2>本機合成身份</h2><form data-form="login">${select('principal', '本機測試身份', [
@@ -244,11 +245,11 @@ function render() {
     ])}<button>進入本機工作台</button></form></section>`; return;
   }
   const landlord = state.actor.role === 'landlord';
-  $('#identity').textContent = `${landlord ? '房東' : '合作廠商'} · ${displayName(state.actor.actor_id)} · ${displayName(state.actor.workspace_id)}`;
+  $('#identity').textContent = landlord ? '房東管理工作區' : `合作工作區 · ${roleName(state.actor.member_role)}`;
   $('#navigation').innerHTML = `<button data-tab="jobs" aria-current="${state.tab === 'jobs' ? 'page' : 'false'}">${landlord ? '工單總覽' : '我的工作'}</button>${landlord ? '<button data-tab="directory">合作設定</button>' : ''}<button data-tab="inbox">通知中心</button>`;
   let html = '<button class="secondary" id="refresh">重新讀取</button>';
   if (state.tab === 'directory' && landlord) html += directory();
-  else if (state.tab === 'inbox') html += `<h2>本機通知中心</h2>${state.inbox.map(n => { const matched = /^Work order (repair|cleaning|other): update available\.$/.exec(n.message); return `<article><p>${esc(matched ? `${tradeName(matched[1])}工單有新進度，請查看工作清單。` : n.message)}</p><p>${n.status === 'saved' ? '已保存通知' : '通知處理中'} · ${esc(n.at)}</p></article>`; }).join('') || '<p>尚無本機通知</p>'}`;
+  else if (state.tab === 'inbox') html += `<h2>通知中心</h2>${state.inbox.map(n => { const matched = /^Work order (repair|cleaning|other): update available\.$/.exec(n.message); return `<article><p>${esc(matched ? `${tradeName(matched[1])}工單有新進度，請查看工作清單。` : n.message)}</p><p>${n.status === 'saved' ? '已保存通知' : '通知處理中'} · ${esc(n.at)}</p></article>`; }).join('') || '<p>尚無通知</p>'}`;
   else {
     html += `<h2>${landlord ? '工單總覽' : '我的邀請與工作'}</h2>`;
     if (landlord) html += `<details open class="panel"><summary>建立工作</summary><p class="muted">先填三項：要做什麼、工作類型、在哪裡。建立後再選廠商。</p><form id="job-create" data-form="create">${input('title', '工作標題')}${select('trade', '工種', trades)}${tradeNameField('其他工種名稱')}${input('area', '必要區域')}<details class="optional" data-disclosure="create-extra"><summary>補充物件、詳細位置與作業說明（選填）</summary><div class="form-fields"><p class="muted">有設定廠商順位才需填物件代號；詳細位置與作業指引提供給承接廠商。</p>${input('property_id', '物件代號', '', 'text', false)}${input('location', '核准作業位置', '', 'text', false)}${textarea('instructions', '核准作業指引')}</div></details><button>建立工作草稿</button></form></details>`;

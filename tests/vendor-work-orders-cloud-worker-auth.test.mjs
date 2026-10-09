@@ -1,3 +1,4 @@
+import { sqliteD1 } from './helpers/vendor-d1.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -5,73 +6,7 @@ import { createWorker } from '../_dev/vendor-work-orders-cloud/src/worker.mjs';
 import { hashToken, sha256Hex } from '../_dev/vendor-work-orders-cloud/src/line-auth-worker.mjs';
 import { signLineWebhook } from '../_dev/vendor-work-orders-cloud/src/line-crypto.mjs';
 
-function authDb() {
-  const rows = new Map();
-  return {
-    prepare(sql) {
-      let args = [];
-      return {
-        bind(...values) { args = values; return this; },
-        async first() {
-          if (sql.includes('SELECT kind, payload_json, expires_at FROM vendor_work_orders_auth')) return rows.get(args[0]) || null;
-          return null;
-        },
-        async all() { return { results: [] }; },
-        async run() {
-          if (sql.includes('CREATE TABLE') || sql.includes('CREATE INDEX')) return { success: true };
-          if (sql.includes('INSERT INTO vendor_work_orders_auth')) {
-            rows.set(args[0], { kind: args[1], payload_json: args[2], expires_at: args[3] });
-            return { success: true };
-          }
-          if (sql.includes('DELETE FROM vendor_work_orders_auth')) { rows.delete(args[0]); return { success: true }; }
-          if (sql.includes('DELETE FROM vendor_work_orders_rows')) return { success: true };
-          if (sql.includes('INSERT INTO vendor_work_orders_meta')) return { success: true };
-          if (sql.includes('CREATE')) return { success: true };
-          throw new Error(`Unhandled SQL: ${sql}`);
-        },
-      };
-    },
-    async batch(statements) { return Promise.all(statements.map(statement => statement.run())); },
-  };
-}
-
-function cloudDb(initial = []) {
-  const auth = new Map();
-  const rows = initial.map(({ table_name, row_id, payload_json }) => ({ table_name, row_id, payload_json }));
-  return {
-    seedAuth(key, value) { auth.set(key, value); },
-    prepare(sql) {
-      let args = [];
-      return {
-        bind(...values) { args = values; return this; },
-        async first() {
-          if (sql.includes('SELECT kind, payload_json, expires_at FROM vendor_work_orders_auth')) return auth.get(args[0]) || null;
-          return null;
-        },
-        async all() {
-          if (sql.includes('SELECT table_name, row_id, payload_json FROM vendor_work_orders_rows')) return { results: rows };
-          return { results: [] };
-        },
-        async run() {
-          if (sql.includes('CREATE TABLE') || sql.includes('CREATE INDEX')) return { success: true };
-          if (sql.includes('INSERT INTO vendor_work_orders_auth')) {
-            auth.set(args[0], { kind: args[1], payload_json: args[2], expires_at: args[3] });
-            return { success: true };
-          }
-          if (sql.includes('DELETE FROM vendor_work_orders_auth')) { auth.delete(args[0]); return { success: true }; }
-          if (sql.includes('INSERT INTO vendor_work_orders_meta')) return { success: true };
-          if (sql.includes('DELETE FROM vendor_work_orders_rows')) { rows.splice(0); return { success: true }; }
-          if (sql.includes('INSERT INTO vendor_work_orders_rows')) {
-            rows.push({ table_name: args[0], row_id: args[1], payload_json: args[3] });
-            return { success: true };
-          }
-          throw new Error(`Unhandled SQL: ${sql}`);
-        },
-      };
-    },
-    async batch(statements) { return Promise.all(statements.map(statement => statement.run())); },
-  };
-}
+const authDb = sqliteD1, cloudDb = sqliteD1;
 
 test('Worker starts LINE Login with a secure browser transaction cookie', async () => {
   const worker = createWorker({ env: {
@@ -133,7 +68,7 @@ test('Worker verifies LINE webhook signature and deduplicates event IDs in D1', 
   const db = cloudDb();
   const worker = createWorker({ env: {
     DB: db, PUBLIC_ORIGIN: 'https://workorders-test.cmwebs.com', LINE_CHANNEL_ID: '2011937202',
-    LINE_CHANNEL_SECRET: 'secret', LINE_PROVIDER_ID: '1631758156',
+    LINE_MESSAGING_SECRET: 'secret', LINE_PROVIDER_ID: '1631758156',
   }, clock: () => 1000000 });
   const body = JSON.stringify({ events: [{ webhookEventId: 'evt-1', type: 'follow', timestamp: 1000,
     source: { type: 'user', userId: 'U' + 'a'.repeat(32) } }] });
@@ -185,4 +120,34 @@ test('Worker applies vendor assignment actions with D1 idempotency replay', asyn
   const replay = await worker.fetch(request());
   assert.equal(replay.status, 200);
   assert.equal((await replay.json()).data.status, 'in_progress');
+});
+
+test('configured owner can log in to an empty landlord workspace; other identities receive no authority', async () => {
+  const db = cloudDb();
+  let subject = 'U' + 'd'.repeat(32); const provider = '1631758156';
+  const actorId = `line-${await sha256Hex(JSON.stringify([provider, subject]))}`;
+  const now = Math.floor(Date.now() / 1000);
+  const env = { DB: db, PUBLIC_ORIGIN: 'https://workorders-test.cmwebs.com', LINE_CHANNEL_ID: '2011937202', LINE_CHANNEL_SECRET: 'secret', LINE_PROVIDER_ID: provider, OWNER_ACTOR_ID: actorId, OWNER_WORKSPACE_ID: 'owner-workspace' };
+  const worker = createWorker({ env, lineFetchImpl: async (url, options) => ({ ok: true, json: async () => url.endsWith('/token') ? { id_token: 'token' } : { iss: 'https://access.line.me', aud: env.LINE_CHANNEL_ID, sub: subject, nonce: new URLSearchParams(options.body).get('nonce'), exp: now + 600, iat: now } }) });
+  const start = await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/auth/line/start`));
+  const callback = await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/auth/line/callback?code=code&state=${new URL(start.headers.get('location')).searchParams.get('state')}`, { headers: { cookie: start.headers.get('set-cookie').split(';')[0] } }));
+  assert.equal(callback.status, 303);
+  const headers = { cookie: callback.headers.get('set-cookie').split(';')[0] };
+  const session = await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/api/session`, { headers }));
+  assert.equal((await session.json()).data.actor.role, 'landlord');
+  const orders = await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/api/work-orders`, { headers }));
+  assert.equal(orders.status, 200);
+  assert.deepEqual((await orders.json()).data, []);
+  subject = 'U' + 'e'.repeat(32);
+  const otherStart = await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/auth/line/start`));
+  const denied = await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/auth/line/callback?code=code&state=${new URL(otherStart.headers.get('location')).searchParams.get('state')}`, { headers: { cookie: otherStart.headers.get('set-cookie').split(';')[0] } }));
+  assert.equal(denied.status, 403); assert.equal(denied.headers.get('set-cookie'), null);
+  const { createD1StateStore } = await import('../_dev/vendor-work-orders-cloud/src/d1-state-store.mjs');
+  const store = createD1StateStore({ db });
+  await store.transact(current => { current.workspace_memberships[0].active = false; return current; });
+  subject = 'U' + 'd'.repeat(32);
+  const revokedStart = await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/auth/line/start`));
+  const revoked = await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/auth/line/callback?code=code&state=${new URL(revokedStart.headers.get('location')).searchParams.get('state')}`, { headers: { cookie: revokedStart.headers.get('set-cookie').split(';')[0] } }));
+  assert.equal(revoked.status, 403);
+  assert.equal((await worker.fetch(new Request(`${env.PUBLIC_ORIGIN}/api/session`, { headers }))).status, 401);
 });

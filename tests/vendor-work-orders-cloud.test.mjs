@@ -1,3 +1,4 @@
+import { sqliteD1 } from './helpers/vendor-d1.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -8,63 +9,7 @@ import { createAuthStore } from '../_dev/vendor-work-orders-cloud/src/auth-store
 import { signLineWebhook, verifyLineWebhook } from '../_dev/vendor-work-orders-cloud/src/line-crypto.mjs';
 import { createPrivateAttachmentStore } from '../_dev/vendor-work-orders-cloud/src/r2-attachments.mjs';
 
-function memoryD1() {
-  const rows = new Map();
-  const key = (table, id) => `${table}:${id}`;
-  return {
-    rows,
-    prepare(sql) {
-      let args = [];
-      return {
-        bind(...values) { args = values; return this; },
-        async first() {
-          if (sql.includes('SELECT value FROM vendor_work_orders_meta')) {
-            return rows.get(key('meta', args[0])) || null;
-          }
-          if (sql.includes('SELECT kind, payload_json, expires_at FROM vendor_work_orders_auth')) {
-            return rows.get(key('auth', args[0])) || null;
-          }
-          return null;
-        },
-        async all() {
-          if (sql.includes('SELECT table_name, row_id, payload_json FROM vendor_work_orders_rows')) {
-            return { results: [...rows.values()].filter(row => row.table_name).map(row => ({ ...row })) };
-          }
-          return { results: [] };
-        },
-        async run() {
-          if (sql.includes('CREATE TABLE') || sql.includes('CREATE INDEX')) return { success: true, meta: {} };
-          if (sql.includes('INSERT INTO vendor_work_orders_auth')) {
-            rows.set(key('auth', args[0]), { key_hash: args[0], kind: args[1], payload_json: args[2], expires_at: args[3], created_at: args[4] });
-            return { success: true, meta: { changes: 1 } };
-          }
-          if (sql.includes('DELETE FROM vendor_work_orders_auth')) {
-            rows.delete(key('auth', args[0]));
-            return { success: true, meta: { changes: 1 } };
-          }
-          if (sql.includes('INSERT INTO vendor_work_orders_meta')) {
-            rows.set(key('meta', args[0]), { key: args[0], value: args[1] });
-            return { success: true, meta: { changes: 1 } };
-          }
-          if (sql.includes('DELETE FROM vendor_work_orders_rows')) {
-            for (const [rowKey, row] of rows) if (row.table_name) rows.delete(rowKey);
-            return { success: true, meta: { changes: 1 } };
-          }
-          if (sql.includes('INSERT INTO vendor_work_orders_rows')) {
-            rows.set(key(args[0], args[1]), { table_name: args[0], row_id: args[1], workspace_id: args[2], payload_json: args[3] });
-            return { success: true, meta: { changes: 1 } };
-          }
-          throw new Error(`Unhandled SQL: ${sql}`);
-        },
-      };
-    },
-    async batch(statements) {
-      const results = [];
-      for (const statement of statements) results.push(await statement.run());
-      return results;
-    },
-  };
-}
+const memoryD1 = sqliteD1;
 
 function memoryR2() {
   const objects = new Map();
@@ -149,7 +94,7 @@ test('cloud diagnostic and unknown API routes never expose business state or fal
     DB: memoryD1(), PUBLIC_ORIGIN: 'https://workorders-test.cmwebs.com',
     ASSETS: { fetch: async () => { assetCalls++; return new Response('<html>app</html>'); } },
   } });
-  for (const path of ['/api/cloud/state', '/api/partners', '/auth/unknown']) {
+  for (const path of ['/api/cloud/state', '/api/unknown', '/auth/unknown']) {
     const response = await worker.fetch(new Request(`https://workorders-test.cmwebs.com${path}`));
     assert.equal(response.status, 404);
     assert.deepEqual(await response.json(), { success: false, error: 'NOT_FOUND' });

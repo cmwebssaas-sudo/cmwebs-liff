@@ -1,0 +1,49 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vendor-work-orders-production",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-10-09",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "PUBLIC_ORIGIN": "https://workorders.cmwebs.com",
+    "LINE_CHANNEL_ID": "2011937202",
+    "LINE_PROVIDER_ID": "1631758156",
+    "OWNER_WORKSPACE_ID": "cmwebs-workorders"
+  },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*",
+      "/auth/*",
+      "/health"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vendor-work-orders-production",
+      "database_id": "a10a8db3-6e2f-45ac-9380-29d714af0d5d",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ATTACHMENTS",
+      "bucket_name": "vendor-work-orders-attachments-production"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "workorders.cmwebs.com",
+      "custom_domain": true
+    }
+  ]
+}
