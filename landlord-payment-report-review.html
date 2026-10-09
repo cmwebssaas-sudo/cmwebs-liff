@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 付款回報審核</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261010-payment-review-submit-v1"></script>
-  <script src="landlord-auth.js?v=20261010-payment-review-submit-v1"></script>
+<script src="frontend-release.js?v=20261010-payment-report-decision-v1"></script>
+  <script src="landlord-auth.js?v=20261010-payment-report-decision-v1"></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -133,6 +133,8 @@
     let BANK_RECEIPT_ERROR = '';
     let BANK_RECEIPT_BUSY = false;
     let BANK_RECEIPT_UNCERTAIN = '';
+    let PAYMENT_REPORT_BUSY = false;
+    let PAYMENT_REPORT_UNCERTAIN = '';
     let REVIEW_AUTH = null;
     let toastTimer = null;
 
@@ -337,13 +339,13 @@
     }
 
     function waitForPaymentReportRecoveryDelay() {
-      return new Promise(function (resolve) { setTimeout(resolve, 1200); });
+      return new Promise(function (resolve) { setTimeout(resolve, 5000); });
     }
 
     async function recoverTimedOutPaymentReport(reportId) {
       for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
-          const result = await jsonpRequest('landlord_payment_reports_init', {}, 5000);
+          const result = await jsonpRequest('landlord_payment_reports_init', {}, 60000);
           if (result && result.success === true) {
             const report = findConfirmedPaymentReport(result.data || {}, reportId);
             if (report) return report;
@@ -401,6 +403,7 @@
     }
 
     async function submitBankReceipt(button,receiptId,decision) {
+      if (PAYMENT_REPORT_BUSY || PAYMENT_REPORT_UNCERTAIN) {showToast('上一筆付款結果尚未確認，請先重新整理核對。',true);return;}
       if (BANK_RECEIPT_BUSY) {showToast('目前正在處理另一筆入帳，請稍候。',true);return;}
       if (BANK_RECEIPT_UNCERTAIN) {showToast('上一筆銷帳結果尚未確認，請先重新整理核對。',true);return;}
       const receipt = (BANK_RECEIPT_DATA.receipts||[]).find(function(r){return r.receipt_id===receiptId;});
@@ -492,6 +495,9 @@
     }
 
     function openDecision(reportId, decision) {
+      if (PAYMENT_REPORT_BUSY || PAYMENT_REPORT_UNCERTAIN || BANK_RECEIPT_BUSY || BANK_RECEIPT_UNCERTAIN) {
+        showToast('上一筆處理結果尚未確認，請重新整理核對。', true); return;
+      }
       const report = (PAGE_DATA.reports || []).find(function (item) { return item.report_id === reportId; });
       if (!report || !isPending(report)) {
         showToast('此付款回報目前不能處理。', true);
@@ -508,6 +514,9 @@
     }
 
     async function submitDecision(reportId, decision, modal) {
+      if (PAYMENT_REPORT_BUSY || PAYMENT_REPORT_UNCERTAIN || BANK_RECEIPT_BUSY || BANK_RECEIPT_UNCERTAIN) {
+        showToast('上一筆處理結果尚未確認，請重新整理核對。', true); return;
+      }
       const note = rawText(modal.querySelector('#decisionNote').value).trim();
       if (decision === 'rejected' && !note) {
         showToast('請填寫駁回原因。', true);
@@ -515,29 +524,42 @@
       }
       const submit = modal.querySelectorAll('button')[1];
       submit.disabled = true;
+      submit.textContent = '處理中，請稍候…';
+      PAYMENT_REPORT_BUSY = true;
       try {
         const result = await jsonpRequest('landlord_payment_report_update', {
           report_id: reportId,
           decision: decision,
           reject_reason: decision === 'rejected' ? note : '',
           landlord_note: decision === 'confirmed' ? note : ''
-        });
+        }, 240000);
         if (!result || result.success !== true) throw new Error(result && result.message ? result.message : '付款回報處理失敗');
         modal.remove();
         showToast(result.message || '付款回報已處理。');
         loadPage();
       } catch (error) {
         if (error && error.code === 'API_TIMEOUT') {
+          PAYMENT_REPORT_UNCERTAIN = reportId;
+          submit.textContent = '正在核對處理結果…';
           const confirmedReport = await recoverTimedOutPaymentReport(reportId);
           if (confirmedReport) {
+            PAYMENT_REPORT_UNCERTAIN = '';
             modal.remove();
             showToast('付款回報已完成銷帳。');
             loadPage();
             return;
           }
         }
-        submit.disabled = false;
-        showToast(error.message || '付款回報處理失敗。', true);
+        if (PAYMENT_REPORT_UNCERTAIN) {
+          submit.textContent = '結果待確認';
+          showToast('處理結果尚未確認，請重新整理核對，勿重複送出。', true);
+        } else {
+          submit.disabled = false;
+          submit.textContent = '送出處理';
+          showToast(error.message || '付款回報處理失敗。', true);
+        }
+      } finally {
+        PAYMENT_REPORT_BUSY = false;
       }
     }
 
@@ -546,9 +568,10 @@
         const ready = await initLine();
         if (!ready) return;
         try {await loadBankReceipts();} catch (error) {BANK_RECEIPT_DATA=null;BANK_RECEIPT_ERROR=error.message;}
-        const result = await jsonpRequest('landlord_payment_reports_init');
+        const result = await jsonpRequest('landlord_payment_reports_init', {}, 60000);
         if (!result || result.success !== true) throw new Error(result && result.message ? result.message : '付款回報資料載入失敗');
         PAGE_DATA = result.data || {};
+        if (PAYMENT_REPORT_UNCERTAIN && (PAGE_DATA.reports || []).some(function (r) { return r.report_id === PAYMENT_REPORT_UNCERTAIN && ['confirmed','rejected','voided','void'].indexOf(r.status) >= 0; })) PAYMENT_REPORT_UNCERTAIN = '';
         renderPage();
         focusBankReceipt();
       } catch (error) {

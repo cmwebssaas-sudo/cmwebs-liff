@@ -1,5 +1,17 @@
 # V2 回歸測試矩陣
 
+## 2026-10-10 一般付款回報確認逾時修正
+
+一般付款回報送出原等候30秒，逾時恢復讀取只等5秒；正式唯讀確認使用者
+截圖所示回報已confirmed並有payment ID，不能把畫面逾時視為付款失敗。
+本次為V2.0穩定性修復，隔離branch codex/payment-report-decision-timeout-20261010，
+基底668168e，root WIP保留。寫入等候240秒、恢復／清單讀取60秒，最多三次
+唯讀恢復、間隔5秒；提交與核對期間顯示進度。未確認結果持續禁止再次提交
+及跨郵局卡片寫入，只有正式終態讀回才解除。此任務不新增付款或發送訊息。
+三項新行為測試RED→GREEN及跨卡片防重複回歸；完整691項、validate及diff-check通過。
+前端tag20261010-payment-report-decision-v1，Apps Script v221及Schema不變。
+回退前端f614ed8；不需資料回退。手機實際銷帳操作仍待真機驗收。
+
 ## 2026-10-10 入帳銷帳等待與五項導覽修復
 
 建議gpt-5.6-terra／medium；隔離分支codex/payment-review-submit-navigation-20261010，

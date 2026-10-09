@@ -32,3 +32,32 @@ test('pending timeout remains guarded after readback and cannot be resubmitted',
 test('review navigation includes the same five destinations as landlord home',()=>{
  const nav=html.match(/<nav class="bottom-nav"[\s\S]*?<\/nav>/)[0];const home=fs.readFileSync('landlord-home.html','utf8').match(/<nav class="bottom-nav"[\s\S]*?<\/nav>/)[0];const routes=s=>[...s.matchAll(/goPage\('([^']+)'\)/g)].map(m=>m[1]);assert.deepEqual(routes(nav),routes(home));
 });
+
+function decisionFixture(){
+ const r=fixture();const controls=[{disabled:false},{disabled:false,textContent:'送出處理'}];
+ r.modal={querySelector:()=>({value:''}),querySelectorAll:()=>controls,remove(){this.removed=true;}};
+ vm.runInContext("PAGE_DATA={reports:[{report_id:'r',status:'pending'}]}",r.ctx);
+ r.ctx.loadPage=()=>{};r.controls=controls;return r;
+}
+test('normal review waits for slow settlement and disables repeat submit',async()=>{
+ const r=decisionFixture();let finish;let writes=0;
+ r.ctx.jsonpRequest=(a,p,t)=>{writes++;assert.equal(t,240000);return new Promise(resolve=>finish=resolve);};
+ const task=r.ctx.submitDecision('r','confirmed',r.modal);assert.equal(r.controls[1].disabled,true);assert.match(r.controls[1].textContent,/處理/);
+ await r.ctx.submitDecision('r','confirmed',r.modal);assert.equal(writes,1);
+ finish({success:true});await task;assert.equal(r.modal.removed,true);
+});
+test('normal review readback allows slow reads and confirms without another write',async()=>{
+ const r=decisionFixture();let reads=0,writes=0;
+ r.ctx.jsonpRequest=async(a,p,t)=>{if(a==='landlord_payment_report_update'){writes++;throw Object.assign(Error('timeout'),{code:'API_TIMEOUT'});}assert.equal(t,60000);reads++;return {success:true,data:{reports:[{report_id:'r',status:reads===1?'pending':'confirmed'}]}};};
+ await r.ctx.submitDecision('r','confirmed',r.modal);assert.equal(writes,1);assert.equal(reads,2);assert.equal(r.modal.removed,true);
+});
+test('unresolved normal confirmation blocks another write until authoritative terminal readback',async()=>{
+ const r=decisionFixture();let writes=0;
+ r.ctx.jsonpRequest=async(a)=>{if(a==='landlord_payment_report_update'){writes++;throw Object.assign(Error('timeout'),{code:'API_TIMEOUT'});}return {success:true,data:{reports:[{report_id:'r',status:'pending'}]}};};
+ await r.ctx.submitDecision('r','confirmed',r.modal);await r.ctx.submitDecision('r','confirmed',r.modal);assert.equal(writes,1);assert.equal(r.controls[1].disabled,true);assert.ok(r.messages.some(m=>m.includes('尚未確認')));
+});
+
+test('uncertain normal confirmation also blocks postal card submission',async()=>{
+ const r=decisionFixture();r.ctx.jsonpRequest=async(a)=>{if(a==='landlord_payment_report_update')throw Object.assign(Error('timeout'),{code:'API_TIMEOUT'});return {success:true,data:{reports:[{report_id:'r',status:'pending'}]}};};
+ await r.ctx.submitDecision('r','confirmed',r.modal);r.ctx.bankReceiptRequest=()=>{throw Error('must not write');};await r.ctx.submitBankReceipt(r.buttons[0],'a','confirm');assert.ok(r.messages.some(m=>m.includes('尚未確認')));
+});
