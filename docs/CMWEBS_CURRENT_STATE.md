@@ -3,7 +3,7 @@
 2026-10-10續作確認：隔離工單 WIP 已建立 Cloudflare staging 垂直切片；LINE
 Developers Login channel 2011937202 的 callback 為
 `https://workorders-test.cmwebs.com/auth/line/callback`。Worker
-`vendor-work-orders-staging` version `84cd884b-c062-4710-b99a-afc986b93810` 已
+`vendor-work-orders-staging` version `0e37cb56-3688-42ee-8085-ee6b80184fcb` 已
 部署並綁定 `workorders-test.cmwebs.com`；獨立 D1 ID
 `23557e55-6e12-4a2a-9c08-ef9e445efbe7`、R2
 `vendor-work-orders-attachments-staging` 已建立並完成第一個 migration。
@@ -13,7 +13,7 @@ secret 已注入，`notification_ready=false` 仍保持關閉。root 混合 WIP 
 本 worktree 最新設計／計畫／雲端程式均在隔離 branch
 `codex/vendor-work-orders-design-20261007`；新增 resource 與 secret 沒有重用或
 修改任何既有正式 Worker、OA webhook、Sheets 或 Apps Script。Secret 已注入，仍待
-真實登入／手機驗收。
+合作綁定／手機驗收。
 
 指定 Messaging API 測試 OA `@mmz7030n`／channel 1592018523 仍使用既有
 Dialogflow webhook URL；Login channel 2011937202 已關聯該測試 OA。本輪只讀取
@@ -1365,3 +1365,5 @@ immutable216已匯出59檔與候選逐位元組相同，原Web App讀回216，UR
 Rollback 後端214及本次前端基底 d107206，保留新增網址欄與資料。
 網址欄只在授權房東首次儲存時加欄，不代填任何真實網址；自動橋接仍未
 建立正式綁定，不覆蓋網站端 WIP。真實儲存／重載及手機 LINE 尚未驗收。
+
+2026-10-10 登入修正：LINE token request 改採 manual redirect，callback 捕捉 provider 失敗，避免未處理例外造成 Cloudflare 1101。正確 Secret 寫入後，真實回呼已到達 membership gate（HTTP 403，無例外、無 provider 拒絕）；尚未建立合作 membership，不能宣稱完整登入 session 或工單驗收。雲端測試 14/14、完整測試 805/805、validate 通過。回復方式：回滾 Worker 到前一版本；Secret 仍維持獨立 staging 設定。

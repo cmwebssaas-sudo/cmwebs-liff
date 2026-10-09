@@ -116,6 +116,19 @@ test('Worker callback creates a D1-backed session and session endpoint reads it'
   assert.equal((await session.json()).data.actor.workspace_id, 'workspace-1');
 });
 
+test('Worker contains a rejected LINE token exchange instead of throwing a 1101', async () => {
+  const worker = createWorker({ env: {
+    DB: authDb(), PUBLIC_ORIGIN: 'https://workorders-test.cmwebs.com', LINE_CHANNEL_ID: '2011937202',
+    LINE_CHANNEL_SECRET: 'secret', LINE_PROVIDER_ID: '1631758156',
+  }, lineFetchImpl: async () => ({ ok: false, status: 400, json: async () => ({ error: 'invalid_grant' }) }) });
+  const start = await worker.fetch(new Request('https://workorders-test.cmwebs.com/auth/line/start'));
+  const startUrl = new URL(start.headers.get('location'));
+  const browserCookie = start.headers.get('set-cookie').split(';')[0];
+  const callback = await worker.fetch(new Request(`https://workorders-test.cmwebs.com/auth/line/callback?code=code&state=${encodeURIComponent(startUrl.searchParams.get('state'))}`, { headers: { cookie: browserCookie } }));
+  assert.equal(callback.status, 502);
+  assert.deepEqual(await callback.json(), { success: false, error: 'LINE_IDENTITY_REJECTED' });
+});
+
 test('Worker verifies LINE webhook signature and deduplicates event IDs in D1', async () => {
   const db = cloudDb();
   const worker = createWorker({ env: {

@@ -127,7 +127,14 @@ export function createWorker({ env = {}, clock = Date.now, lineFetchImpl = fetch
         const saved = await authStore.get('line_browser', browserKey);
         if (!saved) return json({ success: false, error: 'INVALID_AUTH_TRANSACTION' }, 401);
         await authStore.remove(browserKey);
-        const result = await lineLogin.complete({ transaction: saved.payload, code, state, fetchImpl: lineFetchImpl, now: clock });
+        let result;
+        try {
+          result = await lineLogin.complete({ transaction: saved.payload, code, state, fetchImpl: lineFetchImpl, now: clock });
+        } catch (error) {
+          const errorCode = error?.code || 'LINE_IDENTITY_REJECTED';
+          const status = errorCode === 'INVALID_AUTH_TRANSACTION' ? 400 : 502;
+          return json({ success: false, error: errorCode }, status);
+        }
         const stateSnapshot = await store.read();
         const actorId = `line-${await sha256Hex(JSON.stringify([result.identity.provider_id, result.identity.subject]))}`;
         const memberships = stateSnapshot.partner_memberships.filter(row => row.actor_id === actorId && row.active === true);

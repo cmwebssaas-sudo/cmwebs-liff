@@ -62,11 +62,22 @@ export function createLineLogin(config) {
         let response;
         try {
           response = await fetchImpl(`https://api.line.me/oauth2/v2.1/${endpoint}`, {
-            method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            method: 'POST', redirect: 'manual', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(fields).toString(),
           });
-        } catch { fail('LINE_IDENTITY_REJECTED'); }
-        if (!response?.ok) fail('LINE_IDENTITY_REJECTED');
+        } catch {
+          console.error('LINE API request failed', endpoint);
+          fail('LINE_IDENTITY_REJECTED');
+        }
+        if (!response?.ok) {
+          let apiError = 'unknown';
+          try {
+            const payload = await response.json();
+            if (typeof payload?.error === 'string' && payload.error.length <= 64) apiError = payload.error;
+          } catch { /* Keep provider response details out of the client and logs when unavailable. */ }
+          console.error('LINE API rejected', endpoint, response.status, apiError);
+          fail('LINE_IDENTITY_REJECTED');
+        }
         try { return await response.json(); } catch { fail('LINE_IDENTITY_REJECTED'); }
       }
       const tokens = await post('token', { grant_type: 'authorization_code', code, redirect_uri: checked.redirectUri,

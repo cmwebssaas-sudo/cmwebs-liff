@@ -35,7 +35,7 @@
   `23557e55-6e12-4a2a-9c08-ef9e445efbe7`）及 R2
   `vendor-work-orders-attachments-staging`；D1 migration
   `0001_vendor_work_orders.sql` 已套用。
-- Worker version `84cd884b-c062-4710-b99a-afc986b93810` 已部署至
+- Worker version `0e37cb56-3688-42ee-8085-ee6b80184fcb` 已部署至
   `https://vendor-work-orders-staging.buyhotart.workers.dev`，並綁定
   `https://workorders-test.cmwebs.com`。
 - 遠端讀回：`GET /health` HTTP 200；首頁 HTTP 200；`GET /api/line/status`
@@ -44,15 +44,14 @@
 - Cloudflare Workers Free／D1／標準 R2 guardrail 已寫入 Worker 設定；沒有啟用
   Workers Paid、R2 Infrequent Access、R2 SQL 或通知推送。
 - `LINE_CHANNEL_SECRET` 已由管理者以 Wrangler 互動方式注入 Worker Secret；密鑰
-  沒有寫入 repository、聊天、截圖或日誌，LINE Login callback 與 webhook 驗簽
+  僅保存於 Worker Secret，repository 不保存秘密；LINE Login callback 與 webhook 驗簽
   已具備啟動條件。
 - 現有測試 OA 的 Dialogflow webhook 沒有改動；本次沒有發送 LINE 訊息。
 
 ### 待完成的真實驗收
 
 密鑰已完成注入，不要重複輸入或把 secret 貼到聊天、Git、截圖及 shell history。
-目前已確認 `/api/line/status` 回報 `login_ready=true`；下一步是進行真實
-LINE Login callback、手機操作及受控 webhook 驗收。
+目前已確認 `/api/line/status` 回報 `login_ready=true`；真實 callback 已完成 token 交換與 claims 驗證，回傳 403 `LINE_MEMBERSHIP_REQUIRED`。下一步是合作綁定、手機操作及受控 webhook 驗收。
 
 ## 2026-10-08 設定核對與授權（歷史紀錄）
 
@@ -102,3 +101,5 @@ LINE Login callback、手機操作及受控 webhook 驗收。
 
 本機 injected adapter／瀏覽器 regression 不等於手機登入或收件。需真機登入、確認、房東核准、重新登入看到本人工單，及報價／完工／驗收；未完成一項皆留 pending。
 尚未部署，不需要 production rollback。未來先關通知 worker 再停測試 webhook；保留 V2 與其他服務不變。不能自行重啟舊 Dialogflow。
+
+2026-10-10 登入修正：LINE token request 改採 manual redirect，callback 捕捉 provider 失敗，避免未處理例外造成 Cloudflare 1101。正確 Secret 寫入後，真實回呼已到達 membership gate（HTTP 403，無例外、無 provider 拒絕）；尚未建立合作 membership，不能宣稱完整登入 session 或工單驗收。雲端測試 14/14、完整測試 805/805、validate 通過。回復方式：回滾 Worker 到前一版本；Secret 仍維持獨立 staging 設定。

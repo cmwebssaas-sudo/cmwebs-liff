@@ -18,7 +18,7 @@ LINE API、未新增 secrets、未部署。
 新增 `_dev/vendor-work-orders-cloud/`，包括 Worker router、D1 state/auth store、
 Web Crypto LINE Login PKCE、Webhook 驗簽／去重、R2 私有附件、Session、工作單讀取與
 指派動作 idempotency。新建獨立 D1／R2，套用 migration，Worker version
-`84cd884b-c062-4710-b99a-afc986b93810` 已綁定 `workorders-test.cmwebs.com`。
+`0e37cb56-3688-42ee-8085-ee6b80184fcb` 已綁定 `workorders-test.cmwebs.com`。
 遠端 health、首頁及 LINE status 均 HTTP 200；目前 `login_ready=true`，代表 secret
 已注入並可啟動 LINE Login，`notification_ready` 保持 false。沒有改既有 Worker、
 OA webhook 或發送訊息。
@@ -60,3 +60,5 @@ Developing；Web app Callback URL 已設定為
 HTTPS reverse proxy，login secret 也尚未注入 staging；通知保持關閉。下一步是
 完成獨立 staging 的 host、持久儲存與 secret storage，再做 callback、webhook
 簽章及受控手機驗收。
+
+2026-10-10 登入修正：LINE token request 改採 manual redirect，callback 捕捉 provider 失敗，避免未處理例外造成 Cloudflare 1101。正確 Secret 寫入後，真實回呼已到達 membership gate（HTTP 403，無例外、無 provider 拒絕）；尚未建立合作 membership，不能宣稱完整登入 session 或工單驗收。雲端測試 14/14、完整測試 805/805、validate 通過。回復方式：回滾 Worker 到前一版本；Secret 仍維持獨立 staging 設定。
