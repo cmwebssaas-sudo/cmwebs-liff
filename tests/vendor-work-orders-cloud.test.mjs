@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import { createWorker } from '../_dev/vendor-work-orders-cloud/src/worker.mjs';
 import { createD1StateStore } from '../_dev/vendor-work-orders-cloud/src/d1-state-store.mjs';
@@ -117,6 +118,12 @@ test('private R2 attachment store writes, reads and deletes opaque keys', async 
   assert.ok(await attachments.get('attachment-1'));
   await attachments.delete('attachment-1');
   assert.equal(await attachments.get('attachment-1'), null);
+});
+
+test('cloud UI preserves SESSION_REQUIRED from Worker error responses', async () => {
+  const app = await readFile(new URL('../_dev/vendor-work-orders-cloud/public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /const code = data\.code \|\| data\.error/);
+  assert.match(app, /new Error\(code \|\| '無法讀取回應'\)/);
 });
 
 test('Worker exposes health and non-secret LINE status', async () => {

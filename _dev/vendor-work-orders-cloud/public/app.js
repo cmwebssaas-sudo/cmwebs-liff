@@ -45,7 +45,8 @@ async function api(path, method = 'GET', body) {
       ...(write ? { body: JSON.stringify(body) } : {}) });
     data = await response.json();
   } catch { throw Object.assign(new Error('回應結果不明'), { uncertain: write }); }
-  if (!response.ok || data.success !== true) throw Object.assign(new Error(data.code || '無法讀取回應'), { uncertain: write && response.status >= 500, code: data.code });
+  const code = data.code || data.error;
+  if (!response.ok || data.success !== true) throw Object.assign(new Error(code || '無法讀取回應'), { uncertain: write && response.status >= 500, code });
   return data.data;
 }
 async function readAll(orderId, beforeRender) {

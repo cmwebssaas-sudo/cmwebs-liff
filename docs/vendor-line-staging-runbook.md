@@ -35,7 +35,7 @@
   `23557e55-6e12-4a2a-9c08-ef9e445efbe7`）及 R2
   `vendor-work-orders-attachments-staging`；D1 migration
   `0001_vendor_work_orders.sql` 已套用。
-- Worker version `15f8acdb-1ed1-4807-9703-0dff52220939` 已部署至
+- Worker version `84cd884b-c062-4710-b99a-afc986b93810` 已部署至
   `https://vendor-work-orders-staging.buyhotart.workers.dev`，並綁定
   `https://workorders-test.cmwebs.com`。
 - 遠端讀回：`GET /health` HTTP 200；首頁 HTTP 200；`GET /api/line/status`
