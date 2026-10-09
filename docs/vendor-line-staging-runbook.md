@@ -11,6 +11,8 @@
   `https://workorders-test.cmwebs.com/auth/line/callback`。
 - 頻道密鑰已在管理台存在，但只允許注入 staging secret storage；不寫入
   repository、聊天、截圖或日誌。
+- 指定 Messaging API 測試 OA `@mmz7030n`（channel 1592018523）仍指向既有
+  Dialogflow webhook；本輪只讀取，不能用工單原型取代或改寫該 webhook。
 - 以上只代表管理台設定已存在；網址尚無 DNS／公開服務，因此仍未完成真實
   LINE Login 或手機驗收。
 

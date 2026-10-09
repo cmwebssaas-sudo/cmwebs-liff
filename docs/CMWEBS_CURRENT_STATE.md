@@ -1,8 +1,15 @@
 # CMWebs Current State
 
-2026-10-09收工確認：停止實作與外部設定，保留隔離工單WIP；下次從新LINE
-Login通道2011937202的詳細核對及獨立測試部署前置條件接續。
-本次交接見`project-memory/worklogs/2026-10-09.md`；未發布、未發送通知。
+2026-10-10續作確認：隔離工單WIP保留；LINE Developers 已登入並完成新 Login
+通道2011937202的 Provider／類型／callback 唯讀核對。Callback 已設定為
+`https://workorders-test.cmwebs.com/auth/line/callback`；獨立測試服務仍未部署、
+未注入秘密、未發送通知。本次交接見`project-memory/worklogs/2026-10-09.md`。
+
+本 worktree 文件狀態 commit 為 `ce64733`；程式候選仍由前一個隔離 commit
+`d80243c` 提供。root 混合 WIP 未修改。
+
+指定 Messaging API 測試 OA `@mmz7030n`／channel 1592018523 仍使用既有
+Dialogflow webhook URL；本輪只讀取，沒有替換 webhook 或存取 token。
 
 ## 2026-10-08 收工：隔離合作工單 LINE 測試（未部署）
 
