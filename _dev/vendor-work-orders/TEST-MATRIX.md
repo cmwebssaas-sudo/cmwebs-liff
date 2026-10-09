@@ -34,7 +34,7 @@
 
 2026-10-08 中文介面更新：示範名稱、成員職責、登入身分、金額單位、版本及錯誤提示改為中文，保留內部識別代號。合作設定測試檢查可見文字沒有原本英文示範名稱及角色；更新後全套 `npm test` 774/774 通過，`npm run validate` 通過。只更新本機原型。
 
-2026-10-10 本次專項重跑結果：`node --test tests/vendor-work-orders*.test.mjs` 為 144/144 通過；新增 webhook route 只接受 loopback、原始 body 簽章與注入的測試 secret。session cookie 改以 `Max-Age` 配合伺服器端固定時鐘驗證，避免本機瀏覽器時鐘偏差丟失有效測試 session。尚未執行本輪 `npm test`、`npm run validate` 與完整 diff 檢查；不可將本機測試推論為 staging、LINE、實機或 Production 驗收。
+2026-10-10 本次專項重跑結果：`node --test tests/vendor-work-orders*.test.mjs` 為 144/144 通過；新增 webhook route 只接受 loopback、原始 body 簽章與注入的測試 secret。session cookie 改以 `Max-Age` 配合伺服器端固定時鐘驗證，避免本機瀏覽器時鐘偏差丟失有效測試 session。隨後完整 `npm test` 為 791/791、`npm run validate` 與 `git diff --check` 通過；不可將本機測試推論為 staging、LINE、實機或 Production 驗收。
 # LINE 綁定操作介面（2026-10-08）
 
 - API：房東邀請保存、跨工作區隔離、廠商拒絕、列表隱藏 token／identity、真實登入能力標記未接通。
