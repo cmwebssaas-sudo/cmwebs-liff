@@ -61,7 +61,7 @@ function validateSnapshot(state, previous) {
         typeof row.property_id !== 'string' || !row.property_id.trim()) invalid();
   }
   if (previous) {
-    for (const table of ['service_agreements', 'work_order_events', 'idempotency_records', 'quote_revisions', 'notification_outbox']) {
+    for (const table of ['service_agreements', 'work_order_events', 'idempotency_records', 'quote_revisions', 'notification_outbox', 'line_webhook_events']) {
       if (state[table].length < previous[table].length || previous[table].some((row, i) =>
         JSON.stringify(row) !== JSON.stringify(state[table][i]))) invalid();
     }
@@ -79,7 +79,17 @@ export function createWorkOrderStore({ filePath } = {}) {
   let loading;
   function load() {
     loading ??= (async () => {
-      try { snapshot = validateSnapshot(JSON.parse(await readFile(target, 'utf8'))); }
+      try {
+        const loaded = JSON.parse(await readFile(target, 'utf8'));
+        // Additive compatibility: preserve existing snapshots and all business rows.
+        if (loaded?.schema_version === 1) {
+          loaded.line_binding_invites ??= [];
+          loaded.line_binding_requests ??= [];
+          loaded.line_presence ??= [];
+          loaded.line_webhook_events ??= [];
+        }
+        snapshot = validateSnapshot(loaded);
+      }
       catch (error) {
         if (error.code !== 'ENOENT') throw error;
         snapshot = createInitialState();

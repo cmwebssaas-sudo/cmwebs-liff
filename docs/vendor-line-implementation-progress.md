@@ -4,6 +4,34 @@
 
 任務 1 進行中：新增 `line-binding.mjs` 純轉移核心與兩項測試，先確認缺少模組而失敗，再確認測試通過。邀請 token 僅保存雜湊，24 小時到期；申請不直接授權，需房東核准；撤銷、重放、跨工作區及非房東操作拒絕。
 
-待完成：新資料表的舊 snapshot 相容處理、交易 API／冪等、介面，以及後續 LINE 登入、通知與獨立 staging。核心尚未接入 server 或 live store，不能對外使用。既有本機資料未遷移；沒有 webhook、秘密或發送設定變更。
+2026-10-08 下一步：核心已接入本機 store 與交易 API；舊 snapshot 加入空邀請與申請表，不改既有工單。合作設定新增邀請建立、讀回、撤銷與申請核准介面。列表不返回原始 token、token hash 或 LINE identity；重放結果不保存或再次返回 token。
+
+2026-10-10：完成隔離 webhook／通知核心。新增 `line-webhook.mjs` 的 raw-body
+HMAC timing-safe 驗證、event ID 去重、follow／unfollow 狀態與舊事件順序保護；
+新增 `line-notifications.mjs`，只接受明確白名單、仍在好友狀態且 active membership
+的單一測試 subject，發送關閉回報 disabled，傳輸超時回報 unknown 並固定
+`line:<entry.id>` retry key。`POST /api/line/webhook` 只在注入 channel secret／Provider
+時啟用，事件先驗證再寫入本機 snapshot。完整工單專項 144/144 通過；未啟用真實
+LINE API、未新增 secrets、未部署。
+
+本機介面回歸驗證建立、重載保留及撤銷。尚無公開申請 endpoint，不接受使用者提交假 LINE identity。
+
+待完成：真正 LINE Login 的伺服器驗證、HTTPS 獨立測試入口、通知與手機驗收。`/api/line/status` 明確回報 login_ready=false、notification_ready=false；目前不能完成真實綁定或發送。沒有 webhook、秘密或正式發送設定變更。需確認同 Provider 的測試 Login channel 與獨立 HTTPS 部署位置，不能拿其他既有服務的入口代用。
 
 驗證：新核心測試 2/2；`npm run validate` 通過；`git diff --check` 通過。這些不是 LINE 收件或完整工單綁定證據。
+
+本輪完整回歸：`npm test` 778/778；`npm run validate` 通過。本機預覽與合成身份不等於真實 LINE 登入。
+
+## 登入交易串接（2026-10-08 下一輪）
+
+新增 line-auth.mjs：authorization code、PKCE S256、nonce/state、10 分鐘 browser-bound 交易、單次 callback／code、官方 token exchange 與 ID-token verify。驗證 issuer、audience、expiry、nonce；只回傳 verified Provider/subject，不回傳 LINE token／secret。
+
+server 候選新增 start/callback、確認綁定／待審核讀回；callback 不直接寫 membership。明確確認後交易保存一筆待核准申請；房東核准後重新登入才取得 vendor session。既有登入身分與 callback 混用會拒絕。多工作區 membership 暫拒絕，不任選第一筆。Cookie 使用 Secure／HttpOnly／SameSite=Lax。
+
+中文介面顯示確認公司及職責、等待房東核准；部署模式不顯示本機合成身份。CLI 本機仍未配置真實 LINE，notification_ready=false。server/public 改動保留在既有隔離 WIP，未發布或合併。
+
+外部阻擋：本輪實際 Chrome 的指定 OA Developers 分頁為 LINE Business ID 登入頁，不能核對 channel 配對或安全設定秘密。已請使用者重新登入與選定獨立 HTTPS 網址。尚未建立雲端資源、改 DNS／webhook、發送通知或讀取任何密鑰。
+
+官方依據：https://developers.line.biz/en/reference/line-login/ 及 https://developers.line.biz/en/docs/line-login/integrate-pkce/ 。同 Provider 是管理台配置核對，不能從 ID token 猜測。
+
+最終本輪：完整786/786、validate、diff-check通過；核心及測試commit b7bbe74。API／UI候選仍與既有原型WIP一起保留，尚未合併。重啟8787讀回能力仍為login_ready=false及notification_ready=false。剩餘部署gate見vendor-line-staging-runbook.md。

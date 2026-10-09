@@ -14,6 +14,13 @@ h2 { font-size: 1.35rem; } h3 { font-size: 1.1rem; }
 p, h2, h3 { overflow-wrap: anywhere; }
 article, .panel { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin: 16px 0; }
 form { display: grid; gap: 12px; margin: 16px 0; }
+[hidden] { display: none !important; }
+.form-fields { display: grid; gap: 12px; padding-top: 12px; }
+summary { cursor: pointer; font-weight: 650; padding-block: 8px; color: var(--accent); }
+.optional { border-top: 1px solid var(--line); padding-top: 4px; }
+.optional summary { font-size: .94rem; }
+details[open] > summary { margin-bottom: 8px; }
+details > form { margin-top: 10px; }
 label { display: grid; gap: 5px; font-weight: 600; }
 input, select, textarea, button { font: inherit; min-width: 0; }
 input, select, textarea { width: 100%; border: 1px solid #8ca79b; padding: 10px; border-radius: 7px; background: #fff; color: var(--ink); }

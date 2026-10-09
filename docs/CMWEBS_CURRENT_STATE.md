@@ -1,5 +1,32 @@
 # CMWebs Current State
 
+2026-10-09收工確認：停止實作與外部設定，保留隔離工單WIP；下次從新LINE
+Login通道2011937202的詳細核對及獨立測試部署前置條件接續。
+本次交接見`project-memory/worklogs/2026-10-09.md`；未發布、未發送通知。
+
+## 2026-10-08 收工：隔離合作工單 LINE 測試（未部署）
+
+建議模型／速度：gpt-5.6-terra／medium。只在隔離 worktree
+`/Users/hans/.codex/worktrees/invite-auth-fix-0930/cmwebs-liff` 延續
+`codex/vendor-work-orders-design-20261007`，HEAD `b7bbe7467917aa9c79c2f90cc137894b273f6a87`。
+root 混合 WIP 未修改，V2 正式服務未部署或變更。
+
+使用者授權同 Provider 的工單測試 Login channel 與
+`workorders-test.cmwebs.com`。Provider 1631758156（dialogflow）原有兩個
+Messaging API channels，指定 OA @mmz7030n 對應1592018523。建立表單填入
+CMWebs 工單測試／Web app／Taiwan；條款與提交由使用者完成。使用者回覆
+「已建立」，瀏覽器 inventory 確實見新 channel URL `/console/channel/2011937202`。
+這只證明新通道頁已出現；其名稱、Provider、callback 與實際登入尚未讀回驗收。
+轉回 Provider 查驗尚未完成時使用者要求收工，因此停止外部設定操作。
+
+本機登入核心與綁定 API 候選已存在；收工定向8/8及diff-check通過。
+HTTPS測試服務／DNS／秘密注入／真實房東登入尚未完成；webhook與受限通知
+尚未實作，不得先改舊webhook。沒有讀取密鑰、發送通知或發布。
+16個tracked修改與1個untracked整合測試保留；交接文件修改另計，未stage／commit。
+下一步先唯讀核對2011937202的名稱／類型／Provider與callback，再完成安全
+部署前置條件；不得移除Host／Origin檢查直接公開本機原型。
+詳細紀錄：`project-memory/worklogs/2026-10-08.md`、`vendor-line-staging-runbook.md`。
+
 ## 2026-10-07 房源分享按鈕縮小（前端已發布）
 
 使用者確認32px圓形、17px圖示、44px觸控範圍；建議gpt-5.6-terra、medium。

@@ -9,11 +9,28 @@ import { createVendorWorkOrderServer } from '../_dev/vendor-work-orders/server.m
 import { createSyntheticFixtures } from '../_dev/vendor-work-orders/fixtures.mjs';
 import { projectDirectory } from '../_dev/vendor-work-orders/domain.mjs';
 
+test('LINE binding invitations persist and never expose identity or token on readback', async t => {
+  const a = await authenticated(t);
+  const r = await a.api('/api/line/invites', 'POST', { partner_id: 'company-a', member_role: 'worker' }, 'line-invite');
+  assert.equal(r.status, 200);
+  assert.ok(r.json.data.token);
+  const list = await a.api('/api/line/bindings');
+  assert.equal(list.status, 200);
+  assert.equal(list.json.data.invites.length, 1);
+  assert.equal(JSON.stringify(list.json).includes(r.json.data.token), false);
+  const v = await authenticated(t, 'company_a_worker', a.server);
+  assert.equal((await v.api('/api/line/bindings')).status, 403);
+  const b = await authenticated(t, 'landlord_b', a.server);
+  assert.equal((await b.api('/api/line/bindings')).json.data.invites.length, 0);
+  const config = await a.api('/api/line/status');
+  assert.equal(config.json.data.login_ready, false);
+});
+
 test('completion_acceptance_rework_and_supplement_round_trip_are_atomic_and_idempotent', async t => {
   const a = await fixedInvite(t);
   a.assignmentId = a.invitation.assignment_id;
   const v = await authenticated(t, 'company_a_worker', a.server);
-  let r = await v.api(`/api/assignments/${a.assignmentId}/accept`, 'POST', { expected_version: 2 });
+  let r = await a.manager.api(`/api/assignments/${a.assignmentId}/accept`, 'POST', { expected_version: 2, assignee_actor_id: 'worker-a' });
   assert.equal(r.status, 200);
   r = await v.api(`/api/assignments/${a.assignmentId}/start`, 'POST', { expected_version: r.json.data.version });
   assert.equal(r.status, 200);
@@ -56,7 +73,7 @@ test('execution_checks_assignment_scope_membership_permissions_and_stale_version
   const a = await fixedInvite(t);
   a.assignmentId = a.invitation.assignment_id;
   const v = await authenticated(t, 'company_a_worker', a.server);
-  const accepted = await v.api(`/api/assignments/${a.assignmentId}/accept`, 'POST', { expected_version: 2 });
+  const accepted = await a.manager.api(`/api/assignments/${a.assignmentId}/accept`, 'POST', { expected_version: 2, assignee_actor_id: 'worker-a' });
   const path = `/api/assignments/${a.assignmentId}/start`;
   const input = { expected_version: accepted.json.data.version };
   const other = await authenticated(t, 'individual_worker', a.server);
@@ -190,10 +207,15 @@ test('fixture_session_is_explicit_cookie_scoped_and_expires', async t => {
   assert.match(setCookie, /HttpOnly/);
   assert.match(setCookie, /SameSite=Strict/);
   assert.match(setCookie, /Max-Age=28800/);
-  assert.match(setCookie, /Expires=Thu, 08 Oct 2026 08:00:00 GMT/);
+  assert.doesNotMatch(setCookie, /Expires=/);
   const cookie = setCookie.split(';')[0];
   const session = await call(server, '/api/session', { headers: { cookie } });
   assert.deepEqual(session.json.data.actor, createSyntheticFixtures().principals.landlord_a);
+  const manager = await authenticated(t, 'company_a_manager', server);
+  assert.deepEqual((await manager.api('/api/session')).json.data.actor,
+    { ...createSyntheticFixtures().principals.company_a_manager, member_role: 'manager', partner_type: 'company' });
+  const contact = await authenticated(t, 'company_a_contact', server);
+  assert.equal((await contact.api('/api/session')).json.data.actor.member_role, 'contact');
   now += 8 * 60 * 60 * 1000;
   assert.equal((await call(server, '/api/session', { headers: { cookie } })).status, 401);
 });
@@ -246,10 +268,14 @@ async function sourcingApi(t, trade = 'cleaning') {
   let time = Date.parse('2026-10-08T04:00:00Z');
   const server = await running(t, { developmentMode: true, clock: () => time });
   const a = await authenticated(t, 'landlord_a', server);
-  for (const partner of ['company-a', 'individual-a']) await a.api(`/api/partners/${partner}`, 'PATCH', { trades: [trade] }, partner);
-  await a.api('/api/priority-rules', 'PUT', { property_id: 'property-a', trade,
+  const trade_name = trade === 'other' ? '合成油漆' : '';
+  for (const partner of ['company-a', 'individual-a']) await a.api(`/api/partners/${partner}`, 'PATCH', {
+    skills: [{ trade, name: trade_name || trade }],
+  }, partner);
+  await a.api('/api/priority-rules', 'PUT', { property_id: 'property-a', trade, ...(trade_name ? { trade_name } : {}),
     rules: [{ partner_id: 'company-a', rank: 1 }, { partner_id: 'individual-a', rank: 2 }] });
   const created = await a.api('/api/work-orders', 'POST', { title: 'Synthetic work', area: 'North', property_id: 'property-a', trade,
+    ...(trade_name ? { trade_name } : {}),
     location: 'PRIVATE LOCATION', instructions: 'PRIVATE INSTRUCTIONS', tenant_name: 'SECRET TENANT' });
   assert.equal(created.status, 200);
   return { ...a, id: created.json.data.id, setTime: value => { time = Date.parse(value); } };
@@ -260,17 +286,18 @@ async function fixedInvite(t) {
     expected_version: 1, mode: 'manual', partner_id: 'company-a', agreement_id: 'agreement-a' });
   assert.equal(r.status, 200);
   const vendor = await authenticated(t, 'company_a_worker', a.server);
+  const manager = await authenticated(t, 'company_a_manager', a.server);
   const view = (await vendor.api(`/api/work-orders/${a.id}`)).json.data;
   assert.equal(view.invitations.length, 1);
-  return { ...a, vendor, invitation: view.invitations[0] };
+  return { ...a, vendor, manager, invitation: view.invitations[0] };
 }
 test('only_one_concurrent_acceptance_creates_assignment', async t => {
   const a = await fixedInvite(t);
   assert.equal((await a.server.store.readSnapshot()).assignments.length, 0);
-  const manager = await authenticated(t, 'company_a_manager', a.server);
   const path = `/api/assignments/${a.invitation.assignment_id}/accept`;
-  const results = await Promise.all([a.vendor.api(path, 'POST', { expected_version: 2 }, 'worker'), manager.api(path, 'POST', { expected_version: 2 }, 'manager')]);
-  assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
+  const results = await Promise.all([a.vendor.api(path, 'POST', { expected_version: 2 }, 'worker'),
+    a.manager.api(path, 'POST', { expected_version: 2, assignee_actor_id: 'worker-a' }, 'manager')]);
+  assert.deepEqual(results.map(r => r.status).sort(), [200, 403]);
   const s = await a.server.store.readSnapshot();
   assert.equal(s.assignments.length, 1);
   assert.equal(s.work_order_events.filter(e => e.action === 'accept-assignment').length, 1);
@@ -305,14 +332,14 @@ test('ambiguous_action_is_resolved_by_readback', async t => {
   const a = await fixedInvite(t);
   const path = `/api/assignments/${a.invitation.assignment_id}/accept`;
   // Discard the successful response, as when the client loses its result after commit.
-  await a.vendor.api(path, 'POST', { expected_version: 2 }, 'unknown-result');
+  await a.manager.api(path, 'POST', { expected_version: 2, assignee_actor_id: 'worker-a' }, 'unknown-result');
   const s = await a.server.store.readSnapshot();
-  const view = await a.vendor.api(`/api/work-orders/${a.id}`);
+  const view = await a.manager.api(`/api/work-orders/${a.id}`);
   assert.equal(view.json.data.status, 'assigned');
   assert.equal(view.json.data.assignment.id, a.invitation.assignment_id);
   assert.equal(view.json.data.events.filter(e => e.action === 'accept-assignment').length, 1);
   assert.deepEqual(await a.server.store.readSnapshot(), s);
-  assert.equal((await a.vendor.api(path, 'POST', { expected_version: 2 }, 'unknown-result')).status, 200);
+  assert.equal((await a.manager.api(path, 'POST', { expected_version: 2, assignee_actor_id: 'worker-a' }, 'unknown-result')).status, 200);
   assert.deepEqual(await a.server.store.readSnapshot(), s);
 });
 test('start_sweeps_due_invitations_and_timer_advances_with_injected_clock', async t => {
@@ -344,11 +371,13 @@ for (const trigger of ['start', 'timer']) {
     const a = await sourcingApi(t, 'repair');
     const invited = await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 1 });
     const v = await authenticated(t, 'company_a_worker', a.server);
+    const manager = await authenticated(t, 'company_a_manager', a.server);
     const invitation = invited.json.data.invitations[0];
     const body = { expected_version: 2, labor_twd: 1000, materials_twd: 0, tax_twd: 0,
       estimated_days: 1, expires_at: '2026-10-08T06:00:00Z' };
     const path = `/api/invitations/${invitation.id}/quote`;
-    assert.equal((await v.api(path, 'POST', body)).status, 200);
+    assert.equal((await v.api(path, 'POST', body)).status, 403);
+    assert.equal((await manager.api(path, 'POST', { ...body, assignee_actor_id: 'worker-a' })).status, 200);
     const before = await a.server.store.readSnapshot();
     const quote = before.quotes[0];
     await a.server.close();
@@ -368,10 +397,10 @@ for (const trigger of ['start', 'timer']) {
     assert.equal(swept.notification_outbox.length, before.notification_outbox.length + 1);
     assert.deepEqual(swept.quote_revisions, before.quote_revisions);
     assert.equal(swept.assignments.length, 0);
-    const renewed = await authenticated(t, 'company_a_worker', a.server);
-    assert.deepEqual((await renewed.api(path, 'POST', body)).json.data.quotes[0].status, 'submitted');
-    assert.equal((await renewed.api(path, 'POST', { ...body, labor_twd: 1200 })).json.code, 'IDEMPOTENCY_CONFLICT');
-    assert.equal((await renewed.api(path, 'POST', { ...body, expected_version: 4 }, 'stale-quote')).json.code, 'INVITATION_EXPIRED');
+    const renewed = await authenticated(t, 'company_a_manager', a.server);
+    assert.deepEqual((await renewed.api(path, 'POST', { ...body, assignee_actor_id: 'worker-a' })).json.data.quotes[0].status, 'submitted');
+    assert.equal((await renewed.api(path, 'POST', { ...body, assignee_actor_id: 'worker-a', labor_twd: 1200 })).json.code, 'IDEMPOTENCY_CONFLICT');
+    assert.equal((await renewed.api(path, 'POST', { ...body, expected_version: 4, assignee_actor_id: 'worker-a' }, 'stale-quote')).json.code, 'INVITATION_EXPIRED');
     const landlord = await authenticated(t, 'landlord_a', a.server);
     assert.equal((await landlord.api(`/api/work-orders/${a.id}/quote-approval`, 'POST', {
       expected_version: 4, quote_id: quote.id, quote_version: 1 }, 'expired-approval')).json.code, 'QUOTE_NOT_APPROVED');
@@ -385,13 +414,16 @@ test('quote_revisions_approval_and_vendor_privacy_are_transactional', async t =>
   const a = await sourcingApi(t, 'repair');
   await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 1, mode: 'parallel', partner_ids: ['company-a', 'individual-a'] });
   const v = await authenticated(t, 'company_a_worker', a.server);
+  const manager = await authenticated(t, 'company_a_manager', a.server);
   const other = await authenticated(t, 'individual_worker', a.server);
   const invitation = (await v.api(`/api/work-orders/${a.id}`)).json.data.invitations[0];
   const q = { expected_version: 2, labor_twd: 1000, materials_twd: 0, tax_twd: 0, estimated_days: 1, expires_at: '2026-10-10T04:00:00Z' };
   const first = await v.api(`/api/invitations/${invitation.id}/quote`, 'POST', q);
-  assert.equal(first.status, 200);
+  assert.equal(first.status, 403);
+  const acceptedFirst = await manager.api(`/api/invitations/${invitation.id}/quote`, 'POST', { ...q, assignee_actor_id: 'worker-a' });
+  assert.equal(acceptedFirst.status, 200);
   assert.equal((await a.server.store.readSnapshot()).assignments.length, 0);
-  const second = await v.api(`/api/invitations/${invitation.id}/quote`, 'POST', { ...q, expected_version: 3, labor_twd: 1200 }, 'revision');
+  const second = await manager.api(`/api/invitations/${invitation.id}/quote`, 'POST', { ...q, expected_version: 3, assignee_actor_id: 'worker-a', labor_twd: 1200 }, 'revision');
   assert.equal(second.status, 200);
   const before = await a.server.store.readSnapshot();
   assert.equal(before.quote_revisions.length, 2);
@@ -410,8 +442,10 @@ test('api_decline_advances_rank_and_retains_authoritative_readback', async t => 
   const a = await sourcingApi(t, 'repair');
   const invited = await a.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 1 });
   const v = await authenticated(t, 'company_a_worker', a.server);
+  const manager = await authenticated(t, 'company_a_manager', a.server);
   const invitation = invited.json.data.invitations[0];
-  const declined = await v.api(`/api/invitations/${invitation.id}/decline`, 'POST', { expected_version: 2 });
+  assert.equal((await v.api(`/api/invitations/${invitation.id}/decline`, 'POST', { expected_version: 2 })).status, 403);
+  const declined = await manager.api(`/api/invitations/${invitation.id}/decline`, 'POST', { expected_version: 2 });
   assert.equal(declined.status, 200);
   const s = await a.server.store.readSnapshot();
   assert.equal(s.invitations[0].status, 'declined');
@@ -430,21 +464,21 @@ test('acceptance_rechecks_deadline_permissions_scope_and_key_without_writes', as
   let before = await a.server.store.readSnapshot();
   assert.equal((await other.api(path, 'POST', { expected_version: 2 })).status, 403);
   assert.equal((await b.api(`/api/work-orders/${a.id}/invitations`, 'POST', { expected_version: 2 })).status, 404);
-  assert.equal((await a.vendor.api(path, 'POST', { expected_version: 1 })).json.code, 'VERSION_CONFLICT');
+  assert.equal((await a.manager.api(path, 'POST', { expected_version: 1, assignee_actor_id: 'worker-a' })).json.code, 'VERSION_CONFLICT');
   assert.deepEqual(await a.server.store.readSnapshot(), before);
   // Renew session before the deadline, so expiry is tested with a valid session.
   a.setTime('2026-10-09T03:00:00Z');
-  const v = await authenticated(t, 'company_a_worker', a.server);
+  const v = await authenticated(t, 'company_a_manager', a.server);
   a.setTime('2026-10-09T04:00:00Z');
   assert.equal((await v.api(path, 'POST', { expected_version: 2 })).json.code, 'INVITATION_EXPIRED');
   assert.deepEqual(await a.server.store.readSnapshot(), before);
   a.setTime('2026-10-08T04:00:00Z');
-  const success = await v.api(path, 'POST', { expected_version: 2 }, 'accepted');
+  const success = await v.api(path, 'POST', { expected_version: 2, assignee_actor_id: 'worker-a' }, 'accepted');
   assert.equal(success.status, 200);
   before = await a.server.store.readSnapshot();
-  assert.equal((await v.api(path, 'POST', { expected_version: 3 }, 'accepted')).json.code, 'IDEMPOTENCY_CONFLICT');
+  assert.equal((await v.api(path, 'POST', { expected_version: 3, assignee_actor_id: 'worker-a' }, 'accepted')).json.code, 'IDEMPOTENCY_CONFLICT');
   assert.deepEqual(await a.server.store.readSnapshot(), before);
-  await a.server.store.transact(s => { s.partner_memberships.find(m => m.actor_id === 'worker-a').active = false; return s; });
+  await a.server.store.transact(s => { s.partner_memberships.find(m => m.actor_id === 'manager-a').active = false; return s; });
   before = await a.server.store.readSnapshot();
   assert.equal((await v.api(path, 'POST', { expected_version: 2 }, 'accepted')).status, 403);
   assert.deepEqual(await a.server.store.readSnapshot(), before);
@@ -468,7 +502,7 @@ test('work_order_mutations_require_key_and_approval_permission', async t => {
 });
 test('store_enforces_one_winner_and_immutable_quote_inbox_history', async t => {
   const a = await fixedInvite(t);
-  await a.vendor.api(`/api/assignments/${a.invitation.assignment_id}/accept`, 'POST', { expected_version: 2 });
+  await a.manager.api(`/api/assignments/${a.invitation.assignment_id}/accept`, 'POST', { expected_version: 2, assignee_actor_id: 'worker-a' });
   await a.server.store.transact(s => {
     s.quote_revisions.push({ id: 'historical', quote_id: 'q', version: 1, workspace_id: 'ws-a', total_twd: 100 }); return s;
   });
@@ -546,7 +580,7 @@ test('scopes_member_permissions_to_active_membership', async t => {
   const added = await a.api('/api/partners/company-a/memberships', 'POST', { actor_id: 'synthetic-extra', member_role: 'worker', active: true });
   assert.equal(added.status, 200);
   assert.equal(added.json.data.actor_id, 'synthetic-extra');
-  assert.equal((await a.server.store.readSnapshot()).partner_memberships.filter(m => m.partner_id === 'company-a').length, 3);
+  assert.equal((await a.server.store.readSnapshot()).partner_memberships.filter(m => m.partner_id === 'company-a').length, 5);
 });
 test('disabled_member_loses_access_but_events_remain', async t => {
   const a = await authenticated(t);

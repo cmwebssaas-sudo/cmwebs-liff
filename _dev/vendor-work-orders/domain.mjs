@@ -7,7 +7,8 @@ import { createHash } from 'node:crypto';
 const tables = ['partners', 'partner_memberships', 'workspace_memberships', 'workspace_partners',
   'partner_skills', 'priority_rules', 'service_agreements', 'work_orders', 'invitations',
   'quotes', 'quote_revisions', 'assignments', 'completion_reports', 'acceptances',
-  'work_order_events', 'private_attachments', 'notification_outbox', 'idempotency_records'];
+  'work_order_events', 'private_attachments', 'notification_outbox', 'idempotency_records', 'line_binding_invites', 'line_binding_requests',
+  'line_presence', 'line_webhook_events'];
 const permissions = { create: 'work_order_dispatch', source: 'work_order_dispatch',
   assign: 'work_order_approve', start: null, complete: null, accept: 'work_order_accept',
   rework: 'work_order_accept', cancel: 'work_order_dispatch',
@@ -76,10 +77,60 @@ function partnerActive(state, workspaceId, partnerId) {
   return state.partners.some(p => p.id === partnerId && p.active === true) &&
     state.workspace_partners.some(p => p.workspace_id === workspaceId && p.partner_id === partnerId && p.active === true);
 }
+function vendorMembership(state, actor) {
+  if (actor.role !== 'vendor') return null;
+  const membership = state.partner_memberships.find(m => m.workspace_id === actor.workspace_id &&
+    m.actor_id === actor.actor_id && m.partner_id === actor.partner_id && m.active === true);
+  return membership && ['manager', 'worker', 'contact'].includes(membership.member_role) ? membership : null;
+}
+function partnerType(state, partnerId) { return state.partners.find(p => p.id === partnerId)?.type || ''; }
 function vendorAllowed(state, actor) {
-  return actor.role === 'vendor' && partnerActive(state, actor.workspace_id, actor.partner_id) &&
-    state.partner_memberships.some(m => m.workspace_id === actor.workspace_id &&
-      m.actor_id === actor.actor_id && m.partner_id === actor.partner_id && m.active === true);
+  return Boolean(vendorMembership(state, actor) && partnerActive(state, actor.workspace_id, actor.partner_id));
+}
+function vendorCanRespond(state, actor) {
+  const member = vendorMembership(state, actor);
+  if (!member || !partnerActive(state, actor.workspace_id, actor.partner_id)) return false;
+  return member.member_role === 'manager' || partnerType(state, actor.partner_id) === 'individual' && member.member_role === 'worker';
+}
+function validateAssignee(state, workspaceId, partnerId, assigneeActorId) {
+  const assignee = typeof assigneeActorId === 'string' && state.partner_memberships.find(m =>
+    m.workspace_id === workspaceId && m.partner_id === partnerId && m.actor_id === assigneeActorId &&
+    m.active === true && ['manager', 'worker'].includes(m.member_role));
+  if (!assignee) fail('INVALID_ASSIGNEE');
+  return assigneeActorId;
+}
+function validateVendorAssignee(state, actor, assigneeActorId) {
+  const membership = vendorMembership(state, actor);
+  const type = partnerType(state, actor.partner_id);
+  if (type === 'individual' && assigneeActorId === undefined) assigneeActorId = actor.actor_id;
+  const assignee = state.partner_memberships.find(m => m.workspace_id === actor.workspace_id && m.partner_id === actor.partner_id &&
+    m.actor_id === assigneeActorId && m.active === true && ['manager', 'worker'].includes(m.member_role));
+  if (!membership || !assignee || type === 'individual' && assigneeActorId !== actor.actor_id ||
+      type === 'company' && membership.member_role !== 'manager') fail('INVALID_ASSIGNEE');
+  return assigneeActorId;
+}
+function canManageAssignment(state, actor, assignment) {
+  const membership = vendorMembership(state, actor);
+  if (!membership || !assignment || assignment.partner_id !== actor.partner_id) return false;
+  return membership.member_role === 'manager' || partnerType(state, actor.partner_id) === 'individual' &&
+    membership.member_role === 'worker' && assignment.assigned_actor_id === actor.actor_id;
+}
+function canExecuteAssignment(state, actor, assignment) {
+  const membership = vendorMembership(state, actor);
+  return Boolean(membership && assignment && assignment.partner_id === actor.partner_id &&
+    ['manager', 'worker'].includes(membership.member_role) && assignment.assigned_actor_id === actor.actor_id);
+}
+function normalizeTradeName(value, selectedTrade, code = 'INVALID_INPUT') {
+  if (selectedTrade !== 'other') return '';
+  const name = text(value, code);
+  if (name.length > 80) fail(code);
+  return name;
+}
+function skillMatchesOrder(skill, order) {
+  return skill.trade === order.trade && (order.trade !== 'other' || skill.name === order.trade_name);
+}
+function directorySkillMatches(skill, tradeValue, tradeNameValue) {
+  return skill.trade === tradeValue && (tradeValue !== 'other' || skill.name === tradeNameValue);
 }
 function findOrder(state, actor, id) {
   const order = state.work_orders.find(w => w.id === id && w.workspace_id === actor.workspace_id);
@@ -113,7 +164,7 @@ export function transitionWorkOrder(state, actor, action, input, now) {
     if (next.work_orders.some(w => w.id === id)) fail('ALREADY_EXISTS');
     if (!['repair', 'cleaning', 'other'].includes(input.trade)) fail('INVALID_INPUT');
     order = { id, workspace_id: principal.workspace_id, title: text(input.title, 'INVALID_INPUT'),
-      trade: input.trade, area: text(input.area, 'INVALID_INPUT'),
+      trade: input.trade, trade_name: normalizeTradeName(input.trade_name, input.trade), area: text(input.area, 'INVALID_INPUT'),
       location: typeof input.location === 'string' ? input.location.trim() : '',
       instructions: typeof input.instructions === 'string' ? input.instructions.trim() : '',
       status: 'draft', version: 1, created_at: at, updated_at: at };
@@ -128,8 +179,7 @@ export function transitionWorkOrder(state, actor, action, input, now) {
     if (!Number.isSafeInteger(input.expected_version) || input.expected_version !== order.version) fail('VERSION_CONFLICT');
     from = order.status;
     const assignment = assignmentFor(next, order);
-    if (['start', 'complete', 'request-supplement'].includes(action) &&
-        (!vendorAllowed(next, principal) || !assignment || assignment.partner_id !== principal.partner_id)) fail('FORBIDDEN');
+    if (['start', 'complete', 'request-supplement'].includes(action) && !canExecuteAssignment(next, principal, assignment)) fail('FORBIDDEN');
     switch (action) {
       case 'source':
         if (order.status !== 'draft') fail('INVALID_TRANSITION');
@@ -138,12 +188,14 @@ export function transitionWorkOrder(state, actor, action, input, now) {
       case 'assign': {
         if (!['sourcing', 'awaiting_approval'].includes(order.status) || assignment) fail('INVALID_TRANSITION');
         if (!partnerActive(next, principal.workspace_id, input.partner_id)) fail('FORBIDDEN');
+        if (!next.partner_skills.some(s => s.workspace_id === principal.workspace_id && s.partner_id === input.partner_id && skillMatchesOrder(s, order))) fail('INVALID_TRADE');
         const row = { id: `assignment-${order.id}`, workspace_id: order.workspace_id,
           work_order_id: order.id, partner_id: input.partner_id, status: 'assigned', created_at: at };
         if (input.agreement_id && order.trade !== 'repair') {
           const agreement = latestAgreement(next, order.workspace_id, input.agreement_id);
           if (!agreement || agreement.active !== true || !Number.isSafeInteger(agreement.version) || agreement.version < 1 ||
               agreement.partner_id !== input.partner_id || agreement.trade !== order.trade ||
+              (order.trade === 'other' && agreement.trade_name !== order.trade_name) ||
               (agreement.property_id && agreement.property_id !== order.property_id) ||
               timestamp(agreement.starts_at, 'INVALID_AGREEMENT') > at || timestamp(agreement.ends_at, 'INVALID_AGREEMENT') < at) fail('INVALID_AGREEMENT');
           row.agreement_snapshot = { id: agreement.id, version: agreement.version, title: agreement.title,
@@ -159,6 +211,7 @@ export function transitionWorkOrder(state, actor, action, input, now) {
           row.quote_version = quote.version;
           row.approved_amount_twd = amount(quote.total_twd);
         }
+        row.assigned_actor_id = validateAssignee(next, principal.workspace_id, input.partner_id, input.assignee_actor_id);
         next.assignments.push(row);
         order.status = 'assigned';
         break;
@@ -260,7 +313,8 @@ export function authorizeAttachment(state, actor, workOrderId, write = false) {
         write && !landlordAllowed(state, principal, 'work_order_dispatch')) fail('FORBIDDEN');
   } else {
     const assignment = assignmentFor(state, order);
-    if (!vendorAllowed(state, principal) || !assignment || assignment.partner_id !== principal.partner_id) fail('FORBIDDEN');
+    if (write ? !canExecuteAssignment(state, principal, assignment)
+      : !canManageAssignment(state, principal, assignment) && !canExecuteAssignment(state, principal, assignment)) fail('FORBIDDEN');
   }
   return order;
 }
@@ -326,7 +380,7 @@ function directoryAllowed(state, actor, write = false) {
 }
 function agreementView(row) {
   return { id: row.id, agreement_id: row.agreement_id || row.id, workspace_id: row.workspace_id,
-    partner_id: row.partner_id, title: row.title, trade: row.trade, property_id: row.property_id || '',
+    partner_id: row.partner_id, title: row.title, trade: row.trade, trade_name: row.trade_name || '', property_id: row.property_id || '',
     version: row.version, price_twd: row.price_twd, currency: 'TWD', active: row.active,
     starts_at: row.starts_at, ends_at: row.ends_at };
 }
@@ -335,7 +389,7 @@ function memberView(row) {
     member_role: row.member_role, active: row.active };
 }
 function priorityView(row) {
-  return { workspace_id: row.workspace_id, property_id: row.property_id, trade: row.trade,
+  return { workspace_id: row.workspace_id, property_id: row.property_id, trade: row.trade, trade_name: row.trade_name || '',
     partner_id: row.partner_id, rank: row.rank };
 }
 function partnerView(state, actor, id) {
@@ -397,6 +451,7 @@ export function normalizeDirectoryInput(action, input) {
     case 'priority-set':
       if (!Array.isArray(input.rules) || input.rules.length > 100) fail('INVALID_PRIORITY');
       data = { property_id: text(input.property_id, 'INVALID_PRIORITY'), trade: trade(input.trade),
+        trade_name: normalizeTradeName(input.trade_name, trade(input.trade), 'INVALID_PRIORITY'),
         rules: input.rules.map(r => {
           if (!r || !Number.isSafeInteger(r.rank) || r.rank < 1) fail('INVALID_PRIORITY');
           return { partner_id: text(r.partner_id, 'INVALID_PARTNER'), rank: r.rank };
@@ -404,7 +459,8 @@ export function normalizeDirectoryInput(action, input) {
       break;
     case 'agreement-save':
       data = { partner_id: text(input.partner_id, 'INVALID_PARTNER'), title: text(input.title, 'INVALID_AGREEMENT'),
-        trade: trade(input.trade), property_id: input.property_id === undefined || input.property_id === '' ? '' : text(input.property_id, 'INVALID_AGREEMENT'),
+        trade: trade(input.trade), trade_name: normalizeTradeName(input.trade_name, trade(input.trade), 'INVALID_AGREEMENT'),
+        property_id: input.property_id === undefined || input.property_id === '' ? '' : text(input.property_id, 'INVALID_AGREEMENT'),
         price_twd: amount(input.price_twd), starts_at: timestamp(input.starts_at, 'INVALID_AGREEMENT'),
         ends_at: timestamp(input.ends_at, 'INVALID_AGREEMENT'), active: input.active === undefined ? true : boolean(input.active) };
       if (data.ends_at < data.starts_at) fail('INVALID_AGREEMENT');
@@ -466,15 +522,19 @@ export function mutateDirectory(state, actor, action, input, resource, now, id) 
       if (ranks.has(rule.rank) || partners.has(rule.partner_id)) fail('PRIORITY_CONFLICT');
       ranks.add(rule.rank); partners.add(rule.partner_id);
       if (!partnerActive(next, principal.workspace_id, rule.partner_id)) fail('INVALID_PARTNER');
-      if (!next.partner_skills.some(s => s.workspace_id === principal.workspace_id && s.partner_id === rule.partner_id && s.trade === data.trade)) fail('INVALID_TRADE');
+      if (!next.partner_skills.some(s => s.workspace_id === principal.workspace_id && s.partner_id === rule.partner_id &&
+        directorySkillMatches(s, data.trade, data.trade_name))) fail('INVALID_TRADE');
     }
-    next.priority_rules = next.priority_rules.filter(r => !(r.workspace_id === principal.workspace_id && r.property_id === data.property_id && r.trade === data.trade));
-    const rows = data.rules.map(rule => ({ workspace_id: principal.workspace_id, property_id: data.property_id, trade: data.trade, ...rule }));
+    next.priority_rules = next.priority_rules.filter(r => !(r.workspace_id === principal.workspace_id && r.property_id === data.property_id &&
+      r.trade === data.trade && (r.trade_name || '') === data.trade_name));
+    const rows = data.rules.map(rule => ({ workspace_id: principal.workspace_id, property_id: data.property_id,
+      trade: data.trade, trade_name: data.trade_name, ...rule }));
     next.priority_rules.push(...rows);
     result = rows.map(priorityView);
   } else if (action === 'agreement-save') {
     if (!partnerActive(next, principal.workspace_id, data.partner_id)) fail('INVALID_PARTNER');
-    if (!next.partner_skills.some(s => s.workspace_id === principal.workspace_id && s.partner_id === data.partner_id && s.trade === data.trade)) fail('INVALID_TRADE');
+    if (!next.partner_skills.some(s => s.workspace_id === principal.workspace_id && s.partner_id === data.partner_id &&
+      directorySkillMatches(s, data.trade, data.trade_name))) fail('INVALID_TRADE');
     let agreementId = id;
     if (data.agreement_id) {
       const previous = latestAgreement(next, principal.workspace_id, data.agreement_id);
@@ -502,6 +562,7 @@ export function normalizeWorkOrderInput(action, input) {
     const data = { title: text(input.title, 'INVALID_INPUT'), trade: trade(input.trade), area: text(input.area, 'INVALID_INPUT'),
       location: typeof input.location === 'string' ? input.location.trim() : '',
       instructions: typeof input.instructions === 'string' ? input.instructions.trim() : '' };
+    data.trade_name = normalizeTradeName(input.trade_name, data.trade);
     if (input.property_id !== undefined) data.property_id = text(input.property_id, 'INVALID_INPUT');
     return data;
   }
@@ -522,7 +583,12 @@ export function normalizeWorkOrderInput(action, input) {
     if (data.mode === 'manual') data.partner_id = text(input.partner_id, 'INVALID_PARTNER');
     if (input.agreement_id !== undefined) data.agreement_id = text(input.agreement_id, 'INVALID_AGREEMENT');
     if (data.mode === 'parallel' && data.agreement_id) fail('INVALID_AGREEMENT');
-  } else if (action === 'quote') Object.assign(data, validateQuoteInput(input));
+  } else if (action === 'quote') {
+    Object.assign(data, validateQuoteInput(input));
+    if (input.assignee_actor_id !== undefined) data.assignee_actor_id = normalizeMemberId(input.assignee_actor_id);
+  } else if (action === 'accept-assignment') {
+    if (input.assignee_actor_id !== undefined) data.assignee_actor_id = normalizeMemberId(input.assignee_actor_id);
+  }
   else if (action === 'request-supplement') Object.assign(data, validateQuoteInput(input), { reason: text(input.reason, 'INVALID_QUOTE') });
   else if (action === 'approve-supplement') {
     data.supplement_id = text(input.supplement_id, 'INVALID_QUOTE');
@@ -560,7 +626,7 @@ export function authorizeWorkOrderAction(state, actor, action, resource = {}) {
           !landlordAllowed(state, principal, action === 'approve-supplement' ? 'work_order_approve' : 'work_order_accept')) fail('FORBIDDEN');
     } else {
       const assignment = assignmentFor(state, order);
-      if (!vendorAllowed(state, principal) || !assignment || assignment.partner_id !== principal.partner_id ||
+      if (!canExecuteAssignment(state, principal, assignment) ||
           resource.assignment_id && assignment.id !== resource.assignment_id) fail('FORBIDDEN');
     }
     return;
@@ -575,17 +641,19 @@ export function authorizeWorkOrderAction(state, actor, action, resource = {}) {
   const invitation = state.invitations.find(i => i.workspace_id === principal.workspace_id &&
     (action === 'accept-assignment' ? i.assignment_id === resource.assignment_id : i.id === resource.invitation_id));
   if (!invitation) fail('NOT_FOUND');
-  if (invitation.partner_id !== principal.partner_id) fail('FORBIDDEN');
+  if (invitation.partner_id !== principal.partner_id || !vendorCanRespond(state, principal)) fail('FORBIDDEN');
 }
 function quoteWaiting(state, order, at) {
   return state.quotes.some(q => belongs(q, order) && q.status === 'submitted' && q.expires_at > at);
 }
 function agreementSnapshot(agreement) {
   return { id: agreement.id, version: agreement.version, title: agreement.title,
-    price_twd: amount(agreement.price_twd), currency: 'TWD', starts_at: agreement.starts_at, ends_at: agreement.ends_at };
+    trade: agreement.trade, trade_name: agreement.trade_name || '', price_twd: amount(agreement.price_twd), currency: 'TWD',
+    starts_at: agreement.starts_at, ends_at: agreement.ends_at };
 }
 function validAgreement(a, order, partnerId, at) {
   return a && a.active === true && a.partner_id === partnerId && a.trade === order.trade && order.trade !== 'repair' &&
+    (order.trade !== 'other' || (a.trade_name || '') === order.trade_name) &&
     (!a.property_id || a.property_id === order.property_id) && a.starts_at <= at && a.ends_at >= at;
 }
 function recordSourcingEvent(state, order, actor, action, at, from, recipients) {
@@ -655,12 +723,13 @@ function sourcingTransition(state, actor, action, input, now) {
       if (!recipients.length) fail('NO_CANDIDATE');
     } else {
       let ranking = data.mode === 'ranked' ? next.priority_rules.filter(r => r.workspace_id === order.workspace_id &&
-        r.property_id === order.property_id && r.trade === order.trade).sort((a, b) => a.rank - b.rank).map(r => ({ partner_id: r.partner_id, rank: r.rank }))
+        r.property_id === order.property_id && r.trade === order.trade && (r.trade_name || '') === order.trade_name)
+        .sort((a, b) => a.rank - b.rank).map(r => ({ partner_id: r.partner_id, rank: r.rank }))
         : (data.mode === 'manual' ? [data.partner_id] : data.partner_ids).map(partner_id => ({ partner_id }));
       if (!ranking.length) fail('NO_CANDIDATE');
       for (const candidate of ranking) {
         if (!partnerActive(next, order.workspace_id, candidate.partner_id)) fail('INVALID_PARTNER');
-        if (!next.partner_skills.some(s => s.workspace_id === order.workspace_id && s.partner_id === candidate.partner_id && s.trade === order.trade)) fail('INVALID_TRADE');
+        if (!next.partner_skills.some(s => s.workspace_id === order.workspace_id && s.partner_id === candidate.partner_id && skillMatchesOrder(s, order))) fail('INVALID_TRADE');
         if (data.agreement_id) {
           const agreement = candidate === ranking[0] ? latestAgreement(next, order.workspace_id, data.agreement_id)
             : next.service_agreements.filter(a => a.workspace_id === order.workspace_id && validAgreement(a, order, candidate.partner_id, at) &&
@@ -680,12 +749,13 @@ function sourcingTransition(state, actor, action, input, now) {
     if (!['sent', 'quoted'].includes(invitation.status)) fail('INVALID_TRANSITION');
     if (action === 'quote') {
       if (invitation.agreement_snapshot || data.expires_at <= at) fail('INVALID_QUOTE');
+      const assignedActorId = validateVendorAssignee(next, principal, data.assignee_actor_id);
       let quote = next.quotes.find(q => q.invitation_id === invitation.id && belongs(q, order));
       if (quote && quote.status !== 'submitted') fail('INVALID_TRANSITION');
       const quoteId = quote?.id || opaqueId(invitation.id, 'quote');
       const revision = { ...validateQuoteInput(data), id: opaqueId(quoteId, (quote?.version || 0) + 1), workspace_id: order.workspace_id,
         work_order_id: order.id, partner_id: principal.partner_id, invitation_id: invitation.id,
-        quote_id: quoteId, version: (quote?.version || 0) + 1, actor: principal, at };
+        quote_id: quoteId, version: (quote?.version || 0) + 1, assignee_actor_id: assignedActorId, actor: principal, at };
       next.quote_revisions.push(revision);
       if (!quote) { quote = { id: revision.quote_id }; next.quotes.push(quote); }
       Object.assign(quote, revision, { id: revision.quote_id, status: 'submitted' });
@@ -700,9 +770,10 @@ function sourcingTransition(state, actor, action, input, now) {
       if (!recipients.length) recipients = [`workspace:${order.workspace_id}`];
     } else {
       if (!invitation.agreement_snapshot || invitation.status !== 'sent') fail('QUOTE_NOT_APPROVED');
+      const assignedActorId = validateVendorAssignee(next, principal, data.assignee_actor_id);
       invitation.status = 'accepted';
       next.assignments.push({ id: invitation.assignment_id, workspace_id: order.workspace_id, work_order_id: order.id,
-        partner_id: principal.partner_id, status: 'assigned', actor: principal, created_at: at,
+        partner_id: principal.partner_id, assigned_actor_id: assignedActorId, status: 'assigned', actor: principal, created_at: at,
         agreement_snapshot: structuredClone(invitation.agreement_snapshot), approved_amount_twd: invitation.agreement_snapshot.price_twd });
       order.status = 'assigned';
       revokeOtherInvitations(next, order, invitation.id);
@@ -719,7 +790,7 @@ function sourcingTransition(state, actor, action, input, now) {
     quote.status = data.decision === 'approve' ? 'approved' : 'rejected';
     if (data.decision === 'approve') {
       next.assignments.push({ id: opaqueId(quote.id, quote.version, 'approved-assignment'), workspace_id: order.workspace_id, work_order_id: order.id,
-        partner_id: quote.partner_id, status: 'assigned', actor: principal, created_at: at,
+        partner_id: quote.partner_id, assigned_actor_id: quote.assignee_actor_id, status: 'assigned', actor: principal, created_at: at,
         quote_id: quote.id, quote_version: quote.version, approved_amount_twd: quote.total_twd });
       order.status = 'assigned';
       quotedInvite.status = 'accepted';
@@ -782,13 +853,15 @@ export function projectWorkOrderForActor(state, actor, workOrderId) {
   const assignment = assignmentFor(state, order);
   const vendor = vendorAllowed(state, principal);
   const invited = vendor && state.invitations.some(i => belongs(i, order) && i.partner_id === principal.partner_id);
-  const assigned = vendor && assignment?.partner_id === principal.partner_id;
-  if (!landlord && !invited && !assigned) fail('FORBIDDEN');
+  const assignmentManager = vendor && canManageAssignment(state, principal, assignment);
+  const assigned = vendor && canExecuteAssignment(state, principal, assignment);
+  const assignmentReadable = assignmentManager || assigned;
+  if (!landlord && !invited && !assignmentReadable) fail('FORBIDDEN');
   const view = { id: order.id, workspace_id: order.workspace_id, title: order.title,
-    trade: order.trade, area: order.area, status: order.status, version: order.version,
+    trade: order.trade, trade_name: order.trade_name || '', area: order.area, status: order.status, version: order.version,
     created_at: order.created_at, updated_at: order.updated_at };
   if (landlord && order.property_id !== undefined) view.property_id = order.property_id;
-  if (landlord || assigned) { view.location = order.location; view.instructions = order.instructions; }
+  if (landlord || assignmentReadable) { view.location = order.location; view.instructions = order.instructions; }
   view.invitations = state.invitations.filter(i => belongs(i, order) && (landlord || i.partner_id === principal.partner_id)).map(i => ({
     id: i.id, partner_id: i.partner_id, status: i.status, round_id: i.round_id,
     deadline_at: i.deadline_at, assignment_id: i.assignment_id || null,
@@ -799,8 +872,8 @@ export function projectWorkOrderForActor(state, actor, workOrderId) {
     labor_twd: q.labor_twd, materials_twd: q.materials_twd, tax_twd: q.tax_twd,
     total_twd: q.total_twd, expires_at: q.expires_at, estimated_days: q.estimated_days,
   }));
-  view.assignment = assignment && (landlord || assigned) ? {
-    id: assignment.id, partner_id: assignment.partner_id, status: assignment.status,
+  view.assignment = assignment && (landlord || assignmentReadable) ? {
+    id: assignment.id, partner_id: assignment.partner_id, assigned_actor_id: assignment.assigned_actor_id || '', status: assignment.status,
     approved_amount_twd: assignment.approved_amount_twd,
     ...(assignment.agreement_snapshot ? { agreement_snapshot: {
       id: assignment.agreement_snapshot.id, version: assignment.agreement_snapshot.version,
@@ -814,7 +887,7 @@ export function projectWorkOrderForActor(state, actor, workOrderId) {
     id: e.id, at: e.at, action: e.action, from: e.from, to: e.to, version: e.version,
     ...(landlord ? { actor: e.actor.role === 'system' ? { role: 'system', actor_id: 'invitation-sweeper' } : normalizeActor(e.actor), visibility: e.visibility } : {}),
   }));
-  if (landlord || assigned) {
+  if (landlord || assignmentReadable) {
     view.completion_reports = state.completion_reports.filter(r => belongs(r, order)).map(r => ({
       id: r.id, assignment_id: r.assignment_id, description: r.description, actual_amount_twd: r.actual_amount_twd,
       attachment_ids: r.attachment_ids || [], actor: normalizeActor(r.actor), at: r.at, version: r.version }));

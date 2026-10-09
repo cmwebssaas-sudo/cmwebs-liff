@@ -41,7 +41,8 @@ async function fixture(t, options = {}) {
   const vendor = await cookie('company_a_worker');
   await server.store.transact(s => {
     s.work_orders.push({ id: 'wo', workspace_id: 'ws-a', title: 'Synthetic work', trade: 'cleaning', area: 'Test', location: '', instructions: '', status: 'in_progress', version: 1, created_at: '2026-10-08T04:00:00Z', updated_at: '2026-10-08T04:00:00Z' });
-    s.assignments.push({ id: 'as', workspace_id: 'ws-a', work_order_id: 'wo', partner_id: 'company-a', status: 'in_progress', approved_amount_twd: 1500 });
+    s.assignments.push({ id: 'as', workspace_id: 'ws-a', work_order_id: 'wo', partner_id: 'company-a',
+      assigned_actor_id: 'worker-a', status: 'in_progress', approved_amount_twd: 1500 });
     return s;
   });
   async function upload(type = samples[1][0], bytes = samples[1][1], overrides = {}) {
@@ -299,6 +300,21 @@ test('attachment_permissions_sessions_membership_and_replays_are_checked_every_t
   assert.equal((await raw(f.server, path, { headers: { cookie: f.vendor } })).status, 403);
   assert.equal((await f.upload()).status, 403);
   assert.deepEqual(await f.server.store.readSnapshot(), state);
+});
+
+test('company_manager_can_review_assigned_attachment_but_only_assignee_can_upload', async t => {
+  const f = await fixture(t), uploaded = await f.upload();
+  const manager = await f.cookie('company_a_manager');
+  const contact = await f.cookie('company_a_contact');
+  const path = `/api/attachments/${uploaded.json.data.id}`;
+  assert.equal((await raw(f.server, path, { headers: { cookie: manager } })).status, 200);
+  const before = await f.server.store.readSnapshot();
+  assert.equal((await f.upload(undefined, undefined, { cookie: manager })).status, 403);
+  assert.equal((await raw(f.server, path, { headers: { cookie: contact } })).status, 403);
+  const after = await f.server.store.readSnapshot();
+  assert.equal(after.private_attachments.length, before.private_attachments.length);
+  assert.equal(after.work_order_events.filter(event => event.action === 'attachment-upload').length,
+    before.work_order_events.filter(event => event.action === 'attachment-upload').length);
 });
 
 test('download_rejects_tampered_blob_before_audit_and_bytes', async t => {

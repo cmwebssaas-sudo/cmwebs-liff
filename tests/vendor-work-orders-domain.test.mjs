@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInitialState, normalizeActor, transitionWorkOrder, projectWorkOrderForActor,
-  validatePartnerInput, validateQuoteInput } from '../_dev/vendor-work-orders/domain.mjs';
+  mutateDirectory, validatePartnerInput, validateQuoteInput } from '../_dev/vendor-work-orders/domain.mjs';
 import { createSyntheticFixtures } from '../_dev/vendor-work-orders/fixtures.mjs';
 import * as domain from '../_dev/vendor-work-orders/domain.mjs';
 
@@ -92,17 +92,23 @@ const quoteInput = { labor_twd: 1000, materials_twd: 200, tax_twd: 60, estimated
 function ranked(trade = 'repair') {
   const f = setup(trade);
   f.state.work_orders[0].property_id = 'property-a';
-  f.state.partner_skills.push(...['company-a', 'individual-a'].map(partner_id => ({ workspace_id: 'ws-a', partner_id, trade })));
-  f.state.priority_rules.push(...['company-a', 'individual-a'].map((partner_id, i) => ({ workspace_id: 'ws-a', property_id: 'property-a', trade, partner_id, rank: i + 1 })));
+  const trade_name = f.state.work_orders[0].trade_name || '';
+  f.state.partner_skills.push(...['company-a', 'individual-a'].map(partner_id => ({ workspace_id: 'ws-a', partner_id, trade,
+    ...(trade === 'other' ? { name: trade_name } : {}) })));
+  f.state.priority_rules.push(...['company-a', 'individual-a'].map((partner_id, i) => ({ workspace_id: 'ws-a', property_id: 'property-a', trade,
+    ...(trade === 'other' ? { trade_name } : {}), partner_id, rank: i + 1 })));
   return f;
 }
 function invite(f, input = {}) {
   f.state = step(f.state, f.principals.landlord_a, 'invite', input).state;
   return f;
 }
-function respond(f, action, extra = {}, time = now, actor = f.principals.company_a_worker) {
+function respond(f, action, extra = {}, time = now, actor = f.principals.company_a_manager) {
+  const assignee = actor.actor_id === f.principals.company_a_manager.actor_id &&
+    ['quote', 'accept-assignment'].includes(action) && extra.assignee_actor_id === undefined
+    ? { assignee_actor_id: f.principals.company_a_worker.actor_id } : {};
   return transitionWorkOrder(f.state, actor, action, { work_order_id: 'wo-1',
-    invitation_id: f.state.invitations[0].id, expected_version: f.state.work_orders[0].version, ...extra }, time);
+    invitation_id: f.state.invitations[0].id, expected_version: f.state.work_orders[0].version, ...assignee, ...extra }, time);
 }
 
 test('fixed_price_dispatch_requires_explicit_landlord_action', () => {
@@ -115,6 +121,66 @@ test('fixed_price_dispatch_requires_explicit_landlord_action', () => {
   const result = respond(f, 'accept-assignment', { assignment_id: f.state.invitations[0].assignment_id });
   assert.equal(result.state.assignments.length, 1);
   assert.equal(result.state.assignments[0].approved_amount_twd, 1500);
+});
+test('company_workers_cannot_quote_decline_or_accept_and_managers_assign_a_verified_member', () => {
+  const f = invite(ranked('repair'), { mode: 'manual', partner_id: 'company-a' });
+  const invitation = f.state.invitations[0];
+  const response = (actor, action, extra = {}) => respond(f, action,
+    { invitation_id: invitation.id, assignment_id: invitation.assignment_id, ...extra }, now, actor);
+  for (const action of ['quote', 'decline']) {
+    assert.throws(() => response(f.principals.company_a_worker, action, quoteInput), fails('FORBIDDEN'));
+    assert.throws(() => response(f.principals.company_a_contact, action, quoteInput), fails('FORBIDDEN'));
+  }
+  const fixed = invite(ranked('cleaning'), { mode: 'manual', partner_id: 'company-a', agreement_id: 'agreement-a' });
+  const fixedInvitation = fixed.state.invitations[0];
+  const accept = (actor, extra = {}) => respond(fixed, 'accept-assignment', {
+    invitation_id: fixedInvitation.id, assignment_id: fixedInvitation.assignment_id, ...extra,
+  }, now, actor);
+  assert.throws(() => accept(fixed.principals.company_a_worker, { assignee_actor_id: 'worker-a-2' }), fails('FORBIDDEN'));
+  assert.throws(() => accept(fixed.principals.company_a_contact, { assignee_actor_id: 'worker-a-2' }), fails('FORBIDDEN'));
+  const accepted = accept(fixed.principals.company_a_manager, {
+    assignee_actor_id: fixed.principals.company_a_worker_2.actor_id,
+  });
+  assert.equal(accepted.state.assignments[0].assigned_actor_id, 'worker-a-2');
+  assert.equal(projectWorkOrderForActor(accepted.state, f.principals.company_a_manager, 'wo-1').location, 'Synthetic room 101');
+  assert.equal(projectWorkOrderForActor(accepted.state, f.principals.company_a_worker_2, 'wo-1').location, 'Synthetic room 101');
+  const unassigned = projectWorkOrderForActor(accepted.state, f.principals.company_a_worker, 'wo-1');
+  assert.equal('location' in unassigned, false);
+  assert.equal(unassigned.assignment, null);
+  const contact = projectWorkOrderForActor(accepted.state, f.principals.company_a_contact, 'wo-1');
+  assert.equal('instructions' in contact, false);
+  assert.equal(contact.assignment, null);
+  assert.throws(() => step(accepted.state, f.principals.company_a_worker, 'start'), fails('FORBIDDEN'));
+  assert.throws(() => step(accepted.state, f.principals.company_a_manager, 'start'), fails('FORBIDDEN'));
+  assert.equal(step(accepted.state, f.principals.company_a_worker_2, 'start').state.work_orders[0].status, 'in_progress');
+});
+test('other_trade_name_is_required_and_matching_is_exact', () => {
+  const f = setup('other');
+  f.state.work_orders[0].property_id = 'property-a';
+  f.state.work_orders[0].trade_name = '剪枝';
+  f.state.partner_skills.push({ workspace_id: 'ws-a', partner_id: 'company-a', trade: 'other', name: '油漆' });
+  f.state.priority_rules.push({ workspace_id: 'ws-a', property_id: 'property-a', trade: 'other', trade_name: '剪枝', partner_id: 'company-a', rank: 1 });
+  assert.throws(() => step(f.state, f.principals.landlord_a, 'invite', {
+    mode: 'manual', partner_id: 'company-a', expected_version: 1,
+  }), fails('INVALID_TRADE'));
+  assert.throws(() => domain.normalizeWorkOrderInput('create', {
+    title: 'Paint', trade: 'other', area: 'A',
+  }), fails('INVALID_INPUT'));
+});
+test('named_other_trade_priority_is_persisted_and_routes_only_the_matching_trade', () => {
+  const f = setup('other');
+  f.state.work_orders[0].property_id = 'property-a';
+  const trade_name = f.state.work_orders[0].trade_name;
+  f.state.partner_skills.push({ workspace_id: 'ws-a', partner_id: 'company-a', trade: 'other', name: trade_name });
+  const configured = mutateDirectory(f.state, f.principals.landlord_a, 'priority-set', {
+    property_id: 'property-a', trade: 'other', trade_name,
+    rules: [{ partner_id: 'company-a', rank: 1 }],
+  }, { property_id: 'property-a', trade: 'other' }, now, 'priority-1');
+  assert.equal(configured.state.priority_rules[0].trade_name, trade_name);
+  const invited = transitionWorkOrder(configured.state, f.principals.landlord_a, 'invite', {
+    work_order_id: 'wo-1', expected_version: configured.state.work_orders[0].version, mode: 'ranked',
+  }, now);
+  assert.equal(invited.state.invitations[0].partner_id, 'company-a');
 });
 test('quote_requires_landlord_approval_before_assignment', () => {
   const f = invite(ranked());
@@ -253,6 +319,7 @@ function setup(trade = 'repair') {
   const { state, principals } = createSyntheticFixtures();
   const result = transitionWorkOrder(state, principals.landlord_a, 'create', {
     id: 'wo-1', title: trade === 'cleaning' ? 'Synthetic room cleaning' : 'Synthetic sink repair', trade, area: 'Test north zone',
+    ...(trade === 'other' ? { trade_name: '合成其他工種' } : {}),
     location: 'Synthetic room 101', instructions: 'Synthetic work instructions',
   }, now);
   return { state: result.state, principals };
@@ -265,12 +332,15 @@ function step(state, actor, action, extra = {}) {
 function sourced(trade = 'repair') {
   const f = setup(trade);
   f.state = step(f.state, f.principals.landlord_a, 'source').state;
+  f.state.partner_skills.push({ workspace_id: 'ws-a', partner_id: 'company-a', trade,
+    name: trade === 'other' ? f.state.work_orders[0].trade_name : trade });
   f.state.invitations.push({ id: 'inv-1', workspace_id: 'ws-a', work_order_id: 'wo-1', partner_id: 'company-a', status: 'sent' });
   return f;
 }
 function fixedAssignment() {
   const f = sourced('cleaning');
-  f.state = step(f.state, f.principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' }).state;
+  f.state = step(f.state, f.principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a',
+    assignee_actor_id: 'worker-a' }).state;
   return f;
 }
 
@@ -332,7 +402,7 @@ test('requires_quote_before_nonfixed_assignment', () => {
   state.quotes.push({ id: 'quote-a', workspace_id: 'ws-a', work_order_id: 'wo-1', partner_id: 'company-a', version: 1, status: 'submitted', total_twd: 1200, expires_at: '2026-10-09T04:00:00.000Z' });
   assert.throws(() => step(state, principals.landlord_a, 'assign', { partner_id: 'company-a', quote_id: 'quote-a' }), fails('QUOTE_NOT_APPROVED'));
   state.quotes[0].status = 'approved';
-  const assigned = step(state, principals.landlord_a, 'assign', { partner_id: 'company-a', quote_id: 'quote-a' });
+  const assigned = step(state, principals.landlord_a, 'assign', { partner_id: 'company-a', quote_id: 'quote-a', assignee_actor_id: 'worker-a' });
   assert.equal(assigned.state.work_orders[0].status, 'assigned');
   assert.equal(assigned.state.assignments[0].approved_amount_twd, 1200);
   assert.equal(assigned.state.assignments[0].quote_version, 1);
@@ -341,7 +411,7 @@ test('requires_quote_before_nonfixed_assignment', () => {
 test('snapshots_fixed_price_agreement', () => {
   const { state, principals } = sourced('cleaning');
   assert.equal(state.service_agreements[0].trade, 'cleaning');
-  const assigned = step(state, principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' });
+  const assigned = step(state, principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a', assignee_actor_id: 'worker-a' });
   const snapshot = assigned.state.assignments[0].agreement_snapshot;
   assert.equal(snapshot.price_twd, 1500);
   assert.equal(snapshot.version, 1);
@@ -353,7 +423,7 @@ test('snapshots_fixed_price_agreement', () => {
 
 test('fixed_price_requires_matching_trade_property_and_latest_active_version', () => {
   const f = sourced('cleaning');
-  const assign = s => step(s, f.principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a' });
+  const assign = s => step(s, f.principals.landlord_a, 'assign', { partner_id: 'company-a', agreement_id: 'agreement-a', assignee_actor_id: 'worker-a' });
   f.state.service_agreements[0].trade = 'other';
   assert.throws(() => assign(f.state), fails('INVALID_AGREEMENT'));
   f.state.service_agreements[0].trade = 'cleaning';
@@ -384,7 +454,7 @@ test('repair_assignment_requires_approved_quote_even_with_fixed_price_agreement'
   state.quotes.push({ id: 'quote-repair', workspace_id: 'ws-a', work_order_id: 'wo-1',
     partner_id: 'company-a', version: 1, status: 'submitted', total_twd: 1200,
     expires_at: '2026-10-09T04:00:00.000Z' });
-  const withQuote = { ...input, quote_id: 'quote-repair' };
+  const withQuote = { ...input, quote_id: 'quote-repair', assignee_actor_id: 'worker-a' };
   const unapproved = structuredClone(state);
   assert.throws(() => step(state, principals.landlord_a, 'assign', withQuote), fails('QUOTE_NOT_APPROVED'));
   assert.deepEqual(state, unapproved);

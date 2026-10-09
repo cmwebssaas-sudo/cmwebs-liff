@@ -50,10 +50,10 @@
 **Files:** Create `_dev/vendor-work-orders/line-webhook.mjs`, `line-notifications.mjs`; Modify `domain.mjs`, `server.mjs`; Test `tests/vendor-work-orders-line-notifications.test.mjs`。
 **Interfaces:** `verifyWebhook(rawBody, signature, secret): boolean`；`applyWebhookEvents(state, events, now): state`；`dispatchLineNotification({entry, state, config, transport})` 回傳送出狀態。transport `push({to, message, retryKey})`；config 含 enabled、allowlistedSubjects、providerId、publicOrigin。
 
-- [ ] Tests：原始 body 簽章、偽造拒絕、event 去重、follow 不授權、unfollow 停送、亂序事件拒絕覆寫較新狀態、白名單外零呼叫、停用成員零呼叫；超時保持相同 retryKey 與 unknown，不另送。
+- [x] Tests：原始 body 簽章、偽造拒絕、event 去重、follow 不授權、unfollow 停送、亂序事件拒絕覆寫較新狀態、白名單外零呼叫、停用成員零呼叫；超時保持相同 retryKey 與 unknown，不另送。
 - [ ] 執行 `node --test tests/vendor-work-orders-line-notifications.test.mjs`，確認 FAIL。
-- [ ] 實作 `/api/line/webhook`，解析前 HMAC／timing-safe 比較；通知 worker 僅交易提交後執行。依 membership 與指派解析收件人，訊息只含中性工種／登入連結，發送前重查權限與好友狀態。
-- [ ] 同命令 PASS；重跑 domain／API 測試；紀錄 queued、accepted、failed、unknown，通知關閉仍留本機收件匣。
+- [x] 實作 `/api/line/webhook`，解析前 HMAC／timing-safe 比較；通知 adapter 僅接受交易後讀到的 entry。依 membership 與白名單解析單一收件人，訊息只含中性工種，發送前重查權限與好友狀態。
+- [x] 同命令 PASS；重跑 domain／API 測試；adapter 紀錄 disabled、skipped、accepted、failed、unknown，通知關閉仍留本機收件匣。
 - [ ] 路徑限定提交：`feat: add signed webhook and allowlisted LINE notifications`。
 
 ### 任務 4：中文綁定操作與整體回歸

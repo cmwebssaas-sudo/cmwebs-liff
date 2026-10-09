@@ -8,6 +8,9 @@ import { resolve, dirname, basename, join, relative, isAbsolute } from 'node:pat
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createWorkOrderStore } from './store.mjs';
 import { createSyntheticFixtures } from './fixtures.mjs';
+import { createBindingInvite, requestBinding, approveBinding, revokeBindingInvite } from './line-binding.mjs';
+import { createLineAuth } from './line-auth.mjs';
+import { verifyWebhook, applyWebhookEvents } from './line-webhook.mjs';
 import { normalizeActor, normalizeMemberId, normalizeDirectoryInput, mutateDirectory, projectDirectory,
   normalizeWorkOrderInput, authorizeWorkOrderAction, transitionWorkOrder, projectWorkOrderForActor,
   projectInbox, expireDueInvitations, authorizeAttachment, attachmentMetadata, recordAttachmentAccess } from './domain.mjs';
@@ -94,6 +97,17 @@ function checkMembership(state, actor) {
       state.workspace_partners.some(row => row.workspace_id === actor.workspace_id && row.partner_id === actor.partner_id && row.active === true);
   if (!active) fail('FORBIDDEN', 403);
 }
+function sessionActor(state, actor) {
+  const principal = normalizeActor(actor);
+  if (principal.role === 'vendor') {
+    const membership = state.partner_memberships.find(row => row.actor_id === principal.actor_id &&
+      row.workspace_id === principal.workspace_id && row.partner_id === principal.partner_id && row.active === true);
+    const partner = state.partners.find(row => row.id === principal.partner_id);
+    principal.member_role = membership?.member_role || 'contact';
+    principal.partner_type = partner?.type || '';
+  }
+  return principal;
+}
 
 /** Trusted session only: request bodies never supply actor authority. */
 export function requireSession(request) {
@@ -108,7 +122,7 @@ export function requireSession(request) {
     fail('SESSION_REQUIRED', 401);
   }
   checkMembership(context.state, session.actor);
-  return structuredClone(session.actor);
+  return sessionActor(context.state, session.actor);
 }
 
 async function jsonBody(request) {
@@ -122,6 +136,19 @@ async function jsonBody(request) {
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
   catch { fail('INVALID_BODY'); }
+}
+
+async function rawTextBody(request, limit = 1024 * 1024) {
+  if (request.headers['content-type']?.split(';')[0].trim() !== 'application/json') fail('INVALID_BODY');
+  if (Number(request.headers['content-length']) > limit) fail('BODY_TOO_LARGE', 413);
+  let size = 0;
+  const chunks = [];
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > limit) fail('BODY_TOO_LARGE', 413);
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 export function createVendorWorkOrderServer(options = {}) {
@@ -158,6 +185,18 @@ export function createVendorWorkOrderServer(options = {}) {
     }
   }
   const sessions = new Map();
+  const lineAuth = options.lineConfig ? createLineAuth({ config: options.lineConfig, identityAdapter: options.lineIdentityAdapter, clock }) : null;
+  const lineWebhookConfig = options.lineWebhookConfig ? { ...options.lineWebhookConfig } : null;
+  const lineBrowsers = new Map();
+  const bindingDrafts = new Map();
+  const lineCookie = token => `vendor_line_browser=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`;
+  const lineBrowser = request => {
+    const tokens = String(request.headers.cookie || '').split(';').map(v => v.trim()).filter(v => v.startsWith('vendor_line_browser='));
+    if (tokens.length !== 1) fail('INVALID_AUTH_TRANSACTION', 401);
+    const token = tokens[0].slice('vendor_line_browser='.length);
+    if (!lineBrowsers.has(token) || lineBrowsers.get(token) <= clock()) fail('INVALID_AUTH_TRANSACTION', 401);
+    return token;
+  };
   const bootstrapKeys = new Map();
   const fixtures = createSyntheticFixtures();
   const now = () => {
@@ -177,6 +216,84 @@ export function createVendorWorkOrderServer(options = {}) {
       if (request.headers.host !== authority) fail('LOOPBACK_REQUIRED', 403);
       if (request.headers.origin !== undefined && request.headers.origin !== `http://${authority}`) fail('ORIGIN_REJECTED', 403);
       const path = request.url?.split('?')[0];
+      if (path === '/auth/line/start' && request.method === 'GET') {
+        if (!lineAuth) fail('LINE_NOT_CONFIGURED', 503);
+        const query = new URL(request.url, `http://${authority}`).searchParams;
+        if ([...query.keys()].some(k => k !== 'invite') || query.getAll('invite').length > 1) fail('INVALID_AUTH_TRANSACTION');
+        const inviteToken = query.get('invite') ?? undefined;
+        if (inviteToken) {
+          const snapshot = await store.readSnapshot();
+          const hash = createHash('sha256').update(inviteToken).digest('hex');
+          if (!snapshot.line_binding_invites.some(i => i.token_hash === hash && i.status === 'pending' && i.expires_at > now())) fail('INVALID_INVITE');
+        }
+        for (const [key, expires] of lineBrowsers) if (expires <= now()) { lineBrowsers.delete(key); bindingDrafts.delete(key); }
+        if (lineBrowsers.size >= 1000) fail('AUTH_BUSY', 429);
+        const token = randomBytes(32).toString('base64url');
+        const result = lineAuth.begin({ inviteToken, sessionId: token });
+        lineBrowsers.set(token, now() + 600000);
+        response.writeHead(302, { location: result.authorizationUrl, 'set-cookie': lineCookie(token), 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' }); response.end(); return;
+      }
+      if (path === '/auth/line/callback' && request.method === 'GET') {
+        if (!lineAuth) fail('LINE_NOT_CONFIGURED', 503);
+        const existingCookies = String(request.headers.cookie || '').split(';').map(v => v.trim()).filter(v => v.startsWith('vendor_session='));
+        if (existingCookies.length > 1 || existingCookies.some(v => (sessions.get(v.slice('vendor_session='.length))?.expiresAt || 0) > now())) fail('SESSION_IDENTITY_CONFLICT', 403);
+        const token = lineBrowser(request), q = new URL(request.url, `http://${authority}`).searchParams;
+        if (q.getAll('state').length !== 1 || q.getAll('code').length !== 1 || q.has('error')) fail('INVALID_AUTH_TRANSACTION');
+        const result = await lineAuth.complete({ code: q.get('code'), state: q.get('state'), sessionId: token });
+        if (result.inviteToken) {
+          bindingDrafts.set(token, { ...result, csrf: randomBytes(32).toString('base64url') });
+          response.writeHead(303, { location: '/?line=binding', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' }); response.end(); return;
+        }
+        const actorId = 'line-' + createHash('sha256').update(JSON.stringify([result.identity.provider_id, result.identity.subject])).digest('hex');
+        const snapshot = await store.readSnapshot();
+        const memberships = snapshot.partner_memberships.filter(m => m.actor_id === actorId && m.active === true);
+        // No implicit first-workspace selection; multi-membership selection is a later explicit flow.
+        if (memberships.length !== 1) fail('LINE_MEMBERSHIP_REQUIRED', 403);
+        const m = memberships[0], actor = sessionActor(snapshot, { role: 'vendor', actor_id: actorId, workspace_id: m.workspace_id, partner_id: m.partner_id });
+        checkMembership(snapshot, actor);
+        const sessionToken = randomBytes(32).toString('hex');
+        sessions.set(sessionToken, { actor, expiresAt: now() + hours8 });
+        lineBrowsers.delete(token); bindingDrafts.delete(token);
+        response.writeHead(303, { location: '/', 'set-cookie': `vendor_session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=28800`, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' }); response.end(); return;
+      }
+      if (['/api/line/pending', '/api/line/confirm'].includes(path)) {
+        if (!lineAuth) fail('LINE_NOT_CONFIGURED', 503);
+        const token = lineBrowser(request), draft = bindingDrafts.get(token);
+        if (!draft) fail('INVALID_AUTH_TRANSACTION', 401);
+        if (path === '/api/line/pending' && request.method === 'GET') {
+          const snapshot = await store.readSnapshot();
+          const invite = snapshot.line_binding_invites.find(i => i.token_hash === createHash('sha256').update(draft.inviteToken).digest('hex'));
+          if (!invite || invite.status === 'revoked' || invite.expires_at <= now()) fail('INVALID_INVITE');
+          send(200, { success: true, data: { partner_name: snapshot.partners.find(p => p.id === invite.partner_id)?.name,
+            member_role: invite.member_role, csrf: draft.csrf, status: draft.requestId ? 'awaiting_approval' : 'confirmation_required' } }); return;
+        }
+        if (path === '/api/line/confirm' && request.method === 'POST') {
+          const body = await jsonBody(request);
+          if (!body || Object.keys(body).length !== 1 || body.csrf !== draft.csrf) fail('FORBIDDEN', 403);
+          if (!draft.requestId) await store.transact(snapshot => {
+            // Re-check inside the serialized writer, including concurrent confirms.
+            if (draft.requestId) return snapshot;
+            const result = requestBinding(snapshot, { token: draft.inviteToken, verified_identity: draft.identity }, now());
+            draft.requestId = result.request.id;
+            return result.state;
+          }).catch(error => { draft.requestId = undefined; throw error; });
+          send(200, { success: true, data: { status: 'awaiting_approval' } }); return;
+        }
+        fail('NOT_FOUND', 404);
+      }
+      if (path === '/api/line/webhook' && request.method === 'POST') {
+        if (!lineWebhookConfig?.channelSecret || !lineWebhookConfig.providerId) fail('LINE_WEBHOOK_NOT_CONFIGURED', 503);
+        const raw = await rawTextBody(request);
+        if (!verifyWebhook(raw, request.headers['x-line-signature'], lineWebhookConfig.channelSecret)) {
+          fail('INVALID_WEBHOOK_SIGNATURE', 401);
+        }
+        let parsed;
+        try { parsed = JSON.parse(raw); } catch { fail('INVALID_BODY'); }
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !Array.isArray(parsed.events)) fail('INVALID_WEBHOOK_EVENT');
+        const events = parsed.events.map(event => ({ ...event, provider_id: lineWebhookConfig.providerId }));
+        await store.transact(state => applyWebhookEvents(state, events, now()));
+        send(200, { success: true, data: { accepted_events: events.length } }); return;
+      }
       // Compare raw paths with exact allowlists, without URL normalization.
       if (request.method === 'GET' && assets.has(path)) {
         const [file, type] = assets.get(path);
@@ -209,14 +326,19 @@ export function createVendorWorkOrderServer(options = {}) {
         for (const [savedKey, saved] of bootstrapKeys) if (saved.expiresAt <= time) bootstrapKeys.delete(savedKey);
         const prior = bootstrapKeys.get(key);
         if (prior && prior.principal !== body.principal) fail('IDEMPOTENCY_CONFLICT', 409);
-        checkMembership(await store.readSnapshot(), fixtures.principals[body.principal]);
+        const initialState = await store.readSnapshot();
+        checkMembership(initialState, fixtures.principals[body.principal]);
         const session = prior || (() => {
           const token = randomBytes(32).toString('hex');
-          const actor = normalizeActor(fixtures.principals[body.principal]);
+          const actor = sessionActor(initialState, fixtures.principals[body.principal]);
           const expiresAt = time + hours8;
           sessions.set(token, { actor, expiresAt });
           return { principal: body.principal, token, expiresAt, actor,
-            cookie: `vendor_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800; Expires=${new Date(expiresAt).toUTCString()}` };
+            // Max-Age is relative to the client response time. Do not derive an
+            // absolute Expires value from the injectable server clock: a local
+            // staging clock may intentionally differ from the browser clock and
+            // cause the browser to discard an otherwise valid server session.
+            cookie: `vendor_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800` };
         })();
         bootstrapKeys.set(key, session);
         response.setHeader('set-cookie', session.cookie);
@@ -227,6 +349,50 @@ export function createVendorWorkOrderServer(options = {}) {
         contexts.set(request, { sessions, now, state: await store.readSnapshot() });
         send(200, { success: true, data: { actor: requireSession(request) } });
         return;
+      }
+      const bindingAction = /^\/api\/line\/(bindings|invites)\/([A-Za-z0-9_-]+)\/(approve|revoke)$/.exec(path);
+      if (path === '/api/line/status' && request.method === 'GET') {
+        send(200, { success: true, data: { login_ready: Boolean(lineAuth), ...(lineAuth ? { public_origin: options.lineConfig.publicOrigin } : {}), development_mode: developmentMode === true, notification_ready: false, reason: lineAuth ? '登入已設定，LINE 通知仍關閉' : '尚未設定獨立 LINE Login 與 HTTPS 測試入口' } }); return;
+      }
+      if (path === '/api/line/bindings' && request.method === 'GET' ||
+          path === '/api/line/invites' && request.method === 'POST' || bindingAction && request.method === 'POST') {
+        contexts.set(request, { sessions, now, state: await store.readSnapshot() });
+        const actor = requireSession(request);
+        const authorized = state => {
+          const m = state.workspace_memberships.find(m => m.active === true && m.actor_id === actor.actor_id && m.workspace_id === actor.workspace_id);
+          if (actor.role !== 'landlord' || !m?.permissions.includes('work_order_dispatch')) fail('FORBIDDEN', 403);
+        };
+        authorized(contexts.get(request).state);
+        if (request.method === 'GET') {
+          const s = contexts.get(request).state;
+          const redact = ({ token_hash, identity, ...row }) => row;
+          send(200, { success: true, data: { invites: s.line_binding_invites.filter(i => i.workspace_id === actor.workspace_id).map(redact),
+            requests: s.line_binding_requests.filter(i => i.workspace_id === actor.workspace_id).map(redact) } }); return;
+        }
+        const key = request.headers['idempotency-key'];
+        if (typeof key !== 'string' || !/^[\x21-\x7e]{1,128}$/.test(key)) fail('IDEMPOTENCY_KEY_REQUIRED');
+        const input = await jsonBody(request), normalized = JSON.stringify(input);
+        const scope = JSON.stringify([actor.workspace_id, actor.actor_id, path]); let data;
+        await store.transact(s => {
+          contexts.set(request, { sessions, now, state: s }); requireSession(request); authorized(s);
+          const prior = s.idempotency_records.find(r => r.scope === scope && r.key === key);
+          // Never persist raw invitation secrets for replay recovery.
+          if (prior) { if (prior.normalized_body !== normalized) fail('IDEMPOTENCY_CONFLICT', 409); data = prior.result; return s; }
+          let next;
+          if (!bindingAction) {
+            const result = createBindingInvite(s, actor, { partner_id: input.partner_id, member_role: input.member_role }, now());
+            next = result.state; const { token_hash, ...invite } = result.invite;
+            data = { invite, token: result.token };
+          } else if (bindingAction[1] === 'bindings' && bindingAction[3] === 'approve') {
+            const result = approveBinding(s, actor, bindingAction[2], now()); next = result.state; data = result.membership;
+          } else if (bindingAction[1] === 'invites' && bindingAction[3] === 'revoke') {
+            next = revokeBindingInvite(s, actor, bindingAction[2], now()); data = { revoked: true };
+          } else fail('NOT_FOUND', 404);
+          const { token, ...saved } = data;
+          next.idempotency_records.push({ id: randomUUID(), workspace_id: actor.workspace_id, actor_id: actor.actor_id,
+            scope, key, normalized_body: normalized, result: structuredClone(saved) }); return next;
+        });
+        send(200, { success: true, data }); return;
       }
       const uploadPath = /^\/api\/work-orders\/([A-Za-z0-9_-]+)\/attachments$/.exec(path);
       const downloadPath = /^\/api\/attachments\/([0-9a-f-]+)$/.exec(path);
@@ -453,7 +619,10 @@ export function createVendorWorkOrderServer(options = {}) {
         'INVALID_AGREEMENT', 'INVALID_AMOUNT', 'ALREADY_EXISTS', 'VERSION_CONFLICT', 'INVALID_TRANSITION',
         'INVALID_QUOTE', 'QUOTE_NOT_APPROVED', 'QUOTE_EXPIRED', 'INVITATION_EXPIRED', 'NO_CANDIDATE',
         'QUOTE_AWAITING_APPROVAL', 'PARALLEL_CHOICE_REQUIRED', 'SUPPLEMENT_REQUIRED', 'INVALID_COMPLETION',
-        'INVALID_ACCEPTANCE', 'INVALID_ATTACHMENT']);
+        'INVALID_ACCEPTANCE', 'INVALID_ATTACHMENT', 'LINE_NOT_CONFIGURED', 'INVALID_AUTH_TRANSACTION',
+        'LINE_IDENTITY_REJECTED', 'LINE_MEMBERSHIP_REQUIRED', 'SESSION_IDENTITY_CONFLICT', 'AUTH_BUSY', 'INVALID_INVITE',
+        'LINE_WEBHOOK_NOT_CONFIGURED', 'INVALID_WEBHOOK_SIGNATURE', 'INVALID_WEBHOOK_EVENT',
+        'INVITE_EXPIRED', 'INVITE_REVOKED', 'INVITE_USED', 'ALREADY_BOUND']);
       const code = codes.has(error.code) ? error.code : 'INTERNAL_ERROR';
       const status = error.status || (code === 'FORBIDDEN' ? 403 : code === 'NOT_FOUND' ? 404 :
         ['ALREADY_EXISTS', 'VERSION_CONFLICT', 'PRIORITY_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'INVALID_TRANSITION',
