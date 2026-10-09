@@ -10,13 +10,32 @@
 - DNS 查詢該測試網址未回傳記錄；這不是已部署入口。尚未建立 DNS、公開服務或儲存資源。前置 gate 仍須完成，不能直接公開 loopback 原型。
 - 本次沒有改 webhook、發送訊息、更改其他 OA 或部署 V2。
 
-## 前置 gate
+## 目前已完成的本機能力（2026-10-10）
+
+- 工單 domain、邀請／房東核准、LINE Login 交易與中文操作介面已在隔離
+  `_dev/vendor-work-orders/` 完成。
+- `POST /api/line/webhook` 已支援 raw-body HMAC 簽章驗證、事件 ID 去重、
+  follow／unfollow 好友狀態及舊事件順序保護。
+- 通知 adapter 已實作 enabled、Provider／subject 白名單、好友狀態、active
+  membership、固定 retry key 與 timeout=`unknown`；預設仍關閉發送。
+- 本機驗證：工單專項 144/144、repository `npm test` 791/791、`npm run validate`
+  與 `git diff --check` 通過。這些只代表本機合成測試，不代表真實 LINE 收件。
+
+## 下一步：獨立 staging 前置 gate
 
 1. 人工登入 LINE Developers 後核對 Login 與指定 Messaging channel 同一 Provider；秘密透過伺服器 secret storage 注入，禁止聊天／Git／日誌。
 2. 使用者選定獨立 HTTPS 網址，核實 host／持久資料及附件儲存。現有 server 綁定 loopback、拒絕外部 Host／Origin，尚不可直接對外暴露；必須先完成固定可信 reverse proxy origin 與測試，不得移除檢查來湊通。
 3. 目前無 CLI 環境設定與部署 launcher；不得把注入測試 adapter 或例子 URL 當作正式配置。
 4. 真實房東測試 session 尚需受控 identity bootstrap（不可允許合成房東遠端登入），合作對象只能邀請／確認／房東核准後建立 membership。
-5. 發送保持關閉。webhook／好友狀態／白名單通知 worker 尚未實作，不應先替換現有 webhook。
+5. 發送保持關閉。先以獨立 staging 驗證 webhook；不要替換現有 webhook，也不要
+   啟用真實推播，直到 Provider、HTTPS、secret storage、測試 subject 都核對完成。
+6. 由使用者在 LINE Developers 完成同一 Provider 的 Login channel 建立並取得
+   channel ID／secret；secret 只注入 staging 環境，不回傳聊天或提交 Git。
+7. 部署 loopback server 後面的固定 HTTPS reverse proxy，先只做健康檢查、登入關閉、
+   webhook 簽章驗證與持久 snapshot；確認錯誤 Host／Origin、偽造簽章與未登入工單
+   都拒絕。
+8. 再由指定測試人員完成好友、登入、邀請確認、房東核准與重新登入；最後才允許
+   一個白名單 subject 發送一則中性通知，人工確認手機收件。
 
 ## 本機 API 候選
 
