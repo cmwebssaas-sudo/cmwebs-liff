@@ -27,7 +27,8 @@
 `mailbox_email` 必須與 Gmail profile 的主要地址相同；填入地址本身不授予
 其他信箱的存取權。專用信箱、Apps Script 執行身份與授權方式須先確認。
 
-允許郵局 `bsnotify@mail.post.gov.tw` 直寄，或設定的可信轉寄人。核對 Gmail
+允許郵局 `bsnsnotify@mail.post.gov.tw`（已觀察格式）或 `bsnotify@mail.post.gov.tw`
+直寄，或設定的可信轉寄人。核對 Gmail
 收到的外層寄件人及 `mx.google.com` 的 DMARC 結果。轉寄內文的 From 不作
 來源驗證；轉寄紀錄明確顯示「請核對收款紀錄」。原信缺欄位、重複通知區塊、
 錯誤時間、無法唯一定位收款帳戶都不猜配，記錄去識別化的掃描失敗計數。
@@ -43,6 +44,21 @@
 不接受裸 LINE UID 或 query credentials，不採用客戶端指定的金額／Workspace。
 通知沿用現有團隊 payment_report 偏好與通知中心，關閉 LINE push 仍保存事件。
 本工作沒有新增共用 OA 代發的 SaaS 功能。
+
+## 2026-10-09 啟用準備核對
+
+使用者已指定專用 Gmail 並授權實作及啟用。Gmail connector、Drive connector
+與 clasp 執行身份已核對為同一指定帳戶；真實轉寄通知的解析已通過，
+唯一啟用收款帳戶的前後碼與通知遮罩一致。實際信件、銀行帳號及設定
+僅保存在本機受限暫存檔，不提交 Git。設定目前為停用，尚未寫入 Script Properties。
+
+重新匯出正式 Web App version219 與 editor HEAD，各59個來源檔均與
+`origin/main@6af4b28` 逐檔一致；保留兩份隔離匯出供回退。新候選前端
+cache tag 為 `20261009-postal-payment-review-v1`，尚未發布。
+
+Chrome 尚未登入指定 Google 帳戶；Google 登入頁開啟時另一個 extension
+介面阻擋自動操作，需要使用者完成登入。新增 Gmail readonly 授權尚未
+同意。正式 Sheet 的新表、設定、觸發器、後端與 Pages 均尚未變更。
 
 ## 設定與啟用步驟（尚未執行）
 
@@ -112,8 +128,9 @@ Node VM 覆蓋合成 Gmail API → 擷取／匹配 → 保存／通知；另實�
 手機390×844合成預覽無橫向溢出，銀行按鈕高度至少44px；配對確認及手動選帳單
 可完成合成狀態轉換。此預覽沒有登入、呼叫正式 API、讀真實信件或發 LINE。
 
-真實 Gmail OAuth／API、Google執行身份、觸發器、郵件標頭、正式Schema migration、
-發布、LINE手機收件及正式銷帳均 **UNVERIFIED／未執行**。
+Gmail／Drive connector、clasp 身份、真實轉寄標頭／格式、收款帳戶遮罩及 serving
+source 已核對。Apps Script Gmail OAuth／API、觸發器、正式 Schema migration、
+發布、LINE 手機收件及正式銷帳仍 **UNVERIFIED／未執行**。
 
 API 行為依據：[Gmail search timezone](https://developers.google.com/workspace/gmail/api/guides/filtering)、
 [LINE request retry](https://developers.line.biz/en/docs/messaging-api/retrying-api-request/)。

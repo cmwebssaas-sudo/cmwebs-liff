@@ -187,7 +187,7 @@ function bankReceiptMailSource_(headers,config) {
   const auth=bankReceiptHeader_(headers,'Authentication-Results');
   const verified=auth.match(/\bdmarc=pass\b[^;]*?\bheader\.from=([^\s;]+)/i);
   if(!/^\s*mx\.google\.com;/i.test(auth)||!verified||!(domain===verified[1]||domain.endsWith('.'+verified[1])))return '';
-  if(sender==='bsnotify@mail.post.gov.tw')return 'direct';
+  if(['bsnsnotify@mail.post.gov.tw','bsnotify@mail.post.gov.tw'].indexOf(sender)>=0)return 'direct';
   return (config.trusted_forwarders||[]).indexOf(sender)>=0?'forwarded':'';
 }
 function bankReceiptGmailBody_(part) {

@@ -1333,3 +1333,10 @@ immutable216已匯出59檔與候選逐位元組相同，原Web App讀回216，UR
 Rollback 後端214及本次前端基底 d107206，保留新增網址欄與資料。
 網址欄只在授權房東首次儲存時加欄，不代填任何真實網址；自動橋接仍未
 建立正式綁定，不覆蓋網站端 WIP。真實儲存／重載及手機 LINE 尚未驗收。
+# 郵局 Email 啟用準備（2026-10-09）
+
+指定信箱的 Gmail／Drive／clasp 身份、真實轉寄解析及唯一收款帳戶遮罩已核對。
+正式 serving219/editor HEAD 各59來源檔與 origin/main6af4b28 一致。
+候選 cache tag20261009-postal-payment-review-v1。Chrome 指定帳戶登入與新增
+Gmail readonly 授權待使用者操作；尚未發布、建立正式表、修改 Properties、
+安裝觸發器、發送 LINE 或確認真實款項。參見 BANK-EMAIL-RECEIPTS.md。

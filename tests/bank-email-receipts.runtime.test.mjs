@@ -279,3 +279,7 @@ test('enabled intake refuses a different authenticated Gmail mailbox',()=>{
  const r=runtime();r.ctx.runBankEmailReceiptMigration();r.ctx.UrlFetchApp={fetch:()=>({getResponseCode:()=>200,getContentText:()=>JSON.stringify({emailAddress:'wrong@example.test'})})};
  assert.throws(()=>r.ctx.runBankEmailReceiptIntake(),/mailbox mismatch/);assert.equal(r.ctx.bankReceiptRows_('V2_bank_email_receipts').length,0);
 });
+
+test('postal direct envelope supports the observed official sender spelling',()=>{
+ const r=runtime();assert.equal(r.ctx.bankReceiptMailSource_([{name:'From',value:'bsnsnotify@mail.post.gov.tw'},{name:'Authentication-Results',value:'mx.google.com; dmarc=pass header.from=post.gov.tw'}],{trusted_forwarders:[]}),'direct');
+});
