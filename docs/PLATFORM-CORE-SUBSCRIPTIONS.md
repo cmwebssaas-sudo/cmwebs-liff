@@ -12,7 +12,7 @@ It does not implement subscription checkout or payment collection.
 ## Mapping and secure configuration
 
 Additive editor-only helper `provisionPlatformCoreWorkspaceLink(options)`
-requires explicit staging environment, canonical workspace_id,
+requires explicit staging/production environment matching server Properties, canonical workspace_id,
 platform_company_id, product_id, mode legacy/observe and a reason. It records
 an audit through the existing operation audit module before binding; audit
 failure denies provisioning. No browser route changes mappings. Provisioning
@@ -27,7 +27,7 @@ means legacy. Duplicate rows, malformed columns, status/mode or incomplete
 linked mapping fail closed. Reads never create schema. ProductCompanyLink in
 Core must have external_company_id equal to exact canonical Workspace ID.
 
-Server-only Properties: CMWEBS_PLATFORM_CORE_ENVIRONMENT (staging),
+Server-only Properties: CMWEBS_PLATFORM_CORE_ENVIRONMENT (staging/production),
 CMWEBS_PLATFORM_CORE_BASE_URL (HTTPS origin), CMWEBS_PLATFORM_CORE_PRODUCT_ID,
 CMWEBS_PLATFORM_CORE_SERVICE_TOKEN. The service token is an opaque ACTIVE
 ServiceClient for that Product with exact product.access.read scope. It exists
@@ -128,7 +128,49 @@ staging acceptance pass; only inline self-review, no independent agent review.
 The user identified themselves as the first landlord. A metadata-first bounded
 read of the formal V2_workspaces table resolves the only existing Workspace to
 W000001, 朱文漢的管理團隊, active/completed. This is the intended first observe
-target. The current Core runtime and CM adapter intentionally reject production
-environment configuration; do not disguise a real Workspace as a staging fixture
-or assign the fixture's two-room quota. Formal environment promotion, secure
-credential injection and the authenticated summary still require completion.
+target. The user subsequently approved explicit production support for only the Core
+product profile/CM adapter, a separate AI-00 production database/readonly
+credential and W000001 observe binding. No Plan, Subscription, fee or room quota
+is created. Do not disguise the owner as a staging fixture or assign the test
+two-room quota. RED production refusal reproduced; GREEN CM770/Core361 pass.
+Host provisioning and formal credential injection are complete. Formal audited
+mapping and authenticated summary await owner consent/login. Admin runtime
+and staging migration stay restricted.
+
+2026-10-11 Pages PR252 merged396f4de, build completed and51 public files match
+byte-for-byte. The new production-environment candidate changes no frontend
+files. The editor-only provisioner now refuses a caller environment that does
+not match the configured server environment, before acquiring a write lock.
+
+The formal editor execution exposed a missing explicit userinfo.email scope:
+Session.getEffectiveUser().getEmail() failed before any audit or mapping write.
+The manifest adds only the basic editor Email identity scope required by the
+audited provisioner; all existing scopes and Web App access settings remain.
+A regression reproduced the missing scope, and the complete suite now passes
+771 tests (including four cross-repository checks) plus validate/diff-check.
+Human Google consent is separate from source verification and must complete
+before formal mapping activation is claimed.
+
+## Formal rollout checkpoint
+
+CorePR50 merged627a422 after exact-head production PostgreSQL runtime CI.
+Separate productionDB/reader/API14102 on verified ai-00 and the specifically
+confirmed core.cmwebs.com DNS are live. Actual public scoped200/anonymous401,
+Company/Product403, staging credential401, local admin404 and SQLwrite42501 pass.
+Production local restore verifies nine migrations, exact canonical link and
+zero Plans/Subscriptions. Four formal Core Properties securely saved,23 total
+key names verified without existing values. No fees or room-limit enforcement.
+
+Formal Web App22763 files match153964e at its original URL, other four deployments
+unchanged. Missing editor-email scope denied provisioning before a binding write.
+Repair1e5d61f adds only userinfo.email;771 tests/validate pass. Prepared immutable
+22863 files matches that repair; it is not serving. Editor HEAD was restored to
+227, removing the temporary operator, while owner Google consent is pending.
+The owner consent page shows the original project title 綠界結帳; do not create
+another project, bypass its warning, or treat an Email login as Google consent.
+Rental browser also needs actual Email/LINE login; never retrieve OTP. After
+consent, promote exact228, run the editor-only audited observe provisioner for
+W000001, verify real Google round-trip, remove only the operator, and inspect
+the authenticated subscription card. Preserve legacy until that run passes.
+Rollback backend226/Pages396f4de, or restore the new mapping to legacy after
+activation; preserve all financial/history rows, LINE and existing triggers.

@@ -88,9 +88,9 @@ function platformCoreConfig_(link) {
   );
   const product = p.getProperty("CMWEBS_PLATFORM_CORE_PRODUCT_ID");
   const token = p.getProperty("CMWEBS_PLATFORM_CORE_SERVICE_TOKEN");
-  // This first runtime is staging-only. No URL credentials, query, fragment or redirect.
+  // Explicit environment only. No URL credentials, query, fragment or redirect.
   if (
-    environment !== "staging" ||
+    ["staging", "production"].indexOf(environment) < 0 ||
     !/^https:\/\/[A-Za-z0-9.-]+(?::443)?\/?$/.test(base) ||
     product !== link.product_id ||
     !token ||
@@ -363,7 +363,8 @@ function provisionPlatformCoreWorkspaceLink(options) {
     company = platformCoreIdentifier_(options.platform_company_id),
     product = platformCoreIdentifier_(options.product_id);
   if (
-    options.environment !== "staging" ||
+    ["staging", "production"].indexOf(options.environment) < 0 ||
+    options.environment !== PropertiesService.getScriptProperties().getProperty("CMWEBS_PLATFORM_CORE_ENVIRONMENT") ||
     ["legacy", "observe"].indexOf(options.mode) < 0 ||
     !platformCoreText_(options.reason) || platformCoreText_(options.reason).length > 200
   )

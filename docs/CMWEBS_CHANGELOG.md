@@ -1,5 +1,17 @@
 # CMWebs Changelog
 
+## 2026-10-11 — Core 正式訂閱接線準備
+
+V3訂閱摘要；使用者確認第一個工作區與AI-00正式部署。独立正式資料庫／唯讀
+API及core.cmwebs.com已啟用；未授權401／跨範圍403，正式備份還原驗證通過。
+正式Apps Script227／63檔 exact153964e，原URL與其他四部署保留；四個Core
+屬性安全保存，不讀既有值。771測試／validate通過。缺少執行者Email scope
+導致audited綁定在寫入前拒絕；修正只增加userinfo.email，immutable228準備
+完成但未發布，editor HEAD已恢復227／移除臨時operator，等待本人Google授權。
+租管頁亦需本人登入驗收。目前沒有正式方案／訂閱、不收費、不啟用房間上限，
+工作區仍legacy。回退226／Pages396f4de；不改LINE或帳務規則，不刪歷史資料。
+
+
 ## 2026-10-05 — 月帳單日期辨識修復已發布214
 
 - 明確授權後，editor HEAD與原正式Web App已發布214；immutable59檔與a7b58e4逐位元組一致，其他四部署不變。
