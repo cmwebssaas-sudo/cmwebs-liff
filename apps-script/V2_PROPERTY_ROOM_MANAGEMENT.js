@@ -1525,7 +1525,9 @@ function saveLandlordRoomByLineUid_(
       );
     }
 
-    const platformCorePrepared = propertyRoomPlatformCorePrepare_(access);
+    const preflightRoom = roomId ? propertyRoomFindWorkspaceTarget_(ss.getSheetByName(V2_PROPERTY_ROOM_SHEETS_.rooms), access, 'room_id', roomId) : null;
+    const platformCorePrepared = !preflightRoom || propertyRoomText_(preflightRoom.account_status || 'active').toLowerCase() !== 'active'
+      ? propertyRoomPlatformCorePrepare_(access) : {mode:'skip',grant:null};
 
     lock.waitLock(20000);
     locked = true;
@@ -1895,7 +1897,9 @@ function setLandlordRoomAccountToggleByLineUid_(
         enabled
       );
 
-    const platformCorePrepared = propertyRoomPlatformCorePrepare_(access);
+    const preflightRoom = propertyRoomFindWorkspaceTarget_(runtimeSpreadsheet_().getSheetByName(V2_PROPERTY_ROOM_SHEETS_.rooms), access, 'room_id', roomId);
+    const platformCorePrepared = targetStatus === 'active' && (!preflightRoom || propertyRoomText_(preflightRoom.account_status || 'active').toLowerCase() !== 'active')
+      ? propertyRoomPlatformCorePrepare_(access) : {mode:'skip',grant:null};
 
     lock.waitLock(20000);
     locked = true;

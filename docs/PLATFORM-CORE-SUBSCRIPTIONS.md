@@ -101,3 +101,10 @@ Rollback: first set the explicitly provisioned row mode to legacy under an
 operator-controlled write (never delete business rows), then restore verified
 previous backend immutable version and Pages revision independently. Stop the
 product runtime if needed; no schema removal or historical version deletion.
+
+2026-10-11 local verification: Core359 tests/typecheck/Admin build; CMWebs768
+passing tests including cross-repo4, validate63 backend files/38 endpoint refs.
+Actual reactivation checks fetch-before-lock, count-inside-lock, last-slot denial
+and lock release. Existing active/idempotent/disable and ordinary edit do not
+contact Core. Prior root WIP unchanged. PostgreSQL CI/live staging still pending
+at this commit; only inline self-review, no independent agent review.

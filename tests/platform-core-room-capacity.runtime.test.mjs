@@ -294,4 +294,9 @@ test("actual room reactivation fetches before lock, counts inside lock and relea
   assert.equal(held, false);
   assert.equal(fetches, 2);
   assert.equal(writes, 1);
+  ctx.platformCoreGetWorkspaceAccess_ = () => { throw new Error('Core is unavailable'); };
+  assert.equal(ctx.setLandlordRoomAccountToggleByLineUid_('verified','R1',true,'WS_A').success,true);
+  assert.equal(ctx.setLandlordRoomAccountToggleByLineUid_('verified','R1',false,'WS_A').success,true);
+  assert.equal(fetches,2,'existing active and disabling actions must not contact Core');
+  assert.equal(writes,2);
 });
