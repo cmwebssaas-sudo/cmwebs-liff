@@ -3040,12 +3040,11 @@ function doPost(e) {
                 'landlord_session_token',
                 'request_id'
               ]
-            ) ||
-            resolveLandlordPrincipal_(
-              request
             );
 
-          if (result && result.success === true) {
+          // The status handler performs the full session/user/workspace/role
+          // validation itself; resolving a principal first duplicates it.
+          if (!result) {
             result =
               getLandlordEmailSessionStatus_(
                 request.landlord_session_token || '',
@@ -3181,8 +3180,17 @@ function doPost(e) {
         }
 
         if (action === 'landlord_subscription_init') {
-          const principal = platformCoreResolveSubscriptionPrincipal_(request);
-          result = getLandlordSubscriptionInitByPrincipal_(principal);
+          try {
+            const principal = platformCoreResolveSubscriptionPrincipal_(request);
+            result = getLandlordSubscriptionInitByPrincipal_(principal);
+          } catch (_) {
+            result = {
+              success: false,
+              code: 'SUBSCRIPTION_UNAVAILABLE',
+              message: '暫時無法確認訂閱，請稍後重試',
+              data: null
+            };
+          }
           return useBridge ? htmlBridgeOutput_(result, request.request_id || '') : jsonOutput_(result, '');
         }
 

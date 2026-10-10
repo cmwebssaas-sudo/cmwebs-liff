@@ -216,11 +216,20 @@ function getLandlordEmailSessionStatus_(
   sessionToken,
   requestId
 ) {
-  return landlordEmailAuthResolveSession_(
-    sessionToken,
-    requestId,
-    true
-  );
+  try {
+    return landlordEmailAuthResolveSession_(
+      sessionToken,
+      requestId,
+      false
+    );
+  } catch (_) {
+    // Read paths never create missing auth schema. Return a bridge-compatible
+    // failure so the client does not wait until its iframe timeout.
+    return landlordEmailAuthError_(
+      'AUTH_UNAVAILABLE',
+      '暫時無法確認登入，請稍後重試'
+    );
+  }
 }
 
 function revokeLandlordEmailSession_(
@@ -515,14 +524,18 @@ function landlordEmailAuthResolveSession_(
     landlordEmailAuthTimestamp_(session.expires_at) <=
     landlordEmailAuthTimestamp_(nowIso)
   ) {
-    landlordEmailAuthUpdateRow_(
-      sheet,
-      session,
-      {
-        status: 'expired',
-        last_seen_at: nowIso
-      }
-    );
+    // Read routes reject expiry directly; metadata maintenance must not turn
+    // login restoration into a write or invalidate unrelated read caches.
+    if (touch === true) {
+      landlordEmailAuthUpdateRow_(
+        sheet,
+        session,
+        {
+          status: 'expired',
+          last_seen_at: nowIso
+        }
+      );
+    }
     return landlordEmailAuthResult_(
       false,
       'SESSION_EXPIRED',
