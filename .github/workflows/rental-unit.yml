@@ -6,6 +6,8 @@ on:
 jobs:
   rental:
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Taipei
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
