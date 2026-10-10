@@ -134,7 +134,7 @@ credential and W000001 observe binding. No Plan, Subscription, fee or room quota
 is created. Do not disguise the owner as a staging fixture or assign the test
 two-room quota. RED production refusal reproduced; GREEN CM770/Core361 pass.
 Host provisioning and formal credential injection are complete. Formal audited mapping and actual Google round-trip now pass; the logged-in
-Email card repair awaits frontend publication and acceptance. Admin runtime
+Email card repair and normal published desktop acceptance now pass. Admin runtime
 and staging migration stay restricted.
 
 2026-10-11 Pages PR252 merged396f4de, build completed and51 public files match
@@ -174,7 +174,10 @@ page now obtains a LINE ID token only in LINE mode, retaining normal verified
 Email-session transport. Observe with null quota shows actual room count and
 unset limit without inventing unlimited entitlement. Regression first failed on
 the real page script/card, then passed; full772 tests/crossrepo4 and validate pass.
-Frontend tag20261011-core-subscription-v2 awaits publication and normal logged-in
-UI acceptance. Frontend rollbackedf13f9; mapping can be restored to legacy via an
+Frontend tag20261011-core-subscription-v2 is published: PR254 merged e8289ac,
+Pages built2026-10-10T20:16:01Z,51 public files match source byte-for-byte. The
+normal published Email-authenticated More page shows the correct Workspace and
+無有效訂閱 · 房間21 · 未設定房間上限. Desktop acceptance PASS; physical LINE
+device remains UNVERIFIED. Frontend rollbackedf13f9; mapping can be restored to legacy via an
 audited operator if needed. No Plan/Subscription/fee/quota/enforce/financial write
 or LINE send, and no existing credentials read, OTP capture or principal bypass.

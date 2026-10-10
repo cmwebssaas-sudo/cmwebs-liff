@@ -90,8 +90,8 @@
     "rollback_backend_version": 212,
     "status": "Immutable213 export matches all59 local files, unchanged formal Web App reads213. User confirmed403/505 continued occupancy and October rent7500 each and authorized release plus only these two unpaid corrections. User completed browser confirmation; formal UI fresh readback explicitly reports both saved, without resubmission. Original bills B0000051/B0000056 remain;403total10100,505total10550, rent7500 each, meters/due/zero discounts and blank notes unchanged. Other19 card DOM snapshots identical before/after correction. No manual LINE send, lease/trigger changes or batch financial rewrite."
   },
-  "frontend_revision": "edf13f9dc07026af161598c73dd0df5f94fde2bd",
-  "frontend_workflow": "Pages built2026-10-10T19:10:11Z at396f4de",
+  "frontend_revision": "e8289ac6cd3745833e650b0c55744737c1ef6315",
+  "frontend_workflow": "Pages built2026-10-10T20:16:01Z at e8289ac",
   "frontend_public_file_count_verified": 51,
   "frontend_release_tag": "20261010-repair-dispatch-v1",
   "frontend_authenticated_acceptance": "UNVERIFIED: LINE session entry did not establish an authenticated landlord page",
@@ -164,7 +164,7 @@
   "scope": "V2.0 tenant detail correctness repair: exact current-lease rent, management, contractual deposit, Taipei dates/payment day and existing rates. Read projections retain explicit zero and null for unknown values without changing write/default normalizers; document fallback refreshes only summary/history, preserving meter and file forms. Fresh serving/editor HEAD v204 exports matched all 59 baseline files; reviewed c583d36 created immutable v205, all 59 files byte-identical. Existing formal deployment CLI reads back v205 at unchanged URL; four other deployments unchanged and v204 rollback retained. PR201 merged at657ec08; Pages workflow36985692299 succeeded and 41 public files are byte-identical. Post-merge validate, 485/485 tests and diff-check pass. No business-row, lease/date/history, private-file, schema, Properties, trigger or LINE writes, and no version deletion. Authenticated browser/physical-device acceptance and previously approved room501-only settings save (rent19570, management0, deposit39140) remain PENDING: browser is at landlord Email login; no direct Sheets write or auth bypass. Prior506 document/meter recovery and502 expired-occupied protection remain. Rollback same Web App v204, frontend cc01e81.",
   "rollback": {
     "backend_version": 227,
-    "frontend_revision": "396f4de3ae501b4a485889ad48870881b9473f4e"
+    "frontend_revision": "edf13f9dc07026af161598c73dd0df5f94fde2bd"
   },
   "version_inventory_verified": {
     "highest_version": 205,
@@ -440,7 +440,7 @@
     "serving_source_commit": "1e5d61f5cdae48ffb206f76058637de31926dbb0",
     "backend_version": 228,
     "rollback_backend_version": 227,
-    "rollback_frontend_revision": "396f4de3ae501b4a485889ad48870881b9473f4e",
+    "rollback_frontend_revision": "edf13f9dc07026af161598c73dd0df5f94fde2bd",
     "immutable_files_matched": 63,
     "other_deployments_unchanged": true,
     "production_environment_support": true,
@@ -464,13 +464,18 @@
     "permission_fix_status": "PASS owner consent completed; serving/editor228 exact63; original URL and other4 deployments preserved",
     "editor_head_restored_version": 228,
     "first_provisioning_attempt": "Missing userinfo.email denied before audit/binding write",
-    "authenticated_acceptance": "Logged in to exact Workspace; Email card failure traced to uninitialized LIFF; frontend repair candidate pending publication",
+    "authenticated_acceptance": "PASS normal published desktop Email session; correct Workspace; NONE / rooms21 / unset quota",
     "frontend_changed": true,
     "actual_formal_google_roundtrip": "PASS exact W000001 through real Google UrlFetch",
     "audited_mapping": "PASS single formal LINKED observe row; bounded A1:G3 readback",
     "rooms_used": 21,
     "rooms_max": null,
     "temporary_operator_removed": true,
-    "frontend_release_tag": "20261011-core-subscription-v2"
+    "frontend_release_tag": "20261011-core-subscription-v2",
+    "frontend_fix_pull_request": 254,
+    "frontend_fix_source_commit": "d052b1fe26415c81f5b710fa06666065ca7851ae",
+    "frontend_revision": "e8289ac6cd3745833e650b0c55744737c1ef6315",
+    "frontend_public_files_verified": 51,
+    "physical_line_acceptance": "UNVERIFIED; outside desktop acceptance"
   }
 }
