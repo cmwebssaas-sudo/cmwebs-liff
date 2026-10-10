@@ -1,8 +1,8 @@
 {
   "verified_on": "2026-10-04",
-  "source_commit": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
+  "source_commit": "7241f2e419099db349e65a22dac1cb3f7b5d1c46",
   "backend_verified_on": "2026-10-10",
-  "backend_source_commit": "aeda946",
+  "backend_source_commit": "145319cb692cb742d51fd7979f4bda3845f1bbf1",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 224,
   "room_photo_share_occupancy_release": {
@@ -90,12 +90,12 @@
     "rollback_backend_version": 212,
     "status": "Immutable213 export matches all59 local files, unchanged formal Web App reads213. User confirmed403/505 continued occupancy and October rent7500 each and authorized release plus only these two unpaid corrections. User completed browser confirmation; formal UI fresh readback explicitly reports both saved, without resubmission. Original bills B0000051/B0000056 remain;403total10100,505total10550, rent7500 each, meters/due/zero discounts and blank notes unchanged. Other19 card DOM snapshots identical before/after correction. No manual LINE send, lease/trigger changes or batch financial rewrite."
   },
-  "frontend_revision": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
+  "frontend_revision": "7241f2e419099db349e65a22dac1cb3f7b5d1c46",
   "frontend_workflow": "37192744518",
-  "frontend_public_file_count_verified": 46,
+  "frontend_public_file_count_verified": 50,
   "frontend_release_tag": "20261010-repair-dispatch-v1",
-  "frontend_authenticated_acceptance": "PENDING: formal Email login entry opened with return_to revenue dashboard; no verified session or OTP sent",
-  "frontend_physical_device_acceptance": "PENDING",
+  "frontend_authenticated_acceptance": "UNVERIFIED: LINE session entry did not establish an authenticated landlord page",
+  "frontend_physical_device_acceptance": "UNVERIFIED",
   "frontend_scope": "Authorized V2.1 existing homepage frontend slice: responsive visual polish and motion, reduced-motion/pause, lazy LINE SDK and in-place secondary action updates. No backend/API/schema/auth/financial/business-data changes. PR203 merged074c225; Pages37068482843 succeeded; all40 changed public assets plus the prior manifest union,43/43, were byte-identical. Fresh validate and503/503 tests pass. Direct homepage browser had no verified session and displayed missing LINE User ID; explicit Email login entry opened, no OTP sent. Authenticated/real-device/end-to-end timing acceptance pending. The v205 backend evidence below remains dated2026-10-02 and was not freshly exported or deployed by this frontend release.",
   "prior_frontend_release": {
     "verified_on": "2026-10-02",
@@ -383,12 +383,19 @@
     "rollback_frontend_revision": "e7fd413d2a34dc26a5e8f00bfbc26917aacba566",
     "tests_passed": 724,
     "head_files_matched": 61,
-    "status": "Original serving223/editor HEAD60 files matched main. Candidate HEAD and immutable22461 files byte-identical. Original deployment now224; other4 unchanged. Owner editor initialized10-column event table/private folder. Pages publication in progress.",
+    "status": "Published: original Web App224 with unchanged URL; immutable61 files byte-identical; other4 deployments unchanged. PR249 merged7241f2e, Pages built successfully,50 public files byte-identical. Additive storage initialized10 headers/private folder; no business dispatch, financial write, LINE send or new trigger.724 tests/validate pass. Real authenticated/phone workflow unverified.",
     "backend_version": 224,
     "immutable_files_matched": 61,
     "storage_headers_verified": 10,
     "private_folder_initialized": true,
     "new_trigger_installed": false,
-    "line_messages_sent": 0
+    "line_messages_sent": 0,
+    "pull_request": 249,
+    "frontend_revision": "7241f2e419099db349e65a22dac1cb3f7b5d1c46",
+    "public_files_matched": 50,
+    "anonymous_post_rejected": "AUTH_REQUIRED",
+    "anonymous_get_rejected": "AUTH_METHOD_REQUIRED",
+    "authenticated_acceptance": "UNVERIFIED",
+    "physical_line_acceptance": "UNVERIFIED"
   }
 }
