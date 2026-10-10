@@ -12,6 +12,23 @@ function repairDispatchMigrate_() {
   return { sheet: REPAIR_DISPATCH_SHEET_, columns: headers.length };
 }
 
+// Run from the verified original project's editor; never exposed as an API action.
+function initializeRepairDispatchStorage() {
+  return repairDispatchLock_(function() {
+    const schema = repairDispatchMigrate_();
+    const props = PropertiesService.getScriptProperties();
+    const key = 'CMWEBS_REPAIR_PRIVATE_DRIVE_ROOT_FOLDER_ID';
+    const existing = props.getProperty(key);
+    const folder = existing ? DriveApp.getFolderById(existing) : DriveApp.createFolder('CMWebs Repair Private Attachments');
+    folder.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+    if (folder.getSharingAccess() !== DriveApp.Access.PRIVATE) throw new Error('PRIVATE_FOLDER_REQUIRED');
+    if (!existing) props.setProperty(key, folder.getId());
+    const result = { sheet: schema.sheet, columns: schema.columns, private_folder_ready: true, existing_folder_reused: !!existing };
+    console.log(JSON.stringify(result));
+    return result;
+  });
+}
+
 function repairDispatchRows_() {
   const sheet = runtimeSpreadsheet_().getSheetByName(REPAIR_DISPATCH_SHEET_);
   if (!sheet) return [];
