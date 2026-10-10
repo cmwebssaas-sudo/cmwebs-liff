@@ -1,5 +1,14 @@
 # CMWebs Changelog
 
+## 2026-10-11 — 登入復驗與共用讀取修補（本機候選，未發布）
+
+Session status 移除重複完整驗證；status／subscription summary 改為僅請求內
+讀取重用，避免 Schema ensure、last-seen 寫入和無意義快取失效，仍每次讀取
+權限並即時查 Core。共用快取世代每個請求只取得一次。合成案例登入整表讀取
+16→5、表頭 82→0、寫入 4→0；這不是正式秒數改善證據。新增 18 項回歸，
+完整 786 pass／0 fail／4 外部 Core skip，validate／合併語法／diff-check 通過。
+沒有部署、Schema 或前端變更。見 `LANDLORD-READ-PERFORMANCE.md`。
+
 ## 2026-10-11 — Core 正式訂閱接線與 Email 卡片修復
 
 本人已完成原「綠界結帳」Google 授權與租管登入。正式 Apps Script228／63檔

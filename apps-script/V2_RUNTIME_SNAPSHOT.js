@@ -28,6 +28,13 @@ const V2_RUNTIME_SNAPSHOT_READ_ACTIONS_ = {
   landlord_workspace_context: true
 };
 
+// These reads must see fresh authentication/authorization data on every request.
+// Reuse values only within the request; never read or fill the shared sheet cache.
+const V2_RUNTIME_SNAPSHOT_LOCAL_READ_ACTIONS_ = {
+  landlord_email_session_status: true,
+  landlord_subscription_init: true
+};
+
 const V2_RUNTIME_READ_CACHE_PREFIX_ =
   'cmwebs:v2:readonly-sheet:';
 const V2_RUNTIME_READ_CACHE_VERSION_KEY_ =
@@ -55,7 +62,11 @@ function runtimeSnapshotBegin_(action) {
     action: action,
     started_at: Date.now(),
     enabled:
+      V2_RUNTIME_SNAPSHOT_READ_ACTIONS_[action] === true ||
+      V2_RUNTIME_SNAPSHOT_LOCAL_READ_ACTIONS_[action] === true,
+    shared_cache_enabled:
       V2_RUNTIME_SNAPSHOT_READ_ACTIONS_[action] === true,
+    read_cache_version: null,
     spreadsheet_handles: {},
     spreadsheet_handle_created: 0,
     spreadsheet_handle_reused: 0,
@@ -151,11 +162,14 @@ function runtimeSnapshotGetValues_(sheet) {
   }
 
   const sharedCache =
-    runtimeSnapshotReadCache_();
-  const sharedKey =
-    runtimeSnapshotSharedCacheKey_(
+    state.shared_cache_enabled
+      ? runtimeSnapshotReadCache_()
+      : null;
+  const sharedKey = sharedCache
+    ? runtimeSnapshotSharedCacheKey_(
       sheet
-    );
+    )
+    : '';
 
   if (sharedCache && sharedKey) {
     try {
@@ -218,21 +232,28 @@ function runtimeSnapshotReadCache_() {
 
 
 function runtimeSnapshotReadCacheVersion_() {
+  const state = V2_REQUEST_RUNTIME_SNAPSHOT_STATE_;
+  if (state && state.read_cache_version !== null) {
+    return state.read_cache_version;
+  }
   const cache =
     runtimeSnapshotReadCache_();
   if (!cache) {
     return 'disabled';
   }
 
+  let version = '1';
   try {
-    return String(
+    version = String(
       cache.get(
         V2_RUNTIME_READ_CACHE_VERSION_KEY_
       ) || '1'
     );
   } catch (error) {
-    return '1';
+    // Preserve the existing best-effort cache behavior.
   }
+  if (state) state.read_cache_version = version;
+  return version;
 }
 
 
@@ -350,6 +371,7 @@ function runtimeSnapshotFinish_() {
     action: state.action,
     elapsed_ms: Math.max(0, Date.now() - state.started_at),
     enabled: state.enabled,
+    shared_cache_enabled: state.shared_cache_enabled,
     spreadsheet_handle_created:
       state.spreadsheet_handle_created,
     spreadsheet_handle_reused:
