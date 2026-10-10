@@ -37,7 +37,7 @@ function platformCoreCapacityError_(code) {
 }
 function platformCoreAssertRoomGrowth_(ss, access, prepared, delta) {
   if (delta === 0) return { success: true, code: "OK" };
-  if (delta !== 1) return platformCoreCapacityError_("INVALID_ROOM_GROWTH");
+  if (!Number.isSafeInteger(delta) || delta < 1) return platformCoreCapacityError_("INVALID_ROOM_GROWTH");
   try {
     const workspaceId = platformCoreText_(access.workspace.workspace_id);
     const link = platformCoreReadWorkspaceLink_(workspaceId);
@@ -45,6 +45,7 @@ function platformCoreAssertRoomGrowth_(ss, access, prepared, delta) {
     if (mode === "legacy" || mode === "observe")
       return { success: true, code: "OK" };
     const grant = prepared && prepared.grant;
+    const roomLimit=grant && (grant.room_limit || (Number.isSafeInteger(grant.max_rooms)?{mode:'LIMITED',max_rooms:grant.max_rooms}:{mode:'NONE'}));
     if (
       !prepared ||
       prepared.mode !== "enforce" ||
@@ -53,8 +54,8 @@ function platformCoreAssertRoomGrowth_(ss, access, prepared, delta) {
       grant.company_id !== link.platform_company_id ||
       grant.product_id !== link.product_id ||
       grant.enabled !== true ||
-      !Number.isSafeInteger(grant.max_rooms) ||
-      grant.max_rooms < 0 ||
+      !roomLimit || ['LIMITED','UNLIMITED'].indexOf(roomLimit.mode)<0 ||
+      (roomLimit.mode==='LIMITED' && (!Number.isSafeInteger(roomLimit.max_rooms) || roomLimit.max_rooms<0)) ||
       !Number.isFinite(Date.parse(grant.expires_at)) ||
       Date.parse(grant.expires_at) <= Date.now()
     )
@@ -62,7 +63,7 @@ function platformCoreAssertRoomGrowth_(ss, access, prepared, delta) {
     const used = platformCoreCountWorkspaceRooms_(ss, workspaceId);
     if (Date.parse(grant.expires_at) <= Date.now())
       return platformCoreCapacityError_("SUBSCRIPTION_UNAVAILABLE");
-    if (used + 1 > grant.max_rooms)
+    if (roomLimit.mode==='LIMITED' && used + delta > roomLimit.max_rooms)
       return platformCoreCapacityError_("ROOM_CAPACITY_REACHED");
     return { success: true, code: "OK" };
   } catch (_) {

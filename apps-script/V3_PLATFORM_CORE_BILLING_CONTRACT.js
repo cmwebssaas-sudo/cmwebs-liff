@@ -59,6 +59,103 @@ var CMWebsCoreBillingContracts = function(exports) {
       this.name = "ContractValidationError";
     }
   }
+  function record$2(value, label) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      throw new ContractValidationError(`${label} must be an object`);
+    }
+    return value;
+  }
+  function nonEmptyString$2(value, label) {
+    if (typeof value !== "string" || value.trim() === "") {
+      throw new ContractValidationError(`${label} must be a non-empty string`);
+    }
+    return value;
+  }
+  function capabilityCode(value, label) {
+    const code = nonEmptyString$2(value, label);
+    if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(code)) {
+      throw new ContractValidationError(`${label} must be a lowercase dot-path`);
+    }
+    return code;
+  }
+  function timestamp$1(value, label) {
+    const result = nonEmptyString$2(value, label);
+    if (Number.isNaN(Date.parse(result))) {
+      throw new ContractValidationError(`${label} must be an ISO timestamp`);
+    }
+    return result;
+  }
+  function scalar(value, label) {
+    if (typeof value === "boolean" || typeof value === "string") {
+      return value;
+    }
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    throw new ContractValidationError(`${label} must be a finite JSON scalar`);
+  }
+  function valueForType(value, valueType, label) {
+    const scalarValue = scalar(value, label);
+    switch (valueType) {
+      case "BOOLEAN":
+        if (typeof scalarValue !== "boolean") throw new ContractValidationError(`${label} must be boolean`);
+        return scalarValue;
+      case "INTEGER":
+        if (typeof scalarValue !== "number" || !Number.isSafeInteger(scalarValue)) {
+          throw new ContractValidationError(`${label} must be a safe integer`);
+        }
+        return scalarValue;
+      case "DECIMAL":
+        if (typeof scalarValue !== "number") throw new ContractValidationError(`${label} must be a number`);
+        return scalarValue;
+      case "ENUM":
+        if (typeof scalarValue !== "string") throw new ContractValidationError(`${label} must be a string`);
+        return scalarValue;
+      default:
+        throw new ContractValidationError(`${label} has an unsupported value_type`);
+    }
+  }
+  function parseCommonEnvelope(input) {
+    const value = record$2(input, "response");
+    return {
+      ...value,
+      request_id: nonEmptyString$2(value.request_id, "request_id"),
+      company_id: nonEmptyString$2(value.company_id, "company_id"),
+      product_id: nonEmptyString$2(value.product_id, "product_id"),
+      evaluated_at: timestamp$1(value.evaluated_at, "evaluated_at")
+    };
+  }
+  function parseEntitlementsResponse(input) {
+    const envelope = parseCommonEnvelope(input);
+    if (!Array.isArray(envelope.entitlements)) {
+      throw new ContractValidationError("entitlements must be an array");
+    }
+    const entitlements = envelope.entitlements.map((item, index) => {
+      const resource = record$2(item, `entitlements[${index}]`);
+      const valueType = resource.value_type;
+      if (!["BOOLEAN", "INTEGER", "DECIMAL", "ENUM"].includes(String(valueType))) {
+        throw new ContractValidationError(`entitlements[${index}].value_type is unsupported`);
+      }
+      return {
+        subscription_id: nonEmptyString$2(resource.subscription_id, `entitlements[${index}].subscription_id`),
+        plan_id: nonEmptyString$2(resource.plan_id, `entitlements[${index}].plan_id`),
+        definition_id: nonEmptyString$2(resource.definition_id, `entitlements[${index}].definition_id`),
+        code: capabilityCode(resource.code, `entitlements[${index}].code`),
+        value_type: valueType,
+        value: valueForType(resource.value, valueType, `entitlements[${index}].value`),
+        source: resource.source === "plan" || resource.source === "subscription_override" || resource.source === "subscription_period" ? resource.source : (() => {
+          throw new ContractValidationError(`entitlements[${index}].source is unsupported`);
+        })()
+      };
+    });
+    return {
+      request_id: envelope.request_id,
+      company_id: envelope.company_id,
+      product_id: envelope.product_id,
+      evaluated_at: envelope.evaluated_at,
+      entitlements
+    };
+  }
   function billingObject(value) {
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new ContractValidationError("Invalid billing object");
     return value;
@@ -396,6 +493,214 @@ var CMWebsCoreBillingContracts = function(exports) {
     } else throw new ContractValidationError("Unknown billing operation");
     return v;
   }
+  class SubscriptionDirectoryContractValidationError extends Error {
+    constructor(message) {
+      super(message);
+      this.name = "SubscriptionDirectoryContractValidationError";
+    }
+  }
+  function record$1(value, label) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      throw new SubscriptionDirectoryContractValidationError(`${label} must be an object`);
+    }
+    return value;
+  }
+  function nonEmptyString$1(value, label) {
+    if (typeof value !== "string" || value.trim() === "") {
+      throw new SubscriptionDirectoryContractValidationError(`${label} must be a non-empty string`);
+    }
+    return value;
+  }
+  function timestamp(value, label) {
+    const result = nonEmptyString$1(value, label);
+    if (Number.isNaN(Date.parse(result))) {
+      throw new SubscriptionDirectoryContractValidationError(`${label} must be an ISO timestamp`);
+    }
+    return result;
+  }
+  function optionalTimestamp(value, label) {
+    if (value === void 0) return void 0;
+    return timestamp(value, label);
+  }
+  function enumValue(value, label, values) {
+    if (typeof value !== "string" || !values.includes(value)) {
+      throw new SubscriptionDirectoryContractValidationError(`${label} is unsupported`);
+    }
+    return value;
+  }
+  function parseSubscriptionDirectoryResponse(input) {
+    const value = record$1(input, "response");
+    if (!Array.isArray(value.subscriptions)) {
+      throw new SubscriptionDirectoryContractValidationError("subscriptions must be an array");
+    }
+    const seen = /* @__PURE__ */ new Set();
+    const subscriptions = value.subscriptions.map((item, index) => {
+      const subscription = record$1(item, `subscriptions[${index}]`);
+      const subscriptionId = nonEmptyString$1(subscription.subscription_id, `subscriptions[${index}].subscription_id`);
+      if (seen.has(subscriptionId)) {
+        throw new SubscriptionDirectoryContractValidationError(`subscriptions[${index}].subscription_id is duplicated`);
+      }
+      seen.add(subscriptionId);
+      const endsAt = optionalTimestamp(subscription.ends_at, `subscriptions[${index}].ends_at`);
+      return {
+        subscription_id: subscriptionId,
+        company_id: nonEmptyString$1(subscription.company_id, `subscriptions[${index}].company_id`),
+        product_id: nonEmptyString$1(subscription.product_id, `subscriptions[${index}].product_id`),
+        plan_id: nonEmptyString$1(subscription.plan_id, `subscriptions[${index}].plan_id`),
+        plan_version_id: nonEmptyString$1(subscription.plan_version_id, `subscriptions[${index}].plan_version_id`),
+        status: enumValue(subscription.status, `subscriptions[${index}].status`, ["TRIAL", "ACTIVE", "PAST_DUE", "SUSPENDED", "CANCELLED", "EXPIRED"]),
+        starts_at: timestamp(subscription.starts_at, `subscriptions[${index}].starts_at`),
+        ...endsAt !== void 0 ? { ends_at: endsAt } : {}
+      };
+    });
+    return {
+      request_id: nonEmptyString$1(value.request_id, "request_id"),
+      subscriptions
+    };
+  }
+  class CompanySubscriptionContractValidationError extends Error {
+    constructor(message) {
+      super(message);
+      this.name = "CompanySubscriptionContractValidationError";
+    }
+  }
+  function record(value, label) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      throw new CompanySubscriptionContractValidationError(`${label} must be an object`);
+    }
+    return value;
+  }
+  function nonEmptyString(value, label) {
+    if (typeof value !== "string" || value.trim() === "") {
+      throw new CompanySubscriptionContractValidationError(`${label} must be a non-empty string`);
+    }
+    return value;
+  }
+  function parseCompanySubscriptionDirectoryResponse(input) {
+    const value = record(input, "response");
+    const requestId = nonEmptyString(value.request_id, "request_id");
+    const companyId2 = nonEmptyString(value.company_id, "company_id");
+    let subscriptions;
+    try {
+      subscriptions = parseSubscriptionDirectoryResponse({
+        request_id: requestId,
+        subscriptions: value.subscriptions
+      }).subscriptions;
+    } catch (error) {
+      throw new CompanySubscriptionContractValidationError(error instanceof Error ? error.message : "Invalid subscriptions");
+    }
+    for (const [index, subscription] of subscriptions.entries()) {
+      if (subscription.company_id !== companyId2) {
+        throw new CompanySubscriptionContractValidationError(`subscriptions[${index}].company_id must match company_id`);
+      }
+    }
+    return { request_id: requestId, company_id: companyId2, subscriptions };
+  }
+  function productAccessIdentifier(input) {
+    if (typeof input !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(input)) {
+      throw new ContractValidationError("Invalid product access identifier");
+    }
+    return input;
+  }
+  function instant(input) {
+    if (typeof input !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(input) || !Number.isFinite(Date.parse(input))) {
+      throw new ContractValidationError("Invalid product access timestamp");
+    }
+    return input;
+  }
+  function parseProductAccessResponse(input) {
+    var _a;
+    if (!input || typeof input !== "object" || Array.isArray(input))
+      throw new ContractValidationError("Invalid access snapshot");
+    const value = input;
+    const request_id = productAccessIdentifier(value.request_id);
+    const company_id = productAccessIdentifier(value.company_id);
+    const product_id = productAccessIdentifier(value.product_id);
+    const external_company_id = productAccessIdentifier(
+      value.external_company_id
+    );
+    const evaluated_at = instant(value.evaluated_at);
+    const expires_at = instant(value.expires_at);
+    const evaluated = Date.parse(evaluated_at);
+    const expiry = Date.parse(expires_at);
+    if (expiry <= evaluated || expiry > evaluated + 3e4)
+      throw new ContractValidationError("Invalid grant validity");
+    if (!Array.isArray(value.subscriptions) || value.subscriptions.length > 100 || !Array.isArray(value.entitlements) || value.entitlements.length > 1e3)
+      throw new ContractValidationError("Invalid access resource count");
+    const subscriptions = parseCompanySubscriptionDirectoryResponse({
+      request_id,
+      company_id,
+      subscriptions: value.subscriptions
+    }).subscriptions;
+    const ids = /* @__PURE__ */ new Set();
+    const active = [];
+    for (const subscription of subscriptions) {
+      if (subscription.product_id !== product_id || ids.has(subscription.subscription_id))
+        throw new ContractValidationError("Invalid subscription scope");
+      for (const id of [
+        subscription.subscription_id,
+        subscription.plan_id,
+        subscription.plan_version_id
+      ])
+        productAccessIdentifier(id);
+      ids.add(subscription.subscription_id);
+      const starts = Date.parse(instant(subscription.starts_at));
+      const ends = subscription.ends_at === void 0 ? Infinity : Date.parse(instant(subscription.ends_at));
+      if (ends < starts || ends === starts && !["CANCELLED", "EXPIRED"].includes(subscription.status))
+        throw new ContractValidationError("Invalid subscription interval");
+      if (["TRIAL", "ACTIVE"].includes(subscription.status) && starts <= evaluated && evaluated < ends) {
+        active.push(subscription);
+        if (expiry > ends)
+          throw new ContractValidationError("Grant outlives subscription");
+      }
+    }
+    if (active.length > 1)
+      throw new ContractValidationError("Ambiguous effective subscriptions");
+    const entitlements = parseEntitlementsResponse({
+      request_id,
+      company_id,
+      product_id,
+      evaluated_at,
+      entitlements: value.entitlements
+    }).entitlements;
+    const codes = /* @__PURE__ */ new Set();
+    for (const entitlement of entitlements) {
+      const subscription = active.find(
+        (item) => item.subscription_id === entitlement.subscription_id && item.plan_id === entitlement.plan_id
+      );
+      if (!subscription || codes.has(entitlement.code))
+        throw new ContractValidationError(
+          "Invalid effective entitlement reference"
+        );
+      codes.add(entitlement.code);
+      productAccessIdentifier(entitlement.definition_id);
+      if (entitlement.code === "rental.rooms.max" && (entitlement.value_type !== "INTEGER" || typeof entitlement.value !== "number" || !Number.isSafeInteger(entitlement.value) || entitlement.value < 0))
+        throw new ContractValidationError("Invalid room capacity");
+      if (entitlement.code === "rental.workspace.enabled" && (entitlement.value_type !== "BOOLEAN" || typeof entitlement.value !== "boolean"))
+        throw new ContractValidationError("Invalid rental permission");
+      if (entitlement.code === "rental.rooms.unlimited" && (entitlement.value_type !== "BOOLEAN" || entitlement.value !== true))
+        throw new ContractValidationError("Invalid unlimited capacity");
+    }
+    if (codes.has("rental.rooms.max") && codes.has("rental.rooms.unlimited")) throw new ContractValidationError("Conflicting room capacity");
+    const commercialState = value.commercial_state;
+    if (commercialState !== void 0 && (typeof commercialState !== "string" || !["NONE", "TRIAL", "ACTIVE", "PAST_DUE", "SUSPENDED", "CANCELLED", "EXPIRED"].includes(commercialState))) throw new ContractValidationError("Invalid commercial state");
+    const commercialActive = ["ACTIVE", "TRIAL"].includes(String(commercialState));
+    if (commercialActive && (active.length !== 1 || ((_a = active[0]) == null ? void 0 : _a.status) !== commercialState)) throw new ContractValidationError("Invalid commercial subscription");
+    if (commercialState !== void 0 && !commercialActive && (active.length || entitlements.length)) throw new ContractValidationError("Inactive commercial grant");
+    if ((commercialActive || entitlements.some((e) => e.source === "subscription_period")) && (!codes.has("rental.rooms.max") && !codes.has("rental.rooms.unlimited") || !entitlements.some((e) => e.code === "rental.workspace.enabled" && e.value === true)))
+      throw new ContractValidationError("Missing commercial room configuration");
+    return {
+      request_id,
+      company_id,
+      product_id,
+      external_company_id,
+      evaluated_at,
+      expires_at,
+      subscriptions,
+      entitlements,
+      ...commercialState === void 0 ? {} : { commercial_state: commercialState }
+    };
+  }
   exports.bankInstructionToDto = bankInstructionToDto;
   exports.billingBody = billingBody;
   exports.billingIdentifier = billingIdentifier;
@@ -416,6 +721,7 @@ var CMWebsCoreBillingContracts = function(exports) {
   exports.parseBillingPeriodDto = parseBillingPeriodDto;
   exports.parseCommercialPlanDto = parseCommercialPlanDto;
   exports.parseCommercialTermsDto = parseCommercialTermsDto;
+  exports.parseProductAccessResponse = parseProductAccessResponse;
   Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
   return exports;
 }({});

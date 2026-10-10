@@ -31,3 +31,10 @@ test('LINE billing requires provider proof, binds CSRF to that proof, and ignore
  assert.equal(r.api.platformCoreBillingCall_({...r.request,csrf_token:init.data.csrf_token},'member/plans/query',{}).success,false);
  const email=r.api.platformCoreBillingInit_(r.request);r.response=()=>({plans:[{plan_id:'pln_fake',plan_version_id:'plv_fake',terms:{product_id:'prd_other'}}]});assert.equal(r.api.platformCoreBillingCall_({...r.request,csrf_token:email.data.csrf_token},'member/plans/query',{}).success,false);
 });
+test('Email member can explicitly attach verified LINE to the same rental User without merging another account',()=>{
+ const r=fixture(),init=r.api.platformCoreBillingInit_(r.request),request={...r.request,csrf_token:init.data.csrf_token,link_confirmed:true};
+ assert.equal(r.api.platformCoreLinkBillingLine_({...request,link_id_token:'forged-token'}).success,false);assert.equal(r.sheets.V2_users.objects()[0].line_user_id,'');
+ assert.equal(r.api.platformCoreLinkBillingLine_({...request,link_id_token:'verified-line-token',link_confirmed:false}).success,false);
+ const userId=r.sheets.V2_users.objects()[0].user_id,workspace=r.request.workspace_id,linked=r.api.platformCoreLinkBillingLine_({...request,link_id_token:'verified-line-token'});assert.equal(linked.success,true);assert.equal(r.sheets.V2_users.objects().length,1);assert.equal(r.sheets.V2_users.objects()[0].user_id,userId);assert.equal(r.sheets.V2_users.objects()[0].active_workspace_id,workspace);assert.equal(r.sheets.V2_users.objects()[0].line_user_id,'line-verified');assert.equal(r.sheets.V3_platform_core_workspace_links.objects()[0].platform_company_id,'com_fixture');
+ const another=fixture();another.api.workspaceAppendObject_(another.sheets.V2_users,{user_id:'U_OTHER',line_user_id:'line-verified',account_status:'active'});const otherInit=another.api.platformCoreBillingInit_(another.request);assert.equal(another.api.platformCoreLinkBillingLine_({...another.request,csrf_token:otherInit.data.csrf_token,link_confirmed:true,link_id_token:'verified-line-token'}).code,'AUTHORIZATION_DENIED');assert.equal(another.sheets.V2_users.objects()[0].line_user_id,'');
+});

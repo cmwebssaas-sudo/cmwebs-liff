@@ -213,6 +213,8 @@ function saveLandlordOnboardingStepByLineUid_(
     }
 
     onboardingEnsureSchema_();
+    let capacityAccess=null,preparedCapacity=null;
+    if(step==='room'){const preflight=getLandlordWorkspaceContextByLineUid_(lineUserId);if(!preflight || !preflight.success)return preflight;const context=preflight.data;capacityAccess={user:context.user,workspace:context.active_workspace,membership:context.active_membership};preparedCapacity=typeof platformCorePrepareRoomGrowth_==='function'?platformCorePrepareRoomGrowth_(capacityAccess):null;}
 
     lock.waitLock(20000);
     locked = true;
@@ -324,7 +326,9 @@ function saveLandlordOnboardingStepByLineUid_(
           workspaceId,
           userId,
           landlord,
-          payload
+          payload,
+          capacityAccess,
+          preparedCapacity
         );
     }
 
@@ -1198,7 +1202,9 @@ function onboardingSaveRoom_(
   workspaceId,
   userId,
   landlord,
-  payload
+  payload,
+  capacityAccess,
+  preparedCapacity
 ) {
   const workspaceSheet =
     ss.getSheetByName(
@@ -1411,12 +1417,15 @@ function onboardingSaveRoom_(
     );
   }
 
-  // Already inside ScriptLock: this legacy onboarding path cannot fetch a grant.
+  if(capacityAccess && capacityAccess.workspace.workspace_id!==workspaceId)throw new Error('管理團隊已變更，請重新載入');
+  // Grant was fetched before ScriptLock; recheck scope/count/expiry before writing.
   if (!existing || onboardingText_(existing.account_status || 'active').toLowerCase() !== 'active') {
-    const capacity = typeof platformCoreRejectUnpreparedGrowth_ === 'function'
-      ? platformCoreRejectUnpreparedGrowth_(workspaceId)
-      : {success: !ss.getSheetByName('V3_platform_core_workspace_links')};
-    if (!capacity.success) throw new Error('請從房間管理新增或啟用房間');
+    const capacity = capacityAccess && typeof platformCoreAssertRoomGrowth_==='function'
+      ? platformCoreAssertRoomGrowth_(ss,capacityAccess,preparedCapacity,1)
+      : typeof platformCoreRejectUnpreparedGrowth_ === 'function'
+        ? platformCoreRejectUnpreparedGrowth_(workspaceId)
+        : {success: !ss.getSheetByName('V3_platform_core_workspace_links')};
+    if (!capacity.success) throw new Error(capacity.message || '請先至會員中心確認訂閱與房間額度');
   }
 
   const landlordId =

@@ -29,7 +29,7 @@
         NONE: "無有效訂閱",
       };
       let text = labels[data.status] || "訂閱狀態待確認";
-      if (
+      if(data.room_limit && data.room_limit.mode==="UNLIMITED"){text += " · 房間 "+data.rooms_used+" · 不限房間數";} else if (
         Number.isSafeInteger(data.rooms_used) &&
         data.rooms_used >= 0 &&
         Number.isSafeInteger(data.rooms_max) &&

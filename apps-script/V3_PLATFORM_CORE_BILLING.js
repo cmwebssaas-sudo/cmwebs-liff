@@ -2,7 +2,7 @@ const PLATFORM_CORE_MODE_HEADERS_=['mode_intent_id','mode_applied_at','mode_audi
 function platformCoreBillingInit_(request) {
   try {
     const access=platformCoreResolveBillingPrincipal_(request),provision=retryCommercialWorkspaceProvisioning_(access);
-    const basic={workspace_id:access.workspace.workspace_id,workspace_name:access.workspace.workspace_name,can_purchase:['owner','admin'].indexOf(access.membership.role)>=0,csrf_token:platformCoreIssueBillingCsrf_(access),provisioning_status:provision.success?'READY':'PROVISIONING_PENDING'};
+    const basic={workspace_id:access.workspace.workspace_id,workspace_name:access.workspace.workspace_name,line_linked:!!access.user.line_user_id,can_purchase:['owner','admin'].indexOf(access.membership.role)>=0,csrf_token:platformCoreIssueBillingCsrf_(access),provisioning_status:provision.success?'READY':'PROVISIONING_PENDING'};
     if(!provision.success)return workspaceResult_(true,'PROVISIONING_PENDING','訂閱帳號等待連線，請重試',basic);
     const me=platformCoreSendVerifiedHuman_(access,'admin/me',{},undefined),link=platformCoreReadWorkspaceLink_(access.workspace.workspace_id);
     return workspaceResult_(true,'OK','',{...basic,company_id:me.company_id,product_id:me.product_id,mode:link.mode,me:me.me});
@@ -40,9 +40,27 @@ function platformCoreApplyBillingMode_(request,workspaceId,mode,reason,key) {
   }catch(error){return platformCoreBillingFailure_(error);}
 }
 function platformCoreDispatchBilling_(action,request) {
+  if(action==='commercial_billing_link_line')return platformCoreLinkBillingLine_(request);
   if(action==='commercial_billing_init')return platformCoreBillingInit_(request);
   if(action==='commercial_billing_retry_provisioning')return platformCoreRetryBillingProvisioning_(request);
   if(action==='commercial_billing_workspace_mode')return platformCoreApplyBillingMode_(request,request.target_workspace_id,request.mode,request.reason,request.idempotency_key);
   if(action==='commercial_billing'){let payload;try{payload=JSON.parse(request.payload_json);}catch(_){return platformCoreBillingFailure_(platformCoreBillingError_('INVALID_REQUEST'));}return platformCoreBillingCall_(request,request.operation,payload,request.idempotency_key || undefined);}
   return platformCoreBillingFailure_(platformCoreBillingError_('INVALID_REQUEST'));
+}
+/** Explicit self-link: both Email login and a provider-verified LINE token required. */
+function platformCoreLinkBillingLine_(request) {
+  try {
+    if(!request.landlord_session_token || (request.link_confirmed!==true && request.link_confirmed!=='true'))throw platformCoreBillingError_('AUTHENTICATION_REQUIRED');
+    const access=platformCoreResolveBillingPrincipal_(request);platformCoreVerifyBillingCsrf_(access,request.csrf_token);
+    const verified=commercialRegistrationVerifyLineToken_(request.link_id_token || '');if(!verified || !verified.success)throw platformCoreBillingError_('AUTHENTICATION_REQUIRED');
+    const lineId=verified.data.line_user_id,lock=LockService.getScriptLock();
+    try {
+      lock.waitLock(5000);const ss=runtimeSpreadsheet_(),users=ss.getSheetByName('V2_users'),rows=workspaceGetObjectsWithRow_(users),user=rows.find(function(row){return row.user_id===access.user.user_id;}),workspace=workspaceGetObjectsWithRow_(ss.getSheetByName('V2_workspaces')).find(function(row){return row.workspace_id===access.workspace.workspace_id;}),members=workspaceGetObjectsWithRow_(ss.getSheetByName('V2_workspace_members')),member=members.find(function(row){return row.user_id===access.user.user_id && row.workspace_id===access.workspace.workspace_id;});
+      if(!user || user.account_status!=='active' || user.active_workspace_id!==access.workspace.workspace_id || !workspace || workspace.account_status!=='active' || !member || member.member_status!=='active' || (user.line_user_id && user.line_user_id!==lineId) || rows.some(function(row){return row.line_user_id===lineId && row.user_id!==user.user_id;}))throw platformCoreBillingError_('AUTHORIZATION_DENIED');
+      const now=workspaceNowIso_();landlordEmailAuthUpdateRow_(users,user,{line_user_id:lineId,updated_at:now});members.filter(function(row){return row.user_id===user.user_id;}).forEach(function(row){landlordEmailAuthUpdateRow_(ss.getSheetByName('V2_workspace_members'),row,{line_user_id:lineId,updated_at:now});});
+      const landlords=ss.getSheetByName('V2_landlords');workspaceGetObjectsWithRow_(landlords).filter(function(row){return (row.user_id || row.landlord_user_id)===user.user_id;}).forEach(function(row){landlordEmailAuthUpdateRow_(landlords,row,{line_user_id:lineId,landlord_line_user_id:lineId,updated_at:now});});
+      workspaceWriteActivityLog_({workspace_id:access.workspace.workspace_id,user_id:user.user_id,membership_id:member.membership_id,line_user_id:lineId,action:'commercial_self_line_linked',target_type:'user',target_id:user.user_id,result:'success',detail:'Verified Email session and verified LINE with explicit consent'});SpreadsheetApp.flush();
+      return workspaceResult_(true,'OK','LINE 已連接，沿用原帳號與工作區',{line_linked:true,workspace_id:access.workspace.workspace_id});
+    }finally{try{lock.releaseLock();}catch(_){}}
+  }catch(error){return platformCoreBillingFailure_(error);}
 }

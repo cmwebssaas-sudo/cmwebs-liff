@@ -154,7 +154,7 @@ function commercialRegistrationCreateLocked_(type, identityKey, lineUserId, inpu
     if (!intent) {
         if (workspaceGetObjectsWithRow_(users).some(function (u) { return workspaceNormalizeTaiwanPhone_(u.phone) === input.phone; }))
             throw new Error('Phone already registered');
-        const unique = function (prefix) { return prefix + Utilities.getUuid().replace(/-/g, ''); };
+        const unique = function (prefix) { return prefix + Utilities.getUuid().replace(/-/g, '').toUpperCase(); };
         intent = { identity_type: type, identity_key: identityKey, input_json: JSON.stringify(input), user_id: unique('U'), workspace_id: unique('W'), landlord_id: unique('L'), membership_id: unique('WM'), status: 'CREATING', created_at: now, updated_at: now };
         workspaceAppendObject_(intents, intent);
         intent = workspaceGetObjectsWithRow_(intents).find(function (r) { return r.identity_type === type && r.identity_key === identityKey; });

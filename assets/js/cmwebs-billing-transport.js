@@ -19,6 +19,7 @@
     return {
       initialize,
       async request(operation,payload,key){try{return await post('commercial_billing',Object.assign(await bound(),{operation:operation,payload_json:JSON.stringify(payload),...(key?{idempotency_key:key}:{})}));}catch(e){return {error:{code:e.code||'SERVICE_UNAVAILABLE'}};}},
+      async linkLine(){if(auth.getMode()!=='email')throw error('AUTHENTICATION_REQUIRED');if(!window.liff)throw error('AUTHENTICATION_REQUIRED');await window.liff.init({liffId:options.liffId});if(!window.liff.isLoggedIn()){window.liff.login({redirectUri:window.location.href});throw error('AUTHENTICATION_REQUIRED');}return post('commercial_billing_link_line',Object.assign(await bound(),{link_confirmed:true,link_id_token:window.liff.getIDToken()}));},
       async retryProvisioning(){return post('commercial_billing_retry_provisioning',await bound());},
       async applyMode(body,key){return post('commercial_billing_workspace_mode',Object.assign(await bound(),{target_workspace_id:body.external_workspace_id,mode:body.mode,reason:body.reason,idempotency_key:key}));}
     };

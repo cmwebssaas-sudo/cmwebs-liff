@@ -283,7 +283,7 @@ function doGet(e) {
   let lineUserId =
     e.parameter.line_user_id || '';
 
-  if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode'].indexOf(v2Action) >= 0) {
+  if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode','commercial_billing_link_line'].indexOf(v2Action) >= 0) {
     return ContentService.createTextOutput(JSON.stringify({success:false,code:'POST_REQUIRED',message:'請使用安全登入頁送出'})).setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -2761,7 +2761,7 @@ function doPost(e) {
             .trim() === 'bridge';
         let result = null;
 
-        if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode'].indexOf(action) >= 0) {
+        if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode','commercial_billing_link_line'].indexOf(action) >= 0) {
           result = platformCoreDispatchBilling_(action, request);
           return useBridge ? htmlBridgeOutput_(result, request.request_id || '') : ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
         }

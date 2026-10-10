@@ -1,5 +1,5 @@
 const COMMERCIAL_MEMBER_PROVISIONING_SHEET_ = 'V3_platform_core_member_provisioning';
-const COMMERCIAL_MEMBER_PROVISIONING_HEADERS_ = ['workspace_id', 'user_id', 'status', 'idempotency_key', 'attempted_at', 'last_error_code', 'created_at', 'updated_at'];
+const COMMERCIAL_MEMBER_PROVISIONING_HEADERS_ = ['workspace_id', 'user_id', 'status', 'idempotency_key', 'attempted_at', 'last_error_code', 'created_at', 'updated_at', 'workspace_display_name'];
 function platformCoreProvisionTransport_(access, operation, payload, key) {
     if (typeof platformCoreSendVerifiedHuman_ !== 'function')
         throw new Error('CORE_NOT_CONFIGURED');
@@ -28,11 +28,14 @@ function provisionCommercialWorkspaceMember_(access, idempotencyKey) {
             return commercialRegistrationResult_(true, 'READY', '訂閱帳號已連線', { workspace_id: workspaceId });
         const now = workspaceNowIso_();
         if (!record) {
-            workspaceAppendObject_(sheet, { workspace_id: workspaceId, user_id: userId, status: 'PROVISIONING_PENDING', idempotency_key: key, attempted_at: now, last_error_code: '', created_at: now, updated_at: now });
+            workspaceAppendObject_(sheet, { workspace_id: workspaceId, user_id: userId, status: 'PROVISIONING_PENDING', idempotency_key: key, attempted_at: now, last_error_code: '', created_at: now, updated_at: now, workspace_display_name: storedWorkspace.workspace_name || workspaceId });
             record = workspaceGetObjectsWithRow_(sheet).find(function (r) { return r.workspace_id === workspaceId && r.user_id === userId; });
         }
-        else
-            landlordEmailAuthUpdateRow_(sheet, record, { attempted_at: now, updated_at: now });
+        else {
+            const name=record.workspace_display_name || storedWorkspace.workspace_name || workspaceId;
+            landlordEmailAuthUpdateRow_(sheet, record, { attempted_at: now, updated_at: now, workspace_display_name: name });
+            record.workspace_display_name=name;
+        }
     }
     catch (_) {
         return commercialRegistrationResult_(false, 'PROVISIONING_PENDING', '訂閱帳號等待連線，請稍後重試');
@@ -45,7 +48,7 @@ function provisionCommercialWorkspaceMember_(access, idempotencyKey) {
     }
     let result;
     try {
-        result = platformCoreProvisionTransport_(access, 'provision', { workspace_display_name: access.workspace.workspace_name || workspaceId, role: role }, record.idempotency_key);
+        result = platformCoreProvisionTransport_(access, 'provision', { workspace_display_name: record.workspace_display_name, role: role }, record.idempotency_key);
         const product = PropertiesService.getScriptProperties().getProperty('CMWEBS_PLATFORM_CORE_PRODUCT_ID');
         if (!result || result.status !== 'READY' || result.product_id !== product || result.external_workspace_id !== workspaceId || !/^com_[A-Za-z0-9_-]+$/.test(String(result.company_id || '')) || !/^usr_[A-Za-z0-9_-]+$/.test(String(result.platform_user_id || '')))
             throw new Error('Invalid provision scope');
