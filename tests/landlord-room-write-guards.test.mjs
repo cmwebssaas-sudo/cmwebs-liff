@@ -93,7 +93,7 @@ test('review-needed room offers neither desktop nor mobile edit/archive actions'
 function archiveFixture(kind, roomStatus = 'vacant', tenantStatus = 'active', role = 'owner', activeContract = false) {
   let writes = 0;
   const lock = { waitLock() {}, releaseLock() {} };
-  const ss = { getSheetByName: name => ({ name }) };
+  const ss = { getSheetByName: name => name === 'V3_platform_core_workspace_links' ? null : ({ name }) };
   const context = vm.createContext({
     String, Date, Number,
     LockService: { getScriptLock: () => lock },
@@ -126,6 +126,8 @@ function archiveFixture(kind, roomStatus = 'vacant', tenantStatus = 'active', ro
     extract(backend, 'propertyRoomCanWrite_'),
     extract(backend, 'propertyRoomRequireWrite_'),
     extract(backend, 'propertyRoomHasActiveTenantLink_'),
+    extract(backend, 'propertyRoomPlatformCorePrepare_'),
+    extract(backend, 'propertyRoomPlatformCoreAssert_'),
     extract(backend, 'saveLandlordRoomByLineUid_'),
     extract(backend, kind === 'property'
       ? 'archiveLandlordPropertyByLineUid_' : 'archiveLandlordRoomByLineUid_')

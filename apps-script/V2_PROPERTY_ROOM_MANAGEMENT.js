@@ -1525,6 +1525,8 @@ function saveLandlordRoomByLineUid_(
       );
     }
 
+    const platformCorePrepared = propertyRoomPlatformCorePrepare_(access);
+
     lock.waitLock(20000);
     locked = true;
 
@@ -1659,6 +1661,10 @@ function saveLandlordRoomByLineUid_(
       roomStatus =
         'occupied';
     }
+
+    const platformCoreGrowth = !existing || propertyRoomText_(existing.account_status || 'active').toLowerCase() !== 'active' ? 1 : 0;
+    const platformCoreGuard = propertyRoomPlatformCoreAssert_(ss, access, platformCorePrepared, platformCoreGrowth);
+    if (!platformCoreGuard.success) return platformCoreGuard;
 
     const now =
       new Date();
@@ -1889,6 +1895,8 @@ function setLandlordRoomAccountToggleByLineUid_(
         enabled
       );
 
+    const platformCorePrepared = propertyRoomPlatformCorePrepare_(access);
+
     lock.waitLock(20000);
     locked = true;
 
@@ -1919,6 +1927,10 @@ function setLandlordRoomAccountToggleByLineUid_(
         room.account_status || 'active'
       )
         .toLowerCase();
+
+    const platformCoreGrowth = targetStatus === 'active' && currentStatus !== 'active' ? 1 : 0;
+    const platformCoreGuard = propertyRoomPlatformCoreAssert_(ss, access, platformCorePrepared, platformCoreGrowth);
+    if (!platformCoreGuard.success) return platformCoreGuard;
 
     if (currentStatus !== targetStatus) {
       const actor =
@@ -5837,4 +5849,15 @@ function testLandlordPropertiesInit() {
   );
 
   return result;
+}
+
+// Preserve old deployments only when no Core mapping schema exists.
+function propertyRoomPlatformCorePrepare_(access) {
+  if (typeof platformCorePrepareRoomGrowth_ === 'function') return platformCorePrepareRoomGrowth_(access);
+  return {mode:runtimeSpreadsheet_().getSheetByName('V3_platform_core_workspace_links') ? 'enforce' : 'legacy',grant:null};
+}
+function propertyRoomPlatformCoreAssert_(ss, access, prepared, delta) {
+  if (typeof platformCoreAssertRoomGrowth_ === 'function') return platformCoreAssertRoomGrowth_(ss, access, prepared, delta);
+  if (delta === 0 || (!ss.getSheetByName('V3_platform_core_workspace_links') && prepared.mode === 'legacy')) return {success:true,code:'OK'};
+  return {success:false,code:'SUBSCRIPTION_MODULE_REQUIRED',message:'訂閱模組未就緒'};
 }
