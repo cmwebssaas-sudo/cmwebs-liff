@@ -7,3 +7,5 @@ The auto path returned the settlement result envelope instead of the persisted r
 No matching/amount/payment rules, triggers, scopes, Properties, schema or frontend change. No manual production scan, financial mutation or real notification test. Rollback: existing Web App/editor HEAD224; frontend unchanged. Private original HEAD/immutable224 exports: /Users/hans/CMWebs/cmwebs-auto-notice-u1xl343v;61 files matched fresh main b96499a.
 
 Validation:729 full tests,42 bank runtime tests, validate/diff-check. Independent review repaired partial-delivery retry. Production publication evidence follows.
+
+Publication: candidate HEAD and immutable225 each61 files byte-identical. Existing formal Web App repointed225 at same URL; other4 deployments unchanged. Rollback224 retained. Original Gmail worker uses updated HEAD; no manual intake run or real notification test. PR251 contains source and evidence; phone receipt remains UNVERIFIED.
