@@ -365,9 +365,11 @@ function provisionPlatformCoreWorkspaceLink(options) {
   if (
     options.environment !== "staging" ||
     ["legacy", "observe"].indexOf(options.mode) < 0 ||
-    !platformCoreText_(options.reason)
+    !platformCoreText_(options.reason) || platformCoreText_(options.reason).length > 200
   )
     throw new Error("PROVISIONING_SCOPE_REQUIRED");
+  const editorEmail = platformCoreText_(Session.getEffectiveUser().getEmail());
+  if (!editorEmail) throw new Error("EDITOR_IDENTITY_REQUIRED");
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -394,7 +396,7 @@ function provisionPlatformCoreWorkspaceLink(options) {
     const audited = workspaceRecordOperationActor_(
       {
         workspace: { workspace_id: workspaceId },
-        user: { user_id: "EDITOR", name: "Apps Script editor" },
+        user: { user_id: "EDITOR", name: "editor=" + editorEmail },
         membership: { role: "editor" },
       },
       "platform_core.workspace_link.provision",
@@ -402,7 +404,8 @@ function provisionPlatformCoreWorkspaceLink(options) {
       {
         target_type: "platform_core_link",
         target_id: workspaceId,
-        note: platformCoreText_(options.reason),
+        secondary_target_id: company,
+        detail: "product=" + product + "; mode=" + options.mode + "; reason=" + platformCoreText_(options.reason),
       },
     );
     if (!audited || !audited.success) throw new Error("AUDIT_FAILED");

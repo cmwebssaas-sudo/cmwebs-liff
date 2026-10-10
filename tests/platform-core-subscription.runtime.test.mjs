@@ -291,6 +291,7 @@ test("editor provisioning requires canonical workspace and successful audit befo
   };
   s.ctx.runtimeSpreadsheet_ = () => ss;
   s.ctx.workspaceGetObjectsWithRow_ = () => [{ workspace_id: "WS_FIXTURE" }];
+  s.ctx.Session = {getEffectiveUser:()=>({getEmail:()=>"operator@example.test"})};
   s.ctx.LockService = {
     getScriptLock: () => ({ waitLock() {}, releaseLock() {} }),
   };
@@ -311,8 +312,11 @@ test("editor provisioning requires canonical workspace and successful audit befo
     /AUDIT_FAILED/,
   );
   assert.equal(appended, 0);
-  s.ctx.workspaceRecordOperationActor_ = () => {
+  s.ctx.workspaceRecordOperationActor_ = (actor, action, result, meta) => {
     audits++;
+    assert.match(actor.user.name,/operator@example.test/);
+    assert.equal(meta.secondary_target_id,"com_fixture");
+    assert.match(meta.detail,/product=prd_fixture; mode=observe; reason=isolated test/);
     return { success: true };
   };
   assert.equal(s.ctx.provisionPlatformCoreWorkspaceLink(options).success, true);
