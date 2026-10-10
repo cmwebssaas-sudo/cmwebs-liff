@@ -133,8 +133,9 @@ product profile/CM adapter, a separate AI-00 production database/readonly
 credential and W000001 observe binding. No Plan, Subscription, fee or room quota
 is created. Do not disguise the owner as a staging fixture or assign the test
 two-room quota. RED production refusal reproduced; GREEN CM770/Core361 pass.
-Host provisioning, formal credential/mapping and authenticated summary still
-require completion. Admin runtime/staging migration stay restricted.
+Host provisioning and formal credential injection are complete. Formal audited
+mapping and authenticated summary await owner consent/login. Admin runtime
+and staging migration stay restricted.
 
 2026-10-11 Pages PR252 merged396f4de, build completed and51 public files match
 byte-for-byte. The new production-environment candidate changes no frontend
@@ -149,3 +150,27 @@ A regression reproduced the missing scope, and the complete suite now passes
 771 tests (including four cross-repository checks) plus validate/diff-check.
 Human Google consent is separate from source verification and must complete
 before formal mapping activation is claimed.
+
+## Formal rollout checkpoint
+
+CorePR50 merged627a422 after exact-head production PostgreSQL runtime CI.
+Separate productionDB/reader/API14102 on verified ai-00 and the specifically
+confirmed core.cmwebs.com DNS are live. Actual public scoped200/anonymous401,
+Company/Product403, staging credential401, local admin404 and SQLwrite42501 pass.
+Production local restore verifies nine migrations, exact canonical link and
+zero Plans/Subscriptions. Four formal Core Properties securely saved,23 total
+key names verified without existing values. No fees or room-limit enforcement.
+
+Formal Web App22763 files match153964e at its original URL, other four deployments
+unchanged. Missing editor-email scope denied provisioning before a binding write.
+Repair1e5d61f adds only userinfo.email;771 tests/validate pass. Prepared immutable
+22863 files matches that repair; it is not serving. Editor HEAD was restored to
+227, removing the temporary operator, while owner Google consent is pending.
+The owner consent page shows the original project title 綠界結帳; do not create
+another project, bypass its warning, or treat an Email login as Google consent.
+Rental browser also needs actual Email/LINE login; never retrieve OTP. After
+consent, promote exact228, run the editor-only audited observe provisioner for
+W000001, verify real Google round-trip, remove only the operator, and inspect
+the authenticated subscription card. Preserve legacy until that run passes.
+Rollback backend226/Pages396f4de, or restore the new mapping to legacy after
+activation; preserve all financial/history rows, LINE and existing triggers.
