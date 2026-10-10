@@ -63,3 +63,5 @@ Use an isolated worktree, preserve unrelated dirty work, stage only in-scope
 files, and test proportionately. Do not deploy, push, merge, change Production
 data, Properties, triggers, LINE, LIFF, GitHub Pages, or external accounts
 without specific authorization. Never store or reveal secret values.
+
+- 2026-10-10 user-authorized native repair dispatch publication: fresh serving223/editor HEAD60 files matched main; immutable22461 files matched candidate; original Web App224, other4 unchanged. Owner initialized10-column event table/private folder;724 tests and validate pass. Tag20261010-repair-dispatch-v1. Rollback223/e7fd413. See REPAIR-DISPATCH-INTEGRATION.md. No business dispatch/LINE sends; real device unverified.

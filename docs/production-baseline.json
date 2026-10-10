@@ -4,7 +4,7 @@
   "backend_verified_on": "2026-10-10",
   "backend_source_commit": "aeda946",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 223,
+  "backend_version": 224,
   "room_photo_share_occupancy_release": {
     "verified_on": "2026-10-07",
     "source_commit": "b8a409e0581613b580471e527bd540aa28d4417a",
@@ -383,6 +383,12 @@
     "rollback_frontend_revision": "e7fd413d2a34dc26a5e8f00bfbc26917aacba566",
     "tests_passed": 724,
     "head_files_matched": 61,
-    "status": "Candidate HEAD verified; additive storage initialization in progress; not yet served"
+    "status": "Original serving223/editor HEAD60 files matched main. Candidate HEAD and immutable22461 files byte-identical. Original deployment now224; other4 unchanged. Owner editor initialized10-column event table/private folder. Pages publication in progress.",
+    "backend_version": 224,
+    "immutable_files_matched": 61,
+    "storage_headers_verified": 10,
+    "private_folder_initialized": true,
+    "new_trigger_installed": false,
+    "line_messages_sent": 0
   }
 }

@@ -65,3 +65,7 @@ Pages恢復發布前revision，保留附加事件表、私有附件及已完成�
 
 journal逐表掃描、完整快照與45000字元上限是目前容量邊界；達上限拒絕新增而不刪歷史。
 人工分享不等於自動發送或LINE送達；真實file/provider/手機尚未驗收。
+
+## Authorized production publication 2026-10-10
+
+User explicitly requested Production deployment. Fresh main e7fd413; serving223 and editor HEAD each60 files byte-identical to main. Private rollback exports: /Users/hans/CMWebs/cmwebs-repair-production-pc6erl41. Candidate HEAD and immutable224 each61 files byte-identical; original manifest/scopes unchanged. Original Web App now224; other4 deployments unchanged. Owner editor initializeRepairDispatchStorage completed:10 headers and private folder ready. Only additive empty table, dedicated private folder and one folder property created; no business repair/partner/billing rows written. No new triggers or LINE sends. Shared frontend tag20261010-repair-dispatch-v1;724/724 tests and validate pass. Rollback same Web App223/editor HEAD backup223 and Pages e7fd413; preserve event table/private attachments. Real phone LIFF/upload/acceptance unverified. Pages readback follows.
