@@ -79,9 +79,20 @@ and a separate SELECT-only product runtime with credential revocation.
 Run CMWebs integration test with PLATFORM_CORE_TEST_WORKTREE set to the Core
 checkout. Otherwise its four round-trip tests explicitly skip.
 
-No real Core HTTPS host, Product/Company/link, secure credential injection or
-isolated Sheet has been identified. Live connection, production subscription
-activation and authenticated phone/browser UI acceptance remain UNVERIFIED.
+2026-10-11: Core product-read-only staging runtime and an independent PostgreSQL
+database are installed on the verified AI-00 host. HTTPS origin is
+https://core-staging.cmwebs.com; readiness200, scoped access200, anonymous401,
+Company/Product403, suspension/revocation and SELECT-only SQL checks passed.
+The actual CMWebs adapter/capacity code in a local VM calling that live
+HTTPS/PostgreSQL target also allowed the last available room and denied excess
+capacity and Workspace mismatch. This is not real Google UrlFetch execution.
+The Core fixture Workspace WS_CORE_STAGING_20261011 is synthetic, not a
+canonical Workspace in the serving rental Sheet. Secure Script Properties
+injection, an isolated canonical Sheet/Workspace mapping, production
+subscription activation and authenticated phone/browser UI acceptance remain
+UNVERIFIED. No serving rental source, Sheet or Properties were changed during
+the AI-00 installation. See Core docs/AI00_PRODUCT_READ_DEPLOYMENT.md for host
+identity, private configuration paths, local backup/restore and rollback.
 Default mapping absence keeps production legacy; do not set enforce from local
 suite success. Existing rent, tenant payments, leases, repairs and LINE sends
 are unaffected by subscription denial. No real financial/tenant test writes.
