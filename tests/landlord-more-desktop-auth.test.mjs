@@ -18,6 +18,8 @@ let token = 'session-present';
 const bridgeActions = [];
 const lineActions = [];
 let lineLoginCalls = 0;
+let idTokenCalls = 0;
+const subscriptionRequests = [];
 let replaced = '';
 const dom = new Map();
 const element = () => ({
@@ -34,6 +36,10 @@ const auth = {
   async request(action) {
     bridgeActions.push(action);
     return { success: true, data: { summary: { pending: 0 } } };
+  },
+  async requestProtected(action, params) {
+    subscriptionRequests.push({ action, params });
+    return { success: true, data: { mode: 'observe', status: 'NONE', rooms_used: 21, rooms_max: null } };
   },
   handleAuthFailure() { return false; }
 };
@@ -64,6 +70,11 @@ const context = {
   liff: {
     async init() { lineLoginCalls++; },
     isLoggedIn() { return true; },
+    getIDToken() {
+      idTokenCalls++;
+      if (!lineLoginCalls) throw new Error('LIFF is not initialized');
+      return 'isolated-line-id-token';
+    },
     async getProfile() { return { userId: 'line-user' }; }
   },
   visualViewport: { height: 900, addEventListener() {} },
@@ -73,6 +84,7 @@ const context = {
 };
 context.window = context;
 vm.createContext(context);
+vm.runInContext(readFileSync(new URL('../platform-core-subscription.js', import.meta.url), 'utf8'), context);
 vm.runInContext(script.replace(/\n\s*loadSummary\(\);\s*$/, '\n'), context);
 
 assert.equal(await context.ensureLandlordAuthReady(), true);
@@ -81,6 +93,13 @@ const emailResult = await context.jsonpRequest('landlord_workspace_context', {})
 assert.equal(emailResult.success, true);
 assert.deepEqual(bridgeActions, ['landlord_workspace_context']);
 assert.deepEqual(lineActions, []);
+
+await context.loadSummary();
+assert.match(dom.get('platformCoreSubscriptionStatus').textContent, /無有效訂閱/,
+  'Email subscription card must reach the protected backend while LIFF remains uninitialized');
+assert.equal(idTokenCalls, 0, 'Email subscription reads must not call the LINE SDK');
+assert.equal(subscriptionRequests[0].action, 'landlord_subscription_init');
+assert.equal(subscriptionRequests[0].params.id_token, undefined);
 
 token = '';
 assert.equal(await context.ensureLandlordAuthReady(), false);
@@ -94,5 +113,10 @@ assert.equal(await context.ensureLandlordAuthReady(), true);
 assert.equal(lineLoginCalls, 1);
 await context.jsonpRequest('landlord_workspace_context', {});
 assert.deepEqual(lineActions, ['landlord_workspace_context']);
+
+await context.loadSummary();
+assert.match(dom.get('platformCoreSubscriptionStatus').textContent, /無有效訂閱/);
+assert.equal(idTokenCalls, 1, 'LINE subscription reads must retain verified ID-token transport');
+assert.equal(subscriptionRequests[1].params.id_token, 'isolated-line-id-token');
 
 console.log('Landlord More desktop Email authentication regression passed.');

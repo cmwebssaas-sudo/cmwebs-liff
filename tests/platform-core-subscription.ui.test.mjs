@@ -9,6 +9,16 @@ function setup() {
   const container = { textContent: "", setAttribute() {} };
   return { mount: window.CMWebsPlatformCoreSubscription.mount, container };
 }
+test("observe summary shows actual rooms when no quota is configured", async () => {
+  const s = setup();
+  await s.mount({
+    container: s.container,
+    request: async () => ({success:true, data:{mode:"observe",status:"NONE",rooms_used:21,rooms_max:null}}),
+  });
+  assert.match(s.container.textContent, /房間 21/);
+  assert.match(s.container.textContent, /未設定房間上限/);
+  assert.doesNotMatch(s.container.textContent, /21 \/ 0|超出/);
+});
 for (const [data, pattern] of [
   [{ mode: "legacy" }, /尚未連接訂閱/],
   [

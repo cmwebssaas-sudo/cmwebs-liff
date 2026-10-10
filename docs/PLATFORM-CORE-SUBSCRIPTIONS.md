@@ -18,8 +18,8 @@ an audit through the existing operation audit module before binding; audit
 failure denies provisioning. No browser route changes mappings. Provisioning
 cannot choose enforce. An operator must first prove an isolated observe and
 room-capacity round-trip before explicitly setting a validated row to enforce.
-The helper has run only against the new isolated acceptance Sheet, with no
-real rental records. No formal landlord Workspace has been provisioned.
+The helper first ran against the isolated acceptance Sheet. After explicit owner
+consent, it audited and bound only formal W000001 in observe.
 
 `V3_platform_core_workspace_links` columns: workspace_id, platform_company_id,
 product_id, status, mode, linked_at, updated_at. Missing Sheet or missing row
@@ -101,7 +101,7 @@ Default mapping absence keeps production legacy; do not set enforce from local
 suite success. Existing rent, tenant payments, leases, repairs and LINE sends
 are unaffected by subscription denial. No real financial/tenant test writes.
 
-## Release and rollback
+## Historical initial release and rollback (superseded by formal checkpoint)
 
 2026-10-11 backend publication: fresh serving225 and editor HEAD matched all61
 files from main9388ab9. Candidate HEAD and immutable226 match all63 intentional
@@ -133,8 +133,8 @@ product profile/CM adapter, a separate AI-00 production database/readonly
 credential and W000001 observe binding. No Plan, Subscription, fee or room quota
 is created. Do not disguise the owner as a staging fixture or assign the test
 two-room quota. RED production refusal reproduced; GREEN CM770/Core361 pass.
-Host provisioning and formal credential injection are complete. Formal audited
-mapping and authenticated summary await owner consent/login. Admin runtime
+Host provisioning and formal credential injection are complete. Formal audited mapping and actual Google round-trip now pass; the logged-in
+Email card repair awaits frontend publication and acceptance. Admin runtime
 and staging migration stay restricted.
 
 2026-10-11 Pages PR252 merged396f4de, build completed and51 public files match
@@ -161,16 +161,20 @@ Production local restore verifies nine migrations, exact canonical link and
 zero Plans/Subscriptions. Four formal Core Properties securely saved,23 total
 key names verified without existing values. No fees or room-limit enforcement.
 
-Formal Web App22763 files match153964e at its original URL, other four deployments
-unchanged. Missing editor-email scope denied provisioning before a binding write.
-Repair1e5d61f adds only userinfo.email;771 tests/validate pass. Prepared immutable
-22863 files matches that repair; it is not serving. Editor HEAD was restored to
-227, removing the temporary operator, while owner Google consent is pending.
-The owner consent page shows the original project title 綠界結帳; do not create
-another project, bypass its warning, or treat an Email login as Google consent.
-Rental browser also needs actual Email/LINE login; never retrieve OTP. After
-consent, promote exact228, run the editor-only audited observe provisioner for
-W000001, verify real Google round-trip, remove only the operator, and inspect
-the authenticated subscription card. Preserve legacy until that run passes.
-Rollback backend226/Pages396f4de, or restore the new mapping to legacy after
-activation; preserve all financial/history rows, LINE and existing triggers.
+Owner completed the original project's Google consent and existing rental login.
+Actual Google UrlFetch passed exact canonical W000001 without subscription or quota;
+the audited provisioner wrote one LINKED observe row, verified by bounded formal
+A1:G3 readback. Real adapter summary reported21 active rooms, max=null and NONE.
+Formal serving/editor22863 files match1e5d61f; original URL/other4 deployments
+preserved and temporary operator removed. Preserve rollback227 and prior226.
+
+The logged-in Email card failed before any subscription network request. A one-use
+safe diagnostic reported LIFF_NOT_INITIALIZED and restored its wrapper. The More
+page now obtains a LINE ID token only in LINE mode, retaining normal verified
+Email-session transport. Observe with null quota shows actual room count and
+unset limit without inventing unlimited entitlement. Regression first failed on
+the real page script/card, then passed; full772 tests/crossrepo4 and validate pass.
+Frontend tag20261011-core-subscription-v2 awaits publication and normal logged-in
+UI acceptance. Frontend rollbackedf13f9; mapping can be restored to legacy via an
+audited operator if needed. No Plan/Subscription/fee/quota/enforce/financial write
+or LINE send, and no existing credentials read, OTP capture or principal bypass.
