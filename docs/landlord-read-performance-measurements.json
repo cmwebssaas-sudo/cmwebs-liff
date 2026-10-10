@@ -1,0 +1,102 @@
+{
+  "date": "2026-10-11",
+  "backend_version": 229,
+  "frontend_commit": "e3e51c2d8c713aef988b7eb6279d596e008c064f",
+  "browser": "Chrome desktop, same account, user manually completed Email login in a fresh tab",
+  "metric": "request start to response headers, seconds; includes network, Google platform and backend; not full render latency or p95",
+  "overall_performance_acceptance": "FAILED",
+  "before": {
+    "session_restore_timeout_seconds": 24.999,
+    "session_restore_headers_received": false,
+    "home_primary_seconds": 9.745,
+    "home_secondary_cumulative_seconds": 22.014,
+    "properties_seconds": [
+      12.059,
+      11.697
+    ]
+  },
+  "samples": [
+    {
+      "name": "email-session-restore-1",
+      "session_seconds": 4.357,
+      "session_outcome": "restored",
+      "home_primary_seconds": 10.223,
+      "home_status": 200,
+      "home_outcome": "API timeout shown; response headers do not establish successful bridge/render"
+    },
+    {
+      "name": "home-refresh-1",
+      "home_primary_seconds": 9.347,
+      "revenue_wait_seconds": 7.895,
+      "revenue_start_seconds": 12.388,
+      "actions_wait_seconds": 9.346,
+      "actions_start_seconds": 12.391,
+      "secondary_cumulative_seconds": 21.737,
+      "outcome": "loaded"
+    },
+    {
+      "name": "properties-first",
+      "seconds": 5.998,
+      "outcome": "loaded"
+    },
+    {
+      "name": "properties-refresh",
+      "seconds": null,
+      "outcome": "UI loaded; missing network capture; excluded from timing comparison"
+    },
+    {
+      "name": "email-session-restore-2",
+      "seconds": null,
+      "outcome": "restored and homepage loaded; missing network capture; excluded from timing comparison"
+    },
+    {
+      "name": "properties-navigation-2",
+      "seconds": 8.451,
+      "outcome": "loaded"
+    },
+    {
+      "name": "properties-refresh-2",
+      "seconds": 5.782,
+      "outcome": "loaded"
+    },
+    {
+      "name": "email-session-restore-3",
+      "session_seconds": 3.819,
+      "home_primary_seconds": 8.508,
+      "revenue_wait_seconds": 6.476,
+      "actions_wait_seconds": 10.555,
+      "secondary_cumulative_seconds_from_home_start": 19.595,
+      "timeline_from_session_start": [
+        {
+          "action": "session_status",
+          "start": 0,
+          "response_headers": 3.819
+        },
+        {
+          "action": "home",
+          "start": 4.466,
+          "response_headers": 12.974
+        },
+        {
+          "action": "revenue",
+          "start": 13.503,
+          "response_headers": 19.979
+        },
+        {
+          "action": "actions",
+          "start": 13.506,
+          "response_headers": 24.061
+        }
+      ],
+      "outcome": "restored and homepage loaded"
+    }
+  ],
+  "limits": [
+    "Small sequential sample, not a load test or reliable percentile estimate",
+    "Two missing network captures excluded, not recorded as zero",
+    "One homepage timeout retained in acceptance result; root cause unresolved",
+    "Fresh OTP send/verify timing, physical LINE device and subscription concurrency not tested",
+    "No credentials, business values, raw URLs, request bodies or responses saved in this report",
+    "No business mutations or LINE sends; final home UI loaded and network capture disabled"
+  ]
+}
