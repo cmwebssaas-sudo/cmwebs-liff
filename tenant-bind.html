@@ -9,7 +9,7 @@
   <title>CMWebs 房客首次綁定</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261010-receipt-existing-payment-v1"></script>
+<script src="frontend-release.js?v=20261010-repair-dispatch-v1"></script>
 
   <style>
     :root {
@@ -503,6 +503,9 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="repair-dispatch.css?v=20261010-repair-dispatch-v1">
+  <script src="repair-dispatch.js?v=20261010-repair-dispatch-v1"></script>
+  <script src="vendor-repair.js?v=20261010-repair-dispatch-v1"></script>
 </head>
 
 <body>
@@ -1564,7 +1567,11 @@
       );
     }
 
-    loadPage();
+    if (window.CMWebsVendorEntry && window.CMWebsVendorEntry.isEntry(location.href)) {
+      window.CMWebsVendorEntry.start({apiUrl: API_URL, liffId: LIFF_ID});
+    } else {
+      loadPage();
+    }
   </script>
 </body>
 </html>

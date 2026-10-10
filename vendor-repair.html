@@ -1,0 +1,4 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CMWebs 工作邀請</title></head><body><p id="status">正在開啟工作邀請…</p><script>
+const invitation=new URL(location.href).searchParams.get('invitation_id');
+if(invitation && /^[A-Za-z0-9_-]{3,100}$/.test(invitation)){const target=new URL('tenant-bind.html',location.href);target.searchParams.set('repair_invitation_id',invitation);location.replace(target.href);}else{document.getElementById('status').textContent='缺少有效工作邀請，請向房東取得邀請。';}
+</script></body></html>

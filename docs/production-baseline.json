@@ -4,7 +4,7 @@
   "backend_verified_on": "2026-10-10",
   "backend_source_commit": "aeda946",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 223,
+  "backend_version": 224,
   "room_photo_share_occupancy_release": {
     "verified_on": "2026-10-07",
     "source_commit": "b8a409e0581613b580471e527bd540aa28d4417a",
@@ -93,7 +93,7 @@
   "frontend_revision": "7507e939bdac33fa5de5c8b8e7cc7452a61c4e5f",
   "frontend_workflow": "37192744518",
   "frontend_public_file_count_verified": 46,
-  "frontend_release_tag": "20261004-asset-income-valuation-v1",
+  "frontend_release_tag": "20261010-repair-dispatch-v1",
   "frontend_authenticated_acceptance": "PENDING: formal Email login entry opened with return_to revenue dashboard; no verified session or OTP sent",
   "frontend_physical_device_acceptance": "PENDING",
   "frontend_scope": "Authorized V2.1 existing homepage frontend slice: responsive visual polish and motion, reduced-motion/pause, lazy LINE SDK and in-place secondary action updates. No backend/API/schema/auth/financial/business-data changes. PR203 merged074c225; Pages37068482843 succeeded; all40 changed public assets plus the prior manifest union,43/43, were byte-identical. Fresh validate and503/503 tests pass. Direct homepage browser had no verified session and displayed missing LINE User ID; explicit Email login entry opened, no OTP sent. Authenticated/real-device/end-to-end timing acceptance pending. The v205 backend evidence below remains dated2026-10-02 and was not freshly exported or deployed by this frontend release.",
@@ -104,8 +104,8 @@
     "public_file_count_verified": 41,
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
-  "backend_file_count": 60,
-  "backend_tree_sha256": "e3ad113e56e2d8768709ac9f376beb1f8baa5433c0bd200b4fc15080e7d10520",
+  "backend_file_count": 61,
+  "backend_tree_sha256": "1be4ed351be75bd87be44e7e38c65743025144aec7b39b40ddcb8e10e0468565",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -147,6 +147,8 @@
     "landlord-tenant-detail.html",
     "landlord-tenants.html",
     "landlord-workspaces.html",
+    "repair-dispatch.css",
+    "repair-dispatch.js",
     "tenant-bills.html",
     "tenant-bind.html",
     "tenant-contract.html",
@@ -154,7 +156,9 @@
     "tenant-message.html",
     "tenant-payment-report.html",
     "tenant-renewal.html",
-    "tenant-termination.html"
+    "tenant-termination.html",
+    "vendor-repair.html",
+    "vendor-repair.js"
   ],
   "scope": "V2.0 tenant detail correctness repair: exact current-lease rent, management, contractual deposit, Taipei dates/payment day and existing rates. Read projections retain explicit zero and null for unknown values without changing write/default normalizers; document fallback refreshes only summary/history, preserving meter and file forms. Fresh serving/editor HEAD v204 exports matched all 59 baseline files; reviewed c583d36 created immutable v205, all 59 files byte-identical. Existing formal deployment CLI reads back v205 at unchanged URL; four other deployments unchanged and v204 rollback retained. PR201 merged at657ec08; Pages workflow36985692299 succeeded and 41 public files are byte-identical. Post-merge validate, 485/485 tests and diff-check pass. No business-row, lease/date/history, private-file, schema, Properties, trigger or LINE writes, and no version deletion. Authenticated browser/physical-device acceptance and previously approved room501-only settings save (rent19570, management0, deposit39140) remain PENDING: browser is at landlord Email login; no direct Sheets write or auth bypass. Prior506 document/meter recovery and502 expired-occupied protection remain. Rollback same Web App v204, frontend cc01e81.",
   "rollback": {
@@ -371,5 +375,20 @@
     "navigation_destinations": 5,
     "business_writes_performed": 0,
     "known_limitation": "Postal payment reports currently leave tenant_line_user_id blank; tenant LINE notification wiring pending."
+  },
+  "repair_dispatch_release": {
+    "date": "2026-10-10",
+    "scope": "User-authorized original-system repair dispatch production deployment",
+    "rollback_backend_version": 223,
+    "rollback_frontend_revision": "e7fd413d2a34dc26a5e8f00bfbc26917aacba566",
+    "tests_passed": 724,
+    "head_files_matched": 61,
+    "status": "Original serving223/editor HEAD60 files matched main. Candidate HEAD and immutable22461 files byte-identical. Original deployment now224; other4 unchanged. Owner editor initialized10-column event table/private folder. Pages publication in progress.",
+    "backend_version": 224,
+    "immutable_files_matched": 61,
+    "storage_headers_verified": 10,
+    "private_folder_initialized": true,
+    "new_trigger_installed": false,
+    "line_messages_sent": 0
   }
 }

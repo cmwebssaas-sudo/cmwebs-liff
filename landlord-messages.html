@@ -11,8 +11,8 @@
   <title>CMWebs 房客訊息管理</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261010-receipt-existing-payment-v1"></script>
-  <script src="landlord-auth.js?v=20261010-receipt-existing-payment-v1"></script>
+<script src="frontend-release.js?v=20261010-repair-dispatch-v1"></script>
+  <script src="landlord-auth.js?v=20261010-repair-dispatch-v1"></script>
 
   <style>
     :root {
@@ -733,6 +733,8 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="repair-dispatch.css?v=20261010-repair-dispatch-v1">
+  <script src="repair-dispatch.js?v=20261010-repair-dispatch-v1"></script>
 </head>
 
 <body>
@@ -1861,7 +1863,8 @@
                   <div class="reply-box"><div class="reply-label">事件摘要</div>建立：${formatDateTime(ticket.created_at)}<br>最新公開紀錄：${safeText(ticket.public_note)}</div>
                   <div class="field"><label class="field-label" for="repairStatus_${safeText(ticketId)}">更新狀態</label><select class="field-select" id="repairStatus_${safeText(ticketId)}">${repairStatusOptions(ticket.status)}</select></div>
                   <div class="field"><label class="field-label" for="repairReply_${safeText(ticketId)}">公開回覆</label><textarea class="field-textarea" id="repairReply_${safeText(ticketId)}" maxlength="500">${safeText(ticket.public_note)}</textarea></div>
-                  <button class="btn btn-primary" type="button" onclick="updateRepairTicket('${escapeHtml(ticketId)}')">儲存報修更新</button>
+                  <button class="btn btn-primary" type="button" onclick="openRepairDispatch('${escapeHtml(ticketId)}')">${ticket.dispatch_stage ? '查看派工與驗收' : '安排處理／派工'}</button>
+                  <button class="btn btn-primary" type="button" data-repair-save ${ticket.dispatch_stage ? 'disabled' : ''} onclick="updateRepairTicket('${escapeHtml(ticketId)}')">儲存報修更新</button>
                 </article>
               `;
             }).join('')}
@@ -1923,10 +1926,18 @@
       }
     }
 
+    function openRepairDispatch(ticketId) {
+      const panel = document.createElement('section');
+      panel.className = 'rd-modal'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-label', '報修派工與驗收');
+      document.body.appendChild(panel);
+      const auth = LANDLORD_REPAIR_AUTH || initLandlordRepairAuth();
+      CMWebsRepairDispatch.mount(panel, { ticketId: ticketId, close: true, role: (PAGE_DATA.workspace_context && PAGE_DATA.workspace_context.current_membership && PAGE_DATA.workspace_context.current_membership.role) || (PAGE_DATA.current_membership && PAGE_DATA.current_membership.role) || 'viewer', request: function(action, params) { return landlordRepairRequest(action, params); }, onChange: function() { loadRepairTickets(); } });
+    }
+
     async function updateRepairTicket(ticketId) {
       const status = document.getElementById('repairStatus_' + ticketId);
       const reply = document.getElementById('repairReply_' + ticketId);
-      const button = document.querySelector('[data-repair-ticket-id="' + ticketId + '"] button');
+      const button = document.querySelector('[data-repair-ticket-id="' + ticketId + '"] [data-repair-save]');
       if (!status || !reply || !button) return;
 
       button.disabled = true;

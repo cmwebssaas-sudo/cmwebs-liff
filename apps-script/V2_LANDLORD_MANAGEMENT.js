@@ -545,7 +545,7 @@ function getLandlordRepairTicketsInitByLineUid_(
   ).filter(function(ticket) {
     return lmText_(ticket.workspace_id) === workspaceId &&
       (!roomId || lmText_(ticket.room_id) === roomId) &&
-      (!status || lmText_(ticket.status).toLowerCase() === status);
+      (!status || lmText_(repairTicketToLandlordProjection_(ticket).status).toLowerCase() === status);
   }).map(function(ticket) {
     return repairTicketToLandlordProjection_(ticket);
   });
@@ -622,6 +622,10 @@ function updateLandlordRepairTicketByLineUid_(
       code: 'REPAIR_TICKET_NOT_FOUND',
       message: '找不到指定報修工單'
     };
+  }
+
+  if (typeof repairDispatchState_ === 'function' && repairDispatchState_(workspaceId, ticketId)) {
+    return { success: false, code: 'DISPATCH_WORKFLOW_REQUIRED', message: '此工單已啟用派工，請使用派工回覆與驗收操作。' };
   }
 
   var updated = repairTicketAppendEvent_(ticketId, {

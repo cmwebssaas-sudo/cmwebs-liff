@@ -501,3 +501,33 @@ occupancy is calculation-only and audit-recorded, not a lease-date amendment.
 欄位。從已保存網址讀公开房源第一張照片；圖片 URL 與狀態只作短期公開
 快取，失效後重取。既有網址不需重新保存即可在讀取時取圖；不建立或更改
 V3 listing binding，不改房間／租約金額。程式回退不影響已保存網址。
+
+## 原生報修派工附加事件（2026-10-10，本地候選）
+
+正式表 **未 migration**。operator-only `repairDispatchMigrate_()` 在明確部署
+授權後只建立 `V2_repair_dispatch_events`，既有同名不同 header 拒絕。HTTP/讀取
+不建立此附加表。原 `V2_repair_tickets` 的工單 ID、房間/房客/租約快照不改。
+
+表頭依序：`workspace_id, entity_id, event_id, request_id, actor_id, operation,
+payload_json, version, state_json, created_at`。`entity_id` 是原 repair_ticket_id，
+或 `partner:<uuid>` 合作對象 ID。每列包含該次完整業務狀態與稽核，同列提交；
+短 ScriptLock 內核對 Workspace、live membership、版本及冪等。讀取最後一列
+重建最新狀態；提交結果不明依 request_id 的事件判定，不覆寫既有事件。
+
+合作對象 state：公司/個人、啟用、members LINE UID/manager/worker/contact、
+skills、property_id（空白為全 Workspace）、priority、固定價及適用工種。
+派工 state：原 ticket_id、mode、work_kind、房東核准 work_summary/location/
+instructions、stage、invitations、quotes、assignment、approved/actual_amount、
+completion revisions、private attachments、公開回覆及 history/request_id。
+前端選擇同額或多公司不授權；核准/固定價接單只產生一個 assignment，撤銷其餘。
+
+狀態相容：sourcing/awaiting_approval→open；assigned/in_progress→in_progress；
+awaiting_acceptance→awaiting_confirmation；completed/cancelled→closed。
+房東歷史保存，房客僅透過原 tenant allowlist 的公開 status/note 讀取；不能取得
+dispatch state、公司成員、報價、位置指引、附件、歷史房客訊息或租約快照。
+
+照片存 Drive PRIVATE。新增 property key 為
+`CMWEBS_REPAIR_PRIVATE_DRIVE_ROOT_FOLDER_ID`；缺少時拒絕 upload，不借用身份證或
+合約資料夾。表內只存受保護 file_id/metadata；下載 API 重驗權限並回傳圖片內容，
+不建立公共 Drive URL。state_json 長度限制45000字元，附件每工單30張；達上限
+明確拒絕，不刪除歷史。journal 目前逐表掃描，擴大用量前需量測與索引/封存設計。
