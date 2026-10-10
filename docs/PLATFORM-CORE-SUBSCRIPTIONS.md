@@ -12,7 +12,7 @@ It does not implement subscription checkout or payment collection.
 ## Mapping and secure configuration
 
 Additive editor-only helper `provisionPlatformCoreWorkspaceLink(options)`
-requires explicit staging environment, canonical workspace_id,
+requires explicit staging/production environment matching server Properties, canonical workspace_id,
 platform_company_id, product_id, mode legacy/observe and a reason. It records
 an audit through the existing operation audit module before binding; audit
 failure denies provisioning. No browser route changes mappings. Provisioning
@@ -27,7 +27,7 @@ means legacy. Duplicate rows, malformed columns, status/mode or incomplete
 linked mapping fail closed. Reads never create schema. ProductCompanyLink in
 Core must have external_company_id equal to exact canonical Workspace ID.
 
-Server-only Properties: CMWEBS_PLATFORM_CORE_ENVIRONMENT (staging),
+Server-only Properties: CMWEBS_PLATFORM_CORE_ENVIRONMENT (staging/production),
 CMWEBS_PLATFORM_CORE_BASE_URL (HTTPS origin), CMWEBS_PLATFORM_CORE_PRODUCT_ID,
 CMWEBS_PLATFORM_CORE_SERVICE_TOKEN. The service token is an opaque ACTIVE
 ServiceClient for that Product with exact product.access.read scope. It exists
@@ -128,7 +128,15 @@ staging acceptance pass; only inline self-review, no independent agent review.
 The user identified themselves as the first landlord. A metadata-first bounded
 read of the formal V2_workspaces table resolves the only existing Workspace to
 W000001, 朱文漢的管理團隊, active/completed. This is the intended first observe
-target. The current Core runtime and CM adapter intentionally reject production
-environment configuration; do not disguise a real Workspace as a staging fixture
-or assign the fixture's two-room quota. Formal environment promotion, secure
-credential injection and the authenticated summary still require completion.
+target. The user subsequently approved explicit production support for only the Core
+product profile/CM adapter, a separate AI-00 production database/readonly
+credential and W000001 observe binding. No Plan, Subscription, fee or room quota
+is created. Do not disguise the owner as a staging fixture or assign the test
+two-room quota. RED production refusal reproduced; GREEN CM770/Core361 pass.
+Host provisioning, formal credential/mapping and authenticated summary still
+require completion. Admin runtime/staging migration stay restricted.
+
+2026-10-11 Pages PR252 merged396f4de, build completed and51 public files match
+byte-for-byte. The new production-environment candidate changes no frontend
+files. The editor-only provisioner now refuses a caller environment that does
+not match the configured server environment, before acquiring a write lock.

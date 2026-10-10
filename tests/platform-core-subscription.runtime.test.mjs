@@ -155,6 +155,17 @@ test("valid grant stays server-side and summary omits credentials", () => {
   assert.equal(r.data.grant.max_rooms, 2);
   assert.equal(JSON.stringify(r).includes("fixture_secret"), false);
 });
+test("production observe reports no subscription without inventing a room quota", () => {
+  const body = fixture();
+  body.subscriptions = [];
+  body.entitlements = [];
+  const s = setup({mode:"observe", props:{CMWEBS_PLATFORM_CORE_ENVIRONMENT:"production"}, body});
+  const r = s.ctx.platformCoreGetWorkspaceAccess_(access);
+  assert.equal(r.success, true);
+  assert.equal(r.data.mode, "observe");
+  assert.equal(r.data.grant.enabled, false);
+  assert.equal(r.data.grant.max_rooms, null);
+});
 test("raw UID cannot authenticate; email and verified LINE derive Workspace", () => {
   const s = setup();
   assert.equal(
@@ -281,8 +292,8 @@ test("provider refusal or changed membership cannot authenticate", () => {
     false,
   );
 });
-test("editor provisioning requires canonical workspace and successful audit before additive binding", () => {
-  const s = setup({ missing: true });
+for (const environment of ["staging", "production"]) test("editor provisioning requires canonical workspace and successful audit before additive binding " + environment, () => {
+  const s = setup({ missing: true, props:{CMWEBS_PLATFORM_CORE_ENVIRONMENT:environment} });
   let appended = 0,
     audits = 0;
   const ss = {
@@ -300,7 +311,7 @@ test("editor provisioning requires canonical workspace and successful audit befo
     return { success: false };
   };
   const options = {
-    environment: "staging",
+    environment,
     workspace_id: "WS_FIXTURE",
     platform_company_id: "com_fixture",
     product_id: "prd_fixture",
@@ -312,6 +323,10 @@ test("editor provisioning requires canonical workspace and successful audit befo
     /AUDIT_FAILED/,
   );
   assert.equal(appended, 0);
+  assert.throws(
+    () => s.ctx.provisionPlatformCoreWorkspaceLink({...options, environment:environment === "production" ? "staging" : "production"}),
+    /PROVISIONING_SCOPE_REQUIRED/,
+  );
   s.ctx.workspaceRecordOperationActor_ = (actor, action, result, meta) => {
     audits++;
     assert.match(actor.user.name,/operator@example.test/);
