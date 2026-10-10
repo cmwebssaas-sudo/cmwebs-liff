@@ -403,7 +403,12 @@ function repairTicketSheetHeaders_(sheet) {
 }
 
 function repairTicketToLandlordProjection_(ticket) {
-  return repairTicketPublicRow_(ticket || {});
+  const result = repairTicketPublicRow_(ticket || {});
+  if (typeof repairDispatchState_ === 'function') {
+    const dispatch = repairDispatchState_(result.workspace_id, result.repair_ticket_id);
+    if (dispatch) { result.status = repairDispatchStatus_(dispatch); result.dispatch_stage = dispatch.stage; result.dispatch_version = dispatch.version; result.public_note = dispatch.public_note; result.estimated_cost = dispatch.approved_amount; result.actual_cost = dispatch.actual_amount; }
+  }
+  return result;
 }
 
 function repairTicketToTenantProjection_(ticket, currentTenant) {
@@ -416,6 +421,7 @@ function repairTicketToTenantProjection_(ticket, currentTenant) {
   ) {
     return null;
   }
+  const dispatch = typeof repairDispatchState_ === 'function' ? repairDispatchState_(source.workspace_id, source.repair_ticket_id) : null;
   const projection = {};
   V2_REPAIR_TICKET_TENANT_ALLOWED_FIELDS_.forEach(function(field) {
     projection[field] = field === 'public_note'
@@ -424,6 +430,7 @@ function repairTicketToTenantProjection_(ticket, currentTenant) {
         ? ''
         : source[field] === undefined ? '' : source[field];
   });
+  if (dispatch) { projection.status = repairDispatchStatus_(dispatch); projection.public_note = dispatch.public_note; projection.closed_at = dispatch.stage === 'completed' || dispatch.stage === 'cancelled' ? dispatch.history[dispatch.history.length - 1].created_at : ''; }
   return projection;
 }
 

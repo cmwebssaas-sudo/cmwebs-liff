@@ -55,7 +55,8 @@ function repairRouteIsAction_(action) {
   return (
     action === 'tenant_repair_tickets_init' ||
     action === 'landlord_repair_tickets_init' ||
-    action === 'landlord_repair_ticket_update'
+    action === 'landlord_repair_ticket_update' ||
+    (typeof repairDispatchIsAction_ === 'function' && repairDispatchIsAction_(action))
   );
 }
 
@@ -132,6 +133,7 @@ function repairRouteRequestFromPostBody_(e) {
 
 
 function dispatchRepairPostRoute_(action, request) {
+  if (typeof repairDispatchIsAction_ === 'function' && repairDispatchIsAction_(action)) return repairDispatchRoute_(action, request || {});
   if (action === 'tenant_repair_tickets_init') {
     return dispatchTenantRepairTicketsInit_(request || {});
   }
@@ -373,7 +375,8 @@ function doGet(e) {
   if (
     v2Action === 'tenant_repair_tickets_init' ||
     v2Action === 'landlord_repair_tickets_init' ||
-    v2Action === 'landlord_repair_ticket_update'
+    v2Action === 'landlord_repair_ticket_update' ||
+    (typeof repairDispatchIsAction_ === 'function' && repairDispatchIsAction_(v2Action))
   ) {
     runtimeSnapshotBegin_(v2Action);
     const result = repairRouteDoGetRejected_();
@@ -2915,7 +2918,8 @@ function doPost(e) {
         if (
           action === 'tenant_repair_tickets_init' ||
           action === 'landlord_repair_tickets_init' ||
-          action === 'landlord_repair_ticket_update'
+          action === 'landlord_repair_ticket_update' ||
+          (typeof repairDispatchIsAction_ === 'function' && repairDispatchIsAction_(action))
         ) {
           result = dispatchRepairPostRoute_(action, request);
           if (useBridge) {

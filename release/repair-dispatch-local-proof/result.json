@@ -1,0 +1,15 @@
+{
+  "company_stage": "completed",
+  "company_executor": "V2",
+  "scope": "Local real UI + real Apps Script workflow; synthetic data and mocked Sheet/identity boundaries",
+  "viewport_sizes": [
+    390,
+    1280
+  ],
+  "stage": "completed",
+  "completions": 2,
+  "approved_amount": 1200,
+  "mutations": 14,
+  "browser_errors": [],
+  "production": "NOT_TOUCHED"
+}

@@ -1142,3 +1142,15 @@ save 及 authorized bound fallback。先觀察未實作的 RED，再實作 GREEN
 部署需先fresh export核對正式後端217基線，建立新immutable版本並保留Web
 App URL，再合併前端及驗證Pages。回退到本次基底1a17369與已核對後端217；
 本次無Schema migration，不需回退房源資料。未以本機測試宣稱正式生效。
+
+## 原生報修派工 — 本地候選，2026-10-10
+
+| 檢查 | 證據 | 邊界 |
+|---|---|---|
+| 自办、报价、固定價、指定施工者、完工/補修/超額核准/驗收 | `repair-dispatch-runtime.test.mjs` | 實際 Apps Script 函式 + 合成 Sheet/Drive adapter |
+| live membership/Workspace、POST body、provider 身份、contact/worker/manager | `repair-dispatch-route.test.mjs` | session/provider 為受控外部邊界，不證明真實 LINE |
+| stage actions、exact request 恢復、LIFF 入口分流、舊 save 按鈕 | `repair-dispatch-ui.test.mjs` | 實際 production function 執行 |
+| 手機390px/桌面1280px 自办閉環 | `release/repair-dispatch-local-proof/result.json` / PNG | 真實 Chrome、共用 UI + 實際 workflow；合成資料 |
+| 公司manager報價/指定worker施工/房東驗收 | 同上本地 browser QA | 必須成功產生證據後才記 PASS |
+| 完整 regressions/validator/syntax/diff | release runbook 記錄 | 本地驗證；沒有 cloud run、migration、LINE send |
+| 正式登入、Sheet migration、實際照片、真機 LINE/驗收 | NOT_RUN / HUMAN_REQUIRED | 本次未授權 Production 發布或真實業務寫入 |

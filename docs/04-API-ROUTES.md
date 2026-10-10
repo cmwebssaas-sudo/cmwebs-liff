@@ -1100,3 +1100,31 @@ amount has one eligible bill. Duplicate amounts are narrowed with historical
 bank and payer suffix links; unresolved duplicates remain for
 `landlord_bank_receipt_confirm`. A missing suffix does not block a unique
 amount. This is an intake setting, not a new API route or Schema field.
+
+## 2026-10-10 原生報修派工候選（未發布）
+
+派工 route 由原 `程式碼.js` 的 repair POST dispatcher 接入，不接受 GET/query
+credentials 或裸 UID。房東使用原 `landlord_session_token`；廠商使用 server
+LINE provider 驗證的 `id_token`，`invitation_id` 只定位工單，不能單獨授權。
+所有 mutation 提供 `request_id`（共用 auth bridge 實際為 `business_request_id`）
+及目前 `expected_version`，body 的 Workspace/actor/role 不授權。
+
+| action | 身份 | 責任 |
+|---|---|---|
+| `landlord_repair_dispatch_init` | 原房東/團隊 session | 原 ticket、派工狀態與 Workspace 合作對象 |
+| `landlord_repair_partner_save` | owner/admin/manager | 公司/個人、多人 role、工種、物件順位、固定價設定/停用 |
+| `landlord_repair_dispatch_update` | 原團隊 role | start/assign_self/invite/approve_quote/begin/finish/approve_extra/rework/accept/cancel |
+| `landlord_repair_attachment_upload` | 授權施工/管理角色 | 私有 JPEG/PNG、≤3 MiB、冪等及版本核對 |
+| `landlord_repair_attachment_download` | 原 Workspace 讀權限 | 私有圖片內容；每次重驗 membership/Workspace |
+| `vendor_repair_identity_init` | LINE provider | 回傳自己的 LINE UID 供房東核對登記；不授權工單 |
+| `vendor_repair_dispatch_init` | 已登記且啟用的廠商成員 | 只讀本邀請/派工的 allowlist，不含原房客/租約/原訊息/其他公司報價 |
+| `vendor_repair_dispatch_update` | manager 或指定 executor | manager quote/decline/accept_invite；executor begin/finish；不能驗收/核准價格 |
+| `vendor_repair_attachment_upload` | 指定 executor | 私有施工照片 |
+| `vendor_repair_attachment_download` | 本公司啟用成員且原上傳者 | 只讀自己上傳的本工單照片 |
+
+費用採整數 TWD。quote 生成不可變 revision；approve_quote 必須核准最新有效
+quote_id 及目前啟用的 executor。固定價必須精確匹配 `fixed_work_kind`，保存
+當時 agreement version/價格，後續改價不改已派價格。`finish` 需 note/actual_amount；
+超額須 `approve_extra` 後才能 accept。舊 `landlord_repair_ticket_update` 不得
+繞過已啟用派工的工單；房客/房東讀取相容五種 status projection。
+`DISPATCH_RESULT_UNKNOWN` 不表示未提交，前端保留 guard 並讀回 exact request ID。
