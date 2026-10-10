@@ -1253,6 +1253,10 @@ function doGet(e) {
         );
   }
 
+  if (v2Action === 'landlord_subscription_init') {
+    return jsonOutput_({success:false,code:'POST_REQUIRED',message:'請使用已驗證登入的 POST 請求'}, callback);
+  }
+
   if (v2Action === 'landlord_properties_init') {
     const result =
       getLandlordPropertiesInitByLineUid_(
@@ -3194,6 +3198,12 @@ function doPost(e) {
             result,
             request.request_id || ''
           );
+        }
+
+        if (action === 'landlord_subscription_init') {
+          const principal = platformCoreResolveSubscriptionPrincipal_(request);
+          result = getLandlordSubscriptionInitByPrincipal_(principal);
+          return useBridge ? htmlBridgeOutput_(result, request.request_id || '') : jsonOutput_(result, '');
         }
 
         if (useBridge && action === 'landlord_properties_init') {

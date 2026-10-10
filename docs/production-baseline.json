@@ -1,10 +1,10 @@
 {
   "verified_on": "2026-10-04",
   "source_commit": "7241f2e419099db349e65a22dac1cb3f7b5d1c46",
-  "backend_verified_on": "2026-10-10",
-  "backend_source_commit": "a377903",
+  "backend_verified_on": "2026-10-11",
+  "backend_source_commit": "d8bae502a4692fd4052b0c583dc1305ca2799ea9",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 225,
+  "backend_version": 226,
   "room_photo_share_occupancy_release": {
     "verified_on": "2026-10-07",
     "source_commit": "b8a409e0581613b580471e527bd540aa28d4417a",
@@ -104,8 +104,8 @@
     "public_file_count_verified": 41,
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
-  "backend_file_count": 61,
-  "backend_tree_sha256": "f3ab7fdb3e6b2ed475710416ff41e6351d46f00c3e235fcfb6067439b8118763",
+  "backend_file_count": 63,
+  "backend_tree_sha256": "4c5adfd420ee9b5df0f537a1cdbed009d70c381e68dababe29b37b03c468b87b",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -147,6 +147,7 @@
     "landlord-tenant-detail.html",
     "landlord-tenants.html",
     "landlord-workspaces.html",
+    "platform-core-subscription.js",
     "repair-dispatch.css",
     "repair-dispatch.js",
     "tenant-bills.html",
@@ -238,7 +239,7 @@
     "editor_head_restored_to_version": 200,
     "required_approval": "Delete only unreferenced and locally exported version 199; retain version 200 and all existing deployments/data."
   },
-  "backend_rollback_version": 210,
+  "backend_rollback_version": 225,
   "monthly_bill_noon_schedule": {
     "verified_on": "2026-10-05",
     "source_commit": "7cc1fb3",
@@ -409,5 +410,28 @@
     "real_line_receipt": "UNVERIFIED",
     "historical_notices_resent": false,
     "scope": "Completed automatic email settlement emits a separate stable verified completion notice. Failed/partial retries reuse provider key. No financial rules, frontend, schema, Properties or triggers changed; no manual scan or send performed."
+  },
+  "core_subscription_release": {
+    "date": "2026-10-11",
+    "pull_request": 252,
+    "source_commit": "d8bae502a4692fd4052b0c583dc1305ca2799ea9",
+    "backend_version": 226,
+    "rollback_backend_version": 225,
+    "rollback_frontend_revision": "9388ab944e0b43a0e6d2f481727d8ca6825fc872",
+    "tests_passed": 768,
+    "cross_repo_tests_passed": 4,
+    "immutable_files_matched": 63,
+    "other_deployments_unchanged": true,
+    "real_google_roundtrip": "PASS",
+    "real_google_suspension": "PASS; existing edits allowed; fixture restored ACTIVE",
+    "test_credential_rotation": "PASS; old401/new200",
+    "production_mode": "legacy; no mapping",
+    "production_properties_changed": false,
+    "formal_target_workspace": "W000001",
+    "formal_target_name": "朱文漢的管理團隊",
+    "production_subscription_activation": "PENDING; current profile staging-only",
+    "frontend_publication": "PENDING",
+    "authenticated_acceptance": "UNVERIFIED",
+    "room_limit_enforcement": false
   }
 }

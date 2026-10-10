@@ -1158,3 +1158,8 @@ App URL，再合併前端及驗證Pages。回退到本次基底1a17369與已核�
 ## 2026-10-10 automatic settlement notification correctness
 
 Synthetic bank receipt regressions cover completion notice wording, stable completion event ID, failed/partial retry without a second payment, pending receipt canonical commit recovery and refusal to announce unproven completion. Full suite729 tests; focused bank runtime42 tests; validate/diff-check. No real notification or financial test executed.
+
+V3 Core subscription candidate: platform-core-subscription.runtime.test.mjs,
+platform-core-room-capacity.runtime.test.mjs, platform-core-subscription.ui.test.mjs
+and optional cross-repo platform-core-subscription.roundtrip.test.mjs. See
+PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.

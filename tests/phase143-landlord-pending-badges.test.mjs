@@ -189,6 +189,7 @@ const summaryResponses = {
   }
 };
 const orchestrationContext = {
+  window: { CMWebsPlatformCoreSubscription: { mount: () => Promise.resolve() } },
   Math,
   Number,
   String,

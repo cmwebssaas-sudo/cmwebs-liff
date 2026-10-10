@@ -1411,6 +1411,14 @@ function onboardingSaveRoom_(
     );
   }
 
+  // Already inside ScriptLock: this legacy onboarding path cannot fetch a grant.
+  if (!existing || onboardingText_(existing.account_status || 'active').toLowerCase() !== 'active') {
+    const capacity = typeof platformCoreRejectUnpreparedGrowth_ === 'function'
+      ? platformCoreRejectUnpreparedGrowth_(workspaceId)
+      : {success: !ss.getSheetByName('V3_platform_core_workspace_links')};
+    if (!capacity.success) throw new Error('請從房間管理新增或啟用房間');
+  }
+
   const landlordId =
     onboardingText_(
       landlord.landlord_id
