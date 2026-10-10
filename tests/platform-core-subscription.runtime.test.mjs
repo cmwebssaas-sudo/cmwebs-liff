@@ -15,6 +15,13 @@ const headers = [
   "linked_at",
   "updated_at",
 ];
+test("formal manifest permits the editor identity required for audited provisioning", () => {
+  const manifest = JSON.parse(readFileSync("apps-script/appsscript.json", "utf8"));
+  assert.ok(
+    manifest.oauthScopes.includes("https://www.googleapis.com/auth/userinfo.email"),
+    "Session.getEffectiveUser().getEmail() otherwise fails before the audit or binding",
+  );
+});
 export function fixture() {
   const now = Date.now();
   return {

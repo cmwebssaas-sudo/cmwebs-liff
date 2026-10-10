@@ -140,3 +140,12 @@ require completion. Admin runtime/staging migration stay restricted.
 byte-for-byte. The new production-environment candidate changes no frontend
 files. The editor-only provisioner now refuses a caller environment that does
 not match the configured server environment, before acquiring a write lock.
+
+The formal editor execution exposed a missing explicit userinfo.email scope:
+Session.getEffectiveUser().getEmail() failed before any audit or mapping write.
+The manifest adds only the basic editor Email identity scope required by the
+audited provisioner; all existing scopes and Web App access settings remain.
+A regression reproduced the missing scope, and the complete suite now passes
+771 tests (including four cross-repository checks) plus validate/diff-check.
+Human Google consent is separate from source verification and must complete
+before formal mapping activation is claimed.
