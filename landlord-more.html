@@ -12,6 +12,7 @@
 <script src="frontend-release.js?v=20261010-repair-dispatch-v1"></script>
   <script src="landlord-api.js?v=20261010-repair-dispatch-v1"></script>
   <script src="landlord-auth.js?v=20261010-repair-dispatch-v1"></script>
+  <script src="platform-core-subscription.js?v=20261010-core-subscription-v1"></script>
 
   <style>
     :root {
@@ -1344,6 +1345,11 @@
         </div>
       </section>
 
+      <section class="card" aria-labelledby="subscriptionTitle">
+        <div class="section-title-row"><div class="section-title" id="subscriptionTitle">訂閱與房間額度</div></div>
+        <div class="system-row" id="platformCoreSubscriptionStatus" role="status" aria-live="polite">正在讀取訂閱…</div>
+      </section>
+
       <section class="card">
         <div class="section-title-row">
           <div class="section-title">系統狀態</div>
@@ -2254,6 +2260,17 @@
       try {
         if (!(await ensureLandlordAuthReady())) {
           return;
+        }
+
+        if (window.CMWebsPlatformCoreSubscription) {
+          window.CMWebsPlatformCoreSubscription.mount({
+            container: document.getElementById('platformCoreSubscriptionStatus'),
+            request: function (action, params) {
+              const auth = LANDLORD_AUTH || initLandlordAuthClient();
+              const token = window.liff && typeof window.liff.getIDToken === 'function' ? window.liff.getIDToken() : '';
+              return auth.requestProtected(action, Object.assign({}, params, token ? { id_token: token } : {}));
+            }
+          });
         }
 
         const results =
