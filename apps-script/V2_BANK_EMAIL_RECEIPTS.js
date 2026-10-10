@@ -162,7 +162,7 @@ function bankReceiptAutoSettleUnique_(row) {
   lock.waitLock(25000);
   try {
     row=bankReceiptRows_('V2_bank_email_receipts').find(function(item){return item.receipt_id===row.receipt_id&&item.workspace_id===workspaceId;})||row;
-    const committed=bankReceiptCommittedPayment_(row);if(committed)return bankReceiptFinish_(row,{workspace:{workspace_id:workspaceId},principal_line_user_id:principal.line_user_id},committed,bill);
+    const committed=bankReceiptCommittedPayment_(row);if(committed){bankReceiptFinish_(row,{workspace:{workspace_id:workspaceId},principal_line_user_id:principal.line_user_id},committed,bill);return bankReceiptRows_('V2_bank_email_receipts').find(function(item){return item.receipt_id===row.receipt_id&&item.workspace_id===workspaceId;})||row;}
   } finally {lock.releaseLock();}
   return result&&result.success?bankReceiptError_('SETTLEMENT_UNVERIFIED','自動銷帳結果待核對'):row;
 }
@@ -199,19 +199,24 @@ function bankReceiptAccept_(parsed,message,config) {
 function bankReceiptNotify_(row) {
   const scope=bankReceiptWorkspaceScope_(row.workspace_id);
   const bill=bankReceiptRows_('V2_bills').find(function(b){return b.bill_id===row.match_bill_id&&bankReceiptBillInWorkspace_(b,row.workspace_id,scope);});
-  const message='收到入帳 '+Number(row.amount).toLocaleString('zh-TW')+' 元\n付款帳戶：'+(row.payer_bank||'未提供銀行')+'／末五碼 '+(row.payer_last5||'未提供')+
+  const committed=row.confirmed_by==='system:bank_email_auto'?bankReceiptCommittedPayment_(row):null;
+  const completed=!!committed;
+  const month=bankReceiptText_(bill&&bill.bill_month);
+  const billMonth=/^\d{4}-\d{2}/.test(month)?month.slice(0,7):bill&&bill.bill_month&&Number.isFinite(new Date(bill.bill_month).getTime())?Utilities.formatDate(new Date(bill.bill_month),'Asia/Taipei','yyyy-MM'):'-';
+  if(row.status==='settled'&&!completed)return;
+  const message=(completed?'已完成自動對帳，帳單已銷帳。無需再次確認。\n':'')+'收到入帳 '+Number(row.amount).toLocaleString('zh-TW')+' 元\n付款帳戶：'+(row.payer_bank||'未提供銀行')+'／末五碼 '+(row.payer_last5||'未提供')+
     '\n入帳時間：'+bankReceiptText_(row.payment_at).replace('T',' ').replace(':00+08:00','')+
-    '\n'+(bill?'配對帳單：'+bankReceiptText_(bill.room_name)+'／'+bankReceiptText_(bill.bill_month)+'，待確認銷帳':'收到入帳，但無法配對，請選擇帳單或標記為其他款項')+
-    (row.source_kind==='forwarded'?'\n來源：轉寄通知，請核對收款紀錄':'');
-  const result=workspaceNotifyTeam_({notification_id:'BN-'+bankReceiptHash_(row.receipt_id).slice(0,32),workspace_id:row.workspace_id,event_type:'payment_report',
-    title:bill?'收到入帳，請確認銷帳':'收到入帳，但無法配對',body:message,target_type:'bank_receipt',target_id:row.receipt_id,
+    '\n'+(bill?'配對帳單：'+bankReceiptText_(bill.room_name)+'／'+billMonth+(completed?'，已完成對帳':'，待確認銷帳'):'收到入帳，但無法配對，請選擇帳單或標記為其他款項')+
+    (row.source_kind==='forwarded'?'\n來源：轉寄通知'+(completed?'':'，請核對收款紀錄'):'');
+  const result=workspaceNotifyTeam_({notification_id:'BN-'+bankReceiptHash_(row.receipt_id+(completed?'|settled':'')).slice(0,32),workspace_id:row.workspace_id,event_type:'payment_report',
+    title:completed?'已完成自動對帳':bill?'收到入帳，請確認銷帳':'收到入帳，但無法配對',body:message,target_type:'bank_receipt',target_id:row.receipt_id,
     action_url:'https://cmwebssaas-sudo.github.io/cmwebs-liff/landlord-payment-report-review.html?receipt_id='+encodeURIComponent(row.receipt_id),
     source:'bank_email_receipt',severity:'info',metadata:{receipt_id:row.receipt_id}});
   const nid=result&&result.data&&result.data.notification_id;
   if(result&&result.success&&nid){const lock=LockService.getScriptLock();lock.waitLock(25000);try{bankReceiptUpdate_('V2_bank_email_receipts','receipt_id',row.receipt_id,{notification_id:nid,notification_status:result.data.deliveries && result.data.deliveries.length && result.data.deliveries.every(function(d){return ['sent','skipped_disabled','skipped_unbound','failed_permanent'].indexOf(d.delivery_status)>=0;}) ? (['sent','stored_only'].indexOf(result.data.status)>=0?result.data.status:'exhausted') : result.data.status||'stored'});}finally{lock.releaseLock();}}
 }
 function bankReceiptNeedsNotification_(row) {
-  return ['pending','unmatched'].indexOf(row.status)>=0 && ['sent','stored_only','exhausted'].indexOf(row.notification_status)<0;
+  return (['pending','unmatched'].indexOf(row.status)>=0 || (row.status==='settled'&&row.confirmed_by==='system:bank_email_auto'&&['settlement_pending','failed','partial','stored','pending'].indexOf(row.notification_status)>=0)) && ['sent','stored_only','exhausted'].indexOf(row.notification_status)<0;
 }
 
 function bankReceiptHeader_(headers,name) {
@@ -399,7 +404,7 @@ function bankReceiptFinish_(row,access,payment,knownBill) {
       link_id:id,workspace_id:row.workspace_id,payment_account_id:row.payment_account_id,payer_bank:row.payer_bank,payer_last5:row.payer_last5,
       tenant_id:bill.tenant_id,contract_id:bill.contract_id,status:'active',confirmed_by:row.confirmed_by,confirmed_at:row.confirmed_at});
   }
-  if(row.status!=='settled')bankReceiptUpdate_('V2_bank_email_receipts','receipt_id',row.receipt_id,{status:'settled',payment_id:payment.payment_id,updated_at:now});
+  if(row.status!=='settled')bankReceiptUpdate_('V2_bank_email_receipts','receipt_id',row.receipt_id,Object.assign({status:'settled',payment_id:payment.payment_id,updated_at:now},row.confirmed_by==='system:bank_email_auto'?{notification_id:'',notification_status:'settlement_pending'}:{}));
   return {success:true,code:'OK',message:'已確認銷帳',data:{receipt_id:row.receipt_id,payment_id:payment.payment_id,status:'settled'}};
 }
 function bankReceiptConfirm_(access,input) {

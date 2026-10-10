@@ -1154,3 +1154,7 @@ App URL，再合併前端及驗證Pages。回退到本次基底1a17369與已核�
 | 公司manager報價/指定worker施工/房東驗收 | 同上本地 browser QA | 必須成功產生證據後才記 PASS |
 | 完整 regressions/validator/syntax/diff | release runbook 記錄 | 本地驗證；沒有 cloud run、migration、LINE send |
 | 正式登入、Sheet migration、實際照片、真機 LINE/驗收 | NOT_RUN / HUMAN_REQUIRED | 本次未授權 Production 發布或真實業務寫入 |
+
+## 2026-10-10 automatic settlement notification correctness
+
+Synthetic bank receipt regressions cover completion notice wording, stable completion event ID, failed/partial retry without a second payment, pending receipt canonical commit recovery and refusal to announce unproven completion. Full suite729 tests; focused bank runtime42 tests; validate/diff-check. No real notification or financial test executed.
