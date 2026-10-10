@@ -283,6 +283,10 @@ function doGet(e) {
   let lineUserId =
     e.parameter.line_user_id || '';
 
+  if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode'].indexOf(v2Action) >= 0) {
+    return ContentService.createTextOutput(JSON.stringify({success:false,code:'POST_REQUIRED',message:'請使用安全登入頁送出'})).setMimeType(ContentService.MimeType.JSON);
+  }
+
   if (bankReceiptIsAction_(v2Action)) {
     return jsonOutput_(bankReceiptError_('POST_REQUIRED', '入帳通知需使用已驗證的 POST'), callback);
   }
@@ -2756,6 +2760,11 @@ function doPost(e) {
           String(request.response_mode || '')
             .trim() === 'bridge';
         let result = null;
+
+        if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode'].indexOf(action) >= 0) {
+          result = platformCoreDispatchBilling_(action, request);
+          return useBridge ? htmlBridgeOutput_(result, request.request_id || '') : ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+        }
 
         if (['landlord_register_submit','commercial_registration_email_request','commercial_registration_email_verify','commercial_registration_line'].indexOf(action) >= 0) {
           let registrationInput = null;

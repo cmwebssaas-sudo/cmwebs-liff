@@ -1169,3 +1169,13 @@ ScriptLock. New workspace links start in `enforce` while pending; existing
 `observe` links are preserved. Core timeout returns successful local registration
 with `PROVISIONING_PENDING`, and the verified member may retry the same binding.
 No first room or completed onboarding is required to reach the subscription page.
+
+### V3 Commercial Billing POST bridge
+
+`commercial_billing_init` verifies the original Email session or LINE ID token, rechecks active User/Workspace/member rows without requiring onboarding, retries stable Core provisioning, and returns a 15-minute login-bound CSRF token. No broker credential or assertion secret is returned.
+
+`commercial_billing` accepts only `operation`, JSON `payload_json`, `idempotency_key` for writes and `csrf_token`. The generated Core contract is the operation/body/response authority. Mode operations cannot be submitted through the generic forwarder. `commercial_billing_retry_provisioning` requires the same verified login and CSRF. GET is rejected before tenant identity resolution; only the actual POST body may authenticate.
+
+`commercial_billing_workspace_mode` accepts `target_workspace_id`, `mode`, `reason`, `idempotency_key` and CSRF. Core checks actual Super Admin authority and returns a scoped 60-second intent. The Sheet change stores `mode_intent_id`, `mode_applied_at`, `mode_audit_status`; late retries attest the persisted timely write and finish Core audit without repeating it. Network calls run outside ScriptLock. `MODE_AUDIT_PENDING` means the setting was saved but the audit needs retry. Explicit editor migration `initializeCommercialRentalSchema` appends these headers and preserves existing modes.
+
+Private properties: `CMWEBS_PLATFORM_CORE_BILLING_BASE_URL`, `CMWEBS_PLATFORM_CORE_BROKER_CREDENTIAL`, `CMWEBS_PLATFORM_CORE_ASSERTION_KEY_ID`, `CMWEBS_PLATFORM_CORE_ASSERTION_SECRET` (32-byte base64url); existing environment/product and read-only properties stay separate. Issuer `https://cmwebs.com/rental`, audience `commercial-staging` or `commercial-production`. Exact UTF-8 body and assertion bytes are signed with a fresh one-use nonce for each attempt.

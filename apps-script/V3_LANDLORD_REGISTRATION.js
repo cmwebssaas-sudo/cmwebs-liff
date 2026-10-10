@@ -19,7 +19,7 @@ function initializeCommercialRentalSchema_() {
         workspaceEnsureSchema_();
         const ss = runtimeSpreadsheet_();
         workspaceEnsureSheet_(ss, COMMERCIAL_REGISTRATION_INTENT_SHEET_, COMMERCIAL_REGISTRATION_INTENT_HEADERS_);
-        workspaceEnsureSheet_(ss, PLATFORM_CORE_LINK_SHEET_, PLATFORM_CORE_LINK_HEADERS_);
+        workspaceEnsureSheet_(ss, PLATFORM_CORE_LINK_SHEET_, PLATFORM_CORE_LINK_HEADERS_.concat(typeof PLATFORM_CORE_MODE_HEADERS_ === 'undefined' ? [] : PLATFORM_CORE_MODE_HEADERS_));
         workspaceEnsureSheet_(ss, COMMERCIAL_MEMBER_PROVISIONING_SHEET_, COMMERCIAL_MEMBER_PROVISIONING_HEADERS_);
         SpreadsheetApp.flush();
         return { success: true, code: 'SCHEMA_READY' };
