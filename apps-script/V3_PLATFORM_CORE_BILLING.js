@@ -34,7 +34,7 @@ function platformCoreApplyBillingMode_(request,workspaceId,mode,reason,key) {
         appliedAt=at.toISOString();landlordEmailAuthUpdateRow_(sheet,link,{mode:mode,mode_intent_id:intent.intent_id,mode_applied_at:appliedAt,mode_audit_status:'PENDING',updated_at:appliedAt});SpreadsheetApp.flush();
       }
     }finally{try{lock.releaseLock();}catch(_){}}
-    try{platformCoreSendVerifiedHuman_(access,'admin/workspace-mode/applied',{intent_id:intent.intent_id,applied_at:appliedAt},key+'_applied');}catch(_){throw platformCoreBillingError_('MODE_AUDIT_PENDING');}
+    try{platformCoreSendVerifiedHuman_(access,'admin/workspace-mode/applied',{intent_id:intent.intent_id,applied_at:appliedAt},'mode_applied_'+platformCoreBillingHash_(key));}catch(_){throw platformCoreBillingError_('MODE_AUDIT_PENDING');}
     const complete=LockService.getScriptLock();try{complete.waitLock(5000);const sheet=runtimeSpreadsheet_().getSheetByName(PLATFORM_CORE_LINK_SHEET_),link=workspaceGetObjectsWithRow_(sheet).find(function(row){return row.workspace_id===workspaceId;});if(!link || link.mode_intent_id!==intent.intent_id)throw platformCoreBillingError_('ORDER_CONFLICT');landlordEmailAuthUpdateRow_(sheet,link,{mode_audit_status:'SYNCED',updated_at:workspaceNowIso_()});SpreadsheetApp.flush();}finally{try{complete.releaseLock();}catch(_){}}
     return workspaceResult_(true,'OK','設定已儲存',{workspace_id:workspaceId,mode:mode,audit_status:'SYNCED'});
   }catch(error){return platformCoreBillingFailure_(error);}

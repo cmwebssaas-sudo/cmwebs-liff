@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#24513e"><title>訂閱會員管理｜CMWebs</title><script src="frontend-release.js?v=20261010-repair-dispatch-v1"></script><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script src="landlord-auth.js?v=20261010-repair-dispatch-v1"></script><script src="assets/js/cmwebs-billing-transport.js?v=20261010-repair-dispatch-v1"></script></head>
+<body><div id="admin-root" role="main" aria-live="polite">正在載入會員管理…</div><noscript>請啟用 JavaScript 後使用會員管理。</noscript><script>
+(async function(){
+ const root=document.getElementById('admin-root');
+ const auth=CMWebsLandlordAuth.init({apiUrl:'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec',liffId:'2010314940-EjX1qbb8',entryPage:'landlord-entry.html',testMode:false});
+ const host=CMWebsRentalBilling.create({auth:auth,liffId:'2010314940-EjX1qbb8'});
+ try {
+  const response=await fetch('assets/platform-admin/manifest.json',{cache:'no-store'});if(!response.ok)throw new Error('Load failed');
+  const manifest=await response.json();if(manifest.format!==1||!Array.isArray(manifest.assets))throw new Error('Invalid assets');
+  for(const asset of manifest.assets){if(!/^assets\/platform-admin\/[-A-Za-z0-9_.]+\.(js|css)$/.test(asset.path)||!/^[a-f0-9]{64}$/.test(asset.sha256))throw new Error('Invalid assets');if(asset.path.endsWith('.css')){const link=document.createElement('link');link.rel='stylesheet';link.href=asset.path;document.head.appendChild(link);}else{await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=asset.path;script.onload=resolve;script.onerror=reject;document.head.appendChild(script);});}}
+  await CMWebsCommercialAdmin.startCommercialAdmin(root,host);
+ }catch(_){root.textContent='會員管理暫時無法載入，請重新整理或返回租管後再試。';}
+})();
+</script></body></html>
