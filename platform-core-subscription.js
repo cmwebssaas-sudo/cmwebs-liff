@@ -37,6 +37,12 @@
       ) {
         text += " · 房間 " + data.rooms_used + " / " + data.rooms_max;
         if (data.rooms_used > data.rooms_max) text += " · 已超出房間上限";
+      } else if (
+        data.mode === "observe" &&
+        Number.isSafeInteger(data.rooms_used) && data.rooms_used >= 0 &&
+        data.rooms_max === null
+      ) {
+        text += " · 房間 " + data.rooms_used + " · 未設定房間上限";
       }
       container.textContent = text;
     } catch (_) {

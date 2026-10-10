@@ -1,15 +1,18 @@
 # CMWebs Changelog
 
-## 2026-10-11 — Core 正式訂閱接線準備
+## 2026-10-11 — Core 正式訂閱接線與 Email 卡片修復
 
-V3訂閱摘要；使用者確認第一個工作區與AI-00正式部署。独立正式資料庫／唯讀
-API及core.cmwebs.com已啟用；未授權401／跨範圍403，正式備份還原驗證通過。
-正式Apps Script227／63檔 exact153964e，原URL與其他四部署保留；四個Core
-屬性安全保存，不讀既有值。771測試／validate通過。缺少執行者Email scope
-導致audited綁定在寫入前拒絕；修正只增加userinfo.email，immutable228準備
-完成但未發布，editor HEAD已恢復227／移除臨時operator，等待本人Google授權。
-租管頁亦需本人登入驗收。目前沒有正式方案／訂閱、不收費、不啟用房間上限，
-工作區仍legacy。回退226／Pages396f4de；不改LINE或帳務規則，不刪歷史資料。
+本人已完成原「綠界結帳」Google 授權與租管登入。正式 Apps Script228／63檔
+與1e5d61f一致，原URL、其他四部署與回退227保留，臨時operator已移除。
+實際 Google UrlFetch、既有審計 provisioner、正式表 A1:G3 讀回通過：只有
+W000001／朱文漢的管理團隊 LINKED observe；啟用房間21、rooms_max=null。
+AI-00獨立正式資料庫／唯讀API、保護入口與本機備份還原通過；無方案／訂閱、
+收費或房間上限。四個Core屬性安全保存，既有屬性值未讀取。
+已登入頁面的卡片未送出請求；一次性安全診斷證明 Email 模式呼叫未初始化 LIFF。
+最小修復只在LINE模式取ID token；observe無額度時仍顯示實際房間與未設定上限。
+測試先重現卡片錯誤再修復；772完整測試／validate通過。前端tag
+20261011-core-subscription-v2待發布後實際登入畫面驗收；不偽造使用者或讀驗證碼。
+後端回退227、前端edf13f9；不改LINE／帳務規則、不刪歷史資料。
 
 
 ## 2026-10-05 — 月帳單日期辨識修復已發布214
