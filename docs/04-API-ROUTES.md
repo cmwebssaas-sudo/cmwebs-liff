@@ -1138,3 +1138,34 @@ Frontend Company/Product/Workspace inputs never select the Core tenant.
 Returns mode, subscription status, rooms_used/rooms_max, enabled and expiry;
 no Core credential or raw Core error. There is no subscription/payment/link
 mutation route. See [PLATFORM-CORE-SUBSCRIPTIONS.md](PLATFORM-CORE-SUBSCRIPTIONS.md).
+
+## V3 verified commercial registration
+
+Dispatcher is the current canonical `apps-script/程式碼.js`. All registration
+actions require POST body; JSON and the existing iframe form bridge are supported.
+GET `landlord_register_submit` and the new actions return `POST_REQUIRED`.
+The previous claimed-UID registration function always denies access.
+
+| Action | Verified evidence | Request fields |
+| --- | --- | --- |
+| `commercial_registration_email_request` | Email recipient challenge | `email` |
+| `commercial_registration_email_verify` | One-use Email OTP, five attempts, ten minutes | `challenge_id`, `code`, `registration_json` |
+| `commercial_registration_line` | LINE provider-verified ID token for the existing login channel | `id_token`, `registration_json` |
+| `landlord_register_submit` (compatibility POST) | Same verified LINE token requirement | `id_token`, registration fields with explicit terms consent |
+
+Registration JSON contains `landlord_name`, `phone`, `email`, `workspace_name`,
+`terms_accepted:true`. Browser UID, roles and Workspace claims grant no authority.
+An existing Email returns `ALREADY_REGISTERED` and the original login route.
+LINE registration never enables Email login from a displayed Email alone.
+
+The explicit editor operation `initializeCommercialRentalSchema` adds
+`V3_landlord_registration_intents` and `V3_platform_core_member_provisioning`,
+and ensures the existing rental schema and Core workspace-link headers. Reads
+never initialize these tables. Durable registration intents reserve original
+User/Workspace/Owner IDs so a fresh verified retry can finish a partial write.
+Provisioning records use workspace_id/user_id/status/idempotency_key/attempted_at/
+last_error_code/created_at/updated_at. Core calls and Email delivery run outside
+ScriptLock. New workspace links start in `enforce` while pending; existing
+`observe` links are preserved. Core timeout returns successful local registration
+with `PROVISIONING_PENDING`, and the verified member may retry the same binding.
+No first room or completed onboarding is required to reach the subscription page.

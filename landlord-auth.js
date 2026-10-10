@@ -409,6 +409,18 @@
       );
     },
 
+    requestRegistrationEmail(email) {
+      return bridgePost('commercial_registration_email_request', {email:text(email).trim()}, EMAIL_BRIDGE_TIMEOUT_MS);
+    },
+
+    verifyRegistrationEmail(challengeId, code, registrationInput) {
+      return bridgePost('commercial_registration_email_verify', {challenge_id:text(challengeId),code:text(code).trim(),registration_json:JSON.stringify(registrationInput)}, EMAIL_BRIDGE_TIMEOUT_MS).then(maybeStoreSession);
+    },
+
+    registerVerifiedLine(idToken, registrationInput) {
+      return bridgePost('commercial_registration_line', {id_token:text(idToken),registration_json:JSON.stringify(registrationInput)}, EMAIL_BRIDGE_TIMEOUT_MS);
+    },
+
     verifyEmailCode(challengeId, code) {
       return bridgePost(
         'landlord_email_login_verify',
