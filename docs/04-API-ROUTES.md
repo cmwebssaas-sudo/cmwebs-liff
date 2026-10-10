@@ -1128,3 +1128,13 @@ quote_id 及目前啟用的 executor。固定價必須精確匹配 `fixed_work_k
 超額須 `approve_extra` 後才能 accept。舊 `landlord_repair_ticket_update` 不得
 繞過已啟用派工的工單；房客/房東讀取相容五種 status projection。
 `DISPATCH_RESULT_UNKNOWN` 不表示未提交，前端保留 guard 並讀回 exact request ID。
+
+## V3 Core subscription adapter (candidate)
+
+`landlord_subscription_init`: POST body only, `response_mode=bridge` supported.
+Requires existing landlord Email session or provider-verified LINE ID token,
+then resolves current Workspace and read permission. GET and raw UID rejected.
+Frontend Company/Product/Workspace inputs never select the Core tenant.
+Returns mode, subscription status, rooms_used/rooms_max, enabled and expiry;
+no Core credential or raw Core error. There is no subscription/payment/link
+mutation route. See [PLATFORM-CORE-SUBSCRIPTIONS.md](PLATFORM-CORE-SUBSCRIPTIONS.md).
