@@ -1,5 +1,18 @@
 # 房東登入復驗與讀取效能修復
 
+## 正式發布狀態（2026-10-11）
+
+使用者確認「發布，接著重測登入、首頁與房間清單」。重新讀回正式部署 v228、
+其他四部署 HEAD／160／10／139；serving v228 與 editor HEAD 匯出皆為 63 檔，
+與當時 origin/main 完全相同。只推送下述三檔差異，建立 immutable v229，
+匯出 63 檔與 `7ea6b5b` 逐位元一致後切換原 deployment。正式讀回為 v229，
+URL 與其他四部署不變。保留 rollback v228；129 個既有版本皆未刪除。
+
+發布前 fresh suite 786 pass／0 fail／4 外部 Core skip，validate 通過。
+目前新的驗收頁缺少原分頁的 sessionStorage 登入，已請使用者自行登入；
+authenticated timing 仍為 PENDING，不以尚未送出 API 的登入表單當速度證據。
+以下保留修補前測量與開發過程；其「本機候選」是發布前歷史狀態。
+
 建議模型／速度：`gpt-5.6-terra`／`medium`。範圍：V2.0 現有登入與讀取穩定性。
 2026-10-11 本機候選，基底 `3cb7d45cb00435c5cb30a719bbf81a3d9ac1e9a6`；
 分支 `codex/cmwebs-read-performance-20261011`。未 push、merge 或部署。

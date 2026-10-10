@@ -632,7 +632,7 @@ envelope correlated by `request_id`. They are not `doGet` / JSONP
 - All six Email auth actions are POST-only. `doGet` / JSONP routes stay
   compatible for existing flows but do not carry Email, OTP code, challenge ID,
   session token, `workspace_id`, or `role`.
-- 2026-10-11 local performance candidate: `landlord_email_session_status`
+- 2026-10-11 performance release v229: `landlord_email_session_status`
   validates the session once after required-field checks. It uses a fresh,
   request-local snapshot only (no shared auth sheet cache) and does not touch
   `last_seen_at` / `request_id` or persist expiry on a read. Expiry and revocation
@@ -641,7 +641,8 @@ envelope correlated by `request_id`. They are not `doGet` / JSONP
   shared business-read cache. Missing auth sheets or read failures return a
   controlled bridge error (`AUTH_UNAVAILABLE` for status,
   `SUBSCRIPTION_UNAVAILABLE` for summary), without schema repair.
-  See `LANDLORD-READ-PERFORMANCE.md`; not deployment evidence.
+  Deployment evidence and pending authenticated timing acceptance are recorded
+  in `LANDLORD-READ-PERFORMANCE.md`.
 - The desktop request body cannot override the server-resolved `workspace_id`
   or `role`. Every protected landlord action must continue to resolve the
   active Workspace membership and authorization on the server.

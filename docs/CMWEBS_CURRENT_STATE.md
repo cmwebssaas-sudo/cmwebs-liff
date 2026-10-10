@@ -1,5 +1,14 @@
 # CMWebs Current State
 
+## 2026-10-11 — 登入復驗與共用讀取後端正式 v229
+
+使用者已授權發布與登入／首頁／房間清單重測。Fresh serving/editor228 的63檔
+與 main 相同；immutable229 全63檔與7ea6b5b一致，原 deployment 已讀回229，
+其他四部署不變，rollback228保留。沒有前端／Schema／Properties／trigger／
+LINE變更或版本刪除。786測試通過、0失敗、4項外部Core條件式skip。
+新的驗收頁需要使用者自行登入，實際速度改善仍待測；詳見
+`LANDLORD-READ-PERFORMANCE.md`。
+
 ## 2026-10-11 — Core 正式訂閱接線與 Email 卡片修復
 
 本人已完成原「綠界結帳」Google 授權與租管登入。正式 Apps Script228／63檔

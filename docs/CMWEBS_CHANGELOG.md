@@ -1,5 +1,12 @@
 # CMWebs Changelog
 
+## 2026-10-11 — 登入復驗與共用讀取後端發布 v229
+
+使用者授權後，fresh v228/editor63檔核對 main；v229匯出63檔與7ea6b5b相同。
+同一正式 deployment 已讀回229，其他四部署、URL及rollback228保留。
+不改前端／Schema／Properties／triggers／LINE。登入後實測待使用者在新驗收頁
+完成登入；不能把本機操作次數降幅當成正式站秒數。
+
 ## 2026-10-11 — 登入復驗與共用讀取修補（本機候選，未發布）
 
 Session status 移除重複完整驗證；status／subscription summary 改為僅請求內

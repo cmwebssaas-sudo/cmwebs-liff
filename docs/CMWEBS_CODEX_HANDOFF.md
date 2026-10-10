@@ -16,6 +16,14 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
+- 2026-10-11 user-authorized performance release: fresh serving/editor228 exact63
+  matched main; immutable229 exact63 matched7ea6b5b. Original Web App now229,
+  other4 deployments unchanged; rollback228, no version deletion. Fresh786 pass,
+  0fail/4external Core skips and validate pass. No frontend/schema/Properties/
+  triggers/LINE changes. Authenticated retest pending user login in new test tab;
+  original logged-in tab belongs to another browser session. See
+  LANDLORD-READ-PERFORMANCE.md; do not claim live speed improvement yet.
+
 - 2026-10-11 landlord read performance local candidate: recommended model/speed
   `gpt-5.6-terra` / `medium`; branch `codex/cmwebs-read-performance-20261011`, base
   `3cb7d45`. Session status validates once; status/subscription init use fresh
