@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "release_id": "cmwebs-v2-rc1",
+  "generated_at": "2026-07-23T21:46:20+08:00",
+  "capture_mode": "local_repository_and_git_history_read_only",
+  "safety": {
+    "production_changed": false,
+    "git_pushed": false,
+    "remote_query_performed": false,
+    "secret_or_property_value_recorded": false
+  },
+  "coverage": {
+    "worktree_identity_reference_files_scanned": 20,
+    "git_commits_scanned": [
+      "3c0ddc1c60cd3bcbdd2f723ba47852f1de159b54",
+      "498057271a2fac46e0f3fe1747215aaaf26a3b88",
+      "8da55494d9f6f9fb2a3b57f5a3eba069ade7bd81"
+    ],
+    "historical_paths_with_canonical_deployment_fingerprint": 43
+  },
+  "candidates": [
+    {
+      "id": "historical_serving_production_candidate",
+      "classification": "LOCAL_CANONICAL_CANDIDATE",
+      "confidence": "high_local_evidence",
+      "script_project": {
+        "masked_id": "1NAPtZ...MD0k",
+        "sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985"
+      },
+      "deployment": {
+        "masked_id": "AKfycb...X6Og",
+        "sha256": "ebd02787d83c57d00096d95c3280254e609d051b5d1367da556871192105a390"
+      },
+      "evidence_chain": [
+        {
+          "source_path": "release/phase54/apps-script/.clasp.json",
+          "source_type": "worktree",
+          "content_sha256": "e0b4aaa072474ea58ef4517d345c7596f64b4324721b1d71d701640e11e343eb",
+          "declared_purpose": "historical release source binding",
+          "classification": "HISTORICAL_ROLLBACK"
+        },
+        {
+          "source_path": "release/phase57/production-rollback-metadata.json",
+          "source_type": "worktree",
+          "content_sha256": "73810c73cda4ddab1be8f8ec14c99dbf9146bcdfe2bb1ca7378b287b25e40de1",
+          "captured_at": "2026-07-20T23:12:09+08:00",
+          "declared_purpose": "Production rollback metadata",
+          "classification": "HISTORICAL_ROLLBACK"
+        },
+        {
+          "source_path": "production-manifest.json",
+          "source_type": "git_history_and_worktree",
+          "git_commit": "3c0ddc1c60cd3bcbdd2f723ba47852f1de159b54",
+          "content_sha256": "71d51fbaccc2dd8dd10d4f5b8b1b038c942c7070fe38b82f27ccfd6d4897c0c2",
+          "declared_purpose": "candidate manifest with Web App reference",
+          "classification": "INSUFFICIENT_EVIDENCE"
+        },
+        {
+          "source_path": "docs/03-CONFIGURATION.md",
+          "source_type": "git_history_and_worktree",
+          "git_commits": [
+            "3c0ddc1c60cd3bcbdd2f723ba47852f1de159b54",
+            "498057271a2fac46e0f3fe1747215aaaf26a3b88",
+            "8da55494d9f6f9fb2a3b57f5a3eba069ade7bd81"
+          ],
+          "git_blob_sha1": "f6d99bede9699b6dc1ace6136e4641f66e7bae94",
+          "matching_historical_path_count": 43,
+          "declared_purpose": "historical frontend endpoint configuration",
+          "classification": "HISTORICAL_ROLLBACK"
+        }
+      ],
+      "remote_verification": "HUMAN_REQUIRED"
+    },
+    {
+      "id": "current_local_clasp_binding",
+      "classification": "CONFLICTING",
+      "script_project": {
+        "masked_id": "1JmW2N...ihRJ",
+        "sha256": "8be891f7be33c46ac63ead80efafd167cfb54da3e4a1ba348abd63d231925fb1"
+      },
+      "deployment": {
+        "masked_id": "AKfycb...MdBJ",
+        "sha256": "97f28cf71041e582582ea59f1af24507129f7dbdc5630c6af57e9ba33a570b3a",
+        "version_reference": "@HEAD"
+      },
+      "evidence_source": "apps-script/.clasp.json and Phase 122B read-only inventory",
+      "reason": "Neither fingerprint matches the historical serving Production candidate."
+    },
+    {
+      "id": "staging_binding",
+      "classification": "STAGING",
+      "script_project": {
+        "masked_id": "1ZfX86...k23T",
+        "sha256": "2be1ad2a31dbee871544ee51bff67131f7791d270c95dd7dcf546a21b4e3f354"
+      },
+      "deployment": {
+        "masked_id": "AKfycb...LQ8g",
+        "sha256": "2b94d0a5b091d33e7937b18a1a37be5c52e0663d438c7d0e0588cdd87aaadcdb"
+      },
+      "evidence_source": "release/staging/.clasp.json and release/staging/.staging-resources.local.json"
+    }
+  ],
+  "result": {
+    "production_identity_reconciliation": "PARTIAL",
+    "local_canonical_candidate": "PRESENT",
+    "remote_verification": "HUMAN_REQUIRED",
+    "serving_production_candidate_count": 1,
+    "conflicting_serving_production_candidate_count": 0,
+    "next_safe_gate": "authorized_human_read_only_identity_comparison"
+  }
+}

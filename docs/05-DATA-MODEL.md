@@ -24,6 +24,7 @@
 | `V2_tenants` | 房客 |
 | `V2_contracts` | 租約 |
 | `V2_contract_requests` | 續約、提前終止與其他合約申請 |
+| `V2_contract_documents` | 房東上傳與管理合約、身分證件與自拍照 |
 | `V2_tenant_checkins` | 入住報到、鑰匙與入住電表 |
 | `V2_tenant_messages` | 房客訊息與報修基礎資料 |
 

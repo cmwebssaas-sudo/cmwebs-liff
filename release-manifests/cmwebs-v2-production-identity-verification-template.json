@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "release_id": "cmwebs-v2-rc1",
+  "template_purpose": "authorized_human_read_only_production_identity_verification",
+  "remote_verification": "HUMAN_REQUIRED",
+  "rc_freeze_ready": "NO",
+  "permitted_record_fields": [
+    "verification_timestamp",
+    "verifier_role",
+    "match_result",
+    "masked_identifier",
+    "fingerprint_masked",
+    "evidence_reference"
+  ],
+  "prohibited_record_fields": [
+    "raw_identifier",
+    "secret",
+    "property_value",
+    "line_uid",
+    "personal_data",
+    "token"
+  ],
+  "record_template": {
+    "verification_timestamp": null,
+    "verifier_role": null,
+    "script_id": {
+      "match_result": null,
+      "masked_identifier": null,
+      "fingerprint_masked": null
+    },
+    "deployment_id": {
+      "match_result": null,
+      "masked_identifier": null,
+      "fingerprint_masked": null
+    },
+    "evidence_reference": null
+  }
+}

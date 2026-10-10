@@ -193,8 +193,7 @@ function importV1HistoricalBillsToV2ByMonth_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const sourceSheet =
     ss.getSheetByName(

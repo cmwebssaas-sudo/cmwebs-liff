@@ -1,0 +1,17 @@
+{
+  "environment": "staging",
+  "defaultPolicy": "deny",
+  "tenantLineUids": [
+    "__SET_APPROVED_STAGING_TENANT_UID_LOCALLY__"
+  ],
+  "landlordLineUids": [
+    "__OPTIONAL_APPROVED_STAGING_LANDLORD_UID_LOCALLY__"
+  ],
+  "rules": {
+    "productionUidReuseAllowed": false,
+    "unknownUidAllowed": false,
+    "uidInUrlAllowed": false,
+    "linePushAllowed": false,
+    "sheetWriteAllowedDuringSmokeTest": false
+  }
+}

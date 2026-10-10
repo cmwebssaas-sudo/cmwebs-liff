@@ -729,9 +729,6 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
-
     const URL_PARAMS =
       new URLSearchParams(location.search);
 
@@ -1137,6 +1134,10 @@
             '&_=' +
             Date.now();
 
+          if (TEST_MODE) {
+            url += '&test=1';
+          }
+
           Object.keys(
             params || {}
           ).forEach(
@@ -1188,13 +1189,6 @@
     }
 
     async function initLineUserId() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
-
-        return true;
-      }
-
       if (
         typeof liff === 'undefined'
       ) {

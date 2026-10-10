@@ -7,6 +7,7 @@
  * - landlord_property_archive
  * - landlord_room_save
  * - landlord_room_archive
+ * - landlord_room_account_toggle
  *
  * 權限：
  * - owner / admin / manager 可新增與修改
@@ -44,6 +45,38 @@ const V2_ROOM_MANUAL_STATUSES_ = [
 ];
 
 
+function propertyRoomNormalizeAccountToggleEnabled_(value) {
+  if (value === true) {
+    return true;
+  }
+
+  const normalized = String(
+    value === undefined || value === null
+      ? ''
+      : value
+  )
+    .trim()
+    .toLowerCase();
+
+  return [
+    'true',
+    '1',
+    'on',
+    'active',
+    'enabled',
+    '啟用',
+    '啟用中'
+  ].indexOf(normalized) >= 0;
+}
+
+
+function propertyRoomAccountStatusFromToggle_(value) {
+  return propertyRoomNormalizeAccountToggleEnabled_(value)
+    ? 'active'
+    : 'inactive';
+}
+
+
 function getLandlordPropertiesInitByLineUid_(
   lineUserId,
   includeArchived
@@ -72,7 +105,7 @@ function getLandlordPropertiesInitByLineUid_(
       );
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const roomDefaults =
       typeof settingsIntegrationGetWorkspaceSettings_ ===
@@ -649,7 +682,7 @@ function saveLandlordPropertyByLineUid_(
     locked = true;
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const sheet =
       ss.getSheetByName(
@@ -1096,7 +1129,7 @@ function saveLandlordRoomByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const roomDefaults =
       typeof settingsIntegrationGetWorkspaceSettings_ ===
@@ -1716,6 +1749,181 @@ function saveLandlordRoomByLineUid_(
 }
 
 
+function setLandlordRoomAccountToggleByLineUid_(
+  lineUserId,
+  roomId,
+  enabled
+) {
+  const lock =
+    LockService.getScriptLock();
+
+  let locked = false;
+
+  try {
+    propertyRoomEnsureSchema_();
+
+    const access =
+      workspaceLandlordResolveAccess_(
+        lineUserId,
+        {
+          require_onboarding: true
+        }
+      );
+
+    if (!access.success) {
+      return access;
+    }
+
+    const permission =
+      propertyRoomRequireWrite_(
+        access
+      );
+
+    if (!permission.success) {
+      return permission;
+    }
+
+    roomId =
+      propertyRoomText_(
+        roomId
+      );
+
+    if (!roomId) {
+      return workspaceResult_(
+        false,
+        'MISSING_ROOM_ID',
+        '缺少房間 ID'
+      );
+    }
+
+    if (
+      enabled === undefined ||
+      enabled === null ||
+      String(enabled).trim() === ''
+    ) {
+      return workspaceResult_(
+        false,
+        'MISSING_ACCOUNT_STATUS',
+        '缺少房間帳號狀態'
+      );
+    }
+
+    const targetStatus =
+      propertyRoomAccountStatusFromToggle_(
+        enabled
+      );
+
+    lock.waitLock(20000);
+    locked = true;
+
+    const ss =
+      runtimeSpreadsheet_();
+    const roomSheet =
+      ss.getSheetByName(
+        V2_PROPERTY_ROOM_SHEETS_.rooms
+      );
+    const room =
+      propertyRoomFindWorkspaceTarget_(
+        roomSheet,
+        access,
+        'room_id',
+        roomId
+      );
+
+    if (!room) {
+      return workspaceResult_(
+        false,
+        'ROOM_NOT_FOUND',
+        '找不到指定房間或無權限存取'
+      );
+    }
+
+    const currentStatus =
+      propertyRoomText_(
+        room.account_status || 'active'
+      )
+        .toLowerCase();
+
+    if (currentStatus !== targetStatus) {
+      const actor =
+        propertyRoomActor_(
+          access
+        );
+
+      propertyRoomSetValues_(
+        roomSheet,
+        room.__row_number,
+        {
+          account_status:
+            targetStatus,
+          updated_by_user_id:
+            actor.user_id,
+          updated_by_membership_id:
+            actor.membership_id,
+          updated_at:
+            new Date()
+        }
+      );
+
+      SpreadsheetApp.flush();
+    }
+
+    const result =
+      workspaceResult_(
+        true,
+        currentStatus === targetStatus
+          ? 'ROOM_ACCOUNT_STATUS_UNCHANGED'
+          : 'ROOM_ACCOUNT_STATUS_UPDATED',
+        targetStatus === 'active'
+          ? '房間帳號已啟用'
+          : '房間帳號已停用',
+        {
+          room_id:
+            roomId,
+          account_status:
+            targetStatus,
+          changed:
+            currentStatus !== targetStatus
+        }
+      );
+
+    propertyRoomAudit_(
+      access,
+      'landlord_room_account_toggle',
+      result,
+      {
+        target_type:
+          'room',
+        target_id:
+          roomId,
+        secondary_target_id:
+          room.property_id || '',
+        operation_status:
+          targetStatus,
+        detail:
+          'account_status=' +
+          targetStatus
+      }
+    );
+
+    return result;
+
+  } catch (error) {
+    return workspaceResult_(
+      false,
+      'ROOM_ACCOUNT_STATUS_ERROR',
+      '房間帳號狀態更新失敗：' +
+        error.message
+    );
+
+  } finally {
+    if (locked) {
+      lock.releaseLock();
+    }
+  }
+}
+
+
 function archiveLandlordRoomByLineUid_(
   lineUserId,
   roomId,
@@ -1780,7 +1988,7 @@ function archiveLandlordRoomByLineUid_(
     locked = true;
 
     const ss =
-      SpreadsheetApp.getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const roomSheet =
       ss.getSheetByName(
@@ -3012,7 +3220,7 @@ function propertyRoomEnsureSchema_() {
   workspaceEnsureSchema_();
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   propertyRoomEnsureSheet_(
     ss,
@@ -3219,8 +3427,7 @@ function propertyRoomEnsureSheet_(
  */
 function propertyRoomRequireReadSchema_() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const requiredSheets = [
     V2_PROPERTY_ROOM_SHEETS_
@@ -4241,8 +4448,7 @@ function repairWorkspacePropertyRoomLinksByLineUid_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const roomSheet =
     ss.getSheetByName(
@@ -4484,8 +4690,7 @@ function repairWorkspaceRoomFinancialDataByLineUid_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const roomSheet =
     ss.getSheetByName(
@@ -4882,8 +5087,7 @@ function diagnoseWorkspaceRoomPaymentDepositByLineUid_(
   }
 
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const rooms =
     propertyRoomGetWorkspaceRooms_(
@@ -5135,7 +5339,7 @@ function testEnsurePropertyRoomSchema() {
   propertyRoomEnsureSchema_();
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const result = {
     success:

@@ -1,0 +1,151 @@
+{
+  "phase": "123B",
+  "recorded_at": "2026-07-24T05:54:52+08:00",
+  "rc_source_freeze": {
+    "status": "PASS",
+    "release_branch": "release/cmwebs-v2-rc1",
+    "local_release_commit_sha": "acdfe8eae5e6ea4914ed791f818beec88d4e7c08",
+    "git_tree_sha": "a8883aab9c5f302d873531b6b40646e1e56803fb",
+    "candidate_count": 36,
+    "release_worktree_clean": true
+  },
+  "production_safety": {
+    "original_spreadsheet_changed": false,
+    "apps_script_deployed": false,
+    "properties_changed": false,
+    "triggers_changed": false,
+    "real_line_sent": false,
+    "real_payment_action": false,
+    "git_pushed": false
+  },
+  "copies": {
+    "immutable_backup": {
+      "created": true,
+      "title": "[IMMUTABLE BACKUP] CMWebs V2 pre-RC1 20260723-235310",
+      "created_at": "2026-07-23T23:53:10+08:00",
+      "spreadsheet_id_recorded": false,
+      "schema_verification": "PENDING_SAFE_INVENTORY"
+    },
+    "rehearsal": {
+      "created": true,
+      "title": "[REHEARSAL] CMWebs V2 RC1 migration 20260723-235527",
+      "created_at": "2026-07-23T23:55:27+08:00",
+      "masked_spreadsheet_id": "10_a...xld4",
+      "spreadsheet_id_sha256": "9f96aefc2be4cd4f6867d1d0b0daa61efb871d33d5b73c3e25f8c48e5f2dcd34"
+    }
+  },
+  "rehearsal_runtime": {
+    "linked_apps_script_menu_found": true,
+    "project_created": true,
+    "project_account": "cmwebs.saas@gmail.com",
+    "masked_script_id": "1nlv...H3BH",
+    "script_id_sha256": "888a3ba3cf018e203c1de41a56a1e31fa7ae36fc845b528a9e1646dd022e653c",
+    "script_differs_from_production": true,
+    "script_differs_from_staging": true,
+    "script_identity_isolated": "VERIFIED",
+    "clasp_named_credential": "cmwebs-rehearsal",
+    "oauth_account_confirmed": true,
+    "read_only_pull": "PASS",
+    "push_target_verified": true,
+    "remote_manifest_scope_sync": "PASS",
+    "project_oauth_scopes_verified": true,
+    "runtime_reauthorization": "PASS",
+    "runtime_authorization_at": "2026-07-24T02:55:46+08:00",
+    "runtime_oauth_account": "cmwebs.saas@gmail.com",
+    "oauth_scope_allowlist": [
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/script.scriptapp"
+    ],
+    "environment": "REHEARSAL",
+    "line_transport": "MOCK",
+    "payment_transport": "MOCK",
+    "notification_delivery": "MOCK",
+    "trigger_count": 0,
+    "triggers_created": false,
+    "web_app_deployed": false,
+    "guard_source_written": true,
+    "guard_checksum_sha256": "c97b1a572755e057767044f419a92e83de7628e5bb0561d7479a4df85682d63d",
+    "guard_static_isolation_scan": "PASS",
+    "spreadsheet_binding": "VERIFIED",
+    "preflight_run": true,
+    "preflight_sanitized_output": {
+      "environment": "REHEARSAL",
+      "spreadsheet_binding_verified": true,
+      "trigger_count": 0,
+      "line_transport": "MOCKED",
+      "payment_transport": "MOCKED",
+      "notification_transport": "MOCKED",
+      "external_network_allowed": false,
+      "production_access_allowed": false
+    },
+    "preflight_result": "PASS",
+    "remote_package_complete": true,
+    "remote_package_file_count": 20,
+    "entrypoint_discovery": "PASS",
+    "temporary_restore_verifier_removed": true,
+    "no_side_effects": {
+      "rehearsal_data_or_schema_changed": true,
+      "properties_read_or_changed": false,
+      "real_line_sent": false,
+      "real_payment_action": false,
+      "deployment_created": false
+    }
+  },
+  "verification": {
+    "backup_verification": "PASS_RESTORE_METADATA_AND_HEADERS",
+    "frozen_rc_integrity": "PASS",
+    "frozen_rc_candidate_count": 36,
+    "frozen_rc_path_sets_identical": true,
+    "frozen_rc_sha_recomputation": "PASS",
+    "migration_source_gate": "PASS",
+    "rehearsal_source_pushed": true,
+    "rehearsal_deployment_created": false,
+    "rehearsal_spreadsheet_helper": "PASS",
+    "pre_migration_snapshot": {
+      "status": "PASS",
+      "sheet_count": 67,
+      "total_row_count": 128851,
+      "total_column_count": 1565,
+      "schema_version": "",
+      "migration_marker": "",
+      "snapshot_checksum_sha256": "74b124028bdddbee3db5e9d0a2b8b6b5223ef3f1c6b4035a23f55d387b760535"
+    },
+    "migration_rehearsal": {
+      "status": "PASS",
+      "unsafe_schema_delta": false,
+      "post_migration_sheet_count": 69,
+      "post_migration_total_row_count": 128855,
+      "post_migration_total_column_count": 1569,
+      "schema_version": "CMWEBS_V2_RC1",
+      "migration_marker": "CMWEBS_V2_RC1",
+      "snapshot_checksum_sha256": "37ba37e740806aaed6045dc3af46699779264676c78c796f3817877c172d8d74"
+    },
+    "migration_idempotency": {
+      "status": "PASS",
+      "second_run_matches_first_post_migration_snapshot": true
+    },
+    "core_smoke_test": {
+      "status": "PASS",
+      "tenant": "PASS",
+      "landlord": "PASS",
+      "infrastructure": "PASS",
+      "fixture_created": true,
+      "fixture_cleanup": "PASS",
+      "fixture_remaining_rows": 0,
+      "line_transport": "MOCKED",
+      "payment_transport": "MOCKED",
+      "notification_transport": "MOCKED"
+    },
+    "rollback_rehearsal": "NOT_APPLICABLE",
+    "restore_rehearsal": {
+      "status": "PASS",
+      "restore_test_copy_created": true,
+      "sheet_count": 67,
+      "metadata_match": true,
+      "header_checksum_match": true,
+      "mismatch_count": 0
+    },
+    "restore_duration_seconds": 481
+  },
+  "blocker": []
+}

@@ -1,0 +1,5 @@
+window.CMWEB_ENV_OVERRIDES = Object.freeze({
+  apiUrl: '__SET_STAGING_WEB_APP_URL_LOCALLY__',
+  liffId: '__SET_STAGING_LIFF_ID_LOCALLY__',
+  testLineUserId: '__SET_STAGING_TEST_LINE_UID_LOCALLY__'
+});

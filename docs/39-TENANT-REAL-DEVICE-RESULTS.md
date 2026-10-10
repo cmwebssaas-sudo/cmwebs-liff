@@ -1,11 +1,11 @@
 # CMWebs V2 Tenant Frontend Phase 38 — Real Device Results
 
-- Result sheet date: 2026-07-19 (Asia/Taipei)
+- Result sheet date: 2026-07-20 (Asia/Taipei)
 - Execution source: `docs/38-TENANT-REAL-DEVICE-VALIDATION.md`
-- Initial state: every case is `NOT TESTED`
-- Release recommendation: `NOT EVALUATED`
+- Current state: five human-observed cases recorded; Phase 44 confirmed the master and tenant runtime View rows exist, but landlord-link ambiguity and deployment identity remain unresolved; no post-fix retest has been executed
+- Release recommendation: `DO NOT RELEASE` until the P0 incident is retested
 
-This file is an unexecuted human-test template. It contains no inferred PASS result. Create a separate row when the same case is run on more than one device or environment; never overwrite one device's evidence with another device's result.
+This file is the human-test result template with five reported incident observations recorded. It contains no inferred PASS result and no post-fix retest. Create a separate row when the same case is run on more than one device or environment; never overwrite one device's evidence with another device's result.
 
 ## 1. Result summary
 
@@ -13,13 +13,13 @@ This file is an unexecuted human-test template. It contains no inferred PASS res
 |---|---:|
 | Total cases | 63 unique case definitions |
 | Passed | 0 |
-| Failed | 0 |
-| Blocked | 0 |
-| Not tested | 63 |
-| P0 count | 0 confirmed findings |
+| Failed | 3 |
+| Blocked | 2 |
+| Not tested | 58 |
+| P0 count | 3 failed case results from 1 confirmed incident |
 | P1 count | 0 confirmed findings |
 | P2 count | 0 confirmed findings |
-| Release recommendation | **NOT EVALUATED** |
+| Release recommendation | **DO NOT RELEASE — P0 incident open; post-fix retest required** |
 
 Applicability totals are 62 cases for iPhone and 61 cases for Android. These are execution slots, not completed results. `TH-14` and `TB-20` are iPhone-only; `TB-21` is Android-only. Desktop checks supplement but never replace the required mobile/WebView rows.
 
@@ -40,9 +40,9 @@ Applicability totals are 62 cases for iPhone and 61 cases for Android. These are
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | TH-01 | iPhone + Android | — | LINE WebView | `tenant-home.html` | Page opens | Shell reaches Home, Bind or classified error without blank/crash/loop. | — | NOT TESTED | P0 | — | — | — | — |
 | TH-02 | iPhone + Android | — | Formal LIFF | `tenant-home.html` | LIFF initialization | Login returns once to the correct tenant entry without an initialization loop. | — | NOT TESTED | P0 | — | — | — | — |
-| TH-03 | iPhone + Android | — | Approved `test=1` | `tenant-home.html` | Test identity | Only the approved test tenant appears; formal identity is not substituted. | — | NOT TESTED | P0 | — | — | — | — |
-| TH-04 | iPhone + Android | — | Approved unbound identity | `tenant-home.html` | Unbound redirect | Redirects once to `tenant-bind.html`, preserves mode and does not loop. | — | NOT TESTED | P0 | — | — | — | — |
-| TH-05 | iPhone + Android | — | LINE WebView | `tenant-home.html` | Bound data | Tenant, workspace, room and contract match the approved fixture only. | — | NOT TESTED | P0 | — | — | — | — |
+| TH-03 | Human-reported real device | Not provided | GitHub Pages `test=1` | `tenant-home.html` | Test identity | Only the approved test tenant appears; formal identity is not substituted. | Bind identified test tenant `T000020`, but entering Home returned to Bind, so test identity continuity failed. | FAIL | P0 | Human incident report; device evidence pending | 2026-07-19, time not provided | Human tester, name not provided | No post-fix retest; no PASS inferred |
+| TH-04 | Human-reported real device | Not provided | GitHub Pages `test=1` | `tenant-home.html` | Unbound redirect | Redirects once to `tenant-bind.html`, preserves mode and does not loop. | The already-bound test tenant was redirected from Home back to Bind; pressing “進入房客首頁” repeated the loop. | FAIL | P0 | Human incident report; URL/evidence capture pending | 2026-07-19, time not provided | Human tester, name not provided | Observed bound→Home→Bind loop |
+| TH-05 | Human-reported real device | Not provided | GitHub Pages `test=1` | `tenant-home.html` | Bound data | Tenant, workspace, room and contract match the approved fixture only. | Home data could not be observed because the page returned to Bind before rendering. | BLOCKED | P0 incident blocker | Human incident report | 2026-07-19, time not provided | Human tester, name not provided | Retest only after incident review; no result for field accuracy |
 | TH-06 | iPhone + Android | — | LINE WebView | `tenant-home.html` | Month format | Month values are consistent `YYYY-MM`; blank is `-`. | — | NOT TESTED | P1 | — | — | — | — |
 | TH-07 | iPhone + Android | — | LINE WebView | `tenant-home.html` | Current bill summary | Status, total, due date and count match the approved current bill. | — | NOT TESTED | P0 if financial data differs | — | — | — | — |
 | TH-08 | iPhone + Android | — | LINE WebView | `tenant-home.html` | Unpaid amount | Unpaid total/count match the same tenant's eligible bills. | — | NOT TESTED | P0 if tenant or amount differs | — | — | — | — |
@@ -65,8 +65,8 @@ Applicability totals are 62 cases for iPhone and 61 cases for Android. These are
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | TB-01 | iPhone + Android | — | LINE WebView | `tenant-bills.html` | Page opens | Loading reaches list, empty state or classified error without crash. | — | NOT TESTED | P0 | — | — | — | — |
 | TB-02 | iPhone + Android | — | Formal LIFF | `tenant-bills.html` | LIFF initialization | Correct formal tenant loads without login loop or test identity. | — | NOT TESTED | P0 | — | — | — | — |
-| TB-03 | iPhone + Android | — | Approved `test=1` | `tenant-bills.html` | Test identity | Only approved test-tenant bills appear. | — | NOT TESTED | P0 | — | — | — | — |
-| TB-04 | iPhone + Android | — | Multi-month fixture | `tenant-bills.html` | Month list | Normalized newest-first months appear once and match the fixture. | — | NOT TESTED | P1; P0 if a wrong bill appears | — | — | — | — |
+| TB-03 | Human-reported real device | Not provided | GitHub Pages `test=1` | `tenant-bills.html` | Test identity | Only approved test-tenant bills appear. | Direct open displayed “帳單資料讀取失敗”; tenant bill identity could not be established. | FAIL | P0 | Human incident report; exact API code/evidence pending | 2026-07-19, time not provided | Human tester, name not provided | No post-fix retest; no PASS inferred |
+| TB-04 | Human-reported real device | Not provided | GitHub Pages `test=1` | `tenant-bills.html` | Month list | Normalized newest-first months appear once and match the fixture. | No month list was available because the page stopped at the bill-read error. | BLOCKED | P0 incident blocker | Human incident report | 2026-07-19, time not provided | Human tester, name not provided | Month ordering itself was not tested |
 | TB-05 | iPhone + Android | — | Multi-month fixture | `tenant-bills.html` | Month switching | Detail always matches the selected month, bill and amount. | — | NOT TESTED | P0 | — | — | — | — |
 | TB-06 | iPhone + Android | — | LINE WebView | `tenant-bills.html` | Open detail | One detail opens at top with the correct bill from both entry paths. | — | NOT TESTED | P1; P0 if the wrong bill appears | — | — | — | — |
 | TB-07 | iPhone + Android | — | LINE WebView | `tenant-bills.html` | Close detail | Both close controls remove the modal/lock once and restore the list. | — | NOT TESTED | P1 | — | — | — | — |
@@ -144,12 +144,25 @@ Complete only after required iPhone and Android executions and formal smoke are 
 - Required Android cases complete: `NOT TESTED`
 - Desktop supplement complete: `NOT TESTED`
 - Formal LIFF smoke complete: `NOT TESTED`
-- Open P0: `NOT EVALUATED`
+- Open P0: `1 confirmed incident affecting 3 failed and 2 blocked cases`
 - Open P1: `NOT EVALUATED`
 - Data isolation accepted by: `—`
 - Frontend owner accepted by: `—`
-- Release recommendation: **NOT EVALUATED**
+- Release recommendation: **DO NOT RELEASE — post-fix real-device retest required**
 
 ## 9. No-execution declaration
 
-No real-device, browser or formal LIFF test has been executed or marked PASS in this initial results file. No HTML, Apps Script, route, endpoint, LIFF ID, test UID, Google Sheet, deployment or runtime setting was changed. No commit, push, `clasp push`, `clasp deploy` or deployment was performed.
+Five human-observed case results from the reported incident are recorded above. No post-fix real-device, browser or formal LIFF retest has been executed, and no case is marked PASS. This results file does not record a deployment, commit, push, `clasp push` or `clasp deploy`.
+
+## 10. Phase 44/45 diagnosis status
+
+Phase 44's production read-only diagnosis supersedes the earlier static assumption that the three runtime Views were absent. It confirmed:
+
+- `V2_tenant_home_view`: 1 related row.
+- `V2_tenant_bill_view`: 1 related row matching the bill master.
+- `V2_landlord_tenant_list_view`: 2 related rows, one incomplete legacy-style row and one complete canonical relationship row.
+- Tenant, active contract, room, bill, home view and bill view identifiers are consistent.
+- The shared Home/Message resolver currently fails closed with `MULTIPLE_TENANT_LANDLORD_LINKS`.
+- The repository frontend endpoint does not match the deployment exposed by the current canonical Apps Script project configuration; no live route call was made in Phase 45 because route logging may write access-log data.
+
+Phase 45 adds only a local, read-only deployment-contract verifier and remediation plans. It has not been pushed to Apps Script or executed against production. TH-03, TH-04, TH-05, TB-03 and TB-04 therefore retain their original observed `FAIL`/`BLOCKED` states. All post-remediation and post-deployment checks remain `NOT TESTED`; no case is changed to PASS.

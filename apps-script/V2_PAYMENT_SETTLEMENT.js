@@ -80,8 +80,7 @@ function settleLandlordPaymentReportByLineUid_(
     }
 
     const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
+      runtimeSpreadsheet_();
 
     const reportSheet =
       ensureSettlementPaymentReportSheet_(
@@ -117,13 +116,103 @@ function settleLandlordPaymentReportByLineUid_(
     const report =
       reportData.object;
 
-    if (
+    const billingAccess =
+      workspaceLandlordResolveAccess_(
+        landlordLineUserId,
+        {
+          require_onboarding: true,
+          skip_schema_ensure: true,
+          skip_legacy_context_creation: true
+        }
+      );
+
+    if (!billingAccess.success) {
+      return {
+        success: false,
+        code:
+          billingAccess.code ||
+          'WORKSPACE_ACCESS_REQUIRED',
+        message:
+          billingAccess.message ||
+          '無法驗證帳務 Workspace 權限'
+      };
+    }
+
+    const principalLandlordIds = [];
+
+    [
+      billingAccess.principal_landlord_id,
+      billingAccess.principal &&
+        billingAccess.principal.landlord_id
+    ].forEach(function (landlordId) {
+      const normalizedLandlordId =
+        String(landlordId || '').trim();
+
+      if (
+        normalizedLandlordId &&
+        principalLandlordIds.indexOf(
+          normalizedLandlordId
+        ) === -1
+      ) {
+        principalLandlordIds.push(
+          normalizedLandlordId
+        );
+      }
+    });
+
+    (billingAccess.principals || []).forEach(
+      function (principal) {
+        const normalizedLandlordId =
+          String(
+            principal &&
+            principal.landlord_id ||
+            ''
+          ).trim();
+
+        if (
+          normalizedLandlordId &&
+          principalLandlordIds.indexOf(
+            normalizedLandlordId
+          ) === -1
+        ) {
+          principalLandlordIds.push(
+            normalizedLandlordId
+          );
+        }
+      }
+    );
+
+    const principalLineUserId =
       String(
-        report
-          .landlord_line_user_id ||
+        billingAccess.principal_line_user_id ||
+        (
+          billingAccess.principal &&
+          billingAccess.principal.line_user_id
+        ) ||
         ''
-      ).trim() !== landlordLineUserId
-    ) {
+      ).trim();
+
+    const reportLandlordId =
+      String(report.landlord_id || '').trim();
+    const reportLandlordLineUserId =
+      String(
+        report.landlord_line_user_id ||
+        ''
+      ).trim();
+
+    const reportOwned =
+      reportLandlordLineUserId ===
+        landlordLineUserId ||
+      (
+        !!principalLineUserId &&
+        reportLandlordLineUserId ===
+          principalLineUserId
+      ) ||
+      principalLandlordIds.indexOf(
+        reportLandlordId
+      ) !== -1;
+
+    if (!reportOwned) {
       return {
         success: false,
         code:
@@ -1411,8 +1500,7 @@ function buildSettlementSuccessNotice_(
  */
 function testEnsureSettlementSheets() {
   const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
+    runtimeSpreadsheet_();
 
   const paymentSheet =
     ensureSettlementPaymentSheet_(

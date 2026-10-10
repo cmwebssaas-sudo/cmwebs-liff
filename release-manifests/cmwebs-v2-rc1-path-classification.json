@@ -1,0 +1,1513 @@
+{
+  "release_id": "cmwebs-v2-rc1",
+  "generated_at": "2026-07-23T15:21:58.095Z",
+  "source": {
+    "root_branch": "codex/cmwebs-project-autopilot",
+    "root_head": "d4dd7a861ee315ee858572c7835fbfebc07f53da",
+    "release_branch_head": "50182b7846903b11155442912eaea2589eac5d0f"
+  },
+  "counts": {
+    "documentation/evidence": 105,
+    "unrelated pre-existing user change": 1,
+    "Production RC candidate": 35,
+    "test/fixture-only": 4,
+    "generated/temp": 154
+  },
+  "entries": [
+    {
+      "path": ".agents/skills/cmwebs-project-autopilot/agents/openai.yaml",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": ".agents/skills/cmwebs-project-autopilot/assets/project-profile.template.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": ".agents/skills/cmwebs-project-autopilot/references/context-rotation.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": ".agents/skills/cmwebs-project-autopilot/references/handoff-protocol.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": ".agents/skills/cmwebs-project-autopilot/SKILL.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": ".gitignore",
+      "state": "modified-staged",
+      "classification": "unrelated pre-existing user change"
+    },
+    {
+      "path": "apps-script/appsscript.json",
+      "state": "tracked-unchanged",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/TESTS.js",
+      "state": "modified",
+      "classification": "test/fixture-only"
+    },
+    {
+      "path": "apps-script/V2_ANNOUNCEMENT_MANAGEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_API.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_AUTO_PAYMENT_REMINDER.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_BILL_NOTIFICATIONS.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_BILLING_MANAGEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_CONTRACT_REQUESTS.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_LANDLORD_MANAGEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_LANDLORD_ONBOARDING.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_LEGACY_BILL_IMPORT.js",
+      "state": "modified",
+      "classification": "test/fixture-only"
+    },
+    {
+      "path": "apps-script/V2_MANUAL_SETTLEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_PAID_BILL_MANAGEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_PAYMENT_REVERSAL.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_PAYMENT_SETTLEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_PROPERTY_ROOM_MANAGEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_RUNTIME_SNAPSHOT.js",
+      "state": "untracked",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_SETTINGS_INTEGRATION.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_SYSTEM_SETTINGS.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_TEAM_MANAGEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_TENANT_BINDING_PHONE.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_TENANT_CHECKIN_MANAGEMENT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_TENANT_LEASE_ONBOARDING.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_TENANT_MESSAGES.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_TENANT_PAYMENT_REPORTS.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_TENANT_RUNTIME_DATA_REPAIR.js",
+      "state": "untracked",
+      "classification": "test/fixture-only"
+    },
+    {
+      "path": "apps-script/V2_TENANT_RUNTIME_RESOLVER.js",
+      "state": "untracked",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_TENANT_RUNTIME_VALIDATION.js",
+      "state": "untracked",
+      "classification": "test/fixture-only"
+    },
+    {
+      "path": "apps-script/V2_WORKSPACE_CREATION.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_WORKSPACE_DASHBOARD_NATIVE.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_WORKSPACE_NOTIFICATIONS.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_WORKSPACE_OPERATION_AUDIT.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/V2_WORKSPACES.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "apps-script/程式碼.js",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "docs/04-API-ROUTES.md",
+      "state": "modified",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/100-PRODUCTION-READINESS-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/101-PRODUCTION-SHADOW-DEPLOYMENT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/102-PRODUCTION-ENVIRONMENT-INVENTORY.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/103-PRODUCTION-MIGRATION-DRY-RUN.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/104-PRODUCTION-ENVIRONMENT-FREEZE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/105-PRODUCTION-TRIGGER-WORKER-AUDIT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/106-PRODUCTION-NOTIFICATION-WORKER-DRY-RUN.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/107-PRODUCTION-NOTIFICATION-HUMAN-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/108-PRODUCTION-RELEASE-CANDIDATE-FREEZE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/109-PRODUCTION-RELEASE-MANIFEST.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/110-PRODUCTION-DRY-RUN-ROLLBACK-REHEARSAL.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/111-PRODUCTION-RELEASE-APPROVAL-CHECKLIST.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/112-PRODUCTION-EVIDENCE-COLLECTION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/113-PRODUCTION-TRIGGER-WORKER-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/114-PRODUCTION-WORKSPACE-ISOLATION-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/115-STAGING-WORKSPACE-ISOLATION-SMOKE-TEST.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/115.1-STAGING-WORKSPACE-ISOLATION-MATRIX.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/115.2-STAGING-WORKSPACE-ISOLATION-MATRIX.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/116-WORKSPACE-ISOLATION-FIX.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/117-PRODUCTION-RELEASE-CANDIDATE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/118-PRODUCTION-ARTIFACT-FREEZE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/119-PRODUCTION-ENVIRONMENT-EVIDENCE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/120-PRODUCTION-BACKUP-ROLLBACK-EVIDENCE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/121-PRODUCTION-TRIGGER-NOTIFICATION-FINAL-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/122A-RC-SCOPE-CLASSIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/39-TENANT-REAL-DEVICE-RESULTS.md",
+      "state": "modified",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/40-TENANT-TEST-IDENTITY-INCIDENT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/41-TENANT-BILLS-API-INCIDENT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/41-TENANT-BILLS-RUNTIME-FIX.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/41-TENANT-RUNTIME-DATA-REPAIR.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/41-TENANT-RUNTIME-VIEW-REPAIR.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/41-TEST-TENANT-DATA-REPAIR-PLAN.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/43-TENANT-DATA-DIAGNOSIS-RUNBOOK.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/44-TENANT-DATA-DIAGNOSIS-RESULT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/45-TENANT-DEPLOYMENT-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/46-TENANT-LINK-REMEDIATION-PLAN.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/47-BACKEND-RELEASE-REVIEW.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/48-CANONICAL-DEPLOYMENT-OWNERSHIP.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/49-CANONICAL-DEPLOYMENT-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/49-DEPLOYMENT-OWNERSHIP-CHECKLIST.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/51-TENANT-LANDLORD-LINK-DETERMINISTIC-RESOLVER.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/52-TENANT-READ-RUNTIME-MINIMAL-IMPLEMENTATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/53-TENANT-RUNTIME-RESOLVER-SEPARATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/54-ISOLATED-PRODUCTION-RUNTIME-RELEASE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/55-RUNTIME-RELEASE-DEPENDENCY-AUDIT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/56-FINAL-PRODUCTION-RELEASE-PREFLIGHT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/57-PRODUCTION-ROLLBACK-BASELINE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/58-ISOLATED-PRODUCTION-CLASP-BINDING.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/60-PRODUCTION-RUNTIME-DEPLOYMENT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/61C-HTTP-ONLY-SMOKE-TEST-DIAGNOSIS.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/68-RUNTIME-PERFORMANCE-AUDIT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/69-RUNTIME-PERFORMANCE-OPTIMIZATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/69B-SHEET-READ-AUDIT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/70-RUNTIME-SNAPSHOT-CONSOLIDATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/71A-RUNTIME-PERFORMANCE-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/71B-SPREADSHEET-HANDLE-REUSE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/72-PAYLOAD-LAZY-LOADING-AUDIT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/73-CRITICAL-PATH-LAZY-LOADING-DESIGN.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/74-TENANT-LAZY-LOADING-IMPLEMENTATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/75-PRODUCTION-PERFORMANCE-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/76-RELEASE-PREPARATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/77-RELEASE-MANIFEST.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/78-PRODUCTION-RELEASE-TREE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/79-RELEASE-DEPENDENCY-CLEANUP.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/80-RELEASE-ARTIFACT-BUILD.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/81-STAGING-DEPLOYMENT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/81A-STAGING-ENVIRONMENT-BOOTSTRAP.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/81B-STAGING-RESOURCE-CONFIGURATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/81C-STAGING-GOOGLE-RESOURCES.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/81D-STAGING-CONFIGURATION-COMPLETE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/81E-STAGING-LIFF-SMOKE-TEST-PREPARATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/81F-STAGING-FRONTEND-HOSTING.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/83-STAGING-TENANT-BINDING-CRITICAL-PATH-OPTIMIZATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/83A1-TENANT-BINDING-CONSISTENCY-REVIEW.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/83A2-STAGING-LIFF-ENVIRONMENT-ISOLATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/83A3-STAGING-URL-ISOLATION-AND-NAVIGATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/88-UNIFIED-NOTIFICATION-SERVICE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/89-BUSINESS-EVENT-NOTIFICATIONS.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/90-NOTIFICATION-RELIABILITY.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/91-REPAIR-WORKFLOW.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/92-LEASE-LIFECYCLE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/93-BILLING-LIFECYCLE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/94-MOVE-OUT-DEPOSIT-SETTLEMENT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95-V2-PRODUCTION-READINESS-AUDIT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.1-PRODUCTION-SECURITY-HARDENING.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.1-STAGING-TO-PRODUCTION-MIGRATION-CHECKLIST.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.2-PRODUCTION-READINESS-CLOSURE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.3-PRODUCTION-SHA-MANIFEST-DRAFT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.3-REMOTE-STAGING-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.4-STAGING-FRONTEND-SYNCHRONIZATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.5-LIFF-BRIDGE-TRANSPORT-FIX.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.6-LANDLORD-LIFF-AUTHENTICATED-VERIFICATION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/95.7-STAGING-LANDLORD-ONBOARDING-COMPLETION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/96-PRODUCTION-RELEASE-GATE-AUDIT.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/97-PRODUCTION-MIGRATION-PACKAGE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/98-PRODUCTION-READINESS-EXECUTION.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "docs/99-PRODUCTION-RELEASE-GATE-CLOSURE.md",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "release-manifests/cmwebs-v2-rc1-scope-manifest.json",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "release-manifests/cmwebs-v2-rc1-sha-manifest.json",
+      "state": "untracked",
+      "classification": "documentation/evidence"
+    },
+    {
+      "path": "release/phase54/apps-script/appsscript.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_ANNOUNCEMENT_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_API.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_AUTO_PAYMENT_REMINDER.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_BILL_NOTIFICATIONS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_BILLING_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_CONTRACT_REQUESTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_LANDLORD_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_LANDLORD_ONBOARDING.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_MANUAL_SETTLEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_PAID_BILL_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_PAYMENT_REVERSAL.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_PAYMENT_SETTLEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_PROPERTY_ROOM_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_SETTINGS_INTEGRATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_SYSTEM_SETTINGS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_TEAM_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_TENANT_BINDING_PHONE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_TENANT_CHECKIN_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_TENANT_LEASE_ONBOARDING.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_TENANT_MESSAGES.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_TENANT_PAYMENT_REPORTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_TENANT_RUNTIME_RESOLVER.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_WORKSPACE_CREATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_WORKSPACE_DASHBOARD_NATIVE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_WORKSPACE_NOTIFICATIONS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_WORKSPACE_OPERATION_AUDIT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/V2_WORKSPACES.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/apps-script/程式碼.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/RUNTIME-CALL-GRAPH.md",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase54/SHA256SUMS",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase57/production-rollback-metadata.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase57/production-rollback-metadata.sha256",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/APPS-SCRIPT-SHA256SUMS",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/appsscript.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_ANNOUNCEMENT_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_API.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_AUTO_PAYMENT_REMINDER.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_BILL_NOTIFICATIONS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_BILLING_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_CONTRACT_REQUESTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_LANDLORD_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_LANDLORD_ONBOARDING.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_MANUAL_SETTLEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_PAID_BILL_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_PAYMENT_REVERSAL.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_PAYMENT_SETTLEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_PROPERTY_ROOM_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_RUNTIME_SNAPSHOT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_SETTINGS_INTEGRATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_SYSTEM_SETTINGS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_TEAM_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_TENANT_BINDING_PHONE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_TENANT_CHECKIN_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_TENANT_LEASE_ONBOARDING.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_TENANT_MESSAGES.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_TENANT_PAYMENT_REPORTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_TENANT_RUNTIME_RESOLVER.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_WORKSPACE_CREATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_WORKSPACE_DASHBOARD_NATIVE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_WORKSPACE_NOTIFICATIONS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_WORKSPACE_OPERATION_AUDIT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/V2_WORKSPACES.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/apps-script/程式碼.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/FRONTEND-SHA256SUMS",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/frontend/tenant-bills.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/frontend/tenant-bind.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/frontend/tenant-home.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/frontend/tenant-message.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/phase80/RELEASE-MANIFEST.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging-hosting/",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/appsscript.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/STAGING_LANDLORD_REGISTRATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/STAGING_TENANT_BINDING_SETUP.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/STAGING_WORKSPACE_ISOLATION_FIXTURES.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_ANNOUNCEMENT_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_API.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_AUTO_PAYMENT_REMINDER.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_BILL_NOTIFICATIONS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_BILLING_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_BILLS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_CONTRACT_REQUESTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_CONTRACTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_DEPOSIT_SETTLEMENTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_ENVIRONMENT_CONFIGURATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_LANDLORD_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_LANDLORD_ONBOARDING.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_LINE_IDENTITY_SECURITY.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_MANUAL_SETTLEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_MOVE_OUT_REQUESTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_NOTIFICATION_QUEUE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_NOTIFICATION_SERVICE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_NOTIFICATION_TEMPLATES.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_PAID_BILL_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_PAYMENT_REVERSAL.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_PAYMENT_SETTLEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_PAYMENTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_PROPERTY_ROOM_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_RBAC.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_REPAIR_TICKETS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_RUNTIME_ENVIRONMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_RUNTIME_SNAPSHOT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_SECURITY_FAILURE_QUEUE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_SECURITY_HARDENING_MIGRATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_SETTINGS_INTEGRATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_SETTLEMENT_TRANSACTION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_SYSTEM_SETTINGS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_TEAM_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_TENANT_BINDING_PHONE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_TENANT_CHECKIN_MANAGEMENT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_TENANT_LEASE_ONBOARDING.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_TENANT_MESSAGES.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_TENANT_PAYMENT_REPORTS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_TENANT_RUNTIME_RESOLVER.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_WORKSPACE_CREATION.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_WORKSPACE_DASHBOARD_NATIVE.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_WORKSPACE_NOTIFICATIONS.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_WORKSPACE_OPERATION_AUDIT.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/V2_WORKSPACES.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/apps-script/程式碼.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/appsscript.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/config/environment.schema.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/config/production.placeholder.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/config/staging.example.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/cmweb-env.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/cmweb-env.local.js.example",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/liff-staging.config.example.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/staging-phase95-5-smoke.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/staging-secure-api.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/staging-test-uid-allowlist.example.json",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/tenant-bills.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/tenant-bind.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/tenant-contract.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/tenant-home.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/tenant-message.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/frontend/tenant-payment-report.html",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/README.md",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase83-binding-critical-path.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase83a2-runtime-environment.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase83a3-url-isolation.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase88-notification-service.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase89-business-notifications.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase90-notification-reliability.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase91-repair-workflow.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase92-contract-lifecycle.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase93-billing-lifecycle.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase94-move-out-settlement.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase95-2-readiness-closure.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase95-5-liff-bridge-transport.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase95-7-landlord-onboarding.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "release/staging/tests/phase95-security-hardening.test.js",
+      "state": "untracked",
+      "classification": "generated/temp"
+    },
+    {
+      "path": "tenant-bills.html",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "tenant-bind.html",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "tenant-home.html",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    },
+    {
+      "path": "tenant-message.html",
+      "state": "modified",
+      "classification": "Production RC candidate"
+    }
+  ]
+}

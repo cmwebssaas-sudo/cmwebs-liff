@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "verification_timestamp": "2026-07-23T14:25:50.451Z",
+  "verifier_role": "AUTHORIZED_HUMAN",
+  "evidence_reference": "read-only Apps Script project and triggers console observation; no screenshot persisted",
+  "script_property_keys": [
+    {
+      "key": "CMWEBS_SPREADSHEET_ID",
+      "status": "PRESENT",
+      "classification": "required",
+      "purpose": "Production spreadsheet reference"
+    },
+    {
+      "key": "ECPAY_HASH_IV",
+      "status": "PRESENT",
+      "classification": "required",
+      "purpose": "ECPay payment configuration"
+    },
+    {
+      "key": "ECPAY_HASH_KEY",
+      "status": "PRESENT",
+      "classification": "required",
+      "purpose": "ECPay payment configuration"
+    },
+    {
+      "key": "ECPAY_MERCHANT_ID",
+      "status": "PRESENT",
+      "classification": "required",
+      "purpose": "ECPay merchant configuration"
+    },
+    {
+      "key": "LINE_CHANNEL_ACCESS_TOKEN",
+      "status": "PRESENT",
+      "classification": "required",
+      "purpose": "LINE Messaging API"
+    },
+    {
+      "key": "TEST_LANDLORD_LINE_UID",
+      "status": "PRESENT",
+      "classification": "optional",
+      "purpose": "test landlord routing"
+    },
+    {
+      "key": "TEST_TENANT_LINE_UID",
+      "status": "PRESENT",
+      "classification": "optional",
+      "purpose": "test tenant routing"
+    }
+  ],
+  "triggers": [
+    {
+      "handler": "runV2AutomaticPaymentReminders",
+      "status": "EXPECTED",
+      "event_source": "TIME_DRIVEN",
+      "owner": "cmwebs.saas@gmail.com",
+      "last_run_display": "2026-07-23 21:38:21",
+      "source_check": "PRESENT",
+      "error_rate": "0%"
+    },
+    {
+      "handler": "syncV1PaidBillsToV2",
+      "status": "EXPECTED",
+      "event_source": "TIME_DRIVEN",
+      "owner": "cmwebs.saas@gmail.com",
+      "last_run_display": "2026-07-23 22:28:04",
+      "source_check": "PRESENT",
+      "error_rate": "0%"
+    }
+  ],
+  "result": "PRODUCTION_RUNTIME_CONFIG_VERIFIED",
+  "global_rc_freeze_ready": "NO"
+}

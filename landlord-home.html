@@ -1064,6 +1064,47 @@
       return 0;
     }
 
+    function countPendingPaymentReports(
+      paymentData
+    ) {
+      const reports =
+        paymentData &&
+        Array.isArray(paymentData.reports)
+          ? paymentData.reports
+          : null;
+
+      if (reports) {
+        return reports.filter(function (report) {
+          const status =
+            String(
+              report && report.status ||
+              ''
+            )
+              .trim()
+              .toLowerCase();
+
+          return (
+            status === 'pending' ||
+            status === 'payment_reported'
+          );
+        }).length;
+      }
+
+      const summary =
+        paymentData &&
+        paymentData.summary
+          ? paymentData.summary
+          : {};
+
+      return findSummaryNumber(
+        summary,
+        [
+          'pending_count',
+          'pending'
+        ]
+      );
+    }
+
     function buildActionSummary(
       contractData,
       paymentData,
@@ -1073,12 +1114,6 @@
         contractData &&
         contractData.summary
           ? contractData.summary
-          : {};
-
-      const paymentSummary =
-        paymentData &&
-        paymentData.summary
-          ? paymentData.summary
           : {};
 
       const messageSummary =
@@ -1107,12 +1142,8 @@
           ),
 
         paymentPending:
-          findSummaryNumber(
-            paymentSummary,
-            [
-              'pending_count',
-              'pending'
-            ]
+          countPendingPaymentReports(
+            paymentData
           ),
 
         messagePending:
@@ -1401,7 +1432,7 @@
             <button
               class="action-item"
               type="button"
-              onclick="goPage('landlord-payment-reports.html')"
+              onclick="goPage('landlord-payment-report-review.html')"
             >
               <div class="action-icon blue">
                 <svg viewBox="0 0 24 24">
@@ -1833,4 +1864,3 @@
   </script>
 </body>
 </html>
-

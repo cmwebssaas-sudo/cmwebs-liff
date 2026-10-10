@@ -1,0 +1,74 @@
+{
+  "phase": 80,
+  "artifact": "CMWebs V2 production release",
+  "status": "built_not_deployed",
+  "appsScript": {
+    "root": "apps-script",
+    "javascriptCount": 30,
+    "manifestCount": 1,
+    "files": [
+      "appsscript.json",
+      "V2_ANNOUNCEMENT_MANAGEMENT.js",
+      "V2_API.js",
+      "V2_AUTO_PAYMENT_REMINDER.js",
+      "V2_BILLING_MANAGEMENT.js",
+      "V2_BILL_NOTIFICATIONS.js",
+      "V2_CONTRACT_REQUESTS.js",
+      "V2_LANDLORD_MANAGEMENT.js",
+      "V2_LANDLORD_ONBOARDING.js",
+      "V2_MANUAL_SETTLEMENT.js",
+      "V2_PAID_BILL_MANAGEMENT.js",
+      "V2_PAYMENT_REVERSAL.js",
+      "V2_PAYMENT_SETTLEMENT.js",
+      "V2_PROPERTY_ROOM_MANAGEMENT.js",
+      "V2_RUNTIME_SNAPSHOT.js",
+      "V2_SETTINGS_INTEGRATION.js",
+      "V2_SYSTEM_SETTINGS.js",
+      "V2_TEAM_MANAGEMENT.js",
+      "V2_TENANT_BINDING_PHONE.js",
+      "V2_TENANT_CHECKIN_MANAGEMENT.js",
+      "V2_TENANT_LEASE_ONBOARDING.js",
+      "V2_TENANT_MESSAGES.js",
+      "V2_TENANT_PAYMENT_REPORTS.js",
+      "V2_TENANT_RUNTIME_RESOLVER.js",
+      "V2_WORKSPACES.js",
+      "V2_WORKSPACE_CREATION.js",
+      "V2_WORKSPACE_DASHBOARD_NATIVE.js",
+      "V2_WORKSPACE_LANDLORD_ACCESS.js",
+      "V2_WORKSPACE_NOTIFICATIONS.js",
+      "V2_WORKSPACE_OPERATION_AUDIT.js",
+      "程式碼.js"
+    ],
+    "sha256Manifest": "APPS-SCRIPT-SHA256SUMS"
+  },
+  "frontend": {
+    "root": "frontend",
+    "htmlCount": 4,
+    "files": [
+      "tenant-bind.html",
+      "tenant-home.html",
+      "tenant-bills.html",
+      "tenant-message.html"
+    ],
+    "sha256Manifest": "FRONTEND-SHA256SUMS"
+  },
+  "excluded": [
+    "TESTS.js",
+    "V2_TENANT_RUNTIME_DATA_REPAIR.js",
+    "V2_TENANT_RUNTIME_VALIDATION.js",
+    "V2_LEGACY_BILL_IMPORT.js",
+    ".clasp.json",
+    ".clasprc.json",
+    "credential files",
+    "repair modules",
+    "migration modules",
+    "legacy-only modules",
+    "diagnostic-only modules"
+  ],
+  "operations": {
+    "claspPush": false,
+    "gitPush": false,
+    "deployment": false,
+    "businessLogicModified": false
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "CMWebs 專案自動接力"
+  short_description: "低額度接力、驗證並自動輪替 CMWebs 專案上下文"
+  default_prompt: "使用 $cmwebs-project-autopilot 以低額度模式繼續 cmwebs-liff，必要時建立精簡的新討論與 Codex 任務。"

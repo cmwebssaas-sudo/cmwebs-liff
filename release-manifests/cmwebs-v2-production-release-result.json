@@ -1,0 +1,82 @@
+{
+  "release_phase": "124",
+  "verification_timestamp": "2026-07-24",
+  "production_account": "cmwebs.saas@gmail.com",
+  "apps_script_baseline": {
+    "classification": "VERSION_75_KNOWN_PREEXISTING_BASELINE",
+    "serving_deployment_matches_phase_122g": true,
+    "source_verified": true,
+    "pre_release_baseline_version": 75,
+    "primary_rollback_version": 75,
+    "secondary_rollback_version": 74,
+    "version_75_checksum_masked": "4eb4705728b1...",
+    "version_74_checksum_masked": "2fdf7e9f23d3...",
+    "version_75_equals_current_production_head": true,
+    "version_75_equals_version_74": false,
+    "version_75_equals_final_rc": false
+  },
+  "frontend_baseline": {
+    "provider": "GitHub Pages",
+    "repository": "cmwebssaas-sudo/cmwebs-liff",
+    "build_type": "legacy",
+    "source_branch": "main",
+    "source_path": "/",
+    "custom_domain_configured": false,
+    "https_enforced": true,
+    "target_verified": true,
+    "current_revision_masked": "3b48e9b2421a...9a3e",
+    "previous_revision_masked": "28767ded0f5c...1fee",
+    "current_build_status": "built",
+    "previous_build_status": "built",
+    "rollback_ready": true
+  },
+  "frozen_release": {
+    "commit": "a04a0f8c49e98551dbb27e8d895841ac65e51864",
+    "tree": "6f447a3211753d9059f278e272c92e959326a46f",
+    "worktree_clean_before_release": true,
+    "git_pushed": false
+  },
+  "release_actions": {
+    "production_source_pushed": true,
+    "production_migration": "PASS",
+    "production_migration_idempotency": "PASS",
+    "new_apps_script_version": 76,
+    "existing_web_app_deployment_updated": true,
+    "new_deployment_created": false,
+    "production_frontend_deployed": true,
+    "production_smoke": "PASS",
+    "rollback_required": true,
+    "rollback_executed": true,
+    "serving_version_after_rollback": 75,
+    "trigger_count_after_release": 2,
+    "properties_changed": false,
+    "real_line_sent": false,
+    "real_payment_action": false,
+    "git_pushed": false
+  },
+  "frontend_publication": {
+    "release_commit": "2b62a07b34ebd28f94910220aa6b76d3342214ef",
+    "fast_forward_only": true,
+    "force_push_used": false,
+    "changed_paths": [
+      "tenant-bills.html",
+      "tenant-bind.html",
+      "tenant-home.html",
+      "tenant-message.html"
+    ],
+    "github_pages_build_status": "built",
+    "tenant_http_head": 200,
+    "landlord_http_head": 200,
+    "infrastructure_http_head": 200
+  },
+  "final_cutover": {
+    "serving_version": 76,
+    "existing_web_app_deployment_updated": true,
+    "new_deployment_created": false,
+    "final_rollback_required": false,
+    "final_rollback_executed": false
+  },
+  "release_result": "SUCCESS",
+  "blocker": null,
+  "prohibited_data_recorded": false
+}

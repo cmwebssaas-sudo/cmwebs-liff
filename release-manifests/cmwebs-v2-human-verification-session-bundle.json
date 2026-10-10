@@ -1,0 +1,55 @@
+{
+  "phase": "122F",
+  "bundle_name": "cmwebs-v2-human-verification-session-bundle",
+  "purpose": "offline human verification session freeze and dry run",
+  "files": [
+    {
+      "path": "docs/122D-PRODUCTION-IDENTITY-MANUAL-VERIFICATION-PACKET.md",
+      "sha256": "3b048280642c5e2fcfb2b33ab91c8c123562d4c03bf8d9276baf840a6b89cd1e"
+    },
+    {
+      "path": "docs/122E-MANUAL-EVIDENCE-INTAKE-AND-RC-GATE.md",
+      "sha256": "df94df4df1d61333449267c089676066591ccf8967c396923601484ad9f22461"
+    },
+    {
+      "path": "docs/122F-OFFLINE-HUMAN-VERIFICATION-SESSION-RUNBOOK.md",
+      "sha256": "975aac72f9b81fcc5f37c10000c031b4968b2df2fd712c9701a654f04afc2731"
+    },
+    {
+      "path": "release-manifests/cmwebs-v2-production-identity-verification-template.json",
+      "sha256": "007dd0e18095e5cd1b90e355d02cea5f2e67028bf44f39af2bace1168ff16025"
+    },
+    {
+      "path": "tools/verify-production-identity-fingerprint.mjs",
+      "sha256": "650a3867be8ea910b3bc27f1a9fe5169a2e90563a4771c7a7572b7ff44652275"
+    },
+    {
+      "path": "tools/validate-production-identity-evidence.mjs",
+      "sha256": "d04340f13aa098b5a64382063fe11aeec95c6adf5d0c5a772e7357bfe21e38bf"
+    },
+    {
+      "path": "tools/evaluate-rc-freeze-gate.mjs",
+      "sha256": "425fc93da69858ede8df5b91c30ed9b9da5377bef00a7b510fe7244deb7436fb"
+    },
+    {
+      "path": "tools/run-production-identity-evidence-intake.mjs",
+      "sha256": "04cd928ca6651f95401cef7dbd23551b41e159838e314ba773e63de23ceb914d"
+    },
+    {
+      "path": "tests/verify-production-identity-fingerprint.test.mjs",
+      "sha256": "4b7a3fd4a9814a65343b1b75edf9d4aace4b9eeb26156cbb48f00ea7cd523abc"
+    },
+    {
+      "path": "tests/validate-production-identity-evidence.test.mjs",
+      "sha256": "56a60eaf0246640d1bf9edd243367ee88befbb2abd5e44816bf87f076c81c55c"
+    },
+    {
+      "path": "tests/evaluate-rc-freeze-gate.test.mjs",
+      "sha256": "5c3a0b2c0673952b270f03b3722c34cd014910887adda13d4ad6b826139e9784"
+    },
+    {
+      "path": "tests/run-production-identity-evidence-intake.test.mjs",
+      "sha256": "fe553c00e969334e420dcde1b450274612f778341f2d0a344f8ac694db677878"
+    }
+  ]
+}

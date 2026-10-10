@@ -1,6 +1,6 @@
 # V2 API 路由
 
-    候選 `Code.gs` 目前辨識到 **68** 個唯一 `v2_action`。
+    候選 `Code.gs` 目前辨識到 **71** 個唯一 `v2_action`。
 
     | Route | 模組 | 用途 |
     |---|---|---|
@@ -43,6 +43,7 @@
 | `landlord_property_save` | 物件 | 新增或修改物件 |
 | `landlord_property_archive` | 物件 | 封存物件 |
 | `landlord_room_save` | 物件 | 新增或修改房間 |
+| `landlord_room_account_toggle` | 物件 | 啟用或停用房間帳號，不修改租約與帳單 |
 | `landlord_room_archive` | 物件 | 封存房間 |
 | `landlord_workspace_create` | Workspace | 建立新 Workspace |
 | `landlord_workspace_context` | Workspace | 取得可使用的 Workspace 清單與目前 Context |
@@ -72,6 +73,13 @@
 | `tenant_contract_request_cancel` | 租約 | 取消申請 |
 | `landlord_contract_requests_init` | 租約 | 載入房東合約申請管理 |
 | `landlord_contract_request_update` | 租約 | 房東審核或更新申請 |
+| `landlord_contract_documents_init` | 租約 | 載入房東合約文件清單 |
+| `landlord_contract_document_download` | 租約 | 下載合約文件 |
+
+付款回報入口規則：房客通知的 `action_url` 必須指向
+`landlord-payment-report-review.html`，由房東 LIFF gateway
+`landlord-entry.html` 完成登入後再回到審核頁；房客端的
+`landlord-payment-reports.html` 不得作為房東付款回報入口。
 
     ## 變更規則
 
@@ -79,4 +87,59 @@
     - 新增 route 必須同步更新本文件。
     - route 名稱不得重複。
     - handler 不存在時驗證應失敗。
-    - Production baseline 必須確認所有 68 個 route 在實際 Apps Script 專案可解析。
+- Production baseline 必須確認所有 71 個 route 在實際 Apps Script 專案可解析。
+
+## Phase 91 staging-only repair routes
+
+下列 4 個 route 只存在 `release/staging/`，尚未納入 Production canonical 68 routes：
+
+| Route | Handler | 用途 |
+|---|---|---|
+| `tenant_repairs_init` | `getTenantRepairTicketsByLineUid_` | 房客查詢自己的報修單 |
+| `tenant_repair_create` | `createTenantRepairTicketByLineUid_` | 房客建立報修單並將房東通知排入 Queue |
+| `landlord_repairs_init` | `getLandlordRepairTicketsByLineUid_` | 房東依目前 Workspace 查詢報修單 |
+| `landlord_repair_update` | `updateLandlordRepairTicketByLineUid_` | 房東更新狀態；完成時將房客通知排入 Queue |
+
+Staging dispatcher 預期為 72 個唯一 route；Production canonical 仍維持 68 個。
+
+## Phase 92 staging-only lease lifecycle routes
+
+下列 6 個 route 只存在 `release/staging/`：
+
+| Route | Handler | 用途 |
+|---|---|---|
+| `landlord_contracts_init` | `getLandlordContractsByLineUid_` | 依目前 Workspace 查詢租約 |
+| `landlord_contract_create` | `createLandlordContractByLineUid_` | 建立租約草稿 |
+| `landlord_contract_update` | `updateLandlordContractByLineUid_` | 修改租約草稿主要條件 |
+| `landlord_contract_activate` | `activateLandlordContractByLineUid_` | 驗證日期與衝突後啟用租約 |
+| `landlord_contract_status_update` | `updateLandlordContractStatusByLineUid_` | 更新租約 lifecycle 狀態 |
+| `landlord_contract_delete` | `deleteLandlordContractByLineUid_` | 軟刪除草稿或已取消租約 |
+
+Phase 92 staging dispatcher 預期為 78 個唯一 route；Production canonical 仍維持 68 個。
+
+## Phase 93 staging-only billing lifecycle routes
+
+下列 3 個 route 只存在 `release/staging/`：
+
+| Route | Handler | 用途 |
+|---|---|---|
+| `landlord_billing_lifecycle_init` | `getLandlordBillingLifecycleByLineUid_` | 依目前 Workspace 查詢帳單及付款 ledger |
+| `landlord_contract_bill_generate` | `generateContractMonthlyBillByLineUid_` | 依有效租約建立指定月份帳單並排入 `bill_created` 通知 |
+| `landlord_bill_payment_confirm` | `confirmLandlordBillPaymentByLineUid_` | 房東確認全額付款、建立付款紀錄並排入 `payment_confirmed` 通知 |
+
+Phase 93 staging dispatcher 預期為 81 個唯一 route；Production canonical 仍維持 68 個。房客帳單讀取沿用既有 `tenant_bills` route，不建立第二個 tenant API contract。
+
+## Phase 94 staging-only move-out and deposit settlement routes
+
+下列 6 個 route 只存在 `release/staging/`：
+
+| Route | Handler | 用途 |
+|---|---|---|
+| `tenant_move_out_requests_init` | `getTenantMoveOutRequestsByLineUid_` | 房客查詢自己的退租申請及押金結算 |
+| `tenant_move_out_request_create` | `createTenantMoveOutRequestByLineUid_` | 房客依目前有效租約建立退租申請 |
+| `landlord_move_out_requests_init` | `getLandlordMoveOutRequestsByLineUid_` | 房東依目前 Workspace 查詢退租流程 |
+| `landlord_move_out_inspection_schedule` | `scheduleLandlordMoveOutInspectionByLineUid_` | 安排驗屋並通知房客 |
+| `landlord_move_out_inspection_complete` | `completeLandlordMoveOutInspectionByLineUid_` | 完成驗屋、讀取未繳帳單及報修扣款並建立押金結算 |
+| `landlord_deposit_refund_confirm` | `confirmLandlordDepositRefundByLineUid_` | 確認退款、終止租約並排入完成通知 |
+
+Phase 94 staging dispatcher 預期為 87 個唯一 route；Production canonical 仍維持 68 個。

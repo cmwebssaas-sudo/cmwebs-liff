@@ -551,8 +551,39 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
+    function buildTenantLiffLoginRedirectUri_() {
+      const safeHost =
+        location.protocol ===
+          'https:' &&
+        location.host
+          ? location.host
+            .toLowerCase()
+            .includes('github.io')
+          : false;
+
+      const url =
+        safeHost
+          ? new URL(
+              'tenant-bind.html',
+              location.href
+            )
+          : new URL(
+              'https://liff.line.me/' +
+              LIFF_ID
+            );
+
+      if (safeHost) {
+        url.searchParams.set(
+          'v',
+          window.CMWEBS_RELEASE_VERSION ||
+            'v2.1-p0-1'
+        );
+      }
+
+      return preserveTestQuery_(
+        url.href
+      );
+    }
 
     const URL_PARAMS =
       new URLSearchParams(
@@ -603,15 +634,124 @@
         .replace(/'/g, '&#039;');
     }
 
-    function goHome() {
-      location.href =
-        'tenant-home.html?v=' +
-        Date.now() +
-        (
-          TEST_MODE
-            ? '&test=1'
-            : ''
+    function preserveTestQuery_(
+      targetUrl
+    ) {
+      const url = new URL(
+        targetUrl,
+        location.href
+      );
+
+      if (TEST_MODE) {
+        url.searchParams.set(
+          'test',
+          '1'
         );
+      }
+
+      return url.href;
+    }
+
+    function buildPostLoginTarget_() {
+      const rawNext =
+        rawText(
+          URL_PARAMS.get('next')
+        ).trim();
+
+      if (!rawNext) {
+        return '';
+      }
+
+      let target;
+
+      try {
+        target = new URL(
+          rawNext,
+          location.href
+        );
+      } catch (error) {
+        return '';
+      }
+
+      if (
+        target.origin !==
+        location.origin
+      ) {
+        return '';
+      }
+
+      const allowedPages = [
+        'tenant-home.html',
+        'tenant-bills.html',
+        'tenant-payment-report.html',
+        'tenant-message.html',
+        'tenant-contract.html',
+        'tenant-renewal.html',
+        'tenant-termination.html'
+      ];
+      const page =
+        target.pathname
+          .split('/')
+          .filter(Boolean)
+          .pop() ||
+        '';
+
+      if (
+        allowedPages.indexOf(page) < 0
+      ) {
+        return '';
+      }
+
+      const nextUrl =
+        new URL(
+          page,
+          location.href
+        );
+
+      ['bill_id', 'test'].forEach(
+        function (key) {
+          const value =
+            target.searchParams.get(key);
+
+          if (value !== null && value !== '') {
+            nextUrl.searchParams.set(
+              key,
+              value
+            );
+          }
+        }
+      );
+
+      nextUrl.searchParams.set(
+        'v',
+        Date.now()
+      );
+
+      return nextUrl.href;
+    }
+
+    function goHome() {
+      const postLoginTarget =
+        buildPostLoginTarget_();
+
+      if (postLoginTarget) {
+        location.href =
+          postLoginTarget;
+        return;
+      }
+
+      const url = new URL(
+        'tenant-home.html',
+        location.href
+      );
+
+      url.searchParams.set(
+        'v',
+        Date.now()
+      );
+
+      location.href =
+        preserveTestQuery_(url.href);
     }
 
     function jsonpRequest(
@@ -702,6 +842,10 @@
             '&_=' +
             Date.now();
 
+          if (TEST_MODE) {
+            url += '&test=1';
+          }
+
           Object.keys(
             params || {}
           ).forEach(
@@ -757,20 +901,6 @@
     }
 
     async function initLine() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
-
-        LINE_PROFILE = {
-          displayName:
-            '測試 LINE 使用者',
-          pictureUrl:
-            ''
-        };
-
-        return true;
-      }
-
       if (
         typeof liff ===
         'undefined'
@@ -787,7 +917,7 @@
       if (!liff.isLoggedIn()) {
         liff.login({
           redirectUri:
-            location.href
+            buildTenantLiffLoginRedirectUri_()
         });
 
         return false;

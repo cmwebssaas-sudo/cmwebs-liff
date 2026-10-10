@@ -2,6 +2,14 @@
 
 本文件是 Codex 在此 repository 的最高優先級工程規則。
 
+## 0. 每個新 Agent / Codex session 的開工規則
+
+任何新的 Agent 或 Codex session 在開始實作、修改檔案、規劃部署或判定
+Production 狀態前，必須先閱讀 `docs/EXECUTION_RECORD.md`，以及
+`docs/00-HANDOFF-INDEX.md` 所列的既有 authoritative documentation。必須先以
+`git status`、目前 branch、HEAD、diff 與未追蹤檔案重新驗證交接紀錄；交接文件
+或聊天內容不得取代可驗證的 repository 與已授權 Production 證據。
+
 ## 1. 產品版本邊界
 
 - V2.0：目前內部自有房源的 Production 基線，只接受真實 Production

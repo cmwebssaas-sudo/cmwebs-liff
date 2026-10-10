@@ -16,26 +16,64 @@ function getRequiredScriptProperty_(key) {
 
 // === 綠界金鑰設定區 ===
 // 正式憑證只允許由 Script Properties 提供
-const MERCHANT_ID =
-  getRequiredScriptProperty_(
-    'ECPAY_MERCHANT_ID'
-  );
-const HASH_KEY =
-  getRequiredScriptProperty_(
-    'ECPAY_HASH_KEY'
-  );
-const HASH_IV =
-  getRequiredScriptProperty_(
-    'ECPAY_HASH_IV'
-  );
+function getEcpayConfig_() {
+  return {
+    merchantId:
+      getRequiredScriptProperty_(
+        'ECPAY_MERCHANT_ID'
+      ),
+    hashKey:
+      getRequiredScriptProperty_(
+        'ECPAY_HASH_KEY'
+      ),
+    hashIv:
+      getRequiredScriptProperty_(
+        'ECPAY_HASH_IV'
+      )
+  };
+}
+
 function doGet(e) {
   e = e || { parameter: {} };
 
   const v2Action = e.parameter.v2_action || '';
-  const lineUserId = e.parameter.line_user_id || '';
   const callback = e.parameter.callback || '';
   const bridge = e.parameter.bridge || '';
   const requestId = e.parameter.request_id || '';
+  let lineUserId =
+    e.parameter.line_user_id || '';
+
+  runtimeSnapshotBegin_(v2Action);
+
+  try {
+    lineUserId =
+      resolveTenantRequestLineUserId_(
+        e,
+        v2Action,
+        lineUserId
+      );
+  } catch (error) {
+    const result = {
+      success: false,
+      code:
+        'TEST_TENANT_IDENTITY_NOT_CONFIGURED',
+      message:
+        '測試房客身份尚未設定',
+      data: null
+    };
+
+    if (bridge === '1') {
+      return htmlBridgeOutput_(
+        result,
+        requestId
+      );
+    }
+
+    return jsonOutput_(
+      result,
+      callback
+    );
+  }
 
   // ==================================================
   // V2 LIFF API Routes
@@ -845,6 +883,19 @@ function doGet(e) {
         e.parameter.deposit_amount || '',
         e.parameter.room_status || '',
         e.parameter.note || ''
+      );
+
+    return bridge === '1'
+      ? htmlBridgeOutput_(result, requestId)
+      : jsonOutput_(result, callback);
+  }
+
+  if (v2Action === 'landlord_room_account_toggle') {
+    const result =
+      setLandlordRoomAccountToggleByLineUid_(
+        lineUserId,
+        e.parameter.room_id || '',
+        e.parameter.enabled || e.parameter.account_status || ''
       );
 
     return bridge === '1'
@@ -1755,6 +1806,79 @@ if (
   );
 }
 
+// --------------------------------------------------
+// 房東：合約文件管理初始化
+//
+// v2_action=landlord_contract_documents_init
+//
+// 可加篩選 contract_id / tenant_id 查詢歷史文件
+// --------------------------------------------------
+
+if (
+  v2Action ===
+  'landlord_contract_documents_init'
+) {
+  const contractId =
+    String(
+      e.parameter.contract_id ||
+      ''
+    ).trim();
+
+  const tenantId =
+    String(
+      e.parameter.tenant_id ||
+      ''
+    ).trim();
+
+  const result =
+    getLandlordContractDocumentsInitByLineUid_(
+      lineUserId,
+      contractId,
+      tenantId
+    );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(result, requestId);
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
+
+// --------------------------------------------------
+// 房東：合約文件下載
+//
+// v2_action=landlord_contract_document_download
+// --------------------------------------------------
+
+if (
+  v2Action ===
+  'landlord_contract_document_download'
+) {
+  const documentId =
+    String(
+      e.parameter.document_id ||
+      e.parameter.documentId ||
+      ''
+    ).trim();
+
+  const result =
+    getLandlordContractDocumentDownloadByLineUid_(
+      lineUserId,
+      documentId
+    );
+
+  if (bridge === '1') {
+    return htmlBridgeOutput_(result, requestId);
+  }
+
+  return jsonOutput_(
+    result,
+    callback
+  );
+}
 
   if (v2Action) {
     const result = {
@@ -1783,6 +1907,9 @@ if (
   // 沒有 v2_action 時才會走這裡
   // ==================================================
 
+  const ecpayConfig =
+    getEcpayConfig_();
+
   let rawAmount = e.parameter.amount || '50';
   let amount = Math.round(Number(rawAmount));
 
@@ -1806,7 +1933,8 @@ if (
     Math.floor(Math.random() * 999);
 
   const params = {
-    MerchantID: MERCHANT_ID,
+    MerchantID:
+      ecpayConfig.merchantId,
     MerchantTradeNo: tradeNo,
     MerchantTradeDate: tradeDate,
     PaymentType: 'aio',
@@ -1820,7 +1948,12 @@ if (
     EncryptType: '1'
   };
 
-  params.CheckMacValue = generateCheckMacValue(params, HASH_KEY, HASH_IV);
+  params.CheckMacValue =
+    generateCheckMacValue(
+      params,
+      ecpayConfig.hashKey,
+      ecpayConfig.hashIv
+    );
 
   let formHtml = `
     <html>
@@ -2000,6 +2133,40 @@ function doPost(e) {
       e.postData && e.postData.contents
         ? e.postData.contents
         : '';
+
+    if (postBody) {
+      let request = null;
+
+      try {
+        request = JSON.parse(postBody);
+      } catch (_) {}
+
+      if (
+        request &&
+        String(request.v2_action || '')
+          .trim() ===
+          'landlord_contract_document_upload'
+      ) {
+        const result =
+          uploadLandlordContractDocumentByLineUid_(
+            request.line_user_id || '',
+            request.contract_id || '',
+            request.tenant_id || '',
+            request.document_type || '',
+            request.file_name || '',
+            request.mime_type || '',
+            request.base64 || '',
+            request.idempotency_key || '',
+            request.note || ''
+          );
+
+        return ContentService
+          .createTextOutput(
+            JSON.stringify(result)
+          )
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
 
     const result = handleLineWebhook_(postBody);
 

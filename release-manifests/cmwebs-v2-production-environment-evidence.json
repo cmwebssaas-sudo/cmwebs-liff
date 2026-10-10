@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "release_id": "cmwebs-v2-rc1",
+  "captured_at": "2026-07-23T21:37:24+08:00",
+  "capture_mode": [
+    "local_repository_read_only",
+    "clasp_deployments_read_only"
+  ],
+  "safety": {
+    "production_changed": false,
+    "git_pushed": false,
+    "deployment_created_or_updated": false,
+    "script_property_values_read": false,
+    "spreadsheet_contents_read": false,
+    "staged_entries_before_capture": 0,
+    "conflicted_entries_before_capture": 0
+  },
+  "git_baseline": {
+    "branch": "codex/cmwebs-project-autopilot",
+    "root_worktree_head": "d4dd7a861ee315ee858572c7835fbfebc07f53da",
+    "release_worktree_head": "50182b7846903b11155442912eaea2589eac5d0f",
+    "modified_before_capture": 37,
+    "untracked_before_capture": 262,
+    "staged_before_capture": 0,
+    "conflicted_before_capture": 0
+  },
+  "manifest_validation": {
+    "scope_manifest": "VERIFIED",
+    "sha_manifest": "VERIFIED",
+    "path_classification_manifest": "VERIFIED",
+    "path_classification_unresolved_blocker_count": 0
+  },
+  "project_identity": {
+    "local_clasp_binding": {
+      "script_id_masked": "1JmW2N...ihRJ",
+      "script_id_sha256": "8be891f7be33c46ac63ead80efafd167cfb54da3e4a1ba348abd63d231925fb1",
+      "status": "VERIFIED_LOCAL_ONLY"
+    },
+    "historical_production_record": {
+      "source": "release/phase57/production-rollback-metadata.json",
+      "script_id_masked": "1NAPtZ...MD0k",
+      "script_id_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
+      "status": "HISTORICAL_ONLY"
+    },
+    "comparison": {
+      "status": "MISMATCH",
+      "reason": "The local clasp script ID SHA-256 differs from the historical serving Production script ID SHA-256."
+    }
+  },
+  "local_binding_deployment_inventory": {
+    "source": "clasp deployments",
+    "queried_read_only": true,
+    "deployment_count": 1,
+    "deployment": {
+      "id_masked": "AKfycb...MdBJ",
+      "id_sha256": "97f28cf71041e582582ea59f1af24507129f7dbdc5630c6af57e9ba33a570b3a",
+      "version_reference": "@HEAD"
+    },
+    "production_evidence_status": "MISMATCH",
+    "reason": "The queried deployment belongs to the locally bound project, not the historical serving Production project; @HEAD is not immutable-version evidence."
+  },
+  "production_apps_script": {
+    "serving_project_identity": "HUMAN_REQUIRED",
+    "serving_deployment_id": "HUMAN_REQUIRED",
+    "web_app_metadata": "HUMAN_REQUIRED",
+    "immutable_version": "BLOCKED",
+    "source_deployment_mapping": "BLOCKED"
+  },
+  "script_properties_presence_only": {
+    "CMWEBS_ENVIRONMENT": "HUMAN_REQUIRED",
+    "CMWEBS_SPREADSHEET_ID": "HUMAN_REQUIRED",
+    "CMWEBS_LINE_LOGIN_CHANNEL_ID": "HUMAN_REQUIRED",
+    "CMWEB_TENANT_LIFF_URL": "HUMAN_REQUIRED",
+    "CMWEB_TENANT_FRONTEND_BASE_URL": "HUMAN_REQUIRED",
+    "CMWEB_LANDLORD_FRONTEND_BASE_URL": "HUMAN_REQUIRED",
+    "LINE_CHANNEL_ACCESS_TOKEN": "HUMAN_REQUIRED",
+    "CMWEBS_LINE_VERIFY_TIMEOUT_MS": "HUMAN_REQUIRED",
+    "CMWEBS_LINE_VERIFY_MAX_ATTEMPTS": "HUMAN_REQUIRED",
+    "CMWEBS_NOTIFICATION_PROCESSING_TIMEOUT_MINUTES": "HUMAN_REQUIRED",
+    "CMWEBS_FEATURE_ALLOW_TEST_IDENTITY": "HUMAN_REQUIRED",
+    "CMWEBS_FEATURE_SCHEMA_MIGRATIONS": "HUMAN_REQUIRED",
+    "CMWEBS_FEATURE_NOTIFICATION_QUEUE": "HUMAN_REQUIRED",
+    "CMWEBS_FEATURE_REPAIR_WORKFLOW": "HUMAN_REQUIRED",
+    "CMWEBS_FEATURE_LEASE_LIFECYCLE": "HUMAN_REQUIRED",
+    "CMWEBS_FEATURE_BILLING_LIFECYCLE": "HUMAN_REQUIRED",
+    "CMWEBS_FEATURE_MOVE_OUT_SETTLEMENT": "HUMAN_REQUIRED",
+    "CMWEBS_FEATURE_SECURITY_FAILURE_QUEUE": "HUMAN_REQUIRED"
+  },
+  "trigger_inventory": {
+    "runV2AutomaticPaymentReminders": {
+      "expected_cadence": "hourly_when_installed",
+      "status": "HUMAN_REQUIRED"
+    },
+    "syncV1PaidBillsToV2": {
+      "expected_cadence": "every_5_minutes_when_installed",
+      "status": "HUMAN_REQUIRED"
+    },
+    "processNotificationQueue": {
+      "expected_state": "must_be_absent_unless_separately_approved",
+      "status": "HUMAN_REQUIRED"
+    },
+    "processContractExpiryNotifications": {
+      "expected_state": "must_be_absent_unless_separately_approved",
+      "status": "HUMAN_REQUIRED"
+    },
+    "processBillingLifecycleNotifications": {
+      "expected_state": "must_be_absent_unless_separately_approved",
+      "status": "HUMAN_REQUIRED"
+    }
+  },
+  "spreadsheet_metadata": {
+    "identity": "HUMAN_REQUIRED",
+    "sheet_names": "HUMAN_REQUIRED",
+    "header_schema_checksums": "HUMAN_REQUIRED",
+    "row_counts": "HUMAN_REQUIRED"
+  },
+  "frontend_hosting": {
+    "project_identity": "HUMAN_REQUIRED",
+    "current_revision": "HUMAN_REQUIRED",
+    "artifact_reference": "HUMAN_REQUIRED",
+    "rc_sha_comparison": "BLOCKED"
+  },
+  "result": {
+    "production_evidence": "BLOCKED",
+    "rc_freeze_ready": "NO",
+    "blocking_conditions": [
+      "The local clasp binding does not match the historical serving Production project.",
+      "Serving deployment/version, Properties, triggers, spreadsheet metadata, and hosting revision were not available through the verified local binding."
+    ]
+  }
+}

@@ -5,9 +5,20 @@ _deployed/
 _backup/
 
 # Local Apps Script deployment and authentication files
-apps-script/.clasp.json
+**/.clasp.json
+release/staging/frontend/cmweb-env.local.js
+release/staging/frontend/liff-staging.config.local.json
+release/staging/frontend/staging-test-uid-allowlist.local.json
+release/staging/.staging-resources.local.json
 **/.clasprc.json
 **/credentials.json
 **/credentials.local.json
 **/client_secret*.json
 **/oauth*.json
+
+# Local project-specific ChatGPT handoff binding
+.cmwebs-project-autopilot.local.md
+.cmwebs-project-autopilot-handoff.local.md
+
+/worktrees
+/.worktrees

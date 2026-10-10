@@ -111,6 +111,16 @@ instead of reconstructing or redefining product scope from chat history.
 Documentation-only memory updates are repository records, not permission to
 alter runtime code, Production configuration, or Production data.
 
+### ADR-CMW-014 — Payment report identity and landlord entry
+
+Tenant payment-report reads and submissions resolve identity from the canonical
+tenant, active contract, property, and room chain. The derived
+`V2_landlord_tenant_list_view` may be absent or incomplete and is not a
+required dependency for this critical path; conflicting canonical values still
+fail closed. Landlord payment review links use the landlord LIFF gateway, and
+settlement ownership accepts only the current Workspace's authorised landlord
+principals. Pending badges render only for valid positive integer counts.
+
 ## Existing V2 decisions retained
 
 - V2 retains GitHub Pages + Apps Script + Sheets while it consolidates

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "verification_timestamp": "2026-07-23T14:43:26Z",
+  "verifier_role": "AUTHORIZED_HUMAN",
+  "evidence_reference": "read-only Google Sheets UI observation; no spreadsheet export persisted",
+  "spreadsheet_identity": {
+    "title": "CMWebs_租管系統大腦",
+    "account": "cmwebs.saas@gmail.com",
+    "status": "VERIFIED",
+    "fingerprint_masked": "1c1c92...3a22a6",
+    "fingerprint_algorithm": "SHA-256",
+    "verification_source": "authorized browser URL identity",
+    "verification_timestamp": "2026-07-24T00:00:00+08:00",
+    "excluded_copy_types": [
+      "immutable_backup",
+      "rehearsal",
+      "restore_test"
+    ]
+  },
+  "visible_sheet_tabs": [
+    "0.系統身分綁定表",
+    "0.建檔總表",
+    "V2_landlord_home_view",
+    "V2_landlord_arrears_view",
+    "V2_landlord_tenant_list_view"
+  ],
+  "sheet_schemas": [
+    {
+      "sheet_name": "0.系統身分綁定表",
+      "status": "VERIFIED",
+      "header_fields": [
+        "LINE UID",
+        "角色",
+        "房東代碼",
+        "房號",
+        "真實姓名",
+        "建案代碼",
+        "合約狀態",
+        "備註",
+        "系統導航碼",
+        "帳號狀態"
+      ],
+      "row_values_captured": false
+    },
+    {
+      "sheet_name": "0.建檔總表",
+      "status": "VERIFIED",
+      "header_fields": [
+        "房東代號或品牌",
+        "房東聯絡電話",
+        "物件名稱",
+        "房號",
+        "租客姓名",
+        "租客手機號碼",
+        "每月租金",
+        "初始電表度數",
+        "每月管理費",
+        "每度電費",
+        "每度設備費",
+        "合約到期日"
+      ],
+      "row_values_captured": false
+    }
+  ],
+  "result": "PRODUCTION_SPREADSHEET_SCHEMA_VERIFIED",
+  "values_captured": false
+}

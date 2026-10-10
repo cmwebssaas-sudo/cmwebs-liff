@@ -129,6 +129,7 @@ function getLandlordPaymentReports_(landlordLineUserId) {
   }
 
   var rows = lmSheetObjects_(sheet);
+  var billById = lmPaymentReportBillMap_();
 
   return rows
     .filter(function (row) {
@@ -141,6 +142,12 @@ function getLandlordPaymentReports_(landlordLineUserId) {
       );
     })
     .map(function (row) {
+      var effectiveStatus =
+        lmResolveEffectivePaymentReportStatus_(
+          row,
+          billById[lmText_(row.bill_id)] || null
+        );
+
       return {
         report_id: row.report_id,
         created_at: row.created_at,
@@ -165,8 +172,8 @@ function getLandlordPaymentReports_(landlordLineUserId) {
         reported_last5: row.reported_last5,
         reported_paid_date: row.reported_paid_date,
 
-        status: row.status,
-        matched_payment_id: row.matched_payment_id,
+        status: effectiveStatus.status,
+        matched_payment_id: effectiveStatus.matched_payment_id,
 
         confirmed_at: row.confirmed_at,
         confirmed_by: row.confirmed_by,
@@ -182,6 +189,67 @@ function getLandlordPaymentReports_(landlordLineUserId) {
       };
     })
     .sort(lmPaymentReportSort_);
+}
+
+
+/**
+ * 建立帳單索引，供付款回報讀取時對帳使用。
+ * 只讀 V2_bills，不修改任何帳單或付款回報資料。
+ */
+function lmPaymentReportBillMap_() {
+  var billSheet = runtimeSpreadsheet_().getSheetByName('V2_bills');
+  var billById = {};
+
+  lmSheetObjects_(billSheet).forEach(function (bill) {
+    var billId = lmText_(bill.bill_id);
+
+    if (billId) {
+      billById[billId] = bill;
+    }
+  });
+
+  return billById;
+}
+
+
+/**
+ * 將付款回報與帳單的有效狀態合併。
+ *
+ * 舊資料可能在正式銷帳前就已被其他銷帳流程標記為 paid，
+ * 但 V2_payment_reports 仍保留 pending。這類回報不可再列入待審核，
+ * 也不可在前端繼續顯示確認並銷帳操作。
+ */
+function lmResolveEffectivePaymentReportStatus_(report, bill) {
+  var result = {
+    status: lmText_(report && report.status),
+    matched_payment_id: lmText_(report && report.matched_payment_id)
+  };
+  var reportStatus = result.status.toLowerCase();
+
+  if (
+    result.matched_payment_id &&
+    ['pending', 'payment_reported'].indexOf(reportStatus) !== -1
+  ) {
+    result.status = 'confirmed';
+    return result;
+  }
+
+  if (
+    !bill ||
+    ['pending', 'payment_reported'].indexOf(reportStatus) === -1
+  ) {
+    return result;
+  }
+
+  var billPaymentStatus = lmText_(bill.payment_status).toLowerCase();
+
+  if (billPaymentStatus === 'paid' || billPaymentStatus === '已繳') {
+    result.status = 'confirmed';
+    result.matched_payment_id =
+      result.matched_payment_id || lmText_(bill.payment_id);
+  }
+
+  return result;
 }
 
 
@@ -824,8 +892,7 @@ function lmResolveLandlord_(landlordLineUserId) {
   ];
 
   for (var s = 0; s < candidateSheets.length; s++) {
-    var sheet = SpreadsheetApp
-      .getActiveSpreadsheet()
+    var sheet = runtimeSpreadsheet_()
       .getSheetByName(candidateSheets[s]);
 
     if (!sheet || sheet.getLastRow() < 2) {
@@ -862,7 +929,7 @@ function lmResolveLandlord_(landlordLineUserId) {
 
 
 function lmEnsurePaymentReportSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = runtimeSpreadsheet_();
   var sheet = ss.getSheetByName(LM_SHEETS_.paymentReports);
   var headers = [
     'report_id',
@@ -907,7 +974,7 @@ function lmEnsurePaymentReportSheet_() {
 
 
 function lmEnsureTenantMessageSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = runtimeSpreadsheet_();
   var sheet = ss.getSheetByName(LM_SHEETS_.tenantMessages);
   var headers = [
     'message_id',

@@ -1,0 +1,20 @@
+{
+  "environment": "staging",
+  "lineChannel": "__STAGING_OR_TEST_CHANNEL_ONLY__",
+  "liffId": "__SET_STAGING_LIFF_ID_LOCALLY__",
+  "frontendBaseUrl": "__SET_STAGING_FRONTEND_BASE_URL_LOCALLY__",
+  "endpointUrl": "__SET_STAGING_FRONTEND_BASE_URL_LOCALLY__/tenant-bind.html",
+  "callbackUrl": "__SET_STAGING_FRONTEND_BASE_URL_LOCALLY__/tenant-bind.html",
+  "allowedCallbackUrls": [
+    "__SET_STAGING_FRONTEND_BASE_URL_LOCALLY__/tenant-bind.html",
+    "__SET_STAGING_FRONTEND_BASE_URL_LOCALLY__/tenant-home.html",
+    "__SET_STAGING_FRONTEND_BASE_URL_LOCALLY__/tenant-bills.html",
+    "__SET_STAGING_FRONTEND_BASE_URL_LOCALLY__/tenant-message.html"
+  ],
+  "scope": [
+    "openid",
+    "profile"
+  ],
+  "botPrompt": "disabled",
+  "testUidAllowlistFile": "staging-test-uid-allowlist.local.json"
+}

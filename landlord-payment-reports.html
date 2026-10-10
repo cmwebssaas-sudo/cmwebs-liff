@@ -8,6 +8,16 @@
   />
   <title>CMWebs 付款回報</title>
 
+  <script>
+    (function redirectLegacyLandlordPaymentReports() {
+      const target = new URL(
+        'landlord-payment-report-review.html',
+        location.href
+      );
+      target.search = location.search;
+      location.replace(target.href);
+    }());
+  </script>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "verification_timestamp": "2026-07-23T14:25:50.451Z",
+  "verifier_role": "AUTHORIZED_HUMAN",
+  "evidence_reference": "read-only Apps Script console observation; no screenshot persisted",
+  "script": {
+    "match_result": "MATCH",
+    "masked_identifier": "1NAPtZ...YIMD0k",
+    "fingerprint_masked": "601b21...8fa985"
+  },
+  "deployment": {
+    "match_result": "MATCH",
+    "masked_identifier": "AKfycb...81X6Og",
+    "fingerprint_masked": "ebd027...05a390",
+    "type": "WEB_APP",
+    "immutable_version": "74",
+    "active_confirmed": true,
+    "serving_confirmed": true
+  }
+}

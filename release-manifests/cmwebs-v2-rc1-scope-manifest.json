@@ -1,0 +1,75 @@
+{
+  "release_id": "cmwebs-v2-rc1",
+  "source": {
+    "branch": "release/cmwebs-v2-rc1",
+    "root_worktree_head": "d4dd7a861ee315ee858572c7835fbfebc07f53da",
+    "release_worktree_head": "50182b7846903b11155442912eaea2589eac5d0f"
+  },
+  "scope_classification": {
+    "status": "RC_ELIGIBLE",
+    "document": "docs/123-CONTROLLED-RC-FREEZE-BACKUP-MIGRATION-REHEARSAL.md",
+    "reconciliation": {
+      "original_scope_count": 35,
+      "original_classification_count": 34,
+      "differing_path": "apps-script/appsscript.json",
+      "decision": "RC_ELIGIBLE",
+      "evidence": "Apps Script runtime manifest required by the platform and canonical validator."
+    }
+  },
+  "candidate": {
+    "backend": [
+      "程式碼.js",
+      "V2_API.js",
+      "V2_RUNTIME_SNAPSHOT.js",
+      "V2_TENANT_RUNTIME_RESOLVER.js",
+      "V2_TENANT_BINDING_PHONE.js",
+      "V2_TENANT_LEASE_ONBOARDING.js",
+      "V2_TENANT_MESSAGES.js",
+      "V2_TENANT_PAYMENT_REPORTS.js",
+      "V2_TENANT_CHECKIN_MANAGEMENT.js",
+      "V2_BILLING_MANAGEMENT.js",
+      "V2_BILL_NOTIFICATIONS.js",
+      "V2_AUTO_PAYMENT_REMINDER.js",
+      "V2_PAID_BILL_MANAGEMENT.js",
+      "V2_PAYMENT_SETTLEMENT.js",
+      "V2_PAYMENT_REVERSAL.js",
+      "V2_MANUAL_SETTLEMENT.js",
+      "V2_CONTRACT_REQUESTS.js",
+      "V2_PROPERTY_ROOM_MANAGEMENT.js",
+      "V2_SYSTEM_SETTINGS.js",
+      "V2_SETTINGS_INTEGRATION.js",
+      "V2_WORKSPACES.js",
+      "V2_WORKSPACE_CREATION.js",
+      "V2_WORKSPACE_LANDLORD_ACCESS.js",
+      "V2_WORKSPACE_DASHBOARD_NATIVE.js",
+      "V2_WORKSPACE_NOTIFICATIONS.js",
+      "V2_WORKSPACE_OPERATION_AUDIT.js",
+      "V2_TEAM_MANAGEMENT.js",
+      "V2_LANDLORD_MANAGEMENT.js",
+      "V2_LANDLORD_ONBOARDING.js",
+      "V2_ANNOUNCEMENT_MANAGEMENT.js",
+      "appsscript.json"
+    ],
+    "frontend": [
+      "tenant-bind.html",
+      "tenant-home.html",
+      "tenant-bills.html",
+      "tenant-message.html"
+    ]
+  },
+  "excluded": [
+    "TESTS.js",
+    "V2_TENANT_RUNTIME_DATA_REPAIR.js",
+    "V2_TENANT_RUNTIME_VALIDATION.js",
+    "V2_LEGACY_BILL_IMPORT.js",
+    "staging modules",
+    "local clasp credentials",
+    "tokens",
+    "secrets"
+  ],
+  "validation_expectation": {
+    "source_integrity": "Run npm run validate on the exact candidate tree",
+    "hash_freeze": "Generate frontend/backend SHA manifests only from a clean isolated tree",
+    "human_evidence": "Production deployment / hosting / trigger / property evidence remains required"
+  }
+}
