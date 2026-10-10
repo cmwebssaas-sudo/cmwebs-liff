@@ -1,4 +1,14 @@
-import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';import {webcrypto} from 'node:crypto';
 const context={window:{},JSON,Number,String,Date};vm.runInNewContext(readFileSync('assets/js/cmwebs-subscription.js','utf8'),context);const ui=context.window.CMWebsCommercialSubscription;
 test('member empty state is honest and each payment state gives the correct next step',()=>{assert.match(ui.renderPlans([],true,false),/尚未上架方案/);for(const [status,message] of [['AWAITING_PAYMENT','回報轉帳'],['UNDER_REVIEW','等待管理者確認'],['PAID','已付款'],['CANCELLED','已取消'],['EXPIRED','已到期']])assert.match(ui.renderOrders([{order_id:'ord_test',status,amount_twd:100,plan:{terms:{display_name:'Test'}},expires_at:'2026-10-11T00:00:00Z'}],true),new RegExp(message));assert.match(ui.renderSubscription({status:'ACTIVE',current:{plan:{terms:{display_name:'Test',room_limit:{mode:'UNLIMITED'}}},ends_at:'2026-11-11T00:00:00Z'},usable_until:'2026-11-11T00:00:00Z',future:[],history:[],subscription_id:'sub_test',renewal_cancelled_at:null},true),/不會自動退款/);});
 test('plan names and transfer notes are escaped and viewer cannot purchase or report',()=>{const terms={display_name:'<img src=x onerror=alert(1)>',amount_twd:100,cycle:{unit:'MONTH',interval:1},trial_days:7,room_limit:{mode:'LIMITED',max_rooms:10},description:'<script>bad</script>'};const html=ui.renderPlans([{plan_version_id:'plv_test',terms}],false,false);assert.doesNotMatch(html,/<img|<script|data-command="purchase"/);assert.match(html,/&lt;img/);});
+test('cancel renewal can repeat after a new renewal while uncertain retries keep their key',async()=>{
+ const c={crypto:webcrypto,window:{crypto:webcrypto},JSON,Number,String,Date};vm.createContext(c);
+ const manifest=JSON.parse(readFileSync('assets/platform-member/manifest.json','utf8'));for(const asset of manifest.assets)if(asset.path.endsWith('.js'))vm.runInContext(readFileSync(asset.path,'utf8'),c);
+ const seen=[];let lost=true;const client={querySubscription:async()=>({subscription:{status:'NONE',current:null,future:[],history:[]}}),queryPlans:async()=>({plans:[]}),queryOrders:async()=>({orders:[]}),cancelRenewal:async key=>{seen.push(key);if(lost)throw new Error('Lost response');return {};},requestRenewal:async()=>({})};
+ c.window.CMWebsCoreBilling={...c.CMWebsCoreBilling,createBillingClient:()=>client};vm.runInContext(readFileSync('assets/js/cmwebs-subscription.js','utf8'),c);
+ const root={innerHTML:'',addEventListener(){},querySelector:()=>({textContent:''})};
+ const mounted=await c.window.CMWebsCommercialSubscription.mount({root,host:{initialize:async()=>({provisioning_status:'READY',line_linked:true,me:{},company_id:'com_test',product_id:'prd_test'})}});
+ await assert.rejects(mounted.cancelCommercialRenewal());lost=false;await mounted.cancelCommercialRenewal();await mounted.requestCommercialRenewal('plv_test');await mounted.cancelCommercialRenewal();
+ assert.equal(seen[0],seen[1]);assert.notEqual(seen[1],seen[2]);
+});

@@ -47,9 +47,9 @@ function requestCommercialEmailRegistration_(email, options) {
     try {
         commercialRegistrationSheet_(COMMERCIAL_REGISTRATION_INTENT_SHEET_, COMMERCIAL_REGISTRATION_INTENT_HEADERS_);
         lock.waitLock(5000);
-        if (landlordEmailAuthRows_(landlordEmailAuthUserSheet_()).some(function (u) { return landlordEmailAuthNormalizeEmail_(u.email) === email; }))
+        if (commercialRegistrationEmailReserved_(email))
             return commercialRegistrationResult_(true, 'ALREADY_REGISTERED', '此 Email 已有帳號，請回原登入頁使用 Email 或 LINE 登入', { route: 'login' });
-        const registrationUser = 'reg_' + landlordEmailAuthEmailHash_(email), now = Date.parse(workspaceNowIso_());
+        const registrationUser = 'reg_' + landlordEmailAuthEmailHash_(email), now = Date.parse(landlordEmailAuthNowIso_());
         if (landlordEmailAuthRows_(landlordEmailAuthChallengeSheet_()).some(function (c) { return c.user_id === registrationUser && now - Date.parse(c.issued_at) < 60000; }))
             return commercialRegistrationResult_(false, 'RATE_LIMITED', '請稍候再重新寄送驗證碼');
         result = landlordEmailAuthIssueChallenge_({ user: { user_id: 'reg_' + landlordEmailAuthEmailHash_(email) }, email: email, requestId: options.request_id || '', purpose: 'registration', deferDelivery: function (to, code, purpose) { delivery = { to: to, code: code, purpose: purpose }; } });
@@ -86,7 +86,7 @@ function verifyCommercialEmailRegistration_(challengeId, code, registrationInput
         const verified = landlordEmailAuthVerifyChallenge_(challengeId, code, options.request_id || '', 'reg_' + landlordEmailAuthEmailHash_(input.email));
         if (!verified.success)
             return verified;
-        if (landlordEmailAuthRows_(landlordEmailAuthUserSheet_()).some(function (u) { return landlordEmailAuthNormalizeEmail_(u.email) === input.email; }))
+        if (commercialRegistrationEmailReserved_(input.email))
             return commercialRegistrationResult_(true, 'ALREADY_REGISTERED', '請回原登入頁登入', { route: 'login' });
         access = commercialRegistrationCreateLocked_('EMAIL', landlordEmailAuthEmailHash_(input.email), '', input);
     }
@@ -101,6 +101,13 @@ function verifyCommercialEmailRegistration_(challengeId, code, registrationInput
     }
     const session = landlordEmailAuthCreateSessionForAccess_(access.user, access, options.request_id || '');
     return commercialRegistrationFinish_(access, session.data);
+}
+// Unverified LINE display data is not an Email login identity. Disabled verified
+// accounts remain reserved, so registering again cannot bypass suspension.
+function commercialRegistrationEmailReserved_(email) {
+    return landlordEmailAuthRows_(landlordEmailAuthUserSheet_()).some(function (u) {
+        return landlordEmailAuthNormalizeEmail_(u.email) === email && Boolean(landlordEmailAuthText_(u.email_verified_at)) && landlordEmailAuthAcceptedBoolean_(u.email_login_enabled);
+    });
 }
 function commercialRegistrationVerifyLineToken_(idToken) {
     const channel = PropertiesService.getScriptProperties().getProperty('CMWEBS_LINE_LOGIN_CHANNEL_ID');
@@ -149,7 +156,7 @@ function registerCommercialLandlordByVerifiedLine_(idToken, registrationInput, o
 function commercialRegistrationCreateLocked_(type, identityKey, lineUserId, input) {
     const ss = runtimeSpreadsheet_(), intents = commercialRegistrationSheet_(COMMERCIAL_REGISTRATION_INTENT_SHEET_, COMMERCIAL_REGISTRATION_INTENT_HEADERS_), users = ss.getSheetByName('V2_users');
     const previous = workspaceGetObjectsWithRow_(intents).find(function (r) { return r.identity_type === type && r.identity_key === identityKey; });
-    const now = workspaceNowIso_();
+    const now = landlordEmailAuthNowIso_();
     let intent = previous;
     if (!intent) {
         if (workspaceGetObjectsWithRow_(users).some(function (u) { return workspaceNormalizeTaiwanPhone_(u.phone) === input.phone; }))

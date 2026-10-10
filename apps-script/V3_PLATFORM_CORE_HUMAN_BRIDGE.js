@@ -40,20 +40,20 @@ function platformCoreResolveBillingPrincipal_(request) {
   return commercialRegistrationTrustAccess_({user:user,workspace:workspaces[0],membership:members[0],billing_auth_hash:platformCoreBillingHash_(proof)});
 }
 function platformCoreIssueBillingCsrf_(access) {
-  const config=platformCoreBillingConfig_(),at=Date.parse(workspaceNowIso_());
+  const config=platformCoreBillingConfig_(),at=Date.parse(landlordEmailAuthNowIso_());
   const text=JSON.stringify({user:access.user.user_id,workspace:access.workspace.workspace_id,product:config.productId,proof:access.billing_auth_hash,issued:at,expires:at+900000,nonce:Utilities.getUuid().replace(/-/g,'')});
   return platformCoreBillingBase64_(Utilities.newBlob(text).getBytes())+'.'+platformCoreBillingHmac_(text,config);
 }
 function platformCoreVerifyBillingCsrf_(access,token) {
   try {
     if(typeof token!=='string' || token.length>2048 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(token))throw new Error('Invalid CSRF');
-    const parts=token.split('.'),text=Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString(),config=platformCoreBillingConfig_(),p=JSON.parse(text),now=Date.parse(workspaceNowIso_());
+    const parts=token.split('.'),text=Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString(),config=platformCoreBillingConfig_(),p=JSON.parse(text),now=Date.parse(landlordEmailAuthNowIso_());
     if(!landlordEmailAuthConstantEquals_(parts[1],platformCoreBillingHmac_(text,config)) || p.user!==access.user.user_id || p.workspace!==access.workspace.workspace_id || p.product!==config.productId || p.proof!==access.billing_auth_hash || !Number.isSafeInteger(p.issued) || !Number.isSafeInteger(p.expires) || p.issued>now || p.expires<=now || p.expires-p.issued!==900000)throw new Error('Invalid CSRF');
   }catch(_){throw platformCoreBillingError_('AUTHENTICATION_REQUIRED');}
 }
 function platformCoreSignHumanRequest_(access,method,path,payload,intent) {
   if(!access || !COMMERCIAL_VERIFIED_ACCESS_.has(access) || method!=='POST' || ['PROVISION','HUMAN_ACTION'].indexOf(intent)<0)throw platformCoreBillingError_('AUTHENTICATION_REQUIRED');
-  const config=platformCoreBillingConfig_(),body=JSON.stringify(payload),at=Math.floor(Date.parse(workspaceNowIso_())/1000);
+  const config=platformCoreBillingConfig_(),body=JSON.stringify(payload),at=Math.floor(Date.parse(landlordEmailAuthNowIso_())/1000);
   if(Utilities.newBlob(body).getBytes().length>65536)throw platformCoreBillingError_('INVALID_REQUEST');
   const assertion=JSON.stringify({issuer:'https://cmwebs.com/rental',audience:'commercial-'+config.environment,product_id:config.productId,external_user_id:access.user.user_id,external_workspace_id:access.workspace.workspace_id,intent:intent,method:'POST',path:path,body_sha256:platformCoreBillingHash_(body),issued_at:at,expires_at:at+60,nonce:Utilities.getUuid().replace(/-/g,'')});
   return {body:body,headers:{Authorization:'Bearer '+config.credential,'x-core-key-id':config.keyId,'x-core-assertion':platformCoreBillingBase64_(Utilities.newBlob(assertion).getBytes()),'x-core-signature':platformCoreBillingHmac_(assertion,config)}};

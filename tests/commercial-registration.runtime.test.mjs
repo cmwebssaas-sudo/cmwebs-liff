@@ -4,6 +4,21 @@ import {createCommercialRentalRuntime} from './fixtures/commercial-rental-runtim
 const input={landlord_name:'Synthetic owner',phone:'0912345678',email:'synthetic@example.invalid',workspace_name:'Synthetic team',terms_accepted:true};
 function setup(){let calls=0,timeout=false;const r=createCommercialRentalRuntime({transport:(access,_op,_body,_key)=>{calls++;if(timeout)throw new Error('Private timeout');return {status:'READY',company_id:'com_test_'+access.workspace.workspace_id,product_id:'prd_commercial_test',platform_user_id:'usr_fixture',external_workspace_id:access.workspace.workspace_id};}});return {...r,calls:()=>calls,timeout:value=>{timeout=value;}};}
 function otp(r){return r.state.mail.at(-1).body.match(/\b\d{6}\b/)[0];}
+test('unverified LINE display Email cannot reserve the verified Email login identity',()=>{
+ const r=setup();assert.equal(r.api.registerCommercialLandlordByVerifiedLine_('verified-line-token',input,{}).success,true);
+ const challenge=r.api.requestCommercialEmailRegistration_(input.email,{});assert.equal(challenge.success,true);assert.ok(challenge.data.challenge_id);
+ const verified=r.api.verifyCommercialEmailRegistration_(challenge.data.challenge_id,otp(r),{...input,phone:'0923456789'},{});assert.equal(verified.success,true);
+ const users=r.sheets.V2_users.objects();assert.equal(users.length,2);assert.notEqual(users[0].user_id,users[1].user_id);assert.equal(users[0].email_login_enabled,false);assert.equal(users[1].email_login_enabled,true);
+ r.state.now='2026-10-11T00:01:01Z';assert.equal(r.api.requestLandlordEmailLogin_(input.email,{}).success,true);
+ r.api.landlordEmailAuthUpdateRow_(r.sheets.V2_users,users[1],{account_status:'disabled'});
+ assert.equal(r.api.requestCommercialEmailRegistration_(input.email,{}).code,'ALREADY_REGISTERED');
+});
+test('commercial registration runs with the original production clock without a VM-only helper',()=>{
+ const r=setup();delete r.api.workspaceNowIso_;
+ const challenge=r.api.requestCommercialEmailRegistration_(input.email,{});
+ assert.equal(challenge.success,true,challenge.code);
+ assert.equal(r.api.verifyCommercialEmailRegistration_(challenge.data.challenge_id,otp(r),input,{}).success,true);
+});
 test('new Email registration requires a bounded one-use challenge and a stable Core retry',()=>{
   const r=setup(),api=r.api;assert.equal(api.verifyCommercialEmailRegistration_('fake','123456',input,{}).success,false);assert.equal(r.sheets.V2_users.objects().length,0);
   const issued=api.requestCommercialEmailRegistration_(input.email,{});assert.equal(issued.success,true);const code=otp(r);r.timeout(true);

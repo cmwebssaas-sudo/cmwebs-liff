@@ -26,7 +26,7 @@ function provisionCommercialWorkspaceMember_(access, idempotencyKey) {
         record = workspaceGetObjectsWithRow_(sheet).find(function (r) { return r.workspace_id === workspaceId && r.user_id === userId; });
         if (record && record.status === 'READY')
             return commercialRegistrationResult_(true, 'READY', '訂閱帳號已連線', { workspace_id: workspaceId });
-        const now = workspaceNowIso_();
+        const now = landlordEmailAuthNowIso_();
         if (!record) {
             workspaceAppendObject_(sheet, { workspace_id: workspaceId, user_id: userId, status: 'PROVISIONING_PENDING', idempotency_key: key, attempted_at: now, last_error_code: '', created_at: now, updated_at: now, workspace_display_name: storedWorkspace.workspace_name || workspaceId });
             record = workspaceGetObjectsWithRow_(sheet).find(function (r) { return r.workspace_id === workspaceId && r.user_id === userId; });
@@ -57,7 +57,7 @@ function provisionCommercialWorkspaceMember_(access, idempotencyKey) {
         const retryLock = LockService.getScriptLock();
         try {
             retryLock.waitLock(5000);
-            landlordEmailAuthUpdateRow_(commercialRegistrationSheet_(COMMERCIAL_MEMBER_PROVISIONING_SHEET_, COMMERCIAL_MEMBER_PROVISIONING_HEADERS_), record, { last_error_code: 'PROVISIONING_PENDING', updated_at: workspaceNowIso_() });
+            landlordEmailAuthUpdateRow_(commercialRegistrationSheet_(COMMERCIAL_MEMBER_PROVISIONING_SHEET_, COMMERCIAL_MEMBER_PROVISIONING_HEADERS_), record, { last_error_code: 'PROVISIONING_PENDING', updated_at: landlordEmailAuthNowIso_() });
         }
         finally {
             try {
@@ -73,7 +73,7 @@ function provisionCommercialWorkspaceMember_(access, idempotencyKey) {
         const sheet = commercialRegistrationSheet_(COMMERCIAL_MEMBER_PROVISIONING_SHEET_, COMMERCIAL_MEMBER_PROVISIONING_HEADERS_), links = commercialRegistrationSheet_(PLATFORM_CORE_LINK_SHEET_, PLATFORM_CORE_LINK_HEADERS_), link = workspaceGetObjectsWithRow_(links).find(function (r) { return r.workspace_id === workspaceId; });
         if (link && link.status === 'LINKED' && (link.platform_company_id !== result.company_id || link.product_id !== result.product_id))
             throw new Error('Existing link conflict');
-        const now = workspaceNowIso_();
+        const now = landlordEmailAuthNowIso_();
         if (link)
             landlordEmailAuthUpdateRow_(links, link, { platform_company_id: result.company_id, product_id: result.product_id, status: 'LINKED', linked_at: link.linked_at || now, updated_at: now });
         else
