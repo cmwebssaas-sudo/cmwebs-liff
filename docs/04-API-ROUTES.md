@@ -641,8 +641,10 @@ envelope correlated by `request_id`. They are not `doGet` / JSONP
   shared business-read cache. Missing auth sheets or read failures return a
   controlled bridge error (`AUTH_UNAVAILABLE` for status,
   `SUBSCRIPTION_UNAVAILABLE` for summary), without schema repair.
-  Deployment evidence and pending authenticated timing acceptance are recorded
-  in `LANDLORD-READ-PERFORMANCE.md`.
+  Deployment evidence and authenticated measurements are recorded in
+  `LANDLORD-READ-PERFORMANCE.md`. Session restore/room reads improved in the
+  observed samples; overall performance acceptance failed because the homepage
+  remains slow and one attempt timed out.
 - The desktop request body cannot override the server-resolved `workspace_id`
   or `role`. Every protected landlord action must continue to resolve the
   active Workspace membership and authorization on the server.

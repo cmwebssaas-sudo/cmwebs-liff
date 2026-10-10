@@ -161,7 +161,7 @@
     "vendor-repair.html",
     "vendor-repair.js"
   ],
-  "scope": "V2.0 landlord read performance repair: single Email session validation; session status and subscription init use fresh request-local snapshots, skip schema/metadata writes and preserve business caches; read cache namespace resolved once per request. Missing auth schema returns controlled bridge errors. Fresh serving/editor v228 matched main63 files; immutable v229 matches candidate7ea6b5b63 files; same Web App reads back229, other4 deployments unchanged. Rollback228; no frontend/schema/Properties/triggers/LINE changes. Authenticated timing retest pending user login in new test tab.",
+  "scope": "V2.0 landlord read performance repair: single Email session validation; session status and subscription init use fresh request-local snapshots, skip schema/metadata writes and preserve business caches; read cache namespace resolved once per request. Missing auth schema returns controlled bridge errors. Fresh serving/editor v228 matched main63 files; immutable v229 matches candidate7ea6b5b63 files; same Web App reads back229, other4 deployments unchanged. Rollback228; no frontend/schema/Properties/triggers/LINE changes. Authenticated retest completed: session restore3.819–4.357s, rooms5.782–8.451s; home primary8.508–9.347s and secondary cumulative19.595–21.737s remain slow, first home timed out. Overall performance acceptance FAILED; timings are request-to-headers, not render latency or load capacity.",
   "rollback": {
     "backend_version": 228,
     "frontend_revision": "edf13f9dc07026af161598c73dd0df5f94fde2bd"
@@ -496,7 +496,14 @@
     "properties_changed": false,
     "triggers_changed": false,
     "line_sends": 0,
-    "authenticated_timing_acceptance": "PENDING: original session tab is owned by another browser session; user asked to sign in to fresh test tab",
-    "physical_line_acceptance": "UNVERIFIED"
+    "authenticated_timing_acceptance": "PARTIAL: session restore and room reads improved in measured desktop samples; homepage remains slow with one timeout. Overall performance acceptance FAILED.",
+    "physical_line_acceptance": "UNVERIFIED",
+    "merge_commit": "e3e51c2d8c713aef988b7eb6279d596e008c064f",
+    "pull_request": 256,
+    "pages_workflow": "38096070415",
+    "public_files_matched": 51,
+    "measurements_file": "docs/landlord-read-performance-measurements.json",
+    "fresh_otp_timing_acceptance": "UNVERIFIED: login completed by user outside network capture",
+    "load_capacity_acceptance": "UNVERIFIED"
   }
 }

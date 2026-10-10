@@ -9,7 +9,10 @@ Schema／metadata 零寫入、撤銷／過期／停權／角色／Workspace 變�
 logout 持久化、訂閱摘要即時查 Core、房間數隔離、cache failure fallback、
 寫入後世代重讀。完整 786 pass／0 fail／4 個外部 Core 條件式 skip；validate、
 62 份 JS 合併語法與 diff-check 通過。獨立複查無新增阻擋問題，定向 52／52
-通過。正式部署後速度與手機 LINE 尚未驗收。
+通過。v229已發布；同帳號桌面復驗3.819–4.357秒，房間5.782–8.451秒。
+首頁主資料8.508–9.347秒、摘要累計19.595–21.737秒，首輪曾逾時；整體效能
+未通過。兩笔網路事件缺失樣本只記UI成功，排除於秒數。OTP速度、手機LINE與
+多人負載未驗證；量測是請求到標頭，不等於完整畫面渲染。
 操作次數與發布／回退見 [LANDLORD-READ-PERFORMANCE.md](LANDLORD-READ-PERFORMANCE.md)。
 
 ## 2026-10-10 郵局唯一金額自動銷帳
