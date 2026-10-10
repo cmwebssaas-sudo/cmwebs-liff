@@ -1,10 +1,10 @@
 {
   "verified_on": "2026-10-11",
-  "source_commit": "1e5d61f5cdae48ffb206f76058637de31926dbb0",
+  "source_commit": "7ea6b5ba0942ae6a1113fdf75c40b428a7bd6c44",
   "backend_verified_on": "2026-10-11",
-  "backend_source_commit": "1e5d61f5cdae48ffb206f76058637de31926dbb0",
+  "backend_source_commit": "7ea6b5ba0942ae6a1113fdf75c40b428a7bd6c44",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
-  "backend_version": 228,
+  "backend_version": 229,
   "room_photo_share_occupancy_release": {
     "verified_on": "2026-10-07",
     "source_commit": "b8a409e0581613b580471e527bd540aa28d4417a",
@@ -105,7 +105,7 @@
     "rollback_revision": "cc01e8115fff9219172f02e91077ad1bbcf27aa3"
   },
   "backend_file_count": 63,
-  "backend_tree_sha256": "1b5f511a76988cc75b1f444757320840ddeca29168de3f96ad5af855b77e835d",
+  "backend_tree_sha256": "5e580f7071e9c16bf7d0338916c7d7e1fe4239e70b89fde17fb6a21beb690326",
   "project_sha256": "601b2190f15a93eb5bbcbb1ade48922b1352825d32bb01add37c28ca1f8fa985",
   "deployment_sha256": "ab9002505bca54af4aa7c95b4d6d2e6ba7f713b26516de3f5423d994af3da504",
   "public_files": [
@@ -161,9 +161,9 @@
     "vendor-repair.html",
     "vendor-repair.js"
   ],
-  "scope": "V2.0 tenant detail correctness repair: exact current-lease rent, management, contractual deposit, Taipei dates/payment day and existing rates. Read projections retain explicit zero and null for unknown values without changing write/default normalizers; document fallback refreshes only summary/history, preserving meter and file forms. Fresh serving/editor HEAD v204 exports matched all 59 baseline files; reviewed c583d36 created immutable v205, all 59 files byte-identical. Existing formal deployment CLI reads back v205 at unchanged URL; four other deployments unchanged and v204 rollback retained. PR201 merged at657ec08; Pages workflow36985692299 succeeded and 41 public files are byte-identical. Post-merge validate, 485/485 tests and diff-check pass. No business-row, lease/date/history, private-file, schema, Properties, trigger or LINE writes, and no version deletion. Authenticated browser/physical-device acceptance and previously approved room501-only settings save (rent19570, management0, deposit39140) remain PENDING: browser is at landlord Email login; no direct Sheets write or auth bypass. Prior506 document/meter recovery and502 expired-occupied protection remain. Rollback same Web App v204, frontend cc01e81.",
+  "scope": "V2.0 landlord read performance repair: single Email session validation; session status and subscription init use fresh request-local snapshots, skip schema/metadata writes and preserve business caches; read cache namespace resolved once per request. Missing auth schema returns controlled bridge errors. Fresh serving/editor v228 matched main63 files; immutable v229 matches candidate7ea6b5b63 files; same Web App reads back229, other4 deployments unchanged. Rollback228; no frontend/schema/Properties/triggers/LINE changes. Authenticated timing retest pending user login in new test tab.",
   "rollback": {
-    "backend_version": 227,
+    "backend_version": 228,
     "frontend_revision": "edf13f9dc07026af161598c73dd0df5f94fde2bd"
   },
   "version_inventory_verified": {
@@ -239,7 +239,7 @@
     "editor_head_restored_to_version": 200,
     "required_approval": "Delete only unreferenced and locally exported version 199; retain version 200 and all existing deployments/data."
   },
-  "backend_rollback_version": 227,
+  "backend_rollback_version": 228,
   "monthly_bill_noon_schedule": {
     "verified_on": "2026-10-05",
     "source_commit": "7cc1fb3",
@@ -477,5 +477,26 @@
     "frontend_revision": "e8289ac6cd3745833e650b0c55744737c1ef6315",
     "frontend_public_files_verified": 51,
     "physical_line_acceptance": "UNVERIFIED; outside desktop acceptance"
+  },
+  "landlord_read_performance_release": {
+    "date": "2026-10-11",
+    "source_commit": "7ea6b5ba0942ae6a1113fdf75c40b428a7bd6c44",
+    "backend_version": 229,
+    "rollback_backend_version": 228,
+    "immutable_files_matched": 63,
+    "other_deployments_unchanged": true,
+    "versions_before_count": 129,
+    "versions_deleted": 0,
+    "tests_passed": 786,
+    "tests_skipped": 4,
+    "focused_tests_passed": 18,
+    "independent_review": "PASS after controlled bridge correction",
+    "frontend_changed": false,
+    "schema_changed": false,
+    "properties_changed": false,
+    "triggers_changed": false,
+    "line_sends": 0,
+    "authenticated_timing_acceptance": "PENDING: original session tab is owned by another browser session; user asked to sign in to fresh test tab",
+    "physical_line_acceptance": "UNVERIFIED"
   }
 }

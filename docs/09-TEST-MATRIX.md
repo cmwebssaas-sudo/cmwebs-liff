@@ -1,5 +1,17 @@
 # V2 回歸測試矩陣
 
+## 2026-10-11 登入復驗與讀取效能（本機候選）
+
+`tests/landlord-session-read-performance.runtime.test.mjs` 新增 18 項真實模組
+runtime 回歸；最初 16 項在基底副本有 5 項失敗，再補兩項缺表 bridge 測試
+先重現失敗；修補後全部通過。涵蓋單次 session 驗證、
+Schema／metadata 零寫入、撤銷／過期／停權／角色／Workspace 變更、偽造欄位、
+logout 持久化、訂閱摘要即時查 Core、房間數隔離、cache failure fallback、
+寫入後世代重讀。完整 786 pass／0 fail／4 個外部 Core 條件式 skip；validate、
+62 份 JS 合併語法與 diff-check 通過。獨立複查無新增阻擋問題，定向 52／52
+通過。正式部署後速度與手機 LINE 尚未驗收。
+操作次數與發布／回退見 [LANDLORD-READ-PERFORMANCE.md](LANDLORD-READ-PERFORMANCE.md)。
+
 ## 2026-10-10 郵局唯一金額自動銷帳
 
 新增唯一金額（含無後五碼）自動銷帳、同額保留人工確認、同額後五碼輔助配對及
