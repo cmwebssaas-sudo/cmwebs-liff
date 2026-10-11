@@ -1,5 +1,19 @@
 # V2 回歸測試矩陣
 
+## 2026-10-12 R0 records and source reconciliation
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Fresh deployment/project fingerprint and immutable source export | PASS: serving v232, 68/68 byte matches; five deployments stable | Read-only authenticated CLI; no function execution or business data access |
+| PR261/262 and Pages runs | PASS: merged revisions and successful workflows confirmed | No new merge or publication |
+| Public source readback | PASS: 61/61 existing manifest assets match main 2a5779f | No authenticated/physical-device or speed proof |
+| `npm test` | 822 pass / 1 fail / 4 skip | Sole failure: commercial roundtrip requires `PLATFORM_CORE_TEST_WORKTREE`; external Core/PG not configured |
+| `npm run test:unit` | 822 pass / 0 fail / 0 skip | Local unit suite; not full cross-repo integration |
+| `npm run validate`, export check, `git diff --check` | PASS | Static and source evidence |
+| Cloud Apps Script functions and current-build authenticated/LINE/performance acceptance | NOT_RUN / HUMAN_REQUIRED | Documentation-only task |
+
+Details, provenance, risk and rollback: [EXECUTION_RECORD.md](EXECUTION_RECORD.md).
+
 ## 2026-10-11 登入復驗與讀取效能（本機候選）
 
 `tests/landlord-session-read-performance.runtime.test.mjs` 新增 18 項真實模組
