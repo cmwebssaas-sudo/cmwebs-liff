@@ -4,10 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 營收儀表板</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-membership-transfer-v1"></script>
-  <script src="landlord-auth.js?v=20261011-membership-transfer-v1"></script>
-  <script src="landlord-api.js?v=20261011-membership-transfer-v1"></script>
+<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
+  <script src="landlord-api.js?v=20261011-fast-navigation-v1"></script>
   <link rel="stylesheet" href="assets/css/cmwebs-asset-valuation.css?v=20261005-utility-meter-save-v1">
   <script src="assets/js/cmwebs-asset-valuation.js?v=20261005-utility-meter-save-v1"></script>
   <style>
@@ -166,6 +165,8 @@
       if (auth.getMode() === 'email') {
         if (auth.getRequestAuthParams().landlord_session_token) return true;
       }
+      // // LINE SDK loads on demand; Email sessions never download it.
+      if (window.CMWebsLandlordApi && window.CMWebsLandlordApi.loadLiffSdk) await window.CMWebsLandlordApi.loadLiffSdk();
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) { location.href = LANDLORD_ENTRY_URL + '?mode=' + auth.getMode() + '&return_to=landlord-revenue-dashboard.html'; return false; }
       const profile = await liff.getProfile();
@@ -278,7 +279,13 @@
       const app = document.getElementById('app');
       app.setAttribute('aria-busy', 'true');
       try {
-        const result = await jsonpRequest('landlord_revenue_dashboard_init', { range: SELECTED_RANGE, property_id: SELECTED_PROPERTY });
+        const params = { range: SELECTED_RANGE, property_id: SELECTED_PROPERTY };
+        const reportRequest = jsonpRequest('landlord_revenue_dashboard_init', params);
+        // Paint the last report for the same filters at once; the request replaces it.
+        if (window.CMWebsLandlordApi && window.CMWebsLandlordApi.snapshot) {
+          window.CMWebsLandlordApi.snapshot('landlord_revenue_dashboard_init', params, reportRequest, function (cached) { render(cached.data || {}); });
+        }
+        const result = await reportRequest;
         if (!result || result.success !== true) throw new Error(result && result.message ? result.message : '營收儀表板讀取失敗');
         render(result.data || {});
       } catch (error) {

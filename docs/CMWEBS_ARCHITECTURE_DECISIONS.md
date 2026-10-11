@@ -229,3 +229,33 @@ for the first render. The owner explicitly approved a guarded snapshot.
 
 No Apps Script, schema, route or Production data change. GitHub Pages
 publication and real LIFF/mobile acceptance require separate authorization.
+
+## 2026-10-11 inner-page snapshots, prefetch and on-demand LINE SDK
+
+Extends the homepage snapshot decision to the main inner pages, with owner
+approval ("A then C"; C is the AI-00 read path).
+
+- `CMWebsLandlordApi.snapshot(action, params, freshPromise, onCached)` paints
+  the last successful result for the same identity while the real request
+  runs, shows a fixed "顯示 HH:MM 的資料・更新中" notice, then stores the fresh
+  result. Allowlist: `landlord_tenants`, `landlord_room_center_init`,
+  `landlord_arrears`, `landlord_properties_init`,
+  `landlord_revenue_dashboard_init`. Storage key
+  `cmwebs_landlord_read_cache_v1`, one book per SHA-256 identity hash, 24-hour
+  entries, 400 KB per entry and 1.5 MB total with oldest-first eviction.
+- Invalidation: logout and auth failures (`landlord-auth.js`), auth-coded read
+  failures, and any successful non-read request through `CMWebsLandlordApi`.
+  Writes sent directly through the Email bridge do not clear it; the notice and
+  the immediate fresh read keep such views short-lived.
+- Prefetch: after the homepage settles it warms tenants, rooms and (LINE only)
+  arrears one at a time, skipping any snapshot younger than ten minutes. This
+  adds at most three Apps Script reads per homepage visit.
+- Tenants, rooms, arrears, properties and revenue pages load the LINE SDK only
+  when a LINE session needs it; Email sessions never download it. A thin top
+  progress bar appears on page-link taps.
+- Contract requests are excluded: the page merges several sources and a
+  partial snapshot could show an inconsistent signing state.
+- Frontend release version advanced to `20261011-fast-navigation-v1` so every
+  page fetches the new shared scripts together.
+
+No Apps Script, route, schema or Production data change.

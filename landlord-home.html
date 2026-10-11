@@ -8,10 +8,10 @@
   />
   <title>CMWebs 房東首頁</title>
 
-  <script src="frontend-release.js?v=20261011-membership-transfer-v1"></script>
-  <script src="landlord-auth.js?v=20261011-membership-transfer-v1"></script>
-  <script src="landlord-api.js?v=20261011-membership-transfer-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-membership-transfer-v1" />
+  <script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
+  <script src="landlord-api.js?v=20261011-fast-navigation-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-fast-navigation-v1" />
 
   <style>
     :root {
@@ -3390,6 +3390,33 @@
       );
     }
 
+    // After the homepage settles, warm the most used inner pages one at a
+    // time so their first tap paints from a snapshot instead of a blank page.
+    let innerPagePrefetchScheduled_ = false;
+    function scheduleInnerPagePrefetch_() {
+      const api = window.CMWebsLandlordApi;
+      if (innerPagePrefetchScheduled_ || TEST_MODE || !api || typeof api.prefetch !== 'function') return;
+      innerPagePrefetchScheduled_ = true;
+      const auth = window.CMWebsLandlordAuth ? window.CMWebsLandlordAuth.getRequestAuthParams() : {};
+      const reads = [
+        { action: 'landlord_tenants', params: {} },
+        { action: 'landlord_room_center_init', params: { include_archived: '1' } }
+      ];
+      // Arrears is LINE-only; the desktop Email bridge does not serve it.
+      if (!auth.landlord_session_token) reads.push({ action: 'landlord_arrears', params: {} });
+      setTimeout(function () {
+        reads.reduce(function (chain, read) {
+          return chain.then(function () {
+            return api.prefetch({
+              apiUrl: API_URL, action: read.action, params: read.params,
+              lineUserId: LINE_USER_ID, testMode: TEST_MODE, maxAttempts: 1,
+              callbackPrefix: '__cmwebs_prefetch_'
+            });
+          });
+        }, Promise.resolve());
+      }, 1500);
+    }
+
     async function loadPage() {
       if (homeLoadInProgress_) return;
       homeLoadInProgress_ = true;
@@ -3465,6 +3492,7 @@
           );
           renderHome(home, actionSummary, true);
           writeHomeCache_(cacheIdentity, { action_summary: actionSummary });
+          scheduleInnerPagePrefetch_();
         } catch (error) {
           if (requestToken !== pageRequestToken_) return;
           if (/AUTH|SESSION|FORBIDDEN|PERMISSION|WORKSPACE|MEMBERSHIP/.test(error.code || '')) throw error;

@@ -5,6 +5,8 @@
     'cmwebs_landlord_session_token';
   const HOME_SNAPSHOT_KEY =
     'cmwebs_landlord_home_cache_v1';
+  const READ_SNAPSHOT_KEY =
+    'cmwebs_landlord_read_cache_v1';
   const AUTH_FAILURE_CODES = {
     SESSION_EXPIRED: true,
     AUTH_REQUIRED: true,
@@ -44,10 +46,13 @@
   }
 
   // Logout and authorization failures also drop the homepage's browser
-  // snapshot, so the next person on this device never sees old figures.
+  // and page snapshots, so the next person on this device never sees old figures.
   function clearHomeSnapshot() {
     try {
-      if (window.localStorage) window.localStorage.removeItem(HOME_SNAPSHOT_KEY);
+      if (window.localStorage) {
+        window.localStorage.removeItem(HOME_SNAPSHOT_KEY);
+        window.localStorage.removeItem(READ_SNAPSHOT_KEY);
+      }
     } catch (error) {}
   }
 
