@@ -1,7 +1,7 @@
 {
-  "verified_on": "2026-10-11",
+  "verified_on": "2026-10-12",
   "source_commit": "1fe0e338ea72e7c2f997bb2175e7ef2ea489a893",
-  "backend_verified_on": "2026-10-11",
+  "backend_verified_on": "2026-10-12",
   "backend_source_commit": "1fe0e338ea72e7c2f997bb2175e7ef2ea489a893",
   "site": "https://cmwebssaas-sudo.github.io/cmwebs-liff/",
   "backend_version": 232,
@@ -90,13 +90,13 @@
     "rollback_backend_version": 212,
     "status": "Immutable213 export matches all59 local files, unchanged formal Web App reads213. User confirmed403/505 continued occupancy and October rent7500 each and authorized release plus only these two unpaid corrections. User completed browser confirmation; formal UI fresh readback explicitly reports both saved, without resubmission. Original bills B0000051/B0000056 remain;403total10100,505total10550, rent7500 each, meters/due/zero discounts and blank notes unchanged. Other19 card DOM snapshots identical before/after correction. No manual LINE send, lease/trigger changes or batch financial rewrite."
   },
-  "frontend_revision": "117c6c529123d6860ba844d8294ab9d49ca8b200",
-  "frontend_workflow": "38098463477",
+  "frontend_revision": "2a5779f47505ba1c665b2cd172c9ca0b503fc839",
+  "frontend_workflow": "38151775414",
   "frontend_public_file_count_verified": 61,
-  "frontend_release_tag": "20261011-membership-transfer-v1",
-  "frontend_authenticated_acceptance": "PASS: original Email session, W000001 owner, member empty state and all six commercial admin views; no real payment submitted",
-  "frontend_physical_device_acceptance": "UNVERIFIED",
-  "frontend_scope": "Authorized original-rental membership and bank-transfer subscription release. Core5d24c57 deployed on verified AI-00 with twelve migrations, restricted writer14103 and retained reader14102. Existing W000001 remains observe. GAS232 immutable68 files byte-identical, editor67 sources identical plus semantic manifest equality; original URL and other four deployments preserved; no temporary helper. Exact UTF8 payload bytes signed and sent. User original verified login bound the first Core commercial administrator. Production prices/banks/orders/payments/periods remain empty; user sets real values later. ECPay/NewebPay modules reserved, disabled.",
+  "frontend_release_tag": "20261011-fast-navigation-v1",
+  "frontend_authenticated_acceptance": "HUMAN_REQUIRED: current fast-navigation build was checked by public byte readback only; prior membership acceptance remains in membership_transfer_release",
+  "frontend_physical_device_acceptance": "HUMAN_REQUIRED: physical LINE/mobile acceptance of the current build was not performed",
+  "frontend_scope": "PR261 homepage redesign and PR262 inner-page snapshots, prefetch and on-demand LINE SDK. R0 read-only reconciliation on 2026-10-12 matched all 61 existing manifest assets to origin/main 2a5779f; no publication or authenticated performance retest.",
   "prior_frontend_release": {
     "verified_on": "2026-10-02",
     "revision": "657ec08274faa1150af082906f7c9ecb84b4b89e",
@@ -250,7 +250,7 @@
     "editor_head_restored_to_version": 200,
     "required_approval": "Delete only unreferenced and locally exported version 199; retain version 200 and all existing deployments/data."
   },
-  "backend_rollback_version": 228,
+  "backend_rollback_version": 229,
   "monthly_bill_noon_schedule": {
     "verified_on": "2026-10-05",
     "source_commit": "7cc1fb3",
@@ -545,5 +545,65 @@
     "desktop_admin_views_verified": 6,
     "mobile_layout": "Chrome390x844, admin plan form and member empty state; physical device UNVERIFIED",
     "cleanup": "Synthetic tunnel routes, staging listeners, Google test properties/operator and temporary production diagnostics removed; normal writer service active"
+  },
+  "frontend_verified_on": "2026-10-12",
+  "r0_reconciliation": {
+    "verified_on": "2026-10-12",
+    "recommended_model": "gpt-5.6-terra",
+    "recommended_speed": "medium",
+    "classification": "V2 documentation and source reconciliation; no runtime implementation",
+    "source_commit": "2a5779f47505ba1c665b2cd172c9ca0b503fc839",
+    "backend_version": 232,
+    "backend_file_count": 68,
+    "backend_tree_sha256": "ebf03d14512a3b5767b80b3f4c2d0c31f8ff28d1de74efae9037a791d35e3326",
+    "deployment_readback": "Authenticated clasp list-deployments before and after immutable export; project and formal deployment SHA-256 match the recorded baseline",
+    "deployments_checked": 5,
+    "deployment_inventory_unchanged_during_check": true,
+    "retained_versions_confirmed": [
+      229,
+      232
+    ],
+    "next_backend_release_rollback_version": 232,
+    "next_frontend_release_rollback_revision": "2a5779f47505ba1c665b2cd172c9ca0b503fc839",
+    "public_files_matched": 61,
+    "public_manifest_expanded": false,
+    "frontend_releases": [
+      {
+        "pull_request": 261,
+        "merge_commit": "4885a0ed20a28368341fac8ca525ddc2df68ea9b",
+        "pages_workflow": "38121570901",
+        "conclusion": "success"
+      },
+      {
+        "pull_request": 262,
+        "merge_commit": "2a5779f47505ba1c665b2cd172c9ca0b503fc839",
+        "pages_workflow": "38151775414",
+        "conclusion": "success"
+      }
+    ],
+    "tests": {
+      "npm_test": {
+        "passed": 822,
+        "failed": 1,
+        "skipped": 4,
+        "failure": "commercial-subscription.roundtrip.test.mjs: PLATFORM_CORE_TEST_WORKTREE is required"
+      },
+      "npm_run_test_unit": {
+        "passed": 822,
+        "failed": 0,
+        "skipped": 0
+      },
+      "npm_run_validate": "PASS",
+      "npm_run_verify_production": "PASS",
+      "immutable_export_check": "PASS: 68 of 68 files match local source and recorded fingerprint",
+      "git_diff_check": "PASS",
+      "cloud_apps_script_tests": "NOT_RUN: documentation-only work; no formal runtime test action"
+    },
+    "runtime_changed": false,
+    "production_configuration_changed": false,
+    "production_data_changed": false,
+    "deployment_performed": false,
+    "physical_line_acceptance": "HUMAN_REQUIRED",
+    "authenticated_performance_acceptance": "HUMAN_REQUIRED"
   }
 }

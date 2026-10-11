@@ -16,6 +16,24 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
+- 2026-10-12 R0 read-only reconciliation: fresh `origin/main` `2a5779f`,
+  original Web App v232 and its 68-file export match source and recorded
+  fingerprints; all five deployments stable before/after export. Retained v229
+  and v232 confirmed. PR261 / 4885a0e / Pages38121570901 and
+  PR262 / 2a5779f / Pages38151775414 verified successful; 61 existing manifest assets
+  match current main byte-for-byte. Baseline frontend tag now
+  `20261011-fast-navigation-v1`. Previous backend rollback v229; next release
+  baseline v232 / Pages2a5779f. Units 822/822; full suite 822 pass / 1 fail / 4 skip,
+  sole failure missing `PLATFORM_CORE_TEST_WORKTREE`; validate/export/public
+  readback/diff checks pass. No runtime/config/data/merge/deploy action.
+  Current-build authenticated/physical LINE/performance acceptance
+  HUMAN_REQUIRED. See `EXECUTION_RECORD.md` and `production-baseline.json`.
+  Work plan/design remain on local `codex/cloudflare-read-path-plan-20261011`
+  at `aeebf7b`, paths `docs/CODEX-WORKPLAN-2026-10-12.md` and
+  `docs/CLOUDFLARE-READ-PATH-PLAN.md`. Continue R0→S1→C0→C1…;
+  keep S1 instructions private, each work order in its own worktree/PR,
+  and obtain fresh approval for every merge or Production change.
+
 - 2026-10-11 commercial membership release is deployed, using original rental
   login/workspace and canonical Core authority. Core PR53/5d24c57 on verified
   AI-00: PG16.15, Node22.23.3,12 migrations, reader14102 and restricted writer14103.
