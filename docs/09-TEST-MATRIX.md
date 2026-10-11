@@ -1220,3 +1220,12 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | 31 standalone JSONP transports and LINE entry GET carry the active credential | Same | Real page functions; synthetic browser I/O |
 | Email bridge, native signing/meter exchanges, billing timeout and recovery | Existing auth, meter and billing runtime suites | Synthetic data; no real business write |
 | Production LINE and desktop Email, post-release harmless write, physical navigation | HUMAN_REQUIRED | Must be recorded after staged publication; local tests do not satisfy this gate |
+
+## 2026-10-12 C0 local Worker environment
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Health reads real D1; rejected methods and unknown route preserve fixture rows | `cloudflare/read-api/test/health.test.mjs` | Actual local workerd/Miniflare and disposable D1 |
+| Missing/failing database gives sanitized 503 with no-store | Same | Real handler, controlled failing binding |
+| Pinned dependency install, Worker tests and bundle dry-run | `read-worker` CI job; `npm run test:worker`; `npm run dry-run:worker` | No Cloudflare credentials or upload |
+| Account, Paid plan and APAC D1 readiness | UNVERIFIED | Requires authenticated evidence; new costs/login/payment remain owner gates |

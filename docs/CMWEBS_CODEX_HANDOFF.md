@@ -16,6 +16,14 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
+- 2026-10-12 C0 scaffold: independent branch/worktree based on S1 merge
+  `b8f62f0`; local Worker/D1 health tests and dry-run pass. Worker and remote
+  D1 are not deployed/created. CLI OAuth login is present; target account,
+  paid-plan readiness and scoped deployment credential remain UNVERIFIED.
+  S1 Pages38169983258 succeeded and 62 public files match; frontend tag
+  `20261012-line-identity-v1`, backend still v232. Physical LINE acceptance
+  remains HUMAN_REQUIRED before backend publication. See execution record.
+
 - 2026-10-12 S1 compatibility candidate is in an isolated worktree based on R0
   merge `37b362c`. Current batch authorization covers plan-scoped releases;
   physical acceptance and new cost gates remain. See `EXECUTION_RECORD.md`.

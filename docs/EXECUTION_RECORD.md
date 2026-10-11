@@ -141,3 +141,36 @@ Independent review completed after remediation: original findings resolved,
 no remaining actionable major finding. Reviewer reran 40 relevant tests
 (including 13 identity policies), validate and diff-check successfully.
 This is source/synthetic acceptance only; staged production checks remain.
+
+## 2026-10-12 — C0 local read API environment
+
+Recommended model/speed: `gpt-5.6-terra` / medium. Independent worktree and
+branch `codex/c0-read-api-environment-20261012` start at S1 merge `b8f62f0`.
+Root WIP remains untouched. C0 adds a pinned Wrangler/Miniflare package,
+local D1 binding, read-only health endpoint and independent CI job. Remote
+account readiness is UNVERIFIED; no paid plan, Worker, D1 or Secret is created.
+
+S1 publication readback: PR264 merged `b8f62f0`, Pages run38169983258 succeeded,
+62 public assets matched the candidate on 2026-10-12. The serving backend is
+still v232. Its staged wait and physical LINE gate remain pending; C0 local
+acceptance cannot replace them. Current frontend metadata records that split.
+
+C0 tests execute real workerd and local D1, preserving synthetic fixture rows
+while checking health, unsupported methods and unavailable bindings. Local
+dry-run bundles successfully without uploading. No operational read route,
+schema, synchronization or frontend flag is introduced. C1 requires verified
+account access and APAC D1 placement; new costs and owner login/payment remain
+owner-only actions under the batch authorization.
+
+Rollback: reviewed source/CI revert; C0 has no remote runtime or data changes.
+Later deployment requires its own version/configuration readback and rollback.
+
+Local checks: Worker tests 2/2, `npm run validate`, `npm run test:unit`
+835/835 and `git diff --check` pass; Worker dry-run exits without upload.
+`npm test` retains the same single missing `PLATFORM_CORE_TEST_WORKTREE`
+integration-environment failure (835 pass, 4 skips). Independent read-only
+review found no blocking issue. Node22/Linux acceptance is supplied by the
+PR's two actual CI jobs before merge; local checks used Node26/macOS.
+CLI read-only `whoami` confirms an existing OAuth login, without publishing
+account identifiers or credentials; Paid plan and provisioning target still
+require read-only verification.
