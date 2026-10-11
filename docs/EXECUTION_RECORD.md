@@ -328,3 +328,12 @@ found no remaining P1/P2 source issue; added LINE-only authority coverage was
 independently verified1/1 PASS. C3 PR/CI pending. Real C1 observation, live
 Google redirect/authority latency, binding/secret readback and device acceptance
 remain required. Release order and rollback are in `READ-AUTHORIZATION.md`.
+
+C3 draft [PR268](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/268) is
+stacked on C2 and attached. Source `c665325`, test isolation `15e331f`.
+Initial CI38181553601 rental passed; Worker failed its unchanged50ms local p95
+gate (arrears94.676ms) while independent test files competed for workerd/CPU.
+Worker files now run serially to isolate the same100-sample benchmark, without
+relaxing thresholds. Local19/19 passed with p95 1.928–2.411ms; CI38181810348
+rental/read-worker both passed. This is local single-request calculation
+evidence, not authenticated network latency or concurrent throughput.
