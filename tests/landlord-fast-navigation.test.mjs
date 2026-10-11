@@ -8,6 +8,16 @@ const apiSource = readFileSync(new URL('../landlord-api.js', import.meta.url), '
 const authSource = readFileSync(new URL('../landlord-auth.js', import.meta.url), 'utf8');
 const page = name => readFileSync(new URL('../' + name, import.meta.url), 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
+// Hashing runs on the platform crypto queue, so wait for the observable
+// outcome instead of a fixed number of turns (CI machines are slower).
+async function until(condition, label) {
+  const deadline = Date.now() + 2000;
+  while (!condition()) {
+    if (Date.now() > deadline) throw new Error('timed out waiting for ' + label);
+    await new Promise(resolve => setTimeout(resolve, 5));
+  }
+}
+const stored = storage => () => storage.getItem('cmwebs_landlord_read_cache_v1') !== null;
 
 function memoryStorage() {
   const map = new Map();
@@ -52,7 +62,7 @@ test('a snapshot paints only for the same identity and is replaced by the fresh 
   const fresh = Promise.resolve({ success: true, data: { tenants: ['A'] } });
   let painted = null;
   first.api.snapshot('landlord_tenants', {}, fresh, cached => { painted = cached; });
-  await fresh; await tick(); await tick();
+  await until(stored(storage), 'first store');
   assert.equal(painted, null, 'nothing cached on the first visit');
   assert.match(storage.getItem('cmwebs_landlord_read_cache_v1'), /tenants/);
   assert.doesNotMatch(storage.getItem('cmwebs_landlord_read_cache_v1'), /session-a/, 'the token itself is never stored');
@@ -61,17 +71,17 @@ test('a snapshot paints only for the same identity and is replaced by the fresh 
   let release;
   const slow = new Promise(resolve => { release = resolve; });
   second.api.snapshot('landlord_tenants', {}, slow, cached => { painted = cached; });
-  await tick(); await tick();
+  await until(() => painted !== null, 'cached paint');
   assert.deepEqual(JSON.parse(JSON.stringify(painted)), { success: true, data: { tenants: ['A'] } });
   assert.match(second.document.getElementById('cmwebsSnapshotNotice').textContent, /的資料・更新中/);
   release({ success: true, data: { tenants: ['A', 'B'] } });
-  await slow; await tick();
+  await until(() => second.document.getElementById('cmwebsSnapshotNotice') === null, 'notice removal');
   assert.equal(second.document.getElementById('cmwebsSnapshotNotice'), null, 'the old-data notice goes away');
 
   let other = null;
   const third = apiFixture({ storage, token: 'session-b' });
   third.api.snapshot('landlord_tenants', {}, new Promise(() => {}), cached => { other = cached; });
-  await tick(); await tick();
+  await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(other, null, 'another account never sees the list');
 });
 
@@ -81,28 +91,27 @@ test('authorization failures and successful writes drop every snapshot', async (
     action === 'landlord_room_update' ? { success: true } : { success: true, data: {} }
   ) });
   await fixture.api.snapshot('landlord_arrears', {}, Promise.resolve({ success: true, data: { bills: [] } }), null);
-  await tick(); await tick();
-  assert.ok(storage.getItem('cmwebs_landlord_read_cache_v1'));
+  await until(stored(storage), 'arrears store');
   await fixture.api.request({ action: 'landlord_room_update', params: {} });
   await tick();
   assert.equal(storage.getItem('cmwebs_landlord_read_cache_v1'), null, 'a write invalidates old lists');
 
   await fixture.api.snapshot('landlord_arrears', {}, Promise.resolve({ success: true, data: {} }), null);
-  await tick(); await tick();
+  await until(stored(storage), 'second arrears store');
   const denied = Promise.reject(Object.assign(new Error('expired'), { code: 'SESSION_EXPIRED' }));
   fixture.api.snapshot('landlord_arrears', {}, denied, null);
   await denied.catch(() => {}); await tick();
   assert.equal(storage.getItem('cmwebs_landlord_read_cache_v1'), null, 'auth failure clears snapshots');
 
   await fixture.api.snapshot('landlord_billing_init', {}, Promise.resolve({ success: true, data: {} }), null);
-  await tick(); await tick();
+  await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(storage.getItem('cmwebs_landlord_read_cache_v1'), null, 'only approved list reads are stored');
 });
 
 test('prefetch fills a snapshot once and skips while it is younger than ten minutes', async () => {
   const fixture = apiFixture();
   await fixture.api.prefetch({ action: 'landlord_tenants', params: {} });
-  await tick(); await tick();
+  await until(stored(fixture.storage), 'prefetch store');
   await fixture.api.prefetch({ action: 'landlord_tenants', params: {} });
   await fixture.api.prefetch({ action: 'landlord_billing_init', params: {} });
   assert.deepEqual(fixture.calls.map(call => call.action), ['landlord_tenants']);
