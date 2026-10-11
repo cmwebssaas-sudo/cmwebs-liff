@@ -259,3 +259,12 @@ exported byte-identical. Restart the72-hour gate from this final test revision;
 earliest time eligibility is2026-10-15 at05:39 Taipei, subject to all actual
 daily correctness and complete runtime evidence. Earlier observed executions
 remain part of daily totals. No production publication occurred.
+
+Read-only follow-up on2026-10-12 at06:53 Taipei: disposable D1 returned the
+synthetic room mutation from the06:30 timer, synchronized at06:30:19.826.
+Earlier06:14 readback showed the06:00 mutation at06:00:19.544. The test source
+remains `8f1191a` and four exported source files remain the recorded final
+revision; these observations do not restart its72-hour clock. Actual observation
+is RUNNING, earliest time eligibility October15 at05:39 Taipei. These partial
+checks are not daily runtime totals or three-day acceptance. No production
+source, Properties, trigger, flag or data mutation was performed by the probes.
