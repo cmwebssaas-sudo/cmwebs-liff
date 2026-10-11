@@ -289,3 +289,8 @@ failure and four skips. Independent re-review passed all three corrections,
 affected28/28 and Worker13/13 (p95 4.760–6.557ms); PR/CI pending. Production routes
 all return503 until C3; C2 remote deployment/readback NOT_STARTED. Detailed
 publication order and rollback are in `READ-API-PARITY.md`.
+
+C2 draft [PR267](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/267) source
+`fa3300e` is stacked on C1 and attached to this task. CI38178464204 rental and
+read-worker both passed. It remains unmerged/unpublished while real C1
+acceptance runs; independent C3 local work proceeds on its own worktree.
