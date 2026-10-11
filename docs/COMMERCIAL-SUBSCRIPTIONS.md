@@ -13,3 +13,16 @@
 驗證命令：`npm run validate`；完整套件必須提供 `PLATFORM_CORE_TEST_WORKTREE` 與 disposable `DATABASE_URL` 後執行 `npm test`。公開租管 CI 執行 `test:unit`，Core 私有 CI 對固定租管 revision 執行完整跨 repo / PG 套件，避免將私有 Core 讀取 token 放入公開 repo。
 
 隔離瀏覽器 fixture 僅接受私人 synthetic config、`prd_billing_db` 與 UUID 工作區；`node scripts/commercial-browser-fixture.mjs /private/staging-config.json` 綁定 127.0.0.1:18104。它使用合成租管登入與真實 Core staging HTTP，不能作為正式登入驗收證據。
+
+
+## 2026-10-11 正式上線
+
+會員與銀行轉帳功能已發布到 AI-00。Core5d24c57／十二個migrations／restricted writer14103；原SELECT-only reader14102保留。GAS232 immutable68檔與UTF-8修正1fe0e33一致，editor67 source檔相同、manifest語意相同，原URL及其他四deployments保留。Pages117c6c5／38098463477成功，61公開檔逐位元一致；UI來源Core0fc7575及兩個manifest SHA256已核對。
+
+你的原Email登入／W000001 owner產生新鮮proof後，Core一次性bootstrap為平台管理者；後台六個頁面均能讀取，只有一位super admin及一筆正式會員provisioning。方案／銀行／付款／期間為空，原租管21間房間、未設定上限，保持observe。Chrome390×844手機版面已驗證；這不代表實體LINE裝置登入與連結驗收。完整測試816/816、0skip；公開CI單元套件與私有Node22／PG16跨repo套件均成功。
+
+開始收款：先在「更多 → 訂閱會員管理後台 → 收款帳號」儲存啟用的銀行資料，再在「方案」設定名稱、金額、日／月／年週期、試用、房間上限與轉帳期限，儲存草稿後上架。會員在「會員中心與轉帳續訂」選方案並回報；你核對銀行實際入帳後，在轉帳審核確認開通。尚未設定銀行及付費方案前不能收實際订阅款。綠界／藍新與其他provider模組留待後續啟用。
+
+正式bootstrap後DB與全部歷史key已在AI-00私有備份；隔離測試DB完成dump／restore比對及解密驗證。合成tunnel routes、測試服務／DB／roles、Google隔離專案九個測試Properties及operator已撤收；正式normal writer恢復，沒有測試付款写入W000001。金鑰不在瀏覽器或Git。
+
+回退GAS229、Pages01b9f78；移除僅prd_cmwebs_rental匹配的14103 bridge route并停writer，保留支援十二migrations的14102 reader。不得把reader切回九migrations舊版本或刪訂閱財務資料／歷史AES keys。部署與更多維運證據見Core COMMERCIAL-SUBSCRIPTIONS-OPERATIONS.md；原效能等待問題與實體LINE驗收仍以各自文件追蹤。
