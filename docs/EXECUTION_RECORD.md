@@ -337,3 +337,38 @@ Worker files now run serially to isolate the same100-sample benchmark, without
 relaxing thresholds. Local19/19 passed with p95 1.928–2.411ms; CI38181810348
 rental/read-worker both passed. This is local single-request calculation
 evidence, not authenticated network latency or concurrent throughput.
+
+## 2026-10-12 — C4 local routing candidate
+
+Recommended default gpt-5.6-terra/medium; GPT-6.1 Sol/high retained for
+authorization/fallback races. Independent C4 branch/worktree stacked on C3
+`3bb03e9`. Root checkpoint WIP preserved. Six centralized flags remain off and
+endpoint blank; no formal publication/configuration/trigger change occurred.
+
+Shared browser routing supports off, shadow and on. Worker bearer stays in
+headers; invalid configuration/query/detail modes use GAS. On mode has a real
+three-second deadline covering body validation and immediately falls back.
+Shadow renders GAS only and sends bounded redacted field paths plus separate
+header/full-response timing; failed Worker reads are distinct from zero diffs.
+No comparison values, actor/scope IDs, dynamic object keys or credentials enter
+reports. C5's authenticated receiver and real seven-day coverage remain pending.
+
+Successful writes persist a two-minute numeric guard across page navigation,
+including protected bridge and legacy LINE JSONP. Concurrent Worker completion
+is rechecked. Independent review reproduced quota recovery, two-page bypass
+and incomplete timing defects; all were corrected with actual module/page VM
+regressions. Six actual HTML wrappers × LINE/Email now reach the shared API;
+arrears still restricts unsupported desktop actions before dispatch. Existing
+snapshot keys are unchanged. The guard conservatively covers other browser
+Workspaces during the same short interval without storing identifying data.
+
+Release references advanced to `20261012-read-routing-v1` across40 root HTML
+pages and affected shared assets/tests/validator. Affected54/54, unit897/897,
+validate72 backend files and diff-check pass; independent review53/53 plus9/9
+release checks found no remaining source blocker. Full suite897 pass, one known
+external Core/PG fixture failure and four skips. An artificial zero-ms callback
+timer raced the five-ms Phase193 test deadline under full-suite CPU load;
+synthetic callback now uses a microtask, preserving timeout/retry assertions,
+and isolated/full reruns passed that test. C4 PR/CI pending. Publication/readback,
+authenticated performance and device acceptance follow preceding gates and
+`READ-ROUTING.md` rollback. C1 actual72-hour gate remains running unchanged.
