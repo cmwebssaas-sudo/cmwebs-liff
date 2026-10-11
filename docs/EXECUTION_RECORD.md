@@ -377,3 +377,40 @@ C4 draft [PR269](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/269) is
 stacked on C3 and attached; source/record `ea193f3`. CI38182426724 rental and
 read-worker passed. It remains unmerged and unpublished while preceding actual
 gates run. Independent C5 worktree starts from this candidate with flags off.
+
+## 2026-10-12 — C5 local shadow candidate and approved clock boundary
+
+Recommended model/speed GPT-6.1 Sol/high per approved plan. Independent C5
+worktree/branch starts from C4 `0af14ca`; root checkpoint WIP preserved. All
+flags off/endpoint blank. No formal deployment/configuration/property/trigger
+or data change. C1 actual72-hour gate continues unchanged; actual C5 seven-day
+observation is NOT_STARTED.
+
+Implemented current-authority POST telemetry with strict metadata bounds,
+server-timed read attempts and single-use route/section/release-bound receipts,
+atomic report/diff/clock writes and concurrent rate enforcement. Independent
+review reproduced missing actual-read proof, hidden eighth-day errors, pending
+attempt acceptance and report-boundary misattribution; each was fixed with
+actual local D1/browser or export regressions. Busy-browser timer delays also
+cannot extend the unchanged3000ms read deadline.
+
+The owner explicitly approved separately recording the exact generation-clock
+paths in `READ-CLOCK-DECISION.md`, canonical ISO and at most60s apart. Financial
+fields, counts, order and source-row timestamps remain exact; API/rendering is
+unchanged. Clock metadata is separately persisted/exported, never silently
+ignored. A shared-clock synthetic oracle now uses one Date constructor for
+native source-cell rehydration and calculation, avoiding a false instanceof
+mismatch in the end-to-end browser test.
+
+Unit902/902, Worker24/24 including dry-run and validate72 backend files/40
+endpoint references pass. Full902 pass/1 documented missing external Core/PG
+fixture failure/4 skips. Independent review found no remaining source blocker;
+focused clock boundary/D1 rollback checks pass. Actual HTTP/browser clock
+storage is verified locally, not a real observation day. Release references
+advance to `20261012-read-shadow-v1` across40 root HTML pages. C5 PR/CI pending.
+
+Real exports cover the whole epoch and latest seven complete24-hour windows;
+errors/missing/pending reports anywhere in the epoch remain blocking. Candidate
+aggregate eligibility never replaces verified remote export, authenticated
+performance or device acceptance. Publication sequence and rollback are in
+`READ-SHADOW.md`; retain all metadata/replica data and prior deployment versions.

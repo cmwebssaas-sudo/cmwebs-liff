@@ -1315,11 +1315,22 @@ The on deadline is3000ms including decoding/shape validation, followed by GAS
 fallback. Successful shared API, bridge and legacy LIFF JSONP writes protect
 subsequent reads for120000ms across navigation. Existing snapshot keys remain.
 
-Shadow renders GAS only and sends `POST /v1/shadow-report` with JSON
-`{route,outcome,paths,elapsed_ms,headers_ms}`; outcome is `compared` or
-`worker_error`, paths are redacted fixed-vocabulary fields, and times measure
-full decoded response and header arrival respectively. No values, actor/scope
-IDs, raw dynamic keys or credential body are sent. C5 must implement authenticated
-receiver/persistence/coverage; C4 transport alone does not establish acceptance.
-Current endpoint is blank and flags off. See `READ-ROUTING.md` for publication
-and rollback, and retained actual/device/performance gates.
+Shadow renders GAS only. C5 sends `X-CMWebs-Read-Mode: shadow` on reads;
+the Worker records actual attempts and exposes `X-CMWebs-Shadow-Receipt`.
+`POST /v1/shadow-report` accepts only JSON
+`{route,variant,release,outcome,paths,clock_paths,receipt,elapsed_ms,headers_ms}`.
+Current provider/D1/GAS authority is verified again. Compared reports require a
+same-actor/scope/epoch/release/route/section completed200 receipt within five
+minutes, consumed atomically with metadata inserts and rate enforcement.
+Worker errors use null receipt/timings and empty paths. CORS remains exact Pages
+origin;24KiB/one-second body bounds and3000ms timing bounds apply. No values,
+raw IDs/dynamic keys or credential body are sent. Ordinary paths remain exact;
+only owner-approved canonical ISO generation-clock differences at most60s use
+`clock_paths`. They are separately visible and never exempt source-row clocks.
+
+C5 metadata uses immutable migration0004 and private server-derived keyed hashes.
+Missing/invalid observation epoch/release/start keeps the receiver closed.
+Read-only private exports require real seven-day coverage and matched attempts;
+zero rows, missing reports or partial-day failures cannot establish acceptance.
+Current endpoint is blank and flags off. See `READ-SHADOW.md`,
+`READ-CLOCK-DECISION.md` and `READ-ROUTING.md` for retained gates and rollback.

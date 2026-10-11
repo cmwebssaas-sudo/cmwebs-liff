@@ -12,6 +12,7 @@ function runtime({mode='on',fetcher,store=new Map(),clock={now:1000},flags=true,
     Date:class extends Date {static now(){return clock.now;}},
     setTimeout:(fn,ms)=>setTimeout(fn,ms===3000?ms*timeoutScale:ms),clearTimeout,
     localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},
+    CMWEBS_RELEASE_VERSION:'20261012-read-shadow-v1',
     CMWEBS_READ_API_URL:'https://synthetic-worker.invalid',
     CMWebsLandlordAuth:{getRequestAuthParams:()=>auth,handleAuthFailure:()=>false,
       request:async()=>{calls.gas++;return good(20);}},
@@ -49,7 +50,9 @@ test('shadow renders GAS and reports only bounded field paths without values',as
   assert.equal(r.calls.worker.length,1);assert.equal(r.calls.reports.length,1);
   const report=r.calls.reports[0];assert.equal(report.route,'tenants');
   assert.deepEqual(Array.from(report.paths),['data.summary.total_amount']);
-  assert.doesNotMatch(JSON.stringify(report),/synthetic-session|SYNTHETIC_W|total_amount":|20|10/);
+  assert.doesNotMatch(JSON.stringify(report),/synthetic-session|SYNTHETIC_W|total_amount":/);
+  assert.ok(!('data' in report));
+  assert.equal(report.release,'20261012-read-shadow-v1');assert.equal(report.variant,'default');
 });
 test('successful write guard survives navigation for120 seconds, failed writes do not guard',async()=>{
   const r=runtime();await r.api.request({action:'landlord_room_save'});
@@ -178,4 +181,28 @@ test('shadow records header arrival and complete validated response separately',
   }});
   await r.api.request(config);await new Promise(resolve=>setTimeout(resolve,10));
   assert.equal(r.calls.reports[0].headers_ms,100);assert.equal(r.calls.reports[0].elapsed_ms,2100);
+});
+
+test('elapsed deadline is enforced even when browser timer delivery is delayed',async()=>{
+  const clock={now:1000};
+  const r=runtime({clock,fetcher:async()=>({ok:true,json:async()=>{clock.now+=3001;return good();}})});
+  assert.deepEqual(await r.api.request(config),good(20));assert.equal(r.calls.gas,1);
+});
+
+test('approved request-clock classification is exact, bounded, and never hides source row timestamps',async()=>{
+  const a='2026-10-12T00:00:00.000Z';
+  for(const delta of [1000,60000,60001,'invalid']) {
+    const b=delta==='invalid'?'invalid':new Date(Date.parse(a)+delta).toISOString();
+    const gas=good(10),worker=good(10);
+    gas.data.landlord={updated_at:a};worker.data.landlord={updated_at:b};
+    gas.data.tenants=[{updated_at:a}];worker.data.tenants=[{updated_at:b}];
+    const r=runtime({mode:'shadow',fetcher:async()=>({ok:true,json:async()=>worker})});
+    r.context.CMWebsLandlordAuth.request=async()=>gas;
+    await r.api.request(config);await new Promise(resolve=>setTimeout(resolve,10));
+    const report=r.calls.reports[0];assert.ok(report.paths.includes('data.tenants[].updated_at'));
+    if(typeof delta==='number'&&delta<=60000) {
+      assert.deepEqual(Array.from(report.clock_paths),['data.landlord.updated_at']);
+      assert.ok(!report.paths.includes('data.landlord.updated_at'));
+    } else {assert.equal(report.clock_paths.length,0);assert.ok(report.paths.includes('data.landlord.updated_at'));}
+  }
 });

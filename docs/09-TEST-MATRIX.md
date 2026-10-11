@@ -1279,3 +1279,15 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Actual six HTML page wrappers × LINE/Email and retained arrears desktop action restriction | `tests/read-routing-pages.test.mjs` | AST-extracted actual page functions; shared router dispatch proven |
 | Affected54/54, unit897/897, validate72 files and release cache references | Local candidate | Full suite897 pass/1 known external Core fixture failure/4 skips |
 | Actual Pages readback, authenticated/device routing/fallback and seven-day report coverage | NOT_STARTED | All flags off; C1 real72-hour observation continues, then preceding release gates |
+
+## 2026-10-12 C5 shadow candidate
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Current LINE/Email/D1/GAS authority, exact CORS, strict/private/oversized metadata rejection | `cloudflare/read-api/test/shadow-report.test.mjs` | Actual local workerd/D1 and real synthetic GAS dispatcher |
+| Receipt-backed actual reads, source-only access failures, route/section/release binding, replay, concurrent rate limits and atomic rollback | Same | No operational data writes; synthetic identities/keys |
+| Actual browser router → read receipt → authenticated report → separate D1 clock storage | Same | GAS rendering retained; no comparison values in telemetry |
+| ISO/60s exact route/section clock contract, source-row timestamps strict, delayed browser timer fallback | `tests/read-routing.test.mjs`; `tests/read-shadow.test.mjs` | Owner explicitly approved clock classification; no actual time gate implied |
+| Entire-epoch errors, seven rolling full windows, missing/pending attempts, report boundary attribution and fixed AST contracts | Same; actual D1 export test | Synthetic clock cases exercise logic only |
+| Unit902/902, Worker24/24 plus dry-run, validate72 backend files/40 endpoint references | Local candidate | Full902 pass/1 known external Core fixture failure/4 skips |
+| Verified remote exports, seven real days, authenticated latency, Pages readback and phone/desktop acceptance | NOT_STARTED | All flags off; preceding C1 real72-hour gate continues independently |

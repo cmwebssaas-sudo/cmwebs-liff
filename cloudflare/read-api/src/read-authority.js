@@ -58,8 +58,13 @@ export async function confirmReadAuthority(request,env,access,options={}) {
       !Number.isSafeInteger(body.issued_at)||!Number.isSafeInteger(body.expires_at)||body.expires_at-body.issued_at!==5000||
       body.issued_at>now+1000||body.expires_at<=now||now-timestamp>15000) failure();
     if(body.result?.success!==true) failure('AUTH_REQUIRED');
-    if(body.result.replica_dirty!==false) failure('READ_SYNC_PENDING');
+    if(typeof body.result.replica_dirty!=='boolean') failure();
+    // Trusted handlers may inspect pending state for telemetry. The operational
+    // HTTP handler must reject it before loading any data. No env/body/query
+    // can supply this option.
+    if(body.result.replica_dirty!==false && options.telemetryOnly!==true) failure('READ_SYNC_PENDING');
     if(JSON.stringify(body.result.fingerprint)!==JSON.stringify(readAccessFingerprint(access))) failure('READ_AUTH_STATE_CHANGED');
+    return {replica_dirty:body.result.replica_dirty};
   } catch(error) {
     if(['AUTH_REQUIRED','READ_AUTH_STATE_CHANGED','READ_SYNC_PENDING'].includes(error?.code)) throw error;
     failure();
