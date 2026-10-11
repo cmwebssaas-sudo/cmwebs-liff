@@ -1178,3 +1178,13 @@ V3 Core subscription candidate: platform-core-subscription.runtime.test.mjs,
 platform-core-room-capacity.runtime.test.mjs, platform-core-subscription.ui.test.mjs
 and optional cross-repo platform-core-subscription.roundtrip.test.mjs. See
 PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
+
+## 2026-10-11 landlord-home redesign and parallel reads
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Home, actions and 12-month report start together; hero still paints first; late counts update in place | `tests/landlord-home-progressive.test.mjs`, `tests/phase193-landlord-home-dashboard.test.mjs`, `tests/landlord-home-loading.test.mjs` | Real `loadPage`; network faked |
+| Snapshot bound to hashed identity, 24-hour expiry, corrupt/blocked storage, cleared on logout and auth failure | `tests/landlord-home-redesign.test.mjs` | Real helpers and `landlord-auth.js`; memory storage |
+| Income curve geometry, growth labels, reduced-motion and accessibility markers | `tests/landlord-home-redesign.test.mjs` | Synthetic rows |
+| Desktop 1366px and phone 375px rendering, rolling digits, ring animation, curve scrubbing | `scripts/preview-landlord-home.mjs` in the local browser | Synthetic data; no login, LIFF or Production |
+| Real login latency, LINE in-app browser, Production publication | NOT_RUN / HUMAN_REQUIRED | Not authorized in this change |
