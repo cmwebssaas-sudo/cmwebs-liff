@@ -1525,7 +1525,8 @@ if (v2Action === 'tenant_message_submit') {
   if (v2Action === 'landlord_home_bootstrap') {
     const result = getWorkspaceLandlordHomeBootstrapByLineUid_(
       lineUserId,
-      e.parameter.section || ''
+      e.parameter.section || '',
+      e.parameter.read_view || ''
     );
 
     if (bridge === '1') {
@@ -1559,7 +1560,7 @@ if (v2Action === 'tenant_message_submit') {
   }
 
   if (v2Action === 'landlord_tenants') {
-  const result = getWorkspaceLandlordTenantsNativeByLineUid_(lineUserId);
+  const result = getWorkspaceLandlordTenantsNativeByLineUid_(lineUserId, e.parameter.read_view || '');
 
   if (bridge === '1') {
     return htmlBridgeOutput_(result, requestId);
@@ -3170,7 +3171,8 @@ function dispatchV2Post_(e) {
             result =
               getWorkspaceLandlordHomeBootstrapByLineUid_(
                 principal.data.principal_line_user_id,
-                request.section || ''
+                request.section || '',
+                request.read_view || ''
               );
           }
 
@@ -3201,7 +3203,8 @@ function dispatchV2Post_(e) {
           if (principal) {
             result =
               getWorkspaceLandlordTenantsNativeByLineUid_(
-                principal.data.principal_line_user_id
+                principal.data.principal_line_user_id,
+                request.read_view || ''
               );
           }
 

@@ -1,4 +1,5 @@
 import { sync } from './sync.js';
+import { isReadRoute, readFailure } from './read-routes.js';
 
 function json(body, status = 200, headers = {}) {
   return Response.json(body, {
@@ -10,6 +11,7 @@ function json(body, status = 200, headers = {}) {
 export default {
   async fetch(request, env) {
     if (new URL(request.url).pathname === '/sync') return sync(request,env);
+    if (isReadRoute(new URL(request.url).pathname)) return readFailure('READ_AUTH_NOT_READY');
     if (new URL(request.url).pathname !== '/health') {
       return json({ success: false, error: 'NOT_FOUND' }, 404);
     }

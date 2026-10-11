@@ -26,19 +26,38 @@ function readReplicaCanonicalFields_(fields) {
   return JSON.stringify(result);
 }
 
-function readReplicaProjectRow_(sheetName, source) {
+function readReplicaProjectRow_(sheetName, source, sourceRow, sourceContext) {
   const table = V2_READ_REPLICA_TABLES_[sheetName];
   if (!table) throw new Error('Sheet outside whitelist');
-  const fields = {};
+  const fields = {},dateFields=[];
   table.fields.forEach(function(key) {
+    if(key==='replica_date_fields') return;
+    if(key==='replica_room_bridge_supported') {
+      fields[key]=Boolean(sourceContext && sourceContext.roomBridgeSupported===true);
+      return;
+    }
+    if(key==='replica_source_row') {
+      if(Number.isSafeInteger(sourceRow) && sourceRow>=2) fields[key]=sourceRow;
+      return;
+    }
+    const transform = table.computed_fields && table.computed_fields[key];
+    if (transform) {
+      const digits = String(source[transform.source] || '').trim().replace(/\D/g, '');
+      fields[key] = digits ? '•••• ' + digits.slice(-5) : '';
+      return;
+    }
     if (!Object.prototype.hasOwnProperty.call(source,key)) return;
     let value = source[key];
-    if (Object.prototype.toString.call(value)==='[object Date]') value=value.toISOString();
+    if (Object.prototype.toString.call(value)==='[object Date]') {
+      if(key===table.key) throw new Error('Date cannot be a stable replica key');
+      value=value.toISOString();dateFields.push(key);
+    }
     if (value === undefined) return;
     if (value !== null && ['string','number','boolean'].indexOf(typeof value)<0) throw new Error('Unsupported replica field');
     if (typeof value==='number' && !isFinite(value)) throw new Error('Unsupported replica field');
     fields[key]=value;
   });
+  if(dateFields.length) fields.replica_date_fields=JSON.stringify(dateFields);
   const key = String(fields[table.key] || '').trim();
   if (!key || key.length>256) throw new Error('Missing stable replica key');
   return {row_key:key,row_hash:readReplicaHash_(readReplicaCanonicalFields_(fields)),fields:fields};
@@ -93,7 +112,8 @@ const V2_READ_REPLICA_ACTIONS_ = (function() {
     tenant_bills tenant_binding_status tenant_contract_artifact_upload_status tenant_contract_auth_status
     tenant_contract_init tenant_contract_invite_auth_status tenant_contract_requests tenant_contract_sign_status
     tenant_home tenant_message_init tenant_payment_account_cover tenant_payment_report_init tenant_repair_tickets_init`,[]);
-  routes(`landlord_property_archive landlord_property_save landlord_room_account_toggle
+  routes(`landlord_property_save`,['V2_rooms','V2_properties','V2_contracts','V2_bills','V2_property_owners']);
+  routes(`landlord_property_archive landlord_room_account_toggle
     landlord_room_archive landlord_room_save landlord_room_website_save`,
     ['V2_rooms','V2_properties','V2_contracts','V2_bills']);
   routes(`landlord_bank_receipt_confirm landlord_bill_apply_initial_rent_credit landlord_bill_manual_settle
@@ -127,8 +147,12 @@ const V2_READ_REPLICA_ACTIONS_ = (function() {
 
 function readReplicaSheetsForAction_(action) {
   if (!action) return [];
-  return Object.prototype.hasOwnProperty.call(V2_READ_REPLICA_ACTIONS_,action)
+  const sheets=Object.prototype.hasOwnProperty.call(V2_READ_REPLICA_ACTIONS_,action)
     ? V2_READ_REPLICA_ACTIONS_[action].slice() : Object.keys(V2_READ_REPLICA_TABLES_);
+  const view='V2_landlord_tenant_list_view';
+  if(Object.prototype.hasOwnProperty.call(V2_READ_REPLICA_TABLES_,view) && sheets.indexOf(view)<0 &&
+    sheets.some(function(sheet){return ['V2_rooms','V2_contracts','V2_tenants','V2_users','V2_bills'].indexOf(sheet)>=0;})) sheets.push(view);
+  return sheets;
 }
 
 function readReplicaAfterResponse_(action, output) {
@@ -168,9 +192,13 @@ function readReplicaRowsFromSheet_(sheetName) {
   const key=V2_READ_REPLICA_TABLES_[sheetName].key;
   if (headers.indexOf(key)<0 || headers.some(function(header,index){return header && headers.indexOf(header)!==index;})) throw new Error('Replica source headers invalid');
   const seen=Object.create(null);
-  return values.filter(function(row){return row.some(function(value){return value!=='' && value!==null;});}).map(function(row){
+  const sourceContext=sheetName==='V2_rooms'?{roomBridgeSupported:
+    !ss.getSheetByName('V3_listing_integrations')&&!ss.getSheetByName('V3_listing_integration_snapshots')}:null;
+  return values.map(function(row,index){return {values:row,sourceRow:index+2};})
+    .filter(function(item){return item.values.some(function(value){return value!=='' && value!==null;});}).map(function(item){
+    const row=item.values;
     const source={}; headers.forEach(function(header,index){if(header) source[header]=row[index];});
-    const projected=readReplicaProjectRow_(sheetName,source);
+    const projected=readReplicaProjectRow_(sheetName,source,item.sourceRow,sourceContext);
     if (Object.prototype.hasOwnProperty.call(seen,projected.row_key)) throw new Error('Duplicate stable replica key');
     seen[projected.row_key]=true;
     return projected;

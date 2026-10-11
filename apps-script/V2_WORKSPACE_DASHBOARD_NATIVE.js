@@ -395,9 +395,10 @@ function getWorkspaceLandlordArrearsNativeByLineUid_(
 
 
 function getWorkspaceLandlordTenantsNativeByLineUid_(
-  lineUserId
+  lineUserId,
+  readView
 ) {
-  return workspaceDashboardExecute_(
+  const result = workspaceDashboardExecute_(
     lineUserId,
     'landlord_tenants',
     function (
@@ -503,6 +504,8 @@ function getWorkspaceLandlordTenantsNativeByLineUid_(
       );
     }
   );
+  return readView === 'summary'
+    ? workspaceLandlordReadSummary_(result, 'tenants') : result;
 }
 
 

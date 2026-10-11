@@ -259,3 +259,33 @@ exported byte-identical. Restart the72-hour gate from this final test revision;
 earliest time eligibility is2026-10-15 at05:39 Taipei, subject to all actual
 daily correctness and complete runtime evidence. Earlier observed executions
 remain part of daily totals. No production publication occurred.
+
+## 2026-10-12 — C2 local parity candidate
+
+Independent C2 branch based on C1 `8f1191a`; recommended GPT-6.1 Sol/high due to
+privacy and calculation parity. Owner explicitly approved the bounded summary
+decision in `READ-PARITY-DECISION.md`. Home actions and tenant list opt in;
+default/detail APIs retain full GAS data. Root checkpoint WIP was rechecked and
+preserved. C1's actual three-day test continues unchanged, earliest time gate
+October15 at05:39 Taipei; this candidate does not publish or merge ahead of it.
+
+Generated219 read-only functions from13 canonical GAS source files, with source
+SHA manifest and no eval/runtime VM. Twenty-table additive projection preserves
+JSON scalar types, real source order, masked bank suffix and genuine Date cells.
+Independent review found a Taipei month-boundary type-loss bug (home total
+10300→20600), reproduced red and fixed by date-type metadata/rehydration; new
+property owner rows now receive dirty marking. Existing optional room bridge
+dependencies fail closed for GAS fallback instead of returning a false unbound
+state. No V3 source rows or protected contract fields are added to replication.
+
+Formal read-only metadata/header/key-column checks confirm the four existing
+projection dependencies and unique tenant-view keys; optional bridge tables
+absent. Only aggregate evidence is public. Actual GAS vs whitelist/local D1/HTTP
+matches every field on six routes/both home sections with rich synthetic data.
+Each entry100 samples: local p95 below50ms (4.833–6.371ms in the full run), not
+remote/device proof. Affected28/28, unit863/863, Worker13/13, validate and
+diff-check pass. Full suite retains the known missing external Core fixture
+failure and four skips. Independent re-review passed all three corrections,
+affected28/28 and Worker13/13 (p95 4.760–6.557ms); PR/CI pending. Production routes
+all return503 until C3; C2 remote deployment/readback NOT_STARTED. Detailed
+publication order and rollback are in `READ-API-PARITY.md`.

@@ -6,6 +6,7 @@ import vm from 'node:vm';
 
 const schemaSource=readFileSync(new URL('../apps-script/V2_READ_REPLICA_SCHEMA.js',import.meta.url),'utf8');
 const moduleSource=()=>readFileSync(new URL('../apps-script/V2_READ_REPLICA_SYNC.js',import.meta.url),'utf8');
+const tableCount=Object.keys(JSON.parse(readFileSync(new URL('../cloudflare/read-api/schema.json',import.meta.url),'utf8'))).length;
 function harness({configured=true,fail=false,sheets={}}={}) {
   const cache=new Map(), sent=[], logs=[]; let reads=0, cacheSingleReads=0, cacheBatchReads=0, propertyReads=0;
   const properties=new Map(configured ? [['READ_REPLICA_URL','https://replica.synthetic.test'],['READ_REPLICA_SYNC_SECRET','synthetic-secret']] : []);
@@ -56,7 +57,7 @@ test('every dispatched action has an explicit classification and mutations inval
     h.cache.clear(); h.ctx.readReplicaAfterResponse_(action,{success:true});
     for(const table of required) assert.ok(h.cache.has('cmwebs:read-replica:dirty:'+table),action+' omitted '+table);
   }
-  assert.equal(h.ctx.readReplicaSheetsForAction_('future_unclassified_route').length,16);
+  assert.equal(h.ctx.readReplicaSheetsForAction_('future_unclassified_route').length,tableCount);
 });
 
 test('empty and unprocessed webhooks do not schedule full replica reads',()=>{
@@ -72,7 +73,53 @@ test('empty and unprocessed webhooks do not schedule full replica reads',()=>{
     data:{total:1,processed:0,skipped:1,errors:0}});
   assert.equal(h.cache.size,0);
   h.ctx.readReplicaAfterResponse_('LINE_WEBHOOK',{success:true,data:{processed:1}});
-  assert.equal(h.cache.size,16);
+  assert.equal(h.cache.size,tableCount);
+});
+
+test('payment account projection preserves only a masked suffix and drops the full account',()=>{
+  const h=harness();
+  const result=h.ctx.readReplicaProjectRow_('V2_payment_accounts',{payment_account_id:'SYNTHETIC_ACCOUNT',
+    workspace_id:'SYNTHETIC_W1',bank_account:'0000-0001-2345',bank_code:'SYNTHETIC',bank_name:'synthetic'});
+  assert.equal(result.fields.bank_account_last5,'•••• 12345');
+  assert.ok(!Object.hasOwn(result.fields,'bank_account'));
+  assert.doesNotMatch(JSON.stringify(result),/0000-0001-2345|000000012345/);
+});
+
+test('projection preserves real Sheet row order across blanks and ignores spoofed ordinal fields',()=>{
+  const h=harness({sheets:{V2_rooms:[['room_id','workspace_id','replica_source_row'],
+    ['SYNTHETIC_Z','SYNTHETIC_W1',999],['','',''],['SYNTHETIC_A','SYNTHETIC_W1',0]]}});
+  h.ctx.readReplicaMarkDirty_(['V2_rooms']);
+  assert.equal(h.ctx.runV2ReadReplicaDirtySync().success,true);
+  const rows=JSON.parse(h.sent[0].payload).rows;
+  assert.deepEqual(rows.map(row=>[row.row_key,row.fields.replica_source_row]),[['SYNTHETIC_Z',2],['SYNTHETIC_A',4]]);
+  const moved=h.ctx.readReplicaProjectRow_('V2_rooms',{room_id:'SYNTHETIC_Z',workspace_id:'SYNTHETIC_W1'},4,{roomBridgeSupported:true});
+  assert.notEqual(moved.row_hash,rows[0].row_hash,'source order participates in synchronization integrity');
+});
+
+test('tenant list view is invalidated by its existing source mutations',()=>{
+  const h=harness();
+  for(const action of ['landlord_room_save','landlord_bills_generate','landlord_contract_paper_backfill']) {
+    assert.ok(h.ctx.readReplicaSheetsForAction_(action).includes('V2_landlord_tenant_list_view'),action);
+  }
+  assert.ok(h.ctx.readReplicaSheetsForAction_('landlord_property_save').includes('V2_property_owners'));
+});
+
+test('Date cells retain type metadata while ISO-looking text remains text',()=>{
+  const h=harness();
+  const result=h.ctx.readReplicaProjectRow_('V2_bills',{bill_id:'SYNTHETIC_BILL',
+    bill_month:new Date('2026-10-01T00:00:00+08:00'),due_date:'2026-09-30T16:00:00.000Z',replica_date_fields:'["bill_id"]'},2);
+  assert.equal(result.fields.bill_month,'2026-09-30T16:00:00.000Z');
+  assert.deepEqual(JSON.parse(result.fields.replica_date_fields),['bill_month']);
+  assert.throws(()=>h.ctx.readReplicaProjectRow_('V2_bills',{bill_id:new Date()},2),/stable replica key/);
+});
+
+test('room snapshots derive bridge capability from the source schema rather than a row claim',()=>{
+  for(const present of [false,true]) {
+    const sheets={V2_rooms:[['room_id','replica_room_bridge_supported'],['SYNTHETIC_ROOM',!present]]};
+    if(present) sheets.V3_listing_integrations=[['room_id']];
+    const h=harness({sheets});h.ctx.readReplicaMarkDirty_(['V2_rooms']);h.ctx.runV2ReadReplicaDirtySync();
+    assert.equal(JSON.parse(h.sent[0].payload).rows[0].fields.replica_room_bridge_supported,!present);
+  }
 });
 
 test('idle or unconfigured triggers read no Sheet and send nothing',()=>{
