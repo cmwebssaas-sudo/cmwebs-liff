@@ -7,8 +7,11 @@ for (const [name, table] of Object.entries(schema)) {
   if (!/^V2_[a-z_]+$/.test(name) || !table.fields.includes(table.key) || table.fields.length > 97) throw new Error('Invalid table');
   for (const field of table.fields) {
     // Permission booleans are authorization data, never bank account values.
-    if (!/^[a-z_][a-z0-9_]*$/.test(field) || (forbidden.test(field) && !['can_edit_bank_account', 'profile_display_name', 'profile_picture_url', 'session_token_hash'].includes(field))) throw new Error('Forbidden field: ' + field);
+    const safeBankMetadata = name === 'V2_payment_accounts' && ['bank_code','bank_name','bank_account_last5'].includes(field);
+    if (!/^[a-z_][a-z0-9_]*$/.test(field) || (forbidden.test(field) && !safeBankMetadata && !['can_edit_bank_account', 'profile_display_name', 'profile_picture_url', 'session_token_hash'].includes(field))) throw new Error('Forbidden field: ' + field);
   }
+  if (table.computed_fields && JSON.stringify(table.computed_fields)!==JSON.stringify({bank_account_last5:{source:'bank_account',mask:'last5'}})) throw new Error('Unknown projection transform');
+  if (table.computed_fields && name!=='V2_payment_accounts') throw new Error('Unexpected projection transform table');
 }
 const gas = '// Generated from cloudflare/read-api/schema.json; edit that authority and rerun this script.\nconst V2_READ_REPLICA_TABLES_ = ' + JSON.stringify(schema, null, 2) + ';\n';
 const tables = Object.entries(schema).map(([name, table]) => `CREATE TABLE "${name}" (\n  row_key TEXT PRIMARY KEY,\n  row_hash TEXT NOT NULL,\n  synced_at TEXT NOT NULL,\n${table.fields.map(field => `  "${field}" TEXT`).join(',\n')}\n);`).join('\n\n');
@@ -37,4 +40,22 @@ CREATE TABLE shadow_diffs (
 );
 `;
 await writeFile(new URL('apps-script/V2_READ_REPLICA_SCHEMA.js', root), gas);
-await writeFile(new URL('cloudflare/read-api/migrations/0001_read_replica.sql', root), '-- Generated from schema.json; regenerate with scripts/generate-read-replica-schema.mjs.\n'+tables+'\n'+metadata);
+const baselineUrl=new URL('cloudflare/read-api/migrations/0001_read_replica.sql',root);
+let baseline;
+try { baseline=await readFile(baselineUrl,'utf8'); } catch { baseline=null; }
+if (!baseline) {
+  await writeFile(baselineUrl, '-- Generated from schema.json; regenerate with scripts/generate-read-replica-schema.mjs.\n'+tables+'\n'+metadata);
+} else {
+  // Never rewrite the C1 migration after provisioning. Extend it additively.
+  const baselineTables=Object.fromEntries([...baseline.matchAll(/CREATE TABLE "(V2_[a-z_]+)" \(([^;]+)\);/g)].map(match=>[match[1],[...match[2].matchAll(/"([a-z_][a-z0-9_]*)" TEXT/g)].map(field=>field[1])]));
+  const additions=[];
+  if(Object.keys(baselineTables).some(name=>!Object.hasOwn(schema,name))) throw new Error('Table removal requires an explicit migration');
+  for(const [name,table] of Object.entries(schema)) {
+    if(!baselineTables[name]) additions.push(tables.split('\n\n').find(sql=>sql.startsWith('CREATE TABLE "'+name+'"')));
+    else {
+      if(baselineTables[name].some(field=>!table.fields.includes(field))) throw new Error('Removal requires an explicit migration');
+      for(const field of table.fields.filter(field=>!baselineTables[name].includes(field))) additions.push(`ALTER TABLE "${name}" ADD COLUMN "${field}" TEXT;`);
+    }
+  }
+  if(additions.length) await writeFile(new URL('cloudflare/read-api/migrations/0002_read_projection.sql',root),'-- Generated additive projection extension; never stores an unmasked bank account.\n'+additions.join('\n\n')+'\n');
+}

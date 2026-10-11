@@ -1,0 +1,48 @@
+{
+  "now": "2026-10-12T04:00:00+08:00",
+  "V2_workspaces": [
+    {"workspace_id":"SYNTHETIC_W1","workspace_name":"合成甲團隊","account_status":"active","onboarding_status":"completed","timezone":"Asia/Taipei","created_by_user_id":"SYNTHETIC_U1"},
+    {"workspace_id":"SYNTHETIC_W2","workspace_name":"合成乙團隊","account_status":"active","onboarding_status":"completed","timezone":"Asia/Taipei"}
+  ],
+  "V2_workspace_members": [{"membership_id":"SYNTHETIC_M1","workspace_id":"SYNTHETIC_W1","user_id":"SYNTHETIC_U1","role":"owner","member_status":"active","is_primary":true,"joined_at":"2025-01-01"}],
+  "V2_member_scopes": [],
+  "V2_users": [
+    {"user_id":"SYNTHETIC_U1","role":"landlord","name":"合成管理者","account_status":"active","active_workspace_id":"SYNTHETIC_W1","line_user_id":"SYNTHETIC_LINE1"},
+    {"user_id":"SYNTHETIC_TU1","role":"tenant","name":"合成房客甲","phone":"912345678","account_status":"active","line_user_id":"SYNTHETIC_TLINE1"}
+  ],
+  "V2_landlords": [{"landlord_id":"SYNTHETIC_L1","workspace_id":"SYNTHETIC_W1","landlord_user_id":"SYNTHETIC_U1","landlord_name":"合成管理者","line_user_id":"SYNTHETIC_LINE1","landlord_line_user_id":"SYNTHETIC_LINE1"}],
+  "V2_properties": [
+    {"property_id":"SYNTHETIC_P1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","property_name":"合成一館","account_status":"active","property_type":"apartment","property_address":"合成地址"},
+    {"property_id":"SYNTHETIC_P2","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","property_name":"合成二館","account_status":"active","property_type":"suite"},
+    {"property_id":"SYNTHETIC_PA","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","property_name":"合成停用館","account_status":"archived"},
+    {"property_id":"SYNTHETIC_PX","workspace_id":"SYNTHETIC_W2","landlord_id":"SYNTHETIC_L2","property_name":"另一團隊物件","account_status":"active"}
+  ],
+  "V2_rooms": [
+    {"room_id":"SYNTHETIC_R1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","property_id":"SYNTHETIC_P1","room_name":"201","account_status":"active","room_status":"occupied","current_contract_id":"SYNTHETIC_C1","current_tenant_id":"SYNTHETIC_T1","rent_amount":10000,"management_fee":300,"equipment_summer_months":"5,6,7,8,9,10","equipment_fee_rate_summer":4,"equipment_fee_rate_regular":2.5},
+    {"room_id":"SYNTHETIC_R2","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","property_id":"SYNTHETIC_P1","room_name":"202","account_status":"active","room_status":"vacant","rent_amount":11000},
+    {"room_id":"SYNTHETIC_R3","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","property_id":"SYNTHETIC_P2","room_name":"301","account_status":"inactive","room_status":"maintenance","rent_amount":12000},
+    {"room_id":"SYNTHETIC_RA","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","property_id":"SYNTHETIC_PA","room_name":"101","account_status":"archived","room_status":"vacant"},
+    {"room_id":"SYNTHETIC_RX","workspace_id":"SYNTHETIC_W2","landlord_id":"SYNTHETIC_L2","property_id":"SYNTHETIC_PX","room_name":"999","account_status":"active","rent_amount":999999}
+  ],
+  "V2_tenants": [{"tenant_id":"SYNTHETIC_T1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","user_id":"SYNTHETIC_TU1","tenant_user_id":"SYNTHETIC_TU1","tenant_name":"合成房客甲","room_id":"SYNTHETIC_R1","property_id":"SYNTHETIC_P1","current_contract_id":"SYNTHETIC_C1","account_status":"active"}],
+  "V2_contracts": [
+    {"contract_id":"SYNTHETIC_C1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","tenant_id":"SYNTHETIC_T1","tenant_user_id":"SYNTHETIC_TU1","room_id":"SYNTHETIC_R1","property_id":"SYNTHETIC_P1","start_date":"2026-01-01","end_date":"2026-10-31","contract_status":"active","rent_amount":10000,"management_fee":300,"contract_family_id":"SYNTHETIC_F1","renewal_sequence":2,"previous_contract_id":"SYNTHETIC_C0","electricity_fee_rate":3,"equipment_fee_rate":4},
+    {"contract_id":"SYNTHETIC_C0","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","tenant_id":"SYNTHETIC_T1","room_id":"SYNTHETIC_R1","property_id":"SYNTHETIC_P1","start_date":"2025-01-01","end_date":"2025-12-31","contract_status":"expired","contract_family_id":"SYNTHETIC_F1","renewal_sequence":1,"renewed_to_contract_id":"SYNTHETIC_C1","rent_amount":9500},
+    {"contract_id":"SYNTHETIC_CP","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","room_id":"SYNTHETIC_R2","property_id":"SYNTHETIC_P1","contract_status":"pending_tenant_signature","contract_origin":"landlord_initiated","invite_id":"SYNTHETIC_I1","start_date":"2026-11-01","end_date":"2027-10-31","rent_amount":11000}
+  ],
+  "V2_bills": [
+    {"bill_id":"SYNTHETIC_B1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","tenant_id":"SYNTHETIC_T1","contract_id":"SYNTHETIC_C1","room_id":"SYNTHETIC_R1","property_id":"SYNTHETIC_P1","bill_month":"2026-09","bill_status":"issued","total_amount":10300,"paid_amount":3000,"due_date":"2026-09-10"},
+    {"bill_id":"SYNTHETIC_B2","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","tenant_id":"SYNTHETIC_T1","contract_id":"SYNTHETIC_C1","room_id":"SYNTHETIC_R1","property_id":"SYNTHETIC_P1","bill_month":"2026-10","bill_status":"paid","total_amount":10300,"paid_amount":10300,"due_date":"2026-10-10"},
+    {"bill_id":"SYNTHETIC_B3","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","room_id":"SYNTHETIC_R2","property_id":"SYNTHETIC_P1","bill_month":"2026-10","bill_status":"cancelled","total_amount":8888,"due_date":"2026-10-01"},
+    {"bill_id":"SYNTHETIC_BX","workspace_id":"SYNTHETIC_W2","landlord_id":"SYNTHETIC_L2","room_id":"SYNTHETIC_RX","property_id":"SYNTHETIC_PX","bill_month":"2026-10","bill_status":"issued","total_amount":999999,"due_date":"2026-10-01"}
+  ],
+  "V2_payments": [{"payment_id":"SYNTHETIC_PAY1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","bill_id":"SYNTHETIC_B1","payment_status":"confirmed","amount":3000,"payment_date":"2026-09-15"}],
+  "V2_contract_requests": [{"request_id":"SYNTHETIC_Q1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","tenant_id":"SYNTHETIC_T1","contract_id":"SYNTHETIC_C1","request_type":"renewal","status":"pending","created_at":"2026-10-11"}],
+  "V2_payment_reports": [{"report_id":"SYNTHETIC_PR1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","tenant_id":"SYNTHETIC_T1","bill_id":"SYNTHETIC_B1","status":"pending","reported_amount":3000,"created_at":"2026-09-15"}],
+  "V2_tenant_messages": [{"message_id":"SYNTHETIC_MSG1","workspace_id":"SYNTHETIC_W1","landlord_id":"SYNTHETIC_L1","tenant_id":"SYNTHETIC_T1","message_title":"合成詢問","message_body":"純測試內容","status":"pending","priority":"urgent","created_at":"2026-10-11"}],
+  "V2_contract_invites": [{"invite_id":"SYNTHETIC_I1","workspace_id":"SYNTHETIC_W1","contract_id":"SYNTHETIC_CP","room_id":"SYNTHETIC_R2","status":"pending","expires_at":"2026-10-13T12:00:00+08:00"}],
+  "V2_landlord_email_sessions": [],
+  "V2_workspace_settings": [{"workspace_id":"SYNTHETIC_W1","default_payment_day":15,"default_deposit_months":3,"default_electricity_fee_rate":4,"summer_months_csv":"5,6,7,8,9,10","default_management_fee":300}],
+  "V2_property_owners": [{"property_owner_id":"SYNTHETIC_PO1","workspace_id":"SYNTHETIC_W1","property_id":"SYNTHETIC_P1","owner_user_id":"SYNTHETIC_U1","owner_name":"合成所有權人","ownership_percentage":100,"is_primary_owner":true}],
+  "V2_payment_accounts": [{"payment_account_id":"SYNTHETIC_PA1","workspace_id":"SYNTHETIC_W1","account_name":"合成帳號","bank_name":"合成銀行","bank_code":"SYNTHETIC","bank_account":"000000012345","is_default":true,"account_status":"active"}]
+}

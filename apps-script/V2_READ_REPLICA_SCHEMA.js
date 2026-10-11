@@ -8,12 +8,15 @@ const V2_READ_REPLICA_TABLES_ = {
       "workspace_type",
       "account_status",
       "onboarding_status",
+      "created_by_user_id",
       "default_currency",
       "timezone",
       "created_at",
       "updated_at",
       "first_property_id",
-      "first_room_id"
+      "first_room_id",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_workspace_members": {
@@ -25,6 +28,7 @@ const V2_READ_REPLICA_TABLES_ = {
       "role",
       "member_status",
       "is_primary",
+      "joined_at",
       "display_name",
       "line_user_id",
       "can_manage_team",
@@ -34,7 +38,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "can_terminate_contract",
       "can_delete_data",
       "can_export_data",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_member_scopes": {
@@ -46,7 +52,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "scope_type",
       "property_id",
       "room_id",
-      "permission_level"
+      "permission_level",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_users": {
@@ -61,7 +69,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "account_status",
       "active_workspace_id",
       "profile_display_name",
-      "profile_picture_url"
+      "profile_picture_url",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_landlords": {
@@ -75,7 +85,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "landlord_line_user_id",
       "landlord_name",
       "account_status",
-      "onboarding_status"
+      "onboarding_status",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_properties": {
@@ -100,7 +112,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "archive_reason",
       "note",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_rooms": {
@@ -146,7 +160,10 @@ const V2_READ_REPLICA_TABLES_ = {
       "archive_reason",
       "note",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields",
+      "replica_room_bridge_supported"
     ]
   },
   "V2_tenants": {
@@ -171,7 +188,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "tenant_account_status",
       "account_status",
       "status",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_contracts": {
@@ -243,7 +262,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "checkout_move_out_date",
       "terminated_at",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_bills": {
@@ -290,7 +311,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "notes",
       "remark",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_payments": {
@@ -314,7 +337,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "cancelled_at",
       "created_at",
       "updated_at",
-      "reported_amount"
+      "reported_amount",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_contract_requests": {
@@ -357,7 +382,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "note",
       "landlord_note",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_payment_reports": {
@@ -384,7 +411,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "rejected_at",
       "reject_reason",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_tenant_messages": {
@@ -411,7 +440,9 @@ const V2_READ_REPLICA_TABLES_ = {
       "closed_at",
       "note",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   },
   "V2_contract_invites": {
@@ -429,8 +460,75 @@ const V2_READ_REPLICA_TABLES_ = {
       "claimed_line_user_id",
       "cancelled_at",
       "created_at",
-      "updated_at"
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
+  },
+  "V2_workspace_settings": {
+    "key": "workspace_id",
+    "fields": [
+      "workspace_id",
+      "locale",
+      "timezone",
+      "currency",
+      "default_payment_day",
+      "default_electricity_fee_rate",
+      "summer_month_start",
+      "summer_month_end",
+      "summer_equipment_fee_rate",
+      "regular_equipment_fee_rate",
+      "default_management_fee",
+      "default_deposit_months",
+      "late_fee_type",
+      "late_fee_value",
+      "late_fee_grace_days",
+      "auto_overdue_reminder",
+      "overdue_reminder_hour",
+      "overdue_reminder_days_json",
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
+    ]
+  },
+  "V2_property_owners": {
+    "key": "property_owner_id",
+    "fields": [
+      "property_owner_id",
+      "workspace_id",
+      "property_id",
+      "owner_user_id",
+      "owner_name",
+      "owner_phone",
+      "ownership_percentage",
+      "is_primary_owner",
+      "payment_recipient",
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
+    ]
+  },
+  "V2_payment_accounts": {
+    "key": "payment_account_id",
+    "fields": [
+      "payment_account_id",
+      "workspace_id",
+      "account_name",
+      "bank_code",
+      "bank_name",
+      "bank_account_last5",
+      "is_default",
+      "account_status",
+      "updated_at",
+      "replica_source_row",
+      "replica_date_fields"
+    ],
+    "computed_fields": {
+      "bank_account_last5": {
+        "source": "bank_account",
+        "mask": "last5"
+      }
+    }
   },
   "V2_landlord_email_sessions": {
     "key": "session_id",
@@ -443,7 +541,45 @@ const V2_READ_REPLICA_TABLES_ = {
       "issued_at",
       "expires_at",
       "revoked_at",
-      "status"
+      "status",
+      "replica_source_row",
+      "replica_date_fields"
+    ]
+  },
+  "V2_landlord_tenant_list_view": {
+    "key": "tenant_id",
+    "fields": [
+      "tenant_id",
+      "workspace_id",
+      "line_user_id",
+      "user_id",
+      "landlord_id",
+      "landlord_name",
+      "tenant_line_user_id",
+      "tenant_user_id",
+      "tenant_name",
+      "tenant_phone",
+      "tenant_email",
+      "tenant_binding_status",
+      "room_list",
+      "latest_bill_month",
+      "latest_due_date",
+      "latest_total_amount",
+      "latest_payment_status",
+      "unpaid_bill_count",
+      "unpaid_total_amount",
+      "tenant_account_status",
+      "updated_at",
+      "property_id",
+      "property_name",
+      "room_id",
+      "current_contract_id",
+      "contract_status",
+      "contract_start_date",
+      "contract_end_date",
+      "created_at",
+      "replica_source_row",
+      "replica_date_fields"
     ]
   }
 };

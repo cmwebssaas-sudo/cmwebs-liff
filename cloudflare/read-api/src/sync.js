@@ -56,8 +56,20 @@ async function validateBatch(batch) {
         String(row.fields[table.key] ?? '').trim() !== row.row_key ||
         Object.entries(row.fields).some(([key,value])=>!table.fields.includes(key) ||
           !(['string','number','boolean'].includes(typeof value) || value === null) ||
-          (typeof value === 'number' && !Number.isFinite(value))) ||
+          (typeof value === 'number' && !Number.isFinite(value)) ||
+          (key==='replica_source_row' && (!Number.isSafeInteger(value) || value<2)) ||
+          (key==='replica_room_bridge_supported' && typeof value!=='boolean') ||
+          (table.computed_fields?.[key]?.mask==='last5' && (typeof value!=='string' || !/^(?:•••• \d{1,5})?$/.test(value)))) ||
         row.row_hash !== await sha256(canonicalFields(row.fields))) stop('INVALID_BATCH');
+    if(Object.hasOwn(row.fields,'replica_date_fields')) {
+      let dates;try{dates=JSON.parse(row.fields.replica_date_fields);}catch{stop('INVALID_BATCH');}
+      if(typeof row.fields.replica_date_fields!=='string'||!Array.isArray(dates)||dates.length>table.fields.length||new Set(dates).size!==dates.length) stop('INVALID_BATCH');
+      for(const field of dates) {
+        if(typeof field!=='string'||!table.fields.includes(field)||field===table.key||field.startsWith('replica_')||typeof row.fields[field]!=='string') stop('INVALID_BATCH');
+        const date=new Date(row.fields[field]);
+        if(!Number.isFinite(date.getTime())||date.toISOString()!==row.fields[field]) stop('INVALID_BATCH');
+      }
+    }
     seen.add(row.row_key);
   }
   return table;

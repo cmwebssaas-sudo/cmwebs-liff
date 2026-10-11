@@ -1,5 +1,21 @@
 # V2 回歸測試矩陣
 
+## 2026-10-12 C2 read parity candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Actual GAS vs whitelist → local D1 → six HTTP routes/both home sections | PASS: every field equal with rich private-field and real Date-cell fixtures | Synthetic local workerd; not production/phone |
+| Each entry100 samples, HTTP/D1 p95 | PASS:4.833–6.371ms, all below50ms | Local response consumption included; not remote latency |
+| Source order, scalar JSON, masked bank suffix, Date rehydration | PASS | Original source order including blank gaps; no private contract fields/raw account replicated |
+| Actual home renderer counters/default detail | PASS | Explicit summary approved by owner; default remains full GAS |
+| Source-derived optional bridge capability | PASS:503 when missing/unsupported; no false unbound result | C4 must retain GAS fallback; formal optional bridge tables currently absent |
+| Affected GAS/calendar/query boundaries | 28/28 PASS | Includes `testReadReplicaProjection` and `testV2ReadSummaryProjection`; no Sheet writes |
+| Unit / Worker / validate / diff-check | 863/863 /13/13 /PASS /PASS | Source evidence |
+| Full repository suite | 863 pass /1 existing external Core fixture failure /4 skips | `PLATFORM_CORE_TEST_WORKTREE` unavailable; external PG acceptance not claimed |
+| C1 actual three days / C3 auth / C2 publication | RUNNING /NOT_STARTED /NOT_STARTED | Production read paths stay closed; no gate skipped |
+
+Source manifest, schema, review, release and rollback: `READ-API-PARITY.md`.
+
 ## 2026-10-12 R0 records and source reconciliation
 
 | Check | Result | Evidence boundary |
