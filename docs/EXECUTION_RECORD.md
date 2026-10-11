@@ -294,3 +294,37 @@ C2 draft [PR267](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/267) source
 `fa3300e` is stacked on C1 and attached to this task. CI38178464204 rental and
 read-worker both passed. It remains unmerged/unpublished while real C1
 acceptance runs; independent C3 local work proceeds on its own worktree.
+
+## 2026-10-12 — C3 local authorization candidate
+
+Recommended GPT-6.1 Sol/high per work plan. Independent C3 worktree/branch based
+on C2 `91da898`; root checkpoint WIP reverified and preserved. Owner approved
+the authority amendment in `READ-AUTHORITY-DECISION.md`: each Worker read uses
+an uncached, signed request-bound GAS confirmation and compares current primary
+D1 authorization before loading scoped operational data. Performance must pass
+before flags are enabled. No production source, secret, trigger or flag changed.
+
+LINE provider claims alone may cache for at most five minutes; access never
+caches. Email uses canonical session HMAC, current eligibility, revocation and
+expiry. Missing/forged credentials and client identity/scope overrides fail
+before data IO. Bound primary D1 queries, actor/membership identity checks,
+canonical role/permission helpers and foreign-parent legacy guards preserve
+six-route scope/parity. Additive migration0003 supplies existing Email metadata;
+the generator appends migrations without rewriting provisioned files.
+
+Independent review found and verified corrections for ambiguous Email aliases,
+expiry during a slow lookup, foreign legacy parents, unbounded authority bodies,
+and repeated Sheet scans in write-mode filters. Ten legacy rows now read one
+three-table parent map per filter; the next filter rereads after mutations.
+Real local workerd/D1 HTTP plus the original GAS authority functions reject
+source-only undelivered LINE/Email revocation/disable/role changes, forged or
+replayed authority responses, dirty/receiving/stale snapshots and foreign scope.
+
+Generated234 canonical functions from15 files. Affected68/68, unit884/884,
+Worker19/19 including dry-run, validate72 backend files and diff-check pass.
+Full suite retains the documented missing external Core/PG fixture failure and
+four skips; external integration acceptance is not claimed. Independent review
+found no remaining P1/P2 source issue; added LINE-only authority coverage was
+independently verified1/1 PASS. C3 PR/CI pending. Real C1 observation, live
+Google redirect/authority latency, binding/secret readback and device acceptance
+remain required. Release order and rollback are in `READ-AUTHORIZATION.md`.

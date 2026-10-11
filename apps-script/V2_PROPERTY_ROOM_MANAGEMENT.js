@@ -2291,6 +2291,8 @@ function propertyRoomGetWorkspaceRooms_(
       )
       .filter(Boolean);
 
+  // Local to this filter: write requests must reread after a later mutation.
+  let legacyParentMaps = null;
   return workspaceGetObjectsWithRow_(
     roomSheet
   ).filter(
@@ -2326,6 +2328,12 @@ function propertyRoomGetWorkspaceRooms_(
             landlordId
           ) >= 0
         );
+
+      if (rowWorkspaceId && rowWorkspaceId !== workspaceId) return false;
+      if (!rowWorkspaceId && typeof workspaceLandlordLegacyParentsMatchAccess_ === 'function') {
+        legacyParentMaps = legacyParentMaps || workspaceLandlordLegacyParentMaps_();
+        if (!workspaceLandlordLegacyParentsMatchAccess_(row,access,legacyParentMaps)) return false;
+      }
 
       if (!belongsToWorkspace) {
         return false;
@@ -2367,6 +2375,8 @@ function propertyRoomGetWorkspaceRows_(
       })
       .filter(Boolean);
 
+  // Do not retain a parent snapshot between write-mode filter invocations.
+  let legacyParentMaps = null;
   return workspaceGetObjectsWithRow_(
     sheet
   ).filter(function (row) {
@@ -2378,6 +2388,11 @@ function propertyRoomGetWorkspaceRows_(
     if (rowWorkspaceId) {
       return rowWorkspaceId ===
         workspaceId;
+    }
+
+    if (typeof workspaceLandlordLegacyParentsMatchAccess_ === 'function') {
+      legacyParentMaps = legacyParentMaps || workspaceLandlordLegacyParentMaps_();
+      if (!workspaceLandlordLegacyParentsMatchAccess_(row,access,legacyParentMaps)) return false;
     }
 
     return (

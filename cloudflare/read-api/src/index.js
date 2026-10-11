@@ -1,5 +1,7 @@
 import { sync } from './sync.js';
 import { isReadRoute, readFailure } from './read-routes.js';
+import { createReadHttpHandler } from './read-http.js';
+const read=createReadHttpHandler();
 
 function json(body, status = 200, headers = {}) {
   return Response.json(body, {
@@ -11,7 +13,10 @@ function json(body, status = 200, headers = {}) {
 export default {
   async fetch(request, env) {
     if (new URL(request.url).pathname === '/sync') return sync(request,env);
-    if (isReadRoute(new URL(request.url).pathname)) return readFailure('READ_AUTH_NOT_READY');
+    if (isReadRoute(new URL(request.url).pathname)) {
+      if(!env.READ_AUTHORITY_URL||!env.LINE_LOGIN_CHANNEL_ID||!env.READ_REPLICA_SYNC_SECRET) return readFailure('READ_AUTH_NOT_READY');
+      return read(request,env);
+    }
     if (new URL(request.url).pathname !== '/health') {
       return json({ success: false, error: 'NOT_FOUND' }, 404);
     }

@@ -1256,3 +1256,15 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Every dispatcher route explicitly classified, previously missed mutations queue their tables, real GET/POST envelopes preserved | Same | Real dispatcher and dirty-marker functions; synthetic successful responses |
 | Apps Script affected test function | `testReadReplicaProjection()` executed by the VM suite | Pure projection test; not a production execution |
 | Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_STARTED | Must be observed in the isolated remote environment; local tests cannot satisfy this gate |
+
+## 2026-10-12 C3 authorization candidate
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Exact LINE protocol/provider claims, five-minute/expiry cache, Email HMAC, slow-lookup expiry and per-read revocation | `tests/read-identity.test.mjs` | Synthetic provider/session adapters; real crypto |
+| Canonical context/permissions, inactive user/member/Workspace, Email eligibility/session scope, alias ambiguity and explicit principal scope | `tests/read-access.test.mjs` | Real generated and original GAS helpers |
+| Immutable additive migrations and removal rejection | `tests/read-migration.test.mjs` | Actual generator in a disposable filesystem |
+| Primary D1 identity/operational scope, delegated manager parity, both alias orders and foreign-parent legacy anchors | `cloudflare/read-api/test/read-access-d1.test.mjs` | Actual local workerd/D1; six original GAS routes compared |
+| Signed GAS confirmation through actual POST dispatcher; nonce/digest/route binding, replay/forgery/expiry, unavailable authority and undelivered source-only revocation/access changes | `tests/read-authority.test.mjs`; integrated D1 HTTP test | Real GAS modules in VM, real Worker HMAC and local service bridge; no formal account |
+| Source pending markers, incomplete/stale D1 snapshots, role changes, CORS, query tampering and sanitized HTTP errors | Integrated D1 HTTP test | Synthetic source and local D1 changes; no cross-request access cache |
+| Remote GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |

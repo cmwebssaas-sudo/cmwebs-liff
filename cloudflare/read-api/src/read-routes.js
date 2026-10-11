@@ -19,7 +19,7 @@ export function readFailure(code,status=503,headers={}) {
 // C3 supplies verified access and a scoped D1 loader. This API is not an
 // authentication mechanism; neither production env bindings nor query fields
 // can supply access. The production dispatcher stays closed until C3 exists.
-export async function serveReadRoute(request,context) {
+export function validateReadRequest(request) {
   const url=new URL(request.url),route=routes[url.pathname];
   if(!route) return readFailure('NOT_FOUND',404);
   if(request.method!=='GET') return readFailure('METHOD_NOT_ALLOWED',405,{allow:'GET'});
@@ -32,6 +32,13 @@ export async function serveReadRoute(request,context) {
   const section=q.get('section')||'home';
   if(url.pathname==='/v1/home'&&!['home','actions'].includes(section)) return readFailure('INVALID_READ_QUERY',400);
   if((url.pathname==='/v1/tenants'||url.pathname==='/v1/home'&&section==='actions')&&q.get('read_view')!=='summary') return readFailure('READ_VIEW_REQUIRED',400);
+  return null;
+}
+
+export async function serveReadRoute(request,context) {
+  const invalid=validateReadRequest(request);
+  if(invalid) return invalid;
+  const url=new URL(request.url),route=routes[url.pathname],q=url.searchParams,section=q.get('section')||'home';
   if(context?.access?.success!==true||typeof context.loadDataset!=='function') return readFailure('READ_AUTH_NOT_READY');
   try {
     const dataset=await context.loadDataset(context.access);

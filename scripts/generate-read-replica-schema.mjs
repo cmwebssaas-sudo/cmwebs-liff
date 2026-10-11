@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, readdir } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 const schema = JSON.parse(await readFile(new URL('cloudflare/read-api/schema.json', root), 'utf8'));
@@ -47,7 +47,20 @@ if (!baseline) {
   await writeFile(baselineUrl, '-- Generated from schema.json; regenerate with scripts/generate-read-replica-schema.mjs.\n'+tables+'\n'+metadata);
 } else {
   // Never rewrite the C1 migration after provisioning. Extend it additively.
-  const baselineTables=Object.fromEntries([...baseline.matchAll(/CREATE TABLE "(V2_[a-z_]+)" \(([^;]+)\);/g)].map(match=>[match[1],[...match[2].matchAll(/"([a-z_][a-z0-9_]*)" TEXT/g)].map(field=>field[1])]));
+  const migrationDir=new URL('cloudflare/read-api/migrations/',root);
+  const files=(await readdir(migrationDir)).filter(name=>/^\d{4}_.*\.sql$/.test(name)).sort();
+  const baselineTables={};
+  for(const file of files) {
+    const sql=await readFile(new URL(file,migrationDir),'utf8');
+    for(const match of sql.matchAll(/CREATE TABLE "(V2_[a-z_]+)" \(([^;]+)\);/g)) {
+      if(baselineTables[match[1]]) throw new Error('Duplicate migration table');
+      baselineTables[match[1]]=[...match[2].matchAll(/"([a-z_][a-z0-9_]*)" TEXT/g)].map(field=>field[1]);
+    }
+    for(const match of sql.matchAll(/ALTER TABLE "(V2_[a-z_]+)" ADD COLUMN "([a-z_][a-z0-9_]*)" TEXT;/g)) {
+      if(!baselineTables[match[1]]||baselineTables[match[1]].includes(match[2])) throw new Error('Invalid additive migration');
+      baselineTables[match[1]].push(match[2]);
+    }
+  }
   const additions=[];
   if(Object.keys(baselineTables).some(name=>!Object.hasOwn(schema,name))) throw new Error('Table removal requires an explicit migration');
   for(const [name,table] of Object.entries(schema)) {
@@ -57,5 +70,8 @@ if (!baseline) {
       for(const field of table.fields.filter(field=>!baselineTables[name].includes(field))) additions.push(`ALTER TABLE "${name}" ADD COLUMN "${field}" TEXT;`);
     }
   }
-  if(additions.length) await writeFile(new URL('cloudflare/read-api/migrations/0002_read_projection.sql',root),'-- Generated additive projection extension; never stores an unmasked bank account.\n'+additions.join('\n\n')+'\n');
+  if(additions.length) {
+    const next=String(Math.max(...files.map(file=>Number(file.slice(0,4))))+1).padStart(4,'0');
+    await writeFile(new URL(next+'_read_projection.sql',migrationDir),'-- Generated additive projection extension; existing migrations are immutable.\n'+additions.join('\n\n')+'\n',{flag:'wx'});
+  }
 }

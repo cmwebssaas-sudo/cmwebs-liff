@@ -65,6 +65,8 @@ const V2_READ_REPLICA_TABLES_ = {
       "name",
       "phone",
       "email",
+      "email_verified_at",
+      "email_login_enabled",
       "line_user_id",
       "account_status",
       "active_workspace_id",
