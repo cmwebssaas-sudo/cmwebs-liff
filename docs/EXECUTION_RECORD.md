@@ -372,3 +372,8 @@ synthetic callback now uses a microtask, preserving timeout/retry assertions,
 and isolated/full reruns passed that test. C4 PR/CI pending. Publication/readback,
 authenticated performance and device acceptance follow preceding gates and
 `READ-ROUTING.md` rollback. C1 actual72-hour gate remains running unchanged.
+
+C4 draft [PR269](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/269) is
+stacked on C3 and attached; source/record `ea193f3`. CI38182426724 rental and
+read-worker passed. It remains unmerged and unpublished while preceding actual
+gates run. Independent C5 worktree starts from this candidate with flags off.
