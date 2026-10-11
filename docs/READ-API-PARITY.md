@@ -95,7 +95,8 @@ Affected GAS/calendar/route28/28, unit863/863, Worker13/13, validate and diff-ch
 pass. Full suite:863 pass, one existing missing `PLATFORM_CORE_TEST_WORKTREE`
 integration failure, four conditional skips; external Core/PG acceptance is not
 claimed. Independent re-review passed after all three reported fixes; its
-affected28/28 and Worker13/13 checks passed, p95 4.760–6.557ms. PR/CI pending.
+affected28/28 and Worker13/13 checks passed, p95 4.760–6.557ms.
+Draft PR267 source `fa3300e`; CI38178464204 rental/read-worker both passed.
 Remote publication/readback is
 NOT_STARTED; C1's real-time gate remains a prerequisite.
 
