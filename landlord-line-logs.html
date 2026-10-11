@@ -6,7 +6,8 @@
   <title>CMWebs LINE 對話紀錄</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
 
   <style>
     :root {
@@ -412,7 +413,7 @@
 
     const API_URL = 'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
     const LIFF_ID = '2010314940-EjX1qbb8';
-    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+
 
     let LINE_USER_ID = '';
 
@@ -672,24 +673,27 @@
           console.log('JSONP script onerror ignored');
         };
 
-        script.src =
-          API_URL +
+        try {
+          script.src =
+          window.CMWebsLiffRequestAuth.withIdToken(API_URL +
           '?v2_action=' + encodeURIComponent(action) +
           '&line_user_id=' + encodeURIComponent(LINE_USER_ID) +
           '&tenant_id=' + encodeURIComponent(tenantId) +
           '&tenant_user_id=' + encodeURIComponent(tenantUserId) +
           '&callback=' + encodeURIComponent(callbackName) +
-          '&_=' + Date.now();
+          '&_=' + Date.now());
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
 
         document.body.appendChild(script);
       });
     }
 
     async function initLineUserId() {
-      if (typeof liff === 'undefined') {
-        LINE_USER_ID = TEST_LINE_USER_ID;
-        return;
-      }
+      if (typeof liff === 'undefined') { throw new Error('LIFF SDK 載入失敗'); }
 
       try {
         await liff.init({ liffId: LIFF_ID });
@@ -705,9 +709,7 @@
         if (!LINE_USER_ID) {
           throw new Error('無法取得 LINE User ID');
         }
-      } catch (error) {
-        LINE_USER_ID = TEST_LINE_USER_ID;
-      }
+      } catch (error) { throw error; }
     }
 
     function goBackToTenantDetail() {

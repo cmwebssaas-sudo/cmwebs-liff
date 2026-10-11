@@ -125,6 +125,7 @@
     "landlord-api.js",
     "landlord-arrears.html",
     "landlord-auth.js",
+    "liff-request-auth.js",
     "landlord-bill-notifications.html",
     "landlord-billing.html",
     "landlord-contract-documents.html",

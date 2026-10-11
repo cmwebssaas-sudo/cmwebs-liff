@@ -200,7 +200,8 @@ function createEntryRuntime(search = '') {
 
 test('desktop share Email mode permits an explicit LINE choice without returning to Email form', async () => {
   const runtime = createEntryRuntime('?mode=email&return_to=landlord-home.html');
-  runtime.context.liff = { init: async () => {}, isLoggedIn: () => true, isInClient: () => false, getProfile: async () => ({ userId: 'line-fixture' }) };
+  runtime.context.liff = { init: async () => {}, isLoggedIn: () => true, isInClient: () => false, getProfile: async () => ({ userId: 'line-fixture' }), getIDToken: () => 'synthetic-id-token' };
+  vm.runInNewContext(readFileSync(new URL('../liff-request-auth.js', import.meta.url), 'utf8'), runtime.context);
   runtime.context.fetch = async () => ({ ok: true, json: async () => ({ success: true, data: { route: 'home' } }) });
   await runtime.context.loadPage();
   assert.match(runtime.elements.get('app').innerHTML, /emailLoginInput/);

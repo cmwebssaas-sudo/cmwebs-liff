@@ -1211,3 +1211,12 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Write and auth-failure invalidation, allowlist, ten-minute prefetch throttle, logout clearing | `tests/landlord-fast-navigation.test.mjs` | Same |
 | Five inner pages wire snapshots, load the shared module and fetch the LINE SDK on demand | `tests/landlord-fast-navigation.test.mjs`, `tests/asset-income-valuation.test.mjs` | Source and VM checks |
 | Real LIFF login, in-app navigation timing, Production publication | NOT_RUN / HUMAN_REQUIRED | Needs owner device after Pages publication |
+
+## 2026-10-12 LIFF request compatibility candidate
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Provider credential validation, cache lifecycle, principal routing and controlled rejection | `tests/line-request-identity.test.mjs` | Real Apps Script functions and dispatcher; synthetic provider/cache adapters |
+| 31 standalone JSONP transports and LINE entry GET carry the active credential | Same | Real page functions; synthetic browser I/O |
+| Email bridge, native signing/meter exchanges, billing timeout and recovery | Existing auth, meter and billing runtime suites | Synthetic data; no real business write |
+| Production LINE and desktop Email, post-release harmless write, physical navigation | HUMAN_REQUIRED | Must be recorded after staged publication; local tests do not satisfy this gate |

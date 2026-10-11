@@ -55,9 +55,11 @@ test('Email bridge rejection retains nested bill errors for the same recovery fl
 });
 test('legacy JSONP timeout never automatically resubmits a billing write',async()=>{
   const timers=[],scripts=[];
-  const context=vm.createContext({window:{},API_URL:'https://example.test/exec',LINE_USER_ID:'synthetic',
+  const browser={location:{href:'https://example.test/'},liff:{getIDToken:()=> 'synthetic-id-token'}};
+  const context=vm.createContext({window:browser,URL,API_URL:'https://example.test/exec',LINE_USER_ID:'synthetic',
     setTimeout:callback=>{timers.push(callback);return timers.length;},clearTimeout:()=>{},
     document:{createElement:()=>({}),body:{appendChild:script=>scripts.push(script)}}});
+  vm.runInContext(readFileSync(new URL('../liff-request-auth.js',import.meta.url),'utf8'),context);
   vm.runInContext(html.slice(html.indexOf('    function jsonpRequest('),html.indexOf('    async function initLine()')),context);
   const request=context.jsonpRequest('landlord_bills_generate',{items_json:'[]'});
   const rejection=assert.rejects(request,/逾時/);

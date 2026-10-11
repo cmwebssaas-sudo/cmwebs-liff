@@ -16,6 +16,12 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
+- 2026-10-12 S1 compatibility candidate is in an isolated worktree based on R0
+  merge `37b362c`. Current batch authorization covers plan-scoped releases;
+  physical acceptance and new cost gates remain. See `EXECUTION_RECORD.md`.
+  Backend v232 is still the recorded serving baseline. This candidate is not
+  a completed production acceptance. Private materials remain outside Git.
+
 - 2026-10-12 R0 read-only reconciliation: fresh `origin/main` `2a5779f`,
   original Web App v232 and its 68-file export match source and recorded
   fingerprints; all five deployments stable before/after export. Retained v229
@@ -32,7 +38,7 @@ Start every handoff with a recommended model and speed. Default:
   at `aeebf7b`, paths `docs/CODEX-WORKPLAN-2026-10-12.md` and
   `docs/CLOUDFLARE-READ-PATH-PLAN.md`. Continue R0→S1→C0→C1…;
   keep S1 instructions private, each work order in its own worktree/PR,
-  and obtain fresh approval for every merge or Production change.
+  follow the current batch authorization recorded above for plan-scoped changes.
 
 - 2026-10-11 commercial membership release is deployed, using original rental
   login/workspace and canonical Core authority. Core PR53/5d24c57 on verified

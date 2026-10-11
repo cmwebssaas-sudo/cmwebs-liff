@@ -10,7 +10,8 @@
   <title>CMWebs 我的合約</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
 
   <style>
     :root {
@@ -2448,7 +2449,13 @@
               );
             };
 
-          script.src = url;
+          try {
+          script.src = window.CMWebsLiffRequestAuth.withIdToken(url);
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
 
           document.body
             .appendChild(script);
@@ -3962,6 +3969,7 @@
           body: JSON.stringify({
             v2_action: 'tenant_contract_renewal_intent',
             line_user_id: LINE_USER_ID,
+            id_token: window.CMWebsLiffRequestAuth.getIdToken(),
             contract_id: contractId,
             decision: decision
           })

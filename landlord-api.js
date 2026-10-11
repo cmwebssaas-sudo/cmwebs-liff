@@ -177,7 +177,12 @@
       script.onerror = function () {
         finishWithError(makeError('API 路由載入失敗', 'API_NETWORK_ERROR'));
       };
-      script.src = url;
+      try {
+        script.src = global.CMWebsLiffRequestAuth.withIdToken(url);
+      } catch (error) {
+        finishWithError(error);
+        return;
+      }
       document.body.appendChild(script);
     });
   }

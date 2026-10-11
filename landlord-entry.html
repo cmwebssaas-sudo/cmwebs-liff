@@ -8,9 +8,10 @@
   />
   <title>CMWebs 房東入口</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
-  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-fast-navigation-v1" />
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-auth.js?v=20261012-line-identity-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261012-line-identity-v1" />
 
   <style>
     :root {
@@ -418,7 +419,7 @@
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
     const LIFF_ID = '2010314940-EjX1qbb8';
-    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+
 
     const URL_PARAMS =
       new URLSearchParams(
@@ -426,8 +427,7 @@
       );
 
     const TEST_MODE =
-      URL_PARAMS.get('test') ===
-      '1';
+      false;
 
     const STAY_MODE =
       URL_PARAMS.get('stay') ===
@@ -1064,9 +1064,9 @@
       try {
         const response =
           await fetch(
-            API_URL +
+            window.CMWebsLiffRequestAuth.withIdToken(API_URL +
             '?' +
-            query.toString(),
+            query.toString()),
             {
               method: 'GET',
               credentials: 'omit',
@@ -1176,12 +1176,7 @@
     }
 
     async function initLine() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
 
-        return true;
-      }
 
       if (
         typeof liff ===

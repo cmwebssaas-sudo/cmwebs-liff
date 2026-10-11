@@ -5190,9 +5190,12 @@ function resolveLandlordPrincipal_(request, options) {
     };
   }
 
+  const identity = resolveVerifiedLineRequestIdentity_(request);
+  if (!identity.success) return identity;
+
   const access =
     workspaceLandlordResolveAccess_(
-      request.line_user_id || '',
+      identity.data.sub,
       {
         skip_schema_ensure: false,
         skip_legacy_context_creation: true

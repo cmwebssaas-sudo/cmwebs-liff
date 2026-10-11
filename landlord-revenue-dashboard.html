@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 營收儀表板</title>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
-  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
-  <script src="landlord-api.js?v=20261011-fast-navigation-v1"></script>
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-api.js?v=20261012-line-identity-v1"></script>
   <link rel="stylesheet" href="assets/css/cmwebs-asset-valuation.css?v=20261005-utility-meter-save-v1">
   <script src="assets/js/cmwebs-asset-valuation.js?v=20261005-utility-meter-save-v1"></script>
   <style>
@@ -124,9 +125,9 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ/exec';
     const LIFF_ID = '2010314940-EjX1qbb8';
     const LANDLORD_ENTRY_URL = new URL('landlord-entry.html', location.href).href.split('?')[0];
-    const TEST_LINE_USER_ID = 'Uf708ece75c9c985cfe1dbda48d123511';
+
     const URL_PARAMS = new URLSearchParams(location.search);
-    const TEST_MODE = URL_PARAMS.get('test') === '1';
+    const TEST_MODE = false;
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
     let VALUATION_VISUAL_STATE = null;
@@ -160,7 +161,7 @@
       return window.CMWebsLandlordApi.request({ action: action, params: params || {}, apiUrl: API_URL, lineUserId: LINE_USER_ID, callbackPrefix: '__cmwebs_revenue_', rejectOnFailure: true });
     }
     async function initLineUserId() {
-      if (TEST_MODE) { LINE_USER_ID = TEST_LINE_USER_ID; return true; }
+
       const auth = window.CMWebsLandlordAuth.init({ apiUrl: API_URL, liffId: LIFF_ID, returnTo: 'landlord-revenue-dashboard.html', entryPage: 'landlord-entry.html', testMode: TEST_MODE });
       if (auth.getMode() === 'email') {
         if (auth.getRequestAuthParams().landlord_session_token) return true;

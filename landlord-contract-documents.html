@@ -8,7 +8,8 @@
   />
   <title>CMWebs 合約文件管理</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-auth.js?v=20261012-line-identity-v1"></script>
   <script src="document-mobile-actions.js?v=20260822-line-actions-v1"></script>
   <style>
     :root {
@@ -593,12 +594,11 @@
         'landlord-entry.html',
         location.href
       ).href.split('?')[0];
-    const TEST_LINE_USER_ID =
-      'Uf708ece75c9c985cfe1dbda48d123511';
+
     const urlParams = new URLSearchParams(
       location.search
     );
-    const TEST_MODE = urlParams.get('test') === '1';
+    const TEST_MODE = false;
 
     let LINE_USER_ID = '';
     let LANDLORD_AUTH = null;
@@ -668,11 +668,7 @@
 
     async function initLine() {
       const auth = initLandlordAuthClient();
-      if (TEST_MODE) {
-        LINE_USER_ID = TEST_LINE_USER_ID;
-        initLandlordAuthClient();
-        return true;
-      }
+
 
       if (auth.getMode() === 'email') {
         if (auth.getRequestAuthParams().landlord_session_token) return true;
@@ -757,7 +753,13 @@
           url +=
             `&${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`;
         });
-        script.src = url;
+        try {
+          script.src = window.CMWebsLiffRequestAuth.withIdToken(url);
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
         document.body.appendChild(script);
       });
     }

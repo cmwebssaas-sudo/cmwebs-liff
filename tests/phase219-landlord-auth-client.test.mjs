@@ -604,14 +604,15 @@ guardedTest('Phase 219 sends the settings page bootstrap through the authenticat
   });
 });
 
-guardedTest('Phase 219 test mode keeps Email actions free of deterministic test LINE identity', async () => {
+guardedTest('Email verification carries the active LINE credential regardless of a test option', async () => {
   const { context, document } = createRuntime();
   const auth = context.window.CMWebsLandlordAuth;
   auth.init({
     apiUrl: 'https://script.google.com/macros/s/example/exec',
-    lineUserId: 'TEST_LINE_USER_ID_SHOULD_NOT_LEAK',
+    lineUserId: 'synthetic-line-principal',
     testMode: true
   });
+  context.window.liff = { getIDToken: () => 'synthetic-id-token' };
 
   const request = auth.requestEmailVerification('owner@example.com');
   const form = document.submittedForms[0];
@@ -619,8 +620,8 @@ guardedTest('Phase 219 test mode keeps Email actions free of deterministic test 
   const fields = formFields(form);
   assert.equal(fields.action, 'landlord_email_verify_request');
   assert.equal(fields.email, 'owner@example.com');
-  assert.equal(fields.line_user_id, undefined);
-  assert.equal(JSON.stringify(fields).includes('TEST_LINE_USER_ID_SHOULD_NOT_LEAK'), false);
+  assert.equal(fields.line_user_id, 'synthetic-line-principal');
+  assert.equal(fields.id_token, 'synthetic-id-token');
 
   context.dispatchMessage({
     source: 'CMWEBS_APPS_SCRIPT',
