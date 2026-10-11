@@ -215,3 +215,36 @@ mark zero tables, a processed event marks all16. Unit847/847, affected sync12/12
 Worker10/10, validate and diff-check pass. The full suite's existing external
 Core fixture remains unavailable. Draft PR/CI are source evidence only; remote
 three-day acceptance and formal synchronization publication are NOT_STARTED.
+
+## 2026-10-12 — C1 isolated remote acceptance started
+
+Authenticated Cloudflare readback confirms the selected account's Workers Paid
+subscription. A separate synthetic-only D1 reports APAC placement. Test Worker
+version `aa544a72-5113-469a-80ba-dde6fabc1c2e` binds only that test database and
+an encrypted sync Secret. Remote health passed; bad HMAC returns401 and nonce
+replay409. Owner entered the test Apps Script Secret; only presence was read
+back. The bound test project has four exported byte-identical files, limited
+current-Sheet/external-request/own-trigger scopes and no production credential.
+
+Initial real GAS-to-Worker full sync passed16 tables/531 rows, including501
+rooms split into500+1 batches, in43,436 ms. D1 readback matched every table count
+and removed only the prior disposable probe rows. Immediate synthetic session
+revocation passed in1,433 ms; D1 readback confirms revoked state. Two own test
+timers (one-minute and daily hour03 Asia/Taipei) were installed at05:19 Taipei.
+The authenticated execution table records44.304 seconds for the manual full
+run and3.152 seconds for the manual revocation test.
+
+Early idle timer executions took2.547/2.446 seconds due to an unnecessary
+synthetic-wrapper Sheet identity read. Removing it preserves a local project
+guard; the next actual idle execution took0.591 seconds. The source now also
+uses one bulk cache read to discover dirty markers. Generation checks after
+sends remain unchanged. Final test source was pushed and exported identical
+at05:23; restart the72-hour observation window from that source revision.
+The account is consumer Gmail, with90-minute daily timer allowance. Full
+daily trigger totals must include idle/failure/overhead records and remain
+below15 minutes; wrapper timing is insufficient. No formal Sheet, Properties,
+trigger, operational read route or serving backend changed. C1 remains draft;
+three actual days and formal publication are not yet accepted.
+
+Affected GAS tests13/13 and unit848/848 pass; validate passes. Keep rollback
+limited to the two test timers/test endpoint while formal backend remainsv233.

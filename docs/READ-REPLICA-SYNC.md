@@ -85,11 +85,40 @@ synchronization health; no operational Worker route is exposed in C1.
    Retain serving version/editor export, create immutable version, preserve the
    original Web App URL and read back source/version/bindings/timers/results.
 
-Current remote/day gate: **NOT_STARTED**. Local/CI tests do not satisfy it.
+Current remote/day gate: **RUNNING / NOT_ACCEPTED**. The isolated synthetic
+test timers started on 2026-10-12 at05:19 Asia/Taipei. Workers Paid was verified in
+the authenticated account UI. The separate test D1 reports APAC placement;
+its Worker has only the test database binding and an encrypted sync Secret.
+Health, invalid signature rejection and nonce replay rejection passed remotely.
+
+The separate bound test Apps Script contains four byte-verified files and only
+current-spreadsheet, external-request and own-trigger scopes. Owner-entered
+Properties were verified by presence only. Initial full synchronization passed
+for16 tables/531 rows, including a501-row table split across two batches;
+all table counts matched D1 readback. It took43,436 ms. Immediate synthetic
+session revocation passed and D1 readback confirmed revoked state. Only the
+test project's one-minute and daily-hour03 timers were installed.
+
+The account is consumer Gmail (90-minute daily trigger allowance). The test
+changes one synthetic room every30 minutes and otherwise exercises idle runs.
+Wrapper timings exclude platform overhead and are not daily trigger-quota
+evidence. Reconcile the complete authenticated execution history each day,
+including idle runs and failures, before accepting the below15-minute target.
+The first two idle executions took2.547/2.446 seconds because the synthetic
+wrapper unnecessarily opened Sheets. The wrapper now checks local project
+identity on idle and opens the bound test Sheet only for a synthetic mutation.
+The source also discovers dirty markers with one bulk CacheService read;
+per-table generation validation after sends is unchanged. Final test source
+was exported byte-identical at05:23. Count the72-hour gate from that revision;
+retain earlier overhead records rather than dropping them from daily totals.
+No production Sheet, Properties, trigger or serving Apps Script version was
+changed by this test. Local/CI tests and the initial manual run do not satisfy
+three actual days. Require at least72 hours plus consecutive daily execution
+and reconciliation evidence before production enablement.
 
 | Actual day | Runtime total | Correctness/revocation | Status |
 | --- | --- | --- | --- |
-| 1 | Not measured | Not run | NOT_STARTED |
+| 1 (from final source 2026-10-12 05:23 Taipei) | Full trigger total pending | Initial16-table count and immediate revocation passed | RUNNING |
 | 2 | Not measured | Not run | NOT_STARTED |
 | 3 | Not measured | Not run | NOT_STARTED |
 

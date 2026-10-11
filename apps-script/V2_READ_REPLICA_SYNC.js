@@ -213,7 +213,11 @@ function readReplicaRun_(full) {
   try {config=readReplicaConfig_();} catch (_) {return {success:false,code:'SYNC_NOT_CONFIGURED'};}
   if(!config) return {success:true,code:'DISABLED',tables:0,duration_ms:Date.now()-start};
   const cache=CacheService.getScriptCache();
-  const pending=Object.keys(V2_READ_REPLICA_TABLES_).filter(function(sheet){return full || cache.get(V2_READ_REPLICA_DIRTY_PREFIX_+sheet);});
+  const tables=Object.keys(V2_READ_REPLICA_TABLES_);
+  // Cache is a remote service. One bulk read keeps every idle minute bounded
+  // without weakening the per-table generation check after a successful send.
+  const markers=full ? {} : cache.getAll(tables.map(function(sheet){return V2_READ_REPLICA_DIRTY_PREFIX_+sheet;}));
+  const pending=tables.filter(function(sheet){return full || markers[V2_READ_REPLICA_DIRTY_PREFIX_+sheet];});
   if(!pending.length) return {success:true,code:'IDLE',tables:0,duration_ms:Date.now()-start};
   const lease=Utilities.getUuid(); let acquired=false;
   try {
