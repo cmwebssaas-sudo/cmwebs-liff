@@ -1188,3 +1188,12 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Income curve geometry, growth labels, reduced-motion and accessibility markers | `tests/landlord-home-redesign.test.mjs` | Synthetic rows |
 | Desktop 1366px and phone 375px rendering, rolling digits, ring animation, curve scrubbing | `scripts/preview-landlord-home.mjs` in the local browser | Synthetic data; no login, LIFF or Production |
 | Real login latency, LINE in-app browser, Production publication | NOT_RUN / HUMAN_REQUIRED | Not authorized in this change |
+
+## 2026-10-11 inner-page snapshots and prefetch
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Same-identity painting, fresh replacement, notice lifecycle, token never stored | `tests/landlord-fast-navigation.test.mjs` | Real `landlord-api.js`; fake bridge and storage |
+| Write and auth-failure invalidation, allowlist, ten-minute prefetch throttle, logout clearing | `tests/landlord-fast-navigation.test.mjs` | Same |
+| Five inner pages wire snapshots, load the shared module and fetch the LINE SDK on demand | `tests/landlord-fast-navigation.test.mjs`, `tests/asset-income-valuation.test.mjs` | Source and VM checks |
+| Real LIFF login, in-app navigation timing, Production publication | NOT_RUN / HUMAN_REQUIRED | Needs owner device after Pages publication |

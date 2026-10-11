@@ -7,10 +7,10 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
   <title>CMWebs 物件與房間</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-membership-transfer-v1"></script>
-  <script src="landlord-auth.js?v=20261011-membership-transfer-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-membership-transfer-v1" />
+<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
+  <script src="landlord-api.js?v=20261011-fast-navigation-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-fast-navigation-v1" />
 
   <style>
     :root {
@@ -1525,6 +1525,9 @@
           TEST_LINE_USER_ID;
         return true;
       }
+
+      // // LINE SDK loads on demand; Email sessions never download it.
+      if (window.CMWebsLandlordApi && window.CMWebsLandlordApi.loadLiffSdk) await window.CMWebsLandlordApi.loadLiffSdk();
 
       await liff.init({
         liffId: LIFF_ID
@@ -3113,14 +3116,25 @@
           return;
         }
 
-        const result =
-          await jsonpRequest(
+        const propertiesRequest =
+          jsonpRequest(
             'landlord_properties_init',
             {
               include_archived:
                 '1'
             }
           );
+
+        // Paint the last visit's properties at once; the request replaces it.
+        if (window.CMWebsLandlordApi && window.CMWebsLandlordApi.snapshot) {
+          window.CMWebsLandlordApi.snapshot('landlord_properties_init', { include_archived: '1' }, propertiesRequest, function (cached) {
+            PAGE_DATA = cached.data || {};
+            renderPage();
+          });
+        }
+
+        const result =
+          await propertiesRequest;
 
         if (
           !result ||

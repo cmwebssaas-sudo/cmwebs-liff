@@ -10,11 +10,10 @@
 
   <title>CMWebs 房客欠款</title>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-membership-transfer-v1"></script>
-  <script src="landlord-auth.js?v=20261011-membership-transfer-v1"></script>
-  <script src="landlord-api.js?v=20261011-membership-transfer-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-membership-transfer-v1" />
+<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
+  <script src="landlord-api.js?v=20261011-fast-navigation-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-fast-navigation-v1" />
 
   <style>
     :root {
@@ -2620,6 +2619,11 @@
     // ==================================================
 
     async function initLineUserId() {
+      // // LINE SDK loads on demand; Email sessions never download it.
+      if (!TEST_MODE) {
+        if (window.CMWebsLandlordApi && window.CMWebsLandlordApi.loadLiffSdk) await window.CMWebsLandlordApi.loadLiffSdk().catch(function () {});
+      }
+
       if (
         typeof liff ===
         'undefined'
@@ -4278,10 +4282,20 @@
         app.innerHTML =
           '資料載入中...';
 
-        const response =
-          await jsonpRequest(
+        const arrearsRequest =
+          jsonpRequest(
             'landlord_arrears'
           );
+
+        // Paint the last visit's arrears at once; the request replaces it.
+        if (window.CMWebsLandlordApi && window.CMWebsLandlordApi.snapshot) {
+          window.CMWebsLandlordApi.snapshot('landlord_arrears', {}, arrearsRequest, function (cached) {
+            renderPage(cached.data || {});
+          });
+        }
+
+        const response =
+          await arrearsRequest;
 
         renderPage(
           response.data ||
