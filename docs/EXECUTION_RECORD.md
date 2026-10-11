@@ -84,3 +84,60 @@ records. No Apps Script or Cloudflare release is needed. To undo the record
 change, revert this PR through a separately approved main update; do not roll
 back runtime or business data for a documentation correction. Recheck the
 serving/export/Pages baseline before any later release.
+
+## 2026-10-12 — S1 request compatibility candidate
+
+Recommended model/speed: `GPT-6.1 Sol` / high, as specified by the work plan
+for identity and authorization changes. One clean worktree from R0 merge
+`37b362c`, branch `codex/s1-verified-identity-20261012`. Root WIP is preserved.
+
+The owner's current batch authorization supersedes the earlier action-time
+approval rule for plan-scoped commit/push/PR/merge, deployment and configuration.
+New costs, deleting production data, scope expansion and owner-only login,
+payment or physical acceptance still require owner action. Private instructions
+and owner account checks are kept outside Git.
+
+Candidate: shared LIFF credential transport, corresponding dispatcher
+compatibility and stable frontend tag `20261012-line-identity-v1`. Email bridge
+and native exchange protocols remain covered by regression tests. No Schema or
+route addition. The public asset manifest includes `liff-request-auth.js`; its
+serving readback is pending. Existing serving backend remains v232 until a
+verified deployment is recorded.
+
+Release order: review and CI, merge this work order's PR, then confirm Pages
+bytes. Wait at least 15 minutes after publication and obtain physical LINE
+acceptance of the compatible frontend. Export the still-serving backend and
+confirm the immutable rollback version before publishing the backend to the
+original deployment. Read back editor and immutable version, then verify LINE
+and Email reads plus the plan's harmless operation. Until those checks finish,
+S1 remains incomplete. Independent C0 preparation may proceed while the
+physical gate is pending; it does not satisfy that gate.
+
+Rollback: restore the verified prior Apps Script serving version (currently
+v232) on the same deployment; the compatible frontend can remain. If the
+frontend itself needs reversal, revert this PR through a reviewed PR and
+confirm Pages readback. Do not delete or rewrite business data for rollback.
+
+Independent review required additional credential coverage for existing LINE
+POST consumers. The shared principal resolver and direct POST consumers now
+use verified identity; their frontend POST data and Email-session compatibility
+are covered by real-function synthetic tests. No route or Schema addition.
+
+Local release checks: `npm run validate` passes (69 backend files parsed,
+40 endpoint references, stable navigation cache checks). `npm run test:unit`
+passes 835/835, no skip. `npm test`: 840 total, 835 pass, 1 known environment
+failure and 4 skips; the sole failure is the pre-existing cross-repository
+commercial roundtrip requiring `PLATFORM_CORE_TEST_WORKTREE` and a disposable
+Core/PostgreSQL environment. No production database was used to replace that
+integration fixture. Focused identity tests execute 13 policies, including all
+31 standalone JSONP transports and existing LINE POST consumers.
+
+The tenant mutation inventory includes contract-request cancellation and
+renewal-intent compatibility alongside submission routes; native exchanges
+retain their independent verified protocol. Review remediation and deployment
+acceptance remain separate from these synthetic test results.
+
+Independent review completed after remediation: original findings resolved,
+no remaining actionable major finding. Reviewer reran 40 relevant tests
+(including 13 identity policies), validate and diff-check successfully.
+This is source/synthetic acceptance only; staged production checks remain.

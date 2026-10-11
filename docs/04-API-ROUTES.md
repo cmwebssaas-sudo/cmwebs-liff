@@ -622,8 +622,8 @@ envelope correlated by `request_id`. They are not `doGet` / JSONP
 
 | Route / POST action | Transport | Required authority | Request fields | Contracted response codes | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| `landlord_email_verify_request` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `line_user_id`, `email` | `OK`, `INVALID_EMAIL`, `EMAIL_NOT_BOUND_TO_LINE_USER`, `EMAIL_DELIVERY_FAILED`, `RATE_LIMITED`, `AUTH_REQUIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED`, `WORKSPACE_MODULE_REQUIRED` | Start or resend Email verification for the currently logged-in landlord. |
-| `landlord_email_verify_code` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, `line_user_id`, `challenge_id`, `code` | `OK`, `INVALID_CHALLENGE`, `INVALID_CODE`, `CHALLENGE_CONSUMED`, `CHALLENGE_EXPIRED`, `CHALLENGE_LOCKED`, `AUTH_REQUIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED`, `WORKSPACE_MODULE_REQUIRED` | Verify the submitted Email code and write `email_verified_at`. |
+| `landlord_email_verify_request` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, verified LINE credential or Email session, `email` | `OK`, `INVALID_EMAIL`, `EMAIL_NOT_BOUND_TO_LINE_USER`, `EMAIL_DELIVERY_FAILED`, `RATE_LIMITED`, `AUTH_REQUIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED`, `WORKSPACE_MODULE_REQUIRED` | Start or resend Email verification for the currently logged-in landlord. |
+| `landlord_email_verify_code` | `doPost` JSON body + controlled bridge | Current verified LINE landlord principal resolved server-side | `action`, `request_id`, verified LINE credential or Email session, `challenge_id`, `code` | `OK`, `INVALID_CHALLENGE`, `INVALID_CODE`, `CHALLENGE_CONSUMED`, `CHALLENGE_EXPIRED`, `CHALLENGE_LOCKED`, `AUTH_REQUIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED`, `WORKSPACE_MODULE_REQUIRED` | Verify the submitted Email code and write `email_verified_at`. |
 | `landlord_email_login_request` | `doPost` JSON body + controlled bridge | Public desktop entry; server resolves the matching active landlord account | `action`, `request_id`, `email` | `OK`, `AUTH_REQUIRED`, `EMAIL_DELIVERY_FAILED`, `RATE_LIMITED` | Create or resend an Email OTP login challenge without revealing account existence. |
 | `landlord_email_login_verify` | `doPost` JSON body + controlled bridge | Challenge-scoped verification only | `action`, `request_id`, `challenge_id`, `code` | `OK`, `AUTH_REQUIRED`, `INVALID_CHALLENGE`, `INVALID_CODE`, `CHALLENGE_CONSUMED`, `CHALLENGE_EXPIRED`, `CHALLENGE_LOCKED`, `WORKSPACE_FORBIDDEN` | Verify the submitted challenge code and mint an Email session bound to the server-resolved Workspace and role. |
 | `landlord_email_session_status` | `doPost` JSON body + controlled bridge | Opaque Email session token resolved server-side | `action`, `request_id`, `landlord_session_token` | `OK`, `AUTH_REQUIRED`, `SESSION_REVOKED`, `SESSION_EXPIRED`, `WORKSPACE_FORBIDDEN`, `EMAIL_SESSION_MODULE_REQUIRED` | Re-validate the current Email session and return the active auth context. |
@@ -1196,3 +1196,18 @@ Private properties: `CMWEBS_PLATFORM_CORE_BILLING_BASE_URL`, `CMWEBS_PLATFORM_CO
 `commercial_billing_link_line` is an explicit self-link for a verified Email member: same-session CSRF, `link_confirmed`, and separately provider-verified `link_id_token` are required. It attaches LINE to the original User and membership/landlord compatibility rows, preserving Workspace/Core Company. It rejects an existing different LINE binding or a LINE already assigned to another User; Email equality never merges accounts. The original rental operational pages use LINE-backed context; the member center supports Email without onboarding. Network verification happens before lock; current active rows are rechecked inside it.
 
 Commercial provisioning schema appends `workspace_display_name`: the first verified attempt fixes the name used with the stable Core idempotency key; a later rental rename cannot change that request body. Membership role is still freshly checked on each retry. New registration reserves uppercase UUID IDs to match existing rental Workspace normalization. Current-period room grants use the exported Core parser; explicit LIMITED/UNLIMITED/NONE is rechecked after lock, including onboarding's first-room path. No existing bulk room import entry was found; the shared guard checks any positive integer growth against canonical count for future batch callers.
+
+## 2026-10-12 LIFF request compatibility candidate
+
+The ordinary LINE request transport now carries a provider-verifiable credential.
+The dispatcher resolves the principal before invoking normal route handlers;
+authentication failures return the existing controlled `AUTH_REQUIRED` surface.
+Email sessions retain the existing POST bridge. Credential-bound native exchange
+polling and POST-only routes retain their separate protocols. No route or Schema
+is added. This source change requires the staged release recorded in
+`EXECUTION_RECORD.md`; a main merge alone does not deploy Apps Script.
+
+The existing LINE POST consumers use the same verified-principal boundary.
+Email verification uses the active Email session when available. Contract
+document upload and renewal-intent requests carry the active credential while
+preserving existing Workspace, role and contract authorization.

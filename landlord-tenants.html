@@ -8,10 +8,11 @@
   />
   <title>CMWebs 房客名單</title>
 
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
-  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
-  <script src="landlord-api.js?v=20261011-fast-navigation-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-fast-navigation-v1" />
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-api.js?v=20261012-line-identity-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261012-line-identity-v1" />
 
   <style>
     :root {
@@ -1003,14 +1004,13 @@
         location.href
       ).href.split('?')[0];
 
-    const TEST_LINE_USER_ID =
-      'Uf708ece75c9c985cfe1dbda48d123511';
+
 
     const URL_PARAMS =
       new URLSearchParams(location.search);
 
     const TEST_MODE =
-      URL_PARAMS.get('test') === '1';
+      false;
 
     let LINE_USER_ID = '';
     let LANDLORD_AUTH = null;
@@ -1203,12 +1203,7 @@
         LANDLORD_AUTH ||
         initLandlordAuthClient();
 
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
-        initLandlordAuthClient();
-        return true;
-      }
+
 
       if (auth.getMode() === 'email') {
         // The protected read bridge validates the session and returns the
@@ -1708,7 +1703,13 @@
               );
             };
 
-          script.src = url;
+          try {
+          script.src = window.CMWebsLiffRequestAuth.withIdToken(url);
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
           document.body.appendChild(
             script
           );
@@ -1717,12 +1718,7 @@
     }
 
     async function initLineUserId() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
 
-        return true;
-      }
 
       // // LINE SDK loads on demand; Email sessions never download it.
       if (window.CMWebsLandlordApi && window.CMWebsLandlordApi.loadLiffSdk) await window.CMWebsLandlordApi.loadLiffSdk().catch(function () {});

@@ -68,6 +68,9 @@ function pageRuntime(page, search = '?tenant_id=T-fixture') {
     window: { innerHeight: 800, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name), visualViewport: null },
     liff: { getIDToken: () => null, login: () => { throw new Error('Unexpected LINE login'); } }
   });
+  context.window.location = context.location;
+  context.window.liff = context.liff;
+  vm.runInContext(readFileSync(new URL('../liff-request-auth.js', import.meta.url), 'utf8'), context);
   let script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).filter(Boolean).join('\n');
   // Suppress automatic page startup, then invoke each user flow explicitly.
   script = script.replace(/\(async function (?:bootstrap|init)\(\)[\s\S]*?\}\)\(\);/g, '');

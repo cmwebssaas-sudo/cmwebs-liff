@@ -9,7 +9,8 @@
   <title>CMWebs 付款回報</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
 
   <style>
     :root {
@@ -1013,14 +1014,13 @@
     const LIFF_ID =
       '2010314940-iJB1D6sN';
 
-    const TEST_LINE_USER_ID =
-      'U3615a7ed919c1a4a438a246c10784d70';
+
 
     const URL_PARAMS =
       new URLSearchParams(location.search);
 
     const TEST_MODE =
-      URL_PARAMS.get('test') === '1';
+      false;
 
     const REQUESTED_BILL_ID =
       String(
@@ -1490,7 +1490,13 @@
               );
             };
 
-          script.src = url;
+          try {
+          script.src = window.CMWebsLiffRequestAuth.withIdToken(url);
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
 
           document.body.appendChild(
             script
@@ -1500,12 +1506,7 @@
     }
 
     async function initLineUserId() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
 
-        return true;
-      }
 
       if (
         typeof liff ===

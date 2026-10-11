@@ -337,11 +337,10 @@
   }
 
   function lineAuthParams() {
-    if (config.testMode) {
-      return {};
-    }
     return {
-      line_user_id: text(config.lineUserId)
+      line_user_id: text(config.lineUserId),
+      id_token: window.liff && typeof window.liff.getIDToken === 'function'
+        ? text(window.liff.getIDToken()) : ''
     };
   }
 
@@ -374,10 +373,7 @@
           landlord_session_token: token
         };
       }
-      return {
-        line_user_id:
-          text(config.lineUserId)
-      };
+      return lineAuthParams();
     },
 
     request(action, params, options) {
@@ -453,7 +449,7 @@
         'landlord_email_verify_request',
         Object.assign(
           {},
-          lineAuthParams(),
+          api.getRequestAuthParams(),
           {
             email: text(email).trim()
           }
@@ -467,7 +463,7 @@
         'landlord_email_verify_code',
         Object.assign(
           {},
-          lineAuthParams(),
+          api.getRequestAuthParams(),
           {
             challenge_id: text(challengeId).trim(),
             code: text(code).trim()

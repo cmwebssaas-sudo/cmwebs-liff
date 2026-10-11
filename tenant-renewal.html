@@ -10,7 +10,8 @@
   <title>CMWebs 申請續約</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
 
   <style>
     :root {
@@ -1239,7 +1240,13 @@
         script.onerror = function () {
           console.warn('JSONP script onerror ignored.');
         };
-        script.src = url;
+        try {
+          script.src = window.CMWebsLiffRequestAuth.withIdToken(url);
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
         document.body.appendChild(script);
       });
     }

@@ -317,6 +317,9 @@ function createJsonpRuntime(appendScript) {
     }
   };
   runtime.window = runtime;
+  runtime.location = { href: 'https://example.test/' };
+  runtime.liff = { getIDToken: () => 'synthetic-id-token' };
+  vm.runInNewContext(readFileSync(new URL('../liff-request-auth.js', import.meta.url), 'utf8'), runtime);
   runtime.window.CMWebsLandlordAuth = {
     getRequestAuthParams() {
       return {

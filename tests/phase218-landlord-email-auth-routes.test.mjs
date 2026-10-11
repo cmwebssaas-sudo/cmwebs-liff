@@ -224,8 +224,8 @@ assert.match(
 
 assert.match(
   apiSource,
-  /workspaceLandlordResolveAccess_\s*\(\s*request\.line_user_id\s*\|\|\s*''/,
-  'resolveLandlordPrincipal_ must accept the existing verified LINE identity'
+  /resolveVerifiedLineRequestIdentity_\(request\)[\s\S]*?workspaceLandlordResolveAccess_\s*\(\s*identity\.data\.sub/,
+  'resolveLandlordPrincipal_ must resolve Workspace access from the provider-verified principal'
 );
 
 assert.doesNotMatch(

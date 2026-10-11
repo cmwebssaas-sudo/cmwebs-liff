@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>CMWebs 付款回報審核</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
-  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-auth.js?v=20261012-line-identity-v1"></script>
   <style>
     :root {
       --app-height: 100vh;
@@ -323,7 +324,13 @@
             reject(new Error('付款回報服務暫時無法使用'));
           }
         };
-        script.src = url;
+        try {
+          script.src = window.CMWebsLiffRequestAuth.withIdToken(url);
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
         document.body.appendChild(script);
       });
     }

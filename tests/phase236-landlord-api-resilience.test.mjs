@@ -169,6 +169,9 @@ function makeBridgeRuntime(request) {
 
   context.window = context;
   vm.createContext(context);
+  context.location = { href: 'https://example.test/' };
+  context.liff = { getIDToken: () => 'synthetic-id-token' };
+  vm.runInContext(fs.readFileSync(path.join(rootDir, 'liff-request-auth.js'), 'utf8'), context);
   vm.runInContext(apiSource, context);
 
   await assert.rejects(

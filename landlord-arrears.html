@@ -10,10 +10,11 @@
 
   <title>CMWebs 房客欠款</title>
 
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
-  <script src="landlord-auth.js?v=20261011-fast-navigation-v1"></script>
-  <script src="landlord-api.js?v=20261011-fast-navigation-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-fast-navigation-v1" />
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-auth.js?v=20261012-line-identity-v1"></script>
+  <script src="landlord-api.js?v=20261012-line-identity-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261012-line-identity-v1" />
 
   <style>
     :root {
@@ -1599,8 +1600,7 @@
         location.href
       ).href.split('?')[0];
 
-    const TEST_LINE_USER_ID =
-      'Uf708ece75c9c985cfe1dbda48d123511';
+
 
     /*
      * 直接在瀏覽器測試時，可使用：
@@ -1609,9 +1609,7 @@
      * 正式 LINE LIFF 使用時不會啟用測試 UID。
      */
     const TEST_MODE =
-      new URLSearchParams(
-        location.search
-      ).get('test') === '1';
+      false;
 
     let LINE_USER_ID = '';
     let LANDLORD_AUTH = null;
@@ -1755,11 +1753,7 @@
     async function ensureLandlordAuthReady() {
       const auth = LANDLORD_AUTH || initLandlordAuthClient();
 
-      if (TEST_MODE) {
-        LINE_USER_ID = TEST_LINE_USER_ID;
-        initLandlordAuthClient();
-        return true;
-      }
+
 
       if (auth.getMode() === 'email') {
         // The protected read bridge validates the session and returns the
@@ -2628,12 +2622,7 @@
         typeof liff ===
         'undefined'
       ) {
-        if (TEST_MODE) {
-          LINE_USER_ID =
-            TEST_LINE_USER_ID;
 
-          return true;
-        }
 
         throw new Error(
           'LIFF SDK 載入失敗'
@@ -2673,12 +2662,7 @@
         return true;
 
       } catch (error) {
-        if (TEST_MODE) {
-          LINE_USER_ID =
-            TEST_LINE_USER_ID;
 
-          return true;
-        }
 
         throw error;
       }

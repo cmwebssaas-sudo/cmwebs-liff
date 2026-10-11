@@ -11,7 +11,8 @@
   <title>CMWebs 已繳帳單管理</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
 
   <style>
     :root {
@@ -1056,13 +1057,10 @@
     const LIFF_ID =
       '2010314940-EjX1qbb8';
 
-    const TEST_LINE_USER_ID =
-      'Uf708ece75c9c985cfe1dbda48d123511';
+
 
     const TEST_MODE =
-      new URLSearchParams(
-        location.search
-      ).get('test') === '1';
+      false;
 
     let LINE_USER_ID = '';
     let PAGE_DATA = null;
@@ -1515,7 +1513,13 @@
               );
             };
 
-          script.src = url;
+          try {
+          script.src = window.CMWebsLiffRequestAuth.withIdToken(url);
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
 
           document.body
             .appendChild(script);
@@ -1532,12 +1536,7 @@
         typeof liff ===
         'undefined'
       ) {
-        if (TEST_MODE) {
-          LINE_USER_ID =
-            TEST_LINE_USER_ID;
 
-          return true;
-        }
 
         throw new Error(
           'LIFF SDK 載入失敗'
@@ -1577,12 +1576,7 @@
         return true;
 
       } catch (error) {
-        if (TEST_MODE) {
-          LINE_USER_ID =
-            TEST_LINE_USER_ID;
 
-          return true;
-        }
 
         throw error;
       }

@@ -9,7 +9,8 @@
   <title>CMWebs 切換管理團隊</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261011-fast-navigation-v1"></script>
+<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
 
   <style>
     :root {
@@ -1077,8 +1078,7 @@
         location.href
       ).href.split('?')[0];
 
-    const TEST_LINE_USER_ID =
-      'Uf708ece75c9c985cfe1dbda48d123511';
+
 
     const URL_PARAMS =
       new URLSearchParams(
@@ -1086,8 +1086,7 @@
       );
 
     const TEST_MODE =
-      URL_PARAMS.get('test') ===
-      '1';
+      false;
 
     const RETURN_TO =
       sanitizeReturnTo(
@@ -1405,7 +1404,13 @@
               );
             };
 
-          script.src = url;
+          try {
+          script.src = window.CMWebsLiffRequestAuth.withIdToken(url);
+        } catch (error) {
+          cleanup();
+          reject(error);
+          return;
+        }
           document.body.appendChild(
             script
           );
@@ -1414,12 +1419,7 @@
     }
 
     async function initLine() {
-      if (TEST_MODE) {
-        LINE_USER_ID =
-          TEST_LINE_USER_ID;
 
-        return true;
-      }
 
       await liff.init({
         liffId: LIFF_ID

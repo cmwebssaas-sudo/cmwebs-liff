@@ -415,15 +415,27 @@ function doGet(e) {
     );
   }
 
+  const verifiedLineAction = lineRequestNeedsIdentity_(v2Action);
+  if (verifiedLineAction) {
+    const identity = resolveVerifiedLineRequestIdentity_(e.parameter);
+    if (!identity.success) {
+      if (bridge === '1') return htmlBridgeOutput_(identity, requestId);
+      return jsonOutput_(identity, callback);
+    }
+    lineUserId = identity.data.sub;
+  }
+
   runtimeSnapshotBegin_(v2Action);
 
   try {
-    lineUserId =
-      resolveTenantRequestLineUserId_(
-        e,
-        v2Action,
-        lineUserId
-      );
+    if (!verifiedLineAction) {
+      lineUserId =
+        resolveTenantRequestLineUserId_(
+          e,
+          v2Action,
+          lineUserId
+        );
+    }
   } catch (error) {
     const result = {
       success: false,
@@ -2919,7 +2931,6 @@ function doPost(e) {
             landlordEmailAuthPostRequires_(
               request,
               [
-                'line_user_id',
                 'email',
                 'request_id'
               ]
@@ -2952,7 +2963,6 @@ function doPost(e) {
             landlordEmailAuthPostRequires_(
               request,
               [
-                'line_user_id',
                 'challenge_id',
                 'code',
                 'request_id'
@@ -3745,9 +3755,14 @@ function doPost(e) {
           .trim() ===
           'landlord_contract_document_upload'
       ) {
+        const principal = resolveLandlordPrincipal_(request, { require_onboarding: true });
+        if (!principal || principal.success !== true) {
+          return ContentService.createTextOutput(JSON.stringify(principal || lineRequestAuthRequired_()))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
         const result =
           uploadLandlordContractDocumentByLineUid_(
-            request.line_user_id || '',
+            principal.data.principal_line_user_id || '',
             request.contract_id || '',
             request.tenant_id || '',
             request.document_type || '',
@@ -3771,9 +3786,14 @@ function doPost(e) {
           .trim() ===
           'tenant_contract_renewal_intent'
       ) {
+        const identity = resolveVerifiedLineRequestIdentity_(request);
+        if (!identity.success) {
+          return ContentService.createTextOutput(JSON.stringify(identity))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
         const result =
           landlordInitiatedContractUpdateRenewalIntentByLineUid_(
-            request.line_user_id || '',
+            identity.data.sub,
             request.contract_id || '',
             request.decision || ''
           );

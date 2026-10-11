@@ -41,7 +41,8 @@ const notificationPage = fs.readFileSync(
     Promise,
     encodeURIComponent,
     document,
-    window: {},
+    URL,
+    window: { location: { href: 'https://example.invalid/' }, liff: { getIDToken: () => 'synthetic-id-token' } },
     setTimeout(callback) {
       timers.push(callback);
       return timers.length;
@@ -49,6 +50,9 @@ const notificationPage = fs.readFileSync(
     clearTimeout() {}
   };
 
+  vm.runInNewContext(
+    fs.readFileSync('liff-request-auth.js', 'utf8'), context
+  );
   vm.runInNewContext(
     extractPageFunction(notificationPage, '    function jsonpRequest('),
     context
