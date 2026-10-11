@@ -414,3 +414,9 @@ errors/missing/pending reports anywhere in the epoch remain blocking. Candidate
 aggregate eligibility never replaces verified remote export, authenticated
 performance or device acceptance. Publication sequence and rollback are in
 `READ-SHADOW.md`; retain all metadata/replica data and prior deployment versions.
+
+C5 draft [PR270](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/270) is
+stacked on C4 and attached; source `9c72fd4`. CI38185484575 rental and read-worker
+both passed. Focused independent actual browser clock case1/1 passed after the
+oracle fixture repair; all required local source checks are complete. This is
+still an unpublished candidate, with preceding actual/time/device gates pending.
