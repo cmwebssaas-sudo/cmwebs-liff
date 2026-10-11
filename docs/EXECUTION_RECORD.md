@@ -248,3 +248,14 @@ three actual days and formal publication are not yet accepted.
 
 Affected GAS tests13/13 and unit848/848 pass; validate passes. Keep rollback
 limited to the two test timers/test endpoint while formal backend remainsv233.
+
+Further C1 idle correction at05:39: retrieve signing configuration only after
+bulk discovery finds pending work. Idle has zero Properties/Sheet/network/lock
+calls; pending/full still validate configuration before IO. Independent review
+verified missing/invalid configuration preserves markers and prevents IO,
+disabled business dirty marking remains cheap, and concurrency protection is
+unchanged. Tests13/13, unit848/848 and validate pass. Four test files were
+exported byte-identical. Restart the72-hour gate from this final test revision;
+earliest time eligibility is2026-10-15 at05:39 Taipei, subject to all actual
+daily correctness and complete runtime evidence. Earlier observed executions
+remain part of daily totals. No production publication occurred.

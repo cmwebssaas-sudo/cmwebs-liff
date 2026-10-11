@@ -210,8 +210,6 @@ function readReplicaSendRows_(config,sheet,rows,mode,sourceVersion,deadline) {
 
 function readReplicaRun_(full) {
   const start=Date.now(); let config;
-  try {config=readReplicaConfig_();} catch (_) {return {success:false,code:'SYNC_NOT_CONFIGURED'};}
-  if(!config) return {success:true,code:'DISABLED',tables:0,duration_ms:Date.now()-start};
   const cache=CacheService.getScriptCache();
   const tables=Object.keys(V2_READ_REPLICA_TABLES_);
   // Cache is a remote service. One bulk read keeps every idle minute bounded
@@ -219,6 +217,10 @@ function readReplicaRun_(full) {
   const markers=full ? {} : cache.getAll(tables.map(function(sheet){return V2_READ_REPLICA_DIRTY_PREFIX_+sheet;}));
   const pending=tables.filter(function(sheet){return full || markers[V2_READ_REPLICA_DIRTY_PREFIX_+sheet];});
   if(!pending.length) return {success:true,code:'IDLE',tables:0,duration_ms:Date.now()-start};
+  // Idle has no reason to retrieve configuration or the signing credential.
+  // Full/pending runs still check configuration before any Sheet or network IO.
+  try {config=readReplicaConfig_();} catch (_) {return {success:false,code:'SYNC_NOT_CONFIGURED'};}
+  if(!config) return {success:true,code:'DISABLED',tables:0,duration_ms:Date.now()-start};
   const lease=Utilities.getUuid(); let acquired=false;
   try {
     acquired=readReplicaWithMarkerLock_(function(marker){

@@ -7,10 +7,10 @@ import vm from 'node:vm';
 const schemaSource=readFileSync(new URL('../apps-script/V2_READ_REPLICA_SCHEMA.js',import.meta.url),'utf8');
 const moduleSource=()=>readFileSync(new URL('../apps-script/V2_READ_REPLICA_SYNC.js',import.meta.url),'utf8');
 function harness({configured=true,fail=false,sheets={}}={}) {
-  const cache=new Map(), sent=[], logs=[]; let reads=0, cacheSingleReads=0, cacheBatchReads=0;
+  const cache=new Map(), sent=[], logs=[]; let reads=0, cacheSingleReads=0, cacheBatchReads=0, propertyReads=0;
   const properties=new Map(configured ? [['READ_REPLICA_URL','https://replica.synthetic.test'],['READ_REPLICA_SYNC_SECRET','synthetic-secret']] : []);
   const ctx=vm.createContext({ console, Date, JSON, Map, Set,
-    PropertiesService:{getScriptProperties:()=>({getProperty:key=>properties.get(key)||null})},
+    PropertiesService:{getScriptProperties:()=>({getProperty:key=>{propertyReads++;return properties.get(key)||null;}})},
     CacheService:{getScriptCache:()=>({get:key=>{cacheSingleReads++;return cache.get(key)||null;},
       getAll:keys=>{cacheBatchReads++;return Object.fromEntries(keys.filter(key=>cache.has(key)).map(key=>[key,cache.get(key)]));},
       put:(key,value)=>cache.set(key,value),remove:key=>cache.delete(key)})},
@@ -25,7 +25,7 @@ function harness({configured=true,fail=false,sheets={}}={}) {
     Logger:{log:value=>logs.push(value)}
   });
   vm.runInContext(schemaSource+'\n'+moduleSource(),ctx);
-  return {ctx,cache,sent,logs,get reads(){return reads;},get cacheSingleReads(){return cacheSingleReads;},get cacheBatchReads(){return cacheBatchReads;}};
+  return {ctx,cache,sent,logs,get reads(){return reads;},get cacheSingleReads(){return cacheSingleReads;},get cacheBatchReads(){return cacheBatchReads;},get propertyReads(){return propertyReads;}};
 }
 
 test('generated Apps Script schema equals the single JSON whitelist authority',()=>{
@@ -87,6 +87,7 @@ test('idle trigger discovers all dirty markers in one cache service call',()=>{
   assert.equal(h.ctx.runV2ReadReplicaDirtySync().code,'IDLE');
   assert.equal(h.cacheBatchReads,1);
   assert.equal(h.cacheSingleReads,0);
+  assert.equal(h.propertyReads,0,'idle has no configuration or credential read');
 });
 
 test('dirty snapshot filters private fields, batches 501 rows and signs exact UTF8 bytes',()=>{

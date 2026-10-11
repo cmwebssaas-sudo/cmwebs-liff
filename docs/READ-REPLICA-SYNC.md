@@ -109,7 +109,12 @@ wrapper unnecessarily opened Sheets. The wrapper now checks local project
 identity on idle and opens the bound test Sheet only for a synthetic mutation.
 The source also discovers dirty markers with one bulk CacheService read;
 per-table generation validation after sends is unchanged. Final test source
-was exported byte-identical at05:23. Count the72-hour gate from that revision;
+was exported byte-identical at05:39 after a further idle optimization: signing
+configuration is retrieved only when a full or pending run needs it. Idle
+returns before Properties, Sheet, network or lock calls; pending/full still
+validate configuration before IO. An unconfigured timer with no pending work
+therefore reports IDLE, while unconfigured pending/full reports DISABLED.
+Count the72-hour gate from that revision;
 retain earlier overhead records rather than dropping them from daily totals.
 No production Sheet, Properties, trigger or serving Apps Script version was
 changed by this test. Local/CI tests and the initial manual run do not satisfy
@@ -118,7 +123,7 @@ and reconciliation evidence before production enablement.
 
 | Actual day | Runtime total | Correctness/revocation | Status |
 | --- | --- | --- | --- |
-| 1 (from final source 2026-10-12 05:23 Taipei) | Full trigger total pending | Initial16-table count and immediate revocation passed | RUNNING |
+| 1 (from final source 2026-10-12 05:39 Taipei) | Full trigger total pending | Initial16-table count and immediate revocation passed | RUNNING |
 | 2 | Not measured | Not run | NOT_STARTED |
 | 3 | Not measured | Not run | NOT_STARTED |
 
