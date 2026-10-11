@@ -16,6 +16,24 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
+- 2026-10-11 commercial membership release is deployed, using original rental
+  login/workspace and canonical Core authority. Core PR53/5d24c57 on verified
+  AI-00: PG16.15, Node22.23.3,12 migrations, reader14102 and restricted writer14103.
+  CM PR257/PR259 merged; exact UTF-8 body bytes signed/sent at1fe0e33; original
+  Google Web App serves232 exact68, editor67 plus semantic manifest, other4
+  deployments unchanged. Pages117c6c5/workflow38098463477,61 public files match;
+  exported UI source0fc7575. Full816/816 zero skips and privateNode22/PG16CI pass.
+  Fresh real Email W000001 owner proof bootstrapped the sole super admin.
+  Member empty state, six admin views and Chrome390x844 verified. Existing
+  W000001 observe/21 rooms/unset limit; no plan,bank,order,receipt or period.
+  Owner sets bank and plans before collecting; actual bank receipt/physical
+  LINE/load capacity unverified. Card providers disabled. Backup includes all
+  retained AES keys. Synthetic routes, listeners, exact disposable DB/roles,
+  nine Google test properties/operators and production diagnostics removed.
+  Rollback GAS229/Pages01b9f78; stop writer/remove exact Product bridge, retain
+  twelve-migration-compatible reader and all financial history/keys. Preserve
+  dirty roots and preceding229 auth/read performance work. See commercial docs.
+
 - 2026-10-11 user-authorized performance release: fresh serving/editor228 exact63
   matched main; immutable229 exact63 matched7ea6b5b. Original Web App now229,
   other4 deployments unchanged; rollback228, no version deletion. Fresh786 pass,

@@ -1,5 +1,25 @@
 # CMWebs Changelog
 
+## 2026-10-11 — 會員／銀行轉帳訂閱正式發布
+
+使用者確認彈性後台設計與直接實作、推送／部署。Core PR53／5d24c57已部署於
+AI-00，Node22.23.3／PG16.15／十二migrations；reader14102及restricted writer14103
+正常，HTTPS精確Product路徑保留其他服務。CM PR257、UTF-8修正PR259均合併。
+正式GAS232／68檔與1fe0e33逐位元一致，editor67 source相同、manifest語意相同，
+原URL／其他四deployments保留，臨時operator／trace已清除。Pages117c6c5／
+38098463477成功，61公開檔一致；Core UI來源0fc7575。完整816/816零skip與私有
+Node22／PG16 CI通過。原登入讀取效能v229修正已保留。
+本人原Email登入完成新鮮nonce bootstrap；只有一位Core super admin／一筆
+會員provisioning。正式會員中心空狀態、後台六個頁面及Chrome390×844驗收通過。
+W000001仍observe，原租管摘要21間房間、未設定上限。方案／銀行／付款／期間
+皆空；使用者自行輸入收款帳號及價額後上架。轉帳回報必須實際入帳核對後確認。
+綠界／藍新provider未啟用。實體LINE、真實銀行收款及多人容量仍未驗證。
+bootstrap後私有DB＋歷史key備份完成；隔離dump／restore／解密／FK／grants通過。
+測試routes、listeners、disposable DB／roles及Google測試Properties／operator撤收。
+回退GAS229、Pages01b9f78，停writer／移除精確bridge route；保留十二migration
+相容reader，禁止刪財務歷史與AES keys。原dirty roots保留。詳見
+COMMERCIAL-SUBSCRIPTIONS.md及production-baseline.json。
+
 ## 2026-10-11 — 登入復驗與共用讀取後端發布 v229
 
 使用者授權後，fresh v228/editor63檔核對 main；v229匯出63檔與7ea6b5b相同。
