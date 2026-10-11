@@ -195,3 +195,37 @@ The total is derived from the already authorized monthly aggregate rows in the
 existing report response. No route, schema, Apps Script, or financial data
 change is required; a fresh GitHub Pages publication and LIFF/mobile visual
 check remain required for Production verification.
+
+## 2026-10-11 landlord-home redesign, parallel reads and browser snapshot
+
+Supersedes the 2026-08-31 statement that no financial snapshot is stored in
+browser storage, and the 2026-09-09 ordering in which the chart read waited
+for the first render. The owner explicitly approved a guarded snapshot.
+
+- Reads: `landlord_home_bootstrap` `section=home`, `section=actions` and
+  `landlord_revenue_dashboard_init` `range=12m` now start together. Painting
+  order is unchanged: the hero renders first, then counts and charts. The
+  serial start added roughly one homepage round trip (about 9 seconds in the
+  2026-10-11 v229 measurement) before the secondary reads could begin.
+- Snapshot: after a successful read, the homepage stores the home payload,
+  normalised 12-month report and action counts in `localStorage` key
+  `cmwebs_landlord_home_cache_v1`. It is bound to a SHA-256 hash of the
+  signed-in identity (Email session token or verified LINE user ID; the raw
+  value is never stored), shown only to the same identity, expires after 24
+  hours, and is labelled on screen as old data until fresh figures replace
+  it. Logout, any authorization failure and any non-transient homepage error
+  remove it (`landlord-auth.js` clears it centrally). Test mode never caches.
+  Residual risk: within 24 hours the aggregates remain readable through
+  browser developer tools on that device; no bank account, tenant contact or
+  bill detail is stored.
+- Presentation: navy hero with a counter-clockwise collection-rate ring,
+  rolling amounts reusing `CMWebsAssetValuation.rollingMoney`, and a single
+  collected-income curve with pointer, touch and arrow-key month inspection.
+  All new motion stops under `prefers-reduced-motion`.
+- Title: the homepage heading shows the Workspace name. Owners and admins get
+  an edit button that opens the existing settings page; no new route is added
+  because `landlord_settings_save_workspace` also overwrites timezone,
+  currency and note.
+
+No Apps Script, schema, route or Production data change. GitHub Pages
+publication and real LIFF/mobile acceptance require separate authorization.

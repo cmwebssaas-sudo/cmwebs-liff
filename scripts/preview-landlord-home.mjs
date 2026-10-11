@@ -29,10 +29,11 @@ export function previewHtml() {
   const startup = '\n    loadPage();\n  </script>';
   if (source.split(startup).length !== 2) throw new Error('Homepage startup changed; preview must be reviewed.');
   return source
-    .replace(/<script src="(?!landlord-home-motion\.js)[^"]+"><\/script>/g, '')
+    .replace(/<script src="(?!landlord-home-motion\.js|assets\/js\/cmwebs-asset-valuation\.js)[^"]+"><\/script>/g, '')
     .replaceAll("${TEST_MODE ? '測試' : '正式'}", '本機示範')
     .replace(startup, `
       function previewRender() {
+        homeShown_ = null;
         renderHome(${JSON.stringify(home)}, buildActionSummary({}, {}, {}, {}));
         document.getElementById('app').insertAdjacentHTML('afterbegin',
           '<aside class="preview-notice"><span><strong>首頁設計預覽</strong> · 合成數據，尚未發布</span><button type="button" id="previewReplay">重播進場動畫</button></aside>');
@@ -58,7 +59,8 @@ export function previewHtml() {
 export function createPreviewServer() {
   const assets = new Map([
     ['/landlord-home.css', 'text/css'], ['/landlord-responsive.css', 'text/css'],
-    ['/landlord-home-motion.js', 'text/javascript']
+    ['/landlord-home-motion.js', 'text/javascript'],
+    ['/assets/js/cmwebs-asset-valuation.js', 'text/javascript']
   ]);
   return createServer((request, response) => {
     const pathname = new URL(request.url, 'http://127.0.0.1').pathname;

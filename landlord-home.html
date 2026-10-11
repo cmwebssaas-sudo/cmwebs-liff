@@ -944,8 +944,9 @@
     }
     .actions-pending .badge, .actions-pending .action-desc { display: none; }
   </style>
-  <link rel="stylesheet" href="landlord-home.css?v=20261005-utility-meter-save-v1" />
-  <script src="landlord-home-motion.js?v=20261005-utility-meter-save-v1"></script>
+  <link rel="stylesheet" href="landlord-home.css?v=20261011-home-redesign-v1" />
+  <script src="landlord-home-motion.js?v=20261011-home-redesign-v1"></script>
+  <script src="assets/js/cmwebs-asset-valuation.js?v=20261005-utility-meter-save-v1"></script>
 </head>
 
 <body>
@@ -1028,8 +1029,17 @@
       </header>
 
       <div id="app">
-        <section class="card loading-card">
-          <div class="loading-spinner"></div>
+        <section class="home-skeleton-page" aria-label="房東首頁資料載入中">
+          <div class="home-skeleton home-skeleton-line" style="width:34%"></div>
+          <div class="home-skeleton home-skeleton-title"></div>
+          <div class="home-skeleton-hero">
+            <div class="home-skeleton home-skeleton-ring"></div>
+            <div class="home-skeleton-hero-copy">
+              <div class="home-skeleton home-skeleton-line" style="width:40%"></div>
+              <div class="home-skeleton home-skeleton-amount"></div>
+            </div>
+          </div>
+          <div class="home-skeleton home-skeleton-chart"></div>
           <div class="loading-text">房東首頁資料載入中...</div>
         </section>
       </div>
@@ -1290,6 +1300,7 @@
     }
 
     function desktopLogout() {
+      clearHomeCache_();
       if (
         window.CMWebsLandlordAuth &&
         typeof window.CMWebsLandlordAuth.logout ===
@@ -2206,176 +2217,116 @@
         .replace(/'/g, '&#039;');
     }
 
-    function dashboardLineChartSvg_(
+    // Geometry for the collected-income curve. Kept separate from the SVG so
+    // the scrub handler and tests share one source of truth.
+    function dashboardTrendGeometry_(
       rows
     ) {
       const width = 360;
-      const height = 190;
-      const left = 37;
-      const right = 8;
-      const top = 16;
-      const bottom = 30;
-      const plotWidth =
-        width - left - right;
-      const plotHeight =
-        height - top - bottom;
-      const series = [
-        'receivable',
-        'collected',
-        'outstanding'
-      ];
-      const labels = {
-        receivable: '應收',
-        collected: '已收',
-        outstanding: '欠款'
-      };
+      const height = 170;
+      const padX = 14;
+      const top = 14;
+      const bottom = 26;
+      const plotHeight = height - top - bottom;
       const safeRows =
         Array.isArray(rows)
           ? rows.slice(-12)
           : [];
-      const max = Math.max(
-        1,
-        ...safeRows.reduce(
-          function (values, row) {
-            series.forEach(function (key) {
-              values.push(
-                dashboardNumber_(
-                  row && row[key]
-                )
-              );
-            });
+      const values = safeRows.map(function (row) {
+        return dashboardNumber_(row && row.collected);
+      });
+      const max = Math.max(1, ...values);
+      const min = values.length ? Math.min(...values) : 0;
+      const span = Math.max(max - min, max * 0.08, 1);
+      const floor = Math.max(0, min - span * 0.35);
+      const ceiling = max + span * 0.12;
+      const points = values.map(function (value, index) {
+        return {
+          x: safeRows.length <= 1
+            ? width / 2
+            : padX + ((width - padX * 2) * index) / (safeRows.length - 1),
+          y: top + plotHeight - ((value - floor) / (ceiling - floor)) * plotHeight,
+          value: value,
+          month: String(safeRows[index] && safeRows[index].month || '')
+        };
+      });
+      let line = '';
+      points.forEach(function (point, index) {
+        const xy = function (p) { return p.x.toFixed(1) + ' ' + p.y.toFixed(1); };
+        if (index === 0) {
+          line = 'M' + xy(point);
+          return;
+        }
+        // Catmull-Rom to cubic Bezier: a smooth curve through every month.
+        const p0 = points[index - 2] || points[index - 1];
+        const p1 = points[index - 1];
+        const p3 = points[index + 1] || point;
+        line += ' C' + xy({ x: p1.x + (point.x - p0.x) / 6, y: p1.y + (point.y - p0.y) / 6 }) +
+          ' ' + xy({ x: point.x - (p3.x - p1.x) / 6, y: point.y - (p3.y - p1.y) / 6 }) +
+          ' ' + xy(point);
+      });
+      return {
+        width: width,
+        height: height,
+        padX: padX,
+        baseline: height - bottom,
+        points: points,
+        line: line,
+        area: points.length
+          ? line + ' L' + points[points.length - 1].x.toFixed(1) + ' ' + (height - bottom) +
+            ' L' + points[0].x.toFixed(1) + ' ' + (height - bottom) + ' Z'
+          : ''
+      };
+    }
 
-            return values;
-          },
-          []
-        )
-      );
-      const x = function (index) {
-        return safeRows.length <= 1
-          ? left + plotWidth / 2
-          : left +
-              (plotWidth * index) /
-                (safeRows.length - 1);
-      };
-      const y = function (value) {
-        return (
-          top +
-          plotHeight -
-          (dashboardNumber_(value) /
-            max) *
-            plotHeight
-        );
-      };
-      const path = function (key) {
-        return safeRows
-          .map(function (row, index) {
-            return (
-              (index === 0 ? 'M' : 'L') +
-              x(index).toFixed(1) +
-              ' ' +
-              y(row && row[key]).toFixed(1)
-            );
-          })
-          .join(' ');
-      };
-      const grid = [0, 0.5, 1]
+    function dashboardLineChartSvg_(
+      rows
+    ) {
+      const geometry =
+        dashboardTrendGeometry_(rows);
+      const last =
+        geometry.points[geometry.points.length - 1];
+      const grid = [0.25, 0.5, 0.75]
         .map(function (ratio) {
-          const gridY =
-            top + plotHeight * ratio;
-
-          return (
-            '<line x1="' +
-            left +
-            '" y1="' +
-            gridY.toFixed(1) +
-            '" x2="' +
-            (width - right) +
-            '" y2="' +
-            gridY.toFixed(1) +
-            '" stroke="#E6EBF0" stroke-dasharray="3 4"/>' +
-            '<text x="2" y="' +
-            (gridY + 4).toFixed(1) +
-            '" fill="#6B7785" font-size="10">' +
-            dashboardEscape_(
-              Math.round(max * (1 - ratio) / 1000) +
-                'K'
-            ) +
-            '</text>'
-          );
+          const gridY = (geometry.baseline * ratio).toFixed(1);
+          return '<line x1="0" y1="' + gridY + '" x2="' + geometry.width + '" y2="' + gridY +
+            '" stroke="#E6EBF0" stroke-dasharray="3 5"/>';
         })
         .join('');
-      const paths = series
-        .map(function (key) {
-          return (
-            '<path class="dashboard-line dashboard-entrance" pathLength="1" d="' +
-            path(key) +
-            '" fill="none" stroke="' +
-            dashboardSeriesColor_(key) +
-            '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-series="' +
-            key +
-            '"/>'
-          );
+      const monthLabels = geometry.points
+        .map(function (point, index) {
+          return '<text x="' + point.x.toFixed(1) + '" y="' + (geometry.height - 6) +
+            '" text-anchor="middle" fill="#6B7785" font-size="10">' +
+            dashboardEscape_(String(Number(point.month.slice(-2)) || point.month.slice(-2) || '-')) +
+            '月</text>';
         })
         .join('');
-      const points = series
-        .map(function (key) {
-          return safeRows
-            .map(function (row, index) {
-              return (
-                '<circle class="dashboard-point dashboard-entrance" style="--point-delay:' + (index * 55) + 'ms" cx="' +
-                x(index).toFixed(1) +
-                '" cy="' +
-                y(row && row[key]).toFixed(1) +
-                '" r="3.3" fill="#fff" stroke="' +
-                dashboardSeriesColor_(key) +
-                '" stroke-width="2" aria-label="' +
-                dashboardEscape_(
-                  (row && row.month) +
-                    ' ' +
-                    labels[key] +
-                    ' ' +
-                    dashboardMoney_(
-                      row && row[key]
-                    )
-                ) +
-                '"/>'
-              );
-            })
-            .join('');
+      const summary = geometry.points
+        .map(function (point) {
+          return point.month + ' 已收 ' + dashboardMoney_(point.value);
         })
-        .join('');
-      const monthLabels = safeRows
-        .map(function (row, index) {
-          const month = String(
-            row && row.month
-              ? row.month
-              : ''
-          );
-
-          return (
-            '<text x="' +
-            x(index).toFixed(1) +
-            '" y="' +
-            (height - 11) +
-            '" text-anchor="middle" fill="#6B7785" font-size="9">' +
-            dashboardEscape_(
-              month.slice(-2) || '-'
-            ) +
-            '</text>'
-          );
-        })
-        .join('');
+        .join('，');
 
       return (
         '<svg id="landlordRevenueChart" viewBox="0 0 ' +
-        width +
+        geometry.width +
         ' ' +
-        height +
-        '" role="img" aria-label="應收、已收、欠款近 12 個月收租趨勢">' +
-        '<title>應收、已收、欠款近 12 個月收租趨勢</title>' +
+        geometry.height +
+        '" role="img" aria-label="近 12 個月已收收入曲線：' + dashboardEscape_(summary) + '">' +
+        '<title>近 12 個月已收收入曲線</title>' +
         grid +
-        paths +
-        points +
+        (geometry.points.length
+          ? '<path class="home-trend-area dashboard-entrance" d="' + geometry.area + '" fill="' +
+            dashboardSeriesColor_('collected') + '" fill-opacity="0.12"/>' +
+            '<path class="dashboard-line dashboard-entrance" pathLength="1" d="' + geometry.line +
+            '" fill="none" stroke="' + dashboardSeriesColor_('collected') +
+            '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-series="collected"/>' +
+            '<line class="home-trend-guide" data-trend-guide x1="' + last.x.toFixed(1) + '" x2="' + last.x.toFixed(1) +
+            '" y1="0" y2="' + geometry.baseline + '" stroke="#9AA4B5" stroke-dasharray="3 4"/>' +
+            '<circle class="dashboard-point dashboard-entrance home-trend-dot" data-trend-dot style="--point-delay:900ms" cx="' +
+            last.x.toFixed(1) + '" cy="' + last.y.toFixed(1) + '" r="5.5" fill="' + dashboardSeriesColor_('collected') +
+            '" stroke="#fff" stroke-width="3"/>'
+          : '') +
         monthLabels +
         '</svg>'
       );
@@ -2519,26 +2470,40 @@
       const rows = report.months;
       const trendTotals =
         dashboardTrendTotals_(rows);
+      const trendRows = rows.slice(-12);
+      const firstRow = trendRows[0];
+      const lastRow = trendRows[trendRows.length - 1];
+      const growth = dashboardTrendDelta_(
+        firstRow && firstRow.collected,
+        lastRow && lastRow.collected
+      );
+      const shownCollected =
+        typeof homeShown_ !== 'undefined' && homeShown_ ? homeShown_.collectedTotal : null;
+      const collectedDisplay =
+        typeof homeRollingMoney_ === 'function'
+          ? homeRollingMoney_(trendTotals.collected, shownCollected)
+          : dashboardMoney_(trendTotals.collected);
+      if (typeof homeShown_ !== 'undefined' && homeShown_) homeShown_.collectedTotal = trendTotals.collected;
 
       host.innerHTML = `
         <div class="dashboard-motion-toolbar">
           <div class="dashboard-motion-copy"><strong>營運數據，一目了然</strong><span data-motion-status></span></div>
           <button type="button" class="dashboard-motion-toggle" data-motion-toggle aria-pressed="false" aria-controls="landlordRevenueChart landlordOccupancyChart landlordContractExpiryChart">暫停動畫</button>
         </div>
-        <section class="dashboard-card trend-card">
+        <section class="dashboard-card trend-card home-trend">
           <div class="dashboard-section-heading">
             <div>
               <div class="dashboard-section-title">近 12 個月收租趨勢</div>
-              <div class="dashboard-section-subtitle">應收、已收與欠款變化</div>
+              <div class="dashboard-section-subtitle" data-trend-label>近 12 個月已收合計</div>
             </div>
             <a class="dashboard-detail-link" href="landlord-revenue-dashboard.html">查看收入明細</a>
           </div>
-          <div class="dashboard-legend" aria-label="圖表圖例">
-            <span><i style="background:${dashboardSeriesColor_('receivable')}"></i>應收</span>
-            <span><i style="background:${dashboardSeriesColor_('collected')}"></i>已收</span>
-            <span><i style="background:${dashboardSeriesColor_('outstanding')}"></i>欠款</span>
+          <div class="home-trend-value home-roll" data-trend-value aria-live="polite">${collectedDisplay}</div>
+          <div class="home-trend-delta">
+            <span class="home-delta" data-trend-delta data-direction="${growth.direction}">${dashboardEscape_(growth.text)}</span>
+            <span data-trend-delta-label>${firstRow && lastRow ? dashboardEscape_(lastRow.month + ' 對比 ' + firstRow.month + ' 月已收') : '尚無收款紀錄'}</span>
           </div>
-          <div class="dashboard-chart-scroll">
+          <div class="dashboard-chart-scroll home-trend-chart" data-trend-chart tabindex="0" aria-label="收入曲線，可用左右方向鍵逐月查看">
             ${dashboardLineChartSvg_(rows)}
           </div>
           <div class="dashboard-chart-values-caption">近 12 個月合計</div>
@@ -2562,7 +2527,101 @@
           </div>
         </section>
       `;
+      attachTrendScrub_(host, trendRows, trendTotals.collected);
       if (typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.mount(host);
+    }
+
+    function dashboardTrendDelta_(
+      from,
+      to
+    ) {
+      const start = dashboardNumber_(from);
+      const end = dashboardNumber_(to);
+      if (start <= 0) {
+        return { direction: 'flat', text: end > 0 ? '新增收入' : '—' };
+      }
+      const change = (end - start) / start * 100;
+      return {
+        direction: change > 0.05 ? 'up' : change < -0.05 ? 'down' : 'flat',
+        text: (change > 0.05 ? '+' : change < -0.05 ? '−' : '') + Math.abs(change).toFixed(1) + '%'
+      };
+    }
+
+    // Pointer, touch and arrow keys pick a month on the curve; leaving the
+    // chart returns to the 12-month total. Pure presentation: no requests.
+    function attachTrendScrub_(
+      host,
+      rows,
+      collectedTotal
+    ) {
+      const chart = host && host.querySelector && host.querySelector('[data-trend-chart]');
+      if (!chart || !rows.length || typeof chart.addEventListener !== 'function') return;
+      const geometry = dashboardTrendGeometry_(rows);
+      const valueNode = host.querySelector('[data-trend-value]');
+      const labelNode = host.querySelector('[data-trend-label]');
+      const deltaNode = host.querySelector('[data-trend-delta]');
+      const deltaLabelNode = host.querySelector('[data-trend-delta-label]');
+      const dot = host.querySelector('[data-trend-dot]');
+      const guide = host.querySelector('[data-trend-guide]');
+      let selected = null;
+      let shown = collectedTotal;
+
+      function paint(index) {
+        if (index === selected) return;
+        selected = index;
+        const point = index === null ? geometry.points[geometry.points.length - 1] : geometry.points[index];
+        const amount = index === null ? collectedTotal : point.value;
+        const delta = index === null
+          ? dashboardTrendDelta_(geometry.points[0].value, point.value)
+          : dashboardTrendDelta_(index > 0 ? geometry.points[index - 1].value : 0, point.value);
+        // Scrubbing swaps figures instantly; only the return to the total rolls.
+        if (valueNode) valueNode.innerHTML = index === null ? homeRollingMoney_(amount, shown) : homeStaticMoney_(amount);
+        shown = amount;
+        if (labelNode) labelNode.textContent = index === null ? '近 12 個月已收合計' : point.month + ' 已收';
+        if (deltaNode) {
+          deltaNode.textContent = index !== null && index === 0 ? '—' : delta.text;
+          deltaNode.setAttribute('data-direction', index !== null && index === 0 ? 'flat' : delta.direction);
+        }
+        if (deltaLabelNode) {
+          deltaLabelNode.textContent = index === null
+            ? point.month + ' 對比 ' + geometry.points[0].month + ' 月已收'
+            : index === 0 ? '圖表第一個月' : '較 ' + geometry.points[index - 1].month;
+        }
+        [dot, guide].forEach(function (node) {
+          if (!node) return;
+          if (node === dot) {
+            node.setAttribute('cx', point.x.toFixed(1));
+            node.setAttribute('cy', point.y.toFixed(1));
+          } else {
+            node.setAttribute('x1', point.x.toFixed(1));
+            node.setAttribute('x2', point.x.toFixed(1));
+          }
+        });
+        chart.setAttribute('data-scrubbing', index === null ? 'false' : 'true');
+      }
+
+      function indexAt(clientX) {
+        const rect = chart.getBoundingClientRect();
+        if (!rect.width) return null;
+        const viewX = (clientX - rect.left) / rect.width * geometry.width;
+        const ratio = Math.min(1, Math.max(0, (viewX - geometry.padX) / (geometry.width - geometry.padX * 2)));
+        return Math.round(ratio * (geometry.points.length - 1));
+      }
+
+      chart.addEventListener('pointermove', function (event) { paint(indexAt(event.clientX)); });
+      chart.addEventListener('pointerdown', function (event) { paint(indexAt(event.clientX)); });
+      chart.addEventListener('pointerleave', function () { paint(null); });
+      chart.addEventListener('pointercancel', function () { paint(null); });
+      chart.addEventListener('blur', function () { paint(null); });
+      chart.addEventListener('keydown', function (event) {
+        const lastIndex = geometry.points.length - 1;
+        const current = selected === null ? lastIndex : selected;
+        if (event.key === 'ArrowLeft') paint(Math.max(0, current - 1));
+        else if (event.key === 'ArrowRight') paint(Math.min(lastIndex, current + 1));
+        else if (event.key === 'Escape') paint(null);
+        else return;
+        event.preventDefault();
+      });
     }
 
     function renderLandlordDashboardError_(
@@ -2593,6 +2652,121 @@
     let pageRequestToken_ = 0;
     let homeLoadInProgress_ = false;
     let homeRendered_ = false;
+    // Last amounts painted on screen, so a refresh rolls only the changed digits.
+    let homeShown_ = null;
+
+    const HOME_CACHE_STORAGE_KEY = 'cmwebs_landlord_home_cache_v1';
+    const HOME_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+    function homeMotionAllowed_() {
+      try {
+        return !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      } catch (error) {
+        return true;
+      }
+    }
+
+    // Same visual structure as the rolling markup, without motion.
+    function homeStaticMoney_(value) {
+      const amount = Math.round(dashboardNumber_(value)).toLocaleString('zh-TW');
+      return '<span class="av-number" role="img" aria-label="NT$ ' + amount + '"><span class="av-number-visual" aria-hidden="true">' +
+        '<span class="av-number-currency">NT$&nbsp;</span>' + amount + '</span></span>';
+    }
+
+    function homeRollingMoney_(value, previous) {
+      const roller = window.CMWebsAssetValuation && window.CMWebsAssetValuation.rollingMoney;
+      if (typeof roller !== 'function') return homeStaticMoney_(value);
+      const html = roller(dashboardNumber_(value), previous === null || previous === undefined ? null : dashboardNumber_(previous), homeMotionAllowed_());
+      return html.indexOf('av-number-visual') >= 0 ? html : homeStaticMoney_(value);
+    }
+
+    function homeGreeting_(date) {
+      const hour = (date || new Date()).getHours();
+      if (hour < 5) return '夜深了';
+      if (hour < 11) return '早安';
+      if (hour < 14) return '午安';
+      if (hour < 18) return '下午好';
+      return '晚安';
+    }
+
+    function homeClockLabel_(timestamp) {
+      const date = new Date(Number(timestamp));
+      if (!Number.isFinite(date.getTime())) return '上次';
+      return String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+    }
+
+    function setHomeLiveStatus_(state, text) {
+      const status = document.getElementById('homeLiveStatus');
+      if (!status) return;
+      status.setAttribute('data-state', state);
+      status.innerHTML = '<i aria-hidden="true"></i><span>' + safeHtml(text) + '</span>';
+    }
+
+    // Browser snapshot of the last successful homepage read (ADR 2026-10-11).
+    // It is bound to a one-way hash of the signed-in identity, expires after a
+    // day and is cleared by logout or any authorization failure, so a shared
+    // device never shows another account's figures.
+    function homeCacheStore_() {
+      try {
+        return window.localStorage || null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function homeCacheIdentity_() {
+      if (TEST_MODE || !window.CMWebsLandlordAuth) return '';
+      const auth = window.CMWebsLandlordAuth.getRequestAuthParams() || {};
+      const raw = auth.landlord_session_token
+        ? 'email:' + auth.landlord_session_token
+        : auth.line_user_id ? 'line:' + auth.line_user_id : '';
+      const subtle = window.crypto && window.crypto.subtle;
+      if (!raw || !subtle || typeof TextEncoder === 'undefined') return '';
+      const digest = await subtle.digest('SHA-256', new TextEncoder().encode('cmwebs-home-cache:' + raw));
+      return Array.from(new Uint8Array(digest)).map(function (byte) {
+        return byte.toString(16).padStart(2, '0');
+      }).join('');
+    }
+
+    function clearHomeCache_() {
+      const store = homeCacheStore_();
+      try {
+        if (store) store.removeItem(HOME_CACHE_STORAGE_KEY);
+      } catch (error) {}
+    }
+
+    function readHomeCache_(identity, now) {
+      const store = homeCacheStore_();
+      if (!store || !identity) return null;
+      try {
+        const entry = JSON.parse(store.getItem(HOME_CACHE_STORAGE_KEY) || 'null');
+        if (!entry) return null;
+        const age = (now || Date.now()) - Number(entry.saved_at);
+        if (entry.v !== 1 || entry.id !== identity || !(age >= 0 && age < HOME_CACHE_TTL_MS) || !entry.home) {
+          clearHomeCache_();
+          return null;
+        }
+        return entry;
+      } catch (error) {
+        clearHomeCache_();
+        return null;
+      }
+    }
+
+    function writeHomeCache_(identity, patch, now) {
+      const store = homeCacheStore_();
+      if (!store || !identity) return;
+      try {
+        const current = JSON.parse(store.getItem(HOME_CACHE_STORAGE_KEY) || 'null');
+        const base = current && current.v === 1 && current.id === identity ? current : { v: 1, id: identity };
+        const next = Object.assign({}, base, patch);
+        if (patch.home) next.saved_at = now || Date.now();
+        if (!next.home) return;
+        store.setItem(HOME_CACHE_STORAGE_KEY, JSON.stringify(next));
+      } catch (error) {
+        clearHomeCache_();
+      }
+    }
 
     function requestDashboardReport_(
       requestToken
@@ -2717,9 +2891,14 @@
     function renderHome(
       home,
       actionSummary,
-      preserveDashboard
+      preserveDashboard,
+      options
     ) {
-      const previousDashboard = preserveDashboard && document.getElementById('landlordDashboardState');
+      const renderOptions = options || {};
+      // keepDashboard rebuilds the hero with fresh numbers while the chart
+      // already on screen (cached or fresh) stays connected.
+      const previousDashboard = (preserveDashboard || renderOptions.keepDashboard) &&
+        document.getElementById('landlordDashboardState');
       if (!previousDashboard && typeof CMWebsHomeMotion !== 'undefined') CMWebsHomeMotion.unmount();
       const actionsPending = !actionSummary;
       actionSummary = actionSummary || buildActionSummary({}, {}, {}, {});
@@ -2820,15 +2999,28 @@
       const app =
         document.getElementById('app');
 
+      const homeTitle =
+        rawText(workspace.workspace_name).trim() ||
+        '您好，' + (rawText(home.landlord_name).trim() || '房東');
+      const canEditTitle =
+        /^(owner|admin)$/i.test(rawText(currentMembership.role));
+      const heroEnter = !homeShown_;
+      const paidDisplay = homeRollingMoney_(paidTotal, homeShown_ ? homeShown_.paid : null);
+      const liveStatus = renderOptions.staleSavedAt
+        ? { state: 'stale', text: '顯示 ' + homeClockLabel_(renderOptions.staleSavedAt) + ' 的資料・更新中' }
+        : { state: 'fresh', text: '最後更新 ' + rawText(home.updated_at || home.latest_bill_month || '-') };
+      homeShown_ = { paid: paidTotal, collectedTotal: homeShown_ ? homeShown_.collectedTotal : null };
+
       app.innerHTML = `
-        <header class="dashboard-page-header">
-          <div>
-            <div class="dashboard-brand">CMWEBS · LANDLORD WORKSPACE</div>
-            <h1 class="dashboard-page-title">
-              您好，${safeHtml(home.landlord_name || '房東')}
-            </h1>
-            <div class="dashboard-updated">
-              最後更新 ${safeHtml(home.updated_at || home.latest_bill_month || '-')}
+        <header class="dashboard-page-header home-header">
+          <div class="home-title-block">
+            <div class="dashboard-brand">${safeHtml(homeGreeting_())}・${safeHtml(currentRole)}</div>
+            <div class="home-title-row">
+              <h1 class="dashboard-page-title" id="homeTitle">${safeHtml(homeTitle)}</h1>
+              ${canEditTitle ? `
+              <button class="home-title-edit" type="button" onclick="goPage('landlord-settings.html')" aria-label="自訂首頁標題：前往設定修改管理團隊名稱">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>
+              </button>` : ''}
             </div>
           </div>
 
@@ -2846,28 +3038,38 @@
           </button>
         </header>
 
-        <section class="card dashboard-summary-card">
-          <div class="dashboard-section-heading">
+        <section class="card dashboard-summary-card home-hero ${heroEnter ? 'home-hero-enter' : ''}" aria-labelledby="homeHeroTitle">
+          <div class="home-hero-top">
             <div>
-              <div class="dashboard-section-title">本月營運總覽</div>
+              <div class="dashboard-section-title" id="homeHeroTitle">本月營運總覽</div>
               <div class="dashboard-section-subtitle">
-                ${safeHtml(home.latest_bill_month || '-')} ・ ${numberValue(home.latest_bill_count)} 筆帳單
+                ${safeHtml(home.latest_bill_month || '-')} ・ ${numberValue(home.latest_bill_count)} 筆帳單${TEST_MODE ? ' ・ 測試' : ''}
               </div>
             </div>
-            <div class="dashboard-section-subtitle">${TEST_MODE ? '測試' : '正式'}</div>
+            <div class="home-live" id="homeLiveStatus" data-state="${liveStatus.state}" role="status">
+              <i aria-hidden="true"></i><span>${safeHtml(liveStatus.text)}</span>
+            </div>
           </div>
 
-          <div class="dashboard-kpi-grid desktop-kpi-row">
+          <div class="home-hero-main">
+            <div class="home-ring" role="img" aria-label="收款率 ${paidRate.toFixed(1)}%" style="--ring-offset:${(314.16 * (1 - paidRate / 100)).toFixed(2)}">
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="home-ring-track" cx="60" cy="60" r="50"></circle>
+                <circle class="home-ring-fill" cx="60" cy="60" r="50"></circle>
+              </svg>
+              <div class="home-ring-label" aria-hidden="true"><strong>${paidRate.toFixed(paidRate >= 99.95 || paidRate === 0 ? 0 : 1)}%</strong><span>收款率</span></div>
+            </div>
+            <div class="home-hero-amount">
+              <div class="home-hero-label">本月已收</div>
+              <div class="home-hero-value home-roll" aria-label="已收 ${dashboardMoney_(paidTotal)}">${paidDisplay}</div>
+            </div>
+          </div>
+
+          <div class="dashboard-kpi-grid desktop-kpi-row home-hero-kpis">
             <div class="dashboard-kpi">
               <div class="dashboard-kpi-label">應收</div>
               <div class="dashboard-kpi-value blue" aria-label="應收 ${dashboardMoney_(latestTotal)}">
                 ${dashboardMoney_(latestTotal)}
-              </div>
-            </div>
-            <div class="dashboard-kpi">
-              <div class="dashboard-kpi-label">已收</div>
-              <div class="dashboard-kpi-value green" aria-label="已收 ${dashboardMoney_(paidTotal)}">
-                ${dashboardMoney_(paidTotal)}
               </div>
             </div>
             <div class="dashboard-kpi">
@@ -2876,18 +3078,14 @@
                 ${dashboardMoney_(unpaidTotal)}
               </div>
             </div>
-            <div class="dashboard-kpi">
-              <div class="dashboard-kpi-label">收款率</div>
-              <div class="dashboard-kpi-value dashboard-kpi-rate" aria-label="收款率 ${paidRate.toFixed(1)}%">
-                ${paidRate.toFixed(1)}%
-              </div>
-            </div>
           </div>
         </section>
 
         <div id="landlordDashboardState" class="dashboard-state" aria-live="polite">
-          <section class="dashboard-card loading-card">
-            <div class="loading-spinner"></div>
+          <section class="dashboard-card loading-card home-skeleton-card" aria-label="圖表資料載入中">
+            <div class="home-skeleton home-skeleton-line" style="width:42%"></div>
+            <div class="home-skeleton home-skeleton-amount"></div>
+            <div class="home-skeleton home-skeleton-chart"></div>
             <div class="loading-text">圖表資料載入中...</div>
           </section>
         </div>
@@ -3137,29 +3335,6 @@
           </div>
         </section>
 
-        <section class="card section-card">
-          <div class="section-title-row">
-            <div class="section-title">系統資訊</div>
-          </div>
-
-          <div class="summary-grid">
-            <div class="summary-box">
-              <div class="summary-label">最後更新</div>
-              <div class="summary-value">
-                ${safeHtml(
-                  home.updated_at || '-'
-                )}
-              </div>
-            </div>
-
-            <div class="summary-box">
-              <div class="summary-label">目前模式</div>
-              <div class="summary-value">
-                ${TEST_MODE ? '測試' : '正式'}
-              </div>
-            </div>
-          </div>
-        </section>
         </div>
       `;
       if (previousDashboard) {
@@ -3234,32 +3409,62 @@
           return;
         }
 
+        // The three independent reads start together. Each one is painted
+        // only once the core shell exists, so a slow chart or action count
+        // never delays the first useful screen.
+        const homePromise = jsonpRequest(
+          'landlord_home_bootstrap',
+          { section: 'home' },
+          { maxAttempts: 1 }
+        );
+        const actionsPromise = jsonpRequest(
+          'landlord_home_bootstrap', { section: 'actions' }, { maxAttempts: 1 }
+        );
+        const dashboardReportPromise = requestDashboardReport_(requestToken);
+        homePromise.catch(function () {});
+        actionsPromise.catch(function () {});
+        dashboardReportPromise.catch(function () {});
+
+        const cacheIdentity = await homeCacheIdentity_().catch(function () { return ''; });
+        if (requestToken !== pageRequestToken_) return;
+        const cached = homeRendered_ ? null : readHomeCache_(cacheIdentity);
+        if (cached) {
+          renderHome(cached.home, cached.action_summary || null, false, { staleSavedAt: cached.saved_at });
+          homeRendered_ = true;
+          if (cached.report) renderLandlordDashboardCharts_(cached.report);
+          if (cached.action_summary) {
+            const status = document.getElementById('homeActionStatus');
+            if (status) status.textContent = '顯示上次待辦數量，更新中';
+          }
+        }
+        dashboardReportPromise.then(function (result) {
+          if (requestToken === pageRequestToken_) writeHomeCache_(cacheIdentity, { report: unwrapData(result) });
+        }).catch(function () {});
+
         const homeResult =
-          await jsonpRequest(
-            'landlord_home_bootstrap',
-            { section: 'home' },
-            {
-              maxAttempts: 1
-            }
-          );
+          await homePromise;
         const home = unwrapData(homeResult).home || {};
         if (requestToken !== pageRequestToken_) return;
-        renderHome(home, null);
+        renderHome(home, cached && cached.action_summary || null, false, { keepDashboard: Boolean(cached) });
         homeRendered_ = true;
+        writeHomeCache_(cacheIdentity, { home: home });
+        if (cached && cached.action_summary) {
+          const status = document.getElementById('homeActionStatus');
+          if (status) status.textContent = '顯示上次待辦數量，更新中';
+        }
 
         // Secondary work cannot delay the useful first render. Both sections
         // remain independently usable if the other fails.
-        const dashboardReportPromise = requestDashboardReport_(requestToken);
         loadDashboardReport_(requestToken, dashboardReportPromise);
         try {
-          const bootstrap = unwrapData(await jsonpRequest(
-            'landlord_home_bootstrap', { section: 'actions' }, { maxAttempts: 1 }
-          ));
+          const bootstrap = unwrapData(await actionsPromise);
           if (requestToken !== pageRequestToken_) return;
-          renderHome(home, buildActionSummary(
+          const actionSummary = buildActionSummary(
             bootstrap.contract_requests || {}, bootstrap.payment_reports || {},
             bootstrap.messages || {}, bootstrap.landlord_initiated_contracts || {}
-          ), true);
+          );
+          renderHome(home, actionSummary, true);
+          writeHomeCache_(cacheIdentity, { action_summary: actionSummary });
         } catch (error) {
           if (requestToken !== pageRequestToken_) return;
           if (/AUTH|SESSION|FORBIDDEN|PERMISSION|WORKSPACE|MEMBERSHIP/.test(error.code || '')) throw error;
@@ -3275,8 +3480,12 @@
           const transient = /API_TIMEOUT|API_NETWORK_ERROR/.test(error.code || '') ||
             /API 載入逾時|網路/.test(message);
           if (homeRendered_ && transient) {
+            setHomeLiveStatus_('error', '無法更新，畫面為上次資料');
             showToast('更新失敗，畫面保留上次資料：' + message);
           } else {
+            // Authorization or data errors must never leave old figures behind.
+            clearHomeCache_();
+            homeShown_ = null;
             homeRendered_ = false;
             renderError(message);
           }

@@ -157,6 +157,9 @@ vm.runInNewContext(
     extractFunction('dashboardTrendTotals_'),
     extractFunction('dashboardPercent_'),
     extractFunction('dashboardEscape_'),
+    extractFunction('dashboardTrendGeometry_'),
+    extractFunction('dashboardTrendDelta_'),
+    extractFunction('attachTrendScrub_'),
     extractFunction('dashboardLineChartSvg_'),
     extractFunction('dashboardDonutSvg_'),
     extractFunction('dashboardExpiryChartSvg_'),
@@ -269,8 +272,8 @@ assert.ok(
 const reportRequestStartIndex = loadPageSource.indexOf('requestDashboardReport_(');
 const bootstrapRequestIndex = loadPageSource.indexOf("'landlord_home_bootstrap'");
 assert.ok(
-  reportRequestStartIndex > bootstrapRequestIndex && reportRequestStartIndex > loadPageSource.indexOf('renderHome('),
-  'secondary reports must wait until lightweight home has rendered'
+  reportRequestStartIndex > bootstrapRequestIndex && reportRequestStartIndex < loadPageSource.indexOf('renderHome('),
+  'the report read starts together with the home read instead of queueing behind its render'
 );
 assert.ok(
   loadPageSource.indexOf('renderHome(') >= 0,

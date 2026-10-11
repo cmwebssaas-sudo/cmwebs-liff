@@ -3,6 +3,8 @@
 
   const SESSION_TOKEN_KEY =
     'cmwebs_landlord_session_token';
+  const HOME_SNAPSHOT_KEY =
+    'cmwebs_landlord_home_cache_v1';
   const AUTH_FAILURE_CODES = {
     SESSION_EXPIRED: true,
     AUTH_REQUIRED: true,
@@ -41,8 +43,17 @@
       : '';
   }
 
+  // Logout and authorization failures also drop the homepage's browser
+  // snapshot, so the next person on this device never sees old figures.
+  function clearHomeSnapshot() {
+    try {
+      if (window.localStorage) window.localStorage.removeItem(HOME_SNAPSHOT_KEY);
+    } catch (error) {}
+  }
+
   function setSessionToken(token) {
     const store = storage();
+    if (!token) clearHomeSnapshot();
     if (!store) return;
     if (token) {
       store.setItem(SESSION_TOKEN_KEY, token);
