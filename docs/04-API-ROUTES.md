@@ -1304,3 +1304,22 @@ existing Email HMAC property. Values are never printed or committed. Missing
 authority/channel/sync configuration keeps the production dispatcher closed.
 CORS allows only `https://cmwebssaas-sudo.github.io`; all responses are no-store.
 No formal binding, deployment or read flag has been changed by this candidate.
+
+### C4 centralized browser read selection
+
+Only `frontend-release.js` defines `CMWEBS_READ_API_URL` and six
+`CMWEBS_READ_PATH` flags. Default/missing flags are off. Existing six page
+wrappers use `CMWebsLandlordApi.request` for LINE and Email. Worker credentials
+are only Authorization headers, never URL/telemetry parameters; writes stay GAS.
+The on deadline is3000ms including decoding/shape validation, followed by GAS
+fallback. Successful shared API, bridge and legacy LIFF JSONP writes protect
+subsequent reads for120000ms across navigation. Existing snapshot keys remain.
+
+Shadow renders GAS only and sends `POST /v1/shadow-report` with JSON
+`{route,outcome,paths,elapsed_ms,headers_ms}`; outcome is `compared` or
+`worker_error`, paths are redacted fixed-vocabulary fields, and times measure
+full decoded response and header arrival respectively. No values, actor/scope
+IDs, raw dynamic keys or credential body are sent. C5 must implement authenticated
+receiver/persistence/coverage; C4 transport alone does not establish acceptance.
+Current endpoint is blank and flags off. See `READ-ROUTING.md` for publication
+and rollback, and retained actual/device/performance gates.

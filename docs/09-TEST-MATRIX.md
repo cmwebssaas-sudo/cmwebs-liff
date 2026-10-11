@@ -1268,3 +1268,14 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Signed GAS confirmation through actual POST dispatcher; nonce/digest/route binding, replay/forgery/expiry, unavailable authority and undelivered source-only revocation/access changes | `tests/read-authority.test.mjs`; integrated D1 HTTP test | Real GAS modules in VM, real Worker HMAC and local service bridge; no formal account |
 | Source pending markers, incomplete/stale D1 snapshots, role changes, CORS, query tampering and sanitized HTTP errors | Integrated D1 HTTP test | Synthetic source and local D1 changes; no cross-request access cache |
 | Remote GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |
+
+## 2026-10-12 C4 routing candidate
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| off/shadow/on, absent/invalid flags, bearer headers, safe endpoint/query allowlist, non2xx/shape/network/body deadline fallback | `tests/read-routing.test.mjs` | Actual shared browser script in VM, synthetic fetch/GAS |
+| Successful writes across API/bridge/legacy LINE JSONP, two-minute navigation/session guard, quota recovery, write/read races | Same | Actual Auth/LIFF modules and bridge message flow; numeric deadline only |
+| Redacted bounded path-only comparisons, distinct Worker errors, headers vs full-response timing | Same | No compared values or dynamic keys in reports; remote C5 receiver not yet published |
+| Actual six HTML page wrappers × LINE/Email and retained arrears desktop action restriction | `tests/read-routing-pages.test.mjs` | AST-extracted actual page functions; shared router dispatch proven |
+| Affected54/54, unit897/897, validate72 files and release cache references | Local candidate | Full suite897 pass/1 known external Core fixture failure/4 skips |
+| Actual Pages readback, authenticated/device routing/fallback and seven-day report coverage | NOT_STARTED | All flags off; C1 real72-hour observation continues, then preceding release gates |
