@@ -1,3 +1,5 @@
+import { sync } from './sync.js';
+
 function json(body, status = 200, headers = {}) {
   return Response.json(body, {
     status,
@@ -7,6 +9,7 @@ function json(body, status = 200, headers = {}) {
 
 export default {
   async fetch(request, env) {
+    if (new URL(request.url).pathname === '/sync') return sync(request,env);
     if (new URL(request.url).pathname !== '/health') {
       return json({ success: false, error: 'NOT_FOUND' }, 404);
     }

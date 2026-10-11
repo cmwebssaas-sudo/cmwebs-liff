@@ -1229,3 +1229,14 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Missing/failing database gives sanitized 503 with no-store | Same | Real handler, controlled failing binding |
 | Pinned dependency install, Worker tests and bundle dry-run | `read-worker` CI job; `npm run test:worker`; `npm run dry-run:worker` | No Cloudflare credentials or upload |
 | Account, Paid plan and APAC D1 readiness | UNVERIFIED | Requires authenticated evidence; new costs/login/payment remain owner gates |
+
+## 2026-10-12 C1 synchronization candidate
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Exact-byte signature, timestamp/nonce rejection, whitelist, row hash, 500-row acceptance and overflow | `cloudflare/read-api/test/sync.test.mjs` | Real local workerd and disposable D1; synthetic credentials/rows |
+| Staged batches, atomic completion/deletion, conflicting manifests, stale source versions, unchanged rows, scalar types and revocation patch | Same | Local transaction tests; no remote quota or production proof |
+| Generated schema parity, idle zero-read behavior, Sheet projection, failed/concurrent dirty markers and immediate Email revocation | `tests/read-replica-sync.test.mjs` | Actual Apps Script functions in Node VM with controlled Sheet/network adapters |
+| Every dispatcher route explicitly classified, previously missed mutations queue their tables, real GET/POST envelopes preserved | Same | Real dispatcher and dirty-marker functions; synthetic successful responses |
+| Apps Script affected test function | `testReadReplicaProjection()` executed by the VM suite | Pure projection test; not a production execution |
+| Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_STARTED | Must be observed in the isolated remote environment; local tests cannot satisfy this gate |

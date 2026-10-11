@@ -148,4 +148,15 @@ without specific authorization. Never store or reveal secret values.
 
 - Repair dispatch release COMPLETE at publication level: PR249/main7241f2e; Pages built,50 public files match; serving224 at same URL, other4 deployments unchanged. Anonymous GET/POST rejected. Real authenticated landlord/vendor transactions and physical device UNVERIFIED; no business test dispatch/financial write/LINE send.
 
+- 2026-10-12 continuous read-path execution uses the owner's batch authorization
+  for in-plan reviewed commits/PRs/merges, deployments and configuration. Exceptions
+  remain new fees, formal data deletion, scope expansion and owner login/payment/
+  device acceptance. R0 PR263 and S1 PR264 source are merged. S1 frontend gate
+  passed; backend v233 has69-file immutable/readback evidence and rollback v232;
+  post-backend owner LINE/notification/Email acceptance passed. C0 PR265/main32a5820 passes CI and
+  62-file Pages readback. C1 source candidate is isolated and remains draft until
+  the separate test environment's three real consecutive days pass. Seven real
+  shadow days and physical per-page acceptance also remain mandatory. Preserve
+  dirty root WIP. Private security material stays outside Git and PR text.
+
 - 2026-10-10 auto email settlement completion notice correctness fix: candidate a377903; immutable22561 files match; original deployment225, rollback224, other4 unchanged.729 tests/42 bank runtime tests and independent review pass. No frontend/schema/Properties/trigger/financial-rule changes; no manual intake/send or historical bulk resend. Real LINE receipt UNVERIFIED. See BANK-AUTO-SETTLEMENT-NOTIFICATION.md.

@@ -174,3 +174,44 @@ PR's two actual CI jobs before merge; local checks used Node26/macOS.
 CLI read-only `whoami` confirms an existing OAuth login, without publishing
 account identifiers or credentials; Paid plan and provisioning target still
 require read-only verification.
+
+## 2026-10-12 — S1 staged backend publication and C1 candidate
+
+S1's frontend physical gate was owner-confirmed after the required wait.
+Fresh authenticated exports confirmed serving v232 and editor HEAD matched the
+recorded 68-file rollback baseline. The reviewed S1 candidate was pushed and
+exported byte-for-byte, then immutable v233 was exported and matched all69 files.
+The original formal Web App deployment now reads back v233 at the same URL;
+the other4 deployments are unchanged. A synthetic anonymous protected read
+returns `AUTH_REQUIRED`. Rollback retains v232 and its fresh editor export.
+Post-backend owner confirmed LINE reads, harmless notification acknowledgement
+and desktop Email reads normal; staged S1 acceptance passed. No Properties, trigger or formal business data changed.
+
+C0 PR265 merged `32a5820`; PRCI38170596031 and mainCI38170676231 passed,
+including Node22/Linux Worker tests. Pages38170676045 succeeded and all62
+published assets matched. The owner selected the existing Cloudflare account
+and undertook its plan upgrade; the latest authenticated readback still showed
+Free. Paid readiness must be read back after payment before provisioning.
+
+C1 uses independent branch `codex/c1-read-replica-sync-20261012`, based on
+`32a5820`. Recommended model/speed: GPT-6.1 Sol / high. It adds generated
+16-table projections, bounded signed snapshot ingestion, dirty generation
+sync, explicit dispatcher dependencies and immediate session revocation patch.
+Review found incomplete mutation detection; the keyword heuristic was replaced
+by explicit route policy plus full dispatcher inventory regression. Empty
+webhook acknowledgements are excluded from dirty marking. Source review and
+tests are distinct from remote acceptance; the three-day test remains
+NOT_STARTED. Keep this work order's PR draft until that gate passes.
+
+Local unit suite847/847 passed including the empty-webhook regression;
+the full suite retained only the existing missing `PLATFORM_CORE_TEST_WORKTREE`
+integration-environment failure (846 pass,4 skips). Final test counts and review
+will be recorded with the candidate. No test uses formal Sheets or sends LINE.
+See `READ-REPLICA-SYNC.md` for release, quota acceptance and rollback.
+
+Final C1 source review passed after mutation-inventory and empty-webhook fixes.
+Reviewer executed the real webhook/dispatcher fallback: empty or skipped events
+mark zero tables, a processed event marks all16. Unit847/847, affected sync12/12,
+Worker10/10, validate and diff-check pass. The full suite's existing external
+Core fixture remains unavailable. Draft PR/CI are source evidence only; remote
+three-day acceptance and formal synchronization publication are NOT_STARTED.
