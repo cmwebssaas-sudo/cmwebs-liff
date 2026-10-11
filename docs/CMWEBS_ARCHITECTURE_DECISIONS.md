@@ -259,3 +259,12 @@ approval ("A then C"; C is the AI-00 read path).
   page fetches the new shared scripts together.
 
 No Apps Script, route, schema or Production data change.
+# 2026-10-12 C0 local read API boundary
+
+The read-path environment lives under `cloudflare/read-api/` with pinned,
+matching Wrangler/Miniflare dependencies and its own credential-free CI job.
+C0 exposes only a read-only local health probe, with an all-zero D1 placeholder
+and disabled public deployment routes. Schemas, synchronization, identity and
+operational reads follow in their assigned work orders. Account login alone
+does not establish paid-plan readiness or the correct provisioning account.
+Google Sheets remains authoritative. Rollback of C0 only reverts source/CI.

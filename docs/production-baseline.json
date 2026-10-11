@@ -90,13 +90,13 @@
     "rollback_backend_version": 212,
     "status": "Immutable213 export matches all59 local files, unchanged formal Web App reads213. User confirmed403/505 continued occupancy and October rent7500 each and authorized release plus only these two unpaid corrections. User completed browser confirmation; formal UI fresh readback explicitly reports both saved, without resubmission. Original bills B0000051/B0000056 remain;403total10100,505total10550, rent7500 each, meters/due/zero discounts and blank notes unchanged. Other19 card DOM snapshots identical before/after correction. No manual LINE send, lease/trigger changes or batch financial rewrite."
   },
-  "frontend_revision": "2a5779f47505ba1c665b2cd172c9ca0b503fc839",
-  "frontend_workflow": "38151775414",
-  "frontend_public_file_count_verified": 61,
-  "frontend_release_tag": "20261011-fast-navigation-v1",
-  "frontend_authenticated_acceptance": "HUMAN_REQUIRED: current fast-navigation build was checked by public byte readback only; prior membership acceptance remains in membership_transfer_release",
+  "frontend_revision": "b8f62f00652fbae00c202ee2684e8dd910bda86c",
+  "frontend_workflow": "38169983258",
+  "frontend_public_file_count_verified": 62,
+  "frontend_release_tag": "20261012-line-identity-v1",
+  "frontend_authenticated_acceptance": "HUMAN_REQUIRED: compatible frontend published; staged LINE and Email acceptance pending",
   "frontend_physical_device_acceptance": "HUMAN_REQUIRED: physical LINE/mobile acceptance of the current build was not performed",
-  "frontend_scope": "PR261 homepage redesign and PR262 inner-page snapshots, prefetch and on-demand LINE SDK. R0 read-only reconciliation on 2026-10-12 matched all 61 existing manifest assets to origin/main 2a5779f; no publication or authenticated performance retest.",
+  "frontend_scope": "PR264 compatible credential transport published; 62 public files matched source on 2026-10-12. Serving backend remains v232; physical gate precedes backend publication.",
   "prior_frontend_release": {
     "verified_on": "2026-10-02",
     "revision": "657ec08274faa1150af082906f7c9ecb84b4b89e",
@@ -606,5 +606,17 @@
     "deployment_performed": false,
     "physical_line_acceptance": "HUMAN_REQUIRED",
     "authenticated_performance_acceptance": "HUMAN_REQUIRED"
+  },
+  "s1_frontend_publication": {
+    "pull_request": 264,
+    "source_commit": "73d71dacf1d6e275c9ed9d1170e2d042ac5039e9",
+    "merge_commit": "b8f62f00652fbae00c202ee2684e8dd910bda86c",
+    "pages_workflow": "38169983258",
+    "pages_conclusion": "success",
+    "public_files_matched": 62,
+    "readback_at": "2026-10-11T19:56:13.037327+00:00",
+    "backend_publication": "NOT_RUN; serving v232",
+    "physical_line_acceptance": "HUMAN_REQUIRED",
+    "rollback_backend_version": 232
   }
 }

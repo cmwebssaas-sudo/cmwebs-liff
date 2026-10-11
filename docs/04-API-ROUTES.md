@@ -1211,3 +1211,12 @@ The existing LINE POST consumers use the same verified-principal boundary.
 Email verification uses the active Email session when available. Contract
 document upload and renewal-intent requests carry the active credential while
 preserving existing Workspace, role and contract authorization.
+
+## Cloudflare read API scaffold (C0; local only)
+
+`GET /health` returns `{ success: true, data: { service:
+"cmwebs-read-api", database: "ready" } }` only after a read-only D1 probe.
+Missing/failing D1 returns 503 `READ_REPLICA_UNAVAILABLE`; unsupported health
+methods return 405 with `Allow: GET`; other paths return 404. All responses
+use `Cache-Control: no-store`. No operational read or sync endpoint is enabled
+and no Cloudflare deployment is performed by C0.
