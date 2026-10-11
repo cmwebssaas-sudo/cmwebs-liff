@@ -9,10 +9,10 @@
   <title>CMWebs 更多功能</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="frontend-release.js?v=20261010-repair-dispatch-v1"></script>
-  <script src="landlord-api.js?v=20261010-repair-dispatch-v1"></script>
-  <script src="landlord-auth.js?v=20261010-repair-dispatch-v1"></script>
-  <script src="platform-core-subscription.js?v=20261011-core-subscription-v2"></script>
+<script src="frontend-release.js?v=20261011-membership-transfer-v1"></script>
+  <script src="landlord-api.js?v=20261011-membership-transfer-v1"></script>
+  <script src="landlord-auth.js?v=20261011-membership-transfer-v1"></script>
+  <script src="platform-core-subscription.js?v=20261011-membership-transfer-v1"></script>
 
   <style>
     :root {
@@ -733,7 +733,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261010-repair-dispatch-v1" />
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261011-membership-transfer-v1" />
 </head>
 
 <body>
@@ -1348,6 +1348,8 @@
       <section class="card" aria-labelledby="subscriptionTitle">
         <div class="section-title-row"><div class="section-title" id="subscriptionTitle">訂閱與房間額度</div></div>
         <div class="system-row" id="platformCoreSubscriptionStatus" role="status" aria-live="polite">正在讀取訂閱…</div>
+        <button class="menu-item" type="button" onclick="goPage('landlord-subscription.html')"><div class="menu-title">會員中心與轉帳續訂</div><div class="menu-arrow">›</div></button>
+        <button class="menu-item" type="button" onclick="goPage('platform-admin.html')"><div class="menu-title">訂閱會員管理後台</div><div class="menu-desc">管理者可設定方案、收款帳號與確認轉帳</div></button>
       </section>
 
       <section class="card">

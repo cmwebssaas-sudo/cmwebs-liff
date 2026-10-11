@@ -283,6 +283,10 @@ function doGet(e) {
   let lineUserId =
     e.parameter.line_user_id || '';
 
+  if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode','commercial_billing_link_line'].indexOf(v2Action) >= 0) {
+    return ContentService.createTextOutput(JSON.stringify({success:false,code:'POST_REQUIRED',message:'請使用安全登入頁送出'})).setMimeType(ContentService.MimeType.JSON);
+  }
+
   if (bankReceiptIsAction_(v2Action)) {
     return jsonOutput_(bankReceiptError_('POST_REQUIRED', '入帳通知需使用已驗證的 POST'), callback);
   }
@@ -518,51 +522,9 @@ function doGet(e) {
     );
   }
 
-  if (v2Action === 'landlord_register_submit') {
-    const landlordName =
-      e.parameter.landlord_name || '';
-
-    const phone =
-      e.parameter.phone ||
-      e.parameter.landlord_phone ||
-      '';
-
-    const email =
-      e.parameter.email ||
-      e.parameter.landlord_email ||
-      '';
-
-    const workspaceName =
-      e.parameter.workspace_name || '';
-
-    const profileDisplayName =
-      e.parameter.profile_display_name || '';
-
-    const profilePictureUrl =
-      e.parameter.profile_picture_url || '';
-
-    const result =
-      registerLandlordWorkspaceByLineUid_(
-        lineUserId,
-        landlordName,
-        phone,
-        email,
-        workspaceName,
-        profileDisplayName,
-        profilePictureUrl
-      );
-
-    if (bridge === '1') {
-      return htmlBridgeOutput_(
-        result,
-        requestId
-      );
-    }
-
-    return jsonOutput_(
-      result,
-      callback
-    );
+  if (['landlord_register_submit','commercial_registration_email_request','commercial_registration_email_verify','commercial_registration_line'].indexOf(v2Action) >= 0) {
+    const result = workspaceResult_(false, 'POST_REQUIRED', '建立帳號需使用驗證身分的 POST');
+    return bridge === '1' ? htmlBridgeOutput_(result, requestId) : jsonOutput_(result, callback);
   }
 
   if (v2Action === 'landlord_onboarding_init') {
@@ -2798,6 +2760,24 @@ function doPost(e) {
           String(request.response_mode || '')
             .trim() === 'bridge';
         let result = null;
+
+        if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode','commercial_billing_link_line'].indexOf(action) >= 0) {
+          result = platformCoreDispatchBilling_(action, request);
+          return useBridge ? htmlBridgeOutput_(result, request.request_id || '') : ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        if (['landlord_register_submit','commercial_registration_email_request','commercial_registration_email_verify','commercial_registration_line'].indexOf(action) >= 0) {
+          let registrationInput = null;
+          try { registrationInput = typeof request.registration_json === 'string' ? JSON.parse(request.registration_json) : request.registration_input; } catch (_) {}
+          if (action === 'commercial_registration_email_request') {
+            result = requestCommercialEmailRegistration_(request.email || '', {request_id:request.request_id || ''});
+          } else if (action === 'commercial_registration_email_verify') {
+            result = verifyCommercialEmailRegistration_(request.challenge_id || '', request.code || '', registrationInput, {request_id:request.request_id || ''});
+          } else {
+            result = registerCommercialLandlordByVerifiedLine_(request.id_token || '', registrationInput || request, {request_id:request.request_id || ''});
+          }
+          return useBridge ? htmlBridgeOutput_(result, request.request_id || '') : ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+        }
 
         if (
           useBridge &&

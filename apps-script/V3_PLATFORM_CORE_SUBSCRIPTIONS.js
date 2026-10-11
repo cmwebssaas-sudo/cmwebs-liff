@@ -109,6 +109,8 @@ function platformCoreInstant_(input) {
   return Date.parse(input);
 }
 function platformCoreValidateSnapshot_(body, link, now) {
+  const commercial=body && (body.commercial_state!==undefined || (Array.isArray(body.entitlements) && body.entitlements.some(function(e){return e && e.source==='subscription_period';})));
+  if(commercial){if(typeof CMWebsCoreBillingContracts==='undefined')throw new Error('COMMERCIAL_CONTRACT_REQUIRED');CMWebsCoreBillingContracts.parseProductAccessResponse(body);}
   if (
     !body ||
     typeof body !== "object" ||
@@ -176,7 +178,7 @@ function platformCoreValidateSnapshot_(body, link, now) {
   if (active.length > 1) throw new Error("AMBIGUOUS_SUBSCRIPTION");
   const codes = Object.create(null);
   let enabled = false,
-    max = null;
+    max = null, unlimited = false;
   body.entitlements.forEach(function (e) {
     if (
       !e ||
@@ -202,13 +204,14 @@ function platformCoreValidateSnapshot_(body, link, now) {
       (e.value_type === "ENUM" && typeof e.value === "string")
     ) {
     } else throw new Error("INVALID_ENTITLEMENT_VALUE");
-    if (["plan", "subscription_override"].indexOf(e.source) < 0)
+    if (["plan", "subscription_override", "subscription_period"].indexOf(e.source) < 0)
       throw new Error("INVALID_ENTITLEMENT_SOURCE");
     if (e.code === "rental.workspace.enabled") {
       if (e.value_type !== "BOOLEAN" || typeof e.value !== "boolean")
         throw new Error("INVALID_ENABLED");
       enabled = e.value;
     }
+    if(e.code==='rental.rooms.unlimited'){if(e.value_type!=='BOOLEAN' || e.value!==true)throw new Error('INVALID_UNLIMITED');unlimited=true;}
     if (e.code === "rental.rooms.max") {
       if (
         e.value_type !== "INTEGER" ||
@@ -220,7 +223,10 @@ function platformCoreValidateSnapshot_(body, link, now) {
       max = e.value;
     }
   });
+  if(unlimited && max!==null)throw new Error('CONFLICTING_ROOM_LIMIT');
   return {
+    commercial_state:body.commercial_state,
+    room_limit:unlimited?{mode:'UNLIMITED'}:max===null?{mode:'NONE'}:{mode:'LIMITED',max_rooms:max},
     workspace_id: link.workspace_id,
     company_id: link.platform_company_id,
     product_id: link.product_id,
@@ -286,6 +292,7 @@ function platformCoreGetWorkspaceAccess_(access) {
 }
 function platformCoreResolveSubscriptionPrincipal_(request) {
   request = request || {};
+  if(typeof platformCoreResolveBillingPrincipal_==='function'){try{return {success:true,data:platformCoreResolveBillingPrincipal_(request)};}catch(_){return {success:false,code:'AUTH_REQUIRED',message:'請重新登入'};}}
   if (platformCoreText_(request.landlord_session_token))
     return resolveLandlordPrincipal_(request, {
       require_onboarding: true,
@@ -342,8 +349,9 @@ function getLandlordSubscriptionInitByPrincipal_(principal) {
     code: "OK",
     data: {
       mode: result.data.mode,
+      room_limit:grant ? grant.room_limit : null,
       status:
-        grant && grant.subscription
+        grant && grant.commercial_state ? grant.commercial_state : grant && grant.subscription
           ? grant.subscription.status
           : result.data.mode === "legacy"
             ? "LEGACY"

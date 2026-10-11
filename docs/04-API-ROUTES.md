@@ -1151,3 +1151,48 @@ Frontend Company/Product/Workspace inputs never select the Core tenant.
 Returns mode, subscription status, rooms_used/rooms_max, enabled and expiry;
 no Core credential or raw Core error. There is no subscription/payment/link
 mutation route. See [PLATFORM-CORE-SUBSCRIPTIONS.md](PLATFORM-CORE-SUBSCRIPTIONS.md).
+
+## V3 verified commercial registration
+
+Dispatcher is the current canonical `apps-script/程式碼.js`. All registration
+actions require POST body; JSON and the existing iframe form bridge are supported.
+GET `landlord_register_submit` and the new actions return `POST_REQUIRED`.
+The previous claimed-UID registration function always denies access.
+
+| Action | Verified evidence | Request fields |
+| --- | --- | --- |
+| `commercial_registration_email_request` | Email recipient challenge | `email` |
+| `commercial_registration_email_verify` | One-use Email OTP, five attempts, ten minutes | `challenge_id`, `code`, `registration_json` |
+| `commercial_registration_line` | LINE provider-verified ID token for the existing login channel | `id_token`, `registration_json` |
+| `landlord_register_submit` (compatibility POST) | Same verified LINE token requirement | `id_token`, registration fields with explicit terms consent |
+
+Registration JSON contains `landlord_name`, `phone`, `email`, `workspace_name`,
+`terms_accepted:true`. Browser UID, roles and Workspace claims grant no authority.
+An existing Email returns `ALREADY_REGISTERED` and the original login route.
+LINE registration never enables Email login from a displayed Email alone.
+
+The explicit editor operation `initializeCommercialRentalSchema` adds
+`V3_landlord_registration_intents` and `V3_platform_core_member_provisioning`,
+and ensures the existing rental schema and Core workspace-link headers. Reads
+never initialize these tables. Durable registration intents reserve original
+User/Workspace/Owner IDs so a fresh verified retry can finish a partial write.
+Provisioning records use workspace_id/user_id/status/idempotency_key/attempted_at/
+last_error_code/created_at/updated_at. Core calls and Email delivery run outside
+ScriptLock. New workspace links start in `enforce` while pending; existing
+`observe` links are preserved. Core timeout returns successful local registration
+with `PROVISIONING_PENDING`, and the verified member may retry the same binding.
+No first room or completed onboarding is required to reach the subscription page.
+
+### V3 Commercial Billing POST bridge
+
+`commercial_billing_init` verifies the original Email session or LINE ID token, rechecks active User/Workspace/member rows without requiring onboarding, retries stable Core provisioning, and returns a 15-minute login-bound CSRF token. No broker credential or assertion secret is returned.
+
+`commercial_billing` accepts only `operation`, JSON `payload_json`, `idempotency_key` for writes and `csrf_token`. The generated Core contract is the operation/body/response authority. Mode operations cannot be submitted through the generic forwarder. `commercial_billing_retry_provisioning` requires the same verified login and CSRF. GET is rejected before tenant identity resolution; only the actual POST body may authenticate.
+
+`commercial_billing_workspace_mode` accepts `target_workspace_id`, `mode`, `reason`, `idempotency_key` and CSRF. Core checks actual Super Admin authority and returns a scoped 60-second intent. The Sheet change stores `mode_intent_id`, `mode_applied_at`, `mode_audit_status`; late retries attest the persisted timely write and finish Core audit without repeating it. Network calls run outside ScriptLock. `MODE_AUDIT_PENDING` means the setting was saved but the audit needs retry. Explicit editor migration `initializeCommercialRentalSchema` appends these headers and preserves existing modes.
+
+Private properties: `CMWEBS_PLATFORM_CORE_BILLING_BASE_URL`, `CMWEBS_PLATFORM_CORE_BROKER_CREDENTIAL`, `CMWEBS_PLATFORM_CORE_ASSERTION_KEY_ID`, `CMWEBS_PLATFORM_CORE_ASSERTION_SECRET` (32-byte base64url); existing environment/product and read-only properties stay separate. Issuer `https://cmwebs.com/rental`, audience `commercial-staging` or `commercial-production`. Exact UTF-8 body and assertion bytes are signed with a fresh one-use nonce for each attempt.
+
+`commercial_billing_link_line` is an explicit self-link for a verified Email member: same-session CSRF, `link_confirmed`, and separately provider-verified `link_id_token` are required. It attaches LINE to the original User and membership/landlord compatibility rows, preserving Workspace/Core Company. It rejects an existing different LINE binding or a LINE already assigned to another User; Email equality never merges accounts. The original rental operational pages use LINE-backed context; the member center supports Email without onboarding. Network verification happens before lock; current active rows are rechecked inside it.
+
+Commercial provisioning schema appends `workspace_display_name`: the first verified attempt fixes the name used with the stable Core idempotency key; a later rental rename cannot change that request body. Membership role is still freshly checked on each retry. New registration reserves uppercase UUID IDs to match existing rental Workspace normalization. Current-period room grants use the exported Core parser; explicit LIMITED/UNLIMITED/NONE is rechecked after lock, including onboarding's first-room path. No existing bulk room import entry was found; the shared guard checks any positive integer growth against canonical count for future batch callers.

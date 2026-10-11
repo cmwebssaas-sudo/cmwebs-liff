@@ -24,6 +24,11 @@ function requestLandlordEmailVerificationByLineUid_(
     );
   if (!access.success) return access;
 
+  const alreadyVerified = landlordEmailAuthFindActiveVerifiedLandlordByEmail_(email);
+  if (alreadyVerified && alreadyVerified.user_id !== access.user.user_id) {
+    return landlordEmailAuthError_('EMAIL_ALREADY_VERIFIED', '此 Email 已驗證於其他帳號，請使用原帳號登入');
+  }
+
   const normalizedEmail =
     landlordEmailAuthNormalizeEmail_(
       email
@@ -133,6 +138,10 @@ function verifyLandlordEmailLogin_(
   code,
   requestId
 ) {
+  const loginChallenge = landlordEmailAuthFindChallenge_(challengeId);
+  if (loginChallenge && /^reg_/.test(String(loginChallenge.user_id || ''))) {
+    return landlordEmailAuthError_('INVALID_CHALLENGE', '請從建立帳號頁完成註冊驗證');
+  }
   const verified =
     landlordEmailAuthVerifyChallenge_(
       challengeId,
@@ -155,6 +164,11 @@ function verifyLandlordEmailLogin_(
       user
     );
   if (!access.success) return access;
+
+  return landlordEmailAuthCreateSessionForAccess_(user, access, requestId);
+}
+
+function landlordEmailAuthCreateSessionForAccess_(user, access, requestId) {
 
   const token =
     landlordEmailAuthRandomToken_();
@@ -310,11 +324,11 @@ function landlordEmailAuthIssueChallenge_(
       request_id: landlordEmailAuthText_(options.requestId)
     };
 
-    landlordEmailAuthSendOtpEmail_(
-      options.email,
-      otp,
-      options.purpose
-    );
+    if (typeof options.deferDelivery === 'function') {
+      options.deferDelivery(options.email, otp, options.purpose);
+    } else {
+      landlordEmailAuthSendOtpEmail_(options.email, otp, options.purpose);
+    }
   } catch (error) {
     return landlordEmailAuthError_(
       'EMAIL_DELIVERY_FAILED',
