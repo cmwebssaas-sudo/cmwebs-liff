@@ -16,7 +16,7 @@ function platformCoreBillingConfig_() {
   if (config.secretBytes.length !== 32) throw platformCoreBillingError_('CONFIGURATION_REQUIRED');
   return config;
 }
-function platformCoreBillingHash_(value) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(value)).map(function(b){return ('0'+((b+256)%256).toString(16)).slice(-2);}).join(''); }
+function platformCoreBillingHash_(value) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,Array.isArray(value)?value:Utilities.newBlob(String(value)).getBytes()).map(function(b){return ('0'+((b+256)%256).toString(16)).slice(-2);}).join(''); }
 function platformCoreBillingBase64_(bytes) { return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/,''); }
 function platformCoreBillingHmac_(text,config) { return platformCoreBillingBase64_(Utilities.computeHmacSha256Signature(Utilities.newBlob(text).getBytes(),config.secretBytes)); }
 function platformCoreResolveBillingPrincipal_(request) {
@@ -53,10 +53,10 @@ function platformCoreVerifyBillingCsrf_(access,token) {
 }
 function platformCoreSignHumanRequest_(access,method,path,payload,intent) {
   if(!access || !COMMERCIAL_VERIFIED_ACCESS_.has(access) || method!=='POST' || ['PROVISION','HUMAN_ACTION'].indexOf(intent)<0)throw platformCoreBillingError_('AUTHENTICATION_REQUIRED');
-  const config=platformCoreBillingConfig_(),body=JSON.stringify(payload),at=Math.floor(Date.parse(landlordEmailAuthNowIso_())/1000);
-  if(Utilities.newBlob(body).getBytes().length>65536)throw platformCoreBillingError_('INVALID_REQUEST');
-  const assertion=JSON.stringify({issuer:'https://cmwebs.com/rental',audience:'commercial-'+config.environment,product_id:config.productId,external_user_id:access.user.user_id,external_workspace_id:access.workspace.workspace_id,intent:intent,method:'POST',path:path,body_sha256:platformCoreBillingHash_(body),issued_at:at,expires_at:at+60,nonce:Utilities.getUuid().replace(/-/g,'')});
-  return {body:body,headers:{Authorization:'Bearer '+config.credential,'x-core-key-id':config.keyId,'x-core-assertion':platformCoreBillingBase64_(Utilities.newBlob(assertion).getBytes()),'x-core-signature':platformCoreBillingHmac_(assertion,config)}};
+  const config=platformCoreBillingConfig_(),body=JSON.stringify(payload),bodyBytes=Utilities.newBlob(body).getBytes(),at=Math.floor(Date.parse(landlordEmailAuthNowIso_())/1000);
+  if(bodyBytes.length>65536)throw platformCoreBillingError_('INVALID_REQUEST');
+  const assertion=JSON.stringify({issuer:'https://cmwebs.com/rental',audience:'commercial-'+config.environment,product_id:config.productId,external_user_id:access.user.user_id,external_workspace_id:access.workspace.workspace_id,intent:intent,method:'POST',path:path,body_sha256:platformCoreBillingHash_(bodyBytes),issued_at:at,expires_at:at+60,nonce:Utilities.getUuid().replace(/-/g,'')});
+  return {body:body,bodyBytes:bodyBytes,headers:{Authorization:'Bearer '+config.credential,'x-core-key-id':config.keyId,'x-core-assertion':platformCoreBillingBase64_(Utilities.newBlob(assertion).getBytes()),'x-core-signature':platformCoreBillingHmac_(assertion,config)}};
 }
 function platformCoreSendVerifiedHuman_(access,operation,payload,key,intent) {
   intent=intent || 'HUMAN_ACTION';
@@ -66,7 +66,7 @@ function platformCoreSendVerifiedHuman_(access,operation,payload,key,intent) {
   const config=platformCoreBillingConfig_(),path='/v1/bridge/products/'+config.productId+'/'+operation,signed=platformCoreSignHumanRequest_(access,'POST',path,payload,intent);
   if(key)signed.headers['idempotency-key']=key;
   let response,body;
-  try{response=UrlFetchApp.fetch(config.base+path,{method:'post',contentType:'application/json',payload:signed.body,headers:signed.headers,muteHttpExceptions:true,followRedirects:false});const text=response.getContentText();if(text.length>1048576)throw new Error('Oversize result');body=JSON.parse(text);}catch(_){throw platformCoreBillingError_('SERVICE_UNAVAILABLE');}
+  try{response=UrlFetchApp.fetch(config.base+path,{method:'post',contentType:'application/json; charset=utf-8',payload:signed.bodyBytes,headers:signed.headers,muteHttpExceptions:true,followRedirects:false});const text=response.getContentText();if(text.length>1048576)throw new Error('Oversize result');body=JSON.parse(text);}catch(_){throw platformCoreBillingError_('SERVICE_UNAVAILABLE');}
   if(response.getResponseCode()!==200)throw platformCoreBillingError_(body && body.error && body.error.code || 'SERVICE_UNAVAILABLE');
   if(operation==='provision') {
     if(!body || body.status!=='READY' || body.product_id!==config.productId || body.external_workspace_id!==access.workspace.workspace_id)throw platformCoreBillingError_('SERVICE_UNAVAILABLE');
