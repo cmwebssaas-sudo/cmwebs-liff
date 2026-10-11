@@ -268,3 +268,12 @@ revision; these observations do not restart its72-hour clock. Actual observation
 is RUNNING, earliest time eligibility October15 at05:39 Taipei. These partial
 checks are not daily runtime totals or three-day acceptance. No production
 source, Properties, trigger, flag or data mutation was performed by the probes.
+
+C1 read-only partial-day check at2026-10-12 07:46 Taipei: remote synthetic D1
+room mutation07:30 read back at07:45, `synced_at`23:31:34.247Z (07:31 Taipei).
+Authenticated history154 total entries,147 timers all completed,308.771s total
+platform duration/max82.534s; final-source subset128 timers278.816s. Six manual
+runs52.631s and earlier unavailable API attempt0s/failed remain separate. This
+is incomplete-day evidence, not daily quota acceptance. No source/config/timer
+change; actual72-hour gate still RUNNING with earliest completion Oct15 05:39,
+subject to all required complete-day correctness/runtime evidence.

@@ -136,3 +136,16 @@ the new endpoint. Keep frontend flags off. Retain Sheets and operational rows;
 replica rebuild never deletes or rewrites formal data. Retain migration, D1
 export and sanitized version/configuration evidence before changes. Account for
 retained Worker versions before removing any shared Secret they depend on.
+
+## 2026-10-12 partial-day readback at07:46 Taipei
+
+Read-only remote D1 verification at07:45 found the synthetic room mutation from
+07:30, with server `synced_at`2026-10-11T23:31:34.247Z. No source/timer change.
+The refreshed authenticated Apps Script history loaded all154 current entries
+on one page:147 minute timers05:20–07:46, all completed,308.771 platform seconds
+(max82.534s); six manual editor runs52.631s; one earlier unavailable Execution API
+attempt0s/failed. Retain that API failure separately from timer correctness.
+For the final source from05:39,128 timers totaled278.816s. These are partial-day
+observations only, not a full daily runtime total or a passed day. Some dirty
+runs were slow; continue complete daily history/reconciliation before accepting
+the below15-minute target. Do not extrapolate this sample into acceptance.
