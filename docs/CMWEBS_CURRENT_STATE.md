@@ -20,6 +20,21 @@ outlier/rerun records below remain pinned historical evidence, not a new-head
 full-suite/performance claim. C1 fresh72h, C3 strict latency, C5 seven-day and
 C6 authenticated/device/cutover still pending.
 
+## 2026-10-13 — Synthetic direct-Google feasibility authorized
+
+Owner approved the reviewed `READ-DIRECT-GOOGLE-FEASIBILITY.md` synthetic-only
+trial; this decision is no longer pending. Dedicated test Reader/readonly,
+pre-Worker Google-side whitelist killgate, freshness/revocation and all original
+900s/day/72h/seven-day/performance/device gates remain. No formal access,
+new fees or formal adoption is included; new grants/credential input stay owner-only.
+
+Official documentation/Discovery review found no proven atomic header-name
+projection under readonly scope. Tables structured REST selectors remain
+UNKNOWN; A1/header precheck, metadata/named ranges and post-fetch rejection
+cannot establish the privacy gate. Status NOT_PROVEN; no account API, new
+resources/credentials, direct prototype or deployment yet. Retain GAS and
+formal off flags. No need to request credentials before a safe candidate exists.
+
 ## 2026-10-13 — Read-path actual gates and local regression evidence
 
 C1's failed synthetic observation is STOPPED, not running or accepted. Its
