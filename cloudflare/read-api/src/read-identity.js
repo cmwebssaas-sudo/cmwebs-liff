@@ -29,7 +29,9 @@ export function createIdentityAuthenticator(options={}) {
           response=await fetcher('https://api.line.me/oauth2/v2.1/verify',{
             method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},
             body:new URLSearchParams({id_token:token,client_id:channel}).toString(),
-            redirect:'error',signal:AbortSignal.timeout(1500)
+            // workerd rejects redirect:error. Manual plus the exact 200 check
+            // below refuses redirects without forwarding the ID token.
+            redirect:'manual',signal:AbortSignal.timeout(1500)
           });
           if(response.status!==200) deny();
           claims=await response.json();
