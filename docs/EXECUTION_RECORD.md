@@ -732,3 +732,91 @@ No formal/C1 source/data/Properties/scopes/timers/Cloudflare/flags changed.
 Lab adaptation is not canonical HTTP acceptance; strict latency NOT_ACCEPTED.
 Actual corrected72h,seven-day shadow,500-room,D1,real LINE/device/user-flow
 gates remain. Prior full suite933pass/knownCorefailure/4skip not upgraded toPASS.
+
+## 2026-10-13 — C1 owned Cache/Properties read-service diagnostic
+
+Recommended `gpt-5.6-terra`/medium; the current session continues the reviewed
+diagnostic. Root WIP remained unchanged at`be2cefe`; work stayed in the C1
+worktree. Fresh fixed synthetic project/parent/title/source4 and native zero
+triggers preceded an editor-only harness addition. Both canonical modules,
+manifest/scopes and retained deployment configuration stayed unchanged.
+
+One native manual run00:23:53–55 Taipei completed successfully: five paired
+samples,438ms measured region after the fixed Script guard,1.670s separately reported platform
+duration. Cache handle1–8ms/getAll21–48ms; Property handle1–19ms/get45–56ms.
+Only fixed labels, integer timings and booleans were logged; returned values
+were discarded. No Sheet, network/sync, trigger or Cache/Property write.
+The60s between-sample guard cannot interrupt a blocking native service call.
+The438ms timer excludes the Script guard and final log call; no attribution
+of the remaining platform duration to startup or one service is established.
+
+The actual helper11 fake lifecycle cases and actual function4 VM cases passed;
+independent review also rejected4 invalid timestamp/proof cases before OAuth
+or PUT. Original4 editor files and deployment inventory/configuration verified
+restored00:24:38 Taipei; native unfiltered trigger page again showed0.
+This warm manual observation did not reproduce or resolve the earlier335s
+Cache-path stall and provides no evidence that Properties would be faster.
+It is not cold timer, complete-day runtime,500-room or actual72-hour acceptance.
+All original failures,900s/day gate and stopped observation records remain.
+Corrected-source72-hour run NOT_STARTED; no formal release/data/flag change.
+
+Repository verification on the C1 worktree: `npm run validate` PASS (71 backend
+files plus release-cache validation), affected actual module VM13/13 and
+`npm run test:unit`848/848 PASS. Full`npm test`853 total:848 passed,1 failed
+because`PLATFORM_CORE_TEST_WORKTREE` is required,4 external fixture skips.
+That missing Core integration environment is not counted as a pass. Source
+modules and frontend release version were unchanged; `git diff --check` PASS.
+
+## 2026-10-13 — C1 bounded single-pair entry-region follow-up
+
+Recommended `gpt-5.6-terra`/medium. Independent review approved a new editor-only
+manual diagnostic with one fixed Script guard, one original-wrapper Property
+handle and one Cache handle/getAll pair per invocation. It discards Cache
+values and performs no Property value read, Sheet/network/sync, write or timer
+installation. Actual-function6 VM and actual-helper11 fake lifecycle cases
+passed. Fresh fixed binding/source4 and native unfiltered0 triggers preceded
+the addition; both canonical modules/scopes/deployment configuration retained.
+
+Exactly3 manual native executions started00:37:38/00:37:58/00:38:15 Taipei,
+all completed with`success:true,code:OK`. Script guard3/6/2ms, Property handle
+3/10/1ms, Cache handle3/8/1ms, Cache getAll116/44/109ms, timed region125/68/114ms.
+Native execution history separately reports871/921/550ms. The timed region
+includes the Script guard and excludes the final log; its platform difference
+does not isolate startup or any service. Guard/Property handle did not dominate
+these samples; the earlier335s Cache stall remains unresolved.
+
+The already stopped20:29:14 timer's native log says IDLE/core86ms/wrapper99ms,
+platform984ms;20:28:14 says IDLE/core109ms/wrapper180ms/platform1099ms. These
+two selected diagnostics do not classify the rest of914 timers or replace
+their complete failed history, including every failure/outlier.
+
+Exact original4 editor files and retained deployment configuration restored
+00:38:58 Taipei; native unfiltered trigger count again0. No formal source,
+rows, Properties, Cache, trigger, credential/scope or flag changed. No
+corrected-source72-hour run started;900s/day remains unmet. Manual timings
+are not cold timer, complete-day or500-room acceptance.
+
+
+## 2026-10-13 — Full local Core/PG regression environment restored
+
+Recommended GPT-6.1 Sol/high. Clean pinned Core checkout and private local
+PG16.14 supplied the existing missing mandatory integration dependency. No
+application source, test assertion, repository dependency or remote service
+changed. Independent runner review reproduced cleanup timeout failure; four
+fake lifecycle cases and eight target/environment guards PASS after correction.
+
+Actual existing full suites: C1 853/853, C2 868/868, C3 938/938, C4 951/951,
+C5 956/956, C6 959/959; zero fail/cancel/skip. Original GAS commercial flow
+used actual restricted HTTP and real PostgreSQL; four product-access fixtures
+use synthetic Core route-handler injection, not real sockets/database. All
+six tested full HEADs and Node26/macOS scope are retained in
+`READ-REGRESSION-DEPENDENCIES.md`. Previous failures/skips remain historical.
+
+SQL before/after verified fixed owned cluster and no leftover fixture DB/roles;
+final pg_ctl stop/status, absent PID and closed listener passed with no cleanup
+error. Core and all CMWebs tracked sources unchanged; root WIP and C5 editor
+temporary file preserved. Logs/generated synthetic secrets remain private.
+No formal database, source, deployment, Properties, trigger, Worker or flag
+change. Corrected C1 actual72h NOT_STARTED; stopped failed runtime remains
+NOT_ACCEPTED. C3 strict latency, C5 seven-day and C6 real-flow/device/cutover
+remain unaccepted; this full-suite success does not change those gates.
