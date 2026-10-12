@@ -263,3 +263,53 @@ Reinstallation uses the existing fixed synthetic `installC1TestTriggers`,
 followed by native trigger/readback checks; it is not a route to bypass runtime,
 correctness, daily full-sync or downstream shadow acceptance. No formal source,
 data, deployment, trigger or frontend flag was changed by this rollback.
+
+## 2026-10-13 — Owned read-service diagnostic, original editor restored
+
+Recommended `gpt-5.6-terra`/medium; the existing session continues the reviewed
+diagnostic. Fresh fixed project/parent/title/source readback and the native
+unfiltered zero-trigger page preceded an editor-only harness addition. Both
+canonical modules and the manifest/scopes stayed unchanged; the existing
+deployment inventory/configuration was retained. The actual helper passed11
+fake lifecycle cases, the actual function passed4 VM cases, and independent
+review also checked4 invalid timestamp/proof cases. No new credential or scope
+was needed.
+
+The one manual `benchmarkC1ReadServices` invocation started00:23:53 Taipei.
+Its log completed00:23:55 with `success:true,code:OK`, five paired samples,
+438ms measured region after the fixed Script guard, and no between-sample
+loop-guard hit. Native
+execution history separately reports1.670s platform duration; it is not the
+same metric as the service/region timers. The438ms timer excludes the Script
+guard and final log call, so subtraction does not isolate platform startup.
+
+| Sample | Cache handle (ms) | Cache getAll (ms) | Property handle (ms) | Property get (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 4 | 48 | 19 | 46 |
+| 2 | 2 | 21 | 5 | 45 |
+| 3 | 1 | 29 | 1 | 56 |
+| 4 | 8 | 30 | 2 | 45 |
+| 5 | 1 | 28 | 1 | 46 |
+
+The function read the original dirty-key set and queried a fixed non-secret
+test marker key, discarding all returned values. This does not prove that the
+queried Property exists or that its value matches the timer harness's marker;
+the benchmark uses`C1_TEST_LAST_MUTATION_MINUTE`, while the harness uses
+`C1_TEST_LAST_MUTATION`. It performed no Sheet, UrlFetch,
+sync, trigger, Cache/Property write or deployment operation. Its fixed Script
+guard precedes service IO. A60s guard is checked between samples; it cannot
+interrupt a blocking native call and is not a hard execution timeout.
+
+These are warm paired service calls in one manual invocation. They did not
+reproduce the earlier335s idle Cache-path delay, do not identify which earlier
+Cache call stalled, and do not prove cold timer overhead, a complete daily
+runtime,500-room throughput or an actual72-hour pass. The observed Property
+reads provide no evidence that replacing Cache would improve the idle path.
+Keep all original failures and the unchanged900s/day gate.
+
+At00:24:38 Taipei the API export verified exact original4 editor files and
+unchanged retained deployment configuration. The native unfiltered trigger
+page again showed zero. No formal source/data/Properties/trigger/flag changed.
+The stopped failed observation remains NOT_ACCEPTED; no corrected-source
+72-hour run has started. Diagnostic evidence alone does not approve a new
+Cache/Properties design or a relaxed schedule/acceptance gate.

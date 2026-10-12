@@ -384,3 +384,37 @@ Future corrected source requires independent review and a fresh actual72-hour
 run; preserve the original05:39 start and failure history without reusing them
 as qualification. Test rollback/reinstall steps are in
 `docs/READ-REPLICA-SYNC.md`. No formal deployment/Sheet/trigger/flag change.
+
+## 2026-10-13 — C1 owned Cache/Properties read-service diagnostic
+
+Recommended `gpt-5.6-terra`/medium; the current session continues the reviewed
+diagnostic. Root WIP remained unchanged at`be2cefe`; work stayed in the C1
+worktree. Fresh fixed synthetic project/parent/title/source4 and native zero
+triggers preceded an editor-only harness addition. Both canonical modules,
+manifest/scopes and retained deployment configuration stayed unchanged.
+
+One native manual run00:23:53–55 Taipei completed successfully: five paired
+samples,438ms measured region after the fixed Script guard,1.670s separately reported platform
+duration. Cache handle1–8ms/getAll21–48ms; Property handle1–19ms/get45–56ms.
+Only fixed labels, integer timings and booleans were logged; returned values
+were discarded. No Sheet, network/sync, trigger or Cache/Property write.
+The60s between-sample guard cannot interrupt a blocking native service call.
+The438ms timer excludes the Script guard and final log call; no attribution
+of the remaining platform duration to startup or one service is established.
+
+The actual helper11 fake lifecycle cases and actual function4 VM cases passed;
+independent review also rejected4 invalid timestamp/proof cases before OAuth
+or PUT. Original4 editor files and deployment inventory/configuration verified
+restored00:24:38 Taipei; native unfiltered trigger page again showed0.
+This warm manual observation did not reproduce or resolve the earlier335s
+Cache-path stall and provides no evidence that Properties would be faster.
+It is not cold timer, complete-day runtime,500-room or actual72-hour acceptance.
+All original failures,900s/day gate and stopped observation records remain.
+Corrected-source72-hour run NOT_STARTED; no formal release/data/flag change.
+
+Repository verification on the C1 worktree: `npm run validate` PASS (71 backend
+files plus release-cache validation), affected actual module VM13/13 and
+`npm run test:unit`848/848 PASS. Full`npm test`853 total:848 passed,1 failed
+because`PLATFORM_CORE_TEST_WORKTREE` is required,4 external fixture skips.
+That missing Core integration environment is not counted as a pass. Source
+modules and frontend release version were unchanged; `git diff --check` PASS.

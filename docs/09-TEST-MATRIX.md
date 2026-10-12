@@ -1248,3 +1248,12 @@ end of day; one Drive timeout, earlier SYNC_BUSY retained. IDLE CacheService
 path335171ms and successful canonical sync195407ms are observed boundaries,
 not isolated CPU/network metrics. C1 actual runtime/correctness NOT_ACCEPTED;
 no formal release or observation-clock reset.
+
+C1 read-only service diagnostic on2026-10-13: one manual invocation at00:23:53
+Taipei, five paired calls,438ms measured region after the Script guard and
+1.670s native platform
+duration. Cache getAll21–48ms; Property get45–56ms. The actual helper's11 fake
+lifecycle cases, actual function's4 VM cases and independent proof/timestamp
+review passed. Original4 editor files and deployment configuration restored
+at00:24:38; native trigger count remains0. This warm manual measurement neither
+reproduces/resolves the earlier335s Cache stall nor passes daily/72-hour gates.
