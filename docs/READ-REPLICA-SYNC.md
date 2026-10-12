@@ -234,3 +234,32 @@ No canonical/test source, Properties, binding, timer or formal flag changed.
 The original observation clock remains recorded, but elapsed72 hours alone
 cannot pass the failed correctness/runtime acceptance. Investigate in an
 independent environment before revising source or starting a new accepted run.
+
+## 2026-10-12 — Failed synthetic observation stopped
+
+Recommended GPT-6.1 Sol/high. At20:27 Taipei a fresh read-only API check verified
+the fixed synthetic project/Sheet/title and all four source files against the
+recorded test source. Its native trigger page showed only the owner's minute
+and03:00 daily test handlers. The existing `stopC1TestTriggers` ran20:30:29–31;
+its log reported no triggers and the native unfiltered trigger page read back
+zero. This stops additional test quota use after the already failed daily gate.
+The helper only removes those two named synthetic triggers; it does not edit
+source, Properties or Sheet data and never selects a formal project.
+
+Afterward the native execution history was frozen across five pages and all923
+unique records retained. The914 minute timers from05:20:14 through20:30:14
+consume2892.886 platform seconds (48.215 minutes), maximum479.840 seconds.
+All timer records are terminal. Three failures remain:12:30 (72.003s),17:00
+(479.840s) and17:20 (platform reports0s). Zero reported duration does not make a
+failed trigger successful. The daily900-second target is still failed; this
+ended observation is neither a complete day nor three successful actual days.
+Realtime history display was restored after returning to the first page.
+
+Keep every original failure, execution and replica/deployment record. The
+original05:39 observation-start record is retained, but its elapsed time cannot
+qualify a future version. Resume the reviewed minute/daily test schedule only
+with an appropriate fix and a separately recorded fresh actual72-hour gate.
+Reinstallation uses the existing fixed synthetic `installC1TestTriggers`,
+followed by native trigger/readback checks; it is not a route to bypass runtime,
+correctness, daily full-sync or downstream shadow acceptance. No formal source,
+data, deployment, trigger or frontend flag was changed by this rollback.

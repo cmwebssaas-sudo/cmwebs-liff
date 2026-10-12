@@ -698,3 +698,156 @@ All flags remain off and no actual shadow epoch has begun, so no existing
 accepted window is reused or reclassified. C1 actual runtime NOT_ACCEPTED and
 C3 strict authenticated latency NOT_ACCEPTED are retained in the current matrix.
 No GitHub PR merge, formal publication/configuration/timer/data change occurs.
+
+## 2026-10-12 — C3 private service profiling and editor rollback
+
+Recommended GPT-6.1 Sol/high. Reviewed synthetic-only v2 adds test-harness
+method timing; eight canonical modules, manifest/scopes and Properties remain
+unchanged. Editor and immutable10-file exports were verified. An initial404
+deployment readback was recovered by read-only checks of the recorded deployment
+and source, without duplicate creation. Three signed diagnostic replies passed
+canonical request binding/access verification. Client8131.150/3463.392/5108.085ms;
+canonical authorization3306/2164/3073ms; range metadata1215/914/1045ms;
+values564/455/544ms. Five full reads and four local cache hits per request,
+zero shared hits. Nested binding timings are not double-counted; unmeasured
+authorization797/449/987ms cannot be attributed to one service. Native history
+separately showed42 completed v1 executions at1.898–34.129s, median3.0495s;
+platform completion is not request-level authentication success.
+
+Original synthetic editor10-file source restored and verified; both immutable
+test deployments retained. No formal/C1 source, data, timer, Properties, clock
+or flag changed. Diagnostics use15000ms and33 rows, not strict1500ms, p95,
+remote D1/real LINE/device or formal acceptance. Details are in
+`docs/READ-AUTHORIZATION.md`; private telemetry/key material is not committed.
+
+## 2026-10-12 — C1 failed observation rollback
+
+Recommended GPT-6.1 Sol/high. Fresh fixed project/Sheet/title and4-file source
+readback passed before running the existing synthetic stop helper. Native UI
+showed only the owner's two test CLOCK handlers;20:30:29–31 execution reported
+`triggers:[]` and the unfiltered trigger page confirmed zero. The rollback
+prevents further quota consumption by an already failed run and changes no
+formal project. Test source/Properties/data and all existing failure records
+are retained; the helper only removes those two named test triggers.
+
+Complete stopped-history capture: five pages200/200/200/200/123,923 unique
+records,914 minute timers,2892.886 platform seconds (48.215 minutes), maximum
+479.840s. All timers terminal; failures12:30/17:00/17:20 remain, including the
+0s duration reported for17:20. Last timer started20:30:14. This is an ended
+failed partial-day observation, not a complete day or successful72-hour gate.
+The900s/day limit is unchanged. Realtime display restored on first page.
+
+Future corrected source requires independent review and a fresh actual72-hour
+run; preserve the original05:39 start and failure history without reusing them
+as qualification. Test rollback/reinstall steps are in
+`docs/READ-REPLICA-SYNC.md`. No formal deployment/Sheet/trigger/flag change.
+
+## 2026-10-12 — C3 bulk transport and native Utilities diagnostics
+
+Recommended GPT-6.1 Sol/high. Retained two403 manual bulk-read failures; the
+second safely classified API_DISABLED. Test-editor Sheets/v4 dependency used
+the existing two scopes, with no new grant/deployment/timer. Actual21:13:54–59
+Taipei execution produced three bulk/native pairs358/1331,239/863,218/823ms,
+each166 cells/one Date/51 empties/zero typed-scalar or local-clock mismatches.
+These are warm pairs in one invocation, not Date-loader/auth/1500ms/p95/500-room
+or device acceptance. Original10-file editor andv1/v2 verified at21:18:12;
+editor dependency removed, external default-project API disable not requested.
+
+Reviewed editor-only100-string Utilities benchmark passed eight fake safety
+tests. Actual21:51:31–33 execution measured107ms native SHA-256 and254ms UTF-8
+Blob counting,14580 bytes. This sample does not support attributing the prior
+tens-of-seconds delay to these operations; no crypto replacement was made.
+Original10-file editor restored andv1/v2 retained at21:52:43. No formal/C1
+source, data, Properties, timers or flags changed by either diagnostic.
+`docs/READ-AUTHORIZATION.md` records evidence boundaries and remaining gates;
+private source/logs/credential material remain outside Git.
+
+## 2026-10-12 — C3 request-local bulk reader and exact Date feasibility
+
+Recommended GPT-6.1 Sol/high. Added a request-local read-only transport adapter
+that waits for the canonical resolver's first value read, preserving LINE
+verification and Email token hashing before policy data. Independent review
+reproduced and then verified corrections for sparse hydration bounds and
+identity-before-snapshot ordering.49 grid cases plus19 existing policy cases
+passed independently; full local unit933/933, validate72 and diff-check passed.
+Calculator regeneration changed only the authorization source hash manifest.
+
+Owned editor-only candidate changed one canonical module and manual harness,
+preserving seven modules/manifest/scopes/original dispatcher prefix. Full-source
+pins and fixed project/Sheet/title checks guarded publication; v1/v2 verified
+before and after. Actual22:40:41–46 Taipei manual check: bulk576/native2918ms,
+166 cells/one exact native Date/51 empties/three synthetic millisecond boundaries,
+zero mismatches and no native fallback. This is33-row native type feasibility,
+not signed/lazy authority,1500ms/p95/500-room or device acceptance.
+
+Original10-file editor restored and exported exact at22:41:56; v1/v2 retained,
+no new deployment. No formal/C1 source, source data, Properties, scopes, timers
+or flags changed. Actual signed candidate roundtrip and prior release gates
+remain incomplete. `docs/READ-AUTHORIZATION.md` records the current boundaries.
+
+## 2026-10-12 — C3 signed candidate feasibility, still not accepted
+
+Recommended GPT-6.1 Sol/high. Private lifecycle controls passed independent
+review,9 publisher/6 actual-probe/18 pure-gate fake tests; initial validated source
+is retained through OAuth, and only fixed error classifications enter evidence.
+Canonical68 authorization regressions passed with source unchanged. Owned
+synthetic immutablev3/source10 were verified; first readback404 recovered through
+the recorded deployment with read-only management checks and no duplicate.
+
+Actual23:13 Taipei strict1500ms samples all failed at1505.069/1503.023/1504.684ms,
+without response headers. Separately labeled diagnostics passed canonical signed
+authority at3302.118/3187.969/2620.684ms, first headers2902.806/2900.429/2321.985ms.
+The synthetic33-row probe exercises canonical Email identity/access and request
+binding, not remote D1, real LINE/device, p95,500-room or formal acceptance.
+Reader-choice telemetry is absent, so native fallback cannot be excluded.
+
+Original10-file editor restored/exported exact at23:14:32; original eight
+canonical modules and immutablev1/v2/v3 retained. No formal/C1 source, source
+data, Properties, scopes, timers, Worker or flags changed. Strict latency remains
+NOT_ACCEPTED; original failures and all preceding gates remain required.
+
+## 2026-10-12 — C3 signed bulk path proved, strict latency still fails
+
+Recommended GPT-6.1 Sol/high. Independent review/63 fake lifecycle and telemetry
+cases passed. Owned syntheticv4/source10 verified; canonical authorization
+unchanged, harness hook restored in finally, signed telemetry saved to evidence only
+after canonical verification under the original20000-byte limit. First404
+recovered by recorded-ID read-only checks, no duplicate creation.
+
+Actual23:31–23:32 Taipei strict3 failed at1505.136/1503.891/1503.527ms/no headers.
+Separately labeled diagnostics each confirmed one successful bulk attempt,
+no native range.getValues observation and zero shared cache. Complete
+2967.576/2917.804/3002.265ms; headers2547.023/2660.057/2726.958ms;
+authorization.total1183/1394/1052ms includes bulk288/632/223ms. Binding/method
+timings are nested and not summed; theoretical/adapter runtime read counters
+do not mean native Sheet IO. Evidence proves this three-request synthetic bulk
+path, not strict1500ms, p95,500-room, D1, real LINE/device or formal acceptance.
+
+Original10-file editor restored/exported exact23:33:42; original eight canonical
+modules and immutablev1/v2/v3/v4 retained. No formal/C1 source, data, Properties,
+scope, timer, Cloudflare or flag change. Keep strict latency NOT_ACCEPTED and
+all C1/C5/performance/device gates; do not infer acceptance from bulk success.
+
+## 2026-10-12 — C6 draft inherits bulk reader and new comparison identity
+
+Recommended GPT-6.1 Sol/high. Reviewed C3 authorization and current C1/C3
+evidence were propagated through the separate C4/C5/C6 worktrees/PRs. The C6
+append-only execution-record conflict preserves both histories. One existing
+untracked C5 editor temporary file is preserved/excluded; root WIP untouched.
+Only authorization source and its generated manifest hash changed inside the
+178-source normalized comparison closure. Asset tag advanced together with all
+references to20261012-read-cutover-v2; comparison identity is
+read-1321de54a6858357c574e3f5c2d74fc2f5d236ece9a6eb04b77d2ae2a0f7ab30.
+
+Local unit954/954, Worker30/30, dry-run335.06KiB, validate72 backend files/40
+endpoint references/static cache/178-source identity and diff checks passed.
+Full npm test959 total:954 passed, one known missing external
+PLATFORM_CORE_TEST_WORKTREE fixture failure, four external-fixture skips;
+these missing integrations are not recorded as passing.
+
+All six flags off, endpoint blank and shadow/cutover NOT_STARTED. No existing
+window/clock is reused to qualify this new source. C1's failed stopped run still
+requires corrected source and a fresh actual72-hour gate; C3 strict1500ms still
+fails, followed by required actual seven-day shadow/performance/device gates.
+No formal deployment, Property, timer, source-data or flag change is made by
+this draft update. Prior serving versions/data and rollback evidence are retained.

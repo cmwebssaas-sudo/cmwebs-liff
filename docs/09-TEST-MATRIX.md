@@ -12,7 +12,7 @@
 | Affected GAS/calendar/query boundaries | 28/28 PASS | Includes `testReadReplicaProjection` and `testV2ReadSummaryProjection`; no Sheet writes |
 | Unit / Worker / validate / diff-check | 863/863 /13/13 /PASS /PASS | Source evidence |
 | Full repository suite | 863 pass /1 existing external Core fixture failure /4 skips | `PLATFORM_CORE_TEST_WORKTREE` unavailable; external PG acceptance not claimed |
-| C1 actual three days / C3 auth / C2 publication | RUNNING /NOT_STARTED /NOT_STARTED | Production read paths stay closed; no gate skipped |
+| C1 actual three days / C3 formal auth / C2 publication | NOT_ACCEPTED (test timers STOPPED) /NOT_STARTED /NOT_STARTED | Production read paths stay closed; no gate skipped |
 
 Source manifest, schema, review, release and rollback: `READ-API-PARITY.md`.
 
@@ -1255,7 +1255,7 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Generated schema parity, idle zero-read behavior, Sheet projection, failed/concurrent dirty markers and immediate Email revocation | `tests/read-replica-sync.test.mjs` | Actual Apps Script functions in Node VM with controlled Sheet/network adapters |
 | Every dispatcher route explicitly classified, previously missed mutations queue their tables, real GET/POST envelopes preserved | Same | Real dispatcher and dirty-marker functions; synthetic successful responses |
 | Apps Script affected test function | `testReadReplicaProjection()` executed by the VM suite | Pure projection test; not a production execution |
-| Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_ACCEPTED | Through2026-10-12 16:51 Taipei, measured1938.259s exceeds900s daily target and failures are retained; elapsed72 hours alone cannot pass |
+| Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_ACCEPTED; failed test schedule STOPPED | Stopped20:30 Taipei; complete ended history has914 minute timers/2892.886s and3 failures. Daily900s target failed; corrected source needs a fresh actual72-hour gate |
 
 ## 2026-10-12 C3 authorization candidate
 
@@ -1313,6 +1313,14 @@ Synthetic real Google signed Email confirmation and source-only revoke/role/
 disable diagnostic denials verified; no remote D1/real LINE/device acceptance.
 All strict1500ms samples timed out; latency acceptance NOT_ACCEPTED, flags off.
 
+Private synthetic v2 service profiling: eight canonical modules/manifest
+unchanged; VM and10-file exported-source checks PASS. Three real signed
+diagnostics PASS with authorization2164–3306ms, five full Sheet reads and
+zero shared cache hits. Range metadata914–1215ms, values455–564ms; remaining
+time is not exclusively attributed. Original editor restored/exact10 readback;
+v1/v2 retained, no formal/C1 change. This is33-row/15000ms diagnostic evidence,
+not strict1500ms, remote D1,LINE/device,p95 or500-room acceptance.
+
 
 C1 actual remote follow-up through2026-10-12 16:51 Taipei: four-page history,
 694 minute timers/1938.259 platform seconds exceeds900s daily target before
@@ -1320,3 +1328,27 @@ end of day; one Drive timeout, earlier SYNC_BUSY retained. IDLE CacheService
 path335171ms and successful canonical sync195407ms are observed boundaries,
 not isolated CPU/network metrics. C1 actual runtime/correctness NOT_ACCEPTED;
 no formal release or observation-clock reset.
+
+Latest C1 rollback supersedes the RUNNING observation label: two owned test
+timers stopped at20:30; full ended capture923 records/914 minute timers,
+2892.886 platform seconds/three failures. Failed partial day is NOT_ACCEPTED;
+fresh corrected source requires a new actual72-hour gate, flags remain off.
+
+| Additional C3 diagnostic | Evidence | Boundary |
+| --- | --- | --- |
+| Fixed-project/no-redirect bulk transport and typed scalar/local-clock parity | Retained two403 failures; test dependency then actual three bulk/native pairs358/1331,239/863,218/823ms;166 cells/one Date/51 empties/zero mismatches each | One warm manual invocation; no Date-loader, authenticated latency, p95,500-room or device acceptance |
+| Native SHA-256 and UTF-8 byte-count hypothesis | Independent eight fake safety cases; actual100 strings107ms/254ms/14580 bytes | Does not support replacing crypto or establish C1 daily-runtime/72h acceptance |
+| Test editor rollback | Original10-file source exports exact after both diagnostics; immutablev1/v2 retained | Editor Sheets dependency removed; external default-project API disable not requested; formal/C1 source/Properties/data/timers/flags unchanged |
+
+| C3 bulk reader candidate | Evidence | Boundary |
+| --- | --- | --- |
+| Typed grid, inherited Date format, blanks/formula ordinals and bounded sparse hydration | `tests/read-authority-grid.test.mjs`; independent review found input-only cap defect, regression RED→GREEN with total hydrated cap | Synthetic adapters; separate bounded native Date check below |
+| Fresh canonical roles, delegated manager, foreign principal, one-ms expiry, changes during provider/hash waiting, forgery/replay and safe fresh-native fallback |49 new grid cases plus19 authority/access/identity cases; successful cases assert zero native full reads | Preserve canonical identity/hash-before-values ordering; no positive shared access cache; fallback is not latency acceptance |
+| Reproducible calculator source and broader regression |933/933 local unit tests; generated manifest updates only authorization source hash | No signed remote candidate authority, formal release, LINE/device, strict latency or preceding-gate acceptance yet |
+| Actual native Date parity and editor rollback |22:40 manual bulk576/native2918ms,166 cells/one native Date/51 empties/three synthetic millisecond boundaries/zero mismatches;22:41 original10-file restore andv1/v2 retention | One33-row manual invocation, not authenticated lazy-resolution/1500ms/p95/500-room/device acceptance; no new deployment or formal change |
+| Private signed-candidate lifecycle/probe controls | Independent9 publisher/6 actual-probe/18 pure-gate fake checks; source swaps stop, fixed exception classifications, recorded-ID recovery; canonical68 repeated PASS | Fake controls do not establish remote latency or production readiness |
+| Actual signed synthetic candidatev3 | Three strict1500ms failures retained; three diagnostic replies verified at3302.118/3187.969/2620.684ms; original10-file editor restored23:14:32 andv1/v2/v3 retained | NOT_ACCEPTED;33 rows/static fixture/no D1, real LINE/device, p95 or500 rooms; original harness lacks reader-choice telemetry, native fallback not excluded; formal flags off |
+| Signed reader-choice lifecycle and bounded telemetry | Independent63 fake cases:7 harness/7 editor/9 publisher/6 probe/19 gates/15 telemetry; canonical signatures checked before capture is stored;20000-byte cap/cancel; source pins andv1–v3 retention | Synthetic controls only; nested timings must not be summed |
+| Actual signed synthetic bulk diagnosticv4 | Three strict failures; three signed diagnostics each one successful bulk attempt/no native range.getValues/zero shared cache; auth1183/1394/1052ms contains bulk288/632/223ms; complete2967.576/2917.804/3002.265ms; original10-file restore23:33:42/v1–v4 retained | Strict latency NOT_ACCEPTED; runtime adapter read counters are not native IO;33 rows/no D1, real LINE/device, p95 or500-room acceptance; formal flags off |
+| C6 refreshed bulk-source comparison/cache closure |178 source files, only authorization/manifest normalized hashes changed; cache20261012-read-cutover-v2 synchronized; unit954/954, Worker30/30, dry-run, validate and hash check PASS | Local Draft; all6off/endpointblank; actual shadow/cutover NOT_STARTED; fresh qualifying observations required |
+| Refreshed C6 full suite external boundary |959 total/954 pass/one PLATFORM_CORE_TEST_WORKTREE-required failure/four external skips | Missing external Core/PG integration not counted as passing; no formal acceptance inferred |

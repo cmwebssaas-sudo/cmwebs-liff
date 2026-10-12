@@ -120,6 +120,17 @@ Do not weaken GAS authority to meet latency or count fallback as Worker success.
 
 ## Evidence ledger
 
+Current local draft refresh (2026-10-12): reviewed C3 bulk reader and all C1
+stop/C3 signed-diagnostic evidence are inherited through C4/C5. Asset cache
+version is `20261012-read-cutover-v2`; the regenerated178-source comparison is
+`read-1321de54a6858357c574e3f5c2d74fc2f5d236ece9a6eb04b77d2ae2a0f7ab30`.
+Only authorization source and its generated source-manifest hash changed within
+the normalized comparison closure. All six flags remain off and endpoint blank.
+Actual shadow/cutover remain NOT_STARTED; no old window is reused under this
+new identity. C1's failed observation is stopped and needs corrected source plus
+a fresh72-hour gate; C3 strict latency is NOT_ACCEPTED despite signed bulk
+diagnostic success. This cache/hash update is not a formal publication.
+
 Update `LANDLORD-READ-PERFORMANCE.md`, `EXECUTION_RECORD.md`, current state,
 handoff and ADR with sanitized measurements and exact acceptance boundaries.
 Keep private raw network data in a restricted temporary directory; ordinary
