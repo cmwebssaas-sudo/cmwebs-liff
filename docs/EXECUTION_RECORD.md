@@ -593,3 +593,23 @@ Future corrected source requires independent review and a fresh actual72-hour
 run; preserve the original05:39 start and failure history without reusing them
 as qualification. Test rollback/reinstall steps are in
 `docs/READ-REPLICA-SYNC.md`. No formal deployment/Sheet/trigger/flag change.
+
+## 2026-10-12 — C3 bulk transport and native Utilities diagnostics
+
+Recommended GPT-6.1 Sol/high. Retained two403 manual bulk-read failures; the
+second safely classified API_DISABLED. Test-editor Sheets/v4 dependency used
+the existing two scopes, with no new grant/deployment/timer. Actual21:13:54–59
+Taipei execution produced three bulk/native pairs358/1331,239/863,218/823ms,
+each166 cells/one Date/51 empties/zero typed-scalar or local-clock mismatches.
+These are warm pairs in one invocation, not Date-loader/auth/1500ms/p95/500-room
+or device acceptance. Original10-file editor andv1/v2 verified at21:18:12;
+editor dependency removed, external default-project API disable not requested.
+
+Reviewed editor-only100-string Utilities benchmark passed eight fake safety
+tests. Actual21:51:31–33 execution measured107ms native SHA-256 and254ms UTF-8
+Blob counting,14580 bytes. This sample does not support attributing the prior
+tens-of-seconds delay to these operations; no crypto replacement was made.
+Original10-file editor restored andv1/v2 retained at21:52:43. No formal/C1
+source, data, Properties, timers or flags changed by either diagnostic.
+`docs/READ-AUTHORIZATION.md` records evidence boundaries and remaining gates;
+private source/logs/credential material remain outside Git.

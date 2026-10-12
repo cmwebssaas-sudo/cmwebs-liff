@@ -12,7 +12,7 @@
 | Affected GAS/calendar/query boundaries | 28/28 PASS | Includes `testReadReplicaProjection` and `testV2ReadSummaryProjection`; no Sheet writes |
 | Unit / Worker / validate / diff-check | 863/863 /13/13 /PASS /PASS | Source evidence |
 | Full repository suite | 863 pass /1 existing external Core fixture failure /4 skips | `PLATFORM_CORE_TEST_WORKTREE` unavailable; external PG acceptance not claimed |
-| C1 actual three days / C3 auth / C2 publication | RUNNING /NOT_STARTED /NOT_STARTED | Production read paths stay closed; no gate skipped |
+| C1 actual three days / C3 formal auth / C2 publication | NOT_ACCEPTED (test timers STOPPED) /NOT_STARTED /NOT_STARTED | Production read paths stay closed; no gate skipped |
 
 Source manifest, schema, review, release and rollback: `READ-API-PARITY.md`.
 
@@ -1293,3 +1293,14 @@ end of day; one Drive timeout, earlier SYNC_BUSY retained. IDLE CacheService
 path335171ms and successful canonical sync195407ms are observed boundaries,
 not isolated CPU/network metrics. C1 actual runtime/correctness NOT_ACCEPTED;
 no formal release or observation-clock reset.
+
+Latest C1 rollback supersedes the RUNNING observation label: two owned test
+timers stopped at20:30; full ended capture923 records/914 minute timers,
+2892.886 platform seconds/three failures. Failed partial day is NOT_ACCEPTED;
+fresh corrected source requires a new actual72-hour gate, flags remain off.
+
+| Additional C3 diagnostic | Evidence | Boundary |
+| --- | --- | --- |
+| Fixed-project/no-redirect bulk transport and typed scalar/local-clock parity | Retained two403 failures; test dependency then actual three bulk/native pairs358/1331,239/863,218/823ms;166 cells/one Date/51 empties/zero mismatches each | One warm manual invocation; no Date-loader, authenticated latency, p95,500-room or device acceptance |
+| Native SHA-256 and UTF-8 byte-count hypothesis | Independent eight fake safety cases; actual100 strings107ms/254ms/14580 bytes | Does not support replacing crypto or establish C1 daily-runtime/72h acceptance |
+| Test editor rollback | Original10-file source exports exact after both diagnostics; immutablev1/v2 retained | Editor Sheets dependency removed; external default-project API disable not requested; formal/C1 source/Properties/data/timers/flags unchanged |

@@ -170,3 +170,58 @@ work. Client deltas also include runtime/redirect/test telemetry overhead, so
 neither residual identifies an exclusive cause. The33-row fixture, test binding
 and15000ms diagnostic deadline exclude p95,500-room,LINE/device or formal
 acceptance. The normal1500ms deadline and closed flags remain unchanged.
+
+## 2026-10-12 — Request-local bulk transport feasibility
+
+Recommended GPT-6.1 Sol/high. An independently reviewed manual benchmark used
+only the existing owned synthetic project and five authorization tables. Its
+fixed Google HTTPS GET rejects redirects and never logs rows, tokens or error
+messages. The first two native executions returned403; the second classified
+only the safe classification `API_DISABLED` from Google's allowlisted
+`SERVICE_DISABLED` reason. Both failures are retained.
+Adding the Sheets/v4 advanced-service dependency to this test editor preserved
+the original two OAuth scopes. No new grant, deployment or timer was created.
+
+The21:13:54–59 Taipei execution compared three sequential bulk/native pairs:
+
+| Sample | Bulk GET ms | Native Sheet reads ms | Typed scalar/local-clock mismatches |
+| --- | ---: | ---: | ---: |
+| 1 | 358 | 1331 | 0 |
+| 2 | 239 | 863 | 0 |
+| 3 | 218 | 823 | 0 |
+
+Each sample checked166 cells, including one native Date and51 empty cells.
+Date comparison used the native value's Taipei wall clock against the API
+serial; this does not implement or verify a serial-to-Date authorization loader.
+These pairs share one invocation and may benefit from warm services. They are
+not separate authenticated requests, p95,500-room capacity, LINE/device proof
+or the1500ms authority/800ms page acceptance. Permission logic and shared-cache
+policy were unchanged. Before any loader can qualify, test Date reconstruction,
+source row order, missing/malformed tables, every supported role/identity and
+fresh source revocation against canonical authorization; never cache a positive
+access decision across requests.
+
+Original10-file editor restored and read back at21:18:12; the Sheets dependency
+was removed from the editor and both immutablev1/v2 deployments retained.
+No Cloud API disable was requested, so editor rollback is not a claim that
+Google's default-project API activation was reversed. No formal/C1 source,
+Properties, data, timers or flags changed. Actual API use succeeded only after
+the dependency change; a manifest alone was not treated as activation proof.
+
+## 2026-10-12 — Native Utilities hypothesis check
+
+An independently reviewed editor-only manual function timed100 synthetic JSON
+strings without reading real rows, identity or signing credentials. Fixed
+project/Sheet/title checks,75s loop checks and safe failure output passed eight
+fake-runtime tests; a blocking native call itself cannot be interrupted.
+Actual21:51:31–33 execution measured107ms for100 SHA-256 digests and254ms for
+100 UTF-8 Blob byte counts (14580 total bytes). This one sample does not support
+replacing crypto to explain the earlier tens-of-seconds preparation delay.
+No hash or signing implementation was changed, and these100 strings are not a
+500-room, p95, daily-runtime or72-hour acceptance result.
+
+After capture, original10-file editor source was restored and verified at
+21:52:43, retaining immutablev1/v2. No dependency, scope, deployment, Property,
+trigger or data change was introduced by this Utilities benchmark. Continue
+the request-local bulk-reader feasibility work and investigate remaining
+service/network boundaries; formal acceptance remains NOT_ACCEPTED.
