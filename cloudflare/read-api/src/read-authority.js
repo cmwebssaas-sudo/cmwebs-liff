@@ -42,7 +42,9 @@ export async function confirmReadAuthority(request,env,access,options={}) {
     if(response.status===302||response.status===303) {
       const location=new URL(response.headers.get('location')||'',endpoint);
       if(location.protocol!=='https:'||location.hostname!=='script.googleusercontent.com'||location.username||location.password||location.port||location.pathname!=='/macros/echo') failure();
-      response=await fetcher(location.href,{method:'GET',redirect:'error',signal});
+      // workerd supports manual/follow only. Keep this last hop manual and
+      // reject every non-200 below, so another redirect is never followed.
+      response=await fetcher(location.href,{method:'GET',redirect:'manual',signal});
     }
     if(response.status!==200) failure();
     const raw=await boundedBody(response);

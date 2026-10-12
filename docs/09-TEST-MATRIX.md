@@ -1268,3 +1268,12 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Signed GAS confirmation through actual POST dispatcher; nonce/digest/route binding, replay/forgery/expiry, unavailable authority and undelivered source-only revocation/access changes | `tests/read-authority.test.mjs`; integrated D1 HTTP test | Real GAS modules in VM, real Worker HMAC and local service bridge; no formal account |
 | Source pending markers, incomplete/stale D1 snapshots, role changes, CORS, query tampering and sanitized HTTP errors | Integrated D1 HTTP test | Synthetic source and local D1 changes; no cross-request access cache |
 | Remote GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |
+
+
+C3 real workerd transport regression5/5: Google allowed/fakehost/third-hop
+and LINE valid claims/302 rejection. Root cause is workerd redirect:error
+construction; canonical manual+exact200 retains no-follow and1500ms. Complete
+Worker24/24, Node identity+authority13/13, validate72 and independent review PASS.
+Synthetic real Google signed Email confirmation and source-only revoke/role/
+disable diagnostic denials verified; no remote D1/real LINE/device acceptance.
+All strict1500ms samples timed out; latency acceptance NOT_ACCEPTED, flags off.
