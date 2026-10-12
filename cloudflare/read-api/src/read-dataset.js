@@ -25,6 +25,28 @@ export function decodeReplicaRows(rows) {
   });
 }
 
+// Pack the same static projection into one SQL result column per row. This
+// avoids D1 constructing an intermediate object with every schema field.
+// SQL NULL stays a null cell (absent); JSON text "null" stays a string cell
+// until decoding (an own null value). No source fields or rows are omitted.
+export function packedSelection(fields) {
+  return 'json_array('+fields.map(field=>'"'+field.replaceAll('"','""')+'"').join(',')+') AS replica_values';
+}
+export function decodePackedRows(rows,fields) {
+  return rows.map(row=>{
+    const values=JSON.parse(row.replica_values);
+    if(!Array.isArray(values)||values.length!==fields.length) throw new Error('Packed replica row shape');
+    const decoded={};
+    for(let index=0;index<fields.length;index++) {
+      if(values[index]===null) continue;
+      const field=fields[index],value=JSON.parse(values[index]);
+      if(field==='__proto__')Object.defineProperty(decoded,field,{value,enumerable:true,writable:true,configurable:true});
+      else decoded[field]=value;
+    }
+    return decoded;
+  });
+}
+
 // All identifiers below come from the static schema or server-loaded rows.
 // Client values are always bound parameters. No operational table is scanned
 // into JS before access is resolved, and explicitly foreign Workspace rows
@@ -34,9 +56,9 @@ export function createReadDatasetLoader(database,options={}) {
   async function select(table,where,params=[]) {
     const fields=schema[table]?.fields;
     if(!fields||!where) failure();
-    const result=await db.prepare(`SELECT ${fields.map(f=>'"'+f+'"').join(',')} FROM "${table}" WHERE ${where} ORDER BY CAST(replica_source_row AS INTEGER),row_key LIMIT 10001`).bind(...params).all();
+    const result=await db.prepare(`SELECT ${packedSelection(fields)} FROM "${table}" WHERE ${where} ORDER BY CAST(replica_source_row AS INTEGER),row_key LIMIT 10001`).bind(...params).all();
     if(!result.success||result.results.length>10000) failure();
-    return decodeReplicaRows(result.results);
+    return decodePackedRows(result.results,fields);
   }
   async function byValues(table,field,values,extra='1=1',extraParams=[]) {
     const workspaceField=field==='workspace_id';

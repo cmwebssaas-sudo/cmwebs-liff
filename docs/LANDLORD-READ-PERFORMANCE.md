@@ -1,6 +1,24 @@
 # 房東登入復驗與讀取效能修復
 
-## 2026-10-13 v5 本地回歸候選（正式效能尚未驗收）
+## 2026-10-13 v6 D1 資料轉換候選（正式效能尚未驗收）
+
+每列以靜態白名單欄位包成 SQL JSON 陣列，再依相同欄序還原；正式 scoped loader
+與容量 fixture 共用 helper。全部資料、排序、SQLNULL 缺欄／JSONnull own值、
+scalar／日期標記、安全 own key、權限、first-primary 與筆數上限均保留。
+GAS 計算不改，不快取資料列或正向授權。實際單元960/960、Worker33/33、完整
+`npm test`965/965 通過，零 skip；後者固定537個工作中來源（snapshot見回歸依賴），
+含原本 Core HTTP／PG 整合，新私下PG已停止且fixture DB／role無遺留。
+
+每入口原100樣本、本地HTTP／D1 p95<50ms門檻不變：home13.524、actions11.535、
+revenue12.703、tenants29.104、rooms21.780、arrears18.966、properties20.225ms。
+一次私下 baseline／packed對照只支持此候選方向，不代表可重複穩定性。
+先前adf39b4 CI營收160.216ms、4c9950e CI房客62.571ms（31/100超過50ms），
+以及本地房客69.198ms六次連續尖峰全部保留；根因未證明，未同head重跑。
+新head CI仍待驗證，cache20261013-read-capacity-v6／178-source指紋已更新。
+固定access全表計算基準仍不是C3／正式provider、台北、遠端500房或真機驗收。
+三日同步／七日shadow與逐頁正式切換都未通過；以下候選數據保留為歷史樣本。
+
+## 2026-10-13 v5 歷史本地回歸候選（正式效能尚未驗收）
 
 實際 Worker 32/32、`npm test` 963/963 通過，零 fail／cancel／skip；後者固定537個
 未提交候選檔案，使用全新私下 PG16.14／固定 Core，SQL 清理與停機讀回通過。

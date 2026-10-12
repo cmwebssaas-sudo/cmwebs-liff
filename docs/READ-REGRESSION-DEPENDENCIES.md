@@ -117,3 +117,26 @@ changed during execution. Source logs/generated cluster stay private outside Git
 Separate Worker32/32 includes new500-room authenticated/scoped-D1 correctness;
 its LINE/Google authority transport and GAS service adapters remain synthetic.
 All earlier performance failures are retained; no C1/C3/C5/C6 real gate is inferred.
+
+## October13 C6 v6 packed projection working-source regression
+
+Actual `npm test`965/965, zero fail/cancel/skip,2.992s. Tested as an uncommitted
+v6 working candidate at checkout baseline4c9950e, not published diagnostic code.
+All537 tracked paths/bytes are pinned before/after by immutable snapshot
+bc8f7a6bbf0c6182156010a69bc3067f933d28b10951f609a6bf526553440cfb.
+Subsequent evidence-document changes are not retroactively part of that snapshot.
+Cache20261013-read-capacity-v6/comparisonread-1f3b9d5806d1129e4d0aa1006dfd69c21b30e201fc0c3774a5093bf233816541
+cover the current source; validate178-source closure passes.
+
+New0700 private PG16.14 uses the existing verified vendor read-only, no install
+or existing cluster. Original runner changes only private base/snapshot/checkout
+controls;8 target/env,6 snapshot and4 npm-config guard cases pass. Core643c1b3
+is clean, environment restricted, two empty npm configs/cache/logs isolated.
+Original restricted HTTP/PG and four Core handler cases pass. Actual SQL before/
+after shows no fixture DB/role; fresh final pg_ctl/PID/TCP stopped verification
+passes, cleanup_errors empty. No formal database/credential/config is used.
+
+Separate actual Worker33/33 and unit960/960 pass, including shared packed SQL,
+actual D1 types/quoted keys and existing scoped500-room/auth/revocation coverage.
+Seven original100-sample local p95<50ms gates pass. This does not supersede prior
+failed CI samples or any actual72h/900s/day/seven-day/remote500-room/device gate.

@@ -6,9 +6,24 @@ This candidate repairs comparison identity for sequential flag releases and
 prepares acceptance. All flags remain off; no deployment, Property, trigger or
 operational data change occurred. Actual C6 NOT_STARTED.
 
-## October13 v5 local regression candidate
+## October13 v6 packed projection candidate
 
-Current candidate cache `20261013-read-capacity-v5`;178-source comparison
+Current candidate cache20261013-read-capacity-v6;178-source comparison
+read-1f3b9d5806d1129e4d0aa1006dfd69c21b30e201fc0c3774a5093bf233816541.
+Production scoped select and capacity fixture share static packed SQL cells;
+original fields/rows/order/types/NULL semantics/where/binds/limit/primary session
+and authorization are preserved. Actual unit960/960, Worker33/33 and guarded
+uncommitted-source full965/965 pass, zero skips; original100/<50ms gates pass.
+Fresh private Core/PG identity, SQL fixture cleanup and stopped PID/TCP pass.
+New-head CI is pending. Prior published adf39b4/4c9950e failures remain; no cause,
+repeatability, provider/Taipei/device or preceding real observation gate is proved.
+No actual epoch or flag transition started. Do not reuse any old observation.
+Candidate rollback restores preceding4c9950e/v5 source/cache/comparison; accepted
+formal serving versions and data are unchanged. Keep Draft until all gates pass.
+
+## Historical October13 v5 local regression candidate
+
+Historical candidate cache `20261013-read-capacity-v5`;178-source comparison
 `read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f`.
 Request-local date-only/full/layout reuse and direct Sheet matrices retain
 date coercion, undefined-clock, scalar/date/prototype semantics; no date-value or

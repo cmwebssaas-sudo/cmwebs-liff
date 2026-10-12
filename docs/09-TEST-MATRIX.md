@@ -1,5 +1,17 @@
 # V2 回歸測試矩陣
 
+## 2026-10-13 C6 v6 packed D1 projection candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| SQLNULL absent / own JSONnull / scalar / negative zero / date marker / own proto / column order / corrupt frames | Targeted RED original2 pass/new2 fail; GREEN4/4 | Shared decoder; input immutable; malformed frames fail closed |
+| Actual packed SQL vs original columns, escaped identifier/Unicode/quotes/prototype | PASS actual workerd/D1 | Synthetic16 columns, same batch; no new production route |
+| All seven original GAS JSON/literals,500 rooms/250 tenants/20 properties/scoped HTTP and authority-only suspension | PASS Worker33/33 | Primary-D1 policy real; LINE/Google transport/GAS service adapters synthetic |
+| Original100-per-entry p95<50ms | PASS13.524/11.535/12.703/29.104/21.780/18.966/20.225ms | Fixed-access/full-table local benchmark; not scoped/provider/device latency |
+| Unit / full npm / dry-run / validate / diff | 960/960 /965/965 /337.55KiB-gzip70.92 /PASS /PASS | Full537 working files pinned; clean Core643c1b3/fresh private PG16.14; no skips |
+| Prior adf39b4/4c9950e CI and local69.198ms failures | Retained | No same-head rerun or inferred cause; new-head CI pending |
+| Actual C1/C3/C5/C6 gates | NOT_ACCEPTED | No merge/deploy/epoch/flag switch; all original daily/time/device gates apply |
+
 ## 2026-10-12 C2 read parity candidate
 
 | Check | Result | Evidence boundary |

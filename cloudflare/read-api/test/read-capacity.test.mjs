@@ -87,3 +87,38 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
   console.log('C6_LOCAL_500_ROOM_LATENCY '+JSON.stringify(timings));
  }finally{await mf.dispose();}
 });
+
+test('packed SQL projection preserves original D1 values, column order and safe own keys in workerd',async()=>{
+ const fields=['absent','nullable','zero','negativeZero','decimal','enabled','disabled','empty','quotes','unicode','nested','__proto__','replica_source_row','replica_date_fields','date','quoted"key'];
+ const values=[null,'null','0','-0','12.5','true','false','""',JSON.stringify('quote\'"\\\n'),'"台灣 🥧"','["x",0,false,null]','{"polluted":true}','37','"[\\"date\\"]"','"2026-10-12T00:00:00.000Z"','"quoted column"'];
+ const modulePath=new URL('../src/read-dataset.js',import.meta.url).pathname;
+ const bundle=await build({stdin:{contents:`import {decodeReplicaRows,decodePackedRows,packedSelection} from ${JSON.stringify(modulePath)};
+  const fields=${JSON.stringify(fields)};
+  export default {async fetch(request,env){const values=await request.json();
+   const quoted=fields.map(field=>'"'+field.replaceAll('"','""')+'"');
+   const source='WITH source AS (SELECT '+quoted.map(field=>'? AS '+field).join(',')+') ';
+   const pair=await env.DB.batch([env.DB.prepare(source+'SELECT '+quoted.join(',')+' FROM source').bind(...values),
+    env.DB.prepare(source+'SELECT '+packedSelection(fields)+' FROM source').bind(...values)]);
+   const original=decodeReplicaRows(pair[0].results),packed=decodePackedRows(pair[1].results,fields);
+   return Response.json({original,packed,originalKeys:Object.keys(original[0]),packedKeys:Object.keys(packed[0]),
+    normalPrototype:Object.getPrototypeOf(packed[0])===Object.prototype,ownProto:Object.hasOwn(packed[0],'__proto__'),polluted:({}).polluted??null});}};`,
+  resolveDir:new URL('.',import.meta.url).pathname},bundle:true,write:false,format:'esm',target:'es2022'});
+ const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
+  compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()}}));
+ try{
+  const response=await mf.dispatchFetch('https://local.test/packed-values',{method:'POST',body:JSON.stringify(values)});
+  assert.equal(response.status,200);const actual=await response.json();
+  assert.deepEqual(actual.packed,actual.original);
+  assert.deepEqual(actual.packedKeys,actual.originalKeys);
+  assert.deepEqual(actual.packedKeys,fields.filter(field=>field!=='absent'));
+  assert.equal(Object.hasOwn(actual.packed[0],'absent'),false);
+  assert.equal(Object.hasOwn(actual.packed[0],'nullable'),true);
+  assert.equal(actual.packed[0].nullable,null);
+  assert.equal(actual.packed[0].zero,0);
+  assert.equal(actual.packed[0].disabled,false);
+  assert.equal(actual.packed[0].empty,'');
+  assert.equal(actual.packed[0].replica_date_fields,'["date"]');
+  assert.equal(actual.packed[0]['quoted"key'],'quoted column');
+  assert.equal(actual.normalPrototype,true);assert.equal(actual.ownProto,true);assert.equal(actual.polluted,null);
+ }finally{await mf.dispose();}
+});

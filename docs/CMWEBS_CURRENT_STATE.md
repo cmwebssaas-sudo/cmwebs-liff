@@ -1,5 +1,46 @@
 # CMWebs Current State
 
+## 2026-10-13 — v6 packed D1 projection candidate
+
+Shared static SQL packing/decoding now serves both production scoped selection
+and the actual capacity fixture. Every schema field/row, SQLNULL absence versus
+own JSONnull, scalar/date metadata/prototype semantics, source order, where/binds,
+LIMIT10001/success/count guards and first-primary are preserved. GAS calculations
+and authorization policy are unchanged. Targeted RED2 failures become GREEN4/4;
+actual workerd/D1 scalar/frame coverage, scoped500-room and all prior tests pass.
+
+Actual unit960/960, Worker33/33 and full `npm test`965/965 pass with zero skips.
+Full test pins537 uncommitted working files at baseline4c9950e, snapshot
+bc8f7a6bbf0c6182156010a69bc3067f933d28b10951f609a6bf526553440cfb;
+it is not a test of published diagnostic-head source. Fresh private PG16.14,
+original Core HTTP/PG integration, SQL cleanup and stopped PID/TCP pass.
+Later evidence documents are not retroactively included in that source snapshot.
+
+Original seven100-sample capacity p95 remains<50ms:13.524/11.535/12.703/29.104/
+21.780/18.966/20.225ms (home/actions/revenue/tenants/rooms/arrears/properties).
+One private baseline/packed pair is directional only; prior CI/local failures
+below remain, with no root-cause/repeatability or remote/device speed claim.
+Cache20261013-read-capacity-v6 and178-source comparison
+read-1f3b9d5806d1129e4d0aa1006dfd69c21b30e201fc0c3774a5093bf233816541
+are synchronized. New-head CI is pending; keep Draft, six flags off/URL blank.
+No actual72h/seven-day/device/cutover gate is accepted by this local candidate.
+
+## 2026-10-13 — Ordered-diagnostic CI31/32 failure
+
+Diagnostic head4c9950e3c1846e1c9cc22bf5aad1e4f3117e51e6, run38313831332:
+rental SUCCESS; Worker job115025624321 FAIL31/32. Ordered100 samples show
+tenants p95=62.571ms, median49.520ms,31 samples >=50ms distributed across the
+loop (max71.128ms), rather than the local six-sample burst. Home/actions/revenue
+p95=34.280/32.086/32.117ms; remaining loops not reached. All other31 tests,
+including scoped500-room correctness, pass. Root cause remains UNVERIFIED;
+no rerun or threshold change. One setup-repaired private CPU control is now
+COMPLETE: unchanged synthetic Worker, tenant100-only profile/1580 samples,
+700 total original requests, tenant p95=36.059ms. Initial pre-tenant setup failure
+is preserved. D1 materialization is a sampled hotspot, without CI-spike causal
+proof; this control cannot substitute for acceptance. Next inspect materialization
+and review a bounded counterfactual before implementation; do not repeat this
+completed profile merely to seek another result.
+
 ## 2026-10-13 — Ordered timing diagnostics; acceptance still failing
 
 C6 adds only numeric request-order diagnostics after each original100-request

@@ -1208,3 +1208,73 @@ it is not a product fix or a passing acceptance claim. Full npm963/963 remains
 the previously guarded v5 working-source result, not a new exact-head run.
 Rollback removes diagnostic output only. No merge, deployment, Google resources,
 credential reads, formal data/config or flags changed; actual gates remain open.
+
+## 2026-10-13 — Ordered-diagnostic Draft CI failure
+
+Diagnostic-only4c9950e3c1846e1c9cc22bf5aad1e4f3117e51e6 is pushed to Open/Draft
+PR271; exact title/body/head/base readback passes. New-head run38313831332 rental
+SUCCESS; Worker job115025624321 FAIL31/32. All other tests, scoped500-room HTTP
+correctness and prior JSON/literals pass. Original100-sample capacity p95:
+home34.280/actions32.086/revenue32.117/tenants62.571ms. Tenants median49.520ms,
+31 dispersed samples >=50ms/max71.128ms differ from the local six-sample burst;
+remaining loops are not reached. Full Code Review CI log and ordered numbers
+are sealed privately. No unchanged-head rerun, product fix, inferred cause or
+gate change. Next finite private CPU profile targets unchanged Worker bytes;
+profiling is diagnostic only. Actual/formal observation gates remain unchanged.
+
+## 2026-10-13 — Finite original-Worker CPU diagnostic
+
+One private Inspector setup fails before tenant measurement: nine internal
+targets violate the single-target assumption. Original evidence remains intact;
+source/bundle pins pass,300 preceding samples and zero tenant samples. SDK
+inspection establishes the exact unnamed user service ID core:user:. A reviewed
+setup correction uses that unique loopback target, separate output files and
+unchanged bundle8d946acd549dfe6afdb1d41f12f8948221c026fbbb270c8b3f71373bb340f1fa.
+
+Corrected private run completes700 original requests/JSON/literals and gates;
+tenants p95=36.059ms, median32.142ms. CPU sampling covers only100 tenant requests,
+1580 V8 samples,3270770us profile duration. D1 toArrayOfObjects has197 self samples;
+toJson has67 and the largest time-delta sum714522us. These observations motivate
+inspection of D1 result materialization, not a claim that D1 explains the CI or
+local spikes. Sampling intervals include native/waiting effects; Inspector and
+Node observer change execution. No acceptance substitute or root-cause proof.
+
+Review catches tenant-only profile boundaries and incomplete-profile PASS risks
+before execution; both fixed with immediate stop, completion assertion and nested
+disposal. Corrected original/helper provenance checks pass, no timeout. Failed
+setup and completed control remain separate, no product code changed. Next
+bounded private counterfactual must preserve row types, absence/null, order,
+counts, scopes and batched-read semantics before any candidate implementation.
+
+## 2026-10-13 — v6 packed D1 materialization candidate
+
+Recommended model/speed GPT-6.1 Sol/high for scalar/canonical parity and scoped
+capacity. Reviewed private actual D116-column proof passes; same batch preserves
+SQLNULL absence/own JSONnull/scalars/quotes/Unicode/date marker/prototype/order.
+One baseline/packed pair completes700 original samples each, same fixture,
+all JSON/literals/gates: tenants33.620→28.324ms; all seven entries decrease.
+Only directional evidence; no CI-spike cause/repeatability or acceptance claim.
+
+Targeted RED keeps original2 passing while new2 fail for missing helper; GREEN4/4.
+Production scoped select and capacity fixture now share static packedSelection/
+decodePackedRows. Same fields/rows, order, bindings, where, LIMIT10001, success/
+count guards, primary session and auth policy; original GAS logic is unchanged.
+Actual unit960/960, Worker33/33, dry-run337.55KiB/gzip70.92 pass, zero skips.
+Original100-sample capacity p95 remains<50ms: home13.524/actions11.535/revenue
+12.703/tenants29.104/rooms21.780/arrears18.966/properties20.225ms. Scoped500-room
+HTTP and authority-only suspension pass, with synthetic authority transports.
+
+Actual full `npm test`965/965,0fail/cancel/skip,2.992s, includes original restricted
+HTTP/PG and four Core handler cases.537 working files are pinned before/after
+by snapshotbc8f7a6bbf0c6182156010a69bc3067f933d28b10951f609a6bf526553440cfb;
+baselineHEAD4c9950e is not the tested immutable diagnostic source. Later evidence
+documents are not retroactively included. Fresh PG16.14/clean Core643c1b3 verifies
+SQL identity/fixture cleanup and stopped PID/TCP, cleanup_errors empty. Reused
+guarded driver changes only three control values;8+6+4 safety cases pass.
+
+Cache49files (40HTML/7tests/config/validator) synchronizes20261013-read-capacity-v6;
+178-source comparisonread-1f3b9d5806d1129e4d0aa1006dfd69c21b30e201fc0c3774a5093bf233816541.
+Runtime/test/environment reviews pass; validate and diff checks pass. Prior CI/
+local failures stay retained. New-head CI remains mandatory; no merge, deployment,
+Google identity/credential/resource, formal data/config, real epoch or flag change.
+Rollback restores preceding4c9950e/v5 candidate; accepted formal state is unchanged.

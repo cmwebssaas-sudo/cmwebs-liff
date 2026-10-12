@@ -2,15 +2,15 @@
 import schema from '../schema.json' with {type:'json'};
 import { createReadCalculator } from '../src/read-calculator.js';
 import { createReadServices } from '../src/read-runtime.js';
-import { decodeReplicaRows } from '../src/read-dataset.js';
+import { decodePackedRows,packedSelection } from '../src/read-dataset.js';
 import { serveReadRoute, isReadRoute } from '../src/read-routes.js';
 export default {
   async fetch(request,env) {
     const dataset={};
     const tables=Object.entries(schema);
-    const batches=await env.DB.batch(tables.map(([table,definition])=>env.DB.prepare(`SELECT ${definition.fields.map(f=>'"'+f+'"').join(',')} FROM "${table}" ORDER BY CAST(replica_source_row AS INTEGER),row_key`)));
+    const batches=await env.DB.batch(tables.map(([table,definition])=>env.DB.prepare(`SELECT ${packedSelection(definition.fields)} FROM "${table}" ORDER BY CAST(replica_source_row AS INTEGER),row_key`)));
     for(const [index,[table]] of tables.entries()) {
-      dataset[table]=decodeReplicaRows(batches[index].results);
+      dataset[table]=decodePackedRows(batches[index].results,schema[table].fields);
     }
     if(isReadRoute(new URL(request.url).pathname)) return serveReadRoute(request,{
       access:JSON.parse(env.FIXTURE_ACCESS),loadDataset:async()=>dataset,options:{now:Number(env.FIXTURE_NOW),
