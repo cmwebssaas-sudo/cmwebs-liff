@@ -1264,3 +1264,35 @@ end of day; one Drive timeout, earlier SYNC_BUSY retained. IDLE CacheService
 path335171ms and successful canonical sync195407ms are observed boundaries,
 not isolated CPU/network metrics. C1 actual runtime/correctness NOT_ACCEPTED;
 no formal release or observation-clock reset.
+
+C1 read-only service diagnostic on2026-10-13: one manual invocation at00:23:53
+Taipei, five paired calls,438ms measured region after the Script guard and
+1.670s native platform
+duration. Cache getAll21–48ms; Property get45–56ms. The actual helper's11 fake
+lifecycle cases, actual function's4 VM cases and independent proof/timestamp
+review passed. Original4 editor files and deployment configuration restored
+at00:24:38; native trigger count remains0. This warm manual measurement neither
+reproduces/resolves the earlier335s Cache stall nor passes daily/72-hour gates.
+
+C1 separately reviewed single-pair diagnostic onOctober13: exactly3 independent
+manual invocations, timed regions125/68/114ms (including fixed Script guard),
+native platform871/921/550ms. Guard2–6ms and Property handle1–10ms did not
+dominate these samples; no Property value/Sheet/sync/write/timer operation.
+Actual-function VM6/6 and actual-helper fake lifecycle11/11 passed. Original4
+files/deployment configuration restored00:38:58; native trigger count0. The
+stopped IDLE log pairs86/99/984ms and109/180/1099ms (core/wrapper/platform)
+do not replace complete failed history or isolate startup. No corrected-source
+72-hour gate started and no daily-runtime/500-room claim is made.
+
+
+## 2026-10-13 — Missing Core integration environment resolved locally
+
+The existing full suites now execute at all six pinned candidate source heads:
+C1 853/853, C2 868/868, C3 938/938, C4 951/951, C5 956/956, C6 959/959;
+zero failures/cancellations/skips. Node26/macOS and fresh isolated PG16.14,
+with original mandatory restricted HTTP/PG fixture and four synthetic Core
+route-handler cases. Actual database/role cleanup and final stopped listener
+verified. Exact heads and reproduction boundaries are in
+`READ-REGRESSION-DEPENDENCIES.md`. Prior missing-environment results remain
+historical; actual72h/daily-runtime/strict-latency/seven-day/device/cutover gates
+are not accepted by these regressions.
