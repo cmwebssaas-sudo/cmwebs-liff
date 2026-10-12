@@ -472,3 +472,43 @@ No formal database, source, deployment, Properties, trigger, Worker or flag
 change. Corrected C1 actual72h NOT_STARTED; stopped failed runtime remains
 NOT_ACCEPTED. C3 strict latency, C5 seven-day and C6 real-flow/device/cutover
 remain unaccepted; this full-suite success does not change those gates.
+
+## 2026-10-13 — C1 bounded native timer controls, exact restoration
+
+Recommended GPT-6.1 Sol/high for synthetic trigger mutation/rollback guards.
+Existing C1 project/parent/title, original4 source and zero native triggers
+were freshly checked. Editor-only diagnostic retained both canonical modules,
+manifest/scopes and deployment configuration. No version was published.
+Review found manifest-semantic equality insufficient for exact4 restoration;
+helper now compares all source bytes. Actual restore formatting-drift negative
+and exact restoration positive cases pass; VM16/fake lifecycle14 independent
+cases and follow-up review PASS before any editor mutation/timer installation.
+
+Native history starts the installer at07:31:44 Taipei, platform2640ms; the
+editor's separate start notice is07:31:45. Both are retained. Its log confirms
+three after timers with minimum60000/180000/300000ms, not exact scheduling.
+Native unfiltered page showed only the three diagnostic clock handlers.
+No unknown installation outcome was retried; no original sync timer restarted.
+Each event matched its own UID/handler/clock and deleted only its own trigger.
+No Cache/Property/Sheet/sync or replica HTTP/UrlFetch calls enter these controls.
+
+| Native start (Taipei) | Platform ms | Guard ms | List ms | Delete ms | Entry region ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 07:33:38 | 852 | 2 | 86 | 309 | 397 |
+| 07:35:37 | 1000 | 2 | 73 | 162 | 237 |
+| 07:37:26 | 1254 | 41 | 103 | 334 | 478 |
+
+All3 native executions COMPLETED with success/own_trigger_deleted true; all
+entry sums match. Total installer+timer platform5746ms is separate diagnostic
+usage, not a daily sync result. Entry regions include cleanup; logging and
+post-return work are excluded. The residual is not attributed wholly to startup
+or one service. These samples neither prove cold state, resolve335s Cache stall,
+nor establish a1440-run floor,900s/day,500-room or actual72h acceptance.
+
+Native unfiltered0 triggers preceded restore. Exact original4 editor source
+bytes/manifest and retained deployment configuration read back07:40:23.
+Fresh native unfiltered0 again07:42:32.993. No cleanup failure, remaining timer,
+new credentials/Properties/cache or Sheet data write, formal deployment/flags.
+Private logs/harness/zero-trigger image retained outside Git; root WIP and
+private S1 preserved. All failed914/2892.886s records stay; corrected72h
+NOT_STARTED and original gate NOT_ACCEPTED. Repository change is docs only.

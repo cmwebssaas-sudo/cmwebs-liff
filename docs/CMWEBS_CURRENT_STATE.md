@@ -1,5 +1,22 @@
 # CMWebs Current State
 
+## 2026-10-13 — Bounded C1 native timer control completed and restored
+
+Three one-shot controls on the existing synthetic project started at07:33:38,
+07:35:37 and07:37:26 Taipei and all completed. Platform durations852/1000/1254ms;
+entry regions397/237/478ms include Script guard, trigger listing and deleting
+the event's own clock trigger. No Cache, Properties, Sheet or sync calls.
+Installer2640ms plus all three timers total5746ms. This is diagnostic evidence,
+not cold-start/Cache-causality, daily-runtime,500-room or actual72h acceptance.
+
+Reviewed VM16 and unique fake lifecycle14 cases pass. Exact original4 editor
+source bytes, including manifest, restored07:40:23; canonical2 modules/scopes
+and retained deployment unchanged. Fresh unfiltered native0 triggers read
+back07:42:32.993. Three temporary triggers were created/deleted; none remain.
+No new credentials, Properties, cache/data write, formal deployment or flags.
+Original failed914/2892.886s observation remains STOPPED/NOT_ACCEPTED;
+corrected-source72h NOT_STARTED. Root WIP and private S1 boundary preserved.
+
 ## 2026-10-13 — Read-path actual gates and local regression evidence
 
 C1's failed synthetic observation is STOPPED, not running or accepted. Its

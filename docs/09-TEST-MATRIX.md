@@ -1280,3 +1280,15 @@ verified. Exact heads and reproduction boundaries are in
 `READ-REGRESSION-DEPENDENCIES.md`. Prior missing-environment results remain
 historical; actual72h/daily-runtime/strict-latency/seven-day/device/cutover gates
 are not accepted by these regressions.
+
+## 2026-10-13 — C1 bounded native timer control
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Actual diagnostic functions / editor lifecycle | VM16 /14 unique fake lifecycle PASS; review PASS after exact-manifest fix | Pure local guards; includes restore formatting drift and fresh-native0 before OAuth/PUT |
+| Three one-shot native clock executions | COMPLETED, success and own trigger deletion; platform852/1000/1254ms, entry397/237/478ms | Script guard/list/delete only; no Cache/Properties/Sheet/sync. Installer2640ms, all diagnostic platform5746ms |
+| Original4 source/manifest/deployment and native0 restored | Exact byte/config readback07:40:23; fresh unfiltered native0 at07:42:32.993 Taipei | Three temporary controls created/deleted; no version/formal release or data/secret write |
+| Daily-runtime/72h/cold/500-room/causality gates | NOT_ACCEPTED / NOT_STARTED | Cleanup is measured; residual/logging/post-return not attributed to startup. Failed914/2892.886s and335s stall retained; no new observation window |
+
+All original assertions and gates remain. Local source validation and PR checks
+are tracked separately; this diagnostic is not a canonical sync fix.
