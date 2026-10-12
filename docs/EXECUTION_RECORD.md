@@ -636,3 +636,24 @@ Original10-file editor restored and exported exact at22:41:56; v1/v2 retained,
 no new deployment. No formal/C1 source, source data, Properties, scopes, timers
 or flags changed. Actual signed candidate roundtrip and prior release gates
 remain incomplete. `docs/READ-AUTHORIZATION.md` records the current boundaries.
+
+## 2026-10-12 — C3 signed candidate feasibility, still not accepted
+
+Recommended GPT-6.1 Sol/high. Private lifecycle controls passed independent
+review,9 publisher/6 actual-probe/18 pure-gate fake tests; initial validated source
+is retained through OAuth, and only fixed error classifications enter evidence.
+Canonical68 authorization regressions passed with source unchanged. Owned
+synthetic immutablev3/source10 were verified; first readback404 recovered through
+the recorded deployment with read-only management checks and no duplicate.
+
+Actual23:13 Taipei strict1500ms samples all failed at1505.069/1503.023/1504.684ms,
+without response headers. Separately labeled diagnostics passed canonical signed
+authority at3302.118/3187.969/2620.684ms, first headers2902.806/2900.429/2321.985ms.
+The synthetic33-row probe exercises canonical Email identity/access and request
+binding, not remote D1, real LINE/device, p95,500-room or formal acceptance.
+Reader-choice telemetry is absent, so native fallback cannot be excluded.
+
+Original10-file editor restored/exported exact at23:14:32; original eight
+canonical modules and immutablev1/v2/v3 retained. No formal/C1 source, source
+data, Properties, scopes, timers, Worker or flags changed. Strict latency remains
+NOT_ACCEPTED; original failures and all preceding gates remain required.

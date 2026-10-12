@@ -281,3 +281,37 @@ Original10-file editor restored and exported exact at22:41:56, with the candidat
 authorization removed and immutablev1/v2 retained. No source data, Properties,
 scopes, timers, formal source/Worker or flags changed. Keep formal acceptance
 NOT_ACCEPTED and test the candidate's actual signed authority roundtrip next.
+
+## 2026-10-12 — Signed candidate roundtrip and editor rollback
+
+The independently reviewed private publisher/probe retains the initially
+validated source throughout OAuth and live readback, records version/deployment
+identifiers before subsequent checks, and emits only fixed error classifications.
+Nine publisher, six actual-probe control and18 pure-gate fake tests passed;
+source-swap regressions reject publication or stop before credential-seed IO,
+and synthetic exception sentinels cannot enter output/evidence. Canonical68
+authorization regression tests were repeated successfully with source unchanged.
+
+Only the owned synthetic project received a new immutablev3 and separate test
+endpoint. Its10-file source export matches the reviewed candidate; seven other
+canonical modules, original dispatcher/manifest/scopes and existingv1/v2 remain
+unchanged. First deployment readback404 was recovered through the recorded
+identifier using read-only management operations, without duplicate creation.
+
+At23:13 Taipei the canonical Email identity/access and request-bound authority
+probe retained all three strict failures: full1505.069/1503.023/1504.684ms,
+READ_AUTHORITY_UNAVAILABLE, no response headers. Three separately labeled
+15000ms diagnostics passed signed reply verification, with first headers
+2902.806/2900.429/2321.985ms and complete3302.118/3187.969/2620.684ms.
+Each successful diagnostic had one302 POST then one200 GET. These are three
+synthetic33-row requests, not p95, remote D1,500-room, real LINE/device or formal
+performance proof. They do not prove that the bulk path avoided native fallback:
+the original signed harness has no per-request reader-choice telemetry.
+No timeout was relaxed for acceptance and no failed sample was discarded.
+
+At23:14:32 the original10-file editor was restored and exported exact; all eight
+canonical modules are original, candidate authorization removed, immutablev1/v2/v3
+retained. No source-data, Properties, scope, timer, formal deployment/Worker or
+flag change. Strict latency remains NOT_ACCEPTED. Isolate reader choice and
+canonical authorization service time before attributing latency to the bulk
+adapter; all C1/C5/performance/device gates remain mandatory.
