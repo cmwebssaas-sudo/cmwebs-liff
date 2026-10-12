@@ -1,5 +1,25 @@
 # CMWebs Current State
 
+## 2026-10-13 — C6 local capacity repair, actual gates still pending
+
+New500-owned-room fixture checks real local workerd/D1 against unchanged GAS
+at all seven entries and independent room/tenant/property/financial literals.
+Original tenants99.173ms p95 FAIL retained; instrumentation found2252 date
+format calls consuming61–87ms. Request-local formatter reuse preserves mutable
+dates/timezones/errors/DST and never caches date values or positive authority.
+Unit955/955 and Worker31/31 plus dry-run pass. Each entry has100 samples and
+original p95<50ms; tenants41.669ms, range20.732–41.669ms. Independent focused
+source/fixture review passes. CI for the new head is pending; original access
+is fixture-supplied and the all-table loader is not C3/remote/Taipei acceptance.
+
+Candidate cache20261013-read-capacity-v3/comparison
+read-bed1f4eb91b247567955000d406eccb5fc25520481f6af4ec8e0780102da8399
+regenerated over178 source files; no actual epoch began. All flags off/URL blank;
+no formal deployment/config/data change. Prior959 full-suite and previous CI
+outlier/rerun records below remain pinned historical evidence, not a new-head
+full-suite/performance claim. C1 fresh72h, C3 strict latency, C5 seven-day and
+C6 authenticated/device/cutover still pending.
+
 ## 2026-10-13 — Read-path actual gates and local regression evidence
 
 C1's failed synthetic observation is STOPPED, not running or accepted. Its

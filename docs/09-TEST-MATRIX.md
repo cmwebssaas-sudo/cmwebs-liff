@@ -1292,6 +1292,15 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Unit902/902, Worker24/24 plus dry-run, validate72 backend files/40 endpoint references | Local candidate | Full902 pass/1 known external Core fixture failure/4 skips |
 | Verified remote exports, seven real days, authenticated latency, Pages readback and phone/desktop acceptance | NOT_STARTED | All flags off; preceding C1 real72-hour gate continues independently |
 
+## 2026-10-13 C6 500-room local capacity preparation
+
+| Check | Actual evidence | Boundary |
+| --- | --- | --- |
+|20 properties/500 owned rooms/250 occupied and250 vacant/500 bills across2 months; foreign decoy and all20 schema tables | `cloudflare/read-api/test/read-capacity.test.mjs`; every canonical entry JSON matches and independent monetary/count literals pass | Fixed access/all-table test loader, not actual C3/remote/Taipei qualification |
+|100 samples/entry, original p95<50ms | Original tenants99.173ms FAIL retained; after request-local formatter reuse complete Worker31/31, tenants41.669ms and all seven entries pass | Local workerd/D1 only; new exact-head CI pending |
+|Current mutable dates, timezone switches/coercion/errors and DST | `tests/read-calendar.test.mjs`,2/2; complete unit955/955,0 skipped | No date-value/positive-authority caching; existing provider/revocation Worker tests also pass |
+|Source-sensitive comparison/release cache |178-source regeneration,20261013-read-capacity-v3 | New actual epoch required; none started, all flags off |
+
 ## 2026-10-12 C6 acceptance preparation
 
 | Coverage | Evidence | Boundary |

@@ -991,3 +991,36 @@ No formal database, source, deployment, Properties, trigger, Worker or flag
 change. Corrected C1 actual72h NOT_STARTED; stopped failed runtime remains
 NOT_ACCEPTED. C3 strict latency, C5 seven-day and C6 real-flow/device/cutover
 remain unaccepted; this full-suite success does not change those gates.
+
+## 2026-10-13 — C6 500-room local calculation repair
+
+Recommended model/speed GPT-6.1 Sol/high under approved plan; separate C6
+worktree/PR271. Capacity fixture:20 active properties,500 owned rooms,250 active
+tenants/leases and250 vacant rooms,500 bills across September/October plus
+foreign/private canaries. Real local workerd/D1 and all20 projection tables
+match unchanged GAS at seven entries; independent counts/financial literals
+pass. First fixture lacked canonical payment_status; corrected synthetic source
+field, preserving the arrears252 assertion and product behavior. Original
+tenants100-sample p95=99.173ms FAIL retained.
+
+Three private actual workerd profile calls returned identical result hashes;
+2252 date-format calls consumed87/61/61ms, full148.522/103.823/98.936ms.
+Minimal repair reuses string-timezone Intl formatters only within a request,
+never date values, rows or positive access. Mutable Date, non-string timezone
+coercion/errors and spring DST are checked; independent focused review also
+verified request isolation/autumn DST. Original GAS calculator stays unchanged.
+
+Unit955/955 and complete Worker31/31 including dry-run pass, zero skips. Each
+entry's100-sample local p95<50ms: home25.690/actions20.732/revenue21.754/
+tenants41.669/rooms31.105/arrears29.892/properties28.305ms. This fixed-access,
+all-table test is not uncached C3 authority, real provider/scoped loader,
+remote/Taipei500-room, seven-day or device acceptance. Exact-head Linux CI is
+pending; prior959 full-suite and original CI outlier/one rerun remain historical.
+
+Cache tag20261013-read-capacity-v3, all references/validators/tests advanced;
+178-source comparison regenerated as
+read-bed1f4eb91b247567955000d406eccb5fc25520481f6af4ec8e0780102da8399.
+Old failed C1 completion estimate removed from current runbook; corrected run
+NOT_STARTED with no current earliest finish time. A new actual epoch is required;
+none started. Six flags off/URL blank; no formal release/Property/trigger/data
+change. Rollback retains prior candidate e28d39b/cache/comparison. Root WIP preserved.

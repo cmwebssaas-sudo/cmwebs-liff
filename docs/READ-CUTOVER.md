@@ -1,7 +1,7 @@
 # C6 sequential read cutover runbook — preparation only
 
 Recommended model/speed: GPT-6.1 Sol/high per approved plan. Independent branch
-`codex/c6-read-acceptance-20261012`, stacked on reviewed C5 source `9c72fd4`.
+`codex/c6-read-acceptance-20261012`, stacked on C5 candidate `95d69c9`.
 This candidate repairs comparison identity for sequential flag releases and
 prepares acceptance. All flags remain off; no deployment, Property, trigger or
 operational data change occurred. Actual C6 NOT_STARTED.
@@ -11,8 +11,10 @@ operational data change occurred. Actual C6 NOT_STARTED.
 1. C1: at least72 actual hours on the final isolated test source, consecutive
    complete daily execution totals below15 minutes and table/dirty/revocation
    reconciliation. Keep manual/API failures and platform execution time visible.
-   Earliest recorded time is2026-10-15 05:39 Taipei, subject to evidence; reaching
-   that time alone cannot pass the gate. Source/timer fixes restart observation.
+   The old October15 05:39 Taipei estimate belongs to a stopped failed run.
+   Corrected-source observation is NOT_STARTED; no current earliest completion
+   time exists. Verify a new start and at least72 actual hours after source/timer
+   fixes, retaining every failure and the complete platform daily totals.
 2. C2/C3/C4: merge/release each independently only after its predecessors pass;
    fresh formal serving/editor export, immutable new GAS version at original URL,
    prior version retained, Worker/D1 binding/migrations/config presence verified,
@@ -120,7 +122,7 @@ Do not weaken GAS authority to meet latency or count fallback as Worker success.
 
 ## Evidence ledger
 
-Current local draft refresh (2026-10-12): reviewed C3 bulk reader and all C1
+Historical local draft refresh (2026-10-12): reviewed C3 bulk reader and all C1
 stop/C3 signed-diagnostic evidence are inherited through C4/C5. Asset cache
 version is `20261012-read-cutover-v2`; the regenerated178-source comparison is
 `read-1321de54a6858357c574e3f5c2d74fc2f5d236ece9a6eb04b77d2ae2a0f7ab30`.
@@ -159,8 +161,35 @@ Retain additive D1 schema, replica/observation metadata, exports and immutable
 versions; rollback does not need formal data deletion. Confirm actual readback
 and owner-visible operation before declaring rollback complete.
 
-Local candidate verification: unit905/905, Worker25/25 plus bundle dry-run,
-actual D1/browser6/6 and validate72 backend files/40 endpoint references/178
-comparison-source hashes pass. Full905 pass, one documented unavailable external
-Core/PG fixture failure and four skips. All real deployment/day/device gates
-remain pending; these checks only establish the candidate's source behavior.
+The old905/905,25/25 and missing-Core results are historical. The October13
+414eb1f candidate completed959 full tests with zero skips using the isolated
+Core/PG environment in `READ-REGRESSION-DEPENDENCIES.md`. The later e28d39b
+refresh changed only five documentation files with identical runtime/test source;
+the tested head remains414eb1f, not a full-suite claim for later runtime changes.
+
+October13 capacity preparation uses20 properties/500 owned rooms/250 occupied
+tenants and leases,250 vacant rooms,500 bills across two months and a foreign
+Workspace decoy. Actual local workerd/D1 matches unchanged GAS JSON for all
+seven entries, plus independent counts and monetary literals. Original tenants
+p95=99.173ms FAIL is retained. Three separate instrumented local samples showed
+2252 date-format calls consuming61–87ms. The repair reuses only request-local
+Intl formatters, never date values or positive authorization. Mutable dates,
+timezone coercion/errors and DST are separately checked.
+
+After repair, the complete Worker suite31/31 and bundle dry-run pass. Each
+entry's100-sample local HTTP/D1 p95 remains below the original50ms threshold:
+home25.690/actions20.732/revenue21.754/tenants41.669/rooms31.105/
+arrears29.892/properties28.305ms. Access is fixture-supplied and the loader reads
+all test tables; this is not provider/authority/scoped-loader/remote/Taipei/device
+or actual500-room qualification. Linux/Node22 CI still needs the new exact head.
+Unit955/955 also passes with zero skips; the pinned prior-head Core/PG full suite
+is separate evidence. The earlier e28d39b CI home123.926ms failure and its one
+same-head diagnostic rerun PASS remain in PR271's record; the cause was
+UNVERIFIED and the date-formatter change does not claim to repair that outlier.
+
+The new candidate cache is `20261013-read-capacity-v3`; regenerated178-source
+identity is `read-bed1f4eb91b247567955000d406eccb5fc25520481f6af4ec8e0780102da8399`.
+The runtime change requires a fresh real epoch; none has started. All six flags
+remain off, endpoint blank, and no formal release/Property/trigger/data change
+has occurred. Rollback retains the prior candidate e28d39b and comparison/cache
+above. All real deployment/day/device gates remain pending.

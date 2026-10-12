@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {appsScriptDate} from '../cloudflare/read-api/src/apps-script-date.js';
+import {createReplicaRuntime} from '../cloudflare/read-api/src/read-runtime.js';
 
 test('replica Date preserves native GAS Taipei month/day boundaries and date inputs',()=>{
   const previousZone=process.env.TZ;
@@ -29,4 +30,24 @@ test('replica Date preserves native GAS Taipei month/day boundaries and date inp
   } finally {
     if(previousZone===undefined)delete process.env.TZ;else process.env.TZ=previousZone;
   }
+});
+
+test('replica formatDate keeps current date values, time zones, DST and invalid-input errors',()=>{
+  const {formatDate}=createReplicaRuntime({}).Utilities;
+  const pattern='yyyy-MM-dd HH:mm:ss';
+  const date=new Date('2026-09-30T16:00:01Z');
+  assert.equal(formatDate(date,'Asia/Taipei',pattern),'2026-10-01 00:00:01');
+  assert.equal(formatDate(date,'UTC',pattern),'2026-09-30 16:00:01');
+  date.setUTCSeconds(59);
+  assert.equal(formatDate(date,'Asia/Taipei',pattern),'2026-10-01 00:00:59');
+  assert.equal(formatDate(new Date('2026-03-08T09:59:59Z'),'America/Los_Angeles',pattern),'2026-03-08 01:59:59');
+  assert.equal(formatDate(new Date('2026-03-08T10:00:00Z'),'America/Los_Angeles',pattern),'2026-03-08 03:00:00');
+  assert.throws(()=>formatDate(date,'Invalid/Zone',pattern),RangeError);
+  assert.throws(()=>formatDate(new Date(NaN),'Asia/Taipei',pattern),RangeError);
+  let currentZone='UTC';
+  const mutableZone={toString:()=>currentZone};
+  assert.equal(formatDate(date,mutableZone,pattern),'2026-09-30 16:00:59');
+  currentZone='Asia/Taipei';
+  assert.equal(formatDate(date,mutableZone,pattern),'2026-10-01 00:00:59');
+  assert.throws(()=>formatDate(date,Symbol('zone'),pattern),TypeError);
 });

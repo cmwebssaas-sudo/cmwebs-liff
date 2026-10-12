@@ -44,10 +44,19 @@ export function createReplicaRuntime(dataset,options={}) {
   const localCache = new Map();
   const contexts = new Map();
   const cache = {get:key=>localCache.get(key)||null,put:(key,value)=>localCache.set(key,value)};
+  // Formatter construction dominates large summaries. Reuse only request-local
+  // formatters; date values and authorization are never cached. Non-string zones
+  // retain Intl's coercion on every call, including mutable objects and errors.
+  const dateFormatters = new Map();
   const formatDate = (date, timeZone, pattern) => {
-    const values = Object.fromEntries(new Intl.DateTimeFormat('en-GB',{
-      timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
-    }).formatToParts(date).map(item=>[item.type,item.value]));
+    let formatter=typeof timeZone==='string'?dateFormatters.get(timeZone):undefined;
+    if(!formatter) {
+      formatter=new Intl.DateTimeFormat('en-GB',{
+        timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+      });
+      if(typeof timeZone==='string')dateFormatters.set(timeZone,formatter);
+    }
+    const values = Object.fromEntries(formatter.formatToParts(date).map(item=>[item.type,item.value]));
     return pattern.replace(/yyyy|MM|dd|HH|mm|ss/g, key => values[{yyyy:'year',MM:'month',dd:'day',HH:'hour',mm:'minute',ss:'second'}[key]]);
   };
   const noop = () => {};
