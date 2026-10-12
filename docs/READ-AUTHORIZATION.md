@@ -315,3 +315,40 @@ retained. No source-data, Properties, scope, timer, formal deployment/Worker or
 flag change. Strict latency remains NOT_ACCEPTED. Isolate reader choice and
 canonical authorization service time before attributing latency to the bulk
 adapter; all C1/C5/performance/device gates remain mandatory.
+
+## 2026-10-12 — Signed reader-choice and service-time diagnostic
+
+Independent review and63 fake control cases cover the owned v4 diagnostic:
+7 harness,7 actual editor/retained-version,9 publisher,6 actual-probe,
+19 source/deployment gates and15 telemetry cases. Telemetry uses only the
+canonical reader's consumed bytes, with the existing20000-byte limit and
+cancellation, no clone/tee or extra body IO. Only a successful canonical
+signature/freshness/access check permits fixed-label, bounded numeric telemetry
+to enter evidence; damaged signatures and private sentinel fields are tested.
+The source-pinned harness restores its request-local bulk hook in finally and
+includes diagnostics inside the original signed response body. The canonical
+authorization source is unchanged from the reviewed bulk-reader candidate.
+
+Owned synthetic immutablev4 and its10-file source were read back; initial404
+was recovered read-only through the recorded deployment, without duplicates.
+At23:31–23:32 Taipei all three strict1500ms samples failed at1505.136/1503.891/1503.527ms
+without response headers. Three separately labeled15000ms diagnostics passed
+canonical signed checks and each reported one successful bulk attempt, no
+native range.getValues observation and zero shared cache hits. First headers
+2547.023/2660.057/2726.958ms; complete2967.576/2917.804/3002.265ms;
+authorization.total1183/1394/1052ms, containing bulk288/632/223ms.
+
+Owned test binding openById297/274/256ms and title43/40/43ms are nested in
+spreadsheet.getSheetByName397/342/353ms, itself part of authorization.total.
+These observations must not be summed as independent elapsed times or CPU.
+Runtime counters9 theoretical full reads/5 adapter reads/4 local cache hits
+are not five native Sheet value reads: native range.getValues was absent in
+this harness. The successful bulk path is demonstrated for these three
+synthetic requests; strict latency remains NOT_ACCEPTED. Remaining time is not
+assigned to a single Google/platform/transport operation without measurement.
+
+Original10-file editor restored/exported exact at23:33:42, all eight original
+canonical modules restored and immutablev1/v2/v3/v4 retained. No formal/C1
+source, source-data, Properties, scopes, timers, Cloudflare or flags changed.
+This33-row diagnostic is not remote D1,500-room, p95, real LINE/device or formal
+performance acceptance; all original release gates remain required.

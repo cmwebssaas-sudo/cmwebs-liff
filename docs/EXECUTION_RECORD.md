@@ -657,3 +657,25 @@ Original10-file editor restored/exported exact at23:14:32; original eight
 canonical modules and immutablev1/v2/v3 retained. No formal/C1 source, source
 data, Properties, scopes, timers, Worker or flags changed. Strict latency remains
 NOT_ACCEPTED; original failures and all preceding gates remain required.
+
+## 2026-10-12 — C3 signed bulk path proved, strict latency still fails
+
+Recommended GPT-6.1 Sol/high. Independent review/63 fake lifecycle and telemetry
+cases passed. Owned syntheticv4/source10 verified; canonical authorization
+unchanged, harness hook restored in finally, signed telemetry saved to evidence only
+after canonical verification under the original20000-byte limit. First404
+recovered by recorded-ID read-only checks, no duplicate creation.
+
+Actual23:31–23:32 Taipei strict3 failed at1505.136/1503.891/1503.527ms/no headers.
+Separately labeled diagnostics each confirmed one successful bulk attempt,
+no native range.getValues observation and zero shared cache. Complete
+2967.576/2917.804/3002.265ms; headers2547.023/2660.057/2726.958ms;
+authorization.total1183/1394/1052ms includes bulk288/632/223ms. Binding/method
+timings are nested and not summed; theoretical/adapter runtime read counters
+do not mean native Sheet IO. Evidence proves this three-request synthetic bulk
+path, not strict1500ms, p95,500-room, D1, real LINE/device or formal acceptance.
+
+Original10-file editor restored/exported exact23:33:42; original eight canonical
+modules and immutablev1/v2/v3/v4 retained. No formal/C1 source, data, Properties,
+scope, timer, Cloudflare or flag change. Keep strict latency NOT_ACCEPTED and
+all C1/C5/performance/device gates; do not infer acceptance from bulk success.
