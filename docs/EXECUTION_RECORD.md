@@ -447,3 +447,28 @@ Exact original4 editor files and retained deployment configuration restored
 rows, Properties, Cache, trigger, credential/scope or flag changed. No
 corrected-source72-hour run started;900s/day remains unmet. Manual timings
 are not cold timer, complete-day or500-room acceptance.
+
+
+## 2026-10-13 — Full local Core/PG regression environment restored
+
+Recommended GPT-6.1 Sol/high. Clean pinned Core checkout and private local
+PG16.14 supplied the existing missing mandatory integration dependency. No
+application source, test assertion, repository dependency or remote service
+changed. Independent runner review reproduced cleanup timeout failure; four
+fake lifecycle cases and eight target/environment guards PASS after correction.
+
+Actual existing full suites: C1 853/853, C2 868/868, C3 938/938, C4 951/951,
+C5 956/956, C6 959/959; zero fail/cancel/skip. Original GAS commercial flow
+used actual restricted HTTP and real PostgreSQL; four product-access fixtures
+use synthetic Core route-handler injection, not real sockets/database. All
+six tested full HEADs and Node26/macOS scope are retained in
+`READ-REGRESSION-DEPENDENCIES.md`. Previous failures/skips remain historical.
+
+SQL before/after verified fixed owned cluster and no leftover fixture DB/roles;
+final pg_ctl stop/status, absent PID and closed listener passed with no cleanup
+error. Core and all CMWebs tracked sources unchanged; root WIP and C5 editor
+temporary file preserved. Logs/generated synthetic secrets remain private.
+No formal database, source, deployment, Properties, trigger, Worker or flag
+change. Corrected C1 actual72h NOT_STARTED; stopped failed runtime remains
+NOT_ACCEPTED. C3 strict latency, C5 seven-day and C6 real-flow/device/cutover
+remain unaccepted; this full-suite success does not change those gates.

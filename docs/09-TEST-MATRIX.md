@@ -1267,3 +1267,16 @@ files/deployment configuration restored00:38:58; native trigger count0. The
 stopped IDLE log pairs86/99/984ms and109/180/1099ms (core/wrapper/platform)
 do not replace complete failed history or isolate startup. No corrected-source
 72-hour gate started and no daily-runtime/500-room claim is made.
+
+
+## 2026-10-13 — Missing Core integration environment resolved locally
+
+The existing full suites now execute at all six pinned candidate source heads:
+C1 853/853, C2 868/868, C3 938/938, C4 951/951, C5 956/956, C6 959/959;
+zero failures/cancellations/skips. Node26/macOS and fresh isolated PG16.14,
+with original mandatory restricted HTTP/PG fixture and four synthetic Core
+route-handler cases. Actual database/role cleanup and final stopped listener
+verified. Exact heads and reproduction boundaries are in
+`READ-REGRESSION-DEPENDENCIES.md`. Prior missing-environment results remain
+historical; actual72h/daily-runtime/strict-latency/seven-day/device/cutover gates
+are not accepted by these regressions.
