@@ -1342,3 +1342,35 @@ fresh corrected source requires a new actual72-hour gate, flags remain off.
 | Owned synthetic HTML transportv5 | Independent93 fake controls/68 canonical regressions; three strict1500ms failures, three HTTP200 diagnostics rejected by lab body decoder, no telemetry; native six completed; original10 restored01:41:32/v1–v5 retained | NOT_ACCEPTED; lab extraction is not canonical HTTP acceptance; no p95/500-room/D1/LINE/device or formal release; body failure cause still unclassified |
 | Single unsigned wrapper structure classification |16 independently reviewed fake controls; one actual unsigned `{}` POST, HTTP200/8130 UTF-8 bytes/one ordered marker pair/hex-escaped padding; no OAuth/credential/fixture IO or additional signed request | Only unsigned wrapper structure; no raw body retention/script execution, signature/access/latency or original three signed-body diagnosis acceptance |
 | Owned unpadded HTML producer v6 |99 reviewed fake controls; three strict1500ms failures, three diagnostic envelopes verified with one successful bulk/no native getValues/zero shared cache; complete2951.322/2266.999/2898.482ms; native first strict212.683s retained; final original10/config check02:07:18/v1–v6 retained | Lab cryptographic/access validation, not canonical HTTP or strict latency acceptance;33 rows/no D1,p95,500-room,real LINE/device or formal cutover |
+
+C1 read-only service diagnostic on2026-10-13: one manual invocation at00:23:53
+Taipei, five paired calls,438ms measured region after the Script guard and
+1.670s native platform
+duration. Cache getAll21–48ms; Property get45–56ms. The actual helper's11 fake
+lifecycle cases, actual function's4 VM cases and independent proof/timestamp
+review passed. Original4 editor files and deployment configuration restored
+at00:24:38; native trigger count remains0. This warm manual measurement neither
+reproduces/resolves the earlier335s Cache stall nor passes daily/72-hour gates.
+
+C1 separately reviewed single-pair diagnostic onOctober13: exactly3 independent
+manual invocations, timed regions125/68/114ms (including fixed Script guard),
+native platform871/921/550ms. Guard2–6ms and Property handle1–10ms did not
+dominate these samples; no Property value/Sheet/sync/write/timer operation.
+Actual-function VM6/6 and actual-helper fake lifecycle11/11 passed. Original4
+files/deployment configuration restored00:38:58; native trigger count0. The
+stopped IDLE log pairs86/99/984ms and109/180/1099ms (core/wrapper/platform)
+do not replace complete failed history or isolate startup. No corrected-source
+72-hour gate started and no daily-runtime/500-room claim is made.
+
+
+## 2026-10-13 — Missing Core integration environment resolved locally
+
+The existing full suites now execute at all six pinned candidate source heads:
+C1 853/853, C2 868/868, C3 938/938, C4 951/951, C5 956/956, C6 959/959;
+zero failures/cancellations/skips. Node26/macOS and fresh isolated PG16.14,
+with original mandatory restricted HTTP/PG fixture and four synthetic Core
+route-handler cases. Actual database/role cleanup and final stopped listener
+verified. Exact heads and reproduction boundaries are in
+`READ-REGRESSION-DEPENDENCIES.md`. Prior missing-environment results remain
+historical; actual72h/daily-runtime/strict-latency/seven-day/device/cutover gates
+are not accepted by these regressions.

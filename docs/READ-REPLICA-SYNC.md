@@ -263,3 +263,94 @@ Reinstallation uses the existing fixed synthetic `installC1TestTriggers`,
 followed by native trigger/readback checks; it is not a route to bypass runtime,
 correctness, daily full-sync or downstream shadow acceptance. No formal source,
 data, deployment, trigger or frontend flag was changed by this rollback.
+
+## 2026-10-13 — Owned read-service diagnostic, original editor restored
+
+Recommended `gpt-5.6-terra`/medium; the existing session continues the reviewed
+diagnostic. Fresh fixed project/parent/title/source readback and the native
+unfiltered zero-trigger page preceded an editor-only harness addition. Both
+canonical modules and the manifest/scopes stayed unchanged; the existing
+deployment inventory/configuration was retained. The actual helper passed11
+fake lifecycle cases, the actual function passed4 VM cases, and independent
+review also checked4 invalid timestamp/proof cases. No new credential or scope
+was needed.
+
+The one manual `benchmarkC1ReadServices` invocation started00:23:53 Taipei.
+Its log completed00:23:55 with `success:true,code:OK`, five paired samples,
+438ms measured region after the fixed Script guard, and no between-sample
+loop-guard hit. Native
+execution history separately reports1.670s platform duration; it is not the
+same metric as the service/region timers. The438ms timer excludes the Script
+guard and final log call, so subtraction does not isolate platform startup.
+
+| Sample | Cache handle (ms) | Cache getAll (ms) | Property handle (ms) | Property get (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 4 | 48 | 19 | 46 |
+| 2 | 2 | 21 | 5 | 45 |
+| 3 | 1 | 29 | 1 | 56 |
+| 4 | 8 | 30 | 2 | 45 |
+| 5 | 1 | 28 | 1 | 46 |
+
+The function read the original dirty-key set and queried a fixed non-secret
+test marker key, discarding all returned values. This does not prove that the
+queried Property exists or that its value matches the timer harness's marker;
+the benchmark uses`C1_TEST_LAST_MUTATION_MINUTE`, while the harness uses
+`C1_TEST_LAST_MUTATION`. It performed no Sheet, UrlFetch,
+sync, trigger, Cache/Property write or deployment operation. Its fixed Script
+guard precedes service IO. A60s guard is checked between samples; it cannot
+interrupt a blocking native call and is not a hard execution timeout.
+
+These are warm paired service calls in one manual invocation. They did not
+reproduce the earlier335s idle Cache-path delay, do not identify which earlier
+Cache call stalled, and do not prove cold timer overhead, a complete daily
+runtime,500-room throughput or an actual72-hour pass. The observed Property
+reads provide no evidence that replacing Cache would improve the idle path.
+Keep all original failures and the unchanged900s/day gate.
+
+At00:24:38 Taipei the API export verified exact original4 editor files and
+unchanged retained deployment configuration. The native unfiltered trigger
+page again showed zero. No formal source/data/Properties/trigger/flag changed.
+The stopped failed observation remains NOT_ACCEPTED; no corrected-source
+72-hour run has started. Diagnostic evidence alone does not approve a new
+Cache/Properties design or a relaxed schedule/acceptance gate.
+
+## 2026-10-13 — Three independent single-pair entry-region diagnostics
+
+Recommended `gpt-5.6-terra`/medium. A separately reviewed editor-only function,
+`profileC1IdleServices`, measured the previously excluded fixed Script guard
+and the timer harness's unconditional Property handle, followed by one Cache
+handle/getAll pair. It never read a Property value or called the sync function;
+pending dirty markers therefore could not cause Sheet/D1 writes. Three manual
+invocations were the entire bounded diagnostic, with no timer installation.
+Six actual-function VM cases and11 actual-helper fake lifecycle cases passed.
+Fresh fixed binding/source4 and native zero-trigger readbacks preceded the push.
+
+| Native start (Taipei) | Script guard (ms) | Property handle (ms) | Cache handle (ms) | Cache getAll (ms) | Timed region (ms) | Native platform (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 00:37:38 | 3 | 3 | 3 | 116 | 125 | 871 |
+| 00:37:58 | 6 | 10 | 8 | 44 | 68 | 921 |
+| 00:38:15 | 2 | 1 | 1 | 109 | 114 | 550 |
+
+All three returned`success:true,code:OK`; the timer starts before the Script
+guard and ends before the final log call. Native platform duration is a
+separate execution-history measurement. The region/platform difference is
+not exclusively startup, logging, CPU or any particular service. These manual
+invocations do not establish cold-clock-trigger behavior or a daily total.
+The Script guard/Property handle did not dominate these three measurements;
+no fix for the earlier335s Cache-path stall is established. A lazy Property
+handle is a possible removal of redundant harness IO, with unproven benefit,
+and cannot alone qualify a new runtime/correctness observation.
+
+Two already stopped timers were also read with their actual native logs:
+October12 20:29:14 had IDLE/core86ms/wrapper99ms/platform984ms;20:28:14 had
+IDLE/core109ms/wrapper180ms/platform1099ms. These are selected diagnostic
+pairs, not a reclassification of all914 timers; the complete failed history
+and every slow/failing result remain in the gate. Their wrapper/platform
+differences are likewise not attributed to startup.
+
+At00:38:58 Taipei the source API confirmed exact original4 editor files and
+retained deployment configuration. The native unfiltered page again showed
+zero triggers. Both canonical modules, manifest/scopes, Properties, Cache,
+source rows and formal flags remained unchanged. No new credential/scope,
+deployment or corrected-source72-hour run was created. The900s/day and actual
+72-hour gates remain NOT_ACCEPTED/NOT_STARTED respectively.

@@ -1,5 +1,29 @@
 # CMWebs Current State
 
+## 2026-10-13 — Read-path actual gates and local regression evidence
+
+C1's failed synthetic observation is STOPPED, not running or accepted. Its
+914 minute timers consumed2892.886s, exceeding900s/day; all failures/tails
+remain. Original test editor/deployment restored and zero test triggers last
+verified00:38:58 Taipei. Corrected-source actual72-hour run NOT_STARTED.
+Later C3 owned syntheticv6 diagnostics retain canonical envelope verification
+only after a local HTML adaptation; strict1500ms still fails and the first
+server's212.683s tail is retained. Original10 files restored02:07:18 and
+v1–v6 retained. These are not canonical HTTP or formal performance acceptance.
+
+Full local regressions at the six exact candidate heads now pass without skip
+using a new isolated PG16.14/clean pinned Core fixture: C1 853, C2 868, C3 938,
+C4 951, C5 956, C6 959. Exact provenance and actual successful cleanup are in
+`READ-REGRESSION-DEPENDENCIES.md`; Node26/macOS evidence does not replace
+Linux/Node22 CI, actual daily-runtime/72h, seven-day shadow,500-room, latency
+or physical-device gates. Later C4–C6 candidate flags remain off, endpoint
+blank; shadow/cutover NOT_STARTED. Six separate draft worktrees/PRs remain.
+
+Recorded release baseline is S1 GAS233/frontend20261012-line-identity-v1
+and merged C0 scaffold. This documentation/test update does not newly verify
+external serving state; recheck it before another release. No formal deployment,
+Property, trigger, data or flag change. Root checkpoint WIP is preserved.
+
 ## 2026-10-11 — 會員／銀行轉帳訂閱正式發布
 
 使用者確認彈性後台設計與直接實作、推送／部署。Core PR53／5d24c57已部署於
