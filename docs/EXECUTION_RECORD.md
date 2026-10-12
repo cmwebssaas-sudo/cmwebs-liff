@@ -332,3 +332,33 @@ requests all returned409
 not CPU-only or p95/capacity acceptance, and does not identify the earlier
 transient delay's root cause. D1 post-readback found zero probe runs/nonces/
 staging and501 rooms. No source/timer/Properties change or72h gate restart.
+
+
+## 2026-10-12 — C1 actual runtime target failed before end of day
+
+Recommended GPT-6.1 Sol/high. Authenticated execution history was frozen during
+four-page capture and realtime display restored afterward. Through16:51 Taipei,
+702 unique execution records include694 minute timers,1938.259 total platform
+seconds (32.304 minutes), max342.094 seconds and one platform failure. The day
+is incomplete, but measured usage already exceeds the unchanged900-second daily
+target; C1 is not accepted. No extrapolation or successful-day claim is made.
+Minute timestamps contain four duplicates and two missing slots (06:34,12:23),
+so the capture is not described as one successful execution per exact minute.
+
+12:30's72.003-second failed execution reports a Drive service timeout inside the
+test-only spreadsheet identity/title guard, before synthetic mutation/sync.
+The failure is retained separately from the earlier overlapping SYNC_BUSY.
+13:00 completed successfully:195407ms canonical sync,200994ms wrapper and
+215.410s platform.09:44 completed IDLE with zero tables:335171ms canonical,
+335182ms wrapper and342.094s platform. The idle canonical path only obtains the
+script cache and performs its bulk marker read before returning; it has no
+Sheet, signing-Property, lock or UrlFetch IO. This locates that long idle delay
+in the CacheService path, without claiming to distinguish its two API calls.
+Long active sync still combines service/preparation/network/validation time.
+
+All failures and overhead remain in the runtime gate. Do not replace platform
+usage with non-idle wrapper counters or discard slow services as outliers.
+No canonical/test source, Properties, binding, timer or formal flag changed.
+The original observation clock remains recorded, but elapsed72 hours alone
+cannot pass the failed correctness/runtime acceptance. Investigate in an
+independent environment before revising source or starting a new accepted run.
