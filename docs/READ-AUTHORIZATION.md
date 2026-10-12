@@ -136,3 +136,219 @@ revocation, real LINE provider/device or shadow/cutover gate. All three edited
 cells were restored and native bounded readback confirmed active/owner/active;
 post-restore positive verification is recorded separately. No formal data,
 configuration, source, deployment, triggers or C1 observation clock changed.
+
+## 2026-10-12 — Synthetic service profiling
+
+Recommended GPT-6.1 Sol/high. Authenticated Apps Script history contains42
+completed synthetic v1 Web App executions: minimum1.898s, median3.0495s,
+maximum34.129s, total166.116s. These platform durations are not paired with
+individual request nonces; completed does not establish a valid authority reply.
+
+A separate immutable synthetic v2 retains all eight canonical GAS modules and
+the existing manifest/scopes/Properties. Only its test binding harness adds
+request-local method timings and signed private telemetry. Independent review,
+native-module VM tests and10-file editor/immutable exports passed. The initial
+deployment GET returned404 after creation; a subsequent read-only check verified
+the recorded deployment and immutable source without another deployment POST.
+The original v1 endpoint remained unchanged. After measurement, the original
+editor10 files were restored and read back, retaining both immutable versions.
+
+Three diagnostic requests passed canonical MAC/nonce/digest/route/freshness/
+fingerprint verification before telemetry was inspected:
+
+| Sample | Client roundtrip ms | Canonical authorization ms | Range metadata ms | Values ms | Other unmeasured authorization ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 8131.150 | 3306 | 1215 | 564 | 797 |
+| 2 | 3463.392 | 2164 | 914 | 455 | 449 |
+| 3 | 5108.085 | 3073 | 1045 | 544 | 987 |
+
+Each request performs five full Sheet reads, four request-local cache hits and
+zero shared cache hits. Non-overlapping measured Sheet/binding services total
+2509/1715/2086ms; binding timings are nested inside sheet lookup and counted only
+once. Unmeasured authorization includes config/nonce/cache/lock/crypto/local
+work. Client deltas also include runtime/redirect/test telemetry overhead, so
+neither residual identifies an exclusive cause. The33-row fixture, test binding
+and15000ms diagnostic deadline exclude p95,500-room,LINE/device or formal
+acceptance. The normal1500ms deadline and closed flags remain unchanged.
+
+## 2026-10-12 — Request-local bulk transport feasibility
+
+Recommended GPT-6.1 Sol/high. An independently reviewed manual benchmark used
+only the existing owned synthetic project and five authorization tables. Its
+fixed Google HTTPS GET rejects redirects and never logs rows, tokens or error
+messages. The first two native executions returned403; the second classified
+only the safe classification `API_DISABLED` from Google's allowlisted
+`SERVICE_DISABLED` reason. Both failures are retained.
+Adding the Sheets/v4 advanced-service dependency to this test editor preserved
+the original two OAuth scopes. No new grant, deployment or timer was created.
+
+The21:13:54–59 Taipei execution compared three sequential bulk/native pairs:
+
+| Sample | Bulk GET ms | Native Sheet reads ms | Typed scalar/local-clock mismatches |
+| --- | ---: | ---: | ---: |
+| 1 | 358 | 1331 | 0 |
+| 2 | 239 | 863 | 0 |
+| 3 | 218 | 823 | 0 |
+
+Each sample checked166 cells, including one native Date and51 empty cells.
+Date comparison used the native value's Taipei wall clock against the API
+serial; this does not implement or verify a serial-to-Date authorization loader.
+These pairs share one invocation and may benefit from warm services. They are
+not separate authenticated requests, p95,500-room capacity, LINE/device proof
+or the1500ms authority/800ms page acceptance. Permission logic and shared-cache
+policy were unchanged. Before any loader can qualify, test Date reconstruction,
+source row order, missing/malformed tables, every supported role/identity and
+fresh source revocation against canonical authorization; never cache a positive
+access decision across requests.
+
+Original10-file editor restored and read back at21:18:12; the Sheets dependency
+was removed from the editor and both immutablev1/v2 deployments retained.
+No Cloud API disable was requested, so editor rollback is not a claim that
+Google's default-project API activation was reversed. No formal/C1 source,
+Properties, data, timers or flags changed. Actual API use succeeded only after
+the dependency change; a manifest alone was not treated as activation proof.
+
+## 2026-10-12 — Native Utilities hypothesis check
+
+An independently reviewed editor-only manual function timed100 synthetic JSON
+strings without reading real rows, identity or signing credentials. Fixed
+project/Sheet/title checks,75s loop checks and safe failure output passed eight
+fake-runtime tests; a blocking native call itself cannot be interrupted.
+Actual21:51:31–33 execution measured107ms for100 SHA-256 digests and254ms for
+100 UTF-8 Blob byte counts (14580 total bytes). This one sample does not support
+replacing crypto to explain the earlier tens-of-seconds preparation delay.
+No hash or signing implementation was changed, and these100 strings are not a
+500-room, p95, daily-runtime or72-hour acceptance result.
+
+After capture, original10-file editor source was restored and verified at
+21:52:43, retaining immutablev1/v2. No dependency, scope, deployment, Property,
+trigger or data change was introduced by this Utilities benchmark. Continue
+the request-local bulk-reader feasibility work and investigate remaining
+service/network boundaries; formal acceptance remains NOT_ACCEPTED.
+
+## Request-local bulk reader candidate — not yet remotely accepted
+
+The candidate retains the original signature, nonce, credential digest, route,
+access helpers and deadlines. After these request checks it reads the five
+authorization tables from the trusted runtime Spreadsheet ID through one fixed
+Google HTTPS GET, with the existing OAuth grant, no redirects and no HTTP cache.
+The request-local adapter loads only at the original resolver's first value
+read, preserving LINE provider verification and Email token hashing before the
+policy snapshot. No caller can supply verified identity or actor claims.
+It reconstructs primitive types, blank/formula row positions and source-timezone
+Date milliseconds in a request-local read-only adapter. Access denials never
+retry another reader. API/format failure uses the original fresh native reader;
+such fallback does not count as successful performance acceptance.
+
+Input is bounded to100000 sparse cell entries and100000 total hydrated cells,
+20000 rows/table,100 columns and1000000 response characters. The hydrated-cell
+guard was added after independent review reproduced sparse expansion beyond
+the original input cap. Original runtime handles, values and contexts are
+restored after resolution; no positive decision is cached across requests.
+
+Local49 grid cases and19 existing authority/access/identity cases pass, including
+six roles, delegated manager/foreign principal, one-millisecond session expiry,
+source-only changes, access changes during provider/hash waiting, replay/forgery
+and native fallback. Native IO counters prove
+the successful grid cases did not silently fall back. Full unit suite933/933
+passes after regenerating the source-hash manifest; calculator code is unchanged.
+These tests use synthetic Google/Utilities adapters. The bounded native Date
+check below is separate evidence; authenticated strict latency, broader capacity,
+LINE/device and all preceding release gates remain required before formal
+publication or enabling a formal read path.
+
+## 2026-10-12 — Exact native Date check and candidate editor rollback
+
+Independent source review required both bounded hydrated matrices and original
+identity/hash-before-values ordering. Regression cases reproduced those defects
+before the fixes; the final49 grid cases plus19 existing policy cases passed
+independently. Only the authorization module and manual harness changed in the
+owned test editor. Its other seven modules, manifest/scopes and original doPost
+prefix remained exact; complete changed-source hashes guarded publication and
+rollback before any OAuth access. Both immutable test deployments were checked
+before and after editor changes. No new deployment was created.
+
+Actual22:40:41–46 Taipei manual execution used the bulk path without native
+fallback. All166 cells matched original native matrix dimensions, scalar types
+and values; one stored Date matched exact epoch milliseconds,51 cells were
+empty, and three synthetic Taipei midnight/millisecond boundaries round-tripped
+through actual Utilities with zero mismatches. Bulk preparation576ms; five
+native matrix reads2918ms. This one33-row invocation is not a signed authority
+request, lazy-resolution end-to-end test, p95,500-room, LINE/device or strict
+1500ms acceptance. No external-service wait is excluded from the future gate.
+
+Original10-file editor restored and exported exact at22:41:56, with the candidate
+authorization removed and immutablev1/v2 retained. No source data, Properties,
+scopes, timers, formal source/Worker or flags changed. Keep formal acceptance
+NOT_ACCEPTED and test the candidate's actual signed authority roundtrip next.
+
+## 2026-10-12 — Signed candidate roundtrip and editor rollback
+
+The independently reviewed private publisher/probe retains the initially
+validated source throughout OAuth and live readback, records version/deployment
+identifiers before subsequent checks, and emits only fixed error classifications.
+Nine publisher, six actual-probe control and18 pure-gate fake tests passed;
+source-swap regressions reject publication or stop before credential-seed IO,
+and synthetic exception sentinels cannot enter output/evidence. Canonical68
+authorization regression tests were repeated successfully with source unchanged.
+
+Only the owned synthetic project received a new immutablev3 and separate test
+endpoint. Its10-file source export matches the reviewed candidate; seven other
+canonical modules, original dispatcher/manifest/scopes and existingv1/v2 remain
+unchanged. First deployment readback404 was recovered through the recorded
+identifier using read-only management operations, without duplicate creation.
+
+At23:13 Taipei the canonical Email identity/access and request-bound authority
+probe retained all three strict failures: full1505.069/1503.023/1504.684ms,
+READ_AUTHORITY_UNAVAILABLE, no response headers. Three separately labeled
+15000ms diagnostics passed signed reply verification, with first headers
+2902.806/2900.429/2321.985ms and complete3302.118/3187.969/2620.684ms.
+Each successful diagnostic had one302 POST then one200 GET. These are three
+synthetic33-row requests, not p95, remote D1,500-room, real LINE/device or formal
+performance proof. They do not prove that the bulk path avoided native fallback:
+the original signed harness has no per-request reader-choice telemetry.
+No timeout was relaxed for acceptance and no failed sample was discarded.
+
+At23:14:32 the original10-file editor was restored and exported exact; all eight
+canonical modules are original, candidate authorization removed, immutablev1/v2/v3
+retained. No source-data, Properties, scope, timer, formal deployment/Worker or
+flag change. Strict latency remains NOT_ACCEPTED. Isolate reader choice and
+canonical authorization service time before attributing latency to the bulk
+adapter; all C1/C5/performance/device gates remain mandatory.
+
+## 2026-10-12 — Signed reader-choice and service-time diagnostic
+
+Independent review and63 fake control cases cover the owned v4 diagnostic:
+7 harness,7 actual editor/retained-version,9 publisher,6 actual-probe,
+19 source/deployment gates and15 telemetry cases. Telemetry uses only the
+canonical reader's consumed bytes, with the existing20000-byte limit and
+cancellation, no clone/tee or extra body IO. Only a successful canonical
+signature/freshness/access check permits fixed-label, bounded numeric telemetry
+to enter evidence; damaged signatures and private sentinel fields are tested.
+The source-pinned harness restores its request-local bulk hook in finally and
+includes diagnostics inside the original signed response body. The canonical
+authorization source is unchanged from the reviewed bulk-reader candidate.
+
+Owned synthetic immutablev4 and its10-file source were read back; initial404
+was recovered read-only through the recorded deployment, without duplicates.
+At23:31–23:32 Taipei all three strict1500ms samples failed at1505.136/1503.891/1503.527ms
+without response headers. Three separately labeled15000ms diagnostics passed
+canonical signed checks and each reported one successful bulk attempt, no
+native range.getValues observation and zero shared cache hits. First headers
+2547.023/2660.057/2726.958ms; complete2967.576/2917.804/3002.265ms;
+authorization.total1183/1394/1052ms, containing bulk288/632/223ms.
+
+Owned test binding openById297/274/256ms and title43/40/43ms are nested in
+spreadsheet.getSheetByName397/342/353ms, itself part of authorization.total.
+These observations must not be summed as independent elapsed times or CPU.
+Runtime counters9 theoretical full reads/5 adapter reads/4 local cache hits
+are not five native Sheet value reads: native range.getValues was absent in
+this harness. The successful bulk path is demonstrated for these three
+synthetic requests; strict latency remains NOT_ACCEPTED. Remaining time is not
+assigned to a single Google/platform/transport operation without measurement.
+
+Original10-file editor restored/exported exact at23:33:42, all eight original
+canonical modules restored and immutablev1/v2/v3/v4 retained. No formal/C1
+source, source-data, Properties, scopes, timers, Cloudflare or flags changed.
+This33-row diagnostic is not remote D1,500-room, p95, real LINE/device or formal
+performance acceptance; all original release gates remain required.
