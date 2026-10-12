@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261012-read-cutover-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-c3a409307cbc73b73d6b979293b90b9eee9ac31383c857761d87b584326554d6";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-73dcf823e4cca15270bce2c42972cac1ba8f29e5fcbafcf3d345f28123941f8b";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = '';

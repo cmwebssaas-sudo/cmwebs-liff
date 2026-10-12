@@ -1255,7 +1255,7 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Generated schema parity, idle zero-read behavior, Sheet projection, failed/concurrent dirty markers and immediate Email revocation | `tests/read-replica-sync.test.mjs` | Actual Apps Script functions in Node VM with controlled Sheet/network adapters |
 | Every dispatcher route explicitly classified, previously missed mutations queue their tables, real GET/POST envelopes preserved | Same | Real dispatcher and dirty-marker functions; synthetic successful responses |
 | Apps Script affected test function | `testReadReplicaProjection()` executed by the VM suite | Pure projection test; not a production execution |
-| Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_STARTED | Must be observed in the isolated remote environment; local tests cannot satisfy this gate |
+| Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_ACCEPTED | Through2026-10-12 16:51 Taipei, measured1938.259s exceeds900s daily target and failures are retained; elapsed72 hours alone cannot pass |
 
 ## 2026-10-12 C3 authorization candidate
 
@@ -1267,7 +1267,7 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Primary D1 identity/operational scope, delegated manager parity, both alias orders and foreign-parent legacy anchors | `cloudflare/read-api/test/read-access-d1.test.mjs` | Actual local workerd/D1; six original GAS routes compared |
 | Signed GAS confirmation through actual POST dispatcher; nonce/digest/route binding, replay/forgery/expiry, unavailable authority and undelivered source-only revocation/access changes | `tests/read-authority.test.mjs`; integrated D1 HTTP test | Real GAS modules in VM, real Worker HMAC and local service bridge; no formal account |
 | Source pending markers, incomplete/stale D1 snapshots, role changes, CORS, query tampering and sanitized HTTP errors | Integrated D1 HTTP test | Synthetic source and local D1 changes; no cross-request access cache |
-| Remote GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |
+| Formal GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED; isolated synthetic authority tested separately below | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |
 
 ## 2026-10-12 C4 routing candidate
 
@@ -1303,3 +1303,20 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 
 | C6 unchanged comparison identity through flag/cache releases, included source/endpoint invalidation and stale manifest rejection | `tests/read-comparison.test.mjs`; router and actual D1 HTTP regressions | Real source-copy tests; no live acceptance |
 | C6 per-page rolling qualification after earlier page is on, both home sections/unknown selectors, retained epoch errors | `tests/read-shadow.test.mjs` | Synthetic windows; initial all-page ledger still required |
+
+
+C3 real workerd transport regression5/5: Google allowed/fakehost/third-hop
+and LINE valid claims/302 rejection. Root cause is workerd redirect:error
+construction; canonical manual+exact200 retains no-follow and1500ms. Complete
+Worker24/24, Node identity+authority13/13, validate72 and independent review PASS.
+Synthetic real Google signed Email confirmation and source-only revoke/role/
+disable diagnostic denials verified; no remote D1/real LINE/device acceptance.
+All strict1500ms samples timed out; latency acceptance NOT_ACCEPTED, flags off.
+
+
+C1 actual remote follow-up through2026-10-12 16:51 Taipei: four-page history,
+694 minute timers/1938.259 platform seconds exceeds900s daily target before
+end of day; one Drive timeout, earlier SYNC_BUSY retained. IDLE CacheService
+path335171ms and successful canonical sync195407ms are observed boundaries,
+not isolated CPU/network metrics. C1 actual runtime/correctness NOT_ACCEPTED;
+no formal release or observation-clock reset.
