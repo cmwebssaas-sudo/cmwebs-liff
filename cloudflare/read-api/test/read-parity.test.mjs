@@ -5,6 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { originalGas, access, cases, fixture, plain, projectedDataset, richDataset } from '../../../tests/fixtures/read-parity/runtime.mjs';
+import {createClientTiming} from './read-client-timing.mjs';
 
 const httpPaths={home:'/v1/home?section=home',actions:'/v1/home?section=actions&read_view=summary',
   revenue:'/v1/revenue?from_month=2026-09&to_month=2026-10&as_of=2026-10-12',
@@ -35,6 +36,7 @@ test('all six routes match original GAS after whitelist projection and actual lo
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
     compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     bindings:{FIXTURE_ACCESS:JSON.stringify(projectedAccess),FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_PUBLIC_RESOURCES:JSON.stringify(publicResources)}}));
+  const clientTiming=createClientTiming('small');let timingOutcome='FAIL';
   try {
     const db=await mf.getD1Database('DB');
     const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
@@ -68,11 +70,14 @@ test('all six routes match original GAS after whitelist projection and actual lo
     for(const item of cases) {
       const samples=[];
       for(let index=0;index<100;index++) {
+        const observation=clientTiming.begin(item.route,index);
         const start=performance.now();
         const response=await mf.dispatchFetch('https://local.test'+httpPaths[item.route]);
+        const dispatchAt=performance.now();
         assert.equal(response.status,200);
         await response.arrayBuffer();
-        samples.push(performance.now()-start);
+        const end=performance.now();samples.push(end-start);
+        clientTiming.end(observation,start,dispatchAt,end);
       }
       samples.sort((a,b)=>a-b);
       const p95=samples[94];
@@ -80,5 +85,6 @@ test('all six routes match original GAS after whitelist projection and actual lo
       assert.ok(p95<50,item.route+' local HTTP/D1 p95='+p95.toFixed(3)+' ms');
     }
     console.log('C2_LOCAL_READ_LATENCY '+JSON.stringify(timings));
-  } finally { await mf.dispose(); }
+    timingOutcome='PASS';
+  } finally { try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{clientTiming.close(timingOutcome);} }
 });

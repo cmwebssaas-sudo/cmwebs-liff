@@ -1,5 +1,35 @@
 # CMWebs Current State
 
+## 2026-10-13 — Node-client CI diagnostic candidate
+
+Only test-client code adds fixed-route numeric CPU/ELU/GC and dispatch-return/
+full-consumption observations for both original fixtures. Original100 requests,
+JSON/literals and p95<50ms remain; Worker/src/fixture bytes are unchanged, as are
+v6 cache/comparison/flags. Local Worker33/33 passes, each diagnostic700 samples,
+GC119/7, no >=50ms sample, overflow or missing output. Compiled Worker before/
+after remainsdf6377dcafa6d7f98bb7979ccc099d7b6e48721a234900b15da8478481a04f81.
+This did not reproduce or explain the published CI failures below.
+
+Recorder limits700 samples/2048 GC/4096 bytes per line, compact chunks and explicit
+total/dropped/overflow metadata pass synthetic guards; truncated data cannot prove
+absence of GC. CPU/ELU slightly bracket the original clock and describe Node, not
+workerd; dispatch return is not physical network-header timing. More client work
+can perturb execution. New-head CI is required for diagnostic evidence only;
+full965 remains the guarded v6 working-source result. Keep Draft/all actual gates.
+
+## 2026-10-13 — Published v6 CI31/33 failure retained
+
+DraftPR271 headc9694bbdd4f1897e3df31a2f8c432582e067b496 is pushed; exact
+head/title/body/base/OpenDraft readback passes. Run38316892695 rental SUCCESS;
+Worker job115035558718 FAIL31/33. All JSON/literals, scoped500-room HTTP and
+new actual packed-SQL scalar/key coverage pass. Capacity first route home fails
+p95=64.115ms, median20.564ms,7/100>=50ms/max172.033ms; later capacity loops
+are not reached. Small-fixture tenants also fails p95=67.686ms; later small
+loops are not reached. No unchanged-head rerun, threshold adjustment or causal
+claim. Prior failures remain. Next capture numeric CI client/body/GC observations
+against unchanged Worker bytes; more passing local calculations cannot replace
+these failed gates. No merge/deploy or actual epoch/flag transition occurred.
+
 ## 2026-10-13 — v6 packed D1 projection candidate
 
 Shared static SQL packing/decoding now serves both production scoped selection

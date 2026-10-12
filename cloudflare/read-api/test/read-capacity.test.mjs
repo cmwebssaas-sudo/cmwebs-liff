@@ -6,6 +6,7 @@ import {build} from 'esbuild';
 import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
 import {originalGas,access,cases,fixture,plain,projectedDataset} from '../../../tests/fixtures/read-parity/runtime.mjs';
 import {capacityDataset} from '../../../tests/fixtures/read-parity/capacity.mjs';
+import {createClientTiming} from './read-client-timing.mjs';
 
 const paths={home:'/v1/home?section=home',actions:'/v1/home?section=actions&read_view=summary',
  revenue:'/v1/revenue?from_month=2026-09&to_month=2026-10&as_of=2026-10-12',
@@ -28,6 +29,7 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
  const bundle=await build({entryPoints:[new URL('./read-fixture-worker.js',import.meta.url).pathname],bundle:true,write:false,format:'esm',target:'es2022'});
  const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
   compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},bindings:{FIXTURE_ACCESS:JSON.stringify(projectedAccess),FIXTURE_NOW:String(Date.parse(fixture.now))}}));
+ const clientTiming=createClientTiming('capacity500');let timingOutcome='FAIL';
  try {
   const db=await mf.getD1Database('DB'),schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
   for(const name of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql']){
@@ -71,8 +73,11 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
   for(const c of cases){
    const samples=[];
    for(let i=0;i<100;i++){
+    const observation=clientTiming.begin(c.route,i);
     const start=performance.now(),response=await mf.dispatchFetch('https://local.test'+paths[c.route]);
-    assert.equal(response.status,200);await response.arrayBuffer();samples.push(performance.now()-start);
+    const dispatchAt=performance.now();
+    assert.equal(response.status,200);await response.arrayBuffer();const end=performance.now();samples.push(end-start);
+    clientTiming.end(observation,start,dispatchAt,end);
    }
    // Numeric timing diagnostics only, after the original100 measured requests.
    // Preserve request order before sorting; no Worker/body/identity data enters logs.
@@ -85,7 +90,8 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
    assert.ok(p95<50,c.route+'500-room local HTTP/D1 p95='+p95.toFixed(3)+'ms');
   }
   console.log('C6_LOCAL_500_ROOM_LATENCY '+JSON.stringify(timings));
- }finally{await mf.dispose();}
+  timingOutcome='PASS';
+ }finally{try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{clientTiming.close(timingOutcome);}}
 });
 
 test('packed SQL projection preserves original D1 values, column order and safe own keys in workerd',async()=>{

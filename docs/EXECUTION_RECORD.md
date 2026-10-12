@@ -1278,3 +1278,51 @@ Runtime/test/environment reviews pass; validate and diff checks pass. Prior CI/
 local failures stay retained. New-head CI remains mandatory; no merge, deployment,
 Google identity/credential/resource, formal data/config, real epoch or flag change.
 Rollback restores preceding4c9950e/v5 candidate; accepted formal state is unchanged.
+
+## 2026-10-13 — Published v6 CI31/33 failure
+
+Reviewed60-file v6 committed/pushedc9694bbdd4f1897e3df31a2f8c432582e067b496,
+PR271 still Open/Draft with C5 base. Exact head/title/body/base readback passes;
+all tested non-documentation bytes match the guarded full965 working snapshot,
+six later evidence documents are explicitly excluded from that prior test claim.
+
+Run38316892695 rental SUCCESS; Worker job115035558718 FAIL31/33. Original
+capacity home100 samples fail p95=64.115ms, median20.564ms,7>=50ms/max172.033ms;
+later capacity loops are not reached. Small-fixture tenants also fails67.686ms,
+later small loops not reached. All prior JSON/literals and other31 tests including
+scoped500-room HTTP and packed-SQL scalar/key coverage pass. Exact full CI log
+and ordered home numbers are private. No same-head rerun or source fix follows
+without more diagnostic evidence. Packed materialization improves the private
+pair but is not a demonstrated cure for these platform/client/Worker spikes.
+Next record numeric Node CPU/event-loop/body/GC observations in CI while Worker
+bytes, original sample count and strict gates remain unchanged. All actual gates,
+root WIP and private S1 boundary remain; no formal action or epoch started.
+
+## 2026-10-13 — Bounded Node-client diagnostics for original CI fixtures
+
+Recommended model/speed GPT-6.1 Sol/high to distinguish failed elapsed samples
+without changing Worker logic or acceptance. Both capacity/small clients add
+CPU/ELU snapshots around the original clock, one dispatch-return timestamp,
+post-consumption numeric sample collection and Node GC observation. Same original
+requests, fixtures, JSON/literals,100 samples per route, p95<50ms and MF disposal.
+Worker/src/fixture and cache/comparison/flags are unchanged. Before/after build
+hashdf6377dcafa6d7f98bb7979ccc099d7b6e48721a234900b15da8478481a04f81 matches.
+
+Review catches unbounded GC/one-line output before execution. Fixed700-sample,
+2048-GC and4096-byte-line limits, compact10/20 chunks and total/dropped/overflow
+metadata replace it. Private synthetic guards verify2049→2048/drop1, sample cap,
+line sizes, rejected unknown labels, excluded extra data and idempotent disconnect.
+Overflow/missing footer/partial rows cannot imply no GC overlap. No request/body/
+identity/environment/error text is logged. GC/CPU belong to Node, not workerd;
+CPU snapshots include slight bracketing overhead and dispatch return is not
+physical network-header timing. Instrumentation can alter client execution.
+
+One actual local original Worker suite passes33/33, no fail/cancel/skip; capacity
+p95=14.113/11.128/12.713/28.463/21.790/19.514/20.250ms in route order. Both
+diagnostics complete700 samples with119/7 GC records, zero>=50ms, no overflow/
+missing chunk. This does not reproduce or replace c9694bb CI31/33 or earlier
+failures. Full965/965 remains the previously guarded v6 working-source result,
+not a fresh exact-head full run. New-head CI must capture its own observations;
+no performance fix, new cache/identity, merge/deploy/epoch or formal change.
+Root unit960/960, validate72/40/178 and diff checks pass. Changed code is limited
+to the Node test clients/helper; no new full/PG claim is made.
