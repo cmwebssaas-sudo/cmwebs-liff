@@ -38,8 +38,14 @@ test('replica formatDate keeps current date values, time zones, DST and invalid-
   const date=new Date('2026-09-30T16:00:01Z');
   assert.equal(formatDate(date,'Asia/Taipei',pattern),'2026-10-01 00:00:01');
   assert.equal(formatDate(date,'UTC',pattern),'2026-09-30 16:00:01');
+  assert.equal(formatDate(date,'Asia/Taipei','yyyy-MM-dd'),'2026-10-01');
+  assert.equal(formatDate(date,'UTC','yyyy/MM'),'2026/09');
+  assert.equal(formatDate(date,'Asia/Taipei','dd yyyy'),'01 2026');
   date.setUTCSeconds(59);
   assert.equal(formatDate(date,'Asia/Taipei',pattern),'2026-10-01 00:00:59');
+  date.setTime(Date.parse('2026-10-01T16:00:00Z'));
+  assert.equal(formatDate(date,'Asia/Taipei','yyyy-MM-dd'),'2026-10-02');
+  date.setTime(Date.parse('2026-09-30T16:00:59Z'));
   assert.equal(formatDate(new Date('2026-03-08T09:59:59Z'),'America/Los_Angeles',pattern),'2026-03-08 01:59:59');
   assert.equal(formatDate(new Date('2026-03-08T10:00:00Z'),'America/Los_Angeles',pattern),'2026-03-08 03:00:00');
   assert.throws(()=>formatDate(date,'Invalid/Zone',pattern),RangeError);

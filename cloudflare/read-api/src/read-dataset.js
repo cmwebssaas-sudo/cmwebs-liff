@@ -9,6 +9,22 @@ const column=field=>`trim(COALESCE(json_extract("${field}",'$'),''))`;
 const blankWorkspace=`upper(${column('workspace_id')}) = ''`;
 function failure(code='READ_REPLICA_UNAVAILABLE'){throw Object.assign(new Error(code),{code});}
 
+// Stored fields are JSON text; SQL NULL means absent, while JSON "null" is an
+// own null value. Avoid intermediate entry/pair/filter/map arrays at capacity.
+export function decodeReplicaRows(rows) {
+  return rows.map(row=>{
+    const decoded={};
+    for(const field of Object.keys(row)) {
+      const value=row[field];
+      if(value===null)continue;
+      const parsed=JSON.parse(value);
+      if(field==='__proto__')Object.defineProperty(decoded,field,{value:parsed,enumerable:true,writable:true,configurable:true});
+      else decoded[field]=parsed;
+    }
+    return decoded;
+  });
+}
+
 // All identifiers below come from the static schema or server-loaded rows.
 // Client values are always bound parameters. No operational table is scanned
 // into JS before access is resolved, and explicitly foreign Workspace rows
@@ -20,7 +36,7 @@ export function createReadDatasetLoader(database,options={}) {
     if(!fields||!where) failure();
     const result=await db.prepare(`SELECT ${fields.map(f=>'"'+f+'"').join(',')} FROM "${table}" WHERE ${where} ORDER BY CAST(replica_source_row AS INTEGER),row_key LIMIT 10001`).bind(...params).all();
     if(!result.success||result.results.length>10000) failure();
-    return result.results.map(row=>Object.fromEntries(Object.entries(row).filter(([,value])=>value!==null).map(([field,value])=>[field,JSON.parse(value)])));
+    return decodeReplicaRows(result.results);
   }
   async function byValues(table,field,values,extra='1=1',extraParams=[]) {
     const workspaceField=field==='workspace_id';

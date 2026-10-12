@@ -48,16 +48,24 @@ export function createReplicaRuntime(dataset,options={}) {
   // formatters; date values and authorization are never cached. Non-string zones
   // retain Intl's coercion on every call, including mutable objects and errors.
   const dateFormatters = new Map();
+  const timeFormatters = new Map();
+  const formatFields={yyyy:'year',MM:'month',dd:'day',HH:'hour',mm:'minute',ss:'second'};
   const formatDate = (date, timeZone, pattern) => {
-    let formatter=typeof timeZone==='string'?dateFormatters.get(timeZone):undefined;
+    // Date-only GAS patterns need no clock parts. Keep year/month/day together
+    // to preserve Intl's two-digit widths; any clock token uses the full format.
+    const dateOnly=typeof pattern==='string'&&!/HH|mm|ss/.test(pattern);
+    const formatters=dateOnly?dateFormatters:timeFormatters;
+    let formatter=typeof timeZone==='string'?formatters.get(timeZone):undefined;
     if(!formatter) {
       formatter=new Intl.DateTimeFormat('en-GB',{
-        timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+        timeZone,year:'numeric',month:'2-digit',day:'2-digit',
+        ...(dateOnly?{}:{hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})
       });
-      if(typeof timeZone==='string')dateFormatters.set(timeZone,formatter);
+      if(typeof timeZone==='string')formatters.set(timeZone,formatter);
     }
-    const values = Object.fromEntries(formatter.formatToParts(date).map(item=>[item.type,item.value]));
-    return pattern.replace(/yyyy|MM|dd|HH|mm|ss/g, key => values[{yyyy:'year',MM:'month',dd:'day',HH:'hour',mm:'minute',ss:'second'}[key]]);
+    const values={};
+    for(const item of formatter.formatToParts(date))values[item.type]=item.value;
+    return pattern.replace(/yyyy|MM|dd|HH|mm|ss/g, key => values[formatFields[key]]);
   };
   const noop = () => {};
   return {

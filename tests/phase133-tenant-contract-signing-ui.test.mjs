@@ -63,13 +63,13 @@ assert.match(source, /const LIFF_ID\s*=\s*'2010314940-iJB1D6sN'/);
 assert.match(source, /AKfycbwnnuIFZ22eO6MxMnWOYHovgMT2xuTbcIgzbq4qmxXE3gjGoTJFcBGXlsNDS-lqr3EILQ\/exec/);
 assert.match(
   releaseSource,
-    /20261013-read-capacity-v3/,
+    /20261013-read-capacity-v4/,
   'the frontend cache version must advance when the tenant contract preview changes'
 );
 for (const pageSource of [tenantBindSource, tenantHomeSource, source]) {
   assert.match(
     pageSource,
-    /frontend-release\.js\?v=20261013-read-capacity-v3/,
+    /frontend-release\.js\?v=20261013-read-capacity-v4/,
     'tenant entry pages must bypass the cached frontend release script'
   );
 }
