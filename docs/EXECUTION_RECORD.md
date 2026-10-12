@@ -337,3 +337,33 @@ Worker files now run serially to isolate the same100-sample benchmark, without
 relaxing thresholds. Local19/19 passed with p95 1.928–2.411ms; CI38181810348
 rental/read-worker both passed. This is local single-request calculation
 evidence, not authenticated network latency or concurrent throughput.
+
+## 2026-10-12 — C3 isolated real-Google feasibility preparation
+
+Recommended GPT-6.1 Sol/high. A separate synthetic-only20-table/33-row Google
+Sheet and bound Apps Script project were created under the existing batch
+authorization. They do not share C1's running project, timers, database or
+Secret. All20 headers and native Sheet views were verified, timezone is
+Asia/Taipei, and the synthetic session-hash column is hidden. Google XLSX
+conversion dropped four native date cells; only those cells in the new test
+Sheet were restored and serial/date-format readback verified, including expiry.
+
+The test project contains eight byte-identical canonical C3 authority/access/
+identity/runtime/replica modules, a test-only lazy Sheet binding adapter, and
+the manifest:10 files total, full-Sheets/external-request scopes, zero timers.
+Local tests and independent review passed fixed project/title isolation, invalid
+signature with zero Sheet IO, signed responses, replay/current source-only
+revocation and role denial, and no HTTP Sheet/Property writes or auth-policy
+override. All10 uploaded files were exported and compared byte-for-byte; the
+manifest matched semantically. Only non-secret test binding/configuration was
+saved and read back. Google initial execution now requests owner authorization;
+that gate and owner entry of new test Secrets remain pending. No Web App
+deployment or network performance result exists yet.
+
+A private client is prepared to call the unchanged canonical Worker authority
+function over actual Google HTTPS/redirects. Strict1500ms samples and separate
+15000ms diagnostic samples retain failures and are never conflated. The lazy
+openById/getName/Property adapter and33-row fixture are reported boundaries;
+this cannot prove formal binding,500-room capacity, LINE provider/device
+acceptance, seven-day shadow or final C6 latency. No formal source, deployment,
+Properties, trigger, Cloudflare binding or flag changed.
