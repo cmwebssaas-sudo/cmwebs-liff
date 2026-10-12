@@ -277,3 +277,17 @@ runs52.631s and earlier unavailable API attempt0s/failed remain separate. This
 is incomplete-day evidence, not daily quota acceptance. No source/config/timer
 change; actual72-hour gate still RUNNING with earliest completion Oct15 05:39,
 subject to all required complete-day correctness/runtime evidence.
+
+## 2026-10-12 partial-day follow-up at08:26 Taipei
+
+Authenticated execution history was refreshed and all193 entries loaded on one
+page, through the08:25:14 timer:186 timers completed, zero timer failures or
+running timers,379.907 platform seconds total and82.534s maximum. Six manual
+editor runs and the earlier unavailable Execution API attempt remain separate.
+This is complete history at the capture time, but an incomplete day; it does
+not pass the15-minute daily target or the72-hour gate.
+
+A separate read-only D1 check at08:40 found the08:30 synthetic room mutation,
+server `synced_at`2026-10-12T00:30:20.251Z. No source, timer or configuration
+change occurred. Final source remains `8f1191a`; earliest time eligibility is
+October15 at05:39 Taipei, subject to complete daily reconciliation/runtime.

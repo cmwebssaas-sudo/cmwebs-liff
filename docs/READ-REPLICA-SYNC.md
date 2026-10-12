@@ -149,3 +149,17 @@ For the final source from05:39,128 timers totaled278.816s. These are partial-day
 observations only, not a full daily runtime total or a passed day. Some dirty
 runs were slow; continue complete daily history/reconciliation before accepting
 the below15-minute target. Do not extrapolate this sample into acceptance.
+
+## 2026-10-12 partial-day follow-up at08:26 Taipei
+
+Authenticated execution history was refreshed and all193 entries loaded on one
+page, through the08:25:14 timer:186 timers completed, zero timer failures or
+running timers,379.907 platform seconds total and82.534s maximum. Six manual
+editor runs and the earlier unavailable Execution API attempt remain separate.
+This is complete history at the capture time, but an incomplete day; it does
+not pass the15-minute daily target or the72-hour gate.
+
+A separate read-only D1 check at08:40 found the08:30 synthetic room mutation,
+server `synced_at`2026-10-12T00:30:20.251Z. No source, timer or configuration
+change occurred. Final source remains `8f1191a`; earliest time eligibility is
+October15 at05:39 Taipei, subject to complete daily reconciliation/runtime.
