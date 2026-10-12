@@ -397,3 +397,25 @@ No canonical/test source, Properties, binding, timer or formal flag changed.
 The original observation clock remains recorded, but elapsed72 hours alone
 cannot pass the failed correctness/runtime acceptance. Investigate in an
 independent environment before revising source or starting a new accepted run.
+
+## 2026-10-12 — C1 failed observation rollback
+
+Recommended GPT-6.1 Sol/high. Fresh fixed project/Sheet/title and4-file source
+readback passed before running the existing synthetic stop helper. Native UI
+showed only the owner's two test CLOCK handlers;20:30:29–31 execution reported
+`triggers:[]` and the unfiltered trigger page confirmed zero. The rollback
+prevents further quota consumption by an already failed run and changes no
+formal project. Test source/Properties/data and all existing failure records
+are retained; the helper only removes those two named test triggers.
+
+Complete stopped-history capture: five pages200/200/200/200/123,923 unique
+records,914 minute timers,2892.886 platform seconds (48.215 minutes), maximum
+479.840s. All timers terminal; failures12:30/17:00/17:20 remain, including the
+0s duration reported for17:20. Last timer started20:30:14. This is an ended
+failed partial-day observation, not a complete day or successful72-hour gate.
+The900s/day limit is unchanged. Realtime display restored on first page.
+
+Future corrected source requires independent review and a fresh actual72-hour
+run; preserve the original05:39 start and failure history without reusing them
+as qualification. Test rollback/reinstall steps are in
+`docs/READ-REPLICA-SYNC.md`. No formal deployment/Sheet/trigger/flag change.
