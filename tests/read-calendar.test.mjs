@@ -56,4 +56,39 @@ test('replica formatDate keeps current date values, time zones, DST and invalid-
   currentZone='Asia/Taipei';
   assert.equal(formatDate(date,mutableZone,pattern),'2026-10-01 00:00:59');
   assert.throws(()=>formatDate(date,Symbol('zone'),pattern),TypeError);
+  let coercions=0;
+  const numericDate={valueOf(){coercions++;return Date.parse('2026-09-30T16:00:01Z');}};
+  assert.equal(formatDate(numericDate,'Asia/Taipei','yyyy-MM-dd'),'2026-10-01');
+  assert.equal(coercions,1);
+  const before=Date.now(),defaultDate=formatDate(undefined,'UTC','yyyy-MM-dd'),after=Date.now();
+  assert.ok([new Date(before).toISOString().slice(0,10),new Date(after).toISOString().slice(0,10)].includes(defaultDate));
+  assert.throws(()=>formatDate(undefined,'UTC',null),TypeError);
+});
+
+test('replica Sheet matrices preserve header order, typed dates, blanks and masked suffixes with fresh range arrays',()=>{
+  const originalDate=new Date('2026-09-30T16:00:00Z');
+  const data={V2_bills:[{bill_id:'B1',native_date:originalDate,typed_date:'2026-10-01T00:00:01+08:00',
+    blank:null,zero:0,disabled:false,replica_date_fields:'["typed_date"]',replica_source_row:1},
+    {bill_id:'B2',extra:'later',replica_source_row:2}],
+    V2_payment_accounts:[{account_id:'A1',bank_account_last5:'12345',bank_account:'SYNTHETIC_PRIVATE_BANK'}],
+    generic:[Object.fromEntries([['id','G1'],['__proto__','own']]),{id:'G2'}]};
+  const runtime=createReplicaRuntime(data),ss=runtime.runtimeSpreadsheet_();
+  const sheet=ss.getSheetByName('V2_bills'),values=sheet.getDataRange().getValues();
+  assert.deepEqual(values[0],['bill_id','native_date','typed_date','blank','zero','disabled','extra']);
+  assert.equal(values[1][1].getTime(),originalDate.getTime());
+  assert.notEqual(values[1][1],originalDate);
+  assert.equal(values[1][2].getTime(),Date.parse('2026-09-30T16:00:01Z'));
+  assert.deepEqual(values[1].slice(3),['',0,false,'']);
+  assert.deepEqual(values[2],['B2','','','','','','later']);
+  values[0].shift();values[1][0]='mutated';
+  assert.equal(sheet.getDataRange().getValues()[0][0],'bill_id');
+  assert.equal(sheet.getRange(2,1,1,1).getValues()[0][0],'B1');
+  const accounts=ss.getSheetByName('V2_payment_accounts').getDataRange().getValues();
+  assert.deepEqual(accounts,[['account_id','bank_account_last5','bank_account'],['A1','12345','12345']]);
+  assert.equal(data.V2_payment_accounts[0].bank_account,'SYNTHETIC_PRIVATE_BANK');
+  assert.equal(data.V2_bills[0].native_date,originalDate);
+  const generic=ss.getSheetByName('generic').getDataRange().getValues();
+  assert.deepEqual(generic[0],['id','__proto__']);
+  assert.equal(generic[1][1],'own');
+  assert.equal(generic[2][1],Object.prototype);
 });

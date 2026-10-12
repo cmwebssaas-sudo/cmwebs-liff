@@ -6,6 +6,26 @@ This candidate repairs comparison identity for sequential flag releases and
 prepares acceptance. All flags remain off; no deployment, Property, trigger or
 operational data change occurred. Actual C6 NOT_STARTED.
 
+## October13 v5 local regression candidate
+
+Current candidate cache `20261013-read-capacity-v5`;178-source comparison
+`read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f`.
+Request-local date-only/full/layout reuse and direct Sheet matrices retain
+date coercion, undefined-clock, scalar/date/prototype semantics; no date-value or
+positive-access caching. Actual Worker32/32/dry-run and `npm test`963/963 at the
+pinned uncommitted working snapshot pass. New500-room correctness coverage uses
+real identity/authority policy and primary-D1 scope, with synthetic LINE/Google
+authority transports and GAS service adapters. Independent JSON/literals and
+authority-only suspension checks pass; this is not remote/device latency.
+
+Original100-sample capacity gates remain p95<50ms; tenants33.885ms/all entries
+18.106–33.885ms in this run. Prior local149.703/51.388 and publishedv4 CI29/31
+failures are retained; cause and repeatability are UNVERIFIED. New-head CI is
+pending, and no actual epoch started. Do not reuse any old72h/shadow window.
+Rollback of this candidate restores preceding published bcde36b/v4 source/cache/
+comparison; formal accepted serving versions and data remain unchanged. All
+gates below still apply before any merge, deployment or on flag.
+
 ## Required evidence before the first on flag
 
 1. C1: at least72 actual hours on the final isolated test source, consecutive
@@ -122,7 +142,7 @@ Do not weaken GAS authority to meet latency or count fallback as Worker success.
 
 ## Evidence ledger
 
-Current October13 v4 source1cab310 retains the initial v3 CI29/31 failure
+Historical October13 v4 source1cab310 retains the initial v3 CI29/31 failure
 (500-room tenants55.647ms/small-fixture arrears68.719ms), later local date-only
 arrears50.560ms and intermediate decoder tenants94.726ms failures. All use
 the unchanged p95<50ms; failed latency loops did not reach later entries.
@@ -138,7 +158,7 @@ p95: home27.683/actions25.049/revenue19.718/tenants39.150/rooms30.783/
 arrears27.972/properties29.059ms. Fixed access/all-table loader still excludes
 C3/provider/scoped-loader/remote/Taipei/device qualification. New-head CI pending.
 
-Current cache `20261013-read-capacity-v4`;178-source identity
+Historical v4 cache `20261013-read-capacity-v4`;178-source identity
 `read-cdf69ac211f844e21222e231fd546bd5845999989e9dc4ed47e79d9644226993`.
 Both runtime/dataset source hashes change; no old actual epoch is reused.
 Six flags off/URL blank; no formal publication/config/data change. All original

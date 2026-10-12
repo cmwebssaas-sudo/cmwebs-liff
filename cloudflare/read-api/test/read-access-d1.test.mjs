@@ -6,6 +6,7 @@ import { build } from 'esbuild';
 import { Miniflare,convertV4MiniflareOptions } from 'miniflare';
 import { richDataset,projectedDataset,fixture,originalGas,access,cases,plain } from '../../../tests/fixtures/read-parity/runtime.mjs';
 import { authorityRuntime,authoritySecret } from '../../../tests/fixtures/read-parity/authority-runtime.mjs';
+import { capacityDataset } from '../../../tests/fixtures/read-parity/capacity.mjs';
 
 const paths={home:'/v1/home',actions:'/v1/home?section=actions&read_view=summary',revenue:'/v1/revenue?from_month=2026-09&to_month=2026-10&as_of=2026-10-12',tenants:'/v1/tenants?read_view=summary',rooms:'/v1/rooms?include_archived=1',arrears:'/v1/arrears',properties:'/v1/properties?include_archived=1'};
 async function setup(input,identity={kind:'line',line_user_id:'SYNTHETIC_LINE1'}) {
@@ -39,6 +40,55 @@ test('server-resolved D1 scope preserves all six canonical route results',async(
       assert.deepEqual(await response.json(),plain(gas[item.fn](...item.args)),item.route);
     }
   } finally {await mf.dispose();}
+});
+test('500 owned rooms preserve canonical HTTP reads through authenticated primary-D1 scope',async()=>{
+  // Catches scope/relationship batching that truncates capacity rows or admits
+  // foreign rows. LINE/Google authority transports and GAS service adapters
+  // are synthetic; HTTP/identity/authority policy and D1 scope modules are real.
+  const input=capacityDataset(),{mf,db,authority}=await setup(input);
+  try {
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM V2_rooms').first()).n,501);
+    const inspection=await (await mf.dispatchFetch('https://local.test/inspect')).json();
+    assert.equal(inspection.dataset.V2_rooms.length,500);
+    assert.equal(inspection.dataset.V2_properties.length,20);
+    assert.equal(inspection.dataset.V2_tenants.length,250);
+    assert.equal(inspection.dataset.V2_bills.length,500);
+    for(const [table,rows] of Object.entries(inspection.dataset)) {
+      assert.ok(!rows.some(row=>row.workspace_id==='SYNTHETIC_W2'),table+' excludes foreign Workspace');
+    }
+    const gas=originalGas(input),observed={};
+    for(const item of cases) {
+      const response=await mf.dispatchFetch('https://local.test/http'+paths[item.route],{
+        headers:{authorization:'LIFF synthetic-valid-line-token',origin:'https://cmwebssaas-sudo.github.io'}
+      });
+      assert.equal(response.status,200,item.route+' authenticated status');
+      assert.equal(response.headers.get('cache-control'),'no-store');
+      const raw=await response.text(),actual=JSON.parse(raw),expected=plain(gas[item.fn](...item.args));
+      assert.ok(JSON.stringify(actual)===JSON.stringify(expected),item.route+' canonical JSON at scoped capacity');
+      assert.doesNotMatch(raw,/SYNTHETIC_PX|SYNTHETIC_RX|SYNTHETIC_PRIVATE_/);
+      observed[item.route]=actual.data;
+    }
+    assert.equal(observed.home.home.room_count,500);
+    assert.equal(observed.home.home.tenant_count,250);
+    assert.equal(observed.rooms.rooms.length,500);
+    assert.equal(observed.tenants.tenants.length,250);
+    assert.equal(observed.properties.properties.length,20);
+    assert.equal(observed.properties.summary.occupied_room_count,250);
+    assert.equal(observed.properties.summary.vacant_room_count,250);
+    assert.equal(observed.revenue.kpis.receivable,3948000);
+    assert.equal(observed.revenue.kpis.collected,1932000);
+    assert.equal(observed.revenue.kpis.outstanding,2016000);
+    assert.equal(observed.arrears.arrears.length,252);
+    // An authority-only change denies the next request while primary D1 still
+    // contains the previously active membership; no replication patch is sent.
+    const member=authority.data.V2_workspace_members.find(row=>row.membership_id===access.membership.membership_id);
+    member.member_status='suspended';
+    const denied=await mf.dispatchFetch('https://local.test/http/v1/rooms?include_archived=1',{
+      headers:{authorization:'LIFF synthetic-valid-line-token',origin:'https://cmwebssaas-sudo.github.io'}
+    });
+    assert.equal(denied.status,401);
+    assert.doesNotMatch(await denied.text(),/SYNTHETIC_500_|synthetic-valid-line-token|stack/);
+  }finally{await mf.dispose();}
 });
 test('explicit foreign Workspace never enters D1 dataset through shared landlord/property identifiers',async()=>{
   const input=richDataset();

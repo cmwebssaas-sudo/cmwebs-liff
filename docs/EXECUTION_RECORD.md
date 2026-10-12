@@ -1083,3 +1083,79 @@ match actual runtime/dataset bytes and synchronized refs. No real epoch began;
 all flags off/URL blank. C1 fresh72h, C3 strict latency, C5 seven real days and
 C6 real/device/cutover remain pending. No formal resource/deployment/Property/
 trigger/data changes; root WIP and C5 editor temporary file preserved.
+
+## 2026-10-13 — C6 v5 failed gate and finite GET diagnostics
+
+Recommended model/speed GPT-6.1 Sol/high for performance/root-cause review.
+Published bcde36b154d7b2a2c34ce28d6c54dc9f51ab491a CI
+run38301707241/job114985925481 is FAIL29/31:500-room tenants52.648ms and
+atomic report [200,409] versus expected [200,429]; rental CI passed. No same-head
+rerun replaced this failure. Earlier pending-CI wording is historical.
+
+V5 source/cache changes remain uncommitted/unpublished. Latest original Worker
+suite29/31 fails at500-room tenants149.703ms and small tenants51.388ms; unit958/958
+passes. Candidate cache20261013-read-capacity-v5/comparison
+read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f
+over178 files is distinct from published v4. Independent1122 old/new formatter
+cases and calendar/matrix tests check semantics, not performance acceptance.
+
+Finite private diagnostics checked actual GET and original Response.json under
+standalone and node:test, then the full original capacity sequence and complete
+Worker suite. None reproduced the failed p95. Initial instrumentation lacked
+complete immutable pins/early-failure capture; those samples stay exploratory.
+The reviewed replacement preserves first pins, rejects changed repins, records
+failed stages/samples and saves after fixture/build failures with independent
+Miniflare disposal. Its client-only complete-suite control uses the original
+Worker entry without injected code; original-build and tested-bundle SHA256 both
+8d946acd549dfe6afdb1d41f12f8948221c026fbbb270c8b3f71373bb340f1fa.
+
+That Node26.5.0 local diagnostic31/31 retains700 measured requests,100 per route,
+canonical JSON/literals and unchanged p95<50ms. P95 home19.004/actions18.670/
+revenue18.390/tenants34.081/rooms26.174/arrears25.782/properties27.071ms;
+tenant sample2 50.045ms is retained. No overlapping Node GC was recorded for
+that sample; this neither attributes the prior149.703ms failure nor measures
+workerd GC. Post-sample hashing/Node observers still change test-client work;
+passing diagnostics cannot replace failed original/local/CI acceptance. Root
+cause remains UNVERIFIED; no product implementation changed in this diagnostic
+phase and no new performance fix is claimed.
+
+Synthetic direct-Google feasibility remains authorized but NOT_PROVEN at the
+Google-side atomic whitelist gate. No account API/new credentials/formal changes,
+new actual72h or seven-day epoch, or flag transition occurred. No merge/deploy;
+root WIP and private S1 boundary preserved. Further work keeps the original gates.
+
+## 2026-10-13 — C6 v5 full regression and scoped500-room coverage
+
+Recommended model/speed GPT-6.1 Sol/high. Added local HTTP capacity coverage
+through actual identity/authority policy, primary-D1 access and scoped dataset
+queries; LINE/Google authority transports and GAS service adapters are synthetic.
+All seven original GAS JSON results,500 rooms/250 tenants/20 properties,
+receivable3948000/collected1932000/outstanding2016000/252 arrears and foreign/
+private exclusion pass. Authority-only membership suspension rejects the next
+HTTP request while D1 is unchanged. Private in-memory SQL LIMIT100 mutation
+fails100 versus500; unchanged source hash confirms no production mutation.
+
+Actual Worker32/32 and dry-run337.19KiB/gzip70.83 pass, zero skips. The original
+100-sample local capacity gates remain p95<50ms: home20.113/actions18.106/
+revenue18.398/tenants33.885/rooms29.767/arrears26.098/properties25.821ms.
+This is a new verification after broader test coverage, not an unchanged-head
+CI retry. All prior local149.703/51.388 and publishedv4 CI29/31 failures remain;
+root cause/repeatability is UNVERIFIED. No remote/Taipei/device latency claim.
+
+Actual `npm test` on the uncommitted working candidate passes963/963, no fail/
+cancel/skip,3.193s, with mandatory original restricted HTTP/PostgreSQL integration
+and four Core handler cases. All537 tracked files are guarded before/after by
+snapshot SHA256 ec2a7bca3baa1c1edc58d5bb02378a0ab191b5038cf836dab591e810e3de6ed8;
+base HEADbcde36b is only the checkout baseline, not the tested v4 source claim.
+New private PG16.14/clean Core643c1b3 verifies SQL identity and no leftover fixture
+DB/role, stopped PID/TCP, cleanup_errors empty. Initial preparation attempted an
+unnecessary nonexistent package.json copy; corrected before any DB execution.
+Review caught npm config isolation: fixed two empty private config files,
+cache/logs and project-config rejection;8 environment/target,6 snapshot and3 npm
+guards pass. No existing cluster/credential/config or formal DB is used.
+
+Code/cache identity remains178-source read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f,
+release20261013-read-capacity-v5. Independent runtime semantics review and new
+scoped test review pass. Candidate source remains separate from deployment;
+new-head CI, fresh C1 epoch, C3 latency, C5 real seven days and C6 actual/device
+cutover remain mandatory. Six flags off/URL blank unchanged; no formal action.

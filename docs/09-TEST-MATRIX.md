@@ -1406,3 +1406,17 @@ verified. Exact heads and reproduction boundaries are in
 `READ-REGRESSION-DEPENDENCIES.md`. Prior missing-environment results remain
 historical; actual72h/daily-runtime/strict-latency/seven-day/device/cutover gates
 are not accepted by these regressions.
+
+## 2026-10-13 — C6 scoped500-room HTTP boundary
+
+`cloudflare/read-api/test/read-access-d1.test.mjs` now covers500 owned rooms
+through real HTTP/identity/authority policy and primary-D1 scope/relationship
+queries. LINE/Google authority transports and GAS service adapters are synthetic.
+Seven canonical JSON results, independent500/250/20/amount/252 literals,
+foreign/private exclusion and authority-only suspension despite stale D1 pass.
+A private in-memory SQL row-limit mutant fails100 versus500; product source stays
+unchanged. This protects against scope/relationship batch truncation, not provider
+or device latency. Worker32/32 and unchanged100-per-entry local p95<50ms pass.
+Full963/963 at pinned uncommitted v5 working snapshot, zero skips, uses fresh
+private PG16.14 and original Core HTTP/PG fixtures; see regression dependencies.
+Earlier local/CI performance failures remain. All actual gates still apply.

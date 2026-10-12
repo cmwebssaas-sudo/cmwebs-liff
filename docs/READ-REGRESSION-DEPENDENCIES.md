@@ -88,3 +88,32 @@ documentation refreshes are not substituted for this tested exact source head.
 
 This v4 source check still does not establish uncached C3 latency, actual72h/
 900s/day, seven-day shadow, remote500-room/device or a current formal release.
+
+## October13 C6 v5 pinned working-source follow-up
+
+Actual `npm test` passes963/963, zero fail/cancel/skip,3.193s. This is an
+uncommitted v5 candidate at checkout baselinebcde36b, not a test of immutable
+published v4 HEAD. All537 tracked working files were SHA256-pinned before/after;
+immutable snapshot identity:
+`ec2a7bca3baa1c1edc58d5bb02378a0ab191b5038cf836dab591e810e3de6ed8`.
+This includes current runtime/calendar fixes and source/cache/comparison files.
+Later evidence-document updates are not retroactively included in that snapshot.
+The code comparison remains178-source
+`read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f`.
+
+Fresh0700 private PG16.14 cluster uses the same verified vendor read-only and
+clean Core643c1b3. Driver rejects source drift/unpinned test files and still checks
+loopback/data directory/identity, SQL fixture cleanup and finite emergency stop.
+Real `npm test` uses two distinct empty0600 private user/global npm configs,
+private cache/logs, disabled update notifier and rejects project .npmrc without
+reading contents. Eight target/env, six snapshot and three npm guard cases pass;
+independent safety review passes. No inherited database/deployment/OAuth env,
+existing cluster, registry credential/config or system PG service is used.
+
+Mandatory original GAS restricted HTTP/PG and four synthetic Core handlers pass.
+SQL before/after proves only bootstrap/original databases and no fixture roles;
+final PID absent/TCP closed/stopped state passes with no cleanup error. No sources
+changed during execution. Source logs/generated cluster stay private outside Git.
+Separate Worker32/32 includes new500-room authenticated/scoped-D1 correctness;
+its LINE/Google authority transport and GAS service adapters remain synthetic.
+All earlier performance failures are retained; no C1/C3/C5/C6 real gate is inferred.

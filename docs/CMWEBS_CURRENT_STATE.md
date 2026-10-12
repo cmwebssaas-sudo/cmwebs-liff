@@ -1,5 +1,65 @@
 # CMWebs Current State
 
+## 2026-10-13 — C6 v5 scoped-capacity regression candidate
+
+Recommended model/speed GPT-6.1 Sol/high. New500-room HTTP coverage executes
+the unchanged identity/authority policy and primary-D1 resolver/scoped-loader
+modules. LINE/Google authority transports and GAS service adapters are synthetic.
+All seven JSON results and independent500/250/20/financial literals pass;
+authority-only suspension with stale D1 rejects the next request. A private
+in-memory SQL truncation mutant (100 rows) fails at100 versus500; source is intact.
+
+Actual `npm run test:worker` passes32/32,0skip, including unchanged100 samples/
+entry and p95<50ms: tenants33.885ms, all entries18.106–33.885ms. New fresh
+isolated PG16.14 runs actual `npm test`:963/963,0fail/cancel/skip. Its537 tracked
+working files are pinned by snapshot SHA256
+ec2a7bca3baa1c1edc58d5bb02378a0ab191b5038cf836dab591e810e3de6ed8
+at base HEADbcde36b; this proves the uncommitted v5 candidate, not published v4.
+Core643c1b3 remains clean; SQL cleanup, stopped PID/TCP and no cleanup errors pass.
+Private empty npm configs/cache/logs isolate existing credential/config IO.
+
+V5 retains request-local formatter/layout reuse without date-value or positive
+authority caching, single date coercion/native undefined-clock semantics, and
+direct Sheet matrices with unchanged scalar/date/prototype behavior. Cache
+20261013-read-capacity-v5/comparison read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f
+still covers178 source files. Earlier v5 149.703/51.388 failures and published
+v4 CI29/31 remain in the next section; this run does not establish their cause
+or future repeatability. New-head Linux CI and all actual gates remain pending.
+No merge/deploy/flag transition or new real epoch occurred. Direct Google is
+authorized synthetic-only but its pre-Worker whitelist gate is still NOT_PROVEN.
+
+## 2026-10-13 — C6 acceptance still fails; GET diagnostics are not acceptance
+
+Recommended model/speed GPT-6.1 Sol/high for performance evidence and authority
+review. Published C6 head bcde36b154d7b2a2c34ce28d6c54dc9f51ab491a has
+CI run38301707241/Worker job114985925481 FAIL29/31:500-room tenants52.648ms
+and atomic report statuses [200,409] instead of [200,429]. Rental CI passed.
+This supersedes the older pending-CI wording below; causes remain UNVERIFIED.
+
+Local v5 remains UNCOMMITTED/UNPUBLISHED. Latest actual unit958/958 passes,
+but original Worker29/31 fails:500-room tenants149.703ms and small tenants51.388ms.
+Date coercion/undefined clock, mutable dates/timezones, scalar types and missing
+prototype-key semantics have independent checks; they do not qualify performance.
+Candidate cache20261013-read-capacity-v5 and178-source comparison
+read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f
+describe uncommitted bytes, not the published v4 HEAD.
+
+Private real-GET/Response.json and node:test diagnostics did not reproduce the
+failure. Earlier Worker-instrumented samples have provenance/failure-capture
+limitations and are exploratory. A reviewed client-only complete-suite control
+kept original Worker bytes (offline build hash matched),100 samples/entry,
+canonical JSON/literals and p95<50ms. Its31/31 diagnostic run had500-room tenants
+p95 34.081ms and one retained50.045ms sample; no overlapping Node GC was observed
+for that sample. This does not explain prior149.703ms or workerd GC. No acceptance
+result is replaced and no threshold is relaxed. Next investigation must retain
+failed samples and distinguish test-client, Worker and provider evidence.
+
+Google synthetic feasibility approval is RECEIVED, but its atomic pre-Worker
+whitelist gate remains NOT_PROVEN. No new Google account API call/credential,
+formal deployment/config/data change or real epoch occurred during these local
+diagnostics. Recorded six flags off/URL blank remain unchanged. Fresh72h,
+strict authority latency, seven full shadow days and device/cutover remain pending.
+
 ## 2026-10-13 — C6 v4 candidate and retained performance failures
 
 V3 head2d1c1a8 CI run38299581057 failed29/31:500-room tenants55.647ms,

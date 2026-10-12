@@ -16,17 +16,30 @@ export function createReadServices(dataset, access, options = {}) {
 export function createReplicaRuntime(dataset,options={}) {
   const now = options.now ?? Date.now();
   const RequestDate=options.dateConstructor||appsScriptDate(now);
+  const inheritedDefaults={};
   const sheets = new Map(Object.entries(dataset).map(([name, sourceRows]) => {
-    sourceRows=sourceRows.map(row=>{
-      const dates=new Set(row.replica_date_fields?JSON.parse(row.replica_date_fields):[]);
-      return Object.fromEntries(Object.entries(row).map(([key,value])=>[key,
-        dates.has(key)?new RequestDate(value):Object.prototype.toString.call(value)==='[object Date]'?new RequestDate(value.getTime()):value]));
-    });
+    const maskedAccounts=name==='V2_payment_accounts';
+    const headerSet=new Set();
+    for(const row of sourceRows) {
+      for(const key of Object.keys(row))headerSet.add(key);
+      if(maskedAccounts&&Object.hasOwn(row,'bank_account_last5'))headerSet.add('bank_account');
+    }
+    const headers=[...headerSet].filter(key=>!key.startsWith('replica_'));
     // Rehydrate only an already masked suffix for the existing mask formatter.
     // The full account is neither stored in D1 nor reconstructed here.
-    const rows=name==='V2_payment_accounts' ? sourceRows.map(row=>Object.hasOwn(row,'bank_account_last5') ? {...row,bank_account:row.bank_account_last5} : row) : sourceRows;
-    const headers = [...new Set(rows.flatMap(row => Object.keys(row)))].filter(key=>!key.startsWith('replica_'));
-    const values = [headers, ...rows.map(row => headers.map(key => row[key] ?? ''))];
+    // Build the existing Sheet matrix directly instead of cloning every scalar
+    // into another row object first. Dates remain freshly hydrated per request.
+    const values=[headers,...sourceRows.map(row=>{
+      const dates=new Set(row.replica_date_fields?JSON.parse(row.replica_date_fields):[]);
+      return headers.map(key=>{
+        const sourceKey=maskedAccounts&&key==='bank_account'&&Object.hasOwn(row,'bank_account_last5')?'bank_account_last5':key;
+        const own=Object.hasOwn(row,sourceKey);
+        let value=own?row[sourceKey]:inheritedDefaults[sourceKey];
+        if(own&&dates.has(sourceKey))value=new RequestDate(value);
+        else if(value!==null&&typeof value==='object'&&Object.prototype.toString.call(value)==='[object Date]')value=new RequestDate(value.getTime());
+        return value??'';
+      });
+    })];
     const sheet = {
       getName: () => name, getSheetId: () => name,
       getLastRow: () => values.length, getLastColumn: () => headers.length,
@@ -55,16 +68,34 @@ export function createReplicaRuntime(dataset,options={}) {
     // to preserve Intl's two-digit widths; any clock token uses the full format.
     const dateOnly=typeof pattern==='string'&&!/HH|mm|ss/.test(pattern);
     const formatters=dateOnly?dateFormatters:timeFormatters;
-    let formatter=typeof timeZone==='string'?formatters.get(timeZone):undefined;
-    if(!formatter) {
-      formatter=new Intl.DateTimeFormat('en-GB',{
+    let entry=typeof timeZone==='string'?formatters.get(timeZone):undefined;
+    if(!entry) {
+      const formatter=new Intl.DateTimeFormat('en-GB',{
         timeZone,year:'numeric',month:'2-digit',day:'2-digit',
         ...(dateOnly?{}:{hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})
       });
-      if(typeof timeZone==='string')formatters.set(timeZone,formatter);
+      let layout=null;
+      if(dateOnly) {
+        // Derive only a formatter layout, never a source date/result. Normal
+        // numeric dates can use format() without allocating a parts object for
+        // every field on every call. Other layouts fall back to formatToParts.
+        const parts=formatter.formatToParts(946728000000);
+        const fields=parts.filter(part=>part.type!=='literal').map(part=>part.type);
+        if(fields.length===3&&new Set(fields).size===3&&fields.every(field=>['year','month','day'].includes(field))) {
+          const expression=parts.map(part=>part.type==='literal'?part.value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):'([0-9]+)').join('');
+          layout={fields,expression:new RegExp('^'+expression+'$')};
+        }
+      }
+      entry={formatter,layout};
+      if(typeof timeZone==='string')formatters.set(timeZone,entry);
     }
     const values={};
-    for(const item of formatter.formatToParts(date))values[item.type]=item.value;
+    // Match Intl's single numeric coercion even if an unusual formatted layout
+    // needs the parts fallback; do not invoke a caller's valueOf twice.
+    const timeValue=date===undefined?undefined:+date;
+    const match=date===undefined?null:entry.layout?.expression.exec(entry.formatter.format(timeValue));
+    if(match)entry.layout.fields.forEach((field,index)=>{values[field]=match[index+1];});
+    else for(const item of entry.formatter.formatToParts(timeValue))values[item.type]=item.value;
     return pattern.replace(/yyyy|MM|dd|HH|mm|ss/g, key => values[formatFields[key]]);
   };
   const noop = () => {};

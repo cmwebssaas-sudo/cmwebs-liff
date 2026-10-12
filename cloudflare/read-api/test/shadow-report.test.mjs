@@ -107,7 +107,21 @@ test('rate limit is atomic under concurrent submissions and failed diff insert l
     assert.equal((await post()).status,200);
     const seed=await db.prepare('SELECT * FROM shadow_reports LIMIT 1').first();
     await db.batch(Array.from({length:118},()=>db.prepare('INSERT INTO shadow_reports SELECT ?,scope_hash,actor_hash,epoch,release_id,route,variant,outcome,headers_ms,elapsed_ms,field_count,observed_at,NULL,0 FROM shadow_reports WHERE report_id=?').bind(randomUUID(),seed.report_id)));
-    const responses=await Promise.all([post(),post()]);assert.deepEqual(responses.map(r=>r.status).sort(),[200,429]);
+    // Establish two successful, distinct reads before racing the REPORT writes.
+    // A failed prerequisite read must fail here, rather than being mistaken for
+    // a rate-limit defect when its ineligible receipt correctly receives409.
+    const receipts=[];
+    for(let i=0;i<2;i++) {
+      const read=await mf.dispatchFetch('https://local.test/http/v1/tenants?read_view=summary',{
+        headers:{authorization:'Session '+token,'x-cmwebs-read-mode':'shadow'}});
+      assert.equal(read.status,200,'rate-limit fixture prerequisite read must succeed');
+      await read.arrayBuffer();
+      const receipt=read.headers.get('x-cmwebs-shadow-receipt');assert.ok(receipt);
+      const attempt=await db.prepare('SELECT status,report_id FROM shadow_attempts WHERE attempt_id=?').bind(receipt).first();
+      assert.equal(attempt.status,200);assert.equal(attempt.report_id,null);receipts.push(receipt);
+    }
+    assert.equal(new Set(receipts).size,2);
+    const responses=await Promise.all(receipts.map(receipt=>post({...body,receipt})));assert.deepEqual(responses.map(r=>r.status).sort(),[200,429]);
     assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM shadow_reports').first()).n,120);
     assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM shadow_diffs').first()).n,4);
     // Expire the synthetic rate window, then make the second insert fail.

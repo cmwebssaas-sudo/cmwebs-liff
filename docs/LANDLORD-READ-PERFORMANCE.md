@@ -1,5 +1,24 @@
 # 房東登入復驗與讀取效能修復
 
+## 2026-10-13 v5 本地回歸候選（正式效能尚未驗收）
+
+實際 Worker 32/32、`npm test` 963/963 通過，零 fail／cancel／skip；後者固定537個
+未提交候選檔案，使用全新私下 PG16.14／固定 Core，SQL 清理與停機讀回通過。
+這是候選來源證據，不是當時 checkout HEADbcde36b 的已發布 v4 驗證。
+日期 formatter／layout 只在當次請求重用；日期值、資料列與正向授權不快取。
+
+原本固定 access／全表 loader 的500房計算基準仍保留每入口100樣本與p95<50ms。
+本輪 home20.113／actions18.106／revenue18.398／tenants33.885／rooms29.767／
+arrears26.098／properties25.821ms。另新增500房 HTTP 正確性案例，經真正的
+identity／authority policy 與 primary-D1 範圍查詢對帳七入口，並驗證未同步到D1的
+authority停權拒絕；其 LINE／Google authority transport 和 GAS服務adapter 都是合成。
+不能把計算基準的p95套用到這個完整流程，更不能當成台北遠端／手機正式速度。
+
+此前 v5 房客149.703ms／小資料房客51.388ms、本地及 v4 CI29/31 的失敗全部保留；
+原因與重複穩定性未證明。cache20261013-read-capacity-v5／178-source比較指紋已
+更新，六開關off／URL空白，新head CI待驗證；C1全新72小時、C3嚴格延遲、C5七天、
+C6真機與正式切換都未通過。以下v4／v3數據是歷史樣本。
+
 ## 2026-10-13 v4 本地候選（正式效能尚未驗收）
 
 v3 的 GitHub CI 29/31：500 房房客 p95 55.647ms、小資料欠款 68.719ms，均未達
