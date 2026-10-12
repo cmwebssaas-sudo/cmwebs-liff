@@ -136,3 +136,101 @@ the new endpoint. Keep frontend flags off. Retain Sheets and operational rows;
 replica rebuild never deletes or rewrites formal data. Retain migration, D1
 export and sanitized version/configuration evidence before changes. Account for
 retained Worker versions before removing any shared Secret they depend on.
+
+## 2026-10-12 partial-day readback at07:46 Taipei
+
+Read-only remote D1 verification at07:45 found the synthetic room mutation from
+07:30, with server `synced_at`2026-10-11T23:31:34.247Z. No source/timer change.
+The refreshed authenticated Apps Script history loaded all154 current entries
+on one page:147 minute timers05:20–07:46, all completed,308.771 platform seconds
+(max82.534s); six manual editor runs52.631s; one earlier unavailable Execution API
+attempt0s/failed. Retain that API failure separately from timer correctness.
+For the final source from05:39,128 timers totaled278.816s. These are partial-day
+observations only, not a full daily runtime total or a passed day. Some dirty
+runs were slow; continue complete daily history/reconciliation before accepting
+the below15-minute target. Do not extrapolate this sample into acceptance.
+
+## 2026-10-12 partial-day follow-up at08:26 Taipei
+
+Authenticated execution history was refreshed and all193 entries loaded on one
+page, through the08:25:14 timer:186 timers completed, zero timer failures or
+running timers,379.907 platform seconds total and82.534s maximum. Six manual
+editor runs and the earlier unavailable Execution API attempt remain separate.
+This is complete history at the capture time, but an incomplete day; it does
+not pass the15-minute daily target or the72-hour gate.
+
+A separate read-only D1 check at08:40 found the08:30 synthetic room mutation,
+server `synced_at`2026-10-12T00:30:20.251Z. No source, timer or configuration
+change occurred. Final source remains `8f1191a`; earliest time eligibility is
+October15 at05:39 Taipei, subject to complete daily reconciliation/runtime.
+
+## 2026-10-12 — C1 actual result-code investigation
+
+Authenticated history through08:47 was reconciled across two pages:215 total
+entries,208 timers, all platform-completed,414.021 platform seconds/max82.534s.
+This remains partial-day evidence. At08:54, the existing read-only
+`readC1TestRuntimeTotals` function reported nine non-idle wrapper records, one
+failure,227443 observed milliseconds. Wrapper totals include a manual full run
+and exclude idle/platform overhead; they cannot replace daily trigger totals.
+
+Actual Cloud logs identify the failure after the final05:39 source revision:
+07:31's overlapping minute returned `success:false,code:SYNC_BUSY` (306ms
+wrapper), while07:30's lease-owning sync completed at07:31:36 with `OK`, one
+table, empty failed-table list,77684ms core/80882ms wrapper. The busy record is
+retained; platform-completed does not imply function success. D1 readback
+confirms the owning snapshot completed501 room rows/two batches.
+
+Remote room sync metadata shows the07:30 source-version timestamp preceded
+the first recorded Worker post-validation timestamp by72540ms, with1632ms
+between the two recorded post-validation timestamps.
+The08:00 sample was26060ms/1547ms;08:30 was1687ms/1603ms. These are boundary
+timestamps, not exclusive CPU, fetch or database duration. They locate the
+large delay before that first recorded timestamp. Worker records it only after
+body/HMAC/per-row hash validation; GAS preparation, network and Worker
+validation remain combined, so no exact layer/root cause is established.
+Keep the complete-day15-minute target and actual72-hour gate unaccepted; do
+not extrapolate partial data into a passed day or discard the busy outcome.
+
+A fresh API source export at08:54 confirmed all four files still match the
+recorded final test source. No source, timer, Properties, formal backend or flag
+changed; the existing observation clock was not restarted.
+
+Reviewed direct stale-version diagnostic on the isolated C1 Worker: current
+sole version/D1 binding and a newer completed `V2_rooms` snapshot were checked
+live before signing-key access and diagnostic POSTs. Six actual signed1/500-row
+requests all returned409
+`STALE_SNAPSHOT` before writes. Full500-row roundtrips were1250.205/619.488/
+1332.480ms; one-row roundtrips801.522/419.163/409.409ms. This excludes GAS, is
+not CPU-only or p95/capacity acceptance, and does not identify the earlier
+transient delay's root cause. D1 post-readback found zero probe runs/nonces/
+staging and501 rooms. No source/timer/Properties change or72h gate restart.
+
+
+## 2026-10-12 — C1 actual runtime target failed before end of day
+
+Recommended GPT-6.1 Sol/high. Authenticated execution history was frozen during
+four-page capture and realtime display restored afterward. Through16:51 Taipei,
+702 unique execution records include694 minute timers,1938.259 total platform
+seconds (32.304 minutes), max342.094 seconds and one platform failure. The day
+is incomplete, but measured usage already exceeds the unchanged900-second daily
+target; C1 is not accepted. No extrapolation or successful-day claim is made.
+Minute timestamps contain four duplicates and two missing slots (06:34,12:23),
+so the capture is not described as one successful execution per exact minute.
+
+12:30's72.003-second failed execution reports a Drive service timeout inside the
+test-only spreadsheet identity/title guard, before synthetic mutation/sync.
+The failure is retained separately from the earlier overlapping SYNC_BUSY.
+13:00 completed successfully:195407ms canonical sync,200994ms wrapper and
+215.410s platform.09:44 completed IDLE with zero tables:335171ms canonical,
+335182ms wrapper and342.094s platform. The idle canonical path only obtains the
+script cache and performs its bulk marker read before returning; it has no
+Sheet, signing-Property, lock or UrlFetch IO. This locates that long idle delay
+in the CacheService path, without claiming to distinguish its two API calls.
+Long active sync still combines service/preparation/network/validation time.
+
+All failures and overhead remain in the runtime gate. Do not replace platform
+usage with non-idle wrapper counters or discard slow services as outliers.
+No canonical/test source, Properties, binding, timer or formal flag changed.
+The original observation clock remains recorded, but elapsed72 hours alone
+cannot pass the failed correctness/runtime acceptance. Investigate in an
+independent environment before revising source or starting a new accepted run.

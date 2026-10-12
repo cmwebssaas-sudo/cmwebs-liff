@@ -87,3 +87,52 @@ Rollback: keep all frontend flags off or republish the recorded off release;
 restore the prior Worker version and prior GAS immutable serving version on
 the same URLs. Retain additive D1 schema/rows and exports for diagnosis. Do not
 delete formal Sheets data. Configuration removal is unnecessary to fall back.
+
+
+## 2026-10-12 — Real Google feasibility and workerd redirect correction
+
+Recommended GPT-6.1 Sol/high. The owner confirmed both new synthetic Secrets
+saved. The independent bound test project was published as immutablev1, with
+fresh editor/serving-version comparison of all10 files, fixed Sheet/project
+identity, original test Web App readback and zero timers. Matching request and
+response HMACs were verified by actual Email authority replies; Secret values
+were never read back or logged. This changes no formal project or C1 environment.
+
+Direct Node feasibility: all three canonical1500ms requests timed out; separate
+15000ms diagnostics verified signatures/access successfully at3346.695,
+4523.920 and5469.426ms full roundtrip. A separate protected Cloudflare test
+Worker uses canonical identity/access/authority and a static33-row synthetic
+fixture, no D1. Initial strict requests likewise all timed out; diagnostics
+exposed an immediate failure constructing the second Google GET. Only changing
+that diagnostic GET to manual yielded verified replies in2311–3294ms authority
+time, while retaining every earlier failure and the unchanged acceptance limit.
+
+Actual [workerd source](https://github.com/cloudflare/workerd/blob/main/src/workerd/api/http.c%2B%2B)
+rejects redirect mode error. The canonical Google final GET and LINE provider
+POST now use manual, followed by their existing exact200 check. No extra
+redirect is followed, no token is forwarded, and the same1500ms deadline,
+Google host/path allowlist, MAC/freshness/fingerprint and LINE claims remain.
+Five actual-workerd transport regressions reproduced both former defects, then
+passed: allowed Google reply, foreign first redirect, forbidden third hop,
+LINE claims and LINE redirect rejection. Node identity/authority13, complete
+Worker24, validate72 and independent review passed. This is a transport
+correctness fix, not a timeout relaxation or provider/device acceptance.
+
+The corrected canonical C3 modules were published only in the private test
+Worker and its sole100% version/bindings/GAS URL read back. Strict1500ms still
+failed3/3. Ordinary diagnostic replies passed3/3 at3073/3304/3386ms authority
+and3241.605/3472.335/3553.702ms client time. Worker entry requests were served
+from SJC; samples are not p95, full page latency,500-room capacity or formal
+binding. The test-only GAS openById/getName/Property adapter and33-row fixture
+remain explicit boundaries. Performance NOT_ACCEPTED; formal flags remain off.
+
+Source-only tests used just the new synthetic Sheet, retained a narrow restore
+plan and kept the deployed Worker fixture unchanged. Revoked Email session,
+changed membership role and disabled user each produced three fresh signed
+AUTH_REQUIRED denials over real Google HTTPS. These are15000ms diagnostics;
+the normal1500ms path remains unavailable. They demonstrate current source
+confirmation against stale static fixture access, not an actual remote D1
+revocation, real LINE provider/device or shadow/cutover gate. All three edited
+cells were restored and native bounded readback confirmed active/owner/active;
+post-restore positive verification is recorded separately. No formal data,
+configuration, source, deployment, triggers or C1 observation clock changed.
