@@ -903,3 +903,25 @@ No formal database, source, deployment, Properties, trigger, Worker or flag
 change. Corrected C1 actual72h NOT_STARTED; stopped failed runtime remains
 NOT_ACCEPTED. C3 strict latency, C5 seven-day and C6 real-flow/device/cutover
 remain unaccepted; this full-suite success does not change those gates.
+
+## 2026-10-13 — Owner approves synthetic direct-Google feasibility
+
+Recommended model/speed GPT-6.1 Sol/high for security/authority review. Owner
+explicitly approved the reviewed synthetic-only feasibility decision, recorded
+in `READ-DIRECT-GOOGLE-FEASIBILITY.md`; approval is received, not pending.
+Dedicated Reader/readonly scope, Google-side whitelist before Worker bytes,
+freshness and all original gates are retained. Formal table access/adoption,
+additional fees remain outside this approval; owner supplies any new grant/key.
+
+Independent review opened primary Google reference/Discovery documents. No
+atomic header-name selector was proven: DataFilter provides locations/metadata,
+ByDataFilter methods do not list readonly scopes, metadata/named ranges are
+not header-bound privacy controls. Tables structured references in REST remain
+UNKNOWN and formula views cannot stand in for latest revocation. Official links
+and bounded kill-canary conditions are retained in the decision document.
+
+Status NOT_PROVEN. No account API call, resources, new credentials, prototype,
+deployment, Properties, timers, formal data or flags changed. Retain GAS and
+stopped C1/failed C3 actual evidence; do not claim gate PASS or ask for secrets
+while no safe candidate exists. This documentation-only decision is on C3's
+separate worktree/PR268; root checkpoint WIP and private S1 contents preserved.
