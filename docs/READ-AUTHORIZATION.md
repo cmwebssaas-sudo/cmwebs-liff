@@ -136,3 +136,37 @@ revocation, real LINE provider/device or shadow/cutover gate. All three edited
 cells were restored and native bounded readback confirmed active/owner/active;
 post-restore positive verification is recorded separately. No formal data,
 configuration, source, deployment, triggers or C1 observation clock changed.
+
+## 2026-10-12 — Synthetic service profiling
+
+Recommended GPT-6.1 Sol/high. Authenticated Apps Script history contains42
+completed synthetic v1 Web App executions: minimum1.898s, median3.0495s,
+maximum34.129s, total166.116s. These platform durations are not paired with
+individual request nonces; completed does not establish a valid authority reply.
+
+A separate immutable synthetic v2 retains all eight canonical GAS modules and
+the existing manifest/scopes/Properties. Only its test binding harness adds
+request-local method timings and signed private telemetry. Independent review,
+native-module VM tests and10-file editor/immutable exports passed. The initial
+deployment GET returned404 after creation; a subsequent read-only check verified
+the recorded deployment and immutable source without another deployment POST.
+The original v1 endpoint remained unchanged. After measurement, the original
+editor10 files were restored and read back, retaining both immutable versions.
+
+Three diagnostic requests passed canonical MAC/nonce/digest/route/freshness/
+fingerprint verification before telemetry was inspected:
+
+| Sample | Client roundtrip ms | Canonical authorization ms | Range metadata ms | Values ms | Other unmeasured authorization ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 8131.150 | 3306 | 1215 | 564 | 797 |
+| 2 | 3463.392 | 2164 | 914 | 455 | 449 |
+| 3 | 5108.085 | 3073 | 1045 | 544 | 987 |
+
+Each request performs five full Sheet reads, four request-local cache hits and
+zero shared cache hits. Non-overlapping measured Sheet/binding services total
+2509/1715/2086ms; binding timings are nested inside sheet lookup and counted only
+once. Unmeasured authorization includes config/nonce/cache/lock/crypto/local
+work. Client deltas also include runtime/redirect/test telemetry overhead, so
+neither residual identifies an exclusive cause. The33-row fixture, test binding
+and15000ms diagnostic deadline exclude p95,500-room,LINE/device or formal
+acceptance. The normal1500ms deadline and closed flags remain unchanged.

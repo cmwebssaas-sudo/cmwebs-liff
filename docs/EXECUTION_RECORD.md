@@ -550,3 +550,24 @@ and after content/v2 retrieval. Its sole worker.js module exactly matches
 the reviewed local dry-run bundle byte-for-byte. Only SHA/module/version
 metadata is retained in evidence; no credential values or raw source are
 printed. Formal acceptance remains false; all formal flags stay off.
+
+## 2026-10-12 — C3 private service profiling and editor rollback
+
+Recommended GPT-6.1 Sol/high. Reviewed synthetic-only v2 adds test-harness
+method timing; eight canonical modules, manifest/scopes and Properties remain
+unchanged. Editor and immutable10-file exports were verified. An initial404
+deployment readback was recovered by read-only checks of the recorded deployment
+and source, without duplicate creation. Three signed diagnostic replies passed
+canonical request binding/access verification. Client8131.150/3463.392/5108.085ms;
+canonical authorization3306/2164/3073ms; range metadata1215/914/1045ms;
+values564/455/544ms. Five full reads and four local cache hits per request,
+zero shared hits. Nested binding timings are not double-counted; unmeasured
+authorization797/449/987ms cannot be attributed to one service. Native history
+separately showed42 completed v1 executions at1.898–34.129s, median3.0495s;
+platform completion is not request-level authentication success.
+
+Original synthetic editor10-file source restored and verified; both immutable
+test deployments retained. No formal/C1 source, data, timer, Properties, clock
+or flag changed. Diagnostics use15000ms and33 rows, not strict1500ms, p95,
+remote D1/real LINE/device or formal acceptance. Details are in
+`docs/READ-AUTHORIZATION.md`; private telemetry/key material is not committed.

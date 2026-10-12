@@ -1278,6 +1278,14 @@ Synthetic real Google signed Email confirmation and source-only revoke/role/
 disable diagnostic denials verified; no remote D1/real LINE/device acceptance.
 All strict1500ms samples timed out; latency acceptance NOT_ACCEPTED, flags off.
 
+Private synthetic v2 service profiling: eight canonical modules/manifest
+unchanged; VM and10-file exported-source checks PASS. Three real signed
+diagnostics PASS with authorization2164–3306ms, five full Sheet reads and
+zero shared cache hits. Range metadata914–1215ms, values455–564ms; remaining
+time is not exclusively attributed. Original editor restored/exact10 readback;
+v1/v2 retained, no formal/C1 change. This is33-row/15000ms diagnostic evidence,
+not strict1500ms, remote D1,LINE/device,p95 or500-room acceptance.
+
 
 C1 actual remote follow-up through2026-10-12 16:51 Taipei: four-page history,
 694 minute timers/1938.259 platform seconds exceeds900s daily target before
