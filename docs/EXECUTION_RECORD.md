@@ -464,3 +464,9 @@ regression1/1, actual HTTP6/6,178-file hash check and diff check independently
 passed with no remaining P1/P2 source finding. Runtime binding/device/time gates
 remain separate and pending. Public source closure includes entry/runtime config
 and nested valuation/bundle manifests; no credential or operational data is hashed.
+
+C6 draft [PR271](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/271) is
+stacked on C5 and attached; source `f8c7b8c`. CI38186669747 rental/read-worker
+both passed. No merge/publication/configuration/flag change; actual C6 remains
+NOT_STARTED while preceding real gates run. Independent root status still
+matches checkpoint `be2cefe` and the original three modified/untracked WIP groups.
