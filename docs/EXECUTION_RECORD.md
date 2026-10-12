@@ -418,3 +418,32 @@ files plus release-cache validation), affected actual module VM13/13 and
 because`PLATFORM_CORE_TEST_WORKTREE` is required,4 external fixture skips.
 That missing Core integration environment is not counted as a pass. Source
 modules and frontend release version were unchanged; `git diff --check` PASS.
+
+## 2026-10-13 — C1 bounded single-pair entry-region follow-up
+
+Recommended `gpt-5.6-terra`/medium. Independent review approved a new editor-only
+manual diagnostic with one fixed Script guard, one original-wrapper Property
+handle and one Cache handle/getAll pair per invocation. It discards Cache
+values and performs no Property value read, Sheet/network/sync, write or timer
+installation. Actual-function6 VM and actual-helper11 fake lifecycle cases
+passed. Fresh fixed binding/source4 and native unfiltered0 triggers preceded
+the addition; both canonical modules/scopes/deployment configuration retained.
+
+Exactly3 manual native executions started00:37:38/00:37:58/00:38:15 Taipei,
+all completed with`success:true,code:OK`. Script guard3/6/2ms, Property handle
+3/10/1ms, Cache handle3/8/1ms, Cache getAll116/44/109ms, timed region125/68/114ms.
+Native execution history separately reports871/921/550ms. The timed region
+includes the Script guard and excludes the final log; its platform difference
+does not isolate startup or any service. Guard/Property handle did not dominate
+these samples; the earlier335s Cache stall remains unresolved.
+
+The already stopped20:29:14 timer's native log says IDLE/core86ms/wrapper99ms,
+platform984ms;20:28:14 says IDLE/core109ms/wrapper180ms/platform1099ms. These
+two selected diagnostics do not classify the rest of914 timers or replace
+their complete failed history, including every failure/outlier.
+
+Exact original4 editor files and retained deployment configuration restored
+00:38:58 Taipei; native unfiltered trigger count again0. No formal source,
+rows, Properties, Cache, trigger, credential/scope or flag changed. No
+corrected-source72-hour run started;900s/day remains unmet. Manual timings
+are not cold timer, complete-day or500-room acceptance.

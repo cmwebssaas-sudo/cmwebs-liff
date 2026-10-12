@@ -313,3 +313,44 @@ page again showed zero. No formal source/data/Properties/trigger/flag changed.
 The stopped failed observation remains NOT_ACCEPTED; no corrected-source
 72-hour run has started. Diagnostic evidence alone does not approve a new
 Cache/Properties design or a relaxed schedule/acceptance gate.
+
+## 2026-10-13 — Three independent single-pair entry-region diagnostics
+
+Recommended `gpt-5.6-terra`/medium. A separately reviewed editor-only function,
+`profileC1IdleServices`, measured the previously excluded fixed Script guard
+and the timer harness's unconditional Property handle, followed by one Cache
+handle/getAll pair. It never read a Property value or called the sync function;
+pending dirty markers therefore could not cause Sheet/D1 writes. Three manual
+invocations were the entire bounded diagnostic, with no timer installation.
+Six actual-function VM cases and11 actual-helper fake lifecycle cases passed.
+Fresh fixed binding/source4 and native zero-trigger readbacks preceded the push.
+
+| Native start (Taipei) | Script guard (ms) | Property handle (ms) | Cache handle (ms) | Cache getAll (ms) | Timed region (ms) | Native platform (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 00:37:38 | 3 | 3 | 3 | 116 | 125 | 871 |
+| 00:37:58 | 6 | 10 | 8 | 44 | 68 | 921 |
+| 00:38:15 | 2 | 1 | 1 | 109 | 114 | 550 |
+
+All three returned`success:true,code:OK`; the timer starts before the Script
+guard and ends before the final log call. Native platform duration is a
+separate execution-history measurement. The region/platform difference is
+not exclusively startup, logging, CPU or any particular service. These manual
+invocations do not establish cold-clock-trigger behavior or a daily total.
+The Script guard/Property handle did not dominate these three measurements;
+no fix for the earlier335s Cache-path stall is established. A lazy Property
+handle is a possible removal of redundant harness IO, with unproven benefit,
+and cannot alone qualify a new runtime/correctness observation.
+
+Two already stopped timers were also read with their actual native logs:
+October12 20:29:14 had IDLE/core86ms/wrapper99ms/platform984ms;20:28:14 had
+IDLE/core109ms/wrapper180ms/platform1099ms. These are selected diagnostic
+pairs, not a reclassification of all914 timers; the complete failed history
+and every slow/failing result remain in the gate. Their wrapper/platform
+differences are likewise not attributed to startup.
+
+At00:38:58 Taipei the source API confirmed exact original4 editor files and
+retained deployment configuration. The native unfiltered page again showed
+zero triggers. Both canonical modules, manifest/scopes, Properties, Cache,
+source rows and formal flags remained unchanged. No new credential/scope,
+deployment or corrected-source72-hour run was created. The900s/day and actual
+72-hour gates remain NOT_ACCEPTED/NOT_STARTED respectively.

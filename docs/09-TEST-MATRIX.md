@@ -1257,3 +1257,13 @@ lifecycle cases, actual function's4 VM cases and independent proof/timestamp
 review passed. Original4 editor files and deployment configuration restored
 at00:24:38; native trigger count remains0. This warm manual measurement neither
 reproduces/resolves the earlier335s Cache stall nor passes daily/72-hour gates.
+
+C1 separately reviewed single-pair diagnostic onOctober13: exactly3 independent
+manual invocations, timed regions125/68/114ms (including fixed Script guard),
+native platform871/921/550ms. Guard2–6ms and Property handle1–10ms did not
+dominate these samples; no Property value/Sheet/sync/write/timer operation.
+Actual-function VM6/6 and actual-helper fake lifecycle11/11 passed. Original4
+files/deployment configuration restored00:38:58; native trigger count0. The
+stopped IDLE log pairs86/99/984ms and109/180/1099ms (core/wrapper/platform)
+do not replace complete failed history or isolate startup. No corrected-source
+72-hour gate started and no daily-runtime/500-room claim is made.
