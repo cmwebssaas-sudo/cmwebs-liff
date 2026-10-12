@@ -1,5 +1,29 @@
 # CMWebs Current State
 
+## 2026-10-13 — Ordered timing diagnostics; acceptance still failing
+
+C6 adds only numeric request-order diagnostics after each original100-request
+capacity loop. Actual local Worker31/32 fails tenants p95=69.198ms: samples5–10
+are consecutive spikes69–93ms; home/actions/revenue are below50ms, later loops
+are not reached. JSON/literals and scoped500-room HTTP correctness pass.
+One private unchanged-Worker client CPU/ELU/Node-GC control passes700 samples
+without a >=50ms spike; it does not reproduce or explain the failure. Its initial
+pre-Worker bundle guard failure was resolved only after offline verification of
+eight CWD-dependent source-path comments; both setup outcomes remain recorded.
+Root cause remains UNVERIFIED. This diagnostic candidate is not accepted for
+merge/deploy; CI must capture its own distribution with the unchanged gates.
+
+## 2026-10-13 — Published v5 CI31/32 failure retained
+
+C6 candidate adf39b40d2589d53551f3cb4d6bd428b7e7999fe is pushed on DraftPR271;
+no merge/deployment. CI run38311272334 rental passes, read-worker
+job115017316424 fails31/32. New scoped500-room HTTP correctness passes; original
+capacity benchmark fails revenue p95=160.216ms after home28.467/actions25.531ms.
+Remaining capacity loops were not reached. JSON/literals passed before timing.
+All prior failures and actual gates below remain; no unchanged-head rerun,
+threshold change or root-cause claim. Next investigation captures failing sample
+distribution/test-client observations without modifying Worker business logic.
+
 ## 2026-10-13 — C6 v5 scoped-capacity regression candidate
 
 Recommended model/speed GPT-6.1 Sol/high. New500-room HTTP coverage executes

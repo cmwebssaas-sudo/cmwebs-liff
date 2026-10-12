@@ -1159,3 +1159,52 @@ release20261013-read-capacity-v5. Independent runtime semantics review and new
 scoped test review pass. Candidate source remains separate from deployment;
 new-head CI, fresh C1 epoch, C3 latency, C5 real seven days and C6 actual/device
 cutover remain mandatory. Six flags off/URL blank unchanged; no formal action.
+
+## 2026-10-13 — C6 v5 Draft publication and new-head CI failure
+
+Reviewed60-file candidate committed/pushed as
+adf39b40d2589d53551f3cb4d6bd428b7e7999fe on PR271, still Open/Draft with C5 base.
+PR title/body/head/base exact readback passes; private logs/stage list stay outside
+Git. Tested non-evidence-document bytes match the guarded working-source snapshot;
+six later evidence-document edits are not retroactively counted in that test.
+
+Actual new-head CI run38311272334: rental SUCCESS, read-worker
+job115017316424 FAIL31/32. Scoped500-room HTTP correctness passes. Original
+capacity sequence records home28.467/actions25.531/revenue160.216ms and fails
+unchanged p95<50ms on revenue; remaining timing loops are not executed. Original
+seven JSON/literals were checked first. No same-head rerun or causal attribution.
+Full job log is sealed privately and PR body now retains the exact failure.
+
+No source fix follows without diagnostic evidence. Next capture should retain
+ordered failing samples and distinguish Node/client observations from workerd
+execution; previous passing diagnostics and local32/32 do not replace CI failure.
+No formal deployment/config/data/flags or actual observation epoch changed.
+
+## 2026-10-13 — C6 ordered-sample diagnostic candidate
+
+Recommended model/speed GPT-6.1 Sol/high for evidence-based performance diagnosis.
+Only the test client logs fixed route names and the original100 ordered numeric
+durations after measurement. No Worker, request, body/status assertion, parity,
+sample count, disposal or p95<50ms gate changes; no frontend/source identity bump.
+
+Actual local Worker FAIL31/32: home20.277/actions18.030/revenue18.672ms,
+tenants69.198ms, with six consecutive >=50ms samples5–10 (69–93ms). Later
+capacity loops are not reached. Seven JSON/literals pass before timing and the
+scoped500-room HTTP correctness test passes. The published adf39b4 CI revenue
+160.216ms failure and all earlier failures remain; no same-head CI rerun.
+
+One private client-only CPU/ELU/Node-GC observation control completes700 samples
+with no >=50ms spike; seven JSON/literals and original gates pass. Byte-pinned
+Worker bundle8d946acd549dfe6afdb1d41f12f8948221c026fbbb270c8b3f71373bb340f1fa
+is unchanged. Node-GC114 events/max3.116ms do not identify workerd GC or explain
+the earlier burst. Client observer overhead changes the control; it is not an
+acceptance substitute. Initial setup rejected the bundle before any Worker or
+sample; offline Root-versus-Worker-CWD builds differ only in eight source-path
+comments. Corrected CWD retains the original exact bundle guard; both records
+remain private. No repeated performance trials to seek a passing result.
+
+The diagnostic source can supply new-head CI evidence on the existing Draft;
+it is not a product fix or a passing acceptance claim. Full npm963/963 remains
+the previously guarded v5 working-source result, not a new exact-head run.
+Rollback removes diagnostic output only. No merge, deployment, Google resources,
+credential reads, formal data/config or flags changed; actual gates remain open.

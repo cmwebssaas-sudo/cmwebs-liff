@@ -74,9 +74,14 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
     const start=performance.now(),response=await mf.dispatchFetch('https://local.test'+paths[c.route]);
     assert.equal(response.status,200);await response.arrayBuffer();samples.push(performance.now()-start);
    }
+   // Numeric timing diagnostics only, after the original100 measured requests.
+   // Preserve request order before sorting; no Worker/body/identity data enters logs.
+   const orderedSamples=samples.slice();
    samples.sort((a,b)=>a-b);const p95=samples[94];
    timings[c.route]={samples:100,p95_ms:Number(p95.toFixed(3))};
    console.log('C6_LOCAL_500_ROOM_SAMPLE '+JSON.stringify({route:c.route,...timings[c.route]}));
+   console.log('C6_LOCAL_500_ROOM_DISTRIBUTION '+JSON.stringify({route:c.route,
+    p95_full_ms:p95,max_ms:samples[99],over_50:samples.filter(ms=>ms>=50).length,ordered_ms:orderedSamples}));
    assert.ok(p95<50,c.route+'500-room local HTTP/D1 p95='+p95.toFixed(3)+'ms');
   }
   console.log('C6_LOCAL_500_ROOM_LATENCY '+JSON.stringify(timings));
