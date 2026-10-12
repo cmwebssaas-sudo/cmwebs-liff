@@ -613,3 +613,26 @@ Original10-file editor restored andv1/v2 retained at21:52:43. No formal/C1
 source, data, Properties, timers or flags changed by either diagnostic.
 `docs/READ-AUTHORIZATION.md` records evidence boundaries and remaining gates;
 private source/logs/credential material remain outside Git.
+
+## 2026-10-12 — C3 request-local bulk reader and exact Date feasibility
+
+Recommended GPT-6.1 Sol/high. Added a request-local read-only transport adapter
+that waits for the canonical resolver's first value read, preserving LINE
+verification and Email token hashing before policy data. Independent review
+reproduced and then verified corrections for sparse hydration bounds and
+identity-before-snapshot ordering.49 grid cases plus19 existing policy cases
+passed independently; full local unit933/933, validate72 and diff-check passed.
+Calculator regeneration changed only the authorization source hash manifest.
+
+Owned editor-only candidate changed one canonical module and manual harness,
+preserving seven modules/manifest/scopes/original dispatcher prefix. Full-source
+pins and fixed project/Sheet/title checks guarded publication; v1/v2 verified
+before and after. Actual22:40:41–46 Taipei manual check: bulk576/native2918ms,
+166 cells/one exact native Date/51 empties/three synthetic millisecond boundaries,
+zero mismatches and no native fallback. This is33-row native type feasibility,
+not signed/lazy authority,1500ms/p95/500-room or device acceptance.
+
+Original10-file editor restored and exported exact at22:41:56; v1/v2 retained,
+no new deployment. No formal/C1 source, source data, Properties, scopes, timers
+or flags changed. Actual signed candidate roundtrip and prior release gates
+remain incomplete. `docs/READ-AUTHORIZATION.md` records the current boundaries.

@@ -225,3 +225,59 @@ After capture, original10-file editor source was restored and verified at
 trigger or data change was introduced by this Utilities benchmark. Continue
 the request-local bulk-reader feasibility work and investigate remaining
 service/network boundaries; formal acceptance remains NOT_ACCEPTED.
+
+## Request-local bulk reader candidate — not yet remotely accepted
+
+The candidate retains the original signature, nonce, credential digest, route,
+access helpers and deadlines. After these request checks it reads the five
+authorization tables from the trusted runtime Spreadsheet ID through one fixed
+Google HTTPS GET, with the existing OAuth grant, no redirects and no HTTP cache.
+The request-local adapter loads only at the original resolver's first value
+read, preserving LINE provider verification and Email token hashing before the
+policy snapshot. No caller can supply verified identity or actor claims.
+It reconstructs primitive types, blank/formula row positions and source-timezone
+Date milliseconds in a request-local read-only adapter. Access denials never
+retry another reader. API/format failure uses the original fresh native reader;
+such fallback does not count as successful performance acceptance.
+
+Input is bounded to100000 sparse cell entries and100000 total hydrated cells,
+20000 rows/table,100 columns and1000000 response characters. The hydrated-cell
+guard was added after independent review reproduced sparse expansion beyond
+the original input cap. Original runtime handles, values and contexts are
+restored after resolution; no positive decision is cached across requests.
+
+Local49 grid cases and19 existing authority/access/identity cases pass, including
+six roles, delegated manager/foreign principal, one-millisecond session expiry,
+source-only changes, access changes during provider/hash waiting, replay/forgery
+and native fallback. Native IO counters prove
+the successful grid cases did not silently fall back. Full unit suite933/933
+passes after regenerating the source-hash manifest; calculator code is unchanged.
+These tests use synthetic Google/Utilities adapters. The bounded native Date
+check below is separate evidence; authenticated strict latency, broader capacity,
+LINE/device and all preceding release gates remain required before formal
+publication or enabling a formal read path.
+
+## 2026-10-12 — Exact native Date check and candidate editor rollback
+
+Independent source review required both bounded hydrated matrices and original
+identity/hash-before-values ordering. Regression cases reproduced those defects
+before the fixes; the final49 grid cases plus19 existing policy cases passed
+independently. Only the authorization module and manual harness changed in the
+owned test editor. Its other seven modules, manifest/scopes and original doPost
+prefix remained exact; complete changed-source hashes guarded publication and
+rollback before any OAuth access. Both immutable test deployments were checked
+before and after editor changes. No new deployment was created.
+
+Actual22:40:41–46 Taipei manual execution used the bulk path without native
+fallback. All166 cells matched original native matrix dimensions, scalar types
+and values; one stored Date matched exact epoch milliseconds,51 cells were
+empty, and three synthetic Taipei midnight/millisecond boundaries round-tripped
+through actual Utilities with zero mismatches. Bulk preparation576ms; five
+native matrix reads2918ms. This one33-row invocation is not a signed authority
+request, lazy-resolution end-to-end test, p95,500-room, LINE/device or strict
+1500ms acceptance. No external-service wait is excluded from the future gate.
+
+Original10-file editor restored and exported exact at22:41:56, with the candidate
+authorization removed and immutablev1/v2 retained. No source data, Properties,
+scopes, timers, formal source/Worker or flags changed. Keep formal acceptance
+NOT_ACCEPTED and test the candidate's actual signed authority roundtrip next.

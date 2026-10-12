@@ -1,6 +1,137 @@
 // Internal request-bound authority confirmation. This never returns operational
 // rows and never caches a positive access decision across requests.
 const V2_READ_AUTHORIZATION_ROUTES_ = ['/v1/home','/v1/revenue','/v1/tenants','/v1/rooms','/v1/arrears','/v1/properties'];
+const V2_READ_AUTHORIZATION_TABLES_ = ['V2_landlord_email_sessions','V2_users','V2_workspaces','V2_workspace_members','V2_landlords'];
+
+// Decode only request-local authorization rows. No shared positive-access cache.
+// Any unsupported response falls back to the original native reader before
+// resolving access; an authorization denial itself never retries another path.
+function readAuthorizationGridSnapshot_(document,spreadsheetId) {
+  const unavailable=function(){throw new Error('AUTH_GRID_UNAVAILABLE');};
+  if(!document||document.spreadsheetId!==spreadsheetId||!document.properties||
+    typeof document.properties.timeZone!=='string'||!document.properties.timeZone||
+    !Array.isArray(document.sheets))return unavailable();
+  const zone=document.properties.timeZone;
+  const defaultType=document.properties.defaultFormat&&document.properties.defaultFormat.numberFormat&&document.properties.defaultFormat.numberFormat.type;
+  const values=Object.create(null),ids=Object.create(null),seenIds=Object.create(null);
+  let cells=0,hydratedCells=0;
+  document.sheets.forEach(function(sheet){
+    const meta=sheet&&sheet.properties;
+    if(!meta||typeof meta.title!=='string')return unavailable();
+    if(V2_READ_AUTHORIZATION_TABLES_.indexOf(meta.title)<0) {
+      // The API may return unrelated metadata when ranges select only grid data.
+      if(sheet.data&&sheet.data.some(function(grid){return grid.rowData&&grid.rowData.length;}))return unavailable();
+      return;
+    }
+    if(Object.prototype.hasOwnProperty.call(values,meta.title)||!Number.isSafeInteger(meta.sheetId)||meta.sheetId<0||seenIds[meta.sheetId])return unavailable();
+    seenIds[meta.sheetId]=true;ids[meta.title]=meta.sheetId;
+    if(sheet.data!==undefined&&(!Array.isArray(sheet.data)||sheet.data.length>1))return unavailable();
+    const grid=sheet.data&&sheet.data[0]||{};
+    if((grid.startRow||0)!==0||(grid.startColumn||0)!==0||
+      (grid.rowData!==undefined&&!Array.isArray(grid.rowData)))return unavailable();
+    const rows=grid.rowData||[];
+    if(rows.length>20000)return unavailable();
+    let height=0,width=0;
+    rows.forEach(function(row,rowIndex){
+      if(!row||(row.values!==undefined&&!Array.isArray(row.values)))return unavailable();
+      const columns=row.values||[];
+      if(columns.length>100)return unavailable();
+      cells+=columns.length;if(cells>100000)return unavailable();
+      columns.forEach(function(cell,columnIndex){
+        if(!cell||typeof cell!=='object')return unavailable();
+        if(cell.effectiveValue||cell.userEnteredValue){height=Math.max(height,rowIndex+1);width=Math.max(width,columnIndex+1);}
+      });
+    });
+    height=Math.max(height,1);width=Math.max(width,1);
+    hydratedCells+=height*width;if(hydratedCells>100000)return unavailable();
+    values[meta.title]=Array.from({length:height},function(_,rowIndex){
+      const columns=rows[rowIndex]&&rows[rowIndex].values||[];
+      return Array.from({length:width},function(_,columnIndex){
+        const cell=columns[columnIndex]||{},value=cell.effectiveValue;
+        if(value===undefined)return '';
+        if(!value||typeof value!=='object'||Object.keys(value).length!==1)return unavailable();
+        if(Object.prototype.hasOwnProperty.call(value,'stringValue'))return typeof value.stringValue==='string'?value.stringValue:unavailable();
+        if(Object.prototype.hasOwnProperty.call(value,'boolValue'))return typeof value.boolValue==='boolean'?value.boolValue:unavailable();
+        if(!Object.prototype.hasOwnProperty.call(value,'numberValue')||typeof value.numberValue!=='number'||!Number.isFinite(value.numberValue))return unavailable();
+        const type=cell.effectiveFormat&&cell.effectiveFormat.numberFormat&&cell.effectiveFormat.numberFormat.type||defaultType;
+        if(['DATE','DATE_TIME','TIME'].indexOf(type)<0)return value.numberValue;
+        const wallDate=new Date(Math.round((value.numberValue-25569)*86400000));
+        if(!Number.isFinite(wallDate.getTime()))return unavailable();
+        const wall=wallDate.toISOString().slice(0,-1).replace('T',' ');
+        if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/.test(wall))return unavailable();
+        const parsed=Utilities.parseDate(wall,zone,'yyyy-MM-dd HH:mm:ss.SSS');
+        if(Object.prototype.toString.call(parsed)!=='[object Date]'||!Number.isFinite(parsed.getTime())||
+          Utilities.formatDate(parsed,zone,'yyyy-MM-dd HH:mm:ss.SSS')!==wall)return unavailable();
+        return parsed;
+      });
+    });
+  });
+  if(V2_READ_AUTHORIZATION_TABLES_.some(function(name){return !Object.prototype.hasOwnProperty.call(values,name);}))return unavailable();
+  return {values:values,sheet_ids:ids};
+}
+
+function readAuthorizationBulkSnapshot_(sourceSpreadsheet) {
+  const state=V2_REQUEST_RUNTIME_SNAPSHOT_STATE_;
+  if(!state||state.action!=='read_replica_authorize'||state.enabled!==true||state.shared_cache_enabled!==false||
+    typeof ScriptApp==='undefined'||typeof ScriptApp.getOAuthToken!=='function')return null;
+  try {
+    const native=sourceSpreadsheet||runtimeSpreadsheet_(),id=String(native.getId()||'');
+    if(!/^[-A-Za-z0-9_]{1,200}$/.test(id))return null;
+    const fields='spreadsheetId,properties(timeZone,defaultFormat(numberFormat(type))),sheets(properties(title,sheetId),data(startRow,startColumn,rowData(values(userEnteredValue,effectiveValue,effectiveFormat(numberFormat(type))))))';
+    const query='includeGridData=true&fields='+encodeURIComponent(fields)+'&'+V2_READ_AUTHORIZATION_TABLES_.map(function(name){return 'ranges='+encodeURIComponent("'"+name+"'");}).join('&');
+    const response=UrlFetchApp.fetch('https://sheets.googleapis.com/v4/spreadsheets/'+id+'?'+query,{
+      method:'get',followRedirects:false,muteHttpExceptions:true,
+      headers:{Authorization:'Bearer '+ScriptApp.getOAuthToken(),'Cache-Control':'no-cache, no-store',Pragma:'no-cache'}
+    });
+    if(response.getResponseCode()!==200)return null;
+    const text=response.getContentText();if(typeof text!=='string'||text.length>1000000)return null;
+    const snapshot=readAuthorizationGridSnapshot_(JSON.parse(text),id),handles=Object.create(null);
+    const spreadsheet={getId:function(){return id;},getSheetByName:function(name){
+      if(!Object.prototype.hasOwnProperty.call(snapshot.values,name))return native.getSheetByName(name);
+      if(!handles[name])handles[name]={getParent:function(){return spreadsheet;},getSheetId:function(){return snapshot.sheet_ids[name];},
+        getDataRange:function(){return {getValues:function(){return snapshot.values[name];}};}};
+      return handles[name];
+    }};
+    return spreadsheet;
+  }catch(_){return null;}
+}
+
+function readAuthorizationResolveFresh_(payload) {
+  const state=V2_REQUEST_RUNTIME_SNAPSHOT_STATE_;
+  if(!state||state.action!=='read_replica_authorize'||state.enabled!==true||state.shared_cache_enabled!==false)return readAuthorizationResolve_(payload);
+  const handles=state.spreadsheet_handles,
+    values=state.values_by_sheet,contexts=state.contexts;
+  let native=null,loaded=false,bulk=null;
+  const pendingHandles=Object.create(null);
+  const nativeSpreadsheet=function(){
+    if(!native) {
+      const overlay=state.spreadsheet_handles;state.spreadsheet_handles=handles;
+      try{native=runtimeSpreadsheet_();}finally{state.spreadsheet_handles=overlay;}
+    }
+    return native;
+  };
+  const load=function(){
+    if(!loaded){loaded=true;bulk=readAuthorizationBulkSnapshot_(nativeSpreadsheet());}
+    return bulk;
+  };
+  // Loading waits for the original resolver's first value read. LINE provider
+  // verification and Email token hashing retain their canonical ordering.
+  const spreadsheet={getId:function(){return nativeSpreadsheet().getId();},getSheetByName:function(name){
+    if(loaded)return (bulk||nativeSpreadsheet()).getSheetByName(name);
+    if(V2_READ_AUTHORIZATION_TABLES_.indexOf(name)<0)return nativeSpreadsheet().getSheetByName(name);
+    if(!Object.prototype.hasOwnProperty.call(pendingHandles,name)) {
+      const sheet=nativeSpreadsheet().getSheetByName(name);
+      pendingHandles[name]=sheet?{getParent:function(){return spreadsheet;},
+        getSheetId:function(){const ready=load();return ready?ready.getSheetByName(name).getSheetId():sheet.getSheetId();},
+        getDataRange:function(){const ready=load();return ready?ready.getSheetByName(name).getDataRange():sheet.getDataRange();}}:null;
+    }
+    return pendingHandles[name];
+  }};
+  state.spreadsheet_handles=Object.assign({},handles,{ACTIVE:spreadsheet});
+  state.values_by_sheet={};state.contexts={};
+  try{return readAuthorizationResolve_(payload);}
+  finally{state.spreadsheet_handles=handles;state.values_by_sheet=values;state.contexts=contexts;}
+}
 
 function readAuthorizationFingerprint_(access) {
   const text = function(value) { return String(value === undefined || value === null ? '' : value).trim(); };
@@ -67,7 +198,7 @@ function readAuthorizationConfirm_(request) {
     finally {lock.releaseLock();}
     let result;
     try {
-      const fingerprint=readAuthorizationResolve_(payload);
+      const fingerprint=readAuthorizationResolveFresh_(payload);
       const keys=Object.keys(V2_READ_REPLICA_TABLES_).map(function(table){return V2_READ_REPLICA_DIRTY_PREFIX_+table;});
       const cache=CacheService.getScriptCache();
       const pending=Object.keys(cache.getAll(keys)).length>0 || Boolean(cache.get(V2_READ_REPLICA_LEASE_KEY_));
