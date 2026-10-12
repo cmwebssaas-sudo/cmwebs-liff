@@ -67,3 +67,24 @@ latency, real D1/500-room behavior, C5 seven full days, physical LINE/device,
 current production serving state or C6 cutover. Linux/Node22 CI evidence remains
 separate from this macOS/Node26 full-suite evidence. All later read-path gates
 remain mandatory; no formal deployment, Property, trigger or flag is changed.
+
+## October13 C6 v4 runtime follow-up
+
+The new runtime/dataset changes required a fresh full C6 run only; the other
+five source suites were not repeated. Exact C6 source
+`1cab31076ac82e35bb5c264d80ce0c7cc2c46240`:962/962, zero fail/cancel/skip,
+2.871s. Unit957/957 and Worker31/31 are separate counts. The same clean pinned
+Core643c1b3 and verified16.14 vendor were reused read-only, with a newly created
+0700 private directory and fresh fixed loopback cluster. No prior cluster,
+default/inherited connection or formal database was reused. All guards and
+finite emergency teardown remained unchanged; eight target/env guard cases pass.
+
+Original GAS commercial restricted-HTTP/real-PG and four synthetic Core
+handler cases pass. SQL before/after verifies original three databases/bootstrap
+role and no fixture residues. Actual final pg_ctl status, absent PID and closed
+listener pass; cleanup errors are empty. Core/C6 tracked sources stay unchanged
+through the test; generated secrets/raw logs remain0600 outside Git. Later
+documentation refreshes are not substituted for this tested exact source head.
+
+This v4 source check still does not establish uncached C3 latency, actual72h/
+900s/day, seven-day shadow, remote500-room/device or a current formal release.

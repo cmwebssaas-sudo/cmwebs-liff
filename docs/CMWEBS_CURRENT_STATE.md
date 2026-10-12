@@ -1,5 +1,31 @@
 # CMWebs Current State
 
+## 2026-10-13 — C6 v4 candidate and retained performance failures
+
+V3 head2d1c1a8 CI run38299581057 failed29/31:500-room tenants55.647ms,
+small-fixture arrears68.719ms at unchanged p95<50ms. Later local date-only
+candidate arrears50.560ms and intermediate decoder candidate tenants94.726ms
+also failed; all JSON/literals passed but remaining latency loops were not reached.
+These failures are retained; no unchanged-head rerun or root-cause claim.
+
+V4 uses request-local date-only/full Intl formatters and a shared production/
+fixture JSON decoder with fewer intermediate arrays. Stored types, SQL-NULL
+absence versus JSON null, own __proto__, source order and scope/SQL are unchanged.
+Original GAS calculator remains unchanged; no date-value/positive-access cache.
+Unit957/957, Worker31/31 and full962/962 at exact source
+1cab31076ac82e35bb5c264d80ce0c7cc2c46240 pass, zero skips. New isolated
+PG16.14/clean Core643c1b3 cleanup verifies no fixture DB/roles, stopped PID/TCP
+and no errors. Each500-room entry has100 samples/p95<50ms: home27.683/
+actions25.049/revenue19.718/tenants39.150/rooms30.783/arrears27.972/
+properties29.059ms. These are local fixed-access/all-table-loader samples,
+not C3/remote/Taipei/device acceptance. New exact-head CI is pending.
+
+Cache20261013-read-capacity-v4 and178-source comparison
+read-cdf69ac211f844e21222e231fd546bd5845999989e9dc4ed47e79d9644226993
+are verified. No real epoch began; all six flags off/URL blank. C1 fresh72h,
+C3 strict latency, C5 seven full days and C6 real/device/cutover remain pending.
+The v3 local results below are historical, superseded by this candidate entry.
+
 ## 2026-10-13 — C6 local capacity repair, actual gates still pending
 
 New500-owned-room fixture checks real local workerd/D1 against unchanged GAS

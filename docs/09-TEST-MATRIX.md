@@ -1292,6 +1292,15 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Unit902/902, Worker24/24 plus dry-run, validate72 backend files/40 endpoint references | Local candidate | Full902 pass/1 known external Core fixture failure/4 skips |
 | Verified remote exports, seven real days, authenticated latency, Pages readback and phone/desktop acceptance | NOT_STARTED | All flags off; preceding C1 real72-hour gate continues independently |
 
+## 2026-10-13 C6 v4 allocation follow-up
+
+| Check | Actual evidence | Boundary |
+| --- | --- | --- |
+|V3 CI/local intermediate failures retained |2d1c1a8 CI29/31:500tenants55.647ms/small arrears68.719ms; later local arrears50.560 and tenants94.726ms | Original100 samples/p95<50ms; later loops not reached, no root-cause/rerun claim |
+|Shared row decoding preserves stored types/SQL-null absence/JSON-null/own keys/input/error behavior | `tests/read-replica-rows.test.mjs`,2/2; real authenticated/scope Worker regressions pass | SQL/scope/auth checks unchanged; never caches source or access |
+|Date-only/full formatter semantics and immutable source identity |Independent1105-case comparison/2 calendar cases; validate72/40/178; v4 cache synchronized | No date-value cache, original GAS unchanged; new real epoch required |
+|Full source/Worker/capacity |Unit957/957;Worker31/31;full962/962 at1cab310 with clean isolated Core/PG and actual successful cleanup | All local500 entries100 samples/p95<50ms (tenants39.150); new CI and all real gates pending |
+
 ## 2026-10-13 C6 500-room local capacity preparation
 
 | Check | Actual evidence | Boundary |

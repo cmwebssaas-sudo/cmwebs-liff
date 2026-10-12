@@ -1,5 +1,21 @@
 # 房東登入復驗與讀取效能修復
 
+## 2026-10-13 v4 本地候選（正式效能尚未驗收）
+
+v3 的 GitHub CI 29/31：500 房房客 p95 55.647ms、小資料欠款 68.719ms，均未達
+原門檻；其後日期型候選欠款 50.560ms、解碼中間候選房客 94.726ms 的本地失敗
+亦保留，未跑到的入口不補為成功。沒有同 head 重跑，也不宣稱已定位 CI 根因。
+
+最新候選將日期型格式的時分秒省下，並讓正式／fixture 共用少分配中間陣列的 JSON
+decoder；所有資料型別、SQL null 與 JSON null、own __proto__、scope／SQL 均保留。
+完整 Worker 31/31、單元 957/957、隔離 Core／PG 完整 962/962（source1cab310）
+通過，零 skip，PG 已停止且無 fixture DB／role 遺留。500 房七入口各 100 樣本的
+本地 HTTP／D1 p95：home27.683、actions25.049、revenue19.718、tenants39.150、
+rooms30.783、arrears27.972、properties29.059ms；新 head CI 尚待驗證。
+固定 access／全表 loader 仍不能代表 C3／真實 provider、台北、遠端容量或真機。
+v4 比較指紋已重生，六開關 off，三日同步／七日 shadow／正式切換均未開始。
+以下 v3 數值保留為歷史樣本。
+
 ## 2026-10-13 500 房本地計算準備（正式驗收未開始）
 
 20 物件、500 自有房間、250 在住租約／房客、兩月合計 500 bills 經實際本地

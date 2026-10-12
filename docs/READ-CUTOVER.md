@@ -122,6 +122,28 @@ Do not weaken GAS authority to meet latency or count fallback as Worker success.
 
 ## Evidence ledger
 
+Current October13 v4 source1cab310 retains the initial v3 CI29/31 failure
+(500-room tenants55.647ms/small-fixture arrears68.719ms), later local date-only
+arrears50.560ms and intermediate decoder tenants94.726ms failures. All use
+the unchanged p95<50ms; failed latency loops did not reach later entries.
+No unchanged-head rerun or attribution of CI failure is claimed.
+
+Request-local date-only/full Intl parts and shared production/fixture row
+decoding reduce allocations without changing SQL/scope, JSON types/null/own
+keys, fresh dates or original GAS calculations. Actual unit957/957, Worker31/31
+and full962/962 at1cab31076ac82e35bb5c264d80ce0c7cc2c46240 pass with zero
+skips. New isolated PG/Core full-suite provenance and successful cleanup are
+in `READ-REGRESSION-DEPENDENCIES.md`. Each500-room entry's100-sample local
+p95: home27.683/actions25.049/revenue19.718/tenants39.150/rooms30.783/
+arrears27.972/properties29.059ms. Fixed access/all-table loader still excludes
+C3/provider/scoped-loader/remote/Taipei/device qualification. New-head CI pending.
+
+Current cache `20261013-read-capacity-v4`;178-source identity
+`read-cdf69ac211f844e21222e231fd546bd5845999989e9dc4ed47e79d9644226993`.
+Both runtime/dataset source hashes change; no old actual epoch is reused.
+Six flags off/URL blank; no formal publication/config/data change. All original
+real gates remain. The v3 and earlier entries below are historical.
+
 Historical local draft refresh (2026-10-12): reviewed C3 bulk reader and all C1
 stop/C3 signed-diagnostic evidence are inherited through C4/C5. Asset cache
 version is `20261012-read-cutover-v2`; the regenerated178-source comparison is
@@ -167,7 +189,7 @@ Core/PG environment in `READ-REGRESSION-DEPENDENCIES.md`. The later e28d39b
 refresh changed only five documentation files with identical runtime/test source;
 the tested head remains414eb1f, not a full-suite claim for later runtime changes.
 
-October13 capacity preparation uses20 properties/500 owned rooms/250 occupied
+Historical v3 October13 capacity preparation uses20 properties/500 owned rooms/250 occupied
 tenants and leases,250 vacant rooms,500 bills across two months and a foreign
 Workspace decoy. Actual local workerd/D1 matches unchanged GAS JSON for all
 seven entries, plus independent counts and monetary literals. Original tenants
