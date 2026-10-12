@@ -352,3 +352,59 @@ canonical modules restored and immutablev1/v2/v3/v4 retained. No formal/C1
 source, source-data, Properties, scopes, timers, Cloudflare or flags changed.
 This33-row diagnostic is not remote D1,500-room, p95, real LINE/device or formal
 performance acceptance; all original release gates remain required.
+
+
+## 2026-10-13 — HTML response packaging diagnostic, not accepted
+
+Recommended GPT-6.1 Sol/high. A private owned synthetic harness changed only
+its final ContentService response packaging to HtmlService. The reviewed bulk
+authorization and nine other source files stayed exact to the retained v4
+candidate. The lab decoder preserves the signed inner bytes and original
+canonical cryptographic/freshness/access checks; it is not the unmodified
+canonical HTTP reader accepting HTML.
+
+Independent review reproduced and corrected three diagnostic-control defects:
+pending cancellation must not hold the deadline, every opening/closing marker
+must be unique, and terminal request timing excludes local progress-file IO.
+93 offline harness/lifecycle/parser/telemetry cases passed, along with68
+canonical authorization regressions and validate72. Full npm test938 reports
+933 pass, one missing PLATFORM_CORE_TEST_WORKTREE failure and four external
+fixture skips; it is not a complete suite pass.
+
+Owned immutablev5/source10 were read back. Two initial management readback404s
+were retained; recorded-ID recovery and the native deployment view confirmed
+the same version/endpoint without duplicate creation. The actual01:39–01:40
+Taipei run reserved exactly six signed requests in persistent state:
+
+| Series | First headers ms | Complete client ms | Result |
+| --- | --- | --- | --- |
+| strict1500ms, sample1 | none |1503.976| READ_AUTHORITY_UNAVAILABLE |
+| strict1500ms, sample2 | none |1502.382| READ_AUTHORITY_UNAVAILABLE |
+| strict1500ms, sample3 | none |1503.711| READ_AUTHORITY_UNAVAILABLE |
+| diagnostic15000ms, sample1 |2342.746|2350.376| HTTP200, BODY_REJECTED |
+| diagnostic15000ms, sample2 |2619.944|2622.626| HTTP200, BODY_REJECTED |
+| diagnostic15000ms, sample3 |2667.567|2671.189| HTTP200, BODY_REJECTED |
+
+The three diagnostic responses showed one POST hop, but no verified envelope
+or telemetry. Those signed failures alone do not distinguish cap, marker or encoding failure
+and cannot support latency acceptance or a causal comparison with prior v4.
+Native history confirms six completedv5 executions, chronological durations
+2.968/2.736/2.620/2.018/2.343/2.392s. Server completion does not reverse the
+client timeouts or establish signature/access validation.
+
+Original10-file editor restored/exported exact at01:41:32 Taipei, including
+all eight original canonical modules; immutablev1–v5 retained. No formal/C1
+source, data, Properties, scopes, timers, Worker or read-flag change. Keep
+strict latency NOT_ACCEPTED; actual corrected C1 72-hour, seven-day shadow,
+500-room, D1 and authenticated LINE/device/performance gates remain incomplete.
+
+A separate independently reviewed single unsigned POST `{}` then classified
+only wrapper structure, without OAuth/credential/fixture IO or any additional
+signed request. Its15s deadline and20000-byte cap were retained;16 fake controls
+passed after an abort/read race regression. Actual01:46 Taipei result: HTTP200,
+8130 UTF-8 bytes, one ordered opening/closing marker,82 encoded characters;
+the encoded segment was not plain URL-safe base64 and contained hex-escaped
+padding. No raw HTML/envelope was saved or executed. This observed unsigned
+wrapper cannot certify the earlier three signed response bodies, signature,
+access or latency. Next lab parser work can address this specific escaping
+while keeping all original caps/auth/deadlines and failure history unchanged.

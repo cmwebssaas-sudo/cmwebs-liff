@@ -679,3 +679,31 @@ Original10-file editor restored/exported exact23:33:42; original eight canonical
 modules and immutablev1/v2/v3/v4 retained. No formal/C1 source, data, Properties,
 scope, timer, Cloudflare or flag change. Keep strict latency NOT_ACCEPTED and
 all C1/C5/performance/device gates; do not infer acceptance from bulk success.
+
+
+## 2026-10-13 — C3 HTML response transport, still not accepted
+
+Recommended GPT-6.1 Sol/high. Private diagnostic changed only the owned harness
+final response packaging; bulk auth unchanged. Independent review corrected
+non-settling cancellation, unique markers and local-IO timing contamination;
+93 fake controls and68 canonical regressions PASS, validate72 PASS. Full938:
+933 pass/one missing Core worktree failure/four external fixture skips.
+
+Owned immutablev5/source10 readback passed after two management404 failures,
+no duplicate version/deployment. Actual01:39–01:40 Taipei six signed requests:
+strict3 failures1503.976/1502.382/1503.711ms without headers; diagnostics HTTP200
+headers2342.746/2619.944/2667.567ms, complete2350.376/2622.626/2671.189ms, all
+BODY_REJECTED/no verified envelope/telemetry. Native six terminal/completed
+2.968/2.736/2.620/2.018/2.343/2.392s does not override client failures.
+
+Original10 editor restored/exported exact01:41:32, original eight canonical
+modules and immutablev1–v5 retained. No formal/C1 source/data/Properties/scopes/
+timers/Cloudflare/flag change. Strict latency NOT_ACCEPTED; no D1/500-room/p95/
+real LINE/device/formal acceptance. Preserve actual72h and seven-day gates.
+
+Independent single unsigned wrapper classifier16 fake controls PASS, including
+abort/read race RED→GREEN. Actual01:46 one unsigned `{}` request, noOAuth/seed/
+fixture IO/additional signed requests: HTTP200/8130 UTF-8 bytes/one ordered
+marker pair/82 encoded chars/hex-escaped padding; rawHTML/envelope not retained
+or executed. This narrows unsigned wrapper encoding work, not the original
+signed failures, signature/access, latency or formal acceptance.
