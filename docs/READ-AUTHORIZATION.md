@@ -408,3 +408,55 @@ padding. No raw HTML/envelope was saved or executed. This observed unsigned
 wrapper cannot certify the earlier three signed response bodies, signature,
 access or latency. Next lab parser work can address this specific escaping
 while keeping all original caps/auth/deadlines and failure history unchanged.
+
+
+## 2026-10-13 — Unpadded HTML envelopes verified, latency not accepted
+
+Recommended GPT-6.1 Sol/high. The private owned v6 harness changes only the
+final producer to remove base64 padding. Nine other candidate files remain
+exact to v5, including the reviewed bulk authorization. The strict decoder is
+unchanged; it neither decodes JavaScript escapes nor relaxes canonical UTF-8,
+base64, unique-marker, signature, freshness, access or 20000-byte checks.
+The actual harness regression first failed with a genuinely padded fake encoder,
+then passed after the producer change. Independent review and 99 offline
+harness/lifecycle/parser/telemetry cases passed, including retained v5 source
+pins/configuration, unknown creation outcomes and reservation-before-send.
+
+Owned immutable v6/source10 were read back after one management 404 recovered
+through the recorded ID, without duplicate creation. Actual 02:00 Taipei run
+reserved exactly six new signed requests; all earlier v5 failures/intents remain.
+
+| Series | First headers ms | Complete client ms | Verification |
+| --- | --- | --- | --- |
+| strict1500ms, sample1 | none |1505.783| READ_AUTHORITY_UNAVAILABLE |
+| strict1500ms, sample2 | none |1503.620| READ_AUTHORITY_UNAVAILABLE |
+| strict1500ms, sample3 | none |1502.290| READ_AUTHORITY_UNAVAILABLE |
+| diagnostic15000ms, sample1 |2937.959|2951.322| extracted envelope verified |
+| diagnostic15000ms, sample2 |2264.110|2266.999| extracted envelope verified |
+| diagnostic15000ms, sample3 |2893.820|2898.482| extracted envelope verified |
+
+Each diagnostic has one HTTP200 POST hop, one successful bulk attempt, no
+native range.getValues observation and zero shared cache. Signed verified
+telemetry: authorization.total1696/1024/1701ms contains bulk275/293/286ms;
+outer10270/10267/10270 bytes and decoded1666/1664/1666 bytes remain below caps.
+Binding/method durations overlap and are not summed. The runtime counters
+9 theoretical/5 adapter reads and4 local cache hits are not native Sheet IO.
+Lab extraction validates original canonical cryptographic/access checks against
+the synthetic fixture; canonical_http_transport_acceptance remains false.
+This is not the unmodified canonical HTTP reader accepting HTML.
+
+Native history confirms six completed v6 executions with chronological platform
+durations212.683/4.589/2.663/2.594/1.910/2.590s. The long first strict execution
+is retained; client cancellation did not establish server cancellation. Its
+internal delay location is unverified because no verified telemetry reached
+the client. Native completion does not turn any strict failure into acceptance.
+
+Original10 editor first restored at02:03:04. After all native executions were
+confirmed terminal, an idempotent final source/configuration check at02:07:18
+verified all10 source/type bytes including manifest exact, original eight
+canonical modules and immutablev1–v6 retained. No formal/C1 source, data,
+Properties, scopes, timers, Worker or flag change. Repository source is
+unchanged; prior full-suite result remains933 pass/one missing Core-worktree
+failure/four fixture skips. Strict latency NOT_ACCEPTED, actual corrected72h,
+seven-day shadow,500-room,D1,real LINE/device and authenticated user-flow
+acceptance remain incomplete.

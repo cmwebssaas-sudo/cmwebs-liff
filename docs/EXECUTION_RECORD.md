@@ -707,3 +707,28 @@ fixture IO/additional signed requests: HTTP200/8130 UTF-8 bytes/one ordered
 marker pair/82 encoded chars/hex-escaped padding; rawHTML/envelope not retained
 or executed. This narrows unsigned wrapper encoding work, not the original
 signed failures, signature/access, latency or formal acceptance.
+
+
+## 2026-10-13 — C3 unpadded envelope works, strict latency still fails
+
+Recommended GPT-6.1 Sol/high. Only private harness producer removes base64
+padding; nine other candidate files/bulk auth and strict codec remain unchanged.
+Padded producer regression RED→GREEN, independent99 fake controls PASS.
+Owned immutablev6/source10 readback recovered one404 through recordedID, no
+new duplicate. Originalv5 experiments/intents and failures retained.
+
+Actual02:00 Taipei six signed requests: strict3 failures1505.783/1503.620/
+1502.290ms without headers; diagnostics passed original canonical signature,
+nonce, freshness and fixture-access checks after lab extraction. Headers
+2937.959/2264.110/2893.820ms; complete2951.322/2266.999/2898.482ms. Each one
+HTTP200 POST hop/one successful bulk/no native getValues/zero shared cache;
+auth1696/1024/1701 contains bulk275/293/286ms. Both byte caps retained.
+
+Native six completed, chronological212.683/4.589/2.663/2.594/1.910/2.590s;
+first strict server tail retained with internal location unverified. Original10
+editor restored02:03:04; final idempotent all10 source/type-byte/config checks
+02:07:18 after native terminal confirmation, original eight modules/v1–v6 retained.
+No formal/C1 source/data/Properties/scopes/timers/Cloudflare/flags changed.
+Lab adaptation is not canonical HTTP acceptance; strict latency NOT_ACCEPTED.
+Actual corrected72h,seven-day shadow,500-room,D1,real LINE/device/user-flow
+gates remain. Prior full suite933pass/knownCorefailure/4skip not upgraded toPASS.
