@@ -163,3 +163,34 @@ A separate read-only D1 check at08:40 found the08:30 synthetic room mutation,
 server `synced_at`2026-10-12T00:30:20.251Z. No source, timer or configuration
 change occurred. Final source remains `8f1191a`; earliest time eligibility is
 October15 at05:39 Taipei, subject to complete daily reconciliation/runtime.
+
+## 2026-10-12 — C1 actual result-code investigation
+
+Authenticated history through08:47 was reconciled across two pages:215 total
+entries,208 timers, all platform-completed,414.021 platform seconds/max82.534s.
+This remains partial-day evidence. At08:54, the existing read-only
+`readC1TestRuntimeTotals` function reported nine non-idle wrapper records, one
+failure,227443 observed milliseconds. Wrapper totals include a manual full run
+and exclude idle/platform overhead; they cannot replace daily trigger totals.
+
+Actual Cloud logs identify the failure after the final05:39 source revision:
+07:31's overlapping minute returned `success:false,code:SYNC_BUSY` (306ms
+wrapper), while07:30's lease-owning sync completed at07:31:36 with `OK`, one
+table, empty failed-table list,77684ms core/80882ms wrapper. The busy record is
+retained; platform-completed does not imply function success. D1 readback
+confirms the owning snapshot completed501 room rows/two batches.
+
+Remote room sync metadata shows the07:30 source-version timestamp preceded
+the first recorded Worker post-validation timestamp by72540ms, with1632ms
+between the two recorded post-validation timestamps.
+The08:00 sample was26060ms/1547ms;08:30 was1687ms/1603ms. These are boundary
+timestamps, not exclusive CPU, fetch or database duration. They locate the
+large delay before that first recorded timestamp. Worker records it only after
+body/HMAC/per-row hash validation; GAS preparation, network and Worker
+validation remain combined, so no exact layer/root cause is established.
+Keep the complete-day15-minute target and actual72-hour gate unaccepted; do
+not extrapolate partial data into a passed day or discard the busy outcome.
+
+A fresh API source export at08:54 confirmed all four files still match the
+recorded final test source. No source, timer, Properties, formal backend or flag
+changed; the existing observation clock was not restarted.
