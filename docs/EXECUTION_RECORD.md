@@ -367,3 +367,22 @@ openById/getName/Property adapter and33-row fixture are reported boundaries;
 this cannot prove formal binding,500-room capacity, LINE provider/device
 acceptance, seven-day shadow or final C6 latency. No formal source, deployment,
 Properties, trigger, Cloudflare binding or flag changed.
+
+## 2026-10-12 — C3 owner initial grant verified at14:33 Taipei
+
+The owner confirmed the independent C3 project's Google initial authorization.
+Authenticated editor execution at14:33:32–14:33:34 returned synthetic-only,20
+tables and Asia/Taipei. A fresh API export at14:39 verified all10 uploaded
+files against the reviewed local source (eight canonical modules, semantic
+manifest equality). New test Secret entry/save remains an actual owner gate;
+the two blank value fields and private local files are prepared. No test Web
+App or formal deployment has occurred, and no actual authority-network or
+performance acceptance is claimed.
+
+C1 read-only follow-up: a transient Cloudflare management query returned7403
+while CLI identity still included the selected account and D1 permission.
+After identity verification, the same read-only query succeeded and confirms
+the14:30 room snapshot completed501 rows/two batches at14:30:19.075 Taipei.
+Node health returned200. No credential, account, source, timer or binding was
+changed. Python urllib health received1010 and is retained separately as a
+client-specific request rejection; it does not prove background sync failure.
