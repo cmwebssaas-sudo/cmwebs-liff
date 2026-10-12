@@ -322,3 +322,13 @@ not extrapolate partial data into a passed day or discard the busy outcome.
 A fresh API source export at08:54 confirmed all four files still match the
 recorded final test source. No source, timer, Properties, formal backend or flag
 changed; the existing observation clock was not restarted.
+
+Reviewed direct stale-version diagnostic on the isolated C1 Worker: current
+sole version/D1 binding and a newer completed `V2_rooms` snapshot were checked
+live before signing-key access and diagnostic POSTs. Six actual signed1/500-row
+requests all returned409
+`STALE_SNAPSHOT` before writes. Full500-row roundtrips were1250.205/619.488/
+1332.480ms; one-row roundtrips801.522/419.163/409.409ms. This excludes GAS, is
+not CPU-only or p95/capacity acceptance, and does not identify the earlier
+transient delay's root cause. D1 post-readback found zero probe runs/nonces/
+staging and501 rooms. No source/timer/Properties change or72h gate restart.
