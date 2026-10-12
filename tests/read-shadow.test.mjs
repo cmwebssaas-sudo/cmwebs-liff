@@ -6,7 +6,7 @@ import { richDataset,originalGas,access,fixture,plain } from './fixtures/read-pa
 import { createReadCalculator } from '../cloudflare/read-api/src/read-calculator.js';
 import { createReadServices } from '../cloudflare/read-api/src/read-runtime.js';
 
-const report={route:'tenants',variant:'default',release:'20261012-read-shadow-v1',outcome:'compared',
+const report={route:'tenants',variant:'default',release:'20261012-read-cutover-v1',outcome:'compared',
   clock_paths:[],
   receipt:'00000000-0000-4000-8000-000000000001',
   paths:['data.summary.total_amount'],elapsed_ms:100,headers_ms:90};
@@ -56,4 +56,21 @@ test('seven complete real windows require every route/home section, zero differe
     {now:start+7*86400000,epoch,release}).eligible,false);
   assert.equal(evaluateShadowWindows({...input,attempt_rows:[...attempt_rows,{window:7,route:'rooms',variant:'default',attempts:1,matched:0,errors:0,missing:0}]},
     {now:start+7*86400000+1,epoch,release}).eligible,false);
+});
+
+test('sequential page coverage does not require already accepted on pages to keep shadowing',()=>{
+  const start=Date.parse('2026-10-15T00:00:00Z'),epoch='synthetic-epoch',release=report.release;
+  const pairs=[['home','home'],['home','actions'],...['revenue','tenants','rooms','arrears','properties'].map(route=>[route,'default'])];
+  const rows=Array.from({length:8},(_,window)=>pairs.filter(([route])=>!(window===7&&route==='rooms'))
+    .map(([route,variant])=>({window,route,variant,compared:1,errors:0,diffs:0}))).flat();
+  const attempt_rows=rows.map(row=>({...row,attempts:1,matched:1,errors:0,missing:0}));
+  const input={started_at:new Date(start).toISOString(),epoch,release,rows,attempt_rows};
+  const options={now:start+8*86400000,epoch,release};
+  assert.equal(evaluateShadowWindows(input,options).eligible,false);
+  assert.equal(evaluateShadowWindows(input,{...options,page:'tenants'}).eligible,true);
+  assert.equal(evaluateShadowWindows(input,{...options,page:'rooms'}).eligible,false);
+  assert.equal(evaluateShadowWindows(input,{...options,page:'home'}).eligible,true);
+  assert.equal(evaluateShadowWindows(input,{...options,page:'unknown'}).eligible,false);
+  const bad={...input,rows:[...rows,{window:8,route:'revenue',variant:'default',compared:1,errors:1,diffs:0}]};
+  assert.equal(evaluateShadowWindows(bad,{...options,now:options.now+1,page:'tenants'}).eligible,false);
 });

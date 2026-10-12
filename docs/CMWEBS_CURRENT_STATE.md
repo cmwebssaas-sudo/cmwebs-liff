@@ -1,5 +1,22 @@
 # CMWebs Current State
 
+## 2026-10-12 — Cloudflare read path candidate and actual gates
+
+Recorded production baseline: S1 original GAS233, frontend
+20261012-line-identity-v1, owner-confirmed LINE/notification and desktop Email;
+C0 scaffold merged PR265/main32a5820. Reverify external serving/editor/Pages
+before another release. Formal operational read Worker is not deployed.
+C1 isolated real72-hour test is RUNNING, not accepted; complete daily runtime
+and correctness remain required. C2–C5 reviewed draft candidates267–270 are
+stacked independently and unpublished with all flags off. C5 CI38185484575
+passed; only exact canonical ISO generation clocks within60s are separately
+recorded under explicit owner approval. Current source-row/business fields stay
+exact. Actual seven-day shadow and C6 authenticated latency/physical-page
+acceptance are NOT_STARTED. C6 separates generated comparison identity from asset-cache/flag releases so
+sequential page qualification survives a pure flag publication; source changes
+still restart observation. C6 runbook is `READ-CUTOVER.md`; preparation does
+not switch flags or establish performance. Root checkpoint WIP is preserved.
+
 ## 2026-10-11 — 會員／銀行轉帳訂閱正式發布
 
 使用者確認彈性後台設計與直接實作、推送／部署。Core PR53／5d24c57已部署於

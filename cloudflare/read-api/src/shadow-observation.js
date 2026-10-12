@@ -1,3 +1,4 @@
+import comparisonManifest from '../read-comparison-manifest.json' with { type: 'json' };
 const encoder=new TextEncoder();
 async function hash(domain,text,secret) {
   const key=await crypto.subtle.importKey('raw',encoder.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
@@ -5,7 +6,7 @@ async function hash(domain,text,secret) {
 }
 export function shadowConfiguration(env,now) {
   const epoch=env.READ_SHADOW_EPOCH,release=env.READ_SHADOW_RELEASE,start=Date.parse(env.READ_SHADOW_STARTED_AT);
-  if(!env.DB||typeof epoch!=='string'||!/^[a-zA-Z0-9_-]{8,64}$/.test(epoch)||typeof release!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(release)||
+  if(release!==comparisonManifest.comparison_version||!env.DB||typeof epoch!=='string'||!/^[a-zA-Z0-9_-]{8,64}$/.test(epoch)||typeof release!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(release)||
     !Number.isFinite(start)||new Date(start).toISOString()!==env.READ_SHADOW_STARTED_AT||start>now)
     throw Object.assign(Error('SHADOW_NOT_READY'),{code:'SHADOW_NOT_READY'});
   return {epoch,release,start};

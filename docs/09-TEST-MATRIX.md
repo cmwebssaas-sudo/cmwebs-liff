@@ -1291,3 +1291,15 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Entire-epoch errors, seven rolling full windows, missing/pending attempts, report boundary attribution and fixed AST contracts | Same; actual D1 export test | Synthetic clock cases exercise logic only |
 | Unit902/902, Worker24/24 plus dry-run, validate72 backend files/40 endpoint references | Local candidate | Full902 pass/1 known external Core fixture failure/4 skips |
 | Verified remote exports, seven real days, authenticated latency, Pages readback and phone/desktop acceptance | NOT_STARTED | All flags off; preceding C1 real72-hour gate continues independently |
+
+## 2026-10-12 C6 acceptance preparation
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Sequential flags, build/readback, real-day prerequisites and failure rollback | `READ-CUTOVER.md` | Documentation preparation; no flag/deployment change |
+| Complete C1 days and verified C5 seven-day export | RUNNING / NOT_STARTED | Actual elapsed time and full daily evidence required |
+| Authenticated LINE/Email latency including uncached GAS authority | NOT_STARTED | Local p95 calculation tests are not network acceptance |
+| Each on page: phone LINE/desktop, fallback and120-second write guard | HUMAN_REQUIRED after actual release | S1 confirmation does not cover C6; do not solicit before publication |
+
+| C6 unchanged comparison identity through flag/cache releases, included source/endpoint invalidation and stale manifest rejection | `tests/read-comparison.test.mjs`; router and actual D1 HTTP regressions | Real source-copy tests; no live acceptance |
+| C6 per-page rolling qualification after earlier page is on, both home sections/unknown selectors, retained epoch errors | `tests/read-shadow.test.mjs` | Synthetic windows; initial all-page ledger still required |

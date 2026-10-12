@@ -285,3 +285,35 @@ mutation detection. Unknown actions conservatively invalidate all projections.
 Immediate session revocation is a patch with a pending failure result. Operational
 authorization is gated on C3's freshness and fail-closed design. Remote three-day
 acceptance, then seven-day shadow acceptance, remain independent requirements.
+
+## 2026-10-12 approved read-replica boundaries and C6 acceptance
+
+The owner authorized the bounded R0/S1/C0–C6 read-path plan and continuous
+plan-scoped release after each gate. GAS/Sheets retain canonical writes and
+access authority; D1 serves only approved sanitized read projections. Existing
+rental identity/Workspace/RBAC remains canonical, without a second product login.
+Summary opt-in for home/actions and tenants is approved; default/detail remains
+full GAS. See `READ-PARITY-DECISION.md`.
+
+Each Worker read requires uncached request-bound GAS authority confirmation,
+matching current primary-D1 policy; mismatch/failure falls back to GAS. Actual
+performance must pass before enabling a page. See `READ-AUTHORITY-DECISION.md`.
+Only exact canonical ISO generation-clock paths within60s are separately visible
+clock observations under owner approval; all business/source-row fields remain
+exact. See `READ-CLOCK-DECISION.md`. Receipt-backed seven actual days are mandatory.
+
+C6 switches rooms→tenants→properties→arrears→revenue→home with published-build
+readback, authenticated timing, physical LINE/desktop and fallback/write-guard
+evidence for each page. `READ-CUTOVER.md` is preparation, not acceptance. Keep
+flags off/shadow when gates fail; preserve prior versions, additive metadata and
+original formal data for rollback. These approvals do not weaken privacy, alter
+billing/contract workflows or add V3/V4 functionality.
+
+C6 comparison identity is generated from the browser/GAS/Worker/source-contract
+closure and checked by validation and the bundled receiver. Asset cache/flag
+releases are separate. Source changes invalidate observation; flags-only changes
+retain the verified comparison epoch. Initial all-page qualification is saved;
+later page checks require only that page's seven complete windows, including both
+home sections, while all epoch failures remain blocking. Accepted on pages need
+not continue producing shadow rows. Private acceptance ledger/readback/device
+proof remains required; a source fingerprint does not prove live bindings.

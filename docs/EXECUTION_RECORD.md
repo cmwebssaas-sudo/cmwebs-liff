@@ -420,3 +420,47 @@ stacked on C4 and attached; source `9c72fd4`. CI38185484575 rental and read-work
 both passed. Focused independent actual browser clock case1/1 passed after the
 oracle fixture repair; all required local source checks are complete. This is
 still an unpublished candidate, with preceding actual/time/device gates pending.
+
+## 2026-10-12 — C6 independent acceptance preparation
+
+Recommended GPT-6.1 Sol/high per approved work plan. Independent branch/worktree
+starts from reviewed C5 source9c72fd4 plus evidence8f9b2c3; clean detached HEAD
+was checked then feature branch created. Root WIP preserved. Existing authoritative
+documents reviewed/unchanged across C4/C5; handoff/current state/ADR/performance
+now distinguish recorded S1/C0 releases, C1 running days and C2–C6 candidates.
+Initial preparation changed only documentation. Review then found a sequential
+release defect: advancing asset cache tags invalidated C5 report identity and
+requiring already-on pages to keep shadowing prevented later page qualification.
+The necessary source repair is included below; no deployment/flag/Property/trigger
+or operational-data change has occurred.
+
+`READ-CUTOVER.md` specifies the exact page order, real-day/authenticated authority
+latency prerequisites, published-build readback, physical LINE/desktop steps,
+fallback/write guard and rollback with all formal data retained. Batch authorization
+supersedes repeated per-page permission questions; owner login/payment/physical
+acceptance and fee/deletion/scope exceptions remain. All C6 actual gates are
+NOT_STARTED; no timing/performance result is claimed from this preparation.
+
+C6 source repair: separate generated comparison identity from asset cache version,
+check178 browser/GAS/Worker/contract/dependency source files in validation and
+bind the receiver to its bundled identity. Pure central flag/cache publications
+retain identity; included source/config changes invalidate it and restart real
+observation. Per-page evaluator covers latest seven complete windows (home both
+sections), retaining all epoch errors/missing/pending checks. Initial all-page
+qualification and private accepted ledger remain required; no time gate relaxed.
+Regression reproduced asset-tag coupling and already-on coverage failures RED,
+then GREEN after repair. Candidate asset tag20261012-read-cutover-v1; all flags off.
+
+C6 local source checks: unit905/905, Worker25/25 including dry-run, actual
+D1/browser telemetry6/6, validate72 backend files/40 endpoint references and
+178-file comparison verification pass. Full905 pass/1 known missing external
+Core/PG fixture failure/4 skips. Included source changes require a new identity;
+local synthetic windows do not start or satisfy real observation. Independent
+source review and C6 PR/CI are pending; all formal flags remain off.
+
+Independent C6 source re-review passed: the rollout identity/coverage defect and
+Wrangler/nested-asset hash omissions are fixed. Focused19/19, latest comparison
+regression1/1, actual HTTP6/6,178-file hash check and diff check independently
+passed with no remaining P1/P2 source finding. Runtime binding/device/time gates
+remain separate and pending. Public source closure includes entry/runtime config
+and nested valuation/bundle manifests; no credential or operational data is hashed.

@@ -10,9 +10,10 @@ import { authorityRuntime,authoritySecret } from '../../../tests/fixtures/read-p
 import { shadowExportQueries } from '../src/shadow-export.js';
 import { evaluateShadowWindows } from '../src/shadow-windows.js';
 
-const release='20261012-read-shadow-v1',token='synthetic-email-token';
+const release=JSON.parse(await readFile(new URL('../read-comparison-manifest.json',import.meta.url),'utf8')).comparison_version,
+  token='synthetic-email-token';
 const body={route:'tenants',variant:'default',release,outcome:'compared',paths:['data.summary.total_amount','data.tenants[].tenant_name'],clock_paths:[],headers_ms:90,elapsed_ms:100};
-async function setup() {
+async function setup({shadowRelease=release}={}) {
   const input=richDataset();Object.assign(input.V2_users[0],{email_verified_at:'2026-10-01',email_login_enabled:true,email:'synthetic@example.invalid'});
   input.V2_landlord_email_sessions=[{session_id:'SYNTHETIC_SESSION',session_token_hash:createHmac('sha256','synthetic-email-key').update('session:'+token).digest('hex'),
     user_id:access.user.user_id,workspace_id:access.workspace.workspace_id,role:'owner',status:'active',expires_at:new Date(Date.parse(fixture.now)+3600000).toISOString()}];
@@ -20,7 +21,7 @@ async function setup() {
   const output=await build({entryPoints:[new URL('./read-access-fixture-worker.js',import.meta.url).pathname],bundle:true,write:false,format:'esm',target:'es2022'});
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:output.outputFiles[0].text,compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     outboundService:async request=>Response.json(authority.post(await request.json())),
-    bindings:{FIXTURE_NOW:String(Date.parse(fixture.now)),READ_SHADOW_EPOCH:'synthetic-epoch',READ_SHADOW_RELEASE:release,
+    bindings:{FIXTURE_NOW:String(Date.parse(fixture.now)),READ_SHADOW_EPOCH:'synthetic-epoch',READ_SHADOW_RELEASE:shadowRelease,
       READ_SHADOW_STARTED_AT:new Date(Date.parse(fixture.now)-3600000).toISOString(),
       LINE_LOGIN_CHANNEL_ID:'SYNTHETIC_CHANNEL',EMAIL_SESSION_HMAC_SECRET:'synthetic-email-key',READ_REPLICA_SYNC_SECRET:authoritySecret,
       READ_AUTHORITY_URL:'https://script.google.com/macros/s/SYNTHETIC_DEPLOYMENT/exec'}}));
@@ -165,7 +166,7 @@ test('actual browser router completes a receipt-bound comparison without sending
     const store=new Map(),reports=[];let completeReport;
     const reported=new Promise(resolve=>{completeReport=resolve;});
     const context={URL,Date,Math,Promise,AbortController,setTimeout,clearTimeout,
-      CMWEBS_READ_PATH:{tenants:'shadow'},CMWEBS_READ_API_URL:'https://local.test/http',CMWEBS_RELEASE_VERSION:release,
+      CMWEBS_READ_PATH:{tenants:'shadow'},CMWEBS_READ_API_URL:'https://local.test/http',CMWEBS_RELEASE_VERSION:'assets-before',CMWEBS_READ_COMPARISON_VERSION:release,
       localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},
       CMWebsLandlordAuth:{getRequestAuthParams:()=>({response_mode:'bridge',landlord_session_token:token}),handleAuthFailure:()=>false,
         request:async()=>gasResult},
@@ -186,13 +187,27 @@ test('actual browser router completes a receipt-bound comparison without sending
     const clockGas=originalGas(input,{...access,user:input.V2_users[0],membership:input.V2_workspace_members[0],workspace:input.V2_workspaces[0]},
       {now:Date.parse(fixture.now)+1000});
     const clockResult=JSON.parse(JSON.stringify(clockGas.getWorkspaceLandlordTenantsNativeByLineUid_('SYNTHETIC_LINE1','summary')));
+    context.CMWEBS_RELEASE_VERSION='assets-after-rooms-on';
     context.CMWebsLandlordAuth.request=async()=>clockResult;
     const nextReported=new Promise(resolve=>{completeReport=resolve;});
     assert.equal(await context.CMWebsLandlordApi.request({action:'landlord_tenants',params:{read_view:'summary'},maxAttempts:1}),clockResult);
     assert.equal(await nextReported,200);
+    assert.equal(reports[1].release,release);
     assert.deepEqual(Array.from(reports[1].paths),[]);assert.deepEqual(Array.from(reports[1].clock_paths),['data.landlord.updated_at']);
     assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM shadow_diffs').first()).n,0);
     const clockRow=await db.prepare('SELECT * FROM shadow_clock_diffs').first();assert.equal(clockRow.field_path,'data.landlord.updated_at');
     assert.doesNotMatch(JSON.stringify(clockRow),/SYNTHETIC_U1|SYNTHETIC_W1|synthetic-email-token|0912345678/);
+  } finally {await mf.dispose();}
+});
+
+test('a stale configured comparison identity closes shadow reads and reports without metadata writes',async()=>{
+  const {mf,db,post}=await setup({shadowRelease:'read-stale-contract'});
+  try {
+    const response=await mf.dispatchFetch('https://local.test/http/v1/tenants?read_view=summary',
+      {headers:{authorization:'Session '+token,'x-cmwebs-read-mode':'shadow'}});
+    assert.equal(response.status,503);
+    assert.equal((await post({...body,receipt:'00000000-0000-4000-8000-000000000001'})).status,503);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM shadow_attempts').first()).n,0);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM shadow_reports').first()).n,0);
   } finally {await mf.dispose();}
 });
