@@ -543,3 +543,10 @@ No canonical/test source, Properties, binding, timer or formal flag changed.
 The original observation clock remains recorded, but elapsed72 hours alone
 cannot pass the failed correctness/runtime acceptance. Investigate in an
 independent environment before revising source or starting a new accepted run.
+
+C3 isolated Worker source readback at17:36 Taipei: the fresh active deployment
+and latest uploaded version both match the recorded synthetic version before
+and after content/v2 retrieval. Its sole worker.js module exactly matches
+the reviewed local dry-run bundle byte-for-byte. Only SHA/module/version
+metadata is retained in evidence; no credential values or raw source are
+printed. Formal acceptance remains false; all formal flags stay off.

@@ -1267,7 +1267,7 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Primary D1 identity/operational scope, delegated manager parity, both alias orders and foreign-parent legacy anchors | `cloudflare/read-api/test/read-access-d1.test.mjs` | Actual local workerd/D1; six original GAS routes compared |
 | Signed GAS confirmation through actual POST dispatcher; nonce/digest/route binding, replay/forgery/expiry, unavailable authority and undelivered source-only revocation/access changes | `tests/read-authority.test.mjs`; integrated D1 HTTP test | Real GAS modules in VM, real Worker HMAC and local service bridge; no formal account |
 | Source pending markers, incomplete/stale D1 snapshots, role changes, CORS, query tampering and sanitized HTTP errors | Integrated D1 HTTP test | Synthetic source and local D1 changes; no cross-request access cache |
-| Remote GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |
+| Formal GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED; isolated synthetic authority tested separately below | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |
 
 
 C3 real workerd transport regression5/5: Google allowed/fakehost/third-hop
