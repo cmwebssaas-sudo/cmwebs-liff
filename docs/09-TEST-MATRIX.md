@@ -1255,4 +1255,12 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Generated schema parity, idle zero-read behavior, Sheet projection, failed/concurrent dirty markers and immediate Email revocation | `tests/read-replica-sync.test.mjs` | Actual Apps Script functions in Node VM with controlled Sheet/network adapters |
 | Every dispatcher route explicitly classified, previously missed mutations queue their tables, real GET/POST envelopes preserved | Same | Real dispatcher and dirty-marker functions; synthetic successful responses |
 | Apps Script affected test function | `testReadReplicaProjection()` executed by the VM suite | Pure projection test; not a production execution |
-| Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_STARTED | Must be observed in the isolated remote environment; local tests cannot satisfy this gate |
+| Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | RUNNING; Paid/APAC and synthetic full/revoke/dirty readback verified | Final source observation starts2026-10-12 05:39 Taipei; earliest72-hour eligibility Oct15 05:39, with complete actual daily correctness/runtime evidence still required |
+
+
+C1 actual remote follow-up through2026-10-12 16:51 Taipei: four-page history,
+694 minute timers/1938.259 platform seconds exceeds900s daily target before
+end of day; one Drive timeout, earlier SYNC_BUSY retained. IDLE CacheService
+path335171ms and successful canonical sync195407ms are observed boundaries,
+not isolated CPU/network metrics. C1 actual runtime/correctness NOT_ACCEPTED;
+no formal release or observation-clock reset.
