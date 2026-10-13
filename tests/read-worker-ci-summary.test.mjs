@@ -71,3 +71,84 @@ test('terminal evidence preserves original capacity distribution and safe fixtur
   const tail=result.stdout.slice(-120000);
   assert.ok(tail.includes(distribution));assert.ok(tail.includes(failure));
 });
+
+const clientColumns=['sample','completed','start_ms','end_ms','full_ms','dispatch_ms','consume_ms',
+  'node_cpu_user_us','node_cpu_system_us','node_elu_active_ms','node_elu_idle_ms','node_elu'];
+function clientLog({missing=false,duplicate=false,invalid=false,omitGc=false}={}){
+  const rows=Array.from({length:100},(_,i)=>{
+    const full=i<10?80:40,start=(i+1)*100;
+    return [i+1,1,start,start+full,full,full-5,5,1000,200,2,full-2,2/full];
+  });
+  if(invalid)rows[0][5]='SYNTHETIC_SECRET_MUST_NOT_PRINT';
+  const lines=[];
+  for(let offset=0;offset<(missing?90:100);offset+=10)lines.push('# C6_NODE_CLIENT_SAMPLES '+JSON.stringify({suite:'capacity500',route:'tenants',offset,rows:rows.slice(offset,offset+10)}));
+  if(duplicate)lines.push(lines[0]);
+  if(!omitGc)lines.push('# C6_NODE_CLIENT_GC '+JSON.stringify({suite:'capacity500',offset:0,rows:[[110,3,1]]}));
+  lines.push('# C6_NODE_CLIENT_META '+JSON.stringify({suite:'capacity500',outcome:'FAIL',columns:clientColumns,
+    gc_columns:['start_ms','duration_ms','kind'],attempted_samples:400,completed_samples:400,
+    gc_total:1,gc_retained:1,gc_dropped:0,gc_overflow:false,output_dropped:0,
+    token:'SYNTHETIC_META_SECRET_MUST_NOT_PRINT'}));
+  return lines.join('\n')+'\n';
+}
+function aggregate(result){
+  const lines=result.stdout.split('\n').filter(line=>line.startsWith('# C6_NODE_CLIENT_AGGREGATE '));
+  assert.equal(lines.length,1,'client evidence needs one bounded aggregate');
+  return JSON.parse(lines[0].replace(/^# C6_NODE_CLIENT_AGGREGATE /,''));
+}
+test('terminal summary retains complete client timing aggregates after verbose output without exposing raw rows',()=>{
+  const result=summarize(clientLog()+'# numeric observations '.repeat(16000)+'\n'+footer);
+  assert.equal(result.status,0,result.stderr);const data=aggregate(result);
+  assert.equal(data.sample_status,'COMPLETE');assert.equal(data.samples,100);assert.equal(data.gc_status,'COMPLETE');
+  assert.equal(data.over_50.count,10);assert.equal(data.below_50.count,90);
+  assert.equal(data.over_50.median_dispatch_ms,75);assert.equal(data.over_50.median_consume_ms,5);
+  assert.equal(data.over_50.median_node_cpu_ms,1.2);assert.equal(data.over_50.median_node_elu_idle_ms,78);
+  assert.equal(data.over_50.samples_with_node_gc_overlap,1);
+  assert.equal(data.scope,'NODE_CLIENT_ONLY_NOT_WORKER_CAUSE_OR_ACCEPTANCE');
+  assert.doesNotMatch(result.stdout,/SYNTHETIC_META_SECRET|C6_NODE_CLIENT_SAMPLES/);
+  assert.ok(Buffer.byteLength(result.stdout)<64000);
+});
+test('missing client chunks cannot be reported as a complete sample or zero-GC proof',()=>{
+  const result=summarize(clientLog({missing:true})+footer);const data=aggregate(result);
+  assert.equal(data.sample_status,'INCOMPLETE');assert.equal(data.samples,90);assert.equal(data.over_50,null);
+});
+test('duplicate client chunks retain an explicit incomplete status instead of overwriting evidence',()=>{
+  const result=summarize(clientLog({duplicate:true})+footer);const data=aggregate(result);
+  assert.equal(data.sample_status,'INCOMPLETE');assert.ok(data.invalid_records>0);assert.equal(data.over_50,null);
+});
+test('malformed client values never enter terminal diagnostics and cannot manufacture a complete aggregate',()=>{
+  const result=summarize(clientLog({invalid:true})+footer);const data=aggregate(result);
+  assert.equal(data.sample_status,'INCOMPLETE');assert.ok(data.invalid_records>0);
+  assert.doesNotMatch(result.stdout,/SYNTHETIC_SECRET_MUST_NOT_PRINT|SYNTHETIC_META_SECRET_MUST_NOT_PRINT/);
+});
+test('complete client samples with missing GC records preserve unknown GC attribution',()=>{
+  const result=summarize(clientLog({omitGc:true})+footer);const data=aggregate(result);
+  assert.equal(data.sample_status,'COMPLETE');assert.equal(data.gc_status,'INCOMPLETE');
+  assert.equal(data.over_50.count,10);assert.equal(data.over_50.samples_with_node_gc_overlap,null);
+});
+
+test('malformed recognized client JSON cannot be ignored while reporting complete evidence',()=>{
+  const result=summarize(clientLog()+'# C6_NODE_CLIENT_GC {SYNTHETIC_MALFORMED_SECRET}\n'+footer);
+  const data=aggregate(result);assert.equal(data.sample_status,'INCOMPLETE');assert.equal(data.gc_status,'INCOMPLETE');
+  assert.ok(data.invalid_records>0);assert.doesNotMatch(result.stdout,/SYNTHETIC_MALFORMED_SECRET/);
+});
+test('oversized recognized client records cannot be ignored while reporting complete evidence',()=>{
+  const result=summarize(clientLog()+'# C6_NODE_CLIENT_SAMPLES '+JSON.stringify({suite:'capacity500',route:'tenants',payload:'SYNTHETIC_OVERSIZED_SECRET'.repeat(300)})+'\n'+footer);
+  const data=aggregate(result);assert.equal(data.sample_status,'INCOMPLETE');assert.ok(data.invalid_records>0);
+  assert.doesNotMatch(result.stdout,/SYNTHETIC_OVERSIZED_SECRET/);
+});
+
+test('empty recognized client chunks are malformed instead of silently complete evidence',()=>{
+  for(const kind of ['SAMPLES','GC']){
+    const extra={suite:'capacity500',offset:0,rows:[]};if(kind==='SAMPLES')extra.route='tenants';
+    const result=summarize(clientLog()+'# C6_NODE_CLIENT_'+kind+' '+JSON.stringify(extra)+'\n'+footer);
+    const data=aggregate(result);assert.equal(kind==='SAMPLES'?data.sample_status:data.gc_status,'INCOMPLETE');
+    assert.ok(data.invalid_records>0);
+  }
+});
+test('entirely missing client suites are explicitly reported even when no aggregate exists',()=>{
+  for(const [log,want] of [[clientLog(),['small']],['',['capacity500','small']]]){
+    const result=summarize(log+footer);
+    const meta=JSON.parse(result.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
+    assert.deepEqual(meta.client_suites_missing,want);assert.equal(meta.scope,'LOG_EVIDENCE_ONLY_NOT_TEST_OUTCOME');
+  }
+});

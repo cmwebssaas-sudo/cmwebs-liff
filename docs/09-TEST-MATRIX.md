@@ -1502,3 +1502,17 @@ Core/PG cleanup and source/bundle pins verified. Original500-room per-route
 p95<50ms/100 requests pass, tenant24.121ms. Prior995/993 candidates remain
 rejected historical evidence. Validate/dry-run pass, Linux new-head CI pending;
 all formal readback/day/authority/device/cutover gates unchanged.
+
+## 2026-10-13 — C6 complete client diagnostic aggregation
+
+New helper/CLI17/17 independent source PASS, zero skip: complete100 tenant rows,
+missing/duplicates/invalid cells, malformed/oversized frames, empty chunks and
+missing whole suites, unknown GC, secret-canary exclusion and64KB output bounds.
+Actual previous complete local Worker log yields two COMPLETE100-row client/GC
+aggregates, no invalid/missing/drops; this is parser proof, not Linux causality.
+Final full1005/1005 zero skips at543-file snapshot
+d1cfaca4ef48bd3ce09453551b13effe075000b369f3ad5548d617e37699e1b8,
+fresh Core/PG cleanup verified. Validate72/40/178 passes. Runtime/bundle/nine
+inputs unchanged, no repeated local Worker suite/dry-run. d9a9ce8 Linux33/34 FAIL
+tenant62.458ms/26over50 remains; new-head CI diagnostics and all actual gates
+pending. Node client medians/GC correlation cannot establish Worker CPU/cause.

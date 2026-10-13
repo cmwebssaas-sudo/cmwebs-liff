@@ -1872,3 +1872,17 @@ fresh Core/PG cleanup, source/input/bundle pins verified. Tenant local p95=24.12
 with unchanged100/<50 gate. Linux exact-head CI still pending; prior995/993
 candidates were review-rejected, no private/formal state changes. Final unpublished
 v7 comparison identity read-c0ff511e8f71a5736d84d9767e010ee00cd5a59cb0f0ae12a068039318f22f54; Draft/off/blank and all actual gates remain.
+
+## 2026-10-13 — C6 Linux gate still fails; bounded client evidence prepared
+
+Exact d9a9ce8/run38383890134: rentalSUCCESS, WorkerFAIL33/34. Tenant100-sample
+p95=62.458ms,26over50; unchanged<50 threshold not accepted. Other33 cases pass,
+capacity timing after tenant not reached. CI failure retained in PR271, no rerun.
+New diagnostic-only helper retains full-log numeric client aggregates before
+provider truncation, validates complete samples/GC, flags malformed/empty/missing
+records/suites and omits arbitrary values. Source review17/17; full1005/1005 zero
+skips, fresh isolated Core/PG cleanup and unchanged runtime bundle verified.
+No Worker/GAS/caller/timing/assertion/workflow/cache/comparison/flag change.
+Rollback summary source tod9a9ce8. New-head diagnostic CI still required; all
+actual72h/900s/day/authority/seven-day/Taipei500/device/readback gates pending.
+No formal changes; private S1/root WIP boundaries retained.

@@ -1638,3 +1638,60 @@ still required; previous995/34 and993/34 were rejected pre-review candidates,
 not final release evidence. Cache stays unpublished v7; final comparison identity
 read-c0ff511e8f71a5736d84d9767e010ee00cd5a59cb0f0ae12a068039318f22f54. No real epoch/deployment/configuration/data/trigger/Property/scope
 change. PR271 Draft/off/blank; all actual gates and0306b8bd rollback preserved.
+
+## 2026-10-13 — C6 bounded client timing evidence, runtime unchanged
+
+Recommended model/speed GPT-6.1 Sol/high for numeric diagnostic integrity/privacy.
+Exact d9a9ce8 CI run38383890134: rental115250755095 SUCCESS; Worker115250755549
+FAIL33/34, zero cancel/skip, complete terminal70444.635ms. Case16 tenants p95=
+62.458/median48.084/max76.757ms,26/100>=50; home32.428/actions26.067/
+revenue26.663ms pass, later capacity timing loops not reached. All other33 cases,
+including scoped500 and native fixture starvation, pass in this run only.
+Capacity400 observations/20GC; small700 samples pass. Raw provider tail is
+truncated, bounded failure/distribution/footer summary complete/zero drops.
+Two CodeReview connection failures recovered on third read; no CLI/browser
+fallback or unchanged-head CI rerun. Private terminal record and PR body retain
+failure; no claim the index satisfies Linux or real acceptance.
+
+The tail contains no capacity client sample/GC rows; only their META remains.
+An attempted100-row analysis explicitly fails completeness, never infers CPU/
+GC causality from missing data. New terminal aggregator parses the full original
+job log before provider truncation, retaining only two fixed suites'100 tenant
+rows/2048GC maximum, validated finite numeric cells and fixed columns/outcome
+labels. Output contains group counts/medians for full/dispatch/consume/NodeCPU/
+ELU and observed Node-GC overlaps. No response/identity/URL/raw row/arbitrary META
+fields; synthetic secret-canary tests verify exclusion. GC missing is unknown,
+not zero. Sample missing/duplicates/invalid values/recognized malformed JSON/
+oversized frames cannot manufacture COMPLETE. Independent review found empty
+chunks and whole-suite absence; both fixed with actual CLI negatives. Total META
+explicitly lists missing expected suites, including both absent. No test outcome
+is inferred or changed; scope is NODE_CLIENT_ONLY_NOT_WORKER_CAUSE_OR_ACCEPTANCE.
+
+Original names/details/diagnostics/footer budgets remain; new aggregates add
+3072 bytes/max1536 per line, total section budgets62464 bytes plus bounded labels/
+metadata below64KB. Stream state is bounded; drops/incomplete/invalid/missing
+remain explicit. Initial RED8/13→GREEN13, self-check RED13/15→GREEN15, reviewer
+RED15/17→GREEN17; independent source review PASS17/17 zero skip. Earlier helper
+full1001/1003 snapshots are pre-final-review candidates, not final evidence.
+Actual existing complete local Worker log reconstructs two100-row complete
+client/GC aggregates with no invalid/missing/drop,17908-byte summary retained
+privately; does not reproduce Linux metrics or Worker
+CPU. Existing output/runtime measurements are not rerun or relabeled.
+
+Final543-file working snapshot atd9a9ce8 plus3 diagnostic/test files:
+d1cfaca4ef48bd3ce09453551b13effe075000b369f3ad5548d617e37699e1b8.
+Full1005/1005 zero fail/cancel/skip3.466s, clean Core643c1b3/fresh privatePG16.14
+original HTTP/PG/four handlers, fixture DB/roles removed, final PID/listener
+absent, postgres_stopped=true/cleanup_errors=[]. Validate72/40/178, cache and
+source/diff checks pass. Compiled Worker and nine inputs unchanged at
+ e21d4a81512099a0949bb6d39e35a84f04ad7cee699ebf77038e7f71ec0c7ce6;
+no repeated local Worker suite or dry-run for unchanged runtime. Later three
+sanitized evidence docs excluded from tested snapshot. New-head CI is for new
+terminal diagnostics, not an unchanged-head retry to obtain a pass.
+
+Rollback restoresd9a9ce8 summary script/removes new helper/tests through a
+reviewed change; measured runtime, canonical GAS/Worker, sample clocks/counts,
+thresholds, workflow, source/cache/comparison identity and formal flags stay
+unchanged. PR271 Draft/off/blank; actual C1/C3/C5/C6 gates and owner Google-scope
+decision remain pending. No formal data/Properties/triggers/deployment change;
+root WIP and private S1 remain outside Git/PR/commit content.
