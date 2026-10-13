@@ -1316,6 +1316,7 @@ function workspaceDashboardBuildTenantList_(
   access,
   data
 ) {
+  const lineUidLookup = workspaceDashboardLineUidLookup_(data);
   const tenantById = {};
   const userById = {};
   const viewByTenantId = {};
@@ -1660,7 +1661,8 @@ function workspaceDashboardBuildTenantList_(
             currentContract
               .tenant_line_user_id ||
             latestBill
-              .tenant_line_user_id
+              .tenant_line_user_id,
+            lineUidLookup
           );
 
         const roomNames = {};
@@ -1902,13 +1904,86 @@ function workspaceDashboardBuildTenantList_(
 // Tenant LINE binding resolver
 // ==================================================
 
+function workspaceDashboardLineUidLookup_(data) {
+  const lists = [
+    ['tenants', 'tenant_id', true],
+    ['users', 'user_id', false],
+    ['tenant_view_rows', 'tenant_id', true],
+    ['contracts', 'tenant_id', true],
+    ['contracts', 'contract_id', false],
+    ['bills', 'tenant_id', true]
+  ];
+  // The builder reads status, rooms and dates before resolving a binding.
+  // Only inert Sheet cells may be indexed: accessors or custom coercion could
+  // otherwise mutate a key after map construction. Unusual snapshots scan.
+  for (const name of ['rooms', 'tenants', 'users', 'tenant_view_rows', 'contracts', 'bills']) {
+    const collection = Object.getOwnPropertyDescriptor(data, name);
+    if (!collection || collection.get || collection.set || !Array.isArray(collection.value)) return null;
+    for (const row of collection.value) {
+      if (!row || typeof row !== 'object') return null;
+      const prototype = Object.getPrototypeOf(row);
+      if (prototype !== null && prototype !== Object.prototype) return null;
+      for (const field of Reflect.ownKeys(row)) {
+        if (typeof field !== 'string') return null;
+        const descriptor = Object.getOwnPropertyDescriptor(row, field);
+        if (!descriptor || descriptor.get || descriptor.set) return null;
+        const value = descriptor.value;
+        if (value !== null && !['undefined', 'string', 'number', 'boolean'].includes(typeof value)) {
+          // Native dates have no custom properties/coercion; subclasses and
+          // decorated dates retain the original conditional behavior instead.
+          if (typeof value !== 'object' || Object.getPrototypeOf(value) !== Date.prototype || Reflect.ownKeys(value).length) return null;
+          // A Proxy can imitate the prototype/keys but lacks Date's internal
+          // slot. Invoke the intrinsic, never a source method or valueOf trap.
+          try { Date.prototype.getTime.call(value); } catch (_) { return null; }
+        }
+      }
+      for (const field of ['tenant_id', 'user_id', 'tenant_user_id', 'contract_id', 'line_user_id', 'tenant_line_user_id']) {
+        const descriptor = Object.getOwnPropertyDescriptor(row, field);
+        if (!descriptor && field in row) return null;
+        const value = descriptor && descriptor.value;
+        if (value !== null && !['undefined', 'string', 'number', 'boolean'].includes(typeof value)) return null;
+      }
+    }
+  }
+  const maps = lists.map(function (definition) {
+    const map = new Map();
+    data[definition[0]].forEach(function (row, index) {
+      const text = workspaceDashboardText_(row[definition[1]]);
+      const key = definition[2] ? text.toUpperCase() : text;
+      if (!key) return;
+      const matches = map.get(key) || [];
+      matches.push({ row: row, index: index });
+      map.set(key, matches);
+    });
+    return map;
+  });
+  function rows(map, key) { return (map.get(key) || []).map(function (item) { return item.row; }); }
+  return {
+    tenants: function (key) { return rows(maps[0], key); },
+    users: function (key) { return rows(maps[1], key); },
+    views: function (key) { return rows(maps[2], key); },
+    bills: function (key) { return rows(maps[5], key); },
+    contracts: function (tenant, contract) {
+      const matches = new Map();
+      for (const item of (maps[3].get(tenant) || []).concat(maps[4].get(contract) || [])) matches.set(item.index, item.row);
+      return Array.from(matches).sort(function (a, b) { return a[0] - b[0]; }).map(function (item) { return item[1]; });
+    }
+  };
+}
+
 function workspaceDashboardResolveTenantLineUid_(
   data,
   tenantId,
   tenantUserId,
   contractId,
-  directValue
+  directValue,
+  lookup
 ) {
+  // Coercing unusual caller values can mutate later source keys. Keep those
+  // calls on the original scans, before any normalization or candidate read.
+  if ([tenantId, tenantUserId, contractId, directValue].some(function (value) {
+    return value !== null && !['undefined', 'string', 'number', 'boolean'].includes(typeof value);
+  })) lookup = null;
   const candidates = [];
 
   function add(
@@ -1953,7 +2028,7 @@ function workspaceDashboardResolveTenantLineUid_(
       contractId
     );
 
-  data.tenants.forEach(
+  (lookup ? lookup.tenants(tenantId) : data.tenants).forEach(
     function (tenant) {
       if (
         tenantId &&
@@ -1970,7 +2045,7 @@ function workspaceDashboardResolveTenantLineUid_(
     }
   );
 
-  data.users.forEach(
+  (lookup ? lookup.users(tenantUserId) : data.users).forEach(
     function (user) {
       if (
         tenantUserId &&
@@ -1987,7 +2062,7 @@ function workspaceDashboardResolveTenantLineUid_(
     }
   );
 
-  data.tenant_view_rows.forEach(
+  (lookup ? lookup.views(tenantId) : data.tenant_view_rows).forEach(
     function (row) {
       if (
         tenantId &&
@@ -2003,7 +2078,7 @@ function workspaceDashboardResolveTenantLineUid_(
     }
   );
 
-  data.contracts.forEach(
+  (lookup ? lookup.contracts(tenantId, contractId) : data.contracts).forEach(
     function (contract) {
       const matches =
         (
@@ -2029,7 +2104,7 @@ function workspaceDashboardResolveTenantLineUid_(
     }
   );
 
-  data.bills.forEach(
+  (lookup ? lookup.bills(tenantId) : data.bills).forEach(
     function (bill) {
       if (
         tenantId &&

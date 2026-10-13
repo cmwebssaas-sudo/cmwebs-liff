@@ -1521,3 +1521,120 @@ Keep PR271 Draft/off/blank/all actual C1/C3/C5/C6 gates. Local rollback restores
 idle-starvation sensitivity and is not production/runtime/data rollback. No
 formal deployment, new Google scope/credential/resource, data/Properties/trigger/
 epoch change. Root WIP/private S1 boundary preserved.
+
+## 2026-10-13 — C6 request-local tenant LINE binding lookup
+
+Recommended model/speed GPT-6.1 Sol/high under the approved plan. The prior
+0306b8bd CI run38375012763 remains FAIL33/34: rental SUCCESS, Worker115221086428
+fails capacity tenants p95=65.595/median57.270/max75.800ms,100/100>=50ms;
+home31.773/actions23.697/revenue27.119ms pass, later capacity loops not reached.
+Complete terminal summary has zero drops/skip/cancel. Scoped500-room and native
+idle-starvation regressions pass in that run; this is not a universal transport
+cure or real acceptance. No unchanged-head CI rerun.
+
+A private one-pair actual-Workerd tenant CPU control retained original seven
+canonical JSON/literal comparisons and100 samples per entry: baseline p95=29.469,
+median27.203ms, candidate p95=22.791/median20.790ms. This supports an optimization
+hypothesis, not repeatability, Linux causality or acceptance. The canonical GAS
+builder now constructs request-local maps for tenant/user/view/contract/bill
+identity matching; no global cache, source mutation or authorization cache.
+Direct/tenant/user/view/contract/bill priority, duplicates, tenant case folding,
+exact user/contract keys and original contract OR-match source order remain.
+The arrears caller keeps its original scans. Non-scalar, accessor or inherited
+identity/binding cells, or non-scalar resolver arguments, retain original scans.
+
+Independent review found missing tenant/view/contract relationship-cell guards;
+actual loader+builder negative and resolver-argument mutations reproduce RED7/9.
+After extending all six identity/binding fields and disabling lookup before
+non-scalar query coercion, GREEN9/9; actual builder covers five relationship
+locations, argument mutations cover four positions. Relevant routing/parity/
+shadow tests32/32 zero skip; affected GAS summary function executes without writes.
+All prior failures remain retained. Source review final status recorded separately.
+
+Pinned uncommitted candidate at0306b8bd plus54 source/test/cache files:
+542-file snapshotSHA256=bda61e52a54caaab96ba401482bd4cccf9d6a100252561e35d771cb6fd38e571.
+Full npm993/993 zero fail/cancel/skip3.415s; Node22.23.3/macOS Worker34/34 zero
+fail/cancel/skip36.078s, actual process36.312s, owned group empty/no180s wall expiry.
+Worker/input/source pins stable, compiled bundleSHA256=
+3f8a8aad8aacb64810c015590c75eb65d416e1d666208311507b8fa2d197a641.
+Fresh isolated PG16.14 and clean Core643c1b3 execute original restricted HTTP/PG
+and four handler cases; fixture DB/roles removed, final PID/listener absent,
+postgres_stopped=true/cleanup_errors=[]; no shared/formal DB or global config.
+Later evidence docs are excluded from the tested snapshot. Validate72/40/178,
+static cache and diff checks pass; bundle dry-run340.69KiB/gzip71.66KiB.
+
+Original100-sample per-entry local capacity p95<50ms: home14.221/actions12.064/
+revenue13.221/tenants21.936/rooms20.732/arrears19.704/properties20.519ms. Small
+seven-entry700-sample suite passes separately. These local results require new-head
+Linux CI and cannot satisfy C1 fresh72h/900s/day, C3 strict authority latency,
+C5 actual seven days or C6 authenticated/Taipei/500/device/readback/cutover gates.
+Cache is20261013-read-capacity-v7; comparison identity=
+read-9097a2c63b8ef9e0b7fd1ec34e4721e97f4a544f39d7cc7fb3cd4a1c552b4fe8.
+All40 HTML cache references and existing cache tests/validator updated together.
+New identity requires a new real epoch; none starts here. PR271 remains Draft,
+all flags off/URL blank. Rollback restores0306b8bd canonical source/generated
+manifests/cache and original resolver scans, then regenerates/checks comparison;
+no formal deploy or data/Property/trigger/Google-scope/credential change. Root WIP
+and private S1 stay outside this change.
+
+### Final inert-snapshot correction, previous index candidate not accepted
+
+The preceding993/993+34/34 candidate was rejected by a second independent P2:
+non-identity tenant.account_status getter mutates a user key before binding.
+Original builder returns UID/bound; indexed builder returned empty/unbound.
+Actual status/room/date pre-resolver negatives reproduce RED9/10. Eligibility
+now checks every own cell in rooms/tenant/user/view/contract/bill rows, rejects
+accessors, custom prototypes, custom objects/functions/symbols and decorated/
+subclass dates without coercing them. Plain native scalar/date loader snapshots
+remain eligible; non-scalar identity/query values still use original scans.
+Actual builder three side-effect paths plus ordinary500-row loader/date eligibility
+bring index11/11 and canonical parity16/16, zero skips. No failing candidate was
+committed or pushed. Earlier measurements remain historical, not final acceptance.
+
+Corrected542-file working snapshot at0306b8bd plus source/test/cache and earlier
+candidate docs:143e099bef3eb28b18cfce4d30a03293af295ff94f9829ee3bd3bcb110001671.
+Full995/995 zero fail/cancel/skip3.328s, fresh private PG16.14/Core643c1b3 original
+HTTP/PG/four handlers; DB/roles removed, stopped PID/listener, cleanup_errors=[].
+Actual Node22/macOS Worker34/34 zero fail/cancel/skip37.194s/process37.406s;
+owned group empty/no180s wall expiry/source+bundle+input pins stable. Bundle=
+8bc4fc367810dbe00c8d4a945e8d889ba1b0d07cdeed91fb7ad2059eb328f021.
+Original100-per-route local500-room p95<50ms: home14.050/actions12.366/
+revenue23.431/tenants24.086/rooms21.893/arrears20.235/properties21.089ms;
+all700 small samples also pass. Validate72/40/178 and dry-run341.38KiB/gzip71.75KiB
+pass. Later three evidence-document edits are excluded from this snapshot.
+Cache remains unpublished v7; regenerated comparison identity is
+read-3a0dea2a6d73bd8f36f993ea2c7d0351f33e1ab4496dc37d0cbbe2c222746a6c. Linux exact-new-head CI and independent
+final review remain required; no real release/day/device gate is replaced.
+All flags off/URL blank, no formal deployment/trigger/Property/data/Google-scope
+change; rollback remains0306b8bd canonical/generated/cache. Root WIP preserved.
+
+### Final Date internal-slot guard and review acceptance
+
+Third independent P2 found Proxy-wrapped Dates imitate prototype/own keys but
+can mutate user keys through a later getTime trap. Initial negative had a wrong
+cross-realm older row and unbound Date methods and failed TypeError; this is not
+accepted as defect proof. Corrected same-realm row/bound remaining Date methods
+produced actual-builder RED11/12 empty UID versus valid synthetic UID. The fix
+adds Date.prototype.getTime.call(value) in try/catch: verifies native internal
+slot without source getTime/valueOf traps, rejects Proxy, preserves normal
+GAS/Worker adapter dates. Initial post-fix parity ran before manifest generation
+and failed source digest (16/17), retained; regenerated final17/17 zero skips.
+Independent source review PASS17/17; all three P2 fixed under supported snapshot/
+runtime premises. No rejected candidate was committed/pushed.
+
+Final542-file working snapshot at0306b8bd plus candidate source/test/cache and
+previous evidence docs:f08ebc140f017fb306355c767e74de10ebb8ac63e95a76e36e3f47418e433a19.
+Full996/996 zero fail/cancel/skip3.366s; same pinned clean Core643c1b3 with fresh
+isolated PG16.14 and original mandatory HTTP/PG/four handler fixtures. Database/
+roles removed; final PID/listener absent, postgres_stopped=true/cleanup_errors=[].
+Actual Node22/macOS Worker34/34 zero fail/cancel/skip, source/bundle/input pins
+stable; owned group empty/no180s wall expiry. Original100-per-route local500-room
+p95<50ms all pass: home14.133/actions12.070/revenue25.808/tenants24.121/
+rooms21.791/arrears19.676/properties20.350ms, all700 small requests pass too.
+Compiled bundle=e21d4a81512099a0949bb6d39e35a84f04ad7cee699ebf77038e7f71ec0c7ce6.
+Validate72/40/178, cache, diff and dry-run341.51KiB/gzip71.78KiB pass. Later final
+three evidence-doc edits excluded from tested snapshot. Linux exact-head CI
+still required; previous995/34 and993/34 were rejected pre-review candidates,
+not final release evidence. Cache stays unpublished v7; final comparison identity
+read-c0ff511e8f71a5736d84d9767e010ee00cd5a59cb0f0ae12a068039318f22f54. No real epoch/deployment/configuration/data/trigger/Property/scope
+change. PR271 Draft/off/blank; all actual gates and0306b8bd rollback preserved.

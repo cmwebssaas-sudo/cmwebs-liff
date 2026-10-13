@@ -1838,3 +1838,37 @@ Rollback 後端214及本次前端基底 d107206，保留新增網址欄與資料
 首筆真實通知匹配pending，通知provider接受；自然排程完成且沒有重複付款／通知。
 房東手機收件、登入後審核、人工確認及真實銷帳仍待驗收。
 完整证据与回退见BANK-EMAIL-RECEIPTS.md。
+
+## 2026-10-13 — C6 tenant lookup candidate, formal flags remain off
+
+C6 PR271 Draft prepares request-local identity maps in the canonical GAS tenant
+builder and regenerated Worker; the arrears caller is unchanged. Guard fallback
+covers unusual identity/binding cells and caller coercions; review-discovered
+relationship regression fixed, nine cases pass. Full993/993, Worker34/34 and
+unchanged local500-room p95<50ms pass at pinned542-file working snapshot;
+Core/PG cleanup verified. Source review/new-head Linux CI still required.
+The prior0306b8bd run38375012763 remains33/34 FAIL (tenant p95=65.595ms,
+100/100>=50); transport/starvation cases pass in that run only.
+Cache20261013-read-capacity-v7 and comparison
+read-9097a2c63b8ef9e0b7fd1ec34e4721e97f4a544f39d7cc7fb3cd4a1c552b4fe8
+are local candidates. Off/blank, no real epoch/deployment/configuration change.
+Rollback restores0306b8bd canonical source/generated/cache and resolver scans.
+C1 fresh72h/900s/day, C3 strict latency/new Google scope owner decision, C5 seven
+days and C6 actual authenticated/Taipei/500/device/cutover remain pending.
+
+Final guard correction supersedes the993-test index candidate: second P2 status
+accessor fixed with full own-cell/rooms inert eligibility, native plain dates
+remain eligible and custom/date/status/room side effects fall back. Index11/11,
+canonical parity16/16, full995/995 and actual Worker34/34 zero skips; corrected
+542-file snapshot143e099bef3eb28b18cfce4d30a03293af295ff94f9829ee3bd3bcb110001671.
+Final comparison identity read-3a0dea2a6d73bd8f36f993ea2c7d0351f33e1ab4496dc37d0cbbe2c222746a6c; source review/new-head
+CI still pending; all formal flags/day/device/Google-scope gates unchanged.
+
+Final source review PASS17/17 after third P2 Proxy-Date internal-slot guard.
+Plain native adapter dates remain eligible; Proxy dates fallback without source
+getTime/valueOf traps. Latest full996/996 and Worker34/34 zero skips at snapshot
+f08ebc140f017fb306355c767e74de10ebb8ac63e95a76e36e3f47418e433a19;
+fresh Core/PG cleanup, source/input/bundle pins verified. Tenant local p95=24.121ms
+with unchanged100/<50 gate. Linux exact-head CI still pending; prior995/993
+candidates were review-rejected, no private/formal state changes. Final unpublished
+v7 comparison identity read-c0ff511e8f71a5736d84d9767e010ee00cd5a59cb0f0ae12a068039318f22f54; Draft/off/blank and all actual gates remain.

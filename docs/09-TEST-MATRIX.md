@@ -1471,3 +1471,34 @@ or device latency. Worker32/32 and unchanged100-per-entry local p95<50ms pass.
 Full963/963 at pinned uncommitted v5 working snapshot, zero skips, uses fresh
 private PG16.14 and original Core HTTP/PG fixtures; see regression dependencies.
 Earlier local/CI performance failures remain. All actual gates still apply.
+
+## 2026-10-13 — C6 request-local LINE lookup candidate
+
+Canonical GAS+generated Worker use request-local tenant-list identity maps.
+New9/9 regressions cover bounded row reads, priority, case/duplicates/OR order,
+fresh snapshot, unusual identity/accessor/query coercions and actual builder
+relationship mutations; review-discovered RED7/9 retained. Routing/parity/shadow
+32/32; affected GAS summary function runs without writes. Full993/993 zero skips,
+fresh Core/PG cleanup verified; actual Node22/macOS Worker34/34 with unchanged
+100-per-entry/p95<50ms and500-room canonical JSON/literals. Tested542-file
+snapshot bda61e52a54caaab96ba401482bd4cccf9d6a100252561e35d771cb6fd38e571
+at0306b8bd plus source/test/cache changes, later docs excluded. Validate/dry-run
+pass. Prior Linux CI33/34 tenant65.595ms remains failure; new-head CI pending.
+All real synchronization/day/authority/performance/device/cutover gates remain.
+
+The first index candidate above was rejected by a second P2 (status accessor
+stales a key). Corrected full-cell/room inert guard: actual status/room/date
+RED9/10→GREEN, final index11/11 plus canonical parity16/16. Final full995/995,
+Worker34/34 zero skips at snapshot143e099bef3eb28b18cfce4d30a03293af295ff94f9829ee3bd3bcb110001671;
+fresh private PG cleanup/source pins pass. Original500-room per-route p95<50ms
+passes; no assertion/sample/clock changes. Validate and341.38KiB bundle dry-run
+pass; independent final review/Linux new-head CI and all actual gates pending.
+
+Final third P2 Proxy-Date internal-slot guard: actual builder RED11/12→GREEN12/12;
+regenerated canonical/source17/17 and independent source review PASS, zero skips.
+Latest full996/996, actual Node22/macOS Worker34/34 at542-file snapshot
+f08ebc140f017fb306355c767e74de10ebb8ac63e95a76e36e3f47418e433a19;
+Core/PG cleanup and source/bundle pins verified. Original500-room per-route
+p95<50ms/100 requests pass, tenant24.121ms. Prior995/993 candidates remain
+rejected historical evidence. Validate/dry-run pass, Linux new-head CI pending;
+all formal readback/day/authority/device/cutover gates unchanged.
