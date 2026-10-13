@@ -1,5 +1,30 @@
 # CMWebs Current State
 
+## 2026-10-13 — C6 fixture initialization failure cleanup
+
+Original a51ff579 CI38319550201 is terminal: rental SUCCESS, Worker115044090070
+CANCELLED. It records8 passes/1 failure before stopping, without a final test
+footer. The scoped500-room case failed in setup `db.batch(inserts)` with
+`fetch failed`, before returning Miniflare to its caller; timing diagnostics
+were not reached. The underlying fetch failure and cancellation initiator remain
+UNKNOWN. The agent did not cancel or rerun that job.
+
+Setup now disposes its own runtime on initialization failure and rethrows the
+original error; cleanup failure retains both errors. Original seed statements,
+500-room assertions, canonical JSON, revocation and strict timing gates remain.
+Targeted RED1 pass/5 fail becomes GREEN6/6. An actual Workerd2055-statement fault
+left the original helper unclosed beyond10s; the fixed helper disposed once,
+preserved failure and its Node test exited0 in3.695s. Initial private controller
+cleanup-check failure is retained; later owned-Node/Workerd absence verified.
+
+Private Node22/macOS Worker33/33 and full971/971 pass with zero skips. Full539
+working files at a51ff579 plus two test changes are pinned by snapshot9a8d7262;
+later evidence documents are excluded from that exact snapshot. Core643c1b3,
+fresh private PG16.14, fixture cleanup and stopped listener pass. Worker bundle
+remainsdf6377dc, validate72/40/178 and diff checks pass. These are local results,
+not a Linux CI or seed-transport cure. New-head CI remains required; keep Draft,
+six flags off/URL blank and all C1/C3/C5/C6 real gates. Runtime/GAS/data unchanged.
+
 ## 2026-10-13 — Node-client CI diagnostic candidate
 
 Only test-client code adds fixed-route numeric CPU/ELU/GC and dispatch-return/

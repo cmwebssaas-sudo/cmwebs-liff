@@ -15,18 +15,26 @@ async function setup(input,identity={kind:'line',line_user_id:'SYNTHETIC_LINE1'}
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:output.outputFiles[0].text,compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     outboundService:async request=>Response.json(authority.post(await request.json())),
     bindings:{FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_IDENTITY:JSON.stringify(identity),LINE_LOGIN_CHANNEL_ID:'SYNTHETIC_CHANNEL',EMAIL_SESSION_HMAC_SECRET:'synthetic-email-key',READ_REPLICA_SYNC_SECRET:authoritySecret,READ_AUTHORITY_URL:'https://script.google.com/macros/s/SYNTHETIC_DEPLOYMENT/exec'}}));
-  const db=await mf.getD1Database('DB');
-  for(const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).sort()) {
-    const sql=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
-    await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
+  try {
+    const db=await mf.getD1Database('DB');
+    for(const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).sort()) {
+      const sql=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
+      await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
+    }
+    const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8')),data=projectedDataset(input),inserts=[];
+    for(const [table,definition] of Object.entries(schema)) for(const row of data[table]) {
+      inserts.push(db.prepare(`INSERT INTO "${table}" (row_key,row_hash,synced_at,${definition.fields.map(key=>'"'+key+'"').join(',')}) VALUES (${Array(definition.fields.length+3).fill('?').join(',')})`).bind(row[definition.key],'synthetic-hash',fixture.now,...definition.fields.map(key=>Object.hasOwn(row,key)?JSON.stringify(row[key]):null)));
+    }
+    await db.batch(inserts);
+    await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
+    return {mf,db,schema,authority};
+  } catch(error) {
+    // A rejected seed occurs before the caller receives mf. Release it here
+    // so the failed test remains visible without leaving workerd alive.
+    try {await mf.dispose();}
+    catch(cleanup) {throw new AggregateError([error,cleanup],'Read fixture setup and cleanup failed',{cause:error});}
+    throw error;
   }
-  const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8')),data=projectedDataset(input),inserts=[];
-  for(const [table,definition] of Object.entries(schema)) for(const row of data[table]) {
-    inserts.push(db.prepare(`INSERT INTO "${table}" (row_key,row_hash,synced_at,${definition.fields.map(key=>'"'+key+'"').join(',')}) VALUES (${Array(definition.fields.length+3).fill('?').join(',')})`).bind(row[definition.key],'synthetic-hash',fixture.now,...definition.fields.map(key=>Object.hasOwn(row,key)?JSON.stringify(row[key]):null)));
-  }
-  await db.batch(inserts);
-  await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
-  return {mf,db,schema,authority};
 }
 test('server-resolved D1 scope preserves all six canonical route results',async()=>{
   const input=richDataset(),{mf}=await setup(input);

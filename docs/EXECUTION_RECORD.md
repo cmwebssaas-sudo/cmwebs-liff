@@ -1326,3 +1326,51 @@ not a fresh exact-head full run. New-head CI must capture its own observations;
 no performance fix, new cache/identity, merge/deploy/epoch or formal change.
 Root unit960/960, validate72/40/178 and diff checks pass. Changed code is limited
 to the Node test clients/helper; no new full/PG claim is made.
+
+## 2026-10-13 — C6 initialization failure resource ownership
+
+Recommended model/speed GPT-6.1 Sol/high for real process lifetime and retained
+failure evidence. Fresh CodeReview reads show original a51ff579 run38319550201:
+rental SUCCESS, Worker115044090070 completed/CANCELLED. Full291-line log is
+private/untruncated. It reports8 passed cases and one failed scoped500-room case
+at setup `db.batch(inserts)` (`fetch failed`), followed by no Node test footer.
+Client timing cases/700-sample footers were not reached. Cancellation is logged
+04:57:53.991 UTC; initiator/reason and fetch transport cause are UNKNOWN. No
+agent cancellation, unchanged-head rerun or restart occurred.
+
+The caller awaited/destructured setup before its try/finally, while setup did not
+release Miniflare on rejection. Only initialization is changed: database,
+migration, row and marker failures release the owned runtime before rethrowing
+the original error. If release also rejects, AggregateError preserves both and
+the original cause. Original seed batch/rows,500-room and all canonical JSON/
+literal/authority assertions,100-request p95<50ms gates, production Worker/GAS
+source, cache/comparison, six flags and blank URL remain unchanged.
+
+Six actual-initializer VM fault/ownership cases reproduce RED1 pass/5 fail and
+then GREEN6/6. One actual Workerd control forces a2055-statement seed failure:
+original dispose0 remains open at its private10s budget; fixed dispose1 preserves
+the primary failure, passes1/1 and exits0 in3.695s. The first private controller's
+immediate terminated-group cleanup assertion failed; this failure is retained,
+then no owned red Node or Workerd was present before GREEN.
+GREEN's recorded owned group is empty. This is a resource-lifetime proof, not an
+underlying fetch-failure or Linux platform/performance cure.
+
+Fresh private Node22.23.3/macOS Worker33/33 completes28.200s, zero fail/skip;
+same539 source bytes and compiled Worker/input pins remain before/after, bundle
+df6377dcafa6d7f98bb7979ccc099d7b6e48721a234900b15da8478481a04f81.
+Full npm971/971, zero fail/cancel/skip,3.035s, tests a pinned two-test-file working
+candidate at basea51ff579. Snapshot539 files:
+9a8d7262e2893ee63c9717d2e60010890e577cc1210b8241f69060a2993ade1c.
+Later evidence documents are not retroactively counted as tested snapshot bytes.
+Clean Core643c1b3/fresh PG16.14 roundtrip/handler tests pass; fixture databases/
+roles removed, pg_ctl status3/PID absent/TCP closed, cleanup_errors empty. No
+shared/formal database or global runtime/npm configuration was used/changed.
+Validate72/40/178 and diff checks pass. Independent lifecycle review and a separate
+Node22 target6/6 rerun pass; evidence-document review passes. New-head CI remains
+required; these local results do not satisfy the original actual release gates.
+
+Keep PR271 Draft. C1 corrected72h/C3 authority latency/C5 seven-day/C6 actual
+authenticated500/device/cutover gates remain NOT_ACCEPTED. Revert these test/
+evidence changes to a51ff579 for local rollback; that reintroduces the recorded
+setup leak and is not a runtime/data rollback. No deployment, new Google scope/
+credential/resource, formal data/Properties/trigger or real epoch was performed.

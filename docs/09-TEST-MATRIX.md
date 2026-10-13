@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-10-13 C6 fixture failure lifecycle
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Setup failure at database/migration/row seed/marker; success ownership; double failure | RED1 pass/5 fail → GREEN6/6 | Actual initializer executed; external build/D1/runtime fault doubles only |
+| Actual Workerd row-seed fault2055 statements | Original dispose0/10s still open; fixed dispose1/Node exit0/1 test PASS | Controlled failure, not a reproduction of native fetch cause; initial controller check failure retained and later absence checked |
+| Full Node22/macOS npm suite / Worker suite / validate | 971/971 zero skip /33/33 /72 backend,40 endpoints,178 source matches |539-file working snapshot9a8d7262; clean Core/fresh isolated PG; source pins stable; PG stopped |
+| Original a51ff579 CI38319550201 | Worker CANCELLED after8 passes/1 setup failure; rental SUCCESS | No final test footer or timing diagnostic; underlying fetch failure/cancel cause UNKNOWN; no agent rerun/cancel |
+| Publication and actual C1/C3/C5/C6 gates | NOT_ACCEPTED | New-head CI required; no merge/deploy/flags/epoch/device or formal-data change |
+
 ## 2026-10-13 C6 v6 packed D1 projection candidate
 
 | Check | Result | Evidence boundary |
