@@ -85,7 +85,7 @@ function clientLog({missing=false,duplicate=false,invalid=false,omitGc=false}={}
   if(duplicate)lines.push(lines[0]);
   if(!omitGc)lines.push('# C6_NODE_CLIENT_GC '+JSON.stringify({suite:'capacity500',offset:0,rows:[[110,3,1]]}));
   lines.push('# C6_NODE_CLIENT_META '+JSON.stringify({suite:'capacity500',outcome:'FAIL',columns:clientColumns,
-    gc_columns:['start_ms','duration_ms','kind'],attempted_samples:400,completed_samples:400,
+    gc_columns:['start_ms','duration_ms','kind'],attempted_samples:100,completed_samples:100,
     gc_total:1,gc_retained:1,gc_dropped:0,gc_overflow:false,output_dropped:0,
     token:'SYNTHETIC_META_SECRET_MUST_NOT_PRINT'}));
   return lines.join('\n')+'\n';
@@ -151,4 +151,40 @@ test('entirely missing client suites are explicitly reported even when no aggreg
     const meta=JSON.parse(result.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
     assert.deepEqual(meta.client_suites_missing,want);assert.equal(meta.scope,'LOG_EVIDENCE_ONLY_NOT_TEST_OUTCOME');
   }
+});
+
+function multiRouteClientLog({missingRoute=false}={}){
+  const lines=clientLog().trim().split('\n');
+  const meta=JSON.parse(lines.pop().replace(/^# C6_NODE_CLIENT_META /,''));
+  const actionLines=[];
+  for(const line of lines.filter(line=>line.startsWith('# C6_NODE_CLIENT_SAMPLES '))){
+    const data=JSON.parse(line.replace(/^# C6_NODE_CLIENT_SAMPLES /,''));data.route='actions';
+    data.rows=data.rows.map(row=>{const copy=row.slice();copy[2]+=20000;copy[3]=copy[2]+120;
+      copy[4]=120;copy[5]=100;copy[6]=20;copy[10]=118;copy[11]=2/120;return copy;});
+    actionLines.push('# C6_NODE_CLIENT_SAMPLES '+JSON.stringify(data));
+  }
+  meta.attempted_samples=200;meta.completed_samples=200;
+  return [...lines,...(missingRoute?[]:actionLines),'# C6_NODE_CLIENT_META '+JSON.stringify(meta)].join('\n')+'\n';
+}
+test('bounded aggregate selects the actually slowest complete route instead of assuming tenants',()=>{
+  const result=summarize(multiRouteClientLog()+footer),data=aggregate(result);
+  assert.equal(data.route,'actions');assert.equal(data.selection,'HIGHEST_COMPLETE_P95');
+  assert.equal(data.sample_status,'COMPLETE');assert.equal(data.samples,100);assert.equal(data.collected_samples,200);
+  assert.equal(data.over_50.count,100);assert.equal(data.over_50.median_dispatch_ms,100);
+  assert.equal(data.over_50.median_consume_ms,20);assert.equal(data.over_50.samples_with_node_gc_overlap,0);
+});
+test('a complete selected route cannot hide absent sample frames counted by suite metadata',()=>{
+  const result=summarize(multiRouteClientLog({missingRoute:true})+footer),data=aggregate(result);
+  assert.equal(data.sample_status,'INCOMPLETE');assert.equal(data.collected_samples,100);
+  assert.equal(data.over_50,null);
+});
+
+test('non-numeric sample identifiers are rejected without invoking coercion or losing terminal evidence',()=>{
+  const lines=clientLog().trim().split('\n');
+  const data=JSON.parse(lines[0].replace(/^# C6_NODE_CLIENT_SAMPLES /,''));
+  data.rows[0][0]={toString:'SYNTHETIC_IDENTIFIER_SECRET'};
+  lines[0]='# C6_NODE_CLIENT_SAMPLES '+JSON.stringify(data);
+  const result=summarize(lines.join('\n')+'\n'+footer);
+  assert.equal(result.status,0,result.stderr);assert.equal(aggregate(result).sample_status,'INCOMPLETE');
+  assert.match(result.stdout,/# fail 2/);assert.doesNotMatch(result.stdout,/SYNTHETIC_IDENTIFIER_SECRET/);
 });

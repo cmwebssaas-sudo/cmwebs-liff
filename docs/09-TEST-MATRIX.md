@@ -1516,3 +1516,17 @@ fresh Core/PG cleanup verified. Validate72/40/178 passes. Runtime/bundle/nine
 inputs unchanged, no repeated local Worker suite/dry-run. d9a9ce8 Linux33/34 FAIL
 tenant62.458ms/26over50 remains; new-head CI diagnostics and all actual gates
 pending. Node client medians/GC correlation cannot establish Worker CPU/cause.
+
+## 2026-10-13 — Native client-frame/slow-route evidence
+
+Native child TAP transport700 JSON rows and full summary20 cases independently
+PASS21/21. Correct child ENV avoids inherited NODE_TEST_CONTEXT; valid RED raw
+console forbidden retained. Route selection/hidden missing-route and malformed
+sample-ID coercion REDs fixed. Full1009/1009 zero skips at544-file snapshot
+939f02fc8bbdf06f2f1538dc1e633082c427fa248181eda49b3dd2765711470a;
+fresh Core/PG cleanup verified. Actual Node22/macOS Worker34/34 yields two
+COMPLETE client/GC aggregates,700 collected per suite, no invalid/missing/drops,
+18008-byte summary. Original100/<50/JSON/policy assertions unchanged; bundle
+and9inputs unchanged. Validate72/40/178 passes. 503b431 Linux remains33/34 FAIL
+small actions61.592ms; all capacity p95 pass in that run only, incomplete
+client-frame evidence cannot prove cause. New-head Linux and actual gates remain.

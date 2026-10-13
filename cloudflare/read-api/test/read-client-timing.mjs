@@ -10,8 +10,9 @@ const columns=['sample','completed','start_ms','end_ms','full_ms','dispatch_ms',
 // Test-client observations only: no Worker instrumentation, response values,
 // identity, URL, environment or error text. Added client work can perturb timing;
 // these observations never replace the original sample count or p95 assertion.
-export function createClientTiming(suite) {
+export function createClientTiming(suite,emitDiagnostic=line=>console.log(line)) {
   assert.ok(suites.has(suite));
+  assert.equal(typeof emitDiagnostic,'function');
   const samples=[],gc=[];let gcTotal=0;
   const collect=entries=>{
     gcTotal+=entries.length;
@@ -42,7 +43,7 @@ export function createClientTiming(suite) {
       const emit=(type,value)=>{
         const line='C6_NODE_CLIENT_'+type+' '+JSON.stringify({suite,...value});
         if(Buffer.byteLength(line,'utf8')>lineLimit){outputDropped++;return;}
-        console.log(line);
+        emitDiagnostic(line);
       };
       for(const route of routes){
         const rows=samples.filter(row=>row.route===route).map(row=>columns.map(key=>

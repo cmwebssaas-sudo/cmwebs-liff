@@ -17,7 +17,7 @@ function differingPaths(left,right,path='$') {
   if(left===null||right===null||typeof left!=='object'||typeof right!=='object') return [path];
   return [...new Set([...Object.keys(left),...Object.keys(right)])].flatMap(key=>differingPaths(left[key],right[key],path+'.'+key));
 }
-test('all six routes match original GAS after whitelist projection and actual local D1 storage', async () => {
+test('all six routes match original GAS after whitelist projection and actual local D1 storage', async t => {
   const input=richDataset();
   const publicUrl='https://synthetic-c2.z3house.com/spaces/synthetic-room/';
   const photo='https://synthetic-c2.z3house.com/api/public/media/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
@@ -36,7 +36,7 @@ test('all six routes match original GAS after whitelist projection and actual lo
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
     compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     bindings:{FIXTURE_ACCESS:JSON.stringify(projectedAccess),FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_PUBLIC_RESOURCES:JSON.stringify(publicResources)}}));
-  const clientTiming=createClientTiming('small');let timingOutcome='FAIL';
+  const clientTiming=createClientTiming('small',line=>t.diagnostic(line));let timingOutcome='FAIL';
   try {
     const db=await mf.getD1Database('DB');
     const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));

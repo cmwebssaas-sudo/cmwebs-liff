@@ -1695,3 +1695,54 @@ thresholds, workflow, source/cache/comparison identity and formal flags stay
 unchanged. PR271 Draft/off/blank; actual C1/C3/C5/C6 gates and owner Google-scope
 decision remain pending. No formal data/Properties/triggers/deployment change;
 root WIP and private S1 remain outside Git/PR/commit content.
+
+## 2026-10-13 — C6 native diagnostic transport and actual slow-route selection
+
+Recommended GPT-6.1 Sol/high for telemetry protocol/completeness/privacy. Exact
+503b431 run38387208120: rental115261824334 SUCCESS; Worker115261824069 FAIL33/34,
+zero cancel/skip, terminal66446.177ms. All700 capacity samples/p95<50 pass:
+home26.597/actions19.600/revenue23.323/tenants41.363/rooms29.539/arrears35.124/
+properties32.580ms. Small actions61.592ms fails after200 small requests, later
+small timing loops not reached. Runtime/9input/bundle unchanged fromd9a9ce8;
+this change of failing route is not optimization/causal/real acceptance proof.
+Failure preserved in PR/private terminal; no unchanged-head CI rerun/fallback.
+
+New aggregate correctly marks INCOMPLETE/invalid1. Raw retained tail contains
+one SAMPLES JSON payload618 bytes ending mid-row, without closing JSON. A
+100-row/GC causal calculation is not valid from this damaged record. To avoid
+raw stdout framing, test client close() now accepts a diagnostic sink, and both
+capacity/parity callers use native testContext.diagnostic. All output remains
+after original samples/MF disposal, not within measured clocks; original fixture,
+HTTP/JSON/literals/scope,100/p95,cleanup,Worker/GAS remain unchanged. Initial
+child native test inherited NODE_TEST_CONTEXT and ran no child report; retained
+as failed preflight, not defect proof. Minimal PATH/LANG/TZ child environment
+then yields valid RED RAW_CONSOLE_FORBIDDEN; GREEN parses70 chunks/700 rows.
+
+Aggregator now keeps bounded2 suites×7 routes×100 rows and2×2048GC. It selects
+the highest complete100-row p95 route (fixed tie order), not assumed tenants;
+META total completed/attempted must match all collected rows or INCOMPLETE.
+Missing/invalid/unknown GC/privacy defenses and3072 aggregate-byte/1536-line/
+less-than64KB total budget remain. Input4096-byte cap accounts for fixed TAP
+prefix. New route/missing-route RED17/19→GREEN19; invalid object sample-ID could
+throw during key coercion, RED19/20 fixed by numeric validation before key.
+Current summary20+native transport1 =21/21, independent source review PASS,
+zero skips. These are diagnostic proofs, not Worker CPU/Linux cause/acceptance.
+
+Final544-file working snapshot at503b431 plus6 source/test files:
+939f02fc8bbdf06f2f1538dc1e633082c427fa248181eda49b3dd2765711470a.
+Full1009/1009 zero fail/cancel/skip3.266s, fresh privatePG16.14/clean Core643c1b3,
+original HTTP/PG/four handlers; DB/roles removed, stopped PID/listener,
+postgres_stopped=true/cleanup_errors=[]. Actual Node22/macOS Worker34/34 zero
+fail/cancel/skip35.759s/process35.967s, source/bundle/input pins stable, owned
+group empty/no180s wall expiry. Compiled Worker remains e21d4a81512099a0949bb6d39e35a84f04ad7cee699ebf77038e7f71ec0c7ce6.
+New actual raw Worker log parses two COMPLETE100-row selected-route aggregates,
+each collected700/GC COMPLETE/no invalid/missing/drops; summary18008 bytes.
+This is real local-transport proof only; Linux new-head verification is required.
+Validate72/40/178/cache/diff pass. Later three evidence docs excluded from tested
+snapshot; no dry-run repeat for byte-identical production bundle.
+
+Rollback restores503b431 test-output transport/helper/tests. Canonical runtime,
+cache/comparison,API/schema,sample/threshold/workflow and formal flags unchanged.
+PR271 Draft/off/blank; actual C1/C3/C5/C6 gates and owner Google-scope decision
+remain pending. No deployment/Property/trigger/formal data/credential changes;
+root WIP/private S1 untouched and unpublished.

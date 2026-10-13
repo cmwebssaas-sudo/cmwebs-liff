@@ -1886,3 +1886,15 @@ No Worker/GAS/caller/timing/assertion/workflow/cache/comparison/flag change.
 Rollback summary source tod9a9ce8. New-head diagnostic CI still required; all
 actual72h/900s/day/authority/seven-day/Taipei500/device/readback gates pending.
 No formal changes; private S1/root WIP boundaries retained.
+
+## 2026-10-13 — C6 native diagnostic framing candidate
+
+503b431 Linux33/34 FAIL atsmall actions61.592ms; same runtime all700 capacity
+p95 pass in that run. Damaged618-byte SAMPLES JSON makes diagnostics INCOMPLETE,
+not causal proof. New testContext.diagnostic output after original clocks and
+slowest complete route selection preserve all measured assertions/runtime.
+Independent21/21, full1009/1009, actual Worker34/34 zero skips; local actual raw
+log now two700-collected COMPLETE client/GC aggregates with no errors/drops.
+Core/PG cleanup and bundle/input pins verified. New-head Linux framing/results
+still required, no claim performance cured. Rollback503b431 transport/helper;
+Draft/off/blank, actual gates, owner scope and root/private boundaries remain.
