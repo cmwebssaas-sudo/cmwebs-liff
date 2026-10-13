@@ -63,3 +63,11 @@ test('omitted failure headers never attach their error details to another case',
   assert.doesNotMatch(result.stdout,/SECOND_REASON/);
   assert.match(result.stdout,/"failure_names_dropped":1/);
 });
+test('terminal evidence preserves original capacity distribution and safe fixture cause without rounding',()=>{
+  const distribution='# C6_LOCAL_500_ROOM_DISTRIBUTION '+JSON.stringify({route:'actions',p95_full_ms:86.168234,max_ms:123.456789,over_50:6,ordered_ms:[6.111111,86.168234,123.456789]});
+  const failure='# C6_D1_FIXTURE_FAILURE '+JSON.stringify({stage:'row_seed',seed_statements:2055,cause_code:'UND_ERR_SOCKET'});
+  const result=summarize(failure+'\n'+distribution+'\n'+'# numeric observations '.repeat(16000)+'\n'+footer);
+  assert.equal(result.status,0,result.stderr);
+  const tail=result.stdout.slice(-120000);
+  assert.ok(tail.includes(distribution));assert.ok(tail.includes(failure));
+});

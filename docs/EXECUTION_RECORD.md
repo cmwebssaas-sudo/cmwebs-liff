@@ -1422,3 +1422,50 @@ this diagnostic wrapper/reporter/docs to5002d8af retains original raw logging
 and its provider-window limitation; no production/runtime/data rollback needed.
 No deployment, new Google scope/credential/resource, formal data/Properties/
 trigger/epoch change. Root WIP/private S1 boundary preserved.
+
+## 2026-10-13 — C6 safe underlying seed-failure observation
+
+Recommended model/speed GPT-6.1 Sol/high for transport evidence/privacy.
+Head54d21341e51508ccf68dab0ac95549a19e7bf989 run38370308887: rental SUCCESS,
+Worker115205362935 FAIL31/33, zero skip/cancel, actual footer49145.854285ms.
+Raw CodeReview log is truncated but terminal summary is complete: zero names/
+details/diagnostics/footer drops, zero incomplete failure blocks. Case4 scoped500
+fails setup db.batch(inserts) with TypeError fetch failed; case15 capacity actions
+p95=86.168ms after home31.132ms. Capacity200 attempted/completed samples/13 GC,
+later route loops not reached; small700/PASS/p95 routes5.891–6.888ms. Underlying
+transport cause UNKNOWN. Exact summary/truncated raw log private; no same-head
+rerun, provider/CLI fallback or cause/cure/acceptance claim.
+
+Only failure-path test evidence changes: initializer records fixed phase/count,
+enum error/cause kinds, fixed code whitelist, safe nonnegative integer socket
+byte counters. No messages/SQL/rows/addresses/URLs/arbitrary values; cause getters
+and output failures cannot replace the original error or prevent cleanup. Code
+getter is read once before whitelist projection. Original single seed batch/
+rows/markers and scoped500/JSON/parity/authorization checks remain unchanged.
+No production/GAS/calculation/cache/flag or measured-client clock/sample change.
+Summary retains already-emitted exact capacity distribution and safe fixture
+failure lines, no rounding; diagnostic budget16KiB/max line4096. Sections total
+59,392 bytes plus bounded fixed metadata stay below64KB; dropped/partial evidence
+remains explicit and does not imply success. Output handling can perturb runner
+scheduling and is not a performance-cause proof.
+
+Actual initializer RED7 pass/3 fail; single-read/terminal-distribution RED17/2
+then GREEN19/19. Independent Node22 tests19/19 zero skip and code review PASS.
+These cause/code fixtures are fault doubles, not the native Linux transport cause.
+Full984/984 zero fail/cancel/skip2.970s and local Node22/macOS Worker33/33 zero
+fail/skip27.614s pin541 working files at54d21341 plus four diagnostic changes:
+f166e8f25aa0d9752ec84d1bbfcdd50139d04f9bc1cbe75c2b8631ca55c1063b.
+Before/after source and Worker/input pins stable; compiled bundle remains
+ df6377dcafa6d7f98bb7979ccc099d7b6e48721a234900b15da8478481a04f81.
+Later evidence docs are not retroactively part of tested snapshot. Clean Core
+643c1b3/fresh private PG16.14 original HTTP/PG/handler cases pass; fixture DB/roles
+removed, PID/listener absent, postgres_stopped=true/cleanup_errors=[]; no shared/
+formal DB or global runtime/npm settings. Worker-owned group empty/private180s
+budget not expired; original diagnostic per-test120s not changed. Validate72/40/
+178 and diff checks pass. New-head Linux CI remains required; local results do
+not erase prior failures or satisfy real C1/C3/C5/C6 release gates.
+
+Keep PR271 Draft/off/blank. Local rollback restores54d21341 diagnostic source/
+summary with no safe underlying-cause/distribution reprint; it is not a runtime/
+data rollback. No formal deployment, new Google scope/credential/resource, data,
+Properties/trigger/epoch change. Root WIP/private S1 boundary preserved.

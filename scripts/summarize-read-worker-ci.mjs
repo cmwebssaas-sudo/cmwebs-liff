@@ -43,8 +43,8 @@ try{
       const next=footer.length<32?retain(footer,line,2048,footerBytes,128):null;
       if(next===null)footerDropped++;else footerBytes=next;
     }
-    if(/^# (C6_LOCAL_500_ROOM_SAMPLE|C2_LOCAL_READ_LATENCY|C6_NODE_CLIENT_META) /.test(line)){
-      const next=retain(diagnostics,line,8192,diagnosticBytes,2048);
+    if(/^# (C6_D1_FIXTURE_FAILURE|C6_LOCAL_500_ROOM_SAMPLE|C6_LOCAL_500_ROOM_DISTRIBUTION|C2_LOCAL_READ_LATENCY|C6_NODE_CLIENT_META) /.test(line)){
+      const next=retain(diagnostics,line,16384,diagnosticBytes,4096);
       if(next===null)diagnosticDropped++;else diagnosticBytes=next;
     }
   }

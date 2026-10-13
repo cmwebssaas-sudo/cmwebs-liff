@@ -15,20 +15,44 @@ async function setup(input,identity={kind:'line',line_user_id:'SYNTHETIC_LINE1'}
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:output.outputFiles[0].text,compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     outboundService:async request=>Response.json(authority.post(await request.json())),
     bindings:{FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_IDENTITY:JSON.stringify(identity),LINE_LOGIN_CHANNEL_ID:'SYNTHETIC_CHANNEL',EMAIL_SESSION_HMAC_SECRET:'synthetic-email-key',READ_REPLICA_SYNC_SECRET:authoritySecret,READ_AUTHORITY_URL:'https://script.google.com/macros/s/SYNTHETIC_DEPLOYMENT/exec'}}));
+  let stage='database',seedStatements=0;
   try {
     const db=await mf.getD1Database('DB');
+    stage='migration';
     for(const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).sort()) {
       const sql=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
       await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
     }
+    stage='projection';
     const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8')),data=projectedDataset(input),inserts=[];
     for(const [table,definition] of Object.entries(schema)) for(const row of data[table]) {
       inserts.push(db.prepare(`INSERT INTO "${table}" (row_key,row_hash,synced_at,${definition.fields.map(key=>'"'+key+'"').join(',')}) VALUES (${Array(definition.fields.length+3).fill('?').join(',')})`).bind(row[definition.key],'synthetic-hash',fixture.now,...definition.fields.map(key=>Object.hasOwn(row,key)?JSON.stringify(row[key]):null)));
     }
+    stage='row_seed';seedStatements=inserts.length;
     await db.batch(inserts);
+    stage='sync_markers';
     await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
     return {mf,db,schema,authority};
   } catch(error) {
+    // Fixed enums/counts only. Never emit messages, SQL/rows, addresses, URLs
+    // or arbitrary cause properties. Diagnostics cannot mask cleanup/failure.
+    const diagnostic={stage,seed_statements:seedStatements,error_kind:'OTHER',cause_kind:'NONE',
+      cause_code:'NONE',socket_bytes_read:null,socket_bytes_written:null,cause_inspection:'AVAILABLE'};
+    try {
+      const kinds=new Set(['Error','TypeError','RangeError','AggregateError','SocketError','HeadersTimeoutError','BodyTimeoutError','ConnectTimeoutError']);
+      const codes=new Set(['UND_ERR_SOCKET','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT','UND_ERR_CONNECT_TIMEOUT','ECONNRESET','ECONNREFUSED','EPIPE']);
+      const kind=value=>kinds.has(value)?value:'OTHER';
+      const bytes=value=>Number.isSafeInteger(value)&&value>=0?value:null;
+      diagnostic.error_kind=kind(error?.name);
+      const cause=error?.cause;
+      if(cause){
+        diagnostic.cause_kind=kind(cause.name);
+        const code=cause.code;diagnostic.cause_code=codes.has(code)?code:'OTHER';
+        diagnostic.socket_bytes_read=bytes(cause.socket?.bytesRead);
+        diagnostic.socket_bytes_written=bytes(cause.socket?.bytesWritten);
+      }
+    } catch {diagnostic.cause_inspection='UNAVAILABLE';}
+    try {console.log('C6_D1_FIXTURE_FAILURE '+JSON.stringify(diagnostic));}catch{}
     // A rejected seed occurs before the caller receives mf. Release it here
     // so the failed test remains visible without leaving workerd alive.
     try {await mf.dispose();}

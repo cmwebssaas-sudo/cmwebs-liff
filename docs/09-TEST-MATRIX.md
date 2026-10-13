@@ -1,5 +1,14 @@
 # V2 回歸測試矩陣
 
+## 2026-10-13 C6 safe transport cause evidence
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Head54d21341 CI38370308887 | Rental SUCCESS; Worker FAIL31/33; complete bounded summary, zero drops | Case4 seed fetch failed/cause UNKNOWN; case15 actions86.168ms/home31.132; later loops not reached; small700PASS; no rerun |
+| Actual initializer cause/code/counters/privacy/getter/output and exact terminal distribution | RED retained → GREEN19/19; independent Node22 PASS | Fault doubles only; no actual Linux cause/cure claim; original errors/cleanup retained |
+| Full npm / Worker / validate | 984/984 /33/33 /72/40/178; zero skips |541-file snapshotf166e8f2 at54d21341+four diagnostic changes; clean Core/fresh private PG stopped; later docs excluded; bundle unchanged |
+| Summary total/line bounds and actual release | <64KB /4096 diagnostics; NOT_ACCEPTED | Original500/100/p95/parity remain; new-head Linux CI required; Draft/off/blank/real gates unchanged |
+
 ## 2026-10-13 C6 terminal diagnostic summary
 
 | Check | Result | Evidence boundary |

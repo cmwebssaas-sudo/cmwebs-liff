@@ -1,5 +1,31 @@
 # CMWebs Current State
 
+## 2026-10-13 — C6 safe seed transport diagnostics
+
+Diagnostic head54d21341 CI38370308887 rental SUCCESS/Worker115205362935
+FAIL31/33, cancelled0/skipped0, footer49.146s. Bounded summary has zero drops/
+incomplete blocks despite truncated raw provider log. Case4 scoped500 fails
+setup db.batch(inserts) with fetch failed; case15 actions p95=86.168ms after
+home31.132ms, later loops not reached. Small700-sample parity passes, routes
+5.891–6.888ms. Underlying transport cause remains UNKNOWN; no rerun/cure claim.
+
+Failure-only initializer diagnostics now retain fixed stage/seed statement count,
+enum error/cause kinds, whitelisted code and safe socket byte counters. No
+messages, SQL/rows, URLs/addresses or arbitrary properties. Getter/logging failure
+cannot mask the primary error or cleanup; code is read once before projection.
+Terminal summary also retains original capacity distribution and safe diagnostic
+lines without rounding, bounded16KiB/4096-byte lines; combined sections59,392
+bytes plus fixed metadata stay below64KB. Original seed batch,500 assertions,
+client clocks/100 samples/p95<50ms and production/GAS/calculations remain exact.
+
+Actual initializer/CLI targeted19/19 and independent Node22 review PASS.
+Full984/984 zero skips2.970s, local Worker33/33 zero skips27.614s; all541 working
+files at54d21341 plus four diagnostic changes pin f166e8f2 before/after. Later
+evidence docs excluded. Compiled Worker remainsdf6377dc; fresh private PG16.14/
+clean Core643c1b3/fixture cleanup/stopped listener pass. Validate72/40/178 PASS.
+Local fault doubles do not identify Linux cause. New-head CI required; keep
+Draft/off/blank/all C1/C3/C5/C6 actual gates; root WIP/private S1 preserved.
+
 ## 2026-10-13 — C6 terminal CI evidence retention
 
 Cleanup head5002d8af run38368334954: rental SUCCESS, Worker115198796326
