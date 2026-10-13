@@ -1469,3 +1469,55 @@ Keep PR271 Draft/off/blank. Local rollback restores54d21341 diagnostic source/
 summary with no safe underlying-cause/distribution reprint; it is not a runtime/
 data rollback. No formal deployment, new Google scope/credential/resource, data,
 Properties/trigger/epoch change. Root WIP/private S1 boundary preserved.
+
+## 2026-10-13 — C6 synchronous fixture preparation and idle socket
+
+Recommended model/speed GPT-6.1 Sol/high for actual runtime/socket controls.
+Head065f80270b5ca6fb5d7aed8b1ada934fd3337aea run38372089418: rental SUCCESS,
+Worker115211301907 FAIL31/33, cancelled0/skipped0, actual footer55025.801191ms.
+Raw provider log truncated, terminal summary complete/zero drops. Scoped500
+setup fails row_seed2055 with TypeError/SocketError/UND_ERR_SOCKET; socket bytes
+read12551/written78618. Capacity home29.385/actions26.464/revenue27.949ms pass;
+tenants p95=65.878/median57.008/max78.287ms, all100 samples>=50ms, later loops
+not reached. Capacity400 observations/16GC; small700/PASS5.209/4.791/4.858/
+5.509/5.142/4.670/5.503ms. Transport signature known; exact Linux causal chain
+and performance cure remain unproven. No unchanged-head CI rerun or fallback.
+
+Installed Miniflare uses synchronous proxy prepare/bind (Atomics.wait) and a
+runtime pool with client idle1s versus documented workerd idle5s; headers/body
+local timeouts0. Private actual-Workerd original helper controls keep2055 seed
+statements: no block succeeds501 rooms; blocking Node6500ms resets socket;
+block plus one setImmediate succeeds501. Negative control initially required
+UND_ERR_SOCKET but actual Mac causeECONNRESET fails that assertion, overall2/3
+retained. No repeated unchanged probe to obtain a pass. This supports idle-loop
+starvation, not proof that the same exact mechanism caused the Linux failure.
+
+Minimal test-only fix yields once after projection/prepare/bind and before the
+same seed batch; no retry, split, extra explicit RPC, runtime/GAS/calculation/
+cache/flag or measured-client clock/100/p95/JSON/policy change. Native regression
+uses a workspace getter: first read is structuredClone before Miniflare, second
+blocks6500ms during post-migration projection, returning the same canonical value.
+Actual RED1 fail fetch/ECONNRESET at8.614s, GREEN1/1 zero skips8.736s/Node exit0.
+An initial name/skip filter executed zero cases and is not passing regression
+proof. First GREEN crossed transport but had mistaken251 tenant expectation;
+this assertion failure is retained. Canonical fixture has250 tenants/501 total
+room rows; corrected new assertion passes, original500/API assertions unchanged.
+Independent lifecycle11/11 zero skip/source review PASS; unit19/19 zero skip.
+
+Full npm984/984 zero fail/cancel/skip3.220s; local Node22/macOS Worker34/34 zero
+fail/skip37.026s includes actual starvation test. All541 working files pinned at
+065f8027 plus two test changes, snapshotSHA256:
+79cc8c1db10582006237a60355cf9394c8b9701b1d5889e2688b4087e2ba6a52.
+Source/Worker/input pins stable before/after; compiled bundle remainsdf6377dc.
+Later evidence docs excluded. Clean Core643c1b3/fresh private PG16.14 original
+HTTP/PG/handler cases pass; fixture DB/roles removed, PID/listener absent,
+postgres_stopped=true/cleanup_errors=[]; no shared/formal DB/global config.
+Worker-owned group empty/private180s wall budget not expired; original per-test
+120s unchanged. Validate72/40/178 and diff checks pass. New-head Linux CI required;
+these local controls do not erase timing/transport failures or satisfy release.
+
+Keep PR271 Draft/off/blank/all actual C1/C3/C5/C6 gates. Local rollback restores
+065f8027 tests without yield/new regression; it reintroduces the demonstrated
+idle-starvation sensitivity and is not production/runtime/data rollback. No
+formal deployment, new Google scope/credential/resource, data/Properties/trigger/
+epoch change. Root WIP/private S1 boundary preserved.

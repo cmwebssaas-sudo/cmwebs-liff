@@ -29,6 +29,9 @@ async function setup(input,identity={kind:'line',line_user_id:'SYNTHETIC_LINE1'}
       inserts.push(db.prepare(`INSERT INTO "${table}" (row_key,row_hash,synced_at,${definition.fields.map(key=>'"'+key+'"').join(',')}) VALUES (${Array(definition.fields.length+3).fill('?').join(',')})`).bind(row[definition.key],'synthetic-hash',fixture.now,...definition.fields.map(key=>Object.hasOwn(row,key)?JSON.stringify(row[key]):null)));
     }
     stage='row_seed';seedStatements=inserts.length;
+    // Projection/prepare/bind use synchronous Miniflare proxy calls. Let Node
+    // observe workerd idle socket closures before dispatching the one seed RPC.
+    await new Promise(setImmediate);
     await db.batch(inserts);
     stage='sync_markers';
     await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
@@ -120,6 +123,23 @@ test('500 owned rooms preserve canonical HTTP reads through authenticated primar
     });
     assert.equal(denied.status,401);
     assert.doesNotMatch(await denied.text(),/SYNTHETIC_500_|synthetic-valid-line-token|stack/);
+  }finally{await mf.dispose();}
+});
+test('fixture preparation starvation cannot reuse an expired D1 client socket',async()=>{
+  const input=capacityDataset(),room=input.V2_rooms[0],workspace=room.workspace_id;
+  let reads=0;
+  // First read is setup's structuredClone before Miniflare exists; the second
+  // is projection after the last async migration. Model synchronous preparation
+  // starving Node beyond workerd's idle socket lifetime, without changing data.
+  Object.defineProperty(room,'workspace_id',{enumerable:true,configurable:true,get(){
+    if(++reads===2)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,6500);
+    return workspace;
+  }});
+  const {mf,db}=await setup(input);
+  try{
+    assert.ok(reads>=2,'Starvation must occur after clone');
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM V2_rooms').first()).n,501);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM V2_tenants').first()).n,250);
   }finally{await mf.dispose();}
 });
 test('explicit foreign Workspace never enters D1 dataset through shared landlord/property identifiers',async()=>{

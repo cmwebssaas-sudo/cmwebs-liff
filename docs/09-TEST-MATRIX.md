@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-10-13 C6 fixture idle socket handling
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Head065f8027 CI38372089418 | Rental SUCCESS; Worker FAIL31/33, complete summary | Scoped500 seed2055 UND_ERR_SOCKET; tenants65.878ms/all100>=50; later loops not reached; small700PASS; exact cause/cure not proven |
+| Native original/block6500ms/block+yield2055 controls | Baseline/yield pass; blocked ECONNRESET; overall2/3 retained | Negative expected onlyUND_ERR_SOCKET; no rerun to replace it; supports idle-loop mechanism, not exact Linux attribution |
+| Actual post-migration starvation regression | RED1 native transport failure → GREEN1/1 zero skip | Original same values/seed batch; zero-case filter and wrong251 expectation failures retained; correct250 tenants/501 rooms |
+| Full npm / Worker / validate / source review | 984/984 /34/34 /72/40/178 /PASS; zero skips |541-file working snapshot79cc8c1d at065f8027+two test changes; Core/fresh private PG stopped; bundle stable; later docs excluded |
+| New Linux CI and actual release gates | NOT_ACCEPTED | One initializer event-loop turn only; no retry/split/explicit RPC/threshold/runtime/GAS change; Draft/off/blank |
+
 ## 2026-10-13 C6 safe transport cause evidence
 
 | Check | Result | Evidence boundary |

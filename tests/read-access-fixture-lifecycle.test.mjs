@@ -29,7 +29,7 @@ function runtime(failAt,cleanupFailure=false){
     async getD1Database(){if(failAt==='database')throw primary;return db;}
     async dispose(){disposed++;if(cleanupFailure)throw cleanup;}
   }
-  const context=vm.createContext({URL,Date,JSON,AggregateError,Response,
+  const context=vm.createContext({URL,Date,JSON,AggregateError,Response,setImmediate,
     console:{log(value){if(loggingFails)throw new Error('Synthetic output failure');diagnostics.push(value);}},
     build:async()=>({outputFiles:[{text:'synthetic-fixture-worker'}]}),
     authorityRuntime:()=>({data:{}}),structuredClone,Miniflare:FixtureRuntime,

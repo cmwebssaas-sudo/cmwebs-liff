@@ -1,5 +1,34 @@
 # CMWebs Current State
 
+## 2026-10-13 — C6 fixture yields after synchronous preparation
+
+Head065f8027 CI38372089418 rental SUCCESS/Worker115211301907 FAIL31/33,
+footer55.026s. Complete bounded summary shows scoped500 seed2055 statements
+fails with UND_ERR_SOCKET (read12551/write78618 bytes). Capacity tenants has
+all100 samples>=50ms, p95=65.878/median57.008/max78.287ms; home29.385/actions
+26.464/revenue27.949ms pass, later loops not reached. Small700 parity passes.
+Socket signature is known; exact Linux cause/performance cure is not proven.
+
+Installed Miniflare uses synchronous prepare/bind proxy calls and notes workerd
+idle5s/client idle1s. Private actual Workerd controls: original batch2055 passes;
+blocking Node6500ms before it resets the socket; same block plus one event-loop
+turn succeeds. The negative control expected UND_ERR_SOCKET only but observed
+ECONNRESET, so its2/3 result is retained, not reported as all passing.
+
+Setup now yields once before the same single seed RPC; no retry/split/extra
+explicit RPC, source rows/assertions/500/100/p95 gates or runtime source change.
+Actual regression blocks projection after async migration without changing the
+workspace value. RED native fetch/ECONNRESET becomes GREEN1/1 zero skips; a
+filter mistake executed zero cases and an incorrect251 tenant expectation are
+retained. Correct250 tenants/501 total room rows match the canonical fixture.
+
+Full984/984 zero skips3.220s, local Worker34/34 zero skips37.026s, independent
+lifecycle11/11/source review PASS. All541 working files at065f8027 plus two test
+changes pin79cc8c1d before/after; later docs excluded, bundle remainsdf6377dc.
+Clean Core643c1b3/fresh PG16.14 cleanup/stopped and Worker-owned group empty
+pass; validate72/40/178 PASS. New-head Linux CI required; keep Draft/off/blank
+and actual C1/C3/C5/C6 gates. Root WIP/private S1 boundary preserved.
+
 ## 2026-10-13 — C6 safe seed transport diagnostics
 
 Diagnostic head54d21341 CI38370308887 rental SUCCESS/Worker115205362935
