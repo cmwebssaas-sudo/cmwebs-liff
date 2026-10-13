@@ -1,5 +1,15 @@
 # V2 回歸測試矩陣
 
+## 2026-10-13 C6 terminal diagnostic summary
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Cleanup head5002d8af CI38368334954 | Rental SUCCESS; Worker FAIL31/33, zero skips/cancel, actual footer56.928s | CodeReview tail120000 chars truncated; two failed identities/causes UNKNOWN; no rerun/fallback |
+| Early failure after provider window, interrupted footer, Unicode/line/total bounds, missing input, omitted-header association | RED retained → GREEN7/7 | Actual CLI; dropped/incomplete information explicit; no invented success |
+| Actual workflow pipeline with synthetic child exit42/0 | Workflow exit42/0; exact raw stdout/file; summary exit0 | Same shell body, no failed child masked; no measured Worker test rerun |
+| Full npm / validate / independent review | 978/978 zero skips /72/40/178 /PASS |541-file snapshot178cbdea at5002d8af plus diagnostic files; clean Core643c1b3/fresh PG stopped; later docs excluded; initial metadata timeout retained |
+| Linux/actual release gates | NOT_ACCEPTED | New-head CI required; source clients/Worker/GAS/gates unchanged; Draft/off/blank preserved |
+
 ## 2026-10-13 C6 fixture failure lifecycle
 
 | Check | Result | Evidence boundary |

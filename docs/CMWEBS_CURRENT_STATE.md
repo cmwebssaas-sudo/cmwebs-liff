@@ -1,5 +1,31 @@
 # CMWebs Current State
 
+## 2026-10-13 — C6 terminal CI evidence retention
+
+Cleanup head5002d8af run38368334954: rental SUCCESS, Worker115198796326
+FAIL31/33, zero cancelled/skipped, complete33-test footer at56.928s. CodeReview
+returns only the final120000 characters with logTruncated=true; the two failed
+names/causes are outside the retained window and remain UNKNOWN. The small
+fixture's700-sample metadata and parity case pass in that tail. No unchanged-head
+rerun or provider/CLI fallback occurred; this does not prove the scoped500 case
+or cleanup transport cure. Original cancelled run and all timing failures remain.
+
+Only CI evidence handling changes: the same Worker test command uses tee with
+pipefail to retain raw output; an always-run bounded terminal summary reprints
+failure names/associated YAML, emitted route timings/metadata and actual footer.
+Missing footers, omitted lines and incomplete blocks are explicit, never PASS.
+Measured clients, Worker/GAS/calculations/thresholds/sample counts remain exact.
+RED1/4, bounds RED4/2 then5/1, association RED6/1 become GREEN7/7;
+independent Node22 review passes. Real workflow-body controls preserve child
+exit42/0, exact raw stdout/file and summary exit0 without erasing failure.
+
+Full978/978, zero fail/cancel/skip,2.924s pins541 working files at5002d8af plus
+three diagnostic files, snapshot178cbdea; later evidence documents are excluded.
+Core643c1b3/fresh PG16.14 cleanup and stopped listener pass. First preflight
+git-status timeout10s ran no tests/PG; retained, followed by verified clean Core
+and a private metadata-only30s budget. Validate72/40/178 passes. New-head Linux
+CI remains required. Keep Draft/all six flags off/URL blank/all actual gates.
+
 ## 2026-10-13 — C6 fixture initialization failure cleanup
 
 Original a51ff579 CI38319550201 is terminal: rental SUCCESS, Worker115044090070

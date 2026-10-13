@@ -1374,3 +1374,51 @@ authenticated500/device/cutover gates remain NOT_ACCEPTED. Revert these test/
 evidence changes to a51ff579 for local rollback; that reintroduces the recorded
 setup leak and is not a runtime/data rollback. No deployment, new Google scope/
 credential/resource, formal data/Properties/trigger or real epoch was performed.
+
+## 2026-10-13 — C6 bounded terminal CI diagnostic evidence
+
+Recommended model/speed GPT-6.1 Sol/high for failure evidence retention.
+Cleanup head5002d8af52e291930e80b3b43b6d31cf8c36079a run38368334954:
+rental SUCCESS, Worker115198796326 completed/FAIL31/33, cancelled0/skipped0,
+actual terminal duration56927.510097ms. CodeReview logTruncated=true retains
+only the final120000 characters. The two failed names/causes lie outside it and
+remain UNKNOWN. Retained tail shows small700-sample metadata/PASS parity case17;
+this cannot prove the scoped500 case, fetch cause or cleanup cure. No unchanged-
+head CI rerun, cancellation or provider/CLI fallback. Exact truncated evidence
+and previous cancelled/failing attempts remain private and explicitly labeled.
+
+Only the CI wrapper/evidence reporter changes. Original npm Worker test command
+streams raw output through tee/pipefail, preserving child failure. An always-run
+summary reprints bounded failure names/associated YAML, emitted latency/metadata
+and actual Node footer after verbose samples. Budgets16KiB names/24KiB details/
+8KiB diagnostic/2KiB footer; per-line and footer-count bounds apply. Missing input
+fails; no footer is manufactured; dropped names/lines and incomplete blocks are
+explicit. If a header cannot be retained, its whole YAML block is omitted to
+avoid attributing another case's error to the retained header. No test retry,
+Worker/client/GAS/calculation/source-date/cache/flag/threshold/sample change.
+
+Actual CLI RED1 pass/4 fail then bounds RED4/2 and5/1 become GREEN6/6.
+Independent review found omitted-header association; negative case RED6/1 then
+GREEN7/7, independent Node22 targeted7/7 and review PASS. Executed actual workflow
+shell body with one synthetic npm child per case: exit42 stays42, exit0 stays0;
+stdout/raw file exact, reporter exits0 without erasing failed job status.
+
+First full-regression preflight Core git-status timed out10s before any test/PG.
+Failure retained; native follow-up verifies Core clean at643c1b3, and only private
+Git metadata guard allows30s. Full npm978/978, zero fail/cancel/skip,2.924s pins
+541 working files at5002d8af plus three diagnostic files, snapshotSHA256:
+178cbdea776d07586a845b0c1ad365eec6821b2f9311de5ebfa89fa087f8351e.
+Source bytes stable before/after; later evidence docs excluded. Original HTTP/PG
+and Core handler cases use a fresh private PG16.14; fixture DB/roles removed,
+PID/listener absent, postgres_stopped=true, cleanup_errors=[]; no shared/formal
+DB or global runtime/npm config. Validate72 backend/40 endpoints/178 sources
+passes. Existing Worker regression33/33 is from the prior pinned source; no new
+local Worker performance pass is claimed for this CI-only evidence change.
+
+New-head Linux CI remains required, not accepted by local/control passes. Keep
+PR271 Draft/all six flags off/URL blank and C1 corrected72h, C3 authority/latency,
+C5 seven-day shadow and C6 actual authenticated500/device/cutover gates. Rollback
+this diagnostic wrapper/reporter/docs to5002d8af retains original raw logging
+and its provider-window limitation; no production/runtime/data rollback needed.
+No deployment, new Google scope/credential/resource, formal data/Properties/
+trigger/epoch change. Root WIP/private S1 boundary preserved.
