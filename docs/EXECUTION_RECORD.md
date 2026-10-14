@@ -2832,3 +2832,30 @@ Full aligned verification and exact-head CI pending. Original failed C3 CI
 retry or a claim that the original cause was fixed. No warmup, excluded sample,
 threshold relaxation or acceptance amendment. Counter25/160 and no-claim
 boundary, declined320, root WIP, S1 confidentiality and all real gates remain.
+
+## 2026-10-14 — Aligned C3 local validation
+
+Recommended model/speed: GPT-6.1 Sol / high. Source8bb640c,565 tracked files,
+SHA-25686ae88c23a3ee919bb739d5e008e92d5d4879d0d9c7ec6e607d59aa40d58ab7b.
+One complete Node22.23.3/Core/disposablePG16.14 run:1707/1707,0 fail/cancel/skip,
+54.044s; cleanup completed, listener stopped. Validate72 backend files/40 URL
+references/static-cache checks and diff check PASS. After the complete root
+suite terminated, one complete Worker run:24/24,0 fail/cancel/skip, pretest
+Wrangler dry run PASS. All seven original100-sample groups retain index94 p95
+and strict50ms:1.769–3.132ms, no retries, warmup, exclusion or threshold changes.
+Both inherited C1 source/test files and two observer files are the complete
+non-document delta from7226076; every original C3 authority/control file is
+unchanged. Reviewed C2 observer matches exactly plus required0003 migration.
+
+The initial local conflict parser swallowed text across conflict blocks. It
+was corrected before source verification or push by reconstructing each file
+from the three immutable revisions and resolving line-delimited blocks;
+exact observer comparisons and the complete tests above verified final source.
+No erroneous intermediate local commit was pushed. Original52-commit history
+is preserved in the verified complete-history bundle and backup ref.
+
+Exact aligned-head CI remains pending; original CI38526286078 failure/cause
+remains unresolved. Counter hash unchanged25/160, no claim or Google actions;
+320 declined, nine native callbacks and real160-budget feasibility incomplete.
+Original daily900s/fresh72h/seven actual24h/500/Taipei/strict latency/device
+acceptance unchanged. No formal deployment, trigger/property or read switch.

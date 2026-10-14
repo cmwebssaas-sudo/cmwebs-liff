@@ -1775,3 +1775,12 @@ shared-ledger/orchestration acceptance; custom Python prefixes/UID changes untes
 
 Original performance/72h/seven-day/device gates remain; do not infer cutover
 readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
+
+### 2026-10-14 — C3 stack alignment
+
+| Gate | Evidence | Boundary |
+| --- | --- | --- |
+| Source composition | Original7226076 authority/controllers unchanged; only inherited C1 UTF-8 source/tests and reviewed C2 test observer differ | Original history/rollback preserved; no formal runtime change |
+| Full local | Node22/Core/ownedPG1707/1707; cleanup/listener stopped | 0 fail/cancel/skip; one complete run |
+| Worker local |24/24; seven groups100 each, unchanged p951.769–3.132ms<50 | No retries/warmup/exclusions; exact-head Linux CI pending; original failedCI retained |
+| Real gates | Counter25/160 unchanged/no claim;320 declined | Actual trial STOP; daily900s NOT_ACCEPTED; fresh72h/seven-day shadow/500/device NOT_STARTED or UNACCEPTED |

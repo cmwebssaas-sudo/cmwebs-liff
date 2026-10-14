@@ -13,7 +13,9 @@ Actual approved counter remains25/160;320 was declined, no new Google trial
 IO or preparation claim. The native trial is STOP until a complete plan fits
 160 including cleanup. Nine native/guard callbacks still require implementation.
 Previous C3 Linux Worker latency failure remains unresolved (home191.197ms,
-arrears58.361ms against50ms). Aligned-source full tests and CI are pending.
+arrears58.361ms against50ms). Aligned local tests:1707/1707 and Worker24/24, no fail/cancel/skip;
+Node22.23.3/Core/disposablePG cleanup verified. Exact-head Linux CI pending.
+These local results do not resolve the original Linux latency failure.
 C1 daily900s NOT_ACCEPTED; fresh72h and actual seven-day shadow NOT_STARTED.
 No formal deployment, property, trigger or cutover is authorized by local tests.
 
