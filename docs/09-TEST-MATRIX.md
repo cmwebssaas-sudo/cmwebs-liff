@@ -1292,3 +1292,15 @@ are not accepted by these regressions.
 
 All original assertions and gates remain. Local source validation and PR checks
 are tracked separately; this diagnostic is not a canonical sync fix.
+
+
+## 2026-10-14 — C1 UTF-8 sizing regression
+
+| Check | Result | Boundary |
+| --- | --- | --- |
+| Affected source / independent review | 17/17 PASS each; no P1/P2 | 501-row snapshot zero sizing Blob calls; Unicode, byte limits, signing/rejection |
+| One full regression / validate | 857/857 PASS, no fail/cancel/skip; validate71/40/static PASS | Node22.23.3, pinned Core, disposable local PG16.14; cleanup verified |
+| Temporary synthetic editor restored | Exact4/scopes/deployment retained, native unfiltered0 | Comparison cancelled before native execution; native equivalence UNVERIFIED |
+| Formal acceptance | Daily-runtime NOT_ACCEPTED; corrected72h NOT_STARTED | No measured native speedup, formal deployment/flag change or observation restart |
+
+See EXECUTION_RECORD.md for immutable source snapshot, limits and rollback.
