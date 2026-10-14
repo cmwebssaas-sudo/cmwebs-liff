@@ -1,5 +1,21 @@
 # CMWebs Current State
 
+## 2026-10-14 — Actual scoped D1 costs measured locally
+
+GPT-6.1 Sol/high. Two test-only files observe the actual access/data loader in
+seven existing canonical parity requests:63 serial single-call statements each,
+one first-primary session/no batches. Exact GAS responses unchanged. This
+omits replica/session/provider/GAS authority HTTP costs and is not p95 or
+production evidence. It provides the next concrete serial-call optimization
+target; the C2 one-batch fixture cannot represent this production loader.
+
+Worker24/24, numeric guards and original100-sample/<50ms gate pass; static
+review P1/P2/minor0, validate72/40/static/diff PASS. Prior1718/1718 root retained
+because all runtime/root-test bytes match; new exact-head CI pending. Eight
+native/guard callbacks remain incomplete, no guessed native/API substitute.
+Actual25/160 unchanged/no claim,320 declined; no Google/formal changes or new
+observation window. All original real gates remain unaccepted.
+
 ## 2026-10-14 — Original token rejection callback implemented locally
 
 GPT-6.1 Sol/high; one static security review P1/P2/minor0. OAuth verifyRevoked()

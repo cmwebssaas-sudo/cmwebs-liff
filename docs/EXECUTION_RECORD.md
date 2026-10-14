@@ -2934,3 +2934,46 @@ formal mutation. Original daily900s/fresh72h/seven actual24h/500/Taipei/strict
 latency/device/cutover gates unchanged. Root WIP/S1 confidentiality preserved.
 Rollback source to2d48fa7; preserve original journal/counter/UNKNOWN, do not
 reseed or pretend that dropping a memory reference proves grant-wide removal.
+
+## 2026-10-14 — Actual scoped-loader request-cost observation
+
+Recommended model/speed: GPT-6.1 Sol / high, for SDK/session measurement
+boundaries. Original-project/defaultGCP and zero-trigger cleanup require
+actual grounded native UI evidence. Do not replace them with an API Project
+response or guessed UI selectors. Native trial remains STOP under original160;
+pure CUA documentation reload performed, no browser/Google state read. Eight
+native/guard callbacks remain unimplemented; no narrower acceptance is added.
+
+Measure the actual createReadDatasetLoader scope/data path in the existing
+seven canonical parity requests, rather than treating the C2 all20-table batch
+as that path. A test-only SDK wrapper preserves first-primary sessions, bound
+SELECTs/results and ordered batch statements, using WeakMap unwrap. Counts are
+attempted SDK calls/statements; summed awaited-call wall duration is not SQL
+CPU/network or p95. The Node read_validation_ms includes existing response
+clone/body/parity/numeric checks. Header never appears in production entry.
+No additional SQL/request/sample, fallback/retry/warmup or changed benchmark.
+
+Missing observer assertion RED1/1, then one complete affected Worker24/24,
+0 fail/cancel/skip. Seven scoped requests each used one primary session and
+63 single-call statements, no batches. Summed call11–15ms; total test read/
+validation17.016–50.669ms. This is one request per route, not a percentile or
+production result. It omits replica/session/provider/GAS authority costs from
+full HTTP authentication. It establishes a concrete serial-request cost for
+the next bounded performance change. All original GAS comparisons remain
+exact; original seven100-sample fixture p951.751–2.471ms<50, no changed gate.
+
+One static review P1/P2/minor0, no repeat test or review. Original serveReadRoute
+already resolves loader/resource failures into503; fixture await does not
+change those expected statuses. Validate72/40/static/diff PASS. Ruling: retain
+prior1718/1718 root/Core/ownedPG result with verified teardown because every
+runtime/root-test byte matches that snapshot; only two Worker test files differ.
+Cost: retained root platform/time provenance stays explicit; new exact-head
+CI required. No redundant unchanged local root or new implementation-mirroring
+test. Prior e21c3f3 CI38537395989 rental1713/Worker24/two dry runs passed; all
+four >=50ms tails retained, Node supervisor mainly idle while awaiting batch.
+Original latency failure cause remains UNRESOLVED.
+
+Actual25/160 unchanged/unclaimed,320 declined; no native/Google/RPC/formal
+mutation. Original900s/day/fresh72h/seven actual24h/500/Taipei/strict latency/
+device/cutover gates unchanged. Root WIP and S1 confidentiality preserved.
+Rollback test observation toe21c3f3; no formal release or data rollback needed.

@@ -460,3 +460,18 @@ unchanged; prior full-suite result remains933 pass/one missing Core-worktree
 failure/four fixture skips. Strict latency NOT_ACCEPTED, actual corrected72h,
 seven-day shadow,500-room,D1,real LINE/device and authenticated user-flow
 acceptance remain incomplete.
+
+## Scoped read cost evidence
+
+The seven existing synthetic canonical route requests now observe the actual
+server-resolved access/data loader rather than substituting the C2 whole-table
+batch. Baseline uses63 serial SDK single calls/statements per route, one
+first-primary session, no batches. Numeric test-only headers expose attempted
+call/statement counts and summed await wall time, never SQL/row values. Original
+result parity, request count and strict100-sample fixture benchmark are retained.
+
+These seven single requests omit full HTTP replica/session/provider and GAS
+authority costs; read_validation_ms also includes existing test assertions.
+They are neither p95 nor production speed proof. Batching may be investigated
+next while keeping identical bound SQL, result ordering, scopes and fail-closed
+checks. Original authorization/performance and all real gates remain unchanged.

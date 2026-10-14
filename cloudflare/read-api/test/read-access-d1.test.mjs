@@ -33,11 +33,20 @@ test('server-resolved D1 scope preserves all six canonical route results',async(
     const gas=originalGas(input);
     const inspected=await (await mf.dispatchFetch('https://local.test/inspect')).json();
     assert.equal(inspected.access.workspace.workspace_id,access.workspace.workspace_id,JSON.stringify(inspected));
+    const observations={};
     for(const item of cases) {
+      const start=performance.now();
       const response=await mf.dispatchFetch('https://local.test'+paths[item.route]);
       assert.equal(response.status,200,item.route+': '+JSON.stringify(await response.clone().json()));
       assert.deepEqual(await response.json(),plain(gas[item.fn](...item.args)),item.route);
+      assert.ok(response.headers.has('x-cmwebs-test-scoped-d1'),'actual scoped-loader observation');
+      const d1=JSON.parse(response.headers.get('x-cmwebs-test-scoped-d1'));
+      assert.deepEqual(Object.keys(d1).sort(),['batch_calls','primary_sessions','single_calls','statements','summed_call_ms']);
+      for(const name of ['batch_calls','primary_sessions','single_calls','statements'])assert(Number.isSafeInteger(d1[name])&&d1[name]>=0);
+      assert.equal(d1.primary_sessions,1);assert(d1.statements>0);assert(Number.isFinite(d1.summed_call_ms)&&d1.summed_call_ms>=0);
+      observations[item.route]={...d1,read_validation_ms:Number((performance.now()-start).toFixed(3))};
     }
+    console.log('C3_SCOPED_D1_OBSERVATION '+JSON.stringify(observations));
   } finally {await mf.dispose();}
 });
 test('explicit foreign Workspace never enters D1 dataset through shared landlord/property identifiers',async()=>{

@@ -1803,3 +1803,13 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Affected/full |110/110 and1718/1718,0 fail/cancel/skip; Node22/Core/ownedPG stopped | Snapshot565 SHA542b61167239a310904db41397584477a6113b5f666d57ca1f452bc4615c90c2; validate72/40/static/diff PASS |
 | Worker | Prior unchanged24/24/two dry runs CI38535147314 retained | Every Worker source/test byte unchanged; new-head CI pending, no local redundant benchmark |
 | Real trial |25/160 unchanged/unclaimed;320 declined, no Google IO |8 native/guard callbacks/whole160 plan remain; all original real gates unaccepted |
+
+### 2026-10-14 — Scoped-loader SDK costs
+
+| Gate | Evidence | Boundary |
+| --- | --- | --- |
+| TDD/review | Missing observer RED1; static P1/P2/minor0 | SDK bind/session/batch/results retained, no extra request/sample/data in header |
+| Existing canonical requests |7×one request,63 single statements each, one first-primary session/no batch | Actual scope/data loader; omits full HTTP replica/session/provider/GAS costs; not p95 |
+| Full Worker |24/24,0 fail/cancel/skip; original100-sample p951.751–2.471ms<50 | No retry/warmup/exclusion/new gate; exact-head CI pending |
+| Root | Prior1718/1718 retained, all runtime/root-test bytes match snapshot | Only2 Worker test files changed, no unchanged root rerun |
+| Native/real gates |8 native/guard callbacks incomplete;25/160 unchanged/no claim,320 declined | No guessed UI/API substitute, no actual native/Google IO; all original gates retained |
