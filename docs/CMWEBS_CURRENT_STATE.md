@@ -1,5 +1,20 @@
 # CMWebs Current State
 
+## 2026-10-14 — Original token rejection callback implemented locally
+
+GPT-6.1 Sol/high; one static security review P1/P2/minor0. OAuth verifyRevoked()
+uses the original holder's accepted token under existing independent I17 before
+one fixed userinfo GET. Only token rejection at readback is reported; original
+revoke ACK/UNKNOWN preserved, revocationAccepted/rollbackComplete false. No
+refresh/new credential/Scope/alias. Restart cannot reconstruct the raw token.
+
+TDD and affected110/110; complete Node22/Core/ownedPG1718/1718 with cleanup
+verified. Validate72/40/static/diff PASS; unchanged Worker24/24 retained, new
+exact-head CI pending. Eight native/guard callbacks and whole160-budget/native
+window/quota/freshness feasibility still incomplete. Actual25/160 unchanged/
+unclaimed;320 declined, no Google or formal actions. Original900s/day/fresh72h/
+seven actual24h/500/Taipei/strict latency/device/cutover remain unaccepted.
+
 ## 2026-10-14 — C3 inherited Node supervisor observation
 
 Recommended model/speed: GPT-6.1 Sol / high. Latest C2 source1b3c18c is aligned

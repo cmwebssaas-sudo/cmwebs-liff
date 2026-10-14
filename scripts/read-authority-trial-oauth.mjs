@@ -50,7 +50,8 @@ export function createAuthorityTrialOAuth(input){
    save(path,{version:1,binding,stage:'waiting',deadline,stateHash:hash(state),pkceChallenge:challenge,attempted:false,revocation:'NOT_NEEDED'},true);
    save(registry,{state:'ready',path,binding});
   }finally{if(lock!==undefined){closeSync(lock);unlinkSync(registry+'.lock');}}
-  let journal=read(path),accessToken=null,verified=null,revokePromise;
+  let journal=read(path),accessToken=null,verified=null,revokePromise,verifiedExpiry=null;
+  let verificationToken=null,revokeSettled=false,verificationAttempted=false;
   const write=patch=>{journal={...journal,...patch};save(path,journal);};
   const integrity=()=>{directory(path);if(JSON.stringify(read(registry))!==JSON.stringify({state:'ready',path,binding})||JSON.stringify(read(path))!==JSON.stringify(journal))stop();};
   const live=()=>{integrity();const time=now();if(journal.stage!=='claimed'||!Number.isSafeInteger(time)||time<start||time>=deadline)stop();return time;};
@@ -59,7 +60,9 @@ export function createAuthorityTrialOAuth(input){
   const revoke=async()=>{
    if(revokePromise)return revokePromise;if(!accessToken)return;
    const tokenToRevoke=accessToken;
+   if(verifiedExpiry!==null)verificationToken=tokenToRevoke;
    revokePromise=(async()=>{
+   try{
    let receiptFailed=false;try{write({revocation:'UNKNOWN'});}catch(_){receiptFailed=true;}
    // Google's revoke affects all grants for this isolated trial project,
    // not just one token/client. Native isolation is a required precondition.
@@ -71,10 +74,38 @@ export function createAuthorityTrialOAuth(input){
     if(r.status!==200||r.redirected===true||(r.url&&r.url!=='https://oauth2.googleapis.com/revoke'))stop();
    });
    accessToken=null;verified=null;try{write({revocation:'ACK_UNVERIFIED'});}catch(_){receiptFailed=true;}if(receiptFailed)stop();
+   }finally{revokeSettled=true;}
    })();return revokePromise;
   };
+  const verifyRevoked=async function(){
+   let claimed=false;
+   try{
+    if(arguments.length||verificationAttempted||!revokeSettled||!verificationToken||verifiedExpiry===null)stop();
+    verificationAttempted=true;claimed=true;
+    return await capability.cleanup('verify-token-revoked',async()=>{
+     // Original token was accepted by this exact userinfo endpoint before
+     // cancellation. Keep it in this holder's memory only; never mint/refresh
+     // a credential or use a query token. Independent I admission comes first.
+     integrity();const begin=now();
+     if(!Number.isSafeInteger(begin)||begin<start||verifiedExpiry-begin<=10000)stop();
+     write({tokenVerification:'UNKNOWN'});
+     const url='https://www.googleapis.com/oauth2/v2/userinfo?fields=email%2Cverified_email';
+     const response=await fetcher(url,options('GET',undefined,{authorization:'Bearer '+verificationToken}));
+     // Both denial and an unexpected success may contain private data. Do not
+     // read or log that body; disposal remains owned through terminal settle.
+     if(response.body)await response.body.cancel();
+     const end=now();integrity();
+     if(response.status!==401||response.redirected===true||(response.url&&response.url!==url)||
+      !Number.isSafeInteger(end)||end<begin||end>=verifiedExpiry)stop();
+     write({tokenVerification:'REJECTED_AT_READBACK',tokenVerificationAt:end});
+     // Rejection proves only this token is unusable at this readback. Preserve
+     // the original revoke ACK/UNKNOWN; no grant-wide or causal assertion.
+     return Object.freeze({tokenRejectedAtReadback:true,observedAt:end,revocationAccepted:false,rollbackComplete:false});
+    });
+   }catch(_){stop();}finally{if(claimed)verificationToken=null;}
+  };
   const q=new URLSearchParams({client_id:clientId,redirect_uri:AUTHORITY_TRIAL_REDIRECT_URI,response_type:'code',scope:AUTHORITY_TRIAL_SCOPES.join(' '),state,code_challenge:challenge,code_challenge_method:'S256',access_type:'online',include_granted_scopes:'false',prompt:'select_account consent'});
-  const flow=Object.freeze({authorizationUrl:'https://accounts.google.com/o/oauth2/v2/auth?'+q.toString(),remainingMs:()=>Math.max(0,deadline-now()),status:()=>journal.stage,
+  const flow=Object.freeze({verifyRevoked,authorizationUrl:'https://accounts.google.com/o/oauth2/v2/auth?'+q.toString(),remainingMs:()=>Math.max(0,deadline-now()),status:()=>journal.stage,
    receive:async request=>{
     let claimed=false;
     try{
@@ -96,7 +127,7 @@ export function createAuthorityTrialOAuth(input){
      const tokenExpiry=sentAt+t.expires_in*1000;if(tokenExpiry>expiresAt||tokenExpiry-now()<=360000)stop();
      const user=await ordinary(async()=>{const userUrl='https://www.googleapis.com/oauth2/v2/userinfo?fields=email%2Cverified_email';return await jsonResponse(await fetcher(userUrl,options('GET',undefined,{authorization:'Bearer '+accessToken})),userUrl);});live();
      if(!only(user,['email','verified_email'])||typeof user.email!=='string'||user.email.length>320||!/^\S+@\S+\.\S+$/.test(user.email)||user.verified_email!==true||hash(user.email.trim().toLowerCase())!==callerHash||tokenExpiry-now()<=360000)stop();
-     verified=Object.freeze({accessToken,scopes:AUTHORITY_TRIAL_SCOPES,expiresAt:tokenExpiry,refreshTokenPresent:false,callerHash,oauthClientHash});write({stage:'ready'});
+     verified=Object.freeze({accessToken,scopes:AUTHORITY_TRIAL_SCOPES,expiresAt:tokenExpiry,refreshTokenPresent:false,callerHash,oauthClientHash});verifiedExpiry=tokenExpiry;write({stage:'ready'});
     }catch(_){if(claimed){verifier=null;verified=null;try{write({stage:'failed'});}catch(_){}try{await revoke();}catch(_){/* unknown revoke remains durable; never retry */}}stop();}
    },credential:()=>{try{integrity();if(journal.stage!=='ready'||!verified||verified.expiresAt-now()<=360000||now()>=expiresAt)stop();return verified;}catch(_){void flow.cancel().catch(()=>{});stop();}},
    cancel:async()=>{let failed=false;try{integrity();}catch(_){failed=true;}verifier=null;verified=null;try{write({stage:'cancelled'});}catch(_){failed=true;}try{await revoke();}catch(_){failed=true;}if(failed)stop();}

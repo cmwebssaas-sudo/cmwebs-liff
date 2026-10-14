@@ -98,3 +98,20 @@ readback is observation only, never overall rollback/remote-termination proof.
 The other nine native/guard callbacks and complete real windows/quota/budget
 are still required. Owner has declined320 and retained160; no real trial begins
 without a complete executable plan under that bound.
+
+## Original holder token denial probe
+
+The trusted lifecycle may map its existing verify-token-revoked callback to
+flow.verifyRevoked(); it takes no replacement control or token argument. After
+original revoke settles, the original accepted token is held in memory until
+one admitted fixed userinfo GET settles. Independent I17 admission precedes
+HTTP; remaining token lifetime is checked after admission and response disposal.
+No credential refresh/new Scope/alias, query token, retry or durable raw token.
+
+A401 only records original-token rejection at readback. Preserve the original
+ACK_UNVERIFIED/UNKNOWN revoke result; revocationAccepted and rollbackComplete
+remain false. An expired token, damaged receipt, unexpected response or denied
+admission cannot be called verified revocation. A restarted holder has no raw
+token to reconstruct: leave verification unavailable, retain unknown state and
+continue the remaining independent cleanup. This is not a native grant-removal
+or whole-rollback proof. Eight native/guard callbacks remain incomplete.

@@ -2888,3 +2888,49 @@ Actual25/160 byte-identical/no claim;320 declined, no Google/native/RPC/formal
 mutation. All real gates unaccepted; preserve root WIP/S1 confidentiality.
 Rollback aligned feature to685d928 using retained history, no formal rollback
 needed for test-only observations. Keep Draft/unmerged until actual acceptance.
+
+## 2026-10-14 — Original-holder token rejection readback
+
+Recommended implementer model/speed: GPT-6.1 Sol / high. One static final
+security reviewer uses GPT-6 Astra / high per executing-plans most-capable
+review rule; P1/P2/minor0, no repeated review or benchmark.
+
+The OAuth flow now exposes verifyRevoked() bound to its original cleanup
+capability. The token previously accepted by the exact fixed userinfo endpoint
+is retained only in the original holder's memory after revoke settles. The
+existing verify-token-revoked I17 alias admits/debits before HTTP and rechecks
+remaining token lifetime after waiting. GET uses a bearer header, no token URL,
+refresh, new scope/credential or extra alias. Response bodies are cancelled
+without reading/logging private data, under ownership until terminal settle.
+
+Only nonredirected401 before calculated token expiry records tokenVerification
+REJECTED_AT_READBACK. This proves only this original token is rejected at that
+readback; original revoke ACK_UNVERIFIED or UNKNOWN is preserved. Returned
+revocationAccepted/rollbackComplete remain false; no causal or grant-wide
+revocation claim. A restarted holder cannot reconstruct the raw token; its
+verification remains unavailable and other independent cleanup continues.
+
+Seven missing-method cases RED→GREEN. An overlapping-call regression then
+reproduced Bearer null when a rejected second call cleared the first waiting
+call's token; invocation-local claimed ownership fixed it. Added admission
+expiry, UNKNOWN revoke preservation/no retry and response-disposal ownership
+coverage. Affected OAuth/orchestrator/rollback110/110,0 fail/cancel/skip. One
+complete Node22.23.3/Core/ownedPG regression1718/1718,56.513s,0 fail/cancel/skip;
+cleanup/listener stopped. Source565 files SHA-256
+542b61167239a310904db41397584477a6113b5f666d57ca1f452bc4615c90c2
+captures the tested uncommitted source on base2d48fa7; only docs edited after.
+Validate72/40/static/diff PASS; new exact-head CI pending.
+
+Ruling: retain unchanged Worker24/24/two dry runs from exact2d48fa7 CI38535147314
+rather than another local Worker benchmark; all Cloudflare runtime/test/fixture
+bytes are unchanged. User requested fewer redundant tests. Cost: retained local/
+CI Worker provenance stays explicit; this PR's normal new-head CI still runs.
+Original latency failures and UNRESOLVED cause remain; no warmup/retry/exclusion
+or threshold relaxation. Eight native/guard callbacks and complete actual160
+budget/window/quota/freshness feasibility remain incomplete.
+
+Actual counter25/160 unchanged/no claim,320 declined; no Google/native/RPC or
+formal mutation. Original daily900s/fresh72h/seven actual24h/500/Taipei/strict
+latency/device/cutover gates unchanged. Root WIP/S1 confidentiality preserved.
+Rollback source to2d48fa7; preserve original journal/counter/UNKNOWN, do not
+reseed or pretend that dropping a memory reference proves grant-wide removal.

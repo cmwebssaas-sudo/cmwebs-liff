@@ -143,3 +143,49 @@ test('revocation response cancellation remains inside independent cleanup owners
  try{assert.equal(cancelStarted,true);assert.equal(owned,true);}finally{release();await pending;}
  assert.equal(owned,false);assert.equal(JSON.parse(readFileSync(s.options.path)).value.revocation,'ACK_UNVERIFIED');
 });
+
+const rejection=()=>new Response('',{status:401});
+function verificationSetup(response=rejection,cleanup,revocationStatus=200){
+ let profiles=0,verifications=0;const aliases=[];
+ const s=setup({control:{waitForExternalReadSlot:async()=>{},reserveExternalReads:async()=>{},cleanup:async(action,io)=>{aliases.push(action);return cleanup?await cleanup(action,io):await io();}},
+  fetcher:async(url,init)=>{s.calls.push({url,init});if(url.endsWith('/token'))return new Response(JSON.stringify(token()));if(url.endsWith('/revoke'))return new Response('',{status:revocationStatus});
+   if(url==='https://www.googleapis.com/oauth2/v2/userinfo?fields=email%2Cverified_email'){if(profiles++===0)return Response.json({email,verified_email:true});verifications++;return await response();}throw Error('UNEXPECTED_DESTINATION');}});
+ return {s,aliases,verifications:()=>verifications};
+}
+test('original ready token rejection is checked once under independent I alias without token URLs or durable secrets',async()=>{
+ const v=verificationSetup(),s=v.s;await s.flow.receive(s.request());await s.flow.cancel();assert.equal(typeof s.flow.verifyRevoked,'function');
+ const before=s.calls.length,r=await s.flow.verifyRevoked();assert.equal(r.tokenRejectedAtReadback,true);assert.equal(r.revocationAccepted,false);assert.equal(r.rollbackComplete,false);
+ assert.deepEqual(v.aliases,['revoke-token','verify-token-revoked']);assert.equal(v.verifications(),1);assert.equal(s.calls.length,before+1);
+ const call=s.calls.at(-1);assert.equal(call.init.method,'GET');assert.equal(call.init.headers.authorization,'Bearer SYNTHETIC_ACCESS_TOKEN');assert(!call.url.includes('SYNTHETIC_ACCESS_TOKEN'));assert.equal(call.init.redirect,'manual');
+ assert(!readFileSync(s.options.path,'utf8').includes('SYNTHETIC_ACCESS_TOKEN'));await assert.rejects(s.flow.verifyRevoked(),/^Error: TRIAL_STOPPED$/);assert.equal(v.verifications(),1);
+});
+for(const status of [200,400,403,429,503])test('verification status'+status+' remains unknown and cannot be replayed',async()=>{
+ const v=verificationSetup(()=>new Response('PRIVATE_PROVIDER_BODY',{status})),s=v.s;await s.flow.receive(s.request());await s.flow.cancel();
+ assert.equal(typeof s.flow.verifyRevoked,'function');await assert.rejects(s.flow.verifyRevoked(),/^Error: TRIAL_STOPPED$/);await assert.rejects(s.flow.verifyRevoked(),/^Error: TRIAL_STOPPED$/);assert.equal(v.verifications(),1);
+ const value=JSON.parse(readFileSync(s.options.path)).value;assert.equal(value.revocation,'ACK_UNVERIFIED');assert.equal(value.tokenVerification,'UNKNOWN');assert(!JSON.stringify(value).includes('PRIVATE_PROVIDER_BODY'));
+});
+test('ordinary trial expiry does not authorize calling an expired token rejection a revoke verification',async()=>{
+ const v=verificationSetup(),s=v.s;await s.flow.receive(s.request());await s.flow.cancel();s.setNow(clock+3600000);assert.equal(typeof s.flow.verifyRevoked,'function');
+ await assert.rejects(s.flow.verifyRevoked(),/^Error: TRIAL_STOPPED$/);assert.equal(v.verifications(),0);assert.equal(s.calls.filter(x=>x.url.endsWith('/revoke')).length,1);
+});
+
+test('a rejected overlapping verification cannot clear the original token waiting for I admission',async()=>{
+ let enter,release;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);
+ const v=verificationSetup(rejection,async(action,io)=>{if(action==='verify-token-revoked'){enter();await gate;}return await io();}),s=v.s;
+ await s.flow.receive(s.request());await s.flow.cancel();const first=s.flow.verifyRevoked();await entered;await assert.rejects(s.flow.verifyRevoked(),/^Error: TRIAL_STOPPED$/);release();
+ const r=await first;assert.equal(r.tokenRejectedAtReadback,true);assert.equal(v.verifications(),1);assert.equal(s.calls.at(-1).init.headers.authorization,'Bearer SYNTHETIC_ACCESS_TOKEN');
+});
+test('token expiry during I admission waits prevents a denial probe before outbound IO',async()=>{
+ const v=verificationSetup(rejection,async(action,io)=>{if(action==='verify-token-revoked')v.s.setNow(clock+3599999);return await io();}),s=v.s;
+ await s.flow.receive(s.request());await s.flow.cancel();await assert.rejects(s.flow.verifyRevoked(),/^Error: TRIAL_STOPPED$/);assert.equal(v.verifications(),0);assert.deepEqual(v.aliases,['revoke-token','verify-token-revoked']);
+});
+test('independent rejection readback preserves UNKNOWN revocation acknowledgement and never resends revoke',async()=>{
+ const v=verificationSetup(rejection,undefined,503),s=v.s;await s.flow.receive(s.request());await assert.rejects(s.flow.cancel(),/^Error: TRIAL_STOPPED$/);
+ const r=await s.flow.verifyRevoked();assert.equal(r.tokenRejectedAtReadback,true);const value=JSON.parse(readFileSync(s.options.path)).value;assert.equal(value.revocation,'UNKNOWN');assert.equal(value.tokenVerification,'REJECTED_AT_READBACK');
+ assert.equal(s.calls.filter(x=>x.url.endsWith('/revoke')).length,1);assert.equal(v.verifications(),1);
+});
+test('verification owns denial body disposal through settlement before recording token rejection',async()=>{
+ let enter,release;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);const response=()=>new Response(new ReadableStream({cancel:async()=>{enter();await gate;}}),{status:401});
+ const v=verificationSetup(response),s=v.s;await s.flow.receive(s.request());await s.flow.cancel();let settled=false;const pending=s.flow.verifyRevoked().then(r=>{settled=true;return r;});await entered;
+ assert.equal(settled,false);assert.equal(JSON.parse(readFileSync(s.options.path)).value.tokenVerification,'UNKNOWN');release();assert.equal((await pending).tokenRejectedAtReadback,true);assert.equal(settled,true);
+});

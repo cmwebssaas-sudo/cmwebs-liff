@@ -1793,3 +1793,13 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Local | Retained1707/1707 root; new Worker24/24;7×100 p951.774–2.804ms<50 | No retry/warmup/exclusion; exact composed Linux CI pending |
 | Prior C3 CI |38533367980 rental1702 PASS/Worker23 PASS1 FAIL | Rooms188.364ms>50; cause UNRESOLVED, no production performance acceptance |
 | Real gates | Actual25/160 unchanged/no claim,320 declined | Trial STOP; daily900s/fresh72h/seven-day/500/strict latency/device retained |
+
+### 2026-10-14 — Original token rejection check
+
+| Gate | Evidence | Boundary |
+| --- | --- | --- |
+| TDD | Missing method7 RED→GREEN; overlapping token erasure RED→GREEN | Original-token bearer identity, admission expiry, UNKNOWN preservation/no retry, body disposal under ownership |
+| Review | Static P1/P2/minor0, no repeated review | Original-holder only;401 is token rejection at readback, not cause/grant-wide revocation |
+| Affected/full |110/110 and1718/1718,0 fail/cancel/skip; Node22/Core/ownedPG stopped | Snapshot565 SHA542b61167239a310904db41397584477a6113b5f666d57ca1f452bc4615c90c2; validate72/40/static/diff PASS |
+| Worker | Prior unchanged24/24/two dry runs CI38535147314 retained | Every Worker source/test byte unchanged; new-head CI pending, no local redundant benchmark |
+| Real trial |25/160 unchanged/unclaimed;320 declined, no Google IO |8 native/guard callbacks/whole160 plan remain; all original real gates unaccepted |
