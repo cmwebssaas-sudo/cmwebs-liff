@@ -1,5 +1,24 @@
 # CMWebs Current State
 
+## 2026-10-14 — C3 inherited Node supervisor observation
+
+Recommended model/speed: GPT-6.1 Sol / high. Latest C2 source1b3c18c is aligned
+into C3; the sole non-document change from685d928 is the parity test observer.
+C3 authority/controller/runtime/root tests remain byte-identical to tested
+1707/1707 with completed ownedPG cleanup, retained without an unchanged rerun.
+One affected Worker24/24 passes; seven100-sample p951.774–2.804ms<50, no fail/
+cancel/skip. Validate72/40/static/diff pass. Exact composed-head Linux CI pending.
+
+Prior C3 CI38533367980 rental1702 PASS but Worker23/24 FAIL: room188.364ms>50,
+11/100>=50, batch185ms/internal1ms p95. Cause remains UNRESOLVED; local passes
+and new Node parent CPU/ELU probes are not production performance acceptance.
+Original C3 serializes test files; actual authenticated/scoped loader differs
+from the parity fixture. Node CPU excludes workerd; ELU is not CPU.
+
+Actual25/160 unchanged/no claim;320 declined, actual trial STOP. Nine native
+callbacks/whole160 plan,900s/day/fresh72h/seven-day/500/Taipei/device/cutover
+remain unaccepted. No Google or formal configuration/publication/switch change.
+
 ## 2026-10-14 — C3 stack alignment in local verification
 
 Recommended model/speed: GPT-6.1 Sol / high, for security controls and retained

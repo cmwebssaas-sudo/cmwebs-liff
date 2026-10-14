@@ -1784,3 +1784,12 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Full local | Node22/Core/ownedPG1707/1707; cleanup/listener stopped | 0 fail/cancel/skip; one complete run |
 | Worker local |24/24; seven groups100 each, unchanged p951.769–3.132ms<50 | No retries/warmup/exclusions; exact-head Linux CI pending; original failedCI retained |
 | Real gates | Counter25/160 unchanged/no claim;320 declined | Actual trial STOP; daily900s NOT_ACCEPTED; fresh72h/seven-day shadow/500/device NOT_STARTED or UNACCEPTED |
+
+### 2026-10-14 — C3 composed Node observation
+
+| Gate | Evidence | Boundary |
+| --- | --- | --- |
+| Source | Sole non-document delta from685d928 is C2 observer plus original0003 | All authority/runtime/root tests unchanged; static review reused |
+| Local | Retained1707/1707 root; new Worker24/24;7×100 p951.774–2.804ms<50 | No retry/warmup/exclusion; exact composed Linux CI pending |
+| Prior C3 CI |38533367980 rental1702 PASS/Worker23 PASS1 FAIL | Rooms188.364ms>50; cause UNRESOLVED, no production performance acceptance |
+| Real gates | Actual25/160 unchanged/no claim,320 declined | Trial STOP; daily900s/fresh72h/seven-day/500/strict latency/device retained |

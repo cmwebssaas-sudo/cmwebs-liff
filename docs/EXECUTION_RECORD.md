@@ -2859,3 +2859,32 @@ remains unresolved. Counter hash unchanged25/160, no claim or Google actions;
 320 declined, nine native callbacks and real160-budget feasibility incomplete.
 Original daily900s/fresh72h/seven actual24h/500/Taipei/strict latency/device
 acceptance unchanged. No formal deployment, trigger/property or read switch.
+
+## 2026-10-14 — C3 aligned supervisor diagnostic
+
+Recommended model/speed: GPT-6.1 Sol / high. Align two C3 feature commits onto
+C2 source1b3c18c; preserve both historical document sections. Verified complete
+685d928 history bundle retained privately. Only non-document delta is reviewed
+C2 parity observer, exactly equal except C3 required0003 migration. Production
+authority/controllers and root tests remain byte-identical to the prior pinned
+1707/1707 source with verified Core/ownedPG cleanup. Ruling: retain that full
+result and run one affected Worker24/24; no redundant unchanged root rerun.
+Cost: original local root provenance is retained, new composed-head CI required.
+
+All seven original100-sample groups pass p951.774–2.804ms<50 with numeric parent
+CPU/ELU guards;0 fail/cancel/skip, pretest dry run PASS. Validate72/40/static and
+diff PASS. C2 observer static review P1/P2/minor0 reused, no auth/source change
+requiring another review. Start probes count inside existing wall measurement;
+no retry/warmup/exclusion/threshold or acceptance changes.
+
+C2 exactCI38534753700 rental867/867 and Worker13/13/two dry runs PASS, complete
+footers/Worker log/annotations read. C3 prior38533367980 rental1702 PASS and
+Worker23/24 FAIL retained: rooms188.364ms>50,11/100>=50. Internal emulator1ms
+versus batch185ms p95 identifies an unmeasured boundary; it does not identify
+a scheduling/network cause. New parent Node probes cannot measure child
+workerd CPU, and ELU active duration includes blocking. Exact C3 new CI pending.
+
+Actual25/160 byte-identical/no claim;320 declined, no Google/native/RPC/formal
+mutation. All real gates unaccepted; preserve root WIP/S1 confidentiality.
+Rollback aligned feature to685d928 using retained history, no formal rollback
+needed for test-only observations. Keep Draft/unmerged until actual acceptance.
