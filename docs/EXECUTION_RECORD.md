@@ -632,3 +632,23 @@ Cloudflare configuration or formal flags change. C1 daily-runtime/72h, C3
 strict authority/latency and real trial, C5 seven-day and C6 device/cutover
 remain required. Root WIP retained. Rollback reverts these test/diagnostic
 changes to the prior C2 source; serving deployments and data are untouched.
+
+
+## 2026-10-14 — C2 feature stack aligned to current C1
+
+The prior pushed diagnostic head1ddad5b could not start PR CI because the C1
+base had advanced to6b90a4c with conflicting documentation. A private complete
+Git bundle retained the old head/history. Rebase replayed the C2 feature and
+observation on current C1; conflicts were documentation only and both records
+were preserved. Rebased92d2f67 changes runtime versus1ddad5b only by inheriting
+C1's reviewed local UTF-8 sizing helper/test. No formal branch merge/rollout.
+
+Full872/872, zero fail/cancel/skip, Node22.23.3/Core/disposable PG16.14; cleanup
+verified,2.606s.494-source snapshot:
+`ee5c2a7ae34109ff3326f33166b6f219f05db46fab614d5f7eeef4aec66a0cab`.
+Validate71/40/static PASS. All cloudflare/read-api bytes unchanged, so prior
+Worker13/13/p952.117–2.954ms is retained without a redundant Worker rerun.
+Prior868 evidence remains at its pre-alignment source. Explicit remote-head
+lease protects the feature push; PR stays Draft and original actual gates
+remain unmet. Root WIP and actual25/160/no-claim preserved. Prior bundle/source
+heads permit restoring the feature history without changing serving data.

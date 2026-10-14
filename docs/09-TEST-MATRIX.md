@@ -1334,3 +1334,9 @@ See EXECUTION_RECORD.md for immutable source snapshot, limits and rollback.
 
 No retries/warmup/exclusions. Stage p95 values cannot be subtracted to infer
 network time; production Workspace-scoped loader/auth remains a separate gate.
+
+
+C2 stack alignment on C1's6b90a4c: full872/872 and validate71/40/static PASS;
+local Core/PG cleanup verified. Only inherited C1 UTF-8 source/tests changed
+runtime. Worker/test bytes unchanged; prior13/13 retained without a repeat.
+Documentation conflicts preserve both histories; no actual acceptance/rollout.
