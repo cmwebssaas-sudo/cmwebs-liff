@@ -584,3 +584,51 @@ C2 draft [PR267](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/267) source
 `fa3300e` is stacked on C1 and attached to this task. CI38178464204 rental and
 read-worker both passed. It remains unmerged/unpublished while real C1
 acceptance runs; independent C3 local work proceeds on its own worktree.
+
+
+## 2026-10-14 — C2 D1 latency diagnostics without changing acceptance
+
+Recommended GPT-6.1 Sol/high for CI-versus-local measurement fidelity. C3 exact
+head7226076 CI38526286078 failed Worker23/24: home191.197ms and arrears58.361ms,
+with batch stages189/56ms. Other route p95 values7.751–16.016ms. The failure is
+retained; its cause remains UNRESOLVED. C3 changes cannot be assumed to cause
+or resolve a test-only full-table D1 batch latency. Its production loader uses
+Workspace-scoped SQL and is a separate performance boundary.
+
+One private exact-C3 probe preserved all parity assertions and7×100 samples,
+added numeric internal metadata only, and passed locally at1.722–2.390ms.
+Internal-duration sum p95~1ms,20 queries/68 rows. This ARM Node22 observation
+did not reproduce the Linux CI failure and is not production acceptance.
+
+C2's existing test entry now exposes batch/decode/route stages and a test-only
+numeric header with query count, rows read and cumulative internal duration.
+The pinned Miniflare5.20261006.1-alpha implementation includes row conversion
+and bookkeeping in duration; it is not pure SQL time or network-time proof.
+See https://developers.cloudflare.com/d1/worker-api/return-object/ for returned
+metadata fields. Missing/nonfinite metadata fails rather than becoming0.
+There are no extra SQL calls or application response changes. Production entry
+never imports this test entry. Metadata collection remains in decode; final
+header serialization remains in total client timing, outside server stages.
+
+Each original group still uses all100 samples and p95 index94/<50ms. The report
+adds stage p95, count>=50 and five paired slow examples, then fails after every
+group is reported. These examples never substitute for the full sample set;
+no warmup, retry, excluded sample or threshold change. Do not subtract stage
+percentiles from total time to infer a network/host cause.
+
+RED1/1 failed for absent metadata header. Affected actual Miniflare/GAS parity
+GREEN1/1 covered all700 observations, p951.729–2.605ms. One static independent
+review found no P1/P2/minor, diff check PASS, no benchmark rerun. One full root
+regression868/868, zero fail/cancel/skip, Node22.23.3 with pinned Core/disposable
+local PG16.14; final database/role/PG/listener cleanup verified. 494-source pin:
+`8a2ef9f169143983932d087663fa4de05ce623cf331634d4b717a7b40dae7d80`.
+One required full Worker suite13/13, zero fail/cancel/skip; pretest dry run PASS.
+All seven100-sample groups p952.117–2.954ms, zero samples>=50. Validate71/40/static
+and diff PASS. No unchanged suite was retried to obtain a passing result.
+
+The actual Google trial counter remains25/160, byte-identical and unclaimed;
+320 was declined. No Google/production source, secrets, Sheet data, trigger,
+Cloudflare configuration or formal flags change. C1 daily-runtime/72h, C3
+strict authority/latency and real trial, C5 seven-day and C6 device/cutover
+remain required. Root WIP retained. Rollback reverts these test/diagnostic
+changes to the prior C2 source; serving deployments and data are untouched.

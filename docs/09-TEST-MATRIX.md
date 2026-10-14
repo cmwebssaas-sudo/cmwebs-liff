@@ -1320,3 +1320,17 @@ are tracked separately; this diagnostic is not a canonical sync fix.
 | Formal acceptance | Daily-runtime NOT_ACCEPTED; corrected72h NOT_STARTED | No measured native speedup, formal deployment/flag change or observation restart |
 
 See EXECUTION_RECORD.md for immutable source snapshot, limits and rollback.
+
+
+## 2026-10-14 — C2 D1 internal versus batch timing
+
+| Check | Result | Boundary |
+| --- | --- | --- |
+| Header/stage observation | RED missing header; actual parity GREEN1/1, all700 samples | Numeric test-only metadata; no extra SQL or body changes |
+| Independent review | Static PASS, no P1/P2/minor; diff PASS | No repeated benchmark or full suite |
+| Full root / Worker | 868/868 and13/13, no fail/cancel/skip; validate71/40/static PASS | Node22.23.3/macOS/Core/local PG cleanup; Worker pretest dry run |
+| Full local Worker p95 | All seven groups100 each,2.117–2.954ms; zero>=50 | All samples retained; original index94/<50ms unchanged |
+| Earlier C3 CI | Worker23/24 failed home191.197/arrears58.361ms | Cause UNRESOLVED; local pass is not CI reproduction or production acceptance |
+
+No retries/warmup/exclusions. Stage p95 values cannot be subtracted to infer
+network time; production Workspace-scoped loader/auth remains a separate gate.
