@@ -1430,6 +1430,39 @@ function workspaceLandlordResolveAccess_(
 }
 
 
+function workspaceLandlordLegacyParentMaps_() {
+  let maps=typeof runtimeSnapshotGetContext_==='function'?runtimeSnapshotGetContext_('read_scope_parents','all'):null;
+  if(!maps) {
+    maps={};
+    [['property_id','V2_properties'],['room_id','V2_rooms'],['contract_id','V2_contracts']].forEach(function(pair) {
+      const map=Object.create(null);
+      workspaceGetObjectsWithRow_(runtimeSpreadsheet_().getSheetByName(pair[1])).forEach(function(parent) {
+        const id=workspaceText_(parent[pair[0]]);
+        if(id) {if(!map[id]) map[id]=[];map[id].push(parent);}
+      });
+      maps[pair[0]]=map;
+    });
+    if(typeof runtimeSnapshotSetContext_==='function') runtimeSnapshotSetContext_('read_scope_parents','all',maps);
+  }
+  return maps;
+}
+
+function workspaceLandlordLegacyParentsMatchAccess_(row, access, parentMaps) {
+  const workspaceId=workspaceText_(access.workspace.workspace_id).toUpperCase();
+  const maps=parentMaps || workspaceLandlordLegacyParentMaps_();
+  function foreign(record,fields) {
+    return fields.some(function(field) {
+      return (maps[field][workspaceText_(record[field])]||[]).some(function(parent) {
+        const declared=workspaceText_(parent.workspace_id).toUpperCase();
+        if(declared && declared!==workspaceId) return true;
+        const next=field==='contract_id'?['property_id','room_id']:field==='room_id'?['property_id']:[];
+        return foreign(parent,next);
+      });
+    });
+  }
+  return !foreign(row,['property_id','room_id','contract_id']);
+}
+
 function workspaceLandlordResolvePrincipals_(
   ss,
   context
@@ -1559,6 +1592,12 @@ function workspaceLandlordResolvePrincipals_(
   const inferredRows =
     landlords.filter(
       function (landlord) {
+        const declaredWorkspaceId =
+          workspaceText_(landlord.workspace_id).toUpperCase();
+        if (declaredWorkspaceId && declaredWorkspaceId !== workspaceId) {
+          return false;
+        }
+
         const landlordUserId =
           workspaceText_(
             landlord.landlord_user_id ||

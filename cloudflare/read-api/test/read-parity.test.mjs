@@ -39,7 +39,7 @@ test('all six routes match original GAS after whitelist projection and actual lo
   try {
     const db=await mf.getD1Database('DB');
     const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
-    for(const file of ['0001_read_replica.sql','0002_read_projection.sql']) {
+    for(const file of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql']) {
       const migration=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
       await db.batch(migration.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
     }
