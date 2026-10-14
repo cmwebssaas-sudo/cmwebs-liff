@@ -652,3 +652,34 @@ Prior868 evidence remains at its pre-alignment source. Explicit remote-head
 lease protects the feature push; PR stays Draft and original actual gates
 remain unmet. Root WIP and actual25/160/no-claim preserved. Prior bundle/source
 heads permit restoring the feature history without changing serving data.
+
+## 2026-10-14 — C2 Node supervisor timing observation
+
+Recommended model/speed: GPT-6.1 Sol / high for separate-process measurement
+boundaries. The aligned C3 CI38533367980 failed Worker23/24: room p95188.364ms
+against unchanged50ms,11/100>=50; paired batch235–286ms/internal0–1ms. Rental
+1702/1702 passed. Original C3 package already serializes test files; concurrent
+Node test files do not explain this failure. The parity fixture reads all20
+tables in one batch; production instead performs replica, identity/access and
+GAS authority checks before scoped dependent dataset reads. The fixture is
+not production authenticated latency evidence. Cause remains UNRESOLVED.
+
+Add only Node supervisor process CPU and event-loop active/idle/utilization
+metrics alongside existing five slowest paired observations. CPU is total
+Node process threads, may exceed wall time, and excludes the workerd child;
+ELU active duration includes blocking and is not CPU time. Probe starts are
+inside the original wall timer; diagnostic formatting remains after it, as
+with existing header metadata. No added SQL, IO, sample, warmup, retry or
+changed p95 index/50ms threshold. Never infer worker CPU/network from these
+numbers alone. One static review: P1/P2/minor0; no repeated review/benchmark.
+
+One complete affected Worker13/13,0 fail/cancel/skip; all seven100-sample
+groups p952.473–3.570ms and numeric guards PASS; pretest dry run PASS.
+Validate71/40/static and diff PASS. Ruling: retain previously complete872/872
+root/Core/ownedPG evidence because every runtime/root-test byte matches that
+verified snapshot; only this Worker test file differs. User requested fewer
+redundant tests; no separate implementation-mirroring test or unchanged root
+rerun. Cost: local root result retains its original platform/time provenance;
+new exact-head CI still required. No actual Google/counter/formal mutation.
+Rollback this test-only observer to priorC2a1d6406; original C3 failures and all
+900s/day/fresh72h/seven-day/500/strict latency/device gates remain unaccepted.

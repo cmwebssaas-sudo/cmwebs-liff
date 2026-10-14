@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
+import { performance } from 'node:perf_hooks';
 import { createHash, randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
@@ -78,11 +79,24 @@ test('all six routes match original GAS after whitelist projection and actual lo
     for(const item of cases) {
       const samples=[],observations=[],stages={d1:[],decode:[],route:[],internal_ms:[]};
       for(let index=0;index<100;index++) {
-        const start=performance.now();
+        const start=performance.now(),cpuStart=process.cpuUsage(),loopStart=performance.eventLoopUtilization();
         const response=await mf.dispatchFetch('https://local.test'+httpPaths[item.route]);
         assert.equal(response.status,200);
         await response.arrayBuffer();
-        const elapsed=performance.now()-start; samples.push(elapsed);const detail=metrics(response);observations.push({index,wall_ms:Number(elapsed.toFixed(3)),...detail});for(const stage of Object.keys(stages))stages[stage].push(detail[stage]);
+        const elapsed=performance.now()-start;
+        // Node supervisor only: workerd is a separate child. ELU active time
+        // includes blocking; neither ELU nor process CPU establishes a cause.
+        // Start probes stay inside the original wall timer; ending diagnostic
+        // formatting stays outside, as with the existing header observations.
+        const cpu=process.cpuUsage(cpuStart),loop=performance.eventLoopUtilization(loopStart);
+        const supervisor={cpu_ms:Number(((cpu.user+cpu.system)/1000).toFixed(3)),
+          loop_active_ms:Number(loop.active.toFixed(3)),loop_idle_ms:Number(loop.idle.toFixed(3)),
+          loop_utilization:Number(loop.utilization.toFixed(6))};
+        assert(Object.values(supervisor).every(value=>Number.isFinite(value)&&value>=0));
+        assert(supervisor.loop_utilization<=1);
+        samples.push(elapsed);const detail=metrics(response);
+        observations.push({index,wall_ms:Number(elapsed.toFixed(3)),...detail,node_supervisor:supervisor});
+        for(const stage of Object.keys(stages))stages[stage].push(detail[stage]);
       }
       samples.sort((a,b)=>a-b);
       const p95=samples[94];

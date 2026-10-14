@@ -1340,3 +1340,12 @@ C2 stack alignment on C1's6b90a4c: full872/872 and validate71/40/static PASS;
 local Core/PG cleanup verified. Only inherited C1 UTF-8 source/tests changed
 runtime. Worker/test bytes unchanged; prior13/13 retained without a repeat.
 Documentation conflicts preserve both histories; no actual acceptance/rollout.
+
+### 2026-10-14 — C2 supervisor observation
+
+| Gate | Result | Evidence boundary |
+| --- | --- | --- |
+| Diagnostic review | Static P1/P2/minor0 | Node process CPU excludes workerd; ELU not CPU; no root-cause claim |
+| Affected Worker |13/13,0 fail/cancel/skip; seven100-sample p952.473–3.570ms<50 | Existing p95/gates retained, no retries or excluded samples; exact-head CI pending |
+| Root verification | Prior872/872 retained; all runtime/root-test bytes identical | New source change only Worker test; no redundant unchanged root rerun |
+| C3 preceding Linux CI |38533367980 rental1702 PASS/Worker23 PASS1 FAIL | Rooms188.364ms>50,11/100>=50; cause UNRESOLVED; no formal or real acceptance |
