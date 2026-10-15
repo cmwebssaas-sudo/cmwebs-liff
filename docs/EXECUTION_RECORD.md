@@ -3111,3 +3111,100 @@ seven-day shadow NOT_STARTED;500/Taipei/device/cutover unaccepted. Keep blank
 endpoint/six off flags. No Google/native/RPC, new credentials, formal release,
 Properties, timers, formal data or switch action. Private S1/root WIP preserved.
 Rollback local integration to2ed69c7; no formal release/data rollback needed.
+
+## 2026-10-15 — Handle preparation child input failures
+
+Recommended model/speed GPT-6.1 Sol/high. C5's current-stack full regression
+completed1735/1736 with one real failure: an uncaught stdin EPIPE during the
+canonical negative-checkpoint case. The failed run, source snapshot and owned
+PostgreSQL cleanup remain recorded; no unchanged retry erased it. Fix belongs
+to C3's separate worktree/PR268, before propagating to C4/C5/C6.
+
+Writable write/end callbacks do not consume stream error events. Two regressions
+use real spawned Python children and destroy stdin with EPIPE. Both RED with
+uncaught exceptions, then GREEN2/2. Scope protocol requests now reject with
+sanitized TRIAL_STOPPED and failed/ended flags; no terminal mark, new debit,
+retry or cleanup grant. Existing finalizer still drains entered IO and actual
+child exit/close before releasing original local ownership. Stop requests mark
+failure and still require exact valid acknowledgement plus successful close.
+Tests preserve zero callback IO, synthetic spend25, scope reuse after settlement
+and ordinary-IO denial following failed stop input.
+
+One static GPT-6 Astra/high review P1/P2/minor0; pins unchanged, no re-review.
+Final: Ruling: review set aside existing Python EOF/death releasing its OS flock
+while a callback may remain live. This patch does not prove lock continuity,
+remote termination or whole rollback. Keep that broader ownership condition
+unaccepted before any actual trial; verify outer phase/holder coordination.
+Cost if wrong: another operation could overlap an original live callback.
+Actual trial remains STOP; a local sanitized error is not native acceptance.
+
+One complete Node22.23.3/Core/ownedPG regression1720/1720,56.469s,zero fail,
+cancel/skip, PostgreSQL cleanup/closed listener verified.565-file working snapshot
+on old9b1af93 before commit:
+6e3ba568285a892eada5e6c755ea73e21af75d027590ecb084958d0f429c3b69.
+Runtime/root-test bytes pinned; only docs after full terminal. Ruling: retain
+unchanged Worker26/26/two dry runs from9b1af93 CI38705761544; all Cloudflare,
+Apps Script and read-fixture bytes match, so no redundant local Worker benchmark.
+Normal exact-head CI remains required; retained provenance stays explicit.
+
+C5 preflight originally stopped before any test/PG at a30-second Git status
+limit. Owned sampled process was blocked reading common info/exclude,240 bytes
+with the macOS dataless flag. The owned process terminated; no shared process
+was killed. An additional full-tree/blob audit also timed out and is not claimed.
+Ruling: for the original tracked-only Core cleanliness guard, use a private Git
+view with actual verified HEAD, a fresh byte-identical copy of actual index and
+the same object store. Original HEAD/index must stay unchanged before/after.
+No local filter/include or info-attribute override exists. Private excludes are
+empty; [Git documents](https://git-scm.com/docs/gitignore) that ignore rules do
+not affect tracked files. This avoids the blocked untracked-exclude read while
+retaining tracked status; no original source/metadata setting is changed.
+Clean actual worktree is verified and an empty private negative worktree detects
+321 missing tracked paths. Cost if wrong: a dirty Core could be accepted;
+strict actual HEAD/index pins and copied-index status checks are retained.
+The actual HTTP/PostgreSQL/four-handler tests still run against the original
+Core worktree, not the metadata view or a substitute application.
+
+A separate read-only probe used the existing C1 synthetic Cloudflare D1 after
+account/binding metadata checks. Constant SELECT json_array with69 numeric
+arguments returned the exact69-value array; no FROM, table/schema/data write,
+new resource/deployment/credential or Google call. Official D1 docs list32
+SQL-function arguments, so the discrepancy remains explicit. Ruling: do not
+rewrite C6 packing solely on the unconfirmed inference that69 must fail; this
+REST result is not a Worker-binding/projection/capacity/performance acceptance.
+Validate the actual composed candidate before formal use. Cost if wrong:
+a binding-specific limit could still reject the packed query; real readback
+and all original gates remain mandatory.
+
+Validate PASS:72 backend files,40 endpoint references and static release cache;
+diff whitespace check PASS. No Apps Script bytes changed, so no native Apps
+Script test execution is required for this Node controller fix.
+
+Actual Google25/160 unchanged/unclaimed,320 declined; native eight callbacks/
+complete budget/ownership gates incomplete. Daily900s NOT_ACCEPTED, fresh72h
+and seven-day shadow NOT_STARTED;500-room/Taipei/latency/device/cutover remain
+unaccepted. C5 merge stays pending until fixed upstream is propagated and its
+full suite passes. Root WIP, C5 swap and private S1 boundary preserved. Rollback
+local fix to9b1af93; no formal release or data rollback is needed.
+
+
+## 2026-10-15 — C4 inherits child input handling
+
+Recommended model/speed GPT-6.1 Sol/high for stack/ownership boundaries.
+Merge current C3 acbff8e into C4 132e9a1. Only inherited Node controller/test
+bytes change outside docs; all own routing/fallback/write protection and all
+Worker/Apps Script bytes remain identical. Three appended documentation
+conflicts preserve both sides using a line-state parser; no runtime conflict.
+Affected real-child preparation/canonical suites68/68,0 fail/cancel/skip, and
+validate72/40/static cache/diff PASS. Existing static C3 review P1/P2/minor0
+covers exact inherited source; no duplicate review.
+
+Ruling: retain C4 full1731/1731 and Worker26/26 from132e9a1 plus C3 fix full
+1720/1720 at acbff8e, and execute affected68 here; do not repeat unchanged
+local full/Worker work. Cost: source-composition interactions still need normal
+new-head CI; retained snapshots are not claimed as a full run of this merge.
+C3 CI38711093628 rental1715/Worker26/two dry runs SUCCESS, footers/annotations
+read. C4 composed-head CI required after push. Existing OS-flock continuity
+condition remains unaccepted before actual trial; no remote-termination claim.
+Actual25/160 unchanged/unclaimed, native STOP,900s/72h/seven-day/500/Taipei/
+latency/device/cutover unaccepted. Blank endpoint/flags off, root WIP/private
+S1 preserved. Rollback this undeployed merge to132e9a1; no data rollback.

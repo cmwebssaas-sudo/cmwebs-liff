@@ -18,6 +18,30 @@ function setup(patch={},spent=25){
  const pauses=[],options={path,epoch,approvalHash,proposalHash,legacySha256:hash(raw),importedReads:spent,expiresAt:clock+21600000,now:()=>now,pause:async ms=>{pauses.push(ms);now+=ms;},...patch};epochs.add(epoch);assert.equal(typeof mod.createAuthorityPreparationControl,'function');const control=mod.createAuthorityPreparationControl(options);
  return {control,options,pauses,setNow:v=>{now=v;},get:()=>JSON.parse(readFileSync(path))};
 }
+async function failChildInputOnce(work){
+ const original=cp.spawn;let injected=false;
+ try{
+  cp.spawn=(...args)=>{
+   const child=original(...args);
+   if(!injected){injected=true;queueMicrotask(()=>child.stdin.destroy(Object.assign(Error('SYNTHETIC_PRIVATE_PIPE_FAILURE'),{code:'EPIPE'})));}
+   return child;
+  };syncBuiltinESMExports();await work();
+ }finally{cp.spawn=original;syncBuiltinESMExports();}
+ assert.equal(injected,true);
+}
+test('child input EPIPE rejects the preparation scope without IO or an uncaught stream error',async()=>{
+ const s=setup();let io=0;
+ await failChildInputOnce(()=>assert.rejects(s.control.withPreparation(cap=>cap.externalRead(async()=>{io++;})),/^Error: TRIAL_STOPPED$/));
+ assert.equal(io,0);assert.equal(s.get().spent,25);
+ // Reuse is possible only after the original child has actually settled.
+ await s.control.withPreparation(async()=>{});assert.equal(s.get().spent,25);
+});
+test('stop-request input EPIPE cannot acknowledge a durable stop or reopen ordinary IO',async()=>{
+ const s=setup();let io=0;
+ await failChildInputOnce(()=>assert.rejects(s.control.requestStop(),/^Error: TRIAL_STOPPED$/));
+ await assert.rejects(s.control.withPreparation(cap=>cap.externalRead(async()=>{io++;})),/TRIAL_STOPPED/);
+ assert.equal(io,0);assert.equal(s.get().spent,25);
+});
 test('denial after preparation debit but before queued IO vetoes callback and retains independent cleanup',async()=>{
  const s=setup(),original=cp.spawn;let capSaved,second,firstIO=0,secondIO=0,cleanupIO=0,armed=true;
  try{

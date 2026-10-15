@@ -14,6 +14,23 @@ latency/device/cutover unaccepted. Older approval-pending statements below are
 historical; the currently approved synthetic trial remains subject to160 and
 all original gates. Private S1/root WIP preserved.
 
+## 2026-10-15 — Controlled child-input failures; C5 composition pending
+
+GPT-6.1 Sol/high. C5 composed full1735/1736 exposed uncaught stdin EPIPE. C3 now
+consumes scoped/stop stdin errors, rejects protocol work without premature
+terminal/debit/retry/cleanup grant, and retains IO/child drain. Two real-child
+RED→GREEN cases; new full Node22/Core/ownedPG1720/1720 with cleanup verified.
+Static review P1/P2/minor0. Broader OS-flock continuity across child death is
+not proven; actual trial remains STOP. New exact-head CI pending.
+
+Core tracked status uses a private metadata view of actual verified HEAD/index/
+objects to avoid a blocked dataless common exclude file; actual Core sources
+and settings unchanged. All HTTP/PG tests still use the original application.
+C5 must inherit the fix before its regression is accepted. Cloudflare constant
+REST69-argument probe passed on existing synthetic D1; not Worker/performance
+acceptance or a formal change. Google25/160 unchanged,320 declined; all original
+900s/72h/seven-day/500/Taipei/device/cutover gates remain unaccepted/off.
+
 
 ## 2026-10-15 — Scoped loader uses12 calls for the same63 statements
 
@@ -2025,3 +2042,10 @@ failure retained/root cause UNRESOLVED. New CI awaits push. Actual25/160 unchang
 320 proposal UNAPPROVED; native collector/window/quota, full budget/guard/GCP/
 Testing/client/same-ledger/recovery/orchestration and all real gates pending.
 No actual account IO/upgrade/credential/RPC/formal mutation, Draft268 preserved.
+
+
+2026-10-15 C4 child-input propagation: exact inherited C3 acbff8e controller/
+tests, own routing/Worker/Apps Script unchanged; affected68/68 and validate72/40/
+static cache/diff PASS. Retain previous full1731/1731 and Worker26/26 plus
+C3 full1720/1720; this is not a fresh full-composed run. New-head CI pending;
+Draft/off, actual25/160/native STOP and all real gates remain unaccepted.

@@ -1843,3 +1843,20 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Inherited scoped loader/trial controls | Cloudflare/Apps Script/read fixtures exactC3 9b1af93; retain26/26/two dry runs fromCI38705761544 | No redundant local benchmark; new composed-head CI required |
 | Local infrastructure | Node22/Core/ownedPG cleanup and closed listener verified | No shared/formal database |
 | Real gates | Actual25/160 unchanged; daily900s/72h/seven-day/500/Taipei/device unaccepted | Endpoint blank/flags off |
+
+## 2026-10-15 — Child input error handling
+
+| Area | Evidence | Boundary |
+| --- | --- | --- |
+| Scoped child stdin error | Real-child EPIPE RED→GREEN; zero IO/spend25, sanitized failure, scope reuse after actual finalization | No premature terminal/debit/retry/cleanup grant |
+| Stop input error | RED→GREEN; no acknowledgement or ordinary-IO reopening | Existing exact ACK/close checks retained |
+| Complete regression | Node22/Core/ownedPG1720/1720,cleanup/listener verified | Prior C5 failure1735/1736 remains; C5 integration not accepted |
+| Core prerequisite | Actual HEAD/copied actual index/same objects via private metadata view;321-path missing-worktree negative | Shared exclude read blocked; no shared source/metadata change; full blob audit not claimed |
+| Worker/real gates | Retain unchanged9b1af93 Worker26/26/two dry runs; new-head CI required | OS flock continuity, actual160/900s/72h/seven-day/500/Taipei/device unaccepted |
+
+
+2026-10-15 C4 child-input propagation: exact inherited C3 acbff8e controller/
+tests, own routing/Worker/Apps Script unchanged; affected68/68 and validate72/40/
+static cache/diff PASS. Retain previous full1731/1731 and Worker26/26 plus
+C3 full1720/1720; this is not a fresh full-composed run. New-head CI pending;
+Draft/off, actual25/160/native STOP and all real gates remain unaccepted.

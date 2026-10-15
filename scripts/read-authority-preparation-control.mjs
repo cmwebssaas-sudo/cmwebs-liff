@@ -29,6 +29,7 @@ export function createAuthorityPreparationControl(input){
     const timer=setTimeout(()=>{failed=true;child.kill('SIGTERM');killTimer=setTimeout(()=>child.kill('SIGKILL'),2000);},10000);
     child.stdout.setEncoding('utf8');child.stdout.on('data',chunk=>{output+=chunk;if(output.length>5000){failed=true;child.kill('SIGTERM');}});child.stderr.on('data',()=>{});
     child.on('error',()=>{failed=true;if(child.pid===undefined){clearTimeout(timer);reject(Error('TRIAL_STOPPED'));}});
+    child.stdin.on('error',()=>{failed=true;});
     child.on('close',code=>{clearTimeout(timer);clearTimeout(killTimer);try{const r=JSON.parse(output);if(code!==0||failed||!only(r,['ok','stopRequested'])||r.ok!==true||r.stopRequested!==true)stop();resolve();}catch(_){reject(Error('TRIAL_STOPPED'));}});
     child.stdin.end(JSON.stringify({path,epoch,binding})+'\n',e=>{if(e)failed=true;});
    });return Object.freeze({stopRequested:true});
@@ -104,6 +105,9 @@ export function createAuthorityPreparationControl(input){
    try{
     const t=now();if(!integer(t))stop();child=spawn('python3',[fileURLToPath(new URL('./read-authority-preparation-budget.py',import.meta.url))],{stdio:['pipe','pipe','pipe'],env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
     child.on('error',()=>{ended=true;if(child.pid===undefined)markTerminal();for(const p of waiting.splice(0))p.reject(Error('TRIAL_STOPPED'));});
+    // A broken input pipe stops protocol admission, not ownership of the child
+    // or an entered IO callback. The existing finalizer still drains both.
+    child.stdin.on('error',()=>{failed=true;ended=true;for(const p of waiting.splice(0))p.reject(Error('TRIAL_STOPPED'));});
     child.on('close',markTerminal);child.on('exit',()=>{markTerminal();ended=true;for(const p of waiting.splice(0))p.reject(Error('TRIAL_STOPPED'));});
     child.stderr.on('data',()=>{});child.stdout.setEncoding('utf8');child.stdout.on('data',chunk=>{
      buffer+=chunk;if(buffer.length>100000){ended=true;child.kill('SIGTERM');return;}
