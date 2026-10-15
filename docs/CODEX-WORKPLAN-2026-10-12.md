@@ -1,8 +1,9 @@
 # Codex 工作計畫：房東端速度與介面（2026-10-12 起）
 
-> **2026-10-15 加速修訂草案：** 房東要求大幅縮短上線等待時間；具體提案見
+> **2026-10-15 已批准加速修訂：** 房東要求大幅縮短上線等待時間；具體提案見
 > [READ-ACCELERATED-ROLLOUT.md](READ-ACCELERATED-ROLLOUT.md)。原本文保留作歷史基線。
-> 連續 24 小時並行觀察、先房源頁試行的門檻尚待房東確認；確認前仍執行原三日／七日要求。
+> 房東已明確批准 24 小時並行觀察、先房源頁，以及單次 wrapper 的 160 內試驗分配。
+> 原三日／七日與兩次入口的相應條款以兩份修訂決策為準；所有技術前置與其餘門檻保留。
 
 本文件是交給 Codex 的**執行計畫**。設計細節見
 [`CLOUDFLARE-READ-PATH-PLAN.md`](CLOUDFLARE-READ-PATH-PLAN.md)；決策紀錄見
@@ -22,7 +23,7 @@
 
 1. 依 `AGENTS.md`：先讀 `docs/CMWEBS_CODEX_HANDOFF.md`、`docs/EXECUTION_RECORD.md`、`docs/00-HANDOFF-INDEX.md`，並以 `git status`、branch、HEAD 重新驗證。
 2. **每個工作單一個 worktree＋feature branch＋PR**；根目錄 checkout 有大量既有 WIP，不得碰觸。
-3. 原逐次授權規則已由本對話的批次授權取代：各單驗收通過後，可依計畫 commit、push、PR、merge、部署、設定與逐頁切換。新增費用、刪除正式資料、計畫範圍修訂、本人登入／付款／真機驗收仍需房東。加速修訂尚未確認，不能據此縮短原觀察期。
+3. 原逐次授權規則已由本對話的批次授權取代：各單驗收通過後，可依計畫 commit、push、PR、merge、部署、設定與逐頁切換。新增費用、刪除正式資料、計畫範圍修訂、本人登入／付款／真機驗收仍需房東。加速修訂已確認，依 READ-ACCELERATED-ROLLOUT.md 與 READ-TRIAL-MINIMUM-DECISION.md 執行。
 4. 無法驗證的正式狀態一律標 `HUMAN_REQUIRED`，不得推測。
 5. 每個 PR 必附：diff 摘要、`npm test` 結果（已知唯一失敗為需要 `PLATFORM_CORE_TEST_WORKTREE` 的跨 repo round trip）、`npm run validate`、`git diff --check`、風險、部署步驟、rollback。
 6. **本 repository 是公開的，`docs/` 會由 GitHub Pages 公開**。不得寫入任何安全漏洞細節、token、密鑰、真實個資或真實 LINE UID。
