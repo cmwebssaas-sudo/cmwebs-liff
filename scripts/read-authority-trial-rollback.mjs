@@ -51,7 +51,7 @@ export function buildAuthorityTrialRollback(input){
 }
 function existingCounter(input){
  const path=resolve(input.path);dir(dirname(path));const value=JSON.parse(read(path,true,128000)),p=value.preparation;
- if(!p||![1,2,3].includes(p.version))stop();const binding=hash(JSON.stringify({path,epoch:input.epoch,approvalHash:input.approvalHash,proposalHash:input.proposalHash,legacySha256:input.legacySha256,importedReads:input.importedReads,expiresAt:input.expiresAt}));
+ if(!p||![1,2,3].includes(p.version))stop();const binding=hash(JSON.stringify({path,epoch:input.epoch,approvalHash:input.approvalHash,proposalHash:input.proposalHash,legacySha256:input.legacySha256,importedReads:input.importedReads,expiresAt:input.expiresAt,...(Object.hasOwn(input,'decisionHash')?{decisionHash:input.decisionHash}:{})}));
  const record=path=>{dir(dirname(path));const e=JSON.parse(read(path,true,128000));if(!only(e,['value','sha256'])||hash(JSON.stringify(canonical(e.value)))!==e.sha256)stop();return e.value;};
  const claim=record(path+'.preparation-claim.json');if(!same(claim,{path,epoch:input.epoch,binding}))stop();
  const registry=join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(input.epoch))+'.preparation.json'),reg=record(registry);

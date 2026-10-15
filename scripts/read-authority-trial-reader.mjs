@@ -5,6 +5,7 @@ import {dirname,resolve,join} from 'node:path';
 import {homedir,userInfo} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
 import {types} from 'node:util';
+import {consumeAuthorityTrialImportReadback} from './read-authority-trial-import.mjs';
 const stop=()=>{throw Error('TRIAL_STOPPED');},hash=v=>createHash('sha256').update(v).digest('hex'),checksum=v=>hash(JSON.stringify(v));
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const only=(v,keys,required=keys)=>record(v)&&Object.keys(v).every(k=>keys.includes(k))&&required.every(k=>Object.hasOwn(v,k));
@@ -35,7 +36,7 @@ export function createAuthorityTrialReader(input){
   if(!id(epoch,20)||!id(originalSheetId,20)||!id(syntheticSheetId,20)||originalSheetId===syntheticSheetId||![callerHash,publisherHash,fixtureHash].every(digest)||callerHash===publisherHash||!email(callerEmail)||hash(callerEmail)!==callerHash||!Number.isSafeInteger(expiresAt)||
    !only(creation,['source','epoch','syntheticSheetId','publisherHash','fixtureHash'])||creation.source!=='fixed-trial-import-readback'||creation.epoch!==epoch||creation.syntheticSheetId!==syntheticSheetId||creation.publisherHash!==publisherHash||creation.fixtureHash!==fixtureHash||
    [credential,fetcher,now,metadata?.read,control?.externalRead,control?.cleanup].some(f=>typeof f!=='function'))stop();
-  const cap=Object.freeze({read:metadata.read,external:control.externalRead,cleanup:control.cleanup});const metadataControl=Object.freeze({externalRead:cap.external});
+  const cap=Object.freeze({read:metadata.read,external:control.externalRead,cleanup:control.cleanup});const liveImportReceipt=input.creationReceipt,metadataControl=charge=>Object.freeze({externalRead:io=>cap.external(io,charge)});
   const binding=checksum({epoch,originalSheetId,syntheticSheetId,callerHash,publisherHash,fixtureHash,expiresAt,creation}),registryDir=join(homedir(),'.codex','private','cmwebs-authority-trials');mkdirSync(registryDir,{recursive:true,mode:0o700});
   const registry=join(registryDir,checksum(epoch)+'.reader.json'),registration={path,binding};directory(registry);let journal,lock;
   try{
@@ -65,17 +66,17 @@ export function createAuthorityTrialReader(input){
    let op,claimed=false;
    try{
     op=openSync(operationPath,'wx',0o600);integrity();if(journal.grantStarted||journal.grantAttempted||journal.stopRequested||stopped())stop();claimed=true;write({grantStarted:true,state:'checking'});live();
-    const lookup=await cap.read('caller-permission-id',metadataControl);live();if(!only(lookup,['kind','id'])||lookup.kind!=='drive#permissionId'||!id(lookup.id))stop();write({permissionId:lookup.id});
-    const originalOwner=ownerOnly(await cap.read('original-acl',metadataControl));live();if(originalOwner===journal.permissionId)stop();
-    const file=await cap.read('synthetic-file',metadataControl);live();if(!only(file,['id','mimeType','ownedByMe','trashed'])||file.id!==syntheticSheetId||file.mimeType!=='application/vnd.google-apps.spreadsheet'||file.ownedByMe!==true||file.trashed!==false)stop();
-    const newOwner=ownerOnly(await cap.read('synthetic-acl',metadataControl));live();if(newOwner!==originalOwner||newOwner===journal.permissionId)stop();write({ownerId:newOwner});
+    const lookup=await cap.read('caller-permission-id',metadataControl('B:caller-permission-id'));live();if(!only(lookup,['kind','id'])||lookup.kind!=='drive#permissionId'||!id(lookup.id))stop();write({permissionId:lookup.id});
+    const originalOwner=ownerOnly(await cap.read('original-acl',metadataControl('B:original-acl-fresh')));live();if(originalOwner===journal.permissionId)stop();
+    if(!consumeAuthorityTrialImportReadback(liveImportReceipt,{epoch,syntheticSheetId,publisherHash,fixtureHash},now())){const file=await cap.read('synthetic-file',metadataControl('B:fixture-file-readback'));live();if(!only(file,['id','mimeType','ownedByMe','trashed'])||file.id!==syntheticSheetId||file.mimeType!=='application/vnd.google-apps.spreadsheet'||file.ownedByMe!==true||file.trashed!==false)stop();}
+    const newOwner=ownerOnly(await cap.read('synthetic-acl',metadataControl('B:synthetic-acl-baseline')));live();if(newOwner!==originalOwner||newOwner===journal.permissionId)stop();write({ownerId:newOwner});
     live();const t=token();const reply=await cap.external(async()=>{live();if(t.expiresAt-now()<=10000)stop();
      write({state:'grant-intent',grantAttempted:true,grantOutcome:'UNKNOWN'});live();
      const url=base+'?fields='+encodeURIComponent('kind,id,type,role,emailAddress')+'&sendNotificationEmail=false';
      return await json(await fetcher(url,options('POST',t,{type:'user',role:'reader',emailAddress:callerEmail})),url);
-    });
+    },'B:reader-create');
     if(!only(reply,['kind','id','type','role','emailAddress'])||reply.kind!=='drive#permission'||permission(reply,'reader',callerHash)!==journal.permissionId)stop();write({grantOutcome:'ACK_MATCHED'});live();
-    verifyReader(await cap.read('synthetic-acl',metadataControl));live();write({state:'reader-verified',grantOutcome:'READER_VERIFIED'});return Object.freeze({readerVerified:true,permissionHash:hash(journal.permissionId)});
+    verifyReader(await cap.read('synthetic-acl',metadataControl('B:reader-acl-readback')));live();write({state:'reader-verified',grantOutcome:'READER_VERIFIED'});return Object.freeze({readerVerified:true,permissionHash:hash(journal.permissionId)});
    }catch(_){if(claimed)try{integrity();write({state:'failed'});}catch(_){}stop();}finally{release(op);}
   };
   return Object.freeze({status:()=>journal.state,

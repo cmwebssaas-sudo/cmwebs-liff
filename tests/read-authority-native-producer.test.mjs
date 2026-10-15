@@ -22,13 +22,13 @@ test('producer invokes exactly one documented full AX call on the bound actor wi
  assert.deepEqual(v,{requestId:r.requestId,source:'cua.getAXState',capturedAt:clock,snapshot:'SYNTHETIC_FULL_CALLER_AX'});
  assert.deepEqual(s.calls,[{actor:'caller',options:{disableDiffing:true,emit:false}}]);assert.equal(s.producer.status(),'ready');assert(Object.isFrozen(v));
 });
-test('publisher and qualified phases select only the corresponding pinned handle',async()=>{
- const s=setup();await s.producer.read(request({actor:'publisher',phase:'qualified-after',page:2}));assert.equal(s.calls.length,1);assert.equal(s.calls[0].actor,'publisher');
+test('publisher and wrapper phases select only the corresponding pinned handle',async()=>{
+ const s=setup();await s.producer.read(request({actor:'publisher',phase:'wrapper-after',page:2}));assert.equal(s.calls.length,1);assert.equal(s.calls[0].actor,'publisher');
 });
 test('changing input handles or methods cannot switch the pinned producer',async()=>{
  const s=setup();s.input.tabs.caller.tab=s.publisher;s.caller.getAXState=async()=>assert.fail('REPLACED_METHOD');await s.producer.read(request());assert.equal(s.calls[0].actor,'caller');
 });
-for(const [name,patch] of [['actor',{actor:'other'}],['phase',{phase:'authority'}],['page',{page:0}],['URL',{url:'https://private.invalid'}],['method',{method:'getScreenshot'}],['diff',{disableDiffing:false}],['nonce',{requestId:'synthetic-invalid'}],['extra',{query:'PRIVATE'}]])test('descriptor '+name+' is rejected before any UI call',async()=>{
+for(const [name,patch] of [['actor',{actor:'other'}],['phase',{phase:'authority'}],['qualified phase',{phase:'qualified-after'}],['fifth page',{page:5}],['page',{page:0}],['URL',{url:'https://private.invalid'}],['method',{method:'getScreenshot'}],['diff',{disableDiffing:false}],['nonce',{requestId:'synthetic-invalid'}],['extra',{query:'PRIVATE'}]])test('descriptor '+name+' is rejected before any UI call',async()=>{
  const s=setup();await assert.rejects(s.producer.read(request(patch)),/^Error: NATIVE_CAPTURE_STOPPED$/);assert.equal(s.calls.length,0);assert.equal(s.producer.status(),'stopped');
 });
 test('two actor bindings cannot share one tab or mismatch a handle ID',()=>{

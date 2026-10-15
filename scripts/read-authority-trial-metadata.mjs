@@ -12,6 +12,7 @@ const text=(v,max=200)=>typeof v==='string'&&v.length>0&&v.length<=max&&!/[\r\n]
 const id=v=>typeof v==='string'&&/^[-A-Za-z0-9_]{20,200}$/.test(v);
 const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const sameScopes=(v,expected)=>Array.isArray(v)&&v.length===expected.length&&v.every(x=>typeof x==='string')&&JSON.stringify([...v].sort())===JSON.stringify([...expected].sort());
+const metadataAdapters=new WeakMap();
 function freeze(v){if(record(v)||Array.isArray(v)){Object.values(v).forEach(freeze);Object.freeze(v);}return v;}
 function fileMetadata(v,expected){
  if(!only(v,['id','mimeType','trashed','ownedByMe','driveId'],['id','mimeType','trashed','ownedByMe'])||v.id!==expected||
@@ -86,7 +87,7 @@ export function createAuthorityTrialMetadataAdapters(input){
    ...(email===undefined?{}:{'caller-permission-id':{actor:'publisher',url:'https://www.googleapis.com/drive/v2/permissionIds/'+encodeURIComponent(email)+query('kind,id'),max:4096,decode:permissionIdentity}})
   });
   let active=false;
-  return Object.freeze({read:async function(operation,control){
+  const adapter=Object.freeze({read:async function(operation,control){
    let held=false;
    try{
     if(active||arguments.length!==2||typeof operation!=='string'||!Object.hasOwn(calls,operation)||!control||
@@ -108,6 +109,63 @@ export function createAuthorityTrialMetadataAdapters(input){
     });
    }catch(_){stop();}
    finally{if(held)active=false;}
+  }});
+  metadataAdapters.set(adapter,Object.freeze({originalSheetId,syntheticSheetId,publisherHash,callerHash,names,read:adapter.read}));return adapter;
+ }catch(_){stop();}
+}
+
+const authorizationNames=Object.freeze(['V2_landlord_email_sessions','V2_users','V2_workspaces','V2_workspace_members','V2_landlords']);
+const sha=v=>createHash('sha256').update(v).digest('hex');
+function directPermission(p,role,accountHash){
+ if(!only(p,['id','type','role','emailAddress','deleted','permissionDetails','allowFileDiscovery'],['id','type','role','emailAddress'])||
+  typeof p.id!=='string'||!/^[-A-Za-z0-9_]{1,200}$/.test(p.id)||p.type!=='user'||p.role!==role||typeof p.emailAddress!=='string'||p.emailAddress.length>254||
+  !/^[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,63}$/i.test(p.emailAddress)||sha(p.emailAddress.toLowerCase())!==accountHash||
+  (Object.hasOwn(p,'deleted')&&p.deleted!==false)||(Object.hasOwn(p,'allowFileDiscovery')&&p.allowFileDiscovery!==false))stop();
+ if(Object.hasOwn(p,'permissionDetails')){
+  if(!Array.isArray(p.permissionDetails)||p.permissionDetails.length>10)stop();
+  for(const d of p.permissionDetails)if(!only(d,['inherited','permissionType','role'],['inherited','permissionType','role'])||d.inherited!==false||d.permissionType!=='file'||d.role!==role)stop();
+ }
+ return p.id;
+}
+// Derives partial evidence from this module's actual fixed transport, not from
+// caller-supplied packets. Source-parent binding, headers, Properties and full
+// native/quota acceptance remain distinct mandatory observations.
+export function createAuthorityReleaseMetadataVerifier(input){
+ try{
+  if(!only(input,['metadataAdapter','originalSheetId','syntheticSheetId','publisherHash','callerHash','callerPermissionHash','expectedAuthorizationSheets'],['metadataAdapter','originalSheetId','syntheticSheetId','publisherHash','callerHash','callerPermissionHash','expectedAuthorizationSheets']))stop();
+  const {metadataAdapter,originalSheetId,syntheticSheetId,publisherHash,callerHash,callerPermissionHash}=input,pins=metadataAdapters.get(metadataAdapter),expected=structuredClone(input.expectedAuthorizationSheets);
+  if(!pins||pins.originalSheetId!==originalSheetId||pins.syntheticSheetId!==syntheticSheetId||pins.publisherHash!==publisherHash||pins.callerHash!==callerHash||!hash(callerPermissionHash)||!Array.isArray(expected)||expected.length!==5)stop();
+  const seenNames=new Set(),seenIds=new Set();
+  for(const row of expected){
+   if(!only(row,['name','sheetId'],['name','sheetId'])||!authorizationNames.includes(row.name)||!pins.names.includes(row.name)||seenNames.has(row.name)||!Number.isSafeInteger(row.sheetId)||row.sheetId<0||row.sheetId>2147483647||seenIds.has(row.sheetId))stop();
+   seenNames.add(row.name);seenIds.add(row.sheetId);
+  }
+  freeze(expected);const phases=['wrapper-before','wrapper-after'],read=pins.read;let nextPhase=0,busy=false,stopped=false;
+  return Object.freeze({read:async function(control){
+   let held=false,active=false;
+   try{
+    if(stopped||busy||arguments.length!==1||!control||control.phase!==phases[nextPhase]||typeof control.externalRead!=='function')stop();
+    const phase=control.phase,external=control.externalRead;busy=true;held=true;active=true;
+    const live=()=>{if(stopped||!active)stop();};
+    const observe=async(operation,alias)=>{
+     live();const cap=Object.freeze({externalRead:io=>{live();return external(async()=>{live();return await io();},alias);}});
+     const value=await read.call(metadataAdapter,operation,cap);live();return value;
+    };
+    const synthetic=await observe('synthetic-acl','synthetic-acl');
+    if(synthetic.permissions.length!==2)stop();const owners=synthetic.permissions.filter(v=>v.role==='owner'),readers=synthetic.permissions.filter(v=>v.role==='reader');if(owners.length!==1||readers.length!==1)stop();
+    const ownerId=directPermission(owners[0],'owner',publisherHash),callerId=directPermission(readers[0],'reader',callerHash);
+    if(ownerId===callerId||sha(callerId)!==callerPermissionHash)stop();
+    const original=await observe('original-acl','original-acl');if(original.permissions.length!==1||directPermission(original.permissions[0],'owner',publisherHash)!==ownerId)stop();
+    const metadata=await observe('synthetic-tabs','caller-sheets-metadata');
+    const actual=expected.map(row=>{
+     const matches=metadata.sheets.filter(s=>s.properties.title===row.name);if(matches.length!==1||matches[0].properties.sheetId!==row.sheetId)stop();
+     return {name:matches[0].properties.title,sheetId:matches[0].properties.sheetId};
+    });
+    live();nextPhase++;
+    return freeze({source:'fixed-metadata-release-readback',phase,facts:{syntheticSheetId:metadata.spreadsheetId,callerSheetRole:'reader'},
+     originalContainer:{spreadsheetId:originalSheetId,callerRole:'none'},authorizationSheets:actual,callerPermissionHash:sha(callerId),publisherPermissionHash:sha(ownerId),
+     headersVerified:false,nativeProofAccepted:false,trialAccepted:false});
+   }catch(_){stopped=true;stop();}finally{active=false;if(held)busy=false;}
   }});
  }catch(_){stop();}
 }

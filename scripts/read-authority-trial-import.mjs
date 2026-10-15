@@ -17,6 +17,14 @@ async function json(r,url){
  try{while(true){const {done,value}=await reader.read();if(done)break;if(!types.isUint8Array(value)||(size+=value.byteLength)>4096){await reader.cancel().catch(()=>{});stop();}chunks.push(value);}}finally{reader.releaseLock();}
  const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.byteLength;}return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
 }
+// Ephemeral, single-use receipt for the already completed immutable import GET.
+// A serialized journal is never sufficient evidence for this optimization.
+const freshReadbacks=new WeakMap();
+export function consumeAuthorityTrialImportReadback(receipt,expected,time){
+ const observed=receipt&&typeof receipt==='object'?freshReadbacks.get(receipt):undefined;
+ if(!observed||!only(expected,['epoch','syntheticSheetId','publisherHash','fixtureHash'])||!Number.isSafeInteger(time)||time<observed.startedAt||time-observed.startedAt>60000||Object.keys(expected).some(k=>receipt[k]!==expected[k]))return false;
+ freshReadbacks.delete(receipt);return true;
+}
 export function createAuthorityTrialImport(input){
  try{
   if(!only(input,['path','epoch','originalSheetId','publisherHash','fixtureHash','fixtureBytes','preflightReceipt','expiresAt','control','credential','fetcher','now'],['path','epoch','originalSheetId','publisherHash','fixtureHash','fixtureBytes','preflightReceipt','expiresAt','control','credential']))stop();
@@ -42,8 +50,10 @@ export function createAuthorityTrialImport(input){
   const write=patch=>{journal={...journal,...patch};save(path,journal);};
   const token=()=>{const raw=credential();if(types.isPromise(raw)){void Promise.prototype.then.call(raw,()=>{},()=>{});stop();}if(!only(raw,['accessToken','accountHash','scopes','expiresAt','refreshTokenPresent']))stop();const t={...raw};
    if(typeof t.accessToken!=='string'||!t.accessToken||t.accessToken.length>8192||/[\s\x00-\x1f\x7f]/.test(t.accessToken)||t.accountHash!==publisherHash||!Array.isArray(t.scopes)||JSON.stringify([...t.scopes].sort())!==JSON.stringify([...scopes].sort())||!Number.isSafeInteger(t.expiresAt)||typeof t.refreshTokenPresent!=='boolean'||t.expiresAt-now()<=10000)stop();return t;};
+  let readbackStartedAt=null;
   const request=async(url,method,body,contentType)=>{live();const t=token();return cap.external(async()=>{live();if(t.expiresAt-now()<=10000)stop();if(method==='POST'){write({createAttempted:true,creationOutcome:'UNKNOWN'});live();}
-   return json(await fetcher(url,{method,redirect:'manual',signal:AbortSignal.timeout(10000),headers:{authorization:'Bearer '+t.accessToken,'cache-control':'no-cache, no-store',...(contentType?{'content-type':contentType}: {})},...(body?{body}: {})}),url);});};
+   if(method==='GET')readbackStartedAt=now();
+   return json(await fetcher(url,{method,redirect:'manual',signal:AbortSignal.timeout(10000),headers:{authorization:'Bearer '+t.accessToken,'cache-control':'no-cache, no-store',...(contentType?{'content-type':contentType}: {})},...(body?{body}: {})}),url);},method==='POST'?'B:fixture-import':'B:fixture-file-readback');};
   let started=false;
   return Object.freeze({status:()=>localStopRequested||stopped()?'stopped':journal.state,stop:()=>{localStopRequested=true;try{publishStop();return Object.freeze({stopRequested:true,creationOutcome:journal.creationOutcome});}catch(_){stop();}},create:async()=>{
    if(started)stop();started=true;let op,claimed=false;
@@ -56,7 +66,7 @@ export function createAuthorityTrialImport(input){
     if(!only(v,['id','mimeType'])||!id(v.id)||v.id===originalSheetId||v.mimeType!==mime)stop();write({state:'created',creationOutcome:'ACK_MATCHED'});live();
     const fields='id,mimeType,ownedByMe,trashed,driveId',get='https://www.googleapis.com/drive/v3/files/'+journal.syntheticSheetId+'?fields='+encodeURIComponent(fields),r=await request(get,'GET');
     if(!only(r,['id','mimeType','ownedByMe','trashed'])||r.id!==journal.syntheticSheetId||r.mimeType!==mime||r.ownedByMe!==true||r.trashed!==false)stop();live();write({state:'verified',creationOutcome:'VERIFIED'});
-    return Object.freeze({source:'fixed-trial-import-readback',epoch,syntheticSheetId:journal.syntheticSheetId,publisherHash,fixtureHash});
+    const receipt=Object.freeze({source:'fixed-trial-import-readback',epoch,syntheticSheetId:journal.syntheticSheetId,publisherHash,fixtureHash});freshReadbacks.set(receipt,Object.freeze({startedAt:readbackStartedAt}));return receipt;
    }catch(_){if(claimed)try{integrity();write({state:'stopped'});}catch(_){}stop();}finally{if(op!==undefined)try{closeSync(op);unlinkSync(operationPath);}catch(_){stop();}}
   }});
  }catch(_){stop();}

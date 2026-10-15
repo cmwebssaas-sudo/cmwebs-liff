@@ -3,7 +3,7 @@
 // Trusted orchestration calls this only inside atomic native-capture admission.
 const stopped=()=>{throw Error('NATIVE_CAPTURE_STOPPED');};
 const exact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
-const phases=['wrapper-before','wrapper-after','qualified-before','qualified-after'];
+const phases=['wrapper-before','wrapper-after'];
 const actors=['caller','publisher'];
 const timestamp=v=>Number.isSafeInteger(v)&&v>=0;
 export function createAuthorityNativeProducer(input) {
@@ -26,7 +26,7 @@ export function createAuthorityNativeProducer(input) {
         try {
           if(stopRequested||busy||!exact(descriptor,['requestId','actor','phase','page','url','method','disableDiffing'])||!Object.isFrozen(descriptor))stopped();
           const r={...descriptor};
-          if(typeof r.requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(r.requestId)||seen.has(r.requestId)||!actors.includes(r.actor)||!phases.includes(r.phase)||!Number.isSafeInteger(r.page)||r.page<1||r.page>141||r.url!=='https://script.google.com/home/executions'||r.method!=='getAXState'||r.disableDiffing!==true)stopped();
+          if(typeof r.requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(r.requestId)||seen.has(r.requestId)||!actors.includes(r.actor)||!phases.includes(r.phase)||!Number.isSafeInteger(r.page)||r.page<1||r.page>4||r.url!=='https://script.google.com/home/executions'||r.method!=='getAXState'||r.disableDiffing!==true)stopped();
           const handle=handles[r.actor],start=now();
           if(!timestamp(start)||handle.tab.id!==handle.tabId)stopped();
           seen.add(r.requestId);busy=true;
