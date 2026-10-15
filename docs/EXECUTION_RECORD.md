@@ -4217,3 +4217,48 @@ flags off/endpoint blank, no Google/RPC/credential/formal deployment/data/
 Properties/trigger/switch changes. Root WIP/private S1/C5 swap preserved.
 Rollback this undeployed fix to846da4a with previous comparison identity; no
 formal release or data rollback needed.
+
+
+## 2026-10-15 — Skip contract history discarded by explicit tenant summary
+
+Recommended model/speed GPT-6.1 Sol/high for unchanged summary/full API parity.
+Date-output fix daf25c4 CI38714982984: rental1787/1787 SUCCESS, Worker35/36 FAIL
+at tenants500 p9550.894ms,8/100>=50. Keep this and earlier58.708ms failure,
+both truncated log footers/annotations/terminal metadata, without a same-head
+retry or threshold change. Subsequent local passes cannot erase either fail.
+
+Actual unchanged GAS VM for250 tenants builds250 history rows, then explicit
+summary deletes every contract_history field. Existing local workerd profile
+inclusive history cost27516us over10 requests is diagnostic, not Linux cause
+proof. Pass existing exact readView to tenant-list construction and skip only
+that pure history call for readView==='summary'; existing final projection
+still removes the temporary empty field. Default and every other mode still
+construct and return full histories. No new route, response field, auth/cache
+policy, financial computation, sorting or masking change. This implements the
+owner-approved summary contract without expanding its scope.
+
+New actual Apps Script function VM regression RED250 unnecessary history calls
+vs0→GREEN1/1. Entire summary equals the full API's existing projection; default
+response still exactly equal with all250 histories. Calculator regenerated from
+canonical GAS235 functions/15 source files; no second calculation definition.
+One fresh static review P1/P2/actionable minor0, exact six SHA pins before/after,
+no duplicate review. Native Google Apps Script execution is not claimed.
+
+Full Node22/Core/ownedPG1793/1793,58.554s,zero fail/cancel/skip, cleanup/listener
+stopped.596-file pending-source snapshot on daf25c4:
+71b383069f6557f1e0c1782b378b8b88c8cdf6affc529bb8ca79c19ae28aa8f3.
+Worker36/36/bundle PASS. Seven original100-sample500-room fixture p95ms:
+home13.027/actions11.636/revenue12.228/tenants19.857/rooms19.821/arrears17.994/
+properties20.101, all<50. Access remains fixture-supplied; not real provider/
+authority/scoped/remote/Taipei/device performance acceptance. Validate72 backend/
+40 references/static cache/comparison178/diff PASS. Only docs after tests/review;
+new exact-head CI required, original Linux failure cause stays UNRESOLVED.
+
+Comparison read-f78e12a3f964adf8bd38451988ac76840ae0718c1d0bf328bf9e27ae8b7a52d8;
+no actual epoch/window starts. Actual25/160 unchanged/unclaimed/native STOP,
+320 declined, budget/eight callbacks/OS-flock unaccepted. C1 daily900s failed,
+fresh72h/seven actual24h shadow NOT_STARTED;500/Taipei/full-flow latency/device/
+cutover pending. Flags off/endpoint blank; no Google/RPC/credentials/formal
+deployment/data/Properties/trigger/switch action. Root WIP/private S1/C5 swap
+preserved. Rollback this undeployed summary optimization to daf25c4 and previous
+comparison identity; no formal release/data rollback needed.

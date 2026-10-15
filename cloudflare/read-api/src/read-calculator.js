@@ -7286,7 +7286,8 @@ function getWorkspaceLandlordTenantsNativeByLineUid_(
       const tenants =
         workspaceDashboardBuildTenantList_(
           access,
-          data
+          data,
+          readView
         );
 
       const unpaidTenantCount =
@@ -8156,7 +8157,8 @@ function workspaceDashboardLandlordSummary_(
 
 function workspaceDashboardBuildTenantList_(
   access,
-  data
+  data,
+  readView
 ) {
   const lineUidLookup = workspaceDashboardLineUidLookup_(data);
   const tenantById = {};
@@ -8680,7 +8682,10 @@ function workspaceDashboardBuildTenantList_(
           current_contract_status:
             contractRenewalHistoryEffectiveStatus_(currentContract),
 
+          // The summary projection removes this entire field. Keep default
+          // readers complete and skip only work the explicit summary discards.
           contract_history:
+            readView !== 'summary' &&
             typeof landlordContractHistoryView_ ===
               'function'
               ? landlordContractHistoryView_(

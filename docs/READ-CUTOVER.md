@@ -273,3 +273,14 @@ Comparison read-b642a87f97e936c7c5ed055bda2539ff1a072c22601590c1877d44160c3ea3c9
 Previous Linux tenants58.708ms failure remains; local full1792/Worker36 pass
 is not Linux/real acceptance. Fresh exact-head CI required, all real gates/off
 flags unchanged, no actual observation started. Rollback source to846da4a.
+
+
+2026-10-15 explicit tenant summary now skips250 discarded history constructions
+for the synthetic250-tenant case. Actual-source TDD250→0; entire summary equals
+full-response projection, default still returns all histories. Static review0,
+full1793/1793 with Core/ownedPG cleanup, Worker36/36/bundle and validate72/40/
+static cache/comparison178/diff PASS. Snapshot71b383069f6557f1e0c1782b378b8b88c8cdf6affc529bb8ca79c19ae28aa8f3.
+Prior daf25c4 Linux tenants50.894ms FAIL retained; new-head CI required, no
+real acceptance/epoch. New comparison read-f78e12a3f964adf8bd38451988ac76840ae0718c1d0bf328bf9e27ae8b7a52d8.
+Actual25/160/native STOP/off/blank and all original900s/72h/seven-day/Taipei/
+device gates remain; only docs after tests/review. Rollback source to daf25c4.

@@ -2057,3 +2057,14 @@ PASS. Snapshot d828cfed6056a6336bce45b50c072b8a5b2466627233be0403ae0c8e8eb5c8a0.
 Prior Linux500 tenants58.708ms FAIL retained, new-head CI required. Local
 fixture evidence is not real acceptance; actual25/160/native STOP/off/blank,
 900s/72h/seven-day/Taipei/device gates unchanged. Only docs after review/tests.
+
+
+2026-10-15 explicit tenant summary now skips250 discarded history constructions
+for the synthetic250-tenant case. Actual-source TDD250→0; entire summary equals
+full-response projection, default still returns all histories. Static review0,
+full1793/1793 with Core/ownedPG cleanup, Worker36/36/bundle and validate72/40/
+static cache/comparison178/diff PASS. Snapshot71b383069f6557f1e0c1782b378b8b88c8cdf6affc529bb8ca79c19ae28aa8f3.
+Prior daf25c4 Linux tenants50.894ms FAIL retained; new-head CI required, no
+real acceptance/epoch. New comparison read-f78e12a3f964adf8bd38451988ac76840ae0718c1d0bf328bf9e27ae8b7a52d8.
+Actual25/160/native STOP/off/blank and all original900s/72h/seven-day/Taipei/
+device gates remain; only docs after tests/review. Rollback source to daf25c4.
