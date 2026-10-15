@@ -3187,3 +3187,36 @@ Risk: strict unlabeled or duplicated IO intentionally stops instead of borrowing
 a reserve. Rollback undeployed source to b85179f8; preserve any claimed strict
 counter and use its pinned copied cleanup rather than downgrade that binding.
 Root WIP and private S1 boundary preserved.
+
+
+## 2026-10-15 — Fixed preparation IO uses the approved budget aliases
+
+Recommended GPT-6.1 Sol/high. Local C3 preparation only. Import/Reader, original
+library publication/restoration, thin entry publication and OAuth now assign
+fixed approved purpose labels to each admitted IO. Original C2 restore and I17
+cleanup remain separate; legacy records retain action=null. A real strict
+synthetic realm run exercises all six adapters under the original canonical
+flock and charges only unique approved aliases. No actual Google counter used.
+
+B13 lists one file metadata GET, while the prior import plus Reader code made
+two. Preserve the actual import GET and reuse its exact successful frozen receipt
+once in the same holder for Reader, only for matching epoch/synthetic file/
+publisher/fixture and at most60s from GET admission. JSON copies, restart, wrong
+binding and stale/backwards time cannot reconstruct it. Reader still performs
+fresh original ACL and synthetic ACL checks before grant plus post-grant ACL.
+Without valid live receipt it uses its original full GET; strict already-charged
+file alias stops extra IO instead of borrowing or increasing the bucket. The
+shared readback has the same MIME/owner/trashed/non-shared-drive checks; no API
+request/fields, grant, security condition or durable receipt format changed.
+
+Affected adapter/restricted-realm/copied-recovery tests231/231 PASS. RED57 had
+48pass/9fail before implementation, retained. Independent incremental review no
+actionable findings; nine source/test pins stable. Full Node22.23.3/actual Core/owned PostgreSQL1774/1774 PASS,62.790s,zero fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache and diff PASS. Apps Script/Worker unchanged, no redundant native or Worker performance rerun. Previous exact head76a5809 CI38740770185 passed rental1760/1760
+and Worker26/26 plus two dry runs; rental log truncated, test footer read.
+
+Mandatory single-wrapper driver/orchestrator and native observer wiring remain
+pending, so actual trial STOP and25/160 unchanged/unclaimed. Approved24h rollout
+T0 NOT_STARTED; all technical/performance/device gates remain. No new credentials,
+Google/native IO, formal data, Properties, trigger, switch or deployment. Rollback
+this undeployed preparation wiring to76a5809; preserve any original claimed
+counter and copied cleanup. Root WIP and private S1 boundary preserved.

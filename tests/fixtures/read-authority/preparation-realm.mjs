@@ -3,6 +3,7 @@
 import {writeFileSync,readFileSync,lstatSync} from 'node:fs';
 import {join} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
+import {SINGLE_WRAPPER_TRIAL_DECISION_HASH} from '../../../scripts/read-authority-trial-budget-plan.mjs';
 import {request as localRequest} from 'node:http';
 import {buildAuthorityTrialArtifacts} from '../../../scripts/build-read-authority-trial-entry.mjs';
 import {buildAuthorityTrialRollback} from '../../../scripts/read-authority-trial-rollback.mjs';
@@ -12,15 +13,15 @@ const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Obje
 const checksum=v=>hash(JSON.stringify(canonical(v))),fileHash=v=>checksum([...v].sort((a,b)=>a.name.localeCompare(b.name)));
 const managementScopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(s=>'https://www.googleapis.com/auth/'+s);
 const callerScopes=['spreadsheets.readonly','userinfo.email','script.external_request'].map(s=>'https://www.googleapis.com/auth/'+s);
-export async function exercisePreparationRealm(api,{dir,mode='all',constructOnly=false,fixtureBytes=preparationFixtureBytes,badBytes=false,listener=false,lifecycle=false,rpcFailure=false}){
+export async function exercisePreparationRealm(api,{dir,mode='all',constructOnly=false,fixtureBytes=preparationFixtureBytes,badBytes=false,listener=false,lifecycle=false,strict=false,rpcFailure=false}){
  const epoch='SYNTHETIC_PREP_REALM_'+randomUUID(),budgetPath=join(dir,'budget.json');let time=Date.parse('2026-10-14T00:00:00Z');const expiresAt=time+21600000;
  const raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(budgetPath,raw,{mode:0o600,flag:'wx'});
- const counter=()=>JSON.parse(readFileSync(budgetPath)),controlOptions={path:budgetPath,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt,now:()=>time,pause:async ms=>{time+=ms;}};
+ const counter=()=>JSON.parse(readFileSync(budgetPath)),controlOptions={...(strict?{decisionHash:SINGLE_WRAPPER_TRIAL_DECISION_HASH}:{}),path:budgetPath,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt,now:()=>time,pause:async ms=>{time+=ms;}};
  const canonicalControl=api.createAuthorityPreparationControl(controlOptions),control=lifecycle?api.createAuthorityPhaseControl(canonicalControl):canonicalControl,peer=api.createAuthorityPreparationControl(controlOptions);
  const originalSheetId='SYNTHETIC_ORIGINAL_SHEET_ID',syntheticSheetId='SYNTHETIC_NEW_UNBOUND_SHEET_ID',libraryId='SYNTHETIC_LIBRARY_SCRIPT_ID',thinId='SYNTHETIC_THIN_SCRIPT_ID',deploymentId='SYNTHETIC_THIN_DEPLOYMENT_ID';
  const callerEmail='caller@example.invalid',publisherEmail='publisher@example.invalid',callerHash=hash(callerEmail),publisherHash=hash(publisherEmail),fixtureHash=hash(preparationFixtureBytes),permissionId='00001234567890123456789';
  const owner={id:'SYNTHETIC_OWNER_ID',type:'user',role:'owner',emailAddress:publisherEmail},reader={id:permissionId,type:'user',role:'reader',emailAddress:callerEmail};
- let readerPresent=false,thinClosed=false,currentLibrary,version,thinFiles,thinConfig,httpCalls=0,peerDenials=0,constructed=0,entered=false;
+ let importReceipt,readerPresent=false,thinClosed=false,currentLibrary,version,thinFiles,thinConfig,httpCalls=0,peerDenials=0,constructed=0,entered=false;
  const records=[],journalPaths=[];
  const credential=actor=>({accessToken:'SYNTHETIC_REALM_TOKEN',accountHash:actor==='caller'?callerHash:publisherHash,scopes:actor==='caller'?callerScopes:managementScopes,expiresAt:time+3600000,refreshTokenPresent:actor!=='caller'});
  const result=(value,url,status=200)=>{
@@ -78,16 +79,16 @@ export async function exercisePreparationRealm(api,{dir,mode='all',constructOnly
  });
  const prepare=async cap=>{
    const common={epoch,publisherHash,expiresAt,control:cap,credential:()=>credential('publisher'),fetcher,now:()=>time};
-   if(select('import')){importer=api.createAuthorityTrialImport({...common,path:path('import'),originalSheetId,fixtureHash,fixtureBytes,preflightReceipt:{source:'fixed-trial-xlsx-preflight',fixtureHash,size:preparationFixtureBytes.length,tabs:20,unsafeFeatures:false}});constructed++;if(!constructOnly)await importer.create();}
+   if(select('import')){importer=api.createAuthorityTrialImport({...common,path:path('import'),originalSheetId,fixtureHash,fixtureBytes,preflightReceipt:{source:'fixed-trial-xlsx-preflight',fixtureHash,size:preparationFixtureBytes.length,tabs:20,unsafeFeatures:false}});constructed++;if(!constructOnly)importReceipt=await importer.create();}
    if(select('metadata')||select('reader'))metadata=api.createAuthorityTrialMetadataAdapters({originalSheetId,syntheticSheetId,expectedTabNames:Array.from({length:20},(_,i)=>'Synthetic_tab_'+i),callerHash,publisherHash,callerEmail,credential,fetcher,now:()=>time});
-   if(select('metadata')){constructed++;if(!constructOnly)await metadata.read('synthetic-tabs',cap);}
-   if(select('reader')){readerAdapter=api.createAuthorityTrialReader({...common,path:path('reader'),originalSheetId,syntheticSheetId,callerEmail,callerHash,fixtureHash,creationReceipt:{source:'fixed-trial-import-readback',epoch,syntheticSheetId,publisherHash,fixtureHash},metadata});constructed++;if(!constructOnly)await readerAdapter.grant();}
+   if(select('metadata')){constructed++;if(!constructOnly)await metadata.read('synthetic-tabs',{externalRead:io=>cap.externalRead(io,'B:fixture-native')});}
+   if(select('reader')){readerAdapter=api.createAuthorityTrialReader({...common,path:path('reader'),originalSheetId,syntheticSheetId,callerEmail,callerHash,fixtureHash,creationReceipt:importReceipt??{source:'fixed-trial-import-readback',epoch,syntheticSheetId,publisherHash,fixtureHash},metadata});constructed++;if(!constructOnly)await readerAdapter.grant();}
    if(select('publication')){const sourceHash=fileHash(originalFiles);publication=api.createAuthorityTrialPublication({...common,path:path('publication'),scriptId:libraryId,originalFiles,originalSourceHash:sourceHash,baselineVersions:versions,baselineDeployments:deployments,backupReceipt:{source:'fixed-trial-original-editor-backup',epoch,scriptId:libraryId,publisherHash,sourceHash,versionsHash:checksum(versions),deploymentsHash:checksum(deployments)}});constructed++;if(!constructOnly)await publication.publishAndRestore();}
    if(select('thin')){const files=[{name:'Code',type:'SERVER_JS',source:'\n'},{name:'appsscript',type:'JSON',source:'{"timeZone":"Asia/Taipei","runtimeVersion":"V8"}'}],sourceHash=fileHash(files);thin=api.createAuthorityTrialThin({...common,path:path('thin'),scriptId:thinId,libraryId,libraryVersion:7,originalFiles:files,originalSourceHash:sourceHash,backupReceipt:{source:'fixed-trial-thin-empty-backup',epoch,scriptId:thinId,publisherHash,sourceHash}});constructed++;if(!constructOnly)await thin.publish();}
    if(select('oauth')){oauth=api.createAuthorityTrialOAuth({path:path('oauth'),epoch,clientId,oauthClientHash,cloudProjectHash,callerHash,publisherHash,expiresAt,control:cap,clientSecret:()=> 'SYNTHETIC_CLIENT_SECRET',fetcher,now:()=>time,clientReadback:{source:'google-native-ui',oauthClientHash,cloudProjectHash,redirectUri:'http://127.0.0.1:34763/oauth/callback',isolatedTrialProject:true}});constructed++;if(!constructOnly){const state=new URL(oauth.authorizationUrl).searchParams.get('state'),url='/oauth/callback?'+new URLSearchParams({state,code:'SYNTHETIC_CODE'});
     if(listener){const handle=await api.startAuthorityTrialOAuthListener(oauth);try{const callback=await localGet(url);if(callback.status!==303||callback.headers.location!=='/oauth/result')throw Error('SYNTHETIC_LOCAL_CALLBACK_FAILED');const result=await localGet('/oauth/result');if(result.status!==200||result.body.includes(state)||result.body.includes('SYNTHETIC_CODE'))throw Error('SYNTHETIC_LOCAL_RESULT_FAILED');}finally{await handle.close();listenerClosed=true;}}
     else await oauth.receive({method:'GET',host:'127.0.0.1:34763',url});if(oauth.credential().refreshTokenPresent!==false)throw Error('SYNTHETIC_BAD_CREDENTIAL');}}
-   if(lifecycle){expected.thinSourceHash=fileHash(thinFiles);expected.thinManifestHash=hash(thinFiles.find(f=>f.name==='appsscript').source);return {driverOptions:runtimeOptions(),expectedSpent:49};}
+   if(lifecycle){expected.thinSourceHash=fileHash(thinFiles);expected.thinManifestHash=hash(thinFiles.find(f=>f.name==='appsscript').source);return {driverOptions:runtimeOptions(),expectedSpent:48};}
    if(!lifecycle&&mode==='all'&&!constructOnly){await thin.close();await thin.verifyClosed();await readerAdapter.remove();await readerAdapter.verifyRemoved();await oauth.cancel();}
  };
  const runtimeOptions=()=>{
@@ -109,5 +110,5 @@ export async function exercisePreparationRealm(api,{dir,mode='all',constructOnly
   }else await control.withPreparation(prepare);
  }catch(e){error=e.message;}
  const ledger=counter(),pending=ledger.preparation.runtime?.pending??null;runtimeEntries=(ledger.preparation.runtime?.entries??[]).map(e=>({entry:e.entry,complete:e.complete,accounted:Number.isSafeInteger(e.afterNativeMs)&&typeof e.executionHash==='string'}));const privateModes=journalPaths.filter(p=>{try{return lstatSync(p).isFile();}catch{return false;}}).map(p=>lstatSync(p).mode&0o777);
- return {ok:error===null,error,constructed,httpCalls,peerDenials,spent:ledger.spent,events:ledger.preparation.events.map(e=>e.kind),cActions:ledger.preparation.cActions,iActions:ledger.preparation.iActions,privateModes,records,listenerRequests,listenerClosed,rpcCalls,nativeMs,runtimeEntries,pending,orchestrationReport,syntheticNativeCleanupCalls,trialAccepted:false,rollbackComplete:false,realGoogleUiCalls:0,actualCounterTouched:false};
+ return {ok:error===null,error,constructed,httpCalls,peerDenials,spent:ledger.spent,events:ledger.preparation.events.map(e=>e.kind),charges:ledger.preparation.events.map(e=>({kind:e.kind,action:e.action})),cActions:ledger.preparation.cActions,iActions:ledger.preparation.iActions,privateModes,records,listenerRequests,listenerClosed,rpcCalls,nativeMs,runtimeEntries,pending,orchestrationReport,syntheticNativeCleanupCalls,trialAccepted:false,rollbackComplete:false,realGoogleUiCalls:0,actualCounterTouched:false};
 }

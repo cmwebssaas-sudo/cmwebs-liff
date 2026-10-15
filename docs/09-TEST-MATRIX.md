@@ -1861,3 +1861,16 @@ This is local cost/control evidence only. Legacy records keep their existing
 format; new strict policy is opt-in until mandatory orchestrator/adapter/native
 wiring is complete and reviewed. No live trial or credential operation follows
 from these tests. Actual25/160 remains unchanged. Full Node22/actual Core/owned PostgreSQL regression1765/1765 PASS,57.460s; cluster cleanup/listener stop verified.
+
+
+### 2026-10-15 Fixed preparation purpose labels and one live file readback
+
+Adapter/restricted-realm/copied-recovery231/231 PASS; RED57=48pass/9fail retained.
+Strict real-child synthetic realm exercises all six preparation adapters with
+unique approved aliases, original C2/I17, same lock and zero real Google calls.
+Actual import receipt reuse tests: once only, exact four-field binding, frozen
+object identity, JSON/copy rejection, time reversal and60s expiry. Failed/stale
+reuse cannot refund or duplicate a strict alias. Existing ACL/file/permission/
+UNKNOWN/cleanup tests remain. Independent incremental review no actionable
+findings. Full Node22/actual Core/owned PostgreSQL1774/1774 PASS,62.790s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched and
+mandatory runtime/native integration still unaccepted.
