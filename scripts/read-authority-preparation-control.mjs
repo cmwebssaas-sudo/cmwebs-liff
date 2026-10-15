@@ -85,7 +85,7 @@ export function createAuthorityPreparationControl(input){
    const inspectRuntime=()=>tracked(async()=>{
     const r=view(await send({op:'runtime-inspect'}),['runtimeBinding','runtime']);alive();
     if(r.runtimeBinding!==runtimeBinding||!only(r.runtime,['nativeMs','rpcEntries','pending','lastExecutionHash'])||!integer(r.runtime.nativeMs)||r.runtime.nativeMs<0||r.runtime.nativeMs>900000||!Array.isArray(r.runtime.rpcEntries)||r.runtime.rpcEntries.length>2||r.runtime.rpcEntries.some((v,i)=>v!==['wrapper','qualified'][i])||(r.runtime.pending!==null&&(!only(r.runtime.pending,['entry','startedAt'])||!['wrapper','qualified'].includes(r.runtime.pending.entry)||!integer(r.runtime.pending.startedAt)))||(r.runtime.lastExecutionHash!==null&&!digest(r.runtime.lastExecutionHash)))stop();
-    return Object.freeze({source:'canonical-preparation-ledger',epoch,expiresAt,runtimeBinding,spent:r.spent,state:r.state,nativeMs:r.runtime.nativeMs,rpcEntries:Object.freeze([...r.runtime.rpcEntries]),pending:r.runtime.pending===null?null:Object.freeze({...r.runtime.pending}),lastExecutionHash:r.runtime.lastExecutionHash});
+    return Object.freeze({source:'canonical-preparation-ledger',epoch,expiresAt,runtimeBinding,decisionHash:policy.decisionHash??null,spent:r.spent,state:r.state,nativeMs:r.runtime.nativeMs,rpcEntries:Object.freeze([...r.runtime.rpcEntries]),pending:r.runtime.pending===null?null:Object.freeze({...r.runtime.pending}),lastExecutionHash:r.runtime.lastExecutionHash});
    });
    const inspectCleanup=()=>tracked(async()=>{
     const r=view(await send({op:'cleanup-inspect'}),['cleanup']);alive();const c=r.cleanup;

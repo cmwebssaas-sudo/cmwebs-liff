@@ -1874,3 +1874,21 @@ reuse cannot refund or duplicate a strict alias. Existing ACL/file/permission/
 UNKNOWN/cleanup tests remain. Independent incremental review no actionable
 findings. Full Node22/actual Core/owned PostgreSQL1774/1774 PASS,62.790s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched and
 mandatory runtime/native integration still unaccepted.
+
+
+### 2026-10-15 Mandatory single-wrapper runtime/observer wiring
+
+Related185/185 PASS after one review P2 fix. Focused RED8=1pass/7fail retained;
+intermediate129=128pass/1 obsolete two-entry expectation retained and corrected
+for the actual four recovery checks. Require bound decision before observers;
+legacy/missing/foreign policy cannot admit a new trial. Exact15 release aliases
+each phase; missing/duplicate/foreign/unlabeled callbacks and incomplete native
+identity/quota observations fail before RPC. Fifth page/wrong actor/qualified
+phases reject before IO. One wrapper only, UNKNOWN/no retry, independent C2/I17,
+stop/drain/escaped-cap/origin/recovery regressions remain. Four actual fake CUA
+producer→capture→strict-driver reads prove phase/actor charge and lock ownership;
+raw native analysis retains complete=false/quotaAccepted=false. Restricted VM
+six real adapters use strict preparation, one wrapper and all17 cleanup actions.
+Review P2 await-mutation test RED→GREEN fixes fixed actor/phase/page snapshots.
+Full Node22/actual Core/owned PostgreSQL1790/1790 PASS,61.163s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched, no live native or
+Google acceptance.

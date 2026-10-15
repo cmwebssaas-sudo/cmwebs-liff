@@ -48,8 +48,8 @@ test('an array-like response cannot become JSON or acceptance after cross-realm 
  const r=run('metadata','bad-bytes');assert.equal(r.ok,false);assert.equal(r.error,'TRIAL_STOPPED');assert.equal(r.httpCalls,1);assert.equal(r.spent,26);assert.equal(r.trialAccepted,false);
 });
 
-test('all six adapters survive preparation, two canonical entries and cleanup without a new credential or counter',()=>{
- const r=run('lifecycle','combined');assert.equal(r.ok,true,JSON.stringify(r));assert.equal(r.ambientProcess,'undefined');assert.equal(r.constructed,6);assert.equal(r.spent,75);assert.equal(r.rpcCalls,2);assert.equal(r.nativeMs,200);assert.deepEqual(r.runtimeEntries,[{entry:'wrapper',complete:true,accounted:true},{entry:'qualified',complete:true,accounted:true}]);assert.equal(r.peerDenials,r.httpCalls+r.rpcCalls+r.syntheticNativeCleanupCalls);assert.equal(r.iActions.length,17);assert.equal(r.syntheticNativeCleanupCalls,12);assert.equal(r.orchestrationReport.state,'finished');assert.equal(r.trialAccepted,false);assert.equal(r.rollbackComplete,false);assert.equal(r.actualCounterTouched,false);assert.equal(r.realGoogleUiCalls,0);assert(r.privateModes.every(v=>v===0o600));
+test('all six adapters survive preparation, one strict wrapper entry and cleanup without a new credential or counter',()=>{
+ const r=run('lifecycle','combined');assert.equal(r.ok,true,JSON.stringify(r));assert.equal(r.ambientProcess,'undefined');assert.equal(r.constructed,6);assert.equal(r.spent,108);assert.equal(r.rpcCalls,1);assert.equal(r.nativeMs,100);assert.deepEqual(r.runtimeEntries,[{entry:'wrapper',complete:true,accounted:true}]);assert.equal(r.peerDenials,r.httpCalls+r.rpcCalls+r.syntheticNativeCleanupCalls);assert.equal(r.iActions.length,17);assert.equal(r.syntheticNativeCleanupCalls,12);assert.equal(r.orchestrationReport.state,'finished');assert.equal(r.trialAccepted,false);assert.equal(r.rollbackComplete,false);assert.equal(r.actualCounterTouched,false);assert.equal(r.realGoogleUiCalls,0);assert(r.privateModes.every(v=>v===0o600));
 });
 
 test('transport UNKNOWN across the phase facade settles native once and still runs all independent cleanup',()=>{

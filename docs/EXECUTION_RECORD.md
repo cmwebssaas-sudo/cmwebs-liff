@@ -3220,3 +3220,58 @@ T0 NOT_STARTED; all technical/performance/device gates remain. No new credential
 Google/native IO, formal data, Properties, trigger, switch or deployment. Rollback
 this undeployed preparation wiring to76a5809; preserve any original claimed
 counter and copied cleanup. Root WIP and private S1 boundary preserved.
+
+
+## 2026-10-15 — Mandatory single-wrapper canonical runtime
+
+Recommended GPT-6.1 Sol/high. Canonical runtime binding includes the owner-approved
+supplemental decision. Driver requires the same bound strict policy before any
+observer, permits wrapper only with no prior RPC entry, and never dispatches
+qualified/authority. Orchestrator rejects missing policy at construction, runs
+one wrapper and verifies the copied artifact again before independent cleanup.
+Original counter/claim/checkpoint, locks, entered-IO drain, pending UNKNOWN and
+C2/I17 remain. Legacy data formats support historical recovery, not new admission.
+
+Each release observation now requires exactly15 distinct fixed aliases, mapped
+by the driver to its own before/after F phase. Native IO uses fixed actor/category
+G labels with independent4pages/2setup/1identity/1quota caps; each actor must have
+a page plus identity/quota read in each phase. Existing source/complete-window/
+900s/six-minute token+runtime/signature/terminal guards remain mandatory. Normal
+after-read G/F uses its own reservation, not T or cleanup. Native capture and
+producer reject qualified phases/fifth page; capture checks its scoped phase.
+The raw snapshot analyzer still never asserts complete/quota acceptance.
+
+Focused RED8 had1pass/7fail before implementation. Initial affected129 had128pass
+and one obsolete test expectation for recovery-check count (single RPC has four
+checks, two preparation and two runtime, versus two entries). Corrected that
+expectation; related185/185 PASS after the review fix. Restricted VM uses all six
+actual synthetic adapters, the strict original ledger, one wrapper and all17
+cleanup aliases. Actual producer/capture/driver test performs four fake bound AX
+reads with debit/phase/actor and peer-lock checks; this is local interoperability,
+not a real Google/native acceptance.
+
+Independent incremental review found one P2: mutable native request could change
+actor/phase/page during admission wait after charging a different G sub-bucket.
+Real await-mutation test RED reproduced caller instead of charged publisher.
+Capture now snapshots and freezes the three primitives before validation/wait,
+and uses that snapshot for charge, sequence, journal and IO. P2 resolved by
+RED-to-GREEN; no other actionable review findings or deferred minors. No repeat
+review of the fix. Full Node22.23.3/actual Core/owned PostgreSQL1790/1790 PASS,61.163s,zero fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS. Apps Script and Worker bytes unchanged, so no redundant native Apps Script or local Worker performance rerun. Previous exact-head a1fee09 CI38742396684 rental1769/1769 and Worker26/26/two dry runs SUCCESS; footers/annotations read, rental log truncated. New-head CI and downstream propagation pending.
+
+Actual Google25/160 is untouched/unclaimed. Remaining live preparation/native
+setup callbacks, full source/identity/quota/window evidence and original unknown
+terminal T3 integration still need actual trusted wiring/readback; no credential
+operation or trial RPC is admitted by these local results. Public Google docs
+confirm My Executions can include projects one owns/edits/views and on-behalf
+executions, so visible partial rows are not a per-user quota proof. The alternative
+processes API requires script.processes outside the approved three caller Scopes;
+it has not been called or authorized. See official
+[dashboard](https://developers.google.com/apps-script/guides/dashboard) and
+[processes.list](https://developers.google.com/apps-script/api/reference/rest/v1/processes/list).
+Do not change native provenance, account quota or scope gates from this research.
+
+Approved parallel24h rollout T0 NOT_STARTED; original technical/latency/physical
+device gates stay unaccepted, all switches off. No Apps Script/Worker/formal data/
+Properties/trigger/deployment change. Rollback undeployed runtime wiring to
+a1fee0943457dda4087fec72e935f555c9f3aeba; preserve strict claimed journals and
+pinned copied cleanup. Root WIP and private S1 boundary preserved.

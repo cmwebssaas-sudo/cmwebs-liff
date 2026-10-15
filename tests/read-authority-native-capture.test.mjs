@@ -26,3 +26,16 @@ function rewriteJournal(s,change){const e=JSON.parse(readFileSync(s.options.path
 test('rewritten captured timestamp and matching analysis cannot renew an immutable completed capture',async()=>{const s=setup();await s.adapter.capture(request);s.setNow(clock+3600000);rewriteJournal(s,j=>{j.entries[0].capturedAt+=3600000;j.entries[0].analysis.referenceAt+=3600000;});assert.throws(()=>mod.createAuthorityNativeCapture(s.options),/NATIVE_CAPTURE_STOPPED/);assert.equal(s.spent(),1);});
 test('matching raw and journal duration rewrites cannot replace completed source evidence',async()=>{const s=setup();await s.adapter.capture(request);const raw=ax('publisher').replace('2 秒','999 秒');writeFileSync(s.options.path+'.page-001.ax.txt',raw);rewriteJournal(s,j=>{j.entries[0].snapshotSha256=hash(raw);j.entries[0].analysis.visibleDurationLowerBoundMs=999000;});assert.throws(()=>mod.createAuthorityNativeCapture(s.options),/NATIVE_CAPTURE_STOPPED/);assert.equal(s.spent(),1);});
 test('missing unknown journal cannot let a fresh epoch reclaim the same native capture path',async()=>{const s=setup();s.options.nativeRead=async r=>{s.requests.push(r);throw Error('UNKNOWN_NATIVE');};const a=mod.createAuthorityNativeCapture(s.options);await assert.rejects(a.capture(request),/NATIVE_CAPTURE_STOPPED/);unlinkSync(s.options.path);const epoch='SYNTHETIC_NATIVE_CAPTURE_'+randomUUID();epochs.add(epoch);assert.throws(()=>mod.createAuthorityNativeCapture({...s.options,epoch}),/NATIVE_CAPTURE_STOPPED/);assert.equal(s.spent(),1);assert.equal(s.requests.length,1);});
+
+for(const patch of [{phase:'qualified-before'},{page:5}])test('qualified phase or fifth page cannot debit native capture',async()=>{
+ const s=setup();await assert.rejects(s.adapter.capture({...request,...patch}),/NATIVE_CAPTURE_STOPPED/);assert.equal(s.spent(),0);assert.equal(s.requests.length,0);
+});
+
+test('mutable request cannot switch the charged native actor phase or page during admission wait',async()=>{
+ let entered,release;const admitted=new Promise(r=>{entered=r;}),gate=new Promise(r=>{release=r;}),charges=[];
+ const s=setup({control:{phase:'wrapper-before',externalRead:async(io,charge)=>{charges.push(charge);entered();await gate;return io();}}});
+ const mutable={...request},pending=s.adapter.capture(mutable);void pending.catch(()=>{});await admitted;
+ mutable.actor='caller';mutable.phase='wrapper-after';mutable.page=2;release();
+ await pending;assert.equal(s.requests.length,1);assert.deepEqual(charges,[{actor:'publisher',category:'pages'}]);assert.equal(s.requests[0].actor,'publisher');assert.equal(s.requests[0].phase,'wrapper-before');assert.equal(s.requests[0].page,1);
+ const entry=JSON.parse(readFileSync(s.options.path)).value.entries[0];assert.equal(entry.actor,'publisher');assert.equal(entry.phase,'wrapper-before');assert.equal(entry.page,1);
+});
