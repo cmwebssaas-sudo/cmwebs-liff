@@ -2480,3 +2480,57 @@ no deployment,real Apps Script test,Google/formal/credential/counter operation.
 C3/root/private caller and control pins untouched. Rollback this undeployed unclaimed increment to
 C6 HEAD1fba7d259fe862a5983a8fed5b0b59e5858fb732 while retaining every original
 claim/history/UNKNOWN and matching cleanup; no observation T0 or flags changed.
+
+## C6 final retained authorized-path diagnostic — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. One changed-source synthetic diagnostic at
+reviewed d88086d used the actual HTTP handler,primary-D1 scoped loader and
+signed GAS authority modules. Seven complete original-GAS JSON parity checks
+passed,followed by all700 original-order full-body samples;all707 responses
+were200 with no response/transport/security error. The seven parity response
+hashes also matched the previous diagnostic. No retry or sample exclusion.
+
+| Entry | Prior diagnostic p95 ms | Changed-source p95 ms |
+| --- | ---: | ---: |
+| home | 26.391 | 29.061 |
+| actions | 45.197 | 64.483 |
+| revenue | 51.127 | 52.438 |
+| tenants | 41.692 | 66.879 |
+| rooms | 30.426 | 67.129 |
+| arrears | 63.576 | 116.307 |
+| properties | 32.558 | 86.907 |
+
+Six of seven changed-source entries miss the unchanged p95<50ms boundary.
+All maxima/outliers and raw results remain retained. These are two independent
+local synthetic runs;no latency improvement or causal diagnosis is inferred.
+The earlier failed fixture CI38779107637 and its700 samples remain unchanged;
+its full-table fixture omits the authenticated authority/freshness loader and
+was not rerun or substituted. Real production/device latency remains unaccepted.
+
+Each of707 requests performed one first-primary D1 session and one signed
+synthetic GAS authority request. All707 nonces were unique and all707 signed
+responses,nonce-cache entries and authority logs were verified. Actual digest/
+route/fingerprint/signature/dirty/freshness checks remained active;the original
+handler and provider-cache lifecycle were retained without a new cache.
+Per-request statements fell158 to139:8 single calls and6 batches with sizes
+3,4,10,80,29,5. Total SDK calls remain14;there were never20 network round trips.
+
+Runner and independent post-exit verifier both exited0. Miniflare disposed;
+the separate verifier found no remaining owned process. Raw pre-exit state,
+all7 parity+700 timed records,exit codes and independent cleanup receipt are
+retained privately without rewriting the earlier cleanup warning/receipt.
+No source/config/flags,commit/push,real credential or formal IO changed during
+the diagnostic;it did not start observation T0 or establish acceptance.
+
+Latest separate C3 trial outcome is27/160:stopped,repair in-flight/UNKNOWN,
+with original claim/pins/day/deadline and P/N UNKNOWN retained. A new durable
+owner veto and both retained-holder drain acknowledgements are recorded;no
+verifiable caller/page tool state was returned. No second bind/repair,ordinary
+continuation,publisher bind/refresh,trial RPC or remote rollback completion is
+claimed. This final stop supersedes earlier25/26 snapshots only;no refund,
+new claim,deadline change or no-op rollback proof is permitted. All formal
+flags stay off and T0 NOT_STARTED.
+
+The reviewed freshness source changes statement count only;full/Worker
+integration and exact-current-head CI remain separate checks. No deployment
+or cutover is claimed. Preserve all private evidence and original STOP history.
