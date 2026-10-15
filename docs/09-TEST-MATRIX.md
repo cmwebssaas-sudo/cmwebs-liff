@@ -1901,6 +1901,104 @@ seven-day/500/Taipei/device/cutover remain unaccepted, no real shadow started.
 | Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
 | Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
 
+## 2026-10-16 — C1 expired-run Sheet reads
+
+| Check | Evidence | Boundary |
+| --- | --- | --- |
+| Slow send reaches/exceeds the four-minute deadline | Actual-module dirty/full regressions RED2/2 then GREEN; full leaves all15 unattempted tables dirty and both paths release lease | Synthetic clock/network/Sheets; blocking native IO cannot be interrupted |
+| Affected module and independent review |19/19 PASS; no actionable findings | Projection Apps Script test function also runs in the VM; no Google execution |
+| Complete local regression |859/859 PASS,zero fail/cancel/skip,actual pinned Core/owned PG16.14; cleanup verified | Not native900s/day, actual authority, freshness, performance or device acceptance |
+
+No actual Google operations or observation restart. Existing failed execution
+history retained; approved accelerated24h clock NOT_STARTED, switches off.
+
+## C2 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C2 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local874/874 PASS,2.614s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested494-file snapshot
+6ecc7f9b5b48f2221d941a537d420b9fda23fa8388338b852c0229816218cb0e;
+only docs afterwards. Validate71backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated capacity run. Exact-head CI must be read after push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance to1b3c18c25cddea0d38014ba948c7fb03c83da124;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+## C3 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C3 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1938/1938 PASS,59.387s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested577-file snapshot
+858d3792e10d131ff86555dc657cee4fd0537e9c70c941eea90f601f81b7c8ad;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated capacity run. Exact-head CI must be read after push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance to01e2cff1ef314c9812c0520aa7fc77dd96ac6e54;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+## C4 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C4 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1743/1743 PASS,54.368s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested568-file snapshot
+b10ddd8df3a21bc58b8d72688a091d532eee9ad03f163d7eea97ca4f733d7320;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated local capacity run. Exact-head CI follows push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance toff429e179676e6f774ea145d917fd1d6a5b6b2d3;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+After upstream alignment, the32 inherited non-doc paths equal reviewed C3
+source and all54 C4-specific non-doc paths are preserved (independent review).
+One new full1951/1951 PASS,58.997s,Node22/actual Core/owned PG16.14; cleanup
+verified. Tested579-file snapshot37a073c05aafac138e343f04dec8ac0f579ba56e6c0eb1098db9939f60aacf56.
+Only docs changed afterwards, including restoration of separate labelled C1–C4
+evidence/rollback records after a P2 union-merge finding. No remaining source
+conflicts; validation72/40/cache/diff PASS. Approved credentials/source/metadata
+helpers inherited as local preparation only; unapproved native-IO proposal is
+absent. Real gates remain unaccepted/T0 NOT_STARTED/alloff/Google25 unchanged.
+Rollback this upstream alignment to329823894c19efd6ca75928838560c1b525be95a
+before any unclaimed trial; retain matching claimed runtime/cleanup if any.
+
 ## C5 inherited C1 deadline guard — 2026-10-16
 
 Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
@@ -1925,3 +2023,17 @@ Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
 inheritance tod518fd3e019b9284fb3f15f2a0d577e642ef16c9;
 retain all original claims/checkpoints/pinned cleanup and history, never reset
 or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+After upstream alignment, all32 inherited non-doc paths equal the reviewed
+parent; existing C5-specific source is preserved. One new full1956/1956
+PASS,59.188s,Node22/actual Core/owned PG16.14; database/role cleanup,
+stopped cluster and closed listener verified. Tested592-file snapshot
+ccd47742df8c1f9e1adab28517b0a3743c79a90cb772b03d289c331a3ae40e3b.
+Only docs afterwards. Separate labelled C1–C5 evidence and rollback records
+restored after the reviewed union-merge finding; no pending native-IO proposal
+inherited. Validate72/40/cache/diff PASS. Approved C3 controls and partial
+source/metadata/credential adapters are local preparation only. Original25/160
+unchanged/unclaimed; real gates unaccepted/T0 NOT_STARTED/alloff. No Google,
+credential, Properties, trigger, source-data or deployment operation. Rollback
+this undeployed upstream alignment to2059ebefd4a03d840b019c7ff4134c5d79ee2949; preserve any
+original claim/history and matching pinned cleanup, never reset or replay.

@@ -1,5 +1,6 @@
 // Fixed compatibility/cleanup lifecycle for trusted preparation and IO adapters.
 // Does not attest native gates, authorize credentials, or make a trial accepted.
+import {getAuthorityTrialPolicy} from './read-authority-trial-budget-plan.mjs';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {lstatSync} from 'node:fs';
 import {resolve} from 'node:path';
@@ -16,6 +17,7 @@ export function createAuthorityTrialOrchestrator(input){
  try{
   if(!only(input,['control','prepare','restoreEditor','cleanup','rollback'])||typeof input.prepare!=='function'||typeof input.restoreEditor!=='function'||!only(input.cleanup,AUTHORITY_TRIAL_CLEANUP_ACTIONS)||!only(input.rollback,['path','sha256','controlOptions']))stop();
   const rollbackPin=Object.freeze({path:input.rollback.path,sha256:input.rollback.sha256}),recoveryOptions=Object.freeze({...input.rollback.controlOptions});
+  getAuthorityTrialPolicy(recoveryOptions.decisionHash);
   if(typeof rollbackPin.path!=='string'||typeof rollbackPin.sha256!=='string'||!/^[a-f0-9]{64}$/.test(rollbackPin.sha256)||!recoveryOptions.epoch)stop();
   const prepare=input.prepare,restoreEditor=input.restoreEditor,cleanup=Object.fromEntries(AUTHORITY_TRIAL_CLEANUP_ACTIONS.map(action=>[action,input.cleanup[action]]));
   if(Object.values(cleanup).some(fn=>typeof fn!=='function'))stop();
@@ -52,7 +54,10 @@ export function createAuthorityTrialOrchestrator(input){
    }
    activeSlot.called=true;const p=phase.capability.cleanup(...args);activeSlot.operations.add(p);void p.catch(()=>{activeSlot.failed=true;});void p.then(()=>activeSlot.operations.delete(p),()=>activeSlot.operations.delete(p));return p;
   };
-  const adapterControl=Object.freeze({externalRead:(...args)=>admission('externalRead',args),restoreOriginalEditor:(...args)=>admission('restoreOriginalEditor',args),cleanup:(...args)=>admission('cleanup',args)});
+  const adapterControl=Object.freeze({get decisionHash(){
+   if(!currentOrigin||origin.getStore()!==currentOrigin||!currentOrigin.accepting)stop();
+   const selected=phase.capability.decisionHash;if(selected!==recoveryOptions.decisionHash)stop();return selected;
+  },externalRead:(...args)=>admission('externalRead',args),restoreOriginalEditor:(...args)=>admission('restoreOriginalEditor',args),cleanup:(...args)=>admission('cleanup',args)});
   const report=()=>freeze({source:'fixed-authority-trial-orchestrator',state:stage,stopRequested:stopped,handoff,entries:[...entries],restore:restoreOutcome,cleanup:outcomes.map(v=>({...v})),rollbackRuntime:{manifestSha256:rollbackPin.sha256,artifactChecks,counterChecks,failed:recoveryFailed},trialAccepted:false,rollbackComplete:false});
   const requestStop=async()=>{stopped=true;try{return await phase.requestStop();}catch(_){stop();}};
   const clean=async()=>{
@@ -92,13 +97,14 @@ export function createAuthorityTrialOrchestrator(input){
       if(stopped||!only(prepared,['driverOptions','expectedSpent'])||!only(prepared.driverOptions,driverKeys)||!Number.isSafeInteger(prepared.expectedSpent))stop();
       // Driver snapshots pins and callable references before committing the
       // exact canonical handoff. Preparation cannot dispatch or hand off itself.
-      binding=canonicalAuthorityTrialBinding(prepared.driverOptions.expected);
+      binding=canonicalAuthorityTrialBinding(prepared.driverOptions.expected,recoveryOptions.decisionHash);
       if(prepared.driverOptions.expected.trialEpoch!==recoveryOptions.epoch)stop();await checkRecovery(cap);
-      driver=createCanonicalAuthorityTrialDriver({...prepared.driverOptions,control:phase,prepareDispatch:cap=>checkRecovery(cap),assertDispatch});
+      driver=createCanonicalAuthorityTrialDriver({...prepared.driverOptions,decisionHash:recoveryOptions.decisionHash,control:phase,prepareDispatch:cap=>checkRecovery(cap),assertDispatch});
       handoff='unknown';await cap.handoff({runtimeBinding:binding,expectedSpent:prepared.expectedSpent});handoff='acknowledged';
      });
      stage='runtime';
-     for(const entry of ['wrapper','qualified']){if(stopped)stop();checkArtifact();const runtimeOrigin={accepting:true};currentOrigin=runtimeOrigin;try{await origin.run(runtimeOrigin,()=>driver.run(entry));entries.push(entry);}finally{runtimeOrigin.accepting=false;currentOrigin=null;}}
+     for(const entry of ['wrapper']){if(stopped)stop();checkArtifact();const runtimeOrigin={accepting:true};currentOrigin=runtimeOrigin;try{await origin.run(runtimeOrigin,()=>driver.run(entry));entries.push(entry);}finally{runtimeOrigin.accepting=false;currentOrigin=null;}}
+     checkArtifact();
     }catch(_){failed=true;}
     finally{
      stopped=true;try{await phase.requestStop();}catch(_){}

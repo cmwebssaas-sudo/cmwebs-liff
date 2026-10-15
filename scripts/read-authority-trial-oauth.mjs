@@ -55,7 +55,7 @@ export function createAuthorityTrialOAuth(input){
   const write=patch=>{journal={...journal,...patch};save(path,journal);};
   const integrity=()=>{directory(path);if(JSON.stringify(read(registry))!==JSON.stringify({state:'ready',path,binding})||JSON.stringify(read(path))!==JSON.stringify(journal))stop();};
   const live=()=>{integrity();const time=now();if(journal.stage!=='claimed'||!Number.isSafeInteger(time)||time<start||time>=deadline)stop();return time;};
-  const ordinary=async io=>capability.external(async()=>{live();return await io();});
+  const ordinary=async(charge,io)=>capability.external(async()=>{live();return await io();},charge);
   const options=(method,body,headers={})=>({method,redirect:'manual',signal:AbortSignal.timeout(10000),headers:{'cache-control':'no-cache, no-store',...headers},...(body===undefined?{}:{body})});
   const revoke=async()=>{
    if(revokePromise)return revokePromise;if(!accessToken)return;
@@ -113,11 +113,11 @@ export function createAuthorityTrialOAuth(input){
      const u=new URL(request.url,AUTHORITY_TRIAL_REDIRECT_URI),p=u.searchParams;
      if(u.origin!=='http://127.0.0.1:34763'||u.pathname!=='/oauth/callback'||[...p.keys()].some(k=>p.getAll(k).length!==1))stop();
      const incoming=p.get('state');if(typeof incoming!=='string'||incoming.length!==state.length||!timingSafeEqual(Buffer.from(incoming),Buffer.from(state)))stop();
-     write({stage:'claimed',attempted:true});claimed=true;live();await ordinary(async()=>{live();});
+     write({stage:'claimed',attempted:true});claimed=true;live();await ordinary('E:oauth-response',async()=>{live();});
      const allowed=['state','code','error','error_description','error_subtype','scope','authuser','prompt','hd'];
      if([...p.keys()].some(k=>!allowed.includes(k))||p.has('error')||!secret(p.get('code'))||p.get('code').length>4096||(p.has('scope')&&!scopes(p.get('scope'))))stop();
      const rawSecret=clientSecret();if(types.isPromise(rawSecret)){void Promise.prototype.then.call(rawSecret,()=>{},()=>{});stop();}if(!secret(rawSecret))stop();
-     let sentAt;const t=await ordinary(async()=>{
+     let sentAt;const t=await ordinary('E:token-exchange',async()=>{
       const tokenUrl='https://oauth2.googleapis.com/token';sentAt=now();write({revocation:'TOKEN_UNAVAILABLE'});
       const response=await fetcher(tokenUrl,options('POST',new URLSearchParams({client_id:clientId,client_secret:rawSecret,code:p.get('code'),code_verifier:verifier,grant_type:'authorization_code',redirect_uri:AUTHORITY_TRIAL_REDIRECT_URI}).toString(),{'content-type':'application/x-www-form-urlencoded'}));
       return await jsonResponse(response,tokenUrl);
@@ -125,7 +125,7 @@ export function createAuthorityTrialOAuth(input){
      if(record(t)&&secret(t.access_token)){accessToken=t.access_token;write({revocation:'NOT_NEEDED'});}
      live();if(!only(t,['access_token','token_type','expires_in','scope'],['access_token','token_type','expires_in','scope'])||!secret(t.access_token)||t.token_type!=='Bearer'||!Number.isSafeInteger(t.expires_in)||t.expires_in<=360||t.expires_in>3600||!scopes(t.scope))stop();
      const tokenExpiry=sentAt+t.expires_in*1000;if(tokenExpiry>expiresAt||tokenExpiry-now()<=360000)stop();
-     const user=await ordinary(async()=>{const userUrl='https://www.googleapis.com/oauth2/v2/userinfo?fields=email%2Cverified_email';return await jsonResponse(await fetcher(userUrl,options('GET',undefined,{authorization:'Bearer '+accessToken})),userUrl);});live();
+     const user=await ordinary('E:caller-userinfo',async()=>{const userUrl='https://www.googleapis.com/oauth2/v2/userinfo?fields=email%2Cverified_email';return await jsonResponse(await fetcher(userUrl,options('GET',undefined,{authorization:'Bearer '+accessToken})),userUrl);});live();
      if(!only(user,['email','verified_email'])||typeof user.email!=='string'||user.email.length>320||!/^\S+@\S+\.\S+$/.test(user.email)||user.verified_email!==true||hash(user.email.trim().toLowerCase())!==callerHash||tokenExpiry-now()<=360000)stop();
      verified=Object.freeze({accessToken,scopes:AUTHORITY_TRIAL_SCOPES,expiresAt:tokenExpiry,refreshTokenPresent:false,callerHash,oauthClientHash});verifiedExpiry=tokenExpiry;write({stage:'ready'});
     }catch(_){if(claimed){verifier=null;verified=null;try{write({stage:'failed'});}catch(_){}try{await revoke();}catch(_){/* unknown revoke remains durable; never retry */}}stop();}

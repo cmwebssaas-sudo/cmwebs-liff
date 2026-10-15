@@ -91,3 +91,26 @@ for(const kind of ['oversized','rejected-status']) test('import '+kind+' body ca
  try{assert.equal(cancelStarted,true);assert.equal(cancelSettled,false);assert.equal(owned,true);}finally{release();await assert.rejects(pending,/TRIAL_STOPPED/);}
  assert.equal(owned,false);assert.equal(cancelSettled,true);
 });
+
+// Same-holder evidence reuse avoids paying twice for the identical import GET.
+// It grants no RPC/ACL authority, cannot be copied/replayed, and expires60s from IO start.
+test('actual successful import readback can be consumed once by its bound grant holder',async()=>{
+ const s=setup(),receipt=await s.adapter.create(),expected={epoch:s.options.epoch,syntheticSheetId:newId,publisherHash,fixtureHash:s.options.fixtureHash};
+ assert.equal(mod.consumeAuthorityTrialImportReadback?.(receipt,expected,clock),true);
+ assert.equal(mod.consumeAuthorityTrialImportReadback?.(receipt,expected,clock),false);
+ assert.equal(s.calls.length,2);assert.equal(s.spent(),2);
+});
+for(const field of ['epoch','syntheticSheetId','publisherHash','fixtureHash'])test('readback reuse rejects a different '+field+' without consuming the original evidence',async()=>{
+ const s=setup(),receipt=await s.adapter.create(),expected={epoch:s.options.epoch,syntheticSheetId:newId,publisherHash,fixtureHash:s.options.fixtureHash};
+ assert.equal(mod.consumeAuthorityTrialImportReadback?.(receipt,{...expected,[field]:'SYNTHETIC_OTHER'},clock),false);
+ assert.equal(mod.consumeAuthorityTrialImportReadback?.(receipt,expected,clock),true);
+});
+for(const [kind,offset] of [['future',-1],['expired',60001]])test('readback reuse refuses '+kind+' timestamps without a replacement request',async()=>{
+ const s=setup(),receipt=await s.adapter.create(),expected={epoch:s.options.epoch,syntheticSheetId:newId,publisherHash,fixtureHash:s.options.fixtureHash};
+ assert.equal(mod.consumeAuthorityTrialImportReadback?.(receipt,expected,clock+offset),false);assert.equal(s.calls.length,2);
+});
+test('JSON or object copies cannot reconstruct live import evidence',async()=>{
+ const s=setup(),receipt=await s.adapter.create(),expected={epoch:s.options.epoch,syntheticSheetId:newId,publisherHash,fixtureHash:s.options.fixtureHash};
+ for(const value of [{...receipt},JSON.parse(JSON.stringify(receipt)),null])assert.equal(mod.consumeAuthorityTrialImportReadback?.(value,expected,clock),false);
+ assert.equal(mod.consumeAuthorityTrialImportReadback?.(receipt,expected,clock+60000),true);
+});
