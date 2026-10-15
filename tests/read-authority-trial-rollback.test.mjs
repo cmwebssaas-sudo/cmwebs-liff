@@ -4,6 +4,7 @@ import {mkdtempSync,chmodSync,readFileSync,writeFileSync,lstatSync,readdirSync,u
 import {tmpdir,homedir} from 'node:os';
 import {join} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
+import {SINGLE_WRAPPER_TRIAL_DECISION_HASH as decisionHash} from '../scripts/read-authority-trial-budget-plan.mjs';
 import {pathToFileURL} from 'node:url';
 import {createAuthorityPreparationControl} from '../scripts/read-authority-preparation-control.mjs';
 import {createAuthorityTrialOrchestrator,AUTHORITY_TRIAL_CLEANUP_ACTIONS} from '../scripts/read-authority-trial-orchestrator.mjs';
@@ -98,4 +99,12 @@ test('copied publication readback uses original canonical I aliases and preserve
  await control.withRuntimeCleanup(binding,async cap=>{const recovered=api.createPublication({...options,control:cap});methodType=typeof recovered.readOriginal;assert.equal(recovered.publishAndRestore,undefined);leaked=recovered;if(methodType!=='function')return;
   for(const action of aliases){const result=await recovered.readOriginal(action);assert.equal(result.matchedAtReadback,true);assert.equal(result.rollbackComplete,false);}await assert.rejects(recovered.readOriginal(aliases[0]),/TRIAL_STOPPED/);
  });assert.equal(methodType,'function');assert.equal(s.get().spent,36);assert.deepEqual(s.get().preparation.iActions,aliases);assert.equal(JSON.stringify(s.get().preparation.runtime),pendingBefore);assert.deepEqual(readFileSync(options.path),beforeJournal);assert.deepEqual(calls.slice(7).map(c=>c.method),['GET','GET','GET']);await assert.rejects(async()=>leaked.readOriginal('read-original-editor'),/TRIAL_STOPPED/);assert.equal(calls.length,10);
+});
+
+test('copied cleanup preserves the supplemental decision and original25 history without ordinary admission',async()=>{
+ const s=setup();s.options.decisionHash=decisionHash;const original=createAuthorityPreparationControl(s.options);await original.withPreparation(cap=>cap.externalRead(async()=>{},'A:original-project'));
+ const receipt=artifact(s),api=await rollback.loadAuthorityTrialRollback({path:receipt.path,sha256:receipt.sha256}),control=api.createCleanupControl(s.options);
+ await control.withPreparationCleanup(async cap=>{assert.equal(cap.externalRead,undefined);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});for(const action of AUTHORITY_TRIAL_CLEANUP_ACTIONS)await cap.cleanup(action,async()=>{});});
+ assert.equal(s.get().spent,45);assert.equal(s.get().preparation.importedReads,25);assert.equal(s.get().preparation.decisionHash,decisionHash);assert.equal(s.get().preparation.events[0].action,'A:original-project');assert.equal(s.get().preparation.iActions.length,17);
+ const dropped={...s.options};delete dropped.decisionHash;assert.throws(()=>api.createCleanupControl(dropped),/TRIAL_STOPPED/);
 });

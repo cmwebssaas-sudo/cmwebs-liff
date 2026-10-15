@@ -1843,3 +1843,21 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Restricted realm | Original11 full failures retained; existing approved OS identity API restores compatibility; affected83/83 PASS | No ambient process or new builtin permissions |
 | Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
 | Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
+
+
+### 2026-10-15 Approved single-wrapper budget core
+
+Supplemental owner decision replaces the old two-entry/eight-window cost model.
+The immutable presented decision hash selects the approved one-entry/four-window
+allocation without granting execution authority. Offline compiler plus durable
+ledger/rollback tests122/122 PASS: exact160 full allocation, unique fixed aliases,
+G4/2/1/1 per-window caps, P2 per actor, T3 pending-only settlement, C2 included inC9,
+I17 independent, failed IO UNKNOWN/no refund, immutable original history/binding,
+no bulk unlabeled debit, qualified/second RPC denied in supplemental mode, copied
+cleanup retains the original policy and counter. Historical RED ledger70 had
+48pass/22fail before implementation; final affected suite122pass/0fail.
+
+This is local cost/control evidence only. Legacy records keep their existing
+format; new strict policy is opt-in until mandatory orchestrator/adapter/native
+wiring is complete and reviewed. No live trial or credential operation follows
+from these tests. Actual25/160 remains unchanged. Full Node22/actual Core/owned PostgreSQL regression1765/1765 PASS,57.460s; cluster cleanup/listener stop verified.

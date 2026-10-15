@@ -48,10 +48,46 @@ def save(p,v):
 I=['close-deployment','verify-closed-deployment','remove-reader','verify-reader-removed','restore-original-guard','verify-original-guard','restore-thin-guard','verify-thin-guard','remove-testing-user','verify-testing-user-removed','revoke-token','verify-token-revoked','read-original-editor','read-original-versions','read-original-deployments','read-original-project','read-original-triggers']
 C=['restore-editor','read-restored-editor']
 R=['wrapper','qualified']
+DECISION='0b382d87214d9d1fbe658b1615176de48917666698e79092218f1691c358a675'
+FIXED={
+ 'A':['original-project','original-editor','original-versions','original-deployments','original-v1-content','original-cloud-backup','original-triggers-backup','original-properties-backup','original-container-acl'],
+ 'B':['fixture-import','fixture-file-readback','original-acl-fresh','synthetic-acl-baseline','caller-permission-id','reader-create','reader-acl-readback','fixture-native','auth-tab-users','auth-tab-workspaces','auth-tab-members','auth-tab-email','auth-tab-settings'],
+ 'C':['library-source-put','library-version-create','library-fixed-content','library-versions-inventory','library-deployments-inventory','original-properties-write','original-properties-readback'],
+ 'D':['thin-project-backup','thin-source-backup','thin-gcp-link','thin-source-put','thin-version-create','thin-fixed-content','thin-deployment-create','thin-deployments-inventory','thin-properties-write','thin-properties-readback'],
+ 'E':['testing-user-write','testing-user-readback','client-create','client-readback','oauth-response','token-exchange','caller-userinfo']}
+RELEASE=['original-project','original-editor','original-versions','original-deployments','library-content','thin-content','thin-deployments','synthetic-acl','original-acl','original-settings','original-triggers','thin-settings','oauth-audience','oauth-client','caller-sheets-metadata']
+FIXED['F']=[phase+'.'+item for phase in ['wrapper-before','wrapper-after'] for item in RELEASE]
+NATIVE={'pages':4,'setupReads':2,'identityReads':1,'quotaReads':1}
+def policy_key(kind,action):
+ if kind=='C' and action in C:return ('C:'+action,1)
+ if kind=='I' and action in I:return ('I:'+action,1)
+ if kind=='R' and action=='wrapper':return ('H:wrapper-compatibility-rpc',1)
+ if kind not in ['ordinary','S'] or type(action)!=str:fail()
+ bits=action.split(':')
+ if len(bits)==2 and bits[0] in FIXED and bits[1] in FIXED[bits[0]]:
+  after=bits[0]=='F' and bits[1].startswith('wrapper-after.')
+  if (kind=='S')!=after:fail()
+  return (action,1)
+ if len(bits)==4 and bits[0]=='G' and bits[1] in ['wrapper-before','wrapper-after'] and bits[2] in ['caller','publisher'] and bits[3] in NATIVE:
+  if (kind=='S')!=(bits[1]=='wrapper-after'):fail()
+  return (action,NATIVE[bits[3]])
+ if len(bits)==2 and bits[0]=='P' and bits[1] in ['caller','publisher'] and kind=='ordinary':return (action,2)
+ if action=='T:unknown-settlement' and kind=='S':return (action,3)
+ fail()
+def policy_usage(events):
+ used={}
+ for e in events:
+  key,limit=policy_key(e['kind'],e['action'])
+  if e['units']!=1:fail()
+  used[key]=used.get(key,0)+1
+  if used[key]>limit:fail()
+ return used
 class Ledger:
  def __init__(self,cfg,inherited=False):
   keys={'path','epoch','binding','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now'}
-  if type(cfg)!=dict or not keys<=set(cfg) or set(cfg)-keys-{'mode','runtimeBinding'} or any(not digest(cfg[k]) for k in ['binding','approvalHash','proposalHash','legacySha256']) or not integer(cfg['importedReads']) or not 0<=cfg['importedReads']<=141 or not integer(cfg['expiresAt']) or not integer(cfg['now']) or not re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']): fail()
+  if type(cfg)!=dict or not keys<=set(cfg) or set(cfg)-keys-{'mode','runtimeBinding','decisionHash'} or any(not digest(cfg[k]) for k in ['binding','approvalHash','proposalHash','legacySha256']) or not integer(cfg['importedReads']) or not 0<=cfg['importedReads']<=141 or not integer(cfg['expiresAt']) or not integer(cfg['now']) or not re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']): fail()
+  self.strict='decisionHash' in cfg
+  if self.strict and (cfg['decisionHash']!=DECISION or cfg['importedReads']!=25):fail()
   self.mode=cfg.get('mode','preparation')
   if self.mode not in ['preparation','runtime'] or (self.mode=='runtime' and not digest(cfg.get('runtimeBinding'))) or (self.mode=='preparation' and 'runtimeBinding' in cfg):fail()
   self.cfg=cfg;self.path=Path(cfg['path']);self.original=None
@@ -87,7 +123,7 @@ class Ledger:
    self.create_record(self.reg,{**value,'checkpoint':None})
   if 'preparation' not in v:
    if sha(raw)!=cfg['legacySha256'] or v['spent']!=cfg['importedReads'] or not 0<cfg['expiresAt']-cfg['now']<=21600000:fail()
-   v['preparation']={'version':1,'binding':cfg['binding'],'legacySha256':cfg['legacySha256'],'importedReads':cfg['importedReads'],'expiresAt':cfg['expiresAt'],'day':day(cfg['now']),'state':'ready','calls':[cfg['now']]*v['spent'],'events':[],'cActions':[],'iActions':[]}
+   v['preparation']={'version':1,'binding':cfg['binding'],'legacySha256':cfg['legacySha256'],'importedReads':cfg['importedReads'],'expiresAt':cfg['expiresAt'],'day':day(cfg['now']),'state':'ready','calls':[cfg['now']]*v['spent'],'events':[],'cActions':[],'iActions':[],**({'decisionHash':DECISION} if self.strict else {})}
    self.persist(v)
   self.original=v;self.validate(v)
  def record(self,p):
@@ -117,13 +153,14 @@ class Ledger:
  def validate(self,v):
   self.base(v);p=v['preparation'];c=self.cfg
   keys={'version','binding','legacySha256','importedReads','expiresAt','day','state','calls','events','cActions','iActions'}
-  if type(p)!=dict or p.get('version') not in [1,2,3] or set(p)!=(keys|({'handoff'} if p['version']>=2 else set())|({'runtime'} if p['version']==3 else set())) or p['binding']!=c['binding'] or p['legacySha256']!=c['legacySha256'] or p['importedReads']!=c['importedReads'] or p['expiresAt']!=c['expiresAt'] or p['state'] not in ['ready','stopped'] or not re.fullmatch(r'\d{4}-\d{2}-\d{2}',p['day']) or any(type(p[k])!=list for k in ['calls','events','cActions','iActions']):fail()
+  if type(p)!=dict or p.get('version') not in [1,2,3] or set(p)!=(keys|({'decisionHash'} if self.strict else set())|({'handoff'} if p['version']>=2 else set())|({'runtime'} if p['version']==3 else set())) or p['binding']!=c['binding'] or p['legacySha256']!=c['legacySha256'] or p['importedReads']!=c['importedReads'] or p['expiresAt']!=c['expiresAt'] or p['state'] not in ['ready','stopped'] or not re.fullmatch(r'\d{4}-\d{2}-\d{2}',p['day']) or any(type(p[k])!=list for k in ['calls','events','cActions','iActions']):fail()
+  if self.strict and p['decisionHash']!=DECISION:fail()
   if len(p['events'])>160 or len(p['calls'])!=v['spent'] or any(not integer(t) for t in p['calls']) or len(set(p['cActions']))!=len(p['cActions']) or len(set(p['iActions']))!=len(p['iActions']) or any(a not in C for a in p['cActions']) or any(a not in I for a in p['iActions']):fail()
   total=p['importedReads'];cs=[];ins=[];rs=[];times=p['calls'][:p['importedReads']]
   for e in p['events']:
    if type(e)!=dict or set(e)!={'kind','action','units','time','outcome'} or e['kind'] not in ['ordinary','C','I','R','S'] or not integer(e['units']) or not 1<=e['units']<=10 or not integer(e['time']) or e['outcome']!='UNKNOWN':fail()
    if e['kind'] in ['ordinary','S']:
-    if e['action'] is not None:fail()
+    if not self.strict and e['action'] is not None:fail()
     if e['kind']=='S' and (p['version']!=3 or not rs):fail()
    elif e['kind']=='R':
     if p['version']!=3 or e['units']!=1 or len(rs)>=2 or e['action']!=R[len(rs)] or day(e['time'])!=p['day'] or e['time']>=p['expiresAt']:fail()
@@ -132,6 +169,7 @@ class Ledger:
     if e['units']!=1 or e['action'] not in (C if e['kind']=='C' else I):fail()
     (cs if e['kind']=='C' else ins).append(e['action'])
    total+=e['units'];times.extend([e['time']]*e['units'])
+  if self.strict:policy_usage(p['events'])
   if total!=v['spent'] or times!=p['calls'] or cs!=p['cActions'] or ins!=p['iActions'] or ('read-restored-editor' in cs and ('restore-editor' not in cs or cs.index('read-restored-editor')<cs.index('restore-editor'))):fail()
   if p['version']>=2:
    h=p['handoff']
@@ -171,10 +209,10 @@ class Ledger:
    phase='runtime' if p['version']>=2 else 'preparation';rt=self.runtime(p)
    if self.mode!=phase or (phase=='runtime' and p['handoff']['runtimeBinding']!=self.cfg['runtimeBinding']) or t>=p['expiresAt'] or day(t)!=p['day'] or v['spent']+units>160-(17-len(p['iActions']))-(2-len(p['cActions'])):fail()
    if kind=='S':
-    if self.mode!='runtime' or p['version']!=3 or rt['pending'] is None or action is not None:fail()
+    if self.mode!='runtime' or p['version']!=3 or rt['pending'] is None or (not self.strict and action is not None):fail()
    else:
     if p['state']!='ready' or self.stop_requested() or rt['pending'] is not None:fail()
-    if kind=='ordinary' and action is not None:fail()
+    if kind=='ordinary' and not self.strict and action is not None:fail()
     if kind=='R' and (self.mode!='runtime' or len(rt['entries'])>=2 or action!=R[len(rt['entries'])] or units!=1):fail()
   elif kind=='C':
    if units!=1 or action not in C or action in p['cActions'] or (action=='read-restored-editor' and 'restore-editor' not in p['cActions']) or v['spent']+1>160-(17-len(p['iActions'])):fail()
@@ -182,6 +220,11 @@ class Ledger:
    if units!=1 or action not in I or action in p['iActions'] or v['spent']+1>160-(2-len(p['cActions'])):fail()
    if p['state']!='stopped':p['state']='stopped';self.persist(v)
   else:fail()
+  if self.strict:
+   policy_usage(p['events']+[{'kind':kind,'action':action,'units':units}])
+   if kind=='ordinary':
+    if action.startswith(('A:','B:','C:','D:','E:','P:')) and p['version']!=1:fail()
+    if action.startswith(('F:','G:')) and (p['version']<2 or rt['entries']):fail()
   recent=sorted(x for x in p['calls'] if t-x<60000);ms=0 if len(recent)+units<=10 else recent[len(recent)+units-11]+60000-t
   if not 0<=ms<=60000 or (kind in ['ordinary','R','S'] and (t+ms>=p['expiresAt'] or day(t+ms)!=p['day'])):fail()
   return v,ms

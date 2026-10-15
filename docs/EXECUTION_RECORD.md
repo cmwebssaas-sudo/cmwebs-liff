@@ -3153,3 +3153,37 @@ Risk: retained ownership intentionally prevents reuse after an unacknowledged
 stop; use the original controller's requestStop/stopAndDrain for recovery.
 Rollback this undeployed controller change to acbff8e; no formal data rollback.
 Root WIP and private security boundary preserved.
+
+
+## 2026-10-15 — Approved acceleration and supplemental budget core
+
+Recommended model/speed GPT-6.1 Sol/high for continuity of the existing security
+controller work. Owner explicitly approved both revised decisions. PR272 is
+merged at f5ff2ac8d16208e520453b8942a3e97a76d92842 after independent review with
+no actionable findings and exact-head CI38738904903 rental/read-worker success.
+Plan replaces the pre-on72h/seven-day wait: after all technical prerequisites,
+concurrent sync/shadow24h, rooms first, another stable24h before subsequent
+accepted pages; seven-day observation completes after enablement. T0 has not
+started. Performance/privacy/freshness/real-device gates remain unchanged.
+
+Approved phase1 is one wrapper-to-library compatibility RPC, four complete native
+windows, cumulative160 with25 imported history. Pure compiler reserves fixed96
+plus G32/P4/T3; unused sub-buckets are not available for borrowing. Supplemental
+decision hash pins the original presented text, not a new counter or credential
+grant. Durable optional policy binds the same counter, permanent epoch checkpoint
+and claim; fixed aliases are unique, G per-window4pages/2setup/1identity/1quota,
+P per actor2, T3 pending-only, H wrapper once, C2/I17 retain original purposes.
+UNKNOWN charges never refund. Copied cleanup binds the same supplemental policy.
+
+Affected local tests122/122 PASS; exact full135 future operations plus25 history
+reaches160 and includes both original restore operations and all17 cleanup aliases.
+This component is not the completed runtime integration: mandatory strict policy
+selection in orchestrator, fixed adapter charge labels and native producer wiring
+still pending; existing legacy format is retained for historical recovery. Do not
+use legacy two-entry workflow as new trial admission. Actual Google counter25/160
+unchanged; no new credential, Google/Cloudflare/native IO, formal data, switch or
+deployment in this work. Full Node22/actual Core/owned PostgreSQL regression1765/1765 PASS,57.460s,zero fail/cancel/skip; cluster cleanup/listener stop verified. Independent incremental runtime-core review no actionable findings, seven source pins unchanged. Validate72 backend/40 endpoints/static cache and diff check PASS. No Apps Script bytes changed, so no native Apps Script test run is needed. New-head CI and downstream propagation remain pending.
+Risk: strict unlabeled or duplicated IO intentionally stops instead of borrowing
+a reserve. Rollback undeployed source to b85179f8; preserve any claimed strict
+counter and use its pinned copied cleanup rather than downgrade that binding.
+Root WIP and private S1 boundary preserved.
