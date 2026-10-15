@@ -113,14 +113,24 @@ export function createReadDatasetLoader(database,options={}) {
   return {
     async checkReplica() {
       const now=options.now??Date.now(),tables=Object.keys(schema);
-      const results=await db.batch(tables.map(table=>db.prepare(`SELECT source_version,completed_at,
+      // Keep each table's original latest-marker query (including tie choice)
+      // intact; only combine independent results into one bounded statement.
+      const queries=tables.map((table,ordinal)=>`SELECT ${ordinal} AS replica_table_ordinal,marker.* FROM (SELECT source_version,completed_at,
         EXISTS (SELECT 1 FROM sync_runs AS pending WHERE pending.sheet=? AND pending.status='receiving'
           AND pending.source_version > completed.source_version) AS pending
         FROM sync_runs AS completed WHERE completed.sheet=? AND completed.mode='snapshot'
-          AND completed.status='completed' ORDER BY completed.source_version DESC LIMIT 1`).bind(table,table)));
-      for(const result of results) {
-        const row=result.results?.[0];
-        if(!result.success||!row||row.pending) failure('READ_SYNC_INCOMPLETE');
+          AND completed.status='completed' ORDER BY completed.source_version DESC LIMIT 1) AS marker`);
+      // D1 bounds compound SELECT terms; keep both union levels below that
+      // bound without merging or rewriting any table's marker selection.
+      const groups=[];
+      for(let offset=0;offset<queries.length;offset+=5) groups.push('SELECT * FROM ('+queries.slice(offset,offset+5).join(' UNION ALL ')+')');
+      const result=await db.prepare(groups.join(' UNION ALL ')+' ORDER BY replica_table_ordinal').bind(...tables.flatMap(table=>[table,table])).all();
+      if(!result?.success||!Array.isArray(result.results)||result.results.length>tables.length) failure('READ_SYNC_INCOMPLETE');
+      // Visit every required ordinal so missing rows still fail at their old
+      // table position, after any earlier table's original freshness error.
+      for(const ordinal of tables.keys()) {
+        const row=result.results[ordinal];
+        if(!row||row.replica_table_ordinal!==ordinal||row.pending) failure('READ_SYNC_INCOMPLETE');
         const completed=Date.parse(row.completed_at);
         if(!Number.isFinite(completed)||completed>now+300000||now-completed>26*3600000) failure('READ_SYNC_STALE');
       }
