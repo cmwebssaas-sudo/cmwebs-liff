@@ -379,6 +379,49 @@ stacked on C3 and attached; source/record `ea193f3`. CI38182426724 rental and
 read-worker passed. It remains unmerged and unpublished while preceding actual
 gates run. Independent C5 worktree starts from this candidate with flags off.
 
+## 2026-10-12 — C5 local shadow candidate and approved clock boundary
+
+Recommended model/speed GPT-6.1 Sol/high per approved plan. Independent C5
+worktree/branch starts from C4 `0af14ca`; root checkpoint WIP preserved. All
+flags off/endpoint blank. No formal deployment/configuration/property/trigger
+or data change. C1 actual72-hour gate continues unchanged; actual C5 seven-day
+observation is NOT_STARTED.
+
+Implemented current-authority POST telemetry with strict metadata bounds,
+server-timed read attempts and single-use route/section/release-bound receipts,
+atomic report/diff/clock writes and concurrent rate enforcement. Independent
+review reproduced missing actual-read proof, hidden eighth-day errors, pending
+attempt acceptance and report-boundary misattribution; each was fixed with
+actual local D1/browser or export regressions. Busy-browser timer delays also
+cannot extend the unchanged3000ms read deadline.
+
+The owner explicitly approved separately recording the exact generation-clock
+paths in `READ-CLOCK-DECISION.md`, canonical ISO and at most60s apart. Financial
+fields, counts, order and source-row timestamps remain exact; API/rendering is
+unchanged. Clock metadata is separately persisted/exported, never silently
+ignored. A shared-clock synthetic oracle now uses one Date constructor for
+native source-cell rehydration and calculation, avoiding a false instanceof
+mismatch in the end-to-end browser test.
+
+Unit902/902, Worker24/24 including dry-run and validate72 backend files/40
+endpoint references pass. Full902 pass/1 documented missing external Core/PG
+fixture failure/4 skips. Independent review found no remaining source blocker;
+focused clock boundary/D1 rollback checks pass. Actual HTTP/browser clock
+storage is verified locally, not a real observation day. Release references
+advance to `20261012-read-shadow-v1` across40 root HTML pages. C5 PR/CI pending.
+
+Real exports cover the whole epoch and latest seven complete24-hour windows;
+errors/missing/pending reports anywhere in the epoch remain blocking. Candidate
+aggregate eligibility never replaces verified remote export, authenticated
+performance or device acceptance. Publication sequence and rollback are in
+`READ-SHADOW.md`; retain all metadata/replica data and prior deployment versions.
+
+C5 draft [PR270](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/270) is
+stacked on C4 and attached; source `9c72fd4`. CI38185484575 rental and read-worker
+both passed. Focused independent actual browser clock case1/1 passed after the
+oracle fixture repair; all required local source checks are complete. This is
+still an unpublished candidate, with preceding actual/time/device gates pending.
+
 ## 2026-10-12 — C3 isolated real-Google feasibility preparation
 
 Recommended GPT-6.1 Sol/high. A separate synthetic-only20-table/33-row Google
@@ -3209,6 +3252,44 @@ Actual25/160 unchanged/unclaimed, native STOP,900s/72h/seven-day/500/Taipei/
 latency/device/cutover unaccepted. Blank endpoint/flags off, root WIP/private
 S1 preserved. Rollback this undeployed merge to132e9a1; no data rollback.
 
+
+## 2026-10-15 — C5 current-stack composition
+
+Recommended model/speed GPT-6.1 Sol/high for authority/shadow integration.
+Merge current C4 8922fcb into C5 b424ccb. Prior resolved tree/patches retained
+privately before abort/remerge; original swap SHA unchanged. Two conflicts:
+keep C5 enhanced API receipt/clock contract plus new C3 synthetic API section,
+and combine C3 scoped SDK observer with C5 actual LINE/Email shadow dispatch.
+Own65/66 non-document paths remain exact old C5; only the test fixture adapts.
+
+Full Node22/Core/ownedPG1738/1738,56.914s,zero fail/cancel/skip, cleanup and
+closed listener verified;581-file pending-merge snapshot SHA
+aae0ed1dba7e8dbef95a2dd7a8098aa82c336efa22d9979426f235e35b842332.
+Previous1735/1736 uncaught EPIPE failure remains; new inherited C3 fix is exact
+acbff8e. Initial Worker26/31 exposed observer omitting session .run/.first;
+shadow attempts could not create receipts. Forward all/first/run/raw preserving
+receiver/arguments/results; existing five actual shadow failures GREEN. Final
+Worker31/31,zero fail/cancel/skip and bundle dry run PASS. One static review
+P1/P2/minor0 verifies observer/receipt composition; no repeated review.
+Validate72 backend/40 references/static cache/diff PASS.
+
+Ruling: after full root only the Worker test fixture changed; all other non-doc
+bytes match that snapshot and no root test references this fixture. Retain
+1738 result, rerun affected full Worker suite; normal exact-head CI required.
+Cost: retained root provenance remains explicit; this is not a fresh full run
+with the later fixture bytes. C4 CI38711563299 rental1728/Worker26/two dry runs
+SUCCESS. Original Linux latency failures/cause remain UNRESOLVED; no retries,
+warmups/exclusions or relaxed gates. Shadow observer timing is test-only.
+
+Actual25/160 unchanged/unclaimed,320 declined/native STOP; broader OS-flock/
+complete budget and eight native callback conditions unaccepted. Daily900s,
+fresh72h/seven actual24h shadow days NOT_STARTED,500/Taipei/strict full-flow
+latency/device/cutover remain. Endpoint blank/six flags off; no Google/RPC,
+credential, formal deployment/data/Properties/trigger/switch changes. Root WIP/
+private S1 preserved. Rollback undeployed composition to b424ccb, preserving
+original swap and private failed-run evidence; no formal-data rollback needed.
+
+
 ## 2026-10-15 — Carry reviewed preparation ownership fix
 
 Recommended model/speed GPT-6.1 Sol/high. Inherited three preparation controller,
@@ -3224,6 +3305,7 @@ trial STOP. Accelerated-observation Draft PR272 awaits owner confirmation;
 original72h/seven-day gates still apply. No deployment, Properties, trigger,
 formal data, credential or switch change. Root WIP and C5 swap preserved.
 Rollback this carry to its parent commit; no formal release/data rollback.
+
 
 ## 2026-10-15 — Preparation ownership through child finalization
 
@@ -3501,6 +3583,88 @@ Performance and real acceptance remain unmet;endpoint blank,allflags off and
 T0 NOT_STARTED. Rollback this undeployed inheritance to5ad3ea5 while retaining
 original stopped trial history and matching pinned cleanup;never reset/replay.
 
+## C5 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C5 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1748/1748 PASS,60.167s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested581-file snapshot
+81e2547a19b52a412b734be486ee8672dfb4d51e1e041a645edebfb78555eda6;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated local capacity run. Exact-head CI follows push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance tod518fd3e019b9284fb3f15f2a0d577e642ef16c9;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+After upstream alignment, all32 inherited non-doc paths equal the reviewed
+parent; existing C5-specific source is preserved. One new full1956/1956
+PASS,59.188s,Node22/actual Core/owned PG16.14; database/role cleanup,
+stopped cluster and closed listener verified. Tested592-file snapshot
+ccd47742df8c1f9e1adab28517b0a3743c79a90cb772b03d289c331a3ae40e3b.
+Only docs afterwards. Separate labelled C1–C5 evidence and rollback records
+restored after the reviewed union-merge finding; no pending native-IO proposal
+inherited. Validate72/40/cache/diff PASS. Approved C3 controls and partial
+source/metadata/credential adapters are local preparation only. Original25/160
+unchanged/unclaimed; real gates unaccepted/T0 NOT_STARTED/alloff. No Google,
+credential, Properties, trigger, source-data or deployment operation. Rollback
+this undeployed upstream alignment to2059ebefd4a03d840b019c7ff4134c5d79ee2949; preserve any
+original claim/history and matching pinned cleanup, never reset or replay.
+
+## C5 inherited approved C3 native IO controls — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Merged C4 parent5ad3ea5, inheriting the reviewed
+C3 b01e753 controls in the existing C5 branch. All10 non-doc paths among the
+13-path C3 increment are byte-identical to C3; C5 clock/shadow behavior and flags
+are preserved. Both document conflicts retain whole, independently labelled
+C1–C5 historical evidence blocks. Approved native-IO status supersedes the
+historical pending wording only; real five-F/full-G/native gates remain open.
+
+Fresh Node22.23.3 authority regression1065/1065 PASS (30 files,64.451s,
+zero fail/cancel/skip); validate72backend/40endpoint/cache and staged diff PASS.
+No unchanged Worker capacity or cross-repository PostgreSQL rerun; C3 full1960
+is upstream evidence only. Exact-head CI readback remains pending after push.
+
+No account/Google/Cloudflare/credential/data/deployment IO; no T0 or formal
+flag change. Root/private S1/original counter/history untouched. Existing C5
+swap bytes,size,mtime remain exact. Rollback this undeployed inheritance to
+c526a4ec80685a696e6a4c5583c10c3cc39d2b3e; retain any original claimed
+pins/history/UNKNOWN and matching cleanup, never reset or replay a purpose.
+
+## C5 final C3 stopped-trial inheritance — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Normal merge of the final C4 parent inherits
+C3 6bb2a62's nine source/test/fixture paths byte-for-byte,including its three
+frozen original-controller fixtures. Existing C5 authenticated shadow,receipt,
+clock/privacy and rate-limit behavior plus every other runtime path are
+unchanged. Complete historical sections survive both append-only conflicts.
+
+Fresh validate72backend/40endpoint/cache and diff checks PASS. No large local
+suite or benchmark rerun. C3 source872067f full2003/2003 with PG teardown and
+CI38784461317(rental1998/Worker26/two dry-runs) are upstream evidence only;
+this branch's current-head CI/footers remain a separate verification.
+
+Actual trial27/160 is STOPPED,repair in-flight/UNKNOWN,with no verifiable
+caller/page tool state. The new owner veto and both holders' drain ACKs do not
+prove remote execution/rollback completion. No second bind/repair/ordinary
+continuation or trial RPC;original claim/pins/expiry/day/UNKNOWN and cleanup
+authority remain. No Google/counter/realm/credential/formal-data operation in
+this integration. Endpoint blank,formal flags off,T0 NOT_STARTED and actual
+performance/privacy/freshness/device acceptance still unmet. C5 swap bytes,
+size and mtime retained. Rollback this undeployed inheritance toec78b65 while
+preserving original stopped-trial history and matching pinned cleanup.
+
 ## 2026-10-16 — Bounded continuation cost compiler (local only)
 
 Recommended model/speed: GPT-6.1 Sol / high. The owner-approved continuation
@@ -3662,3 +3826,32 @@ No main merge, deployment or cutover. Formal configuration remains default-off,
 endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
 observation and device gates remain open. Rollback this undeployed integration
 to 22d888706716f504295b66cfcf0d25fdc6a11fe0 while retaining all trial evidence.
+
+## C5 bounded-control integration — 2026-10-16
+
+Integrated C3 control/compiler/driver/recovery increment and its terminal trial
+evidence through the existing ordered Draft stack. Eleven inherited source/test
+paths match C3 byte-for-byte; no C5 runtime behavior changed. Documentation
+conflicts were append-only work-order records and both sides were preserved.
+
+Full npm test on merge 13050d54d9fa2246c67af8636b8ae97ecc5222a7:
+2166/2166 PASS, zero failure/cancellation/skip,83.122s, Node22,
+pinned actual Core643c1b3 and a fresh owned PostgreSQL16.14 fixture. Each suite's
+database/role cleanup was verified; final cluster stopped and listener closed.
+Source catalog SHA256 f8fcb12ab1e42c6d262fe76de19457fcd13ab15e75f70b6d5b1d4f073d39a778.
+Validate72backend/40endpoint/static-cache and diff checks PASS. C6 additionally
+checks the179-source comparison identity. No unchanged capacity benchmark rerun;
+the prior C6 properties51.208ms p95 failure remains an unmet gate.
+
+Actual compatibility method ended at28/160 after the sole caller binding
+UNKNOWN. Ordinary owner is drained/closed; original27 remains byte-identical.
+No RPC or new credential/resource/configuration mutation occurred. The copied
+independent recovery subsequently verified the original stopped checkpoint after
+its full60s cooldown, with cActions/iActions empty and zero Google IO. This is
+local recovery availability, not remote rollback acceptance. No rebind, repair,
+refund or second segment is authorized. Original STOP/history/copies retained.
+
+No main merge, deployment or cutover. Formal configuration remains default-off,
+endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
+observation and device gates remain open. Rollback this undeployed integration
+to a2d6114b616132597d7c8d286e7465520c40df59 while retaining all trial evidence.

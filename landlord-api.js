@@ -124,7 +124,7 @@
       Object.keys(params).sort().forEach(key => {
         if (params[key] !== undefined && params[key] !== null) base.searchParams.set(key,String(params[key]));
       });
-      return {url:base.href,route:target.route,mode,credential};
+      return {url:base.href,route:target.route,variant:target.route==='home'?(params.section||'home'):'default',mode,credential};
     } catch (error) { return null; }
   }
   function object(value) { return value && typeof value === 'object' && !Array.isArray(value); }
@@ -144,14 +144,19 @@
     try {
       return await Promise.race([
         (async function () {
+          const headers={Authorization:target.credential};
+          if(target.mode==='shadow') headers['X-CMWebs-Read-Mode']='shadow';
           const response = await global.fetch(target.url,{method:'GET',
-            headers:{Authorization:target.credential},credentials:'omit',cache:'no-store',
+            headers:headers,credentials:'omit',cache:'no-store',
             redirect:'error',signal:controller.signal});
           const headersElapsed = Math.max(0,Date.now() - started);
           if (!response.ok) throw Error('READ_HTTP_ERROR');
           const result = await response.json();
           if (!validReplicaResult(target.route,result)) throw Error('READ_FORMAT_ERROR');
-          return {result,elapsed:Math.max(0,Date.now() - started),headersElapsed};
+          // Timer delivery can be late when the browser is busy.
+          if(Date.now()-started>3000) throw Error('READ_TIMEOUT');
+          const receipt=response.headers&&response.headers.get?response.headers.get('x-cmwebs-shadow-receipt'):null;
+          return {result,elapsed:Math.max(0,Date.now() - started),headersElapsed,receipt};
         })(),
         new Promise((resolve,reject) => {
           timer = setTimeout(function () { controller.abort(); reject(Error('READ_TIMEOUT')); },3000);
@@ -166,6 +171,26 @@
     'contract_id amount rent_amount paid_amount outstanding_amount total revenue income occupancy '+
     'contract_requests payment_reports messages landlord_initiated_contracts updated_at status '+
     'account_status room_status room_name property_name can_write include_archived landlord').split(' '));
+  // Owner-approved request-clock paths only; source row timestamps stay exact.
+  const SHADOW_CLOCK_FIELDS = {
+    home: {home:'data.home.updated_at',actions:'data.contract_requests.summary.updated_at'},
+    revenue: {default:'data.updated_at'},
+    tenants: {default:'data.landlord.updated_at'},
+    arrears: {default:'data.landlord.updated_at'}
+  };
+  function requestClockPaths(target,gas,worker) {
+    const path=SHADOW_CLOCK_FIELDS[target.route]&&SHADOW_CLOCK_FIELDS[target.route][target.variant];
+    if(!path) return [];
+    function valueAt(input) {return path.split('.').reduce((value,key)=>value&&value[key],input);}
+    const left=valueAt(gas),right=valueAt(worker);
+    function iso(value) {
+      if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return null;
+      const time=Date.parse(value);
+      return Number.isFinite(time)&&new Date(time).toISOString()===value?time:null;
+    }
+    const a=iso(left),b=iso(right);
+    return a!==null&&b!==null&&a!==b&&Math.abs(a-b)<=60000?[path]:[];
+  }
   function differencePaths(left,right) {
     const paths = new Set();
     function walk(a,b,path,depth) {
@@ -188,11 +213,15 @@
     const url = new URL(target.url); url.pathname = url.pathname.replace(/\/v1\/[^/]+$/,'/v1/shadow-report'); url.search='';
     const controller = new global.AbortController();
     const timer = setTimeout(() => controller.abort(),3000);
+    const clocks=worker?requestClockPaths(target,gas,worker.result):[];
     try {
       await global.fetch(url.href,{method:'POST',headers:{Authorization:target.credential,'Content-Type':'application/json'},
         credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,
-        body:JSON.stringify({route:target.route,outcome:worker?'compared':'worker_error',
-          paths:worker?differencePaths(gas,worker.result):[],elapsed_ms:worker?worker.elapsed:null,
+        body:JSON.stringify({route:target.route,variant:target.variant,release:global.CMWEBS_RELEASE_VERSION,
+          receipt:worker?worker.receipt:null,
+          outcome:worker?'compared':'worker_error',
+          paths:worker?differencePaths(gas,worker.result).filter(path=>!clocks.includes(path)):[],
+          clock_paths:clocks,elapsed_ms:worker?worker.elapsed:null,
           headers_ms:worker?worker.headersElapsed:null})});
     } finally { clearTimeout(timer); }
   }

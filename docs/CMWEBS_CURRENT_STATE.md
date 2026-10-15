@@ -2049,3 +2049,11 @@ tests, own routing/Worker/Apps Script unchanged; affected68/68 and validate72/40
 static cache/diff PASS. Retain previous full1731/1731 and Worker26/26 plus
 C3 full1720/1720; this is not a fresh full-composed run. New-head CI pending;
 Draft/off, actual25/160/native STOP and all real gates remain unaccepted.
+
+
+2026-10-15 C5 current stack: C4 8922fcb merged; own65/66 source paths exact
+old b424ccb, test-only observer preserves C3 batch/session plus C5 receipts.
+Full1738/1738 with ownedPG cleanup; only Worker fixture changed afterward,
+Worker initial26/31 RED→31/31 GREEN; static review0, validate72/40/static/diff
+PASS. Exact-head CI required. Actual25/160/native STOP/off/blank;900s/72h/
+seven-day/500/Taipei/device/cutover remain unaccepted, no real shadow started.

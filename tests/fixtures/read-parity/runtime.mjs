@@ -41,11 +41,12 @@ export const cases = [
 export function originalGas(input=dataset,serverAccess=access,options={}) {
   // Independent oracle: Node's native Date in the deployed GAS project zone.
   process.env.TZ='Asia/Taipei';
+  const oracleNow=options.now??Date.parse(fixture.now);
   class NativeGasClock extends Date {
-    constructor(...args){super(...(args.length?args:[Date.parse(fixture.now)]));}
-    static now(){return Date.parse(fixture.now);}
+    constructor(...args){super(...(args.length?args:[oracleNow]));}
+    static now(){return oracleNow;}
   }
-  const services=createReadServices(input,serverAccess,{now:Date.parse(fixture.now),...options,dateConstructor:NativeGasClock});
+  const services=createReadServices(input,serverAccess,{now:oracleNow,...options,dateConstructor:NativeGasClock});
   const ctx=vm.createContext({...services,console});
   const manifest=JSON.parse(readFileSync(new URL('../../../cloudflare/read-api/read-source-manifest.json',import.meta.url),'utf8'));
   for(const file of Object.keys(manifest.sources)) vm.runInContext(readFileSync(new URL('../../../'+file,import.meta.url),'utf8'),ctx,{filename:file});

@@ -23,9 +23,12 @@ test('schema generation appends migrations once and preserves every previously p
     const run=()=>execFileSync(process.execPath,[join(root,script)],{stdio:'pipe'});
     run();run();
     const files=(await readdir(join(root,'cloudflare/read-api/migrations'))).sort();
-    assert.deepEqual(files,[...Object.keys(before).sort(),'0004_read_projection.sql']);
+    const extension=files.filter(file=>!Object.hasOwn(before,file));
+    assert.equal(extension.length,1);
+    assert.match(extension[0], /^\d{4}_read_projection\.sql$/);
+    assert.equal(Number(extension[0].slice(0,4)),Math.max(...Object.keys(before).map(file=>Number(file.slice(0,4))))+1);
     for(const [file,contents] of Object.entries(before)) assert.equal(await readFile(join(root,'cloudflare/read-api/migrations',file),'utf8'),contents,file);
-    assert.match(await readFile(join(root,'cloudflare/read-api/migrations/0004_read_projection.sql'),'utf8'),/ALTER TABLE "V2_users" ADD COLUMN "created_at" TEXT;/);
+    assert.match(await readFile(join(root,'cloudflare/read-api/migrations',extension[0]),'utf8'),/ALTER TABLE "V2_users" ADD COLUMN "created_at" TEXT;/);
     schema.V2_users.fields=schema.V2_users.fields.filter(field=>field!=='email_verified_at');
     await writeFile(join(root,schemaPath),JSON.stringify(schema));
     assert.throws(run,error=>String(error.stderr).includes('Removal requires an explicit migration'));
