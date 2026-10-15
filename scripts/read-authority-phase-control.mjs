@@ -4,12 +4,12 @@ import {AsyncLocalStorage} from 'node:async_hooks';
 const stop=()=>{throw Error('TRIAL_STOPPED');};
 const denied=()=>{const p=Promise.reject(Error('TRIAL_STOPPED'));void p.catch(()=>{});return p;};
 const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
-const phases={'preparation-cleanup':new Set(['restoreOriginalEditor','cleanup','inspectCleanup']),preparation:new Set(['externalRead','nativeRead','completeNativePreparation','restoreOriginalEditor','cleanup','inspectCleanup','handoff']),runtime:new Set(['externalRead','nativeRead','restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','dispatchCompatibility','settlementRead','accountNative','finishCompatibility']),cleanup:new Set(['restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','settlementRead','accountNative'])};
+const phases={repair:new Set(['repairNativeBinding','completeNativeBindingRepair']),'preparation-cleanup':new Set(['restoreOriginalEditor','cleanup','inspectCleanup']),preparation:new Set(['externalRead','nativeRead','completeNativePreparation','restoreOriginalEditor','cleanup','inspectCleanup','handoff']),runtime:new Set(['externalRead','nativeRead','restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','dispatchCompatibility','settlementRead','accountNative','finishCompatibility']),cleanup:new Set(['restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','settlementRead','accountNative'])};
 const independent=new Set(['restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','settlementRead','accountNative']);
-const ioIndex={externalRead:0,nativeRead:1,restoreOriginalEditor:1,cleanup:1,dispatchCompatibility:1,settlementRead:0};
+const ioIndex={repairNativeBinding:0,externalRead:0,nativeRead:1,restoreOriginalEditor:1,cleanup:1,dispatchCompatibility:1,settlementRead:0};
 export function createAuthorityPhaseControl(control){
  try{
-  const prep=control?.withPreparation,runtime=control?.withRuntime,requestStop=control?.requestStop;
+  const prep=control?.withPreparation,runtime=control?.withRuntime,requestStop=control?.requestStop,repair=control?.withNativeBindingRepair;
   if([prep,runtime,requestStop].some(f=>typeof f!=='function'))stop();
   const origin=new AsyncLocalStorage();let current=null;
   const invoke=(name,args)=>{
@@ -39,11 +39,11 @@ export function createAuthorityPhaseControl(control){
   const capability=Object.freeze({get decisionHash(){
    const g=origin.getStore();if(!g||g!==current||!g.active||!g.accepting)stop();return g.cap.decisionHash??null;
   },...Object.fromEntries([...new Set(Object.values(phases).flatMap(s=>[...s]))].map(name=>[name,(...args)=>invoke(name,args)]))});
-  const activate=async(phase,binding,callback)=>{
+  const activate=async(phase,binding,callback,descriptor=null)=>{
    const previous=origin.getStore();
    if(previous&&previous!==current)stop();
    if(current){current.failed=true;stop();}
-   if(typeof callback!=='function'||(!phase.startsWith('preparation')&&!digest(binding)))stop();
+   if(typeof callback!=='function'||(!phase.startsWith('preparation')&&phase!=='repair'&&!digest(binding)))stop();
    const g={phase,cap:null,active:true,accepting:false,failed:false,operations:new Set()};current=g;
    try{
     // Stop ACK is best effort; an ambiguous marker stays a negative veto.
@@ -58,10 +58,11 @@ export function createAuthorityPhaseControl(control){
      }
      if(g.failed)stop();return value;
     });
+    if(phase==='repair'){if(typeof repair!=='function')stop();return await repair(descriptor,scoped);}
     return phase.startsWith('preparation')?await prep(scoped):await runtime(binding,scoped);
    }catch(_){stop();}
    finally{g.accepting=false;g.active=false;if(current===g)current=null;}
   };
-  return Object.freeze({capability,withPreparation:callback=>activate('preparation',null,callback),withRuntime:(binding,callback)=>activate('runtime',binding,callback),withCleanup:(binding,callback)=>activate('cleanup',binding,callback),withPreparationCleanup:callback=>activate('preparation-cleanup',null,callback),requestStop});
+  return Object.freeze({capability,withNativeBindingRepair:(descriptor,callback)=>activate('repair',null,callback,descriptor),withPreparation:callback=>activate('preparation',null,callback),withRuntime:(binding,callback)=>activate('runtime',binding,callback),withCleanup:(binding,callback)=>activate('cleanup',binding,callback),withPreparationCleanup:callback=>activate('preparation-cleanup',null,callback),requestStop});
  }catch(_){stop();}
 }
