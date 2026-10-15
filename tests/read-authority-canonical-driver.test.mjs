@@ -11,7 +11,8 @@ import {createAuthorityTrialMetadataAdapters} from '../scripts/read-authority-tr
 import vm from 'node:vm';
 import {createAuthorityNativeCapture} from '../scripts/read-authority-native-capture.mjs';
 import {createAuthorityNativeProducer} from '../scripts/read-authority-native-producer.mjs';
-import {createAuthorityReleaseSource} from '../scripts/read-authority-release-source.mjs';
+import {createAuthorityReleaseSource,createAuthorityReleaseSourceVerifier} from '../scripts/read-authority-release-source.mjs';
+import {buildAuthorityTrialArtifacts} from '../scripts/build-read-authority-trial-entry.mjs';
 import {SINGLE_WRAPPER_TRIAL_DECISION_HASH as decisionHash,SINGLE_WRAPPER_TRIAL_OPERATIONS as fixedOperations} from '../scripts/read-authority-trial-budget-plan.mjs';
 const releaseAliases=fixedOperations.F.filter(v=>v.startsWith('wrapper-before.')).map(v=>v.slice('wrapper-before.'.length));
 const sourceAliases=['original-project','original-editor','original-versions','original-deployments','library-content','thin-content','thin-deployments'];
@@ -131,7 +132,7 @@ function sourceObserver(s,{paginate=false,onFetch=async()=>{}}={}){
    const u=new URL(url),scriptId=u.pathname.includes(s.options.expected.thinScriptId)?s.options.expected.thinScriptId:s.options.expected.libraryId;let value;
    if(u.pathname.endsWith('/content'))value={scriptId,files:[{name:'Synthetic',type:'SERVER_JS',source:'function observedSyntheticSource() {}'},{name:'appsscript',type:'JSON',source:'{}'}]};
    else if(u.pathname.endsWith('/versions'))value={versions:[{scriptId,versionNumber:1}],...(paginate?{nextPageToken:'SYNTHETIC_NEXT'}:{})};
-   else if(u.pathname.endsWith('/deployments'))value={deployments:[{deploymentId:'SYNTHETIC_DEPLOYMENT_ID',deploymentConfig:{scriptId,versionNumber:1,manifestFileName:'appsscript'}}]};
+   else if(u.pathname.endsWith('/deployments'))value={deployments:[{deploymentId:'SYNTHETIC_DEPLOYMENT_ID',deploymentConfig:{scriptId,versionNumber:1,manifestFileName:'appsscript'},...(scriptId===s.options.expected.thinScriptId?{entryPoints:[{entryPointType:'EXECUTION_API',executionApi:{entryPointConfig:{access:'ANYONE'}}}]}:{})}]};
    else value={scriptId};return new Response(JSON.stringify(value));
   }});
  return {io:()=>io,read:async cap=>{
@@ -153,6 +154,26 @@ test('seven actual source transport callbacks use canonical F before and S after
 test('source pagination is charged in canonical F and prevents the compatibility RPC',async()=>{
  const s=setup();await prepare(s);const observer=sourceObserver(s,{paginate:true});s.options.readRelease=observer.read;
  await assert.rejects(driver(s).run('wrapper'),/TRIAL_STOPPED/);assert.equal(observer.io(),3);assert.equal(s.get().spent,30);assert.equal(s.calls.rpc,0);assert.equal(s.get().preparation.state,'stopped');
+});
+function verifiedSourceObserver(s,mutate=()=>{}){
+ const e=s.options.expected,bundle=buildAuthorityTrialArtifacts({libraryId:e.libraryId,version:7});
+ const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v,checksum=v=>hash(JSON.stringify(canonical(v))),fileHash=v=>checksum([...v].sort((a,b)=>a.name.localeCompare(b.name)));
+ const original=Array.from({length:10},(_,i)=>({name:i?'Original'+i:'appsscript',type:i?'SERVER_JS':'JSON',source:i?'// SYNTHETIC ORIGINAL '+i:'{}'})),library=[{name:'AuthorityTrial',type:'SERVER_JS',source:bundle.librarySource},{name:'appsscript',type:'JSON',source:JSON.stringify(bundle.libraryManifest)}],thin=[{name:'Code',type:'SERVER_JS',source:bundle.wrapperSource},{name:'appsscript',type:'JSON',source:JSON.stringify(bundle.wrapperManifest)}];
+ const baseline=Array.from({length:6},(_,i)=>({scriptId:e.libraryId,versionNumber:i+1})),deployments=[{deploymentId:'SYNTHETIC_ORIGINAL_DEPLOYMENT',deploymentConfig:{scriptId:e.libraryId,versionNumber:1,manifestFileName:'appsscript'}}];
+ Object.assign(e,{originalEditorHash:fileHash(original),originalDeploymentsHash:checksum(deployments),librarySourceHash:fileHash(library),thinSourceHash:fileHash(thin),libraryManifestHash:hash(library[1].source),thinManifestHash:hash(thin[1].source)});
+ const packets={'original-project':{scriptId:e.libraryId,parentId:'SYNTHETIC_ORIGINAL_CONTAINER'},'original-editor':{scriptId:e.libraryId,files:original},'original-versions':{versions:[...baseline,{scriptId:e.libraryId,versionNumber:7,description:'CMWebs C3 trial '+hash(e.trialEpoch).slice(0,16)}]},'original-deployments':{deployments},'library-content':{scriptId:e.libraryId,files:library},'thin-content':{scriptId:e.thinScriptId,files:thin},'thin-deployments':{deployments:[{deploymentId:e.deploymentId,deploymentConfig:{scriptId:e.thinScriptId,versionNumber:1,manifestFileName:'appsscript'},entryPoints:[{entryPointType:'EXECUTION_API',executionApi:{entryPointConfig:{access:'ANYONE'}}}]}]}};mutate(packets);
+ let phase,io=0;const publisherScopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(v=>'https://www.googleapis.com/auth/'+v);
+ const source=createAuthorityReleaseSource({originalScriptId:e.libraryId,thinScriptId:e.thinScriptId,libraryVersion:7,publisherHash:e.publisherHash,now:s.options.now,credential:()=>({accessToken:'SYNTHETIC_VERIFIED_SOURCE_TOKEN',accountHash:e.publisherHash,scopes:publisherScopes,expiresAt:clock+3600000,refreshTokenPresent:true}),fetcher:async url=>{
+  const u=new URL(url),isThin=u.pathname.includes(e.thinScriptId),alias=u.pathname.endsWith('/versions')?'original-versions':u.pathname.endsWith('/deployments')?(isThin?'thin-deployments':'original-deployments'):u.pathname.endsWith('/content')?(isThin?'thin-content':u.searchParams.has('versionNumber')?'library-content':'original-editor'):'original-project';io++;assert.equal(s.get().preparation.events.at(-1).action,'F:'+phase+'.'+alias);return new Response(JSON.stringify(packets[alias]));
+ }});
+ const verifier=createAuthorityReleaseSourceVerifier({expected:e,originalParentId:'SYNTHETIC_ORIGINAL_CONTAINER',baselineVersions:baseline,sourceAdapter:source});
+ return {io:()=>io,read:async cap=>{phase=cap.phase;s.calls.release++;const partial=await verifier.read(cap);for(const alias of releaseAliases.filter(v=>!sourceAliases.includes(v)))await cap.externalRead(async()=>{},alias);return {...s.release(),...partial.facts};}};
+}
+test('canonical F observer merges actual source equality facts rather than expected hash constants',async()=>{
+ const s=setup(),observer=verifiedSourceObserver(s);s.options.readRelease=observer.read;await prepare(s);assert.deepEqual(await driver(s).run('wrapper'),{compatible:true});assert.equal(observer.io(),14);assert.equal(s.get().spent,70);assert.equal(s.calls.rpc,1);assert(!readFileSync(s.path,'utf8').includes('SYNTHETIC_VERIFIED_SOURCE_TOKEN'));
+});
+for(const [name,mutate,expectedReads] of [['fixed bytes',p=>{p['library-content'].files[0].source+='\n// changed';},5],['actual access',p=>{p['thin-deployments'].deployments[0].entryPoints[0].executionApi.entryPointConfig.access='MYSELF';},7]])test('canonical observed '+name+' mismatch cannot enter native proof or RPC',async()=>{
+ const s=setup(),observer=verifiedSourceObserver(s,mutate);s.options.readRelease=observer.read;await prepare(s);await assert.rejects(driver(s).run('wrapper'),/TRIAL_STOPPED/);assert.equal(observer.io(),expectedReads);assert.equal(s.get().spent,27+expectedReads);assert.equal(s.calls.native+s.calls.rpc,0);
 });
 for(const status of [302,500])test('execution transport rejected status '+status+' awaits body cancellation before releasing',async()=>{
  let cancel,done=false;const gate=new Promise(r=>{cancel=r;}),transport=trial.createGoogleExecutionTransport('SYNTHETIC_DEPLOYMENT_ID',async()=>({status,body:{cancel:async()=>{await gate;done=true;}}}));

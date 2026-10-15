@@ -1915,3 +1915,30 @@ fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40
 endpoints/static cache/diff PASS. No Apps Script/Worker change, so no repeat of
 unchanged native Apps Script or local Worker capacity runs. Source equality,
 remaining native callbacks and full native-window/quota acceptance stay gated.
+
+### 2026-10-15 Source equality facts and actual execution entrypoint
+
+The seven-source verifier accepts only the original module-branded source
+adapter with matching pinned project/version/publisher, not copied/proxy handles.
+Snapshot expected pins and six original version descriptors before IO. Actual
+responses determine editor/file/manifest hashes, original serving inventory,
+baseline1–6 plus epoch-described7, parent binding and fixed thin deployment.
+Guarded manifests retain the exact scopes/whitelist/runtime/logging/library
+version/development mode. Thin F metadata now includes the actual Execution API
+entrypoint/access in the same existing read; access is not inferred from manifest.
+
+New verifier26RED→GREEN; actual-entrypoint mask1RED→GREEN. Combined124/124 PASS,
+including three canonical equality tests: real source transport/verifier facts
+merge with explicitly synthetic remaining release/native fields in the original
+ledger; changed source bytes or actual deployed access prevents native/RPC.
+Concurrent/duplicate/out-of-order phases, unbranded handles and pin/manifest/
+version/deployment mismatch stop without retry. Independent review found no
+actionable issue. Full regression is recorded in EXECUTION_RECORD when complete.
+Partial source facts omit native/ACL/Sheets fields and fail full driver readback;
+no current Google, credential, quota, full native window or live acceptance.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1859/1859 PASS,64.161s,zero
+fail/cancel/skip; cleanup and stopped listener verified. Validate72 backend/40
+endpoints/static cache/diff PASS. Only documentation changed after the tested
+573-file snapshot; Apps Script/Worker bytes unchanged. Credential-purpose owner
+approval is recorded separately and does not make new policy wiring executable.

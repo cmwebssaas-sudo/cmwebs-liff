@@ -10,7 +10,7 @@ function responseFor(url){
  const u=new URL(url),scriptId=u.pathname.includes(thin)?thin:original;
  if(u.pathname.endsWith('/content'))return {scriptId,files:files()};
  if(u.pathname.endsWith('/versions'))return {versions:[{scriptId,versionNumber:1,description:'Synthetic baseline',createTime:'2026-10-12T00:00:00Z'}]};
- if(u.pathname.endsWith('/deployments'))return {deployments:[{deploymentId:'SYNTHETIC_DEPLOYMENT_ID',deploymentConfig:{scriptId,versionNumber:1,manifestFileName:'appsscript'}}]};
+ if(u.pathname.endsWith('/deployments'))return {deployments:[{deploymentId:'SYNTHETIC_DEPLOYMENT_ID',deploymentConfig:{scriptId,versionNumber:1,manifestFileName:'appsscript'},...(u.searchParams.get('fields').includes('entryPoints')?{entryPoints:[{entryPointType:'EXECUTION_API',executionApi:{entryPointConfig:{access:'ANYONE'}}}]}:{})}]};
  return {scriptId,parentId:'SYNTHETIC_ORIGINAL_CONTAINER'};
 }
 function setup(patch={}){
@@ -39,6 +39,10 @@ test('the actual observed source is returned frozen, never replaced with expecte
  const value={scriptId:original,files:files()};value.files[0].source='function changedActualSource() {}';
  const s=setup({fetcher:async()=>new Response(JSON.stringify(value))}),r=await s.adapter.read('library-content',s.control);
  assert.equal(r.files[0].source,value.files[0].source);assert(Object.isFrozen(r.files[0]));assert.throws(()=>{r.files[0].source='other';});
+});
+test('thin deployment readback requests and preserves actual execution entrypoint',async()=>{
+ const s=setup(),r=await s.adapter.read('thin-deployments',s.control),fields=new URL(s.requests[0].url).searchParams.get('fields');
+ assert(fields.includes('entryPoints(entryPointType,executionApi(entryPointConfig(access)))'));assert.equal(r.deployments[0].entryPoints[0].executionApi.entryPointConfig.access,'ANYONE');assert(Object.isFrozen(r.deployments[0].entryPoints[0]));
 });
 test('one alias is independently readable before and after but cannot repeat within a phase',async()=>{
  const s=setup();await s.adapter.read('original-project',s.control);await s.adapter.read('original-project',{...s.control,phase:'wrapper-after'});

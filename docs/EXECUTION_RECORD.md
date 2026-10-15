@@ -3370,3 +3370,52 @@ freshness, performance and physical-device gates remain, switches off.
 Rollback this undeployed transport to5c6c87b25739778a66541e063ec1fe16de9e486e;
 preserve original claimed journals/copied cleanup if ever created, without
 credential refresh/replay/refund. Root WIP and private S1 boundary preserved.
+
+## C3 actual source equality and execution entrypoint — 2026-10-15
+
+Model/speed remains GPT-6.1 Sol/high for the IO/provenance boundary. Added a
+partial source-equality verifier that accepts only its module's original branded
+source adapter with matching project/version/publisher pins. Expected facts and
+six original version descriptors are snapshotted before any IO. Compute actual
+sorted-file hashes using the existing publication convention, raw uploaded
+manifest-byte hashes, restored original editor/inventory, retained1–6 plus
+epoch-described7, original parent binding and fixed thin deployment. Guarded
+manifests retain exact scopes/whitelist/runtime/logging/library/development mode.
+Thin F metadata now includes actual EXECUTION_API entrypoint/access in the same
+existing GET; equality facts do not infer serving access from manifest alone.
+Schema verified against Google's
+[deployment resource](https://developers.google.com/apps-script/api/reference/rest/v1/projects.deployments#ExecutionApiEntryPoint).
+
+Verifier initial26RED→GREEN; actual-entrypoint-mask1RED→GREEN. Combined124/124
+PASS, including three strict canonical equality tests. Source packets and
+deployment metadata produce actual computed facts, while remaining native/ACL/
+Sheets fields in integration remain explicitly synthetic. Changed bytes or
+actual execution access prevents native/RPC admission. Unbranded/copied/proxy
+handles, concurrent/duplicate/out-of-order phases, mismatched hashes/versions/
+manifests/deployments STOP without retry. Partial result cannot satisfy complete
+driver readback or native proof. Independent incremental review: no actionable
+findings; all four reviewed code/test byte pins unchanged through verification.
+
+One full Node22.23.3/actual Core/owned PostgreSQL1859/1859 PASS,64.161s,zero
+fail/cancel/skip; owned cluster cleanup/listener stop verified. Tested573-file
+snapshot4ee5879b2af96b45aa8221b9fa706219e408a92d393f7f7959bd058772b464dc;
+only documentation changed afterwards. Validate72 backend/40 endpoint/static
+cache/diff PASS. Apps Script and Worker unchanged; no redundant native or local
+Worker performance rerun. Prior exact9272979 CI38749856257 rental1821/1821 and
+Worker26/26/two dry runs SUCCESS; both footers/annotations read, rental truncated,
+runner notices only. New code-head CI remains separately required.
+
+Owner now explicitly approved READ-CREDENTIAL-READBACK-DECISION.md's within160
+purpose amendment: Pcaller1/Ppublisher3 including initial publisher identity
+before A–E, four fresh same-token G identities, E caller identity retained.
+Presented-document hash and approval are pinned; original decision/history/25
+remain. Policy/controller and actual credential/native wiring are not yet
+updated or executed by this documentation approval. No new grant/Scope/account/
+cost/formal access. Actual original25/160 remains byte-identical and unclaimed.
+Full native source/window/identity/quota/terminal evidence, C1 daily900s, C6
+capacity/performance and real-device gates remain unaccepted. Parallel24h T0
+NOT_STARTED; switches off. No Google/native/credential/deployment operation.
+
+Rollback undeployed equality/entrypoint increment to927297951a3f6f57c93c62014d64952606033953;
+retain original claim/journal/copied recovery if created, no replay/refund. Root
+WIP, C5 user swap and private S1 boundary preserved.
