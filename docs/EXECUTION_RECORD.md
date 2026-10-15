@@ -3623,3 +3623,35 @@ Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
 inheritance to01e2cff1ef314c9812c0520aa7fc77dd96ac6e54;
 retain all original claims/checkpoints/pinned cleanup and history, never reset
 or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+
+## 2026-10-16 — C3 approved bounded native IO controls
+
+Recommended model/speed: GPT-6.1 Sol/high for credential, budget and recovery
+boundaries. Owner explicitly approved READ-NATIVE-IO-DECISION presented SHA
+`3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9`.
+This approval supersedes the earlier pending status; no repeated approval needed.
+
+Implemented a new selector on the original canonical counter/claim and recovery
+path: pinned native targets/purposes, Nresearch8 with Pbind2, shared N/G32,
+one-time complete remaining-map admission before refresh/mutation/RPC, and
+phase/driver/credential/copied-binding integration. Original history25/limit160,
+F15 before/after, four mandatory windows, C2/I17/H1/T3, UNKNOWN debits, exclusive
+flock, same-day/deadline and no restart rules remain. Legacy selectors unchanged.
+
+Independent review found one P2: failed transport prevented post-RPC native N
+settlement. Reproduced RED and fixed only runtime wrapper-after admission;
+canonical pending, expiry, stage and exact-map constraints still apply. Complete
+frozen local regression1960/1960 PASS, zero fail/cancel/skip, pinned actual Core
+and owned PG16.14; teardown verified. Validation72/40/cache and diff checks PASS.
+No Apps Script source changed; remote test functions NOT_RUN. See09-TEST-MATRIX.
+
+Rollback: before an actual claim, revert this increment to the prior selector;
+after claim, retain original pins, copied recovery, history and UNKNOWN, stop
+ordinary IO and use existing independent cleanup only. Never replace the claim,
+deadline or copied runtime to resume a spent purpose. No actual claim/Google IO
+occurred; counter remains25/160. Real observer/authority/privacy/freshness/quota,
+900s/day, performance/device acceptance remain open. Formal off/T0NOT_STARTED.
+Root WIP/C5 swap/private S1 boundary preserved. Push to Draft PR268 and exact CI
+readback are the next release-preparation checks; no merge/deployment acceptance
+is inferred from this local result.

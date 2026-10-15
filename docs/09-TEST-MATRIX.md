@@ -2069,3 +2069,36 @@ Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
 inheritance to01e2cff1ef314c9812c0520aa7fc77dd96ac6e54;
 retain all original claims/checkpoints/pinned cleanup and history, never reset
 or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+
+## C3 approved native IO admission — 2026-10-16
+
+Owner approved the presented native-IO amendment SHA
+`3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9`.
+The new immutable selector keeps history25, limit160, fixed96, P4 and T3;
+N research/navigation shares original G32. Old selectors retain their policy.
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Research before full observer | Original caller/publisher bind purposes plus at most8 pinned N reads; UNKNOWN pre-debit, ordinal replay/extra N/raw charge denied | No early refresh, ordinary mutation, RPC or trial acceptance |
+| Complete remaining map | One native-ready record with four bounded windows and exact remaining N sequence; shared32, mandatory identity/quota/page preserved | Cost admission is not actual native proof |
+| Page/target/deadline bounds | Bad console query and fifth-page plans reproduced RED then fixed; expiry preserves spent and independent cleanup | Original claim, same Taipei day, original max6h; no rebind/restart |
+| Native observer integration | Before/after N forwarding retains all30 F and12 minimum G charges; one RPC only | Synthetic IO; actual completeness and cost upper bound UNKNOWN |
+| UNKNOWN transport settlement | Independent review P2 reproduced RED; only runtime wrapper-after N gains settlement exception, canonical pending/day/expiry/map still required | No new ordinary N after STOP or holder loss; copied cleanup stays restricted |
+| Ownership/recovery | Entered N retains original flock through stop/drain; peer denied, durable stop veto, copied target binding/expiry checked | Local scope settlement is not remote execution termination |
+
+Pre-fix affected335/335 passed. After the review fix, frozen complete regression
+**1960/1960 PASS**, zero fail/cancel/skip, using pinned actual Core and an owned
+local PostgreSQL16.14 cluster; cluster shutdown verified. `npm run validate`
+passed72 backend files/40 endpoint references/static cache checks; staged diff
+check passed. No Apps Script source changed or cloud test function executed.
+Independent increment review found one P2, fixed by the exact failing integration
+regression; no deferred findings. Root WIP and private-file boundary preserved.
+
+Actual Google counter remains25/160 unclaimed; no browser/account/refresh/RPC,
+publication, Properties, triggers or formal data operations. Five native F
+observers and complete G/terminal evidence remain unbound. Prioritize bounded
+executions preflight and stop if attribution/quota/full source cannot be proved.
+All real privacy/freshness/authority/900s/day/performance/device gates remain;
+T0 NOT_STARTED and formal switches off. This supersedes the earlier pending
+native-IO-approval status only; it does not supersede missing real acceptance.
