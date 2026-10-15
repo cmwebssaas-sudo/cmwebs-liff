@@ -2091,3 +2091,11 @@ Seven100-sample local500 p9511.061–18.560ms<50; prior568344b Linux properties
 53.391ms FAIL retained. New-head CI/native/real gates still required; actual
 25/160/native STOP/off/blank; fresh72h/seven-day NOT_STARTED. Only docs after
 tests/review. Rollback source/adapter/comparison to568344b.
+
+## 2026-10-15 — Inherited preparation ownership verification
+
+| Evidence | Result | Boundary |
+| --- | --- | --- |
+| Inherited controller/ledger/test | Exact C3 71cc636 bytes; related83/83 and complete1728/1728 retained | Original child lifetime, strict finish and durable-stop ownership only; no native acceptance |
+| Order composition | Own runtime and fixtures unchanged; validate/diff required; exact-head CI pending | No repeated unchanged local Worker benchmark |
+| Real gates |25/160 unchanged, trial STOP; all formal gates unaccepted | PR272 acceleration still pending, original observation gates retained |
