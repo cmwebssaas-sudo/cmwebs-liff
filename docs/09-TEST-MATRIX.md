@@ -1823,3 +1823,13 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Fail closed | Real D1 malformed JSON and missing operational table both503/data:null, no partial output | No retry/cache or diagnostic leak |
 | Local regression | Node22/Core/ownedPG1718/1718,cleanup verified; final Worker26/26 and original7x100 p951.610–2.174ms<50 | Root retained after only Worker test changes; exact-head CI required |
 | Real gates | Actual25/160 unchanged;900s/day,fresh72h,seven-day shadow,500-room/Taipei/latency/device/cutover remain unaccepted | No Google/native/formal changes |
+
+## 2026-10-15 — Child input error handling
+
+| Area | Evidence | Boundary |
+| --- | --- | --- |
+| Scoped child stdin error | Real-child EPIPE RED→GREEN; zero IO/spend25, sanitized failure, scope reuse after actual finalization | No premature terminal/debit/retry/cleanup grant |
+| Stop input error | RED→GREEN; no acknowledgement or ordinary-IO reopening | Existing exact ACK/close checks retained |
+| Complete regression | Node22/Core/ownedPG1720/1720,cleanup/listener verified | Prior C5 failure1735/1736 remains; C5 integration not accepted |
+| Core prerequisite | Actual HEAD/copied actual index/same objects via private metadata view;321-path missing-worktree negative | Shared exclude read blocked; no shared source/metadata change; full blob audit not claimed |
+| Worker/real gates | Retain unchanged9b1af93 Worker26/26/two dry runs; new-head CI required | OS flock continuity, actual160/900s/72h/seven-day/500/Taipei/device unaccepted |

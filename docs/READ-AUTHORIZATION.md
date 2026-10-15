@@ -491,3 +491,16 @@ case actually splits80+8 and preserves tail rows and GAS parity. Numeric batch
 sizes are test-only. Capacity/memory, full authenticated HTTP latency and real
 Google/900s/72h/seven-day/device gates remain separate and unaccepted. Rollback
 to5ea8c96 restores the serial source; this change is not formally deployed.
+
+## 2026-10-15 — Child stdin failure is a local protocol failure
+
+Consume stdin error events in scoped preparation/runtime and stop requests.
+Reject queued/future protocol operations with TRIAL_STOPPED; a stream error
+cannot mark the child terminal, charge/retry an action or authorize cleanup.
+Keep entered-IO drain and actual child finalization. Failed stop input cannot
+acknowledge a durable stop. Two real-child fault regressions and full1720/1720
+pass; no actual Google trial or formal setting changed.
+
+This does not prove OS-flock continuity across Python EOF/death while external
+IO survives, remote execution termination or overall rollback. Actual admission
+remains stopped pending the broader phase/holder, native160 and original gates.
