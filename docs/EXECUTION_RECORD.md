@@ -3703,3 +3703,43 @@ refresh,trial RPC,remote setting/source/data change,formal deployment or
 observation T0 occurred. Preserve both copies and original STOP/history;
 no no-op callback was executed or claimed as remote rollback. The exact failed
 underlying tool cause remains UNKNOWN rather than attributed to login/Google.
+
+
+## 2026-10-16 — Bounded continuation cost compiler (local only)
+
+Recommended model/speed: GPT-6.1 Sol / high. The owner-approved continuation
+decision is selected explicitly, separately from the stopped original driver.
+A pure offline compiler retains the historical27 and cumulative160 cap,
+fixed96, P4, same-token G4, N24 (research8/control16), T3 and unused2. Every
+listed low-level operation is one unit; missing/unknown costs deny credential/RPC
+map eligibility. This is only a mapping condition: executionAuthorized and
+externalPrerequisitesVerified remain false. The non-refundable360000ms upper
+bound is not native runtime, available quota, or later daily-runtime acceptance.
+
+One independent review found two P2 issues: accessor-based changing input could
+produce inconsistent arithmetic, and synthetic-tabs used the wrong actor. Both
+were reproduced RED and corrected in one pass: a bounded own-data snapshot
+rejects accessors/proxies, and B:fixture-native retains the existing caller.
+There were no P1 or separate minor findings. Focused new/existing budget tests
+70/70; full root npm test2041/2041, zero fail/cancel/skip,67.323s using Node22,
+pinned actual Core and a fresh owned PostgreSQL16.14 fixture. Its teardown and
+closed listener were verified. Source snapshot (587 files before documentation
+append):2cc04e9080aa35e3f920f7d0c2b1505f619c8680b1b76603ac7a40cec73c9fb6.
+Validate72 backend/40 endpoint references, static cache and diff checks pass.
+No Apps Script function, route, schema, Worker runtime or frontend changed;
+there is no affected Apps Script test function for this offline-only increment.
+Exact-head CI is pending until push.
+
+The linked canonical journal/control, global cleanup/rate admission, pinned
+independent recovery, one-RPC driver and actual UI map remain unfinished.
+Readonly local counter verification still shows27/160, STOP, repair in-flight
+UNKNOWN. No new segment/W0, Google IO, credentials, remote mutation or fee was
+introduced. Original claim/deadline/copies and all unknown outcomes are retained.
+Formal flags off/endpoint blank; accelerated rollout T0 not started. Actual C1
+daily-runtime, C3 authority/privacy/freshness, performance, observation and device
+gates remain unaccepted. Local compiler tests do not change those gates.
+
+Deployment: none for this increment; retain the separate C3 draft PR. Rollback:
+revert the offline compiler/test addition; it cannot revive the original trial
+or erase future accounting. Any eventual continuation must first pass the
+remaining control/recovery/wiring prerequisites under the approved decision.
