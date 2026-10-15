@@ -165,3 +165,125 @@ test('actual builder rejects Proxy-wrapped date cells without invoking their tra
   assert.equal(result.tenant_binding_status,'bound');
   assert.equal(index,null,'a Date proxy must not be indexed');
 });
+
+// Exercise the actual arrears entry and resolver; only replace the outer IO /
+// authorization executor to inject its already-scoped request snapshot. The
+// oracle keeps the unmodified resolver's original five-argument scan path.
+function arrearsEntry(prepare=()=>{},scan=false){
+  const ctx=originalGas(capacityDataset());
+  const data=ctx.workspaceDashboardLoadData_(ctx.SpreadsheetApp.getActiveSpreadsheet(),access,{mode:'arrears'});
+  const state=prepare(ctx,data)||{};
+  if(scan){
+    const resolver=ctx.workspaceDashboardResolveTenantLineUid_;
+    ctx.workspaceDashboardResolveTenantLineUid_=(...args)=>resolver(...args.slice(0,5));
+  }
+  ctx.workspaceDashboardExecute_=(line,action,build)=>{
+    assert.equal(line,'SYNTHETIC_LINE1');assert.equal(action,'landlord_arrears');
+    return build(ctx.SpreadsheetApp.getActiveSpreadsheet(),access,data);
+  };
+  const result=ctx.getWorkspaceLandlordArrearsNativeByLineUid_('SYNTHETIC_LINE1');
+  return {json:JSON.stringify(result),result,data,state};
+}
+function billRow(ctx,fields){
+  return Object.assign(vm.runInContext('({})',ctx),{bill_id:'B',tenant_id:'t',bill_status:'issued',payment_status:'unpaid',
+    bill_month:'2026-10',due_date:'2026-10-10',total_amount:100,room_name:'1',tenant_line_user_id:''},fields);
+}
+
+test('actual arrears entry resolves 500 inert bills with linear source reads and exact scan-oracle JSON',t=>{
+  function countReads(ctx,data){
+    const state={reads:0};
+    assert.equal(data.bills.length,500);
+    for(const name of ['rooms','contracts','tenants','users','tenant_view_rows'])assert.equal(data[name].length,0);
+    data.bills=new Proxy(data.bills,{get(target,key,receiver){
+      if(typeof key==='string'&&/^\d+$/.test(key))state.reads++;
+      return Reflect.get(target,key,receiver);
+    }});
+    return state;
+  }
+  const oracle=arrearsEntry(countReads,true),actual=arrearsEntry(countReads);
+  assert.equal(actual.json,oracle.json,'complete original-order result, including every field, must remain exact');
+  assert.equal(actual.result.data.arrears.length,252);
+  t.diagnostic(JSON.stringify({bills:500,outstanding:252,scan_reads:oracle.state.reads,actual_reads:actual.state.reads,linear_limit:6000}));
+  assert.ok(actual.state.reads<=6000,'actual arrears entry must avoid 252 full scans of 500 bills; reads='+actual.state.reads);
+});
+
+for(const reverse of [false,true])test('actual arrears preserves duplicate bill binding source order, reversed='+reverse,()=>{
+  const prepare=(ctx,data)=>{
+    const donors=[billRow(ctx,{bill_id:'DONOR1',tenant_id:' T ',bill_status:'cancelled',tenant_line_user_id:uid.bill}),
+      billRow(ctx,{bill_id:'DONOR2',tenant_id:'t',payment_status:'paid',tenant_line_user_id:uid.contract})];
+    if(reverse)donors.reverse();
+    data.bills=[...donors,billRow(ctx,{bill_id:'OUTSTANDING',tenant_id:' t ',tenant_line_user_id:'invalid'})];
+    assert.ok(lookup(ctx,data),'ordinary arrears snapshot must be eligible');
+  };
+  const actual=arrearsEntry(prepare),oracle=arrearsEntry(prepare,true);
+  assert.equal(actual.json,oracle.json);
+  assert.equal(actual.result.data.arrears.length,1);
+  assert.equal(actual.result.data.arrears[0].tenant_line_user_id,reverse?uid.contract:uid.bill);
+});
+
+for(const [kind,want] of [['direct',uid.direct],['tenant',uid.tenant],['user',uid.user],['view',uid.view],['contract',uid.contract],['bill',uid.bill]]){
+  test('actual arrears keeps '+kind+' binding priority with full scan-oracle equality',()=>{
+    const prepare=(ctx,data)=>{
+      const priorities=['direct','tenant','user','view','contract','bill'],start=priorities.indexOf(kind);
+      const value=key=>priorities.indexOf(key)>=start?uid[key]:'invalid';
+      data.tenants=[billRow(ctx,{tenant_id:' T ',tenant_line_user_id:value('tenant')})];
+      data.users=[billRow(ctx,{user_id:'user',line_user_id:value('user')})];
+      data.tenant_view_rows=[billRow(ctx,{tenant_id:'t',tenant_line_user_id:value('view')})];
+      data.contracts=[billRow(ctx,{tenant_id:'other',contract_id:'c',contract_status:'expired',tenant_line_user_id:value('contract')})];
+      data.bills=[billRow(ctx,{bill_id:'DONOR',tenant_id:'T',bill_status:'cancelled',tenant_line_user_id:value('bill')}),
+        billRow(ctx,{tenant_id:'t',tenant_user_id:'user',contract_id:'c',tenant_line_user_id:value('direct')})];
+      assert.ok(lookup(ctx,data));
+    };
+    const actual=arrearsEntry(prepare),oracle=arrearsEntry(prepare,true);
+    assert.equal(actual.json,oracle.json);assert.equal(actual.result.data.arrears[0].tenant_line_user_id,want);
+  });
+}
+
+test('actual arrears keeps empty defaults, exact user/contract case and prototype-like tenant IDs',()=>{
+  for(const [tenant,user,contract,want] of [['','','',''],['','USER','C',''],['','user','c',uid.user],['__proto__','','',uid.bill]]){
+    const prepare=(ctx,data)=>{
+      data.users=[billRow(ctx,{user_id:'user',line_user_id:uid.user})];
+      data.contracts=[billRow(ctx,{tenant_id:'other',contract_id:'c',contract_status:'expired',tenant_line_user_id:uid.contract})];
+      data.bills=[billRow(ctx,{bill_status:'cancelled',tenant_id:' __PROTO__ ',tenant_line_user_id:uid.bill}),
+        billRow(ctx,{tenant_id:tenant,tenant_user_id:user,contract_id:contract})];
+    };
+    const actual=arrearsEntry(prepare);assert.equal(actual.json,arrearsEntry(prepare,true).json);
+    assert.equal(actual.result.data.arrears[0].tenant_line_user_id,want);
+  }
+  const prepare=(_ctx,data)=>{data.bills=[];};
+  const actual=arrearsEntry(prepare);assert.equal(actual.json,arrearsEntry(prepare,true).json);
+  assert.equal(actual.result.data.arrears.length,0);assert.equal(actual.result.data.summary.unpaid_total_amount,0);
+});
+
+for(const kind of ['getter','decorated-date','proxy-date','identity-coercion']){
+  test('actual arrears retains '+kind+' source mutation through scan fallback',()=>{
+    const prepare=(ctx,data)=>{
+      const state={reads:0},donor=billRow(ctx,{bill_id:'DONOR',tenant_id:'old',bill_status:'cancelled',tenant_line_user_id:uid.bill});
+      const bill=billRow(ctx,{tenant_id:'t'});
+      const mutate=()=>{state.reads++;donor.tenant_id='t';};
+      if(kind==='getter')Object.defineProperty(bill,'due_date',{get(){mutate();return '2026-10-10';},enumerable:true});
+      if(kind==='decorated-date'){
+        const date=new ctx.Date('2026-10-10');date.getTime=()=>{mutate();return ctx.Date.prototype.getTime.call(date);};bill.due_date=date;
+      }
+      if(kind==='proxy-date'){
+        const date=new ctx.Date('2026-10-10');bill.due_date=new Proxy(date,{get(target,key){
+          if(key==='getTime')return ()=>{mutate();return ctx.Date.prototype.getTime.call(target);};
+          const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;
+        }});
+      }
+      if(kind==='identity-coercion')bill.tenant_id={toString(){mutate();return 't';}};
+      data.bills=[donor,bill];return state;
+    };
+    const actual=arrearsEntry(prepare),oracle=arrearsEntry(prepare,true);
+    assert.equal(actual.json,oracle.json);assert.equal(actual.state.reads,oracle.state.reads);
+    assert.ok(actual.state.reads>0);assert.equal(actual.result.data.arrears[0].tenant_line_user_id,uid.bill);
+  });
+}
+
+test('actual arrears resolves fresh same-tenant bill bindings independently per request',()=>{
+  for(const wanted of [uid.bill,uid.contract]){
+    const prepare=(ctx,data)=>{data.bills=[billRow(ctx,{bill_status:'cancelled',tenant_line_user_id:wanted}),billRow(ctx,{})];};
+    const actual=arrearsEntry(prepare);assert.equal(actual.json,arrearsEntry(prepare,true).json);
+    assert.equal(actual.result.data.arrears[0].tenant_line_user_id,wanted);
+  }
+});

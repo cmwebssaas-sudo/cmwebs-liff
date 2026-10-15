@@ -82,6 +82,8 @@ function getWorkspaceLandlordArrearsNativeByLineUid_(
       const today =
         workspaceDashboardToday_();
 
+      const lineUidLookup = workspaceDashboardLineUidLookup_(data);
+
       const arrears =
         data.bills
           .filter(
@@ -255,7 +257,8 @@ function getWorkspaceLandlordArrearsNativeByLineUid_(
                     bill.tenant_id,
                     bill.tenant_user_id,
                     bill.contract_id,
-                    bill.tenant_line_user_id
+                    bill.tenant_line_user_id,
+                    lineUidLookup
                   ),
 
                 account_status:

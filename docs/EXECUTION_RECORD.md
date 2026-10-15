@@ -5051,3 +5051,49 @@ Undeployed increment rollback is C6 HEAD901172ca6b0b5b52425aec665b5a580e4d933cf3
 retaining evidence. For a future deployed rollback,use a separately reviewed
 additive migration dropping only the19 `idx_read_scope_<table>` indexes named
 in0005;preserve data and prior migrations. No remote rollback has occurred.
+
+
+## C6 arrears binding lookup — 2026-10-16 (local candidate)
+
+Recommended GPT-6.1 Sol/high. The arrears entry omitted the existing request-local
+LINE-binding lookup and scanned every bill for every outstanding bill. Only this
+entry now constructs the existing lookup once and passes its sixth resolver
+argument;all other canonical functions remain byte-exact. Regenerated calculator
+and manifests preserve each of248 declarations against the canonical source.
+No new helper/cache,authorization,scope,SQL,row cap,sort or response-field change.
+
+Actual arrears-entry TDD on500bills/252outstanding:original127000 source reads
+fails the linear bound;candidate2000 passes with full JSON identical to the
+five-argument original scan oracle. The candidate forced-scan oracle includes
+new index initialization and reads128000;it is not mislabeled the old baseline.
+Priority,duplicate-source-order,case,empty/fresh request and getter/decorated-Date/
+Proxy-Date/identity-coercion mutations retain original behavior and side effects.
+Initial wrong empty-result field name and two npm setup errors remain retained;
+corrected RED26of27 preceded the sole production author pass,then GREEN27of27.
+
+Affected42/42 and four actual Apps Script functions in local synthetic VM pass:
+home,arrears,tenants and summary projection. Independent fresh review found no
+actionable findings,verified all620frozen pins and248generated declarations.
+One complete npm test with actual Core643c1b3 and disposable ownedPG16.14 passes
+2103/2103,zero fail/cancel/skip,68.786s. Snapshot at baseHEADc062891b plus these
+six uncommitted paths:cf62ee611f8be78baa65c4d5cd28f2a97601f4bc8ec2686b91d14638355e64da.
+Later evidence-document appends are outside that exact tested snapshot.
+Fixture DB/roles cleanup and stopped PG/listener verified;no formal DB used.
+Fresh sanitized Worker dry-run passes. Parent actual-D1 HTTP/scoped regression10/10 passes,15.032s,including seven
+500-room canonical JSON results,primary-D1 scope and delegated/legacy privacy.
+Exact-new-head CI remains pending;no local capacity/700 rerun.
+
+Comparison read-1a2b13ba65aa51c55ab651fe8f2a3d58f4a63927572066bdb1aee8193e878ed0
+covers179sources;onlycanonical dashboard,generatedcalculator and source manifest
+change among normalized inputs. Release asset,blank endpoint and sixoff flags
+are preserved. This proves deterministic scan reduction,not a p95 or real
+latency cure. Prior c062891b CI38788433199 rental2083PASS/Worker41of42FAIL
+(arrears50.769/properties51.161ms) and actual-handler6of7p95failures remain.
+
+No Google/browser/credential/counter/claim/epoch/realm or formal-data change,
+merge/deployment/cutover. C3remains27/160STOP/UNKNOWN;the new private接續方案
+is not approved by this code change. T0 NOT_STARTED. Rollback this undeployed
+increment to c062891b01b25c23356611b044bb71fccd58066f,retaining all prior histories.
+Before any later approved release,create a new GAS immutable version at the
+original URL,retain prior serving version,deploy matchingWorker/Pages only after
+all actual gates,read back bytes/bindings/flags and preserve per-surface rollback.
