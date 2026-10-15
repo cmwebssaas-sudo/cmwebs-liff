@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync,unlinkSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {join} from 'node:path';
-import {fixture,session,clock,hash,compact,wrapped} from './fixtures/read-authority/standalone-budget.mjs';
+import {fixture,session,cleanupSession,clock,hash,compact,wrapped} from './fixtures/read-authority/standalone-budget.mjs';
 import {operation,research} from './fixtures/read-authority/continuation-budget.mjs';
 const ok=r=>assert.equal(r.ok,true,JSON.stringify(r)),denied=r=>assert.equal(r.ok,false,JSON.stringify(r));
 const originalPolicy=JSON.parse(spawnSync('python3',['scripts/read-authority-continuation-budget.py','--policy'],{encoding:'utf8'}).stdout);
 const standalonePolicy=Object.fromEntries(Object.entries(originalPolicy).filter(([k])=>!k.startsWith('C:')).map(([k,v])=>[k,k.endsWith('.library-content')?{...v,target:'thin-project'}:v]));
+for(const [key,method] of [['D:standalone-acl-baseline','GET'],['D:standalone-reader-create','POST'],['F:wrapper-before.standalone-acl','GET'],['F:wrapper-after.standalone-acl','GET'],['J:script-remove','DELETE'],['J:script-verify','GET']])standalonePolicy[key]={actor:'publisher',target:'thin-project',methods:[method]};
 const map=()=>Object.entries(standalonePolicy).map(([k,r])=>{const i=k.indexOf(':');return{id:k.replaceAll(':','.'),bucket:k.slice(0,i),alias:k.slice(i+1),actor:r.actor,target:r.target,operation:r.methods[0],units:1};});
 test('standalone native preflight can read the fixed isolated trigger page under its existing N budget',async()=>{
  const s=fixture(),h=session(s);try{
@@ -19,8 +20,8 @@ test('standalone native preflight can read the fixed isolated trigger page under
  }finally{await h.close();}
 });
 async function advance(h,operation,now){let r=await h.send({op:'wait',operation,now});ok(r);now+=r.waitMs;ok(await h.send({op:'debit',operation,now}));return now;}
-test('standalone policy removes every editor/library mutation and retains fixed98',()=>{
- const r=spawnSync('python3',['scripts/read-authority-continuation-budget.py','--standalone-policy'],{encoding:'utf8'});assert.equal(r.status,0);assert.deepEqual(JSON.parse(r.stdout),standalonePolicy);assert.equal(Object.keys(standalonePolicy).length,98);
+test('standalone policy counts script permissions separately and leaves old I17 unchanged',()=>{
+ const r=spawnSync('python3',['scripts/read-authority-continuation-budget.py','--standalone-policy'],{encoding:'utf8'});assert.equal(r.status,0);assert.deepEqual(JSON.parse(r.stdout),standalonePolicy);assert.equal(Object.keys(standalonePolicy).length,104);
 });
 test('standalone W0 imports immutable27+stopped1+diagnosis3 without reopening old claim',async()=>{
  const s=fixture(),raw=readFileSync(s.path),prior=readFileSync(s.cfg.history.continuation.path),h=session(s);try{const r=await h.ready;ok(r);assert.equal(r.spent,31);assert.equal(r.newSpent,0);ok(await h.send({op:'debit',operation:operation('P:caller-bind'),now:clock}));assert.equal((await h.send({op:'inspect'})).spent,32);assert.deepEqual(readFileSync(s.path),raw);assert.deepEqual(readFileSync(s.cfg.history.continuation.path),prior);assert.equal(s.journal().events[0].outcome,'UNKNOWN');assert.deepEqual(s.journal().history,s.cfg.history);}finally{await h.close();}
@@ -54,14 +55,19 @@ test('standalone owner stop and EOF consume the only new epoch claim',async()=>{
  const s=fixture(),h=session(s);try{ok(await h.ready);const r=spawnSync('python3',['scripts/read-authority-continuation-budget.py','--standalone-request-stop'],{input:JSON.stringify({path:s.path,epoch:s.cfg.epoch,binding:s.cfg.binding})+'\n',encoding:'utf8',env:{...process.env,HOME:s.home}});assert.equal(r.status,0);denied(await h.send({op:'debit',operation:operation('P:caller-bind'),now:clock}));}finally{await h.close();}const next=session(s);try{denied(await next.ready);assert.equal(s.journal().spent,0);}finally{await next.close();}
 });
 test('single standalone RPC requires all mapped prechecks but no original C mutation, reserves cleanup and never refunds',async()=>{
- const s=fixture(),h=session(s),operations=[...map(),...Array.from({length:24},(_,i)=>({...research(i+1),...(i>=8?{stage:'preparation'}:{})}))];let t=clock;
+ const s=fixture(),h=session(s),operations=[...map(),...Array.from({length:21},(_,i)=>({...research(i+1),...(i>=8?{stage:'preparation'}:{})}))];let t=clock;
  try{ok(await h.ready);t=await advance(h,operation('P:caller-bind'),t);t=await advance(h,operation('P:publisher-bind'),t);ok(await h.send({op:'plan-ready',operations,now:t}));for(const alias of ['publisher-refresh','publisher-userinfo'])t=await advance(h,operations.find(v=>v.bucket==='P'&&v.alias===alias),t);
  for(const v of operations.filter(v=>['A','B','D','E','N'].includes(v.bucket)||(v.bucket==='F'&&v.alias.startsWith('wrapper-before.'))||(v.bucket==='G'&&v.alias.startsWith('wrapper-before.'))))t=await advance(h,v,t);
  const H=operations.find(v=>v.bucket==='H');let r=await h.send({op:'rpc-wait',operation:H,credentialExpiresAt:clock+3600000,now:t});ok(r);t+=r.waitMs;ok(await h.send({op:'rpc-begin',operation:H,credentialExpiresAt:clock+3600000,now:t}));assert.deepEqual(s.get().preparation.cActions,[]);assert.equal(s.journal().chargedUpperBoundMs,360000);
  for(const v of operations.filter(v=>(v.bucket==='F'&&v.alias.startsWith('wrapper-after.'))||(v.bucket==='G'&&v.alias.startsWith('wrapper-after.'))||v.bucket==='T'))t=await advance(h,v,t);ok(await h.send({op:'rpc-finish',now:t}));
  for(const [kind,actions] of [['C',['restore-editor','read-restored-editor']],['I',operations.filter(v=>v.bucket==='I').map(v=>v.alias)]])for(const action of actions){const q=await h.send({op:'oldcleanup-wait',kind,action,now:t});ok(q);t+=q.waitMs;ok(await h.send({op:'oldcleanup-debit',kind,action,now:t}));}
- const final=await h.send({op:'inspect'});ok(final);assert.equal(final.spent,155);assert.equal(final.cleanup.iActions.length,17);assert.equal(final.cleanup.cActions.length,2);denied(await h.send({op:'rpc-begin',operation:H,credentialExpiresAt:clock+3600000,now:t}));assert.equal(s.journal().chargedUpperBoundMs,360000);
+ const final=await h.send({op:'inspect'});ok(final);assert.equal(final.spent,156);assert.equal(final.cleanup.iActions.length,17);assert.equal(final.cleanup.cActions.length,2);denied(await h.send({op:'rpc-begin',operation:H,credentialExpiresAt:clock+3600000,now:t}));assert.equal(s.journal().chargedUpperBoundMs,360000);
  }finally{await h.close();}
+ const recovery=cleanupSession(s,{minimumNewSpent:106,now:t+60000});try{
+  ok(await recovery.ready);for(const action of ['script-remove','script-verify'])ok(await recovery.send({op:'scriptcleanup-debit',action,now:t+60000}));
+  const checkpoint=JSON.parse(readFileSync(join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.standalone.json'))).value.checkpoint;
+  assert.equal(checkpoint.spent+s.get().spent+4,158);assert.equal(checkpoint.chargedUpperBoundMs,360000);assert.equal(s.get().preparation.iActions.length,17);
+ }finally{await recovery.close();}
 });
 for(const part of ['owner-rpc-boolean','diagnosis-action-boolean'])test('pinned integer history counters reject '+part,async()=>{
  const s=fixture(),pin=part.startsWith('owner')?s.cfg.history.ownerApproval:s.cfg.history.diagnosisCharges[0],v=JSON.parse(readFileSync(pin.path));if(part.startsWith('owner'))v.rpcLimit=true;else v.action=true;s.put(pin.path,compact(v));pin.sha256=hash(readFileSync(pin.path));const h=session(s);try{denied(await h.ready);assert.equal(existsSync(s.path+'.standalone-claim.json'),false);}finally{await h.close();}

@@ -33,7 +33,7 @@ from datetime import datetime, timezone, timedelta
 DECISION='f227ebbf2ca791d521e0008a639c2fa4ecb31e5be793478c45ffee47b420c92d'
 LEGACY_SOURCE='7f04fc0f0e1f1968029fc666297bf0ca83d871e31c310117ec94ebec3c050e18'
 HISTORICAL_POLICY_SOURCE='06112c8340a04b763d70580883e4bc2b4ddb5fb6d18a22eb577e78ef10fd119f'
-POLICY_SOURCE='8043bb2e6c35292d4638059d8c43a3f53cfbde6f8c1c91d3119d02e151dfeaf9'
+POLICY_SOURCE='49014902c98921ca18b4a09895713be0decd631bebefca661157c3a542a7e01f'
 STANDALONE_DECISION='02c75938cc8ecff17c907431db861613bb7f4e2af967f185c6b9933758f7dfd8'
 OWNER_ANSWER='同意改用單一獨立合成腳本，取代舊試驗入口與停止規則；維持累積160上限及安全、效能、回退驗收，通過後依既有批次授權持續完成上線。'
 LEGACY_DECISION='3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9'
@@ -847,10 +847,13 @@ def pinned(v,expected,private=False):
  return b
 
 STANDALONE_OPERATIONS={k:{**v,**({'target':'thin-project'} if k.endswith('.library-content') else {})} for k,v in OPERATIONS.items() if not k.startswith('C:')}
+for key,method in [('D:standalone-acl-baseline','GET'),('D:standalone-reader-create','POST'),('F:wrapper-before.standalone-acl','GET'),('F:wrapper-after.standalone-acl','GET'),('J:script-remove','DELETE'),('J:script-verify','GET')]:
+ STANDALONE_OPERATIONS[key]={'actor':'publisher','target':'thin-project','methods':[method]}
+STANDALONE_LIMITS={**LIMITS,'C':0,'D':12,'F':32,'J':2}
 
 def normalize(op,standalone=False):
  keys=['id','bucket','alias','actor','target','operation','units']
- if type(op) is not dict or not exact(op,keys+(['stage'] if op.get('bucket')=='N' else [])) or type(op['id']) is not str or re.fullmatch('[-a-zA-Z0-9_.]{1,100}',op['id']) is None or type(op['bucket']) is not str or op['bucket'] not in LIMITS or type(op['alias']) is not str or type(op['units']) is not int or op['units']!=1:fail()
+ if type(op) is not dict or not exact(op,keys+(['stage'] if op.get('bucket')=='N' else [])) or type(op['id']) is not str or re.fullmatch('[-a-zA-Z0-9_.]{1,100}',op['id']) is None or type(op['bucket']) is not str or op['bucket'] not in (STANDALONE_LIMITS if standalone else LIMITS) or type(op['alias']) is not str or type(op['units']) is not int or op['units']!=1:fail()
  key=op['bucket']+':'+op['alias']
  if op['bucket']=='N':
    if re.fullmatch('navigation-(?:[1-9]|1[0-9]|2[0-4])',op['alias']) is None or op['actor']!='publisher' or op['target'] not in TARGETS+(['thin-triggers'] if standalone else []) or op['operation'] not in ['navigate','snapshot'] or op['stage'] not in ['research','preparation']:fail()
@@ -862,7 +865,8 @@ def normalize(op,standalone=False):
 def complete_map(operations,standalone=False):
  rules=STANDALONE_OPERATIONS if standalone else OPERATIONS
  if type(operations) is not list or len(operations)>131:fail()
- ids=set();used={};buckets={k:0 for k in LIMITS};research=0;preparation=0
+ limits=STANDALONE_LIMITS if standalone else LIMITS
+ ids=set();used={};buckets={k:0 for k in limits};research=0;preparation=0
  for op in operations:
   key=normalize(op,standalone)
   if key in used or op['id'] in ids:fail()
@@ -870,7 +874,7 @@ def complete_map(operations,standalone=False):
   if op['bucket']=='N':
    if op['stage']=='research':research+=1
    else:preparation+=1
- if any(k not in used for k in rules) or any(buckets[k]>(0 if standalone and k=='C' else LIMITS[k]) for k in LIMITS) or research>8 or preparation>16 or (31 if standalone else 27)+len(operations)+(2 if standalone else 0)>158:fail()
+ if any(k not in used for k in rules) or any(buckets[k]>limits[k] for k in limits) or research>8 or preparation>16 or (31 if standalone else 27)+len(operations)+(2 if standalone else 0)>158:fail()
  return used
 
 def request_stop(cfg,standalone=False):
@@ -886,7 +890,11 @@ def request_stop(cfg,standalone=False):
   if record(marker)!=cfg:fail()
 
 class Ledger:
- def __init__(self,cfg,standalone=False):
+ def __init__(self,cfg,standalone=False,script_cleanup=False):
+  self.script_cleanup=script_cleanup;self.minimum_new_spent=0
+  if script_cleanup:
+   if not standalone or type(cfg) is not dict or not integer(cfg.get('minimumNewSpent')) or not 0<=cfg['minimumNewSpent']<=127:fail()
+   cfg=copy.deepcopy(cfg);self.minimum_new_spent=cfg.pop('minimumNewSpent')
   self.standalone=standalone;self.rules=STANDALONE_OPERATIONS if standalone else OPERATIONS;self.imported=4 if standalone else 0
   decision=STANDALONE_DECISION if standalone else DECISION;stem='standalone' if standalone else 'continuation'
   if not exact(cfg,['path','epoch','binding','decisionHash','expiresAt','now','ownerNonce','original','baseline','legacyBudget','policySource']+(['history'] if standalone else [])) or cfg['decisionHash']!=decision or any(not digest(cfg[k]) for k in ['binding','ownerNonce']) or any(not integer(cfg[k]) for k in ['expiresAt','now']) or type(cfg['path']) is not str or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
@@ -906,6 +914,11 @@ class Ledger:
   # the legacy child, whose old constructor otherwise can create missing claims.
   self.old_current()
   if standalone:self.validate_history()
+  if script_cleanup:
+   reg=record(self.reg);identity=record(self.claim)
+   fixed={'path':str(self.path),'epoch':cfg['epoch'],'binding':cfg['binding'],'originalBinding':self.original['binding'],'baselineSha256':cfg['baseline']['sha256'],'ownerHash':sha(cfg['ownerNonce'].encode()),'decisionHash':decision,'legacyBudgetSha256':LEGACY_SOURCE,'policySourceSha256':POLICY_SOURCE,'expiresAt':cfg['expiresAt'],'history':cfg['history']}
+   if not exact(identity,list(fixed)+['w0']) or any(identity[k]!=v for k,v in fixed.items()) or not integer(identity['w0']) or not 0<identity['expiresAt']-identity['w0']<=21600000 or day(identity['w0'])!=day(identity['expiresAt']) or cfg['now']<identity['w0'] or not exact(reg,['identity','checkpoint']) or reg['identity']!=identity:fail()
+   self.identity=identity;self.current_journal=copy.deepcopy(reg['checkpoint']);self.recovery_current();return
   for p in [self.reg,self.claim,self.journal,self.marker]:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
@@ -1011,16 +1024,52 @@ class Ledger:
   save_record(self.reg,{'identity':self.identity,'checkpoint':j})
   synced(self.journal,j);self.current_journal=copy.deepcopy(j)
  def current(self):
+  if self.script_cleanup:return self.recovery_current()
   self.sources();old=self.old_current()
   if self.standalone:self.validate_history()
   j=json.loads(rawfile(self.journal))
   if j!=self.current_journal or record(self.claim)!=self.identity or record(self.reg)!={'identity':self.identity,'checkpoint':j}:fail()
   return j,old
+ def recovery_current(self):
+  # The registry checkpoint is written before each ordinary IO admission. Read
+  # it independently after actual owner drain; never repair the ordinary file
+  # or use STOP bytes as authority. Missing/broken trusted evidence denies IO.
+  self.sources();old=self.old_current();self.validate_history()
+  reg=record(self.reg);identity=record(self.claim)
+  if identity!=self.identity or not exact(reg,['identity','checkpoint']) or reg['identity']!=identity or reg['checkpoint']!=self.current_journal:fail()
+  j=reg['checkpoint'];fields=list(identity)+['version','day','deadlineUtc','deadlineTaipei','state','spent','events','plan','chargedUpperBoundMs','rpc','finished']
+  if not exact(j,fields) or any(j[k]!=v for k,v in identity.items()) or type(j['version']) is not int or j['version']!=1 or j['day']!=day(j['w0']) or j['deadlineUtc']!=timestamp(j['expiresAt'],timezone.utc) or j['deadlineTaipei']!=timestamp(j['expiresAt'],timezone(timedelta(hours=8))) or j['state'] not in ['ready','stopped'] or type(j['finished']) is not bool or type(j['events']) is not list or not integer(j['spent']) or j['spent']!=len(j['events']) or not self.minimum_new_spent<=j['spent']<=127:fail()
+  if not exact(j['rpc'],['beganAt','complete']) or type(j['rpc']['complete']) is not bool or (j['rpc']['beganAt'] is not None and not integer(j['rpc']['beganAt'])) or not integer(j['chargedUpperBoundMs']) or j['chargedUpperBoundMs'] not in [0,360000]:fail()
+  mapped=None if j['plan'] is None else complete_map(j['plan'],True)
+  seen=set();ids=set();counts={k:0 for k in STANDALONE_LIMITS};last=j['w0'];rpc=None;cleanup_started=False;js=[]
+  for e in j['events']:
+   if not exact(e,['operation','time','outcome']) or e['outcome']!='UNKNOWN' or not integer(e['time']) or e['time']<last:fail()
+   op=e['operation'];key=normalize(op,True)
+   if key in seen or op['id'] in ids or op['bucket'] in ['C','I']:fail()
+   counts[op['bucket']]+=1;seen.add(key);ids.add(op['id']);last=e['time']
+   if counts[op['bucket']]>STANDALONE_LIMITS[op['bucket']]:fail()
+   if op['bucket']=='J':
+    cleanup_started=True
+    if op['alias']=='script-verify' and 'script-remove' not in js:fail()
+    js.append(op['alias'])
+   else:
+    if cleanup_started or e['time']>=j['expiresAt'] or day(e['time'])!=j['day']:fail()
+    if mapped is None:
+     if key not in ['P:caller-bind','P:publisher-bind'] and not (op['bucket']=='N' and op['stage']=='research'):fail()
+    elif mapped.get(key)!=op:fail()
+    if key.startswith(('F:wrapper-after.','G:wrapper-after.','T:')) and rpc is None:fail()
+    if op['bucket']=='H':rpc=e['time']
+  if (rpc is None)!=(j['chargedUpperBoundMs']==0) or j['rpc']['beganAt']!=rpc or j['rpc']['complete'] and rpc is None:fail()
+  if j['rpc']['complete'] and any(k not in seen for k in self.rules if k.startswith(('F:wrapper-after.','G:wrapper-after.'))):fail()
+  p=old['preparation'];reserve=2-len(p['cActions'])+17-len(p['iActions'])+2+2-len(js)
+  if old['spent']+self.imported+j['spent']>160-reserve:fail()
+  return copy.deepcopy(j),old
  def veto(self):
   try:os.lstat(self.marker);return True
   except FileNotFoundError:return False
   except OSError:return True
  def stopped(self):
+  if self.script_cleanup:return
   request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone)
   j,_=self.current();j['state']='stopped';self.persist(j)
  def times(self,j,old,t):
@@ -1034,7 +1083,7 @@ class Ledger:
  def ordinary_check(self,j,old,op,t,rpc=False):
   key=normalize(op,self.standalone);times=self.times(j,old,t)
   if j['state']!='ready' or j['finished'] or self.veto() or t>=j['expiresAt'] or day(t)!=j['day']:fail()
-  if key.startswith('I:') or key in ['C:'+v for v in C] or (key=='H:wrapper-compatibility-rpc')!=rpc:fail()
+  if key.startswith(('I:','J:')) or key in ['C:'+v for v in C] or (key=='H:wrapper-compatibility-rpc')!=rpc:fail()
   used={normalize(e['operation'],self.standalone):e['operation'] for e in j['events']}
   if key in used or any(v['id']==op['id'] for v in used.values()):fail()
   # P/N preflight is the sole initial admission. A complete map adds no remote
@@ -1057,7 +1106,7 @@ class Ledger:
    if any(k not in used for k in required) or (not self.standalone and old['preparation']['cActions']!=C) or j['chargedUpperBoundMs']!=0:fail()
   if key=='P:publisher-refresh' and 'P:publisher-bind' not in used:fail()
   if key=='P:publisher-userinfo' and 'P:publisher-refresh' not in used:fail()
-  reserve=(2-len(old['preparation']['cActions']))+(17-len(old['preparation']['iActions']))+2
+  reserve=(2-len(old['preparation']['cActions']))+(17-len(old['preparation']['iActions']))+2+(2 if self.standalone else 0)
   if old['spent']+self.imported+j['spent']+1>160-reserve:fail()
   ms=self.rate(times,t)
   if t+ms>=j['expiresAt'] or day(t+ms)!=j['day']:fail()
@@ -1067,7 +1116,7 @@ class Ledger:
   j,old=self.current();times=self.times(j,old,q['now']);p=old['preparation'];kind=q['kind'];action=q['action']
   actions=p['cActions'] if kind=='C' else p['iActions']
   if action in actions or (kind=='C' and action=='read-restored-editor' and 'restore-editor' not in actions):fail()
-  reserve=2+(17-len(p['iActions']) if kind=='C' else 2-len(p['cActions']))
+  reserve=2+(17-len(p['iActions']) if kind=='C' else 2-len(p['cActions']))+(2 if self.standalone else 0)
   if old['spent']+self.imported+j['spent']+1>160-reserve:fail()
   original={'op':'wait','kind':kind,'action':action,'units':1,'now':q['now']}
   legacy=self.old_read(original);ms=max(legacy['waitMs'],self.rate(times,q['now']))
@@ -1084,6 +1133,27 @@ class Ledger:
  def command(self,q):
   if type(q) is not dict:fail()
   op=q.get('op')
+  if self.script_cleanup:
+   if op=='finish-cleanup' and exact(q,['op']):return {'ok':True,'finished':True}
+   if op not in ['scriptcleanup-wait','scriptcleanup-debit'] or not exact(q,['op','action','now']) or q['action'] not in ['script-remove','script-verify']:fail()
+   j,old=self.recovery_current();times=self.times(j,old,q['now']);used=[e['operation']['alias'] for e in j['events'] if e['operation']['bucket']=='J'];action=q['action']
+   if action in used or action=='script-verify' and 'script-remove' not in used:fail()
+   ms=self.rate(times,q['now'])
+   if op=='scriptcleanup-wait':return self.view(ms)
+   if ms:fail()
+   key='J:'+action;rule=self.rules[key];used_ids={e['operation']['id'] for e in j['events']};base=key.replace(':','.')
+   # Ordinary IDs are opaque, not a reserved cleanup namespace. Select a
+   # unique bounded ID before the checkpoint write, never poison recovery.
+   event_id=next((candidate for candidate in [base]+[base+'.cleanup-'+str(n) for n in range(1,129)] if candidate not in used_ids),None)
+   if event_id is None:fail()
+   descriptor={'id':event_id,'bucket':'J','alias':action,'actor':rule['actor'],'target':rule['target'],'operation':rule['methods'][0],'units':1}
+   j['spent']+=1;j['events'].append({'operation':descriptor,'time':q['now'],'outcome':'UNKNOWN'});j['state']='stopped'
+   p=old['preparation'];reserve=2-len(p['cActions'])+17-len(p['iActions'])+2+(1-len(used))
+   if old['spent']+self.imported+j['spent']>160-reserve:fail()
+   # Canonical checkpoint is the durable UNKNOWN before IO. Keep ordinary
+   # journal/STOP and original C/I bytes untouched, including corruption.
+   save_record(self.reg,{'identity':self.identity,'checkpoint':j});self.current_journal=copy.deepcopy(j)
+   return self.view(0)
   if op=='inspect' and exact(q,['op']):return self.view(0)
   if op in ['oldcleanup-wait','oldcleanup-debit']:return self.cleanup(q)
   if op=='stop' and exact(q,['op','now']):self.stopped();return self.view(0)
@@ -1111,7 +1181,7 @@ class Ledger:
   self.persist(j);return self.view(0)
  def view(self,ms=0):
   j,old=self.current();p=old['preparation']
-  return {'ok':True,'spent':old['spent']+self.imported+j['spent'],'state':'stopped' if self.veto() else j['state'],'waitMs':ms,'newSpent':j['spent'],'w0':j['w0'],'expiresAt':j['expiresAt'],'deadlineUtc':j['deadlineUtc'],'deadlineTaipei':j['deadlineTaipei'],'chargedUpperBoundMs':j['chargedUpperBoundMs'],'planReady':j['plan'] is not None,'rpc':j['rpc'],'cleanup':{'cActions':p['cActions'],'iActions':p['iActions']}}
+  return {'ok':True,'spent':old['spent']+self.imported+j['spent'],'state':'stopped' if self.script_cleanup or self.veto() else j['state'],'waitMs':ms,'newSpent':j['spent'],'w0':j['w0'],'expiresAt':j['expiresAt'],'deadlineUtc':j['deadlineUtc'],'deadlineTaipei':j['deadlineTaipei'],'chargedUpperBoundMs':j['chargedUpperBoundMs'],'planReady':j['plan'] is not None,'rpc':j['rpc'],'cleanup':{'cActions':p['cActions'],'iActions':p['iActions']}}
  def close(self):
   if getattr(self,'child',None) is not None:
    try:
@@ -1132,13 +1202,13 @@ try:
  if len(line)>100000:fail()
  if sys.argv[1:] in [['--request-stop'],['--standalone-request-stop']]:
   request_stop(json.loads(line),sys.argv[1]=='--standalone-request-stop');emit({'ok':True,'stopRequested':True});sys.exit(0)
- if sys.argv[1:] not in [['--inherited-lock'],['--standalone-inherited-lock']]:fail()
- ledger=Ledger.__new__(Ledger);ledger.__init__(json.loads(line),sys.argv[1]=='--standalone-inherited-lock');emit(ledger.view())
+ if sys.argv[1:] not in [['--inherited-lock'],['--standalone-inherited-lock'],['--standalone-cleanup-inherited-lock']]:fail()
+ ledger=Ledger.__new__(Ledger);ledger.__init__(json.loads(line),sys.argv[1]!='--inherited-lock',sys.argv[1]=='--standalone-cleanup-inherited-lock');emit(ledger.view())
  for line in sys.stdin.buffer:
   try:
    if len(line)>100000:fail()
    q=json.loads(line);r=ledger.command(q);emit(r)
-   if q.get('op')=='finish':break
+   if q.get('op') in ['finish','finish-cleanup']:break
   except Exception:
    try:ledger.stopped()
    except Exception:pass

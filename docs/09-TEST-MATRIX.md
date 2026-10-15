@@ -2310,3 +2310,15 @@ Complete Node22/actual Core/ownedPG npm test2348/2348 PASS, zero fail/cancel/ski
 No actual Google operation/new claim/debit; current31/160 unchanged. Frozen local
 recovery copy is not remote rollback proof. Full native observers/actual IO map
 and all Google/runtime/performance/rollout/device gates remain pending.
+
+### 2026-10-16 standalone script access lifecycle
+
+New96 cases cover separate fixed script Reader grant/ACL/cleanup, standalone16 F
+observations per phase, C2/I17/J2 reservations, damaged ordinary evidence, nonce/
+high-water/claim/registry validation, cross-handle shared recovery lane, executable
+scope elements and collision-free cleanup IDs. Review findings reproduced then
+fixed and independently re-reviewed. Full Node22/actual Core/ownedPG2444/2444
+PASS, zero fail/cancel/skip,149.524s; database/roles cleaned and PostgreSQL stopped.
+Validate/diff PASS. Synthetic maximum run158 preserves unused2; actual complete
+UI/navigation upper bound is still unverified. No Google/account operation or
+new claim/debit; actual31/160 unchanged, no remote/production acceptance.

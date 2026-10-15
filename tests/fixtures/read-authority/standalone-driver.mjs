@@ -8,7 +8,7 @@ import * as mod from '../../../scripts/read-authority-continuation-driver.mjs';
 export {clock};
 const sha=v=>createHash('sha256').update(v).digest('hex');
 const managementScopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(v=>'https://www.googleapis.com/auth/'+v);
-const aliases=['original-project','original-editor','original-versions','original-deployments','library-content','thin-content','thin-deployments','synthetic-acl','original-acl','original-settings','original-triggers','thin-settings','oauth-audience','oauth-client','caller-sheets-metadata'];
+const aliases=['original-project','original-editor','original-versions','original-deployments','library-content','thin-content','thin-deployments','synthetic-acl','original-acl','original-settings','original-triggers','thin-settings','oauth-audience','oauth-client','caller-sheets-metadata','standalone-acl'];
 const fullMap=()=>Object.entries(policy.operations).map(([key,rule])=>{const i=key.indexOf(':');return {id:key.replaceAll(':','.'),bucket:key.slice(0,i),alias:key.slice(i+1),actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1};});
 export function setup(){
  const s=fixture();let time=clock,drift=false;const map=fullMap(),events=[],calls={credential:0,publisher:0,rpc:0,sign:0,guard:0};

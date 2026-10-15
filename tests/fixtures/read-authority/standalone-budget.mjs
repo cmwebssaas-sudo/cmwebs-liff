@@ -24,8 +24,8 @@ export function fixture(){
  s.repin=key=>{const pin=s.cfg.history[key];pin.sha256=hash(readFileSync(pin.path));};
  return s;
 }
-export function session(s,cfg=s.cfg,bootstrap=null){
- const fd=openSync(s.path+'.lock','r+'),child=spawn('python3',[...(bootstrap?['-c',bootstrap]:[]),resolve('scripts/read-authority-continuation-budget.py'),'--standalone-inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env:{PATH:process.env.PATH,HOME:s.home,TZ:'Asia/Taipei',LANG:'C'}});
+export function session(s,cfg=s.cfg,bootstrap=null,cleanup=false){
+ const fd=openSync(s.path+'.lock','r+'),child=spawn('python3',[...(bootstrap?['-c',bootstrap]:[]),resolve('scripts/read-authority-continuation-budget.py'),cleanup?'--standalone-cleanup-inherited-lock':'--standalone-inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env:{PATH:process.env.PATH,HOME:s.home,TZ:'Asia/Taipei',LANG:'C'}});
  let buffer='',ended=false;const queued=[],pending=[];
  const push=v=>pending.length?pending.shift()(v):queued.push(v);
  child.stdout.setEncoding('utf8');child.stdout.on('data',chunk=>{buffer+=chunk;while(buffer.includes('\n')){const i=buffer.indexOf('\n');push(JSON.parse(buffer.slice(0,i)));buffer=buffer.slice(i+1);}});
@@ -34,4 +34,5 @@ export function session(s,cfg=s.cfg,bootstrap=null){
  child.stdin.on('error',()=>{});child.stdin.write(JSON.stringify(cfg)+'\n');
  return {child,ready:read(),send:q=>{child.stdin.write(JSON.stringify(q)+'\n');return read();},close:async()=>{if(!ended){child.stdin.end();await new Promise(r=>child.once('close',r));}closeSync(fd);},fd};
 }
+export function cleanupSession(s,patch={}){return session(s,{...s.cfg,minimumNewSpent:0,...patch},null,true);}
 export {fixture as standaloneFixture};

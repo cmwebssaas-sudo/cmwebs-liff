@@ -7,18 +7,25 @@ function input(){
  const operations=Object.entries(p.operations).map(([key,rule],i)=>({id:'step-'+i,
    bucket:key.split(':')[0],alias:key.slice(key.indexOf(':')+1),actor:rule.actor,
    target:rule.target,operation:rule.methods[0],units:1}));
- for(let n=1;n<=24;n++)operations.push({id:'navigation-'+n,bucket:'N',alias:'navigation-'+n,
+ for(let n=1;n<=21;n++)operations.push({id:'navigation-'+n,bucket:'N',alias:'navigation-'+n,
    actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,stage:n<=8?'research':'preparation'});
  return {decisionHash:plans.STANDALONE_TRIAL_DECISION_HASH,history:{spent:31,limit:160},mapComplete:true,operations};
 }
 const plan=v=>plans.compileAuthorityStandalonePlan(v??input());
 test('standalone map includes31 historical debits and reserves cleanup without charging a library mutation',()=>{
  const v=input(),r=plan(v);
- assert.equal(r.spent,31);assert.equal(r.fixedFutureUnits,87);assert.equal(r.totalUnits,153);
- assert.equal(r.reservedTotalUnits,157);assert.equal(r.cleanupReserve,17);assert.equal(r.originalRestoreReserve,2);
+ assert.equal(r.spent,31);assert.equal(r.fixedFutureUnits,93);assert.equal(r.totalUnits,156);
+ assert.equal(r.reservedTotalUnits,160);assert.equal(r.cleanupReserve,17);assert.equal(r.originalRestoreReserve,2);
+ assert.equal(r.scriptCleanupReserve,2);
  assert.equal(r.budgetFits,true);assert.equal(r.executionAuthorized,false);
  assert.equal(r.externalPrerequisitesVerified,false);assert.equal(r.bucketUnits.C,0);
  assert.equal(r.stage,'standalone-compatibility');assert.equal(Object.isFrozen(r),true);
+});
+test('extra script grant, phase observations and independent removal are required and individually counted',()=>{
+ const v=input(),keys=['D:standalone-acl-baseline','D:standalone-reader-create','F:wrapper-before.standalone-acl','F:wrapper-after.standalone-acl','J:script-remove','J:script-verify'];
+ for(const key of keys){const row=v.operations.find(o=>o.bucket+':'+o.alias===key);assert(row,key);const without={...v,operations:v.operations.filter(o=>o!==row)};assert.equal(plan(without).budgetFits,false);assert(plan(without).missingOperations.includes(key));}
+ v.operations.push({id:'navigation-22',bucket:'N',alias:'navigation-22',actor:'publisher',target:'thin-triggers',operation:'snapshot',units:1,stage:'preparation'});
+ assert.equal(plan(v).budgetFits,false);assert.equal(plan(v).executionAuthorized,false);
 });
 test('standalone source observation is pinned to isolated project instead of original library',()=>{
  const v=input(),row=v.operations.find(o=>o.alias==='wrapper-before.library-content');

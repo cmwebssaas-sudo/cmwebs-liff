@@ -106,9 +106,10 @@ export const STANDALONE_TRIAL_DECISION_HASH='02c75938cc8ecff17c907431db861613bb7
 const standaloneOperations=Object.fromEntries(Object.entries(operations).filter(([key])=>!key.startsWith('C:')).map(([key,rule])=>[
  key,key.startsWith('F:')&&key.endsWith('.library-content')?{...rule,target:'thin-project'}:rule
 ]));
+for(const [key,method] of [['D:standalone-acl-baseline','GET'],['D:standalone-reader-create','POST'],['F:wrapper-before.standalone-acl','GET'],['F:wrapper-after.standalone-acl','GET'],['J:script-remove','DELETE'],['J:script-verify','GET']])standaloneOperations[key]={actor:'publisher',target:'thin-project',methods:[method]};
 export const STANDALONE_TRIAL_POLICY=freeze({...BOUNDED_CONTINUATION_POLICY,
  decisionHash:STANDALONE_TRIAL_DECISION_HASH,stage:'standalone-compatibility',
- importedUnits:31,fixedFutureUnits:87,bucketLimits:{...limits,C:0},operations:standaloneOperations,
+ importedUnits:31,fixedFutureUnits:93,bucketLimits:{...limits,C:0,D:12,F:32,J:2},operations:standaloneOperations,scriptCleanupReserve:2,
  originalRestoreUnitsOutsideMap:2,navigationTargets:[...navigationTargets,'thin-triggers']
 });
 // `*Eligible` denotes only the map's local arithmetic condition. It never
@@ -149,7 +150,8 @@ function compilePlan(input,policy){
   const missingOperations=Object.keys(operations).filter(k=>!seen.has(k)).sort();
   const fullyKnown=missingOperations.length===0&&unknownCosts.length===0&&input.mapComplete;
   const minimumTotalUnits=imported+input.operations.length+missingOperations.length;
-  const reservedTotalUnits=imported+policy.fixedFutureUnits+4+4+24+3+2+outsideRestore;
+  const navigationReserve=policy.scriptCleanupReserve?bucketUnits.N:24;
+  const reservedTotalUnits=imported+policy.fixedFutureUnits+4+4+navigationReserve+3+2+outsideRestore;
   const budgetFits=fullyKnown&&minimumTotalUnits+outsideRestore<=158&&reservedTotalUnits<=160;
   // Counts bound the rows above; unknown/missing costs must not be reported as
   // measured bucket totals. Their one-operation lower bounds remain in minimum.
@@ -164,7 +166,7 @@ function compilePlan(input,policy){
    reservedTotalUnits,unusedReserve:2,bucketUnits:reportedBucketUnits,
    researchUnits:input.operations.some(o=>o.bucket==='N'&&o.stage==='research'&&o.units===null)?null:research,
    navigationControlUnits:input.operations.some(o=>o.bucket==='N'&&o.stage==='preparation'&&o.units===null)?null:preparation,
-   cleanupReserve:17,originalRestoreReserve:2,unknownCosts:unknownCosts.sort(),missingOperations,
+   cleanupReserve:17,originalRestoreReserve:2,...(policy.scriptCleanupReserve?{scriptCleanupReserve:policy.scriptCleanupReserve}:{}),unknownCosts:unknownCosts.sort(),missingOperations,
    budgetFits,preflightMapEligible,credentialRpcEligible:budgetFits,
    eligibilityMeaning:'offline-map-condition-only',externalPrerequisitesVerified:false,
    requiredExternalPrerequisites:BOUNDED_CONTINUATION_POLICY.externalPrerequisites,

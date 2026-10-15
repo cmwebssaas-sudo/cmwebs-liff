@@ -59,8 +59,8 @@ function protocol(child){
  };
  return {send,drain,closed,alive:()=>!dead&&!faulted};
 }
-function view(raw){
- if(!exact(raw,['ok','spent','state','waitMs','newSpent','w0','expiresAt','deadlineUtc','deadlineTaipei','chargedUpperBoundMs','planReady','rpc','cleanup'])||raw.ok!==true||!integer(raw.spent)||raw.spent<27||raw.spent>158||!integer(raw.newSpent)||raw.newSpent<0||raw.newSpent>112||!['ready','stopped'].includes(raw.state)||!integer(raw.waitMs)||raw.waitMs<0||raw.waitMs>60000||![raw.w0,raw.expiresAt].every(integer)||typeof raw.deadlineUtc!=='string'||typeof raw.deadlineTaipei!=='string'||![0,360000].includes(raw.chargedUpperBoundMs)||typeof raw.planReady!=='boolean'||!exact(raw.rpc,['beganAt','complete'])||(raw.rpc.beganAt!==null&&!integer(raw.rpc.beganAt))||typeof raw.rpc.complete!=='boolean'||!exact(raw.cleanup,['cActions','iActions'])||!Array.isArray(raw.cleanup.cActions)||!Array.isArray(raw.cleanup.iActions))stop();
+function view(raw,standalone=false){
+ if(!exact(raw,['ok','spent','state','waitMs','newSpent','w0','expiresAt','deadlineUtc','deadlineTaipei','chargedUpperBoundMs','planReady','rpc','cleanup'])||raw.ok!==true||!integer(raw.spent)||raw.spent<27||raw.spent>(standalone?160:158)||!integer(raw.newSpent)||raw.newSpent<0||raw.newSpent>(standalone?129:112)||!['ready','stopped'].includes(raw.state)||!integer(raw.waitMs)||raw.waitMs<0||raw.waitMs>60000||![raw.w0,raw.expiresAt].every(integer)||typeof raw.deadlineUtc!=='string'||typeof raw.deadlineTaipei!=='string'||![0,360000].includes(raw.chargedUpperBoundMs)||typeof raw.planReady!=='boolean'||!exact(raw.rpc,['beganAt','complete'])||(raw.rpc.beganAt!==null&&!integer(raw.rpc.beganAt))||typeof raw.rpc.complete!=='boolean'||!exact(raw.cleanup,['cActions','iActions'])||!Array.isArray(raw.cleanup.cActions)||!Array.isArray(raw.cleanup.iActions))stop();
  return data(raw);
 }
 export function createAuthorityContinuationControl(input){
@@ -75,7 +75,8 @@ function createControl(input,standalone){
   if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[])])||!isAbsolute(config.path)||config.decisionHash!==(standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||typeof now!=='function'||typeof pause!=='function')stop();
   const home=homedir(),env={PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei',HOME:home},source=fileURLToPath(new URL('./read-authority-continuation-budget.py',import.meta.url));
   const stem=standalone?'.standalone':'.continuation';
-  const nonce=randomBytes(32).toString('hex');let attempted=false,localStop=false,current=null,lastOwned=null,serial=0;
+  const nonce=randomBytes(32).toString('hex');let attempted=false,localStop=false,current=null,lastOwned=null,serial=0,newSpentHighWater=0,cleanupRunning=false;
+  const observed=raw=>{const result=view(raw,standalone);newSpentHighWater=Math.max(newSpentHighWater,result.newSpent);return result;};
   const checked=()=>{const result=guard();if(types.isPromise(result))void Promise.prototype.then.call(result,()=>{},()=>{});if(result!==undefined)stop();};
   const veto=()=>{if(localStop)return true;try{lstatSync(config.path+stem+'-stop.json');return true;}catch(e){return e.code!=='ENOENT';}};
   const durableStop=async()=>{
@@ -91,7 +92,7 @@ function createControl(input,standalone){
   };
   const requestStop=async()=>{const owned=current;const ack=await stopCaptured(owned);if(!ack)stop();return Object.freeze({stopRequested:true});};
   const drainCaptured=async owned=>{
-   const ack=await stopCaptured(owned);if(owned)await owned.settled;
+   const ack=await stopCaptured(owned);if(owned){await owned.settled;owned.drained=true;}
    return Object.freeze({source:'canonical-continuation-holder',stopRequested:true,stopAcknowledged:ack,ordinaryScopeClosed:owned?.scopeClosed===true,ownedScope:Object.freeze({serial:owned?.serial??null,state:owned?'SETTLED':'NONE_CAPTURED'}),remoteExecutionSettled:false,trialAccepted:false,rollbackComplete:false});
   };
   // Keep the original settled promise for independent recovery. A new control
@@ -105,11 +106,11 @@ function createControl(input,standalone){
    owned.acknowledgeStop=()=>{stopAck=true;if(holderDrained)release();};
    const fence=async()=>{
     if(!initial||stopAck)return;
-    try{const r=view(await p.send({op:'stop',now:now()}));stopAck=r.state==='stopped';}catch(_){}
+    try{const r=observed(await p.send({op:'stop',now:now()}));stopAck=r.state==='stopped';}catch(_){}
     if(!stopAck)try{stopAck=await durableStop();}catch(_){}
    };
    const alive=(ordinary=false)=>{if(!active||!p?.alive())stop();checked();if(ordinary&&(failed||veto()))stop();};
-   const exchange=async(q,ordinary=false)=>{alive(ordinary);const r=view(await p.send(q));alive(ordinary);if(ordinary&&r.state!=='ready')stop();return r;};
+   const exchange=async(q,ordinary=false)=>{alive(ordinary);const r=observed(await p.send(q));alive(ordinary);if(ordinary&&r.state!=='ready')stop();return r;};
    const time=()=>{const t=now();if(!integer(t))stop();return t;};
    const tracked=fn=>{
     pending++;const task=(async()=>{try{return await fn();}catch(_){failed=true;await fence();stop();}finally{pending--;}})();tasks.add(task);void task.then(()=>tasks.delete(task),()=>tasks.delete(task));return task;
@@ -141,7 +142,7 @@ function createControl(input,standalone){
     fd=openSync(config.path+'.lock',constants.O_RDWR|constants.O_NOFOLLOW);const s=fstatSync(fd),named=lstatSync(config.path+'.lock');
     if(!s.isFile()||s.uid!==userInfo().uid||(s.mode&0o7777)!==0o600||s.nlink!==1||s.size!==0||s.ino!==named.ino||s.dev!==named.dev)stop();
     child=spawn('python3',[source,standalone?'--standalone-inherited-lock':'--inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
-    const ready=view(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;if(ready.state!=='ready'||ready.w0!==t||ready.expiresAt!==config.expiresAt||(standalone&&ready.spent<31))stop();alive(true);
+    const ready=observed(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;owned.initial=true;if(ready.state!=='ready'||ready.w0!==t||ready.expiresAt!==config.expiresAt||(standalone&&ready.spent<31))stop();alive(true);
     result=await callback(cap);if(pending||failed||veto())stop();
     const ending=await exchange({op:'inspect'},true);
     // A returned callback/transport value never substitutes for postchecks.
@@ -153,7 +154,7 @@ function createControl(input,standalone){
     if(initial&&p?.alive())try{const r=await p.send({op:'finish',now:now()});if(!exact(r,['ok','finished'])||r.ok!==true||r.finished!==true)stop();finishAck=true;}catch(_){scopeFailed=true;}
     if(p)await p.drain();
     if(initial&&(!finishAck||failed||child.exitCode!==0||child.signalCode!==null))scopeFailed=true;
-    if(scopeFailed)await fence();holderDrained=true;owned.scopeClosed=true;
+    if(scopeFailed)await fence();holderDrained=true;owned.scopeClosed=true;try{owned.settledAt=now();}catch(_){owned.settledAt=null;}
     // This segment can never reopen ordinary authority, even with the retained
     // nonce: its durable global claim is single-use. Once actual IO and child
     // handles have drained, an ambiguous negative marker must not deadlock C/I.
@@ -161,6 +162,55 @@ function createControl(input,standalone){
     release();
    }
    if(scopeFailed)stop();return result;
+  };
+  // One actual-owner lane covers the old scope's drain, cooldown and flock.
+  // Separate recovery objects and copied loaders share this same closure.
+  const withOriginalCleanup=async callback=>{
+   if(!standalone||cleanupRunning||typeof callback!=='function'||!attempted||!lastOwned||lastOwned.initial!==true)stop();
+   const owned=lastOwned;cleanupRunning=true;
+   try{
+    checked();await drainCaptured(owned);
+    if(lastOwned!==owned||current||owned.scopeClosed!==true||owned.drained!==true||!integer(owned.settledAt))stop();
+    checked();const result=await callback();checked();return result;
+   }catch(_){stop();}finally{cleanupRunning=false;}
+  };
+  const withScriptCleanup=async callback=>{
+   if(!standalone||cleanupRunning||typeof callback!=='function'||!attempted||!lastOwned||current||lastOwned.scopeClosed!==true||lastOwned.initial!==true)stop();
+   const owned=lastOwned;cleanupRunning=true;let child,p,fd,active=true,failed=false,busy=false,pending=0,result,finished=false;const tasks=new Set(),entered=new Set();
+   const time=()=>{const t=now();if(!integer(t))stop();return t;};
+   const alive=()=>{if(!active||!p?.alive())stop();checked();};
+   const exchange=async q=>{alive();const r=observed(await p.send(q));alive();if(r.state!=='stopped')stop();return r;};
+   const tracked=fn=>{pending++;const task=(async()=>{try{return await fn();}catch(_){failed=true;stop();}finally{pending--;}})();tasks.add(task);void task.then(()=>tasks.delete(task),()=>tasks.delete(task));return task;};
+   const cleanup=(action,io)=>tracked(async()=>{
+    if(busy||failed||typeof io!=='function'||!['script-remove','script-verify'].includes(action))stop();busy=true;
+    try{
+     const start=time(),q={op:'scriptcleanup-wait',action,now:start},wait=await exchange(q);
+     if(wait.waitMs){await pause(wait.waitMs);alive();if(time()<start||(await exchange({...q,now:time()})).waitMs!==0)stop();}
+     const admitted=await exchange({op:'scriptcleanup-debit',action,now:time()});alive();
+     const task=Promise.resolve().then(()=>{alive();if(failed)stop();return io(admitted);});entered.add(task);
+     try{const value=await task;alive();return value;}finally{entered.delete(task);}
+    }finally{busy=false;}
+   });
+   try{
+    checked();await drainCaptured(owned);
+    if(lastOwned!==owned||current||owned.initial!==true||owned.scopeClosed!==true||owned.drained!==true||!integer(owned.settledAt))stop();
+    const elapsed=time()-owned.settledAt;if(elapsed<0)stop();if(elapsed<60000)await pause(60000-elapsed);
+    checked();if(time()-owned.settledAt<60000)stop();
+    const directory=lstatSync(dirname(config.path));if(!directory.isDirectory()||directory.uid!==userInfo().uid||(directory.mode&0o7777)!==0o700)stop();
+    fd=openSync(config.path+'.lock',constants.O_RDWR|constants.O_NOFOLLOW);const s=fstatSync(fd),named=lstatSync(config.path+'.lock');
+    if(!s.isFile()||s.uid!==userInfo().uid||(s.mode&0o7777)!==0o600||s.nlink!==1||s.size!==0||s.ino!==named.ino||s.dev!==named.dev)stop();
+    child=spawn('python3',[source,'--standalone-cleanup-inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
+    const ready=observed(await p.send({...config,now:time(),ownerNonce:nonce,minimumNewSpent:newSpentHighWater}));
+    if(ready.state!=='stopped'||ready.expiresAt!==config.expiresAt)stop();alive();
+    result=await callback(Object.freeze({cleanup}));if(pending||failed)stop();alive();
+   }catch(_){failed=true;}
+   finally{
+    active=false;await Promise.allSettled([...entered]);await Promise.allSettled([...tasks]);
+    if(p?.alive())try{const r=await p.send({op:'finish-cleanup'});if(!exact(r,['ok','finished'])||r.ok!==true||r.finished!==true)stop();finished=true;}catch(_){failed=true;}
+    if(p)await p.drain();if(child&&(!finished||child.exitCode!==0||child.signalCode!==null))failed=true;
+    if(fd!==undefined)closeSync(fd);cleanupRunning=false;
+   }
+   if(failed)stop();return result;
   };
   const bridgeOriginalStopControl=original=>{
    if(!original||typeof original.requestStop!=='function'||typeof original.stopAndDrain!=='function')stop();
@@ -173,6 +223,6 @@ function createControl(input,standalone){
     const [continuationHolder,originalHolder]=results.map(v=>v.value);return Object.freeze({source:'continuation-owner-stop-bridge',stopRequested:true,stopAcknowledged:continuationHolder.stopAcknowledged&&originalHolder.stopAcknowledged===true,continuationHolder,originalHolder,remoteExecutionSettled:false,trialAccepted:false,rollbackComplete:false});
    }});
   };
-  return Object.freeze({withContinuation,requestStop,stopAndDrain,bridgeOriginalStopControl});
+  return Object.freeze({withContinuation,requestStop,stopAndDrain,bridgeOriginalStopControl,...(standalone?{withScriptCleanup,withOriginalCleanup}:{})});
  }catch(_){stop();}
 }

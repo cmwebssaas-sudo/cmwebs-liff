@@ -3976,3 +3976,57 @@ Actual C1 daily-runtime, C3 compatibility/privacy/freshness/latency, C6 performa
 24h parallel sync/shadow, staged rollout/device and seven-day postlaunch gates
 remain unmet. Rollback before use is a source revert; after actual use, drain the
 retained owner and use the fixed reserved recovery, preserving all old evidence.
+
+## 2026-10-16 — Explicit standalone script access and reserved revocation
+
+GPT-6.1 Sol/high, same approved C3 isolated-script scope/worktree/PR. The script's
+Reader permission is distinct from the synthetic Sheet's permission. Existing
+Reader/metadata/driver recipes now support that explicit resource: one owner-only
+ACL baseline GET, one grant POST, one fresh script ACL GET in each phase, and
+independent remove/absence GET. No request is hidden in the Sheet's grant. Original
+15 release observations remain; standalone now requires16 per phase. Original
+script privacy still requires fresh source-parent plus owner-only container ACL;
+the new metadata observer does not manufacture that conclusion or native facts.
+
+The same standalone ledger reserves a separate J2 for script removal/readback.
+Original frozen C2/I17 and their unique actions remain unchanged. Cleanup-only
+reentry requires the actual retained owner, nonce, monotonic spend floor, original
+lock and existing validated registry checkpoint/claim/history. It can read that
+trusted checkpoint when the ordinary journal is missing/corrupt or STOP partial;
+it cannot repair/reopen ordinary evidence, grant access, retry RPC or reset claims.
+UNKNOWN is persisted before IO, and verification needs a removal attempt. Shared
+actual-owner recovery excludes J activity throughout original cleanup's drain,
+cooldown and lock lifetime, preserving the combined10/minute limit across handles.
+
+Six added purposes are explicitly counted. Complete mapped arithmetic with N21
+is156 including historical31; outside C2 plus unused2 gives160. A synthetic run
+executed the required ordinary work, C2/I17 and J2 at158, leaving unused2. This
+does not prove the actual UI/forms fit21 navigation reads: their complete upper
+bound and native parsers/launcher binding remain pending. No new actual claim,
+Google/account IO, debit, credentials, permission, config, deployment or flag.
+
+TDD and independent review: executable scope elements, cross-handle rate race
+and cleanup-ID collision reproduced, fixed and re-reviewed with no remaining
+actionable findings. Denial-path tests also preserve corrupt/missing ordinary
+bytes. New96 cases are included in complete Node22/actual Core643c1b3/owned
+PostgreSQL16.14 npm test2444/2444 PASS, zero fail/cancel/skip,149.524s; isolated
+database/role cleanup and stopped PostgreSQL verified. Snapshot613paths
+c67e72c233452cc5126658e7c6fc7a0ff62a643806e581941fab1b1245de8b7c
+precedes this evidence-only documentation append. Validate72/40/static-cache and
+diff checks PASS. Frozen adapter manifest
+824330e7be119651f01acba7417a713ef810d99d5c2fe700142f655d5d42d563
+built/verified locally; this is not an actual resource rollback receipt.
+
+Preceding aad104d CI38820650833 terminal provider readback: rental2343/2343,
+Worker26/26 and both dry-runs PASS; rental log truncated, Worker complete; only
+Node20 deprecation/Ubuntu26 migration annotations. This increment's exact-head
+CI awaits push/readback. Earlier realm timeout and performance failures remain
+retained. All actual C1/C3/C6,24h rollout/device/postlaunch gates remain unmet.
+Current actual total31/160 and both old raw hashes unchanged; root WIP preserved.
+
+Public API reference checked: [Project resource](https://developers.google.com/apps-script/api/reference/rest/v1/projects)
+defines scriptId as the project Drive ID; [Execution API requirements](https://developers.google.com/apps-script/api/how-tos/execute)
+retain a common standard Cloud project and all manifest scopes. These references
+do not prove actual account access or deployment. Rollback before use is source
+revert; after use, drain the retained owner and use distinct fixed Sheet/script
+revocation plus deployment/credential cleanup, preserving UNKNOWN and old evidence.

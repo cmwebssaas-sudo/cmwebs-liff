@@ -15,7 +15,7 @@ const integer=Number.isSafeInteger;
 const continuationPins=['deploymentId','thinScriptId','libraryId','libraryVersion','librarySourceHash','thinSourceHash','libraryManifestHash','thinManifestHash','originalEditorHash','originalDeploymentsHash','originalCloudProject','trialEpoch','syntheticSheetId','callerHash','publisherHash','oauthClientHash','newCloudProject','sheetContractHash'];
 const standalonePins=['deploymentId','thinScriptId','standaloneVersion','thinSourceHash','thinManifestHash','originalScriptId','originalEditorHash','originalDeploymentsHash','originalCloudProject','trialEpoch','syntheticSheetId','callerHash','publisherHash','oauthClientHash','newCloudProject','sheetContractHash'];
 const managementScopes=Object.freeze(['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(v=>'https://www.googleapis.com/auth/'+v));
-const releaseAliases=Object.keys(policy.operations).filter(k=>k.startsWith('F:wrapper-before.')).map(k=>k.slice('F:wrapper-before.'.length));
+const aliasesFor=policy=>Object.keys(policy.operations).filter(k=>k.startsWith('F:wrapper-before.')).map(k=>k.slice('F:wrapper-before.'.length));
 // Accessor/proxy/toJSON code never participates in validated data snapshots.
 function snapshot(value,strict=false){
  let count=0;const seen=new Set();
@@ -54,6 +54,7 @@ export function createAuthorityStandaloneDriver(input){
 function createDriver(input,standalone){
  try{
   const data=value=>snapshot(value,standalone);
+  const releaseAliases=aliasesFor(standalone?STANDALONE_TRIAL_POLICY:policy);
   const decisionHash=standalone?STANDALONE_TRIAL_DECISION_HASH:continuationDecisionHash,pins=standalone?standalonePins:continuationPins;
   const compile=standalone?compileAuthorityStandalonePlan:compileAuthorityContinuationPlan,verify=standalone?verifyAuthorityStandaloneReadback:verifyAuthorityTrialReadback;
   const o=inputSnapshot(input,standalone),required=['decisionHash','continuationBinding','expected','expiresAt','now','operations','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport'];
@@ -96,7 +97,7 @@ function createDriver(input,standalone){
      };
      try{
       guard();live();const start=time();const raw=await o.readRelease(Object.freeze({phase,decisionHash,externalRead,credentials:tokens}));
-      if(failed||pending||seen.size!==15||releaseAliases.some(v=>!seen.has(v)))stop();const result=data(raw);verify(e,result);fresh(result.observedAt);if(result.observedAt<start)stop();guard();return result;
+      if(failed||pending||seen.size!==releaseAliases.length||releaseAliases.some(v=>!seen.has(v)))stop();const result=data(raw);verify(e,result);fresh(result.observedAt);if(result.observedAt<start)stop();guard();return result;
      }finally{active=false;await Promise.allSettled(tasks);observerActive=false;}
     };
     const identities=async phase=>{

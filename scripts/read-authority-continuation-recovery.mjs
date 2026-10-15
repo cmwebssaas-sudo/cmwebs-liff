@@ -17,6 +17,7 @@ const exact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const same=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
 const denied=()=>{const p=Promise.reject(Error('TRIAL_STOPPED'));void p.catch(()=>{});return p;};
+const scriptResourceKeys=['scriptReaderPath','originalScriptId'];
 const resourceKeys=Object.freeze(['epoch','expiresAt','thinScriptId','publisherHash','syntheticSheetId','originalSheetId','callerHash','fixtureHash','thinOriginalSourceHash','thinPath','readerPath']);
 function data(v){
  let count=0;const active=new Set();
@@ -37,12 +38,14 @@ function pinned(input){
 }
 function standaloneSelection(input,originalCopy){
  if(!exact(input,['copy','resources']))stop();const copy=pinned(input.copy),resources=input.resources;
- if(copy.path===originalCopy.path||!exact(resources,resourceKeys))stop();verifyAuthorityTrialRollback(copy);
+ const hasScript=Object.hasOwn(resources,'scriptReaderPath')||Object.hasOwn(resources,'originalScriptId');
+ if(copy.path===originalCopy.path||!exact(resources,[...resourceKeys,...(hasScript?scriptResourceKeys:[])]))stop();verifyAuthorityTrialRollback(copy);
  const selected=lstatSync(copy.path),original=lstatSync(originalCopy.path);if(selected.dev===original.dev&&selected.ino===original.ino)stop();
  const id=v=>typeof v==='string'&&/^[-A-Za-z0-9_]{20,200}$/.test(v);
  if(!['epoch','thinScriptId','syntheticSheetId','originalSheetId'].every(k=>id(resources[k]))||resources.syntheticSheetId===resources.originalSheetId||!integer(resources.expiresAt)||resources.expiresAt<=0||!['publisherHash','callerHash','fixtureHash','thinOriginalSourceHash'].every(k=>digest(resources[k]))||resources.callerHash===resources.publisherHash)stop();
  for(const key of ['thinPath','readerPath'])if(typeof resources[key]!=='string'||resolve(resources[key])!==resources[key])stop();
- if(resources.thinPath===resources.readerPath)stop();return {copy,resources};
+ if(resources.thinPath===resources.readerPath)stop();
+ if(hasScript&&(!id(resources.originalScriptId)||resources.originalScriptId===resources.thinScriptId||typeof resources.scriptReaderPath!=='string'||resolve(resources.scriptReaderPath)!==resources.scriptReaderPath||[resources.thinPath,resources.readerPath].includes(resources.scriptReaderPath)))stop();return {copy,resources};
 }
 function manifestAt(input){
  const ref=pinned(input);dir(dirname(ref.path));dir(ref.path);dir(join(ref.path,'scripts'));
@@ -91,11 +94,11 @@ export async function loadAuthorityContinuationRecovery(input){
    const thin=await module('read-authority-trial-thin'),reader=await module('read-authority-trial-reader'),generator=await module('build-read-authority-trial-entry');check();
    if(typeof thin.createStandaloneAuthorityTrialPublication!=='function'||typeof reader.createAuthorityTrialReader!=='function'||typeof generator.buildStandaloneAuthorityTrialArtifacts!=='function')stop();
    const bundle=generator.buildStandaloneAuthorityTrialArtifacts(),wrapper=[{name:'AuthorityTrial',type:'SERVER_JS',source:bundle.source},{name:'appsscript',type:'JSON',source:JSON.stringify(bundle.manifest)}];
-   standaloneModules={thin:thin.createStandaloneAuthorityTrialPublication,reader:reader.createAuthorityTrialReader,wrapperHash:hash(JSON.stringify(canonical(wrapper.sort((a,b)=>a.name.localeCompare(b.name)))))};check();
+   standaloneModules={thin:thin.createStandaloneAuthorityTrialPublication,reader:reader.createAuthorityTrialReader,wrapperHash:hash(JSON.stringify(canonical(wrapper.sort((a,b)=>a.name.localeCompare(b.name))))),...(manifest.standalone.resources.scriptReaderPath?{scriptReader:reader.createAuthorityStandaloneScriptReader}:{})};if(manifest.standalone.resources.scriptReaderPath&&typeof standaloneModules.scriptReader!=='function')stop();check();
   }
   const adapter=name=>input=>{
    try{
-    if(!input||typeof input!=='object'||types.isProxy(input))stop();const d=Object.getOwnPropertyDescriptor(input,'control');if(!d||!Object.hasOwn(d,'value'))stop();const ctx=contexts.get(d.value);if(!ctx)stop();ctx.guard();
+    if(!input||typeof input!=='object'||types.isProxy(input))stop();const d=Object.getOwnPropertyDescriptor(input,'control');if(!d||!Object.hasOwn(d,'value'))stop();const ctx=contexts.get(d.value);if(!ctx||ctx.kind==='script')stop();ctx.guard();
     const copied={...input,control:ctx.oldCap},api=legacy[name](copied);
     return Object.freeze(Object.fromEntries(Object.keys(api).map(method=>[method,(...args)=>{try{ctx.guard();return api[method](...args);}catch(_){ctx.failed=true;stop();}}])));
    }catch(_){stop();}
@@ -105,7 +108,7 @@ export async function loadAuthorityContinuationRecovery(input){
     if(!standaloneModules||!input||typeof input!=='object'||types.isProxy(input))stop();const options={};
     const allowed=kind==='thin'?['path','epoch','scriptId','publisherHash','originalFiles','originalSourceHash','backupReceipt','expiresAt','control','credential','fetcher','now']:['path','epoch','originalSheetId','syntheticSheetId','callerEmail','callerHash','publisherHash','fixtureHash','expiresAt','creationReceipt','metadata','control','credential','fetcher','now'];
     for(const key of Reflect.ownKeys(Object.getOwnPropertyDescriptors(input))){const d=Object.getOwnPropertyDescriptor(input,key);if(typeof key!=='string'||!allowed.includes(key)||!d.enumerable||!Object.hasOwn(d,'value'))stop();options[key]=['control','credential','fetcher','now','metadata'].includes(key)?d.value:data(d.value);}
-    const ctx=contexts.get(options.control);if(!ctx)stop();ctx.guard();const fixed=manifest.standalone.resources;
+    const ctx=contexts.get(options.control);if(!ctx||ctx.kind==='script')stop();ctx.guard();const fixed=manifest.standalone.resources;
     const pins={epoch:fixed.epoch,expiresAt:fixed.expiresAt,publisherHash:fixed.publisherHash,path:fixed[kind+'Path'],...(kind==='thin'?{scriptId:fixed.thinScriptId,originalSourceHash:fixed.thinOriginalSourceHash}:{originalSheetId:fixed.originalSheetId,syntheticSheetId:fixed.syntheticSheetId,callerHash:fixed.callerHash,fixtureHash:fixed.fixtureHash})};
     if(Object.entries(pins).some(([k,v])=>options[k]!==v))stop();
     let expected;
@@ -121,15 +124,36 @@ export async function loadAuthorityContinuationRecovery(input){
     return Object.freeze(Object.fromEntries(keys.map(key=>[key,(...args)=>{try{ctx.guard();return api[key](...args);}catch(_){ctx.failed=true;stop();}}])));
    }catch(_){stop();}
   };
-  return Object.freeze({receipt,createReader:adapter('createReader'),createPublication:adapter('createPublication'),createThin:adapter('createThin'),...(standaloneModules?{createStandaloneThin:standaloneAdapter('thin'),createStandaloneReader:standaloneAdapter('reader')} :{}),createCleanup:input=>{
+  const scriptAdapter=input=>{
    try{
+    if(!standaloneModules?.scriptReader||!input||typeof input!=='object'||types.isProxy(input))stop();const options={};
+    const allowed=['path','epoch','scriptId','originalScriptId','callerEmail','callerHash','publisherHash','callerPermissionId','expiresAt','backupReceipt','control','credential','fetcher','now'];
+    for(const key of Reflect.ownKeys(Object.getOwnPropertyDescriptors(input))){const d=Object.getOwnPropertyDescriptor(input,key);if(typeof key!=='string'||!allowed.includes(key)||!d.enumerable||!Object.hasOwn(d,'value'))stop();options[key]=['control','credential','fetcher','now'].includes(key)?d.value:data(d.value);}
+    const ctx=contexts.get(options.control);if(!ctx||ctx.kind!=='script')stop();ctx.guard();const fixed=manifest.standalone.resources;
+    const pins={path:fixed.scriptReaderPath,epoch:fixed.epoch,scriptId:fixed.thinScriptId,originalScriptId:fixed.originalScriptId,callerHash:fixed.callerHash,publisherHash:fixed.publisherHash,expiresAt:fixed.expiresAt};
+    if(Object.entries(pins).some(([k,v])=>options[k]!==v)||!same(options.backupReceipt,{source:'fixed-trial-thin-empty-backup',epoch:fixed.epoch,scriptId:fixed.thinScriptId,publisherHash:fixed.publisherHash,sourceHash:fixed.thinOriginalSourceHash}))stop();
+    const backupReceipt={source:options.backupReceipt.source,epoch:options.backupReceipt.epoch,scriptId:options.backupReceipt.scriptId,publisherHash:options.backupReceipt.publisherHash,sourceHash:options.backupReceipt.sourceHash};
+    const expected=hash(JSON.stringify({mode:'standalone-script',epoch:options.epoch,scriptId:options.scriptId,originalScriptId:options.originalScriptId,callerHash:options.callerHash,publisherHash:options.publisherHash,callerPermissionId:options.callerPermissionId,expiresAt:options.expiresAt,backupReceipt}));
+    const record=path=>{dir(dirname(path));const e=JSON.parse(read(path,true,20000));if(!exact(e,['value','sha256'])||hash(JSON.stringify(e.value))!==e.sha256)stop();return e.value;};
+    const registry=join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(fixed.epoch))+'.script-reader.json'),registration=record(registry),journal=record(pins.path);
+    if(!exact(registration,['path','binding','mode','scriptId','originalScriptId'])||registration.path!==pins.path||registration.binding!==expected||registration.mode!=='standalone-script'||registration.scriptId!==pins.scriptId||registration.originalScriptId!==pins.originalScriptId||journal.binding!==expected)stop();
+    const api=standaloneModules.scriptReader({...options,control:Object.freeze({externalRead:denied,cleanup:options.control.cleanup})});
+    return Object.freeze(Object.fromEntries(['status','remove','verifyRemoved'].map(key=>[key,(...args)=>{try{ctx.guard();return api[key](...args);}catch(_){ctx.failed=true;stop();}}])));
+   }catch(_){stop();}
+  };
+  return Object.freeze({receipt,createReader:adapter('createReader'),createPublication:adapter('createPublication'),createThin:adapter('createThin'),...(standaloneModules?{createStandaloneThin:standaloneAdapter('thin'),createStandaloneReader:standaloneAdapter('reader'),...(standaloneModules.scriptReader?{createStandaloneScriptReader:scriptAdapter}:{})} :{}),createCleanup:input=>{
+   try{
+    // Trusted launcher input: capture the actual source-pinned factory result.
+    // JSON/receipts and disk markers never supply a replacement owner.
     const selected=inputOptions(input),owner=selected.owner;
-    if(!owner||typeof owner!=='object'||types.isProxy(owner)||!Object.isFrozen(owner))stop();const d=Object.getOwnPropertyDescriptor(owner,'stopAndDrain');if(!d||!Object.hasOwn(d,'value')||typeof d.value!=='function')stop();const drain=d.value;
+    if(!owner||typeof owner!=='object'||types.isProxy(owner)||!Object.isFrozen(owner))stop();const d=Object.getOwnPropertyDescriptor(owner,'stopAndDrain');if(!d||!Object.hasOwn(d,'value')||typeof d.value!=='function')stop();const drain=d.value;const scriptDescriptor=Object.getOwnPropertyDescriptor(owner,'withScriptCleanup'),scriptScope=scriptDescriptor&&Object.hasOwn(scriptDescriptor,'value')&&typeof scriptDescriptor.value==='function'?scriptDescriptor.value:null;
+    const originalDescriptor=Object.getOwnPropertyDescriptor(owner,'withOriginalCleanup'),originalScope=originalDescriptor&&Object.hasOwn(originalDescriptor,'value')&&typeof originalDescriptor.value==='function'?originalDescriptor.value:null;
     const original=data(selected.originalOptions),now=selected.now??Date.now,pause=selected.pause??delay;
     if(!exact(original,['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','decisionHash','nativeTargets'])||typeof now!=='function'||typeof pause!=='function')stop();let busy=false;
     return Object.freeze({withCleanup:async callback=>{
      if(busy||typeof callback!=='function')stop();busy=true;
      try{
+      const work=async()=>{
       check();captured(await drain.call(owner));check();const start=now();if(!integer(start))stop();await pause(60000);const end=now();if(!integer(end)||end-start<60000)stop();check();
       // Existing loader revalidates original claim/binding/checkpoint before its
       // control can construct a child. That control alone owns the original lock.
@@ -145,8 +169,20 @@ export async function loadAuthorityContinuationRecovery(input){
        }catch(_){ctx.failed=true;const p=Promise.reject(Error('TRIAL_STOPPED'));void p.catch(()=>{});return p;}}])));contexts.set(cap,ctx);
        try{const result=await callback(cap);ctx.guard();if(ctx.failed)stop();return result;}finally{ctx.active=false;}
       });
+      };
+      return await (originalScope?originalScope.call(owner,work):work());
      }catch(_){stop();}finally{busy=false;}
-    }});
+    },...(standaloneModules?.scriptReader&&scriptScope?{withScriptCleanup:async callback=>{
+     if(busy||typeof callback!=='function')stop();busy=true;
+     try{
+      check();captured(await drain.call(owner));check();const start=now();if(!integer(start))stop();await pause(60000);const end=now();if(!integer(end)||end-start<60000)stop();check();
+      return await scriptScope.call(owner,async ownerCap=>{
+       const ctx={kind:'script',active:true,failed:false,guard:()=>{try{if(!ctx.active)stop();check();}catch(_){ctx.failed=true;stop();}}};
+       const cap=Object.freeze({cleanup:(action,io)=>{try{ctx.guard();if(typeof io!=='function')stop();return ownerCap.cleanup(action,(...values)=>{ctx.guard();return io(...values);});}catch(_){ctx.failed=true;return denied();}}});contexts.set(cap,ctx);
+       try{const result=await callback(cap);ctx.guard();if(ctx.failed)stop();return result;}finally{ctx.active=false;}
+      });
+     }catch(_){stop();}finally{busy=false;}
+    }}:{})});
    }catch(_){stop();}
   }});
  }catch(_){stop();}
