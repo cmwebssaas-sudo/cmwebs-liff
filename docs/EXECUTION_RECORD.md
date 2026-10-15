@@ -5097,3 +5097,136 @@ increment to c062891b01b25c23356611b044bb71fccd58066f,retaining all prior histor
 Before any later approved release,create a new GAS immutable version at the
 original URL,retain prior serving version,deploy matchingWorker/Pages only after
 all actual gates,read back bytes/bindings/flags and preserve per-surface rollback.
+
+## 2026-10-16 — Bounded continuation cost compiler (local only)
+
+Recommended model/speed: GPT-6.1 Sol / high. The owner-approved continuation
+decision is selected explicitly, separately from the stopped original driver.
+A pure offline compiler retains the historical27 and cumulative160 cap,
+fixed96, P4, same-token G4, N24 (research8/control16), T3 and unused2. Every
+listed low-level operation is one unit; missing/unknown costs deny credential/RPC
+map eligibility. This is only a mapping condition: executionAuthorized and
+externalPrerequisitesVerified remain false. The non-refundable360000ms upper
+bound is not native runtime, available quota, or later daily-runtime acceptance.
+
+One independent review found two P2 issues: accessor-based changing input could
+produce inconsistent arithmetic, and synthetic-tabs used the wrong actor. Both
+were reproduced RED and corrected in one pass: a bounded own-data snapshot
+rejects accessors/proxies, and B:fixture-native retains the existing caller.
+There were no P1 or separate minor findings. Focused new/existing budget tests
+70/70; full root npm test2041/2041, zero fail/cancel/skip,67.323s using Node22,
+pinned actual Core and a fresh owned PostgreSQL16.14 fixture. Its teardown and
+closed listener were verified. Source snapshot (587 files before documentation
+append):2cc04e9080aa35e3f920f7d0c2b1505f619c8680b1b76603ac7a40cec73c9fb6.
+Validate72 backend/40 endpoint references, static cache and diff checks pass.
+No Apps Script function, route, schema, Worker runtime or frontend changed;
+there is no affected Apps Script test function for this offline-only increment.
+Exact-head CI is pending until push.
+
+The linked canonical journal/control, global cleanup/rate admission, pinned
+independent recovery, one-RPC driver and actual UI map remain unfinished.
+Readonly local counter verification still shows27/160, STOP, repair in-flight
+UNKNOWN. No new segment/W0, Google IO, credentials, remote mutation or fee was
+introduced. Original claim/deadline/copies and all unknown outcomes are retained.
+Formal flags off/endpoint blank; accelerated rollout T0 not started. Actual C1
+daily-runtime, C3 authority/privacy/freshness, performance, observation and device
+gates remain unaccepted. Local compiler tests do not change those gates.
+
+Deployment: none for this increment; retain the separate C3 draft PR. Rollback:
+revert the offline compiler/test addition; it cannot revive the original trial
+or erase future accounting. Any eventual continuation must first pass the
+remaining control/recovery/wiring prerequisites under the approved decision.
+
+
+## 2026-10-16 — Linked continuation control and compatibility driver (local only)
+
+Recommended model/speed: GPT-6.1 Sol / high. V2 read-performance stability work.
+The new controller adds exactly one linked segment under the original canonical
+lock and epoch. The original27, raw history, STOP/UNKNOWN, deadline and copied
+runtimes are retained. New ordinary events and original C2/I17 share cumulative
+160 and the rolling10/minute guard; two units stay unused. Original restoration
+and cleanup aliases are consumed once globally by the unchanged pinned ledger.
+W0 is durable before IO, at most six hours within one Taipei day, without scope
+reopening after finish, EOF or owner loss.
+
+A persistent Node holder retains the inherited original fd through entered IO
+and child termination. New owner stop vetoes admission immediately, publishes a
+durable marker and drains the captured actual holder. Independent recovery uses
+a separate fixed source graph and the retained owner handle; after actual drain
+and a full60s cooldown it exposes only original C2/I17 under the original lock.
+New journal corruption cannot initialize or restore ordinary authority. Recovery
+still requires the original valid claim/checkpoint, source copy and credentials;
+local callback completion is not remote rollback acceptance.
+
+The separately selected driver consumes the existing scope, checks its original
+epoch/binding, retains exact source/privacy15 and same-token identity2 before
+and after, and dispatches only one signed wrapper compatibility RPC. Its durable
+360000ms charge is never refunded and never called measured native runtime or
+quota acceptance. A returned callback or UNKNOWN response cannot finish pending
+postchecks. Source/owner faults stop admission. Bounded unknown-terminal reads
+cannot retry the RPC or turn UNKNOWN into successful compatibility. Typed Google
+ExecutionResponse envelopes retain the unique compatible:true result check.
+
+Pre-review focused composition:105/105 PASS, zero fail/cancel/skip. The coherent
+review and full-root results are recorded below. No Apps Script source,
+route, schema, Worker/frontend runtime or deployment changed, so no Apps Script
+test function is affected by this local control increment.
+
+Actual launcher, source/recovery admission pins and Google UI/adapter cost map
+remain unfinished. The offline policy or synthetic callbacks do not prove these
+prerequisites. Actual counter remains27/160/stopped/repair in-flight; no new W0,
+Google management IO, credentials, resources, fee or formal mutation occurred.
+Formal flags remain off, endpoint blank and rollout T0 not started. Real C1/C3,
+performance, accelerated observation and device acceptance gates remain open.
+
+Deployment: none; retain the existing separate C3 draft. Software rollback is a
+revert of these new local modules/tests. Eventual trial rollback must retain all
+charges/UNKNOWN and use the pinned original restoration/revocation callbacks;
+never delete markers, reset the original counter or create another segment.
+
+Independent review: one P2, no other actionable P1/P2. A torn new STOP marker
+could retain a fully drained descriptor and deadlock independent recovery. Two
+real-process regressions reproduced it before correction. The single-use owner
+now resolves/releases only after its actual entered IO and child drain; its
+receipt distinguishes ordinaryScopeClosed from stopAcknowledged. Ambiguous STOP
+bytes remain unchanged and negative, without manufacturing a successful ACK.
+Recovery requires that captured actual scope closure, the full60s cooldown and
+the original valid source/claim/checkpoint/lock; no marker grants C/I authority.
+The durable single-use epoch claim still denies every ordinary scope reopening.
+
+Post-correction coherent focused tests:107/107 PASS, zero fail/cancel/skip,21.412s. Full-root regression and validate remain pending.
+
+Full-root npm test:2148/2148 PASS, zero failure/cancellation/skip,78.869s,
+using Node22, actual pinned Core643c1b3 and a fresh owned PostgreSQL16.14 fixture.
+Teardown/closed listener and absence of fixture databases/roles were verified.
+Validate72backend/40endpoint/static-cache and staged diff checks PASS. Source
+snapshot596files before this final evidence append:
+07969d58846651b847b756f297db647913204ea88989f9d80eaab7a7e88b676d.
+The unchanged entry's compatibility path was separately inspected locally:
+18 selected top-level initializers have no calls; the wrapper delegates once,
+and compatibility returns after caller/MAC validation without nested scripts.run,
+Web App dispatch, trigger creation or external background work. Actual fixed
+publication and launcher source/recovery guard wiring remain unverified.
+
+## 2026-10-16 — bounded continuation preflight stopped
+
+The separately approved single continuation started after local control/recovery
+validation and one independent private-launcher review. A source-verification
+ordering finding was reproduced and fixed before entry. The final private-entry
+suite passed16/16 with zero failures, cancellations or skips, including a
+browser-realm compatibility regression. These are local results only.
+
+The sole caller-tab binding attempt failed without verified page/account evidence.
+Its one unit remains UNKNOWN: original27 plus continuation1 equals cumulative28
+of160. The original history is byte-identical; the new journal is stopped and
+finished, and the captured ordinary owner scope is SETTLED and closed. No RPC
+began and no360000ms RPC charge occurred. No new credential, resource, access
+grant, publication, Properties or trigger change was performed in this segment.
+The original error was sanitized; its specific cause remains UNVERIFIED.
+
+The approved stop rule prohibits rebind, repair, another segment, refund or
+changing UNKNOWN to success. This compatibility method is not accepted. The
+independent recovery checkpoint inspection is recorded separately when terminal;
+scope closure alone is not remote rollback acceptance. No formal switch or
+endpoint changed. Actual C1/C3, performance, accelerated observation and real-device
+gates remain open. Continue only independent local work under existing scope.
