@@ -3288,3 +3288,19 @@ latency/device/cutover remain. Endpoint blank/six flags off; no Google/RPC,
 credential, formal deployment/data/Properties/trigger/switch changes. Root WIP/
 private S1 preserved. Rollback undeployed composition to b424ccb, preserving
 original swap and private failed-run evidence; no formal-data rollback needed.
+
+## 2026-10-15 — Carry reviewed preparation ownership fix
+
+Recommended model/speed GPT-6.1 Sol/high. Inherited three preparation controller,
+Python ledger and regression files are byte-identical to reviewed C3 commit
+71cc636. No order-specific runtime, Apps Script, Worker or fixture changes.
+C3 affected83/83 and complete1728/1728 with actual Core/ownedPG PASS; initial
+failures retained and review findings resolved. Reuse those exact-source local
+checks and this order's previous unchanged-module evidence; new-head CI runs
+the composed order's npm regression. Do not rerun unchanged local performance
+benchmarks. Validate and diff checks required before commit.
+All prior formal/native gates remain unaccepted; actual25/160 unchanged and
+trial STOP. Accelerated-observation Draft PR272 awaits owner confirmation;
+original72h/seven-day gates still apply. No deployment, Properties, trigger,
+formal data, credential or switch change. Root WIP and C5 swap preserved.
+Rollback this carry to its parent commit; no formal release/data rollback.

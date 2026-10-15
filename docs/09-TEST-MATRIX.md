@@ -1880,3 +1880,11 @@ Full1738/1738 with ownedPG cleanup; only Worker fixture changed afterward,
 Worker initial26/31 RED→31/31 GREEN; static review0, validate72/40/static/diff
 PASS. Exact-head CI required. Actual25/160/native STOP/off/blank;900s/72h/
 seven-day/500/Taipei/device/cutover remain unaccepted, no real shadow started.
+
+## 2026-10-15 — Inherited preparation ownership verification
+
+| Evidence | Result | Boundary |
+| --- | --- | --- |
+| Inherited controller/ledger/test | Exact C3 71cc636 bytes; related83/83 and complete1728/1728 retained | Original child lifetime, strict finish and durable-stop ownership only; no native acceptance |
+| Order composition | Own runtime and fixtures unchanged; validate/diff required; exact-head CI pending | No repeated unchanged local Worker benchmark |
+| Real gates |25/160 unchanged, trial STOP; all formal gates unaccepted | PR272 acceleration still pending, original observation gates retained |
