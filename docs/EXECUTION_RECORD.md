@@ -4595,6 +4595,54 @@ Root WIP/C5 swap/private S1 boundary preserved. Push to Draft PR268 and exact CI
 readback are the next release-preparation checks; no merge/deployment acceptance
 is inferred from this local result.
 
+## C3 approved single-incident binding repair — 2026-10-16
+
+Recommended GPT-6.1 Sol/high for the canonical stop/debit boundary. The owner
+approved the exact READ-PREFLIGHT-REPAIR-DECISION proposal; its original text
+and hash are retained. The event-specific entry keeps the same claimed ledger,
+epoch, original deadline/day, P UNKNOWN and STOP history, and permits only one
+predebited N getTab. Fresh initial tool state, settled same-holder receipt and
+matching actor/reference are mandatory before ordinary preparation resumes.
+
+Fresh independent review found one P1: the frozen original stop helper only
+ACKs an existing marker. A mandatory in-memory owner-stop bridge now writes
+the new canonical veto first, retains the original holder in its closure, and
+drains both captured scopes. All owner entrypoints must use that bridge; raw
+saved original methods cannot intercept new requests. The final capture-race
+regression and true frozen-controller bytes are covered by43 passing focused
+tests; the public byte-pinned fixtures require no Git history/network in CI.
+Prior transport-timeout and capture-race failures are retained, not erased.
+
+Final frozen full suite:2003/2003 PASS,69.766s,zero fail/cancel/skip, actual
+Platform Core and an owned disposable PostgreSQL16.14 cluster; cluster stopped
+and original Core index/HEAD preserved. Validate72backend/40endpoint/cache
+and diff check PASS. No Apps Script source change. Remote CI and the actual
+one-time repair are still pending at this source snapshot; local tests do not
+prove Google identity/quota, trial RPC,900s/day or latency acceptance.
+
+Rollback keeps the original pinned copy/history and independent globally-once
+C2/I17 cleanup. Never reset/refund/reseed/reopen the claim, erase STOP, or run an
+empty callback as remote rollback proof. No remote mutation, credentials,
+formal data, deployment, flag cutover or observation T0 in this increment.
+
+### Final source CI and one-time execution outcome
+
+Reviewed source872067f passed CI38784461317:rental1998/1998,Worker26/26,
+and both deployment dry-runs. Terminal outputs/annotations and footers read;
+rental log is truncated,Worker log complete. Local full2003/2003 is separate
+actual Core/disposable-PG evidence. No further source change after that check.
+
+The owner-approved single repair was attempted once. Its canonical predebit
+raised spent26 to27/160,keeping original P and new N UNKNOWN. The tool did not
+return verifiable caller/page state; completion was not asserted. The original
+expiry/day/claim remain unchanged. State is stopped,repair in-flight/UNKNOWN,
+new durable owner veto exists,and both retained holders acknowledged drain.
+There is no second repair/rebind or ordinary continuation. No publisher bind,
+refresh,trial RPC,remote setting/source/data change,formal deployment or
+observation T0 occurred. Preserve both copies and original STOP/history;
+no no-op callback was executed or claimed as remote rollback. The exact failed
+underlying tool cause remains UNKNOWN rather than attributed to login/Google.
+
 ## C4 inherited C1 deadline guard — 2026-10-16
 
 Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
@@ -4652,6 +4700,28 @@ integration; original counter/history/private S1/root/C5 swap untouched.
 Formal flags remain inherited off; no observation T0. Rollback this unclaimed,
 undeployed inheritance to918b4fbe99112f2099d84703f2ee2c61318f23e3;
 retain any independently established original claim/pins/history/cleanup.
+
+## C4 final C3 stopped-trial inheritance — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Normal merge of final C3 6bb2a62 retains all
+nine changed non-document files,including its three original-controller
+fixtures,byte-for-byte. Existing C4 routing/fallback/write protection and
+all other runtime source remain unchanged. Complete labelled historical
+records survive both append-conflict resolutions.
+
+Fresh validate72backend/40endpoint/cache and diff checks PASS. No large local
+suite or benchmark rerun; reviewed C3 source872067f full2003/2003 and
+CI38784461317(rental1998,Worker26,two dry-runs) remain attributable upstream
+evidence only. Exact-current-head CI/footers will be read separately.
+
+The actual trial remains27/160 STOPPED,repair in-flight/UNKNOWN,with a new
+owner veto and both retained holders' drain acknowledgements. No verifiable
+caller/page state,no second bind/repair/ordinary continuation or trial RPC;
+original claim/pins/day/deadline/UNKNOWN and cleanup authority stay retained.
+No Google/counter/realm/credential/formal operation in this stack integration.
+Performance and real acceptance remain unmet;endpoint blank,allflags off and
+T0 NOT_STARTED. Rollback this undeployed inheritance to5ad3ea5 while retaining
+original stopped trial history and matching pinned cleanup;never reset/replay.
 
 ## C5 inherited C1 deadline guard — 2026-10-16
 
@@ -4711,6 +4781,29 @@ flag change. Root/private S1/original counter/history untouched. Existing C5
 swap bytes,size,mtime remain exact. Rollback this undeployed inheritance to
 c526a4ec80685a696e6a4c5583c10c3cc39d2b3e; retain any original claimed
 pins/history/UNKNOWN and matching cleanup, never reset or replay a purpose.
+
+## C5 final C3 stopped-trial inheritance — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Normal merge of the final C4 parent inherits
+C3 6bb2a62's nine source/test/fixture paths byte-for-byte,including its three
+frozen original-controller fixtures. Existing C5 authenticated shadow,receipt,
+clock/privacy and rate-limit behavior plus every other runtime path are
+unchanged. Complete historical sections survive both append-only conflicts.
+
+Fresh validate72backend/40endpoint/cache and diff checks PASS. No large local
+suite or benchmark rerun. C3 source872067f full2003/2003 with PG teardown and
+CI38784461317(rental1998/Worker26/two dry-runs) are upstream evidence only;
+this branch's current-head CI/footers remain a separate verification.
+
+Actual trial27/160 is STOPPED,repair in-flight/UNKNOWN,with no verifiable
+caller/page tool state. The new owner veto and both holders' drain ACKs do not
+prove remote execution/rollback completion. No second bind/repair/ordinary
+continuation or trial RPC;original claim/pins/expiry/day/UNKNOWN and cleanup
+authority remain. No Google/counter/realm/credential/formal-data operation in
+this integration. Endpoint blank,formal flags off,T0 NOT_STARTED and actual
+performance/privacy/freshness/device acceptance still unmet. C5 swap bytes,
+size and mtime retained. Rollback this undeployed inheritance toec78b65 while
+preserving original stopped-trial history and matching pinned cleanup.
 
 ## C6 inherited C1 deadline guard — 2026-10-16
 
@@ -4866,3 +4959,33 @@ flags stay off and T0 NOT_STARTED.
 The reviewed freshness source changes statement count only;full/Worker
 integration and exact-current-head CI remain separate checks. No deployment
 or cutover is claimed. Preserve all private evidence and original STOP history.
+
+## C6 final C3 stopped-trial stack integration — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. After saving the complete retained diagnostic
+record in3b09e8f,normal-merged final C5/C3 ancestry into this isolated C6 branch.
+C3 6bb2a62's nine new source/test/fixture paths,including three frozen original
+controller files,are byte-exact. The four reviewed d88086d freshness/test/
+comparison/frontend pins remain unchanged;all other runtime paths are preserved.
+All original documentation sections survive both append-only conflicts.
+
+Fresh validate72backend/40endpoint/cache/comparison178 and diff checks PASS.
+Comparison remains read-ae3a60f8ba10927297da320919eb4bc0138b912bca7fd636081a765dfb41cbed;
+release asset,blank endpoint and all formal flags are unchanged. No large
+local suite or benchmark rerun. C3 full2003/2003 and CI38784461317 remain
+upstream evidence;freshness affected38/38 and independent3/3 remain attributable
+prior candidate checks. Exact-current-head CI/footers await separate readback.
+
+Retained authorized-path diagnostic:7 exact full-body parity checks plus700
+HTTP200/zero-error timed responses,707 per-request signed-authority/unique-nonce/
+primary-D1 checks,and139 statements with14 SDK calls. Six p95 values still
+exceed50ms;all distributions/outliers and both cleanup histories are retained.
+No performance improvement,causal fix or production acceptance is claimed.
+
+The real trial remains27/160 STOPPED,repair in-flight/UNKNOWN,with no verifiable
+caller/page tool state,new owner veto and both retained holders' drain ACKs.
+No second repair/bind,ordinary continuation,refresh or RPC;original claim,
+pins,day/deadline,UNKNOWN and matching cleanup are retained. No Google/counter/
+realm/credential/formal-data operation or T0 in this integration. Keep formal
+flags off. Rollback this undeployed final merge to3b09e8f without altering the
+original stopped trial or replaying spent purposes;no remote rollback inferred.
