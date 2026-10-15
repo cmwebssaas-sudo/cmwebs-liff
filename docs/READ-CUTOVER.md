@@ -250,3 +250,13 @@ The runtime change requires a fresh real epoch; none has started. All six flags
 remain off, endpoint blank, and no formal release/Property/trigger/data change
 has occurred. Rollback retains the prior candidate e28d39b and comparison/cache
 above. All real deployment/day/device gates remain pending.
+
+
+2026-10-15 current-stack composition: C5 8801187 merged into C6 96240d3;
+packed fields retained alongside C3 staged80-statement batching. Calls-cap
+RED1→GREEN3; full1791/1791 with Core/ownedPG cleanup, Worker36/36/bundle PASS;
+static review0/validate72/40/cache/comparison178/diff PASS. Local500 fixture
+seven100-sample p9511.781–23.237ms<50; not real identity/authority/remote/Taipei/
+device acceptance. New comparison read-bce058f378ee92a21559b596ec408c183496a6ec2009def7b508daa333666870.
+Exact-head CI pending; actual25/160/native STOP/off/blank and all real gates
+remain unaccepted; fresh72h/seven-day NOT_STARTED. Only docs after tests/review.

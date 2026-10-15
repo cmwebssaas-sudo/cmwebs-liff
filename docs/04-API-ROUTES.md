@@ -1341,3 +1341,13 @@ advanced asset cache tag. `READ_SHADOW_RELEASE` must match the comparison manife
 stale identity closes shadow reads/reports. Pure flag/cache publication preserves
 unchanged comparison identity/epoch; substantive included source/config changes
 invalidate it. No financial API response or original GAS URL changes.
+
+# Synthetic Execution API trial (not a formal dispatcher route)
+
+The C3 feasibility candidate's separate thin API executable and fixed library
+use `authorizeTrial(request, operation)` with exactly two positional arguments.
+`compatibility` returns a fixed boolean after actual caller/project and canonical
+MAC validation, before authority IO. `authority` preserves the original signed
+`read_replica_authorize` result through a fixed readonly grid facade. Neither is
+registered in the formal Code dispatcher or enabled frontend environment.
+See `READ-EXECUTION-TRIAL.md` for scope, bounded execution and rollback gates.

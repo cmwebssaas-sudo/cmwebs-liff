@@ -354,3 +354,40 @@ zero triggers. Both canonical modules, manifest/scopes, Properties, Cache,
 source rows and formal flags remained unchanged. No new credential/scope,
 deployment or corrected-source72-hour run was created. The900s/day and actual
 72-hour gates remain NOT_ACCEPTED/NOT_STARTED respectively.
+
+
+## 2026-10-14 — C1 local UTF-8 batch sizing optimization
+
+Recommended GPT-6.1 Sol/high for existing synchronization correctness; no new
+architecture or acceptance scope. Snapshot batching previously constructed one
+native Blob per projected row only to count serialized JSON bytes. The sender
+now counts UTF-8 locally; a 501-row snapshot requires zero sizing Blob calls.
+The 500-row/900000-byte budgets, signed payloads, whitelisted projections,
+source ordering and dirty retry semantics remain unchanged. This removes
+redundant service calls; native latency savings have not been measured and it
+does not establish a fix for the earlier 335s idle Cache stall.
+
+Affected module VM17/17 and independent review17/17 PASS, no P1/P2 findings.
+Unicode/escaped malformed input, exact cumulative byte boundary, maximum row,
+signing and pre-HTTP rejection covered. The optional additional asymmetric
+900001-byte fixture is deferred; existing 900000/900002 cases remain. One
+required full regression857/857 PASS, zero fail/cancel/skip, Node22.23.3 and
+pinned Core with disposable local PG16.14; database/role cleanup, stopped PG
+and closed listener verified. Source snapshot SHA256:
+`8b0f4fc535a659f4ac0c135d3e72acdf31976dcc5e9b9c5557309420a40b60bf`.
+`npm run validate` PASS71 backend/40 endpoint references and static release
+checks. No additional unchanged target/review/full reruns were performed.
+
+The temporary synthetic editor-only UTF-8 comparison was cancelled before
+native execution following the request to reduce diagnostic rounds. Native
+comparison is UNVERIFIED, not a pass. Exact original4 editor files, manifest
+scopes and deployment inventory were restored14:31:51 Taipei; subsequent
+native unfiltered trigger count0. No new version, credential, Property,
+Cache or source data write; no formal deployment or flag changes. Existing
+failed914/2892.886s observation stays NOT_ACCEPTED; fresh corrected-source72h
+NOT_STARTED. All original actual-runtime, shadow and device gates remain.
+
+Rollback: retain prior source commit; revert this local byte-sizing change if
+native validation fails before deploying corrected synthetic source. Existing
+serving deployment and authoritative data retained; read flags remain off.
+Root WIP preserved. Temporary editor restoration is already complete.

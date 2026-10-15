@@ -69,11 +69,22 @@ test('server-resolved D1 scope preserves all six canonical route results',async(
     const gas=originalGas(input);
     const inspected=await (await mf.dispatchFetch('https://local.test/inspect')).json();
     assert.equal(inspected.access.workspace.workspace_id,access.workspace.workspace_id,JSON.stringify(inspected));
+    const observations={};
     for(const item of cases) {
+      const start=performance.now();
       const response=await mf.dispatchFetch('https://local.test'+paths[item.route]);
       assert.equal(response.status,200,item.route+': '+JSON.stringify(await response.clone().json()));
       assert.deepEqual(await response.json(),plain(gas[item.fn](...item.args)),item.route);
+      assert.ok(response.headers.has('x-cmwebs-test-scoped-d1'),'actual scoped-loader observation');
+      const d1=JSON.parse(response.headers.get('x-cmwebs-test-scoped-d1'));
+      assert.deepEqual(Object.keys(d1).sort(),['batch_calls','batch_sizes','primary_sessions','single_calls','statements','summed_call_ms']);
+      assert(Array.isArray(d1.batch_sizes)&&d1.batch_sizes.every(size=>Number.isSafeInteger(size)&&size>0&&size<=80));
+      for(const name of ['batch_calls','primary_sessions','single_calls','statements'])assert(Number.isSafeInteger(d1[name])&&d1[name]>=0);
+      assert.equal(d1.primary_sessions,1);assert(d1.statements>0);assert(Number.isFinite(d1.summed_call_ms)&&d1.summed_call_ms>=0);
+      assert(d1.single_calls+d1.batch_calls<=12,'scoped reads must not pay one SDK round trip per statement');
+      observations[item.route]={...d1,read_validation_ms:Number((performance.now()-start).toFixed(3))};
     }
+    console.log('C3_SCOPED_D1_OBSERVATION '+JSON.stringify(observations));
   } finally {await mf.dispose();}
 });
 test('500 owned rooms preserve canonical HTTP reads through authenticated primary-D1 scope',async()=>{
@@ -162,6 +173,53 @@ test('explicit foreign Workspace never enters D1 dataset through shared landlord
     await db.prepare('UPDATE V2_workspace_members SET member_status = ? WHERE row_key = ?').bind(JSON.stringify('suspended'),access.membership.membership_id).run();
     const denied=await (await mf.dispatchFetch('https://local.test/inspect')).json();
     assert.equal(denied.code,'WORKSPACE_REQUIRED');
+  } finally {await mf.dispose();}
+});
+
+test('batched scoped reads preserve source order and deduplication across multiple key chunks',async()=>{
+  const input=richDataset(),expectedIds=[];
+  // Cross both 80-key chunks and an 80-statement batch; legacy children
+  // qualify only through the already loaded parent IDs.
+  for(let index=241;index>0;index--) {
+    const suffix=String(index).padStart(3,'0');expectedIds.push(suffix);
+    input.V2_properties.push({...input.V2_properties[0],property_id:'SYNTHETIC_WIDE_P'+suffix});
+    input.V2_rooms.push({...input.V2_rooms[0],room_id:'SYNTHETIC_WIDE_R'+suffix,property_id:'SYNTHETIC_WIDE_P'+suffix,
+      workspace_id:'',landlord_id:'',landlord_line_user_id:'',current_contract_id:'',current_tenant_id:'',room_status:'vacant'});
+    input.V2_tenants.push({...input.V2_tenants[0],tenant_id:'SYNTHETIC_WIDE_T'+suffix,user_id:'SYNTHETIC_WIDE_U'+suffix,
+      tenant_user_id:'SYNTHETIC_WIDE_U'+suffix,line_user_id:'SYNTHETIC_WIDE_LINE'+suffix,tenant_line_user_id:'SYNTHETIC_WIDE_LINE'+suffix,
+      property_id:'SYNTHETIC_WIDE_P'+suffix,room_id:'SYNTHETIC_WIDE_R'+suffix,current_contract_id:''});
+    input.V2_users.push({...input.V2_users[0],user_id:'SYNTHETIC_WIDE_U'+suffix,line_user_id:'SYNTHETIC_WIDE_LINE'+suffix});
+  }
+  const {mf}=await setup(input);
+  try {
+    const response=await mf.dispatchFetch('https://local.test/inspect');assert.equal(response.status,200);
+    const sizes=JSON.parse(response.headers.get('x-cmwebs-test-scoped-d1')).batch_sizes;
+    assert(sizes.every(size=>size>0&&size<=80)&&sizes.some((size,index)=>size===80&&sizes[index+1]>0&&sizes[index+1]<80),
+      'exercise a full 80-statement batch and its nonempty tail: '+JSON.stringify(sizes));
+    console.log('C3_SCOPED_D1_BATCH_BOUNDARY '+JSON.stringify(sizes));
+    const inspected=await response.json();assert.ok(inspected.dataset,JSON.stringify(inspected));
+    for(const [table,key,prefix] of [['V2_properties','property_id','SYNTHETIC_WIDE_P'],['V2_rooms','room_id','SYNTHETIC_WIDE_R'],
+      ['V2_tenants','tenant_id','SYNTHETIC_WIDE_T'],['V2_users','user_id','SYNTHETIC_WIDE_U']]) {
+      assert.deepEqual(inspected.dataset[table].filter(row=>row[key].startsWith(prefix)).map(row=>row[key]),expectedIds.map(id=>prefix+id),table);
+    }
+    assert.deepEqual(inspected.dataset.V2_landlord_tenant_list_view.map(row=>row.tenant_id),['SYNTHETIC_T1'],'retain rows from the batch tail');
+    const roomResponse=await mf.dispatchFetch('https://local.test'+paths.rooms);
+    assert.equal(roomResponse.status,200);
+    assert.deepEqual(await roomResponse.json(),plain(originalGas(input).getLandlordRoomCenterInitByLineUid_('SYNTHETIC_LINE1',true)));
+  } finally {await mf.dispose();}
+});
+
+test('failed or undecodable scoped batch returns no partial operational response',async()=>{
+  const {mf,db}=await setup(richDataset());
+  try {
+    await db.prepare('UPDATE V2_bills SET rent_amount=? WHERE row_key=?').bind('SYNTHETIC_BROKEN_JSON','SYNTHETIC_B1').run();
+    const malformed=await mf.dispatchFetch('https://local.test/v1/arrears');
+    assert.equal(malformed.status,503);
+    const body=await malformed.json();assert.equal(body.success,false);assert.equal(body.code,'READ_REPLICA_UNAVAILABLE');
+    assert.equal(body.data,null);assert.doesNotMatch(JSON.stringify(body),/SYNTHETIC_BROKEN_JSON|SYNTHETIC_B1|stack/);
+    await db.prepare('DROP TABLE V2_bills').run();
+    const failed=await mf.dispatchFetch('https://local.test/v1/arrears');
+    assert.equal(failed.status,503);assert.deepEqual(await failed.json(),body);
   } finally {await mf.dispose();}
 });
 

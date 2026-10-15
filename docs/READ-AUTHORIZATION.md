@@ -460,3 +460,47 @@ unchanged; prior full-suite result remains933 pass/one missing Core-worktree
 failure/four fixture skips. Strict latency NOT_ACCEPTED, actual corrected72h,
 seven-day shadow,500-room,D1,real LINE/device and authenticated user-flow
 acceptance remain incomplete.
+
+## Scoped read cost evidence
+
+The seven existing synthetic canonical route requests now observe the actual
+server-resolved access/data loader rather than substituting the C2 whole-table
+batch. Baseline uses63 serial SDK single calls/statements per route, one
+first-primary session, no batches. Numeric test-only headers expose attempted
+call/statement counts and summed await wall time, never SQL/row values. Original
+result parity, request count and strict100-sample fixture benchmark are retained.
+
+These seven single requests omit full HTTP replica/session/provider and GAS
+authority costs; read_validation_ms also includes existing test assertions.
+They are neither p95 nor production speed proof. Batching may be investigated
+next while keeping identical bound SQL, result ordering, scopes and fail-closed
+checks. Original authorization/performance and all real gates remain unchanged.
+
+## 2026-10-15 — Preserve scope while batching dataset reads
+
+The scoped loader retains sequential authorization and first-primary sessions.
+After access, each dependency stage is awaited: properties→rooms→contracts,
+then independent operational tables and referenced users. Bound SELECT text,
+80-key chunks, foreign-Workspace/foreign-parent exclusions, result types,
+last-wins/source ordering and10001-row sentinel remain. Known-input statements
+share bounded80-statement SDK batches; exact count/array/success and decode
+validation fail closed. No client identity/scope, retry or shared cache is added.
+
+Rich fixture63 statements now require12 SDK calls instead of63. The241-parent
+case actually splits80+8 and preserves tail rows and GAS parity. Numeric batch
+sizes are test-only. Capacity/memory, full authenticated HTTP latency and real
+Google/900s/72h/seven-day/device gates remain separate and unaccepted. Rollback
+to5ea8c96 restores the serial source; this change is not formally deployed.
+
+## 2026-10-15 — Child stdin failure is a local protocol failure
+
+Consume stdin error events in scoped preparation/runtime and stop requests.
+Reject queued/future protocol operations with TRIAL_STOPPED; a stream error
+cannot mark the child terminal, charge/retry an action or authorize cleanup.
+Keep entered-IO drain and actual child finalization. Failed stop input cannot
+acknowledge a durable stop. Two real-child fault regressions and full1720/1720
+pass; no actual Google trial or formal setting changed.
+
+This does not prove OS-flock continuity across Python EOF/death while external
+IO survives, remote execution termination or overall rollback. Actual admission
+remains stopped pending the broader phase/holder, native160 and original gates.

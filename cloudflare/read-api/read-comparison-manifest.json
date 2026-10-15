@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-c0ff511e8f71a5736d84d9767e010ee00cd5a59cb0f0ae12a068039318f22f54",
+  "comparison_version": "read-bce058f378ee92a21559b596ec408c183496a6ec2009def7b508daa333666870",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -41,7 +41,7 @@
     "apps-script/V2_RC1_SAFE_MIGRATION.js": "123b184bb860b747fe445d2f7d7e886c5cab461338a4f06b508c2a21d59764c5",
     "apps-script/V2_READ_AUTHORIZATION.js": "09f64f99c2d79868addc84af93401ff38d8a423a45db8e5240e48b94a470496d",
     "apps-script/V2_READ_REPLICA_SCHEMA.js": "ff51c90b91c2b6d9b52c089f2d24b0710a948cb42b729470454bf49ec0fea918",
-    "apps-script/V2_READ_REPLICA_SYNC.js": "bee8457eaeb2bae7f6e966d836d1fe0a6c55285f5c6c7db9de6df8d83136d2e3",
+    "apps-script/V2_READ_REPLICA_SYNC.js": "d3cde15a58ead9ea039a095b4e1960bc5e3f639cb2619339fd3c7a36e9d87cd1",
     "apps-script/V2_REPAIR_DISPATCH.js": "568d484b590936f9ba968820932a97ad7c08e7984601f81d8b66b193699272a6",
     "apps-script/V2_REPAIR_TICKETS.js": "10dbe8fa3cf9de3c608f7e2f51f6f1762f80f0c13ee54b1ffcc77368fe31eabd",
     "apps-script/V2_REPORTING_DASHBOARD.js": "16aae6363a814011906f564cd3627a0f4a07dc567f044a15e6118a14ae6e362d",
@@ -103,7 +103,7 @@
     "cloudflare/read-api/src/read-access.js": "2db3ede7d48ad7f75ec996ed1dae2f483aeb93105182bb705a83da8e1ee38d56",
     "cloudflare/read-api/src/read-authority.js": "1e66a5dcbe9ca3a54c30586efafdc9d5d1024881f338e79fbf370bb71456abdd",
     "cloudflare/read-api/src/read-calculator.js": "d4983e75f6231ef821c7df7ffda1360f7965af192c1d2e42ec2cbbb57164e306",
-    "cloudflare/read-api/src/read-dataset.js": "3edc944c836cc399d03ffdceb867db47e3f81989d57d7e520a87d56f87b00985",
+    "cloudflare/read-api/src/read-dataset.js": "fae6961c2b991e7f42d65b5fb389fec6dfc11f987c2a9275f6e1280610317d17",
     "cloudflare/read-api/src/read-http.js": "c19cdc35b47367610ea882626fc721e7247e1c8e54db1d878e3468019062c8fc",
     "cloudflare/read-api/src/read-identity.js": "33bbbb4ed2d6cc88c1c118d35da3a77581f8890c067843b059786c45093211ac",
     "cloudflare/read-api/src/read-routes.js": "f059f0b109927fcceb4f2eee683ad77083a3bb5ef8f9c97183529e78596e7b1e",
