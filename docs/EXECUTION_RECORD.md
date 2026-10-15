@@ -3814,3 +3814,26 @@ The unchanged entry's compatibility path was separately inspected locally:
 and compatibility returns after caller/MAC validation without nested scripts.run,
 Web App dispatch, trigger creation or external background work. Actual fixed
 publication and launcher source/recovery guard wiring remain unverified.
+
+## 2026-10-16 — bounded continuation preflight stopped
+
+The separately approved single continuation started after local control/recovery
+validation and one independent private-launcher review. A source-verification
+ordering finding was reproduced and fixed before entry. The final private-entry
+suite passed16/16 with zero failures, cancellations or skips, including a
+browser-realm compatibility regression. These are local results only.
+
+The sole caller-tab binding attempt failed without verified page/account evidence.
+Its one unit remains UNKNOWN: original27 plus continuation1 equals cumulative28
+of160. The original history is byte-identical; the new journal is stopped and
+finished, and the captured ordinary owner scope is SETTLED and closed. No RPC
+began and no360000ms RPC charge occurred. No new credential, resource, access
+grant, publication, Properties or trigger change was performed in this segment.
+The original error was sanitized; its specific cause remains UNVERIFIED.
+
+The approved stop rule prohibits rebind, repair, another segment, refund or
+changing UNKNOWN to success. This compatibility method is not accepted. The
+independent recovery checkpoint inspection is recorded separately when terminal;
+scope closure alone is not remote rollback acceptance. No formal switch or
+endpoint changed. Actual C1/C3, performance, accelerated observation and real-device
+gates remain open. Continue only independent local work under existing scope.

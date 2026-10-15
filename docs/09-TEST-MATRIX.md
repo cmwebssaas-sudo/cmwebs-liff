@@ -2261,3 +2261,12 @@ The unchanged entry's compatibility path was separately inspected locally:
 and compatibility returns after caller/MAC validation without nested scripts.run,
 Web App dispatch, trigger creation or external background work. Actual fixed
 publication and launcher source/recovery guard wiring remain unverified.
+### Bounded continuation actual preflight (2026-10-16)
+
+- Private launcher16/16 local tests PASS, zero failures/cancellations/skips;
+  source-before-import and browser-realm regressions reproduced before fixes.
+- Actual single caller binding: UNKNOWN/STOP; cumulative28/160, no RPC or
+  resource/configuration mutation. Original27 and both old UNKNOWN events retained.
+- Captured owner drained/closed; no rebind/new segment or compatibility acceptance.
+- Recovery checkpoint inspection pending terminal evidence; real upstream gates
+  remain open and all formal read-path switches stay off.
