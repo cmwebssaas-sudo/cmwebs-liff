@@ -1,7 +1,7 @@
 // Local preparation only. Trusted orchestration pins IO and actual Google gates.
 // No counter mutation, child, account, credential or trial RPC at construction.
 import {spawn} from 'node:child_process';
-import {SINGLE_WRAPPER_TRIAL_DECISION_HASH} from './read-authority-trial-budget-plan.mjs';
+import {getAuthorityTrialPolicy} from './read-authority-trial-budget-plan.mjs';
 import {resolve,dirname} from 'node:path';
 import {userInfo} from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -16,7 +16,7 @@ export function createAuthorityPreparationControl(input){
   if(!only(input,['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now','pause','decisionHash'],['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt']))stop();
   const {epoch,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,now=Date.now,pause=delay}=input;
   const policy=Object.hasOwn(input,'decisionHash')?Object.freeze({decisionHash:input.decisionHash}):Object.freeze({});
-  if('decisionHash' in policy&&(policy.decisionHash!==SINGLE_WRAPPER_TRIAL_DECISION_HASH||importedReads!==25))stop();
+  if('decisionHash' in policy){getAuthorityTrialPolicy(policy.decisionHash);if(importedReads!==25)stop();}
   if(typeof input.path!=='string'||typeof epoch!=='string'||!/^[-A-Za-z0-9_]{20,200}$/.test(epoch)||![approvalHash,proposalHash,legacySha256].every(digest)||!integer(importedReads)||importedReads<0||importedReads>141||!integer(expiresAt)||[now,pause].some(f=>typeof f!=='function'))stop();
   const path=resolve(input.path),binding=hash(JSON.stringify({path,epoch,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,...policy}));let busy=false,localStop=false,currentOwned=null,scopeSerial=0;
   const stopRequested=()=>{

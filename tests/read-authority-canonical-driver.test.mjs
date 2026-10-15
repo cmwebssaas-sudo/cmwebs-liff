@@ -16,24 +16,33 @@ import {buildAuthorityTrialArtifacts} from '../scripts/build-read-authority-tria
 import {SINGLE_WRAPPER_TRIAL_DECISION_HASH as decisionHash,SINGLE_WRAPPER_TRIAL_OPERATIONS as fixedOperations} from '../scripts/read-authority-trial-budget-plan.mjs';
 const releaseAliases=fixedOperations.F.filter(v=>v.startsWith('wrapper-before.')).map(v=>v.slice('wrapper-before.'.length));
 const sourceAliases=['original-project','original-editor','original-versions','original-deployments','library-content','thin-content','thin-deployments'];
+const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72';
 
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z');
-function setup({strict=true}={}){
+function setup({strict=true,policy=decisionHash}={}){
  const dir=mkdtempSync(join(tmpdir(),'cmwebs-canonical-driver-'));chmodSync(dir,0o700);const path=join(dir,'budget.json');let time=clock,total=0,last;
  const epoch='SYNTHETIC_CANONICAL_DRIVER_'+randomUUID(),expected={deploymentId:'SYNTHETIC_DEPLOYMENT_ID',thinScriptId:'SYNTHETIC_THIN_SCRIPT',libraryId:'SYNTHETIC_LIBRARY_SCRIPT',libraryVersion:7,librarySourceHash:'a'.repeat(64),thinSourceHash:'a'.repeat(64),libraryManifestHash:'a'.repeat(64),thinManifestHash:'a'.repeat(64),originalEditorHash:'a'.repeat(64),originalDeploymentsHash:'a'.repeat(64),originalCloudProject:'SYNTHETIC_DEFAULT',trialEpoch:epoch,syntheticSheetId:'SYNTHETIC_UNBOUND_SHEET',callerHash:hash('caller@example.invalid'),publisherHash:hash('publisher@example.invalid'),oauthClientHash:'d'.repeat(64),newCloudProject:'SYNTHETIC_NEW_PROJECT',sheetContractHash:'e'.repeat(64)};
  const raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(path,raw,{mode:0o600});
- const controlOptions={...(strict?{decisionHash}:{}),path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;}};
+ const controlOptions={...(strict?{decisionHash:policy}:{}),path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;}};
  const control=createAuthorityPreparationControl(controlOptions),calls={release:0,native:0,rpc:0,credential:0,signer:0};
  const release=()=>({...expected,scopes:[...trial.AUTHORITY_TRIAL_SCOPES],developmentMode:false,executionAccess:'ANYONE',oauthStatus:'TESTING',testingUsers:1,callerSheetRole:'reader',callerLibraryRole:'none',callerPropertiesMatch:true,libraryPropertiesMatch:true,originalTriggers:0,retainedVersions:[1,2,3,4,5,6],originalEditorRestored:true});
  const native=()=>({source:'google-native-ui',coverage:'caller-and-publisher-all-projects',accountHashes:[expected.callerHash,expected.publisherHash],trialScriptIds:[expected.libraryId,expected.thinScriptId],accountUsage:[expected.callerHash,expected.publisherHash].map(accountHash=>({accountHash,accountType:'consumer',windowStartMs:time-86400000,windowEndMs:time,allProjectRuntimeMs:total,triggerRuntimeMs:0,complete:true})),observedAt:time,day:'2026-10-14',complete:true,active:0,totalMs:total,execution:last});
  const options={expected,expiresAt:controlOptions.expiresAt,now:()=>time,control,readRelease:async cap=>{calls.release++;for(const alias of releaseAliases)await cap.externalRead(async()=>{},alias);return release();},readNative:async(phase,cap)=>{calls.native++;for(const actor of ['caller','publisher'])for(const category of ['pages','identityReads','quotaReads'])await cap.externalRead(async()=>{},{actor,category});if(phase==='after'){time=Math.max(time,last.endMs);total+=last.durationMs;}return native();},credential:()=>{calls.credential++;return {accessToken:'SYNTHETIC_SECRET_NEVER_PERSIST',scopes:[...trial.AUTHORITY_TRIAL_SCOPES],expiresAt:clock+3600000,refreshTokenPresent:false,callerHash:expected.callerHash,oauthClientHash:expected.oauthClientHash};},transport:async call=>{calls.rpc++;last={status:'COMPLETED',function:call.body.function,deploymentId:expected.deploymentId,startMs:time,endMs:time+100,durationMs:100};return {done:true,response:{result:{compatible:true}}};}};
  options.signRequest=()=>{calls.signer++;return {action:'read_replica_authorize',nonce:randomUUID(),payload:JSON.stringify({protocol:'session',credential:'SYNTHETIC_SESSION_NEVER_PERSIST',credential_digest:hash('session:SYNTHETIC_SESSION_NEVER_PERSIST'),route:'/v1/arrears'}),signature:'f'.repeat(64),timestamp:time};};
+ if(policy!==decisionHash)options.decisionHash=policy;
  return {path,options,control,controlOptions,calls,release,native,get:()=>JSON.parse(readFileSync(path)),now:()=>time,setNow:v=>{time=v;},setTotal:v=>{total=v;}};
 }
-async function prepare(s,binding=trial.canonicalAuthorityTrialBinding(s.options.expected)){
- await s.control.withPreparation(async cap=>{await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:27});});
+async function prepare(s,binding=trial.canonicalAuthorityTrialBinding(s.options.expected,s.controlOptions.decisionHash)){
+ await s.control.withPreparation(async cap=>{if(s.controlOptions.decisionHash===credentialDecision)for(const name of ['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'])await cap.externalRead(async()=>{},'P:'+name);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:s.controlOptions.decisionHash===credentialDecision?31:27});});
 }
 function driver(s){assert.equal(typeof trial.createCanonicalAuthorityTrialDriver,'function');return trial.createCanonicalAuthorityTrialDriver(s.options);}
+test('credential decision is part of canonical runtime binding and native capability',async()=>{
+ const s=setup({policy:credentialDecision});assert.notEqual(trial.canonicalAuthorityTrialBinding(s.options.expected),trial.canonicalAuthorityTrialBinding(s.options.expected,credentialDecision));await prepare(s);
+ const native=s.options.readNative;s.options.readNative=async(phase,cap)=>{assert.equal(cap.decisionHash,credentialDecision);return native(phase,cap);};assert.deepEqual(await driver(s).run('wrapper'),{compatible:true});assert.equal(s.get().spent,74);assert.equal(s.get().preparation.decisionHash,credentialDecision);assert.equal(s.calls.rpc,1);
+});
+test('a driver cannot downgrade the selected credential runtime decision',async()=>{
+ const s=setup({policy:credentialDecision});await prepare(s);delete s.options.decisionHash;await assert.rejects(driver(s).run('wrapper'),/TRIAL_STOPPED/);assert.equal(s.get().spent,31);assert.equal(s.calls.release+s.calls.native+s.calls.rpc,0);
+});
 test('canonical driver construction is pure and expected binding ignores field insertion order',()=>{
  const s=setup(),before=readFileSync(s.path);assert.equal(typeof trial.canonicalAuthorityTrialBinding,'function');const binding=trial.canonicalAuthorityTrialBinding(s.options.expected);
  assert.equal(binding,trial.canonicalAuthorityTrialBinding(Object.fromEntries(Object.entries(s.options.expected).reverse())));assert(Object.isFrozen(driver(s)));assert.deepEqual(readFileSync(s.path),before);assert.deepEqual(s.calls,{release:0,native:0,rpc:0,credential:0,signer:0});

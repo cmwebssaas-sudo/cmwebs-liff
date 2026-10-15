@@ -1,6 +1,6 @@
 // Fixed compatibility/cleanup lifecycle for trusted preparation and IO adapters.
 // Does not attest native gates, authorize credentials, or make a trial accepted.
-import {SINGLE_WRAPPER_TRIAL_DECISION_HASH} from './read-authority-trial-budget-plan.mjs';
+import {getAuthorityTrialPolicy} from './read-authority-trial-budget-plan.mjs';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {lstatSync} from 'node:fs';
 import {resolve} from 'node:path';
@@ -17,7 +17,8 @@ export function createAuthorityTrialOrchestrator(input){
  try{
   if(!only(input,['control','prepare','restoreEditor','cleanup','rollback'])||typeof input.prepare!=='function'||typeof input.restoreEditor!=='function'||!only(input.cleanup,AUTHORITY_TRIAL_CLEANUP_ACTIONS)||!only(input.rollback,['path','sha256','controlOptions']))stop();
   const rollbackPin=Object.freeze({path:input.rollback.path,sha256:input.rollback.sha256}),recoveryOptions=Object.freeze({...input.rollback.controlOptions});
-  if(recoveryOptions.decisionHash!==SINGLE_WRAPPER_TRIAL_DECISION_HASH||typeof rollbackPin.path!=='string'||typeof rollbackPin.sha256!=='string'||!/^[a-f0-9]{64}$/.test(rollbackPin.sha256)||!recoveryOptions.epoch)stop();
+  getAuthorityTrialPolicy(recoveryOptions.decisionHash);
+  if(typeof rollbackPin.path!=='string'||typeof rollbackPin.sha256!=='string'||!/^[a-f0-9]{64}$/.test(rollbackPin.sha256)||!recoveryOptions.epoch)stop();
   const prepare=input.prepare,restoreEditor=input.restoreEditor,cleanup=Object.fromEntries(AUTHORITY_TRIAL_CLEANUP_ACTIONS.map(action=>[action,input.cleanup[action]]));
   if(Object.values(cleanup).some(fn=>typeof fn!=='function'))stop();
   const phase=createAuthorityPhaseControl(input.control),origin=new AsyncLocalStorage();let currentOrigin=null,promise,binding=null,handoff='not-attempted',stopped=false,stage='ready',slot=null,restoreFailed=false,restoreAccepting=false;const restoreOperations=new Set();
@@ -93,9 +94,9 @@ export function createAuthorityTrialOrchestrator(input){
       if(stopped||!only(prepared,['driverOptions','expectedSpent'])||!only(prepared.driverOptions,driverKeys)||!Number.isSafeInteger(prepared.expectedSpent))stop();
       // Driver snapshots pins and callable references before committing the
       // exact canonical handoff. Preparation cannot dispatch or hand off itself.
-      binding=canonicalAuthorityTrialBinding(prepared.driverOptions.expected);
+      binding=canonicalAuthorityTrialBinding(prepared.driverOptions.expected,recoveryOptions.decisionHash);
       if(prepared.driverOptions.expected.trialEpoch!==recoveryOptions.epoch)stop();await checkRecovery(cap);
-      driver=createCanonicalAuthorityTrialDriver({...prepared.driverOptions,control:phase,prepareDispatch:cap=>checkRecovery(cap),assertDispatch});
+      driver=createCanonicalAuthorityTrialDriver({...prepared.driverOptions,decisionHash:recoveryOptions.decisionHash,control:phase,prepareDispatch:cap=>checkRecovery(cap),assertDispatch});
       handoff='unknown';await cap.handoff({runtimeBinding:binding,expectedSpent:prepared.expectedSpent});handoff='acknowledged';
      });
      stage='runtime';

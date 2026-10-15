@@ -3419,3 +3419,57 @@ NOT_STARTED; switches off. No Google/native/credential/deployment operation.
 Rollback undeployed equality/entrypoint increment to927297951a3f6f57c93c62014d64952606033953;
 retain original claim/journal/copied recovery if created, no replay/refund. Root
 WIP, C5 user swap and private S1 boundary preserved.
+
+## C3 approved credential-purpose controller binding — 2026-10-15
+
+Model/speed remains GPT-6.1 Sol/high for durable authorization/IO invariants.
+Added the approved credential-purpose selector using the fixed presented hash
+5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72, retaining
+the original single-wrapper selector and its historical recovery semantics.
+Compiler preserves160/history25/fixed96/G32/P4/T3, now caller1/publisher3.
+The new policy permits exactly four unique P aliases: caller-bind, publisher-bind,
+publisher-refresh and publisher-userinfo. Generic actor labels, duplicates or
+borrowing cannot represent several refreshes. Ledger enforces publisher bind
+before refresh before identity; allP4 must precede A–E and runtime handoff.
+Failed/UNKNOWN work stays charged; independent C2/I17 and all old safety gates
+remain. Persist and validate the selected decision against the original claim,
+checkpoint and history; no downgrade/rebinding of an existing epoch.
+
+Canonical runtime binding explicitly includes the selected decision. Driver
+requires matching durable state before observations and exposes the immutable
+selector on release/native capabilities. Orchestrator derives selection from
+pinned copied-recovery options. New selection grants no execution/native/identity
+proof by itself. Old policy remains compatible; actual new credential wiring
+will require this approved selector and fixed labels, not use the old labels.
+
+Core RED14 had1pass/13fail; binding RED5 had2pass/3fail before changes. Affected
+236/236 PASS plus added new copied recovery1/1 PASS. That new test initially
+passed a full receipt into the strict path/SHA-only loader; corrected the test
+input without changing production loader acceptance. New copied runtime retains
+the selected decision/history25/pending wrapper and executes all17 independent
+cleanup aliases, with no ordinary-read/RPC capability; selector downgrade is
+rejected. Independent incremental review found no actionable issue.
+
+One full Node22.23.3/actual Core/owned PostgreSQL1879/1879 PASS,63.322s,zero
+fail/cancel/skip; owned cluster cleanup/listener stop verified. Tested573-file
+snapshot690ce1daa44083be2c6cc11e984cfd2f19b5eca3f66cb3eee3dc14056f7760ce;
+only documentation changed afterwards. All five reviewed source pins unchanged.
+Validate72 backend/40 endpoints/static cache/diff PASS. Apps Script and Worker
+unchanged; no repeated unchanged native or local Worker performance tests.
+Previous exact391e9f3 CI38752246894 rental1854/1854 and Worker26/26/two dry runs
+SUCCESS; both footers/annotations read, rental truncated, runner notices only.
+New code-head CI must be read separately.
+
+Actual counter25/160 remains byte-identical and unclaimed. No renewal, userinfo,
+browser/account/native/formal-data/Properties/trigger/deployment/RPC operation.
+Actual credential/identity and five native release callbacks, ACL/Sheets fact
+assembly, complete native windows/quota and unknown terminal T3 remain pending.
+No old identity timestamp/local token metadata is treated as live actor proof.
+C1 daily900s, C6 capacity/performance and physical-device gates remain unaccepted.
+Approved parallel24h T0 NOT_STARTED; switches off. Do not ask the already-approved
+purpose amendment again; owner login/new credentials still need actual owner.
+
+Rollback undeployed selected-policy binding to391e9f3e97a03bc176569fec2d90e5cbd326666f,
+preserving any original claims/checkpoints and their matching copied runtime;
+never change policy on a claimed counter or replay/refund. Root WIP, C5 user
+swap and private S1 boundary preserved.

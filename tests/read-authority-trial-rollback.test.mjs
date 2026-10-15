@@ -10,15 +10,22 @@ import {createAuthorityPreparationControl} from '../scripts/read-authority-prepa
 import {createAuthorityTrialOrchestrator,AUTHORITY_TRIAL_CLEANUP_ACTIONS} from '../scripts/read-authority-trial-orchestrator.mjs';
 const rollback=await import('../scripts/read-authority-trial-rollback.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-trial-rollback.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),binding='d'.repeat(64),defer=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
-function setup(){
+function setup(patch={}){
  const dir=mkdtempSync(join(tmpdir(),'cmwebs-trial-rollback-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_ROLLBACK_'+randomUUID();let time=clock;
  const raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(path,raw,{mode:0o600});
- const options={path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;}};
+ const options={path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;},...patch};
  const control=createAuthorityPreparationControl(options);return {dir,path,epoch,options,control,get:()=>JSON.parse(readFileSync(path)),now:()=>time,setNow:v=>{time=v;}};
 }
-async function handoff(s){await s.control.withPreparation(async cap=>{await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:27});});}
+const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72';
+async function handoff(s){await s.control.withPreparation(async cap=>{if(s.options.decisionHash===credentialDecision)for(const name of ['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'])await cap.externalRead(async()=>{},'P:'+name);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:s.options.decisionHash===credentialDecision?31:27});});}
 async function pending(s){await handoff(s);await assert.rejects(s.control.withRuntime(binding,cap=>cap.dispatchCompatibility({entry:'wrapper',nativeMs:0,observedAt:s.now(),credentialExpiresAt:clock+3600000},async()=>{throw Error('SYNTHETIC_UNKNOWN');})),/TRIAL_STOPPED/);}
 function artifact(s){assert.equal(typeof rollback.buildAuthorityTrialRollback,'function');return rollback.buildAuthorityTrialRollback({path:join(s.dir,'runtime')});}
+test('copied recovery retains new credential purposes and all17 cleanup without ordinary authority',async()=>{
+ const s=setup({decisionHash:credentialDecision});await pending(s);const receipt=artifact(s),api=await rollback.loadAuthorityTrialRollback({path:receipt.path,sha256:receipt.sha256}),copy=api.createCleanupControl(s.options);let io=0;
+ await copy.withRuntimeCleanup(binding,async cap=>{assert.equal(cap.externalRead,undefined);assert.equal(cap.dispatchCompatibility,undefined);for(const name of AUTHORITY_TRIAL_CLEANUP_ACTIONS)await cap.cleanup(name,async()=>{io++;});});
+ assert.equal(io,17);assert.equal(s.get().spent,49);assert.equal(s.get().preparation.decisionHash,credentialDecision);assert.equal(s.get().preparation.importedReads,25);assert.equal(s.get().preparation.runtime.pending.entry,'wrapper');
+ assert.throws(()=>api.createCleanupControl({...s.options,decisionHash:'0b382d87214d9d1fbe658b1615176de48917666698e79092218f1691c358a675'}),/TRIAL_STOPPED/);
+});
 test('stop-and-drain waits the original owned IO and child; stop ACK alone cannot release its flock',async()=>{
  const s=setup(),entered=defer(),release=defer();let ioSettled=false,drained=false;
  const run=s.control.withPreparation(cap=>cap.externalRead(async()=>{entered.resolve();await release.promise;ioSettled=true;}));await entered.promise;

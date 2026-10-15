@@ -1942,3 +1942,30 @@ fail/cancel/skip; cleanup and stopped listener verified. Validate72 backend/40
 endpoints/static cache/diff PASS. Only documentation changed after the tested
 573-file snapshot; Apps Script/Worker bytes unchanged. Credential-purpose owner
 approval is recorded separately and does not make new policy wiring executable.
+
+### 2026-10-15 Credential-purpose decision binding
+
+The approved credential-purpose selector is distinct from the retained original
+single-wrapper selector. The compiler keeps160/history25/fixed96/G32/P4/T3 and
+reserves caller1/publisher3. New P labels are caller-bind, publisher-bind,
+publisher-refresh and publisher-userinfo, each once. Generic actor aliases,
+replay/borrowing, refresh before bind, identity before refresh, A–E/handoff before
+all four purposes, cross-selector claim/runtime downgrade fail closed. Failed
+identity remains charged; independent C2/I17 still work. Runtime binding and
+scoped observation capabilities carry the selected decision, and orchestrator
+derives it from pinned recovery options. Old policy/cleanup remains compatible.
+
+Policy core RED14=1pass/13fail, binding RED5=2pass/3fail retained; affected236/236
+PASS plus new copied-credential-recovery1/1 PASS. The new copied test initially
+passed the full receipt to a strict path/SHA loader and was rejected; corrected
+test input only, without relaxing the loader. Copied I17 preserves new decision,
+history25 and pending execution, exposing no ordinary/RPC authority. Incremental
+review found no actionable issue. Full regression recorded when complete.
+This is policy/control evidence; fixed actual renewal/identity/native callbacks
+and real safety/quota/complete-window gates are still required before Google IO.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1879/1879 PASS,63.322s,zero
+fail/cancel/skip; cluster cleanup/listener stop verified. Reviewed five source
+pins unchanged. Validate72 backend/40 endpoints/static cache/diff PASS. This
+implements the selected policy through the counter/runtime/recovery; actual
+credential adapters and native release/window bindings remain incomplete.

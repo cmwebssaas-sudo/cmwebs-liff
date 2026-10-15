@@ -12,6 +12,7 @@ import {createAuthorityTrialPublication} from '../scripts/read-authority-trial-p
 import {buildAuthorityTrialArtifacts} from '../scripts/build-read-authority-trial-entry.mjs';
 const mod=await import('../scripts/read-authority-preparation-control.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-preparation-control.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),epochs=new Set();
+const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72',credentialPurposes=['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'];
 test.after(()=>{for(const epoch of epochs)for(const suffix of ['preparation','publication']){const p=join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(epoch))+'.'+suffix+'.json');try{const s=lstatSync(p),v=JSON.parse(readFileSync(p)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-preparation-')))unlinkSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 function setup(patch={},spent=25){
  const dir=mkdtempSync(join(tmpdir(),'cmwebs-preparation-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PREPARATION_'+randomUUID(),approvalHash='a'.repeat(64),proposalHash='b'.repeat(64);let now=clock;
@@ -24,6 +25,28 @@ function probePreparationLock(path){
  const result=cp.spawnSync('python3',['-c',code,path+'.lock'],{encoding:'utf8',timeout:3000,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
  assert.equal(result.status,0);return result.stdout.trim();
 }
+test('credential decision binds four unique P purposes and preserves original counter history',async()=>{
+ const s=setup({decisionHash:credentialDecision});await s.control.withPreparation(async cap=>{for(const name of credentialPurposes)await cap.externalRead(async()=>{},'P:'+name);await cap.externalRead(async()=>{},'A:original-project');});
+ assert.equal(s.get().spent,30);assert.equal(s.get().preparation.decisionHash,credentialDecision);assert.equal(s.get().preparation.importedReads,25);assert.equal(s.get().approval_sha256,s.options.approvalHash);assert.equal(s.get().proposal_sha256,s.options.proposalHash);
+});
+for(const name of credentialPurposes)test('credential purpose '+name+' cannot be replayed or borrowed',async()=>{
+ const s=setup({decisionHash:credentialDecision});let io=0;await assert.rejects(s.control.withPreparation(async cap=>{for(const n of credentialPurposes)await cap.externalRead(async()=>{io++;},'P:'+n);await cap.externalRead(async()=>{io++;},'P:'+name);}),/TRIAL_STOPPED/);assert.equal(io,4);assert.equal(s.get().spent,29);
+});
+for(const label of ['P:caller','P:publisher','A:original-project','B:fixture-import','P:publisher-refresh','P:publisher-userinfo'])test('new policy denies unbound/early '+label+' before IO',async()=>{
+ const s=setup({decisionHash:credentialDecision});let io=0;await assert.rejects(s.control.withPreparation(cap=>cap.externalRead(async()=>{io++;},label)),/TRIAL_STOPPED/);assert.equal(io,0);assert.equal(s.get().spent,25);
+});
+test('failed publisher identity stays charged, prevents A and preserves independent cleanup',async()=>{
+ const s=setup({decisionHash:credentialDecision});let io=0;
+ await assert.rejects(s.control.withPreparation(async cap=>{for(const name of credentialPurposes.slice(0,3))await cap.externalRead(async()=>{},'P:'+name);await assert.rejects(cap.externalRead(async()=>{throw Error('PRIVATE_IDENTITY');},'P:publisher-userinfo'),/^Error: TRIAL_STOPPED$/);await assert.rejects(cap.externalRead(async()=>{io++;},'A:original-project'),/TRIAL_STOPPED/);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.cleanup('read-original-project',async()=>{});}),/TRIAL_STOPPED/);
+ assert.equal(io,0);assert.equal(s.get().spent,32);assert.deepEqual(s.get().preparation.cActions,['restore-editor','read-restored-editor']);assert.deepEqual(s.get().preparation.iActions,['read-original-project']);
+});
+test('original claim cannot downgrade or switch credential purpose policy',async()=>{
+ const s=setup({decisionHash:credentialDecision});await s.control.withPreparation(cap=>cap.externalRead(async()=>{},'P:caller-bind'));const before=readFileSync(s.options.path);
+ await assert.rejects(mod.createAuthorityPreparationControl({...s.options,decisionHash}).withPreparation(async()=>{}),/TRIAL_STOPPED/);assert.deepEqual(readFileSync(s.options.path),before);
+});
+test('credential policy cannot hand off without its four preparation purposes',async()=>{
+ const s=setup({decisionHash:credentialDecision});await assert.rejects(s.control.withPreparation(async cap=>{await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:'d'.repeat(64),expectedSpent:27});}),/TRIAL_STOPPED/);assert.equal(s.get().spent,27);assert.equal(s.get().preparation.version,1);
+});
 for(const failure of ['EOF','SIGKILL'])test('original scope holds flock after budget child '+failure+' until entered IO drains',async()=>{
  const s=setup(),spawn=cp.spawn;let child,enter,release,settled=false,scope,otherIO=0;
  const entered=new Promise(r=>{enter=r;}),gate=new Promise(r=>{release=r;});

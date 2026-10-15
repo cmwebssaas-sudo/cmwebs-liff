@@ -6,7 +6,7 @@ import {homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import {setTimeout as delay} from 'node:timers/promises';
-import {SINGLE_WRAPPER_TRIAL_DECISION_HASH,SINGLE_WRAPPER_TRIAL_OPERATIONS,SINGLE_WRAPPER_TRIAL_POLICY} from './read-authority-trial-budget-plan.mjs';
+import {SINGLE_WRAPPER_TRIAL_DECISION_HASH,SINGLE_WRAPPER_TRIAL_OPERATIONS,getAuthorityTrialPolicy} from './read-authority-trial-budget-plan.mjs';
 export const AUTHORITY_TRIAL_SCOPES=Object.freeze(['https://www.googleapis.com/auth/spreadsheets.readonly','https://www.googleapis.com/auth/userinfo.email','https://www.googleapis.com/auth/script.external_request']);
 const stop=()=>{throw Error('TRIAL_STOPPED');};
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -339,22 +339,23 @@ function canonicalExpected(input){
  const expected=Object.freeze(Object.fromEntries(pinKeys.map(k=>[k,input[k]])));
  validateExpected(expected);return expected;
 }
-export function canonicalAuthorityTrialBinding(input){
- return hash({kind:'canonical-compatibility-runtime',decisionHash:SINGLE_WRAPPER_TRIAL_DECISION_HASH,expected:canonicalExpected(input)});
+export function canonicalAuthorityTrialBinding(input,decisionHash=SINGLE_WRAPPER_TRIAL_DECISION_HASH){
+ try{if(arguments.length>2)stop();getAuthorityTrialPolicy(decisionHash);return hash({kind:'canonical-compatibility-runtime',decisionHash,expected:canonicalExpected(input)});}catch(_){stop();}
 }
 // Approved first stage only. All durable state and IO ownership belong to the
 // canonical preparation controller; this driver never opens or seeds a journal.
 export function createCanonicalAuthorityTrialDriver(input){
  try{
   const baseKeys=['expected','expiresAt','now','control','readRelease','readNative','credential','signRequest','transport'];
-  if(!keys(input,baseKeys)&&!keys(input,[...baseKeys,'prepareDispatch','assertDispatch']))stop();
-  const expected=canonicalExpected(input.expected),binding=canonicalAuthorityTrialBinding(expected);
+  const selectedDecisionHash=Object.hasOwn(input,'decisionHash')?input.decisionHash:SINGLE_WRAPPER_TRIAL_DECISION_HASH,policy=getAuthorityTrialPolicy(selectedDecisionHash);
+  if(!keys(input,[...baseKeys,...(Object.hasOwn(input,'decisionHash')?['decisionHash']:[]),...(Object.hasOwn(input,'prepareDispatch')||Object.hasOwn(input,'assertDispatch')?['prepareDispatch','assertDispatch']:[])]))stop();
+  const expected=canonicalExpected(input.expected),binding=canonicalAuthorityTrialBinding(expected,selectedDecisionHash);
   const {expiresAt,now,readRelease,readNative,credential,signRequest,transport,prepareDispatch,assertDispatch}=input;
   if(('prepareDispatch' in input||'assertDispatch' in input)&&[prepareDispatch,assertDispatch].some(f=>typeof f!=='function'))stop();
   const withRuntime=input.control?.withRuntime,requestStop=input.control?.requestStop;
   if(!Number.isSafeInteger(expiresAt)||expiresAt<=0||[now,readRelease,readNative,credential,signRequest,transport,withRuntime,requestStop].some(f=>typeof f!=='function'))stop();
   const releaseAliases=SINGLE_WRAPPER_TRIAL_OPERATIONS.F.filter(v=>v.startsWith('wrapper-before.')).map(v=>v.slice('wrapper-before.'.length));
-  const nativeLimits=SINGLE_WRAPPER_TRIAL_POLICY.bucketLimits.G.perWindow;
+  const nativeLimits=policy.bucketLimits.G.perWindow;
   const observe=async(observer,read,kind,phase,...args)=>{
    let active=true,failed=false,pending=0;const operations=new Set(),seen=new Map();
    const externalRead=(io,item)=>{
@@ -378,7 +379,7 @@ export function createCanonicalAuthorityTrialDriver(input){
     })();operations.add(operation);void operation.catch(()=>{});return operation;
    };
    try{
-    const value=await observer(...args,Object.freeze({externalRead,phase}));
+    const value=await observer(...args,Object.freeze({externalRead,phase,decisionHash:selectedDecisionHash}));
     if(failed||pending)stop();
     if(kind==='release'){
      if(seen.size!==15||releaseAliases.some(alias=>seen.get(alias)!==1))stop();
@@ -403,7 +404,7 @@ export function createCanonicalAuthorityTrialDriver(input){
     if(args.length>1)stop();const entry=args[0]??'wrapper';if(entry!=='wrapper')stop();
     return await withRuntime(binding,async cap=>{
      const state=await cap.inspectRuntime(),time=now();
-     if(state.source!=='canonical-preparation-ledger'||state.decisionHash!==SINGLE_WRAPPER_TRIAL_DECISION_HASH||state.runtimeBinding!==binding||state.epoch!==expected.trialEpoch||state.expiresAt!==expiresAt||state.state!=='ready'||state.pending!==null||state.rpcEntries.length!==0||!Number.isSafeInteger(time)||time>=expiresAt)stop();
+     if(state.source!=='canonical-preparation-ledger'||state.decisionHash!==selectedDecisionHash||state.runtimeBinding!==binding||state.epoch!==expected.trialEpoch||state.expiresAt!==expiresAt||state.state!=='ready'||state.pending!==null||state.rpcEntries.length!==0||!Number.isSafeInteger(time)||time>=expiresAt)stop();
      verifyAuthorityTrialReadback(expected,await observe(readRelease,cap.externalRead,'release','wrapper-before'));
      const before=proof(await observe(readNative,cap.externalRead,'native','wrapper-before','before'),now(),expected);
      if(before.totalMs<state.nativeMs||before.totalMs+360000>900000)stop();
