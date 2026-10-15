@@ -4446,3 +4446,43 @@ config/deployment action. C3 native/quota, daily900s, remote authenticated
 performance/device gates remain; approved parallel24h T0 NOT_STARTED/alloff.
 Root WIP/C5 swap/private S1 preserved. Rollback only this diagnostic increment
 to957707e; retain all failed evidence, original50ms gate and comparison epoch.
+
+
+## C6 complete capacity evidence despite early latency failure — 2026-10-16
+
+Recommended GPT-6.1 Sol/high for measurement completeness. Exactbc8f6e7 CI
+38765192809 rental1805/1805 PASS, Worker35/36 FAIL arrears50.814ms>50. Original
+fail-fast collected600 samples; properties was NOT_MEASURED. Both footers and
+annotations read, logs truncated. Six paired stage records retained without
+stage overflow; this does not accept performance or establish a GC cause.
+
+The capacity fixture now collects all original7x100 samples before failing on
+any accumulated route violation. Strict !(p95<50) also rejects non-finite p95;
+no timer, request, response consumption, data/parity assertion, order, warmup,
+GC behavior or50ms threshold changed. Actual measurement-tail VM regressions
+use fake transport/clocks only for control flow: early dual failure still
+collects700, NaN cannot pass, and all-below-threshold collects700. NaN regression
+had1RED/2PASS before the strict comparator; affected26/26 PASS afterwards.
+
+First changed full Worker36/36 PASS34.273s preceded that comparator correction;
+final actual capacity2/2 PASS12.918s covers the final reviewed bytes, original
+D1/projection/GAS checks and700 samples. Local p95ms home12.993/actions10.943/
+revenue12.359/tenants18.574/rooms16.163/arrears21.123/properties18.755. Independent
+incremental review found no actionable issue. Validate72/40/cache/comparison178
+and diff PASS. Production Worker/Apps Script unchanged; comparison retained.
+Prior full1808 remains historical coverage for unchanged product, not a new
+full rental run. Exact new CI must be read for complete Linux diagnostics;
+these local passes do not fix or override prior failures.
+
+One private Node CPU/heap/GC profile of unchangedbc8f6e7's synthetic capacity
+case completed without forcedGC/Google/account IO. It observes the Node
+supervisor only, with profilers altering measurement; no Linux causal or
+acceptance claim. Native/library documentation review preserves the existing
+no-Viewer compatibility UNKNOWN and complete quota/attribution gates, with no
+new approval or extra helpers based on assumed success.
+
+ActualGoogle25/160 unchanged/unclaimed, no real config/provider/native/RPC/
+formal/deployment change. Approved parallel24h T0NOT_STARTED/alloff, original
+C1/native/remote/device gates remain. Root WIP/C5 swap/private S1 preserved.
+Rollback only this diagnostic-completeness increment tobc8f6e7; retain all prior
+failed samples and the original comparison/authorization/cleanup state.

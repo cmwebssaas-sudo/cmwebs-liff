@@ -2155,3 +2155,16 @@ not started; old72h/seven-day pre-on rows above are historical.
 - Review no actionable finding; validate72/40/cache/comparison178/diff PASS.
   Prior full1808 retained for unchanged product; not a new full rental run.
   ActualGoogle25/160 unchanged; T0NOT_STARTED/alloff, real gates remain.
+
+
+### 2026-10-16 capacity measurement completion
+
+- Exactbc8f6e7 CI: rental1805 PASS, Worker35/36 FAIL arrears50.814ms;600 samples,
+  propertiesNOT_MEASURED. Both footers/annotations read; prior failure retained.
+- Actual measurement-tail control regressions: early dual violation still700,
+  non-finite p95 denied, below50 all700. NaN1RED/2PASS then affected26/26 PASS.
+- Full Worker36/36 before final strict comparator; final actual capacity2/2
+  PASS12.918s, original realD1/GAS/500-room checks and7x100 requests preserved.
+  Review no issue, validate72/40/cache/comparison178/diff PASS. No new full rental
+  run claimed; product/Apps Script/comparison/alloff unchanged. New exact CI
+  remains separate from local evidence; all real acceptance gates retained.

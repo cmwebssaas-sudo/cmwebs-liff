@@ -69,7 +69,7 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
   assert.equal(observed.revenue.kpis.collected,1932000);
   assert.equal(observed.revenue.kpis.outstanding,2016000);
   assert.equal(observed.arrears.arrears.length,252);
-  const timings={};
+  const timings={},violations=[];
   for(const c of cases){
    const samples=[],observations=[],stages={d1:[],decode:[],route:[]};
    for(let i=0;i<100;i++){
@@ -102,9 +102,12 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
     stage_p95_ms:Object.fromEntries(Object.entries(stages).map(([key,values])=>{
      assert.equal(values.length,100);values.sort((a,b)=>a-b);return [key,values[94]];
     })),slowest:observations.sort((a,b)=>b.wall_ms-a.wall_ms||a.index-b.index).slice(0,2)}));
-   assert.ok(p95<50,c.route+'500-room local HTTP/D1 p95='+p95.toFixed(3)+'ms');
+   if(!(p95<50))violations.push(c.route+'500-room local HTTP/D1 p95='+p95.toFixed(3)+'ms');
   }
   console.log('C6_LOCAL_500_ROOM_LATENCY '+JSON.stringify(timings));
+  // Retain every route's original100 full-wall samples even if an earlier
+  // route fails. Every violation still fails the suite; no sample is replaced.
+  assert.deepEqual(violations,[],violations.join('; '));
   timingOutcome='PASS';
  }finally{try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{clientTiming.close(timingOutcome);}}
 });
