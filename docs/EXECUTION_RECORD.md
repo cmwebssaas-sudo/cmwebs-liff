@@ -683,3 +683,28 @@ rerun. Cost: local root result retains its original platform/time provenance;
 new exact-head CI still required. No actual Google/counter/formal mutation.
 Rollback this test-only observer to priorC2a1d6406; original C3 failures and all
 900s/day/fresh72h/seven-day/500/strict latency/device gates remain unaccepted.
+
+## C2 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C2 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local874/874 PASS,2.614s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested494-file snapshot
+6ecc7f9b5b48f2221d941a537d420b9fda23fa8388338b852c0229816218cb0e;
+only docs afterwards. Validate71backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated capacity run. Exact-head CI must be read after push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance to1b3c18c25cddea0d38014ba948c7fb03c83da124;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
