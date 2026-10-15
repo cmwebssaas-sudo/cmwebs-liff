@@ -1374,3 +1374,13 @@ Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
 inheritance to1b3c18c25cddea0d38014ba948c7fb03c83da124;
 retain all original claims/checkpoints/pinned cleanup and history, never reset
 or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+## 2026-10-16 — C1 expired-run Sheet reads
+
+| Check | Evidence | Boundary |
+| --- | --- | --- |
+| Slow send reaches/exceeds the four-minute deadline | Actual-module dirty/full regressions RED2/2 then GREEN; full leaves all15 unattempted tables dirty and both paths release lease | Synthetic clock/network/Sheets; blocking native IO cannot be interrupted |
+| Affected module and independent review |19/19 PASS; no actionable findings | Projection Apps Script test function also runs in the VM; no Google execution |
+| Complete local regression |859/859 PASS,zero fail/cancel/skip,actual pinned Core/owned PG16.14; cleanup verified | Not native900s/day, actual authority, freshness, performance or device acceptance |
+
+No actual Google operations or observation restart. Existing failed execution
+history retained; approved accelerated24h clock NOT_STARTED, switches off.
