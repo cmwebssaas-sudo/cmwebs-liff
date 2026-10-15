@@ -1992,3 +1992,19 @@ only documentation changed afterwards. Apps Script/Worker source unchanged.
 Actual Google counter remains25/160 and unclaimed; no live refresh, userinfo,
 browser, native capture or RPC. Native/ACL/Sheets/terminal assembly and all
 runtime, quota, privacy, performance and real-device gates remain required.
+
+### 2026-10-15 Fixed ACL and authorization-tab release evidence
+
+Original module branding rejects copied/proxied/mismatched metadata adapters.
+Both phases use exactly three fixed GETs and actual caller/publisher credentials.
+New table is exact owner+Reader with the prior caller permission pin; original
+container is same owner only. Public/domain/group/inherited/deleted/extra or
+incomplete access denies, as do changed authorization tab IDs. No grid data,
+header verification or full source/native proof is inferred from metadata.
+Focused25RED-to-GREEN; related77/77, affected215/215 PASS. Canonical integration
+verifies F/S debits, held flock/peer exclusion and original history. Independent
+reviews found no actionable issue. Full1936/1936 PASS63.501s under Node22.23.3/
+actual Core/owned PostgreSQL, zero fail/cancel/skip; database/listener stopped.
+Snapshot52a8a374ae1eaf7fc2cdb35448fdddd769830bd6e4d121571301fd612abdd2de; only
+docs afterwards. Validate72/40/cache/diff PASS. Actual Google25/160 unchanged
+and unclaimed; native/parent-binding/quota/terminal and release gates remain.

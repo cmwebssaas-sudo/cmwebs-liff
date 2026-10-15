@@ -3513,3 +3513,37 @@ NOT_STARTED and switches off. Root WIP, C5 user swap and private S1 preserved.
 Rollback this undeployed increment tofacbb8f1689f8c012560aa8b7530fb55632a5993;
 retain any original claims/checkpoints and matching copied cleanup. Do not
 reset/refund/replay or assume a lost in-memory publisher token is recoverable.
+
+## C3 fixed metadata release evidence — 2026-10-15
+
+Recommended model/speed: GPT-6.1 Sol/high for permission and evidence boundaries.
+Added a verifier for the original module-branded metadata transport. Each
+wrapper phase consumes exactly synthetic ACL, original ACL and caller Sheets
+metadata aliases. New ACL must be only the approved publisher owner plus caller
+Reader, with the caller permission matching its preparation pin. Original ACL
+must contain that same owner only. Group/domain/public/inherited/deleted/extra
+access, incomplete pagination, wrong actors/IDs and changed auth-tab IDs deny.
+The five recognized authorization IDs are compared with actual caller metadata;
+no grid values are requested. Frozen partial output proves new-table Reader
+and original-container absence only. It does not assert script/source-parent
+access, headers, Properties/contract hash, native quota or full acceptance.
+
+Focused25RED-to-GREEN and metadata-related77/77 PASS; affected215/215 PASS.
+The added canonical integration keeps all six F/S reads under original UNKNOWN
+debit and held OS lock, rejects peer admission, retains history25, and uses
+settlement admission after the synthetic RPC. Independent source/test/integration
+reviews found no actionable issue. Full Node22.23.3/actual pinned Core/owned
+PostgreSQL1936/1936 PASS,63.501s,zero fail/cancel/skip; cluster/listener stopped.
+Tested576-file snapshot52a8a374ae1eaf7fc2cdb35448fdddd769830bd6e4d121571301fd612abdd2de;
+only documentation afterwards. Validate72 backend/40 endpoints/cache/diff PASS.
+Apps Script and Worker source unchanged; no repeated unchanged capacity tests.
+
+Actual Google25/160 remains byte-identical and unclaimed; no account/browser/
+Google/credential/native/RPC/formal-data/config/deployment operation. Loading CUA
+API documentation made no account read. Five native F callbacks, source-parent
+composition, four complete native windows/quota and original T3 remain pending.
+C1 daily900s and C6 performance remain unaccepted; parallel24h T0 NOT_STARTED,
+switches off. Root WIP, C5 user swap and private S1 preserved.
+
+Rollback this undeployed verifier increment to97a31d3317293984e3764d50dd000b8b8330347f;
+keep any original claims/checkpoints and matching cleanup, never reset or replay.

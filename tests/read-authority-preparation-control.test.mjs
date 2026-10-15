@@ -12,6 +12,7 @@ import {createAuthorityTrialPublication} from '../scripts/read-authority-trial-p
 import {buildAuthorityTrialArtifacts} from '../scripts/build-read-authority-trial-entry.mjs';
 import {createAuthorityPublisherCredentials,createAuthorityNativeIdentity} from '../scripts/read-authority-trial-credentials.mjs';
 import {createAuthorityPhaseControl} from '../scripts/read-authority-phase-control.mjs';
+import {createAuthorityTrialMetadataAdapters,createAuthorityReleaseMetadataVerifier} from '../scripts/read-authority-trial-metadata.mjs';
 const mod=await import('../scripts/read-authority-preparation-control.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-preparation-control.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),epochs=new Set();
 const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72',credentialPurposes=['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'];
@@ -62,6 +63,27 @@ test('real credential adapters use original selected-policy debits and four sepa
 test('credential decision binds four unique P purposes and preserves original counter history',async()=>{
  const s=setup({decisionHash:credentialDecision});await s.control.withPreparation(async cap=>{for(const name of credentialPurposes)await cap.externalRead(async()=>{},'P:'+name);await cap.externalRead(async()=>{},'A:original-project');});
  assert.equal(s.get().spent,30);assert.equal(s.get().preparation.decisionHash,credentialDecision);assert.equal(s.get().preparation.importedReads,25);assert.equal(s.get().approval_sha256,s.options.approvalHash);assert.equal(s.get().proposal_sha256,s.options.proposalHash);
+});
+test('metadata release verifier holds original F/S ledger admission through fixed actor responses',async()=>{
+ const s=setup({decisionHash:credentialDecision}),originalSheetId='SYNTHETIC_ORIGINAL_SHEET_ID',syntheticSheetId='SYNTHETIC_UNBOUND_SHEET_ID',publisherHash=hash('publisher@example.invalid'),callerHash=hash('caller@example.invalid'),binding='d'.repeat(64);
+ const expectedAuthorizationSheets=['V2_landlord_email_sessions','V2_users','V2_workspaces','V2_workspace_members','V2_landlords'].map((name,i)=>({name,sheetId:100+i})),names=[...expectedAuthorizationSheets.map(v=>v.name),...Array.from({length:15},(_,i)=>'Synthetic_tab_'+i)];
+ const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(v=>'https://www.googleapis.com/auth/'+v),actions=[],peer=mod.createAuthorityPreparationControl(s.options);
+ const adapter=createAuthorityTrialMetadataAdapters({originalSheetId,syntheticSheetId,publisherHash,callerHash,expectedTabNames:names,now:s.options.now,
+  credential:actor=>({accessToken:'SYNTHETIC_'+actor,accountHash:actor==='caller'?callerHash:publisherHash,refreshTokenPresent:actor==='publisher',expiresAt:clock+3600000,scopes:actor==='publisher'?scopes:['spreadsheets.readonly','userinfo.email','script.external_request'].map(v=>'https://www.googleapis.com/auth/'+v)}),
+  fetcher:async(url,init)=>{
+   actions.push(s.get().preparation.events.at(-1).action);assert.equal(s.get().preparation.events.at(-1).outcome,'UNKNOWN');assert.equal(probePreparationLock(s.options.path),'HELD');await assert.rejects(peer.withPreparation(async()=>{}),/TRIAL_STOPPED/);
+   const owners=[{id:'SYNTHETIC_OWNER',type:'user',role:'owner',emailAddress:'publisher@example.invalid'}],readers=[{id:'SYNTHETIC_CALLER',type:'user',role:'reader',emailAddress:'caller@example.invalid'}];
+   if(url.includes('sheets.googleapis.com')){assert.equal(init.headers.authorization,'Bearer SYNTHETIC_caller');return new Response(JSON.stringify({spreadsheetId:syntheticSheetId,properties:{timeZone:'Asia/Taipei'},sheets:names.map((title,i)=>({properties:{title,sheetId:i<5?100+i:200+i}}))}));}
+   assert.equal(init.headers.authorization,'Bearer SYNTHETIC_publisher');return new Response(JSON.stringify({permissions:url.includes(originalSheetId)?owners:[...owners,...readers]}));
+  }});
+ const verifier=createAuthorityReleaseMetadataVerifier({metadataAdapter:adapter,originalSheetId,syntheticSheetId,publisherHash,callerHash,callerPermissionHash:hash('SYNTHETIC_CALLER'),expectedAuthorizationSheets});
+ await s.control.withPreparation(async cap=>{for(const name of credentialPurposes)await cap.externalRead(async()=>{},'P:'+name);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:31});});
+ await s.control.withRuntime(binding,async cap=>{
+  const view=(phase,settlement=false)=>({phase,externalRead:(io,alias)=>(settlement?cap.settlementRead:cap.externalRead)(io,'F:'+phase+'.'+alias)});
+  assert.equal((await verifier.read(view('wrapper-before'))).originalContainer.callerRole,'none');await cap.dispatchCompatibility({entry:'wrapper',nativeMs:0,observedAt:s.options.now(),credentialExpiresAt:clock+3600000},async()=>{});
+  assert.equal((await verifier.read(view('wrapper-after',true))).facts.callerSheetRole,'reader');await cap.accountNative({entry:'wrapper',totalMs:1,executionHash:'e'.repeat(64)});await cap.finishCompatibility('wrapper');
+ });
+ assert.equal(s.get().spent,38);assert.equal(s.get().preparation.importedReads,25);assert.deepEqual(actions,['F:wrapper-before.synthetic-acl','F:wrapper-before.original-acl','F:wrapper-before.caller-sheets-metadata','F:wrapper-after.synthetic-acl','F:wrapper-after.original-acl','F:wrapper-after.caller-sheets-metadata']);
 });
 for(const name of credentialPurposes)test('credential purpose '+name+' cannot be replayed or borrowed',async()=>{
  const s=setup({decisionHash:credentialDecision});let io=0;await assert.rejects(s.control.withPreparation(async cap=>{for(const n of credentialPurposes)await cap.externalRead(async()=>{io++;},'P:'+n);await cap.externalRead(async()=>{io++;},'P:'+name);}),/TRIAL_STOPPED/);assert.equal(io,4);assert.equal(s.get().spent,29);
