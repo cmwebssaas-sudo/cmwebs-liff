@@ -1868,3 +1868,13 @@ Draft/off, actual25/160/native STOP and all real gates remain unaccepted.
 | Inherited controller/ledger/test | Exact C3 71cc636 bytes; related83/83 and complete1728/1728 retained | Original child lifetime, strict finish and durable-stop ownership only; no native acceptance |
 | Order composition | Own runtime and fixtures unchanged; validate/diff required; exact-head CI pending | No repeated unchanged local Worker benchmark |
 | Real gates |25/160 unchanged, trial STOP; all formal gates unaccepted | PR272 acceleration still pending, original observation gates retained |
+
+## 2026-10-15 — Preparation lock lifetime and completion
+
+| Area | Evidence | Boundary |
+| --- | --- | --- |
+| Canonical inherited FD | EOF/SIGKILL holds actual synthetic flock through entered IO; wrong inode rejected without claim/debit | Local POSIX evidence; not remote termination |
+| Finish and stop | Three new real-child RED→GREEN; strict finish/exit, failed durable helper retains original ownership until ACK | No independent ordinary debit or recovery grant |
+| Restricted realm | Original11 full failures retained; existing approved OS identity API restores compatibility; affected83/83 PASS | No ambient process or new builtin permissions |
+| Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
+| Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
