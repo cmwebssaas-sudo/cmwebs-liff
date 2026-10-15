@@ -7,10 +7,15 @@ import {mkdtempSync,chmodSync,writeFileSync,readFileSync,lstatSync,unlinkSync,ex
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
+import {SINGLE_WRAPPER_TRIAL_DECISION_HASH as decisionHash,SINGLE_WRAPPER_TRIAL_OPERATIONS as fixedOperations} from '../scripts/read-authority-trial-budget-plan.mjs';
 import {createAuthorityTrialPublication} from '../scripts/read-authority-trial-publication.mjs';
 import {buildAuthorityTrialArtifacts} from '../scripts/build-read-authority-trial-entry.mjs';
+import {createAuthorityPublisherCredentials,createAuthorityNativeIdentity} from '../scripts/read-authority-trial-credentials.mjs';
+import {createAuthorityPhaseControl} from '../scripts/read-authority-phase-control.mjs';
+import {createAuthorityTrialMetadataAdapters,createAuthorityReleaseMetadataVerifier} from '../scripts/read-authority-trial-metadata.mjs';
 const mod=await import('../scripts/read-authority-preparation-control.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-preparation-control.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),epochs=new Set();
+const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72',credentialPurposes=['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'];
 test.after(()=>{for(const epoch of epochs)for(const suffix of ['preparation','publication']){const p=join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(epoch))+'.'+suffix+'.json');try{const s=lstatSync(p),v=JSON.parse(readFileSync(p)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-preparation-')))unlinkSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 function setup(patch={},spent=25){
  const dir=mkdtempSync(join(tmpdir(),'cmwebs-preparation-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PREPARATION_'+randomUUID(),approvalHash='a'.repeat(64),proposalHash='b'.repeat(64);let now=clock;
@@ -23,6 +28,81 @@ function probePreparationLock(path){
  const result=cp.spawnSync('python3',['-c',code,path+'.lock'],{encoding:'utf8',timeout:3000,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
  assert.equal(result.status,0);return result.stdout.trim();
 }
+test('publisher holder cannot mint through an actual legacy unlabelled canonical capability',async()=>{
+ const s=setup(),profilePath=join(s.options.path,'..','legacy-profile.json'),raw=JSON.stringify({tokens:{default:{access_token:'SYNTHETIC_EXPIRED',refresh_token:'SYNTHETIC_GRANT',client_id:'123-synthetic.apps.googleusercontent.com',token_type:'Bearer',expiry_date:clock-1000}}});writeFileSync(profilePath,raw,{mode:0o600});let io=0;
+ const holder=createAuthorityPublisherCredentials({source:{path:profilePath,sha256:hash(raw)},publisherHash:'c'.repeat(64),decisionHash:credentialDecision,expiresAt:s.options.expiresAt,now:s.options.now,fetcher:async()=>{io++;return new Response(JSON.stringify({access_token:'SYNTHETIC_NEW',token_type:'Bearer',expires_in:3920,scope:['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(x=>'https://www.googleapis.com/auth/'+x).join(' ')}));}});
+ try{await assert.rejects(s.control.withPreparation(cap=>holder.refresh(cap)),/TRIAL_STOPPED/);assert.equal(io,0);assert.equal(s.get().spent,25);}finally{await holder.stopAndDrain();}
+});
+test('real credential adapters use original selected-policy debits and four separate runtime identity slots',async()=>{
+ const s=setup({decisionHash:credentialDecision}),profilePath=join(s.options.path,'..','profile.json'),publisherEmail='publisher@example.invalid',callerEmail='caller@example.invalid',publisherHash=hash(publisherEmail),callerHash=hash(callerEmail),oauthClientHash='c'.repeat(64),binding='d'.repeat(64);
+ const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(x=>'https://www.googleapis.com/auth/'+x);
+ const raw=JSON.stringify({tokens:{default:{access_token:'SYNTHETIC_EXPIRED',refresh_token:'SYNTHETIC_EXISTING_GRANT',client_id:'123-synthetic.apps.googleusercontent.com',token_type:'Bearer',expiry_date:clock-1000}}});writeFileSync(profilePath,raw,{mode:0o600});
+ const requests=[],fetcher=async(url,init)=>{
+  const event=s.get().preparation.events.at(-1);assert.equal(event.outcome,'UNKNOWN');requests.push({url,action:event.action,spent:s.get().spent});
+  return new Response(JSON.stringify(url.endsWith('/token')?{access_token:'SYNTHETIC_PUBLISHER',token_type:'Bearer',expires_in:3920,scope:scopes.join(' ')}:{email:init.headers.authorization==='Bearer SYNTHETIC_PUBLISHER'?publisherEmail:callerEmail,verified_email:true}));
+ };
+ const holder=createAuthorityPublisherCredentials({source:{path:profilePath,sha256:hash(raw)},publisherHash,decisionHash:credentialDecision,expiresAt:s.options.expiresAt,now:s.options.now,fetcher});
+ const callerCredential=()=>({accessToken:'SYNTHETIC_CALLER',callerHash,oauthClientHash,expiresAt:clock+3600000,refreshTokenPresent:false,scopes:['spreadsheets.readonly','userinfo.email','script.external_request'].map(x=>'https://www.googleapis.com/auth/'+x)});
+ const identity=createAuthorityNativeIdentity({callerHash,publisherHash,oauthClientHash,decisionHash:credentialDecision,expiresAt:s.options.expiresAt,callerCredential,publisherCredential:holder.credential,fetcher,now:s.options.now});
+ const bridge=createAuthorityPhaseControl(s.control);
+ try{
+  await bridge.withPreparation(async cap=>{
+   for(const purpose of ['caller-bind','publisher-bind'])await cap.externalRead(async()=>{},'P:'+purpose);
+   await holder.refresh(cap);await holder.verify(cap);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:31});
+  });
+  await bridge.withRuntime(binding,async cap=>{
+   const view=(phase,settlement=false)=>({phase,decisionHash:credentialDecision,externalRead:(io,{actor,category})=>(settlement?cap.settlementRead:cap.externalRead)(io,'G:'+phase+':'+actor+':'+category)});
+   for(const actor of ['caller','publisher'])await identity.read(actor,view('wrapper-before'));
+   await cap.dispatchCompatibility({entry:'wrapper',nativeMs:0,observedAt:s.options.now(),credentialExpiresAt:clock+3600000},async()=>{});
+   for(const actor of ['caller','publisher'])await identity.read(actor,view('wrapper-after',true));
+   await cap.accountNative({entry:'wrapper',totalMs:1,executionHash:'e'.repeat(64)});await cap.finishCompatibility('wrapper');
+  });
+  assert.equal(s.get().spent,36);assert.equal(s.get().preparation.importedReads,25);assert.deepEqual(requests.map(v=>v.action),['P:publisher-refresh','P:publisher-userinfo','G:wrapper-before:caller:identityReads','G:wrapper-before:publisher:identityReads','G:wrapper-after:caller:identityReads','G:wrapper-after:publisher:identityReads']);assert.equal(readFileSync(profilePath,'utf8'),raw);
+ }finally{await identity.stopAndDrain();await holder.stopAndDrain();}
+});
+test('credential decision binds four unique P purposes and preserves original counter history',async()=>{
+ const s=setup({decisionHash:credentialDecision});await s.control.withPreparation(async cap=>{for(const name of credentialPurposes)await cap.externalRead(async()=>{},'P:'+name);await cap.externalRead(async()=>{},'A:original-project');});
+ assert.equal(s.get().spent,30);assert.equal(s.get().preparation.decisionHash,credentialDecision);assert.equal(s.get().preparation.importedReads,25);assert.equal(s.get().approval_sha256,s.options.approvalHash);assert.equal(s.get().proposal_sha256,s.options.proposalHash);
+});
+test('metadata release verifier holds original F/S ledger admission through fixed actor responses',async()=>{
+ const s=setup({decisionHash:credentialDecision}),originalSheetId='SYNTHETIC_ORIGINAL_SHEET_ID',syntheticSheetId='SYNTHETIC_UNBOUND_SHEET_ID',publisherHash=hash('publisher@example.invalid'),callerHash=hash('caller@example.invalid'),binding='d'.repeat(64);
+ const expectedAuthorizationSheets=['V2_landlord_email_sessions','V2_users','V2_workspaces','V2_workspace_members','V2_landlords'].map((name,i)=>({name,sheetId:100+i})),names=[...expectedAuthorizationSheets.map(v=>v.name),...Array.from({length:15},(_,i)=>'Synthetic_tab_'+i)];
+ const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(v=>'https://www.googleapis.com/auth/'+v),actions=[],peer=mod.createAuthorityPreparationControl(s.options);
+ const adapter=createAuthorityTrialMetadataAdapters({originalSheetId,syntheticSheetId,publisherHash,callerHash,expectedTabNames:names,now:s.options.now,
+  credential:actor=>({accessToken:'SYNTHETIC_'+actor,accountHash:actor==='caller'?callerHash:publisherHash,refreshTokenPresent:actor==='publisher',expiresAt:clock+3600000,scopes:actor==='publisher'?scopes:['spreadsheets.readonly','userinfo.email','script.external_request'].map(v=>'https://www.googleapis.com/auth/'+v)}),
+  fetcher:async(url,init)=>{
+   actions.push(s.get().preparation.events.at(-1).action);assert.equal(s.get().preparation.events.at(-1).outcome,'UNKNOWN');assert.equal(probePreparationLock(s.options.path),'HELD');await assert.rejects(peer.withPreparation(async()=>{}),/TRIAL_STOPPED/);
+   const owners=[{id:'SYNTHETIC_OWNER',type:'user',role:'owner',emailAddress:'publisher@example.invalid'}],readers=[{id:'SYNTHETIC_CALLER',type:'user',role:'reader',emailAddress:'caller@example.invalid'}];
+   if(url.includes('sheets.googleapis.com')){assert.equal(init.headers.authorization,'Bearer SYNTHETIC_caller');return new Response(JSON.stringify({spreadsheetId:syntheticSheetId,properties:{timeZone:'Asia/Taipei'},sheets:names.map((title,i)=>({properties:{title,sheetId:i<5?100+i:200+i}}))}));}
+   assert.equal(init.headers.authorization,'Bearer SYNTHETIC_publisher');return new Response(JSON.stringify({permissions:url.includes(originalSheetId)?owners:[...owners,...readers]}));
+  }});
+ const verifier=createAuthorityReleaseMetadataVerifier({metadataAdapter:adapter,originalSheetId,syntheticSheetId,publisherHash,callerHash,callerPermissionHash:hash('SYNTHETIC_CALLER'),expectedAuthorizationSheets});
+ await s.control.withPreparation(async cap=>{for(const name of credentialPurposes)await cap.externalRead(async()=>{},'P:'+name);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:31});});
+ await s.control.withRuntime(binding,async cap=>{
+  const view=(phase,settlement=false)=>({phase,externalRead:(io,alias)=>(settlement?cap.settlementRead:cap.externalRead)(io,'F:'+phase+'.'+alias)});
+  assert.equal((await verifier.read(view('wrapper-before'))).originalContainer.callerRole,'none');await cap.dispatchCompatibility({entry:'wrapper',nativeMs:0,observedAt:s.options.now(),credentialExpiresAt:clock+3600000},async()=>{});
+  assert.equal((await verifier.read(view('wrapper-after',true))).facts.callerSheetRole,'reader');await cap.accountNative({entry:'wrapper',totalMs:1,executionHash:'e'.repeat(64)});await cap.finishCompatibility('wrapper');
+ });
+ assert.equal(s.get().spent,38);assert.equal(s.get().preparation.importedReads,25);assert.deepEqual(actions,['F:wrapper-before.synthetic-acl','F:wrapper-before.original-acl','F:wrapper-before.caller-sheets-metadata','F:wrapper-after.synthetic-acl','F:wrapper-after.original-acl','F:wrapper-after.caller-sheets-metadata']);
+});
+for(const name of credentialPurposes)test('credential purpose '+name+' cannot be replayed or borrowed',async()=>{
+ const s=setup({decisionHash:credentialDecision});let io=0;await assert.rejects(s.control.withPreparation(async cap=>{for(const n of credentialPurposes)await cap.externalRead(async()=>{io++;},'P:'+n);await cap.externalRead(async()=>{io++;},'P:'+name);}),/TRIAL_STOPPED/);assert.equal(io,4);assert.equal(s.get().spent,29);
+});
+for(const label of ['P:caller','P:publisher','A:original-project','B:fixture-import','P:publisher-refresh','P:publisher-userinfo'])test('new policy denies unbound/early '+label+' before IO',async()=>{
+ const s=setup({decisionHash:credentialDecision});let io=0;await assert.rejects(s.control.withPreparation(cap=>cap.externalRead(async()=>{io++;},label)),/TRIAL_STOPPED/);assert.equal(io,0);assert.equal(s.get().spent,25);
+});
+test('failed publisher identity stays charged, prevents A and preserves independent cleanup',async()=>{
+ const s=setup({decisionHash:credentialDecision});let io=0;
+ await assert.rejects(s.control.withPreparation(async cap=>{for(const name of credentialPurposes.slice(0,3))await cap.externalRead(async()=>{},'P:'+name);await assert.rejects(cap.externalRead(async()=>{throw Error('PRIVATE_IDENTITY');},'P:publisher-userinfo'),/^Error: TRIAL_STOPPED$/);await assert.rejects(cap.externalRead(async()=>{io++;},'A:original-project'),/TRIAL_STOPPED/);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.cleanup('read-original-project',async()=>{});}),/TRIAL_STOPPED/);
+ assert.equal(io,0);assert.equal(s.get().spent,32);assert.deepEqual(s.get().preparation.cActions,['restore-editor','read-restored-editor']);assert.deepEqual(s.get().preparation.iActions,['read-original-project']);
+});
+test('original claim cannot downgrade or switch credential purpose policy',async()=>{
+ const s=setup({decisionHash:credentialDecision});await s.control.withPreparation(cap=>cap.externalRead(async()=>{},'P:caller-bind'));const before=readFileSync(s.options.path);
+ await assert.rejects(mod.createAuthorityPreparationControl({...s.options,decisionHash}).withPreparation(async()=>{}),/TRIAL_STOPPED/);assert.deepEqual(readFileSync(s.options.path),before);
+});
+test('credential policy cannot hand off without its four preparation purposes',async()=>{
+ const s=setup({decisionHash:credentialDecision});await assert.rejects(s.control.withPreparation(async cap=>{await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:'d'.repeat(64),expectedSpent:27});}),/TRIAL_STOPPED/);assert.equal(s.get().spent,27);assert.equal(s.get().preparation.version,1);
+});
 for(const failure of ['EOF','SIGKILL'])test('original scope holds flock after budget child '+failure+' until entered IO drains',async()=>{
  const s=setup(),spawn=cp.spawn;let child,enter,release,settled=false,scope,otherIO=0;
  const entered=new Promise(r=>{enter=r;}),gate=new Promise(r=>{release=r;});
@@ -291,4 +371,78 @@ for(const kind of ['ordinary','C','I']) test('same preparation scope rejects ove
   if(rejected&&kind!=='ordinary')await (kind==='C'?cap.restoreOriginalEditor('restore-editor',async()=>{after++;}):cap.cleanup('read-original-project',async()=>{after++;}));
  });
  await assert.rejects(scope,/TRIAL_STOPPED/);assert.equal(rejected,true);assert.equal(secondIO,0);assert.equal(maximum,1);assert.equal(after,kind==='ordinary'?0:1);assert.equal(s.get().spent,kind==='ordinary'?26:27);
+});
+
+// Approved supplemental policy binds the original counter and permanent epoch.
+// These fixtures use new synthetic paths only; no actual preparation is claimed.
+test('supplemental decision is pure at construction and preserves legacy history on first debit',async()=>{
+ const s=setup({decisionHash}),before=readFileSync(s.options.path);assert.deepEqual(readFileSync(s.options.path),before);assert.equal(s.get().preparation,undefined);
+ await s.control.withPreparation(cap=>cap.externalRead(async()=>{assert.equal(s.get().spent,26);assert.equal(s.get().preparation.events.at(-1).action,'A:original-project');},'A:original-project'));
+ assert.equal(s.get().preparation.decisionHash,decisionHash);assert.equal(s.get().preparation.importedReads,25);assert.equal(s.get().approval_sha256,s.options.approvalHash);assert.equal(s.get().proposal_sha256,s.options.proposalHash);
+});
+for(const patch of [{decisionHash:'f'.repeat(64)},{decisionHash:null},{decisionHash,importedReads:26}])test('supplemental policy rejects an unapproved binding '+JSON.stringify(patch),()=>{
+ assert.throws(()=>setup(patch),/TRIAL_STOPPED/);
+});
+for(const charge of [undefined,null,'A:unknown','B:original-project','F:qualified-before.original-project','G:qualified-before:caller:pages','G:wrapper-before:other:pages','G:wrapper-before:caller:unknown','T:unknown-settlement'])test('supplemental preparation refuses missing or misplaced charge '+String(charge),async()=>{
+ const s=setup({decisionHash});let io=0;await assert.rejects(s.control.withPreparation(cap=>cap.externalRead(async()=>{io++;},charge)),/TRIAL_STOPPED/);assert.equal(io,0);assert.equal(s.get().spent,25);
+});
+test('fixed alias cannot be repeated or relabeled to borrow another fixed bucket',async()=>{
+ const s=setup({decisionHash});let io=0;await assert.rejects(s.control.withPreparation(async cap=>{await cap.externalRead(async()=>{io++;},'A:original-project');await cap.externalRead(async()=>{io++;},'A:original-project');}),/TRIAL_STOPPED/);assert.equal(io,1);assert.equal(s.get().spent,26);
+ await s.control.withPreparation(async cap=>{await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.cleanup('read-original-project',async()=>{});});assert.equal(s.get().spent,29);
+});
+test('failed charged IO remains UNKNOWN and consumes its original alias without refund',async()=>{
+ const s=setup({decisionHash});await assert.rejects(s.control.withPreparation(cap=>cap.externalRead(async()=>{throw Error('PRIVATE_IO');},'B:fixture-import')),/TRIAL_STOPPED/);
+ assert.equal(s.get().spent,26);assert.equal(s.get().preparation.events.at(-1).outcome,'UNKNOWN');assert.equal(s.get().preparation.events.at(-1).action,'B:fixture-import');
+ await s.control.withPreparation(cap=>cap.cleanup('remove-reader',async()=>{}));assert.equal(s.get().spent,27);
+});
+for(const [charge,max] of [['P:caller',2],['P:publisher',2]])test(charge+' hard cap cannot borrow unused peer or native quota',async()=>{
+ const s=setup({decisionHash});let io=0;await assert.rejects(s.control.withPreparation(async cap=>{for(let i=0;i<=max;i++)await cap.externalRead(async()=>{io++;},charge);}),/TRIAL_STOPPED/);assert.equal(io,max);assert.equal(s.get().spent,25+max);
+});
+for(const [category,max] of [['pages',4],['setupReads',2],['identityReads',1],['quotaReads',1]])test('native '+category+' has an independent per-window cap',async()=>{
+ const s=setup({decisionHash});await s.control.withPreparation(async cap=>{await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:'d'.repeat(64),expectedSpent:27});});
+ let io=0;await assert.rejects(s.control.withRuntime('d'.repeat(64),async cap=>{for(let i=0;i<=max;i++)await cap.externalRead(async()=>{io++;},'G:wrapper-before:caller:'+category);}),/TRIAL_STOPPED/);assert.equal(io,max);assert.equal(s.get().spent,27+max);
+});
+test('supplemental binding cannot be dropped or changed when reopening the existing original counter',async()=>{
+ const s=setup({decisionHash});await s.control.withPreparation(cap=>cap.externalRead(async()=>{},'A:original-project'));const before=readFileSync(s.options.path),options={...s.options};delete options.decisionHash;
+ let io=0;await assert.rejects(mod.createAuthorityPreparationControl(options).withPreparation(cap=>cap.externalRead(async()=>{io++;})),/TRIAL_STOPPED/);assert.equal(io,0);assert.deepEqual(readFileSync(s.options.path),before);
+});
+test('strict policy denies unassigned bulk reservations without spending or IO',async()=>{
+ const s=setup({decisionHash});await assert.rejects(s.control.withPreparation(cap=>cap.reserveExternalReads(1)),/TRIAL_STOPPED/);assert.equal(s.get().spent,25);
+});
+test('strict policy never admits direct qualified RPC even after the wrapper is fully complete',async()=>{
+ const s=setup({decisionHash});const binding='d'.repeat(64);await s.control.withPreparation(async cap=>{await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:27});});
+ let io=0;await s.control.withRuntime(binding,async cap=>{await cap.dispatchCompatibility({entry:'wrapper',nativeMs:0,observedAt:clock,credentialExpiresAt:clock+3600000},async()=>{io++;});await cap.accountNative({entry:'wrapper',totalMs:100,executionHash:'e'.repeat(64)});await cap.finishCompatibility('wrapper');});
+ await assert.rejects(s.control.withRuntime(binding,cap=>cap.dispatchCompatibility({entry:'qualified',nativeMs:100,observedAt:clock,credentialExpiresAt:clock+3600000},async()=>{io++;})),/TRIAL_STOPPED/);assert.equal(io,1);assert.equal(s.get().spent,28);assert.deepEqual(s.get().preparation.runtime.entries.map(e=>e.entry),['wrapper']);
+});
+test('G after and F after use reserved observation buckets; T remains independent and limited to three',async()=>{
+ const s=setup({decisionHash}),binding='d'.repeat(64);await s.control.withPreparation(async cap=>{await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:27});});
+ let io=0;await assert.rejects(s.control.withRuntime(binding,async cap=>{
+  await cap.dispatchCompatibility({entry:'wrapper',nativeMs:0,observedAt:clock,credentialExpiresAt:clock+3600000},async()=>{});
+  await cap.settlementRead(async()=>{io++;},'G:wrapper-after:caller:pages');await cap.settlementRead(async()=>{io++;},'F:wrapper-after.original-project');
+  for(let i=0;i<4;i++)await cap.settlementRead(async()=>{io++;},'T:unknown-settlement');
+ }),/TRIAL_STOPPED/);assert.equal(io,5);assert.equal(s.get().spent,33);assert.equal(s.get().preparation.runtime.pending.entry,'wrapper');
+ for(const action of ['close-deployment','remove-reader','revoke-token'])await s.control.withRuntime(binding,cap=>cap.cleanup(action,async()=>{}));assert.equal(s.get().spent,36);
+});
+
+test('complete approved allocation reaches exactly160 while keeping C2 and I17 independent',async()=>{
+ const s=setup({decisionHash}),binding='d'.repeat(64);let io=0;
+ await s.control.withPreparation(async cap=>{
+  for(const bucket of ['A','B','C','D','E'])for(const operation of fixedOperations[bucket]){
+   if(['restore-editor','read-restored-editor'].includes(operation))await cap.restoreOriginalEditor(operation,async()=>{io++;});
+   else await cap.externalRead(async()=>{io++;},bucket+':'+operation);
+  }
+  for(const actor of ['caller','publisher'])for(let n=0;n<2;n++)await cap.externalRead(async()=>{io++;},'P:'+actor);
+  assert.equal(s.get().spent,77);await cap.handoff({runtimeBinding:binding,expectedSpent:77});
+ });
+ await s.control.withRuntime(binding,async cap=>{
+  for(const operation of fixedOperations.F.filter(v=>v.startsWith('wrapper-before.')))await cap.externalRead(async()=>{io++;},'F:'+operation);
+  for(const actor of ['caller','publisher'])for(const [category,max] of [['pages',4],['setupReads',2],['identityReads',1],['quotaReads',1]])for(let n=0;n<max;n++)await cap.externalRead(async()=>{io++;},'G:wrapper-before:'+actor+':'+category);
+  assert.equal(s.get().spent,108);await cap.dispatchCompatibility({entry:'wrapper',nativeMs:0,observedAt:s.options.now(),credentialExpiresAt:s.options.now()+3600000},async()=>{io++;});
+  for(const actor of ['caller','publisher'])for(const [category,max] of [['pages',4],['setupReads',2],['identityReads',1],['quotaReads',1]])for(let n=0;n<max;n++)await cap.settlementRead(async()=>{io++;},'G:wrapper-after:'+actor+':'+category);
+  for(const operation of fixedOperations.F.filter(v=>v.startsWith('wrapper-after.')))await cap.settlementRead(async()=>{io++;},'F:'+operation);
+  for(let n=0;n<3;n++)await cap.settlementRead(async()=>{io++;},'T:unknown-settlement');
+  await cap.accountNative({entry:'wrapper',totalMs:100,executionHash:'e'.repeat(64)});await cap.finishCompatibility('wrapper');assert.equal(s.get().spent,143);
+ });
+ await s.control.withRuntime(binding,async cap=>{for(const operation of fixedOperations.I)await cap.cleanup(operation,async()=>{io++;});});
+ assert.equal(s.get().spent,160);assert.equal(io,135);assert.equal(s.get().preparation.cActions.length,2);assert.equal(s.get().preparation.iActions.length,17);assert.equal(s.get().preparation.events.length,135);
 });

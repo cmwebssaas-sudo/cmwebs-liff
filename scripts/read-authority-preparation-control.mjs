@@ -1,6 +1,7 @@
 // Local preparation only. Trusted orchestration pins IO and actual Google gates.
 // No counter mutation, child, account, credential or trial RPC at construction.
 import {spawn} from 'node:child_process';
+import {getAuthorityTrialPolicy} from './read-authority-trial-budget-plan.mjs';
 import {resolve,dirname} from 'node:path';
 import {userInfo} from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -12,10 +13,12 @@ const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v),integer=Number.isS
 const only=(v,keys,required=keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>keys.includes(k))&&required.every(k=>Object.hasOwn(v,k));
 export function createAuthorityPreparationControl(input){
  try{
-  if(!only(input,['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now','pause'],['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt']))stop();
+  if(!only(input,['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now','pause','decisionHash'],['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt']))stop();
   const {epoch,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,now=Date.now,pause=delay}=input;
+  const policy=Object.hasOwn(input,'decisionHash')?Object.freeze({decisionHash:input.decisionHash}):Object.freeze({});
+  if('decisionHash' in policy){getAuthorityTrialPolicy(policy.decisionHash);if(importedReads!==25)stop();}
   if(typeof input.path!=='string'||typeof epoch!=='string'||!/^[-A-Za-z0-9_]{20,200}$/.test(epoch)||![approvalHash,proposalHash,legacySha256].every(digest)||!integer(importedReads)||importedReads<0||importedReads>141||!integer(expiresAt)||[now,pause].some(f=>typeof f!=='function'))stop();
-  const path=resolve(input.path),binding=hash(JSON.stringify({path,epoch,approvalHash,proposalHash,legacySha256,importedReads,expiresAt}));let busy=false,localStop=false,currentOwned=null,scopeSerial=0;
+  const path=resolve(input.path),binding=hash(JSON.stringify({path,epoch,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,...policy}));let busy=false,localStop=false,currentOwned=null,scopeSerial=0;
   const stopRequested=()=>{
    // Any marker, including a partial exclusive write, is a negative veto.
    // It grants no cleanup authority: Python still validates the canonical
@@ -82,7 +85,7 @@ export function createAuthorityPreparationControl(input){
    const inspectRuntime=()=>tracked(async()=>{
     const r=view(await send({op:'runtime-inspect'}),['runtimeBinding','runtime']);alive();
     if(r.runtimeBinding!==runtimeBinding||!only(r.runtime,['nativeMs','rpcEntries','pending','lastExecutionHash'])||!integer(r.runtime.nativeMs)||r.runtime.nativeMs<0||r.runtime.nativeMs>900000||!Array.isArray(r.runtime.rpcEntries)||r.runtime.rpcEntries.length>2||r.runtime.rpcEntries.some((v,i)=>v!==['wrapper','qualified'][i])||(r.runtime.pending!==null&&(!only(r.runtime.pending,['entry','startedAt'])||!['wrapper','qualified'].includes(r.runtime.pending.entry)||!integer(r.runtime.pending.startedAt)))||(r.runtime.lastExecutionHash!==null&&!digest(r.runtime.lastExecutionHash)))stop();
-    return Object.freeze({source:'canonical-preparation-ledger',epoch,expiresAt,runtimeBinding,spent:r.spent,state:r.state,nativeMs:r.runtime.nativeMs,rpcEntries:Object.freeze([...r.runtime.rpcEntries]),pending:r.runtime.pending===null?null:Object.freeze({...r.runtime.pending}),lastExecutionHash:r.runtime.lastExecutionHash});
+    return Object.freeze({source:'canonical-preparation-ledger',epoch,expiresAt,runtimeBinding,decisionHash:policy.decisionHash??null,spent:r.spent,state:r.state,nativeMs:r.runtime.nativeMs,rpcEntries:Object.freeze([...r.runtime.rpcEntries]),pending:r.runtime.pending===null?null:Object.freeze({...r.runtime.pending}),lastExecutionHash:r.runtime.lastExecutionHash});
    });
    const inspectCleanup=()=>tracked(async()=>{
     const r=view(await send({op:'cleanup-inspect'}),['cleanup']);alive();const c=r.cleanup;
@@ -109,7 +112,7 @@ export function createAuthorityPreparationControl(input){
    const finishCompatibility=entry=>tracked(async()=>{
     idle();if(pending!==1||failed||stopRequested()||eligibleEntry!==entry||!['wrapper','qualified'].includes(entry))stop();const t=now();if(!integer(t))stop();const r=view(await send({op:'rpc-finish',entry,now:t}));alive();if(failed||r.state!=='ready'||stopRequested())stop();eligibleEntry=null;
    });
-   const control=Object.freeze({inspectCleanup,waitForExternalReadSlot:units=>tracked(()=>{idle();return wait('ordinary',null,units);}),reserveExternalReads:units=>tracked(()=>{idle();return request('debit','ordinary',null,units);}),externalRead:io=>tracked(()=>action('ordinary',null,io)),restoreOriginalEditor:(name,io)=>tracked(()=>action('C',name,io)),cleanup:(name,io)=>tracked(()=>action('I',name,io)),...(mode==='preparation'?{handoff}:{inspectRuntime,dispatchCompatibility,settlementRead:io=>tracked(()=>action('S',null,io)),accountNative,finishCompatibility})});
+   const control=Object.freeze({decisionHash:policy.decisionHash??null,inspectCleanup,waitForExternalReadSlot:units=>tracked(()=>{idle();return wait('ordinary',null,units);}),reserveExternalReads:units=>tracked(()=>{idle();return request('debit','ordinary',null,units);}),externalRead:(io,charge=null)=>tracked(()=>action('ordinary',policy.decisionHash?charge:null,io)),restoreOriginalEditor:(name,io)=>tracked(()=>action('C',name,io)),cleanup:(name,io)=>tracked(()=>action('I',name,io)),...(mode==='preparation'?{handoff}:{inspectRuntime,dispatchCompatibility,settlementRead:(io,charge=null)=>tracked(()=>action('S',charge,io)),accountNative,finishCompatibility})});
    const exited=()=>terminal||!child||child.exitCode!==null||child.signalCode!==null?Promise.resolve():terminalPromise;
    const fence=async()=>{
     if(!initialReady||stopFenced)return;
@@ -135,7 +138,7 @@ export function createAuthorityPreparationControl(input){
      buffer+=chunk;if(buffer.length>100000){ended=true;child.kill('SIGTERM');return;}
      while(buffer.includes('\n')){const i=buffer.indexOf('\n'),line=buffer.slice(0,i);buffer=buffer.slice(i+1);const p=waiting.shift();if(!p){ended=true;child.kill('SIGTERM');return;}try{p.resolve(JSON.parse(line));}catch(_){p.reject(Error('TRIAL_STOPPED'));}}
     });
-    const initial=await send({path,epoch,binding,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,now:t,mode,...(mode==='runtime'?{runtimeBinding}:{})});if(initial.ok!==true)stop();initialReady=true;
+    const initial=await send({path,epoch,binding,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,...policy,now:t,mode,...(mode==='runtime'?{runtimeBinding}:{})});if(initial.ok!==true)stop();initialReady=true;
     result=await callback(control);if(pending!==0||failed)stop();
    }catch(_){scopeFailed=true;await fence();}
    finally{

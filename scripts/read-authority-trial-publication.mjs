@@ -49,7 +49,7 @@ export function createAuthorityTrialPublication(input){
   const base='https://script.googleapis.com/v1/projects/'+scriptId,contentFields='scriptId,files(name,type,source)',content=base+'/content?fields='+encodeURIComponent(contentFields),description='CMWebs C3 trial '+hash(epoch).slice(0,16);
   const io=async(url,method,body,t=token())=>json(await fetcher(url,{method,redirect:'manual',signal:AbortSignal.timeout(10000),headers:{authorization:'Bearer '+t.accessToken,'cache-control':'no-cache, no-store',...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})}),url);
   const contentMatch=(v,expected)=>{if(!only(v,['scriptId','files'])||v.scriptId!==scriptId||filesHash(files(v.files,expected.length))!==filesHash(expected))stop();};
-  const ordinary=async(url,method,body,intent)=>{live();const t=token();return cap.external(async()=>{live();if(t.expiresAt-now()<=10000)stop();if(intent){write(intent);live();}return await io(url,method,body,t);});};
+  const ordinary=async(charge,url,method,body,intent)=>{live();const t=token();return cap.external(async()=>{live();if(t.expiresAt-now()<=10000)stop();if(intent){write(intent);live();}return await io(url,method,body,t);},charge);};
   const restoreWork=async()=>{
    if(!journal.stageAttempted)return;let receiptFailed=false,cleanupFailed=false;
    const best=patch=>{try{write(patch);}catch(_){receiptFailed=true;}};
@@ -90,15 +90,15 @@ export function createAuthorityTrialPublication(input){
    if(publishing||restoring||readingOriginal)stop();publishing=true;let op,claimed=false,failed=false;
    try{op=openSync(operationPath,'wx',0o600);integrity();if(journal.started||localStop||stopped())stop();claimed=true;write({started:true,state:'running'});
     try{
-     contentMatch(await ordinary(content,'PUT',{files:library},{stageAttempted:true,stageOutcome:'UNKNOWN'}),library);write({stageOutcome:'ACK_MATCHED'});live();
-     const v=await ordinary(base+'/versions?fields='+encodeURIComponent('scriptId,versionNumber,description,createTime'),'POST',{description},{versionAttempted:true,versionOutcome:'UNKNOWN'});
+     contentMatch(await ordinary('C:library-source-put',content,'PUT',{files:library},{stageAttempted:true,stageOutcome:'UNKNOWN'}),library);write({stageOutcome:'ACK_MATCHED'});live();
+     const v=await ordinary('C:library-version-create',base+'/versions?fields='+encodeURIComponent('scriptId,versionNumber,description,createTime'),'POST',{description},{versionAttempted:true,versionOutcome:'UNKNOWN'});
      if(record(v)&&v.scriptId===scriptId&&v.versionNumber===7)write({libraryVersion:7});version(v,scriptId);if(v.versionNumber!==7||v.description!==description)stop();write({versionOutcome:'ACK_MATCHED'});live();
-     const fixed=await ordinary(content+'&versionNumber=7','GET');contentMatch(fixed,library);write({libraryVerified:true});live();
+     const fixed=await ordinary('C:library-fixed-content',content+'&versionNumber=7','GET');contentMatch(fixed,library);write({libraryVerified:true});live();
     }catch(_){failed=true;}finally{try{await restoreWork();}catch(_){failed=true;}}
     if(failed)stop();live();
-    const inventory=await ordinary(base+'/versions?fields='+encodeURIComponent('nextPageToken,versions(scriptId,versionNumber,description,createTime)')+'&pageSize=200','GET');
+    const inventory=await ordinary('C:library-versions-inventory',base+'/versions?fields='+encodeURIComponent('nextPageToken,versions(scriptId,versionNumber,description,createTime)')+'&pageSize=200','GET');
     if(!only(inventory,['versions','nextPageToken'],['versions'])||(inventory.nextPageToken!==undefined&&inventory.nextPageToken!=='')||!Array.isArray(inventory.versions)||inventory.versions.length!==7)stop();const rows=[...inventory.versions].sort((a,b)=>a.versionNumber-b.versionNumber);rows.forEach(v=>version(v,scriptId));if(checksum(rows.slice(0,6))!==checksum(baseline)||rows[6].versionNumber!==7||rows[6].description!==description)stop();live();
-    const dep=await ordinary(base+'/deployments?fields='+encodeURIComponent('nextPageToken,deployments(deploymentId,deploymentConfig(scriptId,versionNumber,manifestFileName,description))')+'&pageSize=200','GET');
+    const dep=await ordinary('C:library-deployments-inventory',base+'/deployments?fields='+encodeURIComponent('nextPageToken,deployments(deploymentId,deploymentConfig(scriptId,versionNumber,manifestFileName,description))')+'&pageSize=200','GET');
     if(!only(dep,['deployments','nextPageToken'],['deployments'])||(dep.nextPageToken!==undefined&&dep.nextPageToken!=='')||checksum(deployments(dep.deployments,scriptId))!==checksum(serving))stop();live();write({state:'finished'});
     return Object.freeze({libraryVersion:7,librarySha256:bundle.librarySha256,editorRestoredAtReadback:true,publicationAccepted:false,rollbackComplete:false});
    }catch(_){if(claimed)try{integrity();write({state:'stopped'});}catch(_){}stop();}finally{release(op);publishing=false;}

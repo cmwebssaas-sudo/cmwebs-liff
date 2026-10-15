@@ -33,7 +33,9 @@ export function createAuthorityPhaseControl(control){
    const p=Promise.resolve(raw).catch(()=>{g.failed=true;stop();});g.operations.add(p);
    void p.then(()=>g.operations.delete(p),()=>g.operations.delete(p));void p.catch(()=>{});return p;
   };
-  const capability=Object.freeze(Object.fromEntries([...new Set(Object.values(phases).flatMap(s=>[...s]))].map(name=>[name,(...args)=>invoke(name,args)])));
+  const capability=Object.freeze({get decisionHash(){
+   const g=origin.getStore();if(!g||g!==current||!g.active||!g.accepting)stop();return g.cap.decisionHash??null;
+  },...Object.fromEntries([...new Set(Object.values(phases).flatMap(s=>[...s]))].map(name=>[name,(...args)=>invoke(name,args)]))});
   const activate=async(phase,binding,callback)=>{
    const previous=origin.getStore();
    if(previous&&previous!==current)stop();
