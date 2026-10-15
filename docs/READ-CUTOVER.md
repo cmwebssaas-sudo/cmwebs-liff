@@ -284,3 +284,25 @@ Prior daf25c4 Linux tenants50.894ms FAIL retained; new-head CI required, no
 real acceptance/epoch. New comparison read-f78e12a3f964adf8bd38451988ac76840ae0718c1d0bf328bf9e27ae8b7a52d8.
 Actual25/160/native STOP/off/blank and all original900s/72h/seven-day/Taipei/
 device gates remain; only docs after tests/review. Rollback source to daf25c4.
+
+
+2026-10-15 room reads now materialize the actual replica dataset once. The
+pre-fetch calculator uses empty Sheet services for the unchanged pure gallery
+helpers; access validation still precedes public fetch, and the final runtime
+is constructed after fetch with the original options/clock ordering. No shared
+Workspace data/resource cache is introduced. Actual-route32-row diagnostic:
+64→32 matrix row enumerations, exact full GAS JSON preserved. TDD RED duplicate
+materialization→GREEN14/14, including absent gallery and two isolated galleries.
+Full1794/1794 (zero fail/cancel/skip), ownedPG/Core cleanup verified;
+Worker36/36 plus bundle dry-run PASS. Original seven100-sample local500 fixture
+p9512.626–20.092ms<50; static review0, validate72/40/cache/comparison178/diff PASS.
+Snapshot0531c3ac4ea1c76a006fb2c61f83f66b378536e692f15c3ac1f5c926ad7148c7.
+Comparison read-4ee65a7fe1f84baf61a3dbbfe3a5ae37afc02d8ebb217b9cbaa652dd60e8b3b2.
+The prior a043240 Linux room52.967ms FAIL remains; fresh exact-head CI is required.
+Local fixture timing is not native/authority/remote/Taipei/device acceptance.
+Actual25/160/native STOP/off/blank and original900s/72h/seven-day gates remain;
+no formal release/Property/trigger/data change or real observation start.
+Risk: future gallery helpers must remain independent of Sheet rows. Existing
+full-response/public-cover regressions guard that dependency. Rollback source
+and matching comparison identity to a043240 before any new observation.
+Only documentation changed after the verified source/tests/review.

@@ -2068,3 +2068,14 @@ Prior daf25c4 Linux tenants50.894ms FAIL retained; new-head CI required, no
 real acceptance/epoch. New comparison read-f78e12a3f964adf8bd38451988ac76840ae0718c1d0bf328bf9e27ae8b7a52d8.
 Actual25/160/native STOP/off/blank and all original900s/72h/seven-day/Taipei/
 device gates remain; only docs after tests/review. Rollback source to daf25c4.
+
+
+2026-10-15 C6 single room matrix: actual route32 rows/64→32 enumerations,
+full GAS JSON unchanged; TDD duplicate-materialization RED→GREEN14/14, public
+covers/request isolation preserved. Static review0; full1794/1794 with Core/PG
+cleanup, Worker36/36/bundle, validate72/40/cache/comparison178/diff PASS.
+Snapshot0531c3ac4ea1c76a006fb2c61f83f66b378536e692f15c3ac1f5c926ad7148c7.
+Seven100-sample local500 fixture p9512.626–20.092ms<50; prior a043240 Linux
+rooms52.967ms FAIL retained, new-head CI required. Original real gates unchanged;
+actual25/160/native STOP, all flags off/endpoint blank, fresh72h/seven-day
+NOT_STARTED. No formal changes; rollback source/comparison to a043240.

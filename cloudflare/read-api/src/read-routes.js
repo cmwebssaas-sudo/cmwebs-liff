@@ -43,11 +43,15 @@ export async function serveReadRoute(request,context) {
   try {
     const dataset=await context.loadDataset(context.access);
     if(url.pathname==='/v1/rooms'&&(dataset.V2_rooms||[]).some(row=>row.replica_room_bridge_supported!==true)) return readFailure('READ_DEPENDENCY_UNSUPPORTED');
-    let calculator=createReadCalculator(createReadServices(dataset,context.access,context.options));
+    let options=context.options;
     if(url.pathname==='/v1/rooms') {
-      const publicResources=await loadPublicRoomResources((dataset.V2_rooms||[]).map(row=>row.room_website_url),calculator,context.options);
-      calculator=createReadCalculator(createReadServices(dataset,context.access,{...context.options,publicResources}));
+      // Gallery parsing needs only the existing pure helpers. Validate access
+      // without building and discarding a second copy of every Sheet matrix.
+      const helpers=createReadCalculator(createReadServices({},context.access,options));
+      const publicResources=await loadPublicRoomResources((dataset.V2_rooms||[]).map(row=>row.room_website_url),helpers,options);
+      options={...options,publicResources};
     }
+    const calculator=createReadCalculator(createReadServices(dataset,context.access,options));
     const uid=context.access.line_user_id;
     const args=url.pathname==='/v1/home'?[uid,section,q.get('read_view')]:
       url.pathname==='/v1/tenants'?[uid,'summary']:

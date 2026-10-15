@@ -5,7 +5,7 @@ import { createReadServices } from '../cloudflare/read-api/src/read-runtime.js';
 import { loadPublicRoomResources } from '../cloudflare/read-api/src/public-room-resources.js';
 import { serveReadRoute } from '../cloudflare/read-api/src/read-routes.js';
 import worker from '../cloudflare/read-api/src/index.js';
-import { dataset,access,richDataset,projectedDataset,originalGas } from './fixtures/read-parity/runtime.mjs';
+import { dataset,access,fixture,plain,richDataset,projectedDataset,originalGas } from './fixtures/read-parity/runtime.mjs';
 
 test('production read routes stay closed even with fabricated fixture or query identity',async()=>{
   for(const path of ['home','revenue','tenants','rooms','arrears','properties']) {
@@ -49,6 +49,36 @@ test('public gallery loader preserves the actual parser, refuses private targets
   assert.deepEqual(await loadPublicRoomResources(values,helpers,{fetch,now:2000}),first);
   assert.equal(calls,1);
   await loadPublicRoomResources(values,helpers,{fetch,now:21601001});assert.equal(calls,2);
+});
+
+test('rooms materialize each replica row once while retaining request-local public gallery results',async()=>{
+  const previousPhoto='https://synthetic-room-runtime-a.z3house.com/api/public/media/11111111-2222-3333-4444-555555555555';
+  for(const site of ['', 'synthetic-room-runtime-a', 'synthetic-room-runtime-b']) {
+    const input=richDataset(), url=site?'https://'+site+'.z3house.com/spaces/test/':'';
+    const photo=site?'https://'+site+'.z3house.com/api/public/media/11111111-2222-3333-4444-555555555555':'';
+    const body='<section class="space-detail__media"><img src="'+photo+'"></section>';
+    if(url)input.V2_rooms[0].room_website_url=url;
+    const enumerations=[];
+    const projected=Object.fromEntries(Object.entries(projectedDataset(input)).map(([name,rows])=>[name,rows.map(row=>{
+      const count={value:0};enumerations.push(count);
+      return new Proxy(row,{ownKeys(target){count.value++;return Reflect.ownKeys(target);}});
+    })]));
+    let fetches=0;
+    const options=Object.freeze({now:Date.parse(fixture.now),fetch:async(target,request)=>{
+      fetches++;assert.equal(target,url);assert.equal(request.method,'GET');assert.equal(request.redirect,'manual');
+      return new Response(body);
+    }});
+    const response=await serveReadRoute(new Request('https://local.test/v1/rooms?include_archived=1'),{access,loadDataset:async()=>projected,options});
+    assert.equal(response.status,200);
+    const result=await response.json();
+    const publicResources=url?{[url]:{status:200,body}}:{};
+    assert.deepEqual(result,plain(originalGas(input,access,{publicResources}).getLandlordRoomCenterInitByLineUid_('SYNTHETIC_LINE1',true)));
+    if(photo)assert.ok(JSON.stringify(result).includes(photo),'actual room response keeps its public cover');
+    if(site.endsWith('-b'))assert.ok(!JSON.stringify(result).includes(previousPhoto),'another request cannot inherit the previous gallery');
+    assert.equal(fetches,url?1:0);
+    assert.ok(enumerations.length>0);
+    assert.ok(enumerations.every(count=>count.value===1),'each input row should enter only one Sheet matrix');
+  }
 });
 
 test('unsupported existing bridge dependencies fail closed rather than publish a false unbound room',async()=>{
