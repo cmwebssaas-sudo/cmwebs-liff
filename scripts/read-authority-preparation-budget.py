@@ -12,9 +12,9 @@ def day(t): return datetime.fromtimestamp(t/1000,timezone(timedelta(hours=8))).s
 def directory(p):
  s=os.lstat(p)
  if not stat.S_ISDIR(s.st_mode) or s.st_uid!=os.getuid() or stat.S_IMODE(s.st_mode)!=0o700: fail()
-def rawfile(p):
+def rawfile(p,max_size=128000):
  s=os.lstat(p)
- if not stat.S_ISREG(s.st_mode) or s.st_uid!=os.getuid() or stat.S_IMODE(s.st_mode)!=0o600 or s.st_size>128000: fail()
+ if not stat.S_ISREG(s.st_mode) or s.st_uid!=os.getuid() or stat.S_IMODE(s.st_mode)!=0o600 or s.st_size>max_size or s.st_nlink!=1: fail()
  return p.read_bytes()
 def record(p):
  e=json.loads(rawfile(p))
@@ -37,6 +37,10 @@ def request_stop(cfg):
  try:create_record(marker,expected)
  except FileExistsError:
   if record(marker)!=expected:fail()
+  veto=path.with_name(path.name+'.preparation-owner-stop.json')
+  try:create_record(veto,expected)
+  except FileExistsError:
+   if record(veto)!=expected:fail()
 def save(p,v):
  directory(p.parent);tmp=p.with_name(p.name+'.'+uuid.uuid4().hex+'.next')
  fd=os.open(tmp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
@@ -51,6 +55,10 @@ R=['wrapper','qualified']
 DECISION='0b382d87214d9d1fbe658b1615176de48917666698e79092218f1691c358a675'
 CREDENTIAL_DECISION='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72'
 NATIVE_DECISION='3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9'
+REPAIR_INCIDENT='2f231f4b4de097d932281735fac8337f0c59c36cd7bfcc5c892eda4827a8c2f1'
+REPAIR_CALLER='480b16c01748694e5794b46e5ccb84bc75cc459c2e31b9f7c0a8911c35e76abd'
+REPAIR_OWNER='47a88ce3847f43ba9838c32fe5fc182d92e28f5d38dc0a817b3b68cfe46cc73c'
+REPAIR_ACTION='N:research:caller:caller-executions:getTab:1'
 PREPARATION_PURPOSES=['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo']
 FIXED={
  'A':['original-project','original-editor','original-versions','original-deployments','original-v1-content','original-cloud-backup','original-triggers-backup','original-properties-backup','original-container-acl'],
@@ -95,6 +103,7 @@ def policy_key(kind,action,decision):
  if len(bits)==4 and bits[0]=='G' and bits[1] in ['wrapper-before','wrapper-after'] and bits[2] in ['caller','publisher'] and bits[3] in NATIVE:
   if (kind=='S')!=(bits[1]=='wrapper-after'):fail()
   return (action,32 if decision==NATIVE_DECISION and bits[3]=='setupReads' else NATIVE[bits[3]])
+ if action==REPAIR_ACTION and kind=='ordinary' and decision==NATIVE_DECISION:return (action,1)
  if len(bits)==6 and bits[0]=='N' and decision==NATIVE_DECISION:
   if not bits[5].isdigit() or str(int(bits[5]))!=bits[5]:fail()
   op=dict(zip(['stage','actor','target','operation','ordinal'],bits[1:]));op['ordinal']=int(op['ordinal']);native_operation(op)
@@ -105,7 +114,7 @@ def policy_key(kind,action,decision):
   if decision==DECISION and bits[1] in ['caller','publisher']:return (action,2)
  if action=='T:unknown-settlement' and kind=='S':return (action,3)
  fail()
-def policy_usage(events,decision,plan=None):
+def policy_usage(events,decision,plan=None,repair=None):
  if decision not in [DECISION,CREDENTIAL_DECISION,NATIVE_DECISION]:fail()
  used={};n=0;research=0;spent=25
  if plan is not None:
@@ -126,7 +135,9 @@ def policy_usage(events,decision,plan=None):
     if not ready:fail()
    if key.startswith('N:'):
     bits=key.split(':');n+=1
-    if int(bits[-1])!=n or any(used.get('P:'+p)!=1 for p in ['caller-bind','publisher-bind']):fail()
+    exception=key==REPAIR_ACTION and repair is not None and spent==26 and n==1 and used.get('P:caller-bind')==1
+    if key==REPAIR_ACTION and not exception:fail()
+    if int(bits[-1])!=n or (not exception and any(used.get('P:'+p)!=1 for p in ['caller-bind','publisher-bind'])):fail()
     if bits[4]=='next-page' and sum(c for k,c in used.items() if k.startswith('N:'+bits[1]+':'+bits[2]+':') and ':next-page:' in k)>=3:fail()
     if bits[1]=='research':
      if ready or n>8:fail()
@@ -146,7 +157,7 @@ def policy_usage(events,decision,plan=None):
 class Ledger:
  def __init__(self,cfg,inherited=False):
   keys={'path','epoch','binding','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now'}
-  if type(cfg)!=dict or not keys<=set(cfg) or set(cfg)-keys-{'mode','runtimeBinding','decisionHash','nativeTargets'} or any(not digest(cfg[k]) for k in ['binding','approvalHash','proposalHash','legacySha256']) or not integer(cfg['importedReads']) or not 0<=cfg['importedReads']<=141 or not integer(cfg['expiresAt']) or not integer(cfg['now']) or not re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']): fail()
+  if type(cfg)!=dict or not keys<=set(cfg) or set(cfg)-keys-{'mode','runtimeBinding','decisionHash','nativeTargets','repair','repairLiveNonce'} or any(not digest(cfg[k]) for k in ['binding','approvalHash','proposalHash','legacySha256']) or not integer(cfg['importedReads']) or not 0<=cfg['importedReads']<=141 or not integer(cfg['expiresAt']) or not integer(cfg['now']) or not re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']): fail()
   self.strict='decisionHash' in cfg
   if self.strict and (cfg['decisionHash'] not in [DECISION,CREDENTIAL_DECISION,NATIVE_DECISION] or cfg['importedReads']!=25):fail()
   self.native=cfg.get('decisionHash')==NATIVE_DECISION
@@ -154,8 +165,8 @@ class Ledger:
    if type(cfg.get('nativeTargets'))!=dict or set(cfg['nativeTargets'])!=set(TARGETS) or any(type(v)!=str or len(v)>2000 for v in cfg['nativeTargets'].values()):fail()
   elif 'nativeTargets' in cfg:fail()
   self.mode=cfg.get('mode','preparation')
-  if self.mode not in ['preparation','runtime'] or (self.mode=='runtime' and not digest(cfg.get('runtimeBinding'))) or (self.mode=='preparation' and 'runtimeBinding' in cfg):fail()
-  self.cfg=cfg;self.path=Path(cfg['path']);self.original=None
+  if self.mode not in ['preparation','runtime','repair'] or (self.mode=='runtime' and not digest(cfg.get('runtimeBinding'))) or (self.mode=='preparation' and 'runtimeBinding' in cfg):fail()
+  self.cfg=cfg;self.path=Path(cfg['path']);self.original=None;self.repair_context=None;self.repair_settled=None
   if not self.path.is_absolute(): fail()
   directory(self.path.parent)
   lock=self.path.with_name(self.path.name+'.lock');self.inherited=inherited
@@ -168,6 +179,7 @@ class Ledger:
   raw=rawfile(self.path);v=json.loads(raw);self.base(v)
   # Runtime can only reopen the existing canonical counter. Never initialize a
   # phase, claim an epoch or import history from a caller-supplied receipt.
+  if self.mode=='repair' and ('preparation' not in v or 'bindingRepair' in v['preparation']):fail()
   if self.mode=='runtime' and (type(v.get('preparation'))!=dict or v['preparation'].get('version') not in [2,3] or type(v['preparation'].get('handoff'))!=dict or v['preparation']['handoff'].get('runtimeBinding')!=cfg['runtimeBinding']):fail()
   root=Path.home()/'.codex/private/cmwebs-authority-trials';root.mkdir(parents=True,exist_ok=True,mode=0o700);directory(root)
   # A replaceable counter cannot be the only anti-rollback authority.
@@ -177,13 +189,16 @@ class Ledger:
   claim_value={**value,'epoch':cfg['epoch']}
   if claim.exists() or claim.is_symlink():
    if self.record(claim)!=claim_value:fail()
-  else:self.create_record(claim,claim_value)
+  else:
+   if self.mode=='repair':fail()
+   self.create_record(claim,claim_value)
   if self.reg.exists() or self.reg.is_symlink():
    registration=self.record(self.reg)
    if type(registration)!=dict or set(registration)!={'path','binding','checkpoint'} or registration['path']!=value['path'] or registration['binding']!=value['binding']:fail()
    if registration['checkpoint'] is not None and registration['checkpoint']!=v:fail()
    if registration['checkpoint'] is None and 'preparation' in v:fail()
   else:
+   if self.mode=='repair':fail()
    if 'preparation' in v or sha(raw)!=cfg['legacySha256'] or v['spent']!=cfg['importedReads'] or not 0<cfg['expiresAt']-cfg['now']<=21600000:fail()
    self.create_record(self.reg,{**value,'checkpoint':None})
   if 'preparation' not in v:
@@ -191,6 +206,7 @@ class Ledger:
    v['preparation']={'version':1,'binding':cfg['binding'],'legacySha256':cfg['legacySha256'],'importedReads':cfg['importedReads'],'expiresAt':cfg['expiresAt'],'day':day(cfg['now']),'state':'ready','calls':[cfg['now']]*v['spent'],'events':[],'cActions':[],'iActions':[],**({'decisionHash':cfg['decisionHash']} if self.strict else {}),**({'nativePlan':None} if self.native else {})}
    self.persist(v)
   self.original=v;self.validate(v)
+  if self.mode=='repair':self.pin_repair(v,raw)
  def record(self,p):
   return record(p)
  def create_record(self,p,value):
@@ -202,7 +218,15 @@ class Ledger:
   # or native settlement on the independently validated counter/checkpoint.
   # Preserve ambiguous artifacts; request_stop still requires a bound record
   # before returning its successful acknowledgement.
-  try:os.lstat(p);return True
+  try:
+   os.lstat(self.path.with_name(self.path.name+'.preparation-owner-stop.json'));return True
+  except FileNotFoundError:pass
+  except OSError:return True
+  try:
+   os.lstat(p)
+   repair=(self.original or {}).get('preparation',{}).get('bindingRepair')
+   if repair and self.stop_identity(p)==repair['originalStop']:return False
+   return True
   except FileNotFoundError:return False
   except OSError:return True
  def runtime(self,p):
@@ -217,7 +241,7 @@ class Ledger:
   if type(v)!=dict or set(v)-{'preparation'}!=keys or v['limit']!=160 or v['prior_limit']!=40 or v['kind']!='preparation-management-reads' or v['approval_sha256']!=c['approvalHash'] or v['proposal_sha256']!=c['proposalHash'] or not integer(v['spent']) or not 0<=v['spent']<=160:fail()
  def validate(self,v):
   self.base(v);p=v['preparation'];c=self.cfg
-  keys={'version','binding','legacySha256','importedReads','expiresAt','day','state','calls','events','cActions','iActions'}|({'nativePlan'} if self.native else set())
+  keys={'version','binding','legacySha256','importedReads','expiresAt','day','state','calls','events','cActions','iActions'}|({'nativePlan'} if self.native else set())|({'bindingRepair'} if 'bindingRepair' in p else set())
   if type(p)!=dict or p.get('version') not in [1,2,3] or set(p)!=(keys|({'decisionHash'} if self.strict else set())|({'handoff'} if p['version']>=2 else set())|({'runtime'} if p['version']==3 else set())) or p['binding']!=c['binding'] or p['legacySha256']!=c['legacySha256'] or p['importedReads']!=c['importedReads'] or p['expiresAt']!=c['expiresAt'] or p['state'] not in ['ready','stopped'] or not re.fullmatch(r'\d{4}-\d{2}-\d{2}',p['day']) or any(type(p[k])!=list for k in ['calls','events','cActions','iActions']):fail()
   if self.strict and p['decisionHash']!=c['decisionHash']:fail()
   if len(p['events'])>160 or len(p['calls'])!=v['spent'] or any(not integer(t) for t in p['calls']) or len(set(p['cActions']))!=len(p['cActions']) or len(set(p['iActions']))!=len(p['iActions']) or any(a not in C for a in p['cActions']) or any(a not in I for a in p['iActions']):fail()
@@ -234,7 +258,8 @@ class Ledger:
     if e['units']!=1 or e['action'] not in (C if e['kind']=='C' else I):fail()
     (cs if e['kind']=='C' else ins).append(e['action'])
    total+=e['units'];times.extend([e['time']]*e['units'])
-  if self.strict:policy_usage(p['events'],c['decisionHash'],p.get('nativePlan'))
+  if 'bindingRepair' in p:self.validate_repair(p)
+  if self.strict:policy_usage(p['events'],c['decisionHash'],p.get('nativePlan'),p.get('bindingRepair'))
   if self.native and p['nativePlan'] is not None:
    plan=p['nativePlan']
    if day(plan['time'])!=p['day'] or plan['time']>=p['expiresAt'] or plan['spent']>v['spent'] or any(t>plan['time'] for t in p['calls'][:plan['spent']]):fail()
@@ -275,6 +300,7 @@ class Ledger:
   if not integer(t) or not integer(units) or not 1<=units<=10 or any(x>t for x in p['calls']) or (p['version']>=2 and t<p['handoff']['time']):fail()
   if kind in ['ordinary','R','S']:
    phase='runtime' if p['version']>=2 else 'preparation';rt=self.runtime(p)
+   self.live_repair(p)
    if self.mode!=phase or (phase=='runtime' and p['handoff']['runtimeBinding']!=self.cfg['runtimeBinding']) or t>=p['expiresAt'] or day(t)!=p['day'] or v['spent']+units>160-(17-len(p['iActions']))-(2-len(p['cActions'])):fail()
    if kind=='S':
     if self.mode!='runtime' or p['version']!=3 or rt['pending'] is None or (not self.strict and action is not None):fail()
@@ -289,7 +315,7 @@ class Ledger:
    if p['state']!='stopped':p['state']='stopped';self.persist(v)
   else:fail()
   if self.strict:
-   policy_usage(p['events']+[{'kind':kind,'action':action,'units':units,'time':t}],self.cfg['decisionHash'],p.get('nativePlan'))
+   policy_usage(p['events']+[{'kind':kind,'action':action,'units':units,'time':t}],self.cfg['decisionHash'],p.get('nativePlan'),p.get('bindingRepair'))
    if kind=='ordinary':
     if action.startswith(('A:','B:','C:','D:','E:','P:')) and p['version']!=1:fail()
     if action.startswith(('F:','G:')) and (p['version']<2 or rt['entries']):fail()
@@ -309,11 +335,101 @@ class Ledger:
   v['spent']+=1;p['calls'].append(t);p['events'].append({'kind':'R','action':q['entry'],'units':1,'time':t,'outcome':'UNKNOWN'})
   p['version']=3;p['runtime']=rt;rt['nativeMs']=q['nativeMs'];rt['pending']={'entry':q['entry'],'startedAt':t};rt['entries'].append({'entry':q['entry'],'startedAt':t,'beforeNativeMs':q['nativeMs'],'afterNativeMs':None,'executionHash':None,'complete':False})
   self.persist(v);return {**self.view(0),'startedAt':t}
+ def stop_identity(self,path):
+  s=os.lstat(path);return {'sha256':sha(rawfile(path)),'dev':str(s.st_dev),'ino':str(s.st_ino),'mtimeNs':str(s.st_mtime_ns),'ctimeNs':str(s.st_ctime_ns)}
+ def pin_repair(self,v,raw):
+  c=self.cfg;r=c.get('repair')
+  if not self.native or type(r)!=dict or set(r)!={'manifest','ownerApprovalHash','newCopy','drainReceipt','callerDescriptor','originalOptions','nonce'} or r['ownerApprovalHash']!=REPAIR_OWNER or not digest(r['nonce']):fail()
+  def pinned(d,expected):
+   if type(d)!=dict or set(d)!={'path','sha256'} or d['sha256']!=expected:fail()
+   path=Path(d['path']);directory(path.parent);b=rawfile(path)
+   if sha(b)!=expected:fail()
+   return json.loads(b)
+  m=pinned(r['manifest'],REPAIR_INCIDENT);caller=pinned(r['callerDescriptor'],REPAIR_CALLER);original_options=pinned(r['originalOptions'],m['original_options_sha256'])
+  original_keys=['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','decisionHash','nativeTargets']
+  if set(original_options)!=set(original_keys) or any(original_options[k]!=c[k] for k in original_keys):fail()
+  drain=pinned(r['drainReceipt'],m['drain_receipt_sha256'])
+  if drain.get('source')!='canonical-preparation-holder' or drain.get('stopRequested') is not True or drain.get('stopAcknowledged') is not True or drain.get('ownedScope',{}).get('state') not in ['SETTLED','NONE_CAPTURED'] or drain.get('remoteExecutionSettled') is not False or drain.get('trialAccepted') is not False or drain.get('rollbackComplete') is not False:fail()
+  p=v['preparation']
+  if m['counter']!=str(self.path) or m['epoch']!=c['epoch'] or m['binding']!=c['binding'] or m['counter_sha256']!=sha(raw) or m['checkpoint_sha256']!=sha(raw) or m['original_day']!=p['day'] or m['original_expiresAt']!=c['expiresAt'] or (m['spent'],m['P_caller'],m['RPCs'],m['remote_mutations'],m['repair_attempts'])!=(26,'UNKNOWN',0,0,0):fail()
+  if p['version']!=1 or p['state']!='stopped' or v['spent']!=26 or p['nativePlan'] is not None or p['cActions'] or p['iActions'] or len(p['events'])!=1 or p['events'][0]['action']!='P:caller-bind' or p['events'][0]['kind']!='ordinary' or p['events'][0]['units']!=1:fail()
+  if m['claim_path']!=str(self.path)+'.preparation-claim.json' or sha(rawfile(Path(m['claim_path'])))!=m['claim_sha256'] or m['registry_path']!=str(self.reg) or sha(rawfile(self.reg))!=m['registry_sha256']:fail()
+  marker=self.path.with_name(self.path.name+'.preparation-stop.json')
+  manifest_stat=os.lstat(Path(r['manifest']['path']));marker_stat=os.lstat(marker)
+  if marker_stat.st_mtime_ns>manifest_stat.st_mtime_ns or marker_stat.st_ctime_ns>manifest_stat.st_ctime_ns:fail()
+  if m['original_stop_marker_path']!=str(marker) or sha(rawfile(marker))!=m['original_stop_marker_sha256'] or self.path.with_name(self.path.name+'.preparation-owner-stop.json').exists():fail()
+  if caller.get('actor')!='caller' or not digest(caller.get('callerHash')) or caller.get('reference')!=c['nativeTargets']['caller-executions'] or caller.get('credential') is not False or caller.get('fresh_tool_verification_still_required') is not True or caller.get('incident_manifest_sha256')!=REPAIR_INCIDENT or caller.get('owner_decision_sha256')!=REPAIR_OWNER:fail()
+  old=m['original_copy_receipt'];oldroot=Path(old['path']);directory(oldroot);b=rawfile(oldroot/'manifest.json')
+  if sha(b)!=old['sha256']:fail()
+  old_manifest=json.loads(b)
+  if old_manifest['source']!='fixed-authority-trial-rollback-runtime' or old_manifest['files']!=m['original_controller_pins']:fail()
+  for name,pin in old_manifest['files'].items():
+   path=Path(name)
+   if path.is_absolute() or any(bit in ['.','..'] for bit in path.parts):fail()
+   for parent in path.parents:
+    directory(oldroot/parent)
+   target=oldroot/path;directory(target.parent);b=rawfile(target,1000000)
+   if len(b)!=pin['size'] or sha(b)!=pin['sha256']:fail()
+  new=r['newCopy'];newroot=Path(new['path']);directory(newroot);b=rawfile(newroot/'manifest.json')
+  if sha(b)!=new['sha256'] or (newroot/'scripts/read-authority-preparation-budget.py').resolve()!=Path(__file__).resolve():fail()
+  nm=json.loads(b)
+  if nm.get('source')!='fixed-authority-trial-rollback-runtime' or nm.get('policy')!=old_manifest['policy'] or set(nm.get('files',{}))!=set(old_manifest['files'])|{'scripts/read-authority-binding-repair.mjs'}:fail()
+  for name,pin in nm['files'].items():
+   path=Path(name)
+   if path.is_absolute() or '..' in path.parts:fail()
+   for parent in path.parents:
+    directory(newroot/parent)
+   target=newroot/path;directory(target.parent);b=rawfile(target,1000000)
+   if len(b)!=pin['size'] or sha(b)!=pin['sha256']:fail()
+  self.repair_context={'manifest':m,'caller':caller,'originalStop':self.stop_identity(marker),'newCopy':new,'nonce':r['nonce']}
+  self.repair_time(c['now'])
+ def live_repair(self,p):
+  if p.get('bindingRepair') and (p['bindingRepair']['status']!='complete' or self.cfg.get('repairLiveNonce')!=p['bindingRepair']['nonce']):fail()
+ def repair_time(self,t):
+  p=self.current()['preparation']
+  if not integer(t) or any(x>t for x in p['calls']) or t>=p['expiresAt'] or day(t)!=p['day'] or self.path.with_name(self.path.name+'.preparation-owner-stop.json').exists():fail()
+  if self.repair_context and self.stop_identity(self.path.with_name(self.path.name+'.preparation-stop.json'))!=self.repair_context['originalStop']:fail()
+ def validate_repair(self,p):
+  r=p['bindingRepair']
+  keys={'incidentHash','ownerApprovalHash','nonce','newCopy','originalStop','status','beganAt','debitAt','settledAt','completedAt','evidenceHash'}
+  if not self.native or type(r)!=dict or set(r)!=keys or r['incidentHash']!=REPAIR_INCIDENT or r['ownerApprovalHash']!=REPAIR_OWNER or not digest(r['nonce']) or r['status'] not in ['begun','in-flight','settled','complete'] or not integer(r['beganAt']):fail()
+  events=[e for e in p['events'] if e['action']==REPAIR_ACTION]
+  if r['status']=='begun':
+   if events or any(r[k] is not None for k in ['debitAt','settledAt','completedAt','evidenceHash']):fail()
+  else:
+   if len(events)!=1 or events[0]['time']!=r['debitAt'] or not integer(r['debitAt']) or r['debitAt']<r['beganAt']:fail()
+   if r['status']=='in-flight' and any(r[k] is not None for k in ['settledAt','completedAt','evidenceHash']):fail()
+   if r['status'] in ['settled','complete'] and (not integer(r['settledAt']) or r['settledAt']<r['debitAt']):fail()
+   if r['status']=='settled' and any(r[k] is not None for k in ['completedAt','evidenceHash']):fail()
+   if r['status']=='complete' and (not integer(r['completedAt']) or not r['settledAt']<=r['completedAt']<p['expiresAt'] or day(r['completedAt'])!=p['day'] or not digest(r['evidenceHash'])):fail()
+ def repair_command(self,q):
+  if self.mode!='repair' or self.repair_context is None:fail()
+  t=q.get('now');self.repair_time(t);v=self.current();p=v['preparation'];r=p.get('bindingRepair');op=q['op'];ctx=self.repair_context
+  if op=='repair-begin':
+   if set(q)!={'op','now'} or r is not None:fail()
+   p['bindingRepair']={'incidentHash':REPAIR_INCIDENT,'ownerApprovalHash':REPAIR_OWNER,'nonce':ctx['nonce'],'newCopy':ctx['newCopy'],'originalStop':ctx['originalStop'],'status':'begun','beganAt':t,'debitAt':None,'settledAt':None,'completedAt':None,'evidenceHash':None};self.persist(v);return self.view(0)
+  if not r or r['nonce']!=ctx['nonce']:fail()
+  if op in ['repair-wait','repair-debit']:
+   if set(q)!={'op','now'} or r['status']!='begun' or v['spent']!=26 or p['state']!='stopped' or self.stop_requested():fail()
+   recent=sorted(x for x in p['calls'] if t-x<60000);ms=0 if len(recent)<10 else recent[-10]+60000-t
+   if not 0<=ms<=60000 or t+ms>=p['expiresAt'] or day(t+ms)!=p['day']:fail()
+   if op=='repair-wait':return self.view(ms)
+   if ms:fail()
+   r['status']='in-flight';r['debitAt']=t;v['spent']+=1;p['calls'].append(t);p['events'].append({'kind':'ordinary','action':REPAIR_ACTION,'units':1,'time':t,'outcome':'UNKNOWN'});self.persist(v);return self.view(0)
+  if op=='repair-settled':
+   if set(q)!={'op','now','nonce'} or q['nonce']!=ctx['nonce'] or r['status']!='in-flight' or t<r['debitAt']:fail()
+   r['status']='settled';r['settledAt']=t;self.repair_settled=t;self.persist(v);return self.view(0)
+  if op=='repair-complete':
+   if set(q)!={'op','now','nonce','actorHash','reference','observedAt','evidenceSource'} or q['nonce']!=ctx['nonce'] or r['status']!='settled' or self.repair_settled!=r['settledAt'] or q['actorHash']!=ctx['caller']['callerHash'] or q['reference']!=ctx['caller']['reference'] or q['evidenceSource']!='initial-getTab-tool-state' or not integer(q['observedAt']) or not r['debitAt']<=q['observedAt']<=t or t-q['observedAt']>60000 or t<r['settledAt'] or self.stop_requested():fail()
+   r['status']='complete';r['completedAt']=t;r['evidenceHash']=sha(compact(q).encode());p['state']='ready';self.persist(v);return self.view(0)
+  fail()
  def command(self,q):
+  if type(q)==dict and type(q.get('op'))==str and q['op'].startswith('repair-'):return self.repair_command(q)
   if type(q)==dict and q.get('op')=='native-ready':
    v=self.current();p=v['preparation'];t=q.get('now')
    if not self.native or set(q)!={'op','plan','now'} or self.mode!='preparation' or p['version']!=1 or p['state']!='ready' or self.stop_requested() or p['nativePlan'] is not None or p['cActions'] or p['iActions'] or not integer(t) or any(x>t for x in p['calls']) or t>=p['expiresAt'] or day(t)!=p['day']:fail()
-   used=policy_usage(p['events'],NATIVE_DECISION)
+   self.live_repair(p)
+   used=policy_usage(p['events'],NATIVE_DECISION,repair=p.get('bindingRepair'))
    if any(used.get('P:'+name)!=1 for name in ['caller-bind','publisher-bind']):fail()
    research=sum(1 for e in p['events'] if e['action'].startswith('N:research:'))
    native_plan(q['plan'],research)
@@ -343,9 +459,10 @@ class Ledger:
   if type(q)==dict and q.get('op')=='handoff':
    v=self.current();p=v['preparation']
    if set(q)!={'op','runtimeBinding','expectedSpent','now'} or self.mode!='preparation' or p['version']!=1 or p['state']!='ready' or self.stop_requested() or p['cActions']!=C or p['iActions'] or not digest(q['runtimeBinding']) or not integer(q['expectedSpent']) or q['expectedSpent']!=v['spent'] or v['spent']>143 or not integer(q['now']) or any(t>q['now'] for t in p['calls']) or q['now']>=p['expiresAt'] or day(q['now'])!=p['day']:fail()
+   self.live_repair(p)
    if self.cfg.get('decisionHash') in [CREDENTIAL_DECISION,NATIVE_DECISION]:
     if self.native and p['nativePlan'] is None:fail()
-    used=policy_usage(p['events'],self.cfg['decisionHash'],p.get('nativePlan'))
+    used=policy_usage(p['events'],self.cfg['decisionHash'],p.get('nativePlan'),p.get('bindingRepair'))
     if any(used.get('P:'+name)!=1 for name in PREPARATION_PURPOSES):fail()
    p['version']=2;p['handoff']={'runtimeBinding':q['runtimeBinding'],'time':q['now'],'spent':v['spent'],'eventHash':sha(compact(p['events']).encode())}
    self.persist(v);return {**self.view(0),'handoff':p['handoff']}

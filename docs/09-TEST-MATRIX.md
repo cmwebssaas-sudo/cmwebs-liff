@@ -2102,3 +2102,33 @@ executions preflight and stop if attribution/quota/full source cannot be proved.
 All real privacy/freshness/authority/900s/day/performance/device gates remain;
 T0 NOT_STARTED and formal switches off. This supersedes the earlier pending
 native-IO-approval status only; it does not supersede missing real acceptance.
+
+## C3 approved single-incident binding repair — 2026-10-16
+
+Recommended GPT-6.1 Sol/high for the canonical stop/debit boundary. The owner
+approved the exact READ-PREFLIGHT-REPAIR-DECISION proposal; its original text
+and hash are retained. The event-specific entry keeps the same claimed ledger,
+epoch, original deadline/day, P UNKNOWN and STOP history, and permits only one
+predebited N getTab. Fresh initial tool state, settled same-holder receipt and
+matching actor/reference are mandatory before ordinary preparation resumes.
+
+Fresh independent review found one P1: the frozen original stop helper only
+ACKs an existing marker. A mandatory in-memory owner-stop bridge now writes
+the new canonical veto first, retains the original holder in its closure, and
+drains both captured scopes. All owner entrypoints must use that bridge; raw
+saved original methods cannot intercept new requests. The final capture-race
+regression and true frozen-controller bytes are covered by43 passing focused
+tests; the public byte-pinned fixtures require no Git history/network in CI.
+Prior transport-timeout and capture-race failures are retained, not erased.
+
+Final frozen full suite:2003/2003 PASS,69.766s,zero fail/cancel/skip, actual
+Platform Core and an owned disposable PostgreSQL16.14 cluster; cluster stopped
+and original Core index/HEAD preserved. Validate72backend/40endpoint/cache
+and diff check PASS. No Apps Script source change. Remote CI and the actual
+one-time repair are still pending at this source snapshot; local tests do not
+prove Google identity/quota, trial RPC,900s/day or latency acceptance.
+
+Rollback keeps the original pinned copy/history and independent globally-once
+C2/I17 cleanup. Never reset/refund/reseed/reopen the claim, erase STOP, or run an
+empty callback as remote rollback proof. No remote mutation, credentials,
+formal data, deployment, flag cutover or observation T0 in this increment.

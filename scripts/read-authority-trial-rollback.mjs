@@ -13,7 +13,7 @@ const only=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).s
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const same=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
 const files=Object.freeze([
- 'scripts/read-authority-preparation-budget.py','scripts/read-authority-preparation-control.mjs','scripts/read-authority-phase-control.mjs','scripts/read-authority-trial-orchestrator.mjs','scripts/read-authority-trial-rollback.mjs',
+ 'scripts/read-authority-binding-repair.mjs','scripts/read-authority-preparation-budget.py','scripts/read-authority-preparation-control.mjs','scripts/read-authority-phase-control.mjs','scripts/read-authority-trial-orchestrator.mjs','scripts/read-authority-trial-rollback.mjs',
  'scripts/read-authority-trial-import.mjs','scripts/read-authority-trial-reader.mjs','scripts/read-authority-trial-publication.mjs','scripts/read-authority-trial-thin.mjs','scripts/read-authority-trial-oauth.mjs','scripts/read-authority-trial-metadata.mjs','scripts/read-authority-trial-driver.mjs','scripts/read-authority-trial-budget-plan.mjs',
  'scripts/read-authority-native-capture.mjs','scripts/read-authority-native-producer.mjs','scripts/read-authority-native-snapshot.mjs','scripts/build-read-authority-trial-entry.mjs','scripts/build-read-authority-trial-closure.mjs','scripts/templates/read-authority-trial-adapter.js',
  ...['V2_RUNTIME_SNAPSHOT','V2_WORKSPACES','V2_WORKSPACE_LANDLORD_ACCESS','V2_LANDLORD_EMAIL_AUTH','V2_LINE_IDENTITY','V2_READ_REPLICA_SCHEMA','V2_READ_REPLICA_SYNC','V2_READ_AUTHORIZATION'].map(name=>'apps-script/'+name+'.js'),
