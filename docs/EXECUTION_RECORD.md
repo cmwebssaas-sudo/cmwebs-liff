@@ -3275,3 +3275,45 @@ device gates stay unaccepted, all switches off. No Apps Script/Worker/formal dat
 Properties/trigger/deployment change. Rollback undeployed runtime wiring to
 a1fee0943457dda4087fec72e935f555c9f3aeba; preserve strict claimed journals and
 pinned copied cleanup. Root WIP and private S1 boundary preserved.
+
+
+## C3 credential readiness and pending purpose amendment — 2026-10-15
+
+Local-only audit found the existing publisher token declares expiry in the past;
+refresh material exists but was not used. Actual CUA runtime imported the local
+control/orchestration/producer modules successfully, with zero browser/account
+reads and no controller/claim created. Original Google counter remains25/160,
+unclaimed. Neither local credential metadata nor a page account proves token
+holder identity.
+
+Prepared READ-CREDENTIAL-READBACK-DECISION.md for owner review: within unchanged
+P4/G32, change P actor allocation from2/2 to1/3: caller tab binding once;
+publisher tab binding, existing-grant refresh and same-token identity once each,
+with no browser inventory. Publisher identity must pass before any A–E preparation
+IO; its response is not reused as G evidence. Replace each G identity read with the same actor token's fixed
+Google userinfo response. This changes approved purposes and is NOT yet approved
+or executed. All complete native/source/quota/security gates, original history,
+C2 and independent I17 remain. No new scope/account/cost/formal access. Local
+1790/1790 runtime evidence remains applicable; this change is documentation only.
+Parallel24h T0 NOT_STARTED; switches remain off. Root WIP/private S1 preserved.
+
+Review found and corrected one sequencing P2: validating publisher token only in
+G after handoff would follow A–E preparation. P now explicitly pays the initial
+publisher identity before preparation, retains all four fresh G identities, and
+does not inventory/search browsers. Missing known tab references or ambiguous
+bindings STOP without extra reads. Five P/G identity GETs are explicitly accounted
+(one P plus four G); the existing E caller-userinfo remains, making six in the
+whole flow, with E1 already included in fixed96. Review P3 wording clarified;
+no existing check removed. Proposal remains pending owner approval and unexecuted.
+
+Exact runtime8c22474 CI38745247226 rental1785/1785 and Worker26/26/two dry runs
+SUCCESS; actual log footers read, rental log truncated. Rental annotations are
+runner Node20 deprecation and upcoming ubuntu-latest migration notices. No
+application test failure or deployment inferred. Documentation-only follow-up
+does not repeat the unchanged full runtime or Worker benchmark.
+
+Independent proposal review: one P2 sequencing issue resolved and one P3 total
+wording clarified; no remaining actionable findings. Owner approval still
+pending. Validate72 backend/40 endpoint/static cache/diff PASS. Both exact-head
+CI jobs have only the same runner deprecation/migration notices; footers and
+annotations read. No Google operations, counter claim or new trial occurred.
