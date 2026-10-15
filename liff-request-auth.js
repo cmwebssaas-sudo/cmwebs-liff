@@ -23,6 +23,20 @@
       }
       url.searchParams.delete('id_token');
       if (token) url.searchParams.set('id_token', token);
+      // Legacy pages still share this JSONP transport. Observe only its own
+      // existing callback so successful writes protect subsequent page reads.
+      const callback = url.searchParams.get('callback') || '';
+      if (/^landlord_/.test(action) && /^[A-Za-z_$][\w$]*$/.test(callback) && typeof global[callback] === 'function') {
+        const original = global[callback];
+        global[callback] = function (result) {
+          try {
+            if (global.CMWebsLandlordAuth && typeof global.CMWebsLandlordAuth.observeResponse === 'function') {
+              global.CMWebsLandlordAuth.observeResponse(action,result);
+            }
+          } catch (error) {}
+          return original.apply(this,arguments);
+        };
+      }
       return url.href;
     }
   };

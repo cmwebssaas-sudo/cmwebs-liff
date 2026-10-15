@@ -7,11 +7,11 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
   <title>CMWebs 物件與房間</title>
-<script src="frontend-release.js?v=20261012-read-summary-v1"></script>
-  <script src="liff-request-auth.js?v=20261012-read-summary-v1"></script>
-  <script src="landlord-auth.js?v=20261012-read-summary-v1"></script>
-  <script src="landlord-api.js?v=20261012-read-summary-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261012-read-summary-v1" />
+<script src="frontend-release.js?v=20261012-read-routing-v1"></script>
+  <script src="liff-request-auth.js?v=20261012-read-routing-v1"></script>
+  <script src="landlord-auth.js?v=20261012-read-routing-v1"></script>
+  <script src="landlord-api.js?v=20261012-read-routing-v1"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261012-read-routing-v1" />
 
   <style>
     :root {
@@ -1322,6 +1322,13 @@
       params,
       retryCount
     ) {
+      if (window.CMWebsLandlordApi) {
+        return window.CMWebsLandlordApi.request({
+          apiUrl: API_URL, action: action, params: params || {},
+          lineUserId: LINE_USER_ID, testMode: TEST_MODE,
+          callbackPrefix: '__cmwebs_properties_', rejectOnFailure: true
+        });
+      }
       const authParams = window.CMWebsLandlordAuth.getRequestAuthParams();
 
       if (

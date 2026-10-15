@@ -1367,6 +1367,17 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Source pending markers, incomplete/stale D1 snapshots, role changes, CORS, query tampering and sanitized HTTP errors | Integrated D1 HTTP test | Synthetic source and local D1 changes; no cross-request access cache |
 | Formal GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED; isolated synthetic authority tested separately below | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |
 
+## 2026-10-12 C4 routing candidate
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| off/shadow/on, absent/invalid flags, bearer headers, safe endpoint/query allowlist, non2xx/shape/network/body deadline fallback | `tests/read-routing.test.mjs` | Actual shared browser script in VM, synthetic fetch/GAS |
+| Successful writes across API/bridge/legacy LINE JSONP, two-minute navigation/session guard, quota recovery, write/read races | Same | Actual Auth/LIFF modules and bridge message flow; numeric deadline only |
+| Redacted bounded path-only comparisons, distinct Worker errors, headers vs full-response timing | Same | No compared values or dynamic keys in reports; remote C5 receiver not yet published |
+| Actual six HTML page wrappers × LINE/Email and retained arrears desktop action restriction | `tests/read-routing-pages.test.mjs` | AST-extracted actual page functions; shared router dispatch proven |
+| Affected54/54, unit897/897, validate72 files and release cache references | Local candidate | Full suite897 pass/1 known external Core fixture failure/4 skips |
+| Actual Pages readback, authenticated/device routing/fallback and seven-day report coverage | NOT_STARTED | All flags off; C1 real72-hour observation continues, then preceding release gates |
+
 
 C3 real workerd transport regression5/5: Google allowed/fakehost/third-hop
 and LINE valid claims/302 rejection. Root cause is workerd redirect:error
@@ -1824,6 +1835,15 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Local regression | Node22/Core/ownedPG1718/1718,cleanup verified; final Worker26/26 and original7x100 p951.610–2.174ms<50 | Root retained after only Worker test changes; exact-head CI required |
 | Real gates | Actual25/160 unchanged;900s/day,fresh72h,seven-day shadow,500-room/Taipei/latency/device/cutover remain unaccepted | No Google/native/formal changes |
 
+## 2026-10-15 — C4 current-stack composition
+
+| Area | Result | Boundary |
+| --- | --- | --- |
+| Routing/fallback/write protection |54 own non-document paths exact2ed69c7; new full1731/1731,zero fail/cancel/skip | Local composed source; no device/cutover claim |
+| Inherited scoped loader/trial controls | Cloudflare/Apps Script/read fixtures exactC3 9b1af93; retain26/26/two dry runs fromCI38705761544 | No redundant local benchmark; new composed-head CI required |
+| Local infrastructure | Node22/Core/ownedPG cleanup and closed listener verified | No shared/formal database |
+| Real gates | Actual25/160 unchanged; daily900s/72h/seven-day/500/Taipei/device unaccepted | Endpoint blank/flags off |
+
 ## 2026-10-15 — Child input error handling
 
 | Area | Evidence | Boundary |
@@ -1834,6 +1854,21 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Core prerequisite | Actual HEAD/copied actual index/same objects via private metadata view;321-path missing-worktree negative | Shared exclude read blocked; no shared source/metadata change; full blob audit not claimed |
 | Worker/real gates | Retain unchanged9b1af93 Worker26/26/two dry runs; new-head CI required | OS flock continuity, actual160/900s/72h/seven-day/500/Taipei/device unaccepted |
 
+
+2026-10-15 C4 child-input propagation: exact inherited C3 acbff8e controller/
+tests, own routing/Worker/Apps Script unchanged; affected68/68 and validate72/40/
+static cache/diff PASS. Retain previous full1731/1731 and Worker26/26 plus
+C3 full1720/1720; this is not a fresh full-composed run. New-head CI pending;
+Draft/off, actual25/160/native STOP and all real gates remain unaccepted.
+
+## 2026-10-15 — Inherited preparation ownership verification
+
+| Evidence | Result | Boundary |
+| --- | --- | --- |
+| Inherited controller/ledger/test | Exact C3 71cc636 bytes; related83/83 and complete1728/1728 retained | Original child lifetime, strict finish and durable-stop ownership only; no native acceptance |
+| Order composition | Own runtime and fixtures unchanged; validate/diff required; exact-head CI pending | No repeated unchanged local Worker benchmark |
+| Real gates |25/160 unchanged, trial STOP; all formal gates unaccepted | PR272 acceleration still pending, original observation gates retained |
+
 ## 2026-10-15 — Preparation lock lifetime and completion
 
 | Area | Evidence | Boundary |
@@ -1843,171 +1878,6 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Restricted realm | Original11 full failures retained; existing approved OS identity API restores compatibility; affected83/83 PASS | No ambient process or new builtin permissions |
 | Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
 | Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
-
-
-### 2026-10-15 Approved single-wrapper budget core
-
-Supplemental owner decision replaces the old two-entry/eight-window cost model.
-The immutable presented decision hash selects the approved one-entry/four-window
-allocation without granting execution authority. Offline compiler plus durable
-ledger/rollback tests122/122 PASS: exact160 full allocation, unique fixed aliases,
-G4/2/1/1 per-window caps, P2 per actor, T3 pending-only settlement, C2 included inC9,
-I17 independent, failed IO UNKNOWN/no refund, immutable original history/binding,
-no bulk unlabeled debit, qualified/second RPC denied in supplemental mode, copied
-cleanup retains the original policy and counter. Historical RED ledger70 had
-48pass/22fail before implementation; final affected suite122pass/0fail.
-
-This is local cost/control evidence only. Legacy records keep their existing
-format; new strict policy is opt-in until mandatory orchestrator/adapter/native
-wiring is complete and reviewed. No live trial or credential operation follows
-from these tests. Actual25/160 remains unchanged. Full Node22/actual Core/owned PostgreSQL regression1765/1765 PASS,57.460s; cluster cleanup/listener stop verified.
-
-
-### 2026-10-15 Fixed preparation purpose labels and one live file readback
-
-Adapter/restricted-realm/copied-recovery231/231 PASS; RED57=48pass/9fail retained.
-Strict real-child synthetic realm exercises all six preparation adapters with
-unique approved aliases, original C2/I17, same lock and zero real Google calls.
-Actual import receipt reuse tests: once only, exact four-field binding, frozen
-object identity, JSON/copy rejection, time reversal and60s expiry. Failed/stale
-reuse cannot refund or duplicate a strict alias. Existing ACL/file/permission/
-UNKNOWN/cleanup tests remain. Independent incremental review no actionable
-findings. Full Node22/actual Core/owned PostgreSQL1774/1774 PASS,62.790s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched and
-mandatory runtime/native integration still unaccepted.
-
-
-### 2026-10-15 Mandatory single-wrapper runtime/observer wiring
-
-Related185/185 PASS after one review P2 fix. Focused RED8=1pass/7fail retained;
-intermediate129=128pass/1 obsolete two-entry expectation retained and corrected
-for the actual four recovery checks. Require bound decision before observers;
-legacy/missing/foreign policy cannot admit a new trial. Exact15 release aliases
-each phase; missing/duplicate/foreign/unlabeled callbacks and incomplete native
-identity/quota observations fail before RPC. Fifth page/wrong actor/qualified
-phases reject before IO. One wrapper only, UNKNOWN/no retry, independent C2/I17,
-stop/drain/escaped-cap/origin/recovery regressions remain. Four actual fake CUA
-producer→capture→strict-driver reads prove phase/actor charge and lock ownership;
-raw native analysis retains complete=false/quotaAccepted=false. Restricted VM
-six real adapters use strict preparation, one wrapper and all17 cleanup actions.
-Review P2 await-mutation test RED→GREEN fixes fixed actor/phase/page snapshots.
-Full Node22/actual Core/owned PostgreSQL1790/1790 PASS,61.163s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched, no live native or
-Google acceptance.
-
-### 2026-10-15 Fixed seven-source release transport
-
-Seven approved F aliases now have fixed Apps Script GET adapters: original
-project/editor/versions/deployments, pinned library7/thin1 content and thin
-deployments. One phase-bound alias debit owns each response through body read
-or cancellation. Exact cached publisher scopes, request/version pinning,
-single-flight, post-admission expiry and immutable token/control snapshots apply.
-Reject pagination, malformed/foreign/oversized/redirected response and retry;
-return actual frozen bytes/metadata without synthesizing equality or acceptance.
-
-New source tests34/34 PASS after actual RED0pass/34fail. Combined with canonical
-driver91/91 PASS: fourteen real transport callbacks in fake Google responses use
-the original F/S ledger and held lock across both phases; a paginated version
-list stops before compatibility RPC. Independent incremental review found no
-actionable issue. Full regression/validate results are recorded in the execution
-record when complete. No live Google/credential/counter/native proof follows.
-
-Full Node22.23.3/actual Core/owned PostgreSQL1826/1826 PASS,62.802s,zero
-fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40
-endpoints/static cache/diff PASS. No Apps Script/Worker change, so no repeat of
-unchanged native Apps Script or local Worker capacity runs. Source equality,
-remaining native callbacks and full native-window/quota acceptance stay gated.
-
-### 2026-10-15 Source equality facts and actual execution entrypoint
-
-The seven-source verifier accepts only the original module-branded source
-adapter with matching pinned project/version/publisher, not copied/proxy handles.
-Snapshot expected pins and six original version descriptors before IO. Actual
-responses determine editor/file/manifest hashes, original serving inventory,
-baseline1–6 plus epoch-described7, parent binding and fixed thin deployment.
-Guarded manifests retain the exact scopes/whitelist/runtime/logging/library
-version/development mode. Thin F metadata now includes the actual Execution API
-entrypoint/access in the same existing read; access is not inferred from manifest.
-
-New verifier26RED→GREEN; actual-entrypoint mask1RED→GREEN. Combined124/124 PASS,
-including three canonical equality tests: real source transport/verifier facts
-merge with explicitly synthetic remaining release/native fields in the original
-ledger; changed source bytes or actual deployed access prevents native/RPC.
-Concurrent/duplicate/out-of-order phases, unbranded handles and pin/manifest/
-version/deployment mismatch stop without retry. Independent review found no
-actionable issue. Full regression is recorded in EXECUTION_RECORD when complete.
-Partial source facts omit native/ACL/Sheets fields and fail full driver readback;
-no current Google, credential, quota, full native window or live acceptance.
-
-Full Node22.23.3/actual Core/owned PostgreSQL1859/1859 PASS,64.161s,zero
-fail/cancel/skip; cleanup and stopped listener verified. Validate72 backend/40
-endpoints/static cache/diff PASS. Only documentation changed after the tested
-573-file snapshot; Apps Script/Worker bytes unchanged. Credential-purpose owner
-approval is recorded separately and does not make new policy wiring executable.
-
-### 2026-10-15 Credential-purpose decision binding
-
-The approved credential-purpose selector is distinct from the retained original
-single-wrapper selector. The compiler keeps160/history25/fixed96/G32/P4/T3 and
-reserves caller1/publisher3. New P labels are caller-bind, publisher-bind,
-publisher-refresh and publisher-userinfo, each once. Generic actor aliases,
-replay/borrowing, refresh before bind, identity before refresh, A–E/handoff before
-all four purposes, cross-selector claim/runtime downgrade fail closed. Failed
-identity remains charged; independent C2/I17 still work. Runtime binding and
-scoped observation capabilities carry the selected decision, and orchestrator
-derives it from pinned recovery options. Old policy/cleanup remains compatible.
-
-Policy core RED14=1pass/13fail, binding RED5=2pass/3fail retained; affected236/236
-PASS plus new copied-credential-recovery1/1 PASS. The new copied test initially
-passed the full receipt to a strict path/SHA loader and was rejected; corrected
-test input only, without relaxing the loader. Copied I17 preserves new decision,
-history25 and pending execution, exposing no ordinary/RPC authority. Incremental
-review found no actionable issue. Full regression recorded when complete.
-This is policy/control evidence; fixed actual renewal/identity/native callbacks
-and real safety/quota/complete-window gates are still required before Google IO.
-
-Full Node22.23.3/actual Core/owned PostgreSQL1879/1879 PASS,63.322s,zero
-fail/cancel/skip; cluster cleanup/listener stop verified. Reviewed five source
-pins unchanged. Validate72 backend/40 endpoints/static cache/diff PASS. This
-implements the selected policy through the counter/runtime/recovery; actual
-credential adapters and native release/window bindings remain incomplete.
-
-### 2026-10-15 Existing-grant and same-token identity adapters
-
-Publisher source is pinned by exact bytes, owner, mode0600 and no-follow regular
-file read. An explicit single P refresh validates bounded response, original
-ten scopes and finite lifetime, followed by paid verified publisher identity.
-Only then is a synchronous cached credential available. No login-file write,
-new grant, hidden renewal or original-publisher revocation occurs. Four G
-identities use each actor's current token and independent window admission;
-partial identity results never imply full native or quota acceptance.
-
-Initial adapter RED25/25 failed before implementation; selector RED2/2 reproduced
-the actual legacy-cap bypass before repair. Canonical/phase/orchestrator now
-carry the selected policy; missing/historical/stale selectors refuse IO.
-Facade RED3/3 reproduced missing propagation before repair. Affected190/190
-PASS; independent review's P2 selector issue fixed and re-reviewed with no new
-finding. Full Node22.23.3/actual Core/owned PostgreSQL1910/1910 PASS,62.686s,
-zero fail/cancel/skip; cluster and listener stopped. Tested575-file snapshot
-806b20541fbc7d8216d6c45ad2d371649be303f8d300ea921f9f18f803200fe9;
-only documentation changed afterwards. Apps Script/Worker source unchanged.
-Actual Google counter remains25/160 and unclaimed; no live refresh, userinfo,
-browser, native capture or RPC. Native/ACL/Sheets/terminal assembly and all
-runtime, quota, privacy, performance and real-device gates remain required.
-
-### 2026-10-15 Fixed ACL and authorization-tab release evidence
-
-Original module branding rejects copied/proxied/mismatched metadata adapters.
-Both phases use exactly three fixed GETs and actual caller/publisher credentials.
-New table is exact owner+Reader with the prior caller permission pin; original
-container is same owner only. Public/domain/group/inherited/deleted/extra or
-incomplete access denies, as do changed authorization tab IDs. No grid data,
-header verification or full source/native proof is inferred from metadata.
-Focused25RED-to-GREEN; related77/77, affected215/215 PASS. Canonical integration
-verifies F/S debits, held flock/peer exclusion and original history. Independent
-reviews found no actionable issue. Full1936/1936 PASS63.501s under Node22.23.3/
-actual Core/owned PostgreSQL, zero fail/cancel/skip; database/listener stopped.
-Snapshot52a8a374ae1eaf7fc2cdb35448fdddd769830bd6e4d121571301fd612abdd2de; only
-docs afterwards. Validate72/40/cache/diff PASS. Actual Google25/160 unchanged
-and unclaimed; native/parent-binding/quota/terminal and release gates remain.
 
 ## 2026-10-16 — C1 expired-run Sheet reads
 
@@ -2151,6 +2021,85 @@ observation T0 occurred. Preserve both copies and original STOP/history;
 no no-op callback was executed or claimed as remote rollback. The exact failed
 underlying tool cause remains UNKNOWN rather than attributed to login/Google.
 
+## C4 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C4 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1743/1743 PASS,54.368s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested568-file snapshot
+b10ddd8df3a21bc58b8d72688a091d532eee9ad03f163d7eea97ca4f733d7320;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated local capacity run. Exact-head CI follows push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance toff429e179676e6f774ea145d917fd1d6a5b6b2d3;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+After upstream alignment, the32 inherited non-doc paths equal reviewed C3
+source and all54 C4-specific non-doc paths are preserved (independent review).
+One new full1951/1951 PASS,58.997s,Node22/actual Core/owned PG16.14; cleanup
+verified. Tested579-file snapshot37a073c05aafac138e343f04dec8ac0f579ba56e6c0eb1098db9939f60aacf56.
+Only docs changed afterwards, including restoration of separate labelled C1–C4
+evidence/rollback records after a P2 union-merge finding. No remaining source
+conflicts; validation72/40/cache/diff PASS. Approved credentials/source/metadata
+helpers inherited as local preparation only; unapproved native-IO proposal is
+absent. Real gates remain unaccepted/T0 NOT_STARTED/alloff/Google25 unchanged.
+Rollback this upstream alignment to329823894c19efd6ca75928838560c1b525be95a
+before any unclaimed trial; retain matching claimed runtime/cleanup if any.
+
+## C4 inherited approved C3 native IO controls — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Merged reviewed C3 b01e753 into the existing
+C4 feature branch without changing C4 routing or formal flags. All10 non-doc
+paths among the13-path C3 increment are byte-identical to C3. The two document
+conflicts preserve complete, separately labelled C1–C4 evidence blocks. The
+approved native-IO selector supersedes historical pending-approval text only;
+actual five-F/full-G/native acceptance remains unproved.
+
+Fresh Node22.23.3 authority regression1065/1065 PASS (30 test files,
+62.984s,zero fail/cancel/skip); validate72backend/40endpoint/cache and staged
+diff check PASS. No unchanged Worker capacity benchmark or cross-repository
+PostgreSQL suite rerun; upstream full1960 result remains C3 evidence only.
+Exact-head CI is pending after this push, not inferred from local checks.
+
+No account/Google/Cloudflare/credential/data/deployment operation in this
+integration; original counter/history/private S1/root/C5 swap untouched.
+Formal flags remain inherited off; no observation T0. Rollback this unclaimed,
+undeployed inheritance to918b4fbe99112f2099d84703f2ee2c61318f23e3;
+retain any independently established original claim/pins/history/cleanup.
+
+## C4 final C3 stopped-trial inheritance — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Normal merge of final C3 6bb2a62 retains all
+nine changed non-document files,including its three original-controller
+fixtures,byte-for-byte. Existing C4 routing/fallback/write protection and
+all other runtime source remain unchanged. Complete labelled historical
+records survive both append-conflict resolutions.
+
+Fresh validate72backend/40endpoint/cache and diff checks PASS. No large local
+suite or benchmark rerun; reviewed C3 source872067f full2003/2003 and
+CI38784461317(rental1998,Worker26,two dry-runs) remain attributable upstream
+evidence only. Exact-current-head CI/footers will be read separately.
+
+The actual trial remains27/160 STOPPED,repair in-flight/UNKNOWN,with a new
+owner veto and both retained holders' drain acknowledgements. No verifiable
+caller/page state,no second bind/repair/ordinary continuation or trial RPC;
+original claim/pins/day/deadline/UNKNOWN and cleanup authority stay retained.
+No Google/counter/realm/credential/formal operation in this stack integration.
+Performance and real acceptance remain unmet;endpoint blank,allflags off and
+T0 NOT_STARTED. Rollback this undeployed inheritance to5ad3ea5 while retaining
+original stopped trial history and matching pinned cleanup;never reset/replay.
 
 ## 2026-10-16 — Bounded continuation cost compiler (local only)
 
@@ -2270,3 +2219,32 @@ publication and launcher source/recovery guard wiring remain unverified.
 - Captured owner drained/closed; no rebind/new segment or compatibility acceptance.
 - Recovery checkpoint inspection pending terminal evidence; real upstream gates
   remain open and all formal read-path switches stay off.
+
+## C4 bounded-control integration — 2026-10-16
+
+Integrated C3 control/compiler/driver/recovery increment and its terminal trial
+evidence through the existing ordered Draft stack. Eleven inherited source/test
+paths match C3 byte-for-byte; no C4 runtime behavior changed. Documentation
+conflicts were append-only work-order records and both sides were preserved.
+
+Full npm test on merge 28a488bd4f23ae94aacb32a3db633e304ab19d84:
+2161/2161 PASS, zero failure/cancellation/skip,78.192s, Node22,
+pinned actual Core643c1b3 and a fresh owned PostgreSQL16.14 fixture. Each suite's
+database/role cleanup was verified; final cluster stopped and listener closed.
+Source catalog SHA256 f8fcb12ab1e42c6d262fe76de19457fcd13ab15e75f70b6d5b1d4f073d39a778.
+Validate72backend/40endpoint/static-cache and diff checks PASS. C6 additionally
+checks the179-source comparison identity. No unchanged capacity benchmark rerun;
+the prior C6 properties51.208ms p95 failure remains an unmet gate.
+
+Actual compatibility method ended at28/160 after the sole caller binding
+UNKNOWN. Ordinary owner is drained/closed; original27 remains byte-identical.
+No RPC or new credential/resource/configuration mutation occurred. The copied
+independent recovery subsequently verified the original stopped checkpoint after
+its full60s cooldown, with cActions/iActions empty and zero Google IO. This is
+local recovery availability, not remote rollback acceptance. No rebind, repair,
+refund or second segment is authorized. Original STOP/history/copies retained.
+
+No main merge, deployment or cutover. Formal configuration remains default-off,
+endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
+observation and device gates remain open. Rollback this undeployed integration
+to 22d888706716f504295b66cfcf0d25fdc6a11fe0 while retaining all trial evidence.
