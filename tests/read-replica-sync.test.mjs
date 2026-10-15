@@ -8,7 +8,7 @@ const schemaSource=readFileSync(new URL('../apps-script/V2_READ_REPLICA_SCHEMA.j
 const moduleSource=()=>readFileSync(new URL('../apps-script/V2_READ_REPLICA_SYNC.js',import.meta.url),'utf8');
 const tableCount=Object.keys(JSON.parse(readFileSync(new URL('../cloudflare/read-api/schema.json',import.meta.url),'utf8'))).length;
 function harness({configured=true,fail=false,sheets={}}={}) {
-  const cache=new Map(), sent=[], logs=[]; let reads=0, cacheSingleReads=0, cacheBatchReads=0, propertyReads=0;
+  const cache=new Map(), sent=[], logs=[]; let reads=0, cacheSingleReads=0, cacheBatchReads=0, propertyReads=0, blobReads=0;
   const properties=new Map(configured ? [['READ_REPLICA_URL','https://replica.synthetic.test'],['READ_REPLICA_SYNC_SECRET','synthetic-secret']] : []);
   const ctx=vm.createContext({ console, Date, JSON, Map, Set,
     PropertiesService:{getScriptProperties:()=>({getProperty:key=>{propertyReads++;return properties.get(key)||null;}})},
@@ -20,13 +20,13 @@ function harness({configured=true,fail=false,sheets={}}={}) {
       getUuid:()=>crypto.randomUUID(),
       computeDigest:(_,text)=>[...createHash('sha256').update(text).digest()].map(x=>x>127?x-256:x),
       computeHmacSha256Signature:(text,key)=>[...createHmac('sha256',key).update(text).digest()].map(x=>x>127?x-256:x),
-      newBlob:text=>({getBytes:()=>[...Buffer.from(text)]})},
+      newBlob:text=>({getBytes:()=>{blobReads++;return [...Buffer.from(text)];}})},
     SpreadsheetApp:{getActiveSpreadsheet:()=>({getSheetByName:name=>sheets[name] ? {getDataRange:()=>({getValues:()=>{reads++; return sheets[name];}})} : null})},
     UrlFetchApp:{fetch:(url,options)=>{sent.push({url,...options}); return {getResponseCode:()=>fail?503:200,getContentText:()=>JSON.stringify({success:!fail,data:{completed:JSON.parse(options.payload).complete}})};}},
     Logger:{log:value=>logs.push(value)}
   });
   vm.runInContext(schemaSource+'\n'+moduleSource(),ctx);
-  return {ctx,cache,sent,logs,get reads(){return reads;},get cacheSingleReads(){return cacheSingleReads;},get cacheBatchReads(){return cacheBatchReads;},get propertyReads(){return propertyReads;}};
+  return {ctx,cache,sent,logs,get reads(){return reads;},get cacheSingleReads(){return cacheSingleReads;},get cacheBatchReads(){return cacheBatchReads;},get propertyReads(){return propertyReads;},get blobReads(){return blobReads;}};
 }
 
 test('generated Apps Script schema equals the single JSON whitelist authority',()=>{
@@ -143,6 +143,7 @@ test('dirty snapshot filters private fields, batches 501 rows and signs exact UT
   h.ctx.readReplicaMarkDirty_(['V2_rooms']);
   const result=h.ctx.runV2ReadReplicaDirtySync();
   assert.equal(result.success,true); assert.equal(h.reads,1); assert.equal(h.sent.length,2);
+  assert.equal(h.blobReads,0,'501-row batching must size serialized UTF-8 without per-row Blob calls');
   const payloads=h.sent.map(r=>JSON.parse(r.payload));
   assert.deepEqual(payloads.map(p=>p.rows.length),[500,1]);
   assert.equal(payloads[0].complete,false); assert.equal(payloads[1].complete,true);
@@ -155,6 +156,34 @@ test('dirty snapshot filters private fields, batches 501 rows and signs exact UT
   }
   assert.equal([...h.cache.keys()].filter(k=>k.startsWith('cmwebs:read-replica:dirty:')).length,0);
   assert.doesNotMatch(h.logs.join('\n'),/R0|合成房間|synthetic-secret/);
+});
+
+test('serialized JSON byte sizing agrees with independent UTF-8 across Unicode and escaped malformed source strings',()=>{
+  const h=harness();
+  const samples=['','ascii','房租','é','e\u0301','😀','𝄞','🇹🇼','👩‍💻','\u0000\n\t"\\','\ud800','\udc00','\ud800\ud800\udc00'];
+  for(let i=0;i<200;i++)samples.push(String.fromCharCode(i*313%65536)+String.fromCodePoint(0x10000+i*97));
+  for(const value of samples){const serialized=JSON.stringify({value});assert.equal(h.ctx.readReplicaUtf8Length_(serialized),Buffer.byteLength(serialized,'utf8'));}
+  assert.equal(h.blobReads,0);
+  assert.throws(()=>h.ctx.readReplicaUtf8Length_('\ud800'),/surrogate/i);assert.throws(()=>h.ctx.readReplicaUtf8Length_('\udc00'),/surrogate/i);
+});
+
+function rowOfBytes(h,key,bytes){
+  const source={room_id:key,room_name:''},row=h.ctx.readReplicaProjectRow_('V2_rooms',source),remaining=bytes-Buffer.byteLength(JSON.stringify(row));
+  assert(remaining>=0);source.room_name='房😀'.repeat(Math.floor(remaining/7))+'a'.repeat(remaining%7);const result=h.ctx.readReplicaProjectRow_('V2_rooms',source);assert.equal(Buffer.byteLength(JSON.stringify(result)),bytes);return result;
+}
+test('UTF-8 byte boundary retains exact 900000 batch sizing and complete signed payloads',()=>{
+  for(const [bytes,expected] of [[449999,[2]],[450000,[1,1]]]){
+    const h=harness(),rows=[rowOfBytes(h,'R1',bytes),rowOfBytes(h,'R2',bytes)],start=Date.now();h.ctx.readReplicaSendRows_(h.ctx.readReplicaConfig_(),'V2_rooms',rows,'snapshot',start,start+30000);
+    assert.deepEqual(h.sent.map(v=>JSON.parse(v.payload).rows.length),expected);assert.equal(h.blobReads,0);
+    for(const request of h.sent){assert(Buffer.byteLength(request.payload)<=1048576);assert.equal(request.headers['X-CMWebs-Signature'],createHmac('sha256','synthetic-secret').update(request.headers['X-CMWebs-Timestamp']+'\n'+request.headers['X-CMWebs-Nonce']+'\n'+request.payload).digest('hex'));}
+    assert.equal(JSON.parse(h.sent.at(-1).payload).complete,true);
+  }
+});
+test('maximum UTF-8 row is accepted and one extra byte fails before outbound IO',()=>{
+  const h=harness(),start=Date.now();h.ctx.readReplicaSendRows_(h.ctx.readReplicaConfig_(),'V2_rooms',[rowOfBytes(h,'R1',899999)],'snapshot',start,start+30000);assert.equal(h.sent.length,1);const bad=harness();assert.throws(()=>bad.ctx.readReplicaSendRows_(bad.ctx.readReplicaConfig_(),'V2_rooms',[rowOfBytes(bad,'R1',900000)],'snapshot',start,start+30000),/row too large/);assert.equal(bad.sent.length,0);assert.equal(bad.blobReads,0);
+});
+test('actual module UTF-8 comparison function uses only fixed JSON samples and bounded native oracle calls',()=>{
+  const h=harness(),r=h.ctx.testReadReplicaUtf8BatchSizing();assert.equal(r.success,true);assert.equal(r.samples,13);assert.equal(h.blobReads,13);assert.equal(h.sent.length,0);assert.equal(h.reads,0);assert.equal(h.propertyReads,0);assert.equal(h.cacheBatchReads,0);
 });
 
 test('failed and concurrently changed dirty generations remain queued',()=>{

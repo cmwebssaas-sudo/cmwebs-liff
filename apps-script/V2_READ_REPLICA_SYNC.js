@@ -205,6 +205,24 @@ function readReplicaRowsFromSheet_(sheetName) {
   });
 }
 
+function readReplicaUtf8Length_(text) {
+  // JSON.stringify escapes lone surrogates. Count the serialized JSON bytes
+  // locally instead of creating a native Blob for every projected row.
+  let bytes=0;
+  for(let i=0;i<text.length;i++) {
+    const code=text.charCodeAt(i);
+    if(code<0x80) bytes++;
+    else if(code<0x800) bytes+=2;
+    else if(code>=0xd800 && code<=0xdbff) {
+      const next=text.charCodeAt(i+1);
+      if(!(next>=0xdc00 && next<=0xdfff)) throw new Error('Invalid serialized JSON surrogate');
+      bytes+=4; i++;
+    } else if(code>=0xdc00 && code<=0xdfff) throw new Error('Invalid serialized JSON surrogate');
+    else bytes+=3;
+  }
+  return bytes;
+}
+
 function readReplicaSendRows_(config,sheet,rows,mode,sourceVersion,deadline) {
   const id=Utilities.getUuid();
   const manifest=rows.map(function(row){return [row.row_key,row.row_hash];}).sort(function(a,b){return a[0]<b[0]?-1:a[0]>b[0]?1:0;});
@@ -212,7 +230,7 @@ function readReplicaSendRows_(config,sheet,rows,mode,sourceVersion,deadline) {
   // Leave room for metadata and headers within the Worker's 1 MiB limit.
   const batches=[]; let current=[],bytes=0;
   rows.forEach(function(row){
-    const size=Utilities.newBlob(JSON.stringify(row)).getBytes().length+1;
+    const size=readReplicaUtf8Length_(JSON.stringify(row))+1;
     if(size>900000) throw new Error('Replica row too large');
     if(current.length && (current.length>=500 || bytes+size>900000)) {batches.push(current);current=[];bytes=0;}
     current.push(row);bytes+=size;
@@ -303,4 +321,13 @@ function readReplicaPushRevokedSession_(session) {
 function testReadReplicaProjection() {
   const row=readReplicaProjectRow_('V2_rooms',{room_id:'SYNTHETIC_ROOM',room_name:'synthetic',bank_account:'not-exported'});
   return {success:!Object.prototype.hasOwnProperty.call(row.fields,'bank_account') && row.row_hash.length===64};
+}
+
+function testReadReplicaUtf8BatchSizing() {
+  const samples=['','ascii','房租','é','e\u0301','😀','𝄞','🇹🇼','👩‍💻','\u0000\n\t"\\','\ud800','\udc00','\ud800\ud800\udc00'];
+  const matches=samples.map(function(value) {
+    const serialized=JSON.stringify({value:value});
+    return readReplicaUtf8Length_(serialized)===Utilities.newBlob(serialized).getBytes().length;
+  });
+  return {success:matches.every(function(match){return match;}),samples:samples.length};
 }

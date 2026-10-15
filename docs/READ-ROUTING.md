@@ -53,3 +53,12 @@ Rollback: set a page or all six flags off and republish/read back Pages; restore
 the prior Pages release if needed. GAS remains the fallback and writes remain
 on GAS. Retain D1 rows, additive schema, remote versions and observation records;
 no formal data deletion is part of rollback.
+
+## 2026-10-15 — Current C3 dependency composition
+
+C4 retains its original routing, fallback,120000ms write protection, release
+and off configuration while inheriting C3 source9b1af93. C4's54 own source/test
+paths are byte-identical to2ed69c7; Worker/Apps Script/read fixtures match9b1af93.
+The new full root regression is1731/1731; actual authenticated latency,72-hour
+sync/seven-day shadow/device acceptance remain separate gates. No formal
+publication or flag change. Local integration rollback target2ed69c7.
