@@ -2270,3 +2270,18 @@ publication and launcher source/recovery guard wiring remain unverified.
 - Captured owner drained/closed; no rebind/new segment or compatibility acceptance.
 - Recovery checkpoint inspection pending terminal evidence; real upstream gates
   remain open and all formal read-path switches stay off.
+
+
+### 2026-10-16 standalone C3 candidate
+
+- Single generated script: fixed caller/project/MAC, compatibility only, no
+  library or row/cache/lock/network IO; authority/extra arguments denied.
+- Existing publication adapter: five charged steps, immutable readback and
+  independent close/absence; mode change cannot reset same-epoch registration.
+- New17 RED→GREEN; affected116/116; complete2165/2165, zero skip, owned
+  PostgreSQL cleaned/stopped; two independent reviews without findings.
+- Retain earlier2159/2161 realm-child timeout run and focused2/2 diagnosis;
+  the original timeout cause is unresolved. Real Google function/RPC execution
+  NOT_RUN, counters31/160 unchanged, complete actual IO mapping still pending.
+- No production route/Schema/runtime/flags changed; no Cloudflare speed or
+  cutover acceptance is inferred from these local results.

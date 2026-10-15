@@ -3837,3 +3837,43 @@ independent recovery checkpoint inspection is recorded separately when terminal;
 scope closure alone is not remote rollback acceptance. No formal switch or
 endpoint changed. Actual C1/C3, performance, accelerated observation and real-device
 gates remain open. Continue only independent local work under existing scope.
+
+
+## 2026-10-16 — Standalone synthetic compatibility source and publication
+
+GPT-6.1 Sol/high. Owner approved replacing the wrapper/library entry and prior
+no-further-execution STOP rule with one isolated synthetic script. Existing C3
+worktree/PR reused; root WIP preserved. READ-STANDALONE-TRIAL-DECISION.md records
+the bounded change. No original claim/history is reopened or rewritten.
+
+The standalone generator embeds the guarded canonical closure with the same
+three scopes, fixed caller/project and MAC validation. Only compatibility is
+admitted; authority and extra arguments fail before business IO. The existing
+publication adapter now supports this mode with five charged operations and
+independent close/absence checks. Same-epoch registration prevents switching
+modes to reset an adapter. Historical library/wrapper generated artifacts remain
+byte-identical to the pre-change hashes. No original source/secret is copied.
+
+TDD: 13 entry cases and four publication cases observed RED then GREEN. Affected
+116/116 pass. Separate independent reviews found no actionable issues. Complete
+Node22/actual Core643c1b3/owned PostgreSQL16.14 npm test:2165/2165 PASS, no fail,
+cancel or skip,95.834s. Database/role cleanup and final PostgreSQL stop/closed
+listener verified. Source snapshot598 paths SHA
+3f64d9e75bc7d1076a8d2e0dbbeee7f1dad6fb03904f0c783ab129165a0b7eae
+before this documentation-only evidence update. Earlier pre-publication run
+2159/2161 had two preparation-realm child20s ETIMEDOUT failures; focused
+11.546/10.285s diagnosis passed, cause UNRESOLVED, both records retained.
+
+Actual cumulative31/160 remains unchanged. The offline operation candidate is
+98 future units plus31 history=129, leaving31 for actual UI costs; this is NOT
+a verified complete cost map or execution authorization. Append-only accounting
+must link original27, stopped continuation1 and diagnosis3 under the original
+lock; independent17-unit cleanup and applicable restore reserve stay protected.
+No Google/browser IO, credentials, grants, deployment, Properties, triggers or
+formal flags changed. Actual compatibility/privacy/latency/C1 daily-runtime/
+C6/accelerated observation and real-device gates remain unaccepted.
+
+Rollback: revert this source increment before deployment. Once synthetic
+publication is actually used, invoke its separately reserved close/readback and
+credential/access cleanup before reporting rollback. No production rollback or
+data deletion is required by this source increment. CI readback pending push.
