@@ -9,15 +9,25 @@ import {createAuthorityTrialOAuth} from '../scripts/read-authority-trial-oauth.m
 import {AUTHORITY_TRIAL_SCOPES} from '../scripts/read-authority-trial-driver.mjs';
 const phase=await import('../scripts/read-authority-phase-control.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-phase-control.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),binding='d'.repeat(64),defer=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
-function setup(){
+function setup(patch={}){
  const dir=mkdtempSync(join(tmpdir(),'cmwebs-phase-control-'));chmodSync(dir,0o700);const path=join(dir,'budget.json'),epoch='SYNTHETIC_PHASE_CONTROL_'+randomUUID();let time=clock;
  const raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(path,raw,{mode:0o600});
- const options={path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;}};
+ const options={path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;},...patch};
  const control=createAuthorityPreparationControl(options),bridge=phase.createAuthorityPhaseControl?.(control)??{...control,withCleanup:(b,fn)=>control.withRuntime(b,fn)};
  return {dir,path,epoch,options,control,bridge,get:()=>JSON.parse(readFileSync(path)),setNow:v=>{time=v;},now:()=>time};
 }
 async function handoff(s,cap,spent){await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:spent+2});}
 async function prepare(s){await s.bridge.withPreparation(cap=>handoff(s,cap,25));}
+test('policy getter follows the actual canonical activation and refuses a stale origin or inactive facade',async()=>{
+ const decisionHash='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72',s=setup({decisionHash}),gate=defer();let late;
+ assert.throws(()=>s.bridge.capability.decisionHash,/TRIAL_STOPPED/);
+ await s.bridge.withPreparation(async cap=>{
+  assert.equal(cap.decisionHash,decisionHash);assert(Object.isFrozen(cap));late=gate.promise.then(()=>cap.decisionHash);void late.catch(()=>{});
+  for(const purpose of ['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'])await cap.externalRead(async()=>{},'P:'+purpose);await handoff(s,cap,29);
+ });
+ await s.bridge.withRuntime(binding,async cap=>{assert.equal(cap.decisionHash,decisionHash);gate.resolve();await assert.rejects(late,/TRIAL_STOPPED/);assert.equal(cap.decisionHash,decisionHash);});
+ assert.throws(()=>s.bridge.capability.decisionHash,/TRIAL_STOPPED/);assert.equal(s.get().spent,31);
+});
 async function oauthPrepare(s){
  const clientId='1234567890-synthetic.apps.googleusercontent.com',callerHash=hash('caller@example.invalid'),oauthClientHash=hash(clientId);let flow,revoke=0,exchange=0;
  await s.bridge.withPreparation(async cap=>{

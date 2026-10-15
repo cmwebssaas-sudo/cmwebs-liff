@@ -54,7 +54,10 @@ export function createAuthorityTrialOrchestrator(input){
    }
    activeSlot.called=true;const p=phase.capability.cleanup(...args);activeSlot.operations.add(p);void p.catch(()=>{activeSlot.failed=true;});void p.then(()=>activeSlot.operations.delete(p),()=>activeSlot.operations.delete(p));return p;
   };
-  const adapterControl=Object.freeze({externalRead:(...args)=>admission('externalRead',args),restoreOriginalEditor:(...args)=>admission('restoreOriginalEditor',args),cleanup:(...args)=>admission('cleanup',args)});
+  const adapterControl=Object.freeze({get decisionHash(){
+   if(!currentOrigin||origin.getStore()!==currentOrigin||!currentOrigin.accepting)stop();
+   const selected=phase.capability.decisionHash;if(selected!==recoveryOptions.decisionHash)stop();return selected;
+  },externalRead:(...args)=>admission('externalRead',args),restoreOriginalEditor:(...args)=>admission('restoreOriginalEditor',args),cleanup:(...args)=>admission('cleanup',args)});
   const report=()=>freeze({source:'fixed-authority-trial-orchestrator',state:stage,stopRequested:stopped,handoff,entries:[...entries],restore:restoreOutcome,cleanup:outcomes.map(v=>({...v})),rollbackRuntime:{manifestSha256:rollbackPin.sha256,artifactChecks,counterChecks,failed:recoveryFailed},trialAccepted:false,rollbackComplete:false});
   const requestStop=async()=>{stopped=true;try{return await phase.requestStop();}catch(_){stop();}};
   const clean=async()=>{

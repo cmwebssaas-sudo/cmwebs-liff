@@ -1969,3 +1969,26 @@ fail/cancel/skip; cluster cleanup/listener stop verified. Reviewed five source
 pins unchanged. Validate72 backend/40 endpoints/static cache/diff PASS. This
 implements the selected policy through the counter/runtime/recovery; actual
 credential adapters and native release/window bindings remain incomplete.
+
+### 2026-10-15 Existing-grant and same-token identity adapters
+
+Publisher source is pinned by exact bytes, owner, mode0600 and no-follow regular
+file read. An explicit single P refresh validates bounded response, original
+ten scopes and finite lifetime, followed by paid verified publisher identity.
+Only then is a synchronous cached credential available. No login-file write,
+new grant, hidden renewal or original-publisher revocation occurs. Four G
+identities use each actor's current token and independent window admission;
+partial identity results never imply full native or quota acceptance.
+
+Initial adapter RED25/25 failed before implementation; selector RED2/2 reproduced
+the actual legacy-cap bypass before repair. Canonical/phase/orchestrator now
+carry the selected policy; missing/historical/stale selectors refuse IO.
+Facade RED3/3 reproduced missing propagation before repair. Affected190/190
+PASS; independent review's P2 selector issue fixed and re-reviewed with no new
+finding. Full Node22.23.3/actual Core/owned PostgreSQL1910/1910 PASS,62.686s,
+zero fail/cancel/skip; cluster and listener stopped. Tested575-file snapshot
+806b20541fbc7d8216d6c45ad2d371649be303f8d300ea921f9f18f803200fe9;
+only documentation changed afterwards. Apps Script/Worker source unchanged.
+Actual Google counter remains25/160 and unclaimed; no live refresh, userinfo,
+browser, native capture or RPC. Native/ACL/Sheets/terminal assembly and all
+runtime, quota, privacy, performance and real-device gates remain required.

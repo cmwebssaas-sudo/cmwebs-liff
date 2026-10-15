@@ -10,6 +10,8 @@ import {createHash,randomUUID} from 'node:crypto';
 import {SINGLE_WRAPPER_TRIAL_DECISION_HASH as decisionHash,SINGLE_WRAPPER_TRIAL_OPERATIONS as fixedOperations} from '../scripts/read-authority-trial-budget-plan.mjs';
 import {createAuthorityTrialPublication} from '../scripts/read-authority-trial-publication.mjs';
 import {buildAuthorityTrialArtifacts} from '../scripts/build-read-authority-trial-entry.mjs';
+import {createAuthorityPublisherCredentials,createAuthorityNativeIdentity} from '../scripts/read-authority-trial-credentials.mjs';
+import {createAuthorityPhaseControl} from '../scripts/read-authority-phase-control.mjs';
 const mod=await import('../scripts/read-authority-preparation-control.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-preparation-control.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),epochs=new Set();
 const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72',credentialPurposes=['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'];
@@ -25,6 +27,38 @@ function probePreparationLock(path){
  const result=cp.spawnSync('python3',['-c',code,path+'.lock'],{encoding:'utf8',timeout:3000,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
  assert.equal(result.status,0);return result.stdout.trim();
 }
+test('publisher holder cannot mint through an actual legacy unlabelled canonical capability',async()=>{
+ const s=setup(),profilePath=join(s.options.path,'..','legacy-profile.json'),raw=JSON.stringify({tokens:{default:{access_token:'SYNTHETIC_EXPIRED',refresh_token:'SYNTHETIC_GRANT',client_id:'123-synthetic.apps.googleusercontent.com',token_type:'Bearer',expiry_date:clock-1000}}});writeFileSync(profilePath,raw,{mode:0o600});let io=0;
+ const holder=createAuthorityPublisherCredentials({source:{path:profilePath,sha256:hash(raw)},publisherHash:'c'.repeat(64),decisionHash:credentialDecision,expiresAt:s.options.expiresAt,now:s.options.now,fetcher:async()=>{io++;return new Response(JSON.stringify({access_token:'SYNTHETIC_NEW',token_type:'Bearer',expires_in:3920,scope:['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(x=>'https://www.googleapis.com/auth/'+x).join(' ')}));}});
+ try{await assert.rejects(s.control.withPreparation(cap=>holder.refresh(cap)),/TRIAL_STOPPED/);assert.equal(io,0);assert.equal(s.get().spent,25);}finally{await holder.stopAndDrain();}
+});
+test('real credential adapters use original selected-policy debits and four separate runtime identity slots',async()=>{
+ const s=setup({decisionHash:credentialDecision}),profilePath=join(s.options.path,'..','profile.json'),publisherEmail='publisher@example.invalid',callerEmail='caller@example.invalid',publisherHash=hash(publisherEmail),callerHash=hash(callerEmail),oauthClientHash='c'.repeat(64),binding='d'.repeat(64);
+ const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(x=>'https://www.googleapis.com/auth/'+x);
+ const raw=JSON.stringify({tokens:{default:{access_token:'SYNTHETIC_EXPIRED',refresh_token:'SYNTHETIC_EXISTING_GRANT',client_id:'123-synthetic.apps.googleusercontent.com',token_type:'Bearer',expiry_date:clock-1000}}});writeFileSync(profilePath,raw,{mode:0o600});
+ const requests=[],fetcher=async(url,init)=>{
+  const event=s.get().preparation.events.at(-1);assert.equal(event.outcome,'UNKNOWN');requests.push({url,action:event.action,spent:s.get().spent});
+  return new Response(JSON.stringify(url.endsWith('/token')?{access_token:'SYNTHETIC_PUBLISHER',token_type:'Bearer',expires_in:3920,scope:scopes.join(' ')}:{email:init.headers.authorization==='Bearer SYNTHETIC_PUBLISHER'?publisherEmail:callerEmail,verified_email:true}));
+ };
+ const holder=createAuthorityPublisherCredentials({source:{path:profilePath,sha256:hash(raw)},publisherHash,decisionHash:credentialDecision,expiresAt:s.options.expiresAt,now:s.options.now,fetcher});
+ const callerCredential=()=>({accessToken:'SYNTHETIC_CALLER',callerHash,oauthClientHash,expiresAt:clock+3600000,refreshTokenPresent:false,scopes:['spreadsheets.readonly','userinfo.email','script.external_request'].map(x=>'https://www.googleapis.com/auth/'+x)});
+ const identity=createAuthorityNativeIdentity({callerHash,publisherHash,oauthClientHash,decisionHash:credentialDecision,expiresAt:s.options.expiresAt,callerCredential,publisherCredential:holder.credential,fetcher,now:s.options.now});
+ const bridge=createAuthorityPhaseControl(s.control);
+ try{
+  await bridge.withPreparation(async cap=>{
+   for(const purpose of ['caller-bind','publisher-bind'])await cap.externalRead(async()=>{},'P:'+purpose);
+   await holder.refresh(cap);await holder.verify(cap);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:31});
+  });
+  await bridge.withRuntime(binding,async cap=>{
+   const view=(phase,settlement=false)=>({phase,decisionHash:credentialDecision,externalRead:(io,{actor,category})=>(settlement?cap.settlementRead:cap.externalRead)(io,'G:'+phase+':'+actor+':'+category)});
+   for(const actor of ['caller','publisher'])await identity.read(actor,view('wrapper-before'));
+   await cap.dispatchCompatibility({entry:'wrapper',nativeMs:0,observedAt:s.options.now(),credentialExpiresAt:clock+3600000},async()=>{});
+   for(const actor of ['caller','publisher'])await identity.read(actor,view('wrapper-after',true));
+   await cap.accountNative({entry:'wrapper',totalMs:1,executionHash:'e'.repeat(64)});await cap.finishCompatibility('wrapper');
+  });
+  assert.equal(s.get().spent,36);assert.equal(s.get().preparation.importedReads,25);assert.deepEqual(requests.map(v=>v.action),['P:publisher-refresh','P:publisher-userinfo','G:wrapper-before:caller:identityReads','G:wrapper-before:publisher:identityReads','G:wrapper-after:caller:identityReads','G:wrapper-after:publisher:identityReads']);assert.equal(readFileSync(profilePath,'utf8'),raw);
+ }finally{await identity.stopAndDrain();await holder.stopAndDrain();}
+});
 test('credential decision binds four unique P purposes and preserves original counter history',async()=>{
  const s=setup({decisionHash:credentialDecision});await s.control.withPreparation(async cap=>{for(const name of credentialPurposes)await cap.externalRead(async()=>{},'P:'+name);await cap.externalRead(async()=>{},'A:original-project');});
  assert.equal(s.get().spent,30);assert.equal(s.get().preparation.decisionHash,credentialDecision);assert.equal(s.get().preparation.importedReads,25);assert.equal(s.get().approval_sha256,s.options.approvalHash);assert.equal(s.get().proposal_sha256,s.options.proposalHash);

@@ -3473,3 +3473,43 @@ Rollback undeployed selected-policy binding to391e9f3e97a03bc176569fec2d90e5cbd3
 preserving any original claims/checkpoints and their matching copied runtime;
 never change policy on a claimed counter or replay/refund. Root WIP, C5 user
 swap and private S1 boundary preserved.
+
+## C3 existing-grant and same-token credential adapters — 2026-10-15
+
+Recommended model/speed: GPT-6.1 Sol/high for fixed-purpose credential IO.
+Added a local publisher holder: exact source hash, owned0600/no-follow file,
+single explicit paid existing-grant refresh, strict original ten-scope/response/
+expiry checks and same-token verified identity before synchronous credential
+access. Original login file is never overwritten; renewed token stays in memory.
+Four G phase/actor reads independently validate the current token holder, retain
+the caller's original three scopes/no-refresh contract, and return partial proof.
+Stop/drain owns entered body IO; original publisher grant is never revoked.
+Loss of this original memory holder cannot be repaired from copied descriptors.
+
+Initial adapter RED25/25 then GREEN25/25. Review found a P2 where a legacy
+canonical cap could discard the new label. RED2/2 reproduced it; the holder now
+requires the actual capability's approved selector. The canonical cap exposes
+its bound immutable selector. Phase/orchestrator propagation is origin-scoped,
+denies stale/inactive accesses and checks pinned recovery selection; RED3/3
+reproduced this missing path before repair. Final affected190/190 PASS and
+incremental independent re-review found no additional actionable finding.
+
+The preceding adapter snapshot passed1909/1909 before the facade addition.
+The final575-file snapshot806b20541fbc7d8216d6c45ad2d371649be303f8d300ea921f9f18f803200fe9
+passed1910/1910 under Node22.23.3, actual pinned Core and owned PostgreSQL,
+62.686s, zero fail/cancel/skip. Owned cluster/listener cleanup verified. Only
+documentation changed afterwards; all four final reviewed source pins retained.
+Validate72 backend/40 endpoints/static cache/diff PASS. Apps Script and Worker
+unchanged, so no repeated unchanged native/performance tests. Exact new-head CI
+is separate from these local results and must be read after push.
+
+Actual original counter remains25/160, byte-identical and unclaimed. No Google
+refresh/userinfo/browser/account/native/formal-data/RPC/config/deployment action.
+Five native release callbacks, ACL/Sheets fact assembly, four complete native
+windows/quota and unknown-terminal T3 remain. No partial proof bypasses these
+gates. C1 daily900s and C6 capacity/performance remain unaccepted; parallel24h T0
+NOT_STARTED and switches off. Root WIP, C5 user swap and private S1 preserved.
+
+Rollback this undeployed increment tofacbb8f1689f8c012560aa8b7530fb55632a5993;
+retain any original claims/checkpoints and matching copied cleanup. Do not
+reset/refund/replay or assume a lost in-memory publisher token is recoverable.
