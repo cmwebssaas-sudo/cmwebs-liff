@@ -4366,3 +4366,44 @@ Risk: engine-specific performance/ICU behavior still needs exact CI and real
 acceptance. Rollback this undeployed source and generated identity together to
 519d416619cd90157c92dc2a1c6a6b935acf2dde; start a fresh matching observation before
 any later enablement. No data rollback or observation reset was performed.
+
+## C6 request-owned Sheet frame construction — 2026-10-15
+
+Recommended model/speed: GPT-6.1 Sol/high for request ownership/semantic parity.
+Exactf2e90eb CI38761654626 rental1800/1800 PASS, Worker35/36 FAIL properties
+p95=51.147ms>50; all700 samples completed and both footers/annotations read,
+logs truncated. This failure is retained without unchanged retry or acceptance.
+
+The HTTP route now explicitly defers Sheet matrices for its private, already
+loaded complete scoped dataset until first use in the final synchronous
+calculation. Source-table registry stays complete; D1 queries, fields, rows and
+access are unchanged. Materialized Sheets are cached only within that request,
+getValues still returns copies, and default runtime/service callers retain eager
+snapshot behavior. The owned mode rejects non-array/nullish/sparse row frames.
+Public gallery awaits finish before this runtime is constructed.
+
+New3 tests had2RED/1pass before implementation; related24/24 PASS. Actual500-room
+properties matches the complete canonical GAS response and independent500 room
+count; payment data remains loaded but unused matrix enumeration is zero.
+Room regression now permits zero for unused tables while requiring all room
+rows exactly once and every row at most once; whole GAS/photo parity unchanged.
+Independent source/test/generated comparison review found no actionable issue.
+One changed-source full Worker36/36 PASS; original7×100 local p95ms:
+home13.272/actions12.182/revenue12.722/tenants18.564/rooms16.383/arrears21.117/
+properties18.054. No threshold/order/sample/GC changes; local results do not
+replace exact Linux CI or actual user acceptance.
+
+Full1808/1808 PASS56.327s under Node22.23.3/actual pinned Core/owned PostgreSQL,
+zero fail/cancel/skip; cluster/listener stopped. Tested597-file snapshot
+3a4157e6f5096609672b2e371ab2dfa6eca07af0b2696db942803ea2ff619b74; only docs
+afterwards. Existing generator refreshed comparison before this run; validate
+72 backend/40 endpoints/cache/comparison178/diff PASS. Apps Script unchanged.
+Final exact-head CI remains a separate required readback.
+
+No native/provider/Google/RPC/config/formal-data/deployment action. Actual25/160
+unchanged/unclaimed; approved parallel24h T0 NOT_STARTED and switches off.
+Daily900s, C3 native/identity/quota, remote latency and device gates remain.
+Root WIP/C5 swap/private S1 preserved. Risk: owned lazy mode must stay confined
+to the final request-owned synchronous reader; default snapshots remain eager.
+Rollback undeployed runtime/routes/generated identity together tof2e90eb before
+any later matching observation. No data rollback or observation reset needed.

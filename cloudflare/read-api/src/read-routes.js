@@ -51,7 +51,7 @@ export async function serveReadRoute(request,context) {
       const publicResources=await loadPublicRoomResources((dataset.V2_rooms||[]).map(row=>row.room_website_url),helpers,options);
       options={...options,publicResources};
     }
-    const calculator=createReadCalculator(createReadServices(dataset,context.access,options));
+    const calculator=createReadCalculator(createReadServices(dataset,context.access,options,true));
     const uid=context.access.line_user_id;
     const args=url.pathname==='/v1/home'?[uid,section,q.get('read_view')]:
       url.pathname==='/v1/tenants'?[uid,'summary']:

@@ -1,11 +1,11 @@
 import { appsScriptDate } from './apps-script-date.js';
 // Request-local adapters for the generated GAS calculations. Identity is
 // supplied by the server, never resolved from a reader's query parameters.
-export function createReadServices(dataset, access, options = {}) {
+export function createReadServices(dataset, access, options = {}, deferSheetValues = false) {
   if (access?.success !== true || !access.workspace?.workspace_id || !access.membership || !access.user) {
     throw new Error('Verified Workspace access required');
   }
-  return {...createReplicaRuntime(dataset,options),
+  return {...createReplicaRuntime(dataset,options,deferSheetValues),
     workspaceLandlordResolveAccess_:()=>access,
     contractRequestResolveLandlordIdentity_:()=>access.principal,
     lmResolveLandlord_:()=>access.principal};
@@ -13,11 +13,12 @@ export function createReadServices(dataset, access, options = {}) {
 
 // Read-only Sheet/services layer used while resolving provider-verified identity.
 // It supplies no Workspace access or principal and cannot authorize a reader.
-export function createReplicaRuntime(dataset,options={}) {
+export function createReplicaRuntime(dataset,options={},deferSheetValues=false) {
   const now = options.now ?? Date.now();
   const RequestDate=options.dateConstructor||appsScriptDate(now);
   const inheritedDefaults={};
-  const sheets = new Map(Object.entries(dataset).map(([name, sourceRows]) => {
+  const sourceTables=new Map(Object.entries(dataset)),sheets=new Map();
+  function buildSheet(name,sourceRows) {
     const maskedAccounts=name==='V2_payment_accounts';
     const headerSet=new Set();
     for(const row of sourceRows) {
@@ -50,9 +51,24 @@ export function createReplicaRuntime(dataset,options={}) {
         getValues: () => values.slice(row-1,row-1+height).map(item=>item.slice(column-1,column-1+width))
       })
     };
-    return [name,sheet];
-  }));
-  const ss = {getSheetByName: name => sheets.get(name) || null};
+    return sheet;
+  }
+  function getSheetByName(name) {
+    if(sheets.has(name))return sheets.get(name);
+    if(!sourceTables.has(name))return null;
+    const sheet=buildSheet(name,sourceTables.get(name));
+    sheets.set(name,sheet);sourceTables.delete(name);return sheet;
+  }
+  if(deferSheetValues===true) {
+    // Only the HTTP reader opts in, after obtaining its own complete scoped D1
+    // dataset. No caller can mutate those private rows during the synchronous
+    // calculation. Keep default eager snapshot semantics for other callers.
+    for(const rows of sourceTables.values()) {
+      if(!Array.isArray(rows))throw new Error('Replica schema unavailable');
+      for(const row of rows)if(row==null)throw new Error('Replica row unavailable');
+    }
+  } else for(const name of sourceTables.keys())getSheetByName(name);
+  const ss = {getSheetByName};
   const requiredSheet = name => {const sheet=ss.getSheetByName(name); if(!sheet) throw new Error('Replica schema unavailable'); return sheet;};
   const localCache = new Map();
   const contexts = new Map();

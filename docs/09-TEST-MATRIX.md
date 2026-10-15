@@ -2126,3 +2126,16 @@ tests/review. Rollback source/adapter/comparison to568344b.
 Current owner schedule is merged PR272: parallel24h after technical gates,
 rooms first, stable24h before later accepted pages, seven-day post-on. T0 has
 not started; old72h/seven-day pre-on rows above are historical.
+
+### 2026-10-15 Request-owned deferred Sheet matrices
+
+- RED3=2fail/1pass, related24/24 PASS: request-owned unused frames0, used Sheets
+  stable/once, getValues copies, default eager snapshots, invalid arrays denied.
+- Complete actual500-room properties/GAS parity, full loaded payments retained,
+  room rows once/all others at most once; no query/data/API scope reduction.
+- Changed-source Worker36/36 PASS, all7×100 original local p95<50ms. Prior exact
+  f2e90eb CI Worker35/36 properties51.147ms FAIL retained; no unchanged retry.
+- Full1808/1808 PASS56.327s, actual Core/ownedPG cleanup verified; snapshot
+  3a4157e6f5096609672b2e371ab2dfa6eca07af0b2696db942803ea2ff619b74, only docs
+  afterwards. Independent review no finding; validate72/40/cache/comparison178
+  PASS. New-head CI, real remote/device/900s/native and observation gates remain.

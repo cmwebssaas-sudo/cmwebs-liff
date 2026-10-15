@@ -351,3 +351,21 @@ days: technical gates then parallel sync/shadow24h, rooms first, stable24h befor
 later accepted pages, seven-day post-on observation. T0 NOT_STARTED; daily900s,
 privacy, freshness, real authenticated latency and physical acceptance remain
 unaccepted. Actual25/160 unchanged/unclaimed, flags off/endpoint blank.
+
+## 2026-10-15 Request-owned matrix candidate
+
+Priorf2e90eb CI remains FAIL properties51.147ms>50; rental1800/1800 PASS.
+Final HTTP calculation now frames only requested Sheets from its complete
+private scoped dataset, once per request; default services retain eager source
+snapshots. SQL/rows/fields/response parity and the50ms gate are unchanged.
+Related24/24, changed-source Worker36/36 and full1808/1808 PASS56.327s; owned
+Core/PG cleanup verified. Full500-room properties response and loaded payments
+remain intact even though unused payment rows never become a Sheet matrix.
+Independent review no finding; validate72/40/cache/comparison178 PASS.
+Local seven p95<50 cannot replace new exact-head CI or real acceptance.
+
+Generated comparison is updated with runtime/routes; use its matching fresh
+observation before any enablement. Approved parallel24h T0 NOT_STARTED, flags
+off/endpoint blank, actual25/160 unchanged/unclaimed. Native/quota/daily900s/
+remote/device remain unaccepted. Rollback this undeployed runtime/routes/identity
+increment together tof2e90eb before a later observation.

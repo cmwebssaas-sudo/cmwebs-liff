@@ -6,6 +6,29 @@ import { loadPublicRoomResources } from '../cloudflare/read-api/src/public-room-
 import { serveReadRoute } from '../cloudflare/read-api/src/read-routes.js';
 import worker from '../cloudflare/read-api/src/index.js';
 import { dataset,access,fixture,plain,richDataset,projectedDataset,originalGas } from './fixtures/read-parity/runtime.mjs';
+import {capacityDataset} from './fixtures/read-parity/capacity.mjs';
+
+test('owned read services materialize requested Sheet frames once and leave unused rows untouched',()=>{
+  let used=0,unused=0;
+  const row=counter=>new Proxy({value:'first'},{ownKeys(target){counter();return Reflect.ownKeys(target);}});
+  const services=createReadServices({Used:[row(()=>{used++;})],Unused:[row(()=>{unused++;})]},access,{now:Date.parse(fixture.now)},true);
+  assert.equal(used,0);assert.equal(unused,0);
+  const ss=services.SpreadsheetApp.getActiveSpreadsheet(),sheet=ss.getSheetByName('Used');
+  assert.deepEqual(sheet.getDataRange().getValues(),[['value'],['first']]);assert.equal(ss.getSheetByName('Used'),sheet);assert.equal(used,1);assert.equal(unused,0);assert.equal(ss.getSheetByName('missing'),null);
+  const values=sheet.getDataRange().getValues();values[1][0]='changed';assert.equal(sheet.getRange(2,1).getValues()[0][0],'first');
+});
+test('default services retain eager source snapshots and invalid owned row frames fail closed',()=>{
+  const input={Used:[{value:'first'}]},services=createReadServices(input,access,{now:Date.parse(fixture.now)});input.Used[0].value='later';
+  assert.equal(services.SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Used').getRange(2,1).getValues()[0][0],'first');
+  for(const rows of [null,{},[null],[undefined],Array(1)])assert.throws(()=>createReadServices({Unused:rows},access,{now:Date.parse(fixture.now)},true));
+});
+test('actual500-room properties route retains full data and GAS parity without framing unrelated payments',async()=>{
+  const input=capacityDataset(),projected=projectedDataset(input),frames={};let loads=0;
+  const watched=Object.fromEntries(Object.entries(projected).map(([name,rows])=>[name,rows.map(row=>new Proxy(row,{ownKeys(target){frames[name]=(frames[name]||0)+1;return Reflect.ownKeys(target);}}))]));
+  const response=await serveReadRoute(new Request('https://local.test/v1/properties?include_archived=1'),{access,loadDataset:async()=>{loads++;return watched;},options:{now:Date.parse(fixture.now)}});
+  assert.equal(response.status,200);const result=await response.json();assert.deepEqual(result,plain(originalGas(input,access).getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',true)));assert.equal(result.data.summary.room_count,500);
+  assert.equal(loads,1);assert.equal(watched.V2_payments.length,projected.V2_payments.length);assert.equal(frames.V2_payments||0,0);assert.equal(frames.V2_rooms,projected.V2_rooms.length);assert.equal(frames.V2_properties,projected.V2_properties.length);
+});
 
 test('production read routes stay closed even with fabricated fixture or query identity',async()=>{
   for(const path of ['home','revenue','tenants','rooms','arrears','properties']) {
@@ -60,7 +83,7 @@ test('rooms materialize each replica row once while retaining request-local publ
     if(url)input.V2_rooms[0].room_website_url=url;
     const enumerations=[];
     const projected=Object.fromEntries(Object.entries(projectedDataset(input)).map(([name,rows])=>[name,rows.map(row=>{
-      const count={value:0};enumerations.push(count);
+      const count={name,value:0};enumerations.push(count);
       return new Proxy(row,{ownKeys(target){count.value++;return Reflect.ownKeys(target);}});
     })]));
     let fetches=0;
@@ -77,7 +100,8 @@ test('rooms materialize each replica row once while retaining request-local publ
     if(site.endsWith('-b'))assert.ok(!JSON.stringify(result).includes(previousPhoto),'another request cannot inherit the previous gallery');
     assert.equal(fetches,url?1:0);
     assert.ok(enumerations.length>0);
-    assert.ok(enumerations.every(count=>count.value===1),'each input row should enter only one Sheet matrix');
+    assert.ok(enumerations.every(count=>count.value<=1),'unused sheets need no matrix; no row enters two matrices');
+    assert.ok(enumerations.filter(count=>count.name==='V2_rooms').every(count=>count.value===1),'every room still enters exactly one matrix');
   }
 });
 
