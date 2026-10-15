@@ -391,3 +391,40 @@ Rollback: retain prior source commit; revert this local byte-sizing change if
 native validation fails before deploying corrected synthetic source. Existing
 serving deployment and authoritative data retained; read flags remain off.
 Root WIP preserved. Temporary editor restoration is already complete.
+
+## 2026-10-16 — Stop new Sheet reads after the send deadline
+
+Recommended GPT-6.1 Sol/high for synchronization correctness. A slow earlier
+send could exhaust the existing four-minute deadline, yet the table loop still
+loaded and hashed each later Sheet before the send helper rejected it. Two
+actual-module VM regressions reproduced this: dirty sync read2 rather than1
+Sheet, and full reconciliation read16 rather than1.
+
+The loop now checks its already captured source timestamp before loading the
+next Sheet. Full reconciliation still queues every unattempted table; failed
+tables remain pending, acknowledged tables clear only their matching marker,
+and the lease is released. This cannot interrupt a blocking native call, and
+remaining marker/lease cleanup can still require native IO after the deadline.
+It does not resolve or measure the previous335s idle Cache stall or prove the
+unchanged900s/day target.
+
+Both regressions RED-to-GREEN; affected19/19 and independent review19/19 PASS,
+no actionable findings. One full local859/859 PASS,2.566s,zero fail/cancel/skip,
+Node22.23.3 with actual pinned Core and owned disposable PostgreSQL16.14.
+Database/role cleanup, stopped cluster and closed listener verified. Tested
+477-file snapshot `3a69f2c26519e21b25b2df3437e670f1326cc9a59606e61a5edf867b5a8bb14b`;
+only documentation changed after the run. Validate71backend/40endpoints/static
+cache and diff checks PASS. Worker source unchanged; no repeated capacity run.
+
+No Google/account/credential/Properties/trigger/Sheet/deployment operation took
+place. Original25/160 budget remains unchanged and unclaimed; the separate
+native-IO purpose amendment is still awaiting the owner. The approved accelerated
+schedule supersedes the earlier three-day calendar requirement only: after
+technical gates, sync/shadow run in parallel24h, rooms first, another stable24h
+before later accepted pages, seven-day observation after enabling. That clock
+has not started; daily runtime, privacy, freshness, performance and device gates
+remain unaccepted and read switches remain off.
+
+Rollback this undeployed deadline guard to `6b90a4ca3efc8a83b706268d5039f5d9bb988a7c`
+before any corrected synthetic release if necessary. Retain existing serving
+versions, source data, dirty generations and the original failed observation.
