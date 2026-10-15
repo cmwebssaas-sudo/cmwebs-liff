@@ -3,8 +3,8 @@
 // interval, before the unchanged original copied control acquires its own flock.
 import {mkdirSync,lstatSync,readFileSync,readdirSync,openSync,closeSync,writeSync,fsyncSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
-import {fileURLToPath} from 'node:url';
-import {userInfo} from 'node:os';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {userInfo,homedir} from 'node:os';
 import {types} from 'node:util';
 import {createHash} from 'node:crypto';
 import {setTimeout as delay} from 'node:timers/promises';
@@ -16,6 +16,8 @@ const policy=Object.freeze({formatVersion:1,cleanupOnly:true,requiresCapturedOwn
 const exact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const same=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
+const denied=()=>{const p=Promise.reject(Error('TRIAL_STOPPED'));void p.catch(()=>{});return p;};
+const resourceKeys=Object.freeze(['epoch','expiresAt','thinScriptId','publisherHash','syntheticSheetId','originalSheetId','callerHash','fixtureHash','thinOriginalSourceHash','thinPath','readerPath']);
 function data(v){
  let count=0;const active=new Set();
  const copy=(v,depth)=>{
@@ -33,13 +35,22 @@ function syncDir(path){const fd=openSync(path,'r');try{fsyncSync(fd);}finally{cl
 function pinned(input){
  if(!exact(input,['path','sha256'])||typeof input.path!=='string'||!digest(input.sha256))stop();return Object.freeze({path:resolve(input.path),sha256:input.sha256});
 }
+function standaloneSelection(input,originalCopy){
+ if(!exact(input,['copy','resources']))stop();const copy=pinned(input.copy),resources=input.resources;
+ if(copy.path===originalCopy.path||!exact(resources,resourceKeys))stop();verifyAuthorityTrialRollback(copy);
+ const selected=lstatSync(copy.path),original=lstatSync(originalCopy.path);if(selected.dev===original.dev&&selected.ino===original.ino)stop();
+ const id=v=>typeof v==='string'&&/^[-A-Za-z0-9_]{20,200}$/.test(v);
+ if(!['epoch','thinScriptId','syntheticSheetId','originalSheetId'].every(k=>id(resources[k]))||resources.syntheticSheetId===resources.originalSheetId||!integer(resources.expiresAt)||resources.expiresAt<=0||!['publisherHash','callerHash','fixtureHash','thinOriginalSourceHash'].every(k=>digest(resources[k]))||resources.callerHash===resources.publisherHash)stop();
+ for(const key of ['thinPath','readerPath'])if(typeof resources[key]!=='string'||resolve(resources[key])!==resources[key])stop();
+ if(resources.thinPath===resources.readerPath)stop();return {copy,resources};
+}
 function manifestAt(input){
  const ref=pinned(input);dir(dirname(ref.path));dir(ref.path);dir(join(ref.path,'scripts'));
  if(readdirSync(ref.path).sort().join(',')!=='manifest.json,scripts'||readdirSync(join(ref.path,'scripts')).sort().join(',')!==files.map(v=>v.slice(8)).sort().join(','))stop();
  const bytes=read(join(ref.path,'manifest.json'),true,20000);if(hash(bytes)!==ref.sha256)stop();const m=JSON.parse(bytes);
- if(!exact(m,['source','policy','originalCopy','files'])||m.source!=='fixed-authority-continuation-recovery-runtime'||!same(m.policy,policy)||!exact(m.files,files))stop();
+ if(!exact(m,['source','policy','originalCopy','files',...(Object.hasOwn(m,'standalone')?['standalone']:[])])||m.source!=='fixed-authority-continuation-recovery-runtime'||!same(m.policy,policy)||!exact(m.files,files))stop();
  for(const name of files){const bytes=read(join(ref.path,name)),pin=m.files[name];if(!exact(pin,['sha256','size'])||!digest(pin.sha256)||!integer(pin.size)||pin.size!==bytes.length||hash(bytes)!==pin.sha256)stop();}
- verifyAuthorityTrialRollback(pinned(m.originalCopy));return {ref,manifest:m};
+ const originalCopy=pinned(m.originalCopy);verifyAuthorityTrialRollback(originalCopy);if(Object.hasOwn(m,'standalone'))standaloneSelection(m.standalone,originalCopy);return {ref,manifest:m};
 }
 export function verifyAuthorityContinuationRecovery(input){
  try{const {ref}=manifestAt(data(input));return Object.freeze({source:'fixed-authority-continuation-recovery-runtime',...ref,...policy,trialAccepted:false,rollbackComplete:false});}catch(_){stop();}
@@ -48,11 +59,12 @@ export function verifyAuthorityContinuationRecovery(input){
 // rewritten. This new graph copies only its verified bootstrap dependencies.
 export function buildAuthorityContinuationRecovery(input){
  try{
-  input=data(input);if(!exact(input,['path','originalCopy'])||typeof input.path!=='string')stop();const originalCopy=pinned(input.originalCopy);verifyAuthorityTrialRollback(originalCopy);
+  input=data(input);if(!exact(input,['path','originalCopy',...(Object.hasOwn(input,'standalone')?['standalone']:[])])||typeof input.path!=='string')stop();const originalCopy=pinned(input.originalCopy);verifyAuthorityTrialRollback(originalCopy);
+  const standalone=Object.hasOwn(input,'standalone')?standaloneSelection(input.standalone,originalCopy):null;
   const path=resolve(input.path);dir(dirname(path));const buffers=new Map();
   buffers.set(files[0],read(fileURLToPath(import.meta.url),false));
   for(const name of files.slice(1))buffers.set(name,read(join(originalCopy.path,name)));
-  const manifest={source:'fixed-authority-continuation-recovery-runtime',policy,originalCopy,files:Object.fromEntries(files.map(name=>[name,{size:buffers.get(name).length,sha256:hash(buffers.get(name))}]))};
+  const manifest={source:'fixed-authority-continuation-recovery-runtime',policy,originalCopy,files:Object.fromEntries(files.map(name=>[name,{size:buffers.get(name).length,sha256:hash(buffers.get(name))}])),...(standalone?{standalone}:{})};
   mkdirSync(path,{mode:0o700});mkdirSync(join(path,'scripts'),{mode:0o700});for(const [name,bytes] of buffers)synced(join(path,name),bytes);
   const bytes=Buffer.from(JSON.stringify(canonical(manifest))+'\n');synced(join(path,'manifest.json'),bytes);syncDir(join(path,'scripts'));syncDir(path);syncDir(dirname(path));return verifyAuthorityContinuationRecovery({path,sha256:hash(bytes)});
  }catch(_){stop();}
@@ -73,7 +85,14 @@ function captured(receipt){
 export async function loadAuthorityContinuationRecovery(input){
  try{
   const {ref,manifest}=manifestAt(data(input)),receipt=verifyAuthorityContinuationRecovery(ref),check=()=>manifestAt(ref),legacy=await loadAuthorityTrialRollback(pinned(manifest.originalCopy));check();
-  const contexts=new WeakMap();
+  const contexts=new WeakMap();let standaloneModules;
+  if(manifest.standalone){
+   const base=manifest.standalone.copy.path,module=name=>import(pathToFileURL(join(base,'scripts/'+name+'.mjs')).href);
+   const thin=await module('read-authority-trial-thin'),reader=await module('read-authority-trial-reader'),generator=await module('build-read-authority-trial-entry');check();
+   if(typeof thin.createStandaloneAuthorityTrialPublication!=='function'||typeof reader.createAuthorityTrialReader!=='function'||typeof generator.buildStandaloneAuthorityTrialArtifacts!=='function')stop();
+   const bundle=generator.buildStandaloneAuthorityTrialArtifacts(),wrapper=[{name:'AuthorityTrial',type:'SERVER_JS',source:bundle.source},{name:'appsscript',type:'JSON',source:JSON.stringify(bundle.manifest)}];
+   standaloneModules={thin:thin.createStandaloneAuthorityTrialPublication,reader:reader.createAuthorityTrialReader,wrapperHash:hash(JSON.stringify(canonical(wrapper.sort((a,b)=>a.name.localeCompare(b.name)))))};check();
+  }
   const adapter=name=>input=>{
    try{
     if(!input||typeof input!=='object'||types.isProxy(input))stop();const d=Object.getOwnPropertyDescriptor(input,'control');if(!d||!Object.hasOwn(d,'value'))stop();const ctx=contexts.get(d.value);if(!ctx)stop();ctx.guard();
@@ -81,7 +100,28 @@ export async function loadAuthorityContinuationRecovery(input){
     return Object.freeze(Object.fromEntries(Object.keys(api).map(method=>[method,(...args)=>{try{ctx.guard();return api[method](...args);}catch(_){ctx.failed=true;stop();}}])));
    }catch(_){stop();}
   };
-  return Object.freeze({receipt,createReader:adapter('createReader'),createPublication:adapter('createPublication'),createThin:adapter('createThin'),createCleanup:input=>{
+  const standaloneAdapter=kind=>input=>{
+   try{
+    if(!standaloneModules||!input||typeof input!=='object'||types.isProxy(input))stop();const options={};
+    const allowed=kind==='thin'?['path','epoch','scriptId','publisherHash','originalFiles','originalSourceHash','backupReceipt','expiresAt','control','credential','fetcher','now']:['path','epoch','originalSheetId','syntheticSheetId','callerEmail','callerHash','publisherHash','fixtureHash','expiresAt','creationReceipt','metadata','control','credential','fetcher','now'];
+    for(const key of Reflect.ownKeys(Object.getOwnPropertyDescriptors(input))){const d=Object.getOwnPropertyDescriptor(input,key);if(typeof key!=='string'||!allowed.includes(key)||!d.enumerable||!Object.hasOwn(d,'value'))stop();options[key]=['control','credential','fetcher','now','metadata'].includes(key)?d.value:data(d.value);}
+    const ctx=contexts.get(options.control);if(!ctx)stop();ctx.guard();const fixed=manifest.standalone.resources;
+    const pins={epoch:fixed.epoch,expiresAt:fixed.expiresAt,publisherHash:fixed.publisherHash,path:fixed[kind+'Path'],...(kind==='thin'?{scriptId:fixed.thinScriptId,originalSourceHash:fixed.thinOriginalSourceHash}:{originalSheetId:fixed.originalSheetId,syntheticSheetId:fixed.syntheticSheetId,callerHash:fixed.callerHash,fixtureHash:fixed.fixtureHash})};
+    if(Object.entries(pins).some(([k,v])=>options[k]!==v))stop();
+    let expected;
+    if(kind==='thin')expected=hash(JSON.stringify(canonical({epoch:fixed.epoch,scriptId:fixed.thinScriptId,entryKind:'standalone',publisherHash:fixed.publisherHash,originalSourceHash:fixed.thinOriginalSourceHash,expiresAt:fixed.expiresAt,backup:options.backupReceipt,wrapperHash:standaloneModules.wrapperHash})));
+    else expected=hash(JSON.stringify({epoch:fixed.epoch,originalSheetId:fixed.originalSheetId,syntheticSheetId:fixed.syntheticSheetId,callerHash:fixed.callerHash,publisherHash:fixed.publisherHash,fixtureHash:fixed.fixtureHash,expiresAt:fixed.expiresAt,creation:options.creationReceipt}));
+    const record=path=>{dir(dirname(path));const e=JSON.parse(read(path,true,20000));if(!exact(e,['value','sha256'])||hash(JSON.stringify(kind==='reader'?e.value:canonical(e.value)))!==e.sha256)stop();return e.value;};
+    const registry=join(homedir(),'.codex','private','cmwebs-authority-trials',hash(JSON.stringify(fixed.epoch))+'.'+kind+'.json'),registration=record(registry),journal=record(pins.path);
+    // Required before the constructor: no missing registry/journal may trigger
+    // its ordinary initialization branch. Its semantic validator still runs.
+    if(!exact(registration,['path','binding'])||registration.path!==pins.path||registration.binding!==expected||journal.binding!==expected)stop();
+    const control=Object.freeze({externalRead:denied,cleanup:options.control.cleanup,restoreOriginalEditor:options.control.restoreOriginalEditor});
+    const api=standaloneModules[kind]({...options,control,...(kind==='reader'?{metadata:Object.freeze({read:denied})}:{})}),keys=kind==='thin'?['status','stop','close','verifyClosed']:['status','remove','verifyRemoved'];
+    return Object.freeze(Object.fromEntries(keys.map(key=>[key,(...args)=>{try{ctx.guard();return api[key](...args);}catch(_){ctx.failed=true;stop();}}])));
+   }catch(_){stop();}
+  };
+  return Object.freeze({receipt,createReader:adapter('createReader'),createPublication:adapter('createPublication'),createThin:adapter('createThin'),...(standaloneModules?{createStandaloneThin:standaloneAdapter('thin'),createStandaloneReader:standaloneAdapter('reader')} :{}),createCleanup:input=>{
    try{
     const selected=inputOptions(input),owner=selected.owner;
     if(!owner||typeof owner!=='object'||types.isProxy(owner)||!Object.isFrozen(owner))stop();const d=Object.getOwnPropertyDescriptor(owner,'stopAndDrain');if(!d||!Object.hasOwn(d,'value')||typeof d.value!=='function')stop();const drain=d.value;
@@ -96,7 +136,13 @@ export async function loadAuthorityContinuationRecovery(input){
       const control=legacy.createCleanupControl({...original,now,pause});
       return await control.withPreparationCleanup(async oldCap=>{
        const ctx={oldCap,active:true,failed:false,guard:()=>{try{if(!ctx.active)stop();check();}catch(_){ctx.failed=true;stop();}}};
-       const cap=Object.freeze(Object.fromEntries(['restoreOriginalEditor','cleanup','inspectCleanup'].map(name=>[name,(...args)=>{try{ctx.guard();return oldCap[name](...args);}catch(_){ctx.failed=true;const p=Promise.reject(Error('TRIAL_STOPPED'));void p.catch(()=>{});return p;}}])));contexts.set(cap,ctx);
+       const cap=Object.freeze(Object.fromEntries(['restoreOriginalEditor','cleanup','inspectCleanup'].map(name=>[name,(...args)=>{try{
+        ctx.guard();
+        // Original admission awaits its durable debit. Recheck both frozen
+        // graphs at actual IO entry; an admitted UNKNOWN is never refunded.
+        if(name!=='inspectCleanup'&&typeof args[1]==='function'){const io=args[1];args[1]=(...values)=>{ctx.guard();return io(...values);};}
+        return oldCap[name](...args);
+       }catch(_){ctx.failed=true;const p=Promise.reject(Error('TRIAL_STOPPED'));void p.catch(()=>{});return p;}}])));contexts.set(cap,ctx);
        try{const result=await callback(cap);ctx.guard();if(ctx.failed)stop();return result;}finally{ctx.active=false;}
       });
      }catch(_){stop();}finally{busy=false;}

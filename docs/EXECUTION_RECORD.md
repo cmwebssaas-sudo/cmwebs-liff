@@ -3925,3 +3925,54 @@ Rollback: revert this local increment before use; do not delete or rewrite any
 old claim, STOP or journal. Once actually used, drain its retained real owner and
 use the reserved original C/I authority with the fixed new resource bindings.
 Exact-head CI for this increment remains pending push/readback.
+
+## 2026-10-16 — Standalone driver, source readback and independent recovery
+
+GPT-6.1 Sol/high, V2 stability scope, same C3 worktree/PR. The existing driver
+now supports the approved single-script compatibility entry: exact16 pins,
+immutable version1, full15 before/after observations, same-token identities and
+the original one-RPC/non-refundable360000ms/UNKNOWN rules. Original mode remains
+available. New-mode data snapshots reject executable hooks and malformed arrays.
+
+The existing source observer retains seven charged GET aliases. In standalone
+mode, the former library alias reads the isolated immutable version1; the thin
+alias reads its current editor. Both must match the same uploaded artifact and
+three-scope, library-free manifest. Original editor/deployments and all six
+baseline versions must remain unchanged. These are partial source facts: no
+GCP, ACL, Properties, trigger, runtime or full acceptance is manufactured.
+Standalone-only thin-triggers navigation provides a fixed read-only target
+within the same N24 limit; legacy mode still refuses it.
+
+Independent recovery extends the existing frozen graph with a physically
+separate standalone adapter copy and fixed resource/expiry pins. Original copy
+and C2/I17 authority remain unchanged. Matching existing journals/registries are
+required before reconstruction; recovery cannot initialize ordinary trial state.
+Captured owner drain and a full60s cooldown precede original-lock cleanup.
+Both frozen graphs are checked again at actual admitted IO entry. UNKNOWN and
+globally unique cleanup debits are preserved; no remote termination is inferred.
+
+Independent review found two P2 issues: source-constructor expected-value hooks
+and a recovery callback admission race. Both reproduced RED, fixed and separately
+re-reviewed; zero remaining actionable findings in those scopes. New128 cases
+cover these paths and standalone driver/readback/recovery/source/navigation.
+Node22 actual Core643c1b3/owned PostgreSQL16.14 complete npm test2348/2348 PASS,
+zero failures/cancellations/skips,107.244s; database/role cleanup and stopped
+PostgreSQL verified. Source snapshot608paths
+aae17c5edd5d96af2d5b5e23c2650e0d860ea077833c566b2cfcadd0662fdc8b
+precedes this evidence-only documentation append. Validate72/40/static-cache and
+diff checks PASS. No unchanged Worker/capacity benchmark manually rerun. Prior
+2159/2161 realm timeout evidence and unresolved cause remain retained.
+
+Existing3311ebc provider CI is terminal PASS: rental2215/2215, Worker26/26 plus
+both dry-runs. New increment CI remains pending push/readback. Frozen standalone
+adapter manifest e6ed8a001b69fb19b2ca2d1ebea0fd95c13639464cba7e707170c1c466277648
+was built and verified locally; actual resource pins/launcher/native producers
+and the complete160-bounded operation map still need integration before a claim.
+
+Original and prior continuation raw hashes are unchanged; no standalone claim,
+Google/browser operation, new debit, credential/grant/Property/trigger/deployment
+or formal flag change occurred. Actual total remains31/160. Root WIP preserved.
+Actual C1 daily-runtime, C3 compatibility/privacy/freshness/latency, C6 performance,
+24h parallel sync/shadow, staged rollout/device and seven-day postlaunch gates
+remain unmet. Rollback before use is a source revert; after actual use, drain the
+retained owner and use the fixed reserved recovery, preserving all old evidence.

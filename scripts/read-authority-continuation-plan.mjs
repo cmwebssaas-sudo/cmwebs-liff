@@ -109,7 +109,7 @@ const standaloneOperations=Object.fromEntries(Object.entries(operations).filter(
 export const STANDALONE_TRIAL_POLICY=freeze({...BOUNDED_CONTINUATION_POLICY,
  decisionHash:STANDALONE_TRIAL_DECISION_HASH,stage:'standalone-compatibility',
  importedUnits:31,fixedFutureUnits:87,bucketLimits:{...limits,C:0},operations:standaloneOperations,
- originalRestoreUnitsOutsideMap:2
+ originalRestoreUnitsOutsideMap:2,navigationTargets:[...navigationTargets,'thin-triggers']
 });
 // `*Eligible` denotes only the map's local arithmetic condition. It never
 // verifies prerequisites, starts W0, or grants an external operation capability.
@@ -121,7 +121,7 @@ export function compileAuthorityStandalonePlan(input){
 }
 function compilePlan(input,policy){
  try{
-  const limits=policy.bucketLimits,operations=policy.operations,imported=policy.importedUnits;
+  const limits=policy.bucketLimits,operations=policy.operations,imported=policy.importedUnits,navigationTargets=policy.navigationTargets;
   const outsideRestore=policy.originalRestoreUnitsOutsideMap??0;
   input=snapshot(input);
   if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==policy.decisionHash||

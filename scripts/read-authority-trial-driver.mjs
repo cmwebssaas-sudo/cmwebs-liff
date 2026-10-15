@@ -27,6 +27,38 @@ export function verifyAuthorityTrialReadback(expected,observed){
  !Array.isArray(observed.retainedVersions)||![1,2,3,4,5,6].every(v=>observed.retainedVersions.includes(v)))stop();
  return true;
 }
+const standalonePinKeys=['deploymentId','thinScriptId','standaloneVersion','thinSourceHash','thinManifestHash','originalScriptId','originalEditorHash','originalDeploymentsHash','originalCloudProject','trialEpoch','syntheticSheetId','callerHash','publisherHash','oauthClientHash','newCloudProject','sheetContractHash'];
+// Standalone evidence is untrusted data, including when called outside a driver.
+// Reject executable object hooks before reading pins or comparing any evidence.
+function standaloneSnapshot(value){
+ let count=0;const active=new Set();
+ const copy=(v,depth)=>{
+  if(++count>4000||depth>12)stop();
+  if(v===null||typeof v==='string'||typeof v==='boolean'||typeof v==='number'&&Number.isFinite(v))return v;
+  if(typeof v!=='object'||types.isProxy(v)||active.has(v)||(!Array.isArray(v)&&![Object.prototype,null].includes(Object.getPrototypeOf(v))))stop();
+  active.add(v);const ds=Object.getOwnPropertyDescriptors(v),out=Array.isArray(v)?[]:{};
+  if(Array.isArray(v)&&(Reflect.ownKeys(ds).length!==v.length+1||Object.keys(ds).some(k=>k!=='length'&&(!/^(?:0|[1-9]\d*)$/.test(k)||Number(k)>=v.length))))stop();
+  for(const k of Reflect.ownKeys(ds)){if(Array.isArray(v)&&k==='length')continue;const d=ds[k];if(typeof k!=='string'||!d.enumerable||!Object.hasOwn(d,'value')||Array.isArray(v)&&!/^\d+$/.test(k))stop();Object.defineProperty(out,k,{value:copy(d.value,depth+1),enumerable:true});}
+  if(Array.isArray(v)&&Object.keys(out).length!==v.length)stop();active.delete(v);return Object.freeze(out);
+ };return copy(value,0);
+}
+function canonicalStandaloneExpected(expected){
+ const e=standaloneSnapshot(expected);
+ if(!keys(e,standalonePinKeys)||e.standaloneVersion!==1||e.originalScriptId===e.thinScriptId||e.callerHash===e.publisherHash||e.originalCloudProject===e.newCloudProject)stop();
+ for(const k of standalonePinKeys.filter(k=>k!=='standaloneVersion'))if(typeof e[k]!=='string'||!(/Hash$/.test(k)?/^[a-f0-9]{64}$/:/^[-A-Za-z0-9_]{1,200}$/).test(e[k]))stop();
+ return Object.freeze(Object.fromEntries(standalonePinKeys.map(k=>[k,e[k]])));
+}
+export function verifyAuthorityStandaloneReadback(expected,observed){
+ try{
+  const e=canonicalStandaloneExpected(expected),r=standaloneSnapshot(observed);
+  if(!keys(r,[...standalonePinKeys,'scopes','developmentMode','executionAccess','oauthStatus','testingUsers','callerSheetRole','callerOriginalScriptRole','callerOriginalSheetRole','callerStandaloneScriptRole','callerPropertiesMatch','standaloneLibraryCount','standaloneTriggers','originalTriggers','originalEditorUnchanged','originalDeploymentsUnchanged','retainedVersions','observedAt'])||standalonePinKeys.some(k=>r[k]!==e[k])||
+   !Array.isArray(r.scopes)||!same([...r.scopes].sort(),[...AUTHORITY_TRIAL_SCOPES].sort())||r.developmentMode!==false||r.executionAccess!=='ANYONE'||r.oauthStatus!=='TESTING'||r.testingUsers!==1||
+   r.callerSheetRole!=='reader'||r.callerOriginalScriptRole!=='none'||r.callerOriginalSheetRole!=='none'||r.callerStandaloneScriptRole!=='reader'||r.callerPropertiesMatch!==true||
+   r.standaloneLibraryCount!==0||r.standaloneTriggers!==0||r.originalTriggers!==0||r.originalEditorUnchanged!==true||r.originalDeploymentsUnchanged!==true||
+   !Number.isSafeInteger(r.observedAt)||r.observedAt<0||!Array.isArray(r.retainedVersions)||r.retainedVersions.some(v=>!Number.isSafeInteger(v)||v<1)||new Set(r.retainedVersions).size!==r.retainedVersions.length||![1,2,3,4,5,6].every(v=>r.retainedVersions.includes(v)))stop();
+  return true;
+ }catch(_){stop();}
+}
 function proof(p,now,expected){
  // Native collectors must pre-debit actual navigation/reads with the scoped
  // control. This verifies proof fields, not IO wiring or Google UI coverage.
@@ -341,6 +373,9 @@ function canonicalExpected(input){
 }
 export function canonicalAuthorityTrialBinding(input,decisionHash=SINGLE_WRAPPER_TRIAL_DECISION_HASH){
  try{if(arguments.length>2)stop();getAuthorityTrialPolicy(decisionHash);return hash({kind:'canonical-compatibility-runtime',decisionHash,expected:canonicalExpected(input)});}catch(_){stop();}
+}
+export function canonicalAuthorityStandaloneBinding(expected){
+ try{if(arguments.length!==1)stop();return hash({kind:'canonical-standalone-compatibility-runtime',decisionHash:'02c75938cc8ecff17c907431db861613bb7f4e2af967f185c6b9933758f7dfd8',expected:canonicalStandaloneExpected(expected)});}catch(_){stop();}
 }
 // Approved first stage only. All durable state and IO ownership belong to the
 // canonical preparation controller; this driver never opens or seeds a journal.

@@ -2297,3 +2297,16 @@ originalC2/I17 cleanup. Affected151/151; independent review0 findings; full
 No actual new claim/Google/credential/resource operation; actual31/160 unchanged.
 Standalone resource recovery/driver wiring and complete actual UI map remain
 pending, so these tests do not authorize execution or production acceptance.
+
+### 2026-10-16 standalone driver/source/recovery
+
+New128 RED→GREEN cases cover exact standalone pins/strict data, the same15+15
+checks/identity/one charged RPC, actual immutable/editor source packet comparison,
+unchanged original six versions, separate frozen cleanup adapters, existing
+journal prerequisites, admission-time drift, and the standalone trigger target.
+Independent review P2 hook/race findings reproduced, fixed and re-reviewed.
+Complete Node22/actual Core/ownedPG npm test2348/2348 PASS, zero fail/cancel/skip,
+107.244s; database/roles cleaned and PostgreSQL stopped. Validate/diff checks PASS.
+No actual Google operation/new claim/debit; current31/160 unchanged. Frozen local
+recovery copy is not remote rollback proof. Full native observers/actual IO map
+and all Google/runtime/performance/rollout/device gates remain pending.

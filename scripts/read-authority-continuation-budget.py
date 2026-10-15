@@ -33,7 +33,7 @@ from datetime import datetime, timezone, timedelta
 DECISION='f227ebbf2ca791d521e0008a639c2fa4ecb31e5be793478c45ffee47b420c92d'
 LEGACY_SOURCE='7f04fc0f0e1f1968029fc666297bf0ca83d871e31c310117ec94ebec3c050e18'
 HISTORICAL_POLICY_SOURCE='06112c8340a04b763d70580883e4bc2b4ddb5fb6d18a22eb577e78ef10fd119f'
-POLICY_SOURCE='d5cbf1f7d15aff9255c87c57f01d78c8c1caf173fe5e9e3f95a1205f5b7edb5f'
+POLICY_SOURCE='8043bb2e6c35292d4638059d8c43a3f53cfbde6f8c1c91d3119d02e151dfeaf9'
 STANDALONE_DECISION='02c75938cc8ecff17c907431db861613bb7f4e2af967f185c6b9933758f7dfd8'
 OWNER_ANSWER='同意改用單一獨立合成腳本，取代舊試驗入口與停止規則；維持累積160上限及安全、效能、回退驗收，通過後依既有批次授權持續完成上線。'
 LEGACY_DECISION='3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9'
@@ -853,7 +853,7 @@ def normalize(op,standalone=False):
  if type(op) is not dict or not exact(op,keys+(['stage'] if op.get('bucket')=='N' else [])) or type(op['id']) is not str or re.fullmatch('[-a-zA-Z0-9_.]{1,100}',op['id']) is None or type(op['bucket']) is not str or op['bucket'] not in LIMITS or type(op['alias']) is not str or type(op['units']) is not int or op['units']!=1:fail()
  key=op['bucket']+':'+op['alias']
  if op['bucket']=='N':
-  if re.fullmatch('navigation-(?:[1-9]|1[0-9]|2[0-4])',op['alias']) is None or op['actor']!='publisher' or op['target'] not in TARGETS or op['operation'] not in ['navigate','snapshot'] or op['stage'] not in ['research','preparation']:fail()
+   if re.fullmatch('navigation-(?:[1-9]|1[0-9]|2[0-4])',op['alias']) is None or op['actor']!='publisher' or op['target'] not in TARGETS+(['thin-triggers'] if standalone else []) or op['operation'] not in ['navigate','snapshot'] or op['stage'] not in ['research','preparation']:fail()
  else:
   rule=(STANDALONE_OPERATIONS if standalone else OPERATIONS).get(key)
   if rule is None or (op['actor'],op['target'])!=(rule['actor'],rule['target']) or op['operation'] not in rule['methods']:fail()

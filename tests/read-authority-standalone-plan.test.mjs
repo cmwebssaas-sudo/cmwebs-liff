@@ -53,3 +53,11 @@ test('standalone still requires each source/privacy pre/post observation',()=>{
    const r=plan(v);assert.equal(r.credentialRpcEligible,false);assert(r.missingOperations.includes(key));
  }
 });
+test('standalone may observe its own triggers without widening the original navigation policy',()=>{
+ const v=input(),row=v.operations.find(o=>o.bucket==='N');row.target='thin-triggers';
+ assert.equal(plan(v).budgetFits,true);
+ row.operation='click';assert.throws(()=>plan(v),/CONTINUATION_PLAN_UNVERIFIED/);
+ const old={decisionHash:plans.BOUNDED_CONTINUATION_DECISION_HASH,history:{spent:27,limit:160},mapComplete:false,
+   operations:[{...row,operation:'snapshot'}]};
+ assert.throws(()=>plans.compileAuthorityContinuationPlan(old),/CONTINUATION_PLAN_UNVERIFIED/);
+});

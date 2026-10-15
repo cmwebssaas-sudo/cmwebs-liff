@@ -9,6 +9,15 @@ const ok=r=>assert.equal(r.ok,true,JSON.stringify(r)),denied=r=>assert.equal(r.o
 const originalPolicy=JSON.parse(spawnSync('python3',['scripts/read-authority-continuation-budget.py','--policy'],{encoding:'utf8'}).stdout);
 const standalonePolicy=Object.fromEntries(Object.entries(originalPolicy).filter(([k])=>!k.startsWith('C:')).map(([k,v])=>[k,k.endsWith('.library-content')?{...v,target:'thin-project'}:v]));
 const map=()=>Object.entries(standalonePolicy).map(([k,r])=>{const i=k.indexOf(':');return{id:k.replaceAll(':','.'),bucket:k.slice(0,i),alias:k.slice(i+1),actor:r.actor,target:r.target,operation:r.methods[0],units:1};});
+test('standalone native preflight can read the fixed isolated trigger page under its existing N budget',async()=>{
+ const s=fixture(),h=session(s);try{
+  ok(await h.ready);let now=clock;
+  for(const name of ['caller-bind','publisher-bind'])now=await advance(h,operation('P:'+name),now);
+  const descriptor={...research(1),target:'thin-triggers'};
+  now=await advance(h,descriptor,now);assert.equal((await h.send({op:'inspect'})).spent,34);
+  denied(await h.send({op:'debit',operation:{...research(2),target:'thin-triggers',operation:'click'},now}));
+ }finally{await h.close();}
+});
 async function advance(h,operation,now){let r=await h.send({op:'wait',operation,now});ok(r);now+=r.waitMs;ok(await h.send({op:'debit',operation,now}));return now;}
 test('standalone policy removes every editor/library mutation and retains fixed98',()=>{
  const r=spawnSync('python3',['scripts/read-authority-continuation-budget.py','--standalone-policy'],{encoding:'utf8'});assert.equal(r.status,0);assert.deepEqual(JSON.parse(r.stdout),standalonePolicy);assert.equal(Object.keys(standalonePolicy).length,98);
