@@ -72,6 +72,28 @@ test('terminal evidence preserves original capacity distribution and safe fixtur
   assert.ok(tail.includes(distribution));assert.ok(tail.includes(failure));
 });
 
+test('capacity stage evidence survives full distributions and verbose client samples beside the failed gate',()=>{
+  const routes=['home','actions','revenue','tenants','rooms','arrears','properties'];
+  const stages=routes.map(route=>'# C6_LOCAL_500_ROOM_STAGES '+JSON.stringify({route,samples:100,p95_ms:52.057,
+    stage_p95_ms:{d1:24.123,decode:4.567,route:5.678},slowest:[{index:21,wall_ms:54.415,
+      dispatch_ms:33.421,consume_ms:20.994,d1:23.234,decode:4.321,route:5.123,body_bytes:12345}]}));
+  const distributions=routes.map(route=>'# C6_LOCAL_500_ROOM_DISTRIBUTION '+JSON.stringify({route,ordered_ms:Array(100).fill(52.05654700000014)}));
+  const result=summarize(distributions.join('\n')+'\n'+stages.join('\n')+'\n'+'# numeric observations '.repeat(16000)+'\n'
+    +'not ok 18 - capacity\n  ---\n  error: properties p95=52.057ms\n  ...\n'+footer);
+  assert.equal(result.status,0,result.stderr);
+  for(const line of stages)assert.ok(result.stdout.includes(line),'retain '+JSON.parse(line.slice(line.indexOf('{'))).route);
+  assert.match(result.stdout,/properties p95=52.057ms/);assert.match(result.stdout,/# fail 2/);
+  assert.match(result.stdout,/"stage_lines_dropped":0/);
+});
+
+test('excess stage lines are explicitly bounded without losing the original footer',()=>{
+  const line='# C6_LOCAL_500_ROOM_STAGES '+JSON.stringify({route:'properties',samples:100,p95_ms:52.057,slowest:Array(2).fill({index:1,wall_ms:55,d1:25,decode:5,route:5})});
+  const result=summarize((line+'\n').repeat(10000)+footer);
+  assert.equal(result.status,0,result.stderr);assert(Buffer.byteLength(result.stdout)<64000);
+  const meta=JSON.parse(result.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
+  assert(meta.stage_lines_dropped>0);assert.equal(meta.footer_seen,true);
+});
+
 const clientColumns=['sample','completed','start_ms','end_ms','full_ms','dispatch_ms','consume_ms',
   'node_cpu_user_us','node_cpu_system_us','node_elu_active_ms','node_elu_idle_ms','node_elu'];
 function clientLog({missing=false,duplicate=false,invalid=false,omitGc=false}={}){

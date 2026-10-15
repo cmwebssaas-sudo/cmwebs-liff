@@ -4,10 +4,11 @@ import {createClientSummary} from './read-worker-client-summary.mjs';
 
 // Reprint bounded failure evidence after verbose numeric diagnostics. This does
 // not run/retry tests or decide their exit status. Raw output remains in the job.
-const names=[],details=[],footer=[],diagnostics=[];
+const names=[],details=[],footer=[],diagnostics=[],stages=[];
 const clientSummary=createClientSummary();
 let failed=0,namesDropped=0,detailDropped=0,diagnosticDropped=0;
 let nameBytes=0,detailBytes=0,diagnosticBytes=0,block=false,incomplete=0;
+let stageBytes=0,stageDropped=0;
 let blockDetails=false;
 let plan=false,tests=false,fail=false,footerDropped=0,footerBytes=0;
 function retain(list,line,budget,used,maxLine){
@@ -50,6 +51,12 @@ try{
       const next=retain(diagnostics,clientMeta||line,16384,diagnosticBytes,4096);
       if(next===null)diagnosticDropped++;else diagnosticBytes=next;
     }
+    // Keep paired Worker stages separate from long distributions so the
+    // failing last route cannot disappear behind earlier numeric diagnostics.
+    if(/^# C6_LOCAL_500_ROOM_STAGES /.test(line)){
+      const next=retain(stages,line,4096,stageBytes,1024);
+      if(next===null)stageDropped++;else stageBytes=next;
+    }
   }
   if(block)incomplete++;
   console.log('C6_CI_FAILURE_NAMES');
@@ -57,6 +64,7 @@ try{
   console.log('C6_CI_FAILURE_DETAILS');
   for(const line of details)console.log(line);
   for(const line of diagnostics)console.log(line);
+  for(const line of stages)console.log(line);
   const aggregates=[];let aggregateBytes=0,aggregateDropped=0;
   for(const value of clientSummary.finish()){
     const next=retain(aggregates,'# C6_NODE_CLIENT_AGGREGATE '+JSON.stringify(value),3072,aggregateBytes,1536);
@@ -66,7 +74,7 @@ try{
   for(const line of footer)console.log(line);
   console.log('C6_CI_SUMMARY_META '+JSON.stringify({failed_cases:failed,
     failure_names_dropped:namesDropped,detail_lines_dropped:detailDropped,
-    diagnostic_lines_dropped:diagnosticDropped,incomplete_failure_blocks:incomplete,
+    diagnostic_lines_dropped:diagnosticDropped,stage_lines_dropped:stageDropped,incomplete_failure_blocks:incomplete,
     client_aggregates_dropped:aggregateDropped,
     client_records_invalid:clientSummary.invalidRecords(),
     client_suites_missing:clientSummary.missingSuites(),

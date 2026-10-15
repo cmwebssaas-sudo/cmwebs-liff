@@ -2139,3 +2139,19 @@ not started; old72h/seven-day pre-on rows above are historical.
   3a4157e6f5096609672b2e371ab2dfa6eca07af0b2696db942803ea2ff619b74, only docs
   afterwards. Independent review no finding; validate72/40/cache/comparison178
   PASS. New-head CI, real remote/device/900s/native and observation gates remain.
+
+
+### 2026-10-15 C6 paired capacity-stage evidence
+
+- Exact957707e CI38763560079 rental1803/1803 PASS, Worker35/36 FAIL properties
+  p95=52.057ms>50;700 samples complete, both footers/annotations read, truncated
+  logs. No unchanged retry or performance acceptance.
+- Summary TDD20pass/2RED then affected23/23 PASS; actual changed Worker36/36
+  PASS34.231s. Original7×100 requests/full body timer/50ms retained. Existing
+  test-only Worker headers provide paired D1/decode/route/dispatch/consume and
+  byte counts; parse/log work after timer. Terminal summary retains all7 bounded
+  stage lines and original footer; zero stage overflow. This instrumentation
+  can perturb later client GC, cannot prove causality, and changes no product.
+- Review no actionable finding; validate72/40/cache/comparison178/diff PASS.
+  Prior full1808 retained for unchanged product; not a new full rental run.
+  ActualGoogle25/160 unchanged; T0NOT_STARTED/alloff, real gates remain.

@@ -71,13 +71,24 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
   assert.equal(observed.arrears.arrears.length,252);
   const timings={};
   for(const c of cases){
-   const samples=[];
+   const samples=[],observations=[],stages={d1:[],decode:[],route:[]};
    for(let i=0;i<100;i++){
     const observation=clientTiming.begin(c.route,i);
     const start=performance.now(),response=await mf.dispatchFetch('https://local.test'+paths[c.route]);
     const dispatchAt=performance.now();
-    assert.equal(response.status,200);await response.arrayBuffer();const end=performance.now();samples.push(end-start);
+    assert.equal(response.status,200);const body=await response.arrayBuffer();const end=performance.now();samples.push(end-start);
     clientTiming.end(observation,start,dispatchAt,end);
+    // Parse existing test-only headers after the unchanged full wall timer.
+    // These are paired stages, not a subtraction or replacement for the gate.
+    const parts=response.headers.get('server-timing')?.split(', ');assert.equal(parts?.length,3);
+    const detail={};
+    for(const part of parts){
+     const match=/^(d1|decode|route);dur=(\d+\.\d{3})$/.exec(part);assert.ok(match);
+     assert(!Object.hasOwn(detail,match[1]));const value=Number(match[2]);assert(Number.isFinite(value)&&value>=0);
+     detail[match[1]]=value;stages[match[1]].push(value);
+    }
+    observations.push({index:i,wall_ms:Number((end-start).toFixed(3)),dispatch_ms:Number((dispatchAt-start).toFixed(3)),
+     consume_ms:Number((end-dispatchAt).toFixed(3)),...detail,body_bytes:body.byteLength});
    }
    // Numeric timing diagnostics only, after the original100 measured requests.
    // Preserve request order before sorting; no Worker/body/identity data enters logs.
@@ -87,6 +98,10 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
    console.log('C6_LOCAL_500_ROOM_SAMPLE '+JSON.stringify({route:c.route,...timings[c.route]}));
    console.log('C6_LOCAL_500_ROOM_DISTRIBUTION '+JSON.stringify({route:c.route,
     p95_full_ms:p95,max_ms:samples[99],over_50:samples.filter(ms=>ms>=50).length,ordered_ms:orderedSamples}));
+   console.log('C6_LOCAL_500_ROOM_STAGES '+JSON.stringify({route:c.route,...timings[c.route],
+    stage_p95_ms:Object.fromEntries(Object.entries(stages).map(([key,values])=>{
+     assert.equal(values.length,100);values.sort((a,b)=>a-b);return [key,values[94]];
+    })),slowest:observations.sort((a,b)=>b.wall_ms-a.wall_ms||a.index-b.index).slice(0,2)}));
    assert.ok(p95<50,c.route+'500-room local HTTP/D1 p95='+p95.toFixed(3)+'ms');
   }
   console.log('C6_LOCAL_500_ROOM_LATENCY '+JSON.stringify(timings));

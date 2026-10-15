@@ -4407,3 +4407,42 @@ Root WIP/C5 swap/private S1 preserved. Risk: owned lazy mode must stay confined
 to the final request-owned synchronous reader; default snapshots remain eager.
 Rollback undeployed runtime/routes/generated identity together tof2e90eb before
 any later matching observation. No data rollback or observation reset needed.
+
+
+## C6 capacity stage diagnostics — 2026-10-15
+
+Recommended model/speed: GPT-6.1 Sol/high for timing/evidence boundaries.
+Exact957707e CI38763560079 rental1803/1803 PASS; Worker35/36 FAIL, properties
+p95=52.057ms against50ms. All700 capacity requests completed. Both footers and
+annotations read; logs truncated. Earlier519d416/f2e90eb failures retained.
+Client-only observations associate all11 properties samples above50ms with GC
+overlap: dispatch medians33.460ms(over)/33.543ms(below), body-consume medians
+18.669ms(over)/1.815ms(below). This does not prove causality or Worker CPU load.
+No further speculative production optimization or unchanged-head retry.
+
+The capacity fixture now records existing test-only D1/decode/route headers
+after each unchanged full wall timer, with paired dispatch/consume and byte
+counts for the two slowest samples. Every original request/body consumption,
+row/field/parity check, sample/order and50ms assertion remains. A separate
+bounded terminal stage allowance preserves this evidence even when long
+distributions fill the existing allowance; overflow stays explicit. Numeric
+synthetic diagnostics only, no production headers/source/API change.
+
+New summary regressions22 total:20 PASS/2 RED before repair; affected23/23 PASS.
+Changed diagnostic Worker suite36/36 PASS34.231s; all700 capacity samples, local
+p95ms home12.999/actions11.405/revenue12.821/tenants20.273/rooms15.978/
+arrears20.827/properties18.278. Actual raw-log summary retained all7 stage lines,
+zero stage overflow, original footer and complete700 client aggregate. Validate
+72 backend/40 endpoint/static cache/comparison178/diff PASS. Independent review
+found no actionable finding; three reviewed source pins retained. Retain prior
+full1808/1808 for unchanged production source; this is not a new full rental run.
+Apps Script and production Worker unchanged, so no repeated native tests or
+comparison regeneration. A new diagnostic CI run is for evidence, not a claim
+that the performance failure is fixed. Extra post-timer observations can still
+perturb later client GC; they do not recreate the original baseline.
+
+Actual Google25/160 unchanged/unclaimed; no account/native/provider/RPC/formal/
+config/deployment action. C3 native/quota, daily900s, remote authenticated
+performance/device gates remain; approved parallel24h T0 NOT_STARTED/alloff.
+Root WIP/C5 swap/private S1 preserved. Rollback only this diagnostic increment
+to957707e; retain all failed evidence, original50ms gate and comparison epoch.
