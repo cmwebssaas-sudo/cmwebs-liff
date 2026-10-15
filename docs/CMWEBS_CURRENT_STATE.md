@@ -2454,3 +2454,14 @@ seven100-sample p9511.781–23.237ms<50; not real identity/authority/remote/Taip
 device acceptance. New comparison read-bce058f378ee92a21559b596ec408c183496a6ec2009def7b508daa333666870.
 Exact-head CI pending; actual25/160/native STOP/off/blank and all real gates
 remain unaccepted; fresh72h/seven-day NOT_STARTED. Only docs after tests/review.
+
+
+2026-10-15 C6 request-local date output cache: bounded128 finite numeric/
+primitive-zone/pattern tuples with fresh coercion; no Date/auth/cross-request
+cache. TDD RED250 native formats vs1→calendar4/4 GREEN; actual250-tenant
+calculation2252 format calls/5 native formats. Static review0, full1792/1792
+with ownedPG cleanup, Worker36/36/bundle/validate72/40/cache/comparison178/diff
+PASS. Snapshot d828cfed6056a6336bce45b50c072b8a5b2466627233be0403ae0c8e8eb5c8a0.
+Prior Linux500 tenants58.708ms FAIL retained, new-head CI required. Local
+fixture evidence is not real acceptance; actual25/160/native STOP/off/blank,
+900s/72h/seven-day/Taipei/device gates unchanged. Only docs after review/tests.

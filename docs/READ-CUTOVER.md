@@ -260,3 +260,16 @@ seven100-sample p9511.781–23.237ms<50; not real identity/authority/remote/Taip
 device acceptance. New comparison read-bce058f378ee92a21559b596ec408c183496a6ec2009def7b508daa333666870.
 Exact-head CI pending; actual25/160/native STOP/off/blank and all real gates
 remain unaccepted; fresh72h/seven-day NOT_STARTED. Only docs after tests/review.
+
+
+2026-10-15 runtime date-output reuse: at most128 output strings, scoped to a
+single newly created replica runtime/request. Key: JSON tuple of freshly
+coerced finite numeric instant, primitive time zone and primitive pattern.
+No Date/authorization/cross-request cache. Undefined/current time, dynamic
+zone/pattern and invalid date bypass; exceptions/coercions preserved. Lifetime/
+TTL is the request; reconstruction invalidates the map, overflow new keys remain
+uncached. Mutation/key/scope/bound regressions guard stale formatting risk.
+Comparison read-b642a87f97e936c7c5ed055bda2539ff1a072c22601590c1877d44160c3ea3c9.
+Previous Linux tenants58.708ms failure remains; local full1792/Worker36 pass
+is not Linux/real acceptance. Fresh exact-head CI required, all real gates/off
+flags unchanged, no actual observation started. Rollback source to846da4a.

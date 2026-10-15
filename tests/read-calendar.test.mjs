@@ -3,6 +3,42 @@ import {test} from 'node:test';
 import {appsScriptDate} from '../cloudflare/read-api/src/apps-script-date.js';
 import {createReplicaRuntime} from '../cloudflare/read-api/src/read-runtime.js';
 
+test('date formatting reuses equal numeric inputs only within one request and a bounded result set',()=>{
+  const Native=Intl.DateTimeFormat;let nativeFormats=0;
+  Intl.DateTimeFormat=function(...args){
+    const formatter=new Native(...args),format=formatter.format;
+    Object.defineProperty(formatter,'format',{value:value=>{nativeFormats++;return format(value);}});
+    return formatter;
+  };
+  try{
+    const format=createReplicaRuntime({}).Utilities.formatDate;
+    let instant=Date.parse('2026-09-30T16:00:00Z'),coercions=0;
+    const value={valueOf(){coercions++;return instant;}};
+    for(let i=0;i<250;i++)assert.equal(format(value,'Asia/Taipei','yyyy-MM-dd'),'2026-10-01');
+    assert.equal(nativeFormats,1,'Repeated tenant dates must not repeat native Intl formatting');
+    assert.equal(coercions,250,'A hit still reads the current input exactly once');
+    instant+=86400000;assert.equal(format(value,'Asia/Taipei','yyyy-MM-dd'),'2026-10-02');
+    assert.equal(nativeFormats,2);
+    instant-=86400000;assert.equal(format(value,'Asia/Taipei','yyyy-MM-dd'),'2026-10-01');
+    assert.equal(format(value,'UTC','yyyy-MM-dd'),'2026-09-30');
+    assert.equal(format(value,'Asia/Taipei','yyyy/MM'),'2026/10');
+    const beforeRequest=nativeFormats;
+    assert.equal(createReplicaRuntime({}).Utilities.formatDate(value,'Asia/Taipei','yyyy-MM-dd'),'2026-10-01');
+    assert.equal(nativeFormats,beforeRequest+1,'Another request cannot reuse the first result cache');
+
+    const bounded=createReplicaRuntime({}).Utilities.formatDate,base=Date.parse('2026-01-01T00:00:00Z');
+    for(let i=0;i<129;i++){
+      const time=base+i*86400000;
+      assert.equal(bounded(time,'UTC','yyyy-MM-dd'),new Date(time).toISOString().slice(0,10));
+    }
+    const beforeOverflow=nativeFormats;
+    bounded(base+128*86400000,'UTC','yyyy-MM-dd');
+    assert.equal(nativeFormats,beforeOverflow+1,'New results beyond128 retained entries remain uncached');
+    bounded(base,'UTC','yyyy-MM-dd');
+    assert.equal(nativeFormats,beforeOverflow+1,'Existing retained entries remain usable at the bound');
+  }finally{Intl.DateTimeFormat=Native;}
+});
+
 test('replica Date preserves native GAS Taipei month/day boundaries and date inputs',()=>{
   const previousZone=process.env.TZ;
   process.env.TZ='Asia/Taipei';

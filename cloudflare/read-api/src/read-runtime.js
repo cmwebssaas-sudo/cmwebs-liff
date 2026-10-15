@@ -57,11 +57,15 @@ export function createReplicaRuntime(dataset,options={}) {
   const localCache = new Map();
   const contexts = new Map();
   const cache = {get:key=>localCache.get(key)||null,put:(key,value)=>localCache.set(key,value)};
-  // Formatter construction dominates large summaries. Reuse only request-local
-  // formatters; date values and authorization are never cached. Non-string zones
+  // Reuse request-local formatters; Date objects and authorization are never
+  // cached. Non-string zones
   // retain Intl's coercion on every call, including mutable objects and errors.
   const dateFormatters = new Map();
   const timeFormatters = new Map();
+  // Cache at most128 output strings for this runtime/request. The key uses the
+  // freshly coerced numeric instant, primitive zone and primitive pattern, so
+  // mutable inputs still take effect. Undefined/current-time calls bypass it.
+  const formattedDates = new Map();
   const formatFields={yyyy:'year',MM:'month',dd:'day',HH:'hour',mm:'minute',ss:'second'};
   const formatDate = (date, timeZone, pattern) => {
     // Date-only GAS patterns need no clock parts. Keep year/month/day together
@@ -93,10 +97,15 @@ export function createReplicaRuntime(dataset,options={}) {
     // Match Intl's single numeric coercion even if an unusual formatted layout
     // needs the parts fallback; do not invoke a caller's valueOf twice.
     const timeValue=date===undefined?undefined:+date;
+    const resultKey=typeof timeZone==='string'&&typeof pattern==='string'&&Number.isFinite(timeValue)
+      ?JSON.stringify([timeValue,timeZone,pattern]):null;
+    if(resultKey!==null&&formattedDates.has(resultKey))return formattedDates.get(resultKey);
     const match=date===undefined?null:entry.layout?.expression.exec(entry.formatter.format(timeValue));
     if(match)entry.layout.fields.forEach((field,index)=>{values[field]=match[index+1];});
     else for(const item of entry.formatter.formatToParts(timeValue))values[item.type]=item.value;
-    return pattern.replace(/yyyy|MM|dd|HH|mm|ss/g, key => values[formatFields[key]]);
+    const result=pattern.replace(/yyyy|MM|dd|HH|mm|ss/g, key => values[formatFields[key]]);
+    if(resultKey!==null&&formattedDates.size<128)formattedDates.set(resultKey,result);
+    return result;
   };
   const noop = () => {};
   return {

@@ -4164,3 +4164,56 @@ cutover remain pending. Endpoint blank/six flags off; no Google/RPC, credential,
 deployment, formal data, Properties, trigger or switch changes. Preserve root
 WIP/private S1/C5 swap. Rollback undeployed merge to96240d3 and its comparison
 identity; no formal data deletion/reset or release rollback needed.
+
+
+## 2026-10-15 — Bound request-local date output reuse
+
+Recommended model/speed GPT-6.1 Sol/high. Current C6 Linux CI38712997024
+failed500-room tenants p9558.708ms,85/100>=50; rental1786/1786 and Worker35/36.
+Both truncated logs/footers/annotations retained; no same-head rerun. Paired
+Node idle time locates waiting, not the Worker/SQL/transport cause.
+
+One bounded actual local workerd CPU profile used10 unchanged-source requests,
+1565 samples/100us. D1 stage6–9ms/decode2–3/route13–55; first73.258ms request
+retained, no warmup/exclusion. formatDate appears prominently. Two private
+harness preflights failed before profiling requests (migration path separator;
+9 inspector targets rather than1); cleanup completed. Corrected private path
+and selected the unique core:user target, as installed Miniflare does. No repo
+source or external account action during diagnosis. Profile is diagnostic, not
+a Linux cause proof or acceptance. Actual250-tenant calculator calls formatDate
+2252 times with only5 numeric-time/primitive-zone/pattern tuples.
+
+Keep the calculator unchanged. Its runtime now retains at most128 formatted
+output strings per runtime/request, keyed JSON numeric instant/primitive zone/
+primitive pattern after fresh single numeric date coercion. Undefined/current-
+time, nonprimitive zone/pattern and invalid numeric inputs bypass output reuse;
+errors remain observable. No Date object, positive authorization, source data
+or cross-request output is cached. TTL is one runtime/request; reconstruction
+invalidates all entries. New keys beyond128 are uncached; earlier keys remain.
+Risk if wrong: stale/colliding formatting; regressions cover mutation, once-
+per-hit coercion, key dimensions, request isolation and global128-entry bound.
+RED250 native Intl calls vs1→calendar4/4 GREEN. Actual same250-tenant calculator
+retains2252 interface calls but only5 native Intl formats. Output/count/parity
+checks remain unchanged.
+
+One fresh static review P1/P2/actionable minor0, four SHA pins verified before/
+after; no repeat review. Full Node22/Core/ownedPG1792/1792,57.778s,zero fail/
+cancel/skip and cleanup/listener stopped.595-file working snapshot on846da4a:
+d828cfed6056a6336bce45b50c072b8a5b2466627233be0403ae0c8e8eb5c8a0.
+Worker36/36/bundle dry run PASS; same seven100-sample500-room fixture p95ms
+home13.912/actions11.171/revenue12.418/tenants22.130/rooms20.423/arrears17.846/
+properties19.456, all<50. Local500 access is fixture-supplied; this is not
+provider/authority/full-scoped/remote/Taipei/device qualification or proof of
+Linux repair. New exact-head CI required, original failures remain UNRESOLVED.
+Validate72 backend/40 references/static cache/comparison178/diff PASS. Only
+docs after tests/review; all non-doc pins unchanged.
+
+New comparison read-b642a87f97e936c7c5ed055bda2539ff1a072c22601590c1877d44160c3ea3c9;
+no actual epoch starts or old real window reused. Actual25/160 unchanged/
+unclaimed,320 declined/native STOP; budget/eight callbacks/OS-flock conditions
+unaccepted. C1 daily900s NOT_ACCEPTED, fresh72h/seven actual24h shadow days
+NOT_STARTED;500/Taipei/full-flow latency/device/cutover pending. All source
+flags off/endpoint blank, no Google/RPC/credential/formal deployment/data/
+Properties/trigger/switch changes. Root WIP/private S1/C5 swap preserved.
+Rollback this undeployed fix to846da4a with previous comparison identity; no
+formal release or data rollback needed.
