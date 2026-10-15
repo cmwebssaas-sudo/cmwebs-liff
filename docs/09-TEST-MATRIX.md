@@ -2112,3 +2112,17 @@ tests/review. Rollback source/adapter/comparison to568344b.
 | Restricted realm | Original11 full failures retained; existing approved OS identity API restores compatibility; affected83/83 PASS | No ambient process or new builtin permissions |
 | Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
 | Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
+
+### 2026-10-15 Strict scalar decoder and current comparison identity
+
+| Area | Evidence | Boundary |
+| --- | --- | --- |
+| JSON semantics | Scalar5/5, including escapes, controls, malformed strings, whitespace, nested values, own keys and negative zero | No stored/frame/API shape change |
+| Worker/D1 | One modified-source36/36; original7×100 samples all p95<50, local properties18.054ms | Exact prior CI51.233ms FAIL retained; new CI required |
+| Source identity | Initial validate/full1804/1805 rejected stale comparison; existing generator updates only identity/source SHA | No off flag, endpoint or threshold change |
+| Full regression | Final1805/1805,57.154s,Node22.23.3/actual Core/ownedPG; cleanup verified | Snapshotcaac7501df0bf22c62f0d2b92f9eed718be4208acff704f4c1e15206060b1bd8; only docs afterwards |
+| Review/checks | Independent four-file review no finding; validate72/40/cache/comparison178/diff PASS | Native/provider/remote/device/daily900s and approved observation gates unaccepted |
+
+Current owner schedule is merged PR272: parallel24h after technical gates,
+rooms first, stable24h before later accepted pages, seven-day post-on. T0 has
+not started; old72h/seven-day pre-on rows above are historical.

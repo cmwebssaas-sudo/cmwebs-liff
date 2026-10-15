@@ -8,6 +8,17 @@ const unique=values=>[...new Set(values.map(text).filter(Boolean))];
 const column=field=>`trim(COALESCE(json_extract("${field}",'$'),''))`;
 const blankWorkspace=`upper(${column('workspace_id')}) = ''`;
 function failure(code='READ_REPLICA_UNAVAILABLE'){throw Object.assign(new Error(code),{code});}
+const escapedOrControl=/[\\\u0000-\u001f]/;
+function decodeCell(value) {
+  // Common replica strings have no escapes. Keep strict JSON.parse for numbers,
+  // containers, escaped strings and every malformed or non-string input.
+  if(value==='null')return null;
+  if(value==='true')return true;
+  if(value==='false')return false;
+  if(value==='0')return 0;
+  if(typeof value==='string'&&value.charCodeAt(0)===34&&value.indexOf('"',1)===value.length-1&&!escapedOrControl.test(value))return value.slice(1,-1);
+  return JSON.parse(value);
+}
 
 // Stored fields are JSON text; SQL NULL means absent, while JSON "null" is an
 // own null value. Avoid intermediate entry/pair/filter/map arrays at capacity.
@@ -17,7 +28,7 @@ export function decodeReplicaRows(rows) {
     for(const field of Object.keys(row)) {
       const value=row[field];
       if(value===null)continue;
-      const parsed=JSON.parse(value);
+      const parsed=decodeCell(value);
       if(field==='__proto__')Object.defineProperty(decoded,field,{value:parsed,enumerable:true,writable:true,configurable:true});
       else decoded[field]=parsed;
     }
@@ -39,7 +50,7 @@ export function decodePackedRows(rows,fields) {
     const decoded={};
     for(let index=0;index<fields.length;index++) {
       if(values[index]===null) continue;
-      const field=fields[index],value=JSON.parse(values[index]);
+      const field=fields[index],value=decodeCell(values[index]);
       if(field==='__proto__')Object.defineProperty(decoded,field,{value,enumerable:true,writable:true,configurable:true});
       else decoded[field]=value;
     }

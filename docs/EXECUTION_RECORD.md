@@ -4321,3 +4321,48 @@ Risk: retained ownership intentionally prevents reuse after an unacknowledged
 stop; use the original controller's requestStop/stopAndDrain for recovery.
 Rollback this undeployed controller change to acbff8e; no formal data rollback.
 Root WIP and private security boundary preserved.
+
+## C6 strict scalar decode performance candidate — 2026-10-15
+
+Recommended model/speed: GPT-6.1 Sol/high for lossless decoding/performance gates.
+Exact baseline519d416 CI38723653168 remains Worker35/36 FAIL: properties
+500-room p95=51.233ms against the unchanged50ms gate. Added a request-local
+cell decoder fast path only for exact null/true/false/zero and complete quoted
+strings without embedded quotes, backslash or control characters. All other
+values retain JSON.parse, including negative zero, escapes, whitespace, nested
+values and malformed input. Both row decoders share it. SQL, fields/rows, query
+bounds, stored presence/null distinction, safe own keys and API output unchanged.
+
+Semantic regression5/5 PASS. One modified-source full Worker36/36 PASS, with
+original request order, all seven100-sample distributions and p95<50 unchanged.
+Local p95ms: home13.199/actions10.991/revenue12.642/tenants19.176/rooms16.663/
+arrears20.794/properties18.054. These local results neither erase the prior CI
+failure nor prove a speedup against a different host. Final exact-head CI still
+required. No excluded sample, warmup, forced GC, retry of unchanged benchmark or
+relaxed threshold. Independent source/test/generated-artifact review no finding.
+
+Initial validate and full1804/1805 failed the existing source-comparison guard
+because generated identity was stale; failure retained. Ran the existing
+comparison generator: only source SHA/comparison identity changed, preserving
+asset version, all off flags and blank endpoint. New identity:
+read-1f03cf1f453135d6be7f647eb8f5dc43b3431ad73e82e1c40f8134fed4373936.
+Final597-file snapshotcaac7501df0bf22c62f0d2b92f9eed718be4208acff704f4c1e15206060b1bd8
+passed1805/1805,57.154s,Node22.23.3/actual pinned Core/owned PostgreSQL,
+zero fail/cancel/skip; database/listener cleanup verified. Only documentation
+afterwards. Validate72 backend/40 endpoints/cache/comparison178/diff PASS.
+Apps Script unchanged; no redundant native Apps Script or unchanged local
+capacity rerun after generated identity repair.
+
+Approved acceleration PR272 is merged: after technical gates, sync/shadow
+parallel24h, rooms first, another stable24h before later accepted pages, seven
+days post-on. This supersedes older pending/72h/pre-on-seven-day records only
+for the observation schedule. T0 NOT_STARTED; daily900s, privacy/freshness,
+remote authenticated performance and physical-device gates remain. C3's newer
+credential/metadata components are still isolated in PR268, not inherited here.
+Google25/160 remains unchanged/unclaimed; no native/provider/RPC/formal/config/
+deployment action. Root WIP, C5 user swap and private S1 preserved.
+
+Risk: engine-specific performance/ICU behavior still needs exact CI and real
+acceptance. Rollback this undeployed source and generated identity together to
+519d416619cd90157c92dc2a1c6a6b935acf2dde; start a fresh matching observation before
+any later enablement. No data rollback or observation reset was performed.

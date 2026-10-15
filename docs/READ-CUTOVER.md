@@ -328,3 +328,26 @@ flags off/endpoint blank, no formal changes. Risk: engine ICU/collation must
 continue to match real GAS; do not infer cross-engine equivalence from a Node
 oracle alone. Roll back source/adapter/generated comparison together to568344b
 before any new real observation.
+
+## 2026-10-15 Strict scalar decode candidate
+
+Prior exact519d416 CI properties51.233ms FAIL is retained. Common unescaped
+JSON scalar decoding now avoids per-cell parsing while fallback preserves
+strict JSON semantics. Row presence/null, negative zero, dates, own keys,
+query/data scope and API responses remain unchanged. Semantic5/5 and one full
+modified-source Worker36/36 PASS; original seven100-sample local p95ms:
+13.199/10.991/12.642/19.176/16.663/20.794/18.054 (home/actions/revenue/tenants/
+rooms/arrears/properties). These are local, not exact CI or real-user acceptance.
+
+Stale comparison identity caused initial validate/full1804/1805 failure. Existing
+generator repaired only comparison/source SHA; final1805/1805 PASS57.154s,
+Core/ownedPG/listener cleanup verified. Validate72/40/cache/comparison178 PASS;
+review no finding. New comparison read-1f03cf1f453135d6be7f647eb8f5dc43b3431ad73e82e1c40f8134fed4373936
+requires matching new observations. No old observation was reset or reused.
+Rollback undeployed decoder/identity together to519d416 before a later release.
+
+The owner-approved merged PR272 schedule supersedes historical72h/pre-on-seven
+days: technical gates then parallel sync/shadow24h, rooms first, stable24h before
+later accepted pages, seven-day post-on observation. T0 NOT_STARTED; daily900s,
+privacy, freshness, real authenticated latency and physical acceptance remain
+unaccepted. Actual25/160 unchanged/unclaimed, flags off/endpoint blank.

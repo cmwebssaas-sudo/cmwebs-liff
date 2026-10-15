@@ -62,3 +62,16 @@ test('packed replica decoding rejects corrupt cells and incomplete or non-array 
   assert.throws(()=>decode([{replica_values:'{}'}],[]),/shape/);
   assert.throws(()=>decode([{replica_values:'[null,null]'}],['amount']),/shape/);
 });
+
+test('scalar decoding retains JSON escapes, whitespace, nested values and strict malformed-string rejection',()=>{
+  const examples=[['"plain 台灣"','plain 台灣'],['""',''],['"line\\nnext"','line\nnext'],['"back\\\\slash"','back\\slash'],
+    ['"quoted\\\"text"','quoted"text'],[' true ',true],[' false ',false],[' null ',null],[' -0 ',-0],['[1,"x",null]',[1,'x',null]]];
+  for(const [stored,expected] of examples){
+    assert.deepEqual(decodeReplicaRows([{cell:stored}])[0].cell,expected);
+    assert.deepEqual(datasetTransport.decodePackedRows([{replica_values:JSON.stringify([stored])}],['cell'])[0].cell,expected);
+  }
+  for(const stored of ['"','"unterminated','"inside"quote"','"control\nline"','"control\u0000byte"','"bad\\xescape"','nullish','trueX']){
+    assert.throws(()=>decodeReplicaRows([{cell:stored}]),SyntaxError);
+    assert.throws(()=>datasetTransport.decodePackedRows([{replica_values:JSON.stringify([stored])}],['cell']),SyntaxError);
+  }
+});
