@@ -1220,3 +1220,25 @@ Missing/failing D1 returns 503 `READ_REPLICA_UNAVAILABLE`; unsupported health
 methods return 405 with `Allow: GET`; other paths return 404. All responses
 use `Cache-Control: no-store`. No operational read or sync endpoint is enabled
 and no Cloudflare deployment is performed by C0.
+
+## Read replica synchronization candidate (C1)
+
+`POST /sync` accepts only the tables/fields in `cloudflare/read-api/schema.json`.
+It authenticates exact UTF-8 body bytes with timestamp, nonce and HMAC-SHA256
+headers before any write. Requests are limited to 500 rows and 1 MiB. Snapshot
+metadata identifies all batches, row count, source version and whole-manifest
+hash. Live projections change atomically only after every batch is present and
+the manifest matches. Older source versions, replayed nonces and conflicting
+batch metadata are rejected. Session revocation alone permits a one-batch patch
+that preserves other sessions. Responses expose completion state, never rows.
+
+The existing Apps Script GET/POST dispatcher observes successful writes without
+changing their response envelopes. An explicit route policy invalidates table
+dependencies; unknown successful routes conservatively queue all tables. Email
+revocation updates the authoritative Sheet first and immediately pushes a
+session patch. A failed patch reports `READ_REPLICA_REVOCATION_PENDING` and
+retains dirty work. C3 must enforce its authentication freshness requirements
+before operational read routes can be enabled. No synchronization configuration
+or trigger is automatically installed by this source change.
+
+See `READ-REPLICA-SYNC.md` for payload, failure codes, release and rollback gates.
