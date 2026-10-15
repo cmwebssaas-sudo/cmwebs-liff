@@ -173,3 +173,12 @@ without specific authorization. Never store or reveal secret values.
   dirty root WIP. Private security material stays outside Git and PR text.
 
 - 2026-10-10 auto email settlement completion notice correctness fix: candidate a377903; immutable22561 files match; original deployment225, rollback224, other4 unchanged.729 tests/42 bank runtime tests and independent review pass. No frontend/schema/Properties/trigger/financial-rule changes; no manual intake/send or historical bulk resend. Real LINE receipt UNVERIFIED. See BANK-AUTO-SETTLEMENT-NOTIFICATION.md.
+
+- 2026-10-15 C3 local holder/finalizer fix: affected83/83 and complete1728/1728
+  PASS, actual Core/ownedPG cleanup verified; initial11 realm failures retained
+  and fixed using the existing approved OS identity API. Initial review findings
+  resolved, incremental findings0. Exact-head CI and downstream propagation
+  pending. Actual25/160 unchanged/unclaimed, native STOP. Separate Draft PR272
+  proposes accelerated24h/rooms-first gates, not yet approved; original72h and
+  seven-day requirements still apply. Prioritize an executable160-budget trial
+  plan after this fix, not additional unrelated performance/tooling work.
