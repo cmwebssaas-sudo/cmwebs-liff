@@ -2168,3 +2168,29 @@ not started; old72h/seven-day pre-on rows above are historical.
   Review no issue, validate72/40/cache/comparison178/diff PASS. No new full rental
   run claimed; product/Apps Script/comparison/alloff unchanged. New exact CI
   remains separate from local evidence; all real acceptance gates retained.
+
+## C6 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C6 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1815/1815 PASS,67.047s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested598-file snapshot
+da3130e5c483dd2231b56fd1a549996443b055df4b11a6666a46fca181480a01;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated local capacity run. Exact-head CI follows push.
+C6 comparison identity regenerated with the existing generator: read-841ae9a6fd45932f15b8ef6bb1d0bae28cbc394b8845afa852422f6aa742260d. Only sync source hash changed among178 comparison sources; asset version, blank endpoint and alloff flags retained. Initial stale-identity validate failure retained, corrected before the full suite. Previous capacity failures and the latest prior-head CI pass remain historical; no causal/performance fix claimed.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance tobb859677844e72de4b4bd9f33348e06c8377f6a5;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.

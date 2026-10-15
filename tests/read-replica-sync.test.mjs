@@ -199,6 +199,46 @@ test('failed and concurrently changed dirty generations remain queued',()=>{
   assert.ok(h2.cache.get('cmwebs:read-replica:dirty:V2_rooms'));
 });
 
+test('dirty sync stops reading subsequent Sheets when a send consumes the four-minute deadline',()=>{
+  const h=harness({sheets:{V2_rooms:[['room_id'],['R1']],V2_properties:[['property_id'],['P1']]}});
+  let clock=1000000;
+  h.ctx.Date={now:()=>clock};
+  h.ctx.readReplicaMarkDirty_(['V2_rooms','V2_properties']);
+  const pending=[...h.cache.keys()];
+  const fetch=h.ctx.UrlFetchApp.fetch;
+  h.ctx.UrlFetchApp.fetch=(...args)=>{const response=fetch(...args);clock+=240000;return response;};
+  const result=h.ctx.runV2ReadReplicaDirtySync();
+  assert.equal(h.reads,1,'expired run must not load and hash another Sheet');
+  assert.equal(h.sent.length,1);
+  assert.equal(result.success,false);
+  assert.equal(result.code,'SYNC_PENDING');
+  assert.equal(result.tables,1);
+  assert.equal(result.failed_tables.length,1);
+  const completed=JSON.parse(h.sent[0].payload).sheet;
+  assert.equal(h.cache.has('cmwebs:read-replica:dirty:'+completed),false);
+  for(const key of pending.filter(key=>key!=='cmwebs:read-replica:dirty:'+completed)) assert.ok(h.cache.has(key));
+  assert.equal(h.cache.has('cmwebs:read-replica:lease'),false);
+});
+
+test('full sync queues every unattempted table after deadline without reading its Sheet',()=>{
+  const schema=JSON.parse(readFileSync(new URL('../cloudflare/read-api/schema.json',import.meta.url),'utf8'));
+  const sheets=Object.fromEntries(Object.entries(schema).map(([name,table])=>[name,[[table.key],['SYNTHETIC_'+name]]]));
+  const h=harness({sheets});
+  let clock=1000000;
+  h.ctx.Date={now:()=>clock};
+  const fetch=h.ctx.UrlFetchApp.fetch;
+  h.ctx.UrlFetchApp.fetch=(...args)=>{const response=fetch(...args);clock+=240001;return response;};
+  const result=h.ctx.runV2ReadReplicaFullSync();
+  assert.equal(h.reads,1,'full reconciliation must not load remaining Sheets after expiry');
+  assert.equal(h.sent.length,1);
+  assert.equal(result.success,false);
+  assert.equal(result.code,'SYNC_PENDING');
+  assert.equal(result.tables,1);
+  assert.deepEqual(Array.from(result.failed_tables),Object.keys(schema).slice(1));
+  for(const name of result.failed_tables) assert.ok(h.cache.get('cmwebs:read-replica:dirty:'+name));
+  assert.equal(h.cache.has('cmwebs:read-replica:lease'),false);
+});
+
 test('missing sheets and duplicate stable keys never send a deleting snapshot',()=>{
   for(const sheets of [{},{V2_rooms:[['room_id'],['R1'],['R1']]}]) {
     const h=harness({sheets}); h.ctx.readReplicaMarkDirty_(['V2_rooms']);
