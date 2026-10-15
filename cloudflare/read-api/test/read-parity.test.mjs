@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
+import { performance } from 'node:perf_hooks';
 import { createHash, randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
@@ -60,25 +61,51 @@ test('all six routes match original GAS after whitelist projection and actual lo
       assert.equal(response.headers.get('cache-control'),'no-store');
       const actual=await response.json();
       assert.equal(response.status,200,item.route+': '+actual.code);
+      assert.ok(response.headers.has('x-cmwebs-test-d1'),'test-only D1 operation metadata must be present');
       const paths=differingPaths(expected,actual);
       if(paths.length) differences[item.route]=paths;
     }
     assert.deepEqual(differences,{},'field parity after D1 projection');
-    const timings={};
+    function metrics(response) {
+      const header=response.headers.get('server-timing');assert.ok(header,'test-only stage timings');
+      const parts=header.split(', ');assert.equal(parts.length,3);const result={};
+      for(const part of parts){const match=/^(d1|decode|route);dur=(\d+\.\d{3})$/.exec(part);assert.ok(match);assert(!Object.hasOwn(result,match[1]));result[match[1]]=Number(match[2]);}
+      const internal=JSON.parse(response.headers.get('x-cmwebs-test-d1'));
+      assert.deepEqual(Object.keys(internal).sort(),['internal_ms','queries','rows_read']);
+      assert.equal(internal.queries,Object.keys(schema).length);assert(Number.isSafeInteger(internal.rows_read)&&internal.rows_read>=Object.values(projected).reduce((n,rows)=>n+rows.length,0));assert(Number.isFinite(internal.internal_ms)&&internal.internal_ms>=0);
+      return {...result,...internal};
+    }
+    const timings={},violations=[];
     for(const item of cases) {
-      const samples=[];
+      const samples=[],observations=[],stages={d1:[],decode:[],route:[],internal_ms:[]};
       for(let index=0;index<100;index++) {
-        const start=performance.now();
+        const start=performance.now(),cpuStart=process.cpuUsage(),loopStart=performance.eventLoopUtilization();
         const response=await mf.dispatchFetch('https://local.test'+httpPaths[item.route]);
         assert.equal(response.status,200);
         await response.arrayBuffer();
-        samples.push(performance.now()-start);
+        const elapsed=performance.now()-start;
+        // Node supervisor only: workerd is a separate child. ELU active time
+        // includes blocking; neither ELU nor process CPU establishes a cause.
+        // Start probes stay inside the original wall timer; ending diagnostic
+        // formatting stays outside, as with the existing header observations.
+        const cpu=process.cpuUsage(cpuStart),loop=performance.eventLoopUtilization(loopStart);
+        const supervisor={cpu_ms:Number(((cpu.user+cpu.system)/1000).toFixed(3)),
+          loop_active_ms:Number(loop.active.toFixed(3)),loop_idle_ms:Number(loop.idle.toFixed(3)),
+          loop_utilization:Number(loop.utilization.toFixed(6))};
+        assert(Object.values(supervisor).every(value=>Number.isFinite(value)&&value>=0));
+        assert(supervisor.loop_utilization<=1);
+        samples.push(elapsed);const detail=metrics(response);
+        observations.push({index,wall_ms:Number(elapsed.toFixed(3)),...detail,node_supervisor:supervisor});
+        for(const stage of Object.keys(stages))stages[stage].push(detail[stage]);
       }
       samples.sort((a,b)=>a-b);
       const p95=samples[94];
-      timings[item.route]={samples:samples.length,p95_ms:Number(p95.toFixed(3))};
-      assert.ok(p95<50,item.route+' local HTTP/D1 p95='+p95.toFixed(3)+' ms');
+      timings[item.route]={samples:samples.length,p95_ms:Number(p95.toFixed(3)),server_p95_ms:Object.fromEntries(Object.entries(stages).map(([name,values])=>{assert.equal(values.length,100);values.sort((a,b)=>a-b);return [name,values[94]];})),over_50ms:samples.filter(ms=>ms>=50).length,slowest:observations.sort((a,b)=>b.wall_ms-a.wall_ms||a.index-b.index).slice(0,5)};
+      if(p95>=50)violations.push(item.route+' local HTTP/D1 p95='+p95.toFixed(3)+' ms');
     }
     console.log('C2_LOCAL_READ_LATENCY '+JSON.stringify(timings));
+    // All100 samples contribute to the original p95; paired slow samples are
+    // diagnostic only. No retry, warmup, exclusion or threshold relaxation.
+    assert.deepEqual(violations,[],violations.join('; '));
   } finally { await mf.dispose(); }
 });

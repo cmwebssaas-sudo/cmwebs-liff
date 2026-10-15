@@ -1334,3 +1334,13 @@ Read-only private exports require real seven-day coverage and matched attempts;
 zero rows, missing reports or partial-day failures cannot establish acceptance.
 Current endpoint is blank and flags off. See `READ-SHADOW.md`,
 `READ-CLOCK-DECISION.md` and `READ-ROUTING.md` for retained gates and rollback.
+
+# Synthetic Execution API trial (not a formal dispatcher route)
+
+The C3 feasibility candidate's separate thin API executable and fixed library
+use `authorizeTrial(request, operation)` with exactly two positional arguments.
+`compatibility` returns a fixed boolean after actual caller/project and canonical
+MAC validation, before authority IO. `authority` preserves the original signed
+`read_replica_authorize` result through a fixed readonly grid facade. Neither is
+registered in the formal Code dispatcher or enabled frontend environment.
+See `READ-EXECUTION-TRIAL.md` for scope, bounded execution and rollback gates.

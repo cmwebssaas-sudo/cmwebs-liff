@@ -149,3 +149,52 @@ Workers／D1 超額亦可能計費。本次同意不包括開通付費 Google �
 
 目前判定為 **NOT_PROVEN**；維持原 GAS、正式六開關 off。授權已收到，不能把
 這項技術門檻誤記為等待房東批准，也不能在尚無安全候選時要求房東提供憑證。
+
+### 2026-10-13 補充：Tables、Visualization 與 Execution API
+
+再次開啟官方 Tables guide（2026-09-03）與 Table resource（2026-09-30）。
+`columnProperties.columnName` 是 table metadata；`columnIndex` 是 table-relative 位置。
+文件列出建立／修改、append 及 filter/protection 支援，沒有提供以欄名原子選值並在
+header 改名時拒絕回傳的 readonly endpoint。`values.get` 的 range 文件仍為 A1／R1C1。
+這是缺少所需契約的判定，**不是**宣稱所有未記載的 Tables range 都一定無法解析。
+REST structured-reference 支援與原子隱私保證仍是 UNKNOWN，不能依賴 metadata
+先查欄名再取位置。
+[Tables guide](https://developers.google.com/workspace/sheets/api/guides/tables)、
+[Table column properties](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets/sheets#TableColumnProperties)、
+[values.get](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/get)。
+
+Google Visualization Query Language 明確以試算表欄位字母為 ID，表頭文字為 label；
+query 不能以 label 代替 ID。故 `gviz` 查詢不是本次欄名投影 gate 的替代方案，
+不做公開 Sheet／query endpoint 的嘗試。
+[Query language](https://developers.google.com/chart/interactive/docs/querylanguage)。
+
+另查 `scripts.run`：Google 明示不支援 service accounts，且呼叫端與 API executable
+須共用 standard Cloud project、OAuth token 須涵蓋整個 script 的所有 scopes。
+它不是已核准直接 Sheets 機器 Reader 的可互換傳輸；不得為繞過 Web App 延遲而
+沿用人員 clasp credential 或自動擴大 scopes。任何另設人員 OAuth／API executable
+試驗均屬新範圍決策，目前只研究、沒有部署／帳號設定，延遲與 readonly 相容性未證明。
+[Execution API](https://developers.google.com/apps-script/api/how-tos/execute)。
+
+本輪沒有帳號 API 讀取（官方公開文件不計入合成表 40 次試驗預算）、canary、
+新身分／憑證／Cloud project 或 Worker 原型。先行投影 gate 保持 NOT_PROVEN。
+
+### 2026-10-13 補充：Execution API 的唯讀與憑證存續門檻
+
+實際開啟 `scripts.run` reference 與官方 Discovery：method 的授權 scope 清單未列
+`spreadsheets.readonly`；清單有 `userinfo.email` 等其他 scope。這不足以斷言
+「唯讀 Sheets 加另一個 scope」必然無法執行，但**唯讀 Sheets 單一 scope 不是
+目前列明的契約**。不為探索自動增加 identity／write／script-management scope。
+Advanced Sheets service 使用公開 Sheets API 的方法與參數，不自動消除這個
+Execution API 的呼叫端授權門檻；也不證明冷啟動、日期／型別或 1,500 ms 效能。
+[scripts.run scopes](https://developers.google.com/apps-script/api/reference/rest/v1/scripts/run)、
+[官方 Discovery](https://raw.githubusercontent.com/googleapis/discovery-artifact-manager/master/discoveries/script.v1.json)、
+[Advanced Sheets](https://developers.google.com/apps-script/advanced/sheets)。
+
+Google OAuth 文件另明示 external／Testing 的 refresh token 通常七日到期，亦可能
+因撤銷失效；session policy 的適用性另取決於 GCP／Cloud Platform scope 與組織政策，
+不能泛稱所有唯讀 Sheets token 都受其影響。未來若提出人員 OAuth 合成方案，須先列明專用身分、
+全部 scopes、最小檔案授權、token 存續／失效拒絕與撤除步驟；不得沿用 clasp token、
+把 Testing refresh token 當持續供讀保證，或以此跳過原三日／七日窗口。
+本輪只有公開文件研究，沒有人員 OAuth、帳號 API、API executable、prototype 或
+憑證操作；既有機器 Reader 的合成授權不因此擴大。
+[OAuth token expiration](https://developers.google.com/identity/protocols/oauth2#expiration)。
