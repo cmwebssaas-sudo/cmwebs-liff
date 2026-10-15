@@ -254,6 +254,9 @@ function readReplicaRun_(full) {
         // Capture version before reading, so a later revocation patch cannot be
         // overwritten by an older full snapshot that finishes after it.
         const sourceVersion=Date.now();
+        // Keep full-run dirty markers, but do not read/hash another Sheet when
+        // earlier native IO has already consumed the send deadline.
+        if(sourceVersion>=start+240000) throw new Error('Replica run deadline');
         const rows=readReplicaRowsFromSheet_(sheet);
         readReplicaSendRows_(config,sheet,rows,'snapshot',sourceVersion,start+240000);
         readReplicaWithMarkerLock_(function(marker){

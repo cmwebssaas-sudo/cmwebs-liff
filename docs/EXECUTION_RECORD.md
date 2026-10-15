@@ -549,3 +549,29 @@ Rollback: retain prior source commit; revert this local byte-sizing change if
 native validation fails before deploying corrected synthetic source. Existing
 serving deployment and authoritative data retained; read flags remain off.
 Root WIP preserved. Temporary editor restoration is already complete.
+
+## C1 pre-read deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Existing four-minute send deadline was enforced
+only after Sheet loading/projection; slow earlier IO could therefore cause
+later unnecessary Sheet reads. Actual-module dirty/full tests reproduced2/16
+reads rather than1, then passed with a pre-read check against the existing
+source timestamp. Full-run unattempted tables remain dirty; matching completed
+generations clear and lease cleanup remains. Blocking native calls are not
+interrupted; marker/lease IO may still continue. No claim that the335s Cache
+stall or900s/day gate is resolved.
+
+Affected19/19 and independent19/19 PASS/no actionable findings. One full local
+859/859 PASS,2.566s,Node22.23.3/actual Core/owned PG16.14; database/role cleanup,
+stopped cluster and closed listener verified. Tested477-file snapshot
+3a69f2c26519e21b25b2df3437e670f1326cc9a59606e61a5edf867b5a8bb14b;
+only docs afterwards. Validate71backend/40endpoints/cache/diff PASS. Worker
+unchanged, no repeated unchanged capacity test. Exact-head CI follows push.
+
+No account/Google/credential/Properties/trigger/Sheet/deployment operation.
+Original25/160 unclaimed/history retained; native-IO purpose revision remains
+awaiting owner. Approved parallel24h schedule supersedes original3/7 calendar
+only; T0 NOT_STARTED/alloff, actual daily900s/privacy/freshness/performance/device
+gates unaccepted. Rollback undeployed increment to6b90a4ca3efc8a83b706268d5039f5d9bb988a7c,
+retain original serving/editor/data and dirty generations. Root WIP/privateS1/
+C5swap preserved. No formal release or failed-observation reset.
