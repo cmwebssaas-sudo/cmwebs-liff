@@ -3113,3 +3113,43 @@ and seven-day shadow NOT_STARTED;500-room/Taipei/latency/device/cutover remain
 unaccepted. C5 merge stays pending until fixed upstream is propagated and its
 full suite passes. Root WIP, C5 swap and private S1 boundary preserved. Rollback
 local fix to9b1af93; no formal release or data rollback is needed.
+
+## 2026-10-15 — Preparation ownership through child finalization
+
+Recommended model/speed GPT-6.1 Sol/high. C3 local controller only; no Apps
+Script, Worker, Google/native, credential, formal data or deployment change.
+Parent retains the canonical open lock description inherited by Python until
+entered IO and the original child settle. Python checks canonical inode/RW mode
+and omits explicit unlock for inherited descriptors. Original direct mode stays.
+Successful scope results now require strict finish acknowledgement and expected
+zero child exit. If neither ledger stop nor bound durable-stop acknowledgement
+can be obtained, retain original ownership until that handle obtains the ACK;
+never grant independent ordinary admission. Existing cleanup/settlement claims
+remain separate from remote termination or complete rollback.
+
+Real-child EOF/SIGKILL, finish-exchange failure, failed stop helper, wrong inherited
+FD and independent-controller regressions retain RED evidence. Full initial
+1725-case run had11 restricted-realm failures; retained, not erased by retry.
+Fix uses existing approved node:os userInfo ownership instead of ambient process,
+without widening the realm. Related controller/realm/rollback83/83 PASS.
+Static initial review P1/P2 both resolved; incremental review no new actionable
+findings, unchanged pins before/after.
+
+One final Node22.23.3/actual Core/owned PostgreSQL regression1728/1728 PASS,
+57.895s,zero fail/cancel/skip; database cleanup/listener stopped verified.
+565-file source snapshot before documentation:
+5bd74ec05347a9cd01e70895eea8d0291875b61d606c58897989cb2c9cdb7647.
+Validate72 backend/40 endpoint references/static cache and diff check PASS.
+Worker/App Script bytes unchanged, so retain prior exact-head CI38711093628
+Worker26/26/two dry runs instead of rerunning unchanged local performance tests.
+New-head CI and downstream C4/C5/C6 propagation remain pending.
+
+Actual25/160 unchanged/unclaimed;320 declined and native trial STOP. Fresh72h,
+seven-day shadow,900s/day,real500-room/Taipei/latency/device/cutover gates remain
+unaccepted. Owner requested accelerated rollout; separate Draft PR272 proposes
+24h concurrent observation and rooms-first cutover, still awaiting exact scope
+confirmation. Do not adopt shortened gates from this local fix.
+Risk: retained ownership intentionally prevents reuse after an unacknowledged
+stop; use the original controller's requestStop/stopAndDrain for recovery.
+Rollback this undeployed controller change to acbff8e; no formal data rollback.
+Root WIP and private security boundary preserved.

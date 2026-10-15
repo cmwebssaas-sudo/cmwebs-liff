@@ -1833,3 +1833,13 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Complete regression | Node22/Core/ownedPG1720/1720,cleanup/listener verified | Prior C5 failure1735/1736 remains; C5 integration not accepted |
 | Core prerequisite | Actual HEAD/copied actual index/same objects via private metadata view;321-path missing-worktree negative | Shared exclude read blocked; no shared source/metadata change; full blob audit not claimed |
 | Worker/real gates | Retain unchanged9b1af93 Worker26/26/two dry runs; new-head CI required | OS flock continuity, actual160/900s/72h/seven-day/500/Taipei/device unaccepted |
+
+## 2026-10-15 — Preparation lock lifetime and completion
+
+| Area | Evidence | Boundary |
+| --- | --- | --- |
+| Canonical inherited FD | EOF/SIGKILL holds actual synthetic flock through entered IO; wrong inode rejected without claim/debit | Local POSIX evidence; not remote termination |
+| Finish and stop | Three new real-child RED→GREEN; strict finish/exit, failed durable helper retains original ownership until ACK | No independent ordinary debit or recovery grant |
+| Restricted realm | Original11 full failures retained; existing approved OS identity API restores compatibility; affected83/83 PASS | No ambient process or new builtin permissions |
+| Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
+| Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
