@@ -3685,3 +3685,21 @@ Rollback keeps the original pinned copy/history and independent globally-once
 C2/I17 cleanup. Never reset/refund/reseed/reopen the claim, erase STOP, or run an
 empty callback as remote rollback proof. No remote mutation, credentials,
 formal data, deployment, flag cutover or observation T0 in this increment.
+
+### Final source CI and one-time execution outcome
+
+Reviewed source872067f passed CI38784461317:rental1998/1998,Worker26/26,
+and both deployment dry-runs. Terminal outputs/annotations and footers read;
+rental log is truncated,Worker log complete. Local full2003/2003 is separate
+actual Core/disposable-PG evidence. No further source change after that check.
+
+The owner-approved single repair was attempted once. Its canonical predebit
+raised spent26 to27/160,keeping original P and new N UNKNOWN. The tool did not
+return verifiable caller/page state; completion was not asserted. The original
+expiry/day/claim remain unchanged. State is stopped,repair in-flight/UNKNOWN,
+new durable owner veto exists,and both retained holders acknowledged drain.
+There is no second repair/rebind or ordinary continuation. No publisher bind,
+refresh,trial RPC,remote setting/source/data change,formal deployment or
+observation T0 occurred. Preserve both copies and original STOP/history;
+no no-op callback was executed or claimed as remote rollback. The exact failed
+underlying tool cause remains UNKNOWN rather than attributed to login/Google.
