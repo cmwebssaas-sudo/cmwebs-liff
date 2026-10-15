@@ -3,7 +3,7 @@ import cp from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import {setTimeout as delay} from 'node:timers/promises';
 import assert from 'node:assert/strict';
-import {mkdtempSync,chmodSync,writeFileSync,readFileSync,lstatSync,unlinkSync,existsSync} from 'node:fs';
+import {mkdtempSync,chmodSync,writeFileSync,readFileSync,lstatSync,unlinkSync,existsSync,openSync,closeSync,constants} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
@@ -18,6 +18,123 @@ function setup(patch={},spent=25){
  const pauses=[],options={path,epoch,approvalHash,proposalHash,legacySha256:hash(raw),importedReads:spent,expiresAt:clock+21600000,now:()=>now,pause:async ms=>{pauses.push(ms);now+=ms;},...patch};epochs.add(epoch);assert.equal(typeof mod.createAuthorityPreparationControl,'function');const control=mod.createAuthorityPreparationControl(options);
  return {control,options,pauses,setNow:v=>{now=v;},get:()=>JSON.parse(readFileSync(path))};
 }
+function probePreparationLock(path){
+ const code="import os,fcntl,sys\nf=os.open(sys.argv[1],os.O_RDWR|os.O_NOFOLLOW)\ntry:\n fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB);print('ACQUIRED')\nexcept BlockingIOError:print('HELD')\nfinally:os.close(f)\n";
+ const result=cp.spawnSync('python3',['-c',code,path+'.lock'],{encoding:'utf8',timeout:3000,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
+ assert.equal(result.status,0);return result.stdout.trim();
+}
+for(const failure of ['EOF','SIGKILL'])test('original scope holds flock after budget child '+failure+' until entered IO drains',async()=>{
+ const s=setup(),spawn=cp.spawn;let child,enter,release,settled=false,scope,otherIO=0;
+ const entered=new Promise(r=>{enter=r;}),gate=new Promise(r=>{release=r;});
+ try{
+  cp.spawn=(...args)=>{const value=spawn(...args);if(!child)child=value;return value;};syncBuiltinESMExports();
+  scope=s.control.withPreparation(async cap=>{void cap.restoreOriginalEditor('restore-editor',async()=>{enter();await gate;});await entered;});
+  void scope.then(()=>{settled=true;},()=>{settled=true;});await entered;
+  for(let n=0;n<100&&s.get().preparation.state!=='stopped';n++)await delay(10);
+  assert.equal(s.get().preparation.state,'stopped');assert.equal(probePreparationLock(s.options.path),'HELD');
+  const closed=new Promise(r=>child.once('close',r));
+  if(failure==='EOF')child.stdin.end();else assert.equal(child.kill('SIGKILL'),true);
+  await closed;assert.equal(settled,false);
+  assert.equal(probePreparationLock(s.options.path),'HELD','Child termination cannot release ownership of pending IO');
+  const other=mod.createAuthorityPreparationControl(s.options);
+  await assert.rejects(other.withPreparation(cap=>cap.restoreOriginalEditor('read-restored-editor',async()=>{otherIO++;})),/TRIAL_STOPPED/);
+  assert.equal(otherIO,0);assert.equal(s.get().spent,26);
+ }finally{release();if(scope)await assert.rejects(scope,/TRIAL_STOPPED/);cp.spawn=spawn;syncBuiltinESMExports();}
+ assert.equal(probePreparationLock(s.options.path),'ACQUIRED','All descriptor copies close after the original scope settles');
+ await s.control.withPreparation(cap=>cap.restoreOriginalEditor('read-restored-editor',async()=>{otherIO++;}));
+ assert.equal(otherIO,1);assert.equal(s.get().spent,27);
+});
+test('budget child death during an awaited callback rejects success and fences later ordinary IO',async()=>{
+ const s=setup(),spawn=cp.spawn;let child,enter,release,scope,ordinary=0;
+ const entered=new Promise(r=>{enter=r;}),gate=new Promise(r=>{release=r;});
+ try{
+  cp.spawn=(...args)=>{const value=spawn(...args);if(!child)child=value;return value;};syncBuiltinESMExports();
+  scope=s.control.withPreparation(cap=>cap.externalRead(async()=>{enter();await gate;return 'SYNTHETIC_COMPLETE';}));void scope.catch(()=>{});
+  await entered;const closed=new Promise(r=>child.once('close',r));assert.equal(child.kill('SIGKILL'),true);await closed;
+  release();await assert.rejects(scope,/TRIAL_STOPPED/);
+ }finally{release();if(scope)await scope.catch(()=>{});cp.spawn=spawn;syncBuiltinESMExports();}
+ assert.equal(s.get().spent,26);assert.equal(probePreparationLock(s.options.path),'ACQUIRED');
+ const other=mod.createAuthorityPreparationControl(s.options);
+ await assert.rejects(other.withPreparation(cap=>cap.externalRead(async()=>{ordinary++;})),/TRIAL_STOPPED/);
+ assert.equal(ordinary,0);assert.equal(s.get().spent,26);
+ await other.withPreparation(cap=>cap.cleanup('read-original-project',async()=>{}));assert.equal(s.get().spent,27);
+});
+test('child death during the stop exchange still writes a durable ordinary-admission veto',async()=>{
+ const s=setup(),spawn=cp.spawn;let injected=false,ordinary=0;
+ try{
+  cp.spawn=(...args)=>{
+   const child=spawn(...args),write=child.stdin.write.bind(child.stdin);
+   child.stdin.write=(message,...rest)=>{
+    if(!injected&&JSON.parse(String(message)).op==='stop'){injected=true;child.kill('SIGKILL');}
+    return write(message,...rest);
+   };return child;
+  };syncBuiltinESMExports();
+  await assert.rejects(s.control.withPreparation(async cap=>{await cap.externalRead(async()=>{});throw Error('SYNTHETIC_CALLBACK_FAILED');}),/TRIAL_STOPPED/);
+ }finally{cp.spawn=spawn;syncBuiltinESMExports();}
+ assert.equal(injected,true);assert.equal(s.get().spent,26);assert.equal(probePreparationLock(s.options.path),'ACQUIRED');
+ const other=mod.createAuthorityPreparationControl(s.options);
+ await assert.rejects(other.withPreparation(cap=>cap.externalRead(async()=>{ordinary++;})),/TRIAL_STOPPED/);
+ assert.equal(ordinary,0);assert.equal(s.get().spent,26);
+});
+for(const failure of ['EOF','SIGKILL'])test('finish exchange '+failure+' rejects success and fences independent ordinary admission',async()=>{
+ const s=setup(),spawn=cp.spawn;let injected=false,ordinary=0;
+ try{
+  cp.spawn=(...args)=>{
+   const child=spawn(...args),write=child.stdin.write.bind(child.stdin);
+   child.stdin.write=(message,...rest)=>{
+    if(!injected&&JSON.parse(String(message)).op==='finish'){
+     injected=true;if(failure==='EOF')child.stdin.end();else child.kill('SIGKILL');
+    }
+    return write(message,...rest);
+   };return child;
+  };syncBuiltinESMExports();
+  await assert.rejects(s.control.withPreparation(async cap=>{await cap.externalRead(async()=>{});return 'FALSE_SUCCESS';}),/TRIAL_STOPPED/);
+ }finally{cp.spawn=spawn;syncBuiltinESMExports();}
+ assert.equal(injected,true);assert.equal(s.get().spent,26);assert.equal(probePreparationLock(s.options.path),'ACQUIRED');
+ const other=mod.createAuthorityPreparationControl(s.options);
+ await assert.rejects(other.withPreparation(cap=>cap.externalRead(async()=>{ordinary++;})),/TRIAL_STOPPED/);
+ assert.equal(ordinary,0);assert.equal(s.get().spent,26);
+});
+test('failed durable stop helper retains ownership until its original controller obtains a strict stop acknowledgement',async()=>{
+ const s=setup(),spawn=cp.spawn;let ordinary=0,helperFailed=false,injected=false;
+ try{
+  cp.spawn=(cmd,args,options)=>{
+   if(args.includes('--request-stop')){helperFailed=true;return spawn('cmwebs-missing-stop-helper-for-test',args,options);}
+   const child=spawn(cmd,args,options),write=child.stdin.write.bind(child.stdin);
+   child.stdin.write=(message,...rest)=>{
+    if(!injected&&JSON.parse(String(message)).op==='finish'){injected=true;child.kill('SIGKILL');}
+    return write(message,...rest);
+   };return child;
+  };syncBuiltinESMExports();
+  await assert.rejects(s.control.withPreparation(async cap=>{await cap.externalRead(async()=>{});return 'FALSE_SUCCESS';}),/TRIAL_STOPPED/);
+  assert.equal(helperFailed,true);assert.equal(probePreparationLock(s.options.path),'HELD');
+  const other=mod.createAuthorityPreparationControl(s.options);
+  await assert.rejects(other.withPreparation(cap=>cap.externalRead(async()=>{ordinary++;})),/TRIAL_STOPPED/);
+  assert.equal(ordinary,0);assert.equal(s.get().spent,26);
+ }finally{
+  cp.spawn=spawn;syncBuiltinESMExports();await s.control.requestStop();
+ }
+ assert.equal(probePreparationLock(s.options.path),'ACQUIRED');
+ const other=mod.createAuthorityPreparationControl(s.options);
+ await assert.rejects(other.withPreparation(cap=>cap.externalRead(async()=>{ordinary++;})),/TRIAL_STOPPED/);
+ assert.equal(ordinary,0);assert.equal(s.get().spent,26);
+ await other.withPreparation(cap=>cap.cleanup('read-original-project',async()=>{}));assert.equal(s.get().spent,27);
+});
+test('inherited descriptor must name the canonical lock and mismatch leaves no claim or held descriptor',async()=>{
+ const s=setup(),spawn=cp.spawn,wrong=openSync(s.options.path+'.wrong-lock',constants.O_RDWR|constants.O_CREAT|constants.O_EXCL,0o600);
+ let injected=false,io=0;
+ try{
+  cp.spawn=(command,args,options)=>{
+   if(!injected){injected=true;return spawn(command,args,{...options,stdio:[...options.stdio.slice(0,3),wrong]});}
+   return spawn(command,args,options);
+  };syncBuiltinESMExports();
+  await assert.rejects(s.control.withPreparation(async()=>{io++;}),/TRIAL_STOPPED/);
+ }finally{cp.spawn=spawn;syncBuiltinESMExports();closeSync(wrong);}
+ assert.equal(injected,true);assert.equal(io,0);assert.equal(s.get().spent,25);
+ assert.equal(existsSync(s.options.path+'.preparation-claim.json'),false);
+ assert.equal(probePreparationLock(s.options.path),'ACQUIRED');
+ await s.control.withPreparation(async()=>{});assert.equal(s.get().spent,25);
+});
 async function failChildInputOnce(work){
  const original=cp.spawn;let injected=false;
  try{

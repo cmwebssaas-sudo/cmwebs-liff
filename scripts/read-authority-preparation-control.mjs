@@ -1,10 +1,11 @@
 // Local preparation only. Trusted orchestration pins IO and actual Google gates.
 // No counter mutation, child, account, credential or trial RPC at construction.
 import {spawn} from 'node:child_process';
-import {resolve} from 'node:path';
+import {resolve,dirname} from 'node:path';
+import {userInfo} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
-import {lstatSync} from 'node:fs';
+import {lstatSync,openSync,fstatSync,closeSync,constants} from 'node:fs';
 import {setTimeout as delay} from 'node:timers/promises';
 const stop=()=>{throw Error('TRIAL_STOPPED');},hash=v=>createHash('sha256').update(v).digest('hex');
 const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v),integer=Number.isSafeInteger;
@@ -23,7 +24,7 @@ export function createAuthorityPreparationControl(input){
    try{lstatSync(path+'.preparation-stop.json');return true;}catch(e){return e.code!=='ENOENT';}
   };
   const requestStop=async()=>{
-   localStop=true;
+   const owned=currentOwned;localStop=true;
    await new Promise((resolve,reject)=>{
     let output='',failed=false,killTimer;const child=spawn('python3',[fileURLToPath(new URL('./read-authority-preparation-budget.py',import.meta.url)),'--request-stop'],{stdio:['pipe','pipe','pipe'],env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
     const timer=setTimeout(()=>{failed=true;child.kill('SIGTERM');killTimer=setTimeout(()=>child.kill('SIGKILL'),2000);},10000);
@@ -32,7 +33,7 @@ export function createAuthorityPreparationControl(input){
     child.stdin.on('error',()=>{failed=true;});
     child.on('close',code=>{clearTimeout(timer);clearTimeout(killTimer);try{const r=JSON.parse(output);if(code!==0||failed||!only(r,['ok','stopRequested'])||r.ok!==true||r.stopRequested!==true)stop();resolve();}catch(_){reject(Error('TRIAL_STOPPED'));}});
     child.stdin.end(JSON.stringify({path,epoch,binding})+'\n',e=>{if(e)failed=true;});
-   });return Object.freeze({stopRequested:true});
+   });owned?.acknowledgeStop();return Object.freeze({stopRequested:true});
   };
   const stopAndDrain=async()=>{
    // This is an original in-memory scope handle, never PID/file/lock metadata.
@@ -42,7 +43,15 @@ export function createAuthorityPreparationControl(input){
    return Object.freeze({source:'canonical-preparation-holder',stopRequested:true,stopAcknowledged:acknowledged,ownedScope:Object.freeze({serial:owned?.serial??null,state:owned?'SETTLED':'NONE_CAPTURED'}),remoteExecutionSettled:false,trialAccepted:false,rollbackComplete:false});
   };
   const scope=async(mode,runtimeBinding,callback)=>{
-   if(busy||typeof callback!=='function'||(mode==='runtime'&&!digest(runtimeBinding)))stop();busy=true;let resolveOwned;const owned={serial:++scopeSerial,settled:new Promise(r=>{resolveOwned=r;})};currentOwned=owned;let child,active=true,pending=0,failed=false,admissionBusy=false,eligibleEntry=null,chain=Promise.resolve(),buffer='',waiting=[],ended=false,terminal=false;const enteredIO=new Set();let terminalResolve;const terminalPromise=new Promise(r=>{terminalResolve=r;});const markTerminal=()=>{terminal=true;terminalResolve();};
+   if(busy||typeof callback!=='function'||(mode==='runtime'&&!digest(runtimeBinding)))stop();busy=true;let resolveOwned;const owned={serial:++scopeSerial,settled:new Promise(r=>{resolveOwned=r;})};currentOwned=owned;let child,lockFd,result,initialReady=false,active=true,pending=0,failed=false,scopeFailed=false,finishAcknowledged=false,stopFenced=false,holderDrained=false,released=false,admissionBusy=false,eligibleEntry=null,chain=Promise.resolve(),buffer='',waiting=[],ended=false,terminal=false;const enteredIO=new Set();let terminalResolve;const terminalPromise=new Promise(r=>{terminalResolve=r;});const markTerminal=()=>{terminal=true;terminalResolve();};
+   const releaseOwnership=()=>{
+    if(released)return;released=true;
+    try{if(lockFd!==undefined)closeSync(lockFd);}
+    finally{busy=false;if(currentOwned===owned)currentOwned=null;resolveOwned();}
+   };
+   // A failed durable stop cannot release another controller into ordinary IO.
+   // Only this original handle can release retained ownership after strict ACK.
+   owned.acknowledgeStop=()=>{stopFenced=true;if(holderDrained)releaseOwnership();};
    const send=message=>{
     const operation=chain.then(()=>new Promise((resolve,reject)=>{
      if(ended||!child||child.exitCode!==null)return reject(Error('TRIAL_STOPPED'));
@@ -102,26 +111,50 @@ export function createAuthorityPreparationControl(input){
    });
    const control=Object.freeze({inspectCleanup,waitForExternalReadSlot:units=>tracked(()=>{idle();return wait('ordinary',null,units);}),reserveExternalReads:units=>tracked(()=>{idle();return request('debit','ordinary',null,units);}),externalRead:io=>tracked(()=>action('ordinary',null,io)),restoreOriginalEditor:(name,io)=>tracked(()=>action('C',name,io)),cleanup:(name,io)=>tracked(()=>action('I',name,io)),...(mode==='preparation'?{handoff}:{inspectRuntime,dispatchCompatibility,settlementRead:io=>tracked(()=>action('S',null,io)),accountNative,finishCompatibility})});
    const exited=()=>terminal||!child||child.exitCode!==null||child.signalCode!==null?Promise.resolve():terminalPromise;
+   const fence=async()=>{
+    if(!initialReady||stopFenced)return;
+    if(child&&!ended)try{stopFenced=view(await send({op:'stop',kind:'ordinary',action:null,units:1,now:now()})).state==='stopped';}catch(_){}
+    if(!stopFenced)try{await requestStop();}catch(_){}
+   };
    try{
-    const t=now();if(!integer(t))stop();child=spawn('python3',[fileURLToPath(new URL('./read-authority-preparation-budget.py',import.meta.url))],{stdio:['pipe','pipe','pipe'],env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
-    child.on('error',()=>{ended=true;if(child.pid===undefined)markTerminal();for(const p of waiting.splice(0))p.reject(Error('TRIAL_STOPPED'));});
+    const t=now();if(!integer(t))stop();
+    const directory=lstatSync(dirname(path));
+    if(!integer(userInfo().uid)||typeof constants.O_NOFOLLOW!=='number'||constants.O_NOFOLLOW<=0||!directory.isDirectory()||directory.uid!==userInfo().uid||(directory.mode&0o7777)!==0o700)stop();
+    lockFd=openSync(path+'.lock',constants.O_RDWR|constants.O_CREAT|constants.O_NOFOLLOW,0o600);
+    const lock=fstatSync(lockFd);
+    if(!lock.isFile()||lock.uid!==userInfo().uid||(lock.mode&0o7777)!==0o600||lock.size!==0)stop();
+    // Python acquires flock on the same open-file description. Retain this
+    // descriptor until both entered IO and the original child have settled.
+    child=spawn('python3',[fileURLToPath(new URL('./read-authority-preparation-budget.py',import.meta.url)),'--inherited-lock'],{stdio:['pipe','pipe','pipe',lockFd],env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
+    child.on('error',()=>{failed=true;ended=true;if(child.pid===undefined)markTerminal();for(const p of waiting.splice(0))p.reject(Error('TRIAL_STOPPED'));});
     // A broken input pipe stops protocol admission, not ownership of the child
     // or an entered IO callback. The existing finalizer still drains both.
     child.stdin.on('error',()=>{failed=true;ended=true;for(const p of waiting.splice(0))p.reject(Error('TRIAL_STOPPED'));});
-    child.on('close',markTerminal);child.on('exit',()=>{markTerminal();ended=true;for(const p of waiting.splice(0))p.reject(Error('TRIAL_STOPPED'));});
+    child.on('close',markTerminal);child.on('exit',(code,signal)=>{if(!finishAcknowledged||code!==0||signal!==null)failed=true;markTerminal();ended=true;for(const p of waiting.splice(0))p.reject(Error('TRIAL_STOPPED'));});
     child.stderr.on('data',()=>{});child.stdout.setEncoding('utf8');child.stdout.on('data',chunk=>{
      buffer+=chunk;if(buffer.length>100000){ended=true;child.kill('SIGTERM');return;}
      while(buffer.includes('\n')){const i=buffer.indexOf('\n'),line=buffer.slice(0,i);buffer=buffer.slice(i+1);const p=waiting.shift();if(!p){ended=true;child.kill('SIGTERM');return;}try{p.resolve(JSON.parse(line));}catch(_){p.reject(Error('TRIAL_STOPPED'));}}
     });
-    const initial=await send({path,epoch,binding,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,now:t,mode,...(mode==='runtime'?{runtimeBinding}:{})});if(initial.ok!==true)stop();
-    const result=await callback(control);if(pending!==0||failed)stop();return result;
-   }catch(_){if(child&&!ended)try{await send({op:'stop',kind:'ordinary',action:null,units:1,now:now()});}catch(_){}stop();}
+    const initial=await send({path,epoch,binding,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,now:t,mode,...(mode==='runtime'?{runtimeBinding}:{})});if(initial.ok!==true)stop();initialReady=true;
+    result=await callback(control);if(pending!==0||failed)stop();
+   }catch(_){scopeFailed=true;await fence();}
    finally{
-    active=false;await Promise.allSettled([...enteredIO]);
-    if(child&&!ended)try{await send({op:'finish'});}catch(_){}
+    active=false;
+    await Promise.allSettled([...enteredIO]);
+    if(child&&!ended)try{
+     const r=await send({op:'finish'});
+     if(!only(r,['ok','finished'])||r.ok!==true||r.finished!==true)stop();
+     finishAcknowledged=true;
+    }catch(_){scopeFailed=true;}
     if(child){child.stdin.end();await Promise.race([exited(),delay(2000)]);if(!terminal&&child.exitCode===null&&child.signalCode===null){child.kill('SIGTERM');await Promise.race([exited(),delay(2000)]);}if(!terminal&&child.exitCode===null&&child.signalCode===null){child.kill('SIGKILL');await exited();}}
-    busy=false;if(currentOwned===owned)currentOwned=null;resolveOwned();
+    if(initialReady&&(failed||!finishAcknowledged||child.exitCode!==0||child.signalCode!==null))scopeFailed=true;
+    if(scopeFailed)await fence();
+    holderDrained=true;
+    if(!initialReady||!scopeFailed||stopFenced)releaseOwnership();
+    // Otherwise retain the canonical descriptor and busy original handle.
+    // A later successful requestStop/stopAndDrain releases it after durable ACK.
    }
+   if(scopeFailed)stop();return result;
   };
   return Object.freeze({withPreparation:callback=>scope('preparation',null,callback),withRuntime:(runtimeBinding,callback)=>scope('runtime',runtimeBinding,callback),requestStop,stopAndDrain});
  }catch(_){stop();}

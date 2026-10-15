@@ -49,7 +49,7 @@ I=['close-deployment','verify-closed-deployment','remove-reader','verify-reader-
 C=['restore-editor','read-restored-editor']
 R=['wrapper','qualified']
 class Ledger:
- def __init__(self,cfg):
+ def __init__(self,cfg,inherited=False):
   keys={'path','epoch','binding','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now'}
   if type(cfg)!=dict or not keys<=set(cfg) or set(cfg)-keys-{'mode','runtimeBinding'} or any(not digest(cfg[k]) for k in ['binding','approvalHash','proposalHash','legacySha256']) or not integer(cfg['importedReads']) or not 0<=cfg['importedReads']<=141 or not integer(cfg['expiresAt']) or not integer(cfg['now']) or not re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']): fail()
   self.mode=cfg.get('mode','preparation')
@@ -57,8 +57,12 @@ class Ledger:
   self.cfg=cfg;self.path=Path(cfg['path']);self.original=None
   if not self.path.is_absolute(): fail()
   directory(self.path.parent)
-  lock=self.path.with_name(self.path.name+'.lock');self.fd=os.open(lock,os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600);s=os.fstat(self.fd)
+  lock=self.path.with_name(self.path.name+'.lock');self.inherited=inherited
+  self.fd=3 if inherited else os.open(lock,os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600);s=os.fstat(self.fd)
   if not stat.S_ISREG(s.st_mode) or s.st_uid!=os.getuid() or stat.S_IMODE(s.st_mode)!=0o600 or s.st_size!=0: fail()
+  if inherited:
+   named=os.lstat(lock)
+   if (s.st_dev,s.st_ino)!=(named.st_dev,named.st_ino) or not stat.S_ISREG(named.st_mode) or (fcntl.fcntl(self.fd,fcntl.F_GETFL)&os.O_ACCMODE)!=os.O_RDWR:fail()
   fcntl.flock(self.fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
   raw=rawfile(self.path);v=json.loads(raw);self.base(v)
   # Runtime can only reopen the existing canonical counter. Never initialize a
@@ -229,7 +233,11 @@ class Ledger:
   self.persist(v);return self.view(0)
  def view(self,ms):
   v=self.current();return {'ok':True,'spent':v['spent'],'state':'stopped' if self.stop_requested() else v['preparation']['state'],'waitMs':ms}
- def close(self):fcntl.flock(self.fd,fcntl.LOCK_UN);os.close(self.fd)
+ def close(self):
+  # Inherited descriptors share the parent's open-file description. Unlocking
+  # here would release its ownership while an entered callback may still run.
+  if not self.inherited:fcntl.flock(self.fd,fcntl.LOCK_UN)
+  os.close(self.fd)
 def emit(v):print(compact(v),flush=True)
 ledger=None
 try:
@@ -237,8 +245,8 @@ try:
  if len(line)>20000:fail()
  if sys.argv[1:]==['--request-stop']:
   request_stop(json.loads(line));emit({'ok':True,'stopRequested':True});sys.exit(0)
- if sys.argv[1:]:fail()
- ledger=Ledger(json.loads(line));emit(ledger.view(0))
+ if sys.argv[1:] not in [[],['--inherited-lock']]:fail()
+ ledger=Ledger(json.loads(line),inherited=sys.argv[1:]==['--inherited-lock']);emit(ledger.view(0))
  for line in sys.stdin.buffer:
   try:
    if len(line)>20000:fail()
