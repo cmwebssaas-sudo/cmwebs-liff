@@ -15,22 +15,51 @@ function failure(code='READ_REPLICA_UNAVAILABLE'){throw Object.assign(new Error(
 // never qualify through a matching legacy landlord/property/room identifier.
 export function createReadDatasetLoader(database,options={}) {
   const db=database.withSession('first-primary');
-  async function select(table,where,params=[]) {
+  function statement(table,where,params=[]) {
     const fields=schema[table]?.fields;
     if(!fields||!where) failure();
-    const result=await db.prepare(`SELECT ${fields.map(f=>'"'+f+'"').join(',')} FROM "${table}" WHERE ${where} ORDER BY CAST(replica_source_row AS INTEGER),row_key LIMIT 10001`).bind(...params).all();
-    if(!result.success||result.results.length>10000) failure();
+    return db.prepare(`SELECT ${fields.map(f=>'"'+f+'"').join(',')} FROM "${table}" WHERE ${where} ORDER BY CAST(replica_source_row AS INTEGER),row_key LIMIT 10001`).bind(...params);
+  }
+  function decode(result) {
+    if(!result?.success||!Array.isArray(result.results)||result.results.length>10000) failure();
     return result.results.map(row=>Object.fromEntries(Object.entries(row).filter(([,value])=>value!==null).map(([field,value])=>[field,JSON.parse(value)])));
   }
-  async function byValues(table,field,values,extra='1=1',extraParams=[]) {
+  async function select(table,where,params=[]) {
+    return decode(await statement(table,where,params).all());
+  }
+  function merge(table,rows) {
+    const key=schema[table].key;
+    return [...new Map(rows.map(row=>[row[key],row])).values()].sort((a,b)=>Number(a.replica_source_row)-Number(b.replica_source_row)||String(a[key]).localeCompare(String(b[key])));
+  }
+  function valueSelections(field,values,extra='1=1',extraParams=[]) {
     const workspaceField=field==='workspace_id';
-    const ids=unique(values).map(value=>workspaceField?value.toUpperCase():value),found=[];
+    const ids=unique(values).map(value=>workspaceField?value.toUpperCase():value),selections=[];
     for(let offset=0;offset<ids.length;offset+=80) {
       const chunk=ids.slice(offset,offset+80);
-      found.push(...await select(table,`${workspaceField?'upper('+column(field)+')':column(field)} IN (${chunk.map(()=>'?').join(',')}) AND (${extra})`,[...chunk,...extraParams]));
+      selections.push([`${workspaceField?'upper('+column(field)+')':column(field)} IN (${chunk.map(()=>'?').join(',')}) AND (${extra})`,[...chunk,...extraParams]]);
     }
-    const key=schema[table].key;
-    return [...new Map(found.map(row=>[row[key],row])).values()].sort((a,b)=>Number(a.replica_source_row)-Number(b.replica_source_row)||String(a[key]).localeCompare(String(b[key])));
+    return selections;
+  }
+  async function byValues(table,field,values,extra='1=1',extraParams=[]) {
+    const found=[];
+    for(const [where,params] of valueSelections(field,values,extra,extraParams)) found.push(...await select(table,where,params));
+    return merge(table,found);
+  }
+  // Preserve statement and group order. Only queries whose server-derived
+  // inputs are already known enter a batch; dependent stages still await.
+  // Bound transient result size to 80 statements per SDK call, not 80 keys.
+  async function selectGroups(groups) {
+    const statements=groups.flatMap(({table,selections})=>selections.map(([where,params])=>statement(table,where,params))),rows=[];
+    for(let offset=0;offset<statements.length;offset+=80) {
+      const batch=statements.slice(offset,offset+80),results=await db.batch(batch);
+      if(!Array.isArray(results)||results.length!==batch.length) failure();
+      rows.push(...results.map(decode));
+    }
+    let offset=0;
+    return groups.map(({table,selections})=>{
+      const result=merge(table,rows.slice(offset,offset+selections.length).flat());
+      offset+=selections.length;return result;
+    });
   }
   return {
     async checkReplica() {
@@ -109,29 +138,31 @@ export function createReadDatasetLoader(database,options={}) {
         }
         return {sql:clauses.length?clauses.join(' AND '):'1=1',params};
       }
-      async function scoped(table) {
+      function scopedGroups(table) {
         const fields=schema[table].fields;
-        const direct=await select(table,`upper(${column('workspace_id')}) = ?`,[workspaceId]);
-        const legacy=[];
+        const groups=[{table,selections:[[ `upper(${column('workspace_id')}) = ?`,[workspaceId] ]]}];
         const anchors=safeParents(table);
-        for(const [field,ids] of Object.entries(relationships)) if(fields.includes(field)) legacy.push(...await byValues(table,field,ids,blankWorkspace+' AND '+anchors.sql,anchors.params));
-        const key=schema[table].key;
-        return [...new Map([...direct,...legacy].map(row=>[row[key],row])).values()]
-          .sort((a,b)=>Number(a.replica_source_row)-Number(b.replica_source_row)||String(a[key]).localeCompare(String(b[key])));
+        for(const [field,ids] of Object.entries(relationships)) if(fields.includes(field)) groups.push({table,selections:valueSelections(field,ids,blankWorkspace+' AND '+anchors.sql,anchors.params)});
+        return groups;
       }
-      data.V2_properties=await scoped('V2_properties');
+      async function scopedTables(tables) {
+        const plans=tables.map(table=>scopedGroups(table)),groups=await selectGroups(plans.flat());
+        let offset=0;
+        for(let index=0;index<tables.length;index++) {
+          data[tables[index]]=merge(tables[index],groups.slice(offset,offset+plans[index].length).flat());
+          offset+=plans[index].length;
+        }
+      }
+      await scopedTables(['V2_properties']);
       relationships.property_id=unique(data.V2_properties.map(row=>row.property_id));
-      data.V2_rooms=await scoped('V2_rooms');
+      await scopedTables(['V2_rooms']);
       relationships.room_id=unique(data.V2_rooms.map(row=>row.room_id));
-      data.V2_contracts=await scoped('V2_contracts');
+      await scopedTables(['V2_contracts']);
       relationships.contract_id=unique(data.V2_contracts.map(row=>row.contract_id));
-      for(const table of Object.keys(schema)) {
-        if(['V2_users','V2_workspaces','V2_workspace_members','V2_landlords','V2_properties','V2_rooms','V2_contracts','V2_landlord_email_sessions'].includes(table)) continue;
-        data[table]=await scoped(table);
-      }
+      await scopedTables(Object.keys(schema).filter(table=>!['V2_users','V2_workspaces','V2_workspace_members','V2_landlords','V2_properties','V2_rooms','V2_contracts','V2_landlord_email_sessions'].includes(table)));
       const userIds=unique([access.user.user_id,...Object.values(data).flatMap(rows=>rows.flatMap(row=>[row.user_id,row.tenant_user_id,row.owner_user_id,row.landlord_user_id]))]);
       const lineIds=unique(Object.values(data).flatMap(rows=>rows.flatMap(row=>[row.line_user_id,row.tenant_line_user_id,row.landlord_line_user_id])));
-      const users=[...await byValues('V2_users','user_id',userIds),...await byValues('V2_users','line_user_id',lineIds)];
+      const users=(await selectGroups([{table:'V2_users',selections:valueSelections('user_id',userIds)},{table:'V2_users',selections:valueSelections('line_user_id',lineIds)}])).flat();
       data.V2_users=[...new Map(users.map(row=>[row.user_id,row])).values()].sort((a,b)=>Number(a.replica_source_row)-Number(b.replica_source_row));
       return data;
     }

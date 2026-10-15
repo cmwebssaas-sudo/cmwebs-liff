@@ -2977,3 +2977,65 @@ Actual25/160 unchanged/unclaimed,320 declined; no native/Google/RPC/formal
 mutation. Original900s/day/fresh72h/seven actual24h/500/Taipei/strict latency/
 device/cutover gates unchanged. Root WIP and S1 confidentiality preserved.
 Rollback test observation toe21c3f3; no formal release or data rollback needed.
+
+## 2026-10-15 — Batch scoped D1 reads without changing scope
+
+Recommended model/speed: GPT-6.1 Sol / high. Classification: the explicitly
+approved V2 performance plan; local source only. Pre-flight: C3 loader consumes
+C1 whitelist/source ordering and C2 response projections. Keep both interfaces,
+canonical authorization and parent dependency stages unchanged. The prior
+scoped observer established63 serial SDK calls for63 statements; the separate
+C2 all-table batch fixture was not this path. Cloudflare's D1 batch API preserves
+statement/result order and executes the statements transactionally; query and
+binding limits remain per statement. No new SQL or authorization relaxation.
+
+Keep authorization SELECTs sequential, first-primary session and all bound
+WHERE clauses. After access resolution, batch known-input queries within
+properties, then rooms, then contracts; only then batch independent remaining
+tables and referenced-user groups. Each SDK batch is bounded to80 statements;
+value selections retain80-key chunks. Preserve per-group last-wins merging,
+source/key order, null omission/JSON types and per-statement10001 sentinel /
+>10000 rejection. Result count/array/success or decoding failure throws, with
+no partial response, fallback retry or cross-request cache.
+
+Existing seven exact GAS parity requests now use7 single calls plus5 batch
+calls, the same63 statements/one primary session. Batch sizes3/4/4/43/2.
+Final local summed SDK-call3–5ms and read/validation6.058–14.061ms are one sample
+per route, not p95 or production performance. Full HTTP freshness/session/
+provider/GAS authority costs are omitted. Calls-cap regression RED1/1→GREEN1/1.
+Corrupted real D1 JSON and a missing operational table both return503/data:null
+without partial rows or diagnostic details. The first new test's undefined
+expectation was corrected to the existing API's null; runtime response unchanged.
+
+One static GPT-6 Astra/high review: P1=0/P2=1/minor=0. The161-parent fixture had
+largest stage73, not an80-statement split; numeric observer RED confirmed
+[3,6,8,73,6]. Fixed with241 parents and actual[3,7,10,80,8,8], preserving all241
+property/legacy-room/tenant/referenced-user IDs in source order, deduplication,
+a final tail-table row and exact GAS rooms parity. The review's proposed85 was
+a static estimate; an intermediate exact80+5 assertion failed (Worker25/26).
+Ruling: require a full80 plus a nonempty bounded tail, rather than its estimated
+remainder. Actual88 statements are retained, not removed to force85. Cost if
+wrong: missing a split/tail could hide dropped scoped rows; explicit tail row,
+full ordering and parity assertions guard that behavior. Fixed target1/1 and
+final complete affected Worker26/26,0 fail/cancel/skip; no repeated review.
+Original seven100-sample fixture p951.610–2.174ms<50, no samples>=50. This does
+not resolve the earlier Linux latency failures or accept production latency.
+
+One full Node22.23.3/Core/ownedPG regression1718/1718,54.176s,0 fail/cancel/skip;
+owned PostgreSQL cleanup/listener stopped verified. Tested565-file snapshot
+29d25358c4bb1d7a7c48172ba0558366dd7473f858c4de0238c3811f0aaee30f
+pins uncommitted runtime on base5ea8c96. After review only the two Worker test
+files changed; all runtime/root-test bytes still match. Ruling: retain that
+full root result and rerun only the changed Worker suite; avoid an unchanged
+root rerun per the owner's fewer-tests direction. Cost: retained snapshot's
+platform/time provenance remains explicit. New exact-head CI still required.
+Validate72 backend/40 endpoint references/static release cache and diff checks PASS.
+
+All original gates remain: actual25/160 unchanged/unclaimed,320 declined,
+native trial STOP/eight callbacks incomplete; daily900s NOT_ACCEPTED, fresh72h
+and seven actual24-hour shadow days NOT_STARTED,500-room/Taipei/strict latency/
+real device/cutover unaccepted. Staged batching retains decoded results until
+its stage ends, so real capacity/memory acceptance is still required. No new
+Google/UI/RPC, credential, formal deployment, trigger, Property or switch action.
+Root WIP/S1 confidentiality preserved. Rollback source to5ea8c96; no release
+or formal data rollback is needed for this undeployed change.

@@ -1813,3 +1813,13 @@ readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
 | Full Worker |24/24,0 fail/cancel/skip; original100-sample p951.751–2.471ms<50 | No retry/warmup/exclusion/new gate; exact-head CI pending |
 | Root | Prior1718/1718 retained, all runtime/root-test bytes match snapshot | Only2 Worker test files changed, no unchanged root rerun |
 | Native/real gates |8 native/guard callbacks incomplete;25/160 unchanged/no claim,320 declined | No guessed UI/API substitute, no actual native/Google IO; all original gates retained |
+
+## 2026-10-15 — Scoped D1 batching
+
+| Area | Evidence | Acceptance boundary |
+| --- | --- | --- |
+| Scoped request cost | Existing seven exact GAS parity requests:63 statements,7 single+5 batch calls,one primary session; calls-cap RED→GREEN | Same queries/scope/projections; not full HTTP or production latency |
+| Chunk/tail mapping |241 parents/legacy rooms/tenants/users, observer[3,7,10,80,8,8], source order/dedup/tail row and GAS rooms parity | Review P2 fixed after161-row fixture exposed73-only stage; no guessed85 remainder |
+| Fail closed | Real D1 malformed JSON and missing operational table both503/data:null, no partial output | No retry/cache or diagnostic leak |
+| Local regression | Node22/Core/ownedPG1718/1718,cleanup verified; final Worker26/26 and original7x100 p951.610–2.174ms<50 | Root retained after only Worker test changes; exact-head CI required |
+| Real gates | Actual25/160 unchanged;900s/day,fresh72h,seven-day shadow,500-room/Taipei/latency/device/cutover remain unaccepted | No Google/native/formal changes |

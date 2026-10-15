@@ -475,3 +475,19 @@ authority costs; read_validation_ms also includes existing test assertions.
 They are neither p95 nor production speed proof. Batching may be investigated
 next while keeping identical bound SQL, result ordering, scopes and fail-closed
 checks. Original authorization/performance and all real gates remain unchanged.
+
+## 2026-10-15 — Preserve scope while batching dataset reads
+
+The scoped loader retains sequential authorization and first-primary sessions.
+After access, each dependency stage is awaited: properties→rooms→contracts,
+then independent operational tables and referenced users. Bound SELECT text,
+80-key chunks, foreign-Workspace/foreign-parent exclusions, result types,
+last-wins/source ordering and10001-row sentinel remain. Known-input statements
+share bounded80-statement SDK batches; exact count/array/success and decode
+validation fail closed. No client identity/scope, retry or shared cache is added.
+
+Rich fixture63 statements now require12 SDK calls instead of63. The241-parent
+case actually splits80+8 and preserves tail rows and GAS parity. Numeric batch
+sizes are test-only. Capacity/memory, full authenticated HTTP latency and real
+Google/900s/72h/seven-day/device gates remain separate and unaccepted. Rollback
+to5ea8c96 restores the serial source; this change is not formally deployed.

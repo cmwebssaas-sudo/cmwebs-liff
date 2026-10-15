@@ -1,5 +1,24 @@
 # CMWebs Current State
 
+## 2026-10-15 — Scoped loader uses12 calls for the same63 statements
+
+GPT-6.1 Sol/high. Sequential authorization, primary session, bound scope/parent
+checks and dependency stages are retained. Known-input dataset queries now
+batch by stage, up to80 statements per SDK call. Seven exact GAS parity requests
+use7 single+5 batch calls,63 statements unchanged. This is not full HTTP or
+production performance acceptance.241-parent case confirms80+8 tail mapping,
+source order/dedup and parity; malformed JSON/missing table fail closed503.
+
+Static review P2 coverage gap fixed via RED→GREEN; no minors/re-review. Full
+Node22/Core/ownedPG1718/1718 with cleanup verified; final affected Worker26/26,
+original7x100 p951.610–2.174ms<50. Root runtime/tests unchanged after only Worker
+test fixes; exact-head CI pending. Prior Linux latency cause remains UNRESOLVED.
+
+Actual25/160 unchanged/unclaimed,320 declined; actual trial STOP/eight native
+callbacks incomplete. Daily900s NOT_ACCEPTED; fresh72h/seven-day NOT_STARTED;
+500/Taipei/latency/device/cutover unaccepted. No Google or formal action.
+
+
 ## 2026-10-14 — Actual scoped D1 costs measured locally
 
 GPT-6.1 Sol/high. Two test-only files observe the actual access/data loader in

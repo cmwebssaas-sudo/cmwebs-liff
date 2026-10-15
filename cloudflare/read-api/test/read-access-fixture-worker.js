@@ -22,13 +22,14 @@ function observedDatabase(database,stats) {
     return {prepare:sql=>statement(session.prepare(sql)),batch:statements=>{
       const raw=statements.map(value=>original.get(value));
       if(raw.some(value=>!value))throw Error('TEST_STATEMENT_UNAVAILABLE');
+      stats.batch_sizes.push(raw.length);
       return observe(raw.length,true,()=>session.batch(raw));
     }};
   }};
 }
 export default {
   async fetch(request,env) {
-    const stats={primary_sessions:0,single_calls:0,batch_calls:0,statements:0,summed_call_ms:0};
+    const stats={primary_sessions:0,single_calls:0,batch_calls:0,statements:0,summed_call_ms:0,batch_sizes:[]};
     const database=observedDatabase(env.DB,stats);let response;
     if(new URL(request.url).pathname.startsWith('/http/')) {
       httpHandler ||= createReadHttpHandler({now:()=>Number(env.FIXTURE_NOW),authorityFetch:fetch,
