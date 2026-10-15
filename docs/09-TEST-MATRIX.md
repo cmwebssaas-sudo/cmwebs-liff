@@ -1892,3 +1892,26 @@ six real adapters use strict preparation, one wrapper and all17 cleanup actions.
 Review P2 await-mutation test RED→GREEN fixes fixed actor/phase/page snapshots.
 Full Node22/actual Core/owned PostgreSQL1790/1790 PASS,61.163s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched, no live native or
 Google acceptance.
+
+### 2026-10-15 Fixed seven-source release transport
+
+Seven approved F aliases now have fixed Apps Script GET adapters: original
+project/editor/versions/deployments, pinned library7/thin1 content and thin
+deployments. One phase-bound alias debit owns each response through body read
+or cancellation. Exact cached publisher scopes, request/version pinning,
+single-flight, post-admission expiry and immutable token/control snapshots apply.
+Reject pagination, malformed/foreign/oversized/redirected response and retry;
+return actual frozen bytes/metadata without synthesizing equality or acceptance.
+
+New source tests34/34 PASS after actual RED0pass/34fail. Combined with canonical
+driver91/91 PASS: fourteen real transport callbacks in fake Google responses use
+the original F/S ledger and held lock across both phases; a paginated version
+list stops before compatibility RPC. Independent incremental review found no
+actionable issue. Full regression/validate results are recorded in the execution
+record when complete. No live Google/credential/counter/native proof follows.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1826/1826 PASS,62.802s,zero
+fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40
+endpoints/static cache/diff PASS. No Apps Script/Worker change, so no repeat of
+unchanged native Apps Script or local Worker capacity runs. Source equality,
+remaining native callbacks and full native-window/quota acceptance stay gated.

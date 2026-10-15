@@ -3317,3 +3317,56 @@ wording clarified; no remaining actionable findings. Owner approval still
 pending. Validate72 backend/40 endpoint/static cache/diff PASS. Both exact-head
 CI jobs have only the same runner deprecation/migration notices; footers and
 annotations read. No Google operations, counter claim or new trial occurred.
+
+## C3 fixed seven-source release readback transport — 2026-10-15
+
+Recommended model/speed remains GPT-6.1 Sol/high for credential/IO boundaries.
+Added read-authority-release-source.mjs for seven fixed approved F observations:
+original project/editor/versions/deployments, fixed library7/thin1 content and
+thin deployments. These use existing publisher scopes and cached synchronous
+credentials; construction performs no credential/account/source/counter IO.
+Driver assigns its own before/after F alias; admission owns the full response
+read/cancellation under the canonical lock. Exact project/version/field masks,
+manual redirect handling, byte bounds, strict shapes, immutable snapshots,
+post-debit expiry and single-flight apply. Pagination or failed/malformed IO
+stops without retry. Actual frozen source bytes/metadata remain available to the
+trusted equality verifier; the adapter does not assert source equality, full
+native evidence, token holder identity or acceptance.
+
+Official API shapes/methods verified against Google primary documentation:
+[project metadata](https://developers.google.com/apps-script/api/reference/rest/v1/projects/get),
+[fixed or editor content](https://developers.google.com/apps-script/api/reference/rest/v1/projects/getContent),
+[versions](https://developers.google.com/apps-script/api/reference/rest/v1/projects.versions/list),
+[deployments](https://developers.google.com/apps-script/api/reference/rest/v1/projects.deployments/list).
+No new route, Scope, account, trial RPC or production surface was introduced.
+
+New tests34 had actual RED0pass/34fail before implementation, then34/34 PASS.
+Combined canonical-driver91/91 PASS: fourteen source transport callbacks in fake
+Google responses debit F before/S after in the original ledger, peer control
+cannot enter while the actual source callback owns the lock, and a paginated
+version list is charged then denies compatibility RPC. Remaining equality and
+native fields in that integration test are labeled synthetic fixtures, not real
+Google acceptance. Independent incremental review found no actionable issue.
+Reviewed three code/test pins remained unchanged through final verification.
+
+One full Node22.23.3/actual Core/owned PostgreSQL regression1826/1826 PASS,62.802s,
+zero fail/cancel/skip; owned cluster cleanup/listener stop verified. Tested572-file
+snapshot00fce357081745f55ad66ced5f00aaf1c7cf205448fb35105e07cad4809579cc;
+only documentation changed afterwards. Validate72 backend/40 endpoint references/
+static cache/diff PASS. Apps Script and Worker bytes unchanged: no redundant
+native test or Worker performance rerun. Prior documentation head5c6c87b CI
+38748152181 rental1785/1785 and Worker26/26/two dry runs SUCCESS; both footers
+and annotations read, rental log truncated, runner notices only. New code-head
+CI remains separate until read back.
+
+Actual Google counter25/160 remains byte-identical and unclaimed. Credential
+purpose amendment is still pending owner approval; current P2/P2 policy is not
+silently changed. Remaining complete native/source/identity/quota windows,
+native settings/audience/client/trigger callbacks and actual terminal T3 binding
+remain unaccepted. No Google/native/formal data/Properties/trigger/deployment
+operation. Approved parallel24h T0 NOT_STARTED; original privacy, daily900s,
+freshness, performance and physical-device gates remain, switches off.
+
+Rollback this undeployed transport to5c6c87b25739778a66541e063ec1fe16de9e486e;
+preserve original claimed journals/copied cleanup if ever created, without
+credential refresh/replay/refund. Root WIP and private S1 boundary preserved.

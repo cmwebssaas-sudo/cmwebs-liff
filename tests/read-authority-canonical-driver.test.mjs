@@ -11,8 +11,10 @@ import {createAuthorityTrialMetadataAdapters} from '../scripts/read-authority-tr
 import vm from 'node:vm';
 import {createAuthorityNativeCapture} from '../scripts/read-authority-native-capture.mjs';
 import {createAuthorityNativeProducer} from '../scripts/read-authority-native-producer.mjs';
+import {createAuthorityReleaseSource} from '../scripts/read-authority-release-source.mjs';
 import {SINGLE_WRAPPER_TRIAL_DECISION_HASH as decisionHash,SINGLE_WRAPPER_TRIAL_OPERATIONS as fixedOperations} from '../scripts/read-authority-trial-budget-plan.mjs';
 const releaseAliases=fixedOperations.F.filter(v=>v.startsWith('wrapper-before.')).map(v=>v.slice('wrapper-before.'.length));
+const sourceAliases=['original-project','original-editor','original-versions','original-deployments','library-content','thin-content','thin-deployments'];
 
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z');
 function setup({strict=true}={}){
@@ -118,6 +120,39 @@ test('fixed metadata adapter uses ordinary before and paid S after in the same c
   credential:()=>({accessToken:'SYNTHETIC_METADATA_TOKEN',accountHash:s.options.expected.publisherHash,scopes:['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(v=>'https://www.googleapis.com/auth/'+v),expiresAt:clock+3600000,refreshTokenPresent:true}),
   fetcher:async()=>{io++;assert.equal(s.get().preparation.events.at(-1).kind,io===1?'ordinary':'S');return new Response(JSON.stringify({permissions:[]}));}});
  s.options.readRelease=async cap=>{for(const alias of releaseAliases){if(alias==='original-acl')await adapter.read('original-acl',{externalRead:io=>cap.externalRead(io,alias)});else await cap.externalRead(async()=>{},alias);}return s.release();};await driver(s).run('wrapper');assert.equal(io,2);assert.equal(s.get().spent,70);assert.equal(s.get().preparation.runtime.pending,null);
+});
+function sourceObserver(s,{paginate=false,onFetch=async()=>{}}={}){
+ let alias,phase,io=0;
+ const publisherScopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(v=>'https://www.googleapis.com/auth/'+v);
+ const adapter=createAuthorityReleaseSource({originalScriptId:s.options.expected.libraryId,thinScriptId:s.options.expected.thinScriptId,libraryVersion:7,publisherHash:s.options.expected.publisherHash,now:s.options.now,
+  credential:()=>({accessToken:'SYNTHETIC_SOURCE_TOKEN',accountHash:s.options.expected.publisherHash,scopes:publisherScopes,expiresAt:clock+3600000,refreshTokenPresent:true}),
+  fetcher:async url=>{
+   io++;const event=s.get().preparation.events.at(-1);assert.equal(event.action,'F:'+phase+'.'+alias);assert.equal(event.kind,phase==='wrapper-before'?'ordinary':'S');await onFetch(alias,phase);
+   const u=new URL(url),scriptId=u.pathname.includes(s.options.expected.thinScriptId)?s.options.expected.thinScriptId:s.options.expected.libraryId;let value;
+   if(u.pathname.endsWith('/content'))value={scriptId,files:[{name:'Synthetic',type:'SERVER_JS',source:'function observedSyntheticSource() {}'},{name:'appsscript',type:'JSON',source:'{}'}]};
+   else if(u.pathname.endsWith('/versions'))value={versions:[{scriptId,versionNumber:1}],...(paginate?{nextPageToken:'SYNTHETIC_NEXT'}:{})};
+   else if(u.pathname.endsWith('/deployments'))value={deployments:[{deploymentId:'SYNTHETIC_DEPLOYMENT_ID',deploymentConfig:{scriptId,versionNumber:1,manifestFileName:'appsscript'}}]};
+   else value={scriptId};return new Response(JSON.stringify(value));
+  }});
+ return {io:()=>io,read:async cap=>{
+  phase=cap.phase;s.calls.release++;
+  for(const item of releaseAliases){alias=item;if(sourceAliases.includes(item)){const packet=await adapter.read(item,cap);assert.equal(packet.trialAccepted,undefined);}else await cap.externalRead(async()=>{},item);}
+  // The remaining source equality/native acceptance fields are a fixture only.
+  return s.release();
+ }};
+}
+test('seven actual source transport callbacks use canonical F before and S after with one owned lock',async()=>{
+ const s=setup();await prepare(s);let enter,release,held=false;const entered=new Promise(r=>{enter=r;}),gate=new Promise(r=>{release=r;});
+ const observer=sourceObserver(s,{onFetch:async(alias,phase)=>{if(alias==='original-editor'&&phase==='wrapper-before'){held=true;enter();await gate;held=false;}}});s.options.readRelease=observer.read;
+ const run=driver(s).run('wrapper');void run.catch(()=>{});await entered;let peerIO=0;
+ try{assert(held);await assert.rejects(createAuthorityPreparationControl(s.controlOptions).withRuntime(trial.canonicalAuthorityTrialBinding(s.options.expected),async()=>{peerIO++;}),/TRIAL_STOPPED/);assert.equal(peerIO,0);}finally{release();}
+ assert.deepEqual(await run,{compatible:true});assert.equal(observer.io(),14);assert.equal(s.get().spent,70);assert.equal(s.calls.rpc,1);
+ for(const phase of ['wrapper-before','wrapper-after'])for(const alias of sourceAliases)assert.equal(s.get().preparation.events.filter(e=>e.action==='F:'+phase+'.'+alias).length,1);
+ assert(!readFileSync(s.path,'utf8').includes('SYNTHETIC_SOURCE_TOKEN'));assert(!readFileSync(s.path,'utf8').includes('observedSyntheticSource'));
+});
+test('source pagination is charged in canonical F and prevents the compatibility RPC',async()=>{
+ const s=setup();await prepare(s);const observer=sourceObserver(s,{paginate:true});s.options.readRelease=observer.read;
+ await assert.rejects(driver(s).run('wrapper'),/TRIAL_STOPPED/);assert.equal(observer.io(),3);assert.equal(s.get().spent,30);assert.equal(s.calls.rpc,0);assert.equal(s.get().preparation.state,'stopped');
 });
 for(const status of [302,500])test('execution transport rejected status '+status+' awaits body cancellation before releasing',async()=>{
  let cancel,done=false;const gate=new Promise(r=>{cancel=r;}),transport=trial.createGoogleExecutionTransport('SYNTHETIC_DEPLOYMENT_ID',async()=>({status,body:{cancel:async()=>{await gate;done=true;}}}));
