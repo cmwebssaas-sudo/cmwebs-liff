@@ -1,7 +1,7 @@
 // Local preparation only. Trusted orchestration pins IO and actual Google gates.
 // No counter mutation, child, account, credential or trial RPC at construction.
 import {spawn} from 'node:child_process';
-import {getAuthorityTrialPolicy} from './read-authority-trial-budget-plan.mjs';
+import {getAuthorityTrialPolicy,NATIVE_IO_DECISION_HASH,normalizeAuthorityNativeTargets,normalizeAuthorityNativeOperation} from './read-authority-trial-budget-plan.mjs';
 import {resolve,dirname} from 'node:path';
 import {userInfo} from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -13,9 +13,11 @@ const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v),integer=Number.isS
 const only=(v,keys,required=keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>keys.includes(k))&&required.every(k=>Object.hasOwn(v,k));
 export function createAuthorityPreparationControl(input){
  try{
-  if(!only(input,['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now','pause','decisionHash'],['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt']))stop();
+  if(!only(input,['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now','pause','decisionHash','nativeTargets'],['path','epoch','approvalHash','proposalHash','legacySha256','importedReads','expiresAt']))stop();
   const {epoch,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,now=Date.now,pause=delay}=input;
-  const policy=Object.hasOwn(input,'decisionHash')?Object.freeze({decisionHash:input.decisionHash}):Object.freeze({});
+  const native=input.decisionHash===NATIVE_IO_DECISION_HASH;
+  if(!native&&Object.hasOwn(input,'nativeTargets'))stop();
+  const policy=Object.hasOwn(input,'decisionHash')?Object.freeze({decisionHash:input.decisionHash,...(native?{nativeTargets:normalizeAuthorityNativeTargets(input.nativeTargets)}:{})}):Object.freeze({});
   if('decisionHash' in policy){getAuthorityTrialPolicy(policy.decisionHash);if(importedReads!==25)stop();}
   if(typeof input.path!=='string'||typeof epoch!=='string'||!/^[-A-Za-z0-9_]{20,200}$/.test(epoch)||![approvalHash,proposalHash,legacySha256].every(digest)||!integer(importedReads)||importedReads<0||importedReads>141||!integer(expiresAt)||[now,pause].some(f=>typeof f!=='function'))stop();
   const path=resolve(input.path),binding=hash(JSON.stringify({path,epoch,approvalHash,proposalHash,legacySha256,importedReads,expiresAt,...policy}));let busy=false,localStop=false,currentOwned=null,scopeSerial=0;
@@ -112,7 +114,18 @@ export function createAuthorityPreparationControl(input){
    const finishCompatibility=entry=>tracked(async()=>{
     idle();if(pending!==1||failed||stopRequested()||eligibleEntry!==entry||!['wrapper','qualified'].includes(entry))stop();const t=now();if(!integer(t))stop();const r=view(await send({op:'rpc-finish',entry,now:t}));alive();if(failed||r.state!=='ready'||stopRequested())stop();eligibleEntry=null;
    });
-   const control=Object.freeze({decisionHash:policy.decisionHash??null,inspectCleanup,waitForExternalReadSlot:units=>tracked(()=>{idle();return wait('ordinary',null,units);}),reserveExternalReads:units=>tracked(()=>{idle();return request('debit','ordinary',null,units);}),externalRead:(io,charge=null)=>tracked(()=>action('ordinary',policy.decisionHash?charge:null,io)),restoreOriginalEditor:(name,io)=>tracked(()=>action('C',name,io)),cleanup:(name,io)=>tracked(()=>action('I',name,io)),...(mode==='preparation'?{handoff}:{inspectRuntime,dispatchCompatibility,settlementRead:(io,charge=null)=>tracked(()=>action('S',charge,io)),accountNative,finishCompatibility})});
+   const nativeRead=(descriptor,io)=>tracked(async()=>{
+    if(!native||typeof io!=='function')stop();const d=normalizeAuthorityNativeOperation(descriptor);
+    const charge='N:'+['stage','actor','target','operation','ordinal'].map(k=>d[k]).join(':');
+    const request=Object.freeze({...d,reference:policy.nativeTargets[d.target]});
+    return action(d.stage==='wrapper-after'?'S':'ordinary',charge,()=>io(request));
+   });
+   const completeNativePreparation=plan=>tracked(async()=>{
+    idle();if(!native||mode!=='preparation'||pending!==1||failed||stopRequested())stop();admissionBusy=true;
+    try{const pinned=JSON.parse(JSON.stringify(plan)),time=now();if(!integer(time))stop();view(await send({op:'native-ready',plan:pinned,now:time}));alive();}finally{admissionBusy=false;}
+   });
+   const ordinary=(io,charge)=>{if(typeof charge==='string'&&charge.startsWith('N:'))stop();return action('ordinary',policy.decisionHash?charge:null,io);};
+   const control=Object.freeze({decisionHash:policy.decisionHash??null,inspectCleanup,waitForExternalReadSlot:units=>tracked(()=>{idle();return wait('ordinary',null,units);}),reserveExternalReads:units=>tracked(()=>{idle();return request('debit','ordinary',null,units);}),externalRead:(io,charge=null)=>tracked(()=>ordinary(io,charge)),nativeRead,restoreOriginalEditor:(name,io)=>tracked(()=>action('C',name,io)),cleanup:(name,io)=>tracked(()=>action('I',name,io)),...(mode==='preparation'?{handoff,completeNativePreparation}:{inspectRuntime,dispatchCompatibility,settlementRead:(io,charge=null)=>tracked(()=>{if(typeof charge==='string'&&charge.startsWith('N:'))stop();return action('S',charge,io);}),accountNative,finishCompatibility})});
    const exited=()=>terminal||!child||child.exitCode!==null||child.signalCode!==null?Promise.resolve():terminalPromise;
    const fence=async()=>{
     if(!initialReady||stopFenced)return;

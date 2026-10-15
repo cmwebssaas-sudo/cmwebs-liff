@@ -57,7 +57,7 @@ export function createAuthorityTrialOrchestrator(input){
   const adapterControl=Object.freeze({get decisionHash(){
    if(!currentOrigin||origin.getStore()!==currentOrigin||!currentOrigin.accepting)stop();
    const selected=phase.capability.decisionHash;if(selected!==recoveryOptions.decisionHash)stop();return selected;
-  },externalRead:(...args)=>admission('externalRead',args),restoreOriginalEditor:(...args)=>admission('restoreOriginalEditor',args),cleanup:(...args)=>admission('cleanup',args)});
+  },externalRead:(...args)=>admission('externalRead',args),nativeRead:(...args)=>admission('nativeRead',args),completeNativePreparation:(...args)=>admission('completeNativePreparation',args),restoreOriginalEditor:(...args)=>admission('restoreOriginalEditor',args),cleanup:(...args)=>admission('cleanup',args)});
   const report=()=>freeze({source:'fixed-authority-trial-orchestrator',state:stage,stopRequested:stopped,handoff,entries:[...entries],restore:restoreOutcome,cleanup:outcomes.map(v=>({...v})),rollbackRuntime:{manifestSha256:rollbackPin.sha256,artifactChecks,counterChecks,failed:recoveryFailed},trialAccepted:false,rollbackComplete:false});
   const requestStop=async()=>{stopped=true;try{return await phase.requestStop();}catch(_){stop();}};
   const clean=async()=>{

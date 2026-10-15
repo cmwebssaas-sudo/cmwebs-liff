@@ -4,9 +4,9 @@ import {AsyncLocalStorage} from 'node:async_hooks';
 const stop=()=>{throw Error('TRIAL_STOPPED');};
 const denied=()=>{const p=Promise.reject(Error('TRIAL_STOPPED'));void p.catch(()=>{});return p;};
 const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
-const phases={'preparation-cleanup':new Set(['restoreOriginalEditor','cleanup','inspectCleanup']),preparation:new Set(['externalRead','restoreOriginalEditor','cleanup','inspectCleanup','handoff']),runtime:new Set(['externalRead','restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','dispatchCompatibility','settlementRead','accountNative','finishCompatibility']),cleanup:new Set(['restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','settlementRead','accountNative'])};
+const phases={'preparation-cleanup':new Set(['restoreOriginalEditor','cleanup','inspectCleanup']),preparation:new Set(['externalRead','nativeRead','completeNativePreparation','restoreOriginalEditor','cleanup','inspectCleanup','handoff']),runtime:new Set(['externalRead','nativeRead','restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','dispatchCompatibility','settlementRead','accountNative','finishCompatibility']),cleanup:new Set(['restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','settlementRead','accountNative'])};
 const independent=new Set(['restoreOriginalEditor','cleanup','inspectCleanup','inspectRuntime','settlementRead','accountNative']);
-const ioIndex={externalRead:0,restoreOriginalEditor:1,cleanup:1,dispatchCompatibility:1,settlementRead:0};
+const ioIndex={externalRead:0,nativeRead:1,restoreOriginalEditor:1,cleanup:1,dispatchCompatibility:1,settlementRead:0};
 export function createAuthorityPhaseControl(control){
  try{
   const prep=control?.withPreparation,runtime=control?.withRuntime,requestStop=control?.requestStop;
@@ -18,12 +18,15 @@ export function createAuthorityPhaseControl(control){
    // adapter object is intentionally reused by the trusted orchestrator.
    if(!g||g!==current||!g.active||!g.accepting)return denied();
    const fail=()=>{g.failed=true;return denied();};
-   if(!phases[g.phase].has(name)||typeof g.cap[name]!=='function'||(g.failed&&!independent.has(name)))return fail();
+   // Only the original runtime's post-RPC native plan may settle an UNKNOWN.
+   // Canonical S admission still requires its pending entry, day and deadline.
+   const settlement=independent.has(name)||(g.phase==='runtime'&&name==='nativeRead'&&args[0]?.stage==='wrapper-after');
+   if(!phases[g.phase].has(name)||typeof g.cap[name]!=='function'||(g.failed&&!settlement))return fail();
    const index=ioIndex[name],copy=[...args];
    if(index!==undefined){
     const io=copy[index];if(typeof io!=='function')return fail();
     copy[index]=(...values)=>{
-     if(origin.getStore()!==g||g!==current||!g.active||(!independent.has(name)&&(!g.accepting||g.failed)))stop();
+     if(origin.getStore()!==g||g!==current||!g.active||(!settlement&&(!g.accepting||g.failed)))stop();
      // C/I and settlement operations already owned before callback exit must
      // drain under this scope. New operations are denied by accepting=false.
      return io(...values);
