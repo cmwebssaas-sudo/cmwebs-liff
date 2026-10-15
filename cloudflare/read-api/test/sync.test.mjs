@@ -25,8 +25,10 @@ async function fixture(run, configured = true) {
     bindings: configured ? { READ_REPLICA_SYNC_SECRET: secret } : {} }));
   try {
     const db = await mf.getD1Database('DB');
-    const migration = await readFile(new URL('../migrations/0001_read_replica.sql', import.meta.url), 'utf8');
-    await db.batch(migration.replace(/^--.*$/gm,'').split(';').map(s => s.trim()).filter(Boolean).map(s => db.prepare(s)));
+    for(const file of ['0001_read_replica.sql','0002_read_projection.sql']) {
+      const migration = await readFile(new URL('../migrations/'+file, import.meta.url), 'utf8');
+      await db.batch(migration.replace(/^--.*$/gm,'').split(';').map(s => s.trim()).filter(Boolean).map(s => db.prepare(s)));
+    }
     const send = async (payload, options = {}) => {
       const body = JSON.stringify(payload);
       const timestamp = String(options.timestamp ?? Math.floor(Date.now() / 1000));
@@ -71,7 +73,7 @@ test('bad signatures, expired timestamps and nonce replay never alter replica ro
 
 test('whitelist, row integrity and 500-row bound fail before any sync state write', async () => {
   await fixture(async (db, send) => {
-    for (const payload of [snapshot([], { sheet:'V2_payment_accounts' }),
+    for (const payload of [snapshot([], { sheet:'V2_unapproved_accounts' }),
       snapshot([{...row('R1'), fields:{...row('R1').fields,bank_account:'synthetic'}}]),
       snapshot([{...row('R1'),row_hash:'0'.repeat(64)}]),
       snapshot(Array.from({length:501},(_,i)=>row('R'+i))),
@@ -79,6 +81,35 @@ test('whitelist, row integrity and 500-row bound fail before any sync state writ
       assert.equal((await send(payload)).status, 400);
     }
     assert.equal((await db.prepare('SELECT COUNT(*) AS count FROM sync_runs').first()).count, 0);
+  });
+});
+
+test('bank suffix projection rejects unmasked values before any state write',async()=>{
+  await fixture(async(db,send)=>{
+    const fields={payment_account_id:'SYNTHETIC_ACCOUNT',bank_account_last5:'000000012345'};
+    const row={row_key:fields.payment_account_id,row_hash:hash(canonical(fields)),fields};
+    assert.equal((await send(snapshot([row],{sheet:'V2_payment_accounts'}))).status,400);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS count FROM sync_runs').first()).count,0);
+    fields.bank_account_last5='•••• 12345';row.row_hash=hash(canonical(fields));
+    assert.equal((await send(snapshot([row],{sheet:'V2_payment_accounts'}))).status,200);
+    assert.equal((await db.prepare('SELECT bank_account_last5 FROM V2_payment_accounts').first()).bank_account_last5,'"•••• 12345"');
+  });
+});
+
+test('Date type metadata and room dependency capabilities are validated before storage writes',async()=>{
+  await fixture(async(db,send)=>{
+    const date='2026-09-30T16:00:00.000Z';
+    for(const metadata of ['not JSON','{}','["bank_account"]','["room_id"]','["replica_source_row"]','["created_at","created_at"]']) {
+      const fields={room_id:'SYNTHETIC_DATE_ROOM',created_at:date,replica_date_fields:metadata};
+      assert.equal((await send(snapshot([{row_key:fields.room_id,row_hash:hash(canonical(fields)),fields}]))).status,400);
+    }
+    const fields={room_id:'SYNTHETIC_DATE_ROOM',created_at:date,replica_date_fields:'["created_at"]',replica_room_bridge_supported:'true'};
+    assert.equal((await send(snapshot([{row_key:fields.room_id,row_hash:hash(canonical(fields)),fields}]))).status,400);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS count FROM sync_runs').first()).count,0);
+    fields.replica_room_bridge_supported=true;
+    assert.equal((await send(snapshot([{row_key:fields.room_id,row_hash:hash(canonical(fields)),fields}]))).status,200);
+    const stored=await db.prepare('SELECT created_at,replica_date_fields,replica_room_bridge_supported FROM V2_rooms').first();
+    assert.deepEqual(stored,{created_at:JSON.stringify(date),replica_date_fields:'"[\\"created_at\\"]"',replica_room_bridge_supported:'true'});
   });
 });
 

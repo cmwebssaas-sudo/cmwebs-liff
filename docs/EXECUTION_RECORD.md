@@ -550,6 +550,140 @@ native validation fails before deploying corrected synthetic source. Existing
 serving deployment and authoritative data retained; read flags remain off.
 Root WIP preserved. Temporary editor restoration is already complete.
 
+## 2026-10-12 — C2 local parity candidate
+
+Independent C2 branch based on C1 `8f1191a`; recommended GPT-6.1 Sol/high due to
+privacy and calculation parity. Owner explicitly approved the bounded summary
+decision in `READ-PARITY-DECISION.md`. Home actions and tenant list opt in;
+default/detail APIs retain full GAS data. Root checkpoint WIP was rechecked and
+preserved. C1's actual three-day test continues unchanged, earliest time gate
+October15 at05:39 Taipei; this candidate does not publish or merge ahead of it.
+
+Generated219 read-only functions from13 canonical GAS source files, with source
+SHA manifest and no eval/runtime VM. Twenty-table additive projection preserves
+JSON scalar types, real source order, masked bank suffix and genuine Date cells.
+Independent review found a Taipei month-boundary type-loss bug (home total
+10300→20600), reproduced red and fixed by date-type metadata/rehydration; new
+property owner rows now receive dirty marking. Existing optional room bridge
+dependencies fail closed for GAS fallback instead of returning a false unbound
+state. No V3 source rows or protected contract fields are added to replication.
+
+Formal read-only metadata/header/key-column checks confirm the four existing
+projection dependencies and unique tenant-view keys; optional bridge tables
+absent. Only aggregate evidence is public. Actual GAS vs whitelist/local D1/HTTP
+matches every field on six routes/both home sections with rich synthetic data.
+Each entry100 samples: local p95 below50ms (4.833–6.371ms in the full run), not
+remote/device proof. Affected28/28, unit863/863, Worker13/13, validate and
+diff-check pass. Full suite retains the known missing external Core fixture
+failure and four skips. Independent re-review passed all three corrections,
+affected28/28 and Worker13/13 (p95 4.760–6.557ms); PR/CI pending. Production routes
+all return503 until C3; C2 remote deployment/readback NOT_STARTED. Detailed
+publication order and rollback are in `READ-API-PARITY.md`.
+
+C2 draft [PR267](https://github.com/cmwebssaas-sudo/cmwebs-liff/pull/267) source
+`fa3300e` is stacked on C1 and attached to this task. CI38178464204 rental and
+read-worker both passed. It remains unmerged/unpublished while real C1
+acceptance runs; independent C3 local work proceeds on its own worktree.
+
+
+## 2026-10-14 — C2 D1 latency diagnostics without changing acceptance
+
+Recommended GPT-6.1 Sol/high for CI-versus-local measurement fidelity. C3 exact
+head7226076 CI38526286078 failed Worker23/24: home191.197ms and arrears58.361ms,
+with batch stages189/56ms. Other route p95 values7.751–16.016ms. The failure is
+retained; its cause remains UNRESOLVED. C3 changes cannot be assumed to cause
+or resolve a test-only full-table D1 batch latency. Its production loader uses
+Workspace-scoped SQL and is a separate performance boundary.
+
+One private exact-C3 probe preserved all parity assertions and7×100 samples,
+added numeric internal metadata only, and passed locally at1.722–2.390ms.
+Internal-duration sum p95~1ms,20 queries/68 rows. This ARM Node22 observation
+did not reproduce the Linux CI failure and is not production acceptance.
+
+C2's existing test entry now exposes batch/decode/route stages and a test-only
+numeric header with query count, rows read and cumulative internal duration.
+The pinned Miniflare5.20261006.1-alpha implementation includes row conversion
+and bookkeeping in duration; it is not pure SQL time or network-time proof.
+See https://developers.cloudflare.com/d1/worker-api/return-object/ for returned
+metadata fields. Missing/nonfinite metadata fails rather than becoming0.
+There are no extra SQL calls or application response changes. Production entry
+never imports this test entry. Metadata collection remains in decode; final
+header serialization remains in total client timing, outside server stages.
+
+Each original group still uses all100 samples and p95 index94/<50ms. The report
+adds stage p95, count>=50 and five paired slow examples, then fails after every
+group is reported. These examples never substitute for the full sample set;
+no warmup, retry, excluded sample or threshold change. Do not subtract stage
+percentiles from total time to infer a network/host cause.
+
+RED1/1 failed for absent metadata header. Affected actual Miniflare/GAS parity
+GREEN1/1 covered all700 observations, p951.729–2.605ms. One static independent
+review found no P1/P2/minor, diff check PASS, no benchmark rerun. One full root
+regression868/868, zero fail/cancel/skip, Node22.23.3 with pinned Core/disposable
+local PG16.14; final database/role/PG/listener cleanup verified. 494-source pin:
+`8a2ef9f169143983932d087663fa4de05ce623cf331634d4b717a7b40dae7d80`.
+One required full Worker suite13/13, zero fail/cancel/skip; pretest dry run PASS.
+All seven100-sample groups p952.117–2.954ms, zero samples>=50. Validate71/40/static
+and diff PASS. No unchanged suite was retried to obtain a passing result.
+
+The actual Google trial counter remains25/160, byte-identical and unclaimed;
+320 was declined. No Google/production source, secrets, Sheet data, trigger,
+Cloudflare configuration or formal flags change. C1 daily-runtime/72h, C3
+strict authority/latency and real trial, C5 seven-day and C6 device/cutover
+remain required. Root WIP retained. Rollback reverts these test/diagnostic
+changes to the prior C2 source; serving deployments and data are untouched.
+
+
+## 2026-10-14 — C2 feature stack aligned to current C1
+
+The prior pushed diagnostic head1ddad5b could not start PR CI because the C1
+base had advanced to6b90a4c with conflicting documentation. A private complete
+Git bundle retained the old head/history. Rebase replayed the C2 feature and
+observation on current C1; conflicts were documentation only and both records
+were preserved. Rebased92d2f67 changes runtime versus1ddad5b only by inheriting
+C1's reviewed local UTF-8 sizing helper/test. No formal branch merge/rollout.
+
+Full872/872, zero fail/cancel/skip, Node22.23.3/Core/disposable PG16.14; cleanup
+verified,2.606s.494-source snapshot:
+`ee5c2a7ae34109ff3326f33166b6f219f05db46fab614d5f7eeef4aec66a0cab`.
+Validate71/40/static PASS. All cloudflare/read-api bytes unchanged, so prior
+Worker13/13/p952.117–2.954ms is retained without a redundant Worker rerun.
+Prior868 evidence remains at its pre-alignment source. Explicit remote-head
+lease protects the feature push; PR stays Draft and original actual gates
+remain unmet. Root WIP and actual25/160/no-claim preserved. Prior bundle/source
+heads permit restoring the feature history without changing serving data.
+
+## 2026-10-14 — C2 Node supervisor timing observation
+
+Recommended model/speed: GPT-6.1 Sol / high for separate-process measurement
+boundaries. The aligned C3 CI38533367980 failed Worker23/24: room p95188.364ms
+against unchanged50ms,11/100>=50; paired batch235–286ms/internal0–1ms. Rental
+1702/1702 passed. Original C3 package already serializes test files; concurrent
+Node test files do not explain this failure. The parity fixture reads all20
+tables in one batch; production instead performs replica, identity/access and
+GAS authority checks before scoped dependent dataset reads. The fixture is
+not production authenticated latency evidence. Cause remains UNRESOLVED.
+
+Add only Node supervisor process CPU and event-loop active/idle/utilization
+metrics alongside existing five slowest paired observations. CPU is total
+Node process threads, may exceed wall time, and excludes the workerd child;
+ELU active duration includes blocking and is not CPU time. Probe starts are
+inside the original wall timer; diagnostic formatting remains after it, as
+with existing header metadata. No added SQL, IO, sample, warmup, retry or
+changed p95 index/50ms threshold. Never infer worker CPU/network from these
+numbers alone. One static review: P1/P2/minor0; no repeated review/benchmark.
+
+One complete affected Worker13/13,0 fail/cancel/skip; all seven100-sample
+groups p952.473–3.570ms and numeric guards PASS; pretest dry run PASS.
+Validate71/40/static and diff PASS. Ruling: retain previously complete872/872
+root/Core/ownedPG evidence because every runtime/root-test byte matches that
+verified snapshot; only this Worker test file differs. User requested fewer
+redundant tests; no separate implementation-mirroring test or unchanged root
+rerun. Cost: local root result retains its original platform/time provenance;
+new exact-head CI still required. No actual Google/counter/formal mutation.
+Rollback this test-only observer to priorC2a1d6406; original C3 failures and all
+900s/day/fresh72h/seven-day/500/strict latency/device gates remain unaccepted.
+
 ## C1 pre-read deadline guard — 2026-10-16
 
 Recommended GPT-6.1 Sol/high. Existing four-minute send deadline was enforced
@@ -575,3 +709,28 @@ only; T0 NOT_STARTED/alloff, actual daily900s/privacy/freshness/performance/devi
 gates unaccepted. Rollback undeployed increment to6b90a4ca3efc8a83b706268d5039f5d9bb988a7c,
 retain original serving/editor/data and dirty generations. Root WIP/privateS1/
 C5swap preserved. No formal release or failed-observation reset.
+
+## C2 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C2 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local874/874 PASS,2.614s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested494-file snapshot
+6ecc7f9b5b48f2221d941a537d420b9fda23fa8388338b852c0229816218cb0e;
+only docs afterwards. Validate71backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated capacity run. Exact-head CI must be read after push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance to1b3c18c25cddea0d38014ba948c7fb03c83da124;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.

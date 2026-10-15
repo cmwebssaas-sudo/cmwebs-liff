@@ -144,7 +144,7 @@ test('every standalone page transport attaches the current LIFF credential at ru
     const fn = ['jsonpRequestOnce', 'jsonpRequest', 'callApi'].map(name => ({ name, code: pageFunction(html, name) }))
       .find(f => f.code.includes('CMWebsLiffRequestAuth.withIdToken'));
     if (!fn) continue;
-    assert.ok(html.includes('src="liff-request-auth.js?v=20261012-line-identity-v1"'), file);
+    assert.ok(html.includes('src="liff-request-auth.js?v=20261012-read-summary-v1"'), file);
     const scripts = [], timers = new Map();
     const context = vm.createContext({ URL, URLSearchParams, Date, Math, Object, String, Number, Promise, Error,
       encodeURIComponent, location: { href: 'https://example.invalid/' + file },

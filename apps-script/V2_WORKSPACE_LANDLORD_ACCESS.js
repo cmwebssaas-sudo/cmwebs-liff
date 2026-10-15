@@ -512,9 +512,10 @@ function getWorkspaceLandlordContractRequestsInitByLineUid_(
  */
 function getWorkspaceLandlordHomeBootstrapByLineUid_(
   lineUserId,
-  section
+  section,
+  readView
 ) {
-  return workspaceLandlordProxy_(
+  const result = workspaceLandlordProxy_(
     lineUserId,
     'landlord_home_bootstrap',
     'read',
@@ -637,6 +638,49 @@ function getWorkspaceLandlordHomeBootstrapByLineUid_(
       };
     }
   );
+  return readView === 'summary' && section !== 'home'
+    ? workspaceLandlordReadSummary_(result, 'home') : result;
+}
+
+// Explicit summary reads retain display counters and statuses. Detail/default
+// reads continue to return their original GAS-only contract information.
+function workspaceLandlordReadSummary_(result, kind) {
+  if (!result || result.success !== true || !result.data) return result;
+  const data = Object.assign({}, result.data);
+  function compact(block, arrayKey, fields) {
+    const value = Object.assign({}, block || {});
+    if (Array.isArray(value[arrayKey])) value[arrayKey] = value[arrayKey].map(function (row) {
+      const summary = {};
+      fields.forEach(function (key) { if (Object.prototype.hasOwnProperty.call(row,key)) summary[key]=row[key]; });
+      return summary;
+    });
+    return value;
+  }
+  if (kind === 'home') {
+    data.contract_requests = compact(data.contract_requests,'requests',['request_id','status']);
+    data.payment_reports = compact(data.payment_reports,'reports',['report_id','status']);
+    data.messages = compact(data.messages,'messages',['message_id','status']);
+    data.landlord_initiated_contracts = compact(data.landlord_initiated_contracts,'items',['contract_id','contract_status','status']);
+  }
+  if (kind === 'tenants' && Array.isArray(data.tenants)) {
+    data.tenants = data.tenants.map(function (tenant) {
+      const summary = Object.assign({}, tenant);
+      delete summary.contract_history;
+      return summary;
+    });
+  }
+  return Object.assign({}, result, {data:data});
+}
+
+function testV2ReadSummaryProjection() {
+  const original={success:true,data:{contract_requests:{summary:{pending:1},requests:[{request_id:'SYNTHETIC_REQUEST',status:'pending',requested_terms_snapshot_json:'SYNTHETIC_PRIVATE'}]},
+    landlord_initiated_contracts:{items:[{contract_id:'SYNTHETIC_CONTRACT',contract_status:'pending_tenant_signature',identity_document_url:'SYNTHETIC_PRIVATE'}]}}};
+  const before=JSON.stringify(original),summary=workspaceLandlordReadSummary_(original,'home');
+  if(JSON.stringify(summary).indexOf('SYNTHETIC_PRIVATE')!==-1||JSON.stringify(original)!==before||summary.data.contract_requests.summary.pending!==1) throw new Error('Summary projection failed');
+  const tenants={success:true,data:{tenants:[{tenant_id:'SYNTHETIC_TENANT',unpaid_total_amount:1250,contract_history:[{contract_file_url:'SYNTHETIC_PRIVATE'}]}]}};
+  const list=workspaceLandlordReadSummary_(tenants,'tenants');
+  if(list.data.tenants[0].unpaid_total_amount!==1250||Object.prototype.hasOwnProperty.call(list.data.tenants[0],'contract_history')||!tenants.data.tenants[0].contract_history) throw new Error('Tenant summary projection failed');
+  return {success:true,code:'READ_SUMMARY_TEST_PASSED'};
 }
 
 

@@ -1,5 +1,21 @@
 # V2 回歸測試矩陣
 
+## 2026-10-12 C2 read parity candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Actual GAS vs whitelist → local D1 → six HTTP routes/both home sections | PASS: every field equal with rich private-field and real Date-cell fixtures | Synthetic local workerd; not production/phone |
+| Each entry100 samples, HTTP/D1 p95 | PASS:4.833–6.371ms, all below50ms | Local response consumption included; not remote latency |
+| Source order, scalar JSON, masked bank suffix, Date rehydration | PASS | Original source order including blank gaps; no private contract fields/raw account replicated |
+| Actual home renderer counters/default detail | PASS | Explicit summary approved by owner; default remains full GAS |
+| Source-derived optional bridge capability | PASS:503 when missing/unsupported; no false unbound result | C4 must retain GAS fallback; formal optional bridge tables currently absent |
+| Affected GAS/calendar/query boundaries | 28/28 PASS | Includes `testReadReplicaProjection` and `testV2ReadSummaryProjection`; no Sheet writes |
+| Unit / Worker / validate / diff-check | 863/863 /13/13 /PASS /PASS | Source evidence |
+| Full repository suite | 863 pass /1 existing external Core fixture failure /4 skips | `PLATFORM_CORE_TEST_WORKTREE` unavailable; external PG acceptance not claimed |
+| C1 actual three days / C3 auth / C2 publication | RUNNING /NOT_STARTED /NOT_STARTED | Production read paths stay closed; no gate skipped |
+
+Source manifest, schema, review, release and rollback: `READ-API-PARITY.md`.
+
 ## 2026-10-12 R0 records and source reconciliation
 
 | Check | Result | Evidence boundary |
@@ -1305,6 +1321,35 @@ are tracked separately; this diagnostic is not a canonical sync fix.
 
 See EXECUTION_RECORD.md for immutable source snapshot, limits and rollback.
 
+
+## 2026-10-14 — C2 D1 internal versus batch timing
+
+| Check | Result | Boundary |
+| --- | --- | --- |
+| Header/stage observation | RED missing header; actual parity GREEN1/1, all700 samples | Numeric test-only metadata; no extra SQL or body changes |
+| Independent review | Static PASS, no P1/P2/minor; diff PASS | No repeated benchmark or full suite |
+| Full root / Worker | 868/868 and13/13, no fail/cancel/skip; validate71/40/static PASS | Node22.23.3/macOS/Core/local PG cleanup; Worker pretest dry run |
+| Full local Worker p95 | All seven groups100 each,2.117–2.954ms; zero>=50 | All samples retained; original index94/<50ms unchanged |
+| Earlier C3 CI | Worker23/24 failed home191.197/arrears58.361ms | Cause UNRESOLVED; local pass is not CI reproduction or production acceptance |
+
+No retries/warmup/exclusions. Stage p95 values cannot be subtracted to infer
+network time; production Workspace-scoped loader/auth remains a separate gate.
+
+
+C2 stack alignment on C1's6b90a4c: full872/872 and validate71/40/static PASS;
+local Core/PG cleanup verified. Only inherited C1 UTF-8 source/tests changed
+runtime. Worker/test bytes unchanged; prior13/13 retained without a repeat.
+Documentation conflicts preserve both histories; no actual acceptance/rollout.
+
+### 2026-10-14 — C2 supervisor observation
+
+| Gate | Result | Evidence boundary |
+| --- | --- | --- |
+| Diagnostic review | Static P1/P2/minor0 | Node process CPU excludes workerd; ELU not CPU; no root-cause claim |
+| Affected Worker |13/13,0 fail/cancel/skip; seven100-sample p952.473–3.570ms<50 | Existing p95/gates retained, no retries or excluded samples; exact-head CI pending |
+| Root verification | Prior872/872 retained; all runtime/root-test bytes identical | New source change only Worker test; no redundant unchanged root rerun |
+| C3 preceding Linux CI |38533367980 rental1702 PASS/Worker23 PASS1 FAIL | Rooms188.364ms>50,11/100>=50; cause UNRESOLVED; no formal or real acceptance |
+
 ## 2026-10-16 — C1 expired-run Sheet reads
 
 | Check | Evidence | Boundary |
@@ -1315,3 +1360,28 @@ See EXECUTION_RECORD.md for immutable source snapshot, limits and rollback.
 
 No actual Google operations or observation restart. Existing failed execution
 history retained; approved accelerated24h clock NOT_STARTED, switches off.
+
+## C2 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C2 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local874/874 PASS,2.614s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested494-file snapshot
+6ecc7f9b5b48f2221d941a537d420b9fda23fa8388338b852c0229816218cb0e;
+only docs afterwards. Validate71backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated capacity run. Exact-head CI must be read after push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance to1b3c18c25cddea0d38014ba948c7fb03c83da124;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.

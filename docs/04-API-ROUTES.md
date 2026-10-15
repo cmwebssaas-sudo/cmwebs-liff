@@ -1242,3 +1242,26 @@ before operational read routes can be enabled. No synchronization configuration
 or trigger is automatically installed by this source change.
 
 See `READ-REPLICA-SYNC.md` for payload, failure codes, release and rollback gates.
+
+## Explicit read summaries and C2 candidate routes
+
+`landlord_home_bootstrap` with `section=actions&read_view=summary` keeps existing
+block summaries and item IDs/statuses; `landlord_tenants` with `read_view=summary`
+omits contract history. Both verified LINE GET and active Email POST forward the
+view. Default/detail calls retain their original full Apps Script responses.
+Only the home action and tenant-list callers opt in; snapshot keys and monetary
+calculations remain unchanged. Owner approval: `READ-PARITY-DECISION.md`.
+
+The candidate has six GET paths: `/v1/home`, `/v1/revenue`, `/v1/tenants`,
+`/v1/rooms`, `/v1/arrears`, `/v1/properties`. Actions/tenants require the explicit
+summary. Query parameters cannot supply identity or Workspace; duplicate/unknown
+parameters and writes fail before reader IO. Production currently returns503
+`READ_AUTH_NOT_READY` on these paths until C3 authorization and a scoped D1
+loader are accepted. Fixture access exists only in the test entry point.
+
+Date cells retain type metadata and source row order. Sync strictly validates
+both, masked bank suffixes and source-derived room-bridge capability. Rooms with
+unsupported/missing bridge capability return503 `READ_DEPENDENCY_UNSUPPORTED`
+for GAS fallback rather than an incorrect unbound response. See
+`READ-API-PARITY.md` for exact options, additive schema, local parity, measured
+latency, publication and rollback. No C2 operational endpoint is deployed yet.
