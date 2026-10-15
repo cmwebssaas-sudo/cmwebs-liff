@@ -306,3 +306,25 @@ Risk: future gallery helpers must remain independent of Sheet rows. Existing
 full-response/public-cover regressions guard that dependency. Rollback source
 and matching comparison identity to a043240 before any new observation.
 Only documentation changed after the verified source/tests/review.
+
+
+2026-10-15 fixed collation setup is now lazy and request-local in the Worker.
+Actual prior properties CPU/operation diagnostics identified499 native
+localeCompare calls per500-room read. Canonical GAS keeps its original fallback;
+Worker normalizes operands first and reuses one fixed zh-Hant/numeric/base
+collator, with no result/input/auth cache. The GAS oracle omits this adapter.
+TDD499→0 native localeCompare calls/one explicit collator per request;784 pairs,
+mutable/throwing conversions and exact whole-response parity pass. Relevant12/12;
+actual module testLandlordPropertiesInit in synthetic VM passes500 rooms/20
+properties (not native Google). Full1796/1796,57.624s,zero fail/cancel/skip with
+Core/ownedPG cleanup/listener verified; snapshotf4bbd4807b1927b9b28f4ebef04f2070bf062e5c1d64d03eb308c72dff38fb71.
+Worker36/36/bundle PASS; original seven100-sample local500 p9511.061–18.560ms<50.
+Static review0,validate72/40/cache/comparison178/diff PASS; only docs afterward.
+Comparison read-1d71effca3633cc6f6f5c904d5973abe7df8b05a8aa9f098d21d614f9c936ab3.
+Prior568344b Linux properties53.391ms FAIL is retained; exact new-head CI is
+required. No native/provider/authority/remote/Taipei/device/actual-day acceptance.
+All original900s/day/72h/seven-day gates remain, actual25/160/native STOP,
+flags off/endpoint blank, no formal changes. Risk: engine ICU/collation must
+continue to match real GAS; do not infer cross-engine equivalence from a Node
+oracle alone. Roll back source/adapter/generated comparison together to568344b
+before any new real observation.

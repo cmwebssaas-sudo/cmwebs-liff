@@ -4790,6 +4790,14 @@ function propertyRoomCompareText_(
   valueA,
   valueB
 ) {
+  // The Worker adapter reuses this fixed collation within one request. Native
+  // Apps Script has no adapter and retains its existing localeCompare path.
+  if (typeof runtimePropertyRoomCompareText_ === 'function') {
+    return runtimePropertyRoomCompareText_(
+      propertyRoomText_(valueA),
+      propertyRoomText_(valueB)
+    );
+  }
   return propertyRoomText_(
     valueA
   ).localeCompare(

@@ -2079,3 +2079,15 @@ Seven100-sample local500 fixture p9512.626–20.092ms<50; prior a043240 Linux
 rooms52.967ms FAIL retained, new-head CI required. Original real gates unchanged;
 actual25/160/native STOP, all flags off/endpoint blank, fresh72h/seven-day
 NOT_STARTED. No formal changes; rollback source/comparison to a043240.
+
+
+2026-10-15 C6 fixed collation: TDD499 repeated localeCompare calls→one explicit
+request-local sorter; full500-room response equals native GAS VM,784 pairs plus
+literal ordering/live coercions/ties/errors pass. Relevant12/12; module function
+testLandlordPropertiesInit VM500/20 PASS; full1796/1796 with Core/ownedPG cleanup;
+Worker36/36/bundle,static review0,validate72/40/cache/comparison178/diff PASS.
+Snapshotf4bbd4807b1927b9b28f4ebef04f2070bf062e5c1d64d03eb308c72dff38fb71.
+Seven100-sample local500 p9511.061–18.560ms<50; prior568344b Linux properties
+53.391ms FAIL retained. New-head CI/native/real gates still required; actual
+25/160/native STOP/off/blank; fresh72h/seven-day NOT_STARTED. Only docs after
+tests/review. Rollback source/adapter/comparison to568344b.

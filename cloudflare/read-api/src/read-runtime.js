@@ -57,6 +57,13 @@ export function createReplicaRuntime(dataset,options={}) {
   const localCache = new Map();
   const contexts = new Map();
   const cache = {get:key=>localCache.get(key)||null,put:(key,value)=>localCache.set(key,value)};
+  // Only fixed Intl configuration is reused, never strings or comparison
+  // results. This runtime belongs to one request and initializes lazily.
+  let propertyRoomTextCompare;
+  const runtimePropertyRoomCompareText_ = (left,right) => {
+    if(!propertyRoomTextCompare)propertyRoomTextCompare=new Intl.Collator('zh-Hant',{numeric:true,sensitivity:'base'}).compare;
+    return propertyRoomTextCompare(left,right);
+  };
   // Reuse request-local formatters; Date objects and authorization are never
   // cached. Non-string zones
   // retain Intl's coercion on every call, including mutable objects and errors.
@@ -109,7 +116,7 @@ export function createReplicaRuntime(dataset,options={}) {
   };
   const noop = () => {};
   return {
-    Date:RequestDate, Utilities:{formatDate, ...options.utilities},
+    Date:RequestDate, Utilities:{formatDate, ...options.utilities},runtimePropertyRoomCompareText_,
     SpreadsheetApp:{getActiveSpreadsheet:()=>ss}, CacheService:{getScriptCache:()=>cache},
     UrlFetchApp:{fetchAll: requests => requests.map(request => {
       // URLs have already passed the existing z3House public-page allowlist.

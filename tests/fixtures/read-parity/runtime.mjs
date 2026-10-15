@@ -47,6 +47,9 @@ export function originalGas(input=dataset,serverAccess=access,options={}) {
     static now(){return oracleNow;}
   }
   const services=createReadServices(input,serverAccess,{now:oracleNow,...options,dateConstructor:NativeGasClock});
+  // Actual GAS has no Worker collation adapter. Keep its native localeCompare
+  // as the independent oracle for the canonical text ordering rules.
+  delete services.runtimePropertyRoomCompareText_;
   const ctx=vm.createContext({...services,console});
   const manifest=JSON.parse(readFileSync(new URL('../../../cloudflare/read-api/read-source-manifest.json',import.meta.url),'utf8'));
   for(const file of Object.keys(manifest.sources)) vm.runInContext(readFileSync(new URL('../../../'+file,import.meta.url),'utf8'),ctx,{filename:file});
