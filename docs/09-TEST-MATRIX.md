@@ -2285,3 +2285,15 @@ publication and launcher source/recovery guard wiring remain unverified.
   NOT_RUN, counters31/160 unchanged, complete actual IO mapping still pending.
 - No production route/Schema/runtime/flags changed; no Cloudflare speed or
   cutover acceptance is inferred from these local results.
+
+
+### 2026-10-16 standalone linked accounting
+
+Original27 + stopped continuation1 + diagnosis3 remain immutable and cumulative.
+New55 RED→GREEN cases cover history/approval pins, strict integers, same-lock
+UNKNOWN accounting, union10/minute, one RPC, lifecycle and globally unique
+originalC2/I17 cleanup. Affected151/151; independent review0 findings; full
+2220/2220 with actual Core/ownedPG, zero skip and cleanup/stop verified.
+No actual new claim/Google/credential/resource operation; actual31/160 unchanged.
+Standalone resource recovery/driver wiring and complete actual UI map remain
+pending, so these tests do not authorize execution or production acceptance.

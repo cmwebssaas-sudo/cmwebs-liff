@@ -100,13 +100,32 @@ export const BOUNDED_CONTINUATION_POLICY=freeze({
  externalPrerequisites:['linked-canonical-claim-and-original-history','local-accounting-stop-cleanup-tests','independent-review','pinned-independent-recovery','fixed-private-destinations','durable-W0-before-first-Google-IO'],
  credentialRpcPrerequisites:['complete-actual-low-level-map','actual-adapter-wiring-tests','fixed-source-closure-no-child-execution']
 });
+// Select the owner-approved replacement without changing the old policy or
+// treating its stopped claim as live. Actual history is revalidated by ledger.
+export const STANDALONE_TRIAL_DECISION_HASH='02c75938cc8ecff17c907431db861613bb7f4e2af967f185c6b9933758f7dfd8';
+const standaloneOperations=Object.fromEntries(Object.entries(operations).filter(([key])=>!key.startsWith('C:')).map(([key,rule])=>[
+ key,key.startsWith('F:')&&key.endsWith('.library-content')?{...rule,target:'thin-project'}:rule
+]));
+export const STANDALONE_TRIAL_POLICY=freeze({...BOUNDED_CONTINUATION_POLICY,
+ decisionHash:STANDALONE_TRIAL_DECISION_HASH,stage:'standalone-compatibility',
+ importedUnits:31,fixedFutureUnits:87,bucketLimits:{...limits,C:0},operations:standaloneOperations,
+ originalRestoreUnitsOutsideMap:2
+});
 // `*Eligible` denotes only the map's local arithmetic condition. It never
 // verifies prerequisites, starts W0, or grants an external operation capability.
 export function compileAuthorityContinuationPlan(input){
+ return compilePlan(input,BOUNDED_CONTINUATION_POLICY);
+}
+export function compileAuthorityStandalonePlan(input){
+ return compilePlan(input,STANDALONE_TRIAL_POLICY);
+}
+function compilePlan(input,policy){
  try{
+  const limits=policy.bucketLimits,operations=policy.operations,imported=policy.importedUnits;
+  const outsideRestore=policy.originalRestoreUnitsOutsideMap??0;
   input=snapshot(input);
-  if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==BOUNDED_CONTINUATION_DECISION_HASH||
-   !exact(input.history,['spent','limit'])||input.history.spent!==27||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
+  if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==policy.decisionHash||
+   !exact(input.history,['spent','limit'])||input.history.spent!==imported||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
    !Array.isArray(input.operations)||input.operations.length>131)stop();
   const ids=new Set(),seen=new Map(),unknownCosts=[],bucketUnits=Object.fromEntries(Object.keys(limits).map(k=>[k,0]));
   let research=0,preparation=0;
@@ -129,9 +148,9 @@ export function compileAuthorityContinuationPlan(input){
   if(research>8||preparation>16||Object.entries(bucketUnits).some(([k,n])=>n>limits[k]))stop();
   const missingOperations=Object.keys(operations).filter(k=>!seen.has(k)).sort();
   const fullyKnown=missingOperations.length===0&&unknownCosts.length===0&&input.mapComplete;
-  const minimumTotalUnits=27+input.operations.length+missingOperations.length;
-  const reservedTotalUnits=27+96+4+4+24+3+2;
-  const budgetFits=fullyKnown&&minimumTotalUnits<=158&&reservedTotalUnits===160;
+  const minimumTotalUnits=imported+input.operations.length+missingOperations.length;
+  const reservedTotalUnits=imported+policy.fixedFutureUnits+4+4+24+3+2+outsideRestore;
+  const budgetFits=fullyKnown&&minimumTotalUnits+outsideRestore<=158&&reservedTotalUnits<=160;
   // Counts bound the rows above; unknown/missing costs must not be reported as
   // measured bucket totals. Their one-operation lower bounds remain in minimum.
   const unknownBuckets=new Set([...unknownCosts,...missingOperations].map(k=>k.split(':')[0]));
@@ -139,9 +158,9 @@ export function compileAuthorityContinuationPlan(input){
   const preflightMapEligible=['P:caller-bind','P:publisher-bind'].every(k=>seen.get(k)===1)&&
    input.operations.filter(o=>o.bucket==='N'&&o.stage==='research').every(o=>o.units===1);
   return freeze({
-   source:'authority-continuation-offline-plan',stage:BOUNDED_CONTINUATION_POLICY.stage,
-   decisionHash:BOUNDED_CONTINUATION_DECISION_HASH,spent:27,limit:160,
-   fixedFutureUnits:96,minimumTotalUnits,totalUnits:fullyKnown?minimumTotalUnits:null,
+   source:'authority-continuation-offline-plan',stage:policy.stage,
+   decisionHash:policy.decisionHash,spent:imported,limit:160,
+   fixedFutureUnits:policy.fixedFutureUnits,minimumTotalUnits,totalUnits:fullyKnown?minimumTotalUnits:null,
    reservedTotalUnits,unusedReserve:2,bucketUnits:reportedBucketUnits,
    researchUnits:input.operations.some(o=>o.bucket==='N'&&o.stage==='research'&&o.units===null)?null:research,
    navigationControlUnits:input.operations.some(o=>o.bucket==='N'&&o.stage==='preparation'&&o.units===null)?null:preparation,

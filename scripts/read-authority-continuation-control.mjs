@@ -8,7 +8,7 @@ import {types} from 'node:util';
 import {randomBytes} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {setTimeout as delay} from 'node:timers/promises';
-import {BOUNDED_CONTINUATION_DECISION_HASH} from './read-authority-continuation-plan.mjs';
+import {BOUNDED_CONTINUATION_DECISION_HASH,STANDALONE_TRIAL_DECISION_HASH} from './read-authority-continuation-plan.mjs';
 const stop=()=>{throw Error('TRIAL_STOPPED');},integer=Number.isSafeInteger;
 const exact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
 function data(value){
@@ -64,15 +64,22 @@ function view(raw){
  return data(raw);
 }
 export function createAuthorityContinuationControl(input){
+ return createControl(input,false);
+}
+export function createAuthorityStandaloneControl(input){
+ return createControl(input,true);
+}
+function createControl(input,standalone){
  try{
   const o=options(input),config=data(o.config),now=o.now??Date.now,pause=o.pause??delay,guard=o.guard;
-  if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource'])||!isAbsolute(config.path)||config.decisionHash!==BOUNDED_CONTINUATION_DECISION_HASH||typeof now!=='function'||typeof pause!=='function')stop();
+  if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[])])||!isAbsolute(config.path)||config.decisionHash!==(standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||typeof now!=='function'||typeof pause!=='function')stop();
   const home=homedir(),env={PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei',HOME:home},source=fileURLToPath(new URL('./read-authority-continuation-budget.py',import.meta.url));
+  const stem=standalone?'.standalone':'.continuation';
   const nonce=randomBytes(32).toString('hex');let attempted=false,localStop=false,current=null,lastOwned=null,serial=0;
   const checked=()=>{const result=guard();if(types.isPromise(result))void Promise.prototype.then.call(result,()=>{},()=>{});if(result!==undefined)stop();};
-  const veto=()=>{if(localStop)return true;try{lstatSync(config.path+'.continuation-stop.json');return true;}catch(e){return e.code!=='ENOENT';}};
+  const veto=()=>{if(localStop)return true;try{lstatSync(config.path+stem+'-stop.json');return true;}catch(e){return e.code!=='ENOENT';}};
   const durableStop=async()=>{
-   const child=spawn('python3',[source,'--request-stop'],{stdio:['pipe','pipe','pipe'],env}),p=protocol(child);let acknowledged=false;
+   const child=spawn('python3',[source,standalone?'--standalone-request-stop':'--request-stop'],{stdio:['pipe','pipe','pipe'],env}),p=protocol(child);let acknowledged=false;
    try{const r=await p.send({path:config.path,epoch:config.epoch,binding:config.binding});if(!exact(r,['ok','stopRequested'])||r.ok!==true||r.stopRequested!==true)stop();acknowledged=true;}finally{await p.drain();}
    if(!acknowledged||child.exitCode!==0||child.signalCode!==null)stop();return true;
   };
@@ -133,8 +140,8 @@ export function createAuthorityContinuationControl(input){
     if(!directory.isDirectory()||directory.uid!==userInfo().uid||(directory.mode&0o7777)!==0o700)stop();
     fd=openSync(config.path+'.lock',constants.O_RDWR|constants.O_NOFOLLOW);const s=fstatSync(fd),named=lstatSync(config.path+'.lock');
     if(!s.isFile()||s.uid!==userInfo().uid||(s.mode&0o7777)!==0o600||s.nlink!==1||s.size!==0||s.ino!==named.ino||s.dev!==named.dev)stop();
-    child=spawn('python3',[source,'--inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
-    const ready=view(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;if(ready.state!=='ready'||ready.w0!==t||ready.expiresAt!==config.expiresAt)stop();alive(true);
+    child=spawn('python3',[source,standalone?'--standalone-inherited-lock':'--inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
+    const ready=view(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;if(ready.state!=='ready'||ready.w0!==t||ready.expiresAt!==config.expiresAt||(standalone&&ready.spent<31))stop();alive(true);
     result=await callback(cap);if(pending||failed||veto())stop();
     const ending=await exchange({op:'inspect'},true);
     // A returned callback/transport value never substitutes for postchecks.

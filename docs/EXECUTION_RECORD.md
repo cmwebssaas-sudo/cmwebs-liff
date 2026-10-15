@@ -3877,3 +3877,51 @@ Rollback: revert this source increment before deployment. Once synthetic
 publication is actually used, invoke its separately reserved close/readback and
 credential/access cleanup before reporting rollback. No production rollback or
 data deletion is required by this source increment. CI readback pending push.
+
+
+## 2026-10-16 — Standalone accounting extends the original owner
+
+GPT-6.1 Sol/high. Same C3 worktree/PR, owner-approved standalone scope. Existing
+Python ledger, JS owner and offline compiler now have an explicit standalone
+mode; original mode and stopped histories remain intact. No separate budget or
+controller framework is introduced. New mode validates immutable original27,
+stopped continuation1 and stopped diagnosis3 plus exact pinned owner approval,
+using the same original lock and original pinned C2/I17 child. It reports all31
+historical debits, includes them in rolling-minute admission, and preserves
+globally unique cleanup/restore actions and the160 cumulative maximum.
+
+New singleton claim/STOP is separate from old stopped claims. Construction is
+inert; every callback follows durable UNKNOWN, and stop drains entered IO before
+fd release. One RPC has a non-refundable360000ms charge; no retry/claim reset.
+Standalone mapping removes C library mutations and checks its single artifact
+at the isolated project. No map arithmetic is remote execution authorization.
+
+TDD: new55 cases (8 map,6 owner,41 Python), including strict-integer history
+regressions, observed RED→GREEN. Independent reviewer ran original/new affected
+151/151 PASS and reported0 actionable findings. Complete npm test with Node22,
+actual Core643c1b3 and newly owned PostgreSQL16.14:2220/2220 PASS, zero fail/
+cancel/skip,83.463s. Database/role cleanup and final stopped/closed PostgreSQL
+verified. Snapshot602paths d028f774a56eb13c2b441210d2515f689dd880be8f97aeee5b5a0e6cdd491291
+before this documentation-only evidence append. Validate72/40/static-cache and
+diff checks pass. No unchanged Worker/capacity benchmark was manually rerun.
+
+Prior source b048768 CI38816981459 terminal provider readback: rental2160/2160
+PASS (five Core/PG cases excluded there but included locally), Worker26/26 and
+both dry-runs PASS. Rental log is truncated; Worker log complete; footers and
+annotations read. Annotations only Node20 deprecation/Ubuntu26 migration. This
+is attributable to b048768, not the unpushed accounting increment. Earlier local
+2159/2161 realm timeouts remain retained with cause unresolved.
+
+Actual original/continuation raw hashes are unchanged, no standalone claim or
+Google/browser IO/debit exists; current actual total remains31/160. Original
+frozen rollback copy and root WIP unchanged. Driver, real operation map and
+independent standalone resource adapters still require integration: original
+cleanup adapter binds its old expiry and cannot restore new-window resources
+unchanged. Do not run the trial until frozen new adapter/source/expiry bindings
+and captured-holder recovery are verified. No formal data/config/deploy/flags
+changed; all actual C1/C3/C6 and accelerated observation/device gates remain.
+
+Rollback: revert this local increment before use; do not delete or rewrite any
+old claim, STOP or journal. Once actually used, drain its retained real owner and
+use the reserved original C/I authority with the fixed new resource bindings.
+Exact-head CI for this increment remains pending push/readback.
