@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-ae3a60f8ba10927297da320919eb4bc0138b912bca7fd636081a765dfb41cbed",
+  "comparison_version": "read-935c6be0704ccc5b09e71143e016ceeee76b78f29f608456c25da77dd554bbdf",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -91,6 +91,7 @@
     "cloudflare/read-api/migrations/0002_read_projection.sql": "d834d2e0f4a8b23fb3cd9c41d910d1560951118843f301b7d9017b5e54372ec5",
     "cloudflare/read-api/migrations/0003_read_projection.sql": "9166a38c617c26ef516e49554faa8e47d8e6b071a5ac3074014d2977696e1da7",
     "cloudflare/read-api/migrations/0004_shadow_observation.sql": "7371caf7bfb7e9b033581db42fb2b580c08ca7177c6f391c40f27367e16d0d41",
+    "cloudflare/read-api/migrations/0005_read_scope_indexes.sql": "edc49761f974936910189d4777dbba97942f11f20585bc5fcfdd3248ed275d07",
     "cloudflare/read-api/package-lock.json": "d7bc7ef8bbfbc4b2a0153e7b9f6b5fbaf26ac33818a0000bfe3be3b719158293",
     "cloudflare/read-api/package.json": "0855e510e718cdac2f3dd272f8dd8ec60e3e9ab101aa1d7f482ee0efa8b9deba",
     "cloudflare/read-api/read-source-manifest.json": "afa0a9a692254d98453967c2f750d43b374844395dd197a7a3b83852e4bd0058",

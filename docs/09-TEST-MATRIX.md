@@ -2657,3 +2657,65 @@ pins,day/deadline,UNKNOWN and matching cleanup are retained. No Google/counter/
 realm/credential/formal-data operation or T0 in this integration. Keep formal
 flags off. Rollback this undeployed final merge to3b09e8f without altering the
 original stopped trial or replaying spent purposes;no remote rollback inferred.
+
+
+## C6 Workspace scope indexes — 2026-10-16 (local candidate)
+
+Recommended GPT-6.1 Sol/high for query-plan and privacy parity review. A private
+single-observation profile at HEAD901172ca showed loadDataset18–21ms and
+21937 D1 rows read per signed HTTP request,including14382 in one80-statement
+batch. Decode1–3ms,calculation2–10ms and serialization0–2ms overlap with other
+phases;these coarse instrumented observations are not p95 or CPU attribution.
+Seven original-GAS parity checks and seven observations returned HTTP200 with
+14 signed-authority/unique-nonce/primary-D1 checks. The initial64-shape observer
+failure and the second runner's stale707-footer assertion(14!=707,exit1) remain
+retained. Independent post-exit verification confirms complete14-record data,
+source guard,disposal and no remaining owned process;it does not turn either
+failed runner into acceptance. Query-plan capture is partial64shapes/20overflow.
+
+Additive migration0005 adds19 nonunique Workspace expression indexes only.
+The expression exactly matches the existing loader's
+`upper(trim(COALESCE(json_extract("workspace_id",'$'),'')))`.
+No runtime/auth/authority/query/binding/order/row-cap/cache or schema-field
+change;0001–0004 bytes remain intact. No index on global users,sync_runs,
+identity/parent fields or sort order. Existing sync tests now apply0005 too.
+
+One actual-D1 test seeds the same500-owned-room/foreign-decoy database once,
+compares the complete raw access/dataset JSON before/after applying0005,and
+records unchanged138 statements/SQL/params/order,7singles+6batches and one
+first-primary session. rows_read21886→5742(-73.764%);829427-byte JSON is exact,
+SHA25686dd1a969d2c9a2349e7062cb93cb65e8289e796f6c8adf91a79ae991bd3648b.
+This inspect path omits freshness,so138/13 differs intentionally from signed
+HTTP139/14. Mixed/padded Workspace values,SQLNULL,JSONnull,empty/spaces and
+foreign rows retain literal expected classifications. All19 indexes are
+nonunique;38 direct/blank actual plans SEARCH through the matching index.
+
+Focused actual-D1 RED21886==21886 becomes GREEN1/1. Affected49/49 pass includes
+scoped500-room HTTP/GAS parity,foreign/legacy/delegated/role/revocation and
+signed500-row sync insert/update/delete/type cases with new indexes. Parent
+migration-preserves-prior-bytes/comparison guards2/2 pass. Fresh sanitized
+Node22 Worker dry-run,validate72backend/40endpoint/cache/comparison179 and diff
+checks pass. Comparison generator produces
+read-935c6be0704ccc5b09e71143e016ceeee76b78f29f608456c25da77dd554bbdf;
+only0005 is added among normalized comparison sources. Asset version,blank
+endpoint and all formal flags remain unchanged. Fresh independent review found no actionable findings and independently
+verified all499 frozen non-document pins,original migration bytes,full raw JSON,
+SQL/parameters/order and38 plans. Exact-head CI remains pending;no huge local suite,
+700-request diagnostic or unchanged capacity benchmark rerun for this increment.
+
+Scan reduction is proven only on this local actual-D1 synthetic fixture.
+Previous actual-handler six-of-seven p95 failures and901172ca CI38785667919
+rental2083PASS/Worker40of41FAIL(properties53.742ms>50ms) remain evidence;
+no latency cure or production acceptance is claimed. T0 NOT_STARTED,all flags
+off. Actual C3 remains27/160 STOPPED with original claim/pins/day/deadline,
+P/N UNKNOWN and matching cleanup. No Google/counter/realm/credential/formal-data
+operation,second repair/rebind,refund,replay,deadline extension or deployment.
+
+Risk: index storage and write-maintenance overhead;actual sync regression
+passes but remote scale/storage has not been measured. Eventual in-plan release
+still requires all actual gates,current target identity,migration inventory,
+backup/readback and rollback preparation under the owner's batch authorization.
+Undeployed increment rollback is C6 HEAD901172ca6b0b5b52425aec665b5a580e4d933cf3,
+retaining evidence. For a future deployed rollback,use a separately reviewed
+additive migration dropping only the19 `idx_read_scope_<table>` indexes named
+in0005;preserve data and prior migrations. No remote rollback has occurred.

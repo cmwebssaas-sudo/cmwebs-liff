@@ -531,3 +531,22 @@ dispatch state、公司成員、報價、位置指引、附件、歷史房客訊
 合約資料夾。表內只存受保護 file_id/metadata；下載 API 重驗權限並回傳圖片內容，
 不建立公共 Drive URL。state_json 長度限制45000字元，附件每工單30張；達上限
 明確拒絕，不刪除歷史。journal 目前逐表掃描，擴大用量前需量測與索引/封存設計。
+
+
+## C6 D1 Workspace expression indexes — 2026-10-16 (undeployed)
+
+`cloudflare/read-api/migrations/0005_read_scope_indexes.sql` adds one nonunique
+`idx_read_scope_<table>` index to each of the19 replica tables with workspace_id.
+The indexed expression is exactly
+`upper(trim(COALESCE(json_extract("workspace_id",'$'),'')))`,matching existing
+scoped selections without changing stored JSON values,fields,keys,uniqueness,
+row order or authorization. V2_users and sync_runs are unchanged. Prior SQL
+migrations0001–0004 are byte-preserved. This does not change Google Sheets.
+
+Actual local same-database500-room regression preserves complete raw JSON and
+query order while rows_read falls21886→5742. See09-TEST-MATRIX.md for limits,
+write/delete/type coverage and retained failed performance gates. Index storage
+and maintenance overhead apply;no remote migration/deployment is claimed.
+Rollback before release:revert this increment. After a future authorized release,
+review an additive migration dropping only these19 named indexes;retain every
+row and previously provisioned migration. Performance/device gates stay open.
