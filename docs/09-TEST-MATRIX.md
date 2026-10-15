@@ -2009,22 +2009,23 @@ Snapshot52a8a374ae1eaf7fc2cdb35448fdddd769830bd6e4d121571301fd612abdd2de; only
 docs afterwards. Validate72/40/cache/diff PASS. Actual Google25/160 unchanged
 and unclaimed; native/parent-binding/quota/terminal and release gates remain.
 
-## C3 inherited C1 deadline guard — 2026-10-16
+## 2026-10-16 — C1 expired-run Sheet reads
+
+| Check | Evidence | Boundary |
+| --- | --- | --- |
+| Slow send reaches/exceeds the four-minute deadline | Actual-module dirty/full regressions RED2/2 then GREEN; full leaves all15 unattempted tables dirty and both paths release lease | Synthetic clock/network/Sheets; blocking native IO cannot be interrupted |
+| Affected module and independent review |19/19 PASS; no actionable findings | Projection Apps Script test function also runs in the VM; no Google execution |
+| Complete local regression |859/859 PASS,zero fail/cancel/skip,actual pinned Core/owned PG16.14; cleanup verified | Not native900s/day, actual authority, freshness, performance or device acceptance |
+
+No actual Google operations or observation restart. Existing failed execution
+history retained; approved accelerated24h clock NOT_STARTED, switches off.
+
 ## C2 inherited C1 deadline guard — 2026-10-16
 
 Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
 the existing four-minute send deadline, do not read/hash another Sheet. Full
 reconciliation still queues every unattempted table; completed matching dirty
 generations clear and lease cleanup remains. Blocking native calls cannot be
-interrupted and marker/lease IO may continue. Existing C3 projection/auth
-changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
-
-Affected24/24 PASS and shared incremental independent review found no actionable
-issue. One full local1938/1938 PASS,59.387s,zero fail/cancel/skip,
-Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
-cluster and closed listener verified. Tested577-file snapshot
-858d3792e10d131ff86555dc657cee4fd0537e9c70c941eea90f601f81b7c8ad;
-only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
 interrupted and marker/lease IO may continue. Existing C2 projection/auth
 changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
 
@@ -2040,19 +2041,31 @@ No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
 Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
 Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
 900s/day/performance/device gates remain unaccepted. Rollback this undeployed
-inheritance to01e2cff1ef314c9812c0520aa7fc77dd96ac6e54;
-retain all original claims/checkpoints/pinned cleanup and history, never reset
-or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
 inheritance to1b3c18c25cddea0d38014ba948c7fb03c83da124;
 retain all original claims/checkpoints/pinned cleanup and history, never reset
 or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
-## 2026-10-16 — C1 expired-run Sheet reads
 
-| Check | Evidence | Boundary |
-| --- | --- | --- |
-| Slow send reaches/exceeds the four-minute deadline | Actual-module dirty/full regressions RED2/2 then GREEN; full leaves all15 unattempted tables dirty and both paths release lease | Synthetic clock/network/Sheets; blocking native IO cannot be interrupted |
-| Affected module and independent review |19/19 PASS; no actionable findings | Projection Apps Script test function also runs in the VM; no Google execution |
-| Complete local regression |859/859 PASS,zero fail/cancel/skip,actual pinned Core/owned PG16.14; cleanup verified | Not native900s/day, actual authority, freshness, performance or device acceptance |
+## C3 inherited C1 deadline guard — 2026-10-16
 
-No actual Google operations or observation restart. Existing failed execution
-history retained; approved accelerated24h clock NOT_STARTED, switches off.
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C3 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1938/1938 PASS,59.387s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested577-file snapshot
+858d3792e10d131ff86555dc657cee4fd0537e9c70c941eea90f601f81b7c8ad;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated capacity run. Exact-head CI must be read after push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance to01e2cff1ef314c9812c0520aa7fc77dd96ac6e54;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
