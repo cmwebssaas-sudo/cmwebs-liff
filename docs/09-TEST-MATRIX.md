@@ -2219,3 +2219,32 @@ publication and launcher source/recovery guard wiring remain unverified.
 - Captured owner drained/closed; no rebind/new segment or compatibility acceptance.
 - Recovery checkpoint inspection pending terminal evidence; real upstream gates
   remain open and all formal read-path switches stay off.
+
+## C4 bounded-control integration — 2026-10-16
+
+Integrated C3 control/compiler/driver/recovery increment and its terminal trial
+evidence through the existing ordered Draft stack. Eleven inherited source/test
+paths match C3 byte-for-byte; no C4 runtime behavior changed. Documentation
+conflicts were append-only work-order records and both sides were preserved.
+
+Full npm test on merge 28a488bd4f23ae94aacb32a3db633e304ab19d84:
+2161/2161 PASS, zero failure/cancellation/skip,78.192s, Node22,
+pinned actual Core643c1b3 and a fresh owned PostgreSQL16.14 fixture. Each suite's
+database/role cleanup was verified; final cluster stopped and listener closed.
+Source catalog SHA256 f8fcb12ab1e42c6d262fe76de19457fcd13ab15e75f70b6d5b1d4f073d39a778.
+Validate72backend/40endpoint/static-cache and diff checks PASS. C6 additionally
+checks the179-source comparison identity. No unchanged capacity benchmark rerun;
+the prior C6 properties51.208ms p95 failure remains an unmet gate.
+
+Actual compatibility method ended at28/160 after the sole caller binding
+UNKNOWN. Ordinary owner is drained/closed; original27 remains byte-identical.
+No RPC or new credential/resource/configuration mutation occurred. The copied
+independent recovery subsequently verified the original stopped checkpoint after
+its full60s cooldown, with cActions/iActions empty and zero Google IO. This is
+local recovery availability, not remote rollback acceptance. No rebind, repair,
+refund or second segment is authorized. Original STOP/history/copies retained.
+
+No main merge, deployment or cutover. Formal configuration remains default-off,
+endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
+observation and device gates remain open. Rollback this undeployed integration
+to 22d888706716f504295b66cfcf0d25fdc6a11fe0 while retaining all trial evidence.
