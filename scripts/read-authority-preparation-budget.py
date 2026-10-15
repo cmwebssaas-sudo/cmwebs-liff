@@ -50,6 +50,7 @@ C=['restore-editor','read-restored-editor']
 R=['wrapper','qualified']
 DECISION='0b382d87214d9d1fbe658b1615176de48917666698e79092218f1691c358a675'
 CREDENTIAL_DECISION='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72'
+NATIVE_DECISION='3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9'
 PREPARATION_PURPOSES=['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo']
 FIXED={
  'A':['original-project','original-editor','original-versions','original-deployments','original-v1-content','original-cloud-backup','original-triggers-backup','original-properties-backup','original-container-acl'],
@@ -60,6 +61,27 @@ FIXED={
 RELEASE=['original-project','original-editor','original-versions','original-deployments','library-content','thin-content','thin-deployments','synthetic-acl','original-acl','original-settings','original-triggers','thin-settings','oauth-audience','oauth-client','caller-sheets-metadata']
 FIXED['F']=[phase+'.'+item for phase in ['wrapper-before','wrapper-after'] for item in RELEASE]
 NATIVE={'pages':4,'setupReads':2,'identityReads':1,'quotaReads':1}
+TARGETS={'original-settings':'publisher','original-triggers':'publisher','thin-settings':'publisher','oauth-audience':'publisher','oauth-client':'publisher','caller-executions':'caller','publisher-executions':'publisher'}
+def native_operation(v):
+ if type(v)!=dict or set(v)!={'stage','ordinal','actor','target','operation'} or v['stage'] not in ['research','preparation','wrapper-before','wrapper-after'] or not integer(v['ordinal']) or not 1<=v['ordinal']<=32 or v['target'] not in TARGETS or v['actor']!=TARGETS[v['target']] or v['operation'] not in ['navigate','snapshot','next-page','refresh','page-size','filter'] or (not v['target'].endswith('-executions') and v['operation'] not in ['navigate','snapshot']):fail()
+ return 'N:'+':'.join(str(v[k]) for k in ['stage','actor','target','operation','ordinal'])
+def native_plan(v,research,stored=False):
+ if type(v)!=dict or set(v)!=({'windows','operations','time','spent'} if stored else {'windows','operations'}) or type(v['windows'])!=list or len(v['windows'])!=4 or type(v['operations'])!=list or len(v['operations'])>32 or not 0<=research<=8:fail()
+ limits={};total=research;turns={}
+ for w in v['windows']:
+  if type(w)!=dict or set(w)!={'phase','actor','pages','setupReads','identityReads','quotaReads','settlementReads'} or w['phase'] not in ['wrapper-before','wrapper-after'] or w['actor'] not in ['caller','publisher']:fail()
+  key=w['phase']+':'+w['actor']
+  if key in limits or any(not integer(w[k]) for k in NATIVE) or not 1<=w['pages']<=4 or not 0<=w['setupReads']<=32 or w['identityReads']!=1 or w['quotaReads']!=1 or type(w['settlementReads'])!=int or w['settlementReads']!=0:fail()
+  limits[key]={k:w[k] for k in NATIVE};total+=sum(limits[key].values())
+ for i,op in enumerate(v['operations']):
+  native_operation(op)
+  if op['stage']=='research' or op['ordinal']!=research+i+1:fail()
+  if op['operation']=='next-page':
+   key=op['stage']+':'+op['actor'];turns[key]=turns.get(key,0)+1
+   if turns[key]>3 or (key in limits and turns[key]>=limits[key]['pages']):fail()
+ total+=len(v['operations'])
+ if total>32:fail()
+ return limits
 def policy_key(kind,action,decision):
  if kind=='C' and action in C:return ('C:'+action,1)
  if kind=='I' and action in I:return ('I:'+action,1)
@@ -72,31 +94,65 @@ def policy_key(kind,action,decision):
   return (action,1)
  if len(bits)==4 and bits[0]=='G' and bits[1] in ['wrapper-before','wrapper-after'] and bits[2] in ['caller','publisher'] and bits[3] in NATIVE:
   if (kind=='S')!=(bits[1]=='wrapper-after'):fail()
-  return (action,NATIVE[bits[3]])
+  return (action,32 if decision==NATIVE_DECISION and bits[3]=='setupReads' else NATIVE[bits[3]])
+ if len(bits)==6 and bits[0]=='N' and decision==NATIVE_DECISION:
+  if not bits[5].isdigit() or str(int(bits[5]))!=bits[5]:fail()
+  op=dict(zip(['stage','actor','target','operation','ordinal'],bits[1:]));op['ordinal']=int(op['ordinal']);native_operation(op)
+  if (kind=='S')!=(op['stage']=='wrapper-after'):fail()
+  return (action,1)
  if len(bits)==2 and bits[0]=='P' and kind=='ordinary':
-  if decision==CREDENTIAL_DECISION and bits[1] in PREPARATION_PURPOSES:return (action,1)
+  if decision in [CREDENTIAL_DECISION,NATIVE_DECISION] and bits[1] in PREPARATION_PURPOSES:return (action,1)
   if decision==DECISION and bits[1] in ['caller','publisher']:return (action,2)
  if action=='T:unknown-settlement' and kind=='S':return (action,3)
  fail()
-def policy_usage(events,decision):
- if decision not in [DECISION,CREDENTIAL_DECISION]:fail()
- used={}
+def policy_usage(events,decision,plan=None):
+ if decision not in [DECISION,CREDENTIAL_DECISION,NATIVE_DECISION]:fail()
+ used={};n=0;research=0;spent=25
+ if plan is not None:
+  research=sum(1 for e in events if type(e.get('action'))==str and e['action'].startswith('N:research:'))
+  limits=native_plan(plan,research,True)
+  if not integer(plan['spent']) or plan['spent']!=27+research or not integer(plan['time']):fail()
  for e in events:
   key,limit=policy_key(e['kind'],e['action'],decision)
   if e['units']!=1:fail()
-  if decision==CREDENTIAL_DECISION:
+  ready=plan is not None and spent>=plan['spent']
+  if ready and e.get('time',plan['time'])<plan['time']:fail()
+  if decision in [CREDENTIAL_DECISION,NATIVE_DECISION]:
    if key=='P:publisher-refresh' and used.get('P:publisher-bind')!=1:fail()
    if key=='P:publisher-userinfo' and used.get('P:publisher-refresh')!=1:fail()
    if e['kind']=='ordinary' and key.startswith(('A:','B:','C:','D:','E:')) and any(used.get('P:'+name)!=1 for name in PREPARATION_PURPOSES):fail()
+  if decision==NATIVE_DECISION:
+   if key in ['P:publisher-refresh','P:publisher-userinfo'] or key.startswith(('G:','H:')) or (e['kind']=='ordinary' and key.startswith(('A:','B:','C:','D:','E:'))):
+    if not ready:fail()
+   if key.startswith('N:'):
+    bits=key.split(':');n+=1
+    if int(bits[-1])!=n or any(used.get('P:'+p)!=1 for p in ['caller-bind','publisher-bind']):fail()
+    if bits[4]=='next-page' and sum(c for k,c in used.items() if k.startswith('N:'+bits[1]+':'+bits[2]+':') and ':next-page:' in k)>=3:fail()
+    if bits[1]=='research':
+     if ready or n>8:fail()
+    else:
+     if not ready or n-research-1>=len(plan['operations']) or native_operation(plan['operations'][n-research-1])!=key:fail()
   used[key]=used.get(key,0)+1
   if used[key]>limit:fail()
+  if decision==NATIVE_DECISION:
+   g=sum(count for name,count in used.items() if name.startswith('G:'))
+   required=sum(1 for phase in ['wrapper-before','wrapper-after'] for actor in ['caller','publisher'] for category in ['pages','identityReads','quotaReads'] if not used.get('G:'+phase+':'+actor+':'+category))
+   if n+g+required>32:fail()
+   if key.startswith('G:'):
+    bits=key.split(':')
+    if used[key]>limits[bits[1]+':'+bits[2]][bits[3]]:fail()
+  spent+=e['units']
  return used
 class Ledger:
  def __init__(self,cfg,inherited=False):
   keys={'path','epoch','binding','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now'}
-  if type(cfg)!=dict or not keys<=set(cfg) or set(cfg)-keys-{'mode','runtimeBinding','decisionHash'} or any(not digest(cfg[k]) for k in ['binding','approvalHash','proposalHash','legacySha256']) or not integer(cfg['importedReads']) or not 0<=cfg['importedReads']<=141 or not integer(cfg['expiresAt']) or not integer(cfg['now']) or not re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']): fail()
+  if type(cfg)!=dict or not keys<=set(cfg) or set(cfg)-keys-{'mode','runtimeBinding','decisionHash','nativeTargets'} or any(not digest(cfg[k]) for k in ['binding','approvalHash','proposalHash','legacySha256']) or not integer(cfg['importedReads']) or not 0<=cfg['importedReads']<=141 or not integer(cfg['expiresAt']) or not integer(cfg['now']) or not re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']): fail()
   self.strict='decisionHash' in cfg
-  if self.strict and (cfg['decisionHash'] not in [DECISION,CREDENTIAL_DECISION] or cfg['importedReads']!=25):fail()
+  if self.strict and (cfg['decisionHash'] not in [DECISION,CREDENTIAL_DECISION,NATIVE_DECISION] or cfg['importedReads']!=25):fail()
+  self.native=cfg.get('decisionHash')==NATIVE_DECISION
+  if self.native:
+   if type(cfg.get('nativeTargets'))!=dict or set(cfg['nativeTargets'])!=set(TARGETS) or any(type(v)!=str or len(v)>2000 for v in cfg['nativeTargets'].values()):fail()
+  elif 'nativeTargets' in cfg:fail()
   self.mode=cfg.get('mode','preparation')
   if self.mode not in ['preparation','runtime'] or (self.mode=='runtime' and not digest(cfg.get('runtimeBinding'))) or (self.mode=='preparation' and 'runtimeBinding' in cfg):fail()
   self.cfg=cfg;self.path=Path(cfg['path']);self.original=None
@@ -132,7 +188,7 @@ class Ledger:
    self.create_record(self.reg,{**value,'checkpoint':None})
   if 'preparation' not in v:
    if sha(raw)!=cfg['legacySha256'] or v['spent']!=cfg['importedReads'] or not 0<cfg['expiresAt']-cfg['now']<=21600000:fail()
-   v['preparation']={'version':1,'binding':cfg['binding'],'legacySha256':cfg['legacySha256'],'importedReads':cfg['importedReads'],'expiresAt':cfg['expiresAt'],'day':day(cfg['now']),'state':'ready','calls':[cfg['now']]*v['spent'],'events':[],'cActions':[],'iActions':[],**({'decisionHash':cfg['decisionHash']} if self.strict else {})}
+   v['preparation']={'version':1,'binding':cfg['binding'],'legacySha256':cfg['legacySha256'],'importedReads':cfg['importedReads'],'expiresAt':cfg['expiresAt'],'day':day(cfg['now']),'state':'ready','calls':[cfg['now']]*v['spent'],'events':[],'cActions':[],'iActions':[],**({'decisionHash':cfg['decisionHash']} if self.strict else {}),**({'nativePlan':None} if self.native else {})}
    self.persist(v)
   self.original=v;self.validate(v)
  def record(self,p):
@@ -161,7 +217,7 @@ class Ledger:
   if type(v)!=dict or set(v)-{'preparation'}!=keys or v['limit']!=160 or v['prior_limit']!=40 or v['kind']!='preparation-management-reads' or v['approval_sha256']!=c['approvalHash'] or v['proposal_sha256']!=c['proposalHash'] or not integer(v['spent']) or not 0<=v['spent']<=160:fail()
  def validate(self,v):
   self.base(v);p=v['preparation'];c=self.cfg
-  keys={'version','binding','legacySha256','importedReads','expiresAt','day','state','calls','events','cActions','iActions'}
+  keys={'version','binding','legacySha256','importedReads','expiresAt','day','state','calls','events','cActions','iActions'}|({'nativePlan'} if self.native else set())
   if type(p)!=dict or p.get('version') not in [1,2,3] or set(p)!=(keys|({'decisionHash'} if self.strict else set())|({'handoff'} if p['version']>=2 else set())|({'runtime'} if p['version']==3 else set())) or p['binding']!=c['binding'] or p['legacySha256']!=c['legacySha256'] or p['importedReads']!=c['importedReads'] or p['expiresAt']!=c['expiresAt'] or p['state'] not in ['ready','stopped'] or not re.fullmatch(r'\d{4}-\d{2}-\d{2}',p['day']) or any(type(p[k])!=list for k in ['calls','events','cActions','iActions']):fail()
   if self.strict and p['decisionHash']!=c['decisionHash']:fail()
   if len(p['events'])>160 or len(p['calls'])!=v['spent'] or any(not integer(t) for t in p['calls']) or len(set(p['cActions']))!=len(p['cActions']) or len(set(p['iActions']))!=len(p['iActions']) or any(a not in C for a in p['cActions']) or any(a not in I for a in p['iActions']):fail()
@@ -178,7 +234,10 @@ class Ledger:
     if e['units']!=1 or e['action'] not in (C if e['kind']=='C' else I):fail()
     (cs if e['kind']=='C' else ins).append(e['action'])
    total+=e['units'];times.extend([e['time']]*e['units'])
-  if self.strict:policy_usage(p['events'],c['decisionHash'])
+  if self.strict:policy_usage(p['events'],c['decisionHash'],p.get('nativePlan'))
+  if self.native and p['nativePlan'] is not None:
+   plan=p['nativePlan']
+   if day(plan['time'])!=p['day'] or plan['time']>=p['expiresAt'] or plan['spent']>v['spent'] or any(t>plan['time'] for t in p['calls'][:plan['spent']]):fail()
   if total!=v['spent'] or times!=p['calls'] or cs!=p['cActions'] or ins!=p['iActions'] or ('read-restored-editor' in cs and ('restore-editor' not in cs or cs.index('read-restored-editor')<cs.index('restore-editor'))):fail()
   if p['version']>=2:
    h=p['handoff']
@@ -230,10 +289,14 @@ class Ledger:
    if p['state']!='stopped':p['state']='stopped';self.persist(v)
   else:fail()
   if self.strict:
-   policy_usage(p['events']+[{'kind':kind,'action':action,'units':units}],self.cfg['decisionHash'])
+   policy_usage(p['events']+[{'kind':kind,'action':action,'units':units,'time':t}],self.cfg['decisionHash'],p.get('nativePlan'))
    if kind=='ordinary':
     if action.startswith(('A:','B:','C:','D:','E:','P:')) and p['version']!=1:fail()
     if action.startswith(('F:','G:')) and (p['version']<2 or rt['entries']):fail()
+    if self.native and action.startswith('N:'):
+     stage=action.split(':')[1]
+     if stage in ['research','preparation'] and p['version']!=1:fail()
+     if stage=='wrapper-before' and (p['version']<2 or rt['entries']):fail()
   recent=sorted(x for x in p['calls'] if t-x<60000);ms=0 if len(recent)+units<=10 else recent[len(recent)+units-11]+60000-t
   if not 0<=ms<=60000 or (kind in ['ordinary','R','S'] and (t+ms>=p['expiresAt'] or day(t+ms)!=p['day'])):fail()
   return v,ms
@@ -247,6 +310,15 @@ class Ledger:
   p['version']=3;p['runtime']=rt;rt['nativeMs']=q['nativeMs'];rt['pending']={'entry':q['entry'],'startedAt':t};rt['entries'].append({'entry':q['entry'],'startedAt':t,'beforeNativeMs':q['nativeMs'],'afterNativeMs':None,'executionHash':None,'complete':False})
   self.persist(v);return {**self.view(0),'startedAt':t}
  def command(self,q):
+  if type(q)==dict and q.get('op')=='native-ready':
+   v=self.current();p=v['preparation'];t=q.get('now')
+   if not self.native or set(q)!={'op','plan','now'} or self.mode!='preparation' or p['version']!=1 or p['state']!='ready' or self.stop_requested() or p['nativePlan'] is not None or p['cActions'] or p['iActions'] or not integer(t) or any(x>t for x in p['calls']) or t>=p['expiresAt'] or day(t)!=p['day']:fail()
+   used=policy_usage(p['events'],NATIVE_DECISION)
+   if any(used.get('P:'+name)!=1 for name in ['caller-bind','publisher-bind']):fail()
+   research=sum(1 for e in p['events'] if e['action'].startswith('N:research:'))
+   native_plan(q['plan'],research)
+   if v['spent']!=27+research:fail()
+   p['nativePlan']={**q['plan'],'spent':v['spent'],'time':t};self.persist(v);return self.view(0)
   if type(q)==dict and q.get('op')=='cleanup-inspect':
    if set(q)!={'op'}:fail()
    p=self.current()['preparation']
@@ -271,8 +343,9 @@ class Ledger:
   if type(q)==dict and q.get('op')=='handoff':
    v=self.current();p=v['preparation']
    if set(q)!={'op','runtimeBinding','expectedSpent','now'} or self.mode!='preparation' or p['version']!=1 or p['state']!='ready' or self.stop_requested() or p['cActions']!=C or p['iActions'] or not digest(q['runtimeBinding']) or not integer(q['expectedSpent']) or q['expectedSpent']!=v['spent'] or v['spent']>143 or not integer(q['now']) or any(t>q['now'] for t in p['calls']) or q['now']>=p['expiresAt'] or day(q['now'])!=p['day']:fail()
-   if self.cfg.get('decisionHash')==CREDENTIAL_DECISION:
-    used=policy_usage(p['events'],CREDENTIAL_DECISION)
+   if self.cfg.get('decisionHash') in [CREDENTIAL_DECISION,NATIVE_DECISION]:
+    if self.native and p['nativePlan'] is None:fail()
+    used=policy_usage(p['events'],self.cfg['decisionHash'],p.get('nativePlan'))
     if any(used.get('P:'+name)!=1 for name in PREPARATION_PURPOSES):fail()
    p['version']=2;p['handoff']={'runtimeBinding':q['runtimeBinding'],'time':q['now'],'spent':v['spent'],'eventHash':sha(compact(p['events']).encode())}
    self.persist(v);return {**self.view(0),'handoff':p['handoff']}

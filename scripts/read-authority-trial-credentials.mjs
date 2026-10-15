@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 import {types} from 'node:util';
 import {AUTHORITY_TRIAL_SCOPES} from './read-authority-trial-driver.mjs';
-import {CREDENTIAL_READBACK_DECISION_HASH} from './read-authority-trial-budget-plan.mjs';
+import {CREDENTIAL_READBACK_DECISION_HASH,NATIVE_IO_DECISION_HASH} from './read-authority-trial-budget-plan.mjs';
 const stop=()=>{throw Error('TRIAL_STOPPED');};
 const hash=v=>createHash('sha256').update(v).digest('hex'),integer=Number.isSafeInteger;
 const only=(v,keys,required=keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>keys.includes(k))&&required.every(k=>Object.hasOwn(v,k));
@@ -41,7 +41,7 @@ function sourceProfile(source){
  }finally{closeSync(fd);}
 }
 function validateConfig(decisionHash,expiresAt,now){
- if(decisionHash!==CREDENTIAL_READBACK_DECISION_HASH||typeof now!=='function')stop();const t=now();
+ if(![CREDENTIAL_READBACK_DECISION_HASH,NATIVE_IO_DECISION_HASH].includes(decisionHash)||typeof now!=='function')stop();const t=now();
  if(!integer(t)||!integer(expiresAt)||expiresAt-t<=360000||expiresAt-t>21600000)stop();return t;
 }
 export function createAuthorityPublisherCredentials(input){

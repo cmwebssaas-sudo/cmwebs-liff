@@ -3341,6 +3341,38 @@ inheritance to01e2cff1ef314c9812c0520aa7fc77dd96ac6e54;
 retain all original claims/checkpoints/pinned cleanup and history, never reset
 or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
 
+
+## 2026-10-16 — C3 approved bounded native IO controls
+
+Recommended model/speed: GPT-6.1 Sol/high for credential, budget and recovery
+boundaries. Owner explicitly approved READ-NATIVE-IO-DECISION presented SHA
+`3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9`.
+This approval supersedes the earlier pending status; no repeated approval needed.
+
+Implemented a new selector on the original canonical counter/claim and recovery
+path: pinned native targets/purposes, Nresearch8 with Pbind2, shared N/G32,
+one-time complete remaining-map admission before refresh/mutation/RPC, and
+phase/driver/credential/copied-binding integration. Original history25/limit160,
+F15 before/after, four mandatory windows, C2/I17/H1/T3, UNKNOWN debits, exclusive
+flock, same-day/deadline and no restart rules remain. Legacy selectors unchanged.
+
+Independent review found one P2: failed transport prevented post-RPC native N
+settlement. Reproduced RED and fixed only runtime wrapper-after admission;
+canonical pending, expiry, stage and exact-map constraints still apply. Complete
+frozen local regression1960/1960 PASS, zero fail/cancel/skip, pinned actual Core
+and owned PG16.14; teardown verified. Validation72/40/cache and diff checks PASS.
+No Apps Script source changed; remote test functions NOT_RUN. See09-TEST-MATRIX.
+
+Rollback: before an actual claim, revert this increment to the prior selector;
+after claim, retain original pins, copied recovery, history and UNKNOWN, stop
+ordinary IO and use existing independent cleanup only. Never replace the claim,
+deadline or copied runtime to resume a spent purpose. No actual claim/Google IO
+occurred; counter remains25/160. Real observer/authority/privacy/freshness/quota,
+900s/day, performance/device acceptance remain open. Formal off/T0NOT_STARTED.
+Root WIP/C5 swap/private S1 boundary preserved. Push to Draft PR268 and exact CI
+readback are the next release-preparation checks; no merge/deployment acceptance
+is inferred from this local result.
+
 ## C4 inherited C1 deadline guard — 2026-10-16
 
 Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
@@ -3377,3 +3409,24 @@ helpers inherited as local preparation only; unapproved native-IO proposal is
 absent. Real gates remain unaccepted/T0 NOT_STARTED/alloff/Google25 unchanged.
 Rollback this upstream alignment to329823894c19efd6ca75928838560c1b525be95a
 before any unclaimed trial; retain matching claimed runtime/cleanup if any.
+
+## C4 inherited approved C3 native IO controls — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Merged reviewed C3 b01e753 into the existing
+C4 feature branch without changing C4 routing or formal flags. All10 non-doc
+paths among the13-path C3 increment are byte-identical to C3. The two document
+conflicts preserve complete, separately labelled C1–C4 evidence blocks. The
+approved native-IO selector supersedes historical pending-approval text only;
+actual five-F/full-G/native acceptance remains unproved.
+
+Fresh Node22.23.3 authority regression1065/1065 PASS (30 test files,
+62.984s,zero fail/cancel/skip); validate72backend/40endpoint/cache and staged
+diff check PASS. No unchanged Worker capacity benchmark or cross-repository
+PostgreSQL suite rerun; upstream full1960 result remains C3 evidence only.
+Exact-head CI is pending after this push, not inferred from local checks.
+
+No account/Google/Cloudflare/credential/data/deployment operation in this
+integration; original counter/history/private S1/root/C5 swap untouched.
+Formal flags remain inherited off; no observation T0. Rollback this unclaimed,
+undeployed inheritance to918b4fbe99112f2099d84703f2ee2c61318f23e3;
+retain any independently established original claim/pins/history/cleanup.

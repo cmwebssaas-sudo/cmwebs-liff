@@ -9,6 +9,7 @@ import {createAuthorityPreparationControl} from '../scripts/read-authority-prepa
 import {trialEntryRuntime,trialSigned} from './fixtures/read-parity/trial-entry-runtime.mjs';
 import {createAuthorityTrialMetadataAdapters} from '../scripts/read-authority-trial-metadata.mjs';
 import vm from 'node:vm';
+import {createAuthorityPhaseControl} from '../scripts/read-authority-phase-control.mjs';
 import {createAuthorityNativeCapture} from '../scripts/read-authority-native-capture.mjs';
 import {createAuthorityNativeProducer} from '../scripts/read-authority-native-producer.mjs';
 import {createAuthorityReleaseSource,createAuthorityReleaseSourceVerifier} from '../scripts/read-authority-release-source.mjs';
@@ -16,6 +17,10 @@ import {buildAuthorityTrialArtifacts} from '../scripts/build-read-authority-tria
 import {SINGLE_WRAPPER_TRIAL_DECISION_HASH as decisionHash,SINGLE_WRAPPER_TRIAL_OPERATIONS as fixedOperations} from '../scripts/read-authority-trial-budget-plan.mjs';
 const releaseAliases=fixedOperations.F.filter(v=>v.startsWith('wrapper-before.')).map(v=>v.slice('wrapper-before.'.length));
 const sourceAliases=['original-project','original-editor','original-versions','original-deployments','library-content','thin-content','thin-deployments'];
+const nativeDecision='3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9';
+const nativeTargets={'original-settings':'https://script.google.com/home/projects/SYNTHETIC_ORIGINAL_SCRIPT_ID/settings','original-triggers':'https://script.google.com/home/projects/SYNTHETIC_ORIGINAL_SCRIPT_ID/triggers','thin-settings':'https://script.google.com/home/projects/SYNTHETIC_THIN_SCRIPT_ID/settings','oauth-audience':'https://console.cloud.google.com/auth/audience?project=synthetic-c3-trial','oauth-client':'https://console.cloud.google.com/auth/clients/create?project=synthetic-c3-trial','caller-executions':'https://script.google.com/home/executions','publisher-executions':'https://script.google.com/home/executions'};
+const nativeWindows=()=>['wrapper-before','wrapper-after'].flatMap(phase=>['caller','publisher'].map(actor=>({phase,actor,pages:1,setupReads:0,identityReads:1,quotaReads:1,settlementReads:0})));
+const nativeOperation=(ordinal,stage)=>({stage,ordinal,actor:'publisher',target:'original-settings',operation:'snapshot'});
 const credentialDecision='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72';
 
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z');
@@ -23,7 +28,7 @@ function setup({strict=true,policy=decisionHash}={}){
  const dir=mkdtempSync(join(tmpdir(),'cmwebs-canonical-driver-'));chmodSync(dir,0o700);const path=join(dir,'budget.json');let time=clock,total=0,last;
  const epoch='SYNTHETIC_CANONICAL_DRIVER_'+randomUUID(),expected={deploymentId:'SYNTHETIC_DEPLOYMENT_ID',thinScriptId:'SYNTHETIC_THIN_SCRIPT',libraryId:'SYNTHETIC_LIBRARY_SCRIPT',libraryVersion:7,librarySourceHash:'a'.repeat(64),thinSourceHash:'a'.repeat(64),libraryManifestHash:'a'.repeat(64),thinManifestHash:'a'.repeat(64),originalEditorHash:'a'.repeat(64),originalDeploymentsHash:'a'.repeat(64),originalCloudProject:'SYNTHETIC_DEFAULT',trialEpoch:epoch,syntheticSheetId:'SYNTHETIC_UNBOUND_SHEET',callerHash:hash('caller@example.invalid'),publisherHash:hash('publisher@example.invalid'),oauthClientHash:'d'.repeat(64),newCloudProject:'SYNTHETIC_NEW_PROJECT',sheetContractHash:'e'.repeat(64)};
  const raw=JSON.stringify({limit:160,spent:25,kind:'preparation-management-reads',proposal_sha256:'b'.repeat(64),approval_sha256:'a'.repeat(64),prior_limit:40});writeFileSync(path,raw,{mode:0o600});
- const controlOptions={...(strict?{decisionHash:policy}:{}),path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;}};
+ const controlOptions={...(strict?{decisionHash:policy}:{}),...(policy===nativeDecision?{nativeTargets}:{}),path,epoch,approvalHash:'a'.repeat(64),proposalHash:'b'.repeat(64),legacySha256:hash(raw),importedReads:25,expiresAt:clock+21600000,now:()=>time,pause:async ms=>{time+=ms;}};
  const control=createAuthorityPreparationControl(controlOptions),calls={release:0,native:0,rpc:0,credential:0,signer:0};
  const release=()=>({...expected,scopes:[...trial.AUTHORITY_TRIAL_SCOPES],developmentMode:false,executionAccess:'ANYONE',oauthStatus:'TESTING',testingUsers:1,callerSheetRole:'reader',callerLibraryRole:'none',callerPropertiesMatch:true,libraryPropertiesMatch:true,originalTriggers:0,retainedVersions:[1,2,3,4,5,6],originalEditorRestored:true});
  const native=()=>({source:'google-native-ui',coverage:'caller-and-publisher-all-projects',accountHashes:[expected.callerHash,expected.publisherHash],trialScriptIds:[expected.libraryId,expected.thinScriptId],accountUsage:[expected.callerHash,expected.publisherHash].map(accountHash=>({accountHash,accountType:'consumer',windowStartMs:time-86400000,windowEndMs:time,allProjectRuntimeMs:total,triggerRuntimeMs:0,complete:true})),observedAt:time,day:'2026-10-14',complete:true,active:0,totalMs:total,execution:last});
@@ -33,7 +38,16 @@ function setup({strict=true,policy=decisionHash}={}){
  return {path,options,control,controlOptions,calls,release,native,get:()=>JSON.parse(readFileSync(path)),now:()=>time,setNow:v=>{time=v;},setTotal:v=>{total=v;}};
 }
 async function prepare(s,binding=trial.canonicalAuthorityTrialBinding(s.options.expected,s.controlOptions.decisionHash)){
- await s.control.withPreparation(async cap=>{if(s.controlOptions.decisionHash===credentialDecision)for(const name of ['caller-bind','publisher-bind','publisher-refresh','publisher-userinfo'])await cap.externalRead(async()=>{},'P:'+name);await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});await cap.handoff({runtimeBinding:binding,expectedSpent:s.controlOptions.decisionHash===credentialDecision?31:27});});
+ await s.control.withPreparation(async cap=>{
+  const selected=s.controlOptions.decisionHash;
+  if([credentialDecision,nativeDecision].includes(selected)){
+   for(const name of ['caller-bind','publisher-bind'])await cap.externalRead(async()=>{},'P:'+name);
+   if(selected===nativeDecision)await cap.completeNativePreparation({windows:nativeWindows(),operations:[nativeOperation(1,'wrapper-before'),nativeOperation(2,'wrapper-after')]});
+   for(const name of ['publisher-refresh','publisher-userinfo'])await cap.externalRead(async()=>{},'P:'+name);
+  }
+  await cap.restoreOriginalEditor('restore-editor',async()=>{});await cap.restoreOriginalEditor('read-restored-editor',async()=>{});
+  await cap.handoff({runtimeBinding:binding,expectedSpent:[credentialDecision,nativeDecision].includes(selected)?31:27});
+ });
 }
 function driver(s){assert.equal(typeof trial.createCanonicalAuthorityTrialDriver,'function');return trial.createCanonicalAuthorityTrialDriver(s.options);}
 test('credential decision is part of canonical runtime binding and native capability',async()=>{
@@ -225,4 +239,20 @@ test('single wrapper binds real capture and producer page IO to the strict nativ
   if(phase==='after'){s.setTotal(100);s.setNow(Math.max(s.now(),s.native().execution.endMs));}return s.native();
  };
  await driver(s).run('wrapper');assert.equal(reads,4);assert.equal(s.get().spent,70);assert.equal(s.calls.rpc,1);const pages=JSON.parse(readFileSync(join(s.path,'..','native.json'))).value.entries;assert.equal(pages.length,4);assert(pages.every(p=>p.status==='CAPTURED'&&p.analysis.complete===false));assert.deepEqual([...new Set(pages.map(p=>p.phase))],['wrapper-before','wrapper-after']);
+});
+
+test('native IO observer retains all thirty F checks and four G windows under the original claim',async()=>{
+ const s=setup({policy:nativeDecision});await prepare(s);const original=s.options.readRelease,seen=[];let stale;
+ s.options.readRelease=async cap=>{stale=cap;assert.equal(typeof cap.nativeRead,'function');const ordinal=cap.phase==='wrapper-before'?1:2;await cap.nativeRead(nativeOperation(ordinal,cap.phase),async d=>{seen.push(d.reference);assert.equal(s.get().preparation.events.at(-1).outcome,'UNKNOWN');});return original(cap);};
+ assert.deepEqual(await driver(s).run('wrapper'),{compatible:true});assert.deepEqual(seen,[nativeTargets['original-settings'],nativeTargets['original-settings']]);
+ const events=s.get().preparation.events;assert.equal(events.filter(e=>e.action.startsWith('F:')).length,30);assert.equal(events.filter(e=>e.action.startsWith('G:')).length,12);assert.equal(events.filter(e=>e.action.startsWith('N:')).length,2);assert.equal(s.get().spent,76);assert.equal(s.calls.rpc,1);
+ let entered=false;await assert.rejects(stale.nativeRead(nativeOperation(3,'wrapper-after'),async()=>{entered=true;}),/TRIAL_STOPPED/);assert.equal(entered,false);assert.equal(s.get().spent,76);
+});
+
+test('unknown transport retains after-native settlement through the failed phase facade',async()=>{
+ const s=setup({policy:nativeDecision});await prepare(s);s.options.control=createAuthorityPhaseControl(s.control);const release=s.options.readRelease,native=s.options.readNative,transport=s.options.transport;let settled=false;
+ s.options.readRelease=async cap=>{await cap.nativeRead(nativeOperation(1,'wrapper-before'),async()=>{});return release(cap);};
+ s.options.readNative=async(phase,cap)=>{if(phase==='after')await cap.nativeRead(nativeOperation(2,'wrapper-after'),async()=>{settled=true;});return native(phase,cap);};
+ s.options.transport=async call=>{await transport(call);throw Error('SYNTHETIC_UNKNOWN_TRANSPORT');};
+ await assert.rejects(driver(s).run('wrapper'),/TRIAL_STOPPED/);assert.equal(settled,true);assert.equal(s.calls.rpc,1);assert.equal(s.get().spent,61);assert.equal(s.get().preparation.runtime.pending.entry,'wrapper');assert.equal(s.get().preparation.runtime.entries[0].complete,false);assert.equal(s.get().preparation.runtime.nativeMs,100);
 });
