@@ -1962,6 +1962,39 @@ inheritance to01e2cff1ef314c9812c0520aa7fc77dd96ac6e54;
 retain all original claims/checkpoints/pinned cleanup and history, never reset
 or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
 
+
+## C3 approved native IO admission — 2026-10-16
+
+Owner approved the presented native-IO amendment SHA
+`3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9`.
+The new immutable selector keeps history25, limit160, fixed96, P4 and T3;
+N research/navigation shares original G32. Old selectors retain their policy.
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Research before full observer | Original caller/publisher bind purposes plus at most8 pinned N reads; UNKNOWN pre-debit, ordinal replay/extra N/raw charge denied | No early refresh, ordinary mutation, RPC or trial acceptance |
+| Complete remaining map | One native-ready record with four bounded windows and exact remaining N sequence; shared32, mandatory identity/quota/page preserved | Cost admission is not actual native proof |
+| Page/target/deadline bounds | Bad console query and fifth-page plans reproduced RED then fixed; expiry preserves spent and independent cleanup | Original claim, same Taipei day, original max6h; no rebind/restart |
+| Native observer integration | Before/after N forwarding retains all30 F and12 minimum G charges; one RPC only | Synthetic IO; actual completeness and cost upper bound UNKNOWN |
+| UNKNOWN transport settlement | Independent review P2 reproduced RED; only runtime wrapper-after N gains settlement exception, canonical pending/day/expiry/map still required | No new ordinary N after STOP or holder loss; copied cleanup stays restricted |
+| Ownership/recovery | Entered N retains original flock through stop/drain; peer denied, durable stop veto, copied target binding/expiry checked | Local scope settlement is not remote execution termination |
+
+Pre-fix affected335/335 passed. After the review fix, frozen complete regression
+**1960/1960 PASS**, zero fail/cancel/skip, using pinned actual Core and an owned
+local PostgreSQL16.14 cluster; cluster shutdown verified. `npm run validate`
+passed72 backend files/40 endpoint references/static cache checks; staged diff
+check passed. No Apps Script source changed or cloud test function executed.
+Independent increment review found one P2, fixed by the exact failing integration
+regression; no deferred findings. Root WIP and private-file boundary preserved.
+
+Actual Google counter remains25/160 unclaimed; no browser/account/refresh/RPC,
+publication, Properties, triggers or formal data operations. Five native F
+observers and complete G/terminal evidence remain unbound. Prioritize bounded
+executions preflight and stop if attribution/quota/full source cannot be proved.
+All real privacy/freshness/authority/900s/day/performance/device gates remain;
+T0 NOT_STARTED and formal switches off. This supersedes the earlier pending
+native-IO-approval status only; it does not supersede missing real acceptance.
+
 ## C4 inherited C1 deadline guard — 2026-10-16
 
 Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
@@ -1998,6 +2031,27 @@ helpers inherited as local preparation only; unapproved native-IO proposal is
 absent. Real gates remain unaccepted/T0 NOT_STARTED/alloff/Google25 unchanged.
 Rollback this upstream alignment to329823894c19efd6ca75928838560c1b525be95a
 before any unclaimed trial; retain matching claimed runtime/cleanup if any.
+
+## C4 inherited approved C3 native IO controls — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Merged reviewed C3 b01e753 into the existing
+C4 feature branch without changing C4 routing or formal flags. All10 non-doc
+paths among the13-path C3 increment are byte-identical to C3. The two document
+conflicts preserve complete, separately labelled C1–C4 evidence blocks. The
+approved native-IO selector supersedes historical pending-approval text only;
+actual five-F/full-G/native acceptance remains unproved.
+
+Fresh Node22.23.3 authority regression1065/1065 PASS (30 test files,
+62.984s,zero fail/cancel/skip); validate72backend/40endpoint/cache and staged
+diff check PASS. No unchanged Worker capacity benchmark or cross-repository
+PostgreSQL suite rerun; upstream full1960 result remains C3 evidence only.
+Exact-head CI is pending after this push, not inferred from local checks.
+
+No account/Google/Cloudflare/credential/data/deployment operation in this
+integration; original counter/history/private S1/root/C5 swap untouched.
+Formal flags remain inherited off; no observation T0. Rollback this unclaimed,
+undeployed inheritance to918b4fbe99112f2099d84703f2ee2c61318f23e3;
+retain any independently established original claim/pins/history/cleanup.
 
 ## C5 inherited C1 deadline guard — 2026-10-16
 
@@ -2037,3 +2091,23 @@ unchanged/unclaimed; real gates unaccepted/T0 NOT_STARTED/alloff. No Google,
 credential, Properties, trigger, source-data or deployment operation. Rollback
 this undeployed upstream alignment to2059ebefd4a03d840b019c7ff4134c5d79ee2949; preserve any
 original claim/history and matching pinned cleanup, never reset or replay.
+
+## C5 inherited approved C3 native IO controls — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Merged C4 parent5ad3ea5, inheriting the reviewed
+C3 b01e753 controls in the existing C5 branch. All10 non-doc paths among the
+13-path C3 increment are byte-identical to C3; C5 clock/shadow behavior and flags
+are preserved. Both document conflicts retain whole, independently labelled
+C1–C5 historical evidence blocks. Approved native-IO status supersedes the
+historical pending wording only; real five-F/full-G/native gates remain open.
+
+Fresh Node22.23.3 authority regression1065/1065 PASS (30 files,64.451s,
+zero fail/cancel/skip); validate72backend/40endpoint/cache and staged diff PASS.
+No unchanged Worker capacity or cross-repository PostgreSQL rerun; C3 full1960
+is upstream evidence only. Exact-head CI readback remains pending after push.
+
+No account/Google/Cloudflare/credential/data/deployment IO; no T0 or formal
+flag change. Root/private S1/original counter/history untouched. Existing C5
+swap bytes,size,mtime remain exact. Rollback this undeployed inheritance to
+c526a4ec80685a696e6a4c5583c10c3cc39d2b3e; retain any original claimed
+pins/history/UNKNOWN and matching cleanup, never reset or replay a purpose.

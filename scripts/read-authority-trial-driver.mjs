@@ -6,7 +6,7 @@ import {homedir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import {setTimeout as delay} from 'node:timers/promises';
-import {SINGLE_WRAPPER_TRIAL_DECISION_HASH,SINGLE_WRAPPER_TRIAL_OPERATIONS,getAuthorityTrialPolicy} from './read-authority-trial-budget-plan.mjs';
+import {SINGLE_WRAPPER_TRIAL_DECISION_HASH,SINGLE_WRAPPER_TRIAL_OPERATIONS,NATIVE_IO_DECISION_HASH,getAuthorityTrialPolicy} from './read-authority-trial-budget-plan.mjs';
 export const AUTHORITY_TRIAL_SCOPES=Object.freeze(['https://www.googleapis.com/auth/spreadsheets.readonly','https://www.googleapis.com/auth/userinfo.email','https://www.googleapis.com/auth/script.external_request']);
 const stop=()=>{throw Error('TRIAL_STOPPED');};
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -356,7 +356,7 @@ export function createCanonicalAuthorityTrialDriver(input){
   if(!Number.isSafeInteger(expiresAt)||expiresAt<=0||[now,readRelease,readNative,credential,signRequest,transport,withRuntime,requestStop].some(f=>typeof f!=='function'))stop();
   const releaseAliases=SINGLE_WRAPPER_TRIAL_OPERATIONS.F.filter(v=>v.startsWith('wrapper-before.')).map(v=>v.slice('wrapper-before.'.length));
   const nativeLimits=policy.bucketLimits.G.perWindow;
-  const observe=async(observer,read,kind,phase,...args)=>{
+  const observe=async(observer,read,native,kind,phase,...args)=>{
    let active=true,failed=false,pending=0;const operations=new Set(),seen=new Map();
    const externalRead=(io,item)=>{
     pending++;
@@ -378,8 +378,17 @@ export function createCanonicalAuthorityTrialDriver(input){
      }catch(_){failed=true;stop();}finally{pending--;}
     })();operations.add(operation);void operation.catch(()=>{});return operation;
    };
+   const nativeRead=(descriptor,io)=>{
+    pending++;
+    const operation=(async()=>{
+     try{
+      if(!active||failed||pending!==1||typeof native!=='function'||typeof io!=='function'||descriptor?.stage!==phase)stop();
+      return await native(descriptor,async pinned=>{if(!active||failed)stop();return await io(pinned);});
+     }catch(_){failed=true;stop();}finally{pending--;}
+    })();operations.add(operation);void operation.catch(()=>{});return operation;
+   };
    try{
-    const value=await observer(...args,Object.freeze({externalRead,phase,decisionHash:selectedDecisionHash}));
+    const value=await observer(...args,Object.freeze({externalRead,...(selectedDecisionHash===NATIVE_IO_DECISION_HASH?{nativeRead}:{}),phase,decisionHash:selectedDecisionHash}));
     if(failed||pending)stop();
     if(kind==='release'){
      if(seen.size!==15||releaseAliases.some(alias=>seen.get(alias)!==1))stop();
@@ -405,8 +414,8 @@ export function createCanonicalAuthorityTrialDriver(input){
     return await withRuntime(binding,async cap=>{
      const state=await cap.inspectRuntime(),time=now();
      if(state.source!=='canonical-preparation-ledger'||state.decisionHash!==selectedDecisionHash||state.runtimeBinding!==binding||state.epoch!==expected.trialEpoch||state.expiresAt!==expiresAt||state.state!=='ready'||state.pending!==null||state.rpcEntries.length!==0||!Number.isSafeInteger(time)||time>=expiresAt)stop();
-     verifyAuthorityTrialReadback(expected,await observe(readRelease,cap.externalRead,'release','wrapper-before'));
-     const before=proof(await observe(readNative,cap.externalRead,'native','wrapper-before','before'),now(),expected);
+     verifyAuthorityTrialReadback(expected,await observe(readRelease,cap.externalRead,cap.nativeRead,'release','wrapper-before'));
+     const before=proof(await observe(readNative,cap.externalRead,cap.nativeRead,'native','wrapper-before','before'),now(),expected);
      if(before.totalMs<state.nativeMs||before.totalMs+360000>900000)stop();
      const token=tokenSnapshot(),functionName='authorizeTrial';
      let response,startedAt,transportFailed=false,transportEntered=false;
@@ -432,11 +441,11 @@ export function createCanonicalAuthorityTrialDriver(input){
       const pending=(await cap.inspectRuntime()).pending;
       if(!pending||pending.entry!==entry||!transportEntered)stop();startedAt=pending.startedAt;transportFailed=true;
      }
-     const after=proof(await observe(readNative,cap.settlementRead,'native','wrapper-after','after'),now(),expected),e=after.execution;
+     const after=proof(await observe(readNative,cap.settlementRead,cap.nativeRead,'native','wrapper-after','after'),now(),expected),e=after.execution;
      if(!e||!['COMPLETED','FAILED','TIMED_OUT','CANCELED'].includes(e.status)||e.function!==functionName||e.deploymentId!==expected.deploymentId||![e.startMs,e.endMs,e.durationMs].every(Number.isSafeInteger)||e.durationMs<0||e.durationMs>360000||e.startMs<startedAt-1000||e.endMs<e.startMs||e.endMs>after.observedAt+1000||e.endMs-e.startMs!==e.durationMs||after.totalMs<before.totalMs+e.durationMs)stop();
      await cap.accountNative({entry,totalMs:after.totalMs,executionHash:hash([e.deploymentId,e.function,e.startMs,e.endMs,e.durationMs])});
      if(transportFailed||!response||response.done!==true||(('response' in response)===('error' in response))||'error' in response||e.status!=='COMPLETED'||!resultAllowed(response.response?.result,'compatibility'))stop();
-     verifyAuthorityTrialReadback(expected,await observe(readRelease,cap.settlementRead,'release','wrapper-after'));
+     verifyAuthorityTrialReadback(expected,await observe(readRelease,cap.settlementRead,cap.nativeRead,'release','wrapper-after'));
      await cap.finishCompatibility(entry);return Object.freeze({compatible:true});
     });
    }catch(_){stop();}
