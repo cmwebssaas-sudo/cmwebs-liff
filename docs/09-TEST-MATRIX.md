@@ -1878,3 +1878,28 @@ Draft/off, actual25/160/native STOP and all real gates remain unaccepted.
 | Restricted realm | Original11 full failures retained; existing approved OS identity API restores compatibility; affected83/83 PASS | No ambient process or new builtin permissions |
 | Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
 | Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
+
+## C4 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C4 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1743/1743 PASS,54.368s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested568-file snapshot
+b10ddd8df3a21bc58b8d72688a091d532eee9ad03f163d7eea97ca4f733d7320;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated local capacity run. Exact-head CI follows push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance toff429e179676e6f774ea145d917fd1d6a5b6b2d3;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
