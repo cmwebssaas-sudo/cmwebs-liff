@@ -48,6 +48,49 @@ test('property totals reuse completed per-property summaries without rescanning 
   }
 });
 
+test('room-builder seasonal rates preserve precedence, rounding and bill-month fallbacks in both seasons',()=>{
+  const scenarios=[
+    {room:{equipment_fee_rate_summer:'4.1236',summer_equipment_fee_rate:8,equipment_fee_rate_regular:'2.5554'},contract:{equipment_fee_rate_summer:9,equipment_fee_rate_regular:9},rates:[4.124,2.555]},
+    {room:{equipment_fee_rate_summer:0,summer_equipment_fee_rate:'5.4326',equipment_fee_rate_regular:'NaN',regular_equipment_fee_rate:-1,non_summer_equipment_fee_rate:'1,234.5678'},rates:[5.433,1234.568]},
+    {room:{equipment_fee_rate:9},contract:{equipment_fee_rate_summer:0,summer_equipment_fee_rate:'6.7896',equipment_fee_rate_regular:-1,non_summer_equipment_fee_rate:'2.2222'},rates:[6.79,2.222]},
+    {room:{equipment_fee_rate:'1.1114'},bill:{bill_month:new Date('2026-07-01T00:00:00+08:00'),equipment_fee_rate:'4.4446'},rates:[4.445,1.111]},
+    {contract:{equipment_rate:'1.5556'},bill:{bill_month:'2026-01',equipment_rate:'3.3336'},rates:[1.556,3.334]},
+    {room:{equipment_rate:1.001},bill:{bill_month:'',due_date:'2026-07-10',equipment_fee_rate:'4.9996'},rates:[5,1.001]},
+    {room:{equipment_rate:'2,100.9999'},bill:{bill_month:'invalid',due_date:'2026-07-10',equipment_fee_rate:8},rates:[2101,2101]},
+    {contract:{equipment_fee_rate:'2.3336'},bill:{bill_month:'2026-07',equipment_fee_rate:0,equipment_rate:-2},rates:[2.334,2.334]},
+    {room:{equipment_fee_rate_summer:-1,equipment_fee_rate_regular:'Infinity',equipment_fee_rate:0},contract:{equipment_rate:'NaN'},rates:[3.5,2.5]},
+    {room:{equipment_fee_rate_summer:0.0004,summer_equipment_fee_rate:0.0006,equipment_fee_rate_regular:0.0004,equipment_fee_rate:1.4},rates:[0.001,1.4]},
+    {room:{equipment_fee_rate_summer:5,equipment_fee_rate_regular:1,equipment_summer_months:'1'},bill:{bill_month:'2026-07',equipment_fee_rate:8},rates:[5,1]}
+  ];
+  for(const item of scenarios)for(const month of [1,7]) {
+    const gas=originalGas(dataset,access,{now:Date.parse(`2026-${String(month).padStart(2,'0')}-15T12:00:00+08:00`)});
+    const room={room_id:'SYNTHETIC_RATE_ROOM',account_status:'active',room_status:'vacant',...item.room};
+    const contract={...item.contract},bill=item.bill||null,before=JSON.stringify([room,contract,bill]);
+    const view=gas.propertyRoomBuildRoomView_(room,{}, {[room.room_id]:contract}, {[room.room_id]:bill},{},{});
+    const summer=room.equipment_summer_months==='1'?month===1:month===7;
+    assert.deepEqual([view.equipment_fee_rate_summer,view.equipment_fee_rate_regular],item.rates);
+    assert.equal(view.equipment_fee_rate,item.rates[summer?0:1]);
+    assert.equal(view.equipment_fee_season,summer?'summer':'regular');
+    assert.equal(JSON.stringify([room,contract,bill]),before,'Actual rate projection must not mutate source rows');
+  }
+});
+
+test('500-room seasonal rates resolve each season once per room instead of repeating1000 calls',()=>{
+  const input=capacityDataset(),gas=originalGas(input),before=JSON.stringify(input);
+  const expected=plain(gas.getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',true));
+  const resolve=gas.propertyRoomResolveEquipmentSeasonRate_,calls=new Map();
+  gas.propertyRoomResolveEquipmentSeasonRate_=(room,contract,bill,summer)=>{
+    const counts=calls.get(room)||[0,0];counts[summer?0:1]++;calls.set(room,counts);
+    return resolve(room,contract,bill,summer);
+  };
+  const actual=gas.getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',true);
+  assert.deepEqual(plain(actual),expected,'Complete response and ordering remain canonical');
+  assert.equal(calls.size,500);
+  assert.equal([...calls.values()].reduce((sum,counts)=>sum+counts[0]+counts[1],0),1000);
+  for(const counts of calls.values())assert.deepEqual(counts,[1,1]);
+  assert.equal(JSON.stringify(input),before,'Actual rate projection must not mutate source rows');
+});
+
 test('production read routes stay closed even with fabricated fixture or query identity',async()=>{
   for(const path of ['home','revenue','tenants','rooms','arrears','properties']) {
     const response=await worker.fetch(new Request('https://local.test/v1/'+path+'?workspace_id=SYNTHETIC_W1'),{FIXTURE_ACCESS:JSON.stringify(access),DB:{prepare(){throw new Error('must not read');}}});

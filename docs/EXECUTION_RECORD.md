@@ -5478,3 +5478,37 @@ suite/CI run, commit/push or external operation. Independent review and subseque
 acceptance remain pending; all real C1/C3/device/observation gates remain open.
 Rollback this undeployed increment's owned source/test/generated/doc paths to
 504e7ee and regenerate comparison; preserve private frozen oracle/failure evidence.
+
+
+## C6 per-room seasonal rate reuse candidate — 2026-10-16
+
+Recommended model/speed GPT-6.1 Sol/high. Existing isolated C6 branch at d2ebdec;
+local candidate only. propertyRoomBuildRoomView_ stores the existing summer and
+regular resolver results in two invocation-local numbers and reuses them in the
+same three response fields. No cross-room cache, resolver/fallback policy change,
+financial-contract selection, Date/month-helper movement, output key reordering,
+payload reduction or harness/50ms/100-sample gate change. Canonical calculator,
+source manifest and comparison179 were regenerated; asset/endpoint/flags unchanged.
+
+Node22 affected baseline45/45 PASS. Actual room-builder matrix covers11 cases in
+two seasons (22 combinations): seasonal alias precedence, positive/zero/negative/
+nonfinite/comma inputs, three-decimal rounding, bill-month Date/string and due-date
+fallback, mismatched/invalid bill month, legacy/default rates and custom summer
+months. Matrix passed before change; the new500-room call regression first failed
+at2000 versus1000 calls, then final affected47/47 PASS. Each room now invokes the
+real resolver once per season; input rows unchanged. Frozen d2 complete27 and
+projected Worker27 responses remain byte/key-order equal across small/rich/500-room
+and archived modes:2989899bytes SHA256
+65a9a3f85f8c5f7f829f2402937718578af51a03c78bc10d06111e7cecee3758.
+Validate72/40/static/comparison179 and diff check PASS. New comparison identity:
+read-5262caac7a53db81ede2f1138ab82f23c652da95a1acace33f2b33fd96778faf.
+
+Saved exact d2 job116778372168 log reports42/43, properties p9550.432ms with100
+full-wall samples; saved provider metadata still in_progress/conclusion null.
+The7 samples above50ms overlap Node GC; correlation does not change acceptance or
+justify excluding samples. This candidate removes1000 duplicate calls/arrays at
+500rooms; actual latency benefit remains UNKNOWN. No local Worker/fullsuite/
+CoreDB/benchmark, CI, commit/push or external operation. Independent source review
+and one normal new-head CI remain pending; prior failures and release gates stay
+open. Rollback the owned undeployed increment to d2ebdec and regenerate comparison,
+retaining all frozen/private evidence.

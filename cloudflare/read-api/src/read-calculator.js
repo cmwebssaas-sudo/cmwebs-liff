@@ -3448,6 +3448,22 @@ function propertyRoomBuildRoomView_(
       depositMonths
     );
 
+  const summerEquipmentRate =
+    propertyRoomResolveEquipmentSeasonRate_(
+      room,
+      financialContract,
+      latestBill,
+      true
+    );
+
+  const regularEquipmentRate =
+    propertyRoomResolveEquipmentSeasonRate_(
+      room,
+      financialContract,
+      latestBill,
+      false
+    );
+
   return {
     room_id:
       roomId,
@@ -3517,35 +3533,15 @@ function propertyRoomBuildRoomView_(
       ),
 
     equipment_fee_rate_summer:
-      propertyRoomResolveEquipmentSeasonRate_(
-        room,
-        financialContract,
-        latestBill,
-        true
-      ),
+      summerEquipmentRate,
 
     equipment_fee_rate_regular:
-      propertyRoomResolveEquipmentSeasonRate_(
-        room,
-        financialContract,
-        latestBill,
-        false
-      ),
+      regularEquipmentRate,
 
     equipment_fee_rate:
       propertyRoomEquipmentRateForMonth_(
-        propertyRoomResolveEquipmentSeasonRate_(
-          room,
-          financialContract,
-          latestBill,
-          true
-        ),
-        propertyRoomResolveEquipmentSeasonRate_(
-          room,
-          financialContract,
-          latestBill,
-          false
-        ),
+        summerEquipmentRate,
+        regularEquipmentRate,
         new Date(),
         room.equipment_summer_months ||
         financialContract

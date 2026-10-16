@@ -3023,3 +3023,16 @@ small/rich/500-room both archived modes retain27 frozen504e7ee complete response
 generated manifests/comparison179 synchronized; validate/diff checks PASS. No
 benchmark/fullDB/Worker/fullsuite/CI rerun or p95 improvement claim; previous exact
 CI properties51.647ms failure remains an unmet gate pending independent review.
+
+
+### 2026-10-16 per-room seasonal equipment-rate reuse
+
+Node22 baseline45/45; real builder22-combination seasonal fallback/rounding/month
+matrix PASS before change. Call-count regression RED2000 vs1000, final affected
+47/47 PASS, with one real resolver invocation per room/season and source rows
+unchanged. Frozen d2 complete27 + projected27 responses retain2989899 identical
+bytes/key order, including archived modes. Canonical/generated/comparison179,
+validate and diff checks PASS. Three existing Date/month-helper sites and all
+financial fallback semantics unchanged. No new benchmark/fullDB/fullsuite/Worker/
+CI run or p95 improvement claim; saved exact d2 log50.432ms failure remains open,
+with provider metadata still in_progress/null in that evidence snapshot.
