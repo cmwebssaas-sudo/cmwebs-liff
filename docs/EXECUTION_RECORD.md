@@ -4078,3 +4078,37 @@ preparation7/7 PASS, with validate and diff-check PASS. The earlier457-case run
 was not repeated. Final committed-source pins, supported-runtime full regression,
 provider CI and reviewed actual one-way launcher flow remain root-owned gates;
 this increment performed no actual handoff, IO or counter debit.
+
+## 2026-10-16 — submitted OAuth consent admission and loopback race candidate
+
+Recommended GPT-6.1 Sol/high for the bounded ownership/accounting correction.
+Work continues on the existing isolated C3 feature branch from96ee8b41; root
+worktrees and used frozen sources are preserved. The owner approved submitted
+form counting, while the preceding actual attempt was stopped/drained before
+its original expiry; this local change neither reopens it nor renews its time.
+
+The helper exposes single-shot submitConsent(io), admitting E:oauth-response
+before the actual fixed caller UI callback. receive refuses pre-admission input
+without consuming valid state and no longer charges local reception. A valid
+callback during submit only claims/buffers bounded parameters and returns local
+303; pending result200 stays generic and keeps the listener open. After the
+submission cap settles, token POST and userinfo GET enter separately. Duplicate,
+late or fabricated submission callbacks deny, cancellation/failure cannot mint
+from buffered input, and the existing privacy/PKCE/expiry/revoke checks remain.
+No consent or trial acceptance is asserted by the settled submission receipt.
+
+TDD new6 cases failed before implementation and then passed. Node22.23.3 affected
+phase/preparation-control/realm122 cases passed; final OAuth67/67 passed including
+all11 new regression cases. The initial combined188/189 failure was the new late
+callback test passing a synchronous throw to assert.rejects; corrected to
+assert.throws, then the complete affected OAuth file reran green. Production
+source did not change for that correction. npm run validate parsed72 backend
+files, matched40 endpoint references and passed static cache checks; diff check
+passes. No performance/full database/full suite was run for this bounded change.
+
+No actual Google/UI, credential, counter, resource, RPC, commit, push or deployment
+action. Public flags stay off. Existing strict time/reserve/cleanup gates and
+actual fixed form/readback/cost grounding remain required. Independent root
+review and source pinning precede any future integration. Rollback is reverting
+this helper/listener and its explicit fixture/documentation changes; do not alter
+old claims, immutable journals, source copies or approval/spend history.

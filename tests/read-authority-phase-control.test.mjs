@@ -34,7 +34,7 @@ async function oauthPrepare(s){
   flow=createAuthorityTrialOAuth({path:join(s.dir,'oauth.json'),epoch:s.epoch,clientId,oauthClientHash,cloudProjectHash:'c'.repeat(64),callerHash,publisherHash:hash('publisher@example.invalid'),expiresAt:s.options.expiresAt,control:s.bridge.capability??cap,clientSecret:()=> 'SYNTHETIC_CLIENT_SECRET',now:s.now,
    clientReadback:{source:'google-native-ui',oauthClientHash,cloudProjectHash:'c'.repeat(64),redirectUri:'http://127.0.0.1:34763/oauth/callback',isolatedTrialProject:true},
    fetcher:async url=>{if(url.endsWith('/revoke')){revoke++;return new Response('');}if(url.endsWith('/token')){exchange++;return new Response(JSON.stringify({access_token:'SYNTHETIC_ACCESS_TOKEN',token_type:'Bearer',expires_in:3600,scope:AUTHORITY_TRIAL_SCOPES.join(' ')}));}return new Response(JSON.stringify({email:'caller@example.invalid',verified_email:true}));}});
-  await flow.receive({method:'GET',host:'127.0.0.1:34763',url:'/oauth/callback?'+new URLSearchParams({state:new URL(flow.authorizationUrl).searchParams.get('state'),code:'SYNTHETIC_CODE'})});await handoff(s,cap,28);
+  await flow.submitConsent(async()=>{});await flow.receive({method:'GET',host:'127.0.0.1:34763',url:'/oauth/callback?'+new URLSearchParams({state:new URL(flow.authorizationUrl).searchParams.get('state'),code:'SYNTHETIC_CODE'})});await handoff(s,cap,28);
  });return {flow,revoke:()=>revoke,exchange:()=>exchange};
 }
 test('the same prepared in-memory OAuth token can be used and revoked after canonical handoff',async()=>{

@@ -662,3 +662,34 @@ Crashed operation-lock requires trusted terminal/recovery handoff, not deletion
 based on file/timeout. Actual25/160 six-field counter unmodified. G8 falsified,
 160 executable budget, guard/GCP/native collectors/same-ledger/full orchestration
 and all real gates unaccepted before owner credentials or trial RPC.
+
+## October16 submitted-consent accounting candidate, local only
+
+The approved fixed submitted-form counting rule now has an explicit
+`flow.submitConsent(io)` boundary. Trusted orchestration must supply the actual
+fixed caller consent submission callback; its single `E:oauth-response` admission
+precedes that callback. Pure local callback reception no longer debits that alias.
+A callback before actual admission is denied without claiming its state. The
+submission callback must enter once, finish and return the same owned receipt;
+missing, repeated, fabricated or late invocation fails closed. Submission intent
+is UNKNOWN before IO and becomes ACK_UNVERIFIED only after its cap settles.
+The helper's result keeps consentVerified/trialAccepted/rollbackComplete false.
+
+A valid callback may arrive while the browser submission still owns admission.
+It claims the same state once and buffers its bounded parameters in memory;
+loopback returns303 immediately. The generic result page returns pending200
+without exposing code/state or closing the listener. Only after submission
+ownership settles does buffered processing issue the separate token POST and
+same-token userinfo GET. A callback arriving later uses those same two operations.
+Successful accounting remains one submission, one token exchange and one identity
+read. Initial result navigation still returns404; terminal pages stay generic.
+Cancellation or submission failure discards buffered input, and existing PKCE,
+exact scopes/identity, expiry, registry, late-token revoke and UNKNOWN cleanup
+checks remain. Orchestration must await submitConsent and retain the listener
+until callback processing finishes; a settled submission alone is not OAuth ready.
+
+This is a local source candidate. The preceding actual attempt remains stopped;
+its history, limit, original expiry and frozen used sources are unchanged.
+No actual Google consent, credential, resource, RPC or new execution scope was
+created. Live fixed-form grounding, complete cost/recovery map and actual Google
+proof remain required. This change does not renew a deadline or establish fit.

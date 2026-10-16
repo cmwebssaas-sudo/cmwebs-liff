@@ -2342,3 +2342,20 @@ retired legacy J function refs, active legacy route exclusion and maximum158
 plus unused2 protection. Original C2/I17/drain remain usable on the shared lane.
 Updated private preparation requires the handoff and verifies sources before
 moving its slot; raw full owners/serialized capsules cannot create a claim.
+
+### 2026-10-16 submitted OAuth consent accounting
+
+Eleven new regression cases cover callback-before-admission denial; actual
+submission debit ordering; real loopback303/pending200 while submit owns the
+cap; separate token/userinfo ownership after settlement; duplicate submissions
+and callbacks; cancel/failure with buffered input; skipped/cloned/repeated/late
+submission callbacks; and preclaim denial while waiting for admission.
+The unchanged privacy/PKCE/scope/identity/expiry/revocation cases now explicitly
+submit first. Phase and cross-realm fixtures preserve three ordinary charges.
+Node22.23.3 affected phase/preparation/control/realm122 cases passed; final OAuth
+67/67 passed, zero fail/cancel/skip. Initial combined188/189 contained one new
+test incorrectly using assert.rejects for an expected synchronous late-callback
+throw; its assertion was corrected and final OAuth rerun passed. No runtime
+change was needed for that test correction. Validate and diff checks pass.
+Real Google form grounding/consent, RPC, cleanup and complete160-fit remain
+unverified; prior stopped scope and frozen used runtime were not reopened.
