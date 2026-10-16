@@ -2717,15 +2717,23 @@ function getLandlordPropertiesInitByLineUid_(
           );
         });
 
-    const allRoomViews = [];
+    const roomSummary = {
+      room_count: 0,
+      vacant_count: 0,
+      occupied_count: 0,
+      maintenance_count: 0
+    };
 
     propertyViews.forEach(
       function (property) {
-        property.rooms.forEach(
-          function (room) {
-            allRoomViews.push(room);
-          }
-        );
+        roomSummary.room_count +=
+          property.summary.room_count;
+        roomSummary.vacant_count +=
+          property.summary.vacant_count;
+        roomSummary.occupied_count +=
+          property.summary.occupied_count;
+        roomSummary.maintenance_count +=
+          property.summary.maintenance_count;
       }
     );
 
@@ -2805,45 +2813,13 @@ function getLandlordPropertiesInitByLineUid_(
               }
             ).length,
           room_count:
-            allRoomViews.filter(
-              function (room) {
-                return room.account_status ===
-                  'active';
-              }
-            ).length,
+            roomSummary.room_count,
           vacant_room_count:
-            allRoomViews.filter(
-              function (room) {
-                return (
-                  room.account_status ===
-                    'active' &&
-                  room.effective_status ===
-                    'vacant'
-                );
-              }
-            ).length,
+            roomSummary.vacant_count,
           occupied_room_count:
-            allRoomViews.filter(
-              function (room) {
-                return (
-                  room.account_status ===
-                    'active' &&
-                  room.effective_status ===
-                    'occupied'
-                );
-              }
-            ).length,
+            roomSummary.occupied_count,
           maintenance_room_count:
-            allRoomViews.filter(
-              function (room) {
-                return (
-                  room.account_status ===
-                    'active' &&
-                  room.effective_status ===
-                    'maintenance'
-                );
-              }
-            ).length
+            roomSummary.maintenance_count
         },
         property_types:
           propertyRoomPropertyTypeOptions_(),

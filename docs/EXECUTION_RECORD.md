@@ -5450,3 +5450,31 @@ to SQLCPU. Capacity fixture bypasses GAS authority/scoped loader. Preserve all
 failures; no release/device/observation gate passes from this local increment.
 Rollback: revert only this uncommitted source/test/generated/doc increment to
 fbdef67 and regenerate comparison; retain private canonical and failure evidence.
+
+
+## C6 properties summary fold candidate — 2026-10-16
+
+Recommended model/speed GPT-6.1 Sol/high. Existing isolated C6 branch at504e7ee;
+local source candidate only. Properties initialization now sums the four counters
+already computed in each returned property's summary, omitting the temporary
+flattened room list and its four duplicate filters. Response key order, room and
+property contents, amounts, ordering and archived filtering remain unchanged.
+No seasonal/financial helper, payload, asset version, endpoint, flag or50ms gate
+changed. Canonical source and generated calculator/manifests remain synchronized.
+
+Node22 baseline affected15/15 PASS; the new regression first observed12 redundant
+room-status reads (RED), then final affected16/16 PASS. Frozen504e7ee small/rich/
+500-room oracle:27 complete responses including both archived filters,2989899
+bytes/key order, exact;27 projected Worker calculator responses also match.
+Validate72/40/static/comparison179 and diff checks PASS. Comparison identity:
+read-2fb25808e4a3515cfbfeca31d9fc13628908b892b2d342da4c1273b851bb1a1a.
+
+Exact504e7ee CI38839223666 remains historical acceptance evidence: rental2248/2248
+PASS, Worker42/43 FAIL solely properties p9551.647ms. Properties stages p95D115/
+decode5/route15ms, body713795bytes, slow paired consume16–18ms. This increment
+removes proven route work; it does not establish a p95 cure or attribute unrelated
+D1/host changes to the previous tenant fix. No new benchmark/fullDB/Worker/full
+suite/CI run, commit/push or external operation. Independent review and subsequent
+acceptance remain pending; all real C1/C3/device/observation gates remain open.
+Rollback this undeployed increment's owned source/test/generated/doc paths to
+504e7ee and regenerate comparison; preserve private frozen oracle/failure evidence.

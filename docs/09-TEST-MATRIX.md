@@ -3012,3 +3012,14 @@ frozenfbdef67 responses(2060399bytes/keyorder) plus21 projected Worker calculato
 responses match exactly, including foreign/private parity. Generated source and
 comparison179 updated; validate PASS. No capacity benchmark/fullDB/fullsuite/CI
 rerun or latency improvement claim; independent review and acceptance pending.
+
+
+### 2026-10-16 properties request-local summary fold
+
+Node22 baseline affected15/15; regression RED12 redundant status reads, final16/16
+PASS. Sum only completed per-property room/vacant/occupied/maintenance counters;
+small/rich/500-room both archived modes retain27 frozen504e7ee complete responses
+(2989899bytes/key order) and27 projected calculator responses exactly. Canonical/
+generated manifests/comparison179 synchronized; validate/diff checks PASS. No
+benchmark/fullDB/Worker/fullsuite/CI rerun or p95 improvement claim; previous exact
+CI properties51.647ms failure remains an unmet gate pending independent review.

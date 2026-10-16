@@ -30,6 +30,24 @@ test('actual500-room properties route retains full data and GAS parity without f
   assert.equal(loads,1);assert.equal(watched.V2_payments.length,projected.V2_payments.length);assert.equal(frames.V2_payments||0,0);assert.equal(frames.V2_rooms,projected.V2_rooms.length);assert.equal(frames.V2_properties,projected.V2_properties.length);
 });
 
+test('property totals reuse completed per-property summaries without rescanning room views',()=>{
+  for(const input of [dataset,richDataset(),capacityDataset()])for(const archived of [false,true]) {
+    const gas=originalGas(input),expected=plain(gas.getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',archived));
+    const build=gas.propertyRoomBuildPropertyView_;let rereads=0;
+    gas.propertyRoomBuildPropertyView_=(...args)=>{
+      const view=build(...args);
+      for(const room of view.rooms){const status=room.account_status;Object.defineProperty(room,'account_status',{
+        enumerable:true,configurable:true,get(){rereads++;return status;}
+      });}
+      return view;
+    };
+    const actual=gas.getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',archived);
+    assert.equal(actual.success,true);
+    assert.equal(rereads,0,'Global counters already exist in the completed property summaries');
+    assert.deepEqual(plain(actual),expected,'Complete response, values, ordering and archived filtering remain exact');
+  }
+});
+
 test('production read routes stay closed even with fabricated fixture or query identity',async()=>{
   for(const path of ['home','revenue','tenants','rooms','arrears','properties']) {
     const response=await worker.fetch(new Request('https://local.test/v1/'+path+'?workspace_id=SYNTHETIC_W1'),{FIXTURE_ACCESS:JSON.stringify(access),DB:{prepare(){throw new Error('must not read');}}});
