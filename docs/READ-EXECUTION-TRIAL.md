@@ -693,3 +693,48 @@ its history, limit, original expiry and frozen used sources are unchanged.
 No actual Google consent, credential, resource, RPC or new execution scope was
 created. Live fixed-form grounding, complete cost/recovery map and actual Google
 proof remain required. This change does not renew a deadline or establish fit.
+
+## October16 named staged resume, local policy candidate
+
+The separately approved named segment links the complete stopped42 history and
+its claims/checkpoints. It neither reopens the stopped scope nor changes any old
+W0, expiry, UNKNOWN, debit or source copy. A distinct singleton claim cannot be
+chained. Construction, inspect, stage registration and completePlan are local;
+W0 remains null until the first durable counted IO admission. That admission
+writes W0, deadline and UNKNOWN together before its callback. The deadline is
+the earlier of W0+6h and the last millisecond of that Taipei day; it never slides.
+
+`createAuthorityStagedResumeControl` uses the existing original flock and the
+consumable predecessor handoff. Config retains the existing history and closed
+preflight pins, adds stagedResume approval/journal/claim/stop/registry pins, and
+requires expiresAt:null. The immutable raw cap identity retains that null value;
+only inspect supplies the actual active W0/expiry after the first counted IO.
+The staged driver binds that inspected deadline separately, without deriving a
+replacement cap or manufacturing a mutable identity.
+
+Only fixed N readonly targets may precede stage registration. N partitions are
+publisher12 across the whole flow, dedicated caller OAuth entry/observe2, and
+thin-trigger before/after2; none can borrow another partition. Publisher N may
+also run after RPC. The four dedicated observations remain mandatory in the full
+map. The true single B:auth-tabs-batch GET replaces the five old header aliases;
+there is no refund or multipart discount. Both retained bindings are imported.
+Fixed accounting reserves42+98 future+16N+original C2+unused2=160; I17/J2 are
+already inside98. This arithmetic does not prove actual callbacks or completion.
+
+`completeStage({stage,operations,futureCaps})` installs one complete fixed current
+stage and exact caps for every not-yet-grounded stage, including recovery. Fixed
+groups cover baseline, resources, cloud-link, properties, OAuth audience/client,
+publication, caller OAuth and readbacks. The synchronous trusted assertStage
+hook must verify actual actor/destination/callback/cost/failure cleanup and source
+closure; its local return is not remote evidence. It also checks readonly N and
+the final complete map. A future cap never claims future grounding. Resources
+must come from actual responses and the recovery graph must exist before grants.
+Unknown/extra steps stop rather than borrow or retry.
+
+Compatibility RPC still requires complete actual mapping, the dedicated before
+observations, all16 F and same-token G before/after, original privacy/freshness
+checks, one nonrefundable360s admission, and all ordinary dispatch gates. Single
+IO, shared historical10/min, C2/I17/J2, actual-owner drain and recovery cooldown
+remain. No actual execution readiness, Google consent, production or fit result
+follows from this local policy. Old scope remains closed; frozen used sources
+and real ledgers are not migration targets.

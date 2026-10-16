@@ -4112,3 +4112,31 @@ actual fixed form/readback/cost grounding remain required. Independent root
 review and source pinning precede any future integration. Rollback is reverting
 this helper/listener and its explicit fixture/documentation changes; do not alter
 old claims, immutable journals, source copies or approval/spend history.
+
+## 2026-10-16 — approved named staged resume local implementation candidate
+
+Recommended GPT-6.1 Sol/high for the bounded linked accounting change. Continued
+on the existing isolated C3 feature branch from7dd82d9. The owner approved one
+named staged segment with the160 limit. Previous actual scope remains stopped
+and finished at42, with no RPC/resources; no old ledger, source copy, expiry or
+claim is changed. This increment performs no Google/UI, credential, counter,
+resource, RPC, commit, push or deployment action.
+
+Existing plan/control/ledger/driver gain the named mode, complete immutable42
+history linking, separate single claim, first-counted-debit W0 and same-Taipei-day
+maximum6h deadline. Existing modes retain their rules. The true one-GET header
+batch replaces five aliases. Both retained selections are imported; remaining N
+is strictly publisher12/caller2/thin-trigger2 without borrowing. Fixed current
+stages require actual callback/cost/cleanup assertions and preserve every future
+capped check and full recovery reserve; final RPC still requires the complete
+actual map and all original gates. Missing or excess actual steps remain a stop.
+
+Initial five-case RED was1 pass/4 expected failures. The expanded focused cases
+exercise actual persistent accounting processes with synthetic callbacks,
+including the complete raw-cap driver/RPC/readback/cleanup path. Established
+Node22 affected continuation/standalone/header tests passed349/349. No full,
+performance or database suite was run. Final focused/validate evidence and
+source pins accompany independent review; no real mapping fit or execution
+readiness is claimed. Public switches remain off. Rollback is reverting this
+named local mode and its explicit fixtures/docs, preserving every old claim,
+source copy and debit; no stopped execution is reopened.

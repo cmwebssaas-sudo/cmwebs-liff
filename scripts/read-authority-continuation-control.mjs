@@ -8,7 +8,7 @@ import {types} from 'node:util';
 import {randomBytes} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {setTimeout as delay} from 'node:timers/promises';
-import {BOUNDED_CONTINUATION_DECISION_HASH,STANDALONE_TRIAL_DECISION_HASH} from './read-authority-continuation-plan.mjs';
+import {BOUNDED_CONTINUATION_DECISION_HASH,STANDALONE_TRIAL_DECISION_HASH,STAGED_RESUME_DECISION_HASH} from './read-authority-continuation-plan.mjs';
 const stop=()=>{throw Error('TRIAL_STOPPED');},integer=Number.isSafeInteger;
 const exact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
 function data(value){
@@ -29,7 +29,7 @@ function data(value){
 function options(value){
  if(!value||typeof value!=='object'||types.isProxy(value))stop();
  const ds=Object.getOwnPropertyDescriptors(value),out=Object.create(null);
- for(const k of Reflect.ownKeys(ds)){const d=ds[k];if(typeof k!=='string'||!['config','now','pause','guard','predecessorHandoff','onReadStage'].includes(k)||!d.enumerable||!Object.hasOwn(d,'value'))stop();out[k]=d.value;}
+ for(const k of Reflect.ownKeys(ds)){const d=ds[k];if(typeof k!=='string'||!['config','now','pause','guard','predecessorHandoff','onReadStage','assertStage'].includes(k)||!d.enumerable||!Object.hasOwn(d,'value'))stop();out[k]=d.value;}
  if(!Object.hasOwn(out,'config')||typeof out.guard!=='function')stop();return out;
 }
 // A failed/late response poisons this process. Never assign it to a later IO.
@@ -59,8 +59,8 @@ function protocol(child){
  };
  return {send,drain,closed,alive:()=>!dead&&!faulted};
 }
-function view(raw,standalone=false){
- if(!exact(raw,['ok','spent','state','waitMs','newSpent','w0','expiresAt','deadlineUtc','deadlineTaipei','chargedUpperBoundMs','planReady','rpc','cleanup'])||raw.ok!==true||!integer(raw.spent)||raw.spent<27||raw.spent>(standalone?160:158)||!integer(raw.newSpent)||raw.newSpent<0||raw.newSpent>(standalone?129:112)||!['ready','stopped'].includes(raw.state)||!integer(raw.waitMs)||raw.waitMs<0||raw.waitMs>60000||![raw.w0,raw.expiresAt].every(integer)||typeof raw.deadlineUtc!=='string'||typeof raw.deadlineTaipei!=='string'||![0,360000].includes(raw.chargedUpperBoundMs)||typeof raw.planReady!=='boolean'||!exact(raw.rpc,['beganAt','complete'])||(raw.rpc.beganAt!==null&&!integer(raw.rpc.beganAt))||typeof raw.rpc.complete!=='boolean'||!exact(raw.cleanup,['cActions','iActions'])||!Array.isArray(raw.cleanup.cActions)||!Array.isArray(raw.cleanup.iActions))stop();
+function view(raw,standalone=false,staged=false){
+ if(!exact(raw,['ok','spent','state','waitMs','newSpent','w0','expiresAt','deadlineUtc','deadlineTaipei','chargedUpperBoundMs','planReady','rpc','cleanup'])||raw.ok!==true||!integer(raw.spent)||raw.spent<27||raw.spent>(standalone?160:158)||!integer(raw.newSpent)||raw.newSpent<0||raw.newSpent>(standalone?129:112)||!['ready','stopped'].includes(raw.state)||!integer(raw.waitMs)||raw.waitMs<0||raw.waitMs>60000||!(staged&&raw.w0===null&&raw.expiresAt===null&&raw.deadlineUtc===null&&raw.deadlineTaipei===null||[raw.w0,raw.expiresAt].every(integer)&&typeof raw.deadlineUtc==='string'&&typeof raw.deadlineTaipei==='string')||![0,360000].includes(raw.chargedUpperBoundMs)||typeof raw.planReady!=='boolean'||!exact(raw.rpc,['beganAt','complete'])||(raw.rpc.beganAt!==null&&!integer(raw.rpc.beganAt))||typeof raw.rpc.complete!=='boolean'||!exact(raw.cleanup,['cActions','iActions'])||!Array.isArray(raw.cleanup.cActions)||!Array.isArray(raw.cleanup.iActions))stop();
  return data(raw);
 }
 // One trusted move, not revocation of arbitrary external raw aliases. The
@@ -98,10 +98,11 @@ export function createAuthorityContinuationControl(input){
 export function createAuthorityStandaloneControl(input){
  return createControl(input,true);
 }
-function createControl(input,standalone){
+export function createAuthorityStagedResumeControl(input){return createControl(input,true,true);}
+function createControl(input,standalone,staged=false){
  try{
   const o=options(input),config=data(o.config),closed=standalone&&Object.hasOwn(config,'closedPreflight'),now=o.now??Date.now,pause=o.pause??delay,guard=o.guard;
-  if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[]),...(closed?['closedPreflight']:[])])||!isAbsolute(config.path)||config.decisionHash!==(standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||typeof now!=='function'||typeof pause!=='function')stop();
+  if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[]),...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[])])||!isAbsolute(config.path)||config.decisionHash!==(staged?STAGED_RESUME_DECISION_HASH:standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||staged&&(!closed||config.expiresAt!==null||typeof o.assertStage!=='function')||!staged&&Object.hasOwn(o,'assertStage')||typeof now!=='function'||typeof pause!=='function')stop();
   // Only this module's consumable move can supply the narrow predecessor lane.
   // Full owners and serialized receipts are rejected by options/brand checks.
   const predecessor=closed?consumePredecessorHandoff(o.predecessorHandoff):null;
@@ -111,13 +112,13 @@ function createControl(input,standalone){
   const stage=(operation,stage)=>{if(o.onReadStage){const result=o.onReadStage(Object.freeze({operationId:operation.id,stage,errorCategory:stage==='api-rejected'?'API_REJECTED':stage==='post-return-guard-rejected'?'POST_RETURN_GUARD':'NONE'}));if(result!==undefined)stop();}};
   const inPredecessorLane=callback=>closed?predecessorLane.call(predecessor,callback):callback();
   const home=homedir(),env={PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei',HOME:home},source=fileURLToPath(new URL('./read-authority-continuation-budget.py',import.meta.url));
-  const stem=closed?'.standalone-successor':standalone?'.standalone':'.continuation';
+  const stem=staged?'.staged-resume':closed?'.standalone-successor':standalone?'.standalone':'.continuation';
   const nonce=randomBytes(32).toString('hex');let attempted=false,localStop=false,current=null,lastOwned=null,serial=0,newSpentHighWater=0,cleanupRunning=false;
-  const observed=raw=>{const result=view(raw,standalone);newSpentHighWater=Math.max(newSpentHighWater,result.newSpent);return result;};
+  const observed=raw=>{const result=view(raw,standalone,staged);newSpentHighWater=Math.max(newSpentHighWater,result.newSpent);return result;};
   const checked=()=>{const result=guard();if(types.isPromise(result))void Promise.prototype.then.call(result,()=>{},()=>{});if(result!==undefined)stop();};
   const veto=()=>{if(localStop)return true;try{lstatSync(config.path+stem+'-stop.json');return true;}catch(e){return e.code!=='ENOENT';}};
   const durableStop=async()=>{
-   const child=spawn('python3',[source,closed?'--standalone-successor-request-stop':standalone?'--standalone-request-stop':'--request-stop'],{stdio:['pipe','pipe','pipe'],env}),p=protocol(child);let acknowledged=false;
+   const child=spawn('python3',[source,staged?'--staged-resume-request-stop':closed?'--standalone-successor-request-stop':standalone?'--standalone-request-stop':'--request-stop'],{stdio:['pipe','pipe','pipe'],env}),p=protocol(child);let acknowledged=false;
    try{const r=await p.send({path:config.path,epoch:config.epoch,binding:config.binding});if(!exact(r,['ok','stopRequested'])||r.ok!==true||r.stopRequested!==true)stop();acknowledged=true;}finally{await p.drain();}
    if(!acknowledged||child.exitCode!==0||child.signalCode!==null)stop();return true;
   };
@@ -154,17 +155,19 @@ function createControl(input,standalone){
    };
    const exclusive=async fn=>{if(busy)stop();busy=true;try{return await fn();}finally{busy=false;}};
    const wait=async(q,ordinary)=>{const start=time(),r=await exchange({...q,now:start},ordinary);if(r.waitMs){await pause(r.waitMs);alive(ordinary);if(time()<start||(await exchange({...q,now:time()},ordinary)).waitMs!==0)stop();}};
+   const assertStage=proof=>{const value=o.assertStage(data(proof));if(types.isPromise(value))void Promise.prototype.then.call(value,()=>{},()=>{});if(value!==undefined)stop();};
    const run=async(q,io,ordinary)=>{
-    if(typeof io!=='function')stop();await wait({...q,op:q.op==='rpc-begin'?'rpc-wait':q.op==='oldcleanup-debit'?'oldcleanup-wait':'wait'},ordinary);
+    if(typeof io!=='function')stop();if(staged&&ordinary&&q.operation?.bucket==='N')assertStage({stage:'readonly-preparation',operations:[q.operation]});await wait({...q,op:q.op==='rpc-begin'?'rpc-wait':q.op==='oldcleanup-debit'?'oldcleanup-wait':'wait'},ordinary);
     const admitted=await exchange({...q,now:time()},ordinary);alive(ordinary);
     const task=Promise.resolve().then(async()=>{alive(ordinary);if(closed&&q.operation)stage(q.operation,'entered');let value;try{value=await io(admitted);}catch(_){if(closed&&q.operation)stage(q.operation,'api-rejected');stop();}if(closed&&q.operation)stage(q.operation,'api-returned');return value;});entered.add(task);
     try{const value=await task;try{alive(ordinary);}catch(_){if(closed&&q.operation)stage(q.operation,'post-return-guard-rejected');stop();}return value;}finally{entered.delete(task);}
    };
    const cap=Object.freeze({decisionHash:config.decisionHash,
-    identity:Object.freeze({epoch:config.epoch,binding:config.binding,decisionHash:config.decisionHash,expiresAt:config.expiresAt,...(closed?{closedPreflight:config.closedPreflight}:{} )}),
+    identity:Object.freeze({epoch:config.epoch,binding:config.binding,decisionHash:config.decisionHash,expiresAt:config.expiresAt,...(closed?{closedPreflight:config.closedPreflight}:{} ),...(staged?{stagedResume:config.stagedResume}:{})}),
     inspect:()=>tracked(()=>exchange({op:'inspect'})),
     externalRead:(io,descriptor)=>{let operation;try{operation=data(descriptor);}catch(_){return tracked(async()=>stop());}return tracked(()=>exclusive(()=>run({op:'debit',operation},io,true)));},
-    completePlan:operations=>{let pinned;try{pinned=data(operations);}catch(_){return tracked(async()=>stop());}return tracked(()=>exclusive(()=>exchange({op:'plan-ready',operations:pinned,now:time()},true)));},
+    ...(staged?{completeStage:proof=>{let pinned;try{pinned=data(proof);if(!exact(pinned,['stage','operations','futureCaps']))stop();}catch(_){return tracked(async()=>stop());}return tracked(()=>exclusive(async()=>{assertStage(pinned);return exchange({op:'stage-ready',...pinned,now:time()},true);}));}}:{}),
+    completePlan:operations=>{let pinned;try{pinned=data(operations);}catch(_){return tracked(async()=>stop());}return tracked(()=>exclusive(()=>{if(staged)assertStage({stage:'complete',operations:pinned});return exchange({op:'plan-ready',operations:pinned,now:time()},true);}));},
     restoreOriginalEditor:(action,io)=>tracked(()=>exclusive(()=>run({op:'oldcleanup-debit',kind:'C',action},io,false))),
     cleanup:(action,io)=>tracked(()=>exclusive(()=>run({op:'oldcleanup-debit',kind:'I',action},io,false))),
     dispatchCompatibility:(descriptor,io)=>{
@@ -179,7 +182,7 @@ function createControl(input,standalone){
     fd=openSync(config.path+'.lock',constants.O_RDWR|constants.O_NOFOLLOW);const s=fstatSync(fd),named=lstatSync(config.path+'.lock');
     if(!s.isFile()||s.uid!==userInfo().uid||(s.mode&0o7777)!==0o600||s.nlink!==1||s.size!==0||s.ino!==named.ino||s.dev!==named.dev)stop();
     child=spawn('python3',[source,standalone?'--standalone-inherited-lock':'--inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
-    const ready=observed(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;owned.initial=true;if(ready.state!=='ready'||(closed?ready.w0>t:ready.w0!==t)||ready.expiresAt!==config.expiresAt||(standalone&&ready.spent<31))stop();alive(true);
+    const ready=observed(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;owned.initial=true;if(ready.state!=='ready'||(staged?ready.w0!==null:closed?ready.w0>t:ready.w0!==t)||ready.expiresAt!==config.expiresAt||(standalone&&ready.spent<31))stop();alive(true);
     result=await callback(cap);if(pending||failed||veto())stop();
     const ending=await exchange({op:'inspect'},true);
     // A returned callback/transport value never substitutes for postchecks.
@@ -238,7 +241,7 @@ function createControl(input,standalone){
     if(!s.isFile()||s.uid!==userInfo().uid||(s.mode&0o7777)!==0o600||s.nlink!==1||s.size!==0||s.ino!==named.ino||s.dev!==named.dev)stop();
     child=spawn('python3',[source,'--standalone-cleanup-inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
     const ready=observed(await p.send({...config,now:time(),ownerNonce:nonce,minimumNewSpent:newSpentHighWater}));
-    if(ready.state!=='stopped'||ready.expiresAt!==config.expiresAt)stop();alive();
+    if(ready.state!=='stopped'||!staged&&ready.expiresAt!==config.expiresAt)stop();alive();
     result=await callback(Object.freeze({cleanup}));if(pending||failed)stop();alive();
    }catch(_){failed=true;}
    finally{

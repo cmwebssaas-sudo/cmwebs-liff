@@ -53,3 +53,14 @@ export function successorFixture(s){
  s.predecessor=predecessor;s.successorJournal=()=>JSON.parse(readFileSync(s.path+'.standalone-successor.json'));
  return s;
 }
+
+export async function stagedFixture(){
+ const s=await closedPreflightFixture(),h=session(s);assertReady(await h.ready);let time=clock+1;
+ const ops=[{id:'publisher-executions-discovery',bucket:'N',alias:'navigation-1',actor:'publisher',target:'publisher-executions',operation:'snapshot',units:1,stage:'research'},{id:'publisher-executions-open',bucket:'N',alias:'navigation-2',actor:'publisher',target:'publisher-executions',operation:'navigate',units:1,stage:'research'},{id:'current-publisher-bind',bucket:'P',alias:'publisher-bind',actor:'publisher',target:'publisher-executions',operation:'bind',units:1},...Array.from({length:6},(_,i)=>({id:'current-research-'+(i+3),bucket:'N',alias:'navigation-'+(i+3),actor:'publisher',target:'original-settings',operation:'snapshot',units:1,stage:'research'}))];
+ for(const operation of ops){let r=await h.send({op:'wait',operation,now:time});assertReady(r);time+=r.waitMs;assertReady(await h.send({op:'debit',operation,now:time}));}
+ assertReady(await h.send({op:'stop',now:time}));assertReady(await h.send({op:'finish',now:time}));await h.close();
+ const pin=path=>({path,sha256:hash(readFileSync(path))}),journal=s.path+'.standalone-successor.json',approval=join(s.home,'staged-approval.json');
+ s.put(approval,compact({decisionHash:'19c51070c90552bfe5af0c998a45cc5a2104efe17d6428dae046cdc492d3b16d',ownerAnswer:'同意此單次接續方案，維持160',importedSpent:42,limit:160,predecessorSha256:pin(journal).sha256}));
+ s.cfg={...s.cfg,binding:'8'.repeat(64),decisionHash:'19c51070c90552bfe5af0c998a45cc5a2104efe17d6428dae046cdc492d3b16d',expiresAt:null,now:clock+21600001,stagedResume:{approval:pin(approval),journal:pin(journal),claim:pin(s.path+'.standalone-successor-claim.json'),stop:pin(s.path+'.standalone-successor-stop.json'),registry:pin(join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.standalone-successor.json'))}};
+ s.stagedJournal=()=>JSON.parse(readFileSync(s.path+'.staged-resume.json'));return s;
+}

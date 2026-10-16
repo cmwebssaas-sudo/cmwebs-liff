@@ -6,7 +6,7 @@
 import {createHash} from 'node:crypto';
 import {types} from 'node:util';
 import {AUTHORITY_TRIAL_SCOPES,verifyAuthorityTrialReadback,verifyAuthorityStandaloneReadback} from './read-authority-trial-driver.mjs';
-import {BOUNDED_CONTINUATION_DECISION_HASH as continuationDecisionHash,BOUNDED_CONTINUATION_POLICY as policy,compileAuthorityContinuationPlan,STANDALONE_TRIAL_DECISION_HASH,STANDALONE_TRIAL_POLICY,compileAuthorityStandalonePlan} from './read-authority-continuation-plan.mjs';
+import {BOUNDED_CONTINUATION_DECISION_HASH as continuationDecisionHash,BOUNDED_CONTINUATION_POLICY as policy,compileAuthorityContinuationPlan,STANDALONE_TRIAL_DECISION_HASH,STANDALONE_TRIAL_POLICY,compileAuthorityStandalonePlan,STAGED_RESUME_DECISION_HASH,STAGED_RESUME_POLICY,compileAuthorityStagedResumePlan} from './read-authority-continuation-plan.mjs';
 const stop=()=>{throw Error('TRIAL_STOPPED');};
 const keys=(v,list)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...list].sort().join(',');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -51,20 +51,22 @@ export function createAuthorityContinuationDriver(input){
 export function createAuthorityStandaloneDriver(input){
  return createDriver(input,true);
 }
-function createDriver(input,standalone){
+export function createAuthorityStagedResumeDriver(input){return createDriver(input,true,true);}
+function createDriver(input,standalone,staged=false){
  try{
   const data=value=>snapshot(value,standalone);
-  const releaseAliases=aliasesFor(standalone?STANDALONE_TRIAL_POLICY:policy);
-  const decisionHash=standalone?STANDALONE_TRIAL_DECISION_HASH:continuationDecisionHash,pins=standalone?standalonePins:continuationPins;
-  const compile=standalone?compileAuthorityStandalonePlan:compileAuthorityContinuationPlan,verify=standalone?verifyAuthorityStandaloneReadback:verifyAuthorityTrialReadback;
+  const releaseAliases=aliasesFor(staged?STAGED_RESUME_POLICY:standalone?STANDALONE_TRIAL_POLICY:policy);
+  const decisionHash=staged?STAGED_RESUME_DECISION_HASH:standalone?STANDALONE_TRIAL_DECISION_HASH:continuationDecisionHash,pins=standalone?standalonePins:continuationPins;
+  const compile=staged?compileAuthorityStagedResumePlan:standalone?compileAuthorityStandalonePlan:compileAuthorityContinuationPlan,verify=standalone?verifyAuthorityStandaloneReadback:verifyAuthorityTrialReadback;
   const o=inputSnapshot(input,standalone),closed=standalone&&Object.hasOwn(o,'closedPreflight'),required=['decisionHash','continuationBinding','expected','expiresAt','now','operations','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport'];
-  if(!keys(o,[...required,...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[]),...(closed?['closedPreflight']:[])])||o.decisionHash!==decisionHash||typeof o.continuationBinding!=='string'||!/^[a-f0-9]{64}$/.test(o.continuationBinding)||!integer(o.expiresAt)||o.expiresAt<=0||['now','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport',...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[])].some(k=>typeof o[k]!=='function'))stop();
+  if(!keys(o,[...required,...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[]),...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[])])||o.decisionHash!==decisionHash||typeof o.continuationBinding!=='string'||!/^[a-f0-9]{64}$/.test(o.continuationBinding)||!integer(o.expiresAt)||o.expiresAt<=0||['now','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport',...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[])].some(k=>typeof o[k]!=='function'))stop();
   const e=o.expected;
   const version=standalone?'standaloneVersion':'libraryVersion';
   if(!keys(e,pins)||!integer(e[version])||(standalone?e[version]!==1||e.originalScriptId===e.thinScriptId:e[version]<1)||e.callerHash===e.publisherHash||e.originalCloudProject===e.newCloudProject)stop();
   for(const k of pins.filter(k=>k!==version))if(typeof e[k]!=='string'||!(/Hash$/.test(k)?/^[a-f0-9]{64}$/:/^[-A-Za-z0-9_]{1,200}$/).test(e[k]))stop();
+  if(staged&&!closed)stop();
   if(closed&&!keys(o.closedPreflight,['pins','callerSelection']))stop();
-  if(!compile({decisionHash,history:{spent:closed?33:standalone?STANDALONE_TRIAL_POLICY.importedUnits:policy.importedUnits,limit:160,...(closed?{closedPreflightCaller:o.closedPreflight.callerSelection}:{})},mapComplete:true,operations:o.operations}).credentialRpcEligible)stop();
+  if(!compile({decisionHash,history:{spent:staged?42:closed?33:standalone?STANDALONE_TRIAL_POLICY.importedUnits:policy.importedUnits,limit:160,...(closed&&!staged?{closedPreflightCaller:o.closedPreflight.callerSelection}:{})},mapComplete:true,operations:o.operations}).credentialRpcEligible)stop();
   const mapped=new Map(o.operations.map(v=>[v.bucket+':'+v.alias,v]));
   const time=()=>{const n=o.now();if(!integer(n))stop();return n;};
   const guard=()=>{if(sync(o.assertDispatch)!==undefined)stop();};
@@ -82,7 +84,7 @@ function createDriver(input,standalone){
     if(arguments.length!==1||used||!cap||typeof cap.inspect!=='function'||typeof cap.externalRead!=='function'||typeof cap.dispatchCompatibility!=='function'||typeof cap.finishCompatibility!=='function')stop();used=true;
     // No new scope or ledger: identity comes from the current captured owner.
     const identity=data(cap.identity);
-    if(!keys(identity,['epoch','binding','decisionHash','expiresAt',...(closed?['closedPreflight']:[])])||identity.epoch!==e.trialEpoch||identity.binding!==o.continuationBinding||identity.decisionHash!==decisionHash||identity.expiresAt!==o.expiresAt||cap.decisionHash!==decisionHash||closed&&!same(identity.closedPreflight,o.closedPreflight.pins))stop();
+    if(!keys(identity,['epoch','binding','decisionHash','expiresAt',...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[])])||identity.epoch!==e.trialEpoch||identity.binding!==o.continuationBinding||identity.decisionHash!==decisionHash||identity.expiresAt!==(staged?null:o.expiresAt)||cap.decisionHash!==decisionHash||closed&&!same(identity.closedPreflight,o.closedPreflight.pins)||staged&&!same(identity.stagedResume,o.stagedResume))stop();
     guard();const state=data(await cap.inspect());
     if(state.state!=='ready'||state.planReady!==true||state.expiresAt!==o.expiresAt||!integer(state.w0)||live()<state.w0||o.expiresAt-state.w0>21600000||state.rpc?.beganAt!==null||state.rpc?.complete!==false||state.chargedUpperBoundMs!==0)stop();
     const caller=token(o.credential,'caller'),publisher=token(o.publisherCredential,'publisher');

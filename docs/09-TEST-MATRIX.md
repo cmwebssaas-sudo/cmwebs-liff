@@ -2359,3 +2359,17 @@ throw; its assertion was corrected and final OAuth rerun passed. No runtime
 change was needed for that test correction. Validate and diff checks pass.
 Real Google form grounding/consent, RPC, cleanup and complete160-fit remain
 unverified; prior stopped scope and frozen used runtime were not reopened.
+
+### 2026-10-16 named staged resume accounting candidate
+
+Node22 focused staged cases cover immutable42/full-history import and singleton
+claims, no pre-IO W0, durable first UNKNOWN, same-day deadline/cutoff and no slide,
+strict12/2/2 N partitions including after navigation, true batch-header aliases,
+current-stage callback guard and exact future recovery caps, unknown/changed maps,
+shared historical rate/single IO, no UNKNOWN replay, complete-map-only RPC and
+all32 F. The full synthetic route debits once for360s, uses global C2/I17/J2 and
+ends at158 with unused2. Damaged ordinary journal still permits independent J2
+after actual captured drain/cooldown. Raw cap driver testing binds the immutable
+null identity to the real inspected active deadline. Existing affected
+continuation/standalone plan/budget/control/driver/recovery and header tests pass
+349/349; these are synthetic/local checks, not actual form or Google readiness.
