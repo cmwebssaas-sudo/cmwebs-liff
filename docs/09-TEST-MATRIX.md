@@ -1,5 +1,14 @@
 # V2 回歸測試矩陣
 
+## 2026-10-16 C6 encoded writer restoration
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Prior exact9d745be CI38828519240 | Rental2247/2247 PASS; Worker42/43 FAIL | Five500-room groups51.871–69.328ms fail unchanged<50ms; logs truncated, footers/seven stages returned; prior local pass does not override |
+| Restored encoded writer and unchanged dual decoder | RED→GREEN9/9; all65 D1 cases retained | Same null/absence/-0/deep/NUL/BLOB/JSONB/own-key/error semantics; only removed writer-specific mode/byte-saving expectations change |
+| Validation/new full acceptance |72/40/static/comparison179 and diff PASS; new CI REQUIRED | Comparison read-a6bbc6244c79ed1087ce576ee1c2c46430b4325ac2762c60fb25a6561e3095e7; next normal PR CI covers full unit/Worker/capacity; no duplicate local full/Core/PG run |
+| Actual release | NOT_ACCEPTED | Draft/off/blank/T0 not started; C1/C3/authority/performance/observation/device/rollback gates remain |
+
 ## 2026-10-16 C6 strict typed packed transport candidate
 
 | Check | Result | Evidence boundary |

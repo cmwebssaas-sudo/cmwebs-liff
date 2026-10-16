@@ -5397,3 +5397,30 @@ Properties/trigger/flag/data change, endpoint blank, T0 NOT_STARTED.
 Approved accelerated observation and actual C1/C3/performance/device gates stay
 open. Undeployed rollback restores only owned source/test/generated paths to
 base ac7fc474 and regenerates comparison; retain all evidence and private history.
+
+## C6 encoded SQL writer restoration — 2026-10-16
+
+Recommended model/speed GPT-6.1 Sol/high. Exact9d745be CI38828519240:
+rental2247/2247 PASS; Worker42/43 FAIL, five500-room p95 groups51.871–69.328ms
+above the unchanged50ms gate. Diagnostic logs are truncated, with terminal
+footers/all seven stage summaries returned. Prior local43/43 remains historical
+local evidence. The prior entry's comparison was precommit; committed9d745be
+uses read-e980d02a0f487eaf7cac15b734df01fe85aad5bcabbd9c7e7423cbd9a1a27dd3.
+
+A bounded local comparison supports SQL packing cost as a hypothesis: original
+encoded/current typed batch medians6/17ms across12 observations each, with65
+edge cases and36 complete datasets matching. This is not acceptance p95.
+Restore only the encoded writer/comment to ac7fc474; retain current decoder,
+canonical occupancy and all query/access/freshness rules. All65 semantic cases
+remain; removed typed-mode/byte-saving expectations become exact encoded-wire
+checks. RED observed before restoration, then focused9/9 PASS; validate72/40/
+static/comparison179 and diff checks PASS. No new Apps Script change.
+
+Comparison read-a6bbc6244c79ed1087ce576ee1c2c46430b4325ac2762c60fb25a6561e3095e7;
+asset unchanged. Next normal Draft PR CI provides fresh full unit/Worker/
+capacity verification; no additional local full/Core/PG run or CI success is
+claimed. No unchanged-source retry. All prior failures retained. No main merge,
+deployment, flags, Properties, triggers or data change; endpoint blank and
+T0 NOT_STARTED. Real C1/C3, authority/privacy/latency, approved observation,
+device/rollback gates remain open. Undeployed rollback restores this writer,
+wire test and generated comparison to9d745be while preserving all evidence.

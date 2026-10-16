@@ -1,5 +1,30 @@
 # C6 sequential read cutover runbook — preparation only
 
+## October16 encoded writer restoration — fresh CI required
+
+Head9d745be CI38828519240 is terminal: rental2247/2247 PASS;
+Worker42/43 FAIL. Original500-room p95ms home51.871/actions40.158/
+revenue44.228/tenants64.449/rooms53.741/arrears58.476/properties69.328;
+five groups fail the unchanged strict50ms gate. Provider logs are truncated;
+returned terminal footers and all seven stage summaries are retained.
+
+The new candidate restores only the original encoded SQL writer to avoid
+duplicated JSON validation at every present cell. Canonical occupancy and
+the legacy/typed decoder remain. All65 D1 semantic cases remain; encoded-frame
+expectations replace assertions specific to the removed typed writer.
+Focused9/9, validate72/40/static/comparison179 and diff checks pass.
+Comparison read-a6bbc6244c79ed1087ce576ee1c2c46430b4325ac2762c60fb25a6561e3095e7;
+asset20261013-read-capacity-v7 unchanged. This candidate uses the next normal
+PR CI for full unit/Worker/capacity verification; no duplicate local full or
+Core/PG run is claimed. The prior local43/43 does not override CI failure.
+
+The preceding typed entry records a precommit comparison identity; the exact
+committed9d745be identity is read-e980d02a0f487eaf7cac15b734df01fe85aad5bcabbd9c7e7423cbd9a1a27dd3.
+All failures remain. Keep Draft/off/blank/T0 not started. Actual C1/C3,
+authenticated latency, approved24-hour observation, rollback/device and
+seven-day postlaunch gates remain. Undeployed rollback restores this writer,
+wire-contract test and generated comparison to9d745be, retaining evidence.
+
 ## October16 strict typed transport — local gates pass, real cutover closed
 
 Recommended model/speed GPT-6.1 Sol/high. Shared canonical room occupancy and

@@ -36,20 +36,12 @@ export function decodeReplicaRows(rows) {
   });
 }
 
-// Pack the same static projection into one SQL result column per row. A mode
-// string distinguishes SQL NULL/absent from embedded JSON null. Strict JSON
-// avoids a second encoded string/JS parse; unsupported or malformed text keeps
-// the original decoder path. SQLite accepts NUL-terminated prefixes and some
-// BLOB JSON inputs, so neither may be promoted and silently become valid.
+// Pack the same static projection into one SQL result column per row. This
+// avoids D1 constructing an intermediate object with every schema field.
+// SQL NULL stays a null cell (absent); JSON text "null" stays a string cell
+// until decoding (an own null value). No source fields or rows are omitted.
 export function packedSelection(fields) {
-  if(fields.length===0)return "json_array('') AS replica_values";
-  const cells=fields.map(field=>{
-    const name='"'+field.replaceAll('"','""')+'"';
-    const valid=`typeof(${name}) <> 'blob' AND instr(${name},char(0)) = 0 AND json_valid(${name})`;
-    return {mode:`CASE WHEN ${name} IS NULL THEN '0' WHEN ${valid} THEN '1' ELSE '2' END`,
-      value:`CASE WHEN ${name} IS NULL THEN NULL WHEN ${valid} THEN json(${name}) ELSE ${name} END`};
-  });
-  return 'json_array('+cells.map(cell=>cell.mode).join(' || ')+','+cells.map(cell=>cell.value).join(',')+') AS replica_values';
+  return 'json_array('+fields.map(field=>'"'+field.replaceAll('"','""')+'"').join(',')+') AS replica_values';
 }
 export function decodePackedRows(rows,fields) {
   return rows.map(row=>{
