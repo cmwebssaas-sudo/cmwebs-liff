@@ -696,6 +696,7 @@ proof remain required. This change does not renew a deadline or establish fit.
 
 ## October16 named staged resume, local policy candidate
 
+
 The separately approved named segment links the complete stopped42 history and
 its claims/checkpoints. It neither reopens the stopped scope nor changes any old
 W0, expiry, UNKNOWN, debit or source copy. A distinct singleton claim cannot be
@@ -738,3 +739,24 @@ IO, shared historical10/min, C2/I17/J2, actual-owner drain and recovery cooldown
 remain. No actual execution readiness, Google consent, production or fit result
 follows from this local policy. Old scope remains closed; frozen used sources
 and real ledgers are not migration targets.
+
+## October16 named readonly recovery
+
+The subsequent named readonly recovery permits one separately claimed repair
+of a terminal preflight result. It imports the complete43 history, preserves
+the original W0 and hard expiry, and leaves15 navigation units partitioned as
+publisher11, caller OAuth2 and thin-trigger2. Publisher1 cannot be reused;
+publisher2 must be the first operation and must be the fixed original synthetic
+settings snapshot. The98 required operations, original C2 and unused2 remain
+reserved. No uncertain mutation or RPC may be retried, and no further segment
+or clock extension is authorized by this mode.
+
+This recovery validates the pinned terminal journal, claim, stop, registry and
+the actual prior drain evidence before creating its own single-use claim. A
+lost in-memory predecessor is never reconstructed from JSON: the new mode owns
+a new real holder under the same canonical flock, and its future independent
+cleanup must capture and drain that actual holder. Older modes continue to
+require their branded predecessor handoff. Static capability expiry remains
+null while inspection returns the inherited numeric W0/deadline. Every stage,
+full dispatch map, privacy, runtime, performance and device gate still applies.
+These local mechanisms are not actual Google acceptance or rollout readiness.

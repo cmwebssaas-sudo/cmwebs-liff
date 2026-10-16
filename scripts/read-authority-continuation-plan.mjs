@@ -137,6 +137,12 @@ export const STAGED_RESUME_STAGES=freeze({
  recovery:Object.keys(stagedOperations).filter(k=>k.startsWith('I:')||k.startsWith('J:'))
 });
 export function compileAuthorityStagedResumePlan(input){return compilePlan(input,STAGED_RESUME_POLICY);}
+// One named repair of the stopped43 readonly result, with no new clock.
+export const READONLY_RECOVERY_DECISION_HASH='ccb1f0d40fe93df36d18f687da256287b1e3980b9397b58c31d6c75c6c6b8b60';
+export const READONLY_RECOVERY_WINDOW=freeze({w0:1792142820041,expiresAt:1792164420041});
+export const READONLY_RECOVERY_POLICY=freeze({...STAGED_RESUME_POLICY,decisionHash:READONLY_RECOVERY_DECISION_HASH,priorDecisionHash:STAGED_RESUME_DECISION_HASH,stage:'readonly-recovery-compatibility',importedUnits:43,bucketLimits:{...STAGED_RESUME_POLICY.bucketLimits,N:15},navigationControlLimit:15,navigationPartitions:{publisher:11,'caller-oauth':2,'thin-trigger':2}});
+export function compileAuthorityReadonlyRecoveryPlan(input){return compilePlan(input,READONLY_RECOVERY_POLICY);}
+
 // `*Eligible` denotes only the map's local arithmetic condition. It never
 // verifies prerequisites, starts W0, or grants an external operation capability.
 export function compileAuthorityContinuationPlan(input){
@@ -150,7 +156,7 @@ function compilePlan(input,policy){
   const limits=policy.bucketLimits,operations=policy.operations,navigationTargets=policy.navigationTargets;
   const outsideRestore=policy.originalRestoreUnitsOutsideMap??0;
   input=snapshot(input);
-  const staged=policy===STAGED_RESUME_POLICY;
+  const readonly=policy===READONLY_RECOVERY_POLICY,staged=policy===STAGED_RESUME_POLICY||readonly;
   const closed=policy===STANDALONE_TRIAL_POLICY&&Object.hasOwn(input.history??{},'closedPreflightCaller'),imported=closed?33:policy.importedUnits;
   if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==policy.decisionHash||
    !exact(input.history,['spent','limit',...(closed?['closedPreflightCaller']:[])])||input.history.spent!==imported||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
@@ -168,7 +174,7 @@ function compilePlan(input,policy){
      const pub=/^publisher-(?:[1-9]|1[0-2])$/.test(op.alias)&&op.actor==='publisher'&&navigationTargets.includes(op.target)&&op.target!=='thin-triggers'&&['navigate','snapshot'].includes(op.operation)&&op.stage==='publisher';
      const caller=['caller-oauth-enter','caller-oauth-observe'].includes(op.alias)&&op.actor==='caller'&&op.target==='caller-oauth'&&op.operation===(op.alias.endsWith('enter')?'navigate':'snapshot')&&op.stage==='caller-oauth';
      const thin=['thin-triggers-before','thin-triggers-after'].includes(op.alias)&&op.actor==='publisher'&&op.target==='thin-triggers'&&op.operation==='snapshot'&&op.stage==='thin-trigger';
-     if(!pub&&!caller&&!thin)stop();preparation++;
+     if(!pub&&!caller&&!thin||readonly&&(op.alias==='publisher-1'||op.alias==='publisher-2'&&(op.target!=='original-settings'||op.operation!=='snapshot')))stop();preparation++;
     }else{
     const discovery=closed&&((op.id==='publisher-executions-discovery'&&op.alias==='navigation-1'&&op.operation==='snapshot')||(op.id==='publisher-executions-open'&&op.alias==='navigation-2'&&op.operation==='navigate'))&&op.actor==='publisher'&&op.target==='publisher-executions'&&op.stage==='research';
     if(!discovery&&(!/^navigation-(?:[1-9]|1[0-9]|2[0-4])$/.test(op.alias)||op.actor!=='publisher'||!navigationTargets.includes(op.target)||
@@ -183,7 +189,7 @@ function compilePlan(input,policy){
   }
   if(closed&&input.operations.some(o=>o.id==='publisher-executions-open')&&!input.operations.some(o=>o.id==='publisher-executions-discovery'))stop();
   if(research>8||preparation>16||Object.entries(bucketUnits).some(([k,n])=>n>limits[k]))stop();
-  const required=[...Object.keys(operations),...(staged?['N:caller-oauth-enter','N:caller-oauth-observe','N:thin-triggers-before','N:thin-triggers-after']:[])];
+  const required=[...Object.keys(operations),...(readonly?['N:publisher-2']:[]),...(staged?['N:caller-oauth-enter','N:caller-oauth-observe','N:thin-triggers-before','N:thin-triggers-after']:[])];
   const missingOperations=required.filter(k=>!seen.has(k)).sort();
   const fullyKnown=missingOperations.length===0&&unknownCosts.length===0&&input.mapComplete;
   if(closed){const caller=input.history.closedPreflightCaller;const mapped=input.operations.find(o=>o.bucket==='P'&&o.alias==='caller-bind');if(!mapped||!exact(caller,Object.keys(mapped))||Object.keys(mapped).some(k=>caller[k]!==mapped[k])||caller.units!==1)stop();}

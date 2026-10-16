@@ -34,8 +34,12 @@ DECISION='f227ebbf2ca791d521e0008a639c2fa4ecb31e5be793478c45ffee47b420c92d'
 LEGACY_SOURCE='7f04fc0f0e1f1968029fc666297bf0ca83d871e31c310117ec94ebec3c050e18'
 HISTORICAL_POLICY_SOURCE='06112c8340a04b763d70580883e4bc2b4ddb5fb6d18a22eb577e78ef10fd119f'
 PREDECESSOR_POLICY_SOURCE='49014902c98921ca18b4a09895713be0decd631bebefca661157c3a542a7e01f'
-POLICY_SOURCE='e711e68679b2010a1079198c0bc028f4b3a385cda2d091d37c4d2f3bbc9e9434'
+POLICY_SOURCE='3c920e6027824b3581cdc9101b081f8fbd92ce35694e008034faaa579abbc06c'
 CLOSED_POLICY_SOURCE='3a30a2ad1a93ef2cba5db552152cc909df9bddb597eb0cc7afddc571abc9aec8'
+READONLY_DECISION='ccb1f0d40fe93df36d18f687da256287b1e3980b9397b58c31d6c75c6c6b8b60'
+READONLY_W0=1792142820041
+READONLY_EXPIRY=1792164420041
+STAGED_POLICY_SOURCE='e711e68679b2010a1079198c0bc028f4b3a385cda2d091d37c4d2f3bbc9e9434'
 STAGED_DECISION='19c51070c90552bfe5af0c998a45cc5a2104efe17d6428dae046cdc492d3b16d'
 STANDALONE_DECISION='02c75938cc8ecff17c907431db861613bb7f4e2af967f185c6b9933758f7dfd8'
 OWNER_ANSWER='同意改用單一獨立合成腳本，取代舊試驗入口與停止規則；維持累積160上限及安全、效能、回退驗收，通過後依既有批次授權持續完成上線。'
@@ -869,18 +873,18 @@ STAGES={
  'readbacks':[k for k in STAGED_OPERATIONS if k.startswith(('F:','G:','H:','T:')) or k in ['B:fixture-native','B:auth-tabs-batch']],
  'recovery':[k for k in STAGED_OPERATIONS if k.startswith(('I:','J:'))]
 }
-def staged_n(op):
+def staged_n(op,readonly=False):
  pub=re.fullmatch('publisher-(?:[1-9]|1[0-2])',op['alias']) is not None and op['actor']=='publisher' and op['target'] in TARGETS and op['operation'] in ['navigate','snapshot'] and op['stage']=='publisher'
  caller=op['alias'] in ['caller-oauth-enter','caller-oauth-observe'] and op['actor']=='caller' and op['target']=='caller-oauth' and op['operation']==('navigate' if op['alias']=='caller-oauth-enter' else 'snapshot') and op['stage']=='caller-oauth'
  thin=op['alias'] in ['thin-triggers-before','thin-triggers-after'] and op['actor']=='publisher' and op['target']=='thin-triggers' and op['operation']=='snapshot' and op['stage']=='thin-trigger'
- if not (pub or caller or thin):fail()
+ if not (pub or caller or thin) or readonly and (op['alias']=='publisher-1' or op['alias']=='publisher-2' and (op['target']!='original-settings' or op['operation']!='snapshot')):fail()
 
-def normalize(op,standalone=False,closed=False,staged=False):
+def normalize(op,standalone=False,closed=False,staged=False,readonly=False):
  keys=['id','bucket','alias','actor','target','operation','units']
  if type(op) is not dict or not exact(op,keys+(['stage'] if op.get('bucket')=='N' else [])) or type(op['id']) is not str or re.fullmatch('[-a-zA-Z0-9_.]{1,100}',op['id']) is None or type(op['bucket']) is not str or op['bucket'] not in (STAGED_LIMITS if staged else STANDALONE_LIMITS if standalone else LIMITS) or type(op['alias']) is not str or type(op['units']) is not int or op['units']!=1:fail()
  key=op['bucket']+':'+op['alias']
  if op['bucket']=='N':
-  if staged:staged_n(op)
+  if staged:staged_n(op,readonly)
   else:
    discovery=closed and any(op=={'id':event_id,'bucket':'N','alias':alias,'actor':'publisher','target':'publisher-executions','operation':method,'units':1,'stage':'research'} for event_id,alias,method in [('publisher-executions-discovery','navigation-1','snapshot'),('publisher-executions-open','navigation-2','navigate')])
    if not discovery and (re.fullmatch('navigation-(?:[1-9]|1[0-9]|2[0-4])',op['alias']) is None or op['actor']!='publisher' or op['target'] not in TARGETS+(['thin-triggers'] if standalone else []) or op['operation'] not in ['navigate','snapshot'] or op['stage'] not in ['research','preparation']):fail()
@@ -889,25 +893,27 @@ def normalize(op,standalone=False,closed=False,staged=False):
   if rule is None or (op['actor'],op['target'])!=(rule['actor'],rule['target']) or op['operation'] not in rule['methods']:fail()
  return key
 
-def complete_map(operations,standalone=False,closed=False,staged=False):
+def complete_map(operations,standalone=False,closed=False,staged=False,readonly=False):
  rules=STAGED_OPERATIONS if staged else STANDALONE_OPERATIONS if standalone else OPERATIONS
  if type(operations) is not list or len(operations)>131:fail()
  limits=STAGED_LIMITS if staged else STANDALONE_LIMITS if standalone else LIMITS
  ids=set();used={};buckets={k:0 for k in limits};research=0;preparation=0
  for op in operations:
-  key=normalize(op,standalone,closed,staged)
+  key=normalize(op,standalone,closed,staged,readonly)
   if key in used or op['id'] in ids:fail()
   used[key]=op;ids.add(op['id']);buckets[op['bucket']]+=1
   if op['bucket']=='N':
    if op['stage']=='research':research+=1
    else:preparation+=1
  if closed and not staged and used.get('N:navigation-2',{}).get('id')=='publisher-executions-open' and used.get('N:navigation-1',{}).get('id')!='publisher-executions-discovery':fail()
+ if readonly and 'N:publisher-2' not in used:fail()
+ if readonly and buckets['N']>15:fail()
  if staged and any(k not in used for k in ['N:caller-oauth-enter','N:caller-oauth-observe','N:thin-triggers-before','N:thin-triggers-after']):fail()
- if any(k not in used for k in rules) or any(buckets[k]>limits[k] for k in limits) or research>8 or preparation>16 or (42 if staged else 33 if closed else 31 if standalone else 27)+len(operations)-(1 if closed and not staged else 0)+(2 if standalone else 0)>158:fail()
+ if any(k not in used for k in rules) or any(buckets[k]>limits[k] for k in limits) or research>8 or preparation>16 or (43 if readonly else 42 if staged else 33 if closed else 31 if standalone else 27)+len(operations)-(1 if closed and not staged else 0)+(2 if standalone else 0)>158:fail()
  return used
 
-def request_stop(cfg,standalone=False,closed=False,staged=False):
- stem='staged-resume' if staged else 'standalone-successor' if closed else 'standalone' if standalone else 'continuation'
+def request_stop(cfg,standalone=False,closed=False,staged=False,readonly=False):
+ stem='readonly-recovery' if readonly else 'staged-resume' if staged else 'standalone-successor' if closed else 'standalone' if standalone else 'continuation'
  if not exact(cfg,['path','epoch','binding']) or not digest(cfg['binding']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
  p=Path(cfg['path'])
  if not p.is_absolute():fail()
@@ -924,11 +930,12 @@ class Ledger:
   if script_cleanup:
    if not standalone or type(cfg) is not dict or not integer(cfg.get('minimumNewSpent')) or not 0<=cfg['minimumNewSpent']<=127:fail()
    cfg=copy.deepcopy(cfg);self.minimum_new_spent=cfg.pop('minimumNewSpent')
+  self.readonly=standalone and type(cfg) is dict and 'readonlyRecovery' in cfg
   self.staged=standalone and type(cfg) is dict and 'stagedResume' in cfg
   self.closed=standalone and type(cfg) is dict and 'closedPreflight' in cfg
-  self.standalone=standalone;self.rules=STAGED_OPERATIONS if self.staged else STANDALONE_OPERATIONS if standalone else OPERATIONS;self.imported=15 if self.staged else 6 if self.closed else 4 if standalone else 0
-  decision=STAGED_DECISION if self.staged else STANDALONE_DECISION if standalone else DECISION;stem='staged-resume' if self.staged else 'standalone-successor' if self.closed else 'standalone' if standalone else 'continuation'
-  if not exact(cfg,['path','epoch','binding','decisionHash','expiresAt','now','ownerNonce','original','baseline','legacyBudget','policySource']+(['history'] if standalone else [])+(['closedPreflight'] if self.closed else [])+(['stagedResume'] if self.staged else [])) or cfg['decisionHash']!=decision or any(not digest(cfg[k]) for k in ['binding','ownerNonce']) or (not integer(cfg['now']) or (cfg['expiresAt'] is not None if self.staged else not integer(cfg['expiresAt']))) or type(cfg['path']) is not str or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
+  self.standalone=standalone;self.rules=STAGED_OPERATIONS if self.staged else STANDALONE_OPERATIONS if standalone else OPERATIONS;self.imported=16 if self.readonly else 15 if self.staged else 6 if self.closed else 4 if standalone else 0
+  decision=READONLY_DECISION if self.readonly else STAGED_DECISION if self.staged else STANDALONE_DECISION if standalone else DECISION;stem='readonly-recovery' if self.readonly else 'staged-resume' if self.staged else 'standalone-successor' if self.closed else 'standalone' if standalone else 'continuation'
+  if not exact(cfg,['path','epoch','binding','decisionHash','expiresAt','now','ownerNonce','original','baseline','legacyBudget','policySource']+(['history'] if standalone else [])+(['closedPreflight'] if self.closed else [])+(['stagedResume'] if self.staged else [])+(['readonlyRecovery'] if self.readonly else [])) or cfg['decisionHash']!=decision or any(not digest(cfg[k]) for k in ['binding','ownerNonce']) or (not integer(cfg['now']) or (cfg['expiresAt'] is not None if self.staged else not integer(cfg['expiresAt']))) or type(cfg['path']) is not str or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
   self.cfg=cfg;self.path=Path(cfg['path']);self.original=cfg['original'];self.child=None;self.current_journal=None
   if not self.path.is_absolute():fail()
   directory(self.path.parent)
@@ -947,26 +954,30 @@ class Ledger:
   if standalone:self.validate_history()
   if self.closed:self.validate_closed_preflight()
   if self.staged:self.validate_staged_predecessor()
+  if self.readonly:self.validate_readonly_predecessor()
   if script_cleanup:
    reg=record(self.reg);identity=record(self.claim)
    fixed={'path':str(self.path),'epoch':cfg['epoch'],'binding':cfg['binding'],'originalBinding':self.original['binding'],'baselineSha256':cfg['baseline']['sha256'],'ownerHash':sha(cfg['ownerNonce'].encode()),'decisionHash':decision,'legacyBudgetSha256':LEGACY_SOURCE,'policySourceSha256':POLICY_SOURCE,'expiresAt':cfg['expiresAt'],'history':cfg['history']}
    if self.closed:fixed['closedPreflight']=cfg['closedPreflight']
    if self.staged:fixed['stagedResume']=cfg['stagedResume']
+   if self.readonly:fixed['readonlyRecovery']=cfg['readonlyRecovery']
    if not exact(identity,list(fixed)+['w0']) or any(identity[k]!=v for k,v in fixed.items()) or (identity['w0'] is not None if self.staged else not integer(identity['w0']) or not 0<identity['expiresAt']-identity['w0']<=21600000 or day(identity['w0'])!=day(identity['expiresAt']) or cfg['now']<identity['w0']) or not exact(reg,['identity','checkpoint']) or reg['identity']!=identity:fail()
    self.identity=identity;self.current_journal=copy.deepcopy(reg['checkpoint']);self.recovery_current();return
   for p in [self.reg,self.claim,self.journal,self.marker]:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
-  t=cfg['now'];end=cfg['expiresAt'];w0=None if self.staged else self.predecessor['w0'] if self.closed else t
+  t=cfg['now'];end=READONLY_EXPIRY if self.readonly else cfg['expiresAt'];w0=READONLY_W0 if self.readonly else None if self.staged else self.predecessor['w0'] if self.closed else t
   if self.closed and not self.staged and (end!=self.predecessor['expiresAt'] or t>=end or self.old_current()['spent']!=27):fail()
   if (not self.staged and (not 0<end-t<=21600000 or day(t)!=day(end))) or any(x>t for x in self.baseline['preparation']['calls']+(self.history_times if standalone else [])):fail()
+  if self.readonly and (t<READONLY_W0 or end-t<=360000 or day(t)!=day(READONLY_W0)):fail()
   self.start_child();self.old_read({'op':'cleanup-inspect'});self.old_current()
   identity={'path':str(self.path),'epoch':cfg['epoch'],'binding':cfg['binding'],'originalBinding':self.original['binding'],'baselineSha256':cfg['baseline']['sha256'],'ownerHash':sha(cfg['ownerNonce'].encode()),'decisionHash':decision,'legacyBudgetSha256':LEGACY_SOURCE,'policySourceSha256':POLICY_SOURCE,'w0':w0,'expiresAt':end}
   if standalone:identity['history']=copy.deepcopy(cfg['history'])
   if self.closed:identity['closedPreflight']=copy.deepcopy(cfg['closedPreflight'])
   if self.staged:identity['stagedResume']=copy.deepcopy(cfg['stagedResume'])
+  if self.readonly:identity.update({'readonlyRecovery':copy.deepcopy(cfg['readonlyRecovery']),'w0':None,'expiresAt':None})
   self.identity=identity
-  j={**identity,'version':1,'day':None if self.staged else day(w0),'deadlineUtc':None if self.staged else timestamp(end,timezone.utc),'deadlineTaipei':None if self.staged else timestamp(end,timezone(timedelta(hours=8))),'state':'ready','spent':0,'events':[],'plan':None,'chargedUpperBoundMs':0,'rpc':{'beganAt':None,'complete':False},'finished':False}
+  j={**identity,'w0':w0,'expiresAt':end,'version':1,'day':None if self.staged and not self.readonly else day(w0),'deadlineUtc':None if self.staged and not self.readonly else timestamp(end,timezone.utc),'deadlineTaipei':None if self.staged and not self.readonly else timestamp(end,timezone(timedelta(hours=8))),'state':'ready','spent':0,'events':[],'plan':None,'chargedUpperBoundMs':0,'rpc':{'beganAt':None,'complete':False},'finished':False}
   if self.staged:j['stages']={}
   # Any interrupted creation consumes the sole segment; retry cannot recreate it.
   save_record(self.reg,{'identity':identity,'checkpoint':None},True)
@@ -1034,7 +1045,7 @@ class Ledger:
    values[k]=json.loads(pinned(pin,pin['sha256'],True))
   j=values['journal'];identity=record(Path(paths['claim']))
   fixed={'path':str(self.path),'epoch':self.cfg['epoch'],'originalBinding':self.original['binding'],'baselineSha256':self.cfg['baseline']['sha256'],'decisionHash':STANDALONE_DECISION,'legacyBudgetSha256':LEGACY_SOURCE,'history':self.cfg['history'],'expiresAt':json.loads(pinned(spec['journal'],spec['journal']['sha256'],True))['expiresAt'] if self.staged else self.cfg['expiresAt']}
-  if not exact(identity,list(fixed)+['binding','ownerHash','policySourceSha256','w0']) or any(identity[k]!=v for k,v in fixed.items()) or not all(digest(identity[k]) for k in ['binding','ownerHash','policySourceSha256']) or identity['policySourceSha256'] not in [PREDECESSOR_POLICY_SOURCE,CLOSED_POLICY_SOURCE,POLICY_SOURCE] or identity['binding']==self.cfg['binding'] or not integer(identity['w0']) or not 0<identity['expiresAt']-identity['w0']<=21600000 or day(identity['w0'])!=day(identity['expiresAt']):fail()
+  if not exact(identity,list(fixed)+['binding','ownerHash','policySourceSha256','w0']) or any(identity[k]!=v for k,v in fixed.items()) or not all(digest(identity[k]) for k in ['binding','ownerHash','policySourceSha256']) or identity['policySourceSha256'] not in [PREDECESSOR_POLICY_SOURCE,CLOSED_POLICY_SOURCE,STAGED_POLICY_SOURCE,POLICY_SOURCE] or identity['binding']==self.cfg['binding'] or not integer(identity['w0']) or not 0<identity['expiresAt']-identity['w0']<=21600000 or day(identity['w0'])!=day(identity['expiresAt']):fail()
   if values['registry']!={'value':{'identity':identity,'checkpoint':j},'sha256':sha(compact({'identity':identity,'checkpoint':j}).encode())} or values['claim']!={'value':identity,'sha256':sha(compact(identity).encode())} or record(Path(paths['stop']))!={'path':str(self.path),'epoch':self.cfg['epoch'],'binding':identity['binding']}:fail()
   fields=list(identity)+['version','day','deadlineUtc','deadlineTaipei','state','spent','events','plan','chargedUpperBoundMs','rpc','finished']
   if not exact(j,fields) or any(j[k]!=v for k,v in identity.items()) or type(j['version']) is not int or j['version']!=1 or j['day']!=day(j['w0']) or j['deadlineUtc']!=timestamp(j['expiresAt'],timezone.utc) or j['deadlineTaipei']!=timestamp(j['expiresAt'],timezone(timedelta(hours=8))) or j['state']!='stopped' or type(j['spent']) is not int or j['spent']!=2 or j['finished'] is not True or j['plan'] is not None or type(j['chargedUpperBoundMs']) is not int or j['chargedUpperBoundMs']!=0 or j['rpc']!={'beganAt':None,'complete':False} or type(j['events']) is not list or len(j['events'])!=2:fail()
@@ -1058,7 +1069,7 @@ class Ledger:
   if v['approval']!=expected:fail()
   identity=record(Path(paths['claim']));j=v['journal']
   fixed={'path':str(self.path),'epoch':self.cfg['epoch'],'originalBinding':self.original['binding'],'baselineSha256':self.cfg['baseline']['sha256'],'decisionHash':STANDALONE_DECISION,'legacyBudgetSha256':LEGACY_SOURCE,'history':self.cfg['history'],'closedPreflight':self.cfg['closedPreflight'],'expiresAt':self.predecessor['expiresAt'],'w0':self.predecessor['w0']}
-  if not exact(identity,list(fixed)+['binding','ownerHash','policySourceSha256']) or any(identity[k]!=val for k,val in fixed.items()) or any(not digest(identity[k]) for k in ['binding','ownerHash','policySourceSha256']) or identity['policySourceSha256'] not in [CLOSED_POLICY_SOURCE,POLICY_SOURCE] or identity['binding'] in [self.cfg['binding'],self.predecessor['binding']]:fail()
+  if not exact(identity,list(fixed)+['binding','ownerHash','policySourceSha256']) or any(identity[k]!=val for k,val in fixed.items()) or any(not digest(identity[k]) for k in ['binding','ownerHash','policySourceSha256']) or identity['policySourceSha256'] not in [CLOSED_POLICY_SOURCE,STAGED_POLICY_SOURCE,POLICY_SOURCE] or identity['binding'] in [self.cfg['binding'],self.predecessor['binding']]:fail()
   fields=list(identity)+['version','day','deadlineUtc','deadlineTaipei','state','spent','events','plan','chargedUpperBoundMs','rpc','finished']
   if not exact(j,fields) or any(j[k]!=val for k,val in identity.items()) or j['version']!=1 or j['day']!=day(j['w0']) or j['deadlineUtc']!=timestamp(j['expiresAt'],timezone.utc) or j['deadlineTaipei']!=timestamp(j['expiresAt'],timezone(timedelta(hours=8))) or j['state']!='stopped' or type(j['spent']) is not int or j['spent']!=9 or j['finished'] is not True or j['plan'] is not None or type(j['chargedUpperBoundMs']) is not int or j['chargedUpperBoundMs']!=0 or j['rpc']!={'beganAt':None,'complete':False} or type(j['events']) is not list or len(j['events'])!=9:fail()
   if v['claim']!={'value':identity,'sha256':sha(compact(identity).encode())} or v['registry']!={'value':{'identity':identity,'checkpoint':j},'sha256':sha(compact({'identity':identity,'checkpoint':j}).encode())} or record(Path(paths['stop']))!={'path':str(self.path),'epoch':self.cfg['epoch'],'binding':identity['binding']}:fail()
@@ -1069,6 +1080,29 @@ class Ledger:
    op=e['operation'];ids.add(op['id']);seen.add(key);last=e['time']
    if op['bucket']=='N' and (op['stage']!='research' or (key=='N:navigation-1' and op['id']!='publisher-executions-discovery') or (key=='N:navigation-2' and op['id']!='publisher-executions-open') or (key not in ['N:navigation-1','N:navigation-2'] and op['target']!='original-settings')):fail()
   self.history_times += [e['time'] for e in j['events']];self.staged_predecessor=j
+ def validate_readonly_predecessor(self):
+  spec=self.cfg['readonlyRecovery']
+  if not self.staged or not exact(spec,['approval','journal','claim','stop','registry','drain']):fail()
+  base=str(self.path)+'.staged-resume';paths={'journal':base+'.json','claim':base+'-claim.json','stop':base+'-stop.json','registry':str(self.old_reg.parent/(sha(json.dumps(self.cfg['epoch'],separators=(',',':')).encode())+'.staged-resume.json'))}
+  v={}
+  for key,pin in spec.items():
+   if not exact(pin,['path','sha256']) or not digest(pin['sha256']) or key in paths and pin['path']!=paths[key]:fail()
+   v[key]=json.loads(pinned(pin,pin['sha256'],True))
+  expected={'decisionHash':READONLY_DECISION,'ownerAnswer':'同意，然后继续解除我们的卡点。','importedSpent':43,'limit':160,'predecessorSha256':spec['journal']['sha256'],'w0':READONLY_W0,'expiresAt':READONLY_EXPIRY}
+  if v['approval']!=expected:fail()
+  # This exact saved receipt is PRIOR terminal negative evidence only. It
+  # never brands an old/current owner: the new process must own the real flock.
+  expected_drain={'source':'actual-staged-first-read-stopped','at':'2026-10-16T09:27:49.522Z','errorCategory':'TRIAL_STOPPED','result':'UNAVAILABLE','report':{'phase':'stopped','bindings':2,'preparationReads':0,'partitionReads':{'publisher':0,'caller-oauth':0,'thin-trigger':0},'w0':READONLY_W0,'expiresAt':READONLY_EXPIRY,'spent':43,'trialAccepted':False,'rollbackComplete':False,'remoteExecutionSettled':False},'drain':{'source':'canonical-continuation-holder','stopRequested':True,'stopAcknowledged':True,'ordinaryScopeClosed':True,'ownedScope':{'serial':1,'state':'SETTLED'},'remoteExecutionSettled':False,'trialAccepted':False,'rollbackComplete':False},'retryPerformed':False,'googleMutationPerformed':False}
+  if spec['drain']['sha256']!='f2fbe799e7f77febe21ecebf0d2b4dfe0e585f196d3f30837963e0971bd0beff' or v['drain']!=expected_drain:fail()
+  identity=record(Path(paths['claim']));j=v['journal']
+  fixed={'path':str(self.path),'epoch':self.cfg['epoch'],'originalBinding':self.original['binding'],'baselineSha256':self.cfg['baseline']['sha256'],'decisionHash':STAGED_DECISION,'legacyBudgetSha256':LEGACY_SOURCE,'history':self.cfg['history'],'closedPreflight':self.cfg['closedPreflight'],'stagedResume':self.cfg['stagedResume'],'w0':None,'expiresAt':None}
+  if not exact(identity,list(fixed)+['binding','ownerHash','policySourceSha256']) or any(identity[k]!=value for k,value in fixed.items()) or any(not digest(identity[k]) for k in ['binding','ownerHash','policySourceSha256']) or identity['policySourceSha256'] not in [STAGED_POLICY_SOURCE,POLICY_SOURCE] or identity['binding'] in [self.cfg['binding'],self.predecessor['binding'],self.staged_predecessor['binding']]:fail()
+  fields=list(identity)+['version','day','deadlineUtc','deadlineTaipei','state','spent','events','plan','chargedUpperBoundMs','rpc','finished','stages']
+  if not exact(j,fields) or any(j[k]!=value for k,value in identity.items() if k not in ['w0','expiresAt']) or j['version']!=1 or j['w0']!=READONLY_W0 or j['expiresAt']!=READONLY_EXPIRY or j['day']!=day(READONLY_W0) or j['deadlineUtc']!=timestamp(READONLY_EXPIRY,timezone.utc) or j['deadlineTaipei']!=timestamp(READONLY_EXPIRY,timezone(timedelta(hours=8))) or j['state']!='stopped' or type(j['spent']) is not int or j['spent']!=1 or j['finished'] is not True or j['plan'] is not None or type(j['chargedUpperBoundMs']) is not int or j['chargedUpperBoundMs']!=0 or j['rpc']!={'beganAt':None,'complete':False} or j['stages']!={} or type(j['events']) is not list or len(j['events'])!=1:fail()
+  if v['claim']!={'value':identity,'sha256':sha(compact(identity).encode())} or v['registry']!={'value':{'identity':identity,'checkpoint':j},'sha256':sha(compact({'identity':identity,'checkpoint':j}).encode())} or record(Path(paths['stop']))!={'path':str(self.path),'epoch':self.cfg['epoch'],'binding':identity['binding']}:fail()
+  event=j['events'][0]
+  if not exact(event,['operation','time','outcome']) or event['outcome']!='UNKNOWN' or event['time']!=READONLY_W0 or not integer(event['time']) or normalize(event['operation'],True,True,True)!='N:publisher-1' or event['operation']['target']!='original-settings' or event['operation']['operation']!='snapshot' or any(t>event['time'] for t in self.history_times) or event['time']>self.cfg['now']:fail()
+  self.history_times += [event['time']];self.readonly_predecessor=j
  def window(self,t):
   # Last millisecond of the same Taipei calendar day.
   end=min(t+21600000,((t+28800000)//86400000+1)*86400000-28800000-1)
@@ -1104,7 +1138,7 @@ class Ledger:
    prior.add(name)
  def used_operations(self,j):
   events=([] if self.staged else [self.predecessor['events'][0]] if self.closed else [])+j['events']
-  return {normalize(e['operation'],self.standalone,self.closed,self.staged):e['operation'] for e in events}
+  return {normalize(e['operation'],self.standalone,self.closed,self.staged,self.readonly):e['operation'] for e in events}
  def legacy_cfg(self):
   o=self.original
   if not exact(o,['path','epoch','binding','approvalHash','proposalHash','legacySha256','importedReads','expiresAt','now','decisionHash','nativeTargets']) or o['path']!=str(self.path) or o['epoch']!=self.cfg['epoch'] or o['decisionHash']!=LEGACY_DECISION or o['importedReads']!=25 or any(not digest(o[k]) for k in ['binding','approvalHash','proposalHash','legacySha256']) or not integer(o['expiresAt']) or not integer(o['now']):fail()
@@ -1151,6 +1185,7 @@ class Ledger:
   if self.standalone:self.validate_history()
   if self.closed:self.validate_closed_preflight()
   if self.staged:self.validate_staged_predecessor()
+  if self.readonly:self.validate_readonly_predecessor()
   j=json.loads(rawfile(self.journal))
   if j!=self.current_journal or record(self.claim)!=self.identity or record(self.reg)!={'identity':self.identity,'checkpoint':j}:fail()
   return j,old
@@ -1161,21 +1196,24 @@ class Ledger:
   self.sources();old=self.old_current();self.validate_history()
   if self.closed:self.validate_closed_preflight()
   if self.staged:self.validate_staged_predecessor()
+  if self.readonly:self.validate_readonly_predecessor()
   reg=record(self.reg);identity=record(self.claim)
   if identity!=self.identity or not exact(reg,['identity','checkpoint']) or reg['identity']!=identity or reg['checkpoint']!=self.current_journal:fail()
   j=reg['checkpoint'];fields=list(identity)+['version','day','deadlineUtc','deadlineTaipei','state','spent','events','plan','chargedUpperBoundMs','rpc','finished']+(['stages'] if self.staged else [])
   if not exact(j,fields) or any(j[k]!=v for k,v in identity.items() if not self.staged or k not in ['w0','expiresAt']) or type(j['version']) is not int or j['version']!=1 or (not self.staged and (j['day']!=day(j['w0']) or j['deadlineUtc']!=timestamp(j['expiresAt'],timezone.utc) or j['deadlineTaipei']!=timestamp(j['expiresAt'],timezone(timedelta(hours=8))))) or j['state'] not in ['ready','stopped'] or type(j['finished']) is not bool or type(j['events']) is not list or not integer(j['spent']) or j['spent']!=len(j['events']) or not self.minimum_new_spent<=j['spent']<=127:fail()
   if self.staged:
-   if j['w0'] is None:
+   if self.readonly:
+    if j['w0']!=READONLY_W0 or j['expiresAt']!=READONLY_EXPIRY or j['day']!=day(READONLY_W0) or j['deadlineUtc']!=timestamp(READONLY_EXPIRY,timezone.utc) or j['deadlineTaipei']!=timestamp(READONLY_EXPIRY,timezone(timedelta(hours=8))):fail()
+   elif j['w0'] is None:
     if j['spent']!=0 or any(j[k] is not None for k in ['expiresAt','day','deadlineUtc','deadlineTaipei']):fail()
    elif not integer(j['w0']) or j['expiresAt']!=self.window(j['w0']) or j['day']!=day(j['w0']) or j['deadlineUtc']!=timestamp(j['expiresAt'],timezone.utc) or j['deadlineTaipei']!=timestamp(j['expiresAt'],timezone(timedelta(hours=8))):fail()
    self.validate_stages(j)
   if not exact(j['rpc'],['beganAt','complete']) or type(j['rpc']['complete']) is not bool or (j['rpc']['beganAt'] is not None and not integer(j['rpc']['beganAt'])) or not integer(j['chargedUpperBoundMs']) or j['chargedUpperBoundMs'] not in [0,360000]:fail()
-  mapped=None if j['plan'] is None else complete_map(j['plan'],True,self.closed,self.staged)
+  mapped=None if j['plan'] is None else complete_map(j['plan'],True,self.closed,self.staged,self.readonly)
   seen=set();ids=set();counts={k:0 for k in (STAGED_LIMITS if self.staged else STANDALONE_LIMITS)};last=j['w0'];rpc=None;cleanup_started=False;js=[]
   for e in j['events']:
    if not exact(e,['operation','time','outcome']) or e['outcome']!='UNKNOWN' or not integer(e['time']) or (last is not None and e['time']<last):fail()
-   op=e['operation'];key=normalize(op,True,self.closed,self.staged)
+   op=e['operation'];key=normalize(op,True,self.closed,self.staged,self.readonly)
    if key in seen or op['id'] in ids or op['bucket'] in ['C','I']:fail()
    counts[op['bucket']]+=1;seen.add(key);ids.add(op['id']);last=e['time']
    if counts[op['bucket']]>(STAGED_LIMITS if self.staged else STANDALONE_LIMITS)[op['bucket']]:fail()
@@ -1203,7 +1241,7 @@ class Ledger:
   except OSError:return True
  def stopped(self):
   if self.script_cleanup:return
-  request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged)
+  request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged,self.readonly)
   j,_=self.current();j['state']='stopped';self.persist(j)
  def times(self,j,old,t):
   if not integer(t):fail()
@@ -1214,10 +1252,12 @@ class Ledger:
   recent=sorted(x for x in times if t-x<60000)
   return 0 if len(recent)<10 else recent[-10]+60000-t
  def ordinary_check(self,j,old,op,t,rpc=False):
-  key=normalize(op,self.standalone,self.closed,self.staged);times=self.times(j,old,t)
+  key=normalize(op,self.standalone,self.closed,self.staged,self.readonly);times=self.times(j,old,t)
   if j['state']!='ready' or j['finished'] or self.veto() or t>=self.live_window(j,t) or (j['day'] is not None and day(t)!=j['day']):fail()
   if key.startswith(('I:','J:')) or key in ['C:'+v for v in C] or (key=='H:wrapper-compatibility-rpc')!=rpc:fail()
   used=self.used_operations(j)
+  if self.readonly and j['spent']==0 and (key!='N:publisher-2' or op['target']!='original-settings' or op['operation']!='snapshot'):fail()
+  if self.readonly and op['bucket']=='N' and sum(e['operation']['bucket']=='N' for e in j['events'])>=15:fail()
   if key in used or any(v['id']==op['id'] for v in used.values()):fail()
   # P/N preflight is the sole initial admission. A complete map adds no remote
   # authorization; the JS driver separately verifies external prerequisites.
@@ -1226,7 +1266,7 @@ class Ledger:
     if op['bucket']!='N' and not any(op==v for stage in j['stages'].values() for v in stage['operations']):fail()
    elif key not in ['P:caller-bind','P:publisher-bind'] and not (op['bucket']=='N' and op['stage']=='research'):fail()
   else:
-   mapped=complete_map(j['plan'],self.standalone,self.closed,self.staged)
+   mapped=complete_map(j['plan'],self.standalone,self.closed,self.staged,self.readonly)
    if mapped.get(key)!=op:fail()
   if op['bucket']=='N' and not self.staged:
    if any('P:'+p not in used for p in (['caller-bind'] if self.closed and op['target']=='publisher-executions' else ['caller-bind','publisher-bind'])):fail()
@@ -1265,7 +1305,7 @@ class Ledger:
    # Presence is a negative veto, including a partial marker. Never repair or
    # erase ambiguous STOP to obtain cleanup authorization; original C/I claims
    # and source/checkpoint validation above are the cleanup authority.
-   if not self.veto():request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged)
+   if not self.veto():request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged,self.readonly)
    j['state']='stopped';self.persist(j)
   self.old_read({**original,'op':'debit'});self.old_current()
   return self.view(0)
@@ -1314,14 +1354,14 @@ class Ledger:
    if type(q['futureCaps']) is not dict or q['futureCaps']!=future or any(type(v) is not int for v in q['futureCaps'].values()):fail()
    # Full fixed98 + all16 N + original C2 + unused2 stays reserved. I/J
    # are inside98, never deducted a second time or loaned to stage work.
-   if len(self.rules)+16+42+2+2!=160:fail()
+   if len(self.rules)+(15 if self.readonly else 16)+(43 if self.readonly else 42)+2+2!=160:fail()
    j['stages'][name]={'operations':q['operations'],'futureCaps':q['futureCaps']};self.persist(j);return self.view(0)
   if op=='plan-ready' and exact(q,['op','now','operations']):
-   self.times(j,old,q['now']);mapped=complete_map(q['operations'],self.standalone,self.closed,self.staged)
+   self.times(j,old,q['now']);mapped=complete_map(q['operations'],self.standalone,self.closed,self.staged,self.readonly)
    if j['plan'] is not None or self.veto() or j['state']!='ready' or q['now']>=self.live_window(j,q['now']) or (j['day'] is not None and day(q['now'])!=j['day']) or any(mapped.get(k)!=v for k,v in self.used_operations(j).items()) or self.staged and any(mapped.get(normalize(o,True,True,True))!=o for v in j['stages'].values() for o in v['operations']):fail()
    j['plan']=q['operations'];self.persist(j);return self.view(0)
   if op=='rpc-finish' and exact(q,['op','now']):
-   self.times(j,old,q['now']);used={normalize(e['operation'],self.standalone,self.closed,self.staged) for e in j['events']}
+   self.times(j,old,q['now']);used={normalize(e['operation'],self.standalone,self.closed,self.staged,self.readonly) for e in j['events']}
    required=[k for k in self.rules if k.startswith(('F:wrapper-after.','G:wrapper-after.'))]+(['N:thin-triggers-after'] if self.staged else [])
    if j['rpc']['beganAt'] is None or j['rpc']['complete'] or any(k not in used for k in required) or self.veto() or j['state']!='ready' or q['now']>=j['expiresAt'] or day(q['now'])!=j['day']:fail()
    j['rpc']['complete']=True;self.persist(j);return self.view(0)
@@ -1330,7 +1370,7 @@ class Ledger:
   if op.startswith('rpc-') and (not integer(q['credentialExpiresAt']) or not q['now']+ms+360000<q['credentialExpiresAt']<=j['expiresAt']):fail()
   if op in ['wait','rpc-wait']:return self.view(ms)
   if ms:fail()
-  if self.staged and j['w0'] is None:
+  if self.staged and not self.readonly and j['w0'] is None:
    j['w0']=q['now'];j['expiresAt']=self.window(q['now']);j['day']=day(q['now']);j['deadlineUtc']=timestamp(j['expiresAt'],timezone.utc);j['deadlineTaipei']=timestamp(j['expiresAt'],timezone(timedelta(hours=8)))
   j['spent']+=1;j['events'].append({'operation':q['operation'],'time':q['now'],'outcome':'UNKNOWN'})
   if op=='rpc-begin':
@@ -1358,8 +1398,8 @@ try:
  if sys.argv[1:]==['--standalone-policy']:emit(STANDALONE_OPERATIONS);sys.exit(0)
  line=sys.stdin.buffer.readline(100001)
  if len(line)>100000:fail()
- if sys.argv[1:] in [['--request-stop'],['--standalone-request-stop'],['--standalone-successor-request-stop'],['--staged-resume-request-stop']]:
-  request_stop(json.loads(line),sys.argv[1]!='--request-stop',sys.argv[1] in ['--standalone-successor-request-stop','--staged-resume-request-stop'],sys.argv[1]=='--staged-resume-request-stop');emit({'ok':True,'stopRequested':True});sys.exit(0)
+ if sys.argv[1:] in [['--request-stop'],['--standalone-request-stop'],['--standalone-successor-request-stop'],['--staged-resume-request-stop'],['--readonly-recovery-request-stop']]:
+  request_stop(json.loads(line),sys.argv[1]!='--request-stop',sys.argv[1] in ['--standalone-successor-request-stop','--staged-resume-request-stop','--readonly-recovery-request-stop'],sys.argv[1] in ['--staged-resume-request-stop','--readonly-recovery-request-stop'],sys.argv[1]=='--readonly-recovery-request-stop');emit({'ok':True,'stopRequested':True});sys.exit(0)
  if sys.argv[1:] not in [['--inherited-lock'],['--standalone-inherited-lock'],['--standalone-cleanup-inherited-lock']]:fail()
  ledger=Ledger.__new__(Ledger);ledger.__init__(json.loads(line),sys.argv[1]!='--inherited-lock',sys.argv[1]=='--standalone-cleanup-inherited-lock');emit(ledger.view())
  for line in sys.stdin.buffer:
