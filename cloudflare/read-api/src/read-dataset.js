@@ -8,6 +8,67 @@ const unique=values=>[...new Set(values.map(text).filter(Boolean))];
 const column=field=>`trim(COALESCE(json_extract("${field}",'$'),''))`;
 const blankWorkspace=`upper(${column('workspace_id')}) = ''`;
 function failure(code='READ_REPLICA_UNAVAILABLE'){throw Object.assign(new Error(code),{code});}
+const escapedOrControl=/[\\\u0000-\u001f]/;
+function decodeCell(value) {
+  // Common replica strings have no escapes. Keep strict JSON.parse for numbers,
+  // containers, escaped strings and every malformed or non-string input.
+  if(value==='null')return null;
+  if(value==='true')return true;
+  if(value==='false')return false;
+  if(value==='0')return 0;
+  if(typeof value==='string'&&value.charCodeAt(0)===34&&value.indexOf('"',1)===value.length-1&&!escapedOrControl.test(value))return value.slice(1,-1);
+  return JSON.parse(value);
+}
+
+// Stored fields are JSON text; SQL NULL means absent, while JSON "null" is an
+// own null value. Avoid intermediate entry/pair/filter/map arrays at capacity.
+export function decodeReplicaRows(rows) {
+  return rows.map(row=>{
+    const decoded={};
+    for(const field of Object.keys(row)) {
+      const value=row[field];
+      if(value===null)continue;
+      const parsed=decodeCell(value);
+      if(field==='__proto__')Object.defineProperty(decoded,field,{value:parsed,enumerable:true,writable:true,configurable:true});
+      else decoded[field]=parsed;
+    }
+    return decoded;
+  });
+}
+
+// Pack the same static projection into one SQL result column per row. This
+// avoids D1 constructing an intermediate object with every schema field.
+// SQL NULL stays a null cell (absent); JSON text "null" stays a string cell
+// until decoding (an own null value). No source fields or rows are omitted.
+export function packedSelection(fields) {
+  return 'json_array('+fields.map(field=>'"'+field.replaceAll('"','""')+'"').join(',')+') AS replica_values';
+}
+export function decodePackedRows(rows,fields) {
+  return rows.map(row=>{
+    const values=JSON.parse(row.replica_values);
+    if(!Array.isArray(values))throw new Error('Packed replica row shape');
+    const typed=values.length===fields.length+1,modes=typed?values[0]:null;
+    // Exact-N frames retain the exported legacy contract, even when the first
+    // encoded cell happens to look like a mode string.
+    if(typed?typeof modes!=='string'||modes.length!==fields.length||!/^[012]*$/.test(modes):values.length!==fields.length)
+      throw new Error('Packed replica row shape');
+    const decoded={};
+    for(let index=0;index<fields.length;index++) {
+      const raw=values[index+(typed?1:0)],mode=typed?modes[index]:null;
+      if(typed&&mode==='0') {
+        if(raw!==null)throw new Error('Packed replica row shape');
+        continue;
+      }
+      // A raw BLOB may itself pack as JSONB null. Its fallback must retain
+      // the legacy null skip; only promoted JSON null is an own null value.
+      if(raw===null&&(!typed||mode==='2'))continue;
+      const field=fields[index],value=typed&&mode==='1'?raw:decodeCell(raw);
+      if(field==='__proto__')Object.defineProperty(decoded,field,{value,enumerable:true,writable:true,configurable:true});
+      else decoded[field]=value;
+    }
+    return decoded;
+  });
+}
 
 // All identifiers below come from the static schema or server-loaded rows.
 // Client values are always bound parameters. No operational table is scanned
@@ -18,14 +79,14 @@ export function createReadDatasetLoader(database,options={}) {
   function statement(table,where,params=[]) {
     const fields=schema[table]?.fields;
     if(!fields||!where) failure();
-    return db.prepare(`SELECT ${fields.map(f=>'"'+f+'"').join(',')} FROM "${table}" WHERE ${where} ORDER BY CAST(replica_source_row AS INTEGER),row_key LIMIT 10001`).bind(...params);
+    return db.prepare(`SELECT ${packedSelection(fields)} FROM "${table}" WHERE ${where} ORDER BY CAST(replica_source_row AS INTEGER),row_key LIMIT 10001`).bind(...params);
   }
-  function decode(result) {
+  function decode(result,fields) {
     if(!result?.success||!Array.isArray(result.results)||result.results.length>10000) failure();
-    return result.results.map(row=>Object.fromEntries(Object.entries(row).filter(([,value])=>value!==null).map(([field,value])=>[field,JSON.parse(value)])));
+    return decodePackedRows(result.results,fields);
   }
   async function select(table,where,params=[]) {
-    return decode(await statement(table,where,params).all());
+    return decode(await statement(table,where,params).all(),schema[table].fields);
   }
   function merge(table,rows) {
     const key=schema[table].key;
@@ -49,11 +110,11 @@ export function createReadDatasetLoader(database,options={}) {
   // inputs are already known enter a batch; dependent stages still await.
   // Bound transient result size to 80 statements per SDK call, not 80 keys.
   async function selectGroups(groups) {
-    const statements=groups.flatMap(({table,selections})=>selections.map(([where,params])=>statement(table,where,params))),rows=[];
+    const statements=groups.flatMap(({table,selections})=>selections.map(([where,params])=>({fields:schema[table].fields,query:statement(table,where,params)}))),rows=[];
     for(let offset=0;offset<statements.length;offset+=80) {
-      const batch=statements.slice(offset,offset+80),results=await db.batch(batch);
+      const batch=statements.slice(offset,offset+80),results=await db.batch(batch.map(entry=>entry.query));
       if(!Array.isArray(results)||results.length!==batch.length) failure();
-      rows.push(...results.map(decode));
+      rows.push(...results.map((result,index)=>decode(result,batch[index].fields)));
     }
     let offset=0;
     return groups.map(({table,selections})=>{
@@ -64,14 +125,24 @@ export function createReadDatasetLoader(database,options={}) {
   return {
     async checkReplica() {
       const now=options.now??Date.now(),tables=Object.keys(schema);
-      const results=await db.batch(tables.map(table=>db.prepare(`SELECT source_version,completed_at,
+      // Keep each table's original latest-marker query (including tie choice)
+      // intact; only combine independent results into one bounded statement.
+      const queries=tables.map((table,ordinal)=>`SELECT ${ordinal} AS replica_table_ordinal,marker.* FROM (SELECT source_version,completed_at,
         EXISTS (SELECT 1 FROM sync_runs AS pending WHERE pending.sheet=? AND pending.status='receiving'
           AND pending.source_version > completed.source_version) AS pending
         FROM sync_runs AS completed WHERE completed.sheet=? AND completed.mode='snapshot'
-          AND completed.status='completed' ORDER BY completed.source_version DESC LIMIT 1`).bind(table,table)));
-      for(const result of results) {
-        const row=result.results?.[0];
-        if(!result.success||!row||row.pending) failure('READ_SYNC_INCOMPLETE');
+          AND completed.status='completed' ORDER BY completed.source_version DESC LIMIT 1) AS marker`);
+      // D1 bounds compound SELECT terms; keep both union levels below that
+      // bound without merging or rewriting any table's marker selection.
+      const groups=[];
+      for(let offset=0;offset<queries.length;offset+=5) groups.push('SELECT * FROM ('+queries.slice(offset,offset+5).join(' UNION ALL ')+')');
+      const result=await db.prepare(groups.join(' UNION ALL ')+' ORDER BY replica_table_ordinal').bind(...tables.flatMap(table=>[table,table])).all();
+      if(!result?.success||!Array.isArray(result.results)||result.results.length>tables.length) failure('READ_SYNC_INCOMPLETE');
+      // Visit every required ordinal so missing rows still fail at their old
+      // table position, after any earlier table's original freshness error.
+      for(const ordinal of tables.keys()) {
+        const row=result.results[ordinal];
+        if(!row||row.replica_table_ordinal!==ordinal||row.pending) failure('READ_SYNC_INCOMPLETE');
         const completed=Date.parse(row.completed_at);
         if(!Number.isFinite(completed)||completed>now+300000||now-completed>26*3600000) failure('READ_SYNC_STALE');
       }

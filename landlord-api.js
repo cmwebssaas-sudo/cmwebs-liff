@@ -107,6 +107,8 @@
     if (!target || config.testMode || replicaGuarded()) return null;
     const mode = global.CMWEBS_READ_PATH && global.CMWEBS_READ_PATH[target.route];
     if (mode !== 'on' && mode !== 'shadow') return null;
+    if(mode==='shadow'&&(typeof global.CMWEBS_READ_COMPARISON_VERSION!=='string'||
+      !/^[a-zA-Z0-9_-]{8,80}$/.test(global.CMWEBS_READ_COMPARISON_VERSION))) return null;
     const params = config.params || {};
     if (Object.keys(params).some(key => !target.query.includes(key))) return null;
     if (target.route === 'tenants' && params.read_view !== 'summary') return null;
@@ -217,7 +219,7 @@
     try {
       await global.fetch(url.href,{method:'POST',headers:{Authorization:target.credential,'Content-Type':'application/json'},
         credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,
-        body:JSON.stringify({route:target.route,variant:target.variant,release:global.CMWEBS_RELEASE_VERSION,
+        body:JSON.stringify({route:target.route,variant:target.variant,release:global.CMWEBS_READ_COMPARISON_VERSION,
           receipt:worker?worker.receipt:null,
           outcome:worker?'compared':'worker_error',
           paths:worker?differencePaths(gas,worker.result).filter(path=>!clocks.includes(path)):[],

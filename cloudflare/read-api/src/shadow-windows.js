@@ -1,6 +1,8 @@
 const routes=[['home','home'],['home','actions'],...['revenue','tenants','rooms','arrears','properties'].map(route=>[route,'default'])];
-export function evaluateShadowWindows(input,{now,epoch,release}) {
+export function evaluateShadowWindows(input,{now,epoch,release,page}) {
   const reasons=[],start=Date.parse(input?.started_at);
+  if(page!==undefined&&!routes.some(([route])=>route===page)) reasons.push('INVALID_PAGE');
+  const required=page===undefined?routes:routes.filter(([route])=>route===page);
   if(!Number.isFinite(start)||!Number.isSafeInteger(now)||now-start<7*86400000) reasons.push('INCOMPLETE_REAL_TIME');
   if(input?.epoch!==epoch||input?.release!==release||!epoch||!release) reasons.push('RELEASE_MISMATCH');
   const completed=Number.isFinite(start)&&Number.isSafeInteger(now)?Math.floor((now-start)/86400000):0;
@@ -31,7 +33,7 @@ export function evaluateShadowWindows(input,{now,epoch,release}) {
     if(row.attempts!==row.matched) reasons.push('OBSERVATION_PENDING');
     if((seen.get(key)?.compared||0)!==row.matched) reasons.push('UNMATCHED_COMPARISONS');
   }
-  for(let window=first;window<first+7;window++) for(const [route,variant] of routes) {
+  for(let window=first;window<first+7;window++) for(const [route,variant] of required) {
     const row=seen.get(window+':'+route+':'+variant);
     if(!row||row.compared<1) reasons.push('MISSING_COVERAGE');
     const attempt=attempts.get(window+':'+route+':'+variant);
@@ -39,5 +41,5 @@ export function evaluateShadowWindows(input,{now,epoch,release}) {
     if(row?.errors) reasons.push('WORKER_ERRORS');
     if(row?.diffs) reasons.push('FIELD_DIFFERENCES');
   }
-  return {eligible:reasons.length===0,reasons:[...new Set(reasons)],evidence:'AGGREGATE_ONLY_REQUIRES_VERIFIED_REMOTE_EXPORT'};
+  return {eligible:reasons.length===0,coverage:page||'all',reasons:[...new Set(reasons)],evidence:'AGGREGATE_ONLY_REQUIRES_VERIFIED_REMOTE_EXPORT'};
 }

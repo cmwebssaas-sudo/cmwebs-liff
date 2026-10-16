@@ -1335,6 +1335,13 @@ zero rows, missing reports or partial-day failures cannot establish acceptance.
 Current endpoint is blank and flags off. See `READ-SHADOW.md`,
 `READ-CLOCK-DECISION.md` and `READ-ROUTING.md` for retained gates and rollback.
 
+C6 binds telemetry `release` to generated `CMWEBS_READ_COMPARISON_VERSION` and
+bundled Worker source identity. `CMWEBS_RELEASE_VERSION` remains the independently
+advanced asset cache tag. `READ_SHADOW_RELEASE` must match the comparison manifest;
+stale identity closes shadow reads/reports. Pure flag/cache publication preserves
+unchanged comparison identity/epoch; substantive included source/config changes
+invalidate it. No financial API response or original GAS URL changes.
+
 # Synthetic Execution API trial (not a formal dispatcher route)
 
 The C3 feasibility candidate's separate thin API executable and fixed library

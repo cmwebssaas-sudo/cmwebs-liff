@@ -385,7 +385,7 @@ function landlordRoomCenterOccupancyByRoom_(ss, access, rooms) {
   });
   const statuses = {};
   rooms.forEach(function (room) {
-    statuses[propertyRoomText_(room.room_id)] = propertyRoomBuildRoomView_(room, current, latest, {}, tenantIds, activeTenantIds, {contracts: contractsById, tenants: tenantsById}).effective_status;
+    statuses[propertyRoomText_(room.room_id)] = propertyRoomResolveRoomOccupancy_(room, current, latest, tenantIds, activeTenantIds, {contracts: contractsById, tenants: tenantsById}).effectiveStatus;
   });
   return statuses;
 }

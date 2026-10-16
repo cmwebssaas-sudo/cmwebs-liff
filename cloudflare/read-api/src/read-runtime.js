@@ -1,11 +1,11 @@
 import { appsScriptDate } from './apps-script-date.js';
 // Request-local adapters for the generated GAS calculations. Identity is
 // supplied by the server, never resolved from a reader's query parameters.
-export function createReadServices(dataset, access, options = {}) {
+export function createReadServices(dataset, access, options = {}, deferSheetValues = false) {
   if (access?.success !== true || !access.workspace?.workspace_id || !access.membership || !access.user) {
     throw new Error('Verified Workspace access required');
   }
-  return {...createReplicaRuntime(dataset,options),
+  return {...createReplicaRuntime(dataset,options,deferSheetValues),
     workspaceLandlordResolveAccess_:()=>access,
     contractRequestResolveLandlordIdentity_:()=>access.principal,
     lmResolveLandlord_:()=>access.principal};
@@ -13,20 +13,34 @@ export function createReadServices(dataset, access, options = {}) {
 
 // Read-only Sheet/services layer used while resolving provider-verified identity.
 // It supplies no Workspace access or principal and cannot authorize a reader.
-export function createReplicaRuntime(dataset,options={}) {
+export function createReplicaRuntime(dataset,options={},deferSheetValues=false) {
   const now = options.now ?? Date.now();
   const RequestDate=options.dateConstructor||appsScriptDate(now);
-  const sheets = new Map(Object.entries(dataset).map(([name, sourceRows]) => {
-    sourceRows=sourceRows.map(row=>{
-      const dates=new Set(row.replica_date_fields?JSON.parse(row.replica_date_fields):[]);
-      return Object.fromEntries(Object.entries(row).map(([key,value])=>[key,
-        dates.has(key)?new RequestDate(value):Object.prototype.toString.call(value)==='[object Date]'?new RequestDate(value.getTime()):value]));
-    });
+  const inheritedDefaults={};
+  const sourceTables=new Map(Object.entries(dataset)),sheets=new Map();
+  function buildSheet(name,sourceRows) {
+    const maskedAccounts=name==='V2_payment_accounts';
+    const headerSet=new Set();
+    for(const row of sourceRows) {
+      for(const key of Object.keys(row))headerSet.add(key);
+      if(maskedAccounts&&Object.hasOwn(row,'bank_account_last5'))headerSet.add('bank_account');
+    }
+    const headers=[...headerSet].filter(key=>!key.startsWith('replica_'));
     // Rehydrate only an already masked suffix for the existing mask formatter.
     // The full account is neither stored in D1 nor reconstructed here.
-    const rows=name==='V2_payment_accounts' ? sourceRows.map(row=>Object.hasOwn(row,'bank_account_last5') ? {...row,bank_account:row.bank_account_last5} : row) : sourceRows;
-    const headers = [...new Set(rows.flatMap(row => Object.keys(row)))].filter(key=>!key.startsWith('replica_'));
-    const values = [headers, ...rows.map(row => headers.map(key => row[key] ?? ''))];
+    // Build the existing Sheet matrix directly instead of cloning every scalar
+    // into another row object first. Dates remain freshly hydrated per request.
+    const values=[headers,...sourceRows.map(row=>{
+      const dates=new Set(row.replica_date_fields?JSON.parse(row.replica_date_fields):[]);
+      return headers.map(key=>{
+        const sourceKey=maskedAccounts&&key==='bank_account'&&Object.hasOwn(row,'bank_account_last5')?'bank_account_last5':key;
+        const own=Object.hasOwn(row,sourceKey);
+        let value=own?row[sourceKey]:inheritedDefaults[sourceKey];
+        if(own&&dates.has(sourceKey))value=new RequestDate(value);
+        else if(value!==null&&typeof value==='object'&&Object.prototype.toString.call(value)==='[object Date]')value=new RequestDate(value.getTime());
+        return value??'';
+      });
+    })];
     const sheet = {
       getName: () => name, getSheetId: () => name,
       getLastRow: () => values.length, getLastColumn: () => headers.length,
@@ -37,22 +51,88 @@ export function createReplicaRuntime(dataset,options={}) {
         getValues: () => values.slice(row-1,row-1+height).map(item=>item.slice(column-1,column-1+width))
       })
     };
-    return [name,sheet];
-  }));
-  const ss = {getSheetByName: name => sheets.get(name) || null};
+    return sheet;
+  }
+  function getSheetByName(name) {
+    if(sheets.has(name))return sheets.get(name);
+    if(!sourceTables.has(name))return null;
+    const sheet=buildSheet(name,sourceTables.get(name));
+    sheets.set(name,sheet);sourceTables.delete(name);return sheet;
+  }
+  if(deferSheetValues===true) {
+    // Only the HTTP reader opts in, after obtaining its own complete scoped D1
+    // dataset. No caller can mutate those private rows during the synchronous
+    // calculation. Keep default eager snapshot semantics for other callers.
+    for(const rows of sourceTables.values()) {
+      if(!Array.isArray(rows))throw new Error('Replica schema unavailable');
+      for(const row of rows)if(row==null)throw new Error('Replica row unavailable');
+    }
+  } else for(const name of sourceTables.keys())getSheetByName(name);
+  const ss = {getSheetByName};
   const requiredSheet = name => {const sheet=ss.getSheetByName(name); if(!sheet) throw new Error('Replica schema unavailable'); return sheet;};
   const localCache = new Map();
   const contexts = new Map();
   const cache = {get:key=>localCache.get(key)||null,put:(key,value)=>localCache.set(key,value)};
+  // Only fixed Intl configuration is reused, never strings or comparison
+  // results. This runtime belongs to one request and initializes lazily.
+  let propertyRoomTextCompare;
+  const runtimePropertyRoomCompareText_ = (left,right) => {
+    if(!propertyRoomTextCompare)propertyRoomTextCompare=new Intl.Collator('zh-Hant',{numeric:true,sensitivity:'base'}).compare;
+    return propertyRoomTextCompare(left,right);
+  };
+  // Reuse request-local formatters; Date objects and authorization are never
+  // cached. Non-string zones
+  // retain Intl's coercion on every call, including mutable objects and errors.
+  const dateFormatters = new Map();
+  const timeFormatters = new Map();
+  // Cache at most128 output strings for this runtime/request. The key uses the
+  // freshly coerced numeric instant, primitive zone and primitive pattern, so
+  // mutable inputs still take effect. Undefined/current-time calls bypass it.
+  const formattedDates = new Map();
+  const formatFields={yyyy:'year',MM:'month',dd:'day',HH:'hour',mm:'minute',ss:'second'};
   const formatDate = (date, timeZone, pattern) => {
-    const values = Object.fromEntries(new Intl.DateTimeFormat('en-GB',{
-      timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
-    }).formatToParts(date).map(item=>[item.type,item.value]));
-    return pattern.replace(/yyyy|MM|dd|HH|mm|ss/g, key => values[{yyyy:'year',MM:'month',dd:'day',HH:'hour',mm:'minute',ss:'second'}[key]]);
+    // Date-only GAS patterns need no clock parts. Keep year/month/day together
+    // to preserve Intl's two-digit widths; any clock token uses the full format.
+    const dateOnly=typeof pattern==='string'&&!/HH|mm|ss/.test(pattern);
+    const formatters=dateOnly?dateFormatters:timeFormatters;
+    let entry=typeof timeZone==='string'?formatters.get(timeZone):undefined;
+    if(!entry) {
+      const formatter=new Intl.DateTimeFormat('en-GB',{
+        timeZone,year:'numeric',month:'2-digit',day:'2-digit',
+        ...(dateOnly?{}:{hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})
+      });
+      let layout=null;
+      if(dateOnly) {
+        // Derive only a formatter layout, never a source date/result. Normal
+        // numeric dates can use format() without allocating a parts object for
+        // every field on every call. Other layouts fall back to formatToParts.
+        const parts=formatter.formatToParts(946728000000);
+        const fields=parts.filter(part=>part.type!=='literal').map(part=>part.type);
+        if(fields.length===3&&new Set(fields).size===3&&fields.every(field=>['year','month','day'].includes(field))) {
+          const expression=parts.map(part=>part.type==='literal'?part.value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):'([0-9]+)').join('');
+          layout={fields,expression:new RegExp('^'+expression+'$')};
+        }
+      }
+      entry={formatter,layout};
+      if(typeof timeZone==='string')formatters.set(timeZone,entry);
+    }
+    const values={};
+    // Match Intl's single numeric coercion even if an unusual formatted layout
+    // needs the parts fallback; do not invoke a caller's valueOf twice.
+    const timeValue=date===undefined?undefined:+date;
+    const resultKey=typeof timeZone==='string'&&typeof pattern==='string'&&Number.isFinite(timeValue)
+      ?JSON.stringify([timeValue,timeZone,pattern]):null;
+    if(resultKey!==null&&formattedDates.has(resultKey))return formattedDates.get(resultKey);
+    const match=date===undefined?null:entry.layout?.expression.exec(entry.formatter.format(timeValue));
+    if(match)entry.layout.fields.forEach((field,index)=>{values[field]=match[index+1];});
+    else for(const item of entry.formatter.formatToParts(timeValue))values[item.type]=item.value;
+    const result=pattern.replace(/yyyy|MM|dd|HH|mm|ss/g, key => values[formatFields[key]]);
+    if(resultKey!==null&&formattedDates.size<128)formattedDates.set(resultKey,result);
+    return result;
   };
   const noop = () => {};
   return {
-    Date:RequestDate, Utilities:{formatDate, ...options.utilities},
+    Date:RequestDate, Utilities:{formatDate, ...options.utilities},runtimePropertyRoomCompareText_,
     SpreadsheetApp:{getActiveSpreadsheet:()=>ss}, CacheService:{getScriptCache:()=>cache},
     UrlFetchApp:{fetchAll: requests => requests.map(request => {
       // URLs have already passed the existing z3House public-page allowlist.

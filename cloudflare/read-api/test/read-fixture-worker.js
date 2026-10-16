@@ -1,5 +1,6 @@
 // Test-only entry point. Wrangler's production entry does not import this file.
 import schema from '../schema.json' with {type:'json'};
+import {decodePackedRows,packedSelection} from '../src/read-dataset.js';
 import { createReadCalculator } from '../src/read-calculator.js';
 import { createReadServices } from '../src/read-runtime.js';
 import { serveReadRoute, isReadRoute } from '../src/read-routes.js';
@@ -8,14 +9,13 @@ export default {
     const started=performance.now();
     const dataset={};
     const tables=Object.entries(schema);
-    const batches=await env.DB.batch(tables.map(([table,definition])=>env.DB.prepare(`SELECT ${definition.fields.map(f=>'"'+f+'"').join(',')} FROM "${table}" ORDER BY CAST(replica_source_row AS INTEGER),row_key`)));
+    const batches=await env.DB.batch(tables.map(([table,definition])=>env.DB.prepare(`SELECT ${packedSelection(definition.fields)} FROM "${table}" ORDER BY CAST(replica_source_row AS INTEGER),row_key`)));
     const loaded=performance.now();
     const durations=batches.map(v=>v.meta?.duration),rows=batches.map(v=>v.meta?.rows_read);
     if(batches.length!==tables.length||batches.some(v=>v.success!==true)||durations.some(v=>!Number.isFinite(v)||v<0)||rows.some(v=>!Number.isSafeInteger(v)||v<0)) throw Error('TEST_D1_METADATA_UNAVAILABLE');
     const internalMs=durations.reduce((a,b)=>a+b,0),rowsRead=rows.reduce((a,b)=>a+b,0);
     for(const [index,[table]] of tables.entries()) {
-      dataset[table]=batches[index].results.map(row=>
-        Object.fromEntries(Object.entries(row).filter(([,value])=>value!==null).map(([field,value])=>[field,JSON.parse(value)])));
+      dataset[table]=decodePackedRows(batches[index].results,schema[table].fields);
     }
     const decoded=performance.now();
     if(isReadRoute(new URL(request.url).pathname)) {

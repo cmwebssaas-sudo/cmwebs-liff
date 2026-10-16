@@ -12,7 +12,8 @@ function runtime({mode='on',fetcher,store=new Map(),clock={now:1000},flags=true,
     Date:class extends Date {static now(){return clock.now;}},
     setTimeout:(fn,ms)=>setTimeout(fn,ms===3000?ms*timeoutScale:ms),clearTimeout,
     localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},
-    CMWEBS_RELEASE_VERSION:'20261012-read-shadow-v1',
+    CMWEBS_RELEASE_VERSION:'20261013-read-capacity-v7',
+    CMWEBS_READ_COMPARISON_VERSION:'read-contract-synthetic-v1',
     CMWEBS_READ_API_URL:'https://synthetic-worker.invalid',
     CMWebsLandlordAuth:{getRequestAuthParams:()=>auth,handleAuthFailure:()=>false,
       request:async()=>{calls.gas++;return good(20);}},
@@ -52,7 +53,7 @@ test('shadow renders GAS and reports only bounded field paths without values',as
   assert.deepEqual(Array.from(report.paths),['data.summary.total_amount']);
   assert.doesNotMatch(JSON.stringify(report),/synthetic-session|SYNTHETIC_W|total_amount":/);
   assert.ok(!('data' in report));
-  assert.equal(report.release,'20261012-read-shadow-v1');assert.equal(report.variant,'default');
+  assert.equal(report.release,'read-contract-synthetic-v1');assert.equal(report.variant,'default');
 });
 test('successful write guard survives navigation for120 seconds, failed writes do not guard',async()=>{
   const r=runtime();await r.api.request({action:'landlord_room_save'});
@@ -205,4 +206,16 @@ test('approved request-clock classification is exact, bounded, and never hides s
       assert.ok(!report.paths.includes('data.landlord.updated_at'));
     } else {assert.equal(report.clock_paths.length,0);assert.ok(report.paths.includes('data.landlord.updated_at'));}
   }
+});
+
+test('flag-only asset releases preserve the verified comparison identity, missing identity cannot start shadow',async()=>{
+  const r=runtime({mode:'shadow'});
+  r.context.CMWEBS_READ_COMPARISON_VERSION='read-contract-synthetic-v1';
+  for(const version of ['assets-before','assets-after']) {
+    r.context.CMWEBS_RELEASE_VERSION=version;
+    await r.api.request(config);await new Promise(resolve=>setTimeout(resolve,20));
+  }
+  assert.deepEqual(r.calls.reports.map(row=>row.release),['read-contract-synthetic-v1','read-contract-synthetic-v1']);
+  const missing=runtime({mode:'shadow'});delete missing.context.CMWEBS_READ_COMPARISON_VERSION;
+  await missing.api.request(config);assert.equal(missing.calls.worker.length,0);
 });

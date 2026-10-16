@@ -26,5 +26,11 @@ jobs:
           cache: npm
           cache-dependency-path: cloudflare/read-api/package-lock.json
       - run: npm ci --prefix cloudflare/read-api
-      - run: npm run test:worker
+      - name: Worker tests with retained raw diagnostics
+        run: |
+          set -o pipefail
+          npm run test:worker 2>&1 | tee "$RUNNER_TEMP/cmwebs-read-worker.log"
+      - name: Bounded terminal Worker evidence
+        if: always()
+        run: node scripts/summarize-read-worker-ci.mjs "$RUNNER_TEMP/cmwebs-read-worker.log"
       - run: npm run dry-run:worker

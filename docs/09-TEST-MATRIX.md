@@ -1,5 +1,86 @@
 # V2 回歸測試矩陣
 
+## 2026-10-16 C6 encoded writer restoration
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Prior exact9d745be CI38828519240 | Rental2247/2247 PASS; Worker42/43 FAIL | Five500-room groups51.871–69.328ms fail unchanged<50ms; logs truncated, footers/seven stages returned; prior local pass does not override |
+| Restored encoded writer and unchanged dual decoder | RED→GREEN9/9; all65 D1 cases retained | Same null/absence/-0/deep/NUL/BLOB/JSONB/own-key/error semantics; only removed writer-specific mode/byte-saving expectations change |
+| Validation/new full acceptance |72/40/static/comparison179 and diff PASS; new CI REQUIRED | Comparison read-a6bbc6244c79ed1087ce576ee1c2c46430b4325ac2762c60fb25a6561e3095e7; next normal PR CI covers full unit/Worker/capacity; no duplicate local full/Core/PG run |
+| Actual release | NOT_ACCEPTED | Draft/off/blank/T0 not started; C1/C3/authority/performance/observation/device/rollback gates remain |
+
+## 2026-10-16 C6 strict typed packed transport candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Strict codec/legacy format/SQL NULL/JSON null/-0/own keys/deep/NUL/BLOB |Focused9/9; affected29/29;65 actual D1 probes; review clean |Unsafe promotion and JSONB-null RED retained then fixed; legacy errors and raw-null skip preserved |
+| Full npm/validate/owned dependency cleanup |2252/2252 zero fail/cancel/skip;72/40/static/comparison179 PASS |633-path snapshot0ed8611fb681e31146b1fe2d5d76c4772d2180adf6476c24a8acf6ccdeefc084 at ac7fc474; fresh PG16.14/Core643c1b3 cleaned/stopped; later docs excluded |
+| Original Worker/pretest dry-run |43/43 PASS;1400 samples retained; no owned group left |500-room p95 home22.390/actions20.855/revenue21.713/tenants27.732/rooms23.535/arrears28.446/properties37.468ms, strict<50; no threshold/process/sample change |
+| Earlier failures/actual gates |Retained / NOT_ACCEPTED |Prior41/42 retained; new-head CI, remote authority/privacy/latency, approved24-hour observation, device/rollback/postlaunch remain; Draft/off/blank/T0 not started |
+
+
+## 2026-10-16 C6 canonical room occupancy working candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Actual500-room occupancy financial-projection trap | RED→GREEN; focused35/35, affected61/61 | Shared canonical status rules; expired/scheduled/association/privacy guards retained; no unused financial/season/display projection |
+| Frozen-base complete response oracle and generated closure |27 responses/2614144 bytes exact including key order;249 declarations/236 functions match | Small/rich/500 fixtures; full management response unchanged; plain supported rows |
+| Full npm / validation / independent review |2249/2249 zero skip;72backend/40endpoint/static/comparison179 PASS; no P1/P2 |632-path working snapshot04987a58c433475b4121ed658e1644310bed7aa05f3f7c5555d0ef61f6289104 at base ac7fc474; fresh owned Core/PG cleanup/stopped; later docs excluded |
+| Original complete Worker/pretest dry-run |41/42 FAIL, zero cancel/skip;1400 samples retained |500-room p95 home54.548/actions43.875/revenue55.615/tenants78.945/rooms49.100/arrears57.852/properties69.828ms; strict<50ms unchanged; small seven groups PASS |
+| CI/publication/actual gates |NOT_ACCEPTED | Local staged candidate only; no commit/push/merge/deploy/flags/epoch; C1/C3, performance, approved24-hour observation and device remain open |
+
+
+## 2026-10-13 C6 fixture idle socket handling
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Head065f8027 CI38372089418 | Rental SUCCESS; Worker FAIL31/33, complete summary | Scoped500 seed2055 UND_ERR_SOCKET; tenants65.878ms/all100>=50; later loops not reached; small700PASS; exact cause/cure not proven |
+| Native original/block6500ms/block+yield2055 controls | Baseline/yield pass; blocked ECONNRESET; overall2/3 retained | Negative expected onlyUND_ERR_SOCKET; no rerun to replace it; supports idle-loop mechanism, not exact Linux attribution |
+| Actual post-migration starvation regression | RED1 native transport failure → GREEN1/1 zero skip | Original same values/seed batch; zero-case filter and wrong251 expectation failures retained; correct250 tenants/501 rooms |
+| Full npm / Worker / validate / source review | 984/984 /34/34 /72/40/178 /PASS; zero skips |541-file working snapshot79cc8c1d at065f8027+two test changes; Core/fresh private PG stopped; bundle stable; later docs excluded |
+| New Linux CI and actual release gates | NOT_ACCEPTED | One initializer event-loop turn only; no retry/split/explicit RPC/threshold/runtime/GAS change; Draft/off/blank |
+
+## 2026-10-13 C6 safe transport cause evidence
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Head54d21341 CI38370308887 | Rental SUCCESS; Worker FAIL31/33; complete bounded summary, zero drops | Case4 seed fetch failed/cause UNKNOWN; case15 actions86.168ms/home31.132; later loops not reached; small700PASS; no rerun |
+| Actual initializer cause/code/counters/privacy/getter/output and exact terminal distribution | RED retained → GREEN19/19; independent Node22 PASS | Fault doubles only; no actual Linux cause/cure claim; original errors/cleanup retained |
+| Full npm / Worker / validate | 984/984 /33/33 /72/40/178; zero skips |541-file snapshotf166e8f2 at54d21341+four diagnostic changes; clean Core/fresh private PG stopped; later docs excluded; bundle unchanged |
+| Summary total/line bounds and actual release | <64KB /4096 diagnostics; NOT_ACCEPTED | Original500/100/p95/parity remain; new-head Linux CI required; Draft/off/blank/real gates unchanged |
+
+## 2026-10-13 C6 terminal diagnostic summary
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Cleanup head5002d8af CI38368334954 | Rental SUCCESS; Worker FAIL31/33, zero skips/cancel, actual footer56.928s | CodeReview tail120000 chars truncated; two failed identities/causes UNKNOWN; no rerun/fallback |
+| Early failure after provider window, interrupted footer, Unicode/line/total bounds, missing input, omitted-header association | RED retained → GREEN7/7 | Actual CLI; dropped/incomplete information explicit; no invented success |
+| Actual workflow pipeline with synthetic child exit42/0 | Workflow exit42/0; exact raw stdout/file; summary exit0 | Same shell body, no failed child masked; no measured Worker test rerun |
+| Full npm / validate / independent review | 978/978 zero skips /72/40/178 /PASS |541-file snapshot178cbdea at5002d8af plus diagnostic files; clean Core643c1b3/fresh PG stopped; later docs excluded; initial metadata timeout retained |
+| Linux/actual release gates | NOT_ACCEPTED | New-head CI required; source clients/Worker/GAS/gates unchanged; Draft/off/blank preserved |
+
+## 2026-10-13 C6 fixture failure lifecycle
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Setup failure at database/migration/row seed/marker; success ownership; double failure | RED1 pass/5 fail → GREEN6/6 | Actual initializer executed; external build/D1/runtime fault doubles only |
+| Actual Workerd row-seed fault2055 statements | Original dispose0/10s still open; fixed dispose1/Node exit0/1 test PASS | Controlled failure, not a reproduction of native fetch cause; initial controller check failure retained and later absence checked |
+| Full Node22/macOS npm suite / Worker suite / validate | 971/971 zero skip /33/33 /72 backend,40 endpoints,178 source matches |539-file working snapshot9a8d7262; clean Core/fresh isolated PG; source pins stable; PG stopped |
+| Original a51ff579 CI38319550201 | Worker CANCELLED after8 passes/1 setup failure; rental SUCCESS | No final test footer or timing diagnostic; underlying fetch failure/cancel cause UNKNOWN; no agent rerun/cancel |
+| Publication and actual C1/C3/C5/C6 gates | NOT_ACCEPTED | New-head CI required; no merge/deploy/flags/epoch/device or formal-data change |
+
+## 2026-10-13 C6 v6 packed D1 projection candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| SQLNULL absent / own JSONnull / scalar / negative zero / date marker / own proto / column order / corrupt frames | Targeted RED original2 pass/new2 fail; GREEN4/4 | Shared decoder; input immutable; malformed frames fail closed |
+| Actual packed SQL vs original columns, escaped identifier/Unicode/quotes/prototype | PASS actual workerd/D1 | Synthetic16 columns, same batch; no new production route |
+| All seven original GAS JSON/literals,500 rooms/250 tenants/20 properties/scoped HTTP and authority-only suspension | PASS Worker33/33 | Primary-D1 policy real; LINE/Google transport/GAS service adapters synthetic |
+| Original100-per-entry p95<50ms | PASS13.524/11.535/12.703/29.104/21.780/18.966/20.225ms | Fixed-access/full-table local benchmark; not scoped/provider/device latency |
+| Unit / full npm / dry-run / validate / diff | 960/960 /965/965 /337.55KiB-gzip70.92 /PASS /PASS | Full537 working files pinned; clean Core643c1b3/fresh private PG16.14; no skips |
+| Prior adf39b4/4c9950e CI and local69.198ms failures | Retained | No same-head rerun or inferred cause; new-head CI pending |
+| Actual C1/C3/C5/C6 gates | NOT_ACCEPTED | No merge/deploy/epoch/flag switch; all original daily/time/device gates apply |
+
 ## 2026-10-14 C3 fixed actor metadata candidate
 
 | Check | Result | Evidence boundary |
@@ -1390,6 +1471,36 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Unit902/902, Worker24/24 plus dry-run, validate72 backend files/40 endpoint references | Local candidate | Full902 pass/1 known external Core fixture failure/4 skips |
 | Verified remote exports, seven real days, authenticated latency, Pages readback and phone/desktop acceptance | NOT_STARTED | All flags off; preceding C1 real72-hour gate continues independently |
 
+## 2026-10-13 C6 v4 allocation follow-up
+
+| Check | Actual evidence | Boundary |
+| --- | --- | --- |
+|V3 CI/local intermediate failures retained |2d1c1a8 CI29/31:500tenants55.647ms/small arrears68.719ms; later local arrears50.560 and tenants94.726ms | Original100 samples/p95<50ms; later loops not reached, no root-cause/rerun claim |
+|Shared row decoding preserves stored types/SQL-null absence/JSON-null/own keys/input/error behavior | `tests/read-replica-rows.test.mjs`,2/2; real authenticated/scope Worker regressions pass | SQL/scope/auth checks unchanged; never caches source or access |
+|Date-only/full formatter semantics and immutable source identity |Independent1105-case comparison/2 calendar cases; validate72/40/178; v4 cache synchronized | No date-value cache, original GAS unchanged; new real epoch required |
+|Full source/Worker/capacity |Unit957/957;Worker31/31;full962/962 at1cab310 with clean isolated Core/PG and actual successful cleanup | All local500 entries100 samples/p95<50ms (tenants39.150); new CI and all real gates pending |
+
+## 2026-10-13 C6 500-room local capacity preparation
+
+| Check | Actual evidence | Boundary |
+| --- | --- | --- |
+|20 properties/500 owned rooms/250 occupied and250 vacant/500 bills across2 months; foreign decoy and all20 schema tables | `cloudflare/read-api/test/read-capacity.test.mjs`; every canonical entry JSON matches and independent monetary/count literals pass | Fixed access/all-table test loader, not actual C3/remote/Taipei qualification |
+|100 samples/entry, original p95<50ms | Original tenants99.173ms FAIL retained; after request-local formatter reuse complete Worker31/31, tenants41.669ms and all seven entries pass | Local workerd/D1 only; new exact-head CI pending |
+|Current mutable dates, timezone switches/coercion/errors and DST | `tests/read-calendar.test.mjs`,2/2; complete unit955/955,0 skipped | No date-value/positive-authority caching; existing provider/revocation Worker tests also pass |
+|Source-sensitive comparison/release cache |178-source regeneration,20261013-read-capacity-v3 | New actual epoch required; none started, all flags off |
+
+## 2026-10-12 C6 acceptance preparation
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Sequential flags, build/readback, real-day prerequisites and failure rollback | `READ-CUTOVER.md` | Documentation preparation; no flag/deployment change |
+| Complete C1 days and verified C5 seven-day export | RUNNING / NOT_STARTED | Actual elapsed time and full daily evidence required |
+| Authenticated LINE/Email latency including uncached GAS authority | NOT_STARTED | Local p95 calculation tests are not network acceptance |
+| Each on page: phone LINE/desktop, fallback and120-second write guard | HUMAN_REQUIRED after actual release | S1 confirmation does not cover C6; do not solicit before publication |
+
+| C6 unchanged comparison identity through flag/cache releases, included source/endpoint invalidation and stale manifest rejection | `tests/read-comparison.test.mjs`; router and actual D1 HTTP regressions | Real source-copy tests; no live acceptance |
+| C6 per-page rolling qualification after earlier page is on, both home sections/unknown selectors, retained epoch errors | `tests/read-shadow.test.mjs` | Synthetic windows; initial all-page ledger still required |
+
 
 C3 real workerd transport regression5/5: Google allowed/fakehost/third-hop
 and LINE valid claims/302 rejection. Root cause is workerd redirect:error
@@ -1436,6 +1547,8 @@ fresh corrected source requires a new actual72-hour gate, flags remain off.
 | Actual signed synthetic candidatev3 | Three strict1500ms failures retained; three diagnostic replies verified at3302.118/3187.969/2620.684ms; original10-file editor restored23:14:32 andv1/v2/v3 retained | NOT_ACCEPTED;33 rows/static fixture/no D1, real LINE/device, p95 or500 rooms; original harness lacks reader-choice telemetry, native fallback not excluded; formal flags off |
 | Signed reader-choice lifecycle and bounded telemetry | Independent63 fake cases:7 harness/7 editor/9 publisher/6 probe/19 gates/15 telemetry; canonical signatures checked before capture is stored;20000-byte cap/cancel; source pins andv1–v3 retention | Synthetic controls only; nested timings must not be summed |
 | Actual signed synthetic bulk diagnosticv4 | Three strict failures; three signed diagnostics each one successful bulk attempt/no native range.getValues/zero shared cache; auth1183/1394/1052ms contains bulk288/632/223ms; complete2967.576/2917.804/3002.265ms; original10-file restore23:33:42/v1–v4 retained | Strict latency NOT_ACCEPTED; runtime adapter read counters are not native IO;33 rows/no D1, real LINE/device, p95 or500-room acceptance; formal flags off |
+| C6 refreshed bulk-source comparison/cache closure |178 source files, only authorization/manifest normalized hashes changed; cache20261012-read-cutover-v2 synchronized; unit954/954, Worker30/30, dry-run, validate and hash check PASS | Local Draft; all6off/endpointblank; actual shadow/cutover NOT_STARTED; fresh qualifying observations required |
+| Refreshed C6 full suite external boundary |959 total/954 pass/one PLATFORM_CORE_TEST_WORKTREE-required failure/four external skips | Missing external Core/PG integration not counted as passing; no formal acceptance inferred |
 
 | Owned synthetic HTML transportv5 | Independent93 fake controls/68 canonical regressions; three strict1500ms failures, three HTTP200 diagnostics rejected by lab body decoder, no telemetry; native six completed; original10 restored01:41:32/v1–v5 retained | NOT_ACCEPTED; lab extraction is not canonical HTTP acceptance; no p95/500-room/D1/LINE/device or formal release; body failure cause still unclassified |
 | Single unsigned wrapper structure classification |16 independently reviewed fake controls; one actual unsigned `{}` POST, HTTP200/8130 UTF-8 bytes/one ordered marker pair/hex-escaped padding; no OAuth/credential/fixture IO or additional signed request | Only unsigned wrapper structure; no raw body retention/script execution, signature/access/latency or original three signed-body diagnosis acceptance |
@@ -1472,6 +1585,79 @@ verified. Exact heads and reproduction boundaries are in
 `READ-REGRESSION-DEPENDENCIES.md`. Prior missing-environment results remain
 historical; actual72h/daily-runtime/strict-latency/seven-day/device/cutover gates
 are not accepted by these regressions.
+
+## 2026-10-13 — C6 scoped500-room HTTP boundary
+
+`cloudflare/read-api/test/read-access-d1.test.mjs` now covers500 owned rooms
+through real HTTP/identity/authority policy and primary-D1 scope/relationship
+queries. LINE/Google authority transports and GAS service adapters are synthetic.
+Seven canonical JSON results, independent500/250/20/amount/252 literals,
+foreign/private exclusion and authority-only suspension despite stale D1 pass.
+A private in-memory SQL row-limit mutant fails100 versus500; product source stays
+unchanged. This protects against scope/relationship batch truncation, not provider
+or device latency. Worker32/32 and unchanged100-per-entry local p95<50ms pass.
+Full963/963 at pinned uncommitted v5 working snapshot, zero skips, uses fresh
+private PG16.14 and original Core HTTP/PG fixtures; see regression dependencies.
+Earlier local/CI performance failures remain. All actual gates still apply.
+
+## 2026-10-13 — C6 request-local LINE lookup candidate
+
+Canonical GAS+generated Worker use request-local tenant-list identity maps.
+New9/9 regressions cover bounded row reads, priority, case/duplicates/OR order,
+fresh snapshot, unusual identity/accessor/query coercions and actual builder
+relationship mutations; review-discovered RED7/9 retained. Routing/parity/shadow
+32/32; affected GAS summary function runs without writes. Full993/993 zero skips,
+fresh Core/PG cleanup verified; actual Node22/macOS Worker34/34 with unchanged
+100-per-entry/p95<50ms and500-room canonical JSON/literals. Tested542-file
+snapshot bda61e52a54caaab96ba401482bd4cccf9d6a100252561e35d771cb6fd38e571
+at0306b8bd plus source/test/cache changes, later docs excluded. Validate/dry-run
+pass. Prior Linux CI33/34 tenant65.595ms remains failure; new-head CI pending.
+All real synchronization/day/authority/performance/device/cutover gates remain.
+
+The first index candidate above was rejected by a second P2 (status accessor
+stales a key). Corrected full-cell/room inert guard: actual status/room/date
+RED9/10→GREEN, final index11/11 plus canonical parity16/16. Final full995/995,
+Worker34/34 zero skips at snapshot143e099bef3eb28b18cfce4d30a03293af295ff94f9829ee3bd3bcb110001671;
+fresh private PG cleanup/source pins pass. Original500-room per-route p95<50ms
+passes; no assertion/sample/clock changes. Validate and341.38KiB bundle dry-run
+pass; independent final review/Linux new-head CI and all actual gates pending.
+
+Final third P2 Proxy-Date internal-slot guard: actual builder RED11/12→GREEN12/12;
+regenerated canonical/source17/17 and independent source review PASS, zero skips.
+Latest full996/996, actual Node22/macOS Worker34/34 at542-file snapshot
+f08ebc140f017fb306355c767e74de10ebb8ac63e95a76e36e3f47418e433a19;
+Core/PG cleanup and source/bundle pins verified. Original500-room per-route
+p95<50ms/100 requests pass, tenant24.121ms. Prior995/993 candidates remain
+rejected historical evidence. Validate/dry-run pass, Linux new-head CI pending;
+all formal readback/day/authority/device/cutover gates unchanged.
+
+## 2026-10-13 — C6 complete client diagnostic aggregation
+
+New helper/CLI17/17 independent source PASS, zero skip: complete100 tenant rows,
+missing/duplicates/invalid cells, malformed/oversized frames, empty chunks and
+missing whole suites, unknown GC, secret-canary exclusion and64KB output bounds.
+Actual previous complete local Worker log yields two COMPLETE100-row client/GC
+aggregates, no invalid/missing/drops; this is parser proof, not Linux causality.
+Final full1005/1005 zero skips at543-file snapshot
+d1cfaca4ef48bd3ce09453551b13effe075000b369f3ad5548d617e37699e1b8,
+fresh Core/PG cleanup verified. Validate72/40/178 passes. Runtime/bundle/nine
+inputs unchanged, no repeated local Worker suite/dry-run. d9a9ce8 Linux33/34 FAIL
+tenant62.458ms/26over50 remains; new-head CI diagnostics and all actual gates
+pending. Node client medians/GC correlation cannot establish Worker CPU/cause.
+
+## 2026-10-13 — Native client-frame/slow-route evidence
+
+Native child TAP transport700 JSON rows and full summary20 cases independently
+PASS21/21. Correct child ENV avoids inherited NODE_TEST_CONTEXT; valid RED raw
+console forbidden retained. Route selection/hidden missing-route and malformed
+sample-ID coercion REDs fixed. Full1009/1009 zero skips at544-file snapshot
+939f02fc8bbdf06f2f1538dc1e633082c427fa248181eda49b3dd2765711470a;
+fresh Core/PG cleanup verified. Actual Node22/macOS Worker34/34 yields two
+COMPLETE client/GC aggregates,700 collected per suite, no invalid/missing/drops,
+18008-byte summary. Original100/<50/JSON/policy assertions unchanged; bundle
+and9inputs unchanged. Validate72/40/178 passes. 503b431 Linux remains33/34 FAIL
+small actions61.592ms; all capacity p95 pass in that run only, incomplete
+client-frame evidence cannot prove cause. New-head Linux and actual gates remain.
 
 ## 2026-10-13 — C1 bounded native timer control
 
@@ -1882,6 +2068,61 @@ PASS. Exact-head CI required. Actual25/160/native STOP/off/blank;900s/72h/
 seven-day/500/Taipei/device/cutover remain unaccepted, no real shadow started.
 
 
+2026-10-15 current-stack composition: C5 8801187 merged into C6 96240d3;
+packed fields retained alongside C3 staged80-statement batching. Calls-cap
+RED1→GREEN3; full1791/1791 with Core/ownedPG cleanup, Worker36/36/bundle PASS;
+static review0/validate72/40/cache/comparison178/diff PASS. Local500 fixture
+seven100-sample p9511.781–23.237ms<50; not real identity/authority/remote/Taipei/
+device acceptance. New comparison read-bce058f378ee92a21559b596ec408c183496a6ec2009def7b508daa333666870.
+Exact-head CI pending; actual25/160/native STOP/off/blank and all real gates
+remain unaccepted; fresh72h/seven-day NOT_STARTED. Only docs after tests/review.
+
+
+2026-10-15 C6 request-local date output cache: bounded128 finite numeric/
+primitive-zone/pattern tuples with fresh coercion; no Date/auth/cross-request
+cache. TDD RED250 native formats vs1→calendar4/4 GREEN; actual250-tenant
+calculation2252 format calls/5 native formats. Static review0, full1792/1792
+with ownedPG cleanup, Worker36/36/bundle/validate72/40/cache/comparison178/diff
+PASS. Snapshot d828cfed6056a6336bce45b50c072b8a5b2466627233be0403ae0c8e8eb5c8a0.
+Prior Linux500 tenants58.708ms FAIL retained, new-head CI required. Local
+fixture evidence is not real acceptance; actual25/160/native STOP/off/blank,
+900s/72h/seven-day/Taipei/device gates unchanged. Only docs after review/tests.
+
+
+2026-10-15 explicit tenant summary now skips250 discarded history constructions
+for the synthetic250-tenant case. Actual-source TDD250→0; entire summary equals
+full-response projection, default still returns all histories. Static review0,
+full1793/1793 with Core/ownedPG cleanup, Worker36/36/bundle and validate72/40/
+static cache/comparison178/diff PASS. Snapshot71b383069f6557f1e0c1782b378b8b88c8cdf6affc529bb8ca79c19ae28aa8f3.
+Prior daf25c4 Linux tenants50.894ms FAIL retained; new-head CI required, no
+real acceptance/epoch. New comparison read-f78e12a3f964adf8bd38451988ac76840ae0718c1d0bf328bf9e27ae8b7a52d8.
+Actual25/160/native STOP/off/blank and all original900s/72h/seven-day/Taipei/
+device gates remain; only docs after tests/review. Rollback source to daf25c4.
+
+
+2026-10-15 C6 single room matrix: actual route32 rows/64→32 enumerations,
+full GAS JSON unchanged; TDD duplicate-materialization RED→GREEN14/14, public
+covers/request isolation preserved. Static review0; full1794/1794 with Core/PG
+cleanup, Worker36/36/bundle, validate72/40/cache/comparison178/diff PASS.
+Snapshot0531c3ac4ea1c76a006fb2c61f83f66b378536e692f15c3ac1f5c926ad7148c7.
+Seven100-sample local500 fixture p9512.626–20.092ms<50; prior a043240 Linux
+rooms52.967ms FAIL retained, new-head CI required. Original real gates unchanged;
+actual25/160/native STOP, all flags off/endpoint blank, fresh72h/seven-day
+NOT_STARTED. No formal changes; rollback source/comparison to a043240.
+
+
+2026-10-15 C6 fixed collation: TDD499 repeated localeCompare calls→one explicit
+request-local sorter; full500-room response equals native GAS VM,784 pairs plus
+literal ordering/live coercions/ties/errors pass. Relevant12/12; module function
+testLandlordPropertiesInit VM500/20 PASS; full1796/1796 with Core/ownedPG cleanup;
+Worker36/36/bundle,static review0,validate72/40/cache/comparison178/diff PASS.
+Snapshotf4bbd4807b1927b9b28f4ebef04f2070bf062e5c1d64d03eb308c72dff38fb71.
+Seven100-sample local500 p9511.061–18.560ms<50; prior568344b Linux properties
+53.391ms FAIL retained. New-head CI/native/real gates still required; actual
+25/160/native STOP/off/blank; fresh72h/seven-day NOT_STARTED. Only docs after
+tests/review. Rollback source/adapter/comparison to568344b.
+
+
 ## 2026-10-15 — Inherited preparation ownership verification
 
 | Evidence | Result | Boundary |
@@ -1889,6 +2130,7 @@ seven-day/500/Taipei/device/cutover remain unaccepted, no real shadow started.
 | Inherited controller/ledger/test | Exact C3 71cc636 bytes; related83/83 and complete1728/1728 retained | Original child lifetime, strict finish and durable-stop ownership only; no native acceptance |
 | Order composition | Own runtime and fixtures unchanged; validate/diff required; exact-head CI pending | No repeated unchanged local Worker benchmark |
 | Real gates |25/160 unchanged, trial STOP; all formal gates unaccepted | PR272 acceleration still pending, original observation gates retained |
+
 
 
 ## 2026-10-15 — Preparation lock lifetime and completion
@@ -1900,6 +2142,62 @@ seven-day/500/Taipei/device/cutover remain unaccepted, no real shadow started.
 | Restricted realm | Original11 full failures retained; existing approved OS identity API restores compatibility; affected83/83 PASS | No ambient process or new builtin permissions |
 | Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
 | Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
+
+### 2026-10-15 Strict scalar decoder and current comparison identity
+
+| Area | Evidence | Boundary |
+| --- | --- | --- |
+| JSON semantics | Scalar5/5, including escapes, controls, malformed strings, whitespace, nested values, own keys and negative zero | No stored/frame/API shape change |
+| Worker/D1 | One modified-source36/36; original7×100 samples all p95<50, local properties18.054ms | Exact prior CI51.233ms FAIL retained; new CI required |
+| Source identity | Initial validate/full1804/1805 rejected stale comparison; existing generator updates only identity/source SHA | No off flag, endpoint or threshold change |
+| Full regression | Final1805/1805,57.154s,Node22.23.3/actual Core/ownedPG; cleanup verified | Snapshotcaac7501df0bf22c62f0d2b92f9eed718be4208acff704f4c1e15206060b1bd8; only docs afterwards |
+| Review/checks | Independent four-file review no finding; validate72/40/cache/comparison178/diff PASS | Native/provider/remote/device/daily900s and approved observation gates unaccepted |
+
+Current owner schedule is merged PR272: parallel24h after technical gates,
+rooms first, stable24h before later accepted pages, seven-day post-on. T0 has
+not started; old72h/seven-day pre-on rows above are historical.
+
+### 2026-10-15 Request-owned deferred Sheet matrices
+
+- RED3=2fail/1pass, related24/24 PASS: request-owned unused frames0, used Sheets
+  stable/once, getValues copies, default eager snapshots, invalid arrays denied.
+- Complete actual500-room properties/GAS parity, full loaded payments retained,
+  room rows once/all others at most once; no query/data/API scope reduction.
+- Changed-source Worker36/36 PASS, all7×100 original local p95<50ms. Prior exact
+  f2e90eb CI Worker35/36 properties51.147ms FAIL retained; no unchanged retry.
+- Full1808/1808 PASS56.327s, actual Core/ownedPG cleanup verified; snapshot
+  3a4157e6f5096609672b2e371ab2dfa6eca07af0b2696db942803ea2ff619b74, only docs
+  afterwards. Independent review no finding; validate72/40/cache/comparison178
+  PASS. New-head CI, real remote/device/900s/native and observation gates remain.
+
+
+### 2026-10-15 C6 paired capacity-stage evidence
+
+- Exact957707e CI38763560079 rental1803/1803 PASS, Worker35/36 FAIL properties
+  p95=52.057ms>50;700 samples complete, both footers/annotations read, truncated
+  logs. No unchanged retry or performance acceptance.
+- Summary TDD20pass/2RED then affected23/23 PASS; actual changed Worker36/36
+  PASS34.231s. Original7×100 requests/full body timer/50ms retained. Existing
+  test-only Worker headers provide paired D1/decode/route/dispatch/consume and
+  byte counts; parse/log work after timer. Terminal summary retains all7 bounded
+  stage lines and original footer; zero stage overflow. This instrumentation
+  can perturb later client GC, cannot prove causality, and changes no product.
+- Review no actionable finding; validate72/40/cache/comparison178/diff PASS.
+  Prior full1808 retained for unchanged product; not a new full rental run.
+  ActualGoogle25/160 unchanged; T0NOT_STARTED/alloff, real gates remain.
+
+
+### 2026-10-16 capacity measurement completion
+
+- Exactbc8f6e7 CI: rental1805 PASS, Worker35/36 FAIL arrears50.814ms;600 samples,
+  propertiesNOT_MEASURED. Both footers/annotations read; prior failure retained.
+- Actual measurement-tail control regressions: early dual violation still700,
+  non-finite p95 denied, below50 all700. NaN1RED/2PASS then affected26/26 PASS.
+- Full Worker36/36 before final strict comparator; final actual capacity2/2
+  PASS12.918s, original realD1/GAS/500-room checks and7x100 requests preserved.
+  Review no issue, validate72/40/cache/comparison178/diff PASS. No new full rental
+  run claimed; product/Apps Script/comparison/alloff unchanged. New exact CI
+  remains separate from local evidence; all real acceptance gates retained.
 
 ## 2026-10-16 — C1 expired-run Sheet reads
 
@@ -2205,6 +2503,299 @@ performance/privacy/freshness/device acceptance still unmet. C5 swap bytes,
 size and mtime retained. Rollback this undeployed inheritance toec78b65 while
 preserving original stopped-trial history and matching pinned cleanup.
 
+## C6 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C6 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1815/1815 PASS,67.047s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested598-file snapshot
+da3130e5c483dd2231b56fd1a549996443b055df4b11a6666a46fca181480a01;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated local capacity run. Exact-head CI follows push.
+C6 comparison identity regenerated with the existing generator: read-841ae9a6fd45932f15b8ef6bb1d0bae28cbc394b8845afa852422f6aa742260d. Only sync source hash changed among178 comparison sources; asset version, blank endpoint and alloff flags retained. Initial stale-identity validate failure retained, corrected before the full suite. Previous capacity failures and the latest prior-head CI pass remain historical; no causal/performance fix claimed.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance tobb859677844e72de4b4bd9f33348e06c8377f6a5;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+After upstream alignment, all32 inherited non-doc paths equal the reviewed
+parent; existing C6-specific source is preserved. One new full2023/2023
+PASS,64.087s,Node22/actual Core/owned PG16.14; database/role cleanup,
+stopped cluster and closed listener verified. Tested609-file snapshot
+6133ac0c79037ba7cbfa41192c91cbd7e3d6a7bd5d57cf2e848113a1ef0c960e.
+Only docs afterwards. Separate labelled C1–C6 evidence and rollback records
+restored after the reviewed union-merge finding; no pending native-IO proposal
+inherited. Validate72/40/cache/comparison178/diff PASS. Approved C3 controls and partial
+source/metadata/credential adapters are local preparation only. Original25/160
+unchanged/unclaimed; real gates unaccepted/T0 NOT_STARTED/alloff. No Google,
+credential, Properties, trigger, source-data or deployment operation. Rollback
+this undeployed upstream alignment to5241b2ecf1f1e16573c93d04ba11c46b34e81e5e; preserve any
+original claim/history and matching pinned cleanup, never reset or replay.
+
+## C6 inherited approved C3 native IO controls — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Merged C5 parentec78b65 into the existing C6
+feature branch, inheriting reviewed C3 b01e753. All10 non-doc files among the
+13-path C3 increment equal C3 bytes. No other source path changed; existing
+C6 acceptance/comparison behavior, endpoint,asset version and flags preserved.
+Both document conflicts retain complete separately labelled C1–C6 historical
+evidence; approved native-IO status supersedes historical pending wording only.
+
+Fresh Node22.23.3 authority regression1065/1065 PASS (30 files,65.417s,
+zero fail/cancel/skip). Validate72backend/40endpoint/cache/comparison178 and
+staged diff PASS. No unchanged Worker capacity benchmark or cross-repository
+PostgreSQL suite rerun; upstream full1960 remains C3 evidence only. Exact-head
+CI readback pending after this push; no remote acceptance inferred.
+
+No account/Google/Cloudflare/credential/data/deployment operation; no new
+observation T0 or formal flag change. Root/private S1/C5 swap/original counter
+and history untouched. Real authority/privacy/freshness/quota/900s/day/device
+acceptance remains open. Rollback this undeployed inheritance to
+ dd901e4c7d7ccf5557e016f8658deb5cd6461095; retain original claimed pins,
+UNKNOWN/history and matching cleanup, never replace a spent claim or purpose.
+
+## C6 single-statement freshness read — 2026-10-16 (reviewed candidate)
+
+Recommended GPT-6.1 Sol/high. Consolidated only read-dataset checkReplica's
+20 same-table sync_runs statements into one SQL with fixed table ordinals.
+Each original latest-completed SELECT/ORDER BY/LIMIT1,its two bindings and
+newer-receiving predicate remain intact. A flat20-term UNION was rejected by
+actual D1; grouping5 inner branches under4 outer branches passes actual D1
+with40 parameters and a SQL payload below20kB. No schema/auth/scope/dependent
+parent/order/rowcap/cache change; source outside checkReplica is byte-exact.
+
+TDD: actual D1 statement-count RED20!=1,then GREEN. A second RED exposed
+error-precedence loss from checking all missing markers too early; traversing
+every fixed ordinal retains the original earlier-table stale/error precedence
+and still rejects missing/duplicate/wrong ordinals. Five new tests cover all20
+tables across16 original-query-oracle cases each,including duplicate-version
+ties in both insertion orders,receiving older/equal/newer,missing/invalid/null/
+stale/future and exact clock boundaries,malformed result/ordinal failure,and
+real D1 operational10000 accepted/10001 rejected. Existing500-room HTTP/GAS
+parity,foreign/legacy/delegated privacy,nonce/authority,packed values and shadow
+cases retained. Affected38/38 PASS,103.317s,zero fail/cancel/skip,Node22.23.3;
+validate72backend/40endpoint/cache/comparison178 and diff check PASS.
+
+Comparison identity regenerated by the existing generator:
+read-ae3a60f8ba10927297da320919eb4bc0138b912bca7fd636081a765dfb41cbed.
+Among178 normalized sources only read-dataset changed; release asset,blank
+endpoint and every formal flag exactly preserved. No old capacity gate or
+new timed diagnostic rerun here. Prior CI38779107637 and the separate authorized
+700-sample diagnostic failures remain evidence; this increment does not claim
+to repair the old fixture timer,which omits checkReplica entirely.
+
+Independent fresh review found no P1/P2 or actionable minor; all505 frozen
+non-document pins match and its independent actual-D13/3 checks passed.
+Full-suite/Worker integration and the coordinated changed-source diagnostic
+remain pending. Source/tests are saved for review in this isolated C6 branch;
+no deployment,real Apps Script test,Google/formal/credential/counter operation.
+C3/root/private caller and control pins untouched. Rollback this undeployed unclaimed increment to
+C6 HEAD1fba7d259fe862a5983a8fed5b0b59e5858fb732 while retaining every original
+claim/history/UNKNOWN and matching cleanup; no observation T0 or flags changed.
+
+## C6 final retained authorized-path diagnostic — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. One changed-source synthetic diagnostic at
+reviewed d88086d used the actual HTTP handler,primary-D1 scoped loader and
+signed GAS authority modules. Seven complete original-GAS JSON parity checks
+passed,followed by all700 original-order full-body samples;all707 responses
+were200 with no response/transport/security error. The seven parity response
+hashes also matched the previous diagnostic. No retry or sample exclusion.
+
+| Entry | Prior diagnostic p95 ms | Changed-source p95 ms |
+| --- | ---: | ---: |
+| home | 26.391 | 29.061 |
+| actions | 45.197 | 64.483 |
+| revenue | 51.127 | 52.438 |
+| tenants | 41.692 | 66.879 |
+| rooms | 30.426 | 67.129 |
+| arrears | 63.576 | 116.307 |
+| properties | 32.558 | 86.907 |
+
+Six of seven changed-source entries miss the unchanged p95<50ms boundary.
+All maxima/outliers and raw results remain retained. These are two independent
+local synthetic runs;no latency improvement or causal diagnosis is inferred.
+The earlier failed fixture CI38779107637 and its700 samples remain unchanged;
+its full-table fixture omits the authenticated authority/freshness loader and
+was not rerun or substituted. Real production/device latency remains unaccepted.
+
+Each of707 requests performed one first-primary D1 session and one signed
+synthetic GAS authority request. All707 nonces were unique and all707 signed
+responses,nonce-cache entries and authority logs were verified. Actual digest/
+route/fingerprint/signature/dirty/freshness checks remained active;the original
+handler and provider-cache lifecycle were retained without a new cache.
+Per-request statements fell158 to139:8 single calls and6 batches with sizes
+3,4,10,80,29,5. Total SDK calls remain14;there were never20 network round trips.
+
+Runner and independent post-exit verifier both exited0. Miniflare disposed;
+the separate verifier found no remaining owned process. Raw pre-exit state,
+all7 parity+700 timed records,exit codes and independent cleanup receipt are
+retained privately without rewriting the earlier cleanup warning/receipt.
+No source/config/flags,commit/push,real credential or formal IO changed during
+the diagnostic;it did not start observation T0 or establish acceptance.
+
+Latest separate C3 trial outcome is27/160:stopped,repair in-flight/UNKNOWN,
+with original claim/pins/day/deadline and P/N UNKNOWN retained. A new durable
+owner veto and both retained-holder drain acknowledgements are recorded;no
+verifiable caller/page tool state was returned. No second bind/repair,ordinary
+continuation,publisher bind/refresh,trial RPC or remote rollback completion is
+claimed. This final stop supersedes earlier25/26 snapshots only;no refund,
+new claim,deadline change or no-op rollback proof is permitted. All formal
+flags stay off and T0 NOT_STARTED.
+
+The reviewed freshness source changes statement count only;full/Worker
+integration and exact-current-head CI remain separate checks. No deployment
+or cutover is claimed. Preserve all private evidence and original STOP history.
+
+## C6 final C3 stopped-trial stack integration — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. After saving the complete retained diagnostic
+record in3b09e8f,normal-merged final C5/C3 ancestry into this isolated C6 branch.
+C3 6bb2a62's nine new source/test/fixture paths,including three frozen original
+controller files,are byte-exact. The four reviewed d88086d freshness/test/
+comparison/frontend pins remain unchanged;all other runtime paths are preserved.
+All original documentation sections survive both append-only conflicts.
+
+Fresh validate72backend/40endpoint/cache/comparison178 and diff checks PASS.
+Comparison remains read-ae3a60f8ba10927297da320919eb4bc0138b912bca7fd636081a765dfb41cbed;
+release asset,blank endpoint and all formal flags are unchanged. No large
+local suite or benchmark rerun. C3 full2003/2003 and CI38784461317 remain
+upstream evidence;freshness affected38/38 and independent3/3 remain attributable
+prior candidate checks. Exact-current-head CI/footers await separate readback.
+
+Retained authorized-path diagnostic:7 exact full-body parity checks plus700
+HTTP200/zero-error timed responses,707 per-request signed-authority/unique-nonce/
+primary-D1 checks,and139 statements with14 SDK calls. Six p95 values still
+exceed50ms;all distributions/outliers and both cleanup histories are retained.
+No performance improvement,causal fix or production acceptance is claimed.
+
+The real trial remains27/160 STOPPED,repair in-flight/UNKNOWN,with no verifiable
+caller/page tool state,new owner veto and both retained holders' drain ACKs.
+No second repair/bind,ordinary continuation,refresh or RPC;original claim,
+pins,day/deadline,UNKNOWN and matching cleanup are retained. No Google/counter/
+realm/credential/formal-data operation or T0 in this integration. Keep formal
+flags off. Rollback this undeployed final merge to3b09e8f without altering the
+original stopped trial or replaying spent purposes;no remote rollback inferred.
+
+
+## C6 Workspace scope indexes — 2026-10-16 (local candidate)
+
+Recommended GPT-6.1 Sol/high for query-plan and privacy parity review. A private
+single-observation profile at HEAD901172ca showed loadDataset18–21ms and
+21937 D1 rows read per signed HTTP request,including14382 in one80-statement
+batch. Decode1–3ms,calculation2–10ms and serialization0–2ms overlap with other
+phases;these coarse instrumented observations are not p95 or CPU attribution.
+Seven original-GAS parity checks and seven observations returned HTTP200 with
+14 signed-authority/unique-nonce/primary-D1 checks. The initial64-shape observer
+failure and the second runner's stale707-footer assertion(14!=707,exit1) remain
+retained. Independent post-exit verification confirms complete14-record data,
+source guard,disposal and no remaining owned process;it does not turn either
+failed runner into acceptance. Query-plan capture is partial64shapes/20overflow.
+
+Additive migration0005 adds19 nonunique Workspace expression indexes only.
+The expression exactly matches the existing loader's
+`upper(trim(COALESCE(json_extract("workspace_id",'$'),'')))`.
+No runtime/auth/authority/query/binding/order/row-cap/cache or schema-field
+change;0001–0004 bytes remain intact. No index on global users,sync_runs,
+identity/parent fields or sort order. Existing sync tests now apply0005 too.
+
+One actual-D1 test seeds the same500-owned-room/foreign-decoy database once,
+compares the complete raw access/dataset JSON before/after applying0005,and
+records unchanged138 statements/SQL/params/order,7singles+6batches and one
+first-primary session. rows_read21886→5742(-73.764%);829427-byte JSON is exact,
+SHA25686dd1a969d2c9a2349e7062cb93cb65e8289e796f6c8adf91a79ae991bd3648b.
+This inspect path omits freshness,so138/13 differs intentionally from signed
+HTTP139/14. Mixed/padded Workspace values,SQLNULL,JSONnull,empty/spaces and
+foreign rows retain literal expected classifications. All19 indexes are
+nonunique;38 direct/blank actual plans SEARCH through the matching index.
+
+Focused actual-D1 RED21886==21886 becomes GREEN1/1. Affected49/49 pass includes
+scoped500-room HTTP/GAS parity,foreign/legacy/delegated/role/revocation and
+signed500-row sync insert/update/delete/type cases with new indexes. Parent
+migration-preserves-prior-bytes/comparison guards2/2 pass. Fresh sanitized
+Node22 Worker dry-run,validate72backend/40endpoint/cache/comparison179 and diff
+checks pass. Comparison generator produces
+read-935c6be0704ccc5b09e71143e016ceeee76b78f29f608456c25da77dd554bbdf;
+only0005 is added among normalized comparison sources. Asset version,blank
+endpoint and all formal flags remain unchanged. Fresh independent review found no actionable findings and independently
+verified all499 frozen non-document pins,original migration bytes,full raw JSON,
+SQL/parameters/order and38 plans. Exact-head CI remains pending;no huge local suite,
+700-request diagnostic or unchanged capacity benchmark rerun for this increment.
+
+Scan reduction is proven only on this local actual-D1 synthetic fixture.
+Previous actual-handler six-of-seven p95 failures and901172ca CI38785667919
+rental2083PASS/Worker40of41FAIL(properties53.742ms>50ms) remain evidence;
+no latency cure or production acceptance is claimed. T0 NOT_STARTED,all flags
+off. Actual C3 remains27/160 STOPPED with original claim/pins/day/deadline,
+P/N UNKNOWN and matching cleanup. No Google/counter/realm/credential/formal-data
+operation,second repair/rebind,refund,replay,deadline extension or deployment.
+
+Risk: index storage and write-maintenance overhead;actual sync regression
+passes but remote scale/storage has not been measured. Eventual in-plan release
+still requires all actual gates,current target identity,migration inventory,
+backup/readback and rollback preparation under the owner's batch authorization.
+Undeployed increment rollback is C6 HEAD901172ca6b0b5b52425aec665b5a580e4d933cf3,
+retaining evidence. For a future deployed rollback,use a separately reviewed
+additive migration dropping only the19 `idx_read_scope_<table>` indexes named
+in0005;preserve data and prior migrations. No remote rollback has occurred.
+
+
+## C6 arrears binding lookup — 2026-10-16 (local candidate)
+
+Recommended GPT-6.1 Sol/high. The arrears entry omitted the existing request-local
+LINE-binding lookup and scanned every bill for every outstanding bill. Only this
+entry now constructs the existing lookup once and passes its sixth resolver
+argument;all other canonical functions remain byte-exact. Regenerated calculator
+and manifests preserve each of248 declarations against the canonical source.
+No new helper/cache,authorization,scope,SQL,row cap,sort or response-field change.
+
+Actual arrears-entry TDD on500bills/252outstanding:original127000 source reads
+fails the linear bound;candidate2000 passes with full JSON identical to the
+five-argument original scan oracle. The candidate forced-scan oracle includes
+new index initialization and reads128000;it is not mislabeled the old baseline.
+Priority,duplicate-source-order,case,empty/fresh request and getter/decorated-Date/
+Proxy-Date/identity-coercion mutations retain original behavior and side effects.
+Initial wrong empty-result field name and two npm setup errors remain retained;
+corrected RED26of27 preceded the sole production author pass,then GREEN27of27.
+
+Affected42/42 and four actual Apps Script functions in local synthetic VM pass:
+home,arrears,tenants and summary projection. Independent fresh review found no
+actionable findings,verified all620frozen pins and248generated declarations.
+One complete npm test with actual Core643c1b3 and disposable ownedPG16.14 passes
+2103/2103,zero fail/cancel/skip,68.786s. Snapshot at baseHEADc062891b plus these
+six uncommitted paths:cf62ee611f8be78baa65c4d5cd28f2a97601f4bc8ec2686b91d14638355e64da.
+Later evidence-document appends are outside that exact tested snapshot.
+Fixture DB/roles cleanup and stopped PG/listener verified;no formal DB used.
+Fresh sanitized Worker dry-run passes. Parent actual-D1 HTTP/scoped regression10/10 passes,15.032s,including seven
+500-room canonical JSON results,primary-D1 scope and delegated/legacy privacy.
+Exact-new-head CI remains pending;no local capacity/700 rerun.
+
+Comparison read-1a2b13ba65aa51c55ab651fe8f2a3d58f4a63927572066bdb1aee8193e878ed0
+covers179sources;onlycanonical dashboard,generatedcalculator and source manifest
+change among normalized inputs. Release asset,blank endpoint and sixoff flags
+are preserved. This proves deterministic scan reduction,not a p95 or real
+latency cure. Prior c062891b CI38788433199 rental2083PASS/Worker41of42FAIL
+(arrears50.769/properties51.161ms) and actual-handler6of7p95failures remain.
+
+No Google/browser/credential/counter/claim/epoch/realm or formal-data change,
+merge/deployment/cutover. C3remains27/160STOP/UNKNOWN;the new private接續方案
+is not approved by this code change. T0 NOT_STARTED. Rollback this undeployed
+increment to c062891b01b25c23356611b044bb71fccd58066f,retaining all prior histories.
+Before any later approved release,create a new GAS immutable version at the
+original URL,retain prior serving version,deploy matchingWorker/Pages only after
+all actual gates,read back bytes/bindings/flags and preserve per-surface rollback.
+
 ## 2026-10-16 — Bounded continuation cost compiler (local only)
 
 Recommended model/speed: GPT-6.1 Sol / high. The owner-approved continuation
@@ -2381,3 +2972,79 @@ No main merge, deployment or cutover. Formal configuration remains default-off,
 endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
 observation and device gates remain open. Rollback this undeployed integration
 to a2d6114b616132597d7c8d286e7465520c40df59 while retaining all trial evidence.
+
+## C6 bounded-control integration — 2026-10-16
+
+Integrated C3 control/compiler/driver/recovery increment and its terminal trial
+evidence through the existing ordered Draft stack. Eleven inherited source/test
+paths match C3 byte-for-byte; no C6 runtime behavior changed. Documentation
+conflicts were append-only work-order records and both sides were preserved.
+
+Full npm test on merge 3a901b6c8aa62839146ba61c6e9ed5aacbebce60:
+2248/2248 PASS, zero failure/cancellation/skip,91.892s, Node22,
+pinned actual Core643c1b3 and a fresh owned PostgreSQL16.14 fixture. Each suite's
+database/role cleanup was verified; final cluster stopped and listener closed.
+Source catalog SHA256 f8fcb12ab1e42c6d262fe76de19457fcd13ab15e75f70b6d5b1d4f073d39a778.
+Validate72backend/40endpoint/static-cache and diff checks PASS. C6 additionally
+checks the179-source comparison identity. No unchanged capacity benchmark rerun;
+the prior C6 properties51.208ms p95 failure remains an unmet gate.
+
+Actual compatibility method ended at28/160 after the sole caller binding
+UNKNOWN. Ordinary owner is drained/closed; original27 remains byte-identical.
+No RPC or new credential/resource/configuration mutation occurred. The copied
+independent recovery subsequently verified the original stopped checkpoint after
+its full60s cooldown, with cActions/iActions empty and zero Google IO. This is
+local recovery availability, not remote rollback acceptance. No rebind, repair,
+refund or second segment is authorized. Original STOP/history/copies retained.
+
+No main merge, deployment or cutover. Formal configuration remains default-off,
+endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
+observation and device gates remain open. Rollback this undeployed integration
+to 3b59165c0c1ef8fa4531b128f8f42faeb8f3e6f4 while retaining all trial evidence.
+
+
+### 2026-10-16 tenant landlord-summary-only calculation
+
+Baseline affected6/6; final Node22 affected7/7 PASS after observed extra billing
+aggregation RED. Small/rich/500-room full and summary landlord fields retain
+canonical counts/current timestamp and tenant unpaid sums/history;24 complete
+frozenfbdef67 responses(2060399bytes/keyorder) plus21 projected Worker calculator
+responses match exactly, including foreign/private parity. Generated source and
+comparison179 updated; validate PASS. No capacity benchmark/fullDB/fullsuite/CI
+rerun or latency improvement claim; independent review and acceptance pending.
+
+
+### 2026-10-16 properties request-local summary fold
+
+Node22 baseline affected15/15; regression RED12 redundant status reads, final16/16
+PASS. Sum only completed per-property room/vacant/occupied/maintenance counters;
+small/rich/500-room both archived modes retain27 frozen504e7ee complete responses
+(2989899bytes/key order) and27 projected calculator responses exactly. Canonical/
+generated manifests/comparison179 synchronized; validate/diff checks PASS. No
+benchmark/fullDB/Worker/fullsuite/CI rerun or p95 improvement claim; previous exact
+CI properties51.647ms failure remains an unmet gate pending independent review.
+
+
+### 2026-10-16 per-room seasonal equipment-rate reuse
+
+Node22 baseline45/45; real builder22-combination seasonal fallback/rounding/month
+matrix PASS before change. Call-count regression RED2000 vs1000, final affected
+47/47 PASS, with one real resolver invocation per room/season and source rows
+unchanged. Frozen d2 complete27 + projected27 responses retain2989899 identical
+bytes/key order, including archived modes. Canonical/generated/comparison179,
+validate and diff checks PASS. Three existing Date/month-helper sites and all
+financial fallback semantics unchanged. No new benchmark/fullDB/fullsuite/Worker/
+CI run or p95 improvement claim; saved exact d2 log50.432ms failure remains open,
+with provider metadata still in_progress/null in that evidence snapshot.
+
+
+### 2026-10-16 primitive numeric property conversion
+
+Node22 baseline47/47; new finite/denormal/exponent/signed-zero/nonfinite and other
+type/custom coercion parity PASS before change. Actual500-room helper regression
+RED5770 numeric String calls vs0, then final affected49/49 PASS. Numeric -0 becomes
++0; string '-0' keeps -0 and other type coercions/exceptions retain the original
+branch. Frozen cce1282 complete27 + projected27 responses preserve2989899 bytes/key
+order exactly. Only six canonical fast-path lines added, with all other source
+bytes unchanged; generated/comparison179, validate/diff checks PASS. No performance
+benchmark/fullDB/fullsuite/Worker/CI run or acceptance improvement claim.

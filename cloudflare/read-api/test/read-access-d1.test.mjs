@@ -6,6 +6,7 @@ import { build } from 'esbuild';
 import { Miniflare,convertV4MiniflareOptions } from 'miniflare';
 import { richDataset,projectedDataset,fixture,originalGas,access,cases,plain } from '../../../tests/fixtures/read-parity/runtime.mjs';
 import { authorityRuntime,authoritySecret } from '../../../tests/fixtures/read-parity/authority-runtime.mjs';
+import { capacityDataset } from '../../../tests/fixtures/read-parity/capacity.mjs';
 
 const paths={home:'/v1/home',actions:'/v1/home?section=actions&read_view=summary',revenue:'/v1/revenue?from_month=2026-09&to_month=2026-10&as_of=2026-10-12',tenants:'/v1/tenants?read_view=summary',rooms:'/v1/rooms?include_archived=1',arrears:'/v1/arrears',properties:'/v1/properties?include_archived=1'};
 async function setup(input,identity={kind:'line',line_user_id:'SYNTHETIC_LINE1'}) {
@@ -14,18 +15,53 @@ async function setup(input,identity={kind:'line',line_user_id:'SYNTHETIC_LINE1'}
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:output.outputFiles[0].text,compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     outboundService:async request=>Response.json(authority.post(await request.json())),
     bindings:{FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_IDENTITY:JSON.stringify(identity),LINE_LOGIN_CHANNEL_ID:'SYNTHETIC_CHANNEL',EMAIL_SESSION_HMAC_SECRET:'synthetic-email-key',READ_REPLICA_SYNC_SECRET:authoritySecret,READ_AUTHORITY_URL:'https://script.google.com/macros/s/SYNTHETIC_DEPLOYMENT/exec'}}));
-  const db=await mf.getD1Database('DB');
-  for(const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).sort()) {
-    const sql=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
-    await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
+  let stage='database',seedStatements=0;
+  try {
+    const db=await mf.getD1Database('DB');
+    stage='migration';
+    for(const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).sort()) {
+      const sql=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
+      await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
+    }
+    stage='projection';
+    const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8')),data=projectedDataset(input),inserts=[];
+    for(const [table,definition] of Object.entries(schema)) for(const row of data[table]) {
+      inserts.push(db.prepare(`INSERT INTO "${table}" (row_key,row_hash,synced_at,${definition.fields.map(key=>'"'+key+'"').join(',')}) VALUES (${Array(definition.fields.length+3).fill('?').join(',')})`).bind(row[definition.key],'synthetic-hash',fixture.now,...definition.fields.map(key=>Object.hasOwn(row,key)?JSON.stringify(row[key]):null)));
+    }
+    stage='row_seed';seedStatements=inserts.length;
+    // Projection/prepare/bind use synchronous Miniflare proxy calls. Let Node
+    // observe workerd idle socket closures before dispatching the one seed RPC.
+    await new Promise(setImmediate);
+    await db.batch(inserts);
+    stage='sync_markers';
+    await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
+    return {mf,db,schema,authority};
+  } catch(error) {
+    // Fixed enums/counts only. Never emit messages, SQL/rows, addresses, URLs
+    // or arbitrary cause properties. Diagnostics cannot mask cleanup/failure.
+    const diagnostic={stage,seed_statements:seedStatements,error_kind:'OTHER',cause_kind:'NONE',
+      cause_code:'NONE',socket_bytes_read:null,socket_bytes_written:null,cause_inspection:'AVAILABLE'};
+    try {
+      const kinds=new Set(['Error','TypeError','RangeError','AggregateError','SocketError','HeadersTimeoutError','BodyTimeoutError','ConnectTimeoutError']);
+      const codes=new Set(['UND_ERR_SOCKET','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT','UND_ERR_CONNECT_TIMEOUT','ECONNRESET','ECONNREFUSED','EPIPE']);
+      const kind=value=>kinds.has(value)?value:'OTHER';
+      const bytes=value=>Number.isSafeInteger(value)&&value>=0?value:null;
+      diagnostic.error_kind=kind(error?.name);
+      const cause=error?.cause;
+      if(cause){
+        diagnostic.cause_kind=kind(cause.name);
+        const code=cause.code;diagnostic.cause_code=codes.has(code)?code:'OTHER';
+        diagnostic.socket_bytes_read=bytes(cause.socket?.bytesRead);
+        diagnostic.socket_bytes_written=bytes(cause.socket?.bytesWritten);
+      }
+    } catch {diagnostic.cause_inspection='UNAVAILABLE';}
+    try {console.log('C6_D1_FIXTURE_FAILURE '+JSON.stringify(diagnostic));}catch{}
+    // A rejected seed occurs before the caller receives mf. Release it here
+    // so the failed test remains visible without leaving workerd alive.
+    try {await mf.dispose();}
+    catch(cleanup) {throw new AggregateError([error,cleanup],'Read fixture setup and cleanup failed',{cause:error});}
+    throw error;
   }
-  const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8')),data=projectedDataset(input),inserts=[];
-  for(const [table,definition] of Object.entries(schema)) for(const row of data[table]) {
-    inserts.push(db.prepare(`INSERT INTO "${table}" (row_key,row_hash,synced_at,${definition.fields.map(key=>'"'+key+'"').join(',')}) VALUES (${Array(definition.fields.length+3).fill('?').join(',')})`).bind(row[definition.key],'synthetic-hash',fixture.now,...definition.fields.map(key=>Object.hasOwn(row,key)?JSON.stringify(row[key]):null)));
-  }
-  await db.batch(inserts);
-  await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
-  return {mf,db,schema,authority};
 }
 test('server-resolved D1 scope preserves all six canonical route results',async()=>{
   const input=richDataset(),{mf}=await setup(input);
@@ -50,6 +86,72 @@ test('server-resolved D1 scope preserves all six canonical route results',async(
     }
     console.log('C3_SCOPED_D1_OBSERVATION '+JSON.stringify(observations));
   } finally {await mf.dispose();}
+});
+test('500 owned rooms preserve canonical HTTP reads through authenticated primary-D1 scope',async()=>{
+  // Catches scope/relationship batching that truncates capacity rows or admits
+  // foreign rows. LINE/Google authority transports and GAS service adapters
+  // are synthetic; HTTP/identity/authority policy and D1 scope modules are real.
+  const input=capacityDataset(),{mf,db,authority}=await setup(input);
+  try {
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM V2_rooms').first()).n,501);
+    const inspection=await (await mf.dispatchFetch('https://local.test/inspect')).json();
+    assert.equal(inspection.dataset.V2_rooms.length,500);
+    assert.equal(inspection.dataset.V2_properties.length,20);
+    assert.equal(inspection.dataset.V2_tenants.length,250);
+    assert.equal(inspection.dataset.V2_bills.length,500);
+    for(const [table,rows] of Object.entries(inspection.dataset)) {
+      assert.ok(!rows.some(row=>row.workspace_id==='SYNTHETIC_W2'),table+' excludes foreign Workspace');
+    }
+    const gas=originalGas(input),observed={};
+    for(const item of cases) {
+      const response=await mf.dispatchFetch('https://local.test/http'+paths[item.route],{
+        headers:{authorization:'LIFF synthetic-valid-line-token',origin:'https://cmwebssaas-sudo.github.io'}
+      });
+      assert.equal(response.status,200,item.route+' authenticated status');
+      assert.equal(response.headers.get('cache-control'),'no-store');
+      const raw=await response.text(),actual=JSON.parse(raw),expected=plain(gas[item.fn](...item.args));
+      assert.ok(JSON.stringify(actual)===JSON.stringify(expected),item.route+' canonical JSON at scoped capacity');
+      assert.doesNotMatch(raw,/SYNTHETIC_PX|SYNTHETIC_RX|SYNTHETIC_PRIVATE_/);
+      observed[item.route]=actual.data;
+    }
+    assert.equal(observed.home.home.room_count,500);
+    assert.equal(observed.home.home.tenant_count,250);
+    assert.equal(observed.rooms.rooms.length,500);
+    assert.equal(observed.tenants.tenants.length,250);
+    assert.equal(observed.properties.properties.length,20);
+    assert.equal(observed.properties.summary.occupied_room_count,250);
+    assert.equal(observed.properties.summary.vacant_room_count,250);
+    assert.equal(observed.revenue.kpis.receivable,3948000);
+    assert.equal(observed.revenue.kpis.collected,1932000);
+    assert.equal(observed.revenue.kpis.outstanding,2016000);
+    assert.equal(observed.arrears.arrears.length,252);
+    // An authority-only change denies the next request while primary D1 still
+    // contains the previously active membership; no replication patch is sent.
+    const member=authority.data.V2_workspace_members.find(row=>row.membership_id===access.membership.membership_id);
+    member.member_status='suspended';
+    const denied=await mf.dispatchFetch('https://local.test/http/v1/rooms?include_archived=1',{
+      headers:{authorization:'LIFF synthetic-valid-line-token',origin:'https://cmwebssaas-sudo.github.io'}
+    });
+    assert.equal(denied.status,401);
+    assert.doesNotMatch(await denied.text(),/SYNTHETIC_500_|synthetic-valid-line-token|stack/);
+  }finally{await mf.dispose();}
+});
+test('fixture preparation starvation cannot reuse an expired D1 client socket',async()=>{
+  const input=capacityDataset(),room=input.V2_rooms[0],workspace=room.workspace_id;
+  let reads=0;
+  // First read is setup's structuredClone before Miniflare exists; the second
+  // is projection after the last async migration. Model synchronous preparation
+  // starving Node beyond workerd's idle socket lifetime, without changing data.
+  Object.defineProperty(room,'workspace_id',{enumerable:true,configurable:true,get(){
+    if(++reads===2)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,6500);
+    return workspace;
+  }});
+  const {mf,db}=await setup(input);
+  try{
+    assert.ok(reads>=2,'Starvation must occur after clone');
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM V2_rooms').first()).n,501);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM V2_tenants').first()).n,250);
+  }finally{await mf.dispose();}
 });
 test('explicit foreign Workspace never enters D1 dataset through shared landlord/property identifiers',async()=>{
   const input=richDataset();

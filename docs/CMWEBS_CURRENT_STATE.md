@@ -1,5 +1,312 @@
 # CMWebs Current State
 
+## 2026-10-13 — C6 fixture yields after synchronous preparation
+
+Head065f8027 CI38372089418 rental SUCCESS/Worker115211301907 FAIL31/33,
+footer55.026s. Complete bounded summary shows scoped500 seed2055 statements
+fails with UND_ERR_SOCKET (read12551/write78618 bytes). Capacity tenants has
+all100 samples>=50ms, p95=65.878/median57.008/max78.287ms; home29.385/actions
+26.464/revenue27.949ms pass, later loops not reached. Small700 parity passes.
+Socket signature is known; exact Linux cause/performance cure is not proven.
+
+Installed Miniflare uses synchronous prepare/bind proxy calls and notes workerd
+idle5s/client idle1s. Private actual Workerd controls: original batch2055 passes;
+blocking Node6500ms before it resets the socket; same block plus one event-loop
+turn succeeds. The negative control expected UND_ERR_SOCKET only but observed
+ECONNRESET, so its2/3 result is retained, not reported as all passing.
+
+Setup now yields once before the same single seed RPC; no retry/split/extra
+explicit RPC, source rows/assertions/500/100/p95 gates or runtime source change.
+Actual regression blocks projection after async migration without changing the
+workspace value. RED native fetch/ECONNRESET becomes GREEN1/1 zero skips; a
+filter mistake executed zero cases and an incorrect251 tenant expectation are
+retained. Correct250 tenants/501 total room rows match the canonical fixture.
+
+Full984/984 zero skips3.220s, local Worker34/34 zero skips37.026s, independent
+lifecycle11/11/source review PASS. All541 working files at065f8027 plus two test
+changes pin79cc8c1d before/after; later docs excluded, bundle remainsdf6377dc.
+Clean Core643c1b3/fresh PG16.14 cleanup/stopped and Worker-owned group empty
+pass; validate72/40/178 PASS. New-head Linux CI required; keep Draft/off/blank
+and actual C1/C3/C5/C6 gates. Root WIP/private S1 boundary preserved.
+
+## 2026-10-13 — C6 safe seed transport diagnostics
+
+Diagnostic head54d21341 CI38370308887 rental SUCCESS/Worker115205362935
+FAIL31/33, cancelled0/skipped0, footer49.146s. Bounded summary has zero drops/
+incomplete blocks despite truncated raw provider log. Case4 scoped500 fails
+setup db.batch(inserts) with fetch failed; case15 actions p95=86.168ms after
+home31.132ms, later loops not reached. Small700-sample parity passes, routes
+5.891–6.888ms. Underlying transport cause remains UNKNOWN; no rerun/cure claim.
+
+Failure-only initializer diagnostics now retain fixed stage/seed statement count,
+enum error/cause kinds, whitelisted code and safe socket byte counters. No
+messages, SQL/rows, URLs/addresses or arbitrary properties. Getter/logging failure
+cannot mask the primary error or cleanup; code is read once before projection.
+Terminal summary also retains original capacity distribution and safe diagnostic
+lines without rounding, bounded16KiB/4096-byte lines; combined sections59,392
+bytes plus fixed metadata stay below64KB. Original seed batch,500 assertions,
+client clocks/100 samples/p95<50ms and production/GAS/calculations remain exact.
+
+Actual initializer/CLI targeted19/19 and independent Node22 review PASS.
+Full984/984 zero skips2.970s, local Worker33/33 zero skips27.614s; all541 working
+files at54d21341 plus four diagnostic changes pin f166e8f2 before/after. Later
+evidence docs excluded. Compiled Worker remainsdf6377dc; fresh private PG16.14/
+clean Core643c1b3/fixture cleanup/stopped listener pass. Validate72/40/178 PASS.
+Local fault doubles do not identify Linux cause. New-head CI required; keep
+Draft/off/blank/all C1/C3/C5/C6 actual gates; root WIP/private S1 preserved.
+
+## 2026-10-13 — C6 terminal CI evidence retention
+
+Cleanup head5002d8af run38368334954: rental SUCCESS, Worker115198796326
+FAIL31/33, zero cancelled/skipped, complete33-test footer at56.928s. CodeReview
+returns only the final120000 characters with logTruncated=true; the two failed
+names/causes are outside the retained window and remain UNKNOWN. The small
+fixture's700-sample metadata and parity case pass in that tail. No unchanged-head
+rerun or provider/CLI fallback occurred; this does not prove the scoped500 case
+or cleanup transport cure. Original cancelled run and all timing failures remain.
+
+Only CI evidence handling changes: the same Worker test command uses tee with
+pipefail to retain raw output; an always-run bounded terminal summary reprints
+failure names/associated YAML, emitted route timings/metadata and actual footer.
+Missing footers, omitted lines and incomplete blocks are explicit, never PASS.
+Measured clients, Worker/GAS/calculations/thresholds/sample counts remain exact.
+RED1/4, bounds RED4/2 then5/1, association RED6/1 become GREEN7/7;
+independent Node22 review passes. Real workflow-body controls preserve child
+exit42/0, exact raw stdout/file and summary exit0 without erasing failure.
+
+Full978/978, zero fail/cancel/skip,2.924s pins541 working files at5002d8af plus
+three diagnostic files, snapshot178cbdea; later evidence documents are excluded.
+Core643c1b3/fresh PG16.14 cleanup and stopped listener pass. First preflight
+git-status timeout10s ran no tests/PG; retained, followed by verified clean Core
+and a private metadata-only30s budget. Validate72/40/178 passes. New-head Linux
+CI remains required. Keep Draft/all six flags off/URL blank/all actual gates.
+
+## 2026-10-13 — C6 fixture initialization failure cleanup
+
+Original a51ff579 CI38319550201 is terminal: rental SUCCESS, Worker115044090070
+CANCELLED. It records8 passes/1 failure before stopping, without a final test
+footer. The scoped500-room case failed in setup `db.batch(inserts)` with
+`fetch failed`, before returning Miniflare to its caller; timing diagnostics
+were not reached. The underlying fetch failure and cancellation initiator remain
+UNKNOWN. The agent did not cancel or rerun that job.
+
+Setup now disposes its own runtime on initialization failure and rethrows the
+original error; cleanup failure retains both errors. Original seed statements,
+500-room assertions, canonical JSON, revocation and strict timing gates remain.
+Targeted RED1 pass/5 fail becomes GREEN6/6. An actual Workerd2055-statement fault
+left the original helper unclosed beyond10s; the fixed helper disposed once,
+preserved failure and its Node test exited0 in3.695s. Initial private controller
+cleanup-check failure is retained; later owned-Node/Workerd absence verified.
+
+Private Node22/macOS Worker33/33 and full971/971 pass with zero skips. Full539
+working files at a51ff579 plus two test changes are pinned by snapshot9a8d7262;
+later evidence documents are excluded from that exact snapshot. Core643c1b3,
+fresh private PG16.14, fixture cleanup and stopped listener pass. Worker bundle
+remainsdf6377dc, validate72/40/178 and diff checks pass. These are local results,
+not a Linux CI or seed-transport cure. New-head CI remains required; keep Draft,
+six flags off/URL blank and all C1/C3/C5/C6 real gates. Runtime/GAS/data unchanged.
+
+## 2026-10-13 — Node-client CI diagnostic candidate
+
+Only test-client code adds fixed-route numeric CPU/ELU/GC and dispatch-return/
+full-consumption observations for both original fixtures. Original100 requests,
+JSON/literals and p95<50ms remain; Worker/src/fixture bytes are unchanged, as are
+v6 cache/comparison/flags. Local Worker33/33 passes, each diagnostic700 samples,
+GC119/7, no >=50ms sample, overflow or missing output. Compiled Worker before/
+after remainsdf6377dcafa6d7f98bb7979ccc099d7b6e48721a234900b15da8478481a04f81.
+This did not reproduce or explain the published CI failures below.
+
+Recorder limits700 samples/2048 GC/4096 bytes per line, compact chunks and explicit
+total/dropped/overflow metadata pass synthetic guards; truncated data cannot prove
+absence of GC. CPU/ELU slightly bracket the original clock and describe Node, not
+workerd; dispatch return is not physical network-header timing. More client work
+can perturb execution. New-head CI is required for diagnostic evidence only;
+full965 remains the guarded v6 working-source result. Keep Draft/all actual gates.
+
+## 2026-10-13 — Published v6 CI31/33 failure retained
+
+DraftPR271 headc9694bbdd4f1897e3df31a2f8c432582e067b496 is pushed; exact
+head/title/body/base/OpenDraft readback passes. Run38316892695 rental SUCCESS;
+Worker job115035558718 FAIL31/33. All JSON/literals, scoped500-room HTTP and
+new actual packed-SQL scalar/key coverage pass. Capacity first route home fails
+p95=64.115ms, median20.564ms,7/100>=50ms/max172.033ms; later capacity loops
+are not reached. Small-fixture tenants also fails p95=67.686ms; later small
+loops are not reached. No unchanged-head rerun, threshold adjustment or causal
+claim. Prior failures remain. Next capture numeric CI client/body/GC observations
+against unchanged Worker bytes; more passing local calculations cannot replace
+these failed gates. No merge/deploy or actual epoch/flag transition occurred.
+
+## 2026-10-13 — v6 packed D1 projection candidate
+
+Shared static SQL packing/decoding now serves both production scoped selection
+and the actual capacity fixture. Every schema field/row, SQLNULL absence versus
+own JSONnull, scalar/date metadata/prototype semantics, source order, where/binds,
+LIMIT10001/success/count guards and first-primary are preserved. GAS calculations
+and authorization policy are unchanged. Targeted RED2 failures become GREEN4/4;
+actual workerd/D1 scalar/frame coverage, scoped500-room and all prior tests pass.
+
+Actual unit960/960, Worker33/33 and full `npm test`965/965 pass with zero skips.
+Full test pins537 uncommitted working files at baseline4c9950e, snapshot
+bc8f7a6bbf0c6182156010a69bc3067f933d28b10951f609a6bf526553440cfb;
+it is not a test of published diagnostic-head source. Fresh private PG16.14,
+original Core HTTP/PG integration, SQL cleanup and stopped PID/TCP pass.
+Later evidence documents are not retroactively included in that source snapshot.
+
+Original seven100-sample capacity p95 remains<50ms:13.524/11.535/12.703/29.104/
+21.780/18.966/20.225ms (home/actions/revenue/tenants/rooms/arrears/properties).
+One private baseline/packed pair is directional only; prior CI/local failures
+below remain, with no root-cause/repeatability or remote/device speed claim.
+Cache20261013-read-capacity-v6 and178-source comparison
+read-1f3b9d5806d1129e4d0aa1006dfd69c21b30e201fc0c3774a5093bf233816541
+are synchronized. New-head CI is pending; keep Draft, six flags off/URL blank.
+No actual72h/seven-day/device/cutover gate is accepted by this local candidate.
+
+## 2026-10-13 — Ordered-diagnostic CI31/32 failure
+
+Diagnostic head4c9950e3c1846e1c9cc22bf5aad1e4f3117e51e6, run38313831332:
+rental SUCCESS; Worker job115025624321 FAIL31/32. Ordered100 samples show
+tenants p95=62.571ms, median49.520ms,31 samples >=50ms distributed across the
+loop (max71.128ms), rather than the local six-sample burst. Home/actions/revenue
+p95=34.280/32.086/32.117ms; remaining loops not reached. All other31 tests,
+including scoped500-room correctness, pass. Root cause remains UNVERIFIED;
+no rerun or threshold change. One setup-repaired private CPU control is now
+COMPLETE: unchanged synthetic Worker, tenant100-only profile/1580 samples,
+700 total original requests, tenant p95=36.059ms. Initial pre-tenant setup failure
+is preserved. D1 materialization is a sampled hotspot, without CI-spike causal
+proof; this control cannot substitute for acceptance. Next inspect materialization
+and review a bounded counterfactual before implementation; do not repeat this
+completed profile merely to seek another result.
+
+## 2026-10-13 — Ordered timing diagnostics; acceptance still failing
+
+C6 adds only numeric request-order diagnostics after each original100-request
+capacity loop. Actual local Worker31/32 fails tenants p95=69.198ms: samples5–10
+are consecutive spikes69–93ms; home/actions/revenue are below50ms, later loops
+are not reached. JSON/literals and scoped500-room HTTP correctness pass.
+One private unchanged-Worker client CPU/ELU/Node-GC control passes700 samples
+without a >=50ms spike; it does not reproduce or explain the failure. Its initial
+pre-Worker bundle guard failure was resolved only after offline verification of
+eight CWD-dependent source-path comments; both setup outcomes remain recorded.
+Root cause remains UNVERIFIED. This diagnostic candidate is not accepted for
+merge/deploy; CI must capture its own distribution with the unchanged gates.
+
+## 2026-10-13 — Published v5 CI31/32 failure retained
+
+C6 candidate adf39b40d2589d53551f3cb4d6bd428b7e7999fe is pushed on DraftPR271;
+no merge/deployment. CI run38311272334 rental passes, read-worker
+job115017316424 fails31/32. New scoped500-room HTTP correctness passes; original
+capacity benchmark fails revenue p95=160.216ms after home28.467/actions25.531ms.
+Remaining capacity loops were not reached. JSON/literals passed before timing.
+All prior failures and actual gates below remain; no unchanged-head rerun,
+threshold change or root-cause claim. Next investigation captures failing sample
+distribution/test-client observations without modifying Worker business logic.
+
+## 2026-10-13 — C6 v5 scoped-capacity regression candidate
+
+Recommended model/speed GPT-6.1 Sol/high. New500-room HTTP coverage executes
+the unchanged identity/authority policy and primary-D1 resolver/scoped-loader
+modules. LINE/Google authority transports and GAS service adapters are synthetic.
+All seven JSON results and independent500/250/20/financial literals pass;
+authority-only suspension with stale D1 rejects the next request. A private
+in-memory SQL truncation mutant (100 rows) fails at100 versus500; source is intact.
+
+Actual `npm run test:worker` passes32/32,0skip, including unchanged100 samples/
+entry and p95<50ms: tenants33.885ms, all entries18.106–33.885ms. New fresh
+isolated PG16.14 runs actual `npm test`:963/963,0fail/cancel/skip. Its537 tracked
+working files are pinned by snapshot SHA256
+ec2a7bca3baa1c1edc58d5bb02378a0ab191b5038cf836dab591e810e3de6ed8
+at base HEADbcde36b; this proves the uncommitted v5 candidate, not published v4.
+Core643c1b3 remains clean; SQL cleanup, stopped PID/TCP and no cleanup errors pass.
+Private empty npm configs/cache/logs isolate existing credential/config IO.
+
+V5 retains request-local formatter/layout reuse without date-value or positive
+authority caching, single date coercion/native undefined-clock semantics, and
+direct Sheet matrices with unchanged scalar/date/prototype behavior. Cache
+20261013-read-capacity-v5/comparison read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f
+still covers178 source files. Earlier v5 149.703/51.388 failures and published
+v4 CI29/31 remain in the next section; this run does not establish their cause
+or future repeatability. New-head Linux CI and all actual gates remain pending.
+No merge/deploy/flag transition or new real epoch occurred. Direct Google is
+authorized synthetic-only but its pre-Worker whitelist gate is still NOT_PROVEN.
+
+## 2026-10-13 — C6 acceptance still fails; GET diagnostics are not acceptance
+
+Recommended model/speed GPT-6.1 Sol/high for performance evidence and authority
+review. Published C6 head bcde36b154d7b2a2c34ce28d6c54dc9f51ab491a has
+CI run38301707241/Worker job114985925481 FAIL29/31:500-room tenants52.648ms
+and atomic report statuses [200,409] instead of [200,429]. Rental CI passed.
+This supersedes the older pending-CI wording below; causes remain UNVERIFIED.
+
+Local v5 remains UNCOMMITTED/UNPUBLISHED. Latest actual unit958/958 passes,
+but original Worker29/31 fails:500-room tenants149.703ms and small tenants51.388ms.
+Date coercion/undefined clock, mutable dates/timezones, scalar types and missing
+prototype-key semantics have independent checks; they do not qualify performance.
+Candidate cache20261013-read-capacity-v5 and178-source comparison
+read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f
+describe uncommitted bytes, not the published v4 HEAD.
+
+Private real-GET/Response.json and node:test diagnostics did not reproduce the
+failure. Earlier Worker-instrumented samples have provenance/failure-capture
+limitations and are exploratory. A reviewed client-only complete-suite control
+kept original Worker bytes (offline build hash matched),100 samples/entry,
+canonical JSON/literals and p95<50ms. Its31/31 diagnostic run had500-room tenants
+p95 34.081ms and one retained50.045ms sample; no overlapping Node GC was observed
+for that sample. This does not explain prior149.703ms or workerd GC. No acceptance
+result is replaced and no threshold is relaxed. Next investigation must retain
+failed samples and distinguish test-client, Worker and provider evidence.
+
+Google synthetic feasibility approval is RECEIVED, but its atomic pre-Worker
+whitelist gate remains NOT_PROVEN. No new Google account API call/credential,
+formal deployment/config/data change or real epoch occurred during these local
+diagnostics. Recorded six flags off/URL blank remain unchanged. Fresh72h,
+strict authority latency, seven full shadow days and device/cutover remain pending.
+
+## 2026-10-13 — C6 v4 candidate and retained performance failures
+
+V3 head2d1c1a8 CI run38299581057 failed29/31:500-room tenants55.647ms,
+small-fixture arrears68.719ms at unchanged p95<50ms. Later local date-only
+candidate arrears50.560ms and intermediate decoder candidate tenants94.726ms
+also failed; all JSON/literals passed but remaining latency loops were not reached.
+These failures are retained; no unchanged-head rerun or root-cause claim.
+
+V4 uses request-local date-only/full Intl formatters and a shared production/
+fixture JSON decoder with fewer intermediate arrays. Stored types, SQL-NULL
+absence versus JSON null, own __proto__, source order and scope/SQL are unchanged.
+Original GAS calculator remains unchanged; no date-value/positive-access cache.
+Unit957/957, Worker31/31 and full962/962 at exact source
+1cab31076ac82e35bb5c264d80ce0c7cc2c46240 pass, zero skips. New isolated
+PG16.14/clean Core643c1b3 cleanup verifies no fixture DB/roles, stopped PID/TCP
+and no errors. Each500-room entry has100 samples/p95<50ms: home27.683/
+actions25.049/revenue19.718/tenants39.150/rooms30.783/arrears27.972/
+properties29.059ms. These are local fixed-access/all-table-loader samples,
+not C3/remote/Taipei/device acceptance. New exact-head CI is pending.
+
+Cache20261013-read-capacity-v4 and178-source comparison
+read-cdf69ac211f844e21222e231fd546bd5845999989e9dc4ed47e79d9644226993
+are verified. No real epoch began; all six flags off/URL blank. C1 fresh72h,
+C3 strict latency, C5 seven full days and C6 real/device/cutover remain pending.
+The v3 local results below are historical, superseded by this candidate entry.
+
+## 2026-10-13 — C6 local capacity repair, actual gates still pending
+
+New500-owned-room fixture checks real local workerd/D1 against unchanged GAS
+at all seven entries and independent room/tenant/property/financial literals.
+Original tenants99.173ms p95 FAIL retained; instrumentation found2252 date
+format calls consuming61–87ms. Request-local formatter reuse preserves mutable
+dates/timezones/errors/DST and never caches date values or positive authority.
+Unit955/955 and Worker31/31 plus dry-run pass. Each entry has100 samples and
+original p95<50ms; tenants41.669ms, range20.732–41.669ms. Independent focused
+source/fixture review passes. CI for the new head is pending; original access
+is fixture-supplied and the all-table loader is not C3/remote/Taipei acceptance.
+
+Candidate cache20261013-read-capacity-v3/comparison
+read-bed1f4eb91b247567955000d406eccb5fc25520481f6af4ec8e0780102da8399
+regenerated over178 source files; no actual epoch began. All flags off/URL blank;
+no formal deployment/config/data change. Prior959 full-suite and previous CI
+outlier/rerun records below remain pinned historical evidence, not a new-head
+full-suite/performance claim. C1 fresh72h, C3 strict latency, C5 seven-day and
+C6 authenticated/device/cutover still pending.
+
 ## 2026-10-15 — C4 composed with current C3 source
 
 GPT-6.1 Sol/high. Inherit C3 9b1af93 scoped batching and bounded-trial controls;
@@ -200,6 +507,26 @@ Recorded release baseline is S1 GAS233/frontend20261012-line-identity-v1
 and merged C0 scaffold. This documentation/test update does not newly verify
 external serving state; recheck it before another release. No formal deployment,
 Property, trigger, data or flag change. Root checkpoint WIP is preserved.
+
+## 2026-10-12 — Cloudflare read path candidate and actual gates
+
+Historical snapshot, superseded by the October13 entry above. The old C1
+RUNNING label below does not describe its current stopped failed schedule.
+
+Recorded production baseline: S1 original GAS233, frontend
+20261012-line-identity-v1, owner-confirmed LINE/notification and desktop Email;
+C0 scaffold merged PR265/main32a5820. Reverify external serving/editor/Pages
+before another release. Formal operational read Worker is not deployed.
+C1 isolated real72-hour test is RUNNING, not accepted; complete daily runtime
+and correctness remain required. C2–C5 reviewed draft candidates267–270 are
+stacked independently and unpublished with all flags off. C5 CI38185484575
+passed; only exact canonical ISO generation clocks within60s are separately
+recorded under explicit owner approval. Current source-row/business fields stay
+exact. Actual seven-day shadow and C6 authenticated latency/physical-page
+acceptance are NOT_STARTED. C6 separates generated comparison identity from asset-cache/flag releases so
+sequential page qualification survives a pure flag publication; source changes
+still restart observation. C6 runbook is `READ-CUTOVER.md`; preparation does
+not switch flags or establish performance. Root checkpoint WIP is preserved.
 
 ## 2026-10-11 — 會員／銀行轉帳訂閱正式發布
 
@@ -1674,6 +2001,66 @@ Rollback 後端214及本次前端基底 d107206，保留新增網址欄與資料
 房東手機收件、登入後審核、人工確認及真實銷帳仍待驗收。
 完整证据与回退见BANK-EMAIL-RECEIPTS.md。
 
+## 2026-10-13 — C6 tenant lookup candidate, formal flags remain off
+
+C6 PR271 Draft prepares request-local identity maps in the canonical GAS tenant
+builder and regenerated Worker; the arrears caller is unchanged. Guard fallback
+covers unusual identity/binding cells and caller coercions; review-discovered
+relationship regression fixed, nine cases pass. Full993/993, Worker34/34 and
+unchanged local500-room p95<50ms pass at pinned542-file working snapshot;
+Core/PG cleanup verified. Source review/new-head Linux CI still required.
+The prior0306b8bd run38375012763 remains33/34 FAIL (tenant p95=65.595ms,
+100/100>=50); transport/starvation cases pass in that run only.
+Cache20261013-read-capacity-v7 and comparison
+read-9097a2c63b8ef9e0b7fd1ec34e4721e97f4a544f39d7cc7fb3cd4a1c552b4fe8
+are local candidates. Off/blank, no real epoch/deployment/configuration change.
+Rollback restores0306b8bd canonical source/generated/cache and resolver scans.
+C1 fresh72h/900s/day, C3 strict latency/new Google scope owner decision, C5 seven
+days and C6 actual authenticated/Taipei/500/device/cutover remain pending.
+
+Final guard correction supersedes the993-test index candidate: second P2 status
+accessor fixed with full own-cell/rooms inert eligibility, native plain dates
+remain eligible and custom/date/status/room side effects fall back. Index11/11,
+canonical parity16/16, full995/995 and actual Worker34/34 zero skips; corrected
+542-file snapshot143e099bef3eb28b18cfce4d30a03293af295ff94f9829ee3bd3bcb110001671.
+Final comparison identity read-3a0dea2a6d73bd8f36f993ea2c7d0351f33e1ab4496dc37d0cbbe2c222746a6c; source review/new-head
+CI still pending; all formal flags/day/device/Google-scope gates unchanged.
+
+Final source review PASS17/17 after third P2 Proxy-Date internal-slot guard.
+Plain native adapter dates remain eligible; Proxy dates fallback without source
+getTime/valueOf traps. Latest full996/996 and Worker34/34 zero skips at snapshot
+f08ebc140f017fb306355c767e74de10ebb8ac63e95a76e36e3f47418e433a19;
+fresh Core/PG cleanup, source/input/bundle pins verified. Tenant local p95=24.121ms
+with unchanged100/<50 gate. Linux exact-head CI still pending; prior995/993
+candidates were review-rejected, no private/formal state changes. Final unpublished
+v7 comparison identity read-c0ff511e8f71a5736d84d9767e010ee00cd5a59cb0f0ae12a068039318f22f54; Draft/off/blank and all actual gates remain.
+
+## 2026-10-13 — C6 Linux gate still fails; bounded client evidence prepared
+
+Exact d9a9ce8/run38383890134: rentalSUCCESS, WorkerFAIL33/34. Tenant100-sample
+p95=62.458ms,26over50; unchanged<50 threshold not accepted. Other33 cases pass,
+capacity timing after tenant not reached. CI failure retained in PR271, no rerun.
+New diagnostic-only helper retains full-log numeric client aggregates before
+provider truncation, validates complete samples/GC, flags malformed/empty/missing
+records/suites and omits arbitrary values. Source review17/17; full1005/1005 zero
+skips, fresh isolated Core/PG cleanup and unchanged runtime bundle verified.
+No Worker/GAS/caller/timing/assertion/workflow/cache/comparison/flag change.
+Rollback summary source tod9a9ce8. New-head diagnostic CI still required; all
+actual72h/900s/day/authority/seven-day/Taipei500/device/readback gates pending.
+No formal changes; private S1/root WIP boundaries retained.
+
+## 2026-10-13 — C6 native diagnostic framing candidate
+
+503b431 Linux33/34 FAIL atsmall actions61.592ms; same runtime all700 capacity
+p95 pass in that run. Damaged618-byte SAMPLES JSON makes diagnostics INCOMPLETE,
+not causal proof. New testContext.diagnostic output after original clocks and
+slowest complete route selection preserve all measured assertions/runtime.
+Independent21/21, full1009/1009, actual Worker34/34 zero skips; local actual raw
+log now two700-collected COMPLETE client/GC aggregates with no errors/drops.
+Core/PG cleanup and bundle/input pins verified. New-head Linux framing/results
+still required, no claim performance cured. Rollback503b431 transport/helper;
+Draft/off/blank, actual gates, owner scope and root/private boundaries remain.
+
 
 ## 2026-10-13 — Bounded human-OAuth trial approval and local preparation
 
@@ -2057,3 +2444,35 @@ Full1738/1738 with ownedPG cleanup; only Worker fixture changed afterward,
 Worker initial26/31 RED→31/31 GREEN; static review0, validate72/40/static/diff
 PASS. Exact-head CI required. Actual25/160/native STOP/off/blank;900s/72h/
 seven-day/500/Taipei/device/cutover remain unaccepted, no real shadow started.
+
+
+2026-10-15 current-stack composition: C5 8801187 merged into C6 96240d3;
+packed fields retained alongside C3 staged80-statement batching. Calls-cap
+RED1→GREEN3; full1791/1791 with Core/ownedPG cleanup, Worker36/36/bundle PASS;
+static review0/validate72/40/cache/comparison178/diff PASS. Local500 fixture
+seven100-sample p9511.781–23.237ms<50; not real identity/authority/remote/Taipei/
+device acceptance. New comparison read-bce058f378ee92a21559b596ec408c183496a6ec2009def7b508daa333666870.
+Exact-head CI pending; actual25/160/native STOP/off/blank and all real gates
+remain unaccepted; fresh72h/seven-day NOT_STARTED. Only docs after tests/review.
+
+
+2026-10-15 C6 request-local date output cache: bounded128 finite numeric/
+primitive-zone/pattern tuples with fresh coercion; no Date/auth/cross-request
+cache. TDD RED250 native formats vs1→calendar4/4 GREEN; actual250-tenant
+calculation2252 format calls/5 native formats. Static review0, full1792/1792
+with ownedPG cleanup, Worker36/36/bundle/validate72/40/cache/comparison178/diff
+PASS. Snapshot d828cfed6056a6336bce45b50c072b8a5b2466627233be0403ae0c8e8eb5c8a0.
+Prior Linux500 tenants58.708ms FAIL retained, new-head CI required. Local
+fixture evidence is not real acceptance; actual25/160/native STOP/off/blank,
+900s/72h/seven-day/Taipei/device gates unchanged. Only docs after review/tests.
+
+
+2026-10-15 explicit tenant summary now skips250 discarded history constructions
+for the synthetic250-tenant case. Actual-source TDD250→0; entire summary equals
+full-response projection, default still returns all histories. Static review0,
+full1793/1793 with Core/ownedPG cleanup, Worker36/36/bundle and validate72/40/
+static cache/comparison178/diff PASS. Snapshot71b383069f6557f1e0c1782b378b8b88c8cdf6affc529bb8ca79c19ae28aa8f3.
+Prior daf25c4 Linux tenants50.894ms FAIL retained; new-head CI required, no
+real acceptance/epoch. New comparison read-f78e12a3f964adf8bd38451988ac76840ae0718c1d0bf328bf9e27ae8b7a52d8.
+Actual25/160/native STOP/off/blank and all original900s/72h/seven-day/Taipei/
+device gates remain; only docs after tests/review. Rollback source to daf25c4.

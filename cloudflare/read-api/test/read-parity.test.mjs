@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 import { createHash, randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
+import {createClientTiming} from './read-client-timing.mjs';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { originalGas, access, cases, fixture, plain, projectedDataset, richDataset } from '../../../tests/fixtures/read-parity/runtime.mjs';
 
@@ -17,7 +18,7 @@ function differingPaths(left,right,path='$') {
   if(left===null||right===null||typeof left!=='object'||typeof right!=='object') return [path];
   return [...new Set([...Object.keys(left),...Object.keys(right)])].flatMap(key=>differingPaths(left[key],right[key],path+'.'+key));
 }
-test('all six routes match original GAS after whitelist projection and actual local D1 storage', async () => {
+test('all six routes match original GAS after whitelist projection and actual local D1 storage', async t => {
   const input=richDataset();
   const publicUrl='https://synthetic-c2.z3house.com/spaces/synthetic-room/';
   const photo='https://synthetic-c2.z3house.com/api/public/media/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
@@ -36,6 +37,7 @@ test('all six routes match original GAS after whitelist projection and actual lo
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
     compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     bindings:{FIXTURE_ACCESS:JSON.stringify(projectedAccess),FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_PUBLIC_RESOURCES:JSON.stringify(publicResources)}}));
+  const clientTiming=createClientTiming('small',line=>t.diagnostic(line));let timingOutcome='FAIL';
   try {
     const db=await mf.getD1Database('DB');
     const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
@@ -79,16 +81,19 @@ test('all six routes match original GAS after whitelist projection and actual lo
     for(const item of cases) {
       const samples=[],observations=[],stages={d1:[],decode:[],route:[],internal_ms:[]};
       for(let index=0;index<100;index++) {
+        const observation=clientTiming.begin(item.route,index);
         const start=performance.now(),cpuStart=process.cpuUsage(),loopStart=performance.eventLoopUtilization();
         const response=await mf.dispatchFetch('https://local.test'+httpPaths[item.route]);
+        const dispatchAt=performance.now();
         assert.equal(response.status,200);
         await response.arrayBuffer();
-        const elapsed=performance.now()-start;
+        const end=performance.now(),elapsed=end-start;
         // Node supervisor only: workerd is a separate child. ELU active time
         // includes blocking; neither ELU nor process CPU establishes a cause.
         // Start probes stay inside the original wall timer; ending diagnostic
         // formatting stays outside, as with the existing header observations.
         const cpu=process.cpuUsage(cpuStart),loop=performance.eventLoopUtilization(loopStart);
+        clientTiming.end(observation,start,dispatchAt,end);
         const supervisor={cpu_ms:Number(((cpu.user+cpu.system)/1000).toFixed(3)),
           loop_active_ms:Number(loop.active.toFixed(3)),loop_idle_ms:Number(loop.idle.toFixed(3)),
           loop_utilization:Number(loop.utilization.toFixed(6))};
@@ -107,5 +112,6 @@ test('all six routes match original GAS after whitelist projection and actual lo
     // All100 samples contribute to the original p95; paired slow samples are
     // diagnostic only. No retry, warmup, exclusion or threshold relaxation.
     assert.deepEqual(violations,[],violations.join('; '));
-  } finally { await mf.dispose(); }
+    timingOutcome='PASS';
+  } finally {try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{clientTiming.close(timingOutcome);}}
 });

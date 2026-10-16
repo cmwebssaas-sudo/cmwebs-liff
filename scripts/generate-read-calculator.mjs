@@ -17,7 +17,8 @@ const helpers=['landlordRoomWebsiteCoverTarget_','landlordRoomWebsitePhotosFromH
   'workspaceResolveContextByLineUid_','workspaceLandlordResolvePrincipals_',
   'workspaceBuildPermissionView_','workspaceIsActiveStatus_','workspaceOnboardingComplete_',
   'landlordEmailAuthUserCanLogin_','V2_WORKSPACE_ROLES_','readAuthorizationFingerprint_'];
-// Runtime services replace only IO, schema mutation and identity resolution.
+// Runtime services replace IO, schema mutation, identity resolution and the
+// optional request-local Intl collator used with unchanged GAS text rules.
 // C3 must supply verified access; these readers never resolve a client UID.
 const adapters = [
   'workspaceLandlordResolveAccess_', 'runtimeSpreadsheet_',
@@ -26,7 +27,8 @@ const adapters = [
   'contractRequestLogAccess_', 'lmLogAccess_',
   'ensureV2ContractRequestsSheet_', 'lmEnsurePaymentReportSheet_',
   'lmEnsureTenantMessageSheet_', 'landlordInitiatedContractSchema_',
-  'contractRequestResolveLandlordIdentity_', 'lmResolveLandlord_'
+  'contractRequestResolveLandlordIdentity_', 'lmResolveLandlord_',
+  'runtimePropertyRoomCompareText_'
 ];
 const excluded = new Set(adapters);
 const definitions = new Map(), sources = new Map();
