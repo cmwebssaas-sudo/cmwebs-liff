@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261013-read-capacity-v7';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-a6bbc6244c79ed1087ce576ee1c2c46430b4325ac2762c60fb25a6561e3095e7";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-a6d010fd98b15ed865482768ebd7b7092b10761a03dc2f4276fdd0ae45753f54";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = '';

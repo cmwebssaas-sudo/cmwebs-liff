@@ -5424,3 +5424,29 @@ deployment, flags, Properties, triggers or data change; endpoint blank and
 T0 NOT_STARTED. Real C1/C3, authority/privacy/latency, approved observation,
 device/rollback gates remain open. Undeployed rollback restores this writer,
 wire test and generated comparison to9d745be while preserving all evidence.
+
+
+## C6 tenant landlord-summary billing omission candidate — 2026-10-16
+
+Recommended model/speed GPT-6.1 Sol/high. Existing isolated C6 branch atfbdef67;
+local source candidate only. Tenant full/summary responses request the existing
+home builder's landlord-summary-only path: unchanged operational room/tenant
+counts and current Date, without discarded home billing totals or context views.
+Default home/arrears behavior and tenant unpaid totals/history remain unchanged.
+Generated calculator/source manifest and comparison179 were regenerated; asset
+version, blank endpoint, all flags and strict50ms gate remain unchanged.
+
+Node22 baseline affected6/6 PASS. New regression observed8 aggregate calls vs2
+required tenant sums, then final affected7/7 PASS. Frozenfbdef67 oracle:24 complete
+small/rich/500-room responses,2060399 bytes/key order, exact;21 generated
+projected-reader responses also match. Validate72/40/static/comparison179 PASS.
+No benchmark/fullDB/Worker/fullsuite rerun, commit/push or external operation.
+Independent review and later full/CI acceptance remain pending.
+
+Exact prior CI job116748257935/headfbdef67 confirms tenants p9595.205ms with
+D1stage60/decode6/route17ms, homeD153ms; logs truncated, stage summaries complete.
+This source inefficiency fix does not establish a p95 cure or attribute D1await
+to SQLCPU. Capacity fixture bypasses GAS authority/scoped loader. Preserve all
+failures; no release/device/observation gate passes from this local increment.
+Rollback: revert only this uncommitted source/test/generated/doc increment to
+fbdef67 and regenerate comparison; retain private canonical and failure evidence.

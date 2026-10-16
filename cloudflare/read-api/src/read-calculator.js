@@ -7310,7 +7310,8 @@ function getWorkspaceLandlordTenantsNativeByLineUid_(
       const home =
         workspaceDashboardBuildHomeData_(
           access,
-          data
+          data,
+          true
         );
 
       const tenants =
@@ -7864,7 +7865,8 @@ function workspaceDashboardBuildHomeResult_(
 
 function workspaceDashboardBuildHomeData_(
   access,
-  data
+  data,
+  landlordSummaryOnly
 ) {
   const activeRooms =
     data.rooms.filter(
@@ -7917,6 +7919,24 @@ function workspaceDashboardBuildHomeData_(
       }
     }
   );
+
+  // Tenant responses consume only the landlord summary. Keep its operational
+  // counts and current timestamp, without computing discarded home bill KPIs.
+  if (landlordSummaryOnly === true) {
+    const principal = access.principal || {};
+    const currentUser = access.user || {};
+    return {
+      line_user_id: access.line_user_id || principal.line_user_id || '',
+      user_id: currentUser.user_id || principal.landlord_user_id || '',
+      landlord_id: principal.landlord_id || access.principal_landlord_id || '',
+      landlord_name: principal.landlord_name || currentUser.name ||
+        access.membership.display_name || '房東',
+      room_count: activeRooms.length,
+      tenant_count: Object.keys(activeTenantIds).length,
+      account_status: 'active',
+      updated_at: new Date()
+    };
+  }
 
   const activeBills =
     data.bills.filter(

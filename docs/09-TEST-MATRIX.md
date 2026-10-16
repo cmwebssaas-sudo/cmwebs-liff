@@ -3001,3 +3001,14 @@ No main merge, deployment or cutover. Formal configuration remains default-off,
 endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
 observation and device gates remain open. Rollback this undeployed integration
 to 3b59165c0c1ef8fa4531b128f8f42faeb8f3e6f4 while retaining all trial evidence.
+
+
+### 2026-10-16 tenant landlord-summary-only calculation
+
+Baseline affected6/6; final Node22 affected7/7 PASS after observed extra billing
+aggregation RED. Small/rich/500-room full and summary landlord fields retain
+canonical counts/current timestamp and tenant unpaid sums/history;24 complete
+frozenfbdef67 responses(2060399bytes/keyorder) plus21 projected Worker calculator
+responses match exactly, including foreign/private parity. Generated source and
+comparison179 updated; validate PASS. No capacity benchmark/fullDB/fullsuite/CI
+rerun or latency improvement claim; independent review and acceptance pending.
