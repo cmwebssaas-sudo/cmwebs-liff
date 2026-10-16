@@ -2322,3 +2322,23 @@ PASS, zero fail/cancel/skip,149.524s; database/roles cleaned and PostgreSQL stop
 Validate/diff PASS. Synthetic maximum run158 preserves unused2; actual complete
 UI/navigation upper bound is still unverified. No Google/account operation or
 new claim/debit; actual31/160 unchanged, no remote/production acceptance.
+
+### 2026-10-16 closed standalone preflight continuation candidate
+
+Focused standalone/continuation457/457 pass before the final fixed executions
+opening descriptor. Coverage includes immutable closed two-selection history,
+import33/all rate timestamps/original W0, pin/semantic drift, partial claims,
+duplicate import/arbitrary chains, actual retained-holder exclusion and drain,
+safe API/post-return failure categories, complete-map reserves and fresh
+same-token identities, one RPC, original C2/I17 uniqueness and successor J2.
+The final discovery/opening pair uses existing navigation20 and fixed ordering;
+its affected budget/plan and private inert preparation checks are recorded in
+the execution record. Synthetic callbacks do not prove current native selection,
+Google access, real execution, remote cleanup or rollout acceptance.
+
+
+Round1 P2 coverage adds one-way owned-slot transfer, branded/single-use admission,
+retired legacy J function refs, active legacy route exclusion and maximum158
+plus unused2 protection. Original C2/I17/drain remain usable on the shared lane.
+Updated private preparation requires the handoff and verifies sources before
+moving its slot; raw full owners/serialized capsules cannot create a claim.

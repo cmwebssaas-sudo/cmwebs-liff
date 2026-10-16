@@ -85,3 +85,72 @@ test('standalone cleanup retains original C/I uniqueness and imported31 after ex
 for(const fault of ['old-C-mutation','old-library-target','missing-postcheck'])test('standalone map denies '+fault,async()=>{
  const s=fixture(),h=session(s),operations=map();if(fault==='old-C-mutation'){const r=originalPolicy['C:library-source-put'];operations.push({id:'forbidden-C',bucket:'C',alias:'library-source-put',actor:r.actor,target:r.target,operation:r.methods[0],units:1});}if(fault==='old-library-target')operations.find(v=>v.alias==='wrapper-before.library-content').target='original-project';if(fault==='missing-postcheck')operations.splice(operations.findIndex(v=>v.alias==='wrapper-after.original-project'),1);try{ok(await h.ready);denied(await h.send({op:'plan-ready',operations,now:clock}));assert.equal(s.journal().plan,null);assert.equal(s.journal().spent,0);}finally{await h.close();}
 });
+
+import {closedPreflightFixture} from './fixtures/read-authority/standalone-budget.mjs';
+test('closed two-selection preflight imports33 and same W0 and expiry without rewriting predecessor',async()=>{
+ const s=await closedPreflightFixture(),pins=Object.values(s.cfg.closedPreflight),before=pins.map(p=>readFileSync(p.path)),h=session(s);
+ try{const r=await h.ready;ok(r);assert.equal(r.spent,33);assert.equal(r.w0,s.predecessor.w0);assert.equal(r.expiresAt,s.predecessor.expiresAt);
+ ok(await h.send({op:'debit',operation:operation('P:publisher-bind'),now:clock+1}));assert.equal((await h.send({op:'inspect'})).spent,34);
+ denied(await h.send({op:'debit',operation:operation('P:caller-bind'),now:clock+1}));
+ pins.forEach((p,i)=>assert.deepEqual(readFileSync(p.path),before[i]));
+ }finally{await h.close();}
+});
+
+test('closed preflight spends one N20 discovery before publisher selection and preserves rolling history',async()=>{
+ const s=await closedPreflightFixture(),h=session(s),discovery={id:'publisher-executions-discovery',bucket:'N',alias:'navigation-1',actor:'publisher',target:'publisher-executions',operation:'snapshot',units:1,stage:'research'};
+ try{ok(await h.ready);ok(await h.send({op:'debit',operation:discovery,now:clock+1}));assert.equal((await h.send({op:'inspect'})).spent,34);
+ ok(await h.send({op:'debit',operation:operation('P:publisher-bind'),now:clock+1}));
+ for(let n=2;n<=3;n++)ok(await h.send({op:'debit',operation:research(n),now:clock+1}));
+ const wait=await h.send({op:'wait',operation:research(4),now:clock+1});ok(wait);assert.equal(wait.waitMs,50999);
+ denied(await h.send({op:'debit',operation:{...discovery,alias:'navigation-4',id:'second-discovery'},now:clock+1}));
+ }finally{await h.close();}
+});
+
+for(const key of ['journal','claim','stop','registry','callerProof'])test('closed predecessor '+key+' pin drift denies before successor claim',async()=>{
+ const s=await closedPreflightFixture(),p=s.cfg.closedPreflight[key];s.put(p.path,readFileSync(p.path,'utf8')+' ');const h=session(s);try{denied(await h.ready);assert.equal(existsSync(s.path+'.standalone-successor-claim.json'),false);}finally{await h.close();}
+});
+for(const fault of ['map','rpc','charge','mutation','count','order','success','unfinished','proof','wrong-path','extended-deadline','expired','backward'])test('closed predecessor semantic '+fault+' cannot create successor',async()=>{
+ const s=await closedPreflightFixture(),p=s.cfg.closedPreflight;
+ if(['map','rpc','charge','mutation','count','order','success','unfinished'].includes(fault)){
+  const j=JSON.parse(readFileSync(p.journal.path));
+  if(fault==='map')j.plan=[];if(fault==='rpc')j.rpc.beganAt=clock;if(fault==='charge')j.chargedUpperBoundMs=360000;
+  if(fault==='mutation')j.events[1].operation={id:'mutation',bucket:'B',alias:'fixture-import',actor:'publisher',target:'synthetic-sheet',operation:'POST',units:1};
+  if(fault==='count'){j.events.pop();j.spent=1;}if(fault==='order')j.events.reverse();if(fault==='success')j.events[0].outcome='SUCCESS';if(fault==='unfinished')j.finished=false;
+  const registry=JSON.parse(readFileSync(p.registry.path)).value;registry.checkpoint=j;
+  s.put(p.journal.path,compact(j));s.put(p.registry.path,wrapped(registry));p.journal.sha256=hash(readFileSync(p.journal.path));p.registry.sha256=hash(readFileSync(p.registry.path));
+ }
+ if(fault==='proof'){const v=JSON.parse(readFileSync(p.callerProof.path));v.actorConfirmed=false;s.put(p.callerProof.path,compact(v));p.callerProof.sha256=hash(readFileSync(p.callerProof.path));}
+ if(fault==='wrong-path')p.journal.path=s.path+'.standalone-successor.json';
+ if(fault==='extended-deadline')s.cfg.expiresAt++;if(fault==='expired')s.cfg.now=s.cfg.expiresAt;if(fault==='backward')s.cfg.now=clock-1;
+ const h=session(s);try{denied(await h.ready);assert.equal(existsSync(s.path+'.standalone-successor-claim.json'),false);}finally{await h.close();}
+});
+for(const partial of ['claim','registry','journal','stop'])test('partial successor '+partial+' remains consumed and cannot import again',async()=>{
+ const s=await closedPreflightFixture();const p=partial==='registry'?join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.standalone-successor.json'):s.path+'.standalone-successor'+(partial==='journal'?'.json':'-'+partial+'.json');s.put(p,'');
+ const h=session(s);try{denied(await h.ready);assert.equal(readFileSync(p,'utf8'),'');}finally{await h.close();}
+});
+test('completed successor has no further import or arbitrary chaining path',async()=>{
+ const s=await closedPreflightFixture(),h=session(s);ok(await h.ready);ok(await h.send({op:'finish',now:clock+1}));await h.close();
+ const next=session(s);try{denied(await next.ready);}finally{await next.close();}
+ s.cfg.closedPreflight.journal={path:s.path+'.standalone-successor.json',sha256:hash(readFileSync(s.path+'.standalone-successor.json'))};
+ const chain=session(s);try{denied(await chain.ready);}finally{await chain.close();}
+});
+test('closed successor complete map reserves all C2 I17 J2 unused2 and rejects21 navigation',async()=>{
+ const s=await closedPreflightFixture(),ops=map();ops.find(o=>o.alias==='caller-bind').id='preflight-caller-bind';
+ const h=session(s);try{ok(await h.ready);ok(await h.send({op:'debit',operation:operation('P:publisher-bind'),now:clock+1}));
+ const nav=Array.from({length:21},(_,i)=>({...research(i+1),stage:i<8?'research':'preparation'}));
+ denied(await h.send({op:'plan-ready',operations:[...ops,...nav],now:clock+1}));assert.equal(s.successorJournal().plan,null);
+ }finally{await h.close();}
+});
+
+const executionsDiscovery={id:'publisher-executions-discovery',bucket:'N',alias:'navigation-1',actor:'publisher',target:'publisher-executions',operation:'snapshot',units:1,stage:'research'};
+const executionsOpen={...executionsDiscovery,id:'publisher-executions-open',alias:'navigation-2',operation:'navigate'};
+test('closed preflight allows one fixed executions open after discovery, spending another N20 unit before bind',async()=>{
+ const s=await closedPreflightFixture(),h=session(s);try{ok(await h.ready);
+ for(const descriptor of [executionsDiscovery,executionsOpen,operation('P:publisher-bind')])ok(await h.send({op:'debit',operation:descriptor,now:clock+1}));
+ assert.equal((await h.send({op:'inspect'})).spent,36);assert.deepEqual(s.successorJournal().events.map(e=>e.operation.bucket),['N','N','P']);
+ denied(await h.send({op:'debit',operation:executionsOpen,now:clock+1}));
+ }finally{await h.close();}
+});
+test('closed preflight opening cannot skip the fixed charged discovery',async()=>{
+ const s=await closedPreflightFixture(),h=session(s);try{ok(await h.ready);denied(await h.send({op:'debit',operation:executionsOpen,now:clock+1}));assert.equal(s.successorJournal().spent,0);}finally{await h.close();}
+});

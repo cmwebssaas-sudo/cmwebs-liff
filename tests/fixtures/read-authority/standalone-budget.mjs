@@ -36,3 +36,20 @@ export function session(s,cfg=s.cfg,bootstrap=null,cleanup=false){
 }
 export function cleanupSession(s,patch={}){return session(s,{...s.cfg,minimumNewSpent:0,...patch},null,true);}
 export {fixture as standaloneFixture};
+// Closed preflight fixture uses the real persistent ledger, then pins its
+// finished checkpoint. It never deletes or rewrites a predecessor artifact.
+export async function closedPreflightFixture(){
+ const s=fixture(),h=session(s);assertReady(await h.ready);
+ for(const alias of ['caller-bind','publisher-bind'])assertReady(await h.send({op:'debit',operation:{id:'preflight-'+alias,bucket:'P',alias,actor:alias==='caller-bind'?'caller':'publisher',target:alias==='caller-bind'?'caller-executions':'publisher-executions',operation:'bind',units:1},now:clock}));
+ assertReady(await h.send({op:'stop',now:clock}));assertReady(await h.send({op:'finish',now:clock}));await h.close();
+ return successorFixture(s);
+}
+function assertReady(v){if(v.ok!==true)throw Error(JSON.stringify(v));}
+export function successorFixture(s){
+ const pin=path=>({path,sha256:hash(readFileSync(path))}),proof=join(s.home,'caller-proof.json');
+ s.put(proof,compact({source:'observed-native-initial-AX',expectedActorMatches:true,surface:'apps-script-executions',observedUrl:'https://script.google.com/home/executions',profileLabel:'ART',actorConfirmed:true}));
+ const predecessor=s.journal();
+ s.cfg={...s.cfg,binding:'9'.repeat(64),now:clock+1,closedPreflight:{journal:pin(s.path+'.standalone.json'),claim:pin(s.path+'.standalone-claim.json'),stop:pin(s.path+'.standalone-stop.json'),registry:pin(join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.standalone.json')),callerProof:pin(proof)}};
+ s.predecessor=predecessor;s.successorJournal=()=>JSON.parse(readFileSync(s.path+'.standalone-successor.json'));
+ return s;
+}

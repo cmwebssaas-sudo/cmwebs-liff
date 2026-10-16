@@ -76,3 +76,56 @@ test('standalone rejects old decision or missing linked history before startup',
    assert.throws(()=>mod.createAuthorityStandaloneControl({config,guard:()=>{}}),/TRIAL_STOPPED/);
  assert.equal(existsSync(s.path+'.standalone.json'),false);
 });
+
+import {successorFixture} from './fixtures/read-authority/standalone-budget.mjs';
+async function closedControl(){
+ const s=setup();await assert.rejects(s.control.withContinuation(async cap=>{
+  await cap.externalRead(()=>{}, {...operation('P:caller-bind'),id:'preflight-caller-bind'});
+  await cap.externalRead(()=>{throw Error('PRIVATE_API_ERROR');},{...operation('P:publisher-bind'),id:'preflight-publisher-bind'});
+ }),/TRIAL_STOPPED/);
+ successorFixture(s);const home=process.env.HOME;process.env.HOME=s.home;const {now,ownerNonce,...config}=s.cfg;
+ let handoff,successorTime=clock+1;const create=(extra={})=>{const prev=process.env.HOME;process.env.HOME=s.home;try{return mod.createAuthorityStandaloneControl({config,predecessorHandoff:Object.hasOwn(extra,'predecessorHandoff')?extra.predecessorHandoff:(handoff??=mod.createAuthorityClosedPreflightHandoff({current:{control:s.control}})),now:()=>successorTime,pause:async ms=>{successorTime+=ms;},guard:()=>{},...extra});}finally{if(prev===undefined)delete process.env.HOME;else process.env.HOME=prev;}};
+ if(home===undefined)delete process.env.HOME;else process.env.HOME=home;
+ return {...s,create};
+}
+test('closed preflight requires captured actual owner and shares its original cleanup lane',async()=>{
+ const s=await closedControl();assert.throws(()=>s.create({predecessorOwner:{ordinaryScopeClosed:true}}),/TRIAL_STOPPED/);
+ const successor=s.create();let enter,release;const entered=new Promise(r=>{enter=r;}),gate=new Promise(r=>{release=r;});
+ const run=successor.withContinuation(async cap=>{assert.equal((await cap.inspect()).spent,33);return cap.externalRead(async()=>{enter();await gate;},operation('P:publisher-bind'));});
+ await entered;assert.equal(lock(s.path),'HELD');await assert.rejects(s.control.withOriginalCleanup(()=>{}),/TRIAL_STOPPED/);
+ assert.throws(()=>s.create(),/TRIAL_STOPPED/);
+ release();await run;assert.equal(lock(s.path),'FREE');assert.equal(s.successorJournal().spent,1);
+});
+for(const fault of ['api-rejection','post-return-guard'])test('closed preflight preserves safe '+fault+' stage with one debit and drained holder',async()=>{
+ const s=await closedControl(),stages=[];let drift=false;
+ const successor=s.create({guard:()=>{if(drift)throw Error('PRIVATE_TOKEN_MUST_NEVER_ESCAPE');},onReadStage:v=>{stages.push(v);}});
+ await assert.rejects(successor.withContinuation(cap=>cap.externalRead(()=>{if(fault==='api-rejection')throw Error('PRIVATE_TOKEN_MUST_NEVER_ESCAPE');drift=true;return 'value';},operation('P:publisher-bind'))),/TRIAL_STOPPED/);
+ assert.equal(s.successorJournal().spent,1);assert.equal(lock(s.path),'FREE');assert.equal((await successor.stopAndDrain()).ordinaryScopeClosed,true);
+ assert.deepEqual(stages.map(v=>v.stage),fault==='api-rejection'?['entered','api-rejected']:['entered','api-returned','post-return-guard-rejected']);
+ assert.equal(JSON.stringify(stages).includes('PRIVATE_TOKEN'),false);
+});
+
+test('one-way predecessor handoff retires stale legacy J references before successor entry',async()=>{
+ const s=await closedControl();assert.equal(typeof mod.createAuthorityClosedPreflightHandoff,'function');
+ const slot={current:{control:s.control}},handoff=mod.createAuthorityClosedPreflightHandoff(slot),staleJ=handoff.legacy.withScriptCleanup;
+ assert.equal(slot.current,null);assert.equal(handoff.withScriptCleanup,undefined);
+ const successor=s.create({predecessorHandoff:handoff});
+ let entered=0;await assert.rejects(staleJ(cap=>cap.cleanup('script-remove',()=>{entered++;})),/TRIAL_STOPPED/);assert.equal(entered,0);
+ await successor.withContinuation(cap=>cap.externalRead(()=>{},operation('P:publisher-bind')));
+ await successor.withScriptCleanup(async cap=>{await cap.cleanup('script-remove',()=>{entered++;});await cap.cleanup('script-verify',()=>{entered++;});});
+ const old=readFileSync(s.path+'.standalone.json');
+ await assert.rejects(staleJ(cap=>cap.cleanup('script-remove',()=>{entered++;})),/TRIAL_STOPPED/);assert.equal(entered,2);assert.deepEqual(readFileSync(s.path+'.standalone.json'),old);
+ await successor.withOriginalCleanup(async()=>{assert.equal((await successor.stopAndDrain()).ordinaryScopeClosed,true);});
+});
+
+test('handoff refuses raw owners, fabricated capsules, duplicate moves and transfer during active legacy lane',async()=>{
+ const s=await closedControl(),slot={current:{control:s.control}},handoff=mod.createAuthorityClosedPreflightHandoff(slot);
+ assert.throws(()=>mod.createAuthorityClosedPreflightHandoff({current:{control:s.control}}),/TRIAL_STOPPED/);
+ assert.throws(()=>s.create({predecessorOwner:s.control,predecessorHandoff:handoff}),/TRIAL_STOPPED/);
+ assert.throws(()=>s.create({predecessorHandoff:Object.freeze({legacy:handoff.legacy})}),/TRIAL_STOPPED/);
+ let entered,release;const ready=new Promise(r=>entered=r),gate=new Promise(r=>release=r);
+ const work=handoff.legacy.withOriginalCleanup(async()=>{entered();await gate;});await ready;
+ assert.throws(()=>s.create({predecessorHandoff:handoff}),/TRIAL_STOPPED/);release();await work;
+ const successor=s.create({predecessorHandoff:handoff});await successor.withContinuation(async()=>{});
+ assert.throws(()=>s.create({predecessorHandoff:handoff}),/TRIAL_STOPPED/);
+});

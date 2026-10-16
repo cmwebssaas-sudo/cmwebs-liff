@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
+import {existsSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {fixture,clock} from './standalone-budget.mjs';
-import {createAuthorityStandaloneControl} from '../../../scripts/read-authority-continuation-control.mjs';
+import {createAuthorityStandaloneControl,createAuthorityClosedPreflightHandoff} from '../../../scripts/read-authority-continuation-control.mjs';
 import {STANDALONE_TRIAL_POLICY as policy,STANDALONE_TRIAL_DECISION_HASH as decisionHash} from '../../../scripts/read-authority-continuation-plan.mjs';
 import {AUTHORITY_TRIAL_SCOPES} from '../../../scripts/read-authority-trial-driver.mjs';
 import * as mod from '../../../scripts/read-authority-continuation-driver.mjs';
@@ -24,10 +25,22 @@ export function setup(){
   readIdentity:async(actor,token,context)=>{events.push(context.phase+'.identity.'+actor);assert.equal(token,actor==='caller'?'SYNTHETIC_CALLER_SECRET':'SYNTHETIC_PUBLISHER_SECRET');return {source:'google-userinfo-same-token',actor,phase:context.phase,accountHash:expected[actor+'Hash'],observedAt:time,credentialExpiresAt:config.expiresAt};},
   signRequest:()=>{calls.sign++;return {action:'read_replica_authorize',nonce:'SYNTHETIC-NONCE-123456789012',timestamp:time,signature:'f'.repeat(64),payload:JSON.stringify({protocol:'session',credential:'SYNTHETIC_SESSION_SECRET',credential_digest:sha('session:SYNTHETIC_SESSION_SECRET'),route:'/v1/rooms'})};},
   assertDispatch:guard,
-  transport:async call=>{calls.rpc++;assert.equal(call.accessToken,'SYNTHETIC_CALLER_SECRET');assert.equal(call.url,'https://script.googleapis.com/v1/scripts/SYNTHETIC_DEPLOYMENT_ID:run');assert.equal(call.body.function,'authorizeTrial');assert.equal(call.body.devMode,false);assert.equal(call.body.parameters[1],'compatibility');assert.equal(s.journal().chargedUpperBoundMs,360000);assert.equal(s.journal().events.at(-1).outcome,'UNKNOWN');assert.equal(s.journal().events.at(-1).operation.bucket,'H');events.push('RPC');return {done:true,response:{result:{compatible:true}}};}
+  transport:async call=>{calls.rpc++;assert.equal(call.accessToken,'SYNTHETIC_CALLER_SECRET');assert.equal(call.url,'https://script.googleapis.com/v1/scripts/SYNTHETIC_DEPLOYMENT_ID:run');assert.equal(call.body.function,'authorizeTrial');assert.equal(call.body.devMode,false);assert.equal(call.body.parameters[1],'compatibility');assert.equal((existsSync(s.path+'.standalone-successor.json')?JSON.parse(readFileSync(s.path+'.standalone-successor.json')):s.journal()).chargedUpperBoundMs,360000);assert.equal((existsSync(s.path+'.standalone-successor.json')?JSON.parse(readFileSync(s.path+'.standalone-successor.json')):s.journal()).events.at(-1).outcome,'UNKNOWN');assert.equal((existsSync(s.path+'.standalone-successor.json')?JSON.parse(readFileSync(s.path+'.standalone-successor.json')):s.journal()).events.at(-1).operation.bucket,'H');events.push('RPC');return {done:true,response:{result:{compatible:true}}};}
  };
- const prepare=async cap=>{await cap.completePlan(map);for(const bucket of ['P','A','B','C','D','E'])for(const op of map.filter(v=>v.bucket===bucket&&!['restore-editor','read-restored-editor'].includes(v.alias)))await cap.externalRead(()=>{},op);};
+ const prepare=async cap=>{await cap.completePlan(map);for(const bucket of ['P','A','B','C','D','E'])for(const op of map.filter(v=>v.bucket===bucket&&!['restore-editor','read-restored-editor',...(cap.identity.closedPreflight?['caller-bind']:[])].includes(v.alias)))await cap.externalRead(()=>{},op);};
  const driver=()=>{assert.equal(typeof mod.createAuthorityStandaloneDriver,'function');return mod.createAuthorityStandaloneDriver(options);};
  const run=async(d=driver(),inside=null)=>control.withContinuation(async cap=>{await prepare(cap);if(inside)return inside(d,cap);return d.run(cap);});
  return {...s,options,driver,run,prepare,control,calls,events,map,release,now:()=>time,setTime:v=>{time=v;},setDrift:()=>{drift=true;}};
+}
+
+import {successorFixture} from './standalone-budget.mjs';
+export async function successorSetup(){
+ const s=setup(),caller=s.map.find(o=>o.alias==='caller-bind'),publisher=s.map.find(o=>o.alias==='publisher-bind');
+ await assert.rejects(s.control.withContinuation(async cap=>{await cap.externalRead(()=>{},caller);await cap.externalRead(()=>{throw Error('API_REJECTED');},publisher);}),/TRIAL_STOPPED/);
+ successorFixture(s);s.setTime(clock+1);const previous=process.env.HOME;process.env.HOME=s.home;
+ let control;const {now,ownerNonce,...config}=s.cfg;
+ try{control=createAuthorityStandaloneControl({config,predecessorHandoff:createAuthorityClosedPreflightHandoff({current:{control:s.control}}),now:s.now,pause:async ms=>s.setTime(s.now()+ms),guard:()=>{}});}finally{if(previous===undefined)delete process.env.HOME;else process.env.HOME=previous;}
+ s.options.continuationBinding=config.binding;s.options.closedPreflight={pins:config.closedPreflight,callerSelection:caller};
+ const run=async(d=s.driver())=>control.withContinuation(async cap=>{await s.prepare(cap);return d.run(cap);});
+ return {...s,control,run};
 }

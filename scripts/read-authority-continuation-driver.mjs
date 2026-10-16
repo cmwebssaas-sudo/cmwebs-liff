@@ -57,13 +57,14 @@ function createDriver(input,standalone){
   const releaseAliases=aliasesFor(standalone?STANDALONE_TRIAL_POLICY:policy);
   const decisionHash=standalone?STANDALONE_TRIAL_DECISION_HASH:continuationDecisionHash,pins=standalone?standalonePins:continuationPins;
   const compile=standalone?compileAuthorityStandalonePlan:compileAuthorityContinuationPlan,verify=standalone?verifyAuthorityStandaloneReadback:verifyAuthorityTrialReadback;
-  const o=inputSnapshot(input,standalone),required=['decisionHash','continuationBinding','expected','expiresAt','now','operations','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport'];
-  if(!keys(o,[...required,...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[])])||o.decisionHash!==decisionHash||typeof o.continuationBinding!=='string'||!/^[a-f0-9]{64}$/.test(o.continuationBinding)||!integer(o.expiresAt)||o.expiresAt<=0||['now','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport',...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[])].some(k=>typeof o[k]!=='function'))stop();
+  const o=inputSnapshot(input,standalone),closed=standalone&&Object.hasOwn(o,'closedPreflight'),required=['decisionHash','continuationBinding','expected','expiresAt','now','operations','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport'];
+  if(!keys(o,[...required,...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[]),...(closed?['closedPreflight']:[])])||o.decisionHash!==decisionHash||typeof o.continuationBinding!=='string'||!/^[a-f0-9]{64}$/.test(o.continuationBinding)||!integer(o.expiresAt)||o.expiresAt<=0||['now','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport',...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[])].some(k=>typeof o[k]!=='function'))stop();
   const e=o.expected;
   const version=standalone?'standaloneVersion':'libraryVersion';
   if(!keys(e,pins)||!integer(e[version])||(standalone?e[version]!==1||e.originalScriptId===e.thinScriptId:e[version]<1)||e.callerHash===e.publisherHash||e.originalCloudProject===e.newCloudProject)stop();
   for(const k of pins.filter(k=>k!==version))if(typeof e[k]!=='string'||!(/Hash$/.test(k)?/^[a-f0-9]{64}$/:/^[-A-Za-z0-9_]{1,200}$/).test(e[k]))stop();
-  if(!compile({decisionHash,history:{spent:standalone?STANDALONE_TRIAL_POLICY.importedUnits:policy.importedUnits,limit:160},mapComplete:true,operations:o.operations}).credentialRpcEligible)stop();
+  if(closed&&!keys(o.closedPreflight,['pins','callerSelection']))stop();
+  if(!compile({decisionHash,history:{spent:closed?33:standalone?STANDALONE_TRIAL_POLICY.importedUnits:policy.importedUnits,limit:160,...(closed?{closedPreflightCaller:o.closedPreflight.callerSelection}:{})},mapComplete:true,operations:o.operations}).credentialRpcEligible)stop();
   const mapped=new Map(o.operations.map(v=>[v.bucket+':'+v.alias,v]));
   const time=()=>{const n=o.now();if(!integer(n))stop();return n;};
   const guard=()=>{if(sync(o.assertDispatch)!==undefined)stop();};
@@ -81,7 +82,7 @@ function createDriver(input,standalone){
     if(arguments.length!==1||used||!cap||typeof cap.inspect!=='function'||typeof cap.externalRead!=='function'||typeof cap.dispatchCompatibility!=='function'||typeof cap.finishCompatibility!=='function')stop();used=true;
     // No new scope or ledger: identity comes from the current captured owner.
     const identity=data(cap.identity);
-    if(!keys(identity,['epoch','binding','decisionHash','expiresAt'])||identity.epoch!==e.trialEpoch||identity.binding!==o.continuationBinding||identity.decisionHash!==decisionHash||identity.expiresAt!==o.expiresAt||cap.decisionHash!==decisionHash)stop();
+    if(!keys(identity,['epoch','binding','decisionHash','expiresAt',...(closed?['closedPreflight']:[])])||identity.epoch!==e.trialEpoch||identity.binding!==o.continuationBinding||identity.decisionHash!==decisionHash||identity.expiresAt!==o.expiresAt||cap.decisionHash!==decisionHash||closed&&!same(identity.closedPreflight,o.closedPreflight.pins))stop();
     guard();const state=data(await cap.inspect());
     if(state.state!=='ready'||state.planReady!==true||state.expiresAt!==o.expiresAt||!integer(state.w0)||live()<state.w0||o.expiresAt-state.w0>21600000||state.rpc?.beganAt!==null||state.rpc?.complete!==false||state.chargedUpperBoundMs!==0)stop();
     const caller=token(o.credential,'caller'),publisher=token(o.publisherCredential,'publisher');

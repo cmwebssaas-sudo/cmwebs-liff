@@ -83,3 +83,14 @@ for(const [method,action] of [['cleanup','close-deployment'],['restoreOriginalEd
  }),/TRIAL_STOPPED/);
  assert.equal(entered,0);assert.equal(s.get().spent,28);assert.equal(s.get().preparation.events.at(-1).outcome,'UNKNOWN');
 }));
+
+import {successorOwner} from './fixtures/read-authority/standalone-recovery.mjs';
+test('closed preflight successor recovery keeps predecessor lane and original C2 I17 globally unique',()=>setup(async s=>{
+ const owner=await successorOwner(s);await owner.withContinuation(cap=>cap.externalRead(()=>{},operation('P:publisher-bind')));
+ const cleanup=s.api.createCleanup({owner,originalOptions:s.originalOptions,now:s.now,pause:s.pause});
+ const predecessor=readFileSync(s.path+'.standalone.json');
+ await cleanup.withCleanup(async cap=>{await cap.restoreOriginalEditor('restore-editor',()=>{});await cap.cleanup('close-deployment',()=>{});});
+ await assert.rejects(s.cleanup().withCleanup(cap=>cap.cleanup('close-deployment',()=>assert.fail('DUPLICATE'))),/TRIAL_STOPPED/);
+ assert.equal(s.get().spent,29);assert.equal(s.successorJournal().spent,1);assert.deepEqual(readFileSync(s.path+'.standalone.json'),predecessor);
+ await assert.rejects(owner.withContinuation(()=>assert.fail('REOPEN')),/TRIAL_STOPPED/);
+}));

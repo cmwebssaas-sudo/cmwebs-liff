@@ -64,3 +64,37 @@ test('shared actual owner excludes J cleanup throughout old cleanup cooldown acr
  await s.cleanup().withScriptCleanup(async cap=>{for(const action of ['script-remove','script-verify'])await cap.cleanup(action,()=>events.push({action,time:s.now()}));});
  assert.equal(events.length,12);assert(events.slice(10).every(e=>e.time>=clock+120000));
 }));
+
+import {successorOwner} from './fixtures/read-authority/standalone-recovery.mjs';
+test('closed preflight successor J2 cleanup shares actual predecessor exclusion and keeps imported33',()=>setup(async s=>{
+ const owner=await successorOwner(s);await owner.withContinuation(cap=>cap.externalRead(()=>{},operation('P:publisher-bind')));
+ const old=readFileSync(s.path),predecessor=readFileSync(s.path+'.standalone.json'),cleanup=s.api.createCleanup({owner,originalOptions:s.originalOptions,now:s.now,pause:s.pause});
+ await cleanup.withScriptCleanup(async cap=>{const reader=s.api.createStandaloneScriptReader({...s.options,control:cap});await reader.remove();await reader.verifyRemoved();});
+ const reg=JSON.parse(readFileSync(join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.standalone-successor.json'))).value;
+ assert.equal(reg.checkpoint.spent,3);assert.deepEqual(reg.checkpoint.events.slice(-2).map(e=>e.operation.bucket),['J','J']);
+ assert.deepEqual(readFileSync(s.path),old);assert.deepEqual(readFileSync(s.path+'.standalone.json'),predecessor);
+ await assert.rejects(cleanup.withScriptCleanup(cap=>cap.cleanup('script-remove',()=>assert.fail('DUPLICATE'))),/TRIAL_STOPPED/);
+}));
+
+import {STANDALONE_TRIAL_POLICY} from '../scripts/read-authority-continuation-plan.mjs';
+import {research} from './fixtures/read-authority/continuation-budget.mjs';
+test('transferred predecessor cannot repeat J2 or spend unused2 after successor maximum158 path',()=>setup(async s=>{
+ const owner=await successorOwner(s),staleJ=s.predecessorHandoff.legacy.withScriptCleanup;
+ const map=Object.entries(STANDALONE_TRIAL_POLICY.operations).map(([key,rule])=>({id:key.replace(':','.'),bucket:key.split(':')[0],alias:key.slice(key.indexOf(':')+1),actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1}));
+ map.push(...Array.from({length:20},(_,i)=>({...research(i+1),stage:i<8?'research':'preparation'})));
+ await assert.rejects(owner.withContinuation(async cap=>{
+  await cap.completePlan(map);
+  for(const op of map.filter(v=>v.bucket==='P'&&v.alias!=='caller-bind'))await cap.externalRead(()=>{},op);
+  for(const op of map.filter(v=>['A','B','D','E','N'].includes(v.bucket)||v.bucket==='F'&&v.alias.startsWith('wrapper-before.')||v.bucket==='G'&&v.alias.startsWith('wrapper-before.')))await cap.externalRead(()=>{},op);
+  await cap.dispatchCompatibility({operation:map.find(v=>v.bucket==='H'),credentialExpiresAt:s.cfg.expiresAt},()=>null);
+  for(const op of map.filter(v=>v.bucket==='F'&&v.alias.startsWith('wrapper-after.')||v.bucket==='G'&&v.alias.startsWith('wrapper-after.')||v.bucket==='T'))await cap.externalRead(()=>{},op);
+  throw Error('SYNTHETIC_UNKNOWN_RPC');
+ }),/TRIAL_STOPPED/);
+ const cleanup=s.api.createCleanup({owner,originalOptions:s.originalOptions,now:s.now,pause:s.pause});
+ await cleanup.withCleanup(async cap=>{for(const action of ['restore-editor','read-restored-editor'])await cap.restoreOriginalEditor(action,()=>{});for(const op of map.filter(v=>v.bucket==='I'))await cap.cleanup(op.alias,()=>{});});
+ await owner.withScriptCleanup(async cap=>{await cap.cleanup('script-remove',()=>{});await cap.cleanup('script-verify',()=>{});});
+ const predecessor=s.cfg.closedPreflight.registry.path,oldBytes=readFileSync(predecessor),reg=JSON.parse(readFileSync(join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.standalone-successor.json'))).value;
+ assert.equal(s.get().spent+6+reg.checkpoint.spent,158);assert.equal(reg.checkpoint.chargedUpperBoundMs,360000);assert.equal(reg.checkpoint.rpc.complete,false);
+ let forbidden=0;for(const action of ['script-remove','script-verify'])await assert.rejects(staleJ(cap=>cap.cleanup(action,()=>{forbidden++;})),/TRIAL_STOPPED/);
+ assert.equal(forbidden,0);assert.deepEqual(readFileSync(predecessor),oldBytes);assert.equal(s.get().spent+6+reg.checkpoint.spent,158);
+}));

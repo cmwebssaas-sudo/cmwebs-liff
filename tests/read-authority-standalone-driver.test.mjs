@@ -33,3 +33,18 @@ test('noncanonical numeric caller scope properties are rejected before observers
 
 test('standalone requires its actual ACL callback in addition to all original fifteen before H',async()=>{const s=setup(),read=s.options.readRelease;s.options.readRelease=cap=>read({...cap,externalRead:(io,alias)=>alias==='standalone-acl'?Promise.resolve():cap.externalRead(io,alias)});await assert.rejects(s.run(),/TRIAL_STOPPED/);assert.equal(s.calls.rpc,0);});
 test('standalone ACL callback never replaces an original observation',async()=>{const s=setup(),read=s.options.readRelease;s.options.readRelease=cap=>read({...cap,externalRead:(io,alias)=>alias==='original-acl'?Promise.resolve():cap.externalRead(io,alias)});await assert.rejects(s.run(),/TRIAL_STOPPED/);assert.equal(s.calls.rpc,0);});
+
+import {successorSetup} from './fixtures/read-authority/standalone-driver.mjs';
+test('closed preflight driver inherits caller selection while retaining fresh same-token identities and one charged RPC',async()=>{
+ const s=await successorSetup();assert.deepEqual(await s.run(),{compatible:true});
+ assert.equal(s.calls.rpc,1);assert.equal(s.events.filter(v=>v.includes('.identity.')).length,4);
+ assert.equal(s.successorJournal().events.filter(e=>e.operation.alias==='caller-bind').length,0);
+ assert.equal(s.successorJournal().chargedUpperBoundMs,360000);
+ await assert.rejects(s.run(),/TRIAL_STOPPED/);assert.equal(s.calls.rpc,1);
+});
+
+test('closed preflight UNKNOWN RPC stays charged and cannot reopen for retry',async()=>{
+ const s=await successorSetup();s.options.transport=async()=>{s.calls.rpc++;throw Error('SYNTHETIC_UNKNOWN');};
+ await assert.rejects(s.run(),/TRIAL_STOPPED/);assert.equal(s.calls.rpc,1);assert.equal(s.successorJournal().chargedUpperBoundMs,360000);assert.equal(s.successorJournal().rpc.complete,false);
+ await assert.rejects(s.run(),/TRIAL_STOPPED/);assert.equal(s.calls.rpc,1);assert.equal((await s.control.stopAndDrain()).ordinaryScopeClosed,true);
+});

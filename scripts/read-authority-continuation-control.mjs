@@ -29,7 +29,7 @@ function data(value){
 function options(value){
  if(!value||typeof value!=='object'||types.isProxy(value))stop();
  const ds=Object.getOwnPropertyDescriptors(value),out=Object.create(null);
- for(const k of Reflect.ownKeys(ds)){const d=ds[k];if(typeof k!=='string'||!['config','now','pause','guard'].includes(k)||!d.enumerable||!Object.hasOwn(d,'value'))stop();out[k]=d.value;}
+ for(const k of Reflect.ownKeys(ds)){const d=ds[k];if(typeof k!=='string'||!['config','now','pause','guard','predecessorHandoff','onReadStage'].includes(k)||!d.enumerable||!Object.hasOwn(d,'value'))stop();out[k]=d.value;}
  if(!Object.hasOwn(out,'config')||typeof out.guard!=='function')stop();return out;
 }
 // A failed/late response poisons this process. Never assign it to a later IO.
@@ -63,6 +63,35 @@ function view(raw,standalone=false){
  if(!exact(raw,['ok','spent','state','waitMs','newSpent','w0','expiresAt','deadlineUtc','deadlineTaipei','chargedUpperBoundMs','planReady','rpc','cleanup'])||raw.ok!==true||!integer(raw.spent)||raw.spent<27||raw.spent>(standalone?160:158)||!integer(raw.newSpent)||raw.newSpent<0||raw.newSpent>(standalone?129:112)||!['ready','stopped'].includes(raw.state)||!integer(raw.waitMs)||raw.waitMs<0||raw.waitMs>60000||![raw.w0,raw.expiresAt].every(integer)||typeof raw.deadlineUtc!=='string'||typeof raw.deadlineTaipei!=='string'||![0,360000].includes(raw.chargedUpperBoundMs)||typeof raw.planReady!=='boolean'||!exact(raw.rpc,['beganAt','complete'])||(raw.rpc.beganAt!==null&&!integer(raw.rpc.beganAt))||typeof raw.rpc.complete!=='boolean'||!exact(raw.cleanup,['cActions','iActions'])||!Array.isArray(raw.cleanup.cActions)||!Array.isArray(raw.cleanup.iActions))stop();
  return data(raw);
 }
+// One trusted move, not revocation of arbitrary external raw aliases. The
+// launcher must clear its known old-client globals before it moves this slot.
+const predecessorHandoffs=new WeakMap(),movedPredecessors=new WeakSet();
+export function createAuthorityClosedPreflightHandoff(slot){
+ try{
+  if(!slot||types.isProxy(slot)||!exact(slot,['current']))stop();
+  const selected=Object.getOwnPropertyDescriptor(slot,'current');
+  if(!selected||!Object.hasOwn(selected,'value')||selected.writable!==true)stop();
+  const client=selected.value;if(!client||typeof client!=='object'||types.isProxy(client))stop();
+  const d=Object.getOwnPropertyDescriptor(client,'control'),owner=d&&Object.hasOwn(d,'value')?d.value:null;
+  const names=['withContinuation','requestStop','stopAndDrain','withOriginalCleanup','withScriptCleanup'];
+  if(!owner||typeof owner!=='object'||types.isProxy(owner)||!Object.isFrozen(owner)||movedPredecessors.has(owner))stop();
+  for(const name of names){const method=Object.getOwnPropertyDescriptor(owner,name);if(!method||!Object.hasOwn(method,'value')||typeof method.value!=='function')stop();}
+  const lane=Object.freeze({stopAndDrain:(...args)=>owner.stopAndDrain(...args),withOriginalCleanup:(...args)=>owner.withOriginalCleanup(...args)});
+  const state={phase:'retained',active:0,lane};
+  const legacy=Object.freeze(Object.fromEntries(names.map(name=>[name,async(...args)=>{
+   if(state.phase!=='retained')stop();state.active++;
+   try{return await owner[name](...args);}finally{state.active--;}
+  }])));
+  slot.current=null;movedPredecessors.add(owner);
+  const handoff=Object.freeze({legacy,lane});predecessorHandoffs.set(handoff,state);return handoff;
+ }catch(_){stop();}
+}
+function consumePredecessorHandoff(handoff){
+ const state=predecessorHandoffs.get(handoff);
+ if(!state||state.phase!=='retained'||state.active)stop();state.phase='transferred';
+ // No script cleanup or ordinary capability crosses the one-way transfer.
+ return state.lane;
+}
 export function createAuthorityContinuationControl(input){
  return createControl(input,false);
 }
@@ -71,16 +100,24 @@ export function createAuthorityStandaloneControl(input){
 }
 function createControl(input,standalone){
  try{
-  const o=options(input),config=data(o.config),now=o.now??Date.now,pause=o.pause??delay,guard=o.guard;
-  if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[])])||!isAbsolute(config.path)||config.decisionHash!==(standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||typeof now!=='function'||typeof pause!=='function')stop();
+  const o=options(input),config=data(o.config),closed=standalone&&Object.hasOwn(config,'closedPreflight'),now=o.now??Date.now,pause=o.pause??delay,guard=o.guard;
+  if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[]),...(closed?['closedPreflight']:[])])||!isAbsolute(config.path)||config.decisionHash!==(standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||typeof now!=='function'||typeof pause!=='function')stop();
+  // Only this module's consumable move can supply the narrow predecessor lane.
+  // Full owners and serialized receipts are rejected by options/brand checks.
+  const predecessor=closed?consumePredecessorHandoff(o.predecessorHandoff):null;
+  if(!closed&&(Object.hasOwn(o,'predecessorHandoff')||Object.hasOwn(o,'onReadStage')))stop();
+  const predecessorLane=predecessor?.withOriginalCleanup;
+  if(Object.hasOwn(o,'onReadStage')&&typeof o.onReadStage!=='function')stop();
+  const stage=(operation,stage)=>{if(o.onReadStage){const result=o.onReadStage(Object.freeze({operationId:operation.id,stage,errorCategory:stage==='api-rejected'?'API_REJECTED':stage==='post-return-guard-rejected'?'POST_RETURN_GUARD':'NONE'}));if(result!==undefined)stop();}};
+  const inPredecessorLane=callback=>closed?predecessorLane.call(predecessor,callback):callback();
   const home=homedir(),env={PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei',HOME:home},source=fileURLToPath(new URL('./read-authority-continuation-budget.py',import.meta.url));
-  const stem=standalone?'.standalone':'.continuation';
+  const stem=closed?'.standalone-successor':standalone?'.standalone':'.continuation';
   const nonce=randomBytes(32).toString('hex');let attempted=false,localStop=false,current=null,lastOwned=null,serial=0,newSpentHighWater=0,cleanupRunning=false;
   const observed=raw=>{const result=view(raw,standalone);newSpentHighWater=Math.max(newSpentHighWater,result.newSpent);return result;};
   const checked=()=>{const result=guard();if(types.isPromise(result))void Promise.prototype.then.call(result,()=>{},()=>{});if(result!==undefined)stop();};
   const veto=()=>{if(localStop)return true;try{lstatSync(config.path+stem+'-stop.json');return true;}catch(e){return e.code!=='ENOENT';}};
   const durableStop=async()=>{
-   const child=spawn('python3',[source,standalone?'--standalone-request-stop':'--request-stop'],{stdio:['pipe','pipe','pipe'],env}),p=protocol(child);let acknowledged=false;
+   const child=spawn('python3',[source,closed?'--standalone-successor-request-stop':standalone?'--standalone-request-stop':'--request-stop'],{stdio:['pipe','pipe','pipe'],env}),p=protocol(child);let acknowledged=false;
    try{const r=await p.send({path:config.path,epoch:config.epoch,binding:config.binding});if(!exact(r,['ok','stopRequested'])||r.ok!==true||r.stopRequested!==true)stop();acknowledged=true;}finally{await p.drain();}
    if(!acknowledged||child.exitCode!==0||child.signalCode!==null)stop();return true;
   };
@@ -120,11 +157,11 @@ function createControl(input,standalone){
    const run=async(q,io,ordinary)=>{
     if(typeof io!=='function')stop();await wait({...q,op:q.op==='rpc-begin'?'rpc-wait':q.op==='oldcleanup-debit'?'oldcleanup-wait':'wait'},ordinary);
     const admitted=await exchange({...q,now:time()},ordinary);alive(ordinary);
-    const task=Promise.resolve().then(()=>{alive(ordinary);return io(admitted);});entered.add(task);
-    try{const value=await task;alive(ordinary);return value;}finally{entered.delete(task);}
+    const task=Promise.resolve().then(async()=>{alive(ordinary);if(closed&&q.operation)stage(q.operation,'entered');let value;try{value=await io(admitted);}catch(_){if(closed&&q.operation)stage(q.operation,'api-rejected');stop();}if(closed&&q.operation)stage(q.operation,'api-returned');return value;});entered.add(task);
+    try{const value=await task;try{alive(ordinary);}catch(_){if(closed&&q.operation)stage(q.operation,'post-return-guard-rejected');stop();}return value;}finally{entered.delete(task);}
    };
    const cap=Object.freeze({decisionHash:config.decisionHash,
-    identity:Object.freeze({epoch:config.epoch,binding:config.binding,decisionHash:config.decisionHash,expiresAt:config.expiresAt}),
+    identity:Object.freeze({epoch:config.epoch,binding:config.binding,decisionHash:config.decisionHash,expiresAt:config.expiresAt,...(closed?{closedPreflight:config.closedPreflight}:{} )}),
     inspect:()=>tracked(()=>exchange({op:'inspect'})),
     externalRead:(io,descriptor)=>{let operation;try{operation=data(descriptor);}catch(_){return tracked(async()=>stop());}return tracked(()=>exclusive(()=>run({op:'debit',operation},io,true)));},
     completePlan:operations=>{let pinned;try{pinned=data(operations);}catch(_){return tracked(async()=>stop());}return tracked(()=>exclusive(()=>exchange({op:'plan-ready',operations:pinned,now:time()},true)));},
@@ -142,7 +179,7 @@ function createControl(input,standalone){
     fd=openSync(config.path+'.lock',constants.O_RDWR|constants.O_NOFOLLOW);const s=fstatSync(fd),named=lstatSync(config.path+'.lock');
     if(!s.isFile()||s.uid!==userInfo().uid||(s.mode&0o7777)!==0o600||s.nlink!==1||s.size!==0||s.ino!==named.ino||s.dev!==named.dev)stop();
     child=spawn('python3',[source,standalone?'--standalone-inherited-lock':'--inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
-    const ready=observed(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;owned.initial=true;if(ready.state!=='ready'||ready.w0!==t||ready.expiresAt!==config.expiresAt||(standalone&&ready.spent<31))stop();alive(true);
+    const ready=observed(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;owned.initial=true;if(ready.state!=='ready'||(closed?ready.w0>t:ready.w0!==t)||ready.expiresAt!==config.expiresAt||(standalone&&ready.spent<31))stop();alive(true);
     result=await callback(cap);if(pending||failed||veto())stop();
     const ending=await exchange({op:'inspect'},true);
     // A returned callback/transport value never substitutes for postchecks.
@@ -223,6 +260,6 @@ function createControl(input,standalone){
     const [continuationHolder,originalHolder]=results.map(v=>v.value);return Object.freeze({source:'continuation-owner-stop-bridge',stopRequested:true,stopAcknowledged:continuationHolder.stopAcknowledged&&originalHolder.stopAcknowledged===true,continuationHolder,originalHolder,remoteExecutionSettled:false,trialAccepted:false,rollbackComplete:false});
    }});
   };
-  return Object.freeze({withContinuation,requestStop,stopAndDrain,bridgeOriginalStopControl,...(standalone?{withScriptCleanup,withOriginalCleanup}:{})});
+  return Object.freeze({withContinuation:callback=>inPredecessorLane(()=>withContinuation(callback)),requestStop,stopAndDrain,bridgeOriginalStopControl,...(standalone?{withScriptCleanup:callback=>inPredecessorLane(()=>withScriptCleanup(callback)),withOriginalCleanup:callback=>inPredecessorLane(()=>withOriginalCleanup(callback))}:{})});
  }catch(_){stop();}
 }

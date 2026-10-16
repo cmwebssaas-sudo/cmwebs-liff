@@ -100,3 +100,46 @@ ledger. An earlier complete run was 2159/2161 with two existing realm-child
 Neither history is discarded. No new Google/browser operation, credentials,
 resource, deployment, claim or counter debit. Actual operation mapping and
 append-only execution wiring remain pending; there is no remote readiness claim.
+
+## Closed preflight continuation
+
+A finished, stopped preflight containing only caller and publisher selection
+attempts can have one append-only successor. All predecessor journal, claim,
+STOP, registry checkpoint and caller-selection proof bytes are pinned and
+rechecked. A partial successor claim consumes that successor; it cannot be
+recreated or used as another predecessor. No mapped work, resource mutation,
+RPC or runtime charge may exist in the predecessor.
+
+This successor imports cumulative33 and every historical rate timestamp. It
+retains the original standalone W0 and hard expiry, with no new six-hour window.
+The observed caller selection is reused once; fresh same-token identities and
+all sixteen before/after privacy observations remain required. The conditional
+ceiling is33 + remaining fixed103 + navigation20 + original restore2 + unused2
+=160. The fixed103 already includes I17 and separate script cleanup J2. Any
+additional selection observation spends navigation20. A single, exact publisher
+executions discovery descriptor may precede publisher selection and consumes
+one of those20 units. If discovery finds no matching existing tab, one exact
+known-URL executions opening may consume another navigation unit before the
+publisher bind. It requires the charged discovery and cannot repeat or occur
+after the publisher bind. Both are limited to the publisher executions target.
+
+Trusted orchestration first moves its sole known old client through a mutable
+owned slot and clears every known raw alias. The verified handoff factory
+clears that slot and retains the raw control privately. A same-module branded
+capsule can be consumed by one successor only, and all exposed legacy routes,
+including previously retained J cleanup function references, then refuse entry.
+The successor accepts this capsule rather than a full predecessor owner or a
+serialized receipt. Its retained narrow lane exposes only captured drain and
+original cleanup exclusion; J2 is available solely through the successor.
+Duplicate moves, fabricated capsules and transfers during active legacy routes
+deny admission. Existing recovery retains the original canonical C2/I17 ledger.
+This enforced known-alias flow does not revoke arbitrary raw references retained
+outside trusted orchestration; source-pinned launch wiring must show their
+absence before actual continuation.
+
+A bounded callback-stage recorder distinguishes API rejection from a successful
+API return followed by a guard failure. It records only a fixed stage, operation
+identifier and safe category, never raw errors, page content or credentials.
+Every admitted failure remains a durable UNKNOWN debit. Local accounting and
+synthetic selector fixtures establish neither publisher selection availability
+nor current Google identity, access, execution, rollback or rollout acceptance.

@@ -4,7 +4,7 @@ import {readFileSync,realpathSync} from 'node:fs';
 import {join} from 'node:path';
 import {fixture,clock,hash,compact,wrapped} from './standalone-budget.mjs';
 import {normalizeAuthorityNativeTargets} from '../../../scripts/read-authority-trial-budget-plan.mjs';
-import {createAuthorityStandaloneControl} from '../../../scripts/read-authority-continuation-control.mjs';
+import {createAuthorityStandaloneControl,createAuthorityClosedPreflightHandoff} from '../../../scripts/read-authority-continuation-control.mjs';
 import {buildAuthorityTrialRollback} from '../../../scripts/read-authority-trial-rollback.mjs';
 import {buildStandaloneAuthorityTrialArtifacts} from '../../../scripts/build-read-authority-trial-entry.mjs';
 import * as recovery from '../../../scripts/read-authority-continuation-recovery.mjs';
@@ -42,4 +42,15 @@ export async function setup(fn){
   const pause=async ms=>{pauses.push(ms);time+=ms;},cleanup=()=>api.createCleanup({owner,originalOptions,now:()=>time,pause});
   await fn({...s,owner,oldCopy,oldBytes,overlay,receipt,api,resources,originalOptions,thinOptions,readerOptions,thinRegistry,readerRegistry,calls,pauses,pause,cleanup,now:()=>time});
  }finally{if(beforeHome===undefined)delete process.env.HOME;else process.env.HOME=beforeHome;cp.spawn=spawn;syncBuiltinESMExports();}
+}
+
+import assert from 'node:assert/strict';
+import {successorFixture} from './standalone-budget.mjs';
+import {operation} from './continuation-budget.mjs';
+export async function successorOwner(s){
+ await assert.rejects(s.owner.withContinuation(async cap=>{await cap.externalRead(()=>{},operation('P:caller-bind'));await cap.externalRead(()=>{throw Error('API_REJECTED');},operation('P:publisher-bind'));}),/TRIAL_STOPPED/);
+ successorFixture(s);await s.pause(1);const {now,ownerNonce,...config}=s.cfg;
+ s.predecessorHandoff=createAuthorityClosedPreflightHandoff({current:{control:s.owner}});
+ const owner=createAuthorityStandaloneControl({config,predecessorHandoff:s.predecessorHandoff,now:s.now,pause:s.pause,guard:()=>{}});
+ return owner;
 }

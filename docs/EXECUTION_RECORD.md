@@ -4030,3 +4030,51 @@ retain a common standard Cloud project and all manifest scopes. These references
 do not prove actual account access or deployment. Rollback before use is source
 revert; after use, drain the retained owner and use distinct fixed Sheet/script
 revocation plus deployment/credential cleanup, preserving UNKNOWN and old evidence.
+
+## 2026-10-16 — Closed standalone preflight continuation candidate
+
+Recommended model/speed: GPT-6.1 Sol / high. Local accounting repair in the
+existing isolated C3 branch; no external operation or release in this increment.
+One pinned finished two-selection preflight may have one append-only successor.
+It imports33, every rate timestamp and the original standalone W0/expiry while
+preserving all predecessor files. Partial claims, changed history, mapped work,
+mutation, runtime charge, RPC and arbitrary successor chains deny admission.
+
+The retained original owner supplies its actual drain/cleanup exclusion lane.
+Completed caller selection is reused; publisher discovery consumes the existing
+navigation allowance. Fresh identities, sixteen privacy observations, C2/I17/J2,
+unused2, total160 and the one nonrefundable360000ms RPC remain protected.
+Safe callback stages preserve API-return/rejection and post-return guard failure
+without retaining raw exceptions. The existing recovery facade uses successor
+owner lanes; no independent recovery policy was broadened.
+
+Focused standalone and continuation regression457/457 and validate PASS. Private
+inert preparation fixtures6/6 PASS after observed RED cases. Tests use synthetic
+local ledgers and callbacks, with no real browser, Google, credential, grant,
+resource, RPC or deployment operation. Full regression, independent review,
+provider CI, actual source-pinned orchestration and native acceptance remain
+pending at this candidate. No staging, commit, push or counter mutation was
+performed. Source rollback is a reviewed revert; historical evidence is retained.
+
+Final descriptor delta: affected budget/plan plus private inert preparation89/89
+PASS; closed UNKNOWN-RPC nonretry1/1 PASS; preserved original private preparation
+14/14 PASS. Final validate and diff-check PASS. The earlier457-case run predates
+only this exact discovery/opening descriptor delta; it is not claimed as a
+fresh complete-suite result for the final source. Root owns fresh independent
+review, full regression and provider CI before any actual operation.
+
+
+Round1 independent review found one P2: sequential stale predecessor J cleanup
+could use its old registry after successor J2. A one-way branded handoff now
+moves the known owned client slot, retires legacy routes/stale function refs,
+and admits only narrow captured drain/original-cleanup authority to the
+successor. Raw owner inputs and fabricated/reused capsules deny admission.
+The maximum158 synthetic path retains unused2 after attempted stale J2. Known
+raw launcher aliases must be cleared explicitly; arbitrary external raw aliases
+cannot be revoked by a callee. Original frozen sources/history remain untouched.
+
+Round1 focused control/recovery/J58/58, successor driver2/2 and private inert
+preparation7/7 PASS, with validate and diff-check PASS. The earlier457-case run
+was not repeated. Final committed-source pins, supported-runtime full regression,
+provider CI and reviewed actual one-way launcher flow remain root-owned gates;
+this increment performed no actual handoff, IO or counter debit.

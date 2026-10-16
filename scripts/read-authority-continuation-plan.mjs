@@ -122,11 +122,12 @@ export function compileAuthorityStandalonePlan(input){
 }
 function compilePlan(input,policy){
  try{
-  const limits=policy.bucketLimits,operations=policy.operations,imported=policy.importedUnits,navigationTargets=policy.navigationTargets;
+  const limits=policy.bucketLimits,operations=policy.operations,navigationTargets=policy.navigationTargets;
   const outsideRestore=policy.originalRestoreUnitsOutsideMap??0;
   input=snapshot(input);
+  const closed=policy===STANDALONE_TRIAL_POLICY&&Object.hasOwn(input.history??{},'closedPreflightCaller'),imported=closed?33:policy.importedUnits;
   if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==policy.decisionHash||
-   !exact(input.history,['spent','limit'])||input.history.spent!==imported||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
+   !exact(input.history,['spent','limit',...(closed?['closedPreflightCaller']:[])])||input.history.spent!==imported||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
    !Array.isArray(input.operations)||input.operations.length>131)stop();
   const ids=new Set(),seen=new Map(),unknownCosts=[],bucketUnits=Object.fromEntries(Object.keys(limits).map(k=>[k,0]));
   let research=0,preparation=0;
@@ -137,8 +138,9 @@ function compilePlan(input,policy){
     op.units!==1&&op.units!==null)stop();
    ids.add(op.id);const key=op.bucket+':'+op.alias;if(seen.has(key))stop();
    if(op.bucket==='N'){
-    if(!/^navigation-(?:[1-9]|1[0-9]|2[0-4])$/.test(op.alias)||op.actor!=='publisher'||!navigationTargets.includes(op.target)||
-     !['navigate','snapshot'].includes(op.operation)||!['research','preparation'].includes(op.stage))stop();
+    const discovery=closed&&((op.id==='publisher-executions-discovery'&&op.alias==='navigation-1'&&op.operation==='snapshot')||(op.id==='publisher-executions-open'&&op.alias==='navigation-2'&&op.operation==='navigate'))&&op.actor==='publisher'&&op.target==='publisher-executions'&&op.stage==='research';
+    if(!discovery&&(!/^navigation-(?:[1-9]|1[0-9]|2[0-4])$/.test(op.alias)||op.actor!=='publisher'||!navigationTargets.includes(op.target)||
+     !['navigate','snapshot'].includes(op.operation)||!['research','preparation'].includes(op.stage)))stop();
     if(op.stage==='research')research++;else preparation++;
    }else{
     const rule=operations[key];if(!rule||op.actor!==rule.actor||op.target!==rule.target||!rule.methods.includes(op.operation))stop();
@@ -146,12 +148,14 @@ function compilePlan(input,policy){
    seen.set(key,op.units);bucketUnits[op.bucket]++;
    if(op.units===null)unknownCosts.push(key);
   }
+  if(closed&&input.operations.some(o=>o.id==='publisher-executions-open')&&!input.operations.some(o=>o.id==='publisher-executions-discovery'))stop();
   if(research>8||preparation>16||Object.entries(bucketUnits).some(([k,n])=>n>limits[k]))stop();
   const missingOperations=Object.keys(operations).filter(k=>!seen.has(k)).sort();
   const fullyKnown=missingOperations.length===0&&unknownCosts.length===0&&input.mapComplete;
-  const minimumTotalUnits=imported+input.operations.length+missingOperations.length;
+  if(closed){const caller=input.history.closedPreflightCaller;const mapped=input.operations.find(o=>o.bucket==='P'&&o.alias==='caller-bind');if(!mapped||!exact(caller,Object.keys(mapped))||Object.keys(mapped).some(k=>caller[k]!==mapped[k])||caller.units!==1)stop();}
+  const minimumTotalUnits=imported+input.operations.length+missingOperations.length-(closed?1:0);
   const navigationReserve=policy.scriptCleanupReserve?bucketUnits.N:24;
-  const reservedTotalUnits=imported+policy.fixedFutureUnits+4+4+navigationReserve+3+2+outsideRestore;
+  const reservedTotalUnits=imported+policy.fixedFutureUnits+(closed?3:4)+4+navigationReserve+3+2+outsideRestore;
   const budgetFits=fullyKnown&&minimumTotalUnits+outsideRestore<=158&&reservedTotalUnits<=160;
   // Counts bound the rows above; unknown/missing costs must not be reported as
   // measured bucket totals. Their one-operation lower bounds remain in minimum.

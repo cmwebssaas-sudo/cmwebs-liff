@@ -68,3 +68,25 @@ test('standalone may observe its own triggers without widening the original navi
    operations:[{...row,operation:'snapshot'}]};
  assert.throws(()=>plans.compileAuthorityContinuationPlan(old),/CONTINUATION_PLAN_UNVERIFIED/);
 });
+
+test('closed preflight retains failed publisher debit and counts caller selection once within20 navigation',()=>{
+ const v=input(),caller=v.operations.find(o=>o.alias==='caller-bind');
+ v.history={spent:33,limit:160,closedPreflightCaller:caller};v.operations=v.operations.filter(o=>o.alias!=='navigation-21');
+ const r=plan(v);assert.equal(r.spent,33);assert.equal(r.totalUnits,156);assert.equal(r.reservedTotalUnits,160);assert.equal(r.budgetFits,true);
+ v.operations.push({id:'extra-selection',bucket:'N',alias:'navigation-21',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,stage:'preparation'});
+ assert.equal(plan(v).budgetFits,false);
+});
+
+test('retained caller descriptor matches by fields across canonical JSON serialization',()=>{
+ const v=input(),caller=v.operations.find(o=>o.alias==='caller-bind');v.operations.pop();
+ v.history={spent:33,limit:160,closedPreflightCaller:Object.fromEntries(Object.entries(caller).reverse())};
+ assert.equal(plan(v).budgetFits,true);
+});
+
+test('closed publisher discovery and optional fixed open both consume existing navigation20',()=>{
+ const v=input(),caller=v.operations.find(o=>o.alias==='caller-bind');v.operations.pop();v.history={spent:33,limit:160,closedPreflightCaller:caller};
+ Object.assign(v.operations.find(o=>o.alias==='navigation-1'),{id:'publisher-executions-discovery',target:'publisher-executions'});
+ Object.assign(v.operations.find(o=>o.alias==='navigation-2'),{id:'publisher-executions-open',target:'publisher-executions',operation:'navigate'});
+ assert.equal(plan(v).reservedTotalUnits,160);assert.equal(plan(v).budgetFits,true);
+ v.operations=v.operations.filter(o=>o.alias!=='navigation-1');assert.throws(()=>plan(v),/CONTINUATION_PLAN_UNVERIFIED/);
+});
