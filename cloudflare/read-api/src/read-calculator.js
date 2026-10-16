@@ -4811,6 +4811,12 @@ function propertyRoomText_(
 function propertyRoomNumber_(
   value
 ) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value)
+      ? (value === 0 ? 0 : value)
+      : 0;
+  }
+
   const number =
     Number(
       String(

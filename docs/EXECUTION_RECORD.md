@@ -5512,3 +5512,36 @@ CoreDB/benchmark, CI, commit/push or external operation. Independent source revi
 and one normal new-head CI remain pending; prior failures and release gates stay
 open. Rollback the owned undeployed increment to d2ebdec and regenerate comparison,
 retaining all frozen/private evidence.
+
+
+## C6 primitive numeric conversion candidate — 2026-10-16
+
+Recommended model/speed GPT-6.1 Sol/high. Existing isolated C6 branch at cce1282;
+local candidate only. Bounded20-call Node generated-properties CPU diagnosis
+observed propertyRoomNumber_ self12.166ms total;713795-byte responses retained the
+same hash. This is sampling evidence, not Worker CPU or acceptance latency.
+
+propertyRoomNumber_ now returns finite primitive numbers directly, normalizing
+numeric -0 to +0; NaN/infinities return0. Every other type retains the original
+String/comma-removal/Number path unchanged, including string '-0', boxed values,
+BigInt/Symbol and stateful/throwing coercion. Original source bytes outside the
+six-line fast path are identical: season/Date/fallback/other helpers unchanged.
+Generated calculator/source manifest and comparison179 synchronized; asset version,
+endpoint, flags, payload and original100-sample/50ms full-wall gate unchanged.
+
+Node22 baseline affected47/47 PASS. New numeric/coercion parity passed before
+change; actual500-room helper regression first failed with5770 numeric String
+calls versus0, then final affected49/49 PASS, zero skip/fail/cancellation. Cases
+include finite extremes/denormals/exponents, signed zero, nonfinite values, other
+primitive/boxed/array/object values, custom hint/order and propagated exception.
+Frozen cce1282 complete27 + projected27 responses remain byte/key-order equal:
+2989899bytes SHA256
+65a9a3f85f8c5f7f829f2402937718578af51a03c78bc10d06111e7cecee3758.
+Validate72/40/static/comparison179 and diff check PASS. Comparison identity:
+read-6d587873ad41f79de5d6b6752529ab593d8081ef701ef88b42633712da9b4a94.
+
+No new profile/benchmark/full Worker/fullsuite/CoreDB/CI run, commit/push or
+external operation. Actual latency benefit remains UNKNOWN; prior performance
+failures remain open. Independent source review and one normal new-head CI follow.
+Rollback only this undeployed increment's owned paths to cce1282 and regenerate
+comparison, retaining all frozen/private diagnostic and regression evidence.

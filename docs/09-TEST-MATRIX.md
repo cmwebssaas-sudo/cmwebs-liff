@@ -3036,3 +3036,15 @@ validate and diff checks PASS. Three existing Date/month-helper sites and all
 financial fallback semantics unchanged. No new benchmark/fullDB/fullsuite/Worker/
 CI run or p95 improvement claim; saved exact d2 log50.432ms failure remains open,
 with provider metadata still in_progress/null in that evidence snapshot.
+
+
+### 2026-10-16 primitive numeric property conversion
+
+Node22 baseline47/47; new finite/denormal/exponent/signed-zero/nonfinite and other
+type/custom coercion parity PASS before change. Actual500-room helper regression
+RED5770 numeric String calls vs0, then final affected49/49 PASS. Numeric -0 becomes
++0; string '-0' keeps -0 and other type coercions/exceptions retain the original
+branch. Frozen cce1282 complete27 + projected27 responses preserve2989899 bytes/key
+order exactly. Only six canonical fast-path lines added, with all other source
+bytes unchanged; generated/comparison179, validate/diff checks PASS. No performance
+benchmark/fullDB/fullsuite/Worker/CI run or acceptance improvement claim.

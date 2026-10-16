@@ -91,6 +91,39 @@ test('500-room seasonal rates resolve each season once per room instead of repea
   assert.equal(JSON.stringify(input),before,'Actual rate projection must not mutate source rows');
 });
 
+test('property number conversion preserves finite extremes, positive zero and other type coercions',()=>{
+  const number=originalGas().propertyRoomNumber_;
+  for(const value of [0,1,-1,0.1,-0.1,Number.MIN_VALUE,-Number.MIN_VALUE,Number.MAX_VALUE,-Number.MAX_VALUE,
+    Number.EPSILON,Number.MAX_SAFE_INTEGER,Number.MAX_SAFE_INTEGER+1,1e-7,-1e-7,1e21,-1e21])assert.equal(number(value),value);
+  for(const value of [-0,NaN,Infinity,-Infinity])assert.equal(number(value),0);
+  for(const [value,expected] of [[null,0],[undefined,0],['',0],[' 1,234.567 ',1234.567],['-0',-0],['1e-7',1e-7],
+    ['Infinity',0],['invalid',0],[true,0],[false,0],[12n,12],[9007199254740993n,9007199254740992],
+    [Symbol('rate'),0],[new Number(3.5),3.5],[new String('1,234'),1234],[[1,2],12],[{},0]])assert.equal(number(value),expected);
+  const calls=[];let text='1,234';
+  const changing={toString(){calls.push('toString');return text;},valueOf(){throw Error('Unused valueOf');}};
+  assert.equal(number(changing),1234);text='2,345';assert.equal(number(changing),2345);
+  const primitive={[Symbol.toPrimitive](hint){calls.push(hint);return '3,456';}};
+  assert.equal(number(primitive),3456);assert.deepEqual(calls,['toString','toString','string']);
+  const error=Error('synthetic coercion');assert.throws(()=>number({toString(){throw error;}}),value=>value===error);
+});
+
+test('500-room property numeric helper avoids primitive-number string conversion',()=>{
+  const input=capacityDataset(),gas=originalGas(input),expected=plain(gas.getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',true));
+  const number=gas.propertyRoomNumber_;let active=0,numericCalls=0,numericStrings=0;
+  gas.String=new Proxy(String,{apply(target,thisArg,args){
+    if(active&&typeof args[0]==='number')numericStrings++;
+    return Reflect.apply(target,thisArg,args);
+  }});
+  gas.propertyRoomNumber_=value=>{
+    if(typeof value==='number')numericCalls++;
+    active++;try{return number(value);}finally{active--;}
+  };
+  const actual=gas.getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',true);
+  assert.deepEqual(plain(actual),expected,'Complete500-room response remains canonical');
+  assert.ok(numericCalls>0,'Exercise primitive numeric input in the real helper');
+  assert.equal(numericStrings,0,'Already numeric values need no String/replace/Number roundtrip');
+});
+
 test('production read routes stay closed even with fabricated fixture or query identity',async()=>{
   for(const path of ['home','revenue','tenants','rooms','arrears','properties']) {
     const response=await worker.fetch(new Request('https://local.test/v1/'+path+'?workspace_id=SYNTHETIC_W1'),{FIXTURE_ACCESS:JSON.stringify(access),DB:{prepare(){throw new Error('must not read');}}});
