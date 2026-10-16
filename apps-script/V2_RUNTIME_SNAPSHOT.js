@@ -31,6 +31,7 @@ const V2_RUNTIME_SNAPSHOT_READ_ACTIONS_ = {
 // These reads must see fresh authentication/authorization data on every request.
 // Reuse values only within the request; never read or fill the shared sheet cache.
 const V2_RUNTIME_SNAPSHOT_LOCAL_READ_ACTIONS_ = {
+  read_replica_authorize: true,
   landlord_email_session_status: true,
   landlord_subscription_init: true
 };

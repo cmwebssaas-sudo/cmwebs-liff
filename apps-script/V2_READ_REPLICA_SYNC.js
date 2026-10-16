@@ -93,7 +93,7 @@ const V2_READ_REPLICA_ACTIONS_ = (function() {
       policies[action]=tables;
     });
   }
-  routes(`commercial_billing commercial_billing_init
+  routes(`read_replica_authorize commercial_billing commercial_billing_init
     landlord_announcements_init landlord_arrears landlord_bank_receipts_init
     landlord_bill_manual_settlement_status landlord_bill_notifications_init
     landlord_bill_test_archive_candidates landlord_billing_init

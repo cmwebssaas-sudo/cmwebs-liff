@@ -5,6 +5,15 @@ export function createReadServices(dataset, access, options = {}) {
   if (access?.success !== true || !access.workspace?.workspace_id || !access.membership || !access.user) {
     throw new Error('Verified Workspace access required');
   }
+  return {...createReplicaRuntime(dataset,options),
+    workspaceLandlordResolveAccess_:()=>access,
+    contractRequestResolveLandlordIdentity_:()=>access.principal,
+    lmResolveLandlord_:()=>access.principal};
+}
+
+// Read-only Sheet/services layer used while resolving provider-verified identity.
+// It supplies no Workspace access or principal and cannot authorize a reader.
+export function createReplicaRuntime(dataset,options={}) {
   const now = options.now ?? Date.now();
   const RequestDate=options.dateConstructor||appsScriptDate(now);
   const sheets = new Map(Object.entries(dataset).map(([name, sourceRows]) => {
@@ -33,6 +42,7 @@ export function createReadServices(dataset, access, options = {}) {
   const ss = {getSheetByName: name => sheets.get(name) || null};
   const requiredSheet = name => {const sheet=ss.getSheetByName(name); if(!sheet) throw new Error('Replica schema unavailable'); return sheet;};
   const localCache = new Map();
+  const contexts = new Map();
   const cache = {get:key=>localCache.get(key)||null,put:(key,value)=>localCache.set(key,value)};
   const formatDate = (date, timeZone, pattern) => {
     const values = Object.fromEntries(new Intl.DateTimeFormat('en-GB',{
@@ -50,9 +60,9 @@ export function createReadServices(dataset, access, options = {}) {
       const resource=options.publicResources?.[request.url];
       return {getResponseCode:()=>resource?.status??503,getContentText:()=>resource?.body??''};
     })}, Logger:{log:noop},
-    workspaceLandlordResolveAccess_:()=>access,
     runtimeSpreadsheet_:()=>ss, runtimeSnapshotGetValues_:sheet=>sheet.getDataRange().getValues(),
-    runtimeSnapshotGetContext_:()=>null,runtimeSnapshotSetContext_:noop,
+    runtimeSnapshotGetContext_:(name,key)=>contexts.get(name+':'+key)||null,
+    runtimeSnapshotSetContext_:(name,key,value)=>contexts.set(name+':'+key,value),
     workspaceLandlordLog_:noop,contractRequestLogAccess_:noop,lmLogAccess_:noop,
     ensureV2ContractRequestsSheet_:()=>requiredSheet('V2_contract_requests'),
     lmEnsurePaymentReportSheet_:()=>requiredSheet('V2_payment_reports'),
@@ -60,8 +70,6 @@ export function createReadServices(dataset, access, options = {}) {
     landlordInitiatedContractSchema_:()=>({success:true,code:'OK',data:{
       properties:requiredSheet('V2_properties'),rooms:requiredSheet('V2_rooms'),users:requiredSheet('V2_users'),
       tenants:requiredSheet('V2_tenants'),contracts:requiredSheet('V2_contracts'),invites:requiredSheet('V2_contract_invites')
-    }}),
-    contractRequestResolveLandlordIdentity_:()=>access.principal,
-    lmResolveLandlord_:()=>access.principal
+    }})
   };
 }

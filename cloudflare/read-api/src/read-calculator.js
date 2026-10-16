@@ -1343,6 +1343,82 @@ function contractRequestError_(
   };
 }
 
+function landlordEmailAuthUserCanLogin_(
+  user
+) {
+  return (
+    landlordEmailAuthUserIsActiveLandlord_(user) &&
+    Boolean(landlordEmailAuthNormalizeEmail_(user.email)) &&
+    Boolean(landlordEmailAuthText_(user.email_verified_at)) &&
+    landlordEmailAuthAcceptedBoolean_(user.email_login_enabled)
+  );
+}
+
+function landlordEmailAuthUserIsActiveLandlord_(
+  user
+) {
+  if (!user) return false;
+  return (
+    landlordEmailAuthText_(user.role || 'landlord').toLowerCase() ===
+      'landlord' &&
+    landlordEmailAuthActiveStatus_(
+      user.account_status ||
+        user.status ||
+        'active'
+    )
+  );
+}
+
+function landlordEmailAuthNormalizeEmail_(
+  email
+) {
+  const text =
+    landlordEmailAuthText_(
+      email
+    ).toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)
+    ? text
+    : '';
+}
+
+function landlordEmailAuthActiveStatus_(
+  status
+) {
+  return [
+    'active',
+    'enabled',
+    'valid',
+    'current',
+    '啟用',
+    '有效'
+  ].indexOf(landlordEmailAuthText_(status).toLowerCase()) >= 0;
+}
+
+function landlordEmailAuthAcceptedBoolean_(
+  value
+) {
+  if (value === true || value === 1) return true;
+  return [
+    'true',
+    '1',
+    'yes',
+    'y',
+    'enabled',
+    'active',
+    '是',
+    '啟用'
+  ].indexOf(landlordEmailAuthText_(value).toLowerCase()) >= 0;
+}
+
+function landlordEmailAuthText_(
+  value
+) {
+  if (typeof workspaceText_ === 'function') {
+    return workspaceText_(value);
+  }
+  return String(value == null ? '' : value).trim();
+}
+
 const V2_LANDLORD_INITIATED_CONTRACT_LIFF_URL_ = 'https://liff.line.me/2010314940-iJB1D6sN';
 
 function landlordInitiatedContractListByAccess_(access) {
@@ -2897,6 +2973,8 @@ function propertyRoomGetWorkspaceRooms_(
       )
       .filter(Boolean);
 
+  // Local to this filter: write requests must reread after a later mutation.
+  let legacyParentMaps = null;
   return workspaceGetObjectsWithRow_(
     roomSheet
   ).filter(
@@ -2932,6 +3010,12 @@ function propertyRoomGetWorkspaceRooms_(
             landlordId
           ) >= 0
         );
+
+      if (rowWorkspaceId && rowWorkspaceId !== workspaceId) return false;
+      if (!rowWorkspaceId && typeof workspaceLandlordLegacyParentsMatchAccess_ === 'function') {
+        legacyParentMaps = legacyParentMaps || workspaceLandlordLegacyParentMaps_();
+        if (!workspaceLandlordLegacyParentsMatchAccess_(row,access,legacyParentMaps)) return false;
+      }
 
       if (!belongsToWorkspace) {
         return false;
@@ -2972,6 +3056,8 @@ function propertyRoomGetWorkspaceRows_(
       })
       .filter(Boolean);
 
+  // Do not retain a parent snapshot between write-mode filter invocations.
+  let legacyParentMaps = null;
   return workspaceGetObjectsWithRow_(
     sheet
   ).filter(function (row) {
@@ -2983,6 +3069,11 @@ function propertyRoomGetWorkspaceRows_(
     if (rowWorkspaceId) {
       return rowWorkspaceId ===
         workspaceId;
+    }
+
+    if (typeof workspaceLandlordLegacyParentsMatchAccess_ === 'function') {
+      legacyParentMaps = legacyParentMaps || workspaceLandlordLegacyParentMaps_();
+      if (!workspaceLandlordLegacyParentsMatchAccess_(row,access,legacyParentMaps)) return false;
     }
 
     return (
@@ -4804,6 +4895,20 @@ function propertyRoomDate_(
     : date;
 }
 
+function readAuthorizationFingerprint_(access) {
+  const text = function(value) { return String(value === undefined || value === null ? '' : value).trim(); };
+  const member=access.membership,workspace=access.workspace,user=access.user;
+  const permissions=workspaceBuildPermissionView_(member);
+  const normalized={};
+  ['can_manage_team','can_edit_bank_account','can_approve_payment','can_edit_contract','can_terminate_contract','can_delete_data','can_export_data'].forEach(function(key) {normalized[key]=permissions[key]===true;});
+  return {user_id:text(user.user_id),line_user_id:text(user.line_user_id),
+    workspace_id:text(workspace.workspace_id).toUpperCase(),workspace_status:text(workspace.account_status||'active').toLowerCase(),
+    onboarding_status:text(workspace.onboarding_status).toLowerCase(),
+    membership_id:text(member.membership_id),membership_user_id:text(member.user_id),
+    membership_status:text(member.member_status||'active').toLowerCase(),role:text(member.role).toLowerCase(),permissions:normalized,
+    principals:(access.principals||[]).map(function(row) {return {landlord_id:text(row.landlord_id),line_user_id:text(row.line_user_id)};})};
+}
+
 const V2_REPORTING_DASHBOARD_SHEETS_ = {
   properties: 'V2_properties',
   rooms: 'V2_rooms',
@@ -5557,6 +5662,9 @@ function revenueDashboardRowMatchesAccess_(
   ) {
     return false;
   }
+
+  if (typeof workspaceLandlordLegacyParentsMatchAccess_ === 'function' &&
+    !workspaceLandlordLegacyParentsMatchAccess_(row,access)) return false;
 
   if (propertyIdMap && Object.keys(propertyIdMap).length > 0) {
     return Boolean(propertyId && propertyIdMap[propertyId]);
@@ -7626,6 +7734,9 @@ function workspaceDashboardRowMatchesAccess_(
       workspaceId
     );
   }
+
+  if (typeof workspaceLandlordLegacyParentsMatchAccess_ === 'function' &&
+    !workspaceLandlordLegacyParentsMatchAccess_(row,access)) return false;
 
   const landlordIds =
     (
@@ -9730,6 +9841,389 @@ function workspaceLandlordProxy_(
   }
 }
 
+function workspaceLandlordLegacyParentMaps_() {
+  let maps=typeof runtimeSnapshotGetContext_==='function'?runtimeSnapshotGetContext_('read_scope_parents','all'):null;
+  if(!maps) {
+    maps={};
+    [['property_id','V2_properties'],['room_id','V2_rooms'],['contract_id','V2_contracts']].forEach(function(pair) {
+      const map=Object.create(null);
+      workspaceGetObjectsWithRow_(runtimeSpreadsheet_().getSheetByName(pair[1])).forEach(function(parent) {
+        const id=workspaceText_(parent[pair[0]]);
+        if(id) {if(!map[id]) map[id]=[];map[id].push(parent);}
+      });
+      maps[pair[0]]=map;
+    });
+    if(typeof runtimeSnapshotSetContext_==='function') runtimeSnapshotSetContext_('read_scope_parents','all',maps);
+  }
+  return maps;
+}
+
+function workspaceLandlordLegacyParentsMatchAccess_(row, access, parentMaps) {
+  const workspaceId=workspaceText_(access.workspace.workspace_id).toUpperCase();
+  const maps=parentMaps || workspaceLandlordLegacyParentMaps_();
+  function foreign(record,fields) {
+    return fields.some(function(field) {
+      return (maps[field][workspaceText_(record[field])]||[]).some(function(parent) {
+        const declared=workspaceText_(parent.workspace_id).toUpperCase();
+        if(declared && declared!==workspaceId) return true;
+        const next=field==='contract_id'?['property_id','room_id']:field==='room_id'?['property_id']:[];
+        return foreign(parent,next);
+      });
+    });
+  }
+  return !foreign(row,['property_id','room_id','contract_id']);
+}
+
+function workspaceLandlordResolvePrincipals_(
+  ss,
+  context
+) {
+  const workspaceId =
+    workspaceText_(
+      context.activeWorkspace
+        .workspace_id
+    ).toUpperCase();
+
+  const landlordsSheet =
+    ss.getSheetByName(
+      V2_WORKSPACE_SHEETS_
+        .landlords
+    );
+
+  const usersSheet =
+    ss.getSheetByName(
+      V2_WORKSPACE_SHEETS_
+        .users
+    );
+
+  const membersSheet =
+    ss.getSheetByName(
+      V2_WORKSPACE_SHEETS_
+        .members
+    );
+
+  const landlords =
+    workspaceGetObjectsWithRow_(
+      landlordsSheet
+    );
+
+  const users =
+    workspaceGetObjectsWithRow_(
+      usersSheet
+    );
+
+  const members =
+    workspaceGetObjectsWithRow_(
+      membersSheet
+    );
+
+  const userMap = {};
+
+  users.forEach(
+    function (user) {
+      userMap[
+        workspaceText_(
+          user.user_id
+        )
+      ] =
+        user;
+    }
+  );
+
+  const ownerMemberships =
+    members
+      .filter(
+        function (membership) {
+          return (
+            workspaceText_(
+              membership.workspace_id
+            ).toUpperCase() ===
+              workspaceId &&
+            workspaceText_(
+              membership.role
+            ).toLowerCase() ===
+              'owner' &&
+            workspaceIsActiveStatus_(
+              membership.member_status ||
+              'active'
+            )
+          );
+        }
+      )
+      .sort(
+        function (a, b) {
+          const primaryA =
+            workspaceBoolean_(
+              a.is_primary
+            )
+              ? 0
+              : 1;
+
+          const primaryB =
+            workspaceBoolean_(
+              b.is_primary
+            )
+              ? 0
+              : 1;
+
+          return (
+            primaryA -
+            primaryB
+          );
+        }
+      );
+
+  const ownerUserIds =
+    ownerMemberships.map(
+      function (membership) {
+        return workspaceText_(
+          membership.user_id
+        );
+      }
+    );
+
+  const workspaceCreatedBy =
+    workspaceText_(
+      context.activeWorkspace
+        .created_by_user_id
+    );
+
+  const directRows =
+    landlords.filter(
+      function (landlord) {
+        return (
+          workspaceText_(
+            landlord.workspace_id
+          ).toUpperCase() ===
+          workspaceId
+        );
+      }
+    );
+
+  const inferredRows =
+    landlords.filter(
+      function (landlord) {
+        const declaredWorkspaceId =
+          workspaceText_(landlord.workspace_id).toUpperCase();
+        if (declaredWorkspaceId && declaredWorkspaceId !== workspaceId) {
+          return false;
+        }
+
+        const landlordUserId =
+          workspaceText_(
+            landlord.landlord_user_id ||
+            landlord.user_id
+          );
+
+        const landlordLineUid =
+          workspaceText_(
+            landlord.landlord_line_user_id ||
+            landlord.line_user_id
+          );
+
+        const ownerLineMatch =
+          ownerMemberships.some(
+            function (membership) {
+              const ownerUser =
+                userMap[
+                  workspaceText_(
+                    membership.user_id
+                  )
+                ] || {};
+
+              return (
+                landlordLineUid &&
+                landlordLineUid ===
+                  workspaceText_(
+                    ownerUser.line_user_id
+                  )
+              );
+            }
+          );
+
+        return (
+          ownerUserIds.indexOf(
+            landlordUserId
+          ) >= 0 ||
+          (
+            workspaceCreatedBy &&
+            landlordUserId ===
+              workspaceCreatedBy
+          ) ||
+          ownerLineMatch
+        );
+      }
+    );
+
+  const combined = [];
+  const seen = {};
+
+  directRows
+    .concat(
+      inferredRows
+    )
+    .forEach(
+      function (landlord) {
+        const key =
+          workspaceText_(
+            landlord.landlord_id
+          ) ||
+          workspaceText_(
+            landlord.landlord_line_user_id ||
+            landlord.line_user_id
+          );
+
+        if (
+          key &&
+          !seen[key]
+        ) {
+          seen[key] = true;
+          combined.push(
+            landlord
+          );
+        }
+      }
+    );
+
+  const principals =
+    combined.map(
+      function (landlord) {
+        const landlordUserId =
+          workspaceText_(
+            landlord.landlord_user_id ||
+            landlord.user_id
+          );
+
+        const user =
+          userMap[
+            landlordUserId
+          ] || {};
+
+        const lineUserId =
+          workspaceText_(
+            landlord.landlord_line_user_id ||
+            landlord.line_user_id ||
+            user.line_user_id
+          );
+
+        let score = 0;
+
+        if (
+          landlordUserId &&
+          landlordUserId ===
+            workspaceCreatedBy
+        ) {
+          score += 100;
+        }
+
+        if (
+          ownerUserIds.indexOf(
+            landlordUserId
+          ) >= 0
+        ) {
+          score += 80;
+        }
+
+        if (
+          workspaceIsActiveStatus_(
+            landlord.account_status ||
+            'active'
+          )
+        ) {
+          score += 30;
+        }
+
+        if (lineUserId) {
+          score += 20;
+        }
+
+        return {
+          landlord_id:
+            workspaceText_(
+              landlord.landlord_id
+            ),
+          landlord_name:
+            workspaceText_(
+              landlord.landlord_name ||
+              landlord.name ||
+              user.name
+            ),
+          landlord_user_id:
+            landlordUserId,
+          line_user_id:
+            lineUserId,
+          account_status:
+            workspaceText_(
+              landlord.account_status ||
+              'active'
+            ),
+          score:
+            score
+        };
+      }
+    );
+
+  if (principals.length === 0) {
+    ownerMemberships.forEach(
+      function (membership) {
+        const user =
+          userMap[
+            workspaceText_(
+              membership.user_id
+            )
+          ] || {};
+
+        const lineUserId =
+          workspaceText_(
+            user.line_user_id ||
+            membership.line_user_id
+          );
+
+        if (lineUserId) {
+          principals.push({
+            landlord_id:
+              '',
+            landlord_name:
+              workspaceText_(
+                user.name ||
+                membership.display_name
+              ),
+            landlord_user_id:
+              workspaceText_(
+                user.user_id ||
+                membership.user_id
+              ),
+            line_user_id:
+              lineUserId,
+            account_status:
+              workspaceText_(
+                user.account_status ||
+                'active'
+              ),
+            score:
+              50
+          });
+        }
+      }
+    );
+  }
+
+  principals.sort(
+    function (a, b) {
+      return (
+        Number(
+          b.score || 0
+        ) -
+        Number(
+          a.score || 0
+        )
+      );
+    }
+  );
+
+  return principals;
+}
+
 function workspaceLandlordCheckPolicy_(
   access,
   policy
@@ -9960,7 +10454,116 @@ function workspaceLandlordBuildContextView_(
   };
 }
 
+const V2_WORKSPACE_SHEETS_ = {
+  users: 'V2_users',
+  landlords: 'V2_landlords',
+  landlordHomeView: 'V2_landlord_home_view',
+  landlordTenantListView: 'V2_landlord_tenant_list_view',
+  landlordEmailLoginChallenges: 'V2_landlord_email_login_challenges',
+  landlordEmailSessions: 'V2_landlord_email_sessions',
+
+  workspaces: 'V2_workspaces',
+  members: 'V2_workspace_members',
+  invitations: 'V2_workspace_invitations',
+  memberScopes: 'V2_member_scopes',
+  propertyOwners: 'V2_property_owners',
+  activityLogs: 'V2_workspace_activity_logs'
+};
+
 const V2_WORKSPACE_TIMEZONE_ = 'Asia/Taipei';
+
+const V2_WORKSPACE_ROLES_ = [
+  'owner',
+  'admin',
+  'manager',
+  'accountant',
+  'maintenance',
+  'viewer'
+];
+
+function workspaceResolveContextByLineUid_(ss, lineUserId, options) {
+  options = options || {};
+
+  const usersSheet = ss.getSheetByName(V2_WORKSPACE_SHEETS_.users);
+  const memberSheet = ss.getSheetByName(V2_WORKSPACE_SHEETS_.members);
+  const workspaceSheet = ss.getSheetByName(V2_WORKSPACE_SHEETS_.workspaces);
+
+  const userRows = workspaceGetObjectsWithRow_(usersSheet);
+  const memberRows = workspaceGetObjectsWithRow_(memberSheet);
+  const workspaceRows = workspaceGetObjectsWithRow_(workspaceSheet);
+
+  const user = userRows.find(function (row) {
+    return workspaceText_(row.line_user_id) === lineUserId;
+  }) || null;
+
+  if (!user) {
+    return {
+      user: null,
+      memberships: [],
+      workspaceRows: workspaceRows,
+      activeWorkspace: null,
+      activeMembership: null
+    };
+  }
+
+  const userId = workspaceText_(user.user_id);
+
+  const memberships = memberRows.filter(function (row) {
+    return workspaceText_(row.user_id) === userId;
+  });
+
+  const requestedWorkspaceId = workspaceText_(
+    options.workspace_id
+  ).toUpperCase();
+
+  let activeWorkspaceId = requestedWorkspaceId || workspaceText_(
+    user.active_workspace_id
+  ).toUpperCase();
+
+  if (
+    !requestedWorkspaceId &&
+    (
+      !activeWorkspaceId ||
+      !memberships.some(function (row) {
+        return (
+          workspaceText_(row.workspace_id).toUpperCase() === activeWorkspaceId &&
+          workspaceIsActiveStatus_(row.member_status || 'active')
+        );
+      })
+    )
+  ) {
+    const primaryMembership = memberships.find(function (row) {
+      return (
+        workspaceBoolean_(row.is_primary) &&
+        workspaceIsActiveStatus_(row.member_status || 'active')
+      );
+    });
+
+    const fallbackMembership = memberships.find(function (row) {
+      return workspaceIsActiveStatus_(row.member_status || 'active');
+    });
+
+    activeWorkspaceId = workspaceText_(
+      (primaryMembership || fallbackMembership || {}).workspace_id
+    ).toUpperCase();
+  }
+
+  const activeMembership = memberships.find(function (row) {
+    return workspaceText_(row.workspace_id).toUpperCase() === activeWorkspaceId;
+  }) || null;
+
+  const activeWorkspace = workspaceRows.find(function (row) {
+    return workspaceText_(row.workspace_id).toUpperCase() === activeWorkspaceId;
+  }) || null;
+
+  return {
+    user: user,
+    memberships: memberships,
+    workspaceRows: workspaceRows,
+    activeWorkspace: activeWorkspace,
+    activeMembership: activeMembership
+  };
+}
 
 function workspaceBuildUserView_(row) {
   return {
@@ -10003,6 +10606,69 @@ function workspaceBuildMembershipView_(row) {
     joined_at: row.joined_at || '',
     display_name: row.display_name || ''
   };
+}
+
+function workspaceBuildPermissionView_(membership) {
+  if (!membership) {
+    return workspaceDefaultPermissions_('viewer');
+  }
+
+  const defaults = workspaceDefaultPermissions_(membership.role || 'viewer');
+
+  Object.keys(defaults).forEach(function (key) {
+    if (membership[key] !== undefined && membership[key] !== '') {
+      defaults[key] = workspaceBoolean_(membership[key]);
+    }
+  });
+
+  return defaults;
+}
+
+function workspaceDefaultPermissions_(role) {
+  role = workspaceText_(role).toLowerCase();
+
+  const permissions = {
+    can_manage_team: false,
+    can_edit_bank_account: false,
+    can_approve_payment: false,
+    can_edit_contract: false,
+    can_terminate_contract: false,
+    can_delete_data: false,
+    can_export_data: false
+  };
+
+  if (role === 'owner') {
+    Object.keys(permissions).forEach(function (key) {
+      permissions[key] = true;
+    });
+    return permissions;
+  }
+
+  if (role === 'admin') {
+    permissions.can_manage_team = true;
+    permissions.can_edit_bank_account = true;
+    permissions.can_approve_payment = true;
+    permissions.can_edit_contract = true;
+    permissions.can_terminate_contract = true;
+    permissions.can_export_data = true;
+    return permissions;
+  }
+
+  if (role === 'manager') {
+    permissions.can_approve_payment = true;
+    permissions.can_edit_contract = true;
+    permissions.can_terminate_contract = true;
+    return permissions;
+  }
+
+  if (role === 'accountant') {
+    permissions.can_edit_bank_account = true;
+    permissions.can_approve_payment = true;
+    permissions.can_export_data = true;
+    return permissions;
+  }
+
+  return permissions;
 }
 
 function workspaceGetObjectsWithRow_(sheet) {
@@ -10063,6 +10729,26 @@ function workspaceBoolean_(value) {
   ].indexOf(text) >= 0;
 }
 
+function workspaceIsActiveStatus_(status) {
+  return [
+    'active',
+    'enabled',
+    'valid',
+    'current',
+    '啟用',
+    '有效'
+  ].indexOf(workspaceText_(status).toLowerCase()) >= 0;
+}
+
+function workspaceOnboardingComplete_(status) {
+  return [
+    'completed',
+    'complete',
+    'done',
+    '已完成'
+  ].indexOf(workspaceText_(status).toLowerCase()) >= 0;
+}
+
 function workspaceResult_(success, code, message, data) {
   return {
     success: success === true,
@@ -10071,5 +10757,5 @@ function workspaceResult_(success, code, message, data) {
     data: data === undefined ? null : data
   };
 }
-return { getWorkspaceLandlordHomeBootstrapByLineUid_, getWorkspaceLandlordArrearsNativeByLineUid_, getWorkspaceLandlordTenantsNativeByLineUid_, getLandlordRoomCenterInitByLineUid_, getLandlordPropertiesInitByLineUid_, getLandlordRevenueDashboardByLineUid_, landlordRoomWebsiteCoverTarget_, landlordRoomWebsitePhotosFromHtml_ };
+return { getWorkspaceLandlordHomeBootstrapByLineUid_, getWorkspaceLandlordArrearsNativeByLineUid_, getWorkspaceLandlordTenantsNativeByLineUid_, getLandlordRoomCenterInitByLineUid_, getLandlordPropertiesInitByLineUid_, getLandlordRevenueDashboardByLineUid_, landlordRoomWebsiteCoverTarget_, landlordRoomWebsitePhotosFromHtml_, workspaceResolveContextByLineUid_, workspaceLandlordResolvePrincipals_, workspaceBuildPermissionView_, workspaceIsActiveStatus_, workspaceOnboardingComplete_, landlordEmailAuthUserCanLogin_, V2_WORKSPACE_ROLES_, readAuthorizationFingerprint_ };
 }

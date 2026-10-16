@@ -13,7 +13,10 @@ const entries = [
   'getLandlordPropertiesInitByLineUid_',
   'getLandlordRevenueDashboardByLineUid_'
 ];
-const helpers=['landlordRoomWebsiteCoverTarget_','landlordRoomWebsitePhotosFromHtml_'];
+const helpers=['landlordRoomWebsiteCoverTarget_','landlordRoomWebsitePhotosFromHtml_',
+  'workspaceResolveContextByLineUid_','workspaceLandlordResolvePrincipals_',
+  'workspaceBuildPermissionView_','workspaceIsActiveStatus_','workspaceOnboardingComplete_',
+  'landlordEmailAuthUserCanLogin_','V2_WORKSPACE_ROLES_','readAuthorizationFingerprint_'];
 // Runtime services replace only IO, schema mutation and identity resolution.
 // C3 must supply verified access; these readers never resolve a client UID.
 const adapters = [
