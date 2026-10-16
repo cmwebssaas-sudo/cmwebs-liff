@@ -1,5 +1,52 @@
 # C6 sequential read cutover runbook — preparation only
 
+## October16 strict typed transport — local gates pass, real cutover closed
+
+Recommended model/speed GPT-6.1 Sol/high. Shared canonical room occupancy and
+strict packed-cell transport preserve full responses, source fields and access
+checks.633-path snapshot0ed8611fb681e31146b1fe2d5d76c4772d2180adf6476c24a8acf6ccdeefc084
+at base ac7fc474: full npm2252/2252, original Worker/pretest43/43, validate
+72/40/static/comparison179 PASS; clean independent reviews and owned PG/Worker
+cleanup. Later three evidence docs excluded from tested snapshot.
+
+Original100-sample500-room p95ms: home22.390/actions20.855/revenue21.713/
+tenants27.732/rooms23.535/arrears28.446/properties37.468, all<50. All1400
+capacity/small samples retained. Prior41/42 and earlier failed distributions
+remain historical failures; one changed-source success is not repeatability,
+remote Google/D1 or actual user/device speed acceptance.
+
+Candidate comparison read-95099e4480a5c1335e10bb08f2b7b8b83e202cb773beb7301f00e181d519d7da;
+asset20261013-read-capacity-v7 unchanged. Existing Draft PR271/new-head CI
+required. No main merge/deployment/flag/Property/trigger or data change.
+Endpoint blank and T0 NOT_STARTED. Real C1/C3, current authority/privacy/
+freshness, authenticated0.8/1.5s, approved24-hour observation, rollback/device
+and seven-day postlaunch gates remain open before formal completion.
+
+
+## October16 room occupancy candidate — acceptance still open
+
+Recommended model/speed: GPT-6.1 Sol/high. Local working candidate based on
+ac7fc474; shared canonical occupancy avoids discarded full management views.
+Complete API JSON/order remains exact across27 original-base oracle responses.
+Full npm2249/2249 and validate72/40/comparison179 pass; independent review clean.
+Original Worker41/42:500-room p95 FAIL at home54.548/revenue55.615/tenants78.945/
+arrears57.852/properties69.828ms; actions43.875 and rooms49.100ms. All100 samples
+per entry retained, strict<50ms unchanged. A local room sample passing is not
+repeatability, remote performance, authenticated authority or cutover acceptance.
+
+Candidate comparison read-384255326e4c60273c326a1628cde3a81ec6d0c7e914d427b34d173c3e74128e;
+asset20261013-read-capacity-v7 unchanged. No commit/push/CI/merge/deploy from this
+working increment; flags off, endpoint blank, no T0. Rollback only owned local
+source/test changes to ac7fc474; retain evidence.
+
+The approved READ-ACCELERATED-ROLLOUT.md governs observation timing:
+technical gates first,24-hour concurrent sync/shadow, rooms first, another
+stable24 hours before remaining pages, seven-day postlaunch observation.
+Historical72-hour/prelaunch-seven-day descriptions below are retained history;
+they do not override that later owner-approved schedule. Technical/safety/
+performance/device gates are unchanged and have not passed.
+
+
 Recommended model/speed: GPT-6.1 Sol/high per approved plan. Independent branch
 `codex/c6-read-acceptance-20261012`, stacked on C5 candidate `95d69c9`.
 This candidate repairs comparison identity for sequential flag releases and

@@ -5317,3 +5317,83 @@ No main merge, deployment or cutover. Formal configuration remains default-off,
 endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
 observation and device gates remain open. Rollback this undeployed integration
 to 3b59165c0c1ef8fa4531b128f8f42faeb8f3e6f4 while retaining all trial evidence.
+
+## C6 room occupancy working candidate — 2026-10-16
+
+Recommended model/speed: GPT-6.1 Sol/high. Base ac7fc4747dd71d38d3a0032dd5985252b5115dd2; existing independent C6 worktree/PR.
+Shared canonical propertyRoomResolveRoomOccupancy_ preserves association/status
+rules and the full management-view API, while room-center no longer constructs
+discarded financial/season/replacement/display projections. No route, schema,
+authorization, source selection, cache policy, fixture or threshold change.
+
+Observed financial-boundary RED then canonical35/35 and affected61/61 GREEN.
+Frozen-base oracle compared27 complete responses across small/rich/500-room
+fixtures,2614144 bytes including key order, all exact. All249 generated
+declarations match canonical source,236 functions/no duplicate. Independent
+review found no remaining P1/P2. Supported plain Sheet/D1 rows retain outputs;
+pure status resolution now precedes replacement projection.
+
+Full npm test2249/2249 PASS, zero fail/cancel/skip,98.904s, Node22, actual
+pinned Core643c1b3 and fresh owned PostgreSQL16.14. Database/role cleanup and
+final stopped PID/listener verified; no cleanup errors.632 tracked paths pinned
+before/after under SHA256
+04987a58c433475b4121ed658e1644310bed7aa05f3f7c5555d0ef61f6289104.
+Later updates to these evidence documents are outside that tested snapshot.
+Validate72backend/40endpoint/static-cache/comparison179 and diff checks PASS.
+
+Original full Worker suite/pretest dry-run:41/42, zero cancellation/skip,152.685s.
+All correctness checks passed;500-room capacity p95 gate FAIL. Original100
+samples per entry: home54.548/actions43.875/revenue55.615/tenants78.945/
+rooms49.100/arrears57.852/properties69.828ms; threshold stays strictly<50ms.
+Small-fixture seven100-sample groups pass, p953.601–7.677ms. All1400 samples,
+paired stages, failures and original prior histories retained. No unchanged
+benchmark repeat or latency cure/repeatability claim. Owned Worker process group
+is absent after terminal exit.
+
+This candidate remains local/staged, not committed/pushed or new-head CI-verified;
+C6 acceptance remains unmet. No merge/deploy/Properties/trigger/flag change,
+endpoint remains blank and T0 NOT_STARTED. Current observation order follows
+the approved READ-ACCELERATED-ROLLOUT.md; real C1/C3/performance/device gates
+remain required. Undeployed rollback restores only the nine owned source/test
+paths to base ac7fc474 while retaining all trial and failure evidence.
+
+## C6 strict typed packed transport candidate — 2026-10-16
+
+Recommended model/speed GPT-6.1 Sol/high. This adds to the preceding reviewed
+occupancy change in the same isolated C6 worktree/Draft PR. Internal packed rows
+now embed strict JSON values, with a presence/mode string and original raw-cell
+fallback. Old encoded frames remain supported. No source field/row omission,
+stored schema/sync, WHERE/binds/order/cap/primary session, authorization,
+freshness, cache/flags, API or50ms threshold change.
+
+Actual workerd feasibility found unsafe BLOB promotion and NUL-prefix acceptance;
+the guarded condition retains original error/value behavior. Deep JSON falls
+back to JS, negative zero/own keys/null-presence stay exact. JSONB null exposed
+a raw-null skip regression, observed RED then fixed with actual D1 and literal
+regressions. Final focused9/9 and affected29/29 PASS, including65 actual D1
+correctness probes. Independent review checked final pins, no remaining P1/P2.
+
+Full npm2252/2252 PASS, zero fail/cancel/skip,84.593s, Node22/actual pinned
+Core643c1b3/fresh private PostgreSQL16.14. SQL fixtures cleaned and cluster
+stopped/PID/listener absent, no cleanup errors.633 tracked paths pinned under
+SHA2560ed8611fb681e31146b1fe2d5d76c4772d2180adf6476c24a8acf6ccdeefc084
+before/after; later three evidence-doc changes excluded. Validate72backend/
+40endpoint/static/comparison179 and diff checks PASS.
+
+Original Worker/pretest dry-run43/43 PASS, zero fail/cancel/skip,60.457s.
+Original100 full-wall samples per entry retained:500-room p95 home22.390/
+actions20.855/revenue21.713/tenants27.732/rooms23.535/arrears28.446/
+properties37.468ms; all strictly<50ms. Small-fixture seven100-sample groups
+p953.210–3.619ms. All1400 samples retained; no warmup/drop/GC/threshold/process
+change or unchanged-source rerun. Owned Worker process group absent after exit.
+Prior41/42 and all earlier failures remain, including snapshot04987a58.
+This changed-source sample is not repeatability, provider CPU attribution,
+remote D1, Google/LINE/Email/device or real serving acceptance.
+
+Comparison read-95099e4480a5c1335e10bb08f2b7b8b83e202cb773beb7301f00e181d519d7da,
+179 sources; asset20261013-read-capacity-v7 retained. Candidate is prepared for
+existing Draft PR271; new-head CI still required. No main merge/deploy/
+Properties/trigger/flag/data change, endpoint blank, T0 NOT_STARTED.
+Approved accelerated observation and actual C1/C3/performance/device gates stay
+open. Undeployed rollback restores only owned source/test/generated paths to
+base ac7fc474 and regenerates comparison; retain all evidence and private history.

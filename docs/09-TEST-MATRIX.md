@@ -1,5 +1,26 @@
 # V2 回歸測試矩陣
 
+## 2026-10-16 C6 strict typed packed transport candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Strict codec/legacy format/SQL NULL/JSON null/-0/own keys/deep/NUL/BLOB |Focused9/9; affected29/29;65 actual D1 probes; review clean |Unsafe promotion and JSONB-null RED retained then fixed; legacy errors and raw-null skip preserved |
+| Full npm/validate/owned dependency cleanup |2252/2252 zero fail/cancel/skip;72/40/static/comparison179 PASS |633-path snapshot0ed8611fb681e31146b1fe2d5d76c4772d2180adf6476c24a8acf6ccdeefc084 at ac7fc474; fresh PG16.14/Core643c1b3 cleaned/stopped; later docs excluded |
+| Original Worker/pretest dry-run |43/43 PASS;1400 samples retained; no owned group left |500-room p95 home22.390/actions20.855/revenue21.713/tenants27.732/rooms23.535/arrears28.446/properties37.468ms, strict<50; no threshold/process/sample change |
+| Earlier failures/actual gates |Retained / NOT_ACCEPTED |Prior41/42 retained; new-head CI, remote authority/privacy/latency, approved24-hour observation, device/rollback/postlaunch remain; Draft/off/blank/T0 not started |
+
+
+## 2026-10-16 C6 canonical room occupancy working candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Actual500-room occupancy financial-projection trap | RED→GREEN; focused35/35, affected61/61 | Shared canonical status rules; expired/scheduled/association/privacy guards retained; no unused financial/season/display projection |
+| Frozen-base complete response oracle and generated closure |27 responses/2614144 bytes exact including key order;249 declarations/236 functions match | Small/rich/500 fixtures; full management response unchanged; plain supported rows |
+| Full npm / validation / independent review |2249/2249 zero skip;72backend/40endpoint/static/comparison179 PASS; no P1/P2 |632-path working snapshot04987a58c433475b4121ed658e1644310bed7aa05f3f7c5555d0ef61f6289104 at base ac7fc474; fresh owned Core/PG cleanup/stopped; later docs excluded |
+| Original complete Worker/pretest dry-run |41/42 FAIL, zero cancel/skip;1400 samples retained |500-room p95 home54.548/actions43.875/revenue55.615/tenants78.945/rooms49.100/arrears57.852/properties69.828ms; strict<50ms unchanged; small seven groups PASS |
+| CI/publication/actual gates |NOT_ACCEPTED | Local staged candidate only; no commit/push/merge/deploy/flags/epoch; C1/C3, performance, approved24-hour observation and device remain open |
+
+
 ## 2026-10-13 C6 fixture idle socket handling
 
 | Check | Result | Evidence boundary |

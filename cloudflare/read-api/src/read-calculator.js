@@ -2345,7 +2345,7 @@ function landlordRoomCenterOccupancyByRoom_(ss, access, rooms) {
   });
   const statuses = {};
   rooms.forEach(function (room) {
-    statuses[propertyRoomText_(room.room_id)] = propertyRoomBuildRoomView_(room, current, latest, {}, tenantIds, activeTenantIds, {contracts: contractsById, tenants: tenantsById}).effective_status;
+    statuses[propertyRoomText_(room.room_id)] = propertyRoomResolveRoomOccupancy_(room, current, latest, tenantIds, activeTenantIds, {contracts: contractsById, tenants: tenantsById}).effectiveStatus;
   });
   return statuses;
 }
@@ -3208,11 +3208,10 @@ function propertyRoomLegacyPendingPaperBackfillEligible_(
     ) === '';
 }
 
-function propertyRoomBuildRoomView_(
+function propertyRoomResolveRoomOccupancy_(
   room,
   currentContractRoomMap,
   latestContractRoomMap,
-  latestBillRoomMap,
   tenantIdMap,
   activeTenantIdMap,
   associationMaps
@@ -3262,6 +3261,75 @@ function propertyRoomBuildRoomView_(
       ? pointedContract
       : null;
   const linkedContract = currentContract || upcomingContract;
+
+  const hasActiveContract =
+    Boolean(
+      currentContract
+    );
+
+  const storedStatus =
+    propertyRoomText_(
+      room.room_status ||
+      'vacant'
+    ).toLowerCase();
+
+  const linkedTenantIsActive =
+    Boolean(
+      (
+        activeTenantIdMap &&
+        activeTenantIdMap[propertyRoomText_(room.current_tenant_id)]
+      ) ||
+      (
+        propertyRoomText_(room.current_tenant_id) &&
+        !(tenantIdMap && tenantIdMap[propertyRoomText_(room.current_tenant_id)])
+      ) ||
+      (
+        activeTenantIdMap &&
+        (
+          storedStatus === 'occupied' &&
+          activeTenantIdMap[propertyRoomText_(latestContract && latestContract.tenant_id)]
+        )
+      )
+    );
+
+  const needsOccupancyReview =
+    !hasActiveContract &&
+    !upcomingContract &&
+    linkedTenantIsActive;
+
+  const effectiveStatus =
+    hasActiveContract
+      ? 'occupied'
+      : upcomingContract
+        ? 'upcoming'
+        : needsOccupancyReview
+        ? 'needs_review'
+        : (
+          storedStatus ===
+            'occupied'
+            ? 'vacant'
+            : storedStatus
+        );
+
+  return {roomId, currentContract, latestContract, upcomingContract,
+    linkedContract, hasActiveContract, storedStatus, needsOccupancyReview,
+    effectiveStatus};
+}
+
+function propertyRoomBuildRoomView_(
+  room,
+  currentContractRoomMap,
+  latestContractRoomMap,
+  latestBillRoomMap,
+  tenantIdMap,
+  activeTenantIdMap,
+  associationMaps
+) {
+  const {roomId, currentContract, latestContract, upcomingContract,
+    linkedContract, hasActiveContract, storedStatus, needsOccupancyReview,
+    effectiveStatus} = propertyRoomResolveRoomOccupancy_(room,
+      currentContractRoomMap, latestContractRoomMap, tenantIdMap,
+      activeTenantIdMap, associationMaps);
 
   const paperBackfillReplacementContract =
     [
@@ -3355,55 +3423,6 @@ function propertyRoomBuildRoomView_(
     upcomingContract ||
     latestContract ||
     {};
-
-  const hasActiveContract =
-    Boolean(
-      currentContract
-    );
-
-  const storedStatus =
-    propertyRoomText_(
-      room.room_status ||
-      'vacant'
-    ).toLowerCase();
-
-  const linkedTenantIsActive =
-    Boolean(
-      (
-        activeTenantIdMap &&
-        activeTenantIdMap[propertyRoomText_(room.current_tenant_id)]
-      ) ||
-      (
-        propertyRoomText_(room.current_tenant_id) &&
-        !(tenantIdMap && tenantIdMap[propertyRoomText_(room.current_tenant_id)])
-      ) ||
-      (
-        activeTenantIdMap &&
-        (
-          storedStatus === 'occupied' &&
-          activeTenantIdMap[propertyRoomText_(latestContract && latestContract.tenant_id)]
-        )
-      )
-    );
-
-  const needsOccupancyReview =
-    !hasActiveContract &&
-    !upcomingContract &&
-    linkedTenantIsActive;
-
-  const effectiveStatus =
-    hasActiveContract
-      ? 'occupied'
-      : upcomingContract
-        ? 'upcoming'
-        : needsOccupancyReview
-        ? 'needs_review'
-        : (
-          storedStatus ===
-            'occupied'
-            ? 'vacant'
-            : storedStatus
-        );
 
   const roomRent =
     propertyRoomNumber_(

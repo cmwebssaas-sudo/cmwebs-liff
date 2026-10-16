@@ -75,3 +75,43 @@ test('scalar decoding retains JSON escapes, whitespace, nested values and strict
     assert.throws(()=>datasetTransport.decodePackedRows([{replica_values:JSON.stringify([stored])}],['cell']),SyntaxError);
   }
 });
+
+test('typed packed cells retain null presence, negative zero, nested own keys and duplicate-field order',()=>{
+  const fields=['absent','nullable','negativeZero','nested','__proto__'];
+  const packed=[{replica_values:'["01111",null,null,-0,{"a":[-0,true]},{"polluted":true}]'}];
+  const before=JSON.stringify(packed),[row]=datasetTransport.decodePackedRows(packed,fields);
+  assert.deepEqual(Object.keys(row),['nullable','negativeZero','nested','__proto__']);
+  assert.equal(Object.hasOwn(row,'absent'),false);
+  assert.equal(row.nullable,null);
+  assert.equal(Object.is(row.negativeZero,-0),true);
+  assert.equal(Object.is(row.nested.a[0],-0),true);
+  assert.equal(Object.hasOwn(row,'__proto__'),true);
+  assert.equal(Object.getPrototypeOf(row),Object.prototype);
+  assert.equal(row.polluted,undefined);
+  assert.equal(JSON.stringify(packed),before);
+  const duplicate=datasetTransport.decodePackedRows([{replica_values:'["1110",1,{"safe":true},2,null]'}],['x','__proto__','x','x'])[0];
+  assert.deepEqual(Object.keys(duplicate),['x','__proto__']);
+  assert.equal(duplicate.x,2,'an absent later field does not remove an earlier value');
+  assert.deepEqual(datasetTransport.decodePackedRows([{replica_values:'[""]'}],[]),[{}]);
+});
+
+test('typed raw fallback retains deep JSON, legacy scalar coercion and strict invalid JSON rejection',()=>{
+  const deep='['.repeat(1100)+'0'+']'.repeat(1100);
+  const [row]=datasetTransport.decodePackedRows([{replica_values:JSON.stringify(['222',deep,'-0',17])}],['deep','negativeZero','numeric']);
+  let value=row.deep;
+  for(let depth=0;depth<1100;depth++){assert.equal(value.length,1);value=value[0];}
+  assert.equal(value,0);
+  assert.equal(Object.is(row.negativeZero,-0),true);
+  assert.equal(row.numeric,17);
+  assert.deepEqual(datasetTransport.decodePackedRows([{replica_values:'["2",null]'}],['absent']),[{}],
+    'a raw fallback null keeps the legacy skip, including JSONB-null packing');
+  for(const raw of ['1\u0000junk','null\u0000false','"ok"\u0000bad','{"x":1}\u0000[]','"raw\u0000string"','[1,]','{a:1}','NaN','invalid'])
+    assert.throws(()=>datasetTransport.decodePackedRows([{replica_values:JSON.stringify(['2',raw])}],['value']),SyntaxError);
+});
+
+test('typed packed frames reject invalid mode headers, absent payloads and incomplete rows',()=>{
+  for(const frame of ['[null,null]','[1,null]','["",null]','["11",null]','["3",null]','["0",1]','["0",false]','["1",null,0]'])
+    assert.throws(()=>datasetTransport.decodePackedRows([{replica_values:frame}],['value']),/shape/);
+  assert.throws(()=>datasetTransport.decodePackedRows([{replica_values:'["00",null]'}],['a','b']),SyntaxError,
+    'length-N remains the legacy format, never inferred from a mode-looking first field');
+});
