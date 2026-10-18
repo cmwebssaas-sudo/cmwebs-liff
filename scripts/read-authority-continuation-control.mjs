@@ -102,7 +102,7 @@ export function createAuthorityStagedResumeControl(input){return createControl(i
 export function createAuthorityReadonlyRecoveryControl(input){return createControl(input,true,true,true);}
 function createControl(input,standalone,staged=false,readonly=false){
  try{
-  const o=options(input),config=data(o.config),closed=standalone&&Object.hasOwn(config,'closedPreflight'),renewed=readonly&&Object.hasOwn(config,'deadlineRenewal'),repair=renewed&&Object.hasOwn(config,'firstStageRepair'),connection=repair&&Object.hasOwn(config,'connectionRepair'),rewindow=connection&&Object.hasOwn(config.connectionRepair,'windowApproval'),now=o.now??Date.now,pause=o.pause??delay,guard=o.guard;
+  const o=options(input),config=data(o.config),closed=standalone&&Object.hasOwn(config,'closedPreflight'),renewed=readonly&&Object.hasOwn(config,'deadlineRenewal'),repair=renewed&&Object.hasOwn(config,'firstStageRepair'),connection=repair&&Object.hasOwn(config,'connectionRepair'),rewindow=connection&&Object.hasOwn(config.connectionRepair,'windowApproval'),usertab=rewindow&&Object.hasOwn(config.connectionRepair,'userTabRepair'),now=o.now??Date.now,pause=o.pause??delay,guard=o.guard;
   if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[]),...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[]),...(readonly?['readonlyRecovery']:[]),...(renewed?['deadlineRenewal']:[]),...(repair?['firstStageRepair']:[]),...(connection?['connectionRepair']:[])])||!isAbsolute(config.path)||config.decisionHash!==(readonly?READONLY_RECOVERY_DECISION_HASH:staged?STAGED_RESUME_DECISION_HASH:standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||staged&&(!closed||config.expiresAt!==null||typeof o.assertStage!=='function')||!staged&&Object.hasOwn(o,'assertStage')||typeof now!=='function'||typeof pause!=='function')stop();
   // Only this module's consumable move can supply the narrow predecessor lane.
   // Full owners and serialized receipts are rejected by options/brand checks.
@@ -114,13 +114,13 @@ function createControl(input,standalone,staged=false,readonly=false){
   const stage=(operation,stage)=>{if(o.onReadStage){const result=o.onReadStage(Object.freeze({operationId:operation.id,stage,errorCategory:stage==='api-rejected'?'API_REJECTED':stage==='post-return-guard-rejected'?'POST_RETURN_GUARD':'NONE'}));if(result!==undefined)stop();}};
   const inPredecessorLane=callback=>closed&&!readonly?predecessorLane.call(predecessor,callback):callback();
   const home=homedir(),env={PATH:'/opt/homebrew/bin:/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei',HOME:home},source=fileURLToPath(new URL('./read-authority-continuation-budget.py',import.meta.url));
-  const stem=connection?'.readonly-connection-repair':repair?'.readonly-wiring-repair':readonly?'.readonly-recovery':staged?'.staged-resume':closed?'.standalone-successor':standalone?'.standalone':'.continuation';
+  const stem=usertab?'.readonly-user-tab-repair':connection?'.readonly-connection-repair':repair?'.readonly-wiring-repair':readonly?'.readonly-recovery':staged?'.staged-resume':closed?'.standalone-successor':standalone?'.standalone':'.continuation';
   const nonce=randomBytes(32).toString('hex');let attempted=false,localStop=false,current=null,lastOwned=null,serial=0,newSpentHighWater=0,cleanupRunning=false;
   const observed=raw=>{const result=view(raw,standalone,staged);newSpentHighWater=Math.max(newSpentHighWater,result.newSpent);return result;};
   const checked=()=>{const result=guard();if(types.isPromise(result))void Promise.prototype.then.call(result,()=>{},()=>{});if(result!==undefined)stop();};
   const veto=()=>{if(localStop)return true;try{lstatSync(config.path+stem+'-stop.json');return true;}catch(e){return e.code!=='ENOENT';}};
   const durableStop=async()=>{
-   const child=spawn('python3',[source,connection?'--readonly-connection-repair-request-stop':repair?'--readonly-wiring-repair-request-stop':readonly?'--readonly-recovery-request-stop':staged?'--staged-resume-request-stop':closed?'--standalone-successor-request-stop':standalone?'--standalone-request-stop':'--request-stop'],{stdio:['pipe','pipe','pipe'],env}),p=protocol(child);let acknowledged=false;
+   const child=spawn('python3',[source,usertab?'--readonly-user-tab-repair-request-stop':connection?'--readonly-connection-repair-request-stop':repair?'--readonly-wiring-repair-request-stop':readonly?'--readonly-recovery-request-stop':staged?'--staged-resume-request-stop':closed?'--standalone-successor-request-stop':standalone?'--standalone-request-stop':'--request-stop'],{stdio:['pipe','pipe','pipe'],env}),p=protocol(child);let acknowledged=false;
    try{const r=await p.send({path:config.path,epoch:config.epoch,binding:config.binding});if(!exact(r,['ok','stopRequested'])||r.ok!==true||r.stopRequested!==true)stop();acknowledged=true;}finally{await p.drain();}
    if(!acknowledged||child.exitCode!==0||child.signalCode!==null)stop();return true;
   };
@@ -186,7 +186,7 @@ function createControl(input,standalone,staged=false,readonly=false){
     child=spawn('python3',[source,standalone?'--standalone-inherited-lock':'--inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
     const ready=observed(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;owned.initial=true;
     if(ready.state!=='ready'||(standalone&&ready.spent<31))stop();
-    if(connection){if(ready.spent!==46||(rewindow?ready.w0!==null||ready.expiresAt!==null:ready.w0!==CONNECTION_REPAIR_WINDOW.w0||ready.expiresAt!==CONNECTION_REPAIR_WINDOW.expiresAt||t>=ready.expiresAt))stop();}
+    if(connection){if(ready.spent!==(usertab?47:46)||(rewindow?ready.w0!==null||ready.expiresAt!==null:ready.w0!==CONNECTION_REPAIR_WINDOW.w0||ready.expiresAt!==CONNECTION_REPAIR_WINDOW.expiresAt||t>=ready.expiresAt))stop();}
     else if(readonly&&ready.spent!==43||(readonly&&!renewed?ready.w0!==READONLY_RECOVERY_WINDOW.w0||ready.expiresAt!==READONLY_RECOVERY_WINDOW.expiresAt||t>=ready.expiresAt||ready.spent!==43:staged?ready.w0!==null||ready.expiresAt!==null:closed?ready.w0>t||ready.expiresAt!==config.expiresAt:ready.w0!==t||ready.expiresAt!==config.expiresAt))stop();alive(true);
     result=await callback(cap);if(pending||failed||veto())stop();
     const ending=await exchange({op:'inspect'},true);

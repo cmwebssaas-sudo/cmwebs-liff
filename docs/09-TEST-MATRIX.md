@@ -2394,3 +2394,15 @@ damaged ordinary journal, and insufficient cleanup time before claim.
 Independent source review found no actionable P1/P2. Node24.19 supported-runtime rerun93/93 focused and2619/2619 full unit PASS,
 zero fail/cancel/skip; validate72 backend/40 endpoints/static cache PASS.
 Exact-head CI remains separate and pending before actual Google acceptance.
+
+## User-tab repair local acceptance
+
+Node24.19 readonly recovery112/112 and full unit2638/2638 PASS, zero failures,
+cancellations or skips. Validate72 backend/40 endpoint/static cache and diff
+checks PASS. Tests cover stopped47 import, three separate48/49/50 debits, no
+pre-IO clock, first-prefix order/shape/replay, changed approval/history denial,
+full32-check driver/one360-second RPC and post-expiry independent J2 despite
+ordinary journal corruption. The original-I lane retains its own STOP target.
+Independent public source review0 actionable P1/P2 and three separate focused
+synthetic review cases PASS. Exact-head CI and actual user-tab mapping remain
+separate gates; no new native IO has occurred.

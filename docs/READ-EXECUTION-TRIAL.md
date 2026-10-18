@@ -852,3 +852,22 @@ deny entry; later operations cannot slide the clock. The driver still requires
 47, complete actual map/160-fit,32 observations and one360-second RPC. No Google
 read, grant, execution, deployment or rollout acceptance follows from local
 source/test approval. This mode does not reopen a stopped successor.
+
+## Approved user-tab claim repair
+
+An optional connectionRepair.userTabRepair manifest pins the stopped47
+checkpoint, original claim/STOP/registry/configuration, terminal owner drain,
+bind-only failure trace and exact new owner approval. A separately named
+singleton under the original canonical lock imports all47; it never rewrites
+or reopens earlier claims or clocks. Its first native debit48 starts the
+bounded six-hour/Taipei-day window. The first three descriptors are fixed
+publisher3/4/5: user-tab list, claim of the exact returned object, and the
+existing safe projection. Each is separately debited before IO. Raw native
+id or URL equality alone does not establish the approved page identity.
+
+The47+98+N11+C2+unused2 reservation retains all original release/runtime and
+independent recovery gates. Publisher N is capped7, caller2 and thin-trigger2.
+Replay, altered approvals, uncertain mutations, incomplete maps and unproven
+identity mapping deny continuation. Driver/RPC still requires the full actual
+map, all32 checks and one nonrefundable360-second admission. Source and local
+synthetic tests do not prove raw browser compatibility or real acceptance.

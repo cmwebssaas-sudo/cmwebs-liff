@@ -4176,3 +4176,21 @@ Node24.19 rerun93/93 focused and2619/2619 full unit PASS, zero
 fail/cancel/skip; validate72 backend/40 endpoint/static cache and diff PASS.
 Exact-head CI is required before any real page read. Undeployed rollback returns this increment to c76e6f4 while preserving
 all evidence; no Production, credentials, flags or formal data were changed.
+
+## C3 user-tab claim repair candidate
+
+Recommended model/speed GPT-6.1 Sol/high. Explicit owner approval permits one
+new linked successor retaining the stopped47 history and160 limit. Native
+metadata listing, exact returned-object claim and safe projection have distinct
+prepaid prefix slots. Existing selected page and prior source/claim/STOP/UNKNOWN
+bytes remain fixed; new mode uses its own singleton and first-debit clock.
+
+New accounting regressions first failed for missing mode/compiler, then19/19
+focused PASS. An extended fixture initially selected the wrong predecessor mode;
+its helper was corrected with the failure retained. Final readonly112/112 and
+full unit2638/2638 PASS on Node24.19; validate72/40/static/diff PASS. Independent
+source review0P1/P2 and three synthetic driver/cleanup cases PASS. Private
+root/read tests are separate; no claim of actual browser API compatibility.
+No native48+, grant, RPC, formal configuration, data or deployment change.
+Rollback this undeployed increment to667035a while preserving all used source
+copies, evidence and failed attempts. Draft/off/T0 not started; actual gates open.

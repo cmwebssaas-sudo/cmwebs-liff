@@ -149,6 +149,8 @@ export const CONNECTION_REPAIR_DECISION_HASH='bfdd63b5933323758669c2735894a7ad4a
 export const CONNECTION_REPAIR_WINDOW=freeze({w0:1792284815457,expiresAt:1792306415457});
 export const CONNECTION_REPAIR_POLICY=freeze({...READONLY_RECOVERY_POLICY,stage:'selected-page-connection-repair',importedUnits:46,bucketLimits:{...READONLY_RECOVERY_POLICY.bucketLimits,N:12},navigationControlLimit:12,navigationPartitions:{publisher:8,'caller-oauth':2,'thin-trigger':2}});
 export function compileAuthorityConnectionRepairPlan(input){return compilePlan(input,CONNECTION_REPAIR_POLICY);}
+export const USER_TAB_REPAIR_POLICY=freeze({...CONNECTION_REPAIR_POLICY,stage:'user-tab-claim-repair',importedUnits:47,bucketLimits:{...CONNECTION_REPAIR_POLICY.bucketLimits,N:11},navigationControlLimit:11,navigationPartitions:{publisher:7,'caller-oauth':2,'thin-trigger':2}});
+export function compileAuthorityUserTabRepairPlan(input){return compilePlan(input,USER_TAB_REPAIR_POLICY);}
 
 
 // `*Eligible` denotes only the map's local arithmetic condition. It never
@@ -164,7 +166,7 @@ function compilePlan(input,policy){
   const limits=policy.bucketLimits,operations=policy.operations,navigationTargets=policy.navigationTargets;
   const outsideRestore=policy.originalRestoreUnitsOutsideMap??0;
   input=snapshot(input);
-  const readonly=policy===READONLY_RECOVERY_POLICY||policy===CONNECTION_REPAIR_POLICY,staged=policy===STAGED_RESUME_POLICY||readonly;
+  const usertab=policy===USER_TAB_REPAIR_POLICY,readonly=policy===READONLY_RECOVERY_POLICY||policy===CONNECTION_REPAIR_POLICY||usertab,staged=policy===STAGED_RESUME_POLICY||readonly;
   const closed=policy===STANDALONE_TRIAL_POLICY&&Object.hasOwn(input.history??{},'closedPreflightCaller'),imported=closed?33:policy.importedUnits;
   if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==policy.decisionHash||
    !exact(input.history,['spent','limit',...(closed?['closedPreflightCaller']:[])])||input.history.spent!==imported||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
@@ -182,7 +184,7 @@ function compilePlan(input,policy){
      const pub=/^publisher-(?:[1-9]|1[0-2])$/.test(op.alias)&&op.actor==='publisher'&&navigationTargets.includes(op.target)&&op.target!=='thin-triggers'&&['navigate','snapshot'].includes(op.operation)&&op.stage==='publisher';
      const caller=['caller-oauth-enter','caller-oauth-observe'].includes(op.alias)&&op.actor==='caller'&&op.target==='caller-oauth'&&op.operation===(op.alias.endsWith('enter')?'navigate':'snapshot')&&op.stage==='caller-oauth';
      const thin=['thin-triggers-before','thin-triggers-after'].includes(op.alias)&&op.actor==='publisher'&&op.target==='thin-triggers'&&op.operation==='snapshot'&&op.stage==='thin-trigger';
-     if(!pub&&!caller&&!thin||readonly&&(op.alias==='publisher-1'||op.alias==='publisher-2'&&(op.target!=='original-settings'||op.operation!=='snapshot')))stop();preparation++;
+     if(!pub&&!caller&&!thin||readonly&&(op.alias==='publisher-1'||op.alias==='publisher-2'&&(op.target!=='original-settings'||op.operation!=='snapshot'))||usertab&&(op.alias==='publisher-2'||['publisher-3','publisher-4','publisher-5'].includes(op.alias)&&(op.target!=='original-settings'||op.operation!=='snapshot')))stop();preparation++;
     }else{
     const discovery=closed&&((op.id==='publisher-executions-discovery'&&op.alias==='navigation-1'&&op.operation==='snapshot')||(op.id==='publisher-executions-open'&&op.alias==='navigation-2'&&op.operation==='navigate'))&&op.actor==='publisher'&&op.target==='publisher-executions'&&op.stage==='research';
     if(!discovery&&(!/^navigation-(?:[1-9]|1[0-9]|2[0-4])$/.test(op.alias)||op.actor!=='publisher'||!navigationTargets.includes(op.target)||
@@ -197,7 +199,7 @@ function compilePlan(input,policy){
   }
   if(closed&&input.operations.some(o=>o.id==='publisher-executions-open')&&!input.operations.some(o=>o.id==='publisher-executions-discovery'))stop();
   if(research>8||preparation>16||Object.entries(bucketUnits).some(([k,n])=>n>limits[k]))stop();
-  const required=[...Object.keys(operations),...(readonly?['N:publisher-2']:[]),...(staged?['N:caller-oauth-enter','N:caller-oauth-observe','N:thin-triggers-before','N:thin-triggers-after']:[])];
+  const required=[...Object.keys(operations),...(usertab?['N:publisher-3','N:publisher-4','N:publisher-5']:readonly?['N:publisher-2']:[]),...(staged?['N:caller-oauth-enter','N:caller-oauth-observe','N:thin-triggers-before','N:thin-triggers-after']:[])];
   const missingOperations=required.filter(k=>!seen.has(k)).sort();
   const fullyKnown=missingOperations.length===0&&unknownCosts.length===0&&input.mapComplete;
   if(closed){const caller=input.history.closedPreflightCaller;const mapped=input.operations.find(o=>o.bucket==='P'&&o.alias==='caller-bind');if(!mapped||!exact(caller,Object.keys(mapped))||Object.keys(mapped).some(k=>caller[k]!==mapped[k])||caller.units!==1)stop();}
