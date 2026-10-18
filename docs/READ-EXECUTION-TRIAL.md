@@ -1,5 +1,28 @@
 # Bounded synthetic Execution API trial
 
+## October18 fixed zero-debit wiring successor
+
+A separately approved, named wiring-repair successor may accept only the fixed
+readonly-recovery predecessor with a finished STOP, zero new debits, empty
+events, null window, no RPC or remote result, and the acknowledged actual-holder
+drain. Pin its config, journal, claim, STOP, registry and drain; recheck those
+bytes before every admission and independent cleanup. The prior claim is never
+reopened, rewritten or replaced; this successor cannot accept another successor.
+
+Use its separate `readonly-wiring-repair` singleton while retaining the same
+canonical path, lock, epoch, original history and43 imported units. The pinned
+approval permits one claim only, with no refund, extra navigation, retry, Scope
+or fee. First IO remains the fixed publisher-2 readonly projection. Its first
+durable admission starts the previously approved six-hour window, capped at the
+same Taipei calendar day ending; inspection cannot start or extend that clock.
+
+All32 release observations, one nonrefundable360-second RPC, full-map/160-fit,
+C2/I17, independentJ2, daily runtime, capacity, privacy, latency, device and
+rollout gates remain mandatory. Source tests and a settled local holder are not
+Google compatibility or remote rollback acceptance. The private root wiring
+must exercise the genuine first proof and the same fixed gate in a complete
+synthetic composition before any actual launch.
+
 Recommended model/speed: GPT-6.1 Sol/high for authority and credential boundaries.
 Owner approved the bounded dedicated-human OAuth/Execution API trial on
 2026-10-13. This is a synthetic feasibility trial; formal adoption is unapproved.
