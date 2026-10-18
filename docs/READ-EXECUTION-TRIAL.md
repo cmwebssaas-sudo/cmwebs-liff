@@ -834,3 +834,21 @@ raw identity expiry stays null. First-read failure still stops the sole owner,
 and original C2/I17, separate J2, all release/privacy, runtime, performance and
 device checks remain mandatory. This local policy update is not proof of real
 Google execution, actual fit, deployment, observation start or rollout readiness.
+
+## October18 approved selected-page execution window
+
+The optional connectionRepair.windowApproval pin renews only the unclaimed,
+owner-selected connection successor. It preserves46 imported charges, the
+selected page, canonical flock and singleton, all predecessor bytes and all
+original cleanup reserves. The exact approval and chronology are revalidated
+before ordinary admission and independent recovery. Without this pin, the
+existing inherited numeric connection deadline still applies.
+
+Construction, inspection, wait and stage registration do not start a renewed
+clock. The first durably charged publisher2 snapshot starts47 and persists the
+earlier of six hours or that Taipei day's final millisecond. Approval-time
+rewind, changed approval, insufficient cleanup margin and any existing claim
+deny entry; later operations cannot slide the clock. The driver still requires
+47, complete actual map/160-fit,32 observations and one360-second RPC. No Google
+read, grant, execution, deployment or rollout acceptance follows from local
+source/test approval. This mode does not reopen a stopped successor.

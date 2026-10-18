@@ -4161,3 +4161,18 @@ not change spent/nonrefund/window/operation limits. Full unit2605/2605 passes, z
 follows; private actual launcher not yet verified or started. Keep Draft/off/T0
 NOT_STARTED and every actual acceptance gate. Undeployed rollback reverts this
 increment to85f9f56 and retains all evidence.
+
+## C3 selected-page window-only candidate — 2026-10-18
+
+Recommended model/speed GPT-6.1 Sol/high, continuing bounded C3 safety work in
+its isolated worktree/PR268. Direct owner approval permits a fresh execution
+window only for the still-unclaimed selected-page successor. Optional approval
+pin retains46/160 and every old claim/STOP/UNKNOWN; first47 alone starts the
+bounded same-day clock. Full release/RPC/cleanup gates remain unchanged.
+Independent source review0P1/P2; private launcher and actual acceptance remain
+separate. Initial Node26 local runs suffered long process delays and timeouts;
+failed logs are retained rather than passing or weakening their deadlines.
+Node24.19 rerun93/93 focused and2619/2619 full unit PASS, zero
+fail/cancel/skip; validate72 backend/40 endpoint/static cache and diff PASS.
+Exact-head CI is required before any real page read. Undeployed rollback returns this increment to c76e6f4 while preserving
+all evidence; no Production, credentials, flags or formal data were changed.

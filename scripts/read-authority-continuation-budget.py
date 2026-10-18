@@ -39,6 +39,7 @@ POLICY_SOURCE='6f478fae42b94c8d9934a7740933ac05e7f26ea37af8a6d18715705a0323aa9c'
 CLOSED_POLICY_SOURCE='3a30a2ad1a93ef2cba5db552152cc909df9bddb597eb0cc7afddc571abc9aec8'
 READONLY_DECISION='ccb1f0d40fe93df36d18f687da256287b1e3980b9397b58c31d6c75c6c6b8b60'
 CONNECTION_DECISION='bfdd63b5933323758669c2735894a7ad4a8dfc98af4fb49badc1797574bfb061'
+SELECTED_WINDOW_DECISION='df75c2492d4fe95dcee890eae4b597aef72c19fa19c912848cdc9e0160526890'
 CONNECTION_W0=1792284815457
 CONNECTION_EXPIRY=1792306415457
 WIRING_DECISION='29f4e083338c2acc8006c7d0905e530531e8c26b35ae0c43cb4226ed947c3bfe'
@@ -940,6 +941,7 @@ class Ledger:
   self.renewed=self.readonly and 'deadlineRenewal' in cfg
   self.repair=self.renewed and 'firstStageRepair' in cfg
   self.connection=self.repair and 'connectionRepair' in cfg
+  self.rewindow=self.connection and type(cfg['connectionRepair']) is dict and 'windowApproval' in cfg['connectionRepair']
   self.staged=standalone and type(cfg) is dict and 'stagedResume' in cfg
   self.closed=standalone and type(cfg) is dict and 'closedPreflight' in cfg
   self.standalone=standalone;self.rules=STAGED_OPERATIONS if self.staged else STANDALONE_OPERATIONS if standalone else OPERATIONS;self.imported=19 if self.connection else 16 if self.readonly else 15 if self.staged else 6 if self.closed else 4 if standalone else 0
@@ -981,7 +983,7 @@ class Ledger:
   for p in [self.reg,self.claim,self.journal,self.marker]:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
-  t=cfg['now'];end=CONNECTION_EXPIRY if self.connection else READONLY_EXPIRY if self.readonly and not self.renewed else cfg['expiresAt'];w0=CONNECTION_W0 if self.connection else READONLY_W0 if self.readonly and not self.renewed else None if self.staged else self.predecessor['w0'] if self.closed else t
+  t=cfg['now'];end=CONNECTION_EXPIRY if self.connection and not self.rewindow else READONLY_EXPIRY if self.readonly and not self.renewed else cfg['expiresAt'];w0=CONNECTION_W0 if self.connection and not self.rewindow else READONLY_W0 if self.readonly and not self.renewed else None if self.staged else self.predecessor['w0'] if self.closed else t
   if self.closed and not self.staged and (end!=self.predecessor['expiresAt'] or t>=end or self.old_current()['spent']!=27):fail()
   if (not self.staged and (not 0<end-t<=21600000 or day(t)!=day(end))) or any(x>t for x in self.baseline['preparation']['calls']+(self.history_times if standalone else [])):fail()
   if self.readonly and not self.renewed and (t<READONLY_W0 or end-t<=360000 or day(t)!=day(READONLY_W0)):fail()
@@ -996,7 +998,7 @@ class Ledger:
   if self.repair:identity['firstStageRepair']=copy.deepcopy(cfg['firstStageRepair'])
   if self.connection:identity['connectionRepair']=copy.deepcopy(cfg['connectionRepair'])
   self.identity=identity
-  j={**identity,'w0':w0,'expiresAt':end,'version':1,'day':None if self.staged and (not self.readonly or self.renewed) and not self.connection else day(w0),'deadlineUtc':None if self.staged and (not self.readonly or self.renewed) and not self.connection else timestamp(end,timezone.utc),'deadlineTaipei':None if self.staged and (not self.readonly or self.renewed) and not self.connection else timestamp(end,timezone(timedelta(hours=8))),'state':'ready','spent':0,'events':[],'plan':None,'chargedUpperBoundMs':0,'rpc':{'beganAt':None,'complete':False},'finished':False}
+  j={**identity,'w0':w0,'expiresAt':end,'version':1,'day':None if self.staged and (not self.readonly or self.renewed) and (not self.connection or self.rewindow) else day(w0),'deadlineUtc':None if self.staged and (not self.readonly or self.renewed) and (not self.connection or self.rewindow) else timestamp(end,timezone.utc),'deadlineTaipei':None if self.staged and (not self.readonly or self.renewed) and (not self.connection or self.rewindow) else timestamp(end,timezone(timedelta(hours=8))),'state':'ready','spent':0,'events':[],'plan':None,'chargedUpperBoundMs':0,'rpc':{'beganAt':None,'complete':False},'finished':False}
   if self.staged:j['stages']={}
   # Any interrupted creation consumes the sole segment; retry cannot recreate it.
   save_record(self.reg,{'identity':identity,'checkpoint':None},True)
@@ -1156,7 +1158,7 @@ class Ledger:
   if receipt!={'at':receipt['at'],'source':'actual-renewed-first-read','result':None,'error':{'name':'Error','category':'FIRST_READ_STOPPED'},'report':report,'drain':drain,'journalNewSpent':0,'cumulativeSpent':43,'retryPerformed':False,'productionChanges':False}:fail()
  def validate_connection_repair(self):
   spec=self.cfg['connectionRepair']
-  keys=['approval','config','journal','claim','stop','registry','drain','inventoryFirst','inventorySecond','inventoryResult']
+  keys=['approval','config','journal','claim','stop','registry','drain','inventoryFirst','inventorySecond','inventoryResult']+(['windowApproval'] if self.rewindow else [])
   if not exact(spec,keys):fail()
   stem=str(self.path)+'.readonly-wiring-repair'
   paths={'journal':stem+'.json','claim':stem+'-claim.json','stop':stem+'-stop.json','registry':str(self.old_reg.parent/(sha(json.dumps(self.cfg['epoch'],separators=(',',':')).encode())+'.readonly-wiring-repair.json'))}
@@ -1198,10 +1200,16 @@ class Ledger:
   for m in observed['matches']:
    if not exact(m,matchkeys) or any(type(m[k]) is not str or not m[k] for k in matchkeys) or m['url']!=url or m['browserType']!='extension' or m['browserFamily']!='chrome':fail()
   if observed['matches'][0]['tabId']==observed['matches'][1]['tabId'] or observed['matches'][0]['browserId']!=observed['matches'][1]['browserId'] or not last<=millis(observed['at'])<CONNECTION_EXPIRY:fail()
-  if not exact(a,['source','answer','decision','selected','importedSpent','limit','w0','expiresAt','at','claimStarted','newActualOperations']) or a['source']!='direct-human-selected-tab-approval' or a['answer'] not in ['使用分頁 A 接續','使用分頁 B 接續'] or not exact(a['decision'],['path','sha256']) or a['decision']['sha256']!=CONNECTION_DECISION or a['selected']!=observed['matches'][0 if a['answer']=='使用分頁 A 接續' else 1] or a['importedSpent']!=46 or a['limit']!=160 or a['w0']!=CONNECTION_W0 or a['expiresAt']!=CONNECTION_EXPIRY or a['claimStarted'] is not False or a['newActualOperations']!=0 or not millis(observed['at'])<=millis(a['at'])<=self.cfg['now'] or self.cfg['now']>=CONNECTION_EXPIRY:fail()
+  if not exact(a,['source','answer','decision','selected','importedSpent','limit','w0','expiresAt','at','claimStarted','newActualOperations']) or a['source']!='direct-human-selected-tab-approval' or a['answer'] not in ['使用分頁 A 接續','使用分頁 B 接續'] or not exact(a['decision'],['path','sha256']) or a['decision']['sha256']!=CONNECTION_DECISION or a['selected']!=observed['matches'][0 if a['answer']=='使用分頁 A 接續' else 1] or a['importedSpent']!=46 or a['limit']!=160 or a['w0']!=CONNECTION_W0 or a['expiresAt']!=CONNECTION_EXPIRY or a['claimStarted'] is not False or a['newActualOperations']!=0 or not millis(observed['at'])<=millis(a['at'])<=self.cfg['now'] or not self.rewindow and self.cfg['now']>=CONNECTION_EXPIRY:fail()
+  self.authorization_at=millis(a['at'])
+  if self.rewindow:
+   window=v['windowApproval']
+   fixed={'source':'direct-human-selected-execution-window-approval','answer':'同意更新接續時窗，其餘不變','importedSpent':46,'limit':160,'priorW0':CONNECTION_W0,'priorExpiresAt':CONNECTION_EXPIRY,'maxWindowMs':21600000,'sameTaipeiDay':True,'singleClaim':True,'firstCountedReadStartsWindow':True,'newActualOperations':0}
+   if not exact(window,list(fixed)+['decision','at']) or any(type(window[k]) is not type(x) or window[k]!=x for k,x in fixed.items()) or not exact(window['decision'],['path','sha256']) or window['decision']['sha256']!=SELECTED_WINDOW_DECISION or not self.authorization_at<=millis(window['at'])<=self.cfg['now']:fail()
+   self.authorization_at=millis(window['at'])
   self.history_times += [e['time'],millis(v['inventoryFirst']['createdAt']),millis(v['inventorySecond']['createdAt'])]
  def window(self,t):
-  if self.connection:return CONNECTION_EXPIRY
+  if self.connection and not self.rewindow:return CONNECTION_EXPIRY
   # Last millisecond of the same Taipei calendar day.
   end=min(t+21600000,((t+28800000)//86400000+1)*86400000-28800000-1)
   return end
@@ -1348,7 +1356,7 @@ class Ledger:
   request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged,self.readonly,self.repair,self.connection)
   j,_=self.current();j['state']='stopped';self.persist(j)
  def times(self,j,old,t):
-  if not integer(t):fail()
+  if not integer(t) or self.connection and t<self.authorization_at:fail()
   times=old['preparation']['calls']+(self.history_times if self.standalone else [])+[e['time'] for e in j['events']]
   if j['w0'] is not None and t<j['w0'] or any(x>t for x in times):fail()
   return times

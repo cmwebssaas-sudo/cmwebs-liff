@@ -2384,3 +2384,13 @@ continuation/standalone plan/budget/control/driver/recovery and header tests pas
 |Source validation |72 backend/40 endpoint/static cache PASS | No release or formal-data change; approved actual window expired |
 
 Full unit2605/2605 PASS, zero failures/cancellations/skips. Exact-head CI pending; no remote trial or formal acceptance.
+
+## 2026-10-18 selected-page window-only increment
+
+Regressions cover null clocks before first47, six-hour/Taipei-midnight cap,
+unchanged46/history/selection/claim, exact approval and chronology, drift and
+backward-time rejection, full driver checks, post-midnight independent J2 with
+damaged ordinary journal, and insufficient cleanup time before claim.
+Independent source review found no actionable P1/P2. Node24.19 supported-runtime rerun93/93 focused and2619/2619 full unit PASS,
+zero fail/cancel/skip; validate72 backend/40 endpoints/static cache PASS.
+Exact-head CI remains separate and pending before actual Google acceptance.
