@@ -35,7 +35,9 @@ LEGACY_SOURCE='7f04fc0f0e1f1968029fc666297bf0ca83d871e31c310117ec94ebec3c050e18'
 HISTORICAL_POLICY_SOURCE='06112c8340a04b763d70580883e4bc2b4ddb5fb6d18a22eb577e78ef10fd119f'
 PREDECESSOR_POLICY_SOURCE='49014902c98921ca18b4a09895713be0decd631bebefca661157c3a542a7e01f'
 WIRING_POLICY_SOURCE='17313472ea90e2e323c0deb53312a52345a23436813ce80be6354bd6c5662132'
-POLICY_SOURCE='c9e337f4245bd073bb158ef01385a71a40b72409b5c607306574b41b76c5c30b'
+USER_TAB_POLICY_SOURCE='c9e337f4245bd073bb158ef01385a71a40b72409b5c607306574b41b76c5c30b'
+LOCAL_RESUME_DECISION='e0914151c113ae1eeeedd822c140491f4a9d98a0b72d16a3b4914b4a6391cd59'
+POLICY_SOURCE='6cf3cb279bdc0a70cd86186686bdd50d17077c462ddf8827b3c1ff58bb19d4e4'
 CLOSED_POLICY_SOURCE='3a30a2ad1a93ef2cba5db552152cc909df9bddb597eb0cc7afddc571abc9aec8'
 READONLY_DECISION='ccb1f0d40fe93df36d18f687da256287b1e3980b9397b58c31d6c75c6c6b8b60'
 CONNECTION_DECISION='bfdd63b5933323758669c2735894a7ad4a8dfc98af4fb49badc1797574bfb061'
@@ -902,7 +904,7 @@ def normalize(op,standalone=False,closed=False,staged=False,readonly=False):
   if rule is None or (op['actor'],op['target'])!=(rule['actor'],rule['target']) or op['operation'] not in rule['methods']:fail()
  return key
 
-def complete_map(operations,standalone=False,closed=False,staged=False,readonly=False,connection=False,usertab=False):
+def complete_map(operations,standalone=False,closed=False,staged=False,readonly=False,connection=False,usertab=False,local=0):
  rules=STAGED_OPERATIONS if staged else STANDALONE_OPERATIONS if standalone else OPERATIONS
  if type(operations) is not list or len(operations)>131:fail()
  limits=STAGED_LIMITS if staged else STANDALONE_LIMITS if standalone else LIMITS
@@ -915,16 +917,18 @@ def complete_map(operations,standalone=False,closed=False,staged=False,readonly=
    if op['stage']=='research':research+=1
    else:preparation+=1
  if closed and not staged and used.get('N:navigation-2',{}).get('id')=='publisher-executions-open' and used.get('N:navigation-1',{}).get('id')!='publisher-executions-discovery':fail()
- if usertab:
+ if local:
+  if any('N:publisher-'+str(n) in used for n in range(1,6)):fail()
+ elif usertab:
   if 'N:publisher-2' in used or any(used.get('N:publisher-'+str(n),{}).get('target')!='original-settings' or used.get('N:publisher-'+str(n),{}).get('operation')!='snapshot' for n in [3,4,5]):fail()
  elif readonly and 'N:publisher-2' not in used:fail()
- if readonly and buckets['N']>(11 if usertab else 12 if connection else 15):fail()
+ if readonly and buckets['N']>(8 if local else 11 if usertab else 12 if connection else 15):fail()
  if staged and any(k not in used for k in ['N:caller-oauth-enter','N:caller-oauth-observe','N:thin-triggers-before','N:thin-triggers-after']):fail()
- if any(k not in used for k in rules) or any(buckets[k]>limits[k] for k in limits) or research>8 or preparation>16 or (47 if usertab else 46 if connection else 43 if readonly else 42 if staged else 33 if closed else 31 if standalone else 27)+len(operations)-(1 if closed and not staged else 0)+(2 if standalone else 0)>158:fail()
+ if any(k not in used for k in rules) or any(buckets[k]>limits[k] for k in limits) or research>8 or preparation>16 or (50 if local else 47 if usertab else 46 if connection else 43 if readonly else 42 if staged else 33 if closed else 31 if standalone else 27)+len(operations)-(1 if closed and not staged else 0)+(2 if standalone else 0)>158:fail()
  return used
 
-def request_stop(cfg,standalone=False,closed=False,staged=False,readonly=False,repair=False,connection=False,usertab=False):
- stem='readonly-user-tab-repair' if usertab else 'readonly-connection-repair' if connection else 'readonly-wiring-repair' if repair else 'readonly-recovery' if readonly else 'staged-resume' if staged else 'standalone-successor' if closed else 'standalone' if standalone else 'continuation'
+def request_stop(cfg,standalone=False,closed=False,staged=False,readonly=False,repair=False,connection=False,usertab=False,local=0):
+ stem='readonly-local-resume-'+str(local) if local else 'readonly-user-tab-repair' if usertab else 'readonly-connection-repair' if connection else 'readonly-wiring-repair' if repair else 'readonly-recovery' if readonly else 'staged-resume' if staged else 'standalone-successor' if closed else 'standalone' if standalone else 'continuation'
  if not exact(cfg,['path','epoch','binding']) or not digest(cfg['binding']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
  p=Path(cfg['path'])
  if not p.is_absolute():fail()
@@ -947,11 +951,16 @@ class Ledger:
   self.connection=self.repair and 'connectionRepair' in cfg
   self.rewindow=self.connection and type(cfg['connectionRepair']) is dict and 'windowApproval' in cfg['connectionRepair']
   self.usertab=self.rewindow and 'userTabRepair' in cfg['connectionRepair']
+  self.local=0
+  if self.usertab and 'localWiringResume' in cfg:
+   v=cfg['localWiringResume']
+   if not exact(v,['sequence','manifest']) or type(v['sequence']) is not int or not 1<=v['sequence']<=3:fail()
+   self.local=v['sequence']
   self.staged=standalone and type(cfg) is dict and 'stagedResume' in cfg
   self.closed=standalone and type(cfg) is dict and 'closedPreflight' in cfg
-  self.standalone=standalone;self.rules=STAGED_OPERATIONS if self.staged else STANDALONE_OPERATIONS if standalone else OPERATIONS;self.imported=20 if self.usertab else 19 if self.connection else 16 if self.readonly else 15 if self.staged else 6 if self.closed else 4 if standalone else 0
-  decision=READONLY_DECISION if self.readonly else STAGED_DECISION if self.staged else STANDALONE_DECISION if standalone else DECISION;stem='readonly-user-tab-repair' if self.usertab else 'readonly-connection-repair' if self.connection else 'readonly-wiring-repair' if self.repair else 'readonly-recovery' if self.readonly else 'staged-resume' if self.staged else 'standalone-successor' if self.closed else 'standalone' if standalone else 'continuation'
-  if not exact(cfg,['path','epoch','binding','decisionHash','expiresAt','now','ownerNonce','original','baseline','legacyBudget','policySource']+(['history'] if standalone else [])+(['closedPreflight'] if self.closed else [])+(['stagedResume'] if self.staged else [])+(['readonlyRecovery'] if self.readonly else [])+(['deadlineRenewal'] if self.renewed else [])+(['firstStageRepair'] if self.repair else [])+(['connectionRepair'] if self.connection else [])) or cfg['decisionHash']!=decision or any(not digest(cfg[k]) for k in ['binding','ownerNonce']) or (not integer(cfg['now']) or (cfg['expiresAt'] is not None if self.staged else not integer(cfg['expiresAt']))) or type(cfg['path']) is not str or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
+  self.standalone=standalone;self.rules=STAGED_OPERATIONS if self.staged else STANDALONE_OPERATIONS if standalone else OPERATIONS;self.imported=23 if self.local else 20 if self.usertab else 19 if self.connection else 16 if self.readonly else 15 if self.staged else 6 if self.closed else 4 if standalone else 0
+  decision=READONLY_DECISION if self.readonly else STAGED_DECISION if self.staged else STANDALONE_DECISION if standalone else DECISION;stem='readonly-local-resume-'+str(self.local) if self.local else 'readonly-user-tab-repair' if self.usertab else 'readonly-connection-repair' if self.connection else 'readonly-wiring-repair' if self.repair else 'readonly-recovery' if self.readonly else 'staged-resume' if self.staged else 'standalone-successor' if self.closed else 'standalone' if standalone else 'continuation'
+  if not exact(cfg,['path','epoch','binding','decisionHash','expiresAt','now','ownerNonce','original','baseline','legacyBudget','policySource']+(['history'] if standalone else [])+(['closedPreflight'] if self.closed else [])+(['stagedResume'] if self.staged else [])+(['readonlyRecovery'] if self.readonly else [])+(['deadlineRenewal'] if self.renewed else [])+(['firstStageRepair'] if self.repair else [])+(['connectionRepair'] if self.connection else [])+(['localWiringResume'] if self.local else [])) or cfg['decisionHash']!=decision or any(not digest(cfg[k]) for k in ['binding','ownerNonce']) or (not integer(cfg['now']) or (cfg['expiresAt'] is not None if self.staged else not integer(cfg['expiresAt']))) or type(cfg['path']) is not str or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
   self.cfg=cfg;self.path=Path(cfg['path']);self.original=cfg['original'];self.child=None;self.current_journal=None
   if not self.path.is_absolute():fail()
   directory(self.path.parent)
@@ -974,6 +983,7 @@ class Ledger:
   if self.renewed:self.validate_deadline_renewal()
   if self.repair:self.validate_first_stage_repair()
   if self.connection:self.validate_connection_repair()
+  if self.local:self.validate_local_resume()
   if script_cleanup:
    reg=record(self.reg);identity=record(self.claim)
    fixed={'path':str(self.path),'epoch':cfg['epoch'],'binding':cfg['binding'],'originalBinding':self.original['binding'],'baselineSha256':cfg['baseline']['sha256'],'ownerHash':sha(cfg['ownerNonce'].encode()),'decisionHash':decision,'legacyBudgetSha256':LEGACY_SOURCE,'policySourceSha256':POLICY_SOURCE,'expiresAt':cfg['expiresAt'],'history':cfg['history']}
@@ -983,6 +993,7 @@ class Ledger:
    if self.renewed:fixed['deadlineRenewal']=cfg['deadlineRenewal']
    if self.repair:fixed['firstStageRepair']=cfg['firstStageRepair']
    if self.connection:fixed['connectionRepair']=cfg['connectionRepair']
+   if self.local:fixed['localWiringResume']=cfg['localWiringResume']
    if not exact(identity,list(fixed)+['w0']) or any(identity[k]!=v for k,v in fixed.items()) or (identity['w0'] is not None if self.staged else not integer(identity['w0']) or not 0<identity['expiresAt']-identity['w0']<=21600000 or day(identity['w0'])!=day(identity['expiresAt']) or cfg['now']<identity['w0']) or not exact(reg,['identity','checkpoint']) or reg['identity']!=identity:fail()
    self.identity=identity;self.current_journal=copy.deepcopy(reg['checkpoint']);self.recovery_current();return
   for p in [self.reg,self.claim,self.journal,self.marker]:
@@ -993,6 +1004,7 @@ class Ledger:
   if (not self.staged and (not 0<end-t<=21600000 or day(t)!=day(end))) or any(x>t for x in self.baseline['preparation']['calls']+(self.history_times if standalone else [])):fail()
   if self.readonly and not self.renewed and (t<READONLY_W0 or end-t<=360000 or day(t)!=day(READONLY_W0)):fail()
   if self.renewed and self.window(t)-t<=360000:fail()
+  if self.local and self.old_current()['spent']!=27:fail()
   self.start_child();self.old_read({'op':'cleanup-inspect'});self.old_current()
   identity={'path':str(self.path),'epoch':cfg['epoch'],'binding':cfg['binding'],'originalBinding':self.original['binding'],'baselineSha256':cfg['baseline']['sha256'],'ownerHash':sha(cfg['ownerNonce'].encode()),'decisionHash':decision,'legacyBudgetSha256':LEGACY_SOURCE,'policySourceSha256':POLICY_SOURCE,'w0':w0,'expiresAt':end}
   if standalone:identity['history']=copy.deepcopy(cfg['history'])
@@ -1002,6 +1014,7 @@ class Ledger:
   if self.renewed:identity['deadlineRenewal']=copy.deepcopy(cfg['deadlineRenewal'])
   if self.repair:identity['firstStageRepair']=copy.deepcopy(cfg['firstStageRepair'])
   if self.connection:identity['connectionRepair']=copy.deepcopy(cfg['connectionRepair'])
+  if self.local:identity['localWiringResume']=copy.deepcopy(cfg['localWiringResume'])
   self.identity=identity
   j={**identity,'w0':w0,'expiresAt':end,'version':1,'day':None if self.staged and (not self.readonly or self.renewed) and (not self.connection or self.rewindow) else day(w0),'deadlineUtc':None if self.staged and (not self.readonly or self.renewed) and (not self.connection or self.rewindow) else timestamp(end,timezone.utc),'deadlineTaipei':None if self.staged and (not self.readonly or self.renewed) and (not self.connection or self.rewindow) else timestamp(end,timezone(timedelta(hours=8))),'state':'ready','spent':0,'events':[],'plan':None,'chargedUpperBoundMs':0,'rpc':{'beganAt':None,'complete':False},'finished':False}
   if self.staged:j['stages']={}
@@ -1253,6 +1266,76 @@ class Ledger:
   authorized=millis(approval['at'])
   if not self.authorization_at<=j['w0']<=millis(receipt['at'])<=authorized<=self.cfg['now']:fail()
   self.authorization_at=authorized;self.history_times.append(event['time'])
+ def validate_local_resume(self):
+  spec=self.cfg['localWiringResume'];m=json.loads(pinned(spec['manifest'],spec['manifest'].get('sha256'),True))
+  if not exact(m,['sequence','approval','anchor','previous']) or type(m['sequence']) is not int or m['sequence']!=self.local:fail()
+  approved=json.loads(pinned(m['approval'],m['approval'].get('sha256'),True))
+  fixed={'source':'direct-human-local-wiring-resume-approval','answer':'同意此接續方案，維持160','importedSpent':50,'limit':160,'maxWindowMs':21600000,'sameTaipeiDay':True,'maxAdditionalLocalSuccessors':2,'firstDurableDebitStartsWindow':True,'newActualOperations':0}
+  if not exact(approved,list(fixed)+['decision','at']) or any(type(approved[k]) is not type(v) or approved[k]!=v for k,v in fixed.items()) or not exact(approved['decision'],['path','sha256']) or approved['decision']['sha256']!=LOCAL_RESUME_DECISION:fail()
+  at=datetime.fromisoformat(approved['at'].replace('Z','+00:00'))
+  if at.tzinfo is None:fail()
+  authorized=int(at.timestamp()*1000)
+  if not self.authorization_at<=authorized<=self.cfg['now']:fail()
+  self.authorization_at=authorized
+  def values(pins,stem):
+   names=['config','journal','claim','stop','registry','drain','checkpoint','trace']
+   if not exact(pins,names):fail()
+   paths={'journal':str(self.path)+'.'+stem+'.json','claim':str(self.path)+'.'+stem+'-claim.json','stop':str(self.path)+'.'+stem+'-stop.json','registry':str(self.old_reg.parent/(sha(json.dumps(self.cfg['epoch'],separators=(',',':')).encode())+'.'+stem+'.json'))}
+   v={}
+   for k,pin in pins.items():
+    if not exact(pin,['path','sha256']) or not digest(pin['sha256']) or k in paths and pin['path']!=paths[k]:fail()
+    v[k]=json.loads(pinned(pin,pin['sha256'],True))
+   old=v['config'];expected=[k for k in self.cfg if k not in ['now','ownerNonce','localWiringResume']]
+   if stem!='readonly-user-tab-repair':expected+=['localWiringResume']
+   if not exact(old,expected) or not digest(old['binding']) or old['binding']==self.cfg['binding'] or any(old[k]!=self.cfg[k] for k in old if k not in ['binding','policySource','localWiringResume']) or old['policySource']['sha256'] not in [USER_TAB_POLICY_SOURCE,POLICY_SOURCE]:fail()
+   pinned(old['policySource'],old['policySource']['sha256'])
+   identity=record(Path(paths['claim']));j=v['journal']
+   if v['claim']!={'value':identity,'sha256':sha(compact(identity).encode())} or v['registry']!={'value':{'identity':identity,'checkpoint':j},'sha256':sha(compact({'identity':identity,'checkpoint':j}).encode())} or record(Path(paths['stop']))!={k:old[k] for k in ['path','epoch','binding']}:fail()
+   for k in ['path','epoch','binding','decisionHash','history','closedPreflight','stagedResume','readonlyRecovery','deadlineRenewal','firstStageRepair','connectionRepair']:
+    if identity.get(k)!=old[k] or j.get(k)!=old[k]:fail()
+   fixed_identity={'path':str(self.path),'epoch':old['epoch'],'binding':old['binding'],'originalBinding':self.original['binding'],'baselineSha256':old['baseline']['sha256'],'decisionHash':READONLY_DECISION,'legacyBudgetSha256':LEGACY_SOURCE,'policySourceSha256':old['policySource']['sha256'],'w0':None,'expiresAt':None,**{k:old[k] for k in ['history','closedPreflight','stagedResume','readonlyRecovery','deadlineRenewal','firstStageRepair','connectionRepair']}}
+   if stem!='readonly-user-tab-repair':fixed_identity['localWiringResume']=old['localWiringResume']
+   if not exact(identity,list(fixed_identity)+['ownerHash']) or any(identity[k]!=v for k,v in fixed_identity.items()) or not exact(j,list(identity)+['version','day','deadlineUtc','deadlineTaipei','state','spent','events','plan','chargedUpperBoundMs','rpc','finished','stages']) or any(j[k]!=v for k,v in identity.items() if k not in ['w0','expiresAt']) or type(j['version']) is not int or j['version']!=1:fail()
+   if stem!='readonly-user-tab-repair' and old['policySource']['sha256']!=POLICY_SOURCE:fail()
+   if identity.get('policySourceSha256')!=old['policySource']['sha256'] or not digest(identity.get('ownerHash')) or j.get('state')!='stopped' or j.get('finished') is not True or j.get('plan') is not None or j.get('stages')!={} or j.get('chargedUpperBoundMs')!=0 or j.get('rpc')!={'beganAt':None,'complete':False}:fail()
+   d=v['drain'].get('drain') if type(v['drain']) is dict else None
+   if not exact(d,['source','stopRequested','stopAcknowledged','ordinaryScopeClosed','ownedScope','remoteExecutionSettled','trialAccepted','rollbackComplete']) or d!={'source':'canonical-continuation-holder','stopRequested':True,'stopAcknowledged':True,'ordinaryScopeClosed':True,'ownedScope':{'serial':1,'state':'SETTLED'},'remoteExecutionSettled':False,'trialAccepted':False,'rollbackComplete':False}:fail()
+   return v,old,j
+  anchor,old,j=values(m['anchor'],'readonly-user-tab-repair')
+  if type(j.get('spent')) is not int or j['spent']!=3 or type(j.get('events')) is not list or len(j['events'])!=3 or not integer(j.get('w0')) or j['expiresAt']!=self.window(j['w0']) or j['day']!=day(j['w0']) or j['deadlineUtc']!=timestamp(j['expiresAt'],timezone.utc) or j['deadlineTaipei']!=timestamp(j['expiresAt'],timezone(timedelta(hours=8))):fail()
+  last=j['w0'];trace=[]
+  for n,e in zip([3,4,5],j['events']):
+   if not exact(e,['operation','time','outcome']) or e['outcome']!='UNKNOWN' or not integer(e['time']) or not last<=e['time']<j['expiresAt'] or e['time']>authorized or normalize(e['operation'],True,True,True,True)!='N:publisher-'+str(n) or e['operation']['target']!='original-settings' or e['operation']['operation']!='snapshot':fail()
+   last=e['time'];self.history_times.append(last)
+   trace += [{'operationId':e['operation']['id'],'stage':stage,'errorCategory':'NONE'} for stage in ['entered','api-returned']]
+  if anchor['trace']!=trace:fail()
+  cp=anchor['checkpoint'];failed=anchor['drain'];report={'phase':'stopped','bindings':2,'importedSpent':47,'preparationReads':3,'partitionReads':{'publisher':3,'caller-oauth':0,'thin-trigger':0},'w0':j['w0'],'expiresAt':j['expiresAt'],'spent':50,'trialAccepted':False,'rollbackComplete':False,'remoteExecutionSettled':False}
+  if not exact(cp,['source','at','result','error','report','drain']) or cp['source']!='actual-user-tab-claim-resumed-first-read' or cp['error'] is not None or cp['drain'] is not None or cp['report']!={**report,'phase':'preflight'} or type(cp['result']) is not dict or cp['result'].get('matchedPage') is not True or cp['result'].get('source')!='fixed-original-settings-safe-projection':fail()
+  if not exact(failed,['source','at','result','error','report','drain']) or failed['source']!='actual-fixed-settings-actions-read' or failed['result'] is not None or failed['error']!='SETTINGS_ACTIONS_STOPPED' or failed['report']!=report:fail()
+  def instant(text):
+   t=datetime.fromisoformat(text.replace('Z','+00:00'))
+   if t.tzinfo is None:fail()
+   return int(t.timestamp()*1000)
+  if not last<=instant(cp['at'])<=instant(failed['at'])<=authorized:fail()
+  if self.local==1:
+   if m['previous'] is not None:fail()
+  else:
+   previous,previous_cfg,prior=values(m['previous'],'readonly-local-resume-'+str(self.local-1))
+   ps=previous_cfg.get('localWiringResume')
+   if not exact(ps,['sequence','manifest']) or ps['sequence']!=self.local-1:fail()
+   pm=json.loads(pinned(ps['manifest'],ps['manifest']['sha256'],True))
+   if not exact(pm,['sequence','approval','anchor','previous']) or pm.get('sequence')!=self.local-1 or (self.local==2 and pm['previous'] is not None) or pm.get('anchor')!=m['anchor'] or pm.get('approval')!=m['approval'] or prior.get('spent')!=0 or prior.get('events')!=[] or prior.get('w0') is not None or prior.get('expiresAt') is not None or previous['trace']!=[]:fail()
+   proof=previous['checkpoint']
+   if not exact(proof,['source','spent','newDebits','remoteIOEntered','previousCheckpointSha256']) or proof!={'source':'local-predebit-stop-proof','spent':50,'newDebits':0,'remoteIOEntered':False,'previousCheckpointSha256':m['anchor']['checkpoint']['sha256']}:fail()
+   if self.local==3:
+    pm2=pm.get('previous')
+    if pm2 is None:fail()
+    prior2,old2,j2=values(pm2,'readonly-local-resume-1')
+    first_spec=old2.get('localWiringResume');first_manifest=json.loads(pinned(first_spec['manifest'],first_spec['manifest']['sha256'],True)) if exact(first_spec,['sequence','manifest']) and first_spec['sequence']==1 else None
+    if not exact(first_manifest,['sequence','approval','anchor','previous']) or first_manifest['sequence']!=1 or first_manifest['previous'] is not None or first_manifest['approval']!=m['approval'] or first_manifest['anchor']!=m['anchor']:fail()
+    if j2.get('spent')!=0 or j2.get('events')!=[] or j2.get('w0') is not None or prior2['trace']!=[] or prior2['checkpoint']!=proof:fail()
+  # Only the actually verified50 checkpoint can currently be adopted. A later
+  # debit/remote step is not eligible merely because a caller labels it local.
  def window(self,t):
   if self.connection and not self.rewindow:return CONNECTION_EXPIRY
   # Last millisecond of the same Taipei calendar day.
@@ -1340,6 +1423,7 @@ class Ledger:
   if self.renewed:self.validate_deadline_renewal()
   if self.repair:self.validate_first_stage_repair()
   if self.connection:self.validate_connection_repair()
+  if self.local:self.validate_local_resume()
   j=json.loads(rawfile(self.journal))
   if j!=self.current_journal or record(self.claim)!=self.identity or record(self.reg)!={'identity':self.identity,'checkpoint':j}:fail()
   return j,old
@@ -1354,6 +1438,7 @@ class Ledger:
   if self.renewed:self.validate_deadline_renewal()
   if self.repair:self.validate_first_stage_repair()
   if self.connection:self.validate_connection_repair()
+  if self.local:self.validate_local_resume()
   reg=record(self.reg);identity=record(self.claim)
   if identity!=self.identity or not exact(reg,['identity','checkpoint']) or reg['identity']!=identity or reg['checkpoint']!=self.current_journal:fail()
   j=reg['checkpoint'];fields=list(identity)+['version','day','deadlineUtc','deadlineTaipei','state','spent','events','plan','chargedUpperBoundMs','rpc','finished']+(['stages'] if self.staged else [])
@@ -1366,7 +1451,7 @@ class Ledger:
    elif not integer(j['w0']) or j['expiresAt']!=self.window(j['w0']) or j['day']!=day(j['w0']) or j['deadlineUtc']!=timestamp(j['expiresAt'],timezone.utc) or j['deadlineTaipei']!=timestamp(j['expiresAt'],timezone(timedelta(hours=8))):fail()
    self.validate_stages(j)
   if not exact(j['rpc'],['beganAt','complete']) or type(j['rpc']['complete']) is not bool or (j['rpc']['beganAt'] is not None and not integer(j['rpc']['beganAt'])) or not integer(j['chargedUpperBoundMs']) or j['chargedUpperBoundMs'] not in [0,360000]:fail()
-  mapped=None if j['plan'] is None else complete_map(j['plan'],True,self.closed,self.staged,self.readonly,self.connection,self.usertab)
+  mapped=None if j['plan'] is None else complete_map(j['plan'],True,self.closed,self.staged,self.readonly,self.connection,self.usertab,self.local)
   seen=set();ids=set();counts={k:0 for k in (STAGED_LIMITS if self.staged else STANDALONE_LIMITS)};last=j['w0'];rpc=None;cleanup_started=False;js=[]
   for e in j['events']:
    if not exact(e,['operation','time','outcome']) or e['outcome']!='UNKNOWN' or not integer(e['time']) or (last is not None and e['time']<last):fail()
@@ -1398,7 +1483,7 @@ class Ledger:
   except OSError:return True
  def stopped(self):
   if self.script_cleanup:return
-  request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged,self.readonly,self.repair,self.connection,self.usertab)
+  request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged,self.readonly,self.repair,self.connection,self.usertab,self.local)
   j,_=self.current();j['state']='stopped';self.persist(j)
  def times(self,j,old,t):
   if not integer(t) or self.connection and t<self.authorization_at:fail()
@@ -1414,9 +1499,10 @@ class Ledger:
   if key.startswith(('I:','J:')) or key in ['C:'+v for v in C] or (key=='H:wrapper-compatibility-rpc')!=rpc:fail()
   used=self.used_operations(j)
   if self.readonly and not self.usertab and j['spent']==0 and (key!='N:publisher-2' or op['target']!='original-settings' or op['operation']!='snapshot'):fail()
-  if self.usertab and (key=='N:publisher-2' or j['spent']<3 and (key!='N:publisher-'+str(3+j['spent']) or op['target']!='original-settings' or op['operation']!='snapshot')):fail()
-  if self.readonly and op['bucket']=='N' and sum(e['operation']['bucket']=='N' for e in j['events'])>=(11 if self.usertab else 12 if self.connection else 15):fail()
-  if self.connection and op['bucket']=='N' and op['stage']=='publisher' and sum(e['operation']['bucket']=='N' and e['operation']['stage']=='publisher' for e in j['events'])>=(7 if self.usertab else 8):fail()
+  if self.local and op['bucket']=='N' and op['stage']=='publisher' and int(op['alias'].split('-')[-1])<6:fail()
+  if self.usertab and not self.local and (key=='N:publisher-2' or j['spent']<3 and (key!='N:publisher-'+str(3+j['spent']) or op['target']!='original-settings' or op['operation']!='snapshot')):fail()
+  if self.readonly and op['bucket']=='N' and sum(e['operation']['bucket']=='N' for e in j['events'])>=(8 if self.local else 11 if self.usertab else 12 if self.connection else 15):fail()
+  if self.connection and op['bucket']=='N' and op['stage']=='publisher' and sum(e['operation']['bucket']=='N' and e['operation']['stage']=='publisher' for e in j['events'])>=(4 if self.local else 7 if self.usertab else 8):fail()
   if key in used or any(v['id']==op['id'] for v in used.values()):fail()
   # P/N preflight is the sole initial admission. A complete map adds no remote
   # authorization; the JS driver separately verifies external prerequisites.
@@ -1425,7 +1511,7 @@ class Ledger:
     if op['bucket']!='N' and not any(op==v for stage in j['stages'].values() for v in stage['operations']):fail()
    elif key not in ['P:caller-bind','P:publisher-bind'] and not (op['bucket']=='N' and op['stage']=='research'):fail()
   else:
-   mapped=complete_map(j['plan'],self.standalone,self.closed,self.staged,self.readonly,self.connection,self.usertab)
+   mapped=complete_map(j['plan'],self.standalone,self.closed,self.staged,self.readonly,self.connection,self.usertab,self.local)
    if mapped.get(key)!=op:fail()
   if op['bucket']=='N' and not self.staged:
    if any('P:'+p not in used for p in (['caller-bind'] if self.closed and op['target']=='publisher-executions' else ['caller-bind','publisher-bind'])):fail()
@@ -1464,7 +1550,7 @@ class Ledger:
    # Presence is a negative veto, including a partial marker. Never repair or
    # erase ambiguous STOP to obtain cleanup authorization; original C/I claims
    # and source/checkpoint validation above are the cleanup authority.
-   if not self.veto():request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged,self.readonly,self.repair,self.connection,self.usertab)
+   if not self.veto():request_stop({k:self.cfg[k] for k in ['path','epoch','binding']},self.standalone,self.closed,self.staged,self.readonly,self.repair,self.connection,self.usertab,self.local)
    j['state']='stopped';self.persist(j)
   self.old_read({**original,'op':'debit'});self.old_current()
   return self.view(0)
@@ -1513,10 +1599,10 @@ class Ledger:
    if type(q['futureCaps']) is not dict or q['futureCaps']!=future or any(type(v) is not int for v in q['futureCaps'].values()):fail()
    # Full fixed98 + all16 N + original C2 + unused2 stays reserved. I/J
    # are inside98, never deducted a second time or loaned to stage work.
-   if len(self.rules)+(11 if self.usertab else 12 if self.connection else 15 if self.readonly else 16)+(47 if self.usertab else 46 if self.connection else 43 if self.readonly else 42)+2+2!=160:fail()
+   if len(self.rules)+(8 if self.local else 11 if self.usertab else 12 if self.connection else 15 if self.readonly else 16)+(50 if self.local else 47 if self.usertab else 46 if self.connection else 43 if self.readonly else 42)+2+2!=160:fail()
    j['stages'][name]={'operations':q['operations'],'futureCaps':q['futureCaps']};self.persist(j);return self.view(0)
   if op=='plan-ready' and exact(q,['op','now','operations']):
-   self.times(j,old,q['now']);mapped=complete_map(q['operations'],self.standalone,self.closed,self.staged,self.readonly,self.connection,self.usertab)
+   self.times(j,old,q['now']);mapped=complete_map(q['operations'],self.standalone,self.closed,self.staged,self.readonly,self.connection,self.usertab,self.local)
    if j['plan'] is not None or self.veto() or j['state']!='ready' or q['now']>=self.live_window(j,q['now']) or (j['day'] is not None and day(q['now'])!=j['day']) or any(mapped.get(k)!=v for k,v in self.used_operations(j).items()) or self.staged and any(mapped.get(normalize(o,True,True,True))!=o for v in j['stages'].values() for o in v['operations']):fail()
    j['plan']=q['operations'];self.persist(j);return self.view(0)
   if op=='rpc-finish' and exact(q,['op','now']):
@@ -1557,6 +1643,8 @@ try:
  if sys.argv[1:]==['--standalone-policy']:emit(STANDALONE_OPERATIONS);sys.exit(0)
  line=sys.stdin.buffer.readline(100001)
  if len(line)>100000:fail()
+ if len(sys.argv)==2 and re.fullmatch('--readonly-local-resume-[1-3]-request-stop',sys.argv[1]):
+  request_stop(json.loads(line),True,True,True,True,True,True,True,int(sys.argv[1].split('-')[5]));emit({'ok':True,'stopRequested':True});sys.exit(0)
  if sys.argv[1:] in [['--request-stop'],['--standalone-request-stop'],['--standalone-successor-request-stop'],['--staged-resume-request-stop'],['--readonly-recovery-request-stop'],['--readonly-wiring-repair-request-stop'],['--readonly-connection-repair-request-stop'],['--readonly-user-tab-repair-request-stop']]:
   usertab=sys.argv[1]=='--readonly-user-tab-repair-request-stop';connection=usertab or sys.argv[1]=='--readonly-connection-repair-request-stop';repair=connection or sys.argv[1]=='--readonly-wiring-repair-request-stop';request_stop(json.loads(line),sys.argv[1]!='--request-stop',repair or sys.argv[1] in ['--standalone-successor-request-stop','--staged-resume-request-stop','--readonly-recovery-request-stop'],repair or sys.argv[1] in ['--staged-resume-request-stop','--readonly-recovery-request-stop'],repair or sys.argv[1]=='--readonly-recovery-request-stop',repair,connection,usertab);emit({'ok':True,'stopRequested':True});sys.exit(0)
  if sys.argv[1:] not in [['--inherited-lock'],['--standalone-inherited-lock'],['--standalone-cleanup-inherited-lock']]:fail()

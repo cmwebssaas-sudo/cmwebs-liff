@@ -2406,3 +2406,38 @@ ordinary journal corruption. The original-I lane retains its own STOP target.
 Independent public source review0 actionable P1/P2 and three separate focused
 synthetic review cases PASS. Exact-head CI and actual user-tab mapping remain
 separate gates; no new native IO has occurred.
+
+## 2026-10-19 local wiring successor candidate
+
+GPT-6.1 Sol/high. The explicitly approved successor imports the verified50
+checkpoint, keeps every old UNKNOWN/claim/STOP and160 total, and starts its
+new bounded same-Taipei-day window at first durable debit. Native allowance
+is8 (publisher4/caller2/thin2);50+98+N8+C2+unused2 remains160. It never
+replays the imported preparation prefix or reopens an old claim.
+
+Three permanent singleton slots cover the new owner plus at most two local
+predebit repairs. This implementation accepts only the actually verified50
+checkpoint: a subsequent debit or remote step cannot be labelled local and
+carried forward. Additional later checkpoints need separately tested proof
+adapters before they could qualify under the approved scope; none is inferred.
+An immutable successful checkpoint, exact stopped canonical registry/claim,
+complete returned-IO trace and actual terminal drain are all required.
+
+Sixteen targeted regressions pass, including real stop, original-C/I and
+independent J2 after damaged ordinary journal/expiry; full suite/CI and
+independent review follow. A synthetic chain fixture initially reused an old
+binding and was correctly rejected; unique fixture bindings repaired that test.
+Private stable ESM dispatch fixes a reproduced cross-cell callback binding
+error; its verification is not Google authority or trial acceptance.
+No new actual51, credential, grant, RPC, Production data/config/deployment, flag
+or T0 is claimed. Full actual map, privacy/freshness/runtime/performance/device
+and observation gates remain. Undeployed rollback returns to70722bd; all used
+source copies and failed attempts remain immutable.
+
+Final local verification: full2654/2654 PASS on supported Node24.19, zero
+fail/cancel/skip; validate72 backend/40 endpoints/static cache and diff PASS.
+Independent review identified an original C/I counter-tail loophole; RED
+reproduced it and the ordinary constructor now rejects changed original spent
+before child/claim. Both C and I negative regressions pass; independent review
+reports no remaining P1/P2. The exact-head CI and private launcher remain
+separate prerequisites; no actual new operation or launch is implied.
