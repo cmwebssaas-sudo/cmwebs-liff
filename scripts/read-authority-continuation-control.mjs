@@ -102,8 +102,8 @@ export function createAuthorityStagedResumeControl(input){return createControl(i
 export function createAuthorityReadonlyRecoveryControl(input){return createControl(input,true,true,true);}
 function createControl(input,standalone,staged=false,readonly=false){
  try{
-  const o=options(input),config=data(o.config),closed=standalone&&Object.hasOwn(config,'closedPreflight'),now=o.now??Date.now,pause=o.pause??delay,guard=o.guard;
-  if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[]),...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[]),...(readonly?['readonlyRecovery']:[])])||!isAbsolute(config.path)||config.decisionHash!==(readonly?READONLY_RECOVERY_DECISION_HASH:staged?STAGED_RESUME_DECISION_HASH:standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||staged&&(!closed||config.expiresAt!==null||typeof o.assertStage!=='function')||!staged&&Object.hasOwn(o,'assertStage')||typeof now!=='function'||typeof pause!=='function')stop();
+  const o=options(input),config=data(o.config),closed=standalone&&Object.hasOwn(config,'closedPreflight'),renewed=readonly&&Object.hasOwn(config,'deadlineRenewal'),now=o.now??Date.now,pause=o.pause??delay,guard=o.guard;
+  if(!exact(config,['path','epoch','binding','decisionHash','expiresAt','original','baseline','legacyBudget','policySource',...(standalone?['history']:[]),...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[]),...(readonly?['readonlyRecovery']:[]),...(renewed?['deadlineRenewal']:[])])||!isAbsolute(config.path)||config.decisionHash!==(readonly?READONLY_RECOVERY_DECISION_HASH:staged?STAGED_RESUME_DECISION_HASH:standalone?STANDALONE_TRIAL_DECISION_HASH:BOUNDED_CONTINUATION_DECISION_HASH)||staged&&(!closed||config.expiresAt!==null||typeof o.assertStage!=='function')||!staged&&Object.hasOwn(o,'assertStage')||typeof now!=='function'||typeof pause!=='function')stop();
   // Only this module's consumable move can supply the narrow predecessor lane.
   // Full owners and serialized receipts are rejected by options/brand checks.
   if(readonly&&Object.hasOwn(o,'predecessorHandoff'))stop();
@@ -165,7 +165,7 @@ function createControl(input,standalone,staged=false,readonly=false){
     try{const value=await task;try{alive(ordinary);}catch(_){if(closed&&q.operation)stage(q.operation,'post-return-guard-rejected');stop();}return value;}finally{entered.delete(task);}
    };
    const cap=Object.freeze({decisionHash:config.decisionHash,
-    identity:Object.freeze({epoch:config.epoch,binding:config.binding,decisionHash:config.decisionHash,expiresAt:config.expiresAt,...(closed?{closedPreflight:config.closedPreflight}:{} ),...(staged?{stagedResume:config.stagedResume}:{}),...(readonly?{readonlyRecovery:config.readonlyRecovery}:{})}),
+    identity:Object.freeze({epoch:config.epoch,binding:config.binding,decisionHash:config.decisionHash,expiresAt:config.expiresAt,...(closed?{closedPreflight:config.closedPreflight}:{} ),...(staged?{stagedResume:config.stagedResume}:{}),...(readonly?{readonlyRecovery:config.readonlyRecovery}:{}),...(renewed?{deadlineRenewal:config.deadlineRenewal}:{})}),
     inspect:()=>tracked(()=>exchange({op:'inspect'})),
     externalRead:(io,descriptor)=>{let operation;try{operation=data(descriptor);}catch(_){return tracked(async()=>stop());}return tracked(()=>exclusive(()=>run({op:'debit',operation},io,true)));},
     ...(staged?{completeStage:proof=>{let pinned;try{pinned=data(proof);if(!exact(pinned,['stage','operations','futureCaps']))stop();}catch(_){return tracked(async()=>stop());}return tracked(()=>exclusive(async()=>{assertStage(pinned);return exchange({op:'stage-ready',...pinned,now:time()},true);}));}}:{}),
@@ -184,7 +184,7 @@ function createControl(input,standalone,staged=false,readonly=false){
     fd=openSync(config.path+'.lock',constants.O_RDWR|constants.O_NOFOLLOW);const s=fstatSync(fd),named=lstatSync(config.path+'.lock');
     if(!s.isFile()||s.uid!==userInfo().uid||(s.mode&0o7777)!==0o600||s.nlink!==1||s.size!==0||s.ino!==named.ino||s.dev!==named.dev)stop();
     child=spawn('python3',[source,standalone?'--standalone-inherited-lock':'--inherited-lock'],{stdio:['pipe','pipe','pipe',fd],env});p=protocol(child);
-    const ready=observed(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;owned.initial=true;if(ready.state!=='ready'||(readonly?ready.w0!==READONLY_RECOVERY_WINDOW.w0||ready.expiresAt!==READONLY_RECOVERY_WINDOW.expiresAt||t>=ready.expiresAt||ready.spent!==43:staged?ready.w0!==null||ready.expiresAt!==null:closed?ready.w0>t||ready.expiresAt!==config.expiresAt:ready.w0!==t||ready.expiresAt!==config.expiresAt)||(standalone&&ready.spent<31))stop();alive(true);
+    const ready=observed(await p.send({...config,now:t,ownerNonce:nonce}));initial=true;owned.initial=true;if(ready.state!=='ready'||readonly&&ready.spent!==43||(readonly&&!renewed?ready.w0!==READONLY_RECOVERY_WINDOW.w0||ready.expiresAt!==READONLY_RECOVERY_WINDOW.expiresAt||t>=ready.expiresAt||ready.spent!==43:staged?ready.w0!==null||ready.expiresAt!==null:closed?ready.w0>t||ready.expiresAt!==config.expiresAt:ready.w0!==t||ready.expiresAt!==config.expiresAt)||(standalone&&ready.spent<31))stop();alive(true);
     result=await callback(cap);if(pending||failed||veto())stop();
     const ending=await exchange({op:'inspect'},true);
     // A returned callback/transport value never substitutes for postchecks.

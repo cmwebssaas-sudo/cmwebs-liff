@@ -760,3 +760,27 @@ require their branded predecessor handoff. Static capability expiry remains
 null while inspection returns the inherited numeric W0/deadline. Every stage,
 full dispatch map, privacy, runtime, performance and device gate still applies.
 These local mechanisms are not actual Google acceptance or rollout readiness.
+
+
+## October18 explicit deadline-only renewal
+
+A separate pinned approval may renew only the still-unclaimed named readonly
+recovery window. It does not create another segment, refund any of the43
+imported operations, change the fixed first publisher2 snapshot, or relax the
+160-operation limit and reserved cleanup. Existing modes without this approval
+retain their inherited deadline and reject an expired window.
+
+The optional deadlineRenewal pin is part of the immutable capability identity
+and durable singleton claim. Its exact owner approval, prior journal/approval
+pins, original window, six-hour maximum, same-day cap and single-claim rule are
+rechecked before admission and independent script cleanup. Construction and
+inspection keep W0 and expiry null. The first actual debit atomically persists
+W0, UNKNOWN and the earlier of W0+6h or that UTC+8 day's final millisecond.
+Inspection, wait, phase registration and further IO cannot slide that deadline.
+Insufficient cleanup time, approval drift or an existing claim denies launch.
+
+The driver binds the actual inspected numeric window and the same renewal pin;
+raw identity expiry stays null. First-read failure still stops the sole owner,
+and original C2/I17, separate J2, all release/privacy, runtime, performance and
+device checks remain mandatory. This local policy update is not proof of real
+Google execution, actual fit, deployment, observation start or rollout readiness.

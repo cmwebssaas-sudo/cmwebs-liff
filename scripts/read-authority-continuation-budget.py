@@ -34,9 +34,10 @@ DECISION='f227ebbf2ca791d521e0008a639c2fa4ecb31e5be793478c45ffee47b420c92d'
 LEGACY_SOURCE='7f04fc0f0e1f1968029fc666297bf0ca83d871e31c310117ec94ebec3c050e18'
 HISTORICAL_POLICY_SOURCE='06112c8340a04b763d70580883e4bc2b4ddb5fb6d18a22eb577e78ef10fd119f'
 PREDECESSOR_POLICY_SOURCE='49014902c98921ca18b4a09895713be0decd631bebefca661157c3a542a7e01f'
-POLICY_SOURCE='3c920e6027824b3581cdc9101b081f8fbd92ce35694e008034faaa579abbc06c'
+POLICY_SOURCE='17313472ea90e2e323c0deb53312a52345a23436813ce80be6354bd6c5662132'
 CLOSED_POLICY_SOURCE='3a30a2ad1a93ef2cba5db552152cc909df9bddb597eb0cc7afddc571abc9aec8'
 READONLY_DECISION='ccb1f0d40fe93df36d18f687da256287b1e3980b9397b58c31d6c75c6c6b8b60'
+DEADLINE_DECISION='91b6c8f359fcbe0a8e72804ace101ce39cd063b80609a9c2caca4f8f36cfa7c4'
 READONLY_W0=1792142820041
 READONLY_EXPIRY=1792164420041
 STAGED_POLICY_SOURCE='e711e68679b2010a1079198c0bc028f4b3a385cda2d091d37c4d2f3bbc9e9434'
@@ -931,11 +932,12 @@ class Ledger:
    if not standalone or type(cfg) is not dict or not integer(cfg.get('minimumNewSpent')) or not 0<=cfg['minimumNewSpent']<=127:fail()
    cfg=copy.deepcopy(cfg);self.minimum_new_spent=cfg.pop('minimumNewSpent')
   self.readonly=standalone and type(cfg) is dict and 'readonlyRecovery' in cfg
+  self.renewed=self.readonly and 'deadlineRenewal' in cfg
   self.staged=standalone and type(cfg) is dict and 'stagedResume' in cfg
   self.closed=standalone and type(cfg) is dict and 'closedPreflight' in cfg
   self.standalone=standalone;self.rules=STAGED_OPERATIONS if self.staged else STANDALONE_OPERATIONS if standalone else OPERATIONS;self.imported=16 if self.readonly else 15 if self.staged else 6 if self.closed else 4 if standalone else 0
   decision=READONLY_DECISION if self.readonly else STAGED_DECISION if self.staged else STANDALONE_DECISION if standalone else DECISION;stem='readonly-recovery' if self.readonly else 'staged-resume' if self.staged else 'standalone-successor' if self.closed else 'standalone' if standalone else 'continuation'
-  if not exact(cfg,['path','epoch','binding','decisionHash','expiresAt','now','ownerNonce','original','baseline','legacyBudget','policySource']+(['history'] if standalone else [])+(['closedPreflight'] if self.closed else [])+(['stagedResume'] if self.staged else [])+(['readonlyRecovery'] if self.readonly else [])) or cfg['decisionHash']!=decision or any(not digest(cfg[k]) for k in ['binding','ownerNonce']) or (not integer(cfg['now']) or (cfg['expiresAt'] is not None if self.staged else not integer(cfg['expiresAt']))) or type(cfg['path']) is not str or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
+  if not exact(cfg,['path','epoch','binding','decisionHash','expiresAt','now','ownerNonce','original','baseline','legacyBudget','policySource']+(['history'] if standalone else [])+(['closedPreflight'] if self.closed else [])+(['stagedResume'] if self.staged else [])+(['readonlyRecovery'] if self.readonly else [])+(['deadlineRenewal'] if self.renewed else [])) or cfg['decisionHash']!=decision or any(not digest(cfg[k]) for k in ['binding','ownerNonce']) or (not integer(cfg['now']) or (cfg['expiresAt'] is not None if self.staged else not integer(cfg['expiresAt']))) or type(cfg['path']) is not str or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None:fail()
   self.cfg=cfg;self.path=Path(cfg['path']);self.original=cfg['original'];self.child=None;self.current_journal=None
   if not self.path.is_absolute():fail()
   directory(self.path.parent)
@@ -955,29 +957,33 @@ class Ledger:
   if self.closed:self.validate_closed_preflight()
   if self.staged:self.validate_staged_predecessor()
   if self.readonly:self.validate_readonly_predecessor()
+  if self.renewed:self.validate_deadline_renewal()
   if script_cleanup:
    reg=record(self.reg);identity=record(self.claim)
    fixed={'path':str(self.path),'epoch':cfg['epoch'],'binding':cfg['binding'],'originalBinding':self.original['binding'],'baselineSha256':cfg['baseline']['sha256'],'ownerHash':sha(cfg['ownerNonce'].encode()),'decisionHash':decision,'legacyBudgetSha256':LEGACY_SOURCE,'policySourceSha256':POLICY_SOURCE,'expiresAt':cfg['expiresAt'],'history':cfg['history']}
    if self.closed:fixed['closedPreflight']=cfg['closedPreflight']
    if self.staged:fixed['stagedResume']=cfg['stagedResume']
    if self.readonly:fixed['readonlyRecovery']=cfg['readonlyRecovery']
+   if self.renewed:fixed['deadlineRenewal']=cfg['deadlineRenewal']
    if not exact(identity,list(fixed)+['w0']) or any(identity[k]!=v for k,v in fixed.items()) or (identity['w0'] is not None if self.staged else not integer(identity['w0']) or not 0<identity['expiresAt']-identity['w0']<=21600000 or day(identity['w0'])!=day(identity['expiresAt']) or cfg['now']<identity['w0']) or not exact(reg,['identity','checkpoint']) or reg['identity']!=identity:fail()
    self.identity=identity;self.current_journal=copy.deepcopy(reg['checkpoint']);self.recovery_current();return
   for p in [self.reg,self.claim,self.journal,self.marker]:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
-  t=cfg['now'];end=READONLY_EXPIRY if self.readonly else cfg['expiresAt'];w0=READONLY_W0 if self.readonly else None if self.staged else self.predecessor['w0'] if self.closed else t
+  t=cfg['now'];end=READONLY_EXPIRY if self.readonly and not self.renewed else cfg['expiresAt'];w0=READONLY_W0 if self.readonly and not self.renewed else None if self.staged else self.predecessor['w0'] if self.closed else t
   if self.closed and not self.staged and (end!=self.predecessor['expiresAt'] or t>=end or self.old_current()['spent']!=27):fail()
   if (not self.staged and (not 0<end-t<=21600000 or day(t)!=day(end))) or any(x>t for x in self.baseline['preparation']['calls']+(self.history_times if standalone else [])):fail()
-  if self.readonly and (t<READONLY_W0 or end-t<=360000 or day(t)!=day(READONLY_W0)):fail()
+  if self.readonly and not self.renewed and (t<READONLY_W0 or end-t<=360000 or day(t)!=day(READONLY_W0)):fail()
+  if self.renewed and self.window(t)-t<=360000:fail()
   self.start_child();self.old_read({'op':'cleanup-inspect'});self.old_current()
   identity={'path':str(self.path),'epoch':cfg['epoch'],'binding':cfg['binding'],'originalBinding':self.original['binding'],'baselineSha256':cfg['baseline']['sha256'],'ownerHash':sha(cfg['ownerNonce'].encode()),'decisionHash':decision,'legacyBudgetSha256':LEGACY_SOURCE,'policySourceSha256':POLICY_SOURCE,'w0':w0,'expiresAt':end}
   if standalone:identity['history']=copy.deepcopy(cfg['history'])
   if self.closed:identity['closedPreflight']=copy.deepcopy(cfg['closedPreflight'])
   if self.staged:identity['stagedResume']=copy.deepcopy(cfg['stagedResume'])
   if self.readonly:identity.update({'readonlyRecovery':copy.deepcopy(cfg['readonlyRecovery']),'w0':None,'expiresAt':None})
+  if self.renewed:identity['deadlineRenewal']=copy.deepcopy(cfg['deadlineRenewal'])
   self.identity=identity
-  j={**identity,'w0':w0,'expiresAt':end,'version':1,'day':None if self.staged and not self.readonly else day(w0),'deadlineUtc':None if self.staged and not self.readonly else timestamp(end,timezone.utc),'deadlineTaipei':None if self.staged and not self.readonly else timestamp(end,timezone(timedelta(hours=8))),'state':'ready','spent':0,'events':[],'plan':None,'chargedUpperBoundMs':0,'rpc':{'beganAt':None,'complete':False},'finished':False}
+  j={**identity,'w0':w0,'expiresAt':end,'version':1,'day':None if self.staged and (not self.readonly or self.renewed) else day(w0),'deadlineUtc':None if self.staged and (not self.readonly or self.renewed) else timestamp(end,timezone.utc),'deadlineTaipei':None if self.staged and (not self.readonly or self.renewed) else timestamp(end,timezone(timedelta(hours=8))),'state':'ready','spent':0,'events':[],'plan':None,'chargedUpperBoundMs':0,'rpc':{'beganAt':None,'complete':False},'finished':False}
   if self.staged:j['stages']={}
   # Any interrupted creation consumes the sole segment; retry cannot recreate it.
   save_record(self.reg,{'identity':identity,'checkpoint':None},True)
@@ -1103,6 +1109,10 @@ class Ledger:
   event=j['events'][0]
   if not exact(event,['operation','time','outcome']) or event['outcome']!='UNKNOWN' or event['time']!=READONLY_W0 or not integer(event['time']) or normalize(event['operation'],True,True,True)!='N:publisher-1' or event['operation']['target']!='original-settings' or event['operation']['operation']!='snapshot' or any(t>event['time'] for t in self.history_times) or event['time']>self.cfg['now']:fail()
   self.history_times += [event['time']];self.readonly_predecessor=j
+ def validate_deadline_renewal(self):
+  spec=self.cfg['deadlineRenewal'];approval=json.loads(pinned(spec,spec.get('sha256'),True))
+  expected={'decisionHash':DEADLINE_DECISION,'ownerAnswer':'同意只更新期限，其餘不變','importedSpent':43,'limit':160,'predecessorSha256':self.cfg['readonlyRecovery']['journal']['sha256'],'priorApprovalSha256':self.cfg['readonlyRecovery']['approval']['sha256'],'priorW0':READONLY_W0,'priorExpiresAt':READONLY_EXPIRY,'maxWindowMs':21600000,'sameTaipeiDay':True,'singleClaim':True}
+  if not exact(approval,list(expected)) or any(type(approval[k]) is not type(v) or approval[k]!=v for k,v in expected.items()):fail()
  def window(self,t):
   # Last millisecond of the same Taipei calendar day.
   end=min(t+21600000,((t+28800000)//86400000+1)*86400000-28800000-1)
@@ -1186,6 +1196,7 @@ class Ledger:
   if self.closed:self.validate_closed_preflight()
   if self.staged:self.validate_staged_predecessor()
   if self.readonly:self.validate_readonly_predecessor()
+  if self.renewed:self.validate_deadline_renewal()
   j=json.loads(rawfile(self.journal))
   if j!=self.current_journal or record(self.claim)!=self.identity or record(self.reg)!={'identity':self.identity,'checkpoint':j}:fail()
   return j,old
@@ -1197,12 +1208,13 @@ class Ledger:
   if self.closed:self.validate_closed_preflight()
   if self.staged:self.validate_staged_predecessor()
   if self.readonly:self.validate_readonly_predecessor()
+  if self.renewed:self.validate_deadline_renewal()
   reg=record(self.reg);identity=record(self.claim)
   if identity!=self.identity or not exact(reg,['identity','checkpoint']) or reg['identity']!=identity or reg['checkpoint']!=self.current_journal:fail()
   j=reg['checkpoint'];fields=list(identity)+['version','day','deadlineUtc','deadlineTaipei','state','spent','events','plan','chargedUpperBoundMs','rpc','finished']+(['stages'] if self.staged else [])
   if not exact(j,fields) or any(j[k]!=v for k,v in identity.items() if not self.staged or k not in ['w0','expiresAt']) or type(j['version']) is not int or j['version']!=1 or (not self.staged and (j['day']!=day(j['w0']) or j['deadlineUtc']!=timestamp(j['expiresAt'],timezone.utc) or j['deadlineTaipei']!=timestamp(j['expiresAt'],timezone(timedelta(hours=8))))) or j['state'] not in ['ready','stopped'] or type(j['finished']) is not bool or type(j['events']) is not list or not integer(j['spent']) or j['spent']!=len(j['events']) or not self.minimum_new_spent<=j['spent']<=127:fail()
   if self.staged:
-   if self.readonly:
+   if self.readonly and not self.renewed:
     if j['w0']!=READONLY_W0 or j['expiresAt']!=READONLY_EXPIRY or j['day']!=day(READONLY_W0) or j['deadlineUtc']!=timestamp(READONLY_EXPIRY,timezone.utc) or j['deadlineTaipei']!=timestamp(READONLY_EXPIRY,timezone(timedelta(hours=8))):fail()
    elif j['w0'] is None:
     if j['spent']!=0 or any(j[k] is not None for k in ['expiresAt','day','deadlineUtc','deadlineTaipei']):fail()
@@ -1370,7 +1382,7 @@ class Ledger:
   if op.startswith('rpc-') and (not integer(q['credentialExpiresAt']) or not q['now']+ms+360000<q['credentialExpiresAt']<=j['expiresAt']):fail()
   if op in ['wait','rpc-wait']:return self.view(ms)
   if ms:fail()
-  if self.staged and not self.readonly and j['w0'] is None:
+  if self.staged and (not self.readonly or self.renewed) and j['w0'] is None:
    j['w0']=q['now'];j['expiresAt']=self.window(q['now']);j['day']=day(q['now']);j['deadlineUtc']=timestamp(j['expiresAt'],timezone.utc);j['deadlineTaipei']=timestamp(j['expiresAt'],timezone(timedelta(hours=8)))
   j['spent']+=1;j['events'].append({'operation':q['operation'],'time':q['now'],'outcome':'UNKNOWN'})
   if op=='rpc-begin':

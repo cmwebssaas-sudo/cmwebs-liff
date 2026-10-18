@@ -140,6 +140,8 @@ export function compileAuthorityStagedResumePlan(input){return compilePlan(input
 // One named repair of the stopped43 readonly result, with no new clock.
 export const READONLY_RECOVERY_DECISION_HASH='ccb1f0d40fe93df36d18f687da256287b1e3980b9397b58c31d6c75c6c6b8b60';
 export const READONLY_RECOVERY_WINDOW=freeze({w0:1792142820041,expiresAt:1792164420041});
+// Separate explicit approval renews only the still-unclaimed recovery window.
+export const READONLY_DEADLINE_DECISION_HASH='91b6c8f359fcbe0a8e72804ace101ce39cd063b80609a9c2caca4f8f36cfa7c4';
 export const READONLY_RECOVERY_POLICY=freeze({...STAGED_RESUME_POLICY,decisionHash:READONLY_RECOVERY_DECISION_HASH,priorDecisionHash:STAGED_RESUME_DECISION_HASH,stage:'readonly-recovery-compatibility',importedUnits:43,bucketLimits:{...STAGED_RESUME_POLICY.bucketLimits,N:15},navigationControlLimit:15,navigationPartitions:{publisher:11,'caller-oauth':2,'thin-trigger':2}});
 export function compileAuthorityReadonlyRecoveryPlan(input){return compilePlan(input,READONLY_RECOVERY_POLICY);}
 
