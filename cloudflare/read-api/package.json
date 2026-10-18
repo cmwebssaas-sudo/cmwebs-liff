@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --local",
+    "pretest": "npm run dry-run",
     "test": "node --test test/*.test.mjs",
     "dry-run": "wrangler deploy --dry-run --outdir .wrangler/dry-run"
   },

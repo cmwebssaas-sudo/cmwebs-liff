@@ -255,6 +255,15 @@ function revokeLandlordEmailSession_(
         last_seen_at: nowIso
       }
     );
+    if (typeof readReplicaPushRevokedSession_ === 'function') {
+      const replica = readReplicaPushRevokedSession_(Object.assign({},resolved.data.session,{
+        revoked_at:nowIso,status:'revoked',last_seen_at:nowIso
+      }));
+      if (replica && replica.success !== true) {
+        return landlordEmailAuthResult_(false,'READ_REPLICA_REVOCATION_PENDING',
+          '本地登入已登出，讀取副本撤銷待同步',null);
+      }
+    }
   }
 
   return landlordEmailAuthResult_(

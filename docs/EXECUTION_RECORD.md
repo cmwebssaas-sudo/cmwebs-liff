@@ -174,3 +174,436 @@ PR's two actual CI jobs before merge; local checks used Node26/macOS.
 CLI read-only `whoami` confirms an existing OAuth login, without publishing
 account identifiers or credentials; Paid plan and provisioning target still
 require read-only verification.
+
+## 2026-10-12 — S1 staged backend publication and C1 candidate
+
+S1's frontend physical gate was owner-confirmed after the required wait.
+Fresh authenticated exports confirmed serving v232 and editor HEAD matched the
+recorded 68-file rollback baseline. The reviewed S1 candidate was pushed and
+exported byte-for-byte, then immutable v233 was exported and matched all69 files.
+The original formal Web App deployment now reads back v233 at the same URL;
+the other4 deployments are unchanged. A synthetic anonymous protected read
+returns `AUTH_REQUIRED`. Rollback retains v232 and its fresh editor export.
+Post-backend owner confirmed LINE reads, harmless notification acknowledgement
+and desktop Email reads normal; staged S1 acceptance passed. No Properties, trigger or formal business data changed.
+
+C0 PR265 merged `32a5820`; PRCI38170596031 and mainCI38170676231 passed,
+including Node22/Linux Worker tests. Pages38170676045 succeeded and all62
+published assets matched. The owner selected the existing Cloudflare account
+and undertook its plan upgrade; the latest authenticated readback still showed
+Free. Paid readiness must be read back after payment before provisioning.
+
+C1 uses independent branch `codex/c1-read-replica-sync-20261012`, based on
+`32a5820`. Recommended model/speed: GPT-6.1 Sol / high. It adds generated
+16-table projections, bounded signed snapshot ingestion, dirty generation
+sync, explicit dispatcher dependencies and immediate session revocation patch.
+Review found incomplete mutation detection; the keyword heuristic was replaced
+by explicit route policy plus full dispatcher inventory regression. Empty
+webhook acknowledgements are excluded from dirty marking. Source review and
+tests are distinct from remote acceptance; the three-day test remains
+NOT_STARTED. Keep this work order's PR draft until that gate passes.
+
+Local unit suite847/847 passed including the empty-webhook regression;
+the full suite retained only the existing missing `PLATFORM_CORE_TEST_WORKTREE`
+integration-environment failure (846 pass,4 skips). Final test counts and review
+will be recorded with the candidate. No test uses formal Sheets or sends LINE.
+See `READ-REPLICA-SYNC.md` for release, quota acceptance and rollback.
+
+Final C1 source review passed after mutation-inventory and empty-webhook fixes.
+Reviewer executed the real webhook/dispatcher fallback: empty or skipped events
+mark zero tables, a processed event marks all16. Unit847/847, affected sync12/12,
+Worker10/10, validate and diff-check pass. The full suite's existing external
+Core fixture remains unavailable. Draft PR/CI are source evidence only; remote
+three-day acceptance and formal synchronization publication are NOT_STARTED.
+
+## 2026-10-12 — C1 isolated remote acceptance started
+
+Authenticated Cloudflare readback confirms the selected account's Workers Paid
+subscription. A separate synthetic-only D1 reports APAC placement. Test Worker
+version `aa544a72-5113-469a-80ba-dde6fabc1c2e` binds only that test database and
+an encrypted sync Secret. Remote health passed; bad HMAC returns401 and nonce
+replay409. Owner entered the test Apps Script Secret; only presence was read
+back. The bound test project has four exported byte-identical files, limited
+current-Sheet/external-request/own-trigger scopes and no production credential.
+
+Initial real GAS-to-Worker full sync passed16 tables/531 rows, including501
+rooms split into500+1 batches, in43,436 ms. D1 readback matched every table count
+and removed only the prior disposable probe rows. Immediate synthetic session
+revocation passed in1,433 ms; D1 readback confirms revoked state. Two own test
+timers (one-minute and daily hour03 Asia/Taipei) were installed at05:19 Taipei.
+The authenticated execution table records44.304 seconds for the manual full
+run and3.152 seconds for the manual revocation test.
+
+Early idle timer executions took2.547/2.446 seconds due to an unnecessary
+synthetic-wrapper Sheet identity read. Removing it preserves a local project
+guard; the next actual idle execution took0.591 seconds. The source now also
+uses one bulk cache read to discover dirty markers. Generation checks after
+sends remain unchanged. Final test source was pushed and exported identical
+at05:23; restart the72-hour observation window from that source revision.
+The account is consumer Gmail, with90-minute daily timer allowance. Full
+daily trigger totals must include idle/failure/overhead records and remain
+below15 minutes; wrapper timing is insufficient. No formal Sheet, Properties,
+trigger, operational read route or serving backend changed. C1 remains draft;
+three actual days and formal publication are not yet accepted.
+
+Affected GAS tests13/13 and unit848/848 pass; validate passes. Keep rollback
+limited to the two test timers/test endpoint while formal backend remainsv233.
+
+Further C1 idle correction at05:39: retrieve signing configuration only after
+bulk discovery finds pending work. Idle has zero Properties/Sheet/network/lock
+calls; pending/full still validate configuration before IO. Independent review
+verified missing/invalid configuration preserves markers and prevents IO,
+disabled business dirty marking remains cheap, and concurrency protection is
+unchanged. Tests13/13, unit848/848 and validate pass. Four test files were
+exported byte-identical. Restart the72-hour gate from this final test revision;
+earliest time eligibility is2026-10-15 at05:39 Taipei, subject to all actual
+daily correctness and complete runtime evidence. Earlier observed executions
+remain part of daily totals. No production publication occurred.
+
+Read-only follow-up on2026-10-12 at06:53 Taipei: disposable D1 returned the
+synthetic room mutation from the06:30 timer, synchronized at06:30:19.826.
+Earlier06:14 readback showed the06:00 mutation at06:00:19.544. The test source
+remains `8f1191a` and four exported source files remain the recorded final
+revision; these observations do not restart its72-hour clock. Actual observation
+is RUNNING, earliest time eligibility October15 at05:39 Taipei. These partial
+checks are not daily runtime totals or three-day acceptance. No production
+source, Properties, trigger, flag or data mutation was performed by the probes.
+
+C1 read-only partial-day check at2026-10-12 07:46 Taipei: remote synthetic D1
+room mutation07:30 read back at07:45, `synced_at`23:31:34.247Z (07:31 Taipei).
+Authenticated history154 total entries,147 timers all completed,308.771s total
+platform duration/max82.534s; final-source subset128 timers278.816s. Six manual
+runs52.631s and earlier unavailable API attempt0s/failed remain separate. This
+is incomplete-day evidence, not daily quota acceptance. No source/config/timer
+change; actual72-hour gate still RUNNING with earliest completion Oct15 05:39,
+subject to all required complete-day correctness/runtime evidence.
+
+## 2026-10-12 partial-day follow-up at08:26 Taipei
+
+Authenticated execution history was refreshed and all193 entries loaded on one
+page, through the08:25:14 timer:186 timers completed, zero timer failures or
+running timers,379.907 platform seconds total and82.534s maximum. Six manual
+editor runs and the earlier unavailable Execution API attempt remain separate.
+This is complete history at the capture time, but an incomplete day; it does
+not pass the15-minute daily target or the72-hour gate.
+
+A separate read-only D1 check at08:40 found the08:30 synthetic room mutation,
+server `synced_at`2026-10-12T00:30:20.251Z. No source, timer or configuration
+change occurred. Final source remains `8f1191a`; earliest time eligibility is
+October15 at05:39 Taipei, subject to complete daily reconciliation/runtime.
+
+## 2026-10-12 — C1 actual result-code investigation
+
+Authenticated history through08:47 was reconciled across two pages:215 total
+entries,208 timers, all platform-completed,414.021 platform seconds/max82.534s.
+This remains partial-day evidence. At08:54, the existing read-only
+`readC1TestRuntimeTotals` function reported nine non-idle wrapper records, one
+failure,227443 observed milliseconds. Wrapper totals include a manual full run
+and exclude idle/platform overhead; they cannot replace daily trigger totals.
+
+Actual Cloud logs identify the failure after the final05:39 source revision:
+07:31's overlapping minute returned `success:false,code:SYNC_BUSY` (306ms
+wrapper), while07:30's lease-owning sync completed at07:31:36 with `OK`, one
+table, empty failed-table list,77684ms core/80882ms wrapper. The busy record is
+retained; platform-completed does not imply function success. D1 readback
+confirms the owning snapshot completed501 room rows/two batches.
+
+Remote room sync metadata shows the07:30 source-version timestamp preceded
+the first recorded Worker post-validation timestamp by72540ms, with1632ms
+between the two recorded post-validation timestamps.
+The08:00 sample was26060ms/1547ms;08:30 was1687ms/1603ms. These are boundary
+timestamps, not exclusive CPU, fetch or database duration. They locate the
+large delay before that first recorded timestamp. Worker records it only after
+body/HMAC/per-row hash validation; GAS preparation, network and Worker
+validation remain combined, so no exact layer/root cause is established.
+Keep the complete-day15-minute target and actual72-hour gate unaccepted; do
+not extrapolate partial data into a passed day or discard the busy outcome.
+
+A fresh API source export at08:54 confirmed all four files still match the
+recorded final test source. No source, timer, Properties, formal backend or flag
+changed; the existing observation clock was not restarted.
+
+Reviewed direct stale-version diagnostic on the isolated C1 Worker: current
+sole version/D1 binding and a newer completed `V2_rooms` snapshot were checked
+live before signing-key access and diagnostic POSTs. Six actual signed1/500-row
+requests all returned409
+`STALE_SNAPSHOT` before writes. Full500-row roundtrips were1250.205/619.488/
+1332.480ms; one-row roundtrips801.522/419.163/409.409ms. This excludes GAS, is
+not CPU-only or p95/capacity acceptance, and does not identify the earlier
+transient delay's root cause. D1 post-readback found zero probe runs/nonces/
+staging and501 rooms. No source/timer/Properties change or72h gate restart.
+
+
+## 2026-10-12 — C1 actual runtime target failed before end of day
+
+Recommended GPT-6.1 Sol/high. Authenticated execution history was frozen during
+four-page capture and realtime display restored afterward. Through16:51 Taipei,
+702 unique execution records include694 minute timers,1938.259 total platform
+seconds (32.304 minutes), max342.094 seconds and one platform failure. The day
+is incomplete, but measured usage already exceeds the unchanged900-second daily
+target; C1 is not accepted. No extrapolation or successful-day claim is made.
+Minute timestamps contain four duplicates and two missing slots (06:34,12:23),
+so the capture is not described as one successful execution per exact minute.
+
+12:30's72.003-second failed execution reports a Drive service timeout inside the
+test-only spreadsheet identity/title guard, before synthetic mutation/sync.
+The failure is retained separately from the earlier overlapping SYNC_BUSY.
+13:00 completed successfully:195407ms canonical sync,200994ms wrapper and
+215.410s platform.09:44 completed IDLE with zero tables:335171ms canonical,
+335182ms wrapper and342.094s platform. The idle canonical path only obtains the
+script cache and performs its bulk marker read before returning; it has no
+Sheet, signing-Property, lock or UrlFetch IO. This locates that long idle delay
+in the CacheService path, without claiming to distinguish its two API calls.
+Long active sync still combines service/preparation/network/validation time.
+
+All failures and overhead remain in the runtime gate. Do not replace platform
+usage with non-idle wrapper counters or discard slow services as outliers.
+No canonical/test source, Properties, binding, timer or formal flag changed.
+The original observation clock remains recorded, but elapsed72 hours alone
+cannot pass the failed correctness/runtime acceptance. Investigate in an
+independent environment before revising source or starting a new accepted run.
+
+## 2026-10-12 — C1 failed observation rollback
+
+Recommended GPT-6.1 Sol/high. Fresh fixed project/Sheet/title and4-file source
+readback passed before running the existing synthetic stop helper. Native UI
+showed only the owner's two test CLOCK handlers;20:30:29–31 execution reported
+`triggers:[]` and the unfiltered trigger page confirmed zero. The rollback
+prevents further quota consumption by an already failed run and changes no
+formal project. Test source/Properties/data and all existing failure records
+are retained; the helper only removes those two named test triggers.
+
+Complete stopped-history capture: five pages200/200/200/200/123,923 unique
+records,914 minute timers,2892.886 platform seconds (48.215 minutes), maximum
+479.840s. All timers terminal; failures12:30/17:00/17:20 remain, including the
+0s duration reported for17:20. Last timer started20:30:14. This is an ended
+failed partial-day observation, not a complete day or successful72-hour gate.
+The900s/day limit is unchanged. Realtime display restored on first page.
+
+Future corrected source requires independent review and a fresh actual72-hour
+run; preserve the original05:39 start and failure history without reusing them
+as qualification. Test rollback/reinstall steps are in
+`docs/READ-REPLICA-SYNC.md`. No formal deployment/Sheet/trigger/flag change.
+
+## 2026-10-13 — C1 owned Cache/Properties read-service diagnostic
+
+Recommended `gpt-5.6-terra`/medium; the current session continues the reviewed
+diagnostic. Root WIP remained unchanged at`be2cefe`; work stayed in the C1
+worktree. Fresh fixed synthetic project/parent/title/source4 and native zero
+triggers preceded an editor-only harness addition. Both canonical modules,
+manifest/scopes and retained deployment configuration stayed unchanged.
+
+One native manual run00:23:53–55 Taipei completed successfully: five paired
+samples,438ms measured region after the fixed Script guard,1.670s separately reported platform
+duration. Cache handle1–8ms/getAll21–48ms; Property handle1–19ms/get45–56ms.
+Only fixed labels, integer timings and booleans were logged; returned values
+were discarded. No Sheet, network/sync, trigger or Cache/Property write.
+The60s between-sample guard cannot interrupt a blocking native service call.
+The438ms timer excludes the Script guard and final log call; no attribution
+of the remaining platform duration to startup or one service is established.
+
+The actual helper11 fake lifecycle cases and actual function4 VM cases passed;
+independent review also rejected4 invalid timestamp/proof cases before OAuth
+or PUT. Original4 editor files and deployment inventory/configuration verified
+restored00:24:38 Taipei; native unfiltered trigger page again showed0.
+This warm manual observation did not reproduce or resolve the earlier335s
+Cache-path stall and provides no evidence that Properties would be faster.
+It is not cold timer, complete-day runtime,500-room or actual72-hour acceptance.
+All original failures,900s/day gate and stopped observation records remain.
+Corrected-source72-hour run NOT_STARTED; no formal release/data/flag change.
+
+Repository verification on the C1 worktree: `npm run validate` PASS (71 backend
+files plus release-cache validation), affected actual module VM13/13 and
+`npm run test:unit`848/848 PASS. Full`npm test`853 total:848 passed,1 failed
+because`PLATFORM_CORE_TEST_WORKTREE` is required,4 external fixture skips.
+That missing Core integration environment is not counted as a pass. Source
+modules and frontend release version were unchanged; `git diff --check` PASS.
+
+## 2026-10-13 — C1 bounded single-pair entry-region follow-up
+
+Recommended `gpt-5.6-terra`/medium. Independent review approved a new editor-only
+manual diagnostic with one fixed Script guard, one original-wrapper Property
+handle and one Cache handle/getAll pair per invocation. It discards Cache
+values and performs no Property value read, Sheet/network/sync, write or timer
+installation. Actual-function6 VM and actual-helper11 fake lifecycle cases
+passed. Fresh fixed binding/source4 and native unfiltered0 triggers preceded
+the addition; both canonical modules/scopes/deployment configuration retained.
+
+Exactly3 manual native executions started00:37:38/00:37:58/00:38:15 Taipei,
+all completed with`success:true,code:OK`. Script guard3/6/2ms, Property handle
+3/10/1ms, Cache handle3/8/1ms, Cache getAll116/44/109ms, timed region125/68/114ms.
+Native execution history separately reports871/921/550ms. The timed region
+includes the Script guard and excludes the final log; its platform difference
+does not isolate startup or any service. Guard/Property handle did not dominate
+these samples; the earlier335s Cache stall remains unresolved.
+
+The already stopped20:29:14 timer's native log says IDLE/core86ms/wrapper99ms,
+platform984ms;20:28:14 says IDLE/core109ms/wrapper180ms/platform1099ms. These
+two selected diagnostics do not classify the rest of914 timers or replace
+their complete failed history, including every failure/outlier.
+
+Exact original4 editor files and retained deployment configuration restored
+00:38:58 Taipei; native unfiltered trigger count again0. No formal source,
+rows, Properties, Cache, trigger, credential/scope or flag changed. No
+corrected-source72-hour run started;900s/day remains unmet. Manual timings
+are not cold timer, complete-day or500-room acceptance.
+
+
+## 2026-10-13 — Full local Core/PG regression environment restored
+
+Recommended GPT-6.1 Sol/high. Clean pinned Core checkout and private local
+PG16.14 supplied the existing missing mandatory integration dependency. No
+application source, test assertion, repository dependency or remote service
+changed. Independent runner review reproduced cleanup timeout failure; four
+fake lifecycle cases and eight target/environment guards PASS after correction.
+
+Actual existing full suites: C1 853/853, C2 868/868, C3 938/938, C4 951/951,
+C5 956/956, C6 959/959; zero fail/cancel/skip. Original GAS commercial flow
+used actual restricted HTTP and real PostgreSQL; four product-access fixtures
+use synthetic Core route-handler injection, not real sockets/database. All
+six tested full HEADs and Node26/macOS scope are retained in
+`READ-REGRESSION-DEPENDENCIES.md`. Previous failures/skips remain historical.
+
+SQL before/after verified fixed owned cluster and no leftover fixture DB/roles;
+final pg_ctl stop/status, absent PID and closed listener passed with no cleanup
+error. Core and all CMWebs tracked sources unchanged; root WIP and C5 editor
+temporary file preserved. Logs/generated synthetic secrets remain private.
+No formal database, source, deployment, Properties, trigger, Worker or flag
+change. Corrected C1 actual72h NOT_STARTED; stopped failed runtime remains
+NOT_ACCEPTED. C3 strict latency, C5 seven-day and C6 real-flow/device/cutover
+remain unaccepted; this full-suite success does not change those gates.
+
+## 2026-10-13 — C1 bounded native timer controls, exact restoration
+
+Recommended GPT-6.1 Sol/high for synthetic trigger mutation/rollback guards.
+Existing C1 project/parent/title, original4 source and zero native triggers
+were freshly checked. Editor-only diagnostic retained both canonical modules,
+manifest/scopes and deployment configuration. No version was published.
+Review found manifest-semantic equality insufficient for exact4 restoration;
+helper now compares all source bytes. Actual restore formatting-drift negative
+and exact restoration positive cases pass; VM16/fake lifecycle14 independent
+cases and follow-up review PASS before any editor mutation/timer installation.
+
+Native history starts the installer at07:31:44 Taipei, platform2640ms; the
+editor's separate start notice is07:31:45. Both are retained. Its log confirms
+three after timers with minimum60000/180000/300000ms, not exact scheduling.
+Native unfiltered page showed only the three diagnostic clock handlers.
+No unknown installation outcome was retried; no original sync timer restarted.
+Each event matched its own UID/handler/clock and deleted only its own trigger.
+No Cache/Property/Sheet/sync or replica HTTP/UrlFetch calls enter these controls.
+
+| Native start (Taipei) | Platform ms | Guard ms | List ms | Delete ms | Entry region ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 07:33:38 | 852 | 2 | 86 | 309 | 397 |
+| 07:35:37 | 1000 | 2 | 73 | 162 | 237 |
+| 07:37:26 | 1254 | 41 | 103 | 334 | 478 |
+
+All3 native executions COMPLETED with success/own_trigger_deleted true; all
+entry sums match. Total installer+timer platform5746ms is separate diagnostic
+usage, not a daily sync result. Entry regions include cleanup; logging and
+post-return work are excluded. The residual is not attributed wholly to startup
+or one service. These samples neither prove cold state, resolve335s Cache stall,
+nor establish a1440-run floor,900s/day,500-room or actual72h acceptance.
+
+Native unfiltered0 triggers preceded restore. Exact original4 editor source
+bytes/manifest and retained deployment configuration read back07:40:23.
+Fresh native unfiltered0 again07:42:32.993. No cleanup failure, remaining timer,
+new credentials/Properties/cache or Sheet data write, formal deployment/flags.
+Private logs/harness/zero-trigger image retained outside Git; root WIP and
+private S1 preserved. All failed914/2892.886s records stay; corrected72h
+NOT_STARTED and original gate NOT_ACCEPTED. Repository change is docs only.
+
+
+## 2026-10-14 — C1 local UTF-8 batch sizing optimization
+
+Recommended GPT-6.1 Sol/high for existing synchronization correctness; no new
+architecture or acceptance scope. Snapshot batching previously constructed one
+native Blob per projected row only to count serialized JSON bytes. The sender
+now counts UTF-8 locally; a 501-row snapshot requires zero sizing Blob calls.
+The 500-row/900000-byte budgets, signed payloads, whitelisted projections,
+source ordering and dirty retry semantics remain unchanged. This removes
+redundant service calls; native latency savings have not been measured and it
+does not establish a fix for the earlier 335s idle Cache stall.
+
+Affected module VM17/17 and independent review17/17 PASS, no P1/P2 findings.
+Unicode/escaped malformed input, exact cumulative byte boundary, maximum row,
+signing and pre-HTTP rejection covered. The optional additional asymmetric
+900001-byte fixture is deferred; existing 900000/900002 cases remain. One
+required full regression857/857 PASS, zero fail/cancel/skip, Node22.23.3 and
+pinned Core with disposable local PG16.14; database/role cleanup, stopped PG
+and closed listener verified. Source snapshot SHA256:
+`8b0f4fc535a659f4ac0c135d3e72acdf31976dcc5e9b9c5557309420a40b60bf`.
+`npm run validate` PASS71 backend/40 endpoint references and static release
+checks. No additional unchanged target/review/full reruns were performed.
+
+The temporary synthetic editor-only UTF-8 comparison was cancelled before
+native execution following the request to reduce diagnostic rounds. Native
+comparison is UNVERIFIED, not a pass. Exact original4 editor files, manifest
+scopes and deployment inventory were restored14:31:51 Taipei; subsequent
+native unfiltered trigger count0. No new version, credential, Property,
+Cache or source data write; no formal deployment or flag changes. Existing
+failed914/2892.886s observation stays NOT_ACCEPTED; fresh corrected-source72h
+NOT_STARTED. All original actual-runtime, shadow and device gates remain.
+
+Rollback: retain prior source commit; revert this local byte-sizing change if
+native validation fails before deploying corrected synthetic source. Existing
+serving deployment and authoritative data retained; read flags remain off.
+Root WIP preserved. Temporary editor restoration is already complete.
+
+## C1 pre-read deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Existing four-minute send deadline was enforced
+only after Sheet loading/projection; slow earlier IO could therefore cause
+later unnecessary Sheet reads. Actual-module dirty/full tests reproduced2/16
+reads rather than1, then passed with a pre-read check against the existing
+source timestamp. Full-run unattempted tables remain dirty; matching completed
+generations clear and lease cleanup remains. Blocking native calls are not
+interrupted; marker/lease IO may still continue. No claim that the335s Cache
+stall or900s/day gate is resolved.
+
+Affected19/19 and independent19/19 PASS/no actionable findings. One full local
+859/859 PASS,2.566s,Node22.23.3/actual Core/owned PG16.14; database/role cleanup,
+stopped cluster and closed listener verified. Tested477-file snapshot
+3a69f2c26519e21b25b2df3437e670f1326cc9a59606e61a5edf867b5a8bb14b;
+only docs afterwards. Validate71backend/40endpoints/cache/diff PASS. Worker
+unchanged, no repeated unchanged capacity test. Exact-head CI follows push.
+
+No account/Google/credential/Properties/trigger/Sheet/deployment operation.
+Original25/160 unclaimed/history retained; native-IO purpose revision remains
+awaiting owner. Approved parallel24h schedule supersedes original3/7 calendar
+only; T0 NOT_STARTED/alloff, actual daily900s/privacy/freshness/performance/device
+gates unaccepted. Rollback undeployed increment to6b90a4ca3efc8a83b706268d5039f5d9bb988a7c,
+retain original serving/editor/data and dirty generations. Root WIP/privateS1/
+C5swap preserved. No formal release or failed-observation reset.
+
+
+## 2026-10-19 — Independent synthetic baseline recovery and readback
+
+Recommended GPT-6.1 Sol/high. Connected Drive located the existing C1 synthetic
+Sheet. Opening its bound Apps Script established the exact project; fresh API
+metadata matched its title and parent. All four editor source hashes match the
+retained October12 baseline. Deployment inventory returned one entry; serving
+version/endpoints were not reverified. This is the old
+synthetic baseline, not deployment of the later local byte-sizing/deadline fixes.
+The existing publisher credential was refreshed only for these C1 metadata,
+content and deployment reads, kept in memory, and its local file was unchanged.
+No credential was copied to a Worker; no Property value was read or displayed.
+
+Fresh unfiltered native trigger inventory shows0. Read-only queries against the
+explicitly identified C1 test D1 show501 rooms,0 staging rows and16 tables with
+completed snapshot history. Latest room completion remains October12 20:30:20.591
+Taipei; this is historical replica data, not current source parity or freshness
+acceptance. The three query results report0 rows written. Worker version/binding
+was not freshly verified by this database-only readback.
+
+C1 source CI on489d339 remains SUCCESS. No editor source, timer, Property, Sheet
+row, Worker deployment, permission or flag was changed. No corrected observation
+started, and the failed minute schedule was not automatically reinstalled.
+Later local fixes do not establish a solution to the335s idle Cache stall or
+900s/day failure. The approved direct-Google path requires C3 safety feasibility
+before C1 pull prototype; do not bypass that dependency with a new observation.
+Source/deployment backup and readback evidence were retained privately in durable
+handoff storage; expired temporary helper directories were not treated as proof.
+C3's separate stopped trial remains53/160; these C1 reads did not resume it or
+provide handles/credentials to evade its operation map. No release or rollback
+mutation was needed; authoritative data was preserved; deployment inventory was not modified.

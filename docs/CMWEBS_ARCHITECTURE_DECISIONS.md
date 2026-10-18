@@ -268,3 +268,20 @@ and disabled public deployment routes. Schemas, synchronization, identity and
 operational reads follow in their assigned work orders. Account login alone
 does not establish paid-plan readiness or the correct provisioning account.
 Google Sheets remains authoritative. Rollback of C0 only reverts source/CI.
+# 2026-10-12 C1 candidate: signed snapshots and bounded projections
+
+One JSON whitelist generates both Apps Script projection schema and D1 SQL.
+The replica stores approved operational fields and scalar encodings; raw tokens,
+bank data, identity documents and contract files remain excluded. Sheets retain
+write authority. Exact-byte HMAC, bounded request bodies, atomic nonce reservation
+and complete snapshot manifests protect ingestion. Batch staging does not expose
+partial replacement; transaction guards recheck source ordering before deletion.
+
+Dirty generations use brief ScriptLock sections, never network operations under
+the lock. A changed marker survives a concurrent synchronization; failed tables
+remain queued while independent tables continue. Successful dispatcher actions
+use an explicit classification and dependency map instead of spelling-based
+mutation detection. Unknown actions conservatively invalidate all projections.
+Immediate session revocation is a patch with a pending failure result. Operational
+authorization is gated on C3's freshness and fail-closed design. Remote three-day
+acceptance, then seven-day shadow acceptance, remain independent requirements.

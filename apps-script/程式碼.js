@@ -274,6 +274,13 @@ function bankReceiptPostRequest_(e) {
 }
 
 function doGet(e) {
+  const output = dispatchV2Get_(e);
+  return typeof readReplicaAfterResponse_ === 'function'
+    ? readReplicaAfterResponse_(String(e && e.parameter && e.parameter.v2_action || ''), output)
+    : output;
+}
+
+function dispatchV2Get_(e) {
   e = e || { parameter: {} };
 
   const v2Action = e.parameter.v2_action || '';
@@ -2709,6 +2716,21 @@ function escapeHtmlForInput_(value) {
  * LINE Developers Webhook URL 會用 POST 打到這裡
  */
 function doPost(e) {
+  const output = dispatchV2Post_(e);
+  let action = '';
+  try {
+    const body = e && e.postData && e.postData.contents || '';
+    let request;
+    try { request = JSON.parse(body); }
+    catch (_) { request = repairRouteDecodeFormBody_(body); }
+    action = String(request && (request.action || request.v2_action) || 'LINE_WEBHOOK');
+  } catch (_) {}
+  return typeof readReplicaAfterResponse_ === 'function'
+    ? readReplicaAfterResponse_(action, output)
+    : output;
+}
+
+function dispatchV2Post_(e) {
   runtimeSnapshotBegin_('POST');
   try {
     e = e || {};

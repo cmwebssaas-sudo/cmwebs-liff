@@ -1229,3 +1229,89 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Missing/failing database gives sanitized 503 with no-store | Same | Real handler, controlled failing binding |
 | Pinned dependency install, Worker tests and bundle dry-run | `read-worker` CI job; `npm run test:worker`; `npm run dry-run:worker` | No Cloudflare credentials or upload |
 | Account, Paid plan and APAC D1 readiness | UNVERIFIED | Requires authenticated evidence; new costs/login/payment remain owner gates |
+
+## 2026-10-12 C1 synchronization candidate
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Exact-byte signature, timestamp/nonce rejection, whitelist, row hash, 500-row acceptance and overflow | `cloudflare/read-api/test/sync.test.mjs` | Real local workerd and disposable D1; synthetic credentials/rows |
+| Staged batches, atomic completion/deletion, conflicting manifests, stale source versions, unchanged rows, scalar types and revocation patch | Same | Local transaction tests; no remote quota or production proof |
+| Generated schema parity, idle zero-read behavior, Sheet projection, failed/concurrent dirty markers and immediate Email revocation | `tests/read-replica-sync.test.mjs` | Actual Apps Script functions in Node VM with controlled Sheet/network adapters |
+| Every dispatcher route explicitly classified, previously missed mutations queue their tables, real GET/POST envelopes preserved | Same | Real dispatcher and dirty-marker functions; synthetic successful responses |
+| Apps Script affected test function | `testReadReplicaProjection()` executed by the VM suite | Pure projection test; not a production execution |
+| Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_ACCEPTED; failed test schedule STOPPED | Stopped20:30 Taipei; complete ended history has914 minute timers/2892.886s and3 failures. Daily900s target failed; corrected source needs a fresh actual72-hour gate |
+
+
+C1 actual remote follow-up through2026-10-12 16:51 Taipei: four-page history,
+694 minute timers/1938.259 platform seconds exceeds900s daily target before
+end of day; one Drive timeout, earlier SYNC_BUSY retained. IDLE CacheService
+path335171ms and successful canonical sync195407ms are observed boundaries,
+not isolated CPU/network metrics. C1 actual runtime/correctness NOT_ACCEPTED;
+no formal release or observation-clock reset.
+
+C1 read-only service diagnostic on2026-10-13: one manual invocation at00:23:53
+Taipei, five paired calls,438ms measured region after the Script guard and
+1.670s native platform
+duration. Cache getAll21–48ms; Property get45–56ms. The actual helper's11 fake
+lifecycle cases, actual function's4 VM cases and independent proof/timestamp
+review passed. Original4 editor files and deployment configuration restored
+at00:24:38; native trigger count remains0. This warm manual measurement neither
+reproduces/resolves the earlier335s Cache stall nor passes daily/72-hour gates.
+
+C1 separately reviewed single-pair diagnostic onOctober13: exactly3 independent
+manual invocations, timed regions125/68/114ms (including fixed Script guard),
+native platform871/921/550ms. Guard2–6ms and Property handle1–10ms did not
+dominate these samples; no Property value/Sheet/sync/write/timer operation.
+Actual-function VM6/6 and actual-helper fake lifecycle11/11 passed. Original4
+files/deployment configuration restored00:38:58; native trigger count0. The
+stopped IDLE log pairs86/99/984ms and109/180/1099ms (core/wrapper/platform)
+do not replace complete failed history or isolate startup. No corrected-source
+72-hour gate started and no daily-runtime/500-room claim is made.
+
+
+## 2026-10-13 — Missing Core integration environment resolved locally
+
+The existing full suites now execute at all six pinned candidate source heads:
+C1 853/853, C2 868/868, C3 938/938, C4 951/951, C5 956/956, C6 959/959;
+zero failures/cancellations/skips. Node26/macOS and fresh isolated PG16.14,
+with original mandatory restricted HTTP/PG fixture and four synthetic Core
+route-handler cases. Actual database/role cleanup and final stopped listener
+verified. Exact heads and reproduction boundaries are in
+`READ-REGRESSION-DEPENDENCIES.md`. Prior missing-environment results remain
+historical; actual72h/daily-runtime/strict-latency/seven-day/device/cutover gates
+are not accepted by these regressions.
+
+## 2026-10-13 — C1 bounded native timer control
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Actual diagnostic functions / editor lifecycle | VM16 /14 unique fake lifecycle PASS; review PASS after exact-manifest fix | Pure local guards; includes restore formatting drift and fresh-native0 before OAuth/PUT |
+| Three one-shot native clock executions | COMPLETED, success and own trigger deletion; platform852/1000/1254ms, entry397/237/478ms | Script guard/list/delete only; no Cache/Properties/Sheet/sync. Installer2640ms, all diagnostic platform5746ms |
+| Original4 source/manifest/deployment and native0 restored | Exact byte/config readback07:40:23; fresh unfiltered native0 at07:42:32.993 Taipei | Three temporary controls created/deleted; no version/formal release or data/secret write |
+| Daily-runtime/72h/cold/500-room/causality gates | NOT_ACCEPTED / NOT_STARTED | Cleanup is measured; residual/logging/post-return not attributed to startup. Failed914/2892.886s and335s stall retained; no new observation window |
+
+All original assertions and gates remain. Local source validation and PR checks
+are tracked separately; this diagnostic is not a canonical sync fix.
+
+
+## 2026-10-14 — C1 UTF-8 sizing regression
+
+| Check | Result | Boundary |
+| --- | --- | --- |
+| Affected source / independent review | 17/17 PASS each; no P1/P2 | 501-row snapshot zero sizing Blob calls; Unicode, byte limits, signing/rejection |
+| One full regression / validate | 857/857 PASS, no fail/cancel/skip; validate71/40/static PASS | Node22.23.3, pinned Core, disposable local PG16.14; cleanup verified |
+| Temporary synthetic editor restored | Exact4/scopes/deployment retained, native unfiltered0 | Comparison cancelled before native execution; native equivalence UNVERIFIED |
+| Formal acceptance | Daily-runtime NOT_ACCEPTED; corrected72h NOT_STARTED | No measured native speedup, formal deployment/flag change or observation restart |
+
+See EXECUTION_RECORD.md for immutable source snapshot, limits and rollback.
+
+## 2026-10-16 — C1 expired-run Sheet reads
+
+| Check | Evidence | Boundary |
+| --- | --- | --- |
+| Slow send reaches/exceeds the four-minute deadline | Actual-module dirty/full regressions RED2/2 then GREEN; full leaves all15 unattempted tables dirty and both paths release lease | Synthetic clock/network/Sheets; blocking native IO cannot be interrupted |
+| Affected module and independent review |19/19 PASS; no actionable findings | Projection Apps Script test function also runs in the VM; no Google execution |
+| Complete local regression |859/859 PASS,zero fail/cancel/skip,actual pinned Core/owned PG16.14; cleanup verified | Not native900s/day, actual authority, freshness, performance or device acceptance |
+
+No actual Google operations or observation restart. Existing failed execution
+history retained; approved accelerated24h clock NOT_STARTED, switches off.
