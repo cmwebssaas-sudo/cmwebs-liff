@@ -1,5 +1,9 @@
 # Read replica synchronization (C1)
 
+Current status (2026-10-19): stopped synthetic observation NOT_ACCEPTED;
+corrected-source observation NOT_STARTED. The older RUNNING entries below are
+historical. Fresh project/source/D1 readback is recorded at the end of this file.
+
 Recommended model/speed: `GPT-6.1 Sol` / high. Sheets remains authoritative.
 No operational read API or frontend switch is enabled by this source change.
 
@@ -428,3 +432,35 @@ remain unaccepted and read switches remain off.
 Rollback this undeployed deadline guard to `6b90a4ca3efc8a83b706268d5039f5d9bb988a7c`
 before any corrected synthetic release if necessary. Retain existing serving
 versions, source data, dirty generations and the original failed observation.
+
+
+## 2026-10-19 — Independent synthetic baseline recovery and readback
+
+Recommended GPT-6.1 Sol/high. Connected Drive located the existing C1 synthetic
+Sheet. Opening its bound Apps Script established the exact project; fresh API
+metadata matched its title and parent. All four editor source hashes match the
+retained October12 baseline. Deployment inventory returned one entry; serving
+version/endpoints were not reverified. This is the old
+synthetic baseline, not deployment of the later local byte-sizing/deadline fixes.
+The existing publisher credential was refreshed only for these C1 metadata,
+content and deployment reads, kept in memory, and its local file was unchanged.
+No credential was copied to a Worker; no Property value was read or displayed.
+
+Fresh unfiltered native trigger inventory shows0. Read-only queries against the
+explicitly identified C1 test D1 show501 rooms,0 staging rows and16 tables with
+completed snapshot history. Latest room completion remains October12 20:30:20.591
+Taipei; this is historical replica data, not current source parity or freshness
+acceptance. The three query results report0 rows written. Worker version/binding
+was not freshly verified by this database-only readback.
+
+C1 source CI on489d339 remains SUCCESS. No editor source, timer, Property, Sheet
+row, Worker deployment, permission or flag was changed. No corrected observation
+started, and the failed minute schedule was not automatically reinstalled.
+Later local fixes do not establish a solution to the335s idle Cache stall or
+900s/day failure. The approved direct-Google path requires C3 safety feasibility
+before C1 pull prototype; do not bypass that dependency with a new observation.
+Source/deployment backup and readback evidence were retained privately in durable
+handoff storage; expired temporary helper directories were not treated as proof.
+C3's separate stopped trial remains53/160; these C1 reads did not resume it or
+provide handles/credentials to evade its operation map. No release or rollback
+mutation was needed; authoritative data was preserved; deployment inventory was not modified.
