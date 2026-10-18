@@ -1,5 +1,29 @@
 # Bounded synthetic Execution API trial
 
+## October19 actual status — stopped before trial mutation
+
+The approved local wiring repair passed exact-source CI (2654 rental and26
+Worker tests) and independent review. The selected existing settings page was
+successfully listed, claimed by its exact returned object, and projected without
+Property values. These three new operations advance the retained total50→53/160.
+The session then acknowledged STOP, closed ordinary admission and drained its
+owned scope to SETTLED. This is binding evidence, not compatibility acceptance.
+
+The complete remaining operation map could not be proved within160. Of the
+five remaining native units, four are reserved for caller OAuth and before/after
+trigger observations, leaving one publisher preparation unit. Only the selected
+settings handle has current acquisition evidence; four other required native
+release surfaces lack a proven handle map. In this known-handle model they need
+at least four acquisitions/navigation operations, exceeding the one available.
+This is a conditional lower bound, not proof that every possible retained
+context or revised design is infeasible. No speculative binding was attempted.
+
+No new trial grant, resource, credential, RPC, deployment or production switch
+was made. The original C2/I17/J2 reserves and all old records remain intact.
+The zero-new-debit local-repair exception cannot reopen this53-debit budget stop.
+Full actual map, safety/runtime/performance/device and rollout gates remain open;
+T0 is NOT_STARTED. Earlier candidate sections below are historical.
+
 ## October18 selected-page connection successor — local candidate
 
 Recommended model/speed GPT-6.1 Sol/high. This explicitly approved successor

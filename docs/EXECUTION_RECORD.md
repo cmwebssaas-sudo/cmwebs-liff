@@ -4229,3 +4229,24 @@ reproduced it and the ordinary constructor now rejects changed original spent
 before child/claim. Both C and I negative regressions pass; independent review
 reports no remaining P1/P2. The exact-head CI and private launcher remain
 separate prerequisites; no actual new operation or launch is implied.
+
+
+## 2026-10-19 actual wiring readback and budget stop
+
+Exact source e3ea2f3 CI39148470346 SUCCESS: rental2654/2654 and Worker26/26,
+zero fail/cancel/skip; private bootstrap9/9 and route/session/settings13/13 PASS.
+Independent source and private closure reviews report no remaining P1/P2.
+The new approved owner actually completed three preparation operations: exact
+selected-page inventory, returned-object claim and safe static DOM projection.
+Total53/160; no Property values or credentials were displayed. Actual binding
+now works, but complete remaining160-fit remains unproved: publisher preparation
+has only1 unit versus at least4 acquisitions/navigation operations in the
+currently proven single-handle model. Other reserved native units cannot be
+borrowed. No speculative discovery, grant, RPC or trial mutation followed.
+
+Canonical stop acknowledged, ordinary scope closed and owned scope SETTLED.
+Compatibility, remote execution settlement and rollback completion are not
+claimed; no new remote resource was created. Keep all old claims/UNKNOWNs,
+53 debits, cleanup reserves and flags off. This budget stop cannot use the
+predebit local-failure exception. Continue independent work only within existing
+authority; revised trial execution requires a complete feasible approved map.
