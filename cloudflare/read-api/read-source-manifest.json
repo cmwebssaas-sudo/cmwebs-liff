@@ -34,7 +34,8 @@
     "landlordInitiatedContractSchema_",
     "contractRequestResolveLandlordIdentity_",
     "lmResolveLandlord_",
-    "runtimePropertyRoomCompareText_"
+    "runtimePropertyRoomCompareText_",
+    "runtimeMemoizeMonths_"
   ],
   "functions": [
     "contractRenewalHistoryBoolean_",

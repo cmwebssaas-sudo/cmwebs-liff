@@ -1,5 +1,35 @@
 # C6 sequential read cutover runbook — preparation only
 
+## October18 request-local month parsing — local pass, CI pending
+
+Recommended model/speed: GPT-6.1 Sol/high per the C6 performance/parity plan.
+Based on781c766, an optional request-local adapter reuses the original canonical
+month parser for at most64 primitive string inputs of at most256 characters.
+Every hit returns a fresh array; mutable/coercible inputs and errors retain the
+original path. The GAS parser body is unchanged; generated closure, service
+adapter manifest and comparison identity are regenerated together.
+
+Focused RED4/4 missing-adapter failures then GREEN4/4; full unit2257/2257,
+Worker/pretest43/43, validate72/40/static/comparison179 and diff checks PASS.
+One initial test expectation incorrectly sorted a mutated array; the canonical
+source retains input order, so the test now expects8,7 and the failure is kept.
+Independent source review found no P1/P2. These are local checks only.
+
+Original100-sample500-room full HTTP/D1/body p95ms:
+home13.175/actions12.797/revenue12.024/tenants18.225/rooms13.448/
+arrears15.899/properties17.355. These timings include the full response and D1;
+they are not CPU measurements. Previous CI38843225901 properties53.119ms remains
+a failed historical gate; this local result does not override it. Fresh exact-head
+CI is required. Earlier isolated calculator and100+100 paired property samples
+show a small gain, not a formal latency or reproducibility claim.
+
+Comparison `read-6dbfab7d7606bfcfdef4d7c69d03adff4b9a44268bd8cd668cb7efc57f38d44a`; asset version unchanged. No main merge, deployment,
+read flag, Property, trigger, formal data or observation T0 change. C1 runtime,
+C3 actual authority, authenticated latency, approved24-hour observation, device,
+rollback and seven-day postlaunch gates remain. Undeployed rollback restores the
+runtime/generator/generated artifacts and new tests to781c766 while retaining
+all measurements and failures.
+
 ## October16 encoded writer restoration — fresh CI required
 
 Head9d745be CI38828519240 is terminal: rental2247/2247 PASS;

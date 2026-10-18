@@ -1,5 +1,14 @@
 # V2 回歸測試矩陣
 
+## 2026-10-18 C6 request-local month parser
+
+| Check | Evidence | Boundary |
+| --- | --- | --- |
+| Canonical parser, fresh arrays, mutation/coercion/error paths, per-request bounds and500-room integration | RED4/4 then GREEN4/4; incorrect sorted-array expectation retained then corrected to canonical8,7 | Original GAS parser body unchanged; short primitive strings only,64 keys, fresh returned arrays |
+| Full unit / Worker / source and comparison |2257/2257;43/43; validate72/40/static/comparison179; independent review0P1/P2 | Local source evidence; exact-head CI still required |
+| Original full-wall500-room p95 | Seven100-sample routes pass; properties17.355ms | HTTP/D1/full body, not CPU; earlier CI53.119ms failure retained; no Production or user-speed acceptance |
+
+
 ## 2026-10-16 C6 encoded writer restoration
 
 | Check | Result | Evidence boundary |

@@ -5545,3 +5545,27 @@ external operation. Actual latency benefit remains UNKNOWN; prior performance
 failures remain open. Independent source review and one normal new-head CI follow.
 Rollback only this undeployed increment's owned paths to cce1282 and regenerate
 comparison, retaining all frozen/private diagnostic and regression evidence.
+
+
+## C6 request-local month parser candidate — 2026-10-18
+
+Recommended model/speed GPT-6.1 Sol/high per plan. Independent C6 worktree at
+base781c766. Reuse the exact original parser behind a bounded per-calculator
+service adapter; store separate array copies, return fresh hits, bypass mutable
+inputs, long strings and errors. No GAS body change or cross-request cache.
+Generated source/adapter/comparison update together: `read-6dbfab7d7606bfcfdef4d7c69d03adff4b9a44268bd8cd668cb7efc57f38d44a`.
+
+Local RED4/4 then GREEN4/4; one invalid sorted-array expectation was corrected to
+the actual canonical order8,7, with original failure retained. Full unit2257/2257,
+Worker/pretest43/43 and validate72/40/static/comparison179 pass. Independent
+source review found0P1/P2. Original seven100-sample500-room full-wall p95ms
+13.175/12.797/12.024/18.225/13.448/15.899/17.355 all pass. Those are HTTP/D1/body
+timings, not CPU. Prior CI38843225901 failure at properties53.119ms remains;
+new exact-head CI is pending and no retry of that unchanged run was made.
+
+Private isolated14 canonical checks,12 calculator A/B pairs and100+100 full
+property requests retain all results/initial fixture-selection failure and show
+only a small local gain; they are not formal latency acceptance. No Google IO
+or Production change. Preserve Draft/off/blank/T0 not started and all C1/C3,
+authenticated/device/observation/rollback gates. Rollback restores only this
+undeployed increment to781c766 and retains the evidence.

@@ -80,6 +80,19 @@ export function createReplicaRuntime(dataset,options={},deferSheetValues=false) 
     if(!propertyRoomTextCompare)propertyRoomTextCompare=new Intl.Collator('zh-Hant',{numeric:true,sensitivity:'base'}).compare;
     return propertyRoomTextCompare(left,right);
   };
+  // Cache only the canonical parser's immutable, short string inputs. The
+  // wrapper belongs to one calculator/request; arrays and coercible objects
+  // retain their fresh reads. Never share a returned array with another caller.
+  const runtimeMemoizeMonths_ = parse => {
+    const values = new Map();
+    return value => {
+      if(typeof value!=='string'||value.length>256)return parse(value);
+      if(values.has(value))return values.get(value).slice();
+      const parsed=parse(value);
+      if(values.size<64)values.set(value,parsed.slice());
+      return parsed;
+    };
+  };
   // Reuse request-local formatters; Date objects and authorization are never
   // cached. Non-string zones
   // retain Intl's coercion on every call, including mutable objects and errors.
@@ -132,7 +145,7 @@ export function createReplicaRuntime(dataset,options={},deferSheetValues=false) 
   };
   const noop = () => {};
   return {
-    Date:RequestDate, Utilities:{formatDate, ...options.utilities},runtimePropertyRoomCompareText_,
+    Date:RequestDate, Utilities:{formatDate, ...options.utilities},runtimePropertyRoomCompareText_,runtimeMemoizeMonths_,
     SpreadsheetApp:{getActiveSpreadsheet:()=>ss}, CacheService:{getScriptCache:()=>cache},
     UrlFetchApp:{fetchAll: requests => requests.map(request => {
       // URLs have already passed the existing z3House public-page allowlist.
