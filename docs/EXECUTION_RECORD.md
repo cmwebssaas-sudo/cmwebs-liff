@@ -4140,3 +4140,24 @@ source pins accompany independent review; no real mapping fit or execution
 readiness is claimed. Public switches remain off. Rollback is reverting this
 named local mode and its explicit fixtures/docs, preserving every old claim,
 source copy and debit; no stopped execution is reopened.
+
+
+## C3 selected-page connection successor candidate — 2026-10-18
+
+Recommended model/speed GPT-6.1 Sol/high. Existing isolated C3 worktree/PR268;
+base85f9f56. Distinct connectionRepair singleton imports46, pins stopped wiring
+history plus two nonrefundable inventory records and owner-selected matching
+page, inherits the original clock/expiry, retains original flock and cleanup.
+Policy/controller/driver agree on46+98+N12+C2+unused2=160; real map unknown.
+No old history was repinned, reopened or refunded. No real claim/page/RPC/grant
+or Production operation occurred. The approved actual window was already expired at the owner selection; no execution may begin without separate window authorization.
+
+RED2 missing compiler/owner then GREEN2; real-controller RED2 then complete
+focused79/79 PASS. First implementation failed on an unintended normalize argument
+and an over-cap test expectation; both corrected with failed logs retained.
+Validate72 backend/40 endpoints/static release and diff checks PASS. Independent
+source review0P1/P2; deferred low-impact Python zero-valued bool equality does
+not change spent/nonrefund/window/operation limits. Full unit2605/2605 passes, zero failures/skips/cancellations; exact-head CI
+follows; private actual launcher not yet verified or started. Keep Draft/off/T0
+NOT_STARTED and every actual acceptance gate. Undeployed rollback reverts this
+increment to85f9f56 and retains all evidence.

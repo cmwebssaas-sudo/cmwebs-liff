@@ -2373,3 +2373,14 @@ after actual captured drain/cooldown. Raw cap driver testing binds the immutable
 null identity to the real inspected active deadline. Existing affected
 continuation/standalone plan/budget/control/driver/recovery and header tests pass
 349/349; these are synthetic/local checks, not actual form or Google readiness.
+
+
+## 2026-10-18 selected-page connection successor (local)
+
+| Scope | Evidence | Boundary |
+| --- | --- | --- |
+|46 import,47 first debit, inherited numeric window, immutable UNKNOWN history/selection, singleton denial, drift/expiry denial | readonly recovery regressions79/79 PASS | No actual claim or page read |
+|N12 reservation, mandatory observations, unknown-map denial,32 release checks/360s RPC, independent damaged-journal J2 and first-I stop lane | Same79-case suite PASS; independent source review0P1/P2 | Full actual map, private launcher and exact-head CI remain separate |
+|Source validation |72 backend/40 endpoint/static cache PASS | No release or formal-data change; approved actual window expired |
+
+Full unit2605/2605 PASS, zero failures/cancellations/skips. Exact-head CI pending; no remote trial or formal acceptance.

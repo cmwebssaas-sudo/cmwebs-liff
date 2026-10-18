@@ -1,5 +1,32 @@
 # Bounded synthetic Execution API trial
 
+## October18 selected-page connection successor — local candidate
+
+Recommended model/speed GPT-6.1 Sol/high. This explicitly approved successor
+imports46 cumulative units, retains all prior claims/UNKNOWNs and inherits the
+original numeric clock/expiry immediately. It cannot use the old43/null-window
+renewal path. Its separate singleton pins the stopped one-debit predecessor,
+both nonrefundable inventory records and the owner's exact observed-page choice.
+Historical source hashes remain accepted explicitly, never repinned in place.
+
+Full reservation is46+98 fixed operations+at most12 native operations+C2+
+unused2=160. Caller OAuth2 and thin-trigger2 remain mandatory; at most8 publisher
+operations fit. This is an offline bound; the actual complete UI map is unknown
+and must pass160-fit before RPC. All32 release checks and one nonrefundable
+360-second RPC, original flock and independent C2/I17/J2 remain mandatory.
+
+Focused accounting/control regressions79/79 and validate72 backend/40 endpoints/
+static release checks pass; independent source review found no P1/P2. Retain the
+initial failed test/implementation runs. Full unit2605/2605 also passes with zero failures/skips/cancellations.
+Exact-head CI and the private launcher composition remain separate gates. The approved actual window has
+expired; no new claim, page projection, credential, RPC, grant or formal change
+was started. Further actual execution needs explicit window authorization.
+
+Rollback this undeployed source increment to85f9f56 through reviewed source
+revert, preserving all previous trial evidence and cumulative charges. Trial
+privacy, freshness,900s/day, authenticated latency, device and rollout gates stay
+unaccepted. This local candidate does not enable read switches or start T0.
+
 ## October18 fixed zero-debit wiring successor
 
 A separately approved, named wiring-repair successor may accept only the fixed

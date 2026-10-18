@@ -144,6 +144,12 @@ export const READONLY_RECOVERY_WINDOW=freeze({w0:1792142820041,expiresAt:1792164
 export const READONLY_DEADLINE_DECISION_HASH='91b6c8f359fcbe0a8e72804ace101ce39cd063b80609a9c2caca4f8f36cfa7c4';
 export const READONLY_RECOVERY_POLICY=freeze({...STAGED_RESUME_POLICY,decisionHash:READONLY_RECOVERY_DECISION_HASH,priorDecisionHash:STAGED_RESUME_DECISION_HASH,stage:'readonly-recovery-compatibility',importedUnits:43,bucketLimits:{...STAGED_RESUME_POLICY.bucketLimits,N:15},navigationControlLimit:15,navigationPartitions:{publisher:11,'caller-oauth':2,'thin-trigger':2}});
 export function compileAuthorityReadonlyRecoveryPlan(input){return compilePlan(input,READONLY_RECOVERY_POLICY);}
+// One separately approved selected-page successor; no new observation window.
+export const CONNECTION_REPAIR_DECISION_HASH='bfdd63b5933323758669c2735894a7ad4a8dfc98af4fb49badc1797574bfb061';
+export const CONNECTION_REPAIR_WINDOW=freeze({w0:1792284815457,expiresAt:1792306415457});
+export const CONNECTION_REPAIR_POLICY=freeze({...READONLY_RECOVERY_POLICY,stage:'selected-page-connection-repair',importedUnits:46,bucketLimits:{...READONLY_RECOVERY_POLICY.bucketLimits,N:12},navigationControlLimit:12,navigationPartitions:{publisher:8,'caller-oauth':2,'thin-trigger':2}});
+export function compileAuthorityConnectionRepairPlan(input){return compilePlan(input,CONNECTION_REPAIR_POLICY);}
+
 
 // `*Eligible` denotes only the map's local arithmetic condition. It never
 // verifies prerequisites, starts W0, or grants an external operation capability.
@@ -158,7 +164,7 @@ function compilePlan(input,policy){
   const limits=policy.bucketLimits,operations=policy.operations,navigationTargets=policy.navigationTargets;
   const outsideRestore=policy.originalRestoreUnitsOutsideMap??0;
   input=snapshot(input);
-  const readonly=policy===READONLY_RECOVERY_POLICY,staged=policy===STAGED_RESUME_POLICY||readonly;
+  const readonly=policy===READONLY_RECOVERY_POLICY||policy===CONNECTION_REPAIR_POLICY,staged=policy===STAGED_RESUME_POLICY||readonly;
   const closed=policy===STANDALONE_TRIAL_POLICY&&Object.hasOwn(input.history??{},'closedPreflightCaller'),imported=closed?33:policy.importedUnits;
   if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==policy.decisionHash||
    !exact(input.history,['spent','limit',...(closed?['closedPreflightCaller']:[])])||input.history.spent!==imported||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
