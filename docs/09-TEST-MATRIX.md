@@ -2441,3 +2441,15 @@ reproduced it and the ordinary constructor now rejects changed original spent
 before child/claim. Both C and I negative regressions pass; independent review
 reports no remaining P1/P2. The exact-head CI and private launcher remain
 separate prerequisites; no actual new operation or launch is implied.
+
+## Synthetic authority replacement accounting (2026-10-19)
+
+`tests/read-authority-simple.test.mjs` covers separate main/browser ceilings,
+protected recovery, predebit window and UNKNOWN persistence, shared rate and
+single IO, bounded readonly retries, stage/native GCP mapping, original C/I,
+real-owner drain, damaged-mirror recovery, source/history drift, full driver
+pre/post checks, nonrefundable RPC charge, incomplete/unknown transport and
+bounded terminal reads. Review regressions cover cleanup replay, falsey Promise
+rejections, inaccessible C2 and dangling STOP markers. No live Google or
+Production acceptance is implied; actual adapter closure and real cost mapping
+remain prerequisites. See READ-SIMPLE-TRIAL-ACCOUNTING.md.

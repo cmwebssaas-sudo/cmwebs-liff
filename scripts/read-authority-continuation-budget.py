@@ -1636,28 +1636,31 @@ class Ledger:
   except OSError:pass
 
 def emit(v):print(compact(v),flush=True)
-ledger=None
-try:
- os.umask(0o077)
- if sys.argv[1:]==['--policy']:emit(OPERATIONS);sys.exit(0)
- if sys.argv[1:]==['--standalone-policy']:emit(STANDALONE_OPERATIONS);sys.exit(0)
- line=sys.stdin.buffer.readline(100001)
- if len(line)>100000:fail()
- if len(sys.argv)==2 and re.fullmatch('--readonly-local-resume-[1-3]-request-stop',sys.argv[1]):
-  request_stop(json.loads(line),True,True,True,True,True,True,True,int(sys.argv[1].split('-')[5]));emit({'ok':True,'stopRequested':True});sys.exit(0)
- if sys.argv[1:] in [['--request-stop'],['--standalone-request-stop'],['--standalone-successor-request-stop'],['--staged-resume-request-stop'],['--readonly-recovery-request-stop'],['--readonly-wiring-repair-request-stop'],['--readonly-connection-repair-request-stop'],['--readonly-user-tab-repair-request-stop']]:
-  usertab=sys.argv[1]=='--readonly-user-tab-repair-request-stop';connection=usertab or sys.argv[1]=='--readonly-connection-repair-request-stop';repair=connection or sys.argv[1]=='--readonly-wiring-repair-request-stop';request_stop(json.loads(line),sys.argv[1]!='--request-stop',repair or sys.argv[1] in ['--standalone-successor-request-stop','--staged-resume-request-stop','--readonly-recovery-request-stop'],repair or sys.argv[1] in ['--staged-resume-request-stop','--readonly-recovery-request-stop'],repair or sys.argv[1]=='--readonly-recovery-request-stop',repair,connection,usertab);emit({'ok':True,'stopRequested':True});sys.exit(0)
- if sys.argv[1:] not in [['--inherited-lock'],['--standalone-inherited-lock'],['--standalone-cleanup-inherited-lock']]:fail()
- ledger=Ledger.__new__(Ledger);ledger.__init__(json.loads(line),sys.argv[1]!='--inherited-lock',sys.argv[1]=='--standalone-cleanup-inherited-lock');emit(ledger.view())
- for line in sys.stdin.buffer:
-  try:
-   if len(line)>100000:fail()
-   q=json.loads(line);r=ledger.command(q);emit(r)
-   if q.get('op') in ['finish','finish-cleanup']:break
-  except Exception:
-   try:ledger.stopped()
-   except Exception:pass
-   emit({'ok':False,'code':'TRIAL_STOPPED'})
-except Exception:emit({'ok':False,'code':'TRIAL_STOPPED'});sys.exit(1)
-finally:
- if ledger is not None:ledger.close()
+def main():
+ ledger=None
+ try:
+  os.umask(0o077)
+  if sys.argv[1:]==['--policy']:emit(OPERATIONS);sys.exit(0)
+  if sys.argv[1:]==['--standalone-policy']:emit(STANDALONE_OPERATIONS);sys.exit(0)
+  line=sys.stdin.buffer.readline(100001)
+  if len(line)>100000:fail()
+  if len(sys.argv)==2 and re.fullmatch('--readonly-local-resume-[1-3]-request-stop',sys.argv[1]):
+   request_stop(json.loads(line),True,True,True,True,True,True,True,int(sys.argv[1].split('-')[5]));emit({'ok':True,'stopRequested':True});sys.exit(0)
+  if sys.argv[1:] in [['--request-stop'],['--standalone-request-stop'],['--standalone-successor-request-stop'],['--staged-resume-request-stop'],['--readonly-recovery-request-stop'],['--readonly-wiring-repair-request-stop'],['--readonly-connection-repair-request-stop'],['--readonly-user-tab-repair-request-stop']]:
+   usertab=sys.argv[1]=='--readonly-user-tab-repair-request-stop';connection=usertab or sys.argv[1]=='--readonly-connection-repair-request-stop';repair=connection or sys.argv[1]=='--readonly-wiring-repair-request-stop';request_stop(json.loads(line),sys.argv[1]!='--request-stop',repair or sys.argv[1] in ['--standalone-successor-request-stop','--staged-resume-request-stop','--readonly-recovery-request-stop'],repair or sys.argv[1] in ['--staged-resume-request-stop','--readonly-recovery-request-stop'],repair or sys.argv[1]=='--readonly-recovery-request-stop',repair,connection,usertab);emit({'ok':True,'stopRequested':True});sys.exit(0)
+  if sys.argv[1:] not in [['--inherited-lock'],['--standalone-inherited-lock'],['--standalone-cleanup-inherited-lock']]:fail()
+  ledger=Ledger.__new__(Ledger);ledger.__init__(json.loads(line),sys.argv[1]!='--inherited-lock',sys.argv[1]=='--standalone-cleanup-inherited-lock');emit(ledger.view())
+  for line in sys.stdin.buffer:
+   try:
+    if len(line)>100000:fail()
+    q=json.loads(line);r=ledger.command(q);emit(r)
+    if q.get('op') in ['finish','finish-cleanup']:break
+   except Exception:
+    try:ledger.stopped()
+    except Exception:pass
+    emit({'ok':False,'code':'TRIAL_STOPPED'})
+ except Exception:emit({'ok':False,'code':'TRIAL_STOPPED'});sys.exit(1)
+ finally:
+  if ledger is not None:ledger.close()
+
+if __name__ == "__main__":main()

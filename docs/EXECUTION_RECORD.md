@@ -4250,3 +4250,26 @@ claimed; no new remote resource was created. Keep all old claims/UNKNOWNs,
 53 debits, cleanup reserves and flags off. This budget stop cannot use the
 predebit local-failure exception. Continue independent work only within existing
 authority; revised trial execution requires a complete feasible approved map.
+
+## 2026-10-19 approved synthetic replacement accounting
+
+Owner approved a main160 plus browser72 ceiling (232 combined), retaining all
+53 historical operations. Added one durable replacement owner and separate
+browser accounting; all old claims/UNKNOWN/STOP evidence remain unchanged.
+The native GCP baseline now uses the settings interface, and the existing full
+safety driver retains its pre/post checks under the replacement identity.
+
+Independent review found five important defects (unknown cleanup replay,
+falsey rejection settlement, incomplete RPC postreads, inaccessible C2 and
+dangling STOP veto); each was reproduced RED and fixed GREEN. Focused28/28,
+validate72 backend/40 endpoints/static cache, Worker26/26 and diff checks pass.
+Full unit2682/2682 PASS, zero fail/cancel/skip; exact-head CI remains a separate pending gate at this entry.
+The bare npm-test integration run also reported missing disposable Core/PG
+configuration in commercial-subscription.roundtrip.test.mjs; that suite belongs
+to the existing pinned Core integration workflow, and no database was started.
+
+This is local trial preparation only: no new actual trial debit, claim/window,
+credential, grant, RPC, Google/Cloudflare/Pages change, flag or T0. Actual
+source-pinned adapter closure, real browser cost fit, original-resource write
+eligibility and all live acceptance remain open. See
+READ-SIMPLE-TRIAL-ACCOUNTING.md for boundaries and rollback.

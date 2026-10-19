@@ -3,6 +3,7 @@
 // Trusted adapters must wire every charged callback to one fixed low-level IO.
 // A real launcher must pin the entire reachable source closure and independent
 // recovery; the synchronous guard is an obligation, not a source-proof factory.
+import {SIMPLE_DECISION,SIMPLE_RULES,compileAuthoritySimplePlan} from './read-authority-simple-plan.mjs';
 import {createHash} from 'node:crypto';
 import {types} from 'node:util';
 import {AUTHORITY_TRIAL_SCOPES,verifyAuthorityTrialReadback,verifyAuthorityStandaloneReadback} from './read-authority-trial-driver.mjs';
@@ -53,13 +54,14 @@ export function createAuthorityStandaloneDriver(input){
 }
 export function createAuthorityStagedResumeDriver(input){return createDriver(input,true,true);}
 export function createAuthorityReadonlyRecoveryDriver(input){return createDriver(input,true,true,true);}
-function createDriver(input,standalone,staged=false,readonly=false){
+export function createAuthoritySimpleDriver(input){return createDriver(input,true,false,false,true);}
+function createDriver(input,standalone,staged=false,readonly=false,simple=false){
  try{
   const data=value=>snapshot(value,standalone);
   const releaseAliases=aliasesFor(staged?STAGED_RESUME_POLICY:standalone?STANDALONE_TRIAL_POLICY:policy);
-  const decisionHash=readonly?READONLY_RECOVERY_DECISION_HASH:staged?STAGED_RESUME_DECISION_HASH:standalone?STANDALONE_TRIAL_DECISION_HASH:continuationDecisionHash,pins=standalone?standalonePins:continuationPins;
+  const decisionHash=simple?SIMPLE_DECISION:readonly?READONLY_RECOVERY_DECISION_HASH:staged?STAGED_RESUME_DECISION_HASH:standalone?STANDALONE_TRIAL_DECISION_HASH:continuationDecisionHash,pins=standalone?standalonePins:continuationPins;
   const defaultCompile=readonly?compileAuthorityReadonlyRecoveryPlan:staged?compileAuthorityStagedResumePlan:standalone?compileAuthorityStandalonePlan:compileAuthorityContinuationPlan,verify=standalone?verifyAuthorityStandaloneReadback:verifyAuthorityTrialReadback;
-  const o=inputSnapshot(input,standalone),closed=standalone&&Object.hasOwn(o,'closedPreflight'),renewed=readonly&&Object.hasOwn(o,'deadlineRenewal'),repair=renewed&&Object.hasOwn(o,'firstStageRepair'),connection=repair&&Object.hasOwn(o,'connectionRepair'),rewindow=connection&&Object.hasOwn(o.connectionRepair,'windowApproval'),usertab=rewindow&&Object.hasOwn(o.connectionRepair,'userTabRepair'),local=usertab&&Object.hasOwn(o,'localWiringResume'),required=['decisionHash','continuationBinding','expected','expiresAt','now','operations','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport'];
+  const o=inputSnapshot(input,standalone),closed=standalone&&Object.hasOwn(o,'closedPreflight'),renewed=readonly&&Object.hasOwn(o,'deadlineRenewal'),repair=renewed&&Object.hasOwn(o,'firstStageRepair'),connection=repair&&Object.hasOwn(o,'connectionRepair'),rewindow=connection&&Object.hasOwn(o.connectionRepair,'windowApproval'),usertab=rewindow&&Object.hasOwn(o.connectionRepair,'userTabRepair'),local=usertab&&Object.hasOwn(o,'localWiringResume'),required=[...(simple?['browserOperations']:[]),'decisionHash','continuationBinding','expected','expiresAt','now','operations','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport'];
   if(!keys(o,[...required,...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[]),...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[]),...(readonly?['readonlyRecovery']:[]),...(renewed?['deadlineRenewal']:[]),...(repair?['firstStageRepair']:[]),...(connection?['connectionRepair']:[]),...(local?['localWiringResume']:[])])||o.decisionHash!==decisionHash||typeof o.continuationBinding!=='string'||!/^[a-f0-9]{64}$/.test(o.continuationBinding)||!integer(o.expiresAt)||o.expiresAt<=0||['now','readRelease','readIdentity','credential','publisherCredential','signRequest','assertDispatch','transport',...(Object.hasOwn(o,'readTerminal')?['readTerminal']:[])].some(k=>typeof o[k]!=='function'))stop();
   const compile=local?compileAuthorityLocalWiringResumePlan:usertab?compileAuthorityUserTabRepairPlan:connection?compileAuthorityConnectionRepairPlan:defaultCompile;
   const e=o.expected;
@@ -68,7 +70,7 @@ function createDriver(input,standalone,staged=false,readonly=false){
   for(const k of pins.filter(k=>k!==version))if(typeof e[k]!=='string'||!(/Hash$/.test(k)?/^[a-f0-9]{64}$/:/^[-A-Za-z0-9_]{1,200}$/).test(e[k]))stop();
   if(staged&&!closed)stop();
   if(closed&&!keys(o.closedPreflight,['pins','callerSelection']))stop();
-  if(!compile({decisionHash,history:{spent:local?50:usertab?47:connection?46:readonly?43:staged?42:closed?33:standalone?STANDALONE_TRIAL_POLICY.importedUnits:policy.importedUnits,limit:160,...(closed&&!staged?{closedPreflightCaller:o.closedPreflight.callerSelection}:{})},mapComplete:true,operations:o.operations}).credentialRpcEligible)stop();
+  if(!(simple?compileAuthoritySimplePlan({decisionHash,history:{spent:53,limit:160},mapComplete:true,operations:o.operations,browserOperations:o.browserOperations}):compile({decisionHash,history:{spent:local?50:usertab?47:connection?46:readonly?43:staged?42:closed?33:standalone?STANDALONE_TRIAL_POLICY.importedUnits:policy.importedUnits,limit:160,...(closed&&!staged?{closedPreflightCaller:o.closedPreflight.callerSelection}:{})},mapComplete:true,operations:o.operations})).credentialRpcEligible)stop();
   const mapped=new Map(o.operations.map(v=>[v.bucket+':'+v.alias,v]));
   const time=()=>{const n=o.now();if(!integer(n))stop();return n;};
   const guard=()=>{if(sync(o.assertDispatch)!==undefined)stop();};
@@ -86,7 +88,7 @@ function createDriver(input,standalone,staged=false,readonly=false){
     if(arguments.length!==1||used||!cap||typeof cap.inspect!=='function'||typeof cap.externalRead!=='function'||typeof cap.dispatchCompatibility!=='function'||typeof cap.finishCompatibility!=='function')stop();used=true;
     // No new scope or ledger: identity comes from the current captured owner.
     const identity=data(cap.identity);
-    if(!keys(identity,['epoch','binding','decisionHash','expiresAt',...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[]),...(readonly?['readonlyRecovery']:[]),...(renewed?['deadlineRenewal']:[]),...(repair?['firstStageRepair']:[]),...(connection?['connectionRepair']:[]),...(local?['localWiringResume']:[])])||identity.epoch!==e.trialEpoch||identity.binding!==o.continuationBinding||identity.decisionHash!==decisionHash||identity.expiresAt!==(staged?null:o.expiresAt)||cap.decisionHash!==decisionHash||closed&&!same(identity.closedPreflight,o.closedPreflight.pins)||staged&&!same(identity.stagedResume,o.stagedResume)||readonly&&!same(identity.readonlyRecovery,o.readonlyRecovery)||renewed&&(!keys(o.deadlineRenewal,['path','sha256'])||!same(identity.deadlineRenewal,o.deadlineRenewal))||repair&&!same(identity.firstStageRepair,o.firstStageRepair)||connection&&!same(identity.connectionRepair,o.connectionRepair)||local&&!same(identity.localWiringResume,o.localWiringResume))stop();
+    if(!keys(identity,['epoch','binding','decisionHash','expiresAt',...(closed?['closedPreflight']:[]),...(staged?['stagedResume']:[]),...(readonly?['readonlyRecovery']:[]),...(renewed?['deadlineRenewal']:[]),...(repair?['firstStageRepair']:[]),...(connection?['connectionRepair']:[]),...(local?['localWiringResume']:[])])||identity.epoch!==e.trialEpoch||identity.binding!==o.continuationBinding||identity.decisionHash!==decisionHash||identity.expiresAt!==((staged||simple)?null:o.expiresAt)||cap.decisionHash!==decisionHash||closed&&!same(identity.closedPreflight,o.closedPreflight.pins)||staged&&!same(identity.stagedResume,o.stagedResume)||readonly&&!same(identity.readonlyRecovery,o.readonlyRecovery)||renewed&&(!keys(o.deadlineRenewal,['path','sha256'])||!same(identity.deadlineRenewal,o.deadlineRenewal))||repair&&!same(identity.firstStageRepair,o.firstStageRepair)||connection&&!same(identity.connectionRepair,o.connectionRepair)||local&&!same(identity.localWiringResume,o.localWiringResume))stop();
     guard();const state=data(await cap.inspect());
     if(connection&&(state.spent<(usertab?50:47)||!rewindow&&(state.w0!==CONNECTION_REPAIR_WINDOW.w0||state.expiresAt!==CONNECTION_REPAIR_WINDOW.expiresAt)))stop();
     if(readonly&&!renewed&&(state.w0!==READONLY_RECOVERY_WINDOW.w0||state.expiresAt!==READONLY_RECOVERY_WINDOW.expiresAt||state.spent<43))stop();
@@ -100,7 +102,12 @@ function createDriver(input,standalone,staged=false,readonly=false){
      const externalRead=(io,alias)=>{
       pending++;
       const task=(async()=>{
-       try{if(!active||failed||pending!==1||typeof io!=='function'||!releaseAliases.includes(alias)||seen.has(alias))stop();seen.add(alias);const descriptor=mapped.get('F:'+phase+'.'+alias);return await cap.externalRead(()=>{if(!active||failed)stop();guard();live();return io();},descriptor);}catch(_){failed=true;stop();}finally{pending--;}
+       try{if(!active||failed||pending!==1||typeof io!=='function'||!releaseAliases.includes(alias)||seen.has(alias))stop();seen.add(alias);const key='F:'+phase+'.'+alias,descriptor=mapped.get(key),read=()=>{if(!active||failed)stop();guard();live();return io();};
+        if(simple&&SIMPLE_RULES[key].methods.every(m=>['snapshot','read-key-presence'].includes(m))){
+         const rows=o.browserOperations.filter(v=>v.key===key);if(rows.length!==1||!['snapshot','read-key-presence'].includes(rows[0].operation)||typeof cap.browserRead!=='function'||typeof cap.completeBrowserOperation!=='function')stop();
+         const value=await cap.browserRead(read,rows[0]);await cap.completeBrowserOperation(key);return value;
+        }
+        return await cap.externalRead(read,descriptor);}catch(_){failed=true;stop();}finally{pending--;}
       })();tasks.push(task);void task.catch(()=>{});return task;
      };
      try{
@@ -122,15 +129,24 @@ function createDriver(input,standalone,staged=false,readonly=false){
     // Guard/sign/validate/dispatch remain synchronous in this admitted callback.
     // Catch only actual transport errors here: the core must still own pending H
     // while bounded F/G/T readback runs. Source/owner faults deny those reads.
-    const reply=await cap.dispatchCompatibility({operation:mapped.get('H:wrapper-compatibility-rpc'),credentialExpiresAt:caller.expiresAt},async startedAt=>{
+    let reply;try{reply=await cap.dispatchCompatibility({operation:mapped.get('H:wrapper-compatibility-rpc'),credentialExpiresAt:caller.expiresAt},async startedAt=>{
      guard();live();fresh(before.observedAt);beforeIdentities.forEach(v=>fresh(v.observedAt));
      if(!integer(startedAt)||time()<startedAt||caller.expiresAt-time()<=360000||publisher.expiresAt-time()<=360000)stop();
      const request=signedRequest(sync(o.signRequest),time());guard();const sendTime=live();
      fresh(before.observedAt,sendTime);beforeIdentities.forEach(v=>fresh(v.observedAt,sendTime));
      if(Math.abs(sendTime-request.timestamp)>15000||caller.expiresAt-sendTime<=360000||publisher.expiresAt-sendTime<=360000)stop();
      const call=Object.freeze({url:'https://script.googleapis.com/v1/scripts/'+e.deploymentId+':run',accessToken:caller.accessToken,body:Object.freeze({function:'authorizeTrial',parameters:Object.freeze([request,'compatibility']),devMode:false})});
-     try{return {transportFailed:false,response:data(await o.transport(call)),startedAt};}catch(_){return {transportFailed:true,response:null,startedAt};}
+     try{const response=data(await o.transport(call));if(simple&&(!keys(response,['done','response'])||response.done!==true))stop();return {transportFailed:false,response,startedAt};}catch(_){if(simple)stop();return {transportFailed:true,response:null,startedAt};}
     });
+    }catch(error){
+     if(simple&&o.readTerminal&&typeof cap.terminalRead==='function')for(let attempt=1;attempt<=3;attempt++){
+      const state=data(await cap.inspectTerminal().catch(()=>({}))); // STOP does not grant ordinary authority.
+      if(!integer(state.rpc?.beganAt))break;
+      const r=await cap.terminalRead(()=>o.readTerminal(Object.freeze({attempt,startedAt:state.rpc.beganAt,deploymentId:e.deploymentId,function:'authorizeTrial',accessToken:caller.accessToken})),mapped.get('T:terminal-'+attempt));
+      if(!keys(r,['terminalKnown'])||typeof r.terminalKnown!=='boolean')stop();if(r.terminalKnown)break;
+     }
+     throw error;
+    }
     const after=await release('wrapper-after'),afterIdentities=await identities('wrapper-after');
     if(reply.transportFailed||!compatible(reply.response)){
      if(o.readTerminal)for(let attempt=1;attempt<=3;attempt++){
