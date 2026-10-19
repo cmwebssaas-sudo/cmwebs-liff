@@ -3,7 +3,7 @@
 // No refresh, account IO, counter mutation or source read occurs at construction.
 import {types} from 'node:util';
 import {createHash} from 'node:crypto';
-import {canonicalAuthorityTrialBinding,AUTHORITY_TRIAL_SCOPES} from './read-authority-trial-driver.mjs';
+import {canonicalAuthorityTrialBinding,canonicalAuthorityStandaloneBinding,AUTHORITY_TRIAL_SCOPES} from './read-authority-trial-driver.mjs';
 const stop=()=>{throw Error('TRIAL_STOPPED');};
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const only=(v,keys,required=keys)=>record(v)&&Object.keys(v).every(k=>keys.includes(k))&&required.every(k=>Object.hasOwn(v,k));
@@ -19,6 +19,23 @@ const filesHash=v=>checksum([...v].sort((a,b)=>a.name.localeCompare(b.name)));
 const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(s=>'https://www.googleapis.com/auth/'+s);
 const sameScopes=v=>Array.isArray(v)&&v.length===scopes.length&&v.every(s=>typeof s==='string')&&JSON.stringify([...v].sort())===JSON.stringify([...scopes].sort());
 function freeze(v){if(record(v)||Array.isArray(v)){Object.values(v).forEach(freeze);Object.freeze(v);}return v;}
+// New-mode options are own data only. Preserve callback/producer references,
+// but snapshot JSON pins without ever invoking getters, proxies or toJSON.
+function standaloneOptions(input){
+ const plain=v=>v&&typeof v==='object'&&!types.isProxy(v)&&[Object.prototype,null].includes(Object.getPrototypeOf(v));
+ if(!plain(input))stop();const out={},active=new Set();let count=0;
+ const copy=(v,depth)=>{
+  if(++count>1000||depth>8)stop();
+  if(v===null||typeof v==='string'||typeof v==='boolean'||typeof v==='number'&&Number.isFinite(v))return v;
+  if(!v||typeof v!=='object'||types.isProxy(v)||active.has(v)||(!Array.isArray(v)&&!plain(v)))stop();
+  active.add(v);const descriptors=Object.getOwnPropertyDescriptors(v),names=Reflect.ownKeys(descriptors),array=Array.isArray(v),result=array?[]:{};
+  if(array&&(v.length>200||names.length!==v.length+1||Array.from({length:v.length},(_,i)=>String(i)).some(k=>!Object.hasOwn(descriptors,k))))stop();
+  for(const key of names){if(array&&key==='length')continue;const d=descriptors[key];if(typeof key!=='string'||!d.enumerable||!Object.hasOwn(d,'value'))stop();Object.defineProperty(result,key,{value:copy(d.value,depth+1),enumerable:true});}
+  active.delete(v);return result;
+ };
+ for(const key of Reflect.ownKeys(Object.getOwnPropertyDescriptors(input))){const d=Object.getOwnPropertyDescriptor(input,key);if(typeof key!=='string'||!d.enumerable||!Object.hasOwn(d,'value'))stop();Object.defineProperty(out,key,{value:['expected','baselineVersions'].includes(key)?copy(d.value,0):d.value,enumerable:true});}
+ return out;
+}
 function content(v,scriptId){
  if(!only(v,['scriptId','files'])||v.scriptId!==scriptId||!Array.isArray(v.files)||v.files.length<1||v.files.length>100)stop();
  const names=new Set();let manifests=0;
@@ -58,11 +75,16 @@ async function json(r,url,max){
  try{while(true){const {done,value}=await reader.read();if(done)break;if(!types.isUint8Array(value)||(size+=value.byteLength)>max){await reader.cancel().catch(()=>{});stop();}chunks.push(value);}}finally{reader.releaseLock();}
  const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.byteLength;}return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
 }
-export function createAuthorityReleaseSource(input){
+export function createAuthorityReleaseSource(input){return createReleaseSource(input,false);}
+export function createAuthorityStandaloneReleaseSource(input){
+ if(arguments.length!==1)stop();return createReleaseSource(standaloneOptions(input),true);
+}
+function createReleaseSource(input,standalone){
  try{
-  if(!only(input,['originalScriptId','thinScriptId','libraryVersion','publisherHash','credential','fetcher','now'],['originalScriptId','thinScriptId','libraryVersion','publisherHash','credential']))stop();
-  const {originalScriptId,thinScriptId,libraryVersion,publisherHash,credential,fetcher=fetch,now=Date.now}=input;
-  if(!id(originalScriptId)||!id(thinScriptId)||originalScriptId===thinScriptId||libraryVersion!==7||typeof publisherHash!=='string'||!/^[a-f0-9]{64}$/.test(publisherHash)||[credential,fetcher,now].some(f=>typeof f!=='function'))stop();
+  const versionKey=standalone?'standaloneVersion':'libraryVersion';
+  if(!only(input,['originalScriptId','thinScriptId',versionKey,'publisherHash','credential','fetcher','now'],['originalScriptId','thinScriptId',versionKey,'publisherHash','credential']))stop();
+  const {originalScriptId,thinScriptId,publisherHash,credential,fetcher=fetch,now=Date.now}=input,versionNumber=input[versionKey];
+  if(!id(originalScriptId)||!id(thinScriptId)||originalScriptId===thinScriptId||versionNumber!==(standalone?1:7)||typeof publisherHash!=='string'||!/^[a-f0-9]{64}$/.test(publisherHash)||[credential,fetcher,now].some(f=>typeof f!=='function'))stop();
   const base=id=>'https://script.googleapis.com/v1/projects/'+id,query=f=>'?fields='+encodeURIComponent(f);
   const contentFields=query('scriptId,files(name,type,source)'),versionFields=query('nextPageToken,versions(scriptId,versionNumber,description,createTime)');
   const sourceCall=(scriptId,suffix='')=>({url:base(scriptId)+'/content'+contentFields+suffix,max:4000000,decode:v=>content(v,scriptId)});
@@ -75,8 +97,8 @@ export function createAuthorityReleaseSource(input){
    'original-editor':sourceCall(originalScriptId),
    'original-versions':{url:base(originalScriptId)+'/versions'+versionFields+'&pageSize=200',max:100000,decode:v=>inventory(v,'versions',originalScriptId)},
    'original-deployments':deploymentsCall(originalScriptId),
-   'library-content':sourceCall(originalScriptId,'&versionNumber='+libraryVersion),
-   'thin-content':sourceCall(thinScriptId,'&versionNumber=1'),
+   'library-content':sourceCall(standalone?thinScriptId:originalScriptId,'&versionNumber='+versionNumber),
+   'thin-content':sourceCall(thinScriptId,standalone?'':'&versionNumber=1'),
    'thin-deployments':deploymentsCall(thinScriptId,true)
   });
   let busy=false,stopped=false;const seen=new Set();
@@ -98,17 +120,19 @@ export function createAuthorityReleaseSource(input){
     },alias);
    }catch(_){stopped=true;stop();}finally{if(held)busy=false;}
   }});
-  sourceAdapters.set(adapter,Object.freeze({originalScriptId,thinScriptId,libraryVersion,publisherHash,read:adapter.read}));return adapter;
+  sourceAdapters.set(adapter,Object.freeze({originalScriptId,thinScriptId,[versionKey]:versionNumber,publisherHash,standalone,read:adapter.read}));return adapter;
  }catch(_){stop();}
 }
 
-function manifestOf(packet,wrapper,expected){
+function manifestOf(packet,wrapper,expected,standalone=false){
  const raw=packet.files.find(f=>f.type==='JSON').source,m=JSON.parse(raw);
  const keys=['timeZone','dependencies','exceptionLogging','runtimeVersion','oauthScopes','urlFetchWhitelist',...(wrapper?['executionApi']:[])];
  if(!only(m,keys)||m.timeZone!=='Asia/Taipei'||m.exceptionLogging!=='NONE'||m.runtimeVersion!=='V8'||!Array.isArray(m.oauthScopes)||
   checksum([...m.oauthScopes].sort())!==checksum([...AUTHORITY_TRIAL_SCOPES].sort())||!Array.isArray(m.urlFetchWhitelist)||
   checksum([...m.urlFetchWhitelist].sort())!==checksum(['https://sheets.googleapis.com/v4/spreadsheets/','https://api.line.me/oauth2/v2.1/verify'].sort()))stop();
- if(wrapper){
+ if(standalone){
+  if(!only(m.dependencies,[])||!only(m.executionApi,['access'])||m.executionApi.access!=='ANYONE')stop();
+ }else if(wrapper){
   if(!only(m.dependencies,['libraries'])||!Array.isArray(m.dependencies.libraries)||m.dependencies.libraries.length!==1||!only(m.executionApi,['access'])||m.executionApi.access!=='ANYONE')stop();
   const l=m.dependencies.libraries[0];if(!only(l,['userSymbol','libraryId','version','developmentMode'])||l.userSymbol!=='AuthorityTrial'||l.libraryId!==expected.libraryId||l.version!==String(expected.libraryVersion)||l.developmentMode!==false)stop();
  }else if(!only(m.dependencies,[]))stop();
@@ -117,13 +141,19 @@ function manifestOf(packet,wrapper,expected){
 // Partial equality evidence only. The five native release observations, ACLs,
 // caller Sheets metadata and complete native quota/windows still belong to the
 // trusted full observer. This object cannot satisfy the driver's full readback.
-export function createAuthorityReleaseSourceVerifier(input){
+export function createAuthorityReleaseSourceVerifier(input){return createReleaseSourceVerifier(input,false);}
+export function createAuthorityStandaloneReleaseSourceVerifier(input){
+ if(arguments.length!==1)stop();return createReleaseSourceVerifier(standaloneOptions(input),true);
+}
+function createReleaseSourceVerifier(input,standalone){
  try{
   if(!only(input,['expected','originalParentId','baselineVersions','sourceAdapter']))stop();
+  if(standalone)canonicalAuthorityStandaloneBinding(input.expected);
   const expected=freeze(structuredClone(input.expected)),parent=input.originalParentId,baseline=structuredClone(input.baselineVersions),adapter=input.sourceAdapter,pins=sourceAdapters.get(adapter);
-  canonicalAuthorityTrialBinding(expected);
-  if(!pins||pins.originalScriptId!==expected.libraryId||pins.thinScriptId!==expected.thinScriptId||pins.libraryVersion!==expected.libraryVersion||pins.publisherHash!==expected.publisherHash||(parent!==null&&!id(parent))||!Array.isArray(baseline)||baseline.length!==6)stop();
-  baseline.sort((a,b)=>a.versionNumber-b.versionNumber);for(let i=0;i<6;i++){version(baseline[i],expected.libraryId);if(baseline[i].versionNumber!==i+1)stop();}freeze(baseline);
+  if(!standalone)canonicalAuthorityTrialBinding(expected);
+  const originalId=standalone?expected.originalScriptId:expected.libraryId,versionKey=standalone?'standaloneVersion':'libraryVersion';
+  if(!pins||pins.standalone!==standalone||pins.originalScriptId!==originalId||pins.thinScriptId!==expected.thinScriptId||pins[versionKey]!==expected[versionKey]||pins.publisherHash!==expected.publisherHash||(parent!==null&&!id(parent))||!Array.isArray(baseline)||baseline.length!==6)stop();
+  baseline.sort((a,b)=>a.versionNumber-b.versionNumber);for(let i=0;i<6;i++){version(baseline[i],originalId);if(baseline[i].versionNumber!==i+1)stop();}freeze(baseline);
   const read=pins.read;let busy=false,stopped=false,nextPhase=0;
   return Object.freeze({read:async function(control){
    let held=false,active=false;
@@ -135,26 +165,29 @@ export function createAuthorityReleaseSourceVerifier(input){
     const cap=Object.freeze({phase,externalRead:(io,alias)=>{live();return external(async()=>{live();return await io();},alias);}});
     for(const alias of aliases){
      live();const v=freeze(structuredClone(await read.call(adapter,alias,cap)));live();packets[alias]=v;
-     if(alias==='original-project'){if(v.scriptId!==expected.libraryId||(Object.hasOwn(v,'parentId')?v.parentId:null)!==parent)stop();}
+     if(alias==='original-project'){if(v.scriptId!==originalId||(Object.hasOwn(v,'parentId')?v.parentId:null)!==parent)stop();}
      else if(alias==='original-editor'){if(filesHash(v.files)!==expected.originalEditorHash)stop();}
      else if(alias==='original-versions'){
       const rows=[...v.versions].sort((a,b)=>a.versionNumber-b.versionNumber);
-      if(rows.length!==7||checksum(rows.slice(0,6))!==checksum(baseline)||rows[6].versionNumber!==expected.libraryVersion||rows[6].description!=='CMWebs C3 trial '+sha(expected.trialEpoch).slice(0,16))stop();
+      if(standalone){if(rows.length!==6||checksum(rows)!==checksum(baseline))stop();}
+      else if(rows.length!==7||checksum(rows.slice(0,6))!==checksum(baseline)||rows[6].versionNumber!==expected.libraryVersion||rows[6].description!=='CMWebs C3 trial '+sha(expected.trialEpoch).slice(0,16))stop();
      }else if(alias==='original-deployments'){if(checksum(v.deployments)!==expected.originalDeploymentsHash)stop();}
      else if(alias==='library-content'||alias==='thin-content'){
-      const wrapper=alias==='thin-content',m=manifestOf(v,wrapper,expected);
+      const wrapper=standalone||alias==='thin-content',m=manifestOf(v,wrapper,expected,standalone);
       if(filesHash(v.files)!==expected[wrapper?'thinSourceHash':'librarySourceHash']||sha(m.raw)!==expected[wrapper?'thinManifestHash':'libraryManifestHash'])stop();
      }else{
       if(v.deployments.length!==1||v.deployments[0].deploymentId!==expected.deploymentId||v.deployments[0].deploymentConfig.versionNumber!==1)stop();
      }
     }
-    const library=packets['library-content'],thin=packets['thin-content'],wrapper=manifestOf(thin,true,expected).manifest;
-    const facts={libraryId:library.scriptId,thinScriptId:thin.scriptId,libraryVersion:packets['original-versions'].versions.find(v=>v.versionNumber===7).versionNumber,
-     deploymentId:packets['thin-deployments'].deployments[0].deploymentId,librarySourceHash:filesHash(library.files),thinSourceHash:filesHash(thin.files),
-     libraryManifestHash:sha(manifestOf(library,false,expected).raw),thinManifestHash:sha(manifestOf(thin,true,expected).raw),
+    const library=packets['library-content'],thin=packets['thin-content'],wrapper=manifestOf(thin,true,expected,standalone).manifest;
+    const modeFacts=standalone?{originalScriptId:packets['original-project'].scriptId,standaloneVersion:packets['thin-deployments'].deployments[0].deploymentConfig.versionNumber,
+     standaloneLibraryCount:0,originalEditorUnchanged:true,originalDeploymentsUnchanged:true}:
+     {libraryId:library.scriptId,libraryVersion:packets['original-versions'].versions.find(v=>v.versionNumber===7).versionNumber,librarySourceHash:filesHash(library.files),libraryManifestHash:sha(manifestOf(library,false,expected).raw),originalEditorRestored:true};
+    const facts={...modeFacts,thinScriptId:thin.scriptId,
+     deploymentId:packets['thin-deployments'].deployments[0].deploymentId,thinSourceHash:filesHash(thin.files),thinManifestHash:sha(manifestOf(thin,true,expected,standalone).raw),
      originalEditorHash:filesHash(packets['original-editor'].files),originalDeploymentsHash:checksum(packets['original-deployments'].deployments),
-     retainedVersions:packets['original-versions'].versions.map(v=>v.versionNumber).sort((a,b)=>a-b),originalEditorRestored:true,
-     scopes:[...wrapper.oauthScopes],developmentMode:wrapper.dependencies.libraries[0].developmentMode,executionAccess:packets['thin-deployments'].deployments[0].entryPoints[0].executionApi.entryPointConfig.access};
+     retainedVersions:packets['original-versions'].versions.map(v=>v.versionNumber).sort((a,b)=>a-b),
+     scopes:[...wrapper.oauthScopes],developmentMode:standalone?false:wrapper.dependencies.libraries[0].developmentMode,executionAccess:packets['thin-deployments'].deployments[0].entryPoints[0].executionApi.entryPointConfig.access};
     live();nextPhase++;return freeze({source:'fixed-source-release-readback',phase,facts,nativeProofAccepted:false,trialAccepted:false});
    }catch(_){stopped=true;stop();}finally{active=false;if(held)busy=false;}
   }});

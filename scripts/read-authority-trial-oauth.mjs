@@ -47,11 +47,12 @@ export function createAuthorityTrialOAuth(input){
   let lock;try{
    lock=openSync(registry+'.lock','wx',0o600);let exists=true;try{lstatSync(registry);}catch(e){if(e.code==='ENOENT')exists=false;else throw e;}if(exists)stop();
    save(registry,{state:'initializing',path,binding},true);
-   save(path,{version:1,binding,stage:'waiting',deadline,stateHash:hash(state),pkceChallenge:challenge,attempted:false,revocation:'NOT_NEEDED'},true);
+   save(path,{version:1,binding,stage:'waiting',deadline,stateHash:hash(state),pkceChallenge:challenge,attempted:false,consentAttempted:false,consentOutcome:'NOT_SENT',revocation:'NOT_NEEDED'},true);
    save(registry,{state:'ready',path,binding});
   }finally{if(lock!==undefined){closeSync(lock);unlinkSync(registry+'.lock');}}
   let journal=read(path),accessToken=null,verified=null,revokePromise,verifiedExpiry=null;
   let verificationToken=null,revokeSettled=false,verificationAttempted=false;
+  let submitStarted=false,submitAdmitted=false,submitSettled=false,buffered=null;
   const write=patch=>{journal={...journal,...patch};save(path,journal);};
   const integrity=()=>{directory(path);if(JSON.stringify(read(registry))!==JSON.stringify({state:'ready',path,binding})||JSON.stringify(read(path))!==JSON.stringify(journal))stop();};
   const live=()=>{integrity();const time=now();if(journal.stage!=='claimed'||!Number.isSafeInteger(time)||time<start||time>=deadline)stop();return time;};
@@ -104,18 +105,10 @@ export function createAuthorityTrialOAuth(input){
     });
    }catch(_){stop();}finally{if(claimed)verificationToken=null;}
   };
-  const q=new URLSearchParams({client_id:clientId,redirect_uri:AUTHORITY_TRIAL_REDIRECT_URI,response_type:'code',scope:AUTHORITY_TRIAL_SCOPES.join(' '),state,code_challenge:challenge,code_challenge_method:'S256',access_type:'online',include_granted_scopes:'false',prompt:'select_account consent'});
-  const flow=Object.freeze({verifyRevoked,authorizationUrl:'https://accounts.google.com/o/oauth2/v2/auth?'+q.toString(),remainingMs:()=>Math.max(0,deadline-now()),status:()=>journal.stage,
-   receive:async request=>{
-    let claimed=false;
-    try{
-     integrity();if(journal.stage!=='waiting'||!only(request,['method','host','url'])||request.method!=='GET'||request.host!=='127.0.0.1:34763'||typeof request.url!=='string'||request.url.length>16000||!request.url.startsWith('/oauth/callback?')||request.url.includes('#'))stop();
-     const u=new URL(request.url,AUTHORITY_TRIAL_REDIRECT_URI),p=u.searchParams;
-     if(u.origin!=='http://127.0.0.1:34763'||u.pathname!=='/oauth/callback'||[...p.keys()].some(k=>p.getAll(k).length!==1))stop();
-     const incoming=p.get('state');if(typeof incoming!=='string'||incoming.length!==state.length||!timingSafeEqual(Buffer.from(incoming),Buffer.from(state)))stop();
-     write({stage:'claimed',attempted:true});claimed=true;live();await ordinary('E:oauth-response',async()=>{live();});
-     const allowed=['state','code','error','error_description','error_subtype','scope','authuser','prompt','hd'];
-     if([...p.keys()].some(k=>!allowed.includes(k))||p.has('error')||!secret(p.get('code'))||p.get('code').length>4096||(p.has('scope')&&!scopes(p.get('scope'))))stop();
+  const abandon=async()=>{buffered=null;verifier=null;verified=null;try{if(journal.stage!=='cancelled')write({stage:'failed'});}catch(_){}try{await revoke();}catch(_){/* UNKNOWN stays durable; never retry */}};
+  const submissionLive=()=>{integrity();const t=now();if(!['waiting','claimed'].includes(journal.stage)||!Number.isSafeInteger(t)||t<start||t>=deadline)stop();};
+  const processResponse=async p=>{
+   try{live();
      const rawSecret=clientSecret();if(types.isPromise(rawSecret)){void Promise.prototype.then.call(rawSecret,()=>{},()=>{});stop();}if(!secret(rawSecret))stop();
      let sentAt;const t=await ordinary('E:token-exchange',async()=>{
       const tokenUrl='https://oauth2.googleapis.com/token';sentAt=now();write({revocation:'TOKEN_UNAVAILABLE'});
@@ -128,9 +121,41 @@ export function createAuthorityTrialOAuth(input){
      const user=await ordinary('E:caller-userinfo',async()=>{const userUrl='https://www.googleapis.com/oauth2/v2/userinfo?fields=email%2Cverified_email';return await jsonResponse(await fetcher(userUrl,options('GET',undefined,{authorization:'Bearer '+accessToken})),userUrl);});live();
      if(!only(user,['email','verified_email'])||typeof user.email!=='string'||user.email.length>320||!/^\S+@\S+\.\S+$/.test(user.email)||user.verified_email!==true||hash(user.email.trim().toLowerCase())!==callerHash||tokenExpiry-now()<=360000)stop();
      verified=Object.freeze({accessToken,scopes:AUTHORITY_TRIAL_SCOPES,expiresAt:tokenExpiry,refreshTokenPresent:false,callerHash,oauthClientHash});verifiedExpiry=tokenExpiry;write({stage:'ready'});
-    }catch(_){if(claimed){verifier=null;verified=null;try{write({stage:'failed'});}catch(_){}try{await revoke();}catch(_){/* unknown revoke remains durable; never retry */}}stop();}
+   }catch(_){await abandon();stop();}
+  };
+  const q=new URLSearchParams({client_id:clientId,redirect_uri:AUTHORITY_TRIAL_REDIRECT_URI,response_type:'code',scope:AUTHORITY_TRIAL_SCOPES.join(' '),state,code_challenge:challenge,code_challenge_method:'S256',access_type:'online',include_granted_scopes:'false',prompt:'select_account consent'});
+  const flow=Object.freeze({verifyRevoked,authorizationUrl:'https://accounts.google.com/o/oauth2/v2/auth?'+q.toString(),remainingMs:()=>Math.max(0,deadline-now()),status:()=>journal.stage,
+   submitConsent:async function(io){
+    if(arguments.length!==1||typeof io!=='function'||types.isProxy(io)||submitStarted||journal.stage!=='waiting')stop();submitStarted=true;
+    let active=true,attempts=0,completed=false,actual,work,violated=false;
+    try{
+     submissionLive();
+     const observed=await capability.external(()=>{
+      if(!active||attempts++){violated=true;stop();}
+      work=(async()=>{submissionLive();write({consentAttempted:true,consentOutcome:'UNKNOWN'});submitAdmitted=true;
+       await io();submissionLive();if(!active||violated)stop();actual=Object.freeze({ownedIOSettled:true});completed=true;return actual;
+      })();void work.catch(()=>{});return work;
+     },'E:oauth-response');
+     active=false;if(attempts!==1||!completed||violated||observed!==actual)stop();submissionLive();write({consentOutcome:'ACK_UNVERIFIED'});submitSettled=true;
+     const response=buffered;buffered=null;if(response)await processResponse(response);
+     return Object.freeze({source:'fixed-oauth-consent-submission',ownedIOSettled:true,consentVerified:false,trialAccepted:false,rollbackComplete:false});
+    }catch(_){await abandon();stop();}finally{active=false;if(work)await work.catch(()=>{});}
+   },
+   receive:async request=>{
+    let claimed=false;
+    try{
+     integrity();if(!submitAdmitted||journal.stage!=='waiting'||!only(request,['method','host','url'])||request.method!=='GET'||request.host!=='127.0.0.1:34763'||typeof request.url!=='string'||request.url.length>16000||!request.url.startsWith('/oauth/callback?')||request.url.includes('#'))stop();
+     const u=new URL(request.url,AUTHORITY_TRIAL_REDIRECT_URI),p=u.searchParams;
+     if(u.origin!=='http://127.0.0.1:34763'||u.pathname!=='/oauth/callback'||[...p.keys()].some(k=>p.getAll(k).length!==1))stop();
+     const incoming=p.get('state');if(typeof incoming!=='string'||incoming.length!==state.length||!timingSafeEqual(Buffer.from(incoming),Buffer.from(state)))stop();
+     write({stage:'claimed',attempted:true});claimed=true;live();
+     const allowed=['state','code','error','error_description','error_subtype','scope','authuser','prompt','hd'];
+     if([...p.keys()].some(k=>!allowed.includes(k))||p.has('error')||!secret(p.get('code'))||p.get('code').length>4096||(p.has('scope')&&!scopes(p.get('scope'))))stop();
+     if(!submitSettled){buffered=p;return;}
+     await processResponse(p);
+    }catch(_){if(claimed)await abandon();stop();}
    },credential:()=>{try{integrity();if(journal.stage!=='ready'||!verified||verified.expiresAt-now()<=360000||now()>=expiresAt)stop();return verified;}catch(_){void flow.cancel().catch(()=>{});stop();}},
-   cancel:async()=>{let failed=false;try{integrity();}catch(_){failed=true;}verifier=null;verified=null;try{write({stage:'cancelled'});}catch(_){failed=true;}try{await revoke();}catch(_){failed=true;}if(failed)stop();}
+   cancel:async()=>{buffered=null;let failed=false;try{integrity();}catch(_){failed=true;}verifier=null;verified=null;try{write({stage:'cancelled'});}catch(_){failed=true;}try{await revoke();}catch(_){failed=true;}if(failed)stop();}
   });return flow;
  }catch(_){stop();}
 }
@@ -147,8 +172,8 @@ export async function startAuthorityTrialOAuthListener(flow){
   server=createServer(async(req,res)=>{
    if(req.headers.host!=='127.0.0.1:34763'||req.method!=='GET'){res.writeHead(400,headers);res.end('Request unavailable.');return;}
    if(req.url==='/oauth/result'){
-    if(!['ready','failed','cancelled'].includes(flow.status())){res.writeHead(404,headers);res.end('Request unavailable.');return;}
-    res.writeHead(200,headers);res.end('OAuth response processed. Return to Codex.');void close();return;
+    if(!['claimed','ready','failed','cancelled'].includes(flow.status())){res.writeHead(404,headers);res.end('Request unavailable.');return;}
+    res.writeHead(200,headers);if(flow.status()==='claimed')res.end('OAuth response pending. Return to Codex.');else{res.end('OAuth response processed. Return to Codex.');void close();}return;
    }
    try{await flow.receive({method:req.method,host:req.headers.host,url:req.url});res.writeHead(303,{...headers,location:'/oauth/result'});res.end();}
    catch(_){if(['failed','cancelled'].includes(flow.status())){res.writeHead(303,{...headers,location:'/oauth/result'});res.end();}else{res.writeHead(400,headers);res.end('OAuth response unavailable. Return to Codex.');}}

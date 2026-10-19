@@ -5569,3 +5569,516 @@ only a small local gain; they are not formal latency acceptance. No Google IO
 or Production change. Preserve Draft/off/blank/T0 not started and all C1/C3,
 authenticated/device/observation/rollback gates. Rollback restores only this
 undeployed increment to781c766 and retains the evidence.
+
+
+## 2026-10-16 — Standalone synthetic compatibility source and publication
+
+GPT-6.1 Sol/high. Owner approved replacing the wrapper/library entry and prior
+no-further-execution STOP rule with one isolated synthetic script. Existing C3
+worktree/PR reused; root WIP preserved. READ-STANDALONE-TRIAL-DECISION.md records
+the bounded change. No original claim/history is reopened or rewritten.
+
+The standalone generator embeds the guarded canonical closure with the same
+three scopes, fixed caller/project and MAC validation. Only compatibility is
+admitted; authority and extra arguments fail before business IO. The existing
+publication adapter now supports this mode with five charged operations and
+independent close/absence checks. Same-epoch registration prevents switching
+modes to reset an adapter. Historical library/wrapper generated artifacts remain
+byte-identical to the pre-change hashes. No original source/secret is copied.
+
+TDD: 13 entry cases and four publication cases observed RED then GREEN. Affected
+116/116 pass. Separate independent reviews found no actionable issues. Complete
+Node22/actual Core643c1b3/owned PostgreSQL16.14 npm test:2165/2165 PASS, no fail,
+cancel or skip,95.834s. Database/role cleanup and final PostgreSQL stop/closed
+listener verified. Source snapshot598 paths SHA
+3f64d9e75bc7d1076a8d2e0dbbeee7f1dad6fb03904f0c783ab129165a0b7eae
+before this documentation-only evidence update. Earlier pre-publication run
+2159/2161 had two preparation-realm child20s ETIMEDOUT failures; focused
+11.546/10.285s diagnosis passed, cause UNRESOLVED, both records retained.
+
+Actual cumulative31/160 remains unchanged. The offline operation candidate is
+98 future units plus31 history=129, leaving31 for actual UI costs; this is NOT
+a verified complete cost map or execution authorization. Append-only accounting
+must link original27, stopped continuation1 and diagnosis3 under the original
+lock; independent17-unit cleanup and applicable restore reserve stay protected.
+No Google/browser IO, credentials, grants, deployment, Properties, triggers or
+formal flags changed. Actual compatibility/privacy/latency/C1 daily-runtime/
+C6/accelerated observation and real-device gates remain unaccepted.
+
+Rollback: revert this source increment before deployment. Once synthetic
+publication is actually used, invoke its separately reserved close/readback and
+credential/access cleanup before reporting rollback. No production rollback or
+data deletion is required by this source increment. CI readback pending push.
+
+
+## 2026-10-16 — Standalone accounting extends the original owner
+
+GPT-6.1 Sol/high. Same C3 worktree/PR, owner-approved standalone scope. Existing
+Python ledger, JS owner and offline compiler now have an explicit standalone
+mode; original mode and stopped histories remain intact. No separate budget or
+controller framework is introduced. New mode validates immutable original27,
+stopped continuation1 and stopped diagnosis3 plus exact pinned owner approval,
+using the same original lock and original pinned C2/I17 child. It reports all31
+historical debits, includes them in rolling-minute admission, and preserves
+globally unique cleanup/restore actions and the160 cumulative maximum.
+
+New singleton claim/STOP is separate from old stopped claims. Construction is
+inert; every callback follows durable UNKNOWN, and stop drains entered IO before
+fd release. One RPC has a non-refundable360000ms charge; no retry/claim reset.
+Standalone mapping removes C library mutations and checks its single artifact
+at the isolated project. No map arithmetic is remote execution authorization.
+
+TDD: new55 cases (8 map,6 owner,41 Python), including strict-integer history
+regressions, observed RED→GREEN. Independent reviewer ran original/new affected
+151/151 PASS and reported0 actionable findings. Complete npm test with Node22,
+actual Core643c1b3 and newly owned PostgreSQL16.14:2220/2220 PASS, zero fail/
+cancel/skip,83.463s. Database/role cleanup and final stopped/closed PostgreSQL
+verified. Snapshot602paths d028f774a56eb13c2b441210d2515f689dd880be8f97aeee5b5a0e6cdd491291
+before this documentation-only evidence append. Validate72/40/static-cache and
+diff checks pass. No unchanged Worker/capacity benchmark was manually rerun.
+
+Prior source b048768 CI38816981459 terminal provider readback: rental2160/2160
+PASS (five Core/PG cases excluded there but included locally), Worker26/26 and
+both dry-runs PASS. Rental log is truncated; Worker log complete; footers and
+annotations read. Annotations only Node20 deprecation/Ubuntu26 migration. This
+is attributable to b048768, not the unpushed accounting increment. Earlier local
+2159/2161 realm timeouts remain retained with cause unresolved.
+
+Actual original/continuation raw hashes are unchanged, no standalone claim or
+Google/browser IO/debit exists; current actual total remains31/160. Original
+frozen rollback copy and root WIP unchanged. Driver, real operation map and
+independent standalone resource adapters still require integration: original
+cleanup adapter binds its old expiry and cannot restore new-window resources
+unchanged. Do not run the trial until frozen new adapter/source/expiry bindings
+and captured-holder recovery are verified. No formal data/config/deploy/flags
+changed; all actual C1/C3/C6 and accelerated observation/device gates remain.
+
+Rollback: revert this local increment before use; do not delete or rewrite any
+old claim, STOP or journal. Once actually used, drain its retained real owner and
+use the reserved original C/I authority with the fixed new resource bindings.
+Exact-head CI for this increment remains pending push/readback.
+
+## 2026-10-16 — Standalone driver, source readback and independent recovery
+
+GPT-6.1 Sol/high, V2 stability scope, same C3 worktree/PR. The existing driver
+now supports the approved single-script compatibility entry: exact16 pins,
+immutable version1, full15 before/after observations, same-token identities and
+the original one-RPC/non-refundable360000ms/UNKNOWN rules. Original mode remains
+available. New-mode data snapshots reject executable hooks and malformed arrays.
+
+The existing source observer retains seven charged GET aliases. In standalone
+mode, the former library alias reads the isolated immutable version1; the thin
+alias reads its current editor. Both must match the same uploaded artifact and
+three-scope, library-free manifest. Original editor/deployments and all six
+baseline versions must remain unchanged. These are partial source facts: no
+GCP, ACL, Properties, trigger, runtime or full acceptance is manufactured.
+Standalone-only thin-triggers navigation provides a fixed read-only target
+within the same N24 limit; legacy mode still refuses it.
+
+Independent recovery extends the existing frozen graph with a physically
+separate standalone adapter copy and fixed resource/expiry pins. Original copy
+and C2/I17 authority remain unchanged. Matching existing journals/registries are
+required before reconstruction; recovery cannot initialize ordinary trial state.
+Captured owner drain and a full60s cooldown precede original-lock cleanup.
+Both frozen graphs are checked again at actual admitted IO entry. UNKNOWN and
+globally unique cleanup debits are preserved; no remote termination is inferred.
+
+Independent review found two P2 issues: source-constructor expected-value hooks
+and a recovery callback admission race. Both reproduced RED, fixed and separately
+re-reviewed; zero remaining actionable findings in those scopes. New128 cases
+cover these paths and standalone driver/readback/recovery/source/navigation.
+Node22 actual Core643c1b3/owned PostgreSQL16.14 complete npm test2348/2348 PASS,
+zero failures/cancellations/skips,107.244s; database/role cleanup and stopped
+PostgreSQL verified. Source snapshot608paths
+aae17c5edd5d96af2d5b5e23c2650e0d860ea077833c566b2cfcadd0662fdc8b
+precedes this evidence-only documentation append. Validate72/40/static-cache and
+diff checks PASS. No unchanged Worker/capacity benchmark manually rerun. Prior
+2159/2161 realm timeout evidence and unresolved cause remain retained.
+
+Existing3311ebc provider CI is terminal PASS: rental2215/2215, Worker26/26 plus
+both dry-runs. New increment CI remains pending push/readback. Frozen standalone
+adapter manifest e6ed8a001b69fb19b2ca2d1ebea0fd95c13639464cba7e707170c1c466277648
+was built and verified locally; actual resource pins/launcher/native producers
+and the complete160-bounded operation map still need integration before a claim.
+
+Original and prior continuation raw hashes are unchanged; no standalone claim,
+Google/browser operation, new debit, credential/grant/Property/trigger/deployment
+or formal flag change occurred. Actual total remains31/160. Root WIP preserved.
+Actual C1 daily-runtime, C3 compatibility/privacy/freshness/latency, C6 performance,
+24h parallel sync/shadow, staged rollout/device and seven-day postlaunch gates
+remain unmet. Rollback before use is a source revert; after actual use, drain the
+retained owner and use the fixed reserved recovery, preserving all old evidence.
+
+## 2026-10-16 — Explicit standalone script access and reserved revocation
+
+GPT-6.1 Sol/high, same approved C3 isolated-script scope/worktree/PR. The script's
+Reader permission is distinct from the synthetic Sheet's permission. Existing
+Reader/metadata/driver recipes now support that explicit resource: one owner-only
+ACL baseline GET, one grant POST, one fresh script ACL GET in each phase, and
+independent remove/absence GET. No request is hidden in the Sheet's grant. Original
+15 release observations remain; standalone now requires16 per phase. Original
+script privacy still requires fresh source-parent plus owner-only container ACL;
+the new metadata observer does not manufacture that conclusion or native facts.
+
+The same standalone ledger reserves a separate J2 for script removal/readback.
+Original frozen C2/I17 and their unique actions remain unchanged. Cleanup-only
+reentry requires the actual retained owner, nonce, monotonic spend floor, original
+lock and existing validated registry checkpoint/claim/history. It can read that
+trusted checkpoint when the ordinary journal is missing/corrupt or STOP partial;
+it cannot repair/reopen ordinary evidence, grant access, retry RPC or reset claims.
+UNKNOWN is persisted before IO, and verification needs a removal attempt. Shared
+actual-owner recovery excludes J activity throughout original cleanup's drain,
+cooldown and lock lifetime, preserving the combined10/minute limit across handles.
+
+Six added purposes are explicitly counted. Complete mapped arithmetic with N21
+is156 including historical31; outside C2 plus unused2 gives160. A synthetic run
+executed the required ordinary work, C2/I17 and J2 at158, leaving unused2. This
+does not prove the actual UI/forms fit21 navigation reads: their complete upper
+bound and native parsers/launcher binding remain pending. No new actual claim,
+Google/account IO, debit, credentials, permission, config, deployment or flag.
+
+TDD and independent review: executable scope elements, cross-handle rate race
+and cleanup-ID collision reproduced, fixed and re-reviewed with no remaining
+actionable findings. Denial-path tests also preserve corrupt/missing ordinary
+bytes. New96 cases are included in complete Node22/actual Core643c1b3/owned
+PostgreSQL16.14 npm test2444/2444 PASS, zero fail/cancel/skip,149.524s; isolated
+database/role cleanup and stopped PostgreSQL verified. Snapshot613paths
+c67e72c233452cc5126658e7c6fc7a0ff62a643806e581941fab1b1245de8b7c
+precedes this evidence-only documentation append. Validate72/40/static-cache and
+diff checks PASS. Frozen adapter manifest
+824330e7be119651f01acba7417a713ef810d99d5c2fe700142f655d5d42d563
+built/verified locally; this is not an actual resource rollback receipt.
+
+Preceding aad104d CI38820650833 terminal provider readback: rental2343/2343,
+Worker26/26 and both dry-runs PASS; rental log truncated, Worker complete; only
+Node20 deprecation/Ubuntu26 migration annotations. This increment's exact-head
+CI awaits push/readback. Earlier realm timeout and performance failures remain
+retained. All actual C1/C3/C6,24h rollout/device/postlaunch gates remain unmet.
+Current actual total31/160 and both old raw hashes unchanged; root WIP preserved.
+
+Public API reference checked: [Project resource](https://developers.google.com/apps-script/api/reference/rest/v1/projects)
+defines scriptId as the project Drive ID; [Execution API requirements](https://developers.google.com/apps-script/api/how-tos/execute)
+retain a common standard Cloud project and all manifest scopes. These references
+do not prove actual account access or deployment. Rollback before use is source
+revert; after use, drain the retained owner and use distinct fixed Sheet/script
+revocation plus deployment/credential cleanup, preserving UNKNOWN and old evidence.
+
+## 2026-10-16 — Closed standalone preflight continuation candidate
+
+Recommended model/speed: GPT-6.1 Sol / high. Local accounting repair in the
+existing isolated C3 branch; no external operation or release in this increment.
+One pinned finished two-selection preflight may have one append-only successor.
+It imports33, every rate timestamp and the original standalone W0/expiry while
+preserving all predecessor files. Partial claims, changed history, mapped work,
+mutation, runtime charge, RPC and arbitrary successor chains deny admission.
+
+The retained original owner supplies its actual drain/cleanup exclusion lane.
+Completed caller selection is reused; publisher discovery consumes the existing
+navigation allowance. Fresh identities, sixteen privacy observations, C2/I17/J2,
+unused2, total160 and the one nonrefundable360000ms RPC remain protected.
+Safe callback stages preserve API-return/rejection and post-return guard failure
+without retaining raw exceptions. The existing recovery facade uses successor
+owner lanes; no independent recovery policy was broadened.
+
+Focused standalone and continuation regression457/457 and validate PASS. Private
+inert preparation fixtures6/6 PASS after observed RED cases. Tests use synthetic
+local ledgers and callbacks, with no real browser, Google, credential, grant,
+resource, RPC or deployment operation. Full regression, independent review,
+provider CI, actual source-pinned orchestration and native acceptance remain
+pending at this candidate. No staging, commit, push or counter mutation was
+performed. Source rollback is a reviewed revert; historical evidence is retained.
+
+Final descriptor delta: affected budget/plan plus private inert preparation89/89
+PASS; closed UNKNOWN-RPC nonretry1/1 PASS; preserved original private preparation
+14/14 PASS. Final validate and diff-check PASS. The earlier457-case run predates
+only this exact discovery/opening descriptor delta; it is not claimed as a
+fresh complete-suite result for the final source. Root owns fresh independent
+review, full regression and provider CI before any actual operation.
+
+
+Round1 independent review found one P2: sequential stale predecessor J cleanup
+could use its old registry after successor J2. A one-way branded handoff now
+moves the known owned client slot, retires legacy routes/stale function refs,
+and admits only narrow captured drain/original-cleanup authority to the
+successor. Raw owner inputs and fabricated/reused capsules deny admission.
+The maximum158 synthetic path retains unused2 after attempted stale J2. Known
+raw launcher aliases must be cleared explicitly; arbitrary external raw aliases
+cannot be revoked by a callee. Original frozen sources/history remain untouched.
+
+Round1 focused control/recovery/J58/58, successor driver2/2 and private inert
+preparation7/7 PASS, with validate and diff-check PASS. The earlier457-case run
+was not repeated. Final committed-source pins, supported-runtime full regression,
+provider CI and reviewed actual one-way launcher flow remain root-owned gates;
+this increment performed no actual handoff, IO or counter debit.
+
+## 2026-10-16 — submitted OAuth consent admission and loopback race candidate
+
+Recommended GPT-6.1 Sol/high for the bounded ownership/accounting correction.
+Work continues on the existing isolated C3 feature branch from96ee8b41; root
+worktrees and used frozen sources are preserved. The owner approved submitted
+form counting, while the preceding actual attempt was stopped/drained before
+its original expiry; this local change neither reopens it nor renews its time.
+
+The helper exposes single-shot submitConsent(io), admitting E:oauth-response
+before the actual fixed caller UI callback. receive refuses pre-admission input
+without consuming valid state and no longer charges local reception. A valid
+callback during submit only claims/buffers bounded parameters and returns local
+303; pending result200 stays generic and keeps the listener open. After the
+submission cap settles, token POST and userinfo GET enter separately. Duplicate,
+late or fabricated submission callbacks deny, cancellation/failure cannot mint
+from buffered input, and the existing privacy/PKCE/expiry/revoke checks remain.
+No consent or trial acceptance is asserted by the settled submission receipt.
+
+TDD new6 cases failed before implementation and then passed. Node22.23.3 affected
+phase/preparation-control/realm122 cases passed; final OAuth67/67 passed including
+all11 new regression cases. The initial combined188/189 failure was the new late
+callback test passing a synchronous throw to assert.rejects; corrected to
+assert.throws, then the complete affected OAuth file reran green. Production
+source did not change for that correction. npm run validate parsed72 backend
+files, matched40 endpoint references and passed static cache checks; diff check
+passes. No performance/full database/full suite was run for this bounded change.
+
+No actual Google/UI, credential, counter, resource, RPC, commit, push or deployment
+action. Public flags stay off. Existing strict time/reserve/cleanup gates and
+actual fixed form/readback/cost grounding remain required. Independent root
+review and source pinning precede any future integration. Rollback is reverting
+this helper/listener and its explicit fixture/documentation changes; do not alter
+old claims, immutable journals, source copies or approval/spend history.
+
+## 2026-10-16 — approved named staged resume local implementation candidate
+
+Recommended GPT-6.1 Sol/high for the bounded linked accounting change. Continued
+on the existing isolated C3 feature branch from7dd82d9. The owner approved one
+named staged segment with the160 limit. Previous actual scope remains stopped
+and finished at42, with no RPC/resources; no old ledger, source copy, expiry or
+claim is changed. This increment performs no Google/UI, credential, counter,
+resource, RPC, commit, push or deployment action.
+
+Existing plan/control/ledger/driver gain the named mode, complete immutable42
+history linking, separate single claim, first-counted-debit W0 and same-Taipei-day
+maximum6h deadline. Existing modes retain their rules. The true one-GET header
+batch replaces five aliases. Both retained selections are imported; remaining N
+is strictly publisher12/caller2/thin-trigger2 without borrowing. Fixed current
+stages require actual callback/cost/cleanup assertions and preserve every future
+capped check and full recovery reserve; final RPC still requires the complete
+actual map and all original gates. Missing or excess actual steps remain a stop.
+
+Initial five-case RED was1 pass/4 expected failures. The expanded focused cases
+exercise actual persistent accounting processes with synthetic callbacks,
+including the complete raw-cap driver/RPC/readback/cleanup path. Established
+Node22 affected continuation/standalone/header tests passed349/349. No full,
+performance or database suite was run. Final focused/validate evidence and
+source pins accompany independent review; no real mapping fit or execution
+readiness is claimed. Public switches remain off. Rollback is reverting this
+named local mode and its explicit fixtures/docs, preserving every old claim,
+source copy and debit; no stopped execution is reopened.
+
+
+## C3 selected-page connection successor candidate — 2026-10-18
+
+Recommended model/speed GPT-6.1 Sol/high. Existing isolated C3 worktree/PR268;
+base85f9f56. Distinct connectionRepair singleton imports46, pins stopped wiring
+history plus two nonrefundable inventory records and owner-selected matching
+page, inherits the original clock/expiry, retains original flock and cleanup.
+Policy/controller/driver agree on46+98+N12+C2+unused2=160; real map unknown.
+No old history was repinned, reopened or refunded. No real claim/page/RPC/grant
+or Production operation occurred. The approved actual window was already expired at the owner selection; no execution may begin without separate window authorization.
+
+RED2 missing compiler/owner then GREEN2; real-controller RED2 then complete
+focused79/79 PASS. First implementation failed on an unintended normalize argument
+and an over-cap test expectation; both corrected with failed logs retained.
+Validate72 backend/40 endpoints/static release and diff checks PASS. Independent
+source review0P1/P2; deferred low-impact Python zero-valued bool equality does
+not change spent/nonrefund/window/operation limits. Full unit2605/2605 passes, zero failures/skips/cancellations; exact-head CI
+follows; private actual launcher not yet verified or started. Keep Draft/off/T0
+NOT_STARTED and every actual acceptance gate. Undeployed rollback reverts this
+increment to85f9f56 and retains all evidence.
+
+## C3 selected-page window-only candidate — 2026-10-18
+
+Recommended model/speed GPT-6.1 Sol/high, continuing bounded C3 safety work in
+its isolated worktree/PR268. Direct owner approval permits a fresh execution
+window only for the still-unclaimed selected-page successor. Optional approval
+pin retains46/160 and every old claim/STOP/UNKNOWN; first47 alone starts the
+bounded same-day clock. Full release/RPC/cleanup gates remain unchanged.
+Independent source review0P1/P2; private launcher and actual acceptance remain
+separate. Initial Node26 local runs suffered long process delays and timeouts;
+failed logs are retained rather than passing or weakening their deadlines.
+Node24.19 rerun93/93 focused and2619/2619 full unit PASS, zero
+fail/cancel/skip; validate72 backend/40 endpoint/static cache and diff PASS.
+Exact-head CI is required before any real page read. Undeployed rollback returns this increment to c76e6f4 while preserving
+all evidence; no Production, credentials, flags or formal data were changed.
+
+## C3 user-tab claim repair candidate
+
+Recommended model/speed GPT-6.1 Sol/high. Explicit owner approval permits one
+new linked successor retaining the stopped47 history and160 limit. Native
+metadata listing, exact returned-object claim and safe projection have distinct
+prepaid prefix slots. Existing selected page and prior source/claim/STOP/UNKNOWN
+bytes remain fixed; new mode uses its own singleton and first-debit clock.
+
+New accounting regressions first failed for missing mode/compiler, then19/19
+focused PASS. An extended fixture initially selected the wrong predecessor mode;
+its helper was corrected with the failure retained. Final readonly112/112 and
+full unit2638/2638 PASS on Node24.19; validate72/40/static/diff PASS. Independent
+source review0P1/P2 and three synthetic driver/cleanup cases PASS. Private
+root/read tests are separate; no claim of actual browser API compatibility.
+No native48+, grant, RPC, formal configuration, data or deployment change.
+Rollback this undeployed increment to667035a while preserving all used source
+copies, evidence and failed attempts. Draft/off/T0 not started; actual gates open.
+
+## 2026-10-19 local wiring successor candidate
+
+GPT-6.1 Sol/high. The explicitly approved successor imports the verified50
+checkpoint, keeps every old UNKNOWN/claim/STOP and160 total, and starts its
+new bounded same-Taipei-day window at first durable debit. Native allowance
+is8 (publisher4/caller2/thin2);50+98+N8+C2+unused2 remains160. It never
+replays the imported preparation prefix or reopens an old claim.
+
+Three permanent singleton slots cover the new owner plus at most two local
+predebit repairs. This implementation accepts only the actually verified50
+checkpoint: a subsequent debit or remote step cannot be labelled local and
+carried forward. Additional later checkpoints need separately tested proof
+adapters before they could qualify under the approved scope; none is inferred.
+An immutable successful checkpoint, exact stopped canonical registry/claim,
+complete returned-IO trace and actual terminal drain are all required.
+
+Sixteen targeted regressions pass, including real stop, original-C/I and
+independent J2 after damaged ordinary journal/expiry; full suite/CI and
+independent review follow. A synthetic chain fixture initially reused an old
+binding and was correctly rejected; unique fixture bindings repaired that test.
+Private stable ESM dispatch fixes a reproduced cross-cell callback binding
+error; its verification is not Google authority or trial acceptance.
+No new actual51, credential, grant, RPC, Production data/config/deployment, flag
+or T0 is claimed. Full actual map, privacy/freshness/runtime/performance/device
+and observation gates remain. Undeployed rollback returns to70722bd; all used
+source copies and failed attempts remain immutable.
+
+Final local verification: full2654/2654 PASS on supported Node24.19, zero
+fail/cancel/skip; validate72 backend/40 endpoints/static cache and diff PASS.
+Independent review identified an original C/I counter-tail loophole; RED
+reproduced it and the ordinary constructor now rejects changed original spent
+before child/claim. Both C and I negative regressions pass; independent review
+reports no remaining P1/P2. The exact-head CI and private launcher remain
+separate prerequisites; no actual new operation or launch is implied.
+
+
+## 2026-10-19 actual wiring readback and budget stop
+
+Exact source e3ea2f3 CI39148470346 SUCCESS: rental2654/2654 and Worker26/26,
+zero fail/cancel/skip; private bootstrap9/9 and route/session/settings13/13 PASS.
+Independent source and private closure reviews report no remaining P1/P2.
+The new approved owner actually completed three preparation operations: exact
+selected-page inventory, returned-object claim and safe static DOM projection.
+Total53/160; no Property values or credentials were displayed. Actual binding
+now works, but complete remaining160-fit remains unproved: publisher preparation
+has only1 unit versus at least4 acquisitions/navigation operations in the
+currently proven single-handle model. Other reserved native units cannot be
+borrowed. No speculative discovery, grant, RPC or trial mutation followed.
+
+Canonical stop acknowledged, ordinary scope closed and owned scope SETTLED.
+Compatibility, remote execution settlement and rollback completion are not
+claimed; no new remote resource was created. Keep all old claims/UNKNOWNs,
+53 debits, cleanup reserves and flags off. This budget stop cannot use the
+predebit local-failure exception. Continue independent work only within existing
+authority; revised trial execution requires a complete feasible approved map.
+
+## 2026-10-19 approved synthetic replacement accounting
+
+Owner approved a main160 plus browser72 ceiling (232 combined), retaining all
+53 historical operations. Added one durable replacement owner and separate
+browser accounting; all old claims/UNKNOWN/STOP evidence remain unchanged.
+The native GCP baseline now uses the settings interface, and the existing full
+safety driver retains its pre/post checks under the replacement identity.
+
+Independent review found five important defects (unknown cleanup replay,
+falsey rejection settlement, incomplete RPC postreads, inaccessible C2 and
+dangling STOP veto); each was reproduced RED and fixed GREEN. Focused28/28,
+validate72 backend/40 endpoints/static cache, Worker26/26 and diff checks pass.
+Full unit2682/2682 PASS, zero fail/cancel/skip; exact-head CI remains a separate pending gate at this entry.
+The bare npm-test integration run also reported missing disposable Core/PG
+configuration in commercial-subscription.roundtrip.test.mjs; that suite belongs
+to the existing pinned Core integration workflow, and no database was started.
+
+This is local trial preparation only: no new actual trial debit, claim/window,
+credential, grant, RPC, Google/Cloudflare/Pages change, flag or T0. Actual
+source-pinned adapter closure, real browser cost fit, original-resource write
+eligibility and all live acceptance remain open. See
+READ-SIMPLE-TRIAL-ACCOUNTING.md for boundaries and rollback.
+
+
+## 2026-10-19 — C4 incorporates the current C3 trial controls
+
+Recommended model/speed: GPT-6.1 Sol/high, for security-sensitive integration.
+Integrated C3 source1624fd4 into the existing C4 worktree/Draft. Forty inherited
+script/test paths match that C3 revision byte-for-byte. Only append-only test
+matrix/execution records conflicted; both histories were retained. No C4 page,
+Apps Script, Worker, endpoint or feature-flag source changed in this integration.
+
+Fresh Node24 routing/boundary/page tests17/17 and simple/staged-control tests45/45
+PASS with zero failure/cancellation/skip. `npm run validate` passes72 backend
+files,40 endpoint references and static-cache checks; staged diff check passes.
+These are targeted integration checks, not a new full-suite or Production claim.
+The complete composed stack is verified separately at C6 before release decisions.
+
+The approved synthetic trial's actual ledger is65/232 (main53, browser12).
+Its six-hour ordinary scope expired and was explicitly stopped/drained with
+ownedScope SETTLED; no RPC, credential refresh, new grant, configuration or
+Production mutation occurred in that scope. Native discovery/key names and
+trigger-table observations do not credit unperformed baseline aliases or prove
+full UI cost, account authority, freshness or trial acceptance. No ordinary
+reopening, refund or expiry extension is authorized by this documentation.
+
+No PR merge, deployment, endpoint/flag switch or observation T0. Actual C1/C3,
+provider performance, approved accelerated observation and device gates remain
+open. Rollback this undeployed C4 integration to442cad61d475c22db0fca535de7f123694434be1;
+preserve all earlier control sources and trial evidence.
+
+
+## 2026-10-19 — C5 incorporates the current C4/C3 controls
+
+Recommended model/speed: GPT-6.1 Sol/high. Existing C5 worktree/Draft integrates
+C4 source75a1011, including the verified C3 source1624fd4. All40 inherited
+script/test paths match the upstream source exactly; no C5 shadow/clock, Apps
+Script, Worker, endpoint or flag runtime changed. Both sides of the append-only
+test-matrix/execution conflicts were retained.
+
+Fresh Node24 routing/page/shadow tests18/18 and validate72backend/40endpoints/
+static-cache/diff PASS, zero failure/cancellation/skip. This is targeted source
+integration evidence; the final composed C6 regression is separate. Earlier
+full-source and unchanged-module observations remain historical.
+
+Synthetic ordinary scope expired/stopped at65/232 with ownedScope SETTLED,
+without RPC/credential refresh/configuration/Production mutation. No new scope,
+refund or trial acceptance follows from this merge. No PR merge/deployment,
+flag switch or T0. Real C1/C3, provider latency, accelerated observation and
+device gates remain open. Rollback this undeployed C5 integration to
+17d6006aebd13f4c89ea27667e26361f4bff9564 while preserving all prior evidence.
+
+
+## 2026-10-19 — C6 verifies the current C5/C4/C3 composition
+
+Recommended model/speed: GPT-6.1 Sol/high. Integrated C5 source9138edb, including
+C4 source75a1011 and C3 source1624fd4, into the existing C6 worktree/Draft.
+All40 inherited script/test paths match upstream byte-for-byte; no additional
+HTML, root JavaScript, Apps Script or Worker runtime changed. Both histories
+of the two append-only documentation conflicts were retained. Independent
+integration review found no P1/P2; source equivalence and conflict preservation
+were checked separately from the final test results below.
+
+Fresh composed Node24 unit regression2796/2796 and Worker43/43 PASS, zero
+failure/cancellation/skip. Worker pretest deployment dry-run and validate72
+backend/40endpoints/static cache/comparison179 PASS. These local unit/Worker
+checks do not include a new external Core/PostgreSQL integration acceptance.
+Exact new-head CI remains pending until its terminal result is read separately.
+
+The synthetic trial remains65/232 (main53/browser12), expired and explicitly
+stopped/drained with ownedScope SETTLED. No RPC, credential refresh, grant,
+configuration or Production mutation occurred in that scope; no refund, new
+window or reopening follows from this integration. Real C1 daily runtime,
+C3 privacy/fresh authority/compatibility, provider latency, approved24h parallel
+observation, device/rollback and seven-day postlaunch gates remain open. No
+PR merge, deployment, endpoint/flag change or T0 occurred.
+
+Rollback this undeployed C6 composition to80ba1340f7d6161dc2ab93c08f8d93e88b4c022d;
+preserve all previous source, test failures and private trial evidence.

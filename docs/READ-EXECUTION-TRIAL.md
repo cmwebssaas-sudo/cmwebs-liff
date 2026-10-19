@@ -1,5 +1,79 @@
 # Bounded synthetic Execution API trial
 
+## October19 actual status — stopped before trial mutation
+
+The approved local wiring repair passed exact-source CI (2654 rental and26
+Worker tests) and independent review. The selected existing settings page was
+successfully listed, claimed by its exact returned object, and projected without
+Property values. These three new operations advance the retained total50→53/160.
+The session then acknowledged STOP, closed ordinary admission and drained its
+owned scope to SETTLED. This is binding evidence, not compatibility acceptance.
+
+The complete remaining operation map could not be proved within160. Of the
+five remaining native units, four are reserved for caller OAuth and before/after
+trigger observations, leaving one publisher preparation unit. Only the selected
+settings handle has current acquisition evidence; four other required native
+release surfaces lack a proven handle map. In this known-handle model they need
+at least four acquisitions/navigation operations, exceeding the one available.
+This is a conditional lower bound, not proof that every possible retained
+context or revised design is infeasible. No speculative binding was attempted.
+
+No new trial grant, resource, credential, RPC, deployment or production switch
+was made. The original C2/I17/J2 reserves and all old records remain intact.
+The zero-new-debit local-repair exception cannot reopen this53-debit budget stop.
+Full actual map, safety/runtime/performance/device and rollout gates remain open;
+T0 is NOT_STARTED. Earlier candidate sections below are historical.
+
+## October18 selected-page connection successor — local candidate
+
+Recommended model/speed GPT-6.1 Sol/high. This explicitly approved successor
+imports46 cumulative units, retains all prior claims/UNKNOWNs and inherits the
+original numeric clock/expiry immediately. It cannot use the old43/null-window
+renewal path. Its separate singleton pins the stopped one-debit predecessor,
+both nonrefundable inventory records and the owner's exact observed-page choice.
+Historical source hashes remain accepted explicitly, never repinned in place.
+
+Full reservation is46+98 fixed operations+at most12 native operations+C2+
+unused2=160. Caller OAuth2 and thin-trigger2 remain mandatory; at most8 publisher
+operations fit. This is an offline bound; the actual complete UI map is unknown
+and must pass160-fit before RPC. All32 release checks and one nonrefundable
+360-second RPC, original flock and independent C2/I17/J2 remain mandatory.
+
+Focused accounting/control regressions79/79 and validate72 backend/40 endpoints/
+static release checks pass; independent source review found no P1/P2. Retain the
+initial failed test/implementation runs. Full unit2605/2605 also passes with zero failures/skips/cancellations.
+Exact-head CI and the private launcher composition remain separate gates. The approved actual window has
+expired; no new claim, page projection, credential, RPC, grant or formal change
+was started. Further actual execution needs explicit window authorization.
+
+Rollback this undeployed source increment to85f9f56 through reviewed source
+revert, preserving all previous trial evidence and cumulative charges. Trial
+privacy, freshness,900s/day, authenticated latency, device and rollout gates stay
+unaccepted. This local candidate does not enable read switches or start T0.
+
+## October18 fixed zero-debit wiring successor
+
+A separately approved, named wiring-repair successor may accept only the fixed
+readonly-recovery predecessor with a finished STOP, zero new debits, empty
+events, null window, no RPC or remote result, and the acknowledged actual-holder
+drain. Pin its config, journal, claim, STOP, registry and drain; recheck those
+bytes before every admission and independent cleanup. The prior claim is never
+reopened, rewritten or replaced; this successor cannot accept another successor.
+
+Use its separate `readonly-wiring-repair` singleton while retaining the same
+canonical path, lock, epoch, original history and43 imported units. The pinned
+approval permits one claim only, with no refund, extra navigation, retry, Scope
+or fee. First IO remains the fixed publisher-2 readonly projection. Its first
+durable admission starts the previously approved six-hour window, capped at the
+same Taipei calendar day ending; inspection cannot start or extend that clock.
+
+All32 release observations, one nonrefundable360-second RPC, full-map/160-fit,
+C2/I17, independentJ2, daily runtime, capacity, privacy, latency, device and
+rollout gates remain mandatory. Source tests and a settled local holder are not
+Google compatibility or remote rollback acceptance. The private root wiring
+must exercise the genuine first proof and the same fixed gate in a complete
+synthetic composition before any actual launch.
+
 Recommended model/speed: GPT-6.1 Sol/high for authority and credential boundaries.
 Owner approved the bounded dedicated-human OAuth/Execution API trial on
 2026-10-13. This is a synthetic feasibility trial; formal adoption is unapproved.
@@ -662,3 +736,197 @@ Crashed operation-lock requires trusted terminal/recovery handoff, not deletion
 based on file/timeout. Actual25/160 six-field counter unmodified. G8 falsified,
 160 executable budget, guard/GCP/native collectors/same-ledger/full orchestration
 and all real gates unaccepted before owner credentials or trial RPC.
+
+## October16 submitted-consent accounting candidate, local only
+
+The approved fixed submitted-form counting rule now has an explicit
+`flow.submitConsent(io)` boundary. Trusted orchestration must supply the actual
+fixed caller consent submission callback; its single `E:oauth-response` admission
+precedes that callback. Pure local callback reception no longer debits that alias.
+A callback before actual admission is denied without claiming its state. The
+submission callback must enter once, finish and return the same owned receipt;
+missing, repeated, fabricated or late invocation fails closed. Submission intent
+is UNKNOWN before IO and becomes ACK_UNVERIFIED only after its cap settles.
+The helper's result keeps consentVerified/trialAccepted/rollbackComplete false.
+
+A valid callback may arrive while the browser submission still owns admission.
+It claims the same state once and buffers its bounded parameters in memory;
+loopback returns303 immediately. The generic result page returns pending200
+without exposing code/state or closing the listener. Only after submission
+ownership settles does buffered processing issue the separate token POST and
+same-token userinfo GET. A callback arriving later uses those same two operations.
+Successful accounting remains one submission, one token exchange and one identity
+read. Initial result navigation still returns404; terminal pages stay generic.
+Cancellation or submission failure discards buffered input, and existing PKCE,
+exact scopes/identity, expiry, registry, late-token revoke and UNKNOWN cleanup
+checks remain. Orchestration must await submitConsent and retain the listener
+until callback processing finishes; a settled submission alone is not OAuth ready.
+
+This is a local source candidate. The preceding actual attempt remains stopped;
+its history, limit, original expiry and frozen used sources are unchanged.
+No actual Google consent, credential, resource, RPC or new execution scope was
+created. Live fixed-form grounding, complete cost/recovery map and actual Google
+proof remain required. This change does not renew a deadline or establish fit.
+
+## October16 named staged resume, local policy candidate
+
+
+The separately approved named segment links the complete stopped42 history and
+its claims/checkpoints. It neither reopens the stopped scope nor changes any old
+W0, expiry, UNKNOWN, debit or source copy. A distinct singleton claim cannot be
+chained. Construction, inspect, stage registration and completePlan are local;
+W0 remains null until the first durable counted IO admission. That admission
+writes W0, deadline and UNKNOWN together before its callback. The deadline is
+the earlier of W0+6h and the last millisecond of that Taipei day; it never slides.
+
+`createAuthorityStagedResumeControl` uses the existing original flock and the
+consumable predecessor handoff. Config retains the existing history and closed
+preflight pins, adds stagedResume approval/journal/claim/stop/registry pins, and
+requires expiresAt:null. The immutable raw cap identity retains that null value;
+only inspect supplies the actual active W0/expiry after the first counted IO.
+The staged driver binds that inspected deadline separately, without deriving a
+replacement cap or manufacturing a mutable identity.
+
+Only fixed N readonly targets may precede stage registration. N partitions are
+publisher12 across the whole flow, dedicated caller OAuth entry/observe2, and
+thin-trigger before/after2; none can borrow another partition. Publisher N may
+also run after RPC. The four dedicated observations remain mandatory in the full
+map. The true single B:auth-tabs-batch GET replaces the five old header aliases;
+there is no refund or multipart discount. Both retained bindings are imported.
+Fixed accounting reserves42+98 future+16N+original C2+unused2=160; I17/J2 are
+already inside98. This arithmetic does not prove actual callbacks or completion.
+
+`completeStage({stage,operations,futureCaps})` installs one complete fixed current
+stage and exact caps for every not-yet-grounded stage, including recovery. Fixed
+groups cover baseline, resources, cloud-link, properties, OAuth audience/client,
+publication, caller OAuth and readbacks. The synchronous trusted assertStage
+hook must verify actual actor/destination/callback/cost/failure cleanup and source
+closure; its local return is not remote evidence. It also checks readonly N and
+the final complete map. A future cap never claims future grounding. Resources
+must come from actual responses and the recovery graph must exist before grants.
+Unknown/extra steps stop rather than borrow or retry.
+
+Compatibility RPC still requires complete actual mapping, the dedicated before
+observations, all16 F and same-token G before/after, original privacy/freshness
+checks, one nonrefundable360s admission, and all ordinary dispatch gates. Single
+IO, shared historical10/min, C2/I17/J2, actual-owner drain and recovery cooldown
+remain. No actual execution readiness, Google consent, production or fit result
+follows from this local policy. Old scope remains closed; frozen used sources
+and real ledgers are not migration targets.
+
+## October16 named readonly recovery
+
+The subsequent named readonly recovery permits one separately claimed repair
+of a terminal preflight result. It imports the complete43 history, preserves
+the original W0 and hard expiry, and leaves15 navigation units partitioned as
+publisher11, caller OAuth2 and thin-trigger2. Publisher1 cannot be reused;
+publisher2 must be the first operation and must be the fixed original synthetic
+settings snapshot. The98 required operations, original C2 and unused2 remain
+reserved. No uncertain mutation or RPC may be retried, and no further segment
+or clock extension is authorized by this mode.
+
+This recovery validates the pinned terminal journal, claim, stop, registry and
+the actual prior drain evidence before creating its own single-use claim. A
+lost in-memory predecessor is never reconstructed from JSON: the new mode owns
+a new real holder under the same canonical flock, and its future independent
+cleanup must capture and drain that actual holder. Older modes continue to
+require their branded predecessor handoff. Static capability expiry remains
+null while inspection returns the inherited numeric W0/deadline. Every stage,
+full dispatch map, privacy, runtime, performance and device gate still applies.
+These local mechanisms are not actual Google acceptance or rollout readiness.
+
+
+## October18 explicit deadline-only renewal
+
+A separate pinned approval may renew only the still-unclaimed named readonly
+recovery window. It does not create another segment, refund any of the43
+imported operations, change the fixed first publisher2 snapshot, or relax the
+160-operation limit and reserved cleanup. Existing modes without this approval
+retain their inherited deadline and reject an expired window.
+
+The optional deadlineRenewal pin is part of the immutable capability identity
+and durable singleton claim. Its exact owner approval, prior journal/approval
+pins, original window, six-hour maximum, same-day cap and single-claim rule are
+rechecked before admission and independent script cleanup. Construction and
+inspection keep W0 and expiry null. The first actual debit atomically persists
+W0, UNKNOWN and the earlier of W0+6h or that UTC+8 day's final millisecond.
+Inspection, wait, phase registration and further IO cannot slide that deadline.
+Insufficient cleanup time, approval drift or an existing claim denies launch.
+
+The driver binds the actual inspected numeric window and the same renewal pin;
+raw identity expiry stays null. First-read failure still stops the sole owner,
+and original C2/I17, separate J2, all release/privacy, runtime, performance and
+device checks remain mandatory. This local policy update is not proof of real
+Google execution, actual fit, deployment, observation start or rollout readiness.
+
+## October18 approved selected-page execution window
+
+The optional connectionRepair.windowApproval pin renews only the unclaimed,
+owner-selected connection successor. It preserves46 imported charges, the
+selected page, canonical flock and singleton, all predecessor bytes and all
+original cleanup reserves. The exact approval and chronology are revalidated
+before ordinary admission and independent recovery. Without this pin, the
+existing inherited numeric connection deadline still applies.
+
+Construction, inspection, wait and stage registration do not start a renewed
+clock. The first durably charged publisher2 snapshot starts47 and persists the
+earlier of six hours or that Taipei day's final millisecond. Approval-time
+rewind, changed approval, insufficient cleanup margin and any existing claim
+deny entry; later operations cannot slide the clock. The driver still requires
+47, complete actual map/160-fit,32 observations and one360-second RPC. No Google
+read, grant, execution, deployment or rollout acceptance follows from local
+source/test approval. This mode does not reopen a stopped successor.
+
+## Approved user-tab claim repair
+
+An optional connectionRepair.userTabRepair manifest pins the stopped47
+checkpoint, original claim/STOP/registry/configuration, terminal owner drain,
+bind-only failure trace and exact new owner approval. A separately named
+singleton under the original canonical lock imports all47; it never rewrites
+or reopens earlier claims or clocks. Its first native debit48 starts the
+bounded six-hour/Taipei-day window. The first three descriptors are fixed
+publisher3/4/5: user-tab list, claim of the exact returned object, and the
+existing safe projection. Each is separately debited before IO. Raw native
+id or URL equality alone does not establish the approved page identity.
+
+The47+98+N11+C2+unused2 reservation retains all original release/runtime and
+independent recovery gates. Publisher N is capped7, caller2 and thin-trigger2.
+Replay, altered approvals, uncertain mutations, incomplete maps and unproven
+identity mapping deny continuation. Driver/RPC still requires the full actual
+map, all32 checks and one nonrefundable360-second admission. Source and local
+synthetic tests do not prove raw browser compatibility or real acceptance.
+
+## 2026-10-19 local wiring successor candidate
+
+GPT-6.1 Sol/high. The explicitly approved successor imports the verified50
+checkpoint, keeps every old UNKNOWN/claim/STOP and160 total, and starts its
+new bounded same-Taipei-day window at first durable debit. Native allowance
+is8 (publisher4/caller2/thin2);50+98+N8+C2+unused2 remains160. It never
+replays the imported preparation prefix or reopens an old claim.
+
+Three permanent singleton slots cover the new owner plus at most two local
+predebit repairs. This implementation accepts only the actually verified50
+checkpoint: a subsequent debit or remote step cannot be labelled local and
+carried forward. Additional later checkpoints need separately tested proof
+adapters before they could qualify under the approved scope; none is inferred.
+An immutable successful checkpoint, exact stopped canonical registry/claim,
+complete returned-IO trace and actual terminal drain are all required.
+
+Sixteen targeted regressions pass, including real stop, original-C/I and
+independent J2 after damaged ordinary journal/expiry; full suite/CI and
+independent review follow. A synthetic chain fixture initially reused an old
+binding and was correctly rejected; unique fixture bindings repaired that test.
+Private stable ESM dispatch fixes a reproduced cross-cell callback binding
+error; its verification is not Google authority or trial acceptance.
+No new actual51, credential, grant, RPC, Production data/config/deployment, flag
+or T0 is claimed. Full actual map, privacy/freshness/runtime/performance/device
+and observation gates remain. Undeployed rollback returns to70722bd; all used
+source copies and failed attempts remain immutable.
+
+Final local verification: full2654/2654 PASS on supported Node24.19, zero
+fail/cancel/skip; validate72 backend/40 endpoints/static cache and diff PASS.
+Independent review identified an original C/I counter-tail loophole; RED
+reproduced it and the ordinary constructor now rejects changed original spent
+before child/claim. Both C and I negative regressions pass; independent review
+reports no remaining P1/P2. The exact-head CI and private launcher remain
+separate prerequisites; no actual new operation or launch is implied.

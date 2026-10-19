@@ -100,13 +100,78 @@ export const BOUNDED_CONTINUATION_POLICY=freeze({
  externalPrerequisites:['linked-canonical-claim-and-original-history','local-accounting-stop-cleanup-tests','independent-review','pinned-independent-recovery','fixed-private-destinations','durable-W0-before-first-Google-IO'],
  credentialRpcPrerequisites:['complete-actual-low-level-map','actual-adapter-wiring-tests','fixed-source-closure-no-child-execution']
 });
+// Select the owner-approved replacement without changing the old policy or
+// treating its stopped claim as live. Actual history is revalidated by ledger.
+export const STANDALONE_TRIAL_DECISION_HASH='02c75938cc8ecff17c907431db861613bb7f4e2af967f185c6b9933758f7dfd8';
+const standaloneOperations=Object.fromEntries(Object.entries(operations).filter(([key])=>!key.startsWith('C:')).map(([key,rule])=>[
+ key,key.startsWith('F:')&&key.endsWith('.library-content')?{...rule,target:'thin-project'}:rule
+]));
+for(const [key,method] of [['D:standalone-acl-baseline','GET'],['D:standalone-reader-create','POST'],['F:wrapper-before.standalone-acl','GET'],['F:wrapper-after.standalone-acl','GET'],['J:script-remove','DELETE'],['J:script-verify','GET']])standaloneOperations[key]={actor:'publisher',target:'thin-project',methods:[method]};
+export const STANDALONE_TRIAL_POLICY=freeze({...BOUNDED_CONTINUATION_POLICY,
+ decisionHash:STANDALONE_TRIAL_DECISION_HASH,stage:'standalone-compatibility',
+ importedUnits:31,fixedFutureUnits:93,bucketLimits:{...limits,C:0,D:12,F:32,J:2},operations:standaloneOperations,scriptCleanupReserve:2,
+ originalRestoreUnitsOutsideMap:2,navigationTargets:[...navigationTargets,'thin-triggers']
+});
+// One owner-approved linked segment. Prior selections stay in imported42;
+// their aliases are not future work and cannot be charged again.
+export const STAGED_RESUME_DECISION_HASH='19c51070c90552bfe5af0c998a45cc5a2104efe17d6428dae046cdc492d3b16d';
+const stagedOperations=Object.fromEntries(Object.entries(standaloneOperations).filter(([k])=>!['P:caller-bind','P:publisher-bind'].includes(k)&&!k.startsWith('B:auth-tab-')));
+stagedOperations['B:auth-tabs-batch']={actor:'publisher',target:'synthetic-sheet',methods:['GET']};
+export const STAGED_RESUME_POLICY=freeze({...STANDALONE_TRIAL_POLICY,
+ decisionHash:STAGED_RESUME_DECISION_HASH,priorDecisionHash:STANDALONE_TRIAL_DECISION_HASH,stage:'staged-resume-compatibility',
+ importedUnits:42,fixedFutureUnits:89,bucketLimits:{...STANDALONE_TRIAL_POLICY.bucketLimits,B:9,P:2,N:16},operations:stagedOperations,
+ researchLimit:0,navigationControlLimit:16,navigationPartitions:{publisher:12,'caller-oauth':2,'thin-trigger':2}
+});
+// Fixed groups let a currently grounded stage proceed while future stages keep
+// their full one-operation caps. They do not attest actual UI or callback proof.
+export const STAGED_RESUME_STAGES=freeze({
+ baseline:Object.keys(stagedOperations).filter(k=>k.startsWith('A:')||k.startsWith('P:')||['D:thin-project-backup','D:thin-source-backup'].includes(k)),
+ resources:['D:standalone-acl-baseline','B:original-acl-fresh','B:fixture-import','B:fixture-file-readback','B:synthetic-acl-baseline','B:caller-permission-id','B:reader-create','B:reader-acl-readback','D:standalone-reader-create'],
+ 'cloud-link':['D:thin-gcp-link'],
+ properties:['D:thin-properties-write','D:thin-properties-readback'],
+ 'oauth-audience':['E:testing-user-write','E:testing-user-readback'],
+ 'oauth-client':['E:client-create','E:client-readback'],
+ publication:['D:thin-source-put','D:thin-version-create','D:thin-fixed-content','D:thin-deployment-create','D:thin-deployments-inventory'],
+ 'caller-oauth':['E:oauth-response','E:token-exchange','E:caller-userinfo'],
+ readbacks:Object.keys(stagedOperations).filter(k=>k.startsWith('F:')||k.startsWith('G:')||k.startsWith('H:')||k.startsWith('T:')||['B:fixture-native','B:auth-tabs-batch'].includes(k)),
+ recovery:Object.keys(stagedOperations).filter(k=>k.startsWith('I:')||k.startsWith('J:'))
+});
+export function compileAuthorityStagedResumePlan(input){return compilePlan(input,STAGED_RESUME_POLICY);}
+// One named repair of the stopped43 readonly result, with no new clock.
+export const READONLY_RECOVERY_DECISION_HASH='ccb1f0d40fe93df36d18f687da256287b1e3980b9397b58c31d6c75c6c6b8b60';
+export const READONLY_RECOVERY_WINDOW=freeze({w0:1792142820041,expiresAt:1792164420041});
+// Separate explicit approval renews only the still-unclaimed recovery window.
+export const READONLY_DEADLINE_DECISION_HASH='91b6c8f359fcbe0a8e72804ace101ce39cd063b80609a9c2caca4f8f36cfa7c4';
+export const READONLY_RECOVERY_POLICY=freeze({...STAGED_RESUME_POLICY,decisionHash:READONLY_RECOVERY_DECISION_HASH,priorDecisionHash:STAGED_RESUME_DECISION_HASH,stage:'readonly-recovery-compatibility',importedUnits:43,bucketLimits:{...STAGED_RESUME_POLICY.bucketLimits,N:15},navigationControlLimit:15,navigationPartitions:{publisher:11,'caller-oauth':2,'thin-trigger':2}});
+export function compileAuthorityReadonlyRecoveryPlan(input){return compilePlan(input,READONLY_RECOVERY_POLICY);}
+// One separately approved selected-page successor; no new observation window.
+export const CONNECTION_REPAIR_DECISION_HASH='bfdd63b5933323758669c2735894a7ad4a8dfc98af4fb49badc1797574bfb061';
+export const CONNECTION_REPAIR_WINDOW=freeze({w0:1792284815457,expiresAt:1792306415457});
+export const CONNECTION_REPAIR_POLICY=freeze({...READONLY_RECOVERY_POLICY,stage:'selected-page-connection-repair',importedUnits:46,bucketLimits:{...READONLY_RECOVERY_POLICY.bucketLimits,N:12},navigationControlLimit:12,navigationPartitions:{publisher:8,'caller-oauth':2,'thin-trigger':2}});
+export function compileAuthorityConnectionRepairPlan(input){return compilePlan(input,CONNECTION_REPAIR_POLICY);}
+export const USER_TAB_REPAIR_POLICY=freeze({...CONNECTION_REPAIR_POLICY,stage:'user-tab-claim-repair',importedUnits:47,bucketLimits:{...CONNECTION_REPAIR_POLICY.bucketLimits,N:11},navigationControlLimit:11,navigationPartitions:{publisher:7,'caller-oauth':2,'thin-trigger':2}});
+export function compileAuthorityUserTabRepairPlan(input){return compilePlan(input,USER_TAB_REPAIR_POLICY);}
+export const LOCAL_WIRING_RESUME_POLICY=freeze({...USER_TAB_REPAIR_POLICY,stage:'local-wiring-resume',importedUnits:50,bucketLimits:{...USER_TAB_REPAIR_POLICY.bucketLimits,N:8},navigationControlLimit:8,navigationPartitions:{publisher:4,'caller-oauth':2,'thin-trigger':2}});
+export function compileAuthorityLocalWiringResumePlan(input){return compilePlan(input,LOCAL_WIRING_RESUME_POLICY);}
+
+
 // `*Eligible` denotes only the map's local arithmetic condition. It never
 // verifies prerequisites, starts W0, or grants an external operation capability.
 export function compileAuthorityContinuationPlan(input){
+ return compilePlan(input,BOUNDED_CONTINUATION_POLICY);
+}
+export function compileAuthorityStandalonePlan(input){
+ return compilePlan(input,STANDALONE_TRIAL_POLICY);
+}
+function compilePlan(input,policy){
  try{
+  const limits=policy.bucketLimits,operations=policy.operations,navigationTargets=policy.navigationTargets;
+  const outsideRestore=policy.originalRestoreUnitsOutsideMap??0;
   input=snapshot(input);
-  if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==BOUNDED_CONTINUATION_DECISION_HASH||
-   !exact(input.history,['spent','limit'])||input.history.spent!==27||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
+  const local=policy===LOCAL_WIRING_RESUME_POLICY,usertab=policy===USER_TAB_REPAIR_POLICY,readonly=local||policy===READONLY_RECOVERY_POLICY||policy===CONNECTION_REPAIR_POLICY||usertab,staged=policy===STAGED_RESUME_POLICY||readonly;
+  const closed=policy===STANDALONE_TRIAL_POLICY&&Object.hasOwn(input.history??{},'closedPreflightCaller'),imported=closed?33:policy.importedUnits;
+  if(!exact(input,['decisionHash','history','mapComplete','operations'])||input.decisionHash!==policy.decisionHash||
+   !exact(input.history,['spent','limit',...(closed?['closedPreflightCaller']:[])])||input.history.spent!==imported||input.history.limit!==160||typeof input.mapComplete!=='boolean'||
    !Array.isArray(input.operations)||input.operations.length>131)stop();
   const ids=new Set(),seen=new Map(),unknownCosts=[],bucketUnits=Object.fromEntries(Object.keys(limits).map(k=>[k,0]));
   let research=0,preparation=0;
@@ -117,35 +182,48 @@ export function compileAuthorityContinuationPlan(input){
     op.units!==1&&op.units!==null)stop();
    ids.add(op.id);const key=op.bucket+':'+op.alias;if(seen.has(key))stop();
    if(op.bucket==='N'){
-    if(!/^navigation-(?:[1-9]|1[0-9]|2[0-4])$/.test(op.alias)||op.actor!=='publisher'||!navigationTargets.includes(op.target)||
-     !['navigate','snapshot'].includes(op.operation)||!['research','preparation'].includes(op.stage))stop();
+    if(staged){
+     const pub=/^publisher-(?:[1-9]|1[0-2])$/.test(op.alias)&&op.actor==='publisher'&&navigationTargets.includes(op.target)&&op.target!=='thin-triggers'&&['navigate','snapshot'].includes(op.operation)&&op.stage==='publisher';
+     const caller=['caller-oauth-enter','caller-oauth-observe'].includes(op.alias)&&op.actor==='caller'&&op.target==='caller-oauth'&&op.operation===(op.alias.endsWith('enter')?'navigate':'snapshot')&&op.stage==='caller-oauth';
+     const thin=['thin-triggers-before','thin-triggers-after'].includes(op.alias)&&op.actor==='publisher'&&op.target==='thin-triggers'&&op.operation==='snapshot'&&op.stage==='thin-trigger';
+     if(local&&op.stage==='publisher'&&Number(op.alias.slice(10))<6)stop();
+     if(!pub&&!caller&&!thin||readonly&&(op.alias==='publisher-1'||op.alias==='publisher-2'&&(op.target!=='original-settings'||op.operation!=='snapshot'))||usertab&&(op.alias==='publisher-2'||['publisher-3','publisher-4','publisher-5'].includes(op.alias)&&(op.target!=='original-settings'||op.operation!=='snapshot')))stop();preparation++;
+    }else{
+    const discovery=closed&&((op.id==='publisher-executions-discovery'&&op.alias==='navigation-1'&&op.operation==='snapshot')||(op.id==='publisher-executions-open'&&op.alias==='navigation-2'&&op.operation==='navigate'))&&op.actor==='publisher'&&op.target==='publisher-executions'&&op.stage==='research';
+    if(!discovery&&(!/^navigation-(?:[1-9]|1[0-9]|2[0-4])$/.test(op.alias)||op.actor!=='publisher'||!navigationTargets.includes(op.target)||
+     !['navigate','snapshot'].includes(op.operation)||!['research','preparation'].includes(op.stage)))stop();
     if(op.stage==='research')research++;else preparation++;
+    }
    }else{
     const rule=operations[key];if(!rule||op.actor!==rule.actor||op.target!==rule.target||!rule.methods.includes(op.operation))stop();
    }
    seen.set(key,op.units);bucketUnits[op.bucket]++;
    if(op.units===null)unknownCosts.push(key);
   }
+  if(closed&&input.operations.some(o=>o.id==='publisher-executions-open')&&!input.operations.some(o=>o.id==='publisher-executions-discovery'))stop();
   if(research>8||preparation>16||Object.entries(bucketUnits).some(([k,n])=>n>limits[k]))stop();
-  const missingOperations=Object.keys(operations).filter(k=>!seen.has(k)).sort();
+  const required=[...Object.keys(operations),...(local?[]:usertab?['N:publisher-3','N:publisher-4','N:publisher-5']:readonly?['N:publisher-2']:[]),...(staged?['N:caller-oauth-enter','N:caller-oauth-observe','N:thin-triggers-before','N:thin-triggers-after']:[])];
+  const missingOperations=required.filter(k=>!seen.has(k)).sort();
   const fullyKnown=missingOperations.length===0&&unknownCosts.length===0&&input.mapComplete;
-  const minimumTotalUnits=27+input.operations.length+missingOperations.length;
-  const reservedTotalUnits=27+96+4+4+24+3+2;
-  const budgetFits=fullyKnown&&minimumTotalUnits<=158&&reservedTotalUnits===160;
+  if(closed){const caller=input.history.closedPreflightCaller;const mapped=input.operations.find(o=>o.bucket==='P'&&o.alias==='caller-bind');if(!mapped||!exact(caller,Object.keys(mapped))||Object.keys(mapped).some(k=>caller[k]!==mapped[k])||caller.units!==1)stop();}
+  const minimumTotalUnits=imported+input.operations.length+missingOperations.length-(closed?1:0);
+  const navigationReserve=policy.scriptCleanupReserve?bucketUnits.N:24;
+  const reservedTotalUnits=imported+policy.fixedFutureUnits+(staged?2:closed?3:4)+4+navigationReserve+3+2+outsideRestore;
+  const budgetFits=fullyKnown&&minimumTotalUnits+outsideRestore<=158&&reservedTotalUnits<=160;
   // Counts bound the rows above; unknown/missing costs must not be reported as
   // measured bucket totals. Their one-operation lower bounds remain in minimum.
   const unknownBuckets=new Set([...unknownCosts,...missingOperations].map(k=>k.split(':')[0]));
   const reportedBucketUnits=Object.fromEntries(Object.entries(bucketUnits).map(([k,n])=>[k,unknownBuckets.has(k)?null:n]));
-  const preflightMapEligible=['P:caller-bind','P:publisher-bind'].every(k=>seen.get(k)===1)&&
+  const preflightMapEligible=(staged||['P:caller-bind','P:publisher-bind'].every(k=>seen.get(k)===1))&&
    input.operations.filter(o=>o.bucket==='N'&&o.stage==='research').every(o=>o.units===1);
   return freeze({
-   source:'authority-continuation-offline-plan',stage:BOUNDED_CONTINUATION_POLICY.stage,
-   decisionHash:BOUNDED_CONTINUATION_DECISION_HASH,spent:27,limit:160,
-   fixedFutureUnits:96,minimumTotalUnits,totalUnits:fullyKnown?minimumTotalUnits:null,
+   source:'authority-continuation-offline-plan',stage:policy.stage,
+   decisionHash:policy.decisionHash,spent:imported,limit:160,
+   fixedFutureUnits:policy.fixedFutureUnits,minimumTotalUnits,totalUnits:fullyKnown?minimumTotalUnits:null,
    reservedTotalUnits,unusedReserve:2,bucketUnits:reportedBucketUnits,
    researchUnits:input.operations.some(o=>o.bucket==='N'&&o.stage==='research'&&o.units===null)?null:research,
    navigationControlUnits:input.operations.some(o=>o.bucket==='N'&&o.stage==='preparation'&&o.units===null)?null:preparation,
-   cleanupReserve:17,originalRestoreReserve:2,unknownCosts:unknownCosts.sort(),missingOperations,
+   cleanupReserve:17,originalRestoreReserve:2,...(policy.scriptCleanupReserve?{scriptCleanupReserve:policy.scriptCleanupReserve}:{}),unknownCosts:unknownCosts.sort(),missingOperations,
    budgetFits,preflightMapEligible,credentialRpcEligible:budgetFits,
    eligibilityMeaning:'offline-map-condition-only',externalPrerequisitesVerified:false,
    requiredExternalPrerequisites:BOUNDED_CONTINUATION_POLICY.externalPrerequisites,
