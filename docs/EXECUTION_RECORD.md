@@ -6626,3 +6626,156 @@ All C1/C3actual and provider/device/rollback requirements remain. Rollback this
 undeployed composition to6d07290, preserve trial history and root WIP/private
 material; after real rollout, document revert never substitutes for off and
 deployment readback.
+
+## 2026-10-19 — Explicit bounded local-admission repair controls
+
+Recommended model/speed: GPT-6.1 Sol/high for safety-sensitive accounting.
+Added an optional repair gated by separately pinned direct approval of the
+exact stopped66-operation incident. It imports all13 browser events/main53,
+failures2/preparation13 and retains originalw0/expiry. Only the successful fixed
+trigger event may follow the old12-prefix. Original canonical path/epoch/
+binding/lock, all source/claim/registry/STOP pins, singleton and main/UI recovery
+reserves remain. It does not reopen any predecessor or replenish a clock/retry.
+
+New12-case suite reproduced7 PASS/5 FAIL before support; focused new/previous
+simple/successor55/55 PASS, zero fail/cancel/skip. Validate72backend/40endpoints/
+static-cache and diff PASS. The actual gate still requires separate review,
+exact-head CI and source-pinned inert native-stage admission. No unchanged
+Worker/capacity rerun or new external Core/PostgreSQL/provider acceptance.
+
+Original ordinary window and six-minute RPC reserve are unchanged; if readiness
+is late, no new actual claim/debit or remote operation is allowed. Current
+actual trial remains stopped66/232/pendingnull, with no RPC, credential, grant,
+resource/configuration/source/Production mutation or observation T0 in this
+local increment. Formal C1/C3/privacy/freshness/performance/device/approved
+observation/rollback gates remain open. Rollback undeployed source to f2ff40a;
+retain every used source, counter, claim, STOP and failed package. Root WIP and
+private material preserved.
+
+
+## 2026-10-20 — Approved first-debit clock for the unused repair
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization/accounting controls.
+Added explicit admissionWindow support only alongside the unchanged original
+repair approval and exact stopped66-operation chain. The same fixed repair
+singleton prevents cross-mode reuse. Both old clocks and all13 predecessor
+events remain pinned as history. Without the new direct approval, original033
+still retains its original expiry. New mode leaves clock unset through admission,
+inspection and wait; first durable debit starts max6h/Taipei-midnight. At most
+six minutes remaining rejects before creating any new claim/checkpoint.
+
+Real-ledger RED15 PASS/8 FAIL before implementation; focused66/66 PASS and fresh
+full Node24 unit2720/2720 PASS, zero fail/cancel/skip,169.899s. Independent review
+found no P1/P2 and separately ran23/23; its minor cross-mode test gap was fixed
+by supplying a valid renewal approval after consuming the original-mode claim.
+Final affected23/23 PASS after that test-only strengthening; reviewer verified
+the corrected valid-approval branch. Exact new-head CI remains required.
+Validate72backend/40endpoints/static-cache PASS. No new external Core/PostgreSQL
+acceptance; Apps Script/Worker runtime is unchanged and no Google test ran.
+Historical0c28 exact-head CI39281485876 completed2709/26 PASS; that result does
+not establish CI for this new increment or actual Google acceptance.
+
+Actual trial remains stopped66/232, preparation13/failures2, zero retries and
+pendingnull, no actual repair owner/claim/debit. Private wiring still requires
+closed sources, review, exact-head CI, inert actual-manager admission and the
+complete actual UI/recovery cost map before any RPC. No credentials, grants,
+resource/Production change or observation T0. All safety/freshness/900s/day/
+formal performance/device/approved observation gates remain unaccepted.
+Rollback undeployed clock-only source to0c28e31; never rewrite used history,
+reopen a consumed singleton, refund UNKNOWN or infer original-resource write
+eligibility from a checklist. Root WIP and private material remain preserved.
+
+## 2026-10-20 — Approved bounded readonly diagnostic successor candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization/accounting controls.
+The prior approved clock entry was actually consumed: one fixed readonly
+projection succeeded, the next settled unsuccessful, leaving68/232,
+preparation15/failures3/pendingnull. Owner closed/drained and lock released;
+no RPC/mutation, formal access, credential/grant change, deployment or T0.
+The precise original exception was discarded by the sanitized old boundary;
+visible/all-control selector divergence is a confirmed code difference, not a
+proven live root cause. Used artifacts remain immutable outside Git.
+
+Owner approved a bounded readonly successor: same232 total/old68 history,
+eight additional preparation UI primitives within ordinary56, at most two
+qualified settled readonly projection failures after verified target guards.
+A new fixed namespace imports every event and failure; clocks start at first
+durable debit, at most6h/Taipei-midnight, <=6min preclaim reserve. PAGE/HEADINGS,
+DECODE, generic POSTCHECK, unclassified evaluate rejection, missing target proof,
+unknown IO, mutation/RPC failures and source/account/target drift cannot qualify.
+Original independent recovery and all actual acceptance gates remain required.
+No new actual successor claim/debit or remote observation in this source change.
+Exact private closure, independent review, current-head provider CI and inert
+actual preparation are still prerequisites. Rollback undeployed source to494c592a
+while retaining all actual history. Apps Script/Worker runtime is unchanged;
+no cloud test function or new formal data access is needed for this controller.
+
+Verification for this candidate: focused old/new simple-ledger suites95/95
+PASS before final test-only strengthening; final new suite30/30 PASS, zero
+fail/cancel/skip. Bare npm test completed2749 PASS/1 FAIL/4 SKIP,174.354s:
+commercial-subscription.roundtrip requires PLATFORM_CORE_TEST_WORKTREE and
+Disposable DATABASE_URL; that cross-repository integration was not configured
+or connected. This is the known external-integration prerequisite, not a passed
+gate. The later target-proof negative case is covered by final30 and will be
+included in exact-head CI unit2750. Validate72backend/40endpoint/cache and
+source diff PASS. Independent review found the target-proof P2, reproduced
+four failing phase cases, then verified its fix. Private projection24/24 and
+real disposable-ledger/private-adapter integration7/7 PASS; neither uses actual
+Google/browser state or replaces the pending private execution closure.
+
+## 2026-10-20 — C4 composition with reviewed diagnostic controls
+
+Recommended model/speed: GPT-6.1 Sol/high for accounting and release boundaries.
+Integrated C3 a19e305 into the existing isolated C4 branch. Both documentation
+conflicts retain all pre-merge lines; inherited controller/test/accounting files
+match the C3 parent exactly. C4 routing/frontend/Apps Script/Worker bytes are
+unchanged. Focused controller/routing109/109 PASS, zero fail/cancel/skip;
+validate72backend/40endpoint/static-cache and diff PASS. Exact new-head CI remains
+separate. Rollback undeployed composition to eb897534 without rewriting history.
+
+Actual synthetic observation reached72/232, then stopped on a settings-page
+postcheck. All observations are settled, no pending IO/RPC/mutation; captured
+owner closed/drained and lock released. The failed guard bits were not retained,
+so URL mismatch and incomplete readiness cannot be distinguished from existing
+evidence. A local diagnostic candidate and source CI do not establish actual
+C3 acceptance. Draft status, flags off, no T0/deployment/Production change;
+all privacy/freshness/900s/day/performance/device/rollback gates remain open.
+
+## 2026-10-20 — C5 composition with reviewed diagnostic controls
+
+Recommended model/speed: GPT-6.1 Sol/high for accounting/release boundaries.
+Integrated reviewed C4 20eec6a/C3 a19e305 into the existing C5 isolated branch.
+Both append-only histories remain; inherited controls/tests match upstream,
+while C5 shadow/Worker/frontend runtime is unchanged. Targeted routing/shadow/controller114/114 PASS, zero fail/cancel/skip;
+validate72backend/40endpoints/cache and diff PASS. Provider CI is separate. Actual72/232 remains stopped/settled/noRPC/no mutation, not accepted.
+Flags off, no T0/Production change. Privacy/freshness/900s/day/performance/device/
+rollback gates remain open. Rollback undeployed composition to737dc9b while
+retaining all history and used artifacts.
+
+## 2026-10-20 — C6 composition with reviewed diagnostic controls
+
+Recommended model/speed: GPT-6.1 Sol/high for accounting/release boundaries.
+Integrated reviewed C5 2725bbe/C4 20eec6a/C3 a19e305 into the isolated C6 branch.
+Both complete documentation histories remain. Inherited controls/tests match
+upstream; C6 Worker, HTTP/body timing, SQL, pages and flags are unchanged.
+Targeted controller/routing/shadow/body-timing119/119 PASS, zero fail/cancel/skip;
+validate72backend/40endpoints/cache/comparison179 and diff PASS. Exact-head CI
+is separate.
+Actual72/232 remains stopped/settled/noRPC/no mutation, not accepted; captured
+owner closed/drained, no new claim/read or Production change. Privacy/freshness/
+900s/day/formal performance/device/rollback/observation gates stay open.
+Rollback undeployed composition toaa9c57c, keeping every used artifact/history.
+
+## 2026-10-20 — Accelerated plan composes reviewed diagnostic controls
+
+Recommended model/speed: GPT-6.1 Sol/high for source/evidence reconciliation.
+Integrated C6 f46d5ad/C5 2725bbe/C4 20eec6a/C3 a19e305 into this isolated plan
+branch. Both documentation histories remain. Non-document source matches C6;
+the own delta remains the existing plan/evidence documents, with no revised
+rollout timing or acceptance threshold. Reuse inherited C6 affected119/119
+source evidence; do not call it a repeated local run. Fresh validate72backend/40endpoints/cache/comparison179 and diff PASS;
+exact-head provider CI remains separate. Actual72/232 stopped/settled,
+noRPC/mutation/newowner/Google-read/Production change/T0. Approved24h parallel
+observation, rooms first, another stable24h and seven-day postlaunch remain.
+All actual gates stay open. Rollback undeployed composition toed85174; preserve
+used trial history, private material and root WIP.
