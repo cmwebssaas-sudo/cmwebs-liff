@@ -2381,3 +2381,203 @@ No main merge, deployment or cutover. Formal configuration remains default-off,
 endpoint blank and T0 not started. Actual C1/C3, performance, accelerated
 observation and device gates remain open. Rollback this undeployed integration
 to a2d6114b616132597d7c8d286e7465520c40df59 while retaining all trial evidence.
+
+
+### 2026-10-16 standalone C3 candidate
+
+- Single generated script: fixed caller/project/MAC, compatibility only, no
+  library or row/cache/lock/network IO; authority/extra arguments denied.
+- Existing publication adapter: five charged steps, immutable readback and
+  independent close/absence; mode change cannot reset same-epoch registration.
+- New17 RED→GREEN; affected116/116; complete2165/2165, zero skip, owned
+  PostgreSQL cleaned/stopped; two independent reviews without findings.
+- Retain earlier2159/2161 realm-child timeout run and focused2/2 diagnosis;
+  the original timeout cause is unresolved. Real Google function/RPC execution
+  NOT_RUN, counters31/160 unchanged, complete actual IO mapping still pending.
+- No production route/Schema/runtime/flags changed; no Cloudflare speed or
+  cutover acceptance is inferred from these local results.
+
+
+### 2026-10-16 standalone linked accounting
+
+Original27 + stopped continuation1 + diagnosis3 remain immutable and cumulative.
+New55 RED→GREEN cases cover history/approval pins, strict integers, same-lock
+UNKNOWN accounting, union10/minute, one RPC, lifecycle and globally unique
+originalC2/I17 cleanup. Affected151/151; independent review0 findings; full
+2220/2220 with actual Core/ownedPG, zero skip and cleanup/stop verified.
+No actual new claim/Google/credential/resource operation; actual31/160 unchanged.
+Standalone resource recovery/driver wiring and complete actual UI map remain
+pending, so these tests do not authorize execution or production acceptance.
+
+### 2026-10-16 standalone driver/source/recovery
+
+New128 RED→GREEN cases cover exact standalone pins/strict data, the same15+15
+checks/identity/one charged RPC, actual immutable/editor source packet comparison,
+unchanged original six versions, separate frozen cleanup adapters, existing
+journal prerequisites, admission-time drift, and the standalone trigger target.
+Independent review P2 hook/race findings reproduced, fixed and re-reviewed.
+Complete Node22/actual Core/ownedPG npm test2348/2348 PASS, zero fail/cancel/skip,
+107.244s; database/roles cleaned and PostgreSQL stopped. Validate/diff checks PASS.
+No actual Google operation/new claim/debit; current31/160 unchanged. Frozen local
+recovery copy is not remote rollback proof. Full native observers/actual IO map
+and all Google/runtime/performance/rollout/device gates remain pending.
+
+### 2026-10-16 standalone script access lifecycle
+
+New96 cases cover separate fixed script Reader grant/ACL/cleanup, standalone16 F
+observations per phase, C2/I17/J2 reservations, damaged ordinary evidence, nonce/
+high-water/claim/registry validation, cross-handle shared recovery lane, executable
+scope elements and collision-free cleanup IDs. Review findings reproduced then
+fixed and independently re-reviewed. Full Node22/actual Core/ownedPG2444/2444
+PASS, zero fail/cancel/skip,149.524s; database/roles cleaned and PostgreSQL stopped.
+Validate/diff PASS. Synthetic maximum run158 preserves unused2; actual complete
+UI/navigation upper bound is still unverified. No Google/account operation or
+new claim/debit; actual31/160 unchanged, no remote/production acceptance.
+
+### 2026-10-16 closed standalone preflight continuation candidate
+
+Focused standalone/continuation457/457 pass before the final fixed executions
+opening descriptor. Coverage includes immutable closed two-selection history,
+import33/all rate timestamps/original W0, pin/semantic drift, partial claims,
+duplicate import/arbitrary chains, actual retained-holder exclusion and drain,
+safe API/post-return failure categories, complete-map reserves and fresh
+same-token identities, one RPC, original C2/I17 uniqueness and successor J2.
+The final discovery/opening pair uses existing navigation20 and fixed ordering;
+its affected budget/plan and private inert preparation checks are recorded in
+the execution record. Synthetic callbacks do not prove current native selection,
+Google access, real execution, remote cleanup or rollout acceptance.
+
+
+Round1 P2 coverage adds one-way owned-slot transfer, branded/single-use admission,
+retired legacy J function refs, active legacy route exclusion and maximum158
+plus unused2 protection. Original C2/I17/drain remain usable on the shared lane.
+Updated private preparation requires the handoff and verifies sources before
+moving its slot; raw full owners/serialized capsules cannot create a claim.
+
+### 2026-10-16 submitted OAuth consent accounting
+
+Eleven new regression cases cover callback-before-admission denial; actual
+submission debit ordering; real loopback303/pending200 while submit owns the
+cap; separate token/userinfo ownership after settlement; duplicate submissions
+and callbacks; cancel/failure with buffered input; skipped/cloned/repeated/late
+submission callbacks; and preclaim denial while waiting for admission.
+The unchanged privacy/PKCE/scope/identity/expiry/revocation cases now explicitly
+submit first. Phase and cross-realm fixtures preserve three ordinary charges.
+Node22.23.3 affected phase/preparation/control/realm122 cases passed; final OAuth
+67/67 passed, zero fail/cancel/skip. Initial combined188/189 contained one new
+test incorrectly using assert.rejects for an expected synchronous late-callback
+throw; its assertion was corrected and final OAuth rerun passed. No runtime
+change was needed for that test correction. Validate and diff checks pass.
+Real Google form grounding/consent, RPC, cleanup and complete160-fit remain
+unverified; prior stopped scope and frozen used runtime were not reopened.
+
+### 2026-10-16 named staged resume accounting candidate
+
+Node22 focused staged cases cover immutable42/full-history import and singleton
+claims, no pre-IO W0, durable first UNKNOWN, same-day deadline/cutoff and no slide,
+strict12/2/2 N partitions including after navigation, true batch-header aliases,
+current-stage callback guard and exact future recovery caps, unknown/changed maps,
+shared historical rate/single IO, no UNKNOWN replay, complete-map-only RPC and
+all32 F. The full synthetic route debits once for360s, uses global C2/I17/J2 and
+ends at158 with unused2. Damaged ordinary journal still permits independent J2
+after actual captured drain/cooldown. Raw cap driver testing binds the immutable
+null identity to the real inspected active deadline. Existing affected
+continuation/standalone plan/budget/control/driver/recovery and header tests pass
+349/349; these are synthetic/local checks, not actual form or Google readiness.
+
+
+## 2026-10-18 selected-page connection successor (local)
+
+| Scope | Evidence | Boundary |
+| --- | --- | --- |
+|46 import,47 first debit, inherited numeric window, immutable UNKNOWN history/selection, singleton denial, drift/expiry denial | readonly recovery regressions79/79 PASS | No actual claim or page read |
+|N12 reservation, mandatory observations, unknown-map denial,32 release checks/360s RPC, independent damaged-journal J2 and first-I stop lane | Same79-case suite PASS; independent source review0P1/P2 | Full actual map, private launcher and exact-head CI remain separate |
+|Source validation |72 backend/40 endpoint/static cache PASS | No release or formal-data change; approved actual window expired |
+
+Full unit2605/2605 PASS, zero failures/cancellations/skips. Exact-head CI pending; no remote trial or formal acceptance.
+
+## 2026-10-18 selected-page window-only increment
+
+Regressions cover null clocks before first47, six-hour/Taipei-midnight cap,
+unchanged46/history/selection/claim, exact approval and chronology, drift and
+backward-time rejection, full driver checks, post-midnight independent J2 with
+damaged ordinary journal, and insufficient cleanup time before claim.
+Independent source review found no actionable P1/P2. Node24.19 supported-runtime rerun93/93 focused and2619/2619 full unit PASS,
+zero fail/cancel/skip; validate72 backend/40 endpoints/static cache PASS.
+Exact-head CI remains separate and pending before actual Google acceptance.
+
+## User-tab repair local acceptance
+
+Node24.19 readonly recovery112/112 and full unit2638/2638 PASS, zero failures,
+cancellations or skips. Validate72 backend/40 endpoint/static cache and diff
+checks PASS. Tests cover stopped47 import, three separate48/49/50 debits, no
+pre-IO clock, first-prefix order/shape/replay, changed approval/history denial,
+full32-check driver/one360-second RPC and post-expiry independent J2 despite
+ordinary journal corruption. The original-I lane retains its own STOP target.
+Independent public source review0 actionable P1/P2 and three separate focused
+synthetic review cases PASS. Exact-head CI and actual user-tab mapping remain
+separate gates; no new native IO has occurred.
+
+## 2026-10-19 local wiring successor candidate
+
+GPT-6.1 Sol/high. The explicitly approved successor imports the verified50
+checkpoint, keeps every old UNKNOWN/claim/STOP and160 total, and starts its
+new bounded same-Taipei-day window at first durable debit. Native allowance
+is8 (publisher4/caller2/thin2);50+98+N8+C2+unused2 remains160. It never
+replays the imported preparation prefix or reopens an old claim.
+
+Three permanent singleton slots cover the new owner plus at most two local
+predebit repairs. This implementation accepts only the actually verified50
+checkpoint: a subsequent debit or remote step cannot be labelled local and
+carried forward. Additional later checkpoints need separately tested proof
+adapters before they could qualify under the approved scope; none is inferred.
+An immutable successful checkpoint, exact stopped canonical registry/claim,
+complete returned-IO trace and actual terminal drain are all required.
+
+Sixteen targeted regressions pass, including real stop, original-C/I and
+independent J2 after damaged ordinary journal/expiry; full suite/CI and
+independent review follow. A synthetic chain fixture initially reused an old
+binding and was correctly rejected; unique fixture bindings repaired that test.
+Private stable ESM dispatch fixes a reproduced cross-cell callback binding
+error; its verification is not Google authority or trial acceptance.
+No new actual51, credential, grant, RPC, Production data/config/deployment, flag
+or T0 is claimed. Full actual map, privacy/freshness/runtime/performance/device
+and observation gates remain. Undeployed rollback returns to70722bd; all used
+source copies and failed attempts remain immutable.
+
+Final local verification: full2654/2654 PASS on supported Node24.19, zero
+fail/cancel/skip; validate72 backend/40 endpoints/static cache and diff PASS.
+Independent review identified an original C/I counter-tail loophole; RED
+reproduced it and the ordinary constructor now rejects changed original spent
+before child/claim. Both C and I negative regressions pass; independent review
+reports no remaining P1/P2. The exact-head CI and private launcher remain
+separate prerequisites; no actual new operation or launch is implied.
+
+## Synthetic authority replacement accounting (2026-10-19)
+
+`tests/read-authority-simple.test.mjs` covers separate main/browser ceilings,
+protected recovery, predebit window and UNKNOWN persistence, shared rate and
+single IO, bounded readonly retries, stage/native GCP mapping, original C/I,
+real-owner drain, damaged-mirror recovery, source/history drift, full driver
+pre/post checks, nonrefundable RPC charge, incomplete/unknown transport and
+bounded terminal reads. Review regressions cover cleanup replay, falsey Promise
+rejections, inaccessible C2 and dangling STOP markers. No live Google or
+Production acceptance is implied; actual adapter closure and real cost mapping
+remain prerequisites. See READ-SIMPLE-TRIAL-ACCOUNTING.md.
+
+
+### 2026-10-19 C4 current-C3 composition
+
+Routing/boundary/page17/17 and simple/staged controls45/45 PASS (Node24);
+validate72backend/40endpoints/static cache and diff PASS. Inherited40 source/test
+paths exact C3 source1624fd4; C4 runtime unchanged. Full composed regression is
+recorded at C6 separately. Synthetic ordinary scope expired/stopped65/232; no
+RPC/configuration/Production change and no trial/rollout acceptance.
+
+
+### 2026-10-19 C5 current-C4/C3 composition
+
+Routing/page/shadow18/18 (Node24), validate72backend/40endpoints/static cache
+and diff PASS;40 inherited source/test paths exact upstream75a1011. C5 runtime
+unchanged; full composed regression follows at C6. No new cloud trial, release
+or observation acceptance; prior synthetic ordinary scope stopped65/232.

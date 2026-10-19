@@ -23,6 +23,9 @@ const callerGuard=`function readTrialCallerAllowed_(){
   }catch(_){return false;}
 }`;
 export function buildAuthorityTrialEntry(root=new URL('../',import.meta.url)){
+  return buildEntry(root,false);
+}
+function buildEntry(root,compatibilityOnly){
   const closure=buildAuthorityTrialClosure(root);
   const declaration=closure.declarations.find(d=>d.names.includes('readAuthorizationConfirm_'));
   const original=readFileSync(new URL(declaration.path,root),'utf8').slice(declaration.start,declaration.end);
@@ -57,7 +60,7 @@ ${validate}
 ${adapter}
 return Object.freeze({invoke:function(request,operation){
   if(arguments.length!==2||!readTrialCallerAllowed_())return ${denied};
-  if(operation!=='compatibility'&&operation!=='authority')return ${denied};
+  if(${compatibilityOnly?"operation!=='compatibility'":"operation!=='compatibility'&&operation!=='authority'"})return ${denied};
   if(readTrialRequestValidated_(request)!==true)return ${denied};
   if(operation==='compatibility')return {compatible:true};
   try {
@@ -95,16 +98,36 @@ function authorizeTrial(request,operation){
       'Thin wrapper delegates MAC to the fixed guarded library; it never copies the library secret.']};
 }
 
+function trialManifest(){
+  return {timeZone:'Asia/Taipei',dependencies:{},exceptionLogging:'NONE',runtimeVersion:'V8',
+    oauthScopes:['https://www.googleapis.com/auth/spreadsheets.readonly',
+      'https://www.googleapis.com/auth/userinfo.email','https://www.googleapis.com/auth/script.external_request'],
+    urlFetchWhitelist:['https://sheets.googleapis.com/v4/spreadsheets/','https://api.line.me/oauth2/v2.1/verify']};
+}
+
+// The first phase is compatibility-only. It embeds the same guarded canonical
+// closure in one isolated project; no library, original-project access or
+// original secret is required. The owner provisions a separate synthetic key.
+// Generated artifacts are inert: deployment, source ACL, fixed Properties and
+// the actual Google caller still require independent verification.
+export function buildStandaloneAuthorityTrialArtifacts(root=new URL('../',import.meta.url)){
+  const result=buildEntry(root,true),manifest=trialManifest();
+  manifest.executionApi={access:'ANYONE'};
+  return {status:'LOCAL_STANDALONE_UNDEPLOYED',operation:'compatibility',source:result.librarySource,
+    sourceSha256:result.librarySha256,manifest,closureSha256:result.closureSha256,
+    adapterSha256:result.adapterSha256,canonicalValidationPrefix:result.canonicalValidationPrefix,
+    limits:['Single synthetic compatibility entry only; authority is rejected.',
+      'No library dependency or original project/source/secret access.',
+      'Source visibility is limited to this isolated synthetic script.',
+      'No Google operation, credential, deployment or execution authorization is created.']};
+}
+
 export function buildAuthorityTrialArtifacts(options){
   if(!options||Object.keys(options).sort().join(',')!=='libraryId,version'||
     typeof options.libraryId!=='string'||!/^[-A-Za-z0-9_]{20,200}$/.test(options.libraryId)||
     !Number.isSafeInteger(options.version)||options.version<1||options.version>1000000)throw Error('Fixed trial library binding required');
   const result=buildAuthorityTrialEntry();
-  const manifest=()=>({timeZone:'Asia/Taipei',dependencies:{},exceptionLogging:'NONE',runtimeVersion:'V8',
-    oauthScopes:['https://www.googleapis.com/auth/spreadsheets.readonly',
-      'https://www.googleapis.com/auth/userinfo.email','https://www.googleapis.com/auth/script.external_request'],
-    urlFetchWhitelist:['https://sheets.googleapis.com/v4/spreadsheets/','https://api.line.me/oauth2/v2.1/verify']});
-  const libraryManifest=manifest(),wrapperManifest=manifest();
+  const libraryManifest=trialManifest(),wrapperManifest=trialManifest();
   wrapperManifest.dependencies.libraries=[{userSymbol:'AuthorityTrial',libraryId:options.libraryId,version:String(options.version),developmentMode:false}];
   wrapperManifest.executionApi={access:'ANYONE'};
   return {...result,status:'LOCAL_ARTIFACTS_UNDEPLOYED',libraryManifest,wrapperManifest,

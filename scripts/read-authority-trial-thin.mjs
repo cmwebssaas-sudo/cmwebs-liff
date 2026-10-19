@@ -5,7 +5,7 @@ import {dirname,resolve,join} from 'node:path';
 import {homedir,userInfo} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
 import {types} from 'node:util';
-import {buildAuthorityTrialArtifacts} from './build-read-authority-trial-entry.mjs';
+import {buildAuthorityTrialArtifacts,buildStandaloneAuthorityTrialArtifacts} from './build-read-authority-trial-entry.mjs';
 const stop=()=>{throw Error('TRIAL_STOPPED');},hash=v=>createHash('sha256').update(v).digest('hex');
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v,checksum=v=>hash(JSON.stringify(canonical(v)));
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v),only=(v,keys,required=keys)=>record(v)&&Object.keys(v).every(k=>keys.includes(k))&&required.every(k=>Object.hasOwn(v,k));
@@ -22,15 +22,22 @@ async function json(r,url,max=100000){
 const filesHash=v=>checksum([...v].sort((a,b)=>a.name.localeCompare(b.name)));
 function sourceFiles(v){if(!Array.isArray(v)||v.length<1||v.length>2||new Set(v.map(f=>f?.name)).size!==v.length)stop();for(const f of v)if(!only(f,['name','type','source'])||typeof f.name!=='string'||!/^[-A-Za-z0-9_]{1,128}$/.test(f.name)||!['JSON','SERVER_JS'].includes(f.type)||typeof f.source!=='string'||Buffer.byteLength(f.source)>100000)stop();if(v.filter(f=>f.name==='appsscript'&&f.type==='JSON').length!==1||v.filter(f=>f.type==='JSON').length!==1||!record(JSON.parse(v.find(f=>f.name==='appsscript').source)))stop();return v;}
 export function createAuthorityTrialThin(input){
+ return createTrialPublication(input,false);
+}
+export function createStandaloneAuthorityTrialPublication(input){
+ return createTrialPublication(input,true);
+}
+function createTrialPublication(input,standalone){
  try{
-  if(!only(input,['path','epoch','scriptId','libraryId','libraryVersion','publisherHash','originalFiles','originalSourceHash','backupReceipt','expiresAt','control','credential','fetcher','now'],['path','epoch','scriptId','libraryId','libraryVersion','publisherHash','originalFiles','originalSourceHash','backupReceipt','expiresAt','control','credential']))stop();
+  const required=['path','epoch','scriptId',...(standalone?[]:['libraryId','libraryVersion']),'publisherHash','originalFiles','originalSourceHash','backupReceipt','expiresAt','control','credential'];
+  if(!only(input,[...required,'fetcher','now'],required))stop();
   const {epoch,scriptId,libraryId,libraryVersion,publisherHash,originalSourceHash,expiresAt,control,credential,fetcher=fetch,now=Date.now}=input;
-  if(typeof input.path!=='string'||![epoch,scriptId,libraryId].every(id)||scriptId===libraryId||libraryVersion!==7||![publisherHash,originalSourceHash].every(digest)||!Number.isSafeInteger(expiresAt)||[credential,fetcher,now,control?.externalRead,control?.cleanup].some(f=>typeof f!=='function'))stop();
+  if(typeof input.path!=='string'||![epoch,scriptId,...(standalone?[]:[libraryId])].every(id)||(!standalone&&(scriptId===libraryId||libraryVersion!==7))||![publisherHash,originalSourceHash].every(digest)||!Number.isSafeInteger(expiresAt)||[credential,fetcher,now,control?.externalRead,control?.cleanup].some(f=>typeof f!=='function'))stop();
   const path=resolve(input.path);directory(path);const original=sourceFiles(structuredClone(input.originalFiles)),backup={...input.backupReceipt};
   if(original.some(f=>f.type==='SERVER_JS'&&f.source.trim()!=='')||filesHash(original)!==originalSourceHash||!only(backup,['source','epoch','scriptId','publisherHash','sourceHash'])||backup.source!=='fixed-trial-thin-empty-backup'||backup.epoch!==epoch||backup.scriptId!==scriptId||backup.publisherHash!==publisherHash||backup.sourceHash!==originalSourceHash)stop();
-  const bundle=buildAuthorityTrialArtifacts({libraryId,version:7}),wrapper=[{name:'AuthorityTrial',type:'SERVER_JS',source:bundle.wrapperSource},{name:'appsscript',type:'JSON',source:JSON.stringify(bundle.wrapperManifest)}],wrapperHash=filesHash(wrapper);
+  const bundle=standalone?buildStandaloneAuthorityTrialArtifacts():buildAuthorityTrialArtifacts({libraryId,version:7}),wrapper=[{name:'AuthorityTrial',type:'SERVER_JS',source:standalone?bundle.source:bundle.wrapperSource},{name:'appsscript',type:'JSON',source:JSON.stringify(standalone?bundle.manifest:bundle.wrapperManifest)}],wrapperHash=filesHash(wrapper);
   const cap=Object.freeze({external:control.externalRead,cleanup:control.cleanup});
-  const binding=checksum({epoch,scriptId,libraryId,libraryVersion,publisherHash,originalSourceHash,expiresAt,backup,wrapperHash}),registryDir=join(homedir(),'.codex','private','cmwebs-authority-trials');mkdirSync(registryDir,{recursive:true,mode:0o700});
+  const binding=checksum({epoch,scriptId,...(standalone?{entryKind:'standalone'}:{libraryId,libraryVersion}),publisherHash,originalSourceHash,expiresAt,backup,wrapperHash}),registryDir=join(homedir(),'.codex','private','cmwebs-authority-trials');mkdirSync(registryDir,{recursive:true,mode:0o700});
   const registry=join(registryDir,checksum(epoch)+'.thin.json'),registration={path,binding};directory(registry);let journal,lock;
   try{lock=openSync(registry+'.lock','wx',0o600);let existing=true;try{lstatSync(registry);}catch(e){if(e.code==='ENOENT')existing=false;else throw e;}
    if(existing){if(JSON.stringify(read(registry))!==JSON.stringify(registration))stop();journal=read(path);}
@@ -60,7 +67,7 @@ export function createAuthorityTrialThin(input){
    const v=await ordinary('D:thin-version-create',base+'/versions?fields='+encodeURIComponent('scriptId,versionNumber,description'),'POST',{description},{versionAttempted:true,versionOutcome:'UNKNOWN'});if(!only(v,['scriptId','versionNumber','description'])||v.scriptId!==scriptId||v.versionNumber!==1||v.description!==description)stop();write({versionOutcome:'ACK_MATCHED'});live();
    contentMatch(await ordinary('D:thin-fixed-content',content+'&versionNumber=1','GET'));live();
    const d=await ordinary('D:thin-deployment-create',base+'/deployments?fields='+encodeURIComponent(depFields),'POST',config,{createAttempted:true,createOutcome:'UNKNOWN'});if(record(d)&&id(d.deploymentId)){knownDeploymentId=d.deploymentId;write({deploymentId:d.deploymentId});}if(deployment(d)!==journal.deploymentId)stop();write({createOutcome:'ACK_MATCHED'});live();
-   const list=rows(await ordinary('D:thin-deployments-inventory',inventory,'GET'));if(list.length!==1||deployment(list[0])!==journal.deploymentId)stop();live();write({state:'verified'});return Object.freeze({versionNumber:1,deploymentId:journal.deploymentId,wrapperSha256:bundle.wrapperSha256,deploymentVerified:true,trialAccepted:false,rollbackComplete:false});
+   const list=rows(await ordinary('D:thin-deployments-inventory',inventory,'GET'));if(list.length!==1||deployment(list[0])!==journal.deploymentId)stop();live();write({state:'verified'});return Object.freeze({versionNumber:1,deploymentId:journal.deploymentId,...(standalone?{sourceSha256:bundle.sourceSha256}:{wrapperSha256:bundle.wrapperSha256}),deploymentVerified:true,trialAccepted:false,rollbackComplete:false});
   }catch(_){if(claimed){try{publishStop();}catch(_){}try{integrity();write({state:'stopped'});}catch(_){}}stop();}finally{release(op);}};
   const refresh=()=>{try{const fresh=validate(read(path));let recovered=false;if(knownDeploymentId!==null){if(!fresh.createAttempted||(fresh.deploymentId!==null&&fresh.deploymentId!==knownDeploymentId))stop();if(fresh.deploymentId===null){fresh.deploymentId=knownDeploymentId;recovered=true;}}for(const [known,key,outcome] of [[knownCloseAttempted,'closeAttempted','closeOutcome'],[knownVerifyAttempted,'verifyAttempted','verifyOutcome']])if(known&&!fresh[key]){fresh[key]=true;fresh[outcome]='UNKNOWN';recovered=true;}journal=fresh;knownDeploymentId=journal.deploymentId;knownCloseAttempted||=journal.closeAttempted;knownVerifyAttempted||=journal.verifyAttempted;return recovered;}catch(_){if(!journal.createAttempted||!knownDeploymentId)stop();journal={...journal,deploymentId:knownDeploymentId,closeAttempted:knownCloseAttempted||journal.closeAttempted,verifyAttempted:knownVerifyAttempted||journal.verifyAttempted};return true;}};
   return Object.freeze({status:()=>localStop||stopped()?'stopped':journal.state,stop:()=>{try{publishStop();return Object.freeze({stopRequested:true});}catch(_){stop();}},publish:()=>{if(publishPromise||journal.started||localStop||stopped())return Promise.reject(Error('TRIAL_STOPPED'));publishPromise=work();return publishPromise;},close:async()=>{
