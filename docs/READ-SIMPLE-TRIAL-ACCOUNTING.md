@@ -136,3 +136,33 @@ new credential/access, paid resource, formal data access or Production change.
 Rollback the undeployed clock-only increment to0c28e31; retain all historical
 and consumed artifacts. A local mode change does not authorize an expired or
 consumed actual owner to resume.
+
+## Approved bounded readonly diagnostic successor
+
+A separately approved readonlyDebug mode admits exactly one new singleton from
+stopped68 (main53/browser15), preserving all15 events, failures3, old sources,
+claims, STOPs and the verified drained owner. It uses the same canonical lock,
+path, epoch and binding. Admission/inspection do not start its clock; its first
+durable debit starts at most six hours, capped at Taipei midnight, with the
+existing six-minute preclaim reserve. Consumed namespaces never reopen.
+
+Only eight additional readonly preparation primitives are available: total
+preparation23, within ordinary browser56, separate recovery browser16 and total232.
+HTTP/API operations still use their original main-account fixed aliases and
+reservations. Imported IDs cannot be replayed and all debits/failures remain.
+At most two new settled UI-preparation failures can remain eligible, only with
+an exact fixed proof of verified target and a projection failure after URL,
+ready-state and section guards passed. PAGE/HEADINGS/DECODE, generic POSTCHECK,
+unclassified evaluate rejection, missing target proof, non-readonly operations,
+unknown IO, source/binding drift and any mutation/RPC failure never qualify.
+The third qualifying failure or an exhausted preparation cap stops work.
+
+The private fixed producer emits only enum diagnostics and rethrows qualified
+failure through the holder as READ_FAILED; it never turns a failed observation
+into success. Each used source stays immutable; a reviewed unused stage needs
+its own unused event ID. A diagnostic mode does not authorize RPC retries,
+new API probes, credentials or formal access. Full actual stage/cost/recovery
+mapping and every live privacy/freshness/runtime/performance/device/observation
+gate still apply. Independent C2/I17 recovery remains available after expiry or
+ordinary-mirror damage. Undeployed source rollback is494c592a; never roll back
+or rewrite consumed counters, source packages or failure history.

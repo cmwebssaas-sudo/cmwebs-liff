@@ -13,6 +13,8 @@ DECISION='eccdb919d865327e3b5922231b253266e9084afe33305e12a32e64501efa39b2'
 CONTINUATION_DECISION='fc822ca3296a4f66195c02e9db1088ca6b95eb197bd440a27f417069e9b7cdd7'
 ADMISSION_REPAIR_DECISION='03310835216ab80ff344fe51264466bb7c7cc333d3e7df499b28ce9eb85e290f'
 ADMISSION_WINDOW_DECISION='abb1747f4eae5ba0cd98c200649f700a4cd6de97b215b14b671f63eee0eb25a3'
+READONLY_DEBUG_DECISION='e0342182ffe003392fe00a0f3a516d3b1605dd9c52cecd35ad3a690bc4db1390'
+READONLY_PHASES=['PROJECTOR_COMBOS','PROJECTOR_SHAPE','PROJECTOR_ANCESTORS','PROJECTOR_RELATED','POSTCHECK_COMBO']
 RULES=copy.deepcopy(history.STAGED_OPERATIONS)
 RULES['A:original-cloud-backup']={'actor':'publisher','target':'original-settings','methods':['snapshot']}
 STAGES=history.STAGES
@@ -53,9 +55,9 @@ class Ledger:
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
   self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None
-  self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg
-  if self.repair and not self.continuation or self.repair_window and not self.repair:fail()
-  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])
+  self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg;self.readonly_debug='readonlyDebug' in cfg
+  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window:fail()
+  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])
   if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+optional) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
   self.path=Path(cfg['path']);directory(self.path.parent)
   if not self.path.is_absolute() or cfg['original']['path']!=str(self.path) or cfg['original']['epoch']!=cfg['epoch']:fail()
@@ -67,7 +69,7 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+suffix+'.json')
@@ -80,7 +82,10 @@ class Ledger:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
   self.j={'state':'ready','w0':None,'expiresAt':None,'lastAt':self.prior_time,'events':[],'pending':None,'stages':{},'stageNames':[],'stageBrowser':[],'recoveryBrowser':[],'plan':None,'completed':[],'failures':0,'mutated':False,'rpc':{'beganAt':None,'complete':False},'chargedUpperBoundMs':0,'finished':False}
-  if self.repair:
+  if self.readonly_debug:
+   prior,approved_at=self.validate_readonly_debug()
+   self.j=copy.deepcopy(prior);self.j.update(state='ready',w0=None,expiresAt=None,lastAt=approved_at)
+  elif self.repair:
    prior,approved_at=self.validate_admission_repair()
    self.j=copy.deepcopy(prior);self.j.update(state='ready',lastAt=approved_at)
    if self.repair_window:self.j.update(w0=None,expiresAt=None)
@@ -104,7 +109,8 @@ class Ledger:
   for p in h['files']:private_pin(p)
   j=json.loads(private_pin(h['journal']));d=json.loads(private_pin(h['drain']))
   if j.get('state')!='stopped' or j.get('spent')!=3 or j.get('finished') is not True or j.get('chargedUpperBoundMs')!=0 or j.get('rpc')!={'beganAt':None,'complete':False} or type(j.get('events')) is not list or len(j['events'])!=3 or any(e.get('outcome')!='UNKNOWN' or not integer(e.get('time')) for e in j['events']) or d.get('stopAcknowledged') is not True or d.get('ordinaryScopeClosed') is not True or d.get('ownedScope',{}).get('state')!='SETTLED':fail()
-  if self.repair:self.validate_admission_repair()
+  if self.readonly_debug:self.validate_readonly_debug()
+  elif self.repair:self.validate_admission_repair()
   elif self.continuation:self.validate_continuation()
  def validate_continuation(self):
   c=self.cfg;p=c['continuation']
@@ -177,6 +183,35 @@ class Ledger:
   # Without the extra direct approval, retain the original clock unchanged.
   if not self.cleanup_mode and self.memory is None and c['now']+360000>=j['expiresAt']:fail()
   return j,a['recordedAt']
+ def validate_readonly_debug(self):
+  c=self.cfg;p=c['readonlyDebug'];original,_=self.validate_admission_repair()
+  fields=['approval','journal','claim','stop','registry','drain']
+  if not exact(p,['decisionHash']+fields) or p['decisionHash']!=READONLY_DEBUG_DECISION:fail()
+  if any(not exact(p[k],['path','sha256']) or type(p[k]['path']) is not str or not Path(p[k]['path']).is_absolute() or not digest(p[k]['sha256']) for k in fields):fail()
+  raw={k:private_pin(p[k]) for k in fields};root=Path.home()/'.codex/private/cmwebs-authority-trials'
+  expected={'journal':str(self.path)+'.simple-admission-repair.json','claim':str(self.path)+'.simple-admission-repair-claim.json','stop':str(self.path)+'.simple-admission-repair-stop.json','registry':str(root/(sha(json.dumps(c['epoch'],separators=(',',':')).encode())+'.simple-admission-repair.json'))}
+  if any(p[k]['path']!=v for k,v in expected.items()):fail()
+  a=json.loads(raw['approval']);j=json.loads(raw['journal']);claim=record(Path(p['claim']['path']));reg=record(Path(p['registry']['path']))
+  stable=['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','continuation','admissionRepair','admissionWindow']
+  if not exact(claim,stable+['sources','ownerHash']) or any(claim[k]!=c[k] for k in stable) or not digest(claim['ownerHash']) or type(claim['sources']) is not list or not claim['sources']:fail()
+  for source in claim['sources']:pin(source)
+  if reg!={'identity':claim,'checkpoint':j}:fail()
+  marker=json.loads(raw['stop'])
+  if marker!={'source':'live-owner-stop','binding':c['binding']} and record(Path(p['stop']['path']))!={'identity':claim}:fail()
+  keys=['source','decisionSha256','ownerAnswer','predecessorSha256','importedSpent','importedMainSpent','importedUiSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','additionalReadonlyLimit','preparationLimit','qualifiedFailureLimit','recordedAt','executionStarted']
+  if not exact(a,keys) or a['source']!='direct-human-approval' or a['decisionSha256']!=READONLY_DEBUG_DECISION or a['ownerAnswer']!='同意有界唯讀除錯，維持232' or a['predecessorSha256']!=sha(raw['journal']) or [a[k] for k in ['importedSpent','importedMainSpent','importedUiSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','additionalReadonlyLimit','preparationLimit','qualifiedFailureLimit']]!=[68,53,15,160,56,16,232,8,23,2] or a['executionStarted'] is not False or not integer(a['recordedAt']) or c['now']<a['recordedAt']:fail()
+  if not exact(j,list(original)) or j['state']!='stopped' or j['pending'] is not None or j['mutated'] is not False or j['failures']!=3 or j['rpc']!={'beganAt':None,'complete':False} or j['chargedUpperBoundMs']!=0 or j['finished'] is not False or not integer(j['w0']) or j['expiresAt']!=self.window(j['w0']) or not integer(j['lastAt']) or not j['w0']<=j['lastAt']<=a['recordedAt']:fail()
+  if any(j[k]!=original[k] for k in ['stages','stageNames','stageBrowser','recoveryBrowser','plan','completed']) or type(j['events']) is not list or len(j['events'])!=15 or j['events'][:13]!=original['events']:fail()
+  last=j['w0']
+  for e,ident,success in zip(j['events'][13:],['simple-continuation-native-trigger-labels','simple-admission-filter-context'],[True,False]):
+   operation={'id':ident,'key':'N:preparation','actor':'publisher','target':'original-triggers','operation':'snapshot','units':1,'preparation':True}
+   if not exact(e,['lane','key','operation','time','outcome','cleanup','settled','success']) or e['lane']!='ui' or e['key']!='N:preparation' or e['operation']!=operation or e['outcome']!='UNKNOWN' or e['cleanup'] is not False or e['settled'] is not True or e['success'] is not success or not integer(e['time']) or not last<=e['time']<=j['lastAt']:fail()
+   last=e['time']
+  drain=json.loads(raw['drain'])
+  if not exact(drain,['source','stopRequested','stopAcknowledged','ordinaryScopeClosed','ownedScope','trialAccepted','remoteExecutionSettled','rollbackComplete']) or drain['source']!='simple-authority-holder' or any(drain[k] is not True for k in ['stopRequested','stopAcknowledged','ordinaryScopeClosed']) or drain['ownedScope']!={'state':'SETTLED'} or any(drain[k] is not False for k in ['trialAccepted','remoteExecutionSettled','rollbackComplete']):fail()
+  if self.memory is not None and self.memory['events'][:15]!=j['events']:fail()
+  if not self.cleanup_mode and self.memory is None and self.window(c['now'])-c['now']<=360000:fail()
+  return j,a['recordedAt']
  def old(self):
   v=json.loads(rawfile(self.path));b=self.base;p=v.get('preparation',{});bp=b['preparation'];tail=p.get('events',[])[2:];restored=copy.deepcopy(v)
   if type(tail) is not list or len(tail)>19 or v.get('spent')!=27+len(tail):fail()
@@ -241,7 +276,7 @@ class Ledger:
   else:
    if u>=72 or (u-uo>=16 if cleanup else uo>=56):fail()
    if op['preparation']:
-    if self.j['mutated'] or self.j['rpc']['beganAt'] is not None or self.j['plan'] is not None or self.j['stages'] or sum(e['lane']=='ui' and e['operation']['preparation'] for e in self.j['events'])>=16:fail()
+    if self.j['mutated'] or self.j['rpc']['beganAt'] is not None or self.j['plan'] is not None or self.j['stages'] or sum(e['lane']=='ui' and e['operation']['preparation'] for e in self.j['events'])>=(23 if self.readonly_debug else 16):fail()
    elif cleanup:
     rows=[v for v in self.j['recoveryBrowser'] if v['key']==key]
     prior={e['operation']['id']:e for e in self.j['events'] if e['lane']=='ui'}
@@ -268,15 +303,21 @@ class Ledger:
    if self.memory['pending'] is not None:fail()
    self.cleanup_mode=True;self.current();self.now(q['now']);self.stop();return self.view()
   self.current()
-  if op=='settle' and exact(q,['op','id','success','now']):
+  if op=='settle' and exact(q,['op','id','success','now']+(['readonlyFailure'] if 'readonlyFailure' in q else [])):
    self.now(q['now'])
    if type(q['success']) is not bool or self.j['pending']!=q['id']:fail()
-   e=self.j['events'][-1];self.j['pending']=None;e['settled']=True;e['success']=q['success'];self.j['lastAt']=q['now']
+   e=self.j['events'][-1];qualified=False
+   if 'readonlyFailure' in q:
+    proof=q['readonlyFailure']
+    if not self.readonly_debug or q['success'] is not False or e['lane']!='ui' or e['operation']['preparation'] is not True or e['operation']['operation'] not in READ_METHODS or self.j['mutated'] or self.j['rpc']['beganAt'] is not None or not exact(proof,['phase','category','targetVerified']) or proof['targetVerified'] is not True or proof['phase'] not in READONLY_PHASES or proof['category']!='SETTLED_READONLY_PROJECTION_REJECTED':fail()
+    qualified=True;e['readonlyFailure']=copy.deepcopy(proof)
+   self.j['pending']=None;e['settled']=True;e['success']=q['success'];self.j['lastAt']=q['now']
    if q['success']:
     if e['lane']=='main' or e['key'].startswith('N:thin-'):self.j['completed'].append(e['key'])
    else:
     self.j['failures']+=1
     recoverable=e['lane']=='ui' and e['operation']['preparation'] and not self.j['mutated'] and self.j['rpc']['beganAt'] is None and self.j['failures']<=2 and self.view()['preparation']<16 and q['now']<self.j['expiresAt']
+    if self.readonly_debug:recoverable=qualified and self.j['failures']<=5 and self.view()['preparation']<23 and q['now']<self.j['expiresAt']
     if not recoverable:self.j['state']='stopped'
    self.persist();return self.view()
   if op=='stage-ready' and exact(q,['op','stage','operations','browserOperations','futureCaps','now']):
