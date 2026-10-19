@@ -2440,3 +2440,190 @@ validate72backend/40endpoints/static cache and diff PASS. Inherited40 source/tes
 paths exact C3 source1624fd4; C4 runtime unchanged. Full composed regression is
 recorded at C6 separately. Synthetic ordinary scope expired/stopped65/232; no
 RPC/configuration/Production change and no trial/rollout acceptance.
+
+### 2026-10-19 one-time readonly-trial continuation controls
+
+Synthetic real-ledger tests cover cumulative65 import (main53/browser12),
+byte-identical predecessor events and artifacts, four remaining preparation
+operations/zero restored retries, approval/policy/actor/path/history drift,
+no duplicate successor, first-debit six-hour/midnight cap, drain ownership and
+original C2 recovery after successor-mirror corruption. Focused initial13 cases
+reported8 PASS/5 FAIL before support; the resulting15 boundary cases PASS,
+zero fail/cancel/skip. Full-source unit/validate/review/CI are separate evidence;
+no actual new claim/window, Google/browser/API request or Production change.
+
+
+### 2026-10-19 C4 successor-control composition
+
+Routing and simple/continuation focused56/56 PASS, zero fail/cancel/skip on Node24.
+Validate72backend/40endpoints/static-cache and diff PASS. Seven inherited changed
+paths from C3f2ff40a are integrated; routing runtime is unchanged. Current actual
+trial66/232 is stopped/pendingnull after an unused local-stage admission error,
+with no RPC, mutation, new observation T0 or live acceptance.
+
+
+<!-- Historical C3 source records restored verbatim from1624fd4; these retain their original observation dates. -->
+
+### 2026-10-15 Approved single-wrapper budget core
+
+Supplemental owner decision replaces the old two-entry/eight-window cost model.
+The immutable presented decision hash selects the approved one-entry/four-window
+allocation without granting execution authority. Offline compiler plus durable
+ledger/rollback tests122/122 PASS: exact160 full allocation, unique fixed aliases,
+G4/2/1/1 per-window caps, P2 per actor, T3 pending-only settlement, C2 included inC9,
+I17 independent, failed IO UNKNOWN/no refund, immutable original history/binding,
+no bulk unlabeled debit, qualified/second RPC denied in supplemental mode, copied
+cleanup retains the original policy and counter. Historical RED ledger70 had
+48pass/22fail before implementation; final affected suite122pass/0fail.
+
+This is local cost/control evidence only. Legacy records keep their existing
+format; new strict policy is opt-in until mandatory orchestrator/adapter/native
+wiring is complete and reviewed. No live trial or credential operation follows
+from these tests. Actual25/160 remains unchanged. Full Node22/actual Core/owned PostgreSQL regression1765/1765 PASS,57.460s; cluster cleanup/listener stop verified.
+
+
+### 2026-10-15 Fixed preparation purpose labels and one live file readback
+
+Adapter/restricted-realm/copied-recovery231/231 PASS; RED57=48pass/9fail retained.
+Strict real-child synthetic realm exercises all six preparation adapters with
+unique approved aliases, original C2/I17, same lock and zero real Google calls.
+Actual import receipt reuse tests: once only, exact four-field binding, frozen
+object identity, JSON/copy rejection, time reversal and60s expiry. Failed/stale
+reuse cannot refund or duplicate a strict alias. Existing ACL/file/permission/
+UNKNOWN/cleanup tests remain. Independent incremental review no actionable
+findings. Full Node22/actual Core/owned PostgreSQL1774/1774 PASS,62.790s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched and
+mandatory runtime/native integration still unaccepted.
+
+
+### 2026-10-15 Mandatory single-wrapper runtime/observer wiring
+
+Related185/185 PASS after one review P2 fix. Focused RED8=1pass/7fail retained;
+intermediate129=128pass/1 obsolete two-entry expectation retained and corrected
+for the actual four recovery checks. Require bound decision before observers;
+legacy/missing/foreign policy cannot admit a new trial. Exact15 release aliases
+each phase; missing/duplicate/foreign/unlabeled callbacks and incomplete native
+identity/quota observations fail before RPC. Fifth page/wrong actor/qualified
+phases reject before IO. One wrapper only, UNKNOWN/no retry, independent C2/I17,
+stop/drain/escaped-cap/origin/recovery regressions remain. Four actual fake CUA
+producer→capture→strict-driver reads prove phase/actor charge and lock ownership;
+raw native analysis retains complete=false/quotaAccepted=false. Restricted VM
+six real adapters use strict preparation, one wrapper and all17 cleanup actions.
+Review P2 await-mutation test RED→GREEN fixes fixed actor/phase/page snapshots.
+Full Node22/actual Core/owned PostgreSQL1790/1790 PASS,61.163s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched, no live native or
+Google acceptance.
+
+### 2026-10-15 Fixed seven-source release transport
+
+Seven approved F aliases now have fixed Apps Script GET adapters: original
+project/editor/versions/deployments, pinned library7/thin1 content and thin
+deployments. One phase-bound alias debit owns each response through body read
+or cancellation. Exact cached publisher scopes, request/version pinning,
+single-flight, post-admission expiry and immutable token/control snapshots apply.
+Reject pagination, malformed/foreign/oversized/redirected response and retry;
+return actual frozen bytes/metadata without synthesizing equality or acceptance.
+
+New source tests34/34 PASS after actual RED0pass/34fail. Combined with canonical
+driver91/91 PASS: fourteen real transport callbacks in fake Google responses use
+the original F/S ledger and held lock across both phases; a paginated version
+list stops before compatibility RPC. Independent incremental review found no
+actionable issue. Full regression/validate results are recorded in the execution
+record when complete. No live Google/credential/counter/native proof follows.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1826/1826 PASS,62.802s,zero
+fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40
+endpoints/static cache/diff PASS. No Apps Script/Worker change, so no repeat of
+unchanged native Apps Script or local Worker capacity runs. Source equality,
+remaining native callbacks and full native-window/quota acceptance stay gated.
+
+### 2026-10-15 Source equality facts and actual execution entrypoint
+
+The seven-source verifier accepts only the original module-branded source
+adapter with matching pinned project/version/publisher, not copied/proxy handles.
+Snapshot expected pins and six original version descriptors before IO. Actual
+responses determine editor/file/manifest hashes, original serving inventory,
+baseline1–6 plus epoch-described7, parent binding and fixed thin deployment.
+Guarded manifests retain the exact scopes/whitelist/runtime/logging/library
+version/development mode. Thin F metadata now includes the actual Execution API
+entrypoint/access in the same existing read; access is not inferred from manifest.
+
+New verifier26RED→GREEN; actual-entrypoint mask1RED→GREEN. Combined124/124 PASS,
+including three canonical equality tests: real source transport/verifier facts
+merge with explicitly synthetic remaining release/native fields in the original
+ledger; changed source bytes or actual deployed access prevents native/RPC.
+Concurrent/duplicate/out-of-order phases, unbranded handles and pin/manifest/
+version/deployment mismatch stop without retry. Independent review found no
+actionable issue. Full regression is recorded in EXECUTION_RECORD when complete.
+Partial source facts omit native/ACL/Sheets fields and fail full driver readback;
+no current Google, credential, quota, full native window or live acceptance.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1859/1859 PASS,64.161s,zero
+fail/cancel/skip; cleanup and stopped listener verified. Validate72 backend/40
+endpoints/static cache/diff PASS. Only documentation changed after the tested
+573-file snapshot; Apps Script/Worker bytes unchanged. Credential-purpose owner
+approval is recorded separately and does not make new policy wiring executable.
+
+### 2026-10-15 Credential-purpose decision binding
+
+The approved credential-purpose selector is distinct from the retained original
+single-wrapper selector. The compiler keeps160/history25/fixed96/G32/P4/T3 and
+reserves caller1/publisher3. New P labels are caller-bind, publisher-bind,
+publisher-refresh and publisher-userinfo, each once. Generic actor aliases,
+replay/borrowing, refresh before bind, identity before refresh, A–E/handoff before
+all four purposes, cross-selector claim/runtime downgrade fail closed. Failed
+identity remains charged; independent C2/I17 still work. Runtime binding and
+scoped observation capabilities carry the selected decision, and orchestrator
+derives it from pinned recovery options. Old policy/cleanup remains compatible.
+
+Policy core RED14=1pass/13fail, binding RED5=2pass/3fail retained; affected236/236
+PASS plus new copied-credential-recovery1/1 PASS. The new copied test initially
+passed the full receipt to a strict path/SHA loader and was rejected; corrected
+test input only, without relaxing the loader. Copied I17 preserves new decision,
+history25 and pending execution, exposing no ordinary/RPC authority. Incremental
+review found no actionable issue. Full regression recorded when complete.
+This is policy/control evidence; fixed actual renewal/identity/native callbacks
+and real safety/quota/complete-window gates are still required before Google IO.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1879/1879 PASS,63.322s,zero
+fail/cancel/skip; cluster cleanup/listener stop verified. Reviewed five source
+pins unchanged. Validate72 backend/40 endpoints/static cache/diff PASS. This
+implements the selected policy through the counter/runtime/recovery; actual
+credential adapters and native release/window bindings remain incomplete.
+
+### 2026-10-15 Existing-grant and same-token identity adapters
+
+Publisher source is pinned by exact bytes, owner, mode0600 and no-follow regular
+file read. An explicit single P refresh validates bounded response, original
+ten scopes and finite lifetime, followed by paid verified publisher identity.
+Only then is a synchronous cached credential available. No login-file write,
+new grant, hidden renewal or original-publisher revocation occurs. Four G
+identities use each actor's current token and independent window admission;
+partial identity results never imply full native or quota acceptance.
+
+Initial adapter RED25/25 failed before implementation; selector RED2/2 reproduced
+the actual legacy-cap bypass before repair. Canonical/phase/orchestrator now
+carry the selected policy; missing/historical/stale selectors refuse IO.
+Facade RED3/3 reproduced missing propagation before repair. Affected190/190
+PASS; independent review's P2 selector issue fixed and re-reviewed with no new
+finding. Full Node22.23.3/actual Core/owned PostgreSQL1910/1910 PASS,62.686s,
+zero fail/cancel/skip; cluster and listener stopped. Tested575-file snapshot
+806b20541fbc7d8216d6c45ad2d371649be303f8d300ea921f9f18f803200fe9;
+only documentation changed afterwards. Apps Script/Worker source unchanged.
+Actual Google counter remains25/160 and unclaimed; no live refresh, userinfo,
+browser, native capture or RPC. Native/ACL/Sheets/terminal assembly and all
+runtime, quota, privacy, performance and real-device gates remain required.
+
+### 2026-10-15 Fixed ACL and authorization-tab release evidence
+
+Original module branding rejects copied/proxied/mismatched metadata adapters.
+Both phases use exactly three fixed GETs and actual caller/publisher credentials.
+New table is exact owner+Reader with the prior caller permission pin; original
+container is same owner only. Public/domain/group/inherited/deleted/extra or
+incomplete access denies, as do changed authorization tab IDs. No grid data,
+header verification or full source/native proof is inferred from metadata.
+Focused25RED-to-GREEN; related77/77, affected215/215 PASS. Canonical integration
+verifies F/S debits, held flock/peer exclusion and original history. Independent
+reviews found no actionable issue. Full1936/1936 PASS63.501s under Node22.23.3/
+actual Core/owned PostgreSQL, zero fail/cancel/skip; database/listener stopped.
+Snapshot52a8a374ae1eaf7fc2cdb35448fdddd769830bd6e4d121571301fd612abdd2de; only
+docs afterwards. Validate72/40/cache/diff PASS. Actual Google25/160 unchanged
+and unclaimed; native/parent-binding/quota/terminal and release gates remain.
