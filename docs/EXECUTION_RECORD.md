@@ -4273,3 +4273,33 @@ credential, grant, RPC, Google/Cloudflare/Pages change, flag or T0. Actual
 source-pinned adapter closure, real browser cost fit, original-resource write
 eligibility and all live acceptance remain open. See
 READ-SIMPLE-TRIAL-ACCOUNTING.md for boundaries and rollback.
+
+
+## 2026-10-19 — Approved single successor retains the expired65-operation scope
+
+Recommended model/speed: GPT-6.1 Sol/high, for accounting/authorization controls.
+An optional continuation config admits only a separately approved expired,
+drained readonly predecessor: original53 main operations plus its12 settled
+browser-preparation events, including two failures. Canonical path/epoch/binding/
+lock and all prior source/journal/claim/STOP/registry pins remain unchanged.
+A fixed new journal/claim/registry/STOP singleton retains the event prefix and
+preparation12/failures2; only four preparation debits and zero retries remain.
+First new debit fixes one six-hour/midnight-capped window. Stage/full-map/RPC,
+source, privacy, quota and independent original C2/I17 recovery gates stay intact.
+
+Initial new13-case regression:8 PASS/5 FAIL; support becomes focused41/41 with
+unchanged simple-control cases, then expanded continuation boundaries15/15 PASS.
+Fresh Node24 full unit2697/2697, zero fail/cancel/skip; validate72backend/40endpoint/
+static-cache and diff PASS. No new external Core/PostgreSQL acceptance is claimed.
+Independent review found no actionable P1/P2 and separately ran15/15 synthetic
+continuation cases with zero fail/cancel/skip. Exact new-head CI is still a
+separate remaining preparation gate.
+Worker runtime is unchanged; prior exact-source Worker evidence remains historical.
+
+Actual ledger remains65/232, stopped with no pending IO or RPC. This local change
+creates no actual new owner/claim/window/debit, Google/browser/API/credential IO,
+resource/grant/configuration/Production change or observation T0. Complete actual
+UI cost/recovery map and all real C1/C3/provider/device/accelerated-observation gates
+remain open. Before execution, rollback source to1624fd4; after any future start,
+stop/drain only the actual owner and use its pinned independent recovery without
+rewriting predecessor evidence or retrying an UNKNOWN operation.

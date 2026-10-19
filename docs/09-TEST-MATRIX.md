@@ -2453,3 +2453,15 @@ bounded terminal reads. Review regressions cover cleanup replay, falsey Promise
 rejections, inaccessible C2 and dangling STOP markers. No live Google or
 Production acceptance is implied; actual adapter closure and real cost mapping
 remain prerequisites. See READ-SIMPLE-TRIAL-ACCOUNTING.md.
+
+
+### 2026-10-19 one-time readonly-trial continuation controls
+
+Synthetic real-ledger tests cover cumulative65 import (main53/browser12),
+byte-identical predecessor events and artifacts, four remaining preparation
+operations/zero restored retries, approval/policy/actor/path/history drift,
+no duplicate successor, first-debit six-hour/midnight cap, drain ownership and
+original C2 recovery after successor-mirror corruption. Focused initial13 cases
+reported8 PASS/5 FAIL before support; the resulting15 boundary cases PASS,
+zero fail/cancel/skip. Full-source unit/validate/review/CI are separate evidence;
+no actual new claim/window, Google/browser/API request or Production change.

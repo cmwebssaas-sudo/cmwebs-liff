@@ -57,3 +57,29 @@ Rollback before execution: revert the local trial-controller increment; keep
 all used artifacts and stopped claims. After execution begins, stop/drain the
 actual owner and use only the pinned, independently reserved recovery map.
 Never reset history, delete a claim, replay a write, or reopen an old owner.
+
+
+## Approved one-time continuation of the expired readonly scope
+
+The owner separately approved one successor on2026-10-19, retaining all65
+operations (53 historical main,12 browser preparation) and the original STOP.
+An optional strictly pinned continuation links the old journal, independent
+registry, claim, STOP and settled drain to the new approval. Same canonical
+path/epoch/binding/lock, fixed successor filenames and an independent singleton
+prevent another successor or reset through a changed configuration.
+
+Only an expired, drained, readonly predecessor with exactly12 settled browser
+preparation events and two failures is eligible. Its event prefix and unknowns
+remain byte-identical. The new owner retains failures2/preparation12, so only
+four preparation operations remain and its first new read failure stops;
+no observation retry is restored. Main160, ordinary browser56, browser recovery16,
+combined232 and all protected recovery/unused reservations remain unchanged.
+The first new durable debit fixes one six-hour, same-Taipei-day window.
+
+The ordinary suffix differs from the original simple owner; the original
+journal/claim/STOP/registry remain immutable and source-verified on every
+command. Current recovery can use the independent successor checkpoint even
+if its ordinary mirror is damaged, retaining the original C2/I17 reservations.
+No RPC is admitted before the actual full map and all original safety gates.
+This is local continuation support, not permission to bypass missing UI cost,
+freshness, privacy, daily-runtime, provider/device or rollout acceptance.
