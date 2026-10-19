@@ -4329,3 +4329,36 @@ local increment. Formal C1/C3/privacy/freshness/performance/device/approved
 observation/rollback gates remain open. Rollback undeployed source to f2ff40a;
 retain every used source, counter, claim, STOP and failed package. Root WIP and
 private material preserved.
+
+
+## 2026-10-20 — Approved first-debit clock for the unused repair
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization/accounting controls.
+Added explicit admissionWindow support only alongside the unchanged original
+repair approval and exact stopped66-operation chain. The same fixed repair
+singleton prevents cross-mode reuse. Both old clocks and all13 predecessor
+events remain pinned as history. Without the new direct approval, original033
+still retains its original expiry. New mode leaves clock unset through admission,
+inspection and wait; first durable debit starts max6h/Taipei-midnight. At most
+six minutes remaining rejects before creating any new claim/checkpoint.
+
+Real-ledger RED15 PASS/8 FAIL before implementation; focused66/66 PASS and fresh
+full Node24 unit2720/2720 PASS, zero fail/cancel/skip,169.899s. Independent review
+found no P1/P2 and separately ran23/23; its minor cross-mode test gap was fixed
+by supplying a valid renewal approval after consuming the original-mode claim.
+Final affected23/23 PASS after that test-only strengthening; reviewer verified
+the corrected valid-approval branch. Exact new-head CI remains required.
+Validate72backend/40endpoints/static-cache PASS. No new external Core/PostgreSQL
+acceptance; Apps Script/Worker runtime is unchanged and no Google test ran.
+Historical0c28 exact-head CI39281485876 completed2709/26 PASS; that result does
+not establish CI for this new increment or actual Google acceptance.
+
+Actual trial remains stopped66/232, preparation13/failures2, zero retries and
+pendingnull, no actual repair owner/claim/debit. Private wiring still requires
+closed sources, review, exact-head CI, inert actual-manager admission and the
+complete actual UI/recovery cost map before any RPC. No credentials, grants,
+resource/Production change or observation T0. All safety/freshness/900s/day/
+formal performance/device/approved observation gates remain unaccepted.
+Rollback undeployed clock-only source to0c28e31; never rewrite used history,
+reopen a consumed singleton, refund UNKNOWN or infer original-resource write
+eligibility from a checklist. Root WIP and private material remain preserved.

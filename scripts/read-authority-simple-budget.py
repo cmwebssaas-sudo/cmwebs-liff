@@ -12,6 +12,7 @@ history=importlib.util.module_from_spec(spec);spec.loader.exec_module(history)
 DECISION='eccdb919d865327e3b5922231b253266e9084afe33305e12a32e64501efa39b2'
 CONTINUATION_DECISION='fc822ca3296a4f66195c02e9db1088ca6b95eb197bd440a27f417069e9b7cdd7'
 ADMISSION_REPAIR_DECISION='03310835216ab80ff344fe51264466bb7c7cc333d3e7df499b28ce9eb85e290f'
+ADMISSION_WINDOW_DECISION='abb1747f4eae5ba0cd98c200649f700a4cd6de97b215b14b671f63eee0eb25a3'
 RULES=copy.deepcopy(history.STAGED_OPERATIONS)
 RULES['A:original-cloud-backup']={'actor':'publisher','target':'original-settings','methods':['snapshot']}
 STAGES=history.STAGES
@@ -52,9 +53,10 @@ class Ledger:
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
   self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None
-  self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg
-  if self.repair and not self.continuation:fail()
-  if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
+  self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg
+  if self.repair and not self.continuation or self.repair_window and not self.repair:fail()
+  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])
+  if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+optional) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
   self.path=Path(cfg['path']);directory(self.path.parent)
   if not self.path.is_absolute() or cfg['original']['path']!=str(self.path) or cfg['original']['epoch']!=cfg['epoch']:fail()
   fd=os.fstat(3);named=os.lstat(str(self.path)+'.lock')
@@ -69,7 +71,7 @@ class Ledger:
   self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+suffix+'.json')
-  self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']+(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
+  self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']+optional};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
   if cleanup:
    r=record(self.registry)
    if record(self.claim)!=self.identity or r.get('identity')!=self.identity or type(r.get('checkpoint')) is not dict or type(r['checkpoint'].get('events')) is not list or len(r['checkpoint']['events'])!=minimum:fail()
@@ -81,6 +83,7 @@ class Ledger:
   if self.repair:
    prior,approved_at=self.validate_admission_repair()
    self.j=copy.deepcopy(prior);self.j.update(state='ready',lastAt=approved_at)
+   if self.repair_window:self.j.update(w0=None,expiresAt=None)
   elif self.continuation:
    prior,approved_at=self.validate_continuation()
    self.j=copy.deepcopy(prior);self.j.update(state='ready',w0=None,expiresAt=None,lastAt=approved_at)
@@ -159,8 +162,19 @@ class Ledger:
   operation={'id':'simple-continuation-native-trigger-a','key':'N:preparation','actor':'publisher','target':'original-triggers','operation':'snapshot','units':1,'preparation':True}
   if not exact(e,['lane','key','operation','time','outcome','cleanup','settled','success']) or e['lane']!='ui' or e['key']!='N:preparation' or e['operation']!=operation or e['outcome']!='UNKNOWN' or e['cleanup'] is not False or e['settled'] is not True or e['success'] is not True or not integer(e['time']) or not j['w0']<=e['time']<=j['lastAt']:fail()
   if self.memory is not None and self.memory['events'][:13]!=j['events']:fail()
-  # Keep the original clock. Ordinary admission retains the six-minute RPC reserve;
-  # independent cleanup is still available after that ordinary window closes.
+  if self.repair_window:
+   w=c['admissionWindow']
+   if not exact(w,['decisionHash','approval']) or w['decisionHash']!=ADMISSION_WINDOW_DECISION:fail()
+   pwin=w['approval']
+   if not exact(pwin,['path','sha256']) or type(pwin['path']) is not str or not Path(pwin['path']).is_absolute() or not digest(pwin['sha256']):fail()
+   b=json.loads(private_pin(pwin))
+   keys=keys+['repairDecisionSha256','repairApprovalSha256']
+   if not exact(b,keys) or b['source']!='direct-human-approval' or b['decisionSha256']!=ADMISSION_WINDOW_DECISION or b['ownerAnswer']!='同意更新未啟動修復時窗，其餘限制不變' or b['repairDecisionSha256']!=ADMISSION_REPAIR_DECISION or b['repairApprovalSha256']!=p['approval']['sha256'] or b['predecessorSha256']!=sha(raw['journal']) or any(b[k]!=a[k] for k in ['importedSpent','importedMainSpent','importedUiSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','w0','expiresAt']) or b['executionStarted'] is not False or not integer(b['recordedAt']) or not a['recordedAt']<=b['recordedAt']<=c['now']:fail()
+   # The same unused singleton only. Near midnight, fail before creating it;
+   # admission, inspection and waiting do not start its first-debit clock.
+   if not self.cleanup_mode and self.memory is None and self.window(c['now'])-c['now']<=360000:fail()
+   return j,b['recordedAt']
+  # Without the extra direct approval, retain the original clock unchanged.
   if not self.cleanup_mode and self.memory is None and c['now']+360000>=j['expiresAt']:fail()
   return j,a['recordedAt']
  def old(self):

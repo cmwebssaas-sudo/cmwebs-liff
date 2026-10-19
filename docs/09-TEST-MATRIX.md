@@ -2476,3 +2476,18 @@ retries, singleton, each pin, policy/counter/time drift, repinned incomplete
 parent, original C2 after expiry/corruption, and actual JS debit/stop/drain.
 Validate72backend/40endpoint/static-cache and diff PASS. Full exact-head CI is
 separate; these synthetic tests create no actual owner or external operation.
+
+
+## 2026-10-20 — Same unused repair, separately approved first-debit clock
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization/accounting controls.
+Added real-ledger cases for delayed first debit (inspect/wait leave clock null),
+six-hour/Taipei-midnight caps, <=six-minute preclaim rejection and next-day
+unused admission, shared cross-mode singleton, strict layered approval pins,
+post-admission approval drift, no restored retries and independent original
+recovery after expiry/damaged mirror. Original033 clock tests remain intact.
+New/old repair suite RED15pass/8fail before support; focused simple/successor/
+repair66/66 PASS, zero fail/cancel/skip. Full suite and exact-head provider CI
+are separately recorded in EXECUTION_RECORD.md when terminal.
+No test in this increment calls Google or creates an actual trial owner/claim.
+All live safety/runtime/performance/device/observation gates remain open.

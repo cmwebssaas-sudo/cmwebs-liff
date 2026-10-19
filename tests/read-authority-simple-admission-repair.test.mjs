@@ -37,3 +37,48 @@ test('repair cannot extend/reset window, refund counts, change binding or start 
 test('repair rejects repinned pending, failed, refunded or mutated parent',async()=>{for(const defect of ['pending','failed','refund','mutated']){const s=await repair(),p=s.cfg.admissionRepair,j=structuredClone(s.parent);if(defect==='pending')j.pending='UNKNOWN';if(defect==='failed')j.events[12].success=false;if(defect==='refund')j.events.pop();if(defect==='mutated')j.mutated=true;s.put(p.journal.path,compact(j));p.journal.sha256=hash(readFileSync(p.journal.path));const a=JSON.parse(readFileSync(p.approval.path));a.predecessorSha256=p.journal.sha256;s.put(p.approval.path,compact(a));p.approval.sha256=hash(readFileSync(p.approval.path));const reg=JSON.parse(readFileSync(p.registry.path)).value;reg.checkpoint=j;s.put(p.registry.path,wrapped(reg));p.registry.sha256=hash(readFileSync(p.registry.path));const h=session(s);try{assert.equal((await h.ready).ok,false);}finally{await h.close();}}});
 test('original C2 independent cleanup survives expiry and damaged repair mirror',async()=>{const s=await repair(),h=session(s);try{good(await h.ready);s.put(s.path+'.simple-admission-repair.json','{');good(await h.send({op:'cleanup-start',now:s.parent.expiresAt+60000}));const o={id:'repair-original-restore',bucket:'C',alias:'restore-editor',actor:'publisher',target:'original-project',operation:'PUT',units:1};good(await debit(h,o,s.parent.expiresAt+60000,'main'));good(await settle(h,o.id,true,s.parent.expiresAt+60000));assert.equal(s.get().spent,28);}finally{await h.close();}});
 test('JS holder charges repair once before callback, stops and drains only its own new singleton',async()=>{const s=await repair();let at=s.time;const{now,ownerNonce,...config}=s.cfg,home=process.env.HOME;process.env.HOME=s.home;let c;try{c=createAuthoritySimpleControl({config,guard:()=>{},assertStage:()=>{},now:()=>at,pause:async ms=>{at+=ms;}});}finally{process.env.HOME=home;}let calls=0;await assert.rejects(c.withContinuation(async cap=>{assert.equal((await cap.inspect()).combinedSpent,66);await cap.browserRead(()=>{calls++;assert.equal(s.repaired().pending,'ui-14');throw Error('READ_FAIL');},ui(14));}),/TRIAL_STOPPED/);assert.equal(calls,1);assert.equal((await c.stopAndDrain()).ownedScope.state,'SETTLED');assert.equal(s.repaired().events.length,14);assert.equal(JSON.parse(readFileSync(s.cfg.admissionRepair.journal.path)).events.length,13);});
+
+const windowDecision='abb1747f4eae5ba0cd98c200649f700a4cd6de97b215b14b671f63eee0eb25a3';
+const renewedAt=Date.parse('2026-10-25T01:00:00Z'); // Taipei09:00, after the original expired clock.
+async function windowRepair(at=renewedAt){
+ const s=await repair(),file=join(s.home,'window-approval.json'),p=s.cfg.admissionRepair;
+ s.put(file,compact({source:'direct-human-approval',decisionSha256:windowDecision,ownerAnswer:'同意更新未啟動修復時窗，其餘限制不變',repairDecisionSha256:repairDecision,repairApprovalSha256:p.approval.sha256,predecessorSha256:p.journal.sha256,importedSpent:66,importedMainSpent:53,importedUiSpent:13,mainLimit:160,uiOrdinaryLimit:56,uiRecoveryLimit:16,combinedLimit:232,w0:s.parent.w0,expiresAt:s.parent.expiresAt,recordedAt:at,executionStarted:false}));
+ s.cfg.admissionWindow={decisionHash:windowDecision,approval:{path:file,sha256:hash(readFileSync(file))}};s.time=at;s.cfg.now=at;return s;
+}
+test('approved unused repair clock starts at durable debit, not admission, inspection or wait',async()=>{
+ const s=await windowRepair(),h=session(s);try{const r=await h.ready;good(r);assert.equal(r.combinedSpent,66);assert.equal(r.w0,null);assert.equal(r.expiresAt,null);good(await h.send({op:'inspect'}));good(await h.send({op:'wait',lane:'ui',operation:ui(14),now:s.time+600000}));assert.equal(s.repaired().w0,null);
+ const t=Date.parse('2026-10-25T02:00:00Z'),d=await debit(h,ui(14),t);assert.equal(d.w0,t);assert.equal(d.expiresAt,Date.parse('2026-10-25T08:00:00Z'));assert.equal(d.combinedSpent,67);good(await settle(h,'ui-14',true,t));assert.deepEqual(s.repaired().events.slice(0,13),s.parent.events);
+ }finally{await h.close();}for(const[p,b]of Object.entries(s.parentBytes))assert.deepEqual(readFileSync(p),b);
+});
+test('new repair clock caps at Taipei midnight and cannot debit again after expiry',async()=>{
+ const at=Date.parse('2026-10-25T15:45:00Z'),s=await windowRepair(at),h=session(s);try{good(await h.ready);const d=await debit(h,ui(14),at);assert.equal(d.expiresAt,Date.parse('2026-10-25T15:59:59.999Z'));good(await settle(h,'ui-14',true,at));assert.equal((await h.send({op:'debit',lane:'ui',operation:ui(15),now:d.expiresAt+1})).ok,false);}finally{await h.close();}
+});
+test('six-minute-or-less admission creates no singleton; the unused entry can wait until next day',async()=>{
+ for(const at of [Date.parse('2026-10-25T15:53:59.999Z'),Date.parse('2026-10-25T15:55:00Z')]){const s=await windowRepair(at),h=session(s);try{assert.equal((await h.ready).ok,false);assert.equal(existsSync(s.path+'.simple-admission-repair-claim.json'),false);}finally{await h.close();}s.cfg.now=Date.parse('2026-10-26T00:00:00Z');const next=session(s);try{good(await next.ready);assert.equal(s.repaired().w0,null);}finally{await next.close();}}
+});
+test('one millisecond beyond the reserve admits the unused repair without starting its clock',async()=>{
+ const s=await windowRepair(Date.parse('2026-10-25T15:53:59.998Z')),h=session(s);try{good(await h.ready);assert.equal(s.repaired().w0,null);}finally{await h.close();}
+});
+test('new clock cannot reopen the same repair singleton even before its first debit',async()=>{
+ const s=await windowRepair(),h=session(s);try{good(await h.ready);}finally{await h.close();}const next=session(s);try{assert.equal((await next.ready).ok,false);}finally{await next.close();}
+});
+test('new clock cannot replace a consumed original-clock repair singleton',async()=>{
+ const s=await windowRepair(),window=s.cfg.admissionWindow;delete s.cfg.admissionWindow;s.cfg.now=JSON.parse(readFileSync(s.cfg.admissionRepair.approval.path)).recordedAt;
+ const h=session(s);try{good(await h.ready);}finally{await h.close();}
+ s.cfg.admissionWindow=window;s.cfg.now=renewedAt;const next=session(s);try{assert.equal((await next.ready).ok,false);}finally{await next.close();}
+});
+test('new clock rejects repinned approval changes without creating an owner',async()=>{
+ for(const k of ['ownerAnswer','repairApprovalSha256','predecessorSha256','importedSpent','w0','expiresAt','recordedAt','executionStarted','extra']){const s=await windowRepair(),p=s.cfg.admissionWindow.approval,a=JSON.parse(readFileSync(p.path));if(k==='executionStarted')a[k]=true;else if(k==='recordedAt')a[k]=s.time+1;else a[k]=typeof a[k]==='number'?a[k]+1:'invalid';s.put(p.path,compact(a));p.sha256=hash(readFileSync(p.path));const h=session(s);try{assert.equal((await h.ready).ok,false);assert.equal(existsSync(s.path+'.simple-admission-repair-claim.json'),false);}finally{await h.close();}}
+});
+test('clock approval alone cannot bypass the original repair approval or predecessor',async()=>{
+ for(const defect of ['repair','continuation','approval','decision']){const s=await windowRepair();if(defect==='repair')delete s.cfg.admissionRepair;if(defect==='continuation')delete s.cfg.continuation;if(defect==='approval')s.put(s.cfg.admissionRepair.approval.path,'{}');if(defect==='decision')s.cfg.admissionWindow.decisionHash='0'.repeat(64);const h=session(s);try{assert.equal((await h.ready).ok,false);assert.equal(existsSync(s.path+'.simple-admission-repair-claim.json'),false);}finally{await h.close();}}
+});
+test('clock approval remains pinned on every command and drift stops before another debit',async()=>{
+ const s=await windowRepair(),h=session(s);try{good(await h.ready);s.put(s.cfg.admissionWindow.approval.path,'{}');assert.equal((await h.send({op:'debit',lane:'ui',operation:ui(14),now:s.time})).ok,false);assert.equal(s.repaired().events.length,13);}finally{await h.close();}
+});
+test('renewed repair keeps independent original recovery after expiry and damaged ordinary mirror',async()=>{
+ const s=await windowRepair(),h=session(s);try{good(await h.ready);const d=await debit(h,ui(14),s.time);good(await settle(h,'ui-14',true,s.time));s.put(s.path+'.simple-admission-repair.json','{');good(await h.send({op:'cleanup-start',now:d.expiresAt+60000}));const op={id:'window-original-restore',bucket:'C',alias:'restore-editor',actor:'publisher',target:'original-project',operation:'PUT',units:1};good(await debit(h,op,d.expiresAt+60000,'main'));good(await settle(h,op.id,true,d.expiresAt+60000));assert.equal(s.get().spent,28);}finally{await h.close();}
+});
+test('JS renewed repair persists one charge before failed callback and never restores a retry',async()=>{
+ const s=await windowRepair();let at=s.time;const{now,ownerNonce,...config}=s.cfg,home=process.env.HOME;process.env.HOME=s.home;let c;try{c=createAuthoritySimpleControl({config,guard:()=>{},assertStage:()=>{},now:()=>at,pause:async ms=>{at+=ms;}});}finally{process.env.HOME=home;}let calls=0;await assert.rejects(c.withContinuation(async cap=>{assert.equal((await cap.inspect()).w0,null);await cap.browserRead(()=>{calls++;assert.equal(s.repaired().pending,'ui-14');assert.equal(s.repaired().w0,at);throw Error('FAIL');},ui(14));}),/TRIAL_STOPPED/);assert.equal(calls,1);assert.equal(s.repaired().failures,3);assert.equal(s.repaired().state,'stopped');assert.equal((await c.stopAndDrain()).ownedScope.state,'SETTLED');await assert.rejects(c.withContinuation(()=>{}),/TRIAL_STOPPED/);assert.equal(calls,1);
+});

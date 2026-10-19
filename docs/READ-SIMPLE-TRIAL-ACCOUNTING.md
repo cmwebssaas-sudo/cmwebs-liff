@@ -105,3 +105,34 @@ admission are required before private wiring may invoke this optional entry.
 This is a local controller only, not a deployed feature or live-trial pass.
 Rollback undeployed source to f2ff40a while preserving all used predecessor and
 repair evidence. Local repairs never imply authority to renew an expired window.
+
+
+## Approved clock for the same unused admission repair
+
+The owner separately approved a clock-only amendment on2026-10-20. An optional
+admissionWindow requires its own pinned direct approval in addition to the
+unchanged original repair approval and exact stopped66-operation predecessor.
+It uses the same simple-admission-repair singleton, canonical path/epoch/
+binding/lock and all13 historical events. A consumed repair singleton cannot
+be reopened by switching clock modes. Without the additional approval, the
+original033 clock and expiry remain unchanged.
+
+The amended entry starts with w0/expiresAt unset. Inspection, preparation and
+waiting for CI do not start a clock; the first durable debit fixes at most six
+hours, capped at that Taipei day's midnight. If six minutes or less remain at
+admission, it creates no repair claim/journal/registry and may wait until the
+next Taipei day. Once admitted, the same unique owner cannot be recreated or
+automatically renewed, even if it has not yet debited. Expiry and any first
+failed remote read still stop ordinary work permanently.
+
+Imported main53/browser13, preparation13, failures2, combined232 and zero
+remaining observation retries are unchanged. All source/test/review/exact-head
+CI/inert-manager, actual full UI/recovery cost, privacy/freshness,900s/day,
+formal performance/device and approved rollout observation gates remain.
+Independent recovery retains the original C2/I17 reservations after ordinary
+expiry or a damaged mirror. This local clock mode provides no live acceptance,
+new credential/access, paid resource, formal data access or Production change.
+
+Rollback the undeployed clock-only increment to0c28e31; retain all historical
+and consumed artifacts. A local mode change does not authorize an expired or
+consumed actual owner to resume.
