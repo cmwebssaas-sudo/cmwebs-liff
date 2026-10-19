@@ -9,11 +9,12 @@ import { richDataset,projectedDataset,fixture,access,originalGas } from '../../.
 import { authorityRuntime,authoritySecret } from '../../../tests/fixtures/read-parity/authority-runtime.mjs';
 import { shadowExportQueries } from '../src/shadow-export.js';
 import { evaluateShadowWindows } from '../src/shadow-windows.js';
+import { evaluateAcceleratedShadow } from '../../../scripts/read-accelerated-shadow.mjs';
 
 const release=JSON.parse(await readFile(new URL('../read-comparison-manifest.json',import.meta.url),'utf8')).comparison_version,
   token='synthetic-email-token';
 const body={route:'tenants',variant:'default',release,outcome:'compared',paths:['data.summary.total_amount','data.tenants[].tenant_name'],clock_paths:[],headers_ms:90,elapsed_ms:100};
-async function setup({shadowRelease=release}={}) {
+async function setup({shadowRelease=release,beforeMigration,shadowStartedAt=new Date(Date.parse(fixture.now)-3600000).toISOString()}={}) {
   const input=richDataset();Object.assign(input.V2_users[0],{email_verified_at:'2026-10-01',email_login_enabled:true,email:'synthetic@example.invalid'});
   input.V2_landlord_email_sessions=[{session_id:'SYNTHETIC_SESSION',session_token_hash:createHmac('sha256','synthetic-email-key').update('session:'+token).digest('hex'),
     user_id:access.user.user_id,workspace_id:access.workspace.workspace_id,role:'owner',status:'active',expires_at:new Date(Date.parse(fixture.now)+3600000).toISOString()}];
@@ -22,11 +23,12 @@ async function setup({shadowRelease=release}={}) {
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:output.outputFiles[0].text,compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     outboundService:async request=>Response.json(authority.post(await request.json())),
     bindings:{FIXTURE_NOW:String(Date.parse(fixture.now)),READ_SHADOW_EPOCH:'synthetic-epoch',READ_SHADOW_RELEASE:shadowRelease,
-      READ_SHADOW_STARTED_AT:new Date(Date.parse(fixture.now)-3600000).toISOString(),
+      READ_SHADOW_STARTED_AT:shadowStartedAt,
       LINE_LOGIN_CHANNEL_ID:'SYNTHETIC_CHANNEL',EMAIL_SESSION_HMAC_SECRET:'synthetic-email-key',READ_REPLICA_SYNC_SECRET:authoritySecret,
       READ_AUTHORITY_URL:'https://script.google.com/macros/s/SYNTHETIC_DEPLOYMENT/exec'}}));
   const db=await mf.getD1Database('DB');
   for(const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).sort()) {
+    if(beforeMigration) await beforeMigration(db,file);
     const sql=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
     await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(sql=>sql.trim()).filter(Boolean).map(sql=>db.prepare(sql)));
   }
@@ -54,16 +56,24 @@ test('actual LINE/Email report HTTP stores only redacted metadata atomically and
     }
     const rows=(await db.prepare('SELECT * FROM shadow_reports').all()).results;
     assert.equal(rows.length,2);assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM shadow_diffs').first()).n,4);
+    const attempts=(await db.prepare('SELECT * FROM shadow_attempts ORDER BY rowid').all()).results;
+    assert.deepEqual(attempts.map(row=>row.auth_kind),['email','line']);
+    await assert.rejects(db.prepare("UPDATE shadow_attempts SET auth_kind='forged'").run());
     for(const row of rows){assert.match(row.scope_hash,/^[a-f0-9]{64}$/);assert.match(row.actor_hash,/^[a-f0-9]{64}$/);}
     assert.doesNotMatch(JSON.stringify(rows),/SYNTHETIC_U1|SYNTHETIC_W1|synthetic-email-token|synthetic-email-key|tenant_name/);
     const exported=await db.batch(shadowExportQueries(db,{scope:rows[0].scope_hash,epoch:'synthetic-epoch',release,startedAt:new Date(Date.parse(fixture.now)-3600000).toISOString(),now:Date.parse(fixture.now)+1000}));
     assert.equal(exported[0].results[0].compared,2);assert.equal(exported[0].results[0].diffs,4);
     assert.equal(exported[1].results.length,2);assert.equal(exported[2].results.length,2);
+    assert.deepEqual(exported[1].results.map(row=>row.auth_kind).sort(),['email','line']);
+    for(const sample of exported[1].results){assert.equal(sample.observed_at,new Date(fixture.now).toISOString());assert.match(sample.receipt,/^[a-f0-9-]{36}$/);}
+    assert.equal(new Set(exported[1].results.map(row=>row.receipt)).size,2);
     assert.equal(exported[3].results[0].attempts,2);assert.equal(exported[3].results[0].matched,2);
     assert.doesNotMatch(JSON.stringify(exported.map(result=>result.results)),/scope_hash|actor_hash|SYNTHETIC/);
-    for(const patch of [{workspace_id:'other'},{values:[1234]},{paths:['data.person@example.invalid']},{release:'old'}]) assert.equal((await post({...body,...patch})).status,400);
+    for(const patch of [{workspace_id:'other'},{auth_kind:'line'},{values:[1234]},{paths:['data.person@example.invalid']},{release:'old'}]) assert.equal((await post({...body,...patch})).status,400);
     assert.equal((await post({...body,paths:['x'.repeat(13000)]})).status,400);
     assert.equal((await post({...body,values:'x'.repeat(25000)})).status,400);
+    const claimed=await mf.dispatchFetch('https://local.test/http/v1/tenants?read_view=summary',{headers:{authorization:'Session '+token,'x-cmwebs-read-mode':'shadow','x-cmwebs-auth-kind':'line'}});
+    assert.equal(claimed.status,200);assert.equal((await db.prepare('SELECT auth_kind FROM shadow_attempts WHERE attempt_id=?').bind(claimed.headers.get('x-cmwebs-shadow-receipt')).first()).auth_kind,'email');
     assert.equal((await post({...body,receipt:randomUUID()},'Session forged')).status,401);
     authority.data.V2_landlord_email_sessions[0].status='revoked';assert.equal((await post({...body,receipt:randomUUID()})).status,401);
     authority.data.V2_landlord_email_sessions[0].status='active';
@@ -143,17 +153,18 @@ test('actual D1 export retains post-week failures and uses read timestamps rathe
     for(let window=0;window<7;window++) for(const [route,variant] of variants) {
       const attempt=randomUUID(),report=randomUUID(),readAt=new Date(start+window*86400000+1000).toISOString();
       await db.batch([
-        db.prepare("INSERT INTO shadow_attempts VALUES(?,?,?,?,?,?,?,'completed',200,?,?)").bind(attempt,seed.scope_hash,seed.actor_hash,seed.epoch,release,route,variant,readAt,report),
+        db.prepare("INSERT INTO shadow_attempts(attempt_id,scope_hash,actor_hash,epoch,release_id,route,variant,outcome,status,observed_at,report_id) VALUES(?,?,?,?,?,?,?,'completed',200,?,?)").bind(attempt,seed.scope_hash,seed.actor_hash,seed.epoch,release,route,variant,readAt,report),
         db.prepare("INSERT INTO shadow_reports VALUES(?,?,?,?,?,?,?,'compared',10,20,0,?,?,0)").bind(report,seed.scope_hash,seed.actor_hash,seed.epoch,release,route,variant,new Date(Date.parse(readAt)+1000).toISOString(),attempt)
       ]);
     }
     const selection={scope:seed.scope_hash,epoch:seed.epoch,release,startedAt,now:start+7*86400000+1000};
     const exportNow=async selected=>{
       const result=await db.batch(shadowExportQueries(db,selected));
-      return {started_at:startedAt,epoch:seed.epoch,release,rows:result[0].results,attempt_rows:result[3].results};
+      return {started_at:startedAt,epoch:seed.epoch,release,rows:result[0].results,sample_rows:result[1].results,attempt_rows:result[3].results};
     };
     assert.equal(evaluateShadowWindows(await exportNow(selection),{now:selection.now,epoch:seed.epoch,release}).eligible,true);
-    await db.prepare("INSERT INTO shadow_attempts VALUES(?,?,?,?,?,?,'default','completed',503,?,NULL)")
+    assert.ok((await exportNow(selection)).sample_rows.every(row=>row.auth_kind==='unknown'));
+    await db.prepare("INSERT INTO shadow_attempts(attempt_id,scope_hash,actor_hash,epoch,release_id,route,variant,outcome,status,observed_at,report_id) VALUES(?,?,?,?,?,?,'default','completed',503,?,NULL)")
       .bind(randomUUID(),seed.scope_hash,seed.actor_hash,seed.epoch,release,'rooms',new Date(start+7*86400000+2000).toISOString()).run();
     selection.now=start+7*86400000+3000;
     const failed=await exportNow(selection);assert.ok(failed.attempt_rows.some(row=>row.window===7&&row.errors===1));
@@ -162,7 +173,7 @@ test('actual D1 export retains post-week failures and uses read timestamps rathe
     // when its authenticated report arrives in the next window.
     const attempt=randomUUID(),report=randomUUID(),readAt=new Date(start+86400000-1).toISOString();
     await db.batch([
-      db.prepare("INSERT INTO shadow_attempts VALUES(?,?,?,?,?,?,'default','completed',200,?,?)").bind(attempt,seed.scope_hash,seed.actor_hash,seed.epoch,release,'tenants',readAt,report),
+      db.prepare("INSERT INTO shadow_attempts(attempt_id,scope_hash,actor_hash,epoch,release_id,route,variant,outcome,status,observed_at,report_id) VALUES(?,?,?,?,?,?,'default','completed',200,?,?)").bind(attempt,seed.scope_hash,seed.actor_hash,seed.epoch,release,'tenants',readAt,report),
       db.prepare("INSERT INTO shadow_reports VALUES(?,?,?,?,?,?,'default','compared',10,20,0,?,?,0)").bind(report,seed.scope_hash,seed.actor_hash,seed.epoch,release,'tenants',new Date(start+86400000+1).toISOString(),attempt)
     ]);
     const boundary=await exportNow(selection);
@@ -224,4 +235,34 @@ test('a stale configured comparison identity closes shadow reads and reports wit
     assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM shadow_attempts').first()).n,0);
     assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM shadow_reports').first()).n,0);
   } finally {await mf.dispose();}
+});
+
+test('auth-kind migration preserves existing attempts as unknown without rewriting their evidence',async()=>{
+  const attempt=randomUUID(),scope='a'.repeat(64),actor='b'.repeat(64);let observedOldSchema=false;
+  const {mf,db}=await setup({beforeMigration:async(db,file)=>{
+    if(file!=='0006_shadow_auth_kind.sql')return;
+    const columns=(await db.prepare('PRAGMA table_info(shadow_attempts)').all()).results;
+    assert.equal(columns.some(row=>row.name==='auth_kind'),false);observedOldSchema=true;
+    await db.prepare("INSERT INTO shadow_attempts VALUES(?,?,?,?,?,?,'default','completed',200,?,NULL)").bind(attempt,scope,actor,'legacy-epoch',release,'rooms',new Date(fixture.now).toISOString()).run();
+  }});
+  try{assert.equal(observedOldSchema,true);const row=await db.prepare('SELECT * FROM shadow_attempts WHERE attempt_id=?').bind(attempt).first();assert.equal(row.auth_kind,'unknown');assert.equal(row.scope_hash,scope);assert.equal(row.actor_hash,actor);assert.equal(row.outcome,'completed');assert.equal(row.status,200);assert.equal(row.observed_at,new Date(fixture.now).toISOString());assert.equal(row.report_id,null);}finally{await mf.dispose();}
+});
+
+test('actual D1 sample export feeds only a local accelerated candidate and unknown channels deny',async()=>{
+ const start=Date.parse(fixture.now)-86400000,startedAt=new Date(start).toISOString();
+ const {mf,db,post}=await setup({shadowStartedAt:startedAt});
+ try{
+  assert.equal((await post()).status,200);const seed=await db.prepare('SELECT * FROM shadow_reports LIMIT 1').first();
+  for(let i=0;i<20;i++){
+   const attempt=randomUUID(),reportId=randomUUID(),readAt=new Date(start+(1+(i%3)*8)*3600000+i*1000).toISOString();
+   await db.batch([
+    db.prepare("INSERT INTO shadow_attempts(attempt_id,scope_hash,actor_hash,epoch,release_id,route,variant,outcome,status,observed_at,report_id,auth_kind) VALUES(?,?,?,?,?,'rooms','default','completed',200,?,?,?)").bind(attempt,seed.scope_hash,seed.actor_hash,seed.epoch,release,readAt,reportId,i<10?'line':'email'),
+    db.prepare("INSERT INTO shadow_reports VALUES(?,?,?,?,?,'rooms','default','compared',100,200,0,?,?,0)").bind(reportId,seed.scope_hash,seed.actor_hash,seed.epoch,release,new Date(Date.parse(readAt)+1000).toISOString(),attempt)
+   ]);
+  }
+  const selection={scope:seed.scope_hash,epoch:seed.epoch,release,startedAt,now:Date.parse(fixture.now)+1000};
+  const read=async()=>{const q=await db.batch(shadowExportQueries(db,selection));return evaluateAcceleratedShadow({started_at:startedAt,exported_at:new Date(selection.now).toISOString(),epoch:seed.epoch,release,rows:q[0].results,sample_rows:q[1].results,attempt_rows:q[3].results},{now:selection.now,epoch:seed.epoch,release,page:'rooms'});};
+  const r=await read();assert.equal(r.shadowEligible,true);assert.equal(r.cutoverAuthorized,false);assert.deepEqual(r.samples,{total:20,line:10,email:10,periods:3});assert.ok(r.excludedIssueGroups.some(g=>g.route==='tenants'));
+  await db.prepare("UPDATE shadow_attempts SET auth_kind='unknown' WHERE attempt_id=(SELECT attempt_id FROM shadow_attempts WHERE route='rooms' LIMIT 1)").run();assert.equal((await read()).shadowEligible,false);
+ }finally{await mf.dispose();}
 });

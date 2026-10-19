@@ -1,10 +1,10 @@
 # C5 shadow observation candidate
 
 Recommended model/speed: GPT-6.1 Sol/high, per approved work plan. Independent
-branch `codex/c5-read-shadow-20261012`, based on C4 `0af14ca`. Local implementation
-and review are complete; actual seven-day observation is NOT_STARTED. All six
-frontend flags remain off and the endpoint remains blank. The independent C1
-real72-hour observation continues without changing its source or environment.
+branch `codex/c5-read-shadow-20261012`, based on C4 `0af14ca`. Source remains a Draft candidate; actual observation T0 is NOT_STARTED.
+The owner-approved accelerated schedule supersedes the original prelaunch
+calendar; C1 daily900s and C3 actual safety/performance are still unaccepted.
+No new observation or rollout follows from source tests.
 
 ## Authenticated observations
 
@@ -103,3 +103,41 @@ The default C5 evaluator still requires all routes; subsequent C6 per-page check
 require that page's latest seven complete windows (both home sections), retain
 all epoch errors/missing evidence, and require the initial qualification ledger.
 See `READ-CUTOVER.md`; this repair has not started any real observation.
+
+## 2026-10-20 — Server-verified sampling metadata for approved acceleration
+
+The approved accelerated schedule requires at least20 real paired samples per
+candidate page, LINE and Email at least10 each, over at least3 periods. Existing
+seven-day coverage and count-only exports could not establish those conditions.
+Migration0006 adds auth_kind to shadow_attempts with a fixed line/email/unknown
+constraint. Only authenticated identity.kind supplies it; header/body assertions
+are ignored or rejected. Existing attempts remain unknown, retaining their
+previous status/time/receipt; they cannot establish a known login channel.
+
+The existing second operator query additionally exports server attempt time,
+verified auth_kind and the same opaque receipt. Keep this result as sample_rows
+alongside rows and attempt_rows, plus the verified export cutoff exported_at.
+There are still five queries and no public export route; no raw identity,
+credential, source value or additional DB roundtrip is introduced. Samples are
+actual matched successful receipts; timestamps are not delayed report times.
+These fields enable the C6 accelerated candidate checker, and do not themselves
+accept a24h observation, safety, timing, device or cutover gate. The legacy seven
+window checker remains available for its original evidence scope.
+
+Deployment preparation: back up the actual Worker/database schema and serving
+identity, apply the additive0006 migration before publishing this Worker or
+running the new export, then read back schema and source/bindings. A changed
+comparison source requires a fresh matching observation epoch. This source
+increment performs no remote migration, deployment, credential or flag action.
+Rollback to the preceding immutable Worker; leave the additive column and all
+history intact. The old Worker can insert without the column (default unknown).
+Never drop observation data to perform rollback. Retain all real acceptance gates.
+
+## C6 accelerated evaluator wiring — 2026-10-20
+
+The new operator CLI and pure candidate evaluator are documented in
+READ-ACCELERATED-OBSERVATION.md. The legacy seven-window evaluator above is
+unchanged; it does not implement the approved24h sample distribution gate.
+The new result is shadowEligible only, always cutoverAuthorized:false; verified
+remote export, common-failure review and all actual C1/C3/rollout/device/rollback
+requirements remain external. New capture requires source/comparison readback.

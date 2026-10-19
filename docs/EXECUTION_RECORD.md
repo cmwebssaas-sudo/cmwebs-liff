@@ -6720,3 +6720,71 @@ Actual72/232 remains stopped/settled/noRPC/no mutation, not accepted; captured
 owner closed/drained, no new claim/read or Production change. Privacy/freshness/
 900s/day/formal performance/device/rollback/observation gates stay open.
 Rollback undeployed composition toaa9c57c, keeping every used artifact/history.
+
+## 2026-10-20 — C5 verified channel/time sample exports
+
+Recommended model/speed: GPT-6.1 Sol/high for shadow evidence correctness.
+The approved accelerated schedule needs real LINE/Email sample distribution;
+old count/timing exports could not prove it. Additive migration0006 records
+verified identity.kind on attempts (line/email; historical unknown). The existing
+operator timing query adds this enum, server attempt time and the existing
+opaque receipt. No new public route, raw identity/value, or DB roundtrip.
+Shadow/read authorization, comparisons, fallback, and frontend assets are unchanged.
+
+Actual LINE/Email HTTP test first failed on missing auth_kind. After support,
+expanded shadow/report/export/migration6/6 PASS; a new test applies0006 to an
+actual preexisting old-schema attempt and preserves all fields/default unknown.
+Client-claimed channel cannot override verified Email. Full local Worker32/32
+and bundle dry-run PASS; root shadow/identity/routing23/23 PASS, zero fail/cancel/
+skip. Validate72backend/40endpoint/static-cache and diff PASS. Independent review
+of runtime increment found no P1/P2; exact new-head CI is separate. No unchanged
+Apps Script/native function or external Core/PostgreSQL acceptance was rerun.
+
+This is source preparation, not actual sample collection or accelerated24h
+acceptance. Actual C3 remains stopped72/232/pendingnull/noRPC/mutation; its pending
+scope proposal is not activated. No Google, formal Sheet, remote migration,
+Worker/Pages deployment, credential, flag or T0 action. Apply/read back0006 before
+publishing the new Worker/export. Rollback undeployed source to2725bbe; leave
+additive column/history intact and restore prior immutable Worker if needed.
+All actual C1/C3/safety/performance/device/rollback/observation gates remain open.
+
+## 2026-10-20 — C6 approved24h observation evidence preparation
+
+Recommended model/speed: GPT-6.1 Sol/high for evidence/release correctness.
+The approved accelerated schedule had no matching sample evaluator; original
+seven-window tooling remains intact. New operator module and actual-clock CLI
+evaluate latest complete24h/current-partial issues,20page samples, verified
+LINE10/Email10, three8h periods, both home sections, unique receipt/count/time
+consistency and fresh canonical exports. Other-page/earlier issues remain
+explicit and require shared-failure review. Every result permanently returns
+cutoverAuthorized:false; structured consistency cannot authenticate actual
+export provenance, Workspace/T0 or release authority.
+
+Module RED10/10 then GREEN10/10; CLI extension RED1fail/10pass then GREEN11/11.
+Full local unit2875/2875 PASS, zero fail/cancel/skip. Actual local D1 export
+feeds the evaluator in1/1 integration PASS; synthetic seeded24h timestamps
+never constitute elapsed observation. Complete Worker and exact-head CI are
+recorded separately. Validate72backend/40endpoints/cache/comparison180 PASS.
+Independent module review noP1/P2; final composition review is separate.
+
+Integrated reviewed C5 1799484 metadata/migration0006, preserving both histories
+and stale-comparison/legacy-migration tests. Root HTML only changes static
+asset tag to20261020-read-observation-v1; generated comparison covers180source
+files. Flags remainoff and endpointblank. No Apps Script/native source change,
+no repeat external Core/PostgreSQL acceptance, no Google/formal data/credential
+change, remote migration, deployment, real T0 or live observation. Actual C3
+stays stopped72/232/pendingnull/noRPC/mutation; new scope awaits approval.
+
+Deployment requires additive0006/readback before new Worker/export, immutable
+Worker/Pages source/comparison readbacks and real C1/C3/privacy/freshness/900s
+and performance/device/rollback gates before any observation/cutover. Retain
+approved rooms-first24h sequencing and seven-day postlaunch observation.
+Undeployed rollback source to f46d5ada; never remove additive data/history.
+Published rollback requires verified off/fallback, prior immutable deployments
+and readback. Root WIP and private material remain preserved.
+
+Final C6 composition verification: full local Worker45/45 plus bundle dry-run
+PASS, zero fail/cancel/skip; root unit2875/2875 and D1 integration1/1 as above.
+Independent full merge/cache/manifest/docs/test review noP1/P2;180-source
+comparison and diff check PASS.40root HTML files differ only in static cache
+literal. Provider CI is still distinct from these local results.

@@ -36,7 +36,7 @@ export function createReadHttpHandler(options={}) {
       // Resolve current authority before recording an eligible attempt. Dirty
       // state is then enforced before any operational dataset/calculation.
       const {loader,access,runtimeOptions,authority}=await verify(request,env,{telemetryOnly:true,
-        onResolvedAccess:async access=>{attempt=await beginShadowAttempt(request,env,access,typeof options.now==='function'?options.now():Date.now());}});
+        onResolvedAccess:async (access,authKind)=>{attempt=await beginShadowAttempt(request,env,access,typeof options.now==='function'?options.now():Date.now(),authKind);}});
       if(authority.replica_dirty) throw Object.assign(Error('READ_SYNC_PENDING'),{code:'READ_SYNC_PENDING'});
       await (options.checkReplica?options.checkReplica(env.DB,request):loader.checkReplica());
       return cors(await finishShadowAttempt(env,attempt,await serveReadRoute(request,{access,loadDataset:loader.loadDataset,options:runtimeOptions})));
@@ -63,7 +63,7 @@ export function createReadAccessVerifier(options={}) {
     if(!telemetryOnly) await (options.checkReplica?options.checkReplica(env.DB,request):loader.checkReplica());
     const identity=await authenticate(request,env,{findSession:loader.findSession});
     const access=await loader.resolveAccess(identity);
-    if(onResolvedAccess) await onResolvedAccess(access);
+    if(onResolvedAccess) await onResolvedAccess(access,identity.kind);
     const authority=await confirmReadAuthority(request,env,access,{now:options.now,fetch:options.authorityFetch||options.fetch,telemetryOnly});
     return {loader,access,runtimeOptions,authority};
   };
