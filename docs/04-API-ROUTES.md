@@ -1220,3 +1220,134 @@ Missing/failing D1 returns 503 `READ_REPLICA_UNAVAILABLE`; unsupported health
 methods return 405 with `Allow: GET`; other paths return 404. All responses
 use `Cache-Control: no-store`. No operational read or sync endpoint is enabled
 and no Cloudflare deployment is performed by C0.
+
+## Read replica synchronization candidate (C1)
+
+`POST /sync` accepts only the tables/fields in `cloudflare/read-api/schema.json`.
+It authenticates exact UTF-8 body bytes with timestamp, nonce and HMAC-SHA256
+headers before any write. Requests are limited to 500 rows and 1 MiB. Snapshot
+metadata identifies all batches, row count, source version and whole-manifest
+hash. Live projections change atomically only after every batch is present and
+the manifest matches. Older source versions, replayed nonces and conflicting
+batch metadata are rejected. Session revocation alone permits a one-batch patch
+that preserves other sessions. Responses expose completion state, never rows.
+
+The existing Apps Script GET/POST dispatcher observes successful writes without
+changing their response envelopes. An explicit route policy invalidates table
+dependencies; unknown successful routes conservatively queue all tables. Email
+revocation updates the authoritative Sheet first and immediately pushes a
+session patch. A failed patch reports `READ_REPLICA_REVOCATION_PENDING` and
+retains dirty work. C3 must enforce its authentication freshness requirements
+before operational read routes can be enabled. No synchronization configuration
+or trigger is automatically installed by this source change.
+
+See `READ-REPLICA-SYNC.md` for payload, failure codes, release and rollback gates.
+
+## Explicit read summaries and C2 candidate routes
+
+`landlord_home_bootstrap` with `section=actions&read_view=summary` keeps existing
+block summaries and item IDs/statuses; `landlord_tenants` with `read_view=summary`
+omits contract history. Both verified LINE GET and active Email POST forward the
+view. Default/detail calls retain their original full Apps Script responses.
+Only the home action and tenant-list callers opt in; snapshot keys and monetary
+calculations remain unchanged. Owner approval: `READ-PARITY-DECISION.md`.
+
+The candidate has six GET paths: `/v1/home`, `/v1/revenue`, `/v1/tenants`,
+`/v1/rooms`, `/v1/arrears`, `/v1/properties`. Actions/tenants require the explicit
+summary. Query parameters cannot supply identity or Workspace; duplicate/unknown
+parameters and writes fail before reader IO. Production currently returns503
+`READ_AUTH_NOT_READY` on these paths until C3 authorization and a scoped D1
+loader are accepted. Fixture access exists only in the test entry point.
+
+Date cells retain type metadata and source row order. Sync strictly validates
+both, masked bank suffixes and source-derived room-bridge capability. Rooms with
+unsupported/missing bridge capability return503 `READ_DEPENDENCY_UNSUPPORTED`
+for GAS fallback rather than an incorrect unbound response. See
+`READ-API-PARITY.md` for exact options, additive schema, local parity, measured
+latency, publication and rollback. No C2 operational endpoint is deployed yet.
+
+## C3 authorization candidate — not published
+
+The six read routes accept only `Authorization: LIFF <id_token>` or
+`Authorization: Session <token>`. LINE claims come from the provider; positive
+claim cache is bounded by five minutes and actual expiry. Email HMAC matches
+the canonical GAS `session:` prefix. Primary D1 rechecks the session, user,
+Workspace, membership, role and principals on every request. Duplicate identity
+aliases and ambiguous memberships cannot select another actor's permissions.
+All operational queries are scoped before data enters the calculator; a legacy
+child cannot inherit access through a parent explicitly assigned elsewhere.
+
+Owner-approved amendment: `READ-AUTHORITY-DECISION.md`. Internal JSON POST action
+`read_replica_authorize` uses the existing Web App deployment and existing sync
+HMAC key, with distinct request/response domains. Its strict envelope is
+`{action,timestamp,nonce,payload,signature}`. `payload` is an exact JSON string
+with `{protocol,credential,credential_digest,route}`. No identity or Workspace
+parameter is accepted. Request age is at most15 seconds, nonce replay is
+rejected, and a response expires five seconds after issuance and is bound to
+the nonce, credential digest and read route. It returns only a signed
+authorization fingerprint and a pending-sync boolean, never operational rows.
+Authoritative authorization is uncached and uses a request-local Sheet snapshot;
+the action cannot create schema, touch session metadata or mark replica dirty.
+
+Worker obtains this confirmation for every attempted read. Fingerprint mismatch,
+authority failure, pending source markers, incomplete D1 snapshots or snapshots
+older than26 hours return a sanitized failure for GAS fallback. The26-hour
+bound is a daily-reconciliation guard, not a proof that an unseen write arrived.
+The authority check handles undelivered access/revocation changes; pending flags
+and C4's two-minute guard cover known operational writes. It cannot independently
+prove that a manual Sheet edit has synchronized.
+
+Bindings: `READ_AUTHORITY_URL` is the original GAS `/exec` URL;
+`LINE_LOGIN_CHANNEL_ID` is the verified login channel. The existing sync Secret
+is reused with domain separation; `EMAIL_SESSION_HMAC_SECRET` matches the
+existing Email HMAC property. Values are never printed or committed. Missing
+authority/channel/sync configuration keeps the production dispatcher closed.
+CORS allows only `https://cmwebssaas-sudo.github.io`; all responses are no-store.
+No formal binding, deployment or read flag has been changed by this candidate.
+
+### C4 centralized browser read selection
+
+Only `frontend-release.js` defines `CMWEBS_READ_API_URL` and six
+`CMWEBS_READ_PATH` flags. Default/missing flags are off. Existing six page
+wrappers use `CMWebsLandlordApi.request` for LINE and Email. Worker credentials
+are only Authorization headers, never URL/telemetry parameters; writes stay GAS.
+The on deadline is3000ms including decoding/shape validation, followed by GAS
+fallback. Successful shared API, bridge and legacy LIFF JSONP writes protect
+subsequent reads for120000ms across navigation. Existing snapshot keys remain.
+
+Shadow renders GAS only. C5 sends `X-CMWebs-Read-Mode: shadow` on reads;
+the Worker records actual attempts and exposes `X-CMWebs-Shadow-Receipt`.
+`POST /v1/shadow-report` accepts only JSON
+`{route,variant,release,outcome,paths,clock_paths,receipt,elapsed_ms,headers_ms}`.
+Current provider/D1/GAS authority is verified again. Compared reports require a
+same-actor/scope/epoch/release/route/section completed200 receipt within five
+minutes, consumed atomically with metadata inserts and rate enforcement.
+Worker errors use null receipt/timings and empty paths. CORS remains exact Pages
+origin;24KiB/one-second body bounds and3000ms timing bounds apply. No values,
+raw IDs/dynamic keys or credential body are sent. Ordinary paths remain exact;
+only owner-approved canonical ISO generation-clock differences at most60s use
+`clock_paths`. They are separately visible and never exempt source-row clocks.
+
+C5 metadata uses immutable migration0004 and private server-derived keyed hashes.
+Missing/invalid observation epoch/release/start keeps the receiver closed.
+Read-only private exports require real seven-day coverage and matched attempts;
+zero rows, missing reports or partial-day failures cannot establish acceptance.
+Current endpoint is blank and flags off. See `READ-SHADOW.md`,
+`READ-CLOCK-DECISION.md` and `READ-ROUTING.md` for retained gates and rollback.
+
+C6 binds telemetry `release` to generated `CMWEBS_READ_COMPARISON_VERSION` and
+bundled Worker source identity. `CMWEBS_RELEASE_VERSION` remains the independently
+advanced asset cache tag. `READ_SHADOW_RELEASE` must match the comparison manifest;
+stale identity closes shadow reads/reports. Pure flag/cache publication preserves
+unchanged comparison identity/epoch; substantive included source/config changes
+invalidate it. No financial API response or original GAS URL changes.
+
+# Synthetic Execution API trial (not a formal dispatcher route)
+
+The C3 feasibility candidate's separate thin API executable and fixed library
+use `authorizeTrial(request, operation)` with exactly two positional arguments.
+`compatibility` returns a fixed boolean after actual caller/project and canonical
+MAC validation, before authority IO. `authority` preserves the original signed
+`read_replica_authorize` result through a fixed readonly grid facade. Neither is
+registered in the formal Code dispatcher or enabled frontend environment.
+See `READ-EXECUTION-TRIAL.md` for scope, bounded execution and rollback gates.

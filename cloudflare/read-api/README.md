@@ -1,9 +1,9 @@
-# CMWebs read API environment (C0)
+# CMWebs read API environment
 
-This scaffold implements only `GET /health`. It checks the D1 binding with
-`SELECT 1`, returns no operational data and never writes rows. Read APIs,
-authentication and synchronization belong to C1–C3. No Worker, remote D1,
-Secret, trigger or production page flag is created by C0.
+`GET /health` checks the D1 binding with `SELECT 1` and returns no operational
+data. C1 adds HMAC-authenticated `POST /sync` and replica migrations, documented
+in `docs/READ-REPLICA-SYNC.md`. Operational read APIs/authentication follow in
+C2–C3. Source commits do not create remote resources, timers or page flags.
 
 ## Local verification
 

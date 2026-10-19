@@ -211,7 +211,7 @@ test('desktop landlord read actions return the iframe bridge response', () => {
 });
 
 test('the doPost bridge branch is present for every desktop read action', () => {
-  const doPostSource = extractFunctionSource(dispatcherSource, 'doPost');
+  const doPostSource = extractFunctionSource(dispatcherSource, 'dispatchV2Post_');
 
   for (const action of actions) {
     assert.match(

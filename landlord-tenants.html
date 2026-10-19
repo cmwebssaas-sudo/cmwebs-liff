@@ -8,11 +8,11 @@
   />
   <title>CMWebs 房客名單</title>
 
-<script src="frontend-release.js?v=20261012-line-identity-v1"></script>
-  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
-  <script src="landlord-auth.js?v=20261012-line-identity-v1"></script>
-  <script src="landlord-api.js?v=20261012-line-identity-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261012-line-identity-v1" />
+<script src="frontend-release.js?v=20261013-read-capacity-v7"></script>
+  <script src="liff-request-auth.js?v=20261013-read-capacity-v7"></script>
+  <script src="landlord-auth.js?v=20261013-read-capacity-v7"></script>
+  <script src="landlord-api.js?v=20261013-read-capacity-v7"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261013-read-capacity-v7" />
 
   <style>
     :root {
@@ -2791,7 +2791,7 @@
         const tenantRequest =
           jsonpRequest(
             'landlord_tenants',
-            {}
+            { read_view: 'summary' }
           );
 
         // Paint the last visit's list at once; the request above replaces it.

@@ -37,6 +37,34 @@ test('room center respects association, duplicate and workspace guards rather th
   const f=fixture();f.room.room_name='602';assert.equal(f.read().effective_status,'upcoming');
   delete f.room.current_contract_id;delete f.room.current_tenant_id;f.rows.V2_contracts=[];assert.equal(f.read().effective_status,'vacant');
 });
+test('500 canonical room occupancy results need no financial, season, label or management projection',()=>{
+  const f=fixture(),rooms=[],tenants=[],contracts=[],expected={};
+  for(let index=0;index<500;index++) {
+    const roomId='R'+index,tenantId='T'+index,contractId='C'+index;
+    const room={...f.room,room_id:roomId,current_tenant_id:tenantId,current_contract_id:contractId};
+    const tenant={...f.tenant,tenant_id:tenantId,room_id:roomId,current_contract_id:contractId};
+    const contract={...f.contract,contract_id:contractId,room_id:roomId,tenant_id:tenantId};
+    const kind=index%5;
+    expected[roomId]=['upcoming','occupied','needs_review','vacant','maintenance'][kind];
+    if(kind===1)contract.start_date='2026-01-01';
+    if(kind===2) {contract.start_date='2025-01-01';contract.end_date='2026-01-01';}
+    if(kind===3||kind===4) {
+      room.current_tenant_id='';room.current_contract_id='';room.room_status=kind===4?'maintenance':'occupied';
+    } else {tenants.push(tenant);contracts.push(contract);}
+    rooms.push(room);
+  }
+  f.rows.V2_tenants=tenants;f.rows.V2_contracts=contracts;
+  const before=JSON.stringify([rooms,f.rows]);
+  for(const name of ['propertyRoomResolvePaymentDay_','propertyRoomResolveDepositMonths_',
+    'propertyRoomResolveDepositAmount_','propertyRoomResolveEquipmentSeasonRate_','propertyRoomEquipmentRateForMonth_',
+    'propertyRoomIsSummerMonth_','propertyRoomRoomStatusLabel_']) {
+    f.c[name]=()=>{throw Error('Discarded projection must not run: '+name);};
+  }
+  const statuses=f.c.landlordRoomCenterOccupancyByRoom_({getSheetByName:name=>({name})},
+    {workspace:{workspace_id:'W1'},principals:[{landlord_id:'L1'}]},rooms);
+  assert.deepEqual(JSON.parse(JSON.stringify(statuses)),expected);
+  assert.equal(JSON.stringify([rooms,f.rows]),before,'occupancy is read-only');
+});
 test('room card labels and filters use effective occupancy, not stale vacant flags',()=>{
   const html=fs.readFileSync('landlord-rooms.html','utf8');
   const c=vm.createContext({text:v=>String(v??''),document:{getElementById:()=>({value:''})},FILTER:'occupied'});

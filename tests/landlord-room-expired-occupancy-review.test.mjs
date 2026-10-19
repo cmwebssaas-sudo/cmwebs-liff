@@ -45,6 +45,7 @@ vm.runInContext([
   extract(backend, 'propertyRoomContractDay_'),
   extract(backend, 'propertyRoomScheduledPaperMatchesRoom_'),
   extract(backend, 'propertyRoomUpcomingPaperBackfillForRoom_'),
+  extract(backend, 'propertyRoomResolveRoomOccupancy_'),
   extract(backend, 'propertyRoomBuildRoomView_')
 ].join('\n'), context);
 

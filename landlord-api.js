@@ -63,7 +63,188 @@
     return {};
   }
 
+  const WRITE_GUARD_KEY = 'cmwebs_landlord_read_write_guard_v1';
+  let writeGuardUntil = 0;
+  function replicaGuarded() {
+    try {
+      if (!global.localStorage) return true;
+      // A readable but unwritable store cannot carry the guard across pages.
+      global.localStorage.setItem(WRITE_GUARD_KEY + ':probe','1');
+      global.localStorage.removeItem(WRITE_GUARD_KEY + ':probe');
+      const saved = Number(global.localStorage.getItem(WRITE_GUARD_KEY) || 0);
+      if (!Number.isFinite(saved)) return true;
+      const session = global.sessionStorage ? Number(global.sessionStorage.getItem(WRITE_GUARD_KEY) || 0) : 0;
+      if (!Number.isFinite(session)) return true;
+      return Math.max(saved, session, writeGuardUntil, Number(global.CMWEBS_READ_WRITE_GUARD_UNTIL) || 0) > Date.now();
+    } catch (error) { return true; }
+  }
+  function recordSuccessfulWrite(result) {
+    if (!result || result.success !== true) return;
+    writeGuardUntil = Math.max(writeGuardUntil, Date.now() + 120000);
+    global.CMWEBS_READ_WRITE_GUARD_UNTIL = Math.max(writeGuardUntil,Number(global.CMWEBS_READ_WRITE_GUARD_UNTIL)||0);
+    // Free large snapshots before persisting the tiny deadline.
+    clearSnapshots();
+    ['localStorage','sessionStorage'].forEach(function (name) {
+      try {
+        const store = global[name];
+        if (store) store.setItem(WRITE_GUARD_KEY, String(Math.max(
+          global.CMWEBS_READ_WRITE_GUARD_UNTIL, Number(store.getItem(WRITE_GUARD_KEY) || 0) || 0
+        )));
+      } catch (error) {}
+    });
+  }
+
+  const READ_ROUTES = {
+    landlord_home_bootstrap: {route:'home',query:['section','read_view']},
+    landlord_revenue_dashboard_init: {route:'revenue',query:['range','property_id','from_month','to_month','as_of']},
+    landlord_tenants: {route:'tenants',query:['read_view']},
+    landlord_room_center_init: {route:'rooms',query:['include_archived']},
+    landlord_arrears: {route:'arrears',query:[]},
+    landlord_properties_init: {route:'properties',query:['include_archived']}
+  };
+  function replicaRequest(config, auth) {
+    const target = READ_ROUTES[config.action];
+    if (!target || config.testMode || replicaGuarded()) return null;
+    const mode = global.CMWEBS_READ_PATH && global.CMWEBS_READ_PATH[target.route];
+    if (mode !== 'on' && mode !== 'shadow') return null;
+    if(mode==='shadow'&&(typeof global.CMWEBS_READ_COMPARISON_VERSION!=='string'||
+      !/^[a-zA-Z0-9_-]{8,80}$/.test(global.CMWEBS_READ_COMPARISON_VERSION))) return null;
+    const params = config.params || {};
+    if (Object.keys(params).some(key => !target.query.includes(key))) return null;
+    if (target.route === 'tenants' && params.read_view !== 'summary') return null;
+    if (target.route === 'home' && !['home','actions'].includes(params.section || 'home')) return null;
+    if (target.route === 'home' && params.section === 'actions' && params.read_view !== 'summary') return null;
+    if (params.read_view !== undefined && params.read_view !== 'summary') return null;
+    if (params.include_archived !== undefined && !['0','1'].includes(String(params.include_archived))) return null;
+    const credential = auth.landlord_session_token ? 'Session ' + auth.landlord_session_token
+      : auth.id_token ? 'LIFF ' + auth.id_token : '';
+    if (!credential || /\s/.test(credential.slice(credential.indexOf(' ') + 1))) return null;
+    try {
+      const base = new URL(String(global.CMWEBS_READ_API_URL || ''));
+      if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash) return null;
+      base.pathname = base.pathname.replace(/\/$/,'') + '/v1/' + target.route;
+      Object.keys(params).sort().forEach(key => {
+        if (params[key] !== undefined && params[key] !== null) base.searchParams.set(key,String(params[key]));
+      });
+      return {url:base.href,route:target.route,variant:target.route==='home'?(params.section||'home'):'default',mode,credential};
+    } catch (error) { return null; }
+  }
+  function object(value) { return value && typeof value === 'object' && !Array.isArray(value); }
+  function validReplicaResult(route, result) {
+    if (!object(result) || result.success !== true || typeof result.code !== 'string' ||
+        typeof result.message !== 'string' || !object(result.data)) return false;
+    const data = result.data;
+    if (route === 'home') return object(data.home);
+    if (route === 'revenue') return object(data.kpis) && Array.isArray(data.months);
+    return object(data.summary) && Array.isArray(data[route]);
+  }
+  async function fetchReplica(target) {
+    if (typeof global.fetch !== 'function' || typeof global.AbortController !== 'function') throw Error('READ_UNAVAILABLE');
+    const controller = new global.AbortController();
+    let timer;
+    const started = Date.now();
+    try {
+      return await Promise.race([
+        (async function () {
+          const headers={Authorization:target.credential};
+          if(target.mode==='shadow') headers['X-CMWebs-Read-Mode']='shadow';
+          const response = await global.fetch(target.url,{method:'GET',
+            headers:headers,credentials:'omit',cache:'no-store',
+            redirect:'error',signal:controller.signal});
+          const headersElapsed = Math.max(0,Date.now() - started);
+          if (!response.ok) throw Error('READ_HTTP_ERROR');
+          const result = await response.json();
+          if (!validReplicaResult(target.route,result)) throw Error('READ_FORMAT_ERROR');
+          // Timer delivery can be late when the browser is busy.
+          if(Date.now()-started>3000) throw Error('READ_TIMEOUT');
+          const receipt=response.headers&&response.headers.get?response.headers.get('x-cmwebs-shadow-receipt'):null;
+          return {result,elapsed:Math.max(0,Date.now() - started),headersElapsed,receipt};
+        })(),
+        new Promise((resolve,reject) => {
+          timer = setTimeout(function () { controller.abort(); reject(Error('READ_TIMEOUT')); },3000);
+        })
+      ]);
+    } finally { clearTimeout(timer); }
+  }
+  // A fixed vocabulary prevents dynamic object keys from becoming telemetry.
+  const SHADOW_FIELDS = new Set(('success code message data workspace_context workspace workspace_id '+
+    'current_user current_membership permissions home summary tenants rooms properties arrears kpis months '+
+    'total_amount count total_count tenant_name tenant_phone tenant_id room_id property_id bill_id '+
+    'contract_id amount rent_amount paid_amount outstanding_amount total revenue income occupancy '+
+    'contract_requests payment_reports messages landlord_initiated_contracts updated_at status '+
+    'account_status room_status room_name property_name can_write include_archived landlord').split(' '));
+  // Owner-approved request-clock paths only; source row timestamps stay exact.
+  const SHADOW_CLOCK_FIELDS = {
+    home: {home:'data.home.updated_at',actions:'data.contract_requests.summary.updated_at'},
+    revenue: {default:'data.updated_at'},
+    tenants: {default:'data.landlord.updated_at'},
+    arrears: {default:'data.landlord.updated_at'}
+  };
+  function requestClockPaths(target,gas,worker) {
+    const path=SHADOW_CLOCK_FIELDS[target.route]&&SHADOW_CLOCK_FIELDS[target.route][target.variant];
+    if(!path) return [];
+    function valueAt(input) {return path.split('.').reduce((value,key)=>value&&value[key],input);}
+    const left=valueAt(gas),right=valueAt(worker);
+    function iso(value) {
+      if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return null;
+      const time=Date.parse(value);
+      return Number.isFinite(time)&&new Date(time).toISOString()===value?time:null;
+    }
+    const a=iso(left),b=iso(right);
+    return a!==null&&b!==null&&a!==b&&Math.abs(a-b)<=60000?[path]:[];
+  }
+  function differencePaths(left,right) {
+    const paths = new Set();
+    function walk(a,b,path,depth) {
+      if (Object.is(a,b) || paths.size >= 100) return;
+      if (depth > 32) { paths.add(path || '$'); return; }
+      if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) paths.add(path + '.length');
+        for (let i=0;i<Math.min(Math.max(a.length,b.length),10000);i++) walk(a[i],b[i],path+'[]',depth+1);
+        if (a.length > 10000 || b.length > 10000) paths.add(path+'[]');
+      } else if (object(a) && object(b)) {
+        const keys = new Set(Object.keys(a).concat(Object.keys(b)));
+        keys.forEach(key => walk(a[key],b[key],path+(path?'.':'')+(SHADOW_FIELDS.has(key)?key:'[field]'),depth+1));
+      } else paths.add(path || '$');
+    }
+    walk(left,right,'',0);
+    return Array.from(paths).sort();
+  }
+  async function reportShadow(target,gas,worker) {
+    if (replicaGuarded()) return;
+    const url = new URL(target.url); url.pathname = url.pathname.replace(/\/v1\/[^/]+$/,'/v1/shadow-report'); url.search='';
+    const controller = new global.AbortController();
+    const timer = setTimeout(() => controller.abort(),3000);
+    const clocks=worker?requestClockPaths(target,gas,worker.result):[];
+    try {
+      await global.fetch(url.href,{method:'POST',headers:{Authorization:target.credential,'Content-Type':'application/json'},
+        credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,
+        body:JSON.stringify({route:target.route,variant:target.variant,release:global.CMWEBS_READ_COMPARISON_VERSION,
+          receipt:worker?worker.receipt:null,
+          outcome:worker?'compared':'worker_error',
+          paths:worker?differencePaths(gas,worker.result).filter(path=>!clocks.includes(path)):[],
+          clock_paths:clocks,elapsed_ms:worker?worker.elapsed:null,
+          headers_ms:worker?worker.headersElapsed:null})});
+    } finally { clearTimeout(timer); }
+  }
   function requestOnce(config, authParams) {
+    const target = replicaRequest(config,authParams);
+    if (!target) return gasRequestOnce(config,authParams);
+    if (target.mode === 'on') {
+      return fetchReplica(target).then(function (worker) {
+        return replicaGuarded() ? gasRequestOnce(config,authParams) : worker.result;
+      },function () { return gasRequestOnce(config,authParams); });
+    }
+    const worker = fetchReplica(target).catch(function () { return null; });
+    return gasRequestOnce(config,authParams).then(function (gas) {
+      worker.then(result => {
+        if (gas && gas.success === true) return reportShadow(target,gas,result);
+      }).catch(function () {});
+      return gas;
+    });
+  }
+
+  function gasRequestOnce(config, authParams) {
     const action = String(config.action || '');
     const params = config.params || {};
     const timeoutMs = numberOr(config.timeoutMs, DEFAULT_TIMEOUT_MS);
@@ -500,14 +681,11 @@
 
   global.CMWebsLandlordApi = {
     request: function (config) {
-      const operation = request(config);
       const action = String(config && config.action || '');
-      if (READ_ONLY_ACTIONS[action] !== true) {
-        operation.then(function (result) {
-          if (!result || result.success !== false) clearSnapshots();
-        }, function () {});
-      }
-      return operation;
+      return request(config).then(function (result) {
+        if (READ_ONLY_ACTIONS[action] !== true) recordSuccessfulWrite(result);
+        return result;
+      });
     },
     snapshot: snapshot,
     prefetch: prefetch,

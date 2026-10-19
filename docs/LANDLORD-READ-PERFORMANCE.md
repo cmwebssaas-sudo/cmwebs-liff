@@ -1,5 +1,97 @@
 # 房東登入復驗與讀取效能修復
 
+## 2026-10-13 v6 D1 資料轉換候選（正式效能尚未驗收）
+
+每列以靜態白名單欄位包成 SQL JSON 陣列，再依相同欄序還原；正式 scoped loader
+與容量 fixture 共用 helper。全部資料、排序、SQLNULL 缺欄／JSONnull own值、
+scalar／日期標記、安全 own key、權限、first-primary 與筆數上限均保留。
+GAS 計算不改，不快取資料列或正向授權。實際單元960/960、Worker33/33、完整
+`npm test`965/965 通過，零 skip；後者固定537個工作中來源（snapshot見回歸依賴），
+含原本 Core HTTP／PG 整合，新私下PG已停止且fixture DB／role無遺留。
+
+每入口原100樣本、本地HTTP／D1 p95<50ms門檻不變：home13.524、actions11.535、
+revenue12.703、tenants29.104、rooms21.780、arrears18.966、properties20.225ms。
+一次私下 baseline／packed對照只支持此候選方向，不代表可重複穩定性。
+先前adf39b4 CI營收160.216ms、4c9950e CI房客62.571ms（31/100超過50ms），
+以及本地房客69.198ms六次連續尖峰全部保留；根因未證明，未同head重跑。
+新head CI仍待驗證，cache20261013-read-capacity-v6／178-source指紋已更新。
+固定access全表計算基準仍不是C3／正式provider、台北、遠端500房或真機驗收。
+三日同步／七日shadow與逐頁正式切換都未通過；以下候選數據保留為歷史樣本。
+
+## 2026-10-13 v5 歷史本地回歸候選（正式效能尚未驗收）
+
+實際 Worker 32/32、`npm test` 963/963 通過，零 fail／cancel／skip；後者固定537個
+未提交候選檔案，使用全新私下 PG16.14／固定 Core，SQL 清理與停機讀回通過。
+這是候選來源證據，不是當時 checkout HEADbcde36b 的已發布 v4 驗證。
+日期 formatter／layout 只在當次請求重用；日期值、資料列與正向授權不快取。
+
+原本固定 access／全表 loader 的500房計算基準仍保留每入口100樣本與p95<50ms。
+本輪 home20.113／actions18.106／revenue18.398／tenants33.885／rooms29.767／
+arrears26.098／properties25.821ms。另新增500房 HTTP 正確性案例，經真正的
+identity／authority policy 與 primary-D1 範圍查詢對帳七入口，並驗證未同步到D1的
+authority停權拒絕；其 LINE／Google authority transport 和 GAS服務adapter 都是合成。
+不能把計算基準的p95套用到這個完整流程，更不能當成台北遠端／手機正式速度。
+
+此前 v5 房客149.703ms／小資料房客51.388ms、本地及 v4 CI29/31 的失敗全部保留；
+原因與重複穩定性未證明。cache20261013-read-capacity-v5／178-source比較指紋已
+更新，六開關off／URL空白，新head CI待驗證；C1全新72小時、C3嚴格延遲、C5七天、
+C6真機與正式切換都未通過。以下v4／v3數據是歷史樣本。
+
+## 2026-10-13 v4 本地候選（正式效能尚未驗收）
+
+v3 的 GitHub CI 29/31：500 房房客 p95 55.647ms、小資料欠款 68.719ms，均未達
+原門檻；其後日期型候選欠款 50.560ms、解碼中間候選房客 94.726ms 的本地失敗
+亦保留，未跑到的入口不補為成功。沒有同 head 重跑，也不宣稱已定位 CI 根因。
+
+最新候選將日期型格式的時分秒省下，並讓正式／fixture 共用少分配中間陣列的 JSON
+decoder；所有資料型別、SQL null 與 JSON null、own __proto__、scope／SQL 均保留。
+完整 Worker 31/31、單元 957/957、隔離 Core／PG 完整 962/962（source1cab310）
+通過，零 skip，PG 已停止且無 fixture DB／role 遺留。500 房七入口各 100 樣本的
+本地 HTTP／D1 p95：home27.683、actions25.049、revenue19.718、tenants39.150、
+rooms30.783、arrears27.972、properties29.059ms；新 head CI 尚待驗證。
+固定 access／全表 loader 仍不能代表 C3／真實 provider、台北、遠端容量或真機。
+v4 比較指紋已重生，六開關 off，三日同步／七日 shadow／正式切換均未開始。
+以下 v3 數值保留為歷史樣本。
+
+## 2026-10-13 500 房本地計算準備（正式驗收未開始）
+
+20 物件、500 自有房間、250 在住租約／房客、兩月合計 500 bills 經實際本地
+workerd／D1 對帳，七個入口 JSON 與原 GAS 完全一致。獨立 literals：應收 3,948,000、
+已收 1,932,000、未收 2,016,000、欠款列 252；外 Workspace 及私密 canary 不進回應。
+原版房客 p95 99.173ms 未達既有 50ms，保留失敗。三個診斷樣本各有 2,252 次日期
+格式化，其中 61–87ms 用在格式化；只重用 request-local Intl formatter 後，整套
+Worker 31/31 通過，同一合成案例每入口 100 樣本的 p95 如下：
+
+| 入口 | 本地 HTTP／D1 p95 ms |
+| --- | --- |
+| home | 25.690 |
+| actions | 20.732 |
+| revenue | 21.754 |
+| tenants | 41.669 |
+| rooms | 31.105 |
+| arrears | 29.892 |
+| properties | 28.305 |
+
+固定 access 與全表 test loader 不代表 C3 權威／真實 provider／scoped loader、台北網路、
+遠端 500 房或真機。格式化不快取日期值或正向授權；Date mutation、時區／錯誤及 DST
+語意另測。比較指紋已重生，沒有重用舊觀察窗口；六開關 off，實際 shadow／cutover
+NOT_STARTED。C1 已停止的失敗不能用舊完成日期冒充新 72 小時門檻。
+
+## 2026-10-12 C6 驗收準備（未切換）
+
+建議模型／速度：GPT-6.1 Sol／高，依核准工作計畫。C6 獨立分支
+`codex/c6-read-acceptance-20261012`，逐頁步驟見 `READ-CUTOVER.md`。
+目前六個旗標皆 off；C5 真實七天觀察尚未開始，C6 實測與真機验收尚未開始。
+C1 舊真實同步已停止且未通過；修正來源的新72小時觀察尚未開始。本機／CI通過
+不能替代每日耗時、遠端讀回與實體操作。
+
+切換順序為房源、房客、物件、欠款、營收、首頁。每頁通過之前的實際門檻後，
+依批次授權發布讀回，再請本人於手機LINE與桌面操作。記錄請求到標頭、完整解碼
+及可互動時間的各自口徑，包含每次不快取的GAS權威授權。首頁全部摘要從主請求
+起點到最後摘要完成累計，不用單一請求／中位數代替。目標主資料及房間≤800ms、
+全部摘要≤1500ms；未量測、逾時、fallback、缺少事件與未達標都須如實保留。
+以下2026-10-11數值是歷史v229觀察，不能當作本次Cloudflare改善結果。
+
 ## 正式發布狀態（2026-10-11）
 
 使用者確認「發布，接著重測登入、首頁與房間清單」。重新讀回正式部署 v228、

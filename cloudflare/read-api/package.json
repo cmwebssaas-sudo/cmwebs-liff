@@ -4,11 +4,15 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --local",
-    "test": "node --test test/*.test.mjs",
+    "pretest": "npm run dry-run",
+    "test": "node --test --test-concurrency=1 test/*.test.mjs",
     "dry-run": "wrangler deploy --dry-run --outdir .wrangler/dry-run"
   },
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
+    "acorn": "8.15.0",
     "miniflare": "5.20261006.1-alpha",
     "wrangler": "4.149.0"
   }

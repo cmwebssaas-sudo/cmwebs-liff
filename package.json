@@ -2,12 +2,15 @@
   "name": "cmwebs-liff",
   "private": true,
   "scripts": {
-    "validate": "node scripts/verify-production-source.mjs && node scripts/validate-static-release-cache.js",
+    "validate": "node scripts/verify-production-source.mjs && node scripts/validate-static-release-cache.js && node scripts/generate-read-comparison.mjs --check",
     "test": "node --test tests/*.test.mjs",
     "verify:production": "node scripts/verify-production-source.mjs --live",
     "test:unit": "node scripts/run-unit-tests.mjs",
+    "generate:read-replica": "node scripts/generate-read-replica-schema.mjs",
+    "generate:read-calculator": "node scripts/generate-read-calculator.mjs",
     "test:worker": "npm test --prefix cloudflare/read-api",
-    "dry-run:worker": "npm run dry-run --prefix cloudflare/read-api"
+    "dry-run:worker": "npm run dry-run --prefix cloudflare/read-api",
+    "generate:read-comparison": "node scripts/generate-read-comparison.mjs"
   },
   "engines": {
     "node": ">=22"

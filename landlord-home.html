@@ -8,11 +8,11 @@
   />
   <title>CMWebs 房東首頁</title>
 
-  <script src="frontend-release.js?v=20261012-line-identity-v1"></script>
-  <script src="liff-request-auth.js?v=20261012-line-identity-v1"></script>
-  <script src="landlord-auth.js?v=20261012-line-identity-v1"></script>
-  <script src="landlord-api.js?v=20261012-line-identity-v1"></script>
-  <link rel="stylesheet" href="landlord-responsive.css?v=20261012-line-identity-v1" />
+  <script src="frontend-release.js?v=20261013-read-capacity-v7"></script>
+  <script src="liff-request-auth.js?v=20261013-read-capacity-v7"></script>
+  <script src="landlord-auth.js?v=20261013-read-capacity-v7"></script>
+  <script src="landlord-api.js?v=20261013-read-capacity-v7"></script>
+  <link rel="stylesheet" href="landlord-responsive.css?v=20261013-read-capacity-v7" />
 
   <style>
     :root {
@@ -3441,7 +3441,7 @@
           { maxAttempts: 1 }
         );
         const actionsPromise = jsonpRequest(
-          'landlord_home_bootstrap', { section: 'actions' }, { maxAttempts: 1 }
+          'landlord_home_bootstrap', { section: 'actions', read_view: 'summary' }, { maxAttempts: 1 }
         );
         const dashboardReportPromise = requestDashboardReport_(requestToken);
         homePromise.catch(function () {});

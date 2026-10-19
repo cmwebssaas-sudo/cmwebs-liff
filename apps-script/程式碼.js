@@ -274,6 +274,13 @@ function bankReceiptPostRequest_(e) {
 }
 
 function doGet(e) {
+  const output = dispatchV2Get_(e);
+  return typeof readReplicaAfterResponse_ === 'function'
+    ? readReplicaAfterResponse_(String(e && e.parameter && e.parameter.v2_action || ''), output)
+    : output;
+}
+
+function dispatchV2Get_(e) {
   e = e || { parameter: {} };
 
   const v2Action = e.parameter.v2_action || '';
@@ -1518,7 +1525,8 @@ if (v2Action === 'tenant_message_submit') {
   if (v2Action === 'landlord_home_bootstrap') {
     const result = getWorkspaceLandlordHomeBootstrapByLineUid_(
       lineUserId,
-      e.parameter.section || ''
+      e.parameter.section || '',
+      e.parameter.read_view || ''
     );
 
     if (bridge === '1') {
@@ -1552,7 +1560,7 @@ if (v2Action === 'tenant_message_submit') {
   }
 
   if (v2Action === 'landlord_tenants') {
-  const result = getWorkspaceLandlordTenantsNativeByLineUid_(lineUserId);
+  const result = getWorkspaceLandlordTenantsNativeByLineUid_(lineUserId, e.parameter.read_view || '');
 
   if (bridge === '1') {
     return htmlBridgeOutput_(result, requestId);
@@ -2709,6 +2717,21 @@ function escapeHtmlForInput_(value) {
  * LINE Developers Webhook URL 會用 POST 打到這裡
  */
 function doPost(e) {
+  const output = dispatchV2Post_(e);
+  let action = '';
+  try {
+    const body = e && e.postData && e.postData.contents || '';
+    let request;
+    try { request = JSON.parse(body); }
+    catch (_) { request = repairRouteDecodeFormBody_(body); }
+    action = String(request && (request.action || request.v2_action) || 'LINE_WEBHOOK');
+  } catch (_) {}
+  return typeof readReplicaAfterResponse_ === 'function'
+    ? readReplicaAfterResponse_(action, output)
+    : output;
+}
+
+function dispatchV2Post_(e) {
   runtimeSnapshotBegin_('POST');
   try {
     e = e || {};
@@ -2772,6 +2795,12 @@ function doPost(e) {
           String(request.response_mode || '')
             .trim() === 'bridge';
         let result = null;
+
+        if (action === 'read_replica_authorize') {
+          const confirmation=readAuthorizationConfirm_(request);
+          runtimeSnapshotFinish_();
+          return ContentService.createTextOutput(JSON.stringify(confirmation)).setMimeType(ContentService.MimeType.JSON);
+        }
 
         if (['commercial_billing_init','commercial_billing','commercial_billing_retry_provisioning','commercial_billing_workspace_mode','commercial_billing_link_line'].indexOf(action) >= 0) {
           result = platformCoreDispatchBilling_(action, request);
@@ -3148,7 +3177,8 @@ function doPost(e) {
             result =
               getWorkspaceLandlordHomeBootstrapByLineUid_(
                 principal.data.principal_line_user_id,
-                request.section || ''
+                request.section || '',
+                request.read_view || ''
               );
           }
 
@@ -3179,7 +3209,8 @@ function doPost(e) {
           if (principal) {
             result =
               getWorkspaceLandlordTenantsNativeByLineUid_(
-                principal.data.principal_line_user_id
+                principal.data.principal_line_user_id,
+                request.read_view || ''
               );
           }
 

@@ -55,8 +55,8 @@ function extractFunctionSource(source, functionName) {
   throw new Error(`unterminated dispatcher function ${functionName}`);
 }
 
-const doGetSource = extractFunctionSource(dispatcherSource, 'doGet');
-const doPostFullSource = extractFunctionSource(dispatcherSource, 'doPost');
+const doGetSource = extractFunctionSource(dispatcherSource, 'dispatchV2Get_');
+const doPostFullSource = extractFunctionSource(dispatcherSource, 'dispatchV2Post_');
 const doPostEnd = doPostFullSource.indexOf('\n  } catch (err) {');
 
 assert.notEqual(doPostEnd, -1, 'dispatcher must include the doPost dispatcher body');
