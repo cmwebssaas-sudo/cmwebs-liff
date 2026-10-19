@@ -10,6 +10,7 @@ from datetime import datetime,timezone,timedelta
 spec=importlib.util.spec_from_file_location('authority_history',Path(__file__).with_name('read-authority-continuation-budget.py'))
 history=importlib.util.module_from_spec(spec);spec.loader.exec_module(history)
 DECISION='eccdb919d865327e3b5922231b253266e9084afe33305e12a32e64501efa39b2'
+CONTINUATION_DECISION='fc822ca3296a4f66195c02e9db1088ca6b95eb197bd440a27f417069e9b7cdd7'
 RULES=copy.deepcopy(history.STAGED_OPERATIONS)
 RULES['A:original-cloud-backup']={'actor':'publisher','target':'original-settings','methods':['snapshot']}
 STAGES=history.STAGES
@@ -50,7 +51,8 @@ class Ledger:
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
   self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None
-  if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
+  self.continuation='continuation' in cfg
+  if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+(['continuation'] if self.continuation else [])) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
   self.path=Path(cfg['path']);directory(self.path.parent)
   if not self.path.is_absolute() or cfg['original']['path']!=str(self.path) or cfg['original']['epoch']!=cfg['epoch']:fail()
   fd=os.fstat(3);named=os.lstat(str(self.path)+'.lock')
@@ -61,10 +63,11 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  self.journal=Path(str(self.path)+'.simple.json');self.claim=Path(str(self.path)+'.simple-claim.json');self.stop_path=Path(str(self.path)+'.simple-stop.json')
+  suffix='.simple-continuation' if self.continuation else '.simple'
+  self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
-  self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+'.simple.json')
-  self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
+  self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+suffix+'.json')
+  self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']+(['continuation'] if self.continuation else [])};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
   if cleanup:
    r=record(self.registry)
    if record(self.claim)!=self.identity or r.get('identity')!=self.identity or type(r.get('checkpoint')) is not dict or type(r['checkpoint'].get('events')) is not list or len(r['checkpoint']['events'])!=minimum:fail()
@@ -73,6 +76,9 @@ class Ledger:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
   self.j={'state':'ready','w0':None,'expiresAt':None,'lastAt':self.prior_time,'events':[],'pending':None,'stages':{},'stageNames':[],'stageBrowser':[],'recoveryBrowser':[],'plan':None,'completed':[],'failures':0,'mutated':False,'rpc':{'beganAt':None,'complete':False},'chargedUpperBoundMs':0,'finished':False}
+  if self.continuation:
+   prior,approved_at=self.validate_continuation()
+   self.j=copy.deepcopy(prior);self.j.update(state='ready',w0=None,expiresAt=None,lastAt=approved_at)
   save_record(self.registry,{'identity':self.identity,'checkpoint':None},True);save_record(self.claim,self.identity,True);self.persist()
  def sources(self):
   cfg=self.cfg
@@ -90,6 +96,40 @@ class Ledger:
   for p in h['files']:private_pin(p)
   j=json.loads(private_pin(h['journal']));d=json.loads(private_pin(h['drain']))
   if j.get('state')!='stopped' or j.get('spent')!=3 or j.get('finished') is not True or j.get('chargedUpperBoundMs')!=0 or j.get('rpc')!={'beganAt':None,'complete':False} or type(j.get('events')) is not list or len(j['events'])!=3 or any(e.get('outcome')!='UNKNOWN' or not integer(e.get('time')) for e in j['events']) or d.get('stopAcknowledged') is not True or d.get('ordinaryScopeClosed') is not True or d.get('ownedScope',{}).get('state')!='SETTLED':fail()
+  if self.continuation:self.validate_continuation()
+ def validate_continuation(self):
+  c=self.cfg;p=c['continuation']
+  if not exact(p,['decisionHash','approval','journal','claim','stop','registry','drain']) or p['decisionHash']!=CONTINUATION_DECISION:fail()
+  if any(not exact(p[k],['path','sha256']) or type(p[k]['path']) is not str or not Path(p[k]['path']).is_absolute() or not digest(p[k]['sha256']) for k in ['approval','journal','claim','stop','registry','drain']):fail()
+  raw={k:private_pin(p[k]) for k in ['approval','journal','claim','stop','registry','drain']}
+  oldroot=Path.home()/'.codex/private/cmwebs-authority-trials'
+  expected={'journal':str(self.path)+'.simple.json','claim':str(self.path)+'.simple-claim.json','stop':str(self.path)+'.simple-stop.json','registry':str(oldroot/(sha(json.dumps(c['epoch'],separators=(',',':')).encode())+'.simple.json'))}
+  if any(p[k]['path']!=v for k,v in expected.items()):fail()
+  a=json.loads(raw['approval']);j=json.loads(raw['journal']);claim=record(Path(p['claim']['path']));registry=record(Path(p['registry']['path']))
+  stable=['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget']
+  if not exact(claim,stable+['sources','ownerHash']) or any(claim[k]!=c[k] for k in stable) or not digest(claim['ownerHash']) or type(claim['sources']) is not list or not claim['sources']:fail()
+  for source in claim['sources']:pin(source)
+  if registry!={'identity':claim,'checkpoint':j}:fail()
+  # requestStop writes a plain marker; ledger.stop writes its wrapped identity.
+  marker=json.loads(raw['stop'])
+  if marker!={'source':'live-owner-stop','binding':c['binding']} and record(Path(p['stop']['path']))!={'identity':claim}:fail()
+  if not exact(a,['source','decisionSha256','ownerAnswer','predecessorSha256','importedSpent','importedMainSpent','importedUiSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','recordedAt','executionStarted']) or a['source']!='direct-human-approval' or a['decisionSha256']!=CONTINUATION_DECISION or a['ownerAnswer']!='同意單次接續，保留65／232及全部限制' or a['predecessorSha256']!=sha(raw['journal']) or [a[k] for k in ['importedSpent','importedMainSpent','importedUiSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit']]!=[65,53,12,160,56,16,232] or a['executionStarted'] is not False or not integer(a['recordedAt']) or c['now']<a['recordedAt']:fail()
+  keys=['state','w0','expiresAt','lastAt','events','pending','stages','stageNames','stageBrowser','recoveryBrowser','plan','completed','failures','mutated','rpc','chargedUpperBoundMs','finished']
+  if not exact(j,keys) or j['state']!='stopped' or j['pending'] is not None or any(j[k] for k in ['stages','stageNames','stageBrowser','recoveryBrowser','completed']) or j['plan'] is not None or j['failures']!=2 or j['mutated'] is not False or j['finished'] is not False or j['rpc']!={'beganAt':None,'complete':False} or j['chargedUpperBoundMs']!=0 or not integer(j['w0']) or j['expiresAt']!=self.window(j['w0']) or not integer(j['lastAt']) or not j['w0']<=j['lastAt']<j['expiresAt']<=a['recordedAt']:fail()
+  if type(j['events']) is not list or len(j['events'])!=12:fail()
+  ids=set();last=j['w0'];failed=0
+  for event in j['events']:
+   if not exact(event,['lane','key','operation','time','outcome','cleanup','settled','success']) or event['lane']!='ui' or event['key']!='N:preparation' or descriptor(event['operation'],'ui')!='N:preparation' or event['cleanup'] is not False or event['outcome']!='UNKNOWN' or event['settled'] is not True or type(event['success']) is not bool or event['operation']['id'] in ids or not integer(event['time']) or not last<=event['time']<=j['lastAt']:fail()
+   ids.add(event['operation']['id']);last=event['time'];failed+=not event['success']
+  if failed!=2:fail()
+  d=json.loads(raw['drain']);dr=d.get('drain',{})
+  if d.get('source')!='deadline-expired-retained-owner-closed' or d.get('remoteMutationsInThisScope')!=0 or d.get('compatibilityRpcAttempted') is not False or d.get('ordinaryResumeAllowed') is not False or dr.get('source')!='simple-authority-holder' or any(dr.get(k) is not True for k in ['stopRequested','stopAcknowledged','ordinaryScopeClosed']) or dr.get('ownedScope')!={'state':'SETTLED'} or any(dr.get(k) is not False for k in ['trialAccepted','remoteExecutionSettled','rollbackComplete']):fail()
+  closed_at=d.get('closedAt')
+  if type(closed_at) is not str or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z',closed_at):fail()
+  closed_ms=int(datetime.fromisoformat(closed_at.replace('Z','+00:00')).timestamp()*1000)
+  if not j['expiresAt']<=closed_ms<=a['recordedAt']:fail()
+  if self.memory is not None and self.memory['events'][:12]!=j['events']:fail()
+  return j,a['recordedAt']
  def old(self):
   v=json.loads(rawfile(self.path));b=self.base;p=v.get('preparation',{});bp=b['preparation'];tail=p.get('events',[])[2:];restored=copy.deepcopy(v)
   if type(tail) is not list or len(tail)>19 or v.get('spent')!=27+len(tail):fail()

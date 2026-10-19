@@ -6105,3 +6105,524 @@ Worker43/43; exact new-head CI remains a separately reported result.
 No Google operation, credential, grant, new trial debit/window, PR merge,
 deployment, flag or T0. Rollback this undeployed documentation composition to
 a0dfea5739aafd4acfba4e1d26ffd1cf9ca367f1, preserving every old approval/history.
+
+## 2026-10-19 — Approved single successor retains the expired65-operation scope
+
+Recommended model/speed: GPT-6.1 Sol/high, for accounting/authorization controls.
+An optional continuation config admits only a separately approved expired,
+drained readonly predecessor: original53 main operations plus its12 settled
+browser-preparation events, including two failures. Canonical path/epoch/binding/
+lock and all prior source/journal/claim/STOP/registry pins remain unchanged.
+A fixed new journal/claim/registry/STOP singleton retains the event prefix and
+preparation12/failures2; only four preparation debits and zero retries remain.
+First new debit fixes one six-hour/midnight-capped window. Stage/full-map/RPC,
+source, privacy, quota and independent original C2/I17 recovery gates stay intact.
+
+Initial new13-case regression:8 PASS/5 FAIL; support becomes focused41/41 with
+unchanged simple-control cases, then expanded continuation boundaries15/15 PASS.
+Fresh Node24 full unit2697/2697, zero fail/cancel/skip; validate72backend/40endpoint/
+static-cache and diff PASS. No new external Core/PostgreSQL acceptance is claimed.
+Independent review found no actionable P1/P2 and separately ran15/15 synthetic
+continuation cases with zero fail/cancel/skip. Exact new-head CI is still a
+separate remaining preparation gate.
+Worker runtime is unchanged; prior exact-source Worker evidence remains historical.
+
+Actual ledger remains65/232, stopped with no pending IO or RPC. This local change
+creates no actual new owner/claim/window/debit, Google/browser/API/credential IO,
+resource/grant/configuration/Production change or observation T0. Complete actual
+UI cost/recovery map and all real C1/C3/provider/device/accelerated-observation gates
+remain open. Before execution, rollback source to1624fd4; after any future start,
+stop/drain only the actual owner and use its pinned independent recovery without
+rewriting predecessor evidence or retrying an UNKNOWN operation.
+
+
+## 2026-10-19 — C4 integrates the reviewed C3 single-successor controls
+
+Recommended model/speed: GPT-6.1 Sol/high for source/accounting integration.
+Merged C3f2ff40a into the existing C4 worktree/Draft, retaining both append-only
+test/execution histories. C4 runtime, pages, flags and release identity are
+unchanged. Routing and simple/successor focused56/56 PASS, zero fail/cancel/skip;
+validate72backend/40endpoint/static-cache and diff PASS. Exact composed-head
+provider CI remains a separate check after this source commit.
+
+Actual bounded synthetic trial is stopped at66/232, pendingnull: one new native
+projection succeeded, then an unused local package failed source-permission
+admission before another debit or remote IO. No compatibility RPC, credential
+refresh, grant, resource/configuration write, deployment or Production mutation
+occurred in that successor. A corrected unused package's inert admission is
+local evidence only; it does not authorize reopening or establish baseline
+completeness. All actual C1/C3, provider performance, approved accelerated
+observation and device/rollback gates remain open. No flags/T0/PR merge/deploy.
+Rollback this undeployed integration to75a1011; retain all used control sources,
+charges, claims, STOP and evidence. Root WIP and private material preserved.
+
+
+<!-- Historical C3 source records restored verbatim from1624fd4; these retain their original observation dates. -->
+
+## 2026-10-15 — Approved acceleration and supplemental budget core
+
+Recommended model/speed GPT-6.1 Sol/high for continuity of the existing security
+controller work. Owner explicitly approved both revised decisions. PR272 is
+merged at f5ff2ac8d16208e520453b8942a3e97a76d92842 after independent review with
+no actionable findings and exact-head CI38738904903 rental/read-worker success.
+Plan replaces the pre-on72h/seven-day wait: after all technical prerequisites,
+concurrent sync/shadow24h, rooms first, another stable24h before subsequent
+accepted pages; seven-day observation completes after enablement. T0 has not
+started. Performance/privacy/freshness/real-device gates remain unchanged.
+
+Approved phase1 is one wrapper-to-library compatibility RPC, four complete native
+windows, cumulative160 with25 imported history. Pure compiler reserves fixed96
+plus G32/P4/T3; unused sub-buckets are not available for borrowing. Supplemental
+decision hash pins the original presented text, not a new counter or credential
+grant. Durable optional policy binds the same counter, permanent epoch checkpoint
+and claim; fixed aliases are unique, G per-window4pages/2setup/1identity/1quota,
+P per actor2, T3 pending-only, H wrapper once, C2/I17 retain original purposes.
+UNKNOWN charges never refund. Copied cleanup binds the same supplemental policy.
+
+Affected local tests122/122 PASS; exact full135 future operations plus25 history
+reaches160 and includes both original restore operations and all17 cleanup aliases.
+This component is not the completed runtime integration: mandatory strict policy
+selection in orchestrator, fixed adapter charge labels and native producer wiring
+still pending; existing legacy format is retained for historical recovery. Do not
+use legacy two-entry workflow as new trial admission. Actual Google counter25/160
+unchanged; no new credential, Google/Cloudflare/native IO, formal data, switch or
+deployment in this work. Full Node22/actual Core/owned PostgreSQL regression1765/1765 PASS,57.460s,zero fail/cancel/skip; cluster cleanup/listener stop verified. Independent incremental runtime-core review no actionable findings, seven source pins unchanged. Validate72 backend/40 endpoints/static cache and diff check PASS. No Apps Script bytes changed, so no native Apps Script test run is needed. New-head CI and downstream propagation remain pending.
+Risk: strict unlabeled or duplicated IO intentionally stops instead of borrowing
+a reserve. Rollback undeployed source to b85179f8; preserve any claimed strict
+counter and use its pinned copied cleanup rather than downgrade that binding.
+Root WIP and private S1 boundary preserved.
+
+
+## 2026-10-15 — Fixed preparation IO uses the approved budget aliases
+
+Recommended GPT-6.1 Sol/high. Local C3 preparation only. Import/Reader, original
+library publication/restoration, thin entry publication and OAuth now assign
+fixed approved purpose labels to each admitted IO. Original C2 restore and I17
+cleanup remain separate; legacy records retain action=null. A real strict
+synthetic realm run exercises all six adapters under the original canonical
+flock and charges only unique approved aliases. No actual Google counter used.
+
+B13 lists one file metadata GET, while the prior import plus Reader code made
+two. Preserve the actual import GET and reuse its exact successful frozen receipt
+once in the same holder for Reader, only for matching epoch/synthetic file/
+publisher/fixture and at most60s from GET admission. JSON copies, restart, wrong
+binding and stale/backwards time cannot reconstruct it. Reader still performs
+fresh original ACL and synthetic ACL checks before grant plus post-grant ACL.
+Without valid live receipt it uses its original full GET; strict already-charged
+file alias stops extra IO instead of borrowing or increasing the bucket. The
+shared readback has the same MIME/owner/trashed/non-shared-drive checks; no API
+request/fields, grant, security condition or durable receipt format changed.
+
+Affected adapter/restricted-realm/copied-recovery tests231/231 PASS. RED57 had
+48pass/9fail before implementation, retained. Independent incremental review no
+actionable findings; nine source/test pins stable. Full Node22.23.3/actual Core/owned PostgreSQL1774/1774 PASS,62.790s,zero fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache and diff PASS. Apps Script/Worker unchanged, no redundant native or Worker performance rerun. Previous exact head76a5809 CI38740770185 passed rental1760/1760
+and Worker26/26 plus two dry runs; rental log truncated, test footer read.
+
+Mandatory single-wrapper driver/orchestrator and native observer wiring remain
+pending, so actual trial STOP and25/160 unchanged/unclaimed. Approved24h rollout
+T0 NOT_STARTED; all technical/performance/device gates remain. No new credentials,
+Google/native IO, formal data, Properties, trigger, switch or deployment. Rollback
+this undeployed preparation wiring to76a5809; preserve any original claimed
+counter and copied cleanup. Root WIP and private S1 boundary preserved.
+
+
+## 2026-10-15 — Mandatory single-wrapper canonical runtime
+
+Recommended GPT-6.1 Sol/high. Canonical runtime binding includes the owner-approved
+supplemental decision. Driver requires the same bound strict policy before any
+observer, permits wrapper only with no prior RPC entry, and never dispatches
+qualified/authority. Orchestrator rejects missing policy at construction, runs
+one wrapper and verifies the copied artifact again before independent cleanup.
+Original counter/claim/checkpoint, locks, entered-IO drain, pending UNKNOWN and
+C2/I17 remain. Legacy data formats support historical recovery, not new admission.
+
+Each release observation now requires exactly15 distinct fixed aliases, mapped
+by the driver to its own before/after F phase. Native IO uses fixed actor/category
+G labels with independent4pages/2setup/1identity/1quota caps; each actor must have
+a page plus identity/quota read in each phase. Existing source/complete-window/
+900s/six-minute token+runtime/signature/terminal guards remain mandatory. Normal
+after-read G/F uses its own reservation, not T or cleanup. Native capture and
+producer reject qualified phases/fifth page; capture checks its scoped phase.
+The raw snapshot analyzer still never asserts complete/quota acceptance.
+
+Focused RED8 had1pass/7fail before implementation. Initial affected129 had128pass
+and one obsolete test expectation for recovery-check count (single RPC has four
+checks, two preparation and two runtime, versus two entries). Corrected that
+expectation; related185/185 PASS after the review fix. Restricted VM uses all six
+actual synthetic adapters, the strict original ledger, one wrapper and all17
+cleanup aliases. Actual producer/capture/driver test performs four fake bound AX
+reads with debit/phase/actor and peer-lock checks; this is local interoperability,
+not a real Google/native acceptance.
+
+Independent incremental review found one P2: mutable native request could change
+actor/phase/page during admission wait after charging a different G sub-bucket.
+Real await-mutation test RED reproduced caller instead of charged publisher.
+Capture now snapshots and freezes the three primitives before validation/wait,
+and uses that snapshot for charge, sequence, journal and IO. P2 resolved by
+RED-to-GREEN; no other actionable review findings or deferred minors. No repeat
+review of the fix. Full Node22.23.3/actual Core/owned PostgreSQL1790/1790 PASS,61.163s,zero fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS. Apps Script and Worker bytes unchanged, so no redundant native Apps Script or local Worker performance rerun. Previous exact-head a1fee09 CI38742396684 rental1769/1769 and Worker26/26/two dry runs SUCCESS; footers/annotations read, rental log truncated. New-head CI and downstream propagation pending.
+
+Actual Google25/160 is untouched/unclaimed. Remaining live preparation/native
+setup callbacks, full source/identity/quota/window evidence and original unknown
+terminal T3 integration still need actual trusted wiring/readback; no credential
+operation or trial RPC is admitted by these local results. Public Google docs
+confirm My Executions can include projects one owns/edits/views and on-behalf
+executions, so visible partial rows are not a per-user quota proof. The alternative
+processes API requires script.processes outside the approved three caller Scopes;
+it has not been called or authorized. See official
+[dashboard](https://developers.google.com/apps-script/guides/dashboard) and
+[processes.list](https://developers.google.com/apps-script/api/reference/rest/v1/processes/list).
+Do not change native provenance, account quota or scope gates from this research.
+
+Approved parallel24h rollout T0 NOT_STARTED; original technical/latency/physical
+device gates stay unaccepted, all switches off. No Apps Script/Worker/formal data/
+Properties/trigger/deployment change. Rollback undeployed runtime wiring to
+a1fee0943457dda4087fec72e935f555c9f3aeba; preserve strict claimed journals and
+pinned copied cleanup. Root WIP and private S1 boundary preserved.
+
+
+## C3 credential readiness and pending purpose amendment — 2026-10-15
+
+Local-only audit found the existing publisher token declares expiry in the past;
+refresh material exists but was not used. Actual CUA runtime imported the local
+control/orchestration/producer modules successfully, with zero browser/account
+reads and no controller/claim created. Original Google counter remains25/160,
+unclaimed. Neither local credential metadata nor a page account proves token
+holder identity.
+
+Prepared READ-CREDENTIAL-READBACK-DECISION.md for owner review: within unchanged
+P4/G32, change P actor allocation from2/2 to1/3: caller tab binding once;
+publisher tab binding, existing-grant refresh and same-token identity once each,
+with no browser inventory. Publisher identity must pass before any A–E preparation
+IO; its response is not reused as G evidence. Replace each G identity read with the same actor token's fixed
+Google userinfo response. This changes approved purposes and is NOT yet approved
+or executed. All complete native/source/quota/security gates, original history,
+C2 and independent I17 remain. No new scope/account/cost/formal access. Local
+1790/1790 runtime evidence remains applicable; this change is documentation only.
+Parallel24h T0 NOT_STARTED; switches remain off. Root WIP/private S1 preserved.
+
+Review found and corrected one sequencing P2: validating publisher token only in
+G after handoff would follow A–E preparation. P now explicitly pays the initial
+publisher identity before preparation, retains all four fresh G identities, and
+does not inventory/search browsers. Missing known tab references or ambiguous
+bindings STOP without extra reads. Five P/G identity GETs are explicitly accounted
+(one P plus four G); the existing E caller-userinfo remains, making six in the
+whole flow, with E1 already included in fixed96. Review P3 wording clarified;
+no existing check removed. Proposal remains pending owner approval and unexecuted.
+
+Exact runtime8c22474 CI38745247226 rental1785/1785 and Worker26/26/two dry runs
+SUCCESS; actual log footers read, rental log truncated. Rental annotations are
+runner Node20 deprecation and upcoming ubuntu-latest migration notices. No
+application test failure or deployment inferred. Documentation-only follow-up
+does not repeat the unchanged full runtime or Worker benchmark.
+
+Independent proposal review: one P2 sequencing issue resolved and one P3 total
+wording clarified; no remaining actionable findings. Owner approval still
+pending. Validate72 backend/40 endpoint/static cache/diff PASS. Both exact-head
+CI jobs have only the same runner deprecation/migration notices; footers and
+annotations read. No Google operations, counter claim or new trial occurred.
+
+## C3 fixed seven-source release readback transport — 2026-10-15
+
+Recommended model/speed remains GPT-6.1 Sol/high for credential/IO boundaries.
+Added read-authority-release-source.mjs for seven fixed approved F observations:
+original project/editor/versions/deployments, fixed library7/thin1 content and
+thin deployments. These use existing publisher scopes and cached synchronous
+credentials; construction performs no credential/account/source/counter IO.
+Driver assigns its own before/after F alias; admission owns the full response
+read/cancellation under the canonical lock. Exact project/version/field masks,
+manual redirect handling, byte bounds, strict shapes, immutable snapshots,
+post-debit expiry and single-flight apply. Pagination or failed/malformed IO
+stops without retry. Actual frozen source bytes/metadata remain available to the
+trusted equality verifier; the adapter does not assert source equality, full
+native evidence, token holder identity or acceptance.
+
+Official API shapes/methods verified against Google primary documentation:
+[project metadata](https://developers.google.com/apps-script/api/reference/rest/v1/projects/get),
+[fixed or editor content](https://developers.google.com/apps-script/api/reference/rest/v1/projects/getContent),
+[versions](https://developers.google.com/apps-script/api/reference/rest/v1/projects.versions/list),
+[deployments](https://developers.google.com/apps-script/api/reference/rest/v1/projects.deployments/list).
+No new route, Scope, account, trial RPC or production surface was introduced.
+
+New tests34 had actual RED0pass/34fail before implementation, then34/34 PASS.
+Combined canonical-driver91/91 PASS: fourteen source transport callbacks in fake
+Google responses debit F before/S after in the original ledger, peer control
+cannot enter while the actual source callback owns the lock, and a paginated
+version list is charged then denies compatibility RPC. Remaining equality and
+native fields in that integration test are labeled synthetic fixtures, not real
+Google acceptance. Independent incremental review found no actionable issue.
+Reviewed three code/test pins remained unchanged through final verification.
+
+One full Node22.23.3/actual Core/owned PostgreSQL regression1826/1826 PASS,62.802s,
+zero fail/cancel/skip; owned cluster cleanup/listener stop verified. Tested572-file
+snapshot00fce357081745f55ad66ced5f00aaf1c7cf205448fb35105e07cad4809579cc;
+only documentation changed afterwards. Validate72 backend/40 endpoint references/
+static cache/diff PASS. Apps Script and Worker bytes unchanged: no redundant
+native test or Worker performance rerun. Prior documentation head5c6c87b CI
+38748152181 rental1785/1785 and Worker26/26/two dry runs SUCCESS; both footers
+and annotations read, rental log truncated, runner notices only. New code-head
+CI remains separate until read back.
+
+Actual Google counter25/160 remains byte-identical and unclaimed. Credential
+purpose amendment is still pending owner approval; current P2/P2 policy is not
+silently changed. Remaining complete native/source/identity/quota windows,
+native settings/audience/client/trigger callbacks and actual terminal T3 binding
+remain unaccepted. No Google/native/formal data/Properties/trigger/deployment
+operation. Approved parallel24h T0 NOT_STARTED; original privacy, daily900s,
+freshness, performance and physical-device gates remain, switches off.
+
+Rollback this undeployed transport to5c6c87b25739778a66541e063ec1fe16de9e486e;
+preserve original claimed journals/copied cleanup if ever created, without
+credential refresh/replay/refund. Root WIP and private S1 boundary preserved.
+
+## C3 actual source equality and execution entrypoint — 2026-10-15
+
+Model/speed remains GPT-6.1 Sol/high for the IO/provenance boundary. Added a
+partial source-equality verifier that accepts only its module's original branded
+source adapter with matching project/version/publisher pins. Expected facts and
+six original version descriptors are snapshotted before any IO. Compute actual
+sorted-file hashes using the existing publication convention, raw uploaded
+manifest-byte hashes, restored original editor/inventory, retained1–6 plus
+epoch-described7, original parent binding and fixed thin deployment. Guarded
+manifests retain exact scopes/whitelist/runtime/logging/library/development mode.
+Thin F metadata now includes actual EXECUTION_API entrypoint/access in the same
+existing GET; equality facts do not infer serving access from manifest alone.
+Schema verified against Google's
+[deployment resource](https://developers.google.com/apps-script/api/reference/rest/v1/projects.deployments#ExecutionApiEntryPoint).
+
+Verifier initial26RED→GREEN; actual-entrypoint-mask1RED→GREEN. Combined124/124
+PASS, including three strict canonical equality tests. Source packets and
+deployment metadata produce actual computed facts, while remaining native/ACL/
+Sheets fields in integration remain explicitly synthetic. Changed bytes or
+actual execution access prevents native/RPC admission. Unbranded/copied/proxy
+handles, concurrent/duplicate/out-of-order phases, mismatched hashes/versions/
+manifests/deployments STOP without retry. Partial result cannot satisfy complete
+driver readback or native proof. Independent incremental review: no actionable
+findings; all four reviewed code/test byte pins unchanged through verification.
+
+One full Node22.23.3/actual Core/owned PostgreSQL1859/1859 PASS,64.161s,zero
+fail/cancel/skip; owned cluster cleanup/listener stop verified. Tested573-file
+snapshot4ee5879b2af96b45aa8221b9fa706219e408a92d393f7f7959bd058772b464dc;
+only documentation changed afterwards. Validate72 backend/40 endpoint/static
+cache/diff PASS. Apps Script and Worker unchanged; no redundant native or local
+Worker performance rerun. Prior exact9272979 CI38749856257 rental1821/1821 and
+Worker26/26/two dry runs SUCCESS; both footers/annotations read, rental truncated,
+runner notices only. New code-head CI remains separately required.
+
+Owner now explicitly approved READ-CREDENTIAL-READBACK-DECISION.md's within160
+purpose amendment: Pcaller1/Ppublisher3 including initial publisher identity
+before A–E, four fresh same-token G identities, E caller identity retained.
+Presented-document hash and approval are pinned; original decision/history/25
+remain. Policy/controller and actual credential/native wiring are not yet
+updated or executed by this documentation approval. No new grant/Scope/account/
+cost/formal access. Actual original25/160 remains byte-identical and unclaimed.
+Full native source/window/identity/quota/terminal evidence, C1 daily900s, C6
+capacity/performance and real-device gates remain unaccepted. Parallel24h T0
+NOT_STARTED; switches off. No Google/native/credential/deployment operation.
+
+Rollback undeployed equality/entrypoint increment to927297951a3f6f57c93c62014d64952606033953;
+retain original claim/journal/copied recovery if created, no replay/refund. Root
+WIP, C5 user swap and private S1 boundary preserved.
+
+## C3 approved credential-purpose controller binding — 2026-10-15
+
+Model/speed remains GPT-6.1 Sol/high for durable authorization/IO invariants.
+Added the approved credential-purpose selector using the fixed presented hash
+5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72, retaining
+the original single-wrapper selector and its historical recovery semantics.
+Compiler preserves160/history25/fixed96/G32/P4/T3, now caller1/publisher3.
+The new policy permits exactly four unique P aliases: caller-bind, publisher-bind,
+publisher-refresh and publisher-userinfo. Generic actor labels, duplicates or
+borrowing cannot represent several refreshes. Ledger enforces publisher bind
+before refresh before identity; allP4 must precede A–E and runtime handoff.
+Failed/UNKNOWN work stays charged; independent C2/I17 and all old safety gates
+remain. Persist and validate the selected decision against the original claim,
+checkpoint and history; no downgrade/rebinding of an existing epoch.
+
+Canonical runtime binding explicitly includes the selected decision. Driver
+requires matching durable state before observations and exposes the immutable
+selector on release/native capabilities. Orchestrator derives selection from
+pinned copied-recovery options. New selection grants no execution/native/identity
+proof by itself. Old policy remains compatible; actual new credential wiring
+will require this approved selector and fixed labels, not use the old labels.
+
+Core RED14 had1pass/13fail; binding RED5 had2pass/3fail before changes. Affected
+236/236 PASS plus added new copied recovery1/1 PASS. That new test initially
+passed a full receipt into the strict path/SHA-only loader; corrected the test
+input without changing production loader acceptance. New copied runtime retains
+the selected decision/history25/pending wrapper and executes all17 independent
+cleanup aliases, with no ordinary-read/RPC capability; selector downgrade is
+rejected. Independent incremental review found no actionable issue.
+
+One full Node22.23.3/actual Core/owned PostgreSQL1879/1879 PASS,63.322s,zero
+fail/cancel/skip; owned cluster cleanup/listener stop verified. Tested573-file
+snapshot690ce1daa44083be2c6cc11e984cfd2f19b5eca3f66cb3eee3dc14056f7760ce;
+only documentation changed afterwards. All five reviewed source pins unchanged.
+Validate72 backend/40 endpoints/static cache/diff PASS. Apps Script and Worker
+unchanged; no repeated unchanged native or local Worker performance tests.
+Previous exact391e9f3 CI38752246894 rental1854/1854 and Worker26/26/two dry runs
+SUCCESS; both footers/annotations read, rental truncated, runner notices only.
+New code-head CI must be read separately.
+
+Actual counter25/160 remains byte-identical and unclaimed. No renewal, userinfo,
+browser/account/native/formal-data/Properties/trigger/deployment/RPC operation.
+Actual credential/identity and five native release callbacks, ACL/Sheets fact
+assembly, complete native windows/quota and unknown terminal T3 remain pending.
+No old identity timestamp/local token metadata is treated as live actor proof.
+C1 daily900s, C6 capacity/performance and physical-device gates remain unaccepted.
+Approved parallel24h T0 NOT_STARTED; switches off. Do not ask the already-approved
+purpose amendment again; owner login/new credentials still need actual owner.
+
+Rollback undeployed selected-policy binding to391e9f3e97a03bc176569fec2d90e5cbd326666f,
+preserving any original claims/checkpoints and their matching copied runtime;
+never change policy on a claimed counter or replay/refund. Root WIP, C5 user
+swap and private S1 boundary preserved.
+
+## C3 existing-grant and same-token credential adapters — 2026-10-15
+
+Recommended model/speed: GPT-6.1 Sol/high for fixed-purpose credential IO.
+Added a local publisher holder: exact source hash, owned0600/no-follow file,
+single explicit paid existing-grant refresh, strict original ten-scope/response/
+expiry checks and same-token verified identity before synchronous credential
+access. Original login file is never overwritten; renewed token stays in memory.
+Four G phase/actor reads independently validate the current token holder, retain
+the caller's original three scopes/no-refresh contract, and return partial proof.
+Stop/drain owns entered body IO; original publisher grant is never revoked.
+Loss of this original memory holder cannot be repaired from copied descriptors.
+
+Initial adapter RED25/25 then GREEN25/25. Review found a P2 where a legacy
+canonical cap could discard the new label. RED2/2 reproduced it; the holder now
+requires the actual capability's approved selector. The canonical cap exposes
+its bound immutable selector. Phase/orchestrator propagation is origin-scoped,
+denies stale/inactive accesses and checks pinned recovery selection; RED3/3
+reproduced this missing path before repair. Final affected190/190 PASS and
+incremental independent re-review found no additional actionable finding.
+
+The preceding adapter snapshot passed1909/1909 before the facade addition.
+The final575-file snapshot806b20541fbc7d8216d6c45ad2d371649be303f8d300ea921f9f18f803200fe9
+passed1910/1910 under Node22.23.3, actual pinned Core and owned PostgreSQL,
+62.686s, zero fail/cancel/skip. Owned cluster/listener cleanup verified. Only
+documentation changed afterwards; all four final reviewed source pins retained.
+Validate72 backend/40 endpoints/static cache/diff PASS. Apps Script and Worker
+unchanged, so no repeated unchanged native/performance tests. Exact new-head CI
+is separate from these local results and must be read after push.
+
+Actual original counter remains25/160, byte-identical and unclaimed. No Google
+refresh/userinfo/browser/account/native/formal-data/RPC/config/deployment action.
+Five native release callbacks, ACL/Sheets fact assembly, four complete native
+windows/quota and unknown-terminal T3 remain. No partial proof bypasses these
+gates. C1 daily900s and C6 capacity/performance remain unaccepted; parallel24h T0
+NOT_STARTED and switches off. Root WIP, C5 user swap and private S1 preserved.
+
+Rollback this undeployed increment tofacbb8f1689f8c012560aa8b7530fb55632a5993;
+retain any original claims/checkpoints and matching copied cleanup. Do not
+reset/refund/replay or assume a lost in-memory publisher token is recoverable.
+
+## C3 fixed metadata release evidence — 2026-10-15
+
+Recommended model/speed: GPT-6.1 Sol/high for permission and evidence boundaries.
+Added a verifier for the original module-branded metadata transport. Each
+wrapper phase consumes exactly synthetic ACL, original ACL and caller Sheets
+metadata aliases. New ACL must be only the approved publisher owner plus caller
+Reader, with the caller permission matching its preparation pin. Original ACL
+must contain that same owner only. Group/domain/public/inherited/deleted/extra
+access, incomplete pagination, wrong actors/IDs and changed auth-tab IDs deny.
+The five recognized authorization IDs are compared with actual caller metadata;
+no grid values are requested. Frozen partial output proves new-table Reader
+and original-container absence only. It does not assert script/source-parent
+access, headers, Properties/contract hash, native quota or full acceptance.
+
+Focused25RED-to-GREEN and metadata-related77/77 PASS; affected215/215 PASS.
+The added canonical integration keeps all six F/S reads under original UNKNOWN
+debit and held OS lock, rejects peer admission, retains history25, and uses
+settlement admission after the synthetic RPC. Independent source/test/integration
+reviews found no actionable issue. Full Node22.23.3/actual pinned Core/owned
+PostgreSQL1936/1936 PASS,63.501s,zero fail/cancel/skip; cluster/listener stopped.
+Tested576-file snapshot52a8a374ae1eaf7fc2cdb35448fdddd769830bd6e4d121571301fd612abdd2de;
+only documentation afterwards. Validate72 backend/40 endpoints/cache/diff PASS.
+Apps Script and Worker source unchanged; no repeated unchanged capacity tests.
+
+Actual Google25/160 remains byte-identical and unclaimed; no account/browser/
+Google/credential/native/RPC/formal-data/config/deployment operation. Loading CUA
+API documentation made no account read. Five native F callbacks, source-parent
+composition, four complete native windows/quota and original T3 remain pending.
+C1 daily900s and C6 performance remain unaccepted; parallel24h T0 NOT_STARTED,
+switches off. Root WIP, C5 user swap and private S1 preserved.
+
+Rollback this undeployed verifier increment to97a31d3317293984e3764d50dd000b8b8330347f;
+keep any original claims/checkpoints and matching cleanup, never reset or replay.
+
+
+
+## 2026-10-19 — Restore omitted historical C3 evidence in the C4 composition
+
+Independent integration review found that the earlier C4 HEAD already omitted
+eight test-matrix sections and nine execution sections dated2026-10-15 from
+C3 merge-base1624fd4. This integration restores those complete sections verbatim,
+with their original dates and historical acceptance boundaries. No runtime
+source, current authority, quota, flags or Production action changes. The
+new successor-controller tests/validation above remain the affected checks;
+no unchanged suite was rerun for historical text restoration.
+
+
+## 2026-10-19 — C5 integrates the reviewed successor-control composition
+
+Recommended model/speed: GPT-6.1 Sol/high for source/accounting integration.
+Integrated C4eb89753, including reviewed C3f2ff40a controls and previously omitted
+historical C3 evidence, into the existing C5 worktree/Draft. Both append-only
+execution/test histories remain. Only inherited controls/tests and these
+records changed; shadow reporting, Worker and page/runtime flags are unchanged.
+Focused routing/shadow/simple/successor61/61 PASS, zero fail/cancel/skip;
+validate72backend/40endpoints/static-cache and diff PASS. Exact new-head CI
+remains a separate check after commit.
+
+Actual synthetic trial remains stopped66/232/pendingnull; no new Google/UI
+operation, owner, credential, RPC, grant, source/configuration mutation,
+Production deployment, flag or observation T0. All actual C1/C3, performance,
+approved observation/device and independent rollback gates remain. Rollback
+this undeployed integration to9138edb; preserve old controls/charges/STOP/history.
+Root WIP and private material preserved.
+
+
+## 2026-10-19 — C6 integrates the reviewed successor-control composition
+
+Recommended model/speed: GPT-6.1 Sol/high for source/accounting integration.
+Integrated C5737dc9b/C4eb89753/C3f2ff40a into the existing C6 worktree/Draft.
+Both complete historical documentation bodies survive. Only inherited trial
+controls/tests and these records changed; C6 Worker, fullHTTP/D1/body timing
+gates, parser reuse, pages and flags are unchanged. Fresh Node24 full unit
+2811/2811 PASS, zero fail/cancel/skip,166.329s. Validate72backend/40endpoints/
+static-cache/comparison179 and diff PASS. Unchanged Worker capacity/runtime
+tests were not repeated locally; source-specific earlier43/43 evidence remains
+historical until the next exact-head CI normal Worker job completes.
+
+Actual bounded trial remains stopped66/232/pendingnull after unused package
+admission failure; no new remote operation or owner has followed. No RPC,
+credential refresh, grant, source/configuration/resource write, Production
+deployment, flag switch or observation T0. Actual C1/C3 and formal performance,
+approved observation/device/rollback gates remain open. This source integration
+does not reopen authority or turn local/CI tests into rollout acceptance.
+Rollback this undeployed integration to4a0e90b; retain used sources, charges,
+claims, STOP and histories. Root WIP/private material preserved.
+
+
+## 2026-10-19 — Accelerated plan integrates the reviewed successor composition
+
+Recommended model/speed: GPT-6.1 Sol/high for source/evidence reconciliation.
+Integrated C6aa9c57c/C5737dc9b/C4eb89753/C3f2ff40a into the existing accelerated
+plan worktree/DraftPR273. Both historical execution/test bodies remain;
+non-document source matches C6 exactly, and the own delta is still the same
+six plan/evidence documents. Fresh validate72backend/40endpoints/static-cache/
+comparison179 and diff PASS. Inherited C6 full unit2811/2811 is source evidence,
+not a repeated local run in this branch or actual external acceptance. New
+exact-head CI follows commit; no unchanged full/capacity rerun here.
+
+Actual synthetic trial remains stopped66/232, pendingnull; the narrow local
+admission-repair amendment is not approved by these documents. No new owner
+or Google/UI/RPC/credential/grant/configuration/resource/Production operation,
+flag switch or observation T0. Approved24h parallel observation, rooms first,
+another stable24h, per-page gates and seven-day postlaunch remain unchanged.
+All C1/C3actual and provider/device/rollback requirements remain. Rollback this
+undeployed composition to6d07290, preserve trial history and root WIP/private
+material; after real rollout, document revert never substitutes for off and
+deployment readback.
