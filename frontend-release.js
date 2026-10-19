@@ -3,7 +3,7 @@
  * It is intentionally stable for the lifetime of a release so page-navigation
  * URLs can reuse the browser cache without changing API cache behavior.
  */
-window.CMWEBS_RELEASE_VERSION = '20261012-read-routing-v1';
+window.CMWEBS_RELEASE_VERSION = '20261012-read-shadow-v1';
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = '';
