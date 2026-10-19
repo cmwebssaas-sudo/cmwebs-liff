@@ -11,6 +11,7 @@ spec=importlib.util.spec_from_file_location('authority_history',Path(__file__).w
 history=importlib.util.module_from_spec(spec);spec.loader.exec_module(history)
 DECISION='eccdb919d865327e3b5922231b253266e9084afe33305e12a32e64501efa39b2'
 CONTINUATION_DECISION='fc822ca3296a4f66195c02e9db1088ca6b95eb197bd440a27f417069e9b7cdd7'
+ADMISSION_REPAIR_DECISION='03310835216ab80ff344fe51264466bb7c7cc333d3e7df499b28ce9eb85e290f'
 RULES=copy.deepcopy(history.STAGED_OPERATIONS)
 RULES['A:original-cloud-backup']={'actor':'publisher','target':'original-settings','methods':['snapshot']}
 STAGES=history.STAGES
@@ -51,8 +52,9 @@ class Ledger:
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
   self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None
-  self.continuation='continuation' in cfg
-  if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+(['continuation'] if self.continuation else [])) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
+  self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg
+  if self.repair and not self.continuation:fail()
+  if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
   self.path=Path(cfg['path']);directory(self.path.parent)
   if not self.path.is_absolute() or cfg['original']['path']!=str(self.path) or cfg['original']['epoch']!=cfg['epoch']:fail()
   fd=os.fstat(3);named=os.lstat(str(self.path)+'.lock')
@@ -63,11 +65,11 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+suffix+'.json')
-  self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']+(['continuation'] if self.continuation else [])};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
+  self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']+(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
   if cleanup:
    r=record(self.registry)
    if record(self.claim)!=self.identity or r.get('identity')!=self.identity or type(r.get('checkpoint')) is not dict or type(r['checkpoint'].get('events')) is not list or len(r['checkpoint']['events'])!=minimum:fail()
@@ -76,7 +78,10 @@ class Ledger:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
   self.j={'state':'ready','w0':None,'expiresAt':None,'lastAt':self.prior_time,'events':[],'pending':None,'stages':{},'stageNames':[],'stageBrowser':[],'recoveryBrowser':[],'plan':None,'completed':[],'failures':0,'mutated':False,'rpc':{'beganAt':None,'complete':False},'chargedUpperBoundMs':0,'finished':False}
-  if self.continuation:
+  if self.repair:
+   prior,approved_at=self.validate_admission_repair()
+   self.j=copy.deepcopy(prior);self.j.update(state='ready',lastAt=approved_at)
+  elif self.continuation:
    prior,approved_at=self.validate_continuation()
    self.j=copy.deepcopy(prior);self.j.update(state='ready',w0=None,expiresAt=None,lastAt=approved_at)
   save_record(self.registry,{'identity':self.identity,'checkpoint':None},True);save_record(self.claim,self.identity,True);self.persist()
@@ -96,7 +101,8 @@ class Ledger:
   for p in h['files']:private_pin(p)
   j=json.loads(private_pin(h['journal']));d=json.loads(private_pin(h['drain']))
   if j.get('state')!='stopped' or j.get('spent')!=3 or j.get('finished') is not True or j.get('chargedUpperBoundMs')!=0 or j.get('rpc')!={'beganAt':None,'complete':False} or type(j.get('events')) is not list or len(j['events'])!=3 or any(e.get('outcome')!='UNKNOWN' or not integer(e.get('time')) for e in j['events']) or d.get('stopAcknowledged') is not True or d.get('ordinaryScopeClosed') is not True or d.get('ownedScope',{}).get('state')!='SETTLED':fail()
-  if self.continuation:self.validate_continuation()
+  if self.repair:self.validate_admission_repair()
+  elif self.continuation:self.validate_continuation()
  def validate_continuation(self):
   c=self.cfg;p=c['continuation']
   if not exact(p,['decisionHash','approval','journal','claim','stop','registry','drain']) or p['decisionHash']!=CONTINUATION_DECISION:fail()
@@ -129,6 +135,33 @@ class Ledger:
   closed_ms=int(datetime.fromisoformat(closed_at.replace('Z','+00:00')).timestamp()*1000)
   if not j['expiresAt']<=closed_ms<=a['recordedAt']:fail()
   if self.memory is not None and self.memory['events'][:12]!=j['events']:fail()
+  return j,a['recordedAt']
+ def validate_admission_repair(self):
+  c=self.cfg;p=c['admissionRepair'];original,_=self.validate_continuation()
+  fields=['approval','journal','claim','stop','registry']
+  if not exact(p,['decisionHash']+fields) or p['decisionHash']!=ADMISSION_REPAIR_DECISION:fail()
+  if any(not exact(p[k],['path','sha256']) or type(p[k]['path']) is not str or not Path(p[k]['path']).is_absolute() or not digest(p[k]['sha256']) for k in fields):fail()
+  raw={k:private_pin(p[k]) for k in fields};root=Path.home()/'.codex/private/cmwebs-authority-trials'
+  expected={'journal':str(self.path)+'.simple-continuation.json','claim':str(self.path)+'.simple-continuation-claim.json','stop':str(self.path)+'.simple-continuation-stop.json','registry':str(root/(sha(json.dumps(c['epoch'],separators=(',',':')).encode())+'.simple-continuation.json'))}
+  if any(p[k]['path']!=v for k,v in expected.items()):fail()
+  a=json.loads(raw['approval']);j=json.loads(raw['journal']);claim=record(Path(p['claim']['path']));reg=record(Path(p['registry']['path']))
+  stable=['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','continuation']
+  if not exact(claim,stable+['sources','ownerHash']) or any(claim[k]!=c[k] for k in stable) or not digest(claim['ownerHash']) or type(claim['sources']) is not list or not claim['sources']:fail()
+  for source in claim['sources']:pin(source)
+  if reg!={'identity':claim,'checkpoint':j}:fail()
+  marker=json.loads(raw['stop'])
+  if marker!={'source':'live-owner-stop','binding':c['binding']} and record(Path(p['stop']['path']))!={'identity':claim}:fail()
+  keys=['source','decisionSha256','ownerAnswer','predecessorSha256','importedSpent','importedMainSpent','importedUiSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','w0','expiresAt','recordedAt','executionStarted']
+  if not exact(a,keys) or a['source']!='direct-human-approval' or a['decisionSha256']!=ADMISSION_REPAIR_DECISION or a['ownerAnswer']!='同意單次本地准入修復，保留66／232及原期限' or a['predecessorSha256']!=sha(raw['journal']) or [a[k] for k in ['importedSpent','importedMainSpent','importedUiSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit']]!=[66,53,13,160,56,16,232] or a['executionStarted'] is not False or not integer(a['recordedAt']) or c['now']<a['recordedAt']:fail()
+  if not exact(j,list(original)) or j['state']!='stopped' or j['pending'] is not None or any(j[k] for k in ['stages','stageNames','stageBrowser','recoveryBrowser','completed']) or j['plan'] is not None or j['failures']!=2 or j['mutated'] is not False or j['finished'] is not False or j['rpc']!={'beganAt':None,'complete':False} or j['chargedUpperBoundMs']!=0 or not integer(j['w0']) or j['expiresAt']!=self.window(j['w0']) or a['w0']!=j['w0'] or a['expiresAt']!=j['expiresAt'] or not integer(j['lastAt']) or not j['w0']<=j['lastAt']<=a['recordedAt']<j['expiresAt']:fail()
+  if type(j['events']) is not list or len(j['events'])!=13 or j['events'][:12]!=original['events']:fail()
+  e=j['events'][12]
+  operation={'id':'simple-continuation-native-trigger-a','key':'N:preparation','actor':'publisher','target':'original-triggers','operation':'snapshot','units':1,'preparation':True}
+  if not exact(e,['lane','key','operation','time','outcome','cleanup','settled','success']) or e['lane']!='ui' or e['key']!='N:preparation' or e['operation']!=operation or e['outcome']!='UNKNOWN' or e['cleanup'] is not False or e['settled'] is not True or e['success'] is not True or not integer(e['time']) or not j['w0']<=e['time']<=j['lastAt']:fail()
+  if self.memory is not None and self.memory['events'][:13]!=j['events']:fail()
+  # Keep the original clock. Ordinary admission retains the six-minute RPC reserve;
+  # independent cleanup is still available after that ordinary window closes.
+  if not self.cleanup_mode and self.memory is None and c['now']+360000>=j['expiresAt']:fail()
   return j,a['recordedAt']
  def old(self):
   v=json.loads(rawfile(self.path));b=self.base;p=v.get('preparation',{});bp=b['preparation'];tail=p.get('events',[])[2:];restored=copy.deepcopy(v)

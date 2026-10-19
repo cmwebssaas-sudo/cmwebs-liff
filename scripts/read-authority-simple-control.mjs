@@ -24,9 +24,11 @@ function options(input){
 }
 export function createAuthoritySimpleControl(input){
  const o=options(input),config=simpleData(o.config),guard=o.guard,assertStage=o.assertStage,now=o.now??Date.now,pause=o.pause??delay,home=homedir(),nonce=randomBytes(32).toString('hex');
- const continued=Object.hasOwn(config,'continuation');
- if(!simpleExact(config,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources',...(continued?['continuation']:[])])||config.decisionHash!==SIMPLE_DECISION||[guard,assertStage,now,pause].some(v=>typeof v!=='function'||types.isProxy(v)))stop();
+ const continued=Object.hasOwn(config,'continuation'),repaired=Object.hasOwn(config,'admissionRepair'),suffix=repaired?'.simple-admission-repair':continued?'.simple-continuation':'.simple';
+ if(repaired&&!continued)stop();
+ if(!simpleExact(config,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources',...(continued?['continuation']:[]),...(repaired?['admissionRepair']:[])])||config.decisionHash!==SIMPLE_DECISION||[guard,assertStage,now,pause].some(v=>typeof v!=='function'||types.isProxy(v)))stop();
  if(continued&&(!simpleExact(config.continuation,['decisionHash','approval','journal','claim','stop','registry','drain'])||config.continuation.decisionHash!=='fc822ca3296a4f66195c02e9db1088ca6b95eb197bd440a27f417069e9b7cdd7'))stop();
+ if(repaired&&(!simpleExact(config.admissionRepair,['decisionHash','approval','journal','claim','stop','registry'])||config.admissionRepair.decisionHash!=='03310835216ab80ff344fe51264466bb7c7cc333d3e7df499b28ce9eb85e290f'))stop();
  const source=fileURLToPath(new URL('./read-authority-simple-budget.py',import.meta.url));let attempted=false,stopping=false,owner=null,highWater=0,cleanupRunning=false;
  const checked=()=>{const r=guard();if(types.isPromise(r)){void r.catch(()=>{});stop();}if(r!==undefined)stop();};
  const proof=value=>{const r=assertStage(simpleData(value));if(types.isPromise(r)){void r.catch(()=>{});stop();}if(r!==undefined)stop();};
@@ -40,7 +42,7 @@ export function createAuthoritySimpleControl(input){
   try{child=spawn('python3',[source,...(cleanup?['--cleanup']:[])],{stdio:['pipe','pipe','pipe',fd],env:{HOME:home,PATH:'/opt/homebrew/bin:/usr/bin:/bin',TZ:'Asia/Taipei',LANG:'C'}});p=protocol(child);const first=await p.send({...config,now:time(),ownerNonce:nonce,...(cleanup?{minimumEvents:highWater}:{})});observe(first);return {fd,p};}catch(e){if(p)await p.close();closeSync(fd);throw e;}
  };
  const observe=r=>{
-  if(!Number.isSafeInteger(r.mainSpent)||r.mainSpent<53||r.mainSpent>158||!Number.isSafeInteger(r.uiSpent)||r.uiSpent<(continued?12:0)||r.uiSpent>72||r.combinedSpent!==r.mainSpent+r.uiSpent||r.combinedSpent>232||!['ready','stopped'].includes(r.state)||!Number.isSafeInteger(r.waitMs)||r.waitMs<0||r.waitMs>60000||r.combinedSpent-53<highWater)stop();highWater=r.combinedSpent-53;return Object.freeze(r);
+  if(!Number.isSafeInteger(r.mainSpent)||r.mainSpent<53||r.mainSpent>158||!Number.isSafeInteger(r.uiSpent)||r.uiSpent<(repaired?13:continued?12:0)||r.uiSpent>72||r.combinedSpent!==r.mainSpent+r.uiSpent||r.combinedSpent>232||!['ready','stopped'].includes(r.state)||!Number.isSafeInteger(r.waitMs)||r.waitMs<0||r.waitMs>60000||r.combinedSpent-53<highWater)stop();highWater=r.combinedSpent-53;return Object.freeze(r);
  };
  const runScope=async(callback,cleanup=false)=>{
   let connection,active=true,busy=false,scopeFailed=false;const tasks=new Set(),inflight=new Set();let pending=0;
@@ -93,7 +95,7 @@ export function createAuthoritySimpleControl(input){
  };
  const requestStop=async()=>{
   stopping=true;
-  if(owner?.initialized){checked();const marker=config.path+(continued?'.simple-continuation-stop.json':'.simple-stop.json');try{writeFileSync(marker,JSON.stringify({source:'live-owner-stop',binding:config.binding}),{flag:'wx',mode:0o600});}catch(e){if(e.code!=='EEXIST')stop();}}
+  if(owner?.initialized){checked();const marker=config.path+suffix+'-stop.json';try{writeFileSync(marker,JSON.stringify({source:'live-owner-stop',binding:config.binding}),{flag:'wx',mode:0o600});}catch(e){if(e.code!=='EEXIST')stop();}}
   return Object.freeze({stopRequested:true});
  };
  const stopAndDrain=async()=>{await requestStop();if(owner)await owner.settled;return Object.freeze({source:'simple-authority-holder',stopRequested:true,stopAcknowledged:owner?.stopAcknowledged??!attempted,ordinaryScopeClosed:owner?.scopeClosed??false,ownedScope:Object.freeze({state:owner?'SETTLED':'NONE_CAPTURED'}),trialAccepted:false,remoteExecutionSettled:false,rollbackComplete:false});};

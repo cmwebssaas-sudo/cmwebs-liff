@@ -83,3 +83,25 @@ if its ordinary mirror is damaged, retaining the original C2/I17 reservations.
 No RPC is admitted before the actual full map and all original safety gates.
 This is local continuation support, not permission to bypass missing UI cost,
 freshness, privacy, daily-runtime, provider/device or rollout acceptance.
+
+
+## Explicit local-admission repair
+
+An optional separately approved admissionRepair config admits only the exact
+stopped66-operation incident: the complete13-event predecessor equals the
+reviewed12-event prefix plus the one successful fixed trigger projection. Its
+claim, registry, STOP, approval and every used source remain pinned/unchanged.
+A fixed simple-admission-repair singleton retains the same canonical lock,
+main53/browser13, failures2 and preparation13. Only three preparation reads and
+zero observation retries remain. No path/epoch/binding/counter reset is allowed.
+
+This repair preserves the originalw0 and expiresAt; it never starts a new
+six-hour window. Ordinary admission requires more than the existing six-minute
+RPC reserve to remain. Late readiness fails before claim/debit; independent
+original C2/I17 recovery remains available after ordinary expiry. New direct
+owner approval and exact-source tests/review/CI plus actual inert stage-manager
+admission are required before private wiring may invoke this optional entry.
+
+This is a local controller only, not a deployed feature or live-trial pass.
+Rollback undeployed source to f2ff40a while preserving all used predecessor and
+repair evidence. Local repairs never imply authority to renew an expired window.

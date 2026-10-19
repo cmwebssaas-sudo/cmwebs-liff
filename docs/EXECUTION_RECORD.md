@@ -4303,3 +4303,29 @@ UI cost/recovery map and all real C1/C3/provider/device/accelerated-observation 
 remain open. Before execution, rollback source to1624fd4; after any future start,
 stop/drain only the actual owner and use its pinned independent recovery without
 rewriting predecessor evidence or retrying an UNKNOWN operation.
+
+
+## 2026-10-19 — Explicit bounded local-admission repair controls
+
+Recommended model/speed: GPT-6.1 Sol/high for safety-sensitive accounting.
+Added an optional repair gated by separately pinned direct approval of the
+exact stopped66-operation incident. It imports all13 browser events/main53,
+failures2/preparation13 and retains originalw0/expiry. Only the successful fixed
+trigger event may follow the old12-prefix. Original canonical path/epoch/
+binding/lock, all source/claim/registry/STOP pins, singleton and main/UI recovery
+reserves remain. It does not reopen any predecessor or replenish a clock/retry.
+
+New12-case suite reproduced7 PASS/5 FAIL before support; focused new/previous
+simple/successor55/55 PASS, zero fail/cancel/skip. Validate72backend/40endpoints/
+static-cache and diff PASS. The actual gate still requires separate review,
+exact-head CI and source-pinned inert native-stage admission. No unchanged
+Worker/capacity rerun or new external Core/PostgreSQL/provider acceptance.
+
+Original ordinary window and six-minute RPC reserve are unchanged; if readiness
+is late, no new actual claim/debit or remote operation is allowed. Current
+actual trial remains stopped66/232/pendingnull, with no RPC, credential, grant,
+resource/configuration/source/Production mutation or observation T0 in this
+local increment. Formal C1/C3/privacy/freshness/performance/device/approved
+observation/rollback gates remain open. Rollback undeployed source to f2ff40a;
+retain every used source, counter, claim, STOP and failed package. Root WIP and
+private material preserved.

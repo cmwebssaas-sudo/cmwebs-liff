@@ -2465,3 +2465,14 @@ original C2 recovery after successor-mirror corruption. Focused initial13 cases
 reported8 PASS/5 FAIL before support; the resulting15 boundary cases PASS,
 zero fail/cancel/skip. Full-source unit/validate/review/CI are separate evidence;
 no actual new claim/window, Google/browser/API request or Production change.
+
+
+### 2026-10-19 exact local-admission repair controls
+
+New12-case actual-ledger suite initially7 PASS/5 FAIL before support. Focused
+new/previous simple/successor tests55/55 PASS, zero fail/cancel/skip. Covers66
+import, unchanged13-event prefix/clocks, remaining3 preparation reads/zero
+retries, singleton, each pin, policy/counter/time drift, repinned incomplete
+parent, original C2 after expiry/corruption, and actual JS debit/stop/drain.
+Validate72backend/40endpoint/static-cache and diff PASS. Full exact-head CI is
+separate; these synthetic tests create no actual owner or external operation.
