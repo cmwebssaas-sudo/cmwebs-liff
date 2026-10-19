@@ -3554,3 +3554,18 @@ were not newly accepted. See READ-ACCELERATED-OBSERVATION.md.
 
 Final complete local Worker45/45 plus bundle dry-run PASS, zero fail/cancel/
 skip. Full composition review noP1/P2; comparison180 and source diff PASS.
+
+### 2026-10-20 C6 bounded Node memory evidence
+
+Actual CI39305302531 unit2875 PASS/Worker44of45 FAIL (properties50.602ms);
+matching-source plan CI39305572107 PASS2875/45 does not override failure.
+Real fixed-version local profiling did not reproduce Linux; not acceptance.
+Three new test cases cover native200-record before/after transport, terminal
+joining to original property timers and incomplete/invalid evidence rejection.
+Original timers/100samples/50ms and all real release gates remain unchanged.
+Final targeted checks and current-head CI are recorded separately.
+
+Final affected26/26 PASS, zero fail/cancel/skip. Review's overlapping-pair
+false-completeness case first failed, then passes with sequential pair/timer
+checks. Independent final review noP1/P2; validate72/40/cache/comparison180
+and diff PASS. Exact-head CI outcomes and diagnosis remain separate.

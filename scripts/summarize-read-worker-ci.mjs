@@ -67,7 +67,7 @@ try{
   for(const line of stages)console.log(line);
   const aggregates=[];let aggregateBytes=0,aggregateDropped=0;
   for(const value of clientSummary.finish()){
-    const next=retain(aggregates,'# C6_NODE_CLIENT_AGGREGATE '+JSON.stringify(value),3072,aggregateBytes,1536);
+    const next=retain(aggregates,'# C6_NODE_CLIENT_AGGREGATE '+JSON.stringify(value),6144,aggregateBytes,3072);
     if(next===null)aggregateDropped++;else aggregateBytes=next;
   }
   for(const line of aggregates)console.log(line);
