@@ -2827,3 +2827,11 @@ No RPC/mutation/Production change; provider CI and all live acceptance stay gate
 Inherited C4/C3 controls retain their separate source and actual-trial gates.
 Routing/shadow/controller targeted results are recorded in EXECUTION_RECORD;
 actual72/232 stopped does not establish acceptance. No runtime flags changed.
+
+### 2026-10-20 C5 verified sample metadata
+
+Actual local HTTP/D1 shadow/export6/6 and full Worker32/32 PASS, including old
+attempt migration to unknown, server-verified LINE/Email, forged channel denial,
+opaque unique receipt/server time, and unchanged transactional/report behavior.
+Root shadow/identity/routing23/23 and validate72/40/cache/diff PASS. Tests use
+synthetic local data; no real24h/channel coverage or remote migration follows.

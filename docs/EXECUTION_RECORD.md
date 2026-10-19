@@ -4942,3 +4942,30 @@ validate72backend/40endpoints/cache and diff PASS. Provider CI is separate. Actu
 Flags off, no T0/Production change. Privacy/freshness/900s/day/performance/device/
 rollback gates remain open. Rollback undeployed composition to737dc9b while
 retaining all history and used artifacts.
+
+## 2026-10-20 — C5 verified channel/time sample exports
+
+Recommended model/speed: GPT-6.1 Sol/high for shadow evidence correctness.
+The approved accelerated schedule needs real LINE/Email sample distribution;
+old count/timing exports could not prove it. Additive migration0006 records
+verified identity.kind on attempts (line/email; historical unknown). The existing
+operator timing query adds this enum, server attempt time and the existing
+opaque receipt. No new public route, raw identity/value, or DB roundtrip.
+Shadow/read authorization, comparisons, fallback, and frontend assets are unchanged.
+
+Actual LINE/Email HTTP test first failed on missing auth_kind. After support,
+expanded shadow/report/export/migration6/6 PASS; a new test applies0006 to an
+actual preexisting old-schema attempt and preserves all fields/default unknown.
+Client-claimed channel cannot override verified Email. Full local Worker32/32
+and bundle dry-run PASS; root shadow/identity/routing23/23 PASS, zero fail/cancel/
+skip. Validate72backend/40endpoint/static-cache and diff PASS. Independent review
+of runtime increment found no P1/P2; exact new-head CI is separate. No unchanged
+Apps Script/native function or external Core/PostgreSQL acceptance was rerun.
+
+This is source preparation, not actual sample collection or accelerated24h
+acceptance. Actual C3 remains stopped72/232/pendingnull/noRPC/mutation; its pending
+scope proposal is not activated. No Google, formal Sheet, remote migration,
+Worker/Pages deployment, credential, flag or T0 action. Apply/read back0006 before
+publishing the new Worker/export. Rollback undeployed source to2725bbe; leave
+additive column/history intact and restore prior immutable Worker if needed.
+All actual C1/C3/safety/performance/device/rollback/observation gates remain open.
