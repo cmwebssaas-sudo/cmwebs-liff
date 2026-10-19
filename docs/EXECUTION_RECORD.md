@@ -4400,3 +4400,15 @@ source diff PASS. Independent review found the target-proof P2, reproduced
 four failing phase cases, then verified its fix. Private projection24/24 and
 real disposable-ledger/private-adapter integration7/7 PASS; neither uses actual
 Google/browser state or replaces the pending private execution closure.
+
+## 2026-10-20 — C3 durable readonly preparation candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for lifecycle and accounting guards.
+Owner approved unified readonly preparation while retaining232. New optional
+mode imports settled72 exactly once; fixed finite PREP observations share the
+ordinary UI allocation, remain charged across days, and cannot consume recovery.
+Safe pause and terminal-holder receipts preserve latest checkpoint/repair count;
+unknown IO and hard STOP cannot resume. First ordinary non-PREP debit starts the
+single trial window atomically. See READ-READONLY-CONTINUITY.md for protocol,
+verification requirements and rollback. This source candidate adds no Google IO,
+RPC, mutation, production data access, deployment or launch acceptance.

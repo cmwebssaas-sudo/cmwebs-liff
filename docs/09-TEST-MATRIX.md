@@ -2504,3 +2504,12 @@ phase-veto cases failed against that implementation before the whitelist and
 exact target proof were corrected. Final30-case results and complete-source
 verification are recorded separately. Private DOM doubles/real local-holder
 integration do not establish actual browser compatibility or C3 acceptance.
+
+### C3 readonly continuity controller
+
+`tests/read-authority-readonly-continuity.test.mjs` uses real disposable ledgers
+and live holders: immutable72 import, bounded charged cross-day PREP, failed
+NOT_READY without baseline credit, durable two-failure limit, missing proof hard
+stop, trial clock on non-PREP debit, protected recovery UI, latest-only terminal
+handoff and independent cleanup with damaged ordinary mirror. Existing simple
+controller suites retain legacy behavior. No external Google call is implied.
