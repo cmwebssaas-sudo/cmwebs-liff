@@ -1,5 +1,19 @@
 # CMWebs Current State
 
+## 2026-10-15 — C4 composed with current C3 source
+
+GPT-6.1 Sol/high. Inherit C3 9b1af93 scoped batching and bounded-trial controls;
+54 C4 own source/test paths remain exact2ed69c7. All Worker/Apps Script/read
+fixtures exact9b1af93. New full Node22/Core/ownedPG1731/1731,cleanup/listener
+stopped verified; retain unchanged C3 Worker26/26/two dry runs. New composed-head
+CI required. Endpoint remains blank and all six flags off; no formal action.
+
+Actual25/160 unchanged/unclaimed,320 declined; native trial STOP/eight callbacks
+incomplete.900s/day NOT_ACCEPTED; fresh72h/seven-day NOT_STARTED;500/Taipei/
+latency/device/cutover unaccepted. Older approval-pending statements below are
+historical; the currently approved synthetic trial remains subject to160 and
+all original gates. Private S1/root WIP preserved.
+
 ## 2026-10-15 — Controlled child-input failures; C5 composition pending
 
 GPT-6.1 Sol/high. C5 composed full1735/1736 exposed uncaught stdin EPIPE. C3 now
@@ -2028,3 +2042,10 @@ failure retained/root cause UNRESOLVED. New CI awaits push. Actual25/160 unchang
 320 proposal UNAPPROVED; native collector/window/quota, full budget/guard/GCP/
 Testing/client/same-ledger/recovery/orchestration and all real gates pending.
 No actual account IO/upgrade/credential/RPC/formal mutation, Draft268 preserved.
+
+
+2026-10-15 C4 child-input propagation: exact inherited C3 acbff8e controller/
+tests, own routing/Worker/Apps Script unchanged; affected68/68 and validate72/40/
+static cache/diff PASS. Retain previous full1731/1731 and Worker26/26 plus
+C3 full1720/1720; this is not a fresh full-composed run. New-head CI pending;
+Draft/off, actual25/160/native STOP and all real gates remain unaccepted.
