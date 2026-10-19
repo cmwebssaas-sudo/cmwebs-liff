@@ -3,9 +3,9 @@
  * It is intentionally stable for the lifetime of a release so page-navigation
  * URLs can reuse the browser cache without changing API cache behavior.
  */
-window.CMWEBS_RELEASE_VERSION = '20261013-read-capacity-v7';
+window.CMWEBS_RELEASE_VERSION = '20261020-read-observation-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-6dbfab7d7606bfcfdef4d7c69d03adff4b9a44268bd8cd668cb7efc57f38d44a";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-61699b92d269e399e70bb069f8b0f68d70272702ffc2425ce9bdab55056da0fd";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = '';

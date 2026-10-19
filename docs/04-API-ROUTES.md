@@ -1351,3 +1351,12 @@ MAC validation, before authority IO. `authority` preserves the original signed
 `read_replica_authorize` result through a fixed readonly grid facade. Neither is
 registered in the formal Code dispatcher or enabled frontend environment.
 See `READ-EXECUTION-TRIAL.md` for scope, bounded execution and rollback gates.
+
+## 2026-10-20 Shadow sampling metadata (undeployed)
+
+Existing read/report routes are unchanged. After current provider identity and
+D1 access resolve, shadow attempt metadata stores server-verified line/email
+kind; clients cannot supply it. Operator-only timing exports add this enum,
+server attempt timestamp and the existing opaque receipt for approved sample
+coverage. Migration0006 is additive; historical rows remain unknown. No new
+public API, sensitive value or formal Sheet write. See READ-SHADOW.md.

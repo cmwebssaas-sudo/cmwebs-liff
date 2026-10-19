@@ -3556,3 +3556,34 @@ actual72/232 stopped, flags off, no observation T0 or Production change.
 Runtime/source matches C6; inherited119 affected tests are source evidence,
 not new local or external acceptance. Actual72/232 remains stopped; all
 approved observation and rollout gates and off switches remain unchanged.
+
+### 2026-10-20 C5 verified sample metadata
+
+Actual local HTTP/D1 shadow/export6/6 and full Worker32/32 PASS, including old
+attempt migration to unknown, server-verified LINE/Email, forged channel denial,
+opaque unique receipt/server time, and unchanged transactional/report behavior.
+Root shadow/identity/routing23/23 and validate72/40/cache/diff PASS. Tests use
+synthetic local data; no real24h/channel coverage or remote migration follows.
+
+### 2026-10-20 C6 approved accelerated observation candidate
+
+Operator module/CLI11/11 and full unit2875/2875 PASS, zero fail/cancel/skip.
+Coverage includes latest complete24h/current partial, LINE10/Email10, three8h
+periods, both home sections, receipt/count/time consistency, invalid/stale input
+and sanitized CLI errors. Every result is cutoverAuthorized:false.
+Actual local D1 export→evaluator integration1/1 PASS using explicitly synthetic
+24h timestamps; preserving another-page differences and denying unknown kind.
+This proves wiring, not real elapsed observation or export provenance.
+Full Worker results and exact-head CI are recorded separately in execution
+records. Apps Script/native, Core/PostgreSQL and actual provider/device gates
+were not newly accepted. See READ-ACCELERATED-OBSERVATION.md.
+
+Final complete local Worker45/45 plus bundle dry-run PASS, zero fail/cancel/
+skip. Full composition review noP1/P2; comparison180 and source diff PASS.
+
+### 2026-10-20 Accelerated plan evidence-tool composition
+
+All558 tracked non-document paths match reviewed C6 4d0e67c exactly. Reuse
+its local2875unit/45Worker/1D1 wiring evidence; no repeated suite claimed.
+Fresh validate72/40/cache/comparison180 and diff PASS. Exact-head CI remains
+separate; no real observation, actual Google or release acceptance follows.

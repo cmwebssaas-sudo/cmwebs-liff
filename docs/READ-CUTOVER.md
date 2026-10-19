@@ -1,5 +1,26 @@
 # C6 sequential read cutover runbook — preparation only
 
+## Current accelerated shadow candidate gate — 2026-10-20
+
+The owner-approved24h schedule is operative. Use
+`node scripts/evaluate-read-accelerated.mjs private-export.json expected-epoch expected-comparison-version page`
+for the selected page's latest complete24h sample window; see
+[READ-ACCELERATED-OBSERVATION.md](READ-ACCELERATED-OBSERVATION.md). It checks20
+real paired samples per page, verified LINE/Email>=10 each and three relative8h
+periods, both home sections, current partial failures, receipt uniqueness and
+count consistency. Migration0006 and a new matching source/comparison identity
+are required before new real capture. Old unknown-channel history is retained.
+
+This operator result is only shadowEligible and always cutoverAuthorized:false.
+It cannot authenticate export/scope/T0, waive common-failure review or replace
+actual C1/C3, daily900s, Taipei03:00/cross-day, provider latency, device, rollback,
+rooms-first and subsequent stable24h, or seven-day postlaunch acceptance.
+Keep flags off until those actual gates pass. The seven-window descriptions and
+original evaluator below retain their historical evidence scope; they are not
+the24h candidate evaluator and do not prove postlaunch days already happened.
+No real T0, migration, deployment, credential, Google or flag action occurred.
+
+
 ## October18 request-local month parsing — local pass, CI pending
 
 Recommended model/speed: GPT-6.1 Sol/high per the C6 performance/parity plan.

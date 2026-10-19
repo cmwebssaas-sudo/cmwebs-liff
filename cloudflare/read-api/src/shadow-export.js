@@ -10,6 +10,7 @@ export function shadowExportQueries(db,{scope,epoch,release,startedAt,now=Date.n
   const selection='r.scope_hash=? AND r.epoch=? AND r.release_id=?';
   const normalized=`WITH observations AS (
     SELECT r.route,r.variant,r.outcome,r.headers_ms,r.elapsed_ms,r.field_count,r.clock_count,
+      a.auth_kind,a.attempt_id AS receipt,
       COALESCE(a.observed_at,r.observed_at) AS observed_at,
       (a.outcome='completed' AND a.status=200 AND a.report_id=r.report_id) AS matched
     FROM shadow_reports AS r LEFT JOIN shadow_attempts AS a ON a.attempt_id=r.attempt_id
@@ -21,7 +22,7 @@ export function shadowExportQueries(db,{scope,epoch,release,startedAt,now=Date.n
     db.prepare(`${normalized} SELECT ${window} AS window,route,variant,
       SUM(outcome='compared' AND matched) AS compared,SUM(outcome='worker_error') AS errors,SUM(field_count) AS diffs,SUM(clock_count) AS clock_diffs
       FROM observations WHERE observed_at>=? AND observed_at<? GROUP BY window,route,variant ORDER BY window,route,variant`).bind(scope,epoch,release,start,startedAt,end),
-    db.prepare(`${normalized} SELECT ${window} AS window,route,variant,headers_ms,elapsed_ms
+    db.prepare(`${normalized} SELECT ${window} AS window,route,variant,headers_ms,elapsed_ms,auth_kind,observed_at,receipt
       FROM observations WHERE observed_at>=? AND observed_at<? AND outcome='compared' AND matched ORDER BY window,route,variant,elapsed_ms`).bind(scope,epoch,release,start,startedAt,end),
     db.prepare(`SELECT r.route,r.variant,d.field_path,COUNT(*) AS count FROM shadow_diffs AS d
       JOIN shadow_reports AS r ON d.observation_id=r.report_id

@@ -16,13 +16,14 @@ export async function shadowIdentity(access,secret) {
   const actor=await hash('cmwebs-shadow-actor-v1',scope+':'+access.user.user_id,secret);
   return {scope,actor};
 }
-export async function beginShadowAttempt(request,env,access,now) {
+export async function beginShadowAttempt(request,env,access,now,authKind) {
   if(request.headers.get('x-cmwebs-read-mode')!=='shadow') return null;
+  if(!['line','email'].includes(authKind)) throw Error('Shadow identity unavailable');
   const {epoch,release}=shadowConfiguration(env,now),{scope,actor}=await shadowIdentity(access,env.READ_REPLICA_SYNC_SECRET);
   const url=new URL(request.url),route=url.pathname.slice('/v1/'.length),variant=route==='home'?(url.searchParams.get('section')||'home'):'default';
   const id=crypto.randomUUID();
-  const result=await env.DB.withSession('first-primary').prepare(`INSERT INTO shadow_attempts(attempt_id,scope_hash,actor_hash,epoch,release_id,route,variant,outcome,observed_at)
-    VALUES(?,?,?,?,?,?,?,'started',?)`).bind(id,scope,actor,epoch,release,route,variant,new Date(now).toISOString()).run();
+  const result=await env.DB.withSession('first-primary').prepare(`INSERT INTO shadow_attempts(attempt_id,scope_hash,actor_hash,epoch,release_id,route,variant,outcome,observed_at,auth_kind)
+    VALUES(?,?,?,?,?,?,?,'started',?,?)`).bind(id,scope,actor,epoch,release,route,variant,new Date(now).toISOString(),authKind).run();
   if(!result.success||result.meta.changes!==1) throw Error('Shadow observation unavailable');
   return id;
 }
