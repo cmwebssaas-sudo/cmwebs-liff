@@ -2627,3 +2627,48 @@ actual Core/owned PostgreSQL, zero fail/cancel/skip; database/listener stopped.
 Snapshot52a8a374ae1eaf7fc2cdb35448fdddd769830bd6e4d121571301fd612abdd2de; only
 docs afterwards. Validate72/40/cache/diff PASS. Actual Google25/160 unchanged
 and unclaimed; native/parent-binding/quota/terminal and release gates remain.
+
+### 2026-10-19 exact local-admission repair controls
+
+New12-case actual-ledger suite initially7 PASS/5 FAIL before support. Focused
+new/previous simple/successor tests55/55 PASS, zero fail/cancel/skip. Covers66
+import, unchanged13-event prefix/clocks, remaining3 preparation reads/zero
+retries, singleton, each pin, policy/counter/time drift, repinned incomplete
+parent, original C2 after expiry/corruption, and actual JS debit/stop/drain.
+Validate72backend/40endpoint/static-cache and diff PASS. Full exact-head CI is
+separate; these synthetic tests create no actual owner or external operation.
+
+
+## 2026-10-20 — Same unused repair, separately approved first-debit clock
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization/accounting controls.
+Added real-ledger cases for delayed first debit (inspect/wait leave clock null),
+six-hour/Taipei-midnight caps, <=six-minute preclaim rejection and next-day
+unused admission, shared cross-mode singleton, strict layered approval pins,
+post-admission approval drift, no restored retries and independent original
+recovery after expiry/damaged mirror. Original033 clock tests remain intact.
+New/old repair suite RED15pass/8fail before support; focused simple/successor/
+repair66/66 PASS, zero fail/cancel/skip. Full suite and exact-head provider CI
+are separately recorded in EXECUTION_RECORD.md when terminal.
+No test in this increment calls Google or creates an actual trial owner/claim.
+All live safety/runtime/performance/device/observation gates remain open.
+
+## 2026-10-20 — Bounded readonly diagnostic successor
+
+Real disposable-ledger coverage imports68/15events/failures3 without modifying
+predecessors; checks eight-read/preparation23 cap, two qualified failures then
+STOP, no unclassified retry, strict approval/target proof, duplicate IDs,
+singleton, clock admission/first debit/expiry and independent C2 recovery after
+mirror corruption. Initial18 cases RED7pass/11fail before implementation.
+Review caught that phase alone did not prove target guards; four strengthened
+phase-veto cases failed against that implementation before the whitelist and
+exact target proof were corrected. Final30-case results and complete-source
+verification are recorded separately. Private DOM doubles/real local-holder
+integration do not establish actual browser compatibility or C3 acceptance.
+
+### 2026-10-20 C4 diagnostic-control composition
+
+Controller/routing109/109 PASS, zero fail/cancel/skip; validate72backend/
+40endpoints/cache and diff PASS. Inherited C3 a19e305 controls are byte-identical;
+C4 runtime unchanged. Actual72/232 is stopped and settled, not an accepted trial.
+No RPC/mutation/Production change; provider CI and all live acceptance stay gated.
