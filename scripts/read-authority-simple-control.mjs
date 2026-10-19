@@ -1,0 +1,103 @@
+// One live owner for the approved replacement. Each callback is exactly one IO
+// primitive; mapped private adapters fix its destination, actor and safe result.
+import {spawn} from 'node:child_process';
+import {openSync,closeSync,lstatSync,fstatSync,constants,writeFileSync} from 'node:fs';
+import {dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {homedir,userInfo} from 'node:os';
+import {randomBytes} from 'node:crypto';
+import {types} from 'node:util';
+import {SIMPLE_DECISION,simpleData,simpleExact,simpleBrowser,simpleFixed,compileAuthoritySimplePlan} from './read-authority-simple-plan.mjs';
+const stop=()=>{throw Error('TRIAL_STOPPED');};
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+function protocol(child){
+ let buffer='',closed=false,poison=false;const rows=[],waiters=[];
+ const push=value=>waiters.length?waiters.shift()(value):rows.push(value);
+ child.stdout.setEncoding('utf8');child.stdout.on('data',v=>{buffer+=v;if(buffer.length>1000000){poison=true;child.kill();return;}while(buffer.includes('\n')){const n=buffer.indexOf('\n');let value;try{value=JSON.parse(buffer.slice(0,n));}catch(_){poison=true;child.kill();return;}buffer=buffer.slice(n+1);push(value);}});
+ child.stderr.resume();child.stdin.on('error',()=>{});child.on('error',()=>{poison=true;});
+ const ended=new Promise(resolve=>child.once('close',()=>{closed=true;while(waiters.length)waiters.shift()(null);resolve();}));
+ return {send:async q=>{if(closed||poison)stop();child.stdin.write(JSON.stringify(q)+'\n');const value=await (rows.length?Promise.resolve(rows.shift()):new Promise((resolve,reject)=>{const timer=setTimeout(()=>{poison=true;child.kill();reject(Error('TRIAL_STOPPED'));},10000);waiters.push(v=>{clearTimeout(timer);resolve(v);});}));if(!value||value.ok!==true||poison)stop();return value;},close:async()=>{child.stdin.end();const timer=setTimeout(()=>child.kill('SIGTERM'),2000),hard=setTimeout(()=>child.kill('SIGKILL'),4000);try{await ended;}finally{clearTimeout(timer);clearTimeout(hard);}}};
+}
+function options(input){
+ if(!input||typeof input!=='object'||types.isProxy(input))stop();const o={};for(const [k,d] of Object.entries(Object.getOwnPropertyDescriptors(input))){if(!['config','guard','assertStage','now','pause'].includes(k)||!Object.hasOwn(d,'value')||!d.enumerable)stop();o[k]=d.value;}
+ if(Object.getOwnPropertySymbols(input).length||!['config','guard','assertStage'].every(k=>Object.hasOwn(o,k)))stop();return o;
+}
+export function createAuthoritySimpleControl(input){
+ const o=options(input),config=simpleData(o.config),guard=o.guard,assertStage=o.assertStage,now=o.now??Date.now,pause=o.pause??delay,home=homedir(),nonce=randomBytes(32).toString('hex');
+ if(!simpleExact(config,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources'])||config.decisionHash!==SIMPLE_DECISION||[guard,assertStage,now,pause].some(v=>typeof v!=='function'||types.isProxy(v)))stop();
+ const source=fileURLToPath(new URL('./read-authority-simple-budget.py',import.meta.url));let attempted=false,stopping=false,owner=null,highWater=0,cleanupRunning=false;
+ const checked=()=>{const r=guard();if(types.isPromise(r)){void r.catch(()=>{});stop();}if(r!==undefined)stop();};
+ const proof=value=>{const r=assertStage(simpleData(value));if(types.isPromise(r)){void r.catch(()=>{});stop();}if(r!==undefined)stop();};
+ const time=()=>{const t=now();if(!Number.isSafeInteger(t))stop();return t;};
+ const lock=()=>{
+  const d=lstatSync(dirname(config.path));if(!d.isDirectory()||d.uid!==userInfo().uid||(d.mode&0o7777)!==0o700)stop();
+  const fd=openSync(config.path+'.lock',constants.O_RDWR|constants.O_NOFOLLOW);try{const s=fstatSync(fd),n=lstatSync(config.path+'.lock');if(!s.isFile()||s.uid!==userInfo().uid||(s.mode&0o7777)!==0o600||s.nlink!==1||s.size!==0||s.ino!==n.ino||s.dev!==n.dev)stop();return fd;}catch(e){closeSync(fd);throw e;}
+ };
+ const start=async cleanup=>{
+  checked();const fd=lock();let child,p;
+  try{child=spawn('python3',[source,...(cleanup?['--cleanup']:[])],{stdio:['pipe','pipe','pipe',fd],env:{HOME:home,PATH:'/opt/homebrew/bin:/usr/bin:/bin',TZ:'Asia/Taipei',LANG:'C'}});p=protocol(child);const first=await p.send({...config,now:time(),ownerNonce:nonce,...(cleanup?{minimumEvents:highWater}:{})});observe(first);return {fd,p};}catch(e){if(p)await p.close();closeSync(fd);throw e;}
+ };
+ const observe=r=>{
+  if(!Number.isSafeInteger(r.mainSpent)||r.mainSpent<53||r.mainSpent>158||!Number.isSafeInteger(r.uiSpent)||r.uiSpent<0||r.uiSpent>72||r.combinedSpent!==r.mainSpent+r.uiSpent||r.combinedSpent>232||!['ready','stopped'].includes(r.state)||!Number.isSafeInteger(r.waitMs)||r.waitMs<0||r.waitMs>60000||r.combinedSpent-53<highWater)stop();highWater=r.combinedSpent-53;return Object.freeze(r);
+ };
+ const runScope=async(callback,cleanup=false)=>{
+  let connection,active=true,busy=false,scopeFailed=false;const tasks=new Set(),inflight=new Set();let pending=0;
+  const alive=ordinary=>{if(!active||ordinary&&stopping)stop();checked();};
+  const send=async(q,ordinary=true)=>{alive(ordinary);const r=observe(await connection.p.send(q));alive(ordinary);if(ordinary&&r.state!=='ready')stop();return r;};
+  const track=fn=>{pending++;const task=(async()=>{try{return await fn();}catch(e){if(e?.message!=='READ_FAILED'){scopeFailed=true;stopping=true;}throw e;}finally{pending--;}})();tasks.add(task);void task.then(()=>tasks.delete(task),()=>tasks.delete(task));return task;};
+  const exclusive=async fn=>{if(busy)stop();busy=true;try{return await fn();}finally{busy=false;}};
+  const execute=(lane,raw,io,reserve=false,mode='ordinary',credentialExpiresAt=null)=>track(()=>exclusive(async()=>{
+   if(typeof io!=='function')stop();let operation;
+   try{operation=lane==='ui'?simpleBrowser(raw):simpleFixed(raw,cleanup);}catch(_){stop();}
+   const ordinary=!cleanup&&mode!=='terminal';
+   proof({stage:cleanup?'recovery':mode==='terminal'?'terminal':operation.preparation?'readonly-preparation':'operation',lane,operation});
+   const q={op:mode==='rpc'?'rpc-wait':mode==='terminal'?'terminal-wait':'wait',lane,operation,now:time(),...(mode==='rpc'?{credentialExpiresAt}:{})};let r=await send(q,ordinary);
+   if(r.waitMs){const before=q.now;await pause(r.waitMs);alive(ordinary);if(time()<before)stop();r=await send({...q,now:time()},ordinary);if(r.waitMs)stop();}
+   const admitted=await send({...q,op:mode==='rpc'?'rpc-begin':mode==='terminal'?'terminal-debit':'debit',now:time()},ordinary);let value,rejected=false;
+   const task=Promise.resolve().then(()=>{alive(ordinary);return io(admitted);});inflight.add(task);
+   try{value=await task;}catch(_){rejected=true;}finally{inflight.delete(task);}
+   // IO has actually returned before pending is cleared, including on STOP.
+   const settled=observe(await connection.p.send({op:'settle',id:operation.id,success:!rejected,now:time()}));
+   alive(ordinary);if(rejected){if(settled.state==='ready'&&lane==='ui'&&operation.preparation)throw Error('READ_FAILED');stop();}if(ordinary&&settled.state!=='ready')stop();return reserve?settled:value;
+  }));
+  const cap=Object.freeze({decisionHash:SIMPLE_DECISION,identity:Object.freeze({epoch:config.epoch,binding:config.binding,decisionHash:SIMPLE_DECISION,expiresAt:null}),
+   inspect:()=>track(()=>exclusive(()=>send({op:'inspect'},!cleanup))),
+   browserRead:(io,descriptor)=>execute('ui',descriptor,io),
+   externalRead:(io,descriptor)=>execute('main',descriptor,io),
+   completeStage:raw=>track(()=>exclusive(async()=>{const p=simpleData(raw);proof(p);return send({op:'stage-ready',...p,now:time()});})),
+   completeRecoveryPlan:raw=>track(()=>exclusive(async()=>{const browserOperations=simpleData(raw);proof({stage:'recovery-map',browserOperations});return send({op:'recovery-ready',browserOperations,now:time()});})),
+   completePlan:raw=>track(()=>exclusive(async()=>{const p=simpleData(raw);const compiled=compileAuthoritySimplePlan({...p,decisionHash:SIMPLE_DECISION,history:{spent:53,limit:160},mapComplete:true});if(!compiled.credentialRpcEligible)stop();proof({stage:'complete',...p});return send({op:'plan-ready',plan:p,now:time()});})),
+   completeBrowserOperation:key=>track(()=>exclusive(()=>send({op:'ui-complete',key,now:time()}))),
+   dispatchCompatibility:(raw,io)=>{let d;try{d=simpleData(raw);if(!simpleExact(d,['operation','credentialExpiresAt'])||!Number.isSafeInteger(d.credentialExpiresAt)||typeof io!=='function')stop();}catch(_){return Promise.reject(Error('TRIAL_STOPPED'));}return execute('main',d.operation,v=>io(v.rpc.beganAt),false,'rpc',d.credentialExpiresAt);},
+   inspectTerminal:()=>track(()=>exclusive(()=>send({op:'inspect'},false))),
+   terminalRead:(io,descriptor)=>execute('main',descriptor,io,false,'terminal'),
+   finishCompatibility:()=>track(()=>exclusive(()=>send({op:'rpc-finish',now:time()}))),
+   reserveNativeCleanup:descriptor=>{if(!cleanup)stop();return execute('main',descriptor,()=>{},true);}
+  });
+  try{
+   connection=await start(cleanup);if(!cleanup)owner.initialized=true;
+   if(cleanup)await send({op:'cleanup-start',now:time()},false);
+   const result=await callback(cap);if(pending||scopeFailed||!cleanup&&stopping)stop();return result;
+  }catch(_){scopeFailed=true;stopping=true;stop();}
+  finally{
+   stopping=true;await Promise.allSettled([...inflight]);await Promise.allSettled([...tasks]);
+   if(connection){try{observe(await connection.p.send({op:'stop'}));if(owner)owner.stopAcknowledged=true;}catch(_){scopeFailed=true;}await connection.p.close();closeSync(connection.fd);}
+   active=false;if(!cleanup){owner.scopeClosed=true;owner.settledAt=time();owner.resolve();}
+  }
+ };
+ const withContinuation=callback=>{
+  if(attempted||stopping||typeof callback!=='function')return Promise.reject(Error('TRIAL_STOPPED'));attempted=true;
+  let resolve;const settled=new Promise(r=>{resolve=r;});owner={settled,resolve,scopeClosed:false,stopAcknowledged:false,initialized:false,settledAt:null};return runScope(callback);
+ };
+ const requestStop=async()=>{
+  stopping=true;
+  if(owner?.initialized){checked();const marker=config.path+'.simple-stop.json';try{writeFileSync(marker,JSON.stringify({source:'live-owner-stop',binding:config.binding}),{flag:'wx',mode:0o600});}catch(e){if(e.code!=='EEXIST')stop();}}
+  return Object.freeze({stopRequested:true});
+ };
+ const stopAndDrain=async()=>{await requestStop();if(owner)await owner.settled;return Object.freeze({source:'simple-authority-holder',stopRequested:true,stopAcknowledged:owner?.stopAcknowledged??!attempted,ordinaryScopeClosed:owner?.scopeClosed??false,ownedScope:Object.freeze({state:owner?'SETTLED':'NONE_CAPTURED'}),trialAccepted:false,remoteExecutionSettled:false,rollbackComplete:false});};
+ const withCleanup=async callback=>{
+  if(cleanupRunning||!owner?.initialized||!owner.scopeClosed||typeof callback!=='function')stop();cleanupRunning=true;
+  try{await stopAndDrain();const elapsed=time()-owner.settledAt;if(elapsed<0)stop();if(elapsed<60000)await pause(60000-elapsed);if(time()-owner.settledAt<60000)stop();return await runScope(callback,true);}finally{cleanupRunning=false;}
+ };
+ return Object.freeze({withContinuation,requestStop,stopAndDrain,withCleanup});
+}

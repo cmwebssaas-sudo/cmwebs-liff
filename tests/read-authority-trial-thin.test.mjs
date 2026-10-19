@@ -13,15 +13,43 @@ const hash=v=>createHash('sha256').update(v).digest('hex'),canonical=v=>Array.is
 const clock=Date.parse('2026-10-14T00:00:00Z'),scriptId='SYNTHETIC_THIN_SCRIPT_ID',libraryId='SYNTHETIC_LIBRARY_SCRIPT_ID',deploymentId='SYNTHETIC_THIN_DEPLOYMENT_ID',publisherHash=hash('publisher@example.invalid'),epochs=new Set();
 const scopes=['cloud-platform','drive.file','drive.metadata.readonly','logging.read','script.deployments','script.projects','script.webapp.deploy','service.management','userinfo.email','userinfo.profile'].map(s=>'https://www.googleapis.com/auth/'+s);
 test.after(()=>{for(const e of epochs){const base=join(homedir(),'.codex','private','cmwebs-authority-trials',checksum(e));for(const x of [base+'.thin.json',base+'.thin.json.stop',base+'.thin.json.publish-intent',base+'.preparation.json'])try{const s=lstatSync(x),v=JSON.parse(readFileSync(x)).value;if(s.isFile()&&!s.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-thin-')))unlinkSync(x);}catch(e){if(e.code!=='ENOENT')throw e;}}});
-function setup(patch={}){
+function setup(patch={},factory=mod.createAuthorityTrialThin){
  const dir=mkdtempSync(join(tmpdir(),'cmwebs-thin-'));chmodSync(dir,0o700);const epoch='SYNTHETIC_THIN_'+randomUUID(),calls=[],cleanups=[],originalFiles=[{name:'Code',type:'SERVER_JS',source:'\n'},{name:'appsscript',type:'JSON',source:'{"timeZone":"Asia/Taipei","runtimeVersion":"V8"}'}];let now=clock,spent=0,current,config,closed=false;
  const control={waitForExternalReadSlot:async()=>{},reserveExternalReads:async()=>{spent++;},cleanup:async(name,io)=>{cleanups.push(name);spent++;return io();}};
  const options={path:join(dir,'receipt.json'),epoch,scriptId,libraryId,libraryVersion:7,publisherHash,originalFiles,originalSourceHash:checksum([...originalFiles].sort((a,b)=>a.name.localeCompare(b.name))),expiresAt:clock+21600000,control,
   backupReceipt:{source:'fixed-trial-thin-empty-backup',epoch,scriptId,publisherHash,sourceHash:checksum([...originalFiles].sort((a,b)=>a.name.localeCompare(b.name)))},now:()=>now,
   credential:()=>({accessToken:'SYNTHETIC_TOKEN',accountHash:publisherHash,scopes,expiresAt:now+3600000,refreshTokenPresent:true}),
   fetcher:async(url,init)=>{calls.push({url,init});const u=new URL(url);if(init.method==='PUT'){current=JSON.parse(init.body).files;return new Response(JSON.stringify({scriptId,files:current}));}if(u.pathname.endsWith('/versions'))return new Response(JSON.stringify({scriptId,versionNumber:1,description:JSON.parse(init.body).description}));if(u.pathname.endsWith('/content'))return new Response(JSON.stringify({scriptId,files:current}));if(init.method==='DELETE'){closed=true;return new Response(null,{status:204});}if(init.method==='POST'){config={scriptId,...JSON.parse(init.body)};return new Response(JSON.stringify({deploymentId,deploymentConfig:config,entryPoints:[{entryPointType:'EXECUTION_API',executionApi:{entryPointConfig:{access:'ANYONE'}}}]}));}return new Response(JSON.stringify({deployments:closed?[]:[{deploymentId,deploymentConfig:config,entryPoints:[{entryPointType:'EXECUTION_API',executionApi:{entryPointConfig:{access:'ANYONE'}}}]}]}));},...patch};
- epochs.add(epoch);assert.equal(typeof mod.createAuthorityTrialThin,'function');options.control=atomicFixtureControl(options.control);const adapter=mod.createAuthorityTrialThin(options);return {options,adapter,calls,cleanups,spent:()=>spent,setNow:v=>{now=v;}};
+ epochs.add(epoch);assert.equal(typeof factory,'function');options.control=atomicFixtureControl(options.control);const adapter=factory(options);return {options,adapter,calls,cleanups,spent:()=>spent,setNow:v=>{now=v;}};
 }
+const standaloneOptions=({libraryId,libraryVersion,...options})=>options;
+function standaloneSetup(patch={}){
+ assert.equal(typeof mod.createStandaloneAuthorityTrialPublication,'function');
+ return setup(patch,options=>mod.createStandaloneAuthorityTrialPublication(standaloneOptions(options)));
+}
+test('standalone publication uses five charged operations and deploys no library dependency',async()=>{
+ const s=standaloneSetup(),r=await s.adapter.publish();
+ assert.equal(s.spent(),5);assert.equal(s.calls.length,5);
+ const files=JSON.parse(s.calls[0].init.body).files,manifest=JSON.parse(files.find(f=>f.name==='appsscript').source);
+ const source=files.find(f=>f.type==='SERVER_JS').source;
+ assert.deepEqual(manifest.dependencies,{});assert.equal(r.sourceSha256,hash(source));
+ assert.equal(r.deploymentVerified,true);assert.equal(r.trialAccepted,false);assert.equal(r.rollbackComplete,false);
+ assert.deepEqual(s.calls.map(c=>c.init.method),['PUT','POST','GET','POST','GET']);
+ await assert.rejects(s.adapter.publish(),/TRIAL_STOPPED/);assert.equal(s.calls.length,5);
+});
+test('standalone deployment keeps independent close and absence readback',async()=>{
+ const s=standaloneSetup();await s.adapter.publish();await s.adapter.close();
+ assert.equal((await s.adapter.verifyClosed()).deploymentAbsent,true);
+ assert.deepEqual(s.cleanups,['close-deployment','verify-closed-deployment']);assert.equal(s.calls.length,7);
+});
+test('standalone refuses injected library binding before creating a publication journal',()=>{
+ const s=setup();assert.throws(()=>mod.createStandaloneAuthorityTrialPublication(s.options),/TRIAL_STOPPED/);
+ assert.equal(s.calls.length,0);assert.equal(s.spent(),0);
+});
+test('switching a prepared wrapper journal to standalone cannot reset its registration',()=>{
+ const s=setup();assert.throws(()=>mod.createStandaloneAuthorityTrialPublication(standaloneOptions(s.options)),/TRIAL_STOPPED/);
+ assert.equal(s.calls.length,0);assert.equal(s.spent(),0);
+});
 test('fixed wrapper publication spends five units and accepts only one immutable API entrypoint',async()=>{
  const s=setup(),r=await s.adapter.publish();assert.equal(s.spent(),5);assert.deepEqual(s.calls.map(c=>c.init.method),['PUT','POST','GET','POST','GET']);assert.equal(r.versionNumber,1);assert.equal(r.deploymentId,deploymentId);assert.equal(r.deploymentVerified,true);assert.equal(r.trialAccepted,false);assert.equal(r.rollbackComplete,false);
  const files=JSON.parse(s.calls[0].init.body).files,manifest=JSON.parse(files.find(f=>f.name==='appsscript').source);assert.deepEqual(manifest.dependencies.libraries,[{userSymbol:'AuthorityTrial',libraryId,version:'7',developmentMode:false}]);assert.deepEqual(manifest.executionApi,{access:'ANYONE'});assert.equal(files.filter(f=>f.type==='SERVER_JS').length,1);assert.equal(new URL(s.calls[2].url).searchParams.get('versionNumber'),'1');for(const c of s.calls){assert.equal(new URL(c.url).origin,'https://script.googleapis.com');assert.equal(c.init.redirect,'manual');assert(new URL(c.url).pathname.startsWith('/v1/projects/'+scriptId+'/'));}assert(!readFileSync(s.options.path,'utf8').includes('SYNTHETIC_TOKEN'));await assert.rejects(s.adapter.publish(),/TRIAL_STOPPED/);assert.equal(s.calls.length,5);
