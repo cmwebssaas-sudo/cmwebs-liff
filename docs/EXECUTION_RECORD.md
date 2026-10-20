@@ -7067,3 +7067,89 @@ Private prototype7/7 PASS using real disposable controller ledgers: ready5,
 one target loading7, both loading9, wrong URL/account, evaluate rejection and
 wait timeout. These are local adapter tests, not Google acceptance. Frozen
 private-source review, exact-head CI and inert admission still precede real IO.
+
+## 2026-10-21 — C6 bounded effective-runtime context
+
+Recommended model/speed: gpt-5.6-terra/medium for this bounded test-client
+evidence increment. Prior exact integration CI39478285754 remains FAILED:
+unit2947 PASS, Worker44/45, properties500-room full HTTP/D1/body p95=55.231ms
+against unchanged strict<50ms (32/100 over50). Same-C6-source integration
+CI39473203253 passed45 Worker cases/properties22.344ms; it does not erase the
+failure. The retained single Node22.23.3 Darwin profile did not reproduce the
+Linux failure: properties17.402ms, profiler perturbation acknowledged, no
+Linux cgroup available. No further profile or unchanged CI rerun was made.
+
+Add only two bounded test-client runtime snapshots, before the first and
+after the last properties timer. Capture numeric/null heap limit/new-space,
+available/constrained memory and three fixed cgroup-v2 values with a64-byte
+accepted-input cap, plus Node version and two unlimited booleans. No argv,
+environment dump, host identity, response values or operational data. Existing
+memory/CPU collection and every full-wall timer/count/threshold stay intact.
+This fills missing Linux runtime context; it neither diagnoses a cause nor
+changes production Worker/calculator/SQL/auth/scope/cache behavior.
+
+The duplicate-opening sequence0,0,99 initially reproduced false COMPLETE.
+Runtime observations now count every candidate, retain at most two, and expose
+total/dropped/output-drop counters. COMPLETE requires exactly the ordered
+sample1-before/sample100-after pair, total2 and no output drop; incomplete or
+duplicate captures remain PARTIAL. Fixed Node22.23.3 affected transport/summary
+tests28/28 PASS, zero fail/cancel/skip; validate72backend/40endpoint/cache/
+comparison180 and diff check PASS. Independent review precedes commit/push;
+the new source's exact-head CI and actual Linux snapshots remain separate.
+
+No Apps Script/native/external Core test, capacity benchmark, Google, formal
+data, credential, deployment, flag or T0 operation. Root WIP/C3 untouched.
+Rollback this undeployed diagnostic increment to9005015 while retaining all
+prior CI failures, single-profile evidence and original trial history.
+
+Independent read-only review of all four changed paths found no actionable
+P1/P2 and independently confirmed diff check PASS. Fixed cgroup probes, bounded
+endpoint completeness, timer/privacy boundaries and retained failure history
+were checked; no capacity or external operation was repeated. Exact new-source
+provider CI is required after the reviewed commit; no merge is authorized here.
+
+## 2026-10-21 — Current loading/controller and C6 context composition
+
+Recommended GPT-6.1 Sol/high for source/history and acceptance boundaries.
+Normal merges preserve C3 0bc666a and C6 04e2db0 ancestry in the existing
+accelerated Draft. Non-document source is their exact authoritative union;
+the14-file frozen C3 runtime closure remains byte-identical. Complete component
+and integration documentation histories are retained; no runtime conflict was
+manually rewritten. Fresh validation/diff and independent source review precede
+the sole new composition-head provider CI; component runs are not its result.
+
+C3 exact-source CI39483187602 passed2844 unit/26 Worker. C6 exact-source
+CI39481266323 FAILED:2880 unit PASS, Worker44/45, properties full HTTP/D1/body
+p95=50.504ms against unchanged strict<50ms (6/100 over50). Runtime context was
+complete, not a causal fix. Prior integration CI39478285754 FAILED unit2947
+PASS/Worker44of45 with properties55.231ms; prior successful CI39473203253 and
+all earlier failures remain evidence. The single Darwin profile remains
+NOT_REPRODUCED and profiling perturbs timing; no additional profile or unchanged
+CI rerun is made by this composition.
+
+Latest retained actual C3 is88/232 (main53/UI35), HARD_STOP. Thin projection
+is VERIFIED but audience remains ACCOUNT_SCAN without an allowlisted label
+before hashing; fields remain unread/false. No identity root cause is proven.
+No mutation or trial RPC occurred and the trial clock remains unset. Separate
+account/loading scope decision is pending; this composition authorizes no
+further Google operation and does not claim actual compatibility or acceptance.
+
+No Production data/credential, deployment, endpoint/flag or observation T0
+change; endpoint blank and flags off. C1/C3/privacy/freshness/performance/device/
+rollback and approved observation gates remain open. Undeployed composition
+rollback is382a9d6; retain every used source, charge, checkpoint, HARD_STOP,
+terminal-holder/recovery receipt and root WIP.
+
+Fresh composed-tree verification: all569 tracked paths outside docs/ match the
+exact C3/C6 union including file modes; all14 frozen runtime hashes match both
+source and frozen copies. Both records retain every prior component/integration
+line with multiplicity and every complete paragraph literally; preexisting
+historical section-order differences are not rewritten. Validate72backend/
+40endpoints/cache/comparison180 and staged/working diff checks PASS. Independent
+composition review and new-head provider outcome are recorded separately.
+
+Independent integration review reconstructed all569 non-document mode/blob
+entries from the Git index, verified all14 frozen runtime hashes and all six
+record-content retention checks, and found no P1/P2. Merge ancestry and clean
+index/working-tree agreement were checked; no test or external operation was
+repeated by review. The composed commit still requires its own provider CI.

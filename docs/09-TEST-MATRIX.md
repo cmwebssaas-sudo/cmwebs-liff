@@ -3655,3 +3655,40 @@ membership/counter and PREP-only wait fixes. Validate72/40/cache/diff PASS.
 Bare pre-final2847 result retains1 missing Core/PG environment failure and4
 skips; no external integration acceptance is claimed. Exact-source CI remains
 separate from local/unit and actual browser acceptance.
+
+### 2026-10-21 C6 effective-runtime context
+
+Native transport coverage now checks bounded runtime snapshots before the
+first/after the last properties timer, numeric/null-only heap/new-space and
+fixed cgroup values, no small-fixture collection, and interrupted capture.
+Duplicate-opening0,0,99 first failed (false COMPLETE); exact ordered endpoints,
+total2 and no output drop are now required. Every extra candidate contributes
+to total/dropped while retained context remains capped at2. Fixed Node22.23.3
+transport/summary28/28 PASS, zero fail/cancel/skip; validate72/40/cache/
+comparison180 and diff PASS. Independent review and exact new-head CI are
+recorded separately; no repeated unchanged capacity run.
+
+CI39478285754 remains FAILED (unit2947 PASS/Worker44of45, properties55.231ms,
+32/100 over50). The one Darwin Node22 profile is NOT_REPRODUCED, not acceptance
+or a CI replacement. Runtime context targets missing Linux heap/cgroup
+evidence only; no causal fix, production runtime change or live gate pass.
+Independent four-path source/evidence review noP1/P2; diff check independently
+PASS. Provider CI must follow the new commit and does not replace older failure.
+
+### 2026-10-21 Current C3/C6 accelerated composition
+
+The composition preserves current C3 0bc666a and C6 04e2db0 source exactly,
+including the14-file frozen C3 runtime and both complete documentation histories.
+No duplicate unchanged local suite or profile is claimed. Validation, exact
+source-union verification and independent review precede a new composition CI.
+C3 component CI39483187602 PASS2844unit/26Worker; C6 CI39481266323 FAILED
+Worker44/45 properties50.504ms with2880unit PASS. Earlier failed integration
+CI39478285754 properties55.231ms is retained; no later green erases failure.
+Actual88 HARD_STOP (main53/UI35), VERIFIED thin projection/ACCOUNT_SCAN,
+fields unread, no mutation/RPC/clock. Further account/loading scope is pending.
+No live/runtime/performance/observation gate is accepted by source composition.
+Fresh all569 non-document path/mode union and14 frozen runtime checks PASS;
+prior record lines/multiplicity and complete paragraphs retained. Validate
+72/40/cache/comparison180 and source diff PASS; exact composition CI is separate.
+Independent index-based569-path/14-runtime/6-history review noP1/P2; no duplicate
+suite claimed. New composition provider outcome remains a separate gate.
