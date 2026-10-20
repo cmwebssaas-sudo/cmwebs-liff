@@ -89,6 +89,7 @@ def continuity_class(base):
    rows=self.j['plan']['browserOperations'] if self.j['plan'] is not None else self.j['stageBrowser']
    used={e['operation']['id'] for e in self.j['events']}
    return sum(not r['key'].startswith(('C:','I:','J:')) and r['id'] not in used for r in rows)
+  def preparation_reserve(self):return max(self.remaining_mapped_ui(),max(p['remainingOrdinaryUi'] for p in self.j['preparationStages'].values()))
   def trial_map_ready(self):return self.j['plan'] is not None
   def check(self,lane,op,t,terminal=False):
    result=super().check(lane,op,t,terminal);key,cleanup,wait=result
@@ -101,7 +102,7 @@ def continuity_class(base):
     if self.j['phase']!='PREP' or self.j['mutated'] or self.j['rpc']['beganAt'] is not None:fail()
     stages=[p for p in self.j['preparationStages'].values() if op in p['operations']]
     if len(stages)!=1:fail()
-    reserve=max(self.remaining_mapped_ui(),max(p['remainingOrdinaryUi'] for p in self.j['preparationStages'].values()));_,_,_,uo=self.counts()
+    reserve=self.preparation_reserve();_,_,_,uo=self.counts()
     if uo+1+reserve>self.ui_ordinary_limit:fail()
    else:
     if self.j['phase']=='PREP' and (not self.trial_map_ready() or self.counts()[3]+self.remaining_mapped_ui()>self.ui_ordinary_limit):fail()

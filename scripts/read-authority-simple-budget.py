@@ -24,7 +24,7 @@ fail=history.fail;integer=history.integer;digest=history.digest;exact=history.ex
 rawfile=history.rawfile;directory=history.directory;record=history.record
 save_record=history.save_record;synced=history.synced;compact=history.compact;sha=history.sha;day=history.day
 C=history.C;I=history.I
-READ_METHODS=['inventory','claim','navigate','snapshot','read-key-presence']
+READ_METHODS=['inventory','claim','navigate','snapshot','read-key-presence','wait']
 NAVIGATION=['original-settings','original-triggers','thin-settings','thin-triggers','oauth-audience','oauth-client','caller-executions','publisher-executions','caller-oauth']
 def pin(p):
  if not exact(p,['path','sha256']) or type(p['path']) is not str or not Path(p['path']).is_absolute() or not digest(p['sha256']):fail()
@@ -42,6 +42,7 @@ def descriptor(op,lane):
   key=op['bucket']+':'+op['alias'];r=RULES.get(key)
   if not r or op['actor']!=r['actor'] or op['target']!=r['target'] or op['operation'] not in r['methods'] or op['operation'] in READ_METHODS and not key.startswith(('C:','I:','J:')):fail()
  elif lane=='ui':
+  if op.get('operation')=='wait' and (op.get('key')!='N:preparation' or op.get('preparation') is not True or op.get('target') not in ['thin-settings','oauth-audience']):fail()
   if not exact(op,['id','key','actor','target','operation','units','preparation']) or type(op['preparation']) is not bool or op['operation'] not in READ_METHODS+['click','fill','submit']:fail()
   key=op['key'];r=RULES.get(key)
   if r:
@@ -54,11 +55,11 @@ class Ledger:
  def __init__(self,cfg,cleanup=False):
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
-  self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg;self.rebalanced='readonlyRebalance' in cfg
+  self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg;self.rebalanced='readonlyRebalance' in cfg;self.loading='readonlyLoading' in cfg
   self.main_ordinary_limit=58 if self.rebalanced else 79;self.main_event_limit=84 if self.rebalanced else 105;self.ui_ordinary_limit=77 if self.rebalanced else 56;self.ui_event_limit=self.ui_ordinary_limit+16
   self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg;self.readonly_debug='readonlyDebug' in cfg
-  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity or self.rebalanced and not self.successor:fail()
-  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])+(['readonlyRebalance'] if self.rebalanced else [])
+  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity or self.rebalanced and not self.successor or self.loading and not self.rebalanced:fail()
+  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])+(['readonlyRebalance'] if self.rebalanced else [])+(['readonlyLoading'] if self.loading else [])
   resume=cfg.pop('resume',None) if self.continuity else None
   if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+optional) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
   self.path=Path(cfg['path']);directory(self.path.parent)
@@ -114,6 +115,7 @@ class Ledger:
   required={'read-authority-simple-budget.py','read-authority-simple-plan.mjs','read-authority-simple-control.mjs','read-authority-continuation-budget.py','read-authority-continuation-plan.mjs','read-authority-trial-budget-plan.mjs'}
   if self.continuity:required.add('read-authority-readonly-continuity.py')
   if self.rebalanced:required.add('read-authority-rebalanced-budget.py')
+  if self.loading:required.add('read-authority-loading-budget.py')
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
@@ -284,7 +286,9 @@ class Ledger:
   if self.j['state']!='ready' or self.j['finished'] or os.path.lexists(self.stop_path) or t>=(self.j['expiresAt'] if self.j['expiresAt'] is not None else self.window(t)) or (self.j['expiresAt'] or self.window(t))-t<=360000:fail()
  def continuity_preparation(self,lane,op):return False
  def check(self,lane,op,t,terminal=False):
-  self.current();self.now(t);key=descriptor(op,lane);cleanup=key.startswith(('C:','I:','J:'))
+  self.current();self.now(t);key=descriptor(op,lane);
+  if op.get('operation')=='wait' and (not self.loading or not self.continuity_preparation(lane,op)):fail()
+  cleanup=key.startswith(('C:','I:','J:'))
   if self.j['pending'] is not None:fail()
   if cleanup!=self.cleanup_mode:fail()
   if terminal:
@@ -448,6 +452,9 @@ def main():
   if 'readonlyRebalance' in cfg:
    rspec=importlib.util.spec_from_file_location('rebalanced_budget',Path(__file__).with_name('read-authority-rebalanced-budget.py'))
    rm=importlib.util.module_from_spec(rspec);rspec.loader.exec_module(rm);implementation=rm.rebalanced_class(implementation)
+  if 'readonlyLoading' in cfg:
+   lspec=importlib.util.spec_from_file_location('loading_budget',Path(__file__).with_name('read-authority-loading-budget.py'))
+   lm=importlib.util.module_from_spec(lspec);lspec.loader.exec_module(lm);implementation=lm.loading_class(implementation)
   ledger=implementation(cfg,sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
   for line in sys.stdin.buffer:
    try:

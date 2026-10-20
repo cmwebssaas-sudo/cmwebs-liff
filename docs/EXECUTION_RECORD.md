@@ -4458,3 +4458,54 @@ claimed. Actual usage remains79/232, safely paused PREP, pendingnull, w0null,
 no mutation/RPC. All trial/runtime/privacy/performance/device/recovery/approved
 observation gates remain open. No deployment/T0/flag change; endpoint blank.
 Unused source rollback399241c; preserve all used evidence and root WIP.
+
+
+## 2026-10-21 — Approved C3 loading continuity implementation
+
+Recommended GPT-6.1 Sol/high for retained ledger/source boundaries. Owner approved
+loading and safe source continuity within232. Actual83 remains safely paused,
+main53/UI30, PREP/no mutation/no RPC/no clock. The thin snapshot settled false
+NOT_READY; it is never rewritten or credited.
+
+Add optional readonlyLoading over the same canonical rebalanced registry.
+Immutable83 origin snapshots, direct approval, latest terminal receipt and
+source-history checks gate every new holder/source. Preparation is one shared
+nonresetting9 maximum including inventories/claims, each target2 projections
+and1 separately prepaid guarded wait, protecting old unused1+spare1, future
+40-or36 and recovery16. Supersede only the two old unused audience declarations
+once; no refund or alias completion. Reviewed success proof alone grounds a
+target. Stage/independent recovery/complete actual RPC maps remain gates.
+No legacy wait permission, new fee, formal data, deployment, flag or T0 action.
+
+Initial5 tests RED on unsupported mode, then5 PASS after implementation. Two
+bootstrap issues were local record-envelope decoding and corrected before any
+Google operation. Expanded87 affected tests initially86pass/1fail because the
+negative stale-receipt test mutated its frozen receipt; using a copied invalid
+input corrected that harness error, then87/87 PASS, zero fail/cancel/skip.
+Additional dynamic plan/source migration coverage and full verification follow.
+
+Rollback unused source to4d7cd99; retain used packages, actual83, all failed CI
+and all private ledger evidence. Exact-head CI, frozen private flow/review/inert
+admission remain required before actual reads. No verification count establishes
+actual Google compatibility, freshness, revocation, performance or rollout.
+
+Final public-controller increment:25 new loading cases PASS. Independent review
+found two P2s: non-loading stage names skipped settlement counters/proof, and
+ordinary stages could obtain the new wait method. Both real-holder vectors
+failed RED, then admission/authenticated-event settlement and JS/Python/PREP
+wait restrictions corrected them. Independent two-vector rerun PASS; no
+remaining P1/P2 in this increment. Final unit2844/2844 PASS, zero fail/cancel/skip;
+validate72 backend/40 endpoints/cache and diff PASS. No Apps Script changed.
+
+Bare npm test on the pre-final increment completed2847:2842pass/1fail/4skip.
+The named failing external test is commercial-subscription.roundtrip.test.mjs,
+original GAS -> real restricted HTTP/PG registration/transfer/renewal/expiry,
+missing PLATFORM_CORE_TEST_WORKTREE. This local run does not establish Core/PG
+acceptance; no credentials, service bootstrapping or integration bypass added.
+The final unit command deliberately excludes the two separately owned external
+integration files, as documented by its existing runner.
+
+Private prototype7/7 PASS using real disposable controller ledgers: ready5,
+one target loading7, both loading9, wrong URL/account, evaluate rejection and
+wait timeout. These are local adapter tests, not Google acceptance. Frozen
+private-source review, exact-head CI and inert admission still precede real IO.

@@ -26,9 +26,10 @@ export function simpleFixed(raw,cleanup=false){
  const op=simpleData(raw),key=op.bucket+':'+op.alias,r=SIMPLE_RULES[key]??(cleanup?originalCleanup[key]:null);
  if(!simpleExact(op,['id','bucket','alias','actor','target','operation','units'])||!id(op.id)||!r||r.actor!==op.actor||r.target!==op.target||!r.methods.includes(op.operation)||![1,null].includes(op.units))fail();return op;
 }
-export function simpleBrowser(raw){
+export function simpleBrowser(raw,allowWait=false){
  const op=simpleData(raw),r=SIMPLE_RULES[op.key],navigation=['original-settings','original-triggers','thin-settings','thin-triggers','oauth-audience','oauth-client','caller-executions','publisher-executions','caller-oauth'];
- if(!simpleExact(op,['id','key','actor','target','operation','units','preparation'])||!id(op.id)||![1,null].includes(op.units)||typeof op.preparation!=='boolean'||!['inventory','claim','navigate','snapshot','click','fill','submit','read-key-presence'].includes(op.operation))fail();
+ if(!simpleExact(op,['id','key','actor','target','operation','units','preparation'])||!id(op.id)||![1,null].includes(op.units)||typeof op.preparation!=='boolean'||!['inventory','claim','navigate','snapshot','click','fill','submit','read-key-presence',...(allowWait?['wait']:[])].includes(op.operation))fail();
+ if(op.operation==='wait'&&(!allowWait||op.key!=='N:preparation'||op.preparation!==true||!['thin-settings','oauth-audience'].includes(op.target)))fail();
  if(r){if(r.actor!==op.actor||r.target!==op.target||op.preparation||r.methods.every(m=>['GET','snapshot','read-key-presence'].includes(m))&&!['snapshot','read-key-presence'].includes(op.operation))fail();}
  else if(!['N:preparation','N:navigation','N:thin-triggers-before','N:thin-triggers-after'].includes(op.key)||!navigation.includes(op.target)||!['publisher','caller'].includes(op.actor)||op.actor!==(op.target.startsWith('caller-')?'caller':'publisher')||['click','fill','submit'].includes(op.operation)||op.preparation!==(op.key==='N:preparation')||op.key.startsWith('N:thin-')&&(op.target!=='thin-triggers'||op.operation!=='snapshot'))fail();
  return op;
