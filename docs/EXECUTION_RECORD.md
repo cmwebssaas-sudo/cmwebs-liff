@@ -4433,3 +4433,28 @@ review found a premature handoff/proved-failure gate inconsistency; three failin
 regressions preceded the shared terminal-proof fix, then all288 passed. The valid
 complete-plan/main-descriptor veto was also strengthened. Exact-HEAD CI is still
 pending for this new source; no actual successor claim/debit/Google IO occurred.
+
+
+## 2026-10-21 — Approved79 fixed-total staged controller candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization and accounting.
+The owner approved one exact79 CLEAN_PAUSE migration with matching registry
+and terminal-holder evidence into a separate namespace, preserving all old
+claims, sources, STOPs, failure charges and holder history. Fixed buckets are
+main139/ordinaryUI77/recoveryUI16, total232. Exactly21 native aliases use actual
+prepaid verified UI results only; main native debit/no-op callback is refused.
+HTTP58 and all independent recovery/unused/unassigned reservations remain.
+Six named PREP reads reserve43 future ordinary primitives plus the retained
+unused declaration. Actual staged configuration/recovery is gated before
+non-PREP IO; complete actual map/fit remains mandatory before the sole RPC.
+The same single6h/Taipei-midnight TRIAL starts on first non-PREP durable debit.
+
+TDD new22 tests; affected165/165 PASS, zero fail/cancel/skip. Review identified
+an old56 complete-plan limit; accepted25/43 maps reproduced RED, then mode77
+fixed both. Validate72 backend/40 endpoints/cache and diff PASS. New exact-head
+CI and final frozen private source/tests/review/inert admission precede any
+Google IO. No new external Core/PostgreSQL or Apps Script/runtime acceptance is
+claimed. Actual usage remains79/232, safely paused PREP, pendingnull, w0null,
+no mutation/RPC. All trial/runtime/privacy/performance/device/recovery/approved
+observation gates remain open. No deployment/T0/flag change; endpoint blank.
+Unused source rollback399241c; preserve all used evidence and root WIP.

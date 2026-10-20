@@ -2524,3 +2524,17 @@ charged unproved failure, one-time import and latest-only cross-day handoff.
 The fixture reproduces the four settled prior actions and the unused navigation
 declaration, rather than testing only the earlier72 checkpoint. Actual browser
 compatibility and rollout gates remain separate.
+
+
+### Approved79 fixed-total source/accounting migration
+
+The optional readonlyRebalance controller retains exact79 history and terminal
+handoff, fixes139/77/16 buckets within232, removes only21 native aliases from
+main charging and requires successful reviewed UI results before credit.
+First6 PREP reads reserve future43 plus the retained unused declaration;
+staged actual/recovery maps precede non-PREP work and complete actual map
+precedes the only RPC. Future44 is rejected; complete25/43 is admitted under77.
+Affected165/165 PASS including22 new tests, zero fail/cancel/skip. Validate72/40,
+cache and diff PASS. Review's leftover56 limit reproduced RED in two boundary
+cases and was fixed. Exact-head CI and frozen private/actual acceptance remain
+open; no new Google IO, mutation/RPC, deployment, flag or T0 is implied.

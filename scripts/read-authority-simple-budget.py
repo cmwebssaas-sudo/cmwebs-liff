@@ -54,10 +54,11 @@ class Ledger:
  def __init__(self,cfg,cleanup=False):
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
-  self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg
+  self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg;self.rebalanced='readonlyRebalance' in cfg
+  self.main_ordinary_limit=58 if self.rebalanced else 79;self.main_event_limit=84 if self.rebalanced else 105;self.ui_ordinary_limit=77 if self.rebalanced else 56;self.ui_event_limit=self.ui_ordinary_limit+16
   self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg;self.readonly_debug='readonlyDebug' in cfg
-  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity:fail()
-  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])
+  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity or self.rebalanced and not self.successor:fail()
+  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])+(['readonlyRebalance'] if self.rebalanced else [])
   resume=cfg.pop('resume',None) if self.continuity else None
   if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+optional) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
   self.path=Path(cfg['path']);directory(self.path.parent)
@@ -70,7 +71,7 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.suffix=suffix;self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+suffix+'.json')
@@ -89,7 +90,9 @@ class Ledger:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
   self.j={'state':'ready','w0':None,'expiresAt':None,'lastAt':self.prior_time,'events':[],'pending':None,'stages':{},'stageNames':[],'stageBrowser':[],'recoveryBrowser':[],'plan':None,'completed':[],'failures':0,'mutated':False,'rpc':{'beganAt':None,'complete':False},'chargedUpperBoundMs':0,'finished':False}
-  if self.successor:
+  if self.rebalanced:
+   prior,approved_at=self.validate_rebalance();self.j=copy.deepcopy(prior);self.j.update(state='ready',lastAt=approved_at,lifecycle='ACTIVE',holder=sha(cfg['ownerNonce'].encode()),futureOrdinaryUi=43);self.j['holders'].append(sha(cfg['ownerNonce'].encode()))
+  elif self.successor:
    prior,approved_at=self.validate_successor();self.j=copy.deepcopy(prior);self.j.update(state='ready',lastAt=approved_at,lifecycle='ACTIVE',holder=sha(cfg['ownerNonce'].encode()));self.j['holders'].append(sha(cfg['ownerNonce'].encode()))
   elif self.continuity:
    prior,approved_at=self.validate_continuity()
@@ -110,6 +113,7 @@ class Ledger:
   if type(cfg['sources']) is not list:fail()
   required={'read-authority-simple-budget.py','read-authority-simple-plan.mjs','read-authority-simple-control.mjs','read-authority-continuation-budget.py','read-authority-continuation-plan.mjs','read-authority-trial-budget-plan.mjs'}
   if self.continuity:required.add('read-authority-readonly-continuity.py')
+  if self.rebalanced:required.add('read-authority-rebalanced-budget.py')
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
@@ -122,7 +126,8 @@ class Ledger:
   for p in h['files']:private_pin(p)
   j=json.loads(private_pin(h['journal']));d=json.loads(private_pin(h['drain']))
   if j.get('state')!='stopped' or j.get('spent')!=3 or j.get('finished') is not True or j.get('chargedUpperBoundMs')!=0 or j.get('rpc')!={'beganAt':None,'complete':False} or type(j.get('events')) is not list or len(j['events'])!=3 or any(e.get('outcome')!='UNKNOWN' or not integer(e.get('time')) for e in j['events']) or d.get('stopAcknowledged') is not True or d.get('ordinaryScopeClosed') is not True or d.get('ownedScope',{}).get('state')!='SETTLED':fail()
-  if self.successor:self.validate_successor()
+  if self.rebalanced:self.validate_rebalance()
+  elif self.successor:self.validate_successor()
   elif self.continuity:self.validate_continuity()
   elif self.readonly_debug:self.validate_readonly_debug()
   elif self.repair:self.validate_admission_repair()
@@ -288,10 +293,10 @@ class Ledger:
   if any(e['operation']['id']==op['id'] for e in self.j['events']):fail()
   m,mo,u,uo=self.counts()
   if lane=='main':
-   if m>=105 or not cleanup and mo>=79 or cleanup and sum(e['lane']=='main' and e['cleanup'] for e in self.j['events'])>=21 or key in self.j['completed'] or any(e['key']==key for e in self.j['events']):fail()
+   if m>=self.main_event_limit or not cleanup and mo>=self.main_ordinary_limit or cleanup and sum(e['lane']=='main' and e['cleanup'] for e in self.j['events'])>=21 or key in self.j['completed'] or any(e['key']==key for e in self.j['events']):fail()
    if not cleanup and (key not in self.j['stages'] or self.j['stages'][key]!=op):fail()
   else:
-   if u>=72 or (u-uo>=16 if cleanup else uo>=56):fail()
+   if u>=self.ui_event_limit or (u-uo>=16 if cleanup else uo>=self.ui_ordinary_limit):fail()
    if op['preparation'] and not self.continuity:
     if self.j['mutated'] or self.j['rpc']['beganAt'] is not None or self.j['plan'] is not None or self.j['stages'] or sum(e['lane']=='ui' and e['operation']['preparation'] for e in self.j['events'])>=(23 if self.readonly_debug else 16):fail()
    elif cleanup:
@@ -353,7 +358,7 @@ class Ledger:
     key=descriptor(row,'ui')
     if row['id'] in ids or key not in found and key!='N:navigation':fail()
     ids.add(row['id'])
-   if len(self.j['stageBrowser'])+len(q['browserOperations'])+self.view()['preparation']>56:fail()
+   if len(self.j['stageBrowser'])+len(q['browserOperations'])+self.view()['preparation']>self.ui_ordinary_limit:fail()
    self.j['stageNames'].append(name);self.j['stages'].update(found);self.j['stageBrowser']+=q['browserOperations'];self.persist();return self.view()
   if op=='recovery-ready' and exact(q,['op','browserOperations','now']):
    self.active(q['now'])
@@ -380,7 +385,7 @@ class Ledger:
     ids.add(row['id'])
     if key.startswith(('C:','I:','J:')):uc+=1
     else:uo+=1
-   if uo+self.view()['preparation']>56 or uc>16 or any(row not in p['browserOperations'] for row in self.j['stageBrowser']):fail()
+   if uo+self.view()['preparation']>self.ui_ordinary_limit or uc>16 or any(row not in p['browserOperations'] for row in self.j['stageBrowser']):fail()
    recovery=[v for v in p['browserOperations'] if v['key'].startswith(('C:','I:','J:'))]
    if any(row not in recovery for row in self.j['recoveryBrowser']):fail()
    self.j['recoveryBrowser']=recovery;self.j['stages']=seen;self.j['plan']=p;self.persist();return self.view()
@@ -440,6 +445,9 @@ def main():
   if 'readonlyContinuity' in cfg:
    cspec=importlib.util.spec_from_file_location('readonly_continuity',Path(__file__).with_name('read-authority-readonly-continuity.py'))
    cm=importlib.util.module_from_spec(cspec);cspec.loader.exec_module(cm);implementation=cm.continuity_class(Ledger)
+  if 'readonlyRebalance' in cfg:
+   rspec=importlib.util.spec_from_file_location('rebalanced_budget',Path(__file__).with_name('read-authority-rebalanced-budget.py'))
+   rm=importlib.util.module_from_spec(rspec);rspec.loader.exec_module(rm);implementation=rm.rebalanced_class(implementation)
   ledger=implementation(cfg,sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
   for line in sys.stdin.buffer:
    try:

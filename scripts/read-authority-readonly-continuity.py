@@ -89,6 +89,7 @@ def continuity_class(base):
    rows=self.j['plan']['browserOperations'] if self.j['plan'] is not None else self.j['stageBrowser']
    used={e['operation']['id'] for e in self.j['events']}
    return sum(not r['key'].startswith(('C:','I:','J:')) and r['id'] not in used for r in rows)
+  def trial_map_ready(self):return self.j['plan'] is not None
   def check(self,lane,op,t,terminal=False):
    result=super().check(lane,op,t,terminal);key,cleanup,wait=result
    if self.successor and not cleanup and not terminal and not self.diagnostic_proven():
@@ -101,9 +102,9 @@ def continuity_class(base):
     stages=[p for p in self.j['preparationStages'].values() if op in p['operations']]
     if len(stages)!=1:fail()
     reserve=max(self.remaining_mapped_ui(),max(p['remainingOrdinaryUi'] for p in self.j['preparationStages'].values()));_,_,_,uo=self.counts()
-    if uo+1+reserve>56:fail()
+    if uo+1+reserve>self.ui_ordinary_limit:fail()
    else:
-    if self.j['phase']=='PREP' and (self.j['plan'] is None or self.counts()[3]+self.remaining_mapped_ui()>56):fail()
+    if self.j['phase']=='PREP' and (not self.trial_map_ready() or self.counts()[3]+self.remaining_mapped_ui()>self.ui_ordinary_limit):fail()
     if t+wait+360000>=(self.j['expiresAt'] or self.window(t)):fail()
    return result
   def resume_preparation(self,p):
@@ -134,7 +135,7 @@ def continuity_class(base):
      if not self.continuity_preparation('ui',row) or row['id'] in ids:fail()
      ids.add(row['id'])
     reserve=max([reserve,self.remaining_mapped_ui()]+[p['remainingOrdinaryUi'] for p in self.j['preparationStages'].values()]);used=self.counts()[3];unspent=sum(r['id'] not in {e['operation']['id'] for e in self.j['events']} for p in self.j['preparationStages'].values() for r in p['operations'])
-    if used+unspent+len(rows)+reserve>56:fail()
+    if used+unspent+len(rows)+reserve>self.ui_ordinary_limit:fail()
     self.j['preparationStages'][name]={'operations':copy.deepcopy(rows),'remainingOrdinaryUi':reserve};self.j['lastAt']=q['now'];self.persist();return self.view()
    if op=='pause-preparation' and exact(q,['op','now']):
     self.current();self.active(q['now'])

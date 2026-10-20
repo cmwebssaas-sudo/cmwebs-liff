@@ -105,3 +105,47 @@ safe diagnostics retain only closed booleans/enums and host phases; malformed
 results and raw exceptions must not enter the report. Reverting an unused
 candidate is safe; used source, claims, journals, registries and STOP evidence
 must be retained for accounting and cleanup.
+
+
+## Approved fixed-total accounting migration after the79 handoff
+
+The owner approved one separate source namespace importing the latest79
+CLEAN_PAUSE checkpoint, matching independent registry and terminal-holder
+receipt. Earlier sources, claims, STOPs, events, failed charges and holder
+history remain immutable; the same canonical lock/path/epoch/binding applies.
+The old namespace is never repinned or reopened with changed source.
+
+The optional readonlyRebalance mode fixes main139 / ordinaryUI77 /
+recoveryUI16 =232. Historical main53/UI26 stays unchanged. Exactly21
+predeclared native aliases complete through their real prepaid, successfully
+settled UI primitives and reviewed safe results; a dummy/main native debit is
+rejected. The58 HTTP aliases, protected main recovery21, unused2 and
+unassigned5 retain their roles. Recovery UI16 remains independently protected.
+No failure is refunded and no bucket can freely borrow from another.
+
+First preparation is limited to six named primitives: inventory the same
+connection, claim originalA, navigate/project thin settings, navigate/project
+OAuth audience. The map protects43 subsequent ordinary primitives and the old
+unused declaration; the spare unit grants no additional operation. Inputs,
+targets, ordering, identity and safe projections require reviewed private
+adapters, not arbitrary browsing. PREP can safely hand off across a day without
+starting TRIAL. The first non-PREP durable debit starts the one six-hour,
+Taipei-midnight-capped clock.
+
+Staged actual maps may register a grounded stage with finite remaining caps
+and independently grounded recovery before resource configuration. Unknown
+future forms are bounded reservations, never marked grounded. The full actual
+map, safety/freshness/time/budget and recovery proof remains mandatory before
+the sole RPC. The isolated controller grants no production acceptance.
+
+New affected tests22 cover exact79 import, immutable evidence, invalid direct
+approval/limits/receipt/registry/source/owner rejection, six-step ordering and
+reserves, no native main debit, verified-result credit/failure, staged trial
+start, RPC veto,43/44 future boundary and25/43 admitted complete maps, and
+cross-day same-namespace resume. Independent review found a remaining legacy56
+plan limit; both accepted-map regressions failed before the mode-limit fix.
+Final affected165/165 PASS, zero fail/cancel/skip; validate72/40/cache/diff PASS.
+New exact-head CI, frozen private source/tests/review/inert admission and actual
+first reads remain prerequisites. Actual usage is still79/232 with no mutation,
+RPC or trial clock. Flags remain off and endpoint blank. Rollback this unused
+source increment to399241c while retaining all used sources and evidence.
