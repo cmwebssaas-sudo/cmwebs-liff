@@ -73,3 +73,35 @@ used source, ledgers, STOP markers and receipts. A used persistent session canno
 be migrated to changed runtime merely by editing its source pins. Formal daily
 quota, performance, real-device, rollback and approved rollout observation gates
 remain required before enabling any production page.
+
+## Explicitly approved diagnostic successor
+
+A separate optional `readonlySuccessor` mode admits one fixed exception after
+an unclassified settings observation stopped the original PREP session. It
+requires the specific direct-human approval, exact stopped journal/claim/STOP,
+matching independent registry, reviewed fixed-flow pin and terminal-holder
+evidence. It imports all76 charges, five failures, every event and the old
+unused declaration; it preserves both unused qualified technical allowances.
+No predecessor byte is modified. A new exclusive namespace prevents a second
+import; it does not make HARD_STOP resumable through the normal handoff path.
+
+Before any broader preparation or trial operation, the successor permits only
+inventory → claim original selected tab → fixed settings projection, once each
+and in that order. The stage and operation IDs are distinct from the retained
+history. Three new charges plus23 spent, one retained unused declaration and29
+reserved ordinary UI exhaust the56 ordinary allocation. No session rename,
+navigation, alternate actor/target, main API, credential, write or RPC is granted
+by this diagnostic gate. An unproved failed observation remains HARD_STOP.
+A fully proved terminal observation permits safe pause/handoff and returns to
+the existing full-plan, reserve,
+clock, safety and rollout gates. Qualified NOT_READY/technical observations stay
+unsuccessful and consume their existing failure allowance; proof is not baseline,
+trial or production acceptance. Premature pause/handoff fails closed.
+
+The new holder must differ from the stopped holder. Clean pause/terminal
+handoff uses the successor namespace and the latest checkpoint; a replacement
+never imports76 again. New public runtime requires new exact-HEAD CI. Private
+safe diagnostics retain only closed booleans/enums and host phases; malformed
+results and raw exceptions must not enter the report. Reverting an unused
+candidate is safe; used source, claims, journals, registries and STOP evidence
+must be retained for accounting and cleanup.

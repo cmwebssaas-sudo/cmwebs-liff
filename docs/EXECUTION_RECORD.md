@@ -4412,3 +4412,24 @@ unknown IO and hard STOP cannot resume. First ordinary non-PREP debit starts the
 single trial window atomically. See READ-READONLY-CONTINUITY.md for protocol,
 verification requirements and rollback. This source candidate adds no Google IO,
 RPC, mutation, production data access, deployment or launch acceptance.
+
+## 2026-10-21 — Approved diagnostic successor candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization and accounting.
+The owner approved retaining the stopped76 checkpoint and232 total cap while
+permitting one bounded three-step settings diagnostic. The optional successor
+requires the exact approval and matching latest stopped evidence, preserves
+history and reserves in a separate one-time namespace, and admits only fixed
+inventory/claim/projection before broader gates can apply. Stopped-owner reuse,
+other targets/methods, unproved outcomes and duplicate imports fail closed.
+No production application, Apps Script module or Worker runtime is changed.
+Affected verification, independent review and new exact-HEAD CI must complete
+before private source closure/inert admission and actual Google operation.
+The source candidate and synthetic tests do not establish C3/rollout acceptance.
+
+Affected old/new controller tests288/288 PASS, zero failures/cancellations/skips;
+new successor suite21 cases. Validate72 backend/40 endpoint/cache PASS. Independent
+review found a premature handoff/proved-failure gate inconsistency; three failing
+regressions preceded the shared terminal-proof fix, then all288 passed. The valid
+complete-plan/main-descriptor veto was also strengthened. Exact-HEAD CI is still
+pending for this new source; no actual successor claim/debit/Google IO occurred.
