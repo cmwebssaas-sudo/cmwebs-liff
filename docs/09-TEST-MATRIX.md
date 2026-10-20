@@ -3636,3 +3636,22 @@ Affected165/165 PASS including22 new tests, zero fail/cancel/skip. Validate72/40
 cache and diff PASS. Review's leftover56 limit reproduced RED in two boundary
 cases and was fixed. Exact-head CI and frozen private/actual acceptance remain
 open; no new Google IO, mutation/RPC, deployment, flag or T0 is implied.
+
+
+### C3 approved loading/source continuity
+
+`tests/read-authority-loading.test.mjs` uses real disposable83 ledgers and live
+holders: preserved failed/UNKNOWN history, immutable origin/receipt, latest-only
+source migration, five-step grounding and nine-step guarded waits, shared cap
+and target attempts across holders/days, unverified result and wait timeout
+hard stop, protected2/future40-or36 bounds, no RPC before complete actual map.
+Legacy rebalanced/successor/continuity tests retain their earlier authorization
+boundaries. Bare/full-unit outcomes, review and exact-head CI are recorded
+separately. No Apps Script/native, Google or production result is implied.
+
+Final loading increment25/25 and complete unit2844/2844 PASS (zero skip).
+Two independent-review P2 vectors reproduced RED then passed after the stage
+membership/counter and PREP-only wait fixes. Validate72/40/cache/diff PASS.
+Bare pre-final2847 result retains1 missing Core/PG environment failure and4
+skips; no external integration acceptance is claimed. Exact-source CI remains
+separate from local/unit and actual browser acceptance.

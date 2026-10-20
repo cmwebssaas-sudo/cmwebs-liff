@@ -149,3 +149,49 @@ New exact-head CI, frozen private source/tests/review/inert admission and actual
 first reads remain prerequisites. Actual usage is still79/232 with no mutation,
 RPC or trial clock. Flags remain off and endpoint blank. Rollback this unused
 source increment to399241c while retaining all used sources and evidence.
+
+
+## Approved loading and same-scope source continuity from83
+
+The owner approved bounded loading continuity after the exact six-step flow
+settled four additional UI actions. Actual83 remains main53/UI30, PREP with
+no pending IO, mutation, RPC or trial clock. The original failed thin snapshot
+remains unsuccessful. This optional mode supersedes only the obsolete6+43
+preparation rule and79-only source migration; legacy modes keep their gates.
+
+Optional readonlyLoading retains the same canonical lock, namespace and
+independent latest registry. Immutable origin83 snapshots, exact direct approval
+and the latest HANDOFF_CLOSED receipt are required before migration. Changed
+sources retain the prior identity/source chain; stale receipts, scope drift,
+parallel holders, pending IO and HARD_STOP cannot migrate. Every new source
+still needs tests, independent review, exact-head CI, frozen private pins and
+inert admission. Used packages are never repinned or replayed.
+
+The45 available ordinaryUI units exclude one historical unused declaration
+and one spare. Preparation consumes at most9 named primitives, including all
+inventories/reclaims across holders. A clean flow needs5 and leaves40 future;
+two guarded load waits with second projections need9 and leave36. These are
+reservations, not evidence that later actual forms fit. The old two unused
+audience declarations are superseded once and retained, with no refund or
+credit; new audience IO is within the same9. RecoveryUI16 and all main
+HTTP58/recovery21/unused2/unassigned5 remain protected.
+
+Each holder must inventory and claim the same A at its latest exact authorized
+thin-settings or audience URL before projecting. Each target permits at most
+two projections across holders. A second projection requires exactly one
+separately prepaid documented load wait following that target's guarded
+NOT_READY. Timeout, unclassified failure or invalid safe result cannot become
+NOT_READY or successful grounding. Every successful projection needs the
+reviewed private result proof; failed attempts never establish grounding.
+
+Both successful target projections precede staged resource work; independently
+grounded recovery and stage/future fits remain mandatory. The complete actual
+map still precedes the only RPC, including360s precharge and900s/day budget.
+The first non-PREP debit starts the same6h/Taipei-midnight TRIAL; PREP and source
+handoffs do not reset counters, attempts, failures or clock. All production
+privacy/revocation/freshness/performance/device/rollback and approved24h
+synchronization/shadow, rooms-first then24h stable,7-day postlaunch gates remain.
+
+This source is not Google execution or rollout acceptance. New frozen private
+flow and exact-source CI remain prerequisites. Roll back unused controller
+changes to4d7cd99 while retaining actual83, all old sources and failed evidence.

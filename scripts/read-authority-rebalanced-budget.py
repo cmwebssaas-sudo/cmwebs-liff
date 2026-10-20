@@ -17,7 +17,7 @@ def rebalanced_class(base):
    raw={k:pin(p[k]) for k in ['approval','journal','claim','registry','receipt']};j=json.loads(raw['journal']);claim=record(Path(p['claim']['path']));suffix='.simple-readonly-diagnostic'
    expected={'journal':str(self.path)+suffix+'.json','claim':str(self.path)+suffix+'-claim.json','registry':str(Path.home()/'.codex/private/cmwebs-authority-trials'/(sha(json.dumps(c['epoch'],separators=(',',':')).encode())+suffix+'.json')),'receipt':str(self.path)+suffix+'-handoff-2.json'}
    if any(p[k]['path']!=v for k,v in expected.items()) or os.path.lexists(str(self.path)+suffix+'-stop.json'):fail()
-   stable=[k for k in c if k not in ['sources','now','ownerNonce','readonlyRebalance']]
+   stable=[k for k in c if k not in ['sources','now','ownerNonce','readonlyRebalance','readonlyLoading']]
    if not exact(claim,stable+['sources','ownerHash']) or any(claim[k]!=c[k] for k in stable) or not g['digest'](claim['ownerHash']):fail()
    for source in claim['sources']:g['pin'](source)
    if record(Path(p['registry']['path']))!={'identity':claim,'checkpoint':j}:fail()
@@ -37,6 +37,8 @@ def rebalanced_class(base):
   def initial_preparation(self):
    rows=[('inventory','original-settings','inventory'),('claim','original-settings','claim'),('thin-navigate','thin-settings','navigate'),('thin-snapshot','thin-settings','snapshot'),('audience-navigate','oauth-audience','navigate'),('audience-snapshot','oauth-audience','snapshot')]
    return [{'id':'rebalance79-'+id,'key':'N:preparation','actor':'publisher','target':target,'operation':method,'units':1,'preparation':True} for id,target,method in rows]
+  def future_limit(self):return 43
+  def ordinary_ceiling(self):return 77
   def preparation_complete(self):
    ops=self.initial_preparation();events=[e for e in self.j['events'][26:] if e['operation'] in ops]
    return len(events)==6 and [e['operation'] for e in events]==ops and all(e['settled'] is True and e['success'] is True for e in events)
@@ -49,20 +51,20 @@ def rebalanced_class(base):
   def continuity_preparation(self,lane,op):
    return op.get('preparation') is True and op.get('key')=='N:preparation' and super().continuity_preparation(lane,op)
   def trial_map_ready(self):
-   return self.j['plan'] is not None or self.preparation_complete() and bool(self.j['stages']) and bool(self.j['recoveryBrowser']) and self.counts()[3]+self.remaining_mapped_ui()+self.unspent_preparation()+self.j['futureOrdinaryUi']<=77
+   return self.j['plan'] is not None or self.preparation_complete() and bool(self.j['stages']) and bool(self.j['recoveryBrowser']) and self.counts()[3]+self.remaining_mapped_ui()+self.unspent_preparation()+self.j['futureOrdinaryUi']<=self.ordinary_ceiling()
   def check(self,lane,op,t,terminal=False):
    key=g['descriptor'](op,lane)
    cleanup=key.startswith(('C:','I:','J:'))
    if lane=='main' and key in native or not cleanup and not terminal and not self.continuity_preparation(lane,op) and not self.preparation_complete():fail()
-   if lane=='ui' and not cleanup and not self.continuity_preparation(lane,op) and self.future_spent()>=43:fail()
-   if self.continuity_preparation(lane,op):
+   if lane=='ui' and not cleanup and not self.continuity_preparation(lane,op) and self.future_spent()>=self.future_limit():fail()
+   if not self.loading and self.continuity_preparation(lane,op):
     ops=self.initial_preparation();used=[e for e in self.j['events'][26:] if e['operation'] in ops]
     if len(used)>=6 or op!=ops[len(used)]:fail()
    return super().check(lane,op,t,terminal)
   def command(self,q):
    if type(q) is not dict:fail()
    name=q.get('op')
-   if name=='preparation-ready':
+   if name=='preparation-ready' and not self.loading:
     if q.get('stage')!='rebalanced-resource-preparation' or q.get('operations')!=self.initial_preparation() or q.get('remainingOrdinaryUi')!=43:fail()
    if name=='stage-ready':
     if not exact(q,['op','stage','operations','browserOperations','futureCaps','remainingOrdinaryUi','now']):fail()
@@ -71,13 +73,13 @@ def rebalanced_class(base):
     keys=set(stages[group]);mapped={r.get('key') for r in rows if type(r) is dict}
     if not native.intersection(keys)<=mapped:fail()
     future_native=native-set(self.j['stages'])-keys
-    if reserve<len(future_native)+2 or self.future_spent()+self.remaining_mapped_ui()+len(rows)+reserve>43 or self.counts()[3]+self.remaining_mapped_ui()+self.unspent_preparation()+len(rows)+reserve>77:fail()
+    if reserve<len(future_native)+2 or self.future_spent()+self.remaining_mapped_ui()+len(rows)+reserve>self.future_limit() or self.counts()[3]+self.remaining_mapped_ui()+self.unspent_preparation()+len(rows)+reserve>self.ordinary_ceiling():fail()
     result=super().command({k:v for k,v in q.items() if k!='remainingOrdinaryUi'});self.j['futureOrdinaryUi']=reserve;self.persist();return result
    if name=='plan-ready':
     p=q.get('plan',{});rows=p.get('browserOperations',[])
     if type(rows) is not list or not native<={r.get('key') for r in rows if type(r) is dict}:fail()
     used={e['operation']['id'] for e in self.j['events']};future=sum(not r.get('key','').startswith(('C:','I:','J:')) and r.get('id') not in used for r in rows)
-    if not self.preparation_complete() or self.future_spent()+future>43 or any(r.get('preparation') is not False for r in rows) or self.counts()[3]+self.unspent_preparation()+future>77:fail()
+    if not self.preparation_complete() or self.future_spent()+future>self.future_limit() or any(r.get('preparation') is not False for r in rows) or self.counts()[3]+self.unspent_preparation()+future>self.ordinary_ceiling():fail()
     result=super().command(q);self.j['futureOrdinaryUi']=0;self.persist();return result
    if name=='settle' and q.get('nativeResultVerified') is True:
     self.current()
