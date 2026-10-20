@@ -4,6 +4,7 @@ import {PerformanceObserver,performance} from 'node:perf_hooks';
 const suites=new Set(['capacity500','small']);
 const routes=new Set(['home','actions','revenue','tenants','rooms','arrears','properties']);
 const sampleLimit=700,gcLimit=2048,lineLimit=4096;
+const memoryColumns=['sample','phase','at_ms','rss_bytes','heap_total_bytes','heap_used_bytes','external_bytes','array_buffer_bytes'];
 const columns=['sample','completed','start_ms','end_ms','full_ms','dispatch_ms','consume_ms',
   'node_cpu_user_us','node_cpu_system_us','node_elu_active_ms','node_elu_idle_ms','node_elu'];
 
@@ -13,7 +14,14 @@ const columns=['sample','completed','start_ms','end_ms','full_ms','dispatch_ms',
 export function createClientTiming(suite,emitDiagnostic=line=>console.log(line)) {
   assert.ok(suites.has(suite));
   assert.equal(typeof emitDiagnostic,'function');
-  const samples=[],gc=[];let gcTotal=0;
+  const samples=[],gc=[],memory=[];let gcTotal=0,memoryTotal=0;
+  const rememberMemory=(row,phase)=>{
+    if(suite!=='capacity500'||row.route!=='properties')return;
+    memoryTotal++;
+    if(memory.length>=200)return;
+    const at=performance.now(),m=process.memoryUsage();
+    memory.push([row.sample,phase,at,m.rss,m.heapTotal,m.heapUsed,m.external,m.arrayBuffers]);
+  };
   const collect=entries=>{
     gcTotal+=entries.length;
     for(const entry of entries)if(gc.length<gcLimit)gc.push([entry.startTime,entry.duration,entry.detail?.kind??0]);
@@ -26,6 +34,7 @@ export function createClientTiming(suite,emitDiagnostic=line=>console.log(line))
       assert.ok(routes.has(route));assert.ok(Number.isInteger(index)&&index>=0&&index<100);
       assert.ok(samples.length<sampleLimit,'Client diagnostic sample bound');
       const row={route,sample:index+1,completed:false};samples.push(row);
+      rememberMemory(row,0);
       return {row,cpu:process.cpuUsage(),elu:performance.eventLoopUtilization()};
     },
     end(token,start,dispatchAt,end) {
@@ -34,6 +43,7 @@ export function createClientTiming(suite,emitDiagnostic=line=>console.log(line))
         dispatch_ms:dispatchAt-start,consume_ms:end-dispatchAt,
         node_cpu_user_us:cpu.user,node_cpu_system_us:cpu.system,
         node_elu_active_ms:elu.active,node_elu_idle_ms:elu.idle,node_elu:elu.utilization});
+      rememberMemory(token.row,1);
     },
     close(outcome) {
       if(closed)return;closed=true;
@@ -56,6 +66,18 @@ export function createClientTiming(suite,emitDiagnostic=line=>console.log(line))
         gc_limit:gcLimit,gc_total:gcTotal,gc_retained:gc.length,gc_dropped:gcTotal-gc.length,
         gc_overflow:gcTotal>gcLimit,output_dropped:outputDropped,line_limit_bytes:lineLimit,
         scope:'NODE_CLIENT_ONLY_NOT_ACCEPTANCE_OR_WORKER_CPU'});
+      if(suite==='capacity500'){
+        let dropped=0;
+        const emitMemory=(type,value)=>{
+          const line='C6_NODE_MEMORY_'+type+' '+JSON.stringify({suite,...value});
+          if(Buffer.byteLength(line,'utf8')>lineLimit){dropped++;return;}
+          emitDiagnostic(line);
+        };
+        for(let offset=0;offset<memory.length;offset+=10)emitMemory('SAMPLES',{offset,rows:memory.slice(offset,offset+10)});
+        emitMemory('META',{columns:memoryColumns,total:memoryTotal,retained:memory.length,
+          dropped:memoryTotal-memory.length,output_dropped:dropped,
+          scope:'NODE_CLIENT_MEMORY_NOT_WORKER_CAUSE_OR_ACCEPTANCE'});
+      }
     }
   };
 }

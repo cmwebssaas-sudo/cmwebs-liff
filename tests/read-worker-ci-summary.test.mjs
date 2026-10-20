@@ -210,3 +210,36 @@ test('non-numeric sample identifiers are rejected without invoking coercion or l
   assert.equal(result.status,0,result.stderr);assert.equal(aggregate(result).sample_status,'INCOMPLETE');
   assert.match(result.stdout,/# fail 2/);assert.doesNotMatch(result.stdout,/SYNTHETIC_IDENTIFIER_SECRET/);
 });
+
+function memoryLog({bad=false}={}){
+ const lines=[];
+ for(let offset=0;offset<200;offset+=10){
+  const rows=Array.from({length:10},(_,i)=>{const n=offset+i,sample=Math.floor(n/2)+1,phase=n%2,delta=sample<=10?30:10;
+   return [sample,phase,sample*100+(phase?90:-1),1000+phase*delta,2000,1500+phase*delta,500+phase*delta,300+phase*delta];});
+  if(bad&&offset===0)rows[1][3]='MEMORY_SECRET_MUST_NOT_PRINT';
+  lines.push('# C6_NODE_MEMORY_SAMPLES '+JSON.stringify({suite:'capacity500',offset,rows}));
+ }
+ lines.push('# C6_NODE_MEMORY_META '+JSON.stringify({suite:'capacity500',total:200,retained:200,dropped:0,output_dropped:0,columns:['sample','phase','at_ms','rss_bytes','heap_total_bytes','heap_used_bytes','external_bytes','array_buffer_bytes'],secret:'MEMORY_META_SECRET_MUST_NOT_PRINT'}));
+ return lines.join('\n')+'\n';
+}
+test('terminal memory evidence joins complete property snapshots to original over/below50 samples',()=>{
+ const result=summarize(clientLog().replaceAll('"route":"tenants"','"route":"properties"')+memoryLog()+footer);
+ const data=aggregate(result);
+ assert.equal(data.memory_status,'COMPLETE');
+ assert.equal(data.memory_over_50.count,10);assert.equal(data.memory_below_50.count,90);
+ assert.equal(data.memory_over_50.median_external_delta_bytes,30);
+ assert.equal(data.memory_below_50.median_array_buffer_delta_bytes,10);
+ assert.equal(data.memory_over_50.median_heap_used_delta_bytes,30);
+ assert.doesNotMatch(result.stdout,/MEMORY_META_SECRET|C6_NODE_MEMORY_SAMPLES/);
+});
+test('invalid or missing memory snapshots cannot manufacture complete evidence or expose arbitrary values',()=>{
+ const original=memoryLog(),first=original.split('\n')[0];
+ const inside=original.split('\n').map((line,i)=>{if(i!==0)return line;const data=JSON.parse(line.slice(line.indexOf('{')));data.rows[0][2]=101;return '# C6_NODE_MEMORY_SAMPLES '+JSON.stringify(data);}).join('\n');
+ const overlapping=original.split('\n').map(line=>{if(!line.startsWith('# C6_NODE_MEMORY_SAMPLES '))return line;const data=JSON.parse(line.slice(line.indexOf('{')));for(const row of data.rows)row[2]=row[1]?50000:0;return '# C6_NODE_MEMORY_SAMPLES '+JSON.stringify(data);}).join('\n');
+ for(const memory of [overlapping,memoryLog({bad:true}),original.split('\n').filter((_,i)=>i!==0).join('\n'),original+first+'\n',inside,original.split('\n').filter(line=>!line.startsWith('# C6_NODE_MEMORY_META ')).join('\n')]){
+  const result=summarize(clientLog().replaceAll('"route":"tenants"','"route":"properties"')+memory+footer);
+  const data=aggregate(result);assert.equal(data.memory_status,'INCOMPLETE');
+  assert.equal(data.memory_over_50,null);assert.equal(data.memory_below_50,null);
+  assert.doesNotMatch(result.stdout,/MEMORY_SECRET|MEMORY_META_SECRET/);
+ }
+});

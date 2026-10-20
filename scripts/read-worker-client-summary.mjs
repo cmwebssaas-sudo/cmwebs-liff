@@ -1,5 +1,6 @@
 const columns=['sample','completed','start_ms','end_ms','full_ms','dispatch_ms','consume_ms',
   'node_cpu_user_us','node_cpu_system_us','node_elu_active_ms','node_elu_idle_ms','node_elu'];
+const memoryColumns=['sample','phase','at_ms','rss_bytes','heap_total_bytes','heap_used_bytes','external_bytes','array_buffer_bytes'];
 const gcColumns=['start_ms','duration_ms','kind'];
 const routes=['home','actions','revenue','tenants','rooms','arrears','properties'];
 const number=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=1e12;
@@ -14,10 +15,38 @@ export function createClientSummary(){
   const states=new Map();
   let unknownInvalid=0;
   function state(suite){
-    if(!states.has(suite))states.set(suite,{rows:new Map(),gc:new Map(),invalid:0,gcInvalid:0,meta:null,metaInvalid:0});
+    if(!states.has(suite))states.set(suite,{rows:new Map(),gc:new Map(),invalid:0,gcInvalid:0,meta:null,metaInvalid:0,memory:new Map(),memoryMeta:null,memoryInvalid:0});
     return states.get(suite);
   }
+  function ingestMemory(line){
+    const match=/^# C6_NODE_MEMORY_(SAMPLES|META) (.*)$/.exec(line);
+    if(!match)return false;
+    const s=state('capacity500');
+    if(Buffer.byteLength(line.slice(2))>4096){s.memoryInvalid++;return true;}
+    let data;try{data=JSON.parse(match[2]);}catch{s.memoryInvalid++;return true;}
+    if(data?.suite!=='capacity500'){s.memoryInvalid++;return true;}
+    if(match[1]==='SAMPLES'){
+      if(!integer(data.offset,190)||data.offset%10||!Array.isArray(data.rows)||!data.rows.length||data.rows.length>10){s.memoryInvalid++;return true;}
+      for(const [index,row] of data.rows.entries()){
+        const key=data.offset+index;
+        if(!Array.isArray(row)||row.length!==8||!row.every(number)||
+          row[0]!==Math.floor(key/2)+1||row[1]!==key%2||
+          row.slice(3).some(v=>!integer(v,1e12))||row[5]>row[4]||row[7]>row[6]||s.memory.has(key)){
+          s.memoryInvalid++;continue;
+        }
+        s.memory.set(key,row.slice());
+      }
+    }else{
+      if(s.memoryMeta||!same(data.columns,memoryColumns)||!integer(data.total,1e9)||
+        !integer(data.retained,200)||!integer(data.dropped,1e9)||data.retained+data.dropped!==data.total||!integer(data.output_dropped,1e9)){
+        s.memoryInvalid++;return true;
+      }
+      s.memoryMeta={total:data.total,retained:data.retained,dropped:data.dropped,output_dropped:data.output_dropped};
+    }
+    return true;
+  }
   function ingest(line){
+    if(ingestMemory(line))return null;
     const match=/^# C6_NODE_CLIENT_(SAMPLES|GC|META) (.*)$/.exec(line);
     if(!match)return null;
     // TAP adds the fixed "# " prefix to the producer's4096-byte message.
@@ -91,17 +120,40 @@ export function createClientSummary(){
         value.samples_with_node_gc_overlap=gcComplete?rows.filter(row=>[...s.gc.values()].some(gc=>Math.min(row[3],gc[0]+gc[1])>Math.max(row[2],gc[0]))).length:null;
         return value;
       }
+      const properties=groups.find(group=>group.route==='properties').rows.slice().sort((a,b)=>a[0]-b[0]);
+      const memoryPresent=Boolean(s.memoryMeta||s.memory.size||s.memoryInvalid);
+      const memoryComplete=Boolean(unknownInvalid===0&&s.invalid===0&&s.metaInvalid===0&&s.meta&&
+        s.meta.completed_samples===s.meta.attempted_samples&&s.rows.size===s.meta.completed_samples&&s.meta.output_dropped===0&&
+        properties.length===100&&s.memoryInvalid===0&&s.memoryMeta?.total===200&&s.memoryMeta.retained===200&&
+        s.memoryMeta.dropped===0&&s.memoryMeta.output_dropped===0&&s.memory.size===200&&
+        properties.every((row,index)=>{
+          const before=s.memory.get((row[0]-1)*2),after=s.memory.get((row[0]-1)*2+1);
+          const previous=index?properties[index-1]:null;
+          const previousAfter=previous?s.memory.get((previous[0]-1)*2+1):null;
+          return before&&after&&before[2]<=row[2]&&after[2]>=row[3]&&before[2]<=after[2]&&
+            (!previous||(previousAfter&&previousAfter[2]<=before[2]&&previous[3]<=row[2]));
+        }));
+      function memoryGroup(rows){
+        const result={count:rows.length};
+        for(const [name,index] of [['rss',3],['heap_used',5],['external',6],['array_buffer',7]])
+          result['median_'+name+'_delta_bytes']=median(rows.map(row=>s.memory.get((row[0]-1)*2+1)[index]-s.memory.get((row[0]-1)*2)[index]));
+        return result;
+      }
       const rows=selected.rows;
       results.push({suite,route:selected.route,selection:full.length?'HIGHEST_COMPLETE_P95':'NO_COMPLETE_ROUTE',
         sample_status:complete?'COMPLETE':'INCOMPLETE',samples:rows.length,collected_samples:s.rows.size,
         gc_status:gcComplete?'COMPLETE':'INCOMPLETE',invalid_records:unknownInvalid+s.invalid+s.gcInvalid+s.metaInvalid,
         over_50:complete?group(rows.filter(row=>row[4]>=50)):null,
         below_50:complete?group(rows.filter(row=>row[4]<50)):null,
+        memory_route:'properties',memory_status:memoryComplete?'COMPLETE':memoryPresent?'INCOMPLETE':'NOT_COLLECTED',
+        memory_invalid_records:s.memoryInvalid,
+        memory_over_50:memoryComplete?memoryGroup(properties.filter(row=>row[4]>=50)):null,
+        memory_below_50:memoryComplete?memoryGroup(properties.filter(row=>row[4]<50)):null,
         scope:'NODE_CLIENT_ONLY_NOT_WORKER_CAUSE_OR_ACCEPTANCE'});
     }
     return results;
   }
   return {ingest,finish,
     missingSuites:()=>['capacity500','small'].filter(suite=>!states.get(suite)?.meta),
-    invalidRecords:()=>unknownInvalid+[...states.values()].reduce((n,s)=>n+s.invalid+s.gcInvalid+s.metaInvalid,0)};
+    invalidRecords:()=>unknownInvalid+[...states.values()].reduce((n,s)=>n+s.invalid+s.gcInvalid+s.metaInvalid+s.memoryInvalid,0)};
 }

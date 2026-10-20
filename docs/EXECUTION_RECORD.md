@@ -6864,3 +6864,57 @@ formal data, migration, deployment, flag, credential or T0. Actual C1/C3,
 privacy/freshness/daily900s, formal performance/device/rollback and approved
 observation gates remain open. Endpointblank/alloff. Undeployed rollback to
 0f6d06b while retaining every used source, claim, failure, STOP and trial history.
+
+## 2026-10-20 — C6 body-consumption evidence; performance gate still failed
+
+Recommended model/speed: GPT-6.1 Sol/high for performance evidence boundaries.
+Prior exact-source CI39305302531 at4d0e67c FAILED: unit2875/2875 PASS,
+Worker44/45 FAIL. Properties500-room full HTTP/D1/body p95=50.602ms violates
+unchanged strict<50ms. Scheduled plan-branch CI39305572107 at58d4402 has
+identical558 non-doc paths and passed2875unit/45Worker, properties27.098ms;
+its success cannot erase failure or establish reproducibility. Actual CI merge
+commit trees were freshly verified equal to the respective claimed source head.
+All raw distributions remain. Successful counterpart revenue max135.965ms stays.
+
+Seven over50 property samples have similar dispatch median to other93 but
+consume median19.096 vs2.065ms. GC overlaps all7, yet recorded GC durations
+2.472–3.225ms cannot explain17.392–20.556ms consume by themselves. Capacity
+never imports the changed shadow modules; no causal basis to revert metadata
+or rewrite SQL. Locked Miniflare entry was verified against its integrity-
+checked tarball. Node26 and matching Node22.23.3 local CPU-profile diagnostics
+failed to reproduce the Linux tail. A private Node22 copy kept original timer/
+100samples and added outside-timer numeric snapshots: properties17.927ms,
+median external/ArrayBuffer delta2867773bytes/read. This measures allocation,
+not a leak or proven cause. Startup package-resolution failure is retained.
+
+Add only bounded test-client memory snapshots: before original start and after
+original end/CPU capture, properties/capacity only, at most200numeric records.
+Retain total/drop/output counters. Terminal summary joins complete before/
+after pairs to original100 property timers, reports over/below50 medians, and
+rejects missing/duplicate/non-numeric/misordered-time evidence. Historical
+logs without memory remain NOT_COLLECTED. No raw fields, response values, URL,
+identity or environment; no implication of WorkerCPU or acceptance. Memory
+observation itself may perturb timing. Original full-wall timer/count/threshold,
+canonical runtime, data, API, frontend flags and comparison identity unchanged.
+
+Initial targeted26 tests:23pass/3fail on absent memory evidence. Native child
+transport needed the existing clean test environment to avoid inheriting Node
+test context; private old-helper control fails on0/200 memory frames after
+that test-harness correction. Updated26/26 PASS before final negative-vector
+strengthening. Exact final affected results/review/CI are separate. No repeat
+Apps Script/native test or external Core/PostgreSQL acceptance. No Google,
+remote resource, formal data, credentials, fee, deployment, flag or T0 action.
+Actual C3 remains stopped72/232 with its pending scope proposal inactive.
+
+Rollback undeployed diagnostics to4d0e67c, retaining all CI failures/profiles/
+charges/history. All actual C1/C3/privacy/freshness/900s/performance/device/
+rollback and approved observation gates remain open. This instrumentation is
+not an attempted runtime fix or authority to accept a passing later run.
+
+Final diagnostic checks:26/26 affected tests PASS after negative strengthening,
+zero fail/cancel/skip; validate72/40/cache/comparison180 and diff PASS. Review
+identified that independent pairs could overlap; a new before0/after50000
+negative vector reproduced the false COMPLETE, then sample-order/adjacent
+pair/timer checks corrected it. Final independent increment review noP1/P2.
+No duplicate unchanged local full suite claimed; new-head CI must establish
+unit/Worker outcomes and actual Linux memory capture, separately from cause.
