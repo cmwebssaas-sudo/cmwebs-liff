@@ -6842,3 +6842,43 @@ negative vector reproduced the false COMPLETE, then sample-order/adjacent
 pair/timer checks corrected it. Final independent increment review noP1/P2.
 No duplicate unchanged local full suite claimed; new-head CI must establish
 unit/Worker outcomes and actual Linux memory capture, separately from cause.
+
+## 2026-10-21 — C6 bounded effective-runtime context
+
+Recommended model/speed: gpt-5.6-terra/medium for this bounded test-client
+evidence increment. Prior exact integration CI39478285754 remains FAILED:
+unit2947 PASS, Worker44/45, properties500-room full HTTP/D1/body p95=55.231ms
+against unchanged strict<50ms (32/100 over50). Same-C6-source integration
+CI39473203253 passed45 Worker cases/properties22.344ms; it does not erase the
+failure. The retained single Node22.23.3 Darwin profile did not reproduce the
+Linux failure: properties17.402ms, profiler perturbation acknowledged, no
+Linux cgroup available. No further profile or unchanged CI rerun was made.
+
+Add only two bounded test-client runtime snapshots, before the first and
+after the last properties timer. Capture numeric/null heap limit/new-space,
+available/constrained memory and three fixed cgroup-v2 values with a64-byte
+accepted-input cap, plus Node version and two unlimited booleans. No argv,
+environment dump, host identity, response values or operational data. Existing
+memory/CPU collection and every full-wall timer/count/threshold stay intact.
+This fills missing Linux runtime context; it neither diagnoses a cause nor
+changes production Worker/calculator/SQL/auth/scope/cache behavior.
+
+The duplicate-opening sequence0,0,99 initially reproduced false COMPLETE.
+Runtime observations now count every candidate, retain at most two, and expose
+total/dropped/output-drop counters. COMPLETE requires exactly the ordered
+sample1-before/sample100-after pair, total2 and no output drop; incomplete or
+duplicate captures remain PARTIAL. Fixed Node22.23.3 affected transport/summary
+tests28/28 PASS, zero fail/cancel/skip; validate72backend/40endpoint/cache/
+comparison180 and diff check PASS. Independent review precedes commit/push;
+the new source's exact-head CI and actual Linux snapshots remain separate.
+
+No Apps Script/native/external Core test, capacity benchmark, Google, formal
+data, credential, deployment, flag or T0 operation. Root WIP/C3 untouched.
+Rollback this undeployed diagnostic increment to9005015 while retaining all
+prior CI failures, single-profile evidence and original trial history.
+
+Independent read-only review of all four changed paths found no actionable
+P1/P2 and independently confirmed diff check PASS. Fixed cgroup probes, bounded
+endpoint completeness, timer/privacy boundaries and retained failure history
+were checked; no capacity or external operation was repeated. Exact new-source
+provider CI is required after the reviewed commit; no merge is authorized here.

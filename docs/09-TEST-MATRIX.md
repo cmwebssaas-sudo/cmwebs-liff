@@ -3569,3 +3569,22 @@ Final affected26/26 PASS, zero fail/cancel/skip. Review's overlapping-pair
 false-completeness case first failed, then passes with sequential pair/timer
 checks. Independent final review noP1/P2; validate72/40/cache/comparison180
 and diff PASS. Exact-head CI outcomes and diagnosis remain separate.
+
+### 2026-10-21 C6 effective-runtime context
+
+Native transport coverage now checks bounded runtime snapshots before the
+first/after the last properties timer, numeric/null-only heap/new-space and
+fixed cgroup values, no small-fixture collection, and interrupted capture.
+Duplicate-opening0,0,99 first failed (false COMPLETE); exact ordered endpoints,
+total2 and no output drop are now required. Every extra candidate contributes
+to total/dropped while retained context remains capped at2. Fixed Node22.23.3
+transport/summary28/28 PASS, zero fail/cancel/skip; validate72/40/cache/
+comparison180 and diff PASS. Independent review and exact new-head CI are
+recorded separately; no repeated unchanged capacity run.
+
+CI39478285754 remains FAILED (unit2947 PASS/Worker44of45, properties55.231ms,
+32/100 over50). The one Darwin Node22 profile is NOT_REPRODUCED, not acceptance
+or a CI replacement. Runtime context targets missing Linux heap/cgroup
+evidence only; no causal fix, production runtime change or live gate pass.
+Independent four-path source/evidence review noP1/P2; diff check independently
+PASS. Provider CI must follow the new commit and does not replace older failure.
