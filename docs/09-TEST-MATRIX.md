@@ -3602,3 +3602,23 @@ Final affected26/26 PASS, zero fail/cancel/skip. Review's overlapping-pair
 false-completeness case first failed, then passes with sequential pair/timer
 checks. Independent final review noP1/P2; validate72/40/cache/comparison180
 and diff PASS. Exact-head CI outcomes and diagnosis remain separate.
+
+### C3 readonly continuity controller
+
+`tests/read-authority-readonly-continuity.test.mjs` uses real disposable ledgers
+and live holders: immutable72 import, bounded charged cross-day PREP, failed
+NOT_READY without baseline credit, durable two-failure limit, missing proof hard
+stop, trial clock on non-PREP debit, protected recovery UI, latest-only terminal
+handoff and independent cleanup with damaged ordinary mirror. Existing simple
+controller suites retain legacy behavior. No external Google call is implied.
+
+### C3 approved three-step diagnostic successor
+
+`tests/read-authority-readonly-successor.test.mjs` uses real disposable ledgers
+and live holders. It verifies immutable76 import, exact approval and independent
+checkpoint/terminal/source requirements, no stopped-owner reuse, three-step
+order and target limits, retained unused UI declaration, no main/API bypass,
+charged unproved failure, one-time import and latest-only cross-day handoff.
+The fixture reproduces the four settled prior actions and the unused navigation
+declaration, rather than testing only the earlier72 checkpoint. Actual browser
+compatibility and rollout gates remain separate.

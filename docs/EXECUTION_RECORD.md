@@ -6918,3 +6918,57 @@ negative vector reproduced the false COMPLETE, then sample-order/adjacent
 pair/timer checks corrected it. Final independent increment review noP1/P2.
 No duplicate unchanged local full suite claimed; new-head CI must establish
 unit/Worker outcomes and actual Linux memory capture, separately from cause.
+
+## 2026-10-20 — C3 durable readonly preparation candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for lifecycle and accounting guards.
+Owner approved unified readonly preparation while retaining232. New optional
+mode imports settled72 exactly once; fixed finite PREP observations share the
+ordinary UI allocation, remain charged across days, and cannot consume recovery.
+Safe pause and terminal-holder receipts preserve latest checkpoint/repair count;
+unknown IO and hard STOP cannot resume. First ordinary non-PREP debit starts the
+single trial window atomically. See READ-READONLY-CONTINUITY.md for protocol,
+verification requirements and rollback. This source candidate adds no Google IO,
+RPC, mutation, production data access, deployment or launch acceptance.
+
+## 2026-10-21 — Approved diagnostic successor candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization and accounting.
+The owner approved retaining the stopped76 checkpoint and232 total cap while
+permitting one bounded three-step settings diagnostic. The optional successor
+requires the exact approval and matching latest stopped evidence, preserves
+history and reserves in a separate one-time namespace, and admits only fixed
+inventory/claim/projection before broader gates can apply. Stopped-owner reuse,
+other targets/methods, unproved outcomes and duplicate imports fail closed.
+No production application, Apps Script module or Worker runtime is changed.
+Affected verification, independent review and new exact-HEAD CI must complete
+before private source closure/inert admission and actual Google operation.
+The source candidate and synthetic tests do not establish C3/rollout acceptance.
+
+Affected old/new controller tests288/288 PASS, zero failures/cancellations/skips;
+new successor suite21 cases. Validate72 backend/40 endpoint/cache PASS. Independent
+review found a premature handoff/proved-failure gate inconsistency; three failing
+regressions preceded the shared terminal-proof fix, then all288 passed. The valid
+complete-plan/main-descriptor veto was also strengthened. Exact-HEAD CI is still
+pending for this new source; no actual successor claim/debit/Google IO occurred.
+
+## 2026-10-21 — Accelerated candidate composed with current C3/C6 source
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization/evidence composition.
+Integrated reviewed C6 diagnostics9005015 and C3 controller399241c into the
+existing accelerated Draft. All563 tracked non-document files equal the exact
+union of those source heads; no source conflict was manually rewritten. Both
+complete documentation histories were retained. The12-file C3 runtime closure
+is byte-identical to its affected288-test and exact-head2797/26 CI evidence.
+Validate72/40/cache/comparison180 and diff PASS on the composed tree. New
+composition-head provider CI remains required; individual CI is not that gate.
+
+Actual fixed settings diagnostic passed at79/232 (main53/UI26), with target,
+publisher and section guards, fields unread, no mutation/RPC and trial clock
+unset. Latest checkpoint safely paused with terminal-holder receipt. Complete
+trial/form/freshness/recovery mapping remains unproven; the separate232-budget
+reallocation proposal is inactive without owner approval. This merge performs
+no Google, credentials, formal-data, deployment, flag or T0 action. Endpoint
+remains blank and flags off. All C1/C3/performance/device/rollback/approved
+observation gates remain open. Undeployed integration rollback is58d4402;
+retain all used source, charges, checkpoints and recovery/STOP evidence.
