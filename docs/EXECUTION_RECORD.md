@@ -6972,3 +6972,48 @@ no Google, credentials, formal-data, deployment, flag or T0 action. Endpoint
 remains blank and flags off. All C1/C3/performance/device/rollback/approved
 observation gates remain open. Undeployed integration rollback is58d4402;
 retain all used source, charges, checkpoints and recovery/STOP evidence.
+
+## 2026-10-21 — Approved79 fixed-total staged controller candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization and accounting.
+The owner approved one exact79 CLEAN_PAUSE migration with matching registry
+and terminal-holder evidence into a separate namespace, preserving all old
+claims, sources, STOPs, failure charges and holder history. Fixed buckets are
+main139/ordinaryUI77/recoveryUI16, total232. Exactly21 native aliases use actual
+prepaid verified UI results only; main native debit/no-op callback is refused.
+HTTP58 and all independent recovery/unused/unassigned reservations remain.
+Six named PREP reads reserve43 future ordinary primitives plus the retained
+unused declaration. Actual staged configuration/recovery is gated before
+non-PREP IO; complete actual map/fit remains mandatory before the sole RPC.
+The same single6h/Taipei-midnight TRIAL starts on first non-PREP durable debit.
+
+TDD new22 tests; affected165/165 PASS, zero fail/cancel/skip. Review identified
+an old56 complete-plan limit; accepted25/43 maps reproduced RED, then mode77
+fixed both. Validate72 backend/40 endpoints/cache and diff PASS. New exact-head
+CI and final frozen private source/tests/review/inert admission precede any
+Google IO. No new external Core/PostgreSQL or Apps Script/runtime acceptance is
+claimed. Actual usage remains79/232, safely paused PREP, pendingnull, w0null,
+no mutation/RPC. All trial/runtime/privacy/performance/device/recovery/approved
+observation gates remain open. No deployment/T0/flag change; endpoint blank.
+Unused source rollback399241c; preserve all used evidence and root WIP.
+
+
+## 2026-10-21 — Accelerated candidate includes fixed-total controller
+
+Recommended model/speed: GPT-6.1 Sol/high for source/evidence integration.
+Composed current C3 4d7cd99 with reviewed C6 9005015; no non-document source
+conflicts were manually rewritten. Complete documentation histories remain.
+Component C3 exact-head CI39475853972 passed2819 unit/26 Worker; previous
+composition c990673 CI39473203253 passed2925 unit/45 Worker. A fresh composition
+CI remains required and cannot inherit those provider gates as its own.
+
+Actual C3 is now83/232 (main53/UI30): thin-settings projection verified target
+and publisher with fields unread but document readiness INTERACTIVE. NOT_READY
+was charged unsuccessful; the holder clean-paused and terminal evidence matches
+latest journal/independent registry. PREP, pendingnull, w0null, no mutation/RPC.
+A separately reviewed loading-continuity scope proposal is inactive pending
+owner decision. This integration performs no Google operation, formal-data
+change, deployment, endpoint/flag switch or T0. All actual trial/privacy/runtime,
+performance/device/recovery and approved observation gates remain open.
+Undeployed composition rollback c990673; retain every used frozen source,
+claim, charge, checkpoint, STOP/recovery receipt and root WIP.
