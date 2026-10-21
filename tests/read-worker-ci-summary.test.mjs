@@ -148,6 +148,45 @@ test('complete client samples with missing GC records preserve unknown GC attrib
   assert.equal(data.over_50.count,10);assert.equal(data.over_50.samples_with_node_gc_overlap,null);
 });
 
+function flaggedClientLog(rows){
+  const lines=clientLog().trim().split('\n');
+  return lines.map(line=>{
+    if(line.startsWith('# C6_NODE_CLIENT_GC '))return '# C6_NODE_CLIENT_GC '+JSON.stringify({suite:'capacity500',offset:0,rows});
+    if(line.startsWith('# C6_NODE_CLIENT_META ')){
+      const meta=JSON.parse(line.slice(line.indexOf('{')));meta.gc_columns=['start_ms','duration_ms','kind','flags'];
+      meta.gc_total=rows.length;meta.gc_retained=rows.length;
+      return '# C6_NODE_CLIENT_META '+JSON.stringify(meta);
+    }
+    return line;
+  }).join('\n')+'\n';
+}
+test('GC flags annotate overlapping slow requests without treating absent flags as zero',()=>{
+  const result=summarize(flaggedClientLog([[110,3,4,32],[120,3,4,4],[1110,3,1,0]])+footer),data=aggregate(result);
+  assert.equal(data.gc_status,'COMPLETE');assert.equal(data.gc_flags_status,'COMPLETE');
+  assert.equal(data.over_50.samples_with_node_gc_external_flag,1);
+  assert.equal(data.over_50.samples_with_node_gc_forced_flag,1);
+  assert.equal(data.below_50.samples_with_node_gc_external_flag,0);
+  const legacy=aggregate(summarize(clientLog()+footer));
+  assert.equal(legacy.gc_status,'COMPLETE');assert.equal(legacy.gc_flags_status,'NOT_COLLECTED');
+  assert.equal(legacy.over_50.samples_with_node_gc_external_flag,null);
+  const combined=aggregate(summarize(flaggedClientLog([[110,3,4,126]])+footer));
+  assert.equal(combined.gc_flags_status,'COMPLETE');
+  assert.equal(combined.over_50.samples_with_node_gc_forced_flag,1);
+  assert.equal(combined.over_50.samples_with_node_gc_external_flag,1);
+});
+test('unknown or malformed GC flags cannot manufacture complete attribution or leak values',()=>{
+  for(const flag of [null,1,128,-1,0.5,'GC_FLAG_SECRET']){
+    const result=summarize(flaggedClientLog([[110,3,4,flag]])+footer),data=aggregate(result);
+    assert.equal(data.gc_flags_status,'INCOMPLETE');
+    assert.equal(data.over_50?.samples_with_node_gc_external_flag??null,null);
+    assert.doesNotMatch(result.stdout,/GC_FLAG_SECRET/);
+  }
+  const mixed=aggregate(summarize(flaggedClientLog([[110,3,4]])+footer));
+  assert.equal(mixed.gc_status,'INCOMPLETE');assert.equal(mixed.gc_flags_status,'INCOMPLETE');
+  const mismatched=aggregate(summarize(flaggedClientLog([[110,3,4,32]]).replace('"kind","flags"','"kind"')+footer));
+  assert.equal(mismatched.gc_status,'INCOMPLETE');assert.equal(mismatched.gc_flags_status,'INCOMPLETE');
+});
+
 test('malformed recognized client JSON cannot be ignored while reporting complete evidence',()=>{
   const result=summarize(clientLog()+'# C6_NODE_CLIENT_GC {SYNTHETIC_MALFORMED_SECRET}\n'+footer);
   const data=aggregate(result);assert.equal(data.sample_status,'INCOMPLETE');assert.equal(data.gc_status,'INCOMPLETE');

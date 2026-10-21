@@ -7252,3 +7252,52 @@ Final local current-source unit2887/2887 PASS, zero fail/cancel/skip; validate
 eleven cases independently checked. The owner confirmation is recorded in its
 original instruction context and does not prove tool availability or excuse
 a third failure. Actual remains91, no further native IO before exact CI/seal.
+
+
+## 2026-10-21 — Bounded GC flag attribution for retained Linux capacity failures
+
+Recommended model/speed: GPT-6.1 Sol/high for strict evidence and compatibility
+boundaries. This is existing C6 test-client diagnosis; no production behavior,
+Apps Script, route, schema, response or frontend change. Actual C3 remains92/232
+PREP HARD_STOP, no further Google IO, writes or RPC.
+
+Retain integration CI39586086505 FAILED:3017unit PASS, Worker44/45, properties
+full100-sample p95=50.069319ms against unchanged strict<50ms,7/100 over50.
+The same Worker/fixture/lock/workflow previously passed35.707225ms. New slow
+samples split into5 dispatch/GC,1 consume-tail and1 without GC; this disproves
+an all-GC explanation. Effective Node/heap/new-space values match; different
+runner images are a confounder, not a proven cause. No source repair is yet
+supported, and the single retained Darwin profile does not answer Linux costs.
+
+Append documented Node GC detail.flags to the existing bounded observer records.
+Only the known Node22 numeric mask is retained; missing/unknown flags stay null.
+The terminal summary distinguishes flags COMPLETE, NOT_COLLECTED (legacy three
+columns) and INCOMPLETE, and counts original requests overlapping external-memory
+or forced flags. These describe the collection, not its root cause. Row widths
+must match declared columns; arbitrary flags/strings and malformed frames cannot
+manufacture completeness or leak values. Limits2048 GC rows/4096-byte messages,
+all100 original full-wall samples/timers/50ms gates remain unchanged. No extra
+capacity run, profile, explicit timer-boundary call or normal-GC policy change.
+The existing asynchronous observer can overlap a measured request; added
+observation work may perturb timing and does not establish acceptance.
+
+Three new tests first failed for missing flag transport/attribution. The31-case
+affected suite then passed, including a native Node22 forced-GC transport probe
+without profiling; final combined/mismatched-column vectors and full regression
+are verified separately. Independent final increment review and exact new-head
+CI still precede any claim of actual Linux capture. No affected Apps Script
+function because no .gs/.js backend source changed.
+
+Reference: Node performance GC details,
+https://github.com/nodejs/node/blob/v22.23.3/doc/api/perf_hooks.md .
+Rollback undeployed diagnostics to04e2db0, retaining all raw CI failures, profiles
+and C3 charged history. No fee, formal data, credential, deployment, flag,
+endpoint or observation T0 change; actual rollout gates remain unaccepted.
+
+Final current-source bare npm test:2888/2888 PASS, zero fail/cancel/skip, with
+fresh isolated Core/PostgreSQL. All670 tracked paths matched the pre-run
+snapshot and Core HEAD/index were unchanged; owned cluster stopped, no PID or
+loopback listener, bootstrap password removed. Final strengthened vectors are
+included. Independent six-path review found no P1/P2; validate72/40/cache/
+comparison180 and diff PASS. These are local results; exact new-source CI and
+Linux flags remain unobserved until provider completion.

@@ -6,6 +6,23 @@ import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 
 const moduleUrl=new URL('../cloudflare/read-api/test/read-client-timing.mjs',import.meta.url).href;
+test('native GC diagnostic retains documented flags from a forced collection without profiling',()=>{
+  const dir=mkdtempSync(join(tmpdir(),'cmwebs-gc-flags-'));
+  try{
+    const child=join(dir,'flags.test.mjs');
+    writeFileSync(child,`import {test} from 'node:test';import {createClientTiming} from ${JSON.stringify(moduleUrl)};
+      test('real GC flags',async t=>{const timing=createClientTiming('small',line=>t.diagnostic(line));
+        global.gc();await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));timing.close('PASS');});`);
+    const result=spawnSync(process.execPath,['--expose-gc','--test','--test-reporter=tap',child],{encoding:'utf8',maxBuffer:1024*1024,timeout:10000,env:{PATH:process.env.PATH||'/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
+    assert.equal(result.status,0,result.stderr);
+    const lines=result.stdout.split('\n');
+    const rows=lines.filter(line=>line.startsWith('# C6_NODE_CLIENT_GC ')).flatMap(line=>JSON.parse(line.slice(line.indexOf('{'))).rows);
+    const meta=JSON.parse(lines.find(line=>line.startsWith('# C6_NODE_CLIENT_META ')).slice('# C6_NODE_CLIENT_META '.length));
+    assert.deepEqual(meta.gc_columns,['start_ms','duration_ms','kind','flags']);
+    assert(rows.some(row=>row.length===4&&row[2]===4&&(row[3]&4)===4),'forced-major flag must survive native transport');
+    assert(rows.every(row=>row.length===4&&(row[3]===null||Number.isInteger(row[3])&&row[3]>=0&&(row[3]&~126)===0)));
+  }finally{rmSync(dir,{recursive:true,force:true});}
+});
 test('native diagnostic transport retains complete JSON frames without raw console emission',()=>{
   const dir=mkdtempSync(join(tmpdir(),'cmwebs-client-transport-'));
   try{

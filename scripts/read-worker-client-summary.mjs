@@ -2,6 +2,7 @@ const columns=['sample','completed','start_ms','end_ms','full_ms','dispatch_ms',
   'node_cpu_user_us','node_cpu_system_us','node_elu_active_ms','node_elu_idle_ms','node_elu'];
 const memoryColumns=['sample','phase','at_ms','rss_bytes','heap_total_bytes','heap_used_bytes','external_bytes','array_buffer_bytes'];
 const gcColumns=['start_ms','duration_ms','kind'];
+const gcFlagColumns=[...gcColumns,'flags'];
 const routes=['home','actions','revenue','tenants','rooms','arrears','properties'];
 const number=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=1e12;
 const integer=(value,max)=>number(value)&&Number.isInteger(value)&&value<=max;
@@ -72,13 +73,14 @@ export function createClientSummary(){
       if(!integer(data.offset,2047)||data.offset%20||!Array.isArray(data.rows)||data.rows.length===0||data.rows.length>20){s.gcInvalid++;return null;}
       for(const [index,row] of data.rows.entries()){
         const key=data.offset+index;
-        if(key>=2048||!Array.isArray(row)||row.length!==3||!row.every(number)||!integer(row[2],32)||s.gc.has(key)){
+        if(key>=2048||!Array.isArray(row)||![3,4].includes(row.length)||!row.slice(0,3).every(number)||!integer(row[2],32)||
+          row.length===4&&row[3]!==null&&(!integer(row[3],126)||(row[3]&~126)!==0)||s.gc.has(key)){
           s.gcInvalid++;continue;
         }
         s.gc.set(key,row.slice());
       }
     }else{
-      if(s.meta||!same(data.columns,columns)||!same(data.gc_columns,gcColumns)||
+      if(s.meta||!same(data.columns,columns)||!same(data.gc_columns,gcColumns)&&!same(data.gc_columns,gcFlagColumns)||
         !['PASS','FAIL'].includes(data.outcome)||!integer(data.attempted_samples,700)||
         !integer(data.completed_samples,700)||data.completed_samples>data.attempted_samples||
         !integer(data.gc_total,1e9)||!integer(data.gc_retained,2048)||!integer(data.gc_dropped,1e9)||
@@ -88,7 +90,7 @@ export function createClientSummary(){
       }
       // Copy only known fields and static string/column values. Extra caller
       // fields cannot enter the retained META line or the aggregate.
-      s.meta={suite:data.suite,outcome:data.outcome,columns,gc_columns:gcColumns,
+      s.meta={suite:data.suite,outcome:data.outcome,columns,gc_columns:same(data.gc_columns,gcFlagColumns)?gcFlagColumns:gcColumns,
         attempted_samples:data.attempted_samples,completed_samples:data.completed_samples,
         gc_total:data.gc_total,gc_retained:data.gc_retained,gc_dropped:data.gc_dropped,
         gc_overflow:data.gc_overflow,output_dropped:data.output_dropped};
@@ -112,12 +114,18 @@ export function createClientSummary(){
         s.meta.completed_samples===s.meta.attempted_samples&&s.rows.size===s.meta.completed_samples&&s.meta.output_dropped===0;
       const gcComplete=Boolean(unknownInvalid===0&&s.meta&&s.gcInvalid===0&&s.metaInvalid===0&&s.gc.size===s.meta.gc_retained&&
         s.meta.gc_dropped===0&&!s.meta.gc_overflow&&s.meta.output_dropped===0&&
-        Array.from({length:s.meta.gc_retained},(_,i)=>i).every(i=>s.gc.has(i)));
+        Array.from({length:s.meta.gc_retained},(_,i)=>i).every(i=>s.gc.has(i))&&
+        [...s.gc.values()].every(row=>row.length===s.meta.gc_columns.length));
+      const flagsCollected=same(s.meta?.gc_columns,gcFlagColumns);
+      const flagsComplete=gcComplete&&flagsCollected&&[...s.gc.values()].every(row=>row[3]!==null);
       function group(rows){
         const value={count:rows.length};
         for(const [key,index] of [['median_full_ms',4],['median_dispatch_ms',5],['median_consume_ms',6],['median_node_elu_active_ms',9],['median_node_elu_idle_ms',10]])value[key]=median(rows.map(row=>row[index]));
         value.median_node_cpu_ms=median(rows.map(row=>(row[7]+row[8])/1000));
         value.samples_with_node_gc_overlap=gcComplete?rows.filter(row=>[...s.gc.values()].some(gc=>Math.min(row[3],gc[0]+gc[1])>Math.max(row[2],gc[0]))).length:null;
+        for(const [name,flag] of [['external',32],['forced',4]])
+          value['samples_with_node_gc_'+name+'_flag']=flagsComplete?rows.filter(row=>[...s.gc.values()].some(gc=>
+            (gc[3]&flag)!==0&&Math.min(row[3],gc[0]+gc[1])>Math.max(row[2],gc[0]))).length:null;
         return value;
       }
       const properties=groups.find(group=>group.route==='properties').rows.slice().sort((a,b)=>a[0]-b[0]);
@@ -143,6 +151,7 @@ export function createClientSummary(){
       results.push({suite,route:selected.route,selection:full.length?'HIGHEST_COMPLETE_P95':'NO_COMPLETE_ROUTE',
         sample_status:complete?'COMPLETE':'INCOMPLETE',samples:rows.length,collected_samples:s.rows.size,
         gc_status:gcComplete?'COMPLETE':'INCOMPLETE',invalid_records:unknownInvalid+s.invalid+s.gcInvalid+s.metaInvalid,
+        gc_flags_status:flagsComplete?'COMPLETE':gcComplete&&!flagsCollected?'NOT_COLLECTED':'INCOMPLETE',
         over_50:complete?group(rows.filter(row=>row[4]>=50)):null,
         below_50:complete?group(rows.filter(row=>row[4]<50)):null,
         memory_route:'properties',memory_status:memoryComplete?'COMPLETE':memoryPresent?'INCOMPLETE':'NOT_COLLECTED',
