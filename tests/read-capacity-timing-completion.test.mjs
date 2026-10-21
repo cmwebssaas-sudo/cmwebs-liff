@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
+import {createActorTiming} from '../cloudflare/read-api/test/read-actor-timing.mjs';
 
 // Execute the actual fixture's measurement tail with deterministic transport
 // and clocks. No D1/GAS parity claim is made by these control-flow regressions.
@@ -12,15 +13,16 @@ const body=source.slice(start,end);
 const routes=['home','actions','revenue','tenants','rooms','arrears','properties'];
 function measure(durations){
   const counts=Object.fromEntries(routes.map(route=>[route,0])),logs=[];let current,tick=0;
+  const actorTiming=createActorTiming('capacity500',line=>logs.push(line));
   const result=runInNewContext('(async()=>{'+body+'})()',{
-    assert,cases:routes.map(route=>({route})),paths:Object.fromEntries(routes.map(route=>[route,'/'+route])),
+    assert,actorTiming,cases:routes.map(route=>({route})),paths:Object.fromEntries(routes.map(route=>[route,'/'+route])),
     performance:{now:()=>{const phase=tick++%3;return phase===0?0:phase===1?10:durations[current]??20;}},
     clientTiming:{begin:route=>{current=route;counts[route]++;},end:()=>{}},
     mf:{dispatchFetch:async()=>({status:200,arrayBuffer:async()=>new ArrayBuffer(1),
-      headers:{get:()=> 'd1;dur=1.000, decode;dur=2.000, route;dur=3.000'}})},
+      headers:{get:name=>name==='server-timing'?'d1;dur=1.000, decode;dur=2.000, route;dur=3.000':null}})},
     console:{log:line=>logs.push(line)}
   });
-  return {result,counts,logs};
+  return {result:result.then(value=>{actorTiming.close('PASS');return value;},error=>{actorTiming.close('FAIL');throw error;}),counts,logs};
 }
 test('an early latency failure still measures all700 samples and fails the original gate',async()=>{
   const run=measure({home:60,arrears:51});

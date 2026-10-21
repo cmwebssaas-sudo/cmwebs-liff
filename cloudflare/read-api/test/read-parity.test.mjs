@@ -1,3 +1,5 @@
+import {withD1ActorTiming} from './read-d1-actor.mjs';
+import {createActorTiming} from './read-actor-timing.mjs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
@@ -18,7 +20,7 @@ function differingPaths(left,right,path='$') {
   if(left===null||right===null||typeof left!=='object'||typeof right!=='object') return [path];
   return [...new Set([...Object.keys(left),...Object.keys(right)])].flatMap(key=>differingPaths(left[key],right[key],path+'.'+key));
 }
-test('all six routes match original GAS after whitelist projection and actual local D1 storage', async t => {
+test('all six routes match original GAS after whitelist projection and actual local D1 storage', async t => withD1ActorTiming(async()=>{
   const input=richDataset();
   const publicUrl='https://synthetic-c2.z3house.com/spaces/synthetic-room/';
   const photo='https://synthetic-c2.z3house.com/api/public/media/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
@@ -37,7 +39,7 @@ test('all six routes match original GAS after whitelist projection and actual lo
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
     compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     bindings:{FIXTURE_ACCESS:JSON.stringify(projectedAccess),FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_PUBLIC_RESOURCES:JSON.stringify(publicResources)}}));
-  const clientTiming=createClientTiming('small',line=>t.diagnostic(line));let timingOutcome='FAIL';
+  const clientTiming=createClientTiming('small',line=>t.diagnostic(line)),actorTiming=createActorTiming('small',line=>t.diagnostic(line));let timingOutcome='FAIL';
   try {
     const db=await mf.getD1Database('DB');
     const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
@@ -100,6 +102,7 @@ test('all six routes match original GAS after whitelist projection and actual lo
         assert(Object.values(supervisor).every(value=>Number.isFinite(value)&&value>=0));
         assert(supervisor.loop_utilization<=1);
         samples.push(elapsed);const detail=metrics(response);
+        actorTiming.record(item.route,index,elapsed,detail.d1,response.headers.get('x-cmwebs-test-d1-actor'));
         observations.push({index,wall_ms:Number(elapsed.toFixed(3)),...detail,node_supervisor:supervisor});
         for(const stage of Object.keys(stages))stages[stage].push(detail[stage]);
       }
@@ -113,5 +116,5 @@ test('all six routes match original GAS after whitelist projection and actual lo
     // diagnostic only. No retry, warmup, exclusion or threshold relaxation.
     assert.deepEqual(violations,[],violations.join('; '));
     timingOutcome='PASS';
-  } finally {try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{clientTiming.close(timingOutcome);}}
-});
+  } finally {try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{try{clientTiming.close(timingOutcome);}finally{actorTiming.close(timingOutcome);}}}
+}));

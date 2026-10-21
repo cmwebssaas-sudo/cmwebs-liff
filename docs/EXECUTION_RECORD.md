@@ -6931,3 +6931,75 @@ loopback listener, bootstrap password removed. Final strengthened vectors are
 included. Independent six-path review found no P1/P2; validate72/40/cache/
 comparison180 and diff PASS. These are local results; exact new-source CI and
 Linux flags remain unobserved until provider completion.
+
+
+### 2026-10-22 C6 bounded local D1 actor observation
+
+Recommended model/speed: GPT-6.1 Sol/high for cross-runtime timing diagnosis.
+This is V2.0 stability test work, with no product route, API, Schema, Apps
+Script, deployment, Properties, trigger, access or production-data change.
+
+Accelerated composition4b7f87c CI39627922453 failed two unchanged strict50ms
+local latency assertions (unit3085/3085, Worker43/45). Earlier successful
+e9354d9 CI39625127928 remains historical; it does not replace this failure.
+Identical non-document code and the available Node/D1 stage observations do
+not establish SQL CPU, actor, scheduling, GC or transport as the cause.
+
+The new test-only hook clones the pinned Miniflare local d1:db module in
+memory; node_modules and product Worker source remain unchanged. A scoped
+wrapper rejects overlap and restores the original getServices in outerfinally,
+after fixture disposal even on failure. The module SHA and exact insertion
+points fail closed; sourceURL is retained only on one comment line.
+
+Two numeric spans are attached only to the last batch result metadata:
+entry_to_txn_ms includes request parse/validation plus the awaited transaction
+and bookmark; json_tail_ms is cumulative entry through serialization of the
+last meta getter. Neither is pure SQL CPU, full response completion, network
+or transport. Equal values do not prove zero serialization CPU; workerd
+clock resolution and synchronous advancement remain unproven. Instrumentation
+itself perturbs the path, so results cannot retroactively explain older runs.
+
+Only the existing first small/capacity fixture cases use the hook. All original
+100 requests per route, seven routes, request order, full-wall body-consumption
+timer, p95 index94 and strict p95<50ms remain. No warmup/retry/replacement is
+added. After the original end timestamp, a bounded collector pairs route and
+sample with fullwall, caller D1 await and the two actor spans. A separate
+versioned test-only header/protocol preserves the existing three server-timing
+stages and x-cmwebs-test-d1's three keys. Absent/invalid/decreasing spans stay
+null with explicit incomplete evidence, while subsequent samples still run.
+
+At suite close, at most700 numeric/enum rows emit via native t.diagnostic in
+frames<=4096bytes. The bounded CI summary validates sequence, counts, metadata
+and missing/invalid/drop state, prints paired numeric aggregates and retains
+the original failure/footer. Raw provider logs remain available. COMPLETE
+means diagnostic coverage only; it never means latency or rollout acceptance.
+No percentile subtraction or caller-minus-span transport attribution is valid.
+
+Affected pure/native tests cover source pin/line terminators, last-meta and
+getter semantics, hook restore/overlap, missing/malformed/negative/nonfinite
+spans, sequence/duplicates,700-row transport/privacy and actual measurement-loop
+execution proving collection follows body/full-wall end. New full regression,
+independent review and exact-head CI outcomes must be recorded separately.
+Apps Script tests are unaffected and no Google editor test was invoked.
+Rollback is to revert this test-only change; no production rollback is needed.
+All formal authority/privacy/revocation/freshness/performance/device/rollback
+and approved24h+24h/seven-day rollout gates remain open.
+
+The new-source local Worker run passed53/53 with both suites retaining700/700
+valid actor pairs; actor summary invalid/drop counts0. Raw logs retain one
+legacy long-diagnostic summary omission; no actor frame was omitted. This
+Darwin result does not replace earlier Linux failures or prove their cause.
+Initial bare Core/PG regression was2890/2893 with three failures in the old
+measurement-tail harness: actorTiming was not provided to its VM context.
+The harness now injects the real bounded collector and preserves missing
+header evidence plus all700/NaN/strict-gate assertions; affected8cases pass.
+The failed full run and verified owned-cluster cleanup remain retained.
+Fresh full regression and exact-head CI are pending; no unchanged Worker
+benchmark is repeated for this root-test-only harness repair.
+
+Final repaired bare Core/PostgreSQL regression passed2893/2893, zero fail,
+cancel or skip. All678 tracked source paths matched the pre/post snapshot;
+Core321/index/ref and owned-cluster teardown were verified. Only this final
+result documentation is appended after that snapshot; executable/test bytes
+remain the tested bytes. New exact-head CI remains pending. Initial2890/2893
+and earlier strict Linux failures remain evidence, not replaced outcomes.
