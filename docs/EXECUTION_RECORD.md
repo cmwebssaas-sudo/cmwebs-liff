@@ -4509,3 +4509,21 @@ Private prototype7/7 PASS using real disposable controller ledgers: ready5,
 one target loading7, both loading9, wrong URL/account, evaluate rejection and
 wait timeout. These are local adapter tests, not Google acceptance. Frozen
 private-source review, exact-head CI and inert admission still precede real IO.
+
+## 2026-10-21 — Bounded account-label preparation successor
+
+Recommended GPT-6.1 Sol/high because this increment must preserve exact ledger,
+source and stopped-entry boundaries. V2.0 authorized read-path stability scope;
+no Apps Script source, production deployment, data or activation change.
+
+Added one approved incident-only successor sharing the canonical lock/latest
+registry, with a separate journal/claim and immutable stopped predecessor.
+Four separately prepaid read-only primitives retain the original account proof,
+shared preparation cap and all future/recovery reserves. Replays and unrelated
+stopped states remain denied. Independent review found qualified final read
+failures could pause; two real-holder RED cases reproduced it, then settlement
+was fixed to HARD_STOP. Directed38 and private8 passed; no remaining P1/P2 in
+source and private-flow review. Exact-head CI and frozen admission are required
+before external use. No affected Apps Script test function: no .gs source changed.
+Rollback is to keep the entry inert and existing production flags unchanged;
+a failed/read-only incident retains all debits and stopped history, never replays.

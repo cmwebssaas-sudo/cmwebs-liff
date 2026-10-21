@@ -55,11 +55,11 @@ class Ledger:
  def __init__(self,cfg,cleanup=False):
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
-  self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg;self.rebalanced='readonlyRebalance' in cfg;self.loading='readonlyLoading' in cfg
+  self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg;self.rebalanced='readonlyRebalance' in cfg;self.loading='readonlyLoading' in cfg;self.account_load='readonlyAccountLoad' in cfg
   self.main_ordinary_limit=58 if self.rebalanced else 79;self.main_event_limit=84 if self.rebalanced else 105;self.ui_ordinary_limit=77 if self.rebalanced else 56;self.ui_event_limit=self.ui_ordinary_limit+16
   self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg;self.readonly_debug='readonlyDebug' in cfg
-  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity or self.rebalanced and not self.successor or self.loading and not self.rebalanced:fail()
-  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])+(['readonlyRebalance'] if self.rebalanced else [])+(['readonlyLoading'] if self.loading else [])
+  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity or self.rebalanced and not self.successor or self.loading and not self.rebalanced or self.account_load and not self.loading:fail()
+  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])+(['readonlyRebalance'] if self.rebalanced else [])+(['readonlyLoading'] if self.loading else [])+(['readonlyAccountLoad'] if self.account_load else [])
   resume=cfg.pop('resume',None) if self.continuity else None
   if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+optional) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
   self.path=Path(cfg['path']);directory(self.path.parent)
@@ -72,10 +72,10 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.suffix=suffix;self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
-  self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+suffix+'.json')
+  self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+('.simple-rebalanced' if self.account_load else suffix)+'.json')
   self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']+optional};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
   if self.continuity and resume is not None:
    self.resume_preparation(resume);return
@@ -116,6 +116,7 @@ class Ledger:
   if self.continuity:required.add('read-authority-readonly-continuity.py')
   if self.rebalanced:required.add('read-authority-rebalanced-budget.py')
   if self.loading:required.add('read-authority-loading-budget.py')
+  if self.account_load:required.add('read-authority-account-load-budget.py')
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
@@ -455,6 +456,9 @@ def main():
   if 'readonlyLoading' in cfg:
    lspec=importlib.util.spec_from_file_location('loading_budget',Path(__file__).with_name('read-authority-loading-budget.py'))
    lm=importlib.util.module_from_spec(lspec);lspec.loader.exec_module(lm);implementation=lm.loading_class(implementation)
+  if 'readonlyAccountLoad' in cfg:
+   aspec=importlib.util.spec_from_file_location('account_load_budget',Path(__file__).with_name('read-authority-account-load-budget.py'))
+   am=importlib.util.module_from_spec(aspec);aspec.loader.exec_module(am);implementation=am.account_load_class(implementation)
   ledger=implementation(cfg,sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
   for line in sys.stdin.buffer:
    try:

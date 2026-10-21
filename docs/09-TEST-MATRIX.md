@@ -2557,3 +2557,10 @@ membership/counter and PREP-only wait fixes. Validate72/40/cache/diff PASS.
 Bare pre-final2847 result retains1 missing Core/PG environment failure and4
 skips; no external integration acceptance is claimed. Exact-source CI remains
 separate from local/unit and actual browser acceptance.
+
+- Account-label incident successor: `tests/read-authority-account-load.test.mjs`
+  covers exact stopped-origin import, immutable old STOP, fixed four-step order,
+  replay/approval/authority/terminal/source rejection, timeout and final failure.
+  The last qualified NOT_READY/TECHNICAL cannot produce a CLEAN_PAUSE receipt.
+  Together with loading tests: 38 cases pass locally; separate private adapter
+  tests: 8 pass. These are local evidence, not Google execution or trial acceptance.
