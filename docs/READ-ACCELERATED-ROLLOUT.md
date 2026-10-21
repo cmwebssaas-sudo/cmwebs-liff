@@ -166,3 +166,24 @@ fallback 及 Workspace 隔離均保留。
 不建立新架構、不新增產品功能、不擴張正式資料存取或費用授權。
 文件 rollback：revert 本修訂；不能在已有正式切換後只改文件而跳過實際 off／讀回。
 本次只有計畫文件變更，沒有任何正式部署或資料變更。
+
+
+### 2026-10-22 current C3 and C6 acceptance checkpoint
+
+C3 actual97/232 is PREP HARD_STOP: browser binding succeeded, inventory
+callback/validation failed. All44 UI events settled with pendingnull; no
+page claim/account projection, mutation, RPC or trial clock followed. The
+reason is not established from retained evidence. Prior95/94 and all failure
+history remain; current source work grants no remote retry authority. A new
+bounded continuation decision awaits the owner separately.
+
+C6 diagnostic sourcec2ddec6 has local Worker53/53 and repaired bare Core/PG
+2893/2893 with exact-source/cleanup readbacks and independent review. Its
+new exact-head CI39634649349 is in progress; do not treat it as passed. The
+failed integration39627922453 (3085unit,43/45Worker) remains evidence. This
+composition still requires its own source verification and exact-head CI.
+Neither local evidence nor diagnostic COMPLETE establishes formal acceptance.
+Endpoint blank/flags off; no deployment, formal-data/configuration change or
+observation T0. Technical gates,24h parallel sync/shadow including Taipei
+crossday03:00,rooms-first device/rollback,another stable24h and seven-day
+postlaunch observation all remain required.

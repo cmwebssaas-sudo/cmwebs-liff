@@ -1,11 +1,12 @@
 import {createReadStream} from 'node:fs';
 import {createInterface} from 'node:readline';
 import {createClientSummary} from './read-worker-client-summary.mjs';
+import {createActorSummary} from './read-worker-actor-summary.mjs';
 
 // Reprint bounded failure evidence after verbose numeric diagnostics. This does
 // not run/retry tests or decide their exit status. Raw output remains in the job.
 const names=[],details=[],footer=[],diagnostics=[],stages=[];
-const clientSummary=createClientSummary();
+const clientSummary=createClientSummary(),actorSummary=createActorSummary();
 let failed=0,namesDropped=0,detailDropped=0,diagnosticDropped=0;
 let nameBytes=0,detailBytes=0,diagnosticBytes=0,block=false,incomplete=0;
 let stageBytes=0,stageDropped=0;
@@ -20,7 +21,7 @@ try{
   if(!process.argv[2])throw new Error('CI log path is required');
   const lines=createInterface({input:createReadStream(process.argv[2]),crlfDelay:Infinity});
   for await(const line of lines){
-    const clientMeta=clientSummary.ingest(line);
+    const clientMeta=clientSummary.ingest(line);actorSummary.ingest(line);
     if(/^not ok \d+ - /.test(line)){
       if(block)incomplete++;
       failed++;block=true;
@@ -71,11 +72,18 @@ try{
     if(next===null)aggregateDropped++;else aggregateBytes=next;
   }
   for(const line of aggregates)console.log(line);
+  let actorBytes=0,actorDropped=0;const actor=[];
+  for(const value of actorSummary.finish()){
+    const next=retain(actor,'# C6_D1_ACTOR_AGGREGATE '+JSON.stringify(value),8192,actorBytes,1024);
+    if(next===null)actorDropped++;else actorBytes=next;
+  }
+  for(const line of actor)console.log(line);
   for(const line of footer)console.log(line);
   console.log('C6_CI_SUMMARY_META '+JSON.stringify({failed_cases:failed,
     failure_names_dropped:namesDropped,detail_lines_dropped:detailDropped,
     diagnostic_lines_dropped:diagnosticDropped,stage_lines_dropped:stageDropped,incomplete_failure_blocks:incomplete,
     client_aggregates_dropped:aggregateDropped,
+    actor_aggregates_dropped:actorDropped,actor_records_invalid:actorSummary.invalidRecords(),
     client_records_invalid:clientSummary.invalidRecords(),
     client_suites_missing:clientSummary.missingSuites(),
     footer_lines_dropped:footerDropped,

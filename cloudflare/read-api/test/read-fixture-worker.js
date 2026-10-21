@@ -1,5 +1,6 @@
 // Test-only entry point. Wrangler's production entry does not import this file.
 import schema from '../schema.json' with {type:'json'};
+import {actorTimingHeader} from './read-actor-metadata.js';
 import {decodePackedRows,packedSelection} from '../src/read-dataset.js';
 import { createReadCalculator } from '../src/read-calculator.js';
 import { createReadServices } from '../src/read-runtime.js';
@@ -17,6 +18,7 @@ export default {
     for(const [index,[table]] of tables.entries()) {
       dataset[table]=decodePackedRows(batches[index].results,schema[table].fields);
     }
+    const actorHeader=actorTimingHeader(batches);
     const decoded=performance.now();
     if(isReadRoute(new URL(request.url).pathname)) {
       const response=await serveReadRoute(request,{
@@ -31,6 +33,7 @@ export default {
         ['d1',loaded-started],['decode',decoded-loaded],['route',performance.now()-decoded]
       ].map(([name,ms])=>name+';dur='+ms.toFixed(3)).join(', '));
       response.headers.set('x-cmwebs-test-d1',JSON.stringify({queries:tables.length,rows_read:rowsRead,internal_ms:Number(internalMs.toFixed(3))}));
+      if(actorHeader!==null)response.headers.set('x-cmwebs-test-d1-actor',actorHeader);
       return response;
     }
     const body=await request.json();

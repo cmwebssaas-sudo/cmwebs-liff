@@ -1,3 +1,5 @@
+import {withD1ActorTiming} from './read-d1-actor.mjs';
+import {createActorTiming} from './read-actor-timing.mjs';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFile} from 'node:fs/promises';
@@ -17,7 +19,7 @@ function differences(a,b,path='$') {
  if(a===null||b===null||typeof a!=='object'||typeof b!=='object')return [path];
  return [...new Set([...Object.keys(a),...Object.keys(b)])].flatMap(k=>differences(a[k],b[k],path+'.'+k));
 }
-test('500 owned rooms survive real D1 projection and all seven canonical read entries without scope or amount loss',async t=>{
+test('500 owned rooms survive real D1 projection and all seven canonical read entries without scope or amount loss',async t=>withD1ActorTiming(async()=>{
  const input=capacityDataset();
  assert.equal(input.V2_rooms.filter(r=>r.workspace_id==='SYNTHETIC_W1').length,500,'capacity fixture must actually contain500 owned rooms');
  const projected=projectedDataset(input);
@@ -29,7 +31,7 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
  const bundle=await build({entryPoints:[new URL('./read-fixture-worker.js',import.meta.url).pathname],bundle:true,write:false,format:'esm',target:'es2022'});
  const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
   compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},bindings:{FIXTURE_ACCESS:JSON.stringify(projectedAccess),FIXTURE_NOW:String(Date.parse(fixture.now))}}));
- const clientTiming=createClientTiming('capacity500',line=>t.diagnostic(line));let timingOutcome='FAIL';
+ const clientTiming=createClientTiming('capacity500',line=>t.diagnostic(line)),actorTiming=createActorTiming('capacity500',line=>t.diagnostic(line));let timingOutcome='FAIL';
  try {
   const db=await mf.getD1Database('DB'),schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
   for(const name of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql']){
@@ -87,6 +89,7 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
      assert(!Object.hasOwn(detail,match[1]));const value=Number(match[2]);assert(Number.isFinite(value)&&value>=0);
      detail[match[1]]=value;stages[match[1]].push(value);
     }
+    actorTiming.record(c.route,i,end-start,detail.d1,response.headers.get('x-cmwebs-test-d1-actor'));
     observations.push({index:i,wall_ms:Number((end-start).toFixed(3)),dispatch_ms:Number((dispatchAt-start).toFixed(3)),
      consume_ms:Number((end-dispatchAt).toFixed(3)),...detail,body_bytes:body.byteLength});
    }
@@ -109,8 +112,8 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
   // route fails. Every violation still fails the suite; no sample is replaced.
   assert.deepEqual(violations,[],violations.join('; '));
   timingOutcome='PASS';
- }finally{try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{clientTiming.close(timingOutcome);}}
-});
+ }finally{try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{try{clientTiming.close(timingOutcome);}finally{actorTiming.close(timingOutcome);}}}
+}));
 
 test('packed SQL projection preserves original D1 values, column order and safe own keys in workerd',async()=>{
  const fields=['absent','nullable','zero','negativeZero','decimal','enabled','disabled','empty','quotes','unicode','nested','__proto__','replica_source_row','replica_date_fields','date','quoted"key'];
