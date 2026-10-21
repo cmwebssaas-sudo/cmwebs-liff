@@ -3712,3 +3712,23 @@ cancel or skip. All683 source paths matched the before/after bytes/modes
 snapshot; Core321 tracked blobs/index/ref and owned PostgreSQL teardown were
 verified. Only this result documentation was appended afterward; executable
 and test bytes remain those verified. New exact-head CI is still pending.
+
+### C6 same-sample D1 query-duration evidence
+
+The 500-room fixture now retains the existing test-only D1 `internal_ms`
+header for every original measured response, alongside query and row counts.
+Header parsing follows body consumption and the original full-wall end;
+request count, ordering, p95 index and strict 50ms gate remain unchanged.
+Seven bounded numeric vectors preserve all100 values per route before sorting.
+CI marks missing, duplicate, malformed or dropped vectors incomplete without
+changing the original test outcome. Emulator query-processing duration is not
+SQL CPU, transport duration or Production acceptance.
+
+The actual-loop regressions retain all700 samples after an early latency
+failure, reject nonfinite p95, and verify the new ordered vectors. Boundary
+tests and summary privacy/completeness tests passed33/33 under Node22.
+Local Node22 Worker verification passed59/59; maximum capacity p95 was20.481ms.
+An earlier Node26 run is retained separately and is not the designated Node22
+verification. The prior Linux CI latency failures remain unresolved until new
+exact-source CI supplies evidence; no Production change or rollout follows
+from these local results. Rollback is reverting this test/log-only increment.

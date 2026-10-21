@@ -282,3 +282,20 @@ test('invalid or missing memory snapshots cannot manufacture complete evidence o
   assert.doesNotMatch(result.stdout,/MEMORY_SECRET|MEMORY_META_SECRET/);
  }
 });
+
+test('all seven original capacity query-duration vectors survive noisy failed CI logs in sample order',()=>{
+ const routes=['home','actions','revenue','tenants','rooms','arrears','properties'];
+ const vectors=routes.map(route=>'# C6_LOCAL_500_ROOM_D1_INTERNAL '+JSON.stringify({route,ordered_internal_ms:Array.from({length:100},(_,i)=>i+0.125)}));
+ const result=summarize(vectors.join('\n')+'\n'+'# noisy observations '.repeat(16000)+'\n'+footer);
+ assert.equal(result.status,0,result.stderr);for(const line of vectors)assert(result.stdout.includes(line));
+ const meta=JSON.parse(result.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
+ assert.equal(meta.d1_internal_vectors_retained,7);assert.equal(meta.d1_internal_vectors_invalid,0);assert.equal(meta.d1_internal_vectors_status,'COMPLETE');assert.match(result.stdout,/# fail 2/);
+});
+test('malformed duplicate or private D1 duration vectors cannot become complete or leak strings',()=>{
+ const good='# C6_LOCAL_500_ROOM_D1_INTERNAL '+JSON.stringify({route:'home',ordered_internal_ms:Array(100).fill(1.25)});
+ for(const bad of [good,good.replace('"home"','"PRIVATE_MUST_NOT_PRINT"'),good.replace('[1.25,','["PRIVATE_MUST_NOT_PRINT",'),good.replace('1.25,','-1,'),good.replace('1.25,',''),good.replace('}',',"private":"PRIVATE_MUST_NOT_PRINT"}')]){
+  const result=summarize(good+'\n'+bad+'\n'+footer);assert.equal(result.status,0,result.stderr);
+  const meta=JSON.parse(result.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
+  assert.equal(meta.d1_internal_vectors_status,'PARTIAL');assert(meta.d1_internal_vectors_invalid>0);assert.doesNotMatch(result.stdout,/PRIVATE_MUST_NOT_PRINT/);assert.match(result.stdout,/# fail 2/);
+ }
+});

@@ -17,12 +17,12 @@ function measure(durations){
   const actorTiming=createActorTiming('capacity500',line=>logs.push(line));
   const fetchTiming=createFetchTiming('capacity500',line=>logs.push(line));
   const result=runInNewContext('(async()=>{'+body+'})()',{
-    assert,actorTiming,fetchTiming,fetchCapture:{begin:()=>({}),run:(_,fn)=>fn(),sample:()=>null},
+    assert,schema:{synthetic:{}},actorTiming,fetchTiming,fetchCapture:{begin:()=>({}),run:(_,fn)=>fn(),sample:()=>null},
     cases:routes.map(route=>({route})),paths:Object.fromEntries(routes.map(route=>[route,'/'+route])),
     performance:{now:()=>{const phase=tick++%3;return phase===0?0:phase===1?10:durations[current]??20;}},
     clientTiming:{begin:route=>{current=route;counts[route]++;},end:()=>{}},
     mf:{dispatchFetch:async()=>({status:200,arrayBuffer:async()=>new ArrayBuffer(1),
-      headers:{get:name=>name==='server-timing'?'d1;dur=1.000, decode;dur=2.000, route;dur=3.000':null}})},
+      headers:{get:name=>name==='server-timing'?'d1;dur=1.000, decode;dur=2.000, route;dur=3.000':name==='x-cmwebs-test-d1'?'{"internal_ms":0.5,"queries":1,"rows_read":1}':null}})},
     console:{log:line=>logs.push(line)}
   });
   return {result:result.then(value=>{actorTiming.close('PASS');fetchTiming.close('PASS');return value;},error=>{actorTiming.close('FAIL');fetchTiming.close('FAIL');throw error;}),counts,logs};
@@ -42,4 +42,7 @@ test('all routes below50ms retain their complete original sample counts',async()
   const run=measure({});await run.result;
   assert.deepEqual(Object.values(run.counts),Array(7).fill(100));
   assert.equal(run.logs.filter(line=>line.startsWith('C6_LOCAL_500_ROOM_SAMPLE ')).length,7);
+  const vectors=run.logs.filter(line=>line.startsWith('C6_LOCAL_500_ROOM_D1_INTERNAL ')).map(line=>JSON.parse(line.slice('C6_LOCAL_500_ROOM_D1_INTERNAL '.length)));
+  assert.deepEqual(vectors.map(v=>v.route),routes);
+  for(const vector of vectors)assert.deepEqual(vector.ordered_internal_ms,Array(100).fill(0.5));
 });

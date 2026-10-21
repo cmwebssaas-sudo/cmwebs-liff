@@ -7,6 +7,8 @@ import {createFetchSummary} from './read-worker-fetch-summary.mjs';
 // Reprint bounded failure evidence after verbose numeric diagnostics. This does
 // not run/retry tests or decide their exit status. Raw output remains in the job.
 const names=[],details=[],footer=[],diagnostics=[],stages=[];
+const d1InternalRoutes=['home','actions','revenue','tenants','rooms','arrears','properties'],d1InternalVectors=new Map();
+let d1InternalInvalid=0;
 const clientSummary=createClientSummary(),actorSummary=createActorSummary(),fetchSummary=createFetchSummary();
 let failed=0,namesDropped=0,detailDropped=0,diagnosticDropped=0;
 let nameBytes=0,detailBytes=0,diagnosticBytes=0,block=false,incomplete=0;
@@ -22,6 +24,17 @@ try{
   if(!process.argv[2])throw new Error('CI log path is required');
   const lines=createInterface({input:createReadStream(process.argv[2]),crlfDelay:Infinity});
   for await(const line of lines){
+    if(line.startsWith('# C6_LOCAL_500_ROOM_D1_INTERNAL ')){
+      try{
+        if(Buffer.byteLength(line.slice(2))>4096)throw Error();
+        const value=JSON.parse(line.slice('# C6_LOCAL_500_ROOM_D1_INTERNAL '.length));
+        if(!value||Array.isArray(value)||Object.keys(value).sort().join(',')!=='ordered_internal_ms,route'||
+          !d1InternalRoutes.includes(value.route)||d1InternalVectors.has(value.route)||
+          !Array.isArray(value.ordered_internal_ms)||value.ordered_internal_ms.length!==100||
+          !value.ordered_internal_ms.every(v=>Number.isFinite(v)&&v>=0))throw Error();
+        d1InternalVectors.set(value.route,value.ordered_internal_ms);
+      }catch{d1InternalInvalid++;}
+    }
     const clientMeta=clientSummary.ingest(line);actorSummary.ingest(line);fetchSummary.ingest(line);
     if(/^not ok \d+ - /.test(line)){
       if(block)incomplete++;
@@ -85,8 +98,18 @@ try{
     if(next===null)fetchDropped++;else fetchBytes=next;
   }
   for(const line of fetch)console.log(line);
+  let d1InternalBytes=0,d1InternalDropped=0;const d1Internal=[];
+  for(const route of d1InternalRoutes)if(d1InternalVectors.has(route)){
+    const next=retain(d1Internal,'# C6_LOCAL_500_ROOM_D1_INTERNAL '+JSON.stringify({route,
+      ordered_internal_ms:d1InternalVectors.get(route)}),24576,d1InternalBytes,4096);
+    if(next===null)d1InternalDropped++;else d1InternalBytes=next;
+  }
+  for(const line of d1Internal)console.log(line);
   for(const line of footer)console.log(line);
   console.log('C6_CI_SUMMARY_META '+JSON.stringify({failed_cases:failed,
+    d1_internal_vectors_retained:d1Internal.length,d1_internal_vectors_invalid:d1InternalInvalid,
+    d1_internal_vectors_dropped:d1InternalDropped,
+    d1_internal_vectors_status:d1Internal.length===7&&!d1InternalInvalid&&!d1InternalDropped?'COMPLETE':d1Internal.length||d1InternalInvalid||d1InternalDropped?'PARTIAL':'NOT_COLLECTED',
     failure_names_dropped:namesDropped,detail_lines_dropped:detailDropped,
     diagnostic_lines_dropped:diagnosticDropped,stage_lines_dropped:stageDropped,incomplete_failure_blocks:incomplete,
     client_aggregates_dropped:aggregateDropped,

@@ -75,7 +75,7 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
   assert.equal(observed.arrears.arrears.length,252);
   const timings={},violations=[];
   for(const c of cases){
-   const samples=[],observations=[],stages={d1:[],decode:[],route:[]};
+   const samples=[],observations=[],stages={d1:[],decode:[],route:[],internal_ms:[]};
    for(let i=0;i<100;i++){
     const observation=clientTiming.begin(c.route,i);
         const fetchToken=fetchCapture.begin();
@@ -93,13 +93,24 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
      assert(!Object.hasOwn(detail,match[1]));const value=Number(match[2]);assert(Number.isFinite(value)&&value>=0);
      detail[match[1]]=value;stages[match[1]].push(value);
     }
+    const internal=JSON.parse(response.headers.get('x-cmwebs-test-d1'));
+    assert.deepEqual(Object.keys(internal).sort(),['internal_ms','queries','rows_read']);
+    assert.equal(internal.queries,Object.keys(schema).length);
+    assert(Number.isSafeInteger(internal.rows_read)&&internal.rows_read>=0);
+    assert(Number.isFinite(internal.internal_ms)&&internal.internal_ms>=0);
+    stages.internal_ms.push(internal.internal_ms);
     actorTiming.record(c.route,i,end-start,detail.d1,response.headers.get('x-cmwebs-test-d1-actor'));
     observations.push({index:i,wall_ms:Number((end-start).toFixed(3)),dispatch_ms:Number((dispatchAt-start).toFixed(3)),
-     consume_ms:Number((end-dispatchAt).toFixed(3)),...detail,body_bytes:body.byteLength});
+     consume_ms:Number((end-dispatchAt).toFixed(3)),...detail,...internal,body_bytes:body.byteLength});
    }
    // Numeric timing diagnostics only, after the original100 measured requests.
    // Preserve request order before sorting; no Worker/body/identity data enters logs.
    const orderedSamples=samples.slice();
+   // Existing D1 metadata, paired by the unchanged request-order index. Emulator
+   // query-processing duration is not SQL CPU, transport or formal acceptance.
+   assert(observations.length===100&&observations.every((o,i)=>o.index===i));
+   console.log('C6_LOCAL_500_ROOM_D1_INTERNAL '+JSON.stringify({route:c.route,
+    ordered_internal_ms:observations.map(o=>o.internal_ms)}));
    samples.sort((a,b)=>a-b);const p95=samples[94];
    timings[c.route]={samples:100,p95_ms:Number(p95.toFixed(3))};
    console.log('C6_LOCAL_500_ROOM_SAMPLE '+JSON.stringify({route:c.route,...timings[c.route]}));
