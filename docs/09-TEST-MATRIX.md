@@ -2621,3 +2621,10 @@ verification and all rollout gates remain unproven.
 - Coverage: `tests/read-authority-owner-connection.test.mjs` and `tests/read-authority-browser-selection.test.mjs`. Passing disposable fixtures does not establish a real browser binding, account authority, compatibility RPC or cutover acceptance.
 
 Owner-selection timing regression: a delayed holder retains the closed candidate checkpoint as the approval time floor; stale choices remain rejected. No remote operations are added.
+
+### Classified original-tab inventory and ready-first successor
+
+- A separately approved exact stopped-checkpoint successor preserves prior events, source pins, STOPs and the owner's selected connection. Four individually prepaid steps bind that connection, classify the original tab inventory, claim that tab and project its ready state/account/project guards once. It adds no discovery, standalone wait, retry, write or RPC.
+- Classification stores only fixed enums, counts and booleans. Optional metadata is not traversed; getters/proxies, duplicate IDs, missing provider identity and URL/selection ambiguity fail closed. Invalid successful evidence settles as an unverified failed read, without pending IO or account credit.
+- The projection checks complete load before URL/account/settings access and retains the pinned account/project/control checks. Partial preparation cannot produce a handoff. Successful binding releases only the explicitly superseded unused declaration; 36 future primitives fit while 37 and reuse of that declaration fail. Recovery reserves and failure history remain unchanged.
+- Coverage: `tests/read-authority-inventory-budget.test.mjs`, `tests/read-authority-inventory-diagnostic.test.mjs`, `tests/read-authority-ready-projection.test.mjs`, and the existing owner-selection suite. Disposable fixtures and the isolated callback VM establish local behavior only; actual binding, compatibility, synchronization, performance, device and release gates remain separate.

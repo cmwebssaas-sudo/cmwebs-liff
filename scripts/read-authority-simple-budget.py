@@ -72,7 +72,7 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-inventory-diagnostic' if getattr(self,'inventory97',False) else '.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.suffix=suffix;self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+('.simple-rebalanced' if self.account_load else suffix)+'.json')
@@ -120,6 +120,7 @@ class Ledger:
   if self.connection:required.update(['read-authority-connection-budget.py','read-authority-browser-selection.mjs'])
   if getattr(self,'metadata_diagnostic',False):required.add('read-authority-browser-shape.mjs')
   if getattr(self,'owner_connection',False):required.add('read-authority-owner-connection-budget.py')
+  if getattr(self,'inventory97',False):required.update(['read-authority-inventory-budget.py','read-authority-inventory-diagnostic.mjs','read-authority-ready-projection.mjs'])
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
@@ -472,6 +473,9 @@ def main():
      if 'owner94' in cfg['readonlyConnection']['repair92']['diagnostic93']:
       ospec=importlib.util.spec_from_file_location('owner_connection_budget',Path(__file__).with_name('read-authority-owner-connection-budget.py'))
       om=importlib.util.module_from_spec(ospec);ospec.loader.exec_module(om);implementation=om.owner_connection_class(implementation)
+      if 'inventory97' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']:
+       ispec=importlib.util.spec_from_file_location('inventory_budget',Path(__file__).with_name('read-authority-inventory-budget.py'))
+       im=importlib.util.module_from_spec(ispec);ispec.loader.exec_module(im);implementation=im.inventory_class(implementation)
   ledger=implementation(cfg,sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
   for line in sys.stdin.buffer:
    try:
