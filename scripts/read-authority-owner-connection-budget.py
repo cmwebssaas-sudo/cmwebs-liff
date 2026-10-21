@@ -61,7 +61,7 @@ def owner_connection_class(base):
     if not (j['connection']['stage']=='binding' and j['ownerConnection']['selected']is None or self.prepared_checkpoint(j)):fail()
     if len(j['events'])-41!=j['connection']['used']-5 or not 5<=j['connection']['used']<=11 or j['connection']['failures']!=2 or j['loading']['used']!=11+j['connection']['used']-5:fail()
    for source in prior['sources']:g['pin'](source)
-   j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(prior,separators=(',',':')).encode()),'sources':copy.deepcopy(prior['sources'])});j.update(state='ready',lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now']);j['holders'].append(owner);self.j=j;save(self.claim,self.identity,fresh);self.persist()
+   self.owner_selection_not_before=j['lastAt'];j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(prior,separators=(',',':')).encode()),'sources':copy.deepcopy(prior['sources'])});j.update(state='ready',lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now']);j['holders'].append(owner);self.j=j;save(self.claim,self.identity,fresh);self.persist()
   def prepared_checkpoint(self,j):return j['connection']['stage']=='complete' and j['ownerConnection']['accountVerified']is True
   def current(self):self.validate_owner();return super().current()
   def view(self,wait=0):
@@ -75,7 +75,7 @@ def owner_connection_class(base):
     self.current();self.active(q.get('now'));s=q.get('selection');o=self.j['ownerConnection']
     if not exact(q,['op','selection','now']) or not exact(s,['browserId','approval']) or self.j['pending']is not None or self.j['connection']['stage']!='binding' or o['selected']is not None or not any(r['id']==s['browserId']for r in (o['candidates']or [])):fail()
     a=json.loads(pin(s['approval']));keys=['source','browserId','ownerAnswer','candidatesSha256','recordedAt','executionStarted']
-    if not exact(a,keys) or a['source']!='direct-human-connection-selection' or a['browserId']!=s['browserId'] or a['ownerAnswer']!='使用連線 '+s['browserId'] or a['candidatesSha256']!=sha(g['compact'](o['candidates']).encode()) or not integer(a['recordedAt']) or not self.j['lastAt']<=a['recordedAt']<=q['now'] or a['executionStarted']is not False:fail()
+    if not exact(a,keys) or a['source']!='direct-human-connection-selection' or a['browserId']!=s['browserId'] or a['ownerAnswer']!='使用連線 '+s['browserId'] or a['candidatesSha256']!=sha(g['compact'](o['candidates']).encode()) or not integer(a['recordedAt']) or not self.owner_selection_not_before<=a['recordedAt']<=q['now'] or a['executionStarted']is not False:fail()
     o['selected']=copy.deepcopy(s);self.j['lastAt']=q['now'];self.persist();return self.view()
    if name=='pause-preparation':
     self.current();self.active(q.get('now'))
@@ -87,7 +87,7 @@ def owner_connection_class(base):
    if name=='settle' and self.j['events'] and self.j['events'][-1].get('preparationStage') and self.j['events'][-1]['lane']=='ui' and self.j['events'][-1]['operation']['id'].startswith('loading-owner94-'):
     self.current();self.now(q.get('now'));e=self.j['events'][-1];self.check_loading(e['operation']);success=q.get('success');stage=self.j['connection']['stage'];extra=['ownerCandidates']if success and stage=='discovery'else ['loadingResultVerified']if success and stage=='snapshot'else []
     if type(success)is not bool or not exact(q,['op','id','success','now']+extra) or q['id']!=e['operation']['id'] or self.j['pending']!=q['id'] or e['settled']is not False:fail()
-    if success and stage=='discovery':self.j['ownerConnection']['candidates']=copy.deepcopy(candidates(q['ownerCandidates']))
+    if success and stage=='discovery':self.j['ownerConnection']['candidates']=copy.deepcopy(candidates(q['ownerCandidates']));self.owner_selection_not_before=q['now']
     if success and stage=='snapshot':
      if q['loadingResultVerified']is not True:fail()
      self.j['ownerConnection']['accountVerified']=True;e['loadingResultVerified']=True

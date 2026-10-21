@@ -3773,3 +3773,5 @@ capacity benchmark or profile was repeated locally.
 - Discovery returns only documented Chrome candidate fields and pauses without a binding. A direct owner selection matching the exact candidate digest is required before the remaining acquisition steps, successful bounded wait and proved account/project snapshot.
 - Coverage includes stale receipts/approval/history, missing or invalid owner selection, failure settlement at every step, malformed candidate rejection without pending IO, snapshot proof and offline budget accounting. Existing stopped entries cannot replay; no failure allowance resets.
 - Coverage: `tests/read-authority-owner-connection.test.mjs` and `tests/read-authority-browser-selection.test.mjs`. Passing disposable fixtures does not establish a real browser binding, account authority, compatibility RPC or cutover acceptance.
+
+Owner-selection timing regression: a delayed holder retains the closed candidate checkpoint as the approval time floor; stale choices remain rejected. No remote operations are added.
