@@ -7323,3 +7323,10 @@ The owner approved a successor retaining the completed diagnostic, prior STOPs a
 The ledger rejects stale choices/receipts, unselected binding, reused reservations, extra preparation and malformed candidates. Returned IO settles before any hard stop; failed operations do not reset or renew the retained failure allowance. Complete actual operation maps, existing future and independent recovery limits, and all safety/performance/device/observation gates remain required before RPC or release. Source tests and review are distinct from real binding or acceptance. No Apps Script route, schema, production runtime, deployment, credential, trigger or flag changes are included. Rollback leaves the unconsumed successor disabled and preserves every stopped checkpoint and charge; never replay a consumed entry.
 
 Owner-selection timing regression: a delayed holder retains the closed candidate checkpoint as the approval time floor; stale choices remain rejected. No remote operations are added.
+
+
+## 2026-10-21 owner-selected preparation status reconciliation
+
+Recommended GPT-6.1 Sol/high. Documentation-only update records the approved132main/84ordinaryUI/16UIrecovery allocation (total232), replaces stale current-status wording with actual95 CLEAN_PAUSE, and preserves older94/93/65 evidence as history. One new candidate-list read is settled; all42 events and holder/child/lock are closed, with no pending IO, account/tab verification, mutation, RPC, trial clock, deployment or T0. Explicit owner connection selection is pending. Private candidate/profile/account/credential data is not published.
+
+Source cfd0000 passed isolated full2957/2957 and exact-source CI39624938713 unit2952/Worker26; integration e9354d9 passed exact-head CI39625127928 unit3085/Worker45. Both attempt1 checkout trees match the reviewed sources. These results do not apply retroactively to later documentation commits. Code, workflow, failed samples, actual/recovery-map and formal performance/device/observation gates remain unchanged; rollback is to revert only this status documentation while retaining the current private checkpoint and all historical charges/STOPs.
