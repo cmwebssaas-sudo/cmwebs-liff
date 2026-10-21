@@ -7003,3 +7003,53 @@ Core321/index/ref and owned-cluster teardown were verified. Only this final
 result documentation is appended after that snapshot; executable/test bytes
 remain the tested bytes. New exact-head CI remains pending. Initial2890/2893
 and earlier strict Linux failures remain evidence, not replaced outcomes.
+
+
+## 2026-10-22 C6 Node HTTP-client boundary observation
+
+Recommended GPT-6.1 Sol/high: diagnose the retained strict local latency
+failure without changing product behavior, source fixtures or acceptance gates.
+Source c2ddec6 CI39634649349 passed unit2888/2888 and Worker53/53.
+Integration c3aa5ff CI39635095357 passed unit3090/3090 but Worker52/53: the
+capacity properties full-wall p95 was51.325898ms,11/100 samples>=50ms.
+Identical Worker sources and GC overlap do not establish a cause.
+
+A scoped test-only wrapper resolves the same CJS undici export as the locked
+Miniflare runtime. A minimal local literal-response experiment established
+forwarding with one observed call and complete descriptor restoration; an
+earlier invalid-options experiment failed before any dispatch and is retained.
+No installed package files or product Worker files are changed. Tokens close
+with dispatch settlement, late descendants pass through, and unfinished calls
+remain incomplete. Original response/error identity and unselected promises
+are preserved. Missing, multiple, nonfinite or out-of-window observations cannot
+be reported as complete coverage.
+
+Only the original small/capacity measurement loops are instrumented:700 each,
+100 requests per route, original order, body-consumption end, p95 index94 and
+strict<50ms remain. Token allocation precedes the wall timer; scoped execution
+and two Node-clock observations remain inside it. Validation/formatting occurs
+after the original end. Separate bounded numeric frames pair the original wall
+with undici entry/await settlement; summaries compute windows from individual
+rows. The await span includes Node/transport/Worker work and is neither exact
+fetch4 nor pure network/CPU. No percentile subtraction or cause claim is valid.
+COMPLETE means diagnostic coverage, never latency or rollout acceptance.
+
+Affected pure checks pass; independent integration review, fresh full root/
+Core/PostgreSQL, Worker and exact-source CI results remain pending. Apps Script
+source/tests are unaffected; no Google or formal data operation occurred.
+No page flag, deployment, T0 or production acceptance changed. Rollback reverts
+this test-only change; all approved rollout and physical-device gates remain.
+
+Local new-source Worker verification passed59/59,0fail/cancel/skip, including
+both original700-sample fixture runs. All1400 raw HTTP-client rows match the
+existing client start/end/fullwall/dispatch/body and actor fullwall exactly;
+both producer suites and16 summary aggregates report complete coverage, with
+zero invalid/drop. Maximum route p95=18.670541ms on this Darwin run. This does
+not replace the retained Linux failure or establish a cause. Fresh full root/
+Core/PostgreSQL, exact-source CI and downstream integration remain pending.
+
+Fresh bare root/Core/PostgreSQL regression passed2899/2899, zero fail,
+cancel or skip. All683 source paths matched the before/after bytes/modes
+snapshot; Core321 tracked blobs/index/ref and owned PostgreSQL teardown were
+verified. Only this result documentation was appended afterward; executable
+and test bytes remain those verified. New exact-head CI is still pending.

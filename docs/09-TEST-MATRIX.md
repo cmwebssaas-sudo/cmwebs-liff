@@ -3679,3 +3679,36 @@ Core321/index/ref and owned-cluster teardown were verified. Only this final
 result documentation is appended after that snapshot; executable/test bytes
 remain the tested bytes. New exact-head CI remains pending. Initial2890/2893
 and earlier strict Linux failures remain evidence, not replaced outcomes.
+
+
+### C6 Node HTTP-client boundary diagnostics (2026-10-22)
+
+Test-only CJS hook lifecycle covers response/error/receiver/argument identity,
+unselected Promise identity, concurrent-token isolation, overlap refusal,
+clock faults, late descendants and permanently incomplete detached calls.
+Collector/summary checks cover paired same-clock windows, exact700 counts,
+route/index sequence, duplicates, malformed/nonfinite/missing/multiple calls,
+privacy and bounded output. The actual measurement-body harness proves token
+allocation precedes the original wall timer and sample formatting follows body
+consumption/end. Early gate failures still retain all700 requests and NaN
+cannot pass the capacity gate. CI summaries preserve the original failing
+footer beside complete or explicitly incomplete observation evidence.
+
+A one-request literal-response functional experiment established forwarding
+for this locked Miniflare/undici pair; it is not a latency sample. Fresh full
+root/Core/PostgreSQL, complete Worker and exact-source CI results are pending.
+The prior integration properties p95=51.325898ms failure remains unresolved.
+
+Local new-source Worker verification passed59/59,0fail/cancel/skip, including
+both original700-sample fixture runs. All1400 raw HTTP-client rows match the
+existing client start/end/fullwall/dispatch/body and actor fullwall exactly;
+both producer suites and16 summary aggregates report complete coverage, with
+zero invalid/drop. Maximum route p95=18.670541ms on this Darwin run. This does
+not replace the retained Linux failure or establish a cause. Fresh full root/
+Core/PostgreSQL, exact-source CI and downstream integration remain pending.
+
+Fresh bare root/Core/PostgreSQL regression passed2899/2899, zero fail,
+cancel or skip. All683 source paths matched the before/after bytes/modes
+snapshot; Core321 tracked blobs/index/ref and owned PostgreSQL teardown were
+verified. Only this result documentation was appended afterward; executable
+and test bytes remain those verified. New exact-head CI is still pending.

@@ -2,11 +2,12 @@ import {createReadStream} from 'node:fs';
 import {createInterface} from 'node:readline';
 import {createClientSummary} from './read-worker-client-summary.mjs';
 import {createActorSummary} from './read-worker-actor-summary.mjs';
+import {createFetchSummary} from './read-worker-fetch-summary.mjs';
 
 // Reprint bounded failure evidence after verbose numeric diagnostics. This does
 // not run/retry tests or decide their exit status. Raw output remains in the job.
 const names=[],details=[],footer=[],diagnostics=[],stages=[];
-const clientSummary=createClientSummary(),actorSummary=createActorSummary();
+const clientSummary=createClientSummary(),actorSummary=createActorSummary(),fetchSummary=createFetchSummary();
 let failed=0,namesDropped=0,detailDropped=0,diagnosticDropped=0;
 let nameBytes=0,detailBytes=0,diagnosticBytes=0,block=false,incomplete=0;
 let stageBytes=0,stageDropped=0;
@@ -21,7 +22,7 @@ try{
   if(!process.argv[2])throw new Error('CI log path is required');
   const lines=createInterface({input:createReadStream(process.argv[2]),crlfDelay:Infinity});
   for await(const line of lines){
-    const clientMeta=clientSummary.ingest(line);actorSummary.ingest(line);
+    const clientMeta=clientSummary.ingest(line);actorSummary.ingest(line);fetchSummary.ingest(line);
     if(/^not ok \d+ - /.test(line)){
       if(block)incomplete++;
       failed++;block=true;
@@ -78,12 +79,19 @@ try{
     if(next===null)actorDropped++;else actorBytes=next;
   }
   for(const line of actor)console.log(line);
+  let fetchBytes=0,fetchDropped=0;const fetch=[];
+  for(const value of fetchSummary.finish()){
+    const next=retain(fetch,'# C6_NODE_FETCH_AGGREGATE '+JSON.stringify(value),12288,fetchBytes,1536);
+    if(next===null)fetchDropped++;else fetchBytes=next;
+  }
+  for(const line of fetch)console.log(line);
   for(const line of footer)console.log(line);
   console.log('C6_CI_SUMMARY_META '+JSON.stringify({failed_cases:failed,
     failure_names_dropped:namesDropped,detail_lines_dropped:detailDropped,
     diagnostic_lines_dropped:diagnosticDropped,stage_lines_dropped:stageDropped,incomplete_failure_blocks:incomplete,
     client_aggregates_dropped:aggregateDropped,
     actor_aggregates_dropped:actorDropped,actor_records_invalid:actorSummary.invalidRecords(),
+    fetch_aggregates_dropped:fetchDropped,fetch_records_invalid:fetchSummary.invalidRecords(),
     client_records_invalid:clientSummary.invalidRecords(),
     client_suites_missing:clientSummary.missingSuites(),
     footer_lines_dropped:footerDropped,
