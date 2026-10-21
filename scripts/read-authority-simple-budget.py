@@ -72,7 +72,7 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.suffix=suffix;self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+('.simple-rebalanced' if self.account_load else suffix)+'.json')
@@ -118,6 +118,7 @@ class Ledger:
   if self.loading:required.add('read-authority-loading-budget.py')
   if self.account_load:required.add('read-authority-account-load-budget.py')
   if self.connection:required.update(['read-authority-connection-budget.py','read-authority-browser-selection.mjs'])
+  if getattr(self,'metadata_diagnostic',False):required.add('read-authority-browser-shape.mjs')
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
@@ -463,7 +464,9 @@ def main():
   if 'readonlyConnection' in cfg:
    xspec=importlib.util.spec_from_file_location('connection_budget',Path(__file__).with_name('read-authority-connection-budget.py'))
    xm=importlib.util.module_from_spec(xspec);xspec.loader.exec_module(xm);implementation=xm.connection_class(implementation)
-   if 'repair92' in cfg['readonlyConnection']:implementation=xm.discovery_repair_class(implementation)
+   if 'repair92' in cfg['readonlyConnection']:
+    implementation=xm.discovery_repair_class(implementation)
+    if 'diagnostic93' in cfg['readonlyConnection']['repair92']:implementation=xm.metadata_diagnostic_class(implementation)
   ledger=implementation(cfg,sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
   for line in sys.stdin.buffer:
    try:

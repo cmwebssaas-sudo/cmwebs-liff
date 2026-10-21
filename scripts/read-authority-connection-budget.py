@@ -106,7 +106,7 @@ def discovery_repair_class(base):
   def ordinary_ceiling(self):return 82 # includes the historical unspent declaration; future_limit remains36
   def validate_repair(self):
    old89,_=self.validate_connection();p=self.cfg['readonlyConnection']['repair92'];names=['journal','claim','registry','stop','terminal','result']
-   if not exact(p,['decisionHash','approval','origin']) or p['decisionHash']!=REPAIR92 or not exact(p['origin'],names):fail()
+   if not exact(p,['decisionHash','approval','origin']+(['diagnostic93']if getattr(self,'metadata_diagnostic',False)else[])) or p['decisionHash']!=REPAIR92 or not exact(p['origin'],names):fail()
    raw={k:pin(v)for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));reg=record(Path(p['origin']['registry']['path']));a=json.loads(pin(p['approval']))
    keys=['source','decisionSha256','ownerAnswer','predecessorSha256','importedSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','maximumPreparationPrimitives','maximumLoadingPrimitives','maximumNewPrimitives','qualifiedFailureLimit','recordedAt','executionStarted']
    if not exact(a,keys) or a['source']!='direct-human-approval' or a['decisionSha256']!=REPAIR92 or a['ownerAnswer']!='同意單次修復，維持232' or a['predecessorSha256']!=sha(raw['journal']) or [a[k]for k in ['importedSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','maximumPreparationPrimitives','maximumLoadingPrimitives','maximumNewPrimitives','qualifiedFailureLimit']]!=[92,134,82,16,232,9,15,6,2] or a['executionStarted'] is not False or not integer(a['recordedAt']) or not j['lastAt']<=a['recordedAt']<=self.cfg['now']:fail()
@@ -162,3 +162,63 @@ def discovery_repair_class(base):
     self.stop();return self.view()
    return result
  return DiscoveryRepairLedger
+
+METADATA93='7e539b7f86a3af6d85484cdaa6250ab539bd66d8ce9dd3f30a5aa87a56ccbb95'
+def metadata_diagnostic_class(base):
+ """One shape-only list after exact93; no connection or account identity credit."""
+ g=base.__init__.__globals__;fail=g['fail'];exact=g['exact'];pin=g['private_pin'];rawfile=g['rawfile'];record=g['record'];sha=g['sha'];save=g['save_record'];integer=g['integer']
+ operation={'id':'loading-diagnostic93-discovery','key':'N:preparation','actor':'publisher','target':'oauth-audience','operation':'inventory','units':1,'preparation':True}
+ class MetadataDiagnosticLedger(base):
+  metadata_diagnostic=True
+  def validate_diagnostic(self):
+   origin92,claim92=self.validate_repair();p=self.cfg['readonlyConnection']['repair92']['diagnostic93'];names=['journal','claim','registry','stop','terminal','result']
+   if not exact(p,['decisionHash','approval','origin']) or p['decisionHash']!=METADATA93 or not exact(p['origin'],names):fail()
+   raw={k:pin(v)for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));reg=record(Path(p['origin']['registry']['path']));a=json.loads(pin(p['approval']))
+   keys=['source','decisionSha256','ownerAnswer','predecessorSha256','importedSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','maximumDiagnosticPrimitives','connectionMaximum','loadingMaximum','qualifiedFailureLimit','recordedAt','executionStarted']
+   if not exact(a,keys) or a['source']!='direct-human-approval' or a['decisionSha256']!=METADATA93 or a['ownerAnswer']!='同意一次形狀查核，最多94／232' or a['predecessorSha256']!=sha(raw['journal']) or [a[k]for k in ['importedSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','maximumDiagnosticPrimitives','connectionMaximum','loadingMaximum','qualifiedFailureLimit']]!=[93,134,82,16,232,1,9,15,2] or a['executionStarted']is not False or not integer(a['recordedAt']) or not j['lastAt']<=a['recordedAt']<=self.cfg['now']:fail()
+   stable=copy.deepcopy(self.identity);stable.pop('sources');stable.pop('ownerHash');stable['readonlyConnection']['repair92'].pop('diagnostic93')
+   if not exact(claim,list(stable)+['sources','ownerHash']) or any(claim[k]!=v for k,v in stable.items()) or reg!={'identity':claim,'checkpoint':j}:fail()
+   for source in claim['sources']:g['pin'](source)
+   old=str(self.path)+'.simple-discovery-repair'
+   for k,end in [('journal','.json'),('claim','-claim.json'),('stop','-stop.json')]:
+    if sha(rawfile(Path(old+end)))!=sha(raw[k]):fail()
+   if json.loads(raw['stop'])!={'source':'live-owner-stop','binding':self.cfg['binding']} and record(Path(p['origin']['stop']['path']))!={'identity':claim}:fail()
+   if not exact(j,list(origin92)) or j['events'][:39]!=origin92['events'] or len(j['events'])!=40 or j['state']!='stopped' or j['lifecycle']!='HARD_STOP' or j['phase']!='PREP' or j['pending']is not None or j['mutated']is not False or j['rpc']!={'beganAt':None,'complete':False} or j['w0']is not None or j['expiresAt']is not None or j['chargedUpperBoundMs']!=0 or j['failures']!=12 or j['technicalFailures']!=0 or len(j['holders'])!=9 or j['holders'][:8]!=origin92['holders'] or len(set(j['holders']))!=9 or j['holder']!=claim['ownerHash'] or j['holders'][-1]!=j['holder']:fail()
+   op={'id':'loading-connection-n4-discovery','key':'N:preparation','actor':'publisher','target':'oauth-audience','operation':'inventory','units':1,'preparation':True};e=j['events'][-1]
+   if not exact(e,['lane','key','operation','time','outcome','cleanup','settled','success','preparationStage']) or e['operation']!=op or e['preparationStage']!=op['id'] or e['lane']!='ui' or e['key']!='N:preparation' or e['cleanup']is not False or e['settled']is not True or e['success']is not False or e['outcome']!='UNKNOWN':fail()
+   c=copy.deepcopy(origin92['connection']);c.update(maximum=9,used=4);c['sourceChain'].append({'identitySha256':sha(json.dumps(claim92,separators=(',',':')).encode()),'sources':copy.deepcopy(claim92['sources'])});l=copy.deepcopy(origin92['loading']);l.update(maximum=15,used=10);stages=copy.deepcopy(origin92['preparationStages']);stages[op['id']]={'operations':[op],'remainingOrdinaryUi':36}
+   if j['connection']!=c or j['loading']!=l or j['preparationStages']!=stages or j['futureOrdinaryUi']!=36 or any(j[k]!=origin92[k]for k in ['stages','stageNames','stageBrowser','recoveryBrowser','plan','completed','finished']):fail()
+   d=json.loads(raw['terminal']);r=json.loads(raw['result']);drain=r.get('drain',{})
+   truth=['allIoSettled','pendingNull','scopeClosed','lockReleased','noMutation','noRpc','noTrialClock','old92ArtifactsUnchanged']
+   if d.get('source')!='post-return-discovery-repair-terminal-evidence' or any(d.get(k)is not True for k in truth) or any(d.get(k)is not False for k in ['causeEstablished','physicalDisconnectionEstablished','accountOrTabRead']) or any(d.get(k)!=v for k,v in {'actualSpent':93,'mainSpent':53,'uiSpent':40,'phase':'PREP','lifecycle':'HARD_STOP','connectionUsed':4,'connectionMaximum':9,'connectionFaults':2,'loadingUsed':10,'loadingMaximum':15,'reason':'READ_BROWSER_UNVERIFIED','failurePhase':'DISCOVERY'}.items()) or d.get('files')!={k:p['origin'][k]for k in ['journal','claim','registry','stop','result']}:fail()
+   if r.get('status')!='HARD_STOP' or r.get('failurePhase')!='DISCOVERY' or r.get('safeReason')!='READ_BROWSER_UNVERIFIED' or r.get('observations')!={} or r.get('trialAccepted')is not False or any(drain.get(k)is not True for k in ['stopAcknowledged','ordinaryScopeClosed']) or drain.get('ownedScope')!={'state':'SETTLED'}:fail()
+   return j,claim
+  def resume_preparation(self,p):
+   if p!={'metadataDiagnostic93':True}:fail()
+   origin,prior=self.validate_diagnostic();owner=sha(self.cfg['ownerNonce'].encode())
+   if record(self.registry)!={'identity':prior,'checkpoint':origin} or any(os.path.lexists(p)for p in [self.journal,self.claim,self.stop_path]) or owner in origin['holders']:fail()
+   j=copy.deepcopy(origin);j['metadataDiagnostic']={'maximum':1,'used':0,'complete':False};j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(prior,separators=(',',':')).encode()),'sources':copy.deepcopy(prior['sources'])});j.update(state='ready',lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now']);j['holders'].append(owner)
+   self.j=j;save(self.claim,self.identity,True);self.persist()
+  def current(self):self.validate_diagnostic();return super().current()
+  def view(self,wait=0):
+   v=super().view(wait);v.update(metadataDiagnosticUsed=self.j['metadataDiagnostic']['used'],metadataDiagnosticComplete=self.j['metadataDiagnostic']['complete']);return v
+  def check_loading(self,op):
+   if op!=operation or self.j['metadataDiagnostic']!={'maximum':1,'used':0,'complete':False} or self.j['connection']['used']!=4 or self.j['loading']['used']!=10:fail()
+  def command(self,q):
+   name=q.get('op')
+   if name not in ['inspect','stop','preparation-ready','wait','debit','settle']:fail()
+   if name in ['wait','debit']:
+    if q.get('lane')!='ui':fail()
+    self.current();self.check_loading(q.get('operation'))
+   if name=='settle':
+    self.current();self.now(q.get('now'));e=self.j['events'][-1];self.check_loading(e['operation']);success=q.get('success')
+    if type(success)is not bool or not exact(q,['op','id','success','now']+(['metadataShapeVerified']if success else [])) or success and q['metadataShapeVerified']is not True or q['id']!=operation['id'] or self.j['pending']!=operation['id'] or e['settled']is not False or e['lane']!='ui' or e.get('preparationStage')!=operation['id']:fail()
+    e.update(settled=True,success=success)
+    if success:e['metadataShapeVerified']=True
+    self.j.update(pending=None,lastAt=q['now']);self.j['connection']['used']+=1;self.j['loading']['used']+=1;self.j['metadataDiagnostic'].update(used=1,complete=success)
+    if not success:self.j['failures']+=1
+    self.persist()
+    if not success:self.stop()
+    return self.view()
+   return super().command(q)
+ return MetadataDiagnosticLedger
