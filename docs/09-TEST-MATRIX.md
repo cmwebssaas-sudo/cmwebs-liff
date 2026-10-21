@@ -2582,3 +2582,19 @@ private adapter15/15 PASS; no fail/cancel/skip. Latest-origin persistence-denied
 admission preserves actual89 and creates no entry or debit. Interrupted/failed
 local runs are retained in the execution record; exact-head CI and all actual
 Google/runtime/rollout gates remain independent.
+
+
+### Connection ID refresh preserves original browser/tab authority
+
+`tests/read-authority-browser-selection.test.mjs` covers original-ID preference,
+provisional unique Chrome selection only after contextual owner confirmation,
+ambiguity/type/name/duplicate/accessor rejection, and exact providerTabId/URL
+matching without opaque-ID fallback. Together with retained connection tests:
+30/30 pass. Private eleven real-ledger cases retain91, used2/fault2, mandatory
+six-step success at97, third-fault stop and all security/protected reserves.
+Independent review has no P1/P2. New current-source CI and frozen/inert gates
+remain separate; no Apps Script function or Production behavior changed.
+
+Final current-source Node22 unit2887/2887 PASS with zero fail/cancel/skip.
+Validate72/40/cache and diff-check PASS. Native restored-ID/original-tab
+verification and all rollout gates remain unproven.

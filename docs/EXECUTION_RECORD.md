@@ -4570,3 +4570,41 @@ terminated; a Node22 run completed2865pass/8fail after observed host sleep/wake
 and long protocol/child timeouts. A subsequent Node22 run with an owned,
 test-duration idle-sleep assertion passed all2873 without changing timeouts
 or test thresholds. Exact-head CI and real browser execution remain separate.
+
+
+## 2026-10-21 — Restore browser identity across connection-ID changes
+
+Recommended GPT-6.1 Sol/high for canonical ledger and identity boundaries.
+Authorized V2.0 connection repair; no Apps Script, route or Production change.
+The owner completed the explicitly requested publisher-Chrome reconnection
+step. A second prepaid discovery still lacked the old connection ID; this
+does not establish physical disconnection or prove a changed ID. Actual91
+is fully settled PREP CLEAN_PAUSE, connection used2/8 and fault2/2, no tab read,
+mutation, RPC or trial clock. All failed charges/history remain immutable.
+
+The approved requirement is the same publisher Chrome and original tab, not
+a permanent tool connection number. Add a pure metadata selector: prefer the
+original connection; only with the owner's confirmation in that instruction
+context may one unique Chrome extension be provisionally selected. Selection
+never grants same-browser/account credit. Bind through the same provider and
+require original providerTabId plus exact URL; an opaque tab ID is never an
+alternative identity. Existing hash, successful load wait, unique final safe
+projection and full actual/recovery gates remain. No candidate fallback after
+selection, extra probe, write/RPC retry, budget or failure reset is permitted.
+
+Thirty affected tests and eleven private real-ledger flows pass. Independent
+review found no P1/P2. Tests cover old-ID preference, refreshed-ID provisional
+selection, missing owner context, ambiguous candidates, opaque-only mismatch,
+wrong URL/account/readiness, exact six steps from91 to97, and charged third
+fault hard stop. Seventeen frozen source pins will be required before use.
+Latest-origin persistence-denied admission preserves91; new exact-head CI,
+final source freeze and inert preparation still precede further native IO.
+Rollback: keep unused entry inert, retain all used sources/charges/STOPs and
+production flags. Actual recovery remains unproven until the original tab and
+publisher checks succeed; local tests do not establish Google acceptance.
+
+Final local current-source unit2887/2887 PASS, zero fail/cancel/skip; validate
+72 backend/40 endpoints/cache and diff-check PASS. Source/helper14 and private
+eleven cases independently checked. The owner confirmation is recorded in its
+original instruction context and does not prove tool availability or excuse
+a third failure. Actual remains91, no further native IO before exact CI/seal.
