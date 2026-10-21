@@ -2598,3 +2598,10 @@ remain separate; no Apps Script function or Production behavior changed.
 Final current-source Node22 unit2887/2887 PASS with zero fail/cancel/skip.
 Validate72/40/cache and diff-check PASS. Native restored-ID/original-tab
 verification and all rollout gates remain unproven.
+
+### C3 discovery metadata and exact stopped-checkpoint successor
+
+- Browser/tab discovery projects only documented own data fields. Optional metadata is ignored; accessors, proxies, duplicate IDs, ambiguous Chrome candidates, and provider-tab/URL mismatches fail closed.
+- A separately approved exact stopped-checkpoint successor retains all earlier settled events, claims, source pins and STOP markers. Its six acquisition steps are individually charged, include a successful bounded load before one safe projection, and grant no new failure retry.
+- The repair consumes the existing UI spare while retaining the historical unused declaration, 36 future UI primitives, and independent recovery reserves. Complete maps with 36 future primitives are accepted; 37 or reuse of the historical unused ID are rejected.
+- Coverage: `tests/read-authority-browser-selection.test.mjs`, `tests/read-authority-discovery-repair.test.mjs`, and existing connection/loading/continuity tests. These are disposable local fixtures; passing them is not evidence of Google access, compatibility RPC, deployment, formal performance, or device acceptance.
