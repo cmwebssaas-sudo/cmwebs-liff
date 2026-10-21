@@ -3759,3 +3759,10 @@ capacity benchmark or profile was repeated locally.
 - A separately approved exact stopped-checkpoint successor retains all earlier settled events, claims, source pins and STOP markers. Its six acquisition steps are individually charged, include a successful bounded load before one safe projection, and grant no new failure retry.
 - The repair consumes the existing UI spare while retaining the historical unused declaration, 36 future UI primitives, and independent recovery reserves. Complete maps with 36 future primitives are accepted; 37 or reuse of the historical unused ID are rejected.
 - Coverage: `tests/read-authority-browser-selection.test.mjs`, `tests/read-authority-discovery-repair.test.mjs`, and existing connection/loading/continuity tests. These are disposable local fixtures; passing them is not evidence of Google access, compatibility RPC, deployment, formal performance, or device acceptance.
+
+### Shape-only metadata diagnostic
+
+- The separately approved exact stopped-checkpoint diagnostic permits one prepaid browser-list inventory, retains preparation/loading/failure history and all future/recovery reserves, and grants no browser/tab/account identity credit.
+- The pure helper returns only a fixed source, booleans and counts. Unknown metadata is not traversed, IDs/labels are not returned, and ordinary or revoked proxies/getters are not invoked.
+- Tests cover sole-read success, failed-return settlement (including legacy rejection shapes), forbidden follow-up methods, second reads, proof failure, stale origin/approval/replay and unchanged old STOPs. No binding, tab access, DOM, write or RPC is allowed.
+- Coverage: `tests/read-authority-browser-shape.test.mjs` and `tests/read-authority-metadata-diagnostic.test.mjs`. Disposable fixtures are not evidence of actual browser shape or successful compatibility/release acceptance.
