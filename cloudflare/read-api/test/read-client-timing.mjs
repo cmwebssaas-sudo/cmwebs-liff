@@ -60,7 +60,13 @@ export function createClientTiming(suite,emitDiagnostic=line=>console.log(line))
   };
   const collect=entries=>{
     gcTotal+=entries.length;
-    for(const entry of entries)if(gc.length<gcLimit)gc.push([entry.startTime,entry.duration,entry.detail?.kind??0]);
+    for(const entry of entries)if(gc.length<gcLimit){
+      const flags=entry.detail?.flags;
+      // Node22's documented GC flags. Missing/unknown bits remain unknown,
+      // never zero; flags describe the collection, not a proven cause.
+      gc.push([entry.startTime,entry.duration,entry.detail?.kind??0,
+        Number.isInteger(flags)&&flags>=0&&flags<=126&&(flags&~126)===0?flags:null]);
+    }
   };
   const observer=new PerformanceObserver(list=>collect(list.getEntries()));
   observer.observe({entryTypes:['gc']});
@@ -97,7 +103,7 @@ export function createClientTiming(suite,emitDiagnostic=line=>console.log(line))
         for(let offset=0;offset<rows.length;offset+=10)emit('SAMPLES',{route,offset,rows:rows.slice(offset,offset+10)});
       }
       for(let offset=0;offset<gc.length;offset+=20)emit('GC',{offset,rows:gc.slice(offset,offset+20)});
-      emit('META',{outcome,columns,gc_columns:['start_ms','duration_ms','kind'],sample_limit:sampleLimit,
+      emit('META',{outcome,columns,gc_columns:['start_ms','duration_ms','kind','flags'],sample_limit:sampleLimit,
         attempted_samples:samples.length,completed_samples:samples.filter(row=>row.completed).length,
         gc_limit:gcLimit,gc_total:gcTotal,gc_retained:gc.length,gc_dropped:gcTotal-gc.length,
         gc_overflow:gcTotal>gcLimit,output_dropped:outputDropped,line_limit_bytes:lineLimit,

@@ -3588,3 +3588,22 @@ or a CI replacement. Runtime context targets missing Linux heap/cgroup
 evidence only; no causal fix, production runtime change or live gate pass.
 Independent four-path source/evidence review noP1/P2; diff check independently
 PASS. Provider CI must follow the new commit and does not replace older failure.
+
+
+### 2026-10-21 C6 GC flags and legacy diagnostic compatibility
+
+Real Node22 forced collection must retain its major/forced flag in bounded
+TAP diagnostics, with no profiler or operational data. Summary vectors cover
+external/forced and combined masks, unknown/null/negative/fractional/unknown-bit
+flags, hostile strings, legacy three-column NOT_COLLECTED evidence, and both
+directions of declared-column/row-width mismatch. Unknown is never zero.
+First three new cases RED;31 affected cases GREEN before final negative-vector
+strengthening. Full regression/independent review/new exact-head CI outcomes
+are recorded separately. Existing strict50ms capacity failure and all100 raw
+samples remain authoritative; GC flags are annotation, not causal or production
+acceptance evidence. No unchanged capacity run or additional profile was added.
+
+Final strengthened vectors and all existing root tests passed in fresh isolated
+Core/PostgreSQL bare npm test2888/2888, zero fail/cancel/skip. Source670/Core/
+teardown readbacks verified; independent increment review noP1/P2. No extra
+capacity benchmark or profile was repeated locally.
