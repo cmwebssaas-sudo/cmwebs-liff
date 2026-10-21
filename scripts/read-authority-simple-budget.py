@@ -117,7 +117,7 @@ class Ledger:
   if self.rebalanced:required.add('read-authority-rebalanced-budget.py')
   if self.loading:required.add('read-authority-loading-budget.py')
   if self.account_load:required.add('read-authority-account-load-budget.py')
-  if self.connection:required.add('read-authority-connection-budget.py')
+  if self.connection:required.update(['read-authority-connection-budget.py','read-authority-browser-selection.mjs'])
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
