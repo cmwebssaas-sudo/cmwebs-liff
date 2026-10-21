@@ -172,7 +172,7 @@ def metadata_diagnostic_class(base):
   metadata_diagnostic=True
   def validate_diagnostic(self):
    origin92,claim92=self.validate_repair();p=self.cfg['readonlyConnection']['repair92']['diagnostic93'];names=['journal','claim','registry','stop','terminal','result']
-   if not exact(p,['decisionHash','approval','origin']) or p['decisionHash']!=METADATA93 or not exact(p['origin'],names):fail()
+   if not exact(p,['decisionHash','approval','origin']+(['owner94']if getattr(self,'owner_connection',False)else[])) or p['decisionHash']!=METADATA93 or not exact(p['origin'],names):fail()
    raw={k:pin(v)for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));reg=record(Path(p['origin']['registry']['path']));a=json.loads(pin(p['approval']))
    keys=['source','decisionSha256','ownerAnswer','predecessorSha256','importedSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','maximumDiagnosticPrimitives','connectionMaximum','loadingMaximum','qualifiedFailureLimit','recordedAt','executionStarted']
    if not exact(a,keys) or a['source']!='direct-human-approval' or a['decisionSha256']!=METADATA93 or a['ownerAnswer']!='同意一次形狀查核，最多94／232' or a['predecessorSha256']!=sha(raw['journal']) or [a[k]for k in ['importedSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','maximumDiagnosticPrimitives','connectionMaximum','loadingMaximum','qualifiedFailureLimit']]!=[93,134,82,16,232,1,9,15,2] or a['executionStarted']is not False or not integer(a['recordedAt']) or not j['lastAt']<=a['recordedAt']<=self.cfg['now']:fail()

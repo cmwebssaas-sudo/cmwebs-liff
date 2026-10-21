@@ -33,6 +33,13 @@ export function selectReadAuthorityBrowser(raw,options){
  if(chrome.length!==1)fail();
  return Object.freeze({browserId:chrome[0].id,selection:'CONFIRMED_UNIQUE_CHROME',sameBrowserVerified:false,originalTabRequired:true});
 }
+export function projectReadAuthorityChromeCandidates(raw){
+ const rows=metadataRows(raw,100,['id','name','type','profileName']);
+ return Object.freeze(rows.filter(r=>r.name==='Chrome'&&r.type==='extension').map(r=>{
+  if(r.profileName!==undefined&&(r.profileName.length>200||/[\x00-\x1f\x7f]/.test(r.profileName)))fail();
+  return Object.freeze({id:r.id,name:r.name,type:r.type,...(r.profileName===undefined?{}:{profileName:r.profileName})});
+ }));
+}
 export function selectReadAuthorityOriginalTab(raw,options){
  const rows=metadataRows(raw,300,['id','providerTabId','url']),o=simpleData(options);
  if(!simpleExact(o,['providerTabId','expectedURL'])||!id(o.providerTabId)||typeof o.expectedURL!=='string'||!o.expectedURL||!Array.isArray(rows)||rows.length>300)fail();

@@ -5,6 +5,7 @@ export const SIMPLE_DECISION='eccdb919d865327e3b5922231b253266e9084afe33305e12a3
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v);}return v;};
 export const SIMPLE_RULES=freeze({...STAGED_RESUME_POLICY.operations,'A:original-cloud-backup':{actor:'publisher',target:'original-settings',methods:['snapshot']}});
 export const REBALANCE_DECISION='bdab855eb6e95f7ba838e4514bd9bbc8b59db0ee64755d12950706b5ac0e051a';
+export const OWNER_CONNECTION_DECISION='710fc0a4ff12766c997377a73e8d40f3314722b99b674d0f0fd741a7a96a6b31';
 export const SIMPLE_NATIVE=freeze(["A:original-cloud-backup","A:original-triggers-backup","A:original-properties-backup","D:thin-gcp-link","D:thin-properties-write","D:thin-properties-readback","E:testing-user-write","E:testing-user-readback","E:client-create","E:client-readback","E:oauth-response","F:wrapper-before.original-settings","F:wrapper-before.original-triggers","F:wrapper-before.thin-settings","F:wrapper-before.oauth-audience","F:wrapper-before.oauth-client","F:wrapper-after.original-settings","F:wrapper-after.original-triggers","F:wrapper-after.thin-settings","F:wrapper-after.oauth-audience","F:wrapper-after.oauth-client"]);
 export const SIMPLE_STAGES=STAGED_RESUME_STAGES;
 const fail=()=>{throw Error('SIMPLE_PLAN_UNVERIFIED');};
@@ -35,12 +36,12 @@ export function simpleBrowser(raw,allowWait=false){
  return op;
 }
 export function compileAuthoritySimplePlan(raw){
- const p=simpleData(raw),connection=p.accountingDecision==='659f6874e4e7a53558ed3e3bb9c0e69c2783d42465eeb2eb05bbf921d6d8f6c8',rebalanced=connection||p.accountingDecision===REBALANCE_DECISION;
- if(!simpleExact(p,['decisionHash','history','mapComplete','operations','browserOperations',...(rebalanced?['accountingDecision']:[])])||p.decisionHash!==SIMPLE_DECISION||!simpleExact(p.history,['spent','limit'])||p.history.spent!==53||p.history.limit!==(connection?134:rebalanced?139:160)||typeof p.mapComplete!=='boolean'||!Array.isArray(p.operations)||!Array.isArray(p.browserOperations))fail();
+ const p=simpleData(raw),ownerConnection=p.accountingDecision===OWNER_CONNECTION_DECISION,connection=ownerConnection||p.accountingDecision==='659f6874e4e7a53558ed3e3bb9c0e69c2783d42465eeb2eb05bbf921d6d8f6c8',rebalanced=connection||p.accountingDecision===REBALANCE_DECISION;
+ if(!simpleExact(p,['decisionHash','history','mapComplete','operations','browserOperations',...(rebalanced?['accountingDecision']:[])])||p.decisionHash!==SIMPLE_DECISION||!simpleExact(p.history,['spent','limit'])||p.history.spent!==53||p.history.limit!==(ownerConnection?132:connection?134:rebalanced?139:160)||typeof p.mapComplete!=='boolean'||!Array.isArray(p.operations)||!Array.isArray(p.browserOperations))fail();
  const seen=new Set(),ids=new Set(),unknown=[];let ui=0,cleanup=0,preparation=0;
  for(const raw of p.operations){const o=simpleFixed(raw),k=o.bucket+':'+o.alias;if(seen.has(k)||ids.has(o.id))fail();seen.add(k);ids.add(o.id);if(o.units===null)unknown.push(k);}
  for(const raw of p.browserOperations){const o=simpleBrowser(raw);if(ids.has(o.id))fail();ids.add(o.id);if(o.units===null)unknown.push(o.id);if(/^[CIJ]:/.test(o.key))cleanup++;else ui++;if(o.preparation)preparation++;}
- if(ui>(connection?82:rebalanced?77:56)||cleanup>16||preparation>16)fail();
+ if(ui>(ownerConnection?84:connection?82:rebalanced?77:56)||cleanup>16||preparation>16)fail();
  const missing=Object.keys(SIMPLE_RULES).filter(k=>!seen.has(k)||rebalanced&&SIMPLE_NATIVE.includes(k)&&!p.browserOperations.some(o=>o.key===k)),eligible=p.mapComplete&&unknown.length===0&&missing.length===0;
- return freeze({source:'simple-offline-plan',decisionHash:SIMPLE_DECISION,mainSpent:53,uiSpent:0,mainLimit:connection?134:rebalanced?139:160,uiLimit:connection?98:rebalanced?93:72,combinedLimit:232,mainReserved:rebalanced?134:155,cleanupReserve:21,unusedReserve:2,uiOrdinary:ui,uiCleanup:cleanup,preparation,missing,unknown,credentialRpcEligible:eligible,executionAuthorized:false});
+ return freeze({source:'simple-offline-plan',decisionHash:SIMPLE_DECISION,mainSpent:53,uiSpent:0,mainLimit:ownerConnection?132:connection?134:rebalanced?139:160,uiLimit:ownerConnection?100:connection?98:rebalanced?93:72,combinedLimit:232,mainReserved:ownerConnection?132:rebalanced?134:155,cleanupReserve:21,unusedReserve:ownerConnection?0:2,uiOrdinary:ui,uiCleanup:cleanup,preparation,missing,unknown,credentialRpcEligible:eligible,executionAuthorized:false});
 }
