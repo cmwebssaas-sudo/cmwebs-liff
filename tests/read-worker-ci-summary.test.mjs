@@ -299,3 +299,41 @@ test('malformed duplicate or private D1 duration vectors cannot become complete 
   assert.equal(meta.d1_internal_vectors_status,'PARTIAL');assert(meta.d1_internal_vectors_invalid>0);assert.doesNotMatch(result.stdout,/PRIVATE_MUST_NOT_PRINT/);assert.match(result.stdout,/# fail 2/);
  }
 });
+
+function statementEvidence(){
+ const routes=['home','actions','revenue','tenants','rooms','arrears','properties'];
+ const totals=routes.map(route=>'# C6_LOCAL_500_ROOM_D1_INTERNAL '+JSON.stringify({route,ordered_internal_ms:Array(100).fill(1)}));
+ const frames=routes.flatMap(route=>Array.from({length:10},(_,chunk)=>'# C6_LOCAL_500_ROOM_D1_STATEMENTS '+JSON.stringify({route,offset:chunk*10,
+  rows:Array.from({length:10},(_,i)=>[1,(chunk*10+i)/1000,1-(chunk*10+i)/1000,...Array(18).fill(0)])})));
+ return {totals,frames};
+}
+test('all original statement timings survive CI in route sample and statement order',()=>{
+ const {totals,frames}=statementEvidence();const result=summarize([...frames,...totals,footer].join('\n'));
+ assert.equal(result.status,0,result.stderr);for(const frame of frames)assert(result.stdout.includes(frame));
+ const meta=JSON.parse(result.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
+ assert.equal(meta.d1_statement_frames_retained,70);assert.equal(meta.d1_statement_samples_retained,700);
+ assert.equal(meta.d1_statement_width,20);assert.equal(meta.d1_statement_frames_invalid,0);assert.equal(meta.d1_statement_frames_dropped,0);
+ assert.equal(meta.d1_statement_status,'COMPLETE');assert.match(result.stdout,/# fail 2/);
+});
+test('statement evidence requires numeric shape unique slots correct sums and original totals',()=>{
+ const {totals,frames}=statementEvidence(),one=frames[0];
+ for(const bad of [one,one.replace('"home"','"PRIVATE_MUST_NOT_PRINT"'),one.replace('"offset":0','"offset":1'),
+  one.replace('[1,0,1,','[1,"PRIVATE_MUST_NOT_PRINT",1,'),one.replace('[1,0,1,','[1,-1,2,'),
+  one.replace('[1,0,1,','[1,0,2,'),one.replace('[1,0,1,','[1,1,'),one.replace('}',',"private":"PRIVATE_MUST_NOT_PRINT"}')]){
+  const result=summarize([...totals,one,bad,footer].join('\n'));assert.equal(result.status,0,result.stderr);
+  const meta=JSON.parse(result.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
+  assert.equal(meta.d1_statement_status,'PARTIAL');assert(meta.d1_statement_frames_invalid>0);
+  assert.doesNotMatch(result.stdout,/PRIVATE_MUST_NOT_PRINT/);assert.match(result.stdout,/# fail 2/);
+ }
+ for(const log of [[...frames,footer],[...frames,...totals.slice(1),footer]]){
+  const result=summarize(log.join('\n'));assert.equal(result.status,0,result.stderr);
+  const meta=JSON.parse(result.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
+  assert.equal(meta.d1_statement_status,'PARTIAL');assert(meta.d1_statement_frames_invalid>0);
+ }
+ // A valid row sum still cannot substitute for its original sample total.
+ const changed=one.replace('[1,0,1,','[2,0,2,');
+ const mismatch=summarize([...totals,changed,footer].join('\n'));
+ assert.equal(mismatch.status,0,mismatch.stderr);
+ const meta=JSON.parse(mismatch.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
+ assert.equal(meta.d1_statement_status,'PARTIAL');assert.equal(meta.d1_statement_frames_retained,0);assert.equal(meta.d1_statement_frames_invalid,1);
+});

@@ -33,6 +33,8 @@ export default {
         ['d1',loaded-started],['decode',decoded-loaded],['route',performance.now()-decoded]
       ].map(([name,ms])=>name+';dur='+ms.toFixed(3)).join(', '));
       response.headers.set('x-cmwebs-test-d1',JSON.stringify({queries:tables.length,rows_read:rowsRead,internal_ms:Number(internalMs.toFixed(3))}));
+      // Existing batch order only; no SQL, values or additional query enters this header.
+      response.headers.set('x-cmwebs-test-d1-statements',JSON.stringify(durations));
       if(actorHeader!==null)response.headers.set('x-cmwebs-test-d1-actor',actorHeader);
       return response;
     }

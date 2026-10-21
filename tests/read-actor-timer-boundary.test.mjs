@@ -10,7 +10,7 @@ for(const fixture of ['capacity','parity'])test(fixture+' actor observation runs
  walk(ast,n=>{if(n.type==='ForStatement'&&n.test?.type==='BinaryExpression'&&n.test.right?.value===100)loops.push(n);});
  assert.equal(loops.length,1);let clocks=0,clientEnded=false,records=0,fetchRecords=0,fetchBegins=0,fetchRuns=0;
  const samples=[],observations=[],stages={d1:[],decode:[],route:[],internal_ms:[]},header='{"v":1,"entry_to_txn_ms":1,"json_tail_ms":2}';
- const response={status:200,headers:{get:name=>{assert.equal(clocks,3,'headers are observed after the full-wall end');return name==='server-timing'?'d1;dur=3.000, decode;dur=1.000, route;dur=1.000':name==='x-cmwebs-test-d1'?'{"internal_ms":1.25,"queries":2,"rows_read":12}':header;}},
+ const response={status:200,headers:{get:name=>{assert.equal(clocks,3,'headers are observed after the full-wall end');return name==='server-timing'?'d1;dur=3.000, decode;dur=1.000, route;dur=1.000':name==='x-cmwebs-test-d1-statements'?'[0.5,0.75]':name==='x-cmwebs-test-d1'?'{"internal_ms":1.25,"queries":2,"rows_read":12}':header;}},
   arrayBuffer:async()=>{assert.equal(clocks,2);return new ArrayBuffer(24);}};
  const variables={assert,schema:{first:{},second:{}},i:0,index:0,c:{route:'home'},item:{route:'home'},samples,observations,stages,
   paths:{home:'/local'},httpPaths:{home:'/local'},mf:{dispatchFetch:async()=>{assert.equal(clocks,1);return response;}},
@@ -25,5 +25,5 @@ for(const fixture of ['capacity','parity'])test(fixture+' actor observation runs
  assert.equal(records,1,'each original measured response needs exactly one post-timer actor observation');
  assert.equal(fetchBegins,1);assert.equal(fetchRuns,1);assert.equal(fetchRecords,1,'fetch window formatting follows the unchanged body/full-wall end');
  assert.equal(clocks,3);assert.deepEqual(samples,[2]);
- if(fixture==='capacity'){assert.equal(observations[0].internal_ms,1.25);assert.equal(observations[0].queries,2);assert.equal(observations[0].rows_read,12);assert.deepEqual(stages.internal_ms,[1.25]);}
+ if(fixture==='capacity'){assert.equal(observations[0].internal_ms,1.25);assert.equal(observations[0].queries,2);assert.equal(observations[0].rows_read,12);assert.deepEqual(stages.internal_ms,[1.25]);assert.deepEqual(observations[0].statement_ms,[0.5,0.75]);}
 });

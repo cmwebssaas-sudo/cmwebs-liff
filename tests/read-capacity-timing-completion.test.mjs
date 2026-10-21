@@ -22,7 +22,7 @@ function measure(durations){
     performance:{now:()=>{const phase=tick++%3;return phase===0?0:phase===1?10:durations[current]??20;}},
     clientTiming:{begin:route=>{current=route;counts[route]++;},end:()=>{}},
     mf:{dispatchFetch:async()=>({status:200,arrayBuffer:async()=>new ArrayBuffer(1),
-      headers:{get:name=>name==='server-timing'?'d1;dur=1.000, decode;dur=2.000, route;dur=3.000':name==='x-cmwebs-test-d1'?'{"internal_ms":0.5,"queries":1,"rows_read":1}':null}})},
+      headers:{get:name=>name==='server-timing'?'d1;dur=1.000, decode;dur=2.000, route;dur=3.000':name==='x-cmwebs-test-d1-statements'?'[0.5]':name==='x-cmwebs-test-d1'?'{"internal_ms":0.5,"queries":1,"rows_read":1}':null}})},
     console:{log:line=>logs.push(line)}
   });
   return {result:result.then(value=>{actorTiming.close('PASS');fetchTiming.close('PASS');return value;},error=>{actorTiming.close('FAIL');fetchTiming.close('FAIL');throw error;}),counts,logs};
@@ -45,4 +45,13 @@ test('all routes below50ms retain their complete original sample counts',async()
   const vectors=run.logs.filter(line=>line.startsWith('C6_LOCAL_500_ROOM_D1_INTERNAL ')).map(line=>JSON.parse(line.slice('C6_LOCAL_500_ROOM_D1_INTERNAL '.length)));
   assert.deepEqual(vectors.map(v=>v.route),routes);
   for(const vector of vectors)assert.deepEqual(vector.ordered_internal_ms,Array(100).fill(0.5));
+  const frames=run.logs.filter(line=>line.startsWith('C6_LOCAL_500_ROOM_D1_STATEMENTS ')).map(line=>JSON.parse(line.slice('C6_LOCAL_500_ROOM_D1_STATEMENTS '.length)));
+  assert.equal(frames.length,70);
+  for(const [index,frame] of frames.entries()){
+    assert.equal(frame.route,routes[Math.floor(index/10)]);assert.equal(frame.offset,index%10*10);
+    assert.deepEqual(frame.rows,Array.from({length:10},()=>[0.5,0.5]));
+  }
+  const stages=run.logs.filter(line=>line.startsWith('C6_LOCAL_500_ROOM_STAGES ')).map(line=>JSON.parse(line.slice('C6_LOCAL_500_ROOM_STAGES '.length)));
+  assert.equal(stages.length,7);
+  for(const stage of stages)for(const row of stage.slowest){assert.equal(Object.hasOwn(row,'statement_ms'),false);assert.equal(row.internal_ms,0.5);}
 });

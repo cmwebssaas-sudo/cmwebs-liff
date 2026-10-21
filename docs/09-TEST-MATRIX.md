@@ -3732,3 +3732,19 @@ An earlier Node26 run is retained separately and is not the designated Node22
 verification. The prior Linux CI latency failures remain unresolved until new
 exact-source CI supplies evidence; no Production change or rollout follows
 from these local results. Rollback is reverting this test/log-only increment.
+
+### C6 per-statement timing within the same batch
+
+The synthetic Worker additionally exposes only the numeric durations already
+returned by its original batch, in schema entry order. Capacity measurements
+read them after the unchanged body/full-wall end, require the original query
+count and summed duration, and retain all100 rows per route in ten-row frames.
+No SQL, source values or identity enters these frames; no query is added.
+CI validates exact numeric dimensions, unique route/offset slots, sums and
+same-sample totals against the existing internal-duration vectors. Missing,
+duplicate, malformed, mismatched or dropped frames cannot report COMPLETE.
+All700 original samples and the strict50ms gate remain required. This is
+diagnostic evidence only; individual elapsed durations are not CPU or causal
+proof. The retained properties p95=50.131852ms CI failure remains unresolved.
+Rollback reverts this undeployed test/log-only increment. New exact-source
+verification is required before any acceptance claim.

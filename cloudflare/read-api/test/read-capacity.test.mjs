@@ -99,9 +99,13 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
     assert(Number.isSafeInteger(internal.rows_read)&&internal.rows_read>=0);
     assert(Number.isFinite(internal.internal_ms)&&internal.internal_ms>=0);
     stages.internal_ms.push(internal.internal_ms);
+    const statement_ms=JSON.parse(response.headers.get('x-cmwebs-test-d1-statements'));
+    assert(Array.isArray(statement_ms)&&statement_ms.length===internal.queries);
+    assert(statement_ms.every(ms=>Number.isFinite(ms)&&ms>=0));
+    assert.equal(Number(statement_ms.reduce((sum,ms)=>sum+ms,0).toFixed(3)),internal.internal_ms);
     actorTiming.record(c.route,i,end-start,detail.d1,response.headers.get('x-cmwebs-test-d1-actor'));
     observations.push({index:i,wall_ms:Number((end-start).toFixed(3)),dispatch_ms:Number((dispatchAt-start).toFixed(3)),
-     consume_ms:Number((end-dispatchAt).toFixed(3)),...detail,...internal,body_bytes:body.byteLength});
+     consume_ms:Number((end-dispatchAt).toFixed(3)),...detail,...internal,statement_ms,body_bytes:body.byteLength});
    }
    // Numeric timing diagnostics only, after the original100 measured requests.
    // Preserve request order before sorting; no Worker/body/identity data enters logs.
@@ -111,6 +115,8 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
    assert(observations.length===100&&observations.every((o,i)=>o.index===i));
    console.log('C6_LOCAL_500_ROOM_D1_INTERNAL '+JSON.stringify({route:c.route,
     ordered_internal_ms:observations.map(o=>o.internal_ms)}));
+   for(let offset=0;offset<observations.length;offset+=10)console.log('C6_LOCAL_500_ROOM_D1_STATEMENTS '+JSON.stringify({route:c.route,offset,
+    rows:observations.slice(offset,offset+10).map(o=>[o.internal_ms,...o.statement_ms])}));
    samples.sort((a,b)=>a-b);const p95=samples[94];
    timings[c.route]={samples:100,p95_ms:Number(p95.toFixed(3))};
    console.log('C6_LOCAL_500_ROOM_SAMPLE '+JSON.stringify({route:c.route,...timings[c.route]}));
@@ -119,7 +125,7 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
    console.log('C6_LOCAL_500_ROOM_STAGES '+JSON.stringify({route:c.route,...timings[c.route],
     stage_p95_ms:Object.fromEntries(Object.entries(stages).map(([key,values])=>{
      assert.equal(values.length,100);values.sort((a,b)=>a-b);return [key,values[94]];
-    })),slowest:observations.sort((a,b)=>b.wall_ms-a.wall_ms||a.index-b.index).slice(0,2)}));
+    })),slowest:observations.sort((a,b)=>b.wall_ms-a.wall_ms||a.index-b.index).slice(0,2).map(({statement_ms,...row})=>row)}));
    if(!(p95<50))violations.push(c.route+'500-room local HTTP/D1 p95='+p95.toFixed(3)+'ms');
   }
   console.log('C6_LOCAL_500_ROOM_LATENCY '+JSON.stringify(timings));
