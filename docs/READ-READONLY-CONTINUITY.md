@@ -195,3 +195,23 @@ synchronization/shadow, rooms-first then24h stable,7-day postlaunch gates remain
 This source is not Google execution or rollout acceptance. New frozen private
 flow and exact-source CI remain prerequisites. Roll back unused controller
 changes to4d7cd99 while retaining actual83, all old sources and failed evidence.
+
+### Single stopped-preparation account-label incident
+
+The approved incident successor preserves the stopped journal, claim and STOP
+bytes in their existing namespace and retains the same canonical lock, epoch,
+binding and independent latest registry pointer. A separate successor claim
+can import only the exact settled preparation incident; it does not reopen the
+stopped entry or grant general recovery from HARD_STOP. Origin approval,
+terminal drain, source pins, settled failure and the latest registry are checked
+before admission. Replays and stale or parallel holders are rejected.
+
+The remaining four primitives are fixed: inventory, claim the same audience tab,
+one documented load wait (20 seconds maximum), then the last safe projection.
+Every primitive is prepaid. Publisher hash, exact URL, readiness, headings and
+control allowlists remain mandatory, with no field reads. Any failed final
+projection, including a classified NOT_READY or TECHNICAL outcome, durably
+HARD_STOPs after preserving its settlement and debit. No resumable receipt is
+created for that failure. Nine shared preparation primitives, future UI and
+independent recovery reserves remain unchanged. This grants neither a trial RPC
+nor production activation; full actual-map and release gates still apply.

@@ -3692,3 +3692,10 @@ prior record lines/multiplicity and complete paragraphs retained. Validate
 72/40/cache/comparison180 and source diff PASS; exact composition CI is separate.
 Independent index-based569-path/14-runtime/6-history review noP1/P2; no duplicate
 suite claimed. New composition provider outcome remains a separate gate.
+
+- Account-label incident successor: `tests/read-authority-account-load.test.mjs`
+  covers exact stopped-origin import, immutable old STOP, fixed four-step order,
+  replay/approval/authority/terminal/source rejection, timeout and final failure.
+  The last qualified NOT_READY/TECHNICAL cannot produce a CLEAN_PAUSE receipt.
+  Together with loading tests: 38 cases pass locally; separate private adapter
+  tests: 8 pass. These are local evidence, not Google execution or trial acceptance.
