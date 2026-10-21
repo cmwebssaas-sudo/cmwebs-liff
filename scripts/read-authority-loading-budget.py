@@ -16,7 +16,7 @@ def loading_class(base):
    origin=p['origin'];raw={k:pin(v) for k,v in origin.items()};j=json.loads(raw['journal']);claim=record(Path(origin['claim']['path']));reg=record(Path(origin['registry']['path']));receipt=json.loads(raw['receipt']);a=json.loads(pin(p['approval']))
    keys=['source','decisionSha256','ownerAnswer','predecessorSha256','importedSpent','combinedLimit','maximumLoadingPrimitives','recordedAt','executionStarted']
    if not exact(a,keys) or a['source']!='direct-human-approval' or a['decisionSha256']!=DECISION or a['ownerAnswer']!='同意載入與安全接續修訂，維持232' or a['predecessorSha256']!=sha(raw['journal']) or a['importedSpent']!=83 or a['combinedLimit']!=232 or a['maximumLoadingPrimitives']!=9 or a['executionStarted'] is not False or not integer(a['recordedAt']) or not j['lastAt']<=a['recordedAt']<=self.cfg['now']:fail()
-   stable={k:v for k,v in self.identity.items() if k not in ['sources','ownerHash','readonlyLoading','readonlyAccountLoad']}
+   stable={k:v for k,v in self.identity.items() if k not in ['sources','ownerHash','readonlyLoading','readonlyAccountLoad','readonlyConnection']}
    if not exact(claim,list(stable)+['sources','ownerHash']) or any(claim[k]!=v for k,v in stable.items()) or reg!={'identity':claim,'checkpoint':j}:fail()
    for source in claim['sources']:g['pin'](source)
    if len(j['events'])!=30 or len(j['holders'])!=3 or j['failures']!=6 or j['technicalFailures']!=0 or j['phase']!='PREP' or j['lifecycle']!='CLEAN_PAUSE' or j['state']!='ready' or j['pending'] is not None or j['mutated'] is not False or j['w0'] is not None or j['expiresAt'] is not None or j['rpc']!={'beganAt':None,'complete':False}:fail()

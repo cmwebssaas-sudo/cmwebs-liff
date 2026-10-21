@@ -17,7 +17,7 @@ def rebalanced_class(base):
    raw={k:pin(p[k]) for k in ['approval','journal','claim','registry','receipt']};j=json.loads(raw['journal']);claim=record(Path(p['claim']['path']));suffix='.simple-readonly-diagnostic'
    expected={'journal':str(self.path)+suffix+'.json','claim':str(self.path)+suffix+'-claim.json','registry':str(Path.home()/'.codex/private/cmwebs-authority-trials'/(sha(json.dumps(c['epoch'],separators=(',',':')).encode())+suffix+'.json')),'receipt':str(self.path)+suffix+'-handoff-2.json'}
    if any(p[k]['path']!=v for k,v in expected.items()) or os.path.lexists(str(self.path)+suffix+'-stop.json'):fail()
-   stable=[k for k in c if k not in ['sources','now','ownerNonce','readonlyRebalance','readonlyLoading','readonlyAccountLoad']]
+   stable=[k for k in c if k not in ['sources','now','ownerNonce','readonlyRebalance','readonlyLoading','readonlyAccountLoad','readonlyConnection']]
    if not exact(claim,stable+['sources','ownerHash']) or any(claim[k]!=c[k] for k in stable) or not g['digest'](claim['ownerHash']):fail()
    for source in claim['sources']:g['pin'](source)
    if record(Path(p['registry']['path']))!={'identity':claim,'checkpoint':j}:fail()

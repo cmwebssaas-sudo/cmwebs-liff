@@ -7171,3 +7171,46 @@ source and private-flow review. Exact-head CI and frozen admission are required
 before external use. No affected Apps Script test function: no .gs source changed.
 Rollback is to keep the entry inert and existing production flags unchanged;
 a failed/read-only incident retains all debits and stopped history, never replays.
+
+
+## 2026-10-21 — Bounded readonly connection continuity
+
+Recommended GPT-6.1 Sol/high for retained ledger and source boundaries.
+Authorized V2.0 read-path blocker repair; no Apps Script source changed.
+An exact stopped-origin successor preserves the shared canonical lock/latest
+registry and every old failed event. Five previously unassigned units move
+from main to ordinary UI within the unchanged total232: main134, ordinary82,
+independent UI recovery16. HTTP58, main recovery21, unused2, future36 and
+remaining UI protection are retained. Eight additional named preparation
+primitives and two authenticated settled pure-tool faults are shared across
+closed holders/source migrations; no writing or RPC retry is added.
+
+Each actual callback requires its own prepaid descriptor. Discovery, same
+browser binding, original-tab inventory/claim, successful bounded load wait
+and sole final safe projection precede grounding. Per-stage minimum remaining
+path bounds reject incomplete paths before IO. Known owner-required recovery
+closes the holder at CLEAN_PAUSE. Final projection, account/hash/URL/schema
+and unknown failures still stop. Grounding alone cannot authorize RPC: full
+actual/recovery maps and all original privacy/runtime/performance gates remain.
+
+Independent review reproduced two P2s: final failed projection lost the new
+sub-counter increment, and ID-prefix-only dispatch intercepted ordinary
+settlement. Focused real-holder tests failed before fixes; persist-before-stop
+and exact preparation-event dispatch correct both. Affected76 tests pass,
+zero fail/cancel/skip. Private adapter review, exact-head CI, frozen source
+and inert admission still precede Google IO; actual usage remains89/232.
+Rollback: leave the unused entry inert; retain used journals/STOPs/source pins
+and production flags. No formal data, deployment, configuration or T0 change.
+
+Final local source verification: Node22 complete unit2873/2873 PASS, zero
+fail/cancel/skip. Private adapter15/15 PASS includes charged closed-holder
+continuity and rejects changed receipt paths/counts. Independent source and
+private-entry reviews have no remaining P1/P2. A persistence-intercepted real
+latest-origin constructor reaches its first denied save, with canonical89 and
+all stopped artifacts unchanged, no new namespace/debit/browser IO.
+
+Retain failed local runs separately: the first used system Node26 and was
+terminated; a Node22 run completed2865pass/8fail after observed host sleep/wake
+and long protocol/child timeouts. A subsequent Node22 run with an owned,
+test-duration idle-sleep assertion passed all2873 without changing timeouts
+or test thresholds. Exact-head CI and real browser execution remain separate.
