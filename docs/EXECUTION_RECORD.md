@@ -7301,3 +7301,11 @@ loopback listener, bootstrap password removed. Final strengthened vectors are
 included. Independent six-path review found no P1/P2; validate72/40/cache/
 comparison180 and diff PASS. These are local results; exact new-source CI and
 Linux flags remain unobserved until provider completion.
+
+### C3 bounded discovery repair implementation
+
+The owner approved one successor for the retained stopped discovery checkpoint, using only the existing spare within the unchanged total bound. Discovery now inspects the documented required metadata fields without traversing unrelated optional values. Original browser preference, explicit fallback context, exact provider-tab/URL matching, account proof and the safe projection policy remain required.
+
+The successor imports the exact frozen history into a fresh namespace; consumed entries and STOP markers remain immutable. It allows exactly six separately charged acquisition steps, retains the prior failure count, and hard-stops on any new failure. Only a fully completed acquisition may hand off to the existing future plan. Budget checks include the historical unused declaration and retain the 36-primitive future cap and independent recovery reserves.
+
+Verification includes disposable stopped-history fixtures, all six failure positions, replay/stale authority rejection, full-map bounds and optional metadata cases. Controller-only changes do not modify Apps Script routes, schema, Worker behavior, production flags, credentials or deployments. Actual browser execution and subsequent trial/release gates remain separately required. Rollback is to retain the stopped checkpoint and disable the unused successor; never replay a consumed entry or erase its charges.
