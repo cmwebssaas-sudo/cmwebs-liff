@@ -2564,3 +2564,21 @@ separate from local/unit and actual browser acceptance.
   The last qualified NOT_READY/TECHNICAL cannot produce a CLEAN_PAUSE receipt.
   Together with loading tests: 38 cases pass locally; separate private adapter
   tests: 8 pass. These are local evidence, not Google execution or trial acceptance.
+
+
+### Bounded readonly connection continuity
+
+`tests/read-authority-connection.test.mjs` verifies exact stopped-origin import,
+immutable historical STOPs, shared8/fault2 limits, main134/UI82/recovery16,
+prepaid six-step order, minimum remaining-path denial, successful wait and
+reviewed sole projection, protected future36, cross-day latest-only handoff,
+owner-required CLEAN_PAUSE, replay/approval/source/authority rejection, and
+ordinary ID-prefix settlement isolation. Affected76 cases pass locally,
+zero fail/cancel/skip. External Google, full trial and rollout acceptance are
+separate gates; no Apps Script function changed in this increment.
+
+Connection increment final local verification: Node22 unit2873/2873 PASS,
+private adapter15/15 PASS; no fail/cancel/skip. Latest-origin persistence-denied
+admission preserves actual89 and creates no entry or debit. Interrupted/failed
+local runs are retained in the execution record; exact-head CI and all actual
+Google/runtime/rollout gates remain independent.

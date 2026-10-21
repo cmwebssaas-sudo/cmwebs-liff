@@ -35,12 +35,12 @@ export function simpleBrowser(raw,allowWait=false){
  return op;
 }
 export function compileAuthoritySimplePlan(raw){
- const p=simpleData(raw),rebalanced=p.accountingDecision===REBALANCE_DECISION;
- if(!simpleExact(p,['decisionHash','history','mapComplete','operations','browserOperations',...(rebalanced?['accountingDecision']:[])])||p.decisionHash!==SIMPLE_DECISION||!simpleExact(p.history,['spent','limit'])||p.history.spent!==53||p.history.limit!==(rebalanced?139:160)||typeof p.mapComplete!=='boolean'||!Array.isArray(p.operations)||!Array.isArray(p.browserOperations))fail();
+ const p=simpleData(raw),connection=p.accountingDecision==='659f6874e4e7a53558ed3e3bb9c0e69c2783d42465eeb2eb05bbf921d6d8f6c8',rebalanced=connection||p.accountingDecision===REBALANCE_DECISION;
+ if(!simpleExact(p,['decisionHash','history','mapComplete','operations','browserOperations',...(rebalanced?['accountingDecision']:[])])||p.decisionHash!==SIMPLE_DECISION||!simpleExact(p.history,['spent','limit'])||p.history.spent!==53||p.history.limit!==(connection?134:rebalanced?139:160)||typeof p.mapComplete!=='boolean'||!Array.isArray(p.operations)||!Array.isArray(p.browserOperations))fail();
  const seen=new Set(),ids=new Set(),unknown=[];let ui=0,cleanup=0,preparation=0;
  for(const raw of p.operations){const o=simpleFixed(raw),k=o.bucket+':'+o.alias;if(seen.has(k)||ids.has(o.id))fail();seen.add(k);ids.add(o.id);if(o.units===null)unknown.push(k);}
  for(const raw of p.browserOperations){const o=simpleBrowser(raw);if(ids.has(o.id))fail();ids.add(o.id);if(o.units===null)unknown.push(o.id);if(/^[CIJ]:/.test(o.key))cleanup++;else ui++;if(o.preparation)preparation++;}
- if(ui>(rebalanced?77:56)||cleanup>16||preparation>16)fail();
+ if(ui>(connection?82:rebalanced?77:56)||cleanup>16||preparation>16)fail();
  const missing=Object.keys(SIMPLE_RULES).filter(k=>!seen.has(k)||rebalanced&&SIMPLE_NATIVE.includes(k)&&!p.browserOperations.some(o=>o.key===k)),eligible=p.mapComplete&&unknown.length===0&&missing.length===0;
- return freeze({source:'simple-offline-plan',decisionHash:SIMPLE_DECISION,mainSpent:53,uiSpent:0,mainLimit:rebalanced?139:160,uiLimit:rebalanced?93:72,combinedLimit:232,mainReserved:rebalanced?134:155,cleanupReserve:21,unusedReserve:2,uiOrdinary:ui,uiCleanup:cleanup,preparation,missing,unknown,credentialRpcEligible:eligible,executionAuthorized:false});
+ return freeze({source:'simple-offline-plan',decisionHash:SIMPLE_DECISION,mainSpent:53,uiSpent:0,mainLimit:connection?134:rebalanced?139:160,uiLimit:connection?98:rebalanced?93:72,combinedLimit:232,mainReserved:rebalanced?134:155,cleanupReserve:21,unusedReserve:2,uiOrdinary:ui,uiCleanup:cleanup,preparation,missing,unknown,credentialRpcEligible:eligible,executionAuthorized:false});
 }

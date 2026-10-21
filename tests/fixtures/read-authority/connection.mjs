@@ -1,0 +1,16 @@
+import {accountFixture,holder,loadingOp} from './account-load.mjs';
+import {readFileSync} from 'node:fs';import {join,resolve} from 'node:path';import {hash,compact} from './rebalanced.mjs';
+export {holder,loadingOp} from './account-load.mjs';
+export const connectionDecision='659f6874e4e7a53558ed3e3bb9c0e69c2783d42465eeb2eb05bbf921d6d8f6c8';
+export const fault=(phase,code='API_REJECTED')=>({source:'settled-readonly-connection',kind:'READONLY_TOOL',phase,errorClass:'ERROR',code,pureRead:true,terminal:true,fieldsRead:false});
+export async function connectionFixture(){
+ const s=await accountFixture(),a=holder(s);await a.withContinuation(async cap=>{const op=loadingOp('incident-h5-inventory','inventory','oauth-audience');await cap.prepareReadonly({stage:op.id,operations:[op],remainingOrdinaryUi:36});await cap.browserRead(()=>{throw Error('SYNTHETIC_INVENTORY_ERROR');},op);}).catch(e=>{if(e.message!=='TRIAL_STOPPED')throw e;});const drain=await a.stopAndDrain();
+ const suffix='.simple-account-load',pin=path=>({path,sha256:hash(readFileSync(path))}),origin={},canonical={journal:s.path+suffix+'.json',claim:s.path+suffix+'-claim.json',stop:s.path+suffix+'-stop.json',registry:join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.simple-rebalanced.json')};
+ for(const[k,p]of Object.entries(canonical)){const target=join(s.home,'connection-origin-'+k+'.json');s.put(target,readFileSync(p));origin[k]=pin(target);}
+ const result=join(s.home,'connection-origin-result.json');s.put(result,compact({status:'HARD_STOP',observations:{},failurePhase:'INVENTORY',drain,trialAccepted:false}));origin.result=pin(result);
+ const terminal=join(s.home,'connection-origin-terminal.json');s.put(terminal,compact({source:'post-return-account-load-terminal-evidence',combinedSpent:89,loadingUsed:6,lifecycle:'HARD_STOP',phase:'PREP',events:36,last:{lane:'ui',key:'N:preparation',settled:true,success:false},method:'inventory',currentTarget:'oauth-audience',grounded:['thin-settings'],latestRegistryMatches:true,oldStoppedArtifactsUnchanged:true,lockReleased:true,pendingNull:true,allEventsSettled:true,noMutation:true,noRpc:true,noTrialClock:true,actualAwaitedRunReturned:true,exactHolderChildAbsent:true,scopeClosed:true,stopAcknowledged:true,resumeAuthorized:false,sourceHead:'f'.repeat(40),files:Object.fromEntries(Object.entries(origin).map(([k,v])=>[k==='result'?'actual-result':k,v]))}));origin.terminal=pin(terminal);
+ s.time+=1000;const approval=join(s.home,'connection-approval.json');s.put(approval,compact({source:'direct-human-approval',decisionSha256:connectionDecision,ownerAnswer:'同意232內調整與兩次唯讀修復',predecessorSha256:origin.journal.sha256,importedSpent:89,mainLimit:134,uiOrdinaryLimit:82,uiRecoveryLimit:16,combinedLimit:232,maximumAdditionalPrimitives:8,qualifiedFailureLimit:2,recordedAt:s.time,executionStarted:false}));
+ s.cfg.readonlyConnection={decisionHash:connectionDecision,approval:pin(approval),origin};s.cfg.resume={connectionIncident:true};s.cfg.now=s.time;s.cfg.ownerNonce='f'.repeat(64);
+ try{s.cfg.sources.push(pin(resolve('scripts/read-authority-connection-budget.py')));}catch{}
+ s.connection=()=>JSON.parse(readFileSync(s.path+'.simple-connection.json'));s.retained89=Object.fromEntries(Object.entries(canonical).filter(([k])=>k!=='registry').map(([,p])=>[p,readFileSync(p)]));return s;
+}

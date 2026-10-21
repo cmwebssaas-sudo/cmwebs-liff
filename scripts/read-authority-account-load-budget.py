@@ -16,7 +16,7 @@ def account_load_class(base):
    raw={k:pin(v) for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));reg=record(Path(p['origin']['registry']['path']));prior=self.validate_origin();a=json.loads(pin(p['approval']))
    keys=['source','decisionSha256','ownerAnswer','predecessorSha256','importedSpent','combinedLimit','maximumAdditionalPrimitives','recordedAt','executionStarted']
    if not exact(a,keys) or a['source']!='direct-human-approval' or a['decisionSha256']!=DECISION or a['ownerAnswer']!='同意本次4步接續，維持232' or a['predecessorSha256']!=sha(raw['journal']) or [a[k] for k in ['importedSpent','combinedLimit','maximumAdditionalPrimitives']]!=[88,232,4] or a['executionStarted'] is not False or not integer(a['recordedAt']) or not j['lastAt']<=a['recordedAt']<=self.cfg['now']:fail()
-   stable={k:v for k,v in self.identity.items() if k not in ['sources','ownerHash','readonlyAccountLoad']}
+   stable={k:v for k,v in self.identity.items() if k not in ['sources','ownerHash','readonlyAccountLoad','readonlyConnection']}
    if not exact(claim,list(stable)+['sources','ownerHash']) or any(claim[k]!=v for k,v in stable.items()) or reg!={'identity':claim,'checkpoint':j}:fail()
    for source in claim['sources']:g['pin'](source)
    old=str(self.path)+'.simple-rebalanced'
