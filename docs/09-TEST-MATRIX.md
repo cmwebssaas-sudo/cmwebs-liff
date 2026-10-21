@@ -2612,3 +2612,10 @@ verification and all rollout gates remain unproven.
 - The pure helper returns only a fixed source, booleans and counts. Unknown metadata is not traversed, IDs/labels are not returned, and ordinary or revoked proxies/getters are not invoked.
 - Tests cover sole-read success, failed-return settlement (including legacy rejection shapes), forbidden follow-up methods, second reads, proof failure, stale origin/approval/replay and unchanged old STOPs. No binding, tab access, DOM, write or RPC is allowed.
 - Coverage: `tests/read-authority-browser-shape.test.mjs` and `tests/read-authority-metadata-diagnostic.test.mjs`. Disposable fixtures are not evidence of actual browser shape or successful compatibility/release acceptance.
+
+### Explicit owner connection selection
+
+- The approved successor retains the completed stopped diagnostic and all old charges. Unused main allowance moves to ordinary UI within the same aggregate ceiling; HTTP, future operations and independent recovery reservations remain intact.
+- Discovery returns only documented Chrome candidate fields and pauses without a binding. A direct owner selection matching the exact candidate digest is required before the remaining acquisition steps, successful bounded wait and proved account/project snapshot.
+- Coverage includes stale receipts/approval/history, missing or invalid owner selection, failure settlement at every step, malformed candidate rejection without pending IO, snapshot proof and offline budget accounting. Existing stopped entries cannot replay; no failure allowance resets.
+- Coverage: `tests/read-authority-owner-connection.test.mjs` and `tests/read-authority-browser-selection.test.mjs`. Passing disposable fixtures does not establish a real browser binding, account authority, compatibility RPC or cutover acceptance.
