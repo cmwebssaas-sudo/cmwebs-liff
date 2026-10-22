@@ -351,3 +351,27 @@ cancel or skip. All683 source paths matched the before/after bytes/modes
 snapshot; Core321 tracked blobs/index/ref and owned PostgreSQL teardown were
 verified. Only this result documentation was appended afterward; executable
 and test bytes remain those verified. New exact-head CI is still pending.
+
+
+### Properties stage pairs retained after measurement (C6, 2026-10-23)
+
+Recommended GPT-6.1 Sol/high. Existing100 properties observations already
+contain all D1/decode/route times and body sizes; this candidate retains those
+pairs in original zero-based sample order after the measured loop, before
+wall-time sorting. No timer, SQL, calculator, route, warmup, dependency or
+acceptance gate changed. Output is numeric metadata only. Ten ten-row frames
+and raw counts have independent summary storage (32768 total,3072 per frame);
+strict validation produces COMPLETE/PARTIAL/NOT_COLLECTED coverage receipts.
+Old evidence budgets, original failure names/details and terminal footer stay
+unchanged. The final focused58 tests and validate pass; no new Worker/full-unit
+run occurred. Parent review and one composed diagnostic CI are pending.
+
+The retained run39867571686 properties p95=51.56710199999725ms, max54.88509599999816ms
+and9of100>=50 remain a real strict-gate failure. Previously retained stage
+percentiles/top2 observations lost98 decode/route pairings; this change retains
+those existing pairs for a later controlled observation. It establishes no
+root cause, speed improvement, formal acceptance or permission for rollout.
+Post-loop formatting/output may affect later tests even outside these timers;
+properties is the final capacity route. Rollback reverts the test/summary
+diagnostic change; no Production release, business-data or configuration
+rollback is needed.
