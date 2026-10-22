@@ -4095,3 +4095,30 @@ no redundant local full-unit/Core/PostgreSQL run or external action was performe
 - No changed Apps Script function, route or business schema requires a cloud
   test call. All actual provider, full-map, privacy, performance, device,
   rollback,24h+24h/seven-day gates remain separate and unaccepted here.
+
+## 2026-10-23 C3 shared-object successor source candidate
+
+| Check | Evidence boundary |
+| --- | --- |
+| Fresh direct approval, exact stopped prefix, returned receipt/audit and local bridge proofs; missing or changed pins rejected | Disposable synthetic holder/ledger history; historical UNKNOWN is preserved |
+| Separate four-read namespace and account proof; success stops at binding-only CLEAN_PAUSE | Original proof remains unsuccessful; original decisions keep their ceilings |
+| Each callback failure settles false before STOP/drain; pending clears and consumed entries cannot replay | Real local controller and ledger with synthetic provider callbacks |
+| Future ordinary allowance and independent recovery reserves remain intact | Full operation-map and actual browser acceptance remain separate gates |
+| Shared object gate, visible attempts and safe pending/returned/rejected classifications across later state mutations | Pure local mock boundary; raw provider rejection text is discarded |
+| Deferred source promise retained before callback; terminal result/error, closure and once-only guard retained | Existing source launcher reused without changes |
+
+Coverage: `read-authority-project-shared.test.mjs`,
+`read-authority-retained-browser-bridge.test.mjs` and the affected predecessor
+controller/plan/selector/holder suites. No Apps Script test function applies;
+no `.gs` module, route, schema, calculator or benchmark changes. Independent
+review, final composed-source CI, complementary Core/owned-PostgreSQL integration,
+private immutable packaging, inert/first-write and separate prestart checks remain
+required. Local results cannot establish provider, trial, device or release
+acceptance. The initial overlapping RED run is limited evidence; a separate
+fixed-source ledger admission RED and corresponding GREEN are retained.
+
+Final local affected verification:28 files /709 tests PASS, zero fail/cancel/skip,
+original runner and shell wrapper exit0 under Node22. Added47 cases across two
+new test files; no existing test case removed or modified. Validate72 backend /
+40 endpoints/cache and diff-check PASS. The source remains local and parent
+review/composed-source CI/Core/private execution gates remain required.

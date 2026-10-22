@@ -13,7 +13,7 @@ def launch_class(base):
   def prepared_checkpoint(self,j):return j.get('projectLaunch')=={'maximum':4,'used':4,'accountVerified':True} and j['connection']['stage']=='complete' and j['ownerConnection']['accountVerified']is True
   def validate_launch(self):
    old99,claim99=self.validate_retarget();p=self.cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100'];names=['journal','claim','registry','stop','observation','parentObserver']
-   if not exact(p,['decisionHash','approval','origin']) or p['decisionHash']!=DECISION or not exact(p['origin'],names):fail()
+   if not exact(p,['decisionHash','approval','origin']+(['shared101']if getattr(self,'shared101',False)else[])) or p['decisionHash']!=DECISION or not exact(p['origin'],names):fail()
    for value in [p['approval']]+list(p['origin'].values()):
     if not exact(value,['path','sha256']):fail()
    raw={k:pin(v)for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));a=json.loads(pin(p['approval']))
@@ -45,24 +45,30 @@ def launch_class(base):
    if not exact(proof,list(proof_expected)+['observedAt']) or any(type(proof[k])is not type(v) or proof[k]!=v for k,v in proof_expected.items()) or type(proof['observedAt'])is not str or not 0<len(proof['observedAt'])<=100:fail()
    return j,claim
   def resume_preparation(self,p):
-   origin,prior=self.validate_launch();owner=sha(self.cfg['ownerNonce'].encode());fresh=p=={'launch100':True}
+   origin,prior=self.validate_launch()
+   return self._resume_project_read(p,origin,prior,marker='launch100',proof_key='projectLaunch',connection=15,loading=21,prefix_events=47,preserved=['projectRetarget','inventoryDiagnostic'])
+  # Fixed four-read successors share durable resume checks. Callers supply only
+  # their literal policy identity, counters and separately retained proof keys.
+  def _resume_project_read(self,p,origin,prior,*,marker,proof_key,connection,loading,prefix_events,preserved):
+   owner=sha(self.cfg['ownerNonce'].encode());fresh=p=={marker:True}
    if fresh:
     if record(self.registry)!={'identity':prior,'checkpoint':origin} or any(os.path.lexists(x)for x in [self.journal,self.claim,self.stop_path]) or owner in origin['holders']:fail()
-    j=copy.deepcopy(origin);j['connection'].update(maximum=15,stage='binding');j['loading']['maximum']=21;j['projectLaunch']={'maximum':4,'used':0,'accountVerified':False}
+    j=copy.deepcopy(origin);j['connection'].update(maximum=connection,stage='binding');j['loading']['maximum']=loading;j[proof_key]={'maximum':4,'used':0,'accountVerified':False}
    else:
     if not exact(p,['receipt','minimumEvents']):fail()
     raw=rawfile(self.journal);rr=rawfile(self.registry);j=json.loads(raw);prior=record(self.claim)
     if record(self.registry)!={'identity':prior,'checkpoint':j} or p['minimumEvents']!=len(j['events']) or p['receipt']['path']!=str(self.path)+self.suffix+'-handoff-'+str(len(j['holders']))+'.json':fail()
     self.verify_receipt(json.loads(g['pin'](p['receipt'])),j,raw,rr)
-    if {k:v for k,v in prior.items()if k not in ['sources','ownerHash']}!={k:v for k,v in self.identity.items()if k not in ['sources','ownerHash']} or j['events'][:47]!=origin['events'] or len(j['events'])!=51 or j['state']!='ready' or j['lifecycle']!='CLEAN_PAUSE' or not self.prepared_checkpoint(j) or j['connection']['used']!=15 or j['loading']['used']!=21 or j['projectRetarget']!=origin['projectRetarget'] or j['inventoryDiagnostic']!=origin['inventoryDiagnostic'] or j['phase']!='PREP' or j['pending']is not None or j['mutated'] or j['w0']is not None or j['rpc']!={'beganAt':None,'complete':False} or os.path.lexists(self.stop_path) or any(e['settled']is not True or e['success']is not True for e in j['events'][47:]) or owner in j['holders'] or self.cfg['now']<j['lastAt']:fail()
+    if {k:v for k,v in prior.items()if k not in ['sources','ownerHash']}!={k:v for k,v in self.identity.items()if k not in ['sources','ownerHash']} or j['events'][:prefix_events]!=origin['events'] or len(j['events'])!=prefix_events+4 or j['state']!='ready' or j['lifecycle']!='CLEAN_PAUSE' or not self.prepared_checkpoint(j) or j['connection']['used']!=connection or j['loading']['used']!=loading or any(j[k]!=origin[k]for k in preserved) or j['phase']!='PREP' or j['pending']is not None or j['mutated'] or j['w0']is not None or j['rpc']!={'beganAt':None,'complete':False} or os.path.lexists(self.stop_path) or any(e['settled']is not True or e['success']is not True for e in j['events'][prefix_events:]) or owner in j['holders'] or self.cfg['now']<j['lastAt']:fail()
    for s in prior['sources']:g['pin'](s)
    j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(prior,separators=(',',':')).encode()),'sources':copy.deepcopy(prior['sources'])});j.update(state='ready',lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now']);j['holders'].append(owner);self.j=j;save(self.claim,self.identity,fresh);self.persist()
   def current(self):self.validate_launch();return super().current()
   def view(self,wait=0):
    v=super().view(wait);d=self.j['projectLaunch'];v.update(uiOrdinaryLimit=87,uiLimit=103,combinedLimit=235,launchUsed=d['used'],launchAccountVerified=d['accountVerified']);return v
-  def check_loading(self,op):
-   c=self.j['connection'];d=self.j['projectLaunch'];n=d['used'];stage=c['stage']
-   if n>=4 or stage!=STAGES[n] or c['used']!=11+n or self.j['loading']['used']!=17+n or c['used']>=15 or op!={'id':'loading-launch100-n'+str(c['used']+1)+'-'+stage,'key':'N:preparation','actor':'publisher','target':'thin-settings','operation':METHODS[stage],'units':1,'preparation':True}:fail()
+  def check_loading(self,op):return self._check_project_loading(op,'projectLaunch','launch100',11,17)
+  def _check_project_loading(self,op,proof_key,prefix,initial_connection,initial_loading):
+   c=self.j['connection'];d=self.j[proof_key];n=d['used'];stage=c['stage']
+   if n>=4 or stage!=STAGES[n] or c['used']!=initial_connection+n or self.j['loading']['used']!=initial_loading+n or c['used']>=initial_connection+4 or op!={'id':'loading-'+prefix+'-n'+str(c['used']+1)+'-'+stage,'key':'N:preparation','actor':'publisher','target':'thin-settings','operation':METHODS[stage],'units':1,'preparation':True}:fail()
   def command(self,q):
    name=q.get('op');e=self.j['events'][-1]if self.j['events']else{}
    if name=='settle' and e.get('preparationStage') and e.get('lane')=='ui' and e.get('key')=='N:preparation' and e['operation'].get('preparation')is True and e['operation']['id'].startswith('loading-launch100-'):
