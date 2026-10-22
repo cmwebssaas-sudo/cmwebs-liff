@@ -18,6 +18,9 @@ export function createReplicaRuntime(dataset,options={},deferSheetValues=false) 
   const RequestDate=options.dateConstructor||appsScriptDate(now);
   const inheritedDefaults={};
   const sourceTables=new Map(Object.entries(dataset)),sheets=new Map();
+  // Only the request-private HTTP runtime may share its matrices with the
+  // generated read-only snapshot consumers. Public Sheet reads still clone.
+  const snapshotViews=deferSheetValues===true?new WeakMap():null;
   function buildSheet(name,sourceRows) {
     const maskedAccounts=name==='V2_payment_accounts';
     const headerSet=new Set();
@@ -51,6 +54,7 @@ export function createReplicaRuntime(dataset,options={},deferSheetValues=false) 
         getValues: () => values.slice(row-1,row-1+height).map(item=>item.slice(column-1,column-1+width))
       })
     };
+    if(snapshotViews)snapshotViews.set(sheet,values);
     return sheet;
   }
   function getSheetByName(name) {
@@ -153,7 +157,7 @@ export function createReplicaRuntime(dataset,options={},deferSheetValues=false) 
       const resource=options.publicResources?.[request.url];
       return {getResponseCode:()=>resource?.status??503,getContentText:()=>resource?.body??''};
     })}, Logger:{log:noop},
-    runtimeSpreadsheet_:()=>ss, runtimeSnapshotGetValues_:sheet=>sheet.getDataRange().getValues(),
+    runtimeSpreadsheet_:()=>ss, runtimeSnapshotGetValues_:sheet=>snapshotViews?.get(sheet)??sheet.getDataRange().getValues(),
     runtimeSnapshotGetContext_:(name,key)=>contexts.get(name+':'+key)||null,
     runtimeSnapshotSetContext_:(name,key,value)=>contexts.set(name+':'+key,value),
     workspaceLandlordLog_:noop,contractRequestLogAccess_:noop,lmLogAccess_:noop,

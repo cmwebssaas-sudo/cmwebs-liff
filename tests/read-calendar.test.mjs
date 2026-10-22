@@ -102,13 +102,14 @@ test('replica formatDate keeps current date values, time zones, DST and invalid-
 });
 
 test('replica Sheet matrices preserve header order, typed dates, blanks and masked suffixes with fresh range arrays',()=>{
+ for(const defer of [false,true]) {
   const originalDate=new Date('2026-09-30T16:00:00Z');
   const data={V2_bills:[{bill_id:'B1',native_date:originalDate,typed_date:'2026-10-01T00:00:01+08:00',
     blank:null,zero:0,disabled:false,replica_date_fields:'["typed_date"]',replica_source_row:1},
     {bill_id:'B2',extra:'later',replica_source_row:2}],
     V2_payment_accounts:[{account_id:'A1',bank_account_last5:'12345',bank_account:'SYNTHETIC_PRIVATE_BANK'}],
     generic:[Object.fromEntries([['id','G1'],['__proto__','own']]),{id:'G2'}]};
-  const runtime=createReplicaRuntime(data),ss=runtime.runtimeSpreadsheet_();
+  const runtime=createReplicaRuntime(data,{},defer),ss=runtime.runtimeSpreadsheet_();
   const sheet=ss.getSheetByName('V2_bills'),values=sheet.getDataRange().getValues();
   assert.deepEqual(values[0],['bill_id','native_date','typed_date','blank','zero','disabled','extra']);
   assert.equal(values[1][1].getTime(),originalDate.getTime());
@@ -127,4 +128,11 @@ test('replica Sheet matrices preserve header order, typed dates, blanks and mask
   assert.deepEqual(generic[0],['id','__proto__']);
   assert.equal(generic[1][1],'own');
   assert.equal(generic[2][1],Object.prototype);
+  const internal=runtime.runtimeSnapshotGetValues_(sheet);
+  assert.deepEqual(internal,sheet.getDataRange().getValues());
+  assert.equal(internal[1][1].getTime(),originalDate.getTime());
+  const next=createReplicaRuntime(data,{},defer).runtimeSpreadsheet_().getSheetByName('V2_bills').getDataRange().getValues();
+  assert.notEqual(next[1][1],internal[1][1],'native Dates are hydrated per request');
+  assert.notEqual(next[1][2],internal[1][2],'metadata Dates are hydrated per request');
+ }
 });

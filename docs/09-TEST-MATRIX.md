@@ -3793,3 +3793,47 @@ Validation passed72backend/40endpoint/cache/comparison181; diff check passed.
 Existing migrations and the candidate SQL SHA are byte-identical. No unchanged
 benchmark/full-unit or external Core/PostgreSQL test was repeated after rename.
 Exact committed-source CI and formal performance/quota gates remain pending.
+
+
+### C6 internal Sheet matrix view — 2026-10-23 source candidate
+
+Recommended GPT-6.1 Sol/high for the bounded correctness/performance continuation.
+A private pure-functional prototype using actual projected 500 data, actual
+createReadServices(...,true), fixed clock and canonical properties entry retained
+exact 713,795 response bytes and unchanged source data. Internal complete-matrix
+clones fell 9→0, row arrays 1575→0 and copied cells 20814→0. All seven entry results
+were byte-identical; frozen internal arrays falsified writes by the three generated
+snapshot consumers. This is deterministic allocation evidence only, with no timer.
+
+New functional RED: owned properties consumers called the public cloning path 9
+rather than 0; the foreign/default ownership case observed 4 rather than 2 calls.
+The request-local WeakMap fix affects only owned Sheets in explicit deferred mode.
+Targeted runtime/calendar/parity/collation/month tests pass 30/30 with zero failure,
+cancel or skip. Public header/cell/range mutation isolation, default eager source
+snapshots, foreign-request fallbacks, Date hydration/locality, null/absent blanks,
+scalar zero/false, own/inherited __proto__ and masked account suffix remain covered.
+Generated calculator, canonical GAS, schema, migrations, SQL, packages, transport,
+fixture/timing loops, 100 samples, p95 index 94 and strict<50ms are unchanged.
+
+The prior indexed source 62e386c CI 39832854033 Worker 59/60 failure remains:
+properties p95=54.06686799999807ms,22/100>=50ms. No latency improvement or GC cause
+is established by reducing copies. Formal acceptance/rollout/storage/sync/quota
+and parent integration gates remain open. Rollback reverts this bounded runtime
+change and regenerates comparison identity; no data or remote action is required.
+
+
+The single designated Node 22.23.3/macOS new-source Worker run passed 60/60,
+0 fail/cancel/skip, 45.715609834 s. Original capacity500 p95s (home/actions/revenue/
+tenants/rooms/arrears/properties) were 13.300/11.740/13.092/19.040/14.171/15.948/
+17.886ms; small p95s 1.803/1.638/1.665/1.996/1.722/1.465/2.080ms. Every route
+retained 100 full-wall samples and 0 samples>=50ms. All 1400 client/actor/fetch
+pairs matched exact clocks/arithmetic; actor/fetch each 700 COMPLETE per fixture,
+invalid/drop/outputdrop0. No causal speed claim, new Linux result or prior-failure
+replacement follows. No unchanged benchmark was repeated.
+
+The 685 tracked paths were byte/mode-identical before/after the Worker run,
+snapshot 279164ccc98e2b2122d183c9254a0afb675d6791b20918e1b97f1fb2bedf8f8e;
+this result-only documentation append follows that snapshot. Validate 72 backend /
+40 endpoints/static-cache/comparison 181 and diff check PASS. Final full-unit exact-
+head CI, independent parent review and separate C6 integration remain pending;
+no redundant local full-unit/Core/PostgreSQL run or external action was performed.

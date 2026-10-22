@@ -5,7 +5,7 @@ import { createReadServices } from '../cloudflare/read-api/src/read-runtime.js';
 import { loadPublicRoomResources } from '../cloudflare/read-api/src/public-room-resources.js';
 import { serveReadRoute } from '../cloudflare/read-api/src/read-routes.js';
 import worker from '../cloudflare/read-api/src/index.js';
-import { dataset,access,fixture,plain,richDataset,projectedDataset,originalGas } from './fixtures/read-parity/runtime.mjs';
+import { dataset,access,fixture,plain,richDataset,projectedDataset,originalGas,cases } from './fixtures/read-parity/runtime.mjs';
 import {capacityDataset} from './fixtures/read-parity/capacity.mjs';
 
 test('owned read services materialize requested Sheet frames once and leave unused rows untouched',()=>{
@@ -22,6 +22,63 @@ test('default services retain eager source snapshots and invalid owned row frame
   assert.equal(services.SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Used').getRange(2,1).getValues()[0][0],'first');
   for(const rows of [null,{},[null],[undefined],Array(1)])assert.throws(()=>createReadServices({Unused:rows},access,{now:Date.parse(fixture.now)},true));
 });
+test('owned HTTP snapshot consumers avoid public full-matrix copies and retain canonical500-room bytes',()=>{
+  const input=capacityDataset(),projected=projectedDataset(input),before=JSON.stringify(projected);
+  const services=createReadServices(projected,access,{now:Date.parse(fixture.now)},true),ss=services.runtimeSpreadsheet_();
+  let publicCopies=0,snapshotReads=0;
+  for(const name of Object.keys(projected)) {
+    const sheet=ss.getSheetByName(name),getDataRange=sheet.getDataRange;
+    sheet.getDataRange=()=>{publicCopies++;return getDataRange();};
+  }
+  const snapshot=services.runtimeSnapshotGetValues_;
+  services.runtimeSnapshotGetValues_=sheet=>{
+    const values=snapshot(sheet);snapshotReads++;
+    // Every generated consumer must only read the trusted matrix. Header/row
+    // or outer-array writes would throw instead of silently changing later reads.
+    for(const row of values)Object.freeze(row);
+    return Object.freeze(values);
+  };
+  const calculator=createReadCalculator(services);
+  const actual=calculator.getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',true);
+  const expected=originalGas(input,access).getLandlordPropertiesInitByLineUid_('SYNTHETIC_LINE1',true);
+  assert.equal(actual.success,true);
+  assert.equal(JSON.stringify(actual),JSON.stringify(expected),'complete canonical bytes, values and order');
+  assert.ok(snapshotReads>0,'the actual calculator must exercise internal Sheet snapshots');
+  assert.equal(publicCopies,0,'owned HTTP snapshot readers need no intermediate public matrix clone');
+  // Exercise all three generated snapshot consumers, including the action
+  // readers, against frozen internal arrays and independent canonical output.
+  const gas=originalGas(input,access);
+  for(const item of cases)assert.equal(JSON.stringify(calculator[item.fn](...item.args)),JSON.stringify(gas[item.fn](...item.args)),item.route);
+  assert.equal(JSON.stringify(projected),before,'no source data may change');
+});
+
+test('internal snapshot fast path is confined to its owned deferred Sheets',()=>{
+  const input={Rows:[{id:'first'}]},options={now:Date.parse(fixture.now)};
+  for(const defer of [false,true]) {
+    const services=createReadServices(input,access,options,defer),sheet=services.runtimeSpreadsheet_().getSheetByName('Rows');
+    const foreign=createReadServices(input,access,options,true).runtimeSpreadsheet_().getSheetByName('Rows');
+    let copies=0;
+    for(const candidate of [sheet,foreign]) {
+      const getDataRange=candidate.getDataRange;
+      candidate.getDataRange=()=>{copies++;return getDataRange();};
+    }
+    const first=services.runtimeSnapshotGetValues_(sheet),second=services.runtimeSnapshotGetValues_(sheet);
+    assert.deepEqual(first,[['id'],['first']]);
+    if(!defer) {
+      first[0][0]='changed';first[1][0]='changed';
+      assert.deepEqual(second,[['id'],['first']],'default snapshots still own independent row arrays');
+    }
+    const foreignFirst=services.runtimeSnapshotGetValues_(foreign);
+    foreignFirst[0][0]='changed';foreignFirst[1][0]='changed';
+    assert.deepEqual(services.runtimeSnapshotGetValues_(foreign),[['id'],['first']]);
+    assert.equal(copies,defer?2:4,'another request and default mode retain the public-copy path');
+    const publicFirst=sheet.getDataRange().getValues(),range=sheet.getRange(2,1).getValues();
+    publicFirst[0].shift();publicFirst[1][0]='changed';range[0][0]='changed';
+    assert.deepEqual(sheet.getDataRange().getValues(),[['id'],['first']]);
+    assert.deepEqual(services.runtimeSnapshotGetValues_(sheet),[['id'],['first']]);
+  }
+});
+
 test('actual500-room properties route retains full data and GAS parity without framing unrelated payments',async()=>{
   const input=capacityDataset(),projected=projectedDataset(input),frames={};let loads=0;
   const watched=Object.fromEntries(Object.entries(projected).map(([name,rows])=>[name,rows.map(row=>new Proxy(row,{ownKeys(target){frames[name]=(frames[name]||0)+1;return Reflect.ownKeys(target);}}))]));
