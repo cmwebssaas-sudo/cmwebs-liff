@@ -16,7 +16,7 @@ def retarget_class(base):
   def prepared_checkpoint(self,j):return j.get('projectRetarget')=={'maximum':4,'used':4,'accountVerified':True} and j['connection']['stage']=='complete' and j['ownerConnection']['accountVerified']is True
   def validate_retarget(self):
    old97,claim97=self.validate_inventory();p=self.cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99'];names=['journal','claim','registry','stop','terminal','result']
-   if not exact(p,['decisionHash','approval','origin']) or p['decisionHash']!=DECISION or not exact(p['origin'],names):fail()
+   if not exact(p,['decisionHash','approval','origin']+(['launch100']if getattr(self,'launch100',False)else[])) or p['decisionHash']!=DECISION or not exact(p['origin'],names):fail()
    raw={k:pin(v)for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));reg=record(Path(p['origin']['registry']['path']));a=json.loads(pin(p['approval']))
    keys=['source','questionCall','answer','decisionSha256','recordedAt','operationBudget','retainedSpent','selectedBrowserId','scope','executionStarted']
    if not exact(a,keys) or a['source']!='direct-human-question-reply' or a['answer']!='同意同專案分頁接續及234上限（建議）' or a['decisionSha256']!=DECISION or a['operationBudget']!=234 or a['retainedSpent']!=99 or a['selectedBrowserId']!=j['ownerConnection']['selected']['browserId'] or a['scope']!='FOUR_READONLY_STEPS_EXACT_PROJECT_URL_NEW_ENTRY_ONLY' or a['executionStarted']is not False or type(a['questionCall'])is not str or not 0<len(a['questionCall'])<=200 or not integer(a['recordedAt']) or not j['lastAt']<=a['recordedAt']<=self.cfg['now']:fail()

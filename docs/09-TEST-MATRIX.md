@@ -2658,3 +2658,22 @@ Owner-selection timing regression: a delayed holder retains the closed candidate
   trial/RPC acceptance or any release gate. The private entry must pin the exact
   approved URL, publisher hash, static callback, frozen origin registry and all
   source bytes before its separate inert/first-write/execution gates.
+
+## 2026-10-23 C3 retained launch successor source candidate
+
+| Check | Evidence boundary |
+| --- | --- |
+| Direct approval and exact frozen stopped-state/source/observer agreement; prefix and prior proof drift denied | Synthetic private fixtures only; missing returned receipt stays missing and UNKNOWN stays UNKNOWN |
+| Unique four-read successor; each rejection settles false before HARD_STOP/drain; invalid results normalized | Real disposable local holder/ledger chain with synthetic provider boundary; no remote browser acceptance |
+| Separate new proof, immutable predecessor proofs, decision-specific ceiling, future36/recovery protection | Local controller and compiler behavior; original decisions retain their ceilings |
+| Deferred promise retained before entry, result/error captured, finally gate closure, delayed await and restart denied | Pure local launcher; no provider, canonical debit or production change |
+| Source manifest reconciliation | All 15 included source fingerprints match; calculator/comparison artifacts remain unchanged |
+
+Final local affected chain: 26 files, 636/636 PASS with zero fail/cancel/skip,
+including 39 added cases. Node22 validate72 backend/40 endpoints/cache and
+diff-check PASS. The test runner completed; its shell wrapper then failed assigning
+the reserved zsh `status` variable. No test failure is hidden by that wrapper error.
+Independent review, exact final-source CI and the complementary mandatory
+Core/owned-PostgreSQL partition remain separate gates.
+No Apps Script test function applies: no `.gs` module changed. No real Google or
+production execution, rollout or performance acceptance is established here.

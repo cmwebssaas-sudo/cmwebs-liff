@@ -4677,3 +4677,40 @@ compatibility, physical/performance and release acceptance remain incomplete.
 
 Rollback: reviewed revert of this scoped source change only. Preserve all old
 STOPs, immutable sources and operational history; never rewind a live ledger.
+
+## 2026-10-23 — Retained readonly launch successor source repair
+
+Recommended model/speed: GPT-6.1 Sol / high for retained-ledger and cross-language
+source guards. Existing isolated C3 feature branch starts at `bcb87fd`; this is
+local controller stability work. No Apps Script, schema or product runtime change.
+
+A separately approved successor imports the exact stopped checkpoint into a
+unique namespace while retaining its unknown event outcome and missing returned
+run receipt. Direct approval, immutable source history, frozen state and the
+independent local observer must agree before admission. The new proof is counted
+separately from unsuccessful predecessor proofs. Existing decisions keep their
+original ceilings; only the new decision permits its additional ordinary unit.
+
+The fixed four-read binding flow reuses the existing exact-project selector and
+static ready-first projector. Each callback is separately prepaid and settled;
+failure closes the holder with no retry. Success is binding-only CLEAN_PAUSE and
+requires the original future/full-map, privacy, recovery, observation, performance
+and device gates before any later action. The local launcher retains its promise
+before invoking the entry, stores its terminal result or failure and closes its
+gate. After tool observation interruption, only that same promise may be awaited.
+
+Synthetic tests cover immutable predecessor state, admission failures, isolated
+ceilings, all four callback failures, invalid results, separate completion proofs,
+future/recovery limits and retained-launch replay/rejection behavior. Final local
+verification: affected26 files/636 tests PASS, zero fail/cancel/skip; Node22
+validate72 backend/40 endpoints/cache and diff-check PASS. A post-run shell wrapper
+failed assigning zsh's reserved `status`; the completed test log has no failures.
+Independent review and exact final
+source CI plus the complementary Core/owned-PostgreSQL partition remain parent
+responsibilities. Local verification does not establish real browser or release
+acceptance. No remote operation, canonical ledger mutation, push, merge, deployment,
+activation or unchanged capacity benchmark was performed by this source task.
+
+Rollback: leave the unused successor inert or use a reviewed scoped source revert.
+Retain every used source, journal, claim, STOP, unknown outcome and charge. Never
+rewind a live ledger or replay a stopped entry.

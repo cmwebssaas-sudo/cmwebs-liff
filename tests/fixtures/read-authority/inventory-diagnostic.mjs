@@ -9,10 +9,10 @@ export const inventoryDecision='8a40d0166dc5217eac232b8abdab8e1fb3c994b3c26a462d
 export const inventoryStages=['binding','inventory','claim','snapshot'];
 export const verifiedInventory=()=>classifyAuthorityInventory([{id:'synthetic-opaque',providerTabId:'123',url:'https://synthetic.invalid/settings'}],{providerTabId:'123',expectedURL:'https://synthetic.invalid/settings'}).classification;
 export const failedInventory=()=>authorityInventoryApiFailure().classification;
-export async function inventoryFixture(){
+export async function inventoryFixture(browserId){
  assert(existsSync(resolve('scripts/read-authority-inventory-budget.py')),'inventory97 successor implementation is required');
- const s=await ownerFixture(),a=holder(s);
- await a.withContinuation(async cap=>{await ownerStep(cap,s,'discovery',()=>candidates);await cap.pausePreparation();});
+ const s=await ownerFixture(browserId),a=holder(s);
+ await a.withContinuation(async cap=>{await ownerStep(cap,s,'discovery',()=>s.candidates);await cap.pausePreparation();});
  const b=holder(s,{resume:a.preparationHandoff()});
  await assert.rejects(b.withContinuation(async cap=>{await cap.selectOwnerBrowser(s.selection());await ownerStep(cap,s,'binding');await ownerStep(cap,s,'inventory',()=>{throw Error('synthetic inventory rejection');});}),/TRIAL_STOPPED/);
  const drain=await b.stopAndDrain();const j=s.owner();assert.equal(j.events.length,44);
