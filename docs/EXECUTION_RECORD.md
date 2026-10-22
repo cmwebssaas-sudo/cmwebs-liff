@@ -4630,3 +4630,50 @@ The owner approved a successor retaining the completed diagnostic, prior STOPs a
 The ledger rejects stale choices/receipts, unselected binding, reused reservations, extra preparation and malformed candidates. Returned IO settles before any hard stop; failed operations do not reset or renew the retained failure allowance. Complete actual operation maps, existing future and independent recovery limits, and all safety/performance/device/observation gates remain required before RPC or release. Source tests and review are distinct from real binding or acceptance. No Apps Script route, schema, production runtime, deployment, credential, trigger or flag changes are included. Rollback leaves the unconsumed successor disabled and preserves every stopped checkpoint and charge; never replay a consumed entry.
 
 Owner-selection timing regression: a delayed holder retains the closed candidate checkpoint as the approval time floor; stale choices remain rejected. No remote operations are added.
+
+## 2026-10-23 — Exact stopped-checkpoint project retarget source successor
+
+Recommended model/speed: GPT-6.1 Sol / high, for the cross-language source-pin,
+settlement and budget contract. Existing isolated C3 feature branch starts this
+change at `f2c894c`; the root checkout and C6 source worktree remain untouched.
+This is local controller correctness work, with no application runtime release.
+
+A separately approved nested successor retains the exact stopped inventory
+history in a new namespace. Its pure selector uses exact full-URL matching,
+requires valid unique provider and opaque identifiers across bounded own-data
+rows, and chooses multiple matches by ordinal provider then opaque ordering.
+Four individually mapped/prepaid callbacks bind the selected connection, read
+one user-tab inventory, claim only the selected row and invoke the existing
+injected static ready-first projector. The factory remains inert until run.
+
+Only the new decision permits ordinary UI86 plus recovery16 and main132,
+combined234. Success at103 is binding-only CLEAN_PAUSE. The predecessor
+inventory diagnostic remains unsuccessful (used2/accountfalse); its new proof
+controls completion, while prior fault2, future36, HTTP58 and both independent
+recovery allocations remain intact. Every new failure settles before HARD_STOP.
+Old identity/schema behavior and ceilings remain unchanged. No new preparation
+expiry, credential extension, wait, remote retry, navigation, mutation or RPC.
+
+Validation evidence: missing selector/factory exports produced assertion REDs;
+the exact successor test also failed TRIAL_STOPPED with its subclass absent and
+passed after restoration. Self-review reproduced an unsupported new-scope enum
+leaving pending; normalization now settles false as RESULT_UNVERIFIED. A missing
+publisher-hash type check was separately reproduced and corrected. Final focused
+new/predecessor regression59/59, `npm run validate` and diff-check PASS. Before
+those final narrow fixes, the broader affected/owner regression77/77 and the
+single local unit suite3015/3015 passed, zero skips. These are explicitly pre-fix
+broad-suite results, not final-head complete-source acceptance. Early test-fixture
+argument/name/privacy-assertion errors were corrected without weakening source
+behavior. Apps Script functions were not run; no Apps Script module changed.
+
+The parent owns independent review, exact final-source CI and the complementary
+mandatory Core/owned-PostgreSQL integration partition, immutable private packaging,
+actual inert/first-write gates and any once-only approved external execution.
+No Core/PG cluster, provider/browser/credential operation, external network read,
+canonical journal/claim/STOP/registry write, push, merge, deployment or benchmark
+was performed by this source task. Fresh local SHA readback confirmed the pinned
+decision and all four actual stopped-checkpoint artifacts unchanged. Whole trial,
+compatibility, physical/performance and release acceptance remain incomplete.
+
+Rollback: reviewed revert of this scoped source change only. Preserve all old
+STOPs, immutable sources and operational history; never rewind a live ledger.

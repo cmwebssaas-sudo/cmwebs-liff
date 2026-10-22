@@ -56,7 +56,7 @@ class Ledger:
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
   self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg;self.rebalanced='readonlyRebalance' in cfg;self.loading='readonlyLoading' in cfg;self.account_load='readonlyAccountLoad' in cfg;self.connection='readonlyConnection' in cfg
-  self.main_ordinary_limit=58 if self.rebalanced else 79;self.main_event_limit=79 if self.connection else 84 if self.rebalanced else 105;self.ui_ordinary_limit=84 if getattr(self,'owner_connection',False) else 82 if self.connection else 77 if self.rebalanced else 56;self.ui_event_limit=self.ui_ordinary_limit+16
+  self.main_ordinary_limit=58 if self.rebalanced else 79;self.main_event_limit=79 if self.connection else 84 if self.rebalanced else 105;self.ui_ordinary_limit=86 if getattr(self,'retarget99',False) else 84 if getattr(self,'owner_connection',False) else 82 if self.connection else 77 if self.rebalanced else 56;self.ui_event_limit=self.ui_ordinary_limit+16
   self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg;self.readonly_debug='readonlyDebug' in cfg
   if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity or self.rebalanced and not self.successor or self.loading and not self.rebalanced or self.account_load and not self.loading or self.connection and not self.account_load:fail()
   optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])+(['readonlyRebalance'] if self.rebalanced else [])+(['readonlyLoading'] if self.loading else [])+(['readonlyAccountLoad'] if self.account_load else [])+(['readonlyConnection'] if self.connection else [])
@@ -72,7 +72,7 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-inventory-diagnostic' if getattr(self,'inventory97',False) else '.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-project-retarget' if getattr(self,'retarget99',False) else '.simple-inventory-diagnostic' if getattr(self,'inventory97',False) else '.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.suffix=suffix;self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+('.simple-rebalanced' if self.account_load else suffix)+'.json')
@@ -121,6 +121,7 @@ class Ledger:
   if getattr(self,'metadata_diagnostic',False):required.add('read-authority-browser-shape.mjs')
   if getattr(self,'owner_connection',False):required.add('read-authority-owner-connection-budget.py')
   if getattr(self,'inventory97',False):required.update(['read-authority-inventory-budget.py','read-authority-inventory-diagnostic.mjs','read-authority-ready-projection.mjs'])
+  if getattr(self,'retarget99',False):required.update(['read-authority-project-retarget-budget.py','read-authority-project-selector.mjs','read-authority-project-retarget.mjs'])
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
@@ -476,6 +477,9 @@ def main():
       if 'inventory97' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']:
        ispec=importlib.util.spec_from_file_location('inventory_budget',Path(__file__).with_name('read-authority-inventory-budget.py'))
        im=importlib.util.module_from_spec(ispec);ispec.loader.exec_module(im);implementation=im.inventory_class(implementation)
+       if 'retarget99' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']:
+        tspec=importlib.util.spec_from_file_location('project_retarget_budget',Path(__file__).with_name('read-authority-project-retarget-budget.py'))
+        tm=importlib.util.module_from_spec(tspec);tspec.loader.exec_module(tm);implementation=tm.retarget_class(implementation)
   ledger=implementation(cfg,sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
   for line in sys.stdin.buffer:
    try:

@@ -23,7 +23,7 @@ def inventory_class(base):
   def prepared_checkpoint(self,j):return j.get('inventoryDiagnostic',{}).get('used')==4 and j['inventoryDiagnostic'].get('accountVerified')is True and j['connection']['stage']=='complete' and j['ownerConnection']['accountVerified']is True
   def validate_inventory(self):
    old94,_=self.validate_owner();p=self.cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97'];names=['journal','claim','registry','stop','terminal','result']
-   if not exact(p,['decisionHash','approval','origin']) or p['decisionHash']!=DECISION or not exact(p['origin'],names):fail()
+   if not exact(p,['decisionHash','approval','origin']+(['retarget99']if getattr(self,'retarget99',False)else[])) or p['decisionHash']!=DECISION or not exact(p['origin'],names):fail()
    raw={k:pin(v)for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));reg=record(Path(p['origin']['registry']['path']));a=json.loads(pin(p['approval']))
    keys=['source','questionCall','answer','decisionSha256','recordedAt','operationBudget','retainedSpent','selectedBrowserId','scope','executionStarted']
    if not exact(a,keys) or a['source']!='direct-human-question-reply' or a['answer']!='同意四步方案，維持232' or a['decisionSha256']!=DECISION or a['operationBudget']!=232 or a['retainedSpent']!=97 or a['scope']!='FOUR_READONLY_STEPS_NEW_ENTRY_ONLY' or a['executionStarted']is not False or type(a['questionCall'])is not str or not 0<len(a['questionCall'])<=200 or not integer(a['recordedAt']) or not j['lastAt']<=a['recordedAt']<=self.cfg['now']:fail()

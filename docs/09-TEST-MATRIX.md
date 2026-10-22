@@ -2628,3 +2628,33 @@ Owner-selection timing regression: a delayed holder retains the closed candidate
 - Classification stores only fixed enums, counts and booleans. Optional metadata is not traversed; getters/proxies, duplicate IDs, missing provider identity and URL/selection ambiguity fail closed. Invalid successful evidence settles as an unverified failed read, without pending IO or account credit.
 - The projection checks complete load before URL/account/settings access and retains the pinned account/project/control checks. Partial preparation cannot produce a handoff. Successful binding releases only the explicitly superseded unused declaration; 36 future primitives fit while 37 and reuse of that declaration fail. Recovery reserves and failure history remain unchanged.
 - Coverage: `tests/read-authority-inventory-budget.test.mjs`, `tests/read-authority-inventory-diagnostic.test.mjs`, `tests/read-authority-ready-projection.test.mjs`, and the existing owner-selection suite. Disposable fixtures and the isolated callback VM establish local behavior only; actual binding, compatibility, synchronization, performance, device and release gates remain separate.
+
+### Exact stopped-checkpoint project-tab retarget successor
+
+- A new explicitly approved nested successor imports the exact settled stopped
+  inventory checkpoint into a distinct namespace. Prior events, holders, source
+  chains, failure count, old STOPs and the unsuccessful diagnostic remain intact.
+  Four individually mapped/prepaid reads use the selected connection, a single
+  user-tab inventory, the deterministic exact-full-URL match, its claim and the
+  same injected static ready-first projection. Success pauses for handoff only.
+- The new pure selector requires both provider and opaque identifiers to be valid
+  and globally unique, including unrelated rows. Multiple exact URL matches use
+  ordinal provider-then-opaque ordering; zero matches, unsafe own-data shapes,
+  getters/proxies, sparse arrays, symbols and excessive metadata fail closed.
+  Unknown metadata values are never traversed, and retained diagnostics contain
+  fixed enums/counts/booleans only. No raw row, account, URL, title or error text
+  enters the journal or result report.
+- Only this nested decision permits the revised aggregate allocation. Existing
+  identities and their ceilings remain unchanged. The four-step success keeps
+  the unsuccessful predecessor diagnostic unchanged; its new proof controls
+  preparation completion and handoff. Thirty-six future UI primitives still fit;
+  thirty-seven, superseded-operation reuse, partial handoff and stopped reentry
+  are rejected. Main/HTTP and independent recovery reserves remain intact.
+- Coverage: `read-authority-project-selector.test.mjs`,
+  `read-authority-project-retarget-budget.test.mjs`,
+  `read-authority-project-retarget-flow.test.mjs`, plus the predecessor inventory
+  and owner-selection suites. Fixtures use disposable local journals and fake
+  provider callbacks. They do not establish actual provider execution, source CI,
+  trial/RPC acceptance or any release gate. The private entry must pin the exact
+  approved URL, publisher hash, static callback, frozen origin registry and all
+  source bytes before its separate inert/first-write/execution gates.
