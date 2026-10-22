@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {mkdtempSync,writeFileSync,rmSync} from 'node:fs';
+import {mkdtempSync,writeFileSync,rmSync,readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -336,4 +337,152 @@ test('statement evidence requires numeric shape unique slots correct sums and or
  assert.equal(mismatch.status,0,mismatch.stderr);
  const meta=JSON.parse(mismatch.stdout.trim().split('\n').at(-1).replace(/^C6_CI_SUMMARY_META /,''));
  assert.equal(meta.d1_statement_status,'PARTIAL');assert.equal(meta.d1_statement_frames_retained,0);assert.equal(meta.d1_statement_frames_invalid,1);
+});
+
+
+const propertyStagePrefix='# C6_LOCAL_500_ROOM_PROPERTIES_STAGES ';
+const propertyMetaPrefix='# C6_LOCAL_500_ROOM_PROPERTIES_META ';
+const propertyReceiptPrefix='# C6_LOCAL_500_ROOM_PROPERTIES_RECEIPT ';
+const propertyColumns=['sample','d1_ms','decode_ms','route_ms','body_bytes'];
+function propertyEvidence({large=false}={}){
+ const rows=Array.from({length:100},(_,i)=>[i,large?1.2345678901234567e+100:i+0.125,
+  large?1.2345678901234567e+100:100-i+0.25,large?1.2345678901234567e+100:i*2+0.5,
+  large?Number.MAX_SAFE_INTEGER:713795+i]);
+ const frames=Array.from({length:10},(_,i)=>propertyStagePrefix+JSON.stringify({route:'properties',offset:i*10,rows:rows.slice(i*10,i*10+10)}));
+ const meta=propertyMetaPrefix+JSON.stringify({route:'properties',columns:propertyColumns,total:100,retained:100,
+  frames:10,invalid:0,dropped:0,output_dropped:0});
+ return {rows,frames,meta};
+}
+function propertyReceipt(result){
+ assert.equal(result.status,0,result.stderr);
+ const lines=result.stdout.split('\n').filter(line=>line.startsWith(propertyReceiptPrefix));
+ assert.equal(lines.length,1,'properties evidence always needs one explicit completeness receipt');
+ return JSON.parse(lines[0].slice(propertyReceiptPrefix.length));
+}
+function summaryMeta(result){return JSON.parse(result.stdout.trim().split('\n').at(-1).slice('C6_CI_SUMMARY_META '.length));}
+function retainedPropertyRows(result){return result.stdout.split('\n').filter(line=>line.startsWith(propertyStagePrefix))
+ .flatMap(line=>JSON.parse(line.slice(propertyStagePrefix.length)).rows);}
+
+test('properties stage receipt preserves all100 original row identities after old diagnostic and stage budgets fill',()=>{
+ const {rows,frames,meta}=propertyEvidence();
+ const oldStage='# C6_LOCAL_500_ROOM_STAGES '+JSON.stringify({route:'home',samples:100,slowest:[{index:0,wall_ms:55}]});
+ const noise=('# C6_LOCAL_500_ROOM_DISTRIBUTION '+JSON.stringify({route:'home',ordered_ms:Array(100).fill(51.56710199999725)})+'\n').repeat(20)
+  +(oldStage+'\n').repeat(100);
+ const failure='not ok 60 - properties capacity\n  ---\n  error: properties p95=51.567ms;9of100>=50\n  ...\n';
+ const result=summarize(noise+[...frames,meta,failure,footer].join('\n')),receipt=propertyReceipt(result);
+ assert.equal(receipt.status,'COMPLETE');assert.equal(receipt.frames_retained,10);assert.equal(receipt.samples_retained,100);
+ assert.equal(receipt.invalid_records,0);assert.equal(receipt.output_dropped,0);
+ assert.equal(receipt.scope,'STAGE_PAIR_COVERAGE_NOT_CAUSE_OR_ACCEPTANCE');
+ assert.deepEqual(retainedPropertyRows(result),rows);
+ assert(result.stdout.includes(meta));
+ const old=summaryMeta(result);assert(old.diagnostic_lines_dropped>0);assert(old.stage_lines_dropped>0);
+ assert.match(result.stdout,/properties p95=51.567ms;9of100>=50/);assert.match(result.stdout,/# fail 2/);
+ assert.equal(old.failed_cases,1);assert.equal(old.footer_seen,true);
+});
+test('missing properties frames metadata and all uncollected evidence remain explicitly incomplete',()=>{
+ const {frames,meta}=propertyEvidence();
+ for(const log of [[...frames.slice(1),meta],[...frames], [meta]]){
+  const result=summarize([...log,footer].join('\n')),receipt=propertyReceipt(result);
+  assert.equal(receipt.status,'PARTIAL');assert(receipt.samples_retained<100||!receipt.metadata_valid);
+ }
+ const absent=propertyReceipt(summarize(footer));assert.equal(absent.status,'NOT_COLLECTED');
+ assert.equal(absent.samples_retained,0);assert.equal(absent.metadata_valid,false);
+});
+test('invalid duplicate out-of-order and oversized properties frames fail closed without leaking arbitrary payloads',()=>{
+ const {frames,meta}=propertyEvidence(),first=JSON.parse(frames[0].slice(propertyStagePrefix.length));
+ const variants=[
+  frames[0],propertyStagePrefix+'{PRIVATE_STAGE_SECRET}',
+  propertyStagePrefix+JSON.stringify({...first,route:'PRIVATE_STAGE_SECRET'}),
+  propertyStagePrefix+JSON.stringify({...first,offset:1}),
+  propertyStagePrefix+JSON.stringify({...first,extra:'PRIVATE_STAGE_SECRET'}),
+  propertyStagePrefix+JSON.stringify({...first,rows:[]}),
+  propertyStagePrefix+' '.repeat(3100)+JSON.stringify(first)
+ ];
+ for(const value of ['PRIVATE_STAGE_SECRET',-1,null,{},Number.MAX_VALUE]){
+  const rows=first.rows.map(row=>row.slice());rows[0][4]=value;
+  variants.push(propertyStagePrefix+JSON.stringify({...first,rows}));
+ }
+ for(const [column,value] of [[0,1],[0,'0'],[1,-1],[2,null],[3,'PRIVATE_STAGE_SECRET'],[3,{}],[4,1.5]]){
+  const rows=first.rows.map(row=>row.slice());rows[0][column]=value;
+  variants.push(propertyStagePrefix+JSON.stringify({...first,rows}));
+ }
+ const extraWidth=first.rows.map(row=>[...row,0]);variants.push(propertyStagePrefix+JSON.stringify({...first,rows:extraWidth}));
+ const reordered=first.rows.slice().reverse();variants.push(propertyStagePrefix+JSON.stringify({...first,rows:reordered}));
+ variants.push(frames[0].replace('0.125','1e999'));
+ for(const [i,bad] of variants.entries()){
+  const input=i===0?[...frames,meta,bad]:[bad,...frames.slice(1),meta];
+  const result=summarize([...input,footer].join('\n')),receipt=propertyReceipt(result);
+  assert.equal(receipt.status,'PARTIAL');assert(receipt.invalid_records>0||receipt.output_dropped>0);
+  assert.doesNotMatch(result.stdout,/PRIVATE_STAGE_SECRET/);assert.match(result.stdout,/# fail 2/);
+ }
+ const order=propertyReceipt(summarize([...frames.slice(1),frames[0],meta,footer].join('\n')));
+ assert.equal(order.status,'PARTIAL');assert(order.invalid_records>0);
+});
+test('properties metadata requires exact complete counts unique receipt and zero invalid or dropped rows',()=>{
+ const {frames,meta}=propertyEvidence(),value=JSON.parse(meta.slice(propertyMetaPrefix.length));
+ const badMeta=[propertyMetaPrefix+'{PRIVATE_META_SECRET}',meta,
+  propertyMetaPrefix+JSON.stringify({...value,route:'home'}),
+  propertyMetaPrefix+JSON.stringify({...value,columns:propertyColumns.slice().reverse()}),
+  propertyMetaPrefix+JSON.stringify({...value,extra:'PRIVATE_META_SECRET'}),
+  propertyMetaPrefix+' '.repeat(2100)+JSON.stringify(value)];
+ for(const field of ['total','retained','frames','invalid','dropped','output_dropped'])
+  for(const bad of [-1,null,'100',0.5,field==='frames'?9:field==='total'||field==='retained'?99:1])
+   badMeta.push(propertyMetaPrefix+JSON.stringify({...value,[field]:bad}));
+ for(const [i,bad] of badMeta.entries()){
+  const input=i===1?[...frames,meta,bad]:[...frames,bad];
+  const result=summarize([...input,footer].join('\n')),receipt=propertyReceipt(result);
+  assert.equal(receipt.status,'PARTIAL');assert(receipt.invalid_records>0||receipt.output_dropped>0);
+  assert.doesNotMatch(result.stdout,/PRIVATE_META_SECRET/);assert.match(result.stdout,/# fail 2/);
+ }
+ // Invalid producer counts alone must fail even without a preceding valid receipt.
+ for(const field of ['total','retained','frames','invalid','dropped','output_dropped']){
+  const bad={...value,[field]:field==='total'||field==='retained'?99:field==='frames'?9:1};
+  const result=summarize([...frames,propertyMetaPrefix+JSON.stringify(bad),footer].join('\n'));
+  assert.equal(propertyReceipt(result).status,'PARTIAL');
+ }
+});
+test('ten maximum-budget properties frames plus raw metadata and receipt fit the independent32768bytes',()=>{
+ const {rows,frames,meta}=propertyEvidence({large:true});
+ // Whitespace pads raw frames to the exact inclusive frame budget without changing row values.
+ const padded=frames.map(line=>line+' '.repeat(3072-Buffer.byteLength(line+'\n')));
+ assert(padded.every(line=>Buffer.byteLength(line+'\n')===3072));
+ const result=summarize([...padded,meta,footer].join('\n')),receipt=propertyReceipt(result);
+ assert.equal(receipt.status,'COMPLETE');assert.deepEqual(retainedPropertyRows(result),rows);
+ const output=result.stdout.split('\n').filter(line=>line.startsWith('# C6_LOCAL_500_ROOM_PROPERTIES_'));
+ assert.equal(output.length,12);assert(Buffer.byteLength(output.join('\n')+'\n')<=32768);
+ const overflow=summarize([...padded,meta,padded[0]+' ',footer].join('\n'));
+ assert.equal(propertyReceipt(overflow).status,'PARTIAL');assert(propertyReceipt(overflow).output_dropped>0);
+});
+test('new properties evidence leaves existing statement actor fetch and failure metadata unchanged',()=>{
+ const {frames,meta}=propertyEvidence(),{totals,frames:statements}=statementEvidence();
+ const old=[...totals,...statements,clientLog(),footer].join('\n');
+ const before=summarize(old),after=summarize([...frames,meta,old].join('\n'));
+ assert.equal(propertyReceipt(after).status,'COMPLETE');assert.deepEqual(summaryMeta(after),summaryMeta(before));
+ for(const prefix of ['# C6_D1_ACTOR_AGGREGATE ','# C6_NODE_FETCH_AGGREGATE ','# C6_NODE_CLIENT_AGGREGATE ',
+  '# C6_LOCAL_500_ROOM_D1_STATEMENTS ','# C6_LOCAL_500_ROOM_D1_INTERNAL '])
+  assert.deepEqual(after.stdout.split('\n').filter(line=>line.startsWith(prefix)),before.stdout.split('\n').filter(line=>line.startsWith(prefix)));
+});
+
+test('actual capacity tail emits original properties stage pairs before wall sorting and retains the strict failing gate',async()=>{
+ const source=readFileSync(new URL('../cloudflare/read-api/test/read-capacity.test.mjs',import.meta.url),'utf8');
+ const start=source.indexOf('  const timings='),end=source.indexOf("  timingOutcome='PASS';",start);
+ assert(start>=0&&end>start);
+ const routes=['home','actions','revenue','tenants','rooms','arrears','properties'],logs=[];
+ let route,index,tick=0;const counts=Object.fromEntries(routes.map(r=>[r,0]));
+ const result=runInNewContext('(async()=>{'+source.slice(start,end)+'})()',{
+  assert,schema:{synthetic:{}},cases:routes.map(route=>({route})),paths:Object.fromEntries(routes.map(r=>[r,'/'+r])),
+  fetchCapture:{begin:()=>({}),run:(_,fn)=>fn(),sample:()=>null},fetchTiming:{record:()=>{}},actorTiming:{record:()=>{}},
+  clientTiming:{begin:(r,i)=>{route=r;index=i;counts[r]++;},end:()=>{}},
+  performance:{now:()=>{const phase=tick++%3;return phase===0?0:phase===1?10:route==='properties'?59+index/100:20;}},
+  mf:{dispatchFetch:async()=>({status:200,arrayBuffer:async()=>new ArrayBuffer(100+index),headers:{get:name=>
+   name==='server-timing'?`d1;dur=${(index+0.125).toFixed(3)}, decode;dur=${(100-index+0.25).toFixed(3)}, route;dur=${(index*2+0.5).toFixed(3)}`:
+   name==='x-cmwebs-test-d1-statements'?'[0.5]':name==='x-cmwebs-test-d1'?'{"internal_ms":0.5,"queries":1,"rows_read":1}':null}})},
+  console:{log:line=>logs.push(line)}
+ });
+ await assert.rejects(result,error=>error.name==='AssertionError'&&/properties500-room/.test(error.message));
+ assert.deepEqual(Object.values(counts),Array(7).fill(100));
+ const summary=summarize(logs.map(line=>'# '+line).join('\n')+'\n'+footer);
+ assert.equal(propertyReceipt(summary).status,'COMPLETE');
+ assert.deepEqual(retainedPropertyRows(summary),Array.from({length:100},(_,i)=>[i,i+0.125,100-i+0.25,i*2+0.5,100+i]));
+ assert.equal(logs.filter(line=>line.startsWith('C6_LOCAL_500_ROOM_PROPERTIES_STAGES ')).length,10);
 });

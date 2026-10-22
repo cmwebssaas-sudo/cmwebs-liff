@@ -7667,3 +7667,33 @@ without removing or changing old tests. Node22 validate72 backend /40 endpoint
 references/cache and diff-check PASS. Source stayed fixed during the final test
 run. Full unit/Worker and complementary Core/owned-PostgreSQL acceptance are not
 claimed locally; the parent owns that final composed-head evidence.
+
+
+## 2026-10-23 C6 properties stage-pair retention candidate
+
+Recommended GPT-6.1 Sol/high, bounded evidence/framing risk. Work stayed in the
+existing codex/c6-read-acceptance-20261012 checkout, clean base
+bca67640a22b717437aabeaeb89c66c1677878a5. Only the capacity test, CI summary,
+its summary tests and these owned diagnostic records changed. Existing
+properties measurements are emitted after the100-request loop as ten ten-row
+frames in original sample order plus raw column/count metadata. Independent
+32768-byte summary retention requires valid exact100 coverage with no invalid
+or dropped records; COMPLETE/PARTIAL/NOT_COLLECTED means evidence coverage.
+
+Original measured-loop bytes are unchanged (SHA-256
+090654bc97c875e9b275d942c53024fdc5274d625f8ad3dad4907a872916407e). Seven routes,
+100 full-wall samples each, p95 index94, strict<50ms, timer boundaries, old
+summary budgets/footer and original failing test exit remain unchanged. No
+product Worker, GAS, SQL, schema, calculator, workflow, dependency or Node flag
+changed. The retained Linux properties51.56710199999725ms/9of100>=50 failure and
+all preceding failures remain historical evidence, not replaced outcomes.
+
+Source-frozen RED30pass/7fail observed missing properties receipts, with both
+implementation-file SHA-256 values still matching base. GREEN summary37/37;
+final focused summary/timing/transport58/58, zero fail/cancel/skip. Validate
+(72 backend files,40 endpoints, static cache and181-source comparison identity)
+and diff check passed. Apps Script tests NOT_RUN (unaffected). No Worker
+benchmark, full-unit/Core/PostgreSQL, provider read/write, push, merge, deploy,
+formal data action, rollout or production acceptance occurred. Parent review
+and one predetermined composed diagnostic CI are pending. Revert this bounded
+test/summary change to roll back; no runtime/data release is required.

@@ -10,6 +10,10 @@ import schema from '../cloudflare/read-api/schema.json' with {type:'json'};
 const names=[],details=[],footer=[],diagnostics=[],stages=[];
 const d1InternalRoutes=['home','actions','revenue','tenants','rooms','arrears','properties'],d1InternalVectors=new Map();
 let d1InternalInvalid=0;
+// Properties pair coverage has its own fixed budget; old evidence budgets stay unchanged.
+const propertyStagePrefix='# C6_LOCAL_500_ROOM_PROPERTIES_STAGES ',propertyMetaPrefix='# C6_LOCAL_500_ROOM_PROPERTIES_META ';
+const propertyColumns=['sample','d1_ms','decode_ms','route_ms','body_bytes'],propertyFrames=new Map();
+let propertySeen=false,propertyMeta=null,propertyInvalid=0,propertyDropped=0,propertyLastOffset=-10;
 const statementWidth=Object.keys(schema).length,statementFrames=new Map();let statementInvalid=0;
 const clientSummary=createClientSummary(),actorSummary=createActorSummary(),fetchSummary=createFetchSummary();
 let failed=0,namesDropped=0,detailDropped=0,diagnosticDropped=0;
@@ -26,6 +30,31 @@ try{
   if(!process.argv[2])throw new Error('CI log path is required');
   const lines=createInterface({input:createReadStream(process.argv[2]),crlfDelay:Infinity});
   for await(const line of lines){
+    if(line.startsWith(propertyStagePrefix)||line.startsWith(propertyMetaPrefix)){
+      propertySeen=true;
+      try{
+        const frame=line.startsWith(propertyStagePrefix),bytes=Buffer.byteLength(line+'\n');
+        if(bytes>(frame?3072:1024)){propertyDropped++;throw Error();}
+        const v=JSON.parse(line.slice((frame?propertyStagePrefix:propertyMetaPrefix).length));
+        if(!v||Array.isArray(v)||v.route!=='properties')throw Error();
+        if(frame){
+          if(Object.keys(v).sort().join(',')!=='offset,route,rows'||
+            !Number.isInteger(v.offset)||v.offset<0||v.offset>90||v.offset%10||propertyFrames.has(v.offset)||
+            !Array.isArray(v.rows)||v.rows.length!==10||v.rows.some((row,i)=>
+              !Array.isArray(row)||row.length!==5||row[0]!==v.offset+i||
+              !row.slice(1,4).every(ms=>Number.isFinite(ms)&&ms>=0)||
+              !Number.isSafeInteger(row[4])||row[4]<0))throw Error();
+          if(v.offset!==propertyLastOffset+10)propertyInvalid++;
+          propertyLastOffset=v.offset;propertyFrames.set(v.offset,v);
+        }else{
+          if(propertyMeta||Object.keys(v).sort().join(',')!=='columns,dropped,frames,invalid,output_dropped,retained,route,total'||
+            !Array.isArray(v.columns)||JSON.stringify(v.columns)!==JSON.stringify(propertyColumns)||
+            v.total!==100||v.retained!==100||v.frames!==10||v.invalid!==0||v.dropped!==0||v.output_dropped!==0)throw Error();
+          propertyMeta=v;
+        }
+      }catch{propertyInvalid++;}
+      continue;
+    }
     if(line.startsWith('# C6_LOCAL_500_ROOM_D1_STATEMENTS ')){
       try{
         if(Buffer.byteLength(line.slice(2))>4096)throw Error();
@@ -127,6 +156,23 @@ try{
     if(next===null)statementDropped++;else statementBytes=next;
   }
   for(const line of statements)console.log(line);
+  const propertyOutput=[];let propertyBytes=0,propertyRetained=0;
+  for(let offset=0;offset<100;offset+=10){
+    const value=propertyFrames.get(offset);if(!value)continue;
+    const next=retain(propertyOutput,propertyStagePrefix+JSON.stringify(value),32768-2048,propertyBytes,3072);
+    if(next===null)propertyDropped++;else{propertyBytes=next;propertyRetained++;}
+  }
+  if(propertyMeta){
+    const next=retain(propertyOutput,propertyMetaPrefix+JSON.stringify(propertyMeta),32768-1024,propertyBytes,1024);
+    if(next===null)propertyDropped++;else propertyBytes=next;
+  }
+  const propertyReceipt={route:'properties',status:propertyRetained===10&&propertyMeta&&!propertyInvalid&&!propertyDropped?'COMPLETE':propertySeen?'PARTIAL':'NOT_COLLECTED',
+    frames_retained:propertyRetained,samples_retained:propertyRetained*10,metadata_valid:!!propertyMeta,
+    invalid_records:propertyInvalid,output_dropped:propertyDropped,scope:'STAGE_PAIR_COVERAGE_NOT_CAUSE_OR_ACCEPTANCE'};
+  // Ten3072-byte frames plus1024-byte metadata and receipt fit32768 bytes.
+  const propertyReceiptLine='# C6_LOCAL_500_ROOM_PROPERTIES_RECEIPT '+JSON.stringify(propertyReceipt);
+  retain(propertyOutput,propertyReceiptLine,32768,propertyBytes,1024);
+  for(const line of propertyOutput)console.log(line);
   for(const line of footer)console.log(line);
   console.log('C6_CI_SUMMARY_META '+JSON.stringify({failed_cases:failed,
     d1_statement_frames_retained:statements.length,d1_statement_samples_retained:statements.length*10,d1_statement_width:statementWidth,

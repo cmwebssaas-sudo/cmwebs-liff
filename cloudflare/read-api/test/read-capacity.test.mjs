@@ -110,6 +110,15 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
    // Numeric timing diagnostics only, after the original100 measured requests.
    // Preserve request order before sorting; no Worker/body/identity data enters logs.
    const orderedSamples=samples.slice();
+   // Retain already measured properties stages before observations are sorted.
+   // Zero-based sample indexes preserve pairing; no additional timed-path work.
+   if(c.route==='properties'){
+    for(let offset=0;offset<observations.length;offset+=10)console.log('C6_LOCAL_500_ROOM_PROPERTIES_STAGES '+JSON.stringify({route:c.route,offset,
+     rows:observations.slice(offset,offset+10).map(o=>[o.index,o.d1,o.decode,o.route,o.body_bytes])}));
+    console.log('C6_LOCAL_500_ROOM_PROPERTIES_META '+JSON.stringify({route:c.route,
+     columns:['sample','d1_ms','decode_ms','route_ms','body_bytes'],total:observations.length,retained:observations.length,
+     frames:10,invalid:0,dropped:0,output_dropped:0}));
+   }
    // Existing D1 metadata, paired by the unchanged request-order index. Emulator
    // query-processing duration is not SQL CPU, transport or formal acceptance.
    assert(observations.length===100&&observations.every((o,i)=>o.index===i));

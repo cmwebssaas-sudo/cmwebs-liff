@@ -4122,3 +4122,31 @@ original runner and shell wrapper exit0 under Node22. Added47 cases across two
 new test files; no existing test case removed or modified. Validate72 backend /
 40 endpoints/cache and diff-check PASS. The source remains local and parent
 review/composed-source CI/Core/private execution gates remain required.
+
+
+## 2026-10-23 C6 properties stage-pair retention (local diagnostic candidate)
+
+Recommended GPT-6.1 Sol/high for bounded diagnostic framing risk. The existing
+capacity test now emits ten properties-only frames of ten original zero-based
+`[sample,d1_ms,decode_ms,route_ms,body_bytes]` rows plus one count/column receipt
+after all100 measurements and before any in-place sort. The measured loop is
+byte-identical to base bca67640; all seven routes, full-wall100 samples, p95
+index94, strict<50ms and original test outcome remain unchanged.
+
+Summary frames have a separate32768-byte budget: ten3072-byte frame slots,
+1024 bytes for validated raw metadata and1024 for the completeness receipt.
+Exact route/keys/index order/shape, finite nonnegative times, safe integer body
+bytes, unique offsets, exact100 counts and zero invalid/drop are required for
+COMPLETE. Missing/corrupt/duplicate/oversized/out-of-order records are PARTIAL;
+absent evidence is NOT_COLLECTED. These are coverage statuses, not performance
+acceptance. Existing failure/footer/client/actor/fetch/stage/statement budgets
+and metadata are unchanged; arbitrary strings are not reprinted.
+
+Source-frozen RED: existing30 passed and all7 added summary contract tests
+failed for the missing receipt. GREEN: summary37/37 and final focused summary/
+timing/transport58/58, zero fail/cancel/skip; validate and diff check passed.
+No Worker benchmark or full-unit/Core/PostgreSQL execution was performed here.
+Apps Script tests NOT_RUN (unaffected). Parent review and one predetermined
+composed CI diagnostic remain pending. The retained Linux properties failure
+51.56710199999725ms /9of100>=50 is preserved; no causal/product fix or Production
+acceptance is established. Rollback reverts this bounded diagnostic change.
