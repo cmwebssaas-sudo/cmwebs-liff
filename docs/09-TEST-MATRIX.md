@@ -3748,3 +3748,48 @@ diagnostic evidence only; individual elapsed durations are not CPU or causal
 proof. The retained properties p95=50.131852ms CI failure remains unresolved.
 Rollback reverts this undeployed test/log-only increment. New exact-source
 verification is required before any acceptance claim.
+
+### C6 source-row ordering indexes
+
+Migration0007 adds six nonunique indexes for the existing room, contract and
+bill ordering expressions: source order and Workspace plus source order.
+The real scoped loader SQL/parameters and shared unscoped projection remain
+unchanged. A genuine missing-index regression exercises direct, blank/legacy
+and parent-exclusion queries. Independent order-only and compound stages
+verify why both index forms are needed. Thirty-one actual plans eliminate
+temporary ORDER BY trees; complete scoped dataset and property HTTP bytes,
+foreign-scope exclusion, statement/batch counts and rows_read are preserved.
+Literal edge cases retain numeric casts, SQL/JSON null, nonnumeric source
+rows and row-key ties. Signed-sync tests and both original latency fixtures
+apply the new migration, keeping all original samples and strict50ms gate.
+
+Plan improvement is not latency acceptance. Fresh complete Worker and CI
+verification remain required; prior51.868ms failure is retained. Indexes add
+storage and sync-write work, which must remain within actual quota acceptance.
+Before deployment, back up D1 and verify migration state. Rollback drops only
+the six named0007 indexes and reverts their source/tests; it does not delete
+replica rows, alter query semantics or remove0005 Workspace indexes.
+
+Before the migration filename integration correction, designated Node22 local
+Worker verification passed60/60, including signed sync, complete parity and
+all original latency samples; maximum capacity p95 was19.842ms. The pre-rename
+unit suite passed2898/2898, zero fail/cancel/skip, in171.790s. These Darwin
+results do not replace the retained Linux CI39656752302 properties51.868ms
+failure or any earlier failure and are not post-rename full-suite evidence.
+The new migration uses0007 because existing0006_shadow_auth_kind.sql is
+immutable; the functional baseline applies existing0004/0005/0006 first.
+Comparison identity is regenerated for181 sources, so future observation
+must use the new identity and start a fresh window. Asset version is unchanged,
+endpoint remains blank and all six flags remain off. Post-rename functional/
+affected checks and exact-source CI are recorded separately; exact CI remains
+required. Core/PostgreSQL integrations are unchanged and were not repeated.
+
+Post-rename designated Node22.23.3 checks passed36/36, zero fail/cancel/skip:
+the new real-D1 functional case plus35 actor-timer-boundary/completion/CI-summary
+cases, in4.378s. Functional evidence confirms six nonunique indexes,31 actual
+plans without temporary sorts,28 scoped sorts remaining after order-only
+indexes,500 owned rooms, complete data/HTTP bytes and unchanged queries.
+Validation passed72backend/40endpoint/cache/comparison181; diff check passed.
+Existing migrations and the candidate SQL SHA are byte-identical. No unchanged
+benchmark/full-unit or external Core/PostgreSQL test was repeated after rename.
+Exact committed-source CI and formal performance/quota gates remain pending.

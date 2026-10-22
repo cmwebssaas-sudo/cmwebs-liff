@@ -36,7 +36,7 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
  const clientTiming=createClientTiming('capacity500',line=>t.diagnostic(line)),actorTiming=createActorTiming('capacity500',line=>t.diagnostic(line)),fetchTiming=createFetchTiming('capacity500',line=>t.diagnostic(line));let timingOutcome='FAIL';
  try {
   const db=await mf.getD1Database('DB'),schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
-  for(const name of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql']){
+  for(const name of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql','0007_read_source_order_indexes.sql']){
    const sql=await readFile(new URL('../migrations/'+name,import.meta.url),'utf8');
    await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
   }
