@@ -3847,3 +3847,69 @@ Core321/index/ref and owned-cluster teardown were verified. Only this final
 result documentation is appended after that snapshot; executable/test bytes
 remain the tested bytes. New exact-head CI remains pending. Initial2890/2893
 and earlier strict Linux failures remain evidence, not replaced outcomes.
+
+### Classified original-tab inventory and ready-first successor
+
+- A separately approved exact stopped-checkpoint successor preserves prior events, source pins, STOPs and the owner's selected connection. Four individually prepaid steps bind that connection, classify the original tab inventory, claim that tab and project its ready state/account/project guards once. It adds no discovery, standalone wait, retry, write or RPC.
+- Classification stores only fixed enums, counts and booleans. Optional metadata is not traversed; getters/proxies, duplicate IDs, missing provider identity and URL/selection ambiguity fail closed. Invalid successful evidence settles as an unverified failed read, without pending IO or account credit.
+- The projection checks complete load before URL/account/settings access and retains the pinned account/project/control checks. Partial preparation cannot produce a handoff. Successful binding releases only the explicitly superseded unused declaration; 36 future primitives fit while 37 and reuse of that declaration fail. Recovery reserves and failure history remain unchanged.
+- Coverage: `tests/read-authority-inventory-budget.test.mjs`, `tests/read-authority-inventory-diagnostic.test.mjs`, `tests/read-authority-ready-projection.test.mjs`, and the existing owner-selection suite. Disposable fixtures and the isolated callback VM establish local behavior only; actual binding, compatibility, synchronization, performance, device and release gates remain separate.
+
+### Exact stopped-checkpoint project-tab retarget successor
+
+- A new explicitly approved nested successor imports the exact settled stopped
+  inventory checkpoint into a distinct namespace. Prior events, holders, source
+  chains, failure count, old STOPs and the unsuccessful diagnostic remain intact.
+  Four individually mapped/prepaid reads use the selected connection, a single
+  user-tab inventory, the deterministic exact-full-URL match, its claim and the
+  same injected static ready-first projection. Success pauses for handoff only.
+- The new pure selector requires both provider and opaque identifiers to be valid
+  and globally unique, including unrelated rows. Multiple exact URL matches use
+  ordinal provider-then-opaque ordering; zero matches, unsafe own-data shapes,
+  getters/proxies, sparse arrays, symbols and excessive metadata fail closed.
+  Unknown metadata values are never traversed, and retained diagnostics contain
+  fixed enums/counts/booleans only. No raw row, account, URL, title or error text
+  enters the journal or result report.
+- Only this nested decision permits the revised aggregate allocation. Existing
+  identities and their ceilings remain unchanged. The four-step success keeps
+  the unsuccessful predecessor diagnostic unchanged; its new proof controls
+  preparation completion and handoff. Thirty-six future UI primitives still fit;
+  thirty-seven, superseded-operation reuse, partial handoff and stopped reentry
+  are rejected. Main/HTTP and independent recovery reserves remain intact.
+- Coverage: `read-authority-project-selector.test.mjs`,
+  `read-authority-project-retarget-budget.test.mjs`,
+  `read-authority-project-retarget-flow.test.mjs`, plus the predecessor inventory
+  and owner-selection suites. Fixtures use disposable local journals and fake
+  provider callbacks. They do not establish actual provider execution, source CI,
+  trial/RPC acceptance or any release gate. The private entry must pin the exact
+  approved URL, publisher hash, static callback, frozen origin registry and all
+  source bytes before its separate inert/first-write/execution gates.
+
+## 2026-10-23 C3 retained launch successor source candidate
+
+| Check | Evidence boundary |
+| --- | --- |
+| Direct approval and exact frozen stopped-state/source/observer agreement; prefix and prior proof drift denied | Synthetic private fixtures only; missing returned receipt stays missing and UNKNOWN stays UNKNOWN |
+| Unique four-read successor; each rejection settles false before HARD_STOP/drain; invalid results normalized | Real disposable local holder/ledger chain with synthetic provider boundary; no remote browser acceptance |
+| Separate new proof, immutable predecessor proofs, decision-specific ceiling, future36/recovery protection | Local controller and compiler behavior; original decisions retain their ceilings |
+| Deferred promise retained before entry, result/error captured, finally gate closure, delayed await and restart denied | Pure local launcher; no provider, canonical debit or production change |
+| Source manifest reconciliation | All 15 included source fingerprints match; calculator/comparison artifacts remain unchanged |
+
+Final local affected chain: 26 files, 636/636 PASS with zero fail/cancel/skip,
+including 39 added cases. Node22 validate72 backend/40 endpoints/cache and
+diff-check PASS. The test runner completed; its shell wrapper then failed assigning
+the reserved zsh `status` variable. No test failure is hidden by that wrapper error.
+Independent review, exact final-source CI and the complementary mandatory
+Core/owned-PostgreSQL partition remain separate gates.
+No Apps Script test function applies: no `.gs` module changed. No real Google or
+production execution, rollout or performance acceptance is established here.
+
+### Shared fixed-policy settlement review repair
+
+The two approved project successors retain independent prefix dispatch, proof keys,
+origin/history/receipt guards and ceilings while sharing one private settlement
+implementation. Fresh pre-refactor representative behavior12/12 PASS; final three
+covering files65/65 PASS, zero fail/cancel/skip, runner/wrapper exit0 under Node22.
+Validate72 backend/40 endpoints/cache and diff-check PASS. No tests added or changed,
+no new API/module/namespace or remote/canonical action; final full-source CI and
+Core/owned-PostgreSQL evidence remain separate parent gates.

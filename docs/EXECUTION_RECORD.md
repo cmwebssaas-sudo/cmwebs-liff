@@ -7423,3 +7423,102 @@ Endpoint blank/flags off; no deployment, formal-data/configuration change or
 observation T0. Technical gates,24h parallel sync/shadow including Taipei
 crossday03:00,rooms-first device/rollback,another stable24h and seven-day
 postlaunch observation all remain required.
+
+## 2026-10-23 — Exact stopped-checkpoint project retarget source successor
+
+Recommended model/speed: GPT-6.1 Sol / high, for the cross-language source-pin,
+settlement and budget contract. Existing isolated C3 feature branch starts this
+change at `f2c894c`; the root checkout and C6 source worktree remain untouched.
+This is local controller correctness work, with no application runtime release.
+
+A separately approved nested successor retains the exact stopped inventory
+history in a new namespace. Its pure selector uses exact full-URL matching,
+requires valid unique provider and opaque identifiers across bounded own-data
+rows, and chooses multiple matches by ordinal provider then opaque ordering.
+Four individually mapped/prepaid callbacks bind the selected connection, read
+one user-tab inventory, claim only the selected row and invoke the existing
+injected static ready-first projector. The factory remains inert until run.
+
+Only the new decision permits ordinary UI86 plus recovery16 and main132,
+combined234. Success at103 is binding-only CLEAN_PAUSE. The predecessor
+inventory diagnostic remains unsuccessful (used2/accountfalse); its new proof
+controls completion, while prior fault2, future36, HTTP58 and both independent
+recovery allocations remain intact. Every new failure settles before HARD_STOP.
+Old identity/schema behavior and ceilings remain unchanged. No new preparation
+expiry, credential extension, wait, remote retry, navigation, mutation or RPC.
+
+Validation evidence: missing selector/factory exports produced assertion REDs;
+the exact successor test also failed TRIAL_STOPPED with its subclass absent and
+passed after restoration. Self-review reproduced an unsupported new-scope enum
+leaving pending; normalization now settles false as RESULT_UNVERIFIED. A missing
+publisher-hash type check was separately reproduced and corrected. Final focused
+new/predecessor regression59/59, `npm run validate` and diff-check PASS. Before
+those final narrow fixes, the broader affected/owner regression77/77 and the
+single local unit suite3015/3015 passed, zero skips. These are explicitly pre-fix
+broad-suite results, not final-head complete-source acceptance. Early test-fixture
+argument/name/privacy-assertion errors were corrected without weakening source
+behavior. Apps Script functions were not run; no Apps Script module changed.
+
+The parent owns independent review, exact final-source CI and the complementary
+mandatory Core/owned-PostgreSQL integration partition, immutable private packaging,
+actual inert/first-write gates and any once-only approved external execution.
+No Core/PG cluster, provider/browser/credential operation, external network read,
+canonical journal/claim/STOP/registry write, push, merge, deployment or benchmark
+was performed by this source task. Fresh local SHA readback confirmed the pinned
+decision and all four actual stopped-checkpoint artifacts unchanged. Whole trial,
+compatibility, physical/performance and release acceptance remain incomplete.
+
+Rollback: reviewed revert of this scoped source change only. Preserve all old
+STOPs, immutable sources and operational history; never rewind a live ledger.
+
+## 2026-10-23 — Retained readonly launch successor source repair
+
+Recommended model/speed: GPT-6.1 Sol / high for retained-ledger and cross-language
+source guards. Existing isolated C3 feature branch starts at `bcb87fd`; this is
+local controller stability work. No Apps Script, schema or product runtime change.
+
+A separately approved successor imports the exact stopped checkpoint into a
+unique namespace while retaining its unknown event outcome and missing returned
+run receipt. Direct approval, immutable source history, frozen state and the
+independent local observer must agree before admission. The new proof is counted
+separately from unsuccessful predecessor proofs. Existing decisions keep their
+original ceilings; only the new decision permits its additional ordinary unit.
+
+The fixed four-read binding flow reuses the existing exact-project selector and
+static ready-first projector. Each callback is separately prepaid and settled;
+failure closes the holder with no retry. Success is binding-only CLEAN_PAUSE and
+requires the original future/full-map, privacy, recovery, observation, performance
+and device gates before any later action. The local launcher retains its promise
+before invoking the entry, stores its terminal result or failure and closes its
+gate. After tool observation interruption, only that same promise may be awaited.
+
+Synthetic tests cover immutable predecessor state, admission failures, isolated
+ceilings, all four callback failures, invalid results, separate completion proofs,
+future/recovery limits and retained-launch replay/rejection behavior. Final local
+verification: affected26 files/636 tests PASS, zero fail/cancel/skip; Node22
+validate72 backend/40 endpoints/cache and diff-check PASS. A post-run shell wrapper
+failed assigning zsh's reserved `status`; the completed test log has no failures.
+Independent review and exact final
+source CI plus the complementary Core/owned-PostgreSQL partition remain parent
+responsibilities. Local verification does not establish real browser or release
+acceptance. No remote operation, canonical ledger mutation, push, merge, deployment,
+activation or unchanged capacity benchmark was performed by this source task.
+
+Rollback: leave the unused successor inert or use a reviewed scoped source revert.
+Retain every used source, journal, claim, STOP, unknown outcome and charge. Never
+rewind a live ledger or replay a stopped entry.
+
+### Shared settlement review repair
+
+Starting from `e3efbe2`, source review identified duplicated settlement between the
+fixed project successors. The existing predecessor ledger now owns one private
+settlement helper; each successor retains its explicit event-prefix dispatch and
+separate proof key. No historical admission, receipt, loading guard, quota or
+persistence-before-STOP order changed. Runtime whitelist remains27; API and config
+are unchanged. No new test or artificial RED was created for this behavior-preserving
+refactor. Fresh pre-change representatives12/12 and final covering65/65 PASS, zero
+fail/cancel/skip, runner/wrapper exit0; Node22 validate and diff-check PASS. Only
+source/docs changed; no canonical/provider operation, push, deployment or benchmark.
+The retained RED logs remain historical evidence of their shown failures; there is
+no separately frozen preimplementation test-source revision certifying every
+negative. Independent review and final full-source parent gates remain required.

@@ -6,9 +6,10 @@ export const ownerConnectionDecision='710fc0a4ff12766c997377a73e8d40f3314722b99b
 export const candidates=[{id:'publisher-chrome',name:'Chrome',type:'extension',profileName:'Publisher'},{id:'caller-chrome',name:'Chrome',type:'extension',profileName:'Trial'}];
 export const stages=['discovery','binding','inventory','claim','wait','snapshot'];
 export const methods={discovery:'inventory',binding:'claim',inventory:'inventory',claim:'claim',wait:'wait',snapshot:'snapshot'};
-export async function ownerFixture(){
+export async function ownerFixture(browserId='publisher-chrome'){
+ const fixtureCandidates=candidates.map((row,n)=>n===0?{...row,id:browserId}:row);
  const s=await metadataFixture(),a=holder(s);let shape,report;
- await a.withContinuation(async cap=>{shape=await captureShape(cap,()=>discoveryShape([...candidates,{id:'iab',name:'IAB',type:'iab'},{id:'apps',name:'Apps',type:'mcpapps'}],'old'));report=await cap.inspect();});const drain=await a.stopAndDrain();
+ await a.withContinuation(async cap=>{shape=await captureShape(cap,()=>discoveryShape([...fixtureCandidates,{id:'iab',name:'IAB',type:'iab'},{id:'apps',name:'Apps',type:'mcpapps'}],'old'));report=await cap.inspect();});const drain=await a.stopAndDrain();
  const pin=path=>({path,sha256:hash(readFileSync(path))}),origin={},canonical={journal:s.path+'.simple-metadata-diagnostic.json',claim:s.path+'.simple-metadata-diagnostic-claim.json',stop:s.path+'.simple-metadata-diagnostic-stop.json',registry:join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.simple-rebalanced.json')};
  for(const[k,p]of Object.entries(canonical)){const t=join(s.home,'owner94-origin-'+k+'.json');s.put(t,readFileSync(p));origin[k]=pin(t);}
  const result=join(s.home,'owner94-origin-result.json');s.put(result,compact({status:'SHAPE_CAPTURED',shape,report,drain,trialAccepted:false,browserIdentityVerified:false,followupAuthorized:false}));origin.result=pin(result);
@@ -17,7 +18,7 @@ export async function ownerFixture(){
  s.cfg.sources.push(pin(resolve('scripts/read-authority-owner-connection-budget.py')));
  s.cfg.readonlyConnection.repair92.diagnostic93.owner94={decisionHash:ownerConnectionDecision,approval:pin(approval),origin};s.cfg.resume={ownerConnection94:true};s.cfg.now=s.time;s.cfg.ownerNonce='3'.repeat(64);
  s.owner=()=>JSON.parse(readFileSync(s.path+'.simple-owner-connection.json'));s.retained94=Object.fromEntries(Object.entries(canonical).filter(([k])=>k!=='registry').map(([,p])=>[p,readFileSync(p)]));
- s.selection=(id='publisher-chrome',extra={})=>{const path=join(s.home,'owner-choice-'+id+'.json');s.put(path,compact({source:'direct-human-connection-selection',browserId:id,ownerAnswer:'使用連線 '+id,candidatesSha256:hash(compact(candidates)),recordedAt:s.time,executionStarted:false,...extra}));return {browserId:id,approval:pin(path)};};return s;
+ s.candidates=fixtureCandidates;s.selection=(id=browserId,extra={})=>{const path=join(s.home,'owner-choice-'+id+'.json');s.put(path,compact({source:'direct-human-connection-selection',browserId:id,ownerAnswer:'使用連線 '+id,candidatesSha256:hash(compact(fixtureCandidates)),recordedAt:s.time,executionStarted:false,...extra}));return {browserId:id,approval:pin(path)};};return s;
 }
 export async function ownerStep(cap,s,stage,io=()=>({verified:true})){
  const op={id:'loading-owner94-n'+(s.owner().connection.used+1)+'-'+stage,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:methods[stage],units:1,preparation:true};
