@@ -4729,3 +4729,53 @@ source/docs changed; no canonical/provider operation, push, deployment or benchm
 The retained RED logs remain historical evidence of their shown failures; there is
 no separately frozen preimplementation test-source revision certifying every
 negative. Independent review and final full-source parent gates remain required.
+
+## 2026-10-23 — Shared-object readonly successor source repair
+
+Recommended model/speed: GPT-6.1 Sol / high for the retained-ledger and cross-cell
+state boundaries. Work stays on the existing isolated C3 feature branch. This is
+local controller correctness work; application runtime and production acceptance
+are unchanged.
+
+The newly approved successor imports the exact stopped prefix into a unique
+namespace while retaining the failed UNKNOWN binding, all charges, prior STOPs
+and unsuccessful predecessor proofs. Direct approval, returned run/drain receipt,
+independent audit and the demonstrated local object-capture proofs must agree
+before admission. Only this new decision receives the additional ordinary unit;
+older decisions retain their ceilings and independent recovery allocations.
+
+The existing fixed four-read flow and durable settlement are shared through
+bounded policy helpers. Each returned operation settles before failure STOP;
+success is binding-only CLEAN_PAUSE, requiring the original full map, reserved
+future allowance, privacy, revocation, freshness, performance, physical-device,
+rollback and observation gates before later trial or release work.
+
+The promoted constructor captures one sealed local state object and a stable
+agent reference. Later callers mutate properties on that object. Callback attempts
+and safe gate/pending/returned/rejected classifications remain visible there;
+provider rejection text is discarded. The unchanged source launcher retains its
+promise before invocation, preserves its terminal result or sanitized error,
+closes its gate and forbids another start. A stale scalar observer is never proof
+that a historical callback was not invoked.
+
+The initial broad RED command overlapped source edits and is retained only as
+limited evidence. A separate fixed-source admission test failed while the new
+ledger dispatcher was absent, then passed after its implementation; the first
+successful flow and future-allowance checks are retained separately. No artificial
+claim that every negative had an immutable failing preimplementation revision is
+made. See the test matrix for local coverage and final verification boundaries.
+
+No provider operation, actual canonical journal/claim/STOP/registry write, RPC,
+trial clock, credential/configuration change, push, merge, deploy or unchanged
+benchmark was performed by this source task. The parent owns independent review,
+final composed CI/Core integration and immutable private packaging before any
+separately admitted actual run. Rollback is to leave the unused successor inert
+or use a reviewed scoped source revert. Preserve every used source, receipt,
+UNKNOWN, charge and STOP; never rewind or replay a stopped entry.
+
+Final local verification:28 affected files /709 tests PASS, zero fail/cancel/skip;
+the original test runner and shell wrapper both completed exit0. Added47 cases
+without removing or changing old tests. Node22 validate72 backend /40 endpoint
+references/cache and diff-check PASS. Source stayed fixed during the final test
+run. Full unit/Worker and complementary Core/owned-PostgreSQL acceptance are not
+claimed locally; the parent owns that final composed-head evidence.
