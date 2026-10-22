@@ -3913,3 +3913,185 @@ covering files65/65 PASS, zero fail/cancel/skip, runner/wrapper exit0 under Node
 Validate72 backend/40 endpoints/cache and diff-check PASS. No tests added or changed,
 no new API/module/namespace or remote/canonical action; final full-source CI and
 Core/owned-PostgreSQL evidence remain separate parent gates.
+
+
+### C6 Node HTTP-client boundary diagnostics (2026-10-22)
+
+Test-only CJS hook lifecycle covers response/error/receiver/argument identity,
+unselected Promise identity, concurrent-token isolation, overlap refusal,
+clock faults, late descendants and permanently incomplete detached calls.
+Collector/summary checks cover paired same-clock windows, exact700 counts,
+route/index sequence, duplicates, malformed/nonfinite/missing/multiple calls,
+privacy and bounded output. The actual measurement-body harness proves token
+allocation precedes the original wall timer and sample formatting follows body
+consumption/end. Early gate failures still retain all700 requests and NaN
+cannot pass the capacity gate. CI summaries preserve the original failing
+footer beside complete or explicitly incomplete observation evidence.
+
+A one-request literal-response functional experiment established forwarding
+for this locked Miniflare/undici pair; it is not a latency sample. Fresh full
+root/Core/PostgreSQL, complete Worker and exact-source CI results are pending.
+The prior integration properties p95=51.325898ms failure remains unresolved.
+
+Local new-source Worker verification passed59/59,0fail/cancel/skip, including
+both original700-sample fixture runs. All1400 raw HTTP-client rows match the
+existing client start/end/fullwall/dispatch/body and actor fullwall exactly;
+both producer suites and16 summary aggregates report complete coverage, with
+zero invalid/drop. Maximum route p95=18.670541ms on this Darwin run. This does
+not replace the retained Linux failure or establish a cause. Fresh full root/
+Core/PostgreSQL, exact-source CI and downstream integration remain pending.
+
+Fresh bare root/Core/PostgreSQL regression passed2899/2899, zero fail,
+cancel or skip. All683 source paths matched the before/after bytes/modes
+snapshot; Core321 tracked blobs/index/ref and owned PostgreSQL teardown were
+verified. Only this result documentation was appended afterward; executable
+and test bytes remain those verified. New exact-head CI is still pending.
+
+### C6 same-sample D1 query-duration evidence
+
+The 500-room fixture now retains the existing test-only D1 `internal_ms`
+header for every original measured response, alongside query and row counts.
+Header parsing follows body consumption and the original full-wall end;
+request count, ordering, p95 index and strict 50ms gate remain unchanged.
+Seven bounded numeric vectors preserve all100 values per route before sorting.
+CI marks missing, duplicate, malformed or dropped vectors incomplete without
+changing the original test outcome. Emulator query-processing duration is not
+SQL CPU, transport duration or Production acceptance.
+
+The actual-loop regressions retain all700 samples after an early latency
+failure, reject nonfinite p95, and verify the new ordered vectors. Boundary
+tests and summary privacy/completeness tests passed33/33 under Node22.
+Local Node22 Worker verification passed59/59; maximum capacity p95 was20.481ms.
+An earlier Node26 run is retained separately and is not the designated Node22
+verification. The prior Linux CI latency failures remain unresolved until new
+exact-source CI supplies evidence; no Production change or rollout follows
+from these local results. Rollback is reverting this test/log-only increment.
+
+### C6 per-statement timing within the same batch
+
+The synthetic Worker additionally exposes only the numeric durations already
+returned by its original batch, in schema entry order. Capacity measurements
+read them after the unchanged body/full-wall end, require the original query
+count and summed duration, and retain all100 rows per route in ten-row frames.
+No SQL, source values or identity enters these frames; no query is added.
+CI validates exact numeric dimensions, unique route/offset slots, sums and
+same-sample totals against the existing internal-duration vectors. Missing,
+duplicate, malformed, mismatched or dropped frames cannot report COMPLETE.
+All700 original samples and the strict50ms gate remain required. This is
+diagnostic evidence only; individual elapsed durations are not CPU or causal
+proof. The retained properties p95=50.131852ms CI failure remains unresolved.
+Rollback reverts this undeployed test/log-only increment. New exact-source
+verification is required before any acceptance claim.
+
+### C6 source-row ordering indexes
+
+Migration0007 adds six nonunique indexes for the existing room, contract and
+bill ordering expressions: source order and Workspace plus source order.
+The real scoped loader SQL/parameters and shared unscoped projection remain
+unchanged. A genuine missing-index regression exercises direct, blank/legacy
+and parent-exclusion queries. Independent order-only and compound stages
+verify why both index forms are needed. Thirty-one actual plans eliminate
+temporary ORDER BY trees; complete scoped dataset and property HTTP bytes,
+foreign-scope exclusion, statement/batch counts and rows_read are preserved.
+Literal edge cases retain numeric casts, SQL/JSON null, nonnumeric source
+rows and row-key ties. Signed-sync tests and both original latency fixtures
+apply the new migration, keeping all original samples and strict50ms gate.
+
+Plan improvement is not latency acceptance. Fresh complete Worker and CI
+verification remain required; prior51.868ms failure is retained. Indexes add
+storage and sync-write work, which must remain within actual quota acceptance.
+Before deployment, back up D1 and verify migration state. Rollback drops only
+the six named0007 indexes and reverts their source/tests; it does not delete
+replica rows, alter query semantics or remove0005 Workspace indexes.
+
+Before the migration filename integration correction, designated Node22 local
+Worker verification passed60/60, including signed sync, complete parity and
+all original latency samples; maximum capacity p95 was19.842ms. The pre-rename
+unit suite passed2898/2898, zero fail/cancel/skip, in171.790s. These Darwin
+results do not replace the retained Linux CI39656752302 properties51.868ms
+failure or any earlier failure and are not post-rename full-suite evidence.
+The new migration uses0007 because existing0006_shadow_auth_kind.sql is
+immutable; the functional baseline applies existing0004/0005/0006 first.
+Comparison identity is regenerated for181 sources, so future observation
+must use the new identity and start a fresh window. Asset version is unchanged,
+endpoint remains blank and all six flags remain off. Post-rename functional/
+affected checks and exact-source CI are recorded separately; exact CI remains
+required. Core/PostgreSQL integrations are unchanged and were not repeated.
+
+Post-rename designated Node22.23.3 checks passed36/36, zero fail/cancel/skip:
+the new real-D1 functional case plus35 actor-timer-boundary/completion/CI-summary
+cases, in4.378s. Functional evidence confirms six nonunique indexes,31 actual
+plans without temporary sorts,28 scoped sorts remaining after order-only
+indexes,500 owned rooms, complete data/HTTP bytes and unchanged queries.
+Validation passed72backend/40endpoint/cache/comparison181; diff check passed.
+Existing migrations and the candidate SQL SHA are byte-identical. No unchanged
+benchmark/full-unit or external Core/PostgreSQL test was repeated after rename.
+Exact committed-source CI and formal performance/quota gates remain pending.
+
+
+### C6 internal Sheet matrix view — 2026-10-23 source candidate
+
+Recommended GPT-6.1 Sol/high for the bounded correctness/performance continuation.
+A private pure-functional prototype using actual projected 500 data, actual
+createReadServices(...,true), fixed clock and canonical properties entry retained
+exact 713,795 response bytes and unchanged source data. Internal complete-matrix
+clones fell 9→0, row arrays 1575→0 and copied cells 20814→0. All seven entry results
+were byte-identical; frozen internal arrays falsified writes by the three generated
+snapshot consumers. This is deterministic allocation evidence only, with no timer.
+
+New functional RED: owned properties consumers called the public cloning path 9
+rather than 0; the foreign/default ownership case observed 4 rather than 2 calls.
+The request-local WeakMap fix affects only owned Sheets in explicit deferred mode.
+Targeted runtime/calendar/parity/collation/month tests pass 30/30 with zero failure,
+cancel or skip. Public header/cell/range mutation isolation, default eager source
+snapshots, foreign-request fallbacks, Date hydration/locality, null/absent blanks,
+scalar zero/false, own/inherited __proto__ and masked account suffix remain covered.
+Generated calculator, canonical GAS, schema, migrations, SQL, packages, transport,
+fixture/timing loops, 100 samples, p95 index 94 and strict<50ms are unchanged.
+
+The prior indexed source 62e386c CI 39832854033 Worker 59/60 failure remains:
+properties p95=54.06686799999807ms,22/100>=50ms. No latency improvement or GC cause
+is established by reducing copies. Formal acceptance/rollout/storage/sync/quota
+and parent integration gates remain open. Rollback reverts this bounded runtime
+change and regenerates comparison identity; no data or remote action is required.
+
+
+The single designated Node 22.23.3/macOS new-source Worker run passed 60/60,
+0 fail/cancel/skip, 45.715609834 s. Original capacity500 p95s (home/actions/revenue/
+tenants/rooms/arrears/properties) were 13.300/11.740/13.092/19.040/14.171/15.948/
+17.886ms; small p95s 1.803/1.638/1.665/1.996/1.722/1.465/2.080ms. Every route
+retained 100 full-wall samples and 0 samples>=50ms. All 1400 client/actor/fetch
+pairs matched exact clocks/arithmetic; actor/fetch each 700 COMPLETE per fixture,
+invalid/drop/outputdrop0. No causal speed claim, new Linux result or prior-failure
+replacement follows. No unchanged benchmark was repeated.
+
+The 685 tracked paths were byte/mode-identical before/after the Worker run,
+snapshot 279164ccc98e2b2122d183c9254a0afb675d6791b20918e1b97f1fb2bedf8f8e;
+this result-only documentation append follows that snapshot. Validate 72 backend /
+40 endpoints/static-cache/comparison 181 and diff check PASS. Final full-unit exact-
+head CI, independent parent review and separate C6 integration remain pending;
+no redundant local full-unit/Core/PostgreSQL run or external action was performed.
+
+
+### 2026-10-23 reviewed source composition checks
+
+- Ten focused C3 files cover owner selection, predecessor inventory, project
+  retarget, retained launch, safe metadata selection, ready-first projection and
+  launch-state retention:144/144 PASS, zero fail/cancel/skip under Node22.
+- Eight focused C6 files cover the retained HTTP matrix, private internal
+  snapshot ownership/public copy isolation, typed calendar values, asynchronous
+  fetch attribution, original timer completion and bounded CI summaries, plus
+  actual local D1 source-order query/index/HTTP equivalence:67/67 PASS, zero
+  fail/cancel/skip. No local full unit/Worker capacity benchmark was repeated.
+- Validate72 backend/40 endpoints/static cache/comparison181 and diff-check PASS.
+  Exact source checks: C3 runtime27/27 against8f8d222; C6 Worker56/56 and
+  comparison-source181/181 againstbca6764. Existing asset version, blank endpoint
+  and six disabled flags remain unchanged; the generated comparison is current.
+- Mechanical expected complete partitions are unit3207 (exact C3 baseline3057
+  plus150 source registrations), Worker60 and complementary Core/PostgreSQL5.
+  These are predictions; exact composed CI and Core/PostgreSQL evidence still
+  precede acceptance. The retained C3 source Worker25/26 latency failure is
+  not superseded by these local functional checks or the separate C6 CI pass.
+- No changed Apps Script function, route or business schema requires a cloud
+  test call. All actual provider, full-map, privacy, performance, device,
+  rollback,24h+24h/seven-day gates remain separate and unaccepted here.

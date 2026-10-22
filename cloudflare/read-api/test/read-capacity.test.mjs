@@ -1,3 +1,5 @@
+import {withNodeFetchTiming} from './read-fetch-boundary.mjs';
+import {createFetchTiming} from './read-fetch-timing.mjs';
 import {withD1ActorTiming} from './read-d1-actor.mjs';
 import {createActorTiming} from './read-actor-timing.mjs';
 import assert from 'node:assert/strict';
@@ -19,7 +21,7 @@ function differences(a,b,path='$') {
  if(a===null||b===null||typeof a!=='object'||typeof b!=='object')return [path];
  return [...new Set([...Object.keys(a),...Object.keys(b)])].flatMap(k=>differences(a[k],b[k],path+'.'+k));
 }
-test('500 owned rooms survive real D1 projection and all seven canonical read entries without scope or amount loss',async t=>withD1ActorTiming(async()=>{
+test('500 owned rooms survive real D1 projection and all seven canonical read entries without scope or amount loss',async t=>withD1ActorTiming(async()=>withNodeFetchTiming(async fetchCapture=>{
  const input=capacityDataset();
  assert.equal(input.V2_rooms.filter(r=>r.workspace_id==='SYNTHETIC_W1').length,500,'capacity fixture must actually contain500 owned rooms');
  const projected=projectedDataset(input);
@@ -31,10 +33,10 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
  const bundle=await build({entryPoints:[new URL('./read-fixture-worker.js',import.meta.url).pathname],bundle:true,write:false,format:'esm',target:'es2022'});
  const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
   compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},bindings:{FIXTURE_ACCESS:JSON.stringify(projectedAccess),FIXTURE_NOW:String(Date.parse(fixture.now))}}));
- const clientTiming=createClientTiming('capacity500',line=>t.diagnostic(line)),actorTiming=createActorTiming('capacity500',line=>t.diagnostic(line));let timingOutcome='FAIL';
+ const clientTiming=createClientTiming('capacity500',line=>t.diagnostic(line)),actorTiming=createActorTiming('capacity500',line=>t.diagnostic(line)),fetchTiming=createFetchTiming('capacity500',line=>t.diagnostic(line));let timingOutcome='FAIL';
  try {
   const db=await mf.getD1Database('DB'),schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
-  for(const name of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql']){
+  for(const name of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql','0007_read_source_order_indexes.sql']){
    const sql=await readFile(new URL('../migrations/'+name,import.meta.url),'utf8');
    await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
   }
@@ -73,13 +75,15 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
   assert.equal(observed.arrears.arrears.length,252);
   const timings={},violations=[];
   for(const c of cases){
-   const samples=[],observations=[],stages={d1:[],decode:[],route:[]};
+   const samples=[],observations=[],stages={d1:[],decode:[],route:[],internal_ms:[]};
    for(let i=0;i<100;i++){
     const observation=clientTiming.begin(c.route,i);
-    const start=performance.now(),response=await mf.dispatchFetch('https://local.test'+paths[c.route]);
+        const fetchToken=fetchCapture.begin();
+    const start=performance.now(),response=await fetchCapture.run(fetchToken,()=>mf.dispatchFetch('https://local.test'+paths[c.route]));
     const dispatchAt=performance.now();
     assert.equal(response.status,200);const body=await response.arrayBuffer();const end=performance.now();samples.push(end-start);
     clientTiming.end(observation,start,dispatchAt,end);
+        fetchTiming.record(c.route,i,start,dispatchAt,end,fetchCapture.sample(fetchToken));
     // Parse existing test-only headers after the unchanged full wall timer.
     // These are paired stages, not a subtraction or replacement for the gate.
     const parts=response.headers.get('server-timing')?.split(', ');assert.equal(parts?.length,3);
@@ -89,13 +93,30 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
      assert(!Object.hasOwn(detail,match[1]));const value=Number(match[2]);assert(Number.isFinite(value)&&value>=0);
      detail[match[1]]=value;stages[match[1]].push(value);
     }
+    const internal=JSON.parse(response.headers.get('x-cmwebs-test-d1'));
+    assert.deepEqual(Object.keys(internal).sort(),['internal_ms','queries','rows_read']);
+    assert.equal(internal.queries,Object.keys(schema).length);
+    assert(Number.isSafeInteger(internal.rows_read)&&internal.rows_read>=0);
+    assert(Number.isFinite(internal.internal_ms)&&internal.internal_ms>=0);
+    stages.internal_ms.push(internal.internal_ms);
+    const statement_ms=JSON.parse(response.headers.get('x-cmwebs-test-d1-statements'));
+    assert(Array.isArray(statement_ms)&&statement_ms.length===internal.queries);
+    assert(statement_ms.every(ms=>Number.isFinite(ms)&&ms>=0));
+    assert.equal(Number(statement_ms.reduce((sum,ms)=>sum+ms,0).toFixed(3)),internal.internal_ms);
     actorTiming.record(c.route,i,end-start,detail.d1,response.headers.get('x-cmwebs-test-d1-actor'));
     observations.push({index:i,wall_ms:Number((end-start).toFixed(3)),dispatch_ms:Number((dispatchAt-start).toFixed(3)),
-     consume_ms:Number((end-dispatchAt).toFixed(3)),...detail,body_bytes:body.byteLength});
+     consume_ms:Number((end-dispatchAt).toFixed(3)),...detail,...internal,statement_ms,body_bytes:body.byteLength});
    }
    // Numeric timing diagnostics only, after the original100 measured requests.
    // Preserve request order before sorting; no Worker/body/identity data enters logs.
    const orderedSamples=samples.slice();
+   // Existing D1 metadata, paired by the unchanged request-order index. Emulator
+   // query-processing duration is not SQL CPU, transport or formal acceptance.
+   assert(observations.length===100&&observations.every((o,i)=>o.index===i));
+   console.log('C6_LOCAL_500_ROOM_D1_INTERNAL '+JSON.stringify({route:c.route,
+    ordered_internal_ms:observations.map(o=>o.internal_ms)}));
+   for(let offset=0;offset<observations.length;offset+=10)console.log('C6_LOCAL_500_ROOM_D1_STATEMENTS '+JSON.stringify({route:c.route,offset,
+    rows:observations.slice(offset,offset+10).map(o=>[o.internal_ms,...o.statement_ms])}));
    samples.sort((a,b)=>a-b);const p95=samples[94];
    timings[c.route]={samples:100,p95_ms:Number(p95.toFixed(3))};
    console.log('C6_LOCAL_500_ROOM_SAMPLE '+JSON.stringify({route:c.route,...timings[c.route]}));
@@ -104,7 +125,7 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
    console.log('C6_LOCAL_500_ROOM_STAGES '+JSON.stringify({route:c.route,...timings[c.route],
     stage_p95_ms:Object.fromEntries(Object.entries(stages).map(([key,values])=>{
      assert.equal(values.length,100);values.sort((a,b)=>a-b);return [key,values[94]];
-    })),slowest:observations.sort((a,b)=>b.wall_ms-a.wall_ms||a.index-b.index).slice(0,2)}));
+    })),slowest:observations.sort((a,b)=>b.wall_ms-a.wall_ms||a.index-b.index).slice(0,2).map(({statement_ms,...row})=>row)}));
    if(!(p95<50))violations.push(c.route+'500-room local HTTP/D1 p95='+p95.toFixed(3)+'ms');
   }
   console.log('C6_LOCAL_500_ROOM_LATENCY '+JSON.stringify(timings));
@@ -112,8 +133,8 @@ test('500 owned rooms survive real D1 projection and all seven canonical read en
   // route fails. Every violation still fails the suite; no sample is replaced.
   assert.deepEqual(violations,[],violations.join('; '));
   timingOutcome='PASS';
- }finally{try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{try{clientTiming.close(timingOutcome);}finally{actorTiming.close(timingOutcome);}}}
-}));
+ }finally{try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{try{clientTiming.close(timingOutcome);}finally{try{actorTiming.close(timingOutcome);}finally{fetchTiming.close(timingOutcome);}}}}
+})));
 
 test('packed SQL projection preserves original D1 values, column order and safe own keys in workerd',async()=>{
  const fields=['absent','nullable','zero','negativeZero','decimal','enabled','disabled','empty','quotes','unicode','nested','__proto__','replica_source_row','replica_date_fields','date','quoted"key'];

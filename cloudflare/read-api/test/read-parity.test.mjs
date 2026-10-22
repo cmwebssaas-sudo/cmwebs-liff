@@ -1,3 +1,5 @@
+import {withNodeFetchTiming} from './read-fetch-boundary.mjs';
+import {createFetchTiming} from './read-fetch-timing.mjs';
 import {withD1ActorTiming} from './read-d1-actor.mjs';
 import {createActorTiming} from './read-actor-timing.mjs';
 import assert from 'node:assert/strict';
@@ -20,7 +22,7 @@ function differingPaths(left,right,path='$') {
   if(left===null||right===null||typeof left!=='object'||typeof right!=='object') return [path];
   return [...new Set([...Object.keys(left),...Object.keys(right)])].flatMap(key=>differingPaths(left[key],right[key],path+'.'+key));
 }
-test('all six routes match original GAS after whitelist projection and actual local D1 storage', async t => withD1ActorTiming(async()=>{
+test('all six routes match original GAS after whitelist projection and actual local D1 storage', async t => withD1ActorTiming(async()=>withNodeFetchTiming(async fetchCapture=>{
   const input=richDataset();
   const publicUrl='https://synthetic-c2.z3house.com/spaces/synthetic-room/';
   const photo='https://synthetic-c2.z3house.com/api/public/media/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
@@ -39,11 +41,11 @@ test('all six routes match original GAS after whitelist projection and actual lo
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,
     compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
     bindings:{FIXTURE_ACCESS:JSON.stringify(projectedAccess),FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_PUBLIC_RESOURCES:JSON.stringify(publicResources)}}));
-  const clientTiming=createClientTiming('small',line=>t.diagnostic(line)),actorTiming=createActorTiming('small',line=>t.diagnostic(line));let timingOutcome='FAIL';
+  const clientTiming=createClientTiming('small',line=>t.diagnostic(line)),actorTiming=createActorTiming('small',line=>t.diagnostic(line)),fetchTiming=createFetchTiming('small',line=>t.diagnostic(line));let timingOutcome='FAIL';
   try {
     const db=await mf.getD1Database('DB');
     const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
-    for(const file of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql']) {
+    for(const file of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql','0007_read_source_order_indexes.sql']) {
       const migration=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
       await db.batch(migration.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
     }
@@ -84,8 +86,9 @@ test('all six routes match original GAS after whitelist projection and actual lo
       const samples=[],observations=[],stages={d1:[],decode:[],route:[],internal_ms:[]};
       for(let index=0;index<100;index++) {
         const observation=clientTiming.begin(item.route,index);
+        const fetchToken=fetchCapture.begin();
         const start=performance.now(),cpuStart=process.cpuUsage(),loopStart=performance.eventLoopUtilization();
-        const response=await mf.dispatchFetch('https://local.test'+httpPaths[item.route]);
+        const response=await fetchCapture.run(fetchToken,()=>mf.dispatchFetch('https://local.test'+httpPaths[item.route]));
         const dispatchAt=performance.now();
         assert.equal(response.status,200);
         await response.arrayBuffer();
@@ -96,6 +99,7 @@ test('all six routes match original GAS after whitelist projection and actual lo
         // formatting stays outside, as with the existing header observations.
         const cpu=process.cpuUsage(cpuStart),loop=performance.eventLoopUtilization(loopStart);
         clientTiming.end(observation,start,dispatchAt,end);
+        fetchTiming.record(item.route,index,start,dispatchAt,end,fetchCapture.sample(fetchToken));
         const supervisor={cpu_ms:Number(((cpu.user+cpu.system)/1000).toFixed(3)),
           loop_active_ms:Number(loop.active.toFixed(3)),loop_idle_ms:Number(loop.idle.toFixed(3)),
           loop_utilization:Number(loop.utilization.toFixed(6))};
@@ -116,5 +120,5 @@ test('all six routes match original GAS after whitelist projection and actual lo
     // diagnostic only. No retry, warmup, exclusion or threshold relaxation.
     assert.deepEqual(violations,[],violations.join('; '));
     timingOutcome='PASS';
-  } finally {try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{try{clientTiming.close(timingOutcome);}finally{actorTiming.close(timingOutcome);}}}
-}));
+  } finally {try{await mf.dispose();}catch(error){timingOutcome='FAIL';throw error;}finally{try{clientTiming.close(timingOutcome);}finally{try{actorTiming.close(timingOutcome);}finally{fetchTiming.close(timingOutcome);}}}}
+})));

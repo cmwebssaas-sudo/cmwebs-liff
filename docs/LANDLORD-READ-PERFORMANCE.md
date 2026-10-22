@@ -391,3 +391,36 @@ Endpoint blank/flags off; no deployment, formal-data/configuration change or
 observation T0. Technical gates,24h parallel sync/shadow including Taipei
 crossday03:00,rooms-first device/rollback,another stable24h and seven-day
 postlaunch observation all remain required.
+
+### Node HTTP-client await boundary (C6 diagnostics, 2026-10-22)
+
+The retained integration capacity properties p95=51.325898ms exceeds the
+unchanged strict50ms gate. Actor/GC observations have not established a cause.
+A test-only scoped hook on the same locked Miniflare-resolved CJS undici.fetch
+records Node performance.now at invocation and await settlement. It does not
+edit dependencies or product code. A single local literal-response experiment
+established actual forwarding, disposal and descriptor restoration.
+
+Paired diagnostics retain start/dispatch/body-end and HTTP-client boundaries
+for the existing100 samples per route. Per-row before/await/after/body windows
+are summarized independently; percentiles are never subtracted. The await
+window includes transport, Worker and Node processing; before/after include
+Miniflare/fetch4 request/response work. These are not exact fetch4 spans, CPU,
+pure network or root-cause proof. Instrumentation overhead remains in fullwall.
+Missing/multiple/unfinished or invalid/out-of-order evidence remains incomplete.
+No retry, warmup, sample replacement or threshold change is added. Fresh full
+verification and exact-source CI are required; formal page switches remain off.
+
+Local new-source Worker verification passed59/59,0fail/cancel/skip, including
+both original700-sample fixture runs. All1400 raw HTTP-client rows match the
+existing client start/end/fullwall/dispatch/body and actor fullwall exactly;
+both producer suites and16 summary aggregates report complete coverage, with
+zero invalid/drop. Maximum route p95=18.670541ms on this Darwin run. This does
+not replace the retained Linux failure or establish a cause. Fresh full root/
+Core/PostgreSQL, exact-source CI and downstream integration remain pending.
+
+Fresh bare root/Core/PostgreSQL regression passed2899/2899, zero fail,
+cancel or skip. All683 source paths matched the before/after bytes/modes
+snapshot; Core321 tracked blobs/index/ref and owned PostgreSQL teardown were
+verified. Only this result documentation was appended afterward; executable
+and test bytes remain those verified. New exact-head CI is still pending.

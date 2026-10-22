@@ -7522,3 +7522,98 @@ source/docs changed; no canonical/provider operation, push, deployment or benchm
 The retained RED logs remain historical evidence of their shown failures; there is
 no separately frozen preimplementation test-source revision certifying every
 negative. Independent review and final full-source parent gates remain required.
+
+## 2026-10-22 C6 Node HTTP-client boundary observation
+
+Recommended GPT-6.1 Sol/high: diagnose the retained strict local latency
+failure without changing product behavior, source fixtures or acceptance gates.
+Source c2ddec6 CI39634649349 passed unit2888/2888 and Worker53/53.
+Integration c3aa5ff CI39635095357 passed unit3090/3090 but Worker52/53: the
+capacity properties full-wall p95 was51.325898ms,11/100 samples>=50ms.
+Identical Worker sources and GC overlap do not establish a cause.
+
+A scoped test-only wrapper resolves the same CJS undici export as the locked
+Miniflare runtime. A minimal local literal-response experiment established
+forwarding with one observed call and complete descriptor restoration; an
+earlier invalid-options experiment failed before any dispatch and is retained.
+No installed package files or product Worker files are changed. Tokens close
+with dispatch settlement, late descendants pass through, and unfinished calls
+remain incomplete. Original response/error identity and unselected promises
+are preserved. Missing, multiple, nonfinite or out-of-window observations cannot
+be reported as complete coverage.
+
+Only the original small/capacity measurement loops are instrumented:700 each,
+100 requests per route, original order, body-consumption end, p95 index94 and
+strict<50ms remain. Token allocation precedes the wall timer; scoped execution
+and two Node-clock observations remain inside it. Validation/formatting occurs
+after the original end. Separate bounded numeric frames pair the original wall
+with undici entry/await settlement; summaries compute windows from individual
+rows. The await span includes Node/transport/Worker work and is neither exact
+fetch4 nor pure network/CPU. No percentile subtraction or cause claim is valid.
+COMPLETE means diagnostic coverage, never latency or rollout acceptance.
+
+Affected pure checks pass; independent integration review, fresh full root/
+Core/PostgreSQL, Worker and exact-source CI results remain pending. Apps Script
+source/tests are unaffected; no Google or formal data operation occurred.
+No page flag, deployment, T0 or production acceptance changed. Rollback reverts
+this test-only change; all approved rollout and physical-device gates remain.
+
+Local new-source Worker verification passed59/59,0fail/cancel/skip, including
+both original700-sample fixture runs. All1400 raw HTTP-client rows match the
+existing client start/end/fullwall/dispatch/body and actor fullwall exactly;
+both producer suites and16 summary aggregates report complete coverage, with
+zero invalid/drop. Maximum route p95=18.670541ms on this Darwin run. This does
+not replace the retained Linux failure or establish a cause. Fresh full root/
+Core/PostgreSQL, exact-source CI and downstream integration remain pending.
+
+Fresh bare root/Core/PostgreSQL regression passed2899/2899, zero fail,
+cancel or skip. All683 source paths matched the before/after bytes/modes
+snapshot; Core321 tracked blobs/index/ref and owned PostgreSQL teardown were
+verified. Only this result documentation was appended afterward; executable
+and test bytes remain those verified. New exact-head CI is still pending.
+
+
+## 2026-10-23 — Reviewed C3/C6 source composition
+
+Recommended model/speed: GPT-6.1 Sol / high for multi-branch integration.
+V2.0 stability source composition on the existing isolated integration branch,
+starting at `c3aa5ff`. Both reviewed exact heads are retained as merge ancestors:
+C3 `8f8d222` and C6 `bca6764`. Controller conflicts resolve to the exact reviewed
+C3 bytes; append-only evidence conflicts preserve both histories and their gates.
+No new source design, timer, sample, threshold or test weakening is introduced.
+
+Fresh local verification: ten C3 owner/inventory/retarget/launch/selector/readiness
+files pass144/144; eight complementary C6 HTTP/snapshot/timing/index files
+pass67/67, both with zero fail/cancel/skip under Node22. The actual local D1
+source-order test retains complete scoped dataset/HTTP bytes, SQL/parameters,
+call counts and edge ordering while checking index plans. This is functional
+verification, not an additional capacity benchmark or latency acceptance.
+`npm run validate` passes72 backend files/40 endpoint references/static cache/
+181-source comparison; diff-check passes. No Apps Script function is affected.
+
+Git blob reconciliation verifies all27 C3 controller runtime paths against
+`8f8d222`, and all56 Worker paths plus all181 comparison-source paths against
+`bca6764`. The standard comparison checker passes the retained generated identity;
+no regeneration is necessary. Asset version remains20261020-read-observation-v1,
+endpoint blank and all six read flags off. Source-registration differences from
+the exact C3 unit baseline mechanically predict3207 unit cases (3057+150);
+the identical Worker test tree predicts60. Final composed CI and the separate
+mandatory five-case Core/PostgreSQL partition remain parent responsibilities.
+These expected counts are not claimed executed suite results.
+
+Retain source CI evidence separately: C3 run39848685082 unit3057/3057 passes,
+Worker25/26 fails the unchanged strict50ms gate (small-fixture tenants
+p95=178.301ms,8/100 over50). C6 run39839610496 unit2900/Worker60 passes.
+Neither result is composed-head CI, and this integration does not establish the
+cause or repair of that particular failed tail. No unchanged C3 retry is made.
+
+Retained actual preparation remains stopped at100 within the approved235 ceiling;
+no new actual binding callback or completed return/drain receipt is claimed.
+Historical unsuccessful proofs, charges, STOPs and unknown outcomes remain.
+Independent review, exact composed CI/Core evidence, actual authority/privacy/
+revocation/freshness/full-map/performance/device/rollback gates and the approved
+24h parallel observation, another stable24h and seven-day postlaunch observation
+remain required. No push, main merge, deployment, remote DDL, configuration or
+observation T0 occurs here. A later release requires its own authorization and
+operational gates. Local rollback is a reviewed source revert to `c3aa5ff`,
+retaining all operational history; no production or ledger rollback is implied.
