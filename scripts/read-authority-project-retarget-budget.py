@@ -62,24 +62,27 @@ def retarget_class(base):
   def check_loading(self,op):
    c=self.j['connection'];d=self.j['projectRetarget'];n=d['used'];stage=c['stage']
    if n>=4 or stage!=STAGES[n] or c['used']!=10+n or self.j['loading']['used']!=16+n or c['used']>=14 or op!={'id':'loading-retarget99-n'+str(c['used']+1)+'-'+stage,'key':'N:preparation','actor':'publisher','target':'thin-settings','operation':METHODS[stage],'units':1,'preparation':True}:fail()
+  # Fixed retarget99/launch100 dispatch supplies a literal, separate proof key.
+  def _settle_project_read(self,q,proof_key):
+   self.current();self.now(q.get('now'));e=self.j['events'][-1];self.check_loading(e['operation']);success=q.get('success');stage=self.j['connection']['stage'];extra=['inventoryClassification']if stage=='inventory'else ['loadingResultVerified']if success and stage=='snapshot'else[]
+   if type(success)is not bool or not exact(q,['op','id','success','now']+extra) or q['id']!=e['operation']['id'] or self.j['pending']!=q['id'] or e['settled']is not False:fail()
+   if stage=='inventory':
+    d=q['inventoryClassification']
+    if not exact(d,CLASS_KEYS) or d['source']!='readonly-project-inventory-v1' or d['status']not in STATUSES or d['rawValuesRetained']is not False or any(not integer(d[k])or not 0<=d[k]<=9600 for k in CLASS_KEYS if k not in ['source','status','rawValuesRetained']) or success!=(d['status']=='VERIFIED'):fail()
+    if success and (not 1<=d['rowCount']<=300 or not 1<=d['exactUrlMatches']<=d['rowCount'] or any(d[k]!=0 for k in ['invalidRows','accessors','proxies','duplicateIds','providerIdMissing','opaqueIdMissing'])):fail()
+    e['inventoryClassification']=copy.deepcopy(d)
+   if success and stage=='snapshot':
+    if q['loadingResultVerified']is not True:fail()
+    self.j[proof_key]['accountVerified']=True;self.j['ownerConnection']['accountVerified']=True;e['loadingResultVerified']=True
+   e.update(settled=True,success=success);self.j.update(pending=None,lastAt=q['now']);self.j['connection']['used']+=1;self.j['loading']['used']+=1;self.j[proof_key]['used']+=1
+   if success:self.j['connection']['stage']=STAGES[self.j[proof_key]['used']]if self.j[proof_key]['used']<4 else'complete'
+   else:self.j['failures']+=1
+   self.persist()
+   if not success:self.stop()
+   return self.view()
   def command(self,q):
    name=q.get('op');e=self.j['events'][-1]if self.j['events']else{}
    if name=='settle' and e.get('preparationStage') and e.get('lane')=='ui' and e.get('key')=='N:preparation' and e['operation'].get('preparation')is True and e['operation']['id'].startswith('loading-retarget99-'):
-    self.current();self.now(q.get('now'));e=self.j['events'][-1];self.check_loading(e['operation']);success=q.get('success');stage=self.j['connection']['stage'];extra=['inventoryClassification']if stage=='inventory'else ['loadingResultVerified']if success and stage=='snapshot'else[]
-    if type(success)is not bool or not exact(q,['op','id','success','now']+extra) or q['id']!=e['operation']['id'] or self.j['pending']!=q['id'] or e['settled']is not False:fail()
-    if stage=='inventory':
-     d=q['inventoryClassification']
-     if not exact(d,CLASS_KEYS) or d['source']!='readonly-project-inventory-v1' or d['status']not in STATUSES or d['rawValuesRetained']is not False or any(not integer(d[k])or not 0<=d[k]<=9600 for k in CLASS_KEYS if k not in ['source','status','rawValuesRetained']) or success!=(d['status']=='VERIFIED'):fail()
-     if success and (not 1<=d['rowCount']<=300 or not 1<=d['exactUrlMatches']<=d['rowCount'] or any(d[k]!=0 for k in ['invalidRows','accessors','proxies','duplicateIds','providerIdMissing','opaqueIdMissing'])):fail()
-     e['inventoryClassification']=copy.deepcopy(d)
-    if success and stage=='snapshot':
-     if q['loadingResultVerified']is not True:fail()
-     self.j['projectRetarget']['accountVerified']=True;self.j['ownerConnection']['accountVerified']=True;e['loadingResultVerified']=True
-    e.update(settled=True,success=success);self.j.update(pending=None,lastAt=q['now']);self.j['connection']['used']+=1;self.j['loading']['used']+=1;self.j['projectRetarget']['used']+=1
-    if success:self.j['connection']['stage']=STAGES[self.j['projectRetarget']['used']]if self.j['projectRetarget']['used']<4 else'complete'
-    else:self.j['failures']+=1
-    self.persist()
-    if not success:self.stop()
-    return self.view()
+    return self._settle_project_read(q,'projectRetarget')
    return super().command(q)
  return ProjectRetargetLedger

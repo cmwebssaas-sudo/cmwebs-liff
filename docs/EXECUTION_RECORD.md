@@ -4714,3 +4714,18 @@ activation or unchanged capacity benchmark was performed by this source task.
 Rollback: leave the unused successor inert or use a reviewed scoped source revert.
 Retain every used source, journal, claim, STOP, unknown outcome and charge. Never
 rewind a live ledger or replay a stopped entry.
+
+### Shared settlement review repair
+
+Starting from `e3efbe2`, source review identified duplicated settlement between the
+fixed project successors. The existing predecessor ledger now owns one private
+settlement helper; each successor retains its explicit event-prefix dispatch and
+separate proof key. No historical admission, receipt, loading guard, quota or
+persistence-before-STOP order changed. Runtime whitelist remains27; API and config
+are unchanged. No new test or artificial RED was created for this behavior-preserving
+refactor. Fresh pre-change representatives12/12 and final covering65/65 PASS, zero
+fail/cancel/skip, runner/wrapper exit0; Node22 validate and diff-check PASS. Only
+source/docs changed; no canonical/provider operation, push, deployment or benchmark.
+The retained RED logs remain historical evidence of their shown failures; there is
+no separately frozen preimplementation test-source revision certifying every
+negative. Independent review and final full-source parent gates remain required.

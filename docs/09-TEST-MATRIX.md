@@ -2677,3 +2677,13 @@ Independent review, exact final-source CI and the complementary mandatory
 Core/owned-PostgreSQL partition remain separate gates.
 No Apps Script test function applies: no `.gs` module changed. No real Google or
 production execution, rollout or performance acceptance is established here.
+
+### Shared fixed-policy settlement review repair
+
+The two approved project successors retain independent prefix dispatch, proof keys,
+origin/history/receipt guards and ceilings while sharing one private settlement
+implementation. Fresh pre-refactor representative behavior12/12 PASS; final three
+covering files65/65 PASS, zero fail/cancel/skip, runner/wrapper exit0 under Node22.
+Validate72 backend/40 endpoints/cache and diff-check PASS. No tests added or changed,
+no new API/module/namespace or remote/canonical action; final full-source CI and
+Core/owned-PostgreSQL evidence remain separate parent gates.

@@ -66,21 +66,6 @@ def launch_class(base):
   def command(self,q):
    name=q.get('op');e=self.j['events'][-1]if self.j['events']else{}
    if name=='settle' and e.get('preparationStage') and e.get('lane')=='ui' and e.get('key')=='N:preparation' and e['operation'].get('preparation')is True and e['operation']['id'].startswith('loading-launch100-'):
-    self.current();self.now(q.get('now'));e=self.j['events'][-1];self.check_loading(e['operation']);success=q.get('success');stage=self.j['connection']['stage'];extra=['inventoryClassification']if stage=='inventory'else ['loadingResultVerified']if success and stage=='snapshot'else[]
-    if type(success)is not bool or not exact(q,['op','id','success','now']+extra) or q['id']!=e['operation']['id'] or self.j['pending']!=q['id'] or e['settled']is not False:fail()
-    if stage=='inventory':
-     d=q['inventoryClassification'];keys=['source','status','rowCount','invalidRows','accessors','proxies','duplicateIds','providerIdMissing','opaqueIdMissing','exactUrlMatches','rawValuesRetained']
-     if not exact(d,keys) or d['source']!='readonly-project-inventory-v1' or d['status']not in ['API_REJECTED','OPTIONS_INVALID','ROOT_PROXY','ROOT_NOT_ARRAY','ARRAY_SHAPE','METADATA_INVALID','DUPLICATE_ID','URL_MISMATCH','VERIFIED','RESULT_UNVERIFIED'] or d['rawValuesRetained']is not False or any(not integer(d[k])or not 0<=d[k]<=9600 for k in keys if k not in ['source','status','rawValuesRetained']) or success!=(d['status']=='VERIFIED'):fail()
-     if success and (not 1<=d['rowCount']<=300 or not 1<=d['exactUrlMatches']<=d['rowCount'] or any(d[k]!=0 for k in ['invalidRows','accessors','proxies','duplicateIds','providerIdMissing','opaqueIdMissing'])):fail()
-     e['inventoryClassification']=copy.deepcopy(d)
-    if success and stage=='snapshot':
-     if q['loadingResultVerified']is not True:fail()
-     self.j['projectLaunch']['accountVerified']=True;self.j['ownerConnection']['accountVerified']=True;e['loadingResultVerified']=True
-    e.update(settled=True,success=success);self.j.update(pending=None,lastAt=q['now']);self.j['connection']['used']+=1;self.j['loading']['used']+=1;self.j['projectLaunch']['used']+=1
-    if success:self.j['connection']['stage']=STAGES[self.j['projectLaunch']['used']]if self.j['projectLaunch']['used']<4 else'complete'
-    else:self.j['failures']+=1
-    self.persist()
-    if not success:self.stop()
-    return self.view()
+    return self._settle_project_read(q,'projectLaunch')
    return super().command(q)
  return ProjectLaunchLedger
