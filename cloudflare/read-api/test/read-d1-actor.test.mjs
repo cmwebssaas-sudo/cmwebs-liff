@@ -15,23 +15,27 @@ test('actor instrumentation rejects changed source and preserves sourceURL and p
  assert.equal(readFileSync(new URL('../node_modules/miniflare/dist/src/workers/d1/database.worker.js',import.meta.url),'utf8'),raw);
 });
 
-test('actor spans include awaited txn and last-meta serialization, without changing rows or earlier metadata',async()=>{
+test('actor spans distinguish parsing before txn from awaited txn, without changing rows, status or earlier metadata',async()=>{
  assert.equal(typeof helper.instrumentD1ActorSource,'function');
  const out=helper.instrumentD1ActorSource(raw);
  const method=out.slice(out.indexOf('  queryExecute = async'),out.indexOf('  #isExportPragma(queries)'))
   .replaceAll('this.#','this.').replace('queryExecute = async (req) =>','queryExecute: async function(req)').trim().replace(/;$/,'');
- const times=[10,17,23];
+ const times=[10,12,17,20,23];
  const execute=runInNewContext('({'+method+'}).queryExecute',{
   performance:{now:()=>times.shift()},URL,
   D1QueriesSchema:{parse:v=>v},D1ResultsFormatSchema:{parse:v=>v},
   D1_SESSION_COMMIT_TOKEN_HTTP_HEADER:'x-cf-d1-session-commit-token',Response
  });
  const first={results:[{n:1}],meta:{duration:2}},last={results:[{n:2}],meta:{duration:3}};
- const response=await execute.call({isExportPragma:()=>false,txn:async()=>({results:[first,last],commitToken:'synthetic'})},
+ const response=await execute.call({isExportPragma:()=>false,txn:async()=>{
+  assert.equal(times.length,3,'before-txn timestamp must precede awaited callback');
+  return {results:[first,last],commitToken:'synthetic'};
+ }},
   new Request('https://local.test/query',{method:'POST',body:'[{"sql":"SELECT 1"}]'}));
  const actual=await response.json();
  assert.deepEqual(actual,[{results:[{n:1}],meta:{duration:2}},
-  {results:[{n:2}],meta:{duration:3,cmwebs_test_actor_entry_to_txn_ms:7,cmwebs_test_actor_json_tail_ms:13}}]);
+  {results:[{n:2}],meta:{duration:3,cmwebs_test_actor_entry_to_before_txn_ms:2,
+   cmwebs_test_actor_awaited_txn_ms:5,cmwebs_test_actor_entry_to_txn_ms:10,cmwebs_test_actor_json_tail_ms:13}}]);
  assert.equal(response.headers.get('x-cf-d1-session-commit-token'),'synthetic');assert.equal(times.length,0);
 });
 

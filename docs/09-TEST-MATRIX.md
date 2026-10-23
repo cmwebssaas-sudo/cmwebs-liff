@@ -3865,3 +3865,28 @@ Apps Script tests NOT_RUN (unaffected). Parent review and one predetermined
 composed CI diagnostic remain pending. The retained Linux properties failure
 51.56710199999725ms /9of100>=50 is preserved; no causal/product fix or Production
 acceptance is established. Rollback reverts this bounded diagnostic change.
+
+
+## 2026-10-23 C6 local D1 actor transaction-window diagnostic
+
+Recommended model/speed: gpt-6-sol/high for the bounded cross-file timing and
+transport change. The pinned-hash, test-only Miniflare actor hook now observes
+two timestamps immediately before and after the original awaited `#txn` call.
+The v2 numeric header and paired actor rows add `entry_to_before_txn_ms` and
+`awaited_txn_ms`; the existing `entry_to_txn_ms` and `json_tail_ms` spans remain.
+The first span includes request JSON parsing; the awaited span includes actor
+transaction acquisition/execution and any wait. Neither is SQL CPU or a
+Production performance measurement. Invalid or inconsistent fields cannot be
+COMPLETE. Each fixture still has seven routes x100 original samples; the
+4096-byte frame and 8192-byte actor aggregate budgets are unchanged.
+
+Node22 synthetic hook/header/collector/summary/native transport, original
+timer-boundary, fetch-boundary, capacity completion and CI summary checks pass
+59/59, zero fail/cancel/skip. Test-first RED was 5 pass/6 expected fail because
+the two windows were absent; initial GREEN passed 11/11. `npm run validate`
+passed 72 backend files, 40 endpoints, static cache and 181-source comparison;
+`git diff --check` passed. No local benchmark or full suite was run. Original
+full-wall timer, p95 index94 and strict<50ms gates are unchanged; the retained
+Linux CI39969225950 latency failure and its unknown cause remain open. Parent
+review and one composed exact-source CI are pending. Rollback reverts this
+test-only diagnostic change; no runtime or data rollback is involved.
