@@ -6,12 +6,12 @@ const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Obje
 const same=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
 const methods={binding:'claim',inventory:'inventory',claim:'claim',snapshot:'snapshot'};
 const labels=['變更專案','變更專案編號','Change project','Change project number','新增指令碼屬性','編輯指令碼屬性','Add script property','Edit script properties','儲存指令碼屬性','Save script properties'];
-function projection(raw){
+export function projection(raw){
  if(typeof raw!=='string'||raw.length>10000)stop();const v=simpleData(JSON.parse(raw));
  if(!simpleExact(v,['source','urlMatched','accountVerified','fieldsRead','ready','section','reason','phase','cryptoAvailable','encoderAvailable','controls'])||v.source!=='rebalanced-readonly-grounding'||!['urlMatched','accountVerified','fieldsRead','cryptoAvailable','encoderAvailable'].every(k=>typeof v[k]==='boolean')||v.fieldsRead!==false||!['UNREAD','COMPLETE','LOADING','INTERACTIVE','UNKNOWN'].includes(v.ready)||!['UNREAD','MATCHED','MISMATCHED'].includes(v.section)||!['DOM_REJECTED','URL_MISMATCH','ACCOUNT_BOUND','ACCOUNT_MISMATCH','GUARD_DRIFT','NOT_COMPLETE','HEADINGS_MISMATCH','HEADINGS_BOUND','VERIFIED'].includes(v.reason)||!['URL','ACCOUNT_SCAN','ACCOUNT_HASH','READY','HEADINGS','COMPLETE'].includes(v.phase)||!Array.isArray(v.controls)||v.controls.length>24)stop();
  for(const r of v.controls)if(!simpleExact(r,['label','tag','role','disabled'])||!labels.includes(r.label)||!['BUTTON','DIV','SPAN','A'].includes(r.tag)||![null,'button'].includes(r.role)||typeof r.disabled!=='boolean')stop();return v;
 }
-const verified=v=>v.urlMatched===true&&v.accountVerified===true&&v.ready==='COMPLETE'&&v.section==='MATCHED'&&v.reason==='VERIFIED'&&v.phase==='COMPLETE';
+export const verified=v=>v.urlMatched===true&&v.accountVerified===true&&v.ready==='COMPLETE'&&v.section==='MATCHED'&&v.reason==='VERIFIED'&&v.phase==='COMPLETE';
 const policies={
  retarget99:{start:99,connection:14,loading:20,ordinary:86,source:'approved-project-retarget99',decision:PROJECT_RETARGET_DECISION},
  launch100:{start:100,connection:15,loading:21,ordinary:87,source:'approved-project-launch100',decision:PROJECT_LAUNCH_DECISION},

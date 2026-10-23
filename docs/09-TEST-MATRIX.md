@@ -4150,3 +4150,20 @@ Apps Script tests NOT_RUN (unaffected). Parent review and one predetermined
 composed CI diagnostic remain pending. The retained Linux properties failure
 51.56710199999725ms /9of100>=50 is preserved; no causal/product fix or Production
 acceptance is established. Rollback reverts this bounded diagnostic change.
+
+## 2026-10-23 C3 publisher alignment 105 source candidate
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Exact stopped102 prefix, pinned origin and three settled sidecar pairs | New namespace reports 105 = main53 + UI52; old49 events, UNKNOWN, STOP, failures and no-W0 remain intact |
+| Changed, gapped, duplicated or dishonest sidecar proof | Denied before continuation callback or provider primitive |
+| Six documented browser methods and two safe Google projections | Each UI call prepaid and settled; both verified pages yield CLEAN_PAUSE111 with a stable retained handle object |
+| Failed methods, wrong profile/handle/URL/principal/controls/fieldsRead | Settled failure and drain; no uncharged replay or raw provider text in receipt |
+| Future stage and repair allowance | Stage caps and future minima preserve ordinary UI96, main recovery21 and UI recovery16; two readonly incidents permit at most three prepaid repair calls each |
+| Incomplete future map and RPC | Denied; actual provider map and trial acceptance remain unproved |
+
+Coverage is `tests/read-authority-publisher-alignment.test.mjs` plus affected
+predecessor suites. No Apps Script test function applies: `.gs`, routes, schema,
+calculator, Worker and production deployment files are unchanged. Parent-owned
+review, composed-source CI/Core, private packaging and actual prestart gates
+remain separate from these synthetic tests.
