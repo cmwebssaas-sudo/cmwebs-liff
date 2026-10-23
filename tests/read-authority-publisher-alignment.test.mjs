@@ -4,6 +4,9 @@ import {PUBLISHER_ALIGNMENT_DECISION,createAuthorityPublisherAlignmentFlow} from
 import {alignmentFixture,holder,alignment,changePin} from './fixtures/read-authority/publisher-alignment.mjs';
 import {readFileSync,existsSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
+import {join} from 'node:path';
+import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
+import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
 
 test('approved publisher alignment has its own decision and inert flow constructor',()=>{
  assert.equal(PUBLISHER_ALIGNMENT_DECISION,'5f764b29438b582cdd404823a3a01408579fec7045ac5016971a7394d89337cb');
@@ -42,9 +45,9 @@ for(const [label,mutate] of [
 
 const contract={source:'approved-publisher-alignment105',decisionHash:PUBLISHER_ALIGNMENT_DECISION,startingSpent:105,maximumFirstStageSpent:111,operationBudget:296,ordinaryUiLimit:148,maximumPreparationPrimitives:6,completeActualMapProven:false,browserProfile:'profile-b',browserId:'chosen',settingsTabId:'settings-tab',audienceTabId:'audience-tab',settingsURL:'https://synthetic.invalid/settings',audienceURL:'https://synthetic.invalid/audience',publisherHash:'a'.repeat(64)};
 const snapshot=JSON.stringify({source:'rebalanced-readonly-grounding',urlMatched:true,accountVerified:true,fieldsRead:false,ready:'COMPLETE',section:'MATCHED',reason:'VERIFIED',phase:'COMPLETE',cryptoAvailable:true,encoderAvailable:true,controls:[]});
-function flowFixture(s,failAt,overrides={}){const calls=[],retained={},projectReady=()=>{},approved={...contract,...overrides.contract};
+function flowFixture(s,failAt,overrides={}){const calls=[],retained={},owners=[],projectReady=()=>{},approved={...contract,...overrides.contract};
  const api={getBrowser:async({id})=>{calls.push('binding');assert.equal(id,approved.browserId);if(failAt==='binding')throw Error('PRIVATE');return {browserId:overrides.returnedBrowserId??id,nameSession:async name=>{calls.push('name');assert.equal(name,'🔎 CMWebs C3');if(failAt==='name')throw Error('PRIVATE');},user:{claimTab:async tabId=>{const step=tabId===approved.settingsTabId?'settings-claim':'audience-claim';calls.push(step);if(failAt===step)throw Error('PRIVATE');return {id:tabId,playwright:{evaluate:async(fn,args)=>{const projectionStep=tabId===approved.settingsTabId?'settings-project':'audience-project';calls.push(projectionStep);assert.equal(fn,projectReady);assert.equal(args.expectedURL,tabId===approved.settingsTabId?approved.settingsURL:approved.audienceURL);assert.equal(args.publisherHash,approved.publisherHash);if(failAt===projectionStep)throw Error('PRIVATE');return overrides.snapshot??snapshot;}}};}}};}};
- return {calls,retained,flow:createAuthorityPublisherAlignmentFlow({contract:approved,guard:()=>{},createOwner:({assertStage})=>holder(s,{},assertStage),api,projectReady,retained})};}
+ return {calls,retained,owners,flow:createAuthorityPublisherAlignmentFlow({contract:approved,guard:()=>{},createOwner:({assertStage})=>{const owner=holder(s,{},assertStage);owners.push(owner);return owner;},api,projectReady,retained})};}
 
 test('publisher six-step flow prepays and pauses at111 with stable handles',async()=>{
  const s=await alignmentFixture(),{flow,calls,retained}=flowFixture(s);assert.deepEqual(calls,[]);const r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111',JSON.stringify({phase:r.failurePhase,calls}));assert.deepEqual(calls,['binding','name','settings-claim','settings-project','audience-claim','audience-project']);assert.equal(r.report.combinedSpent,111);assert.equal(r.report.uiSpent,58);assert.equal(r.report.publisherUsed,6);assert.equal(r.report.settingsVerified,true);assert.equal(r.report.audienceVerified,true);assert.equal(r.handoff.minimumEvents,55);assert.equal(s.aligned().w0,null);assert.equal(s.aligned().pending,null);assert.equal(retained.settings.id,contract.settingsTabId);assert.equal(retained.audience.id,contract.audienceTabId);assert.equal(r.completeActualMapProven,false);await assert.rejects(flow.run());
@@ -67,6 +70,49 @@ test('publisher stage reserves future UI and rejects a stage over its cap',async
  const s=await alignmentFixture(),{flow}=flowFixture(s),r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111');
  const map=i=>({lane:'ui',descriptor:{id:`future-baseline-${i}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true},tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:`callback-${i}`,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null});
  s.time+=1000;const accepted=holder(s,{resume:r.handoff});await accepted.withContinuation(async cap=>{const stage=await cap.stagePublisher({stage:'baseline',stageCap:6,map:Array.from({length:6},(_,i)=>map(i))});assert.equal(stage.futureUiSpent,0);assert.equal(stage.uiOrdinaryLimit,148);});assert.equal(s.aligned().publisherStages[0].stageCap,6);assert.equal(s.aligned().futureOrdinaryUi,84);
+});
+
+for(const method of ['snapshot','evaluate'])test(`admitted future ${method} prepays and settles its verified projection`,async()=>{
+ const s=await alignmentFixture(),{flow}=flowFixture(s),first=await flow.run();assert.equal(first.status,'CLEAN_PAUSE111');s.time+=1000;
+ const map=Array.from({length:6},(_,i)=>({lane:'ui',descriptor:{id:`future-baseline-${method}-${i}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:method,units:1,preparation:true},tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:`callback-${i}`,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null}));
+ let callbacks=0;await holder(s,{resume:first.handoff},p=>{if(p.stage==='loading-result'){assert.equal(p.result.accountVerified,true);assert.equal(p.result.fieldsRead,false);}}).withContinuation(async cap=>{
+  await cap.stagePublisher({stage:'baseline',stageCap:6,map});const value=await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},map[0].descriptor);assert.equal(value.accountVerified,true);const view=await cap.inspect();assert.equal(view.combinedSpent,112);assert.equal(view.pending,null);await cap.pausePreparation();
+ });
+ const j=s.aligned();assert.equal(callbacks,1);assert.equal(j.events.length,56);assert.equal(j.events.at(-1).settled,true);assert.equal(j.events.at(-1).success,true);assert.equal(j.events.at(-1).loadingResultVerified,true);
+});
+
+test('future projection settlement rejects absent or false verification before pending clears',()=>{
+ const code=`import runpy,json
+base=runpy.run_path('scripts/read-authority-simple-budget.py')['Ledger']
+aligned=runpy.run_path('scripts/read-authority-publisher-alignment-budget.py')['alignment_class'](base)
+out=[]
+for method in ['snapshot','evaluate']:
+ for flag in ['missing','false']:
+  op={'id':'future-projection','operation':method,'preparation':True}
+  event={'lane':'ui','operation':op,'settled':False}
+  obj=object.__new__(aligned);obj.j={'publisherAlignment':{'used':6},'events':[event],'publisherStages':[{'stage':'baseline','map':[{'lane':'ui','descriptor':op,'repairIncident':None}]}],'pending':op['id']}
+  obj.current=lambda:None;obj.now=lambda _:None
+  q={'op':'settle','id':op['id'],'success':True,'now':1}
+  if flag=='false':q['loadingResultVerified']=False
+  try:obj.command(q);denied=False
+  except Exception as error:denied=str(error)=='TRIAL_STOPPED'
+  out.append([method,flag,denied,obj.j['pending']==op['id'],event['settled'] is False])
+print(json.dumps(out))`;
+ const r=spawnSync('python3',['-c',code],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);const rows=JSON.parse(r.stdout);assert.equal(rows.length,4);for(const row of rows)assert.deepEqual(row.slice(2),[true,true,true],JSON.stringify(row));
+});
+
+test('aligned cleanup opens after a closed 111 scope using durable event count',async()=>{
+ const s=await alignmentFixture(),{flow,owners}=flowFixture(s),r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111');assert.equal(r.report.combinedSpent,111);assert.equal(s.aligned().events.length,55);let entered=0;
+ await owners[0].withCleanup(async cap=>{entered++;const view=await cap.inspect();assert.equal(view.combinedSpent,111);assert.equal(view.pending,null);});assert.equal(entered,1);
+});
+
+test('aligned cleanup rejects a coherent registry with the wrong event count',async()=>{
+ const s=await alignmentFixture(),{flow,owners}=flowFixture(s),r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111');const path=join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.simple-rebalanced.json');const wrapper=JSON.parse(readFileSync(path));wrapper.value.checkpoint.events.push({...wrapper.value.checkpoint.events.at(-1),operation:{...wrapper.value.checkpoint.events.at(-1).operation,id:'synthetic-extra'}});wrapper.sha256=hash(compact(wrapper.value));s.put(path,compact(wrapper));let entered=0;
+ await assert.rejects(owners[0].withCleanup(()=>{entered++;}),/TRIAL_STOPPED/);assert.equal(entered,0);
+});
+
+test('old236 cleanup still uses its unchanged event count',async()=>{
+ const s=await sharedFixture(),owner=holder(s);await owner.withContinuation(cap=>cap.inspect());let entered=0;await owner.withCleanup(async cap=>{entered++;const view=await cap.inspect();assert.equal(view.combinedSpent,101);assert.equal(Object.hasOwn(view,'eventCount'),false);});assert.equal(entered,1);
 });
 
 test('unknown future map does not admit a call or RPC',async()=>{const s=await alignmentFixture(),{flow}=flowFixture(s),r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111');s.time+=1000;let calls=0;const a=holder(s,{resume:r.handoff});await assert.rejects(a.withContinuation(async cap=>{await cap.dispatchCompatibility({operation:{id:'synthetic-rpc'},credentialExpiresAt:s.time+600000},()=>{calls++;});}),/TRIAL_STOPPED/);assert.equal(calls,0);});
