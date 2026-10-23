@@ -7746,3 +7746,18 @@ candidate to roll back; no runtime/data release is involved.
 ## 2026-10-24 C3 conditional native successor source preparation
 
 The local source candidate adds a distinct opt-in successor to the existing publisher alignment ledger. It requires a pinned, fully settled continuation receipt chain, approved current visual proof and a synchronous parent verifier before any new holder write. The original stopped journal and its flags remain unchanged. Imported counts reduce the remaining ordinary budget, preserve protected future stages and carry spent failure/repair highwaters without inventing provider-call times. Synthetic focused source tests, `npm run validate`, syntax checks and diff check passed. Actual identity entry, external reads/writes, provider execution, source CI, merge, deploy and production acceptance were not performed by this source task. No Apps Script, API route or schema changed; affected Apps Script tests are not applicable. Rollback is a reviewed source revert before use, while historical receipts and STOP records remain preserved.
+
+## 2026-10-24 C6 transaction callback phase candidate
+
+Recommended gpt-6-sol/high for the pinned actor transform and bounded test
+transport. On the existing isolated C6 branch, a test-only source transform
+adds three callback clock reads around the unchanged query map and bookmark
+await. The v3 metadata, collector and summary preserve the original sample
+pairing and accept retained v2 summary logs. No product Worker, Apps Script,
+calculator, SQL, schema, dependency or workflow is changed. Original full-wall
+timing, route/sample order, p95 index and strict 50ms threshold remain.
+
+This is source-only diagnostic work. The retained Linux home p95 54.098968ms
+failure remains failed; physical cause and Production acceptance are unknown.
+Parent source review and one new exact-source CI remain pending. Revert the
+test-only source/doc changes for rollback; no runtime or data rollback applies.

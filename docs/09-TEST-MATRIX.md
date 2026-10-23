@@ -4218,3 +4218,16 @@ diagnostic decision and the parent-owned exact-source gates.
 | Accounting and replay | Gap, duplicate nonce, pending state, changed origin, exhausted repair allowance reset and second owner stop; 296 total and at least 70 future UI calls remain protected |
 
 Focused source tests use synthetic evidence in `tests/read-authority-publisher-alignment.test.mjs`; `npm run validate` checks the repository baseline. This source preparation does not establish actual browser identity, external provider acceptance or production readiness. No Apps Script test function applies because `.gs`, routes and schema are unchanged.
+
+## 2026-10-24 C6 transaction callback three-cut diagnostic
+
+Recommended model/speed: gpt-6-sol/high. The locked Miniflare actor's existing
+transaction callback has three test-only clock reads at entry, after the same
+`queries.map`, and after the same bookmark await. Existing C0/C4 points yield
+four same-sample windows. The v3 header and 12-column bounded actor frames
+retain 700 ordered rows per fixture and reject missing, nonnumeric, negative,
+inconsistent or malformed phases. The summary still accepts retained v2 logs.
+The full-wall timer, seven routes x100 samples, p95 index94 and strict <50ms
+gate remain unchanged. These elapsed windows cannot identify workerd CPU,
+SQLite, disk or scheduler cause; the three new clock reads perturb the measured
+path. No benchmark or provider acceptance is claimed here.

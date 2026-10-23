@@ -24,6 +24,46 @@ test('bounded actor summary preserves paired route samples without inferring lat
   paired_slowest:[1,21,18,2,5,10,13,'OK']});
  assert.equal(out.find(r=>r.suite==='capacity500').status,'NOT_COLLECTED');
 });
+test('v3 summary retains four same-row phase p95 values while accepting retained v2 frames',()=>{
+ const old=helper.createActorSummary();for(const line of frames())old.ingest(line);
+ assert.equal(old.finish().find(r=>r.suite==='small'&&r.route==='home').status,'COMPLETE');
+ const c=helper.createActorSummary();
+ const newColumns=['sample','full_ms','caller_d1_ms','entry_to_before_txn_ms','awaited_txn_ms','entry_to_txn_ms','json_tail_ms',
+  'txn_admission_ms','txn_queries_ms','txn_bookmark_ms','txn_completion_ms','status'];
+ for(const line of frames()){
+  const value=JSON.parse(line.slice(line.indexOf('{')));
+  if(value.rows)value.rows=value.rows.map(row=>[...row.slice(0,7),1,1,1,2,row[7]]);
+  else {value.v=3;value.columns=newColumns;}
+  c.ingest(line.slice(0,line.indexOf('{'))+JSON.stringify(value));
+ }
+ const home=c.finish().find(r=>r.suite==='small'&&r.route==='home');
+ assert.equal(home.status,'COMPLETE');assert.equal(home.p95_ms.txn_admission,1);
+ assert.equal(home.p95_ms.txn_queries,1);assert.equal(home.p95_ms.txn_bookmark,1);
+ assert.equal(home.p95_ms.txn_completion,2);
+ assert.deepEqual(home.paired_slowest,[1,21,18,2,5,10,13,1,1,1,2,'OK']);
+});
+test('v3 summary rejects missing phase columns, inconsistent windows and mixed schema',()=>{
+ const newColumns=['sample','full_ms','caller_d1_ms','entry_to_before_txn_ms','awaited_txn_ms','entry_to_txn_ms','json_tail_ms',
+  'txn_admission_ms','txn_queries_ms','txn_bookmark_ms','txn_completion_ms','status'];
+ const base=frames().map(line=>{
+  const prefix=line.slice(0,line.indexOf('{')),value=JSON.parse(line.slice(line.indexOf('{')));
+  if(value.rows)value.rows=value.rows.map(row=>[...row.slice(0,7),1,1,1,2,row[7]]);
+  else {value.v=3;value.columns=newColumns;}
+  return prefix+JSON.stringify(value);
+ });
+ for(const change of ['missing-phase','bad-sum','bad-columns','mixed-version']){
+  const log=base.slice(),at=change==='bad-columns'?log.length-1:0;
+  const prefix=log[at].slice(0,log[at].indexOf('{')),value=JSON.parse(log[at].slice(log[at].indexOf('{')));
+  if(change==='missing-phase')value.rows[0].splice(9,1);
+  if(change==='bad-sum')value.rows[0][9]=3;
+  if(change==='bad-columns')value.columns=value.columns.slice(0,-2).concat('status');
+  if(change==='mixed-version')value.rows=value.rows.map(row=>[...row.slice(0,7),row[11]]);
+  log[at]=prefix+JSON.stringify(value);
+  const c=helper.createActorSummary();for(const line of log)c.ingest(line);
+  assert.equal(c.finish().filter(r=>r.suite==='small').at(-1).status,'PARTIAL',change);
+  assert(c.invalidRecords()>0,change);
+ }
+});
 test('lost, duplicate, nonnumeric and private actor records cannot become complete evidence',()=>{
  assert.equal(typeof helper.createActorSummary,'function');
  for(const change of ['missing','duplicate','private','inconsistent','bad-meta','malformed','oversized']){
@@ -46,7 +86,7 @@ test('native t.diagnostic transport and CI summary retain700 bounded actor sampl
   const child=join(dir,'actor.test.mjs'),url=new URL('../cloudflare/read-api/test/read-actor-timing.mjs',import.meta.url).href;
   writeFileSync(child,`import {test} from 'node:test';import {createActorTiming} from ${JSON.stringify(url)};
    test('native actor frames',t=>{const c=createActorTiming('small',line=>t.diagnostic(line));
-    for(const route of ${JSON.stringify(routes)})for(let i=0;i<100;i++)c.record(route,i,21,18,'{"v":2,"entry_to_before_txn_ms":2,"awaited_txn_ms":5,"entry_to_txn_ms":10,"json_tail_ms":13}');c.close('FAIL');});`);
+    for(const route of ${JSON.stringify(routes)})for(let i=0;i<100;i++)c.record(route,i,21,18,'{"v":3,"entry_to_before_txn_ms":2,"awaited_txn_ms":5,"entry_to_txn_ms":10,"json_tail_ms":13,"txn_admission_ms":1,"txn_queries_ms":1,"txn_bookmark_ms":1,"txn_completion_ms":2}');c.close('FAIL');});`);
   const run=spawnSync(process.execPath,['--test','--test-reporter=tap',child],{encoding:'utf8',timeout:10000,maxBuffer:1024*1024,env:{PATH:process.env.PATH||'/usr/bin:/bin',LANG:'C',TZ:'Asia/Taipei'}});
   assert.equal(run.status,0,run.stderr);const lines=run.stdout.split('\n').filter(l=>l.startsWith('# C6_D1_ACTOR_'));
   assert.equal(lines.length,71);assert(lines.every(l=>Buffer.byteLength(l.slice(2))<=4096));
@@ -56,6 +96,7 @@ test('native t.diagnostic transport and CI summary retain700 bounded actor sampl
   const summary=spawnSync(process.execPath,[new URL('../scripts/summarize-read-worker-ci.mjs',import.meta.url).pathname,log],{encoding:'utf8'});
   assert.equal(summary.status,0,summary.stderr);assert.match(summary.stdout,/C6_D1_ACTOR_AGGREGATE /);
   assert.match(summary.stdout,/"entry_to_before_txn":2/);assert.match(summary.stdout,/"awaited_txn":5/);
+  assert.match(summary.stdout,/"txn_admission":1/);assert.match(summary.stdout,/"txn_bookmark":1/);
   assert.match(summary.stdout,/"entry_to_txn":10/);assert.match(summary.stdout,/# fail 1/);
   assert.match(summary.stdout,/"actor_records_invalid":0/);assert.match(summary.stdout,/"actor_aggregates_dropped":0/);
  }finally{rmSync(dir,{recursive:true,force:true});}

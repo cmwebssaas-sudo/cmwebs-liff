@@ -448,3 +448,25 @@ Post-loop formatting/output may affect later tests even outside these timers;
 properties is the final capacity route. Rollback reverts the test/summary
 diagnostic change; no Production release, business-data or configuration
 rollback is needed.
+
+### Local D1 transaction callback phase diagnostic (2026-10-24)
+
+The pinned test-only Miniflare actor transform now places three additional
+`performance.now()` reads inside the existing transaction callback: at callback
+entry before `queries.map`, after that unchanged map, and after the existing
+`getCurrentBookmark()` await. With the prior before/after transaction points,
+v3 numeric metadata reports four same-sample elapsed windows: admission,
+query/result materialization, bookmark await, and transaction completion /
+resumption. Query text, parameters, row order, result and commit token are
+unchanged. The three reads add diagnostic overhead inside the original full-wall
+interval; they do not measure native CPU, disk or scheduling separately.
+
+The existing bounded actor pipeline carries four additional numeric columns
+through the final-result test header, post-timer collector and CI summary.
+Invalid, absent or inconsistent phase values stay incomplete; historical v2
+actor logs remain readable by the summarizer. Per-route percentiles are
+computed from individual phase columns, never by subtracting percentiles.
+COMPLETE means evidence coverage only. The retained Linux home capacity
+failure (p95 54.098968ms, six of 100 samples at or above 50ms) remains a
+failure; its physical cause is unknown. No product fix or rollout acceptance
+is inferred from this source-only diagnostic.
