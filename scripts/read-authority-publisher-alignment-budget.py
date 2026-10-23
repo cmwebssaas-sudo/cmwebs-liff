@@ -93,7 +93,7 @@ def alignment_class(base):
    self.j=j;save(self.claim,self.identity,fresh);self.persist()
   def current(self):self.validate_alignment();return super().current()
   def view(self,wait=0):
-   v=super().view(wait);d=self.j['publisherAlignment'];v.update(uiSpent=v['uiSpent']+3,combinedSpent=v['combinedSpent']+3,uiOrdinary=v['uiOrdinary']+3,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile);return v
+   v=super().view(wait);d=self.j['publisherAlignment'];v.update(uiSpent=v['uiSpent']+3,combinedSpent=v['combinedSpent']+3,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile);return v
   def preparation_complete(self):return self.j.get('publisherAlignment',{}).get('used')==6 and self.j['publisherAlignment']['settingsVerified'] and self.j['publisherAlignment']['audienceVerified']
   def future_spent(self):return sum(e['lane']=='ui' and not e['cleanup'] for e in self.j['events'][55:])
   def future_limit(self):return 90
@@ -176,7 +176,12 @@ def alignment_class(base):
      p=q.get('preparationOutcome');fields=['kind','phase','targetVerified','accountVerified','bindingVerified','pureRead','terminal','fieldsRead']
      if not exact(q,['op','id','success','now','preparationOutcome']) or not exact(p,fields) or p['kind'] not in ['TECHNICAL','NOT_READY'] or p['kind']=='NOT_READY' and p['phase']!='READY' or p['kind']=='TECHNICAL' and p['phase'] not in ['DECODE','PROJECTOR_COMBOS','PROJECTOR_SHAPE','PROJECTOR_ANCESTORS','PROJECTOR_RELATED','POSTCHECK_COMBO'] or any(p[k] is not True for k in ['targetVerified','accountVerified','bindingVerified','pureRead','terminal']) or p['fieldsRead'] is not False or self.j['phase']!='PREP' or self.j['mutated'] or self.j['rpc']['beganAt'] is not None or d['readonlyIncidents']>=2 or d['diagnosticCalls']>=20:fail()
      e.update(settled=True,success=False,preparationOutcome=copy.deepcopy(p));self.j.update(pending=None,lastAt=q['now']);d['readonlyIncidents']+=1;d['diagnosticCalls']+=1;self.j['failures']+=1;self.persist();return self.view()
-    result=super().command(q)
+    projection=e['operation']['preparation'] is True and e['operation']['operation'] in ['snapshot','evaluate']
+    verified=projection and q.get('success') is True
+    if type(q.get('success'))is not bool or q['id']!=e['operation']['id'] or verified and (not exact(q,['op','id','success','now','loadingResultVerified']) or q['loadingResultVerified'] is not True) or not verified and 'loadingResultVerified'in q:fail()
+    compatible={k:v for k,v in q.items()if k!='loadingResultVerified'}
+    result=super().command(compatible)
+    if verified:self.j['events'][-1]['loadingResultVerified']=True;self.persist();result=self.view()
     if diagnostic:
      d=self.j['publisherAlignment'];d['diagnosticCalls']+=1
      if repair:d['repairCalls']+=1

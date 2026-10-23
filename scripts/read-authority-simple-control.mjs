@@ -52,7 +52,7 @@ export function createAuthoritySimpleControl(input){
  };
  const unknownInventory=()=>({source:retarget99?'readonly-project-inventory-v1':'readonly-tab-inventory-v1',status:'RESULT_UNVERIFIED',rowCount:0,invalidRows:0,accessors:0,proxies:0,duplicateIds:0,providerIdMissing:0,...(retarget99?{opaqueIdMissing:0}:{originalMatches:0}),exactUrlMatches:0,rawValuesRetained:false});
  const isPrep=operation=>continuity&&(!rebalanced||operation.preparation===true&&operation.key==='N:preparation')&&phase==='PREP'&&['N:preparation','N:navigation'].includes(operation.key)&&['original-settings','original-triggers','thin-settings','thin-triggers','oauth-audience','oauth-client','caller-executions','publisher-executions'].includes(operation.target)&&['inventory','claim','navigate','snapshot','read-key-presence',...(loading?['wait']:[]),...(aligned105?['getBrowser','nameSession','claimTab','evaluate']:[])].includes(operation.operation);
- const source=fileURLToPath(new URL('./read-authority-simple-budget.py',import.meta.url));let attempted=false,stopping=false,owner=null,highWater=0,cleanupRunning=false,handoff=null,phase=null;
+ const source=fileURLToPath(new URL('./read-authority-simple-budget.py',import.meta.url));let attempted=false,stopping=false,owner=null,highWater=0,eventHighWater=0,cleanupRunning=false,handoff=null,phase=null;
  const checked=()=>{const r=guard();if(types.isPromise(r)){void r.catch(()=>{});stop();}if(r!==undefined)stop();};
  const proof=value=>{const r=assertStage(simpleData(value));if(types.isPromise(r)){void r.catch(()=>{});stop();}if(r!==undefined)stop();};
  const time=()=>{const t=now();if(!Number.isSafeInteger(t))stop();return t;};
@@ -62,11 +62,12 @@ export function createAuthoritySimpleControl(input){
  };
  const start=async cleanup=>{
   checked();const fd=lock();let child,p;
-  try{child=spawn('python3',[source,...(cleanup?['--cleanup']:[])],{stdio:['pipe','pipe','pipe',fd],env:{HOME:home,PATH:'/opt/homebrew/bin:/usr/bin:/bin',TZ:'Asia/Taipei',LANG:'C'}});p=protocol(child);const initial={...config};if(cleanup)delete initial.resume;const first=await p.send({...initial,now:time(),ownerNonce:nonce,...(cleanup?{minimumEvents:highWater}:{})});observe(first);return {fd,p};}catch(e){if(p)await p.close();closeSync(fd);throw e;}
+  try{child=spawn('python3',[source,...(cleanup?['--cleanup']:[])],{stdio:['pipe','pipe','pipe',fd],env:{HOME:home,PATH:'/opt/homebrew/bin:/usr/bin:/bin',TZ:'Asia/Taipei',LANG:'C'}});p=protocol(child);const initial={...config};if(cleanup)delete initial.resume;const first=await p.send({...initial,now:time(),ownerNonce:nonce,...(cleanup?{minimumEvents:aligned105?eventHighWater:highWater}:{})});observe(first);return {fd,p};}catch(e){if(p)await p.close();closeSync(fd);throw e;}
  };
  const observe=r=>{
   if(continuity){if(!['PREP','TRIAL'].includes(r.phase)||!['ACTIVE','CLEAN_PAUSE','HARD_STOP'].includes(r.lifecycle)||!Number.isSafeInteger(r.technicalFailures)||r.technicalFailures<0||r.technicalFailures>3||phase==='TRIAL'&&r.phase!=='TRIAL')stop();phase=r.phase;}
-  if(!Number.isSafeInteger(r.mainSpent)||r.mainSpent<53||r.mainSpent>(connected?132:rebalanced?137:158)||!Number.isSafeInteger(r.uiSpent)||r.uiSpent<(debug?15:repaired?13:continued?12:0)||r.uiSpent>(aligned105?164:shared101?104:launch100?103:retarget99?102:ownerConnection?100:connected?98:rebalanced?93:72)||r.combinedSpent!==r.mainSpent+r.uiSpent||r.combinedSpent>(aligned105?296:shared101?236:launch100?235:retarget99?234:232)||!['ready','stopped'].includes(r.state)||!Number.isSafeInteger(r.waitMs)||r.waitMs<0||r.waitMs>60000||r.combinedSpent-53<highWater)stop();highWater=r.combinedSpent-53;return Object.freeze(r);
+  // Aligned spend includes three imported sidecars that have no event rows.
+  if(!Number.isSafeInteger(r.mainSpent)||r.mainSpent<53||r.mainSpent>(connected?132:rebalanced?137:158)||!Number.isSafeInteger(r.uiSpent)||r.uiSpent<(debug?15:repaired?13:continued?12:0)||r.uiSpent>(aligned105?164:shared101?104:launch100?103:retarget99?102:ownerConnection?100:connected?98:rebalanced?93:72)||r.combinedSpent!==r.mainSpent+r.uiSpent||r.combinedSpent>(aligned105?296:shared101?236:launch100?235:retarget99?234:232)||!['ready','stopped'].includes(r.state)||!Number.isSafeInteger(r.waitMs)||r.waitMs<0||r.waitMs>60000||r.combinedSpent-53<highWater||aligned105&&(!Number.isSafeInteger(r.eventCount)||r.eventCount!==r.combinedSpent-56||r.eventCount<eventHighWater))stop();highWater=r.combinedSpent-53;if(aligned105)eventHighWater=r.eventCount;return Object.freeze(r);
  };
  const runScope=async(callback,cleanup=false)=>{
   let connection,active=true,busy=false,scopeFailed=false,paused=false;const tasks=new Set(),inflight=new Set();let pending=0;
