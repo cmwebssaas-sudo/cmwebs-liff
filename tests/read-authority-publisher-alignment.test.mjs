@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {PUBLISHER_ALIGNMENT_DECISION,createAuthorityPublisherAlignmentFlow} from '../scripts/read-authority-publisher-alignment.mjs';
 import {alignmentFixture,holder,alignment,changePin} from './fixtures/read-authority/publisher-alignment.mjs';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 
 test('approved publisher alignment has its own decision and inert flow constructor',()=>{
@@ -32,6 +32,14 @@ for(const [label,mutate] of [
  ['false settlement',(s,p)=>changePin(s,p.charges.binding.outcome,v=>{v.settled=false;})]
 ])test(`${label} cannot import or enter callback`,async()=>{const s=await alignmentFixture(),p=alignment(s);mutate(s,p);let called=0;await assert.rejects(holder(s).withContinuation(()=>{called++;}),/TRIAL_STOPPED/);assert.equal(called,0);});
 
+const repinOutcome=(s,p,kind,mutate)=>{changePin(s,p.charges[kind].outcome,mutate);if(kind==='inventory')changePin(s,p.charges.binding.reservation,v=>{v.firstOutcomeSha256=p.charges.inventory.outcome.sha256;});changePin(s,p.closure,v=>{v.outcome1Sha256=p.charges.inventory.outcome.sha256;v.outcome2Sha256=p.charges.binding.outcome.sha256;v.reservation2Sha256=p.charges.binding.reservation.sha256;});};
+for(const [label,mutate] of [
+ ['contradictory stopped snapshot',(s,p)=>changePin(s,p.origin.result,v=>{v.result.snapshot={source:'synthetic-contradiction',fieldsRead:false};})],
+ ['missing inventory no-read marker',(s,p)=>repinOutcome(s,p,'inventory',v=>{delete v.googlePageReads;})],
+ ['missing binding no-read marker',(s,p)=>repinOutcome(s,p,'binding',v=>{delete v.googlePageReads;})],
+ ['contradictory binding page read',(s,p)=>repinOutcome(s,p,'binding',v=>{v.googlePageReads=1;})]
+])test(`${label} is rejected before new holder write`,async()=>{const s=await alignmentFixture(),p=alignment(s);mutate(s,p);let called=0;await assert.rejects(holder(s).withContinuation(()=>{called++;}),/TRIAL_STOPPED/);assert.equal(called,0);assert.equal(existsSync(s.path+'.simple-publisher-alignment.json'),false);});
+
 const contract={source:'approved-publisher-alignment105',decisionHash:PUBLISHER_ALIGNMENT_DECISION,startingSpent:105,maximumFirstStageSpent:111,operationBudget:296,ordinaryUiLimit:148,maximumPreparationPrimitives:6,completeActualMapProven:false,browserProfile:'profile-b',browserId:'chosen',settingsTabId:'settings-tab',audienceTabId:'audience-tab',settingsURL:'https://synthetic.invalid/settings',audienceURL:'https://synthetic.invalid/audience',publisherHash:'a'.repeat(64)};
 const snapshot=JSON.stringify({source:'rebalanced-readonly-grounding',urlMatched:true,accountVerified:true,fieldsRead:false,ready:'COMPLETE',section:'MATCHED',reason:'VERIFIED',phase:'COMPLETE',cryptoAvailable:true,encoderAvailable:true,controls:[]});
 function flowFixture(s,failAt,overrides={}){const calls=[],retained={},projectReady=()=>{},approved={...contract,...overrides.contract};
@@ -42,9 +50,16 @@ test('publisher six-step flow prepays and pauses at111 with stable handles',asyn
  const s=await alignmentFixture(),{flow,calls,retained}=flowFixture(s);assert.deepEqual(calls,[]);const r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111',JSON.stringify({phase:r.failurePhase,calls}));assert.deepEqual(calls,['binding','name','settings-claim','settings-project','audience-claim','audience-project']);assert.equal(r.report.combinedSpent,111);assert.equal(r.report.uiSpent,58);assert.equal(r.report.publisherUsed,6);assert.equal(r.report.settingsVerified,true);assert.equal(r.report.audienceVerified,true);assert.equal(r.handoff.minimumEvents,55);assert.equal(s.aligned().w0,null);assert.equal(s.aligned().pending,null);assert.equal(retained.settings.id,contract.settingsTabId);assert.equal(retained.audience.id,contract.audienceTabId);assert.equal(r.completeActualMapProven,false);await assert.rejects(flow.run());
 });
 
+test('verified ASCII digest fallback remains eligible for both page projections',async()=>{
+ const s=await alignmentFixture(),fallback=JSON.stringify({...JSON.parse(snapshot),cryptoAvailable:false,encoderAvailable:false}),{flow,calls}=flowFixture(s,null,{snapshot:fallback});
+ const r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111');assert.deepEqual(calls,['binding','name','settings-claim','settings-project','audience-claim','audience-project']);assert.equal(s.aligned().publisherAlignment.settingsVerified,true);assert.equal(s.aligned().publisherAlignment.audienceVerified,true);
+});
+
 test('a failed publisher method settles its prepaid debit and closes the holder',async()=>{
  const s=await alignmentFixture(),{flow,calls}=flowFixture(s,'name');const r=await flow.run();assert.equal(r.status,'HARD_STOP');assert.deepEqual(calls,['binding','name']);assert.equal(s.aligned().pending,null);assert.equal(s.aligned().events.length,51);assert.equal(s.aligned().events.at(-1).success,false);assert.equal(s.aligned().events.at(-1).settled,true);assert.equal(r.drain.ownedScope.state,'SETTLED');assert(!JSON.stringify(r).includes('PRIVATE'));await assert.rejects(flow.run());
 });
+
+test('rejecting drain is reported unresolved and cannot replay',async()=>{let runs=0,drains=0;const retained={},flow=createAuthorityPublisherAlignmentFlow({contract,guard:()=>{},createOwner:()=>({withContinuation:async()=>{runs++;throw Error('PRIVATE_TRANSPORT');},stopAndDrain:async()=>{drains++;throw Error('PRIVATE_DRAIN');}}),api:{getBrowser:async()=>{throw Error('UNREACHABLE');}},projectReady:()=>{},retained});const r=await flow.run();assert.equal(r.status,'DRAIN_UNRESOLVED');assert.equal(r.settled,false);assert.equal(r.drain,null);assert.equal(r.trialAccepted,false);assert.equal(runs,1);assert.equal(drains,1);assert(!JSON.stringify(r).includes('PRIVATE'));await assert.rejects(flow.run());assert.equal(runs,1);assert.equal(drains,1);});
 
 for(const [step,count] of [['binding',1],['name',2],['settings-claim',3],['settings-project',4],['audience-claim',5],['audience-project',6]])test(`${step} rejection settles and stops without replay`,async()=>{const s=await alignmentFixture(),{flow,calls}=flowFixture(s,step);const r=await flow.run();assert.equal(r.status,'HARD_STOP');assert.equal(calls.length,count);assert.equal(s.aligned().events.length,49+count);assert.equal(s.aligned().events.at(-1).settled,true);assert.equal(s.aligned().events.at(-1).success,false);assert.equal(s.aligned().pending,null);assert.equal(s.aligned().w0,null);assert.equal(r.drain.ownedScope.state,'SETTLED');await assert.rejects(flow.run());});
 

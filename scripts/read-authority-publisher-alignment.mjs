@@ -33,7 +33,10 @@ export function createAuthorityPublisherAlignmentFlow({contract,guard,createOwne
    await step(5,op=>project('oauth-audience',c.audienceURL,'audience',op));
    phase='PAUSE';report=await cap.pausePreparation();if(report.combinedSpent!==111||report.uiSpent!==58||report.publisherUsed!==6||report.settingsVerified!==true||report.audienceVerified!==true||report.lifecycle!=='CLEAN_PAUSE'||report.w0!==null||report.pending!==null)stop();
   });guard();return Object.freeze({status:'CLEAN_PAUSE111',report,handoff:owner.preparationHandoff(),futureOrdinaryUi:90,trialAccepted:false,completeActualMapProven:false});
-  }catch{retained.browser=null;retained.settings=null;retained.audience=null;let drain=null;try{if(owner)drain=await owner.stopAndDrain();}catch{}return Object.freeze({status:'HARD_STOP',failurePhase:phase,report,drain,trialAccepted:false,completeActualMapProven:false});}
+  }catch{retained.browser=null;retained.settings=null;retained.audience=null;let drain=null,settled=!owner;
+   try{if(owner){drain=await owner.stopAndDrain();settled=drain?.stopRequested===true&&drain.stopAcknowledged===true&&drain.ordinaryScopeClosed===true&&drain.ownedScope?.state==='SETTLED';}}catch{}
+   if(!settled)return Object.freeze({status:'DRAIN_UNRESOLVED',failurePhase:phase,report,drain:null,settled:false,trialAccepted:false,completeActualMapProven:false});
+   return Object.freeze({status:'HARD_STOP',failurePhase:phase,report,drain,trialAccepted:false,completeActualMapProven:false});}
   finally{maps.clear();validated.clear();claimedIds.clear();}
  }});
 }
