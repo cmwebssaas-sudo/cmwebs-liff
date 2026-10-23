@@ -2731,3 +2731,19 @@ predecessor suites. No Apps Script test function applies: `.gs`, routes, schema,
 calculator, Worker and production deployment files are unchanged. Parent-owned
 review, composed-source CI/Core, private packaging and actual prestart gates
 remain separate from these synthetic tests.
+
+## 2026-10-23 C3 publisher projection compatibility repair
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Shared decoder, target-specific labels | Nonempty Settings and Audience controls pass only their own exact whitelist; omitted target retains the Settings default; unknown target and cross-target labels stop |
+| Projection shape and privacy | Malformed control tags, roles, booleans, extra fields and `fieldsRead:true` stop before verification; URL, account, ready, section and VERIFIED gates remain required |
+| Publisher six-step flow | Nonempty legitimate controls on both targets reach CLEAN_PAUSE111; callback rejection, malformed projection and decoded verification rejection each settle and stop without replay |
+| Failure evidence | Receipt retains only fixed target/stage/classification, callback and decode booleans, and a bounded count after valid decode; rejected raw values, URLs and error text are omitted |
+
+Affected tests are `tests/read-authority-publisher-alignment.test.mjs` and the
+legacy project flow suites using the same decoder. These local checks do not
+classify the historical actual111 failure; its raw projection was not retained.
+No `.gs`, route, schema, Worker or production source changed, so no Apps Script
+test function applies. Fresh provider operations require a separate reviewed
+diagnostic decision and the parent-owned exact-source gates.
