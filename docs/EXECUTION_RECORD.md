@@ -7108,3 +7108,18 @@ COMPLETE is diagnostic coverage only. The retained Linux CI39969225950 two
 strict latency failures remain; cause and Production acceptance are unknown.
 Parent review and composed exact-source CI are pending. Revert this test-only
 candidate to roll back; no runtime/data release is involved.
+
+## 2026-10-24 C6 transaction callback phase candidate
+
+Recommended gpt-6-sol/high for the pinned actor transform and bounded test
+transport. On the existing isolated C6 branch, a test-only source transform
+adds three callback clock reads around the unchanged query map and bookmark
+await. The v3 metadata, collector and summary preserve the original sample
+pairing and accept retained v2 summary logs. No product Worker, Apps Script,
+calculator, SQL, schema, dependency or workflow is changed. Original full-wall
+timing, route/sample order, p95 index and strict 50ms threshold remain.
+
+This is source-only diagnostic work. The retained Linux home p95 54.098968ms
+failure remains failed; physical cause and Production acceptance are unknown.
+Parent source review and one new exact-source CI remain pending. Revert the
+test-only source/doc changes for rollback; no runtime or data rollback applies.

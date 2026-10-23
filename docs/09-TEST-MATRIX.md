@@ -3890,3 +3890,16 @@ full-wall timer, p95 index94 and strict<50ms gates are unchanged; the retained
 Linux CI39969225950 latency failure and its unknown cause remain open. Parent
 review and one composed exact-source CI are pending. Rollback reverts this
 test-only diagnostic change; no runtime or data rollback is involved.
+
+## 2026-10-24 C6 transaction callback three-cut diagnostic
+
+Recommended model/speed: gpt-6-sol/high. The locked Miniflare actor's existing
+transaction callback has three test-only clock reads at entry, after the same
+`queries.map`, and after the same bookmark await. Existing C0/C4 points yield
+four same-sample windows. The v3 header and 12-column bounded actor frames
+retain 700 ordered rows per fixture and reject missing, nonnumeric, negative,
+inconsistent or malformed phases. The summary still accepts retained v2 logs.
+The full-wall timer, seven routes x100 samples, p95 index94 and strict <50ms
+gate remain unchanged. These elapsed windows cannot identify workerd CPU,
+SQLite, disk or scheduler cause; the three new clock reads perturb the measured
+path. No benchmark or provider acceptance is claimed here.

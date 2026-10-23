@@ -1,18 +1,23 @@
 import assert from 'node:assert/strict';
 const routes=['home','actions','revenue','tenants','rooms','arrears','properties'];
-const columns=['sample','full_ms','caller_d1_ms','entry_to_before_txn_ms','awaited_txn_ms','entry_to_txn_ms','json_tail_ms','status'];
+const columns=['sample','full_ms','caller_d1_ms','entry_to_before_txn_ms','awaited_txn_ms','entry_to_txn_ms','json_tail_ms',
+ 'txn_admission_ms','txn_queries_ms','txn_bookmark_ms','txn_completion_ms','status'];
 const numeric=v=>Number.isFinite(v)&&v>=0;
 function parse(header){
- if(header===null)return {p:null,t:null,a:null,b:null,status:'MISSING'};
+ if(header===null)return {values:Array(8).fill(null),status:'MISSING'};
  try{
-  if(typeof header!=='string'||header.length>256)throw Error();
+  if(typeof header!=='string'||header.length>512)throw Error();
   const v=JSON.parse(header);
-  if(!v||Object.keys(v).sort().join(',')!=='awaited_txn_ms,entry_to_before_txn_ms,entry_to_txn_ms,json_tail_ms,v'||v.v!==2||
-   ![v.entry_to_before_txn_ms,v.awaited_txn_ms,v.entry_to_txn_ms,v.json_tail_ms].every(numeric)||
+  if(!v||Object.keys(v).sort().join(',')!==
+   'awaited_txn_ms,entry_to_before_txn_ms,entry_to_txn_ms,json_tail_ms,txn_admission_ms,txn_bookmark_ms,txn_completion_ms,txn_queries_ms,v'||v.v!==3||
+   ![v.entry_to_before_txn_ms,v.awaited_txn_ms,v.entry_to_txn_ms,v.json_tail_ms,
+    v.txn_admission_ms,v.txn_queries_ms,v.txn_bookmark_ms,v.txn_completion_ms].every(numeric)||
    v.entry_to_before_txn_ms>v.entry_to_txn_ms||v.awaited_txn_ms>v.entry_to_txn_ms-v.entry_to_before_txn_ms+1e-6||
-   v.json_tail_ms<v.entry_to_txn_ms)throw Error();
-  return {p:v.entry_to_before_txn_ms,t:v.awaited_txn_ms,a:v.entry_to_txn_ms,b:v.json_tail_ms,status:'OK'};
- }catch{return {p:null,t:null,a:null,b:null,status:'INVALID'};}
+   v.json_tail_ms<v.entry_to_txn_ms||Math.abs(v.txn_admission_ms+v.txn_queries_ms+
+    v.txn_bookmark_ms+v.txn_completion_ms-v.awaited_txn_ms)>1e-6)throw Error();
+  return {values:[v.entry_to_before_txn_ms,v.awaited_txn_ms,v.entry_to_txn_ms,v.json_tail_ms,
+   v.txn_admission_ms,v.txn_queries_ms,v.txn_bookmark_ms,v.txn_completion_ms],status:'OK'};
+ }catch{return {values:Array(8).fill(null),status:'INVALID'};}
 }
 // Called after the original full-wall end. No clocks, requests, raw payloads or
 // new samples; header validation/formatting never enters the measured interval.
@@ -27,7 +32,7 @@ export function createActorTiming(suite,emit){
    if(samples.length>=700){dropped++;return;}
    if(position!==previous+1)invalid++;previous=position;seen.add(position);
    const p=parse(header),valid=numeric(fullMs)&&numeric(d1Ms);
-   samples.push({route,row:[index+1,numeric(fullMs)?fullMs:null,numeric(d1Ms)?d1Ms:null,p.p,p.t,p.a,p.b,valid?p.status:'INVALID']});
+   samples.push({route,row:[index+1,numeric(fullMs)?fullMs:null,numeric(d1Ms)?d1Ms:null,...p.values,valid?p.status:'INVALID']});
   },
   close(outcome){
    if(closed)return;closed=true;assert(['PASS','FAIL'].includes(outcome));let outputDropped=0;
@@ -41,8 +46,8 @@ export function createActorTiming(suite,emit){
      if(!count){outputDropped++;offset++;continue;}output(line);offset+=count;
     }
    }
-   const ok=samples.filter(s=>s.row[7]==='OK').length;
-   output(frame('META',{v:2,outcome,columns,expected:700,retained:samples.length,valid:ok,
+   const ok=samples.filter(s=>s.row[11]==='OK').length;
+   output(frame('META',{v:3,outcome,columns,expected:700,retained:samples.length,valid:ok,
     invalid,dropped,output_dropped:outputDropped,status:samples.length===700&&ok===700&&!invalid&&!dropped&&!outputDropped?'COMPLETE':samples.length?'PARTIAL':'NOT_COLLECTED',
     scope:'LOCAL_INSTRUMENTED_ACTOR_WINDOWS_NOT_SQL_CPU_TRANSPORT_OR_ACCEPTANCE'}));
   }

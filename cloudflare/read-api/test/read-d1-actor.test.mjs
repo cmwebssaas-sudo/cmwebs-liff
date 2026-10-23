@@ -29,14 +29,45 @@ test('actor spans distinguish parsing before txn from awaited txn, without chang
  const first={results:[{n:1}],meta:{duration:2}},last={results:[{n:2}],meta:{duration:3}};
  const response=await execute.call({isExportPragma:()=>false,txn:async()=>{
   assert.equal(times.length,3,'before-txn timestamp must precede awaited callback');
-  return {results:[first,last],commitToken:'synthetic'};
+  const results=[first,last];Object.defineProperty(results,'__cmwebsActorTxnPhasePoints',{value:[12,14,16]});
+  return {results,commitToken:'synthetic'};
  }},
   new Request('https://local.test/query',{method:'POST',body:'[{"sql":"SELECT 1"}]'}));
  const actual=await response.json();
  assert.deepEqual(actual,[{results:[{n:1}],meta:{duration:2}},
   {results:[{n:2}],meta:{duration:3,cmwebs_test_actor_entry_to_before_txn_ms:2,
-   cmwebs_test_actor_awaited_txn_ms:5,cmwebs_test_actor_entry_to_txn_ms:10,cmwebs_test_actor_json_tail_ms:13}}]);
+   cmwebs_test_actor_awaited_txn_ms:5,cmwebs_test_actor_entry_to_txn_ms:10,cmwebs_test_actor_json_tail_ms:13,
+   cmwebs_test_actor_txn_admission_ms:0,cmwebs_test_actor_txn_queries_ms:2,
+   cmwebs_test_actor_txn_bookmark_ms:2,cmwebs_test_actor_txn_completion_ms:1}}]);
  assert.equal(response.headers.get('x-cf-d1-session-commit-token'),'synthetic');assert.equal(times.length,0);
+});
+
+test('actor callback cuts retain the original query, bookmark, token and result while exposing four same-sample spans',async()=>{
+ const out=helper.instrumentD1ActorSource(raw);
+ const txnMethod=out.slice(out.indexOf('  async #txn('),out.indexOf('  queryExecute = async'))
+  .replaceAll('this.#','this.').replace('async #txn(','async txn(').trim().replace(/,$/,'');
+ const executeMethod=out.slice(out.indexOf('  queryExecute = async'),out.indexOf('  #isExportPragma(queries)'))
+  .replaceAll('this.#','this.').replace('queryExecute = async (req) =>','queryExecute: async function(req)').trim().replace(/;$/,'');
+ const times=[10,12,13,14,15,17,20,23],events=[];
+ const actor=runInNewContext('({'+txnMethod+', '+executeMethod+'})',{
+  performance:{now:()=>{assert(times.length);return times.shift();}},URL,Response,
+  D1Error:class D1Error extends Error{},D1QueriesSchema:{parse:v=>v},D1ResultsFormatSchema:{parse:v=>v},
+  D1_SESSION_COMMIT_TOKEN_HTTP_HEADER:'x-cf-d1-session-commit-token'
+ });
+ actor.isExportPragma=()=>false;
+ actor.state={storage:{transaction:async callback=>{events.push('transaction');return callback();},
+  getCurrentBookmark:async()=>{events.push('bookmark');return 'synthetic';}}};
+ actor.query=(_format,query)=>{events.push(query.sql);return {results:[{n:1}],meta:{duration:3}};};
+ const response=await actor.queryExecute(new Request('https://local.test/query',{
+  method:'POST',body:'[{"sql":"SELECT 1"}]'}));
+ assert.deepEqual(events,['transaction','SELECT 1','bookmark']);
+ assert.equal(response.headers.get('x-cf-d1-session-commit-token'),'synthetic');
+ assert.deepEqual(await response.json(),[{results:[{n:1}],meta:{duration:3,
+  cmwebs_test_actor_entry_to_before_txn_ms:2,cmwebs_test_actor_awaited_txn_ms:5,
+  cmwebs_test_actor_entry_to_txn_ms:10,cmwebs_test_actor_json_tail_ms:13,
+  cmwebs_test_actor_txn_admission_ms:1,cmwebs_test_actor_txn_queries_ms:1,
+  cmwebs_test_actor_txn_bookmark_ms:1,cmwebs_test_actor_txn_completion_ms:2}}]);
+ assert.equal(times.length,0);
 });
 
 test('scoped actor hook restores original plugin on success, construction failure, dispose failure and overlap',async()=>{
