@@ -7,11 +7,17 @@ export function instrumentD1ActorSource(source){
  if(typeof source!=='string'||source.length>262144)fail();
  const cut=source.lastIndexOf('//# sourceURL='),body=cut<0?source:source.slice(0,cut),suffix=cut<0?'':source.slice(cut);
  if(/[\n\r\u2028\u2029]/.test(suffix)||createHash('sha256').update(body).digest('hex')!==expected)fail();
- const enter='  queryExecute = async (req) => {\n',response='    return Response.json(results, {\n';
- if(body.split(enter).length!==2||body.split(response).length!==2)fail();
- return body.replace(enter,enter+'    const __cmwebsActorStarted = performance.now();\n').replace(response,
+ const enter='  queryExecute = async (req) => {\n',txn='    ), { results, commitToken } = await this.#txn(queries, resultsFormat);\n',response='    return Response.json(results, {\n';
+ if(body.split(enter).length!==2||body.split(txn).length!==2||body.split(response).length!==2)fail();
+ return body.replace(enter,enter+'    const __cmwebsActorStarted = performance.now();\n').replace(txn,
+  '    );\n'+
+  '    const __cmwebsActorBeforeTxn = performance.now();\n'+
+  '    const { results, commitToken } = await this.#txn(queries, resultsFormat);\n'+
+  '    const __cmwebsActorAfterTxn = performance.now();\n').replace(response,
   '    const __cmwebsActorMeta = results.at(-1)?.meta;\n'+
   '    if (!__cmwebsActorMeta) throw Error("D1_DIAGNOSTIC_META_UNAVAILABLE");\n'+
+  '    Object.defineProperty(__cmwebsActorMeta, "cmwebs_test_actor_entry_to_before_txn_ms", { enumerable: true, value: __cmwebsActorBeforeTxn - __cmwebsActorStarted });\n'+
+  '    Object.defineProperty(__cmwebsActorMeta, "cmwebs_test_actor_awaited_txn_ms", { enumerable: true, value: __cmwebsActorAfterTxn - __cmwebsActorBeforeTxn });\n'+
   '    Object.defineProperty(__cmwebsActorMeta, "cmwebs_test_actor_entry_to_txn_ms", { enumerable: true, value: performance.now() - __cmwebsActorStarted });\n'+
   '    Object.defineProperty(__cmwebsActorMeta, "cmwebs_test_actor_json_tail_ms", { enumerable: true, get: () => performance.now() - __cmwebsActorStarted });\n'+response)+suffix;
 }

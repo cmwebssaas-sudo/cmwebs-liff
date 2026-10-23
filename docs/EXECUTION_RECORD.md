@@ -7717,3 +7717,28 @@ provider operation. No actual canonical state, Google data, deployment or
 production claim was changed by this source task. Rollback leaves the unused
 namespace inert or reverts only the reviewed source commit; spent entries and
 historical STOP records are never reset.
+
+
+## 2026-10-23 C6 local actor transaction-window diagnostic candidate
+
+Recommended gpt-6-sol/high because the approved task crosses the actor hook,
+numeric header, paired collector and CI summary. Work used existing isolated
+branch `codex/c6-read-acceptance-20261012` at clean base `986e3cb7`; only the
+test-only actor chain, focused tests and neutral records changed. The installed
+Miniflare actor body still matches the pinned SHA-256
+`0b618134d70e985306907b5b0b67c67bddc5322d8c624ac04667ede75415b7dc`.
+Two timestamps bracket the original awaited transaction. The original response
+rows/status/commit token, full-wall timer, fixture order/count, p95 and strict
+50ms gate remain unchanged. No product Worker, calculator, SQL, package,
+workflow, provider, Apps Script or formal data change occurred.
+
+Source-frozen RED on Node22: 11 focused cases, 5 pass/6 expected fail for the
+missing subwindows. GREEN: 11/11; final focused synthetic/timer/transport/CI
+summary checks 59/59, zero fail/cancel/skip. Validate passed 72 backend files,
+40 endpoints, static cache and comparison identity for181 source files; diff
+check passed. Apps Script tests NOT_RUN (unaffected); no full Worker benchmark,
+full root/Core/PostgreSQL suite, provider operation, push, merge or deployment.
+COMPLETE is diagnostic coverage only. The retained Linux CI39969225950 two
+strict latency failures remain; cause and Production acceptance are unknown.
+Parent review and composed exact-source CI are pending. Revert this test-only
+candidate to roll back; no runtime/data release is involved.
