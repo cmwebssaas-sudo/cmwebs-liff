@@ -7,6 +7,7 @@ import {spawnSync} from 'node:child_process';
 import {join} from 'node:path';
 import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
 import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
+import {projection} from '../scripts/read-authority-project-retarget.mjs';
 
 test('approved publisher alignment has its own decision and inert flow constructor',()=>{
  assert.equal(PUBLISHER_ALIGNMENT_DECISION,'5f764b29438b582cdd404823a3a01408579fec7045ac5016971a7394d89337cb');
@@ -46,11 +47,43 @@ for(const [label,mutate] of [
 const contract={source:'approved-publisher-alignment105',decisionHash:PUBLISHER_ALIGNMENT_DECISION,startingSpent:105,maximumFirstStageSpent:111,operationBudget:296,ordinaryUiLimit:148,maximumPreparationPrimitives:6,completeActualMapProven:false,browserProfile:'profile-b',browserId:'chosen',settingsTabId:'settings-tab',audienceTabId:'audience-tab',settingsURL:'https://synthetic.invalid/settings',audienceURL:'https://synthetic.invalid/audience',publisherHash:'a'.repeat(64)};
 const snapshot=JSON.stringify({source:'rebalanced-readonly-grounding',urlMatched:true,accountVerified:true,fieldsRead:false,ready:'COMPLETE',section:'MATCHED',reason:'VERIFIED',phase:'COMPLETE',cryptoAvailable:true,encoderAvailable:true,controls:[]});
 function flowFixture(s,failAt,overrides={}){const calls=[],retained={},owners=[],projectReady=()=>{},approved={...contract,...overrides.contract};
- const api={getBrowser:async({id})=>{calls.push('binding');assert.equal(id,approved.browserId);if(failAt==='binding')throw Error('PRIVATE');return {browserId:overrides.returnedBrowserId??id,nameSession:async name=>{calls.push('name');assert.equal(name,'🔎 CMWebs C3');if(failAt==='name')throw Error('PRIVATE');},user:{claimTab:async tabId=>{const step=tabId===approved.settingsTabId?'settings-claim':'audience-claim';calls.push(step);if(failAt===step)throw Error('PRIVATE');return {id:tabId,playwright:{evaluate:async(fn,args)=>{const projectionStep=tabId===approved.settingsTabId?'settings-project':'audience-project';calls.push(projectionStep);assert.equal(fn,projectReady);assert.equal(args.expectedURL,tabId===approved.settingsTabId?approved.settingsURL:approved.audienceURL);assert.equal(args.publisherHash,approved.publisherHash);if(failAt===projectionStep)throw Error('PRIVATE');return overrides.snapshot??snapshot;}}};}}};}};
+ const api={getBrowser:async({id})=>{calls.push('binding');assert.equal(id,approved.browserId);if(failAt==='binding')throw Error('PRIVATE');return {browserId:overrides.returnedBrowserId??id,nameSession:async name=>{calls.push('name');assert.equal(name,'🔎 CMWebs C3');if(failAt==='name')throw Error('PRIVATE');},user:{claimTab:async tabId=>{const step=tabId===approved.settingsTabId?'settings-claim':'audience-claim';calls.push(step);if(failAt===step)throw Error('PRIVATE');return {id:tabId,playwright:{evaluate:async(fn,args)=>{const projectionStep=tabId===approved.settingsTabId?'settings-project':'audience-project';calls.push(projectionStep);assert.equal(fn,projectReady);assert.equal(args.expectedURL,tabId===approved.settingsTabId?approved.settingsURL:approved.audienceURL);assert.equal(args.publisherHash,approved.publisherHash);if(failAt===projectionStep)throw Error('PRIVATE');return overrides.snapshots?.[args.target]??overrides.snapshot??snapshot;}}};}}};}};
  return {calls,retained,owners,flow:createAuthorityPublisherAlignmentFlow({contract:approved,guard:()=>{},createOwner:({assertStage})=>{const owner=holder(s,{},assertStage);owners.push(owner);return owner;},api,projectReady,retained})};}
 
 test('publisher six-step flow prepays and pauses at111 with stable handles',async()=>{
  const s=await alignmentFixture(),{flow,calls,retained}=flowFixture(s);assert.deepEqual(calls,[]);const r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111',JSON.stringify({phase:r.failurePhase,calls}));assert.deepEqual(calls,['binding','name','settings-claim','settings-project','audience-claim','audience-project']);assert.equal(r.report.combinedSpent,111);assert.equal(r.report.uiSpent,58);assert.equal(r.report.publisherUsed,6);assert.equal(r.report.settingsVerified,true);assert.equal(r.report.audienceVerified,true);assert.equal(r.handoff.minimumEvents,55);assert.equal(s.aligned().w0,null);assert.equal(s.aligned().pending,null);assert.equal(retained.settings.id,contract.settingsTabId);assert.equal(retained.audience.id,contract.audienceTabId);assert.equal(r.completeActualMapProven,false);await assert.rejects(flow.run());
+});
+
+const control=(label)=>({label,tag:'BUTTON',role:'button',disabled:false});
+test('target-aware decoder accepts nonempty settings and Audience controls while legacy default stays settings-only',()=>{
+ const settings=JSON.stringify({...JSON.parse(snapshot),controls:[control('Change project')]});
+ const audience=JSON.stringify({...JSON.parse(snapshot),controls:['新增使用者','Add users','發布應用程式','Publish app','儲存','Save','取消','Cancel','確定','Confirm'].map(control)});
+ assert.equal(projection(settings).controls.length,1);
+ assert.equal(projection(settings,'thin-settings').controls.length,1);
+ assert.equal(projection(audience,'oauth-audience').controls.length,10);
+ assert.throws(()=>projection(audience),/PROJECT_RETARGET_STOPPED/);
+ assert.throws(()=>projection(audience,'thin-settings'),/PROJECT_RETARGET_STOPPED/);
+ assert.throws(()=>projection(settings,'oauth-audience'),/PROJECT_RETARGET_STOPPED/);
+ assert.throws(()=>projection(audience,'other-target'),/PROJECT_RETARGET_STOPPED/);
+});
+
+test('publisher flow accepts genuine nonempty controls on each known target',async()=>{
+ const s=await alignmentFixture(),{flow,calls}=flowFixture(s,null,{snapshots:{'thin-settings':JSON.stringify({...JSON.parse(snapshot),controls:[control('變更專案')]}),'oauth-audience':JSON.stringify({...JSON.parse(snapshot),controls:[control('新增使用者'),control('發布應用程式')]})}});
+ const r=await flow.run();assert.equal(r.status,'CLEAN_PAUSE111');assert.equal(r.report.audienceVerified,true);assert.equal(r.report.settingsVerified,true);assert.equal(r.failureEvidence,undefined);assert.equal(calls.length,6);
+});
+
+test('decoder rejects malformed control members and fieldsRead on both targets',()=>{
+ for(const target of ['thin-settings','oauth-audience'])for(const controls of [[{...control(target==='thin-settings'?'Change project':'Add users'),tag:'SCRIPT'}],[{...control(target==='thin-settings'?'Change project':'Add users'),role:'link'}],[{...control(target==='thin-settings'?'Change project':'Add users'),disabled:'false'}],[{...control(target==='thin-settings'?'Change project':'Add users'),extra:'PRIVATE'}]])assert.throws(()=>projection(JSON.stringify({...JSON.parse(snapshot),controls}),target),/PROJECT_RETARGET_STOPPED/);
+ for(const target of ['thin-settings','oauth-audience'])assert.throws(()=>projection(JSON.stringify({...JSON.parse(snapshot),fieldsRead:true}),target),/PROJECT_RETARGET_STOPPED/);
+});
+
+test('publisher failure evidence separates no safe callback return, shape rejection and verification rejection',async()=>{
+ const cases=[
+  {failAt:'audience-project',overrides:{},kind:'CALLBACK_NOT_RETURNED',callbackReturned:false,decoded:false,count:null},
+  {failAt:null,overrides:{snapshots:{'oauth-audience':JSON.stringify({...JSON.parse(snapshot),controls:[control('Change project')]})}},kind:'DECODE_SHAPE_REJECTED',callbackReturned:true,decoded:false,count:null},
+  {failAt:null,overrides:{snapshots:{'oauth-audience':JSON.stringify({...JSON.parse(snapshot),urlMatched:false,controls:[control('Add users')]})}},kind:'VERIFICATION_REJECTED',callbackReturned:true,decoded:true,count:1}
+ ];
+ for(const x of cases){const s=await alignmentFixture(),{flow,calls}=flowFixture(s,x.failAt,x.overrides),r=await flow.run();assert.equal(r.status,'HARD_STOP');assert.equal(r.failurePhase,'AUDIENCE-PROJECT');assert.deepEqual(r.failureEvidence,{target:'oauth-audience',stage:'AUDIENCE-PROJECT',kind:x.kind,callbackReturned:x.callbackReturned,decoded:x.decoded,controlsCount:x.count});assert.equal(calls.length,6);assert.equal(s.aligned().events.at(-1).success,false);assert.equal(s.aligned().pending,null);assert.equal(s.aligned().w0,null);assert(!JSON.stringify(r).includes('PRIVATE'));assert(!JSON.stringify(r).includes(contract.audienceURL));assert(!JSON.stringify(r).includes('Change project'));await assert.rejects(flow.run());}
 });
 
 test('verified ASCII digest fallback remains eligible for both page projections',async()=>{

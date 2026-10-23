@@ -4192,3 +4192,19 @@ full-wall timer, p95 index94 and strict<50ms gates are unchanged; the retained
 Linux CI39969225950 latency failure and its unknown cause remain open. Parent
 review and one composed exact-source CI are pending. Rollback reverts this
 test-only diagnostic change; no runtime or data rollback is involved.
+
+## 2026-10-23 C3 publisher projection compatibility repair
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Shared decoder, target-specific labels | Nonempty Settings and Audience controls pass only their own exact whitelist; omitted target retains the Settings default; unknown target and cross-target labels stop |
+| Projection shape and privacy | Malformed control tags, roles, booleans, extra fields and `fieldsRead:true` stop before verification; URL, account, ready, section and VERIFIED gates remain required |
+| Publisher six-step flow | Nonempty legitimate controls on both targets reach CLEAN_PAUSE111; callback rejection, malformed projection and decoded verification rejection each settle and stop without replay |
+| Failure evidence | Receipt retains only fixed target/stage/classification, callback and decode booleans, and a bounded count after valid decode; rejected raw values, URLs and error text are omitted |
+
+Affected tests are `tests/read-authority-publisher-alignment.test.mjs` and the
+legacy project flow suites using the same decoder. These local checks do not
+classify the historical actual111 failure; its raw projection was not retained.
+No `.gs`, route, schema, Worker or production source changed, so no Apps Script
+test function applies. Fresh provider operations require a separate reviewed
+diagnostic decision and the parent-owned exact-source gates.
