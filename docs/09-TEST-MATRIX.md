@@ -2747,3 +2747,13 @@ classify the historical actual111 failure; its raw projection was not retained.
 No `.gs`, route, schema, Worker or production source changed, so no Apps Script
 test function applies. Fresh provider operations require a separate reviewed
 diagnostic decision and the parent-owned exact-source gates.
+
+## 2026-10-24 C3 conditional native visual successor source
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Closed original 111 and complete later settled chain | A distinct PREP successor imports 17–20 charges once, preserves the stopped 55-event origin, and reports spent 128–131 without invented events or provider timestamps |
+| Pinned approval, source and manual visual proof | A synchronous parent verifier is required before spawn and at guarded continuations; closed-menu, wrong URL, false proof and pin drift stop before ordinary work |
+| Accounting and replay | Gap, duplicate nonce, pending state, changed origin, exhausted repair allowance reset and second owner stop; 296 total and at least 70 future UI calls remain protected |
+
+Focused source tests use synthetic evidence in `tests/read-authority-publisher-alignment.test.mjs`; `npm run validate` checks the repository baseline. This source preparation does not establish actual browser identity, external provider acceptance or production readiness. No Apps Script test function applies because `.gs`, routes and schema are unchanged.

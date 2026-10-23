@@ -4799,3 +4799,7 @@ provider operation. No actual canonical state, Google data, deployment or
 production claim was changed by this source task. Rollback leaves the unused
 namespace inert or reverts only the reviewed source commit; spent entries and
 historical STOP records are never reset.
+
+## 2026-10-24 C3 conditional native successor source preparation
+
+The local source candidate adds a distinct opt-in successor to the existing publisher alignment ledger. It requires a pinned, fully settled continuation receipt chain, approved current visual proof and a synchronous parent verifier before any new holder write. The original stopped journal and its flags remain unchanged. Imported counts reduce the remaining ordinary budget, preserve protected future stages and carry spent failure/repair highwaters without inventing provider-call times. Synthetic focused source tests, `npm run validate`, syntax checks and diff check passed. Actual identity entry, external reads/writes, provider execution, source CI, merge, deploy and production acceptance were not performed by this source task. No Apps Script, API route or schema changed; affected Apps Script tests are not applicable. Rollback is a reviewed source revert before use, while historical receipts and STOP records remain preserved.
