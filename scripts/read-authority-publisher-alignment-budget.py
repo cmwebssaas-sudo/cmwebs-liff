@@ -21,13 +21,18 @@ def alignment_class(base):
   if type(d)is not dict or any(type(d.get(k))is not type(v) or d.get(k)!=v for k,v in values.items()):fail()
  class PublisherAlignmentLedger(base):
   aligned105=True
+  def __init__(self,cfg,cleanup=False):
+   p=cfg.get('readonlyConnection',{}).get('repair92',{}).get('diagnostic93',{}).get('owner94',{}).get('inventory97',{}).get('retarget99',{}).get('launch100',{}).get('shared101',{}).get('aligned105',{})
+   self.native_successor='nativeSuccessor' in p
+   self.imported_delta=0
+   super().__init__(cfg,cleanup)
   def ordinary_ceiling(self):return 148
   def prepared_checkpoint(self,j):
-   d=j.get('publisherAlignment',{});return d.get('maximum')==6 and d.get('used')==6 and d.get('settingsVerified') is True and d.get('audienceVerified') is True and 0<=d.get('readonlyIncidents',-1)<=2 and 0<=d.get('repairCalls',-1)<=6 and 0<=d.get('diagnosticCalls',-1)<=20 and j['phase']=='PREP' and j['w0'] is None
+   d=j.get('publisherAlignment',{});return d.get('maximum')==6 and d.get('used')==6 and d.get('settingsVerified') is True and (d.get('audienceVerified') is True or self.native_successor and d.get('audienceVerified') is False and j.get('nativeCurrentVisual') is True) and 0<=d.get('readonlyIncidents',-1)<=2 and 0<=d.get('repairCalls',-1)<=6 and 0<=d.get('diagnosticCalls',-1)<=20-self.imported_delta and j['phase']=='PREP' and j['w0'] is None
   def validate_alignment(self):
    old101,claim101=self.validate_shared();p=self.cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']['shared101']['aligned105']
    names=['journal','claim','registry','stop','result','audit'];charges=['diagnostic','inventory','binding']
-   if not exact(p,['decisionHash','approval','origin','charges','closure']) or p['decisionHash']!=DECISION or not exact(p['origin'],names) or not exact(p['charges'],charges):fail()
+   if not exact(p,['decisionHash','approval','origin','charges','closure']+(['nativeSuccessor']if self.native_successor else [])) or p['decisionHash']!=DECISION or not exact(p['origin'],names) or not exact(p['charges'],charges):fail()
    if any(not exact(p['charges'][k],['reservation','outcome'])for k in charges):fail()
    raw={k:pinned(v)for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));approval=json.loads(pinned(p['approval']));closure=json.loads(pinned(p['closure']))
    expected=['source','questionCall','answer','decisionSha256','recordedAt','operationBudget','retainedSpent','importedMainSpent','importedUiSpent','selectedProfile','selectedBrowserId','scope','executionStarted']
@@ -73,8 +78,62 @@ def alignment_class(base):
    truth(closure,{'source':'independent-connection-location-closure','canonicalSpent':102,'priorIndependent':1,'currentIndependent':2,'effectiveSpent':105,'ordinaryUiSpent':52,'futureUiProtected':36,'recoveryUiProtected':16,'browserCalls':2,'boundBrowserId':b[0]['browserId'],'boundProfile':b[0]['profileName'],'googlePageReads':0,'googleWrites':0,'rpcCalls':0,'oldHardStopPreserved':True,'stopped':True,'publisherGoogleIdentityNotVerified':True})
    if closure.get('reservation1Sha256')!=p['charges']['inventory']['reservation']['sha256'] or closure.get('outcome1Sha256')!=p['charges']['inventory']['outcome']['sha256'] or closure.get('reservation2Sha256')!=p['charges']['binding']['reservation']['sha256'] or closure.get('outcome2Sha256')!=p['charges']['binding']['outcome']['sha256'] or closure.get('otherBrowserId')!=approval['selectedBrowserId'] or closure.get('otherProfile')!=approval['selectedProfile'] or closure.get('canonicalFivePinsUnchanged')!={k:True for k in ['journal','claim','stop','registry','receipt']}:fail()
    return j,claim,approval
+  def validate_native_successor(self,old105,before_write=False):
+   p=self.cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']['shared101']['aligned105']['nativeSuccessor']
+   if not exact(p,['closure']):fail()
+   closure=json.loads(pinned(p['closure']))
+   names=['journal','claim','stop','registry','receipt','audit'];visual_names=['beforeGuard','screenshot','afterGuard','attestation']
+   if not exact(closure,['source','origin','contract','context','approval','validatorSource','sourceReview','ci','faultSource','faultHighwaters','charges','visual','finalSpent','mainSpent','uiSpent','operationBudget','pending','allSettled']) or closure['source']!='publisher-native-successor-closure-v1' or not exact(closure['origin'],names) or not exact(closure['visual'],visual_names):fail()
+   originals={k:pinned(v) for k,v in closure['origin'].items()};j=json.loads(originals['journal']);claim=record(Path(closure['origin']['claim']['path']))
+   live=str(self.path)+'.simple-publisher-alignment'
+   for key,end in [('journal','.json'),('claim','-claim.json'),('stop','-stop.json')]:
+    if sha(rawfile(Path(live+end)))!=sha(originals[key]):fail()
+   if record(Path(closure['origin']['stop']['path']))!={'identity':claim} or record(Path(closure['origin']['registry']['path']))!={'identity':claim,'checkpoint':j}:fail()
+   if before_write and record(self.registry)!={'identity':claim,'checkpoint':j}:fail()
+   historical=copy.deepcopy(self.identity);historical.pop('ownerHash');historical.pop('sources');historical['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']['shared101']['aligned105'].pop('nativeSuccessor')
+   if not exact(claim,list(historical)+['sources','ownerHash']) or any(claim[k]!=v for k,v in historical.items()) or not isinstance(claim['sources'],list) or not claim['sources'] or claim['ownerHash']==self.identity['ownerHash']:fail()
+   d=j.get('publisherAlignment',{});events=j.get('events',[])
+   if len(events)!=55 or events[:49]!=old105['events'] or j.get('state')!='stopped' or j.get('lifecycle')!='HARD_STOP' or j.get('phase')!='PREP' or j.get('pending') is not None or j.get('w0') is not None or j.get('expiresAt') is not None or j.get('mutated') is not False or j.get('rpc')!={'beganAt':None,'complete':False} or j.get('plan') is not None or j.get('publisherStages')!=[] or j.get('futureOrdinaryUi')!=90 or d.get('maximum')!=6 or d.get('used')!=6 or d.get('settingsVerified') is not True or d.get('audienceVerified') is not False or j.get('failures')!=old105['failures']+1 or not integer(j.get('lastAt')) or j['lastAt']>self.cfg['now'] or len(j.get('publisherImported',[]))!=3:fail()
+   for n,(stage,method,target) in enumerate(STEPS):
+    e=events[49+n];op={'id':'publisher105-n'+str(n+1)+'-'+stage,'key':'N:preparation','actor':'publisher','target':target,'operation':method,'units':1,'preparation':True}
+    if e.get('operation')!=op or e.get('lane')!='ui' or e.get('settled') is not True or e.get('success') is not (n<5) or not integer(e.get('time')) or e['time']<old105['lastAt'] or e['time']>j['lastAt']:fail()
+   contract=json.loads(pinned(closure['contract']));context=json.loads(pinned(closure['context']));approval=json.loads(pinned(closure['approval']))
+   for key in ['validatorSource','sourceReview','ci','faultSource','beforeGuard','screenshot','afterGuard']:pinned(closure['visual'][key] if key in visual_names else closure[key])
+   if contract.get('source')!='approved-publisher-alignment105' or contract.get('decisionHash')!=DECISION or contract.get('operationBudget')!=296 or contract.get('publisherHash') is None or not re.fullmatch('[0-9a-f]{64}',contract['publisherHash']) or context.get('source')!='native-current-project-context-v1' or context.get('publisherHash')!=contract['publisherHash'] or context.get('url')!=contract.get('audienceURL') or any(type(context.get(k))is not str or not context[k] or len(context[k])>4096 for k in ['browserId','tabId','url']) or not re.fullmatch('[0-9a-f]{64}',context.get('projectHash','')) or approval.get('source')!='direct-human-connection118-continuation' or approval.get('scope')!='CONNECTION118_BOUNDED_NATIVE' or approval.get('approved') is not True or approval.get('directHuman') is not True or approval.get('operationBudget')!=296:fail()
+   charges=closure['charges'];count=len(charges) if type(charges)is list else -1;expected=['diagnostic111']*3+['audience114']*3+['native117','discovery118']
+   if count<17 or count>20 or closure['finalSpent']!=111+count or closure['finalSpent']>131 or closure['mainSpent']!=53 or closure['uiSpent']!=58+count or closure['operationBudget']!=296 or closure['pending'] is not None or closure['allSettled'] is not True or count>20 or 90-count<70 or [c.get('stage') for c in charges[:8]]!=expected or [c.get('stage') for c in charges[-3:]]!=['GUARD','CAPTURE','GUARD']:fail()
+   h=closure['faultHighwaters'];failed=sum(c.get('outcome')!='VERIFIED' for c in charges);fault=json.loads(pinned(closure['faultSource']))
+   if h!={'globalRepairCallsUsed':6,'globalRepairCallsRemaining':0,'readonlyIncidents':2,'importedFailedCalls':failed} or fault.get('source')!='audience114-actual-three-read-structure-closure' or fault.get('originalGlobalRepairCallsUsed')!=6 or fault.get('originalGlobalRepairCallsRemaining')!=0 or failed<3:fail()
+   prior=closure['origin']['journal']['sha256'];nonces=set();reservation_times=[]
+   for n,c in enumerate(charges,112):
+    historical='VERIFICATION_REJECTED' if n in [114,117] else 'REJECTED' if n==118 else 'VERIFIED'
+    if not exact(c,['spent','stage','nonce','commandSha256','priorOutcomeSha256','reservation','settlement','outcome','reservationAt','providerCallAt']) or c['spent']!=n or c['priorOutcomeSha256']!=prior or n<=119 and c['outcome']!=historical or n>=120 and c['outcome'] not in ['VERIFIED','QUALIFIED_TECHNICAL','VERIFICATION_REJECTED','UNKNOWN'] or c['providerCallAt'] is not None or n>=120 and c['stage'] not in ['BIND','OPEN_TABS','CLAIM','GUARD','CAPTURE']:fail()
+    # The first six historical diagnostic receipts have no nonce or command hash.
+    if n<=117:
+     if c['nonce'] is not None or c['commandSha256'] is not None or c['reservationAt'] is not None:fail()
+    elif c['nonce'] in nonces or not isinstance(c['nonce'],str) or not re.fullmatch('[0-9a-f]{32}',c['nonce']) or not isinstance(c['commandSha256'],str) or not re.fullmatch('[0-9a-f]{64}',c['commandSha256']):fail()
+    if n<=119 and c['reservationAt'] is not None:fail()
+    if n>=120:
+     t=c['reservationAt']
+     if type(t) not in [int,float] or t<0 or t==float('inf') or t!=t or reservation_times and t<reservation_times[-1]:fail()
+     reservation_times.append(t)
+    pinned(c['reservation']);pinned(c['settlement']);
+    if c['nonce'] is not None:nonces.add(c['nonce'])
+    prior=c['settlement']['sha256']
+   a=json.loads(pinned(closure['visual']['attestation']))
+   if not exact(a,['source','observedPrincipalHash','expectedPrincipalHash','browserId','tabId','url','projectHash','screenshotSha256','beforeGuardSha256','afterGuardSha256','sameHandle','samePage','menuOpen','manualObservation']) or a['source']!='parent-native-b-visual-attestation-v1' or a['observedPrincipalHash']!=contract['publisherHash'] or a['expectedPrincipalHash']!=contract['publisherHash'] or any(a[k]!=context[k] for k in ['browserId','tabId','url','projectHash']) or a['screenshotSha256']!=closure['visual']['screenshot']['sha256'] or a['beforeGuardSha256']!=closure['visual']['beforeGuard']['sha256'] or a['afterGuardSha256']!=closure['visual']['afterGuard']['sha256'] or any(a[k] is not True for k in ['sameHandle','samePage','menuOpen','manualObservation']):fail()
+   self.imported_delta=count;self.approvedBrowserId=context['browserId']
+   return j,claim,charges
   def resume_preparation(self,p):
    origin,prior,approval=self.validate_alignment();self.approvedBrowserId=approval['selectedBrowserId'];self.approvedProfile=approval['selectedProfile'];owner=sha(self.cfg['ownerNonce'].encode());fresh=p=={'aligned105':True}
+   if self.native_successor:
+    if p!={'nativeSuccessor':True}:fail()
+    j,claim,charges=self.validate_native_successor(origin,True)
+    if any(os.path.lexists(x)for x in [self.journal,self.claim,self.stop_path]) or owner in j['holders']:fail()
+    j=copy.deepcopy(j);j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(claim,separators=(',',':')).encode()),'sources':copy.deepcopy(claim['sources'])});j.update(state='ready',lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now'],nativeCurrentVisual=True,futureOrdinaryUi=90-self.imported_delta)
+    j['failures']+=sum(c['outcome']!='VERIFIED' for c in charges);j['publisherAlignment']['readonlyIncidents']=2;j['publisherAlignment']['repairCalls']=6
+    j['holders'].append(owner);j['nativeImported']=[{'spent':c['spent'],'reservationSha256':c['reservation']['sha256'],'settlementSha256':c['settlement']['sha256'],'bookkeptAt':self.cfg['now'],'reservationAt':c['reservationAt'],'providerCallAt':None}for c in charges]
+    self.j=j;save(self.claim,self.identity,True);self.persist();return
    if fresh:
     if record(self.registry)!={'identity':prior,'checkpoint':origin} or any(os.path.lexists(x)for x in [self.journal,self.claim,self.stop_path]) or owner in origin['holders']:fail()
     j=copy.deepcopy(origin);j['connection']['maximum']=19;j['loading']['maximum']=25;j['publisherAlignment']={'maximum':6,'used':0,'settingsVerified':False,'audienceVerified':False,'readonlyIncidents':0,'repairCalls':0,'diagnosticCalls':0};j['publisherStages']=[];j['futureOrdinaryUi']=90
@@ -91,18 +150,24 @@ def alignment_class(base):
    # No fabricated provider timestamp or historical call time is assigned.
    if fresh:j['publisherImported']=[{'source':key,'reservationSha256':self.cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']['shared101']['aligned105']['charges'][key]['reservation']['sha256'],'outcomeSha256':self.cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']['shared101']['aligned105']['charges'][key]['outcome']['sha256'],'settled':True,'bookkeptAt':self.cfg['now'],'providerCallAt':None}for key in ['diagnostic','inventory','binding']]
    self.j=j;save(self.claim,self.identity,fresh);self.persist()
-  def current(self):self.validate_alignment();return super().current()
+  def current(self):
+   old,_,_=self.validate_alignment()
+   if self.native_successor:self.validate_native_successor(old)
+   return super().current()
   def view(self,wait=0):
-   v=super().view(wait);d=self.j['publisherAlignment'];v.update(uiSpent=v['uiSpent']+3,combinedSpent=v['combinedSpent']+3,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile);return v
-  def preparation_complete(self):return self.j.get('publisherAlignment',{}).get('used')==6 and self.j['publisherAlignment']['settingsVerified'] and self.j['publisherAlignment']['audienceVerified']
+   v=super().view(wait);d=self.j['publisherAlignment'];delta=self.imported_delta if self.native_successor else 0;v.update(uiSpent=v['uiSpent']+3+delta,combinedSpent=v['combinedSpent']+3+delta,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3+delta,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile)
+   if self.native_successor:v.update(successorImported=delta,futureUiLimit=90-delta,currentVisualVerified=self.j.get('nativeCurrentVisual') is True)
+   return v
+  def preparation_complete(self):return self.j.get('publisherAlignment',{}).get('used')==6 and self.j['publisherAlignment']['settingsVerified'] and (self.j['publisherAlignment']['audienceVerified'] or self.native_successor and self.j.get('nativeCurrentVisual') is True)
   def future_spent(self):return sum(e['lane']=='ui' and not e['cleanup'] for e in self.j['events'][55:])
-  def future_limit(self):return 90
+  def future_limit(self):return 90-self.imported_delta
   def rate(self,t):
    # Call timestamps are absent from imported sidecars. Bookkeeping time is a
    # conservative rate-limit floor, never represented as provider call time.
    ordinary=super().rate(t);booked=self.j.get('publisherImported',[])
-   if booked and t-booked[0]['bookkeptAt']<60000:
-    times=[self.prior_time]*53+[e['time']for e in self.j['events']]+[booked[0]['bookkeptAt']]*3
+   imported=self.j.get('nativeImported',[])
+   if booked and t-booked[0]['bookkeptAt']<60000 or imported and t-imported[0]['bookkeptAt']<60000:
+    times=[self.prior_time]*53+[e['time']for e in self.j['events']]+[booked[0]['bookkeptAt']]*3+[e['bookkeptAt']for e in imported]
     recent=sorted(x for x in times if t-x<60000);return max(ordinary,0 if len(recent)<10 else recent[-10]+60000-t)
    return ordinary
   def check(self,lane,op,t,terminal=False):
@@ -111,12 +176,12 @@ def alignment_class(base):
     if lane!='ui':fail()
     self.check_loading(op)
    elif not self.preparation_complete() and not op.get('key','').startswith(('C:','I:','J:')):fail()
-   if lane=='ui' and not op.get('key','').startswith(('C:','I:','J:')) and self.counts()[3]+3>=148:fail()
+   if lane=='ui' and not op.get('key','').startswith(('C:','I:','J:')) and self.counts()[3]+3+self.imported_delta>=148:fail()
    if lane=='ui' and not first and not op.get('key','').startswith(('C:','I:','J:')):
     entries=[(stage,m) for stage in self.j['publisherStages']for m in stage['map'] if m['lane']=='ui' and m['descriptor']==op]
-    if len(entries)!=1 or self.future_spent()>=90:fail()
+    if len(entries)!=1 or self.future_spent()>=self.future_limit():fail()
     stage,meta=entries[0]
-    if stage['stage']=='diagnostic' and d['diagnosticCalls']>=20:fail()
+    if stage['stage']=='diagnostic' and d['diagnosticCalls']>=20-self.imported_delta:fail()
     if stage['stage']=='diagnostic' and meta['repairIncident'] is None and d['readonlyIncidents']>=2 and op['preparation'] is True:fail()
     if meta['repairIncident'] is not None:
      used_for=sum(e['operation']['id'] in [x['descriptor']['id']for st in self.j['publisherStages']for x in st['map']if x['repairIncident']==meta['repairIncident']]for e in self.j['events'][55:])
@@ -135,10 +200,11 @@ def alignment_class(base):
    if name=='publisher-stage-ready':
     self.current();self.active(q.get('now'));index=len(self.j['publisherStages']);d=self.j['publisherAlignment']
     if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending']is not None or index>=len(FUTURE) or not exact(q,['op','stage','map','stageCap','now']) or q['stage']!=FUTURE[index][0] or type(q['map'])is not list or not q['map'] or not integer(q['stageCap']) or q['stageCap']<1 or sum(m.get('lane')=='ui'for m in q['map']if type(m)is dict)!=q['stageCap']:fail()
-    used=sum(s['stageCap']for s in self.j['publisherStages']);future_minimum=sum(v for _,v in FUTURE[index+1:]);rollover=sum(v for _,v in FUTURE[:index])-used
+    used=sum(s['stageCap']for s in self.j['publisherStages']);future_minimum=sum(20-self.imported_delta if name=='diagnostic' else v for name,v in FUTURE[index+1:]);rollover=sum(v for _,v in FUTURE[:index])-used
     complete={e['operation']['id']for e in self.j['events'][55:]if e.get('settled')is True and e.get('success')is True}
     prior_mapped={m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']}
-    if q['stageCap']>FUTURE[index][1]+rollover or used+q['stageCap']+future_minimum>90 or self.future_spent()!=used or not prior_mapped<=complete or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
+    if self.native_successor and (index<5 and q['stageCap']<FUTURE[index][1] or index==5 and q['stageCap']>20-self.imported_delta):fail()
+    if q['stageCap']>(20-self.imported_delta if q['stage']=='diagnostic' else FUTURE[index][1])+rollover or used+q['stageCap']+future_minimum>self.future_limit() or self.future_spent()!=used or not prior_mapped<=complete or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
     ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']};seen=set();main_keys=set(self.j['stages']);cleanup_ids={c['descriptor']['id']for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']};cleanup_keys={g['descriptor'](c['descriptor'],c['lane'])for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']if c['lane']=='main'};ui_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='ui'])for st in self.j['publisherStages']for m in st['map']);main_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='main'])for st in self.j['publisherStages']for m in st['map'])
     for m in q['map']:
      if not exact(m,['lane','descriptor','tabId','url','callback','receipt','privacy','cleanup','repairIncident']) or m['lane']not in ['ui','main'] or type(m['descriptor'])is not dict or type(m['tabId'])is not str or not m['tabId'] or type(m['url'])is not str or not m['url'].startswith('https://') or type(m['callback'])is not str or not g['valid_id'](m['callback']) or m['receipt']not in ['SANITIZED_READ','EXACT_WRITE_READBACK'] or m['privacy']!='NO_SECRET_VALUES' or type(m['cleanup'])is not list or m['repairIncident'] is not None and (type(m['repairIncident'])is not int or m['repairIncident']not in [1,2]):fail()
@@ -163,18 +229,18 @@ def alignment_class(base):
     if ui_cleanup>16 or main_cleanup>21:fail()
     self.j['publisherStages'].append({'stage':q['stage'],'stageCap':q['stageCap'],'map':copy.deepcopy(q['map'])})
     for m in q['map']:
-     if m['lane']=='ui' and m['descriptor']['preparation'] is True:self.j['preparationStages'][m['descriptor']['id']]={'operations':[copy.deepcopy(m['descriptor'])],'remainingOrdinaryUi':90-used-q['stageCap']}
+     if m['lane']=='ui' and m['descriptor']['preparation'] is True:self.j['preparationStages'][m['descriptor']['id']]={'operations':[copy.deepcopy(m['descriptor'])],'remainingOrdinaryUi':self.future_limit()-used-q['stageCap']}
      elif m['lane']=='ui':self.j['stageBrowser'].append(copy.deepcopy(m['descriptor']))
      else:self.j['stages'][m['descriptor']['bucket']+':'+m['descriptor']['alias']]=copy.deepcopy(m['descriptor'])
      self.j['recoveryBrowser']+=[copy.deepcopy(c['descriptor'])for c in m['cleanup']if c['lane']=='ui']
-    self.j['futureOrdinaryUi']=90-used-q['stageCap'];self.j['lastAt']=q['now'];self.persist();return self.view()
+    self.j['futureOrdinaryUi']=self.future_limit()-used-q['stageCap'];self.j['lastAt']=q['now'];self.persist();return self.view()
    if name=='settle' and self.j.get('publisherAlignment',{}).get('used')==6 and e.get('lane')=='ui' and e['operation'].get('id','').startswith('future-'):
     self.current();self.now(q.get('now'));e=self.j['events'][-1];matches=[(stage,m)for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='ui' and m['descriptor']==e['operation']]
     if len(matches)!=1 or self.j['pending']!=q.get('id') or e['settled'] is not False:fail()
     stage,meta=matches[0];d=self.j['publisherAlignment'];diagnostic=stage['stage']=='diagnostic';repair=meta['repairIncident'] is not None
     if q.get('success') is False and diagnostic and not repair and e['operation']['preparation'] is True:
      p=q.get('preparationOutcome');fields=['kind','phase','targetVerified','accountVerified','bindingVerified','pureRead','terminal','fieldsRead']
-     if not exact(q,['op','id','success','now','preparationOutcome']) or not exact(p,fields) or p['kind'] not in ['TECHNICAL','NOT_READY'] or p['kind']=='NOT_READY' and p['phase']!='READY' or p['kind']=='TECHNICAL' and p['phase'] not in ['DECODE','PROJECTOR_COMBOS','PROJECTOR_SHAPE','PROJECTOR_ANCESTORS','PROJECTOR_RELATED','POSTCHECK_COMBO'] or any(p[k] is not True for k in ['targetVerified','accountVerified','bindingVerified','pureRead','terminal']) or p['fieldsRead'] is not False or self.j['phase']!='PREP' or self.j['mutated'] or self.j['rpc']['beganAt'] is not None or d['readonlyIncidents']>=2 or d['diagnosticCalls']>=20:fail()
+     if not exact(q,['op','id','success','now','preparationOutcome']) or not exact(p,fields) or p['kind'] not in ['TECHNICAL','NOT_READY'] or p['kind']=='NOT_READY' and p['phase']!='READY' or p['kind']=='TECHNICAL' and p['phase'] not in ['DECODE','PROJECTOR_COMBOS','PROJECTOR_SHAPE','PROJECTOR_ANCESTORS','PROJECTOR_RELATED','POSTCHECK_COMBO'] or any(p[k] is not True for k in ['targetVerified','accountVerified','bindingVerified','pureRead','terminal']) or p['fieldsRead'] is not False or self.j['phase']!='PREP' or self.j['mutated'] or self.j['rpc']['beganAt'] is not None or d['readonlyIncidents']>=2 or d['diagnosticCalls']>=20-self.imported_delta:fail()
      e.update(settled=True,success=False,preparationOutcome=copy.deepcopy(p));self.j.update(pending=None,lastAt=q['now']);d['readonlyIncidents']+=1;d['diagnosticCalls']+=1;self.j['failures']+=1;self.persist();return self.view()
     projection=e['operation']['preparation'] is True and e['operation']['operation'] in ['snapshot','evaluate']
     verified=projection and q.get('success') is True
@@ -185,7 +251,7 @@ def alignment_class(base):
     if diagnostic:
      d=self.j['publisherAlignment'];d['diagnosticCalls']+=1
      if repair:d['repairCalls']+=1
-     if d['diagnosticCalls']>20 or d['repairCalls']>6:fail()
+     if d['diagnosticCalls']>20-self.imported_delta or d['repairCalls']>6:fail()
      self.persist();return self.view()
     return result
    if name=='settle' and e.get('preparationStage') and e.get('lane')=='ui' and e.get('key')=='N:preparation' and e['operation'].get('id','').startswith('publisher105-'):

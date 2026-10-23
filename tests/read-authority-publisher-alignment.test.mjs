@@ -9,6 +9,93 @@ import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
 import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
 import {projection} from '../scripts/read-authority-project-retarget.mjs';
 
+async function nativeSuccessorFixture(finalSpent=128){
+ const s=await alignmentFixture(),{flow}=flowFixture(s,null,{snapshots:{'thin-settings':snapshot,'oauth-audience':JSON.stringify({...JSON.parse(snapshot),accountVerified:false})}});
+ const stopped=await flow.run();assert.equal(stopped.status,'HARD_STOP');assert.equal(s.aligned().events.length,55);
+ const make=(name,value)=>{const path=join(s.home,'native15-'+name+'.json');s.put(path,typeof value==='string'||Buffer.isBuffer(value)?value:compact(value));return {path,sha256:hash(readFileSync(path))};};
+ const old=s.path+'.simple-publisher-alignment',live={journal:old+'.json',claim:old+'-claim.json',stop:old+'-stop.json',registry:join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.simple-rebalanced.json')};
+ const origin=Object.fromEntries(Object.entries(live).map(([k,path])=>[k,make('origin-'+k,readFileSync(path))]));
+ origin.receipt=make('origin-receipt',{source:'synthetic-111-receipt',spent:111,settled:true});origin.audit=make('origin-audit',{source:'synthetic-111-audit',mainSpent:53,uiSpent:58,allSettled:true});
+ const currentBrowserId='current-browser',currentTabId='current-tab',contractPin=make('contract',contract),context=make('context',{source:'native-current-project-context-v1',publisherHash:contract.publisherHash,browserId:currentBrowserId,tabId:currentTabId,url:contract.audienceURL,projectHash:'b'.repeat(64)}),approval=make('approval',{source:'direct-human-connection118-continuation',directHuman:true,approved:true,scope:'CONNECTION118_BOUNDED_NATIVE',startingSpent:118,maximumAdditionalPrimitives:13,operationBudget:296}),validatorSource=make('validator-source','synthetic-reviewed-verifier'),sourceReview=make('source-review',{source:'synthetic-reviewed-source',approved:true}),ci=make('ci',{source:'synthetic-ci',passed:true});
+ const charges=[];let priorOutcomeSha256=origin.journal.sha256;
+ const stages=['diagnostic111','diagnostic111','diagnostic111','audience114','audience114','audience114','native117','discovery118','BIND','OPEN_TABS','CLAIM','GUARD','CAPTURE','GUARD','GUARD','CAPTURE','GUARD','GUARD','CAPTURE','GUARD'];
+ for(let spent=112;spent<=finalSpent;spent++){
+  const n=spent-111,stage=stages[n-1],nonce=n<=6?null:hash('nonce-'+n).slice(0,32),commandSha256=n<=6?null:hash('command-'+n),reservationAt=n>=9?s.time/1000+n:null,outcome=[114,117].includes(spent)?'VERIFICATION_REJECTED':spent===118?'REJECTED':'VERIFIED',reservation=make('reservation-'+n,{source:'synthetic-reservation',spent,stage,...(nonce?{nonce,commandSha256}:{}),priorOutcomeSha256,...(reservationAt?{reserveTime:reservationAt}:{})}),settlement=make('settlement-'+n,{source:'synthetic-settlement',spent,stage,...(nonce?{nonce,commandSha256}:{}),reservationSha256:reservation.sha256,settled:true,pending:null,outcome});
+  charges.push({spent,stage,nonce,commandSha256,priorOutcomeSha256,reservation,settlement,outcome,reservationAt,providerCallAt:null});priorOutcomeSha256=settlement.sha256;
+ }
+ const beforeGuard=make('before-guard',{source:'synthetic-guard',urlMatched:true,ready:true,projectMatched:true}),screenshot=make('screenshot','synthetic-image-bytes'),afterGuard=make('after-guard',{source:'synthetic-guard',urlMatched:true,ready:true,projectMatched:true});
+ const attestation=make('attestation',{source:'parent-native-b-visual-attestation-v1',observedPrincipalHash:contract.publisherHash,expectedPrincipalHash:contract.publisherHash,browserId:currentBrowserId,tabId:currentTabId,url:contract.audienceURL,projectHash:'b'.repeat(64),screenshotSha256:screenshot.sha256,beforeGuardSha256:beforeGuard.sha256,afterGuardSha256:afterGuard.sha256,sameHandle:true,samePage:true,menuOpen:true,manualObservation:true});
+ const faultSource=make('fault-source',{source:'audience114-actual-three-read-structure-closure',originalGlobalRepairCallsUsed:6,originalGlobalRepairCallsRemaining:0}),faultHighwaters={globalRepairCallsUsed:6,globalRepairCallsRemaining:0,readonlyIncidents:2,importedFailedCalls:3};
+ const closure=make('closure',{source:'publisher-native-successor-closure-v1',origin,contract:contractPin,context,approval,validatorSource,sourceReview,ci,faultSource,faultHighwaters,charges,visual:{beforeGuard,screenshot,afterGuard,attestation},finalSpent,mainSpent:53,uiSpent:finalSpent-53,operationBudget:296,pending:null,allSettled:true});
+ alignment(s).nativeSuccessor={closure};s.cfg.resume={nativeSuccessor:true};s.time+=1000;
+ return {s,closure,origin,charges,attestation,live};
+}
+
+test('settled B visual chain imports once into a new PREP successor while original 111 stays false',async()=>{
+ const {s,closure,live,origin}=await nativeSuccessorFixture(),before=Object.fromEntries(Object.entries(live).filter(([k])=>k!=='registry').map(([,path])=>[path,readFileSync(path)])),frozenRegistry=readFileSync(origin.registry.path);let calls=0;
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>{calls++;return closure.sha256;});
+ const view=await owner.withContinuation(cap=>cap.inspect());
+ assert.equal(view.combinedSpent,128);assert.equal(view.mainSpent,53);assert.equal(view.uiSpent,75);assert.equal(view.eventCount,55);assert.equal(view.successorImported,17);assert.equal(view.futureUiLimit,73);assert.equal(view.audienceVerified,false);assert.equal(view.currentVisualVerified,true);assert.equal(view.w0,null);assert.equal(view.pending,null);assert(calls>0);
+ assert.equal(s.aligned().publisherAlignment.audienceVerified,false);assert.equal(view.repairCalls,6);assert.equal(view.readonlyIncidents,2);assert.equal(s.aligned().failures+3,JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json')).failures);assert(readFileSync(origin.registry.path).equals(frozenRegistry));
+ for(const [path,bytes]of Object.entries(before))assert(readFileSync(path).equals(bytes),path);
+});
+
+test('native successor admission rejects A-only, gaps, duplicate nonces, pending settlement and exhausted fault reset before any write',async()=>{
+ const {s,closure,live}=await nativeSuccessorFixture(),original=readFileSync(closure.path),registry=readFileSync(live.registry),base=JSON.parse(original),originalAttestation=readFileSync(base.visual.attestation.path),originalContext=readFileSync(base.context.path),cases=[
+  ['closed menu',v=>{changePin(s,v.visual.attestation,a=>{a.menuOpen=false;});}],
+  ['charge gap',v=>{v.charges[8].spent=121;}],
+  ['duplicate nonce',v=>{v.charges[9].nonce=v.charges[8].nonce;}],
+  ['pending',v=>{v.pending={spent:128};}],
+  ['repair refund',v=>{v.faultHighwaters.globalRepairCallsUsed=0;}],
+  ['wrong current URL',v=>{changePin(s,v.context,c=>{c.url='https://synthetic.invalid/wrong';});changePin(s,v.visual.attestation,a=>{a.url='https://synthetic.invalid/wrong';});}],
+ ];
+ for(const [label,mutate] of cases){
+  changePin(s,closure,mutate);
+  const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+  await assert.rejects(owner.withContinuation(cap=>cap.inspect()),/TRIAL_STOPPED|READ_FAILED/,label);
+  assert.equal(existsSync(s.path+'.simple-publisher-native-successor.json'),false,label);
+  assert(readFileSync(live.registry).equals(registry),label);
+  s.put(base.visual.attestation.path,originalAttestation);s.put(base.context.path,originalContext);
+  s.put(closure.path,original);closure.sha256=hash(original);
+ }
+ const raw=readFileSync(closure.path);s.put(closure.path,Buffer.concat([raw,Buffer.from(' ')]));
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ await assert.rejects(owner.withContinuation(cap=>cap.inspect()),/TRIAL_STOPPED|READ_FAILED/);
+ assert(readFileSync(live.registry).equals(registry));
+ s.put(closure.path,original);s.put(live.journal,compact({source:'rewritten-historical-111'}));
+ const rewritten=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ await assert.rejects(rewritten.withContinuation(cap=>cap.inspect()),/TRIAL_STOPPED|READ_FAILED/);
+ assert.equal(existsSync(s.path+'.simple-publisher-native-successor.json'),false);
+ assert(readFileSync(live.registry).equals(registry));
+});
+
+test('native successor requires the parent proof callback and rejects a false pin before spawn',async()=>{
+ const {s,closure,live}=await nativeSuccessorFixture(),registry=readFileSync(live.registry);
+ assert.throws(()=>holder(s,{resume:{nativeSuccessor:true}}),/TRIAL_STOPPED|READ_FAILED/);
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>('0'.repeat(64)));
+ await assert.rejects(owner.withContinuation(cap=>cap.inspect()),/TRIAL_STOPPED|READ_FAILED/);
+ assert.equal(existsSync(s.path+'.simple-publisher-native-successor.json'),false);
+ assert(readFileSync(live.registry).equals(registry));
+ assert.equal(closure.sha256.length,64);
+});
+
+test('native proof drift closes ordinary continuation before another debit',async()=>{
+ const {s,closure}=await nativeSuccessorFixture();let calls=0;
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>++calls===1?closure.sha256:'0'.repeat(64));
+ await assert.rejects(owner.withContinuation(cap=>cap.inspect()),/TRIAL_STOPPED|READ_FAILED/);
+ assert(calls>=2);assert.equal(JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json')).events.length,55);
+});
+
+test('native endpoint 131 preserves seventy future calls and refuses a second owner',async()=>{
+ const {s,closure,origin}=await nativeSuccessorFixture(131),map=Array.from({length:6},(_,i)=>({lane:'ui',descriptor:{id:`future-native-baseline-${i}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true},tabId:'current-tab',url:'https://synthetic.invalid/settings',callback:`callback-${i}`,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null}));
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ const view=await owner.withContinuation(async cap=>{const admitted=await cap.stagePublisher({stage:'baseline',stageCap:6,map});assert.equal(admitted.futureUiSpent,0);return cap.inspect();});
+ assert.equal(view.combinedSpent,131);assert.equal(view.successorImported,20);assert.equal(view.futureUiLimit,70);assert.equal(view.futureUiSpent,0);assert.equal(view.w0,null);assert.equal(view.pending,null);
+ assert.equal(JSON.parse(readFileSync(origin.journal.path)).publisherAlignment.audienceVerified,false);
+ const second=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ await assert.rejects(second.withContinuation(cap=>cap.inspect()),/TRIAL_STOPPED|READ_FAILED/);
+});
+
 test('approved publisher alignment has its own decision and inert flow constructor',()=>{
  assert.equal(PUBLISHER_ALIGNMENT_DECISION,'5f764b29438b582cdd404823a3a01408579fec7045ac5016971a7394d89337cb');
  assert.equal(typeof createAuthorityPublisherAlignmentFlow,'function');
