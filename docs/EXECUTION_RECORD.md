@@ -4779,3 +4779,23 @@ without removing or changing old tests. Node22 validate72 backend /40 endpoint
 references/cache and diff-check PASS. Source stayed fixed during the final test
 run. Full unit/Worker and complementary Core/owned-PostgreSQL acceptance are not
 claimed locally; the parent owns that final composed-head evidence.
+
+## 2026-10-23 C3 publisher alignment 105 source candidate
+
+The approved continuation imports the stopped102 journal and three separately
+settled provider metadata charges into a new publisher-alignment namespace.
+Its first holder admits six documented browser calls, requires the selected
+browser/profile and two safe publisher projections, and pauses at 111 with no
+trial clock or RPC. Imported sidecars have no provider timestamps; the new
+ledger records only its admission bookkeeping time and preserves their pins.
+
+The future UI96 is a stage budget, not an executable actual map. Every stage
+requires explicit actor, destination, callback, receipt, privacy and cleanup
+metadata with a fixed cap and protected future minimum. Unknown calls, writes
+without readback and cleanup, and RPC without the complete reviewed map remain
+denied. Synthetic source tests and validation are local evidence only. Parent
+review, composed CI/Core and private prestart must pass before any actual
+provider operation. No actual canonical state, Google data, deployment or
+production claim was changed by this source task. Rollback leaves the unused
+namespace inert or reverts only the reviewed source commit; spent entries and
+historical STOP records are never reset.

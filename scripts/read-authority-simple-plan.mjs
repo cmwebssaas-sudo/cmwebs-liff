@@ -9,12 +9,13 @@ export const OWNER_CONNECTION_DECISION='710fc0a4ff12766c997377a73e8d40f3314722b9
 export const PROJECT_RETARGET_DECISION='2deec8acafeb444f258ba2ecdddb2cda65c81db5f1ecba032584348e9479b963';
 export const PROJECT_SHARED_DECISION='c767d9a34c9b1df5940ee19205481f26027f7d5abadc0c9fbd3341e4fa24ff5c';
 export const PROJECT_LAUNCH_DECISION='de8bdd4064ca4bedf4ed5c6917d3ea9d3d8f949814710a1cca446f95ef5de670';
+export const PUBLISHER_ALIGNMENT_DECISION='5f764b29438b582cdd404823a3a01408579fec7045ac5016971a7394d89337cb';
 export const SIMPLE_NATIVE=freeze(["A:original-cloud-backup","A:original-triggers-backup","A:original-properties-backup","D:thin-gcp-link","D:thin-properties-write","D:thin-properties-readback","E:testing-user-write","E:testing-user-readback","E:client-create","E:client-readback","E:oauth-response","F:wrapper-before.original-settings","F:wrapper-before.original-triggers","F:wrapper-before.thin-settings","F:wrapper-before.oauth-audience","F:wrapper-before.oauth-client","F:wrapper-after.original-settings","F:wrapper-after.original-triggers","F:wrapper-after.thin-settings","F:wrapper-after.oauth-audience","F:wrapper-after.oauth-client"]);
 export const SIMPLE_STAGES=STAGED_RESUME_STAGES;
 const fail=()=>{throw Error('SIMPLE_PLAN_UNVERIFIED');};
 export function simpleData(value){
  let left=12000;const active=new Set();const copy=(v,depth)=>{
-  if(--left<0||depth>12)fail();if(v===null||['string','boolean'].includes(typeof v))return v;
+  if(--left<0||depth>20)fail();if(v===null||['string','boolean'].includes(typeof v))return v;
   if(typeof v==='number'){if(!Number.isSafeInteger(v))fail();return v;}
   if(!v||typeof v!=='object'||types.isProxy(v)||active.has(v))fail();active.add(v);
   const ds=Object.getOwnPropertyDescriptors(v),keys=Reflect.ownKeys(ds),array=Array.isArray(v),out=array?[]:{};
@@ -30,9 +31,10 @@ export function simpleFixed(raw,cleanup=false){
  const op=simpleData(raw),key=op.bucket+':'+op.alias,r=SIMPLE_RULES[key]??(cleanup?originalCleanup[key]:null);
  if(!simpleExact(op,['id','bucket','alias','actor','target','operation','units'])||!id(op.id)||!r||r.actor!==op.actor||r.target!==op.target||!r.methods.includes(op.operation)||![1,null].includes(op.units))fail();return op;
 }
-export function simpleBrowser(raw,allowWait=false){
+export function simpleBrowser(raw,allowWait=false,aligned105=false){
  const op=simpleData(raw),r=SIMPLE_RULES[op.key],navigation=['original-settings','original-triggers','thin-settings','thin-triggers','oauth-audience','oauth-client','caller-executions','publisher-executions','caller-oauth'];
- if(!simpleExact(op,['id','key','actor','target','operation','units','preparation'])||!id(op.id)||![1,null].includes(op.units)||typeof op.preparation!=='boolean'||!['inventory','claim','navigate','snapshot','click','fill','submit','read-key-presence',...(allowWait?['wait']:[])].includes(op.operation))fail();
+ if(!simpleExact(op,['id','key','actor','target','operation','units','preparation'])||!id(op.id)||![1,null].includes(op.units)||typeof op.preparation!=='boolean'||!['inventory','claim','navigate','snapshot','click','fill','submit','read-key-presence',...(allowWait?['wait']:[]),...(aligned105?['getBrowser','nameSession','claimTab','evaluate']:[])].includes(op.operation))fail();
+ if(['getBrowser','nameSession','claimTab','evaluate'].includes(op.operation)&&(!aligned105||!['publisher105-','future-'].some(prefix=>op.id.startsWith(prefix))||op.key!=='N:preparation'||op.preparation!==true||op.actor!==(op.target.startsWith('caller-')?'caller':'publisher')||!(op.id.startsWith('publisher105-')?['thin-settings','oauth-audience']:navigation).includes(op.target)))fail();
  if(op.operation==='wait'&&(!allowWait||op.key!=='N:preparation'||op.preparation!==true||!['thin-settings','oauth-audience'].includes(op.target)))fail();
  if(r){if(r.actor!==op.actor||r.target!==op.target||op.preparation||r.methods.every(m=>['GET','snapshot','read-key-presence'].includes(m))&&!['snapshot','read-key-presence'].includes(op.operation))fail();}
  else if(!['N:preparation','N:navigation','N:thin-triggers-before','N:thin-triggers-after'].includes(op.key)||!navigation.includes(op.target)||!['publisher','caller'].includes(op.actor)||op.actor!==(op.target.startsWith('caller-')?'caller':'publisher')||['click','fill','submit'].includes(op.operation)||op.preparation!==(op.key==='N:preparation')||op.key.startsWith('N:thin-')&&(op.target!=='thin-triggers'||op.operation!=='snapshot'))fail();

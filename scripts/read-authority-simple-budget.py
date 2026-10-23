@@ -24,7 +24,7 @@ fail=history.fail;integer=history.integer;digest=history.digest;exact=history.ex
 rawfile=history.rawfile;directory=history.directory;record=history.record
 save_record=history.save_record;synced=history.synced;compact=history.compact;sha=history.sha;day=history.day
 C=history.C;I=history.I
-READ_METHODS=['inventory','claim','navigate','snapshot','read-key-presence','wait']
+READ_METHODS=['inventory','claim','navigate','snapshot','read-key-presence','wait','getBrowser','nameSession','claimTab','evaluate']
 NAVIGATION=['original-settings','original-triggers','thin-settings','thin-triggers','oauth-audience','oauth-client','caller-executions','publisher-executions','caller-oauth']
 def pin(p):
  if not exact(p,['path','sha256']) or type(p['path']) is not str or not Path(p['path']).is_absolute() or not digest(p['sha256']):fail()
@@ -43,6 +43,7 @@ def descriptor(op,lane):
   if not r or op['actor']!=r['actor'] or op['target']!=r['target'] or op['operation'] not in r['methods'] or op['operation'] in READ_METHODS and not key.startswith(('C:','I:','J:')):fail()
  elif lane=='ui':
   if op.get('operation')=='wait' and (op.get('key')!='N:preparation' or op.get('preparation') is not True or op.get('target') not in ['thin-settings','oauth-audience']):fail()
+  if op.get('operation') in ['getBrowser','nameSession','claimTab','evaluate'] and (not op.get('id','').startswith(('publisher105-','future-')) or op.get('key')!='N:preparation' or op.get('preparation') is not True):fail()
   if not exact(op,['id','key','actor','target','operation','units','preparation']) or type(op['preparation']) is not bool or op['operation'] not in READ_METHODS+['click','fill','submit']:fail()
   key=op['key'];r=RULES.get(key)
   if r:
@@ -56,7 +57,7 @@ class Ledger:
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
   self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg;self.rebalanced='readonlyRebalance' in cfg;self.loading='readonlyLoading' in cfg;self.account_load='readonlyAccountLoad' in cfg;self.connection='readonlyConnection' in cfg
-  self.main_ordinary_limit=58 if self.rebalanced else 79;self.main_event_limit=79 if self.connection else 84 if self.rebalanced else 105;self.ui_ordinary_limit=88 if getattr(self,'shared101',False) else 87 if getattr(self,'launch100',False) else 86 if getattr(self,'retarget99',False) else 84 if getattr(self,'owner_connection',False) else 82 if self.connection else 77 if self.rebalanced else 56;self.ui_event_limit=self.ui_ordinary_limit+16
+  self.main_ordinary_limit=58 if self.rebalanced else 79;self.main_event_limit=79 if self.connection else 84 if self.rebalanced else 105;self.ui_ordinary_limit=148 if getattr(self,'aligned105',False) else 88 if getattr(self,'shared101',False) else 87 if getattr(self,'launch100',False) else 86 if getattr(self,'retarget99',False) else 84 if getattr(self,'owner_connection',False) else 82 if self.connection else 77 if self.rebalanced else 56;self.ui_event_limit=self.ui_ordinary_limit+16
   self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg;self.readonly_debug='readonlyDebug' in cfg
   if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity or self.rebalanced and not self.successor or self.loading and not self.rebalanced or self.account_load and not self.loading or self.connection and not self.account_load:fail()
   optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])+(['readonlyRebalance'] if self.rebalanced else [])+(['readonlyLoading'] if self.loading else [])+(['readonlyAccountLoad'] if self.account_load else [])+(['readonlyConnection'] if self.connection else [])
@@ -72,7 +73,7 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-project-shared' if getattr(self,'shared101',False) else '.simple-project-launch' if getattr(self,'launch100',False) else '.simple-project-retarget' if getattr(self,'retarget99',False) else '.simple-inventory-diagnostic' if getattr(self,'inventory97',False) else '.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-publisher-alignment' if getattr(self,'aligned105',False) else '.simple-project-shared' if getattr(self,'shared101',False) else '.simple-project-launch' if getattr(self,'launch100',False) else '.simple-project-retarget' if getattr(self,'retarget99',False) else '.simple-inventory-diagnostic' if getattr(self,'inventory97',False) else '.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.suffix=suffix;self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+('.simple-rebalanced' if self.account_load else suffix)+'.json')
@@ -124,6 +125,7 @@ class Ledger:
   if getattr(self,'retarget99',False):required.update(['read-authority-project-retarget-budget.py','read-authority-project-selector.mjs','read-authority-project-retarget.mjs'])
   if getattr(self,'launch100',False):required.update(['read-authority-project-launch-budget.py','read-authority-launch-state.mjs'])
   if getattr(self,'shared101',False):required.update(['read-authority-project-shared-budget.py','read-authority-retained-browser-bridge.mjs'])
+  if getattr(self,'aligned105',False):required.update(['read-authority-publisher-alignment-budget.py','read-authority-publisher-alignment.mjs'])
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
@@ -488,6 +490,9 @@ def main():
          if 'shared101' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']:
           sspec=importlib.util.spec_from_file_location('project_shared_budget',Path(__file__).with_name('read-authority-project-shared-budget.py'))
           sm=importlib.util.module_from_spec(sspec);sspec.loader.exec_module(sm);implementation=sm.shared_class(implementation)
+          if 'aligned105' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']['shared101']:
+           pspec=importlib.util.spec_from_file_location('publisher_alignment_budget',Path(__file__).with_name('read-authority-publisher-alignment-budget.py'))
+           pm=importlib.util.module_from_spec(pspec);pspec.loader.exec_module(pm);implementation=pm.alignment_class(implementation)
   ledger=implementation(cfg,sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
   for line in sys.stdin.buffer:
    try:
@@ -497,7 +502,8 @@ def main():
     try:ledger.stop()
     except Exception:pass
     print('{"ok":false,"code":"TRIAL_STOPPED"}',flush=True)
- except Exception:print('{"ok":false,"code":"TRIAL_STOPPED"}',flush=True)
+ except Exception:
+  print('{"ok":false,"code":"TRIAL_STOPPED"}',flush=True)
  finally:
   if ledger is not None:ledger.close()
 if __name__=='__main__':main()

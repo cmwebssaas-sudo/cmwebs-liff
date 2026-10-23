@@ -13,7 +13,7 @@ def shared_class(base):
   def prepared_checkpoint(self,j):return j.get('projectShared')=={'maximum':4,'used':4,'accountVerified':True} and j['connection']['stage']=='complete' and j['ownerConnection']['accountVerified']is True
   def validate_shared(self):
    old100,claim100=self.validate_launch();p=self.cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']['shared101'];names=['journal','claim','registry','stop','result','audit','crossCellProof','sharedObjectProof','review']
-   if not exact(p,['decisionHash','approval','origin']) or p['decisionHash']!=DECISION or not exact(p['origin'],names):fail()
+   if not exact(p,['decisionHash','approval','origin']+(['aligned105']if getattr(self,'aligned105',False)else[])) or p['decisionHash']!=DECISION or not exact(p['origin'],names):fail()
    for value in [p['approval']]+list(p['origin'].values()):
     if not exact(value,['path','sha256']):fail()
    raw={k:pin(v)for k,v in p['origin'].items()};j=json.loads(raw['journal']);claim=record(Path(p['origin']['claim']['path']));a=json.loads(pin(p['approval']))
