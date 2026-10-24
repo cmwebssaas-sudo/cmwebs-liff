@@ -1,9 +1,11 @@
 import {successorFixture,diagnosticOps,hash,compact} from './readonly-successor.mjs';
 import {createAuthoritySimpleControl} from '../../../scripts/read-authority-simple-control.mjs';
 import {readFileSync} from 'node:fs';import {join,resolve} from 'node:path';
+import os from 'node:os';
+import {syncBuiltinESMExports} from 'node:module';
 export {session,good,debit,settle,prepare,hash,compact,ui} from './readonly-successor.mjs';
 export const rebalanceDecision='bdab855eb6e95f7ba838e4514bd9bbc8b59db0ee64755d12950706b5ac0e051a';
-export function holder(s,extra={},assertStage=()=>{},verifyNativeSuccessor){const{now,ownerNonce,...config}=s.cfg,home=process.env.HOME;process.env.HOME=s.home;try{return createAuthoritySimpleControl({config:{...config,...extra},guard:()=>{},assertStage,now:()=>s.time,pause:async ms=>{s.time+=ms;},...(verifyNativeSuccessor?{verifyNativeSuccessor}:{})});}finally{process.env.HOME=home;}}
+export function holder(s,extra={},assertStage=()=>{},verifyNativeSuccessor){const{now,ownerNonce,...config}=s.cfg,original=os.homedir;os.homedir=()=>s.home;syncBuiltinESMExports();try{return createAuthoritySimpleControl({config:{...config,...extra},guard:()=>{},assertStage,now:()=>s.time,pause:async ms=>{s.time+=ms;},...(verifyNativeSuccessor?{verifyNativeSuccessor}:{})});}finally{os.homedir=original;syncBuiltinESMExports();}}
 export const preparationOps=()=>[['inventory','original-settings','inventory'],['claim','original-settings','claim'],['thin-navigate','thin-settings','navigate'],['thin-snapshot','thin-settings','snapshot'],['audience-navigate','oauth-audience','navigate'],['audience-snapshot','oauth-audience','snapshot']].map(([id,target,operation])=>({id:'rebalance79-'+id,key:'N:preparation',actor:'publisher',target,operation,units:1,preparation:true}));
 export async function rebalancedFixture(){
  const s=await successorFixture(),a=holder(s);await a.withContinuation(async cap=>{await cap.prepareReadonly({stage:'original-settings-guard-76',operations:diagnosticOps(),remainingOrdinaryUi:29});for(const op of diagnosticOps())await cap.browserRead(()=>true,op);await cap.pausePreparation();});

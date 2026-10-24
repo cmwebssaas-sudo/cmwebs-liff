@@ -2,13 +2,406 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {PUBLISHER_ALIGNMENT_DECISION,createAuthorityPublisherAlignmentFlow} from '../scripts/read-authority-publisher-alignment.mjs';
 import {alignmentFixture,holder,alignment,changePin} from './fixtures/read-authority/publisher-alignment.mjs';
-import {readFileSync,existsSync,unlinkSync} from 'node:fs';
+import {readFileSync,existsSync,unlinkSync,mkdirSync,readdirSync,symlinkSync,writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
 import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
 import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
 import {projection} from '../scripts/read-authority-project-retarget.mjs';
 import {SIMPLE_RULES,SIMPLE_NATIVE,simpleBrowser,simpleFixed} from '../scripts/read-authority-simple-plan.mjs';
+import os from 'node:os';
+import {syncBuiltinESMExports} from 'node:module';
+
+function withTestHomedir(home,callback){
+ const before=Object.fromEntries(['HOME','home','CODEX_HOME'].map(key=>[key,{present:Object.hasOwn(process.env,key),value:process.env[key]}]));
+ const original=os.homedir;os.homedir=()=>home;syncBuiltinESMExports();
+ try{return callback();}finally{
+  os.homedir=original;syncBuiltinESMExports();
+  for(const [key,entry] of Object.entries(before)){assert.equal(Object.hasOwn(process.env,key),entry.present);assert.equal(process.env[key],entry.value);}
+ }
+}
+
+async function nativePredebitFixture(actualBaselineIds=false){
+ const standardEnv=Object.fromEntries(['HOME','home','CODEX_HOME'].map(key=>[key,{present:Object.hasOwn(process.env,key),value:process.env[key]}]));
+ const {s,closure}=await nativeSuccessorFixture();
+ const rows=[
+  ['settings-goto','N:preparation','original-settings','navigate',true],
+  ['settings-project','N:preparation','original-settings','evaluate',true],
+  ['cloud','A:original-cloud-backup','original-settings','snapshot',false],
+  ['properties','A:original-properties-backup','original-settings','read-key-presence',false],
+  ['triggers-goto','N:navigation','original-triggers','navigate',false],
+  ['triggers-read','A:original-triggers-backup','original-triggers','snapshot',false],
+  ['ground-triggers-goto','N:preparation','original-triggers','navigate',true],
+  ['ground-triggers-project','N:preparation','original-triggers','evaluate',true],
+  ['ground-settings-return','N:preparation','original-settings','navigate',true]
+ ].map(([id,key,target,operation,preparation],index)=>({id:'future-baseline-'+(actualBaselineIds?index+1:id),key,actor:'publisher',target,operation,units:1,preparation}));
+ const first=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ const project={id:'future-baseline-original-project',bucket:'A',alias:'original-project',actor:'publisher',target:'original-project',operation:'GET',units:1};
+ const projectCleanup={id:'cleanup-original-project-prelude',key:'I:read-original-project',actor:'publisher',target:'original-project',operation:'snapshot',units:1,preparation:false};
+ const projectMap={lane:'main',descriptor:project,tabId:'current-tab',url:'https://synthetic.invalid/original-project',callback:'publisherOriginalProjectRead',receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[{lane:'ui',descriptor:projectCleanup,target:'original-project',tabId:'current-tab',url:'https://synthetic.invalid/original-project',callback:'publisherOriginalProjectPrelude',receipt:'SANITIZED_READ'}],repairIncident:null};
+ await assert.rejects(first.withContinuation(async cap=>{await cap.stagePublisher({stage:'baseline',stageCap:9,map:[...rows.map(row=>({...futureMeta(row),tabId:'current-tab'})),projectMap]});throw Error('synthetic-before-debit');}),/TRIAL_STOPPED/);
+ const old=s.path+'.simple-publisher-native-successor',registry=join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.simple-rebalanced.json');
+ assert(registry.startsWith(s.home+'/'));assert(s.path.startsWith(s.home+'/'));
+ const origin=Object.fromEntries(Object.entries({journal:old+'.json',claim:old+'-claim.json',stop:old+'-stop.json',registry}).map(([key,path])=>[key,{path,sha256:hash(readFileSync(path))}]));
+ const stopped=JSON.parse(readFileSync(origin.journal.path));assert.equal(stopped.events.length,55);assert.equal(stopped.lifecycle,'HARD_STOP');
+ const proofPath=join(s.home,'task72-predebit-proof.json'),proof={source:'native128-predebit-local-timeout-proof-v2',journal:origin.journal,claim:origin.claim,registry:origin.registry,state:'stopped',lifecycle:'HARD_STOP',phase:'PREP',eventCount:55,newEventsAfterImported55:0,counts:{main:53,ui:75,combined:128,limit:296},pending:null,w0:null,mutated:false,rpc:{beganAt:null,complete:false},nativeImports:17,lockOpenHolders:0,providerCallsThisAdmission:0,retainedCUAReferenceLost:true,restartAttemptedAfterHardStop:false};
+ s.put(proofPath,compact(proof));const proofPin={path:proofPath,sha256:hash(readFileSync(proofPath))};
+ const recoverySpec={proof:proofPin,origin};let rejectedCallbacks=0;
+ await assert.rejects(holder(s,{resume:{nativeSuccessor:true,predebitRecovery:recoverySpec}},()=>{},()=>closure.sha256).withContinuation(()=>{rejectedCallbacks++;}),/TRIAL_STOPPED/);
+ assert.equal(rejectedCallbacks,0);assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256);
+ // A test-only copy replaces exactly four fixed pins. The production module
+ // and every function body stay byte-for-byte unchanged outside those literals.
+ const src=resolve('scripts/read-authority-publisher-alignment-budget.py'),body=readFileSync(src,'utf8'),testDir=join(s.home,'task72-module');mkdirSync(testDir,{mode:0o700});
+ for(const name of readdirSync(resolve('scripts')).filter(name=>name.startsWith('read-authority-'))){
+  if(name==='read-authority-publisher-alignment-budget.py'||name==='read-authority-simple-control.mjs')continue;
+  symlinkSync(resolve('scripts',name),join(testDir,name));
+ }
+ const pinned={journal:'91e30a199fbf6660dfd0b659ec4b265fee45bb8d360ea26a68ba1e9846f5491c',claim:'2dc247c18221e958e860a3ec57acfd72342935af936e87be38f14648b5727827',registry:'adf06b0cf233169233621a07b58955c5b7de3505b0791d563c4901df2786e7a6',proof:'e28e43b7045f5f976f4624108c010cb7089cc7f5a75c0c4f046834508d8e46ae'};
+ let adapted=body;for(const [key,oldHash] of Object.entries(pinned)){assert.equal(adapted.split(oldHash).length-1,1);adapted=adapted.replaceAll(oldHash,key==='proof'?proofPin.sha256:origin[key].sha256);}
+ const patched=join(testDir,'read-authority-publisher-alignment-budget.py');writeFileSync(patched,adapted,{mode:0o600});
+ const controlPath=join(testDir,'read-authority-simple-control.mjs');writeFileSync(controlPath,readFileSync(resolve('scripts/read-authority-simple-control.mjs')),{mode:0o600});
+ const config=structuredClone(s.cfg);config.sources=config.sources.map(pin=>pin.path===src?{path:patched,sha256:hash(readFileSync(patched))}:pin.path===resolve('scripts/read-authority-simple-control.mjs')?{path:controlPath,sha256:hash(readFileSync(controlPath))}:pin);
+ const publicSource=config.sources.find(pin=>pin.path===controlPath);assert(publicSource);
+ config.resume={nativeSuccessor:true,predebitRecovery:recoverySpec};
+ const {createAuthoritySimpleControl}=await import('file://'+controlPath);
+ const create=cfg=>withTestHomedir(s.home,()=>createAuthoritySimpleControl({config:((({now,ownerNonce,...rest})=>rest))(cfg),guard:()=>{},assertStage:()=>{},now:()=>s.time,pause:async ms=>{s.time+=ms;},verifyNativeSuccessor:()=>closure.sha256}));
+ const owner=create(config);
+ return {standardEnv,s,closure,origin,stopped,config,create,owner,registry,publicSource,projectMap};
+}
+
+const bootstrapRows=()=>[
+ ['browser','getBrowser','publisherBootstrapGetBrowser'],
+ ['claim','claimTab','publisherBootstrapClaimTab'],
+ ['identity','evaluate','publisherBootstrapEvaluate']
+].map(([name,operation,callback])=>({lane:'ui',descriptor:{id:'future-bootstrap-'+name,key:'N:preparation',actor:'publisher',target:'oauth-audience',operation,units:1,preparation:true},tabId:'current-tab',url:contract.audienceURL,callback,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null}));
+const bootstrapResult=index=>({source:'publisher-bootstrap-context-v1',kind:['BROWSER_BOUND','TAB_CLAIMED','AUDIENCE_CONTEXT'][index],browserId:'current-browser',...(index>0?{tabId:'current-tab'}:{}),...(index===2?{url:contract.audienceURL,projectHash:'b'.repeat(64),readyState:'COMPLETE',headingMatched:true,identityPending:true}:{}),fieldsRead:false});
+
+const nativeAKeys=['original-editor','original-versions','original-deployments','original-v1-content','original-container-acl'];
+const nativeAMap=(aliases,projectMap)=>aliases.map(alias=>{
+ const key=alias.startsWith('publisher-')?'P:':'A:';
+ const rule=SIMPLE_RULES[key+alias],descriptor={id:'future-'+alias,bucket:key[0],alias,actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1};
+ return {lane:'main',descriptor,tabId:projectMap.tabId,url:'https://synthetic.invalid/'+alias,callback:'publisherRead'+alias.replaceAll(/(^|-)([a-z])/g,(_,sep,ch)=>ch.toUpperCase()),receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null};
+});
+const nativeAProof=(phase,map,publicSource,projectMap,config,ownerHash,receipt=null)=>({source:'publisher-a-readonly-readiness-v1',phase,sourceSha256:publicSource.sha256,mapSha256:hash(compact(map)),epoch:config.epoch,binding:config.binding,ownerHash,originalProjectDescriptorSha256:hash(compact(projectMap.descriptor)),projectContextHash:'b'.repeat(64),publisherPrincipalSha256:contract.publisherHash,...(receipt?{projectReceiptSha256:hash(compact(receipt)),originalScriptIdSha256:receipt.originalScriptIdSha256,cloudProjectSlugSha256:receipt.cloudProjectSlugSha256,containerParentIdSha256:receipt.containerParentIdSha256}:{}),targetProofs:map.map(row=>({id:row.descriptor.id,urlSha256:hash(row.url),sameOriginalProject:true,readbackVerified:true,...(row.descriptor.alias==='original-container-acl'?{aclParentIdSha256:receipt.containerParentIdSha256}:{})}))});
+async function prepareNativeARegistration(cap,s){
+ const diagnostic=bootstrapRows();await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:diagnostic});
+ for(const [index,row] of diagnostic.entries())await cap.browserRead(()=>bootstrapResult(index),row.descriptor);
+ const baseline=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).publisherStages[0].map;
+ for(const index of [0,1,6,7,8]){
+  const row=baseline[index];await cap.browserRead(()=>index===0?{source:'publisher-baseline-navigation-v1',status:'AWAITING_NEXT_PROJECTION',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,fieldsRead:false}:index===1?{source:'publisher-baseline-identity-v1',status:'VERIFIED',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,projectHash:'b'.repeat(64),principalHash:contract.publisherHash,readyState:'COMPLETE',fieldsRead:false}:JSON.parse(snapshot),row.descriptor);
+ }
+ return baseline;
+}
+const nativeAInitialRequest=(s,config,publicSource,projectMap)=>{
+ const ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+ const map=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap);
+ return {phase:'initial',map,proof:nativeAProof('initial',map,publicSource,projectMap,config,ownerHash)};
+};
+const nativeAProjectReceipt=publicSource=>({source:'publisher-a-project-receipt-v1',status:'VERIFIED',sourceSha256:publicSource.sha256,projectContextHash:'b'.repeat(64),publisherPrincipalSha256:contract.publisherHash,originalScriptIdSha256:'1'.repeat(64),cloudProjectSlugSha256:'2'.repeat(64),containerParentIdSha256:'3'.repeat(64),projectReadbackSha256:'4'.repeat(64),fieldsRead:false});
+const nativeRegisteredAPlan=(s,baseline,projectMap)=>{
+ const journal=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ const plan=completeNativePlan(),native=plan.browserOperations.slice(0,21),navigation=plan.browserOperations.slice(21,65),recovery=plan.browserOperations.slice(71);
+ plan.operations=plan.operations.map(row=>journal.stages[row.bucket+':'+row.alias]??row);
+ for(let index=0;index<native.length;index++){const mapped=baseline.find(meta=>meta.lane==='ui'&&meta.descriptor.key===native[index].key);if(mapped)native[index]=mapped.descriptor;}
+ navigation[0]=baseline[4].descriptor;
+ plan.browserOperations=[...native,...navigation,...recovery.map(row=>row.key==='I:read-original-project'?projectMap.cleanup[0].descriptor:row)];
+ return plan;
+};
+async function completeNativeAReadiness(cap,s,config,publicSource,projectMap,onRead,omitAlias=null){
+ const baseline=await prepareNativeARegistration(cap,s),request=nativeAInitialRequest(s,config,publicSource,projectMap);
+ await cap.registerPublisherAReads(request);
+ await cap.browserRead(()=>{onRead();return JSON.parse(snapshot);},baseline[2].descriptor);
+ for(const row of request.map)await cap.externalRead(()=>{onRead();return {source:'synthetic-credential'};},row.descriptor);
+ const receipt=nativeAProjectReceipt(publicSource);
+ await cap.externalRead(()=>{onRead();return receipt;},projectMap.descriptor);
+ const rest=nativeAMap(nativeAKeys,projectMap),ownerHash=request.proof.ownerHash;
+ await cap.registerPublisherAReads({phase:'remaining',map:rest,proof:nativeAProof('remaining',rest,publicSource,projectMap,config,ownerHash,receipt)});
+ for(const row of rest)if(row.descriptor.alias!==omitAlias)await cap.externalRead(()=>{onRead();return {source:'synthetic-read'};},row.descriptor);
+ for(const index of [3,4,5])await cap.browserRead(()=>{onRead();return JSON.parse(snapshot);},baseline[index].descriptor);
+ return baseline;
+}
+
+test('native preplan registers P2 and A6 in phases, with real charged receipts and no UI credit',async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0,step='start';
+ await owner.withContinuation(async cap=>{
+  step='diagnostic and baseline PREP';const baseline=await prepareNativeARegistration(cap,s);
+  const before=await cap.inspect();assert.equal(before.combinedSpent,136);assert.equal(before.phase,'PREP');assert.equal(before.w0,null);assert.equal(before.planReady,false);
+  const ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+  const pmap=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap);
+  step='first registration';const first=await cap.registerPublisherAReads({phase:'initial',map:pmap,proof:nativeAProof('initial',pmap,publicSource,projectMap,config,ownerHash)});
+  assert.equal(first.combinedSpent,136);assert.equal(first.mainSpent,53);assert.equal(first.uiSpent,83);assert.equal(first.planReady,false);
+  step='first A UI';await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
+  step='P refresh';const p=await cap.externalRead(()=>{callbacks++;return {source:'synthetic-refresh'};},pmap[0].descriptor);assert.equal(p.source,'synthetic-refresh');
+  step='P userinfo';await cap.externalRead(()=>{callbacks++;return {source:'synthetic-userinfo'};},pmap[1].descriptor);
+  const projectReceipt=nativeAProjectReceipt(publicSource);
+  step='A project';await cap.externalRead(()=>{callbacks++;return projectReceipt;},projectMap.descriptor);
+  const rest=nativeAMap(nativeAKeys,projectMap),proof=nativeAProof('remaining',rest,publicSource,projectMap,config,ownerHash,projectReceipt);
+  step='second registration';const second=await cap.registerPublisherAReads({phase:'remaining',map:rest,proof});assert.equal(second.planReady,false);
+  step='remaining A reads';for(const row of rest)await cap.externalRead(()=>{callbacks++;return {source:'synthetic-read'};},row.descriptor);
+  step='remaining baseline UI';for(const index of [3,4,5])await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[index].descriptor);
+  const done=await cap.inspect();assert.equal(done.mainSpent,61);assert.equal(done.uiSpent,87);assert.equal(done.combinedSpent,148);assert.equal(done.planReady,false);assert.equal(done.futureUiLimit,73);assert.equal(done.futureUiSpent,12);assert.equal(done.pending,null);
+  const plan=nativeRegisteredAPlan(s,baseline,projectMap);
+  step='complete plan';const planned=await cap.completePlan(plan);assert.equal(planned.planReady,true);assert.equal(planned.combinedSpent,148);
+ }).catch(error=>{const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));error.message+=' @'+step+' '+JSON.stringify({eventCount:j.events.length,pending:j.pending,phase:j.phase,w0:j.w0,last:j.events.at(-1)?.operation?.id,readiness:j.publisherAReadiness?.length,completed:j.completed?.slice(-3)});throw error;});
+ const journal=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,12);assert.equal(journal.plan!==null,true);assert.deepEqual(journal.publisherStages[0].map.at(-1),projectMap);assert.equal(journal.publisherStages[0].stageCap,9);assert.equal(journal.mutated,false);
+});
+
+for(const [kind,alter] of [
+ ['wrong phase',request=>({...request,phase:'remaining'})],
+ ['unpinned source',request=>({...request,proof:{...request.proof,sourceSha256:'f'.repeat(64)}})],
+ ['wrong existing pin',request=>({...request,proof:{...request.proof,sourceSha256:request.otherPinnedSource.sha256}})],
+ ['wrong owner',request=>({...request,proof:{...request.proof,ownerHash:'0'.repeat(64)}})],
+ ['wrong epoch',request=>({...request,proof:{...request.proof,epoch:{...request.proof.epoch,foreignCheckpoint:true}}})],
+ ['wrong binding',request=>({...request,proof:{...request.proof,binding:'0'.repeat(64)}})],
+ ['detached target URL',request=>{const map=structuredClone(request.map);map[0].url='https://synthetic.invalid/detached';return {...request,map,proof:{...request.proof,mapSha256:hash(compact(map))}};}],
+ ['false target mapping',request=>{const proof=structuredClone(request.proof);proof.targetProofs[0].sameOriginalProject=false;return {...request,proof};}],
+ ['caller actor',request=>{const map=structuredClone(request.map);map[0].descriptor.actor='caller';return {...request,map,proof:{...request.proof,mapSha256:hash(compact(map))}};}],
+ ['wrong method',request=>{const map=structuredClone(request.map);map[0].descriptor.operation='DELETE';return {...request,map,proof:{...request.proof,mapSha256:hash(compact(map))}};}],
+ ['duplicate original project',request=>{const map=[...request.map,structuredClone(request.originalProject)];return {...request,map,proof:{...request.proof,mapSha256:hash(compact(map))}};}]
+])test(`native main-only readiness rejects ${kind} before any new callback`,async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  await prepareNativeARegistration(cap,s);
+  const ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+  const map=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap);
+  const request={phase:'initial',map,proof:nativeAProof('initial',map,publicSource,projectMap,config,ownerHash),originalProject:projectMap,otherPinnedSource:config.sources.find(pin=>pin.path===resolve('scripts/read-authority-simple-plan.mjs'))};
+  assert(request.otherPinnedSource);const bad=alter(request);delete bad.originalProject;delete bad.otherPinnedSource;
+  await cap.registerPublisherAReads(bad);callbacks++;
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,0);assert.equal(j.events.length,63);assert.equal(j.publisherStages.length,2);assert.equal(j.publisherAReadiness,undefined);assert.equal(j.plan,null);assert.equal(j.pending,null);
+});
+
+test('native readiness replay is refused with the initial map still intact',async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  await prepareNativeARegistration(cap,s);
+  const ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+  const map=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap),request={phase:'initial',map,proof:nativeAProof('initial',map,publicSource,projectMap,config,ownerHash)};
+  await cap.registerPublisherAReads(request);
+  await cap.registerPublisherAReads(request);callbacks++;
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,0);assert.equal(j.events.length,63);assert.equal(j.publisherAReadiness.length,1);assert.equal(j.plan,null);assert.equal(j.w0,null);
+});
+
+test('phase two refuses an ACL URL proof detached from the charged project parent receipt',async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  const baseline=await prepareNativeARegistration(cap,s),ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+  const pmap=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap);
+  await cap.registerPublisherAReads({phase:'initial',map:pmap,proof:nativeAProof('initial',pmap,publicSource,projectMap,config,ownerHash)});
+  await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
+  await cap.externalRead(()=>{callbacks++;return {source:'synthetic-refresh'};},pmap[0].descriptor);
+  await cap.externalRead(()=>{callbacks++;return {source:'synthetic-userinfo'};},pmap[1].descriptor);
+  const receipt={source:'publisher-a-project-receipt-v1',status:'VERIFIED',sourceSha256:publicSource.sha256,projectContextHash:'b'.repeat(64),publisherPrincipalSha256:contract.publisherHash,originalScriptIdSha256:'1'.repeat(64),cloudProjectSlugSha256:'2'.repeat(64),containerParentIdSha256:'3'.repeat(64),projectReadbackSha256:'4'.repeat(64),fieldsRead:false};
+  await cap.externalRead(()=>{callbacks++;return receipt;},projectMap.descriptor);
+  const map=nativeAMap(nativeAKeys,projectMap),proof=nativeAProof('remaining',map,publicSource,projectMap,config,ownerHash,receipt);
+  proof.targetProofs.at(-1).aclParentIdSha256='0'.repeat(64);
+  await cap.registerPublisherAReads({phase:'remaining',map,proof});callbacks++;
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,4);assert.equal(j.events.length,67);assert.equal(j.events.at(-1).key,'A:original-project');assert.equal(j.events.at(-1).settled,true);assert.equal(j.events.at(-1).success,true);assert.equal(j.publisherAReadiness.length,1);assert.equal(j.stages['A:original-container-acl'],undefined);assert.equal(j.pending,null);
+});
+
+for(const [kind,step,expectedEvents] of [
+ ['first A UI before readiness','unregistered',63],
+ ['P refresh before first A UI','registered',63],
+ ['userinfo before refresh','trial',64],
+ ['A project before P2','trial',64],
+ ['PREP pause after readiness','registered',63],
+ ['thin before final A receipt','thin-partial',74],
+ ['H before full plan','registered',63]
+])test(`native phased readiness refuses ${kind} without a new callback`,async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  const baseline=step==='thin-partial'
+   ?await completeNativeAReadiness(cap,s,config,publicSource,projectMap,()=>{callbacks++;},'original-container-acl')
+   :await prepareNativeARegistration(cap,s);
+  const request=step==='thin-partial'?null:nativeAInitialRequest(s,config,publicSource,projectMap);
+  if(step!=='unregistered'&&step!=='thin-partial')await cap.registerPublisherAReads(request);
+  if(step==='trial')await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
+  if(kind==='first A UI before readiness')await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
+  if(kind==='P refresh before first A UI')await cap.externalRead(()=>{callbacks++;},request.map[0].descriptor);
+  if(kind==='userinfo before refresh')await cap.externalRead(()=>{callbacks++;},request.map[1].descriptor);
+  if(kind==='A project before P2')await cap.externalRead(()=>{callbacks++;return nativeAProjectReceipt(publicSource);},projectMap.descriptor);
+  if(kind==='PREP pause after readiness')await cap.pausePreparation();
+  if(kind==='thin before final A receipt'){
+   const checkpoint=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+   const mapped=checkpoint.publisherStages.flatMap(stage=>stage.map.map(row=>row.descriptor.id));
+   const settled=new Set(checkpoint.events.filter(event=>event.settled===true&&event.success===true).map(event=>event.operation.id));
+   assert.equal(checkpoint.publisherAReadiness.length,2);assert.equal(checkpoint.events.length,74);
+   assert(mapped.every(id=>settled.has(id)));assert.equal(checkpoint.events.slice(55).filter(event=>event.lane==='ui'&&!event.cleanup).length,12);
+   assert.equal(checkpoint.completed.includes('A:original-container-acl'),false);
+   const map=Array.from({length:21},(_,index)=>({...futureMeta({id:`future-thin-premature-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false}),tabId:'current-tab'}));
+   await cap.stagePublisher({stage:'thin',stageCap:21,map});
+  }
+  if(kind==='H before full plan'){
+   const rule=SIMPLE_RULES['H:wrapper-compatibility-rpc'];
+   const h={id:'future-h-before-plan',bucket:'H',alias:'wrapper-compatibility-rpc',actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1};
+   assert.deepEqual(simpleFixed(h),h);
+   await cap.dispatchCompatibility({operation:h,credentialExpiresAt:s.time+600000},()=>{callbacks++;});
+  }
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(j.events.length,expectedEvents);assert.equal(callbacks,step==='thin-partial'?11:step==='trial'?1:0);assert.equal(j.plan,null);assert.equal(j.pending,null);assert.equal(j.publisherStages.length,2);
+ assert.equal(j.publisherAReadiness?.length,step==='unregistered'?undefined:step==='thin-partial'?2:1);
+});
+
+test('malformed charged A project receipt cannot open remaining A registration',async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  const baseline=await prepareNativeARegistration(cap,s),request=nativeAInitialRequest(s,config,publicSource,projectMap);
+  await cap.registerPublisherAReads(request);
+  await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
+  for(const row of request.map)await cap.externalRead(()=>{callbacks++;return {source:'synthetic-credential'};},row.descriptor);
+  await cap.externalRead(()=>{callbacks++;return {...nativeAProjectReceipt(publicSource),containerParentIdSha256:'not-a-digest'};},projectMap.descriptor);
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,4);assert.equal(j.events.length,67);assert.equal(j.events.at(-1).key,'A:original-project');assert.equal(j.events.at(-1).projectReceipt,undefined);assert.equal(j.publisherAReadiness.length,1);assert.equal(j.stages['A:original-container-acl'],undefined);
+});
+
+test('a new failed A UI debit stops before any P or remaining A registration',async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  const baseline=await prepareNativeARegistration(cap,s),request=nativeAInitialRequest(s,config,publicSource,projectMap);
+  await cap.registerPublisherAReads(request);
+  await cap.browserRead(()=>{callbacks++;throw Error('synthetic-first-a-failure');},baseline[2].descriptor);
+  await cap.registerPublisherAReads({phase:'remaining',map:nativeAMap(nativeAKeys,projectMap),proof:{}});
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,1);assert.equal(j.events.length,64);assert.equal(j.events.at(-1).success,false);assert.equal(j.publisherAReadiness.length,1);assert.equal(j.completed.includes('P:publisher-refresh'),false);assert.equal(j.plan,null);
+});
+
+for(const [kind,change] of [
+ ['omitted registered A',plan=>{plan.operations=plan.operations.filter(row=>!(row.bucket==='A'&&row.alias==='original-container-acl'));}],
+ ['relabeled registered P',plan=>{const row=plan.operations.find(row=>row.bucket==='P'&&row.alias==='publisher-refresh');row.id='future-renamed-publisher-refresh';}]
+])test(`full native plan rejects ${kind} without an H callback`,async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  const baseline=await completeNativeAReadiness(cap,s,config,publicSource,projectMap,()=>{callbacks++;});
+  const plan=nativeRegisteredAPlan(s,baseline,projectMap);change(plan);
+  await cap.completePlan(plan);
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,12);assert.equal(j.events.length,75);assert.equal(j.plan,null);assert.equal(j.pending,null);assert.equal(j.publisherAReadiness.length,2);assert.equal(j.stages['A:original-container-acl'].id,'future-original-container-acl');
+});
+
+for(const [kind,change] of [
+ ['pending',j=>{j.pending=j.events.at(-1).operation.id;}],
+ ['new failed event',j=>{j.events.at(-1).success=false;}]
+])test(`forged ${kind} checkpoint cannot register native P2`,async()=>{
+ const {s,config,owner,publicSource,projectMap,registry}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  await prepareNativeARegistration(cap,s);
+  const path=s.path+'.simple-publisher-native-predebit-recovery.json',journal=JSON.parse(readFileSync(path));change(journal);s.put(path,compact(journal));
+  const record=JSON.parse(readFileSync(registry)),value={...record.value,checkpoint:journal};s.put(registry,compact({value,sha256:hash(compact(value))}));
+  await cap.registerPublisherAReads(nativeAInitialRequest(s,config,publicSource,projectMap));callbacks++;
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,0);assert.equal(j.events.length,63);assert.equal(j.publisherAReadiness,undefined);assert.equal(j.plan,null);
+});
+
+test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through the real controller',async()=>{
+ const {standardEnv,s,origin,stopped,config,create,owner,registry}=await nativePredebitFixture();
+ s.time+=1000;let callbacks=0;
+ await owner.withContinuation(async cap=>{const view=await cap.inspect();assert.equal(view.combinedSpent,128);assert.equal(view.mainSpent,53);assert.equal(view.uiSpent,75);assert.equal(view.eventCount,55);assert.equal(view.pending,null);assert.equal(view.w0,null);assert.equal(view.failures,stopped.failures);await cap.pausePreparation();});
+ assert.equal(callbacks,0);const active=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.deepEqual(active.events,stopped.events);assert.deepEqual(active.nativeImported,stopped.nativeImported);assert.deepEqual(active.publisherImported,stopped.publisherImported);assert.equal(active.failures,stopped.failures);assert.equal(active.publisherStages[0].stageCap,9);
+ assert.equal(active.lifecycle,'CLEAN_PAUSE');assert.equal(JSON.parse(readFileSync(origin.journal.path)).lifecycle,'HARD_STOP');
+ assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256);assert.equal(hash(readFileSync(origin.claim.path)),origin.claim.sha256);assert.equal(hash(readFileSync(origin.stop.path)),origin.stop.sha256);
+ const receipt=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery-transition.json'));assert.equal(receipt.status,'PREPARED');assert.deepEqual(receipt.origin,origin);
+ const handoff=owner.preparationHandoff();s.time+=1000;const nextConfig={...config,resume:{...config.resume,...handoff}};
+ const recoveryBase=s.path+'.simple-publisher-native-predebit-recovery',claimPath=recoveryBase+'-claim.json',transitionPath=recoveryBase+'-transition.json';
+ for(const [label,path,damage] of [
+  ['missing archive',receipt.archive.journal.path,()=>unlinkSync(receipt.archive.journal.path)],
+  ['corrupt archive',receipt.archive.stop.path,()=>writeFileSync(receipt.archive.stop.path,'{}')],
+  ['target claim hash',transitionPath,()=>writeFileSync(transitionPath,compact({...receipt,targetClaimSha256:'0'.repeat(64)}))],
+  ['target journal hash',transitionPath,()=>writeFileSync(transitionPath,compact({...receipt,targetJournalSha256:'0'.repeat(64)}))],
+  ['target owner',transitionPath,()=>writeFileSync(transitionPath,compact({...receipt,ownerHash:'0'.repeat(64)}))]
+ ]){
+  const before=readFileSync(path),oldClaim=readFileSync(claimPath),oldRegistry=readFileSync(registry);let entered=0;
+  try{
+   damage();
+   await assert.rejects(create(nextConfig).withContinuation(()=>{entered++;}),/TRIAL_STOPPED/,label);
+   assert.equal(entered,0,label);assert.deepEqual(readFileSync(claimPath),oldClaim,label);assert.deepEqual(readFileSync(registry),oldRegistry,label);
+  }finally{writeFileSync(path,before,{mode:0o600});}
+ }
+ const next=create(nextConfig);
+ const diagnostic=bootstrapRows();
+ await next.withContinuation(async cap=>{
+  const view=await cap.inspect();assert.equal(view.combinedSpent,128);assert.equal(view.eventCount,55);assert.equal(view.pending,null);
+  const registered=await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:diagnostic});assert.equal(registered.futureUiSpent,0);
+  for(const [index,row] of diagnostic.entries())await cap.browserRead(()=>bootstrapResult(index),row.descriptor);
+  const after=await cap.inspect();assert.equal(after.combinedSpent,131);assert.equal(after.uiSpent,78);assert.equal(after.eventCount,58);assert.equal(after.futureUiLimit,73);assert.equal(after.futureUiSpent,3);assert.equal(after.readonlyIncidents,2);assert.equal(after.repairCalls,6);assert.equal(after.diagnosticCalls,3);assert.equal(after.bootstrapIdentity,'PENDING');
+  await cap.pausePreparation();
+ });
+ const bootstrap=JSON.parse(readFileSync(recoveryBase+'.json'));assert.equal(bootstrap.publisherStages[0].stageCap,9);assert.equal(bootstrap.publisherStages[1].stageCap,3);assert.equal(bootstrap.futureOrdinaryUi,61);assert.equal(bootstrap.bootstrapIdentity,'PENDING');assert.deepEqual(bootstrap.events.slice(55).map(e=>e.operation.id),diagnostic.map(row=>row.descriptor.id));
+ const bootstrapHandoff=next.preparationHandoff();s.time+=1000;
+ const afterBootstrap=create({...config,resume:{...config.resume,...bootstrapHandoff}});
+ await afterBootstrap.withContinuation(async cap=>{
+  const view=await cap.inspect();assert.equal(view.combinedSpent,131);assert.equal(view.eventCount,58);assert.equal(view.futureUiSpent,3);assert.equal(view.bootstrapIdentity,'PENDING');
+  const baseline=bootstrap.publisherStages[0].map;
+  await cap.browserRead(()=>({source:'publisher-baseline-navigation-v1',status:'AWAITING_NEXT_PROJECTION',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,fieldsRead:false}),baseline[0].descriptor);
+  const beforeIdentity=await cap.inspect();assert.equal(beforeIdentity.bootstrapIdentity,'PENDING');assert.equal(beforeIdentity.combinedSpent,132);
+  await cap.browserRead(()=>({source:'publisher-baseline-identity-v1',status:'VERIFIED',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,projectHash:'b'.repeat(64),principalHash:contract.publisherHash,readyState:'COMPLETE',fieldsRead:false}),baseline[1].descriptor);
+  const grounded=await cap.inspect();assert.equal(grounded.bootstrapIdentity,'VERIFIED');assert.equal(grounded.combinedSpent,133);assert.equal(grounded.uiSpent,80);assert.equal(grounded.futureUiSpent,5);await cap.pausePreparation();
+ });
+ const grounded=JSON.parse(readFileSync(recoveryBase+'.json'));assert.equal(grounded.bootstrapIdentity,'VERIFIED');assert.equal(grounded.futureOrdinaryUi,61);assert.deepEqual(grounded.events.slice(58).map(e=>e.operation.id),bootstrap.publisherStages[0].map.slice(0,2).map(row=>row.descriptor.id));
+ const groundedHandoff=afterBootstrap.preparationHandoff();s.time+=1000;
+ const resumed=create({...config,resume:{...config.resume,...groundedHandoff}});
+ await resumed.withContinuation(async cap=>{const view=await cap.inspect();assert.equal(view.combinedSpent,133);assert.equal(view.bootstrapIdentity,'VERIFIED');await cap.pausePreparation();});
+ const incompleteHandoff=resumed.preparationHandoff();s.time+=1000;let prematureCalls=0;
+ await assert.rejects(create({...config,resume:{...config.resume,...incompleteHandoff}}).withContinuation(async cap=>{
+  await cap.stagePublisher({stage:'thin',stageCap:1,map:[futureMeta({id:'future-premature-thin',key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true})]});prematureCalls++;
+ }),/TRIAL_STOPPED/);assert.equal(prematureCalls,0);
+ assert.equal(JSON.parse(readFileSync(origin.journal.path)).lifecycle,'HARD_STOP');
+ const replay=create(config);
+ await assert.rejects(replay.withContinuation(()=>{callbacks++;}),/TRIAL_STOPPED/);assert.equal(callbacks,0);
+ for(const [key,entry] of Object.entries(standardEnv)){assert.equal(Object.hasOwn(process.env,key),entry.present);assert.equal(process.env[key],entry.value);}
+});
+
+test('predebit bootstrap refuses baseline spending and reordered diagnostics before callbacks',async()=>{
+ for(const kind of ['baseline-first','diagnostic-reordered','diagnostic-duplicate-map']){
+  const {s,owner,origin}=await nativePredebitFixture(),diagnostic=bootstrapRows();let callbacks=0;
+  s.time+=1000;
+  await assert.rejects(owner.withContinuation(async cap=>{
+   const before=await cap.inspect();assert.equal(before.combinedSpent,128);assert.equal(before.eventCount,55);
+   if(kind==='baseline-first')await cap.browserRead(()=>{callbacks++;return {synthetic:true};},{id:'future-baseline-settings-goto',key:'N:preparation',actor:'publisher',target:'original-settings',operation:'navigate',units:1,preparation:true});
+   else if(kind==='diagnostic-reordered'){
+    await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:diagnostic});
+    await cap.browserRead(()=>{callbacks++;return {synthetic:true};},diagnostic[1].descriptor);
+   }else await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:[diagnostic[0],diagnostic[0],diagnostic[2]]});
+  }),/TRIAL_STOPPED/,kind);
+  assert.equal(callbacks,0,kind);
+  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+  assert.equal(j.events.length,55,kind);assert.equal(j.publisherStages[0].stageCap,9,kind);assert.equal(j.publisherStages.length,kind==='diagnostic-reordered'?2:1,kind);
+  assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256,kind);
+ }
+});
+
+test('context is not identity; ambiguous context and Settings principal stop with their debits',async()=>{
+ for(const kind of ['context-only','wrong-context','wrong-principal']){
+  const {s,owner,origin}=await nativePredebitFixture(),diagnostic=bootstrapRows();let forbiddenCalls=0;s.time+=1000;
+  await assert.rejects(owner.withContinuation(async cap=>{
+   await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:diagnostic});
+   for(const [index,row] of diagnostic.entries())await cap.browserRead(()=>index===2&&kind==='wrong-context'?{...bootstrapResult(index),projectHash:'0'.repeat(64)}:bootstrapResult(index),row.descriptor);
+   const baseline=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).publisherStages[0].map;
+   if(kind==='context-only')await cap.externalRead(()=>{forbiddenCalls++;return {synthetic:true};},baseline[2].descriptor);
+   else {
+    await cap.browserRead(()=>({source:'publisher-baseline-navigation-v1',status:'AWAITING_NEXT_PROJECTION',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,fieldsRead:false}),baseline[0].descriptor);
+    await cap.browserRead(()=>({source:'publisher-baseline-identity-v1',status:'VERIFIED',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,projectHash:'b'.repeat(64),principalHash:'0'.repeat(64),readyState:'COMPLETE',fieldsRead:false}),baseline[1].descriptor);
+   }
+  }),/TRIAL_STOPPED/,kind);
+  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+  assert.equal(forbiddenCalls,0,kind);assert.equal(j.state,'stopped',kind);assert.equal(j.bootstrapIdentity,'PENDING',kind);assert.equal(j.events.length,kind==='wrong-principal'?60:58,kind);
+  assert.equal(j.publisherAlignment.readonlyIncidents,2,kind);assert.equal(j.publisherAlignment.repairCalls,6,kind);
+  assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256,kind);
+  if(kind==='context-only')assert.equal(j.pending,null,kind);
+  else {assert.equal(j.events.at(-1).settled,false,kind);assert.equal(j.pending,j.events.at(-1).operation.id,kind);}
+ }
+});
 
 async function nativeSuccessorFixture(finalSpent=128){
  const s=await alignmentFixture(),{flow}=flowFixture(s,null,{snapshots:{'thin-settings':snapshot,'oauth-audience':JSON.stringify({...JSON.parse(snapshot),accountVerified:false})}});
@@ -121,7 +514,7 @@ async function runNativeForwardJourney(unknownH=false){
   await spendUi(cap,[...afterUi,plan.trigger('after')]);await spendMain(cap,after);
   await stage(cap,'terminal',[plan.terminal],[]);await spendUi(cap,[plan.terminal]);
   phase='finish';const done=await cap.finishCompatibility();assert.equal(done.rpc.complete,true);assert.equal(done.pending,null);assert.equal(done.w0,w0);assert.equal(done.chargedUpperBoundMs,360000);
- });if(unknownH)assert.fail('unknown H must stop its ordinary holder');}catch(error){if(!unknownH)assert.fail(`${phase}: ${error.message}`);assert.match(error.message,/TRIAL_STOPPED/);}
+ });if(unknownH)assert.fail('unknown H must stop its ordinary holder');}catch(error){if(!unknownH){const failed=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.fail(`${phase}: ${error.message}; events=${failed.events.length}; pending=${failed.pending}; last=${JSON.stringify(failed.events.at(-1))}`);}assert.match(error.message,/TRIAL_STOPPED/);}
  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
  if(unknownH){
   assert.equal(calls.filter(id=>id==='future-main-H-wrapper-compatibility-rpc').length,1);assert.equal(calls.includes('duplicate-H'),false);assert.equal(calls.filter(id=>id.startsWith('future-main-T-')).length,3);

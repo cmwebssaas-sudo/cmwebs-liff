@@ -78,12 +78,12 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-publisher-native-successor' if getattr(self,'native_successor',False) else '.simple-publisher-alignment' if getattr(self,'aligned105',False) else '.simple-project-shared' if getattr(self,'shared101',False) else '.simple-project-launch' if getattr(self,'launch100',False) else '.simple-project-retarget' if getattr(self,'retarget99',False) else '.simple-inventory-diagnostic' if getattr(self,'inventory97',False) else '.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  suffix='.simple-publisher-native-predebit-recovery' if getattr(self,'predebit_recovery',False) else '.simple-publisher-native-successor' if getattr(self,'native_successor',False) else '.simple-publisher-alignment' if getattr(self,'aligned105',False) else '.simple-project-shared' if getattr(self,'shared101',False) else '.simple-project-launch' if getattr(self,'launch100',False) else '.simple-project-retarget' if getattr(self,'retarget99',False) else '.simple-inventory-diagnostic' if getattr(self,'inventory97',False) else '.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
   self.suffix=suffix;self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
   self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+('.simple-rebalanced' if self.account_load else suffix)+'.json')
   self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']+optional};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
-  if self.continuity and resume is not None:
+  if self.continuity and resume is not None and not cleanup:
    self.resume_preparation(resume);return
   if cleanup:
    if self.continuity:
@@ -429,7 +429,7 @@ class Ledger:
    e={'lane':q['lane'],'key':key,'operation':q['operation'],'time':q['now'],'outcome':'UNKNOWN','cleanup':cleanup,'settled':False,'success':None};
    if self.continuity and preparing:e['preparationStage']=next(name for name,p in self.j['preparationStages'].items() if q['operation'] in p['operations'])
    self.j['events'].append(e);self.j['pending']=q['operation']['id'];self.j['lastAt']=q['now']
-   if q['operation']['operation'] not in READ_METHODS+['GET'] and not cleanup:self.j['mutated']=True
+   if q['operation']['operation'] not in READ_METHODS+['GET'] and not cleanup and not (getattr(self,'predebit_recovery',False) and key=='P:publisher-refresh'):self.j['mutated']=True
    if key=='H:wrapper-compatibility-rpc':self.j['chargedUpperBoundMs']=360000;self.j['rpc']['beganAt']=q['now']
    self.persist()
    if q['lane']=='main' and key.startswith(('C:','I:')):self.original_debit(key,q['now'])

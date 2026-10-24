@@ -4345,3 +4345,91 @@ the immutable push SHA as fallback. This keeps source-identity checks aligned
 with the selected source on both supported event types. Local YAML parsing,
 ref/event assertions, validation and diff checks are configuration checks;
 reviewed source must still receive a complete CI run before acceptance.
+
+## 2026-10-24 C3 zero-debit native PREP recovery source
+
+The predebit recovery tests use an owned temporary fixture and the real
+controller, inherited lock and Python ledger. A stopped 55-event PREP holder
+with a registered nine-row baseline admits one separate recovery segment only
+after exact origin/proof checks. The test verifies 128 spent once, unchanged
+event, failure, imported-bookkeeping and STOP evidence, then closes a genuine
+clean pause and resumes its new segment without a callback. The production
+fixed hashes reject the synthetic fixture; a test-only module copy adapts
+exactly four constants to synthetic hashes while leaving all function bodies
+unchanged. Separate transaction tests interrupt after each archive, initial
+target snapshot, receipt, claim, journal and registry phase and reject a second
+scope. Real-controller handoff negatives corrupt an archive or receipt target
+hash/owner and assert no new claim, registry write, or callback. New event, pending
+IO, trial clock, RPC, mutation, altered stage and registry evidence are denied.
+
+The retained short-cell driver has a separate synthetic test for a wait spanning
+multiple cells, one callback, lost-owner refusal and sanitized error reporting.
+These tests do not run CUA, reattach a browser, spend any actual metadata unit,
+or establish the remaining stage map. No Apps Script function applies because
+no `.gs`, API route or Schema changed.
+
+## 2026-10-24 C3 predebit bootstrap and deferred Settings identity gate
+
+The public predebit recovery branch alone accepts the exact three-row
+`getBrowser → claimTab → evaluate` diagnostic map after the unchanged nine-row
+baseline registration and before any baseline debit. The third diagnostic
+evaluation proves only the current Audience URL, project, readiness and heading;
+the journal remains `bootstrapIdentity: PENDING`. The only next ordinary calls
+are the already mapped original-Settings goto, which must return
+`AWAITING_NEXT_PROJECTION` with no field read, and its Settings grounding
+evaluation. The latter must return the current exact principal, project, URL
+and retained handle before the journal becomes `VERIFIED` and the remaining
+baseline rows can proceed. A context result alone cannot release an A row.
+
+The real controller/Python-ledger synthetic fixture checks 128→131 after three
+charged diagnostic events, 133 after the two Settings preparation events,
+UI 75→78→80, unchanged incident/repair highwaters, no W0/RPC, and genuine
+pause/resume at both identity states. It also checks baseline-before-bootstrap,
+reordered/duplicate diagnostics and context-only A refusal before callback;
+wrong current context or principal leaves the debit and pending evidence in
+HARD_STOP. Registration reserves nine baseline calls and the conditional
+21 thin + 17 OAuth + 21 freshness + 2 terminal = 61 future minimum; spending
+the diagnostic three does not reduce that minimum again. The full map, actual
+callback/handle, complete cleanup and later A/H/RPC fit remain unproved. No
+Apps Script function applies because no `.gs`, API route or Schema changed.
+
+## 2026-10-24 C3 native preplan publisher P and original A registration
+
+The predebit recovery branch has a dedicated `registerPublisherAReads` capability
+that admits only two source-pinned main-read phases. After diagnostic three and
+the first five settled baseline PREP rows, phase `initial` adds the exact two P
+descriptors while preserving the already registered original-project A row.
+The first A UI read starts W0; P refresh and userinfo, then the original-project
+GET, consume ordinary main units. Its successfully settled, typed sanitized
+project receipt binds phase `remaining` to the original script, Cloud slug and
+container parent hashes. That second phase admits only the five remaining A
+GETs, with the ACL target hash matching the charged project receipt. The
+private adapter must verify actual URLs and callback mapping against its
+separately pinned callback graph before submitting these public proofs; the
+shared `sourceSha256` is the existing pinned public simple-control protocol
+anchor in both phases and the charged project receipt;
+initial P2 target attestation is deterministic mapping, with provider readback
+only on the later charged call. An in-progress PREP
+registration cannot pause; a later thin stage requires all P2/A6 calls and
+baseline UI calls to have succeeded. Generic preplan stage and RPC gates stay
+closed.
+
+The real-controller/Python synthetic fixture uses the actual immutable baseline
+ID shape `future-baseline-1` through `-9` and derives the two Settings identity
+rows from registered descriptors. It proves phase ordering, byte-identical
+original-project map, real charged settlement, receipt-to-ACL binding, exact
+main 61/UI 87/combined 148, plan null until `completePlan`, and successful
+full-plan reconciliation. Negative cases refuse malformed maps, source drift,
+replay and detached ACL evidence before an uncharged callback. These tests do
+not establish actual provider readback, private adapter binding, full composed
+CI or deployment. No Apps Script function applies because no `.gs`, API route
+or Schema changed.
+
+The independent Task80 review fix binds `sourceSha256` to the unique pinned
+public `read-authority-simple-control.mjs` sibling source in both readiness
+phases and the charged project receipt. A different source already present in
+the fixed inventory is rejected. Focused real-controller tests also refuse
+identity/proof drift, early P/A and later-stage attempts, a malformed project
+receipt, forged pending or failed synthetic checkpoints, and omitted or
+relabelled registered descriptors in the full plan. Private callback graph
+pinning and actual provider readbacks remain separate owner work.
