@@ -159,7 +159,7 @@ test('actual owner exposes the reserved original C2 path without adding C into t
 });
 
 test('rejected mutation callbacks remain UNKNOWN failures even with undefined null false or zero reasons',async()=>{
- for(const reason of [undefined,null,false,0]){const s=controlFixture(),row=ui(1,{key:'D:thin-gcp-link',target:'thin-settings',operation:'submit',preparation:false});await assert.rejects(s.control.withContinuation(async cap=>{await cap.completePlan({operations:fixed(),browserOperations:[row]});for(const po of fixed().filter(o=>o.bucket==='P'))await cap.externalRead(()=>{},po);await cap.browserRead(()=>Promise.reject(reason),row);}),/TRIAL_STOPPED/);const e=s.journal().events.at(-1);assert.equal(e.success,false);assert.equal(e.outcome,'UNKNOWN');assert.equal(s.journal().state,'stopped');}
+ for(const reason of [undefined,null,false,0]){const s=controlFixture(),row=ui(1,{key:'D:thin-gcp-link',target:'thin-settings',operation:'click',preparation:false});await assert.rejects(s.control.withContinuation(async cap=>{await cap.completePlan({operations:fixed(),browserOperations:[row]});for(const po of fixed().filter(o=>o.bucket==='P'))await cap.externalRead(()=>{},po);await cap.browserRead(()=>Promise.reject(reason),row);}),/TRIAL_STOPPED/);const e=s.journal().events.at(-1);assert.equal(e.success,false);assert.equal(e.outcome,'UNKNOWN');assert.equal(s.journal().state,'stopped');}
 });
 
 test('incomplete or malformed RPC replies cannot run ordinary postchecks before terminal verification',async()=>{

@@ -4811,3 +4811,12 @@ The publisher alignment controller previously rejected its first `plan-ready` re
 The controller view now exposes the inherited `trial_map_ready()` result as `trialMapReady`. This reports staged readiness without setting or bypassing `planReady`; a synthetic stage with mapped main and UI recovery proves the distinction before a full plan. Later publisher stages must match already declared main, UI and recovery descriptors, and extra preparation reads must fit remaining reserved UI capacity. The existing stage caps and historical charges are unchanged.
 
 This is a local source and synthetic regression correction only. No provider action, actual canonical journal write, trial clock, RPC, Apps Script route, schema, Production deployment or acceptance is claimed. Review, exact-source CI, private source packaging and separate actual admission gates remain open. Rollback is a reviewed revert of this source repair before use; retain every historical STOP and charge.
+
+The follow-up source repair requires an exact admitted publisher stage for each
+ordinary main debit, including a staged write's already validated independent
+cleanup metadata. This closes the post-plan gap without requiring a provider
+call before plan registration. The fixed UI policy now rejects undeclared
+write methods in both JS and Python parsers; readonly projections remain
+available. Local synthetic regression tests and validation are source evidence
+only. The unconditional H gate and later conditional terminal-stage sequencing
+remain for the separate forward-journey review; no actual operation was run.

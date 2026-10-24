@@ -8,7 +8,7 @@ import {join} from 'node:path';
 import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
 import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
 import {projection} from '../scripts/read-authority-project-retarget.mjs';
-import {SIMPLE_RULES,SIMPLE_NATIVE} from '../scripts/read-authority-simple-plan.mjs';
+import {SIMPLE_RULES,SIMPLE_NATIVE,simpleBrowser} from '../scripts/read-authority-simple-plan.mjs';
 
 async function nativeSuccessorFixture(finalSpent=128){
  const s=await alignmentFixture(),{flow}=flowFixture(s,null,{snapshots:{'thin-settings':snapshot,'oauth-audience':JSON.stringify({...JSON.parse(snapshot),accountVerified:false})}});
@@ -33,10 +33,39 @@ async function nativeSuccessorFixture(finalSpent=128){
 }
 
 const fullFixedPlan=()=>Object.entries(SIMPLE_RULES).map(([key,rule])=>({id:'native-plan-'+key.replace(':','.'),bucket:key[0],alias:key.slice(2),actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1}));
-const nativePlanRows=()=>SIMPLE_NATIVE.map((key,index)=>{const rule=SIMPLE_RULES[key],writing=rule.methods.some(method=>['click','fill'].includes(method));return {id:`future-native-${index}`,key,actor:rule.actor,target:rule.target,operation:writing?'submit':'snapshot',units:1,preparation:false};});
-const recoveryPlanRows=()=>Object.entries(SIMPLE_RULES).filter(([key])=>key.startsWith('I:')||key.startsWith('J:')).slice(0,16).map(([key,rule],index)=>({id:`native-recovery-${index}`,key,actor:rule.actor,target:rule.target,operation:rule.methods.every(method=>['GET','snapshot','read-key-presence'].includes(method))?'snapshot':'submit',units:1,preparation:false}));
-const completeNativePlan=()=>({operations:fullFixedPlan().map(row=>row.bucket==='P'&&row.alias==='publisher-userinfo'?{...row,id:'future-publisher-userinfo'}:row),browserOperations:[...nativePlanRows(),...Array.from({length:50},(_,index)=>({id:`future-navigation-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false})),...recoveryPlanRows()]});
+const nativePlanRows=()=>SIMPLE_NATIVE.map((key,index)=>{const rule=SIMPLE_RULES[key],writing=rule.methods.some(method=>['click','fill'].includes(method));return {id:`future-native-${index}`,key,actor:rule.actor,target:rule.target,operation:writing?rule.methods[0]:'snapshot',units:1,preparation:false};});
+const recoveryPlanRows=()=>Object.entries(SIMPLE_RULES).filter(([key,rule])=>(key.startsWith('I:')||key.startsWith('J:'))&&!rule.methods.some(method=>['POST','PUT','PATCH','DELETE'].includes(method))).map(([key,rule],index)=>({id:`native-recovery-${index}`,key,actor:rule.actor,target:rule.target,operation:rule.methods.some(method=>['click','fill'].includes(method))?rule.methods[0]:'snapshot',units:1,preparation:false}));
+const completeNativePlan=()=>({operations:fullFixedPlan().map(row=>['P:publisher-refresh','P:publisher-userinfo','B:fixture-import'].includes(row.bucket+':'+row.alias)?{...row,id:'future-'+row.alias}:row),browserOperations:[...nativePlanRows(),...Array.from({length:50},(_,index)=>({id:`future-navigation-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false})),...recoveryPlanRows()]});
 const futureMeta=(descriptor,cleanup=[])=>({lane:'ui',descriptor,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:descriptor.id,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup,repairIncident:null});
+
+test('native write UI methods obey their declared rules in both parsers',()=>{
+ const keys=['D:thin-gcp-link','D:thin-properties-write','E:client-create','E:oauth-response'];
+ const rows=keys.map((key,index)=>({id:`future-method-${index}`,key,actor:SIMPLE_RULES[key].actor,target:SIMPLE_RULES[key].target,operation:'submit',units:1,preparation:false}));
+ for(const row of rows){assert.throws(()=>simpleBrowser(row,false,true),/SIMPLE_PLAN_UNVERIFIED/);for(const method of SIMPLE_RULES[row.key].methods)assert.deepEqual(simpleBrowser({...row,operation:method},false,true).operation,method);}
+ const readonly={id:'future-read-projection',key:'D:thin-properties-readback',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false};
+ assert.equal(simpleBrowser(readonly,false,true).operation,'snapshot');
+ const code=`import runpy,json\nf=runpy.run_path('scripts/read-authority-simple-budget.py')['descriptor']\nrows=json.loads(${JSON.stringify(JSON.stringify([...rows,...rows.flatMap(row=>SIMPLE_RULES[row.key].methods.map(method=>({...row,operation:method})),readonly)]))})\nout=[]\nfor row in rows:\n try:f(row,'ui');out.append(True)\n except Exception as error:out.append(False if str(error)=='TRIAL_STOPPED' else str(error))\nprint(json.dumps(out))`;
+ const result=spawnSync('python3',['-c',code],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);const parsed=JSON.parse(result.stdout);assert.deepEqual(parsed.slice(0,rows.length),rows.map(()=>false));assert.deepEqual(parsed.slice(rows.length),parsed.slice(rows.length).map(()=>true));
+});
+
+test('full native plan requires an admitted exact publisher main stage before each debit',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),plan=completeNativePlan(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ const main=key=>plan.operations.find(row=>row.bucket+':'+row.alias===key),refresh=main('P:publisher-refresh'),userinfo=main('P:publisher-userinfo'),write=main('B:fixture-import');let calls=0;
+ await assert.rejects(owner.withContinuation(async cap=>{await cap.completePlan(plan);await cap.externalRead(()=>{calls++;},refresh);}),/TRIAL_STOPPED/);
+ let j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.equal(calls,0);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);
+ const next=await nativeSuccessorFixture(),second=holder(next.s,{resume:{nativeSuccessor:true}},()=>{},()=>next.closure.sha256);let stagedW0,stagedMain;
+ await assert.rejects(second.withContinuation(async cap=>{
+  await cap.completePlan(plan);
+  const cleanup=main('I:remove-reader');
+  const map=[...plan.browserOperations.slice(21,27).map(row=>futureMeta(row)),{...futureMeta(refresh,[{lane:'main',descriptor:cleanup,target:cleanup.target,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:cleanup.id,receipt:'EXACT_WRITE_READBACK'}]),lane:'main',receipt:'EXACT_WRITE_READBACK'}, {...futureMeta(userinfo),lane:'main'}];
+  await cap.stagePublisher({stage:'baseline',stageCap:6,map});
+  assert.equal(await cap.externalRead(()=>{calls++;return 'SYNTHETIC';},refresh),'SYNTHETIC');
+  assert.equal(await cap.externalRead(()=>{calls++;return 'SYNTHETIC';},userinfo),'SYNTHETIC');
+  const before=await cap.inspect();stagedW0=before.w0;stagedMain=before.mainSpent;
+  await cap.externalRead(()=>{calls++;},write);
+ }),/TRIAL_STOPPED/);
+ j=JSON.parse(readFileSync(next.s.path+'.simple-publisher-native-successor.json'));assert.equal(calls,2);assert.equal(j.events.length,57);assert.equal(j.pending,null);assert(j.w0>0);assert.equal(j.w0,stagedW0);assert.equal(j.events.filter(event=>event.lane==='main').length,2);assert.equal(stagedMain,55);
+});
 
 test('first complete native publisher plan registers from the settled 128 bootstrap',async()=>{
  const {s,closure,origin}=await nativeSuccessorFixture(),old=readFileSync(origin.journal.path);

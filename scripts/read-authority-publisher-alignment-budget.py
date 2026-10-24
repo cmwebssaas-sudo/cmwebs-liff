@@ -176,6 +176,9 @@ def alignment_class(base):
     if lane!='ui':fail()
     self.check_loading(op)
    elif not self.preparation_complete() and not op.get('key','').startswith(('C:','I:','J:')):fail()
+   if lane=='main' and op.get('bucket') not in ['C','I','J']:
+    entries=[m for stage in self.j['publisherStages'] for m in stage['map'] if m['lane']=='main' and m['descriptor']==op]
+    if len(entries)!=1:fail()
    if lane=='ui' and not op.get('key','').startswith(('C:','I:','J:')) and self.counts()[3]+3+self.imported_delta>=148:fail()
    if lane=='ui' and not first and not op.get('key','').startswith(('C:','I:','J:')):
     entries=[(stage,m) for stage in self.j['publisherStages']for m in stage['map'] if m['lane']=='ui' and m['descriptor']==op]

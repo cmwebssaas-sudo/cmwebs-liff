@@ -2768,3 +2768,12 @@ Focused source tests use synthetic evidence in `tests/read-authority-publisher-a
 | Rejection | Missing native alias, duplicate registration, unmapped later stage and premature RPC are denied without new trial debit. |
 
 The RED and GREEN source tests use `tests/read-authority-publisher-alignment.test.mjs` and local synthetic records only. This is controller correctness evidence, not actual provider, Core, production or release acceptance. No Apps Script function applies because no `.gs`, route or schema changes were made.
+
+The follow-up regression checks that each ordinary main debit has exactly one
+admitted publisher-stage descriptor. A synthetic native successor refuses an
+unstaged P call before callback or debit, accepts an exact staged P call with
+validated write cleanup, and refuses a later unstaged B write without another
+debit. JS and Python UI parsers reject write methods outside the fixed alias
+rule while accepting declared click/fill and readonly snapshot projection.
+Legacy local fixture rows use those declared methods. These remain synthetic
+source tests; no actual provider or canonical journal was exercised.
