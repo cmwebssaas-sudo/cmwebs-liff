@@ -419,15 +419,23 @@ function getLandlordPropertiesInitByLineUid_(
           );
         });
 
-    const allRoomViews = [];
+    const roomSummary = {
+      room_count: 0,
+      vacant_count: 0,
+      occupied_count: 0,
+      maintenance_count: 0
+    };
 
     propertyViews.forEach(
       function (property) {
-        property.rooms.forEach(
-          function (room) {
-            allRoomViews.push(room);
-          }
-        );
+        roomSummary.room_count +=
+          property.summary.room_count;
+        roomSummary.vacant_count +=
+          property.summary.vacant_count;
+        roomSummary.occupied_count +=
+          property.summary.occupied_count;
+        roomSummary.maintenance_count +=
+          property.summary.maintenance_count;
       }
     );
 
@@ -507,45 +515,13 @@ function getLandlordPropertiesInitByLineUid_(
               }
             ).length,
           room_count:
-            allRoomViews.filter(
-              function (room) {
-                return room.account_status ===
-                  'active';
-              }
-            ).length,
+            roomSummary.room_count,
           vacant_room_count:
-            allRoomViews.filter(
-              function (room) {
-                return (
-                  room.account_status ===
-                    'active' &&
-                  room.effective_status ===
-                    'vacant'
-                );
-              }
-            ).length,
+            roomSummary.vacant_count,
           occupied_room_count:
-            allRoomViews.filter(
-              function (room) {
-                return (
-                  room.account_status ===
-                    'active' &&
-                  room.effective_status ===
-                    'occupied'
-                );
-              }
-            ).length,
+            roomSummary.occupied_count,
           maintenance_room_count:
-            allRoomViews.filter(
-              function (room) {
-                return (
-                  room.account_status ===
-                    'active' &&
-                  room.effective_status ===
-                    'maintenance'
-                );
-              }
-            ).length
+            roomSummary.maintenance_count
         },
         property_types:
           propertyRoomPropertyTypeOptions_(),
@@ -2551,11 +2527,12 @@ function propertyRoomLegacyPendingPaperBackfillEligible_(
 }
 
 
-function propertyRoomBuildRoomView_(
+// Resolve the canonical association and occupancy once, without constructing
+// the management page's financial, replacement or display projections.
+function propertyRoomResolveRoomOccupancy_(
   room,
   currentContractRoomMap,
   latestContractRoomMap,
-  latestBillRoomMap,
   tenantIdMap,
   activeTenantIdMap,
   associationMaps
@@ -2605,6 +2582,76 @@ function propertyRoomBuildRoomView_(
       ? pointedContract
       : null;
   const linkedContract = currentContract || upcomingContract;
+
+  const hasActiveContract =
+    Boolean(
+      currentContract
+    );
+
+  const storedStatus =
+    propertyRoomText_(
+      room.room_status ||
+      'vacant'
+    ).toLowerCase();
+
+  const linkedTenantIsActive =
+    Boolean(
+      (
+        activeTenantIdMap &&
+        activeTenantIdMap[propertyRoomText_(room.current_tenant_id)]
+      ) ||
+      (
+        propertyRoomText_(room.current_tenant_id) &&
+        !(tenantIdMap && tenantIdMap[propertyRoomText_(room.current_tenant_id)])
+      ) ||
+      (
+        activeTenantIdMap &&
+        (
+          storedStatus === 'occupied' &&
+          activeTenantIdMap[propertyRoomText_(latestContract && latestContract.tenant_id)]
+        )
+      )
+    );
+
+  const needsOccupancyReview =
+    !hasActiveContract &&
+    !upcomingContract &&
+    linkedTenantIsActive;
+
+  const effectiveStatus =
+    hasActiveContract
+      ? 'occupied'
+      : upcomingContract
+        ? 'upcoming'
+        : needsOccupancyReview
+        ? 'needs_review'
+        : (
+          storedStatus ===
+            'occupied'
+            ? 'vacant'
+            : storedStatus
+        );
+
+  return {roomId, currentContract, latestContract, upcomingContract,
+    linkedContract, hasActiveContract, storedStatus, needsOccupancyReview,
+    effectiveStatus};
+}
+
+
+function propertyRoomBuildRoomView_(
+  room,
+  currentContractRoomMap,
+  latestContractRoomMap,
+  latestBillRoomMap,
+  tenantIdMap,
+  activeTenantIdMap,
+  associationMaps
+) {
+  const {roomId, currentContract, latestContract, upcomingContract,
+    linkedContract, hasActiveContract, storedStatus, needsOccupancyReview,
+    effectiveStatus} = propertyRoomResolveRoomOccupancy_(room,
+      currentContractRoomMap, latestContractRoomMap, tenantIdMap,
+      activeTenantIdMap, associationMaps);
 
   const paperBackfillReplacementContract =
     [
@@ -2699,55 +2746,6 @@ function propertyRoomBuildRoomView_(
     latestContract ||
     {};
 
-  const hasActiveContract =
-    Boolean(
-      currentContract
-    );
-
-  const storedStatus =
-    propertyRoomText_(
-      room.room_status ||
-      'vacant'
-    ).toLowerCase();
-
-  const linkedTenantIsActive =
-    Boolean(
-      (
-        activeTenantIdMap &&
-        activeTenantIdMap[propertyRoomText_(room.current_tenant_id)]
-      ) ||
-      (
-        propertyRoomText_(room.current_tenant_id) &&
-        !(tenantIdMap && tenantIdMap[propertyRoomText_(room.current_tenant_id)])
-      ) ||
-      (
-        activeTenantIdMap &&
-        (
-          storedStatus === 'occupied' &&
-          activeTenantIdMap[propertyRoomText_(latestContract && latestContract.tenant_id)]
-        )
-      )
-    );
-
-  const needsOccupancyReview =
-    !hasActiveContract &&
-    !upcomingContract &&
-    linkedTenantIsActive;
-
-  const effectiveStatus =
-    hasActiveContract
-      ? 'occupied'
-      : upcomingContract
-        ? 'upcoming'
-        : needsOccupancyReview
-        ? 'needs_review'
-        : (
-          storedStatus ===
-            'occupied'
-            ? 'vacant'
-            : storedStatus
-        );
-
   const roomRent =
     propertyRoomNumber_(
       room.rent_amount
@@ -2794,6 +2792,22 @@ function propertyRoomBuildRoomView_(
       financialContract,
       resolvedRent,
       depositMonths
+    );
+
+  const summerEquipmentRate =
+    propertyRoomResolveEquipmentSeasonRate_(
+      room,
+      financialContract,
+      latestBill,
+      true
+    );
+
+  const regularEquipmentRate =
+    propertyRoomResolveEquipmentSeasonRate_(
+      room,
+      financialContract,
+      latestBill,
+      false
     );
 
   return {
@@ -2865,35 +2879,15 @@ function propertyRoomBuildRoomView_(
       ),
 
     equipment_fee_rate_summer:
-      propertyRoomResolveEquipmentSeasonRate_(
-        room,
-        financialContract,
-        latestBill,
-        true
-      ),
+      summerEquipmentRate,
 
     equipment_fee_rate_regular:
-      propertyRoomResolveEquipmentSeasonRate_(
-        room,
-        financialContract,
-        latestBill,
-        false
-      ),
+      regularEquipmentRate,
 
     equipment_fee_rate:
       propertyRoomEquipmentRateForMonth_(
-        propertyRoomResolveEquipmentSeasonRate_(
-          room,
-          financialContract,
-          latestBill,
-          true
-        ),
-        propertyRoomResolveEquipmentSeasonRate_(
-          room,
-          financialContract,
-          latestBill,
-          false
-        ),
+        summerEquipmentRate,
+        regularEquipmentRate,
         new Date(),
         room.equipment_summer_months ||
         financialContract
@@ -4790,6 +4784,14 @@ function propertyRoomCompareText_(
   valueA,
   valueB
 ) {
+  // The Worker adapter reuses this fixed collation within one request. Native
+  // Apps Script has no adapter and retains its existing localeCompare path.
+  if (typeof runtimePropertyRoomCompareText_ === 'function') {
+    return runtimePropertyRoomCompareText_(
+      propertyRoomText_(valueA),
+      propertyRoomText_(valueB)
+    );
+  }
   return propertyRoomText_(
     valueA
   ).localeCompare(
@@ -4822,6 +4824,12 @@ function propertyRoomText_(
 function propertyRoomNumber_(
   value
 ) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value)
+      ? (value === 0 ? 0 : value)
+      : 0;
+  }
+
   const number =
     Number(
       String(

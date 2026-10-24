@@ -48,3 +48,45 @@ C0 rollback is a reviewed revert of its source and CI changes. It has no remote
 runtime or business data to restore. Later work must record Worker version,
 bindings and page flags separately. Google Sheets remains the authoritative
 operational store.
+
+### C6 ordering migration (not deployed)
+
+Migration `0007_read_source_order_indexes.sql` adds two nonunique indexes each
+for rooms, contracts and bills. They match the loader's existing numeric
+source-row order and row-key tie break; the scoped form also retains its
+Workspace expression. No SQL filter, parameter, row or payload is changed.
+Local functional verification removes temporary sort trees for the actual
+scoped and unscoped queries while preserving complete data/HTTP bytes and
+read scope. Latency and sync/storage quota acceptance remain separate gates.
+
+Before an authorized deployment, retain a D1 backup and read back the current
+migration state; apply pending migrations in order. Source commits and local
+tests do not apply a remote migration. Rollback removes only
+`idx_read_order_V2_rooms`, `idx_read_order_V2_contracts`,
+`idx_read_order_V2_bills`, `idx_read_workspace_order_V2_rooms`,
+`idx_read_workspace_order_V2_contracts` and `idx_read_workspace_order_V2_bills`.
+Keep existing Workspace indexes and all replica rows.
+
+
+## Request-private internal Sheet snapshots
+
+Only the HTTP runtime's explicit `deferSheetValues === true` mode retains a
+request-local WeakMap from its own Sheet objects to their complete row matrices.
+The generated internal snapshot readers use that view while constructing fresh
+row objects. Public `getDataRange/getRange.getValues()` still return fresh arrays;
+default eager runtimes and foreign Sheet objects retain the public-copy path.
+No field, row, table, date hydration, scope, query or response is removed.
+
+A pure functional projected 500-room properties experiment removed nine redundant
+full-matrix clones (1,575 row arrays / 20,814 cells); all 713,795 response bytes
+matched both the preceding runtime and canonical GAS. This is allocation evidence,
+not a measured latency improvement or an explanation for retained strict 50 ms CI
+failures. Frozen internal-array regression runs all seven canonical entries, with
+separate ownership/public-mutation, Date/null/absence/own-key and masked-suffix
+coverage. Future internal consumers must remain read-only; this private trusted
+view is not a public mutable Sheet API or cross-request cache.
+
+Rollback is a reviewed source revert of the internal-view change and regeneration
+of comparison identity. No remote runtime/configuration or data change is part of
+this candidate. The asset version, blank endpoint, six off flags, original 100
+samples/full-wall p95 gate and all actual rollout/storage/sync/quota gates remain.

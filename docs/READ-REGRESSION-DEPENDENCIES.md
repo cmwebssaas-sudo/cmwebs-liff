@@ -67,3 +67,76 @@ latency, real D1/500-room behavior, C5 seven full days, physical LINE/device,
 current production serving state or C6 cutover. Linux/Node22 CI evidence remains
 separate from this macOS/Node26 full-suite evidence. All later read-path gates
 remain mandatory; no formal deployment, Property, trigger or flag is changed.
+
+## October13 C6 v4 runtime follow-up
+
+The new runtime/dataset changes required a fresh full C6 run only; the other
+five source suites were not repeated. Exact C6 source
+`1cab31076ac82e35bb5c264d80ce0c7cc2c46240`:962/962, zero fail/cancel/skip,
+2.871s. Unit957/957 and Worker31/31 are separate counts. The same clean pinned
+Core643c1b3 and verified16.14 vendor were reused read-only, with a newly created
+0700 private directory and fresh fixed loopback cluster. No prior cluster,
+default/inherited connection or formal database was reused. All guards and
+finite emergency teardown remained unchanged; eight target/env guard cases pass.
+
+Original GAS commercial restricted-HTTP/real-PG and four synthetic Core
+handler cases pass. SQL before/after verifies original three databases/bootstrap
+role and no fixture residues. Actual final pg_ctl status, absent PID and closed
+listener pass; cleanup errors are empty. Core/C6 tracked sources stay unchanged
+through the test; generated secrets/raw logs remain0600 outside Git. Later
+documentation refreshes are not substituted for this tested exact source head.
+
+This v4 source check still does not establish uncached C3 latency, actual72h/
+900s/day, seven-day shadow, remote500-room/device or a current formal release.
+
+## October13 C6 v5 pinned working-source follow-up
+
+Actual `npm test` passes963/963, zero fail/cancel/skip,3.193s. This is an
+uncommitted v5 candidate at checkout baselinebcde36b, not a test of immutable
+published v4 HEAD. All537 tracked working files were SHA256-pinned before/after;
+immutable snapshot identity:
+`ec2a7bca3baa1c1edc58d5bb02378a0ab191b5038cf836dab591e810e3de6ed8`.
+This includes current runtime/calendar fixes and source/cache/comparison files.
+Later evidence-document updates are not retroactively included in that snapshot.
+The code comparison remains178-source
+`read-e48be6b9ef38b1ef417d935980d9ec49bebe19fae81b1f2a2e51a35c9eb8fe2f`.
+
+Fresh0700 private PG16.14 cluster uses the same verified vendor read-only and
+clean Core643c1b3. Driver rejects source drift/unpinned test files and still checks
+loopback/data directory/identity, SQL fixture cleanup and finite emergency stop.
+Real `npm test` uses two distinct empty0600 private user/global npm configs,
+private cache/logs, disabled update notifier and rejects project .npmrc without
+reading contents. Eight target/env, six snapshot and three npm guard cases pass;
+independent safety review passes. No inherited database/deployment/OAuth env,
+existing cluster, registry credential/config or system PG service is used.
+
+Mandatory original GAS restricted HTTP/PG and four synthetic Core handlers pass.
+SQL before/after proves only bootstrap/original databases and no fixture roles;
+final PID absent/TCP closed/stopped state passes with no cleanup error. No sources
+changed during execution. Source logs/generated cluster stay private outside Git.
+Separate Worker32/32 includes new500-room authenticated/scoped-D1 correctness;
+its LINE/Google authority transport and GAS service adapters remain synthetic.
+All earlier performance failures are retained; no C1/C3/C5/C6 real gate is inferred.
+
+## October13 C6 v6 packed projection working-source regression
+
+Actual `npm test`965/965, zero fail/cancel/skip,2.992s. Tested as an uncommitted
+v6 working candidate at checkout baseline4c9950e, not published diagnostic code.
+All537 tracked paths/bytes are pinned before/after by immutable snapshot
+bc8f7a6bbf0c6182156010a69bc3067f933d28b10951f609a6bf526553440cfb.
+Subsequent evidence-document changes are not retroactively part of that snapshot.
+Cache20261013-read-capacity-v6/comparisonread-1f3b9d5806d1129e4d0aa1006dfd69c21b30e201fc0c3774a5093bf233816541
+cover the current source; validate178-source closure passes.
+
+New0700 private PG16.14 uses the existing verified vendor read-only, no install
+or existing cluster. Original runner changes only private base/snapshot/checkout
+controls;8 target/env,6 snapshot and4 npm-config guard cases pass. Core643c1b3
+is clean, environment restricted, two empty npm configs/cache/logs isolated.
+Original restricted HTTP/PG and four Core handler cases pass. Actual SQL before/
+after shows no fixture DB/role; fresh final pg_ctl/PID/TCP stopped verification
+passes, cleanup_errors empty. No formal database/credential/config is used.
+
+Separate actual Worker33/33 and unit960/960 pass, including shared packed SQL,
+actual D1 types/quoted keys and existing scoped500-room/auth/revocation coverage.
+Seven original100-sample local p95<50ms gates pass. This does not supersede prior
+failed CI samples or any actual72h/900s/day/seven-day/remote500-room/device gate.

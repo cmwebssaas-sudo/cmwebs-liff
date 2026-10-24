@@ -91,6 +91,19 @@ occurred for this candidate. Rollback is flags off, publish/read back Pages,
 then restore prior immutable Worker/GAS versions if needed. Retain replica and
 observation metadata and version evidence; no formal data deletion is required.
 
+## C6 sequential-release identity repair
+
+C6 adds a generated comparison source manifest and browser
+`CMWEBS_READ_COMPARISON_VERSION`. Receiver `READ_SHADOW_RELEASE` uses this
+comparison identity, verified against the bundled Worker manifest, rather than
+the asset cache tag. Flags-only Pages publications advance asset references
+without invalidating unchanged comparison/source/authority evidence. Included
+source/endpoint/contract changes regenerate identity and restart real observation.
+The default C5 evaluator still requires all routes; subsequent C6 per-page checks
+require that page's latest seven complete windows (both home sections), retain
+all epoch errors/missing evidence, and require the initial qualification ledger.
+See `READ-CUTOVER.md`; this repair has not started any real observation.
+
 ## 2026-10-20 — Server-verified sampling metadata for approved acceleration
 
 The approved accelerated schedule requires at least20 real paired samples per
@@ -119,3 +132,12 @@ increment performs no remote migration, deployment, credential or flag action.
 Rollback to the preceding immutable Worker; leave the additive column and all
 history intact. The old Worker can insert without the column (default unknown).
 Never drop observation data to perform rollback. Retain all real acceptance gates.
+
+## C6 accelerated evaluator wiring — 2026-10-20
+
+The new operator CLI and pure candidate evaluator are documented in
+READ-ACCELERATED-OBSERVATION.md. The legacy seven-window evaluator above is
+unchanged; it does not implement the approved24h sample distribution gate.
+The new result is shadowEligible only, always cutoverAuthorized:false; verified
+remote export, common-failure review and all actual C1/C3/rollout/device/rollback
+requirements remain external. New capture requires source/comparison readback.

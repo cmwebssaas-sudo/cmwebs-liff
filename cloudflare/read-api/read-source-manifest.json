@@ -33,7 +33,9 @@
     "lmEnsureTenantMessageSheet_",
     "landlordInitiatedContractSchema_",
     "contractRequestResolveLandlordIdentity_",
-    "lmResolveLandlord_"
+    "lmResolveLandlord_",
+    "runtimePropertyRoomCompareText_",
+    "runtimeMemoizeMonths_"
   ],
   "functions": [
     "contractRenewalHistoryBoolean_",
@@ -150,6 +152,7 @@
     "propertyRoomResolveEquipmentSeasonRate_",
     "propertyRoomResolvePaymentDay_",
     "propertyRoomResolvePositiveRate_",
+    "propertyRoomResolveRoomOccupancy_",
     "propertyRoomRoomStatusLabel_",
     "propertyRoomRoomStatusOptions_",
     "propertyRoomScheduledPaperMatchesRoom_",
@@ -237,6 +240,7 @@
     "workspaceDashboardExecute_",
     "workspaceDashboardFormatDate_",
     "workspaceDashboardLandlordSummary_",
+    "workspaceDashboardLineUidLookup_",
     "workspaceDashboardLoadData_",
     "workspaceDashboardNextReminderDay_",
     "workspaceDashboardNormalizeMonth_",
@@ -279,13 +283,13 @@
     "apps-script/V2_LANDLORD_EMAIL_AUTH.js": "c399e7c84bc3120989c2018612055ce7941979c6702b12c10077dc5a4a32b190",
     "apps-script/V2_LANDLORD_INITIATED_CONTRACTS.js": "c8f3c221cde0ec63a7d634de5d66ae6491f2bacdaecfd582e23a61be3b51fcd9",
     "apps-script/V2_LANDLORD_MANAGEMENT.js": "2a45facdea54e87ed6c22a5145a24f0bcd42f204514c095e8d630b09a8cdf578",
-    "apps-script/V2_LANDLORD_ROOM_CENTER.js": "45b806ed86f479bfb692912bac6217c33933d732d1ba7c91f346fa1982a488e0",
-    "apps-script/V2_PROPERTY_ROOM_MANAGEMENT.js": "cf91915622952a7b76efb8c9b062dba47a55b775c63efe7c3a1a83ba96e41bea",
+    "apps-script/V2_LANDLORD_ROOM_CENTER.js": "b65ee54bccb19c4520285537422e62b5ae740f687c533a227d4f2a5df1fd998a",
+    "apps-script/V2_PROPERTY_ROOM_MANAGEMENT.js": "225ee2c3b2246c88e24b062fa317d62f5abaef35f4ac4db33e87c0211dc0ff6b",
     "apps-script/V2_READ_AUTHORIZATION.js": "09f64f99c2d79868addc84af93401ff38d8a423a45db8e5240e48b94a470496d",
     "apps-script/V2_REPORTING_DASHBOARD.js": "16aae6363a814011906f564cd3627a0f4a07dc567f044a15e6118a14ae6e362d",
     "apps-script/V2_SETTINGS_INTEGRATION.js": "d709db4c21f371a7d5e56c435c4179a25c66a3ee30477e70d358df295e254212",
     "apps-script/V2_WORKSPACES.js": "2f4aacb871ccb3877fb27e717aed5194a6bd9a446d6cba3578de593a64486d77",
-    "apps-script/V2_WORKSPACE_DASHBOARD_NATIVE.js": "dd28870c03553dbb64a428245d7f92631d6cb9b463d8c77577a3d88ac5905d8b",
+    "apps-script/V2_WORKSPACE_DASHBOARD_NATIVE.js": "375a553654d9594c55e516c54afa6334d9f05ba1fd7847434cd529fdd9514a7a",
     "apps-script/V2_WORKSPACE_LANDLORD_ACCESS.js": "870025d82ce812fafeb9a5f95611b53d2bb5784ae40c942786783fdac5be0f6b"
   }
 }

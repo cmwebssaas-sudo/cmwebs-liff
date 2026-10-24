@@ -16,6 +16,19 @@ Start every handoff with a recommended model and speed. Default:
 
 ## Current handoff state
 
+- 2026-10-12 read-path continuation: recommended GPT-6.1 Sol/high for C6 per
+  approved work plan. Recorded S1 serving baseline is233 with owner-confirmed
+  LINE reads/notification and desktop Email; C0 merged PR265/main32a5820.
+  C1 draft266 real72-hour isolated test continues; C2–C5 draft267–270 are reviewed
+  local candidates, all off/unpublished. C5 source9c72fd4 CI38185484575 passed;
+  clock classification has explicit owner approval. C6 preparation is in its own
+  branch/worktree and `READ-CUTOVER.md`; no C6 page has switched or been accepted.
+  Real days, authenticated latency and each page's physical LINE/desktop gate
+  remain required. These records require fresh serving/export verification before
+  release and do not replace current external evidence. Preserve checkpoint root
+  WIP and private materials. Batch authorization covers plan-scoped release;
+  only stated owner-action/scope/fee/deletion exceptions need escalation.
+
 - 2026-10-12 C0 scaffold: independent branch/worktree based on S1 merge
   `b8f62f0`; local Worker/D1 health tests and dry-run pass. Worker and remote
   D1 are not deployed/created. CLI OAuth login is present; target account,

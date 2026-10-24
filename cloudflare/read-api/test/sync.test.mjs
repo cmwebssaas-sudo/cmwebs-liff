@@ -25,7 +25,7 @@ async function fixture(run, configured = true) {
     bindings: configured ? { READ_REPLICA_SYNC_SECRET: secret } : {} }));
   try {
     const db = await mf.getD1Database('DB');
-    for(const file of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql']) {
+    for(const file of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql','0005_read_scope_indexes.sql','0007_read_source_order_indexes.sql']) {
       const migration = await readFile(new URL('../migrations/'+file, import.meta.url), 'utf8');
       await db.batch(migration.replace(/^--.*$/gm,'').split(';').map(s => s.trim()).filter(Boolean).map(s => db.prepare(s)));
     }

@@ -167,3 +167,25 @@ Cloudflare configuration or formal flags change. C1 daily-runtime/72h, C3
 strict authority/latency and real trial, C5 seven-day and C6 device/cutover
 remain required. Root WIP retained. Rollback reverts these test/diagnostic
 changes to the prior C2 source; serving deployments and data are untouched.
+
+
+## October15 request-local fixed collation
+
+The optional Worker-only `runtimePropertyRoomCompareText_` service lazily reuses
+one `Intl.Collator('zh-Hant',{numeric:true,sensitivity:'base'}).compare` per
+runtime/request. Canonical `propertyRoomCompareText_` still normalizes operands
+with its existing helper, left to right. Without that adapter, native Apps Script
+retains the entire prior localeCompare path. The generated235-function/15-source
+closure injects only this stateless built-in service; no rental ordering rules
+are duplicated. [ECMA-402 localeCompare](https://tc39.es/ecma402/#sup-string.prototype.localecompare)
+and [Collator compare](https://tc39.es/ecma402/#sec-get-intl.collator.prototype.compare)
+use the same comparison algorithm; actual engine/version parity remains a gate.
+Only the fixed sorter is retained until the request ends; no operands, comparison
+results, authorization or cross-request cache. Reconstructing the runtime
+invalidates it; no shared TTL, keys or source-data invalidation are needed.
+The native GAS VM oracle explicitly removes this Worker-only adapter before
+loading canonical source. Regression covers the entire500-room properties
+response, lazy/per-request construction,784 normalization/Unicode/numeric/tie
+pairs plus literal ordering, live coercions/order and exceptions. RED499 native
+localeCompare calls vs0 then GREEN2/2; related12/12. Native Google execution and
+real authenticated latency/72h/seven-day/device acceptance are not inferred.
