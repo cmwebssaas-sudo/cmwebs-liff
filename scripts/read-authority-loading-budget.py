@@ -79,6 +79,10 @@ def loading_class(base):
    else:fail()
   def check(self,lane,op,t,terminal=False):
    if self.continuity_preparation(lane,op):
+    # Publisher's native successor has a separately sealed, charged PREP map.
+    # The old thin-to-audience loading route applies only to its fixed six.
+    native_mapped=getattr(self,'native_successor',False) and self.j.get('publisherAlignment',{}).get('used')==6 and self.j['phase']=='PREP' and self.j['w0'] is None and op.get('id','').startswith('future-') and op.get('key')=='N:preparation' and op.get('preparation') is True and op.get('actor')=='publisher' and op.get('target') in ['original-settings','original-triggers'] and op.get('operation') in ['navigate','evaluate','snapshot'] and any(stage['stage']=='baseline' and m['lane']=='ui' and m['descriptor']==op for stage in self.j.get('publisherStages',[]) for m in stage['map'])
+    if native_mapped:return super().check(lane,op,t,terminal)
     # Navigation is the one allowed thin -> audience transition; its descriptor
     # names the destination, while inventory/claim must name the latest URL.
     self.current()

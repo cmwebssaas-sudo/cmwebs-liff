@@ -5,6 +5,15 @@ from pathlib import Path
 DECISION='5f764b29438b582cdd404823a3a01408579fec7045ac5016971a7394d89337cb'
 STEPS=[('binding','getBrowser','thin-settings'),('name','nameSession','thin-settings'),('settings-claim','claimTab','thin-settings'),('settings-project','evaluate','thin-settings'),('audience-claim','claimTab','oauth-audience'),('audience-project','evaluate','oauth-audience')]
 FUTURE=[('baseline',6),('thin',18),('oauth',30),('freshness',14),('terminal',2),('diagnostic',20)]
+NATIVE_BASELINE=[('N:preparation','original-settings','navigate',True),('N:preparation','original-settings','evaluate',True),('A:original-cloud-backup','original-settings','snapshot',False),('A:original-properties-backup','original-settings','read-key-presence',False),('N:navigation','original-triggers','navigate',False),('A:original-triggers-backup','original-triggers','snapshot',False)]
+NATIVE_GROUNDING=[('N:preparation','original-triggers','navigate',True),('N:preparation','original-triggers','evaluate',True),('N:preparation','original-settings','navigate',True)]
+
+def native_grounding_count(stage_cap,map_rows):
+ if not 6<=stage_cap<=9:return -1
+ rows=[m['descriptor']for m in map_rows if m.get('lane')=='ui']
+ if len(rows)!=stage_cap:return -1
+ expected=NATIVE_BASELINE+NATIVE_GROUNDING[:stage_cap-6]
+ return stage_cap-6 if all((row.get('key'),row.get('target'),row.get('preparation'))==(shape[0],shape[1],shape[3]) and (row.get('operation')==shape[2] or i==7 and row.get('operation')=='snapshot') and row.get('actor')=='publisher' and row.get('units')==1 for i,(row,shape) in enumerate(zip(rows,expected))) else -1
 
 def repair_allowed(incidents,incident,used_for_incident,used_total):
  return all(type(v)is int for v in [incidents,incident,used_for_incident,used_total]) and 1<=incident<=incidents<=2 and 0<=used_for_incident<3 and 0<=used_total<6
@@ -127,13 +136,39 @@ def alignment_class(base):
   def resume_preparation(self,p):
    origin,prior,approval=self.validate_alignment();self.approvedBrowserId=approval['selectedBrowserId'];self.approvedProfile=approval['selectedProfile'];owner=sha(self.cfg['ownerNonce'].encode());fresh=p=={'aligned105':True}
    if self.native_successor:
-    if p!={'nativeSuccessor':True}:fail()
-    j,claim,charges=self.validate_native_successor(origin,True)
-    if any(os.path.lexists(x)for x in [self.journal,self.claim,self.stop_path]) or owner in j['holders']:fail()
-    j=copy.deepcopy(j);j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(claim,separators=(',',':')).encode()),'sources':copy.deepcopy(claim['sources'])});j.update(state='ready',lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now'],nativeCurrentVisual=True,futureOrdinaryUi=90-self.imported_delta)
-    j['failures']+=sum(c['outcome']!='VERIFIED' for c in charges);j['publisherAlignment']['readonlyIncidents']=2;j['publisherAlignment']['repairCalls']=6
-    j['holders'].append(owner);j['nativeImported']=[{'spent':c['spent'],'reservationSha256':c['reservation']['sha256'],'settlementSha256':c['settlement']['sha256'],'bookkeptAt':self.cfg['now'],'reservationAt':c['reservationAt'],'providerCallAt':None}for c in charges]
-    self.j=j;save(self.claim,self.identity,True);self.persist();return
+    native_fresh=p=={'nativeSuccessor':True}
+    if not native_fresh and (not exact(p,['nativeSuccessor','receipt','minimumEvents']) or p['nativeSuccessor'] is not True or not integer(p['minimumEvents'])):fail()
+    imported,claim,charges=self.validate_native_successor(origin,native_fresh)
+    if native_fresh:
+     if any(os.path.lexists(x)for x in [self.journal,self.claim,self.stop_path]) or owner in imported['holders']:fail()
+     j=copy.deepcopy(imported);j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(claim,separators=(',',':')).encode()),'sources':copy.deepcopy(claim['sources'])});j.update(state='ready',lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now'],nativeCurrentVisual=True,futureOrdinaryUi=90-self.imported_delta)
+     j['failures']+=sum(c['outcome']!='VERIFIED' for c in charges);j['publisherAlignment']['readonlyIncidents']=2;j['publisherAlignment']['repairCalls']=6
+     j['holders'].append(owner);j['nativeImported']=[{'spent':c['spent'],'reservationSha256':c['reservation']['sha256'],'settlementSha256':c['settlement']['sha256'],'bookkeptAt':self.cfg['now'],'reservationAt':c['reservationAt'],'providerCallAt':None}for c in charges]
+     self.j=j;save(self.claim,self.identity,True);self.persist();return
+    raw=rawfile(self.journal);rr=rawfile(self.registry);j=json.loads(raw);previous=record(self.claim)
+    if record(self.registry)!={'identity':previous,'checkpoint':j} or p['minimumEvents']!=len(j['events']) or p['receipt']['path']!=str(self.path)+self.suffix+'-handoff-'+str(len(j['holders']))+'.json':fail()
+    self.verify_receipt(json.loads(g['pin'](p['receipt'])),j,raw,rr)
+    stable=lambda x:{k:v for k,v in x.items()if k not in ['sources','ownerHash']}
+    if stable(previous)!=stable(self.identity) or self.identity['sources'][:len(previous['sources'])]!=previous['sources'] or not previous['sources'] or j['events'][:55]!=imported['events'] or j['state']!='ready' or j['lifecycle']!='CLEAN_PAUSE' or j['phase']!='PREP' or j['pending'] is not None or j['mutated'] is not False or j['w0'] is not None or j['expiresAt'] is not None or j['rpc']!={'beganAt':None,'complete':False} or j['chargedUpperBoundMs']!=imported['chargedUpperBoundMs'] or j['finished'] is not False or j['plan'] is not None or os.path.lexists(self.stop_path) or owner in j['holders'] or j['holder']!=previous['ownerHash'] or j['holders'][-1]!=j['holder'] or self.cfg['now']<j['lastAt'] or j.get('nativeCurrentVisual') is not True or not self.prepared_checkpoint(j):fail()
+    chain=j['connection']['sourceChain'];oldchain=imported['connection']['sourceChain']
+    if chain[:len(oldchain)]!=oldchain or len(chain)!=len(oldchain)+len(j['holders'])-len(imported['holders']) or chain[len(oldchain)]!={'identitySha256':sha(json.dumps(claim,separators=(',',':')).encode()),'sources':claim['sources']}:fail()
+    for entry in chain[len(oldchain):]:
+     if not exact(entry,['identitySha256','sources']) or not re.fullmatch('[0-9a-f]{64}',entry['identitySha256']) or type(entry['sources']) is not list or not entry['sources']:fail()
+     for source in entry['sources']:g['pin'](source)
+    for source in previous['sources']:g['pin'](source)
+    native=j.get('nativeImported',[])
+    if len(native)!=self.imported_delta or any(not exact(row,['spent','reservationSha256','settlementSha256','bookkeptAt','reservationAt','providerCallAt']) or row['spent']!=charge['spent'] or row['reservationSha256']!=charge['reservation']['sha256'] or row['settlementSha256']!=charge['settlement']['sha256'] or row['reservationAt']!=charge['reservationAt'] or row['providerCallAt'] is not None or not integer(row['bookkeptAt']) or not imported['lastAt']<=row['bookkeptAt']<=j['lastAt'] for row,charge in zip(native,charges)) or len({row['bookkeptAt']for row in native})!=1 or j.get('publisherImported')!=imported['publisherImported']:fail()
+    stages=j.get('publisherStages',[])
+    if len(stages)>1 or stages and (stages[0].get('stage')!='baseline' or not 6<=stages[0].get('stageCap',0)<=9 or sum(m.get('lane')=='ui'for m in stages[0].get('map',[]))!=stages[0]['stageCap'] or stages[0]['stageCap']>6 and native_grounding_count(stages[0]['stageCap'],stages[0]['map'])!=stages[0]['stageCap']-6):fail()
+    mapped={m['descriptor']['id']:m['descriptor'] for stage in stages for m in stage['map'] if m['lane']=='ui' and m['descriptor']['preparation'] is True}
+    extra=j['events'][55:];seen=set()
+    for event in extra:
+     operation=event.get('operation',{})
+     if event.get('lane')!='ui' or event.get('cleanup') is not False or event.get('settled') is not True or event.get('success') is not True or event.get('outcome')!='UNKNOWN' or operation.get('id') not in mapped or operation!=mapped[operation['id']] or event.get('preparationStage')!=operation['id'] or operation['id'] in seen or not integer(event.get('time')) or not imported['lastAt']<=event['time']<=j['lastAt']:fail()
+     seen.add(operation['id'])
+    if j['futureOrdinaryUi']!=90-self.imported_delta-sum(stage['stageCap']for stage in stages) or j['failures']!=imported['failures']+sum(c['outcome']!='VERIFIED'for c in charges) or j['publisherAlignment']['readonlyIncidents']!=2 or j['publisherAlignment']['repairCalls']!=6 or j['publisherAlignment']['diagnosticCalls']!=0:fail()
+    j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(previous,separators=(',',':')).encode()),'sources':copy.deepcopy(previous['sources'])});j.update(lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now']);j['holders'].append(owner)
+    self.j=j;save(self.claim,self.identity);self.persist();return
    if fresh:
     if record(self.registry)!={'identity':prior,'checkpoint':origin} or any(os.path.lexists(x)for x in [self.journal,self.claim,self.stop_path]) or owner in origin['holders']:fail()
     j=copy.deepcopy(origin);j['connection']['maximum']=19;j['loading']['maximum']=25;j['publisherAlignment']={'maximum':6,'used':0,'settingsVerified':False,'audienceVerified':False,'readonlyIncidents':0,'repairCalls':0,'diagnosticCalls':0};j['publisherStages']=[];j['futureOrdinaryUi']=90
@@ -203,11 +238,14 @@ def alignment_class(base):
    if name=='publisher-stage-ready':
     self.current();self.active(q.get('now'));index=len(self.j['publisherStages']);d=self.j['publisherAlignment']
     if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending']is not None or index>=len(FUTURE) or not exact(q,['op','stage','map','stageCap','now']) or q['stage']!=FUTURE[index][0] or type(q['map'])is not list or not q['map'] or not integer(q['stageCap']) or q['stageCap']<1 or sum(m.get('lane')=='ui'for m in q['map']if type(m)is dict)!=q['stageCap']:fail()
-    used=sum(s['stageCap']for s in self.j['publisherStages']);future_minimum=sum(20-self.imported_delta if name=='diagnostic' else v for name,v in FUTURE[index+1:]);rollover=sum(v for _,v in FUTURE[:index])-used
+    used=sum(s['stageCap']for s in self.j['publisherStages']);extra=(q['stageCap']-6 if index==0 else self.j['publisherStages'][0]['stageCap']-6)if self.native_successor else 0
+    if self.native_successor and index==0 and (not 6<=q['stageCap']<=9 or q['stageCap']>6 and native_grounding_count(q['stageCap'],q['map'])!=extra):fail()
+    future_minimum=sum(max(0,20-self.imported_delta-extra)if name=='diagnostic' else v for name,v in FUTURE[index+1:]);rollover=sum(v for _,v in FUTURE[:index])+(extra if index else 0)-used
     complete={e['operation']['id']for e in self.j['events'][55:]if e.get('settled')is True and e.get('success')is True}
     prior_mapped={m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']if not (self.native_successor and m['lane']=='main' and m['descriptor']['bucket']=='T')}
-    if self.native_successor and (index==0 and q['stageCap']!=6 or index==5 and q['stageCap']>20-self.imported_delta):fail()
-    if q['stageCap']>(20-self.imported_delta if q['stage']=='diagnostic' else FUTURE[index][1])+rollover or used+q['stageCap']+future_minimum>self.future_limit() or self.future_spent()!=used or not prior_mapped<=complete or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
+    if self.native_successor and index==5 and q['stageCap']>20-self.imported_delta:fail()
+    cap=(9 if self.native_successor and index==0 else 20-self.imported_delta if q['stage']=='diagnostic' else FUTURE[index][1])+rollover
+    if q['stageCap']>cap or used+q['stageCap']+future_minimum>self.future_limit() or self.future_spent()!=used or not prior_mapped<=complete or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
     plan=self.j['plan'];ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']};seen=set();main_keys={m['descriptor']['bucket']+':'+m['descriptor']['alias']for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='main'}if plan is not None else set(self.j['stages']);cleanup_ids={c['descriptor']['id']for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']};cleanup_keys={g['descriptor'](c['descriptor'],c['lane'])for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']if c['lane']=='main'};ui_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='ui'])for st in self.j['publisherStages']for m in st['map']);main_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='main'])for st in self.j['publisherStages']for m in st['map'])
     for m in q['map']:
      if not exact(m,['lane','descriptor','tabId','url','callback','receipt','privacy','cleanup','repairIncident']) or m['lane']not in ['ui','main'] or type(m['descriptor'])is not dict or type(m['tabId'])is not str or not m['tabId'] or type(m['url'])is not str or not m['url'].startswith('https://') or type(m['callback'])is not str or not g['valid_id'](m['callback']) or m['receipt']not in ['SANITIZED_READ','EXACT_WRITE_READBACK'] or m['privacy']!='NO_SECRET_VALUES' or type(m['cleanup'])is not list or m['repairIncident'] is not None and (type(m['repairIncident'])is not int or m['repairIncident']not in [1,2]):fail()

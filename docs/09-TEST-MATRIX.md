@@ -2821,3 +2821,20 @@ same owner, then checks the durable cleanup checkpoint. This is local source
 evidence; it does not establish actual browser reachability, account binding,
 remote restoration, or production acceptance. No Apps Script function applies
 because no `.gs`, route or schema changed.
+
+## 2026-10-24 C3 native PREP checkpoint and baseline grounding
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Native clean resume | A real holder imports the settled 128 history, maps six baseline UI rows with fixed cleanup, charges original-settings navigate and evaluate, closes at PREP/CLEAN_PAUSE with a genuine `HANDOFF_CLOSED` receipt, and a new holder resumes at 130 without replay, W0, RPC or main debit. |
+| Resume denial | Wrong or stale receipt/hash/count, fresh reentry, altered current registry, frozen origin, source chain, owner, pending, failed/unsettled PREP, STOP, TRIAL, W0 and RPC states all stop before a callback. |
+| Grounding reallocation | The finite original-target map accepts baseline caps 6–9. A cap-nine real holder charges settings goto/project and extra original-triggers goto/project before clean pause at cursor four (spent 132), then a new holder charges the declared original-settings return goto to 133; W0 remains null and no A row has run. Partial and malformed shapes are checked separately; the existing generic seven-row baseline remains denied. Each actual extra row transfers one diagnostic future minimum, never more than three, within 73 remaining ordinary UI calls. |
+| Resumed cleanup | An unmapped A debit stops a resumed holder before callback; its independently mapped readonly I cleanup still charges one UI recovery primitive under the separate 16 UI/21 main recovery ceilings. |
+
+The inherited loading-layer thin-settings-to-audience rule now yields only to an
+already registered native publisher baseline PUREPREP row for original settings
+or original triggers while still in PREP with no W0. The fixed six loading steps
+retain their checks. These tests use local synthetic callbacks and pinned fixture
+data; actual browser, provider, canonical ledger, private parent resume gate,
+source equality and production acceptance remain separate. No Apps Script test
+function applies because no `.gs`, API route or Schema changed.

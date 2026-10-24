@@ -4868,3 +4868,34 @@ Apps Script, Worker, production or release action was performed. Review,
 composed-source CI and actual prestart evidence remain pending. Rollback is a
 reviewed source revert before use; retain any future spent cleanup charges,
 STOP and recovery record rather than rewinding them.
+
+## 2026-10-24 — C3 native PREP clean-resume and bounded grounding source
+
+Recommended model/speed: `gpt-6-sol` / `high` for the exact JS/Python holder,
+receipt and stage-budget protocol. The public source now admits only a latest
+genuine same-epoch `HANDOFF_CLOSED` receipt from a native PREP/CLEAN_PAUSE holder
+after the settled 128 import. It rechecks the frozen origin and imported charges,
+current common registry, immutable source ancestry, successful mapped PREP
+events, old holder closure, fresh nonce and monotonic clock before persistence.
+STOP, TRIAL, W0, RPC, pending, failed and unsettled states do not reopen.
+
+The original six baseline logical bindings stay in place. Up to three explicit
+original-target PUREPREP grounding rows may raise the baseline cap from six to
+nine. Those rows charge ordinary UI and transfer only their count from the
+native diagnostic future minimum: baseline six retains three reserved diagnostic
+calls; baseline nine moves all three into declared grounding. The diagnostic
+stage cap, 73 remaining ordinary UI calls, 296 total and independent 21 main/16
+UI recovery ceilings are unchanged. The inherited loading check needed a narrow
+exception for these already registered native baseline PREP rows; it continues
+to govern the fixed thin-settings-to-audience loading steps.
+The cap-nine fixture pauses after settings goto/project and original-triggers
+goto/project at cursor four; the resumed holder then charges the declared
+original-settings return goto before any A read or W0.
+
+Focused local tests use a synthetic settled 128 fixture and the real holder and
+Python ledger. They verify genuine receipt resume, charged grounding, refusal
+before callbacks and independent cleanup after resumed STOP. This public source
+does not constitute the private parent/retainer adaptation or actual browser,
+provider, canonical ledger, Worker, production or release acceptance. No Apps
+Script function applies. Rollback is a reviewed source revert before use; any
+later actual charges or STOP records must remain intact.
