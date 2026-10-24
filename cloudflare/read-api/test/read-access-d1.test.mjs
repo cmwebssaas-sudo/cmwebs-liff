@@ -1,0 +1,266 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { readFile, readdir } from 'node:fs/promises';
+import { randomUUID,createHmac } from 'node:crypto';
+import { build } from 'esbuild';
+import { Miniflare,convertV4MiniflareOptions } from 'miniflare';
+import { richDataset,projectedDataset,fixture,originalGas,access,cases,plain } from '../../../tests/fixtures/read-parity/runtime.mjs';
+import { authorityRuntime,authoritySecret } from '../../../tests/fixtures/read-parity/authority-runtime.mjs';
+
+const paths={home:'/v1/home',actions:'/v1/home?section=actions&read_view=summary',revenue:'/v1/revenue?from_month=2026-09&to_month=2026-10&as_of=2026-10-12',tenants:'/v1/tenants?read_view=summary',rooms:'/v1/rooms?include_archived=1',arrears:'/v1/arrears',properties:'/v1/properties?include_archived=1'};
+async function setup(input,identity={kind:'line',line_user_id:'SYNTHETIC_LINE1'}) {
+  const output=await build({entryPoints:[new URL('./read-access-fixture-worker.js',import.meta.url).pathname],bundle:true,write:false,format:'esm',target:'es2022'});
+  const authority=authorityRuntime();Object.assign(authority.data,structuredClone(input));
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:output.outputFiles[0].text,compatibilityDate:'2026-10-06',d1Databases:{DB:randomUUID()},
+    outboundService:async request=>Response.json(authority.post(await request.json())),
+    bindings:{FIXTURE_NOW:String(Date.parse(fixture.now)),FIXTURE_IDENTITY:JSON.stringify(identity),LINE_LOGIN_CHANNEL_ID:'SYNTHETIC_CHANNEL',EMAIL_SESSION_HMAC_SECRET:'synthetic-email-key',READ_REPLICA_SYNC_SECRET:authoritySecret,READ_AUTHORITY_URL:'https://script.google.com/macros/s/SYNTHETIC_DEPLOYMENT/exec'}}));
+  const db=await mf.getD1Database('DB');
+  for(const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).sort()) {
+    const sql=await readFile(new URL('../migrations/'+file,import.meta.url),'utf8');
+    await db.batch(sql.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>db.prepare(s)));
+  }
+  const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8')),data=projectedDataset(input),inserts=[];
+  for(const [table,definition] of Object.entries(schema)) for(const row of data[table]) {
+    inserts.push(db.prepare(`INSERT INTO "${table}" (row_key,row_hash,synced_at,${definition.fields.map(key=>'"'+key+'"').join(',')}) VALUES (${Array(definition.fields.length+3).fill('?').join(',')})`).bind(row[definition.key],'synthetic-hash',fixture.now,...definition.fields.map(key=>Object.hasOwn(row,key)?JSON.stringify(row[key]):null)));
+  }
+  await db.batch(inserts);
+  await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
+  return {mf,db,schema,authority};
+}
+test('server-resolved D1 scope preserves all six canonical route results',async()=>{
+  const input=richDataset(),{mf}=await setup(input);
+  try {
+    const gas=originalGas(input);
+    const inspected=await (await mf.dispatchFetch('https://local.test/inspect')).json();
+    assert.equal(inspected.access.workspace.workspace_id,access.workspace.workspace_id,JSON.stringify(inspected));
+    const observations={};
+    for(const item of cases) {
+      const start=performance.now();
+      const response=await mf.dispatchFetch('https://local.test'+paths[item.route]);
+      assert.equal(response.status,200,item.route+': '+JSON.stringify(await response.clone().json()));
+      assert.deepEqual(await response.json(),plain(gas[item.fn](...item.args)),item.route);
+      assert.ok(response.headers.has('x-cmwebs-test-scoped-d1'),'actual scoped-loader observation');
+      const d1=JSON.parse(response.headers.get('x-cmwebs-test-scoped-d1'));
+      assert.deepEqual(Object.keys(d1).sort(),['batch_calls','batch_sizes','primary_sessions','single_calls','statements','summed_call_ms']);
+      assert(Array.isArray(d1.batch_sizes)&&d1.batch_sizes.every(size=>Number.isSafeInteger(size)&&size>0&&size<=80));
+      for(const name of ['batch_calls','primary_sessions','single_calls','statements'])assert(Number.isSafeInteger(d1[name])&&d1[name]>=0);
+      assert.equal(d1.primary_sessions,1);assert(d1.statements>0);assert(Number.isFinite(d1.summed_call_ms)&&d1.summed_call_ms>=0);
+      assert(d1.single_calls+d1.batch_calls<=12,'scoped reads must not pay one SDK round trip per statement');
+      observations[item.route]={...d1,read_validation_ms:Number((performance.now()-start).toFixed(3))};
+    }
+    console.log('C3_SCOPED_D1_OBSERVATION '+JSON.stringify(observations));
+  } finally {await mf.dispose();}
+});
+test('explicit foreign Workspace never enters D1 dataset through shared landlord/property identifiers',async()=>{
+  const input=richDataset();
+  const schema=JSON.parse(await readFile(new URL('../schema.json',import.meta.url),'utf8'));
+  for(const [table,definition] of Object.entries(schema)) {
+    if(!definition.fields.includes('workspace_id')||['V2_workspaces','V2_workspace_members','V2_landlord_email_sessions'].includes(table)) continue;
+    const row=input[table]?.[0];if(!row) continue;
+    input[table].push({...row,[definition.key]:'FOREIGN_'+table,workspace_id:'SYNTHETIC_FOREIGN'});
+  }
+  const {mf,db}=await setup(input);
+  try {
+    const inspected=await (await mf.dispatchFetch('https://local.test/inspect')).json();
+    assert.ok(inspected.dataset,JSON.stringify(inspected));
+    for(const [table,rows] of Object.entries(inspected.dataset)) {
+      assert.ok(!rows.some(row=>row.workspace_id==='SYNTHETIC_FOREIGN'),table);
+      assert.ok(!rows.some(row=>String(row[schema[table].key]).startsWith('FOREIGN_')),table);
+    }
+    // Current membership is read from primary D1 every time; no access cache.
+    await db.prepare('UPDATE V2_workspace_members SET member_status = ? WHERE row_key = ?').bind(JSON.stringify('suspended'),access.membership.membership_id).run();
+    const denied=await (await mf.dispatchFetch('https://local.test/inspect')).json();
+    assert.equal(denied.code,'WORKSPACE_REQUIRED');
+  } finally {await mf.dispose();}
+});
+
+test('batched scoped reads preserve source order and deduplication across multiple key chunks',async()=>{
+  const input=richDataset(),expectedIds=[];
+  // Cross both 80-key chunks and an 80-statement batch; legacy children
+  // qualify only through the already loaded parent IDs.
+  for(let index=241;index>0;index--) {
+    const suffix=String(index).padStart(3,'0');expectedIds.push(suffix);
+    input.V2_properties.push({...input.V2_properties[0],property_id:'SYNTHETIC_WIDE_P'+suffix});
+    input.V2_rooms.push({...input.V2_rooms[0],room_id:'SYNTHETIC_WIDE_R'+suffix,property_id:'SYNTHETIC_WIDE_P'+suffix,
+      workspace_id:'',landlord_id:'',landlord_line_user_id:'',current_contract_id:'',current_tenant_id:'',room_status:'vacant'});
+    input.V2_tenants.push({...input.V2_tenants[0],tenant_id:'SYNTHETIC_WIDE_T'+suffix,user_id:'SYNTHETIC_WIDE_U'+suffix,
+      tenant_user_id:'SYNTHETIC_WIDE_U'+suffix,line_user_id:'SYNTHETIC_WIDE_LINE'+suffix,tenant_line_user_id:'SYNTHETIC_WIDE_LINE'+suffix,
+      property_id:'SYNTHETIC_WIDE_P'+suffix,room_id:'SYNTHETIC_WIDE_R'+suffix,current_contract_id:''});
+    input.V2_users.push({...input.V2_users[0],user_id:'SYNTHETIC_WIDE_U'+suffix,line_user_id:'SYNTHETIC_WIDE_LINE'+suffix});
+  }
+  const {mf}=await setup(input);
+  try {
+    const response=await mf.dispatchFetch('https://local.test/inspect');assert.equal(response.status,200);
+    const sizes=JSON.parse(response.headers.get('x-cmwebs-test-scoped-d1')).batch_sizes;
+    assert(sizes.every(size=>size>0&&size<=80)&&sizes.some((size,index)=>size===80&&sizes[index+1]>0&&sizes[index+1]<80),
+      'exercise a full 80-statement batch and its nonempty tail: '+JSON.stringify(sizes));
+    console.log('C3_SCOPED_D1_BATCH_BOUNDARY '+JSON.stringify(sizes));
+    const inspected=await response.json();assert.ok(inspected.dataset,JSON.stringify(inspected));
+    for(const [table,key,prefix] of [['V2_properties','property_id','SYNTHETIC_WIDE_P'],['V2_rooms','room_id','SYNTHETIC_WIDE_R'],
+      ['V2_tenants','tenant_id','SYNTHETIC_WIDE_T'],['V2_users','user_id','SYNTHETIC_WIDE_U']]) {
+      assert.deepEqual(inspected.dataset[table].filter(row=>row[key].startsWith(prefix)).map(row=>row[key]),expectedIds.map(id=>prefix+id),table);
+    }
+    assert.deepEqual(inspected.dataset.V2_landlord_tenant_list_view.map(row=>row.tenant_id),['SYNTHETIC_T1'],'retain rows from the batch tail');
+    const roomResponse=await mf.dispatchFetch('https://local.test'+paths.rooms);
+    assert.equal(roomResponse.status,200);
+    assert.deepEqual(await roomResponse.json(),plain(originalGas(input).getLandlordRoomCenterInitByLineUid_('SYNTHETIC_LINE1',true)));
+  } finally {await mf.dispose();}
+});
+
+test('failed or undecodable scoped batch returns no partial operational response',async()=>{
+  const {mf,db}=await setup(richDataset());
+  try {
+    await db.prepare('UPDATE V2_bills SET rent_amount=? WHERE row_key=?').bind('SYNTHETIC_BROKEN_JSON','SYNTHETIC_B1').run();
+    const malformed=await mf.dispatchFetch('https://local.test/v1/arrears');
+    assert.equal(malformed.status,503);
+    const body=await malformed.json();assert.equal(body.success,false);assert.equal(body.code,'READ_REPLICA_UNAVAILABLE');
+    assert.equal(body.data,null);assert.doesNotMatch(JSON.stringify(body),/SYNTHETIC_BROKEN_JSON|SYNTHETIC_B1|stack/);
+    await db.prepare('DROP TABLE V2_bills').run();
+    const failed=await mf.dispatchFetch('https://local.test/v1/arrears');
+    assert.equal(failed.status,503);assert.deepEqual(await failed.json(),body);
+  } finally {await mf.dispose();}
+});
+
+test('authenticated HTTP verifies LINE/Email and rereads revocation, role and disabled states in primary D1',async()=>{
+  const input=richDataset(),secret='synthetic-email-key',token='synthetic-email-token';
+  Object.assign(input.V2_users[0],{email:'synthetic@example.invalid',email_verified_at:'2026-10-01',email_login_enabled:true});
+  input.V2_landlord_email_sessions=[{session_id:'SYNTHETIC_SESSION',session_token_hash:createHmac('sha256',secret).update('session:'+token).digest('hex'),user_id:access.user.user_id,workspace_id:access.workspace.workspace_id,role:'owner',status:'active',issued_at:'2026-10-12T00:00:00Z',expires_at:'2026-10-13T00:00:00Z',revoked_at:''}];
+  const {mf,db,authority,schema}=await setup(input);
+  const headers=authorization=>({authorization,origin:'https://cmwebssaas-sudo.github.io'});
+  const get=(authorization,path='/v1/arrears')=>mf.dispatchFetch('https://local.test/http'+path,{headers:headers(authorization)});
+  async function update(table,field,key,value){await db.prepare(`UPDATE "${table}" SET "${field}" = ? WHERE row_key = ?`).bind(JSON.stringify(value),key).run();authority.data[table].find(row=>row[schema[table].key]===key)[field]=value;}
+  try {
+    for(const credential of ['LIFF synthetic-valid-line-token','Session '+token]) {
+      const response=await get(credential);assert.equal(response.status,200,JSON.stringify(await response.clone().json()));
+      assert.equal(response.headers.get('access-control-allow-origin'),'https://cmwebssaas-sudo.github.io');
+      assert.equal(response.headers.get('cache-control'),'no-store');
+      const currentAccess={...access,user:input.V2_users[0]};
+      assert.deepEqual(await response.json(),plain(originalGas(input,currentAccess).getWorkspaceLandlordArrearsNativeByLineUid_('SYNTHETIC_LINE1')));
+    }
+    for(const credential of ['LIFF synthetic-forged','Session synthetic-other-token','Bearer synthetic-token']) assert.equal((await get(credential)).status,401);
+    for(const query of ['?workspace_id=SYNTHETIC_W2','?line_uid=SYNTHETIC_OTHER','?section=home&section=actions']) {
+      assert.equal((await get('LIFF synthetic-valid-line-token','/v1/home'+query)).status,400);
+    }
+    const foreignOrigin=await mf.dispatchFetch('https://local.test/http/v1/arrears',{headers:{authorization:'LIFF synthetic-valid-line-token',origin:'https://foreign.invalid'}});
+    assert.equal(foreignOrigin.status,403);assert.equal(foreignOrigin.headers.get('access-control-allow-origin'),null);
+    const preflight=await mf.dispatchFetch('https://local.test/http/v1/arrears',{method:'OPTIONS',headers:{origin:'https://cmwebssaas-sudo.github.io','access-control-request-method':'GET','access-control-request-headers':'authorization'}});
+    assert.equal(preflight.status,204);assert.equal(preflight.headers.get('access-control-allow-methods'),'GET');
+    await update('V2_landlord_email_sessions','status','SYNTHETIC_SESSION','revoked');
+    assert.equal((await get('Session '+token)).status,401);
+    await update('V2_landlord_email_sessions','status','SYNTHETIC_SESSION','active');
+    await update('V2_workspace_members','role',access.membership.membership_id,'viewer');
+    assert.equal((await get('Session '+token)).status,403);
+    assert.equal((await get('LIFF synthetic-valid-line-token')).status,200);
+    await update('V2_workspace_members','role',access.membership.membership_id,'tenant');
+    assert.equal((await get('LIFF synthetic-valid-line-token')).status,403);
+    await update('V2_workspace_members','role',access.membership.membership_id,'owner');
+    for(const [table,key] of [['V2_users',access.user.user_id],['V2_workspaces',access.workspace.workspace_id]]) {
+      await update(table,'account_status',key,'disabled');
+      const denied=await get('LIFF synthetic-valid-line-token');assert.equal(denied.status,403);
+      assert.doesNotMatch(await denied.text(),/synthetic-valid-line-token|synthetic-email-key|stack|SYNTHETIC_U1/);
+      await update(table,'account_status',key,'active');
+    }
+    // These changes happen only in authoritative GAS; no D1 patch is sent.
+    for(const [row,field,value] of [[authority.data.V2_landlord_email_sessions[0],'status','revoked'],
+      [authority.data.V2_users[0],'account_status','disabled'],
+      [authority.data.V2_workspace_members[0],'member_status','suspended'],
+      [authority.data.V2_workspaces[0],'account_status','disabled']]) {
+      const previous=row[field];row[field]=value;
+      assert.equal((await get('Session '+token)).status,401);
+      row[field]=previous;
+    }
+    for(const [row,field,value,status] of [
+      [authority.data.V2_users[0],'account_status','disabled',401],
+      [authority.data.V2_workspace_members[0],'member_status','suspended',401],
+      [authority.data.V2_workspaces[0],'account_status','disabled',401],
+      [authority.data.V2_workspace_members[0],'role','tenant',401],
+      [authority.data.V2_workspace_members[0],'role','viewer',503]
+    ]) {
+      const previous=row[field];row[field]=value;
+      const denied=await get('LIFF synthetic-valid-line-token');
+      assert.equal(denied.status,status);
+      if(status===503) assert.equal((await denied.json()).code,'READ_AUTH_STATE_CHANGED');
+      row[field]=previous;
+      assert.equal((await get('LIFF synthetic-valid-line-token')).status,200);
+    }
+    authority.cache.set('cmwebs:read-replica:dirty:V2_rooms','synthetic-generation');
+    const pending=await get('LIFF synthetic-valid-line-token');
+    assert.equal(pending.status,503);assert.equal((await pending.json()).code,'READ_SYNC_PENDING');
+    authority.cache.delete('cmwebs:read-replica:dirty:V2_rooms');
+    await db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at) VALUES ('synthetic-pending','V2_rooms','snapshot',?,2,0,'synthetic','receiving',?)").bind(Date.parse(fixture.now)+1,fixture.now).run();
+    const incomplete=await get('LIFF synthetic-valid-line-token');
+    assert.equal(incomplete.status,503);assert.equal((await incomplete.json()).code,'READ_SYNC_INCOMPLETE');
+    await db.prepare("DELETE FROM sync_runs WHERE snapshot_id='synthetic-pending'").run();
+    await db.prepare('UPDATE sync_runs SET completed_at=?').bind(new Date(Date.parse(fixture.now)-26*3600000-1).toISOString()).run();
+    const stale=await get('LIFF synthetic-valid-line-token');
+    assert.equal(stale.status,503);assert.equal((await stale.json()).code,'READ_SYNC_STALE');
+  } finally {await mf.dispose();}
+});
+
+test('delegated manager preserves the canonical owner, masking, permissions and all route projections',async()=>{
+  const input=richDataset();
+  const user={...input.V2_users[0],user_id:'SYNTHETIC_MANAGER',line_user_id:'SYNTHETIC_MANAGER_LINE',name:'合成管理員'};
+  const member={...input.V2_workspace_members[0],membership_id:'SYNTHETIC_MANAGER_MEMBER',user_id:user.user_id,role:'manager',is_primary:false,can_edit_bank_account:false,can_manage_team:false};
+  input.V2_users.push(user);input.V2_workspace_members.push(member);
+  const oracle=originalGas(input),ss=oracle.runtimeSpreadsheet_();
+  const context=oracle.workspaceResolveContextByLineUid_(ss,user.line_user_id);
+  const principals=plain(oracle.workspaceLandlordResolvePrincipals_(ss,context));
+  const currentAccess={...access,user,membership:member,principals,principal:principals[0],line_user_id:user.line_user_id,delegated:true,permissions:plain(oracle.workspaceBuildPermissionView_(member))};
+  const gas=originalGas(input,currentAccess),{mf}=await setup(input,{kind:'line',line_user_id:user.line_user_id});
+  try {
+    const inspected=await (await mf.dispatchFetch('https://local.test/inspect')).json();
+    assert.equal(inspected.access.user.user_id,user.user_id);
+    assert.equal(inspected.access.membership.user_id,user.user_id);
+    assert.equal(inspected.access.delegated,true);
+    for(const item of cases) {
+      const args=[user.line_user_id,...item.args.slice(1)];
+      const response=await mf.dispatchFetch('https://local.test'+paths[item.route]);
+      assert.equal(response.status,200,item.route+': '+JSON.stringify(await response.clone().json()));
+      assert.deepEqual(await response.json(),plain(gas[item.fn](...args)),item.route);
+    }
+  } finally {await mf.dispose();}
+});
+
+test('Email D1 lookup rejects two owners sharing one LINE alias in either source order',async()=>{
+  for(const aliasFirst of [true,false]) {
+    const input=richDataset(),actor=input.V2_users[0],member=input.V2_workspace_members[0];
+    Object.assign(actor,{email:'synthetic@example.invalid',email_verified_at:'2026-10-01',email_login_enabled:true});
+    const alias={...actor,user_id:'SYNTHETIC_ALIAS_USER'};
+    const aliasMember={...member,membership_id:'SYNTHETIC_ALIAS_MEMBER',user_id:alias.user_id,can_edit_bank_account:true};
+    input.V2_users[aliasFirst?'unshift':'push'](alias);
+    input.V2_workspace_members[aliasFirst?'unshift':'push'](aliasMember);
+    const {mf}=await setup(input,{kind:'email',user_id:actor.user_id,session:{workspace_id:access.workspace.workspace_id,role:'owner'}});
+    try {const response=await mf.dispatchFetch('https://local.test/inspect');assert.equal(response.status,503);assert.equal((await response.json()).code,'AUTH_REQUIRED');}
+    finally {await mf.dispose();}
+  }
+});
+
+test('delegated legacy scope rejects a blank-Workspace child anchored to a declared foreign parent',async()=>{
+  const input=richDataset();
+  const user={...input.V2_users[0],user_id:'SYNTHETIC_MANAGER',line_user_id:'SYNTHETIC_MANAGER_LINE'};
+  const member={...input.V2_workspace_members[0],membership_id:'SYNTHETIC_MANAGER_MEMBER',user_id:user.user_id,role:'manager',is_primary:false};
+  input.V2_users.push(user);input.V2_workspace_members.push(member);
+  const legacy={...input.V2_landlords[0],landlord_id:'SYNTHETIC_L2'};
+  input.V2_landlords.push(legacy);
+  Object.assign(legacy,{workspace_id:'',user_id:input.V2_users[0].user_id});
+  const room=input.V2_rooms.find(row=>row.room_id==='SYNTHETIC_RX');room.workspace_id='';
+  const bill=input.V2_bills.find(row=>row.bill_id==='SYNTHETIC_BX');bill.workspace_id='';
+  input.V2_contracts.push({contract_id:'SYNTHETIC_FOREIGN_PARENT_CONTRACT',workspace_id:'',landlord_id:'SYNTHETIC_L2',property_id:'SYNTHETIC_PX',room_id:room.room_id,contract_status:'active'});
+  const oracle=originalGas(input),ss=oracle.runtimeSpreadsheet_(),context=oracle.workspaceResolveContextByLineUid_(ss,user.line_user_id);
+  const principals=plain(oracle.workspaceLandlordResolvePrincipals_(ss,context));
+  assert.ok(principals.some(row=>row.landlord_id==='SYNTHETIC_L2'),'exercise inferred legacy owner relationship');
+  const currentAccess={...access,user,membership:member,principals,principal:principals[0],line_user_id:user.line_user_id,delegated:true,permissions:plain(oracle.workspaceBuildPermissionView_(member))};
+  const gas=originalGas(input,currentAccess),{mf}=await setup(input,{kind:'line',line_user_id:user.line_user_id});
+  try {
+    const inspected=await (await mf.dispatchFetch('https://local.test/inspect')).json();
+    assert.ok(inspected.dataset,JSON.stringify(inspected));
+    assert.ok(!inspected.dataset.V2_rooms.some(row=>row.room_id===room.room_id));
+    assert.ok(!inspected.dataset.V2_bills.some(row=>row.bill_id===bill.bill_id));
+    assert.ok(!inspected.dataset.V2_contracts.some(row=>row.contract_id==='SYNTHETIC_FOREIGN_PARENT_CONTRACT'));
+    for(const item of cases) {
+      const response=await mf.dispatchFetch('https://local.test'+paths[item.route]);
+      assert.equal(response.status,200,item.route);
+      assert.deepEqual(await response.json(),plain(gas[item.fn](user.line_user_id,...item.args.slice(1))),item.route);
+    }
+  } finally {await mf.dispose();}
+});

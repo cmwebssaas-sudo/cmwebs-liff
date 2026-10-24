@@ -1,5 +1,103 @@
 # V2 回歸測試矩陣
 
+## 2026-10-14 C3 fixed actor metadata candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Four fixed alias/actor/host/GET/mask requests; wait→credential→debit→life→fetch | RED0/40 then40/40 | Synthetic transport only; no existing guard bypass/new Scope |
+| Same-epoch release-observer metadata ordering | PASS, four metadata+one RPC debit=5 | Durable actual local journal, fake API/native/role readbacks |
+| Response status/redirect/URL/UTF-8/size/JSON/ACL page/file/tabs/grid | STOP negatives PASS | No retry/page/read values; local response validation, not Google datatype/privacy acceptance |
+| Credential identity/Scopes/no caller refresh/life/Promise/one snapshot/single-flight | PASS | Trusted cached synchronous getter, no live OAuth/userinfo/refresh |
+| Six focused files / independent review |286/286 /286/286, zero fail/cancel/skip; no P1/P2 | Reviewer additional six negative repros PASS; no source/account mutation |
+| Full repository/Core regression |1224/1224, zero fail/cancel/skip | Node22.23.3 actual Core HTTP/four handlers; owned PG16.14 DB/role/PID/listener cleanup, errors0 |
+| Validate/diff / previous9638088 exact CI | PASS /1178 rental+24 Worker | New adapter candidate CI not yet dispatched; older pending status historical |
+| Actual Google prerequisites/budget/native/identity/Schema/privacy/latency | NOT_ACCEPTED/UNVERIFIED | Counter25/160 retained; no upload/access/client/token/publication/trial RPC |
+
+Snapshot528 dc7c6199ee0961e3661776df4015e54782af565c51f0402128d8c8f997708360;
+only later evidence-doc updates excluded. Explicit actor/host restriction is
+required because Google Sheets GET accepts drive.file; fixed field mask plus
+response allowlist guards metadata despite includeGridData being ignored with
+a mask. This does not replace role/group/inherited/source-no-Viewer gates.
+
+## 2026-10-14 C3 approved budget and independent cleanup candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Human scope decision / retained preparation | APPROVED160, spent25 | Private approval/hash and same original proposal; earlier14/pending rows are historical |
+| Same epoch/path/binding migration; no reseed/refund | RED126/140 then PASS; extra import>40 RED0/1 fixed; driver141/141 | Actual private files, synthetic clock/IO only; no actual trial journal created |
+| Exclusive seventeen-unit cleanup; per-entry first compatibility stage | PASS | Ordinary reads cannot borrow reserve; authority/third/duplicate entry denied before RPC |
+| Cleanup pending/expiry/minute/concurrency/error/history | PASS | Same lock and durable debit; unknown terminal remains; no replay or new RPC |
+| Five focused files / full Core regression | Final PASS245/245 /1183/1183, zero fail/cancel/skip | Actual pinned Core HTTP/four handlers, owned PG16.14 DB/role/PID/listener teardown, errors0; pre-fix243/1181 retained |
+| Independent review / fix pass / new exact-head CI | One P2 fixed RED0/2; final245/full1183; new CI PENDING | Durable stop intent before lock/slot; in-flight native accounting and pending retained; no re-review |
+| Previous b7eecd9 exact CI | PASS1161 rental /24 Worker; two dry runs, no deploy | Run38448010978; rental footer retained with provider-tail truncation |
+| Actual native UI preflight | PARTIAL_STOP;200/page,400 distinct records still within24h, more pages | One-page budget falsified; complete window/type/maturity/remaining quota UNKNOWN |
+| Actual fixture/adapters/client/token/compatibility | NOT_STARTED / NOT_INTEGRATED |160 approval does not replace executable budget or complete native gate |
+
+Final526-file snapshot 9bdfd466e6b7a2ed23c79f22ed6bfa028f0c596f74eddf1479c777a32ec1b6a1;
+only later evidence-doc updates excluded. All original strict timings/72h/seven
+real24h/500/Taipei/device gates remain unpassed.
+
+## 2026-10-14 C3 native observer debit interface
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Native `(phase, control)` before/after wait/debit under existing epoch lock | RED118/126, eight failures; final driver126/126 | Durable private journal; no actual Google screen/IO |
+| Spent IO error, swallowed debit failure, expired cap, unawaited wait | PASS; no illegal RPC or refund | Private errors excluded from journal; late rejection consumed |
+| After-RPC native budget exhaustion | STOP, spent RPC/pending preserved; no fabricated completed runtime; reopen denied | Reworked old positive-proof collector counterexample; initial TypeError-masked test corrected |
+| Focused / independent review | PASS198/198, zero fail/cancel/skip; no P1/P2 | Own Node22.23.3; reviewer Node26.5.0; adapters remain trusted code to integrate |
+| Full repository/Core regression | PASS1166/1166, zero fail/cancel/skip | Actual pinned Core HTTP plus four handler fixtures; owned PG16.14, verified DB/role/PID/listener cleanup, errors0 |
+| Validate / diff | PASS72 backend/40 endpoints/static cache / PASS | GAS/library/thin/Worker runtime bytes unchanged |
+| Native UI/Scopes/actual trial | NOT_INTEGRATED / UNCHANGED / NOT_STARTED | Approved cap40, spent14 retained; no token/grant/resource/RPC;160 pending |
+
+Full526-file snapshot
+`36783b759cd028aa441ad932d7f498781c78632355df50597a91c052f11eb0ec`;
+only later evidence-document updates excluded. Public method research confirms
+the existing deployment-ID/qualified endpoint and that processes requires an
+unapproved scope; no extra scope or account request was attempted. Full actual
+native coverage, proof ordering, release receipts and independent cleanup remain
+unpassed; source fixture and local green results do not replace those gates.
+
+## 2026-10-14 C3 rolling slot readiness candidate
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Wait before a separate durable debit; preserve preparation/cap40 | RED104/116; final driver118/118 | Local private journal and fake clock; readiness neither spends nor resets quota |
+| Fifteen-item pre-release observation / first sufficient expiring batch / retained epoch lock | PASS | Synthetic before-only observer; not four live observations or160 budget proof |
+| Frozen clock, day/expiry, deleted journal, private pause error, exhausted total40 | STOP without RPC/refund; predicted expiry stops before sleep | Single wait≤60000ms, no IO retry; live native collector still absent |
+| Unawaited observer wait / swallowed failure / expired capability | Fixed counterexample RED0/1 then PASS; no RPC while pending | First test clock was masked by an existing minute guard; corrected reproduction retained |
+| Focused driver/entry/adapter | PASS190/190, zero fail/cancel/skip; independent review no P1/P2 | Same-callback concurrent readiness/debit also vetoes with spent10, zero RPC and stopped journal |
+| Full repository/Core regression | PASS1158/1158, zero fail/cancel/skip | Pinned actual Core HTTP plus four handlers; owned PG16.14 with DB/role/PID/listener teardown, cleanup errors0 |
+| Validate/diff | PASS | Runtime/library/GAS/Worker unchanged; no remote action or new credential |
+| Actual trial/resources/budget approval | NOT_STARTED / UNCHANGED / PENDING | Original spent14/40; no grant/upload/RPC; owner160 scope decision pending |
+
+Full526-file snapshot
+`8a93c4282b61d55fab1cea5f6108ed82dad07b3266580d6c0fb1731a8da2e01a`;
+only later evidence-document updates excluded. API/native observer ordering,
+pre-debit wiring, fresh native proofs and independent cleanup reserve remain
+integration gates; this readiness method alone authorizes no Google call.
+
+## 2026-10-14 C3 trial request minting and preflight safety
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Mint canonical request after awaited release/native/credential checks | PASS; delayed signed-object path remains a characterized canonical denial | Synthetic VM runs unchanged original MAC/15-second prefix; no Google RPC |
+| One-time primitive snapshot, cross-realm rejected Promise, token >360000ms before signer and dispatch | RED:98/103, five failures; final driver104/104 | Fake getters/VM Promise and isolated child; original rejection not printed; no live credential |
+| Dispatch rechecks canonical15-second timestamp after getter delay | RED0/1, then PASS; expired factory sends zero RPC/debit | Independent final review: no remaining P1/P2; static request path/MAC/cap unchanged |
+| Driver/entry/readonly adapter focused regression | PASS176/176, zero fail/cancel/skip | Local Node22.23.3; not native Google compatibility |
+| Complete repository/Core regression | PASS1144/1144, zero fail/cancel/skip | Pinned Core643c1b3, actual owned loopback PG16.14; HTTP plus four handlers; DB/role/PID/listener teardown verified |
+| Validate / diff | PASS72 backend/40 endpoints/static cache; diff PASS | Source validation; no deployment |
+| Actual Google prerequisites / access preflight | Testing0 users, both APIs enabled; original container sharing STOP; spent14/40 retained | Prior authenticated readback; ACL request rejected before Drive IO, no refund; original caller/source ACL remains UNKNOWN |
+| Revised unbound fixture/cumulative160 compatibility proposal | PROPOSED; existing40 remains effective | No new fixture/grant/client/token/RPC;160/cleanup reserve/native IO/rolling observer/OAuth callback still require reviewed implementation and owner scope decision |
+| Actual C1/C3/C5/C6 acceptance | NOT_ACCEPTED / NOT_STARTED / NOT_STARTED / NOT_STARTED | Retain original timing failures; fresh72h, seven real days, authenticated500/Taipei/device gates not bypassed |
+
+Full source snapshot526 files,
+`cf745597c21c233266c26ea1b5e03acbeece25f8a8cbc572d6e34530b26a821f`;
+only later evidence-document updates are excluded. Two private runner preparation
+failures are retained: missing package/config inputs stopped before any DB; then
+missing cluster checker stopped before application tests and closed the owned PG.
+Final runner validates all four pinned inputs before PG startup. Decision and
+rollback: [READ-TRIAL-ACCESS-DECISION.md](READ-TRIAL-ACCESS-DECISION.md).
+
 ## 2026-10-12 C2 read parity candidate
 
 | Check | Result | Evidence boundary |
@@ -12,7 +110,7 @@
 | Affected GAS/calendar/query boundaries | 28/28 PASS | Includes `testReadReplicaProjection` and `testV2ReadSummaryProjection`; no Sheet writes |
 | Unit / Worker / validate / diff-check | 863/863 /13/13 /PASS /PASS | Source evidence |
 | Full repository suite | 863 pass /1 existing external Core fixture failure /4 skips | `PLATFORM_CORE_TEST_WORKTREE` unavailable; external PG acceptance not claimed |
-| C1 actual three days / C3 auth / C2 publication | RUNNING /NOT_STARTED /NOT_STARTED | Production read paths stay closed; no gate skipped |
+| C1 actual three days / C3 formal auth / C2 publication | NOT_ACCEPTED (test timers STOPPED) /NOT_STARTED /NOT_STARTED | Production read paths stay closed; no gate skipped |
 
 Source manifest, schema, review, release and rollback: `READ-API-PARITY.md`.
 
@@ -1257,6 +1355,35 @@ PLATFORM-CORE-SUBSCRIPTIONS.md for fixture versus PostgreSQL/live boundaries.
 | Apps Script affected test function | `testReadReplicaProjection()` executed by the VM suite | Pure projection test; not a production execution |
 | Three consecutive days, separate test Sheet/D1, total daily execution below 15 minutes, Paid quota/APAC readback | NOT_ACCEPTED; failed test schedule STOPPED | Stopped20:30 Taipei; complete ended history has914 minute timers/2892.886s and3 failures. Daily900s target failed; corrected source needs a fresh actual72-hour gate |
 
+## 2026-10-12 C3 authorization candidate
+
+| Coverage | Evidence | Boundary |
+| --- | --- | --- |
+| Exact LINE protocol/provider claims, five-minute/expiry cache, Email HMAC, slow-lookup expiry and per-read revocation | `tests/read-identity.test.mjs` | Synthetic provider/session adapters; real crypto |
+| Canonical context/permissions, inactive user/member/Workspace, Email eligibility/session scope, alias ambiguity and explicit principal scope | `tests/read-access.test.mjs` | Real generated and original GAS helpers |
+| Immutable additive migrations and removal rejection | `tests/read-migration.test.mjs` | Actual generator in a disposable filesystem |
+| Primary D1 identity/operational scope, delegated manager parity, both alias orders and foreign-parent legacy anchors | `cloudflare/read-api/test/read-access-d1.test.mjs` | Actual local workerd/D1; six original GAS routes compared |
+| Signed GAS confirmation through actual POST dispatcher; nonce/digest/route binding, replay/forgery/expiry, unavailable authority and undelivered source-only revocation/access changes | `tests/read-authority.test.mjs`; integrated D1 HTTP test | Real GAS modules in VM, real Worker HMAC and local service bridge; no formal account |
+| Source pending markers, incomplete/stale D1 snapshots, role changes, CORS, query tampering and sanitized HTTP errors | Integrated D1 HTTP test | Synthetic source and local D1 changes; no cross-request access cache |
+| Formal GAS/Worker publication, binding presence, authenticated end-to-end latency and device acceptance | NOT_STARTED; isolated synthetic authority tested separately below | Preceding C1 actual gate, deployment readback and owner device required; all read flags remain off |
+
+
+C3 real workerd transport regression5/5: Google allowed/fakehost/third-hop
+and LINE valid claims/302 rejection. Root cause is workerd redirect:error
+construction; canonical manual+exact200 retains no-follow and1500ms. Complete
+Worker24/24, Node identity+authority13/13, validate72 and independent review PASS.
+Synthetic real Google signed Email confirmation and source-only revoke/role/
+disable diagnostic denials verified; no remote D1/real LINE/device acceptance.
+All strict1500ms samples timed out; latency acceptance NOT_ACCEPTED, flags off.
+
+Private synthetic v2 service profiling: eight canonical modules/manifest
+unchanged; VM and10-file exported-source checks PASS. Three real signed
+diagnostics PASS with authorization2164–3306ms, five full Sheet reads and
+zero shared cache hits. Range metadata914–1215ms, values455–564ms; remaining
+time is not exclusively attributed. Original editor restored/exact10 readback;
+v1/v2 retained, no formal/C1 change. This is33-row/15000ms diagnostic evidence,
+not strict1500ms, remote D1,LINE/device,p95 or500-room acceptance.
+
 
 C1 actual remote follow-up through2026-10-12 16:51 Taipei: four-page history,
 694 minute timers/1938.259 platform seconds exceeds900s daily target before
@@ -1264,6 +1391,32 @@ end of day; one Drive timeout, earlier SYNC_BUSY retained. IDLE CacheService
 path335171ms and successful canonical sync195407ms are observed boundaries,
 not isolated CPU/network metrics. C1 actual runtime/correctness NOT_ACCEPTED;
 no formal release or observation-clock reset.
+
+Latest C1 rollback supersedes the RUNNING observation label: two owned test
+timers stopped at20:30; full ended capture923 records/914 minute timers,
+2892.886 platform seconds/three failures. Failed partial day is NOT_ACCEPTED;
+fresh corrected source requires a new actual72-hour gate, flags remain off.
+
+| Additional C3 diagnostic | Evidence | Boundary |
+| --- | --- | --- |
+| Fixed-project/no-redirect bulk transport and typed scalar/local-clock parity | Retained two403 failures; test dependency then actual three bulk/native pairs358/1331,239/863,218/823ms;166 cells/one Date/51 empties/zero mismatches each | One warm manual invocation; no Date-loader, authenticated latency, p95,500-room or device acceptance |
+| Native SHA-256 and UTF-8 byte-count hypothesis | Independent eight fake safety cases; actual100 strings107ms/254ms/14580 bytes | Does not support replacing crypto or establish C1 daily-runtime/72h acceptance |
+| Test editor rollback | Original10-file source exports exact after both diagnostics; immutablev1/v2 retained | Editor Sheets dependency removed; external default-project API disable not requested; formal/C1 source/Properties/data/timers/flags unchanged |
+
+| C3 bulk reader candidate | Evidence | Boundary |
+| --- | --- | --- |
+| Typed grid, inherited Date format, blanks/formula ordinals and bounded sparse hydration | `tests/read-authority-grid.test.mjs`; independent review found input-only cap defect, regression RED→GREEN with total hydrated cap | Synthetic adapters; separate bounded native Date check below |
+| Fresh canonical roles, delegated manager, foreign principal, one-ms expiry, changes during provider/hash waiting, forgery/replay and safe fresh-native fallback |49 new grid cases plus19 authority/access/identity cases; successful cases assert zero native full reads | Preserve canonical identity/hash-before-values ordering; no positive shared access cache; fallback is not latency acceptance |
+| Reproducible calculator source and broader regression |933/933 local unit tests; generated manifest updates only authorization source hash | No signed remote candidate authority, formal release, LINE/device, strict latency or preceding-gate acceptance yet |
+| Actual native Date parity and editor rollback |22:40 manual bulk576/native2918ms,166 cells/one native Date/51 empties/three synthetic millisecond boundaries/zero mismatches;22:41 original10-file restore andv1/v2 retention | One33-row manual invocation, not authenticated lazy-resolution/1500ms/p95/500-room/device acceptance; no new deployment or formal change |
+| Private signed-candidate lifecycle/probe controls | Independent9 publisher/6 actual-probe/18 pure-gate fake checks; source swaps stop, fixed exception classifications, recorded-ID recovery; canonical68 repeated PASS | Fake controls do not establish remote latency or production readiness |
+| Actual signed synthetic candidatev3 | Three strict1500ms failures retained; three diagnostic replies verified at3302.118/3187.969/2620.684ms; original10-file editor restored23:14:32 andv1/v2/v3 retained | NOT_ACCEPTED;33 rows/static fixture/no D1, real LINE/device, p95 or500 rooms; original harness lacks reader-choice telemetry, native fallback not excluded; formal flags off |
+| Signed reader-choice lifecycle and bounded telemetry | Independent63 fake cases:7 harness/7 editor/9 publisher/6 probe/19 gates/15 telemetry; canonical signatures checked before capture is stored;20000-byte cap/cancel; source pins andv1–v3 retention | Synthetic controls only; nested timings must not be summed |
+| Actual signed synthetic bulk diagnosticv4 | Three strict failures; three signed diagnostics each one successful bulk attempt/no native range.getValues/zero shared cache; auth1183/1394/1052ms contains bulk288/632/223ms; complete2967.576/2917.804/3002.265ms; original10-file restore23:33:42/v1–v4 retained | Strict latency NOT_ACCEPTED; runtime adapter read counters are not native IO;33 rows/no D1, real LINE/device, p95 or500-room acceptance; formal flags off |
+
+| Owned synthetic HTML transportv5 | Independent93 fake controls/68 canonical regressions; three strict1500ms failures, three HTTP200 diagnostics rejected by lab body decoder, no telemetry; native six completed; original10 restored01:41:32/v1–v5 retained | NOT_ACCEPTED; lab extraction is not canonical HTTP acceptance; no p95/500-room/D1/LINE/device or formal release; body failure cause still unclassified |
+| Single unsigned wrapper structure classification |16 independently reviewed fake controls; one actual unsigned `{}` POST, HTTP200/8130 UTF-8 bytes/one ordered marker pair/hex-escaped padding; no OAuth/credential/fixture IO or additional signed request | Only unsigned wrapper structure; no raw body retention/script execution, signature/access/latency or original three signed-body diagnosis acceptance |
+| Owned unpadded HTML producer v6 |99 reviewed fake controls; three strict1500ms failures, three diagnostic envelopes verified with one successful bulk/no native getValues/zero shared cache; complete2951.322/2266.999/2898.482ms; native first strict212.683s retained; final original10/config check02:07:18/v1–v6 retained | Lab cryptographic/access validation, not canonical HTTP or strict latency acceptance;33 rows/no D1,p95,500-room,real LINE/device or formal cutover |
 
 C1 read-only service diagnostic on2026-10-13: one manual invocation at00:23:53
 Taipei, five paired calls,438ms measured region after the Script guard and
@@ -1350,6 +1503,512 @@ Documentation conflicts preserve both histories; no actual acceptance/rollout.
 | Root verification | Prior872/872 retained; all runtime/root-test bytes identical | New source change only Worker test; no redundant unchanged root rerun |
 | C3 preceding Linux CI |38533367980 rental1702 PASS/Worker23 PASS1 FAIL | Rooms188.364ms>50,11/100>=50; cause UNRESOLVED; no formal or real acceptance |
 
+
+## 2026-10-14 — One-time local OAuth candidate
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Fixed loopback, single epoch/state claim, S256, online three scopes, pinned actors, fixed token/userinfo endpoints, bounded/no-retry |40 OAuth cases, fake Google responses, real loopback | No real Google consent, Web PKCE, project isolation or credential gate |
+| Receipt failure and close-claimed review defects | Four exact RED failures then fixes; late-token cleanup, expired getter, failure result redirect; focused326/326 | Independent review found P1/P2; fix regression verified, not re-reviewed |
+| Full regression |1264/1264 Node22.23.3/macOS, actual pinned Core HTTP/four handlers/owned PG16.14 and verified cleanup; validate/diff | Same-head CI pending; no Apps Script source changed |
+| Cleanup | Once-only independent revoke reserve, project-wide isolation precondition, ACK_UNVERIFIED/TOKEN_UNAVAILABLE receipts | Separate actual grant/access readback still required; unknown result never retry |
+| Trial |25/160 retained, no actual new resource/client/grant/token/RPC | Full native window, executable160 budget, publication/restore and original real gates not passed |
+
+
+## 2026-10-14 — Offline native snapshot analysis
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Fixed URL/account hash, independent columns, Taipei dates/decimal seconds, duplicate/unknown/nonterminal/notice preservation |14 cases; review bare-row omission RED0/2 then corrected | No raw identity/project/function output; fixed false acceptance markers, never driver proof |
+| Historical native snapshots | Two200-row pages parsed offline; private duration comparison matches; next/live/notice retained | Historical reference not capture attestation; partial visible totals/fingerprints not exact per-user quota/native IDs |
+| Full regression | Focused340/340/full1278/1278 Node22, actual pinned Core/owned PG16.14 verified cleanup; validate/diff | Initial Core preflight timeout retained; no tests skipped or account IO, same-head CI pending |
+| Trial |25/160 retained; no new resource/access/credential/RPC | Complete native collector/executable160/write/publication/restore and original real gates pending |
+
+
+## 2026-10-14 — Fixed grantee ID lookup preparation
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Optional normalized caller-hash alias, fixed publisher/v2 path/mask/strict opaque ID, no destination override | Eight new cases2/8 initially then48/48 full metadata; independent48/48/no P1/P2 | No configured Email retains four aliases; lookup gives no role/source-Viewer/grant proof |
+| Regression | Full1286/1286 Node22 actual pinned Core/owned PG16.14 verified cleanup, validate/diff | Same-head CI pending; no Apps Script source changed/account calls |
+| Rollback preparation | Prerecord grantee ID before future grant; B12/optimistic159/space1 | Actual v2/v3 match/grant/remove/unknown settlement unverified; spent25/160/17 retained, native budgetSTOP |
+
+
+## 2026-10-14 — Fixed Reader and independent cleanup candidate
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Fixture/actor/hash/epoch binding, fresh original denial, new sole owner, fixed notifications-off Reader POST and readback | Initial0/17, corrected valid publisher mock, expanded23/23 | Fake Google only; actual import/unbound/source/library none and v2/v3 match not accepted |
+| Durable stop/operation lock, admission-before-attempt, target preservation/fresh cleanup verification | Three RED then26/26; independent26/26 P1/P2; two exact RED then28/28 | Fixes regression verified, not independently re-reviewed; unknown terminal/rollbackComplete false preserved |
+| Independent DELETE and owner-only readback | Receipt fault/expiry/cancellation/unknown outcome cases | Valid cached credential, no refresh/retry/notification; actual cleanup still required |
+| Full regression |1314/1314 Node22 actual Core/owned PG16.14 teardown errors0, validate/diff | No Apps Script source changes, same-head CI pending |
+| Budget/trial | B13/optimistic160/space0, approved160/spent25/cleanup17 unchanged | Native executable budget STOP; fixed import/publication/restore/orchestration and all original real gates pending |
+
+
+## 2026-10-14 — Fixed XLSX import candidate
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Copied bytes/hash/size, trusted offline preflight, fixed multipart/publisher/debit/intent/new-ID/metadata readback | RED0/21 then21/21, expanded27/27 | Fake Google; receipt shape is not actual unbound/privacy/Schema proof |
+| Fresh private fixture safety | Same pinned hash/20 tabs/28 entries/no formulas/macros/external relationships/links | Local ZIP/XML check only, no upload or values printed |
+| Stop IO fault | Independent27/27 P1; corrected precise RED0/1 then28/28 local flag-before-persistence fix | First mock second-wait cancellation retained; fix not re-reviewed |
+| Restart/concurrency/unknown create/metadata denial | Single POST, preserved target/unknown, no duplicate/copy/share/delete/refresh | Real Google import and gate wiring still unverified |
+| Full regression |1342/1342 Node22 actual pinned Core/owned PG16.14 cleanup errors0, validate/diff | Same-head CI pending, no Apps Script source changes |
+| Budget/trial | B13/optimistic160/space0, approved160/spent25/cleanup17 unchanged | Native executable budget STOP; publication/restore/collector/orchestration and original real gates pending |
+
+
+## 2026-10-14 — Library publication/exact editor restore candidate
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Canonical library, pinned original ten-file backup, fixed stage/version/content/restore/inventory sequence |15 RED then15 GREEN; actor/path/restart/unknown cases | Fake Google; source receipt does not attest editor exclusivity/native/runtime |
+| Stop persistence/unknown restore readback | Own two precise RED then17/17 | Independent C restore capabilities still unwired; no assumed refund/extra/I17 borrowing |
+| Pre-admission readback reserve and JSON object field order | Independent21/21 two P2; exact RED0/2 then23/23 | Fixes regression verified without second review, source strings remain exact bytes |
+| Full regression |1365/1365 Node22 actual pinned Core/owned PG16.14 cleanup errors0, validate/diff | Same-head CI pending; no Apps Script source changed |
+| Trial | B13/C9/optimistic160/space0, spent25/I17 unchanged, publicationAccepted/rollbackComplete false | C restore control/thin/guard/native/budget/orchestration and all real gates pending, no actual publication/epoch/account IO |
+
+
+## 2026-10-14 — Preparation controller / independent C restore
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Same counter legacy fingerprint/history, native flock, initial rolling wait, independent I17/C2 | Initial13 RED/13 GREEN, swallowed failure1 RED then19/19 | No real counter upgrade/Google/token/RPC/native readiness |
+| Publication integration | Actual local synthetic ledger and fake Google:7 IO→spent32, unknown stage+restore3 IO→spent28 | Returned publicationAccepted/rollbackComplete false; original actual25 unchanged |
+| Rollback/reseed, spawn nullable terminal, pending IO ownership, caught failure stops ordinary | Independent21/21 P1+three P2; six precise RED then27/27 | Early repro callback mistakes corrected; host normal spawn failure already terminated, fault injection explicit; no re-review |
+| Durability | External checkpoint/path claim, checkpoint-first pair; torn/older pair STOP | Preserve checkpoint/counter/claims; actual repair/handoff integration pending, no reset/refund |
+| Full regression |1392/1392 Node22 actual Core/owned PG16.14 cleanup0, validate/diff | First Core preflight timeout/no cluster retained, same-env clean status/r2 success; same-head CI pending |
+| Real trial | Actual25/160/I17/C2 unchanged; optimistic160/no spare, native budget STOP | Thin/guard/native/handoff/full orchestration and all original real gates pending |
+
+
+### Fixed thin publication and independent deployment cleanup candidate
+
+15 RED→15 GREEN; receipt-target RED1fail/1pass→17; ready-receipt replay RED0/1→20.
+Real local preparation ledger/fake Google success25→32 and malformedcreate25→31
+with independent I2/Creserve retained→22. Reviewer20/20/P2 double-receipt-fault
+refresh drops admitted DELETE; exact RED0/1→final23/23 via monotonic close/verify
+admission, UNKNOWN preserved. One fix pass/no re-review/minor0.
+Full1415/1415 Node22/macOS actual Core643c1b3/owned PG16.14 cleanup0, validate/diff
+PASS. Real Google GCP/scopes/empty/ACL/guard, source/version/deployment, actual
+counter handoff, complete native budget/window/quota/latency/device NOT_ACCEPTED.
+
+
+### Compatibility cost compiler
+
+20 missingfeature RED→20 GREEN; fixed127/C2 included/I17 protected in arithmetic,
+eight phase×actor windows, unknown cost fail closed, all navigation categories,
+extra-operation scope review, spent/no-refund/max160, duplicate/missing/invalid
+counts and stage restrictions/order-independence. Independent review20/20 plus
+pure null/freeze probes/no P1/P2/minor. Full1435/1435 Node22/macOS actual Core/
+owned PG cleanup0, validate/diff PASS. Actualprivatecounter25/160 unchanged;
+40 native unknowns/minimum160/total null/budgetFits false. Hypothetical160/168
+not live evidence. No actual IO/admission/native/quota/whole rollback proof.
+
+
+### Atomic native capture and durable raw evidence
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Atomic wait/debit/callback, failure stops ordinary, unawaited IO owns flock, escaped control | Four precise RED→31 controller GREEN | Existing low-level adapters not migrated; no actual native tool |
+| Four phases/two actors, sequential200/full AX, nonce/clock/size, stop/unknown, private raw rehash/analysis |13 missingfeature RED→13; cap swap/raw corruption two RED→15 | Local synthetic text/fake producer, no Google attestation |
+| Immutable completed receipt and permanent path claim | Independent46/46 two P2; three exact RED→49/49 (native18+control31) | One fix pass/no re-review/minor0; preserve torn/unknown/stop |
+| Full regression |1457/1457 Node22/macOS actual Core643c1b3 HTTP/four handlers/owned PG16.14 stopped, cleanup0; validate72/40/cache PASS |548-source snapshot de3ee2d953f736a76b75ae275ab4d4b8831076bb2d4727a150a059dffa8b91f1; evidence docs later |
+| Trial | Actual25/160 unchanged, no actual Google/native/token/RPC/counter upgrade | Native collector/coverage/quota, executable budget/same-ledger/recovery/orchestration and all original real gates NOT_ACCEPTED |
+
+
+### CI local latency failure / diagnostic coverage
+
+d8c4d90 CI rental1452/1452 pass; Worker23/24 failed home p95=63.854ms against
+unchanged50ms. Original local24/24 p95 2.358–3.756ms, diagnostic local24/24
+p95 2.367–2.988ms; separate D1/decode/route timings expose all routes before
+failure. No retried CI, relaxed gate, excluded samples or actual deployment.
+CI root cause remains UNRESOLVED; original real gates are still unaccepted.
+
+
+### Atomic adapter and observer integration
+
+Six routing RED (metadata fixture corrected old-source0/1) and six missing-cap
+RED→251 related GREEN before review. Two P2/three reviewer stdin RED;12 error
+body cancellation+Reader real-metadata method swap+three observer lifecycle
+RED0/16, OAuth cleanup body0/1. One fix pass→412/412 (zero fail/cancel/skip), no
+minor/re-review. Peer-lock fixture corrected and three old-source RED retained.
+Full1468/1469 found old same-epoch observer interface; fixed and final1486/1486
+Node22 actual Core/owned PG stopped cleanup0, snapshot550/49dfbc9a7b85a38bff21bbe90a905d8fe98a8f580e70763139d84f972c49b55e. Validate72/40/cache PASS.
+Real counter25/160 unchanged, no actualGoogle/counter upgrade/native full quota/
+handoff/orchestration proof; all real gates and proposed320 remain unaccepted.
+
+
+### Single in-flight ownership and bound native producer
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Same-scope ordinary/C/I and runtime contention | Four precise RED→416 related GREEN | Original owner spans wait/debit/IO; rejected C/I unadmitted, once after settlement |
+| Fixed producer handle/method pin, actor/phase/nonce/clock/bytes, stop/concurrency |17 missing-module RED→18 GREEN including actual synthetic Python flock25→26/fake AX | One full emitfalse call; actual CUA binding/bridge not executed |
+| Callback race after debit before entry | Reviewer200/200 P2=1; author runtime/preparation two exact RED0/1 each→436 target GREEN | No refund; ordinary stop rechecked at callback; independent cleanup preserved; one fix pass/no re-review |
+| Target command completeness | Initial292 passed but four adapter filenames did not exist; corrected explicit ten files436/436 zero fail/cancel/skip | Incomplete command retained; final target is436 |
+| Full regression |1510/1510 Node22/macOS actual Core643c1b3/owned PG16.14 stopped cleanup0, validate72/40/cache PASS |552-source snapshot92a544005c20d0222c0645532b24a899878c60e1ccdf96610f8ddbbeaeaac13a; docs later |
+| Real acceptance | Actualcounter25/160 unchanged/no preparation claim; no Google/browser/RPC/config | CUA/window/quota/freshness/budget320 approval/common ledger/handoff/recovery/orchestration and all original gates NOT_ACCEPTED |
+
+
+### CUA local-module realm compatibility
+
+Two exact no-process VM RED0/2→73 related GREEN, using actual source/explicit
+builtin allowlist/real synthetic Python flock/private capture. Actual CUA module
+probe first stopped before spawn/debit/UI; no-process import denied, failure
+retained. Fixed PATH/allowed os.userInfo().uid then actual CUA local synthetic
+probe PASS: fake callback1/spent26/peer denied/raw0600/coverage-quota-trial false.
+Fresh reviewer73/73/P1=0/P2=0/minor=0. Full1512/1512 Node22.23.3 actual Core/
+owned PG16.14 stopped cleanup0, validate72/40/cache PASS; snapshot553/
+cc06be4ce14e6a3c99856a3ef439dc3d1a9b2245d25f5f32be1ee1e47d1f07ae.
+Actual counter25/160 unchanged/no preparation claim; no real UI/Google/RPC.
+Tool module co-location proof is not actual tab binding/native window/quota or
+shared-ledger/orchestration acceptance; custom Python prefixes/UID changes untested.
+
+
+### Canonical one-way phase handoff
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Runtime cannot seed legacy; exact C2/ready/noI/spent/day/expiry/idle transfer |17 missingfeatureRED→54 relatedGREEN;239 integration | No extra debit/IO or fresh epoch; C2 admission not remote restoration proof |
+| Same counter/checkpoint/flock/history/rolling/ceilings; wrong binding/stale prep/escaped/duplicate/old bytes/unknown | Real synthetic Python scopes; CUA local27→28/history28/peer denied/acceptancefalse | Actual RPC/shared runtime state/recovery/orchestration not integrated |
+| Clock rollback after handoff | Reviewer282/P2=1; runtime/preparation authorRED0/2→286 final | All kinds checked before debit; rejected I unused, recovered-clock cleanup still eligible; one fix pass/no re-review/minor0 |
+| Full regression |1531/1531 Node22/macOS actual Core/owned PG16.14 stopped cleanup0; Python compile/validate72/40/cache PASS |554-source snapshot148d513421c8872ff56cb4d7266e655d5b3c0bb9a3c86992a5736dc9e0134d74; docs later |
+| Rollback/real gates | Actual25/160 unchanged/no claim/no Google/nativeUI/RPC | V2 phase not downgraded; pin v2 cleanup controller before actual transfer.320 approval/native windows/quota/freshness/whole rollback/original gates NOT_ACCEPTED |
+
+
+### Canonical compatibility runtime core
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| R order/once/pending/debit-before-callback/same-scope finish/hash/native limits/rolling/I17/day/expiry | Initial26:13FAIL/13PASS, then80/267; exact stop-before-handoff0/1→268 | Shared canonical v3 only after first R; UNKNOWN never refunded, no token/result persisted |
+| Pending ordinary denied; paid S/native settlement, expired independent I, escaped/replayed/rolled-back source state | Final31 runtime tests in272/272 seven-file target | Passive metadata or successful fake callback is not Google proof; old separate driver NOT_ACCEPTED |
+| Partial stop write cleanup poisoning | Reviewer27/27 P2=1; actual request_stop fault-injected empty/partial RED1PASS/3FAIL→272 | Negative presence veto preserves bytes; validated checkpoint/claim still mandatory; C/I once and pending/native preserved, one fix pass/no re-review/minor0 |
+| CUA module co-location after fix | Two synthetic Python-flock probes: fake RPC2/native200/pendingnull; partial RPC1/native100/pendingwrapper; both spent30 after cleanup | Real UI/Google0; no actual tab/window/quota/authority or acceptance proof |
+| Full regression |1562/1562 Node22/macOS pinned Core/owned PG16.14 stopped cleanup0,18.564s; validate72/40/cache/compile/diff PASS |555-source snapshot92c1fc56c3e7a8e76b4fdae764d46c282de3084657d3c3f711223d910bc775ac; preflight git timeout retained, bounded same-runner retry, cause UNRESOLVED |
+| Rollback/real gates | Actual25/160 unchanged/no claim/no Google/UI/RPC;320 UNAPPROVED | Pin v3-capable cleanup before actual R, never downgrade counter. Driver integration/recovery/full orchestration/original real gates NOT_ACCEPTED |
+
+
+### Canonical compatibility driver integration
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Pure exact binding/epoch/expiry/order; canonical release/native/token/R/S/native-account/result/post-release/finish |32 initial RED→212; final45 new tests in317 eight-file target; metadata adapter ordinary/S integration | No separate ledger/import/seed or new authority budget; no actual trial acceptance |
+| Signed canonical prefix | Generated GAS-entry VM exactRED0/1 empty request denied→two signed entries PASS | Cache/native/Sheets/LINE/token0; unchanged prefix, synchronous factory copied once, no live Google proof |
+| Unknown/API/native/postrelease errors, stop/caught/unawaited/escaped/pins/scopes/cleanup/cancellation ownership | Real synthetic Python canonicalflock and fixed transport; pending/native/spend retained, peer denied until IO settles | Successful boolean alone never completes pending; no retry/refund/positive liveness from metadata |
+| CUA typed bytes | First local fakeHTTP1/native100/pending retained; diagnostic instanceof false/types true; exact foreign-byte RED0/1→predicate fix | Final actual CUA LOCAL fakeHTTP2/spent38/native200/pendingnull+cleanup PASS; old failed state preserved, trialAcceptedfalse/realGoogleUI0 |
+| Review | Independent386/386 eight files, P1/P2/minor0, validate/diff PASS | No author fix pass/re-review; reviewer did not repeat author CUA probe |
+| Full regression |1607/1607 Node22/macOS actual pinned Core/owned PG16.14 stopped cleanup0,19.239s; validate72/40/cache PASS |556-source snapshot90b309bbd575f3603c255e5209590feede9202a03e7d1fef856df4e4218dfbfb; git preflight timeout retained, readonly Git guard+one bounded retry, cause UNRESOLVED |
+| Actual gates | Actual25/160 unchanged/no claim;320 UNAPPROVED, no Google/UI/RPC | Full adapter CUA interoperability/orchestration/holder recovery/v3 rollback/native windows/quota/budget and all original gates NOT_ACCEPTED |
+
+
+### Preparation adapters in the CUA realm
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Five no-process private initializations; six foreign-byte response operations; combined canonical prep |12 precise RED0/12→228 GREEN; final14 new cases in343 eleven-file target | UID/mode/symlink/size/hash/once/scopes/expiry unchanged; real file/debit/flock, fake endpoints/pins only |
+| Genuine foreign Uint16 fixture and array-like response refused | Two negative preservation cases, no upload/acceptance | types.isUint8Array does not convert arbitrary views/objects; original byte/copy limits retained |
+| Actual CUA LOCAL whole prep |6 adapters/28 fake HTTP/28 real Python peer denials/spent54/C2+I5/private0600 | realGoogleUI0/actualcounterfalse, trialAccepted/rollbackComplete false; not token phase handoff/live attestation |
+| Actual CUA LOCAL fixed callback | Second full prep plus owned127.0.0.1:34763 callback/result HTTP2/listenerClosedtrue | Google/token responses synthetic; no owner input or real Google PKCE/consent proof |
+| Review |230/230 (185+OAuth45), P1/P2/minor0; validate/diff PASS | Negative name filter did not exclude listener; all45 ran, correction recorded; author CUA/343 not reviewer evidence |
+| Full regression |1621/1621 Node22/macOS actual Core/owned PG16.14 stopped cleanup0,39.205s; validate72/40/cache PASS |558-source snapshotf60081e5b1b845b14c2af59356b2b83aa99463482d645f0914bebde0ecf1e211; preflight timeout retained, diagnostic+private trace/one terminal retry, cause UNRESOLVED |
+| Actual gates | Actual25/160 unchanged/no claim;320 unanswered | Full pinned orchestration/token phase handoff/holder recovery/v3 rollback/complete native quota/freshness/budget and all original real gates NOT_ACCEPTED |
+
+
+### Same-controller credential phase lifecycle
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Same OAuth grant prep→runtime→cleanup | Exact prior captured-cap failure RED0/1→16 phase tests PASS; exchange/revoke once and no durable token | Same canonical epoch/counter, no new grant/refresh/reseed; ACK_UNVERIFIED is not native revoke proof |
+| Generation/phase/caught/nested/overlap/unawaited/entered IO/expiry/partial stop | Original flock retained until owned terminal; ignored rejection RED0/1→handled denial | Trusted callback adapter only; stale work cannot borrow newer activation; C/I cleanup reserve unchanged |
+| Whole six-adapter canonical driver integration | VM + actual CUA LOCAL: prep49→wrapper+qualified→I5 spent64/native200, peer denied30; loopbackHTTP2/listenerclosed | Injected Google28/RPC2, no actual UI/token/Google/counter; trialAccepted/rollbackComplete false |
+| Review | Independent76/76, P1/P2=0, diff PASS | Minor deferred: facade transport-error S/native settlement→cleanup integration; no author review fix pass/re-review |
+| Full regression |1638/1638 Node22/macOS pinned Core/owned PG16.14 stopped cleanup0,45.083s |560-source snapshote6f106470d00ef40ed40a8c38d6b233f9b1a1ddb2e2e1c36244d8092f58da259; preflight timeout at unpack_trees/diagnostic/one terminal retry, cause UNRESOLVED |
+| Actual gates |Actual25/160 unchanged/no claim,320 unanswered |Trusted full orchestration/holder recovery/v3 rollback/native quota/budget/privacy/performance/C1/C5/500-Taipei/device NOT_ACCEPTED |
+
+
+### Fixed trial orchestration and failure cleanup
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| UNKNOWN transport→S/native settlement→I17; pure once/fixed entries/prep failure/ACK-lost handoff/stop/immutable refs | Exact old integration RED0/1 (cleanup0vs17)→VM orchestrator; final18 new cases in95 four-file target | No R replay/refund/new ledger; pending/native preserved; real native preparation/cleanup not yet implemented |
+| Empty callback and unawaited restore | Two exact RED0/1→durable C2/I metadata check and owned restoration drain | New cleanup-inspect is passive/frozen/no debit/write, no Google absence or liveness attestation |
+| Stale cleanup callback steals later slot | Fresh reviewer94/94 P2=1/minor0; exactRED0/1→per-callback ALS origin→95 | One author fix pass/no re-review; later slot retains own single authority; previously admitted C/I drains |
+| CUA LOCAL after fix | Expected STOP/fakeRPC1/spent70/native100/accounted incomplete wrapper/pending retained/I17/listenerclosed | Five actual local adapter cleanup methods +12 explicitly synthetic native callbacks; actual GoogleUI/counter0/acceptancefalse |
+| Full regression |1657/1657 Node22/macOS pinned Core/owned PG16.14 stopped cleanup0,52.242s |562-source snapshot9da5e5fed355be5f1b8c0b7e6080db2c096ac66b7477c81d8a6ba17b1376c78b; pre-review Git preflight failure retained, owned pattern-read diagnostics/root cause UNRESOLVED; corrected-source final terminal PASS |
+| Actual gates |25/160 unchanged/no claim;320 unanswered |Concrete pinned GCP/guard/Testing/client/native cleanup/rollback/recovery/native quota/budget and all original real gates NOT_ACCEPTED |
+
+
+### Independent cleanup runtime and original holder drain
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Private fixed source/dependency snapshot; copied bootstrap; inventory/hash/owner/mode/symlink/tamper; stale or absent claim/checkpoint | 19 rollback tests, real synthetic canonical Python controller |31 code files/Acorn8.15.0 license, no secret/counter copy or seed; trusted source boundary only |
+| Original IO/child drain, partial stop ACK, peer holder, original lifecycle cleanup | Core/lifecycle captured handle settles; peer recovery NONE_CAPTURED cannot bypass flock |No file/PID liveness inference or remote termination proof |
+| Existing thin and Reader recovery | Thin constructor shape RED0/1; reviewer Reader checksum P2 exact RED0/1→fixed per-kind format; remove/verify once, original registration/UNKNOWN runtime preserved |No grant/publish/RPC export; no record rewriting or replay |
+| Review and author verification | Independent98/98, P2=1 fixed one author pass; rollback/orchestrator/preparation/phase89/89, no re-review/minors |Actual Google cleanup/credentials/native/device/performance and same-user file races declined |
+| Actual CUA LOCAL |Copied bootstrap31 files, syntheticv3 pendingwrapper/spent29/I1 preserved |GoogleUI/RPC0, actualcounterfalse/trialAcceptedfalse/rollbackfalse |
+| Full regression |1677/1677 Node22/macOS pinned Core/owned PG16.14 stopped cleanup0,52.911s |565-source snapshot05c6c9fc60b07124f7158c8d7d368b17ce9ef677ff9262d68f82d1cec23dc1fe; pre-PG Git timeout retained, explicit empty stdin same gates terminal retry; underlying cause UNRESOLVED |
+| Actual gates |25/160/no claim unchanged;320 unanswered |Lifecycle receipt prerequisite integration, concrete native callbacks/quota/windows/budget and all original actual gates NOT_ACCEPTED |
+
+
+### Recovery prerequisite at canonical dispatch
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Missing/immutable pin/options; wrong epoch/binding; source mutation in prep/release/after wrapper | Required descriptor RED0/1, async seam RED0/1, fixed same-counter copied constructors |Pure construction; no new scope/seed/refund; snapshot does not prove Google absence |
+| Stop while checking; final lifecycle/canonical stop | Prep0vs1 RED; reviewer exact two final-stop REDs→sync veto before transport |R remains charged UNKNOWN/pending; all I17 still attempted, original IO drains |
+| Signature/trial/token/native age after new await | Reviewer aged-signature and expiry REDs→paired async/sync hooks before final guards/signing |Corrected relative token fixture reproduced on preserved old candidate; no await after final checks; native proof bounds unchanged |
+| Review/author |Independent63/63,P2=2/minor0; one author fix pass→114/114,49.110s |No re-review; VM dynamic import loader corrected without ambient process or expanded builtin whitelist |
+| CUA LOCAL copied current source |FakeRPC1/native100/spent70/pendingwrapper/I17; artifact6/counter4 checks |All Google/native responses synthetic; actualcounter0/trialAcceptedfalse/rollbackfalse |
+| Full regression |1692/1692 Node22/macOS pinned Core/owned PG16.14 stopped cleanup0,53.920s |565-source snapshotf2396261f814a6f493c43aad9a7723bb878f7bc28a8d5e481232d9bfad6d6274; no retry this batch; prior Git stall cause UNRESOLVED |
+| Actual gates |25/160/no claim unchanged;320 unanswered |Concrete native preparation/cleanup/readback, full windows/quota/budget and original real gates NOT_ACCEPTED |
+
+
+## 2026-10-14 — Three original publication cleanup readbacks
+
+| Check | Result | Evidence boundary |
+| --- | --- | --- |
+| Original source/versions/deployments I17 aliases | Affected57/57 PASS; independent56/56 plus one P2 author fix | Fixed admitted GETs, exact backup matching, no pagination/replay or UNKNOWN journal settlement |
+| Copied canonical lifecycle | Synthetic UNKNOWN retained; spent36, original I3; journal unchanged | Actual local Python ledger/fake HTTP; copied control bound, no ordinary method or new scope |
+| Cross-holder shared lock | Failure reproduced; corrected test PASS | Held through terminal GET; excludes other holder's stage/restore journal mutation |
+| Full/validate | 1703/1703 PASS, zero fail/cancel/skip; validate72/40/static PASS | Node22.23.3, pinned Core/local PG16.14, cleanup verified; one full run |
+| Owner budget / real acceptance | 320 declined; actual25/160 unchanged/no claim | Nine callbacks and native windows/quota/budget incomplete; no actual Google/production acceptance |
+
+Original performance/72h/seven-day/device gates remain; do not infer cutover
+readiness from local passes. See EXECUTION_RECORD.md and rollback plan.
+
+### 2026-10-14 — C3 stack alignment
+
+| Gate | Evidence | Boundary |
+| --- | --- | --- |
+| Source composition | Original7226076 authority/controllers unchanged; only inherited C1 UTF-8 source/tests and reviewed C2 test observer differ | Original history/rollback preserved; no formal runtime change |
+| Full local | Node22/Core/ownedPG1707/1707; cleanup/listener stopped | 0 fail/cancel/skip; one complete run |
+| Worker local |24/24; seven groups100 each, unchanged p951.769–3.132ms<50 | No retries/warmup/exclusions; exact-head Linux CI pending; original failedCI retained |
+| Real gates | Counter25/160 unchanged/no claim;320 declined | Actual trial STOP; daily900s NOT_ACCEPTED; fresh72h/seven-day shadow/500/device NOT_STARTED or UNACCEPTED |
+
+### 2026-10-14 — C3 composed Node observation
+
+| Gate | Evidence | Boundary |
+| --- | --- | --- |
+| Source | Sole non-document delta from685d928 is C2 observer plus original0003 | All authority/runtime/root tests unchanged; static review reused |
+| Local | Retained1707/1707 root; new Worker24/24;7×100 p951.774–2.804ms<50 | No retry/warmup/exclusion; exact composed Linux CI pending |
+| Prior C3 CI |38533367980 rental1702 PASS/Worker23 PASS1 FAIL | Rooms188.364ms>50; cause UNRESOLVED, no production performance acceptance |
+| Real gates | Actual25/160 unchanged/no claim,320 declined | Trial STOP; daily900s/fresh72h/seven-day/500/strict latency/device retained |
+
+### 2026-10-14 — Original token rejection check
+
+| Gate | Evidence | Boundary |
+| --- | --- | --- |
+| TDD | Missing method7 RED→GREEN; overlapping token erasure RED→GREEN | Original-token bearer identity, admission expiry, UNKNOWN preservation/no retry, body disposal under ownership |
+| Review | Static P1/P2/minor0, no repeated review | Original-holder only;401 is token rejection at readback, not cause/grant-wide revocation |
+| Affected/full |110/110 and1718/1718,0 fail/cancel/skip; Node22/Core/ownedPG stopped | Snapshot565 SHA542b61167239a310904db41397584477a6113b5f666d57ca1f452bc4615c90c2; validate72/40/static/diff PASS |
+| Worker | Prior unchanged24/24/two dry runs CI38535147314 retained | Every Worker source/test byte unchanged; new-head CI pending, no local redundant benchmark |
+| Real trial |25/160 unchanged/unclaimed;320 declined, no Google IO |8 native/guard callbacks/whole160 plan remain; all original real gates unaccepted |
+
+### 2026-10-14 — Scoped-loader SDK costs
+
+| Gate | Evidence | Boundary |
+| --- | --- | --- |
+| TDD/review | Missing observer RED1; static P1/P2/minor0 | SDK bind/session/batch/results retained, no extra request/sample/data in header |
+| Existing canonical requests |7×one request,63 single statements each, one first-primary session/no batch | Actual scope/data loader; omits full HTTP replica/session/provider/GAS costs; not p95 |
+| Full Worker |24/24,0 fail/cancel/skip; original100-sample p951.751–2.471ms<50 | No retry/warmup/exclusion/new gate; exact-head CI pending |
+| Root | Prior1718/1718 retained, all runtime/root-test bytes match snapshot | Only2 Worker test files changed, no unchanged root rerun |
+| Native/real gates |8 native/guard callbacks incomplete;25/160 unchanged/no claim,320 declined | No guessed UI/API substitute, no actual native/Google IO; all original gates retained |
+
+## 2026-10-15 — Scoped D1 batching
+
+| Area | Evidence | Acceptance boundary |
+| --- | --- | --- |
+| Scoped request cost | Existing seven exact GAS parity requests:63 statements,7 single+5 batch calls,one primary session; calls-cap RED→GREEN | Same queries/scope/projections; not full HTTP or production latency |
+| Chunk/tail mapping |241 parents/legacy rooms/tenants/users, observer[3,7,10,80,8,8], source order/dedup/tail row and GAS rooms parity | Review P2 fixed after161-row fixture exposed73-only stage; no guessed85 remainder |
+| Fail closed | Real D1 malformed JSON and missing operational table both503/data:null, no partial output | No retry/cache or diagnostic leak |
+| Local regression | Node22/Core/ownedPG1718/1718,cleanup verified; final Worker26/26 and original7x100 p951.610–2.174ms<50 | Root retained after only Worker test changes; exact-head CI required |
+| Real gates | Actual25/160 unchanged;900s/day,fresh72h,seven-day shadow,500-room/Taipei/latency/device/cutover remain unaccepted | No Google/native/formal changes |
+
+## 2026-10-15 — Child input error handling
+
+| Area | Evidence | Boundary |
+| --- | --- | --- |
+| Scoped child stdin error | Real-child EPIPE RED→GREEN; zero IO/spend25, sanitized failure, scope reuse after actual finalization | No premature terminal/debit/retry/cleanup grant |
+| Stop input error | RED→GREEN; no acknowledgement or ordinary-IO reopening | Existing exact ACK/close checks retained |
+| Complete regression | Node22/Core/ownedPG1720/1720,cleanup/listener verified | Prior C5 failure1735/1736 remains; C5 integration not accepted |
+| Core prerequisite | Actual HEAD/copied actual index/same objects via private metadata view;321-path missing-worktree negative | Shared exclude read blocked; no shared source/metadata change; full blob audit not claimed |
+| Worker/real gates | Retain unchanged9b1af93 Worker26/26/two dry runs; new-head CI required | OS flock continuity, actual160/900s/72h/seven-day/500/Taipei/device unaccepted |
+
+## 2026-10-15 — Preparation lock lifetime and completion
+
+| Area | Evidence | Boundary |
+| --- | --- | --- |
+| Canonical inherited FD | EOF/SIGKILL holds actual synthetic flock through entered IO; wrong inode rejected without claim/debit | Local POSIX evidence; not remote termination |
+| Finish and stop | Three new real-child RED→GREEN; strict finish/exit, failed durable helper retains original ownership until ACK | No independent ordinary debit or recovery grant |
+| Restricted realm | Original11 full failures retained; existing approved OS identity API restores compatibility; affected83/83 PASS | No ambient process or new builtin permissions |
+| Complete regression | Final1728/1728,57.895s,Core/ownedPG cleanup verified; validate72/40/cache/diff PASS | Retain unchanged Worker26/26/two dry runs; new-head CI pending |
+| Real gates |25/160 unchanged/unclaimed; native STOP; original gates unaccepted | Draft accelerated-observation PR272 pending owner scope confirmation |
+
+
+### 2026-10-15 Approved single-wrapper budget core
+
+Supplemental owner decision replaces the old two-entry/eight-window cost model.
+The immutable presented decision hash selects the approved one-entry/four-window
+allocation without granting execution authority. Offline compiler plus durable
+ledger/rollback tests122/122 PASS: exact160 full allocation, unique fixed aliases,
+G4/2/1/1 per-window caps, P2 per actor, T3 pending-only settlement, C2 included inC9,
+I17 independent, failed IO UNKNOWN/no refund, immutable original history/binding,
+no bulk unlabeled debit, qualified/second RPC denied in supplemental mode, copied
+cleanup retains the original policy and counter. Historical RED ledger70 had
+48pass/22fail before implementation; final affected suite122pass/0fail.
+
+This is local cost/control evidence only. Legacy records keep their existing
+format; new strict policy is opt-in until mandatory orchestrator/adapter/native
+wiring is complete and reviewed. No live trial or credential operation follows
+from these tests. Actual25/160 remains unchanged. Full Node22/actual Core/owned PostgreSQL regression1765/1765 PASS,57.460s; cluster cleanup/listener stop verified.
+
+
+### 2026-10-15 Fixed preparation purpose labels and one live file readback
+
+Adapter/restricted-realm/copied-recovery231/231 PASS; RED57=48pass/9fail retained.
+Strict real-child synthetic realm exercises all six preparation adapters with
+unique approved aliases, original C2/I17, same lock and zero real Google calls.
+Actual import receipt reuse tests: once only, exact four-field binding, frozen
+object identity, JSON/copy rejection, time reversal and60s expiry. Failed/stale
+reuse cannot refund or duplicate a strict alias. Existing ACL/file/permission/
+UNKNOWN/cleanup tests remain. Independent incremental review no actionable
+findings. Full Node22/actual Core/owned PostgreSQL1774/1774 PASS,62.790s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched and
+mandatory runtime/native integration still unaccepted.
+
+
+### 2026-10-15 Mandatory single-wrapper runtime/observer wiring
+
+Related185/185 PASS after one review P2 fix. Focused RED8=1pass/7fail retained;
+intermediate129=128pass/1 obsolete two-entry expectation retained and corrected
+for the actual four recovery checks. Require bound decision before observers;
+legacy/missing/foreign policy cannot admit a new trial. Exact15 release aliases
+each phase; missing/duplicate/foreign/unlabeled callbacks and incomplete native
+identity/quota observations fail before RPC. Fifth page/wrong actor/qualified
+phases reject before IO. One wrapper only, UNKNOWN/no retry, independent C2/I17,
+stop/drain/escaped-cap/origin/recovery regressions remain. Four actual fake CUA
+producer→capture→strict-driver reads prove phase/actor charge and lock ownership;
+raw native analysis retains complete=false/quotaAccepted=false. Restricted VM
+six real adapters use strict preparation, one wrapper and all17 cleanup actions.
+Review P2 await-mutation test RED→GREEN fixes fixed actor/phase/page snapshots.
+Full Node22/actual Core/owned PostgreSQL1790/1790 PASS,61.163s,zero fail/cancel/skip; cleanup/listener stop verified. Validate72 backend/40 endpoints/static cache/diff PASS; actual25/160 untouched, no live native or
+Google acceptance.
+
+### 2026-10-15 Fixed seven-source release transport
+
+Seven approved F aliases now have fixed Apps Script GET adapters: original
+project/editor/versions/deployments, pinned library7/thin1 content and thin
+deployments. One phase-bound alias debit owns each response through body read
+or cancellation. Exact cached publisher scopes, request/version pinning,
+single-flight, post-admission expiry and immutable token/control snapshots apply.
+Reject pagination, malformed/foreign/oversized/redirected response and retry;
+return actual frozen bytes/metadata without synthesizing equality or acceptance.
+
+New source tests34/34 PASS after actual RED0pass/34fail. Combined with canonical
+driver91/91 PASS: fourteen real transport callbacks in fake Google responses use
+the original F/S ledger and held lock across both phases; a paginated version
+list stops before compatibility RPC. Independent incremental review found no
+actionable issue. Full regression/validate results are recorded in the execution
+record when complete. No live Google/credential/counter/native proof follows.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1826/1826 PASS,62.802s,zero
+fail/cancel/skip; cluster cleanup/listener stop verified. Validate72 backend/40
+endpoints/static cache/diff PASS. No Apps Script/Worker change, so no repeat of
+unchanged native Apps Script or local Worker capacity runs. Source equality,
+remaining native callbacks and full native-window/quota acceptance stay gated.
+
+### 2026-10-15 Source equality facts and actual execution entrypoint
+
+The seven-source verifier accepts only the original module-branded source
+adapter with matching pinned project/version/publisher, not copied/proxy handles.
+Snapshot expected pins and six original version descriptors before IO. Actual
+responses determine editor/file/manifest hashes, original serving inventory,
+baseline1–6 plus epoch-described7, parent binding and fixed thin deployment.
+Guarded manifests retain the exact scopes/whitelist/runtime/logging/library
+version/development mode. Thin F metadata now includes the actual Execution API
+entrypoint/access in the same existing read; access is not inferred from manifest.
+
+New verifier26RED→GREEN; actual-entrypoint mask1RED→GREEN. Combined124/124 PASS,
+including three canonical equality tests: real source transport/verifier facts
+merge with explicitly synthetic remaining release/native fields in the original
+ledger; changed source bytes or actual deployed access prevents native/RPC.
+Concurrent/duplicate/out-of-order phases, unbranded handles and pin/manifest/
+version/deployment mismatch stop without retry. Independent review found no
+actionable issue. Full regression is recorded in EXECUTION_RECORD when complete.
+Partial source facts omit native/ACL/Sheets fields and fail full driver readback;
+no current Google, credential, quota, full native window or live acceptance.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1859/1859 PASS,64.161s,zero
+fail/cancel/skip; cleanup and stopped listener verified. Validate72 backend/40
+endpoints/static cache/diff PASS. Only documentation changed after the tested
+573-file snapshot; Apps Script/Worker bytes unchanged. Credential-purpose owner
+approval is recorded separately and does not make new policy wiring executable.
+
+### 2026-10-15 Credential-purpose decision binding
+
+The approved credential-purpose selector is distinct from the retained original
+single-wrapper selector. The compiler keeps160/history25/fixed96/G32/P4/T3 and
+reserves caller1/publisher3. New P labels are caller-bind, publisher-bind,
+publisher-refresh and publisher-userinfo, each once. Generic actor aliases,
+replay/borrowing, refresh before bind, identity before refresh, A–E/handoff before
+all four purposes, cross-selector claim/runtime downgrade fail closed. Failed
+identity remains charged; independent C2/I17 still work. Runtime binding and
+scoped observation capabilities carry the selected decision, and orchestrator
+derives it from pinned recovery options. Old policy/cleanup remains compatible.
+
+Policy core RED14=1pass/13fail, binding RED5=2pass/3fail retained; affected236/236
+PASS plus new copied-credential-recovery1/1 PASS. The new copied test initially
+passed the full receipt to a strict path/SHA loader and was rejected; corrected
+test input only, without relaxing the loader. Copied I17 preserves new decision,
+history25 and pending execution, exposing no ordinary/RPC authority. Incremental
+review found no actionable issue. Full regression recorded when complete.
+This is policy/control evidence; fixed actual renewal/identity/native callbacks
+and real safety/quota/complete-window gates are still required before Google IO.
+
+Full Node22.23.3/actual Core/owned PostgreSQL1879/1879 PASS,63.322s,zero
+fail/cancel/skip; cluster cleanup/listener stop verified. Reviewed five source
+pins unchanged. Validate72 backend/40 endpoints/static cache/diff PASS. This
+implements the selected policy through the counter/runtime/recovery; actual
+credential adapters and native release/window bindings remain incomplete.
+
+### 2026-10-15 Existing-grant and same-token identity adapters
+
+Publisher source is pinned by exact bytes, owner, mode0600 and no-follow regular
+file read. An explicit single P refresh validates bounded response, original
+ten scopes and finite lifetime, followed by paid verified publisher identity.
+Only then is a synchronous cached credential available. No login-file write,
+new grant, hidden renewal or original-publisher revocation occurs. Four G
+identities use each actor's current token and independent window admission;
+partial identity results never imply full native or quota acceptance.
+
+Initial adapter RED25/25 failed before implementation; selector RED2/2 reproduced
+the actual legacy-cap bypass before repair. Canonical/phase/orchestrator now
+carry the selected policy; missing/historical/stale selectors refuse IO.
+Facade RED3/3 reproduced missing propagation before repair. Affected190/190
+PASS; independent review's P2 selector issue fixed and re-reviewed with no new
+finding. Full Node22.23.3/actual Core/owned PostgreSQL1910/1910 PASS,62.686s,
+zero fail/cancel/skip; cluster and listener stopped. Tested575-file snapshot
+806b20541fbc7d8216d6c45ad2d371649be303f8d300ea921f9f18f803200fe9;
+only documentation changed afterwards. Apps Script/Worker source unchanged.
+Actual Google counter remains25/160 and unclaimed; no live refresh, userinfo,
+browser, native capture or RPC. Native/ACL/Sheets/terminal assembly and all
+runtime, quota, privacy, performance and real-device gates remain required.
+
+### 2026-10-15 Fixed ACL and authorization-tab release evidence
+
+Original module branding rejects copied/proxied/mismatched metadata adapters.
+Both phases use exactly three fixed GETs and actual caller/publisher credentials.
+New table is exact owner+Reader with the prior caller permission pin; original
+container is same owner only. Public/domain/group/inherited/deleted/extra or
+incomplete access denies, as do changed authorization tab IDs. No grid data,
+header verification or full source/native proof is inferred from metadata.
+Focused25RED-to-GREEN; related77/77, affected215/215 PASS. Canonical integration
+verifies F/S debits, held flock/peer exclusion and original history. Independent
+reviews found no actionable issue. Full1936/1936 PASS63.501s under Node22.23.3/
+actual Core/owned PostgreSQL, zero fail/cancel/skip; database/listener stopped.
+Snapshot52a8a374ae1eaf7fc2cdb35448fdddd769830bd6e4d121571301fd612abdd2de; only
+docs afterwards. Validate72/40/cache/diff PASS. Actual Google25/160 unchanged
+and unclaimed; native/parent-binding/quota/terminal and release gates remain.
+
 ## 2026-10-16 — C1 expired-run Sheet reads
 
 | Check | Evidence | Boundary |
@@ -1385,3 +2044,765 @@ Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
 inheritance to1b3c18c25cddea0d38014ba948c7fb03c83da124;
 retain all original claims/checkpoints/pinned cleanup and history, never reset
 or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+## C3 inherited C1 deadline guard — 2026-10-16
+
+Recommended GPT-6.1 Sol/high. Inherited the reviewed C1 guard from489d339: after
+the existing four-minute send deadline, do not read/hash another Sheet. Full
+reconciliation still queues every unattempted table; completed matching dirty
+generations clear and lease cleanup remains. Blocking native calls cannot be
+interrupted and marker/lease IO may continue. Existing C3 projection/auth
+changes preserved; no claim of fixing335s idle Cache or daily900s acceptance.
+
+Affected24/24 PASS and shared incremental independent review found no actionable
+issue. One full local1938/1938 PASS,59.387s,zero fail/cancel/skip,
+Node22.23.3/actual pinned Core/owned PG16.14; database/role cleanup, stopped
+cluster and closed listener verified. Tested577-file snapshot
+858d3792e10d131ff86555dc657cee4fd0537e9c70c941eea90f601f81b7c8ad;
+only docs afterwards. Validate72backend/40endpoints/staticcache/diff PASS. Worker
+unchanged; no repeated capacity run. Exact-head CI must be read after push.
+
+No actual Google/account/credential/Properties/trigger/Sheet/deployment IO.
+Original25/160 remains unclaimed; native-IO amendment remains awaiting owner.
+Approved parallel24h T0 NOT_STARTED/alloff; actual authority/privacy/freshness/
+900s/day/performance/device gates remain unaccepted. Rollback this undeployed
+inheritance to01e2cff1ef314c9812c0520aa7fc77dd96ac6e54;
+retain all original claims/checkpoints/pinned cleanup and history, never reset
+or replay. Root WIP/privateS1/C5swap and pending C3 proposal preserved.
+
+
+## C3 approved native IO admission — 2026-10-16
+
+Owner approved the presented native-IO amendment SHA
+`3701527108376e07470bc920336fbbd0f78015cb1e55dbfe35090ee059130cb9`.
+The new immutable selector keeps history25, limit160, fixed96, P4 and T3;
+N research/navigation shares original G32. Old selectors retain their policy.
+
+| Case | Evidence | Boundary |
+| --- | --- | --- |
+| Research before full observer | Original caller/publisher bind purposes plus at most8 pinned N reads; UNKNOWN pre-debit, ordinal replay/extra N/raw charge denied | No early refresh, ordinary mutation, RPC or trial acceptance |
+| Complete remaining map | One native-ready record with four bounded windows and exact remaining N sequence; shared32, mandatory identity/quota/page preserved | Cost admission is not actual native proof |
+| Page/target/deadline bounds | Bad console query and fifth-page plans reproduced RED then fixed; expiry preserves spent and independent cleanup | Original claim, same Taipei day, original max6h; no rebind/restart |
+| Native observer integration | Before/after N forwarding retains all30 F and12 minimum G charges; one RPC only | Synthetic IO; actual completeness and cost upper bound UNKNOWN |
+| UNKNOWN transport settlement | Independent review P2 reproduced RED; only runtime wrapper-after N gains settlement exception, canonical pending/day/expiry/map still required | No new ordinary N after STOP or holder loss; copied cleanup stays restricted |
+| Ownership/recovery | Entered N retains original flock through stop/drain; peer denied, durable stop veto, copied target binding/expiry checked | Local scope settlement is not remote execution termination |
+
+Pre-fix affected335/335 passed. After the review fix, frozen complete regression
+**1960/1960 PASS**, zero fail/cancel/skip, using pinned actual Core and an owned
+local PostgreSQL16.14 cluster; cluster shutdown verified. `npm run validate`
+passed72 backend files/40 endpoint references/static cache checks; staged diff
+check passed. No Apps Script source changed or cloud test function executed.
+Independent increment review found one P2, fixed by the exact failing integration
+regression; no deferred findings. Root WIP and private-file boundary preserved.
+
+Actual Google counter remains25/160 unclaimed; no browser/account/refresh/RPC,
+publication, Properties, triggers or formal data operations. Five native F
+observers and complete G/terminal evidence remain unbound. Prioritize bounded
+executions preflight and stop if attribution/quota/full source cannot be proved.
+All real privacy/freshness/authority/900s/day/performance/device gates remain;
+T0 NOT_STARTED and formal switches off. This supersedes the earlier pending
+native-IO-approval status only; it does not supersede missing real acceptance.
+
+## C3 approved single-incident binding repair — 2026-10-16
+
+Recommended GPT-6.1 Sol/high for the canonical stop/debit boundary. The owner
+approved the exact READ-PREFLIGHT-REPAIR-DECISION proposal; its original text
+and hash are retained. The event-specific entry keeps the same claimed ledger,
+epoch, original deadline/day, P UNKNOWN and STOP history, and permits only one
+predebited N getTab. Fresh initial tool state, settled same-holder receipt and
+matching actor/reference are mandatory before ordinary preparation resumes.
+
+Fresh independent review found one P1: the frozen original stop helper only
+ACKs an existing marker. A mandatory in-memory owner-stop bridge now writes
+the new canonical veto first, retains the original holder in its closure, and
+drains both captured scopes. All owner entrypoints must use that bridge; raw
+saved original methods cannot intercept new requests. The final capture-race
+regression and true frozen-controller bytes are covered by43 passing focused
+tests; the public byte-pinned fixtures require no Git history/network in CI.
+Prior transport-timeout and capture-race failures are retained, not erased.
+
+Final frozen full suite:2003/2003 PASS,69.766s,zero fail/cancel/skip, actual
+Platform Core and an owned disposable PostgreSQL16.14 cluster; cluster stopped
+and original Core index/HEAD preserved. Validate72backend/40endpoint/cache
+and diff check PASS. No Apps Script source change. Remote CI and the actual
+one-time repair are still pending at this source snapshot; local tests do not
+prove Google identity/quota, trial RPC,900s/day or latency acceptance.
+
+Rollback keeps the original pinned copy/history and independent globally-once
+C2/I17 cleanup. Never reset/refund/reseed/reopen the claim, erase STOP, or run an
+empty callback as remote rollback proof. No remote mutation, credentials,
+formal data, deployment, flag cutover or observation T0 in this increment.
+
+### Final source CI and one-time execution outcome
+
+Reviewed source872067f passed CI38784461317:rental1998/1998,Worker26/26,
+and both deployment dry-runs. Terminal outputs/annotations and footers read;
+rental log is truncated,Worker log complete. Local full2003/2003 is separate
+actual Core/disposable-PG evidence. No further source change after that check.
+
+The owner-approved single repair was attempted once. Its canonical predebit
+raised spent26 to27/160,keeping original P and new N UNKNOWN. The tool did not
+return verifiable caller/page state; completion was not asserted. The original
+expiry/day/claim remain unchanged. State is stopped,repair in-flight/UNKNOWN,
+new durable owner veto exists,and both retained holders acknowledged drain.
+There is no second repair/rebind or ordinary continuation. No publisher bind,
+refresh,trial RPC,remote setting/source/data change,formal deployment or
+observation T0 occurred. Preserve both copies and original STOP/history;
+no no-op callback was executed or claimed as remote rollback. The exact failed
+underlying tool cause remains UNKNOWN rather than attributed to login/Google.
+
+
+## 2026-10-16 — Bounded continuation cost compiler (local only)
+
+Recommended model/speed: GPT-6.1 Sol / high. The owner-approved continuation
+decision is selected explicitly, separately from the stopped original driver.
+A pure offline compiler retains the historical27 and cumulative160 cap,
+fixed96, P4, same-token G4, N24 (research8/control16), T3 and unused2. Every
+listed low-level operation is one unit; missing/unknown costs deny credential/RPC
+map eligibility. This is only a mapping condition: executionAuthorized and
+externalPrerequisitesVerified remain false. The non-refundable360000ms upper
+bound is not native runtime, available quota, or later daily-runtime acceptance.
+
+One independent review found two P2 issues: accessor-based changing input could
+produce inconsistent arithmetic, and synthetic-tabs used the wrong actor. Both
+were reproduced RED and corrected in one pass: a bounded own-data snapshot
+rejects accessors/proxies, and B:fixture-native retains the existing caller.
+There were no P1 or separate minor findings. Focused new/existing budget tests
+70/70; full root npm test2041/2041, zero fail/cancel/skip,67.323s using Node22,
+pinned actual Core and a fresh owned PostgreSQL16.14 fixture. Its teardown and
+closed listener were verified. Source snapshot (587 files before documentation
+append):2cc04e9080aa35e3f920f7d0c2b1505f619c8680b1b76603ac7a40cec73c9fb6.
+Validate72 backend/40 endpoint references, static cache and diff checks pass.
+No Apps Script function, route, schema, Worker runtime or frontend changed;
+there is no affected Apps Script test function for this offline-only increment.
+Exact-head CI is pending until push.
+
+The linked canonical journal/control, global cleanup/rate admission, pinned
+independent recovery, one-RPC driver and actual UI map remain unfinished.
+Readonly local counter verification still shows27/160, STOP, repair in-flight
+UNKNOWN. No new segment/W0, Google IO, credentials, remote mutation or fee was
+introduced. Original claim/deadline/copies and all unknown outcomes are retained.
+Formal flags off/endpoint blank; accelerated rollout T0 not started. Actual C1
+daily-runtime, C3 authority/privacy/freshness, performance, observation and device
+gates remain unaccepted. Local compiler tests do not change those gates.
+
+Deployment: none for this increment; retain the separate C3 draft PR. Rollback:
+revert the offline compiler/test addition; it cannot revive the original trial
+or erase future accounting. Any eventual continuation must first pass the
+remaining control/recovery/wiring prerequisites under the approved decision.
+
+
+## 2026-10-16 — Linked continuation control and compatibility driver (local only)
+
+Recommended model/speed: GPT-6.1 Sol / high. V2 read-performance stability work.
+The new controller adds exactly one linked segment under the original canonical
+lock and epoch. The original27, raw history, STOP/UNKNOWN, deadline and copied
+runtimes are retained. New ordinary events and original C2/I17 share cumulative
+160 and the rolling10/minute guard; two units stay unused. Original restoration
+and cleanup aliases are consumed once globally by the unchanged pinned ledger.
+W0 is durable before IO, at most six hours within one Taipei day, without scope
+reopening after finish, EOF or owner loss.
+
+A persistent Node holder retains the inherited original fd through entered IO
+and child termination. New owner stop vetoes admission immediately, publishes a
+durable marker and drains the captured actual holder. Independent recovery uses
+a separate fixed source graph and the retained owner handle; after actual drain
+and a full60s cooldown it exposes only original C2/I17 under the original lock.
+New journal corruption cannot initialize or restore ordinary authority. Recovery
+still requires the original valid claim/checkpoint, source copy and credentials;
+local callback completion is not remote rollback acceptance.
+
+The separately selected driver consumes the existing scope, checks its original
+epoch/binding, retains exact source/privacy15 and same-token identity2 before
+and after, and dispatches only one signed wrapper compatibility RPC. Its durable
+360000ms charge is never refunded and never called measured native runtime or
+quota acceptance. A returned callback or UNKNOWN response cannot finish pending
+postchecks. Source/owner faults stop admission. Bounded unknown-terminal reads
+cannot retry the RPC or turn UNKNOWN into successful compatibility. Typed Google
+ExecutionResponse envelopes retain the unique compatible:true result check.
+
+Pre-review focused composition:105/105 PASS, zero fail/cancel/skip. The coherent
+review and full-root results are recorded below. No Apps Script source,
+route, schema, Worker/frontend runtime or deployment changed, so no Apps Script
+test function is affected by this local control increment.
+
+Actual launcher, source/recovery admission pins and Google UI/adapter cost map
+remain unfinished. The offline policy or synthetic callbacks do not prove these
+prerequisites. Actual counter remains27/160/stopped/repair in-flight; no new W0,
+Google management IO, credentials, resources, fee or formal mutation occurred.
+Formal flags remain off, endpoint blank and rollout T0 not started. Real C1/C3,
+performance, accelerated observation and device acceptance gates remain open.
+
+Deployment: none; retain the existing separate C3 draft. Software rollback is a
+revert of these new local modules/tests. Eventual trial rollback must retain all
+charges/UNKNOWN and use the pinned original restoration/revocation callbacks;
+never delete markers, reset the original counter or create another segment.
+
+Independent review: one P2, no other actionable P1/P2. A torn new STOP marker
+could retain a fully drained descriptor and deadlock independent recovery. Two
+real-process regressions reproduced it before correction. The single-use owner
+now resolves/releases only after its actual entered IO and child drain; its
+receipt distinguishes ordinaryScopeClosed from stopAcknowledged. Ambiguous STOP
+bytes remain unchanged and negative, without manufacturing a successful ACK.
+Recovery requires that captured actual scope closure, the full60s cooldown and
+the original valid source/claim/checkpoint/lock; no marker grants C/I authority.
+The durable single-use epoch claim still denies every ordinary scope reopening.
+
+Post-correction coherent focused tests:107/107 PASS, zero fail/cancel/skip,21.412s. Full-root regression and validate remain pending.
+
+Full-root npm test:2148/2148 PASS, zero failure/cancellation/skip,78.869s,
+using Node22, actual pinned Core643c1b3 and a fresh owned PostgreSQL16.14 fixture.
+Teardown/closed listener and absence of fixture databases/roles were verified.
+Validate72backend/40endpoint/static-cache and staged diff checks PASS. Source
+snapshot596files before this final evidence append:
+07969d58846651b847b756f297db647913204ea88989f9d80eaab7a7e88b676d.
+The unchanged entry's compatibility path was separately inspected locally:
+18 selected top-level initializers have no calls; the wrapper delegates once,
+and compatibility returns after caller/MAC validation without nested scripts.run,
+Web App dispatch, trigger creation or external background work. Actual fixed
+publication and launcher source/recovery guard wiring remain unverified.
+### Bounded continuation actual preflight (2026-10-16)
+
+- Private launcher16/16 local tests PASS, zero failures/cancellations/skips;
+  source-before-import and browser-realm regressions reproduced before fixes.
+- Actual single caller binding: UNKNOWN/STOP; cumulative28/160, no RPC or
+  resource/configuration mutation. Original27 and both old UNKNOWN events retained.
+- Captured owner drained/closed; no rebind/new segment or compatibility acceptance.
+- Recovery checkpoint inspection pending terminal evidence; real upstream gates
+  remain open and all formal read-path switches stay off.
+
+
+### 2026-10-16 standalone C3 candidate
+
+- Single generated script: fixed caller/project/MAC, compatibility only, no
+  library or row/cache/lock/network IO; authority/extra arguments denied.
+- Existing publication adapter: five charged steps, immutable readback and
+  independent close/absence; mode change cannot reset same-epoch registration.
+- New17 RED→GREEN; affected116/116; complete2165/2165, zero skip, owned
+  PostgreSQL cleaned/stopped; two independent reviews without findings.
+- Retain earlier2159/2161 realm-child timeout run and focused2/2 diagnosis;
+  the original timeout cause is unresolved. Real Google function/RPC execution
+  NOT_RUN, counters31/160 unchanged, complete actual IO mapping still pending.
+- No production route/Schema/runtime/flags changed; no Cloudflare speed or
+  cutover acceptance is inferred from these local results.
+
+
+### 2026-10-16 standalone linked accounting
+
+Original27 + stopped continuation1 + diagnosis3 remain immutable and cumulative.
+New55 RED→GREEN cases cover history/approval pins, strict integers, same-lock
+UNKNOWN accounting, union10/minute, one RPC, lifecycle and globally unique
+originalC2/I17 cleanup. Affected151/151; independent review0 findings; full
+2220/2220 with actual Core/ownedPG, zero skip and cleanup/stop verified.
+No actual new claim/Google/credential/resource operation; actual31/160 unchanged.
+Standalone resource recovery/driver wiring and complete actual UI map remain
+pending, so these tests do not authorize execution or production acceptance.
+
+### 2026-10-16 standalone driver/source/recovery
+
+New128 RED→GREEN cases cover exact standalone pins/strict data, the same15+15
+checks/identity/one charged RPC, actual immutable/editor source packet comparison,
+unchanged original six versions, separate frozen cleanup adapters, existing
+journal prerequisites, admission-time drift, and the standalone trigger target.
+Independent review P2 hook/race findings reproduced, fixed and re-reviewed.
+Complete Node22/actual Core/ownedPG npm test2348/2348 PASS, zero fail/cancel/skip,
+107.244s; database/roles cleaned and PostgreSQL stopped. Validate/diff checks PASS.
+No actual Google operation/new claim/debit; current31/160 unchanged. Frozen local
+recovery copy is not remote rollback proof. Full native observers/actual IO map
+and all Google/runtime/performance/rollout/device gates remain pending.
+
+### 2026-10-16 standalone script access lifecycle
+
+New96 cases cover separate fixed script Reader grant/ACL/cleanup, standalone16 F
+observations per phase, C2/I17/J2 reservations, damaged ordinary evidence, nonce/
+high-water/claim/registry validation, cross-handle shared recovery lane, executable
+scope elements and collision-free cleanup IDs. Review findings reproduced then
+fixed and independently re-reviewed. Full Node22/actual Core/ownedPG2444/2444
+PASS, zero fail/cancel/skip,149.524s; database/roles cleaned and PostgreSQL stopped.
+Validate/diff PASS. Synthetic maximum run158 preserves unused2; actual complete
+UI/navigation upper bound is still unverified. No Google/account operation or
+new claim/debit; actual31/160 unchanged, no remote/production acceptance.
+
+### 2026-10-16 closed standalone preflight continuation candidate
+
+Focused standalone/continuation457/457 pass before the final fixed executions
+opening descriptor. Coverage includes immutable closed two-selection history,
+import33/all rate timestamps/original W0, pin/semantic drift, partial claims,
+duplicate import/arbitrary chains, actual retained-holder exclusion and drain,
+safe API/post-return failure categories, complete-map reserves and fresh
+same-token identities, one RPC, original C2/I17 uniqueness and successor J2.
+The final discovery/opening pair uses existing navigation20 and fixed ordering;
+its affected budget/plan and private inert preparation checks are recorded in
+the execution record. Synthetic callbacks do not prove current native selection,
+Google access, real execution, remote cleanup or rollout acceptance.
+
+
+Round1 P2 coverage adds one-way owned-slot transfer, branded/single-use admission,
+retired legacy J function refs, active legacy route exclusion and maximum158
+plus unused2 protection. Original C2/I17/drain remain usable on the shared lane.
+Updated private preparation requires the handoff and verifies sources before
+moving its slot; raw full owners/serialized capsules cannot create a claim.
+
+### 2026-10-16 submitted OAuth consent accounting
+
+Eleven new regression cases cover callback-before-admission denial; actual
+submission debit ordering; real loopback303/pending200 while submit owns the
+cap; separate token/userinfo ownership after settlement; duplicate submissions
+and callbacks; cancel/failure with buffered input; skipped/cloned/repeated/late
+submission callbacks; and preclaim denial while waiting for admission.
+The unchanged privacy/PKCE/scope/identity/expiry/revocation cases now explicitly
+submit first. Phase and cross-realm fixtures preserve three ordinary charges.
+Node22.23.3 affected phase/preparation/control/realm122 cases passed; final OAuth
+67/67 passed, zero fail/cancel/skip. Initial combined188/189 contained one new
+test incorrectly using assert.rejects for an expected synchronous late-callback
+throw; its assertion was corrected and final OAuth rerun passed. No runtime
+change was needed for that test correction. Validate and diff checks pass.
+Real Google form grounding/consent, RPC, cleanup and complete160-fit remain
+unverified; prior stopped scope and frozen used runtime were not reopened.
+
+### 2026-10-16 named staged resume accounting candidate
+
+Node22 focused staged cases cover immutable42/full-history import and singleton
+claims, no pre-IO W0, durable first UNKNOWN, same-day deadline/cutoff and no slide,
+strict12/2/2 N partitions including after navigation, true batch-header aliases,
+current-stage callback guard and exact future recovery caps, unknown/changed maps,
+shared historical rate/single IO, no UNKNOWN replay, complete-map-only RPC and
+all32 F. The full synthetic route debits once for360s, uses global C2/I17/J2 and
+ends at158 with unused2. Damaged ordinary journal still permits independent J2
+after actual captured drain/cooldown. Raw cap driver testing binds the immutable
+null identity to the real inspected active deadline. Existing affected
+continuation/standalone plan/budget/control/driver/recovery and header tests pass
+349/349; these are synthetic/local checks, not actual form or Google readiness.
+
+
+## 2026-10-18 selected-page connection successor (local)
+
+| Scope | Evidence | Boundary |
+| --- | --- | --- |
+|46 import,47 first debit, inherited numeric window, immutable UNKNOWN history/selection, singleton denial, drift/expiry denial | readonly recovery regressions79/79 PASS | No actual claim or page read |
+|N12 reservation, mandatory observations, unknown-map denial,32 release checks/360s RPC, independent damaged-journal J2 and first-I stop lane | Same79-case suite PASS; independent source review0P1/P2 | Full actual map, private launcher and exact-head CI remain separate |
+|Source validation |72 backend/40 endpoint/static cache PASS | No release or formal-data change; approved actual window expired |
+
+Full unit2605/2605 PASS, zero failures/cancellations/skips. Exact-head CI pending; no remote trial or formal acceptance.
+
+## 2026-10-18 selected-page window-only increment
+
+Regressions cover null clocks before first47, six-hour/Taipei-midnight cap,
+unchanged46/history/selection/claim, exact approval and chronology, drift and
+backward-time rejection, full driver checks, post-midnight independent J2 with
+damaged ordinary journal, and insufficient cleanup time before claim.
+Independent source review found no actionable P1/P2. Node24.19 supported-runtime rerun93/93 focused and2619/2619 full unit PASS,
+zero fail/cancel/skip; validate72 backend/40 endpoints/static cache PASS.
+Exact-head CI remains separate and pending before actual Google acceptance.
+
+## User-tab repair local acceptance
+
+Node24.19 readonly recovery112/112 and full unit2638/2638 PASS, zero failures,
+cancellations or skips. Validate72 backend/40 endpoint/static cache and diff
+checks PASS. Tests cover stopped47 import, three separate48/49/50 debits, no
+pre-IO clock, first-prefix order/shape/replay, changed approval/history denial,
+full32-check driver/one360-second RPC and post-expiry independent J2 despite
+ordinary journal corruption. The original-I lane retains its own STOP target.
+Independent public source review0 actionable P1/P2 and three separate focused
+synthetic review cases PASS. Exact-head CI and actual user-tab mapping remain
+separate gates; no new native IO has occurred.
+
+## 2026-10-19 local wiring successor candidate
+
+GPT-6.1 Sol/high. The explicitly approved successor imports the verified50
+checkpoint, keeps every old UNKNOWN/claim/STOP and160 total, and starts its
+new bounded same-Taipei-day window at first durable debit. Native allowance
+is8 (publisher4/caller2/thin2);50+98+N8+C2+unused2 remains160. It never
+replays the imported preparation prefix or reopens an old claim.
+
+Three permanent singleton slots cover the new owner plus at most two local
+predebit repairs. This implementation accepts only the actually verified50
+checkpoint: a subsequent debit or remote step cannot be labelled local and
+carried forward. Additional later checkpoints need separately tested proof
+adapters before they could qualify under the approved scope; none is inferred.
+An immutable successful checkpoint, exact stopped canonical registry/claim,
+complete returned-IO trace and actual terminal drain are all required.
+
+Sixteen targeted regressions pass, including real stop, original-C/I and
+independent J2 after damaged ordinary journal/expiry; full suite/CI and
+independent review follow. A synthetic chain fixture initially reused an old
+binding and was correctly rejected; unique fixture bindings repaired that test.
+Private stable ESM dispatch fixes a reproduced cross-cell callback binding
+error; its verification is not Google authority or trial acceptance.
+No new actual51, credential, grant, RPC, Production data/config/deployment, flag
+or T0 is claimed. Full actual map, privacy/freshness/runtime/performance/device
+and observation gates remain. Undeployed rollback returns to70722bd; all used
+source copies and failed attempts remain immutable.
+
+Final local verification: full2654/2654 PASS on supported Node24.19, zero
+fail/cancel/skip; validate72 backend/40 endpoints/static cache and diff PASS.
+Independent review identified an original C/I counter-tail loophole; RED
+reproduced it and the ordinary constructor now rejects changed original spent
+before child/claim. Both C and I negative regressions pass; independent review
+reports no remaining P1/P2. The exact-head CI and private launcher remain
+separate prerequisites; no actual new operation or launch is implied.
+
+## Synthetic authority replacement accounting (2026-10-19)
+
+`tests/read-authority-simple.test.mjs` covers separate main/browser ceilings,
+protected recovery, predebit window and UNKNOWN persistence, shared rate and
+single IO, bounded readonly retries, stage/native GCP mapping, original C/I,
+real-owner drain, damaged-mirror recovery, source/history drift, full driver
+pre/post checks, nonrefundable RPC charge, incomplete/unknown transport and
+bounded terminal reads. Review regressions cover cleanup replay, falsey Promise
+rejections, inaccessible C2 and dangling STOP markers. No live Google or
+Production acceptance is implied; actual adapter closure and real cost mapping
+remain prerequisites. See READ-SIMPLE-TRIAL-ACCOUNTING.md.
+
+
+### 2026-10-19 one-time readonly-trial continuation controls
+
+Synthetic real-ledger tests cover cumulative65 import (main53/browser12),
+byte-identical predecessor events and artifacts, four remaining preparation
+operations/zero restored retries, approval/policy/actor/path/history drift,
+no duplicate successor, first-debit six-hour/midnight cap, drain ownership and
+original C2 recovery after successor-mirror corruption. Focused initial13 cases
+reported8 PASS/5 FAIL before support; the resulting15 boundary cases PASS,
+zero fail/cancel/skip. Full-source unit/validate/review/CI are separate evidence;
+no actual new claim/window, Google/browser/API request or Production change.
+
+
+### 2026-10-19 exact local-admission repair controls
+
+New12-case actual-ledger suite initially7 PASS/5 FAIL before support. Focused
+new/previous simple/successor tests55/55 PASS, zero fail/cancel/skip. Covers66
+import, unchanged13-event prefix/clocks, remaining3 preparation reads/zero
+retries, singleton, each pin, policy/counter/time drift, repinned incomplete
+parent, original C2 after expiry/corruption, and actual JS debit/stop/drain.
+Validate72backend/40endpoint/static-cache and diff PASS. Full exact-head CI is
+separate; these synthetic tests create no actual owner or external operation.
+
+
+## 2026-10-20 — Same unused repair, separately approved first-debit clock
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization/accounting controls.
+Added real-ledger cases for delayed first debit (inspect/wait leave clock null),
+six-hour/Taipei-midnight caps, <=six-minute preclaim rejection and next-day
+unused admission, shared cross-mode singleton, strict layered approval pins,
+post-admission approval drift, no restored retries and independent original
+recovery after expiry/damaged mirror. Original033 clock tests remain intact.
+New/old repair suite RED15pass/8fail before support; focused simple/successor/
+repair66/66 PASS, zero fail/cancel/skip. Full suite and exact-head provider CI
+are separately recorded in EXECUTION_RECORD.md when terminal.
+No test in this increment calls Google or creates an actual trial owner/claim.
+All live safety/runtime/performance/device/observation gates remain open.
+
+## 2026-10-20 — Bounded readonly diagnostic successor
+
+Real disposable-ledger coverage imports68/15events/failures3 without modifying
+predecessors; checks eight-read/preparation23 cap, two qualified failures then
+STOP, no unclassified retry, strict approval/target proof, duplicate IDs,
+singleton, clock admission/first debit/expiry and independent C2 recovery after
+mirror corruption. Initial18 cases RED7pass/11fail before implementation.
+Review caught that phase alone did not prove target guards; four strengthened
+phase-veto cases failed against that implementation before the whitelist and
+exact target proof were corrected. Final30-case results and complete-source
+verification are recorded separately. Private DOM doubles/real local-holder
+integration do not establish actual browser compatibility or C3 acceptance.
+
+### C3 readonly continuity controller
+
+`tests/read-authority-readonly-continuity.test.mjs` uses real disposable ledgers
+and live holders: immutable72 import, bounded charged cross-day PREP, failed
+NOT_READY without baseline credit, durable two-failure limit, missing proof hard
+stop, trial clock on non-PREP debit, protected recovery UI, latest-only terminal
+handoff and independent cleanup with damaged ordinary mirror. Existing simple
+controller suites retain legacy behavior. No external Google call is implied.
+
+### C3 approved three-step diagnostic successor
+
+`tests/read-authority-readonly-successor.test.mjs` uses real disposable ledgers
+and live holders. It verifies immutable76 import, exact approval and independent
+checkpoint/terminal/source requirements, no stopped-owner reuse, three-step
+order and target limits, retained unused UI declaration, no main/API bypass,
+charged unproved failure, one-time import and latest-only cross-day handoff.
+The fixture reproduces the four settled prior actions and the unused navigation
+declaration, rather than testing only the earlier72 checkpoint. Actual browser
+compatibility and rollout gates remain separate.
+
+
+### Approved79 fixed-total source/accounting migration
+
+The optional readonlyRebalance controller retains exact79 history and terminal
+handoff, fixes139/77/16 buckets within232, removes only21 native aliases from
+main charging and requires successful reviewed UI results before credit.
+First6 PREP reads reserve future43 plus the retained unused declaration;
+staged actual/recovery maps precede non-PREP work and complete actual map
+precedes the only RPC. Future44 is rejected; complete25/43 is admitted under77.
+Affected165/165 PASS including22 new tests, zero fail/cancel/skip. Validate72/40,
+cache and diff PASS. Review's leftover56 limit reproduced RED in two boundary
+cases and was fixed. Exact-head CI and frozen private/actual acceptance remain
+open; no new Google IO, mutation/RPC, deployment, flag or T0 is implied.
+
+
+### C3 approved loading/source continuity
+
+`tests/read-authority-loading.test.mjs` uses real disposable83 ledgers and live
+holders: preserved failed/UNKNOWN history, immutable origin/receipt, latest-only
+source migration, five-step grounding and nine-step guarded waits, shared cap
+and target attempts across holders/days, unverified result and wait timeout
+hard stop, protected2/future40-or36 bounds, no RPC before complete actual map.
+Legacy rebalanced/successor/continuity tests retain their earlier authorization
+boundaries. Bare/full-unit outcomes, review and exact-head CI are recorded
+separately. No Apps Script/native, Google or production result is implied.
+
+Final loading increment25/25 and complete unit2844/2844 PASS (zero skip).
+Two independent-review P2 vectors reproduced RED then passed after the stage
+membership/counter and PREP-only wait fixes. Validate72/40/cache/diff PASS.
+Bare pre-final2847 result retains1 missing Core/PG environment failure and4
+skips; no external integration acceptance is claimed. Exact-source CI remains
+separate from local/unit and actual browser acceptance.
+
+- Account-label incident successor: `tests/read-authority-account-load.test.mjs`
+  covers exact stopped-origin import, immutable old STOP, fixed four-step order,
+  replay/approval/authority/terminal/source rejection, timeout and final failure.
+  The last qualified NOT_READY/TECHNICAL cannot produce a CLEAN_PAUSE receipt.
+  Together with loading tests: 38 cases pass locally; separate private adapter
+  tests: 8 pass. These are local evidence, not Google execution or trial acceptance.
+
+
+### Bounded readonly connection continuity
+
+`tests/read-authority-connection.test.mjs` verifies exact stopped-origin import,
+immutable historical STOPs, shared8/fault2 limits, main134/UI82/recovery16,
+prepaid six-step order, minimum remaining-path denial, successful wait and
+reviewed sole projection, protected future36, cross-day latest-only handoff,
+owner-required CLEAN_PAUSE, replay/approval/source/authority rejection, and
+ordinary ID-prefix settlement isolation. Affected76 cases pass locally,
+zero fail/cancel/skip. External Google, full trial and rollout acceptance are
+separate gates; no Apps Script function changed in this increment.
+
+Connection increment final local verification: Node22 unit2873/2873 PASS,
+private adapter15/15 PASS; no fail/cancel/skip. Latest-origin persistence-denied
+admission preserves actual89 and creates no entry or debit. Interrupted/failed
+local runs are retained in the execution record; exact-head CI and all actual
+Google/runtime/rollout gates remain independent.
+
+
+### Connection ID refresh preserves original browser/tab authority
+
+`tests/read-authority-browser-selection.test.mjs` covers original-ID preference,
+provisional unique Chrome selection only after contextual owner confirmation,
+ambiguity/type/name/duplicate/accessor rejection, and exact providerTabId/URL
+matching without opaque-ID fallback. Together with retained connection tests:
+30/30 pass. Private eleven real-ledger cases retain91, used2/fault2, mandatory
+six-step success at97, third-fault stop and all security/protected reserves.
+Independent review has no P1/P2. New current-source CI and frozen/inert gates
+remain separate; no Apps Script function or Production behavior changed.
+
+Final current-source Node22 unit2887/2887 PASS with zero fail/cancel/skip.
+Validate72/40/cache and diff-check PASS. Native restored-ID/original-tab
+verification and all rollout gates remain unproven.
+
+### C3 discovery metadata and exact stopped-checkpoint successor
+
+- Browser/tab discovery projects only documented own data fields. Optional metadata is ignored; accessors, proxies, duplicate IDs, ambiguous Chrome candidates, and provider-tab/URL mismatches fail closed.
+- A separately approved exact stopped-checkpoint successor retains all earlier settled events, claims, source pins and STOP markers. Its six acquisition steps are individually charged, include a successful bounded load before one safe projection, and grant no new failure retry.
+- The repair consumes the existing UI spare while retaining the historical unused declaration, 36 future UI primitives, and independent recovery reserves. Complete maps with 36 future primitives are accepted; 37 or reuse of the historical unused ID are rejected.
+- Coverage: `tests/read-authority-browser-selection.test.mjs`, `tests/read-authority-discovery-repair.test.mjs`, and existing connection/loading/continuity tests. These are disposable local fixtures; passing them is not evidence of Google access, compatibility RPC, deployment, formal performance, or device acceptance.
+
+### Shape-only metadata diagnostic
+
+- The separately approved exact stopped-checkpoint diagnostic permits one prepaid browser-list inventory, retains preparation/loading/failure history and all future/recovery reserves, and grants no browser/tab/account identity credit.
+- The pure helper returns only a fixed source, booleans and counts. Unknown metadata is not traversed, IDs/labels are not returned, and ordinary or revoked proxies/getters are not invoked.
+- Tests cover sole-read success, failed-return settlement (including legacy rejection shapes), forbidden follow-up methods, second reads, proof failure, stale origin/approval/replay and unchanged old STOPs. No binding, tab access, DOM, write or RPC is allowed.
+- Coverage: `tests/read-authority-browser-shape.test.mjs` and `tests/read-authority-metadata-diagnostic.test.mjs`. Disposable fixtures are not evidence of actual browser shape or successful compatibility/release acceptance.
+
+### Explicit owner connection selection
+
+- The approved successor retains the completed stopped diagnostic and all old charges. Unused main allowance moves to ordinary UI within the same aggregate ceiling; HTTP, future operations and independent recovery reservations remain intact.
+- Discovery returns only documented Chrome candidate fields and pauses without a binding. A direct owner selection matching the exact candidate digest is required before the remaining acquisition steps, successful bounded wait and proved account/project snapshot.
+- Coverage includes stale receipts/approval/history, missing or invalid owner selection, failure settlement at every step, malformed candidate rejection without pending IO, snapshot proof and offline budget accounting. Existing stopped entries cannot replay; no failure allowance resets.
+- Coverage: `tests/read-authority-owner-connection.test.mjs` and `tests/read-authority-browser-selection.test.mjs`. Passing disposable fixtures does not establish a real browser binding, account authority, compatibility RPC or cutover acceptance.
+
+Owner-selection timing regression: a delayed holder retains the closed candidate checkpoint as the approval time floor; stale choices remain rejected. No remote operations are added.
+
+### Classified original-tab inventory and ready-first successor
+
+- A separately approved exact stopped-checkpoint successor preserves prior events, source pins, STOPs and the owner's selected connection. Four individually prepaid steps bind that connection, classify the original tab inventory, claim that tab and project its ready state/account/project guards once. It adds no discovery, standalone wait, retry, write or RPC.
+- Classification stores only fixed enums, counts and booleans. Optional metadata is not traversed; getters/proxies, duplicate IDs, missing provider identity and URL/selection ambiguity fail closed. Invalid successful evidence settles as an unverified failed read, without pending IO or account credit.
+- The projection checks complete load before URL/account/settings access and retains the pinned account/project/control checks. Partial preparation cannot produce a handoff. Successful binding releases only the explicitly superseded unused declaration; 36 future primitives fit while 37 and reuse of that declaration fail. Recovery reserves and failure history remain unchanged.
+- Coverage: `tests/read-authority-inventory-budget.test.mjs`, `tests/read-authority-inventory-diagnostic.test.mjs`, `tests/read-authority-ready-projection.test.mjs`, and the existing owner-selection suite. Disposable fixtures and the isolated callback VM establish local behavior only; actual binding, compatibility, synchronization, performance, device and release gates remain separate.
+
+### Exact stopped-checkpoint project-tab retarget successor
+
+- A new explicitly approved nested successor imports the exact settled stopped
+  inventory checkpoint into a distinct namespace. Prior events, holders, source
+  chains, failure count, old STOPs and the unsuccessful diagnostic remain intact.
+  Four individually mapped/prepaid reads use the selected connection, a single
+  user-tab inventory, the deterministic exact-full-URL match, its claim and the
+  same injected static ready-first projection. Success pauses for handoff only.
+- The new pure selector requires both provider and opaque identifiers to be valid
+  and globally unique, including unrelated rows. Multiple exact URL matches use
+  ordinal provider-then-opaque ordering; zero matches, unsafe own-data shapes,
+  getters/proxies, sparse arrays, symbols and excessive metadata fail closed.
+  Unknown metadata values are never traversed, and retained diagnostics contain
+  fixed enums/counts/booleans only. No raw row, account, URL, title or error text
+  enters the journal or result report.
+- Only this nested decision permits the revised aggregate allocation. Existing
+  identities and their ceilings remain unchanged. The four-step success keeps
+  the unsuccessful predecessor diagnostic unchanged; its new proof controls
+  preparation completion and handoff. Thirty-six future UI primitives still fit;
+  thirty-seven, superseded-operation reuse, partial handoff and stopped reentry
+  are rejected. Main/HTTP and independent recovery reserves remain intact.
+- Coverage: `read-authority-project-selector.test.mjs`,
+  `read-authority-project-retarget-budget.test.mjs`,
+  `read-authority-project-retarget-flow.test.mjs`, plus the predecessor inventory
+  and owner-selection suites. Fixtures use disposable local journals and fake
+  provider callbacks. They do not establish actual provider execution, source CI,
+  trial/RPC acceptance or any release gate. The private entry must pin the exact
+  approved URL, publisher hash, static callback, frozen origin registry and all
+  source bytes before its separate inert/first-write/execution gates.
+
+## 2026-10-23 C3 retained launch successor source candidate
+
+| Check | Evidence boundary |
+| --- | --- |
+| Direct approval and exact frozen stopped-state/source/observer agreement; prefix and prior proof drift denied | Synthetic private fixtures only; missing returned receipt stays missing and UNKNOWN stays UNKNOWN |
+| Unique four-read successor; each rejection settles false before HARD_STOP/drain; invalid results normalized | Real disposable local holder/ledger chain with synthetic provider boundary; no remote browser acceptance |
+| Separate new proof, immutable predecessor proofs, decision-specific ceiling, future36/recovery protection | Local controller and compiler behavior; original decisions retain their ceilings |
+| Deferred promise retained before entry, result/error captured, finally gate closure, delayed await and restart denied | Pure local launcher; no provider, canonical debit or production change |
+| Source manifest reconciliation | All 15 included source fingerprints match; calculator/comparison artifacts remain unchanged |
+
+Final local affected chain: 26 files, 636/636 PASS with zero fail/cancel/skip,
+including 39 added cases. Node22 validate72 backend/40 endpoints/cache and
+diff-check PASS. The test runner completed; its shell wrapper then failed assigning
+the reserved zsh `status` variable. No test failure is hidden by that wrapper error.
+Independent review, exact final-source CI and the complementary mandatory
+Core/owned-PostgreSQL partition remain separate gates.
+No Apps Script test function applies: no `.gs` module changed. No real Google or
+production execution, rollout or performance acceptance is established here.
+
+### Shared fixed-policy settlement review repair
+
+The two approved project successors retain independent prefix dispatch, proof keys,
+origin/history/receipt guards and ceilings while sharing one private settlement
+implementation. Fresh pre-refactor representative behavior12/12 PASS; final three
+covering files65/65 PASS, zero fail/cancel/skip, runner/wrapper exit0 under Node22.
+Validate72 backend/40 endpoints/cache and diff-check PASS. No tests added or changed,
+no new API/module/namespace or remote/canonical action; final full-source CI and
+Core/owned-PostgreSQL evidence remain separate parent gates.
+
+## 2026-10-23 C3 shared-object successor source candidate
+
+| Check | Evidence boundary |
+| --- | --- |
+| Fresh direct approval, exact stopped prefix, returned receipt/audit and local bridge proofs; missing or changed pins rejected | Disposable synthetic holder/ledger history; historical UNKNOWN is preserved |
+| Separate four-read namespace and account proof; success stops at binding-only CLEAN_PAUSE | Original proof remains unsuccessful; original decisions keep their ceilings |
+| Each callback failure settles false before STOP/drain; pending clears and consumed entries cannot replay | Real local controller and ledger with synthetic provider callbacks |
+| Future ordinary allowance and independent recovery reserves remain intact | Full operation-map and actual browser acceptance remain separate gates |
+| Shared object gate, visible attempts and safe pending/returned/rejected classifications across later state mutations | Pure local mock boundary; raw provider rejection text is discarded |
+| Deferred source promise retained before callback; terminal result/error, closure and once-only guard retained | Existing source launcher reused without changes |
+
+Coverage: `read-authority-project-shared.test.mjs`,
+`read-authority-retained-browser-bridge.test.mjs` and the affected predecessor
+controller/plan/selector/holder suites. No Apps Script test function applies;
+no `.gs` module, route, schema, calculator or benchmark changes. Independent
+review, final composed-source CI, complementary Core/owned-PostgreSQL integration,
+private immutable packaging, inert/first-write and separate prestart checks remain
+required. Local results cannot establish provider, trial, device or release
+acceptance. The initial overlapping RED run is limited evidence; a separate
+fixed-source ledger admission RED and corresponding GREEN are retained.
+
+Final local affected verification:28 files /709 tests PASS, zero fail/cancel/skip,
+original runner and shell wrapper exit0 under Node22. Added47 cases across two
+new test files; no existing test case removed or modified. Validate72 backend /
+40 endpoints/cache and diff-check PASS. The source remains local and parent
+review/composed-source CI/Core/private execution gates remain required.
+
+## 2026-10-23 C3 publisher alignment 105 source candidate
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Exact stopped102 prefix, pinned origin and three settled sidecar pairs | New namespace reports 105 = main53 + UI52; old49 events, UNKNOWN, STOP, failures and no-W0 remain intact |
+| Changed, gapped, duplicated or dishonest sidecar proof | Denied before continuation callback or provider primitive |
+| Six documented browser methods and two safe Google projections | Each UI call prepaid and settled; both verified pages yield CLEAN_PAUSE111 with a stable retained handle object |
+| Failed methods, wrong profile/handle/URL/principal/controls/fieldsRead | Settled failure and drain; no uncharged replay or raw provider text in receipt |
+| Future stage and repair allowance | Stage caps and future minima preserve ordinary UI96, main recovery21 and UI recovery16; two readonly incidents permit at most three prepaid repair calls each |
+| Incomplete future map and RPC | Denied; actual provider map and trial acceptance remain unproved |
+
+Coverage is `tests/read-authority-publisher-alignment.test.mjs` plus affected
+predecessor suites. No Apps Script test function applies: `.gs`, routes, schema,
+calculator, Worker and production deployment files are unchanged. Parent-owned
+review, composed-source CI/Core, private packaging and actual prestart gates
+remain separate from these synthetic tests.
+
+## 2026-10-23 C3 publisher projection compatibility repair
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Shared decoder, target-specific labels | Nonempty Settings and Audience controls pass only their own exact whitelist; omitted target retains the Settings default; unknown target and cross-target labels stop |
+| Projection shape and privacy | Malformed control tags, roles, booleans, extra fields and `fieldsRead:true` stop before verification; URL, account, ready, section and VERIFIED gates remain required |
+| Publisher six-step flow | Nonempty legitimate controls on both targets reach CLEAN_PAUSE111; callback rejection, malformed projection and decoded verification rejection each settle and stop without replay |
+| Failure evidence | Receipt retains only fixed target/stage/classification, callback and decode booleans, and a bounded count after valid decode; rejected raw values, URLs and error text are omitted |
+
+Affected tests are `tests/read-authority-publisher-alignment.test.mjs` and the
+legacy project flow suites using the same decoder. These local checks do not
+classify the historical actual111 failure; its raw projection was not retained.
+No `.gs`, route, schema, Worker or production source changed, so no Apps Script
+test function applies. Fresh provider operations require a separate reviewed
+diagnostic decision and the parent-owned exact-source gates.
+
+## 2026-10-24 C3 conditional native visual successor source
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Closed original 111 and complete later settled chain | A distinct PREP successor imports 17–20 charges once, preserves the stopped 55-event origin, and reports spent 128–131 without invented events or provider timestamps |
+| Pinned approval, source and manual visual proof | A synchronous parent verifier is required before spawn and at guarded continuations; closed-menu, wrong URL, false proof and pin drift stop before ordinary work |
+| Accounting and replay | Gap, duplicate nonce, pending state, changed origin, exhausted repair allowance reset and second owner stop; 296 total and at least 70 future UI calls remain protected |
+
+Focused source tests use synthetic evidence in `tests/read-authority-publisher-alignment.test.mjs`; `npm run validate` checks the repository baseline. This source preparation does not establish actual browser identity, external provider acceptance or production readiness. No Apps Script test function applies because `.gs`, routes and schema are unchanged.
+
+## 2026-10-24 C3 first publisher plan registration regression
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Native successor first plan | A full fixed-key plan with every native UI alias and bounded recovery can register after the settled publisher bootstrap; no RPC, trial clock or provider call is credited. |
+| Staged readiness | The view reports the inherited ledger's `trial_map_ready()` result: false at bootstrap and true after a valid main/UI/recovery stage map, while `planReady` remains false. |
+| Later stages | A stage registered after the full plan must use exact planned main, ordinary UI and recovery descriptors; any new preparation reads must fit the unspent plan reservation. |
+| Rejection | Missing native alias, duplicate registration, unmapped later stage and premature RPC are denied without new trial debit. |
+
+The RED and GREEN source tests use `tests/read-authority-publisher-alignment.test.mjs` and local synthetic records only. This is controller correctness evidence, not actual provider, Core, production or release acceptance. No Apps Script function applies because no `.gs`, route or schema changes were made.
+
+The follow-up regression checks that each ordinary main debit has exactly one
+admitted publisher-stage descriptor. A synthetic native successor refuses an
+unstaged P call before callback or debit, accepts an exact staged P call with
+validated write cleanup, and refuses a later unstaged B write without another
+debit. JS and Python UI parsers reject write methods outside the fixed alias
+rule while accepting declared click/fill and readonly snapshot projection.
+Legacy local fixture rows use those declared methods. These remain synthetic
+source tests; no actual provider or canonical journal was exercised.
+
+## 2026-10-24 C3 native publisher forward protocol correction
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Full native successor journey | Real controller and Python ledger import the settled 128 bootstrap, register a complete plan, execute mapped fixed and native before calls, prepay one 360-second H, separately settle F/G after calls, and finish the RPC. |
+| Stage rollover | A six-call baseline remains exact. The executed thin map uses seven UI primitives and the later freshness map uses fifteen; actual map count, future minima, protected recovery and combined limits still apply. Seven baseline calls and advancement with an unfinished prior row stop. |
+| Conditional terminal path | Exact T descriptors are staged before H. Successful H may leave T unused; an unknown H is not replayed, permits its three staged terminal reads and retains independent I cleanup through the same real holder. |
+| Existing refusal gates | Missing native alias, unstaged P/B, incomplete plan, duplicate owner and wrong UI write method retain their focused regression coverage. |
+
+These are synthetic one-primitive callbacks through the local ledger. They do
+not establish actual Google identity, privacy, callback destinations, source
+equality, quota or compatibility. No Apps Script, API, Schema or Worker source
+changed; cloud Apps Script functions are not applicable. Final composed-source
+CI/Core review and actual prestart evidence remain separate gates.
+
+## 2026-10-24 C3 exact SIMPLE credential-holder compatibility
+
+`tests/read-authority-trial-credentials.test.mjs` constructs both existing
+credential holders with the imported `SIMPLE_DECISION`. The publisher test uses
+the synthetic pinned grant fixture and checks one charged refresh and one
+charged same-token userinfo read. The native test checks distinct before/after
+caller and publisher reads, with one charge and fetch per operation. Old or
+mismatched controls stop before callback; arbitrary decisions, actor/scope
+mismatch and stale expiry remain denied. The pre-fix focused run failed three
+new cases at holder construction; the same file passed 31/31 after the narrow
+allowlist change. No actual credential, Google operation or production acceptance
+is established. No Apps Script function applies because no `.gs`, route or
+schema changed. Exact composed-head CI/Core review remains pending.

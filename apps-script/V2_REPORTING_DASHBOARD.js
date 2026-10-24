@@ -774,6 +774,9 @@ function revenueDashboardRowMatchesAccess_(
     return false;
   }
 
+  if (typeof workspaceLandlordLegacyParentsMatchAccess_ === 'function' &&
+    !workspaceLandlordLegacyParentsMatchAccess_(row,access)) return false;
+
   if (propertyIdMap && Object.keys(propertyIdMap).length > 0) {
     return Boolean(propertyId && propertyIdMap[propertyId]);
   }

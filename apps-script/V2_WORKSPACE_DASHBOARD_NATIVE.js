@@ -872,6 +872,9 @@ function workspaceDashboardRowMatchesAccess_(
     );
   }
 
+  if (typeof workspaceLandlordLegacyParentsMatchAccess_ === 'function' &&
+    !workspaceLandlordLegacyParentsMatchAccess_(row,access)) return false;
+
   const landlordIds =
     (
       access.principals ||

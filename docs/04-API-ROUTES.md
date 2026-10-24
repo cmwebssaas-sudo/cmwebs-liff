@@ -1265,3 +1265,51 @@ unsupported/missing bridge capability return503 `READ_DEPENDENCY_UNSUPPORTED`
 for GAS fallback rather than an incorrect unbound response. See
 `READ-API-PARITY.md` for exact options, additive schema, local parity, measured
 latency, publication and rollback. No C2 operational endpoint is deployed yet.
+
+## C3 authorization candidate — not published
+
+The six read routes accept only `Authorization: LIFF <id_token>` or
+`Authorization: Session <token>`. LINE claims come from the provider; positive
+claim cache is bounded by five minutes and actual expiry. Email HMAC matches
+the canonical GAS `session:` prefix. Primary D1 rechecks the session, user,
+Workspace, membership, role and principals on every request. Duplicate identity
+aliases and ambiguous memberships cannot select another actor's permissions.
+All operational queries are scoped before data enters the calculator; a legacy
+child cannot inherit access through a parent explicitly assigned elsewhere.
+
+Owner-approved amendment: `READ-AUTHORITY-DECISION.md`. Internal JSON POST action
+`read_replica_authorize` uses the existing Web App deployment and existing sync
+HMAC key, with distinct request/response domains. Its strict envelope is
+`{action,timestamp,nonce,payload,signature}`. `payload` is an exact JSON string
+with `{protocol,credential,credential_digest,route}`. No identity or Workspace
+parameter is accepted. Request age is at most15 seconds, nonce replay is
+rejected, and a response expires five seconds after issuance and is bound to
+the nonce, credential digest and read route. It returns only a signed
+authorization fingerprint and a pending-sync boolean, never operational rows.
+Authoritative authorization is uncached and uses a request-local Sheet snapshot;
+the action cannot create schema, touch session metadata or mark replica dirty.
+
+Worker obtains this confirmation for every attempted read. Fingerprint mismatch,
+authority failure, pending source markers, incomplete D1 snapshots or snapshots
+older than26 hours return a sanitized failure for GAS fallback. The26-hour
+bound is a daily-reconciliation guard, not a proof that an unseen write arrived.
+The authority check handles undelivered access/revocation changes; pending flags
+and C4's two-minute guard cover known operational writes. It cannot independently
+prove that a manual Sheet edit has synchronized.
+
+Bindings: `READ_AUTHORITY_URL` is the original GAS `/exec` URL;
+`LINE_LOGIN_CHANNEL_ID` is the verified login channel. The existing sync Secret
+is reused with domain separation; `EMAIL_SESSION_HMAC_SECRET` matches the
+existing Email HMAC property. Values are never printed or committed. Missing
+authority/channel/sync configuration keeps the production dispatcher closed.
+CORS allows only `https://cmwebssaas-sudo.github.io`; all responses are no-store.
+No formal binding, deployment or read flag has been changed by this candidate.
+# Synthetic Execution API trial (not a formal dispatcher route)
+
+The C3 feasibility candidate's separate thin API executable and fixed library
+use `authorizeTrial(request, operation)` with exactly two positional arguments.
+`compatibility` returns a fixed boolean after actual caller/project and canonical
+MAC validation, before authority IO. `authority` preserves the original signed
+`read_replica_authorize` result through a fixed readonly grid facade. Neither is
+registered in the formal Code dispatcher or enabled frontend environment.
+See `READ-EXECUTION-TRIAL.md` for scope, bounded execution and rollback gates.
