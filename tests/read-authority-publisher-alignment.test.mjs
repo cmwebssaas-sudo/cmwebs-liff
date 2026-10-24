@@ -38,6 +38,82 @@ const recoveryPlanRows=()=>Object.entries(SIMPLE_RULES).filter(([key,rule])=>(ke
 const completeNativePlan=()=>({operations:fullFixedPlan().map(row=>['P:publisher-refresh','P:publisher-userinfo','B:fixture-import'].includes(row.bucket+':'+row.alias)?{...row,id:'future-'+row.alias}:row),browserOperations:[...nativePlanRows(),...Array.from({length:50},(_,index)=>({id:`future-navigation-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false})),...recoveryPlanRows()]});
 const futureMeta=(descriptor,cleanup=[])=>({lane:'ui',descriptor,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:descriptor.id,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup,repairIncident:null});
 
+function forwardJourneyPlan(){
+ const operations=fullFixedPlan().map(row=>({...row,id:'future-main-'+row.bucket+'-'+row.alias}));
+ const native=nativePlanRows();
+ const trigger=phase=>({id:`future-trigger-${phase}`,key:`N:thin-triggers-${phase}`,actor:'publisher',target:'thin-triggers',operation:'snapshot',units:1,preparation:false});
+ const navigation=Array.from({length:4},(_,index)=>({id:`future-fresh-navigation-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false}));
+ const terminal={id:'future-terminal-observation',key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false};
+ const recovery=recoveryPlanRows();
+ return {operations,browserOperations:[...native,trigger('before'),trigger('after'),...navigation,terminal,...recovery],native,trigger,navigation,terminal,recovery};
+}
+
+async function runNativeForwardJourney(unknownH=false){
+ const {s,closure,origin}=await nativeSuccessorFixture(),original=readFileSync(origin.journal.path),plan=forwardJourneyPlan(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ const main=key=>plan.operations.find(row=>row.bucket+':'+row.alias===key),calls=[];let phase='start';
+ const mainRecovery=plan.operations.filter(row=>['I','J'].includes(row.bucket)),uiRecovery=plan.recovery;let mainRecoveryIndex=0,uiRecoveryIndex=0;
+ const clean=row=>({lane:row.key?'ui':'main',descriptor:row,target:row.target,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:row.id,receipt:['GET','snapshot','read-key-presence'].includes(row.operation)?'SANITIZED_READ':'EXACT_WRITE_READBACK'});
+ const mappedMain=row=>{const write=!['GET','snapshot','read-key-presence'].includes(row.operation),cleanup=write?[clean(mainRecovery[mainRecoveryIndex++])]:[];return {...futureMeta(row,cleanup),lane:'main',receipt:write?'EXACT_WRITE_READBACK':'SANITIZED_READ'};};
+ const mappedUi=row=>{const write=!['GET','snapshot','read-key-presence'].includes(row.operation),cleanup=write?[clean(uiRecovery[uiRecoveryIndex++])]:[];return {...futureMeta(row,cleanup),receipt:write?'EXACT_WRITE_READBACK':'SANITIZED_READ'};};
+ const nativeKeys=new Set(SIMPLE_NATIVE),prefix=key=>key.split(':')[0],bucket=(...letters)=>plan.operations.filter(row=>letters.includes(row.bucket)&&!nativeKeys.has(row.bucket+':'+row.alias));
+ const f=phase=>plan.operations.filter(row=>row.bucket==='F'&&row.alias.startsWith(`wrapper-${phase}.`)&&!nativeKeys.has(row.bucket+':'+row.alias));
+ const g=phase=>plan.operations.filter(row=>row.bucket==='G'&&row.alias.startsWith(`wrapper-${phase}.`));
+ const native=(...letters)=>plan.native.filter(row=>letters.includes(prefix(row.key)));
+ const nativeF=phase=>plan.native.filter(row=>row.key.startsWith(`F:wrapper-${phase}.`));
+ const baseline=Array.from({length:6},(_,index)=>({id:`future-forward-baseline-${index}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true}));
+ const stage=async(cap,name,rows,mainRows)=>{phase='map '+name;const map=[...rows.map(mappedUi),...mainRows.map(mappedMain)];phase='stage '+name;return cap.stagePublisher({stage:name,stageCap:rows.length,map});};
+ const spendUi=async(cap,rows)=>{for(const row of rows){phase='ui '+row.id;await cap.browserRead(()=>{calls.push(row.id);return {synthetic:true};},row);if(!row.key.startsWith('N:')){phase='ui complete '+row.id;await cap.completeBrowserOperation(row.key);}}};
+ const spendMain=async(cap,rows)=>{for(const row of rows){phase='main '+row.id;await cap.externalRead(()=>{calls.push(row.id);return {synthetic:true};},row);}};
+ try{await owner.withContinuation(async cap=>{
+  const start=await cap.inspect();assert.equal(start.combinedSpent,128);assert.equal(start.w0,null);
+  phase='complete plan';await cap.completePlan({operations:plan.operations,browserOperations:plan.browserOperations});
+  await stage(cap,'baseline',baseline,bucket('P'));await spendUi(cap,baseline);await spendMain(cap,bucket('P'));
+  const thinRows=[...native('A','D'),plan.trigger('before')],thinMain=bucket('A','B','D');
+  await stage(cap,'thin',thinRows,thinMain);await spendUi(cap,thinRows);await spendMain(cap,thinMain);
+  const w0=(await cap.inspect()).w0;assert(Number.isSafeInteger(w0));
+  const oauthRows=native('E'),oauthMain=bucket('E');await stage(cap,'oauth',oauthRows,oauthMain);await spendUi(cap,oauthRows);await spendMain(cap,oauthMain);
+  const before=[...f('before'),...g('before')],after=[...f('after'),...g('after')],beforeUi=nativeF('before'),afterUi=nativeF('after'),h=main('H:wrapper-compatibility-rpc'),terminal=bucket('T');
+  await stage(cap,'freshness',[...beforeUi,...afterUi,plan.trigger('after'),...plan.navigation],[...before,h,...after,...terminal]);assert.equal(plan.navigation.length+beforeUi.length+afterUi.length+1,15);
+  await spendUi(cap,[...plan.navigation,...beforeUi]);await spendMain(cap,before);
+  const beforeH=await cap.inspect();assert.equal(beforeH.pending,null);assert.equal(beforeH.w0,w0);
+  const assertPrepaid=()=>{const paid=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.equal(paid.pending,h.id);assert.equal(paid.rpc.beganAt,paid.events.at(-1).time);assert.equal(paid.chargedUpperBoundMs,360000);assert.equal(paid.events.at(-1).outcome,'UNKNOWN');};
+  phase='H dispatch';if(unknownH){
+   await assert.rejects(cap.dispatchCompatibility({operation:h,credentialExpiresAt:s.time+600000},()=>{assertPrepaid();calls.push(h.id);throw Error('SYNTHETIC_UNKNOWN');}),/TRIAL_STOPPED/);
+   for(const row of terminal){phase='terminal '+row.id;await cap.terminalRead(()=>{calls.push(row.id);return {synthetic:'terminal-read'};},row);}
+   phase='duplicate H';await assert.rejects(cap.dispatchCompatibility({operation:h,credentialExpiresAt:s.time+600000},()=>{calls.push('duplicate-H');}),/TRIAL_STOPPED/);
+   return;
+  }
+  const response=await cap.dispatchCompatibility({operation:h,credentialExpiresAt:s.time+600000},()=>{assertPrepaid();calls.push(h.id);return {synthetic:'one-rpc'};});assert.deepEqual(response,{synthetic:'one-rpc'});
+  await spendUi(cap,[...afterUi,plan.trigger('after')]);await spendMain(cap,after);
+  await stage(cap,'terminal',[plan.terminal],[]);await spendUi(cap,[plan.terminal]);
+  phase='finish';const done=await cap.finishCompatibility();assert.equal(done.rpc.complete,true);assert.equal(done.pending,null);assert.equal(done.w0,w0);assert.equal(done.chargedUpperBoundMs,360000);
+ });if(unknownH)assert.fail('unknown H must stop its ordinary holder');}catch(error){if(!unknownH)assert.fail(`${phase}: ${error.message}`);assert.match(error.message,/TRIAL_STOPPED/);}
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ if(unknownH){
+  assert.equal(calls.filter(id=>id==='future-main-H-wrapper-compatibility-rpc').length,1);assert.equal(calls.includes('duplicate-H'),false);assert.equal(calls.filter(id=>id.startsWith('future-main-T-')).length,3);
+  assert.equal(j.rpc.complete,false);assert(Number.isSafeInteger(j.rpc.beganAt));assert.equal(j.chargedUpperBoundMs,360000);assert.equal(j.pending,null);assert.equal(j.state,'stopped');
+  const spent=j.events.length;await owner.withCleanup(async cap=>{const before=await cap.inspect();assert.equal(before.eventCount,spent);const read=main('I:read-original-editor');await cap.externalRead(()=>{calls.push(read.id);return {synthetic:'cleanup-read'};},read);const after=await cap.inspect();assert.equal(after.eventCount,spent+1);assert.equal(after.rpc.complete,false);assert.equal(after.w0,j.w0);});
+  assert.equal(calls.filter(id=>id==='future-main-I-read-original-editor').length,1);assert(readFileSync(origin.journal.path).equals(original));return;
+ }
+ assert.equal(calls.filter(id=>id==='future-main-H-wrapper-compatibility-rpc').length,1);assert.deepEqual(j.publisherStages.map(stage=>stage.stageCap),[6,7,5,15,1]);assert.equal(j.rpc.complete,true);assert.equal(j.pending,null);assert.equal(j.chargedUpperBoundMs,360000);
+ const hIndex=j.events.findIndex(event=>event.key==='H:wrapper-compatibility-rpc');assert(hIndex>55);assert.equal(j.events.filter(event=>event.key.startsWith('F:wrapper-after.')).length,16);assert.equal(j.events.filter(event=>event.key.startsWith('G:wrapper-after.')).length,2);assert.equal(j.events.slice(hIndex+1).filter(event=>event.key.startsWith('F:wrapper-after.')).length,16);assert.equal(j.events.slice(hIndex+1).filter(event=>event.key.startsWith('G:wrapper-after.')).length,2);assert(readFileSync(origin.journal.path).equals(original));
+}
+test('native 128 full forward journey debits one H and finishes after independent readbacks',()=>runNativeForwardJourney());
+test('unknown native H never replays, allows exact terminal reads and independent cleanup',()=>runNativeForwardJourney(true));
+
+test('native rollover refuses overflow and an unfinished prior mapped row',async()=>{
+ const row=index=>futureMeta({id:`future-rollover-${index}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true});
+ for(const mode of ['overflow','unfinished']){
+  const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);let calls=0;
+  await assert.rejects(owner.withContinuation(async cap=>{
+   if(mode==='overflow')await cap.stagePublisher({stage:'baseline',stageCap:7,map:Array.from({length:7},(_,index)=>row(index))});
+   else {await cap.stagePublisher({stage:'baseline',stageCap:6,map:Array.from({length:6},(_,index)=>row(index))});await cap.stagePublisher({stage:'thin',stageCap:1,map:[row(6)]});}
+   calls++;
+  }),/TRIAL_STOPPED/,mode);
+  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.equal(calls,0);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);assert.equal(j.publisherStages.length,mode==='overflow'?0:1);
+ }
+});
+
 test('native write UI methods obey their declared rules in both parsers',()=>{
  const keys=['D:thin-gcp-link','D:thin-properties-write','E:client-create','E:oauth-response'];
  const rows=keys.map((key,index)=>({id:`future-method-${index}`,key,actor:SIMPLE_RULES[key].actor,target:SIMPLE_RULES[key].target,operation:'submit',units:1,preparation:false}));

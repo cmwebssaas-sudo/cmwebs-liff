@@ -4820,3 +4820,26 @@ write methods in both JS and Python parsers; readonly projections remain
 available. Local synthetic regression tests and validation are source evidence
 only. The unconditional H gate and later conditional terminal-stage sequencing
 remain for the separate forward-journey review; no actual operation was run.
+
+## 2026-10-24 C3 native publisher full forward protocol candidate
+
+The native successor's single H now reaches the inherited complete-plan,
+pre-H completion, clock, rate, credential freshness, debit and one-RPC checks;
+the preparation-only predecessor keeps its H refusal. A successful native path
+may advance past predeclared conditional T rows without spending them. The
+selected baseline remains six UI primitives, while subsequent stages may use
+fewer than their initial allocations and apply the existing rollover, future
+minimum, actual map count and recovery ceilings. No total, failure or trial
+window allowance changes.
+
+A local synthetic journey drives the real holder and Python ledger from a
+settled 128 bootstrap through the complete fixed/native map, one prepaid H,
+separate after readbacks and completed RPC. An unknown H remains spent and
+stopped, allows only its staged terminal reads, blocks replay and retains the
+same owner's independent cleanup. Source tests do not prove actual browser
+identity, Google privacy, callback mapping, quota, compatibility or release
+acceptance. No actual provider or canonical journal operation, Apps Script,
+API, Schema, Worker, push, merge or deployment is part of this source task.
+Parent review, exact-head CI/Core and private prestart gates remain pending.
+Rollback is a reviewed source revert before use; any future spent H, UNKNOWN,
+STOP and cleanup record must remain intact.

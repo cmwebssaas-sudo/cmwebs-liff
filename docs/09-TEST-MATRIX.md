@@ -2777,3 +2777,18 @@ debit. JS and Python UI parsers reject write methods outside the fixed alias
 rule while accepting declared click/fill and readonly snapshot projection.
 Legacy local fixture rows use those declared methods. These remain synthetic
 source tests; no actual provider or canonical journal was exercised.
+
+## 2026-10-24 C3 native publisher forward protocol correction
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Full native successor journey | Real controller and Python ledger import the settled 128 bootstrap, register a complete plan, execute mapped fixed and native before calls, prepay one 360-second H, separately settle F/G after calls, and finish the RPC. |
+| Stage rollover | A six-call baseline remains exact. The executed thin map uses seven UI primitives and the later freshness map uses fifteen; actual map count, future minima, protected recovery and combined limits still apply. Seven baseline calls and advancement with an unfinished prior row stop. |
+| Conditional terminal path | Exact T descriptors are staged before H. Successful H may leave T unused; an unknown H is not replayed, permits its three staged terminal reads and retains independent I cleanup through the same real holder. |
+| Existing refusal gates | Missing native alias, unstaged P/B, incomplete plan, duplicate owner and wrong UI write method retain their focused regression coverage. |
+
+These are synthetic one-primitive callbacks through the local ledger. They do
+not establish actual Google identity, privacy, callback destinations, source
+equality, quota or compatibility. No Apps Script, API, Schema or Worker source
+changed; cloud Apps Script functions are not applicable. Final composed-source
+CI/Core review and actual prestart evidence remain separate gates.

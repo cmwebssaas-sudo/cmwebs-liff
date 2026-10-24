@@ -189,7 +189,7 @@ def alignment_class(base):
     if meta['repairIncident'] is not None:
      used_for=sum(e['operation']['id'] in [x['descriptor']['id']for st in self.j['publisherStages']for x in st['map']if x['repairIncident']==meta['repairIncident']]for e in self.j['events'][55:])
      if not repair_allowed(d['readonlyIncidents'],meta['repairIncident'],used_for,d['repairCalls']):fail()
-   if op.get('key')=='H:wrapper-compatibility-rpc' or op.get('alias')=='wrapper-compatibility-rpc':fail()
+   if not self.native_successor and (op.get('key')=='H:wrapper-compatibility-rpc' or op.get('alias')=='wrapper-compatibility-rpc'):fail()
    return super().check(lane,op,t,terminal)
   def check_loading(self,op):
    d=self.j['publisherAlignment'];n=d['used']
@@ -205,8 +205,8 @@ def alignment_class(base):
     if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending']is not None or index>=len(FUTURE) or not exact(q,['op','stage','map','stageCap','now']) or q['stage']!=FUTURE[index][0] or type(q['map'])is not list or not q['map'] or not integer(q['stageCap']) or q['stageCap']<1 or sum(m.get('lane')=='ui'for m in q['map']if type(m)is dict)!=q['stageCap']:fail()
     used=sum(s['stageCap']for s in self.j['publisherStages']);future_minimum=sum(20-self.imported_delta if name=='diagnostic' else v for name,v in FUTURE[index+1:]);rollover=sum(v for _,v in FUTURE[:index])-used
     complete={e['operation']['id']for e in self.j['events'][55:]if e.get('settled')is True and e.get('success')is True}
-    prior_mapped={m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']}
-    if self.native_successor and (index<5 and q['stageCap']<FUTURE[index][1] or index==5 and q['stageCap']>20-self.imported_delta):fail()
+    prior_mapped={m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']if not (self.native_successor and m['lane']=='main' and m['descriptor']['bucket']=='T')}
+    if self.native_successor and (index==0 and q['stageCap']!=6 or index==5 and q['stageCap']>20-self.imported_delta):fail()
     if q['stageCap']>(20-self.imported_delta if q['stage']=='diagnostic' else FUTURE[index][1])+rollover or used+q['stageCap']+future_minimum>self.future_limit() or self.future_spent()!=used or not prior_mapped<=complete or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
     plan=self.j['plan'];ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']};seen=set();main_keys={m['descriptor']['bucket']+':'+m['descriptor']['alias']for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='main'}if plan is not None else set(self.j['stages']);cleanup_ids={c['descriptor']['id']for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']};cleanup_keys={g['descriptor'](c['descriptor'],c['lane'])for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']if c['lane']=='main'};ui_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='ui'])for st in self.j['publisherStages']for m in st['map']);main_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='main'])for st in self.j['publisherStages']for m in st['map'])
     for m in q['map']:
