@@ -4231,3 +4231,29 @@ The full-wall timer, seven routes x100 samples, p95 index94 and strict <50ms
 gate remain unchanged. These elapsed windows cannot identify workerd CPU,
 SQLite, disk or scheduler cause; the three new clock reads perturb the measured
 path. No benchmark or provider acceptance is claimed here.
+
+## 2026-10-24 C6 scoped-group merge reduction candidate
+
+Recommended model/speed: gpt-6-sol/high. The existing D1 loader's scoped table
+path now skips its per-group deduplicate/sort pass and keeps the final per-table
+last-row-wins merge. The separate user lookup retains its original group merge.
+SQL, parameters, source fields, authorization, parent guards, fixture, routes,
+GAS source, and timing gates are unchanged. This is V2 read-performance work.
+
+A new exact-response case covers overlapping blank-Workspace room selections,
+tied source-row ordering, an archived room, and a foreign-parent decoy. It
+passed on the old source, so no behavioral RED is claimed. After the change,
+Node22 focused scoped-loader/access/index/source-order tests passed 13/13,
+zero fail/cancel/skip. Existing cases include all seven canonical route
+responses at 500 owned rooms, delegated-manager masking/permissions, invalid
+batch failure closure and scope boundaries. These are functional checks, not
+the 100-sample capacity benchmark. The original strict p95 <50ms acceptance
+and the retained composed CI failure remain open pending reviewed exact-source
+measurement.
+
+The source-identity guard initially rejected the changed Worker module. The
+repository generator refreshed only its source manifest and central comparison
+literal; the endpoint and route flags stayed unchanged. Node22 comparison
+identity regression passed 1/1, `npm run validate` passed 72 backend parses,
+40 endpoint references, static cache checks and 181-source identity; diff
+check passed. A new real shadow observation epoch is required before rollout.

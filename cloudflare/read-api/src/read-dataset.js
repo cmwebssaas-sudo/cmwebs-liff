@@ -109,7 +109,7 @@ export function createReadDatasetLoader(database,options={}) {
   // Preserve statement and group order. Only queries whose server-derived
   // inputs are already known enter a batch; dependent stages still await.
   // Bound transient result size to 80 statements per SDK call, not 80 keys.
-  async function selectGroups(groups) {
+  async function selectGroups(groups,mergeGroups=true) {
     const statements=groups.flatMap(({table,selections})=>selections.map(([where,params])=>({fields:schema[table].fields,query:statement(table,where,params)}))),rows=[];
     for(let offset=0;offset<statements.length;offset+=80) {
       const batch=statements.slice(offset,offset+80),results=await db.batch(batch.map(entry=>entry.query));
@@ -118,7 +118,8 @@ export function createReadDatasetLoader(database,options={}) {
     }
     let offset=0;
     return groups.map(({table,selections})=>{
-      const result=merge(table,rows.slice(offset,offset+selections.length).flat());
+      const selected=rows.slice(offset,offset+selections.length).flat();
+      const result=mergeGroups?merge(table,selected):selected;
       offset+=selections.length;return result;
     });
   }
@@ -217,7 +218,9 @@ export function createReadDatasetLoader(database,options={}) {
         return groups;
       }
       async function scopedTables(tables) {
-        const plans=tables.map(table=>scopedGroups(table)),groups=await selectGroups(plans.flat());
+        // The final per-table merge below already deduplicates and sorts these
+        // groups. Keep the group merge for the separate user-lookup caller.
+        const plans=tables.map(table=>scopedGroups(table)),groups=await selectGroups(plans.flat(),false);
         let offset=0;
         for(let index=0;index<tables.length;index++) {
           data[tables[index]]=merge(tables[index],groups.slice(offset,offset+plans[index].length).flat());
