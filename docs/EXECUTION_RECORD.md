@@ -6083,6 +6083,29 @@ PR merge, deployment, endpoint/flag change or T0 occurred.
 Rollback this undeployed C6 composition to80ba1340f7d6161dc2ab93c08f8d93e88b4c022d;
 preserve all previous source, test failures and private trial evidence.
 
+
+## 2026-10-19 — Accelerated-plan documents track approved trial replacements
+
+Recommended model/speed: GPT-6.1 Sol/high. Existing accelerated-rollout Draft
+integrates C6 source4a0e90b; all source/runtime files match it. Four own plan
+files now distinguish the approved standalone entry and main160/browser72
+combined232 accounting from the retained historical wrapper/160 tables. Actual
+trial65 expired/stopped without RPC or mutation; these documents authorize no
+reopening. The approved24h parallel observation, rooms/device first, another
+stable24h before remaining pages, and seven-day postlaunch sequence is unchanged.
+All C1/C3/privacy/freshness/runtime/provider/device/rollback gates remain open.
+
+Independent review of the four own document changes found no P1/P2. Initial
+validate passed syntax/cache but comparison import failed because this worktree
+lacked acorn; local lockfile-based npm ci with ignore-scripts installed37 packages.
+No dependency/lockfile change. Fresh validate then PASS72backend/40endpoints/
+static cache/comparison179; diff checks PASS. No repeated full regression for
+this documentation-only delta: inherited C6 source has unit2796/2796 and
+Worker43/43; exact new-head CI remains a separately reported result.
+No Google operation, credential, grant, new trial debit/window, PR merge,
+deployment, flag or T0. Rollback this undeployed documentation composition to
+a0dfea5739aafd4acfba4e1d26ffd1cf9ca367f1, preserving every old approval/history.
+
 ## 2026-10-19 — Approved single successor retains the expired65-operation scope
 
 Recommended model/speed: GPT-6.1 Sol/high, for accounting/authorization controls.
@@ -6582,6 +6605,28 @@ does not reopen authority or turn local/CI tests into rollout acceptance.
 Rollback this undeployed integration to4a0e90b; retain used sources, charges,
 claims, STOP and histories. Root WIP/private material preserved.
 
+
+## 2026-10-19 — Accelerated plan integrates the reviewed successor composition
+
+Recommended model/speed: GPT-6.1 Sol/high for source/evidence reconciliation.
+Integrated C6aa9c57c/C5737dc9b/C4eb89753/C3f2ff40a into the existing accelerated
+plan worktree/DraftPR273. Both historical execution/test bodies remain;
+non-document source matches C6 exactly, and the own delta is still the same
+six plan/evidence documents. Fresh validate72backend/40endpoints/static-cache/
+comparison179 and diff PASS. Inherited C6 full unit2811/2811 is source evidence,
+not a repeated local run in this branch or actual external acceptance. New
+exact-head CI follows commit; no unchanged full/capacity rerun here.
+
+Actual synthetic trial remains stopped66/232, pendingnull; the narrow local
+admission-repair amendment is not approved by these documents. No new owner
+or Google/UI/RPC/credential/grant/configuration/resource/Production operation,
+flag switch or observation T0. Approved24h parallel observation, rooms first,
+another stable24h, per-page gates and seven-day postlaunch remain unchanged.
+All C1/C3actual and provider/device/rollback requirements remain. Rollback this
+undeployed composition to6d07290, preserve trial history and root WIP/private
+material; after real rollout, document revert never substitutes for off and
+deployment readback.
+
 ## 2026-10-19 — Explicit bounded local-admission repair controls
 
 Recommended model/speed: GPT-6.1 Sol/high for safety-sensitive accounting.
@@ -6721,6 +6766,20 @@ owner closed/drained, no new claim/read or Production change. Privacy/freshness/
 900s/day/formal performance/device/rollback/observation gates stay open.
 Rollback undeployed composition toaa9c57c, keeping every used artifact/history.
 
+## 2026-10-20 — Accelerated plan composes reviewed diagnostic controls
+
+Recommended model/speed: GPT-6.1 Sol/high for source/evidence reconciliation.
+Integrated C6 f46d5ad/C5 2725bbe/C4 20eec6a/C3 a19e305 into this isolated plan
+branch. Both documentation histories remain. Non-document source matches C6;
+the own delta remains the existing plan/evidence documents, with no revised
+rollout timing or acceptance threshold. Reuse inherited C6 affected119/119
+source evidence; do not call it a repeated local run. Fresh validate72backend/40endpoints/cache/comparison179 and diff PASS;
+exact-head provider CI remains separate. Actual72/232 stopped/settled,
+noRPC/mutation/newowner/Google-read/Production change/T0. Approved24h parallel
+observation, rooms first, another stable24h and seven-day postlaunch remain.
+All actual gates stay open. Rollback undeployed composition toed85174; preserve
+used trial history, private material and root WIP.
+
 ## 2026-10-20 — C5 verified channel/time sample exports
 
 Recommended model/speed: GPT-6.1 Sol/high for shadow evidence correctness.
@@ -6789,6 +6848,23 @@ Independent full merge/cache/manifest/docs/test review noP1/P2;180-source
 comparison and diff check PASS.40root HTML files differ only in static cache
 literal. Provider CI is still distinct from these local results.
 
+## 2026-10-20 — Accelerated plan aligned with approved24h evidence tooling
+
+Recommended model/speed: GPT-6.1 Sol/high for source/evidence boundaries.
+Integrated C6 4d0e67c, preserving both complete documentation histories. All558
+tracked non-document files match C6 byte-for-byte; accelerated decisions and
+acceptance thresholds are unchanged. Validate72backend/40endpoints/cache/
+comparison180 and diff PASS. Inherit actual local C6 unit2875/2875, Worker45/45
+and D1 integration1/1 source evidence, not duplicate local runs. Exact new-head
+CI is separate. Synthetic timestamps prove wiring only, never real24h elapsed.
+
+The new operator CLI is a candidate evaluator, always cutoverAuthorized:false.
+Actual C3 remains stopped72/232/pendingnull/noRPC/mutation; no new Google,
+formal data, migration, deployment, flag, credential or T0. Actual C1/C3,
+privacy/freshness/daily900s, formal performance/device/rollback and approved
+observation gates remain open. Endpointblank/alloff. Undeployed rollback to
+0f6d06b while retaining every used source, claim, failure, STOP and trial history.
+
 ## 2026-10-20 — C6 body-consumption evidence; performance gate still failed
 
 Recommended model/speed: GPT-6.1 Sol/high for performance evidence boundaries.
@@ -6843,6 +6919,155 @@ pair/timer checks corrected it. Final independent increment review noP1/P2.
 No duplicate unchanged local full suite claimed; new-head CI must establish
 unit/Worker outcomes and actual Linux memory capture, separately from cause.
 
+## 2026-10-20 — C3 durable readonly preparation candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for lifecycle and accounting guards.
+Owner approved unified readonly preparation while retaining232. New optional
+mode imports settled72 exactly once; fixed finite PREP observations share the
+ordinary UI allocation, remain charged across days, and cannot consume recovery.
+Safe pause and terminal-holder receipts preserve latest checkpoint/repair count;
+unknown IO and hard STOP cannot resume. First ordinary non-PREP debit starts the
+single trial window atomically. See READ-READONLY-CONTINUITY.md for protocol,
+verification requirements and rollback. This source candidate adds no Google IO,
+RPC, mutation, production data access, deployment or launch acceptance.
+
+## 2026-10-21 — Approved diagnostic successor candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization and accounting.
+The owner approved retaining the stopped76 checkpoint and232 total cap while
+permitting one bounded three-step settings diagnostic. The optional successor
+requires the exact approval and matching latest stopped evidence, preserves
+history and reserves in a separate one-time namespace, and admits only fixed
+inventory/claim/projection before broader gates can apply. Stopped-owner reuse,
+other targets/methods, unproved outcomes and duplicate imports fail closed.
+No production application, Apps Script module or Worker runtime is changed.
+Affected verification, independent review and new exact-HEAD CI must complete
+before private source closure/inert admission and actual Google operation.
+The source candidate and synthetic tests do not establish C3/rollout acceptance.
+
+Affected old/new controller tests288/288 PASS, zero failures/cancellations/skips;
+new successor suite21 cases. Validate72 backend/40 endpoint/cache PASS. Independent
+review found a premature handoff/proved-failure gate inconsistency; three failing
+regressions preceded the shared terminal-proof fix, then all288 passed. The valid
+complete-plan/main-descriptor veto was also strengthened. Exact-HEAD CI is still
+pending for this new source; no actual successor claim/debit/Google IO occurred.
+
+## 2026-10-21 — Accelerated candidate composed with current C3/C6 source
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization/evidence composition.
+Integrated reviewed C6 diagnostics9005015 and C3 controller399241c into the
+existing accelerated Draft. All563 tracked non-document files equal the exact
+union of those source heads; no source conflict was manually rewritten. Both
+complete documentation histories were retained. The12-file C3 runtime closure
+is byte-identical to its affected288-test and exact-head2797/26 CI evidence.
+Validate72/40/cache/comparison180 and diff PASS on the composed tree. New
+composition-head provider CI remains required; individual CI is not that gate.
+
+Actual fixed settings diagnostic passed at79/232 (main53/UI26), with target,
+publisher and section guards, fields unread, no mutation/RPC and trial clock
+unset. Latest checkpoint safely paused with terminal-holder receipt. Complete
+trial/form/freshness/recovery mapping remains unproven; the separate232-budget
+reallocation proposal is inactive without owner approval. This merge performs
+no Google, credentials, formal-data, deployment, flag or T0 action. Endpoint
+remains blank and flags off. All C1/C3/performance/device/rollback/approved
+observation gates remain open. Undeployed integration rollback is58d4402;
+retain all used source, charges, checkpoints and recovery/STOP evidence.
+
+## 2026-10-21 — Approved79 fixed-total staged controller candidate
+
+Recommended model/speed: GPT-6.1 Sol/high for authorization and accounting.
+The owner approved one exact79 CLEAN_PAUSE migration with matching registry
+and terminal-holder evidence into a separate namespace, preserving all old
+claims, sources, STOPs, failure charges and holder history. Fixed buckets are
+main139/ordinaryUI77/recoveryUI16, total232. Exactly21 native aliases use actual
+prepaid verified UI results only; main native debit/no-op callback is refused.
+HTTP58 and all independent recovery/unused/unassigned reservations remain.
+Six named PREP reads reserve43 future ordinary primitives plus the retained
+unused declaration. Actual staged configuration/recovery is gated before
+non-PREP IO; complete actual map/fit remains mandatory before the sole RPC.
+The same single6h/Taipei-midnight TRIAL starts on first non-PREP durable debit.
+
+TDD new22 tests; affected165/165 PASS, zero fail/cancel/skip. Review identified
+an old56 complete-plan limit; accepted25/43 maps reproduced RED, then mode77
+fixed both. Validate72 backend/40 endpoints/cache and diff PASS. New exact-head
+CI and final frozen private source/tests/review/inert admission precede any
+Google IO. No new external Core/PostgreSQL or Apps Script/runtime acceptance is
+claimed. Actual usage remains79/232, safely paused PREP, pendingnull, w0null,
+no mutation/RPC. All trial/runtime/privacy/performance/device/recovery/approved
+observation gates remain open. No deployment/T0/flag change; endpoint blank.
+Unused source rollback399241c; preserve all used evidence and root WIP.
+
+
+## 2026-10-21 — Accelerated candidate includes fixed-total controller
+
+Recommended model/speed: GPT-6.1 Sol/high for source/evidence integration.
+Composed current C3 4d7cd99 with reviewed C6 9005015; no non-document source
+conflicts were manually rewritten. Complete documentation histories remain.
+Component C3 exact-head CI39475853972 passed2819 unit/26 Worker; previous
+composition c990673 CI39473203253 passed2925 unit/45 Worker. A fresh composition
+CI remains required and cannot inherit those provider gates as its own.
+
+Actual C3 is now83/232 (main53/UI30): thin-settings projection verified target
+and publisher with fields unread but document readiness INTERACTIVE. NOT_READY
+was charged unsuccessful; the holder clean-paused and terminal evidence matches
+latest journal/independent registry. PREP, pendingnull, w0null, no mutation/RPC.
+A separately reviewed loading-continuity scope proposal is inactive pending
+owner decision. This integration performs no Google operation, formal-data
+change, deployment, endpoint/flag switch or T0. All actual trial/privacy/runtime,
+performance/device/recovery and approved observation gates remain open.
+Undeployed composition rollback c990673; retain every used frozen source,
+claim, charge, checkpoint, STOP/recovery receipt and root WIP.
+
+## 2026-10-21 — Approved C3 loading continuity implementation
+
+Recommended GPT-6.1 Sol/high for retained ledger/source boundaries. Owner approved
+loading and safe source continuity within232. Actual83 remains safely paused,
+main53/UI30, PREP/no mutation/no RPC/no clock. The thin snapshot settled false
+NOT_READY; it is never rewritten or credited.
+
+Add optional readonlyLoading over the same canonical rebalanced registry.
+Immutable83 origin snapshots, direct approval, latest terminal receipt and
+source-history checks gate every new holder/source. Preparation is one shared
+nonresetting9 maximum including inventories/claims, each target2 projections
+and1 separately prepaid guarded wait, protecting old unused1+spare1, future
+40-or36 and recovery16. Supersede only the two old unused audience declarations
+once; no refund or alias completion. Reviewed success proof alone grounds a
+target. Stage/independent recovery/complete actual RPC maps remain gates.
+No legacy wait permission, new fee, formal data, deployment, flag or T0 action.
+
+Initial5 tests RED on unsupported mode, then5 PASS after implementation. Two
+bootstrap issues were local record-envelope decoding and corrected before any
+Google operation. Expanded87 affected tests initially86pass/1fail because the
+negative stale-receipt test mutated its frozen receipt; using a copied invalid
+input corrected that harness error, then87/87 PASS, zero fail/cancel/skip.
+Additional dynamic plan/source migration coverage and full verification follow.
+
+Rollback unused source to4d7cd99; retain used packages, actual83, all failed CI
+and all private ledger evidence. Exact-head CI, frozen private flow/review/inert
+admission remain required before actual reads. No verification count establishes
+actual Google compatibility, freshness, revocation, performance or rollout.
+
+Final public-controller increment:25 new loading cases PASS. Independent review
+found two P2s: non-loading stage names skipped settlement counters/proof, and
+ordinary stages could obtain the new wait method. Both real-holder vectors
+failed RED, then admission/authenticated-event settlement and JS/Python/PREP
+wait restrictions corrected them. Independent two-vector rerun PASS; no
+remaining P1/P2 in this increment. Final unit2844/2844 PASS, zero fail/cancel/skip;
+validate72 backend/40 endpoints/cache and diff PASS. No Apps Script changed.
+
+Bare npm test on the pre-final increment completed2847:2842pass/1fail/4skip.
+The named failing external test is commercial-subscription.roundtrip.test.mjs,
+original GAS -> real restricted HTTP/PG registration/transfer/renewal/expiry,
+missing PLATFORM_CORE_TEST_WORKTREE. This local run does not establish Core/PG
+acceptance; no credentials, service bootstrapping or integration bypass added.
+The final unit command deliberately excludes the two separately owned external
+integration files, as documented by its existing runner.
+
+Private prototype7/7 PASS using real disposable controller ledgers: ready5,
+one target loading7, both loading9, wrong URL/account, evaluate rejection and
+wait timeout. These are local adapter tests, not Google acceptance. Frozen
+private-source review, exact-head CI and inert admission still precede real IO.
+
 ## 2026-10-21 — C6 bounded effective-runtime context
 
 Recommended model/speed: gpt-5.6-terra/medium for this bounded test-client
@@ -6882,6 +7107,151 @@ P1/P2 and independently confirmed diff check PASS. Fixed cgroup probes, bounded
 endpoint completeness, timer/privacy boundaries and retained failure history
 were checked; no capacity or external operation was repeated. Exact new-source
 provider CI is required after the reviewed commit; no merge is authorized here.
+
+## 2026-10-21 — Current loading/controller and C6 context composition
+
+Recommended GPT-6.1 Sol/high for source/history and acceptance boundaries.
+Normal merges preserve C3 0bc666a and C6 04e2db0 ancestry in the existing
+accelerated Draft. Non-document source is their exact authoritative union;
+the14-file frozen C3 runtime closure remains byte-identical. Complete component
+and integration documentation histories are retained; no runtime conflict was
+manually rewritten. Fresh validation/diff and independent source review precede
+the sole new composition-head provider CI; component runs are not its result.
+
+C3 exact-source CI39483187602 passed2844 unit/26 Worker. C6 exact-source
+CI39481266323 FAILED:2880 unit PASS, Worker44/45, properties full HTTP/D1/body
+p95=50.504ms against unchanged strict<50ms (6/100 over50). Runtime context was
+complete, not a causal fix. Prior integration CI39478285754 FAILED unit2947
+PASS/Worker44of45 with properties55.231ms; prior successful CI39473203253 and
+all earlier failures remain evidence. The single Darwin profile remains
+NOT_REPRODUCED and profiling perturbs timing; no additional profile or unchanged
+CI rerun is made by this composition.
+
+Latest retained actual C3 is88/232 (main53/UI35), HARD_STOP. Thin projection
+is VERIFIED but audience remains ACCOUNT_SCAN without an allowlisted label
+before hashing; fields remain unread/false. No identity root cause is proven.
+No mutation or trial RPC occurred and the trial clock remains unset. Separate
+account/loading scope decision is pending; this composition authorizes no
+further Google operation and does not claim actual compatibility or acceptance.
+
+No Production data/credential, deployment, endpoint/flag or observation T0
+change; endpoint blank and flags off. C1/C3/privacy/freshness/performance/device/
+rollback and approved observation gates remain open. Undeployed composition
+rollback is382a9d6; retain every used source, charge, checkpoint, HARD_STOP,
+terminal-holder/recovery receipt and root WIP.
+
+Fresh composed-tree verification: all569 tracked paths outside docs/ match the
+exact C3/C6 union including file modes; all14 frozen runtime hashes match both
+source and frozen copies. Both records retain every prior component/integration
+line with multiplicity and every complete paragraph literally; preexisting
+historical section-order differences are not rewritten. Validate72backend/
+40endpoints/cache/comparison180 and staged/working diff checks PASS. Independent
+composition review and new-head provider outcome are recorded separately.
+
+Independent integration review reconstructed all569 non-document mode/blob
+entries from the Git index, verified all14 frozen runtime hashes and all six
+record-content retention checks, and found no P1/P2. Merge ancestry and clean
+index/working-tree agreement were checked; no test or external operation was
+repeated by review. The composed commit still requires its own provider CI.
+
+## 2026-10-21 — Bounded account-label preparation successor
+
+Recommended GPT-6.1 Sol/high because this increment must preserve exact ledger,
+source and stopped-entry boundaries. V2.0 authorized read-path stability scope;
+no Apps Script source, production deployment, data or activation change.
+
+Added one approved incident-only successor sharing the canonical lock/latest
+registry, with a separate journal/claim and immutable stopped predecessor.
+Four separately prepaid read-only primitives retain the original account proof,
+shared preparation cap and all future/recovery reserves. Replays and unrelated
+stopped states remain denied. Independent review found qualified final read
+failures could pause; two real-holder RED cases reproduced it, then settlement
+was fixed to HARD_STOP. Directed38 and private8 passed; no remaining P1/P2 in
+source and private-flow review. Exact-head CI and frozen admission are required
+before external use. No affected Apps Script test function: no .gs source changed.
+Rollback is to keep the entry inert and existing production flags unchanged;
+a failed/read-only incident retains all debits and stopped history, never replays.
+
+
+## 2026-10-21 — Bounded readonly connection continuity
+
+Recommended GPT-6.1 Sol/high for retained ledger and source boundaries.
+Authorized V2.0 read-path blocker repair; no Apps Script source changed.
+An exact stopped-origin successor preserves the shared canonical lock/latest
+registry and every old failed event. Five previously unassigned units move
+from main to ordinary UI within the unchanged total232: main134, ordinary82,
+independent UI recovery16. HTTP58, main recovery21, unused2, future36 and
+remaining UI protection are retained. Eight additional named preparation
+primitives and two authenticated settled pure-tool faults are shared across
+closed holders/source migrations; no writing or RPC retry is added.
+
+Each actual callback requires its own prepaid descriptor. Discovery, same
+browser binding, original-tab inventory/claim, successful bounded load wait
+and sole final safe projection precede grounding. Per-stage minimum remaining
+path bounds reject incomplete paths before IO. Known owner-required recovery
+closes the holder at CLEAN_PAUSE. Final projection, account/hash/URL/schema
+and unknown failures still stop. Grounding alone cannot authorize RPC: full
+actual/recovery maps and all original privacy/runtime/performance gates remain.
+
+Independent review reproduced two P2s: final failed projection lost the new
+sub-counter increment, and ID-prefix-only dispatch intercepted ordinary
+settlement. Focused real-holder tests failed before fixes; persist-before-stop
+and exact preparation-event dispatch correct both. Affected76 tests pass,
+zero fail/cancel/skip. Private adapter review, exact-head CI, frozen source
+and inert admission still precede Google IO; actual usage remains89/232.
+Rollback: leave the unused entry inert; retain used journals/STOPs/source pins
+and production flags. No formal data, deployment, configuration or T0 change.
+
+Final local source verification: Node22 complete unit2873/2873 PASS, zero
+fail/cancel/skip. Private adapter15/15 PASS includes charged closed-holder
+continuity and rejects changed receipt paths/counts. Independent source and
+private-entry reviews have no remaining P1/P2. A persistence-intercepted real
+latest-origin constructor reaches its first denied save, with canonical89 and
+all stopped artifacts unchanged, no new namespace/debit/browser IO.
+
+Retain failed local runs separately: the first used system Node26 and was
+terminated; a Node22 run completed2865pass/8fail after observed host sleep/wake
+and long protocol/child timeouts. A subsequent Node22 run with an owned,
+test-duration idle-sleep assertion passed all2873 without changing timeouts
+or test thresholds. Exact-head CI and real browser execution remain separate.
+
+
+## 2026-10-21 — Restore browser identity across connection-ID changes
+
+Recommended GPT-6.1 Sol/high for canonical ledger and identity boundaries.
+Authorized V2.0 connection repair; no Apps Script, route or Production change.
+The owner completed the explicitly requested publisher-Chrome reconnection
+step. A second prepaid discovery still lacked the old connection ID; this
+does not establish physical disconnection or prove a changed ID. Actual91
+is fully settled PREP CLEAN_PAUSE, connection used2/8 and fault2/2, no tab read,
+mutation, RPC or trial clock. All failed charges/history remain immutable.
+
+The approved requirement is the same publisher Chrome and original tab, not
+a permanent tool connection number. Add a pure metadata selector: prefer the
+original connection; only with the owner's confirmation in that instruction
+context may one unique Chrome extension be provisionally selected. Selection
+never grants same-browser/account credit. Bind through the same provider and
+require original providerTabId plus exact URL; an opaque tab ID is never an
+alternative identity. Existing hash, successful load wait, unique final safe
+projection and full actual/recovery gates remain. No candidate fallback after
+selection, extra probe, write/RPC retry, budget or failure reset is permitted.
+
+Thirty affected tests and eleven private real-ledger flows pass. Independent
+review found no P1/P2. Tests cover old-ID preference, refreshed-ID provisional
+selection, missing owner context, ambiguous candidates, opaque-only mismatch,
+wrong URL/account/readiness, exact six steps from91 to97, and charged third
+fault hard stop. Seventeen frozen source pins will be required before use.
+Latest-origin persistence-denied admission preserves91; new exact-head CI,
+final source freeze and inert preparation still precede further native IO.
+Rollback: keep unused entry inert, retain all used sources/charges/STOPs and
+production flags. Actual recovery remains unproven until the original tab and
+publisher checks succeed; local tests do not establish Google acceptance.
+
+Final local current-source unit2887/2887 PASS, zero fail/cancel/skip; validate
+72 backend/40 endpoints/cache and diff-check PASS. Source/helper14 and private
+eleven cases independently checked. The owner confirmation is recorded in its
+original instruction context and does not prove tool availability or excuse
+a third failure. Actual remains91, no further native IO before exact CI/seal.
 
 
 ## 2026-10-21 — Bounded GC flag attribution for retained Linux capacity failures
@@ -6931,6 +7301,35 @@ loopback listener, bootstrap password removed. Final strengthened vectors are
 included. Independent six-path review found no P1/P2; validate72/40/cache/
 comparison180 and diff PASS. These are local results; exact new-source CI and
 Linux flags remain unobserved until provider completion.
+
+### C3 bounded discovery repair implementation
+
+The owner approved one successor for the retained stopped discovery checkpoint, using only the existing spare within the unchanged total bound. Discovery now inspects the documented required metadata fields without traversing unrelated optional values. Original browser preference, explicit fallback context, exact provider-tab/URL matching, account proof and the safe projection policy remain required.
+
+The successor imports the exact frozen history into a fresh namespace; consumed entries and STOP markers remain immutable. It allows exactly six separately charged acquisition steps, retains the prior failure count, and hard-stops on any new failure. Only a fully completed acquisition may hand off to the existing future plan. Budget checks include the historical unused declaration and retain the 36-primitive future cap and independent recovery reserves.
+
+Verification includes disposable stopped-history fixtures, all six failure positions, replay/stale authority rejection, full-map bounds and optional metadata cases. Controller-only changes do not modify Apps Script routes, schema, Worker behavior, production flags, credentials or deployments. Actual browser execution and subsequent trial/release gates remain separately required. Rollback is to retain the stopped checkpoint and disable the unused successor; never replay a consumed entry or erase its charges.
+
+### Bounded shape-only metadata diagnosis
+
+A separately approved diagnostic successor retains the exact stopped discovery history and allows only one prepaid list read. It counts that read in the existing preparation/loading accounts without resetting prior faults, granting identity credit or opening the ordinary trial plan. The raw list remains inside its single callback; the retained output contains only fixed-source numeric/boolean shape statistics. The holder closes after capture or failure, and its consumed namespace cannot be replayed.
+
+The implementation preserves future and independent recovery reserves and denies binding, tab/DOM access, write/RPC, pause/handoff and further reads. Rejections, including older projection/error shapes, settle the single debit before stopping. Pure-helper and disposable-holder coverage verifies these boundaries; actual diagnosis still requires reviewed exact-source CI, immutable private pins, persistence-denied admission and inert checks. No production behavior, route, schema, deployment, credential, trigger or flag changes are part of this implementation. Rollback retains the stopped checkpoint and leaves the unused diagnostic disabled; never erase charges or replay a consumed entry.
+
+### Owner-selected readonly connection successor
+
+The owner approved a successor retaining the completed diagnostic, prior STOPs and all charges. It transfers previously unused main allowance to ordinary browser preparation within the unchanged aggregate ceiling. The six-step path first projects minimal documented Chrome labels and closes at a clean checkpoint for explicit owner choice. Only the chosen connection may acquire the exact original tab, complete the bounded load wait and prove the fixed project/account snapshot. Candidate metadata itself grants no account identity credit.
+
+The ledger rejects stale choices/receipts, unselected binding, reused reservations, extra preparation and malformed candidates. Returned IO settles before any hard stop; failed operations do not reset or renew the retained failure allowance. Complete actual operation maps, existing future and independent recovery limits, and all safety/performance/device/observation gates remain required before RPC or release. Source tests and review are distinct from real binding or acceptance. No Apps Script route, schema, production runtime, deployment, credential, trigger or flag changes are included. Rollback leaves the unconsumed successor disabled and preserves every stopped checkpoint and charge; never replay a consumed entry.
+
+Owner-selection timing regression: a delayed holder retains the closed candidate checkpoint as the approval time floor; stale choices remain rejected. No remote operations are added.
+
+
+## 2026-10-21 owner-selected preparation status reconciliation
+
+Recommended GPT-6.1 Sol/high. Documentation-only update records the approved132main/84ordinaryUI/16UIrecovery allocation (total232), replaces stale current-status wording with actual95 CLEAN_PAUSE, and preserves older94/93/65 evidence as history. One new candidate-list read is settled; all42 events and holder/child/lock are closed, with no pending IO, account/tab verification, mutation, RPC, trial clock, deployment or T0. Explicit owner connection selection is pending. Private candidate/profile/account/credential data is not published.
+
+Source cfd0000 passed isolated full2957/2957 and exact-source CI39624938713 unit2952/Worker26; integration e9354d9 passed exact-head CI39625127928 unit3085/Worker45. Both attempt1 checkout trees match the reviewed sources. These results do not apply retroactively to later documentation commits. Code, workflow, failed samples, actual/recovery-map and formal performance/device/observation gates remain unchanged; rollback is to revert only this status documentation while retaining the current private checkpoint and all historical charges/STOPs.
 
 
 ### 2026-10-22 C6 bounded local D1 actor observation
@@ -7005,6 +7404,125 @@ remain the tested bytes. New exact-head CI remains pending. Initial2890/2893
 and earlier strict Linux failures remain evidence, not replaced outcomes.
 
 
+### 2026-10-22 current C3 and C6 acceptance checkpoint
+
+C3 actual97/232 is PREP HARD_STOP: browser binding succeeded, inventory
+callback/validation failed. All44 UI events settled with pendingnull; no
+page claim/account projection, mutation, RPC or trial clock followed. The
+reason is not established from retained evidence. Prior95/94 and all failure
+history remain; current source work grants no remote retry authority. A new
+bounded continuation decision awaits the owner separately.
+
+C6 diagnostic sourcec2ddec6 has local Worker53/53 and repaired bare Core/PG
+2893/2893 with exact-source/cleanup readbacks and independent review. Its
+new exact-head CI39634649349 is in progress; do not treat it as passed. The
+failed integration39627922453 (3085unit,43/45Worker) remains evidence. This
+composition still requires its own source verification and exact-head CI.
+Neither local evidence nor diagnostic COMPLETE establishes formal acceptance.
+Endpoint blank/flags off; no deployment, formal-data/configuration change or
+observation T0. Technical gates,24h parallel sync/shadow including Taipei
+crossday03:00,rooms-first device/rollback,another stable24h and seven-day
+postlaunch observation all remain required.
+
+## 2026-10-23 — Exact stopped-checkpoint project retarget source successor
+
+Recommended model/speed: GPT-6.1 Sol / high, for the cross-language source-pin,
+settlement and budget contract. Existing isolated C3 feature branch starts this
+change at `f2c894c`; the root checkout and C6 source worktree remain untouched.
+This is local controller correctness work, with no application runtime release.
+
+A separately approved nested successor retains the exact stopped inventory
+history in a new namespace. Its pure selector uses exact full-URL matching,
+requires valid unique provider and opaque identifiers across bounded own-data
+rows, and chooses multiple matches by ordinal provider then opaque ordering.
+Four individually mapped/prepaid callbacks bind the selected connection, read
+one user-tab inventory, claim only the selected row and invoke the existing
+injected static ready-first projector. The factory remains inert until run.
+
+Only the new decision permits ordinary UI86 plus recovery16 and main132,
+combined234. Success at103 is binding-only CLEAN_PAUSE. The predecessor
+inventory diagnostic remains unsuccessful (used2/accountfalse); its new proof
+controls completion, while prior fault2, future36, HTTP58 and both independent
+recovery allocations remain intact. Every new failure settles before HARD_STOP.
+Old identity/schema behavior and ceilings remain unchanged. No new preparation
+expiry, credential extension, wait, remote retry, navigation, mutation or RPC.
+
+Validation evidence: missing selector/factory exports produced assertion REDs;
+the exact successor test also failed TRIAL_STOPPED with its subclass absent and
+passed after restoration. Self-review reproduced an unsupported new-scope enum
+leaving pending; normalization now settles false as RESULT_UNVERIFIED. A missing
+publisher-hash type check was separately reproduced and corrected. Final focused
+new/predecessor regression59/59, `npm run validate` and diff-check PASS. Before
+those final narrow fixes, the broader affected/owner regression77/77 and the
+single local unit suite3015/3015 passed, zero skips. These are explicitly pre-fix
+broad-suite results, not final-head complete-source acceptance. Early test-fixture
+argument/name/privacy-assertion errors were corrected without weakening source
+behavior. Apps Script functions were not run; no Apps Script module changed.
+
+The parent owns independent review, exact final-source CI and the complementary
+mandatory Core/owned-PostgreSQL integration partition, immutable private packaging,
+actual inert/first-write gates and any once-only approved external execution.
+No Core/PG cluster, provider/browser/credential operation, external network read,
+canonical journal/claim/STOP/registry write, push, merge, deployment or benchmark
+was performed by this source task. Fresh local SHA readback confirmed the pinned
+decision and all four actual stopped-checkpoint artifacts unchanged. Whole trial,
+compatibility, physical/performance and release acceptance remain incomplete.
+
+Rollback: reviewed revert of this scoped source change only. Preserve all old
+STOPs, immutable sources and operational history; never rewind a live ledger.
+
+## 2026-10-23 — Retained readonly launch successor source repair
+
+Recommended model/speed: GPT-6.1 Sol / high for retained-ledger and cross-language
+source guards. Existing isolated C3 feature branch starts at `bcb87fd`; this is
+local controller stability work. No Apps Script, schema or product runtime change.
+
+A separately approved successor imports the exact stopped checkpoint into a
+unique namespace while retaining its unknown event outcome and missing returned
+run receipt. Direct approval, immutable source history, frozen state and the
+independent local observer must agree before admission. The new proof is counted
+separately from unsuccessful predecessor proofs. Existing decisions keep their
+original ceilings; only the new decision permits its additional ordinary unit.
+
+The fixed four-read binding flow reuses the existing exact-project selector and
+static ready-first projector. Each callback is separately prepaid and settled;
+failure closes the holder with no retry. Success is binding-only CLEAN_PAUSE and
+requires the original future/full-map, privacy, recovery, observation, performance
+and device gates before any later action. The local launcher retains its promise
+before invoking the entry, stores its terminal result or failure and closes its
+gate. After tool observation interruption, only that same promise may be awaited.
+
+Synthetic tests cover immutable predecessor state, admission failures, isolated
+ceilings, all four callback failures, invalid results, separate completion proofs,
+future/recovery limits and retained-launch replay/rejection behavior. Final local
+verification: affected26 files/636 tests PASS, zero fail/cancel/skip; Node22
+validate72 backend/40 endpoints/cache and diff-check PASS. A post-run shell wrapper
+failed assigning zsh's reserved `status`; the completed test log has no failures.
+Independent review and exact final
+source CI plus the complementary Core/owned-PostgreSQL partition remain parent
+responsibilities. Local verification does not establish real browser or release
+acceptance. No remote operation, canonical ledger mutation, push, merge, deployment,
+activation or unchanged capacity benchmark was performed by this source task.
+
+Rollback: leave the unused successor inert or use a reviewed scoped source revert.
+Retain every used source, journal, claim, STOP, unknown outcome and charge. Never
+rewind a live ledger or replay a stopped entry.
+
+### Shared settlement review repair
+
+Starting from `e3efbe2`, source review identified duplicated settlement between the
+fixed project successors. The existing predecessor ledger now owns one private
+settlement helper; each successor retains its explicit event-prefix dispatch and
+separate proof key. No historical admission, receipt, loading guard, quota or
+persistence-before-STOP order changed. Runtime whitelist remains27; API and config
+are unchanged. No new test or artificial RED was created for this behavior-preserving
+refactor. Fresh pre-change representatives12/12 and final covering65/65 PASS, zero
+fail/cancel/skip, runner/wrapper exit0; Node22 validate and diff-check PASS. Only
+source/docs changed; no canonical/provider operation, push, deployment or benchmark.
+The retained RED logs remain historical evidence of their shown failures; there is
+no separately frozen preimplementation test-source revision certifying every
+negative. Independent review and final full-source parent gates remain required.
+
 ## 2026-10-22 C6 Node HTTP-client boundary observation
 
 Recommended GPT-6.1 Sol/high: diagnose the retained strict local latency
@@ -7055,6 +7573,102 @@ verified. Only this result documentation was appended afterward; executable
 and test bytes remain those verified. New exact-head CI is still pending.
 
 
+## 2026-10-23 — Reviewed C3/C6 source composition
+
+Recommended model/speed: GPT-6.1 Sol / high for multi-branch integration.
+V2.0 stability source composition on the existing isolated integration branch,
+starting at `c3aa5ff`. Both reviewed exact heads are retained as merge ancestors:
+C3 `8f8d222` and C6 `bca6764`. Controller conflicts resolve to the exact reviewed
+C3 bytes; append-only evidence conflicts preserve both histories and their gates.
+No new source design, timer, sample, threshold or test weakening is introduced.
+
+Fresh local verification: ten C3 owner/inventory/retarget/launch/selector/readiness
+files pass144/144; eight complementary C6 HTTP/snapshot/timing/index files
+pass67/67, both with zero fail/cancel/skip under Node22. The actual local D1
+source-order test retains complete scoped dataset/HTTP bytes, SQL/parameters,
+call counts and edge ordering while checking index plans. This is functional
+verification, not an additional capacity benchmark or latency acceptance.
+`npm run validate` passes72 backend files/40 endpoint references/static cache/
+181-source comparison; diff-check passes. No Apps Script function is affected.
+
+Git blob reconciliation verifies all27 C3 controller runtime paths against
+`8f8d222`, and all56 Worker paths plus all181 comparison-source paths against
+`bca6764`. The standard comparison checker passes the retained generated identity;
+no regeneration is necessary. Asset version remains20261020-read-observation-v1,
+endpoint blank and all six read flags off. Source-registration differences from
+the exact C3 unit baseline mechanically predict3207 unit cases (3057+150);
+the identical Worker test tree predicts60. Final composed CI and the separate
+mandatory five-case Core/PostgreSQL partition remain parent responsibilities.
+These expected counts are not claimed executed suite results.
+
+Retain source CI evidence separately: C3 run39848685082 unit3057/3057 passes,
+Worker25/26 fails the unchanged strict50ms gate (small-fixture tenants
+p95=178.301ms,8/100 over50). C6 run39839610496 unit2900/Worker60 passes.
+Neither result is composed-head CI, and this integration does not establish the
+cause or repair of that particular failed tail. No unchanged C3 retry is made.
+
+Retained actual preparation remains stopped at100 within the approved235 ceiling;
+no new actual binding callback or completed return/drain receipt is claimed.
+Historical unsuccessful proofs, charges, STOPs and unknown outcomes remain.
+Independent review, exact composed CI/Core evidence, actual authority/privacy/
+revocation/freshness/full-map/performance/device/rollback gates and the approved
+24h parallel observation, another stable24h and seven-day postlaunch observation
+remain required. No push, main merge, deployment, remote DDL, configuration or
+observation T0 occurs here. A later release requires its own authorization and
+operational gates. Local rollback is a reviewed source revert to `c3aa5ff`,
+retaining all operational history; no production or ledger rollback is implied.
+
+## 2026-10-23 — Shared-object readonly successor source repair
+
+Recommended model/speed: GPT-6.1 Sol / high for the retained-ledger and cross-cell
+state boundaries. Work stays on the existing isolated C3 feature branch. This is
+local controller correctness work; application runtime and production acceptance
+are unchanged.
+
+The newly approved successor imports the exact stopped prefix into a unique
+namespace while retaining the failed UNKNOWN binding, all charges, prior STOPs
+and unsuccessful predecessor proofs. Direct approval, returned run/drain receipt,
+independent audit and the demonstrated local object-capture proofs must agree
+before admission. Only this new decision receives the additional ordinary unit;
+older decisions retain their ceilings and independent recovery allocations.
+
+The existing fixed four-read flow and durable settlement are shared through
+bounded policy helpers. Each returned operation settles before failure STOP;
+success is binding-only CLEAN_PAUSE, requiring the original full map, reserved
+future allowance, privacy, revocation, freshness, performance, physical-device,
+rollback and observation gates before later trial or release work.
+
+The promoted constructor captures one sealed local state object and a stable
+agent reference. Later callers mutate properties on that object. Callback attempts
+and safe gate/pending/returned/rejected classifications remain visible there;
+provider rejection text is discarded. The unchanged source launcher retains its
+promise before invocation, preserves its terminal result or sanitized error,
+closes its gate and forbids another start. A stale scalar observer is never proof
+that a historical callback was not invoked.
+
+The initial broad RED command overlapped source edits and is retained only as
+limited evidence. A separate fixed-source admission test failed while the new
+ledger dispatcher was absent, then passed after its implementation; the first
+successful flow and future-allowance checks are retained separately. No artificial
+claim that every negative had an immutable failing preimplementation revision is
+made. See the test matrix for local coverage and final verification boundaries.
+
+No provider operation, actual canonical journal/claim/STOP/registry write, RPC,
+trial clock, credential/configuration change, push, merge, deploy or unchanged
+benchmark was performed by this source task. The parent owns independent review,
+final composed CI/Core integration and immutable private packaging before any
+separately admitted actual run. Rollback is to leave the unused successor inert
+or use a reviewed scoped source revert. Preserve every used source, receipt,
+UNKNOWN, charge and STOP; never rewind or replay a stopped entry.
+
+Final local verification:28 affected files /709 tests PASS, zero fail/cancel/skip;
+the original test runner and shell wrapper both completed exit0. Added47 cases
+without removing or changing old tests. Node22 validate72 backend /40 endpoint
+references/cache and diff-check PASS. Source stayed fixed during the final test
+run. Full unit/Worker and complementary Core/owned-PostgreSQL acceptance are not
+claimed locally; the parent owns that final composed-head evidence.
+
+
 ## 2026-10-23 C6 properties stage-pair retention candidate
 
 Recommended GPT-6.1 Sol/high, bounded evidence/framing risk. Work stayed in the
@@ -7084,6 +7698,26 @@ formal data action, rollout or production acceptance occurred. Parent review
 and one predetermined composed diagnostic CI are pending. Revert this bounded
 test/summary change to roll back; no runtime/data release is required.
 
+## 2026-10-23 C3 publisher alignment 105 source candidate
+
+The approved continuation imports the stopped102 journal and three separately
+settled provider metadata charges into a new publisher-alignment namespace.
+Its first holder admits six documented browser calls, requires the selected
+browser/profile and two safe publisher projections, and pauses at 111 with no
+trial clock or RPC. Imported sidecars have no provider timestamps; the new
+ledger records only its admission bookkeeping time and preserves their pins.
+
+The future UI96 is a stage budget, not an executable actual map. Every stage
+requires explicit actor, destination, callback, receipt, privacy and cleanup
+metadata with a fixed cap and protected future minimum. Unknown calls, writes
+without readback and cleanup, and RPC without the complete reviewed map remain
+denied. Synthetic source tests and validation are local evidence only. Parent
+review, composed CI/Core and private prestart must pass before any actual
+provider operation. No actual canonical state, Google data, deployment or
+production claim was changed by this source task. Rollback leaves the unused
+namespace inert or reverts only the reviewed source commit; spent entries and
+historical STOP records are never reset.
+
 
 ## 2026-10-23 C6 local actor transaction-window diagnostic candidate
 
@@ -7108,6 +7742,10 @@ COMPLETE is diagnostic coverage only. The retained Linux CI39969225950 two
 strict latency failures remain; cause and Production acceptance are unknown.
 Parent review and composed exact-source CI are pending. Revert this test-only
 candidate to roll back; no runtime/data release is involved.
+
+## 2026-10-24 C3 conditional native successor source preparation
+
+The local source candidate adds a distinct opt-in successor to the existing publisher alignment ledger. It requires a pinned, fully settled continuation receipt chain, approved current visual proof and a synchronous parent verifier before any new holder write. The original stopped journal and its flags remain unchanged. Imported counts reduce the remaining ordinary budget, preserve protected future stages and carry spent failure/repair highwaters without inventing provider-call times. Synthetic focused source tests, `npm run validate`, syntax checks and diff check passed. Actual identity entry, external reads/writes, provider execution, source CI, merge, deploy and production acceptance were not performed by this source task. No Apps Script, API route or schema changed; affected Apps Script tests are not applicable. Rollback is a reviewed source revert before use, while historical receipts and STOP records remain preserved.
 
 ## 2026-10-24 C6 transaction callback phase candidate
 
@@ -7151,3 +7789,110 @@ Production action occurred. The retained composed properties p95
 is not a measured latency cure. Independent source review and exact composed
 acceptance belong to the parent. Rollback is a reviewed revert of this scoped
 source/test/docs commit; no runtime/data rollback is involved.
+## 2026-10-24 C3 first publisher plan registration source repair
+
+The publisher alignment controller previously rejected its first `plan-ready` request while the journal still had no plan. A local synthetic native successor regression now exercises the actual ledger and holder boundary: the first complete validated plan is permitted only after publisher preparation, valid PREP/TRIAL clock state, settled events, no pending operation and no prior RPC. The inherited full-map and budget checks still decide whether the plan is valid. Missing native aliases and duplicate plans remain rejected, as do premature RPC calls.
+
+The controller view now exposes the inherited `trial_map_ready()` result as `trialMapReady`. This reports staged readiness without setting or bypassing `planReady`; a synthetic stage with mapped main and UI recovery proves the distinction before a full plan. Later publisher stages must match already declared main, UI and recovery descriptors, and extra preparation reads must fit remaining reserved UI capacity. The existing stage caps and historical charges are unchanged.
+
+This is a local source and synthetic regression correction only. No provider action, actual canonical journal write, trial clock, RPC, Apps Script route, schema, Production deployment or acceptance is claimed. Review, exact-source CI, private source packaging and separate actual admission gates remain open. Rollback is a reviewed revert of this source repair before use; retain every historical STOP and charge.
+
+The follow-up source repair requires an exact admitted publisher stage for each
+ordinary main debit, including a staged write's already validated independent
+cleanup metadata. This closes the post-plan gap without requiring a provider
+call before plan registration. The fixed UI policy now rejects undeclared
+write methods in both JS and Python parsers; readonly projections remain
+available. Local synthetic regression tests and validation are source evidence
+only. The unconditional H gate and later conditional terminal-stage sequencing
+remain for the separate forward-journey review; no actual operation was run.
+
+## 2026-10-24 C3 native publisher full forward protocol candidate
+
+The native successor's single H now reaches the inherited complete-plan,
+pre-H completion, clock, rate, credential freshness, debit and one-RPC checks;
+the preparation-only predecessor keeps its H refusal. A successful native path
+may advance past predeclared conditional T rows without spending them. The
+selected baseline remains six UI primitives, while subsequent stages may use
+fewer than their initial allocations and apply the existing rollover, future
+minimum, actual map count and recovery ceilings. No total, failure or trial
+window allowance changes.
+
+A local synthetic journey drives the real holder and Python ledger from a
+settled 128 bootstrap through the complete fixed/native map, one prepaid H,
+separate after readbacks and completed RPC. An unknown H remains spent and
+stopped, allows only its staged terminal reads, blocks replay and retains the
+same owner's independent cleanup. Source tests do not prove actual browser
+identity, Google privacy, callback mapping, quota, compatibility or release
+acceptance. No actual provider or canonical journal operation, Apps Script,
+API, Schema, Worker, push, merge or deployment is part of this source task.
+Parent review, exact-head CI/Core and private prestart gates remain pending.
+Rollback is a reviewed source revert before use; any future spent H, UNKNOWN,
+STOP and cleanup record must remain intact.
+
+## 2026-10-24 — C3 mapped UI recovery navigation source repair
+
+Recommended model/speed: `gpt-6-sol` / `high` for a narrow JS/Python parser
+and ledger-ordering change. The retained publisher source plan had no charged
+route from a stopped single tab to its fixed I cleanup pages: ordinary N
+navigation is closed after STOP, while the I UI parser and same-key main-first
+guard rejected a preparatory page transition.
+
+The source now permits `navigate` only for UI-lane existing publisher I aliases
+whose fixed target is original settings, original triggers, thin settings or
+OAuth audience. A predeclared, successful, settled readonly UI recovery row may
+run before its matching main I action. The main duplicate guard ignores only
+that mapped prelude; UI writes still need the prior main success. Navigation
+never marks the alias complete. The 16 UI/21 main cleanup reserves, 98 metadata
+operations, 21 native aliases and 296 total remain unchanged.
+
+Focused tests use the synthetic settled 128 bootstrap and real same-owner
+holder/Python ledger. A mapped I navigation and separate final I read each
+take one charge; ordinary-cap, unmapped and pre-main write attempts stop before
+their provider callback. No actual provider, browser, canonical ledger,
+Apps Script, Worker, production or release action was performed. Review,
+composed-source CI and actual prestart evidence remain pending. Rollback is a
+reviewed source revert before use; retain any future spent cleanup charges,
+STOP and recovery record rather than rewinding them.
+
+## 2026-10-24 — C3 native PREP clean-resume and bounded grounding source
+
+Recommended model/speed: `gpt-6-sol` / `high` for the exact JS/Python holder,
+receipt and stage-budget protocol. The public source now admits only a latest
+genuine same-epoch `HANDOFF_CLOSED` receipt from a native PREP/CLEAN_PAUSE holder
+after the settled 128 import. It rechecks the frozen origin and imported charges,
+current common registry, immutable source ancestry, successful mapped PREP
+events, old holder closure, fresh nonce and monotonic clock before persistence.
+STOP, TRIAL, W0, RPC, pending, failed and unsettled states do not reopen.
+
+The original six baseline logical bindings stay in place. Up to three explicit
+original-target PUREPREP grounding rows may raise the baseline cap from six to
+nine. Those rows charge ordinary UI and transfer only their count from the
+native diagnostic future minimum: baseline six retains three reserved diagnostic
+calls; baseline nine moves all three into declared grounding. The diagnostic
+stage cap, 73 remaining ordinary UI calls, 296 total and independent 21 main/16
+UI recovery ceilings are unchanged. The inherited loading check needed a narrow
+exception for these already registered native baseline PREP rows; it continues
+to govern the fixed thin-settings-to-audience loading steps.
+The cap-nine fixture pauses after settings goto/project and original-triggers
+goto/project at cursor four; the resumed holder then charges the declared
+original-settings return goto before any A read or W0.
+
+Focused local tests use a synthetic settled 128 fixture and the real holder and
+Python ledger. They verify genuine receipt resume, charged grounding, refusal
+before callbacks and independent cleanup after resumed STOP. This public source
+does not constitute the private parent/retainer adaptation or actual browser,
+provider, canonical ledger, Worker, production or release acceptance. No Apps
+Script function applies. Rollback is a reviewed source revert before use; any
+later actual charges or STOP records must remain intact.
+
+## 2026-10-24 — Acceptance CI exact source checkout
+
+The `rental` and `read-worker` jobs in `.github/workflows/rental-unit.yml` now
+select `github.event.pull_request.head.sha` for pull requests and `github.sha`
+for pushes. This aligns the checked-out source with the immutable event source
+used by exact-source acceptance. Event kinds, permissions, tests, thresholds,
+dry-run behavior, and remaining steps are unchanged. Local parsing, source-ref
+assertions, `npm run validate`, and `git diff --check` do not establish an
+Actions result; the reviewed committed source still requires a complete CI run.
+No Production or provider action occurred. Rollback is a reviewed revert of
+this workflow/documentation commit; no runtime or data rollback applies.

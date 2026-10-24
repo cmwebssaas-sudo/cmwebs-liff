@@ -4,6 +4,7 @@ import {mkdtempSync,writeFileSync,readFileSync,chmodSync,symlinkSync,statSync,re
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createHash} from 'node:crypto';
+import {SIMPLE_DECISION} from '../scripts/read-authority-simple-plan.mjs';
 const api=await import('../scripts/read-authority-trial-credentials.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-trial-credentials.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const decisionHash='5bd83ace54d7af801880798be3460ed9b6f8c8b053b447459e7956b127ff4c72',clock=Date.parse('2026-10-15T00:00:00Z');
@@ -34,6 +35,21 @@ test('publisher refresh and identity are explicit, paid once, and expose only a 
  for(let i=0;i<3;i++)s.holder.credential();assert.equal(s.calls.length,2);assert.equal(readFileSync(s.path,'utf8'),s.raw);assert.equal(statSync(s.path).mtimeMs,before.mtimeMs);
  await assert.rejects(s.holder.refresh(s.control),/TRIAL_STOPPED/);await assert.rejects(s.holder.verify(s.control),/TRIAL_STOPPED/);assert.equal(s.calls.length,2);
  await s.holder.stopAndDrain();assert.throws(()=>s.holder.credential(),/TRIAL_STOPPED/);assert.equal(s.calls.length,2);
+});
+test('SIMPLE publisher holder pays and performs one actual refresh and same-token identity read',async()=>{
+ const s=setup({decisionHash:SIMPLE_DECISION}),oldControl=s.control;
+ const simpleControl={...oldControl,decisionHash:SIMPLE_DECISION};
+ await assert.rejects(s.holder.refresh(oldControl),/TRIAL_STOPPED/);
+ assert.deepEqual(s.events,[]);
+ await s.holder.refresh(simpleControl);
+ await assert.rejects(s.holder.verify(oldControl),/TRIAL_STOPPED/);
+ assert.deepEqual(s.events,['debit','fetch']);
+ await s.holder.verify(simpleControl);
+ assert.deepEqual(s.charges,['P:publisher-refresh','P:publisher-userinfo']);
+ assert.deepEqual(s.events,['debit','fetch','debit','fetch']);
+ assert.deepEqual(s.calls.map(c=>[c.url,c.init.method]),[[tokenUrl,'POST'],[userUrl,'GET']]);
+ assert.equal(s.calls[1].init.headers.authorization,'Bearer SYNTHETIC_RENEWED_TOKEN');
+ assert.equal(s.holder.credential().accountHash,publisherHash);
 });
 for(const [name,change] of [
  ['missing scopes',v=>{delete v.scope;}],['broader scopes',v=>{v.scope+=' https://www.googleapis.com/auth/drive';}],['duplicate scopes',v=>{v.scope+=' '+managementScopes[0];}],
@@ -77,6 +93,32 @@ function native(patch={}){
  const cap=phase=>({phase,decisionHash,externalRead:async(io,charge)=>{charges.push(charge);return io();}});
  return {identity,options,credentials,calls,charges,cap,setNow:t=>{time=t;}};
 }
+test('SIMPLE native holder reads caller and publisher in distinct paid before and after windows',async()=>{
+ const publisher=setup({decisionHash:SIMPLE_DECISION}),publisherControl={...publisher.control,decisionHash:SIMPLE_DECISION};
+ await publisher.holder.refresh(publisherControl);await publisher.holder.verify(publisherControl);
+ const s=native({decisionHash:SIMPLE_DECISION,publisherCredential:()=>publisher.holder.credential()});
+ for(const phase of ['wrapper-before','wrapper-after'])for(const actor of ['caller','publisher']){
+  const control={...s.cap(phase),decisionHash:SIMPLE_DECISION};
+  const proof=await s.identity.read(actor,control);
+  assert.equal(proof.actor,actor);assert.equal(proof.phase,phase);
+  assert.equal(proof.accountHash,actor==='caller'?callerHash:publisherHash);
+ }
+ assert.deepEqual(s.charges,[{actor:'caller',category:'identityReads'},{actor:'publisher',category:'identityReads'},{actor:'caller',category:'identityReads'},{actor:'publisher',category:'identityReads'}]);
+ assert.equal(s.calls.length,4);
+ assert.deepEqual(s.calls.map(c=>c.init.headers.authorization),['Bearer SYNTHETIC_CALLER','Bearer SYNTHETIC_RENEWED_TOKEN','Bearer SYNTHETIC_CALLER','Bearer SYNTHETIC_RENEWED_TOKEN']);
+});
+test('SIMPLE native holder rejects mismatched control, actor, scopes and stale expiry before callback',async()=>{
+ const s=native({decisionHash:SIMPLE_DECISION});
+ await assert.rejects(s.identity.read('caller',s.cap('wrapper-before')),/TRIAL_STOPPED/);
+ assert.equal(s.calls.length,0);assert.equal(s.charges.length,0);
+ await assert.rejects(s.identity.read('other',{...s.cap('wrapper-before'),decisionHash:SIMPLE_DECISION}),/TRIAL_STOPPED/);
+ assert.equal(s.calls.length,0);
+ for(const patch of [v=>{v.scopes=managementScopes;},v=>{v.expiresAt=clock+360000;}]){
+  const next=native({decisionHash:SIMPLE_DECISION});patch(next.credentials.caller);
+  await assert.rejects(next.identity.read('caller',{...next.cap('wrapper-before'),decisionHash:SIMPLE_DECISION}),/TRIAL_STOPPED/);
+  assert.equal(next.calls.length,0);assert.equal(next.charges.length,0);
+ }
+});
 test('four G windows each obtain a fresh same-token identity under their own actor admission',async()=>{
  const s=native();for(const phase of ['wrapper-before','wrapper-after'])for(const actor of ['caller','publisher']){
   const proof=await s.identity.read(actor,s.cap(phase));assert.equal(proof.actor,actor);assert.equal(proof.phase,phase);assert.equal(proof.accountHash,actor==='caller'?callerHash:publisherHash);assert.equal(proof.complete,false);assert.equal(proof.trialAccepted,false);assert(Object.isFrozen(proof));

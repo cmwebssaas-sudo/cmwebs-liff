@@ -24,7 +24,7 @@ fail=history.fail;integer=history.integer;digest=history.digest;exact=history.ex
 rawfile=history.rawfile;directory=history.directory;record=history.record
 save_record=history.save_record;synced=history.synced;compact=history.compact;sha=history.sha;day=history.day
 C=history.C;I=history.I
-READ_METHODS=['inventory','claim','navigate','snapshot','read-key-presence']
+READ_METHODS=['inventory','claim','navigate','snapshot','read-key-presence','wait','getBrowser','nameSession','claimTab','evaluate']
 NAVIGATION=['original-settings','original-triggers','thin-settings','thin-triggers','oauth-audience','oauth-client','caller-executions','publisher-executions','caller-oauth']
 def pin(p):
  if not exact(p,['path','sha256']) or type(p['path']) is not str or not Path(p['path']).is_absolute() or not digest(p['sha256']):fail()
@@ -36,16 +36,23 @@ def private_pin(p):
  if sha(raw)!=p['sha256']:fail()
  return raw
 def valid_id(v):return type(v) is str and re.fullmatch('[-A-Za-z0-9_.]{1,100}',v) is not None
+def cleanup_navigation(op,r):
+ return type(op.get('key')) is str and op['key'].startswith('I:') and op['operation']=='navigate' and op['actor']=='publisher' and r is not None and r['actor']=='publisher' and r['target']==op['target'] and op['target'] in ['original-settings','original-triggers','thin-settings','oauth-audience']
+def cleanup_prelude(op,key):
+ r=RULES.get(key)
+ return type(op) is dict and op.get('key')==key and key.startswith('I:') and op.get('actor')=='publisher' and r is not None and r['actor']=='publisher' and op.get('target')==r['target'] and r['target'] in ['original-settings','original-triggers','thin-settings','oauth-audience'] and op.get('operation') in ['navigate','snapshot','read-key-presence']
 def descriptor(op,lane):
  if lane=='main':
   if not exact(op,['id','bucket','alias','actor','target','operation','units']):fail()
   key=op['bucket']+':'+op['alias'];r=RULES.get(key)
   if not r or op['actor']!=r['actor'] or op['target']!=r['target'] or op['operation'] not in r['methods'] or op['operation'] in READ_METHODS and not key.startswith(('C:','I:','J:')):fail()
  elif lane=='ui':
+  if op.get('operation')=='wait' and (op.get('key')!='N:preparation' or op.get('preparation') is not True or op.get('target') not in ['thin-settings','oauth-audience']):fail()
+  if op.get('operation') in ['getBrowser','nameSession','claimTab','evaluate'] and (not op.get('id','').startswith(('publisher105-','future-')) or op.get('key')!='N:preparation' or op.get('preparation') is not True):fail()
   if not exact(op,['id','key','actor','target','operation','units','preparation']) or type(op['preparation']) is not bool or op['operation'] not in READ_METHODS+['click','fill','submit']:fail()
   key=op['key'];r=RULES.get(key)
   if r:
-   if op['actor']!=r['actor'] or op['target']!=r['target'] or op['preparation'] or all(m in ['GET','snapshot','read-key-presence'] for m in r['methods']) and op['operation'] not in ['snapshot','read-key-presence']:fail()
+   if op['actor']!=r['actor'] or op['target']!=r['target'] or op['preparation'] or op['operation']=='navigate' and key.startswith('I:') and not cleanup_navigation(op,r) or not cleanup_navigation(op,r) and (all(m in ['GET','snapshot','read-key-presence'] for m in r['methods']) and op['operation'] not in ['snapshot','read-key-presence'] or any(m in ['click','fill'] for m in r['methods']) and op['operation'] not in r['methods']):fail()
   elif key not in ['N:preparation','N:navigation','N:thin-triggers-before','N:thin-triggers-after'] or op['target'] not in NAVIGATION or op['actor']!=('caller' if op['target'].startswith('caller-') else 'publisher') or op['operation'] not in READ_METHODS or op['preparation']!=(key=='N:preparation') or key.startswith('N:thin-') and (op['target']!='thin-triggers' or op['operation']!='snapshot'):fail()
  else:fail()
  if not valid_id(op['id']) or type(op['units']) is not int or op['units']!=1:fail()
@@ -54,10 +61,12 @@ class Ledger:
  def __init__(self,cfg,cleanup=False):
   minimum=cfg.pop('minimumEvents',None) if cleanup else None
   if cleanup and (not integer(minimum) or minimum<0):fail()
-  self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None
+  self.cfg=cfg;self.child=None;self.cleanup_mode=cleanup;self.memory=None;self.continuity='readonlyContinuity' in cfg;self.successor='readonlySuccessor' in cfg;self.rebalanced='readonlyRebalance' in cfg;self.loading='readonlyLoading' in cfg;self.account_load='readonlyAccountLoad' in cfg;self.connection='readonlyConnection' in cfg
+  self.main_ordinary_limit=58 if self.rebalanced else 79;self.main_event_limit=79 if self.connection else 84 if self.rebalanced else 105;self.ui_ordinary_limit=148 if getattr(self,'aligned105',False) else 88 if getattr(self,'shared101',False) else 87 if getattr(self,'launch100',False) else 86 if getattr(self,'retarget99',False) else 84 if getattr(self,'owner_connection',False) else 82 if self.connection else 77 if self.rebalanced else 56;self.ui_event_limit=self.ui_ordinary_limit+16
   self.continuation='continuation' in cfg;self.repair='admissionRepair' in cfg;self.repair_window='admissionWindow' in cfg;self.readonly_debug='readonlyDebug' in cfg
-  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window:fail()
-  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])
+  if self.repair and not self.continuation or self.repair_window and not self.repair or self.readonly_debug and not self.repair_window or self.continuity and not self.readonly_debug or self.successor and not self.continuity or self.rebalanced and not self.successor or self.loading and not self.rebalanced or self.account_load and not self.loading or self.connection and not self.account_load:fail()
+  optional=(['continuation'] if self.continuation else [])+(['admissionRepair'] if self.repair else [])+(['admissionWindow'] if self.repair_window else [])+(['readonlyDebug'] if self.readonly_debug else [])+(['readonlyContinuity'] if self.continuity else [])+(['readonlySuccessor'] if self.successor else [])+(['readonlyRebalance'] if self.rebalanced else [])+(['readonlyLoading'] if self.loading else [])+(['readonlyAccountLoad'] if self.account_load else [])+(['readonlyConnection'] if self.connection else [])
+  resume=cfg.pop('resume',None) if self.continuity else None
   if not exact(cfg,['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources','now','ownerNonce']+optional) or cfg['decisionHash']!=DECISION or not all(digest(cfg[k]) for k in ['binding','ownerNonce']) or type(cfg['epoch']) is not str or re.fullmatch('[-A-Za-z0-9_]{20,200}',cfg['epoch']) is None or not integer(cfg['now']):fail()
   self.path=Path(cfg['path']);directory(self.path.parent)
   if not self.path.is_absolute() or cfg['original']['path']!=str(self.path) or cfg['original']['epoch']!=cfg['epoch']:fail()
@@ -69,12 +78,18 @@ class Ledger:
   if not cleanup and self.old()['spent']!=27:fail()
   self.old();self.past=json.loads(private_pin(cfg['history']['journal']));self.prior_time=max(e['time'] for e in self.past['events'])
   if cfg['now']<self.prior_time:fail()
-  suffix='.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
-  self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
+  suffix='.simple-publisher-native-predebit-recovery' if getattr(self,'predebit_recovery',False) else '.simple-publisher-native-successor' if getattr(self,'native_successor',False) else '.simple-publisher-alignment' if getattr(self,'aligned105',False) else '.simple-project-shared' if getattr(self,'shared101',False) else '.simple-project-launch' if getattr(self,'launch100',False) else '.simple-project-retarget' if getattr(self,'retarget99',False) else '.simple-inventory-diagnostic' if getattr(self,'inventory97',False) else '.simple-owner-connection' if getattr(self,'owner_connection',False) else '.simple-metadata-diagnostic' if getattr(self,'metadata_diagnostic',False) else '.simple-discovery-repair' if self.connection and 'repair92' in cfg['readonlyConnection'] else '.simple-connection' if self.connection else '.simple-account-load' if self.account_load else '.simple-rebalanced' if self.rebalanced else '.simple-readonly-diagnostic' if self.successor else '.simple-readonly-continuity' if self.continuity else '.simple-readonly-debug' if self.readonly_debug else '.simple-admission-repair' if self.repair else '.simple-continuation' if self.continuation else '.simple'
+  self.suffix=suffix;self.journal=Path(str(self.path)+suffix+'.json');self.claim=Path(str(self.path)+suffix+'-claim.json');self.stop_path=Path(str(self.path)+suffix+'-stop.json')
   root=Path.home()/'.codex/private/cmwebs-authority-trials';directory(root)
-  self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+suffix+'.json')
+  self.registry=root/(sha(json.dumps(cfg['epoch'],separators=(',',':')).encode())+('.simple-rebalanced' if self.account_load else suffix)+'.json')
   self.identity={k:copy.deepcopy(cfg[k]) for k in ['path','epoch','binding','decisionHash','approval','history','baseline','original','legacyBudget','sources']+optional};self.identity['ownerHash']=sha(cfg['ownerNonce'].encode())
+  if self.continuity and resume is not None and not cleanup:
+   self.resume_preparation(resume);return
   if cleanup:
+   if self.continuity:
+    claimed=record(self.claim);checkpoint=record(self.registry).get('checkpoint',{})
+    if {k:v for k,v in claimed.items() if k!='ownerHash'}!={k:v for k,v in self.identity.items() if k!='ownerHash'} or checkpoint.get('holder')!=sha(cfg['ownerNonce'].encode()):fail()
+    self.identity=claimed
    r=record(self.registry)
    if record(self.claim)!=self.identity or r.get('identity')!=self.identity or type(r.get('checkpoint')) is not dict or type(r['checkpoint'].get('events')) is not list or len(r['checkpoint']['events'])!=minimum:fail()
    self.j=copy.deepcopy(r['checkpoint']);self.memory=copy.deepcopy(self.j);self.current();return
@@ -82,7 +97,14 @@ class Ledger:
    try:os.lstat(p);fail()
    except FileNotFoundError:pass
   self.j={'state':'ready','w0':None,'expiresAt':None,'lastAt':self.prior_time,'events':[],'pending':None,'stages':{},'stageNames':[],'stageBrowser':[],'recoveryBrowser':[],'plan':None,'completed':[],'failures':0,'mutated':False,'rpc':{'beganAt':None,'complete':False},'chargedUpperBoundMs':0,'finished':False}
-  if self.readonly_debug:
+  if self.rebalanced:
+   prior,approved_at=self.validate_rebalance();self.j=copy.deepcopy(prior);self.j.update(state='ready',lastAt=approved_at,lifecycle='ACTIVE',holder=sha(cfg['ownerNonce'].encode()),futureOrdinaryUi=43);self.j['holders'].append(sha(cfg['ownerNonce'].encode()))
+  elif self.successor:
+   prior,approved_at=self.validate_successor();self.j=copy.deepcopy(prior);self.j.update(state='ready',lastAt=approved_at,lifecycle='ACTIVE',holder=sha(cfg['ownerNonce'].encode()));self.j['holders'].append(sha(cfg['ownerNonce'].encode()))
+  elif self.continuity:
+   prior,approved_at=self.validate_continuity()
+   self.j=copy.deepcopy(prior);self.j.update(state='ready',w0=None,expiresAt=None,lastAt=approved_at,phase='PREP',lifecycle='ACTIVE',technicalFailures=0,preparationStages={},holder=sha(cfg['ownerNonce'].encode()),holders=[sha(cfg['ownerNonce'].encode())])
+  elif self.readonly_debug:
    prior,approved_at=self.validate_readonly_debug()
    self.j=copy.deepcopy(prior);self.j.update(state='ready',w0=None,expiresAt=None,lastAt=approved_at)
   elif self.repair:
@@ -97,6 +119,18 @@ class Ledger:
   cfg=self.cfg
   if type(cfg['sources']) is not list:fail()
   required={'read-authority-simple-budget.py','read-authority-simple-plan.mjs','read-authority-simple-control.mjs','read-authority-continuation-budget.py','read-authority-continuation-plan.mjs','read-authority-trial-budget-plan.mjs'}
+  if self.continuity:required.add('read-authority-readonly-continuity.py')
+  if self.rebalanced:required.add('read-authority-rebalanced-budget.py')
+  if self.loading:required.add('read-authority-loading-budget.py')
+  if self.account_load:required.add('read-authority-account-load-budget.py')
+  if self.connection:required.update(['read-authority-connection-budget.py','read-authority-browser-selection.mjs'])
+  if getattr(self,'metadata_diagnostic',False):required.add('read-authority-browser-shape.mjs')
+  if getattr(self,'owner_connection',False):required.add('read-authority-owner-connection-budget.py')
+  if getattr(self,'inventory97',False):required.update(['read-authority-inventory-budget.py','read-authority-inventory-diagnostic.mjs','read-authority-ready-projection.mjs'])
+  if getattr(self,'retarget99',False):required.update(['read-authority-project-retarget-budget.py','read-authority-project-selector.mjs','read-authority-project-retarget.mjs'])
+  if getattr(self,'launch100',False):required.update(['read-authority-project-launch-budget.py','read-authority-launch-state.mjs'])
+  if getattr(self,'shared101',False):required.update(['read-authority-project-shared-budget.py','read-authority-retained-browser-bridge.mjs'])
+  if getattr(self,'aligned105',False):required.update(['read-authority-publisher-alignment-budget.py','read-authority-publisher-alignment.mjs'])
   if not required.issubset({Path(p['path']).name for p in cfg['sources']}):fail()
   for p in cfg['sources']:pin(p)
   if not any(Path(p['path']).resolve()==Path(__file__).resolve() for p in cfg['sources']):fail()
@@ -109,7 +143,10 @@ class Ledger:
   for p in h['files']:private_pin(p)
   j=json.loads(private_pin(h['journal']));d=json.loads(private_pin(h['drain']))
   if j.get('state')!='stopped' or j.get('spent')!=3 or j.get('finished') is not True or j.get('chargedUpperBoundMs')!=0 or j.get('rpc')!={'beganAt':None,'complete':False} or type(j.get('events')) is not list or len(j['events'])!=3 or any(e.get('outcome')!='UNKNOWN' or not integer(e.get('time')) for e in j['events']) or d.get('stopAcknowledged') is not True or d.get('ordinaryScopeClosed') is not True or d.get('ownedScope',{}).get('state')!='SETTLED':fail()
-  if self.readonly_debug:self.validate_readonly_debug()
+  if self.rebalanced:self.validate_rebalance()
+  elif self.successor:self.validate_successor()
+  elif self.continuity:self.validate_continuity()
+  elif self.readonly_debug:self.validate_readonly_debug()
   elif self.repair:self.validate_admission_repair()
   elif self.continuation:self.validate_continuation()
  def validate_continuation(self):
@@ -178,7 +215,7 @@ class Ledger:
    if not exact(b,keys) or b['source']!='direct-human-approval' or b['decisionSha256']!=ADMISSION_WINDOW_DECISION or b['ownerAnswer']!='同意更新未啟動修復時窗，其餘限制不變' or b['repairDecisionSha256']!=ADMISSION_REPAIR_DECISION or b['repairApprovalSha256']!=p['approval']['sha256'] or b['predecessorSha256']!=sha(raw['journal']) or any(b[k]!=a[k] for k in ['importedSpent','importedMainSpent','importedUiSpent','mainLimit','uiOrdinaryLimit','uiRecoveryLimit','combinedLimit','w0','expiresAt']) or b['executionStarted'] is not False or not integer(b['recordedAt']) or not a['recordedAt']<=b['recordedAt']<=c['now']:fail()
    # The same unused singleton only. Near midnight, fail before creating it;
    # admission, inspection and waiting do not start its first-debit clock.
-   if not self.cleanup_mode and self.memory is None and self.window(c['now'])-c['now']<=360000:fail()
+   if not self.continuity and not self.cleanup_mode and self.memory is None and self.window(c['now'])-c['now']<=360000:fail()
    return j,b['recordedAt']
   # Without the extra direct approval, retain the original clock unchanged.
   if not self.cleanup_mode and self.memory is None and c['now']+360000>=j['expiresAt']:fail()
@@ -210,7 +247,7 @@ class Ledger:
   drain=json.loads(raw['drain'])
   if not exact(drain,['source','stopRequested','stopAcknowledged','ordinaryScopeClosed','ownedScope','trialAccepted','remoteExecutionSettled','rollbackComplete']) or drain['source']!='simple-authority-holder' or any(drain[k] is not True for k in ['stopRequested','stopAcknowledged','ordinaryScopeClosed']) or drain['ownedScope']!={'state':'SETTLED'} or any(drain[k] is not False for k in ['trialAccepted','remoteExecutionSettled','rollbackComplete']):fail()
   if self.memory is not None and self.memory['events'][:15]!=j['events']:fail()
-  if not self.cleanup_mode and self.memory is None and self.window(c['now'])-c['now']<=360000:fail()
+  if not self.continuity and not self.cleanup_mode and self.memory is None and self.window(c['now'])-c['now']<=360000:fail()
   return j,a['recordedAt']
  def old(self):
   v=json.loads(rawfile(self.path));b=self.base;p=v.get('preparation',{});bp=b['preparation'];tail=p.get('events',[])[2:];restored=copy.deepcopy(v)
@@ -243,6 +280,7 @@ class Ledger:
  def stop(self):
   if getattr(self,'memory',None) is None:return
   self.j=copy.deepcopy(self.memory);self.j['state']='stopped'
+  if self.continuity:self.j['lifecycle']='HARD_STOP'
   if not os.path.lexists(self.stop_path):save_record(self.stop_path,{'identity':self.identity},True)
   self.persist()
  def counts(self):
@@ -261,8 +299,11 @@ class Ledger:
  def active(self,t):
   self.now(t)
   if self.j['state']!='ready' or self.j['finished'] or os.path.lexists(self.stop_path) or t>=(self.j['expiresAt'] if self.j['expiresAt'] is not None else self.window(t)) or (self.j['expiresAt'] or self.window(t))-t<=360000:fail()
+ def continuity_preparation(self,lane,op):return False
  def check(self,lane,op,t,terminal=False):
-  self.current();self.now(t);key=descriptor(op,lane);cleanup=key.startswith(('C:','I:','J:'))
+  self.current();self.now(t);key=descriptor(op,lane);
+  if op.get('operation')=='wait' and (not self.loading or not self.continuity_preparation(lane,op)):fail()
+  cleanup=key.startswith(('C:','I:','J:'))
   if self.j['pending'] is not None:fail()
   if cleanup!=self.cleanup_mode:fail()
   if terminal:
@@ -271,17 +312,17 @@ class Ledger:
   if any(e['operation']['id']==op['id'] for e in self.j['events']):fail()
   m,mo,u,uo=self.counts()
   if lane=='main':
-   if m>=105 or not cleanup and mo>=79 or cleanup and sum(e['lane']=='main' and e['cleanup'] for e in self.j['events'])>=21 or key in self.j['completed'] or any(e['key']==key for e in self.j['events']):fail()
+   if m>=self.main_event_limit or not cleanup and mo>=self.main_ordinary_limit or cleanup and sum(e['lane']=='main' and e['cleanup'] for e in self.j['events'])>=21 or key in self.j['completed'] or any(e['key']==key and not (cleanup and e['lane']=='ui' and e['cleanup'] is True and e['settled'] is True and e['success'] is True and e['operation'] in self.j['recoveryBrowser'] and cleanup_prelude(e['operation'],key)) for e in self.j['events']):fail()
    if not cleanup and (key not in self.j['stages'] or self.j['stages'][key]!=op):fail()
   else:
-   if u>=72 or (u-uo>=16 if cleanup else uo>=56):fail()
-   if op['preparation']:
+   if u>=self.ui_event_limit or (u-uo>=16 if cleanup else uo>=self.ui_ordinary_limit):fail()
+   if op['preparation'] and not self.continuity:
     if self.j['mutated'] or self.j['rpc']['beganAt'] is not None or self.j['plan'] is not None or self.j['stages'] or sum(e['lane']=='ui' and e['operation']['preparation'] for e in self.j['events'])>=(23 if self.readonly_debug else 16):fail()
    elif cleanup:
     rows=[v for v in self.j['recoveryBrowser'] if v['key']==key]
     prior={e['operation']['id']:e for e in self.j['events'] if e['lane']=='ui'}
-    if op not in rows or any(e['key']==key and e.get('success') is False for e in prior.values()) or any(v['id'] not in prior or prior[v['id']].get('success') is not True for v in rows[:rows.index(op)]) or not any(e['lane']=='main' and e['key']==key and e.get('success') is True for e in self.j['events']):fail()
-   elif op not in (self.j['plan']['browserOperations'] if self.j['plan'] is not None else self.j.get('stageBrowser',[])):fail()
+    if op not in rows or any(e['key']==key and e.get('success') is False for e in prior.values()) or any(v['id'] not in prior or prior[v['id']].get('success') is not True for v in rows[:rows.index(op)]) or not cleanup_prelude(op,key) and not any(e['lane']=='main' and e['key']==key and e.get('success') is True for e in self.j['events']):fail()
+   elif not self.continuity_preparation(lane,op) and op not in (self.j['plan']['browserOperations'] if self.j['plan'] is not None else self.j.get('stageBrowser',[])):fail()
   if not cleanup:
    if key=='P:publisher-userinfo' and 'P:publisher-refresh' not in self.j['completed']:fail()
    if (lane=='main' and not key.startswith('P:') or lane=='ui' and (op['operation'] not in READ_METHODS or key.startswith(('F:','G:')))) and any(k not in self.j['completed'] for k in ['P:publisher-refresh','P:publisher-userinfo']):fail()
@@ -291,7 +332,7 @@ class Ledger:
    required=[k for k in RULES if k.startswith(('A:','B:','D:','E:','F:wrapper-before.','G:wrapper-before.','P:'))]
    if self.j['plan'] is None or began or any(k not in self.j['completed'] for k in required+['N:thin-triggers-before']):fail()
   wait=self.rate(t)
-  if not cleanup and not terminal and t+wait+360000>=(self.j['expiresAt'] or self.window(t)):fail()
+  if not cleanup and not terminal and not self.continuity_preparation(lane,op) and t+wait+360000>=(self.j['expiresAt'] or self.window(t)):fail()
   return key,cleanup,wait
  def command(self,q):
   if type(q) is not dict:fail()
@@ -336,7 +377,7 @@ class Ledger:
     key=descriptor(row,'ui')
     if row['id'] in ids or key not in found and key!='N:navigation':fail()
     ids.add(row['id'])
-   if len(self.j['stageBrowser'])+len(q['browserOperations'])+self.view()['preparation']>56:fail()
+   if len(self.j['stageBrowser'])+len(q['browserOperations'])+self.view()['preparation']>self.ui_ordinary_limit:fail()
    self.j['stageNames'].append(name);self.j['stages'].update(found);self.j['stageBrowser']+=q['browserOperations'];self.persist();return self.view()
   if op=='recovery-ready' and exact(q,['op','browserOperations','now']):
    self.active(q['now'])
@@ -363,7 +404,7 @@ class Ledger:
     ids.add(row['id'])
     if key.startswith(('C:','I:','J:')):uc+=1
     else:uo+=1
-   if uo+self.view()['preparation']>56 or uc>16 or any(row not in p['browserOperations'] for row in self.j['stageBrowser']):fail()
+   if uo+self.view()['preparation']>self.ui_ordinary_limit or uc>16 or any(row not in p['browserOperations'] for row in self.j['stageBrowser']):fail()
    recovery=[v for v in p['browserOperations'] if v['key'].startswith(('C:','I:','J:'))]
    if any(row not in recovery for row in self.j['recoveryBrowser']):fail()
    self.j['recoveryBrowser']=recovery;self.j['stages']=seen;self.j['plan']=p;self.persist();return self.view()
@@ -382,9 +423,13 @@ class Ledger:
    if (key=='H:wrapper-compatibility-rpc')!=rpc or rpc and (not integer(q['credentialExpiresAt']) or not q['now']+wait+360000<q['credentialExpiresAt']<=self.j['expiresAt']):fail()
    if op.endswith('wait') or op=='wait':return self.view(wait)
    if wait:fail()
-   if self.j['w0'] is None:self.j['w0']=q['now'];self.j['expiresAt']=self.window(q['now'])
-   e={'lane':q['lane'],'key':key,'operation':q['operation'],'time':q['now'],'outcome':'UNKNOWN','cleanup':cleanup,'settled':False,'success':None};self.j['events'].append(e);self.j['pending']=q['operation']['id'];self.j['lastAt']=q['now']
-   if q['operation']['operation'] not in READ_METHODS+['GET'] and not cleanup:self.j['mutated']=True
+   preparing=self.continuity_preparation(q['lane'],q['operation'])
+   if self.j['w0'] is None and not cleanup and not self.continuity_preparation(q['lane'],q['operation']):self.j['w0']=q['now'];self.j['expiresAt']=self.window(q['now'])
+   if self.continuity and not cleanup and not self.continuity_preparation(q['lane'],q['operation']):self.j['phase']='TRIAL'
+   e={'lane':q['lane'],'key':key,'operation':q['operation'],'time':q['now'],'outcome':'UNKNOWN','cleanup':cleanup,'settled':False,'success':None};
+   if self.continuity and preparing:e['preparationStage']=next(name for name,p in self.j['preparationStages'].items() if q['operation'] in p['operations'])
+   self.j['events'].append(e);self.j['pending']=q['operation']['id'];self.j['lastAt']=q['now']
+   if q['operation']['operation'] not in READ_METHODS+['GET'] and not cleanup and not (getattr(self,'predebit_recovery',False) and key=='P:publisher-refresh'):self.j['mutated']=True
    if key=='H:wrapper-compatibility-rpc':self.j['chargedUpperBoundMs']=360000;self.j['rpc']['beganAt']=q['now']
    self.persist()
    if q['lane']=='main' and key.startswith(('C:','I:')):self.original_debit(key,q['now'])
@@ -402,7 +447,8 @@ class Ledger:
   if self.child is not None:
    self.child.stdin.close();self.child.wait(timeout=3)
   if self.memory is not None:
-   try:self.stop()
+   try:
+    if not self.continuity or self.memory.get('lifecycle')!='CLEAN_PAUSE':self.stop()
    except Exception:pass
 
 def main():
@@ -413,7 +459,46 @@ def main():
   if sys.argv[1:] not in [[],['--cleanup']]:fail()
   line=sys.stdin.buffer.readline(1000001)
   if len(line)>1000000:fail()
-  ledger=Ledger(json.loads(line),sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
+  cfg=json.loads(line)
+  implementation=Ledger
+  if 'readonlyContinuity' in cfg:
+   cspec=importlib.util.spec_from_file_location('readonly_continuity',Path(__file__).with_name('read-authority-readonly-continuity.py'))
+   cm=importlib.util.module_from_spec(cspec);cspec.loader.exec_module(cm);implementation=cm.continuity_class(Ledger)
+  if 'readonlyRebalance' in cfg:
+   rspec=importlib.util.spec_from_file_location('rebalanced_budget',Path(__file__).with_name('read-authority-rebalanced-budget.py'))
+   rm=importlib.util.module_from_spec(rspec);rspec.loader.exec_module(rm);implementation=rm.rebalanced_class(implementation)
+  if 'readonlyLoading' in cfg:
+   lspec=importlib.util.spec_from_file_location('loading_budget',Path(__file__).with_name('read-authority-loading-budget.py'))
+   lm=importlib.util.module_from_spec(lspec);lspec.loader.exec_module(lm);implementation=lm.loading_class(implementation)
+  if 'readonlyAccountLoad' in cfg:
+   aspec=importlib.util.spec_from_file_location('account_load_budget',Path(__file__).with_name('read-authority-account-load-budget.py'))
+   am=importlib.util.module_from_spec(aspec);aspec.loader.exec_module(am);implementation=am.account_load_class(implementation)
+  if 'readonlyConnection' in cfg:
+   xspec=importlib.util.spec_from_file_location('connection_budget',Path(__file__).with_name('read-authority-connection-budget.py'))
+   xm=importlib.util.module_from_spec(xspec);xspec.loader.exec_module(xm);implementation=xm.connection_class(implementation)
+   if 'repair92' in cfg['readonlyConnection']:
+    implementation=xm.discovery_repair_class(implementation)
+    if 'diagnostic93' in cfg['readonlyConnection']['repair92']:
+     implementation=xm.metadata_diagnostic_class(implementation)
+     if 'owner94' in cfg['readonlyConnection']['repair92']['diagnostic93']:
+      ospec=importlib.util.spec_from_file_location('owner_connection_budget',Path(__file__).with_name('read-authority-owner-connection-budget.py'))
+      om=importlib.util.module_from_spec(ospec);ospec.loader.exec_module(om);implementation=om.owner_connection_class(implementation)
+      if 'inventory97' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']:
+       ispec=importlib.util.spec_from_file_location('inventory_budget',Path(__file__).with_name('read-authority-inventory-budget.py'))
+       im=importlib.util.module_from_spec(ispec);ispec.loader.exec_module(im);implementation=im.inventory_class(implementation)
+       if 'retarget99' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']:
+        tspec=importlib.util.spec_from_file_location('project_retarget_budget',Path(__file__).with_name('read-authority-project-retarget-budget.py'))
+        tm=importlib.util.module_from_spec(tspec);tspec.loader.exec_module(tm);implementation=tm.retarget_class(implementation)
+        if 'launch100' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']:
+         lspec=importlib.util.spec_from_file_location('project_launch_budget',Path(__file__).with_name('read-authority-project-launch-budget.py'))
+         lm=importlib.util.module_from_spec(lspec);lspec.loader.exec_module(lm);implementation=lm.launch_class(implementation)
+         if 'shared101' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']:
+          sspec=importlib.util.spec_from_file_location('project_shared_budget',Path(__file__).with_name('read-authority-project-shared-budget.py'))
+          sm=importlib.util.module_from_spec(sspec);sspec.loader.exec_module(sm);implementation=sm.shared_class(implementation)
+          if 'aligned105' in cfg['readonlyConnection']['repair92']['diagnostic93']['owner94']['inventory97']['retarget99']['launch100']['shared101']:
+           pspec=importlib.util.spec_from_file_location('publisher_alignment_budget',Path(__file__).with_name('read-authority-publisher-alignment-budget.py'))
+           pm=importlib.util.module_from_spec(pspec);pspec.loader.exec_module(pm);implementation=pm.alignment_class(implementation)
+  ledger=implementation(cfg,sys.argv[1:]==['--cleanup']);print(compact(ledger.view()),flush=True)
   for line in sys.stdin.buffer:
    try:
     if len(line)>1000000:fail()
@@ -422,7 +507,8 @@ def main():
     try:ledger.stop()
     except Exception:pass
     print('{"ok":false,"code":"TRIAL_STOPPED"}',flush=True)
- except Exception:print('{"ok":false,"code":"TRIAL_STOPPED"}',flush=True)
+ except Exception:
+  print('{"ok":false,"code":"TRIAL_STOPPED"}',flush=True)
  finally:
   if ledger is not None:ledger.close()
 if __name__=='__main__':main()

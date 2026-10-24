@@ -10,6 +10,8 @@ jobs:
       TZ: Asia/Taipei
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -20,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -28,8 +32,23 @@ jobs:
       - run: npm ci --prefix cloudflare/read-api
       - name: Worker tests with retained raw diagnostics
         run: |
+          node scripts/observe-read-worker-resources.mjs "$$" "$RUNNER_TEMP/cmwebs-read-worker-resources.jsonl" &
+          observer_pid=$!
+          finish_worker_observer() {
+            test_status=$?
+            trap - EXIT
+            kill -TERM "$observer_pid" 2>/dev/null || true
+            if ! wait "$observer_pid"; then
+              printf 'C6_WORKER_RESOURCE_OBSERVER_EXIT_FAILED\n'
+            fi
+            exit "$test_status"
+          }
+          trap finish_worker_observer EXIT
           set -o pipefail
           npm run test:worker 2>&1 | tee "$RUNNER_TEMP/cmwebs-read-worker.log"
+      - name: Bounded numeric Worker resource evidence
+        if: always()
+        run: node scripts/observe-read-worker-resources.mjs --summary "$RUNNER_TEMP/cmwebs-read-worker-resources.jsonl"
       - name: Bounded terminal Worker evidence
         if: always()
         run: node scripts/summarize-read-worker-ci.mjs "$RUNNER_TEMP/cmwebs-read-worker.log"

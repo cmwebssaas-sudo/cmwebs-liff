@@ -1,5 +1,58 @@
 # 房東登入復驗與讀取效能修復
 
+## 2026-10-21 最新來源、95次安全暫停與正式門檻
+
+C3來源`cfd0000c98b31ec5318485f2d27e5e963a623648`完整隔離回歸2957／2957、
+來源／Core讀回與合成PG清理通過；來源CI39624938713為2952單元／26 Worker成功。
+整合`e9354d9f7e261d51246ccf614845ccc668662a6a`的CI39625127928為3085單元／45
+Worker成功；均attempt1且實際checkout tree與指定來源一致。後續文件提交需自己的
+CI，不能沿用這些數字冒稱新HEAD已測。既有失敗樣本與正式效能門檻不變。
+
+已批准的六步準備完成首次候選清單讀取，實際95／232＝主帳53＋普通瀏覽器42，
+所有42事件結算、scope／child／lock關閉；同checkpoint安全暫停等待本人明選。
+最新分配132＋84＋16＝232，舊主帳未用2已移轉而非重複保留；回退與future36
+保留。候選資料只存私下，未取得唯一發布者綁定或帳號證據，無分頁／DOM讀取、
+寫入、RPC或部署。不得猜設定檔、重放舊入口或把來源CI／管理連線當作權威、
+撤權、新鮮度及0.8／1.5秒正式效能驗收；T0仍未開始。
+
+## 先前候選證據與剩餘正式門檻（歷史）
+
+C3來源`6e4bf79373a9f21c360a0dec30e45d129698a3de`的CI39616294404為
+2930單元／26 Worker成功；整合`427b741fcb24b3da572f9899752368d76b7918fa`
+的CI39616611326為3063單元／45 Worker成功，均為attempt1，實際checkout tree
+與對應來源一致。這是指定來源的測試證據，不適用於後續未驗證的文件提交，
+也不把較早50.069319ms等失敗改成成功或宣稱GC是根因。
+
+唯一另行批准的瀏覽器形狀診斷已完成，實際94／232，全部IO結算、scope與lock
+關閉，舊紀錄保留；原指定連線不在目前清單，合格Chrome有兩個，尚無唯一
+發布者綁定或帳號證據。沒有分頁接管、DOM／正式資料讀取、寫入、RPC或部署。
+目前只能等待已審查接續方案的範圍決定；不能用診斷或已通過CI代替實際權威、
+撤權、新鮮度與正式速度驗收，也不為取得通過而重跑未變來源的本地容量測試。
+
+C6可獨立進行的本地候選／診斷整合已完成。待C1／C3與正式登入效能前置通過，
+才依已批准24h並行觀察與逐頁門檻開始T0；手機LINE、桌面Email、回退與
+0.8／1.5秒正式目標仍未通過。以下各節保留其原來源與當時狀態，作歷史證據。
+
+## 2026-10-21 來源驗證與正式效能邊界
+
+目前觀察期以已批准的 [24小時並行同步／shadow修訂](READ-ACCELERATED-ROLLOUT.md)
+為準：技術前置通過後才開始T0，先房源頁，穩定另24小時後其餘逐頁，七日
+觀察在上線後完成。以下10/13以前段落的三日／七日前置文字保留作歷史，
+不覆蓋已批准修訂；也不能把文件日期、合成樣本或CI開始時間當成T0。
+
+C3來源`8cc60ce7e53417a70ddb24770ab1e51e86a1922c`隔離Core／PG完整回歸
+2913／2913通過（零失敗／取消／跳過），來源CI39609419506為2908單元／26
+Worker通過。整合候選`2739e94d55dfdbd0ff369548a029a086a3b258be`的
+CI39609755830為3041單元／45 Worker通過；兩次實際checkout tree與對應
+提交tree一致。後續文件提交不冒稱已通過這兩個精確來源的測試。
+
+這些是程式正確性與合成容量候選證據，**不是正式提速或上線驗收**。
+C1每日900秒、C3實際隱私／權威／撤權／新鮮度、正式同帳號的標頭與畫面
+時間、手機LINE／桌面Email、回退與觀察窗口仍未通過。最新有界準備已停止，
+沒有RPC或正式切換；既有成功／失敗樣本與先前properties p95 50.069319ms等
+失敗全部保留。首頁主資料／房間清單仍以0.8秒、首頁全部摘要以1.5秒為目標，
+不以本地p95替代。
+
 ## 2026-10-13 v6 D1 資料轉換候選（正式效能尚未驗收）
 
 每列以靜態白名單欄位包成 SQL JSON 陣列，再依相同欄序還原；正式 scoped loader
@@ -318,6 +371,26 @@ result documentation is appended after that snapshot; executable/test bytes
 remain the tested bytes. New exact-head CI remains pending. Initial2890/2893
 and earlier strict Linux failures remain evidence, not replaced outcomes.
 
+
+### 2026-10-22 current C3 and C6 acceptance checkpoint
+
+C3 actual97/232 is PREP HARD_STOP: browser binding succeeded, inventory
+callback/validation failed. All44 UI events settled with pendingnull; no
+page claim/account projection, mutation, RPC or trial clock followed. The
+reason is not established from retained evidence. Prior95/94 and all failure
+history remain; current source work grants no remote retry authority. A new
+bounded continuation decision awaits the owner separately.
+
+C6 diagnostic sourcec2ddec6 has local Worker53/53 and repaired bare Core/PG
+2893/2893 with exact-source/cleanup readbacks and independent review. Its
+new exact-head CI39634649349 is in progress; do not treat it as passed. The
+failed integration39627922453 (3085unit,43/45Worker) remains evidence. This
+composition still requires its own source verification and exact-head CI.
+Neither local evidence nor diagnostic COMPLETE establishes formal acceptance.
+Endpoint blank/flags off; no deployment, formal-data/configuration change or
+observation T0. Technical gates,24h parallel sync/shadow including Taipei
+crossday03:00,rooms-first device/rollback,another stable24h and seven-day
+postlaunch observation all remain required.
 
 ### Node HTTP-client await boundary (C6 diagnostics, 2026-10-22)
 

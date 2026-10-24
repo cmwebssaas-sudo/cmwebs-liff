@@ -3269,6 +3269,17 @@ histories, without claiming the later final counts or exact-head CI. New-head CI
 is separate; no new external Core/PostgreSQL acceptance. Synthetic ordinary scope
 expired/stopped65/232, no RPC/configuration/Production change; all live gates open.
 
+
+### 2026-10-19 Accelerated-plan source alignment
+
+Own four plan documents reviewed0P1/P2; inherited runtime matches C6 source
+4a0e90b. Initial comparison-import failure due to absent local acorn is retained;
+lockfile npm ci (ignore-scripts,37 packages) changes no dependency source. Fresh
+validate72backend/40endpoints/static cache/comparison179 and diff PASS. C6 inherited
+unit2796/2796 and Worker43/43 are attributable to that source, not a repeated run
+here. Exact-head CI and every real acceptance remain separate; trial65 expired
+STOP/no RPC, no reopen/deployment/flag/T0.
+
 ### 2026-10-19 one-time readonly-trial continuation controls
 
 Synthetic real-ledger tests cover cumulative65 import (main53/browser12),
@@ -3474,6 +3485,15 @@ runtime is unchanged. Unchanged local Worker/capacity tests were not repeated;
 the next exact-head CI will run its normal Worker job. No actual trial,
 provider latency, formal authenticated/device or observation acceptance.
 
+
+### 2026-10-19 accelerated-plan successor composition
+
+Fresh validate72backend/40endpoints/static-cache/comparison179 and diff PASS.
+All non-document tracked content matches C6aa9c57c; own delta remains six
+planning/evidence documents. Inherited C6 full unit2811/2811 is not a second
+local run here; exact-head CI remains separate. No Google/Production or
+observation acceptance, change of approved acceleration, quota or retry rule.
+
 ### 2026-10-19 exact local-admission repair controls
 
 New12-case actual-ledger suite initially7 PASS/5 FAIL before support. Focused
@@ -3531,6 +3551,12 @@ C3/C4/C5 diagnostic-control composition changes no C6 runtime or acceptance
 threshold. Targeted verification and CI remain distinct from actual acceptance;
 actual72/232 stopped, flags off, no observation T0 or Production change.
 
+### 2026-10-20 Accelerated plan diagnostic-control composition
+
+Runtime/source matches C6; inherited119 affected tests are source evidence,
+not new local or external acceptance. Actual72/232 remains stopped; all
+approved observation and rollout gates and off switches remain unchanged.
+
 ### 2026-10-20 C5 verified sample metadata
 
 Actual local HTTP/D1 shadow/export6/6 and full Worker32/32 PASS, including old
@@ -3555,6 +3581,13 @@ were not newly accepted. See READ-ACCELERATED-OBSERVATION.md.
 Final complete local Worker45/45 plus bundle dry-run PASS, zero fail/cancel/
 skip. Full composition review noP1/P2; comparison180 and source diff PASS.
 
+### 2026-10-20 Accelerated plan evidence-tool composition
+
+All558 tracked non-document paths match reviewed C6 4d0e67c exactly. Reuse
+its local2875unit/45Worker/1D1 wiring evidence; no repeated suite claimed.
+Fresh validate72/40/cache/comparison180 and diff PASS. Exact-head CI remains
+separate; no real observation, actual Google or release acceptance follows.
+
 ### 2026-10-20 C6 bounded Node memory evidence
 
 Actual CI39305302531 unit2875 PASS/Worker44of45 FAIL (properties50.602ms);
@@ -3569,6 +3602,59 @@ Final affected26/26 PASS, zero fail/cancel/skip. Review's overlapping-pair
 false-completeness case first failed, then passes with sequential pair/timer
 checks. Independent final review noP1/P2; validate72/40/cache/comparison180
 and diff PASS. Exact-head CI outcomes and diagnosis remain separate.
+
+### C3 readonly continuity controller
+
+`tests/read-authority-readonly-continuity.test.mjs` uses real disposable ledgers
+and live holders: immutable72 import, bounded charged cross-day PREP, failed
+NOT_READY without baseline credit, durable two-failure limit, missing proof hard
+stop, trial clock on non-PREP debit, protected recovery UI, latest-only terminal
+handoff and independent cleanup with damaged ordinary mirror. Existing simple
+controller suites retain legacy behavior. No external Google call is implied.
+
+### C3 approved three-step diagnostic successor
+
+`tests/read-authority-readonly-successor.test.mjs` uses real disposable ledgers
+and live holders. It verifies immutable76 import, exact approval and independent
+checkpoint/terminal/source requirements, no stopped-owner reuse, three-step
+order and target limits, retained unused UI declaration, no main/API bypass,
+charged unproved failure, one-time import and latest-only cross-day handoff.
+The fixture reproduces the four settled prior actions and the unused navigation
+declaration, rather than testing only the earlier72 checkpoint. Actual browser
+compatibility and rollout gates remain separate.
+
+
+### Approved79 fixed-total source/accounting migration
+
+The optional readonlyRebalance controller retains exact79 history and terminal
+handoff, fixes139/77/16 buckets within232, removes only21 native aliases from
+main charging and requires successful reviewed UI results before credit.
+First6 PREP reads reserve future43 plus the retained unused declaration;
+staged actual/recovery maps precede non-PREP work and complete actual map
+precedes the only RPC. Future44 is rejected; complete25/43 is admitted under77.
+Affected165/165 PASS including22 new tests, zero fail/cancel/skip. Validate72/40,
+cache and diff PASS. Review's leftover56 limit reproduced RED in two boundary
+cases and was fixed. Exact-head CI and frozen private/actual acceptance remain
+open; no new Google IO, mutation/RPC, deployment, flag or T0 is implied.
+
+
+### C3 approved loading/source continuity
+
+`tests/read-authority-loading.test.mjs` uses real disposable83 ledgers and live
+holders: preserved failed/UNKNOWN history, immutable origin/receipt, latest-only
+source migration, five-step grounding and nine-step guarded waits, shared cap
+and target attempts across holders/days, unverified result and wait timeout
+hard stop, protected2/future40-or36 bounds, no RPC before complete actual map.
+Legacy rebalanced/successor/continuity tests retain their earlier authorization
+boundaries. Bare/full-unit outcomes, review and exact-head CI are recorded
+separately. No Apps Script/native, Google or production result is implied.
+
+Final loading increment25/25 and complete unit2844/2844 PASS (zero skip).
+Two independent-review P2 vectors reproduced RED then passed after the stage
+membership/counter and PREP-only wait fixes. Validate72/40/cache/diff PASS.
+Bare pre-final2847 result retains1 missing Core/PG environment failure and4
+skips; no external integration acceptance is claimed. Exact-source CI remains
+separate from local/unit and actual browser acceptance.
 
 ### 2026-10-21 C6 effective-runtime context
 
@@ -3589,6 +3675,65 @@ evidence only; no causal fix, production runtime change or live gate pass.
 Independent four-path source/evidence review noP1/P2; diff check independently
 PASS. Provider CI must follow the new commit and does not replace older failure.
 
+### 2026-10-21 Current C3/C6 accelerated composition
+
+The composition preserves current C3 0bc666a and C6 04e2db0 source exactly,
+including the14-file frozen C3 runtime and both complete documentation histories.
+No duplicate unchanged local suite or profile is claimed. Validation, exact
+source-union verification and independent review precede a new composition CI.
+C3 component CI39483187602 PASS2844unit/26Worker; C6 CI39481266323 FAILED
+Worker44/45 properties50.504ms with2880unit PASS. Earlier failed integration
+CI39478285754 properties55.231ms is retained; no later green erases failure.
+Actual88 HARD_STOP (main53/UI35), VERIFIED thin projection/ACCOUNT_SCAN,
+fields unread, no mutation/RPC/clock. Further account/loading scope is pending.
+No live/runtime/performance/observation gate is accepted by source composition.
+Fresh all569 non-document path/mode union and14 frozen runtime checks PASS;
+prior record lines/multiplicity and complete paragraphs retained. Validate
+72/40/cache/comparison180 and source diff PASS; exact composition CI is separate.
+Independent index-based569-path/14-runtime/6-history review noP1/P2; no duplicate
+suite claimed. New composition provider outcome remains a separate gate.
+
+- Account-label incident successor: `tests/read-authority-account-load.test.mjs`
+  covers exact stopped-origin import, immutable old STOP, fixed four-step order,
+  replay/approval/authority/terminal/source rejection, timeout and final failure.
+  The last qualified NOT_READY/TECHNICAL cannot produce a CLEAN_PAUSE receipt.
+  Together with loading tests: 38 cases pass locally; separate private adapter
+  tests: 8 pass. These are local evidence, not Google execution or trial acceptance.
+
+
+### Bounded readonly connection continuity
+
+`tests/read-authority-connection.test.mjs` verifies exact stopped-origin import,
+immutable historical STOPs, shared8/fault2 limits, main134/UI82/recovery16,
+prepaid six-step order, minimum remaining-path denial, successful wait and
+reviewed sole projection, protected future36, cross-day latest-only handoff,
+owner-required CLEAN_PAUSE, replay/approval/source/authority rejection, and
+ordinary ID-prefix settlement isolation. Affected76 cases pass locally,
+zero fail/cancel/skip. External Google, full trial and rollout acceptance are
+separate gates; no Apps Script function changed in this increment.
+
+Connection increment final local verification: Node22 unit2873/2873 PASS,
+private adapter15/15 PASS; no fail/cancel/skip. Latest-origin persistence-denied
+admission preserves actual89 and creates no entry or debit. Interrupted/failed
+local runs are retained in the execution record; exact-head CI and all actual
+Google/runtime/rollout gates remain independent.
+
+
+### Connection ID refresh preserves original browser/tab authority
+
+`tests/read-authority-browser-selection.test.mjs` covers original-ID preference,
+provisional unique Chrome selection only after contextual owner confirmation,
+ambiguity/type/name/duplicate/accessor rejection, and exact providerTabId/URL
+matching without opaque-ID fallback. Together with retained connection tests:
+30/30 pass. Private eleven real-ledger cases retain91, used2/fault2, mandatory
+six-step success at97, third-fault stop and all security/protected reserves.
+Independent review has no P1/P2. New current-source CI and frozen/inert gates
+remain separate; no Apps Script function or Production behavior changed.
+
+Final current-source Node22 unit2887/2887 PASS with zero fail/cancel/skip.
+Validate72/40/cache and diff-check PASS. Native restored-ID/original-tab
+verification and all rollout gates remain unproven.
+
 
 ### 2026-10-21 C6 GC flags and legacy diagnostic compatibility
 
@@ -3607,6 +3752,29 @@ Final strengthened vectors and all existing root tests passed in fresh isolated
 Core/PostgreSQL bare npm test2888/2888, zero fail/cancel/skip. Source670/Core/
 teardown readbacks verified; independent increment review noP1/P2. No extra
 capacity benchmark or profile was repeated locally.
+
+### C3 discovery metadata and exact stopped-checkpoint successor
+
+- Browser/tab discovery projects only documented own data fields. Optional metadata is ignored; accessors, proxies, duplicate IDs, ambiguous Chrome candidates, and provider-tab/URL mismatches fail closed.
+- A separately approved exact stopped-checkpoint successor retains all earlier settled events, claims, source pins and STOP markers. Its six acquisition steps are individually charged, include a successful bounded load before one safe projection, and grant no new failure retry.
+- The repair consumes the existing UI spare while retaining the historical unused declaration, 36 future UI primitives, and independent recovery reserves. Complete maps with 36 future primitives are accepted; 37 or reuse of the historical unused ID are rejected.
+- Coverage: `tests/read-authority-browser-selection.test.mjs`, `tests/read-authority-discovery-repair.test.mjs`, and existing connection/loading/continuity tests. These are disposable local fixtures; passing them is not evidence of Google access, compatibility RPC, deployment, formal performance, or device acceptance.
+
+### Shape-only metadata diagnostic
+
+- The separately approved exact stopped-checkpoint diagnostic permits one prepaid browser-list inventory, retains preparation/loading/failure history and all future/recovery reserves, and grants no browser/tab/account identity credit.
+- The pure helper returns only a fixed source, booleans and counts. Unknown metadata is not traversed, IDs/labels are not returned, and ordinary or revoked proxies/getters are not invoked.
+- Tests cover sole-read success, failed-return settlement (including legacy rejection shapes), forbidden follow-up methods, second reads, proof failure, stale origin/approval/replay and unchanged old STOPs. No binding, tab access, DOM, write or RPC is allowed.
+- Coverage: `tests/read-authority-browser-shape.test.mjs` and `tests/read-authority-metadata-diagnostic.test.mjs`. Disposable fixtures are not evidence of actual browser shape or successful compatibility/release acceptance.
+
+### Explicit owner connection selection
+
+- The approved successor retains the completed stopped diagnostic and all old charges. Unused main allowance moves to ordinary UI within the same aggregate ceiling; HTTP, future operations and independent recovery reservations remain intact.
+- Discovery returns only documented Chrome candidate fields and pauses without a binding. A direct owner selection matching the exact candidate digest is required before the remaining acquisition steps, successful bounded wait and proved account/project snapshot.
+- Coverage includes stale receipts/approval/history, missing or invalid owner selection, failure settlement at every step, malformed candidate rejection without pending IO, snapshot proof and offline budget accounting. Existing stopped entries cannot replay; no failure allowance resets.
+- Coverage: `tests/read-authority-owner-connection.test.mjs` and `tests/read-authority-browser-selection.test.mjs`. Passing disposable fixtures does not establish a real browser binding, account authority, compatibility RPC or cutover acceptance.
+
+Owner-selection timing regression: a delayed holder retains the closed candidate checkpoint as the approval time floor; stale choices remain rejected. No remote operations are added.
 
 
 ### 2026-10-22 C6 bounded local D1 actor observation
@@ -3679,6 +3847,72 @@ Core321/index/ref and owned-cluster teardown were verified. Only this final
 result documentation is appended after that snapshot; executable/test bytes
 remain the tested bytes. New exact-head CI remains pending. Initial2890/2893
 and earlier strict Linux failures remain evidence, not replaced outcomes.
+
+### Classified original-tab inventory and ready-first successor
+
+- A separately approved exact stopped-checkpoint successor preserves prior events, source pins, STOPs and the owner's selected connection. Four individually prepaid steps bind that connection, classify the original tab inventory, claim that tab and project its ready state/account/project guards once. It adds no discovery, standalone wait, retry, write or RPC.
+- Classification stores only fixed enums, counts and booleans. Optional metadata is not traversed; getters/proxies, duplicate IDs, missing provider identity and URL/selection ambiguity fail closed. Invalid successful evidence settles as an unverified failed read, without pending IO or account credit.
+- The projection checks complete load before URL/account/settings access and retains the pinned account/project/control checks. Partial preparation cannot produce a handoff. Successful binding releases only the explicitly superseded unused declaration; 36 future primitives fit while 37 and reuse of that declaration fail. Recovery reserves and failure history remain unchanged.
+- Coverage: `tests/read-authority-inventory-budget.test.mjs`, `tests/read-authority-inventory-diagnostic.test.mjs`, `tests/read-authority-ready-projection.test.mjs`, and the existing owner-selection suite. Disposable fixtures and the isolated callback VM establish local behavior only; actual binding, compatibility, synchronization, performance, device and release gates remain separate.
+
+### Exact stopped-checkpoint project-tab retarget successor
+
+- A new explicitly approved nested successor imports the exact settled stopped
+  inventory checkpoint into a distinct namespace. Prior events, holders, source
+  chains, failure count, old STOPs and the unsuccessful diagnostic remain intact.
+  Four individually mapped/prepaid reads use the selected connection, a single
+  user-tab inventory, the deterministic exact-full-URL match, its claim and the
+  same injected static ready-first projection. Success pauses for handoff only.
+- The new pure selector requires both provider and opaque identifiers to be valid
+  and globally unique, including unrelated rows. Multiple exact URL matches use
+  ordinal provider-then-opaque ordering; zero matches, unsafe own-data shapes,
+  getters/proxies, sparse arrays, symbols and excessive metadata fail closed.
+  Unknown metadata values are never traversed, and retained diagnostics contain
+  fixed enums/counts/booleans only. No raw row, account, URL, title or error text
+  enters the journal or result report.
+- Only this nested decision permits the revised aggregate allocation. Existing
+  identities and their ceilings remain unchanged. The four-step success keeps
+  the unsuccessful predecessor diagnostic unchanged; its new proof controls
+  preparation completion and handoff. Thirty-six future UI primitives still fit;
+  thirty-seven, superseded-operation reuse, partial handoff and stopped reentry
+  are rejected. Main/HTTP and independent recovery reserves remain intact.
+- Coverage: `read-authority-project-selector.test.mjs`,
+  `read-authority-project-retarget-budget.test.mjs`,
+  `read-authority-project-retarget-flow.test.mjs`, plus the predecessor inventory
+  and owner-selection suites. Fixtures use disposable local journals and fake
+  provider callbacks. They do not establish actual provider execution, source CI,
+  trial/RPC acceptance or any release gate. The private entry must pin the exact
+  approved URL, publisher hash, static callback, frozen origin registry and all
+  source bytes before its separate inert/first-write/execution gates.
+
+## 2026-10-23 C3 retained launch successor source candidate
+
+| Check | Evidence boundary |
+| --- | --- |
+| Direct approval and exact frozen stopped-state/source/observer agreement; prefix and prior proof drift denied | Synthetic private fixtures only; missing returned receipt stays missing and UNKNOWN stays UNKNOWN |
+| Unique four-read successor; each rejection settles false before HARD_STOP/drain; invalid results normalized | Real disposable local holder/ledger chain with synthetic provider boundary; no remote browser acceptance |
+| Separate new proof, immutable predecessor proofs, decision-specific ceiling, future36/recovery protection | Local controller and compiler behavior; original decisions retain their ceilings |
+| Deferred promise retained before entry, result/error captured, finally gate closure, delayed await and restart denied | Pure local launcher; no provider, canonical debit or production change |
+| Source manifest reconciliation | All 15 included source fingerprints match; calculator/comparison artifacts remain unchanged |
+
+Final local affected chain: 26 files, 636/636 PASS with zero fail/cancel/skip,
+including 39 added cases. Node22 validate72 backend/40 endpoints/cache and
+diff-check PASS. The test runner completed; its shell wrapper then failed assigning
+the reserved zsh `status` variable. No test failure is hidden by that wrapper error.
+Independent review, exact final-source CI and the complementary mandatory
+Core/owned-PostgreSQL partition remain separate gates.
+No Apps Script test function applies: no `.gs` module changed. No real Google or
+production execution, rollout or performance acceptance is established here.
+
+### Shared fixed-policy settlement review repair
+
+The two approved project successors retain independent prefix dispatch, proof keys,
+origin/history/receipt guards and ceilings while sharing one private settlement
+implementation. Fresh pre-refactor representative behavior12/12 PASS; final three
+covering files65/65 PASS, zero fail/cancel/skip, runner/wrapper exit0 under Node22.
+Validate72 backend/40 endpoints/cache and diff-check PASS. No tests added or changed,
+no new API/module/namespace or remote/canonical action; final full-source CI and
+Core/owned-PostgreSQL evidence remain separate parent gates.
 
 
 ### C6 Node HTTP-client boundary diagnostics (2026-10-22)
@@ -3839,6 +4073,57 @@ head CI, independent parent review and separate C6 integration remain pending;
 no redundant local full-unit/Core/PostgreSQL run or external action was performed.
 
 
+### 2026-10-23 reviewed source composition checks
+
+- Ten focused C3 files cover owner selection, predecessor inventory, project
+  retarget, retained launch, safe metadata selection, ready-first projection and
+  launch-state retention:144/144 PASS, zero fail/cancel/skip under Node22.
+- Eight focused C6 files cover the retained HTTP matrix, private internal
+  snapshot ownership/public copy isolation, typed calendar values, asynchronous
+  fetch attribution, original timer completion and bounded CI summaries, plus
+  actual local D1 source-order query/index/HTTP equivalence:67/67 PASS, zero
+  fail/cancel/skip. No local full unit/Worker capacity benchmark was repeated.
+- Validate72 backend/40 endpoints/static cache/comparison181 and diff-check PASS.
+  Exact source checks: C3 runtime27/27 against8f8d222; C6 Worker56/56 and
+  comparison-source181/181 againstbca6764. Existing asset version, blank endpoint
+  and six disabled flags remain unchanged; the generated comparison is current.
+- Mechanical expected complete partitions are unit3207 (exact C3 baseline3057
+  plus150 source registrations), Worker60 and complementary Core/PostgreSQL5.
+  These are predictions; exact composed CI and Core/PostgreSQL evidence still
+  precede acceptance. The retained C3 source Worker25/26 latency failure is
+  not superseded by these local functional checks or the separate C6 CI pass.
+- No changed Apps Script function, route or business schema requires a cloud
+  test call. All actual provider, full-map, privacy, performance, device,
+  rollback,24h+24h/seven-day gates remain separate and unaccepted here.
+
+## 2026-10-23 C3 shared-object successor source candidate
+
+| Check | Evidence boundary |
+| --- | --- |
+| Fresh direct approval, exact stopped prefix, returned receipt/audit and local bridge proofs; missing or changed pins rejected | Disposable synthetic holder/ledger history; historical UNKNOWN is preserved |
+| Separate four-read namespace and account proof; success stops at binding-only CLEAN_PAUSE | Original proof remains unsuccessful; original decisions keep their ceilings |
+| Each callback failure settles false before STOP/drain; pending clears and consumed entries cannot replay | Real local controller and ledger with synthetic provider callbacks |
+| Future ordinary allowance and independent recovery reserves remain intact | Full operation-map and actual browser acceptance remain separate gates |
+| Shared object gate, visible attempts and safe pending/returned/rejected classifications across later state mutations | Pure local mock boundary; raw provider rejection text is discarded |
+| Deferred source promise retained before callback; terminal result/error, closure and once-only guard retained | Existing source launcher reused without changes |
+
+Coverage: `read-authority-project-shared.test.mjs`,
+`read-authority-retained-browser-bridge.test.mjs` and the affected predecessor
+controller/plan/selector/holder suites. No Apps Script test function applies;
+no `.gs` module, route, schema, calculator or benchmark changes. Independent
+review, final composed-source CI, complementary Core/owned-PostgreSQL integration,
+private immutable packaging, inert/first-write and separate prestart checks remain
+required. Local results cannot establish provider, trial, device or release
+acceptance. The initial overlapping RED run is limited evidence; a separate
+fixed-source ledger admission RED and corresponding GREEN are retained.
+
+Final local affected verification:28 files /709 tests PASS, zero fail/cancel/skip,
+original runner and shell wrapper exit0 under Node22. Added47 cases across two
+new test files; no existing test case removed or modified. Validate72 backend /
+40 endpoints/cache and diff-check PASS. The source remains local and parent
+review/composed-source CI/Core/private execution gates remain required.
+
+
 ## 2026-10-23 C6 properties stage-pair retention (local diagnostic candidate)
 
 Recommended GPT-6.1 Sol/high for bounded diagnostic framing risk. The existing
@@ -3866,6 +4151,23 @@ composed CI diagnostic remain pending. The retained Linux properties failure
 51.56710199999725ms /9of100>=50 is preserved; no causal/product fix or Production
 acceptance is established. Rollback reverts this bounded diagnostic change.
 
+## 2026-10-23 C3 publisher alignment 105 source candidate
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Exact stopped102 prefix, pinned origin and three settled sidecar pairs | New namespace reports 105 = main53 + UI52; old49 events, UNKNOWN, STOP, failures and no-W0 remain intact |
+| Changed, gapped, duplicated or dishonest sidecar proof | Denied before continuation callback or provider primitive |
+| Six documented browser methods and two safe Google projections | Each UI call prepaid and settled; both verified pages yield CLEAN_PAUSE111 with a stable retained handle object |
+| Failed methods, wrong profile/handle/URL/principal/controls/fieldsRead | Settled failure and drain; no uncharged replay or raw provider text in receipt |
+| Future stage and repair allowance | Stage caps and future minima preserve ordinary UI96, main recovery21 and UI recovery16; two readonly incidents permit at most three prepaid repair calls each |
+| Incomplete future map and RPC | Denied; actual provider map and trial acceptance remain unproved |
+
+Coverage is `tests/read-authority-publisher-alignment.test.mjs` plus affected
+predecessor suites. No Apps Script test function applies: `.gs`, routes, schema,
+calculator, Worker and production deployment files are unchanged. Parent-owned
+review, composed-source CI/Core, private packaging and actual prestart gates
+remain separate from these synthetic tests.
+
 
 ## 2026-10-23 C6 local D1 actor transaction-window diagnostic
 
@@ -3890,6 +4192,32 @@ full-wall timer, p95 index94 and strict<50ms gates are unchanged; the retained
 Linux CI39969225950 latency failure and its unknown cause remain open. Parent
 review and one composed exact-source CI are pending. Rollback reverts this
 test-only diagnostic change; no runtime or data rollback is involved.
+
+## 2026-10-23 C3 publisher projection compatibility repair
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Shared decoder, target-specific labels | Nonempty Settings and Audience controls pass only their own exact whitelist; omitted target retains the Settings default; unknown target and cross-target labels stop |
+| Projection shape and privacy | Malformed control tags, roles, booleans, extra fields and `fieldsRead:true` stop before verification; URL, account, ready, section and VERIFIED gates remain required |
+| Publisher six-step flow | Nonempty legitimate controls on both targets reach CLEAN_PAUSE111; callback rejection, malformed projection and decoded verification rejection each settle and stop without replay |
+| Failure evidence | Receipt retains only fixed target/stage/classification, callback and decode booleans, and a bounded count after valid decode; rejected raw values, URLs and error text are omitted |
+
+Affected tests are `tests/read-authority-publisher-alignment.test.mjs` and the
+legacy project flow suites using the same decoder. These local checks do not
+classify the historical actual111 failure; its raw projection was not retained.
+No `.gs`, route, schema, Worker or production source changed, so no Apps Script
+test function applies. Fresh provider operations require a separate reviewed
+diagnostic decision and the parent-owned exact-source gates.
+
+## 2026-10-24 C3 conditional native visual successor source
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Closed original 111 and complete later settled chain | A distinct PREP successor imports 17–20 charges once, preserves the stopped 55-event origin, and reports spent 128–131 without invented events or provider timestamps |
+| Pinned approval, source and manual visual proof | A synchronous parent verifier is required before spawn and at guarded continuations; closed-menu, wrong URL, false proof and pin drift stop before ordinary work |
+| Accounting and replay | Gap, duplicate nonce, pending state, changed origin, exhausted repair allowance reset and second owner stop; 296 total and at least 70 future UI calls remain protected |
+
+Focused source tests use synthetic evidence in `tests/read-authority-publisher-alignment.test.mjs`; `npm run validate` checks the repository baseline. This source preparation does not establish actual browser identity, external provider acceptance or production readiness. No Apps Script test function applies because `.gs`, routes and schema are unchanged.
 
 ## 2026-10-24 C6 transaction callback three-cut diagnostic
 
@@ -3929,3 +4257,238 @@ literal; the endpoint and route flags stayed unchanged. Node22 comparison
 identity regression passed 1/1, `npm run validate` passed 72 backend parses,
 40 endpoint references, static cache checks and 181-source identity; diff
 check passed. A new real shadow observation epoch is required before rollout.
+## 2026-10-24 C3 first publisher plan registration regression
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Native successor first plan | A full fixed-key plan with every native UI alias and bounded recovery can register after the settled publisher bootstrap; no RPC, trial clock or provider call is credited. |
+| Staged readiness | The view reports the inherited ledger's `trial_map_ready()` result: false at bootstrap and true after a valid main/UI/recovery stage map, while `planReady` remains false. |
+| Later stages | A stage registered after the full plan must use exact planned main, ordinary UI and recovery descriptors; any new preparation reads must fit the unspent plan reservation. |
+| Rejection | Missing native alias, duplicate registration, unmapped later stage and premature RPC are denied without new trial debit. |
+
+The RED and GREEN source tests use `tests/read-authority-publisher-alignment.test.mjs` and local synthetic records only. This is controller correctness evidence, not actual provider, Core, production or release acceptance. No Apps Script function applies because no `.gs`, route or schema changes were made.
+
+The follow-up regression checks that each ordinary main debit has exactly one
+admitted publisher-stage descriptor. A synthetic native successor refuses an
+unstaged P call before callback or debit, accepts an exact staged P call with
+validated write cleanup, and refuses a later unstaged B write without another
+debit. JS and Python UI parsers reject write methods outside the fixed alias
+rule while accepting declared click/fill and readonly snapshot projection.
+Legacy local fixture rows use those declared methods. These remain synthetic
+source tests; no actual provider or canonical journal was exercised.
+
+## 2026-10-24 C3 native publisher forward protocol correction
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Full native successor journey | Real controller and Python ledger import the settled 128 bootstrap, register a complete plan, execute mapped fixed and native before calls, prepay one 360-second H, separately settle F/G after calls, and finish the RPC. |
+| Stage rollover | A six-call baseline remains exact. The executed thin map uses seven UI primitives and the later freshness map uses fifteen; actual map count, future minima, protected recovery and combined limits still apply. Seven baseline calls and advancement with an unfinished prior row stop. |
+| Conditional terminal path | Exact T descriptors are staged before H. Successful H may leave T unused; an unknown H is not replayed, permits its three staged terminal reads and retains independent I cleanup through the same real holder. |
+| Existing refusal gates | Missing native alias, unstaged P/B, incomplete plan, duplicate owner and wrong UI write method retain their focused regression coverage. |
+
+These are synthetic one-primitive callbacks through the local ledger. They do
+not establish actual Google identity, privacy, callback destinations, source
+equality, quota or compatibility. No Apps Script, API, Schema or Worker source
+changed; cloud Apps Script functions are not applicable. Final composed-source
+CI/Core review and actual prestart evidence remain separate gates.
+
+## 2026-10-24 C3 exact SIMPLE credential-holder compatibility
+
+`tests/read-authority-trial-credentials.test.mjs` constructs both existing
+credential holders with the imported `SIMPLE_DECISION`. The publisher test uses
+the synthetic pinned grant fixture and checks one charged refresh and one
+charged same-token userinfo read. The native test checks distinct before/after
+caller and publisher reads, with one charge and fetch per operation. Old or
+mismatched controls stop before callback; arbitrary decisions, actor/scope
+mismatch and stale expiry remain denied. The pre-fix focused run failed three
+new cases at holder construction; the same file passed 31/31 after the narrow
+allowlist change. No actual credential, Google operation or production acceptance
+is established. No Apps Script function applies because no `.gs`, route or
+schema changed. Exact composed-head CI/Core review remains pending.
+
+## 2026-10-24 C3 mapped I cleanup navigation source regression
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| UI descriptor | Only an existing publisher `I:` alias at its fixed original-settings, original-triggers, thin-settings or oauth-audience target may use `navigate`; the main alias methods remain fixed. Wrong actor, target, key, preparation flag, unit count and undeclared write method are denied in JS and Python. |
+| Same-owner ordering | After ordinary STOP and drain, a mapped, settled, successful readonly UI prelude may precede the same-key main cleanup action. Navigation alone does not mark the alias complete or prove restored remote state. A separate main read is still required. |
+| Recovery guard | Ordinary-cap cleanup, an unmapped recovery row and a mapped UI write before its main action stop before the provider callback. The 16 UI recovery and 21 main cleanup limits remain independent. |
+
+The focused test uses the real holder and Python ledger with a synthetic settled
+128 bootstrap. It charges one UI navigation and one bounded main read on the
+same owner, then checks the durable cleanup checkpoint. This is local source
+evidence; it does not establish actual browser reachability, account binding,
+remote restoration, or production acceptance. No Apps Script function applies
+because no `.gs`, route or schema changed.
+
+## 2026-10-24 C3 native PREP checkpoint and baseline grounding
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Native clean resume | A real holder imports the settled 128 history, maps six baseline UI rows with fixed cleanup, charges original-settings navigate and evaluate, closes at PREP/CLEAN_PAUSE with a genuine `HANDOFF_CLOSED` receipt, and a new holder resumes at 130 without replay, W0, RPC or main debit. |
+| Resume denial | Wrong or stale receipt/hash/count, fresh reentry, altered current registry, frozen origin, source chain, owner, pending, failed/unsettled PREP, STOP, TRIAL, W0 and RPC states all stop before a callback. |
+| Grounding reallocation | The finite original-target map accepts baseline caps 6–9. A cap-nine real holder charges settings goto/project and extra original-triggers goto/project before clean pause at cursor four (spent 132), then a new holder charges the declared original-settings return goto to 133; W0 remains null and no A row has run. Partial and malformed shapes are checked separately; the existing generic seven-row baseline remains denied. Each actual extra row transfers one diagnostic future minimum, never more than three, within 73 remaining ordinary UI calls. |
+| Resumed cleanup | An unmapped A debit stops a resumed holder before callback; its independently mapped readonly I cleanup still charges one UI recovery primitive under the separate 16 UI/21 main recovery ceilings. |
+
+The inherited loading-layer thin-settings-to-audience rule now yields only to an
+already registered native publisher baseline PUREPREP row for original settings
+or original triggers while still in PREP with no W0. The fixed six loading steps
+retain their checks. These tests use local synthetic callbacks and pinned fixture
+data; actual browser, provider, canonical ledger, private parent resume gate,
+source equality and production acceptance remain separate. No Apps Script test
+function applies because no `.gs`, API route or Schema changed.
+
+## 2026-10-24 — CI source checkout selection
+
+Both rental acceptance jobs check out the immutable pull-request head SHA, with
+the immutable push SHA as fallback. This keeps source-identity checks aligned
+with the selected source on both supported event types. Local YAML parsing,
+ref/event assertions, validation and diff checks are configuration checks;
+reviewed source must still receive a complete CI run before acceptance.
+
+## 2026-10-24 C3 zero-debit native PREP recovery source
+
+The predebit recovery tests use an owned temporary fixture and the real
+controller, inherited lock and Python ledger. A stopped 55-event PREP holder
+with a registered nine-row baseline admits one separate recovery segment only
+after exact origin/proof checks. The test verifies 128 spent once, unchanged
+event, failure, imported-bookkeeping and STOP evidence, then closes a genuine
+clean pause and resumes its new segment without a callback. The production
+fixed hashes reject the synthetic fixture; a test-only module copy adapts
+exactly four constants to synthetic hashes while leaving all function bodies
+unchanged. Separate transaction tests interrupt after each archive, initial
+target snapshot, receipt, claim, journal and registry phase and reject a second
+scope. Real-controller handoff negatives corrupt an archive or receipt target
+hash/owner and assert no new claim, registry write, or callback. New event, pending
+IO, trial clock, RPC, mutation, altered stage and registry evidence are denied.
+
+The retained short-cell driver has a separate synthetic test for a wait spanning
+multiple cells, one callback, lost-owner refusal and sanitized error reporting.
+These tests do not run CUA, reattach a browser, spend any actual metadata unit,
+or establish the remaining stage map. No Apps Script function applies because
+no `.gs`, API route or Schema changed.
+
+## 2026-10-24 C3 predebit bootstrap and deferred Settings identity gate
+
+The public predebit recovery branch alone accepts the exact three-row
+`getBrowser → claimTab → evaluate` diagnostic map after the unchanged nine-row
+baseline registration and before any baseline debit. The third diagnostic
+evaluation proves only the current Audience URL, project, readiness and heading;
+the journal remains `bootstrapIdentity: PENDING`. The only next ordinary calls
+are the already mapped original-Settings goto, which must return
+`AWAITING_NEXT_PROJECTION` with no field read, and its Settings grounding
+evaluation. The latter must return the current exact principal, project, URL
+and retained handle before the journal becomes `VERIFIED` and the remaining
+baseline rows can proceed. A context result alone cannot release an A row.
+
+The real controller/Python-ledger synthetic fixture checks 128→131 after three
+charged diagnostic events, 133 after the two Settings preparation events,
+UI 75→78→80, unchanged incident/repair highwaters, no W0/RPC, and genuine
+pause/resume at both identity states. It also checks baseline-before-bootstrap,
+reordered/duplicate diagnostics and context-only A refusal before callback;
+wrong current context or principal leaves the debit and pending evidence in
+HARD_STOP. Registration reserves nine baseline calls and the conditional
+21 thin + 17 OAuth + 21 freshness + 2 terminal = 61 future minimum; spending
+the diagnostic three does not reduce that minimum again. The full map, actual
+callback/handle, complete cleanup and later A/H/RPC fit remain unproved. No
+Apps Script function applies because no `.gs`, API route or Schema changed.
+
+## 2026-10-24 C3 native preplan publisher P and original A registration
+
+The predebit recovery branch has a dedicated `registerPublisherAReads` capability
+that admits only two source-pinned main-read phases. After diagnostic three and
+the first five settled baseline PREP rows, phase `initial` adds the exact two P
+descriptors while preserving the already registered original-project A row.
+The first A UI read starts W0; P refresh and userinfo, then the original-project
+GET, consume ordinary main units. Its successfully settled, typed sanitized
+project receipt binds phase `remaining` to the original script, Cloud slug and
+container parent hashes. That second phase admits only the five remaining A
+GETs, with the ACL target hash matching the charged project receipt. The
+private adapter must verify actual URLs and callback mapping against its
+separately pinned callback graph before submitting these public proofs; the
+shared `sourceSha256` is the existing pinned public simple-control protocol
+anchor in both phases and the charged project receipt;
+initial P2 target attestation is deterministic mapping, with provider readback
+only on the later charged call. An in-progress PREP
+registration cannot pause; a later thin stage requires all P2/A6 calls and
+baseline UI calls to have succeeded. Generic preplan stage and RPC gates stay
+closed.
+
+The real-controller/Python synthetic fixture uses the actual immutable baseline
+ID shape `future-baseline-1` through `-9` and derives the two Settings identity
+rows from registered descriptors. It proves phase ordering, byte-identical
+original-project map, real charged settlement, receipt-to-ACL binding, exact
+main 61/UI 87/combined 148, plan null until `completePlan`, and successful
+full-plan reconciliation. Negative cases refuse malformed maps, source drift,
+replay and detached ACL evidence before an uncharged callback. These tests do
+not establish actual provider readback, private adapter binding, full composed
+CI or deployment. No Apps Script function applies because no `.gs`, API route
+or Schema changed.
+
+The independent Task80 review fix binds `sourceSha256` to the unique pinned
+public `read-authority-simple-control.mjs` sibling source in both readiness
+phases and the charged project receipt. A different source already present in
+the fixed inventory is rejected. Focused real-controller tests also refuse
+identity/proof drift, early P/A and later-stage attempts, a malformed project
+receipt, forged pending or failed synthetic checkpoints, and omitted or
+relabelled registered descriptors in the full plan. Private callback graph
+pinning and actual provider readbacks remain separate owner work.
+
+## 2026-10-24 — bounded CI Worker resource observation
+
+The existing `read-worker` job starts a passive Linux `/proc` observer beside
+the unchanged `npm run test:worker 2>&1 | tee` command. The shell retains
+`pipefail`, its test exit status, the complete raw Worker log, and the existing
+always-run terminal summary. The observer records at most one sample every
+500 ms for 600 seconds, up to 32 owned descendants per sample and 8 MiB of
+JSONL in `RUNNER_TEMP`; it stops on shell exit and records its own terminal
+status. No process environment, command line, unowned process, or arbitrary
+process name is exported. PID plus process start tick guards CPU deltas from
+PID reuse. CPU is retained in scheduler ticks, RSS in pages, and the mapped
+current cgroup's quota/throttling in its original units; zero, missing and
+invalid values are separate states. A bounded terminal line includes up to
+eight owned-process CPU/RSS totals and first/last cgroup counters, with drops
+explicit. An absent observer result is `UNAVAILABLE`, never a Worker PASS.
+The self-observer is excluded from Node/workerd attribution.
+
+Synthetic Linux proc/cgroup fixtures and abort/closed-file lifecycle tests
+cover parsing, ownership, bounds, missing and invalid data, PID reuse, numeric
+zero and final summary. These are source-level evidence checks; no real
+Ubuntu CI/resource observation or Worker benchmark was run for this change.
+The observer adds background process/I/O overhead, and sampled process totals
+cannot identify a route hotspot, prove a latency cause, or establish Production
+performance. Rollback reverts this observer/workflow-only commit; the original
+Worker test and strict `<50 ms` gate remain the acceptance authority.
+
+The separate always-run resource step now reads the capped JSONL after the
+test and emits typed numeric frames into its own CI step log. It keeps first,
+last, peak CPU-delta and peak RSS observations for each of the 48 most recent
+Node/workerd identities, then prints them in sample order under a 59 KiB frame
+budget. It reports invalid source records, earlier identities evicted, output
+frames dropped, source drops and missing samples; an unreadable file is
+`UNAVAILABLE`. This preserves late test processes beyond the terminal summary's
+first-eight totals while leaving the original always-run Worker raw-log summary
+in its own subsequent step. Synthetic readback with ten earlier identities and
+late Node/workerd processes proves their PID/start-tick/CPU/RSS/wall/cgroup
+values remain visible; malformed and over-limit records are explicitly partial.
+
+Follow-up review found that the first/last/peak and 48-identity selection could
+still discard a capacity process before later tests ended. The CI resource
+readback now projects **every valid collected sample** in original order into
+typed numeric/enum frames, including all Node/workerd rows and cgroup status;
+it does not select identities or trim old frames. The producer's 1,201-sample,
+32-process and 8 MiB limits remain. Each projected frame is capped at 10,240
+bytes; fixed prefix plus 2,048 bytes metadata yields a derived output bound of
+12,331,514 bytes. Invalid/missing/source-dropped records are counted and
+cannot be called COMPLETE. Synthetic coverage retains five consecutive
+workerd samples before 60 later identities and 240 frames beyond the former
+59 KiB trim. This is a bounded diagnostic log, not route CPU attribution.
+
+## 2026-10-24 C3 projection-settlement minimal fixture invariant
+
+The focused absent/false projection-verification test initializes the
+`predebit_recovery` mode explicitly in its `object.__new__` ledger fixture, as
+the base-mode constructor does. Its four snapshot/evaluate and missing/false
+cases continue to require `TRIAL_STOPPED` before pending clears or the event
+settles. This repairs test setup only; no production source or acceptance
+threshold changed.

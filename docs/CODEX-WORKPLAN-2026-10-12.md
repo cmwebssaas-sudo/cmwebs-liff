@@ -2,8 +2,15 @@
 
 > **2026-10-15 已批准加速修訂：** 房東要求大幅縮短上線等待時間；具體提案見
 > [READ-ACCELERATED-ROLLOUT.md](READ-ACCELERATED-ROLLOUT.md)。原本文保留作歷史基線。
-> 房東已明確批准 24 小時並行觀察、先房源頁，以及單次 wrapper 的 160 內試驗分配。
-> 原三日／七日與兩次入口的相應條款以兩份修訂決策為準；所有技術前置與其餘門檻保留。
+> 房東已批准 24 小時並行觀察與先房源頁。後續另已批准以
+> [單一獨立合成腳本](READ-STANDALONE-TRIAL-DECISION.md) 取代 wrapper／library，
+> 以及 [主帳160＋瀏覽器72、總上限232](READ-SIMPLE-TRIAL-ACCOUNTING.md) 的計次修訂。
+> 原等待期、入口與額度條款分別由上述決策取代，其餘門檻保留。
+> **2026-10-19 歷史：實際65／232時，當段遠端試驗時窗到期並停止，未執行RPC。
+> 後續接續只依另行批准的條件執行，不重放舊入口。**
+> **2026-10-21 最新：已批准主帳132＋普通瀏覽器84＋獨立瀏覽器回退16，總額232。
+> 實際95／232，唯一新增候選清單讀取已結算並安全暫停，等待本人明確指定發布者連線。
+> 尚無分頁／帳號驗證、RPC或T0；既有故障、STOP、回退與正式驗收全部保留。**
 
 本文件是交給 Codex 的**執行計畫**。設計細節見
 [`CLOUDFLARE-READ-PATH-PLAN.md`](CLOUDFLARE-READ-PATH-PLAN.md)；決策紀錄見
@@ -23,7 +30,7 @@
 
 1. 依 `AGENTS.md`：先讀 `docs/CMWEBS_CODEX_HANDOFF.md`、`docs/EXECUTION_RECORD.md`、`docs/00-HANDOFF-INDEX.md`，並以 `git status`、branch、HEAD 重新驗證。
 2. **每個工作單一個 worktree＋feature branch＋PR**；根目錄 checkout 有大量既有 WIP，不得碰觸。
-3. 原逐次授權規則已由本對話的批次授權取代：各單驗收通過後，可依計畫 commit、push、PR、merge、部署、設定與逐頁切換。新增費用、刪除正式資料、計畫範圍修訂、本人登入／付款／真機驗收仍需房東。加速修訂已確認，依 READ-ACCELERATED-ROLLOUT.md 與 READ-TRIAL-MINIMUM-DECISION.md 執行。
+3. 原逐次授權規則已由本對話的批次授權取代：各單驗收通過後，可依計畫 commit、push、PR、merge、部署、設定與逐頁切換。新增費用、刪除正式資料、計畫範圍修訂、本人登入／付款／真機驗收仍需房東。加速修訂已確認；觀察／上線依 READ-ACCELERATED-ROLLOUT.md，合成入口／計次依 READ-STANDALONE-TRIAL-DECISION.md 與 READ-SIMPLE-TRIAL-ACCOUNTING.md。READ-TRIAL-MINIMUM-DECISION.md 保留為已被後續修訂取代的歷史；到期STOP不由文件更新重開。
 4. 無法驗證的正式狀態一律標 `HUMAN_REQUIRED`，不得推測。
 5. 每個 PR 必附：diff 摘要、`npm test` 結果（已知唯一失敗為需要 `PLATFORM_CORE_TEST_WORKTREE` 的跨 repo round trip）、`npm run validate`、`git diff --check`、風險、部署步驟、rollback。
 6. **本 repository 是公開的，`docs/` 會由 GitHub Pages 公開**。不得寫入任何安全漏洞細節、token、密鑰、真實個資或真實 LINE UID。
@@ -180,3 +187,24 @@ Apps Script 端（新增正式檔名 `apps-script/V2_READ_REPLICA_SYNC.js`，不
 - [ ] 公開文件無漏洞細節、密鑰、真實個資
 - [ ] 風險、部署步驟、rollback
 - [ ] 所有需要授權的動作皆已取得房東當次明確同意
+
+
+### 2026-10-22 current C3 and C6 acceptance checkpoint
+
+C3 actual97/232 is PREP HARD_STOP: browser binding succeeded, inventory
+callback/validation failed. All44 UI events settled with pendingnull; no
+page claim/account projection, mutation, RPC or trial clock followed. The
+reason is not established from retained evidence. Prior95/94 and all failure
+history remain; current source work grants no remote retry authority. A new
+bounded continuation decision awaits the owner separately.
+
+C6 diagnostic sourcec2ddec6 has local Worker53/53 and repaired bare Core/PG
+2893/2893 with exact-source/cleanup readbacks and independent review. Its
+new exact-head CI39634649349 is in progress; do not treat it as passed. The
+failed integration39627922453 (3085unit,43/45Worker) remains evidence. This
+composition still requires its own source verification and exact-head CI.
+Neither local evidence nor diagnostic COMPLETE establishes formal acceptance.
+Endpoint blank/flags off; no deployment, formal-data/configuration change or
+observation T0. Technical gates,24h parallel sync/shadow including Taipei
+crossday03:00,rooms-first device/rollback,another stable24h and seven-day
+postlaunch observation all remain required.
