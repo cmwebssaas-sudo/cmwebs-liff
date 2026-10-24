@@ -3963,3 +3963,15 @@ The observer adds background process/I/O overhead, and sampled process totals
 cannot identify a route hotspot, prove a latency cause, or establish Production
 performance. Rollback reverts this observer/workflow-only commit; the original
 Worker test and strict `<50 ms` gate remain the acceptance authority.
+
+The separate always-run resource step now reads the capped JSONL after the
+test and emits typed numeric frames into its own CI step log. It keeps first,
+last, peak CPU-delta and peak RSS observations for each of the 48 most recent
+Node/workerd identities, then prints them in sample order under a 59 KiB frame
+budget. It reports invalid source records, earlier identities evicted, output
+frames dropped, source drops and missing samples; an unreadable file is
+`UNAVAILABLE`. This preserves late test processes beyond the terminal summary's
+first-eight totals while leaving the original always-run Worker raw-log summary
+in its own subsequent step. Synthetic readback with ten earlier identities and
+late Node/workerd processes proves their PID/start-tick/CPU/RSS/wall/cgroup
+values remain visible; malformed and over-limit records are explicitly partial.

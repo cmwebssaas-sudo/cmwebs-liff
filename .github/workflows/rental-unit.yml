@@ -46,9 +46,10 @@ jobs:
           trap finish_worker_observer EXIT
           set -o pipefail
           npm run test:worker 2>&1 | tee "$RUNNER_TEMP/cmwebs-read-worker.log"
+      - name: Bounded numeric Worker resource evidence
+        if: always()
+        run: node scripts/observe-read-worker-resources.mjs --summary "$RUNNER_TEMP/cmwebs-read-worker-resources.jsonl"
       - name: Bounded terminal Worker evidence
         if: always()
-        run: |
-          node scripts/observe-read-worker-resources.mjs --summary "$RUNNER_TEMP/cmwebs-read-worker-resources.jsonl"
-          node scripts/summarize-read-worker-ci.mjs "$RUNNER_TEMP/cmwebs-read-worker.log"
+        run: node scripts/summarize-read-worker-ci.mjs "$RUNNER_TEMP/cmwebs-read-worker.log"
       - run: npm run dry-run:worker

@@ -3,6 +3,7 @@ import {test} from 'node:test';
 import {mkdtemp, mkdir, writeFile, readFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {parseProcStat, cpuDelta, sampleOwned, readCpuEvidence, mapSelfCgroup, observe} from '../scripts/observe-read-worker-resources.mjs';
 
 function stat(pid, comm, ppid, user, system, start, rss) {
@@ -115,4 +116,61 @@ test('terminal summary retains bounded owned CPU totals and cgroup status for CI
   assert.deepEqual(summary.process_totals,[{pid:42,ppid:1,start_ticks:100,comm_type:'node',cpu_ticks:5,max_rss_pages:12}]);
   assert.equal(summary.cgroup_first.status,'UNAVAILABLE');
   assert.equal(summary.cgroup_last.status,'UNAVAILABLE');
+}));
+
+function numericFrame(seq,pid,comm_type){
+  return {type:'sample',wall_ms:100000+seq*500,elapsed_ms:seq*500,owned_status:'OK',
+    processes:[{pid,ppid:42,start_ticks:1000+pid,comm_type,user_ticks:seq+2,system_ticks:1,
+      rss_pages:200+seq,cpu_delta:{status:'OK',ticks:2}}],
+    cgroup:{status:'OK',version:2,quota_status:'LIMITED',quota_us:200000,period_us:100000,
+      usage_usec:1000+seq*5,nr_periods:seq,nr_throttled:0,throttled_usec:0,
+      cpuset_status:'OK',cpuset_count:2},available_parallelism:2,dropped:0,invalid:0,missing:0};
+}
+
+async function readback(dir,frames){
+  const path=join(dir,'resource.jsonl');
+  const summary={type:'summary',status:'STOPPED',wall_ms:999999,samples:frames.length,
+    dropped:0,invalid:0,missing:0,bytes:0,available_parallelism:2,
+    process_totals:[],process_totals_dropped:4,cgroup_first:{status:'OK'},cgroup_last:{status:'OK'}};
+  await writeFile(path,[...frames.map(f=>typeof f==='string'?f:JSON.stringify(f)),JSON.stringify(summary)].join('\n')+'\n');
+  return execFileSync(process.execPath,['scripts/observe-read-worker-resources.mjs','--summary',path],
+    {cwd:new URL('..',import.meta.url),encoding:'utf8'});
+}
+
+test('CI readback retains late Node and workerd numeric timeline after eight earlier identities', async () => fixture(async dir => {
+  const frames=Array.from({length:10},(_,i)=>numericFrame(i,100+i,'node'));
+  frames.push(numericFrame(10,220,'node'),numericFrame(11,221,'workerd'));
+  const out=await readback(dir,frames);
+  const trace=out.split('\n').filter(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE '))
+    .map(s=>JSON.parse(s.slice('C6_WORKER_RESOURCE_TRACE '.length)));
+  assert.deepEqual(trace.filter(f=>f.pid>=220).map(f=>[f.seq,f.pid,f.comm_type,f.start_ticks,f.user_ticks,
+    f.rss_pages,f.wall_ms,f.cgroup.quota_us,f.cgroup.usage_usec]),
+    [[10,220,'node',1220,12,210,105000,200000,1050],
+      [11,221,'workerd',1221,13,211,105500,200000,1055]]);
+  assert.deepEqual(trace.map(f=>f.seq),[...trace.map(f=>f.seq)].sort((a,b)=>a-b));
+  const meta=JSON.parse(out.split('\n').find(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE_META ')).slice('C6_WORKER_RESOURCE_TRACE_META '.length));
+  assert.equal(meta.status,'COMPLETE');
+  assert.equal(meta.input_samples,12);
+  assert.equal(meta.invalid_records,0);
+}));
+
+test('CI readback caps earlier identities and marks malformed or omitted evidence explicitly', async () => fixture(async dir => {
+  const frames=Array.from({length:60},(_,i)=>numericFrame(i,100+i,'node'));
+  frames.push('{"type":"sample","secret":"must-never-print"}',numericFrame(61,300,'workerd'));
+  const out=await readback(dir,frames);
+  assert.ok(Buffer.byteLength(out)<65536);
+  assert.equal(out.includes('must-never-print'),false);
+  assert.ok(out.includes('"pid":300'));
+  const meta=JSON.parse(out.split('\n').find(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE_META ')).slice('C6_WORKER_RESOURCE_TRACE_META '.length));
+  assert.equal(meta.status,'PARTIAL');
+  assert.equal(meta.invalid_records,1);
+  assert.ok(meta.identities_evicted>0);
+  assert.ok(meta.output_dropped>=0);
+}));
+
+test('CI readback does not call an empty resource trace complete', async () => fixture(async dir => {
+  const out=await readback(dir,[]);
+  const meta=JSON.parse(out.split('\n').find(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE_META ')).slice('C6_WORKER_RESOURCE_TRACE_META '.length));
+  assert.equal(meta.status,'NOT_COLLECTED');
+  assert.equal(meta.retained_frames,0);
 }));

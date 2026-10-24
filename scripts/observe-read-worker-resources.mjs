@@ -200,9 +200,86 @@ async function printSummary(path){
     if(info.size>MAX_BYTES+2048)throw Error('too-large');
     const lines=(await readFile(path,'utf8')).trim().split('\n');
     const value=JSON.parse(lines.at(-1));
-    if(value.type!=='summary'||!['STOPPED','SAMPLE_FAILURE','ROOT_REUSED','ROOT_UNAVAILABLE','TIME_LIMIT'].includes(value.status))throw Error('missing-summary');
-    console.log('C6_WORKER_RESOURCE_META '+JSON.stringify(value));
-  }catch{console.log('C6_WORKER_RESOURCE_META '+JSON.stringify({status:'UNAVAILABLE'}));}
+    if(value.type!=='summary'||!['STOPPED','SAMPLE_FAILURE','ROOT_REUSED','ROOT_UNAVAILABLE','TIME_LIMIT'].includes(value.status)||
+      !['samples','dropped','invalid','missing','bytes','process_totals_dropped'].every(k=>safeCount(value[k])))throw Error('missing-summary');
+    const identities=new Map();let invalidRecords=0,inputSamples=0,identitiesEvicted=0;
+    for(let seq=0;seq<lines.length-1;seq++){
+      let sample;
+      try{sample=JSON.parse(lines[seq]);}catch{invalidRecords++;continue;}
+      if(sample?.type!=='sample'||!safeCount(sample.wall_ms)||!safeCount(sample.elapsed_ms)||
+        !['OK','ROOT_REUSED','ROOT_UNAVAILABLE'].includes(sample.owned_status)||
+        !Array.isArray(sample.processes)||sample.processes.length>MAX_PROCESSES||
+        !safeCount(sample.available_parallelism)||sample.available_parallelism<1){invalidRecords++;continue;}
+      inputSamples++;
+      const cgroup=projectCgroup(sample.cgroup);
+      if(!cgroup){invalidRecords++;continue;}
+      for(const p of sample.processes){
+        if(!['node','workerd'].includes(p?.comm_type))continue;
+        const delta=p.cpu_delta;
+        if(!['pid','ppid','start_ticks','user_ticks','system_ticks','rss_pages'].every(k=>safeCount(p[k]))||
+          !['OK','NEW','PID_REUSED','INVALID'].includes(delta?.status)||
+          (delta.status==='OK'?!safeCount(delta.ticks):delta.ticks!==null)){invalidRecords++;continue;}
+        const frame={seq,wall_ms:sample.wall_ms,elapsed_ms:sample.elapsed_ms,pid:p.pid,ppid:p.ppid,
+          start_ticks:p.start_ticks,comm_type:p.comm_type,user_ticks:p.user_ticks,
+          system_ticks:p.system_ticks,cpu_delta_status:delta.status,cpu_delta_ticks:delta.ticks,
+          rss_pages:p.rss_pages,cgroup,available_parallelism:sample.available_parallelism};
+        const key=p.pid+':'+p.start_ticks;
+        let retained=identities.get(key);
+        if(!retained){
+          if(identities.size>=48){identities.delete(identities.keys().next().value);identitiesEvicted++;}
+          retained={first:frame,last:frame,peakCpu:frame,peakRss:frame};identities.set(key,retained);
+        }else{
+          retained.last=frame;
+          if((delta.ticks??-1)>(retained.peakCpu.cpu_delta_ticks??-1))retained.peakCpu=frame;
+          if(p.rss_pages>retained.peakRss.rss_pages)retained.peakRss=frame;
+        }
+      }
+    }
+    const selected=new Map();
+    for(const item of identities.values())for(const frame of Object.values(item))selected.set(frame.seq+':'+frame.pid+':'+frame.start_ticks,frame);
+    const frames=[...selected.values()].sort((a,b)=>a.seq-b.seq||a.pid-b.pid);
+    const output=frames.map(frame=>'C6_WORKER_RESOURCE_TRACE '+JSON.stringify(frame));
+    let outputBytes=output.reduce((n,line)=>n+Buffer.byteLength(line+'\n'),0),outputDropped=0;
+    while(outputBytes>59_000){outputBytes-=Buffer.byteLength(output.shift()+'\n');outputDropped++;}
+    for(const line of output)console.log(line);
+    const partial=invalidRecords>0||identitiesEvicted>0||outputDropped>0||value.dropped>0||value.invalid>0||
+      value.missing>0||inputSamples!==value.samples;
+    console.log('C6_WORKER_RESOURCE_TRACE_META '+JSON.stringify({status:partial?'PARTIAL':output.length?'COMPLETE':'NOT_COLLECTED',
+      input_samples:inputSamples,source_samples:value.samples,invalid_records:invalidRecords,
+      source_dropped:value.dropped,source_invalid:value.invalid,source_missing:value.missing,
+      identities_evicted:identitiesEvicted,output_dropped:outputDropped,retained_frames:output.length,
+      output_bytes:outputBytes,scope:'FIRST_LAST_PEAK_CPU_RSS_PER_RECENT_NODE_WORKER_IDENTITY'}));
+    console.log('C6_WORKER_RESOURCE_META '+JSON.stringify({status:value.status,samples:value.samples,
+      dropped:value.dropped,invalid:value.invalid,missing:value.missing,bytes:value.bytes,
+      process_totals_dropped:value.process_totals_dropped,
+      cgroup_first:projectCgroup(value.cgroup_first)||{status:'UNAVAILABLE'},
+      cgroup_last:projectCgroup(value.cgroup_last)||{status:'UNAVAILABLE'}}));
+  }catch{
+    console.log('C6_WORKER_RESOURCE_TRACE_META '+JSON.stringify({status:'UNAVAILABLE'}));
+    console.log('C6_WORKER_RESOURCE_META '+JSON.stringify({status:'UNAVAILABLE'}));
+  }
+}
+
+function safeCount(value){return Number.isSafeInteger(value)&&value>=0;}
+function projectCgroup(value){
+  if(!value||!['OK','UNAVAILABLE','INVALID','NOT_COLLECTED'].includes(value.status))return null;
+  if(value.status!=='OK')return {status:value.status};
+  if(![1,2].includes(value.version)||!['LIMITED','UNLIMITED'].includes(value.quota_status)||
+    value.quota_status==='LIMITED'&&!safeCount(value.quota_us)||
+    value.quota_status==='UNLIMITED'&&value.quota_us!==null||!safeCount(value.period_us)||
+    !safeCount(value.nr_periods)||!safeCount(value.nr_throttled)||
+    !['OK','UNAVAILABLE'].includes(value.cpuset_status)||
+    value.cpuset_status==='OK'&&!safeCount(value.cpuset_count))return null;
+  const base={status:'OK',version:value.version,quota_status:value.quota_status,
+    quota_us:value.quota_us,period_us:value.period_us,nr_periods:value.nr_periods,
+    nr_throttled:value.nr_throttled,cpuset_status:value.cpuset_status,
+    cpuset_count:value.cpuset_status==='OK'?value.cpuset_count:null};
+  if(value.version===2){
+    if(!safeCount(value.usage_usec)||!safeCount(value.throttled_usec))return null;
+    return {...base,usage_usec:value.usage_usec,throttled_usec:value.throttled_usec};
+  }
+  if(!safeCount(value.throttled_ns))return null;
+  return {...base,usage_status:'UNAVAILABLE',usage_usec:null,throttled_ns:value.throttled_ns};
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
