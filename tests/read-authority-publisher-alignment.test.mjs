@@ -185,9 +185,18 @@ test('native PREP resume rejects forged or unsafe checkpoints before any callbac
   ['rpc',j=>{j.rpc.beganAt=s.time;}],
   ['stopped',j=>{j.lifecycle='HARD_STOP';j.state='stopped';}],
   ['owner-hash',j=>{j.holder='0'.repeat(64);}],
-  ['source-chain',j=>{j.connection.sourceChain.push({identitySha256:'0'.repeat(64),sources:[]});}]
+  ['source-chain',j=>{j.connection.sourceChain.push({identitySha256:'0'.repeat(64),sources:[]});}],
+  ['imported-connection-used',j=>{j.connection.used++;}],
+  ['imported-loading-used',j=>{j.loading.used++;}],
+  ['imported-holders-prefix',j=>{j.holders[0]='0'.repeat(64);}],
+  ['derived-preparation-stage',j=>{j.preparationStages['future-baseline-settings-goto'].remainingOrdinaryUi++;}],
+  ['derived-stage-browser',j=>{j.stageBrowser.pop();}],
+  ['derived-main-stage',j=>{j.stages['D:thin-properties-write'].id='forged-stage';}],
+  ['derived-recovery-map',j=>{j.recoveryBrowser.pop();}]
  ]){
-  const resume=forge(change);await attempt(resume).catch(error=>{throw Error(`${name}: ${error.message}`);});
+  const resume=forge(change),forged=Object.fromEntries([journal,claim,live.registry,receipt].map(path=>[path,readFileSync(path)]));
+  await attempt(resume).catch(error=>{throw Error(`${name}: ${error.message}`);});
+  for(const [path,bytes] of Object.entries(forged))assert(readFileSync(path).equals(bytes),`${name}: ${path} changed before rejection`);
   for(const [path,bytes] of Object.entries(originals))s.put(path,bytes);intact();
  }
  s.put(live.stop,compact({source:'synthetic-stop'}));try{await attempt({nativeSuccessor:true,...handoff});}finally{unlinkSync(live.stop);}intact();

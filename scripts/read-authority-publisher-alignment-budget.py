@@ -159,14 +159,35 @@ def alignment_class(base):
     native=j.get('nativeImported',[])
     if len(native)!=self.imported_delta or any(not exact(row,['spent','reservationSha256','settlementSha256','bookkeptAt','reservationAt','providerCallAt']) or row['spent']!=charge['spent'] or row['reservationSha256']!=charge['reservation']['sha256'] or row['settlementSha256']!=charge['settlement']['sha256'] or row['reservationAt']!=charge['reservationAt'] or row['providerCallAt'] is not None or not integer(row['bookkeptAt']) or not imported['lastAt']<=row['bookkeptAt']<=j['lastAt'] for row,charge in zip(native,charges)) or len({row['bookkeptAt']for row in native})!=1 or j.get('publisherImported')!=imported['publisherImported']:fail()
     stages=j.get('publisherStages',[])
-    if len(stages)>1 or stages and (stages[0].get('stage')!='baseline' or not 6<=stages[0].get('stageCap',0)<=9 or sum(m.get('lane')=='ui'for m in stages[0].get('map',[]))!=stages[0]['stageCap'] or stages[0]['stageCap']>6 and native_grounding_count(stages[0]['stageCap'],stages[0]['map'])!=stages[0]['stageCap']-6):fail()
+    if len(stages)>1 or stages and (stages[0].get('stage')!='baseline' or not 6<=stages[0].get('stageCap',0)<=9 or sum(m.get('lane')=='ui'for m in stages[0].get('map',[]))!=stages[0]['stageCap'] or native_grounding_count(stages[0]['stageCap'],stages[0]['map'])!=stages[0]['stageCap']-6):fail()
     mapped={m['descriptor']['id']:m['descriptor'] for stage in stages for m in stage['map'] if m['lane']=='ui' and m['descriptor']['preparation'] is True}
     extra=j['events'][55:];seen=set()
+    last=imported['lastAt']
     for event in extra:
      operation=event.get('operation',{})
-     if event.get('lane')!='ui' or event.get('cleanup') is not False or event.get('settled') is not True or event.get('success') is not True or event.get('outcome')!='UNKNOWN' or operation.get('id') not in mapped or operation!=mapped[operation['id']] or event.get('preparationStage')!=operation['id'] or operation['id'] in seen or not integer(event.get('time')) or not imported['lastAt']<=event['time']<=j['lastAt']:fail()
-     seen.add(operation['id'])
+     if event.get('lane')!='ui' or event.get('cleanup') is not False or event.get('settled') is not True or event.get('success') is not True or event.get('outcome')!='UNKNOWN' or operation.get('id') not in mapped or operation!=mapped[operation['id']] or event.get('preparationStage')!=operation['id'] or operation['id'] in seen or not integer(event.get('time')) or not last<=event['time']<=j['lastAt']:fail()
+     seen.add(operation['id']);last=event['time']
     if j['futureOrdinaryUi']!=90-self.imported_delta-sum(stage['stageCap']for stage in stages) or j['failures']!=imported['failures']+sum(c['outcome']!='VERIFIED'for c in charges) or j['publisherAlignment']['readonlyIncidents']!=2 or j['publisherAlignment']['repairCalls']!=6 or j['publisherAlignment']['diagnosticCalls']!=0:fail()
+    if j['holders'][:len(imported['holders'])]!=imported['holders'] or len(set(j['holders']))!=len(j['holders']):fail()
+    # Rebuild the only legitimate PREP delta from the immutable 105 checkpoint.
+    # A matching local receipt does not authorize altered inherited counters or
+    # independently edited stage/recovery projections.
+    expected=copy.deepcopy(imported)
+    expected['connection']['sourceChain']=copy.deepcopy(chain)
+    expected.update(state='ready',lifecycle='CLEAN_PAUSE',holder=j['holder'],holders=copy.deepcopy(j['holders']),lastAt=j['lastAt'],events=copy.deepcopy(j['events']),failures=imported['failures']+sum(c['outcome']!='VERIFIED'for c in charges),futureOrdinaryUi=90-self.imported_delta-sum(stage['stageCap']for stage in stages),nativeCurrentVisual=True,nativeImported=copy.deepcopy(native),publisherStages=copy.deepcopy(stages))
+    expected['publisherAlignment']['readonlyIncidents']=2;expected['publisherAlignment']['repairCalls']=6
+    for stage in stages:
+     for meta in stage['map']:
+      if not exact(meta,['lane','descriptor','tabId','url','callback','receipt','privacy','cleanup','repairIncident']) or meta['lane'] not in ['ui','main'] or type(meta['descriptor']) is not dict or type(meta['cleanup']) is not list or meta['repairIncident'] is not None or meta['privacy']!='NO_SECRET_VALUES':fail()
+      op=meta['descriptor'];key=g['descriptor'](op,meta['lane'])
+      if meta['lane']=='ui':
+       if op['preparation'] is True:expected['preparationStages'][op['id']]={'operations':[copy.deepcopy(op)],'remainingOrdinaryUi':self.future_limit()-stage['stageCap']}
+       else:expected['stageBrowser'].append(copy.deepcopy(op))
+      else:expected['stages'][key]=copy.deepcopy(op)
+      for clean in meta['cleanup']:
+       if not exact(clean,['lane','descriptor','target','tabId','url','callback','receipt']) or clean['lane'] not in ['ui','main'] or clean['target']!=clean['descriptor'].get('target') or not g['descriptor'](clean['descriptor'],clean['lane']).startswith(('C:','I:','J:')):fail()
+       if clean['lane']=='ui':expected['recoveryBrowser'].append(copy.deepcopy(clean['descriptor']))
+    if j!=expected:fail()
     j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(previous,separators=(',',':')).encode()),'sources':copy.deepcopy(previous['sources'])});j.update(lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now']);j['holders'].append(owner)
     self.j=j;save(self.claim,self.identity);self.persist();return
    if fresh:
