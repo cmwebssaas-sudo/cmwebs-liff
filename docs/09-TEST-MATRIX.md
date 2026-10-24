@@ -2885,3 +2885,35 @@ HARD_STOP. Registration reserves nine baseline calls and the conditional
 the diagnostic three does not reduce that minimum again. The full map, actual
 callback/handle, complete cleanup and later A/H/RPC fit remain unproved. No
 Apps Script function applies because no `.gs`, API route or Schema changed.
+
+## 2026-10-24 C3 native preplan publisher P and original A registration
+
+The predebit recovery branch has a dedicated `registerPublisherAReads` capability
+that admits only two source-pinned main-read phases. After diagnostic three and
+the first five settled baseline PREP rows, phase `initial` adds the exact two P
+descriptors while preserving the already registered original-project A row.
+The first A UI read starts W0; P refresh and userinfo, then the original-project
+GET, consume ordinary main units. Its successfully settled, typed sanitized
+project receipt binds phase `remaining` to the original script, Cloud slug and
+container parent hashes. That second phase admits only the five remaining A
+GETs, with the ACL target hash matching the charged project receipt. The
+private adapter must verify actual URLs and callback mapping against its
+separately pinned callback graph before submitting these public proofs; the
+shared `sourceSha256` is the existing pinned public simple-control protocol
+anchor in both phases and the charged project receipt;
+initial P2 target attestation is deterministic mapping, with provider readback
+only on the later charged call. An in-progress PREP
+registration cannot pause; a later thin stage requires all P2/A6 calls and
+baseline UI calls to have succeeded. Generic preplan stage and RPC gates stay
+closed.
+
+The real-controller/Python synthetic fixture uses the actual immutable baseline
+ID shape `future-baseline-1` through `-9` and derives the two Settings identity
+rows from registered descriptors. It proves phase ordering, byte-identical
+original-project map, real charged settlement, receipt-to-ACL binding, exact
+main 61/UI 87/combined 148, plan null until `completePlan`, and successful
+full-plan reconciliation. Negative cases refuse malformed maps, source drift,
+replay and detached ACL evidence before an uncharged callback. These tests do
+not establish actual provider readback, private adapter binding, full composed
+CI or deployment. No Apps Script function applies because no `.gs`, API route
+or Schema changed.

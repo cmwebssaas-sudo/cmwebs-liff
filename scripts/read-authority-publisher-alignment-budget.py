@@ -10,6 +10,9 @@ NATIVE_GROUNDING=[('N:preparation','original-triggers','navigate',True),('N:prep
 BOOTSTRAP=[('future-bootstrap-browser','getBrowser','publisherBootstrapGetBrowser'),('future-bootstrap-claim','claimTab','publisherBootstrapClaimTab'),('future-bootstrap-identity','evaluate','publisherBootstrapEvaluate')]
 BOOTSTRAP_FUTURE=[('baseline',9),('diagnostic',3),('thin',21),('oauth',17),('freshness',21),('terminal',2)]
 BOOTSTRAP_BASELINE_ORDER=[0,1,6,7,8,2,3,4,5]
+PUBLISHER_A_INITIAL=[('P:publisher-refresh','publisherReadPublisherRefresh'),('P:publisher-userinfo','publisherReadPublisherUserinfo')]
+PUBLISHER_A_REMAINING=[('A:original-editor','publisherReadOriginalEditor'),('A:original-versions','publisherReadOriginalVersions'),('A:original-deployments','publisherReadOriginalDeployments'),('A:original-v1-content','publisherReadOriginalV1Content'),('A:original-container-acl','publisherReadOriginalContainerAcl')]
+PUBLISHER_A_KEYS=[key for key,_ in PUBLISHER_A_INITIAL]+['A:original-project']+[key for key,_ in PUBLISHER_A_REMAINING]
 PREDEBIT_ORIGIN={'journal':'91e30a199fbf6660dfd0b659ec4b265fee45bb8d360ea26a68ba1e9846f5491c','claim':'2dc247c18221e958e860a3ec57acfd72342935af936e87be38f14648b5727827','registry':'adf06b0cf233169233621a07b58955c5b7de3505b0791d563c4901df2786e7a6'}
 PREDEBIT_PROOF='e28e43b7045f5f976f4624108c010cb7089cc7f5a75c0c4f046834508d8e46ae'
 
@@ -267,7 +270,7 @@ def alignment_class(base):
      j['holders'].append(owner);j['nativeImported']=[{'spent':c['spent'],'reservationSha256':c['reservation']['sha256'],'settlementSha256':c['settlement']['sha256'],'bookkeptAt':self.cfg['now'],'reservationAt':c['reservationAt'],'providerCallAt':None}for c in charges]
      self.j=j;save(self.claim,self.identity,True);self.persist();return
     raw=rawfile(self.journal);rr=rawfile(self.registry);j=json.loads(raw);previous=record(self.claim)
-    if record(self.registry)!={'identity':previous,'checkpoint':j} or p['minimumEvents']!=len(j['events']) or p['receipt']['path']!=str(self.path)+self.suffix+'-handoff-'+str(len(j['holders']))+'.json':fail()
+    if record(self.registry)!={'identity':previous,'checkpoint':j} or p['minimumEvents']!=len(j['events']) or p['receipt']['path']!=str(self.path)+self.suffix+'-handoff-'+str(len(j['holders']))+'.json' or 'publisherAReadiness' in j:fail()
     self.verify_receipt(json.loads(g['pin'](p['receipt'])),j,raw,rr)
     stable=lambda x:{k:v for k,v in x.items()if k not in ['sources','ownerHash']}
     if stable(previous)!=stable(self.identity) or self.identity['sources'][:len(previous['sources'])]!=previous['sources'] or not previous['sources'] or j['events'][:55]!=imported['events'] or j['state']!='ready' or j['lifecycle']!='CLEAN_PAUSE' or j['phase']!='PREP' or j['pending'] is not None or j['mutated'] is not False or j['w0'] is not None or j['expiresAt'] is not None or j['rpc']!={'beganAt':None,'complete':False} or j['chargedUpperBoundMs']!=imported['chargedUpperBoundMs'] or j['finished'] is not False or j['plan'] is not None or os.path.lexists(self.stop_path) or owner in j['holders'] or j['holder']!=previous['ownerHash'] or j['holders'][-1]!=j['holder'] or self.cfg['now']<j['lastAt'] or j.get('nativeCurrentVisual') is not True or not self.prepared_checkpoint(j):fail()
@@ -370,11 +373,64 @@ def alignment_class(base):
   def view(self,wait=0):
    v=super().view(wait);d=self.j['publisherAlignment'];delta=self.imported_delta if self.native_successor else 0;v.update(uiSpent=v['uiSpent']+3+delta,combinedSpent=v['combinedSpent']+3+delta,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3+delta,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),trialMapReady=self.trial_map_ready(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile)
    if self.native_successor:v.update(successorImported=delta,futureUiLimit=90-delta,currentVisualVerified=self.j.get('nativeCurrentVisual') is True)
-   if self.predebit_recovery:v.update(bootstrapIdentity=self.j.get('bootstrapIdentity'))
+   if self.predebit_recovery:v.update(bootstrapIdentity=self.j.get('bootstrapIdentity'),baselineIdentityDescriptors=[copy.deepcopy(m['descriptor'])for m in self.j['publisherStages'][0]['map'][:2]] if self.j.get('publisherStages') else [])
    return v
   def preparation_complete(self):return self.j.get('publisherAlignment',{}).get('used')==6 and self.j['publisherAlignment']['settingsVerified'] and (self.j['publisherAlignment']['audienceVerified'] or self.native_successor and self.j.get('nativeCurrentVisual') is True)
   def future_spent(self):return sum(e['lane']=='ui' and not e['cleanup'] for e in self.j['events'][55:])
   def future_limit(self):return 90-self.imported_delta
+  def publisher_a_project_map(self):
+   stages=self.j.get('publisherStages',[])
+   if len(stages)<2 or stages[0].get('stage')!='baseline' or stages[0].get('stageCap')!=9 or stages[1].get('stage')!='diagnostic' or stages[1].get('stageCap')!=3:fail()
+   rows=[m for stage in stages for m in stage['map'] if m.get('lane')=='main' and m.get('descriptor',{}).get('bucket')=='A' and m['descriptor'].get('alias')=='original-project']
+   if len(rows)!=1 or rows[0]['descriptor'].get('id')!='future-baseline-original-project' or self.j['stages'].get('A:original-project')!=rows[0]['descriptor']:fail()
+   return rows[0]
+  def publisher_a_receipt(self,receipt,source_sha):
+   keys=['source','status','sourceSha256','projectContextHash','publisherPrincipalSha256','originalScriptIdSha256','cloudProjectSlugSha256','containerParentIdSha256','projectReadbackSha256','fieldsRead']
+   if not exact(receipt,keys):fail()
+   distinct=[receipt[k]for k in ['publisherPrincipalSha256','originalScriptIdSha256','cloudProjectSlugSha256','containerParentIdSha256']]
+   if receipt['source']!='publisher-a-project-receipt-v1' or receipt['status']!='VERIFIED' or receipt['fieldsRead'] is not False or receipt['sourceSha256']!=source_sha or receipt['projectContextHash']!=self.native_context['projectHash'] or receipt['publisherPrincipalSha256']!=self.native_publisher_hash or any(not g['digest'](receipt[k]) for k in ['originalScriptIdSha256','cloudProjectSlugSha256','containerParentIdSha256','projectReadbackSha256']) or len(set(distinct))!=4:fail()
+  def publisher_a_project_receipt_ready(self,op):
+   readiness=self.j.get('publisherAReadiness',[])
+   if len(readiness)!=2 or [r['phase']for r in readiness]!=['initial','remaining'] or len(self.j['events'])<=66:return False
+   receipt=self.j['events'][66].get('projectReceipt')
+   if receipt is None:return False
+   self.publisher_a_receipt(receipt,readiness[0]['proof']['sourceSha256'])
+   if readiness[1]['proof']['projectReceiptSha256']!=sha(g['compact'](receipt).encode()):return False
+   rows=[(m,p)for m,p in zip(readiness[1]['map'],readiness[1]['proof']['targetProofs'])if m['descriptor']==op]
+   if len(rows)!=1:return False
+   m,p=rows[0]
+   return p['urlSha256']==sha(m['url'].encode()) and p['sameOriginalProject'] is True and p['readbackVerified'] is True and (op['alias']!='original-container-acl' or p.get('aclParentIdSha256')==receipt['containerParentIdSha256'])
+  def publisher_a_complete(self):
+   readiness=self.j.get('publisherAReadiness',[])
+   if len(readiness)!=2 or [r['phase']for r in readiness]!=['initial','remaining']:return False
+   completed=set(self.j['completed']);events=self.j['events'];baseline=self.j['publisherStages'][0]['map'] if len(self.j.get('publisherStages',[]))>=2 else []
+   return set(PUBLISHER_A_KEYS)<=completed and len(baseline)==10 and all(any(e['operation']==m['descriptor'] and e.get('settled') is True and e.get('success') is True for e in events) for m in baseline if m['lane']=='ui') and all(any(e['key']==key and e['lane']=='main' and e.get('settled') is True and e.get('success') is True for e in events) for key in PUBLISHER_A_KEYS)
+  def register_publisher_a(self,q):
+   self.current();self.active(q.get('now'))
+   if not self.predebit_recovery or not exact(q,['op','phase','map','proof','now']) or q['phase'] not in ['initial','remaining'] or self.j['plan'] is not None or self.j['pending'] is not None or self.j['mutated'] is not False or self.j['rpc']!={'beganAt':None,'complete':False} or self.j.get('bootstrapIdentity')!='VERIFIED' or any(e.get('settled') is not True or e.get('success') is not True for e in self.j['events'][55:]):fail()
+   project=self.publisher_a_project_map();phase=q['phase'];readiness=self.j.get('publisherAReadiness',[]);expected=PUBLISHER_A_INITIAL if phase=='initial' else PUBLISHER_A_REMAINING
+   if phase=='initial':
+    if readiness or self.j['phase']!='PREP' or self.j['w0'] is not None or len(self.j['events'])!=63 or self.counts()[1]!=0 or [e['operation']for e in self.j['events'][55:58]]!=[m['descriptor']for m in self.j['publisherStages'][1]['map']] or [e['operation']for e in self.j['events'][58:63]]!=[self.j['publisherStages'][0]['map'][i]['descriptor']for i in BOOTSTRAP_BASELINE_ORDER[:5]]:fail()
+   else:
+    if len(readiness)!=1 or readiness[0]['phase']!='initial' or self.j['phase']!='TRIAL' or self.j['w0'] is None or len(self.j['events'])!=67 or self.counts()[1]!=3 or [e['operation']for e in self.j['events'][63:67]]!=[self.j['publisherStages'][0]['map'][2]['descriptor']]+[r['descriptor']for r in readiness[0]['map']]+[project['descriptor']]:fail()
+   if type(q['map'])is not list or len(q['map'])!=len(expected) or self.main_ordinary_limit!=58 or self.main_event_limit!=79 or self.ui_ordinary_limit!=148 or self.ui_event_limit!=164 or self.counts()[1]+(8 if phase=='initial' else 5)>58 or len(self.j['recoveryBrowser'])>16 or self.j['futureOrdinaryUi']!=61 or self.future_limit()!=73 or self.future_spent()!=(8 if phase=='initial' else 9):fail()
+   proof=q['proof'];common=['source','phase','sourceSha256','mapSha256','epoch','binding','ownerHash','originalProjectDescriptorSha256','projectContextHash','publisherPrincipalSha256','targetProofs'];extra=['projectReceiptSha256','originalScriptIdSha256','cloudProjectSlugSha256','containerParentIdSha256']if phase=='remaining' else []
+   if not exact(proof,common+extra) or proof['source']!='publisher-a-readonly-readiness-v1' or proof['phase']!=phase or proof['epoch']!=self.cfg['epoch'] or proof['binding']!=self.cfg['binding'] or proof['ownerHash']!=self.identity['ownerHash'] or proof['projectContextHash']!=self.native_context['projectHash'] or proof['publisherPrincipalSha256']!=self.native_publisher_hash or proof['originalProjectDescriptorSha256']!=sha(g['compact'](project['descriptor']).encode()) or proof['mapSha256']!=sha(g['compact'](q['map']).encode()) or not g['digest'](proof['sourceSha256']) or proof['sourceSha256'] not in [p['sha256']for p in self.cfg['sources']] or type(proof['targetProofs'])is not list or len(proof['targetProofs'])!=len(expected):fail()
+   if phase=='remaining':
+    source=readiness[0]['proof']['sourceSha256'];event=self.j['events'][66];receipt=event.get('projectReceipt')
+    if proof['sourceSha256']!=source or event['key']!='A:original-project' or event.get('settled') is not True or event.get('success') is not True or not exact(receipt,['source','status','sourceSha256','projectContextHash','publisherPrincipalSha256','originalScriptIdSha256','cloudProjectSlugSha256','containerParentIdSha256','projectReadbackSha256','fieldsRead']):fail()
+    self.publisher_a_receipt(receipt,source)
+    if proof['projectReceiptSha256']!=sha(g['compact'](receipt).encode()) or any(proof[k]!=receipt[k]for k in ['originalScriptIdSha256','cloudProjectSlugSha256','containerParentIdSha256']):fail()
+   seen_ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']}|{m['descriptor']['id']for r in readiness for m in r['map']}
+   for (key,callback),m,target_proof in zip(expected,q['map'],proof['targetProofs']):
+    if not exact(m,['lane','descriptor','tabId','url','callback','receipt','privacy','cleanup','repairIncident']) or m['lane']!='main' or type(m['descriptor'])is not dict or not exact(m['descriptor'],['id','bucket','alias','actor','target','operation','units']) or m['descriptor']['id']!='future-'+key[2:] or m['descriptor']['id'] in seen_ids or m['descriptor']['bucket']+':'+m['descriptor']['alias']!=key or m['descriptor']['actor']!='publisher' or m['descriptor']['target']!=g['RULES'][key]['target'] or m['descriptor']['operation']!=g['RULES'][key]['methods'][0] or m['descriptor']['units']!=1 or m['tabId']!=self.native_context['tabId'] or type(m['url'])is not str or not m['url'].startswith('https://') or m['callback']!=callback or m['receipt']!='SANITIZED_READ' or m['privacy']!='NO_SECRET_VALUES' or m['cleanup']!=[] or m['repairIncident'] is not None or key in self.j['stages']:fail()
+    target_keys=['id','urlSha256','sameOriginalProject','readbackVerified']+(['aclParentIdSha256']if key=='A:original-container-acl' else [])
+    if not exact(target_proof,target_keys) or target_proof['id']!=m['descriptor']['id'] or target_proof['urlSha256']!=sha(m['url'].encode()) or target_proof['sameOriginalProject'] is not True or target_proof['readbackVerified'] is not True or key=='A:original-container-acl' and target_proof['aclParentIdSha256']!=proof['containerParentIdSha256']:fail()
+    seen_ids.add(m['descriptor']['id'])
+   if phase=='initial' and any(m['descriptor']['bucket']=='A' for m in q['map']):fail()
+   self.j.setdefault('publisherAReadiness',[]).append({'phase':phase,'map':copy.deepcopy(q['map']),'proof':copy.deepcopy(proof)})
+   for m in q['map']:self.j['stages'][m['descriptor']['bucket']+':'+m['descriptor']['alias']]=copy.deepcopy(m['descriptor'])
+   self.j['lastAt']=q['now'];self.persist();return self.view()
   def rate(self,t):
    # Call timestamps are absent from imported sidecars. Bookkeeping time is a
    # conservative rate-limit floor, never represented as provider call time.
@@ -392,12 +448,18 @@ def alignment_class(base):
    elif not self.preparation_complete() and not op.get('key','').startswith(('C:','I:','J:')):fail()
    if lane=='main' and op.get('bucket') not in ['C','I','J']:
     entries=[m for stage in self.j['publisherStages'] for m in stage['map'] if m['lane']=='main' and m['descriptor']==op]
+    if self.predebit_recovery and self.j.get('publisherAReadiness'):
+     entries+= [m for registration in self.j['publisherAReadiness'] for m in registration['map'] if m['descriptor']==op]
     if len(entries)!=1:fail()
+    if self.predebit_recovery and op.get('bucket')=='P' and (not self.j.get('publisherAReadiness') or self.j['w0'] is None or self.j['phase']!='TRIAL'):fail()
+    if self.predebit_recovery and op.get('bucket')=='A' and op.get('alias')!='original-project' and not self.publisher_a_project_receipt_ready(op):fail()
    if lane=='ui' and not op.get('key','').startswith(('C:','I:','J:')) and self.counts()[3]+3+self.imported_delta>=148:fail()
    if lane=='ui' and not first and not op.get('key','').startswith(('C:','I:','J:')):
     entries=[(stage,m) for stage in self.j['publisherStages']for m in stage['map'] if m['lane']=='ui' and m['descriptor']==op]
     if len(entries)!=1 or self.future_spent()>=self.future_limit():fail()
     stage,meta=entries[0]
+    if self.predebit_recovery and stage['stage']=='baseline' and op==stage['map'][2]['descriptor'] and not self.j.get('publisherAReadiness'):fail()
+    if self.predebit_recovery and stage['stage'] not in ['baseline','diagnostic'] and not self.publisher_a_complete():fail()
     if self.predebit_recovery and stage['stage']=='diagnostic':
      if len(self.j['publisherStages'])!=2 or d['diagnosticCalls']>=3 or op!=self.j['publisherStages'][1]['map'][d['diagnosticCalls']]['descriptor'] or self.j['events'][55:] and any(e['operation']['id'].startswith('future-baseline-') for e in self.j['events'][55:]):fail()
     if stage['stage']=='diagnostic' and d['diagnosticCalls']>=20-self.imported_delta:fail()
@@ -409,8 +471,8 @@ def alignment_class(base):
     stages=self.j['publisherStages']
     if len(stages)<2 or any(e['operation']!=m['descriptor'] or e.get('settled') is not True or e.get('success') is not True for e,m in zip(self.j['events'][55:58],stages[1]['map'])) or len(self.j['events'])<58:fail()
     if self.j.get('bootstrapIdentity') not in ['PENDING','VERIFIED']:fail()
-    if op.get('id','').startswith('future-baseline-'):
-     consumed=[e['operation']for e in self.j['events'][58:] if e['operation'].get('id','').startswith('future-baseline-')]
+    if lane=='ui' and op.get('id','').startswith('future-baseline-'):
+     consumed=[e['operation']for e in self.j['events'][58:] if e['lane']=='ui' and e['operation'].get('id','').startswith('future-baseline-')]
      if len(consumed)>=9 or op!=stages[0]['map'][BOOTSTRAP_BASELINE_ORDER[len(consumed)]]['descriptor']:fail()
      if self.j['bootstrapIdentity']=='PENDING' and len(consumed)>=2:fail()
     elif self.j['bootstrapIdentity']!='VERIFIED':fail()
@@ -425,9 +487,21 @@ def alignment_class(base):
    if op!={'id':'publisher105-n'+str(n+1)+'-'+stage,'key':'N:preparation','actor':'publisher','target':target,'operation':method,'units':1,'preparation':True}:fail()
   def command(self,q):
    name=q.get('op');e=self.j['events'][-1]if self.j['events']else{}
+   if name=='publisher-a-readonly-ready':return self.register_publisher_a(q)
+   if self.predebit_recovery and name=='settle' and e.get('lane')=='main' and e.get('key')=='A:original-project':
+    self.current();self.now(q.get('now'))
+    if self.j['pending']!=e['operation']['id'] or e.get('settled') is not False or type(q.get('success'))is not bool or not exact(q,['op','id','success','now']+(['projectReceipt']if q['success'] else [])) or q['id']!=e['operation']['id']:fail()
+    if q['success']:
+     registrations=self.j.get('publisherAReadiness',[])
+     if len(registrations)!=1 or registrations[0]['phase']!='initial':fail()
+     self.publisher_a_receipt(q['projectReceipt'],registrations[0]['proof']['sourceSha256'])
+    result=super().command({k:v for k,v in q.items()if k!='projectReceipt'})
+    if q['success']:self.j['events'][-1]['projectReceipt']=copy.deepcopy(q['projectReceipt']);self.persist();return self.view()
+    return result
    if name=='publisher-stage-ready':
     self.current();self.active(q.get('now'));index=len(self.j['publisherStages']);d=self.j['publisherAlignment'];sequence=BOOTSTRAP_FUTURE if self.predebit_recovery else FUTURE
     if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending']is not None or index>=len(sequence) or not exact(q,['op','stage','map','stageCap','now']) or q['stage']!=sequence[index][0] or type(q['map'])is not list or not q['map'] or not integer(q['stageCap']) or q['stageCap']<1 or sum(m.get('lane')=='ui'for m in q['map']if type(m)is dict)!=q['stageCap']:fail()
+    if self.predebit_recovery and index>=2 and not self.publisher_a_complete():fail()
     used=sum(s['stageCap']for s in self.j['publisherStages']);extra=(q['stageCap']-6 if index==0 else self.j['publisherStages'][0]['stageCap']-6)if self.native_successor else 0
     if self.native_successor and index==0 and (not 6<=q['stageCap']<=9 or q['stageCap']>6 and native_grounding_count(q['stageCap'],q['map'])!=extra):fail()
     if self.predebit_recovery and (index==0 or index==1 and (q['stageCap']!=3 or len(self.j['events'])!=55 or d['diagnosticCalls']!=0 or d['readonlyIncidents']!=2 or d['repairCalls']!=6 or self.j['publisherStages'][0]['stageCap']!=9 or any(m['tabId']!=self.native_context['tabId'] or m['url']!=self.native_settings_url for m in self.j['publisherStages'][0]['map'][:2]) or not bootstrap_map_valid(q['map'],self.native_context))):fail()
@@ -456,10 +530,11 @@ def alignment_class(base):
     if len(matches)!=1 or self.j['pending']!=q.get('id') or e['settled'] is not False:fail()
     stage,meta=matches[0];d=self.j['publisherAlignment'];diagnostic=stage['stage']=='diagnostic';repair=meta['repairIncident'] is not None
     bootstrap=self.predebit_recovery and diagnostic
-    baseline_gate=self.predebit_recovery and e['operation']['id'] in ['future-baseline-settings-goto','future-baseline-settings-project']
+    identity_rows=self.j['publisherStages'][0]['map'][:2] if self.predebit_recovery else []
+    baseline_gate=self.predebit_recovery and e['operation'] in [m['descriptor']for m in identity_rows]
     if bootstrap and (e['operation']!=self.j['publisherStages'][1]['map'][d['diagnosticCalls']]['descriptor'] or repair or q.get('success') is True and not bootstrap_proof_valid(q.get('bootstrapProof'),e['operation']['operation'],self.native_context)):fail()
     if baseline_gate and q.get('success') is True:
-     index=0 if e['operation']['id']=='future-baseline-settings-goto' else 1
+     index=0 if e['operation']==identity_rows[0]['descriptor'] else 1
      if e['operation']!=self.j['publisherStages'][0]['map'][index]['descriptor'] or self.j.get('bootstrapIdentity')!='PENDING' or not baseline_identity_proof_valid(q.get('baselineIdentityProof'),e['operation']['operation'],self.j['publisherStages'][0]['map'][index],self.native_context,self.native_publisher_hash):fail()
     if q.get('success') is False and diagnostic and not repair and e['operation']['preparation'] is True and not bootstrap:
      p=q.get('preparationOutcome');fields=['kind','phase','targetVerified','accountVerified','bindingVerified','pureRead','terminal','fieldsRead']
@@ -505,11 +580,11 @@ def alignment_class(base):
     g['descriptor'](rows[0],'ui');self.check_loading(rows[0]);self.j['preparationStages'][q['stage']]={'operations':copy.deepcopy(rows),'remainingOrdinaryUi':q['remainingOrdinaryUi']};self.j['futureOrdinaryUi']=q['remainingOrdinaryUi'];self.j['lastAt']=q['now'];self.persist();return self.view()
    if name=='pause-preparation':
     self.current();self.active(q.get('now'))
-    if not exact(q,['op','now']) or not self.prepared_checkpoint(self.j) or self.j['pending']is not None or any(e['settled']is not True for e in self.j['events']):fail()
+    if not exact(q,['op','now']) or not self.prepared_checkpoint(self.j) or self.j['pending']is not None or any(e['settled']is not True for e in self.j['events']) or self.predebit_recovery and self.j.get('publisherAReadiness'):fail()
     self.j.update(lifecycle='CLEAN_PAUSE',lastAt=q['now']);self.persist();return self.view()
    if name=='plan-ready' and self.j.get('plan') is None:
     self.current();self.active(q.get('now'))
-    if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending'] is not None or any(e.get('settled') is not True for e in self.j['events']) or self.j['rpc']['beganAt'] is not None:fail()
+    if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending'] is not None or any(e.get('settled') is not True for e in self.j['events']) or self.j['rpc']['beganAt'] is not None or self.predebit_recovery and not self.publisher_a_complete():fail()
    if name in ['stage-ready','recovery-ready','rpc-begin'] and self.j.get('plan')is None:fail()
    return super().command(q)
  return PublisherAlignmentLedger

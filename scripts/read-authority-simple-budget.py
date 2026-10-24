@@ -429,7 +429,7 @@ class Ledger:
    e={'lane':q['lane'],'key':key,'operation':q['operation'],'time':q['now'],'outcome':'UNKNOWN','cleanup':cleanup,'settled':False,'success':None};
    if self.continuity and preparing:e['preparationStage']=next(name for name,p in self.j['preparationStages'].items() if q['operation'] in p['operations'])
    self.j['events'].append(e);self.j['pending']=q['operation']['id'];self.j['lastAt']=q['now']
-   if q['operation']['operation'] not in READ_METHODS+['GET'] and not cleanup:self.j['mutated']=True
+   if q['operation']['operation'] not in READ_METHODS+['GET'] and not cleanup and not (getattr(self,'predebit_recovery',False) and key=='P:publisher-refresh'):self.j['mutated']=True
    if key=='H:wrapper-compatibility-rpc':self.j['chargedUpperBoundMs']=360000;self.j['rpc']['beganAt']=q['now']
    self.persist()
    if q['lane']=='main' and key.startswith(('C:','I:')):self.original_debit(key,q['now'])

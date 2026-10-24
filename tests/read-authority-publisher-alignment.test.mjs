@@ -21,7 +21,7 @@ function withTestHomedir(home,callback){
  }
 }
 
-async function nativePredebitFixture(){
+async function nativePredebitFixture(actualBaselineIds=false){
  const standardEnv=Object.fromEntries(['HOME','home','CODEX_HOME'].map(key=>[key,{present:Object.hasOwn(process.env,key),value:process.env[key]}]));
  const {s,closure}=await nativeSuccessorFixture();
  const rows=[
@@ -34,9 +34,12 @@ async function nativePredebitFixture(){
   ['ground-triggers-goto','N:preparation','original-triggers','navigate',true],
   ['ground-triggers-project','N:preparation','original-triggers','evaluate',true],
   ['ground-settings-return','N:preparation','original-settings','navigate',true]
- ].map(([id,key,target,operation,preparation])=>({id:'future-baseline-'+id,key,actor:'publisher',target,operation,units:1,preparation}));
+ ].map(([id,key,target,operation,preparation],index)=>({id:'future-baseline-'+(actualBaselineIds?index+1:id),key,actor:'publisher',target,operation,units:1,preparation}));
  const first=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
- await assert.rejects(first.withContinuation(async cap=>{await cap.stagePublisher({stage:'baseline',stageCap:9,map:rows.map(row=>({...futureMeta(row),tabId:'current-tab'}))});throw Error('synthetic-before-debit');}),/TRIAL_STOPPED/);
+ const project={id:'future-baseline-original-project',bucket:'A',alias:'original-project',actor:'publisher',target:'original-project',operation:'GET',units:1};
+ const projectCleanup={id:'cleanup-original-project-prelude',key:'I:read-original-project',actor:'publisher',target:'original-project',operation:'snapshot',units:1,preparation:false};
+ const projectMap={lane:'main',descriptor:project,tabId:'current-tab',url:'https://synthetic.invalid/original-project',callback:'publisherOriginalProjectRead',receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[{lane:'ui',descriptor:projectCleanup,target:'original-project',tabId:'current-tab',url:'https://synthetic.invalid/original-project',callback:'publisherOriginalProjectPrelude',receipt:'SANITIZED_READ'}],repairIncident:null};
+ await assert.rejects(first.withContinuation(async cap=>{await cap.stagePublisher({stage:'baseline',stageCap:9,map:[...rows.map(row=>({...futureMeta(row),tabId:'current-tab'})),projectMap]});throw Error('synthetic-before-debit');}),/TRIAL_STOPPED/);
  const old=s.path+'.simple-publisher-native-successor',registry=join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.simple-rebalanced.json');
  assert(registry.startsWith(s.home+'/'));assert(s.path.startsWith(s.home+'/'));
  const origin=Object.fromEntries(Object.entries({journal:old+'.json',claim:old+'-claim.json',stop:old+'-stop.json',registry}).map(([key,path])=>[key,{path,sha256:hash(readFileSync(path))}]));
@@ -58,11 +61,12 @@ async function nativePredebitFixture(){
  const patched=join(testDir,'read-authority-publisher-alignment-budget.py');writeFileSync(patched,adapted,{mode:0o600});
  const controlPath=join(testDir,'read-authority-simple-control.mjs');writeFileSync(controlPath,readFileSync(resolve('scripts/read-authority-simple-control.mjs')),{mode:0o600});
  const config=structuredClone(s.cfg);config.sources=config.sources.map(pin=>pin.path===src?{path:patched,sha256:hash(readFileSync(patched))}:pin.path===resolve('scripts/read-authority-simple-control.mjs')?{path:controlPath,sha256:hash(readFileSync(controlPath))}:pin);
+ const publicSource=config.sources.find(pin=>pin.path===controlPath);assert(publicSource);
  config.resume={nativeSuccessor:true,predebitRecovery:recoverySpec};
  const {createAuthoritySimpleControl}=await import('file://'+controlPath);
  const create=cfg=>withTestHomedir(s.home,()=>createAuthoritySimpleControl({config:((({now,ownerNonce,...rest})=>rest))(cfg),guard:()=>{},assertStage:()=>{},now:()=>s.time,pause:async ms=>{s.time+=ms;},verifyNativeSuccessor:()=>closure.sha256}));
  const owner=create(config);
- return {standardEnv,s,closure,origin,stopped,config,create,owner,registry};
+ return {standardEnv,s,closure,origin,stopped,config,create,owner,registry,publicSource,projectMap};
 }
 
 const bootstrapRows=()=>[
@@ -71,6 +75,106 @@ const bootstrapRows=()=>[
  ['identity','evaluate','publisherBootstrapEvaluate']
 ].map(([name,operation,callback])=>({lane:'ui',descriptor:{id:'future-bootstrap-'+name,key:'N:preparation',actor:'publisher',target:'oauth-audience',operation,units:1,preparation:true},tabId:'current-tab',url:contract.audienceURL,callback,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null}));
 const bootstrapResult=index=>({source:'publisher-bootstrap-context-v1',kind:['BROWSER_BOUND','TAB_CLAIMED','AUDIENCE_CONTEXT'][index],browserId:'current-browser',...(index>0?{tabId:'current-tab'}:{}),...(index===2?{url:contract.audienceURL,projectHash:'b'.repeat(64),readyState:'COMPLETE',headingMatched:true,identityPending:true}:{}),fieldsRead:false});
+
+const nativeAKeys=['original-editor','original-versions','original-deployments','original-v1-content','original-container-acl'];
+const nativeAMap=(aliases,projectMap)=>aliases.map(alias=>{
+ const key=alias.startsWith('publisher-')?'P:':'A:';
+ const rule=SIMPLE_RULES[key+alias],descriptor={id:'future-'+alias,bucket:key[0],alias,actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1};
+ return {lane:'main',descriptor,tabId:projectMap.tabId,url:'https://synthetic.invalid/'+alias,callback:'publisherRead'+alias.replaceAll(/(^|-)([a-z])/g,(_,sep,ch)=>ch.toUpperCase()),receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null};
+});
+const nativeAProof=(phase,map,publicSource,projectMap,config,ownerHash,receipt=null)=>({source:'publisher-a-readonly-readiness-v1',phase,sourceSha256:publicSource.sha256,mapSha256:hash(compact(map)),epoch:config.epoch,binding:config.binding,ownerHash,originalProjectDescriptorSha256:hash(compact(projectMap.descriptor)),projectContextHash:'b'.repeat(64),publisherPrincipalSha256:contract.publisherHash,...(receipt?{projectReceiptSha256:hash(compact(receipt)),originalScriptIdSha256:receipt.originalScriptIdSha256,cloudProjectSlugSha256:receipt.cloudProjectSlugSha256,containerParentIdSha256:receipt.containerParentIdSha256}:{}),targetProofs:map.map(row=>({id:row.descriptor.id,urlSha256:hash(row.url),sameOriginalProject:true,readbackVerified:true,...(row.descriptor.alias==='original-container-acl'?{aclParentIdSha256:receipt.containerParentIdSha256}:{})}))});
+async function prepareNativeARegistration(cap,s){
+ const diagnostic=bootstrapRows();await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:diagnostic});
+ for(const [index,row] of diagnostic.entries())await cap.browserRead(()=>bootstrapResult(index),row.descriptor);
+ const baseline=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).publisherStages[0].map;
+ for(const index of [0,1,6,7,8]){
+  const row=baseline[index];await cap.browserRead(()=>index===0?{source:'publisher-baseline-navigation-v1',status:'AWAITING_NEXT_PROJECTION',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,fieldsRead:false}:index===1?{source:'publisher-baseline-identity-v1',status:'VERIFIED',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,projectHash:'b'.repeat(64),principalHash:contract.publisherHash,readyState:'COMPLETE',fieldsRead:false}:JSON.parse(snapshot),row.descriptor);
+ }
+ return baseline;
+}
+
+test('native preplan registers P2 and A6 in phases, with real charged receipts and no UI credit',async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0,step='start';
+ await owner.withContinuation(async cap=>{
+  step='diagnostic and baseline PREP';const baseline=await prepareNativeARegistration(cap,s);
+  const before=await cap.inspect();assert.equal(before.combinedSpent,136);assert.equal(before.phase,'PREP');assert.equal(before.w0,null);assert.equal(before.planReady,false);
+  const ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+  const pmap=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap);
+  step='first registration';const first=await cap.registerPublisherAReads({phase:'initial',map:pmap,proof:nativeAProof('initial',pmap,publicSource,projectMap,config,ownerHash)});
+  assert.equal(first.combinedSpent,136);assert.equal(first.mainSpent,53);assert.equal(first.uiSpent,83);assert.equal(first.planReady,false);
+  step='first A UI';await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
+  step='P refresh';const p=await cap.externalRead(()=>{callbacks++;return {source:'synthetic-refresh'};},pmap[0].descriptor);assert.equal(p.source,'synthetic-refresh');
+  step='P userinfo';await cap.externalRead(()=>{callbacks++;return {source:'synthetic-userinfo'};},pmap[1].descriptor);
+  const projectReceipt={source:'publisher-a-project-receipt-v1',status:'VERIFIED',sourceSha256:publicSource.sha256,projectContextHash:'b'.repeat(64),publisherPrincipalSha256:contract.publisherHash,originalScriptIdSha256:'1'.repeat(64),cloudProjectSlugSha256:'2'.repeat(64),containerParentIdSha256:'3'.repeat(64),projectReadbackSha256:'4'.repeat(64),fieldsRead:false};
+  step='A project';await cap.externalRead(()=>{callbacks++;return projectReceipt;},projectMap.descriptor);
+  const rest=nativeAMap(nativeAKeys,projectMap),proof=nativeAProof('remaining',rest,publicSource,projectMap,config,ownerHash,projectReceipt);
+  step='second registration';const second=await cap.registerPublisherAReads({phase:'remaining',map:rest,proof});assert.equal(second.planReady,false);
+  step='remaining A reads';for(const row of rest)await cap.externalRead(()=>{callbacks++;return {source:'synthetic-read'};},row.descriptor);
+  step='remaining baseline UI';for(const index of [3,4,5])await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[index].descriptor);
+  const done=await cap.inspect();assert.equal(done.mainSpent,61);assert.equal(done.uiSpent,87);assert.equal(done.combinedSpent,148);assert.equal(done.planReady,false);assert.equal(done.futureUiLimit,73);assert.equal(done.futureUiSpent,12);assert.equal(done.pending,null);
+  const journal=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+  const plan=completeNativePlan(),native=plan.browserOperations.slice(0,21),navigation=plan.browserOperations.slice(21,65),recovery=plan.browserOperations.slice(71);
+  plan.operations=plan.operations.map(row=>journal.stages[row.bucket+':'+row.alias]??row);
+  for(let index=0;index<native.length;index++){const mapped=baseline.find(meta=>meta.lane==='ui'&&meta.descriptor.key===native[index].key);if(mapped)native[index]=mapped.descriptor;}
+  navigation[0]=baseline[4].descriptor;
+  plan.browserOperations=[...native,...navigation,...recovery.map(row=>row.key==='I:read-original-project'?projectMap.cleanup[0].descriptor:row)];
+  step='complete plan';const planned=await cap.completePlan(plan);assert.equal(planned.planReady,true);assert.equal(planned.combinedSpent,148);
+ }).catch(error=>{const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));error.message+=' @'+step+' '+JSON.stringify({eventCount:j.events.length,pending:j.pending,phase:j.phase,w0:j.w0,last:j.events.at(-1)?.operation?.id,readiness:j.publisherAReadiness?.length,completed:j.completed?.slice(-3)});throw error;});
+ const journal=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,12);assert.equal(journal.plan!==null,true);assert.deepEqual(journal.publisherStages[0].map.at(-1),projectMap);assert.equal(journal.publisherStages[0].stageCap,9);assert.equal(journal.mutated,false);
+});
+
+for(const [kind,alter] of [
+ ['wrong phase',request=>({...request,phase:'remaining'})],
+ ['unpinned source',request=>({...request,proof:{...request.proof,sourceSha256:'f'.repeat(64)}})],
+ ['caller actor',request=>{const map=structuredClone(request.map);map[0].descriptor.actor='caller';return {...request,map,proof:{...request.proof,mapSha256:hash(compact(map))}};}],
+ ['wrong method',request=>{const map=structuredClone(request.map);map[0].descriptor.operation='DELETE';return {...request,map,proof:{...request.proof,mapSha256:hash(compact(map))}};}],
+ ['duplicate original project',request=>{const map=[...request.map,structuredClone(request.originalProject)];return {...request,map,proof:{...request.proof,mapSha256:hash(compact(map))}};}]
+])test(`native main-only readiness rejects ${kind} before any new callback`,async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  await prepareNativeARegistration(cap,s);
+  const ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+  const map=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap);
+  const request={phase:'initial',map,proof:nativeAProof('initial',map,publicSource,projectMap,config,ownerHash),originalProject:projectMap};
+  const bad=alter(request);delete bad.originalProject;
+  await cap.registerPublisherAReads(bad);callbacks++;
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,0);assert.equal(j.events.length,63);assert.equal(j.publisherStages.length,2);assert.equal(j.publisherAReadiness,undefined);assert.equal(j.plan,null);assert.equal(j.pending,null);
+});
+
+test('native readiness replay is refused with the initial map still intact',async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  await prepareNativeARegistration(cap,s);
+  const ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+  const map=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap),request={phase:'initial',map,proof:nativeAProof('initial',map,publicSource,projectMap,config,ownerHash)};
+  await cap.registerPublisherAReads(request);
+  await cap.registerPublisherAReads(request);callbacks++;
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,0);assert.equal(j.events.length,63);assert.equal(j.publisherAReadiness.length,1);assert.equal(j.plan,null);assert.equal(j.w0,null);
+});
+
+test('phase two refuses an ACL URL proof detached from the charged project parent receipt',async()=>{
+ const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
+ await assert.rejects(owner.withContinuation(async cap=>{
+  const baseline=await prepareNativeARegistration(cap,s),ownerHash=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).holder;
+  const pmap=nativeAMap(['publisher-refresh','publisher-userinfo'],projectMap);
+  await cap.registerPublisherAReads({phase:'initial',map:pmap,proof:nativeAProof('initial',pmap,publicSource,projectMap,config,ownerHash)});
+  await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
+  await cap.externalRead(()=>{callbacks++;return {source:'synthetic-refresh'};},pmap[0].descriptor);
+  await cap.externalRead(()=>{callbacks++;return {source:'synthetic-userinfo'};},pmap[1].descriptor);
+  const receipt={source:'publisher-a-project-receipt-v1',status:'VERIFIED',sourceSha256:publicSource.sha256,projectContextHash:'b'.repeat(64),publisherPrincipalSha256:contract.publisherHash,originalScriptIdSha256:'1'.repeat(64),cloudProjectSlugSha256:'2'.repeat(64),containerParentIdSha256:'3'.repeat(64),projectReadbackSha256:'4'.repeat(64),fieldsRead:false};
+  await cap.externalRead(()=>{callbacks++;return receipt;},projectMap.descriptor);
+  const map=nativeAMap(nativeAKeys,projectMap),proof=nativeAProof('remaining',map,publicSource,projectMap,config,ownerHash,receipt);
+  proof.targetProofs.at(-1).aclParentIdSha256='0'.repeat(64);
+  await cap.registerPublisherAReads({phase:'remaining',map,proof});callbacks++;
+ }),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.equal(callbacks,4);assert.equal(j.events.length,67);assert.equal(j.events.at(-1).key,'A:original-project');assert.equal(j.events.at(-1).settled,true);assert.equal(j.events.at(-1).success,true);assert.equal(j.publisherAReadiness.length,1);assert.equal(j.stages['A:original-container-acl'],undefined);assert.equal(j.pending,null);
+});
 
 test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through the real controller',async()=>{
  const {standardEnv,s,origin,stopped,config,create,owner,registry}=await nativePredebitFixture();
