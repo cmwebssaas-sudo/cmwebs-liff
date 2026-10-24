@@ -21,6 +21,33 @@ def repair_allowed(incidents,incident,used_for_incident,used_total):
 def stage_clock_valid(phase,w0):
  return phase=='PREP' and w0 is None or phase=='TRIAL' and type(w0)is int and w0>0
 
+def validate_stage_rows(q,plan,ids,main_keys,cleanup_ids,cleanup_keys,ui_cleanup,main_cleanup,g,fail):
+ exact=g['exact'];seen=set()
+ for m in q['map']:
+  if not exact(m,['lane','descriptor','tabId','url','callback','receipt','privacy','cleanup','repairIncident']) or m['lane']not in ['ui','main'] or type(m['descriptor'])is not dict or type(m['tabId'])is not str or not m['tabId'] or type(m['url'])is not str or not m['url'].startswith('https://') or type(m['callback'])is not str or not g['valid_id'](m['callback']) or m['receipt']not in ['SANITIZED_READ','EXACT_WRITE_READBACK'] or m['privacy']!='NO_SECRET_VALUES' or type(m['cleanup'])is not list or m['repairIncident'] is not None and (type(m['repairIncident'])is not int or m['repairIncident']not in [1,2]):fail()
+  op=m['descriptor'];g['descriptor'](op,m['lane'])
+  if plan is not None and (m['lane']=='main' and op not in plan['operations'] or m['lane']=='ui' and not op['preparation'] and op not in plan['browserOperations']):fail()
+  if not op['id'].startswith('future-') or op['id']in ids or op['id']in seen or op['id']in cleanup_ids or op['units']!=1 or g['descriptor'](op,m['lane']).startswith(('C:','I:','J:')):fail()
+  if m['lane']=='main':
+   key=op['bucket']+':'+op['alias']
+   if key in main_keys:fail()
+   main_keys.add(key)
+  if m['lane']=='ui' and op['actor']!=('caller'if op['target'].startswith('caller-')else'publisher') or m['repairIncident']is not None and (q['stage']!='diagnostic' or m['lane']!='ui' or op['preparation']is not True or op['operation']not in g['READ_METHODS']):fail()
+  writing=op.get('operation')not in g['READ_METHODS']+['GET','snapshot']
+  if writing and (not m['cleanup'] or m['receipt']!='EXACT_WRITE_READBACK') or not writing and m['receipt']!='SANITIZED_READ':fail()
+  for clean in m['cleanup']:
+   if not exact(clean,['lane','descriptor','target','tabId','url','callback','receipt']) or clean['lane']not in ['ui','main'] or type(clean['descriptor'])is not dict or clean['target']!=clean['descriptor'].get('target') or type(clean['tabId'])is not str or not clean['tabId'] or type(clean['url'])is not str or not clean['url'].startswith('https://') or not g['valid_id'](clean['callback']):fail()
+   key=g['descriptor'](clean['descriptor'],clean['lane']);method=clean['descriptor']['operation'];expected='SANITIZED_READ'if method in g['READ_METHODS']+['GET']else'EXACT_WRITE_READBACK'
+   if plan is not None and clean['descriptor'] not in plan['operations'if clean['lane']=='main'else'browserOperations']:fail()
+   if not key.startswith(('C:','I:','J:')) or clean['lane']=='main' and key in cleanup_keys or clean['receipt']!=expected or clean['descriptor']['id']in ids or clean['descriptor']['id']in seen or clean['descriptor']['id']in cleanup_ids:fail()
+   cleanup_ids.add(clean['descriptor']['id'])
+   if clean['lane']=='main':cleanup_keys.add(key)
+   if clean['lane']=='ui':ui_cleanup+=1
+   else:main_cleanup+=1
+  seen.add(op['id'])
+ if ui_cleanup>16 or main_cleanup>21:fail()
+ return ui_cleanup,main_cleanup
+
 def alignment_class(base):
  g=base.__init__.__globals__;fail=g['fail'];exact=g['exact'];pin=g['private_pin'];record=g['record'];rawfile=g['rawfile'];sha=g['sha'];save=g['save_record'];integer=g['integer']
  def pinned(v):
@@ -160,6 +187,7 @@ def alignment_class(base):
     if len(native)!=self.imported_delta or any(not exact(row,['spent','reservationSha256','settlementSha256','bookkeptAt','reservationAt','providerCallAt']) or row['spent']!=charge['spent'] or row['reservationSha256']!=charge['reservation']['sha256'] or row['settlementSha256']!=charge['settlement']['sha256'] or row['reservationAt']!=charge['reservationAt'] or row['providerCallAt'] is not None or not integer(row['bookkeptAt']) or not imported['lastAt']<=row['bookkeptAt']<=j['lastAt'] for row,charge in zip(native,charges)) or len({row['bookkeptAt']for row in native})!=1 or j.get('publisherImported')!=imported['publisherImported']:fail()
     stages=j.get('publisherStages',[])
     if len(stages)>1 or stages and (stages[0].get('stage')!='baseline' or not 6<=stages[0].get('stageCap',0)<=9 or sum(m.get('lane')=='ui'for m in stages[0].get('map',[]))!=stages[0]['stageCap'] or native_grounding_count(stages[0]['stageCap'],stages[0]['map'])!=stages[0]['stageCap']-6):fail()
+    if stages:validate_stage_rows(stages[0],None,{e['operation']['id']for e in imported['events']},set(imported['stages']),set(),set(),0,0,g,fail)
     mapped={m['descriptor']['id']:m['descriptor'] for stage in stages for m in stage['map'] if m['lane']=='ui' and m['descriptor']['preparation'] is True}
     extra=j['events'][55:];seen=set()
     last=imported['lastAt']
@@ -267,30 +295,8 @@ def alignment_class(base):
     if self.native_successor and index==5 and q['stageCap']>20-self.imported_delta:fail()
     cap=(9 if self.native_successor and index==0 else 20-self.imported_delta if q['stage']=='diagnostic' else FUTURE[index][1])+rollover
     if q['stageCap']>cap or used+q['stageCap']+future_minimum>self.future_limit() or self.future_spent()!=used or not prior_mapped<=complete or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
-    plan=self.j['plan'];ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']};seen=set();main_keys={m['descriptor']['bucket']+':'+m['descriptor']['alias']for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='main'}if plan is not None else set(self.j['stages']);cleanup_ids={c['descriptor']['id']for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']};cleanup_keys={g['descriptor'](c['descriptor'],c['lane'])for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']if c['lane']=='main'};ui_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='ui'])for st in self.j['publisherStages']for m in st['map']);main_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='main'])for st in self.j['publisherStages']for m in st['map'])
-    for m in q['map']:
-     if not exact(m,['lane','descriptor','tabId','url','callback','receipt','privacy','cleanup','repairIncident']) or m['lane']not in ['ui','main'] or type(m['descriptor'])is not dict or type(m['tabId'])is not str or not m['tabId'] or type(m['url'])is not str or not m['url'].startswith('https://') or type(m['callback'])is not str or not g['valid_id'](m['callback']) or m['receipt']not in ['SANITIZED_READ','EXACT_WRITE_READBACK'] or m['privacy']!='NO_SECRET_VALUES' or type(m['cleanup'])is not list or m['repairIncident'] is not None and (type(m['repairIncident'])is not int or m['repairIncident']not in [1,2]):fail()
-     op=m['descriptor'];g['descriptor'](op,m['lane'])
-     if plan is not None and (m['lane']=='main' and op not in plan['operations'] or m['lane']=='ui' and not op['preparation'] and op not in plan['browserOperations']):fail()
-     if not op['id'].startswith('future-') or op['id']in ids or op['id']in seen or op['id']in cleanup_ids or op['units']!=1 or g['descriptor'](op,m['lane']).startswith(('C:','I:','J:')):fail()
-     if m['lane']=='main':
-      key=op['bucket']+':'+op['alias']
-      if key in main_keys:fail()
-      main_keys.add(key)
-     if m['lane']=='ui' and op['actor']!=('caller'if op['target'].startswith('caller-')else'publisher') or m['repairIncident']is not None and (q['stage']!='diagnostic' or m['lane']!='ui' or op['preparation']is not True or op['operation']not in g['READ_METHODS']):fail()
-     writing=op.get('operation')not in g['READ_METHODS']+['GET','snapshot']
-     if writing and (not m['cleanup'] or m['receipt']!='EXACT_WRITE_READBACK') or not writing and m['receipt']!='SANITIZED_READ':fail()
-     for clean in m['cleanup']:
-      if not exact(clean,['lane','descriptor','target','tabId','url','callback','receipt']) or clean['lane']not in ['ui','main'] or type(clean['descriptor'])is not dict or clean['target']!=clean['descriptor'].get('target') or type(clean['tabId'])is not str or not clean['tabId'] or type(clean['url'])is not str or not clean['url'].startswith('https://') or not g['valid_id'](clean['callback']):fail()
-      key=g['descriptor'](clean['descriptor'],clean['lane']);method=clean['descriptor']['operation'];expected='SANITIZED_READ'if method in g['READ_METHODS']+['GET']else'EXACT_WRITE_READBACK'
-      if plan is not None and clean['descriptor'] not in plan['operations'if clean['lane']=='main'else'browserOperations']:fail()
-      if not key.startswith(('C:','I:','J:')) or clean['lane']=='main' and key in cleanup_keys or clean['receipt']!=expected or clean['descriptor']['id']in ids or clean['descriptor']['id']in seen or clean['descriptor']['id']in cleanup_ids:fail()
-      cleanup_ids.add(clean['descriptor']['id'])
-      if clean['lane']=='main':cleanup_keys.add(key)
-      if clean['lane']=='ui':ui_cleanup+=1
-      else:main_cleanup+=1
-     seen.add(op['id'])
-    if ui_cleanup>16 or main_cleanup>21:fail()
+    plan=self.j['plan'];ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']};main_keys={m['descriptor']['bucket']+':'+m['descriptor']['alias']for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='main'}if plan is not None else set(self.j['stages']);cleanup_ids={c['descriptor']['id']for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']};cleanup_keys={g['descriptor'](c['descriptor'],c['lane'])for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']if c['lane']=='main'};ui_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='ui'])for st in self.j['publisherStages']for m in st['map']);main_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='main'])for st in self.j['publisherStages']for m in st['map'])
+    validate_stage_rows(q,plan,ids,main_keys,cleanup_ids,cleanup_keys,ui_cleanup,main_cleanup,g,fail)
     if plan is not None:
      used_ids={e['operation']['id']for e in self.j['events']};unspent=sum(not row['key'].startswith(('C:','I:','J:')) and row['id']not in used_ids for row in plan['browserOperations']);new_prep=sum(m['lane']=='ui' and m['descriptor']['preparation'] for m in q['map'])
      if self.future_spent()+unspent+new_prep>self.future_limit():fail()

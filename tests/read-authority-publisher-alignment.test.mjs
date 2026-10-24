@@ -192,7 +192,8 @@ test('native PREP resume rejects forged or unsafe checkpoints before any callbac
   ['derived-preparation-stage',j=>{j.preparationStages['future-baseline-settings-goto'].remainingOrdinaryUi++;}],
   ['derived-stage-browser',j=>{j.stageBrowser.pop();}],
   ['derived-main-stage',j=>{j.stages['D:thin-properties-write'].id='forged-stage';}],
-  ['derived-recovery-map',j=>{j.recoveryBrowser.pop();}]
+  ['derived-recovery-map',j=>{j.recoveryBrowser.pop();}],
+  ['paired-stage-recovery-cleanup',j=>{const main=j.publisherStages[0].map.find(row=>row.lane==='main'&&row.descriptor.bucket==='D'&&row.descriptor.alias==='thin-properties-write');const removed=new Set(main.cleanup.map(row=>row.descriptor.id));main.cleanup=[];j.recoveryBrowser=j.recoveryBrowser.filter(row=>!removed.has(row.id));}]
  ]){
   const resume=forge(change),forged=Object.fromEntries([journal,claim,live.registry,receipt].map(path=>[path,readFileSync(path)]));
   await attempt(resume).catch(error=>{throw Error(`${name}: ${error.message}`);});
