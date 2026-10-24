@@ -2792,3 +2792,17 @@ not establish actual Google identity, privacy, callback destinations, source
 equality, quota or compatibility. No Apps Script, API, Schema or Worker source
 changed; cloud Apps Script functions are not applicable. Final composed-source
 CI/Core review and actual prestart evidence remain separate gates.
+
+## 2026-10-24 C3 exact SIMPLE credential-holder compatibility
+
+`tests/read-authority-trial-credentials.test.mjs` constructs both existing
+credential holders with the imported `SIMPLE_DECISION`. The publisher test uses
+the synthetic pinned grant fixture and checks one charged refresh and one
+charged same-token userinfo read. The native test checks distinct before/after
+caller and publisher reads, with one charge and fetch per operation. Old or
+mismatched controls stop before callback; arbitrary decisions, actor/scope
+mismatch and stale expiry remain denied. The pre-fix focused run failed three
+new cases at holder construction; the same file passed 31/31 after the narrow
+allowlist change. No actual credential, Google operation or production acceptance
+is established. No Apps Script function applies because no `.gs`, route or
+schema changed. Exact composed-head CI/Core review remains pending.
