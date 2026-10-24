@@ -143,18 +143,19 @@ test('CI readback retains late Node and workerd numeric timeline after eight ear
   const out=await readback(dir,frames);
   const trace=out.split('\n').filter(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE '))
     .map(s=>JSON.parse(s.slice('C6_WORKER_RESOURCE_TRACE '.length)));
-  assert.deepEqual(trace.filter(f=>f.pid>=220).map(f=>[f.seq,f.pid,f.comm_type,f.start_ticks,f.user_ticks,
-    f.rss_pages,f.wall_ms,f.cgroup.quota_us,f.cgroup.usage_usec]),
+  assert.deepEqual(trace.filter(f=>f.processes.some(p=>p.pid>=220)).map(f=>[
+    f.sample_index,f.processes[0].pid,f.processes[0].comm_type,f.processes[0].start_ticks,
+    f.processes[0].user_ticks,f.processes[0].rss_pages,f.wall_ms,f.cgroup.quota_us,f.cgroup.usage_usec]),
     [[10,220,'node',1220,12,210,105000,200000,1050],
       [11,221,'workerd',1221,13,211,105500,200000,1055]]);
-  assert.deepEqual(trace.map(f=>f.seq),[...trace.map(f=>f.seq)].sort((a,b)=>a-b));
+  assert.deepEqual(trace.map(f=>f.sample_index),[...trace.map(f=>f.sample_index)].sort((a,b)=>a-b));
   const meta=JSON.parse(out.split('\n').find(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE_META ')).slice('C6_WORKER_RESOURCE_TRACE_META '.length));
   assert.equal(meta.status,'COMPLETE');
   assert.equal(meta.input_samples,12);
   assert.equal(meta.invalid_records,0);
 }));
 
-test('CI readback caps earlier identities and marks malformed or omitted evidence explicitly', async () => fixture(async dir => {
+test('CI readback retains earlier identities and marks malformed evidence explicitly', async () => fixture(async dir => {
   const frames=Array.from({length:60},(_,i)=>numericFrame(i,100+i,'node'));
   frames.push('{"type":"sample","secret":"must-never-print"}',numericFrame(61,300,'workerd'));
   const out=await readback(dir,frames);
@@ -164,8 +165,9 @@ test('CI readback caps earlier identities and marks malformed or omitted evidenc
   const meta=JSON.parse(out.split('\n').find(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE_META ')).slice('C6_WORKER_RESOURCE_TRACE_META '.length));
   assert.equal(meta.status,'PARTIAL');
   assert.equal(meta.invalid_records,1);
-  assert.ok(meta.identities_evicted>0);
-  assert.ok(meta.output_dropped>=0);
+  assert.equal(meta.identities_evicted,0);
+  assert.equal(meta.retained_samples,61);
+  assert.equal(meta.output_dropped,1);
 }));
 
 test('CI readback does not call an empty resource trace complete', async () => fixture(async dir => {
@@ -173,4 +175,32 @@ test('CI readback does not call an empty resource trace complete', async () => f
   const meta=JSON.parse(out.split('\n').find(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE_META ')).slice('C6_WORKER_RESOURCE_TRACE_META '.length));
   assert.equal(meta.status,'NOT_COLLECTED');
   assert.equal(meta.retained_frames,0);
+}));
+
+test('CI readback retains every capacity sample before more than 48 later identities', async () => fixture(async dir => {
+  const frames=Array.from({length:10},(_,i)=>numericFrame(i,100+i,'node'));
+  for(let i=10;i<15;i++)frames.push(numericFrame(i,220,'workerd'));
+  for(let i=15;i<75;i++)frames.push(numericFrame(i,300+i,'node'));
+  const out=await readback(dir,frames);
+  const trace=out.split('\n').filter(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE '))
+    .map(s=>JSON.parse(s.slice('C6_WORKER_RESOURCE_TRACE '.length)));
+  assert.equal(trace.length,75);
+  assert.deepEqual(trace.filter(f=>f.processes?.some(p=>p.pid===220)).map(f=>[
+    f.sample_index,f.wall_ms,f.processes[0].user_ticks,f.processes[0].rss_pages,f.cgroup.usage_usec]),
+    [[10,105000,12,210,1050],[11,105500,13,211,1055],[12,106000,14,212,1060],
+      [13,106500,15,213,1065],[14,107000,16,214,1070]]);
+  const meta=JSON.parse(out.split('\n').find(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE_META ')).slice('C6_WORKER_RESOURCE_TRACE_META '.length));
+  assert.equal(meta.status,'COMPLETE');
+  assert.equal(meta.output_dropped,0);
+}));
+
+test('CI readback emits all collected valid frames even beyond the former 59 KiB trim', async () => fixture(async dir => {
+  const out=await readback(dir,Array.from({length:240},(_,i)=>numericFrame(i,400+i,'node')));
+  const trace=out.split('\n').filter(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE '));
+  assert.equal(trace.length,240);
+  assert.ok(Buffer.byteLength(out)>59000);
+  const meta=JSON.parse(out.split('\n').find(s=>s.startsWith('C6_WORKER_RESOURCE_TRACE_META ')).slice('C6_WORKER_RESOURCE_TRACE_META '.length));
+  assert.equal(meta.retained_samples,240);
+  assert.equal(meta.output_dropped,0);
+  assert.ok(Buffer.byteLength(out)<=meta.output_bound_bytes);
 }));

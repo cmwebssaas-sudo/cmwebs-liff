@@ -6,6 +6,13 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const INTERVAL_MS=500, MAX_MS=600_000, MAX_PROCESSES=32, MAX_BYTES=8*1024*1024;
+// A projected sample has at most 32 fixed-field processes. With safe-integer
+// decimal fields at their 16-digit maximum, its JSON is below 9 KiB; 10 KiB
+// leaves room for the sample index and all fixed cgroup fields. There are at
+// most 1201 producer samples. This bounds the complete log, without selection.
+const MAX_TRACE_SAMPLES=MAX_MS/INTERVAL_MS+1, MAX_TRACE_FRAME_BYTES=10_240;
+const TRACE_PREFIX='C6_WORKER_RESOURCE_TRACE ';
+const MAX_TRACE_OUTPUT_BYTES=MAX_TRACE_SAMPLES*(MAX_TRACE_FRAME_BYTES+Buffer.byteLength(TRACE_PREFIX+'\n'))+2048;
 const number=s=>{const n=Number(s);return /^\d+$/.test(String(s))&&Number.isSafeInteger(n)?n:null;};
 
 export function parseProcStat(line){
@@ -202,53 +209,51 @@ async function printSummary(path){
     const value=JSON.parse(lines.at(-1));
     if(value.type!=='summary'||!['STOPPED','SAMPLE_FAILURE','ROOT_REUSED','ROOT_UNAVAILABLE','TIME_LIMIT'].includes(value.status)||
       !['samples','dropped','invalid','missing','bytes','process_totals_dropped'].every(k=>safeCount(value[k])))throw Error('missing-summary');
-    const identities=new Map();let invalidRecords=0,inputSamples=0,identitiesEvicted=0;
+    let invalidRecords=0,inputSamples=0,retainedProcesses=0,outputDropped=0,outputBytes=0;
+    const output=[];
     for(let seq=0;seq<lines.length-1;seq++){
       let sample;
-      try{sample=JSON.parse(lines[seq]);}catch{invalidRecords++;continue;}
+      try{sample=JSON.parse(lines[seq]);}catch{invalidRecords++;outputDropped++;continue;}
       if(sample?.type!=='sample'||!safeCount(sample.wall_ms)||!safeCount(sample.elapsed_ms)||
         !['OK','ROOT_REUSED','ROOT_UNAVAILABLE'].includes(sample.owned_status)||
         !Array.isArray(sample.processes)||sample.processes.length>MAX_PROCESSES||
-        !safeCount(sample.available_parallelism)||sample.available_parallelism<1){invalidRecords++;continue;}
+        !safeCount(sample.available_parallelism)||sample.available_parallelism<1||
+        !['dropped','invalid','missing'].every(k=>safeCount(sample[k]))||
+        inputSamples>=MAX_TRACE_SAMPLES){invalidRecords++;outputDropped++;continue;}
       inputSamples++;
       const cgroup=projectCgroup(sample.cgroup);
-      if(!cgroup){invalidRecords++;continue;}
+      if(!cgroup){invalidRecords++;outputDropped++;continue;}
+      const processes=[];
       for(const p of sample.processes){
-        if(!['node','workerd'].includes(p?.comm_type))continue;
-        const delta=p.cpu_delta;
-        if(!['pid','ppid','start_ticks','user_ticks','system_ticks','rss_pages'].every(k=>safeCount(p[k]))||
+        const delta=p?.cpu_delta;
+        if(!['node','workerd','other'].includes(p?.comm_type)||
+          !['pid','ppid','start_ticks','user_ticks','system_ticks','rss_pages'].every(k=>safeCount(p[k]))||
           !['OK','NEW','PID_REUSED','INVALID'].includes(delta?.status)||
           (delta.status==='OK'?!safeCount(delta.ticks):delta.ticks!==null)){invalidRecords++;continue;}
-        const frame={seq,wall_ms:sample.wall_ms,elapsed_ms:sample.elapsed_ms,pid:p.pid,ppid:p.ppid,
-          start_ticks:p.start_ticks,comm_type:p.comm_type,user_ticks:p.user_ticks,
-          system_ticks:p.system_ticks,cpu_delta_status:delta.status,cpu_delta_ticks:delta.ticks,
-          rss_pages:p.rss_pages,cgroup,available_parallelism:sample.available_parallelism};
-        const key=p.pid+':'+p.start_ticks;
-        let retained=identities.get(key);
-        if(!retained){
-          if(identities.size>=48){identities.delete(identities.keys().next().value);identitiesEvicted++;}
-          retained={first:frame,last:frame,peakCpu:frame,peakRss:frame};identities.set(key,retained);
-        }else{
-          retained.last=frame;
-          if((delta.ticks??-1)>(retained.peakCpu.cpu_delta_ticks??-1))retained.peakCpu=frame;
-          if(p.rss_pages>retained.peakRss.rss_pages)retained.peakRss=frame;
-        }
+        if(p.comm_type==='other')continue;
+        processes.push({pid:p.pid,ppid:p.ppid,start_ticks:p.start_ticks,comm_type:p.comm_type,
+          user_ticks:p.user_ticks,system_ticks:p.system_ticks,rss_pages:p.rss_pages,
+          cpu_delta:{status:delta.status,ticks:delta.ticks}});
       }
+      const frame={type:'sample',sample_index:seq,wall_ms:sample.wall_ms,elapsed_ms:sample.elapsed_ms,
+        owned_status:sample.owned_status,processes,cgroup,
+        available_parallelism:sample.available_parallelism,dropped:sample.dropped,
+        invalid:sample.invalid,missing:sample.missing};
+      const line=TRACE_PREFIX+JSON.stringify(frame),size=Buffer.byteLength(line+'\n');
+      if(size>MAX_TRACE_FRAME_BYTES+Buffer.byteLength(TRACE_PREFIX+'\n')||
+        outputBytes+size>MAX_TRACE_OUTPUT_BYTES-2048){invalidRecords++;outputDropped++;continue;}
+      output.push(line);outputBytes+=size;retainedProcesses+=processes.length;
     }
-    const selected=new Map();
-    for(const item of identities.values())for(const frame of Object.values(item))selected.set(frame.seq+':'+frame.pid+':'+frame.start_ticks,frame);
-    const frames=[...selected.values()].sort((a,b)=>a.seq-b.seq||a.pid-b.pid);
-    const output=frames.map(frame=>'C6_WORKER_RESOURCE_TRACE '+JSON.stringify(frame));
-    let outputBytes=output.reduce((n,line)=>n+Buffer.byteLength(line+'\n'),0),outputDropped=0;
-    while(outputBytes>59_000){outputBytes-=Buffer.byteLength(output.shift()+'\n');outputDropped++;}
     for(const line of output)console.log(line);
-    const partial=invalidRecords>0||identitiesEvicted>0||outputDropped>0||value.dropped>0||value.invalid>0||
+    const partial=invalidRecords>0||outputDropped>0||value.dropped>0||value.invalid>0||
       value.missing>0||inputSamples!==value.samples;
     console.log('C6_WORKER_RESOURCE_TRACE_META '+JSON.stringify({status:partial?'PARTIAL':output.length?'COMPLETE':'NOT_COLLECTED',
       input_samples:inputSamples,source_samples:value.samples,invalid_records:invalidRecords,
       source_dropped:value.dropped,source_invalid:value.invalid,source_missing:value.missing,
-      identities_evicted:identitiesEvicted,output_dropped:outputDropped,retained_frames:output.length,
-      output_bytes:outputBytes,scope:'FIRST_LAST_PEAK_CPU_RSS_PER_RECENT_NODE_WORKER_IDENTITY'}));
+      identities_evicted:0,output_dropped:outputDropped,retained_frames:output.length,
+      retained_samples:output.length,retained_process_records:retainedProcesses,
+      output_bytes:outputBytes,output_bound_bytes:MAX_TRACE_OUTPUT_BYTES,
+      scope:'ALL_VALID_COLLECTED_NODE_WORKER_SAMPLES_IN_SOURCE_ORDER'}));
     console.log('C6_WORKER_RESOURCE_META '+JSON.stringify({status:value.status,samples:value.samples,
       dropped:value.dropped,invalid:value.invalid,missing:value.missing,bytes:value.bytes,
       process_totals_dropped:value.process_totals_dropped,

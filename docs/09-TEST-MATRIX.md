@@ -3975,3 +3975,15 @@ first-eight totals while leaving the original always-run Worker raw-log summary
 in its own subsequent step. Synthetic readback with ten earlier identities and
 late Node/workerd processes proves their PID/start-tick/CPU/RSS/wall/cgroup
 values remain visible; malformed and over-limit records are explicitly partial.
+
+Follow-up review found that the first/last/peak and 48-identity selection could
+still discard a capacity process before later tests ended. The CI resource
+readback now projects **every valid collected sample** in original order into
+typed numeric/enum frames, including all Node/workerd rows and cgroup status;
+it does not select identities or trim old frames. The producer's 1,201-sample,
+32-process and 8 MiB limits remain. Each projected frame is capped at 10,240
+bytes; fixed prefix plus 2,048 bytes metadata yields a derived output bound of
+12,331,514 bytes. Invalid/missing/source-dropped records are counted and
+cannot be called COMPLETE. Synthetic coverage retains five consecutive
+workerd samples before 60 later identities and 240 frames beyond the former
+59 KiB trim. This is a bounded diagnostic log, not route CPU attribution.
