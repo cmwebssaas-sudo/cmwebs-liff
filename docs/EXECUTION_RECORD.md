@@ -7123,3 +7123,31 @@ This is source-only diagnostic work. The retained Linux home p95 54.098968ms
 failure remains failed; physical cause and Production acceptance are unknown.
 Parent source review and one new exact-source CI remain pending. Revert the
 test-only source/doc changes for rollback; no runtime or data rollback applies.
+
+## 2026-10-24 C6 scoped D1 group merge source candidate
+
+Recommended gpt-6-sol/high for the deduplication/order and Workspace privacy
+boundary. The clean C2 base does not contain `read-dataset.js`; this narrow
+change therefore uses the existing isolated C6 source branch at `60b2f8f`,
+where the loader and strict acceptance fixture already exist. C2, C3, root WIP
+and the composed integration checkout remain untouched.
+
+The scoped loader retains its final per-table last-row-wins merge and skips
+only the preceding per-group merge. User lookup keeps its original behavior.
+The new overlapping legacy-scope exact-response test passed against the old
+source (equivalence characterization, no artificial RED). Node22 focused
+loader/access/index/source-order checks passed 13/13 with zero fail/cancel/skip
+after the change. Apps Script source and route/schema are unchanged; original
+GAS parity is exercised only through the synthetic oracle, not a live GAS run.
+The source-identity guard first failed because this Worker file is in its
+181-source snapshot. The repository generator updated only the comparison
+manifest and central comparison literal, leaving endpoint and flags unchanged.
+Node22 comparison identity test passed 1/1; `npm run validate` passed 72 backend
+files, 40 endpoint references, static cache checks and 181-source identity;
+diff check passed. No new real shadow observation epoch was started.
+No capacity benchmark, CI, provider operation, push, merge, deployment or
+Production action occurred. The retained composed properties p95
+50.8698140000015ms strict-50ms failure remains failed; source work reduction
+is not a measured latency cure. Independent source review and exact composed
+acceptance belong to the parent. Rollback is a reviewed revert of this scoped
+source/test/docs commit; no runtime/data rollback is involved.

@@ -209,6 +209,40 @@ test('batched scoped reads preserve source order and deduplication across multip
   } finally {await mf.dispose();}
 });
 
+test('overlapping legacy scope groups preserve tied source order, archived responses and foreign-parent exclusion',async()=>{
+  const input=richDataset();
+  const room=input.V2_rooms.find(row=>row.room_id==='SYNTHETIC_R2');
+  for(const [suffix,status] of [['A','active'],['B','archived']]) {
+    input.V2_rooms.push({...room,room_id:'SYNTHETIC_OVERLAP_R_'+suffix,room_name:'合成重疊'+suffix,
+      workspace_id:'',landlord_id:'SYNTHETIC_L1',property_id:'SYNTHETIC_P1',account_status:status});
+  }
+  input.V2_rooms.push({...room,room_id:'SYNTHETIC_OVERLAP_FOREIGN',workspace_id:'',
+    landlord_id:'SYNTHETIC_L1',property_id:'SYNTHETIC_PX',room_name:'外部父物件'});
+  const {mf,db}=await setup(input);
+  try {
+    for(const suffix of ['A','B']) await db.prepare('UPDATE V2_rooms SET replica_source_row=? WHERE row_key=?')
+      .bind(JSON.stringify(100),'SYNTHETIC_OVERLAP_R_'+suffix).run();
+    const inspected=await (await mf.dispatchFetch('https://local.test/inspect')).json();
+    assert.ok(inspected.dataset);
+    assert.deepEqual(inspected.dataset.V2_rooms.map(row=>row.room_id),[
+      'SYNTHETIC_R1','SYNTHETIC_R2','SYNTHETIC_R3','SYNTHETIC_RA',
+      'SYNTHETIC_OVERLAP_R_A','SYNTHETIC_OVERLAP_R_B'
+    ]);
+    assert.ok(!JSON.stringify(inspected.dataset).includes('SYNTHETIC_OVERLAP_FOREIGN'));
+    const gas=originalGas(input);
+    for(const includeArchived of [false,true]) for(const [route,fn] of [
+      ['rooms','getLandlordRoomCenterInitByLineUid_'],
+      ['properties','getLandlordPropertiesInitByLineUid_']
+    ]) {
+      const response=await mf.dispatchFetch('https://local.test/v1/'+route+'?include_archived='+(includeArchived?'1':'0'));
+      assert.equal(response.status,200,route+' include_archived='+includeArchived);
+      const body=await response.text();
+      assert.equal(body,JSON.stringify(plain(gas[fn]('SYNTHETIC_LINE1',includeArchived))),route+' exact response');
+      assert.doesNotMatch(body,/SYNTHETIC_OVERLAP_FOREIGN|SYNTHETIC_PRIVATE_/);
+    }
+  } finally {await mf.dispose();}
+});
+
 test('failed or undecodable scoped batch returns no partial operational response',async()=>{
   const {mf,db}=await setup(richDataset());
   try {
