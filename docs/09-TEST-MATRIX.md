@@ -4337,3 +4337,11 @@ retain their checks. These tests use local synthetic callbacks and pinned fixtur
 data; actual browser, provider, canonical ledger, private parent resume gate,
 source equality and production acceptance remain separate. No Apps Script test
 function applies because no `.gs`, API route or Schema changed.
+
+## 2026-10-24 — CI source checkout selection
+
+Both rental acceptance jobs check out the immutable pull-request head SHA, with
+the immutable push SHA as fallback. This keeps source-identity checks aligned
+with the selected source on both supported event types. Local YAML parsing,
+ref/event assertions, validation and diff checks are configuration checks;
+reviewed source must still receive a complete CI run before acceptance.

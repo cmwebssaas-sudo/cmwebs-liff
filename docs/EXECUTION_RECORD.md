@@ -7884,3 +7884,15 @@ does not constitute the private parent/retainer adaptation or actual browser,
 provider, canonical ledger, Worker, production or release acceptance. No Apps
 Script function applies. Rollback is a reviewed source revert before use; any
 later actual charges or STOP records must remain intact.
+
+## 2026-10-24 — Acceptance CI exact source checkout
+
+The `rental` and `read-worker` jobs in `.github/workflows/rental-unit.yml` now
+select `github.event.pull_request.head.sha` for pull requests and `github.sha`
+for pushes. This aligns the checked-out source with the immutable event source
+used by exact-source acceptance. Event kinds, permissions, tests, thresholds,
+dry-run behavior, and remaining steps are unchanged. Local parsing, source-ref
+assertions, `npm run validate`, and `git diff --check` do not establish an
+Actions result; the reviewed committed source still requires a complete CI run.
+No Production or provider action occurred. Rollback is a reviewed revert of
+this workflow/documentation commit; no runtime or data rollback applies.
