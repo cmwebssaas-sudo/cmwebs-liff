@@ -7151,3 +7151,15 @@ Production action occurred. The retained composed properties p95
 is not a measured latency cure. Independent source review and exact composed
 acceptance belong to the parent. Rollback is a reviewed revert of this scoped
 source/test/docs commit; no runtime/data rollback is involved.
+
+## 2026-10-24 — Acceptance CI exact source checkout
+
+The `rental` and `read-worker` jobs in `.github/workflows/rental-unit.yml` now
+select `github.event.pull_request.head.sha` for pull requests and `github.sha`
+for pushes. This aligns the checked-out source with the immutable event source
+used by exact-source acceptance. Event kinds, permissions, tests, thresholds,
+dry-run behavior, and remaining steps are unchanged. Local parsing, source-ref
+assertions, `npm run validate`, and `git diff --check` do not establish an
+Actions result; the reviewed committed source still requires a complete CI run.
+No Production or provider action occurred. Rollback is a reviewed revert of
+this workflow/documentation commit; no runtime or data rollback applies.

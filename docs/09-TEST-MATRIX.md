@@ -3929,3 +3929,11 @@ literal; the endpoint and route flags stayed unchanged. Node22 comparison
 identity regression passed 1/1, `npm run validate` passed 72 backend parses,
 40 endpoint references, static cache checks and 181-source identity; diff
 check passed. A new real shadow observation epoch is required before rollout.
+
+## 2026-10-24 — CI source checkout selection
+
+Both rental acceptance jobs check out the immutable pull-request head SHA, with
+the immutable push SHA as fallback. This keeps source-identity checks aligned
+with the selected source on both supported event types. Local YAML parsing,
+ref/event assertions, validation and diff checks are configuration checks;
+reviewed source must still receive a complete CI run before acceptance.
