@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {PUBLISHER_ALIGNMENT_DECISION,createAuthorityPublisherAlignmentFlow} from '../scripts/read-authority-publisher-alignment.mjs';
 import {alignmentFixture,holder,alignment,changePin} from './fixtures/read-authority/publisher-alignment.mjs';
-import {readFileSync,existsSync} from 'node:fs';
+import {readFileSync,existsSync,unlinkSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {join} from 'node:path';
 import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
@@ -37,6 +37,40 @@ const nativePlanRows=()=>SIMPLE_NATIVE.map((key,index)=>{const rule=SIMPLE_RULES
 const recoveryPlanRows=()=>Object.entries(SIMPLE_RULES).filter(([key,rule])=>(key.startsWith('I:')||key.startsWith('J:'))&&!rule.methods.some(method=>['POST','PUT','PATCH','DELETE'].includes(method))).map(([key,rule],index)=>({id:`native-recovery-${index}`,key,actor:rule.actor,target:rule.target,operation:rule.methods.some(method=>['click','fill'].includes(method))?rule.methods[0]:'snapshot',units:1,preparation:false}));
 const completeNativePlan=()=>({operations:fullFixedPlan().map(row=>['P:publisher-refresh','P:publisher-userinfo','B:fixture-import'].includes(row.bucket+':'+row.alias)?{...row,id:'future-'+row.alias}:row),browserOperations:[...nativePlanRows(),...Array.from({length:50},(_,index)=>({id:`future-navigation-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false})),...recoveryPlanRows()]});
 const futureMeta=(descriptor,cleanup=[])=>({lane:'ui',descriptor,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:descriptor.id,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup,repairIncident:null});
+
+async function nativePrepPauseFixture(extra=0,prePauseExtra=0){
+ const {s,closure,origin,live}=await nativeSuccessorFixture();
+ const descriptors=[
+  {id:'future-baseline-settings-goto',key:'N:preparation',actor:'publisher',target:'original-settings',operation:'navigate',units:1,preparation:true},
+  {id:'future-baseline-settings-project',key:'N:preparation',actor:'publisher',target:'original-settings',operation:'evaluate',units:1,preparation:true},
+  {id:'future-baseline-cloud',key:'A:original-cloud-backup',actor:'publisher',target:'original-settings',operation:'snapshot',units:1,preparation:false},
+  {id:'future-baseline-properties',key:'A:original-properties-backup',actor:'publisher',target:'original-settings',operation:'read-key-presence',units:1,preparation:false},
+  {id:'future-baseline-triggers-goto',key:'N:navigation',actor:'publisher',target:'original-triggers',operation:'navigate',units:1,preparation:false},
+  {id:'future-baseline-triggers-read',key:'A:original-triggers-backup',actor:'publisher',target:'original-triggers',operation:'snapshot',units:1,preparation:false}
+ ];
+ const write={...fullFixedPlan().find(row=>row.bucket==='D'&&row.alias==='thin-properties-write'),id:'future-baseline-thin-properties-write'};
+ const recovery={id:'cleanup-baseline-thin-guard',key:'I:restore-thin-guard',actor:'publisher',target:'thin-settings',operation:'click',units:1,preparation:false};
+ const cleanup={lane:'ui',descriptor:recovery,target:'thin-settings',tabId:'synthetic-tab',url:'https://synthetic.invalid/thin-settings',callback:recovery.id,receipt:'EXACT_WRITE_READBACK'};
+ const recoveryRead={id:'cleanup-baseline-read-original-triggers',key:'I:read-original-triggers',actor:'publisher',target:'original-triggers',operation:'snapshot',units:1,preparation:false};
+ const cleanupRead={lane:'ui',descriptor:recoveryRead,target:'original-triggers',tabId:'synthetic-tab',url:'https://synthetic.invalid/original-triggers',callback:recoveryRead.id,receipt:'SANITIZED_READ'};
+ const more=[
+  {id:'future-baseline-original-triggers-goto',key:'N:preparation',actor:'publisher',target:'original-triggers',operation:'navigate',units:1,preparation:true},
+  {id:'future-baseline-original-triggers-project',key:'N:preparation',actor:'publisher',target:'original-triggers',operation:'evaluate',units:1,preparation:true},
+  {id:'future-baseline-original-settings-return',key:'N:preparation',actor:'publisher',target:'original-settings',operation:'navigate',units:1,preparation:true}
+ ].slice(0,extra);
+ const map=[...descriptors.concat(more).map(row=>futureMeta(row)),{...futureMeta(write,[cleanup,cleanupRead]),lane:'main',receipt:'EXACT_WRITE_READBACK'}];
+ const owner=holder(s,{resume:{nativeSuccessor:true}},p=>{if(p.stage==='loading-result'){assert([descriptors[1].id,more[1]?.id].includes(p.operation.id));assert.equal(p.result.accountVerified,true);}},()=>closure.sha256);
+ let callbacks=0,phase='start';
+ try{await owner.withContinuation(async cap=>{
+  phase='stage';await cap.stagePublisher({stage:'baseline',stageCap:6+extra,map});
+  phase='goto';await cap.browserRead(()=>{callbacks++;return {kind:'synthetic-goto'};},descriptors[0]);
+  phase='projection';await cap.browserRead(()=>{callbacks++;return {accountVerified:true,fieldsRead:false};},descriptors[1]);
+  for(const row of more.slice(0,prePauseExtra)){phase=row.id;await cap.browserRead(()=>{callbacks++;return row.operation==='evaluate'?{accountVerified:true,fieldsRead:false}:{kind:'synthetic-goto'};},row);}
+  phase='pause';const paused=await cap.pausePreparation();assert.equal(paused.lifecycle,'CLEAN_PAUSE');
+ });}catch(error){const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));throw Error(`prep ${phase}: ${error.message}; events=${j.events.length}; pending=${j.pending}; last=${JSON.stringify(j.events.at(-1))}`);}
+ assert.equal(callbacks,2+prePauseExtra);
+ return {s,closure,origin,live,descriptors,more,map,owner,handoff:owner.preparationHandoff(),recoveryRead};
+}
 
 function forwardJourneyPlan(){
  const operations=fullFixedPlan().map(row=>({...row,id:'future-main-'+row.bucket+'-'+row.alias}));
@@ -101,12 +135,110 @@ async function runNativeForwardJourney(unknownH=false){
 test('native 128 full forward journey debits one H and finishes after independent readbacks',()=>runNativeForwardJourney());
 test('unknown native H never replays, allows exact terminal reads and independent cleanup',()=>runNativeForwardJourney(true));
 
+test('native 128 PREP pause resumes from its latest genuine holder receipt without replay',async()=>{
+ const {s,closure,origin,map,owner,handoff}=await nativePrepPauseFixture(),originBytes=readFileSync(origin.journal.path);
+ const paused=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.equal(handoff.minimumEvents,57);assert.equal(paused.events.length,57);assert.equal(paused.lifecycle,'CLEAN_PAUSE');assert.equal(paused.phase,'PREP');assert.equal(paused.w0,null);assert.equal(paused.expiresAt,null);assert.equal(paused.pending,null);
+ assert.equal(paused.events.slice(-2).every(e=>e.settled===true&&e.success===true),true);
+ assert.equal(paused.events.filter(e=>e.lane==='main').length,0);assert.equal(paused.publisherStages[0].stageCap,6);assert.equal(paused.publisherStages[0].map.length,map.length);
+ s.time+=1000;const resumed=holder(s,{resume:{nativeSuccessor:true,...handoff}},()=>{},()=>closure.sha256);
+ let resumePhase='start';try{await resumed.withContinuation(async cap=>{
+  resumePhase='inspect';
+  const v=await cap.inspect();assert.equal(v.combinedSpent,130);assert.equal(v.mainSpent,53);assert.equal(v.uiSpent,77);assert.equal(v.w0,null);assert.equal(v.pending,null);assert.equal(v.rpc.beganAt,null);assert.equal(v.planReady,false);
+  resumePhase='pause';await cap.pausePreparation();
+ });}catch(error){const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));throw Error(`resume ${resumePhase}: ${error.message}; holders=${j.holders.length}; lifecycle=${j.lifecycle}; events=${j.events.length}`);}
+ assert.equal(owner.preparationHandoff().receipt.sha256,handoff.receipt.sha256);
+ const after=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.deepEqual(after.events,paused.events);assert.equal(after.publisherStages[0].stageCap,6);assert.equal(after.holders.length,paused.holders.length+1);
+ assert.equal(after.connection.sourceChain.length,paused.connection.sourceChain.length+1);
+ assert(readFileSync(origin.journal.path).equals(originBytes));
+ let staleCalls=0;await assert.rejects(holder(s,{resume:{nativeSuccessor:true,...handoff}},()=>{},()=>closure.sha256).withContinuation(()=>{staleCalls++;}),/TRIAL_STOPPED/);assert.equal(staleCalls,0);
+ const latest=resumed.preparationHandoff();s.time+=1000;const third=holder(s,{resume:{nativeSuccessor:true,...latest}},()=>{},()=>closure.sha256);
+ await third.withContinuation(async cap=>{const v=await cap.inspect();assert.equal(v.combinedSpent,130);assert.equal(v.pending,null);await cap.pausePreparation();});
+ const again=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.deepEqual(again.events,paused.events);assert.equal(again.holders.length,paused.holders.length+2);
+});
+
+test('native PREP resume rejects forged or unsafe checkpoints before any callback',async()=>{
+ const {s,closure,origin,live,handoff}=await nativePrepPauseFixture();s.time+=1000;
+ const journal=s.path+'.simple-publisher-native-successor.json',claim=s.path+'.simple-publisher-native-successor-claim.json',receipt=handoff.receipt.path;
+ const originals=Object.fromEntries([journal,claim,live.registry,receipt].map(path=>[path,readFileSync(path)]));let callbacks=0;
+ const attempt=async resume=>{await assert.rejects(holder(s,{resume},()=>{},()=>closure.sha256).withContinuation(()=>{callbacks++;}),/TRIAL_STOPPED/);assert.equal(callbacks,0);};
+ const intact=()=>{for(const [path,bytes] of Object.entries(originals))assert(readFileSync(path).equals(bytes),path);};
+ await attempt({nativeSuccessor:true,receipt:{...handoff.receipt,sha256:'0'.repeat(64)},minimumEvents:handoff.minimumEvents});intact();
+ await attempt({nativeSuccessor:true,...handoff,minimumEvents:handoff.minimumEvents-1});intact();
+ await attempt({nativeSuccessor:true});intact();
+ await assert.rejects(holder(s,{epoch:{...s.cfg.epoch,foreignCheckpoint:true},resume:{nativeSuccessor:true,...handoff}},()=>{},()=>closure.sha256).withContinuation(()=>{callbacks++;}),/TRIAL_STOPPED/);assert.equal(callbacks,0);intact();
+ assert.throws(()=>holder(s,{resume:{nativeSuccessor:true,...handoff,minimumEvents:'57'}},()=>{},()=>closure.sha256),/TRIAL_STOPPED/);intact();
+ s.put(live.registry,Buffer.concat([originals[live.registry],Buffer.from(' ')]));try{await attempt({nativeSuccessor:true,...handoff});}finally{s.put(live.registry,originals[live.registry]);}intact();
+ const forge=change=>{
+  const j=JSON.parse(originals[journal]);change(j);s.put(journal,compact(j));
+  const reg=JSON.parse(originals[live.registry]),value={...reg.value,checkpoint:j};s.put(live.registry,compact({value,sha256:hash(compact(value))}));
+  const r=JSON.parse(originals[receipt]);r.journalSha256=hash(readFileSync(journal));r.registrySha256=hash(readFileSync(live.registry));s.put(receipt,compact(r));
+  return {nativeSuccessor:true,receipt:{path:receipt,sha256:hash(readFileSync(receipt))},minimumEvents:j.events.length};
+ };
+ for(const [name,change] of [
+  ['pending',j=>{j.pending='future-baseline-settings-project';}],
+  ['failed',j=>{j.events.at(-1).success=false;}],
+  ['unsettled',j=>{j.events.at(-1).settled=false;}],
+  ['trial',j=>{j.phase='TRIAL';}],
+  ['w0',j=>{j.w0=s.time;}],
+  ['rpc',j=>{j.rpc.beganAt=s.time;}],
+  ['stopped',j=>{j.lifecycle='HARD_STOP';j.state='stopped';}],
+  ['owner-hash',j=>{j.holder='0'.repeat(64);}],
+  ['source-chain',j=>{j.connection.sourceChain.push({identitySha256:'0'.repeat(64),sources:[]});}],
+  ['imported-connection-used',j=>{j.connection.used++;}],
+  ['imported-loading-used',j=>{j.loading.used++;}],
+  ['imported-holders-prefix',j=>{j.holders[0]='0'.repeat(64);}],
+  ['derived-preparation-stage',j=>{j.preparationStages['future-baseline-settings-goto'].remainingOrdinaryUi++;}],
+  ['derived-stage-browser',j=>{j.stageBrowser.pop();}],
+  ['derived-main-stage',j=>{j.stages['D:thin-properties-write'].id='forged-stage';}],
+  ['derived-recovery-map',j=>{j.recoveryBrowser.pop();}],
+  ['paired-stage-recovery-cleanup',j=>{const main=j.publisherStages[0].map.find(row=>row.lane==='main'&&row.descriptor.bucket==='D'&&row.descriptor.alias==='thin-properties-write');const removed=new Set(main.cleanup.map(row=>row.descriptor.id));main.cleanup=[];j.recoveryBrowser=j.recoveryBrowser.filter(row=>!removed.has(row.id));}]
+ ]){
+  const resume=forge(change),forged=Object.fromEntries([journal,claim,live.registry,receipt].map(path=>[path,readFileSync(path)]));
+  await attempt(resume).catch(error=>{throw Error(`${name}: ${error.message}`);});
+  for(const [path,bytes] of Object.entries(forged))assert(readFileSync(path).equals(bytes),`${name}: ${path} changed before rejection`);
+  for(const [path,bytes] of Object.entries(originals))s.put(path,bytes);intact();
+ }
+ s.put(live.stop,compact({source:'synthetic-stop'}));try{await attempt({nativeSuccessor:true,...handoff});}finally{unlinkSync(live.stop);}intact();
+ const originBytes=readFileSync(origin.journal.path);s.put(origin.journal.path,Buffer.concat([originBytes,Buffer.from(' ')]));try{await attempt({nativeSuccessor:true,...handoff});}finally{s.put(origin.journal.path,originBytes);}intact();
+});
+
+test('native baseline cap nine maps and charges exactly three original-target PREP grounding rows',async()=>{
+ const {s,closure,more,map,handoff}=await nativePrepPauseFixture(3,2);let callbacks=0;
+ assert.equal(map.filter(row=>row.lane==='ui').length,9);
+ assert.equal(handoff.minimumEvents,59);
+ s.time+=1000;const resumed=holder(s,{resume:{nativeSuccessor:true,...handoff}},p=>{if(p.stage==='loading-result')assert.equal(p.result.accountVerified,true);},()=>closure.sha256);
+ await resumed.withContinuation(async cap=>{
+  const before=await cap.inspect();assert.equal(before.combinedSpent,132);assert.equal(before.futureUiLimit,73);assert.equal(before.futureUiSpent,4);assert.equal(before.w0,null);
+  for(const row of more.slice(2))await cap.browserRead(()=>{callbacks++;return {kind:'synthetic-goto'};},row);
+  const after=await cap.inspect();assert.equal(after.combinedSpent,133);assert.equal(after.uiSpent,80);assert.equal(after.mainSpent,53);assert.equal(after.w0,null);assert.equal(after.pending,null);
+  await cap.pausePreparation();
+ });
+ assert.equal(callbacks,1);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.equal(j.publisherStages[0].stageCap,9);assert.deepEqual(j.events.slice(-3).map(e=>e.operation.id),more.map(row=>row.id));assert(j.events.slice(-3).every(e=>e.settled&&e.success));
+});
+
+test('native baseline grounding validator keeps exact six through nine shapes and rejects drift',()=>{
+ const code=`import runpy,json,copy\nm=runpy.run_path('scripts/read-authority-publisher-alignment-budget.py');f=m['native_grounding_count'];shapes=m['NATIVE_BASELINE']+m['NATIVE_GROUNDING'];rows=[{'lane':'ui','descriptor':{'key':key,'target':target,'operation':method,'preparation':prep,'actor':'publisher','units':1}} for key,target,method,prep in shapes]\nout=[f(n,rows[:n]) for n in range(6,10)]\nsnap=copy.deepcopy(rows);snap[7]['descriptor']['operation']='snapshot';out.append(f(9,snap))\nfor index,key,value in [(6,'actor','caller'),(7,'target','oauth-audience'),(8,'key','N:navigation'),(8,'operation','click'),(8,'preparation',False),(2,'target','thin-settings')]:\n x=copy.deepcopy(rows);x[index]['descriptor'][key]=value;out.append(f(9,x))\nout.extend([f(9,rows[:8]),f(10,rows+[rows[0]]),f(5,rows[:5])]);print(json.dumps(out))`;
+ const result=spawnSync('python3',['-c',code],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);assert.deepEqual(JSON.parse(result.stdout),[0,1,2,3,3,...Array(9).fill(-1)]);
+});
+
+test('resumed native owner denies unmapped A then independently charges one readonly cleanup alias',async()=>{
+ const {s,closure,live,handoff,recoveryRead}=await nativePrepPauseFixture();s.time+=1000;
+ const resumed=holder(s,{resume:{nativeSuccessor:true,...handoff}},()=>{},()=>closure.sha256);let calls=0,ordinaryCalls=0;
+ await assert.rejects(resumed.withContinuation(async cap=>{const before=await cap.inspect();assert.equal(before.combinedSpent,130);await cap.externalRead(()=>{ordinaryCalls++;},{...fullFixedPlan().find(row=>row.bucket==='A'&&row.alias==='original-cloud-backup'),id:'future-unmapped-A'});}),/TRIAL_STOPPED/);assert.equal(ordinaryCalls,0);
+ await resumed.withCleanup(async cap=>{const before=await cap.inspect();assert.equal(before.combinedSpent,130);await cap.browserRead(()=>{calls++;return {kind:'synthetic-read'};},recoveryRead);const after=await cap.inspect();assert.equal(after.combinedSpent,131);assert.equal(after.uiCleanup,1);assert.equal(after.pending,null);});
+ assert.equal(calls,1);
+ const j=JSON.parse(readFileSync(live.registry)).value.checkpoint;assert.equal(j.events.at(-1).operation.id,recoveryRead.id);assert.equal(j.events.at(-1).cleanup,true);assert.equal(j.events.at(-1).success,true);
+});
+
 test('native rollover refuses overflow and an unfinished prior mapped row',async()=>{
  const row=index=>futureMeta({id:`future-rollover-${index}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true});
  for(const mode of ['overflow','unfinished']){
   const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);let calls=0;
   await assert.rejects(owner.withContinuation(async cap=>{
-   if(mode==='overflow')await cap.stagePublisher({stage:'baseline',stageCap:7,map:Array.from({length:7},(_,index)=>row(index))});
+   if(mode==='overflow')await cap.stagePublisher({stage:'baseline',stageCap:10,map:Array.from({length:10},(_,index)=>row(index))});
    else {await cap.stagePublisher({stage:'baseline',stageCap:6,map:Array.from({length:6},(_,index)=>row(index))});await cap.stagePublisher({stage:'thin',stageCap:1,map:[row(6)]});}
    calls++;
   }),/TRIAL_STOPPED/,mode);
