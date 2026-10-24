@@ -7789,3 +7789,42 @@ Production action occurred. The retained composed properties p95
 is not a measured latency cure. Independent source review and exact composed
 acceptance belong to the parent. Rollback is a reviewed revert of this scoped
 source/test/docs commit; no runtime/data rollback is involved.
+## 2026-10-24 C3 first publisher plan registration source repair
+
+The publisher alignment controller previously rejected its first `plan-ready` request while the journal still had no plan. A local synthetic native successor regression now exercises the actual ledger and holder boundary: the first complete validated plan is permitted only after publisher preparation, valid PREP/TRIAL clock state, settled events, no pending operation and no prior RPC. The inherited full-map and budget checks still decide whether the plan is valid. Missing native aliases and duplicate plans remain rejected, as do premature RPC calls.
+
+The controller view now exposes the inherited `trial_map_ready()` result as `trialMapReady`. This reports staged readiness without setting or bypassing `planReady`; a synthetic stage with mapped main and UI recovery proves the distinction before a full plan. Later publisher stages must match already declared main, UI and recovery descriptors, and extra preparation reads must fit remaining reserved UI capacity. The existing stage caps and historical charges are unchanged.
+
+This is a local source and synthetic regression correction only. No provider action, actual canonical journal write, trial clock, RPC, Apps Script route, schema, Production deployment or acceptance is claimed. Review, exact-source CI, private source packaging and separate actual admission gates remain open. Rollback is a reviewed revert of this source repair before use; retain every historical STOP and charge.
+
+The follow-up source repair requires an exact admitted publisher stage for each
+ordinary main debit, including a staged write's already validated independent
+cleanup metadata. This closes the post-plan gap without requiring a provider
+call before plan registration. The fixed UI policy now rejects undeclared
+write methods in both JS and Python parsers; readonly projections remain
+available. Local synthetic regression tests and validation are source evidence
+only. The unconditional H gate and later conditional terminal-stage sequencing
+remain for the separate forward-journey review; no actual operation was run.
+
+## 2026-10-24 C3 native publisher full forward protocol candidate
+
+The native successor's single H now reaches the inherited complete-plan,
+pre-H completion, clock, rate, credential freshness, debit and one-RPC checks;
+the preparation-only predecessor keeps its H refusal. A successful native path
+may advance past predeclared conditional T rows without spending them. The
+selected baseline remains six UI primitives, while subsequent stages may use
+fewer than their initial allocations and apply the existing rollover, future
+minimum, actual map count and recovery ceilings. No total, failure or trial
+window allowance changes.
+
+A local synthetic journey drives the real holder and Python ledger from a
+settled 128 bootstrap through the complete fixed/native map, one prepaid H,
+separate after readbacks and completed RPC. An unknown H remains spent and
+stopped, allows only its staged terminal reads, blocks replay and retains the
+same owner's independent cleanup. Source tests do not prove actual browser
+identity, Google privacy, callback mapping, quota, compatibility or release
+acceptance. No actual provider or canonical journal operation, Apps Script,
+API, Schema, Worker, push, merge or deployment is part of this source task.
+Parent review, exact-head CI/Core and private prestart gates remain pending.
+Rollback is a reviewed source revert before use; any future spent H, UNKNOWN,
+STOP and cleanup record must remain intact.

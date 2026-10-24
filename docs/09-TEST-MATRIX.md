@@ -4257,3 +4257,51 @@ literal; the endpoint and route flags stayed unchanged. Node22 comparison
 identity regression passed 1/1, `npm run validate` passed 72 backend parses,
 40 endpoint references, static cache checks and 181-source identity; diff
 check passed. A new real shadow observation epoch is required before rollout.
+## 2026-10-24 C3 first publisher plan registration regression
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Native successor first plan | A full fixed-key plan with every native UI alias and bounded recovery can register after the settled publisher bootstrap; no RPC, trial clock or provider call is credited. |
+| Staged readiness | The view reports the inherited ledger's `trial_map_ready()` result: false at bootstrap and true after a valid main/UI/recovery stage map, while `planReady` remains false. |
+| Later stages | A stage registered after the full plan must use exact planned main, ordinary UI and recovery descriptors; any new preparation reads must fit the unspent plan reservation. |
+| Rejection | Missing native alias, duplicate registration, unmapped later stage and premature RPC are denied without new trial debit. |
+
+The RED and GREEN source tests use `tests/read-authority-publisher-alignment.test.mjs` and local synthetic records only. This is controller correctness evidence, not actual provider, Core, production or release acceptance. No Apps Script function applies because no `.gs`, route or schema changes were made.
+
+The follow-up regression checks that each ordinary main debit has exactly one
+admitted publisher-stage descriptor. A synthetic native successor refuses an
+unstaged P call before callback or debit, accepts an exact staged P call with
+validated write cleanup, and refuses a later unstaged B write without another
+debit. JS and Python UI parsers reject write methods outside the fixed alias
+rule while accepting declared click/fill and readonly snapshot projection.
+Legacy local fixture rows use those declared methods. These remain synthetic
+source tests; no actual provider or canonical journal was exercised.
+
+## 2026-10-24 C3 native publisher forward protocol correction
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Full native successor journey | Real controller and Python ledger import the settled 128 bootstrap, register a complete plan, execute mapped fixed and native before calls, prepay one 360-second H, separately settle F/G after calls, and finish the RPC. |
+| Stage rollover | A six-call baseline remains exact. The executed thin map uses seven UI primitives and the later freshness map uses fifteen; actual map count, future minima, protected recovery and combined limits still apply. Seven baseline calls and advancement with an unfinished prior row stop. |
+| Conditional terminal path | Exact T descriptors are staged before H. Successful H may leave T unused; an unknown H is not replayed, permits its three staged terminal reads and retains independent I cleanup through the same real holder. |
+| Existing refusal gates | Missing native alias, unstaged P/B, incomplete plan, duplicate owner and wrong UI write method retain their focused regression coverage. |
+
+These are synthetic one-primitive callbacks through the local ledger. They do
+not establish actual Google identity, privacy, callback destinations, source
+equality, quota or compatibility. No Apps Script, API, Schema or Worker source
+changed; cloud Apps Script functions are not applicable. Final composed-source
+CI/Core review and actual prestart evidence remain separate gates.
+
+## 2026-10-24 C3 exact SIMPLE credential-holder compatibility
+
+`tests/read-authority-trial-credentials.test.mjs` constructs both existing
+credential holders with the imported `SIMPLE_DECISION`. The publisher test uses
+the synthetic pinned grant fixture and checks one charged refresh and one
+charged same-token userinfo read. The native test checks distinct before/after
+caller and publisher reads, with one charge and fetch per operation. Old or
+mismatched controls stop before callback; arbitrary decisions, actor/scope
+mismatch and stale expiry remain denied. The pre-fix focused run failed three
+new cases at holder construction; the same file passed 31/31 after the narrow
+allowlist change. No actual credential, Google operation or production acceptance
+is established. No Apps Script function applies because no `.gs`, route or
+schema changed. Exact composed-head CI/Core review remains pending.

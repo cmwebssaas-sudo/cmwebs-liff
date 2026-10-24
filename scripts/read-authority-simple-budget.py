@@ -47,7 +47,7 @@ def descriptor(op,lane):
   if not exact(op,['id','key','actor','target','operation','units','preparation']) or type(op['preparation']) is not bool or op['operation'] not in READ_METHODS+['click','fill','submit']:fail()
   key=op['key'];r=RULES.get(key)
   if r:
-   if op['actor']!=r['actor'] or op['target']!=r['target'] or op['preparation'] or all(m in ['GET','snapshot','read-key-presence'] for m in r['methods']) and op['operation'] not in ['snapshot','read-key-presence']:fail()
+   if op['actor']!=r['actor'] or op['target']!=r['target'] or op['preparation'] or all(m in ['GET','snapshot','read-key-presence'] for m in r['methods']) and op['operation'] not in ['snapshot','read-key-presence'] or any(m in ['click','fill'] for m in r['methods']) and op['operation'] not in r['methods']:fail()
   elif key not in ['N:preparation','N:navigation','N:thin-triggers-before','N:thin-triggers-after'] or op['target'] not in NAVIGATION or op['actor']!=('caller' if op['target'].startswith('caller-') else 'publisher') or op['operation'] not in READ_METHODS or op['preparation']!=(key=='N:preparation') or key.startswith('N:thin-') and (op['target']!='thin-triggers' or op['operation']!='snapshot'):fail()
  else:fail()
  if not valid_id(op['id']) or type(op['units']) is not int or op['units']!=1:fail()

@@ -19,7 +19,7 @@ for(const defect of ['approval','changed-stop','stale-registry','changed-history
 async function completeMap(size,reuse=false){
  const {SIMPLE_RULES}=await import('../scripts/read-authority-simple-plan.mjs');
  const operations=Object.entries(SIMPLE_RULES).map(([key,r])=>({id:'map-'+key.replace(':','.'),bucket:key[0],alias:key.slice(2),actor:r.actor,target:r.target,operation:r.methods[0],units:1}));
- const browserOperations=operations.filter(o=>!['C','I','J'].includes(o.bucket)&&!['GET','POST','PUT','PATCH','DELETE'].includes(o.operation)).map(o=>({id:'ui.'+o.id,key:o.bucket+':'+o.alias,actor:o.actor,target:o.target,operation:['GET','snapshot','read-key-presence'].includes(o.operation)?'snapshot':'submit',units:1,preparation:false}));
+ const browserOperations=operations.filter(o=>!['C','I','J'].includes(o.bucket)&&!['GET','POST','PUT','PATCH','DELETE'].includes(o.operation)).map(o=>({id:'ui.'+o.id,key:o.bucket+':'+o.alias,actor:o.actor,target:o.target,operation:['GET','snapshot','read-key-presence'].includes(o.operation)?'snapshot':o.operation,units:1,preparation:false}));
  while(browserOperations.length<size)browserOperations.push({id:'future-nav-'+browserOperations.length,key:'N:navigation',actor:'publisher',target:'original-settings',operation:'navigate',units:1,preparation:false});
  if(reuse==='main')operations.find(o=>o.bucket+':'+o.alias==='P:publisher-refresh').id='continuity-settings-navigate';else if(reuse)browserOperations.at(-1).id='continuity-settings-navigate';return {operations,browserOperations};
 }

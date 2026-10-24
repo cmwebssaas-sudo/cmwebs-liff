@@ -8,6 +8,7 @@ import {join} from 'node:path';
 import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
 import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
 import {projection} from '../scripts/read-authority-project-retarget.mjs';
+import {SIMPLE_RULES,SIMPLE_NATIVE,simpleBrowser} from '../scripts/read-authority-simple-plan.mjs';
 
 async function nativeSuccessorFixture(finalSpent=128){
  const s=await alignmentFixture(),{flow}=flowFixture(s,null,{snapshots:{'thin-settings':snapshot,'oauth-audience':JSON.stringify({...JSON.parse(snapshot),accountVerified:false})}});
@@ -30,6 +31,172 @@ async function nativeSuccessorFixture(finalSpent=128){
  alignment(s).nativeSuccessor={closure};s.cfg.resume={nativeSuccessor:true};s.time+=1000;
  return {s,closure,origin,charges,attestation,live};
 }
+
+const fullFixedPlan=()=>Object.entries(SIMPLE_RULES).map(([key,rule])=>({id:'native-plan-'+key.replace(':','.'),bucket:key[0],alias:key.slice(2),actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1}));
+const nativePlanRows=()=>SIMPLE_NATIVE.map((key,index)=>{const rule=SIMPLE_RULES[key],writing=rule.methods.some(method=>['click','fill'].includes(method));return {id:`future-native-${index}`,key,actor:rule.actor,target:rule.target,operation:writing?rule.methods[0]:'snapshot',units:1,preparation:false};});
+const recoveryPlanRows=()=>Object.entries(SIMPLE_RULES).filter(([key,rule])=>(key.startsWith('I:')||key.startsWith('J:'))&&!rule.methods.some(method=>['POST','PUT','PATCH','DELETE'].includes(method))).map(([key,rule],index)=>({id:`native-recovery-${index}`,key,actor:rule.actor,target:rule.target,operation:rule.methods.some(method=>['click','fill'].includes(method))?rule.methods[0]:'snapshot',units:1,preparation:false}));
+const completeNativePlan=()=>({operations:fullFixedPlan().map(row=>['P:publisher-refresh','P:publisher-userinfo','B:fixture-import'].includes(row.bucket+':'+row.alias)?{...row,id:'future-'+row.alias}:row),browserOperations:[...nativePlanRows(),...Array.from({length:50},(_,index)=>({id:`future-navigation-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false})),...recoveryPlanRows()]});
+const futureMeta=(descriptor,cleanup=[])=>({lane:'ui',descriptor,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:descriptor.id,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup,repairIncident:null});
+
+function forwardJourneyPlan(){
+ const operations=fullFixedPlan().map(row=>({...row,id:'future-main-'+row.bucket+'-'+row.alias}));
+ const native=nativePlanRows();
+ const trigger=phase=>({id:`future-trigger-${phase}`,key:`N:thin-triggers-${phase}`,actor:'publisher',target:'thin-triggers',operation:'snapshot',units:1,preparation:false});
+ const navigation=Array.from({length:4},(_,index)=>({id:`future-fresh-navigation-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false}));
+ const terminal={id:'future-terminal-observation',key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false};
+ const recovery=recoveryPlanRows();
+ return {operations,browserOperations:[...native,trigger('before'),trigger('after'),...navigation,terminal,...recovery],native,trigger,navigation,terminal,recovery};
+}
+
+async function runNativeForwardJourney(unknownH=false){
+ const {s,closure,origin}=await nativeSuccessorFixture(),original=readFileSync(origin.journal.path),plan=forwardJourneyPlan(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ const main=key=>plan.operations.find(row=>row.bucket+':'+row.alias===key),calls=[];let phase='start';
+ const mainRecovery=plan.operations.filter(row=>['I','J'].includes(row.bucket)),uiRecovery=plan.recovery;let mainRecoveryIndex=0,uiRecoveryIndex=0;
+ const clean=row=>({lane:row.key?'ui':'main',descriptor:row,target:row.target,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:row.id,receipt:['GET','snapshot','read-key-presence'].includes(row.operation)?'SANITIZED_READ':'EXACT_WRITE_READBACK'});
+ const mappedMain=row=>{const write=!['GET','snapshot','read-key-presence'].includes(row.operation),cleanup=write?[clean(mainRecovery[mainRecoveryIndex++])]:[];return {...futureMeta(row,cleanup),lane:'main',receipt:write?'EXACT_WRITE_READBACK':'SANITIZED_READ'};};
+ const mappedUi=row=>{const write=!['GET','snapshot','read-key-presence'].includes(row.operation),cleanup=write?[clean(uiRecovery[uiRecoveryIndex++])]:[];return {...futureMeta(row,cleanup),receipt:write?'EXACT_WRITE_READBACK':'SANITIZED_READ'};};
+ const nativeKeys=new Set(SIMPLE_NATIVE),prefix=key=>key.split(':')[0],bucket=(...letters)=>plan.operations.filter(row=>letters.includes(row.bucket)&&!nativeKeys.has(row.bucket+':'+row.alias));
+ const f=phase=>plan.operations.filter(row=>row.bucket==='F'&&row.alias.startsWith(`wrapper-${phase}.`)&&!nativeKeys.has(row.bucket+':'+row.alias));
+ const g=phase=>plan.operations.filter(row=>row.bucket==='G'&&row.alias.startsWith(`wrapper-${phase}.`));
+ const native=(...letters)=>plan.native.filter(row=>letters.includes(prefix(row.key)));
+ const nativeF=phase=>plan.native.filter(row=>row.key.startsWith(`F:wrapper-${phase}.`));
+ const baseline=Array.from({length:6},(_,index)=>({id:`future-forward-baseline-${index}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true}));
+ const stage=async(cap,name,rows,mainRows)=>{phase='map '+name;const map=[...rows.map(mappedUi),...mainRows.map(mappedMain)];phase='stage '+name;return cap.stagePublisher({stage:name,stageCap:rows.length,map});};
+ const spendUi=async(cap,rows)=>{for(const row of rows){phase='ui '+row.id;await cap.browserRead(()=>{calls.push(row.id);return {synthetic:true};},row);if(!row.key.startsWith('N:')){phase='ui complete '+row.id;await cap.completeBrowserOperation(row.key);}}};
+ const spendMain=async(cap,rows)=>{for(const row of rows){phase='main '+row.id;await cap.externalRead(()=>{calls.push(row.id);return {synthetic:true};},row);}};
+ try{await owner.withContinuation(async cap=>{
+  const start=await cap.inspect();assert.equal(start.combinedSpent,128);assert.equal(start.w0,null);
+  phase='complete plan';await cap.completePlan({operations:plan.operations,browserOperations:plan.browserOperations});
+  await stage(cap,'baseline',baseline,bucket('P'));await spendUi(cap,baseline);await spendMain(cap,bucket('P'));
+  const thinRows=[...native('A','D'),plan.trigger('before')],thinMain=bucket('A','B','D');
+  await stage(cap,'thin',thinRows,thinMain);await spendUi(cap,thinRows);await spendMain(cap,thinMain);
+  const w0=(await cap.inspect()).w0;assert(Number.isSafeInteger(w0));
+  const oauthRows=native('E'),oauthMain=bucket('E');await stage(cap,'oauth',oauthRows,oauthMain);await spendUi(cap,oauthRows);await spendMain(cap,oauthMain);
+  const before=[...f('before'),...g('before')],after=[...f('after'),...g('after')],beforeUi=nativeF('before'),afterUi=nativeF('after'),h=main('H:wrapper-compatibility-rpc'),terminal=bucket('T');
+  await stage(cap,'freshness',[...beforeUi,...afterUi,plan.trigger('after'),...plan.navigation],[...before,h,...after,...terminal]);assert.equal(plan.navigation.length+beforeUi.length+afterUi.length+1,15);
+  await spendUi(cap,[...plan.navigation,...beforeUi]);await spendMain(cap,before);
+  const beforeH=await cap.inspect();assert.equal(beforeH.pending,null);assert.equal(beforeH.w0,w0);
+  const assertPrepaid=()=>{const paid=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.equal(paid.pending,h.id);assert.equal(paid.rpc.beganAt,paid.events.at(-1).time);assert.equal(paid.chargedUpperBoundMs,360000);assert.equal(paid.events.at(-1).outcome,'UNKNOWN');};
+  phase='H dispatch';if(unknownH){
+   await assert.rejects(cap.dispatchCompatibility({operation:h,credentialExpiresAt:s.time+600000},()=>{assertPrepaid();calls.push(h.id);throw Error('SYNTHETIC_UNKNOWN');}),/TRIAL_STOPPED/);
+   for(const row of terminal){phase='terminal '+row.id;await cap.terminalRead(()=>{calls.push(row.id);return {synthetic:'terminal-read'};},row);}
+   phase='duplicate H';await assert.rejects(cap.dispatchCompatibility({operation:h,credentialExpiresAt:s.time+600000},()=>{calls.push('duplicate-H');}),/TRIAL_STOPPED/);
+   return;
+  }
+  const response=await cap.dispatchCompatibility({operation:h,credentialExpiresAt:s.time+600000},()=>{assertPrepaid();calls.push(h.id);return {synthetic:'one-rpc'};});assert.deepEqual(response,{synthetic:'one-rpc'});
+  await spendUi(cap,[...afterUi,plan.trigger('after')]);await spendMain(cap,after);
+  await stage(cap,'terminal',[plan.terminal],[]);await spendUi(cap,[plan.terminal]);
+  phase='finish';const done=await cap.finishCompatibility();assert.equal(done.rpc.complete,true);assert.equal(done.pending,null);assert.equal(done.w0,w0);assert.equal(done.chargedUpperBoundMs,360000);
+ });if(unknownH)assert.fail('unknown H must stop its ordinary holder');}catch(error){if(!unknownH)assert.fail(`${phase}: ${error.message}`);assert.match(error.message,/TRIAL_STOPPED/);}
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ if(unknownH){
+  assert.equal(calls.filter(id=>id==='future-main-H-wrapper-compatibility-rpc').length,1);assert.equal(calls.includes('duplicate-H'),false);assert.equal(calls.filter(id=>id.startsWith('future-main-T-')).length,3);
+  assert.equal(j.rpc.complete,false);assert(Number.isSafeInteger(j.rpc.beganAt));assert.equal(j.chargedUpperBoundMs,360000);assert.equal(j.pending,null);assert.equal(j.state,'stopped');
+  const spent=j.events.length;await owner.withCleanup(async cap=>{const before=await cap.inspect();assert.equal(before.eventCount,spent);const read=main('I:read-original-editor');await cap.externalRead(()=>{calls.push(read.id);return {synthetic:'cleanup-read'};},read);const after=await cap.inspect();assert.equal(after.eventCount,spent+1);assert.equal(after.rpc.complete,false);assert.equal(after.w0,j.w0);});
+  assert.equal(calls.filter(id=>id==='future-main-I-read-original-editor').length,1);assert(readFileSync(origin.journal.path).equals(original));return;
+ }
+ assert.equal(calls.filter(id=>id==='future-main-H-wrapper-compatibility-rpc').length,1);assert.deepEqual(j.publisherStages.map(stage=>stage.stageCap),[6,7,5,15,1]);assert.equal(j.rpc.complete,true);assert.equal(j.pending,null);assert.equal(j.chargedUpperBoundMs,360000);
+ const hIndex=j.events.findIndex(event=>event.key==='H:wrapper-compatibility-rpc');assert(hIndex>55);assert.equal(j.events.filter(event=>event.key.startsWith('F:wrapper-after.')).length,16);assert.equal(j.events.filter(event=>event.key.startsWith('G:wrapper-after.')).length,2);assert.equal(j.events.slice(hIndex+1).filter(event=>event.key.startsWith('F:wrapper-after.')).length,16);assert.equal(j.events.slice(hIndex+1).filter(event=>event.key.startsWith('G:wrapper-after.')).length,2);assert(readFileSync(origin.journal.path).equals(original));
+}
+test('native 128 full forward journey debits one H and finishes after independent readbacks',()=>runNativeForwardJourney());
+test('unknown native H never replays, allows exact terminal reads and independent cleanup',()=>runNativeForwardJourney(true));
+
+test('native rollover refuses overflow and an unfinished prior mapped row',async()=>{
+ const row=index=>futureMeta({id:`future-rollover-${index}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true});
+ for(const mode of ['overflow','unfinished']){
+  const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);let calls=0;
+  await assert.rejects(owner.withContinuation(async cap=>{
+   if(mode==='overflow')await cap.stagePublisher({stage:'baseline',stageCap:7,map:Array.from({length:7},(_,index)=>row(index))});
+   else {await cap.stagePublisher({stage:'baseline',stageCap:6,map:Array.from({length:6},(_,index)=>row(index))});await cap.stagePublisher({stage:'thin',stageCap:1,map:[row(6)]});}
+   calls++;
+  }),/TRIAL_STOPPED/,mode);
+  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.equal(calls,0);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);assert.equal(j.publisherStages.length,mode==='overflow'?0:1);
+ }
+});
+
+test('native write UI methods obey their declared rules in both parsers',()=>{
+ const keys=['D:thin-gcp-link','D:thin-properties-write','E:client-create','E:oauth-response'];
+ const rows=keys.map((key,index)=>({id:`future-method-${index}`,key,actor:SIMPLE_RULES[key].actor,target:SIMPLE_RULES[key].target,operation:'submit',units:1,preparation:false}));
+ for(const row of rows){assert.throws(()=>simpleBrowser(row,false,true),/SIMPLE_PLAN_UNVERIFIED/);for(const method of SIMPLE_RULES[row.key].methods)assert.deepEqual(simpleBrowser({...row,operation:method},false,true).operation,method);}
+ const readonly={id:'future-read-projection',key:'D:thin-properties-readback',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false};
+ assert.equal(simpleBrowser(readonly,false,true).operation,'snapshot');
+ const code=`import runpy,json\nf=runpy.run_path('scripts/read-authority-simple-budget.py')['descriptor']\nrows=json.loads(${JSON.stringify(JSON.stringify([...rows,...rows.flatMap(row=>SIMPLE_RULES[row.key].methods.map(method=>({...row,operation:method})),readonly)]))})\nout=[]\nfor row in rows:\n try:f(row,'ui');out.append(True)\n except Exception as error:out.append(False if str(error)=='TRIAL_STOPPED' else str(error))\nprint(json.dumps(out))`;
+ const result=spawnSync('python3',['-c',code],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);const parsed=JSON.parse(result.stdout);assert.deepEqual(parsed.slice(0,rows.length),rows.map(()=>false));assert.deepEqual(parsed.slice(rows.length),parsed.slice(rows.length).map(()=>true));
+});
+
+test('full native plan requires an admitted exact publisher main stage before each debit',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),plan=completeNativePlan(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ const main=key=>plan.operations.find(row=>row.bucket+':'+row.alias===key),refresh=main('P:publisher-refresh'),userinfo=main('P:publisher-userinfo'),write=main('B:fixture-import');let calls=0;
+ await assert.rejects(owner.withContinuation(async cap=>{await cap.completePlan(plan);await cap.externalRead(()=>{calls++;},refresh);}),/TRIAL_STOPPED/);
+ let j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.equal(calls,0);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);
+ const next=await nativeSuccessorFixture(),second=holder(next.s,{resume:{nativeSuccessor:true}},()=>{},()=>next.closure.sha256);let stagedW0,stagedMain;
+ await assert.rejects(second.withContinuation(async cap=>{
+  await cap.completePlan(plan);
+  const cleanup=main('I:remove-reader');
+  const map=[...plan.browserOperations.slice(21,27).map(row=>futureMeta(row)),{...futureMeta(refresh,[{lane:'main',descriptor:cleanup,target:cleanup.target,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:cleanup.id,receipt:'EXACT_WRITE_READBACK'}]),lane:'main',receipt:'EXACT_WRITE_READBACK'}, {...futureMeta(userinfo),lane:'main'}];
+  await cap.stagePublisher({stage:'baseline',stageCap:6,map});
+  assert.equal(await cap.externalRead(()=>{calls++;return 'SYNTHETIC';},refresh),'SYNTHETIC');
+  assert.equal(await cap.externalRead(()=>{calls++;return 'SYNTHETIC';},userinfo),'SYNTHETIC');
+  const before=await cap.inspect();stagedW0=before.w0;stagedMain=before.mainSpent;
+  await cap.externalRead(()=>{calls++;},write);
+ }),/TRIAL_STOPPED/);
+ j=JSON.parse(readFileSync(next.s.path+'.simple-publisher-native-successor.json'));assert.equal(calls,2);assert.equal(j.events.length,57);assert.equal(j.pending,null);assert(j.w0>0);assert.equal(j.w0,stagedW0);assert.equal(j.events.filter(event=>event.lane==='main').length,2);assert.equal(stagedMain,55);
+});
+
+test('first complete native publisher plan registers from the settled 128 bootstrap',async()=>{
+ const {s,closure,origin}=await nativeSuccessorFixture(),old=readFileSync(origin.journal.path);
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ await owner.withContinuation(async cap=>{
+  const before=await cap.inspect();assert.equal(before.planReady,false);assert.equal(before.pending,null);assert.equal(before.futureUiSpent,0);
+  const plan=completeNativePlan(),registered=await cap.completePlan(plan);
+  assert.equal(registered.planReady,true);assert.equal(registered.futureUiSpent,0);assert.equal(registered.rpc.beganAt,null);assert.equal(registered.w0,null);
+  const main=plan.operations.find(row=>row.id==='future-publisher-userinfo');
+  const staged=await cap.stagePublisher({stage:'baseline',stageCap:6,map:[...plan.browserOperations.slice(21,27).map(row=>futureMeta(row)),{lane:'main',descriptor:main,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:main.id,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null}]});
+  assert.equal(staged.planReady,true);assert.equal(staged.publisherUsed,6);assert.equal(staged.w0,null);
+ });
+ assert.equal(s.aligned().plan,null);assert(readFileSync(origin.journal.path).equals(old));
+});
+
+test('native publisher view exposes real staged trial readiness before full plan',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ await owner.withContinuation(async cap=>{
+  const first=await cap.inspect();assert.equal(first.planReady,false);assert.equal(first.trialMapReady,false);
+  const map=Array.from({length:6},(_,index)=>futureMeta({id:`future-baseline-${index}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true}));
+  const rule=SIMPLE_RULES['I:verify-token-revoked'];map[0].cleanup=[{lane:'ui',descriptor:{id:'native-recovery-gate',key:'I:verify-token-revoked',actor:rule.actor,target:rule.target,operation:'snapshot',units:1,preparation:false},target:rule.target,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:'native-recovery-gate',receipt:'SANITIZED_READ'}];
+  const p=SIMPLE_RULES['P:publisher-userinfo'];map.push({lane:'main',descriptor:{id:'future-publisher-userinfo',bucket:'P',alias:'publisher-userinfo',actor:p.actor,target:p.target,operation:p.methods[0],units:1},tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:'future-publisher-userinfo',receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null});
+  const staged=await cap.stagePublisher({stage:'baseline',stageCap:6,map});assert.equal(staged.trialMapReady,true);assert.equal(staged.planReady,false);assert.equal(staged.pending,null);assert.equal(staged.w0,null);assert.equal(staged.eventCount,55);
+ });
+});
+
+test('native first plan refuses a missing native alias before any trial debit',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256),plan=completeNativePlan();
+ plan.browserOperations=plan.browserOperations.filter(row=>row.key!==SIMPLE_NATIVE[0]);
+ await assert.rejects(owner.withContinuation(cap=>cap.completePlan(plan)),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.equal(j.plan,null);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);
+});
+
+test('native first plan cannot be registered twice',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256),plan=completeNativePlan();
+ await assert.rejects(owner.withContinuation(async cap=>{await cap.completePlan(plan);await cap.completePlan(plan);}),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.deepEqual(j.plan,plan);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);
+});
+
+test('native plan rejects a later publisher stage with an unmapped UI row',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256),plan=completeNativePlan();
+ const map=plan.browserOperations.slice(21,27).map(row=>futureMeta(row));map[5].descriptor={...map[5].descriptor,id:'future-unmapped-row'};map[5].callback='future-unmapped-row';
+ await assert.rejects(owner.withContinuation(async cap=>{await cap.completePlan(plan);await cap.stagePublisher({stage:'baseline',stageCap:6,map});}),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.deepEqual(j.plan,plan);assert.deepEqual(j.publisherStages,[]);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);
+});
+
+test('native successor blocks RPC before complete plan without invoking IO',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256),operation=fullFixedPlan().find(row=>row.bucket==='H');let calls=0;
+ await assert.rejects(owner.withContinuation(cap=>cap.dispatchCompatibility({operation,credentialExpiresAt:s.time+600000},()=>{calls++;})),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.equal(calls,0);assert.equal(j.plan,null);assert.equal(j.rpc.beganAt,null);assert.equal(j.events.length,55);assert.equal(j.w0,null);
+});
 
 test('settled B visual chain imports once into a new PREP successor while original 111 stays false',async()=>{
  const {s,closure,live,origin}=await nativeSuccessorFixture(),before=Object.fromEntries(Object.entries(live).filter(([k])=>k!=='registry').map(([,path])=>[path,readFileSync(path)])),frozenRegistry=readFileSync(origin.registry.path);let calls=0;
