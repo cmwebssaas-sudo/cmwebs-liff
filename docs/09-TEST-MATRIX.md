@@ -2849,8 +2849,10 @@ event, failure, imported-bookkeeping and STOP evidence, then closes a genuine
 clean pause and resumes its new segment without a callback. The production
 fixed hashes reject the synthetic fixture; a test-only module copy adapts
 exactly four constants to synthetic hashes while leaving all function bodies
-unchanged. Separate transaction tests interrupt after each archive, receipt,
-claim, journal and registry phase and reject a second scope. New event, pending
+unchanged. Separate transaction tests interrupt after each archive, initial
+target snapshot, receipt, claim, journal and registry phase and reject a second
+scope. Real-controller handoff negatives corrupt an archive or receipt target
+hash/owner and assert no new claim, registry write, or callback. New event, pending
 IO, trial clock, RPC, mutation, altered stage and registry evidence are denied.
 
 The retained short-cell driver has a separate synthetic test for a wait spanning

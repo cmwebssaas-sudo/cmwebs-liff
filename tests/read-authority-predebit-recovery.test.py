@@ -51,12 +51,18 @@ class PredebitRecovery(unittest.TestCase):
   self.assertEqual(target['state'],'ready');self.assertEqual(target['lifecycle'],'ACTIVE')
   self.assertEqual(base.record(self.paths['registry']),{'identity':self.identity,'checkpoint':target})
   self.assertEqual(base.rawfile(Path(str(self.target)+'-origin-registry.json')),raw['registry'])
-  self.assertEqual(json.loads(base.rawfile(Path(str(self.target)+'-transition.json')))['status'],'PREPARED')
+  receipt=json.loads(base.rawfile(Path(str(self.target)+'-transition.json')))
+  self.assertEqual(receipt['status'],'PREPARED')
+  for key in ['claim','journal']:
+   initial=base.rawfile(Path(str(self.target)+'-initial-'+key+'.json'))
+   self.assertEqual(base.sha(initial),receipt['initial'][key]['sha256'])
+   self.assertEqual(base.sha(initial),receipt['target'+key.title()+'Sha256'])
+  self.assertEqual(receipt['ownerHash'],self.identity['ownerHash'])
   for key,data in before.items():self.assertEqual(base.rawfile(self.paths[key]),data)
   with self.assertRaises(Exception):recovery.predebit_transition(self.target,self.paths['registry'],self.identity,j,raw,self.pins,self.proof_pin,200,g)
 
  def test_every_interrupted_phase_is_closed_to_second_scope(self):
-  for phase in ['archive-journal','archive-claim','archive-stop','archive-registry','receipt','claim','journal','registry']:
+  for phase in ['archive-journal','archive-claim','archive-stop','archive-registry','initial-claim','initial-journal','receipt','claim','journal','registry']:
    with self.subTest(phase=phase):
     self.setUp()
     j,claim,raw=self.checked()

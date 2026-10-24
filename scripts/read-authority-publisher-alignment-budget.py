@@ -31,9 +31,9 @@ def predebit_evidence(paths,pins,proof_pin,expected,registry,prior_time,now,g):
 def predebit_transition(path,registry,identity,j,raw,pins,proof_pin,now,g,interrupt=None):
  """The inherited fd3 exclusive lock is held throughout this ordered CAS."""
  fail=g['fail'];sha=g['sha'];compact=g['compact'];rawfile=g['rawfile'];record=g['record'];save=g['save'];synced=g['synced'];directory=g['directory']
- archives={key:Path(str(path)+'-origin-'+key+'.json') for key in ['journal','claim','stop','registry']};receipt=Path(str(path)+'-transition.json')
+ archives={key:Path(str(path)+'-origin-'+key+'.json') for key in ['journal','claim','stop','registry']};initial={key:Path(str(path)+'-initial-'+key+'.json') for key in ['claim','journal']};receipt=Path(str(path)+'-transition.json')
  claim_path=Path(str(path)+'-claim.json');journal_path=Path(str(path)+'.json');stop_path=Path(str(path)+'-stop.json')
- if any(os.path.lexists(p) for p in [*archives.values(),receipt,claim_path,journal_path,stop_path]):fail()
+ if any(os.path.lexists(p) for p in [*archives.values(),*initial.values(),receipt,claim_path,journal_path,stop_path]):fail()
  def write_bytes(p,data):
   directory(p.parent);fd=os.open(p,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
   try:
@@ -48,10 +48,13 @@ def predebit_transition(path,registry,identity,j,raw,pins,proof_pin,now,g,interr
  previous=record(Path(pins['claim']['path']));target=copy.deepcopy(j);target['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(previous,separators=(',',':')).encode()),'sources':copy.deepcopy(previous['sources'])});target.update(state='ready',lifecycle='ACTIVE',holder=identity['ownerHash'],lastAt=now);target['holders'].append(identity['ownerHash'])
  if len(set(target['holders']))!=len(target['holders']) or target['events']!=j['events'] or target['failures']!=j['failures'] or target['nativeImported']!=j['nativeImported'] or target['publisherImported']!=j['publisherImported']:fail()
  for key,p in archives.items():write_bytes(p,raw[key]);phase('archive-'+key)
- manifest={'source':'native128-predebit-recovery-transition-v1','status':'PREPARED','origin':copy.deepcopy(pins),'proofSha256':proof_pin['sha256'],'archive':{key:{'path':str(p),'sha256':sha(raw[key])} for key,p in archives.items()},'targetClaimSha256':sha(compact({'value':identity,'sha256':sha(compact(identity).encode())}).encode()),'targetJournalSha256':sha(compact(target).encode()),'ownerHash':identity['ownerHash'],'events':55,'mainSpent':53,'uiSpent':75,'combinedSpent':128,'operationBudget':296}
+ target_bytes={'claim':compact({'value':identity,'sha256':sha(compact(identity).encode())}).encode(),'journal':compact(target).encode()}
+ for key,p in initial.items():write_bytes(p,target_bytes[key]);phase('initial-'+key)
+ manifest={'source':'native128-predebit-recovery-transition-v1','status':'PREPARED','origin':copy.deepcopy(pins),'proofSha256':proof_pin['sha256'],'archive':{key:{'path':str(p),'sha256':sha(raw[key])} for key,p in archives.items()},'initial':{key:{'path':str(p),'sha256':sha(target_bytes[key])} for key,p in initial.items()},'targetAt':now,'targetClaimSha256':sha(target_bytes['claim']),'targetJournalSha256':sha(target_bytes['journal']),'ownerHash':identity['ownerHash'],'events':55,'mainSpent':53,'uiSpent':75,'combinedSpent':128,'operationBudget':296}
  write_bytes(receipt,compact(manifest).encode());phase('receipt')
  save(claim_path,identity,True);phase('claim')
  synced(journal_path,target,True);phase('journal')
+ if rawfile(claim_path)!=target_bytes['claim'] or rawfile(journal_path)!=target_bytes['journal'] or sha(rawfile(initial['claim']))!=manifest['targetClaimSha256'] or sha(rawfile(initial['journal']))!=manifest['targetJournalSha256'] or sha(rawfile(receipt))!=sha(compact(manifest).encode()):fail()
  if sha(rawfile(registry))!=pins['registry']['sha256'] or record(registry)!={'identity':record(Path(pins['claim']['path'])),'checkpoint':j}:fail()
  save(registry,{'identity':identity,'checkpoint':target});phase('registry')
  return target
@@ -227,6 +230,7 @@ def alignment_class(base):
      self.memory=copy.deepcopy(self.j);return
     if self.predebit_recovery:
      if not exact(p,['nativeSuccessor','predebitRecovery','receipt','minimumEvents']) or p['predebitRecovery']!=self.predebit_spec:fail()
+     self.verify_predebit_anchor()
      p={k:v for k,v in p.items()if k!='predebitRecovery'}
     native_fresh=p=={'nativeSuccessor':True}
     if self.predebit_recovery and native_fresh:fail()
@@ -310,10 +314,15 @@ def alignment_class(base):
    for key,end in [('journal','.json'),('claim','-claim.json'),('stop','-stop.json')]:
     if pins[key]['path']!=base+end or sha(rawfile(Path(base+end)))!=pins[key]['sha256']:fail()
    if self.predebit_spec['proof']['sha256']!=PREDEBIT_PROOF or sha(g['pin'](self.predebit_spec['proof']))!=PREDEBIT_PROOF:fail()
-   archives={key:Path(str(self.path)+self.suffix+'-origin-'+key+'.json') for key in ['journal','claim','stop','registry']};receipt=Path(str(self.path)+self.suffix+'-transition.json')
+   archives={key:Path(str(self.path)+self.suffix+'-origin-'+key+'.json') for key in ['journal','claim','stop','registry']};initial={key:Path(str(self.path)+self.suffix+'-initial-'+key+'.json') for key in ['claim','journal']};receipt=Path(str(self.path)+self.suffix+'-transition.json')
    if pins['registry']['sha256']!=PREDEBIT_ORIGIN['registry'] or any(sha(rawfile(p))!=pins[key]['sha256'] for key,p in archives.items()):fail()
    r=json.loads(rawfile(receipt))
-   if not exact(r,['source','status','origin','proofSha256','archive','targetClaimSha256','targetJournalSha256','ownerHash','events','mainSpent','uiSpent','combinedSpent','operationBudget']) or r['source']!='native128-predebit-recovery-transition-v1' or r['status']!='PREPARED' or r['origin']!=pins or r['proofSha256']!=PREDEBIT_PROOF or r['archive']!={key:{'path':str(p),'sha256':pins[key]['sha256']} for key,p in archives.items()} or r['events']!=55 or r['mainSpent']!=53 or r['uiSpent']!=75 or r['combinedSpent']!=128 or r['operationBudget']!=296:fail()
+   if not exact(r,['source','status','origin','proofSha256','archive','initial','targetAt','targetClaimSha256','targetJournalSha256','ownerHash','events','mainSpent','uiSpent','combinedSpent','operationBudget']) or r['source']!='native128-predebit-recovery-transition-v1' or r['status']!='PREPARED' or r['origin']!=pins or r['proofSha256']!=PREDEBIT_PROOF or r['archive']!={key:{'path':str(p),'sha256':pins[key]['sha256']} for key,p in archives.items()} or r['events']!=55 or r['mainSpent']!=53 or r['uiSpent']!=75 or r['combinedSpent']!=128 or r['operationBudget']!=296:fail()
+   old=json.loads(rawfile(archives['journal']));previous=record(archives['claim']);first=record(initial['claim']);at=r['targetAt']
+   if not integer(at) or at<old['lastAt'] or not exact(first,list(previous)) or {k:v for k,v in first.items()if k not in ['sources','ownerHash']}!={k:v for k,v in previous.items()if k not in ['sources','ownerHash']} or first['ownerHash']==previous['ownerHash'] or not first['sources']:fail()
+   target=copy.deepcopy(old);target['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(previous,separators=(',',':')).encode()),'sources':copy.deepcopy(previous['sources'])});target.update(state='ready',lifecycle='ACTIVE',holder=first['ownerHash'],lastAt=at);target['holders'].append(first['ownerHash'])
+   expected={'claim':g['compact']({'value':first,'sha256':sha(g['compact'](first).encode())}).encode(),'journal':g['compact'](target).encode()}
+   if r['initial']!={key:{'path':str(p),'sha256':sha(expected[key])} for key,p in initial.items()} or any(rawfile(p)!=expected[key] for key,p in initial.items()) or r['targetClaimSha256']!=sha(expected['claim']) or r['targetJournalSha256']!=sha(expected['journal']) or r['ownerHash']!=first['ownerHash']:fail()
   def view(self,wait=0):
    v=super().view(wait);d=self.j['publisherAlignment'];delta=self.imported_delta if self.native_successor else 0;v.update(uiSpent=v['uiSpent']+3+delta,combinedSpent=v['combinedSpent']+3+delta,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3+delta,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),trialMapReady=self.trial_map_ready(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile)
    if self.native_successor:v.update(successorImported=delta,futureUiLimit=90-delta,currentVisualVerified=self.j.get('nativeCurrentVisual') is True)

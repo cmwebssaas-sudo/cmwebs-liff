@@ -70,6 +70,21 @@ test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through th
  assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256);assert.equal(hash(readFileSync(origin.claim.path)),origin.claim.sha256);assert.equal(hash(readFileSync(origin.stop.path)),origin.stop.sha256);
  const receipt=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery-transition.json'));assert.equal(receipt.status,'PREPARED');assert.deepEqual(receipt.origin,origin);
  const handoff=owner.preparationHandoff();s.time+=1000;const nextConfig={...config,resume:{...config.resume,...handoff}};
+ const recoveryBase=s.path+'.simple-publisher-native-predebit-recovery',claimPath=recoveryBase+'-claim.json',transitionPath=recoveryBase+'-transition.json';
+ for(const [label,path,damage] of [
+  ['missing archive',receipt.archive.journal.path,()=>unlinkSync(receipt.archive.journal.path)],
+  ['corrupt archive',receipt.archive.stop.path,()=>writeFileSync(receipt.archive.stop.path,'{}')],
+  ['target claim hash',transitionPath,()=>writeFileSync(transitionPath,compact({...receipt,targetClaimSha256:'0'.repeat(64)}))],
+  ['target journal hash',transitionPath,()=>writeFileSync(transitionPath,compact({...receipt,targetJournalSha256:'0'.repeat(64)}))],
+  ['target owner',transitionPath,()=>writeFileSync(transitionPath,compact({...receipt,ownerHash:'0'.repeat(64)}))]
+ ]){
+  const before=readFileSync(path),oldClaim=readFileSync(claimPath),oldRegistry=readFileSync(registry);let entered=0;
+  try{
+   damage();
+   await assert.rejects(create(nextConfig).withContinuation(()=>{entered++;}),/TRIAL_STOPPED/,label);
+   assert.equal(entered,0,label);assert.deepEqual(readFileSync(claimPath),oldClaim,label);assert.deepEqual(readFileSync(registry),oldRegistry,label);
+  }finally{writeFileSync(path,before,{mode:0o600});}
+ }
  const next=create(nextConfig);
  await next.withContinuation(async cap=>{const view=await cap.inspect();assert.equal(view.combinedSpent,128);assert.equal(view.eventCount,55);assert.equal(view.pending,null);await cap.pausePreparation();});
  assert.equal(JSON.parse(readFileSync(origin.journal.path)).lifecycle,'HARD_STOP');
