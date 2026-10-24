@@ -36,6 +36,11 @@ def private_pin(p):
  if sha(raw)!=p['sha256']:fail()
  return raw
 def valid_id(v):return type(v) is str and re.fullmatch('[-A-Za-z0-9_.]{1,100}',v) is not None
+def cleanup_navigation(op,r):
+ return type(op.get('key')) is str and op['key'].startswith('I:') and op['operation']=='navigate' and op['actor']=='publisher' and r is not None and r['actor']=='publisher' and r['target']==op['target'] and op['target'] in ['original-settings','original-triggers','thin-settings','oauth-audience']
+def cleanup_prelude(op,key):
+ r=RULES.get(key)
+ return type(op) is dict and op.get('key')==key and key.startswith('I:') and op.get('actor')=='publisher' and r is not None and r['actor']=='publisher' and op.get('target')==r['target'] and r['target'] in ['original-settings','original-triggers','thin-settings','oauth-audience'] and op.get('operation') in ['navigate','snapshot','read-key-presence']
 def descriptor(op,lane):
  if lane=='main':
   if not exact(op,['id','bucket','alias','actor','target','operation','units']):fail()
@@ -47,7 +52,7 @@ def descriptor(op,lane):
   if not exact(op,['id','key','actor','target','operation','units','preparation']) or type(op['preparation']) is not bool or op['operation'] not in READ_METHODS+['click','fill','submit']:fail()
   key=op['key'];r=RULES.get(key)
   if r:
-   if op['actor']!=r['actor'] or op['target']!=r['target'] or op['preparation'] or all(m in ['GET','snapshot','read-key-presence'] for m in r['methods']) and op['operation'] not in ['snapshot','read-key-presence'] or any(m in ['click','fill'] for m in r['methods']) and op['operation'] not in r['methods']:fail()
+   if op['actor']!=r['actor'] or op['target']!=r['target'] or op['preparation'] or op['operation']=='navigate' and key.startswith('I:') and not cleanup_navigation(op,r) or not cleanup_navigation(op,r) and (all(m in ['GET','snapshot','read-key-presence'] for m in r['methods']) and op['operation'] not in ['snapshot','read-key-presence'] or any(m in ['click','fill'] for m in r['methods']) and op['operation'] not in r['methods']):fail()
   elif key not in ['N:preparation','N:navigation','N:thin-triggers-before','N:thin-triggers-after'] or op['target'] not in NAVIGATION or op['actor']!=('caller' if op['target'].startswith('caller-') else 'publisher') or op['operation'] not in READ_METHODS or op['preparation']!=(key=='N:preparation') or key.startswith('N:thin-') and (op['target']!='thin-triggers' or op['operation']!='snapshot'):fail()
  else:fail()
  if not valid_id(op['id']) or type(op['units']) is not int or op['units']!=1:fail()
@@ -307,7 +312,7 @@ class Ledger:
   if any(e['operation']['id']==op['id'] for e in self.j['events']):fail()
   m,mo,u,uo=self.counts()
   if lane=='main':
-   if m>=self.main_event_limit or not cleanup and mo>=self.main_ordinary_limit or cleanup and sum(e['lane']=='main' and e['cleanup'] for e in self.j['events'])>=21 or key in self.j['completed'] or any(e['key']==key for e in self.j['events']):fail()
+   if m>=self.main_event_limit or not cleanup and mo>=self.main_ordinary_limit or cleanup and sum(e['lane']=='main' and e['cleanup'] for e in self.j['events'])>=21 or key in self.j['completed'] or any(e['key']==key and not (cleanup and e['lane']=='ui' and e['cleanup'] is True and e['settled'] is True and e['success'] is True and e['operation'] in self.j['recoveryBrowser'] and cleanup_prelude(e['operation'],key)) for e in self.j['events']):fail()
    if not cleanup and (key not in self.j['stages'] or self.j['stages'][key]!=op):fail()
   else:
    if u>=self.ui_event_limit or (u-uo>=16 if cleanup else uo>=self.ui_ordinary_limit):fail()
@@ -316,7 +321,7 @@ class Ledger:
    elif cleanup:
     rows=[v for v in self.j['recoveryBrowser'] if v['key']==key]
     prior={e['operation']['id']:e for e in self.j['events'] if e['lane']=='ui'}
-    if op not in rows or any(e['key']==key and e.get('success') is False for e in prior.values()) or any(v['id'] not in prior or prior[v['id']].get('success') is not True for v in rows[:rows.index(op)]) or not any(e['lane']=='main' and e['key']==key and e.get('success') is True for e in self.j['events']):fail()
+    if op not in rows or any(e['key']==key and e.get('success') is False for e in prior.values()) or any(v['id'] not in prior or prior[v['id']].get('success') is not True for v in rows[:rows.index(op)]) or not cleanup_prelude(op,key) and not any(e['lane']=='main' and e['key']==key and e.get('success') is True for e in self.j['events']):fail()
    elif not self.continuity_preparation(lane,op) and op not in (self.j['plan']['browserOperations'] if self.j['plan'] is not None else self.j.get('stageBrowser',[])):fail()
   if not cleanup:
    if key=='P:publisher-userinfo' and 'P:publisher-refresh' not in self.j['completed']:fail()

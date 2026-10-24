@@ -2806,3 +2806,18 @@ new cases at holder construction; the same file passed 31/31 after the narrow
 allowlist change. No actual credential, Google operation or production acceptance
 is established. No Apps Script function applies because no `.gs`, route or
 schema changed. Exact composed-head CI/Core review remains pending.
+
+## 2026-10-24 C3 mapped I cleanup navigation source regression
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| UI descriptor | Only an existing publisher `I:` alias at its fixed original-settings, original-triggers, thin-settings or oauth-audience target may use `navigate`; the main alias methods remain fixed. Wrong actor, target, key, preparation flag, unit count and undeclared write method are denied in JS and Python. |
+| Same-owner ordering | After ordinary STOP and drain, a mapped, settled, successful readonly UI prelude may precede the same-key main cleanup action. Navigation alone does not mark the alias complete or prove restored remote state. A separate main read is still required. |
+| Recovery guard | Ordinary-cap cleanup, an unmapped recovery row and a mapped UI write before its main action stop before the provider callback. The 16 UI recovery and 21 main cleanup limits remain independent. |
+
+The focused test uses the real holder and Python ledger with a synthetic settled
+128 bootstrap. It charges one UI navigation and one bounded main read on the
+same owner, then checks the durable cleanup checkpoint. This is local source
+evidence; it does not establish actual browser reachability, account binding,
+remote restoration, or production acceptance. No Apps Script function applies
+because no `.gs`, route or schema changed.

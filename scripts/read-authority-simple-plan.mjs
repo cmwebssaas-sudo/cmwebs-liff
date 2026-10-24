@@ -27,6 +27,7 @@ export function simpleData(value){
 export const simpleExact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const id=v=>typeof v==='string'&&/^[-A-Za-z0-9_.]{1,100}$/.test(v);
 const originalCleanup=freeze({'C:restore-editor':{actor:'publisher',target:'original-project',methods:['PUT']},'C:read-restored-editor':{actor:'publisher',target:'original-project',methods:['GET']}});
+const cleanupNavigation=(op,r)=>typeof op.key==='string'&&op.key.startsWith('I:')&&op.operation==='navigate'&&op.actor==='publisher'&&r?.actor==='publisher'&&r.target===op.target&&['original-settings','original-triggers','thin-settings','oauth-audience'].includes(op.target);
 export function simpleFixed(raw,cleanup=false){
  const op=simpleData(raw),key=op.bucket+':'+op.alias,r=SIMPLE_RULES[key]??(cleanup?originalCleanup[key]:null);
  if(!simpleExact(op,['id','bucket','alias','actor','target','operation','units'])||!id(op.id)||!r||r.actor!==op.actor||r.target!==op.target||!r.methods.includes(op.operation)||![1,null].includes(op.units))fail();return op;
@@ -36,7 +37,7 @@ export function simpleBrowser(raw,allowWait=false,aligned105=false){
  if(!simpleExact(op,['id','key','actor','target','operation','units','preparation'])||!id(op.id)||![1,null].includes(op.units)||typeof op.preparation!=='boolean'||!['inventory','claim','navigate','snapshot','click','fill','submit','read-key-presence',...(allowWait?['wait']:[]),...(aligned105?['getBrowser','nameSession','claimTab','evaluate']:[])].includes(op.operation))fail();
  if(['getBrowser','nameSession','claimTab','evaluate'].includes(op.operation)&&(!aligned105||!['publisher105-','future-'].some(prefix=>op.id.startsWith(prefix))||op.key!=='N:preparation'||op.preparation!==true||op.actor!==(op.target.startsWith('caller-')?'caller':'publisher')||!(op.id.startsWith('publisher105-')?['thin-settings','oauth-audience']:navigation).includes(op.target)))fail();
  if(op.operation==='wait'&&(!allowWait||op.key!=='N:preparation'||op.preparation!==true||!['thin-settings','oauth-audience'].includes(op.target)))fail();
- if(r){if(r.actor!==op.actor||r.target!==op.target||op.preparation||r.methods.every(m=>['GET','snapshot','read-key-presence'].includes(m))&&!['snapshot','read-key-presence'].includes(op.operation)||r.methods.some(m=>['click','fill'].includes(m))&&!r.methods.includes(op.operation))fail();}
+ if(r){if(r.actor!==op.actor||r.target!==op.target||op.preparation||op.operation==='navigate'&&op.key.startsWith('I:')&&!cleanupNavigation(op,r)||!cleanupNavigation(op,r)&&(r.methods.every(m=>['GET','snapshot','read-key-presence'].includes(m))&&!['snapshot','read-key-presence'].includes(op.operation)||r.methods.some(m=>['click','fill'].includes(m))&&!r.methods.includes(op.operation)))fail();}
  else if(!['N:preparation','N:navigation','N:thin-triggers-before','N:thin-triggers-after'].includes(op.key)||!navigation.includes(op.target)||!['publisher','caller'].includes(op.actor)||op.actor!==(op.target.startsWith('caller-')?'caller':'publisher')||['click','fill','submit'].includes(op.operation)||op.preparation!==(op.key==='N:preparation')||op.key.startsWith('N:thin-')&&(op.target!=='thin-triggers'||op.operation!=='snapshot'))fail();
  return op;
 }
