@@ -2917,3 +2917,12 @@ replay and detached ACL evidence before an uncharged callback. These tests do
 not establish actual provider readback, private adapter binding, full composed
 CI or deployment. No Apps Script function applies because no `.gs`, API route
 or Schema changed.
+
+The independent Task80 review fix binds `sourceSha256` to the unique pinned
+public `read-authority-simple-control.mjs` sibling source in both readiness
+phases and the charged project receipt. A different source already present in
+the fixed inventory is rejected. Focused real-controller tests also refuse
+identity/proof drift, early P/A and later-stage attempts, a malformed project
+receipt, forged pending or failed synthetic checkpoints, and omitted or
+relabelled registered descriptors in the full plan. Private callback graph
+pinning and actual provider readbacks remain separate owner work.
