@@ -4433,3 +4433,53 @@ identity/proof drift, early P/A and later-stage attempts, a malformed project
 receipt, forged pending or failed synthetic checkpoints, and omitted or
 relabelled registered descriptors in the full plan. Private callback graph
 pinning and actual provider readbacks remain separate owner work.
+
+## 2026-10-24 — bounded CI Worker resource observation
+
+The existing `read-worker` job starts a passive Linux `/proc` observer beside
+the unchanged `npm run test:worker 2>&1 | tee` command. The shell retains
+`pipefail`, its test exit status, the complete raw Worker log, and the existing
+always-run terminal summary. The observer records at most one sample every
+500 ms for 600 seconds, up to 32 owned descendants per sample and 8 MiB of
+JSONL in `RUNNER_TEMP`; it stops on shell exit and records its own terminal
+status. No process environment, command line, unowned process, or arbitrary
+process name is exported. PID plus process start tick guards CPU deltas from
+PID reuse. CPU is retained in scheduler ticks, RSS in pages, and the mapped
+current cgroup's quota/throttling in its original units; zero, missing and
+invalid values are separate states. A bounded terminal line includes up to
+eight owned-process CPU/RSS totals and first/last cgroup counters, with drops
+explicit. An absent observer result is `UNAVAILABLE`, never a Worker PASS.
+The self-observer is excluded from Node/workerd attribution.
+
+Synthetic Linux proc/cgroup fixtures and abort/closed-file lifecycle tests
+cover parsing, ownership, bounds, missing and invalid data, PID reuse, numeric
+zero and final summary. These are source-level evidence checks; no real
+Ubuntu CI/resource observation or Worker benchmark was run for this change.
+The observer adds background process/I/O overhead, and sampled process totals
+cannot identify a route hotspot, prove a latency cause, or establish Production
+performance. Rollback reverts this observer/workflow-only commit; the original
+Worker test and strict `<50 ms` gate remain the acceptance authority.
+
+The separate always-run resource step now reads the capped JSONL after the
+test and emits typed numeric frames into its own CI step log. It keeps first,
+last, peak CPU-delta and peak RSS observations for each of the 48 most recent
+Node/workerd identities, then prints them in sample order under a 59 KiB frame
+budget. It reports invalid source records, earlier identities evicted, output
+frames dropped, source drops and missing samples; an unreadable file is
+`UNAVAILABLE`. This preserves late test processes beyond the terminal summary's
+first-eight totals while leaving the original always-run Worker raw-log summary
+in its own subsequent step. Synthetic readback with ten earlier identities and
+late Node/workerd processes proves their PID/start-tick/CPU/RSS/wall/cgroup
+values remain visible; malformed and over-limit records are explicitly partial.
+
+Follow-up review found that the first/last/peak and 48-identity selection could
+still discard a capacity process before later tests ended. The CI resource
+readback now projects **every valid collected sample** in original order into
+typed numeric/enum frames, including all Node/workerd rows and cgroup status;
+it does not select identities or trim old frames. The producer's 1,201-sample,
+32-process and 8 MiB limits remain. Each projected frame is capped at 10,240
+bytes; fixed prefix plus 2,048 bytes metadata yields a derived output bound of
+12,331,514 bytes. Invalid/missing/source-dropped records are counted and
+cannot be called COMPLETE. Synthetic coverage retains five consecutive
+workerd samples before 60 later identities and 240 frames beyond the former
+59 KiB trim. This is a bounded diagnostic log, not route CPU attribution.
