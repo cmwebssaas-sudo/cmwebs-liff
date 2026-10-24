@@ -2860,3 +2860,28 @@ multiple cells, one callback, lost-owner refusal and sanitized error reporting.
 These tests do not run CUA, reattach a browser, spend any actual metadata unit,
 or establish the remaining stage map. No Apps Script function applies because
 no `.gs`, API route or Schema changed.
+
+## 2026-10-24 C3 predebit bootstrap and deferred Settings identity gate
+
+The public predebit recovery branch alone accepts the exact three-row
+`getBrowser → claimTab → evaluate` diagnostic map after the unchanged nine-row
+baseline registration and before any baseline debit. The third diagnostic
+evaluation proves only the current Audience URL, project, readiness and heading;
+the journal remains `bootstrapIdentity: PENDING`. The only next ordinary calls
+are the already mapped original-Settings goto, which must return
+`AWAITING_NEXT_PROJECTION` with no field read, and its Settings grounding
+evaluation. The latter must return the current exact principal, project, URL
+and retained handle before the journal becomes `VERIFIED` and the remaining
+baseline rows can proceed. A context result alone cannot release an A row.
+
+The real controller/Python-ledger synthetic fixture checks 128→131 after three
+charged diagnostic events, 133 after the two Settings preparation events,
+UI 75→78→80, unchanged incident/repair highwaters, no W0/RPC, and genuine
+pause/resume at both identity states. It also checks baseline-before-bootstrap,
+reordered/duplicate diagnostics and context-only A refusal before callback;
+wrong current context or principal leaves the debit and pending evidence in
+HARD_STOP. Registration reserves nine baseline calls and the conditional
+21 thin + 17 OAuth + 21 freshness + 2 terminal = 61 future minimum; spending
+the diagnostic three does not reduce that minimum again. The full map, actual
+callback/handle, complete cleanup and later A/H/RPC fit remain unproved. No
+Apps Script function applies because no `.gs`, API route or Schema changed.

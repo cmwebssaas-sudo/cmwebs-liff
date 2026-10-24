@@ -7,6 +7,9 @@ STEPS=[('binding','getBrowser','thin-settings'),('name','nameSession','thin-sett
 FUTURE=[('baseline',6),('thin',18),('oauth',30),('freshness',14),('terminal',2),('diagnostic',20)]
 NATIVE_BASELINE=[('N:preparation','original-settings','navigate',True),('N:preparation','original-settings','evaluate',True),('A:original-cloud-backup','original-settings','snapshot',False),('A:original-properties-backup','original-settings','read-key-presence',False),('N:navigation','original-triggers','navigate',False),('A:original-triggers-backup','original-triggers','snapshot',False)]
 NATIVE_GROUNDING=[('N:preparation','original-triggers','navigate',True),('N:preparation','original-triggers','evaluate',True),('N:preparation','original-settings','navigate',True)]
+BOOTSTRAP=[('future-bootstrap-browser','getBrowser','publisherBootstrapGetBrowser'),('future-bootstrap-claim','claimTab','publisherBootstrapClaimTab'),('future-bootstrap-identity','evaluate','publisherBootstrapEvaluate')]
+BOOTSTRAP_FUTURE=[('baseline',9),('diagnostic',3),('thin',21),('oauth',17),('freshness',21),('terminal',2)]
+BOOTSTRAP_BASELINE_ORDER=[0,1,6,7,8,2,3,4,5]
 PREDEBIT_ORIGIN={'journal':'91e30a199fbf6660dfd0b659ec4b265fee45bb8d360ea26a68ba1e9846f5491c','claim':'2dc247c18221e958e860a3ec57acfd72342935af936e87be38f14648b5727827','registry':'adf06b0cf233169233621a07b58955c5b7de3505b0791d563c4901df2786e7a6'}
 PREDEBIT_PROOF='e28e43b7045f5f976f4624108c010cb7089cc7f5a75c0c4f046834508d8e46ae'
 
@@ -65,6 +68,27 @@ def native_grounding_count(stage_cap,map_rows):
  if len(rows)!=stage_cap:return -1
  expected=NATIVE_BASELINE+NATIVE_GROUNDING[:stage_cap-6]
  return stage_cap-6 if all((row.get('key'),row.get('target'),row.get('preparation'))==(shape[0],shape[1],shape[3]) and (row.get('operation')==shape[2] or i==7 and row.get('operation')=='snapshot') and row.get('actor')=='publisher' and row.get('units')==1 for i,(row,shape) in enumerate(zip(rows,expected))) else -1
+
+def bootstrap_map_valid(rows,context):
+ if type(rows)is not list or len(rows)!=3 or type(context)is not dict:return False
+ for row,(identifier,method,callback) in zip(rows,BOOTSTRAP):
+  if type(row)is not dict or row.get('lane')!='ui' or row.get('descriptor')!={'id':identifier,'key':'N:preparation','actor':'publisher','target':'oauth-audience','operation':method,'units':1,'preparation':True} or row.get('tabId')!=context.get('tabId') or row.get('url')!=context.get('url') or row.get('callback')!=callback or row.get('receipt')!='SANITIZED_READ' or row.get('privacy')!='NO_SECRET_VALUES' or row.get('cleanup')!=[] or row.get('repairIncident') is not None:return False
+ return True
+
+def bootstrap_proof_valid(proof,method,context):
+ if type(proof)is not dict or proof.get('source')!='publisher-bootstrap-context-v1' or proof.get('fieldsRead') is not False:return False
+ common={'source':'publisher-bootstrap-context-v1','browserId':context['browserId'],'fieldsRead':False}
+ if method=='getBrowser':return proof=={**common,'kind':'BROWSER_BOUND'}
+ if method=='claimTab':return proof=={**common,'kind':'TAB_CLAIMED','tabId':context['tabId']}
+ if method=='evaluate':return proof.get('headingMatched') is True and proof.get('identityPending') is True and proof=={**common,'kind':'AUDIENCE_CONTEXT','tabId':context['tabId'],'url':context['url'],'projectHash':context['projectHash'],'readyState':'COMPLETE','headingMatched':True,'identityPending':True}
+ return False
+
+def baseline_identity_proof_valid(proof,method,meta,context,publisher_hash):
+ if type(proof)is not dict:return False
+ common={'browserId':context['browserId'],'tabId':context['tabId'],'url':meta['url'],'fieldsRead':False}
+ if method=='navigate':return proof=={**common,'source':'publisher-baseline-navigation-v1','status':'AWAITING_NEXT_PROJECTION'}
+ if method=='evaluate':return proof=={**common,'source':'publisher-baseline-identity-v1','status':'VERIFIED','projectHash':context['projectHash'],'principalHash':publisher_hash,'readyState':'COMPLETE'}
+ return False
 
 def repair_allowed(incidents,incident,used_for_incident,used_total):
  return all(type(v)is int for v in [incidents,incident,used_for_incident,used_total]) and 1<=incident<=incidents<=2 and 0<=used_for_incident<3 and 0<=used_total<6
@@ -211,7 +235,7 @@ def alignment_class(base):
     prior=c['settlement']['sha256']
    a=json.loads(pinned(closure['visual']['attestation']))
    if not exact(a,['source','observedPrincipalHash','expectedPrincipalHash','browserId','tabId','url','projectHash','screenshotSha256','beforeGuardSha256','afterGuardSha256','sameHandle','samePage','menuOpen','manualObservation']) or a['source']!='parent-native-b-visual-attestation-v1' or a['observedPrincipalHash']!=contract['publisherHash'] or a['expectedPrincipalHash']!=contract['publisherHash'] or any(a[k]!=context[k] for k in ['browserId','tabId','url','projectHash']) or a['screenshotSha256']!=closure['visual']['screenshot']['sha256'] or a['beforeGuardSha256']!=closure['visual']['beforeGuard']['sha256'] or a['afterGuardSha256']!=closure['visual']['afterGuard']['sha256'] or any(a[k] is not True for k in ['sameHandle','samePage','menuOpen','manualObservation']):fail()
-   self.imported_delta=count;self.approvedBrowserId=context['browserId']
+   self.imported_delta=count;self.approvedBrowserId=context['browserId'];self.native_context=context;self.native_publisher_hash=contract['publisherHash'];self.native_settings_url=contract['settingsURL']
    return j,claim,charges
   def resume_preparation(self,p):
    origin,prior,approval=self.validate_alignment();self.approvedBrowserId=approval['selectedBrowserId'];self.approvedProfile=approval['selectedProfile'];owner=sha(self.cfg['ownerNonce'].encode());fresh=p=={'aligned105':True}
@@ -256,16 +280,31 @@ def alignment_class(base):
     native=j.get('nativeImported',[])
     if len(native)!=self.imported_delta or any(not exact(row,['spent','reservationSha256','settlementSha256','bookkeptAt','reservationAt','providerCallAt']) or row['spent']!=charge['spent'] or row['reservationSha256']!=charge['reservation']['sha256'] or row['settlementSha256']!=charge['settlement']['sha256'] or row['reservationAt']!=charge['reservationAt'] or row['providerCallAt'] is not None or not integer(row['bookkeptAt']) or not imported['lastAt']<=row['bookkeptAt']<=j['lastAt'] for row,charge in zip(native,charges)) or len({row['bookkeptAt']for row in native})!=1 or j.get('publisherImported')!=imported['publisherImported']:fail()
     stages=j.get('publisherStages',[])
-    if len(stages)>1 or stages and (stages[0].get('stage')!='baseline' or not 6<=stages[0].get('stageCap',0)<=9 or sum(m.get('lane')=='ui'for m in stages[0].get('map',[]))!=stages[0]['stageCap'] or native_grounding_count(stages[0]['stageCap'],stages[0]['map'])!=stages[0]['stageCap']-6):fail()
-    if stages:validate_stage_rows(stages[0],None,{e['operation']['id']for e in imported['events']},set(imported['stages']),set(),set(),0,0,g,fail)
+    if len(stages)>(2 if self.predebit_recovery else 1) or stages and (stages[0].get('stage')!='baseline' or not 6<=stages[0].get('stageCap',0)<=9 or sum(m.get('lane')=='ui'for m in stages[0].get('map',[]))!=stages[0]['stageCap'] or native_grounding_count(stages[0]['stageCap'],stages[0]['map'])!=stages[0]['stageCap']-6):fail()
+    if self.predebit_recovery and (len(stages)<1 or stages[0]['stageCap']!=9 or any(m['tabId']!=self.native_context['tabId'] or m['url']!=self.native_settings_url for m in stages[0]['map'][:2]) or len(stages)==2 and (stages[1].get('stage')!='diagnostic' or stages[1].get('stageCap')!=3 or not bootstrap_map_valid(stages[1].get('map'),self.native_context))):fail()
+    ids={e['operation']['id']for e in imported['events']};main_keys=set(imported['stages']);cleanup_ids=set();cleanup_keys=set();ui_cleanup=main_cleanup=0
+    for stage in stages:
+     ui_cleanup,main_cleanup=validate_stage_rows(stage,None,ids,main_keys,cleanup_ids,cleanup_keys,ui_cleanup,main_cleanup,g,fail)
+     ids.update(m['descriptor']['id']for m in stage['map'])
     mapped={m['descriptor']['id']:m['descriptor'] for stage in stages for m in stage['map'] if m['lane']=='ui' and m['descriptor']['preparation'] is True}
-    extra=j['events'][55:];seen=set()
+    extra=j['events'][55:];seen=set();diagnostic_count=0;baseline_count=0
     last=imported['lastAt']
-    for event in extra:
+    for position,event in enumerate(extra):
      operation=event.get('operation',{})
      if event.get('lane')!='ui' or event.get('cleanup') is not False or event.get('settled') is not True or event.get('success') is not True or event.get('outcome')!='UNKNOWN' or operation.get('id') not in mapped or operation!=mapped[operation['id']] or event.get('preparationStage')!=operation['id'] or operation['id'] in seen or not integer(event.get('time')) or not last<=event['time']<=j['lastAt']:fail()
+     if self.predebit_recovery:
+      if operation['id'].startswith('future-bootstrap-'):
+       if len(stages)!=2 or diagnostic_count>=3 or operation!=stages[1]['map'][diagnostic_count]['descriptor'] or not bootstrap_proof_valid(event.get('bootstrapProof'),operation['operation'],self.native_context) or (operation['operation']=='evaluate')!=(event.get('loadingResultVerified') is True):fail()
+       diagnostic_count+=1
+      else:
+       baseline_index=position-diagnostic_count
+       if len(stages)!=2 or diagnostic_count!=3 or baseline_index>=5 or operation!=stages[0]['map'][BOOTSTRAP_BASELINE_ORDER[baseline_index]]['descriptor'] or 'bootstrapProof' in event:fail()
+       if baseline_index<2 and (not baseline_identity_proof_valid(event.get('baselineIdentityProof'),operation['operation'],stages[0]['map'][baseline_index],self.native_context,self.native_publisher_hash) or (operation['operation']=='evaluate')!=(event.get('loadingResultVerified') is True)):fail()
+       if baseline_index>=2 and 'baselineIdentityProof' in event:fail()
+       baseline_count+=1
      seen.add(operation['id']);last=event['time']
-    if j['futureOrdinaryUi']!=90-self.imported_delta-sum(stage['stageCap']for stage in stages) or j['failures']!=imported['failures']+sum(c['outcome']!='VERIFIED'for c in charges) or j['publisherAlignment']['readonlyIncidents']!=2 or j['publisherAlignment']['repairCalls']!=6 or j['publisherAlignment']['diagnosticCalls']!=0:fail()
+    if j['futureOrdinaryUi']!=90-self.imported_delta-sum(stage['stageCap']for stage in stages) or j['failures']!=imported['failures']+sum(c['outcome']!='VERIFIED'for c in charges) or j['publisherAlignment']['readonlyIncidents']!=2 or j['publisherAlignment']['repairCalls']!=6 or j['publisherAlignment']['diagnosticCalls']!=(diagnostic_count if self.predebit_recovery else 0):fail()
+    if self.predebit_recovery and (len(stages)==2 and j.get('bootstrapIdentity')!=('VERIFIED' if baseline_count>=2 else 'PENDING') or len(stages)==1 and 'bootstrapIdentity' in j):fail()
     if j['holders'][:len(imported['holders'])]!=imported['holders'] or len(set(j['holders']))!=len(j['holders']):fail()
     # Rebuild the only legitimate PREP delta from the immutable 105 checkpoint.
     # A matching local receipt does not authorize altered inherited counters or
@@ -274,17 +313,22 @@ def alignment_class(base):
     expected['connection']['sourceChain']=copy.deepcopy(chain)
     expected.update(state='ready',lifecycle='CLEAN_PAUSE',holder=j['holder'],holders=copy.deepcopy(j['holders']),lastAt=j['lastAt'],events=copy.deepcopy(j['events']),failures=imported['failures']+sum(c['outcome']!='VERIFIED'for c in charges),futureOrdinaryUi=90-self.imported_delta-sum(stage['stageCap']for stage in stages),nativeCurrentVisual=True,nativeImported=copy.deepcopy(native),publisherStages=copy.deepcopy(stages))
     expected['publisherAlignment']['readonlyIncidents']=2;expected['publisherAlignment']['repairCalls']=6
+    if self.predebit_recovery:
+     expected['publisherAlignment']['diagnosticCalls']=diagnostic_count
+     if len(stages)==2:expected['bootstrapIdentity']='VERIFIED' if baseline_count>=2 else 'PENDING'
+    prior_stage_units=0
     for stage in stages:
      for meta in stage['map']:
       if not exact(meta,['lane','descriptor','tabId','url','callback','receipt','privacy','cleanup','repairIncident']) or meta['lane'] not in ['ui','main'] or type(meta['descriptor']) is not dict or type(meta['cleanup']) is not list or meta['repairIncident'] is not None or meta['privacy']!='NO_SECRET_VALUES':fail()
       op=meta['descriptor'];key=g['descriptor'](op,meta['lane'])
       if meta['lane']=='ui':
-       if op['preparation'] is True:expected['preparationStages'][op['id']]={'operations':[copy.deepcopy(op)],'remainingOrdinaryUi':self.future_limit()-stage['stageCap']}
+       if op['preparation'] is True:expected['preparationStages'][op['id']]={'operations':[copy.deepcopy(op)],'remainingOrdinaryUi':self.future_limit()-prior_stage_units-stage['stageCap']}
        else:expected['stageBrowser'].append(copy.deepcopy(op))
       else:expected['stages'][key]=copy.deepcopy(op)
       for clean in meta['cleanup']:
        if not exact(clean,['lane','descriptor','target','tabId','url','callback','receipt']) or clean['lane'] not in ['ui','main'] or clean['target']!=clean['descriptor'].get('target') or not g['descriptor'](clean['descriptor'],clean['lane']).startswith(('C:','I:','J:')):fail()
        if clean['lane']=='ui':expected['recoveryBrowser'].append(copy.deepcopy(clean['descriptor']))
+     prior_stage_units+=stage['stageCap']
     if j!=expected:fail()
     j['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(previous,separators=(',',':')).encode()),'sources':copy.deepcopy(previous['sources'])});j.update(lifecycle='ACTIVE',holder=owner,lastAt=self.cfg['now']);j['holders'].append(owner)
     self.j=j;save(self.claim,self.identity);self.persist();return
@@ -326,6 +370,7 @@ def alignment_class(base):
   def view(self,wait=0):
    v=super().view(wait);d=self.j['publisherAlignment'];delta=self.imported_delta if self.native_successor else 0;v.update(uiSpent=v['uiSpent']+3+delta,combinedSpent=v['combinedSpent']+3+delta,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3+delta,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),trialMapReady=self.trial_map_ready(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile)
    if self.native_successor:v.update(successorImported=delta,futureUiLimit=90-delta,currentVisualVerified=self.j.get('nativeCurrentVisual') is True)
+   if self.predebit_recovery:v.update(bootstrapIdentity=self.j.get('bootstrapIdentity'))
    return v
   def preparation_complete(self):return self.j.get('publisherAlignment',{}).get('used')==6 and self.j['publisherAlignment']['settingsVerified'] and (self.j['publisherAlignment']['audienceVerified'] or self.native_successor and self.j.get('nativeCurrentVisual') is True)
   def future_spent(self):return sum(e['lane']=='ui' and not e['cleanup'] for e in self.j['events'][55:])
@@ -353,11 +398,22 @@ def alignment_class(base):
     entries=[(stage,m) for stage in self.j['publisherStages']for m in stage['map'] if m['lane']=='ui' and m['descriptor']==op]
     if len(entries)!=1 or self.future_spent()>=self.future_limit():fail()
     stage,meta=entries[0]
+    if self.predebit_recovery and stage['stage']=='diagnostic':
+     if len(self.j['publisherStages'])!=2 or d['diagnosticCalls']>=3 or op!=self.j['publisherStages'][1]['map'][d['diagnosticCalls']]['descriptor'] or self.j['events'][55:] and any(e['operation']['id'].startswith('future-baseline-') for e in self.j['events'][55:]):fail()
     if stage['stage']=='diagnostic' and d['diagnosticCalls']>=20-self.imported_delta:fail()
-    if stage['stage']=='diagnostic' and meta['repairIncident'] is None and d['readonlyIncidents']>=2 and op['preparation'] is True:fail()
+    if stage['stage']=='diagnostic' and meta['repairIncident'] is None and d['readonlyIncidents']>=2 and op['preparation'] is True and not self.predebit_recovery:fail()
     if meta['repairIncident'] is not None:
      used_for=sum(e['operation']['id'] in [x['descriptor']['id']for st in self.j['publisherStages']for x in st['map']if x['repairIncident']==meta['repairIncident']]for e in self.j['events'][55:])
      if not repair_allowed(d['readonlyIncidents'],meta['repairIncident'],used_for,d['repairCalls']):fail()
+   if self.predebit_recovery and not op.get('key','').startswith(('C:','I:','J:')) and not first and not op.get('id','').startswith('future-bootstrap-'):
+    stages=self.j['publisherStages']
+    if len(stages)<2 or any(e['operation']!=m['descriptor'] or e.get('settled') is not True or e.get('success') is not True for e,m in zip(self.j['events'][55:58],stages[1]['map'])) or len(self.j['events'])<58:fail()
+    if self.j.get('bootstrapIdentity') not in ['PENDING','VERIFIED']:fail()
+    if op.get('id','').startswith('future-baseline-'):
+     consumed=[e['operation']for e in self.j['events'][58:] if e['operation'].get('id','').startswith('future-baseline-')]
+     if len(consumed)>=9 or op!=stages[0]['map'][BOOTSTRAP_BASELINE_ORDER[len(consumed)]]['descriptor']:fail()
+     if self.j['bootstrapIdentity']=='PENDING' and len(consumed)>=2:fail()
+    elif self.j['bootstrapIdentity']!='VERIFIED':fail()
    if not self.native_successor and (op.get('key')=='H:wrapper-compatibility-rpc' or op.get('alias')=='wrapper-compatibility-rpc'):fail()
    return super().check(lane,op,t,terminal)
   def check_loading(self,op):
@@ -370,22 +426,25 @@ def alignment_class(base):
   def command(self,q):
    name=q.get('op');e=self.j['events'][-1]if self.j['events']else{}
    if name=='publisher-stage-ready':
-    self.current();self.active(q.get('now'));index=len(self.j['publisherStages']);d=self.j['publisherAlignment']
-    if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending']is not None or index>=len(FUTURE) or not exact(q,['op','stage','map','stageCap','now']) or q['stage']!=FUTURE[index][0] or type(q['map'])is not list or not q['map'] or not integer(q['stageCap']) or q['stageCap']<1 or sum(m.get('lane')=='ui'for m in q['map']if type(m)is dict)!=q['stageCap']:fail()
+    self.current();self.active(q.get('now'));index=len(self.j['publisherStages']);d=self.j['publisherAlignment'];sequence=BOOTSTRAP_FUTURE if self.predebit_recovery else FUTURE
+    if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending']is not None or index>=len(sequence) or not exact(q,['op','stage','map','stageCap','now']) or q['stage']!=sequence[index][0] or type(q['map'])is not list or not q['map'] or not integer(q['stageCap']) or q['stageCap']<1 or sum(m.get('lane')=='ui'for m in q['map']if type(m)is dict)!=q['stageCap']:fail()
     used=sum(s['stageCap']for s in self.j['publisherStages']);extra=(q['stageCap']-6 if index==0 else self.j['publisherStages'][0]['stageCap']-6)if self.native_successor else 0
     if self.native_successor and index==0 and (not 6<=q['stageCap']<=9 or q['stageCap']>6 and native_grounding_count(q['stageCap'],q['map'])!=extra):fail()
-    future_minimum=sum(max(0,20-self.imported_delta-extra)if name=='diagnostic' else v for name,v in FUTURE[index+1:]);rollover=sum(v for _,v in FUTURE[:index])+(extra if index else 0)-used
+    if self.predebit_recovery and (index==0 or index==1 and (q['stageCap']!=3 or len(self.j['events'])!=55 or d['diagnosticCalls']!=0 or d['readonlyIncidents']!=2 or d['repairCalls']!=6 or self.j['publisherStages'][0]['stageCap']!=9 or any(m['tabId']!=self.native_context['tabId'] or m['url']!=self.native_settings_url for m in self.j['publisherStages'][0]['map'][:2]) or not bootstrap_map_valid(q['map'],self.native_context))):fail()
+    future_minimum=sum(v for _,v in sequence[index+1:]) if self.predebit_recovery else sum(max(0,20-self.imported_delta-extra)if name=='diagnostic' else v for name,v in FUTURE[index+1:]);rollover=sum(v for _,v in sequence[:index])+(extra if index and not self.predebit_recovery else 0)-used
     complete={e['operation']['id']for e in self.j['events'][55:]if e.get('settled')is True and e.get('success')is True}
     prior_mapped={m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']if not (self.native_successor and m['lane']=='main' and m['descriptor']['bucket']=='T')}
-    if self.native_successor and index==5 and q['stageCap']>20-self.imported_delta:fail()
-    cap=(9 if self.native_successor and index==0 else 20-self.imported_delta if q['stage']=='diagnostic' else FUTURE[index][1])+rollover
-    if q['stageCap']>cap or used+q['stageCap']+future_minimum>self.future_limit() or self.future_spent()!=used or not prior_mapped<=complete or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
+    if self.native_successor and not self.predebit_recovery and index==5 and q['stageCap']>20-self.imported_delta:fail()
+    cap=(sequence[index][1] if self.predebit_recovery else 9 if self.native_successor and index==0 else 20-self.imported_delta if q['stage']=='diagnostic' else FUTURE[index][1])+rollover
+    bootstrap_insert=self.predebit_recovery and index==1 and self.future_spent()==0 and len(self.j['events'])==55
+    if q['stageCap']>cap or used+q['stageCap']+future_minimum>self.future_limit() or (self.future_spent()!=used and not bootstrap_insert) or (not prior_mapped<=complete and not bootstrap_insert) or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
     plan=self.j['plan'];ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']};main_keys={m['descriptor']['bucket']+':'+m['descriptor']['alias']for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='main'}if plan is not None else set(self.j['stages']);cleanup_ids={c['descriptor']['id']for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']};cleanup_keys={g['descriptor'](c['descriptor'],c['lane'])for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']if c['lane']=='main'};ui_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='ui'])for st in self.j['publisherStages']for m in st['map']);main_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='main'])for st in self.j['publisherStages']for m in st['map'])
     validate_stage_rows(q,plan,ids,main_keys,cleanup_ids,cleanup_keys,ui_cleanup,main_cleanup,g,fail)
     if plan is not None:
      used_ids={e['operation']['id']for e in self.j['events']};unspent=sum(not row['key'].startswith(('C:','I:','J:')) and row['id']not in used_ids for row in plan['browserOperations']);new_prep=sum(m['lane']=='ui' and m['descriptor']['preparation'] for m in q['map'])
      if self.future_spent()+unspent+new_prep>self.future_limit():fail()
     self.j['publisherStages'].append({'stage':q['stage'],'stageCap':q['stageCap'],'map':copy.deepcopy(q['map'])})
+    if bootstrap_insert:self.j['bootstrapIdentity']='PENDING'
     for m in q['map']:
      if m['lane']=='ui' and m['descriptor']['preparation'] is True:self.j['preparationStages'][m['descriptor']['id']]={'operations':[copy.deepcopy(m['descriptor'])],'remainingOrdinaryUi':self.future_limit()-used-q['stageCap']}
      elif m['lane']=='ui':self.j['stageBrowser'].append(copy.deepcopy(m['descriptor']))
@@ -396,21 +455,38 @@ def alignment_class(base):
     self.current();self.now(q.get('now'));e=self.j['events'][-1];matches=[(stage,m)for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='ui' and m['descriptor']==e['operation']]
     if len(matches)!=1 or self.j['pending']!=q.get('id') or e['settled'] is not False:fail()
     stage,meta=matches[0];d=self.j['publisherAlignment'];diagnostic=stage['stage']=='diagnostic';repair=meta['repairIncident'] is not None
-    if q.get('success') is False and diagnostic and not repair and e['operation']['preparation'] is True:
+    bootstrap=self.predebit_recovery and diagnostic
+    baseline_gate=self.predebit_recovery and e['operation']['id'] in ['future-baseline-settings-goto','future-baseline-settings-project']
+    if bootstrap and (e['operation']!=self.j['publisherStages'][1]['map'][d['diagnosticCalls']]['descriptor'] or repair or q.get('success') is True and not bootstrap_proof_valid(q.get('bootstrapProof'),e['operation']['operation'],self.native_context)):fail()
+    if baseline_gate and q.get('success') is True:
+     index=0 if e['operation']['id']=='future-baseline-settings-goto' else 1
+     if e['operation']!=self.j['publisherStages'][0]['map'][index]['descriptor'] or self.j.get('bootstrapIdentity')!='PENDING' or not baseline_identity_proof_valid(q.get('baselineIdentityProof'),e['operation']['operation'],self.j['publisherStages'][0]['map'][index],self.native_context,self.native_publisher_hash):fail()
+    if q.get('success') is False and diagnostic and not repair and e['operation']['preparation'] is True and not bootstrap:
      p=q.get('preparationOutcome');fields=['kind','phase','targetVerified','accountVerified','bindingVerified','pureRead','terminal','fieldsRead']
      if not exact(q,['op','id','success','now','preparationOutcome']) or not exact(p,fields) or p['kind'] not in ['TECHNICAL','NOT_READY'] or p['kind']=='NOT_READY' and p['phase']!='READY' or p['kind']=='TECHNICAL' and p['phase'] not in ['DECODE','PROJECTOR_COMBOS','PROJECTOR_SHAPE','PROJECTOR_ANCESTORS','PROJECTOR_RELATED','POSTCHECK_COMBO'] or any(p[k] is not True for k in ['targetVerified','accountVerified','bindingVerified','pureRead','terminal']) or p['fieldsRead'] is not False or self.j['phase']!='PREP' or self.j['mutated'] or self.j['rpc']['beganAt'] is not None or d['readonlyIncidents']>=2 or d['diagnosticCalls']>=20-self.imported_delta:fail()
      e.update(settled=True,success=False,preparationOutcome=copy.deepcopy(p));self.j.update(pending=None,lastAt=q['now']);d['readonlyIncidents']+=1;d['diagnosticCalls']+=1;self.j['failures']+=1;self.persist();return self.view()
     projection=e['operation']['preparation'] is True and e['operation']['operation'] in ['snapshot','evaluate']
     verified=projection and q.get('success') is True
-    if type(q.get('success'))is not bool or q['id']!=e['operation']['id'] or verified and (not exact(q,['op','id','success','now','loadingResultVerified']) or q['loadingResultVerified'] is not True) or not verified and 'loadingResultVerified'in q:fail()
-    compatible={k:v for k,v in q.items()if k!='loadingResultVerified'}
+    if bootstrap or baseline_gate:
+     allowed=['op','id','success','now']+(['loadingResultVerified']if verified else[])+(['bootstrapProof']if bootstrap and q.get('success') is True else[])+(['baselineIdentityProof']if baseline_gate and q.get('success') is True else[])
+     if type(q.get('success'))is not bool or q['id']!=e['operation']['id'] or not exact(q,allowed) or verified and q['loadingResultVerified'] is not True:fail()
+    elif type(q.get('success'))is not bool or q['id']!=e['operation']['id'] or verified and (not exact(q,['op','id','success','now','loadingResultVerified']) or q['loadingResultVerified'] is not True) or not verified and 'loadingResultVerified'in q:fail()
+    compatible={k:v for k,v in q.items()if k not in ['loadingResultVerified','bootstrapProof','baselineIdentityProof']}
     result=super().command(compatible)
     if verified:self.j['events'][-1]['loadingResultVerified']=True;self.persist();result=self.view()
+    if bootstrap and q['success']:self.j['events'][-1]['bootstrapProof']=copy.deepcopy(q['bootstrapProof']);self.persist();result=self.view()
+    if baseline_gate and q['success']:
+     self.j['events'][-1]['baselineIdentityProof']=copy.deepcopy(q['baselineIdentityProof'])
+     if e['operation']['operation']=='evaluate':self.j['bootstrapIdentity']='VERIFIED'
+     self.persist();result=self.view()
     if diagnostic:
      d=self.j['publisherAlignment'];d['diagnosticCalls']+=1
      if repair:d['repairCalls']+=1
      if d['diagnosticCalls']>20-self.imported_delta or d['repairCalls']>6:fail()
-     self.persist();return self.view()
+     self.persist()
+     if bootstrap and not q['success']:self.stop()
+     return self.view()
+    if baseline_gate and not q['success']:self.stop();return self.view()
     return result
    if name=='settle' and e.get('preparationStage') and e.get('lane')=='ui' and e.get('key')=='N:preparation' and e['operation'].get('id','').startswith('publisher105-'):
     self.current();self.now(q.get('now'));e=self.j['events'][-1];op=e['operation'];self.check_loading(op);d=self.j['publisherAlignment'];n=d['used'];success=q.get('success');extra=['loadingResultVerified']if success and n in [3,5]else[]

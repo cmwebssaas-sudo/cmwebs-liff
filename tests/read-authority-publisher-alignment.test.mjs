@@ -21,7 +21,7 @@ function withTestHomedir(home,callback){
  }
 }
 
-test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through the real controller',async()=>{
+async function nativePredebitFixture(){
  const standardEnv=Object.fromEntries(['HOME','home','CODEX_HOME'].map(key=>[key,{present:Object.hasOwn(process.env,key),value:process.env[key]}]));
  const {s,closure}=await nativeSuccessorFixture();
  const rows=[
@@ -36,7 +36,7 @@ test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through th
   ['ground-settings-return','N:preparation','original-settings','navigate',true]
  ].map(([id,key,target,operation,preparation])=>({id:'future-baseline-'+id,key,actor:'publisher',target,operation,units:1,preparation}));
  const first=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
- await assert.rejects(first.withContinuation(async cap=>{await cap.stagePublisher({stage:'baseline',stageCap:9,map:rows.map(row=>futureMeta(row))});throw Error('synthetic-before-debit');}),/TRIAL_STOPPED/);
+ await assert.rejects(first.withContinuation(async cap=>{await cap.stagePublisher({stage:'baseline',stageCap:9,map:rows.map(row=>({...futureMeta(row),tabId:'current-tab'}))});throw Error('synthetic-before-debit');}),/TRIAL_STOPPED/);
  const old=s.path+'.simple-publisher-native-successor',registry=join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.simple-rebalanced.json');
  assert(registry.startsWith(s.home+'/'));assert(s.path.startsWith(s.home+'/'));
  const origin=Object.fromEntries(Object.entries({journal:old+'.json',claim:old+'-claim.json',stop:old+'-stop.json',registry}).map(([key,path])=>[key,{path,sha256:hash(readFileSync(path))}]));
@@ -62,6 +62,18 @@ test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through th
  const {createAuthoritySimpleControl}=await import('file://'+controlPath);
  const create=cfg=>withTestHomedir(s.home,()=>createAuthoritySimpleControl({config:((({now,ownerNonce,...rest})=>rest))(cfg),guard:()=>{},assertStage:()=>{},now:()=>s.time,pause:async ms=>{s.time+=ms;},verifyNativeSuccessor:()=>closure.sha256}));
  const owner=create(config);
+ return {standardEnv,s,closure,origin,stopped,config,create,owner,registry};
+}
+
+const bootstrapRows=()=>[
+ ['browser','getBrowser','publisherBootstrapGetBrowser'],
+ ['claim','claimTab','publisherBootstrapClaimTab'],
+ ['identity','evaluate','publisherBootstrapEvaluate']
+].map(([name,operation,callback])=>({lane:'ui',descriptor:{id:'future-bootstrap-'+name,key:'N:preparation',actor:'publisher',target:'oauth-audience',operation,units:1,preparation:true},tabId:'current-tab',url:contract.audienceURL,callback,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null}));
+const bootstrapResult=index=>({source:'publisher-bootstrap-context-v1',kind:['BROWSER_BOUND','TAB_CLAIMED','AUDIENCE_CONTEXT'][index],browserId:'current-browser',...(index>0?{tabId:'current-tab'}:{}),...(index===2?{url:contract.audienceURL,projectHash:'b'.repeat(64),readyState:'COMPLETE',headingMatched:true,identityPending:true}:{}),fieldsRead:false});
+
+test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through the real controller',async()=>{
+ const {standardEnv,s,origin,stopped,config,create,owner,registry}=await nativePredebitFixture();
  s.time+=1000;let callbacks=0;
  await owner.withContinuation(async cap=>{const view=await cap.inspect();assert.equal(view.combinedSpent,128);assert.equal(view.mainSpent,53);assert.equal(view.uiSpent,75);assert.equal(view.eventCount,55);assert.equal(view.pending,null);assert.equal(view.w0,null);assert.equal(view.failures,stopped.failures);await cap.pausePreparation();});
  assert.equal(callbacks,0);const active=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
@@ -86,11 +98,78 @@ test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through th
   }finally{writeFileSync(path,before,{mode:0o600});}
  }
  const next=create(nextConfig);
- await next.withContinuation(async cap=>{const view=await cap.inspect();assert.equal(view.combinedSpent,128);assert.equal(view.eventCount,55);assert.equal(view.pending,null);await cap.pausePreparation();});
+ const diagnostic=bootstrapRows();
+ await next.withContinuation(async cap=>{
+  const view=await cap.inspect();assert.equal(view.combinedSpent,128);assert.equal(view.eventCount,55);assert.equal(view.pending,null);
+  const registered=await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:diagnostic});assert.equal(registered.futureUiSpent,0);
+  for(const [index,row] of diagnostic.entries())await cap.browserRead(()=>bootstrapResult(index),row.descriptor);
+  const after=await cap.inspect();assert.equal(after.combinedSpent,131);assert.equal(after.uiSpent,78);assert.equal(after.eventCount,58);assert.equal(after.futureUiLimit,73);assert.equal(after.futureUiSpent,3);assert.equal(after.readonlyIncidents,2);assert.equal(after.repairCalls,6);assert.equal(after.diagnosticCalls,3);assert.equal(after.bootstrapIdentity,'PENDING');
+  await cap.pausePreparation();
+ });
+ const bootstrap=JSON.parse(readFileSync(recoveryBase+'.json'));assert.equal(bootstrap.publisherStages[0].stageCap,9);assert.equal(bootstrap.publisherStages[1].stageCap,3);assert.equal(bootstrap.futureOrdinaryUi,61);assert.equal(bootstrap.bootstrapIdentity,'PENDING');assert.deepEqual(bootstrap.events.slice(55).map(e=>e.operation.id),diagnostic.map(row=>row.descriptor.id));
+ const bootstrapHandoff=next.preparationHandoff();s.time+=1000;
+ const afterBootstrap=create({...config,resume:{...config.resume,...bootstrapHandoff}});
+ await afterBootstrap.withContinuation(async cap=>{
+  const view=await cap.inspect();assert.equal(view.combinedSpent,131);assert.equal(view.eventCount,58);assert.equal(view.futureUiSpent,3);assert.equal(view.bootstrapIdentity,'PENDING');
+  const baseline=bootstrap.publisherStages[0].map;
+  await cap.browserRead(()=>({source:'publisher-baseline-navigation-v1',status:'AWAITING_NEXT_PROJECTION',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,fieldsRead:false}),baseline[0].descriptor);
+  const beforeIdentity=await cap.inspect();assert.equal(beforeIdentity.bootstrapIdentity,'PENDING');assert.equal(beforeIdentity.combinedSpent,132);
+  await cap.browserRead(()=>({source:'publisher-baseline-identity-v1',status:'VERIFIED',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,projectHash:'b'.repeat(64),principalHash:contract.publisherHash,readyState:'COMPLETE',fieldsRead:false}),baseline[1].descriptor);
+  const grounded=await cap.inspect();assert.equal(grounded.bootstrapIdentity,'VERIFIED');assert.equal(grounded.combinedSpent,133);assert.equal(grounded.uiSpent,80);assert.equal(grounded.futureUiSpent,5);await cap.pausePreparation();
+ });
+ const grounded=JSON.parse(readFileSync(recoveryBase+'.json'));assert.equal(grounded.bootstrapIdentity,'VERIFIED');assert.equal(grounded.futureOrdinaryUi,61);assert.deepEqual(grounded.events.slice(58).map(e=>e.operation.id),bootstrap.publisherStages[0].map.slice(0,2).map(row=>row.descriptor.id));
+ const groundedHandoff=afterBootstrap.preparationHandoff();s.time+=1000;
+ const resumed=create({...config,resume:{...config.resume,...groundedHandoff}});
+ await resumed.withContinuation(async cap=>{const view=await cap.inspect();assert.equal(view.combinedSpent,133);assert.equal(view.bootstrapIdentity,'VERIFIED');await cap.pausePreparation();});
+ const incompleteHandoff=resumed.preparationHandoff();s.time+=1000;let prematureCalls=0;
+ await assert.rejects(create({...config,resume:{...config.resume,...incompleteHandoff}}).withContinuation(async cap=>{
+  await cap.stagePublisher({stage:'thin',stageCap:1,map:[futureMeta({id:'future-premature-thin',key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true})]});prematureCalls++;
+ }),/TRIAL_STOPPED/);assert.equal(prematureCalls,0);
  assert.equal(JSON.parse(readFileSync(origin.journal.path)).lifecycle,'HARD_STOP');
  const replay=create(config);
  await assert.rejects(replay.withContinuation(()=>{callbacks++;}),/TRIAL_STOPPED/);assert.equal(callbacks,0);
  for(const [key,entry] of Object.entries(standardEnv)){assert.equal(Object.hasOwn(process.env,key),entry.present);assert.equal(process.env[key],entry.value);}
+});
+
+test('predebit bootstrap refuses baseline spending and reordered diagnostics before callbacks',async()=>{
+ for(const kind of ['baseline-first','diagnostic-reordered','diagnostic-duplicate-map']){
+  const {s,owner,origin}=await nativePredebitFixture(),diagnostic=bootstrapRows();let callbacks=0;
+  s.time+=1000;
+  await assert.rejects(owner.withContinuation(async cap=>{
+   const before=await cap.inspect();assert.equal(before.combinedSpent,128);assert.equal(before.eventCount,55);
+   if(kind==='baseline-first')await cap.browserRead(()=>{callbacks++;return {synthetic:true};},{id:'future-baseline-settings-goto',key:'N:preparation',actor:'publisher',target:'original-settings',operation:'navigate',units:1,preparation:true});
+   else if(kind==='diagnostic-reordered'){
+    await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:diagnostic});
+    await cap.browserRead(()=>{callbacks++;return {synthetic:true};},diagnostic[1].descriptor);
+   }else await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:[diagnostic[0],diagnostic[0],diagnostic[2]]});
+  }),/TRIAL_STOPPED/,kind);
+  assert.equal(callbacks,0,kind);
+  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+  assert.equal(j.events.length,55,kind);assert.equal(j.publisherStages[0].stageCap,9,kind);assert.equal(j.publisherStages.length,kind==='diagnostic-reordered'?2:1,kind);
+  assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256,kind);
+ }
+});
+
+test('context is not identity; ambiguous context and Settings principal stop with their debits',async()=>{
+ for(const kind of ['context-only','wrong-context','wrong-principal']){
+  const {s,owner,origin}=await nativePredebitFixture(),diagnostic=bootstrapRows();let forbiddenCalls=0;s.time+=1000;
+  await assert.rejects(owner.withContinuation(async cap=>{
+   await cap.stagePublisher({stage:'diagnostic',stageCap:3,map:diagnostic});
+   for(const [index,row] of diagnostic.entries())await cap.browserRead(()=>index===2&&kind==='wrong-context'?{...bootstrapResult(index),projectHash:'0'.repeat(64)}:bootstrapResult(index),row.descriptor);
+   const baseline=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json')).publisherStages[0].map;
+   if(kind==='context-only')await cap.externalRead(()=>{forbiddenCalls++;return {synthetic:true};},baseline[2].descriptor);
+   else {
+    await cap.browserRead(()=>({source:'publisher-baseline-navigation-v1',status:'AWAITING_NEXT_PROJECTION',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,fieldsRead:false}),baseline[0].descriptor);
+    await cap.browserRead(()=>({source:'publisher-baseline-identity-v1',status:'VERIFIED',browserId:'current-browser',tabId:'current-tab',url:contract.settingsURL,projectHash:'b'.repeat(64),principalHash:'0'.repeat(64),readyState:'COMPLETE',fieldsRead:false}),baseline[1].descriptor);
+   }
+  }),/TRIAL_STOPPED/,kind);
+  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+  assert.equal(forbiddenCalls,0,kind);assert.equal(j.state,'stopped',kind);assert.equal(j.bootstrapIdentity,'PENDING',kind);assert.equal(j.events.length,kind==='wrong-principal'?60:58,kind);
+  assert.equal(j.publisherAlignment.readonlyIncidents,2,kind);assert.equal(j.publisherAlignment.repairCalls,6,kind);
+  assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256,kind);
+  if(kind==='context-only')assert.equal(j.pending,null,kind);
+  else {assert.equal(j.events.at(-1).settled,false,kind);assert.equal(j.pending,j.events.at(-1).operation.id,kind);}
+ }
 });
 
 async function nativeSuccessorFixture(finalSpent=128){
@@ -204,7 +283,7 @@ async function runNativeForwardJourney(unknownH=false){
   await spendUi(cap,[...afterUi,plan.trigger('after')]);await spendMain(cap,after);
   await stage(cap,'terminal',[plan.terminal],[]);await spendUi(cap,[plan.terminal]);
   phase='finish';const done=await cap.finishCompatibility();assert.equal(done.rpc.complete,true);assert.equal(done.pending,null);assert.equal(done.w0,w0);assert.equal(done.chargedUpperBoundMs,360000);
- });if(unknownH)assert.fail('unknown H must stop its ordinary holder');}catch(error){if(!unknownH)assert.fail(`${phase}: ${error.message}`);assert.match(error.message,/TRIAL_STOPPED/);}
+ });if(unknownH)assert.fail('unknown H must stop its ordinary holder');}catch(error){if(!unknownH){const failed=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));assert.fail(`${phase}: ${error.message}; events=${failed.events.length}; pending=${failed.pending}; last=${JSON.stringify(failed.events.at(-1))}`);}assert.match(error.message,/TRIAL_STOPPED/);}
  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
  if(unknownH){
   assert.equal(calls.filter(id=>id==='future-main-H-wrapper-compatibility-rpc').length,1);assert.equal(calls.includes('duplicate-H'),false);assert.equal(calls.filter(id=>id.startsWith('future-main-T-')).length,3);
