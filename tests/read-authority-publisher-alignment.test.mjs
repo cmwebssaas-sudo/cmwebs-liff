@@ -987,7 +987,7 @@ for method in ['snapshot','evaluate']:
  for flag in ['missing','false']:
   op={'id':'future-projection','operation':method,'preparation':True}
   event={'lane':'ui','operation':op,'settled':False}
-  obj=object.__new__(aligned);obj.j={'publisherAlignment':{'used':6},'events':[event],'publisherStages':[{'stage':'baseline','map':[{'lane':'ui','descriptor':op,'repairIncident':None}]}],'pending':op['id']}
+  obj=object.__new__(aligned);obj.predebit_recovery=False;obj.j={'publisherAlignment':{'used':6},'events':[event],'publisherStages':[{'stage':'baseline','map':[{'lane':'ui','descriptor':op,'repairIncident':None}]}],'pending':op['id']}
   obj.current=lambda:None;obj.now=lambda _:None
   q={'op':'settle','id':op['id'],'success':True,'now':1}
   if flag=='false':q['loadingResultVerified']=False

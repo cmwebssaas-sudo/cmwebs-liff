@@ -2926,3 +2926,12 @@ identity/proof drift, early P/A and later-stage attempts, a malformed project
 receipt, forged pending or failed synthetic checkpoints, and omitted or
 relabelled registered descriptors in the full plan. Private callback graph
 pinning and actual provider readbacks remain separate owner work.
+
+## 2026-10-24 C3 projection-settlement minimal fixture invariant
+
+The focused absent/false projection-verification test initializes the
+`predebit_recovery` mode explicitly in its `object.__new__` ledger fixture, as
+the base-mode constructor does. Its four snapshot/evaluate and missing/false
+cases continue to require `TRIAL_STOPPED` before pending clears or the event
+settles. This repairs test setup only; no production source or acceptance
+threshold changed.
