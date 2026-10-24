@@ -155,7 +155,7 @@ def alignment_class(base):
    if self.native_successor:self.validate_native_successor(old)
    return super().current()
   def view(self,wait=0):
-   v=super().view(wait);d=self.j['publisherAlignment'];delta=self.imported_delta if self.native_successor else 0;v.update(uiSpent=v['uiSpent']+3+delta,combinedSpent=v['combinedSpent']+3+delta,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3+delta,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile)
+   v=super().view(wait);d=self.j['publisherAlignment'];delta=self.imported_delta if self.native_successor else 0;v.update(uiSpent=v['uiSpent']+3+delta,combinedSpent=v['combinedSpent']+3+delta,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3+delta,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),trialMapReady=self.trial_map_ready(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile)
    if self.native_successor:v.update(successorImported=delta,futureUiLimit=90-delta,currentVisualVerified=self.j.get('nativeCurrentVisual') is True)
    return v
   def preparation_complete(self):return self.j.get('publisherAlignment',{}).get('used')==6 and self.j['publisherAlignment']['settingsVerified'] and (self.j['publisherAlignment']['audienceVerified'] or self.native_successor and self.j.get('nativeCurrentVisual') is True)
@@ -205,10 +205,11 @@ def alignment_class(base):
     prior_mapped={m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']}
     if self.native_successor and (index<5 and q['stageCap']<FUTURE[index][1] or index==5 and q['stageCap']>20-self.imported_delta):fail()
     if q['stageCap']>(20-self.imported_delta if q['stage']=='diagnostic' else FUTURE[index][1])+rollover or used+q['stageCap']+future_minimum>self.future_limit() or self.future_spent()!=used or not prior_mapped<=complete or any(e.get('settled')is not True or e.get('success')is not True for e in self.j['events'][55:]):fail()
-    ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']};seen=set();main_keys=set(self.j['stages']);cleanup_ids={c['descriptor']['id']for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']};cleanup_keys={g['descriptor'](c['descriptor'],c['lane'])for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']if c['lane']=='main'};ui_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='ui'])for st in self.j['publisherStages']for m in st['map']);main_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='main'])for st in self.j['publisherStages']for m in st['map'])
+    plan=self.j['plan'];ids={e['operation']['id']for e in self.j['events']}|{m['descriptor']['id']for stage in self.j['publisherStages']for m in stage['map']};seen=set();main_keys={m['descriptor']['bucket']+':'+m['descriptor']['alias']for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='main'}if plan is not None else set(self.j['stages']);cleanup_ids={c['descriptor']['id']for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']};cleanup_keys={g['descriptor'](c['descriptor'],c['lane'])for st in self.j['publisherStages']for m in st['map']for c in m['cleanup']if c['lane']=='main'};ui_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='ui'])for st in self.j['publisherStages']for m in st['map']);main_cleanup=sum(len([c for c in m['cleanup']if c['lane']=='main'])for st in self.j['publisherStages']for m in st['map'])
     for m in q['map']:
      if not exact(m,['lane','descriptor','tabId','url','callback','receipt','privacy','cleanup','repairIncident']) or m['lane']not in ['ui','main'] or type(m['descriptor'])is not dict or type(m['tabId'])is not str or not m['tabId'] or type(m['url'])is not str or not m['url'].startswith('https://') or type(m['callback'])is not str or not g['valid_id'](m['callback']) or m['receipt']not in ['SANITIZED_READ','EXACT_WRITE_READBACK'] or m['privacy']!='NO_SECRET_VALUES' or type(m['cleanup'])is not list or m['repairIncident'] is not None and (type(m['repairIncident'])is not int or m['repairIncident']not in [1,2]):fail()
      op=m['descriptor'];g['descriptor'](op,m['lane'])
+     if plan is not None and (m['lane']=='main' and op not in plan['operations'] or m['lane']=='ui' and not op['preparation'] and op not in plan['browserOperations']):fail()
      if not op['id'].startswith('future-') or op['id']in ids or op['id']in seen or op['id']in cleanup_ids or op['units']!=1 or g['descriptor'](op,m['lane']).startswith(('C:','I:','J:')):fail()
      if m['lane']=='main':
       key=op['bucket']+':'+op['alias']
@@ -220,6 +221,7 @@ def alignment_class(base):
      for clean in m['cleanup']:
       if not exact(clean,['lane','descriptor','target','tabId','url','callback','receipt']) or clean['lane']not in ['ui','main'] or type(clean['descriptor'])is not dict or clean['target']!=clean['descriptor'].get('target') or type(clean['tabId'])is not str or not clean['tabId'] or type(clean['url'])is not str or not clean['url'].startswith('https://') or not g['valid_id'](clean['callback']):fail()
       key=g['descriptor'](clean['descriptor'],clean['lane']);method=clean['descriptor']['operation'];expected='SANITIZED_READ'if method in g['READ_METHODS']+['GET']else'EXACT_WRITE_READBACK'
+      if plan is not None and clean['descriptor'] not in plan['operations'if clean['lane']=='main'else'browserOperations']:fail()
       if not key.startswith(('C:','I:','J:')) or clean['lane']=='main' and key in cleanup_keys or clean['receipt']!=expected or clean['descriptor']['id']in ids or clean['descriptor']['id']in seen or clean['descriptor']['id']in cleanup_ids:fail()
       cleanup_ids.add(clean['descriptor']['id'])
       if clean['lane']=='main':cleanup_keys.add(key)
@@ -227,12 +229,15 @@ def alignment_class(base):
       else:main_cleanup+=1
      seen.add(op['id'])
     if ui_cleanup>16 or main_cleanup>21:fail()
+    if plan is not None:
+     used_ids={e['operation']['id']for e in self.j['events']};unspent=sum(not row['key'].startswith(('C:','I:','J:')) and row['id']not in used_ids for row in plan['browserOperations']);new_prep=sum(m['lane']=='ui' and m['descriptor']['preparation'] for m in q['map'])
+     if self.future_spent()+unspent+new_prep>self.future_limit():fail()
     self.j['publisherStages'].append({'stage':q['stage'],'stageCap':q['stageCap'],'map':copy.deepcopy(q['map'])})
     for m in q['map']:
      if m['lane']=='ui' and m['descriptor']['preparation'] is True:self.j['preparationStages'][m['descriptor']['id']]={'operations':[copy.deepcopy(m['descriptor'])],'remainingOrdinaryUi':self.future_limit()-used-q['stageCap']}
      elif m['lane']=='ui':self.j['stageBrowser'].append(copy.deepcopy(m['descriptor']))
      else:self.j['stages'][m['descriptor']['bucket']+':'+m['descriptor']['alias']]=copy.deepcopy(m['descriptor'])
-     self.j['recoveryBrowser']+=[copy.deepcopy(c['descriptor'])for c in m['cleanup']if c['lane']=='ui']
+     if plan is None:self.j['recoveryBrowser']+=[copy.deepcopy(c['descriptor'])for c in m['cleanup']if c['lane']=='ui']
     self.j['futureOrdinaryUi']=self.future_limit()-used-q['stageCap'];self.j['lastAt']=q['now'];self.persist();return self.view()
    if name=='settle' and self.j.get('publisherAlignment',{}).get('used')==6 and e.get('lane')=='ui' and e['operation'].get('id','').startswith('future-'):
     self.current();self.now(q.get('now'));e=self.j['events'][-1];matches=[(stage,m)for stage in self.j['publisherStages']for m in stage['map']if m['lane']=='ui' and m['descriptor']==e['operation']]
@@ -273,6 +278,9 @@ def alignment_class(base):
     self.current();self.active(q.get('now'))
     if not exact(q,['op','now']) or not self.prepared_checkpoint(self.j) or self.j['pending']is not None or any(e['settled']is not True for e in self.j['events']):fail()
     self.j.update(lifecycle='CLEAN_PAUSE',lastAt=q['now']);self.persist();return self.view()
-   if name in ['stage-ready','plan-ready','recovery-ready','rpc-begin'] and self.j.get('plan')is None:fail()
+   if name=='plan-ready' and self.j.get('plan') is None:
+    self.current();self.active(q.get('now'))
+    if not self.preparation_complete() or not stage_clock_valid(self.j['phase'],self.j['w0']) or self.j['pending'] is not None or any(e.get('settled') is not True for e in self.j['events']) or self.j['rpc']['beganAt'] is not None:fail()
+   if name in ['stage-ready','recovery-ready','rpc-begin'] and self.j.get('plan')is None:fail()
    return super().command(q)
  return PublisherAlignmentLedger

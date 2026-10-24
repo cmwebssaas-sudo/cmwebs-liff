@@ -8,6 +8,7 @@ import {join} from 'node:path';
 import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
 import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
 import {projection} from '../scripts/read-authority-project-retarget.mjs';
+import {SIMPLE_RULES,SIMPLE_NATIVE} from '../scripts/read-authority-simple-plan.mjs';
 
 async function nativeSuccessorFixture(finalSpent=128){
  const s=await alignmentFixture(),{flow}=flowFixture(s,null,{snapshots:{'thin-settings':snapshot,'oauth-audience':JSON.stringify({...JSON.parse(snapshot),accountVerified:false})}});
@@ -30,6 +31,67 @@ async function nativeSuccessorFixture(finalSpent=128){
  alignment(s).nativeSuccessor={closure};s.cfg.resume={nativeSuccessor:true};s.time+=1000;
  return {s,closure,origin,charges,attestation,live};
 }
+
+const fullFixedPlan=()=>Object.entries(SIMPLE_RULES).map(([key,rule])=>({id:'native-plan-'+key.replace(':','.'),bucket:key[0],alias:key.slice(2),actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1}));
+const nativePlanRows=()=>SIMPLE_NATIVE.map((key,index)=>{const rule=SIMPLE_RULES[key],writing=rule.methods.some(method=>['click','fill'].includes(method));return {id:`future-native-${index}`,key,actor:rule.actor,target:rule.target,operation:writing?'submit':'snapshot',units:1,preparation:false};});
+const recoveryPlanRows=()=>Object.entries(SIMPLE_RULES).filter(([key])=>key.startsWith('I:')||key.startsWith('J:')).slice(0,16).map(([key,rule],index)=>({id:`native-recovery-${index}`,key,actor:rule.actor,target:rule.target,operation:rule.methods.every(method=>['GET','snapshot','read-key-presence'].includes(method))?'snapshot':'submit',units:1,preparation:false}));
+const completeNativePlan=()=>({operations:fullFixedPlan().map(row=>row.bucket==='P'&&row.alias==='publisher-userinfo'?{...row,id:'future-publisher-userinfo'}:row),browserOperations:[...nativePlanRows(),...Array.from({length:50},(_,index)=>({id:`future-navigation-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false})),...recoveryPlanRows()]});
+const futureMeta=(descriptor,cleanup=[])=>({lane:'ui',descriptor,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:descriptor.id,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup,repairIncident:null});
+
+test('first complete native publisher plan registers from the settled 128 bootstrap',async()=>{
+ const {s,closure,origin}=await nativeSuccessorFixture(),old=readFileSync(origin.journal.path);
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ await owner.withContinuation(async cap=>{
+  const before=await cap.inspect();assert.equal(before.planReady,false);assert.equal(before.pending,null);assert.equal(before.futureUiSpent,0);
+  const plan=completeNativePlan(),registered=await cap.completePlan(plan);
+  assert.equal(registered.planReady,true);assert.equal(registered.futureUiSpent,0);assert.equal(registered.rpc.beganAt,null);assert.equal(registered.w0,null);
+  const main=plan.operations.find(row=>row.id==='future-publisher-userinfo');
+  const staged=await cap.stagePublisher({stage:'baseline',stageCap:6,map:[...plan.browserOperations.slice(21,27).map(row=>futureMeta(row)),{lane:'main',descriptor:main,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:main.id,receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null}]});
+  assert.equal(staged.planReady,true);assert.equal(staged.publisherUsed,6);assert.equal(staged.w0,null);
+ });
+ assert.equal(s.aligned().plan,null);assert(readFileSync(origin.journal.path).equals(old));
+});
+
+test('native publisher view exposes real staged trial readiness before full plan',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ await owner.withContinuation(async cap=>{
+  const first=await cap.inspect();assert.equal(first.planReady,false);assert.equal(first.trialMapReady,false);
+  const map=Array.from({length:6},(_,index)=>futureMeta({id:`future-baseline-${index}`,key:'N:preparation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:true}));
+  const rule=SIMPLE_RULES['I:verify-token-revoked'];map[0].cleanup=[{lane:'ui',descriptor:{id:'native-recovery-gate',key:'I:verify-token-revoked',actor:rule.actor,target:rule.target,operation:'snapshot',units:1,preparation:false},target:rule.target,tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:'native-recovery-gate',receipt:'SANITIZED_READ'}];
+  const p=SIMPLE_RULES['P:publisher-userinfo'];map.push({lane:'main',descriptor:{id:'future-publisher-userinfo',bucket:'P',alias:'publisher-userinfo',actor:p.actor,target:p.target,operation:p.methods[0],units:1},tabId:'synthetic-tab',url:'https://synthetic.invalid/settings',callback:'future-publisher-userinfo',receipt:'SANITIZED_READ',privacy:'NO_SECRET_VALUES',cleanup:[],repairIncident:null});
+  const staged=await cap.stagePublisher({stage:'baseline',stageCap:6,map});assert.equal(staged.trialMapReady,true);assert.equal(staged.planReady,false);assert.equal(staged.pending,null);assert.equal(staged.w0,null);assert.equal(staged.eventCount,55);
+ });
+});
+
+test('native first plan refuses a missing native alias before any trial debit',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256),plan=completeNativePlan();
+ plan.browserOperations=plan.browserOperations.filter(row=>row.key!==SIMPLE_NATIVE[0]);
+ await assert.rejects(owner.withContinuation(cap=>cap.completePlan(plan)),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.equal(j.plan,null);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);
+});
+
+test('native first plan cannot be registered twice',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256),plan=completeNativePlan();
+ await assert.rejects(owner.withContinuation(async cap=>{await cap.completePlan(plan);await cap.completePlan(plan);}),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.deepEqual(j.plan,plan);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);
+});
+
+test('native plan rejects a later publisher stage with an unmapped UI row',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256),plan=completeNativePlan();
+ const map=plan.browserOperations.slice(21,27).map(row=>futureMeta(row));map[5].descriptor={...map[5].descriptor,id:'future-unmapped-row'};map[5].callback='future-unmapped-row';
+ await assert.rejects(owner.withContinuation(async cap=>{await cap.completePlan(plan);await cap.stagePublisher({stage:'baseline',stageCap:6,map});}),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.deepEqual(j.plan,plan);assert.deepEqual(j.publisherStages,[]);assert.equal(j.events.length,55);assert.equal(j.pending,null);assert.equal(j.w0,null);
+});
+
+test('native successor blocks RPC before complete plan without invoking IO',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256),operation=fullFixedPlan().find(row=>row.bucket==='H');let calls=0;
+ await assert.rejects(owner.withContinuation(cap=>cap.dispatchCompatibility({operation,credentialExpiresAt:s.time+600000},()=>{calls++;})),/TRIAL_STOPPED/);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.equal(calls,0);assert.equal(j.plan,null);assert.equal(j.rpc.beganAt,null);assert.equal(j.events.length,55);assert.equal(j.w0,null);
+});
 
 test('settled B visual chain imports once into a new PREP successor while original 111 stays false',async()=>{
  const {s,closure,live,origin}=await nativeSuccessorFixture(),before=Object.fromEntries(Object.entries(live).filter(([k])=>k!=='registry').map(([,path])=>[path,readFileSync(path)])),frozenRegistry=readFileSync(origin.registry.path);let calls=0;

@@ -2757,3 +2757,14 @@ diagnostic decision and the parent-owned exact-source gates.
 | Accounting and replay | Gap, duplicate nonce, pending state, changed origin, exhausted repair allowance reset and second owner stop; 296 total and at least 70 future UI calls remain protected |
 
 Focused source tests use synthetic evidence in `tests/read-authority-publisher-alignment.test.mjs`; `npm run validate` checks the repository baseline. This source preparation does not establish actual browser identity, external provider acceptance or production readiness. No Apps Script test function applies because `.gs`, routes and schema are unchanged.
+
+## 2026-10-24 C3 first publisher plan registration regression
+
+| Check | Local synthetic boundary |
+| --- | --- |
+| Native successor first plan | A full fixed-key plan with every native UI alias and bounded recovery can register after the settled publisher bootstrap; no RPC, trial clock or provider call is credited. |
+| Staged readiness | The view reports the inherited ledger's `trial_map_ready()` result: false at bootstrap and true after a valid main/UI/recovery stage map, while `planReady` remains false. |
+| Later stages | A stage registered after the full plan must use exact planned main, ordinary UI and recovery descriptors; any new preparation reads must fit the unspent plan reservation. |
+| Rejection | Missing native alias, duplicate registration, unmapped later stage and premature RPC are denied without new trial debit. |
+
+The RED and GREEN source tests use `tests/read-authority-publisher-alignment.test.mjs` and local synthetic records only. This is controller correctness evidence, not actual provider, Core, production or release acceptance. No Apps Script function applies because no `.gs`, route or schema changes were made.
