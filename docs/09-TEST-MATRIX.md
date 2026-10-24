@@ -3937,3 +3937,29 @@ the immutable push SHA as fallback. This keeps source-identity checks aligned
 with the selected source on both supported event types. Local YAML parsing,
 ref/event assertions, validation and diff checks are configuration checks;
 reviewed source must still receive a complete CI run before acceptance.
+
+## 2026-10-24 — bounded CI Worker resource observation
+
+The existing `read-worker` job starts a passive Linux `/proc` observer beside
+the unchanged `npm run test:worker 2>&1 | tee` command. The shell retains
+`pipefail`, its test exit status, the complete raw Worker log, and the existing
+always-run terminal summary. The observer records at most one sample every
+500 ms for 600 seconds, up to 32 owned descendants per sample and 8 MiB of
+JSONL in `RUNNER_TEMP`; it stops on shell exit and records its own terminal
+status. No process environment, command line, unowned process, or arbitrary
+process name is exported. PID plus process start tick guards CPU deltas from
+PID reuse. CPU is retained in scheduler ticks, RSS in pages, and the mapped
+current cgroup's quota/throttling in its original units; zero, missing and
+invalid values are separate states. A bounded terminal line includes up to
+eight owned-process CPU/RSS totals and first/last cgroup counters, with drops
+explicit. An absent observer result is `UNAVAILABLE`, never a Worker PASS.
+The self-observer is excluded from Node/workerd attribution.
+
+Synthetic Linux proc/cgroup fixtures and abort/closed-file lifecycle tests
+cover parsing, ownership, bounds, missing and invalid data, PID reuse, numeric
+zero and final summary. These are source-level evidence checks; no real
+Ubuntu CI/resource observation or Worker benchmark was run for this change.
+The observer adds background process/I/O overhead, and sampled process totals
+cannot identify a route hotspot, prove a latency cause, or establish Production
+performance. Rollback reverts this observer/workflow-only commit; the original
+Worker test and strict `<50 ms` gate remain the acceptance authority.
