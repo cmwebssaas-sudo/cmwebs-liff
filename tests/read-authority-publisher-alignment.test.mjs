@@ -107,7 +107,7 @@ const nativeRegisteredAPlan=(s,baseline,projectMap)=>{
  plan.browserOperations=[...native,...navigation,...recovery.map(row=>row.key==='I:read-original-project'?projectMap.cleanup[0].descriptor:row)];
  return plan;
 };
-async function completeNativeAReadiness(cap,s,config,publicSource,projectMap,onRead){
+async function completeNativeAReadiness(cap,s,config,publicSource,projectMap,onRead,omitAlias=null){
  const baseline=await prepareNativeARegistration(cap,s),request=nativeAInitialRequest(s,config,publicSource,projectMap);
  await cap.registerPublisherAReads(request);
  await cap.browserRead(()=>{onRead();return JSON.parse(snapshot);},baseline[2].descriptor);
@@ -116,7 +116,7 @@ async function completeNativeAReadiness(cap,s,config,publicSource,projectMap,onR
  await cap.externalRead(()=>{onRead();return receipt;},projectMap.descriptor);
  const rest=nativeAMap(nativeAKeys,projectMap),ownerHash=request.proof.ownerHash;
  await cap.registerPublisherAReads({phase:'remaining',map:rest,proof:nativeAProof('remaining',rest,publicSource,projectMap,config,ownerHash,receipt)});
- for(const row of rest)await cap.externalRead(()=>{onRead();return {source:'synthetic-read'};},row.descriptor);
+ for(const row of rest)if(row.descriptor.alias!==omitAlias)await cap.externalRead(()=>{onRead();return {source:'synthetic-read'};},row.descriptor);
  for(const index of [3,4,5])await cap.browserRead(()=>{onRead();return JSON.parse(snapshot);},baseline[index].descriptor);
  return baseline;
 }
@@ -211,28 +211,42 @@ for(const [kind,step,expectedEvents] of [
  ['userinfo before refresh','trial',64],
  ['A project before P2','trial',64],
  ['PREP pause after readiness','registered',63],
- ['thin before A receipts','registered',63],
+ ['thin before final A receipt','thin-partial',74],
  ['H before full plan','registered',63]
 ])test(`native phased readiness refuses ${kind} without a new callback`,async()=>{
  const {s,config,owner,publicSource,projectMap}=await nativePredebitFixture(true);let callbacks=0;
  await assert.rejects(owner.withContinuation(async cap=>{
-  const baseline=await prepareNativeARegistration(cap,s),request=nativeAInitialRequest(s,config,publicSource,projectMap);
-  if(step!=='unregistered')await cap.registerPublisherAReads(request);
+  const baseline=step==='thin-partial'
+   ?await completeNativeAReadiness(cap,s,config,publicSource,projectMap,()=>{callbacks++;},'original-container-acl')
+   :await prepareNativeARegistration(cap,s);
+  const request=step==='thin-partial'?null:nativeAInitialRequest(s,config,publicSource,projectMap);
+  if(step!=='unregistered'&&step!=='thin-partial')await cap.registerPublisherAReads(request);
   if(step==='trial')await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
   if(kind==='first A UI before readiness')await cap.browserRead(()=>{callbacks++;return JSON.parse(snapshot);},baseline[2].descriptor);
   if(kind==='P refresh before first A UI')await cap.externalRead(()=>{callbacks++;},request.map[0].descriptor);
   if(kind==='userinfo before refresh')await cap.externalRead(()=>{callbacks++;},request.map[1].descriptor);
   if(kind==='A project before P2')await cap.externalRead(()=>{callbacks++;return nativeAProjectReceipt(publicSource);},projectMap.descriptor);
   if(kind==='PREP pause after readiness')await cap.pausePreparation();
-  if(kind==='thin before A receipts'){
+  if(kind==='thin before final A receipt'){
+   const checkpoint=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+   const mapped=checkpoint.publisherStages.flatMap(stage=>stage.map.map(row=>row.descriptor.id));
+   const settled=new Set(checkpoint.events.filter(event=>event.settled===true&&event.success===true).map(event=>event.operation.id));
+   assert.equal(checkpoint.publisherAReadiness.length,2);assert.equal(checkpoint.events.length,74);
+   assert(mapped.every(id=>settled.has(id)));assert.equal(checkpoint.events.slice(55).filter(event=>event.lane==='ui'&&!event.cleanup).length,12);
+   assert.equal(checkpoint.completed.includes('A:original-container-acl'),false);
    const map=Array.from({length:21},(_,index)=>({...futureMeta({id:`future-thin-premature-${index}`,key:'N:navigation',actor:'publisher',target:'thin-settings',operation:'snapshot',units:1,preparation:false}),tabId:'current-tab'}));
    await cap.stagePublisher({stage:'thin',stageCap:21,map});
   }
-  if(kind==='H before full plan')await cap.dispatchCompatibility({operation:{id:'future-h-before-plan'},credentialExpiresAt:s.time+600000},()=>{callbacks++;});
+  if(kind==='H before full plan'){
+   const rule=SIMPLE_RULES['H:wrapper-compatibility-rpc'];
+   const h={id:'future-h-before-plan',bucket:'H',alias:'wrapper-compatibility-rpc',actor:rule.actor,target:rule.target,operation:rule.methods[0],units:1};
+   assert.deepEqual(simpleFixed(h),h);
+   await cap.dispatchCompatibility({operation:h,credentialExpiresAt:s.time+600000},()=>{callbacks++;});
+  }
  }),/TRIAL_STOPPED/);
  const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
- assert.equal(j.events.length,expectedEvents);assert.equal(callbacks,step==='trial'?1:0);assert.equal(j.plan,null);assert.equal(j.pending,null);assert.equal(j.publisherStages.length,2);
- assert.equal(j.publisherAReadiness?.length,step==='unregistered'?undefined:1);
+ assert.equal(j.events.length,expectedEvents);assert.equal(callbacks,step==='thin-partial'?11:step==='trial'?1:0);assert.equal(j.plan,null);assert.equal(j.pending,null);assert.equal(j.publisherStages.length,2);
+ assert.equal(j.publisherAReadiness?.length,step==='unregistered'?undefined:step==='thin-partial'?2:1);
 });
 
 test('malformed charged A project receipt cannot open remaining A registration',async()=>{
