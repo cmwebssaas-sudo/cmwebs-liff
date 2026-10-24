@@ -4483,3 +4483,12 @@ bytes; fixed prefix plus 2,048 bytes metadata yields a derived output bound of
 cannot be called COMPLETE. Synthetic coverage retains five consecutive
 workerd samples before 60 later identities and 240 frames beyond the former
 59 KiB trim. This is a bounded diagnostic log, not route CPU attribution.
+
+## 2026-10-24 C3 projection-settlement minimal fixture invariant
+
+The focused absent/false projection-verification test initializes the
+`predebit_recovery` mode explicitly in its `object.__new__` ledger fixture, as
+the base-mode constructor does. Its four snapshot/evaluate and missing/false
+cases continue to require `TRIAL_STOPPED` before pending clears or the event
+settles. This repairs test setup only; no production source or acceptance
+threshold changed.
