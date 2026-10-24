@@ -8,7 +8,7 @@ import {join} from 'node:path';
 import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
 import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
 import {projection} from '../scripts/read-authority-project-retarget.mjs';
-import {SIMPLE_RULES,SIMPLE_NATIVE,simpleBrowser} from '../scripts/read-authority-simple-plan.mjs';
+import {SIMPLE_RULES,SIMPLE_NATIVE,simpleBrowser,simpleFixed} from '../scripts/read-authority-simple-plan.mjs';
 
 async function nativeSuccessorFixture(finalSpent=128){
  const s=await alignmentFixture(),{flow}=flowFixture(s,null,{snapshots:{'thin-settings':snapshot,'oauth-audience':JSON.stringify({...JSON.parse(snapshot),accountVerified:false})}});
@@ -122,6 +122,91 @@ test('native write UI methods obey their declared rules in both parsers',()=>{
  assert.equal(simpleBrowser(readonly,false,true).operation,'snapshot');
  const code=`import runpy,json\nf=runpy.run_path('scripts/read-authority-simple-budget.py')['descriptor']\nrows=json.loads(${JSON.stringify(JSON.stringify([...rows,...rows.flatMap(row=>SIMPLE_RULES[row.key].methods.map(method=>({...row,operation:method})),readonly)]))})\nout=[]\nfor row in rows:\n try:f(row,'ui');out.append(True)\n except Exception as error:out.append(False if str(error)=='TRIAL_STOPPED' else str(error))\nprint(json.dumps(out))`;
  const result=spawnSync('python3',['-c',code],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);const parsed=JSON.parse(result.stdout);assert.deepEqual(parsed.slice(0,rows.length),rows.map(()=>false));assert.deepEqual(parsed.slice(rows.length),parsed.slice(rows.length).map(()=>true));
+});
+
+test('mapped I recovery navigation accepts only the four existing publisher UI targets in both parsers',()=>{
+ const keys=['I:restore-original-guard','I:read-original-triggers','I:restore-thin-guard','I:remove-testing-user'];
+ const valid=keys.map((key,index)=>({id:`cleanup-goto-${index}`,key,actor:SIMPLE_RULES[key].actor,target:SIMPLE_RULES[key].target,operation:'navigate',units:1,preparation:false}));
+ const base=valid[1];
+ const invalid=[
+  {...base,actor:'caller'}, {...base,target:'oauth-client'}, {...base,preparation:true},
+  {...base,units:2}, {...base,key:'I:read-original-editor'},
+  {...base,key:'N:navigation',target:'new-target'},
+  {...base,key:'I:revoke-token',actor:'caller',target:'caller-oauth'},
+  {...base,operation:'submit'}
+ ];
+ for(const row of valid)assert.equal(simpleBrowser(row,false,true).operation,'navigate');
+ for(const row of invalid)assert.throws(()=>simpleBrowser(row,false,true),/SIMPLE_PLAN_UNVERIFIED/);
+ assert.throws(()=>simpleFixed({id:'future-main-goto',bucket:'I',alias:'read-original-triggers',actor:'publisher',target:'original-triggers',operation:'navigate',units:1}),/SIMPLE_PLAN_UNVERIFIED/);
+ assert.throws(()=>simpleBrowser({id:'future-write-submit',key:'D:thin-gcp-link',actor:'publisher',target:'thin-settings',operation:'submit',units:1,preparation:false},false,true),/SIMPLE_PLAN_UNVERIFIED/);
+ const code=`import runpy,json\nf=runpy.run_path('scripts/read-authority-simple-budget.py')['descriptor']\nrows=json.loads(${JSON.stringify(JSON.stringify(valid.map(row=>['ui',row]).concat(invalid.map(row=>['ui',row]),[['main',{id:'future-main-goto',bucket:'I',alias:'read-original-triggers',actor:'publisher',target:'original-triggers',operation:'navigate',units:1}],['ui',{id:'future-write-submit',key:'D:thin-gcp-link',actor:'publisher',target:'thin-settings',operation:'submit',units:1,preparation:false}]])))})\nout=[]\nfor lane,row in rows:\n try:f(row,lane);out.append(True)\n except Exception as error:out.append(False if str(error)=='TRIAL_STOPPED' else str(error))\nprint(json.dumps(out))`;
+ const result=spawnSync('python3',['-c',code],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);
+ assert.deepEqual(JSON.parse(result.stdout),[...valid.map(()=>true),...invalid.map(()=>false),false,false]);
+});
+
+test('native 128 same-owner cleanup charges mapped I goto before independent final read',async()=>{
+ const {s,closure,origin,live}=await nativeSuccessorFixture(),unchanged=readFileSync(origin.journal.path);
+ const plan=completeNativePlan(),key='I:read-original-triggers',final=plan.operations.find(row=>row.bucket+':'+row.alias===key);
+ const goto={id:'cleanup-goto-original-triggers',key,actor:'publisher',target:'original-triggers',operation:'navigate',units:1,preparation:false};
+ plan.browserOperations.splice(plan.browserOperations.findIndex(row=>row.key===key),0,goto);
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);let calls=0;
+ await owner.withContinuation(async cap=>{await cap.completePlan(plan);const v=await cap.inspect();assert.equal(v.combinedSpent,128);assert.equal(v.pending,null);});
+ const prior=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ let phase='enter',afterGoto,completedAfterGoto;try{await owner.withCleanup(async cap=>{
+  phase='inspect';
+  const before=await cap.inspect();assert.equal(before.combinedSpent,128);assert.equal(before.uiCleanup,0);
+  phase='goto';
+  await cap.browserRead(()=>{calls++;return {kind:'synthetic-navigation'};},goto);
+  phase='after goto';
+  afterGoto=await cap.inspect();completedAfterGoto=JSON.parse(readFileSync(live.registry)).value.checkpoint.completed.includes(key);
+  phase='main';await cap.externalRead(()=>{calls++;return {kind:'synthetic-bounded-trigger-read'};},final);
+  phase='after main';
+  const after=await cap.inspect();assert.equal(after.uiCleanup,1);assert.equal(after.mainSpent,54);assert.equal(after.combinedSpent,130);assert.equal(after.pending,null);
+ });}catch(e){throw Error(`cleanup ${phase}: ${e.message}`);}
+ assert.equal(afterGoto.uiCleanup,1);assert.equal(afterGoto.mainSpent,53);assert.equal(afterGoto.combinedSpent,129);assert.equal(afterGoto.pending,null);
+ assert.equal(afterGoto.state,'stopped');assert.equal(afterGoto.rpc.complete,false);assert.equal(completedAfterGoto,false);
+ const current=JSON.parse(readFileSync(live.registry)).value.checkpoint;
+ assert.equal(calls,2);assert.equal(current.events.length,prior.events.length+2);
+ assert.deepEqual(current.events.slice(-2).map(e=>[e.lane,e.operation.operation,e.cleanup,e.success]),[['ui','navigate',true,true],['main','snapshot',true,true]]);
+ assert.equal(current.completed.includes(key),true);assert.equal(prior.completed.includes(key),false);
+ assert(readFileSync(origin.journal.path).equals(unchanged));
+});
+
+test('native 128 refuses ordinary cleanup debit and unmapped recovery before provider',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),plan=completeNativePlan(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ const row={id:'cleanup-unmapped-goto',key:'I:read-original-triggers',actor:'publisher',target:'original-triggers',operation:'navigate',units:1,preparation:false};let calls=0;
+ await assert.rejects(owner.withContinuation(async cap=>{await cap.completePlan(plan);await cap.browserRead(()=>{calls++;},row);}),/TRIAL_STOPPED/);
+ assert.equal(calls,0);
+ await assert.rejects(owner.withCleanup(cap=>cap.browserRead(()=>{calls++;},row)),/TRIAL_STOPPED/);
+ assert.equal(calls,0);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.equal(j.events.length,55);assert.equal(j.pending,null);
+});
+
+test('native 128 refuses a mapped cleanup UI write before its main action',async()=>{
+ const {s,closure}=await nativeSuccessorFixture(),plan=completeNativePlan(),owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ const row=plan.browserOperations.find(v=>v.key==='I:restore-original-guard');assert.equal(row.operation,'click');let calls=0;
+ await owner.withContinuation(cap=>cap.completePlan(plan));
+ await assert.rejects(owner.withCleanup(cap=>cap.browserRead(()=>{calls++;},row)),/TRIAL_STOPPED/);
+ assert.equal(calls,0);
+ const j=JSON.parse(readFileSync(s.path+'.simple-publisher-native-successor.json'));
+ assert.equal(j.events.length,55);assert.equal(j.pending,null);
+});
+
+test('failed mapped cleanup navigation cannot be followed by an uncharged main callback',async()=>{
+ const {s,closure,live}=await nativeSuccessorFixture(),plan=completeNativePlan(),key='I:read-original-triggers';
+ const goto={id:'cleanup-failed-goto',key,actor:'publisher',target:'original-triggers',operation:'navigate',units:1,preparation:false};
+ const final=plan.operations.find(row=>row.bucket+':'+row.alias===key);plan.browserOperations.splice(plan.browserOperations.findIndex(row=>row.key===key),0,goto);
+ const owner=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);let navigationCalls=0,mainCalls=0;
+ await owner.withContinuation(cap=>cap.completePlan(plan));
+ await assert.rejects(owner.withCleanup(async cap=>{
+  await assert.rejects(cap.browserRead(()=>{navigationCalls++;throw Error('synthetic navigation failure');},goto),/TRIAL_STOPPED/);
+  await cap.externalRead(()=>{mainCalls++;},final);
+ }),/TRIAL_STOPPED/);
+ const current=JSON.parse(readFileSync(live.registry)).value.checkpoint;
+ assert.equal(navigationCalls,1);assert.equal(mainCalls,0);assert.equal(current.events.length,56);
+ assert.deepEqual(current.events.at(-1).operation,goto);assert.equal(current.events.at(-1).success,false);assert.equal(current.events.at(-1).cleanup,true);
+ assert.equal(current.completed.includes(key),false);
 });
 
 test('full native plan requires an admitted exact publisher main stage before each debit',async()=>{

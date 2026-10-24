@@ -7828,3 +7828,28 @@ API, Schema, Worker, push, merge or deployment is part of this source task.
 Parent review, exact-head CI/Core and private prestart gates remain pending.
 Rollback is a reviewed source revert before use; any future spent H, UNKNOWN,
 STOP and cleanup record must remain intact.
+
+## 2026-10-24 — C3 mapped UI recovery navigation source repair
+
+Recommended model/speed: `gpt-6-sol` / `high` for a narrow JS/Python parser
+and ledger-ordering change. The retained publisher source plan had no charged
+route from a stopped single tab to its fixed I cleanup pages: ordinary N
+navigation is closed after STOP, while the I UI parser and same-key main-first
+guard rejected a preparatory page transition.
+
+The source now permits `navigate` only for UI-lane existing publisher I aliases
+whose fixed target is original settings, original triggers, thin settings or
+OAuth audience. A predeclared, successful, settled readonly UI recovery row may
+run before its matching main I action. The main duplicate guard ignores only
+that mapped prelude; UI writes still need the prior main success. Navigation
+never marks the alias complete. The 16 UI/21 main cleanup reserves, 98 metadata
+operations, 21 native aliases and 296 total remain unchanged.
+
+Focused tests use the synthetic settled 128 bootstrap and real same-owner
+holder/Python ledger. A mapped I navigation and separate final I read each
+take one charge; ordinary-cap, unmapped and pre-main write attempts stop before
+their provider callback. No actual provider, browser, canonical ledger,
+Apps Script, Worker, production or release action was performed. Review,
+composed-source CI and actual prestart evidence remain pending. Rollback is a
+reviewed source revert before use; retain any future spent cleanup charges,
+STOP and recovery record rather than rewinding them.
