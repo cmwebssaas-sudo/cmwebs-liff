@@ -7,6 +7,54 @@ STEPS=[('binding','getBrowser','thin-settings'),('name','nameSession','thin-sett
 FUTURE=[('baseline',6),('thin',18),('oauth',30),('freshness',14),('terminal',2),('diagnostic',20)]
 NATIVE_BASELINE=[('N:preparation','original-settings','navigate',True),('N:preparation','original-settings','evaluate',True),('A:original-cloud-backup','original-settings','snapshot',False),('A:original-properties-backup','original-settings','read-key-presence',False),('N:navigation','original-triggers','navigate',False),('A:original-triggers-backup','original-triggers','snapshot',False)]
 NATIVE_GROUNDING=[('N:preparation','original-triggers','navigate',True),('N:preparation','original-triggers','evaluate',True),('N:preparation','original-settings','navigate',True)]
+PREDEBIT_ORIGIN={'journal':'91e30a199fbf6660dfd0b659ec4b265fee45bb8d360ea26a68ba1e9846f5491c','claim':'2dc247c18221e958e860a3ec57acfd72342935af936e87be38f14648b5727827','registry':'adf06b0cf233169233621a07b58955c5b7de3505b0791d563c4901df2786e7a6'}
+PREDEBIT_PROOF='e28e43b7045f5f976f4624108c010cb7089cc7f5a75c0c4f046834508d8e46ae'
+
+def predebit_evidence(paths,pins,proof_pin,expected,registry,prior_time,now,g):
+ """Pure verification before a same-lineage, zero-event recovery transaction."""
+ fail=g['fail'];exact=g['exact'];sha=g['sha'];rawfile=g['rawfile'];record=g['record'];integer=g['integer'];compact=g['compact']
+ if not exact(pins,['journal','claim','stop','registry']) or not exact(paths,['journal','claim','stop','registry']) or not exact(expected,['journal','claim','registry','proof']) or not exact(proof_pin,['path','sha256']) or proof_pin['sha256']!=expected['proof']:fail()
+ for key in paths:
+  pin=pins[key]
+  if not exact(pin,['path','sha256']) or pin['path']!=str(paths[key]) or not isinstance(pin['sha256'],str):fail()
+ raw={key:rawfile(paths[key]) for key in paths}
+ if any(sha(raw[key])!=pins[key]['sha256'] or key in expected and sha(raw[key])!=expected[key] for key in paths):fail()
+ claim=record(paths['claim']);j=json.loads(raw['journal']);r=record(registry)
+ if paths['registry']!=registry or r!={'identity':claim,'checkpoint':j} or record(paths['stop'])!={'identity':claim} or sha(raw['stop'])!=sha(compact({'value':{'identity':claim},'sha256':sha(compact({'identity':claim}).encode())}).encode()):fail()
+ proof=json.loads(g['pin'](proof_pin))
+ if proof.get('source')!='native128-predebit-local-timeout-proof-v2' or proof.get('journal')!=pins['journal'] or proof.get('claim')!=pins['claim'] or proof.get('registry')!=pins['registry'] or proof.get('state')!='stopped' or proof.get('lifecycle')!='HARD_STOP' or proof.get('phase')!='PREP' or proof.get('eventCount')!=55 or proof.get('newEventsAfterImported55')!=0 or proof.get('counts')!={'main':53,'ui':75,'combined':128,'limit':296} or proof.get('pending') is not None or proof.get('w0') is not None or proof.get('mutated') is not False or proof.get('rpc')!={'beganAt':None,'complete':False} or proof.get('nativeImports')!=17 or proof.get('lockOpenHolders')!=0 or proof.get('providerCallsThisAdmission')!=0 or proof.get('retainedCUAReferenceLost') is not True or proof.get('restartAttemptedAfterHardStop') is not False:fail()
+ if not isinstance(j,dict) or j.get('state')!='stopped' or j.get('lifecycle')!='HARD_STOP' or j.get('phase')!='PREP' or j.get('pending') is not None or j.get('w0') is not None or j.get('expiresAt') is not None or j.get('mutated') is not False or j.get('rpc')!={'beganAt':None,'complete':False} or j.get('finished') is not False or not integer(j.get('lastAt')) or not prior_time<=j['lastAt']<=now or len(j.get('events',[]))!=55 or j.get('plan') is not None or len(j.get('publisherStages',[]))!=1 or j['publisherStages'][0].get('stage')!='baseline' or j['publisherStages'][0].get('stageCap')!=9 or j.get('futureOrdinaryUi')!=64 or j.get('nativeCurrentVisual') is not True or len(j.get('nativeImported',[]))!=17 or len(j.get('publisherImported',[]))!=3:fail()
+ if any(e.get('settled') is not True for e in j['events']) or any(e.get('lane')!='ui' or e.get('success') is not True for e in j['events'][55:]) or not integer(j['nativeImported'][0].get('bookkeptAt')):fail()
+ if not j.get('holders') or j.get('holder')!=claim.get('ownerHash') or j['holders'][-1]!=j['holder'] or len(set(j['holders']))!=len(j['holders']):fail()
+ return j,claim,raw
+
+def predebit_transition(path,registry,identity,j,raw,pins,proof_pin,now,g,interrupt=None):
+ """The inherited fd3 exclusive lock is held throughout this ordered CAS."""
+ fail=g['fail'];sha=g['sha'];compact=g['compact'];rawfile=g['rawfile'];record=g['record'];save=g['save'];synced=g['synced'];directory=g['directory']
+ archives={key:Path(str(path)+'-origin-'+key+'.json') for key in ['journal','claim','stop','registry']};receipt=Path(str(path)+'-transition.json')
+ claim_path=Path(str(path)+'-claim.json');journal_path=Path(str(path)+'.json');stop_path=Path(str(path)+'-stop.json')
+ if any(os.path.lexists(p) for p in [*archives.values(),receipt,claim_path,journal_path,stop_path]):fail()
+ def write_bytes(p,data):
+  directory(p.parent);fd=os.open(p,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
+  try:
+   with os.fdopen(fd,'wb',closefd=False) as f:f.write(data);f.flush();os.fsync(fd)
+  finally:os.close(fd)
+  d=os.open(p.parent,os.O_RDONLY)
+  try:os.fsync(d)
+  finally:os.close(d)
+  if rawfile(p)!=data:fail()
+ def phase(name):
+  if interrupt==name:raise RuntimeError('SYNTHETIC_INTERRUPTION')
+ previous=record(Path(pins['claim']['path']));target=copy.deepcopy(j);target['connection']['sourceChain'].append({'identitySha256':sha(json.dumps(previous,separators=(',',':')).encode()),'sources':copy.deepcopy(previous['sources'])});target.update(state='ready',lifecycle='ACTIVE',holder=identity['ownerHash'],lastAt=now);target['holders'].append(identity['ownerHash'])
+ if len(set(target['holders']))!=len(target['holders']) or target['events']!=j['events'] or target['failures']!=j['failures'] or target['nativeImported']!=j['nativeImported'] or target['publisherImported']!=j['publisherImported']:fail()
+ for key,p in archives.items():write_bytes(p,raw[key]);phase('archive-'+key)
+ manifest={'source':'native128-predebit-recovery-transition-v1','status':'PREPARED','origin':copy.deepcopy(pins),'proofSha256':proof_pin['sha256'],'archive':{key:{'path':str(p),'sha256':sha(raw[key])} for key,p in archives.items()},'targetClaimSha256':sha(compact({'value':identity,'sha256':sha(compact(identity).encode())}).encode()),'targetJournalSha256':sha(compact(target).encode()),'ownerHash':identity['ownerHash'],'events':55,'mainSpent':53,'uiSpent':75,'combinedSpent':128,'operationBudget':296}
+ write_bytes(receipt,compact(manifest).encode());phase('receipt')
+ save(claim_path,identity,True);phase('claim')
+ synced(journal_path,target,True);phase('journal')
+ if sha(rawfile(registry))!=pins['registry']['sha256'] or record(registry)!={'identity':record(Path(pins['claim']['path'])),'checkpoint':j}:fail()
+ save(registry,{'identity':identity,'checkpoint':target});phase('registry')
+ return target
 
 def native_grounding_count(stage_cap,map_rows):
  if not 6<=stage_cap<=9:return -1
@@ -60,6 +108,8 @@ def alignment_class(base):
   def __init__(self,cfg,cleanup=False):
    p=cfg.get('readonlyConnection',{}).get('repair92',{}).get('diagnostic93',{}).get('owner94',{}).get('inventory97',{}).get('retarget99',{}).get('launch100',{}).get('shared101',{}).get('aligned105',{})
    self.native_successor='nativeSuccessor' in p
+   self.predebit_recovery=self.native_successor and 'predebitRecovery' in cfg.get('resume',{})
+   self.predebit_spec=copy.deepcopy(cfg.get('resume',{}).get('predebitRecovery')) if self.predebit_recovery else None
    self.imported_delta=0
    super().__init__(cfg,cleanup)
   def ordinary_ceiling(self):return 148
@@ -163,7 +213,23 @@ def alignment_class(base):
   def resume_preparation(self,p):
    origin,prior,approval=self.validate_alignment();self.approvedBrowserId=approval['selectedBrowserId'];self.approvedProfile=approval['selectedProfile'];owner=sha(self.cfg['ownerNonce'].encode());fresh=p=={'aligned105':True}
    if self.native_successor:
+    if self.predebit_recovery and exact(p,['nativeSuccessor','predebitRecovery']):
+     if p['nativeSuccessor'] is not True or p['predebitRecovery']!=self.predebit_spec or not exact(self.predebit_spec,['proof','origin']):fail()
+     imported,claim,charges=self.validate_native_successor(origin,False)
+     prior_suffix='.simple-publisher-native-successor';base=str(self.path)+prior_suffix
+     paths={'journal':Path(base+'.json'),'claim':Path(base+'-claim.json'),'stop':Path(base+'-stop.json'),'registry':self.registry}
+     j,previous,raw=predebit_evidence(paths,self.predebit_spec['origin'],self.predebit_spec['proof'],{**PREDEBIT_ORIGIN,'proof':PREDEBIT_PROOF},self.registry,imported['lastAt'],self.cfg['now'],{**g,'pin':g['pin'],'compact':g['compact']})
+     if j['events'][:55]!=imported['events'] or j['publisherStages'][0].get('stageCap')!=9 or native_grounding_count(9,j['publisherStages'][0].get('map',[]))!=3 or j['failures']!=imported['failures']+sum(c['outcome']!='VERIFIED'for c in charges) or j['publisherAlignment']['readonlyIncidents']!=2 or j['publisherAlignment']['repairCalls']!=6 or j['publisherAlignment']['diagnosticCalls']!=0 or j['chargedUpperBoundMs']!=imported['chargedUpperBoundMs']:fail()
+     if len(j['nativeImported'])!=len(charges) or any(row['spent']!=charge['spent'] or row['reservationSha256']!=charge['reservation']['sha256'] or row['settlementSha256']!=charge['settlement']['sha256'] or row['providerCallAt'] is not None for row,charge in zip(j['nativeImported'],charges)):fail()
+     if {k:v for k,v in previous.items()if k not in ['sources','ownerHash']}!={k:v for k,v in self.identity.items()if k not in ['sources','ownerHash']} or not previous['sources'] or not self.identity['sources'] or owner in j['holders']:fail()
+     for source in previous['sources']:g['pin'](source)
+     self.j=predebit_transition(Path(str(self.path)+self.suffix),self.registry,self.identity,j,raw,self.predebit_spec['origin'],self.predebit_spec['proof'],self.cfg['now'],{**g,'save':save,'synced':g['synced'],'directory':g['directory'],'compact':g['compact']})
+     self.memory=copy.deepcopy(self.j);return
+    if self.predebit_recovery:
+     if not exact(p,['nativeSuccessor','predebitRecovery','receipt','minimumEvents']) or p['predebitRecovery']!=self.predebit_spec:fail()
+     p={k:v for k,v in p.items()if k!='predebitRecovery'}
     native_fresh=p=={'nativeSuccessor':True}
+    if self.predebit_recovery and native_fresh:fail()
     if not native_fresh and (not exact(p,['nativeSuccessor','receipt','minimumEvents']) or p['nativeSuccessor'] is not True or not integer(p['minimumEvents'])):fail()
     imported,claim,charges=self.validate_native_successor(origin,native_fresh)
     if native_fresh:
@@ -237,7 +303,17 @@ def alignment_class(base):
   def current(self):
    old,_,_=self.validate_alignment()
    if self.native_successor:self.validate_native_successor(old)
+   if self.predebit_recovery:self.verify_predebit_anchor()
    return super().current()
+  def verify_predebit_anchor(self):
+   pins=self.predebit_spec['origin'];base=str(self.path)+'.simple-publisher-native-successor'
+   for key,end in [('journal','.json'),('claim','-claim.json'),('stop','-stop.json')]:
+    if pins[key]['path']!=base+end or sha(rawfile(Path(base+end)))!=pins[key]['sha256']:fail()
+   if self.predebit_spec['proof']['sha256']!=PREDEBIT_PROOF or sha(g['pin'](self.predebit_spec['proof']))!=PREDEBIT_PROOF:fail()
+   archives={key:Path(str(self.path)+self.suffix+'-origin-'+key+'.json') for key in ['journal','claim','stop','registry']};receipt=Path(str(self.path)+self.suffix+'-transition.json')
+   if pins['registry']['sha256']!=PREDEBIT_ORIGIN['registry'] or any(sha(rawfile(p))!=pins[key]['sha256'] for key,p in archives.items()):fail()
+   r=json.loads(rawfile(receipt))
+   if not exact(r,['source','status','origin','proofSha256','archive','targetClaimSha256','targetJournalSha256','ownerHash','events','mainSpent','uiSpent','combinedSpent','operationBudget']) or r['source']!='native128-predebit-recovery-transition-v1' or r['status']!='PREPARED' or r['origin']!=pins or r['proofSha256']!=PREDEBIT_PROOF or r['archive']!={key:{'path':str(p),'sha256':pins[key]['sha256']} for key,p in archives.items()} or r['events']!=55 or r['mainSpent']!=53 or r['uiSpent']!=75 or r['combinedSpent']!=128 or r['operationBudget']!=296:fail()
   def view(self,wait=0):
    v=super().view(wait);d=self.j['publisherAlignment'];delta=self.imported_delta if self.native_successor else 0;v.update(uiSpent=v['uiSpent']+3+delta,combinedSpent=v['combinedSpent']+3+delta,eventCount=len(self.j['events']),uiOrdinary=v['uiOrdinary']+3+delta,uiOrdinaryLimit=148,uiLimit=164,combinedLimit=296,publisherUsed=d['used'],settingsVerified=d['settingsVerified'],audienceVerified=d['audienceVerified'],readonlyIncidents=d['readonlyIncidents'],repairCalls=d['repairCalls'],diagnosticCalls=d['diagnosticCalls'],futureUiSpent=self.future_spent(),trialMapReady=self.trial_map_ready(),approvedBrowserId=self.approvedBrowserId,approvedProfile=self.approvedProfile)
    if self.native_successor:v.update(successorImported=delta,futureUiLimit=90-delta,currentVisualVerified=self.j.get('nativeCurrentVisual') is True)

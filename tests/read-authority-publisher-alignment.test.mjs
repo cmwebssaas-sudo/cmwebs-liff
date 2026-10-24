@@ -2,13 +2,81 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {PUBLISHER_ALIGNMENT_DECISION,createAuthorityPublisherAlignmentFlow} from '../scripts/read-authority-publisher-alignment.mjs';
 import {alignmentFixture,holder,alignment,changePin} from './fixtures/read-authority/publisher-alignment.mjs';
-import {readFileSync,existsSync,unlinkSync} from 'node:fs';
+import {readFileSync,existsSync,unlinkSync,mkdirSync,readdirSync,symlinkSync,writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
 import {hash,compact} from './fixtures/read-authority/rebalanced.mjs';
 import {sharedFixture} from './fixtures/read-authority/project-shared.mjs';
 import {projection} from '../scripts/read-authority-project-retarget.mjs';
 import {SIMPLE_RULES,SIMPLE_NATIVE,simpleBrowser,simpleFixed} from '../scripts/read-authority-simple-plan.mjs';
+import os from 'node:os';
+import {syncBuiltinESMExports} from 'node:module';
+
+function withTestHomedir(home,callback){
+ const before=Object.fromEntries(['HOME','home','CODEX_HOME'].map(key=>[key,{present:Object.hasOwn(process.env,key),value:process.env[key]}]));
+ const original=os.homedir;os.homedir=()=>home;syncBuiltinESMExports();
+ try{return callback();}finally{
+  os.homedir=original;syncBuiltinESMExports();
+  for(const [key,entry] of Object.entries(before)){assert.equal(Object.hasOwn(process.env,key),entry.present);assert.equal(process.env[key],entry.value);}
+ }
+}
+
+test('synthetic predebit HARD_STOP55 admits one same-checkpoint owner through the real controller',async()=>{
+ const standardEnv=Object.fromEntries(['HOME','home','CODEX_HOME'].map(key=>[key,{present:Object.hasOwn(process.env,key),value:process.env[key]}]));
+ const {s,closure}=await nativeSuccessorFixture();
+ const rows=[
+  ['settings-goto','N:preparation','original-settings','navigate',true],
+  ['settings-project','N:preparation','original-settings','evaluate',true],
+  ['cloud','A:original-cloud-backup','original-settings','snapshot',false],
+  ['properties','A:original-properties-backup','original-settings','read-key-presence',false],
+  ['triggers-goto','N:navigation','original-triggers','navigate',false],
+  ['triggers-read','A:original-triggers-backup','original-triggers','snapshot',false],
+  ['ground-triggers-goto','N:preparation','original-triggers','navigate',true],
+  ['ground-triggers-project','N:preparation','original-triggers','evaluate',true],
+  ['ground-settings-return','N:preparation','original-settings','navigate',true]
+ ].map(([id,key,target,operation,preparation])=>({id:'future-baseline-'+id,key,actor:'publisher',target,operation,units:1,preparation}));
+ const first=holder(s,{resume:{nativeSuccessor:true}},()=>{},()=>closure.sha256);
+ await assert.rejects(first.withContinuation(async cap=>{await cap.stagePublisher({stage:'baseline',stageCap:9,map:rows.map(row=>futureMeta(row))});throw Error('synthetic-before-debit');}),/TRIAL_STOPPED/);
+ const old=s.path+'.simple-publisher-native-successor',registry=join(s.root,hash(JSON.stringify(s.cfg.epoch))+'.simple-rebalanced.json');
+ assert(registry.startsWith(s.home+'/'));assert(s.path.startsWith(s.home+'/'));
+ const origin=Object.fromEntries(Object.entries({journal:old+'.json',claim:old+'-claim.json',stop:old+'-stop.json',registry}).map(([key,path])=>[key,{path,sha256:hash(readFileSync(path))}]));
+ const stopped=JSON.parse(readFileSync(origin.journal.path));assert.equal(stopped.events.length,55);assert.equal(stopped.lifecycle,'HARD_STOP');
+ const proofPath=join(s.home,'task72-predebit-proof.json'),proof={source:'native128-predebit-local-timeout-proof-v2',journal:origin.journal,claim:origin.claim,registry:origin.registry,state:'stopped',lifecycle:'HARD_STOP',phase:'PREP',eventCount:55,newEventsAfterImported55:0,counts:{main:53,ui:75,combined:128,limit:296},pending:null,w0:null,mutated:false,rpc:{beganAt:null,complete:false},nativeImports:17,lockOpenHolders:0,providerCallsThisAdmission:0,retainedCUAReferenceLost:true,restartAttemptedAfterHardStop:false};
+ s.put(proofPath,compact(proof));const proofPin={path:proofPath,sha256:hash(readFileSync(proofPath))};
+ const recoverySpec={proof:proofPin,origin};let rejectedCallbacks=0;
+ await assert.rejects(holder(s,{resume:{nativeSuccessor:true,predebitRecovery:recoverySpec}},()=>{},()=>closure.sha256).withContinuation(()=>{rejectedCallbacks++;}),/TRIAL_STOPPED/);
+ assert.equal(rejectedCallbacks,0);assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256);
+ // A test-only copy replaces exactly four fixed pins. The production module
+ // and every function body stay byte-for-byte unchanged outside those literals.
+ const src=resolve('scripts/read-authority-publisher-alignment-budget.py'),body=readFileSync(src,'utf8'),testDir=join(s.home,'task72-module');mkdirSync(testDir,{mode:0o700});
+ for(const name of readdirSync(resolve('scripts')).filter(name=>name.startsWith('read-authority-'))){
+  if(name==='read-authority-publisher-alignment-budget.py'||name==='read-authority-simple-control.mjs')continue;
+  symlinkSync(resolve('scripts',name),join(testDir,name));
+ }
+ const pinned={journal:'91e30a199fbf6660dfd0b659ec4b265fee45bb8d360ea26a68ba1e9846f5491c',claim:'2dc247c18221e958e860a3ec57acfd72342935af936e87be38f14648b5727827',registry:'adf06b0cf233169233621a07b58955c5b7de3505b0791d563c4901df2786e7a6',proof:'e28e43b7045f5f976f4624108c010cb7089cc7f5a75c0c4f046834508d8e46ae'};
+ let adapted=body;for(const [key,oldHash] of Object.entries(pinned)){assert.equal(adapted.split(oldHash).length-1,1);adapted=adapted.replaceAll(oldHash,key==='proof'?proofPin.sha256:origin[key].sha256);}
+ const patched=join(testDir,'read-authority-publisher-alignment-budget.py');writeFileSync(patched,adapted,{mode:0o600});
+ const controlPath=join(testDir,'read-authority-simple-control.mjs');writeFileSync(controlPath,readFileSync(resolve('scripts/read-authority-simple-control.mjs')),{mode:0o600});
+ const config=structuredClone(s.cfg);config.sources=config.sources.map(pin=>pin.path===src?{path:patched,sha256:hash(readFileSync(patched))}:pin.path===resolve('scripts/read-authority-simple-control.mjs')?{path:controlPath,sha256:hash(readFileSync(controlPath))}:pin);
+ config.resume={nativeSuccessor:true,predebitRecovery:recoverySpec};
+ const {createAuthoritySimpleControl}=await import('file://'+controlPath);
+ const create=cfg=>withTestHomedir(s.home,()=>createAuthoritySimpleControl({config:((({now,ownerNonce,...rest})=>rest))(cfg),guard:()=>{},assertStage:()=>{},now:()=>s.time,pause:async ms=>{s.time+=ms;},verifyNativeSuccessor:()=>closure.sha256}));
+ const owner=create(config);
+ s.time+=1000;let callbacks=0;
+ await owner.withContinuation(async cap=>{const view=await cap.inspect();assert.equal(view.combinedSpent,128);assert.equal(view.mainSpent,53);assert.equal(view.uiSpent,75);assert.equal(view.eventCount,55);assert.equal(view.pending,null);assert.equal(view.w0,null);assert.equal(view.failures,stopped.failures);await cap.pausePreparation();});
+ assert.equal(callbacks,0);const active=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery.json'));
+ assert.deepEqual(active.events,stopped.events);assert.deepEqual(active.nativeImported,stopped.nativeImported);assert.deepEqual(active.publisherImported,stopped.publisherImported);assert.equal(active.failures,stopped.failures);assert.equal(active.publisherStages[0].stageCap,9);
+ assert.equal(active.lifecycle,'CLEAN_PAUSE');assert.equal(JSON.parse(readFileSync(origin.journal.path)).lifecycle,'HARD_STOP');
+ assert.equal(hash(readFileSync(origin.journal.path)),origin.journal.sha256);assert.equal(hash(readFileSync(origin.claim.path)),origin.claim.sha256);assert.equal(hash(readFileSync(origin.stop.path)),origin.stop.sha256);
+ const receipt=JSON.parse(readFileSync(s.path+'.simple-publisher-native-predebit-recovery-transition.json'));assert.equal(receipt.status,'PREPARED');assert.deepEqual(receipt.origin,origin);
+ const handoff=owner.preparationHandoff();s.time+=1000;const nextConfig={...config,resume:{...config.resume,...handoff}};
+ const next=create(nextConfig);
+ await next.withContinuation(async cap=>{const view=await cap.inspect();assert.equal(view.combinedSpent,128);assert.equal(view.eventCount,55);assert.equal(view.pending,null);await cap.pausePreparation();});
+ assert.equal(JSON.parse(readFileSync(origin.journal.path)).lifecycle,'HARD_STOP');
+ const replay=create(config);
+ await assert.rejects(replay.withContinuation(()=>{callbacks++;}),/TRIAL_STOPPED/);assert.equal(callbacks,0);
+ for(const [key,entry] of Object.entries(standardEnv)){assert.equal(Object.hasOwn(process.env,key),entry.present);assert.equal(process.env[key],entry.value);}
+});
 
 async function nativeSuccessorFixture(finalSpent=128){
  const s=await alignmentFixture(),{flow}=flowFixture(s,null,{snapshots:{'thin-settings':snapshot,'oauth-audience':JSON.stringify({...JSON.parse(snapshot),accountVerified:false})}});

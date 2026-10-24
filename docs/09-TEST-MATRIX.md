@@ -2838,3 +2838,23 @@ retain their checks. These tests use local synthetic callbacks and pinned fixtur
 data; actual browser, provider, canonical ledger, private parent resume gate,
 source equality and production acceptance remain separate. No Apps Script test
 function applies because no `.gs`, API route or Schema changed.
+
+## 2026-10-24 C3 zero-debit native PREP recovery source
+
+The predebit recovery tests use an owned temporary fixture and the real
+controller, inherited lock and Python ledger. A stopped 55-event PREP holder
+with a registered nine-row baseline admits one separate recovery segment only
+after exact origin/proof checks. The test verifies 128 spent once, unchanged
+event, failure, imported-bookkeeping and STOP evidence, then closes a genuine
+clean pause and resumes its new segment without a callback. The production
+fixed hashes reject the synthetic fixture; a test-only module copy adapts
+exactly four constants to synthetic hashes while leaving all function bodies
+unchanged. Separate transaction tests interrupt after each archive, receipt,
+claim, journal and registry phase and reject a second scope. New event, pending
+IO, trial clock, RPC, mutation, altered stage and registry evidence are denied.
+
+The retained short-cell driver has a separate synthetic test for a wait spanning
+multiple cells, one callback, lost-owner refusal and sanitized error reporting.
+These tests do not run CUA, reattach a browser, spend any actual metadata unit,
+or establish the remaining stage map. No Apps Script function applies because
+no `.gs`, API route or Schema changed.
