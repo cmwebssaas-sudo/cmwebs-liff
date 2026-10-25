@@ -4018,3 +4018,15 @@ existing comparison-source identity check. Comparison identity/epoch and active
 observations remain untouched. Qualification must regenerate the composed
 identity and restart the affected real observation under its existing plan;
 this candidate is not a green full-branch qualification.
+
+
+Task116 source synchronization continuation closes the comparison/cache artifact
+gap with future candidate tag `20261026-read-summary-v1`: mechanical shared
+asset-query substitutions, matching validator/test literals, and regenerated
+comparison identity from the unchanged generator. Endpoint remains blank and
+all six routing flags remain `off`. T0 is NOT_STARTED: no real observation has
+been restarted, reset or accepted. Eight affected comparison/cache test modules
+and final validate check the synchronized candidate; the original canonical and
+local Worker parity evidence remains carried forward on unchanged helper,
+calculator and source-manifest bytes. Capacity/performance, real observation,
+authenticated/device and release gates remain outstanding; no publication.
