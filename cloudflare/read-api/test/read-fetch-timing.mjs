@@ -4,7 +4,8 @@ export const fetchColumns=['sample','start_ms','dispatch_ms','end_ms','undici_be
 export const fetchScope='NODE_UNDICI_AWAIT_NOT_FETCH4_CPU_TRANSPORT_OR_ACCEPTANCE';
 const num=v=>Number.isFinite(v)&&v>=0;
 const count=v=>Number.isSafeInteger(v)&&v>=0&&v<=1000000;
-const exact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===keys.slice().sort().join(',');
+const fetchWindowKeys='after_ms,before_ms,calls,errors,settled,status';
+const exact=v=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===fetchWindowKeys;
 export function validFetchRow(row,index){
  return Array.isArray(row)&&row.length===10&&row[0]===index+1&&row.slice(1,6).every(v=>v===null||num(v))&&
   row.slice(6,9).every(v=>v===null||count(v))&&['OK','MISSING','INVALID','INCOMPLETE'].includes(row[9])&&
@@ -22,7 +23,7 @@ export function createFetchTiming(suite,emit){
    if(r<0||!Number.isInteger(index)||index<0||index>=100||seen.has(position)){invalid++;return;}
    if(rows.length>=700){dropped++;return;}
    if(position!==previous+1)invalid++;previous=position;seen.add(position);
-   const shape=exact(window,['status','calls','settled','errors','before_ms','after_ms']);
+   const shape=exact(window);
    const values=[index+1,...[start,dispatch,end,window?.before_ms,window?.after_ms].map(v=>num(v)?v:null),
     ...[window?.calls,window?.settled,window?.errors].map(v=>count(v)?v:null)];
    let status=window===null||window===undefined?'MISSING':shape&&window.status==='INCOMPLETE'?'INCOMPLETE':'INVALID';
