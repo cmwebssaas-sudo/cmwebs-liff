@@ -1,6 +1,6 @@
 {
   "format": "cmwebs-read-comparison-v1",
-  "comparison_version": "read-31194e2ef79e28d841cf1f5e57fb17d3f8b5e27bb27a4c9e00798fa11c85769e",
+  "comparison_version": "read-a69f07ac82c3ca8374c8fba40c4a6216d33205261603d0c48085330abbe5b783",
   "sources": {
     "announce.html": "6307e65c7d0de73873e76dbef7abdb21251d8741273b045456a1dbbcfa852e10",
     "apps-script/TESTS.js": "42a3c14b4cd8262d2a75f822f8193cf8ba06408b047514c9776fdb261b849d5e",
@@ -116,7 +116,7 @@
     "cloudflare/read-api/src/shadow-observation.js": "fa15ef16fa71865c33c453a0f92c8cec25b22b6c9aab32bd2545f11837c81211",
     "cloudflare/read-api/src/shadow-windows.js": "ed700c6afc3e50c8fb0af8c5eb2af481e1a42445da5223a26a5b9604155fbcc0",
     "cloudflare/read-api/src/sync.js": "b9fc07d822f908fd3faaa23a371e7a5ff9c22b3efacde95eea0bfaf4ba952ff9",
-    "cloudflare/read-api/wrangler.toml": "2ea1271cb1d174189095d56b22bbd553b0caffb23a208bbdbfad93a70e7606eb",
+    "cloudflare/read-api/wrangler.toml": "39796ace858ebbc6e61888ec14bb1988286950969f351ddd9c20b410a945365f",
     "document-mobile-actions.js": "20bc37c4e20ff6570a77aacb5d4e5873ea5d16877480c208bab5906e0cef7f92",
     "frontend-release.js": "6559d0d093386c6d996b7e537635e4a97ae5e13f4ab883998e9df8f769e1d82d",
     "hub.html": "32d4dfc8db089f12cc380014adbed0ee8e705ec276a7b8c77188d644f70b9aff",

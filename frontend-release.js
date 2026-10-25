@@ -5,7 +5,7 @@
  */
 window.CMWEBS_RELEASE_VERSION = '20261026-read-rooms-first-v1';
 // Generated comparison identity survives flags-only asset publications.
-window.CMWEBS_READ_COMPARISON_VERSION = "read-31194e2ef79e28d841cf1f5e57fb17d3f8b5e27bb27a4c9e00798fa11c85769e";
+window.CMWEBS_READ_COMPARISON_VERSION = "read-a69f07ac82c3ca8374c8fba40c4a6216d33205261603d0c48085330abbe5b783";
 
 // Publish one verified endpoint here only after preceding release gates pass.
 window.CMWEBS_READ_API_URL = '';
