@@ -3987,3 +3987,34 @@ bytes; fixed prefix plus 2,048 bytes metadata yields a derived output bound of
 cannot be called COMPLETE. Synthetic coverage retains five consecutive
 workerd samples before 60 later identities and 240 frames beyond the former
 59 KiB trim. This is a bounded diagnostic log, not route CPU attribution.
+
+
+### 2026-10-26 — canonical property summary consolidation (local candidate)
+
+`tests/read-parity-engine.test.mjs` executes the canonical GAS property-view
+helper on 500 materialized plain active room views across 20 properties. A
+VM-local, restored Array observer measures callbacks, filtered-array allocations
+and input-array reads: the original helper gives 2,000 / 80 / 500; the one-pass
+candidate gives 500 / 0 / 500. This verifies exercised work reduction, without a
+timing threshold or a capacity claim. Explicit full-view expectations preserve
+strict account/effective status literals, unknown/blank/null/numeric/mixed-case
+statuses, archived exclusion, duplicates, sparse/empty inputs, field/key order,
+room/owner references and source order; inputs remain unchanged.
+
+Affected canonical/read tests cover calculation parity, legacy write scope,
+collation and route boundaries. The existing local Worker read-parity module
+checks complete GAS/HTTP result identity through disposable D1, including its
+unchanged small-fixture samples. The generated calculator and all 15 source
+manifest hashes must match canonical GAS provenance. No cache, authority,
+projection, fixture, timer or threshold changes accompany this consolidation.
+The original capacity failure and strict `<50 ms` gate remain outstanding;
+source consolidation does not establish latency improvement or full branch
+acceptance. Independent review and the next already-required composed release
+qualification remain required before integration/publication.
+
+Task116 local evidence: 25 affected root tests and one Worker parity test pass;
+`npm run validate` passes backend parsing/static-cache checks, then fails the
+existing comparison-source identity check. Comparison identity/epoch and active
+observations remain untouched. Qualification must regenerate the composed
+identity and restart the affected real observation under its existing plan;
+this candidate is not a green full-branch qualification.
