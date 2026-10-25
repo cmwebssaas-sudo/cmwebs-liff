@@ -25,7 +25,7 @@ async function fixture(run, configured = true) {
     bindings: configured ? { READ_REPLICA_SYNC_SECRET: secret } : {} }));
   try {
     const db = await mf.getD1Database('DB');
-    for(const file of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql','0005_read_scope_indexes.sql','0007_read_source_order_indexes.sql']) {
+    for(const file of ['0001_read_replica.sql','0002_read_projection.sql','0003_read_projection.sql','0005_read_scope_indexes.sql','0007_read_source_order_indexes.sql','0008_sync_heartbeat.sql']) {
       const migration = await readFile(new URL('../migrations/'+file, import.meta.url), 'utf8');
       await db.batch(migration.replace(/^--.*$/gm,'').split(';').map(s => s.trim()).filter(Boolean).map(s => db.prepare(s)));
     }
@@ -34,7 +34,7 @@ async function fixture(run, configured = true) {
       const timestamp = String(options.timestamp ?? Math.floor(Date.now() / 1000));
       const nonce = options.nonce || randomUUID();
       const signature = options.signature ?? createHmac('sha256', secret).update(timestamp+'\n'+nonce+'\n'+body).digest('hex');
-      return mf.dispatchFetch('https://local.test/sync', { method: 'POST', body,
+      return mf.dispatchFetch('https://local.test'+(options.path || '/sync'), { method: 'POST', body,
         headers: { 'content-type': 'application/json', 'X-CMWebs-Timestamp': timestamp,
           'X-CMWebs-Nonce': nonce, 'X-CMWebs-Signature': signature } });
     };
@@ -163,5 +163,23 @@ test('changed manifest, cross-batch duplicate and oversized body fail without de
     const big=row('R4','x'.repeat(1024*1024));
     assert.equal((await send(snapshot([big]))).status,413);
     assert.equal((await db.prepare('SELECT row_key FROM V2_rooms').first()).row_key,'R1');
+  });
+});
+
+test('signed heartbeats record the newest clean version and reject forgery, replay and invalid bodies', async () => {
+  await fixture(async (db, send) => {
+    const beat = (body, options = {}) => send(body, { path: '/sync/heartbeat', ...options });
+    const stored = async () => (await db.prepare('SELECT clean_version FROM sync_heartbeat WHERE id=1').first())?.clean_version ?? null;
+    const now = Date.now();
+    assert.equal((await beat({ clean_version: now }, { signature: 'f'.repeat(64) })).status, 401);
+    assert.equal(await stored(), null);
+    const nonce = randomUUID();
+    assert.equal((await beat({ clean_version: now }, { nonce })).status, 200);
+    assert.equal(await stored(), now);
+    assert.equal((await beat({ clean_version: now + 1 }, { nonce })).status, 409);
+    assert.equal((await beat({ clean_version: now - 60000 })).status, 200);
+    assert.equal(await stored(), now, 'an older report cannot replace a newer one');
+    for (const body of [{}, { clean_version: 'x' }, { clean_version: now, extra: 1 }, { clean_version: now + 600000 }])
+      assert.equal((await beat(body)).status, 400);
   });
 });

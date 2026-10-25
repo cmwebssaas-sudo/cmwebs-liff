@@ -8,7 +8,7 @@ const schemaSource=readFileSync(new URL('../apps-script/V2_READ_REPLICA_SCHEMA.j
 const moduleSource=()=>readFileSync(new URL('../apps-script/V2_READ_REPLICA_SYNC.js',import.meta.url),'utf8');
 const tableCount=Object.keys(JSON.parse(readFileSync(new URL('../cloudflare/read-api/schema.json',import.meta.url),'utf8'))).length;
 function harness({configured=true,fail=false,sheets={}}={}) {
-  const cache=new Map(), sent=[], logs=[]; let reads=0, cacheSingleReads=0, cacheBatchReads=0, propertyReads=0, blobReads=0;
+  const cache=new Map(), sent=[], heartbeats=[], logs=[]; let reads=0, cacheSingleReads=0, cacheBatchReads=0, propertyReads=0, blobReads=0;
   const properties=new Map(configured ? [['READ_REPLICA_URL','https://replica.synthetic.test'],['READ_REPLICA_SYNC_SECRET','synthetic-secret']] : []);
   const ctx=vm.createContext({ console, Date, JSON, Map, Set,
     PropertiesService:{getScriptProperties:()=>({getProperty:key=>{propertyReads++;return properties.get(key)||null;}})},
@@ -22,11 +22,13 @@ function harness({configured=true,fail=false,sheets={}}={}) {
       computeHmacSha256Signature:(text,key)=>[...createHmac('sha256',key).update(text).digest()].map(x=>x>127?x-256:x),
       newBlob:text=>({getBytes:()=>{blobReads++;return [...Buffer.from(text)];}})},
     SpreadsheetApp:{getActiveSpreadsheet:()=>({getSheetByName:name=>sheets[name] ? {getDataRange:()=>({getValues:()=>{reads++; return sheets[name];}})} : null})},
-    UrlFetchApp:{fetch:(url,options)=>{sent.push({url,...options}); return {getResponseCode:()=>fail?503:200,getContentText:()=>JSON.stringify({success:!fail,data:{completed:JSON.parse(options.payload).complete}})};}},
+    UrlFetchApp:{fetch:(url,options)=>{
+      if(url.endsWith('/sync/heartbeat')){heartbeats.push({url,...options});return {getResponseCode:()=>fail?503:200,getContentText:()=>'{"success":true}'};}
+      sent.push({url,...options}); return {getResponseCode:()=>fail?503:200,getContentText:()=>JSON.stringify({success:!fail,data:{completed:JSON.parse(options.payload).complete}})};}},
     Logger:{log:value=>logs.push(value)}
   });
   vm.runInContext(schemaSource+'\n'+moduleSource(),ctx);
-  return {ctx,cache,sent,logs,get reads(){return reads;},get cacheSingleReads(){return cacheSingleReads;},get cacheBatchReads(){return cacheBatchReads;},get propertyReads(){return propertyReads;},get blobReads(){return blobReads;}};
+  return {ctx,cache,sent,heartbeats,logs,get reads(){return reads;},get cacheSingleReads(){return cacheSingleReads;},get cacheBatchReads(){return cacheBatchReads;},get propertyReads(){return propertyReads;},get blobReads(){return blobReads;}};
 }
 
 test('generated Apps Script schema equals the single JSON whitelist authority',()=>{
@@ -122,19 +124,41 @@ test('room snapshots derive bridge capability from the source schema rather than
   }
 });
 
-test('idle or unconfigured triggers read no Sheet and send nothing',()=>{
+test('idle or unconfigured triggers read no Sheet and send no rows',()=>{
   for(const h of [harness(),harness({configured:false})]) {
     h.ctx.runV2ReadReplicaDirtySync();
     assert.equal(h.reads,0); assert.equal(h.sent.length,0);
   }
+  const unconfigured=harness({configured:false});
+  unconfigured.ctx.runV2ReadReplicaDirtySync();
+  assert.equal(unconfigured.heartbeats.length,0);
 });
 
-test('idle trigger discovers all dirty markers in one cache service call',()=>{
-  const h=harness();
+test('idle trigger discovers all dirty markers in one cache service call and reports clean',()=>{
+  const h=harness(),before=Date.now();
   assert.equal(h.ctx.runV2ReadReplicaDirtySync().code,'IDLE');
   assert.equal(h.cacheBatchReads,1);
   assert.equal(h.cacheSingleReads,0);
-  assert.equal(h.propertyReads,0,'idle has no configuration or credential read');
+  assert.equal(h.heartbeats.length,1);
+  const [beat]=h.heartbeats,body=JSON.parse(beat.payload);
+  assert.deepEqual(Object.keys(body),['clean_version']);
+  assert.ok(body.clean_version>=before&&body.clean_version<=Date.now());
+  assert.equal(beat.followRedirects,false);
+  assert.equal(beat.headers['X-CMWebs-Signature'],createHmac('sha256','synthetic-secret').update(beat.headers['X-CMWebs-Timestamp']+'\n'+beat.headers['X-CMWebs-Nonce']+'\n'+beat.payload).digest('hex'));
+});
+
+test('a drained dirty run reports clean; a failed run does not',()=>{
+  const ok=harness({sheets:{V2_rooms:[['room_id'],['SYNTHETIC_ROOM']]}});
+  ok.ctx.readReplicaMarkDirty_(['V2_rooms']);
+  assert.equal(ok.ctx.runV2ReadReplicaDirtySync().code,'OK');
+  assert.equal(ok.heartbeats.length,1);
+  const failed=harness({fail:true,sheets:{V2_rooms:[['room_id'],['SYNTHETIC_ROOM']]}});
+  failed.ctx.readReplicaMarkDirty_(['V2_rooms']);
+  assert.equal(failed.ctx.runV2ReadReplicaDirtySync().code,'SYNC_PENDING');
+  assert.equal(failed.heartbeats.length,0);
+  const full=harness({sheets:{V2_rooms:[['room_id'],['SYNTHETIC_ROOM']]}});
+  full.ctx.runV2ReadReplicaFullSync();
+  assert.equal(full.heartbeats.length,0,'full reconciliation does not observe dirty markers');
 });
 
 test('dirty snapshot filters private fields, batches 501 rows and signs exact UTF8 bytes',()=>{
@@ -306,4 +330,20 @@ test('real Email revoke writes local status before immediate patch and reports p
 
 test('affected Apps Script projection test function executes without private fields',()=>{
   assert.equal(harness().ctx.testReadReplicaProjection().success,true);
+});
+
+test('trigger installer replaces replica triggers with a five-minute sync and a 03:00 Taipei reconciliation',()=>{
+  const h=harness(),created=[],deleted=[];
+  const existing=['runV2ReadReplicaDirtySync','runV2ReadReplicaFullSync','unrelatedReminder'].map(name=>({getHandlerFunction:()=>name}));
+  function builder(handler) {
+    const spec={handler};
+    const chain={timeBased:()=>chain,everyMinutes:n=>{spec.everyMinutes=n;return chain;},atHour:n=>{spec.atHour=n;return chain;},
+      everyDays:n=>{spec.everyDays=n;return chain;},inTimezone:zone=>{spec.timezone=zone;return chain;},create:()=>{created.push(spec);return {};}};
+    return chain;
+  }
+  h.ctx.ScriptApp={getProjectTriggers:()=>existing,deleteTrigger:trigger=>deleted.push(trigger.getHandlerFunction()),newTrigger:builder};
+  assert.equal(h.ctx.installV2ReadReplicaTriggers().success,true);
+  assert.deepEqual(deleted,['runV2ReadReplicaDirtySync','runV2ReadReplicaFullSync']);
+  assert.deepEqual(created,[{handler:'runV2ReadReplicaDirtySync',everyMinutes:5},
+    {handler:'runV2ReadReplicaFullSync',atHour:3,everyDays:1,timezone:'Asia/Taipei'}]);
 });

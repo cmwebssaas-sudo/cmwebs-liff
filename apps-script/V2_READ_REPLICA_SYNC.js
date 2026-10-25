@@ -262,11 +262,13 @@ function readReplicaRun_(full) {
   // without weakening the per-table generation check after a successful send.
   const markers=full ? {} : cache.getAll(tables.map(function(sheet){return V2_READ_REPLICA_DIRTY_PREFIX_+sheet;}));
   const pending=tables.filter(function(sheet){return full || markers[V2_READ_REPLICA_DIRTY_PREFIX_+sheet];});
-  if(!pending.length) return {success:true,code:'IDLE',tables:0,duration_ms:Date.now()-start};
-  // Idle has no reason to retrieve configuration or the signing credential.
-  // Full/pending runs still check configuration before any Sheet or network IO.
   try {config=readReplicaConfig_();} catch (_) {return {success:false,code:'SYNC_NOT_CONFIGURED'};}
   if(!config) return {success:true,code:'DISABLED',tables:0,duration_ms:Date.now()-start};
+  if(!pending.length) {
+    // Nothing was pending at start: tell the Worker its data is current.
+    const sent=readReplicaSendHeartbeat_(config,start);
+    return {success:sent,code:sent?'IDLE':'HEARTBEAT_FAILED',tables:0,duration_ms:Date.now()-start};
+  }
   const lease=Utilities.getUuid(); let acquired=false;
   try {
     acquired=readReplicaWithMarkerLock_(function(marker){
@@ -293,6 +295,8 @@ function readReplicaRun_(full) {
         count++;
       } catch (_) { failed.push(sheet); }
     });
+    // Dirty runs that drained every table were clean as of their start.
+    if(!full && !failed.length) readReplicaSendHeartbeat_(config,start);
     const result={success:failed.length===0,code:failed.length?'SYNC_PENDING':'OK',tables:count,failed_tables:failed,duration_ms:Date.now()-start};
     Logger.log(JSON.stringify(result)); return result;
   } catch (_) {
@@ -305,8 +309,45 @@ function readReplicaRun_(full) {
   }
 }
 
+function readReplicaSendHeartbeat_(config,cleanVersion) {
+  try {
+    const body=JSON.stringify({clean_version:cleanVersion});
+    const timestamp=String(Math.floor(Date.now()/1000));
+    const nonce=Utilities.getUuid();
+    const signature=readReplicaHex_(Utilities.computeHmacSha256Signature(timestamp+'\n'+nonce+'\n'+body,config.secret,Utilities.Charset.UTF_8));
+    const response=UrlFetchApp.fetch(config.url+'/sync/heartbeat',{method:'post',contentType:'application/json',payload:body,
+      headers:{'X-CMWebs-Timestamp':timestamp,'X-CMWebs-Nonce':nonce,'X-CMWebs-Signature':signature},
+      muteHttpExceptions:true,followRedirects:false});
+    return response.getResponseCode()===200;
+  } catch (_) {
+    Logger.log('READ_REPLICA_HEARTBEAT_FAILED');
+    return false;
+  }
+}
+
 function runV2ReadReplicaDirtySync() { return readReplicaRun_(false); }
 function runV2ReadReplicaFullSync() { return readReplicaRun_(true); }
+
+// Run once from the Apps Script editor after READ_REPLICA_URL and
+// READ_REPLICA_SYNC_SECRET are set. Replaces any existing replica triggers.
+function installV2ReadReplicaTriggers() {
+  const handlers=['runV2ReadReplicaDirtySync','runV2ReadReplicaFullSync'];
+  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+    if(handlers.indexOf(trigger.getHandlerFunction())>=0) ScriptApp.deleteTrigger(trigger);
+  });
+  ScriptApp.newTrigger('runV2ReadReplicaDirtySync').timeBased().everyMinutes(5).create();
+  ScriptApp.newTrigger('runV2ReadReplicaFullSync').timeBased().atHour(3).everyDays(1).inTimezone('Asia/Taipei').create();
+  return {success:true,triggers:handlers};
+}
+
+function removeV2ReadReplicaTriggers() {
+  const handlers=['runV2ReadReplicaDirtySync','runV2ReadReplicaFullSync'];
+  let removed=0;
+  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+    if(handlers.indexOf(trigger.getHandlerFunction())>=0) {ScriptApp.deleteTrigger(trigger);removed++;}
+  });
+  return {success:true,removed:removed};
+}
 
 function readReplicaPushRevokedSession_(session) {
   let config;

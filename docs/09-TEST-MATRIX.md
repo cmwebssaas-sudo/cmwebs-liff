@@ -4688,3 +4688,15 @@ and final validate check the synchronized candidate; the original canonical and
 local Worker parity evidence remains carried forward on unchanged helper,
 calculator and source-manifest bytes. Capacity/performance, real observation,
 authenticated/device and release gates remain outstanding; no publication.
+
+## 2026-10-26 read authority from synced D1 and sync heartbeat
+
+- Worker: authority uses synced D1 rows only; tests cover suspended members,
+  disabled users/workspaces, viewer/tenant roles, revoked and expired Email
+  sessions, missing or stale (> 15 min) heartbeat, and the signed
+  `/sync/heartbeat` endpoint (forgery, replay, invalid body, older version).
+- Apps Script: idle and drained dirty runs post one signed heartbeat; failed
+  and full runs do not; `installV2ReadReplicaTriggers` creates a 5-minute sync
+  and a 03:00 Asia/Taipei reconciliation.
+- Frontend: write guard is 7 minutes.
+- Synthetic latency budget: enforced locally, reported only when `CI` is set.

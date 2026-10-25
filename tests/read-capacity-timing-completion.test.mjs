@@ -16,7 +16,7 @@ function measure(durations){
   const counts=Object.fromEntries(routes.map(route=>[route,0])),logs=[];let current,tick=0;
   const actorTiming=createActorTiming('capacity500',line=>logs.push(line));
   const fetchTiming=createFetchTiming('capacity500',line=>logs.push(line));
-  const result=runInNewContext('(async()=>{'+body+'})()',{
+  const result=runInNewContext('(async()=>{'+body+'})()',{process:{env:{}},
     assert,schema:{synthetic:{}},actorTiming,fetchTiming,fetchCapture:{begin:()=>({}),run:(_,fn)=>fn(),sample:()=>null},
     cases:routes.map(route=>({route})),paths:Object.fromEntries(routes.map(route=>[route,'/'+route])),
     performance:{now:()=>{const phase=tick++%3;return phase===0?0:phase===1?10:durations[current]??20;}},

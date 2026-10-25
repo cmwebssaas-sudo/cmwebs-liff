@@ -80,7 +80,8 @@
   }
   function recordSuccessfulWrite(result) {
     if (!result || result.success !== true) return;
-    writeGuardUntil = Math.max(writeGuardUntil, Date.now() + 120000);
+    // Cover one five-minute replica sync interval plus the sync run itself.
+    writeGuardUntil = Math.max(writeGuardUntil, Date.now() + 420000);
     global.CMWEBS_READ_WRITE_GUARD_UNTIL = Math.max(writeGuardUntil,Number(global.CMWEBS_READ_WRITE_GUARD_UNTIL)||0);
     // Free large snapshots before persisting the tiny deadline.
     clearSnapshots();

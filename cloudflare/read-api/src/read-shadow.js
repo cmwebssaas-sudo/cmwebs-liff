@@ -62,10 +62,10 @@ export function createShadowHttpHandler(options={}) {
       const body=validateShadowReport(await bodyJson(request),release);
       // Body selects only a fixed read route; identity/scope remain server-only.
       const proofUrl=new URL(request.url);proofUrl.pathname='/v1/'+body.route;
-      const {access,loader,authority}=await verify(new Request(proofUrl,{headers:request.headers}),env,{telemetryOnly:true});
+      const {access,loader}=await verify(new Request(proofUrl,{headers:request.headers}),env,{telemetryOnly:true});
       if(body.outcome==='compared') {
-        if(authority.replica_dirty) return cors(readFailure('READ_SYNC_PENDING'));
         await loader.checkReplica();
+        await loader.checkHeartbeat();
       }
       const {scope,actor}=await shadowIdentity(access,env.READ_REPLICA_SYNC_SECRET);
       const id=crypto.randomUUID(),at=new Date(clock()).toISOString(),cutoff=new Date(clock()-300000).toISOString();

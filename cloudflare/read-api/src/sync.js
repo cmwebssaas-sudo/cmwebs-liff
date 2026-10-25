@@ -74,6 +74,32 @@ async function validateBatch(batch) {
   }
   return table;
 }
+// Apps Script posts {clean_version} after a sync run that left no pending
+// changes. Only a newer version replaces the stored one.
+export async function heartbeat(request, env) {
+  if (request.method !== 'POST') return failure('METHOD_NOT_ALLOWED',405);
+  if (!env.READ_REPLICA_SYNC_SECRET || !env.DB) return failure('SYNC_NOT_CONFIGURED',503);
+  try {
+    const body = await boundedBody(request);
+    const nonce = await verifySignature(request,body,env.READ_REPLICA_SYNC_SECRET);
+    let input; try { input=JSON.parse(body); } catch { stop('INVALID_HEARTBEAT'); }
+    if (!input || typeof input !== 'object' || Object.keys(input).join(',') !== 'clean_version' ||
+        !Number.isSafeInteger(input.clean_version) || input.clean_version < 1 ||
+        input.clean_version > Date.now()+300000) stop('INVALID_HEARTBEAT');
+    const db = env.DB.withSession ? env.DB.withSession('first-primary') : env.DB;
+    try {
+      await db.batch([db.prepare('DELETE FROM sync_nonces WHERE expires_at<=?').bind(Date.now()),
+        db.prepare('INSERT INTO sync_nonces(nonce,expires_at) VALUES (?,?)').bind(nonce,Date.now()+600000),
+        db.prepare(`INSERT INTO sync_heartbeat(id,clean_version,received_at) VALUES (1,?,?)
+          ON CONFLICT(id) DO UPDATE SET clean_version=excluded.clean_version,received_at=excluded.received_at
+          WHERE excluded.clean_version>sync_heartbeat.clean_version`).bind(input.clean_version,new Date().toISOString())]);
+    } catch { stop('NONCE_REPLAY',409); }
+    return Response.json({ success:true, code:'OK', message:'Heartbeat accepted', data:null }, {headers:{'cache-control':'no-store'}});
+  } catch (error) {
+    return failure(error.status ? error.code : 'SYNC_UNAVAILABLE',error.status || 503);
+  }
+}
+
 export async function sync(request, env) {
   if (request.method !== 'POST') return failure('METHOD_NOT_ALLOWED',405);
   if (!env.READ_REPLICA_SYNC_SECRET || !env.DB) return failure('SYNC_NOT_CONFIGURED',503);

@@ -470,7 +470,7 @@ test('actual capacity tail emits original properties stage pairs before wall sor
  const routes=['home','actions','revenue','tenants','rooms','arrears','properties'],logs=[];
  let route,index,tick=0;const counts=Object.fromEntries(routes.map(r=>[r,0]));
  const result=runInNewContext('(async()=>{'+source.slice(start,end)+'})()',{
-  assert,schema:{synthetic:{}},cases:routes.map(route=>({route})),paths:Object.fromEntries(routes.map(r=>[r,'/'+r])),
+  process:{env:{}},assert,schema:{synthetic:{}},cases:routes.map(route=>({route})),paths:Object.fromEntries(routes.map(r=>[r,'/'+r])),
   fetchCapture:{begin:()=>({}),run:(_,fn)=>fn(),sample:()=>null},fetchTiming:{record:()=>{}},actorTiming:{record:()=>{}},
   clientTiming:{begin:(r,i)=>{route=r;index=i;counts[r]++;},end:()=>{}},
   performance:{now:()=>{const phase=tick++%3;return phase===0?0:phase===1?10:route==='properties'?59+index/100:20;}},

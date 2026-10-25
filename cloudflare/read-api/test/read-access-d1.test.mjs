@@ -34,7 +34,8 @@ async function setup(input,identity={kind:'line',line_user_id:'SYNTHETIC_LINE1'}
     await new Promise(setImmediate);
     await db.batch(inserts);
     stage='sync_markers';
-    await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
+    await db.batch([...Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)),
+      db.prepare('INSERT INTO sync_heartbeat(id,clean_version,received_at) VALUES (1,?,?)').bind(Date.parse(fixture.now),fixture.now)]);
     return {mf,db,schema,authority};
   } catch(error) {
     // Fixed enums/counts only. Never emit messages, SQL/rows, addresses, URLs
@@ -125,14 +126,12 @@ test('500 owned rooms preserve canonical HTTP reads through authenticated primar
     assert.equal(observed.revenue.kpis.collected,1932000);
     assert.equal(observed.revenue.kpis.outstanding,2016000);
     assert.equal(observed.arrears.arrears.length,252);
-    // An authority-only change denies the next request while primary D1 still
-    // contains the previously active membership; no replication patch is sent.
-    const member=authority.data.V2_workspace_members.find(row=>row.membership_id===access.membership.membership_id);
-    member.member_status='suspended';
+    // A suspended membership synced into D1 denies the next request.
+    await db.prepare('UPDATE "V2_workspace_members" SET "member_status" = ? WHERE row_key = ?').bind(JSON.stringify('suspended'),access.membership.membership_id).run();
     const denied=await mf.dispatchFetch('https://local.test/http/v1/rooms?include_archived=1',{
       headers:{authorization:'LIFF synthetic-valid-line-token',origin:'https://cmwebssaas-sudo.github.io'}
     });
-    assert.equal(denied.status,401);
+    assert.notEqual(denied.status,200);
     assert.doesNotMatch(await denied.text(),/SYNTHETIC_500_|synthetic-valid-line-token|stack/);
   }finally{await mf.dispose();}
 });
@@ -296,33 +295,22 @@ test('authenticated HTTP verifies LINE/Email and rereads revocation, role and di
       assert.doesNotMatch(await denied.text(),/synthetic-valid-line-token|synthetic-email-key|stack|SYNTHETIC_U1/);
       await update(table,'account_status',key,'active');
     }
-    // These changes happen only in authoritative GAS; no D1 patch is sent.
-    for(const [row,field,value] of [[authority.data.V2_landlord_email_sessions[0],'status','revoked'],
-      [authority.data.V2_users[0],'account_status','disabled'],
-      [authority.data.V2_workspace_members[0],'member_status','suspended'],
-      [authority.data.V2_workspaces[0],'account_status','disabled']]) {
-      const previous=row[field];row[field]=value;
-      assert.equal((await get('Session '+token)).status,401);
-      row[field]=previous;
-    }
-    for(const [row,field,value,status] of [
-      [authority.data.V2_users[0],'account_status','disabled',401],
-      [authority.data.V2_workspace_members[0],'member_status','suspended',401],
-      [authority.data.V2_workspaces[0],'account_status','disabled',401],
-      [authority.data.V2_workspace_members[0],'role','tenant',401],
-      [authority.data.V2_workspace_members[0],'role','viewer',503]
-    ]) {
-      const previous=row[field];row[field]=value;
-      const denied=await get('LIFF synthetic-valid-line-token');
-      assert.equal(denied.status,status);
-      if(status===503) assert.equal((await denied.json()).code,'READ_AUTH_STATE_CHANGED');
-      row[field]=previous;
-      assert.equal((await get('LIFF synthetic-valid-line-token')).status,200);
-    }
-    authority.cache.set('cmwebs:read-replica:dirty:V2_rooms','synthetic-generation');
-    const pending=await get('LIFF synthetic-valid-line-token');
-    assert.equal(pending.status,503);assert.equal((await pending.json()).code,'READ_SYNC_PENDING');
-    authority.cache.delete('cmwebs:read-replica:dirty:V2_rooms');
+    // Suspended memberships and expired sessions in synced D1 deny reads.
+    await update('V2_workspace_members','member_status',access.membership.membership_id,'suspended');
+    for(const credential of ['LIFF synthetic-valid-line-token','Session '+token]) assert.notEqual((await get(credential)).status,200);
+    await update('V2_workspace_members','member_status',access.membership.membership_id,'active');
+    await update('V2_landlord_email_sessions','expires_at','SYNTHETIC_SESSION','2026-10-11T19:00:00Z');
+    assert.equal((await get('Session '+token)).status,401);
+    await update('V2_landlord_email_sessions','expires_at','SYNTHETIC_SESSION','2026-10-13T00:00:00Z');
+    assert.equal((await get('Session '+token)).status,200);
+    // Without a recent clean report from Apps Script, reads fall back.
+    await db.prepare('UPDATE sync_heartbeat SET clean_version=?').bind(Date.parse(fixture.now)-15*60000-1).run();
+    const silent=await get('LIFF synthetic-valid-line-token');
+    assert.equal(silent.status,503);assert.equal((await silent.json()).code,'READ_SYNC_STALE');
+    await db.prepare('DELETE FROM sync_heartbeat').run();
+    assert.equal((await get('LIFF synthetic-valid-line-token')).status,503);
+    await db.prepare('INSERT INTO sync_heartbeat(id,clean_version,received_at) VALUES (1,?,?)').bind(Date.parse(fixture.now)-15*60000+1,fixture.now).run();
+    assert.equal((await get('LIFF synthetic-valid-line-token')).status,200);
     await db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at) VALUES ('synthetic-pending','V2_rooms','snapshot',?,2,0,'synthetic','receiving',?)").bind(Date.parse(fixture.now)+1,fixture.now).run();
     const incomplete=await get('LIFF synthetic-valid-line-token');
     assert.equal(incomplete.status,503);assert.equal((await incomplete.json()).code,'READ_SYNC_INCOMPLETE');

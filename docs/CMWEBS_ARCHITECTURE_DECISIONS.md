@@ -317,3 +317,31 @@ later page checks require only that page's seven complete windows, including bot
 home sections, while all epoch failures remain blocking. Accepted on pages need
 not continue producing shadow rows. Private acceptance ledger/readback/device
 proof remains required; a source fingerprint does not prove live bindings.
+
+## 2026-10-26 read authority from synced D1, five-minute sync, rooms first
+
+Owner decision (2026-10-26). Supersedes the per-request Apps Script authority
+confirmation from C3 and the 24-hour/7-day observation gates in
+`READ-ACCELERATED-ROLLOUT.md` for the rooms-first launch.
+
+- The Worker no longer calls Apps Script on each read. Identity is still
+  verified (LINE `verify` endpoint; Email session HMAC), and authority comes
+  from the synced D1 rows: users, workspace memberships, workspaces and Email
+  sessions. The per-request call took 1–3 seconds and cancelled the speed-up.
+- Accepted trade-off: changes made in Apps Script (suspending a member, a
+  tenant payment report, a revoked Email session) can take up to about five
+  minutes to reach Worker reads. Revoked Email sessions are still pushed
+  immediately where the existing revocation patch succeeds.
+- Own writes: after a successful write the browser reads from Apps Script for
+  7 minutes (one sync interval plus the run), up from 2 minutes.
+- Sync runs every 5 minutes instead of every minute (about 15 instead of 48
+  Apps Script trigger minutes per day). Daily 03:00 Asia/Taipei full
+  reconciliation is unchanged. `installV2ReadReplicaTriggers()` creates both.
+- Freshness guard: each sync run that leaves nothing pending posts a signed
+  heartbeat to `/sync/heartbeat`. Reads fail over to Apps Script when the
+  latest heartbeat is older than 15 minutes.
+- The synthetic 50 ms latency budget is reported, not enforced, on shared CI
+  runners; it stays enforced locally. Real-device timing is the release gate.
+- Rollout: rooms page first with automatic fallback (3 s timeout, non-2xx or
+  malformed response returns to Apps Script); other pages one at a time after
+  the owner checks rooms on a phone.

@@ -7,6 +7,7 @@ const text=value=>String(value??'').trim();
 const unique=values=>[...new Set(values.map(text).filter(Boolean))];
 const column=field=>`trim(COALESCE(json_extract("${field}",'$'),''))`;
 const blankWorkspace=`upper(${column('workspace_id')}) = ''`;
+export const HEARTBEAT_MAX_AGE_MS=15*60000;
 function failure(code='READ_REPLICA_UNAVAILABLE'){throw Object.assign(new Error(code),{code});}
 const escapedOrControl=/[\\\u0000-\u001f]/;
 function decodeCell(value) {
@@ -147,6 +148,14 @@ export function createReadDatasetLoader(database,options={}) {
         const completed=Date.parse(row.completed_at);
         if(!Number.isFinite(completed)||completed>now+300000||now-completed>26*3600000) failure('READ_SYNC_STALE');
       }
+    },
+    // Apps Script reports every five minutes that no replica changes were
+    // pending. Without a recent report, reads fall back to Apps Script.
+    async checkHeartbeat() {
+      const now=options.now??Date.now();
+      const row=await db.prepare('SELECT clean_version FROM sync_heartbeat WHERE id=1').first();
+      const clean=Number(row?.clean_version);
+      if(!Number.isSafeInteger(clean)||clean>now+300000||now-clean>HEARTBEAT_MAX_AGE_MS) failure('READ_SYNC_STALE');
     },
     async findSession(hash) {
       const rows=await byValues('V2_landlord_email_sessions','session_token_hash',[hash]);

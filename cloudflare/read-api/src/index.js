@@ -1,4 +1,4 @@
-import { sync } from './sync.js';
+import { sync, heartbeat } from './sync.js';
 import { isReadRoute, readFailure } from './read-routes.js';
 import { createReadHttpHandler } from './read-http.js';
 import { createShadowHttpHandler } from './read-shadow.js';
@@ -15,9 +15,10 @@ function json(body, status = 200, headers = {}) {
 export default {
   async fetch(request, env) {
     if (new URL(request.url).pathname === '/sync') return sync(request,env);
+    if (new URL(request.url).pathname === '/sync/heartbeat') return heartbeat(request,env);
     if (new URL(request.url).pathname === '/v1/shadow-report') return shadow(request,env);
     if (isReadRoute(new URL(request.url).pathname)) {
-      if(!env.READ_AUTHORITY_URL||!env.LINE_LOGIN_CHANNEL_ID||!env.READ_REPLICA_SYNC_SECRET) return readFailure('READ_AUTH_NOT_READY');
+      if(!env.LINE_LOGIN_CHANNEL_ID||!env.READ_REPLICA_SYNC_SECRET) return readFailure('READ_AUTH_NOT_READY');
       return read(request,env);
     }
     if (new URL(request.url).pathname !== '/health') {

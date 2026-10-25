@@ -12,7 +12,7 @@ function runtime({mode='on',fetcher,store=new Map(),clock={now:1000},flags=true,
     Date:class extends Date {static now(){return clock.now;}},
     setTimeout:(fn,ms)=>setTimeout(fn,ms===3000?ms*timeoutScale:ms),clearTimeout,
     localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},
-    CMWEBS_RELEASE_VERSION:'20261026-read-summary-v1',
+    CMWEBS_RELEASE_VERSION:'20261026-read-rooms-first-v1',
     CMWEBS_READ_COMPARISON_VERSION:'read-contract-synthetic-v1',
     CMWEBS_READ_API_URL:'https://synthetic-worker.invalid',
     CMWebsLandlordAuth:{getRequestAuthParams:()=>auth,handleAuthFailure:()=>false,
@@ -55,10 +55,11 @@ test('shadow renders GAS and reports only bounded field paths without values',as
   assert.ok(!('data' in report));
   assert.equal(report.release,'read-contract-synthetic-v1');assert.equal(report.variant,'default');
 });
-test('successful write guard survives navigation for120 seconds, failed writes do not guard',async()=>{
+test('successful write guard survives navigation for one sync interval (7 minutes), failed writes do not guard',async()=>{
   const r=runtime();await r.api.request({action:'landlord_room_save'});
   const next=runtime({store:r.store,clock:r.clock});await next.api.request(config);assert.equal(next.calls.worker.length,0);
-  r.clock.now+=120001;await next.api.request(config);assert.equal(next.calls.worker.length,1);
+  r.clock.now+=419000;await next.api.request(config);assert.equal(next.calls.worker.length,0);
+  r.clock.now+=1001;await next.api.request(config);assert.equal(next.calls.worker.length,1);
   const failed=runtime();failed.context.CMWebsLandlordAuth.request=async()=>({success:false});
   await failed.api.request({action:'landlord_room_save'});
   failed.context.CMWebsLandlordAuth.request=async()=>good(20);

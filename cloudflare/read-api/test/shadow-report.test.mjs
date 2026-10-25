@@ -14,6 +14,8 @@ import { evaluateAcceleratedShadow } from '../../../scripts/read-accelerated-sha
 const release=JSON.parse(await readFile(new URL('../read-comparison-manifest.json',import.meta.url),'utf8')).comparison_version,
   token='synthetic-email-token';
 const body={route:'tenants',variant:'default',release,outcome:'compared',paths:['data.summary.total_amount','data.tenants[].tenant_name'],clock_paths:[],headers_ms:90,elapsed_ms:100};
+const d1Update=(db,table,field,key,value)=>db.prepare(`UPDATE "${table}" SET "${field}" = ? WHERE row_key = ?`).bind(JSON.stringify(value),key).run();
+const staleHeartbeat=db=>db.prepare('UPDATE sync_heartbeat SET clean_version=?').bind(Date.parse(fixture.now)-15*60000-1).run();
 async function setup({shadowRelease=release,beforeMigration,shadowStartedAt=new Date(Date.parse(fixture.now)-3600000).toISOString()}={}) {
   const input=richDataset();Object.assign(input.V2_users[0],{email_verified_at:'2026-10-01',email_login_enabled:true,email:'synthetic@example.invalid'});
   input.V2_landlord_email_sessions=[{session_id:'SYNTHETIC_SESSION',session_token_hash:createHmac('sha256','synthetic-email-key').update('session:'+token).digest('hex'),
@@ -37,6 +39,7 @@ async function setup({shadowRelease=release,beforeMigration,shadowStartedAt=new 
     .bind(row[definition.key],'synthetic',fixture.now,...definition.fields.map(key=>Object.hasOwn(row,key)?JSON.stringify(row[key]):null)));
   await db.batch(inserts);
   await db.batch(Object.keys(schema).map(table=>db.prepare("INSERT INTO sync_runs(snapshot_id,sheet,mode,source_version,batch_count,row_count,snapshot_hash,status,started_at,completed_at) VALUES (?,?,'snapshot',?,1,0,'synthetic','completed',?,?)").bind(randomUUID(),table,Date.parse(fixture.now),fixture.now,fixture.now)));
+  await db.prepare('INSERT INTO sync_heartbeat(id,clean_version,received_at) VALUES (1,?,?)').bind(Date.parse(fixture.now),fixture.now).run();
   const post=async(value=body,credential='Session '+token,options={})=>{
     if(value.outcome==='compared'&&value.receipt===undefined) {
       const read=await mf.dispatchFetch('https://local.test/http/v1/tenants?read_view=summary',{headers:{authorization:credential,'x-cmwebs-read-mode':'shadow'}});
@@ -75,11 +78,12 @@ test('actual LINE/Email report HTTP stores only redacted metadata atomically and
     const claimed=await mf.dispatchFetch('https://local.test/http/v1/tenants?read_view=summary',{headers:{authorization:'Session '+token,'x-cmwebs-read-mode':'shadow','x-cmwebs-auth-kind':'line'}});
     assert.equal(claimed.status,200);assert.equal((await db.prepare('SELECT auth_kind FROM shadow_attempts WHERE attempt_id=?').bind(claimed.headers.get('x-cmwebs-shadow-receipt')).first()).auth_kind,'email');
     assert.equal((await post({...body,receipt:randomUUID()},'Session forged')).status,401);
-    authority.data.V2_landlord_email_sessions[0].status='revoked';assert.equal((await post({...body,receipt:randomUUID()})).status,401);
-    authority.data.V2_landlord_email_sessions[0].status='active';
-    authority.data.V2_users[0].account_status='disabled';assert.equal((await post({...body,receipt:randomUUID()},'LIFF synthetic-valid-line-token')).status,401);
-    authority.data.V2_users[0].account_status='active';
-    authority.cache.set('cmwebs:read-replica:dirty:V2_rooms','pending');
+    const sessionId=authority.data.V2_landlord_email_sessions[0].session_id,userId=authority.data.V2_users[0].user_id;
+    await d1Update(db,'V2_landlord_email_sessions','status',sessionId,'revoked');assert.equal((await post({...body,receipt:randomUUID()})).status,401);
+    await d1Update(db,'V2_landlord_email_sessions','status',sessionId,'active');
+    await d1Update(db,'V2_users','account_status',userId,'disabled');assert.notEqual((await post({...body,receipt:randomUUID()},'LIFF synthetic-valid-line-token')).status,200);
+    await d1Update(db,'V2_users','account_status',userId,'active');
+    await staleHeartbeat(db);
     assert.equal((await post({...body,receipt:randomUUID()})).status,503);
     assert.equal((await post({...body,outcome:'worker_error',receipt:null,paths:[],headers_ms:null,elapsed_ms:null})).status,200);
     const failed=(await db.prepare("SELECT * FROM shadow_reports WHERE outcome='worker_error'").all()).results;
@@ -103,7 +107,7 @@ test('failed or missing reads cannot claim zero comparison, receipts cannot repl
     assert.equal((await post({...body,route:'home',variant:'actions',receipt})).status,409);
     assert.equal((await post({...body,receipt})).status,200);
     assert.equal((await post({...body,receipt})).status,409);
-    authority.data.V2_workspace_members[0].role='viewer';
+    await staleHeartbeat(db);
     const changed=await mf.dispatchFetch('https://local.test/http/v1/tenants?read_view=summary',{headers:{authorization:'LIFF synthetic-valid-line-token','x-cmwebs-read-mode':'shadow'}});
     assert.equal(changed.status,503);assert.ok(changed.headers.get('x-cmwebs-shadow-receipt'));
     const counts=await db.prepare("SELECT COUNT(*) AS n,SUM(status!=200) AS failed FROM shadow_attempts").first();assert.equal(counts.n,3);assert.equal(counts.failed,2);
