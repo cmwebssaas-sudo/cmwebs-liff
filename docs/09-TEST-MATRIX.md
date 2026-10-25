@@ -1,5 +1,20 @@
 # V2 回歸測試矩陣
 
+## 2026-10-25 Bounded Node client diagnostic candidate
+
+| Check | Local evidence | Boundary |
+| --- | --- | --- |
+| Source pin, unique outside-timer hooks, reversible derivation, own-copy cleanup | Focused negative and positive source tests | Original capacity test,707 reads,seven route order,all100 walls,p95 index94 and strict<50ms gate unchanged |
+| Owned in-process Inspector lifecycle, callback drain, timeout, output bounds/privacy/checksums | Focused fake-protocol tests and one exact Node22.23.3 capability microtest | CPU1000us/allocation32768bytes with both collected-GC flags; no listener,HTTP or Miniflare in capability check |
+| Local validation |22 focused tests; helper/test/derived syntax,workflow policy,validate and diff checks | Apps Script tests N/A; no full Worker/capacity/local benchmark or broad unchanged suites |
+| Actual diagnostic and acceptance | PENDING independent source review and one parent-selected Linux push run | Temporary branch only; prior strict latency failures remain authoritative; diagnostic coverage is not acceptance |
+
+Rollback: discard or review-revert the added test helper,focused tests,standalone
+branch-only workflow and this note. No runtime,data,dependency or release change.
+The finite launcher preserves the original test exit and reports missing data,
+unsupported capability,overrun or cleanup failure as unavailable/partial.
+
+
 ## 2026-10-18 C6 request-local month parser
 
 | Check | Evidence | Boundary |

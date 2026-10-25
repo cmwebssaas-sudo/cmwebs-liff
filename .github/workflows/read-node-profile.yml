@@ -1,0 +1,22 @@
+name: Bounded read client diagnostic
+on:
+  push:
+    branches: [codex/c6-node-allocation-profile-20261025]
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/c6-node-allocation-profile-20261025'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.3
+      - run: npm ci --prefix cloudflare/read-api --no-fund --no-audit
+      - name: One bounded diagnostic with original test exit
+        run: node cloudflare/read-api/test/read-node-profile.mjs --launch
