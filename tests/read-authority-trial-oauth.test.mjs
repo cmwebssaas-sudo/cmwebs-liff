@@ -3,20 +3,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,chmodSync,readFileSync,lstatSync,unlinkSync} from 'node:fs';
 import {join} from 'node:path';
-import {tmpdir,homedir} from 'node:os';
+import os,{tmpdir} from 'node:os';
+import {syncBuiltinESMExports} from 'node:module';
 import {createHash,randomUUID} from 'node:crypto';
-import {createServer} from 'node:http';
-const oauth=await import('../scripts/read-authority-trial-oauth.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-trial-oauth.mjs'))return {};throw e;});
+import http,{createServer} from 'node:http';
+const canonicalOAuth=await import('../scripts/read-authority-trial-oauth.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-trial-oauth.mjs'))return {};throw e;});
+// Constructor-only synthetic registry seam; actual HOME/CODEX_HOME stay unchanged.
+const fixtureHome=mkdtempSync(join(tmpdir(),'cmwebs-oauth-home-'));chmodSync(fixtureHome,0o700);
+const oauth={...canonicalOAuth,createAuthorityTrialOAuth:input=>{
+ const original=os.homedir;try{os.homedir=()=>fixtureHome;syncBuiltinESMExports();return canonicalOAuth.createAuthorityTrialOAuth(input);}
+ finally{os.homedir=original;syncBuiltinESMExports();}
+}};
 const digest=v=>createHash('sha256').update(v).digest('hex');
 const clock=Date.parse('2026-10-14T00:00:00Z'),clientId='1234567890-synthetic.apps.googleusercontent.com',email='caller@example.invalid';
 const scopes=['https://www.googleapis.com/auth/spreadsheets.readonly','https://www.googleapis.com/auth/userinfo.email','https://www.googleapis.com/auth/script.external_request'];
 const redirect='http://127.0.0.1:34763/oauth/callback',cloudProjectHash='c'.repeat(64),publisherHash=digest('publisher@example.invalid'),callerHash=digest(email);
 const epochs=new Set();
-test.after(()=>{for(const epoch of epochs){const p=join(homedir(),'.codex','private','cmwebs-authority-trials',digest(JSON.stringify(epoch))+'.oauth.json');try{const stat=lstatSync(p),v=JSON.parse(readFileSync(p)).value;if(stat.isFile()&&!stat.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-oauth-')))unlinkSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}}});
+test.after(()=>{for(const epoch of epochs){const p=join(fixtureHome,'.codex','private','cmwebs-authority-trials',digest(JSON.stringify(epoch))+'.oauth.json');try{const stat=lstatSync(p),v=JSON.parse(readFileSync(p)).value;if(stat.isFile()&&!stat.isSymbolicLink()&&v.path.startsWith(join(tmpdir(),'cmwebs-oauth-')))unlinkSync(p);}catch(e){if(e.code!=='ENOENT')throw e;}}});
 const token=()=>({access_token:'SYNTHETIC_ACCESS_TOKEN',expires_in:3600,token_type:'Bearer',scope:scopes.join(' ')});
 function setup(patch={}){
  const dir=mkdtempSync(join(tmpdir(),'cmwebs-oauth-'));chmodSync(dir,0o700);let spent=0,now=clock,cleanups=0;const calls=[],order=[];
- const control={waitForExternalReadSlot:async n=>{assert.equal(n,1);order.push('wait');},reserveExternalReads:async n=>{assert.equal(n,1);spent++;order.push('debit');},cleanup:async(name,io)=>{assert.equal(name,'revoke-token');cleanups++;await io();}};
+ const control={waitForExternalReadSlot:async n=>{assert.equal(n,1);order.push('wait');},reserveExternalReads:async n=>{assert.equal(n,1);spent++;order.push('debit');},cleanup:async(name,io)=>{assert.equal(name,'revoke-token');cleanups++;return await io();}};
  const options={path:join(dir,'receipt.json'),epoch:'SYNTHETIC_OAUTH_'+randomUUID(),clientId,oauthClientHash:digest(clientId),cloudProjectHash,callerHash,publisherHash,expiresAt:clock+7200000,
   clientReadback:{source:'google-native-ui',oauthClientHash:digest(clientId),cloudProjectHash,redirectUri:redirect,isolatedTrialProject:true},
   control,now:()=>now,clientSecret:()=>{order.push('secret');return 'SYNTHETIC_CLIENT_SECRET';},
@@ -56,18 +63,18 @@ test('expired callback denies before exchange and cannot reopen the epoch at ano
 test('failed consent admission cannot submit or later exchange a callback',async()=>{
  const s=setup({control:{waitForExternalReadSlot:async()=>{},reserveExternalReads:async()=>{throw Error('PRIVATE_QUOTA');},cleanup:async()=>{throw Error('UNEXPECTED_CLEANUP');}}});await assert.rejects(s.submit(),/^Error: TRIAL_STOPPED$/);await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);await assert.rejects(s.submit(),/TRIAL_STOPPED/);assert.equal(s.calls.length,0);assert(!readFileSync(s.options.path,'utf8').includes('PRIVATE_QUOTA'));
 });
-for(const [name,response] of [['bad scope',()=>({...token(),scope:scopes.join(' ')+' https://www.googleapis.com/auth/drive'})],['refresh',()=>({...token(),refresh_token:'PRIVATE_REFRESH_NEVER_STORED'})],['too short',()=>({...token(),expires_in:360})],['too long',()=>({...token(),expires_in:3601})],['wrong type',()=>({...token(),token_type:'basic'})]])test('received '+name+' stops, revokes once under cleanup reserve and never exposes credential',async()=>{
+for(const [name,response] of [['bad scope',()=>({...token(),scope:scopes.join(' ')+' https://www.googleapis.com/auth/drive'})],['refresh',()=>({...token(),refresh_token:'PRIVATE_REFRESH_NEVER_STORED'})],['too short',()=>({...token(),expires_in:360})],['too long',()=>({...token(),expires_in:3601})],['wrong type',()=>({...token(),token_type:'basic'})]])test('received '+name+' stops locally, then revokes once under independent cleanup reserve',async()=>{
  const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});if(url.endsWith('/token'))return new Response(JSON.stringify(response()));if(url.endsWith('/revoke'))return new Response('');throw Error('UNEXPECTED_USERINFO');}});await s.submit();
- await assert.rejects(s.flow.receive(s.request()),/^Error: TRIAL_STOPPED$/);assert.equal(s.cleanups(),1);assert.equal(s.calls.length,2);assert.equal(new URLSearchParams(s.calls[1].init.body).get('token'),'SYNTHETIC_ACCESS_TOKEN');assert(!s.calls[1].url.includes('SYNTHETIC_ACCESS_TOKEN'));assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);assert(!readFileSync(s.options.path,'utf8').includes('PRIVATE_REFRESH_NEVER_STORED'));await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.calls.length,2);
+ await assert.rejects(s.flow.receive(s.request()),/^Error: TRIAL_STOPPED$/);assert.equal(s.cleanups(),0);assert.equal(s.calls.length,1);await s.flow.cancel();assert.equal(s.cleanups(),1);assert.equal(s.calls.length,2);assert.equal(new URLSearchParams(s.calls[1].init.body).get('token'),'SYNTHETIC_ACCESS_TOKEN');assert(!s.calls[1].url.includes('SYNTHETIC_ACCESS_TOKEN'));assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);assert(!readFileSync(s.options.path,'utf8').includes('PRIVATE_REFRESH_NEVER_STORED'));await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.calls.length,2);
 });
-for(const [name,profile] of [['publisher',{email:'publisher@example.invalid',verified_email:true}],['unverified',{email,verified_email:false}],['wrong caller',{email:'other@example.invalid',verified_email:true}],['extra private field',{email,verified_email:true,id:'PRIVATE_ID'}]])test('identity '+name+' rejects and revokes received token without retry',async()=>{
- const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});return new Response(url.endsWith('/token')?JSON.stringify(token()):url.endsWith('/revoke')?'':JSON.stringify(profile));}});await s.submit();await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.cleanups(),1);assert.equal(s.calls.length,3);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);
+for(const [name,profile] of [['publisher',{email:'publisher@example.invalid',verified_email:true}],['unverified',{email,verified_email:false}],['wrong caller',{email:'other@example.invalid',verified_email:true}],['extra private field',{email,verified_email:true,id:'PRIVATE_ID'}]])test('identity '+name+' rejects locally and retains received token for explicit cleanup',async()=>{
+ const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});return new Response(url.endsWith('/token')?JSON.stringify(token()):url.endsWith('/revoke')?'':JSON.stringify(profile));}});await s.submit();await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.cleanups(),0);assert.equal(s.calls.length,2);assert.equal(s.flow.status(),'failed');await s.flow.cancel();assert.equal(s.flow.status(),'failed');assert.equal(s.cleanups(),1);assert.equal(s.calls.length,3);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);
 });
 for(const [name,response] of [['redirect',()=>new Response('',{status:302})],['failure',()=>new Response('PRIVATE',{status:400})],['oversize',()=>new Response('x'.repeat(30001))],['malformed',()=>new Response('PRIVATE')],['non UTF8',()=>new Response(new Uint8Array([255]))]])test('token response '+name+' stops without retry/raw output',async()=>{
  const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});return response();}});await s.submit();await assert.rejects(s.flow.receive(s.request()),/^Error: TRIAL_STOPPED$/);assert.equal(s.calls.length,1);assert.equal(s.spent(),2);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);
 });
 test('unknown cleanup result preserves failed flow and cannot expose/retry token',async()=>{
- let requests=0;const s=setup({fetcher:async url=>{requests++;return url.endsWith('/token')?new Response(JSON.stringify({...token(),scope:'OTHER'})):new Response('',{status:503});}});await s.submit();await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(requests,2);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);assert.equal(requests,2);
+ let requests=0;const s=setup({fetcher:async url=>{requests++;return url.endsWith('/token')?new Response(JSON.stringify({...token(),scope:'OTHER'})):new Response('',{status:503});}});await s.submit();await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(requests,1);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);assert.equal(requests,2);
 });
 test('callback concurrency claims state before awaiting readiness, second callback never exchanges',async()=>{
  let enter,release,waits=0;const entered=new Promise(r=>{enter=r;});const s=setup({control:{waitForExternalReadSlot:async()=>{if(++waits===2){enter();await new Promise(r=>{release=r;});}},reserveExternalReads:async()=>{},cleanup:async()=>{throw Error('UNEXPECTED_CLEANUP');}}});await s.submit();
@@ -93,7 +100,7 @@ test('occupied fixed callback port refuses, closes flow and never tries another 
 });
 test('receipt failure after token receipt cannot block the independent revoke attempt',async()=>{
  const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});if(url.endsWith('/token')){chmodSync(join(s.options.path,'..'),0o755);return new Response(JSON.stringify(token()));}if(url.endsWith('/revoke'))return new Response('');throw Error('UNEXPECTED_USERINFO');}});await s.submit();
- try{await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.cleanups(),1);assert.equal(s.calls.filter(c=>c.url.endsWith('/revoke')).length,1);await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);assert.equal(s.cleanups(),1);}finally{chmodSync(join(s.options.path,'..'),0o700);}
+ try{await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.cleanups(),0);await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);assert.equal(s.cleanups(),1);assert.equal(s.calls.filter(c=>c.url.endsWith('/revoke')).length,1);await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);assert.equal(s.cleanups(),1);}finally{chmodSync(join(s.options.path,'..'),0o700);}
 });
 test('explicit cancellation with damaged receipt still revokes an already ready token once',async()=>{
  const s=setup();await s.submit();await s.flow.receive(s.request());chmodSync(join(s.options.path,'..'),0o755);
@@ -108,12 +115,12 @@ test('consumed failed callback redirects to generic result without retaining cod
  const s=setup(),listener=await oauth.startAuthorityTrialOAuthListener(s.flow);await s.submit();
  try{const response=await fetch('http://127.0.0.1:34763'+s.request({error:'access_denied'}).url,{redirect:'manual'});assert.equal(response.status,303);assert.equal(response.headers.get('location'),'/oauth/result');const result=await fetch('http://127.0.0.1:34763/oauth/result');assert.equal(result.status,200);assert(!(await result.text()).includes('SYNTHETIC_CODE'));}finally{await listener.close();}
 });
-test('expired credential stops and begins single cleanup which cancel joins',async()=>{
- const s=setup();await s.submit();await s.flow.receive(s.request());s.setNow(clock+3240000);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);assert.equal(s.flow.status(),'cancelled');assert.equal(s.cleanups(),1);await s.flow.cancel();assert.equal(s.calls.filter(c=>c.url.endsWith('/revoke')).length,1);
+test('expired credential cancels locally and leaves independent cleanup available',async()=>{
+ const s=setup();await s.submit();await s.flow.receive(s.request());s.setNow(clock+3240000);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);assert.equal(s.flow.status(),'cancelled');assert.equal(s.cleanups(),0);await s.flow.cancel();assert.equal(s.calls.filter(c=>c.url.endsWith('/revoke')).length,1);
 });
-test('cancellation during token response revokes the late token without identity request',async()=>{
+test('local cancellation during token response retains the late token for explicit cleanup',async()=>{
  let enter,release;const entered=new Promise(r=>{enter=r;});const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});if(url.endsWith('/token')){enter();await new Promise(r=>{release=r;});return new Response(JSON.stringify(token()));}if(url.endsWith('/revoke'))return new Response('');throw Error('UNEXPECTED_IDENTITY');}});await s.submit();
- const running=s.flow.receive(s.request());await entered;await s.flow.cancel();release();await assert.rejects(running,/TRIAL_STOPPED/);assert.equal(s.cleanups(),1);assert.equal(s.calls.length,2);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);
+ const running=s.flow.receive(s.request());await entered;s.flow.requestCancellation();release();await assert.rejects(running,/TRIAL_STOPPED/);assert.equal(s.cleanups(),0);assert.equal(s.calls.length,1);await s.flow.cancel();assert.equal(s.cleanups(),1);assert.equal(s.calls.length,2);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);
 });
 
 test('ordinary oauth IO enters the pinned atomic capability',async()=>{
@@ -223,4 +230,74 @@ for(const mode of ['skip','clone','double','late'])test('consent admission '+mod
 test('a callback while consent awaits admission cannot preclaim the valid state',async()=>{
  let enter,release;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);const s=setup({control:{externalRead:async fn=>{enter();await gate;return fn();},cleanup:async()=>{throw Error('UNEXPECTED_CLEANUP');}}});
  const pending=s.flow.submitConsent(async()=>{});void pending.catch(()=>{});await entered;await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.flow.status(),'waiting');assert.equal(s.calls.length,0);release();await pending;await s.flow.receive(s.request());assert.equal(s.flow.credential().callerHash,callerHash);
+});
+
+const receipt=s=>JSON.parse(readFileSync(s.options.path)).value;
+const tick=()=>new Promise(r=>setImmediate(r));
+test('requestCancellation is local, synchronous and blocks every ordinary admission',async()=>{
+ const s=setup();assert.equal(typeof s.flow.requestCancellation,'function');assert.equal(s.flow.requestCancellation(),undefined);assert.equal(s.flow.status(),'cancelled');
+ await assert.rejects(s.submit(),/TRIAL_STOPPED/);await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.throws(()=>s.flow.credential(),/TRIAL_STOPPED/);
+ assert.equal(s.calls.length,0);assert.equal(s.spent(),0);assert.equal(s.cleanups(),0);await s.flow.cancel();assert.equal(s.cleanups(),0);
+});
+test('pre-admission denial is local; concurrent callers share it and later explicit cleanup can first dispatch',async()=>{
+ let open=false,admissions=0,release;const gate=new Promise(r=>release=r);
+ const s=setup({control:{externalRead:io=>io(),cleanup:async(name,io)=>{admissions++;if(!open){await gate;throw Error('SYNTHETIC_NOT_ADMITTED');}return io();}}});await s.submit();await s.flow.receive(s.request());
+ const first=s.flow.cancel(),second=s.flow.cancel();void first.catch(()=>{});void second.catch(()=>{});await tick();assert.equal(admissions,1);assert.equal(receipt(s).revocation,'NOT_NEEDED');
+ await assert.rejects(s.flow.verifyRevoked(),/TRIAL_STOPPED/);release();await assert.rejects(first,/TRIAL_STOPPED/);await assert.rejects(second,/TRIAL_STOPPED/);assert.equal(s.calls.length,2);assert.equal(receipt(s).revocation,'NOT_NEEDED');
+ open=true;await Promise.all([s.flow.cancel(),s.flow.cancel()]);assert.equal(admissions,2);assert.equal(s.calls.filter(c=>c.url.endsWith('/revoke')).length,1);assert.equal(receipt(s).revocation,'ACK_UNVERIFIED');
+});
+for(const mode of ['skip','clone','double','late','reject-before','reject-after','detach'])test('revoke admission '+mode+' cannot forge ACK or replay an entered provider callback',async()=>{
+ let saved,admissions=0,allow=false,detached,finish;
+ const s=setup({control:{externalRead:io=>io(),cleanup:async(name,io)=>{
+  admissions++;saved=io;if(allow)return io();
+  if(mode==='skip'||mode==='late')return {};
+  if(mode==='reject-before')throw Error('SYNTHETIC_DENIED');
+  if(mode==='detach'){detached=io();void detached.catch(()=>{});return {};}
+  const value=await io();if(mode==='double')assert.throws(io,/TRIAL_STOPPED/);if(mode==='reject-after')throw Error('SYNTHETIC_DENIED');return mode==='clone'?structuredClone(value):value;
+ }},fetcher:async(url,init)=>{
+  s.calls.push({url,init});if(url.endsWith('/token'))return Response.json(token());if(url.endsWith('/revoke')){if(mode==='detach')await new Promise(r=>finish=r);return new Response('');}return Response.json({email,verified_email:true});
+ }});await s.submit();await s.flow.receive(s.request());const pending=s.flow.cancel();void pending.catch(()=>{});await tick();
+ if(mode==='detach'){let settled=false;void pending.finally(()=>settled=true).catch(()=>{});await tick();assert.equal(settled,false);finish();}
+ await assert.rejects(pending,/TRIAL_STOPPED/);if(mode==='late'||mode==='reject-before')assert.throws(saved,/TRIAL_STOPPED/);
+ const entered=['clone','double','reject-after','detach'].includes(mode);assert.equal(s.calls.filter(c=>c.url.endsWith('/revoke')).length,entered?1:0);assert.equal(receipt(s).revocation,entered?'UNKNOWN':'NOT_NEEDED');
+ allow=true;if(entered)await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);else await s.flow.cancel();assert.equal(s.calls.filter(c=>c.url.endsWith('/revoke')).length,1);assert.equal(admissions,entered?1:2);
+});
+for(const mode of ['provider','disposal','receipt','integrity'])test('admitted '+mode+' failure keeps one revoke UNKNOWN and never replays it',async()=>{
+ let revokes=0;const s=setup({fetcher:async(url,init)=>{
+  s.calls.push({url,init});if(url.endsWith('/token'))return Response.json(token());if(!url.endsWith('/revoke'))return Response.json({email,verified_email:true});revokes++;
+  if(mode==='provider')throw Error('PRIVATE_PROVIDER_FAILURE');if(mode==='receipt')chmodSync(join(s.options.path,'..'),0o755);
+  if(mode==='disposal')return {status:200,body:{cancel:async()=>{throw Error('PRIVATE_DISPOSAL');}}};return new Response('');
+ }});await s.submit();await s.flow.receive(s.request());if(mode==='integrity')chmodSync(join(s.options.path,'..'),0o755);
+ try{await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);assert.equal(revokes,1);assert.notEqual(receipt(s).revocation,'ACK_UNVERIFIED');
+  if(mode==='receipt'||mode==='integrity'){chmodSync(join(s.options.path,'..'),0o700);await assert.rejects(s.flow.verifyRevoked(),/TRIAL_STOPPED/);}
+ }finally{chmodSync(join(s.options.path,'..'),0o700);}
+});
+test('issued but unverified identity can be revoked but cannot fabricate accepted-token verification',async()=>{
+ const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});return url.endsWith('/token')?Response.json(token()):url.endsWith('/revoke')?new Response(''):Response.json({email:'wrong@example.invalid',verified_email:true});}});
+ await s.submit();await assert.rejects(s.flow.receive(s.request()),/TRIAL_STOPPED/);assert.equal(s.cleanups(),0);await assert.rejects(s.flow.verifyRevoked(),/TRIAL_STOPPED/);await s.flow.cancel();await assert.rejects(s.flow.verifyRevoked(),/TRIAL_STOPPED/);assert.equal(s.calls.length,3);assert.equal(s.flow.status(),'failed');
+});
+
+for(const mode of ['timeout','failure'])test('listener '+mode+' stops locally and drains a pending late-token callback',async()=>{
+ let enter,release,server;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);
+ const s=setup({fetcher:async(url,init)=>{s.calls.push({url,init});if(url.endsWith('/token')){enter();await gate;return Response.json(token());}if(url.endsWith('/revoke'))return new Response('');throw Error('UNEXPECTED_IDENTITY');}});await s.submit();
+ if(mode==='timeout')s.setNow(clock+599700);
+ const original=http.createServer;let listener;
+ try{http.createServer=(...args)=>(server=original(...args));syncBuiltinESMExports();listener=await oauth.startAuthorityTrialOAuthListener(s.flow);}
+ finally{http.createServer=original;syncBuiltinESMExports();}
+ const callback=fetch('http://127.0.0.1:34763'+s.request().url,{redirect:'manual'});await entered;
+ if(mode==='failure')server.emit('error',Error('PRIVATE_LISTENER_FAILURE'));
+ else await new Promise(r=>setTimeout(r,350));
+ try{assert.equal(s.flow.status(),'cancelled');assert.equal(s.cleanups(),0);assert.equal(s.calls.length,1);}
+ finally{release();await callback;await listener.close();}
+ assert.equal(s.cleanups(),0);await s.flow.cancel();assert.equal(s.cleanups(),1);assert.equal(s.calls.length,2);assert(!readFileSync(s.options.path,'utf8').includes('PRIVATE_LISTENER_FAILURE'));
+});
+for(const mode of ['skip','clone','double','late','detach','reject-after'])test('verifyRevoked '+mode+' cannot forge rejection proof or escape owned disposal',async()=>{
+ let saved,release,enter;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);
+ const v=verificationSetup(()=>new Response(new ReadableStream({cancel:async()=>{enter();if(mode==='detach')await gate;}}),{status:401}),async(action,io)=>{
+  if(action==='revoke-token')return io();saved=io;if(mode==='skip'||mode==='late')return {tokenRejectedAtReadback:true};
+  if(mode==='detach'){void io().catch(()=>{});return {};}
+  const actual=await io();if(mode==='double')assert.throws(io,/TRIAL_STOPPED/);if(mode==='reject-after')throw Error('SYNTHETIC_DENIED');return mode==='clone'?structuredClone(actual):actual;
+ });const s=v.s;await s.submit();await s.flow.receive(s.request());await s.flow.cancel();const pending=s.flow.verifyRevoked();void pending.catch(()=>{});
+ if(mode==='detach'){await entered;let settled=false;void pending.finally(()=>settled=true).catch(()=>{});await tick();assert.equal(settled,false);release();}
+ await assert.rejects(pending,/TRIAL_STOPPED/);if(mode==='late')assert.throws(saved,/TRIAL_STOPPED/);assert.notEqual(receipt(s).tokenVerification,'REJECTED_AT_READBACK');await assert.rejects(s.flow.verifyRevoked(),/TRIAL_STOPPED/);assert.equal(v.verifications(),['skip','late'].includes(mode)?0:1);
 });

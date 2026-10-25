@@ -1,11 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,chmodSync,readFileSync,writeFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import os,{tmpdir} from 'node:os';
+import {syncBuiltinESMExports} from 'node:module';
 import {join} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import {createAuthorityPreparationControl} from '../scripts/read-authority-preparation-control.mjs';
-import {createAuthorityTrialOAuth} from '../scripts/read-authority-trial-oauth.mjs';
+import {createAuthorityTrialOAuth as canonicalOAuth} from '../scripts/read-authority-trial-oauth.mjs';
+// Constructor-only OAuth registry seam; the real ledger is isolated by the owned runner.
+const fixtureHome=mkdtempSync(join(tmpdir(),'cmwebs-phase-oauth-home-'));chmodSync(fixtureHome,0o700);
+const createAuthorityTrialOAuth=input=>{const original=os.homedir;try{os.homedir=()=>fixtureHome;syncBuiltinESMExports();return canonicalOAuth(input);}finally{os.homedir=original;syncBuiltinESMExports();}};
 import {AUTHORITY_TRIAL_SCOPES} from '../scripts/read-authority-trial-driver.mjs';
 const phase=await import('../scripts/read-authority-phase-control.mjs').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND'&&e.message.includes('read-authority-phase-control.mjs'))return {};throw e;});
 const hash=v=>createHash('sha256').update(v).digest('hex'),clock=Date.parse('2026-10-14T00:00:00Z'),binding='d'.repeat(64),defer=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
@@ -64,8 +68,8 @@ test('unawaited ordinary IO cannot start after the phase callback returns',async
 test('already owned independent cleanup is drained even when the callback throws before awaiting it',async()=>{
  const s=setup();await prepare(s);let io=0,op;await assert.rejects(s.bridge.withRuntime(binding,cap=>{op=cap.cleanup('revoke-token',async()=>{io++;});throw Error('SYNTHETIC_CALLBACK_FAILURE');}),/TRIAL_STOPPED/);await op;assert.equal(io,1);assert.equal(s.get().spent,28);
 });
-test('a credential expiry auto-cancel drains one revoke without refreshing or replaying OAuth',async()=>{
- const s=setup(),o=await oauthPrepare(s);s.setNow(o.flow.credential().expiresAt-360000+1);await assert.rejects(s.bridge.withRuntime(binding,()=>o.flow.credential()),/TRIAL_STOPPED/);assert.equal(o.revoke(),1);assert.equal(o.exchange(),1);assert.equal(s.get().spent,31);assert.deepEqual(s.get().preparation.iActions,['revoke-token']);assert.equal(JSON.parse(readFileSync(join(s.dir,'oauth.json'))).value.revocation,'ACK_UNVERIFIED');
+test('credential expiry stops locally and later independent cleanup owns the one revoke',async()=>{
+ const s=setup(),o=await oauthPrepare(s);s.setNow(o.flow.credential().expiresAt-360000+1);await assert.rejects(s.bridge.withRuntime(binding,()=>o.flow.credential()),/TRIAL_STOPPED/);assert.equal(o.revoke(),0);assert.equal(s.get().spent,30);await s.bridge.withCleanup(binding,()=>o.flow.cancel());assert.equal(o.revoke(),1);assert.equal(o.exchange(),1);assert.equal(s.get().spent,31);assert.deepEqual(s.get().preparation.iActions,['revoke-token']);assert.equal(JSON.parse(readFileSync(join(s.dir,'oauth.json'))).value.revocation,'ACK_UNVERIFIED');
 });
 test('entered IO retains the original flock through callback failure and stop until terminal settlement',async()=>{
  const s=setup(),entered=defer(),release=defer();let op,io=0,finished=false;

@@ -2935,3 +2935,51 @@ the base-mode constructor does. Its four snapshot/evaluate and missing/false
 cases continue to require `TRIAL_STOPPED` before pending clears or the event
 settles. This repairs test setup only; no production source or acceptance
 threshold changed.
+
+
+## 2026-10-25 C3 OAuth local cancellation and independent cleanup
+
+`read-authority-trial-oauth.test.mjs` now distinguishes synchronous local
+`requestCancellation()` from explicit `cancel()` under independent cleanup.
+Abandonment, credential expiry and waiting/claimed listener close, timeout or
+failure stop ordinary admission and clear callback/verifier/credential views
+without invoking cleanup. An issued late token remains in the original holder
+for later cleanup; failed receipts remain failed across explicit cancellation.
+A successful ready flow survives normal listener disposal, preserving the
+existing preparation caller contract.
+
+Concurrent cancels share pending admission. Admission denial without callback
+entry does not claim a remote revoke, ACK or verification eligibility; a later
+explicit attempt remains subject to the same capability/ledger with no refund
+or inferred zero debit. Actual callback entry permanently consumes the one
+factory dispatch, including provider, disposal or receipt failure. Bounded
+active/cardinality and exact-result checks reject skipped, cloned, repeated,
+late, rejected or detached cleanup callbacks and drain entered work. UNKNOWN
+is written only inside the owned callback; ACK follows exact owned settlement.
+A compromised journal cannot support a verified success claim, but does not
+prevent the one real independently admitted revoke.
+
+`verifyRevoked()` remains one-use, independently admitted, limited to this
+holder's previously accepted token before its verified expiry and the exact
+userinfo endpoint/401. Disposal settles before proof, and forged cleanup
+results cannot authorize rejection proof. Issued but unverified tokens can be
+revoked without fabricating identity proof. Original revoke ACK/UNKNOWN and
+`revocationAccepted:false` / `rollbackComplete:false` remain unchanged.
+
+Focused TDD: original-source RED 59 pass/22 fail; initial lifecycle GREEN81/81;
+listener/error and verification-settlement RED0/7 then final OAuth89/89.
+The affected phase-control expiry case now expects local stop followed by
+explicit independent cleanup:17/17 with unchanged real Python ledger/flock
+under a private owned filesystem seam. Its initial seam validation failure
+(1 pass/9 fail/7 cancelled) is retained and does not count as a source failure
+or ledger acceptance. OAuth registry construction temporarily substitutes
+`os.homedir` and restores it immediately; actual HOME/CODEX_HOME are unchanged.
+No provider, real credentials, actual namespace or actual budget was touched.
+
+The unchanged preparation-realm caller suite, full unit/Worker/Core and exact
+composed CI remain DEFERRED NOT WAIVED for parent qualification of the final
+selected source. This bounded source prerequisite does not complete Task94's
+real-holder/Python-ledger retained-forward integration or actual cleanup map.
+No Apps Script test function applies: no `.gs`, route or Schema changed.
+Actual admission remains false;296 accounting/history, rates/single-inflight,
+cleanup reserves, one RPC, performance/device/freshness/24-hour gates remain.
