@@ -10,12 +10,12 @@ const stop=()=>{throw Error('TRIAL_STOPPED');},hash=v=>createHash('sha256').upda
 // Observation metadata never admits IO or replaces a fresh canonical integrity check.
 const cleanupObservation=()=>({requested:false,entered:false,pending:0,result:'not-observed',callbackPending:0,callbackResult:'not-observed',callbackCount:0,ambiguous:false});
 const observeCleanup=(state,work)=>async function(...args){
- state.requested=true;state.pending++;
- try{const result=await work(...args);state.result='returned';return result;}
- catch(e){state.result='rejected';throw e;}finally{if(state.callbackPending)state.ambiguous=true;state.pending--;}
+ state.requested=true;state.pending++;const invocation={active:true};
+ try{const result=await work(invocation)(...args);state.result='returned';return result;}
+ catch(e){state.result='rejected';throw e;}finally{invocation.active=false;if(state.callbackPending)state.ambiguous=true;state.pending--;}
 };
-const observeCleanupCallback=(state,work)=>function(...args){
- state.entered=true;state.callbackPending++;if(++state.callbackCount>1)state.ambiguous=true;
+const observeCleanupCallback=(state,invocation,work)=>function(...args){
+ if(!invocation.active)state.ambiguous=true;state.entered=true;state.callbackPending++;if(++state.callbackCount>1)state.ambiguous=true;
  let result;try{result=work(...args);}catch(e){state.callbackPending--;state.callbackResult='rejected';throw e;}
  return Promise.resolve(result).then(value=>{state.callbackPending--;state.callbackResult='returned';return value;},error=>{state.callbackPending--;state.callbackResult='rejected';throw error;});
 };
@@ -108,20 +108,20 @@ export function createAuthorityTrialReader(input){
   };
   return Object.freeze({cleanupDisposition,status:()=>journal.state,
    grant:()=>{if(grantPromise||journal.grantStarted||journal.stopRequested)return Promise.reject(Error('TRIAL_STOPPED'));grantPromise=grantWork();return grantPromise;},
-   remove:observeCleanup(removeObservation,async()=>{
+   remove:observeCleanup(removeObservation,invocation=>async()=>{
     if(removing||journal.removeAttempted)stop();removing=true;let failed=false,op;
     try{try{publishStop();}catch(_){failed=true;}if(grantPromise)await grantPromise.catch(()=>{});
      try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}try{refresh();}catch(_){dispositionCompromised=true;if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}
      if(journal.removeAttempted)stop();try{write({stopRequested:true,state:'stopped'});}catch(_){failed=true;}
      if(!journal.grantAttempted){try{write({removeAttempted:true,removeOutcome:'NO_GRANT'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({grantNeverDispatched:true});}
      if(!journal.permissionId||!journal.ownerId||journal.permissionId===journal.ownerId)stop();
-     await cap.cleanup('remove-reader',observeCleanupCallback(removeObservation,async()=>{try{write({removeAttempted:true,removeOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),url=base+'/'+encodeURIComponent(journal.permissionId),r=await fetcher(url,options('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else{const v=await json(r,url,4096);if(!only(v,[]))stop();}}));
+     await cap.cleanup('remove-reader',observeCleanupCallback(removeObservation,invocation,async()=>{try{write({removeAttempted:true,removeOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),url=base+'/'+encodeURIComponent(journal.permissionId),r=await fetcher(url,options('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else{const v=await json(r,url,4096);if(!only(v,[]))stop();}}));
      try{write({removeOutcome:'ACK_UNVERIFIED'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({removeAcknowledged:true,rollbackComplete:false});
     }catch(_){stop();}finally{release(op);removing=false;}
-   }),verifyRemoved:observeCleanup(verifyObservation,async()=>{
+   }),verifyRemoved:observeCleanup(verifyObservation,invocation=>async()=>{
     if(removing||verifying)stop();verifying=true;let failed=false,op;
     try{try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}try{refresh();}catch(_){dispositionCompromised=true;if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}if(!journal.removeAttempted||journal.removeOutcome==='NO_GRANT'||journal.verifyAttempted)stop();
-     await cap.cleanup('verify-reader-removed',observeCleanupCallback(verifyObservation,async()=>{try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),fields='nextPageToken,permissions(kind,id,type,role,emailAddress,deleted,permissionDetails(inherited,permissionType,role))',url=base+'?fields='+encodeURIComponent(fields)+'&pageSize=100';const v=await json(await fetcher(url,options('GET',t)),url);if(ownerOnly(v)!==journal.ownerId)stop();}));
+     await cap.cleanup('verify-reader-removed',observeCleanupCallback(verifyObservation,invocation,async()=>{try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),fields='nextPageToken,permissions(kind,id,type,role,emailAddress,deleted,permissionDetails(inherited,permissionType,role))',url=base+'?fields='+encodeURIComponent(fields)+'&pageSize=100';const v=await json(await fetcher(url,options('GET',t)),url);if(ownerOnly(v)!==journal.ownerId)stop();}));
      try{write({verifyOutcome:'ABSENT_AT_READBACK'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({readerAbsentAtReadback:true,grantOutcomeKnown:['ACK_MATCHED','READER_VERIFIED'].includes(journal.grantOutcome),rollbackComplete:false});
     }catch(_){stop();}finally{release(op);verifying=false;}
    })
@@ -199,20 +199,20 @@ export function createAuthorityStandaloneScriptReader(input){
   };
   return Object.freeze({cleanupDisposition,status:()=>journal.state,
    grant:()=>{if(grantPromise||journal.grantStarted||journal.stopRequested)return Promise.reject(Error('TRIAL_STOPPED'));grantPromise=grantWork();return grantPromise;},
-   remove:observeCleanup(removeObservation,async()=>{
+   remove:observeCleanup(removeObservation,invocation=>async()=>{
     if(removing||journal.removeAttempted)stop();removing=true;let failed=false,op;
     try{try{publishStop();}catch(_){failed=true;}if(grantPromise)await grantPromise.catch(()=>{});
      try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}try{refresh();}catch(_){dispositionCompromised=true;if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}
      if(journal.removeAttempted)stop();try{write({stopRequested:true,state:'stopped'});}catch(_){failed=true;}
      if(!journal.grantAttempted){try{write({removeAttempted:true,removeOutcome:'NO_GRANT'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({grantNeverDispatched:true});}
      if(journal.permissionId!==callerPermissionId||!journal.ownerId||journal.permissionId===journal.ownerId)stop();
-     await cap.cleanup('script-remove',observeCleanupCallback(removeObservation,async()=>{if(journal.removeAttempted)stop();try{write({removeAttempted:true,removeOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),url=base+'/'+encodeURIComponent(callerPermissionId),r=await fetcher(url,options('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else{const v=await json(r,url,4096);if(!only(v,[]))stop();}}));
+     await cap.cleanup('script-remove',observeCleanupCallback(removeObservation,invocation,async()=>{if(journal.removeAttempted)stop();try{write({removeAttempted:true,removeOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),url=base+'/'+encodeURIComponent(callerPermissionId),r=await fetcher(url,options('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else{const v=await json(r,url,4096);if(!only(v,[]))stop();}}));
      try{write({removeOutcome:'ACK_UNVERIFIED'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({removeAcknowledged:true,rollbackComplete:false});
     }catch(_){stop();}finally{release(op);removing=false;}
-   }),verifyRemoved:observeCleanup(verifyObservation,async()=>{
+   }),verifyRemoved:observeCleanup(verifyObservation,invocation=>async()=>{
     if(removing||verifying)stop();verifying=true;let failed=false,op;
     try{try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}try{refresh();}catch(_){dispositionCompromised=true;if(!journal.grantAttempted||!journal.permissionId||!journal.ownerId)stop();failed=true;}if(!journal.removeAttempted||journal.removeOutcome==='NO_GRANT'||journal.verifyAttempted)stop();
-     await cap.cleanup('script-verify',observeCleanupCallback(verifyObservation,async()=>{if(journal.verifyAttempted)stop();try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),v=await json(await fetcher(aclUrl,options('GET',t)),aclUrl);if(ownerOnly(v)!==journal.ownerId)stop();}));
+     await cap.cleanup('script-verify',observeCleanupCallback(verifyObservation,invocation,async()=>{if(journal.verifyAttempted)stop();try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN'});}catch(_){failed=true;}const t=token(),v=await json(await fetcher(aclUrl,options('GET',t)),aclUrl);if(ownerOnly(v)!==journal.ownerId)stop();}));
      try{write({verifyOutcome:'ABSENT_AT_READBACK'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({readerAbsentAtReadback:true,grantOutcomeKnown:journal.grantOutcome==='ACK_MATCHED',rollbackComplete:false});
     }catch(_){stop();}finally{release(op);verifying=false;}
    })

@@ -14,12 +14,12 @@ const checksum=v=>hash(JSON.stringify(v));
 // Observation metadata never admits IO or replaces a fresh canonical integrity check.
 const cleanupObservation=()=>({requested:false,entered:false,pending:0,result:'not-observed',callbackPending:0,callbackResult:'not-observed',callbackCount:0,ambiguous:false});
 const observeCleanup=(state,work)=>async function(...args){
- state.requested=true;state.pending++;
- try{const result=await work(...args);state.result='returned';return result;}
- catch(e){state.result='rejected';throw e;}finally{if(state.callbackPending)state.ambiguous=true;state.pending--;}
+ state.requested=true;state.pending++;const invocation={active:true};
+ try{const result=await work(invocation)(...args);state.result='returned';return result;}
+ catch(e){state.result='rejected';throw e;}finally{invocation.active=false;if(state.callbackPending)state.ambiguous=true;state.pending--;}
 };
-const observeCleanupCallback=(state,work)=>function(...args){
- state.entered=true;state.callbackPending++;if(++state.callbackCount>1)state.ambiguous=true;
+const observeCleanupCallback=(state,invocation,work)=>function(...args){
+ if(!invocation.active)state.ambiguous=true;state.entered=true;state.callbackPending++;if(++state.callbackCount>1)state.ambiguous=true;
  let result;try{result=work(...args);}catch(e){state.callbackPending--;state.callbackResult='rejected';throw e;}
  return Promise.resolve(result).then(value=>{state.callbackPending--;state.callbackResult='returned';return value;},error=>{state.callbackPending--;state.callbackResult='rejected';throw error;});
 };
@@ -84,14 +84,14 @@ export function createAuthorityTrialOAuth(input){
    try{write({stage:journal.stage==='failed'?'failed':journal.stage==='cancelled'?'cancelled':stage});}catch(_){failed=true;}
    if(failed)stop();
   };
-  const revoke=observeCleanup(revokeObservation,()=>{
+  const revoke=observeCleanup(revokeObservation,invocation=>()=>{
    if(revokeAttempt)return revokeAttempt.promise;if(!accessToken)return Promise.resolve();
    const tokenToRevoke=accessToken,attempt={active:true,entered:false,violated:false,work:null,promise:null};
    revokeAttempt=attempt;
    attempt.promise=Promise.resolve().then(async()=>{
     let completed=false,actual,receiptFailed=false;
     try{
-     const observed=await capability.cleanup('revoke-token',observeCleanupCallback(revokeObservation,()=>{
+     const observed=await capability.cleanup('revoke-token',observeCleanupCallback(revokeObservation,invocation,()=>{
       if(!attempt.active||attempt.entered){attempt.violated=true;stop();}
       attempt.entered=true;revokeObservation.entered=true;
       if(verifiedExpiry!==null)verificationToken=tokenToRevoke;
@@ -119,12 +119,12 @@ export function createAuthorityTrialOAuth(input){
     }
    });return attempt.promise;
   });
-  const verifyRevoked=observeCleanup(verifyObservation,async function(){
+  const verifyRevoked=observeCleanup(verifyObservation,invocation=>async function(){
    let claimed=false,active=true,entered=false,violated=false,work,completed=false,actual;
    try{
     if(arguments.length||verificationAttempted||!revokeSettled||!verificationToken||verifiedExpiry===null)stop();
     verificationAttempted=true;claimed=true;
-    const observed=await capability.cleanup('verify-token-revoked',observeCleanupCallback(verifyObservation,()=>{
+    const observed=await capability.cleanup('verify-token-revoked',observeCleanupCallback(verifyObservation,invocation,()=>{
      if(!active||entered){violated=true;dispositionCompromised=true;stop();}entered=true;verifyObservation.entered=true;
      work=(async()=>{
       // Only this holder's previously accepted token can support a readback.

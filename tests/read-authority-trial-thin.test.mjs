@@ -159,3 +159,12 @@ test('cleanup disposition retains integrity failure discovered by ordinary stopp
  const s=setup(),other=mod.createAuthorityTrialThin(s.options);s.adapter.stop();const p=join(homedir(),'.codex','private','cmwebs-authority-trials',checksum(s.options.epoch)+'.thin.json.stop');chmodSync(p,0o644);
  try{assert.throws(()=>other.status(),/TRIAL_STOPPED/);assert.equal(other.cleanupDisposition().integrity,'compromised');}finally{chmodSync(p,0o600);}
 });
+
+for(const [profile,make] of [['wrapper',setup],['standalone',standaloneSetup]])test('cleanup disposition first-late '+profile+' callback stays compromised after successful outer close',async()=>{
+ let saved;const s=make({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{assert.equal(name,'close-deployment');saved=io;}}});await s.adapter.publish();
+ assert.deepEqual(await s.adapter.close(),{closeAcknowledged:true,rollbackComplete:false});const before=s.adapter.cleanupDisposition();
+ assert.equal(before.inFlight,false);assert.equal(before.actions.close.entered,false);assert.equal(before.actions.close.consumed,false);assert.equal(s.calls.length,5);
+ await saved();const after=s.adapter.cleanupDisposition();assert.equal(s.calls.length,6);assert.equal(s.calls.at(-1).init.method,'DELETE');
+ assert.equal(after.actions.close.callbackResult,'returned');assert.equal(after.actions.close.consumed,true);assert.equal(after.inFlight,false);assert.equal(after.integrity,'compromised');
+ assert.equal(s.adapter.cleanupDisposition().integrity,'compromised');assert.equal(before.actions.close.entered,false);
+});

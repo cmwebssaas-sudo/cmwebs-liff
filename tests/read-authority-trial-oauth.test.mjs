@@ -341,3 +341,13 @@ test('cleanup disposition flow observation is filesystem clock credential and ca
  const saved={};for(const name of ['lstatSync','readFileSync','openSync','writeSync','renameSync','fsyncSync']){saved[name]=fs[name];fs[name]=()=>assert.fail('OBSERVER_FILESYSTEM_IO');}syncBuiltinESMExports();observing=true;
  try{const a=s.flow.cleanupDisposition(),b=s.flow.cleanupDisposition();assert.deepEqual(a,b);assert.notEqual(a,b);assert.notEqual(a.actions,b.actions);for(const action of Object.keys(a.actions)){assert(Object.isFrozen(a.actions[action]));assert.notEqual(a.actions[action],b.actions[action]);}}finally{observing=false;Object.assign(fs,saved);syncBuiltinESMExports();}
 });
+
+for(const overlapping of [false,true])test('cleanup disposition first-late OAuth callback after pre-entry rejection'+(overlapping?' during next revoke request':''),async()=>{
+ let first,release,enter,count=0;const entered=new Promise(r=>enter=r),gate=new Promise(r=>release=r);
+ const s=setup({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{assert.equal(name,'revoke-token');if(++count===1){first=io;throw Error('PRE_ENTRY_DENIED');}enter();await gate;throw Error('NEXT_PRE_ENTRY_DENIED');}}});
+ await s.submit();await s.flow.receive(s.request());await assert.rejects(s.flow.cancel(),/TRIAL_STOPPED/);const before=s.flow.cleanupDisposition();
+ assert.equal(before.actions.revoke.consumed,false);assert.equal(before.actions.revoke.entered,false);assert.equal(before.tokenHeld,true);assert.equal(before.integrity,'locally-uncontested');
+ let next;if(overlapping){next=s.flow.cancel();await entered;}
+ try{assert.throws(first,/TRIAL_STOPPED/);const after=s.flow.cleanupDisposition();assert.equal(after.integrity,'compromised');assert.equal(after.actions.revoke.callbackResult,'rejected');assert.equal(after.actions.revoke.consumed,false);assert.equal(after.tokenHeld,true);assert.equal(s.calls.length,2);}finally{if(next){release();await assert.rejects(next,/TRIAL_STOPPED/);}}
+ const done=s.flow.cleanupDisposition();assert.equal(done.inFlight,false);assert.equal(done.integrity,'compromised');assert.equal(done.actions.revoke.consumed,false);assert.equal(before.actions.revoke.entered,false);
+});

@@ -11,12 +11,12 @@ const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Obje
 // Observation metadata never admits IO or replaces a fresh canonical integrity check.
 const cleanupObservation=()=>({requested:false,entered:false,pending:0,result:'not-observed',callbackPending:0,callbackResult:'not-observed',callbackCount:0,ambiguous:false});
 const observeCleanup=(state,work)=>async function(...args){
- state.requested=true;state.pending++;
- try{const result=await work(...args);state.result='returned';return result;}
- catch(e){state.result='rejected';throw e;}finally{if(state.callbackPending)state.ambiguous=true;state.pending--;}
+ state.requested=true;state.pending++;const invocation={active:true};
+ try{const result=await work(invocation)(...args);state.result='returned';return result;}
+ catch(e){state.result='rejected';throw e;}finally{invocation.active=false;if(state.callbackPending)state.ambiguous=true;state.pending--;}
 };
-const observeCleanupCallback=(state,work)=>function(...args){
- state.entered=true;state.callbackPending++;if(++state.callbackCount>1)state.ambiguous=true;
+const observeCleanupCallback=(state,invocation,work)=>function(...args){
+ if(!invocation.active)state.ambiguous=true;state.entered=true;state.callbackPending++;if(++state.callbackCount>1)state.ambiguous=true;
  let result;try{result=work(...args);}catch(e){state.callbackPending--;state.callbackResult='rejected';throw e;}
  return Promise.resolve(result).then(value=>{state.callbackPending--;state.callbackResult='returned';return value;},error=>{state.callbackPending--;state.callbackResult='rejected';throw error;});
 };
@@ -93,14 +93,14 @@ function createTrialPublication(input,standalone){
     resourceDisposition:!knownCreateAttempted?'not-dispatched':knownDeploymentId!==null?'attempted-known':'attempted-unknown',createAttempted:knownCreateAttempted,createOutcome:journal.createOutcome,
     actions:Object.freeze({close:cleanupSnapshot(closeObservation,knownCloseAttempted,journal.closeOutcome),verify:cleanupSnapshot(verifyObservation,knownVerifyAttempted,journal.verifyOutcome)})});
   };
-  return Object.freeze({cleanupDisposition,status:()=>localStop||stopped()?'stopped':journal.state,stop:()=>{try{publishStop();return Object.freeze({stopRequested:true});}catch(_){stop();}},publish:()=>{if(publishPromise||journal.started||localStop||stopped())return Promise.reject(Error('TRIAL_STOPPED'));publishPromise=work();return publishPromise;},close:observeCleanup(closeObservation,async()=>{
+  return Object.freeze({cleanupDisposition,status:()=>localStop||stopped()?'stopped':journal.state,stop:()=>{try{publishStop();return Object.freeze({stopRequested:true});}catch(_){stop();}},publish:()=>{if(publishPromise||journal.started||localStop||stopped())return Promise.reject(Error('TRIAL_STOPPED'));publishPromise=work();return publishPromise;},close:observeCleanup(closeObservation,invocation=>async()=>{
    if(closing)stop();closing=true;let op,failed=false;try{try{publishStop();}catch(_){failed=true;}if(publishPromise)await publishPromise.catch(()=>{});try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}failed=refresh()||failed;if(journal.closeAttempted||!journal.createAttempted||!journal.deploymentId)stop();
-    await cap.cleanup('close-deployment',observeCleanupCallback(closeObservation,async()=>{knownCloseAttempted=true;try{write({closeAttempted:true,closeOutcome:'UNKNOWN',state:'stopped'});}catch(_){failed=true;}const t=token(),url=base+'/deployments/'+journal.deploymentId,r=await fetcher(url,request('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else if(!only(await json(r,url,4096),[]))stop();}));
+    await cap.cleanup('close-deployment',observeCleanupCallback(closeObservation,invocation,async()=>{knownCloseAttempted=true;try{write({closeAttempted:true,closeOutcome:'UNKNOWN',state:'stopped'});}catch(_){failed=true;}const t=token(),url=base+'/deployments/'+journal.deploymentId,r=await fetcher(url,request('DELETE',t));if(r.redirected===true||(r.url&&r.url!==url)){if(r.body)await r.body.cancel().catch(()=>{});stop();}if(r.status===204){if(r.body!==null){await r.body.cancel().catch(()=>{});stop();}}else if(!only(await json(r,url,4096),[]))stop();}));
     try{write({closeOutcome:'ACK_UNVERIFIED'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({closeAcknowledged:true,rollbackComplete:false});
    }catch(_){stop();}finally{release(op);closing=false;}
-  }),verifyClosed:observeCleanup(verifyObservation,async()=>{
+  }),verifyClosed:observeCleanup(verifyObservation,invocation=>async()=>{
    if(verifying||closing)stop();verifying=true;let op,failed=false;try{try{publishStop();}catch(_){failed=true;}if(publishPromise)await publishPromise.catch(()=>{});try{op=openSync(operationPath,'wx',0o600);}catch(e){dispositionCompromised=true;throw e;}failed=refresh()||failed;if(journal.verifyAttempted||!journal.createAttempted||(journal.deploymentId!==null&&!journal.closeAttempted))stop();
-    await cap.cleanup('verify-closed-deployment',observeCleanupCallback(verifyObservation,async()=>{knownVerifyAttempted=true;try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN',state:'stopped'});}catch(_){failed=true;}if(rows(await io(inventory,'GET')).length!==0)stop();}));try{write({verifyOutcome:'ABSENT_AT_READBACK'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({deploymentAbsent:true,unknownCreatePreserved:journal.createOutcome==='UNKNOWN',unknownClosePreserved:journal.closeOutcome==='UNKNOWN',rollbackComplete:false});
+    await cap.cleanup('verify-closed-deployment',observeCleanupCallback(verifyObservation,invocation,async()=>{knownVerifyAttempted=true;try{write({verifyAttempted:true,verifyOutcome:'UNKNOWN',state:'stopped'});}catch(_){failed=true;}if(rows(await io(inventory,'GET')).length!==0)stop();}));try{write({verifyOutcome:'ABSENT_AT_READBACK'});}catch(_){failed=true;}if(failed)stop();return Object.freeze({deploymentAbsent:true,unknownCreatePreserved:journal.createOutcome==='UNKNOWN',unknownClosePreserved:journal.closeOutcome==='UNKNOWN',rollbackComplete:false});
    }catch(_){stop();}finally{release(op);verifying=false;}
   })});
  }catch(_){stop();}

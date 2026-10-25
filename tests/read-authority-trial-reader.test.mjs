@@ -172,3 +172,12 @@ test('cleanup disposition adapter observation is filesystem clock credential and
  const saved={};for(const name of ['lstatSync','readFileSync','openSync','writeSync','renameSync','fsyncSync']){saved[name]=fs[name];fs[name]=()=>assert.fail('OBSERVER_FILESYSTEM_IO');}syncBuiltinESMExports();observing=true;
  try{const a=s.adapter.cleanupDisposition(),b=s.adapter.cleanupDisposition();assert.deepEqual(a,b);assert.notEqual(a,b);assert.notEqual(a.actions,b.actions);for(const action of Object.keys(a.actions)){assert(Object.isFrozen(a.actions[action]));assert.notEqual(a.actions[action],b.actions[action]);}}finally{observing=false;Object.assign(fs,saved);syncBuiltinESMExports();}
 });
+
+test('cleanup disposition first-late Reader callback stays compromised after successful outer remove',async()=>{
+ let saved;const s=setup({control:{externalRead:async io=>io(),cleanup:async(name,io)=>{saved=io;}}});await s.adapter.grant();const initialCalls=s.calls.length;
+ assert.deepEqual(await s.adapter.remove(),{removeAcknowledged:true,rollbackComplete:false});const before=s.adapter.cleanupDisposition();
+ assert.equal(before.inFlight,false);assert.equal(before.actions.remove.entered,false);assert.equal(before.actions.remove.consumed,false);assert.equal(s.calls.length,initialCalls);
+ await saved();const after=s.adapter.cleanupDisposition();assert.equal(s.calls.length,initialCalls+1);assert.equal(s.calls.at(-1).init.method,'DELETE');
+ assert.equal(after.actions.remove.callbackResult,'returned');assert.equal(after.actions.remove.consumed,true);assert.equal(after.inFlight,false);assert.equal(after.integrity,'compromised');
+ assert.equal(s.adapter.cleanupDisposition().integrity,'compromised');assert.equal(before.actions.remove.entered,false);
+});

@@ -3054,3 +3054,20 @@ cannot establish eligibility. Canonical scope failure still rejects finally.
 
 Rollback is a reviewed scoped source revert before use. Preserve old immutable
 candidates, UNKNOWN attempts, stopped journals, canonical charges and history.
+
+
+### Cleanup callback lifetime observation correction
+
+Each cleanup invocation now retains its own nonsecret active marker, closed
+when that invocation settles. A first callback entering after its own invocation
+has settled latches the existing sticky `compromised` integrity value, including
+when a later invocation is pending. The observation neither blocks nor invokes
+callbacks and does not alter existing IO, throw, receipt or consumption behavior.
+The snapshot schema and canonical authority boundary are unchanged.
+
+Six focused late-entry regressions cover both publication profiles, both Reader
+profiles and OAuth pre-entry rejection with/without a later pending revoke.
+They assert preserved DELETE/throw behavior, original snapshot detachment and
+sticky compromise after callback settlement. Target Node22.23.3 RED6 then GREEN6;
+final affected four-module221/221 PASS (zero fail/cancel/skip), syntax7/7, validate
+and diff-check PASS. Initial215/215 evidence remains historical.
