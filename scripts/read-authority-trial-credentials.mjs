@@ -2,6 +2,7 @@
 // neither disk nor copied rollback descriptors can restore them after its loss.
 import {openSync,readFileSync,fstatSync,closeSync,constants} from 'node:fs';
 import {resolve} from 'node:path';
+import {userInfo} from 'node:os';
 import {createHash} from 'node:crypto';
 import {types} from 'node:util';
 import {AUTHORITY_TRIAL_SCOPES} from './read-authority-trial-driver.mjs';
@@ -30,7 +31,8 @@ function syncValue(getter){const v=getter();if(types.isPromise(v)){void Promise.
 function sourceProfile(source){
  const fd=openSync(source.path,constants.O_RDONLY|constants.O_NOFOLLOW);
  try{
-  const before=fstatSync(fd);if(!before.isFile()||before.uid!==process.getuid()||(before.mode&0o777)!==0o600||before.size<1||before.size>100000)stop();
+  const uid=userInfo().uid;if(!integer(uid)||uid<0)stop();
+  const before=fstatSync(fd);if(!before.isFile()||before.uid!==uid||(before.mode&0o777)!==0o600||before.size<1||before.size>100000)stop();
   const bytes=readFileSync(fd),after=fstatSync(fd);
   if(['dev','ino','size','mtimeMs','ctimeMs','mode','uid'].some(k=>before[k]!==after[k])||hash(bytes)!==source.sha256)stop();
   const root=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)),p=root?.tokens?.default;
