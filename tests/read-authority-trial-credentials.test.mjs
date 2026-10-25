@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,writeFileSync,readFileSync,chmodSync,symlinkSync,statSync,renameSync} from 'node:fs';
 import {join} from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {createHash} from 'node:crypto';
 import {SIMPLE_DECISION} from '../scripts/read-authority-simple-plan.mjs';
@@ -148,4 +149,53 @@ test('G stop owns the entire response body until drain and emits no post-stop id
 });
 test('publisher policy and epoch validation happens without reading or renewing the local grant',()=>{
  for(const patch of [{decisionHash:'0'.repeat(64)},{publisherHash:'NOT_A_HASH'},{expiresAt:clock+360000},{expiresAt:clock+21600001}])assert.throws(()=>setup(patch),/TRIAL_STOPPED/);
+});
+
+// Child-only builtin fault injection keeps the runner and genuine OS success isolated.
+for(const uidCase of ['native','mismatch','unavailable','invalid','throws'])test('publisher no-global-process imported module: native UID '+uidCase,()=>{
+ const code=`
+ import assert from 'node:assert/strict';
+ import fs from 'node:fs';
+ import os from 'node:os';
+ import {syncBuiltinESMExports} from 'node:module';
+ import {createHash} from 'node:crypto';
+ import {join} from 'node:path';
+ const hash=v=>createHash('sha256').update(v).digest('hex');
+ const uidCase=${JSON.stringify(uidCase)},nativeUID=os.userInfo().uid;
+ assert(Number.isSafeInteger(nativeUID)&&nativeUID>=0);
+ const dir=fs.mkdtempSync('/private/tmp/cmwebs-SYNTHETIC-publisher-');fs.chmodSync(dir,0o700);
+ try{
+  const path=join(dir,'SYNTHETIC-profile.json'),raw=${JSON.stringify(JSON.stringify(profile()))};
+  fs.writeFileSync(path,raw,{mode:0o600});const before=fs.statSync(path);
+  assert.equal(before.uid,nativeUID);assert.equal(before.mode&0o777,0o600);
+  if(uidCase!=='native')os.userInfo=()=>{if(uidCase==='throws')throw Error('SYNTHETIC_OS_UNAVAILABLE');return {uid:uidCase==='mismatch'?nativeUID+1:uidCase==='invalid'?-1:undefined};};
+  let grantReads=0;const originalRead=fs.readFileSync;
+  fs.readFileSync=(...args)=>{if(typeof args[0]==='number')grantReads++;return originalRead(...args);};
+  syncBuiltinESMExports();
+  delete globalThis.process;assert.equal(typeof globalThis.process,'undefined');
+  const {createAuthorityPublisherCredentials}=await import(${JSON.stringify(new URL('../scripts/read-authority-trial-credentials.mjs',import.meta.url).href)});
+  assert.equal(typeof globalThis.process,'undefined');
+  const calls=[],charges=[],events=[],control={decisionHash:${JSON.stringify(decisionHash)},externalRead:async(io,label)=>{charges.push(label);events.push('debit');return io();}};
+  const holder=createAuthorityPublisherCredentials({source:{path,sha256:hash(raw)},publisherHash:hash('SYNTHETIC_PUBLISHER@example.invalid'.toLowerCase()),decisionHash:control.decisionHash,expiresAt:${clock}+7200000,now:()=>${clock},fetcher:async(url,init)=>{
+   calls.push({url,init});events.push('fetch');
+   const value=url===${JSON.stringify(tokenUrl)}?${JSON.stringify(token())}:{email:'SYNTHETIC_PUBLISHER@example.invalid',verified_email:true};
+   return {status:200,redirected:false,url,body:new ReadableStream({start(c){c.enqueue(new TextEncoder().encode(JSON.stringify(value)));c.close();}})};
+  }});
+  assert.throws(()=>holder.credential(),/TRIAL_STOPPED/);
+  if(uidCase==='native'){
+   await holder.refresh(control);assert.throws(()=>holder.credential(),/TRIAL_STOPPED/);await holder.verify(control);
+   const c=holder.credential();assert.equal(c.accessToken,'SYNTHETIC_RENEWED_TOKEN');assert.equal(c.accountHash,hash('SYNTHETIC_PUBLISHER@example.invalid'.toLowerCase()));
+   assert.deepEqual([...c.scopes],${JSON.stringify(managementScopes)});assert.equal(c.expiresAt,${clock}+3920000);assert.equal(c.refreshTokenPresent,true);assert(Object.isFrozen(c));
+   assert.deepEqual(charges,['P:publisher-refresh','P:publisher-userinfo']);assert.deepEqual(events,['debit','fetch','debit','fetch']);assert.equal(grantReads,1);
+   assert.equal(new URLSearchParams(calls[0].init.body).get('refresh_token'),'SYNTHETIC_EXISTING_GRANT');assert.equal(calls[1].init.headers.authorization,'Bearer SYNTHETIC_RENEWED_TOKEN');
+  }else{
+   await assert.rejects(holder.refresh(control),/TRIAL_STOPPED/);assert.equal(grantReads,0);assert.equal(calls.length,0);assert.deepEqual(charges,['P:publisher-refresh']);assert.throws(()=>holder.credential(),/TRIAL_STOPPED/);
+  }
+  await assert.rejects(holder.refresh(control),/TRIAL_STOPPED/);const n=calls.length;await holder.stopAndDrain();assert.throws(()=>holder.credential(),/TRIAL_STOPPED/);assert.equal(calls.length,n);
+  assert.equal(originalRead(path,'utf8'),raw);const after=fs.statSync(path);
+  for(const k of ['uid','mode','dev','ino','size','mtimeMs','ctimeMs'])assert.equal(after[k],before[k]);
+  assert.equal(typeof globalThis.process,'undefined');
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+ `;
+ assert.equal(execFileSync(process.execPath,['--input-type=module','--eval',code],{encoding:'utf8',timeout:15000}),'');
 });

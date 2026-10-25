@@ -3071,3 +3071,16 @@ They assert preserved DELETE/throw behavior, original snapshot detachment and
 sticky compromise after callback settlement. Target Node22.23.3 RED6 then GREEN6;
 final affected four-module221/221 PASS (zero fail/cancel/skip), syntax7/7, validate
 and diff-check PASS. Initial215/215 evidence remains historical.
+
+
+### Publisher credential native OS ownership context
+
+The existing credential module now exercises an owned synthetic profile in an
+isolated imported-module subprocess with no global process. Native OS UID
+permits the existing paid refresh and same-token identity sequence; mismatched,
+unavailable, invalid or throwing UID denies before grant bytes or network.
+The source remains byte-identical with unchanged metadata and charge labels;
+no global shim, caller UID or credential bypass is introduced. Existing source
+mode, no-follow, stable-file/hash, scope, identity, expiry and no-retry guards
+remain covered. This local context regression is not provider, actual CUA
+credential, CI, admission or release acceptance.
